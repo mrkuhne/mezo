@@ -26,7 +26,7 @@ import { backfillOffset } from '@/features/fuel/logic/backfillWindow'
 import { rankUsualMeals } from '@/features/fuel/logic/usualMeals'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import { addDays, huMonthDay, huWeekdayFullIso, localDateString } from '@/shared/lib/dates'
-import { ClayIcon } from '@/shared/ui/clay'
+import { ContentIcon } from '@/shared/ui/clay'
 import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
 import { MealComposer } from '@/features/fuel/components/MealComposer'
 import { FuelLogModes, type LogMode } from '@/features/fuel/components/FuelLogModes'
@@ -56,7 +56,7 @@ export function FuelLogNewPage() {
   const tile: WindowTileVM | null = lane.tiles.find(t => t.key === wKey) ?? null
 
   // Az ablakból indított logolás a terv receptjét is hozza — pontosan úgy, ahogy a
-  // /fuel/log blokkja tette. Az AI-ág kihagyja: a user a ✨ utat választotta.
+  // /fuel/log blokkja tette. Az AI-ág kihagyja: a user az AI utat választotta.
   const slot = tile != null ? plan.slots.find(s => tileKey(s) === tile.key) : undefined
   const prefill = slot?.suggestedRecipeId && !ai
     ? { source: 'recipe' as const, recipeId: slot.suggestedRecipeId }
@@ -95,7 +95,9 @@ export function FuelLogNewPage() {
     <MozaikPage tone={past ? 'gold' : 'coral'} className="flognew-page">
       <PageHead onBack={back} label="‹ Vissza" />
       <div className={`flognew-head${past ? ' is-past' : ''}`}>
-        <div className="flognew-ic"><ClayIcon name={tile?.icon ?? 'i-fuel'} size={26} /></div>
+        {/* Üveg (mezo-me75u.2): az ablak saját ikonja a Titanium 3D készletből (CLAY_TO_3D),
+            ablakon kívül a tál. Keret nélküli, nagy fejléc-művészet — nem kártya. */}
+        <div className="flognew-ic" aria-hidden="true"><ContentIcon name={tile?.icon ?? 't-bowl'} size={48} /></div>
         <div className="flognew-txt">
           <div className="flognew-eyebrow">{editing ? 'Javítás' : past ? 'Pótlás' : 'Logolás'}</div>
           <div className="flognew-title">

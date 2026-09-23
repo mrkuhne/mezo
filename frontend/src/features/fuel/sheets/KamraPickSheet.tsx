@@ -18,6 +18,7 @@ import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Display } from '@/shared/ui/Display'
+import { Icon3D } from '@/shared/ui/clay'
 import { NovaDot } from '@/features/fuel/components/NovaDot'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
 
@@ -31,8 +32,8 @@ function KamraRow({ ing, added, onPick }: { ing: Ingredient; added: boolean; onP
     <div className="fkp-item" style={{ '--kc': catColor } as React.CSSProperties}>
       <div className="row" style={{ alignItems: 'center', gap: 8 }}>
         <div className="col flex-1" style={{ minWidth: 0 }}>
-          <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-primary)' }}>{ing.name}</span>
-          <span className="label-mono row gap-xs" style={{ fontSize: 8, color: 'var(--text-tertiary)', marginTop: 3, alignItems: 'center' }}>
+          <span className="fkp-name">{ing.name}</span>
+          <span className="label-mono row gap-xs fkp-meta">
             {ing.brand && <span>{ing.brand}</span>}
             {nova != null && <NovaDot nova={nova} />}
           </span>
@@ -41,13 +42,11 @@ function KamraRow({ ing, added, onPick }: { ing: Ingredient; added: boolean; onP
           <b>{ing.macros.kcal ?? '—'}</b><small>kcal /{ing.per}{ing.unit}</small>
         </span>
         {added ? (
-          <button disabled aria-label={ing.name + ' hozzáadva'} className="rad-12"
-            style={{ width: 28, height: 28, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'var(--surface-2)', color: 'var(--mz-cell-gold-ink, var(--coral))', opacity: 0.55, cursor: 'default' }}>
+          <button disabled aria-label={ing.name + ' hozzáadva'} className="fkp-add is-added">
             <Icon name="check" size={14} />
           </button>
         ) : (
-          <button onClick={onPick} aria-label={ing.name + ' hozzáadása'} className="rad-12"
-            style={{ width: 28, height: 28, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'var(--mz-tone-gold)', color: 'var(--mz-cell-gold-ink, #8A5E07)' }}>
+          <button onClick={onPick} aria-label={ing.name + ' hozzáadása'} className="fkp-add">
             <Icon name="plus" size={14} />
           </button>
         )}
@@ -77,24 +76,26 @@ export function KamraPickSheet({
     && (!q || i.name.toLowerCase().includes(q) || (i.brand ?? '').toLowerCase().includes(q)))
 
   return (
-    <Sheet onClose={onClose} className="sheet-nested" labelledBy="kamra-pick-title">
+    // Üveg (mezo-me75u.2, uveg-fuel-tobbi `SH.kamrapick`): a sheet `flp-kpick` hatókörében a
+    // sorok LAPOS cellák a kategória-színű belső gerinccel, a fejléc a Kamra 3D ikonját viseli.
+    <Sheet onClose={onClose} className="sheet-nested flp-kpick" labelledBy="kamra-pick-title">
       {(close) => (
         <>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div className="col">
+          <div className="row flp-kpick-head">
+            <Icon3D name="t-stack" size={48} />
+            <div className="col" style={{ flex: 1, minWidth: 0 }}>
               <Eyebrow brand>Kamra · hozzáadás</Eyebrow>
               <div id="kamra-pick-title" style={{ marginTop: 4 }}><Display size="md">Válassz a polcról</Display></div>
             </div>
-            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}>
+            <button className="flp-x" aria-label="Bezárás" onClick={close}>
               <Icon name="x" size={12} />
             </button>
           </div>
 
-          <div className="row gap-sm" style={{ padding: '8px 12px', marginBottom: 9, background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', alignItems: 'center' }}>
-            <Icon name="search" size={12} color="var(--text-tertiary)" />
+          <div className="row gap-sm flp-search">
+            <Icon name="search" size={14} color="var(--text-muted)" />
             <input autoFocus value={query} onChange={e => setQuery(e.target.value)}
-              placeholder="Keress a Kamrában…" aria-label="Keresés a kamrában"
-              style={{ flex: 1, fontSize: 13, color: 'var(--text-primary)' }} />
+              placeholder="Keress a Kamrában…" aria-label="Keresés a kamrában" />
           </div>
 
           <div className="fkp-chiprow" role="group" aria-label="Kategória-szűrő">
@@ -118,7 +119,7 @@ export function KamraPickSheet({
               <KamraRow key={ing.id} ing={ing} added={added.has(ing.id)} onPick={() => onPick(ing)} />
             ))}
             {filtered.length === 0 && (
-              <p className="text-tertiary" style={{ fontSize: 11, textAlign: 'center', padding: '20px 8px' }}>
+              <p className="fkp-none uv-empty">
                 Nincs találat ebben a kategóriában.
               </p>
             )}

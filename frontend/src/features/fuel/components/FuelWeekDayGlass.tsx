@@ -29,7 +29,7 @@ import { useId } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { huInt } from '@/shared/lib/huNum'
 import { huMonthDayDow } from '@/shared/lib/dates'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import type { FuelWeekDay } from '@/data/fuel/mealApi'
 import type { WeekDayVM } from '@/features/fuel/logic/fuelWeekView'
 import { GlassBox } from '@/features/fuel/components/GlassBox'
@@ -42,7 +42,7 @@ export interface DimFactRow { label: string; value: string }
 interface DimView {
   key: 'nutrition' | 'quality'
   label: string
-  icon: ClayIconName
+  icon: Icon3DName
   color: string
   /** A napi értékelés hány százalékát adja ez a szempont. */
   weightPct: number
@@ -83,24 +83,25 @@ export function FuelWeekDayGlass({ day, rollup, subscores, onClose, children }: 
     return (
       <GlassBox onClose={onClose}
         className="ftx-glass glass is-empty"
+        style={{ '--c': 'var(--dv-amber)' } as React.CSSProperties}
         labelledBy={titleId}
       >
         <div className="ftx-glass-hero">
-          <span aria-hidden="true"><ClayIcon name="i-tanyer" size={52} /></span>
+          <span aria-hidden="true"><Icon3D name="t-plate" size={56} /></span>
           <div>
             <strong>—</strong>
             <small id={titleId}>{dayName}</small>
           </div>
         </div>
+        {/* Üveg (mezo-me75u.2): a flat amber-lit callout inside the glass box, never glass in glass. */}
         <p className="ftx-glass-honest">
-          <span aria-hidden="true"><ClayIcon name="i-mezo" size={26} /></span>
           <span>
             <small>ŐSZINTÉN</small>
             Ezen a napon nem naplóztál. Nem töltjük ki becsléssel, és a heti átlagból is kimarad.
           </span>
         </p>
         <button type="button" className="ftx-glass-link" onClick={() => { onClose(); navigate(`/fuel?d=${day.date}`) }}>
-          <span aria-hidden="true"><ClayIcon name="i-naplo" size={28} /></span>
+          <span aria-hidden="true"><Icon3D name="t-journal" size={28} /></span>
           <span><strong>Pótolom a napot</strong><small>A nap saját lapján bármikor felvehető</small></span>
           <b aria-hidden="true">›</b>
         </button>
@@ -111,7 +112,7 @@ export function FuelWeekDayGlass({ day, rollup, subscores, onClose, children }: 
 
   const dims: DimView[] = [
     {
-      key: 'nutrition', label: 'Táplálkozás', icon: 'i-makro', color: 'var(--dv-coral)', weightPct: 30,
+      key: 'nutrition', label: 'Táplálkozás', icon: 't-macro', color: 'var(--dv-coral)', weightPct: 30,
       score: subscores.nutrition,
       rows: [
         { label: 'Kalória', value: pair(rollup.consumed.kcal, day.targetKcal, 'kcal') },
@@ -121,7 +122,7 @@ export function FuelWeekDayGlass({ day, rollup, subscores, onClose, children }: 
       ],
     },
     {
-      key: 'quality', label: 'Minőség', icon: 'i-feldolgozas', color: 'var(--dv-amber)', weightPct: 15,
+      key: 'quality', label: 'Minőség', icon: 't-processing', color: 'var(--dv-amber)', weightPct: 15,
       score: subscores.quality,
       // A feldolgozottság/mikro-részletek a napi motorból nem jönnek le naponta — inkább semmit
       // írunk, mint kitalált tényt. Az étkezésenkénti bontás a Mai oldal értékelőjén él.
@@ -134,10 +135,11 @@ export function FuelWeekDayGlass({ day, rollup, subscores, onClose, children }: 
   return (
     <GlassBox onClose={onClose}
       className={`ftx-glass glass${day.over ? ' is-over' : ''}`}
+      style={{ '--c': 'var(--dv-sage)' } as React.CSSProperties}
       labelledBy={titleId}
     >
       <div className="ftx-glass-hero">
-        <span aria-hidden="true"><ClayIcon name="i-heti" size={52} /></span>
+        <span aria-hidden="true"><Icon3D name="t-calendar" size={56} /></span>
         <div>
           <strong>{day.dayScore == null ? '—' : huScore(day.dayScore)}</strong>
           <small id={titleId}>{dayName} · étkezés-pont</small>
@@ -173,7 +175,7 @@ export function FuelWeekDayGlass({ day, rollup, subscores, onClose, children }: 
             style={{ '--ftx-dim-color': dim.color } as React.CSSProperties}
           >
             <div className="ftx-dim-head">
-              <span aria-hidden="true"><ClayIcon name={dim.icon} size={30} /></span>
+              <span aria-hidden="true"><Icon3D name={dim.icon} size={30} /></span>
               <span>
                 <strong>{dim.label}</strong>
                 <small>a napi értékelés {dim.weightPct}%-a</small>
@@ -203,7 +205,7 @@ export function FuelWeekDayGlass({ day, rollup, subscores, onClose, children }: 
       {children}
 
       <button type="button" className="ftx-glass-link" onClick={() => { onClose(); navigate(`/fuel?d=${day.date}`) }}>
-        <span aria-hidden="true"><ClayIcon name="i-naplo" size={28} /></span>
+        <span aria-hidden="true"><Icon3D name="t-journal" size={28} /></span>
         <span><strong>Megnézem a napot</strong><small>Az étkezések és az értékelésük a nap lapján</small></span>
         <b aria-hidden="true">›</b>
       </button>

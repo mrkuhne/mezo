@@ -197,6 +197,11 @@ something new extends the kit, never forks a second recipe.
   view-model still speaks clay. A glyph that means two things is mapped at its call site with a
   `t-*` name. **Chrome keeps the clay icons; content wears the 3D set.** New glyphs go on the
   slice prototype's "Új ikonok" sheet first (U1: `prototypes/uveg-alap-ikonok.html`).
+- **U2 (`mezo-me75u.2`) additions.** 12 owner-approved icons joined `titanium-custom.svg`
+  (`t-mic`, `t-gear`, `t-syringe`, `t-protocol`, `t-dawn`, `t-sleep`, `t-flame`, `t-calendar`,
+  `t-pin`, `t-weight`, `t-pattern`, `t-chef`; sheet: `prototypes/uveg-fuel-tobbi.html#ikonok`),
+  and `CLAY_TO_3D` now maps the rest of Fuel's clay names. Each U2 surface owns one block at the
+  end of `prototype.css`: `── uveg fuel konyha|receptek|log|stack|trendek (`.
 - **Glass chrome — `── uveg chrome (` block (bible §7).** Same content and behavior, glass
   material: the header's round `.glass.is-round` buttons (badges outside), the gradient "boop"
   wordmark, the header fade with a backdrop blur, `DayOrb` redrawn as a glass sphere holding a

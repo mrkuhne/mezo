@@ -79,7 +79,7 @@ test('the three source tiles are always visible', () => {
   renderPage()
   expect(screen.getByRole('button', { name: 'Kamra · hozzáadás' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Recept · hozzáadás' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: '✨ AI · fotó vagy szöveg' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'AI · fotó vagy szöveg' })).toBeInTheDocument()
 })
 
 test('empty flow shows the dashed combine-sources empty state and disables the CTA', () => {
@@ -150,8 +150,8 @@ test('the derived meal name follows the lines — no name field, the totals card
 
 test('the AI panel: Elemzés is disabled with neither text nor photo, enabled with either', async () => {
   renderPage()
-  await userEvent.click(screen.getByRole('button', { name: '✨ AI · fotó vagy szöveg' }))
-  const go = screen.getByRole('button', { name: '✨ Elemzés' })
+  await userEvent.click(screen.getByRole('button', { name: 'AI · fotó vagy szöveg' }))
+  const go = screen.getByRole('button', { name: 'Elemzés' })
   expect(go).toBeDisabled()
   await userEvent.type(screen.getByRole('textbox', { name: 'Mit ettél?' }), 'csirkés wrap')
   expect(go).toBeEnabled()
@@ -166,19 +166,27 @@ test('AI lines carry their REAL source tag next to a manual pantry line — mixe
   await userEvent.click(screen.getByRole('button', { name: 'Bezárás' }))
 
   // Then the AI panel — MOCK_AI_MEAL_DRAFT resolves after 600ms in mock mode.
-  await userEvent.click(screen.getByRole('button', { name: '✨ AI · fotó vagy szöveg' }))
+  await userEvent.click(screen.getByRole('button', { name: 'AI · fotó vagy szöveg' }))
   await userEvent.type(screen.getByRole('textbox', { name: 'Mit ettél?' }), 'csirkés wrap és egy latte')
-  await userEvent.click(screen.getByRole('button', { name: '✨ Elemzés' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Elemzés' }))
 
   expect(await screen.findByText('Elemzem az étkezést…')).toBeInTheDocument()
   expect(await screen.findByText('Csirkés wrap')).toBeInTheDocument()
   // The draft's pantry-matched line says so (mezo-qrks) — only the genuinely estimated line
-  // is tagged 'becslés'. The ✨ marks who put the line there, the word stays honest about
+  // is tagged 'becslés'. The AI mark (Üveg, mezo-me75u.2: the t-score icon + a screen-reader
+  // "· AI", formerly a ✨ suffix) says who put the line there; the word stays honest about
   // where the macros came from.
-  expect(screen.getByText('kamra ✨')).toBeInTheDocument()
-  expect(screen.getByText('becslés')).toBeInTheDocument()
+  const kamraTags = screen.getAllByText('kamra', { selector: '.logflow-lntag' })
+  expect(kamraTags).toHaveLength(2)
+  const aiTagged = kamraTags.filter(t => t.hasAttribute('data-ai'))
+  expect(aiTagged).toHaveLength(1)
+  expect(aiTagged[0]).toHaveTextContent('kamra · AI')
+  expect(screen.getByText('becslés', { selector: '.logflow-lntag' })).toBeInTheDocument()
+  // …and the estimate tag carries no AI mark of its own ('becslés' already means AI).
+  expect(screen.getByText('becslés', { selector: '.logflow-lntag' })).not.toHaveAttribute('data-ai')
   // The manual line keeps its own unadorned tag.
-  expect(screen.getByText('kamra')).toBeInTheDocument()
+  const manual = kamraTags.find(t => !t.hasAttribute('data-ai'))!
+  expect(manual).toHaveTextContent(/^kamra$/)
   // Both review notes are on screen at once now (the mock pantry line is needsReview:true,
   // mezo-qrks) — assert each note's own distinct copy so neither assertion is ambiguous.
   expect(screen.getByText(/Az AI nem teljesen biztos ebben a sorban/)).toBeInTheDocument()
@@ -206,9 +214,9 @@ test('save on a mixed manual+AI meal carries an honest provenance origin (ai-tex
   const logMeal = vi.fn()
   hoisted.logMeal = logMeal
   renderPage()
-  await userEvent.click(screen.getByRole('button', { name: '✨ AI · fotó vagy szöveg' }))
+  await userEvent.click(screen.getByRole('button', { name: 'AI · fotó vagy szöveg' }))
   await userEvent.type(screen.getByRole('textbox', { name: 'Mit ettél?' }), 'csirkés wrap és egy latte')
-  await userEvent.click(screen.getByRole('button', { name: '✨ Elemzés' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Elemzés' }))
   await screen.findByText('Csirkés wrap')
   await userEvent.click(screen.getByRole('button', { name: /Logolás · \+10 XP/ }))
   const input = logMeal.mock.calls[0][0] as MealInput
@@ -224,9 +232,9 @@ test('a failed AI draft shows the error copy and returns to the panel — the ma
   await userEvent.click(screen.getByRole('button', { name: 'Kamra · hozzáadás' }))
   await userEvent.click(screen.getByRole('button', { name: `${ing.name} hozzáadása` }))
   await userEvent.click(screen.getByRole('button', { name: 'Bezárás' }))
-  await userEvent.click(screen.getByRole('button', { name: '✨ AI · fotó vagy szöveg' }))
+  await userEvent.click(screen.getByRole('button', { name: 'AI · fotó vagy szöveg' }))
   await userEvent.type(screen.getByRole('textbox', { name: 'Mit ettél?' }), 'valami')
-  await userEvent.click(screen.getByRole('button', { name: '✨ Elemzés' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Elemzés' }))
   expect(await screen.findByText(/Nem sikerült az AI-feldolgozás/)).toBeInTheDocument()
   expect(screen.getAllByText(ing.name).length).toBeGreaterThanOrEqual(1)
 })

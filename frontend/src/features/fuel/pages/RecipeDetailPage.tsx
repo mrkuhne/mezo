@@ -20,6 +20,12 @@
 // Ami SZIGORODOTT: a törlés két lépés lett (a prototípus `deleteControl`-ja, és a kamra-tétel
 // lap precedense) — egy részletező lapon egy koppintás nem törölhet receptet.
 //
+// ÜVEG (mezo-me75u.2, prototypes/src/uveg-fuel-tobbi-body.html `recept()` + `SH.reclogs`): a hős
+// keret nélküli fényudvar (U1 `.fmx-detail-hero`), a két info-sor, a Mezo jegyzete, a Pontszám- és
+// Logok-ajtó és a két fő művelet `.glass` a saját hue-jában; a szerkesztés/csillag/törlés lapos
+// cella; a pont-pirula és a „jó ehhez" chip a jegyzeten belül lapos (üveg az üvegben nincs). A
+// tartalmi 3D ikonok a Titanium készletből jönnek (ContentIcon), emoji nincs.
+//
 // ŐSZINTE-NULL: a mikrotápanyag-blokk kizárólag a négy tárolt tényt mutatja (rost, cukor, só,
 // telített zsír); vitamin/ásványi anyag a produkcióban nem létezik (mezo-vj61, manifeszt F1).
 // ============================================================
@@ -31,7 +37,7 @@ import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Display } from '@/shared/ui/Display'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
-import { ClayIcon } from '@/shared/ui/clay'
+import { ContentIcon } from '@/shared/ui/clay'
 import { hu1, huInt } from '@/shared/lib/huNum'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -104,12 +110,12 @@ export function RecipeDetailPage() {
   // real mode shows this fallback briefly on a cold deep-link until the list resolves.
   if (!recipe) {
     return (
-      <div className="fmx-page">
+      <div className="fmx-page fkx-rdetail">
         <div className="fmx-subhead">
-          <button type="button" onClick={() => navigate('/fuel/recipes')} aria-label="Vissza">‹</button>
+          <button type="button" className="glass is-round" onClick={() => navigate('/fuel/recipes')} aria-label="Vissza">‹</button>
           <span><strong>Nincs ilyen recept.</strong></span>
         </div>
-        <p className="fmx-block-empty">
+        <p className="fmx-block-empty fkx-notfound uv-empty">
           Lehet, hogy közben törölted. A Receptek listán minden megmaradt recepted ott van.
         </p>
       </div>
@@ -138,7 +144,7 @@ export function RecipeDetailPage() {
       share: lineKcal > 0 && kcal != null ? Math.round((kcal / lineKcal) * 100) : null,
       amount: `${hu1(basis === 'whole' ? line.amount : line.amount / Math.max(1, servings))} ${line.unit}`,
       // A sor a kamrából jön (egy mentett recept minden sora feloldott kamra-hivatkozás).
-      origin: { label: 'kamra', icon: 'i-kamra' },
+      origin: { label: 'kamra', icon: 't-stack' },
       nova: src?.nova ?? null,
     }
   })
@@ -162,10 +168,10 @@ export function RecipeDetailPage() {
     ?? (breakdown ? breakdown.dimensions.reduce((a, d) => a + d.score * d.weight, 0) : null)
 
   return (
-    <div className="fmx-page fkx-detail" style={{ '--block-color': face.color } as React.CSSProperties}>
+    <div className="fmx-page fkx-detail fkx-rdetail" style={{ '--block-color': face.color } as React.CSSProperties}>
       <EntranceGroup>
         <div className="fmx-subhead">
-          <button type="button" onClick={() => navigate('/fuel/recipes')} aria-label="Vissza">‹</button>
+          <button type="button" className="glass is-round" onClick={() => navigate('/fuel/recipes')} aria-label="Vissza">‹</button>
           <span>
             <small>{face.label.toLocaleUpperCase('hu-HU')}-RECEPT</small>
             <strong>{recipe.name}</strong>
@@ -183,22 +189,22 @@ export function RecipeDetailPage() {
         <div className="fmx-detail-hero">
           <span className="fmx-detail-glow" aria-hidden="true" />
           <div className="fmx-detail-left">
-            <span className="fmx-detail-art" aria-hidden="true"><ClayIcon name="i-tanyer" size={96} /></span>
+            <span className="fmx-detail-art" aria-hidden="true"><ContentIcon name="t-plate" size={96} /></span>
             <div className="fmx-detail-kcal">
               <strong>{huInt(perBasis(recipe.macros.kcal))}</strong>
               <small>kcal {basis === 'whole' ? '· egész' : '/ adag'}</small>
             </div>
           </div>
           <div className="fmx-detail-right">
-            <div className="fmx-detail-when">
-              <span className="fmx-di-art" aria-hidden="true"><ClayIcon name={face.icon} size={30} /></span>
+            <div className="fmx-detail-when glass">
+              <span className="fmx-di-art" aria-hidden="true"><ContentIcon name={face.icon} size={30} /></span>
               <span>
                 <strong>{face.label}</strong>
                 <small>{totalMins > 0 ? `${totalMins} perc alatt kész` : 'elkészítési idő nincs megadva'}</small>
               </span>
             </div>
-            <div className="fmx-detail-share">
-              <span className="fmx-di-art" aria-hidden="true"><ClayIcon name="i-naplo" size={30} /></span>
+            <div className="fmx-detail-share glass">
+              <span className="fmx-di-art" aria-hidden="true"><ContentIcon name="t-journal" size={30} /></span>
               <span>
                 <strong>{recipe.timesLogged > 0 ? `${recipe.timesLogged}× etted` : 'Még nem etted'}</strong>
                 <small>{recipe.timesLogged > 0 ? `legutóbb ${recipe.lastLogged}` : 'naplózd, ha elkészült'}</small>
@@ -233,9 +239,9 @@ export function RecipeDetailPage() {
 
         {/* Mezo jegyzete — a lusta AI-olvasat. Háttér-újraértékelés közben a (már elavult) prózát
             NEM mutatjuk késznek: az egész blokk a becsületes „épp újraértékeli" állapotra vált. */}
-        <section className="fkx-note" aria-label="Mezo jegyzete">
+        <section className="fkx-note glass" aria-label="Mezo jegyzete">
           <div className="fkx-note-head">
-            <span aria-hidden="true"><ClayIcon name="i-kristaly" size={30} /></span>
+            <ContentIcon name="t-score" size={30} />
             <strong>Mezo jegyzete</strong>
           </div>
           {breakdownBusy ? (
@@ -246,39 +252,41 @@ export function RecipeDetailPage() {
             <p className="fkx-note-body">Még nincs olvasat.</p>
           )}
           {!breakdownBusy && fitsFor.length > 0 && (
-            <span className="fkx-fit-chip">● {fitsFor[0]}</span>
+            <span className="fkx-fit-chip"><i className="fkx-dot" aria-hidden="true" />{fitsFor[0]}</span>
           )}
-          <button type="button" className="fkx-door" data-testid="recipe-score-open"
-            disabled={!breakdown || breakdownBusy} onClick={() => navigate(`/fuel/recipes/${recipe.id}/ertekeles`)}>
-            <span aria-hidden="true"><ClayIcon name="i-kristaly" size={26} /></span>
-            <span>
-              <strong>Pontszám</strong>
-              <small>
-                {breakdown && !breakdownBusy
-                  ? `${breakdown.dimensions.length} szempont · megbízh. ${Math.round(breakdown.confidence * 100)}%`
-                  : 'Sablon-pontszámhoz még nincs elég adat (kcal nélküli hozzávalók).'}
-              </small>
-            </span>
-            <b aria-hidden="true">›</b>
-          </button>
         </section>
+        {/* A Pontszám-ajtó a jegyzet ALATT, saját üveg sorként (a prototípus `recept()`-je): a
+            jegyzeten belül üveg az üvegben volna. */}
+        <button type="button" className="fkx-door is-score glass" data-testid="recipe-score-open"
+          disabled={!breakdown || breakdownBusy} onClick={() => navigate(`/fuel/recipes/${recipe.id}/ertekeles`)}>
+          <ContentIcon name="t-score" size={34} />
+          <span>
+            <strong>Pontszám</strong>
+            <small>
+              {breakdown && !breakdownBusy
+                ? `${breakdown.dimensions.length} szempont · megbízh. ${Math.round(breakdown.confidence * 100)}%`
+                : 'Sablon-pontszámhoz még nincs elég adat (kcal nélküli hozzávalók).'}
+            </small>
+          </span>
+          <b aria-hidden="true">›</b>
+        </button>
 
         {/* B12: a logolás előtöltve indul — a kamera-felületet kihagyva. */}
-        <button type="button" className="fkx-cta is-primary" onClick={() => setLogOpen(true)}>
-          <span aria-hidden="true"><ClayIcon name="i-tanyer" size={28} /></span>
+        <button type="button" className="fkx-cta is-primary glass" onClick={() => setLogOpen(true)}>
+          <ContentIcon name="t-plate" size={30} />
           <span>Logolás · ma ettem ilyet</span>
           <b aria-hidden="true">›</b>
         </button>
         {/* B10: a Műhely ezzel a recepttel indul (`?recipeId`), és mentéskor FRISSÍT, nem másol. */}
-        <button type="button" className="fkx-cta is-secondary"
+        <button type="button" className="fkx-cta is-secondary glass"
           onClick={() => navigate(`/fuel/recipes/muhely?recipeId=${recipe.id}`)}>
-          <span aria-hidden="true"><ClayIcon name="i-muhely" size={28} /></span>
+          <ContentIcon name="t-chef" size={30} />
           <span>Iterálás a Műhelyben</span>
           <b aria-hidden="true">›</b>
         </button>
 
-        <button type="button" className="fkx-door" data-testid="recipe-logs-open" onClick={() => setLogsOpen(true)}>
-          <span aria-hidden="true"><ClayIcon name="i-naplo" size={26} /></span>
+        <button type="button" className="fkx-door is-logs glass" data-testid="recipe-logs-open" onClick={() => setLogsOpen(true)}>
+          <ContentIcon name="t-journal" size={34} />
           <span>
             <strong>Logok · {logs.length}</strong>
             <small>{logs.length > 0 ? 'ma is a naplódban' : 'ma még nincs logolva'}</small>
@@ -288,10 +296,10 @@ export function RecipeDetailPage() {
 
         <div className="fkx-actions">
           <button type="button" onClick={() => navigate(`/fuel/recipes/${recipe.id}/edit`)}>
-            <span aria-hidden="true"><ClayIcon name="i-recept" size={20} /></span>Szerkesztés
+            <ContentIcon name="t-book" size={22} />Szerkesztés
           </button>
           <button type="button" onClick={toggleStar}>
-            <Icon name="bookmark" size={12} /> {recipe.starred ? 'Csillag le' : 'Csillag'}
+            <ContentIcon name="t-star" size={22} />{recipe.starred ? 'Csillag le' : 'Csillag'}
           </button>
           {/* Két lépés: egy részletező lapon egy koppintás nem törölhet receptet. */}
           <button type="button" className="fkx-del" onClick={del}>
@@ -302,21 +310,24 @@ export function RecipeDetailPage() {
 
       {logOpen && <LogFlowPage prefill={{ source: 'recipe', recipeId: recipe.id }} onClose={() => setLogOpen(false)} />}
       {logsOpen && (
-        <Sheet onClose={() => setLogsOpen(false)} labelledBy="recipe-logs-title">
+        <Sheet onClose={() => setLogsOpen(false)} className="fkx-rsheet-host" labelledBy="recipe-logs-title">
           {(close) => (
             <>
-              <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+              <div className="fkx-rsheet-head">
+                <ContentIcon name="t-journal" size={40} />
                 <div className="col">
                   <Eyebrow brand>Recept · logok</Eyebrow>
                   <div id="recipe-logs-title" style={{ marginTop: 4 }}>
                     <Display size="md">{recipe.name}</Display>
                   </div>
                 </div>
-                <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}>
+                <button className="fkx-rsheet-x" aria-label="Bezárás" onClick={close}>
                   <Icon name="x" size={12} />
                 </button>
               </div>
-              <RecipeLogsList logs={logs} baselineScore={recipe.mezoFit.score ?? 0} />
+              <div className="fkx-rsheet">
+                <RecipeLogsList logs={logs} baselineScore={recipe.mezoFit.score ?? 0} />
+              </div>
               <div style={{ height: 24 }} />
             </>
           )}

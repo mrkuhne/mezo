@@ -12,7 +12,7 @@
 // ============================================================
 import type { PantryItem } from '@/data/types'
 import { pantrySources, type PantrySourceKey } from '@/data/pantrySources'
-import type { ClayIconName } from '@/shared/ui/clay'
+import type { Icon3DName } from '@/shared/ui/clay'
 
 /** A felvétel MÓDJA, a forrás-kulcsból — ezt a szót keresi az ember a kártyán. */
 export type PantryCaptureKind = 'fotó' | 'link' | 'katalógus' | 'kézi'
@@ -34,11 +34,13 @@ const CAPTURE: Record<PantrySourceKey, PantryCaptureKind> = {
   decathlon: 'katalógus',
 }
 
-const ICON: Record<PantryCaptureKind, ClayIconName> = {
-  'fotó': 'i-video',
-  link: 'i-level',
-  'katalógus': 'i-polc',
-  'kézi': 'i-naplo',
+/** Üveg (mezo-me75u.2): the 3D content set — fotó = camera, link = chain, katalógus = the shelf
+ *  stack, kézi = the journal (prototypes/uveg-fuel-tobbi.html). */
+const ICON: Record<PantryCaptureKind, Icon3DName> = {
+  'fotó': 't-camera',
+  link: 't-link',
+  'katalógus': 't-stack',
+  'kézi': 't-journal',
 }
 
 export interface PantryProvenance {
@@ -48,7 +50,7 @@ export interface PantryProvenance {
   sourceLabel: string
   /** Mikor került a polcra — `null`, ha a tétel nem hordoz időpontot (nem találgatunk). */
   when: string | null
-  icon: ClayIconName
+  icon: Icon3DName
 }
 
 export function pantryProvenance(item: Pick<PantryItem, 'source' | 'scrapedAt'>): PantryProvenance {

@@ -42,3 +42,5 @@ cat src/admin-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/admin-body.h
 cat src/admin-memory-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/admin-memory-body.html > admin-memory.html
 cat src/fuel-kartya-ido-head.html "$A/clay-icons.svg" src/fuel-kartya-ido-body.html > fuel-kartya-ido.html
 echo "OK — 36 prototype files assembled."
+# Üvegesítés U2 (mezo-me75u.2): dark-only; fuel-uveg.html chrome sprite + the shared 3D sprite (U2 icons now live in it).
+{ cat src/uveg-fuel-tobbi-head.html; printf '</head>\n<body>\n'; cat src/uveg-sprite-fuel.svg.part ../../../frontend/src/shared/ui/clay/titanium-icons.svg src/uveg-fuel-tobbi-body.html; } > uveg-fuel-tobbi.html

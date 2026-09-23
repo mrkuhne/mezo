@@ -1,0 +1,979 @@
+<style>
+/* ══ U2 · Fuel többi (mezo-me75u.2) — a fuel-uveg.html kitje fölé, csak sötét ══ */
+.flat{--c:var(--sage);display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:600;color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair);white-space:nowrap}
+.flat .icon{width:18px;height:18px;filter:none}
+.flat b{font-weight:700;opacity:.65}
+.flat.on{color:#191614;background:var(--c);box-shadow:0 0 12px color-mix(in srgb,var(--c) 50%,transparent)}
+.flat.on b{opacity:.75}
+.flat i.dot{width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 6px var(--c)}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:4px 18px 12px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chips>*{flex:0 0 auto}
+.acts{display:flex;gap:6px;margin-left:auto;flex:0 0 auto}
+.search{display:flex;align-items:center;gap:10px;margin:4px 18px 10px;padding:11px 14px;border-radius:16px;background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair);color:var(--faint);font-size:13.5px}
+.search .icon{width:22px;height:22px}
+.list{display:grid;gap:10px;padding:0 16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}
+.well{--c:var(--sage);width:52px;height:52px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;background:radial-gradient(circle at 35% 28%,#3A332D,color-mix(in srgb,var(--c) 14%,#1E1B18));box-shadow:inset 0 1px 0 rgba(255,244,230,.08),inset 0 -6px 12px -8px color-mix(in srgb,var(--c) 70%,transparent),0 0 14px -4px color-mix(in srgb,var(--c) 50%,transparent)}
+.well .icon{width:34px;height:34px}
+.eb{display:block;font-size:9.5px;font-weight:600;letter-spacing:1.3px;color:var(--faint)}
+.dash{--c:var(--sage);border:1.5px dashed color-mix(in srgb,var(--c) 45%,transparent);border-radius:20px;padding:14px;background:rgba(245,239,230,.025)}
+.halo{position:relative}
+.halo::before{content:'';position:absolute;left:50%;top:50%;width:360px;height:280px;transform:translate(-50%,-50%);z-index:-1;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 45%,color-mix(in srgb,var(--c) 32%,transparent),color-mix(in srgb,var(--c2,var(--gold)) 12%,transparent) 40%,transparent 66%)}
+.num{font-size:54px;font-weight:300;letter-spacing:-3px;line-height:1}
+.num small{font-size:14px;letter-spacing:0;color:var(--sub);margin-left:4px;font-weight:400}
+.btn{--c:var(--sage);display:flex;align-items:center;justify-content:center;gap:8px;padding:13px 16px;border-radius:18px;font-size:14.5px;font-weight:600;width:100%;text-align:center}
+.btn .icon{width:26px;height:26px}
+.btn.flatb{background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair);color:var(--sub)}
+.btn.warn{color:#FFB39C;box-shadow:inset 0 0 0 1px rgba(255,126,92,.35);background:rgba(255,126,92,.07)}
+.btn[disabled]{opacity:.45}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}
+.row{--c:var(--sage);display:flex;align-items:center;gap:12px;padding:12px 14px 12px 12px;border-radius:20px;width:100%}
+.row .grow{flex:1;min-width:0}
+.row strong{display:block;font-size:15.5px;font-weight:600;letter-spacing:-.3px}
+.row small{display:block;margin-top:2px;font-size:11.5px;color:var(--sub);line-height:1.35}
+.row .end{text-align:right;flex:0 0 auto}
+.row .end b{display:block;font-size:20px;font-weight:600;letter-spacing:-.6px}
+.row .end b small{display:inline;font-size:10.5px;color:var(--faint);font-weight:500;margin-left:2px}
+.row .end>small{font-size:10.5px;color:var(--faint)}
+.chev{color:var(--faint);font-size:20px;flex:0 0 auto}
+.row>.icon{width:40px;height:40px}
+.cell{padding:10px 12px;border-radius:14px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.p16{padding:0 16px}
+.gap{height:10px}
+.foot{padding:18px 22px 0;font-size:11.5px;color:var(--faint);text-align:center;line-height:1.5}
+.lead{padding:0 18px 12px;font-size:13.5px;line-height:1.5;color:var(--sub)}
+.voice{font-family:var(--serif);font-style:italic}
+.hrow{display:flex;align-items:center;gap:10px}
+
+/* Konyha */
+.cap{--c:var(--lav);display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:14px;border-radius:20px}
+.cap .icon{width:50px;height:50px}
+.cap strong{font-size:15px;font-weight:600;letter-spacing:-.3px}
+.cap small{font-size:11.5px;color:var(--sub);line-height:1.35}
+.cap .plus{position:absolute;top:12px;right:12px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:15px;background:rgba(245,239,230,.07);color:color-mix(in srgb,var(--c) 70%,#fff)}
+.poster{--c:var(--sage);display:block;width:100%;padding:16px;border-radius:22px}
+.poster-head{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:600;letter-spacing:-.4px}
+.poster-head .icon{width:34px;height:34px}
+.poster-head em{margin-left:auto;font-style:normal;color:var(--faint)}
+.poster .num{margin:12px 0 6px}
+.poster p{font-size:13px;color:var(--sub);line-height:1.45;margin-top:6px}
+.poster .voice{font-size:19px;color:var(--ink);margin-top:10px;display:block}
+.goals{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.bowls{display:flex;gap:4px;margin:4px 0 6px}
+.bowls .icon{width:34px;height:34px}
+.split{display:flex;height:8px;border-radius:4px;overflow:hidden;background:rgba(245,239,230,.07);margin:6px 0 10px}
+.split b{height:100%;background:linear-gradient(90deg,color-mix(in srgb,var(--sage) 55%,#fff),var(--sage));box-shadow:0 0 8px var(--sage)}
+.split i{height:100%;flex:1;background:linear-gradient(90deg,color-mix(in srgb,var(--lav) 40%,transparent),var(--lav));opacity:.8}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--sub)}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend .icon{width:20px;height:20px}
+
+.poster p .icon,.icon.inl{width:18px;height:18px;display:inline-block;vertical-align:-4px;filter:none!important}
+.notes ul a{color:var(--sky)}
+/* Kamra tile */
+.tile{--c:var(--sage);display:flex;flex-direction:column;gap:6px;padding:14px 13px 13px;border-radius:20px;width:100%;min-height:176px}
+.tile-top{display:flex;justify-content:space-between;align-items:flex-start}
+.tile-top>.icon{width:42px;height:42px}
+.srcb{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:rgba(245,239,230,.06);box-shadow:inset 0 0 0 1px var(--hair)}
+.srcb .icon{width:17px;height:17px;filter:none!important}
+.tile strong{font-size:14.5px;font-weight:600;letter-spacing:-.3px;line-height:1.25}
+.tile .fact{font-size:11.5px;color:var(--sub)}
+.tile .fact b{font-size:17px;color:color-mix(in srgb,var(--c) 70%,var(--ink));font-weight:600;margin-right:3px}
+.tile .brand{margin-top:auto;font-size:10.5px;color:var(--faint)}
+.tile .bar{margin-top:2px}
+.tile .pb{font-size:10.5px;color:var(--sub)}
+
+/* hero with info rows (kamra/recept detail) */
+.dhero{display:grid;grid-template-columns:1fr 1.3fr;gap:14px;align-items:center;padding:12px 18px 6px}
+.dhero .art .icon{width:96px;height:96px;margin-left:-4px;filter:drop-shadow(0 12px 12px rgba(0,0,0,.5)) drop-shadow(0 0 18px color-mix(in srgb,var(--c) 40%,transparent))}
+.dhero .num{font-size:50px}
+.dhero .cap2{font-size:11.5px;color:var(--sub);margin-top:2px}
+.srcchip{margin-left:auto}
+.seg{display:inline-flex;margin:4px 18px 4px;padding:3px;border-radius:999px;background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+.seg button{padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:600;color:var(--sub)}
+.seg button.on{--c:var(--sage);background:var(--c);color:#191614;box-shadow:0 0 12px color-mix(in srgb,var(--c) 45%,transparent)}
+.meta-line{padding:4px 18px 8px;font-size:12px;color:var(--faint)}
+.rchips{display:flex;gap:6px;flex-wrap:wrap;padding:0 16px}
+.twotap.armed{color:#FFB39C}
+
+/* Receptek — egy recept soronként, adagonkénti makróval (owner 2026-09-23) */
+.rrow{--c:var(--sage);display:block;width:100%;padding:13px 14px 12px;border-radius:21px}
+.rrow-top{display:flex;align-items:center;gap:12px}
+.rrow-top .grow{flex:1;min-width:0}
+.rrow-top strong{display:block;font-size:15.5px;font-weight:600;letter-spacing:-.3px;line-height:1.25}
+.rrow-top small{display:block;margin-top:4px;line-height:1.4;font-size:11.5px;color:var(--sub)}
+.rrow-top small .icon{width:15px;height:15px;filter:none;display:inline-block;vertical-align:-3px;margin-right:3px}
+.rrow-top small em{white-space:nowrap}
+.rrow-top small em{font-style:normal;color:#FFB39C}
+.rkcal{text-align:right;flex:0 0 auto}
+.rkcal b{display:block;font-size:24px;font-weight:600;letter-spacing:-1px;line-height:1}
+.rkcal small{display:block;margin-top:3px;font-size:10px;color:var(--faint);letter-spacing:.4px}
+.rmac{display:grid;grid-template-columns:repeat(3,1fr) auto;gap:8px;align-items:end;margin-top:12px;padding-top:10px;border-top:1px solid var(--hair)}
+.rmac>span:not(.spill){display:flex;flex-direction:column;gap:5px;--c:var(--protein)}
+.rmac span em{font-style:normal;font-size:10.5px;color:var(--faint)}
+.rmac span em b{font-size:15px;font-weight:600;color:color-mix(in srgb,var(--c) 80%,var(--ink));margin-right:2px}
+.rmac .bar{height:4px}
+.spill{--c:var(--lav);white-space:nowrap;justify-self:end;display:inline-flex;align-items:center;gap:5px;padding:4px 10px 4px 4px;border-radius:999px;font-size:13px;font-weight:600;background:radial-gradient(90% 120% at 20% 20%,color-mix(in srgb,var(--c) 26%,transparent),rgba(245,239,230,.04));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 40%,transparent),0 0 12px -4px color-mix(in srgb,var(--c) 60%,transparent);color:#E6DDFF}
+.spill .icon{width:22px;height:22px;filter:none}
+.spill.pending{color:var(--faint);background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+
+/* forms */
+.fcard{--c:var(--sage);margin:0 16px;padding:14px;border-radius:22px;display:grid;gap:12px}
+.field{display:grid;gap:6px}
+.field>span{font-size:9.5px;font-weight:600;letter-spacing:1.3px;color:var(--faint)}
+.inp{display:block;width:100%;padding:11px 13px;border-radius:13px;font:inherit;font-size:14px;color:var(--ink);background:rgba(245,239,230,.05);border:0;box-shadow:inset 0 0 0 1px var(--hair)}
+.inp.ph{color:var(--faint)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.four{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:18px;background:rgba(245,239,230,.06);box-shadow:inset 0 0 0 1px var(--hair)}
+.stepper b{font-size:20px;font-weight:600;min-width:34px;text-align:center}
+.stepper small{font-size:12px;color:var(--sub)}
+.stat{text-align:center}
+.stat b{display:block;font-size:22px;font-weight:600;letter-spacing:-.8px;color:color-mix(in srgb,var(--c) 80%,var(--ink))}
+.stat small{font-size:10px;color:var(--faint)}
+.savebar{position:sticky;bottom:96px;z-index:5;display:grid;grid-template-columns:1fr 1.6fr;gap:10px;margin:18px 12px 0;padding:10px;border-radius:24px;background:rgba(25,22,20,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:inset 0 0 0 1px var(--hair)}
+.xline{display:flex;align-items:center;gap:8px;margin-top:8px}
+
+/* log */
+.logh{display:flex;align-items:center;gap:12px;padding:6px 18px 10px}
+.logh>.icon{width:48px;height:48px}
+.logh .t{flex:1}
+.logh .t strong{display:block;font-size:22px;font-weight:600;letter-spacing:-.7px}
+.logh .t small{font-size:12px;color:var(--sub)}
+.daychip{text-align:center;padding:7px 12px;border-radius:14px;background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+.daychip b{display:block;font-size:14px}
+.daychip small{font-size:10.5px;color:var(--faint)}
+.modes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0 16px;padding:6px;border-radius:22px}
+.mode{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0 7px;border-radius:16px;font-size:11px;font-weight:600;color:var(--faint)}
+.mode .icon{width:30px;height:30px;filter:grayscale(.45) brightness(.8)!important}
+.mode.on{color:var(--ink);background:radial-gradient(80% 90% at 50% 20%,color-mix(in srgb,var(--c) 26%,transparent),transparent 70%);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 40%,transparent)}
+.mode.on .icon{filter:drop-shadow(0 4px 6px rgba(0,0,0,.5)) drop-shadow(0 0 10px color-mix(in srgb,var(--c) 55%,transparent))!important}
+.viewf{--c:var(--coral);position:relative;margin:14px 16px 0;width:calc(100% - 32px);height:230px;border-radius:26px;display:grid;place-items:center;text-align:center}
+.viewf .icon{margin:0 auto;width:92px;height:92px;filter:drop-shadow(0 12px 14px rgba(0,0,0,.5)) drop-shadow(0 0 20px rgba(255,126,92,.35))}
+.viewf>span{display:block;text-align:center}
+.viewf strong{display:block;font-size:16px;font-weight:600;margin-top:6px}
+.viewf i{position:absolute;width:26px;height:26px;border:2.5px solid color-mix(in srgb,var(--c) 75%,#fff);filter:drop-shadow(0 0 6px var(--c))}
+.viewf i:nth-child(1){top:18px;left:18px;border-right:0;border-bottom:0;border-radius:10px 0 0 0}
+.viewf i:nth-child(2){top:18px;right:18px;border-left:0;border-bottom:0;border-radius:0 10px 0 0}
+.viewf i:nth-child(3){bottom:18px;left:18px;border-right:0;border-top:0;border-radius:0 0 0 10px}
+.viewf i:nth-child(4){bottom:18px;right:18px;border-left:0;border-top:0;border-radius:0 0 10px 0}
+.hint{padding:12px 22px 0;font-size:12.5px;line-height:1.5;color:var(--sub);text-align:center;letter-spacing:0;font-weight:400}
+.micbtn{--c:var(--lav);width:120px;height:120px;border-radius:50%;margin:26px auto 0;display:grid;place-items:center}
+.micbtn .icon{width:62px;height:62px}
+.micbtn.rec{--c:var(--coral)}
+.aipanel{--c:var(--lav);margin:12px 16px 0;padding:12px;border-radius:22px;display:grid;gap:10px}
+.aipanel .inp{min-height:64px}
+.srcs{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px 0}
+.lcard{--c:var(--carb);padding:12px 14px;border-radius:20px}
+.lcard-top{display:flex;align-items:center;gap:8px}
+.lcard-top strong{flex:1;font-size:15px;font-weight:600}
+.tagf{display:inline-flex;align-items:center;gap:4px;padding:3px 9px 3px 5px;border-radius:999px;font-size:10.5px;font-weight:500;background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair);color:var(--sub)}
+.tagf .icon{width:15px;height:15px;filter:none!important}
+.lcard .xline{justify-content:space-between}
+.lcard .mm{font-size:11px;color:var(--faint);margin-top:6px}
+.total{--c:var(--lav);margin:14px 16px 0;padding:16px;border-radius:22px}
+.total .four{margin:12px 0}
+.daybar{display:flex;height:7px;border-radius:4px;overflow:hidden;background:rgba(245,239,230,.07);margin-top:8px}
+.daybar b{background:var(--sage);box-shadow:0 0 8px var(--sage)}
+.daybar i{background:var(--lav);box-shadow:0 0 8px var(--lav)}
+.failart{position:relative;width:62px;height:62px;margin:0 auto}
+.failart .icon{width:62px;height:62px}
+.failart b{position:absolute;right:-6px;top:-4px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:#191614;font-size:14px;box-shadow:0 0 10px var(--gold)}
+
+/* Stack */
+.sgauge{position:relative;width:170px;height:170px;margin:4px auto 0;display:grid;place-items:center;text-align:center}
+.sgauge>svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.sgauge .ring-inner{position:absolute;inset:18px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3A332D,#1E1B18);box-shadow:inset 0 1px 0 rgba(255,244,230,.08),inset 0 -10px 20px -10px rgba(143,180,154,.45),0 12px 24px -12px #000}
+.sgauge strong{position:relative;font-size:46px;font-weight:300;letter-spacing:-2.5px;line-height:1}
+.sgauge small{position:relative;display:block;font-size:9.5px;font-weight:600;letter-spacing:1.3px;color:var(--faint);margin-top:4px}
+.next{--c:var(--sage);display:flex;align-items:center;gap:12px;margin:14px 16px 0;padding:12px 12px 12px 14px;border-radius:22px;width:calc(100% - 32px)}
+.next .grow{flex:1;min-width:0}
+.next .eb{color:color-mix(in srgb,var(--c) 75%,var(--ink))}
+.next strong{display:block;font-size:17px;font-weight:600;letter-spacing:-.4px;margin-top:2px}
+.next small{font-size:11.5px;color:var(--sub)}
+.next em{font-style:normal;padding:10px 14px;border-radius:14px;font-size:12px;font-weight:700;letter-spacing:.8px;color:#191614;background:var(--c);box-shadow:0 0 14px color-mix(in srgb,var(--c) 60%,transparent)}
+.band{--c:var(--gold);padding:12px 12px 6px;border-radius:22px}
+.band.done{opacity:.72}
+.band.due{box-shadow:0 16px 30px -16px rgba(0,0,0,.75),0 0 34px -4px color-mix(in srgb,var(--c) 45%,transparent),inset 0 1px 0 rgba(255,244,230,.10),inset 0 -14px 26px -18px color-mix(in srgb,var(--c) 55%,transparent)}
+.band-head{display:flex;align-items:center;gap:10px;padding:0 2px 6px}
+.band-head .icon{width:34px;height:34px}
+.band-head strong{flex:1;font-size:16px;font-weight:600}
+.band-head b{font-size:13px;color:color-mix(in srgb,var(--c) 75%,var(--ink))}
+.srow{display:flex;align-items:center;gap:10px;padding:9px 4px;border-top:1px solid var(--hair)}
+.tick{width:30px;height:30px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;font-size:14px;color:transparent;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c) 55%,transparent)}
+.tick.on{color:#191614;background:var(--c);box-shadow:0 0 10px color-mix(in srgb,var(--c) 60%,transparent)}
+.srow .main{flex:1;display:flex;align-items:center;gap:10px;min-width:0}
+.srow .main .icon{width:28px;height:28px}
+.srow .main strong{display:block;font-size:14px;font-weight:600}
+.srow .main small{display:block;font-size:11px;color:var(--sub);margin-top:1px}
+.srow.taken .main strong{color:var(--sub)}
+.dialog{position:absolute;left:14px;right:14px;top:90px;z-index:47;max-height:calc(100% - 200px);overflow-y:auto;padding:18px 16px 16px;border-radius:28px;opacity:0;transform:scale(.96);pointer-events:none;transition:.3s var(--ease)}
+.dialog.on{opacity:1;transform:none;pointer-events:auto}
+.dialog.glass{overflow-y:auto}
+.dialog .dh{display:flex;align-items:center;gap:12px}
+.dialog .dh .icon{width:56px;height:56px}
+.dialog .dh .num{font-size:40px}
+.dialog h4{font-size:12px;font-weight:600;letter-spacing:1.2px;color:var(--faint);margin:14px 0 8px;display:flex;align-items:center;gap:8px}
+.dialog h4 .icon{width:22px;height:22px;filter:none!important}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.kv .cell small{display:block;font-size:10px;color:var(--faint)}
+.kv .cell b{font-size:14px}
+.zone{--c:var(--gold);padding:12px 12px 4px;border-radius:22px}
+.prow{display:flex;align-items:flex-start;gap:10px;padding:10px 2px;border-top:1px solid var(--hair);width:100%}
+.prow>.icon{width:28px;height:28px}
+.prow .grow{flex:1;min-width:0}
+.prow strong{display:block;font-size:14px;font-weight:600}
+.prow small{display:block;font-size:11px;color:var(--sub)}
+.prow .why{font-family:var(--serif);font-style:italic;font-size:12.5px;color:var(--sub);margin-top:3px;line-height:1.35}
+.prow .end{text-align:right;font-size:13px;font-weight:600}
+.prow .end small{font-size:10px;color:var(--faint);font-weight:500}
+.strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px}
+.strip .cell{text-align:center}
+.strip .cell b{display:block;font-size:20px;font-weight:600}
+.strip .cell small{font-size:10.5px;color:var(--faint)}
+.steps{display:flex;gap:6px;padding:4px 16px 12px}
+.steps span{flex:1;padding:7px 0;border-radius:999px;text-align:center;font-size:11.5px;font-weight:600;color:var(--faint);background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.steps span.on{--c:var(--lav);color:#191614;background:var(--c);box-shadow:0 0 12px color-mix(in srgb,var(--c) 50%,transparent)}
+.steps span.done{color:var(--sub);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--lav) 45%,transparent)}
+.callout{--c:var(--gold);margin:0 16px;padding:12px 14px;border-radius:18px;background:color-mix(in srgb,var(--c) 8%,transparent);box-shadow:inset 3px 0 0 var(--c)}
+.callout .eb{color:color-mix(in srgb,var(--c) 80%,var(--ink))}
+.callout p{font-size:13px;line-height:1.45;color:var(--sub);margin-top:4px}
+
+/* Gyógyszer */
+.cycle{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:10px}
+.cycle span{padding:7px 0 6px;border-radius:11px;text-align:center;font-size:12px;font-weight:700;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair);color:var(--sub)}
+.cycle span small{display:block;font-size:9.5px;font-weight:500;color:var(--faint)}
+.cycle span.P{color:#E9A48E}.cycle span.S{color:var(--sky)}.cycle span.T{color:var(--lav)}
+.cycle span.now{background:color-mix(in srgb,var(--sky) 20%,transparent);box-shadow:inset 0 0 0 1.5px var(--sky),0 0 12px -2px var(--sky)}
+
+/* Trendek */
+.wk{display:flex;align-items:center;justify-content:space-between;padding:0 16px 4px}
+.wk strong{font-size:14px;font-weight:600}
+.bars{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:end;height:190px;padding:10px 18px 0}
+.dbar{--c:var(--sage);position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px}
+.dbar .sc{font-size:11px;font-weight:600;color:var(--sub)}
+.dbar .col{position:relative;width:100%;height:130px;border-radius:10px;background:rgba(245,239,230,.05)}
+.dbar .col b{position:absolute;left:0;right:0;bottom:0;height:var(--h);border-radius:10px;background:linear-gradient(180deg,var(--c),color-mix(in srgb,var(--c) 45%,transparent));box-shadow:0 0 12px -2px color-mix(in srgb,var(--c) 70%,transparent)}
+.dbar .col i{position:absolute;left:-3px;right:-3px;bottom:var(--t);border-top:1.5px dashed rgba(245,239,230,.35)}
+.dbar.over{--c:var(--gold)}
+.dbar.gap .col{background:repeating-linear-gradient(135deg,rgba(245,239,230,.05) 0 5px,transparent 5px 10px);box-shadow:inset 0 0 0 1px var(--hair)}
+.dbar .d{font-size:11px;color:var(--faint);font-weight:600}
+.dbar.train .d{color:var(--ink);text-decoration:underline;text-decoration-color:var(--coral);text-underline-offset:3px;text-decoration-thickness:2px}
+.st3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px}
+.st{--c:var(--sage);padding:12px 10px;border-radius:20px}
+.st .icon{width:30px;height:30px}
+.st b{display:block;font-size:22px;font-weight:600;letter-spacing:-.8px;margin-top:6px;color:color-mix(in srgb,var(--c) 75%,var(--ink))}
+.st b small{font-size:10.5px;color:var(--faint);margin-left:2px;font-weight:500}
+.st>span{display:block;font-size:11px;color:var(--sub);margin-top:2px}
+.st em{display:block;font-style:normal;font-size:10.5px;margin-top:6px;color:var(--faint)}
+.wwrow{display:flex;align-items:center;gap:10px;margin-top:10px}
+.wwrow .icon{width:30px;height:30px}
+.wwrow span.l{width:78px;font-size:13px;font-weight:600}
+.wwrow .bar{flex:1;height:7px}
+.wwrow em{font-style:normal;font-size:13px;font-weight:600;width:44px;text-align:right}
+.hz svg{width:100%;height:auto;display:block;margin-top:8px}
+
+/* Beállítások */
+.arc svg{width:100%;height:auto;display:block}
+.donut{--c:var(--sage);width:112px;height:112px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;text-align:center;
+  background:conic-gradient(var(--protein) 0 27%,var(--carb) 27% 72%,var(--fat) 72% 100%);box-shadow:0 0 22px -6px rgba(240,126,120,.5);position:relative}
+.donut::before{content:'';position:absolute;inset:13px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3A332D,#1E1B18)}
+.donut span{position:relative}
+.donut b{display:block;font-size:19px;font-weight:600}
+.donut small{font-size:9.5px;color:var(--faint)}
+.mrow{display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0}
+.mrow i{width:9px;height:9px;border-radius:50%;background:var(--c);box-shadow:0 0 6px var(--c)}
+.mrow span{flex:1}
+.pillsum{--c:var(--sage);display:inline-flex;gap:6px;align-items:center;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;color:#191614;background:var(--c);box-shadow:0 0 12px color-mix(in srgb,var(--c) 50%,transparent)}
+.slotrow{--c:var(--gold);display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:20px}
+.slotrow .t{font-size:20px;font-weight:600;letter-spacing:-.6px;width:62px;font-variant-numeric:tabular-nums}
+.slotrow .icon{width:34px;height:34px}
+
+/* Új ikonok lap */
+.newgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}
+.newi{--c:var(--lav);display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:16px 10px 14px;border-radius:22px}
+.newi>.icon{width:76px;height:76px}
+.newi .sizes{display:flex;gap:10px;align-items:center}
+.newi .sizes .icon{filter:none!important}
+.newi strong{font-size:14px;font-weight:600}
+.newi small{font-size:11px;color:var(--sub);line-height:1.35}
+.newi em{font-style:normal;font-size:10px;color:var(--faint)}
+.maptab{margin:0 16px;padding:6px 12px;border-radius:22px}
+.maptab div{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--hair);font-size:12.5px}
+.maptab div:first-child{border-top:0}
+.maptab div .icon{width:30px;height:30px}
+.maptab div span{flex:1;color:var(--sub)}
+.maptab div b{font-weight:600;color:var(--ink)}
+.sheet{max-height:calc(100% - 70px);overflow-y:auto}
+.sheet.glass{overflow-y:auto}
+.sheet p{font-family:var(--ff);font-style:normal;margin:0}
+.sheet h3{font-size:21px;font-weight:600;letter-spacing:-.6px;margin-top:2px}
+.sheet .shh{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
+.sheet .shh>.icon{width:48px;height:48px}
+.sheet .shh .grow{flex:1}
+.sheet .x{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(245,239,230,.06);box-shadow:inset 0 0 0 1px var(--hair);color:var(--sub)}
+.sheet .section{margin-top:14px}
+.eq{display:flex;align-items:center;justify-content:space-between;gap:4px;padding:12px;border-radius:16px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair);font-size:12px;color:var(--faint);text-align:center}
+.eq b{display:block;font-size:17px;color:var(--ink)}
+.eq .res b{color:var(--sage);text-shadow:0 0 12px rgba(143,180,154,.6)}
+.eblk{--c:var(--sage);margin-top:12px;padding:12px;border-radius:18px;background:color-mix(in srgb,var(--c) 7%,rgba(245,239,230,.02));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 30%,transparent)}
+.eblk.hl{box-shadow:inset 0 0 0 1.5px var(--c),0 0 18px -6px var(--c)}
+.eblk .eb{color:color-mix(in srgb,var(--c) 80%,var(--ink));margin-bottom:8px}
+.etiles{display:flex;align-items:center;gap:6px}
+.etile{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:13px;background:rgba(245,239,230,.04);font-size:10.5px;color:var(--sub);text-align:center}
+.etile .icon{width:36px;height:36px}
+.etile b{font-size:14px;color:var(--ink)}
+.eop{color:var(--faint);font-size:16px}
+.eblk p{font-size:12px;color:var(--sub);line-height:1.45;margin-top:8px}
+.waterv{text-align:center;margin:10px 0}
+.waterv b{font-size:60px;font-weight:300;letter-spacing:-3px;color:#CFE6FA;text-shadow:0 0 22px rgba(127,178,222,.55)}
+.waterv small{display:block;color:var(--sub);font-size:12px}
+@media (max-width:360px){.num{font-size:44px}.dhead{flex-wrap:wrap}.dhead .acts{order:3;width:100%;margin-left:56px}.tile{padding:12px 11px}.st3{grid-template-columns:1fr 1fr}.rmac{grid-template-columns:repeat(3,1fr)}.rmac .spill{grid-column:1/-1;justify-self:start}}
+</style>
+
+<div class="stage">
+  <div class="phone" id="phone">
+    <div class="aurora"><i></i><i></i><i></i><i></i></div>
+    <div class="scroll" id="scroll"></div>
+    <button class="fab glass" id="fab" data-toast="Gyors logolás — a gyors-rögzítő lap a Nap-körben (U3) kap üveget">＋</button>
+    <nav class="tabbar glass" style="--c:var(--sage)" id="tabbar"></nav>
+    <div class="ntf glass" id="ntf" style="--c:var(--sky)"></div>
+    <div class="switcher glass" id="switcher" style="--c:var(--sage)"></div>
+    <div class="scrim" id="scrim"></div>
+    <div class="dialog glass" id="dialog"></div>
+    <div class="sheet glass" id="sheet"></div>
+    <div class="toast" id="toast"></div>
+  </div>
+  <aside class="notes">
+    <span class="ov">FUEL · ÜVEG · 2. SZELET</span>
+    <h1>A Fuel többi oldala, üvegben</h1>
+    <p>Ugyanaz a tartalom, mint élesben, csak az új anyagban: Konyha, Kamra, Receptek, Műhely, Logolás, Kiegészítők, Gyógyszer, Trendek és a Fuel beállítások. Új: a Receptek lista soronként egy recept, adagonkénti makróval.</p>
+    <nav id="jump">
+      <a href="#konyha" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-pot"/></svg>Konyha</a>
+      <a href="#kamra" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-stack"/></svg>Kamra</a>
+      <a href="#receptek" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-book"/></svg>Receptek (új lista)</a>
+      <a href="#muhely" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-chef"/></svg>Receptműhely</a>
+      <a href="#log" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-camera"/></svg>Logolás</a>
+      <a href="#stack" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-supps"/></svg>Kiegészítők</a>
+      <a href="#gyogyszer" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-syringe"/></svg>Gyógyszer</a>
+      <a href="#trendek" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-trend"/></svg>Trendek</a>
+      <a href="#beallitas" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-gear"/></svg>Fuel beállítások</a>
+      <a href="#ikonok" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-score"/></svg>Új ikonok</a>
+    </nav>
+    <span class="ov">LAPOK, AMIK ALULRÓL JÖNNEK</span>
+    <ul>
+      <li><a href="#" data-sheet="energy">Honnan jön a napi cél?</a> (a Mai oldal kalória-köréből)</li>
+      <li><a href="#" data-sheet="water">Víz: mennyit ittál?</a></li>
+      <li>Kamra: Import, Közös, ＋ Új tétel, Szűrők</li>
+      <li>Kiegészítők: koppints egy tételre</li>
+      <li>Trendek: koppints egy napra</li>
+    </ul>
+    <label class="toggle"><input type="checkbox" id="still"> Mozgás kikapcsolása</label>
+  </aside>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const C=n=>`<svg class="icon" aria-hidden="true"><use href="#c-i-${n}"/></svg>`;
+const B=(d,alive=true)=>`<svg class="boop ${alive?'is-alive':''}" viewBox="0 0 100 100" aria-hidden="true"><use href="#boop-${d}"/></svg>`;
+const I=(n,c='')=>`<svg class="icon ${c}" aria-hidden="true"><use href="#t-${n}"/></svg>`;
+const ring=(p,c,r=34,vb=80)=>`<svg viewBox="0 0 ${vb} ${vb}" aria-hidden="true"><circle class="ring-track" cx="${vb/2}" cy="${vb/2}" r="${r}" pathLength="100"/><circle class="ring-prog" cx="${vb/2}" cy="${vb/2}" r="${r}" pathLength="100" style="--p:${p};--c:${c}"/></svg>`;
+const fmt=n=>String(n).replace('.',',');
+const bar=(w,c,i=0)=>`<span class="bar" style="--c:${c}"><b style="--w:${Math.max(2,Math.min(100,w))}%;--i:${i}"></b></span>`;
+let ntfOpen=false;
+
+/* ── adatok (az élő mock alapján) ─────────────────────────── */
+const CAT={reggeli:['Reggeli','sun','var(--gold)'],ebed:['Ebéd','bowl','var(--sage)'],uzsonna:['Uzsonna','snack','var(--lav)'],vacsora:['Vacsora','moon','var(--sky)']};
+const REC=[
+  {id:'r1',n:'Túrós zabkása · áfonyával',cat:'reggeli',serv:1,kcal:689,p:49,c:74,f:22,min:8,role:'Edzés előtt',star:1,logged:12,last:'ma 07:15',score:8.4,nova:1,fits:'Pre Pull Day · T-10h',date:'Ápr 14'},
+  {id:'r2',n:'Csirke + édesburgonya + spenót',cat:'ebed',serv:2,kcal:1058,p:106,c:108,f:22,min:30,role:'',star:1,logged:18,last:'tegnap 12:40',score:8.1,nova:1,fits:'Pre-workout · délben',date:'Ápr 20'},
+  {id:'r3',n:'Lazac + barna rizs + brokkoli',cat:'vacsora',serv:2,kcal:1636,p:98,c:148,f:74,min:23,role:'Edzés után',star:1,logged:24,last:'4 napja',score:7.9,nova:1,fits:'Post-workout · este',date:'Máj 02'},
+  {id:'r6',n:'Túró · áfonya · méz quick',cat:'uzsonna',serv:1,kcal:324,p:36,c:24,f:10,min:2,role:'',star:0,logged:14,last:'tegnap 16:10',score:null,nova:3,fits:'Casein · esti',date:'Máj 11'},
+  {id:'r4',n:'Whey + banán + mandulavaj',cat:'uzsonna',serv:1,kcal:356,p:36,c:30,f:11,min:2,role:'',star:0,logged:22,last:'ma 10:05',score:7.2,nova:4,fits:'Pre-workout · gyors',date:'Máj 15'},
+  {id:'r5',n:'Tojásrántotta · spenóttal',cat:'reggeli',serv:1,kcal:318,p:24,c:4,f:23,min:8,role:'',star:0,logged:8,last:'5 napja',score:7.6,nova:1,fits:'Low-carb reggel',date:'Jún 03'}
+];
+const KIND={food:['t-carb','var(--sage)'],supp:['t-supps','var(--lav)'],stim:['t-bolt','var(--coral)'],med:['t-syringe','var(--sky)']};
+const SRC={foto:['camera','fotó'],link:['link','link'],kat:['stack','katalógus'],kezi:['journal','kézi']};
+const KAM=[
+  {id:'csirke',n:'Csirkemell · friss',b:'Bonafarm',k:'food',cat:'FEHÉRJE',src:'link',sl:'kifli.hu',when:'Máj 20 · 09:14',kcal:110,p:23,c:0,f:1.5,sug:'0',salt:'0,1',sat:'0,4',nova:'Alapanyag',price:'3 290 Ft/kg',recs:['r2']},
+  {id:'turo',n:'Túró · félzsíros',b:'Mizo',k:'food',cat:'TEJTERMÉK',src:'foto',sl:'Fotó',when:'Máj 22 · 18:02',kcal:130,p:18,c:3.5,f:4.5,sug:'3,5',salt:'0,1',sat:'2,9',nova:'Alapanyag',price:'2 180 Ft/kg',recs:['r1','r6']},
+  {id:'lazac',n:'Lazacfilé · norvég',b:'Kifli Premium',k:'food',cat:'HAL',src:'link',sl:'kifli.hu',when:'Jún 02 · 07:40',kcal:208,p:20.4,c:0,f:13.4,sug:'0',salt:'0,2',sat:'3,1',nova:'Alapanyag',price:'14 990 Ft/kg',recs:['r3']},
+  {id:'zab',n:'Zabpehely · gluténmentes',b:'Naturmind',k:'food',cat:'GABONA',src:'kat',sl:'Közös katalógus',when:'Ápr 30 · 20:11',kcal:372,p:13,c:59,f:7,sug:'1,1',salt:'0',sat:'1,3',nova:'Alapanyag',price:'1 890 Ft/kg',recs:['r1']},
+  {id:'mandula',n:'Mandulavaj · 100%',b:'Nutsi',k:'food',cat:'MAG / OLAJOS',src:'kezi',sl:'Saját bevitel',when:'',kcal:614,p:21,c:7,f:53,sug:'4,4',salt:'0',sat:'4,2',nova:'Konyhai összetevő',price:'',recs:['r4']},
+  {id:'whey',n:'Impact Whey · csoki',b:'MyProtein',k:'supp',cat:'WHEY/PROTEIN',src:'link',sl:'myprotein.hu',when:'Máj 04 · 11:20',dose:'30 g',recs:['r4']},
+  {id:'kreatin',n:'Kreatin Monohidrát',b:'MyProtein',k:'supp',cat:'SUPPLEMENT',src:'link',sl:'myprotein.hu',when:'Máj 04 · 11:22',dose:'5g',recs:[]},
+  {id:'aakg',n:'AAKG · L-Arginine',b:'GymBeam',k:'stim',cat:'STIMULÁNS',src:'foto',sl:'Fotó',when:'Jún 10 · 17:45',dose:'6g',recs:[]}
+];
+const STACK=[
+  {band:'Reggel',ic:'dawn',c:'var(--gold)',items:[['Kreatin monohidrát','5g','Ébredés',1,'07:02'],['Kávé · espresso','80-100mg','Ébredés',1,'07:05'],['Tasty Dose gombakávé','8g','Ébredés',1,'07:30'],['Impact Whey Protein','30-40g','Reggeli',1,'08:10']]},
+  {band:'Dél',ic:'bowl',c:'var(--sage)',items:[['D3 + K2','4000IU + 100µg','Ebéd',1,'12:45'],['Omega-3','2g EPA+DHA','Ebéd',0]]},
+  {band:'Délután',ic:'sun',c:'var(--coral)',items:[['Origin PWO','20g','Edzés előtt',0]]},
+  {band:'Este',ic:'moon',c:'var(--lav)',items:[['Magnézium-glicinát','300mg','Este',0]]}
+];
+
+/* ── fejléc + keret (fuel-uveg.html, változatlan) ─────────── */
+function topbar(){return `<header class="topbar"><span class="wordmark">boop</span>
+  <button class="rbtn q glass" data-toast="Kalauz ehhez az oldalhoz">?<i class="dot"></i></button>
+  <button class="rbtn glass" data-toast="Beállítások">${C('beallitas')}</button>
+  <button class="rbtn glass" style="--c:var(--lav)" data-toast="Mezo üzenetei — Beszélgetés oldal">${C('level')}<b class="badge">2</b></button>
+  <button class="rbtn glass ${ntfOpen?'is-open':''}" style="--c:var(--sky)" data-ntf>${C('ertesites')}<b class="badge">3</b></button>
+  <button class="orb glass" aria-label="A mai nap: 64% rögzítve" data-toast="A mai nap oldala — 64% rögzítve"><svg viewBox="0 0 40 40"><defs><clipPath id="orbc"><circle cx="20" cy="20" r="16"/></clipPath><linearGradient id="orbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC3A8"/><stop offset=".5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C8431F"/></linearGradient></defs><circle class="orb-glass" cx="20" cy="20" r="16"/><g clip-path="url(#orbc)"><g class="wave"><path class="orb-liquid" fill="url(#orbg)" d="M-4 17 Q2 14 8 17 T20 17 T32 17 T44 17 T56 17 V44 H-4Z"/></g></g><path class="orb-hi" d="M11 12 A11 11 0 0 1 17 8.5"/></svg></button>
+</header>`}
+const sec=(h,meta='')=>`<div class="sec"><h2>${h}</h2>${meta?`<span class="meta">${meta}</span>`:''}</div>`;
+function head(eb,title,back,right=''){return `<div class="dhead rise"><button class="back glass" data-go="${back}" aria-label="Vissza">‹</button><span class="t"><small>${eb}</small><strong>${title}</strong></span>${right}</div>`}
+
+/* ── KONYHA ─────────────────────────────────────────────── */
+function konyha(){
+  const food=KAM.filter(k=>k.k==='food').length, rest=KAM.length-food;
+  const fav=REC.slice().sort((a,b)=>b.logged-a.logged)[0];
+  return `${topbar()}
+  <section class="pair" style="padding-top:8px">
+    <button class="cap glass lift rise" style="--c:var(--lav);--i:0" data-go="#recept-uj">${I('book')}<b class="plus">＋</b><strong>Recept mentése</strong><small>Kézzel, a saját szavaiddal</small></button>
+    <button class="cap glass lift rise" style="--c:var(--gold);--i:1" data-sheet="import">${I('stack')}<b class="plus">＋</b><strong>Új elem a kamrába</strong><small>Fotó a címkéről vagy egy termék linkje</small></button>
+  </section>
+  <div class="gap"></div>
+  <section class="list">
+    <button class="poster glass lift rise" style="--c:var(--lav);--i:2" data-go="#muhely">
+      <span class="poster-head">${I('chef')}Receptműhely<em>↗</em></span>
+      <span class="voice">Főzzünk ki valamit</span>
+      <p>Te mondod a célt, én a hozzávalót — a számokat a kamrád adja.</p>
+      <span class="goals">${[['meat','Magas fehérje'],['bolt','Edzés előtt'],['dumbbell','Edzés után'],['moon','Lefekvés előtt'],['sun','Reggeli']].map(([i,l])=>`<span class="flat">${I(i)}${l}</span>`).join('')}</span>
+    </button>
+    <button class="poster glass lift rise" style="--c:var(--sage);--i:3" data-go="#receptek">
+      <span class="poster-head">${I('book')}Receptek<em>↗</em></span>
+      <div class="num">${REC.length}<small>recept</small></div>
+      <span class="bowls">${REC.slice(0,5).map(r=>`<span class="well" style="--c:${CAT[r.cat][2]};width:40px;height:40px">${I(CAT[r.cat][1])}</span>`).join('')}</span>
+      <p>${I('score')} Kedvenced most: <b style="color:var(--ink)">${fav.n}</b> · ${fav.logged}× etted</p>
+    </button>
+    <button class="poster glass lift rise" style="--c:var(--gold);--i:4" data-go="#kamra">
+      <span class="poster-head">${I('stack')}Kamra<em>↗</em></span>
+      <div class="num">${KAM.length}<small>tétel</small></div>
+      <span class="split" aria-label="${food} étel, ${rest} kiegészítő"><b style="width:${food/KAM.length*100}%"></b><i></i></span>
+      <span class="legend"><span>${I('carb')}${food} étel</span><span>${I('supps')}${rest} kiegészítő</span></span>
+    </button>
+  </section>`;
+}
+
+/* ── KAMRA ──────────────────────────────────────────────── */
+let kf='Mind';
+function kamra(empty){
+  const F=[['Mind','var(--gold)',''],['Étel','var(--sage)','carb','food'],['Supp','var(--lav)','supps','supp'],['Stim','var(--coral)','bolt','stim'],['Gyógyszer','var(--sky)','syringe','med']];
+  const items=empty?[]:KAM.filter(k=>kf==='Mind'||F.find(f=>f[0]===kf)[3]===k.k);
+  const acts=`<span class="acts"><button class="flat" data-sheet="catalog">Közös</button><button class="flat" data-sheet="import">Import</button><button class="flat on" style="--c:var(--gold)" data-sheet="add">＋ Új tétel</button></span>`;
+  if(empty) return `${topbar()}${head('KONYHA','Kamra','#konyha',acts)}
+    <div class="dash rise" style="--c:var(--gold);margin:10px 16px;text-align:center;padding:26px 18px">${I('stack')}<strong style="display:block;font-size:17px;margin-top:6px">A kamra üres</strong>
+    <p class="lead" style="padding:8px 0 14px">Vedd fel az első tételt — vagy válassz a közös katalógusból —, és itt jelenik meg a polcodon.</p>
+    <button class="btn glass" style="--c:var(--gold)" data-sheet="add">Első tétel felvétele ＋</button></div>`;
+  return `${topbar()}${head('KONYHA','Kamra','#konyha',acts)}
+  <div class="search rise">${I('stack')}Keress tétel, márka…</div>
+  <div class="chips">${F.map(([l,c,ic,k])=>{const n=l==='Mind'?KAM.length:KAM.filter(x=>x.k===k).length;return `<button class="flat ${kf===l?'on':''}" style="--c:${c}" data-kf="${l}">${ic?I(ic):''}${l} <b>${n}</b></button>`}).join('')}<button class="flat" data-sheet="catfilter">Szűrők</button></div>
+  ${items.length?`<section class="grid2">${items.map((k,i)=>{const [ic,c]=KIND[k.k];return `<button class="tile glass lift rise" style="--c:${c};--i:${i}" data-go="#kamra/${k.id}">
+    <span class="tile-top">${I(ic.slice(2))}<span class="srcb" title="${SRC[k.src][1]}">${I(SRC[k.src][0])}</span></span>
+    <strong>${k.n}</strong>
+    ${k.k==='food'?`<span class="fact"><b>${k.kcal}</b>kcal / 100g</span>${bar(k.p/25*100,'var(--protein)',i)}<span class="pb">${fmt(k.p.toFixed(1))} g fehérje</span>`:`<span class="fact"><b>${k.dose}</b>adag</span>`}
+    <span class="brand">${k.b}</span></button>`}).join('')}</section>`:`<p class="lead" style="text-align:center;padding-top:20px">Nincs egyező tétel.</p>`}
+  ${sec('Okosabb csere')}
+  <div class="list"><div class="dash rise" style="--c:var(--sage)"><div class="hrow"><strong style="flex:1;font-size:14.5px">Görög joghurt 10% · 500g</strong><span class="srcb">${I('link')}</span><b style="font-size:14px">1790 Ft</b></div>
+    <p style="font-size:12px;color:var(--sub);margin-top:6px">${I('score','').replace('class="icon ','class="icon inl ')} Stack-illeszkedés · esti casein +2 recipe</p></div></div>`;
+}
+function kamraItem(id){
+  const k=KAM.find(x=>x.id===id); if(!k) return kamra();
+  const [ic,c]=KIND[k.k]; const food=k.k==='food';
+  const tot=food?k.p*4+k.c*4+k.f*9:0;
+  const sh=food?[['Fehérje','meat','var(--protein)',k.p,k.p*4],['Szénhidrát','carb','var(--carb)',k.c,k.c*4],['Zsír','avocado','var(--fat)',k.f,k.f*9]]:[];
+  return `${topbar()}${head(k.cat,k.n,'#kamra',`<span class="flat srcchip">${I(SRC[k.src][0])}${SRC[k.src][1]}</span>`)}
+  <section class="dhero halo rise" style="--c:${c};--i:1">
+    <div class="art">${I(ic.slice(2))}<div class="num">${food?k.kcal:k.dose}</div><div class="cap2">${food?'kcal / 100 g':'adag'}</div></div>
+    <div class="infos">
+      <div class="info glass" style="--c:var(--gold)">${I('stack')}<span><strong>A polcodon</strong><small>${k.b}</small></span></div>
+      <div class="info glass" style="--c:var(--sky)">${I(SRC[k.src][0])}<span><strong>${k.sl}</strong><small>${k.when||'a felvétel ideje nincs rögzítve'}</small></span></div>
+    </div>
+  </section>
+  ${sec('Forrás')}
+  <div class="list"><div class="cell rise" style="--i:2"><strong style="font-size:14px">Így került a polcra: ${SRC[k.src][1]}</strong><p style="font-size:12px;color:var(--sub);margin-top:3px">${k.sl} · ${k.when||'az időpont nincs rögzítve'}${k.src==='kat'?' · közös · Anna':''}</p></div></div>
+  ${food?`${sec('Makrók')}<section class="shares">${sh.map(([n,a,col,g,kc],i)=>`<div class="share glass rise" style="--c:${col};--i:${i+3}">${I(a)}<div class="sring">${ring(Math.round(kc/tot*100),col,34).replace('style="','style="--i:'+i+';')}<span><strong class="tint">${fmt(g)}<i>g</i></strong><b>${Math.round(kc/tot*100)}%</b></span></div><span class="n">${n}</span></div>`).join('')}</section>
+  ${sec('Minőség')}<section class="quality">${[['Cukor · 100 g','sugar','var(--carb)',k.sug,'g'],['Só · 100 g','salt','var(--sky)',k.salt,'g'],['Telített zsír · 100 g','fat','var(--fat)',k.sat,'g'],[k.nova,'processing','var(--fiber)','NOVA','']].map(([l,a,col,v,u],i)=>`<div class="qt glass rise" style="--c:${col};--i:${i+6}"><span class="qt-top">${I(a)}<strong class="tint">${v}<small>${u}</small></strong></span><span>${l}</span></div>`).join('')}</section>`
+  :`${sec('A napodban')}<div class="list"><button class="row glass lift rise" style="--c:var(--lav);--i:3" data-go="#stack">${I('clock')}<span class="grow"><strong>${k.id==='kreatin'?'5g · ébredés után':'Nincs időzítve'}</strong><small>${k.id==='kreatin'?'a stackben · Ébredés 07:00':'A Kiegészítők oldalon pipálod — ott látod a protokollt is'}</small></span><span class="chev">›</span></button></div>`}
+  ${k.price?`<p class="meta-line" style="padding-top:12px">Ár: ${k.price}</p>`:''}
+  ${k.recs.length?`${sec('Receptekben')}<div class="rchips">${k.recs.map(r=>{const R=REC.find(x=>x.id===r);return `<button class="flat" data-go="#recept/${r}">${I('plate')}${R.n}</button>`}).join('')}</div>`:''}
+  ${food?`<div class="list" style="margin-top:18px"><button class="btn glass lift" style="--c:var(--sage)" data-go="#log">${I('plate')}Logolás · mai étkezésbe ›</button></div>`:''}
+  <div class="pair" style="margin-top:10px"><button class="btn flatb" data-sheet="add-edit">${I('gear')}Szerkesztés</button><button class="btn flatb twotap" data-twotap="Biztos? Még egy érintés a törléshez">Törlés</button></div>`;
+}
+
+/* ── RECEPTEK ───────────────────────────────────────────── */
+let rf='Mind';
+const per=(r,k)=>Math.round(r[k]/Math.max(1,r.serv));
+function receptek(){
+  const F=[['Mind','var(--lav)',''],['Reggeli','var(--gold)','reggeli'],['Ebéd','var(--sage)','ebed'],['Vacsi','var(--sky)','vacsora'],['Snack','var(--lav)','uzsonna'],['Csillagos','var(--lav)','*']];
+  const list=REC.filter(r=>rf==='Mind'||(rf==='Csillagos'?r.star:F.find(f=>f[0]===rf)[2]===r.cat));
+  return `${topbar()}${head('KONYHA','Receptek','#konyha',`<span class="acts"><button class="flat on" style="--c:var(--sage)" data-go="#recept-uj">＋ Új</button></span>`)}
+  <div class="chips">${F.map(([l,c,k])=>{const n=l==='Mind'?REC.length:REC.filter(r=>k==='*'?r.star:r.cat===k).length;return `<button class="flat ${rf===l?'on':''}" style="--c:${c}" data-rf="${l}">${k&&k!=='*'?I(CAT[k][1]):''}${l} <b>${n}</b></button>`}).join('')}</div>
+  ${list.length?`<section class="list">${list.map((r,i)=>{const [cl,ci,cc]=CAT[r.cat];const P=per(r,'p'),Cc=per(r,'c'),Fz=per(r,'f');const mx=Math.max(P,Cc,Fz);return `<button class="rrow glass lift rise" style="--c:${cc};--i:${i}" data-go="#recept/${r.id}">
+      <span class="rrow-top"><span class="well" style="--c:${cc}">${I(ci)}</span>
+        <span class="grow"><strong>${r.n}</strong><small>${I(ci)}${cl} · ${r.min} perc${r.role?` · <em>${r.role}</em>`:''}${r.serv>1?` · ${r.serv} adag`:''}</small></span>
+        <span class="rkcal"><b class="tint">${per(r,'kcal')}</b><small>KCAL / ADAG</small></span></span>
+      <span class="rmac">${[['fehérje',P,'var(--protein)'],['szénh.',Cc,'var(--carb)'],['zsír',Fz,'var(--fat)']].map(([l,g,col],j)=>`<span style="--c:${col}"><em><b>${g}</b>g ${l}</em>${bar(g/mx*100,col,i+j)}</span>`).join('')}
+        ${r.score?`<span class="spill">${I('score')}${fmt(r.score)}</span>`:`<span class="spill pending">${I('other')}folyamatban</span>`}</span>
+    </button>`}).join('')}</section>`
+  :`<div class="dash" style="--c:var(--sage);margin:6px 16px;text-align:center">${I('plate')}<p class="lead" style="padding:8px 0 12px">Ebben a blokkban még nincs recepted.</p><button class="btn glass" data-go="#recept-uj">Mentsünk egyet ＋</button></div>`}`;
+}
+let serveAll=false;
+function recept(id){
+  const r=REC.find(x=>x.id===id); if(!r) return receptek();
+  const [cl,ci,cc]=CAT[r.cat]; const d=serveAll?1:r.serv; const v=k=>Math.round(r[k]/d);
+  const tot=v('p')*4+v('c')*4+v('f')*9;
+  const ings={r1:[['Zabpehely · gluténmentes','carb','var(--carb)',223,'60 g'],['Túró · félzsíros','protein','var(--lav)',325,'250 g'],['Áfonya · fagyasztott','fiber','var(--fiber)',57,'100 g'],['Akácméz · hazai','sugar','var(--gold)',84,'25 g']]}[id]||[['Csirkemell · friss','meat','var(--protein)',330,'300 g'],['Édesburgonya','carb','var(--carb)',344,'400 g'],['Spenót · friss','fiber','var(--fiber)',46,'200 g'],['Olívaolaj · extra szűz','avocado','var(--fat)',338,'38 ml']];
+  return `${topbar()}${head(cl.toLocaleUpperCase('hu-HU')+'-RECEPT',r.n,'#receptek',r.score?`<button class="score glass big" data-toast="A recept értékelése — az U1 értékelés-oldalát kapja">${I('score')}${fmt(r.score)}</button>`:`<span class="spill pending">${I('other')}folyamatban</span>`)}
+  <section class="dhero halo rise" style="--c:${cc};--i:1">
+    <div class="art">${I('plate')}<div class="num">${v('kcal')}</div><div class="cap2">${serveAll?'kcal · egész':'kcal / adag'}</div></div>
+    <div class="infos">
+      <div class="info glass" style="--c:${cc}">${I(ci)}<span><strong>${cl}</strong><small>${r.min} perc alatt kész</small></span></div>
+      <div class="info glass" style="--c:var(--lav)">${I('journal')}<span><strong>${r.logged}× etted</strong><small>legutóbb ${r.last}</small></span></div>
+    </div>
+  </section>
+  <p class="meta-line">${r.serv} adag · ${r.min} perc · NOVA ${r.nova}${r.role?' · '+r.role:''} · létrehozva ${r.date}</p>
+  <div class="seg" style="margin-left:18px"><button class="${serveAll?'':'on'}" data-serve="0">1 adag</button><button class="${serveAll?'on':''}" data-serve="1">Egész · ${r.serv} adag</button></div>
+  ${sec('Makrók')}
+  <section class="shares">${[['Fehérje','meat','var(--protein)',v('p'),v('p')*4],['Szénhidrát','carb','var(--carb)',v('c'),v('c')*4],['Zsír','avocado','var(--fat)',v('f'),v('f')*9]].map(([n,a,col,g,kc],i)=>`<div class="share glass rise" style="--c:${col};--i:${i+2}">${I(a)}<div class="sring">${ring(Math.round(kc/tot*100),col,34).replace('style="','style="--i:'+i+';')}<span><strong class="tint">${g}<i>g</i></strong><b>${Math.round(kc/tot*100)}%</b></span></div><span class="n">${n}</span></div>`).join('')}</section>
+  ${sec('Hozzávalók',ings.length+' TÉTEL')}
+  <section class="ings">${ings.map(([n,a,col,k,amt],i)=>`<button class="ing glass lift rise" style="--c:${col};--i:${i+4}" data-go="#kamra/${i===0&&id!=='r1'?'csirke':i===1&&id==='r1'?'turo':'zab'}">
+    <span class="ing-art">${I(a)}</span><span class="ing-copy"><strong>${n}</strong><span class="tags"><span class="tag">${I('stack')}kamra</span><span class="tag"><i></i>Alapanyag</span></span>${bar(k/v('kcal')*100*(serveAll?1:r.serv),col,i)}</span>
+    <span class="ing-end"><b class="tint">${Math.round(k/d)}<small>kcal</small></b><small>${amt}</small></span></button>`).join('')}</section>
+  ${sec('Minőség')}
+  <section class="quality">${[['Alapanyag-arány','processing','var(--carb)','100','%'],['Növényféle','sprout','var(--fiber)','3','db']].map(([l,a,col,vv,u],i)=>`<div class="qt glass rise" style="--c:${col};--i:${i+8}"><span class="qt-top">${I(a)}<strong class="tint">${vv}<small>${u}</small></strong></span><span>${l}</span></div>`).join('')}</section>
+  ${sec('Mikrotápanyagok')}
+  <div class="p16"><div class="four">${[['Rost','7 g'],['Cukor','19 g'],['Só','0,6 g'],['Tel. zsír','— nincs adat']].map(([l,x])=>`<div class="cell"><span class="eb">${l.toUpperCase()}</span><b style="font-size:14px">${x}</b></div>`).join('')}</div></div>
+  ${sec('Mezo jegyzete')}
+  <div class="note glass rise" style="--c:var(--lav);--i:10">${I('score')}<div><small>MIÉRT ÍGY?</small><p>Lassú szénhidrát és sok fehérje — edzés előtt 2-3 órával ideális, a túró kazeinje sokáig kitart.</p>
+    <span class="flat" style="margin-top:10px"><i class="dot" style="--c:var(--lav)"></i>${r.fits}</span></div></div>
+  <div class="list" style="margin-top:10px"><button class="row glass lift" style="--c:var(--lav)" data-toast="A recept értékelése — az U1 értékelés-oldalát kapja">${I('score')}<span class="grow"><strong>Pontszám</strong><small>9 szempont · megbízh. 92%</small></span><span class="chev">›</span></button></div>
+  <div class="list" style="margin-top:16px">
+    <button class="btn glass lift" style="--c:var(--sage)" data-go="#log">${I('plate')}Logolás · ma ettem ilyet</button>
+    <button class="btn glass lift" style="--c:var(--lav)" data-go="#muhely/vazlat">${I('chef')}Iterálás a Műhelyben</button>
+    <button class="row glass lift" style="--c:var(--gold)" data-sheet="reclogs">${I('journal')}<span class="grow"><strong>Logok · ${r.logged}</strong><small>${r.last.startsWith('ma')?'ma is a naplódban':'ma még nincs logolva'}</small></span><span class="chev">›</span></button>
+  </div>
+  <div class="p16" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px"><button class="btn flatb" data-go="#recept-uj">${I('book')}Szerkesztés</button><button class="btn flatb" data-star>${r.star?'Csillag le':'Csillag'}</button><button class="btn flatb twotap" data-twotap="Biztos? Még egy érintés">Törlés</button></div>`;
+}
+function editor(){
+  return `${topbar()}${head('FUEL · RECEPTEK','Új recept','#receptek')}
+  <div class="fcard glass rise" style="--c:var(--sage)">
+    <label class="field"><span>NÉV</span><span class="inp ph">pl. Tonhalsaláta · postworkout</span></label>
+    <div class="field"><span>SLOT</span><div style="display:flex;gap:6px;flex-wrap:wrap">${['Reggeli','Ebéd','Vacsora','Snack'].map((l,i)=>`<button class="flat ${i===1?'on':''}">${l}</button>`).join('')}<button class="flat">Csillag</button></div></div>
+    <div class="field"><span>SZEREP</span><div style="display:flex;gap:6px;flex-wrap:wrap">${['Általános','Edzés előtt','Edzés után'].map((l,i)=>`<button class="flat ${i===0?'on':''}" style="--c:var(--coral)">${l}</button>`).join('')}</div>
+      <small style="font-size:11.5px;color:var(--sub);line-height:1.4">A szerep dönti el, milyen mérce szerint pontozzuk: edzés körül a gyors szénhidrát üzemanyag, nem hiba.</small></div>
+    <div class="two"><div class="field"><span>ADAG</span><div class="stepper"><button>−</button><b>2</b><small>adag</small><button>+</button></div></div>
+      <div class="field"><span>ELŐ + FŐZÉS</span><div class="stepper"><button>−</button><b>25</b><small>perc</small><button>+</button></div></div></div>
+  </div>
+  ${sec('Makró-összeg')}
+  <div class="fcard glass rise" style="--c:var(--lav);--i:1"><div class="seg" style="margin:0;justify-self:start"><button class="on">1 adag</button><button>Egész recept</button></div>
+    <div class="four">${[['529','kcal','var(--gold)'],['53','fehérje','var(--protein)'],['54','szénhidrát','var(--carb)'],['11','zsír','var(--fat)']].map(([b,l,c])=>`<div class="stat" style="--c:${c}"><b>${b}</b><small>${l}</small></div>`).join('')}</div>
+    <small style="font-size:11px;color:var(--faint)">egész recept = 1058 kcal · P 106 · C 108 · F 22</small></div>
+  ${sec('Hozzávalók','2')}
+  <section class="list">${[['Csirkemell · friss','Bonafarm','var(--protein)',300],['Édesburgonya','Tesco','var(--carb)',400]].map(([n,b,c,g],i)=>`<div class="lcard glass rise" style="--c:${c};--i:${i+2}"><div class="lcard-top"><strong>${n}</strong><button class="x" style="width:28px;height:28px" aria-label="Törlés">×</button></div><small style="font-size:11.5px;color:var(--sub)">${b}</small>
+    <div class="xline"><div class="stepper"><button>−</button><b>${g}</b><small>g</small><button>+</button></div></div></div>`).join('')}
+    <button class="dash" style="--c:var(--sage);text-align:center;font-weight:600;font-size:14px">＋ Kamrából hozzáad</button></section>
+  ${sec('Címkék')}
+  <div class="rchips"><span class="flat">pre-workout ×</span><span class="flat">whole-foods ×</span><span class="flat" style="color:var(--faint)">＋ címke</span></div>
+  <div class="savebar"><button class="btn flatb" data-back>Mégse</button><button class="btn glass" style="--c:var(--sage)" data-toast="Recept mentve">✓ Mentés</button></div>`;
+}
+function muhely(draft){
+  const dock=`<div class="fcard glass" style="--c:var(--lav);margin-top:18px;gap:10px">
+    <div class="chips" style="padding:0;margin:0 -2px">${[['meat','Magas fehérje'],['bolt','Edzés előtt'],['dumbbell','Edzés után'],['moon','Lefekvés előtt'],['sun','Reggeli']].map(([i,l])=>`<button class="flat" data-go="#muhely/vazlat">${I(i)}${l}</button>`).join('')}</div>
+    <div class="hrow"><button class="srcb" style="width:40px;height:40px" aria-label="Kamra">${I('stack')}</button><span class="inp ph" style="flex:1">Mit főzzünk? Mondd el szabadon…</span><button class="rbtn glass" style="--c:var(--lav)" data-go="#muhely/vazlat" aria-label="Küldés">➤</button></div></div>`;
+  if(!draft) return `${topbar()}${head('FUEL · RECEPTEK','Receptműhely','#receptek')}
+  <section class="halo rise" style="--c:var(--lav);text-align:center;padding:24px 22px 4px">
+    <svg class="icon" style="width:104px;height:104px;margin:0 auto;filter:drop-shadow(0 12px 14px rgba(0,0,0,.5)) drop-shadow(0 0 20px rgba(171,159,210,.45))"><use href="#t-chef"/></svg>
+    <h2 class="voice" style="font-size:28px;font-weight:500;margin-top:8px">Mit főzzünk ki?</h2>
+    <p class="lead" style="padding:10px 0 0">Válassz egy célt alul, vagy írd le a saját szavaiddal. Én hozzávalót és mennyiséget javaslok — a számokat mindig a kamrád adja.</p>
+    <p style="font-size:11.5px;color:var(--faint);margin-top:8px">Minden kör patch-ként érkezik, a kézi szerkesztéseid megmaradnak.</p>
+  </section>${dock}`;
+  return `${topbar()}${head('FUEL · RECEPTEK','Receptműhely','#receptek')}
+  <div class="p16"><span class="inp">Csirkés bulgur · magas fehérje</span><span class="flat" style="margin-top:8px">${I('meat')}Magas fehérje</span></div>
+  <section class="dhero halo rise" style="--c:var(--lav);--i:1"><div class="art">${I('plate')}<div class="num">612</div><div class="cap2">kcal / adag</div></div>
+    <div><div class="field"><span>ADAG</span><div class="stepper"><button aria-label="Kevesebb adag">−</button><b>2</b><button aria-label="Több adag">+</button></div></div>
+    <div class="seg" style="margin:10px 0 0"><button class="on">1 adag</button><button>Egész</button></div></div></section>
+  <div class="callout" style="--c:var(--gold);margin-top:8px"><p style="margin:0">1 sorhoz nincs tápérték a kamrában — a számokból kimarad, nem találgatjuk.</p></div>
+  ${sec('Hozzávalók','3 TÉTEL')}
+  <section class="list">${[['Csirkemell · friss','kamra','var(--protein)','330','300 g'],['Bulgur Raw','kamra','var(--carb)','342','100 g'],['Paprika · kaliforniai','becslés','var(--fiber)','—','150 g']].map(([n,t,c,k,a],i)=>`<div class="lcard glass rise" style="--c:${c};--i:${i+2}"><div class="lcard-top"><strong>${n}</strong><span class="tagf">${I(t==='kamra'?'stack':'score')}${t}</span><b>${k}${k!=='—'?' kcal':''}</b><button class="x" style="width:28px;height:28px">×</button></div>
+    <div class="xline"><div class="stepper"><button>−</button><b>${a.split(' ')[0]}</b><small>${a.split(' ')[1]}</small><button>+</button></div>${t==='becslés'?`<button class="flat" style="--c:var(--gold)" data-sheet="kamrapick">Csere kamra-itemre</button>`:''}</div></div>`).join('')}</section>
+  <div class="list" style="margin-top:10px"><button class="row glass" style="--c:var(--sage)" data-toast="Elkészítés: 4 lépés">${I('journal')}<span class="grow"><strong>Elkészítés</strong><small>4 lépés</small></span><span class="chev">▾</span></button></div>
+  <p class="foot">Becslés-sorok: cseréld kamra-itemre vagy töröld a mentéshez</p>
+  <div class="list" style="margin-top:8px"><button class="btn glass" disabled style="--c:var(--sage)">Mentés a Receptkönyvbe</button></div>
+  ${dock}`;
+}
+
+/* ── LOGOLÁS ────────────────────────────────────────────── */
+let mode='foto', lines=false;
+function log(fail){
+  const M=[['foto','Fotó','camera','var(--coral)'],['hang','Hang','mic','var(--lav)'],['gepeles','Gépelés','journal','var(--sage)'],['szokasos','Szokásosak','repeat','var(--gold)']];
+  let body='';
+  if(fail) body=`<div class="dash" style="--c:var(--gold);margin:14px 16px 0;text-align:center"><div class="failart">${I('camera')}<b>?</b></div><span class="eb" style="margin-top:10px">ŐSZINTÉN SZÓLVA</span><strong style="display:block;font-size:17px;margin-top:4px">Ezt a tányért nem ismertem fel.</strong>
+    <p class="lead" style="padding:8px 0 12px">Nem találgatok a hátad mögött. Válassz egy másik utat — ugyanoda vezet.</p>
+    <div style="display:grid;gap:8px"><button class="btn flatb" data-mode="gepeles">Leírom szöveggel</button><button class="btn flatb" data-mode="szokasos">A szokásosakból választok</button><button class="btn flatb" data-mode="foto">Új fotót készítek</button></div></div>`;
+  else if(mode==='foto') body=`<button class="viewf glass lift" data-lines><i></i><i></i><i></i><i></i><span>${I('plate')}<strong>Fotózd le a tányért</strong></span></button><p class="hint">Fotózd le a tányért — a felismert tételeket lent átírhatod, és csak utána mentünk.</p><p class="hint"><a href="#log/hiba" style="color:var(--faint)">(minta: ha nem ismeri fel)</a></p>`;
+  else if(mode==='hang') body=`<button class="micbtn glass lift" data-lines aria-label="Hang · mondd el, mit ettél">${I('mic')}</button><p class="hint">Koppints, és mondd el egy mondatban. A leírt mondatot lent még átírhatod.</p>`;
+  else if(mode==='gepeles') body=`<p class="hint">Írd le egy mondatban, mit ettél — lent a Mezo-mezőben. Az AI tételekre bontja, te pedig átírhatod, mielőtt mentünk.</p>
+    <div class="srcs"><button class="cap glass lift" style="--c:var(--gold)" data-sheet="kamrapick">${I('stack')}<strong>Kamra</strong><small>polcról, grammra</small></button><button class="cap glass lift" style="--c:var(--coral)" data-sheet="receptpick">${I('book')}<strong>Recept</strong><small>adagra</small></button></div>
+    <div class="aipanel glass"><span class="inp ph">pl. csirkés wrap és egy latte…</span><div class="hrow"><span class="flat">${I('camera')}Fotó</span><span class="flat">${I('mic')}Hang</span><button class="flat on" style="--c:var(--lav);margin-left:auto" data-lines>${I('score')}Elemzés</button></div>
+    <small style="font-size:11px;color:var(--faint);line-height:1.4">Szöveg, hang vagy fotó — vagy mindhárom. A felismert sorok a tételek közé kerülnek, ott mindent átírhatsz.</small></div>`;
+  else body=`<p class="hint">Amihez ilyenkor a leggyakrabban nyúlsz — egy koppintás, aztán jóváhagyod.</p><section class="list" style="margin-top:12px">${[['Zabkása gyümölccsel','Reggeli · 9× logoltad',420],['Túrós zabkása · áfonyával','Reggeli · 12× logoltad',689],['Tojásrántotta · spenóttal','Reggeli · egyszer logoltad',318]].map(([n,s,k],i)=>`<button class="row glass lift rise" style="--c:var(--gold);--i:${i}" data-lines><span class="well" style="--c:var(--gold)">${I('plate')}</span><span class="grow"><strong>${n}</strong><small>${s}</small></span><span class="end"><b>${k}<small>kcal</small></b></span></button>`).join('')}</section>`;
+  const conf=lines?`
+  ${sec('Tételek','3')}
+  <section class="list">${[['Zabpehely','kamra','var(--carb)',60,'g',223,[8,36,4]],['Görög joghurt','kamra','var(--protein)',150,'g',146,[14,6,8]],['Erdei gyümölcs','becslés','var(--fiber)',80,'g',51,[1,10,0]]].map(([n,t,c,a,u,k,[p,cc,f]],i)=>`<div class="lcard glass rise" style="--c:${c};--i:${i}"><div class="lcard-top"><strong>${n}</strong><span class="tagf">${I(t==='kamra'?'stack':'score')}${t}</span><button class="x" style="width:28px;height:28px" aria-label="Eltávolítás">×</button></div>
+    <div class="xline"><div class="stepper"><button>−</button><b>${a}</b><small>${u}</small><button>+</button></div><b style="font-size:18px" class="tint">${k} <small style="font-size:10.5px;color:var(--faint)">kcal</small></b></div>
+    <p class="mm">${p} g feh. · ${cc} g szénh. · ${f} g zsír</p>${t==='becslés'?`<p class="mm" style="color:var(--sub)">${I('score').replace('class="icon ','class="icon " style="width:14px;height:14px;vertical-align:-2px;filter:none"')} Az AI nem teljesen biztos ebben a sorban — nézd át a mennyiséget.</p>`:''}</div>`).join('')}</section>
+  <div class="total glass rise" style="--i:3"><span class="eb">EZ AZ ÉTKEZÉS · 3 TÉTEL</span><strong style="display:block;font-size:17px;margin-top:4px">Zabkása joghurttal és gyümölccsel</strong>
+    <div class="four">${[['420','kcal','var(--gold)'],['23','fehérje','var(--protein)'],['52','szénh.','var(--carb)'],['12','zsír','var(--fat)']].map(([b,l,c])=>`<div class="stat" style="--c:${c}"><b>${b}</b><small>${l}</small></div>`).join('')}</div>
+    <small style="font-size:12px;color:var(--sub)">Mai nap eddig 1180 +420 = 1600 · cél 2400 kcal</small><span class="daybar"><b style="width:49%"></b><i style="width:18%"></i></span></div>
+  <div class="savebar"><button class="btn flatb" data-go="#konyha">Mégse</button><button class="btn glass" style="--c:var(--sage)" data-toast="Mentve · +10 XP — az étkezés-ünnep (U10) nyílik">✓ Logolás · +10 XP</button></div>`
+  :'';
+  return `${topbar()}
+  <div style="padding:0 18px 4px"><button class="flat" data-back>‹ Vissza</button></div>
+  <div class="logh rise">${I('sun')}<span class="t"><span class="eb">LOGOLÁS</span><strong>Reggeli</strong><small>08:00 · ablak</small></span><span class="daychip"><b>szept. 23.</b><small>ma</small></span></div>
+  ${fail?'':`<div class="modes glass" role="tablist" aria-label="Naplózási mód" style="--c:var(--coral)">${M.map(([k,l,ic,c])=>`<button class="mode ${mode===k?'on':''}" style="--c:${c}" data-mode="${k}" role="tab">${I(ic)}${l}</button>`).join('')}</div>`}
+  ${body}${conf}`;
+}
+
+/* ── KIEGÉSZÍTŐK ────────────────────────────────────────── */
+function stack(){
+  const all=STACK.flatMap(b=>b.items), taken=all.filter(x=>x[3]).length;
+  const nx=STACK.flatMap(b=>b.items.map(x=>[x,b])).find(([x])=>!x[3]);
+  const due=STACK.findIndex(b=>b.items.some(x=>!x[3]));
+  return `${topbar()}
+  <section class="halo rise" style="--c:var(--sage);--c2:var(--lav);text-align:center;padding:10px 0 0">
+    <span class="eb">MIT VESZEK BE MA?</span>
+    <div class="sgauge" style="--c:var(--sage)" aria-label="Mai kiegészítő-haladás">${ring(Math.round(taken/all.length*100),'var(--sage)',36)}<span class="ring-inner"></span><span><strong>${taken} / ${all.length}</strong><small>BEVÉVE MA</small></span></div>
+  </section>
+  ${nx?`<button class="next glass lift rise" style="--c:${nx[1].c};--i:1" data-take="${nx[0][0]}">${I('supps')}<span class="grow"><span class="eb">KÖVETKEZIK</span><strong>${nx[0][0]}</strong><small>${nx[0][1]} · ${nx[0][2]}</small></span><em>BEVETTEM</em></button>`
+    :`<div class="dash" style="margin:14px 16px 0;text-align:center">${I('protocol')}<p class="lead" style="padding:6px 0 0">Mára minden megvan. Ha félrement valami, a pipát bármikor visszavonhatod.</p></div>`}
+  <div class="gap"></div><div class="gap"></div>
+  <section class="list">${STACK.map((b,i)=>{const d=b.items.filter(x=>x[3]).length;return `<div class="band glass rise ${d===b.items.length?'done':''} ${i===due?'due':''}" style="--c:${b.c};--i:${i+2}">
+    <div class="band-head">${I(b.ic)}<strong>${b.band}</strong><b>${d} / ${b.items.length}</b></div>
+    ${b.items.map(x=>`<div class="srow ${x[3]?'taken':''}"><button class="tick ${x[3]?'on':''}" data-take="${x[0]}" aria-label="${x[3]?'visszavonom':'bevettem'}">✓</button><button class="main" data-item="${x[0]}">${I('supps')}<span style="flex:1"><strong>${x[0]}</strong><small>${x[1]} · ${x[2]}${x[3]?' · bevéve '+x[4]:''}</small></span><span class="chev">›</span></button></div>`).join('')}
+  </div>`}).join('')}</section>
+  <div class="gap"></div>
+  <section class="pair">
+    <button class="cap glass lift rise" style="--c:var(--gold);--i:6" data-go="#protokoll">${I('protocol')}<b class="plus">↗</b><strong>Protokoll · 8 elem</strong><small>Mit miért szedsz, és ki tette a helyére.</small></button>
+    <button class="cap glass lift rise" style="--c:var(--lav);--i:7" data-go="#stack-uj/1">${I('gear')}<b class="plus">↗</b><strong>Új elem beállítása</strong><small>Megmondom, mennyit vegyél be belőle, mikor és miért.</small></button>
+  </section>
+  <div class="list" style="margin-top:10px"><button class="row glass lift" style="--c:var(--sky)" data-go="#gyogyszer">${I('syringe')}<span class="grow"><strong>Gyógyszer</strong><small>A követett gyógyszered és a ciklusa</small></span><span class="chev">↗</span></button></div>
+  <p class="foot">Tájékoztatás, nem orvosi tanács.</p>`;
+}
+function openItem(name){
+  const x=STACK.flatMap(b=>b.items).find(i=>i[0]===name);
+  $('#dialog').style.setProperty('--c','var(--sage)');
+  $('#dialog').innerHTML=`<div class="dh">${I('supps')}<span><div class="num">${x[1]}</div><small style="color:var(--sub);font-size:12px">${x[0]} · naponta</small></span></div>
+  <div class="rchips" style="padding:12px 0 0"><span class="flat">${x[2]} · ${x[4]||'12:30'}</span><span class="flat">okos elhelyezés</span><span class="flat">${x[3]?'bevéve '+x[4]:'ma még nincs bevéve'}</span></div>
+  <button class="btn glass" style="--c:var(--sage);margin-top:14px" data-take="${x[0]}" data-closedlg>${x[3]?I('moon')+'Mégsem vettem be ↺':I('protocol')+'Bevettem ✓'}</button>
+  <h4>${I('stack')}EBBŐL A TERMÉKBŐL</h4><div class="kv">${[['Napi adag',x[1]],['Kiszerelés','kapszula · 1db'],['Készleten','42 db'],['Napi összmennyiség',x[1]]].map(([k,v])=>`<div class="cell"><small>${k}</small><b>${v}</b></div>`).join('')}</div>
+  <h4>${I('bolt')}MIÉRT ÍGY</h4><p class="voice" style="font-size:14.5px;line-height:1.45">Zsíros étkezéssel szívódik fel a legjobban — az ebéd a nap legzsírosabb pontja.</p>
+  <button class="row glass" style="--c:var(--gold);margin-top:12px" data-go="#kamra/kreatin" data-closedlg>${I('stack')}<span class="grow"><strong>${x[0]}</strong><small>42 db a kamrádban</small></span><span class="chev">›</span></button>
+  <p class="foot" style="padding-top:12px">Tájékoztatás, nem orvosi tanács.</p>
+  <button class="btn flatb" style="margin-top:10px" data-closedlg>Bezárom</button>`;
+  $('#dialog').classList.add('on');$('#scrim').classList.add('on');
+}
+function protokoll(){
+  const Z=[['Ébredés','dawn','var(--gold)','07:00',[['Kreatin monohidrát','5g','Reggel, üres gyomorra is jól szívódik — a napi összmennyiség a lényeg.','auto'],['Kávé · espresso','80-100mg','Ébredés után 60–90 perccel a legjobb, a koffein-stop 14:00.','auto'],['Tasty Dose gombakávé','8g','A reggeli kávé mellé, fókuszhoz.','kézi']]],
+    ['Reggeli','sun','var(--gold)','08:00',[['Impact Whey Protein','30-40g','Pihenőnapon a reggelihez kerül.','auto']]],
+    ['Edzés előtt','dumbbell','var(--coral)','16:30',[['Origin PWO','20g','Edzés előtt 20–30 perccel; pihenőnapon kimarad.','auto']]],
+    ['Ebéd','bowl','var(--sage)','12:30',[['D3 + K2','4000IU + 100µg','Zsíros étkezéssel szívódik fel a legjobban.','auto'],['Omega-3','2g EPA+DHA','Az ebéd a nap legzsírosabb pontja.','auto']]],
+    ['Este','moon','var(--lav)','21:00',[['Magnézium-glicinát','300mg','Este nyugtat, segíti az elalvást.','auto']]]];
+  return `${topbar()}${head('STACK','Protokoll','#stack')}
+  <section class="halo rise" style="--c:var(--gold);text-align:center;padding:6px 0 10px">${I('protocol').replace('class="icon ','class="icon " style="width:84px;height:84px;margin:0 auto;filter:drop-shadow(0 12px 14px rgba(0,0,0,.5)) drop-shadow(0 0 18px rgba(255,190,96,.4))"')}<div class="num">8<small>tétel</small></div><small style="color:var(--sub);font-size:12px">v3 · 86% bizalom</small></section>
+  <div class="strip">${[['8','elem'],['5','idősáv'],['1','kézzel elhelyezve']].map(([b,s])=>`<div class="cell"><b>${b}</b><small>${s}</small></div>`).join('')}</div>
+  <div class="gap"></div><div class="gap"></div>
+  <section class="list">${Z.map(([z,ic,c,t,items],i)=>`<div class="zone glass rise" style="--c:${c};--i:${i+1}"><div class="band-head">${I(ic)}<strong>${z}</strong><b>${t} · ${items.length}</b></div>
+    ${items.map(([n,d,why,m])=>`<button class="prow" data-sheet="stackitem" data-pin="${m}" data-name="${n}">${I('supps')}<span class="grow"><strong>${n}</strong><small>${z} · ${d}</small><span class="why">${why}</span></span><span class="end">${d}<small><br>${m}</small></span></button>`).join('')}</div>`).join('')}</section>
+  ${sec('Étkezéshez','2')}
+  <div class="list"><div class="cell"><span class="eb">ÉTKEZÉS-EGYEZTETÉS · MACRO + MICRO MATCH</span>
+    <div class="hrow" style="margin-top:8px">${I('bowl')}<span style="flex:1;font-size:13px"><b>Ebéd · 12:30</b> — <a href="#recept/r2" style="color:var(--sage)">Csirke + édesburgonya + spenót</a><br><small style="color:var(--sub)">zsír 11 g · a D3 + K2 mellé elég</small></span></div>
+    <div class="hrow" style="margin-top:8px">${I('tick')}<span style="flex:1;font-size:13px"><b>Reggeli · tegnap</b><br><small style="color:var(--sub)">fehérje 49 g · a whey-jel együtt rendben</small></span></div></div></div>
+  <div class="list" style="margin-top:10px"><button class="row glass lift" style="--c:var(--lav)" data-go="#stack-uj/1">${I('gear')}<span class="grow"><strong>Új elem beállítása</strong><small>Megmondom, mennyit vegyél be belőle, mikor és miért.</small></span><span class="chev">↗</span></button></div>
+  <p class="foot">Tájékoztatás, nem orvosi tanács. Gyógyszer mellé mindig kérdezd meg a kezelőorvosod.</p>`;
+}
+function stackUj(step){
+  step=+step||1; const names=['Termék','Adatok','Javaslat'];
+  const top=`${topbar()}${head(step===1?'STACK':'PROTOKOLL','Új elem beállítása',step===1?'#stack':'#stack-uj/'+(step-1),`<span class="num" style="font-size:30px;margin-left:auto">${step}/3</span>`)}
+  <div class="steps">${names.map((n,i)=>`<span class="${i+1===step?'on':i+1<step?'done':''}">${n}</span>`).join('')}</div>`;
+  if(step===1) return `${top}<p class="lead">Melyik terméket állítsuk be? A címkéjéről kiolvasom, mennyi van benne, és megmondom, ez mennyi az ajánlott napi mennyiségből.</p>
+    <div class="search">${I('stack')}Név vagy márka…</div>
+    <section class="list">${[['Kreatin Monohidrát','MyProtein · 5g',1],['Cink-biszglicinát','— · 15mg',0],['D3 + K2','MyProtein · 4000IU + 100µg',1]].map(([n,s,inn],i)=>`<button class="row glass lift rise" style="--c:var(--lav);--i:${i}" data-go="#stack-uj/2">${I('supps')}<span class="grow"><strong>${n}</strong><small>${s}</small></span>${inn?'<span class="flat">a stackben</span>':''}<span class="chev">›</span></button>`).join('')}</section>
+    ${sec('Vagy')}
+    <section class="list">${[['link','Termék linkje','Bemásolod a webshop oldalát, kiolvasom a termék adatait'],['camera','Címkefotóról','Lefotózod a hátoldalt, kiolvasom, amit a címke mond'],['journal','Beírom kézzel','Ha nincs nálad a termék']].map(([ic,t,s])=>`<button class="row cell" style="border-radius:18px" data-go="#stack-uj/2">${I(ic)}<span class="grow"><strong>${t}</strong><small>${s}</small></span><span class="chev">›</span></button>`).join('')}</section>`;
+  if(step===2) return `${top}<p class="lead">Ezek a termék saját adatai — a címkén vagy a webshopban látod őket.</p>
+    <div class="fcard glass" style="--c:var(--lav)">${[['Termék neve','Cink-biszglicinát'],['Egy egységben','15'],['Mértékegység','mg'],['Kiszerelés','kapszula'],['Dobozban','90']].map(([l,v])=>`<label class="field"><span>${l.toUpperCase()}</span><span class="inp">${v}</span></label>`).join('')}</div>
+    <div class="list" style="margin-top:14px"><button class="btn glass" style="--c:var(--lav)" data-go="#stack-uj/3">${I('score')}Tovább a javaslathoz ›</button><button class="btn flatb" data-go="#stack-uj/1">‹ Másik terméket választok</button></div>`;
+  return `${top}<section class="halo rise" style="--c:var(--lav);text-align:center;padding:10px 20px 4px">${I('supps').replace('class="icon ','class="icon " style="width:64px;height:64px;margin:0 auto"')}
+    <div class="num">1 kapszula<small>naponta</small></div>
+    <p style="font-size:13px;color:var(--sub);margin-top:8px">15 mg · az ajánlott <b style="color:var(--ink)">10–15 mg</b> sávban</p><p style="font-size:12px;color:var(--faint);margin-top:4px">A doboz ~90 napra elég</p></section>
+    <div class="list" style="margin-top:8px"><div class="cell hrow">${I('bolt')}<span class="voice" style="font-size:14px;line-height:1.4">Vacsorával szívódik fel a legjobban, és nem versenyez a reggeli vassal.</span></div></div>
+    <div class="fcard glass" style="--c:var(--lav);margin-top:12px"><div class="field"><span>NAPI MENNYISÉG</span><div class="stepper"><button>−</button><b>1</b><small>kapszula</small><button>＋</button></div></div>
+    <div class="field"><span>MIKOR</span><div style="display:flex;gap:6px;flex-wrap:wrap">${['Ébredés','Reggeli','Edzés előtt','Edzés után','Ebéd','Vacsora','Este','Lefekvés'].map(z=>`<button class="flat ${z==='Vacsora'?'on':''}" style="--c:var(--lav)">${z}</button>`).join('')}</div></div></div>
+    <div class="callout" style="--c:var(--gold);margin-top:12px"><span class="eb">AMIRE FIGYELJ</span><p>Hosszan 25 mg fölött a réz felszívódását ronthatja.</p></div>
+    <div class="list" style="margin-top:14px"><button class="btn glass" style="--c:var(--sage)" data-go="#protokoll">${I('protocol')}Felveszem a protokollba · Vacsora ✓</button><button class="btn flatb" data-go="#stack-uj/2">‹ Vissza az adatokhoz</button></div>
+    <p class="foot">Tájékoztatás, nem orvosi tanács. Gyógyszer vagy krónikus betegség mellett kérdezd meg a kezelőorvosod.</p>`;
+}
+
+/* ── GYÓGYSZER ──────────────────────────────────────────── */
+function gyogyszer(active){
+  if(!active) return `${topbar()}<div style="padding:0 18px 8px"><button class="flat" data-go="#stack">‹ Fuel</button></div>
+    <div class="dash rise" style="--c:var(--sky);margin:10px 16px;text-align:center;padding:26px 18px">${I('syringe').replace('class="icon ','class="icon " style="width:70px;height:70px;margin:0 auto"')}<strong style="display:block;font-size:17px;margin-top:6px">Nincs követett gyógyszer</strong>
+    <p class="lead" style="padding:8px 0 14px">Ha szedsz valamit ciklusban — ide kerül a fázis-térkép és a beadás-napló.</p>
+    <button class="btn glass" style="--c:var(--sky)" data-sheet="medform">＋ Gyógyszer felvétele</button></div>
+    <p class="hint"><a href="#gyogyszer/aktiv" style="color:var(--faint)">(minta: ha van követett gyógyszer)</a></p>`;
+  const cyc=['P','P','S','S','S','T','T'];
+  return `${topbar()}<div style="padding:0 18px 8px;display:flex;justify-content:space-between"><button class="flat" data-go="#stack">‹ Fuel</button><button class="flat on" style="--c:var(--sky)" data-sheet="dose">＋ Beadás</button></div>
+  <section class="halo rise" style="--c:var(--sky);--c2:var(--lav);text-align:center;padding:6px 0 10px">${I('syringe').replace('class="icon ','class="icon " style="width:84px;height:84px;margin:0 auto;filter:drop-shadow(0 12px 14px rgba(0,0,0,.5)) drop-shadow(0 0 18px rgba(127,178,222,.45))"')}<div class="num" style="font-size:64px">D3</div><span class="eb">GYÓGYSZER</span></section>
+  <div class="fcard glass rise" style="--c:var(--sky);--i:1"><div class="hrow"><strong style="flex:1;font-size:18px">Retatrutid</strong><b class="tint" style="font-size:18px">6 mg</b></div><small style="color:var(--sub);font-size:12px;margin-top:-6px">subQ injekció · heti · hétfő</small>
+    <div><span class="eb">KINETIKUS CIKLUS</span><div class="cycle">${cyc.map((g,i)=>`<span class="${g} ${i===2?'now':''}">${g}<small>${i+1}</small></span>`).join('')}</div></div>
+    <small style="font-size:12.5px;color:var(--sub)">3. nap · <b style="color:var(--ink)">Stabil fázis</b> · utolsó beadás 2 napja</small></div>
+  ${sec('Beadások','3')}
+  <section class="list">${[['hétf., szept. 22.','„Hétfő reggel · subQ has"'],['hétf., szept. 15.',''],['hétf., szept. 8.','']].map(([d,n],i)=>`<div class="row cell rise" style="--i:${i+2}">${I('syringe')}<span class="grow"><strong>${d}</strong>${n?`<small class="voice">${n}</small>`:''}</span><span class="end"><b>6<small>mg</small></b></span></div>`).join('')}</section>
+  <div class="pair" style="margin-top:12px"><button class="btn flatb" data-sheet="medform">Szerkesztés</button><button class="btn warn twotap" data-twotap="Leállítom?">Leállítás</button></div>`;
+}
+
+/* ── TRENDEK ────────────────────────────────────────────── */
+const WEEK=[['H',2115,2400,'7,8',0],['K',2260,2400,'7,7',1],['Sze',1180,2400,'8,3',0],['Cs',null,2400,'·',1],['P',2050,2400,'7,9',0],['Szo',2740,2200,'7,1',0],['V',null,2200,'·',0]];
+function trendek(){
+  const mx=Math.max(2400,...WEEK.map(w=>w[1]||0));
+  const kc=[2860,2990,3050,2940,3120,3010,3055],wt=[84.0,83.9,null,83.7,83.6,null,83.9];
+  const X=i=>20+i*49,Yk=v=>120-(v-2700)/500*90,Yw=v=>120-(v-83)/1.5*90;
+  const kline=kc.map((v,i)=>`${i?'L':'M'}${X(i)} ${Yk(v).toFixed(1)}`).join(' ');
+  let wpath='',pen=false;wt.forEach((v,i)=>{if(v==null){pen=false;return}wpath+=`${pen?'L':'M'}${X(i)} ${Yw(v).toFixed(1)} `;pen=true});
+  return `${topbar()}
+  <div class="wk rise"><button class="flat" data-toast="Múlt hét">‹ Múlt hét</button><strong>szept. 15–21.</strong><button class="flat" disabled style="opacity:.4">Ez a hét ›</button></div>
+  <section class="halo rise" style="--c:var(--sage);--c2:var(--gold);text-align:center;padding:14px 0 0;--i:1">
+    <div class="num" style="font-size:64px">5<small>/ 7 naplózott nap</small></div><span class="eb" style="margin-top:6px">EBBŐL ÁLL A HETI KÉP</span>
+    <div class="bars">${WEEK.map(([d,k,t,s,tr],i)=>`<button class="dbar ${k==null?'gap':''} ${k>t+60?'over':''} ${tr?'train':''}" data-day="${i}"><span class="sc">${s}</span><span class="col">${k?`<b style="--h:${k/mx*100}%"></b>`:''}<i style="--t:${t/mx*100}%"></i></span><span class="d">${d}</span></button>`).join('')}</div>
+  </section>
+  <p class="voice lead" style="text-align:center;padding-top:14px;font-size:14.5px">Hétvégén átlagosan 46%-kal többet ettél a keretedhez mérve, mint hétköznap. Így alakult, és most már látod.</p>
+  <p class="hint" style="padding-top:0"><span class="eb">A SZÁM A NAP PONTJA · KOPPINTS A RÉSZLETEKÉRT</span></p>
+  <div class="gap"></div>
+  <section class="st3">${[['plate','Napi átlag','2069','kcal','▼ 180 kcal','var(--gold)'],['score','Étkezés-minőség','7,8','','▲ 0,7','var(--lav)'],['weight','Heti súlyátlag','81,3','kg','▼ 0,6 kg','var(--sky)']].map(([ic,l,v,u,dl,c],i)=>`<div class="st glass rise" style="--c:${c};--i:${i+2}">${I(ic)}<b>${v}<small>${u}</small></b><span>${l}</span><em>${dl}</em></div>`).join('')}</section>
+  ${sec('Hétköznap és hétvége')}
+  <div class="fcard glass rise" style="--c:var(--gold);--i:5;gap:0">
+    <div class="wwrow" style="margin-top:0">${I('sun')}<span class="l">Hétköznap</span>${bar(79/130*100,'var(--sage)')}<em>79%</em></div>
+    <div class="wwrow">${I('moon')}<span class="l">Hétvége</span>${bar(125/130*100,'var(--gold)')}<em>125%</em></div>
+    <p style="font-size:12.5px;color:var(--sub);margin-top:12px">A különbség <b style="color:var(--ink)">46 százalékpont</b> a hétvége javára.</p></div>
+  ${sec('Hosszabb táv','7 HÉT')}
+  <div class="fcard glass hz rise" style="--c:var(--sage);--i:6;gap:4px"><p style="font-size:12.5px;color:var(--sub);line-height:1.45">A heti átlagok egymás mellett… Egyik sem ok, csak együttjárás.</p>
+    <svg viewBox="0 0 336 150" aria-hidden="true"><defs><linearGradient id="hzf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8FB49A" stop-opacity=".35"/><stop offset="1" stop-color="#8FB49A" stop-opacity="0"/></linearGradient></defs>
+      ${[30,75,120].map(y=>`<line x1="10" x2="326" y1="${y}" y2="${y}" stroke="rgba(245,239,230,.07)"/>`).join('')}
+      <path d="${kline} L${X(6)} 130 L${X(0)} 130Z" fill="url(#hzf)"/>
+      <path d="${kline}" fill="none" stroke="#8FB49A" stroke-width="2.4" style="filter:drop-shadow(0 0 5px rgba(143,180,154,.7))"/>
+      <path d="${wpath}" fill="none" stroke="#7FB2DE" stroke-width="2" stroke-dasharray="1 0"/>
+      ${wt.map((v,i)=>v==null?'':`<circle cx="${X(i)}" cy="${Yw(v).toFixed(1)}" r="3.4" fill="#7FB2DE" style="filter:drop-shadow(0 0 5px #7FB2DE)"/>`).join('')}
+      <text x="12" y="146" fill="#8A7A6A" font-size="10">aug. 4.</text><text x="324" y="146" fill="#8A7A6A" font-size="10" text-anchor="end">szept. 15.</text></svg>
+    <div class="legend" style="margin-top:6px"><span><i class="dot" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--sage);box-shadow:0 0 6px var(--sage)"></i>heti átlag kcal</span><span><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--sky);box-shadow:0 0 6px var(--sky)"></i>heti súlyátlag</span></div>
+    <small style="font-size:11px;color:var(--faint);margin-top:4px">Ahol nincs mérés, ott a súlyvonal megszakad.</small></div>
+  ${sec('Mintázatok','2')}
+  <section class="list">${[['Késő szénhidrát (>20:00 · >60g) → másnap reggeli RPE +1','Figyeljük'],['Caffeine 14:00 utáni dózis → sleep onset +24 perc','Megerősítve']].map(([t,s],i)=>`<button class="row glass lift rise" style="--c:var(--lav);--i:${i+7}" data-toast="Mezo · mintázat oldala">${I('pattern')}<span class="grow"><strong style="font-size:14px">${t}</strong><small>${s}</small></span><span class="chev">↗</span></button>`).join('')}</section>
+  <p class="foot">A mintázatok otthona a Mezo — innen odalépsz, nem másolatot látsz.</p>`;
+}
+function openDay(i){
+  const [d,k,t,s]=WEEK[i];
+  $('#dialog').style.setProperty('--c',k?'var(--sage)':'var(--gold)');
+  $('#dialog').innerHTML=k?`<div class="dh">${I('calendar')}<span><div class="num">${s}</div><small style="color:var(--sub);font-size:12px">szept. ${15+i}. · étkezés-pont</small></span></div>
+    <div class="rchips" style="padding:12px 0 0"><span class="flat">${k} / ${t} kcal</span><span class="flat">étkezés-pont ${s}/10</span>${WEEK[i][4]?'<span class="flat">edzésnap</span>':''}</div>
+    <div style="margin-top:12px">${bar(k/t*100,'var(--sage)')}</div>
+    <p style="font-size:13px;color:var(--sub);margin-top:10px;line-height:1.45">A kereted ezen a napon <b style="color:var(--ink)">${t} kcal</b> volt. ${k>t?`${k-t} kcal-lal fölé ment; így alakult.`:'Belefértél — így alakult.'}</p>
+    <h4>${I('macro')}TÁPLÁLKOZÁS · A NAPI ÉRTÉKELÉS 30%-A</h4><div class="kv">${[['Kalória',`${k} / ${t}`],['Fehérje','148 / 160 g'],['Szénhidrát','231 / 250 g'],['Zsír','66 / 75 g']].map(([a,b])=>`<div class="cell"><small>${a}</small><b>${b}</b></div>`).join('')}</div>
+    <h4>${I('plate')}A NAP ÉTKEZÉSEI</h4>${[['Zabkása gyümölccsel','08:00 · 420 kcal','8,2'],['Csirkés rizstál','12:40 · 760 kcal','8,4']].map(([n,m,sc])=>`<button class="row cell" style="margin-bottom:6px" data-toast="Étkezés részletei (U1)">${I('plate')}<span class="grow"><strong style="font-size:14px">${n}</strong><small>${m}</small></span><span class="spill">${I('score')}${sc}</span></button>`).join('')}
+    <button class="btn glass" style="--c:var(--sage);margin-top:10px" data-toast="A nap Fuel · Mai oldala">${I('journal')}Megnézem a napot</button><button class="btn flatb" style="margin-top:8px" data-closedlg>Bezárom</button>`
+  :`<div class="dh">${I('plate')}<span><div class="num">—</div><small style="color:var(--sub);font-size:12px">szept. ${15+i}.</small></span></div>
+    <div class="callout" style="margin:14px 0 0"><span class="eb">ŐSZINTÉN</span><p>Ezen a napon nem naplóztál. Nem töltjük ki becsléssel, és a heti átlagból is kimarad.</p></div>
+    <button class="btn glass" style="--c:var(--gold);margin-top:14px" data-go="#log" data-closedlg>${I('journal')}Pótolom a napot</button><button class="btn flatb" style="margin-top:8px" data-closedlg>Bezárom</button>`;
+  $('#dialog').classList.add('on');$('#scrim').classList.add('on');
+}
+
+/* ── BEÁLLÍTÁSOK ────────────────────────────────────────── */
+function beallitas(){
+  const meals=[['08:00',8],['12:30',12.5],['16:00',16],['19:30',19.5]];
+  const A=h=>{const t=(h-6)/18*Math.PI;return [160-130*Math.cos(t),108-90*Math.sin(t)]};
+  const [cx,cy]=A(14);
+  return `${topbar()}${head('BEÁLLÍTÁSOK','Fuel beállítások','#stack')}
+  <section class="halo arc rise" style="--c:var(--gold);--c2:var(--sage);padding:0 18px">
+    <div class="hrow" style="justify-content:space-between"><span><span class="eb">NAPI RITMUS</span><strong style="font-size:22px;font-weight:600">4 étkezés</strong></span><span class="flat" style="--c:var(--coral)">${I('clock')}koffein-stop · 14:00</span></div>
+    <svg viewBox="0 0 320 118" aria-hidden="true"><path d="M30 108 A130 90 0 0 1 290 108" fill="none" stroke="rgba(245,239,230,.08)" stroke-width="8" stroke-linecap="round"/>
+      <path d="M30 108 A130 90 0 0 1 290 108" fill="none" stroke="url(#arcg)" stroke-width="3" stroke-linecap="round" style="filter:drop-shadow(0 0 6px rgba(255,190,96,.6))"/>
+      <defs><linearGradient id="arcg"><stop offset="0" stop-color="#FFBE60"/><stop offset=".6" stop-color="#8FB49A"/><stop offset="1" stop-color="#AB9FD2"/></linearGradient></defs>
+      ${meals.map(([l,h])=>{const [x,y]=A(h);return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="7" fill="#221E1B" stroke="#FFBE60" stroke-width="2.4" style="filter:drop-shadow(0 0 6px rgba(255,190,96,.8))"/>`}).join('')}
+      <line x1="${cx.toFixed(1)}" y1="${(cy-12).toFixed(1)}" x2="${cx.toFixed(1)}" y2="${(cy+12).toFixed(1)}" stroke="#FF7E5C" stroke-width="2.4" stroke-linecap="round" style="filter:drop-shadow(0 0 5px #FF7E5C)"/>
+      ${[['06',6],['12',12],['18',18],['24',24]].map(([l,h])=>{const [x,y]=A(h);return `<text x="${x.toFixed(1)}" y="${(y+(h===12||h===18?-12:4)).toFixed(1)}" fill="#8A7A6A" font-size="10" text-anchor="middle">${l}</text>`}).join('')}</svg>
+    <p style="text-align:center;font-size:11.5px;color:var(--faint)">A napi ív együtt mozdul a beállításaiddal.</p></section>
+  ${sec('Ritmus')}
+  <div class="fcard glass rise" style="--c:var(--gold);--i:1"><div class="hrow" style="justify-content:space-between"><span style="font-size:14px;font-weight:600">Étkezés/nap</span><div class="stepper"><button>−</button><b>4</b><button>+</button></div></div>
+    <div class="hrow" style="justify-content:space-between"><span style="font-size:14px;font-weight:600">Koffein-cutoff</span><span class="inp" style="width:auto">14:00</span></div>
+    <small style="font-size:11.5px;color:var(--sub)">A cutoff a Mai chipet, a nap-tervet és a koffein-habitot is állítja.</small></div>
+  ${sec('Makrók')}
+  <div class="fcard glass rise" style="--c:var(--protein);--i:2"><label class="field"><span>MAKRÓPROFIL</span><span class="inp">Kiegyensúlyozott ▾</span></label>
+    <span class="eb">MAI CÉL A BEÁLLÍTÁS SZERINT</span>
+    <div class="hrow" style="gap:16px"><div class="donut"><span><b>2400</b><small>kcal · aktív cél</small></span></div>
+      <div style="flex:1">${[['Fehérje','27% · 160 g','var(--protein)'],['Szénhidrát','45% · 270 g','var(--carb)'],['Zsír','28% · 76 g','var(--fat)']].map(([l,v,c])=>`<div class="mrow" style="--c:${c}"><i></i><span>${l}</span><b>${v}</b></div>`).join('')}</div></div></div>
+  <div class="gap"></div>
+  <section class="pair">${[['water','Víz-cél','2500','ml','var(--sky)'],['fiber','Rost-cél','30','g','var(--fiber)']].map(([ic,l,v,u,c],i)=>`<div class="st glass rise" style="--c:${c};--i:${i+3}">${I(ic)}<b>${v}<small>${u}</small></b><span>${l}</span><div class="stepper" style="margin-top:8px"><button>−</button><button>+</button></div></div>`).join('')}</section>
+  ${sec('Finomhangolás')}
+  <div class="fcard glass rise" style="--c:var(--lav);--i:5"><div class="field"><span>FEHÉRJE-SZINT</span><div class="seg" style="margin:0;justify-self:start"><button>Alacsony</button><button>Mérsékelt</button><button class="on" style="--c:var(--lav)">Magas</button></div></div>
+    <div class="hrow" style="justify-content:space-between"><span style="font-size:14px;font-weight:600">Edzőnap-shift</span><div class="stepper"><button>−</button><b>200</b><small>kcal</small><button>+</button></div></div>
+    <small style="font-size:11.5px;color:var(--sub);line-height:1.45">Edzésnapon ennyivel nő a keret — a többletet főleg szénhidrát adja.</small></div>
+  <div class="list" style="margin-top:12px"><button class="row glass lift" style="--c:var(--gold)" data-go="#ablakok">${I('clock')}<span class="grow"><strong>Étkezési ablakok</strong><small>szerkesztése</small></span><span class="chev">›</span></button></div>
+  <p class="foot voice" style="font-size:13.5px">A ritmus vezet, nem korlátoz — bármelyik ablak utólag is logolható.</p>
+  <div class="savebar"><button class="btn flatb" data-go="#stack">Mégse</button><button class="btn glass" style="--c:var(--sage)" data-toast="Mentve">✓ Mentés</button></div>`;
+}
+function ablakok(edit){
+  const S=[['08:00','Reggeli','sun',600,'var(--gold)'],['12:30','Ebéd','bowl',780,'var(--sage)'],['16:00','Uzsonna','snack',300,'var(--lav)'],['19:30','Vacsora','moon',720,'var(--sky)']];
+  return `${topbar()}${head('FUEL · BEÁLLÍTÁSOK','Étkezési ablakok','#beallitas')}
+  <div class="seg" style="margin-left:18px">${['Pihenőnap','Reggeli edzés','Esti edzés'].map((l,i)=>`<button class="${i===0?'on':''}" style="--c:var(--gold)">${l}</button>`).join('')}</div>
+  <div class="gap"></div>
+  ${!edit?`<section class="list">${S.map(([t,l,ic,k,c],i)=>`<div class="slotrow glass rise" style="--c:${c};--i:${i}"><span class="t">${t}</span>${I(ic)}<span style="flex:1;font-size:15px;font-weight:600">${l}</span><b class="tint">${k} <small style="font-size:10.5px;color:var(--faint)">kcal</small></b></div>`).join('')}</section>
+    <div class="list" style="margin-top:12px"><button class="btn glass" style="--c:var(--gold)" data-go="#ablakok/szerk">${I('gear')}Testreszabás</button></div>`
+  :`<section class="list">${S.map(([t,l,ic,k,c],i)=>`<div class="fcard glass rise" style="--c:${c};--i:${i};margin:0;gap:10px"><div class="hrow"><span class="inp" style="flex:1">${l}</span><button class="x srcb" style="width:36px;height:36px">×</button></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${['Reggeli','Ebéd','Vacsora','Snack'].map((m,j)=>`<span class="flat ${j===i||(i===2&&j===3)?'on':''}" style="--c:${c}">${m}</span>`).join('')}</div>
+      <div class="two"><label class="field"><span>HORGONY</span><span class="inp">Fix időpont ▾</span></label><label class="field"><span>IDŐ · BUDGET</span><span class="inp">${t} · ${Math.round(k/24)}%</span></label></div></div>`).join('')}
+    <button class="dash" style="--c:var(--gold);text-align:center;font-weight:600">＋ Új slot</button></section>
+    <div class="p16" style="margin-top:12px;display:flex;gap:10px;align-items:center"><span class="pillsum">Σ BUDGET 100%</span><button class="flat" style="--c:var(--lav)" data-toast="Mezo értékeli a felosztást…">${I('score')}Mezo értékelése</button></div>
+    <div class="savebar"><button class="btn flatb" data-go="#ablakok">Mégse</button><button class="btn glass" style="--c:var(--sage)" data-toast="Mentve">✓ Mentés</button></div>`}`;
+}
+
+/* ── ÚJ IKONOK ──────────────────────────────────────────── */
+function ikonok(){
+  const N=[['mic','Hang','Logolás · a hang mód füle','agyag mikrofon','var(--lav)'],['chef','Receptműhely','Konyha plakát, Műhely fejléce, „Iterálás a Műhelyben"','agyag műhely-ikon','var(--lav)'],['syringe','Gyógyszer','Kamra „Gyógyszer" szűrő, Gyógyszer oldal','agyag injekció','var(--sky)'],['protocol','Protokoll','Kiegészítők · Protokoll kártya és oldal','agyag stack-ikon','var(--gold)'],['gear','Beállítás','„Új elem beállítása", „Testreszabás"','agyag fogaskerék','var(--gold)'],['dawn','Ébredés / reggel','Kiegészítők · Reggel sáv, Ébredés zóna','agyag hajnal','var(--gold)'],['sleep','Lefekvés','Protokoll · Lefekvés zóna','agyag alvás-ikon','var(--lav)'],['flame','Alapanyagcsere','Honnan jön a napi cél? lap','🔥 emoji','var(--coral)'],['calendar','Heti átlag / nap','Napi cél lap, Trendek nap-kártya','📅 emoji / agyag heti','var(--gold)'],['pin','Kézzel ide raktad','Protokoll tétel lapja','📌 emoji','var(--coral)'],['weight','Testsúly','Trendek · Heti súlyátlag','agyag mérleg','var(--sky)'],['pattern','Mintázat','Trendek · Mintázatok','agyag minta-ikon','var(--lav)']];
+  const M=[['camera','fotó forrás, Fotó mód','agyag videó'],['link','link forrás','agyag levél'],['journal','kézi forrás, Gépelés, napló','agyag napló'],['repeat','Szokásosak','agyag heti'],['stack','Kamra, közös katalógus','agyag polc'],['carb','Étel (kamra)','agyag gabona'],['supps','Supp / kiegészítő','agyag kiegészítő'],['bolt','Stim, „Miért így"','agyag láng'],['sugar','Cukor · 100 g','agyag termés'],['salt','Só · 100 g','agyag kristály'],['processing','NOVA / feldolgozottság','agyag rétegek'],['other','értékelés folyamatban','—'],['hike','NEAT (séta)','🚶 emoji'],['dumbbell','edzés a napi célban','🏋️ emoji'],['score','AI / Mezo jel','✨ emoji']];
+  return `${topbar()}${head('ÜVEGESÍTÉS · 2. SZELET','Új ikonok','#konyha')}
+  <p class="lead">Ezeket most rajzoltam a 3D készlet stílusában — ezek kellenek a Fuel többi oldalához. Jóváhagyás után bekerülnek a közös ikonkészletbe, és a későbbi körök is ezeket használják.</p>
+  <section class="newgrid">${N.map(([ic,n,w,old,c],i)=>`<div class="newi glass rise" style="--c:${c};--i:${i}">${I(ic)}<span class="sizes">${[42,30,18].map(s=>`<svg class="icon" style="width:${s}px;height:${s}px"><use href="#t-${ic}"/></svg>`).join('')}</span><strong>${n}</strong><small>${w}</small><em>eddig: ${old}</em></div>`).join('')}</section>
+  ${sec('A meglévő készletből, új helyen')}
+  <div class="maptab glass" style="--c:var(--sage)">${M.map(([ic,w,old])=>`<div>${I(ic)}<span><b>${w}</b> · eddig: ${old}</span></div>`).join('')}</div>`;
+}
+
+/* ── lapok (alulról) ────────────────────────────────────── */
+const x=`<button class="x" data-closesheet aria-label="Bezárás">×</button>`;
+const SH={
+  import:['var(--gold)',()=>`<div class="shh">${I('camera')}<span class="grow"><span class="eb">IMPORT · FOTÓ &amp; LINK</span><h3>Új tétel a Kamrába</h3></span>${x}</div>
+    <p style="font-size:13px;color:var(--sub);line-height:1.45">Fotózd le a termék címkéjét, vagy illeszd be egy termékoldal linkjét — a nevet, makrókat és tápértékeket az AI olvassa ki.</p>
+    <div class="seg" style="margin:12px 0"><button class="on" style="--c:var(--gold)">Fotó</button><button>Link</button></div>
+    <div class="dash" style="--c:var(--gold);text-align:center">${I('camera')}<strong style="display:block;font-size:14px;margin-top:4px">Címke fotó</strong><small style="color:var(--sub);font-size:11.5px">Előlap fotó (opcionális — ha a név nem látszik a címkén)</small></div>
+    <p style="font-size:11.5px;color:var(--faint);margin:10px 0">Fotózd le a termék tápérték-táblázatát — az AI kiolvassa a makrókat /100 g bázison. A fotó nem kerül tárolásra.</p>
+    <div class="pair" style="padding:0"><button class="btn flatb" data-closesheet>Mégse</button><button class="btn glass" style="--c:var(--gold)" data-toast="Beolvasás — Skyr · epres, Milbona, 62 kcal">${I('score')}Beolvasás</button></div>`],
+  add:['var(--gold)',(edit)=>`<div class="shh">${I('journal')}<span class="grow"><span class="eb">${edit?'TÉTEL · SZERKESZTÉS':'ÚJ TÉTEL · KÉZI'}</span><h3>${edit?'Tétel szerkesztése':'Új kamra-tétel'}</h3></span>${x}</div>
+    <div class="field"><span>ALAP</span><div class="two"><span class="inp">Étel ▾</span><span class="inp">— nincs — ▾</span></div><span class="inp ph">pl. Görög joghurt 10%</span><span class="inp">Saját bevitel ▾</span></div>
+    <div class="field section"><span>MAKRÓK · /100 G</span><div class="four">${['119','6','4','9'].map(v=>`<span class="inp ph">${v}</span>`).join('')}</div></div>
+    <div class="field section"><span>TÁPANYAG · /100 G</span><div class="four">${['Rost','Cukor','Tel. zsír','Só'].map(v=>`<span class="inp ph" style="font-size:12px">${v}</span>`).join('')}</div></div>
+    <div class="field section"><span>ÁR</span><span class="inp ph">750 Ft</span></div>
+    <div class="pair section" style="padding:0"><button class="btn flatb" data-closesheet>Mégse</button><button class="btn glass" style="--c:var(--gold)" data-closesheet>✓ ${edit?'Mentés':'Polcra'}</button></div>`],
+  catalog:['var(--gold)',()=>`<div class="shh">${I('stack')}<span class="grow"><span class="eb">KÖZÖS KATALÓGUS</span><h3>Hozzáadás a közösből</h3></span>${x}</div>
+    <div class="search" style="margin:0 0 10px">${I('stack')}Keresés név vagy márka szerint</div>
+    <div class="chips" style="padding:0 0 10px">${['Mind','Étel','Supp','Stim','Gyógyszer'].map((l,i)=>`<span class="flat ${i?'':'on'}" style="--c:var(--gold)">${l}</span>`).join('')}</div>
+    ${[['Skyr natúr','Ehrmann · 63 kcal/100g','Anna',0],['Bulgur Raw','Kifli · 342 kcal/100g','mezo',0],['Creatine Monohydrate','— · supp','Béla',1]].map(([n,s,a,on])=>`<div class="row cell" style="margin-bottom:6px"><span class="grow"><strong style="font-size:14px">${n}</strong><small>${s} · ${a}</small></span>${on?'<small style="color:var(--faint)">a polcon</small>':'<button class="flat on" style="--c:var(--gold)">＋ Polcra</button>'}</div>`).join('')}`],
+  catfilter:['var(--gold)',()=>`<div class="shh"><span class="grow"><span class="eb">KATEGÓRIA SZŰRŐ</span><h3>Mit mutassak?</h3></span><button class="flat" disabled style="opacity:.5">0 kiválasztva · törlés</button></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">${[['FEHÉRJE',1,'var(--protein)'],['TEJTERMÉK',1,'var(--sky)'],['HAL',1,'var(--sky)'],['GABONA',1,'var(--carb)'],['MAG / OLAJOS',1,'var(--fat)'],['WHEY/PROTEIN',1,'var(--lav)'],['SUPPLEMENT',1,'var(--lav)'],['STIMULÁNS',1,'var(--coral)']].map(([l,n,c])=>`<span class="flat" style="--c:${c}"><i class="dot"></i>${l} <b>${n}</b></span>`).join('')}</div>
+    <button class="btn glass" style="--c:var(--gold);margin-top:14px" data-closesheet>Szűrés (8 tétel)</button>`],
+  kamrapick:['var(--gold)',()=>`<div class="shh">${I('stack')}<span class="grow"><span class="eb">KAMRA · HOZZÁADÁS</span><h3>Válassz a polcról</h3></span>${x}</div>
+    <div class="search" style="margin:0 0 10px">${I('stack')}Keress a Kamrában…</div>
+    ${KAM.filter(k=>k.k==='food').slice(0,4).map((k,i)=>`<div class="row cell" style="margin-bottom:6px;box-shadow:inset 3px 0 0 ${['var(--protein)','var(--sky)','var(--sky)','var(--carb)'][i]}"><span class="grow"><strong style="font-size:14px">${k.n}</strong><small>${k.b} · ${k.p} g feh. · ${k.c} g szénh. · ${k.f} g zsír /100g</small></span><span class="end"><b style="font-size:16px">${k.kcal}</b><small>kcal</small></span><button class="flat ${i===1?'':'on'}" style="--c:var(--gold)">${i===1?'✓':'＋'}</button></div>`).join('')}`],
+  receptpick:['var(--coral)',()=>`<div class="shh">${I('book')}<span class="grow"><span class="eb">RECEPT · HOZZÁADÁS</span><h3>Válassz receptet</h3></span>${x}</div>
+    <div class="hrow" style="margin-bottom:10px"><div class="search" style="margin:0;flex:1">${I('book')}Keress receptet…</div><span class="flat">${I('star')}csillagos</span></div>
+    ${REC.slice(0,4).map(r=>`<button class="row cell" style="margin-bottom:6px" data-closesheet><span class="grow"><strong style="font-size:14px">${r.n}${r.star?' '+I('star').replace('class="icon ','class="icon " style="width:14px;height:14px;display:inline;vertical-align:-2px;filter:none"'):''}</strong><small>${CAT[r.cat][0]} · 4 hozzávaló · adag · ${per(r,'p')} / ${per(r,'c')} / ${per(r,'f')} g</small></span><span class="end"><b style="font-size:16px">${per(r,'kcal')}</b><small>kcal /adag</small></span></button>`).join('')}`],
+  reclogs:['var(--gold)',()=>`<div class="shh">${I('journal')}<span class="grow"><span class="eb">RECEPT · LOGOK</span><h3>Túrós zabkása · áfonyával</h3></span>${x}</div>
+    ${[['ma 07:15','689 kcal','8,4'],['tegnap 07:30','689 kcal','8,3'],['szept. 19. 07:10','620 kcal','8,1']].map(([d,k,s])=>`<div class="row cell" style="margin-bottom:6px">${I('plate')}<span class="grow"><strong style="font-size:14px">${d}</strong><small>${k}</small></span><span class="spill">${I('score')}${s}</span></div>`).join('')}`],
+  water:['var(--sky)',()=>`<div class="shh">${I('water')}<span class="grow"><span class="eb">VÍZ</span><h3>Mennyit ittál?</h3><small style="color:var(--sub)">Egy korty szünet.</small></span>${x}</div>
+    <div class="waterv"><b>400</b> <span style="color:var(--sub)">ml</span><small>ma eddig 1,3 / 2,5 l</small></div>
+    <div style="display:flex;gap:8px;justify-content:center">${['250 ml','400 ml','500 ml'].map((l,i)=>`<span class="flat ${i===1?'on':''}" style="--c:var(--sky)">${l}</span>`).join('')}</div>
+    <label class="field section"><span>ML KÉZZEL</span><span class="inp ph">pl. 330</span></label>
+    <button class="btn glass section" style="--c:var(--sky)" data-closesheet>✓ Mentés</button>`],
+  energy:['var(--sage)',()=>`<div class="shh">${I('ring')}<span class="grow"><span class="eb">NAPI CÉL</span><h3>Honnan jön a 2400 kcal?</h3></span>${x}</div>
+    <p style="font-size:13px;color:var(--sub);line-height:1.45">A napi cél nem statikus — az alapanyagcserédből, a mai betáblázott mozgásból és a célod deficitjéből áll össze.</p>
+    <div class="eq section"><span><b>2150</b>Alap</span>+<span><b>320</b>Mozgás</span>−<span><b>70</b>Deficit</span>=<span class="res"><b>2400</b>Mai cél</span></div>
+    <div class="eblk hl" style="--c:var(--sage)"><span class="eb">ALAPHŐ · NEAT</span><div class="etiles"><span class="etile">${I('flame')}<b>1720</b>Alapanyagcsere<small>Katch-McArdle</small></span><span class="eop">×</span><span class="etile">${I('hike')}<b>1,25</b>NEAT-szorzó<small>életmód</small></span><span class="eop">=</span><span class="etile"><b style="font-size:18px">2150</b>Alaphő</span></div>
+      <p>Amit akkor is elégetsz, ha nem edzel: a testsúlyodból és a zsírmentes tömegedből számolva, a hétköznapi mozgásoddal szorozva.</p></div>
+    <div class="eblk" style="--c:var(--gold)"><span class="eb">BETÁBLÁZOTT MOZGÁS</span><div class="etiles"><span class="etile">${I('dumbbell')}<b>+320</b>Felsőtest A<small>60 perc</small></span><span class="eop">=</span><span class="etile"><b style="font-size:18px">320</b>Mai mozgás</span></div><p>A mai betáblázott edzésed becsült energiája.</p></div>
+    <div class="eblk" style="--c:var(--coral)"><span class="eb">DEFICIT · FOGYÁS</span><div class="etiles"><span class="etile">${I('ring')}<b>0,3</b>Cél ütem<small>kg/hét</small></span><span class="eop">→</span><span class="etile"><b style="font-size:18px">−70</b>Napi deficit</span></div><p>Lassú ütem, hogy az edzés ereje megmaradjon.</p></div>`],
+  stackitem:['var(--gold)',(pin,name)=>`<div class="shh">${I('supps')}<span class="grow"><span class="eb">STACK · IDŐZÍTÉS</span><h3>${name||'Tasty Dose gombakávé'}</h3><small style="color:var(--sub)">8g</small></span>${x}</div>
+    ${pin==='kézi'?`<div class="cell hrow">${I('pin')}<span style="flex:1;font-size:13px">Ide raktad kézzel (Ébredés)</span><button class="flat" style="--c:var(--gold)" data-closesheet>Vissza autóra</button></div>`:`<div class="cell hrow">${I('bolt')}<span class="voice" style="flex:1;font-size:13.5px">Automatikusan időzítve.</span></div>`}
+    <div class="field section"><span>MOZGATÁS MÁSIK ZÓNÁBA</span><div style="display:flex;gap:6px;flex-wrap:wrap">${['Ébredés','Reggeli','Edzés előtt','Edzés után','Ebéd','Vacsora','Este','Lefekvés'].map((z,i)=>`<button class="flat" ${i===0?'disabled style="opacity:.5"':''} data-closesheet>${z}${i===0?' ✓':''}</button>`).join('')}</div></div>
+    <label class="field section"><span>DÓZIS</span><span class="inp">8g</span></label>
+    <div class="field section"><span>+ MÉG EGY BEVÉTEL</span><div class="hrow"><span class="inp ph" style="flex:1">Dózis</span><button class="flat on" style="--c:var(--coral)">＋ Hozzáadás</button></div></div>
+    <button class="btn warn section" data-closesheet>Eltávolítás a stackből</button>`],
+  dose:['var(--sky)',()=>`<div class="shh">${I('syringe')}<span class="grow"><span class="eb">BEADÁS · RETATRUTID</span><h3>Új beadás</h3></span>${x}</div>
+    <div class="field"><span>MIKOR</span><div class="two"><span class="inp">2026. 09. 23.</span><span class="inp ph">Időpont</span></div></div>
+    <label class="field section"><span>DÓZIS</span><span class="inp">6 mg</span></label>
+    <label class="field section"><span>JEGYZET</span><span class="inp ph">pl. hétfő reggel · subQ has</span></label>
+    <div class="pair section" style="padding:0"><button class="btn flatb" data-closesheet>Mégse</button><button class="btn glass" style="--c:var(--sky)" data-closesheet>✓ Beadás</button></div>`],
+  medform:['var(--sky)',()=>`<div class="shh">${I('syringe')}<span class="grow"><span class="eb">GYÓGYSZER</span><h3>Gyógyszer felvétele</h3></span>${x}</div>
+    <div class="two"><label class="field"><span>NÉV</span><span class="inp ph">pl. Retatrutid</span></label><label class="field"><span>HATÓANYAG</span><span class="inp ph">retatrutid</span></label></div>
+    <div class="field section"><span>BEVITELI ÚT</span><div style="display:flex;gap:6px;flex-wrap:wrap">${['subQ injekció','IM injekció','orális'].map((l,i)=>`<span class="flat ${i?'':'on'}" style="--c:var(--sky)">${l}</span>`).join('')}</div></div>
+    <div class="field section"><span>KADENCIA</span><div style="display:flex;gap:6px">${['heti','napi'].map((l,i)=>`<span class="flat ${i?'':'on'}" style="--c:var(--sky)">${l}</span>`).join('')}</div><div style="display:flex;gap:5px;margin-top:6px">${['H','K','Sze','Cs','P','Szo','V'].map((l,i)=>`<span class="flat ${i?'':'on'}" style="--c:var(--sky);padding:7px 9px">${l}</span>`).join('')}</div></div>
+    <div class="field section"><span>CIKLUS · FÁZISOK</span><div class="cycle">${['P','P','S','S','S','T','T'].map((g,i)=>`<span class="${g}">${{P:'C',S:'S',T:'M'}[g]}<small>${i+1}</small></span>`).join('')}</div><small style="font-size:11px;color:var(--faint)">Alap-sablon: 2 nap csúcs · 3 nap stabil · 2 nap völgy — a beadás napjától számolva.</small></div>
+    <div class="pair section" style="padding:0"><button class="btn flatb" data-closesheet>Mégse</button><button class="btn glass" style="--c:var(--sky)" data-closesheet>✓ Felveszem</button></div>`]
+};
+function openSheet(k,...a){const [c,f]=SH[k];const sh=$('#sheet');sh.style.setProperty('--c',c);sh.innerHTML=`<div class="grab"></div>`+f(...a);$('#scrim').classList.add('on');sh.classList.add('on');sh.scrollTop=0}
+function closeSheet(){$('#scrim').classList.remove('on');$('#sheet').classList.remove('on');$('#dialog').classList.remove('on')}
+
+/* ── router ─────────────────────────────────────────────── */
+const TAB={konyha:'Konyha',kamra:'Konyha',receptek:'Konyha',recept:'Konyha','recept-uj':'Konyha',muhely:'Konyha',stack:'Kiegészítők',protokoll:'Kiegészítők','stack-uj':'Kiegészítők',gyogyszer:'Kiegészítők',trendek:'Trendek',log:'Mai',beallitas:'Mai',ablakok:'Mai',ikonok:'Konyha'};
+function render(){
+  const h=location.hash||'#konyha', [r,id]=h.slice(1).split('/');
+  const V={konyha,kamra:()=>id==='ures'?kamra(true):id?kamraItem(id):kamra(),receptek,recept:()=>recept(id),'recept-uj':editor,muhely:()=>muhely(id),log:()=>log(id==='hiba'),stack,protokoll,'stack-uj':()=>stackUj(id),gyogyszer:()=>gyogyszer(id),trendek,beallitas,ablakok:()=>ablakok(id),ikonok};
+  $('#scroll').innerHTML=(V[r]||konyha)(); $('#scroll').scrollTop=0; closeSheet();
+  ntfOpen=false;$('#ntf').classList.remove('on');$('#switcher').classList.remove('on');
+  $('#fab').style.display=r==='log'?'none':'';
+  tabbar(TAB[r]||'Konyha');
+  document.querySelectorAll('#jump a').forEach(a=>a.setAttribute('aria-current',String(a.getAttribute('href')==='#'+r)));
+}
+let toastT;
+function toast(t){clearTimeout(toastT);$('#toast').textContent=t;$('#toast').classList.add('on');toastT=setTimeout(()=>$('#toast').classList.remove('on'),2400)}
+function soft(){const y=$('#scroll').scrollTop;const h=location.hash||'#konyha',[r]=h.slice(1).split('/');render();$('#scroll').scrollTop=y}
+document.addEventListener('click',e=>{
+  const t=e.target, go=t.closest('[data-go]'), tt=t.closest('[data-toast]'), sh=t.closest('[data-sheet]');
+  if(t.closest('[data-closedlg]')&&!go&&!t.closest('[data-take]')){closeSheet();return}
+  if(t.closest('[data-back]')){history.back();return}
+  if(t.closest('[data-closesheet]')){closeSheet();return}
+  const kfb=t.closest('[data-kf]'); if(kfb){kf=kfb.dataset.kf;soft();return}
+  const rfb=t.closest('[data-rf]'); if(rfb){rf=rfb.dataset.rf;soft();return}
+  const sv=t.closest('[data-serve]'); if(sv){serveAll=sv.dataset.serve==='1';soft();return}
+  const md=t.closest('[data-mode]'); if(md){mode=md.dataset.mode;lines=false;location.hash==='#log'?soft():location.hash='#log';return}
+  if(t.closest('[data-lines]')){lines=true;soft();setTimeout(()=>$('#scroll').scrollTo({top:520,behavior:'smooth'}),60);return}
+  const tk=t.closest('[data-take]'); if(tk){STACK.forEach(b=>b.items.forEach(x=>{if(x[0]===tk.dataset.take){x[3]=x[3]?0:1;x[4]=x[4]||'12:50'}}));closeSheet();soft();return}
+  const it=t.closest('[data-item]'); if(it){openItem(it.dataset.item);return}
+  const dy=t.closest('[data-day]'); if(dy){openDay(+dy.dataset.day);return}
+  const tw=t.closest('[data-twotap]'); if(tw){if(tw.classList.contains('armed')){toast('Törölve (a prototípusban nem történik semmi)');tw.classList.remove('armed');tw.textContent=tw.dataset.orig}else{tw.dataset.orig=tw.textContent;tw.classList.add('armed');tw.textContent=tw.dataset.twotap}return}
+  if(t.closest('[data-star]')){toast('Csillag átállítva');return}
+  if(sh){e.preventDefault();const k=sh.dataset.sheet;k==='add-edit'?openSheet('add',true):k==='stackitem'?openSheet('stackitem',sh.dataset.pin,sh.dataset.name):openSheet(k);return}
+  if(go){e.preventDefault();closeSheet();location.hash=go.dataset.go;return}
+  if(tt){toast(tt.dataset.toast);return}
+  if(t.id==='scrim')closeSheet();
+});
+addEventListener('hashchange',render);
+$('#still').addEventListener('change',e=>document.body.classList.toggle('still',e.target.checked));
+
+function tabbar(active){
+  const tabs=[['Mai','tanyer',''],['Kiegészítők','kiegeszito','#stack'],['Trendek','trend','#trendek'],['Konyha','fazek','#konyha']];
+  $('#tabbar').innerHTML=`<button class="tb-boop" data-switch aria-label="Területváltó: Fuel">${B('fuel')}</button>`+
+    tabs.map(([l,ic,go])=>`<button class="tb ${l===active?'on':''}" ${go?`data-go="${go}"`:`data-toast="Fuel · Mai — az 1. szeletben már üvegben van (fuel-uveg.html)"`}>${C(ic)}<span>${l}</span></button>`).join('');
+}
+(function chrome(){
+  const D=[['nap','Nap','var(--gold)'],['train','Edzés','var(--coral)'],['fuel','Fuel','var(--sage)'],['mezo','Mezo','var(--lav)'],['en','Én','var(--rose)']];
+  $('#switcher').innerHTML=`<small>TERÜLETVÁLTÓ</small><div class="sw-grid">${D.map(([d,n,c])=>`<button class="sw ${d==='fuel'?'on':''}" style="--c:${c}" ${d==='fuel'?'data-switch':`data-toast="${n} — másik terület, nem része ennek a körnek"`}>${B(d)}${n}</button>`).join('')}</div>`;
+  $('#ntf').innerHTML=`<div class="ntf-head"><strong>Értesítések</strong><button data-toast="Mind olvasott">Mind olvasott</button></div>
+  <div class="ntf-chips"><span class="on">Mind 5</span><span>Olvasatlan 3</span><span>Fuel 2</span><span>Edzés 1</span><span>Mezo 2</span></div>
+  <div class="ntf-day">MA</div>
+  <div class="ntf-row unread">${I('score')}<span><strong>Reggeli értékelve: 8,2</strong><small>Fehérjében erős, tiszta tányér.</small></span><em>08:04</em></div>
+  <div class="ntf-row unread">${I('water')}<span><strong>Még 1,2 liter víz fér bele</strong><small>A délutáni ablakban érdemes pótolni.</small></span><em>11:30</em></div>
+  <div class="ntf-row unread">${I('dumbbell')}<span><strong>Ma 17:30: Felsőtest A</strong><small>A kihívás már elkészült hozzá.</small></span><em>00:05</em></div>
+  <div class="ntf-day">TEGNAP</div>
+  <div class="ntf-row">${I('moon')}<span><strong>Napzárás kész</strong><small>7 jel rögzítve, 3 szokás pipálva.</small></span><em>21:48</em></div>`;
+})();
+function toggleNtf(v){ntfOpen=v??!ntfOpen;$('#ntf').classList.toggle('on',ntfOpen);document.querySelector('[data-ntf]')?.classList.toggle('is-open',ntfOpen);$('#scrim').classList.toggle('on',ntfOpen||$('#switcher').classList.contains('on'))}
+function toggleSwitch(v){const on=v??!$('#switcher').classList.contains('on');$('#switcher').classList.toggle('on',on);$('#scrim').classList.toggle('on',on)}
+document.addEventListener('click',e=>{
+  if(e.target.closest('[data-ntf]')){e.stopPropagation();toggleNtf();return}
+  if(e.target.closest('[data-switch]')){e.stopPropagation();toggleSwitch();return}
+  if(e.target.id==='scrim'){toggleNtf(false);toggleSwitch(false)}
+},true);
+render();
+</script>
+</body>
+</html>

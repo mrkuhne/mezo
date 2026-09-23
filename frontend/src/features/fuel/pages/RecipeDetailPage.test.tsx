@@ -357,7 +357,10 @@ test('renders the Mezo jegyzete card with the first fit chip when the seed carri
   await screen.findByText(rec.name)
   const note = screen.getByRole('region', { name: 'Mezo jegyzete' })
   await waitFor(() => expect(within(note).queryByText(/Még nincs olvasat/)).toBeNull())
-  expect(within(note).getByText(`● ${rec.mezoFit.fitsFor[0]}`)).toBeInTheDocument()
+  // Üveg U2: the ● literal became a colored dot span — the chip text is the fit itself.
+  const fit = within(note).getByText(rec.mezoFit.fitsFor[0])
+  expect(fit).toHaveClass('fkx-fit-chip')
+  expect(fit.textContent).not.toContain('●')
 })
 
 // Background re-evaluation (mezo-uavr) — real mode only: an edit / role change nulls the

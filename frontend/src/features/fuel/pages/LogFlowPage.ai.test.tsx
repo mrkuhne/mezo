@@ -50,7 +50,7 @@ afterEach(() => {
 
 async function openAiPanel(initialSlot?: 'breakfast' | 'lunch' | 'dinner' | 'snack') {
   render(<LogFlowPage initialSlot={initialSlot} onClose={vi.fn()} />, { wrapper })
-  await userEvent.click(screen.getByRole('button', { name: '✨ AI · fotó vagy szöveg' }))
+  await userEvent.click(screen.getByRole('button', { name: 'AI · fotó vagy szöveg' }))
 }
 
 test('an attached photo renders a thumbnail preview, not just the filename (mezo-j4e6)', async () => {
@@ -69,7 +69,7 @@ test('the photo path downscales the image before drafting, and saves ai-photo pr
 
   const file = new File(['x'], 'ebed.jpg', { type: 'image/jpeg' })
   fireEvent.change(screen.getByLabelText('Étel fotó'), { target: { files: [file] } })
-  await userEvent.click(screen.getByRole('button', { name: '✨ Elemzés' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Elemzés' }))
   await screen.findByText('Csirkés wrap')
 
   expect(resizeSpy).toHaveBeenCalledWith(file)
@@ -85,7 +85,7 @@ test('the photo path downscales the image before drafting, and saves ai-photo pr
 test('slot-lock: an initialSlot survives the draft — the AI-proposed slot does not override it (mezo-53su)', async () => {
   await openAiPanel('breakfast')
   await userEvent.type(screen.getByRole('textbox', { name: 'Mit ettél?' }), 'csirkés wrap')
-  await userEvent.click(screen.getByRole('button', { name: '✨ Elemzés' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Elemzés' }))
   await screen.findByText('Csirkés wrap')
 
   expect(screen.getByRole('button', { name: 'Reggeli' })).toHaveAttribute('aria-pressed', 'true')
@@ -100,7 +100,7 @@ test('no initialSlot: the AI-proposed slot wins (mezo-53su)', async () => {
     await openAiPanel()
     expect(screen.getByRole('button', { name: 'Snack' })).toHaveAttribute('aria-pressed', 'true')
     await userEvent.type(screen.getByRole('textbox', { name: 'Mit ettél?' }), 'csirkés wrap')
-    await userEvent.click(screen.getByRole('button', { name: '✨ Elemzés' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Elemzés' }))
     await screen.findByText('Csirkés wrap')
     expect(screen.getByRole('button', { name: 'Ebéd' })).toHaveAttribute('aria-pressed', 'true')
   } finally {

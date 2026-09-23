@@ -8,6 +8,9 @@
 // chamfer-chrome sections: Alap / Makrók / Tápanyag / Készlet · ár. The kind toggle
 // gates the dose vs macro/nutrition fields where it makes sense; food exposes all
 // numeric nutrition fields.
+// Üveg (mezo-me75u.2, uveg-fuel-tobbi.html `SH.add`): the sheet is one gold glass surface; the
+// fields are flat cells with an eyebrow label, the sections eyebrow rows, Mégse flat and the
+// save a gold-lit flat pill (never glass in glass). Behavior (fields, gating, the definition/state split) unchanged.
 // ============================================================
 import { useState } from 'react'
 import { usePantryActions } from '@/data/hooks'
@@ -17,8 +20,7 @@ import { pantrySources, type PantrySourceKey } from '@/data/pantrySources'
 import type { PantryItemInput, PantryItemKind } from '@/data/types'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { Display } from '@/shared/ui/Display'
+import { KamraSheetHead, KAMRA_SHEET_CLASS } from '@/features/fuel/sheets/KamraSheetHead'
 
 const kinds: { id: PantryItemKind; label: string }[] = [
   { id: 'food', label: 'Étel' },
@@ -30,32 +32,19 @@ const kinds: { id: PantryItemKind; label: string }[] = [
 const categoryKeys = Object.keys(pantryCategoryMeta)
 const sourceKeys = Object.keys(pantrySources) as PantrySourceKey[]
 
-const fieldLabelStyle = { fontSize: 8, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-tertiary)' } as const
-const fieldInputStyle = { fontSize: 14, color: 'var(--text-primary)', marginTop: 3, width: '100%' } as const
-const selectStyle = { ...fieldInputStyle, background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', padding: '5px 6px' } as const
-
-// A single chamfered form field card (label on top, control below).
+// A single form field (eyebrow label on top, the flat control below — `.fkk-inp`).
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="card" style={{ padding: '8px 10px' }}>
-      <label className="label-mono col" style={{ ...fieldLabelStyle, gap: 0 }}>
-        {label}
-        {children}
-      </label>
-    </div>
+    <label className="fkk-field">
+      <span className="uv-eyebrow">{label}</span>
+      {children}
+    </label>
   )
 }
 
 function SectionHead({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="row" style={{ alignItems: 'center', gap: 8, margin: '14px 2px 8px' }}>
-      <span className="label-mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--text-tertiary)' }}>{children}</span>
-      <span style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
-    </div>
-  )
+  return <div className="fkk-sh-sec uv-eyebrow">{children}</div>
 }
-
-const grid2 = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 } as const
 const numProps = { inputMode: 'decimal' as const }
 const toNum = (s: string): number | undefined => (s.trim() === '' ? undefined : Number(s))
 
@@ -177,56 +166,47 @@ export function AddPantryItemSheet({
   if (!open) return null
 
   return (
-    <Sheet onClose={onClose} labelledBy="add-pantry-item-title">
+    <Sheet onClose={onClose} labelledBy="add-pantry-item-title" className={KAMRA_SHEET_CLASS}>
       {(close) => (
         <>
-          {/* Header */}
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-            <div className="col">
-              <Eyebrow brand>{editId ? 'Tétel · szerkesztés' : 'Új tétel · kézi'}</Eyebrow>
-              <div id="add-pantry-item-title" style={{ marginTop: 4 }}>
-                <Display size="md">{editId ? 'Tétel szerkesztése' : 'Új kamra-tétel'}</Display>
-              </div>
-            </div>
-            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}>
-              <Icon name="x" size={12} />
-            </button>
-          </div>
+          <KamraSheetHead icon="t-journal" titleId="add-pantry-item-title" onClose={close}
+            eyebrow={editId ? 'Tétel · szerkesztés' : 'Új tétel · kézi'}
+            title={editId ? 'Tétel szerkesztése' : 'Új kamra-tétel'} />
 
           {/* Alap */}
           <SectionHead>Alap</SectionHead>
-          <div style={grid2}>
+          <div className="fkk-grid2">
             <Field label="Típus">
-              <select disabled={lock} value={kind} onChange={e => setKind(e.target.value as PantryItemKind)} style={selectStyle}>
+              <select disabled={lock} value={kind} onChange={e => setKind(e.target.value as PantryItemKind)} className="fkk-inp">
                 {kinds.map(k => <option key={k.id} value={k.id}>{k.label}</option>)}
               </select>
             </Field>
             <Field label="Kategória">
-              <select disabled={lock} value={category} onChange={e => setCategory(e.target.value)} style={selectStyle}>
+              <select disabled={lock} value={category} onChange={e => setCategory(e.target.value)} className="fkk-inp">
                 {category === '' && <option value="">— nincs —</option>}
                 {categoryKeys.map(c => <option key={c} value={c}>{pantryCategoryMeta[c].label}</option>)}
               </select>
             </Field>
           </div>
-          <div style={{ marginBottom: 8 }}>
+          <div className="fkk-grid1">
             <Field label="Név">
-              <input disabled={lock} value={name} onChange={e => setName(e.target.value)} placeholder="pl. Görög joghurt 10%" style={fieldInputStyle} />
+              <input disabled={lock} value={name} onChange={e => setName(e.target.value)} placeholder="pl. Görög joghurt 10%" className="fkk-inp" />
             </Field>
           </div>
-          <div style={grid2}>
+          <div className="fkk-grid2">
             <Field label="Forrás">
-              <select disabled={lock} value={source} onChange={e => setSource(e.target.value as PantrySourceKey)} style={selectStyle}>
+              <select disabled={lock} value={source} onChange={e => setSource(e.target.value as PantrySourceKey)} className="fkk-inp">
                 {sourceKeys.map(s => <option key={s} value={s}>{pantrySources[s].label}</option>)}
               </select>
             </Field>
           </div>
           {legacyPer != null && (
-            <p className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', margin: '0 2px 8px' }}>
+            <p className="fkk-sh-note">
               Bázis: /{legacyPer} {initial?.unit ?? 'g'} · örökölt
             </p>
           )}
           {lock && (
-            <p className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', margin: '0 2px 8px' }}>
+            <p className="fkk-sh-note">
               Közös katalógus-tétel: az adatait csak a szerző vagy a tulajdonos szerkesztheti. Az ár, a készlet és a dózis a tiéd.
             </p>
           )}
@@ -235,33 +215,33 @@ export function AddPantryItemSheet({
             <>
               {/* Makrók — the label's per-100 g column, verbatim (mezo-0gjr) */}
               <SectionHead>Makrók · /100 g</SectionHead>
-              <div style={grid2}>
-                <Field label="kcal"><input disabled={lock} {...numProps} value={kcal} onChange={e => setKcal(e.target.value)} placeholder="119" style={fieldInputStyle} /></Field>
-                <Field label="Fehérje"><input disabled={lock} {...numProps} value={proteinG} onChange={e => setProteinG(e.target.value)} placeholder="6" style={fieldInputStyle} /></Field>
+              <div className="fkk-grid2">
+                <Field label="kcal"><input disabled={lock} {...numProps} value={kcal} onChange={e => setKcal(e.target.value)} placeholder="119" className="fkk-inp" /></Field>
+                <Field label="Fehérje"><input disabled={lock} {...numProps} value={proteinG} onChange={e => setProteinG(e.target.value)} placeholder="6" className="fkk-inp" /></Field>
               </div>
-              <div style={grid2}>
-                <Field label="Szénhidrát"><input disabled={lock} {...numProps} value={carbsG} onChange={e => setCarbsG(e.target.value)} placeholder="4" style={fieldInputStyle} /></Field>
-                <Field label="Zsír"><input disabled={lock} {...numProps} value={fatG} onChange={e => setFatG(e.target.value)} placeholder="9" style={fieldInputStyle} /></Field>
+              <div className="fkk-grid2">
+                <Field label="Szénhidrát"><input disabled={lock} {...numProps} value={carbsG} onChange={e => setCarbsG(e.target.value)} placeholder="4" className="fkk-inp" /></Field>
+                <Field label="Zsír"><input disabled={lock} {...numProps} value={fatG} onChange={e => setFatG(e.target.value)} placeholder="9" className="fkk-inp" /></Field>
               </div>
 
               {/* Tápanyag — same per-100 g basis as the macros */}
               <SectionHead>Tápanyag · /100 g</SectionHead>
-              <div style={grid2}>
-                <Field label="Rost"><input disabled={lock} {...numProps} value={fiberG} onChange={e => setFiberG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
-                <Field label="Cukor"><input disabled={lock} {...numProps} value={sugarG} onChange={e => setSugarG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
+              <div className="fkk-grid2">
+                <Field label="Rost"><input disabled={lock} {...numProps} value={fiberG} onChange={e => setFiberG(e.target.value)} placeholder="0" className="fkk-inp" /></Field>
+                <Field label="Cukor"><input disabled={lock} {...numProps} value={sugarG} onChange={e => setSugarG(e.target.value)} placeholder="0" className="fkk-inp" /></Field>
               </div>
-              <div style={grid2}>
-                <Field label="Tel. zsír"><input disabled={lock} {...numProps} value={saturatedFatG} onChange={e => setSaturatedFatG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
-                <Field label="Só"><input disabled={lock} {...numProps} value={saltG} onChange={e => setSaltG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
+              <div className="fkk-grid2">
+                <Field label="Tel. zsír"><input disabled={lock} {...numProps} value={saturatedFatG} onChange={e => setSaturatedFatG(e.target.value)} placeholder="0" className="fkk-inp" /></Field>
+                <Field label="Só"><input disabled={lock} {...numProps} value={saltG} onChange={e => setSaltG(e.target.value)} placeholder="0" className="fkk-inp" /></Field>
               </div>
             </>
           ) : (
             <>
               {/* Dózis (supplement/stim/med) */}
               <SectionHead>Dózis</SectionHead>
-              <div style={{ marginBottom: 8 }}>
+              <div className="fkk-grid1">
                 <Field label="Dózis">
-                  <input value={dose} onChange={e => setDose(e.target.value)} placeholder="pl. 5 g" style={fieldInputStyle} />
+                  <input value={dose} onChange={e => setDose(e.target.value)} placeholder="pl. 5 g" className="fkk-inp" />
                 </Field>
               </div>
             </>
@@ -269,31 +249,29 @@ export function AddPantryItemSheet({
 
           {/* Készlet · ár — stock input hidden (deferred, mezo-6nu); price kept */}
           <SectionHead>{SHOW_PANTRY_STOCK ? 'Készlet · ár' : 'Ár'}</SectionHead>
-          <div style={grid2}>
+          <div className="fkk-grid2">
             {SHOW_PANTRY_STOCK && (
               <Field label="Készlet">
-                <div className="row gap-xs" style={{ marginTop: 3, alignItems: 'center' }}>
-                  <input {...numProps} value={stockQty} onChange={e => setStockQty(e.target.value)} placeholder="—" style={{ fontSize: 14, color: 'var(--text-primary)', width: '50%' }} />
-                  <input value={stockUnit} onChange={e => setStockUnit(e.target.value)} placeholder="g" style={{ fontSize: 14, color: 'var(--text-primary)', width: '50%' }} />
-                </div>
+                <span className="fkk-grid2 is-tight">
+                  <input {...numProps} value={stockQty} onChange={e => setStockQty(e.target.value)} placeholder="—" className="fkk-inp" />
+                  <input value={stockUnit} onChange={e => setStockUnit(e.target.value)} placeholder="g" className="fkk-inp" />
+                </span>
               </Field>
             )}
             <Field label="Ár (Ft)">
-              <input {...numProps} value={price} onChange={e => setPrice(e.target.value)} placeholder="750" style={fieldInputStyle} />
+              <input {...numProps} value={price} onChange={e => setPrice(e.target.value)} placeholder="750" className="fkk-inp" />
             </Field>
           </div>
 
           {/* Actions */}
-          <div className="row gap-sm" style={{ marginTop: 14 }}>
-            <button className="cta-ghost flex-1" onClick={close}>
+          <div className="fkk-sh-acts">
+            <button type="button" className="fkk-btn is-flat" onClick={close}>
               Mégse
             </button>
-            <button className="cta-primary flex-1" disabled={!name.trim()} onClick={submit}>
+            <button type="button" className="fkk-btn is-go" disabled={!name.trim()} onClick={submit}>
               <Icon name="check" size={14} /> {editId ? 'Mentés' : 'Polcra'}
             </button>
           </div>
-
-          <div style={{ height: 24 }} />
         </>
       )}
     </Sheet>

@@ -4,68 +4,67 @@
 // delta vs baseline, macros. Empty-state copy when none.
 // ============================================================
 import type { RecipeLog } from '@/data/types'
-import { Icon } from '@/shared/ui/Icon'
+import { ContentIcon } from '@/shared/ui/clay'
 
+// Üveg U2 (mezo-me75u.2, prototype `SH.reclogs`): the sheet is the surface, so every log is a
+// FLAT cell (no glass in the glass sheet) with the plate icon, and the score a flat
+// lavender-lit pill. The empty state is dashed; the footnote stays a quiet line.
 export function RecipeLogsList({ logs, baselineScore }: { logs?: RecipeLog[]; baselineScore: number }) {
   if (!logs || logs.length === 0) {
     return (
-      <div className="card" style={{ padding: 20, textAlign: 'center' }}>
-        <span className="text-tertiary" style={{ fontSize: 12 }}>Még nem logoltad ezt a receptet ezen a héten.</span>
-        <p className="text-tertiary mt-sm" style={{ fontSize: 11, lineHeight: 1.5 }}>
+      <div className="fkx-rlog-empty uv-empty">
+        <ContentIcon name="t-journal" size={40} />
+        <strong>Még nem logoltad ezt a receptet ezen a héten.</strong>
+        <p>
           Amint logolod a mai étkezésekbe, a Mezo kontextusra futtatja és látod itt a tényleges score-okat.
         </p>
       </div>
     )
   }
   return (
-    <div className="col gap-sm">
+    <div className="fkx-rlogs">
       {logs.map((l, i) => {
         // delta vs the recipe's live mezo-fit baseline (mezo-yta); the seed's authored delta is
         // the fallback for mock logs whose baseline is still the pending null → 0.
         const delta = baselineScore > 0 && l.score ? l.score - baselineScore : l.delta
         return (
-        <div key={i} className="card" style={{ padding: '10px 12px' }}>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <div className="col">
-              <span style={{ fontSize: 12, color: 'var(--text-primary)' }}>{l.slot}</span>
-              <span className="label-mono text-tertiary" style={{ fontSize: 9, marginTop: 2 }}>{l.loggedAt}</span>
+        <div key={i} className="fkx-rlog uv-flat">
+          <div className="fkx-rlog-top">
+            <ContentIcon name="t-plate" size={30} />
+            <div className="fkx-rlog-when">
+              <strong>{l.slot}</strong>
+              <small>{l.loggedAt}</small>
             </div>
-            <div className="col" style={{ alignItems: 'flex-end' }}>
+            <div className="fkx-rlog-score">
               {l.score ? (
                 <>
-                  <span style={{ fontFamily: 'var(--ff-display)', fontSize: 18, color: 'var(--coral)', lineHeight: 1, fontWeight: 600 }}>
-                    {(l.score * 100).toFixed(0)}
+                  <span className="fmx-score">
+                    <ContentIcon name="t-score" size={22} /><b>{(l.score * 100).toFixed(0)}</b>
                   </span>
-                  <span className="label-mono" style={{
-                    fontSize: 9,
-                    color: delta > 0 ? 'var(--coral)' : delta < 0 ? 'var(--warning)' : 'var(--text-tertiary)',
-                    marginTop: 2,
-                  }}>
+                  <small className={delta > 0 ? 'is-up' : delta < 0 ? 'is-down' : undefined}>
                     {delta > 0 ? '+' : ''}{(delta * 100).toFixed(0)} vs baseline
-                  </span>
+                  </small>
                 </>
               ) : (
-                <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  <Icon name="sparkle" size={12} /> pending
+                <span className="fmx-score is-pending">
+                  <ContentIcon name="t-other" size={22} /><b>pending</b>
                 </span>
               )}
             </div>
           </div>
-          <div className="row gap-md mt-sm" style={{ fontVariantNumeric: 'tabular-nums', fontSize: 10, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
-            <span style={{ color: 'var(--text-tertiary)' }}>kcal <span style={{ color: 'var(--text-primary)' }}>{l.kcal}</span></span>
-            <span style={{ color: 'var(--text-tertiary)' }}>P <span style={{ color: 'var(--text-primary)' }}>{l.p}</span></span>
-            <span style={{ color: 'var(--text-tertiary)' }}>C <span style={{ color: 'var(--text-primary)' }}>{l.c}</span></span>
-            <span style={{ color: 'var(--text-tertiary)' }}>F <span style={{ color: 'var(--text-primary)' }}>{l.f}</span></span>
+          <div className="fkx-rlog-macros">
+            <span>kcal <b>{l.kcal}</b></span>
+            <span>P <b>{l.p}</b></span>
+            <span>C <b>{l.c}</b></span>
+            <span>F <b>{l.f}</b></span>
           </div>
         </div>
         )
       })}
 
-      <div className="card" style={{ padding: 10, background: 'var(--surface-1)', borderStyle: 'dashed', marginTop: 6 }}>
-        <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>
-          Csak a mai naptári logok látszanak itt. Heti / havi nézet az Insights tabon.
-        </span>
-      </div>
+      <p className="fkx-rlog-foot">
+        Csak a mai naptári logok látszanak itt. Heti / havi nézet az Insights tabon.
+      </p>
     </div>
   )
 }

@@ -3623,52 +3623,12 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
            padding: 10px 16px; border-radius: 999px; }
 .mtr-quiet { font: 600 11.5px/1 var(--ff-body); color: var(--faint); padding: 10px 8px; }
 
-/* ── Energy-breakdown sheet (mezo-hobb) ────────────────────────────────── */
-.eqbar { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
-  background: var(--surface-1); border: 1px solid var(--card-border); border-radius: 16px; padding: 12px 14px; margin: 12px 0 14px; }
-.eqbar .t { text-align: center; }
-.eqbar .t .k { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; color: var(--faint); }
-.eqbar .t .v { font-family: var(--ff-display); font-weight: 800; font-size: 16px; margin-top: 2px; font-variant-numeric: tabular-nums; }
-.eqbar .t.base .v { color: var(--sage-deep); }
-.eqbar .t.move .v { color: var(--amber-deep); }
-.eqbar .t.def .v { color: var(--coral-deep); }
-.eqbar .t.res .v { color: var(--text-primary); font-size: 19px; }
-.eqbar .op { font-family: var(--ff-display); color: var(--faint); font-weight: 700; }
-
-.seg { background: var(--surface-1); border: 1px solid var(--card-border); border-radius: 16px; margin-bottom: 10px; padding: 13px 15px; }
-.seg.hl { box-shadow: 0 0 0 2px var(--sage); }
-.seg .sh { display: flex; align-items: center; gap: 9px; }
-.seg .sdot { width: 10px; height: 10px; border-radius: 3px; }
-.seg .stit { font-weight: 800; font-size: 13.5px; }
-.seg .samt { margin-left: auto; font-family: var(--ff-display); font-weight: 800; font-size: 17px; font-variant-numeric: tabular-nums; }
-.seg .why { font-size: 12.5px; color: var(--text-primary); line-height: 1.5; margin: 10px 0 0; }
+/* ── Energy-breakdown sheet (mezo-hobb) — the sheet moved to the `uveg fuel log` block
+   (mezo-me75u.2, `.flp-e*`); only the `.dot-*` swatches (BiometricSheet) stay here. ── */
 .dot-sage { background: var(--sage); }
 .dot-amber { background: var(--amber); }
 .dot-coral { background: var(--coral); }
-.txt-sage { color: var(--sage-deep); }
-.txt-amber { color: var(--amber-deep); }
-.txt-coral { color: var(--coral-deep); }
 
-.btiles { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin: 11px 0 4px; }
-.btile { flex: 1 1 96px; min-width: 96px; border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; background: var(--warm); }
-.btile.sage { background: var(--wash-sage); }
-.btile.amber { background: var(--wash-amber); }
-.btile.coral { background: var(--warm); }
-.btile .thd { display: flex; align-items: center; gap: 6px; }
-.btile .emo { font-size: 14px; line-height: 1; }
-.btile .nm { font-size: 11px; font-weight: 800; }
-.btile.sage .nm { color: var(--sage-deep); }
-.btile.amber .nm { color: var(--amber-deep); }
-.btile.coral .nm { color: var(--coral-deep); }
-.btile .sub { font-size: 10px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--faint); }
-.btile .val { font-family: var(--ff-display); font-weight: 800; font-size: 19px; font-variant-numeric: tabular-nums; margin-top: 1px; }
-.btile.sage .val { color: var(--sage-deep); }
-.btile.amber .val { color: var(--amber-deep); }
-.btile.coral .val { color: var(--coral-deep); }
-.btile .val .u { font-size: 10px; font-weight: 700; color: var(--sub); margin-left: 3px; }
-.btile.result { background: transparent; border: 1.5px dashed var(--line); justify-content: center; }
-.btile.result .val { color: var(--text-primary); font-size: 21px; }
-.btiles .op { align-self: center; font-family: var(--ff-display); font-size: 17px; font-weight: 700; color: var(--faint); }
 
 /* Alap-TDEE breakdown — Variant B stacked list + emphasized total (mezo-hobb).
    Overrides the horizontal .tdee flex when both classes are present (kept for the .tdee test hook). */
@@ -7192,91 +7152,10 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   .km-item { transition: none; }
 }
 
-/* ============================================================
-   Unified log flow (design 2.0 iterations §7, bd mezo-d20.4.2)
-   `page-log` ×1.18: a full-bleed page (not a bottom sheet), self-portaled into
-   .phone-screen like the level-up overlay — z-index sits above the tab bar (40)
-   but BELOW the sheets (200+) it hosts (KamraPickSheet / ReceptPickSheet), the
-   same tier the recipe-editor save bar already claims. Source-tile washes and
-   shadows reuse the existing --mz-wash-, --mz-shadow- and --mz-tone- tokens
-   (both :root blocks above) instead of inventing a parallel palette. ── */
-.logflow-page {
-  position: absolute; inset: 0; z-index: 60;
-  background: var(--surface-page); color: var(--text-primary);
-  overflow-y: auto; overscroll-behavior: contain;
-}
-.logflow-head {
-  display: flex; align-items: center; gap: 8px;
-  padding: 14px 20px 6px; position: sticky; top: 0; z-index: 1;
-  background: var(--surface-page);
-}
-.logflow-back { padding: 6px 12px; }
-.logflow-time { margin-left: auto; font-size: 9px; color: var(--text-tertiary); font-family: var(--ff-mono); }
-.logflow-body { padding: 4px 20px calc(20px + env(safe-area-inset-bottom)); }
-
-.logflow-srctiles { display: flex; gap: 7px; margin: 8px 0 2px; }
-.logflow-srct {
-  flex: 1; min-height: 44px; border: none; cursor: pointer; font-family: inherit;
-  border-radius: var(--r-2xl, 18px); padding: 11px 7px 10px;
-  display: grid; gap: 3px; justify-items: center; text-align: center;
-  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
-}
-.logflow-srct:active { transform: scale(0.94); }
-.logflow-srct b { font-size: 11.5px; color: var(--text-primary); }
-.logflow-srct small { font-size: 7.5px; font-weight: 700; color: var(--text-tertiary); }
-.logflow-srct.tone-gold { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
-.logflow-srct.tone-coral { background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
-.logflow-srct.tone-lav { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
-.logflow-srct.on { box-shadow: var(--mz-shadow), inset 0 0 0 1.5px var(--lav-deep); }
-
-.logflow-aipanel {
-  border-radius: var(--r-2xl, 18px); padding: 11px 12px 12px; margin-top: 9px;
-  background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav);
-}
-.logflow-aipanel textarea {
-  width: 100%; border: 1px solid var(--border-subtle); border-radius: 10px;
-  padding: 9px 11px; font-family: inherit; font-size: 12px; color: var(--text-primary);
-  background: var(--surface-card, var(--surface-1)); resize: none;
-}
-.logflow-aibusy {
-  display: flex; gap: 9px; align-items: center; font-size: 11px; font-weight: 600;
-  color: var(--lav-deep); justify-content: center;
-}
-.logflow-aibusy .np-twinkle {
-  width: 10px; height: 10px; border-radius: 50%; background: var(--lav-deep); flex: none;
-}
-
-/* Kind-wash line cards (mezo-byo1, prototype fuel-logolas.html .lncard):
-   source-tinted gradient + 4px spine, kcal cell in the source ink, and a
-   3-cell macro mini row in the shared mz-cell tints. */
-.logflow-lncard {
-  position: relative; overflow: hidden;
-  border-radius: 15px; padding: 10px 12px 10px 15px; background: var(--surface-1);
-  --ln-spine: var(--coral); --ln-wash: var(--mz-tone-coral);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--ln-wash) 55%, var(--surface-1)) 0%, var(--surface-1) 62%);
-  box-shadow: 0 2px 6px rgba(43, 33, 24, 0.05);
-}
-.logflow-lncard::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--ln-spine); }
-.logflow-lncard[data-tag="kamra"] { --ln-spine: var(--mz-cell-gold-ink, #8A5E07); --ln-wash: var(--mz-tone-gold); }
-.logflow-lncard[data-tag="becslés"] { --ln-spine: var(--lav-deep); --ln-wash: var(--mz-tone-lav); }
-.logflow-lnkcal {
-  margin-left: auto; flex: none; border-radius: 10px; padding: 3px 10px 2px; text-align: center;
-  background: var(--surface-0); box-shadow: inset 0 0 0 1px var(--border-subtle);
-  color: var(--ln-spine);
-}
-.logflow-lnkcal b { display: block; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.logflow-lnkcal small { font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
-.logflow-lnmac { display: flex; gap: 5px; margin-top: 8px; }
-.logflow-lnmac span {
-  flex: 1; border-radius: 10px; padding: 4px 2px 3px; text-align: center;
-  background: var(--mw); color: var(--md);
-}
-.logflow-lnmac b { display: block; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
-.logflow-lnmac small { font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.78; }
-.logflow-totname {
-  font-size: 12.5px; font-weight: 700; margin-bottom: 8px;
-  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
-}
+/* Unified log flow (bd mezo-d20.4.2): the page, composer, source tiles, AI panel and line cards
+   moved to the `uveg fuel log` block at the end of this file (Üveg, mezo-me75u.2). The picker
+   rows and the `.logflow-lntag` / `.logflow-stepbtn` / `.logflow-amtinput` idiom stay here —
+   the recipe Műhely and the Recept picker share them. */
 
 /* ── Kamra/Recept picker re-face (mezo-byo1) — category chips + kind-wash rows
    (prototype fuel-logolas.html #sh-kpick / #sh-rpick). --kc = the row's category
@@ -7317,11 +7196,6 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   width: 52px; text-align: center; border: 1px solid var(--border-subtle); border-radius: 8px;
   padding: 5px 2px; font-family: inherit; font-size: 12px; font-weight: 600;
   color: var(--text-primary); background: var(--surface-2); font-variant-numeric: tabular-nums;
-}
-.logflow-lnnote { font-size: 10px; color: var(--lav-deep); margin-top: 7px; }
-
-@media (prefers-reduced-motion: reduce) {
-  .logflow-srct { transition: none; }
 }
 
 /* A `.flog-*` család (a `/fuel/log` lap teljes stíluskészlete) KIVEZETVE (Fuel Titanium S5,
@@ -7579,62 +7453,8 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   font-variant-numeric: tabular-nums; }
 .sb-imp-gain small { display: block; font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 800; opacity: 0.8; }
 
-/* ===== /fuel/log/uj — a logolás saját oldala (mezo-bq2t) =====
-   Prototype fuel-log-oldal.html `.cmp-head` / `.cmp-daychip` / `.pastnote` /
-   `.cmp-savebar`, a hardcode-olt hexek helyett a meglévő tokenekkel (a prototípus
-   #A84A26 → --coral, #A8801F/rgba(201,150,46,·) → --mz-cell-amber-ink/-bg, a
-   savebar #FDFAF4 lapja → --surface-page), így a sötét mód is együtt fordul. */
-/* A 14px vízszintes inset a prototípusé (`.cmp-head { padding: 8px 14px 10px }`) és itt KÖTELEZŐ:
-   a fejléc a `.mz-page` közvetlen gyereke, annak pedig nincs oldalsó paddingja — minden testvér
-   a sajátját hozza (.mz-page-head 14px, .mz-page-hero/.mz-page-body 17px). Nélküle a clay-ikon
-   12px-re kezdődne a képernyő szélétől a fölötte lévő „‹ Vissza" 26px-e alatt: látható lépcső. */
-.flognew-head { display: flex; align-items: center; gap: 9px; padding: 8px 14px 10px; }
-.flognew-ic {
-  width: 38px; height: 38px; border-radius: 13px; flex: none; display: grid; place-items: center;
-  background: var(--surface-card); box-shadow: inset 0 0 0 1px var(--border-subtle);
-}
-.flognew-txt { min-width: 0; }
-.flognew-eyebrow {
-  font-size: 7.5px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase;
-  color: var(--coral);
-}
-.flognew-head.is-past .flognew-eyebrow { color: var(--mz-cell-amber-ink); }
-.flognew-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
-.flognew-sub { font-size: 9px; color: var(--text-secondary); margin-top: 1px; font-variant-numeric: tabular-nums; }
-.flognew-daychip {
-  margin-left: auto; flex: none; border-radius: 999px; padding: 4px 10px 5px; text-align: center;
-  background: var(--surface-card); border: 1px solid var(--border-subtle);
-}
-.flognew-daychip b { display: block; font-size: 10px; font-weight: 800; line-height: 1.2; }
-.flognew-daychip small {
-  display: block; font-size: 6.5px; font-weight: 700; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--text-tertiary);
-}
-.flognew-head.is-past .flognew-daychip { background: var(--mz-cell-amber-bg); border-color: transparent; }
-.flognew-head.is-past .flognew-daychip b { color: var(--mz-cell-amber-ink); }
-.flognew-pastnote {
-  display: flex; gap: 6px; align-items: center; font-size: 8px; font-weight: 600;
-  color: var(--mz-cell-amber-ink); background: var(--mz-cell-amber-bg); border-radius: 10px;
-  padding: 6px 9px;
-  /* ugyanaz a 14px inset, mint a fejlécen (prototípus `.pastnote { margin: 0 14px 8px }`) */
-  margin: 0 14px 8px;
-}
-.flognew-pastnote b { margin: 0 3px; }
-.flognew-pastnote i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
-/* Ragadós mentés-sáv: a composer akció-sora az oldal aljára tapad, nem görög a tételek alá.
-   A `bottom` NEM 0: a `.tab-bar` lebegő kapszula (`position: absolute; bottom: 14px;
-   height: 64px`) = 78px-es sáv a képernyő alján, a `.mz-page-body` alsó paddingja pedig csak
-   19px — 0-val a kitapadt sáv alsó ~31px-e a tab-bar mögé kerül (futásidőben mérve).
-   14 + 64 + 8px levegő = 86px. A `border-top` a prototípus `.cmp-savebar` hajszálvonala
-   (fuel-log-oldal.html:1163), tokenre igazítva: nélküle sűrű lista alatt nincs elválasztás.
-   A margót NEM állítjuk: a MealComposer sora inline `margin: 14px 0 12px`-t visz, azt egy
-   osztály-szabály úgysem írná felül — a padding + a lap-színű átmenet a mi dolgunk. */
-.flognew-page .logflow-actions {
-  position: sticky; bottom: 86px; z-index: 2;
-  padding: 9px 0 10px;
-  border-top: 0.5px solid var(--border-subtle);
-  background: linear-gradient(180deg, transparent 0%, var(--surface-page) 32%);
-}
+/* /fuel/log/uj (mezo-bq2t): the `.flognew-*` rules moved to the `uveg fuel log` block at the
+   end of this file (Üveg, mezo-me75u.2). */
 /* ── Fuel · Terv + Gyógyszer re-face (mezo-d20.4.7) — prototype fuel-body
    #page-terv / #page-gyogyszer ×1.18 (330→390px frame). The week-rhythm
    rows/track/markers (.fpl-*, prototype .rhyrow/.rhytrack/.rhyleg) and the
@@ -9854,8 +9674,6 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .fset-card .fset-error { color: var(--error-hover); font-weight: 700; }
 
 .fset-goalgrid { display: grid; gap: 0; border-radius: 22px; padding: 4px 16px; background: var(--mz-wash-sky); }
-.fset-goalgrid .fset-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
-.fset-goalgrid .fset-card:last-child { border-top: 1px solid var(--border-subtle); }
 .fset-goalgrid input {
   width: 98px; min-width: 0; padding: 0 9px; border-color: transparent;
   background: var(--mz-chipbg); text-align: right; font-size: 18px; font-weight: 500;
@@ -9874,7 +9692,6 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   width: 100%; min-height: 62px; display: flex; align-items: center; justify-content: space-between;
   gap: 12px; text-align: left; cursor: pointer;
 }
-.fset-slots strong { flex: none; font-size: 12px; color: var(--primary-deep); }
 .fset-closing { margin: 1px 15px 0; text-align: center; font-size: 10px; line-height: 1.45; color: var(--text-muted); }
 .fset-savebar { padding-inline: 17px; }
 .fset-savebar .fset-save { width: 100%; min-height: 52px; justify-content: center; border-radius: var(--r-full); }
@@ -12085,104 +11902,14 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   color: var(--dv-amber); white-space: nowrap; }
 .fmx-score-fb { margin: 14px 0 4px; }
 
-/* ── S1c: a kamera-első logoló héja (mezo-33k6; manifeszt A4 · A5 · A6 · A7) ──────────────
-   Prototípus: fuel-pages.css `Logger mode tabs` (:2), `Camera demo` (:7), `Voice demo` (:25),
-   `Usuals` (:33) és `Failure state` (:41) blokkjai — a geometria (4-es fülrács, a 150-es
-   kereső, a 74-es mikrofon-korong, a sor-rács) 1:1, a beégetett sötét hexek helyett a ház
-   tokenjeivel. A „DEMÓ KERESŐ" overlay és a minta-exponálás gombjai SZÁNDÉKOSAN nem jönnek át:
-   itt valódi kamera-input és valódi felismerés áll. */
-.fmx-logmodes { margin: 0 0 14px; }
-.fmx-modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 2px 0 14px; }
-/* A fül-rács: semleges lapok, az aktív egy égszín CELLA (§2.2 B) — se fénykör, se üveg. */
-.fmx-mode { display: flex; flex-direction: column; align-items: center; gap: 5px;
-  padding: 9px 2px 8px; border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 14px;
-  background: var(--surface-1); color: var(--sub); font-size: 8.5px; font-weight: 600;
-  letter-spacing: 0.04em; }
-.fmx-mode.is-active { border-color: transparent;
-  background: var(--mz-cell-sky-bg); color: var(--mz-cell-sky-ink); }
-
-/* A kereső: a kamera-bemenet MAGA a felület (label → rejtett file input). */
-.fmx-camera { text-align: center; }
-.fmx-finder { position: relative; display: grid; place-items: center; gap: 6px;
-  margin: 2px 0 10px; padding: 16px 10px 12px; min-height: 150px; border-radius: 21px;
-  border: 0.5px solid rgba(43, 33, 24, 0.06); cursor: pointer;
-  background: var(--mz-wash-sky); box-shadow: var(--mz-shadow-sky); }
-.fmx-finder > span { position: absolute; width: 22px; height: 22px;
-  border: 2px solid color-mix(in srgb, var(--mz-cell-sky-ink) 55%, transparent); }
-.fmx-finder > span:nth-child(1) { top: 8px; left: 8px; border-right: 0; border-bottom: 0; border-top-left-radius: 8px; }
-.fmx-finder > span:nth-child(2) { top: 8px; right: 8px; border-left: 0; border-bottom: 0; border-top-right-radius: 8px; }
-.fmx-finder > span:nth-child(3) { bottom: 8px; left: 8px; border-right: 0; border-top: 0; border-bottom-left-radius: 8px; }
-.fmx-finder > span:nth-child(4) { bottom: 8px; right: 8px; border-left: 0; border-top: 0; border-bottom-right-radius: 8px; }
-.fmx-finder b { font-size: 12px; font-weight: 700; color: var(--text-primary); }
-.fmx-finder input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-.fmx-mode-hint { margin: 0 0 4px; font-size: 11px; line-height: 1.55; color: var(--sub); text-align: center; }
-.fmx-mode-error { margin: 6px 0 0; font-size: 11px; color: var(--error); text-align: center; }
-.fmx-mode-empty { margin: 10px 0 4px; padding: 14px 13px; border-radius: 18px;
-  border: 1.2px dashed rgba(43, 33, 24, 0.2); background: transparent;
-  font-size: 11.5px; line-height: 1.6; color: var(--sub); text-align: center; }
-
-/* Hang: egyetlen nagy korong — valódi felvétel, nem mintamondat-lista. */
-.fmx-voice { text-align: center; }
-.fmx-mic { width: 74px; height: 74px; margin: 6px auto 12px; display: grid; place-items: center;
-  border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 50%;
-  background: var(--mz-wash-lav); color: var(--mz-cell-lav-ink); box-shadow: var(--mz-shadow-lav); }
-.fmx-mic:disabled { opacity: 0.45; }
-.fmx-mic.is-live { border: 1px solid var(--dv-coral); color: var(--dv-coral);
-  box-shadow: var(--mz-shadow-coral); }
-.fmx-typed { padding: 2px 0 4px; }
-
-/* Szokásosak: egy koppintás, aztán jóváhagyás. */
-.fmx-usuals { display: grid; gap: 0; }
-.fmx-usual { display: flex; align-items: center; gap: 11px; width: 100%; padding: 13px 2px;
-  border: 0; border-bottom: 1px solid var(--border-subtle); background: transparent;
-  text-align: left; color: var(--ink); }
-.fmx-usual-art { flex: 0 0 auto; display: grid; place-items: center; }
-.fmx-usual-copy { flex: 1; min-width: 0; }
-.fmx-usual-copy strong { display: block; font-size: 13px; font-weight: 700; }
-.fmx-usual-copy small { display: block; margin-top: 3px; font-size: 8.5px; color: var(--faint); }
-.fmx-usual > b { margin-left: auto; font-size: 15px; font-weight: 700;
-  font-variant-numeric: tabular-nums; color: var(--sub); text-align: right; }
-.fmx-usual > b small { display: block; margin-top: 2px; font-size: 8px; color: var(--faint); }
-
-/* A felismerés kudarca: saját állapot, a másik három úttal — nem hibajelzés. */
-.fmx-failed { padding-top: 8px; text-align: center; }
-/* §4.4: a felismerés kudarca BOROSTYÁN és szaggatott — sosem piros, sosem hibaállapot. */
-.fmx-failed-art { position: relative; width: 84px; height: 84px; margin: 6px auto 14px;
-  display: grid; place-items: center;
-  border: 1.2px dashed color-mix(in srgb, var(--mz-cell-amber-ink) 55%, transparent);
-  border-radius: 50%; }
-.fmx-failed-art i { position: absolute; right: 2px; bottom: 4px; width: 24px; height: 24px;
-  display: grid; place-items: center; border-radius: 50%; background: var(--mz-cell-amber-bg);
-  color: var(--mz-cell-amber-ink); font-style: normal; font-weight: 800; font-size: 12px; }
-.fmx-failed small { display: block; font-size: 9px; font-weight: 800; letter-spacing: 0.16em;
-  text-transform: uppercase; color: var(--mz-cell-amber-ink); }
-.fmx-failed strong { display: block; margin: 6px 0 8px; font-family: var(--ff-display);
-  font-size: 22px; line-height: 1.2; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
-.fmx-failed p { margin: 0 0 16px; font-size: 11px; line-height: 1.6; color: var(--sub); }
-.fmx-failed-cta { display: block; width: 100%; margin: 0 0 8px; padding: 12px 14px;
-  border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 18px;
-  background: var(--mz-wash-sky); box-shadow: var(--mz-shadow-sky);
-  color: var(--text-primary); font-size: 12.5px; font-weight: 700; }
-.fmx-failed-cta.is-quiet { background: var(--mz-wash-white); box-shadow: var(--mz-shadow); color: var(--sub); }
+/* S1c (mezo-33k6): the camera-first logger shell (`.fmx-logmodes`, `.fmx-mode*`, `.fmx-finder`,
+   `.fmx-mic`, `.fmx-usual*`, `.fmx-failed*`) moved to the `uveg fuel log` block (mezo-me75u.2). */
 
 /* A8 · A9: a javítás idő-mezője, a javítás halk ajtaja a részletezőn, és a KÉT lépéses törlés
    (prototípus `food-time` + `deleteBlock`). A törlés szándékosan csendes és a lap alján áll. */
-.fmx-edit-time { display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  margin: 12px 0 0; padding: 10px 12px; border: 0.5px solid rgba(43, 33, 24, 0.06);
-  border-radius: 15px; background: var(--surface-1); }
-.fmx-edit-time .label-mono { font-size: 8.5px; letter-spacing: 0.12em; color: var(--faint); }
-.fmx-edit-time input { padding: 6px 8px; border: 1px solid var(--border-subtle); border-radius: 9px;
-  background: var(--surface-card); color: var(--ink); font-family: inherit; font-size: 13px; }
 .fmx-edit-door { display: block; width: 100%; margin: 16px 0 2px; padding: 12px 14px;
   border: 0; border-radius: 16px; background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
   color: var(--sub); font-size: 13px; }
-.fmx-delete { margin: 14px 0 4px; padding-top: 12px; border-top: 1px solid var(--border-subtle);
-  text-align: center; }
-.fmx-delete > button { padding: 9px 15px; border: 1px solid var(--border-subtle); border-radius: 11px;
-  background: transparent; color: var(--faint); font-size: 10.5px; }
-.fmx-delete p { margin: 0 0 9px; font-size: 10.5px; color: var(--sub); }
-.fmx-delete .fmx-delete-yes { margin-right: 8px; border-color: transparent;
-  background: var(--mz-cell-coral-bg); color: var(--mz-cell-coral-ink); font-weight: 600; }
 
 /* ── Vércukor-válasz üvegdoboz (mezo-6mi43) ───────────────────────────────
    Jóváhagyott referencia: a companion-titanium prototípus `glucoseView` / `glucoseCurve` és a
@@ -12289,15 +12016,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   @keyframes fmx-ring-rise { from { stroke-dasharray: 0 100; } }
   @keyframes fmx-glass-in { from { opacity: 0; transform: scale(0.92) translateY(8px); } }
   @keyframes fmx-node-in { from { opacity: 0; transform: translateX(-8px); } }
-  /* S1c: a mikrofon-korong lélegzik, amíg hallgat (prototípus `mic-breathe`), a kereső tálja
-     pedig ugyanúgy lebeg, mint a Mai műszeré. */
-  /* A mikrofon lélegzése a FELVÉTEL visszajelzése, nem dísz: csak `is-live` alatt fut
-     (mezo-ju4j6.7) — üresjáratban a korong áll. */
-  .fmx-mic.is-live { animation: fmx-mic-breathe 2.6s ease-in-out infinite; }
-  @keyframes fmx-mic-breathe {
-    0%, 100% { box-shadow: var(--mz-shadow-coral); }
-    50% { box-shadow: var(--mz-shadow-coral), 0 0 0 5px color-mix(in srgb, var(--dv-coral) 26%, transparent); }
-  }
 
 }
 /* Csökkentett mozgás: minden, amit ez a blokk indít, kivezetve. */
@@ -12309,8 +12027,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .fmx-gauge-art, .fmx-detail-art, .fmx-score-art, .fmx-score-value span { animation: none; }
   /* A dimenzió-csempék belépője kivezetve (S1b, mezo-33k6). */
   .fmx-dim { animation: none; }
-  /* S1c (mezo-33k6): a logoló-héj mikrofon-lélegzése kivezetve. */
-  .fmx-mic, .fmx-mic.is-live { animation: none; }
   /* S1d (mezo-33k6): a víz-gyorsgomb nyomás-visszajelzése kivezetve. */
   .fmx-water-add, .fmx-water-add:active { transform: none; transition: none; }
   /* mezo-6mi43: a vércukor-görbe önrajzolása kivezetve — a végállapot statikusan látszik. */
@@ -13136,11 +12852,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* §3.4: a RECEPTMŰHELY a lap egyetlen hangos felülete — ő az, amit a Konyha kínál. A
    Receptek és a Kamra KÖNYVTÁR-ajtók: megtartják a nagy számukat, de egy fokkal lejjebb
    ülnek (ház-kártya), különben három plakát verseng egymással (mezo-ju4j6.19). */
-.fkx-poster.is-workshop {
-  border: 0.5px solid rgba(43, 33, 24, 0.06);
-  background: linear-gradient(150deg, color-mix(in srgb, var(--fkx) 16%, var(--surface-card)),
-    color-mix(in srgb, var(--fkx) 5%, var(--surface-page)));
-  box-shadow: var(--mz-shadow-lav); }
+/* Üveg U2 (mezo-me75u.2): the workshop poster's wash-tile lift is gone — all three posters
+   are `.glass` now (see the `uveg fuel konyha` block at the end of this file). */
 .fkx-poster-head { display: flex; align-items: center; justify-content: space-between; }
 .fkx-poster-title { display: flex; align-items: center; gap: 9px; }
 .fkx-poster-title > span { display: grid; place-items: center; width: 34px; height: 34px;
@@ -13253,12 +12966,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fkx-recipe-kcal b, .fkx-item-fact b { font-family: var(--ff-display); font-size: 19px;
   font-weight: 200; letter-spacing: -0.03em; font-variant-numeric: tabular-nums;
   color: var(--ink); }
-.fkx-macro-bar { display: flex; width: 100%; height: 6px; border-radius: 999px; overflow: hidden;
-  background: var(--surface-recess); }
-.fkx-macro-bar i { width: var(--w); background: var(--c); }
-.fkx-recipe-meta { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 5px;
-  font-size: 10px; color: var(--sub); }
-.fkx-recipe-meta em { font-style: normal; font-weight: 600; color: var(--dv-coral); }
 .fkx-item-top em { display: grid; place-items: center; width: 28px; height: 28px;
   border-radius: 50%; border: 0; background: var(--surface-1);
   box-shadow: inset 0 0 0 1px var(--border-subtle); }
@@ -16633,3 +16340,1892 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .quicklog-fab.glass { animation: uv-breathe 3s ease-in-out infinite; }
 }
 /* ── /uveg chrome ──────────────────────────────────────────────────────────── */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   U2 · Fuel többi (mezo-me75u.2) — the rest of Fuel in the Üveg material.
+   Reference: docs/design_2.0/prototypes/uveg-fuel-tobbi.html (owner OK 2026-09-23).
+   Uses ONLY the uveg kit above (.glass, .uv-flat, .uv-empty, .uv-well, .uv-halo, rings,
+   bars, type); these blocks hold per-surface geometry. Dark only.
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* ── uveg fuel konyha (mezo-me75u.2) ── Konyha, Kamra, Kamra item, kamra sheets ── */
+/* Reference: prototypes/uveg-fuel-tobbi.html `konyha()`, `kamra()`, `kamraItem()`, `SH.import/
+   add/catalog/catfilter`. Ranking (bible §3.4): the two captures, the three posters, the Kamra
+   tiles, the item's two info rows, its protocol door and its log CTA are `.glass` in their own
+   hue (`--c`); chips, fields, rows and cells inside them are flat; the empty Kamra and the swap
+   suggestions are dashed. The four Kamra sheets are ONE gold glass surface each (no sheen: they
+   scroll), so everything inside a sheet — including its go button — is flat (U1 rule 5).
+   The old `fuel-konyha` block keeps the shared base (the Receptek pages still read it); these
+   rules outrank it per surface: `.fkx-page` = Konyha hub, `.fkx-kamra` = Kamra (+ skeleton),
+   `.fkx-kitem` = Kamra item, `.fkk-sheet` / `.fkk-sh-*` = the Kamra sheets. */
+
+/* one-shot entrance stagger: 70ms per item (--i), on the house `.rise` idiom */
+.fkx-page .rise, .fkx-kamra .rise { --d: calc(var(--i, 0) * 70ms); }
+
+/* ── Konyha hub ── */
+/* the aurora must show through: the Mozaik tone wash would paint an opaque page */
+.fkx-page.mz-page { background: transparent; }
+.fkx-page .fkx-body { gap: 10px; }
+.fkx-capture.glass { align-items: flex-start; gap: 8px; padding: 14px; border: 0; border-radius: 20px;
+  color: var(--text-primary); }
+.fkx-capture.glass .fkx-capture-art .t-ico { width: 50px; height: 50px; }
+/* U1 rule 2: `.glass > *` would drop the plus into the flow */
+.fkx-capture.glass > .fkx-plus { position: absolute; top: 12px; right: 12px; z-index: 2; width: 24px; height: 24px;
+  font-size: 15px; font-weight: 400; background: rgba(245, 239, 230, 0.07); box-shadow: none;
+  color: color-mix(in srgb, var(--c) 70%, #fff); }
+.fkx-capture.glass strong { margin-top: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.3px; color: var(--text-primary); }
+.fkx-capture.glass small { font-size: 11.5px; font-weight: 400; line-height: 1.35; color: var(--text-secondary); }
+
+.fkx-page .fkx-poster.glass { display: grid; gap: 8px; padding: 16px; border: 0; border-radius: 22px; color: var(--text-primary); }
+.fkx-page .fkx-poster-title { gap: 10px; }
+.fkx-page .fkx-poster-title > span { width: auto; height: auto; border-radius: 0; background: none; box-shadow: none; }
+.fkx-page .fkx-poster.glass .fkx-poster-title strong { font-family: var(--ff-display); font-size: 17px; font-weight: 600;
+  letter-spacing: -0.4px; line-height: 1.2; text-transform: none; color: var(--text-primary); }
+.fkx-page .fkx-poster-head > b { font-size: 15px; color: var(--text-muted); }
+/* the workshop's promise is Mezo's own sentence: the voice type (§5) */
+.fkx-page .fkx-ws-copy strong { font-family: var(--ff-serif); font-style: italic; font-size: 19px; font-weight: 400;
+  letter-spacing: 0; line-height: 1.3; color: var(--text-primary); }
+.fkx-page .fkx-ws-copy small { margin-top: 4px; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.fkx-page .fkx-ws-goals { flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.fkx-page .fkx-ws-goals i { width: auto; height: auto; display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 11px 6px 7px; border-radius: 999px; font-style: normal; font-size: 12px; font-weight: 600;
+  white-space: nowrap; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-page .fkx-ws-goals i .t-ico, .fkx-page .fkx-legend .t-ico, .fkx-page .fkx-poster-foot .t-ico { filter: none; }
+/* §5 big numeral + its unit */
+.fkx-page .fkx-poster-main { justify-content: flex-start; align-items: baseline; gap: 6px; margin-top: 4px; }
+.fkx-page .fkx-poster-main > strong { font-size: 54px; font-weight: 300; letter-spacing: -3px; line-height: 1;
+  color: var(--text-primary); }
+.fkx-page .fkx-poster-main > small { font-size: 14px; color: var(--text-secondary); }
+/* the recipe bowls: 40px lit wells (§4) in each recipe's meal-slot hue */
+.fkx-page .fkx-bowls { gap: 4px; }
+.fkx-page .fkx-bowls i { width: 40px; height: 40px; margin-left: 0; display: grid; place-items: center; border-radius: 50%;
+  background: radial-gradient(circle at 35% 28%, #3A332D, color-mix(in srgb, var(--slot) 14%, #1E1B18));
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08),
+    inset 0 -6px 12px -8px color-mix(in srgb, var(--slot) 70%, transparent),
+    0 0 14px -4px color-mix(in srgb, var(--slot) 50%, transparent); }
+/* the food / extra split: sage fill with its glow over a lavender rest */
+.fkx-page .fkx-split { display: block; flex: none; max-width: none; height: 8px; margin: 2px 0 4px; border-radius: 4px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--dv-lav) 32%, transparent), color-mix(in srgb, var(--dv-lav) 80%, transparent)); }
+.fkx-page .fkx-split i { border-radius: 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--dv-sage) 55%, #fff), var(--dv-sage));
+  box-shadow: 0 0 8px var(--dv-sage); }
+.fkx-page .fkx-legend { gap: 14px; }
+.fkx-page .fkx-legend em { gap: 6px; padding: 0; background: none; font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+.fkx-page .fkx-poster-foot { padding-top: 10px; font-size: 13px; color: var(--text-secondary); }
+.fkx-page .fkx-poster-foot b { font-weight: 600; color: var(--text-primary); }
+
+/* ── Kamra ── */
+.fkx-kamra .fmx-subhead { flex-wrap: wrap; row-gap: 8px; }
+/* the title keeps its word; the three header chips wrap to their own row when they don't fit */
+.fkx-kamra .fmx-subhead > span { min-width: 92px; }
+.fkx-kamra .fkx-head-acts { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 0 auto; flex: 0 1 auto; min-width: 0; max-width: 100%; }
+.fkx-kamra .fkx-head-acts .fkx-head-act { margin-left: 0; min-height: 36px; padding: 7px 12px; border: 0; border-radius: 999px;
+  font-size: 12px; font-weight: 600; white-space: nowrap; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+  min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.fkx-kamra .fkx-head-acts .fkx-head-act.is-on { color: #191614; background: var(--dv-amber);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--dv-amber) 50%, transparent); }
+.fkx-kamra .fkx-search { gap: 10px; margin: 0 0 10px; padding: 3px 14px; border: 0; border-radius: 16px; }
+.fkx-kamra .fkx-search input, .fkk-sh-search input { flex: 1; min-width: 0; padding: 10px 0; border: 0; background: transparent;
+  font: inherit; font-size: 13.5px; color: var(--text-primary); outline: none; }
+.fkx-kamra .fkx-search input::placeholder, .fkk-sh-search input::placeholder { color: var(--text-muted); }
+.fkx-kamra .fkx-search > button { color: var(--text-secondary); }
+/* type chips: flat cells; the selected one filled in its own hue (prototype `.flat.on`) */
+.fkx-kamra .fkx-filters { gap: 6px; }
+.fkx-kamra .fkx-filters button { gap: 6px; min-height: 36px; padding: 7px 12px; border: 0; border-radius: 999px;
+  font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-kamra .fkx-filters button b { padding: 0; background: none; font-size: 12px; font-weight: 700; opacity: 0.65; }
+.fkx-kamra .fkx-filters button[aria-pressed="true"] { color: #191614; background: var(--c);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
+.fkx-kamra .fkx-filters button[aria-pressed="true"] b { opacity: 0.75; }
+.fkx-kamra .fkx-catpills button { min-height: 32px; padding: 5px 11px; border: 0; font-size: 11px; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-kamra .fkx-catpills i { width: 7px; height: 7px; }
+.fkx-kamra .fkx-nohit { padding-top: 8px; font-size: 13.5px; color: var(--text-secondary); }
+/* the tile: a glass card in the item's kind hue */
+.fkx-kamra .fkx-item.glass { display: flex; flex-direction: column; align-items: stretch; gap: 6px; min-height: 176px;
+  padding: 14px 13px 13px; border: 0; border-radius: 20px; color: var(--text-primary); }
+.fkx-kamra .fkx-item-art .t-ico { width: 42px; height: 42px; }
+/* the capture-mode badge: a small flat disc, the icon without a halo */
+.fkx-kamra .fkx-item-top em, .fkk-srcb { display: grid; place-items: center; flex: 0 0 auto; width: 26px; height: 26px;
+  border: 0; border-radius: 50%; background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-kamra .fkx-item-top em .t-ico, .fkk-srcb .t-ico { filter: none; }
+.fkx-kamra .fkx-item strong { min-height: 0; font-size: 14.5px; font-weight: 600; letter-spacing: -0.3px; line-height: 1.25; }
+.fkx-kamra .fkx-item-fact { font-size: 11.5px; color: var(--text-secondary); }
+.fkx-kamra .fkx-item-fact b { margin-right: 3px; font-size: 17px; font-weight: 600; letter-spacing: 0;
+  color: color-mix(in srgb, var(--c) 70%, var(--text-primary)); }
+.fkx-kamra .fkx-protein { gap: 5px; }
+.fkx-kamra .fkx-protein i.uv-bar { --c: var(--macro-protein); height: 5px; border-radius: 3px; background: rgba(245, 239, 230, 0.07); }
+.fkx-kamra .fkx-protein .uv-bar > b { border-radius: 3px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 55%, #fff), var(--c));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--c) 60%, transparent); }
+.fkx-kamra .fkx-protein small { font-size: 10.5px; color: var(--text-secondary); }
+.fkx-kamra .fkx-item-amount { margin-top: auto; font-size: 10.5px; color: var(--text-muted); }
+/* the empty shelf: a dashed gold call to action, not a glass object (§3 rank 4) */
+.fkk-kamra-empty { --c: var(--dv-amber); display: flex; flex-direction: column; align-items: center; gap: 6px;
+  margin: 10px 0; padding: 26px 18px; border-radius: 20px; text-align: center; }
+.fkk-kamra-empty strong { font-family: var(--ff-display); font-size: 17px; font-weight: 600; color: var(--text-primary); }
+.fkk-kamra-empty p { max-width: 300px; margin: 2px 0 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+.fkk-kamra-empty > button.glass { width: 100%; min-height: 48px; padding: 13px 16px; border: 0; border-radius: 18px;
+  font: inherit; font-size: 14.5px; font-weight: 600; color: var(--text-primary); }
+/* Okosabb csere: a suggestion, not a shelf object — dashed sage */
+.fkx-kamra .fkx-swaps { gap: 10px; }
+.fkk-swap { --c: var(--dv-sage); padding: 14px; border-radius: 20px; }
+.fkk-swap-top { display: flex; align-items: center; gap: 10px; }
+.fkk-swap-top strong { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 600; color: var(--text-primary); }
+.fkk-swap-top > b { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.fkk-swap p { display: flex; align-items: center; gap: 5px; margin: 6px 0 0; font-size: 12px; line-height: 1.4; color: var(--text-secondary); }
+.fkk-swap-add { display: inline-flex; align-items: center; gap: 5px; margin-top: 10px; min-height: 34px; padding: 6px 12px;
+  border: 0; border-radius: 999px; font: inherit; font-size: 12px; font-weight: 700; color: #191614;
+  background: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
+/* the loading skeleton: the page's shape in flat cells (a loading state is not a shelf object) */
+.fkk-skel-title { display: grid; gap: 6px; flex: 1; }
+.fkk-skel-bar { margin: 0 0 10px; padding: 16px 14px; border-radius: 16px; }
+.fkk-skel-chips { display: flex; gap: 6px; margin: 0 0 12px; }
+.fkk-skel-chips span { width: 64px; height: 34px; border-radius: 999px; }
+.fkk-skel-tile { display: grid; align-content: start; gap: 8px; min-height: 176px; padding: 14px 13px; border-radius: 20px; }
+
+/* ── Kamra item ── */
+.fkx-kitem .fmx-detail-when { --c: var(--dv-amber); }
+.fkx-kitem .fmx-detail-share { --c: var(--dv-sky); }
+/* the chip is a span in the sub-head: `.fmx-subhead > span` would stretch it like the title */
+.fkx-kitem .fmx-subhead > .fkx-source-chip { flex: 0 0 auto; gap: 6px; padding: 5px 12px 5px 5px; font-size: 12px; font-weight: 600;
+  color: var(--text-secondary); }
+.fkx-kitem .fkx-source-chip .t-ico { filter: none; }
+.fkx-kitem .fkx-source-head { margin-top: 18px; }
+.fkx-kitem .fkx-source { gap: 10px; margin: 0; padding: 10px 12px; border: 0; border-radius: 14px; }
+.fkx-kitem .fkx-source-copy strong { font-size: 14px; color: var(--text-primary); }
+.fkx-kitem .fkx-source-copy small { font-size: 12px; font-weight: 400; color: var(--text-secondary); }
+.fkx-kitem .fkx-shared { font-style: normal; font-size: 11px; color: var(--text-muted); }
+/* the protocol door: a lavender glass row with its chevron */
+.fkx-kitem .fkx-door.glass { --c: var(--dv-lav); gap: 12px; min-height: 60px; margin: 0; padding: 12px 14px 12px 12px;
+  border: 0; border-radius: 20px; }
+.fkx-kitem .fkx-door strong { font-size: 15.5px; letter-spacing: -0.3px; color: var(--text-primary); }
+.fkx-kitem .fkx-door small { font-size: 11.5px; font-weight: 400; line-height: 1.35; color: var(--text-secondary); }
+.fkx-kitem .fkx-door > b { font-size: 20px; color: var(--text-muted); }
+.fkx-kitem .fkx-meta { margin: 12px 2px 0; font-size: 12px; letter-spacing: 0; color: var(--text-muted); }
+.fkx-kitem .fkx-used { gap: 6px; }
+.fkx-kitem .fkx-used button { gap: 6px; min-height: 36px; padding: 6px 12px 6px 7px; border: 0; font-size: 12px; font-weight: 600;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-kitem .fkx-used button .t-ico { filter: none; }
+/* the log CTA: a sage glass button */
+.fkx-kitem .fkx-cta.glass { --c: var(--dv-sage); justify-content: center; gap: 8px; min-height: 52px; margin: 18px 0 0;
+  padding: 13px 16px; border: 0; border-radius: 18px; font-size: 14.5px; text-align: center; }
+.fkx-kitem .fkx-cta.glass > span:nth-child(2) { flex: 0 1 auto; }
+.fkx-kitem .fkx-cta.glass > b { color: var(--text-secondary); }
+/* Szerkesztés + Törlés: two flat halves; Törlés is coral-lined, never red */
+.fkx-kitem .fkx-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin: 10px 0 6px; }
+.fkx-kitem .fkx-actions > button { justify-content: center; gap: 8px; min-height: 48px; padding: 10px 14px; border: 0;
+  border-radius: 18px; font-size: 14px; font-weight: 600; text-align: center; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-kitem .fkx-actions > button .t-ico { filter: none; }
+.fkx-kitem .fkx-actions > button.fkx-del { margin-left: 0; color: #FFB39C;
+  background: rgba(255, 126, 92, 0.07); box-shadow: inset 0 0 0 1px rgba(255, 126, 92, 0.35); }
+
+/* ── Kamra sheets: one gold glass surface each ── */
+/* U1 rules 1 + 3: `.glass` would re-anchor the sheet and clip its scroll — restate both */
+.sheet.fkk-sheet.glass { --c: var(--dv-amber); position: absolute; left: 10px; right: 10px;
+  bottom: calc(10px + env(safe-area-inset-bottom)); max-height: calc(100% - 70px); overflow-y: auto;
+  padding: 4px 18px 22px; border: 0; border-radius: 30px; }
+.sheet.fkk-sheet .sheet-handle-zone { margin: 0 -18px 4px; }
+.sheet.fkk-sheet .sheet-handle { width: 40px; height: 5px; background: rgba(245, 239, 230, 0.18); }
+.fkk-sh-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.fkk-sh-art { flex: 0 0 auto; }
+.fkk-sh-copy { flex: 1; min-width: 0; }
+.fkk-sh-eb { display: block; }
+.fkk-sh-head h3 { margin: 3px 0 0; font-family: var(--ff-display); font-size: 21px; font-weight: 600; letter-spacing: -0.6px;
+  line-height: 1.2; color: var(--text-primary); }
+.fkk-sh-x { display: grid; place-items: center; flex: 0 0 auto; width: 34px; height: 34px; border: 0; border-radius: 50%;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkk-sh-clear { flex: 0 0 auto; min-height: 32px; padding: 6px 12px; border: 0; border-radius: 999px; font: inherit;
+  font-size: 12px; font-weight: 600; color: #FFB39C;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkk-sh-clear:disabled { opacity: 0.5; color: var(--text-muted); }
+.fkk-sh-lead { margin: 0; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.fkk-sh-hint { margin: 10px 0 0; font-size: 11.5px; line-height: 1.5; color: var(--text-muted); }
+.fkk-sh-note { margin: 0 2px 10px; font-size: 11.5px; line-height: 1.45; color: var(--text-muted); }
+.fkk-sh-error { margin: 8px 0 0; font-size: 12px; line-height: 1.45; color: #FFB39C; }
+.fkk-sh-warn { margin: 10px 0 0; font-size: 12px; line-height: 1.45; color: var(--dv-amber); }
+/* a section eyebrow is tinted in the sheet hue so it reads above the field labels */
+.fkk-sh-sec { margin: 18px 2px 8px; color: color-mix(in srgb, var(--c) 75%, var(--text-primary)); }
+.fkk-sh-none { display: block; padding: 8px 2px; font-size: 12px; color: var(--text-muted); }
+/* fields: eyebrow label over a flat input */
+.fkk-field { display: grid; gap: 6px; margin-bottom: 10px; }
+.fkk-inp { display: block; width: 100%; min-width: 0; padding: 11px 13px; border: 0; border-radius: 13px; font: inherit;
+  font-size: 14px; color: var(--text-primary); color-scheme: dark; outline: none;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkk-inp::placeholder { color: var(--text-muted); }
+.fkk-inp:focus-visible { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 70%, transparent); }
+.fkk-inp:disabled { opacity: 0.55; }
+.fkk-grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-bottom: 10px; }
+.fkk-grid1 { margin-bottom: 10px; }
+.fkk-grid2 > .fkk-field, .fkk-grid1 > .fkk-field { margin-bottom: 0; }
+.fkk-grid2.is-tight { gap: 6px; margin: 0; }
+/* the button pair: Mégse flat, the go button gold-lit flat (never glass in glass) */
+.fkk-sh-acts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-top: 16px; }
+.fkk-btn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 12px 16px;
+  border: 0; border-radius: 18px; font: inherit; font-size: 14.5px; font-weight: 600; color: var(--text-primary); }
+.fkk-btn.is-flat { color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkk-btn.is-go { color: #FFE2B0;
+  background: radial-gradient(90% 120% at 30% 20%, color-mix(in srgb, var(--c) 34%, transparent), color-mix(in srgb, var(--c) 10%, rgba(245, 239, 230, 0.04)));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent), 0 0 14px -4px color-mix(in srgb, var(--c) 60%, transparent); }
+.fkk-btn:disabled { opacity: 0.45; }
+.fkk-sh-apply { width: 100%; margin-top: 16px; }
+/* import: the Fotó/Link switch, the dashed photo drops, the searching card and the draft */
+.fkk-seg { display: flex; margin: 12px 0; padding: 3px; border-radius: 999px;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkk-seg button { flex: 1; min-height: 36px; padding: 7px 14px; border: 0; border-radius: 999px; background: none; font: inherit;
+  font-size: 12.5px; font-weight: 600; color: var(--text-secondary); }
+.fkk-seg button[aria-pressed="true"] { color: #191614; background: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 45%, transparent); }
+.fkk-drop { margin-bottom: 10px; padding: 14px; border-radius: 18px; text-align: center; }
+.fkk-drop label { display: grid; justify-items: center; gap: 4px; cursor: pointer; }
+.fkk-drop strong { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.fkk-drop small { font-size: 11.5px; line-height: 1.4; color: var(--text-secondary); }
+.fkk-drop input[type="file"] { width: 100%; margin-top: 6px; font-size: 12px; color: var(--text-secondary); }
+.fkk-drop-file { display: block; margin-top: 6px; font-size: 11.5px; color: var(--dv-sage); }
+.fkk-searching { display: grid; justify-items: center; gap: 8px; padding: 22px 16px; border-radius: 18px; text-align: center; }
+.fkk-searching strong { display: inline-flex; align-items: center; gap: 8px; font-family: var(--ff-display); font-size: 17px;
+  font-weight: 600; color: var(--text-primary); }
+.fkk-searching .np-twinkle { display: block; width: 12px; height: 12px; margin-top: 6px; border-radius: 50%;
+  border: 1.5px solid var(--dv-amber); box-shadow: 0 0 10px color-mix(in srgb, var(--dv-amber) 60%, transparent); }
+.fkk-draft { padding: 14px; border-radius: 18px; }
+.fkk-draft.is-none { font-size: 12.5px; line-height: 1.5; text-align: center; color: var(--text-secondary); }
+.fkk-draft-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.fkk-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 10px 4px; border-radius: 14px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkk-stat { min-width: 0; text-align: center; }
+.fkk-stat b { display: block; font-size: 19px; font-weight: 600; letter-spacing: -0.6px; font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.fkk-stat small { font-size: 10px; color: var(--text-muted); }
+.fkk-draft-nutri { margin-top: 8px; }
+.fkk-sh-addphoto { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 7px 12px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+/* catalog + category filter: flat search, flat chips (the selected one filled), flat rows */
+.fkk-sh-search { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; padding: 3px 14px; border-radius: 16px; }
+.fkk-sh-chips { display: flex; gap: 6px; padding: 0 0 12px; overflow-x: auto; scrollbar-width: none; }
+.fkk-sh-chips::-webkit-scrollbar { display: none; }
+.fkk-sh-chips.is-wrap { flex-wrap: wrap; overflow: visible; padding-bottom: 0; }
+.fkk-sh-chips button { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; min-height: 34px; padding: 7px 12px;
+  border: 0; border-radius: 999px; font: inherit; font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkk-sh-chips button b { font-weight: 700; opacity: 0.65; }
+.fkk-sh-chips button.is-on { color: #191614; background: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
+.fkk-sh-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--c); box-shadow: 0 0 6px var(--c); }
+.fkk-sh-chips button.is-on .fkk-sh-dot { background: #191614; box-shadow: none; }
+.fkk-sh-rows { display: grid; gap: 6px; }
+.fkk-sh-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkk-sh-row-copy { flex: 1; min-width: 0; }
+.fkk-sh-row-copy strong { display: block; overflow: hidden; font-size: 14px; font-weight: 600; white-space: nowrap;
+  text-overflow: ellipsis; color: var(--text-primary); }
+.fkk-sh-row-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 3px; font-size: 11px;
+  color: var(--text-secondary); }
+.fkk-sh-author { padding: 1px 7px; border-radius: 999px; font-size: 10px;
+  background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkk-sh-have { flex: 0 0 auto; font-size: 11.5px; color: var(--text-muted); }
+.fkk-sh-add { display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto; min-height: 34px; padding: 6px 12px; border: 0;
+  border-radius: 999px; font: inherit; font-size: 12px; font-weight: 700; color: #191614;
+  background: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
+.fkk-sh-add:disabled { opacity: 0.5; }
+
+@media (max-width: 360px) {
+  .fkx-page .fkx-poster-main > strong { font-size: 44px; }
+  .fkx-capture.glass { padding: 12px; }
+  .fkx-kamra .fkx-item.glass { padding: 12px 11px; }
+  .fkx-kitem .fkx-actions > button { font-size: 13px; padding: 10px; }
+}
+/* ── /uveg fuel konyha ── */
+
+/* ── uveg fuel receptek (mezo-me75u.2) ── Receptek, recept, szerkesztő, Műhely, recept sheets ── */
+/* The approved look: prototypes/src/uveg-fuel-tobbi-body.html `receptek()`, `recept()`,
+   `editor()`, `muhely()`, `SH.receptpick`, `SH.reclogs` (+ its `.rrow/.rmac/.spill/.fcard/
+   .stepper/.savebar` rules). Scoped to the recipe surfaces (`.fkx-recipes`, `.fkx-rdetail`,
+   `.fkx-reditor`, `.fkx-workshop`, `.fkx-rsheet`) because the `fkx-` family is shared with the
+   Kamra pages, which the konyha block re-dresses on its own. Ranking (bible §3.4): rows, cards
+   and CTAs are `.glass` in their own hue; chips/pills/steppers inside them are flat; empty is
+   dashed. `.glass` comes last and wins ties, so geometry is restated on `.x.glass` (U1 rule 1). */
+
+/* Receptek · sub-head: the `＋ Új` is a lit flat chip (prototype `.flat.on`, sage). */
+.fkx-recipes .fmx-subhead .fkx-head-act.is-on {
+  /* `.fmx-subhead > button` makes every sub-head button a 40px disc — this one is a pill */
+  width: auto; height: auto; white-space: nowrap; line-height: 1.2;
+  min-height: 36px; padding: 7px 13px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  color: var(--page, #191614); background: var(--dv-sage);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--dv-sage) 50%, transparent); }
+
+/* Filter chips — flat cells (rank 3); the pressed one fills with its own hue and glows. */
+.fkx-recipes .fkx-filters { gap: 6px; margin: 0 0 12px; padding: 2px 0 4px; }
+.fkx-recipes .fkx-filters button {
+  --c: var(--dv-lav); display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto;
+  min-height: 36px; padding: 7px 12px; border-radius: 999px; border: 0;
+  font-size: 12px; font-weight: 600; white-space: nowrap; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-recipes .fkx-filters button .t-ico { width: 18px; height: 18px; filter: none; }
+.fkx-recipes .fkx-filters button b { padding: 0; font-size: 12px; font-weight: 700; opacity: 0.65;
+  background: none; }
+.fkx-recipes .fkx-filters button[aria-pressed="true"] {
+  color: var(--page, #191614); background: var(--c);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
+.fkx-recipes .fkx-filters button[aria-pressed="true"] b { opacity: 0.75; }
+
+/* One recipe per row (owner 2026-09-23). */
+.fkx-recipe-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; min-width: 0; }
+.fkx-recipe-list > * { min-width: 0; }
+.fkx-recipe-row.glass { display: block; width: 100%; min-width: 0; padding: 13px 14px 12px;
+  border: 0; border-radius: 21px; font-family: inherit; text-align: left; color: var(--text-primary); }
+.fkx-rrow-top { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.fkx-rrow-copy { flex: 1; min-width: 0; }
+.fkx-rrow-copy strong { display: block; font-size: 15.5px; font-weight: 600; letter-spacing: -0.3px;
+  line-height: 1.25; overflow-wrap: anywhere; }
+.fkx-rrow-copy small { display: block; margin-top: 4px; font-size: 11.5px; line-height: 1.4;
+  color: var(--text-secondary); overflow-wrap: anywhere; }
+.fkx-rrow-copy small .fkx-role { font-style: normal; font-weight: 600; white-space: nowrap; color: #FFB39C; }
+.fkx-rrow-kcal { flex: 0 0 auto; text-align: right; }
+.fkx-rrow-kcal b { display: block; font-size: 24px; font-weight: 600; letter-spacing: -1px; line-height: 1;
+  font-variant-numeric: tabular-nums; }
+.fkx-rrow-kcal small { display: block; margin-top: 3px; font-size: 10px; letter-spacing: 0.4px;
+  text-transform: uppercase; color: var(--text-muted); }
+.fkx-rrow-foot { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end;
+  margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--divider); }
+.fkx-rrow-macros { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-width: 0; }
+.fkx-rrow-macros > span { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.fkx-rrow-macros em { font-style: normal; font-size: 10.5px; white-space: nowrap; color: var(--text-muted); }
+.fkx-rrow-macros em b { margin-right: 2px; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.fkx-rrow-macros .uv-bar { height: 4px; }
+/* The score pill: the U1 flat lavender-lit `.fmx-score`, at the row's size (prototype `.spill`). */
+.fkx-rrow-foot .fkx-rrow-score { justify-self: end; gap: 5px; padding: 4px 10px 4px 4px; }
+.fkx-rrow-foot .fkx-rrow-score b { font-size: 13px; }
+.fkx-rrow-foot .fkx-rrow-score.is-pending { padding: 4px 10px 4px 4px; }
+.fkx-rrow-foot .fkx-rrow-score.is-pending b { font-size: 9px; }
+.fkx-rrow-foot .fkx-rrow-score .t-ico { filter: none; }
+.fkx-recipe-row.is-skeleton { display: block; padding: 13px 14px 12px; border-radius: 21px; }
+
+/* Empty: dashed sage free space (rank 4) with the lit call-to-action as the one glass. */
+.fkx-recipes .fkx-empty.uv-empty { gap: 10px; padding: 22px 18px; border-radius: 20px; }
+.fkx-recipes .fkx-empty .t-ico { width: 52px; height: 52px; }
+.fkx-recipes .fkx-empty strong { font-family: inherit; font-size: 13.5px; font-weight: 500;
+  line-height: 1.5; letter-spacing: 0; color: var(--text-secondary); }
+.fkx-recipes .fkx-empty button.glass { --c: var(--dv-sage); min-height: 46px; padding: 12px 18px;
+  border: 0; border-radius: 18px; font-family: inherit; font-size: 14px; font-weight: 600;
+  color: var(--text-primary);
+  /* the older `.fkx-empty button` (0,1,1) outranks `.glass` on background: restate it */
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.60)); }
+
+@media (max-width: 360px) {
+  .fkx-rrow-foot { grid-template-columns: minmax(0, 1fr); }
+  .fkx-rrow-foot .fkx-rrow-score { justify-self: start; }
+}
+
+/* Re-glass: a few older house rules (`.fkx-cta.is-primary`, the save/bottom bars) outrank
+   `.glass` on background/box-shadow; the recipe surfaces restate the §3 body here. */
+.fkx-rdetail .fkx-cta.glass,
+.fkx-reditor .fkx-btn.glass, .fkx-workshop .fkx-btn.glass,
+.fkx-savebar .fkx-btn.glass, .fkx-wsbottom .fkx-btn.glass {
+  border: 0;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.60));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.10),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent); }
+
+/* Shared flat pieces of the recipe surfaces (rank 3): chips, tags, steppers, inputs, close. */
+.fkx-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fkx-chip { --c: var(--dv-sage); display: inline-flex; align-items: center; gap: 6px; min-height: 34px;
+  padding: 7px 12px; border: 0; border-radius: 999px; font-family: inherit; font-size: 12px;
+  font-weight: 600; white-space: nowrap; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-chip .t-ico { width: 18px; height: 18px; filter: none; }
+.fkx-chip.is-role, .fkx-chip.is-star { --c: var(--dv-coral); }
+.fkx-chip.is-star { --c: var(--dv-amber); }
+.fkx-chip.is-on { color: var(--page, #191614); background: var(--c);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
+.fkx-chip.is-input { min-width: 96px; color: var(--text-primary); background: transparent;
+  box-shadow: none; border: 1.2px dashed color-mix(in srgb, var(--dv-sage) 40%, transparent); outline: none; }
+.fkx-chip.is-input::placeholder { color: var(--text-muted); }
+.fkx-chip.is-goal { --c: var(--dv-lav); align-self: flex-start; }
+.fkx-chip.is-swap { --c: var(--dv-amber); margin-left: auto; color: color-mix(in srgb, var(--c) 80%, var(--text-primary));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 40%, transparent); }
+.fkx-tagf { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px 3px 7px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 500; white-space: nowrap; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-tagf .t-ico { width: 15px; height: 15px; filter: none; }
+.fkx-inp { display: block; width: 100%; min-width: 0; padding: 11px 13px; border: 0; border-radius: 13px;
+  font: inherit; font-size: 14px; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); outline: none; }
+.fkx-inp::placeholder { color: var(--text-muted); }
+.fkx-step { display: inline-flex; align-items: center; gap: 10px; }
+.fkx-step > button { width: 34px; height: 34px; flex: 0 0 auto; display: grid; place-items: center;
+  border: 0; border-radius: 50%; font-family: inherit; font-size: 18px; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-step > b { min-width: 34px; text-align: center; font-size: 20px; font-weight: 600;
+  font-variant-numeric: tabular-nums; }
+.fkx-step > small { font-size: 12px; color: var(--text-secondary); }
+.fkx-step.is-amount { gap: 8px; }
+.fkx-amt { width: 52px; padding: 6px 4px; border: 0; border-radius: 10px; text-align: center;
+  font: inherit; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums;
+  color: var(--text-primary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-x, .fkx-rsheet-x { width: 32px; height: 32px; flex: 0 0 auto; display: grid; place-items: center;
+  border: 0; border-radius: 50%; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-rsheet-x { width: 34px; height: 34px; margin-left: auto; }
+/* the basis switch (ServingToggle) — prototype `.seg` */
+.fkx-seg { display: inline-flex; align-self: flex-start; justify-self: start; padding: 3px; border-radius: 999px;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-seg button { padding: 7px 14px; border: 0; border-radius: 999px; font-family: inherit;
+  font-size: 12.5px; font-weight: 600; white-space: nowrap; color: var(--text-secondary);
+  background: transparent; font-variant-numeric: tabular-nums; }
+.fkx-seg button.is-on { color: var(--page, #191614); background: var(--dv-sage);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--dv-sage) 45%, transparent); }
+/* sub-head h1 (editor/Műhely): the `.fmx-subhead strong` title as a real heading */
+.fkx-title { margin: 3px 0 0; font-family: var(--ff-display); font-size: 23px; font-weight: 600;
+  letter-spacing: -0.8px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--text-primary); }
+.fkx-sec { margin-top: 22px; }
+.fkx-notfound.uv-empty { margin: 6px 0 0; padding: 16px; border-radius: 18px; text-align: center;
+  font-size: 12.5px; color: var(--text-secondary); }
+
+/* Recept részlet — hero + the two info rows are U1 (`.fmx-detail-*`); the page's own pieces: */
+.fkx-rdetail .fkx-meta { margin: 8px 2px 0; font-size: 12px; letter-spacing: 0; color: var(--text-muted); }
+.fkx-rdetail .fkx-nova { color: var(--dv-amber); }
+.fkx-rdetail .fkx-role { color: #FFB39C; }
+.fkx-rdetail .fkx-basis { margin: 12px 0 2px; }
+.fkx-rdetail .fkx-note.glass { --c: var(--dv-lav); margin: 18px 0 0; padding: 14px; border: 0; border-radius: 22px; }
+.fkx-rdetail .fkx-note-head { display: flex; align-items: center; gap: 10px; }
+.fkx-rdetail .fkx-note-head strong { font-family: var(--ff-display); font-size: 16px; font-weight: 600; }
+.fkx-rdetail .fkx-note-body { margin: 8px 0 0; font-family: var(--ff-serif); font-style: italic;
+  font-size: 14px; line-height: 1.5; color: var(--text-primary); }
+.fkx-rdetail .fkx-fit-chip { display: inline-flex; align-items: center; gap: 7px; margin-top: 10px;
+  padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-dot { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: var(--dv-lav);
+  box-shadow: 0 0 6px var(--dv-lav); }
+.fkx-rdetail .fkx-door.glass { gap: 12px; min-height: 56px; margin: 10px 0 0; padding: 12px 14px 12px 12px;
+  border: 0; border-radius: 20px; }
+.fkx-rdetail .fkx-door.is-score { --c: var(--dv-lav); }
+.fkx-rdetail .fkx-door.is-logs { --c: var(--dv-amber); }
+.fkx-rdetail .fkx-door strong { font-size: 15px; letter-spacing: -0.3px; }
+.fkx-rdetail .fkx-door small { font-size: 11.5px; color: var(--text-secondary); }
+.fkx-rdetail .fkx-door > b { font-size: 20px; color: var(--text-muted); }
+.fkx-rdetail .fkx-door:disabled { opacity: 0.6; }
+.fkx-rdetail .fkx-cta.glass { justify-content: center; gap: 8px; min-height: 52px; margin: 12px 0 0;
+  padding: 13px 16px; border-radius: 18px; font-size: 14.5px; color: var(--text-primary); }
+.fkx-rdetail .fkx-cta.is-primary { --c: var(--dv-sage); margin-top: 18px; }
+.fkx-rdetail .fkx-cta.is-secondary { --c: var(--dv-lav); margin-top: 10px; }
+.fkx-rdetail .fkx-cta > span:nth-child(2) { flex: 0 1 auto; }
+.fkx-rdetail .fkx-cta > b { color: var(--text-muted); }
+.fkx-rdetail .fkx-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 12px 0 6px; }
+.fkx-rdetail .fkx-actions > button { justify-content: center; min-height: 48px; padding: 10px 8px;
+  border-radius: 16px; font-size: 13px; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-rdetail .fkx-actions > button .t-ico { width: 22px; height: 22px; filter: none; }
+.fkx-rdetail .fkx-actions > button.fkx-del { margin-left: 0; color: #FFB39C;
+  background: rgba(255, 126, 92, 0.07); box-shadow: inset 0 0 0 1px rgba(255, 126, 92, 0.35); }
+
+/* Sheets (logs · Műhely thread · recipe/kamra pickers): the sheet is the surface, rows are flat. */
+.fkx-rsheet-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.fkx-rsheet-head .col { flex: 1; min-width: 0; }
+.fkx-rsheet-head > .t-ico { width: 44px; height: 44px; }
+.fkx-rsheet { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.fkx-rsheet > * { min-width: 0; }
+.fkx-rlogs { display: grid; gap: 6px; }
+.fkx-rlog { padding: 10px 12px; border-radius: 14px; }
+.fkx-rlog-top { display: flex; align-items: center; gap: 12px; }
+.fkx-rlog-when { flex: 1; min-width: 0; }
+.fkx-rlog-when strong { display: block; font-size: 14px; font-weight: 600; }
+.fkx-rlog-when small { display: block; margin-top: 2px; font-size: 11.5px; color: var(--text-secondary); }
+.fkx-rlog-score { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.fkx-rlog-score .fmx-score { padding: 4px 10px 4px 4px; }
+.fkx-rlog-score .fmx-score b { font-size: 13px; }
+.fkx-rlog-score .fmx-score .t-ico { filter: none; }
+.fkx-rlog-score small { font-size: 10px; color: var(--text-muted); }
+.fkx-rlog-score small.is-up { color: var(--dv-sage); }
+.fkx-rlog-score small.is-down { color: var(--dv-amber); }
+.fkx-rlog-macros { display: flex; gap: 14px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--divider);
+  font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.fkx-rlog-macros b { font-weight: 600; color: var(--text-primary); }
+.fkx-rlog-foot { margin: 6px 2px 0; font-size: 11px; line-height: 1.5; color: var(--text-muted); }
+.fkx-rlog-empty.uv-empty { --c: var(--dv-amber); display: grid; justify-items: center; gap: 8px;
+  padding: 18px 16px; border-radius: 18px; text-align: center; }
+.fkx-rlog-empty strong { font-size: 14px; font-weight: 600; }
+.fkx-rlog-empty p { margin: 0; font-size: 12px; line-height: 1.5; color: var(--text-secondary); }
+.fkx-search-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.fkx-search-field { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 9px 14px;
+  border-radius: 16px; background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-search-field .t-ico { width: 22px; height: 22px; filter: none; }
+.fkx-search-field input { flex: 1; min-width: 0; border: 0; background: none; font: inherit;
+  font-size: 13.5px; color: var(--text-primary); outline: none; }
+.fkx-search-field input::placeholder { color: var(--text-muted); }
+.fkx-pick-list { max-height: 420px; overflow-y: auto; }
+.fkx-pick { padding: 11px 12px; border-radius: 14px;
+  box-shadow: inset 3px 0 0 var(--c), inset 0 0 0 1px var(--divider); }
+.fkx-pick-top { display: flex; align-items: center; gap: 10px; }
+.fkx-pick-copy { flex: 1; min-width: 0; }
+.fkx-pick-name { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.fkx-pick-name strong { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.fkx-pick-star { display: inline-grid; }
+.fkx-pick-star .t-ico { width: 15px; height: 15px; filter: none; }
+.fkx-pick-copy > small { display: block; margin-top: 3px; font-size: 11.5px; color: var(--text-secondary); overflow-wrap: anywhere; }
+.fkx-pick-kcal { flex: 0 0 auto; text-align: right; }
+.fkx-pick-kcal b { display: block; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fkx-pick-kcal small { font-size: 10px; color: var(--text-muted); }
+.fkx-pick-add { --c: var(--dv-coral); width: 34px; height: 34px; flex: 0 0 auto; display: grid; place-items: center;
+  border: 0; border-radius: 50%; color: var(--page, #191614); background: var(--c);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
+.fkx-pick-add.is-gold { --c: var(--dv-amber); }
+.fkx-pick-add.is-added { color: var(--text-secondary); background: rgba(245, 239, 230, 0.06);
+  box-shadow: inset 0 0 0 1px var(--divider); opacity: 0.7; }
+.fkx-pick-macros { margin-top: 8px; }
+.fkx-pick-none.uv-empty { --c: var(--dv-coral); margin: 4px 0; padding: 16px 8px; border-radius: 14px;
+  text-align: center; font-size: 12px; color: var(--text-secondary); }
+.fkx-thread { max-height: 420px; overflow-y: auto; }
+.fkx-bubble { max-width: 92%; justify-self: start; padding: 9px 12px; border-radius: 14px; }
+.fkx-bubble.is-user { justify-self: end; background: color-mix(in srgb, var(--dv-coral) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 30%, transparent); }
+.fkx-bubble p { margin: 3px 0 0; font-size: 13px; line-height: 1.5; color: var(--text-primary); }
+
+/* Recept szerkesztő — one sage glass form card, a lavender glass total, glass line cards. */
+.fkx-fcard.glass { display: grid; gap: 14px; padding: 14px; border-radius: 22px; }
+.fkx-field { display: grid; gap: 7px; min-width: 0; }
+.fkx-field > span { font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+.fkx-hint { margin: 0; font-size: 11.5px; line-height: 1.4; color: var(--text-secondary); }
+.fkx-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.fkx-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.fkx-stat { text-align: center; }
+.fkx-stat b { display: block; font-size: 22px; font-weight: 600; letter-spacing: -0.8px;
+  font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.fkx-stat small { font-size: 10px; color: var(--text-muted); }
+.fkx-other { margin: 0; font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.fkx-other b { font-weight: 600; color: var(--text-secondary); }
+.fkx-lines { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.fkx-lines > * { min-width: 0; }
+.fkx-lcard.glass { display: grid; gap: 10px; padding: 12px 14px; border-radius: 20px; }
+.fkx-lcard-top { display: flex; align-items: flex-start; gap: 8px; }
+.fkx-lcard-name { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.fkx-lcard-name strong { font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.fkx-lcard-name small { flex-basis: 100%; font-size: 11.5px; color: var(--text-secondary); }
+.fkx-lcard-kcal { flex: 0 0 auto; text-align: right; }
+.fkx-lcard-kcal b { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--c) 78%, var(--text-primary)); }
+.fkx-lcard-kcal small { margin-left: 3px; font-size: 10.5px; color: var(--text-muted); }
+.fkx-lcard-kcal.is-null b { color: var(--text-muted); }
+.fkx-lcard-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.fkx-lines-empty.uv-empty { --c: var(--dv-sage); margin: 0; padding: 14px; border-radius: 18px;
+  text-align: center; font-size: 12px; color: var(--text-secondary); }
+.fkx-addline.uv-empty { --c: var(--dv-sage); display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 12px; border-radius: 20px; font-family: inherit; font-size: 14px; font-weight: 600;
+  color: var(--text-primary); }
+.fkx-addline .t-ico { width: 24px; height: 24px; filter: none; }
+.fkx-tags { align-items: center; }
+/* the portaled save bar — a frosted dock, not a card (prototype `.savebar`) */
+.recipe-save-bar.fkx-savebar { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px;
+  left: 12px; right: 12px; padding: 10px; border: 0; border-radius: 24px;
+  background: rgba(25, 22, 20, 0.82); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-btn { --c: var(--dv-sage); display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 12px 16px; border: 0; border-radius: 18px; font-family: inherit;
+  font-size: 14.5px; font-weight: 600; color: var(--text-primary); text-align: center; }
+.fkx-btn.is-flat { color: var(--text-secondary); background: rgba(245, 239, 230, 0.05);
+  box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-btn:disabled { opacity: 0.45; }
+
+/* Receptműhely — the empty canvas is a frameless lavender halo; the dock is ONE glass card. */
+.fkx-workshop .fkx-ws-empty { padding: 24px 22px 8px; background: none; }
+.fkx-workshop .fkx-ws-art .t-ico { width: 104px; height: 104px; margin: 0 auto;
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 20px rgba(171, 159, 210, 0.45)); }
+.fkx-workshop .fkx-ws-empty strong { font-family: var(--ff-serif); font-style: italic; font-size: 28px;
+  font-weight: 500; letter-spacing: 0; }
+.fkx-workshop .fkx-ws-empty p { font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+.fkx-workshop .fkx-ws-empty small { font-size: 11.5px; color: var(--text-muted); }
+.fkx-ws-name { display: grid; gap: 8px; margin: 0 0 6px; }
+.fkx-ws-name .fkx-inp { font-family: var(--ff-display); font-size: 16px; }
+.fkx-workshop .fkx-stepper { padding: 0; border: 0; background: none; box-shadow: none; }
+.fkx-workshop .fkx-stepper button { width: 38px; height: 38px; font-size: 18px; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-workshop .fkx-stepper strong { font-size: 22px; font-weight: 600; }
+.fkx-workshop .fkx-stepper small { font-size: 11px; color: var(--text-secondary); }
+.fkx-workshop .fkx-basis { margin: 0; }
+.fkx-callout { margin: 8px 0 0; padding: 12px 14px; border-radius: 18px; font-size: 13px; line-height: 1.45;
+  color: var(--text-secondary); background: color-mix(in srgb, var(--dv-amber) 8%, transparent);
+  box-shadow: inset 3px 0 0 var(--dv-amber); }
+.fkx-workshop .fkx-lines-empty.uv-empty { padding: 14px; }
+/* the diff flash rides on ::after, which glass also uses for its sheen: restate the overlay */
+.fkx-workshop .wsh-ing.glass.diff::after { top: 0; bottom: 0; left: 0; width: auto; right: 0; z-index: 3;
+  transform: none; opacity: 1; animation: wsh-difffade 2.6s ease-out forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .fkx-workshop .wsh-ing.glass.diff::after { animation: none; opacity: 0.5; }
+}
+.fkx-ws-steps { margin-top: 12px; }
+.fkx-ws-steps .mz-colstrip.glass { --c: var(--dv-sage); border: 0; border-radius: 20px; }
+.fkx-ws-steps .mz-colhead { padding: 13px 14px; }
+.fkx-steps { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.fkx-steps li { display: flex; gap: 8px; font-size: 13px; line-height: 1.45; color: var(--text-primary); }
+.fkx-steps b { min-width: 16px; font-weight: 600; color: var(--dv-coral); }
+.fkx-principle { margin: 18px 4px 0; font-size: 11.5px; line-height: 1.5; text-align: center; color: var(--text-muted); }
+.wsh-bottom.fkx-wsbottom { left: 10px; right: 10px; gap: 10px; padding: 8px 2px 10px; border-top: 0;
+  background: linear-gradient(180deg, transparent, rgba(25, 22, 20, 0.86) 28%); }
+.fkx-gate { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0 0 8px;
+  font-size: 11.5px; line-height: 1.4; text-align: center; color: var(--text-muted); }
+.fkx-gate .t-ico { filter: none; }
+.fkx-wsbottom .fkx-btn { width: 100%; }
+.fkx-wsbottom .wsh-dock.glass { gap: 8px; padding: 12px; border-radius: 22px; }
+.fkx-wsbottom .wsh-pchip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px;
+  border: 0; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-wsbottom .wsh-pchip .t-ico { width: 18px; height: 18px; filter: none; }
+.fkx-wsbottom .wsh-pchip.on { color: var(--page, #191614); background: var(--dv-lav);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--dv-lav) 50%, transparent); }
+.fkx-wsbottom .wsh-busy { margin: 0; padding: 0 4px; font-size: 11px; color: var(--text-muted); }
+.fkx-wsbottom .wsh-last { gap: 8px; padding: 8px 12px; border: 0; border-radius: 14px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-wsbottom .wsh-last .t-ico { filter: none; }
+.fkx-wsbottom .wsh-last .tx { font-size: 12px; }
+.fkx-wsbottom .wsh-last-chev { font-size: 10px; color: var(--text-muted); }
+.fkx-wsbottom .wsh-composer { display: flex; align-items: center; gap: 8px; }
+.fkx-wsbottom .wsh-cfield { padding: 4px 6px 4px 14px; border: 0; background: rgba(245, 239, 230, 0.05);
+  box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-wsbottom .wsh-cfield input { font-size: 13.5px; }
+.fkx-wsbottom .wsh-cbtn { width: 40px; height: 40px; border: 0; background: rgba(245, 239, 230, 0.06);
+  box-shadow: inset 0 0 0 1px var(--divider); }
+.fkx-wsbottom .wsh-cbtn .t-ico { filter: none; }
+.fkx-wsbottom .wsh-cbtn.send { color: var(--page, #191614); background: var(--dv-lav);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--dv-lav) 55%, transparent); }
+
+@media (max-width: 360px) {
+  .fkx-rdetail .fkx-actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .fkx-rdetail .fkx-actions > button.fkx-del { grid-column: 1 / -1; }
+  .fkx-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fkx-two { grid-template-columns: minmax(0, 1fr); }
+}
+/* the 340px kit halo is wider than a 320px screen: clip it sideways, never scroll */
+.fkx-ws-empty.uv-halo { overflow-x: clip; }
+/* ── /uveg fuel receptek ── */
+
+/* ── uveg fuel log (mezo-me75u.2) ── /fuel/log/uj, composer, pick/víz/energia sheets ── */
+/* The approved look: prototypes/src/uveg-fuel-tobbi-body.html `log()` (incl. the fail state),
+   `SH.kamrapick`, `SH.water`, `SH.energy` (+ its `.logh/.daychip/.modes/.mode/.viewf/.micbtn/
+   .aipanel/.srcs/.lcard/.tagf/.total/.daybar/.failart/.eq/.eblk/.etile` rules). Ranking (bible
+   §3.4): the mode bar, viewfinder, mic, source tiles, AI panel, line cards, usual rows and the
+   total card are `.glass` in their own hue; everything inside them is flat; empty and failed
+   states are dashed. The composer is scoped to `.logflow-composer`, because `.logflow-lntag`,
+   `.logflow-stepbtn` and `.logflow-amtinput` are shared with the recipe Műhely, and the Kamra
+   picker to `.flp-kpick`, because `.fkp-*` is shared with the Recept picker. */
+
+/* ─ /fuel/log/uj page: the page lets the aurora through; header art is frameless (rank 1) ─ */
+.flognew-page.mz-page {
+  background: radial-gradient(120% 40% at 50% 0%, color-mix(in srgb, var(--dv-coral) 14%, transparent), transparent 70%); }
+.flognew-page.mz-p-gold {
+  background: radial-gradient(120% 40% at 50% 0%, color-mix(in srgb, var(--dv-amber) 14%, transparent), transparent 70%); }
+.flognew-page .mz-backbtn {
+  padding: 7px 12px; font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+/* The 14px inset is the page head's own (`.mz-page` children carry their own gutters). */
+.flognew-head { --c: var(--dv-coral); display: flex; align-items: center; gap: 12px; padding: 8px 14px 10px; }
+.flognew-head.is-past { --c: var(--dv-amber); }
+.flognew-ic { flex: 0 0 auto; width: 48px; height: 48px; display: grid; place-items: center; }
+.flognew-ic .t-ico {
+  filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 12px color-mix(in srgb, var(--c) 40%, transparent)); }
+.flognew-txt { flex: 1; min-width: 0; }
+.flognew-eyebrow { font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase;
+  color: var(--text-muted); }
+.flognew-head.is-past .flognew-eyebrow { color: color-mix(in srgb, var(--dv-amber) 80%, var(--text-primary)); }
+.flognew-title { margin-top: 2px; font-size: 22px; font-weight: 600; letter-spacing: -0.7px; line-height: 1.15;
+  color: var(--text-primary); overflow-wrap: anywhere; }
+.flognew-sub { margin-top: 2px; font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.flognew-daychip { flex: 0 0 auto; margin-left: auto; padding: 7px 12px; border-radius: 14px; text-align: center;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.flognew-daychip b { display: block; font-size: 14px; font-weight: 600; line-height: 1.2; color: var(--text-primary); }
+.flognew-daychip small { display: block; font-size: 10.5px; color: var(--text-muted); }
+.flognew-head.is-past .flognew-daychip { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 45%, transparent); }
+.flognew-head.is-past .flognew-daychip b { color: color-mix(in srgb, var(--dv-amber) 80%, var(--text-primary)); }
+.flognew-pastnote { display: flex; gap: 8px; align-items: center; margin: 0 14px 8px; padding: 9px 12px;
+  border-radius: 14px; font-size: 12px; line-height: 1.4; color: var(--text-secondary);
+  background: color-mix(in srgb, var(--dv-amber) 8%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 30%, transparent); }
+.flognew-pastnote b { margin: 0 3px; color: color-mix(in srgb, var(--dv-amber) 80%, var(--text-primary)); }
+.flognew-pastnote i { flex: none; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--dv-amber); box-shadow: 0 0 6px var(--dv-amber); }
+/* Sticky save bar (prototype `.savebar`): the composer's action row sticks above the floating
+   glass tab bar (14 + 64 + 8px air = 86px), as a blurred strip — not a card, so the glass CTA
+   inside it is not glass-in-glass. */
+.flognew-page .logflow-actions {
+  position: sticky; bottom: 86px; z-index: 5;
+  padding: 10px; border-radius: 24px;
+  background: rgba(25, 22, 20, 0.82);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  box-shadow: inset 0 0 0 1px var(--divider); }
+
+/* ─ The four ways in (FuelLogModes) ─ */
+.fmx-logmodes { margin: 0 0 14px; }
+.fmx-modes.glass { --c: var(--dv-coral); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px; margin: 2px 0 14px; padding: 6px; border-radius: 22px; }
+.fmx-mode { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0;
+  padding: 8px 0 7px; border: 0; border-radius: 16px; background: transparent;
+  font-family: inherit; font-size: 11px; font-weight: 600; color: var(--text-muted); }
+.fmx-modes .fmx-mode .t-ico { filter: grayscale(0.45) brightness(0.8); }
+.fmx-mode.is-active { color: var(--text-primary);
+  background: radial-gradient(80% 90% at 50% 20%, color-mix(in srgb, var(--c) 26%, transparent), transparent 70%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 40%, transparent); }
+.fmx-modes .fmx-mode.is-active .t-ico {
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 10px color-mix(in srgb, var(--c) 55%, transparent)); }
+.fmx-mode:focus-visible { outline: 2px solid var(--c); outline-offset: -2px; }
+
+.fmx-mode-hint { margin: 12px 6px 4px; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); text-align: center; }
+.fmx-inline-ico { display: inline-block; vertical-align: -3px; }
+.fmx-mode-error { margin: 6px 0 0; font-size: 12px; color: var(--dv-coral); text-align: center; }
+.fmx-mode-empty.uv-empty { --c: var(--dv-amber); margin: 10px 0 4px; padding: 14px; border-radius: 20px;
+  font-size: 12.5px; line-height: 1.55; color: var(--text-secondary); text-align: center; }
+
+/* Fotó: the viewfinder IS the camera input (label → hidden file input). */
+.fmx-camera { text-align: center; }
+.fmx-finder.glass { --c: var(--dv-coral); display: grid; place-items: center; align-content: center; gap: 6px;
+  height: 230px; margin: 0; padding: 16px; border-radius: 26px; cursor: pointer; text-align: center; }
+.fmx-finder.glass > .t-ico {
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 20px color-mix(in srgb, var(--c) 35%, transparent)); }
+.fmx-finder.glass > span { position: absolute; z-index: 1; width: 26px; height: 26px;
+  border: 2.5px solid color-mix(in srgb, var(--c) 75%, #fff); filter: drop-shadow(0 0 6px var(--c)); }
+.fmx-finder.glass > span:nth-child(1) { top: 18px; left: 18px; border-right: 0; border-bottom: 0; border-radius: 10px 0 0 0; }
+.fmx-finder.glass > span:nth-child(2) { top: 18px; right: 18px; border-left: 0; border-bottom: 0; border-radius: 0 10px 0 0; }
+.fmx-finder.glass > span:nth-child(3) { bottom: 18px; left: 18px; border-right: 0; border-top: 0; border-radius: 0 0 0 10px; }
+.fmx-finder.glass > span:nth-child(4) { bottom: 18px; right: 18px; border-left: 0; border-top: 0; border-radius: 0 0 10px 0; }
+.fmx-finder b { margin-top: 6px; font-size: 16px; font-weight: 600; color: var(--text-primary); }
+.fmx-finder.glass > input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.fmx-finder:focus-within { outline: 2px solid var(--c); outline-offset: 2px; }
+
+/* Hang: one big glass disc — a real recorder, no sample sentences. Live = coral. */
+.fmx-voice { text-align: center; }
+.fmx-mic.glass { --c: var(--dv-lav); width: 120px; height: 120px; margin: 26px auto 0; padding: 0; border: 0;
+  border-radius: 50%; display: grid; place-items: center; }
+.fmx-mic.glass.is-live { --c: var(--dv-coral); }
+.fmx-mic.glass:disabled { opacity: 0.45; }
+
+/* Szokásosak: glass rows in amber, the plate in a lit well. */
+.fmx-usuals { display: grid; gap: 10px; margin-top: 12px; }
+.fmx-usual.glass { --c: var(--dv-amber); display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 12px 14px 12px 12px; border: 0; border-radius: 20px; font-family: inherit;
+  text-align: left; color: var(--text-primary); }
+.fmx-usual-art.uv-well { --c: var(--dv-amber); }
+.fmx-usual-copy { flex: 1; min-width: 0; }
+.fmx-usual-copy strong { display: block; font-size: 15.5px; font-weight: 600; letter-spacing: -0.3px; overflow-wrap: anywhere; }
+.fmx-usual-copy small { display: block; margin-top: 2px; font-size: 11.5px; line-height: 1.35; color: var(--text-secondary); }
+.fmx-usual > b { flex: 0 0 auto; margin-left: auto; font-size: 20px; font-weight: 600; letter-spacing: -0.6px;
+  font-variant-numeric: tabular-nums; text-align: right; color: var(--text-primary); }
+.fmx-usual > b small { margin-left: 2px; font-size: 10.5px; font-weight: 500; letter-spacing: 0; color: var(--text-muted); }
+
+/* A felismerés kudarca: amber and dashed — never red, never an error (prototype `log(fail)`). */
+.fmx-failed.uv-empty { --c: var(--dv-amber); margin: 0; padding: 16px 14px 14px; border-radius: 20px; text-align: center; }
+.fmx-failed-art { position: relative; display: block; width: 62px; height: 62px; margin: 0 auto; }
+.fmx-failed-art .t-ico { filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.55)); }
+.fmx-failed-art i { position: absolute; right: -6px; top: -4px; width: 24px; height: 24px;
+  display: grid; place-items: center; border-radius: 50%; font-style: normal; font-weight: 700; font-size: 14px;
+  color: var(--page, #191614); background: var(--dv-amber); box-shadow: 0 0 10px var(--dv-amber); }
+.fmx-failed small { display: block; margin-top: 10px; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px;
+  text-transform: uppercase; color: var(--text-muted); }
+.fmx-failed strong { display: block; margin-top: 4px; font-size: 17px; font-weight: 600; letter-spacing: -0.3px;
+  line-height: 1.3; color: var(--text-primary); }
+.fmx-failed p { margin: 8px 0 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+.fmx-failed-cta { display: flex; align-items: center; justify-content: center; width: 100%; margin: 0 0 8px;
+  padding: 13px 16px; border: 0; border-radius: 18px; font-family: inherit; font-size: 14.5px; font-weight: 600;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fmx-failed-cta:last-child { margin-bottom: 0; }
+
+/* ─ LogFlowPage: the full-page overlay (other entry points) ─ z 60: above the tab bar (40), below
+   the sheets (200+) it hosts. Opaque, so it carries its own aurora wash. */
+.logflow-page {
+  position: absolute; inset: 0; z-index: 60; overflow-y: auto; overscroll-behavior: contain;
+  color: var(--text-primary);
+  background:
+    radial-gradient(260px 260px at 0% 14%, rgba(94, 138, 103, 0.22), transparent 70%),
+    radial-gradient(240px 240px at 100% 0%, rgba(201, 138, 58, 0.18), transparent 70%),
+    radial-gradient(260px 260px at 20% 80%, rgba(109, 95, 168, 0.18), transparent 70%),
+    var(--surface-page); }
+.logflow-head { position: sticky; top: 0; z-index: 4; display: flex; align-items: center; gap: 8px;
+  padding: 14px 20px 8px; background: rgba(25, 22, 20, 0.82);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+.logflow-back.chip { padding: 7px 12px; border: 0; font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.logflow-time { margin-left: auto; font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.logflow-body { padding: 4px 20px calc(20px + env(safe-area-inset-bottom)); }
+.logflow-body > .h-display { font-size: 22px; font-weight: 600; letter-spacing: -0.7px; }
+
+/* ─ MealComposer ─ */
+.logflow-composer .logflow-eyebrow { display: block; margin: 12px 2px 8px; }
+.logflow-composer .logflow-seg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px;
+  margin: 0 0 6px; padding: 4px; border-radius: 16px; }
+.logflow-composer .logflow-segbtn { min-width: 0; padding: 9px 0; border: 0; border-radius: 12px; background: transparent;
+  font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase;
+  color: var(--text-muted); }
+.logflow-composer .logflow-segbtn.is-on { color: var(--page, #191614); background: var(--dv-sage);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--dv-sage) 50%, transparent); }
+
+/* Source tiles (prototype `.srcs` / `.cap`): glass in their own hue; 2 or 3 per row. */
+.logflow-composer .logflow-srctiles { display: flex; gap: 10px; margin: 0 0 4px; }
+.logflow-composer .logflow-srct.glass { display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+  flex: 1 1 0; min-width: 0; min-height: 44px; padding: 13px 12px; border: 0; border-radius: 20px; cursor: pointer;
+  font-family: inherit; text-align: left; color: var(--text-primary);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.logflow-composer .logflow-srct:active { transform: scale(0.96); }
+.logflow-composer .logflow-srct b { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+.logflow-composer .logflow-srct small { font-size: 11.5px; line-height: 1.35; color: var(--text-secondary); }
+.logflow-composer .logflow-srct.glass.on {
+  box-shadow: 0 16px 30px -16px rgba(0, 0, 0, 0.75), 0 0 26px -2px color-mix(in srgb, var(--c) 55%, transparent),
+    inset 0 0 0 1.5px color-mix(in srgb, var(--c) 70%, transparent); }
+
+/* The AI panel (prototype `.aipanel`): lavender glass; its field and chips are flat. */
+.logflow-composer .logflow-aipanel.glass { --c: var(--dv-lav); display: grid; gap: 10px; margin-top: 12px;
+  padding: 12px; border-radius: 22px; }
+.logflow-composer .logflow-aipanel textarea { width: 100%; min-height: 64px; padding: 11px 13px; border: 0;
+  border-radius: 13px; resize: none; font-family: inherit; font-size: 14px; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.logflow-composer .logflow-aipanel textarea::placeholder { color: var(--text-muted); }
+.logflow-composer .logflow-airow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.logflow-composer .logflow-aichip { --c: var(--dv-lav); display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px; border: 0; border-radius: 999px; cursor: pointer; font-family: inherit;
+  font-size: 12px; font-weight: 600; white-space: nowrap; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.logflow-composer .logflow-aichip .t-ico { filter: none; }
+.logflow-composer .logflow-aichip:disabled { opacity: 0.45; cursor: default; }
+.logflow-composer .logflow-aichip.is-live { --c: var(--dv-coral); color: var(--page, #191614); background: var(--c);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
+.logflow-composer .logflow-airun { margin-left: auto; color: var(--page, #191614); background: var(--c);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
+.logflow-composer .logflow-aiphoto { display: inline-flex; align-items: center; gap: 6px; min-width: 0;
+  padding: 4px 8px 4px 4px; border-radius: 999px; font-size: 12px; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); overflow-wrap: anywhere; }
+.logflow-composer .logflow-aiphoto img { width: 26px; height: 26px; object-fit: cover; border-radius: 50%; flex: none; }
+.logflow-composer .logflow-aiphoto button { display: grid; place-items: center; padding: 2px; border: 0;
+  background: none; color: var(--text-muted); }
+.logflow-composer .logflow-aierr { margin: 0; font-size: 12px; color: var(--dv-coral); }
+.logflow-composer .logflow-aihint { margin: 0; font-size: 11px; line-height: 1.4; color: var(--text-muted); }
+.logflow-composer .logflow-aibusy.glass { display: flex; align-items: center; justify-content: center; gap: 9px;
+  font-size: 13px; font-weight: 600; color: color-mix(in srgb, var(--c) 78%, var(--text-primary)); }
+.logflow-composer .logflow-aibusy .np-twinkle { flex: none; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--dv-lav); box-shadow: 0 0 10px var(--dv-lav); }
+
+/* TÉTELEK header + the empty state (dashed, rank 4). */
+.logflow-composer .logflow-sec { display: flex; align-items: center; gap: 9px; margin: 18px 2px 10px; }
+.logflow-composer .logflow-sec-n { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
+  color: var(--text-secondary); }
+.logflow-composer .logflow-sec-rule { flex: 1; height: 1px; background: linear-gradient(90deg, var(--divider), transparent); }
+.logflow-composer .logflow-empty.uv-empty { padding: 14px; border-radius: 20px; text-align: center;
+  font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+
+/* Line cards (prototype `.lcard`): glass in the line's dominant-macro hue. */
+.logflow-composer .logflow-lines { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.logflow-composer .logflow-lines > * { min-width: 0; }
+.logflow-composer .logflow-lncard.glass { padding: 12px 14px; border-radius: 20px; }
+.logflow-composer .logflow-lntop { display: flex; align-items: center; gap: 8px; }
+.logflow-composer .logflow-lnname { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.logflow-composer .logflow-lnlabel { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; color: var(--text-primary);
+  overflow-wrap: anywhere; }
+.logflow-composer .logflow-lntag { display: inline-flex; align-items: center; gap: 4px; flex: none;
+  padding: 3px 9px 3px 5px; border-radius: 999px; font-size: 10.5px; font-weight: 500; letter-spacing: 0;
+  text-transform: none; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.logflow-composer .logflow-lntag .t-ico { filter: none; }
+.logflow-composer .logflow-lntag .logflow-lntag-ai { margin-left: 1px; }
+.logflow-composer .logflow-lnx { flex: none; width: 28px; height: 28px; display: grid; place-items: center;
+  padding: 0; border: 0; border-radius: 50%; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider); }
+.logflow-composer .logflow-lnstep { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.logflow-composer .logflow-stepbtn { flex: none; width: 34px; height: 34px; min-width: 34px; border: 0; border-radius: 50%;
+  display: grid; place-items: center; font-size: 18px; color: var(--text-primary); cursor: pointer;
+  background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider); }
+.logflow-composer .logflow-amtinput { width: 58px; padding: 6px 2px; border: 0; border-radius: 10px; text-align: center;
+  font-family: inherit; font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary);
+  background: transparent; box-shadow: inset 0 0 0 1px var(--divider); }
+.logflow-composer .logflow-lnunit { font-size: 12px; color: var(--text-secondary); }
+.logflow-composer .logflow-lnkcal { margin-left: auto; flex: none; text-align: right; white-space: nowrap; }
+.logflow-composer .logflow-lnkcal b { font-size: 18px; font-weight: 600; letter-spacing: -0.4px; font-variant-numeric: tabular-nums; }
+.logflow-composer .logflow-lnkcal small { margin-left: 3px; font-size: 10.5px; color: var(--text-muted); }
+/* the macro strip (prototype `.mm`): three flat cells, each in its macro's hue */
+.logflow-composer .logflow-lnmac { display: flex; gap: 6px; margin-top: 8px; }
+.logflow-composer .logflow-lnmac span { flex: 1; min-width: 0; padding: 4px 2px 3px; border-radius: 10px; text-align: center;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.logflow-composer .logflow-lnmac b { display: block; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.logflow-composer .logflow-lnmac .mz-c-coral b { color: var(--macro-protein); }
+.logflow-composer .logflow-lnmac .mz-c-gold b { color: var(--macro-carbs); }
+.logflow-composer .logflow-lnmac .mz-c-lav b { color: var(--macro-fat); }
+.logflow-composer .logflow-lnmac small { font-size: 10px; color: var(--text-muted); }
+.logflow-composer .logflow-lnnutri { margin-top: 6px; }
+.logflow-composer .logflow-lnnote { display: flex; align-items: flex-start; gap: 6px; margin: 8px 0 0;
+  font-size: 11.5px; line-height: 1.4; color: var(--text-secondary); }
+.logflow-composer .logflow-lnnote .t-ico { flex: none; margin-top: 1px; filter: none; }
+
+/* Recipe fine-tuning inside a line card — flat (RecipeOverrideRow). */
+.logflow-composer .logflow-tune { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--divider); }
+.logflow-composer .logflow-tune-head { display: flex; align-items: center; justify-content: space-between; width: 100%;
+  padding: 2px 0; border: 0; background: none; font-family: inherit; cursor: pointer; }
+.logflow-composer .logflow-tune-toggle { font-size: 11.5px; font-weight: 600; color: var(--dv-coral); }
+.logflow-composer .logflow-tune-note { margin-top: 5px; font-size: 11px; color: var(--text-muted); }
+.logflow-composer .logflow-tune-reset { margin-top: 8px; padding: 6px 12px; border: 0; border-radius: 999px;
+  font-family: inherit; font-size: 11.5px; font-weight: 600; color: var(--dv-coral);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.flp-ovr { display: flex; align-items: center; gap: 8px; margin-top: 6px; padding: 7px 8px; border-radius: 12px;
+  background: rgba(245, 239, 230, 0.03); }
+.flp-ovr.is-changed { background: color-mix(in srgb, var(--dv-amber) 9%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 30%, transparent); }
+.flp-ovr-name { flex: 1; min-width: 0; font-size: 12.5px; color: var(--text-secondary); overflow-wrap: anywhere; }
+.flp-ovr.is-changed .flp-ovr-name { font-weight: 600; color: var(--text-primary); }
+.flp-ovr-mod { margin-left: 6px; padding: 1px 6px; border-radius: 999px; font-size: 9.5px; font-weight: 700;
+  letter-spacing: 0.8px; color: var(--page, #191614); background: var(--dv-amber); }
+.flp-ovr-was { margin-left: 6px; font-size: 11px; color: var(--text-muted); text-decoration: line-through; }
+.flp-ovr-step { display: inline-flex; align-items: center; flex: none; border-radius: 999px;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.flp-ovr-step > button { min-width: 28px; height: 28px; padding: 0 4px; border: 0; background: none;
+  display: grid; place-items: center; font-family: inherit; font-size: 15px; color: var(--text-primary); }
+.flp-ovr-step > button.flp-ovr-amt { min-width: 30px; font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.flp-ovr-step input { width: 42px; padding: 3px 0; border: 0; border-radius: 8px; text-align: center; font-family: inherit;
+  font-size: 12.5px; font-weight: 600; color: var(--text-primary); background: rgba(245, 239, 230, 0.06);
+  box-shadow: inset 0 0 0 1px var(--dv-amber); }
+.flp-ovr-unit { padding: 0 8px 0 1px; font-size: 10.5px; color: var(--text-muted); }
+.flp-ovr-kcal { flex: none; min-width: 34px; text-align: right; font-size: 12px; font-variant-numeric: tabular-nums;
+  color: var(--text-muted); }
+.flp-ovr-reset { flex: none; display: grid; place-items: center; padding: 3px; border: 0; background: none;
+  color: var(--text-muted); }
+
+/* EZ AZ ÉTKEZÉS (prototype `.total`): lavender glass; the cells are flat, numerals in their hue. */
+.logflow-composer .logflow-total.glass { --c: var(--dv-lav); margin-top: 14px; padding: 16px; border-radius: 22px; }
+.logflow-composer .logflow-total-head { display: flex; align-items: baseline; justify-content: space-between; }
+.logflow-composer .logflow-totname { margin-top: 4px; font-size: 17px; font-weight: 600; letter-spacing: -0.3px;
+  color: var(--text-primary); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.logflow-composer .logflow-total-cells.mz-mcells { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px; margin: 12px 0; }
+.logflow-composer .logflow-total-cells span { padding: 0; border-radius: 0; background: none; box-shadow: none; text-align: center; }
+.logflow-composer .logflow-total-cells b { font-size: 22px; font-weight: 600; letter-spacing: -0.8px; }
+.logflow-composer .logflow-total-cells small { font-size: 10px; font-weight: 500; letter-spacing: 0; text-transform: none;
+  color: var(--text-muted); opacity: 1; }
+.logflow-composer .logflow-total-cells .mz-c-sage b { color: color-mix(in srgb, var(--dv-amber) 80%, var(--text-primary)); }
+.logflow-composer .logflow-total-cells .mz-c-coral b { color: color-mix(in srgb, var(--macro-protein) 80%, var(--text-primary)); }
+.logflow-composer .logflow-total-cells .mz-c-gold b { color: color-mix(in srgb, var(--macro-carbs) 80%, var(--text-primary)); }
+.logflow-composer .logflow-total-cells .mz-c-lav b { color: color-mix(in srgb, var(--macro-fat) 80%, var(--text-primary)); }
+.logflow-composer .logflow-total-nutri { margin-top: 6px; }
+.logflow-composer .logflow-total-day { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--divider); }
+.logflow-composer .logflow-total-dayline { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+  font-size: 12px; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.logflow-composer .logflow-total-dayline b { font-weight: 600; color: var(--text-primary); }
+.logflow-composer .logflow-total-add { color: color-mix(in srgb, var(--dv-lav) 80%, var(--text-primary)); }
+.logflow-composer .logflow-daybar { display: flex; height: 7px; margin-top: 8px; border-radius: 4px; overflow: hidden;
+  background: rgba(245, 239, 230, 0.07); }
+.logflow-composer .logflow-daybar b { background: var(--dv-sage); box-shadow: 0 0 8px var(--dv-sage); }
+.logflow-composer .logflow-daybar i { background: var(--dv-lav); box-shadow: 0 0 8px var(--dv-lav); }
+
+/* Actions: Mégse flat, the log CTA sage glass (prototype `.savebar`). */
+.logflow-composer .logflow-actions .cta-ghost { padding: 13px 16px; border: 0; border-radius: 18px;
+  font-size: 14.5px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.logflow-composer .logflow-save.glass { --c: var(--dv-sage); width: 100%; padding: 13px 16px; border: 0; border-radius: 18px;
+  gap: 8px; font-size: 14.5px; font-weight: 600; color: var(--text-primary); }
+.logflow-composer .logflow-save.glass:disabled { opacity: 0.45; }
+
+/* A8 · A9: the edit time field and the two-step delete. */
+.logflow-composer .fmx-edit-time.uv-flat { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin: 12px 0 0; padding: 10px 12px; border-radius: 16px; }
+.logflow-composer .fmx-edit-time .label-mono { font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; color: var(--text-muted); }
+.logflow-composer .fmx-edit-time input { padding: 7px 10px; border: 0; border-radius: 11px; font-family: inherit; font-size: 14px;
+  color: var(--text-primary); background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider);
+  color-scheme: dark; }
+.logflow-composer .fmx-delete { margin: 14px 0 4px; padding-top: 12px; border-top: 1px solid var(--divider); text-align: center; }
+.logflow-composer .fmx-delete > button { padding: 10px 16px; border: 0; border-radius: 14px; font-family: inherit;
+  font-size: 12.5px; color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.logflow-composer .fmx-delete p { margin: 0 0 10px; font-size: 12.5px; color: var(--text-secondary); }
+.logflow-composer .fmx-delete .fmx-delete-yes { margin-right: 8px; font-weight: 600; color: #FFB39C;
+  background: rgba(255, 126, 92, 0.07); box-shadow: inset 0 0 0 1px rgba(255, 126, 92, 0.35); }
+
+/* ─ Shared sheet bits of this block: the round close button ─ */
+.flp-x { flex: none; width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border: 0;
+  border-radius: 50%; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider); }
+
+/* ─ KamraPickSheet (prototype `SH.kamrapick`) — flat rows with the category spine ─ */
+.flp-kpick { --c: var(--dv-amber); }
+.flp-kpick .flp-kpick-head { align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.flp-kpick .flp-kpick-head > .t-ico {
+  filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 10px color-mix(in srgb, var(--c) 40%, transparent)); }
+.flp-kpick .flp-search { align-items: center; margin-bottom: 10px; padding: 11px 14px; border-radius: 16px;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.flp-kpick .flp-search input { flex: 1; min-width: 0; border: 0; background: none; font-family: inherit;
+  font-size: 13.5px; color: var(--text-primary); }
+.flp-kpick .flp-search input::placeholder { color: var(--text-muted); }
+.flp-kpick .fkp-chip { min-height: 32px; padding: 6px 12px; border: 0; font-size: 12px; font-weight: 600;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.flp-kpick .fkp-cdot { box-shadow: 0 0 6px var(--cc); }
+.flp-kpick .fkp-chip.is-on { color: var(--page, #191614); background: var(--cc);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--cc) 50%, transparent); }
+.flp-kpick .fkp-chip.is-on .fkp-cdot { background: var(--page, #191614); box-shadow: none; }
+/* flex: none stays (layout.spec: rows must not squash inside the max-height list, mezo-bq2t). */
+.flp-kpick .fkp-item { flex: none; position: relative; overflow: hidden; padding: 10px 12px 10px 14px; border-radius: 14px;
+  background: rgba(245, 239, 230, 0.04);
+  box-shadow: inset 3px 0 0 var(--kc), inset 0 0 0 1px var(--divider); }
+.flp-kpick .fkp-item::before { content: none; }
+.flp-kpick .fkp-name { font-size: 14px; font-weight: 600; color: var(--text-primary); overflow-wrap: anywhere; }
+.flp-kpick .fkp-meta { margin-top: 3px; align-items: center; font-size: 10px; color: var(--text-muted); }
+.flp-kpick .fkp-kcell { padding: 0 2px; border-radius: 0; background: none; box-shadow: none; text-align: right; }
+.flp-kpick .fkp-kcell b { font-size: 16px; font-weight: 600; letter-spacing: -0.4px; }
+.flp-kpick .fkp-kcell small { font-size: 9.5px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text-muted); }
+.flp-kpick .fkp-add { flex: none; width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border: 0;
+  border-radius: 999px; color: var(--page, #191614); background: var(--c);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
+.flp-kpick .fkp-add.is-added { color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); cursor: default;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.flp-kpick .fkp-none.uv-empty { margin: 4px 0; padding: 18px 12px; border-radius: 16px; text-align: center;
+  font-size: 12px; color: var(--text-secondary); }
+
+/* ─ WaterLogSheet (prototype `SH.water`) — only its own chips + field; the capture header and
+   hero are the shared capture system's (slice U3). ─ */
+.flp-wchip { --c: var(--dv-sky); display: inline-flex; align-items: center; padding: 9px 16px; border: 0;
+  border-radius: 999px; font-family: inherit; font-size: 13px; font-weight: 600; white-space: nowrap;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.flp-wchip.is-on { color: var(--page, #191614); background: var(--c);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
+.flp-winput { width: 120px; padding: 11px 13px; border: 0; border-radius: 13px; text-align: right;
+  font-family: inherit; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.flp-winput::placeholder { color: var(--text-muted); font-weight: 400; }
+.flp-wunit { font-size: 11.5px; font-weight: 600; color: var(--text-muted); }
+
+/* ─ EnergyBreakdownSheet (prototype `SH.energy`) — no glass in the sheet: a flat equation cell,
+   hue-tinted section blocks (the opened one lit), flat tiles with 3D icons. ─ */
+.flp-eh { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+.flp-eh > .t-ico {
+  filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 10px color-mix(in srgb, var(--dv-sage) 40%, transparent)); }
+.flp-eh h2 { margin: 2px 0 0; font-size: 21px; font-weight: 600; letter-spacing: -0.6px; line-height: 1.2; color: var(--text-primary); }
+.flp-elead { margin: 0 0 12px; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.flp-eq { display: flex; align-items: center; justify-content: space-between; gap: 4px; flex-wrap: wrap;
+  margin: 0 0 4px; padding: 12px; border-radius: 16px; text-align: center; font-size: 12px; color: var(--text-muted);
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.flp-eq .t .v { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.flp-eq .t .k { font-size: 11px; color: var(--text-muted); }
+.flp-eq .t.res .v { color: var(--dv-sage); text-shadow: 0 0 12px color-mix(in srgb, var(--dv-sage) 60%, transparent); }
+.flp-eq .op { color: var(--text-muted); font-size: 15px; }
+.flp-eblk { margin-top: 12px; padding: 12px; border-radius: 18px;
+  background: color-mix(in srgb, var(--c) 7%, rgba(245, 239, 230, 0.02));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent); }
+.flp-eblk.is-hl { box-shadow: inset 0 0 0 1.5px var(--c), 0 0 18px -6px var(--c); }
+.flp-esh { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.flp-estit { font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.flp-esamt { margin-left: auto; font-size: 17px; font-weight: 600; letter-spacing: -0.4px; font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.flp-etiles { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.flp-etiles .op { color: var(--text-muted); font-size: 16px; }
+.flp-etile { flex: 1 1 84px; min-width: 84px; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 8px 4px; border-radius: 13px; text-align: center; font-size: 10.5px; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.04); }
+.flp-etile .t-ico { filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.5)); }
+.flp-etile-val { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.flp-etile-val .u { margin-left: 2px; font-size: 10px; font-weight: 500; color: var(--text-muted); }
+.flp-etile-nm { font-size: 10.5px; color: var(--text-secondary); overflow-wrap: anywhere; }
+.flp-etile-sub { font-size: 9.5px; color: var(--text-muted); }
+.flp-etile.is-result { background: none; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 45%, transparent); }
+.flp-etile.is-result .flp-etile-val { font-size: 18px; color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.flp-ewhy { margin: 8px 0 0; font-size: 12px; line-height: 1.45; color: var(--text-secondary); }
+.flp-ewhy b { font-weight: 600; color: var(--text-primary); }
+
+/* ─ Motion: the live mic breathes (feedback, not decoration); reduced motion = still ─ */
+@keyframes flp-mic-breathe {
+  0%, 100% { box-shadow: 0 16px 30px -16px rgba(0, 0, 0, 0.75), 0 0 26px -6px color-mix(in srgb, var(--dv-coral) 40%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.10); }
+  50% { box-shadow: 0 16px 30px -16px rgba(0, 0, 0, 0.75), 0 0 34px 2px color-mix(in srgb, var(--dv-coral) 55%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.10); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fmx-mic.glass.is-live { animation: flp-mic-breathe 2.6s ease-in-out infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fmx-mic.glass, .fmx-mic.glass.is-live { animation: none; }
+  .logflow-composer .logflow-srct { transition: none; }
+  .fmx-finder.glass > .t-ico { animation: none; }
+}
+/* ── /uveg fuel log ── */
+
+/* ── uveg fuel stack (mezo-me75u.2) ── Kiegészítők, protokoll, új elem, gyógyszer, stack sheets ── */
+/* Reference: prototypes/uveg-fuel-tobbi.html — `stack()`, `openItem()`, `protokoll()`, `stackUj()`,
+   `gyogyszer()`, `SH.stackitem`, `SH.dose`, `SH.medform` (owner OK 2026-09-23). The older
+   `── fuel-stack (` and `.fmd-*` blocks stay underneath as the fallback their guards pin; every
+   rule here out-ranks them (U1 rule 1: `.glass` wins ties, so geometry is restated on
+   `.<thing>.glass`). Ranking (bible §3.4): the ring is a frameless halo; KÖVETKEZIK, the time
+   bands, the zone groups, the doors, the medication card and the item box are glass, ONE
+   accent each via `--c`; rows, chips, ticks and fields inside them are flat; empty/free
+   states are dashed. The sheets are one glass surface each, nothing glass inside. */
+
+/* the aurora shows through: the Kiegészítők family drops the opaque tone ground */
+.fsx-page.mz-page, .stk-detail-page.mz-page, .fmd-page.mz-page { background: transparent; }
+.fsx-page .fsx-note, .stk-detail-body .fsx-note { font-size: 11.5px; color: var(--text-muted); }
+
+/* ── Kiegészítők hub: the frameless ring halo + KÖVETKEZIK glass ── */
+.fsx-page .fsx-hero { display: grid; gap: 14px; padding: 0; border-radius: 0; background: none; overflow: visible; }
+.fsx-hero-halo { --c: var(--dv-sage); --c2: var(--dv-lav); display: grid; justify-items: center; gap: 4px; padding: 8px 0 0; text-align: center; }
+.fsx-hero-halo .fsx-overline { font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; color: var(--text-muted); }
+.fsx-gauge.fsx-ring { width: 170px; height: 170px; flex: none; margin: 4px auto 0; }
+.fsx-gauge.fsx-ring svg { width: 100%; height: 100%; }
+.fsx-gauge.fsx-ring circle { stroke-width: 8; }
+.fsx-gauge .fsx-ring-track.uv-ring-track { stroke: rgba(245, 239, 230, 0.07); }
+.fsx-gauge .fsx-ring-progress.uv-ring-prog { --c: var(--dv-sage); stroke: var(--c); stroke-dasharray: var(--fsx-progress) 100; }
+.fsx-gauge > .fsx-gauge-inner {
+  position: absolute; inset: 20px; z-index: 0; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #3A332D, #1E1B18);
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08),
+    inset 0 -10px 20px -10px color-mix(in srgb, var(--dv-sage) 45%, transparent),
+    0 12px 24px -12px #000;
+}
+.fsx-gauge.fsx-ring strong { font-family: var(--ff-display); font-size: 46px; font-weight: 300; letter-spacing: -2.5px; color: var(--text-primary); }
+.fsx-gauge.fsx-ring strong small { font-size: 18px; font-weight: 300; letter-spacing: -0.5px; color: var(--text-muted); }
+.fsx-gauge.fsx-ring b { margin-top: 4px; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+.fsx-next.glass {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 64px; margin: 0;
+  padding: 12px 12px 12px 14px; border: 0; border-radius: 22px; text-align: left; color: var(--text-primary);
+}
+.fsx-next.glass .fsx-next-copy small { font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: color-mix(in srgb, var(--c) 75%, var(--text-primary)); }
+.fsx-next.glass .fsx-next-copy strong { margin-top: 2px; font-size: 17px; font-weight: 600; letter-spacing: -0.4px; }
+.fsx-next.glass .fsx-next-copy em { font-size: 11.5px; color: var(--text-secondary); }
+.fsx-next.glass > b {
+  flex: 0 0 auto; padding: 10px 14px; border-radius: 14px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.8px; color: #191614;
+  background: var(--c); box-shadow: 0 0 14px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.fsx-done.uv-empty {
+  --c: var(--dv-sage); display: flex; flex-direction: column; align-items: center; gap: 6px;
+  margin: 0; padding: 14px 16px; border-radius: 20px; text-align: center;
+  font-size: 13px; line-height: 1.5; color: var(--text-secondary);
+}
+
+/* the time bands: glass in the band's own hue; the due one glows harder, a finished one dims */
+.fsx-band.glass { margin: 0; padding: 12px 12px 6px; border: 0; border-radius: 22px; }
+.fsx-band.glass.is-due {
+  border: 0;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 28%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.60));
+  box-shadow: 0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 34px -4px color-mix(in srgb, var(--c) 45%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.10),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.fsx-band.glass.is-complete { opacity: 0.72; }
+.fsx-band.glass .fsx-band-head { gap: 10px; padding: 0 2px 6px; }
+.fsx-band.glass .fsx-band-head strong { flex: 1; min-width: 0; font-family: var(--ff-body); font-size: 16px; font-weight: 600; letter-spacing: 0; }
+.fsx-band.glass .fsx-band-count { font-size: 13px; color: color-mix(in srgb, var(--c) 75%, var(--text-primary)); }
+.fsx-band.glass .fsx-row { gap: 8px; min-height: 52px; padding: 4px 2px; border-top: 1px solid var(--divider); }
+/* 44px hit area, a 30px round tick inside it (layout.spec keeps the 44px floor) */
+.fsx-band.glass .fsx-check, .fsx-band.glass .fsx-row.is-done .fsx-check {
+  width: 44px; height: 44px; margin-left: -6px; background: none; box-shadow: none; color: transparent;
+}
+.fsx-band.glass .fsx-check > span {
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 14px; font-weight: 700; color: #191614;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 55%, transparent);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.fsx-band.glass .fsx-row.is-done .fsx-check > span { background: var(--c); box-shadow: 0 0 10px color-mix(in srgb, var(--c) 60%, transparent); }
+.fsx-band.glass .fsx-check:focus-visible { outline: none; }
+.fsx-band.glass .fsx-check:focus-visible > span { outline: 2px solid var(--c); outline-offset: 2px; }
+.fsx-band.glass .fsx-row-main { gap: 10px; color: var(--text-primary); }
+.fsx-band.glass .fsx-row-copy strong { font-size: 14px; font-weight: 600; }
+.fsx-band.glass .fsx-row-copy small { margin-top: 1px; font-size: 11px; color: var(--text-secondary); }
+.fsx-band.glass .fsx-row.is-done .fsx-row-copy strong { color: var(--text-secondary); }
+.fsx-band.glass .fsx-row-main > b { font-size: 20px; color: var(--text-muted); }
+
+.fsx-empty.uv-empty { --c: var(--dv-sage); border-radius: 22px; box-shadow: none; }
+.fsx-empty.uv-empty strong { font-family: var(--ff-display); font-size: 20px; font-weight: 600; letter-spacing: -0.4px; }
+.fsx-empty.uv-empty p { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+
+/* the two doors (prototype `.cap.glass`) and the Gyógyszer row */
+.fsx-posters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; min-width: 0; }
+.fsx-posters > * { min-width: 0; }
+.fsx-poster.glass {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px; width: 100%; min-height: 44px;
+  padding: 14px; border: 0; border-radius: 20px; text-align: left; color: var(--text-primary);
+}
+.fsx-poster.glass.is-protocol { --c: var(--dv-amber); }
+.fsx-poster.glass.is-setup { --c: var(--dv-lav); }
+.fsx-poster.glass > .fsx-poster-go {
+  position: absolute; top: 12px; right: 12px; width: 24px; height: 24px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 14px; font-weight: 500;
+  background: rgba(245, 239, 230, 0.07); color: color-mix(in srgb, var(--c) 70%, #fff);
+}
+.fsx-poster.glass > strong { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; line-height: 1.25; }
+.fsx-poster.glass > small { font-size: 11.5px; line-height: 1.35; color: var(--text-secondary); }
+.fsx-poster.glass.is-row { flex-direction: row; align-items: center; gap: 12px; padding: 12px 14px 12px 12px; }
+.fsx-poster.glass.is-row .fsx-poster-copy { flex: 1; min-width: 0; }
+.fsx-poster.glass.is-row .fsx-poster-copy strong { font-family: var(--ff-body); font-size: 15.5px; font-weight: 600; letter-spacing: -0.3px; }
+.fsx-poster.glass.is-row .fsx-poster-copy small { font-size: 11.5px; color: var(--text-secondary); }
+.fsx-poster.glass.is-row > b { font-size: 18px; color: var(--text-muted); }
+.fsx-quiet.glass {
+  --c: var(--dv-sky); gap: 12px; padding: 12px 14px 12px 12px; border: 0; border-radius: 20px; color: var(--text-primary);
+}
+.fsx-quiet.glass strong { font-size: 15.5px; font-weight: 600; letter-spacing: -0.3px; }
+.fsx-quiet.glass small { font-size: 11.5px; color: var(--text-secondary); }
+.fsx-quiet.glass > b { font-size: 18px; color: var(--text-muted); }
+
+/* ── the item box (GlassBox): the ONE glass; everything inside is flat ── */
+.fmx-glass.fsx-glass { --c: var(--dv-sage); width: min(88%, 352px); padding: 18px 16px 16px; border: 0; border-radius: 28px; }
+.fsx-glass .fsx-glass-hero { gap: 12px; padding: 0 0 2px; border-bottom: 0; }
+.fsx-glass .fsx-glass-hero strong { font-family: var(--ff-display); font-size: 40px; font-weight: 300; letter-spacing: -2px; color: var(--text-primary); }
+.fsx-glass .fsx-glass-hero small { font-size: 12px; color: var(--text-secondary); }
+.fsx-glass .fsx-glass-chips span {
+  padding: 6px 11px; font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.fsx-glass .fsx-glass-chips span.is-on { color: #191614; background: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
+.fsx-glass .fsx-glass-tick {
+  justify-content: center; min-height: 48px; margin-top: 14px; padding: 12px 16px; border: 0; border-radius: 18px;
+  font-size: 14.5px; font-weight: 600; color: var(--text-primary);
+  background: color-mix(in srgb, var(--c) 20%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent), 0 0 18px -6px color-mix(in srgb, var(--c) 65%, transparent);
+}
+.fsx-glass .fsx-glass-tick span:nth-child(2) { flex: 0 1 auto; }
+.fsx-glass .fsx-glass-tick.is-done { border: 0; color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fsx-glass .fsx-glass-block { margin: 16px 0 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.fsx-glass .fsx-glass-block-head { gap: 8px; margin: 0 0 8px; }
+.fsx-glass .fsx-glass-block-head .t-ico { filter: none; }
+.fsx-glass .fsx-glass-block-head strong { font-size: 12px; font-weight: 600; letter-spacing: 1.2px; color: var(--text-muted); }
+.fsx-glass .fsx-glass-rows { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.fsx-glass .fsx-glass-rows > div, .fsx-glass .fsx-glass-rows > div:last-child {
+  display: block; padding: 10px 12px; border: 0; border-radius: 14px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.fsx-glass .fsx-glass-rows dt { font-size: 10px; color: var(--text-muted); }
+.fsx-glass .fsx-glass-rows dd { margin-top: 2px; text-align: left; font-size: 14px; font-weight: 600; color: var(--text-primary); overflow-wrap: anywhere; }
+.fsx-glass .fsx-glass-block.is-why p { font-family: var(--ff-serif); font-style: italic; font-size: 14.5px; line-height: 1.45; color: var(--text-primary); }
+.fsx-glass .fsx-glass-block.is-quiet {
+  padding: 12px 13px; border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent); border-radius: 18px;
+  background: rgba(245, 239, 230, 0.025); box-shadow: none;
+}
+.fsx-glass .fsx-glass-block p { font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+.fsx-glass .fsx-glass-link {
+  min-height: 48px; margin-top: 10px; padding: 11px 13px; border: 0; border-radius: 18px; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.fsx-glass .fsx-glass-link.is-shelf {
+  --c: var(--dv-amber); margin-top: 14px;
+  background: color-mix(in srgb, var(--c) 12%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 40%, transparent), 0 0 16px -6px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.fsx-glass .fsx-glass-link strong { font-size: 14px; font-weight: 600; }
+.fsx-glass .fsx-glass-link small { font-size: 11px; color: var(--text-secondary); }
+.fsx-glass .fsx-glass-link b { color: var(--text-muted); }
+.fsx-glass .fsx-note { margin-top: 14px; color: var(--text-muted); }
+.fsx-glass .fsx-glass-close {
+  margin-top: 10px; border-radius: 18px; font-size: 14px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+
+/* ── Protokoll + Új elem: the shared scaffold (round glass back + eyebrow + title, halo hero) ── */
+.fsx-subhead { display: flex; align-items: center; gap: 12px; padding: 8px 17px 10px; }
+.fsx-subhead > button.glass {
+  --c: var(--text-muted); flex: 0 0 auto; width: 44px; height: 44px; padding: 0; border: 0;
+  display: grid; place-items: center; font-family: inherit; font-size: 22px; line-height: 1; color: var(--text-secondary);
+}
+.fsx-subhead > span:not(.fsx-subhead-num) { flex: 1; min-width: 0; }
+.fsx-subhead small { display: block; font-size: 10px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: var(--text-muted); }
+.fsx-subhead strong {
+  display: block; margin-top: 3px; font-family: var(--ff-display); font-size: 23px; font-weight: 600; letter-spacing: -0.8px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary);
+}
+.fsx-subhead-num { flex: 0 0 auto; font-family: var(--ff-display); font-size: 30px; font-weight: 300; letter-spacing: -1.5px; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.stk-page-hero.fsx-halo-hero { overflow-x: clip; display: grid; justify-items: center; gap: 2px; padding: 4px 17px 14px; border-radius: 0; background: none; text-align: center; }
+.fsx-halo-art, .fmd-hero-art, .fsx-advice-art { display: block; }
+.fsx-halo-art .t-ico, .fmd-hero-art .t-ico {
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 18px color-mix(in srgb, var(--c) 45%, transparent));
+}
+.fsx-halo-num { margin-top: 4px; font-family: var(--ff-display); font-size: 54px; font-weight: 300; letter-spacing: -3px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text-primary); overflow-wrap: anywhere; }
+.fsx-halo-sub { font-size: 12px; color: var(--text-secondary); }
+.stk-detail-body .stk-detail-state.uv-empty { --c: var(--dv-sage); padding: 22px 16px; border-radius: 18px; font-size: 12.5px; color: var(--text-muted); }
+
+/* Protokoll: the flat number strip, the zone glasses with flat hairline rows */
+.stk-detail-body .fsx-summary { gap: 8px; margin: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.stk-detail-body .fsx-summary > div {
+  padding: 10px 6px; border-radius: 14px; text-align: center;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.stk-detail-body .fsx-summary strong { font-family: var(--ff-body); font-size: 20px; font-weight: 600; letter-spacing: -0.4px; }
+.stk-detail-body .fsx-summary small { margin-top: 2px; font-size: 10.5px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text-muted); }
+.fsx-proto-group.glass { margin: 0; padding: 12px 12px 4px; border: 0; border-radius: 22px; }
+.fsx-proto-group.glass .fsx-proto-title { gap: 10px; padding: 0 2px 6px; }
+.fsx-proto-group.glass .fsx-proto-title strong { font-family: var(--ff-body); font-size: 16px; font-weight: 600; letter-spacing: 0; }
+.fsx-proto-group.glass .fsx-proto-title time { margin-left: auto; font-size: 13px; color: color-mix(in srgb, var(--c) 75%, var(--text-primary)); }
+.fsx-proto-group.glass .fsx-proto-title b { margin-left: 0; font-size: 13px; font-weight: 600; color: color-mix(in srgb, var(--c) 75%, var(--text-primary)); }
+.fsx-proto-group.glass .fsx-proto-title time + b { margin-left: -6px; }
+.fsx-proto-group.glass .fsx-proto-title time + b::before { content: '· '; }
+.fsx-proto-group.glass .fsx-proto-list { gap: 0; }
+.fsx-proto-group.glass .fsx-proto-line {
+  align-items: flex-start; gap: 10px; min-height: 56px; padding: 10px 2px; border: 0; border-top: 1px solid var(--divider);
+  border-radius: 0; background: none; box-shadow: none; color: var(--text-primary);
+}
+.fsx-proto-group.glass .fsx-proto-line-copy strong { font-size: 14px; font-weight: 600; }
+.fsx-proto-group.glass .fsx-proto-line-copy small { font-size: 11px; color: var(--text-secondary); }
+.fsx-proto-group.glass .fsx-proto-line-copy em { margin-top: 3px; font-family: var(--ff-serif); font-style: italic; font-size: 12.5px; line-height: 1.35; color: var(--text-secondary); }
+.fsx-proto-group.glass .fsx-proto-line-end b { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.fsx-proto-group.glass .fsx-proto-line-end small { font-size: 10px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text-muted); }
+.stk-detail-body .fsx-proto-meals { margin: 6px 0 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.stk-detail-body .fsx-proto-meals .fsx-proto-title { padding: 0 4px 8px; }
+.stk-detail-body .fsx-proto-meals .fsx-proto-title strong { font-family: var(--ff-body); font-size: 15px; font-weight: 600; letter-spacing: -0.2px; }
+.stk-detail-body .fsx-proto-meals .fsx-proto-title b {
+  margin-left: 6px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.fsx-proto-quiet.uv-flat { padding: 12px 14px; border-radius: 14px; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+/* StackMealMatch: ONE flat cell; the tick is the 3D tick, a short meal a warning-tinted marker */
+.fsx-mm.uv-flat { display: grid; padding: 10px 12px 4px; border-radius: 14px; }
+.fsx-mm-eyebrow { display: block; margin-bottom: 2px; }
+.fsx-mm-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-top: 1px solid var(--divider); }
+.fsx-mm-eyebrow + .fsx-mm-row { border-top: 0; }
+.fsx-mm-art, .fsx-mm-mark { flex: 0 0 auto; width: 28px; height: 28px; display: grid; place-items: center; }
+.fsx-mm-mark.is-warn {
+  border-radius: 50%; font-size: 15px; font-weight: 800; color: var(--dv-amber);
+  background: color-mix(in srgb, var(--dv-amber) 14%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--dv-amber) 55%, transparent);
+}
+.fsx-mm-copy { flex: 1; min-width: 0; display: grid; gap: 2px; font-size: 13px; line-height: 1.4; color: var(--text-primary); }
+.fsx-mm-when b, .fsx-mm-title { font-weight: 600; }
+.fsx-mm-when time { font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.fsx-mm-link { font-weight: 600; color: var(--dv-sage); text-decoration: none; overflow-wrap: anywhere; }
+.fsx-mm-day { font-weight: 400; color: var(--text-muted); }
+.fsx-mm-copy small { font-size: 11.5px; color: var(--text-secondary); }
+.fsx-mm-copy small.fsx-mm-advice { color: color-mix(in srgb, var(--dv-amber) 80%, var(--text-primary)); }
+
+/* Új elem: flat step pills, lav glass picks + form, the lav advice halo, the tune glass */
+.stk-detail-body .fsx-steps { gap: 6px; margin: 0 0 2px; }
+.stk-detail-body .fsx-steps li {
+  padding: 7px 0; font-size: 11.5px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--text-muted);
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.stk-detail-body .fsx-steps li.is-done { color: var(--text-secondary); background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-lav) 45%, transparent); }
+.stk-detail-body .fsx-steps li.is-on { color: #191614; background: var(--dv-lav); box-shadow: 0 0 12px color-mix(in srgb, var(--dv-lav) 50%, transparent); }
+.stk-detail-body .fsx-lead { font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+.stk-detail-body .fsx-lead.is-quiet { color: var(--text-muted); }
+.stk-detail-body .fsx-section { font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+.stk-detail-body .fsx-search { gap: 10px; padding: 0 14px; border-radius: 16px; color: var(--text-muted); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.stk-detail-body .fsx-search input { font-size: 14px; color: var(--text-primary); }
+.fsx-pick.glass { --c: var(--dv-lav); gap: 12px; min-height: 60px; padding: 12px 14px 12px 12px; border: 0; border-radius: 20px; color: var(--text-primary); }
+.stk-detail-body .fsx-pick.is-wide.uv-flat { border: 0; border-radius: 18px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); color: var(--text-primary); }
+.stk-detail-body .fsx-pick strong { font-size: 15.5px; font-weight: 600; letter-spacing: -0.3px; }
+.stk-detail-body .fsx-pick small { font-size: 11.5px; line-height: 1.35; color: var(--text-secondary); }
+.stk-detail-body .fsx-pick > b { font-size: 20px; color: var(--text-muted); }
+.stk-detail-body .fsx-pick-flag.uv-flat { padding: 5px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--text-secondary); }
+.stk-detail-body .fsx-arm { --c: var(--dv-lav); border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent); border-radius: 18px; background: rgba(245, 239, 230, 0.025); }
+.fsx-form.glass { --c: var(--dv-lav); gap: 12px; padding: 14px; border-radius: 22px; }
+.stk-detail-body .fsx-field { font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+.stk-detail-body .fsx-field input, .stk-detail-body .fsx-field select {
+  min-height: 44px; padding: 11px 13px; border-radius: 13px; font-size: 14px; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); color-scheme: dark;
+}
+.stk-detail-body .fsx-field input:focus, .stk-detail-body .fsx-field select:focus { box-shadow: inset 0 0 0 1.5px var(--dv-lav); }
+.stk-detail-body .fsx-primary { justify-content: center; gap: 8px; min-height: 48px; padding: 13px 16px; border: 0; border-radius: 18px; font-size: 14.5px; font-weight: 600; color: var(--text-primary); }
+.stk-detail-body .fsx-primary span:nth-child(2) { flex: 0 1 auto; }
+.stk-detail-body .fsx-primary b { color: var(--text-muted); }
+.fsx-primary.glass { --c: var(--dv-lav); }
+.fsx-primary.glass.is-save { --c: var(--dv-sage); }
+.stk-detail-body .fsx-primary.is-lit {
+  --c: var(--dv-lav);
+  background: color-mix(in srgb, var(--c) 20%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent), 0 0 18px -6px color-mix(in srgb, var(--c) 65%, transparent);
+}
+.stk-detail-body .fsx-back-step {
+  justify-self: stretch; width: 100%; min-height: 46px; padding: 12px 16px; border-radius: 18px;
+  font-size: 14px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.stk-detail-body .fsx-callout {
+  --c: var(--dv-lav); gap: 10px; padding: 12px 14px; border: 0; border-radius: 18px;
+  background: color-mix(in srgb, var(--c) 8%, transparent); box-shadow: inset 3px 0 0 var(--c);
+}
+.stk-detail-body .fsx-callout.is-warn { --c: var(--dv-amber); background: color-mix(in srgb, var(--c) 8%, transparent); box-shadow: inset 3px 0 0 var(--c); }
+.stk-detail-body .fsx-callout p { font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.stk-detail-body .fsx-callout small { font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.fsx-advice.uv-halo { --c: var(--dv-lav); --c2: var(--dv-sky); padding: 10px 20px 4px; border-radius: 0; background: none; overflow: visible; }
+.fsx-advice.uv-halo > strong { font-family: var(--ff-display); font-size: 46px; font-weight: 300; letter-spacing: -3px; color: var(--text-primary); }
+.fsx-advice.uv-halo > em { font-size: 14px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--text-secondary); }
+.fsx-advice.uv-halo p { font-size: 13px; color: var(--text-secondary); }
+.fsx-advice.uv-halo p b { color: var(--text-primary); }
+.fsx-advice.uv-halo .fsx-advice-days { margin-top: 4px; padding: 0; background: none; font-size: 12px; font-weight: 400; color: var(--text-muted); }
+.stk-detail-body .fsx-dose-why.uv-flat { --c: var(--dv-amber); align-items: center; gap: 10px; padding: 12px 14px; border: 0; border-radius: 14px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.stk-detail-body .fsx-dose-why p { font-family: var(--ff-serif); font-style: italic; font-size: 14px; line-height: 1.4; color: var(--text-primary); }
+.fsx-tunecard.glass { --c: var(--dv-lav); display: grid; gap: 14px; padding: 14px; border-radius: 22px; }
+.fsx-tunecard .fsx-overline { font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+.fsx-tunecard .fsx-stepper { justify-content: flex-start; gap: 12px; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.fsx-tunecard .fsx-stepper button { border-radius: 50%; font-size: 18px; color: var(--text-primary); background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider); }
+.fsx-tunecard .fsx-stepper strong { font-family: var(--ff-body); font-size: 20px; font-weight: 600; letter-spacing: -0.4px; color: var(--text-primary); }
+.fsx-tunecard .fsx-stepper small { font-size: 12px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--text-secondary); }
+.fsx-tunecard .fsx-zones button {
+  min-height: 36px; padding: 7px 12px; font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.fsx-tunecard .fsx-zones button[aria-pressed="true"] { color: #191614; background: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
+
+/* ── Gyógyszer: sky halo hero, ONE sky glass card, flat dose rows ── */
+.fmd-page .mz-backbtn { font-size: 12.5px; color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fmd-page .pgact.fmd-act {
+  --c: var(--dv-sky); margin-left: auto; min-height: 40px; padding: 0 14px; font-size: 12.5px; font-weight: 600; color: #191614;
+  background: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.fmd-hero.uv-halo { overflow-x: clip; --c: var(--dv-sky); --c2: var(--dv-lav); display: grid; justify-items: center; gap: 2px; padding: 6px 17px 12px; text-align: center; }
+.fmd-hero-num { font-family: var(--ff-display); font-size: 64px; font-weight: 300; letter-spacing: -3px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.fmd-hero-eb, .fmd-eyebrow { font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted); }
+.fmd-medcard.glass { --c: var(--dv-sky); display: grid; gap: 8px; margin: 0 0 12px; padding: 14px; border-radius: 22px; }
+.fmd-medcard.glass::before { width: auto; }
+.fmd-medcard-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.fmd-medcard-head strong { min-width: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.3px; color: var(--text-primary); overflow-wrap: anywhere; }
+.fmd-medcard-head b { flex: 0 0 auto; font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--c) 78%, var(--text-primary)); }
+.fmd-medcard-sub { margin-top: -4px; font-size: 12px; color: var(--text-secondary); }
+.fmd-medcard .fmd-eyebrow { margin-top: 4px; }
+.fmd-phase { font-size: 12.5px; color: var(--text-secondary); }
+.fmd-phase b { color: var(--text-primary); }
+/* the cycle strip (page + the medform preview): flat cells, today lit sky */
+.fmd-cyc { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; margin: 0; padding: 0; list-style: none; }
+.fmd-cyc > li, .fmd-cyc > span {
+  height: auto; padding: 7px 0 6px; border-radius: 11px; display: flex; flex-direction: column; align-items: center; gap: 1px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); color: var(--text-secondary);
+}
+.fmd-cyc > li.peak, .fmd-cyc > span.peak { background: rgba(245, 239, 230, 0.04); color: color-mix(in srgb, var(--dv-coral) 60%, var(--text-primary)); }
+.fmd-cyc > li.stable, .fmd-cyc > span.stable { background: rgba(245, 239, 230, 0.04); color: var(--dv-sky); }
+.fmd-cyc > li.trough, .fmd-cyc > span.trough { background: rgba(245, 239, 230, 0.04); color: var(--dv-lav); }
+.fmd-cyc > li.cur { background: color-mix(in srgb, var(--dv-sky) 20%, transparent); box-shadow: inset 0 0 0 1.5px var(--dv-sky), 0 0 12px -2px var(--dv-sky); }
+.fmd-cyc > li.cur::after { content: none; }
+.fmd-cyc .fmd-cyc-glyph { font-size: 12px; font-weight: 700; }
+.fmd-cyc .fmd-cyc-day { font-size: 9.5px; font-weight: 500; color: var(--text-muted); }
+.fmd-sec { display: flex; align-items: center; gap: 8px; margin: 18px 4px 10px; }
+.fmd-sec b { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fmd-doselist { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.fmd-doselist .fmd-doserow.uv-flat { --c: var(--dv-sky); display: flex; align-items: center; gap: 12px; padding: 10px 14px 10px 10px; border: 0; border-radius: 18px; font-size: 14px; }
+.fmd-dose-copy { flex: 1; min-width: 0; }
+.fmd-dose-copy strong { display: block; font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.fmd-doselist .fmd-doserow .nt { display: block; margin-top: 2px; font-family: var(--ff-serif); font-style: italic; font-size: 12px; color: var(--text-secondary); }
+.fmd-doselist .fmd-doserow .dd { flex: 0 0 auto; font-size: 18px; font-weight: 600; color: var(--text-primary); }
+.fmd-nodose.uv-empty { --c: var(--dv-sky); padding: 16px; border-radius: 18px; text-align: center; font-size: 12.5px; color: var(--text-muted); }
+.fmd-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.fmd-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 46px; padding: 12px 16px;
+  border: 0; border-radius: 18px; font: inherit; font-size: 14.5px; font-weight: 600; color: var(--text-secondary); cursor: pointer;
+}
+.fmd-btn.is-warn { color: #FFB39C; background: rgba(255, 126, 92, 0.07); box-shadow: inset 0 0 0 1px rgba(255, 126, 92, 0.35); }
+.fmd-btn.glass.is-primary { --c: var(--dv-sky); margin-top: 14px; color: var(--text-primary); }
+.fmd-empty.uv-empty {
+  --c: var(--dv-sky); display: flex; flex-direction: column; align-items: center; gap: 6px;
+  margin: 10px 0; padding: 26px 18px; border-radius: 20px; text-align: center;
+}
+.fmd-empty.uv-empty strong { margin-top: 6px; font-size: 17px; font-weight: 600; color: var(--text-primary); }
+.fmd-empty-lead { font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+.fmd-stop.uv-empty { --c: var(--dv-coral); margin-top: 10px; padding: 12px 14px; border-radius: 16px; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+
+/* ── the stack sheets: ONE glass surface each (StackItemSheet gold, dose + medform sky) ── */
+.sheet.glass.fsx-sheet {
+  position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); overflow-x: hidden; overflow-y: auto;
+  border: 0; border-radius: 30px; padding-bottom: 18px;
+}
+.sheet.fsx-sheet.is-gold { --c: var(--dv-amber); }
+.sheet.fsx-sheet.is-sky { --c: var(--dv-sky); }
+.sheet.glass.fsx-sheet .sheet-handle { background: rgba(245, 239, 230, 0.22); }
+.fsx-shh { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.fsx-shh-art { flex: 0 0 auto; }
+.fsx-shh-copy { flex: 1; min-width: 0; }
+.fsx-shh-title strong { display: block; margin-top: 2px; font-family: var(--ff-display); font-size: 21px; font-weight: 600; letter-spacing: -0.6px; color: var(--text-primary); overflow-wrap: anywhere; }
+.fsx-shh-copy small { display: block; margin-top: 2px; font-size: 12px; color: var(--text-secondary); }
+.fsx-shh-x {
+  flex: 0 0 auto; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.fsx-sh-cell.uv-flat { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; }
+.fsx-sh-cell p { flex: 1; min-width: 0; margin: 0; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.fsx-sh-cell p.uv-voice { font-size: 13.5px; color: var(--text-primary); }
+.fsx-sh-field { display: grid; gap: 6px; min-width: 0; margin-top: 14px; }
+.fsx-sheet .fsx-sh-input {
+  display: block; width: 100%; min-width: 0; min-height: 44px; padding: 11px 13px; border: 0; border-radius: 13px;
+  font: inherit; font-size: 14px; color: var(--text-primary); color-scheme: dark; outline: none;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.fsx-sheet .fsx-sh-input:focus { box-shadow: inset 0 0 0 1.5px var(--c); }
+.fsx-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fsx-sheet .fsx-chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 7px 12px; border: 0; border-radius: 999px;
+  font: inherit; font-size: 12px; font-weight: 600; white-space: nowrap; color: var(--text-secondary); cursor: pointer;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.fsx-sheet .fsx-chip.is-on { color: #191614; background: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
+.fsx-sheet .fsx-chip:disabled { opacity: 0.5; cursor: default; }
+.fsx-chips.is-coral, .fsx-sh-addrow.is-coral { --c: var(--dv-coral); }
+.fsx-sh-addrow { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.fsx-sh-addrow .fsx-sh-input { flex: 1; }
+.fsx-sh-hint { display: block; margin: 10px 0 0; font-size: 11px; line-height: 1.5; color: var(--text-muted); }
+.fsx-sh-sec { display: block; margin: 14px 0 6px; }
+.fsx-sh-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.fsx-sh-two > .fsx-sh-field { margin-top: 0; }
+.fsx-sh-two.is-dose { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); margin-top: 14px; }
+.fsx-sh-unitrow { display: flex; align-items: center; gap: 8px; }
+.fsx-sh-unit { flex: 0 0 auto; font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.fsx-sheet .fmd-cyc.is-preview { margin-top: 2px; }
+.fsx-sh-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 46px; margin-top: 16px;
+  padding: 12px 16px; border: 0; border-radius: 18px; font: inherit; font-size: 14.5px; font-weight: 600; color: var(--text-secondary); cursor: pointer;
+}
+.fsx-sh-btn.is-warn { color: #FFB39C; background: rgba(255, 126, 92, 0.07); box-shadow: inset 0 0 0 1px rgba(255, 126, 92, 0.35); }
+.fsx-sh-btn.is-lit {
+  color: var(--text-primary); background: color-mix(in srgb, var(--c) 22%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent), 0 0 18px -6px color-mix(in srgb, var(--c) 65%, transparent);
+}
+.fsx-sh-btn:disabled { opacity: 0.45; cursor: default; }
+.fsx-sh-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+.fsx-sh-pair .fsx-sh-btn { margin-top: 0; }
+
+/* §6 motion: the hero art floats, the due band keeps its entrance but drops the old coral pulse */
+@media (prefers-reduced-motion: no-preference) {
+  .fsx-halo-art, .fmd-hero-art, .fsx-advice-art { animation: uv-float 5s ease-in-out 1s infinite; }
+  .fsx-band.glass.is-due { animation: fsx-band-in 0.45s cubic-bezier(0.2, 0.8, 0.3, 1.1) both; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fsx-halo-art, .fmd-hero-art, .fsx-advice-art, .fsx-band.glass.is-due { animation: none; }
+}
+/* 320px: the ring shrinks, the doors keep two columns with wrapped copy */
+@media (max-width: 360px) {
+  .fsx-gauge.fsx-ring { width: 150px; height: 150px; }
+  .fsx-gauge.fsx-ring strong { font-size: 40px; }
+  .fsx-poster.glass { padding: 12px; }
+  .fsx-subhead strong { font-size: 20px; }
+  .fsx-halo-num { font-size: 46px; }
+  .fsx-advice.uv-halo > strong { font-size: 40px; }
+  .fmd-hero-num { font-size: 54px; }
+}
+/* ── /uveg fuel stack ── */
+
+/* ── uveg fuel trendek (mezo-me75u.2) ── Trendek, day card, Fuel beállítások, étkezési ablakok ── */
+/* Reference: docs/design_2.0/prototypes/src/uveg-fuel-tobbi-body.html `trendek()`, `openDay()`,
+   `beallitas()`, `ablakok()`. The restored-world `fuel-trendek` block and the `fset-` block stay
+   in place underneath (their DOM hooks are unchanged); this block re-dresses them in the üveg
+   ranking (bible §3.4): the week picture and the day arc are frameless halos, the primary
+   objects are .glass in ONE hue, chips/cells inside a card are flat, empty is dashed. */
+
+/* ─ Trendek ─ the halo's 340px ellipse must never become a sideways scroll on a 320px phone */
+.ftx-body, .fset-body, .fsl-page .mz-page-body { overflow-x: hidden; }
+
+/* the WEEK PICTURE — frameless on a sage/gold halo (bible §5) */
+.ftx-hero.uv-halo { --c: var(--dv-sage); --c2: var(--dv-amber); overflow: visible;
+  padding: 4px 2px 6px; border-radius: 0; background: none; }
+.ftx-hero.uv-halo::before { top: 58%; width: 380px; height: 360px; }
+.ftx-week { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: 0; text-transform: none;
+  color: var(--text-primary); }
+.ftx-weeknav button.uv-flat { padding: 7px 12px; border: 0; border-radius: 999px;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+  font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.ftx-weeknav button.uv-flat[aria-pressed="true"] { background: rgba(245, 239, 230, 0.05);
+  color: color-mix(in srgb, var(--dv-sage) 78%, var(--text-primary));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-sage) 40%, transparent); }
+.ftx-weeknav button.uv-flat:disabled { opacity: 0.45; }
+.ftx-weeknav-note { color: var(--text-muted); }
+.ftx-big { justify-content: center; margin: 16px 0 2px; }
+.ftx-big strong { font-size: 64px; font-weight: 300; letter-spacing: -3px; color: var(--text-primary); }
+.ftx-big b { font-size: 14px; font-weight: 400; color: var(--text-secondary); }
+.ftx-big small { font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+/* the 7 day bars: a recessed column, a glowing fill, a dashed target line */
+.ftx-bars { gap: 8px; margin: 14px 2px 2px; }
+.ftx-day { display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  gap: 6px; padding: 0 0 4px; }
+.ftx-day-score { order: -1; font-size: 11px; font-weight: 600;
+  color: color-mix(in srgb, var(--dv-lav) 70%, var(--text-primary)); }
+.ftx-day.is-empty .ftx-day-score { color: var(--text-muted); }
+.ftx-col { height: 124px; border-radius: 10px; background: rgba(245, 239, 230, 0.05); }
+.ftx-target { z-index: 1; justify-self: center; width: calc(100% + 6px);
+  border-top: 1.5px dashed rgba(245, 239, 230, 0.35); }
+.ftx-fill { width: 100%; border-radius: 10px;
+  background: linear-gradient(180deg, var(--dv-sage), color-mix(in srgb, var(--dv-sage) 45%, transparent));
+  box-shadow: 0 0 12px -2px color-mix(in srgb, var(--dv-sage) 70%, transparent); }
+/* shame-free: over the target is GOLD, never an error hue */
+.ftx-day.is-over .ftx-fill {
+  background: linear-gradient(180deg, var(--dv-amber), color-mix(in srgb, var(--dv-amber) 45%, transparent));
+  box-shadow: 0 0 12px -2px color-mix(in srgb, var(--dv-amber) 70%, transparent); }
+/* honest gap: the whole column hatched, not a zero-height bar */
+.ftx-day.is-empty .ftx-col { background: none; }
+.ftx-gap { width: 100%; height: 100%; border-radius: 10px;
+  background: repeating-linear-gradient(135deg, rgba(245, 239, 230, 0.05) 0 5px, transparent 5px 10px);
+  box-shadow: inset 0 0 0 1px var(--divider); }
+.ftx-day-name { font-size: 11px; font-weight: 600; letter-spacing: 0.4px; color: var(--text-muted); }
+.ftx-day.is-weekend .ftx-day-name { color: color-mix(in srgb, var(--dv-amber) 70%, var(--text-muted)); }
+/* a training day: the day name underlined in coral (the dot is kept for the DOM, not drawn) */
+.ftx-train { display: none; }
+.ftx-day.is-train .ftx-day-name { color: var(--text-primary); text-decoration: underline;
+  text-decoration-color: var(--dv-coral); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.ftx-read.uv-voice { margin: 14px 4px 0; font-size: 14.5px; line-height: 1.5; text-align: center;
+  color: var(--text-secondary); }
+.ftx-hint { font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+.ftx-section { margin: 10px 0 0; font-size: 19px; font-weight: 600; letter-spacing: -0.3px; }
+/* three glass stat tiles, each in its own hue */
+.ftx-tiles { gap: 8px; }
+.ftx-tile.glass { gap: 4px; padding: 12px 10px; border: 0; border-radius: 20px; color: var(--text-primary); }
+.ftx-tile.glass strong { margin-top: 4px; font-family: var(--ff-body); font-size: 22px; font-weight: 600;
+  letter-spacing: -0.8px; color: color-mix(in srgb, var(--c) 75%, var(--text-primary)); }
+.ftx-tile.glass strong small { font-size: 10.5px; font-weight: 500; color: var(--text-muted); }
+.ftx-tile.glass .ftx-tile-label { font-size: 11px; font-weight: 400; letter-spacing: 0; text-transform: none;
+  color: var(--text-secondary); }
+.ftx-tile.glass .ftx-delta { font-size: 10.5px; color: var(--text-muted); }
+/* weekday vs weekend: one gold glass card, two glowing bars on flat rows */
+.ftx-split.glass { gap: 4px; padding: 12px 14px 14px; border-radius: 22px; }
+.ftx-split .ftx-splitrow { min-height: 44px; padding: 6px 0; border-radius: 0; background: none; box-shadow: none; }
+.ftx-split-copy strong { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.ftx-split-copy i { height: 7px; background: rgba(245, 239, 230, 0.07); }
+.ftx-split-copy i b { background: linear-gradient(90deg, color-mix(in srgb, var(--ftx-split-color) 55%, #fff), var(--ftx-split-color));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--ftx-split-color) 60%, transparent); }
+.ftx-splitrow > b { font-size: 15px; font-weight: 600;
+  color: color-mix(in srgb, var(--ftx-split-color) 78%, var(--text-primary)); }
+.ftx-split-note { margin-top: 8px; font-size: 12.5px; color: var(--text-secondary); }
+.ftx-split-note b { color: var(--text-primary); }
+/* the longer horizon: a sage glass card, the kcal line glows, weight in sky with lit dots */
+.ftx-horizon.glass { gap: 6px; padding: 14px; border: 0; border-radius: 22px; }
+.ftx-horizon-grid { stroke: rgba(245, 239, 230, 0.07); }
+.ftx-horizon-kcal { stroke: var(--dv-sage); stroke-width: 2.4;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--dv-sage) 70%, transparent)); }
+.ftx-horizon-weight { stroke: var(--dv-sky); stroke-width: 2; stroke-dasharray: none; }
+.ftx-horizon-dot { fill: var(--dv-sky); filter: drop-shadow(0 0 5px var(--dv-sky)); }
+.ftx-horizon-axis { font-size: 10px; fill: var(--text-muted); }
+.ftx-horizon-legend em { font-size: 12px; font-weight: 400; letter-spacing: 0; text-transform: none;
+  color: var(--text-secondary); }
+.ftx-horizon-legend .is-kcal::before { background: var(--dv-sage); box-shadow: 0 0 6px var(--dv-sage); }
+.ftx-horizon-legend .is-weight::before { background: var(--dv-sky); box-shadow: 0 0 6px var(--dv-sky); }
+.ftx-horizon-lead { font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); }
+.ftx-horizon-gapnote { font-size: 11px; color: var(--text-muted); }
+/* fewer than two weeks: free space, dashed — no glass, no glow */
+.ftx-horizon.uv-empty.is-waiting { --c: var(--dv-sage); padding: 14px; border-radius: 22px;
+  border: 1.5px dashed color-mix(in srgb, var(--dv-sage) 45%, transparent);
+  background: rgba(245, 239, 230, 0.025); box-shadow: none; }
+.ftx-horizon-wait { font-size: 12.5px; color: var(--text-secondary); }
+/* pattern references: lavender glass rows */
+.ftx-pattern.glass { gap: 12px; padding: 12px 14px 12px 12px; border: 0; border-radius: 20px; color: var(--text-primary); }
+.ftx-pattern-copy strong { font-size: 14px; font-weight: 600; }
+.ftx-pattern-copy small { font-size: 11.5px; color: var(--text-secondary); }
+.ftx-pattern.glass > b { font-size: 16px; color: var(--text-muted); }
+.ftx-note { font-size: 11.5px; line-height: 1.5; text-align: center; color: var(--text-muted); }
+
+/* ─ the day card (FuelWeekDayGlass inside the kit GlassBox): cells inside are flat (U1 rule 5) */
+.ftx-glass-hero strong { font-size: 40px; font-weight: 300; letter-spacing: -2.4px; color: var(--text-primary); }
+.ftx-glass-hero small { margin-top: 3px; font-size: 12px; font-weight: 400; letter-spacing: 0;
+  text-transform: none; color: var(--text-secondary); }
+.ftx-glass-chips span { padding: 7px 12px; background: rgba(245, 239, 230, 0.05);
+  box-shadow: inset 0 0 0 1px var(--divider); font-size: 12px; color: var(--text-secondary); }
+.ftx-glass-bar { height: 6px; background: rgba(245, 239, 230, 0.07); }
+.ftx-glass-bar i { background: linear-gradient(90deg, color-mix(in srgb, var(--dv-sage) 55%, #fff), var(--dv-sage));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--dv-sage) 60%, transparent); }
+.ftx-glass.is-over .ftx-glass-bar i { background: linear-gradient(90deg, color-mix(in srgb, var(--dv-amber) 55%, #fff), var(--dv-amber));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--dv-amber) 60%, transparent); }
+.ftx-glass-fact { font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.ftx-glass-fact b { color: var(--text-primary); }
+/* ŐSZINTÉN: an amber-lit callout, flat */
+.ftx-glass-honest { display: block; padding: 12px 14px; border: 0; border-radius: 18px;
+  background: color-mix(in srgb, var(--c) 8%, transparent); box-shadow: inset 3px 0 0 var(--c);
+  font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.ftx-glass-honest > span:first-child { line-height: inherit; }
+.ftx-glass-honest small { font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px;
+  color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.ftx-dim { padding: 11px 12px; border: 0; border-radius: 16px; background: rgba(245, 239, 230, 0.04);
+  box-shadow: inset 0 0 0 1px var(--divider); }
+.ftx-dim.is-degraded { border: 1.5px dashed color-mix(in srgb, var(--ftx-dim-color) 45%, transparent);
+  background: rgba(245, 239, 230, 0.025); box-shadow: none; }
+.ftx-dim .t-ico { filter: none; }
+.ftx-dim-head strong { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.ftx-dim-head small { font-size: 9.5px; font-weight: 600; letter-spacing: 1.2px; color: var(--text-muted); }
+.ftx-dim-head > b { font-family: var(--ff-body); font-size: 22px; font-weight: 600; letter-spacing: -0.8px;
+  color: color-mix(in srgb, var(--ftx-dim-color) 78%, var(--text-primary)); }
+.ftx-dim-bar { height: 5px; background: rgba(245, 239, 230, 0.07); }
+.ftx-dim-bar b { background: linear-gradient(90deg, color-mix(in srgb, var(--ftx-dim-color) 55%, #fff), var(--ftx-dim-color));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--ftx-dim-color) 60%, transparent); }
+.ftx-dim-note { font-size: 12px; color: var(--text-secondary); }
+.ftx-rows span { font-size: 12px; color: var(--text-secondary); }
+.ftx-rows b { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.ftx-meal { gap: 12px; margin-bottom: 6px; padding: 10px 12px; border: 0; border-radius: 14px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); color: var(--text-primary); }
+.ftx-meals li:last-child .ftx-meal { border-bottom: 0; }
+.ftx-meal .t-ico { filter: none; }
+.ftx-meal-copy strong { font-size: 14px; font-weight: 600; }
+.ftx-meal-copy small { font-size: 11.5px; color: var(--text-secondary); }
+/* the meal's score: the lavender-lit pill (fuel-uveg.html `.spill`) — flat, inside the glass box */
+.ftx-meal-score { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px 4px 4px;
+  border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--text-primary);
+  background: radial-gradient(90% 120% at 20% 20%, color-mix(in srgb, var(--dv-lav) 26%, transparent), rgba(245, 239, 230, 0.04));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-lav) 40%, transparent); }
+.ftx-meals-note { font-size: 12px; color: var(--text-muted); }
+/* the door to the day: a lit flat row in the box's hue (never glass in glass) */
+.ftx-glass-link { gap: 12px; padding: 12px 14px 12px 12px; border-radius: 18px; color: var(--text-primary);
+  background: color-mix(in srgb, var(--c) 12%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 40%, transparent), 0 0 14px -6px var(--c); }
+.ftx-glass-link strong { font-size: 14px; font-weight: 600; }
+.ftx-glass-link small { font-size: 11.5px; color: var(--text-secondary); }
+.ftx-glass-link > b { font-size: 18px; color: var(--text-muted); }
+.ftx-glass-close { border-radius: 18px; background: rgba(245, 239, 230, 0.05);
+  box-shadow: inset 0 0 0 1px var(--divider); font-size: 14px; color: var(--text-secondary); }
+.ftx-glass .ftx-section { font-size: 12px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--text-muted); margin: 4px 0 0; }
+
+/* ─ Fuel beállítások (/settings/fuel) ─ the day arc is the hero, frameless on an amber/sage halo */
+.fset-hero.uv-halo { overflow: visible; min-height: 0; padding: 6px 4px 4px; border: 0; border-radius: 0;
+  background: none; box-shadow: none; }
+.fset-hero.uv-halo::after { display: none; }
+.fset-hero .fset-eyebrow { font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+.fset-hero-head strong { font: 600 22px/1.15 var(--ff-body); letter-spacing: -0.4px; }
+.fset-cutoff-pill.uv-flat { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px 5px 6px;
+  border-radius: 999px; background: rgba(245, 239, 230, 0.05); font-size: 12px; font-weight: 600; letter-spacing: 0;
+  color: color-mix(in srgb, var(--dv-coral) 78%, var(--text-primary));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 35%, transparent); }
+.fset-arc-track { stroke: rgba(245, 239, 230, 0.08); stroke-width: 8; }
+.fset-arc-glow { stroke: url(#fset-arc-grad); stroke-width: 3;
+  filter: drop-shadow(0 0 6px rgba(255, 190, 96, 0.6)); }
+.fset-meal-dot { fill: var(--surface-card); stroke: var(--dv-amber); stroke-width: 2.4;
+  filter: drop-shadow(0 0 6px rgba(255, 190, 96, 0.8)); }
+.fset-cutoff-line { stroke: var(--dv-coral); stroke-width: 2.4; filter: drop-shadow(0 0 5px var(--dv-coral)); }
+.fset-cutoff-dot { fill: var(--dv-coral); stroke: var(--surface-card); }
+.fset-axis span { font-size: 10px; font-weight: 500; color: var(--text-muted); }
+.fset-principle { font-size: 11.5px; color: var(--text-muted); }
+/* the cards: glass, one hue each (Ritmus amber, Makrók protein, Finomhangolás lavender) */
+.fset-card.glass { border: 0; padding: 14px; }
+.fset-card.glass > h2 { color: color-mix(in srgb, var(--c) 78%, var(--text-primary)); }
+.fset-card.glass p { font-size: 11.5px; color: var(--text-secondary); }
+.fset-card.glass .fset-row > span:first-child { font-size: 14px; font-weight: 600; letter-spacing: 0;
+  text-transform: none; color: var(--text-primary); }
+.fset-card.glass .fset-selectrow > span:first-child { font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px;
+  color: var(--text-muted); }
+/* flat fields inside a glass card */
+.fset-row input, .fset-selectrow select, .fset-custom input, .fset-goal input {
+  border: 0; border-radius: 13px; background: rgba(245, 239, 230, 0.05);
+  box-shadow: inset 0 0 0 1px var(--divider); color: var(--text-primary); color-scheme: dark; }
+.fset-stepper .chip { width: 44px; height: 44px; border: 0; border-radius: 50%;
+  background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider); color: var(--text-primary); }
+.fset-stepper > span { font-size: 20px; font-weight: 600; }
+.fset-segments .chip { border: 0; border-radius: 999px; background: rgba(245, 239, 230, 0.05);
+  box-shadow: inset 0 0 0 1px var(--divider); font-size: 12.5px; font-weight: 600; color: var(--text-secondary); }
+.fset-segments .chip[aria-pressed="true"] { border: 0; background: var(--c); color: #191614; font-weight: 700;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 45%, transparent); }
+/* the macro preview: no box of its own; the donut glows and sits on a lit inner disc */
+.fset-preview .fset-target-preview { padding: 0; border: 0; border-radius: 0; background: none; }
+.fset-preview .fset-target-preview .fset-target-label { font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+.fset-donut { padding: 12px; box-shadow: 0 0 22px -6px rgba(240, 126, 120, 0.5); }
+.fset-donut > span { background: radial-gradient(circle at 35% 30%, #3A332D, #1E1B18);
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08); }
+.fset-donut strong { font-size: 15px; font-weight: 600; }
+.fset-donut small { font-size: 9.5px; }
+.fset-macro-rows > div { border-bottom-color: var(--divider); }
+.fset-macro-rows > div::before { width: 9px; height: 9px; box-shadow: 0 0 6px var(--macro-protein); }
+.fset-macro-rows > div:nth-child(2)::before { box-shadow: 0 0 6px var(--macro-carbs); }
+.fset-macro-rows > div:nth-child(3)::before { box-shadow: 0 0 6px var(--macro-fat); }
+.fset-preview .fset-target-preview span { font-size: 13px; color: var(--text-primary); }
+.fset-preview .fset-target-preview b { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+.fset-preview .fset-target-preview .fset-donut small { font-size: 9.5px; color: var(--text-muted); }
+.fset-card .fset-refresh-note { background: rgba(255, 190, 96, 0.1); color: color-mix(in srgb, var(--dv-amber) 80%, var(--text-primary));
+  box-shadow: inset 0 0 0 1px rgba(255, 190, 96, 0.3); }
+.fset-card .fset-error { color: color-mix(in srgb, var(--dv-coral) 80%, var(--text-primary)); }
+.fset-custom label { font-size: 9.5px; font-weight: 600; letter-spacing: 1px; color: var(--text-muted); }
+/* water / fiber goals: two glass tiles side by side */
+.fset-goalgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 0; border-radius: 0; background: none; }
+.fset-goal.glass { display: grid; align-content: start; gap: 6px; min-width: 0; padding: 12px; border-radius: 20px; }
+.fset-goal > span { font-size: 11px; color: var(--text-secondary); }
+.fset-goal input { width: 100%; min-height: 44px; padding: 0 10px; text-align: left; font: 600 20px/1 var(--ff-body);
+  letter-spacing: -0.6px; font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--c) 78%, var(--text-primary)); }
+/* the meal-window door: an amber glass row with the 3D clock */
+.fset-slots.glass { justify-content: flex-start; gap: 12px; min-height: 66px; padding: 12px 14px 12px 12px;
+  border-radius: 20px; color: var(--text-primary); }
+.fset-slots-copy { flex: 1; min-width: 0; }
+.fset-slots-copy > span { display: block; font-size: 15.5px; font-weight: 600; letter-spacing: -0.3px; }
+.fset-slots-copy > small { display: block; margin-top: 2px; font-size: 11.5px; color: var(--text-secondary); }
+.fset-slots.glass > b { font-size: 20px; color: var(--text-muted); }
+.fset-closing.uv-voice { font-size: 13.5px; color: var(--text-muted); }
+/* the save bar: a blurred FLAT bar (not glass), the save button in sage glass */
+.fset-savebar, .fsl-savebar { left: 12px; right: 12px; gap: 10px; padding: 10px; border-top: 0; border-radius: 24px;
+  background: rgba(25, 22, 20, 0.82); box-shadow: inset 0 0 0 1px var(--divider);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+.fset-savebar .fset-save.glass { border-radius: 18px; color: var(--text-primary); font-size: 14.5px; font-weight: 600; }
+.fsl-savebar .fsl-cancel { flex: 1; border: 0; border-radius: 18px; background: rgba(245, 239, 230, 0.05);
+  box-shadow: inset 0 0 0 1px var(--divider); font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+.fsl-savebar .fsl-save.glass { flex: 1.6; width: auto; padding: 13px 16px; border-radius: 18px;
+  color: var(--text-primary); font-size: 14.5px; font-weight: 600; }
+.fsl-savebar .fsl-save:disabled { opacity: 0.45; }
+
+/* ─ Étkezési ablakok (/settings/fuel/slots) ─ */
+.fsl-seg { display: flex; margin: 0 0 14px; padding: 3px; border-radius: 999px;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fsl-seg-btn { flex: 1; min-width: 0; min-height: 36px; padding: 7px 6px; border-radius: 999px; white-space: nowrap;
+  font-size: 12.5px; font-weight: 600; color: var(--text-secondary); }
+.fsl-seg-btn.is-on { background: var(--dv-amber); color: #191614;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--dv-amber) 45%, transparent); }
+.fsl-list { display: grid; gap: 10px; margin-bottom: 12px; }
+/* recommended: glass rows in the slot's hue with its 3D icon */
+.fsl-slotrow.glass { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 20px; }
+.fsl-slot-time { width: 62px; flex: 0 0 auto; font-size: 20px; font-weight: 600; letter-spacing: -0.6px;
+  font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.fsl-slot-label { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.fsl-slot-kcal { flex: 0 0 auto; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fsl-slot-kcal small { font-size: 10.5px; font-weight: 500; color: var(--text-muted); }
+.fsl-cta.glass { width: 100%; gap: 8px; padding: 13px 16px; border-radius: 18px; color: var(--text-primary);
+  font-size: 14.5px; font-weight: 600; }
+/* editable: a glass card per slot, flat fields and chips inside */
+.fsl-edit.glass { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 14px; border-radius: 22px; }
+.fsl-edit-head { display: flex; align-items: center; gap: 10px; }
+.fsl-inp { min-width: 0; padding: 10px 12px; border: 0; border-radius: 13px; background: rgba(245, 239, 230, 0.05);
+  box-shadow: inset 0 0 0 1px var(--divider); font: 500 14px/1.2 var(--ff-body); color: var(--text-primary);
+  color-scheme: dark; }
+.fsl-edit-head .fsl-inp { flex: 1 1 0; width: 0; }
+.fsl-remove { display: grid; place-items: center; flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%;
+  color: var(--text-secondary); }
+.fsl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fsl-chip { min-height: 32px; padding: 6px 12px; border-radius: 999px; background: rgba(245, 239, 230, 0.05);
+  box-shadow: inset 0 0 0 1px var(--divider); font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.fsl-chip.is-on { background: var(--c); color: #191614; box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
+.fsl-anchor { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.fsl-anchor select.fsl-inp { font-size: 13px; }
+.fsl-time { font-variant-numeric: tabular-nums; }
+.fsl-stepper { display: inline-flex; align-items: center; gap: 2px; padding: 2px; border-radius: 999px;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fsl-stepper button { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(245, 239, 230, 0.06); font-size: 16px; color: var(--text-primary); }
+.fsl-num { padding: 6px 0; border: 0; background: transparent; text-align: center; font-size: 13px; font-weight: 600;
+  font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.fsl-pct { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; padding: 2px 10px 2px 4px;
+  border-radius: 999px; background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fsl-pct > span { font-size: 11px; color: var(--text-muted); }
+.fsl-add.uv-empty { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%;
+  margin-bottom: 12px; padding: 14px; border-radius: 20px; font-size: 13px; font-weight: 600;
+  color: color-mix(in srgb, var(--c) 78%, var(--text-primary)); }
+.fsl-sum { display: flex; align-items: center; justify-content: space-between; margin: 4px 2px 10px; }
+/* Σ BUDGET: a lit pill — sage when it adds up, coral when it does not */
+.fsl-pillsum { display: inline-flex; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  color: #191614; background: var(--dv-sage); box-shadow: 0 0 12px color-mix(in srgb, var(--dv-sage) 50%, transparent); }
+.fsl-pillsum.is-off { background: var(--dv-coral); box-shadow: 0 0 12px color-mix(in srgb, var(--dv-coral) 50%, transparent); }
+.fsl-compiled { display: grid; gap: 6px; margin-bottom: 9px; }
+.fsl-compiled-row { padding: 9px 12px; border-radius: 14px; font-size: 12px; font-variant-numeric: tabular-nums;
+  color: var(--text-secondary); }
+.fsl-note { margin-top: 6px; padding: 9px 12px; border-radius: 14px; font-size: 12px; font-weight: 500; line-height: 1.45; }
+.fsl-note.is-error { color: color-mix(in srgb, var(--dv-coral) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-coral) 9%, transparent); box-shadow: inset 3px 0 0 var(--dv-coral); }
+.fsl-note.is-warn { color: color-mix(in srgb, var(--dv-amber) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-amber) 8%, transparent); box-shadow: inset 3px 0 0 var(--dv-amber); }
+/* Mezo's reading: a lavender flat pill to ask, a lavender glass card for the answer */
+.fsl-eval.uv-flat { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+  margin-top: 14px; min-height: 44px; padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  color: color-mix(in srgb, var(--c) 78%, var(--text-primary));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 40%, transparent); }
+.fsl-eval:disabled { opacity: 0.45; }
+.fsl-eval-pending { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 10px 2px 0;
+  font-size: 11.5px; color: var(--text-muted); }
+.fsl-verdict.glass { display: grid; gap: 8px; margin-top: 10px; padding: 14px; border-radius: 20px; }
+.fsl-verdict-head { display: flex; align-items: center; gap: 8px; }
+.fsl-verdict-chip { margin-left: auto; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  color: color-mix(in srgb, var(--dv-sage) 80%, var(--text-primary)); background: rgba(245, 239, 230, 0.05);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-sage) 40%, transparent); }
+.fsl-verdict-chip.is-adjust { color: color-mix(in srgb, var(--dv-amber) 80%, var(--text-primary));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 40%, transparent); }
+.fsl-verdict-summary { font-size: 14px; line-height: 1.5; color: var(--text-primary); }
+.fsl-verdict-tips { display: grid; gap: 4px; }
+.fsl-verdict-tips p { font-size: 12px; line-height: 1.5; color: var(--text-secondary); }
+.fsl-eval-degraded { margin: 10px 2px 0; font-size: 11.5px; color: var(--text-muted); }
+.fsl-reset { width: 100%; margin-top: 14px; padding: 12px 16px; border: 0; background: rgba(245, 239, 230, 0.05);
+  box-shadow: inset 0 0 0 1px var(--divider); font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+@media (max-width: 360px) {
+  .fsl-seg-btn { font-size: 11px; padding-inline: 4px; }
+  .fsl-slot-time { width: 54px; font-size: 18px; }
+  .ftx-tile.glass { padding: 11px 8px; }
+  .ftx-tile.glass strong { font-size: 19px; }
+  .fset-goal input { font-size: 18px; }
+}
+/* ── /uveg fuel trendek ── */

@@ -14,6 +14,7 @@ import {
 } from '@/data/hooks'
 import { buildFuelSettingsMacroPreview } from '@/features/fuel/logic/fuelSettingsPreview'
 import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
@@ -151,7 +152,8 @@ export function FuelSettingsPage() {
 
   const saveBar = typeof document === 'undefined' ? null : createPortal(
     <div className="recipe-save-bar fset-savebar">
-      <button type="button" className="cta-primary fset-save np-press" disabled={busy}
+      <button type="button" className="cta-primary fset-save glass np-press" disabled={busy}
+        style={{ '--c': 'var(--dv-sage)' } as React.CSSProperties}
         onClick={() => void save()}>
         <Icon name="check" size={14} /> Mentés
       </button>
@@ -172,15 +174,26 @@ export function FuelSettingsPage() {
       <fieldset disabled={isPending || dietPending} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
       <EntranceGroup>
       <PageBody className="fset-body">
-        <section className="fset-hero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+        <section className="fset-hero uv-halo rise"
+          style={{ '--d': '0ms', '--c': 'var(--dv-amber)', '--c2': 'var(--dv-sage)' } as React.CSSProperties}>
           <span className="fset-eyebrow">Napi ritmus</span>
           <div className="fset-hero-head">
             <strong>{mealsPerDay} étkezés</strong>
-            <span className="fset-cutoff-pill">koffein-stop · {caffeineCutoff}</span>
+            <span className="fset-cutoff-pill uv-flat">
+              <Icon3D name="t-clock" size={20} />koffein-stop · {caffeineCutoff}
+            </span>
           </div>
           <p className="fset-summary">{mealsPerDay} étkezés · koffein-stop {caffeineCutoff}</p>
           <div className="fset-arc-wrap">
             <svg className="fset-dayarc" viewBox="0 0 320 118" aria-hidden="true" focusable="false">
+              {/* Üveg (mezo-me75u.2): the day arc glows amber → sage → lavender (uveg-fuel-tobbi.html `beallitas()`). */}
+              <defs>
+                <linearGradient id="fset-arc-grad">
+                  <stop offset="0" stopColor="#FFBE60" />
+                  <stop offset="0.6" stopColor="#8FB49A" />
+                  <stop offset="1" stopColor="#AB9FD2" />
+                </linearGradient>
+              </defs>
               <path className="fset-arc-track" d="M24 100 C88 4 232 4 296 100" />
               <path className="fset-arc-glow" d="M24 100 C88 4 232 4 296 100" />
               {mealPoints.map((point, index) => (
@@ -195,7 +208,8 @@ export function FuelSettingsPage() {
           <p className="fset-principle">A napi ív együtt mozdul a beállításaiddal.</p>
         </section>
 
-        <section className="fset-card rise" style={{ '--d': '60ms' } as React.CSSProperties}
+        <section className="fset-card glass rise"
+          style={{ '--d': '60ms', '--c': 'var(--dv-amber)', '--i': 1 } as React.CSSProperties}
           aria-labelledby="fset-rhythm-title">
           <h2 id="fset-rhythm-title">Ritmus</h2>
           <div className="fset-row">
@@ -215,7 +229,8 @@ export function FuelSettingsPage() {
           <p>A cutoff a Mai chipet, a nap-tervet és a koffein-habitot is állítja.</p>
         </section>
 
-        <section className="fset-card fset-preview rise" style={{ '--d': '110ms' } as React.CSSProperties}
+        <section className="fset-card fset-preview glass rise"
+          style={{ '--d': '110ms', '--c': 'var(--macro-protein)', '--i': 2 } as React.CSSProperties}
           aria-labelledby="fset-macros-title">
           <h2 id="fset-macros-title">Makrók</h2>
           <label className="fset-selectrow">
@@ -270,19 +285,22 @@ export function FuelSettingsPage() {
         </section>
 
         <div className="fset-goalgrid rise" style={{ '--d': '160ms' } as React.CSSProperties}>
-          <label className="fset-card">
+          <label className="fset-card fset-goal glass" style={{ '--c': 'var(--dv-sky)', '--i': 3 } as React.CSSProperties}>
+            <Icon3D name="t-water" size={30} />
             <span>Víz-cél (ml)</span>
             <input type="number" min={500} max={8000} step={100} aria-label="Víz-cél" value={waterMl}
               onChange={(event) => { setTouchedDiet(true); setWaterMl(Number(event.target.value)) }} />
           </label>
-          <label className="fset-card">
+          <label className="fset-card fset-goal glass" style={{ '--c': 'var(--macro-fiber)', '--i': 4 } as React.CSSProperties}>
+            <Icon3D name="t-fiber" size={30} />
             <span>Rost-cél (g)</span>
             <input type="number" min={10} max={80} aria-label="Rost-cél" value={fiberG}
               onChange={(event) => { setTouchedDiet(true); setFiberG(Number(event.target.value)) }} />
           </label>
         </div>
 
-        <section className="fset-card rise" style={{ '--d': '210ms' } as React.CSSProperties}
+        <section className="fset-card glass rise"
+          style={{ '--d': '210ms', '--c': 'var(--dv-lav)', '--i': 5 } as React.CSSProperties}
           aria-labelledby="fset-protein-title">
           <h2 id="fset-protein-title">Finomhangolás</h2>
           <div className="fset-row">
@@ -315,13 +333,17 @@ export function FuelSettingsPage() {
           </p>
         </section>
 
-        <button type="button" className="fset-card fset-slots np-press rise"
-          style={{ '--d': '260ms' } as React.CSSProperties}
+        <button type="button" className="fset-card fset-slots glass np-press rise"
+          style={{ '--d': '260ms', '--c': 'var(--dv-amber)', '--i': 6 } as React.CSSProperties}
           aria-label="Étkezési ablakok szerkesztése" onClick={() => navigate('/settings/fuel/slots', { state: originState })}>
-          <span>Étkezési ablakok</span>
-          <strong>szerkesztése <span aria-hidden="true">›</span></strong>
+          <Icon3D name="t-clock" size={40} />
+          <span className="fset-slots-copy">
+            <span>Étkezési ablakok</span>
+            <small>szerkesztése</small>
+          </span>
+          <b aria-hidden="true">›</b>
         </button>
-        <p className="fset-closing rise" style={{ '--d': '300ms' } as React.CSSProperties}>
+        <p className="fset-closing uv-voice rise" style={{ '--d': '300ms' } as React.CSSProperties}>
           A ritmus vezet, nem korlátoz — bármelyik ablak utólag is logolható.
         </p>
       </PageBody>

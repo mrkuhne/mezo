@@ -29,6 +29,7 @@ import { useNavigate } from 'react-router-dom'
 import { useFuelSettings, useFuelTimeline, useSlotTemplateActions, useSlotTemplateEvaluation, useSlotTemplates } from '@/data/hooks'
 import { useStickyTab } from '@/shared/hooks/useStickyTab'
 import { Icon } from '@/shared/ui/Icon'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -63,6 +64,15 @@ const SLOT_KIND_OPTIONS: { id: MealSlot; label: string }[] = [
   { id: 'snack', label: 'Snack' },
 ]
 
+// Üveg (mezo-me75u.2, prototypes/uveg-fuel-tobbi.html `ablakok()`): every slot wears its own hue and
+// 3D slot icon — the same slot → hue pairing as the approved prototype.
+const SLOT_FACE: Record<MealSlot, { icon: Icon3DName; color: string }> = {
+  breakfast: { icon: 't-sun', color: 'var(--dv-amber)' },
+  lunch: { icon: 't-bowl', color: 'var(--dv-sage)' },
+  snack: { icon: 't-snack', color: 'var(--dv-lav)' },
+  dinner: { icon: 't-moon', color: 'var(--dv-sky)' },
+}
+
 const ANCHOR_OPTIONS: { id: SlotAnchor['type']; label: string }[] = [
   { id: 'fixed', label: 'Fix időpont' },
   { id: 'wake', label: 'Ébredés után' },
@@ -95,13 +105,7 @@ function SegButton({ on, onClick, children }: { on: boolean; onClick: () => void
       role="tab"
       aria-selected={on}
       onClick={onClick}
-      className="rad-12"
-      style={{
-        flex: 1, textAlign: 'center', fontSize: 10, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase',
-        padding: '7px 0', borderRadius: 3,
-        color: on ? 'var(--sage-deep)' : 'var(--text-tertiary)',
-        background: on ? 'var(--wash-sage)' : 'transparent',
-      }}
+      className={on ? 'fsl-seg-btn is-on' : 'fsl-seg-btn'}
     >
       {children}
     </button>
@@ -155,7 +159,8 @@ function NumberField({
       onChange={e => commit(e.target.value)}
       onBlur={() => { if (text !== String(value)) setText(String(value)) }}
       aria-label={label}
-      style={{ width, textAlign: 'center', fontVariantNumeric: 'tabular-nums', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', background: 'transparent' }}
+      className="fsl-num"
+      style={{ width }}
     />
   )
 }
@@ -329,7 +334,7 @@ export function FuelSlotsPage() {
   if (settingsError || templatesError) return <MozaikPage tone="sage"><UnsavedChangesGuard dirty={!saved && ((forked && JSON.stringify(rows) !== JSON.stringify(existing?.slots ?? [])) || Object.entries(drafts).some(([key, draft]) => draft?.forked && JSON.stringify(draft.rows) !== JSON.stringify(templates.find(t => t.dayType === key)?.slots ?? [])))} /><PageHead onBack={() => navigate('/settings/fuel', { state: originState })} label="‹ Fuel" /><PageBody><p role="alert">Nem sikerült betölteni az étkezési ablakok beállításait. A mentett rendet addig nem lehet felülírni.</p><button className="cta-primary" onClick={() => { retrySettings(); retryTemplates() }}>Újrapróbálás</button></PageBody></MozaikPage>
 
   return (
-    <MozaikPage tone="sage">
+    <MozaikPage tone="sage" className="fsl-page">
         <UnsavedChangesGuard dirty={!saved && ((forked && JSON.stringify(rows) !== JSON.stringify(existing?.slots ?? [])) || Object.entries(drafts).some(([key, draft]) => draft?.forked && JSON.stringify(draft.rows) !== JSON.stringify(templates.find(t => t.dayType === key)?.slots ?? [])))} />
         {writeError && <p role="alert">Nem sikerült menteni. A módosításaid megmaradtak.</p>}
         <PageHead onBack={() => navigate('/settings/fuel', { state: originState })} label="‹ Fuel" />
@@ -345,7 +350,7 @@ export function FuelSlotsPage() {
         </div>
 
         {/* Day-type switcher */}
-        <div role="tablist" aria-label="Naptípusok" className="row gap-xs rise" style={{ '--d': '40ms', marginBottom: 14 } as React.CSSProperties}>
+        <div role="tablist" aria-label="Naptípusok" className="fsl-seg rise" style={{ '--d': '40ms' } as React.CSSProperties}>
           {DAY_TYPES.map(dt => (
             <SegButton key={dt.id} on={dayType === dt.id} onClick={() => setDayType(dt.id)}>{dt.label}</SegButton>
           ))}
@@ -353,12 +358,14 @@ export function FuelSlotsPage() {
 
         {!editing ? (
           <>
-            <div className="col gap-sm rise" style={{ '--d': '80ms', marginBottom: 12 } as React.CSSProperties}>
+            <div className="fsl-list rise" style={{ '--d': '80ms' } as React.CSSProperties}>
               {recommendedWindows.map((w, i) => (
-                <div key={i} className="zcard" style={{ padding: '11px 12px', marginLeft: 0, marginRight: 0 }}>
-                  <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>
-                    {toHHmm(w.time)} · {w.label} · {recommendedBudgets[i]?.kcal ?? 0} kcal
-                  </span>
+                <div key={i} className="fsl-slotrow glass"
+                  style={{ '--c': SLOT_FACE[w.slotKey].color, '--i': i } as React.CSSProperties}>
+                  <span className="fsl-slot-time">{toHHmm(w.time)}</span>
+                  <Icon3D name={SLOT_FACE[w.slotKey].icon} size={34} />
+                  <span className="fsl-slot-label">{w.label}</span>
+                  <b className="fsl-slot-kcal uv-tint">{recommendedBudgets[i]?.kcal ?? 0} <small>kcal</small></b>
                 </div>
               ))}
             </div>
@@ -370,51 +377,54 @@ export function FuelSlotsPage() {
                 this day type — Mentés would silently overwrite the real template with the fork.
                 Mock mode resolves `isPending` synchronously (`useDualQuery`'s `initialData`), so the
                 button is never disabled there. */}
-            <button className="cta-primary rise" onClick={fork} disabled={templatesPending} style={{ '--d': '120ms', width: '100%' } as React.CSSProperties}>
-              <Icon name="pencil" size={14} /> Testreszabás
+            <button className="cta-primary fsl-cta glass rise" onClick={fork} disabled={templatesPending}
+              style={{ '--d': '120ms', '--c': 'var(--dv-amber)' } as React.CSSProperties}>
+              <Icon3D name="t-gear" size={26} /> Testreszabás
             </button>
           </>
         ) : (
           <>
-            <div className="col gap-sm rise" style={{ '--d': '80ms', marginBottom: 12 } as React.CSSProperties}>
+            <div className="fsl-list rise" style={{ '--d': '80ms' } as React.CSSProperties}>
               {rows.map((row, i) => (
-                <div key={i} className="zcard" style={{ padding: '11px 12px', marginLeft: 0, marginRight: 0 }}>
-                  <div className="row" style={{ alignItems: 'center', gap: 8 }}>
+                <div key={i} className="fsl-edit glass"
+                  style={{ '--c': SLOT_FACE[row.slotKind].color, '--i': i } as React.CSSProperties}>
+                  <div className="fsl-edit-head">
+                    <Icon3D name={SLOT_FACE[row.slotKind].icon} size={30} />
                     <input
+                      className="fsl-inp"
                       value={row.label}
                       onChange={e => updateRow(i, { label: e.target.value })}
                       aria-label="Slot neve"
                       placeholder="Slot neve"
                       maxLength={40}
-                      style={{ flex: 1, fontSize: 13, color: 'var(--text-primary)' }}
                     />
-                    <button onClick={() => removeRow(i)} aria-label={`${row.label} törlése`} style={{ padding: 3, color: 'var(--text-tertiary)', flexShrink: 0 }}>
+                    <button className="fsl-remove uv-flat" onClick={() => removeRow(i)} aria-label={`${row.label} törlése`}>
                       <Icon name="trash" size={13} />
                     </button>
                   </div>
 
-                  <div className="row gap-xs flex-wrap" style={{ marginTop: 8 }}>
+                  <div className="fsl-chips">
                     {SLOT_KIND_OPTIONS.map(o => (
-                      <button key={o.id} onClick={() => updateRow(i, { slotKind: o.id })} className={'chip' + (row.slotKind === o.id ? ' brand' : '')} style={{ fontSize: 9, padding: '6px 10px' }}>
+                      <button key={o.id} onClick={() => updateRow(i, { slotKind: o.id })} className={'fsl-chip' + (row.slotKind === o.id ? ' is-on' : '')}>
                         {o.label}
                       </button>
                     ))}
                   </div>
 
-                  <div className="row gap-xs flex-wrap" style={{ marginTop: 8 }}>
+                  <div className="fsl-chips">
                     {ROLE_OPTIONS.map(o => (
-                      <button key={o.id} onClick={() => updateRow(i, { role: o.id })} className={'chip' + (row.role === o.id ? ' brand' : '')} style={{ fontSize: 9, padding: '6px 10px' }}>
+                      <button key={o.id} onClick={() => updateRow(i, { role: o.id })} className={'fsl-chip' + (row.role === o.id ? ' is-on' : '')}>
                         {o.label}
                       </button>
                     ))}
                   </div>
 
-                  <div className="row gap-sm" style={{ marginTop: 9, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div className="fsl-anchor">
                     <select
+                      className="fsl-inp"
                       aria-label="Horgony"
                       value={row.anchor.type}
                       onChange={e => setAnchorType(i, e.target.value as SlotAnchor['type'])}
-                      style={{ fontSize: 11, color: 'var(--text-primary)', background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', padding: '5px 6px' }}
                     >
                       {ANCHOR_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
                     </select>
@@ -429,15 +439,14 @@ export function FuelSlotsPage() {
                           type="time"
                           aria-label="Fix időpont"
                           value={anchor.time}
+                          className="fsl-inp fsl-time"
                           onChange={e => { if (e.target.value) updateRow(i, { anchor: { type: 'fixed', time: e.target.value } }) }}
-                          style={{ background: 'transparent', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)', fontSize: 12, fontVariantNumeric: 'tabular-nums', padding: '5px 6px' }}
                         />
                       ) : (
-                        <div className="row" style={{ alignItems: 'center', background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', display: 'inline-flex' }}>
+                        <div className="fsl-stepper">
                           <button
                             onClick={() => updateRow(i, { anchor: { type: anchor.type, offsetMin: clampOffsetMin(anchor.offsetMin - 15) } })}
                             aria-label="Csökkentés"
-                            style={{ width: 26, height: 26, display: 'grid', placeItems: 'center', color: 'var(--coral)', fontSize: 14 }}
                           >−</button>
                           <NumberField
                             value={anchor.offsetMin}
@@ -450,15 +459,14 @@ export function FuelSlotsPage() {
                           <button
                             onClick={() => updateRow(i, { anchor: { type: anchor.type, offsetMin: clampOffsetMin(anchor.offsetMin + 15) } })}
                             aria-label="Növelés"
-                            style={{ width: 26, height: 26, display: 'grid', placeItems: 'center', color: 'var(--coral)', fontSize: 14 }}
                           >+</button>
                         </div>
                       )
                     })()}
 
-                    <div className="row" style={{ alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
+                    <div className="fsl-pct">
                       <NumberField value={row.budgetPct} onChange={n => updateRow(i, { budgetPct: n })} label="Budget %" width={40} normalize={normalizeBudgetPct} />
-                      <span className="label-mono" style={{ fontSize: 8.5, color: 'var(--text-tertiary)' }}>%</span>
+                      <span>%</span>
                     </div>
                   </div>
                 </div>
@@ -467,27 +475,21 @@ export function FuelSlotsPage() {
 
             <button
               onClick={addRow}
-              className="rad-12"
-              style={{ width: '100%', padding: 11, marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 12, fontWeight: 600, color: 'var(--coral)', background: 'color-mix(in srgb, var(--sage) 8%, transparent)', border: '1px dashed var(--line)' }}
+              className="fsl-add uv-empty"
+              style={{ '--c': 'var(--dv-amber)' } as React.CSSProperties}
             >
               <Icon name="plus" size={14} /> Új slot
             </button>
 
-            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', margin: '4px 2px 10px' }}>
-              <span className="label-mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--text-tertiary)' }}>Σ BUDGET</span>
-              <span
-                style={{
-                  fontSize: 11, fontWeight: 800, borderRadius: 999, padding: '3px 10px',
-                  color: Math.abs(sumPct - 100) > 1 ? 'var(--coral-deep)' : 'var(--sage-deep)',
-                  background: Math.abs(sumPct - 100) > 1 ? 'var(--warm)' : 'var(--wash-sage)',
-                }}
-              >{sumPct}%</span>
+            <div className="fsl-sum">
+              <span className="uv-eyebrow">Σ BUDGET</span>
+              <span className={Math.abs(sumPct - 100) > 1 ? 'fsl-pillsum is-off' : 'fsl-pillsum'}>{sumPct}%</span>
             </div>
 
-            <div className="col gap-sm" style={{ marginBottom: 9 }}>
+            <div className="fsl-compiled">
               {compiled.map((w, i) => (
-                <div key={i} className="zcard" style={{ padding: '9px 12px', marginLeft: 0, marginRight: 0 }}>
-                  <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                <div key={i} className="fsl-compiled-row uv-flat">
+                  <span>
                     {toHHmm(w.time)} · {w.label} · {compiledBudgets[i]?.kcal ?? 0} kcal · P{compiledBudgets[i]?.p ?? 0}
                   </span>
                 </div>
@@ -499,10 +501,10 @@ export function FuelSlotsPage() {
             {/* Tier-1 errors in a coral wash card — a FORBIDDEN state, the one place the
                 colour is legitimate; warnings in amber and they never block (fuel-mely.html). */}
             {errors.map((e, i) => (
-              <p key={`${e.code}-${i}`} role="alert" style={{ fontSize: 11, fontWeight: 500, color: 'var(--coral-deep)', background: 'color-mix(in srgb, var(--coral) 9%, transparent)', borderRadius: 12, padding: '8px 11px', marginTop: 6 }}>{e.text}</p>
+              <p key={`${e.code}-${i}`} role="alert" className="fsl-note is-error">{e.text}</p>
             ))}
             {warnings.map((w, i) => (
-              <p key={`${w.code}-${i}`} style={{ fontSize: 11, fontWeight: 500, color: 'var(--warning)', background: 'color-mix(in srgb, var(--warning) 10%, transparent)', borderRadius: 12, padding: '8px 11px', marginTop: 6 }}>{w.text}</p>
+              <p key={`${w.code}-${i}`} className="fsl-note is-warn">{w.text}</p>
             ))}
 
             {/* "Mezo értékelése" (mezo-7102 Task 12) — an AI olvasat on the current draft,
@@ -511,38 +513,35 @@ export function FuelSlotsPage() {
                 while a call is already in flight. Never blocks saving — Mentés stays governed by
                 `errors` alone. */}
             <button
-              className="cta-ghost"
+              className="fsl-eval uv-flat"
               aria-label="Mezo értékelése"
               onClick={runEvaluate}
               disabled={errors.length > 0 || evalPending}
-              style={{ width: '100%', marginTop: 14 }}
+              style={{ '--c': 'var(--dv-lav)' } as React.CSSProperties}
             >
-              <Icon name="sparkle" size={14} /> Mezo értékelése
+              <Icon3D name="t-score" size={24} /> Mezo értékelése
             </button>
 
             {evalPending && (
-              <p className="np-twinkle text-tertiary" style={{ fontSize: 11.5, textAlign: 'center', margin: '10px 2px 0' }}>
-                ✨ Mezo értékeli a felosztást…
+              <p className="fsl-eval-pending np-twinkle">
+                <Icon3D name="t-score" size={18} /> Mezo értékeli a felosztást…
               </p>
             )}
 
             {!evalPending && verdict && (
-              <div className="mz-qcard" style={{ margin: '10px 0 0', padding: 12, background: 'var(--mz-wash-lav)' }}>
-                <div className="row gap-sm" style={{ alignItems: 'center', marginBottom: 8 }}>
-                  <Icon name="sparkle" size={12} color="var(--coral)" />
+              <div className="fsl-verdict glass" style={{ '--c': 'var(--dv-lav)' } as React.CSSProperties}>
+                <div className="fsl-verdict-head">
+                  <Icon3D name="t-score" size={26} />
                   <Eyebrow brand>Mezo · olvasat</Eyebrow>
-                  <span
-                    className={verdict.verdict === 'adjust' ? 'chip warning' : 'chip'}
-                    style={verdict.verdict === 'ok' ? { color: 'var(--sage-deep)', background: 'var(--wash-sage)', borderColor: 'transparent' } : undefined}
-                  >
+                  <span className={verdict.verdict === 'adjust' ? 'fsl-verdict-chip is-adjust' : 'fsl-verdict-chip'}>
                     {verdict.verdict === 'ok' ? 'rendben' : 'érdemes igazítani'}
                   </span>
                 </div>
-                <p style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--text-primary)' }}>{verdict.summary}</p>
+                <p className="fsl-verdict-summary uv-voice">{verdict.summary}</p>
                 {verdict.suggestions.length > 0 && (
-                  <div className="col gap-xs" style={{ marginTop: 8 }}>
+                  <div className="fsl-verdict-tips">
                     {verdict.suggestions.map((s, i) => (
-                      <p key={i} style={{ fontSize: 11.5, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+                      <p key={i}>
                         {s.slotLabel && <b>{s.slotLabel}: </b>}{s.text}
                       </p>
                     ))}
@@ -552,7 +551,7 @@ export function FuelSlotsPage() {
             )}
 
             {!evalPending && evalDegraded && (
-              <p className="text-tertiary" style={{ fontSize: 11, margin: '10px 2px 0' }}>
+              <p className="fsl-eval-degraded">
                 Az AI-értékelés most nem elérhető — a determinisztikus ellenőrzés él.
               </p>
             )}
@@ -563,10 +562,9 @@ export function FuelSlotsPage() {
                 mandate this button live in the bar — it reads fine as the last editor action. */}
             {existing && (
               <button
-                className="cta-ghost"
+                className="cta-ghost fsl-reset"
                 aria-label="Ajánlott visszaállítása"
                 onClick={resetToRecommended}
-                style={{ width: '100%', marginTop: 14 }}
               >
                 Ajánlott visszaállítása
               </button>
@@ -583,9 +581,10 @@ export function FuelSlotsPage() {
           editable (a fork in progress, or an existing saved template) — the pure recommended
           preview has its own primary action (Testreszabás). */}
       {editing && createPortal(
-        <div className="recipe-save-bar">
-          <button className="cta-ghost" onClick={() => navigate('/settings/fuel', { state: originState })} style={{ flex: 1 }}>Mégse</button>
-          <button className="cta-primary" disabled={errors.length > 0 || pending || settingsPending || templatesPending} onClick={save} style={{ flex: 1.8 }}>
+        <div className="recipe-save-bar fsl-savebar">
+          <button className="cta-ghost fsl-cancel" onClick={() => navigate('/settings/fuel', { state: originState })}>Mégse</button>
+          <button className="cta-primary fsl-save glass" disabled={errors.length > 0 || pending || settingsPending || templatesPending} onClick={save}
+            style={{ '--c': 'var(--dv-sage)' } as React.CSSProperties}>
             <Icon name="check" size={15} /> Mentés
           </button>
         </div>,

@@ -34,7 +34,7 @@
 // how many manual lines ride alongside; a purely manual meal omits provenance —
 // the LogFlowPage rule, kept verbatim (see that file's original header note).
 // ============================================================
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { FuelMeal, Ingredient, MealInput, MealItemInput, MealSlot, Recipe } from '@/data/types'
 import { useFuelDay, useMealActions, useRecipes, usePantry } from '@/data/hooks'
 import { useMealCeremony } from '@/features/fuel/MealCeremonyProvider'
@@ -43,7 +43,7 @@ import { pct } from '@/shared/lib/pct'
 import { nowOffsetIso, offsetIso, localDateString, huMonthDay } from '@/shared/lib/dates'
 import { resizeImage } from '@/shared/lib/resizeImage'
 import { Icon } from '@/shared/ui/Icon'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { MCells } from '@/shared/ui/mozaik'
 import { NutrientCells } from '@/features/fuel/components/NutrientCells'
 import { KamraPickSheet } from '@/features/fuel/sheets/KamraPickSheet'
@@ -83,6 +83,21 @@ const SLOTS: { id: MealSlot; label: string }[] = [
 const round = (n: number) => Math.round(n)
 const zero = { kcal: 0, p: 0, c: 0, f: 0 }
 
+/** Üveg (mezo-me75u.2): a sor-címke forrás-ikonja (uveg-fuel-tobbi `log()` `.tagf`). */
+const TAG_ICON: Record<'kamra' | 'recept' | 'becslés', Icon3DName> = {
+  kamra: 't-stack', recept: 't-book', becslés: 't-score',
+}
+
+/** Üveg (mezo-me75u.2): a sor-kártya hue-ja a sor ENERGIÁJÁNAK uralkodó makrója (a prototípus
+ *  soronkénti `--c`-je) — pusztán vizuális; energia nélkül a Fuel zsályája. */
+function lineHue(c: { p: number; c: number; f: number }): string {
+  const shares: [string, number][] = [
+    ['var(--macro-protein)', c.p * 4], ['var(--macro-carbs)', c.c * 4], ['var(--macro-fat)', c.f * 9],
+  ]
+  const top = shares.reduce((a, b) => (b[1] > a[1] ? b : a))
+  return top[1] > 0 ? top[0] : 'var(--dv-sage)'
+}
+
 /** Múltbeli napi mentés idő-komponense, ha az indító nem hoz sajátot (szabad blokk). */
 const SLOT_DEFAULT_TIME: Record<MealSlot, string> = {
   breakfast: '08:00', lunch: '13:00', dinner: '19:00', snack: '16:00',
@@ -102,8 +117,8 @@ interface DraftLine {
   name: string
   amount: number
   unit: string
-  /** true when this line came out of the AI panel — shown as a ✨-suffixed source tag, so a
-   *  pantry-matched AI line reads "kamra ✨" rather than pretending to be an estimate. */
+  /** true when this line came out of the AI panel — shown as an AI mark on the source tag, so a
+   *  pantry-matched AI line reads "kamra · AI" rather than pretending to be an estimate. */
   fromAi?: boolean
   needsReview?: boolean
   estimate?: EstimateSnapshot
@@ -112,19 +127,20 @@ interface DraftLine {
 }
 
 function lineMeta(l: DraftLine, recipes: Recipe[], ingredients: Ingredient[]) {
-  // The tag names where the MACROS came from; ✨ marks who put the line there. Keeping the two
-  // apart is why an AI line matched to a real Kamra row no longer lies about being an estimate
-  // (mezo-qrks). `tag` alone feeds data-tag — prototype.css selects on its exact value.
-  const tag = l.source === 'estimate' ? 'becslés' : l.source === 'recipe' ? 'recept' : 'kamra'
+  // The tag names where the MACROS came from; the AI mark says who put the line there. Keeping
+  // the two apart is why an AI line matched to a real Kamra row no longer lies about being an
+  // estimate (mezo-qrks). `tag` alone feeds data-tag — prototype.css selects on its exact value.
+  const tag: keyof typeof TAG_ICON = l.source === 'estimate' ? 'becslés' : l.source === 'recipe' ? 'recept' : 'kamra'
   // 'becslés' only ever comes from the AI panel (there's no manual estimate path), so the tag
-  // already says "AI" on its own — a ✨ there would be redundant, not honest-making.
-  const tagLabel = l.fromAi && l.source !== 'estimate' ? `${tag} ✨` : tag
+  // already says "AI" on its own — an AI mark there would be redundant, not honest-making.
+  // (Üveg, mezo-me75u.2: the former ✨ suffix is the t-score icon + a screen-reader "AI".)
+  const aiMark = !!l.fromAi && l.source !== 'estimate'
   if (l.source === 'estimate') {
     const est = l.estimate!
     const per = est.per || 1
     const factor = l.amount / per
     return {
-      name: l.name, tag, tagLabel, step: 10, min: 1,
+      name: l.name, tag, aiMark, step: 10, min: 1,
       contribution: {
         kcal: round(est.kcal * factor), p: round(est.proteinG * factor),
         c: round(est.carbsG * factor), f: round(est.fatG * factor),
@@ -147,7 +163,7 @@ function lineMeta(l: DraftLine, recipes: Recipe[], ingredients: Ingredient[]) {
       ? computeRecipeNutrientsWithOverrides(r!.ingredients, ingredients, l.overrides!)
       : (r ? computeRecipeNutrients(r.ingredients) : NO_NUTRIENTS)
     return {
-      name: l.fromAi ? l.name : (r?.name ?? l.name), tag, tagLabel, step: 1, min: 1,
+      name: l.fromAi ? l.name : (r?.name ?? l.name), tag, aiMark, step: 1, min: 1,
       contribution: {
         kcal: round(whole.kcal / s * factor), p: round(whole.p / s * factor),
         c: round(whole.c / s * factor), f: round(whole.f / s * factor),
@@ -159,7 +175,7 @@ function lineMeta(l: DraftLine, recipes: Recipe[], ingredients: Ingredient[]) {
   const per = ing?.per || 1
   const factor = l.amount / per
   return {
-    name: l.fromAi ? l.name : (ing?.name ?? l.name), tag, tagLabel, step: 10, min: 1,
+    name: l.fromAi ? l.name : (ing?.name ?? l.name), tag, aiMark, step: 10, min: 1,
     contribution: {
       kcal: round((ing?.macros.kcal ?? 0) * factor), p: round((ing?.macros.p ?? 0) * factor),
       c: round((ing?.macros.c ?? 0) * factor), f: round((ing?.macros.f ?? 0) * factor),
@@ -602,12 +618,11 @@ export function MealComposer({
     <div className="logflow-composer">
       {fixedSlot == null && showConfirm && (
         <>
-          <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>MIKOR</span>
-          <div className="row gap-xs" style={{ margin: '7px 0 10px', padding: 5, background: 'var(--surface-1)', border: '1px solid var(--border-subtle)' }}>
+          <span className="logflow-eyebrow uv-eyebrow">MIKOR</span>
+          <div className="logflow-seg uv-flat">
             {SLOTS.map(s => (
               <button key={s.id} onClick={() => selectSlot(s.id)} aria-label={s.label} aria-pressed={slot === s.id}
-                className={'chip flex-1' + (slot === s.id ? ' brand' : '')}
-                style={{ justifyContent: 'center', padding: '8px 0', fontSize: 11, textTransform: 'uppercase' }}>
+                className={'logflow-segbtn' + (slot === s.id ? ' is-on' : '')}>
                 {s.label}
               </button>
             ))}
@@ -617,27 +632,27 @@ export function MealComposer({
 
       {showSourceRow && (
         <>
-          <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>HONNAN ADOD HOZZÁ?</span>
+          <span className="logflow-eyebrow uv-eyebrow">HONNAN ADOD HOZZÁ?</span>
           {/* A kalauz-horgony CSAK a héj nélküli felületen ül itt (a teljes oldalon a héj
               mód-sora viseli ugyanezt a nevet) — így pontosan egy elem hordozza, és a
               „Mutasd meg" gomb mindig a valóban aktuális „hogyan adod hozzá" felületre mutat. */}
           <div className="logflow-srctiles" {...(shellOwnsEntry ? {} : { 'data-kalauz-anchor': 'log-forrasok' })}>
             {showManualSources && (
               <>
-                <button type="button" className="logflow-srct tone-gold" onClick={() => setKamraOpen(true)} aria-label="Kamra · hozzáadás">
-                  <ClayIcon name="i-kamra" size={26} />
+                <button type="button" className="logflow-srct glass" style={{ '--c': 'var(--dv-amber)' } as CSSProperties} onClick={() => setKamraOpen(true)} aria-label="Kamra · hozzáadás">
+                  <Icon3D name="t-stack" size={40} />
                   <b>Kamra</b><small>polcról, grammra</small>
                 </button>
-                <button type="button" className="logflow-srct tone-coral" onClick={() => setReceptOpen(true)} aria-label="Recept · hozzáadás">
-                  <ClayIcon name="i-recept" size={26} />
+                <button type="button" className="logflow-srct glass" style={{ '--c': 'var(--dv-coral)' } as CSSProperties} onClick={() => setReceptOpen(true)} aria-label="Recept · hozzáadás">
+                  <Icon3D name="t-book" size={40} />
                   <b>Recept</b><small>adagra</small>
                 </button>
               </>
             )}
             {showAiSource && (
-              <button type="button" className={'logflow-srct tone-lav' + (aiOpen ? ' on' : '')} onClick={() => setAiOpen(o => !o)} aria-label="✨ AI · fotó vagy szöveg" aria-pressed={aiOpen}>
-                <Icon name="sparkle" size={22} color="var(--lav-deep)" />
-                <b>✨ AI</b><small>fotó vagy szöveg</small>
+              <button type="button" className={'logflow-srct glass' + (aiOpen ? ' on' : '')} style={{ '--c': 'var(--dv-lav)' } as CSSProperties} onClick={() => setAiOpen(o => !o)} aria-label="AI · fotó vagy szöveg" aria-pressed={aiOpen}>
+                <Icon3D name="t-score" size={40} />
+                <b>AI</b><small>fotó vagy szöveg</small>
               </button>
             )}
           </div>
@@ -645,81 +660,94 @@ export function MealComposer({
       )}
 
       {aiBusy && (
-        <div className="logflow-aipanel logflow-aibusy">
+        <div className="logflow-aipanel logflow-aibusy glass">
           <span className="np-twinkle" aria-hidden="true" />
           Elemzem az étkezést…
         </div>
       )}
       {aiOpen && !aiBusy && (
-        <div className="logflow-aipanel">
+        <div className="logflow-aipanel glass">
           <textarea
             value={aiText} onChange={(e) => setAiText(e.target.value)}
             aria-label="Mit ettél?" placeholder="pl. csirkés wrap és egy latte…" rows={2}
           />
-          <div className="row gap-xs" style={{ alignItems: 'center', marginTop: 7 }}>
+          <div className="logflow-airow">
             {aiPhoto ? (
-              <span className="row gap-xs" style={{ alignItems: 'center', fontSize: 11, color: 'var(--lav-deep)' }}>
-                {photoUrl && <img src={photoUrl} alt="Fotó előnézet" style={{ width: 26, height: 26, objectFit: 'cover', borderRadius: 8 }} />}
+              <span className="logflow-aiphoto">
+                {photoUrl && <img src={photoUrl} alt="Fotó előnézet" />}
                 {aiPhoto.name}
-                <button type="button" aria-label="Fotó eltávolítása" onClick={() => setAiPhoto(null)} style={{ padding: 2, color: 'var(--text-tertiary)' }}>
+                <button type="button" aria-label="Fotó eltávolítása" onClick={() => setAiPhoto(null)}>
                   <Icon name="x" size={11} />
                 </button>
               </span>
             ) : (
-              <label className="chip" style={{ cursor: 'pointer', fontSize: 11, padding: '6px 12px' }}>
-                📷 Fotó
+              <label className="logflow-aichip">
+                <Icon3D name="t-camera" size={18} />
+                Fotó
                 <input type="file" accept="image/*" capture="environment" aria-label="Étel fotó"
                   onChange={(e) => setAiPhoto(e.target.files?.[0] ?? null)} style={{ display: 'none' }} />
               </label>
             )}
-            <button type="button" className={'chip' + (voiceRecording ? ' brand' : '')}
-              style={{ fontSize: 11, padding: '6px 12px' }}
+            <button type="button" className={'logflow-aichip' + (voiceRecording ? ' is-live' : '')}
               onClick={voice.toggle}
               disabled={voice.state === 'unsupported' || voice.state === 'transcribing'}
               aria-label={VOICE_LABEL[voice.state]} aria-pressed={voiceRecording}>
-              <Icon name={voiceRecording ? 'voice-wave' : 'mic'} size={12} />
+              <Icon3D name="t-mic" size={18} />
               {voiceRecording ? 'Hallgatlak…' : voice.state === 'transcribing' ? 'Leiratozom…' : 'Hang'}
             </button>
-            <button type="button" className="cta-primary" style={{ marginLeft: 'auto', padding: '6px 16px' }}
+            <button type="button" className="logflow-aichip logflow-airun"
               disabled={!canRunAi} onClick={() => void runAi()}>
-              ✨ Elemzés
+              <Icon3D name="t-score" size={18} />
+              Elemzés
             </button>
           </div>
-          {aiError && <p style={{ fontSize: 11, color: 'var(--error)', marginTop: 8 }}>{aiError}</p>}
-          {voice.error && <p style={{ fontSize: 11, color: 'var(--error)', marginTop: 8 }}>{voice.error}</p>}
-          <p className="text-secondary" style={{ fontSize: 9.5, lineHeight: 1.5, marginTop: 8 }}>
+          {aiError && <p className="logflow-aierr">{aiError}</p>}
+          {voice.error && <p className="logflow-aierr">{voice.error}</p>}
+          <p className="logflow-aihint">
             Szöveg, hang vagy fotó — vagy mindhárom. A felismert sorok a tételek közé kerülnek, ott mindent átírhatsz.
           </p>
         </div>
       )}
 
       {showConfirm && (
-        <div className="row" style={{ alignItems: 'center', gap: 9, margin: '14px 2px 9px' }}>
-          <span className="label-mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--text-tertiary)' }}>TÉTELEK</span>
-          <span className="label-mono" style={{ fontSize: 9.5, color: 'var(--coral)' }}>{lines.length}</span>
-          <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border-subtle),transparent)' }} />
+        <div className="logflow-sec">
+          <span className="uv-eyebrow">TÉTELEK</span>
+          <span className="logflow-sec-n">{lines.length}</span>
+          <span className="logflow-sec-rule" aria-hidden="true" />
         </div>
       )}
 
       {showConfirm && lines.length === 0 && (
-        <div className="card" style={{ padding: 14, textAlign: 'center', borderStyle: 'dashed' }}>
-          <span className="text-tertiary" style={{ fontSize: 11 }}>Még nincs tétel — válassz forrást fent, vagy kombináld őket.</span>
+        <div className="logflow-empty uv-empty">
+          <span>Még nincs tétel — válassz forrást fent, vagy kombináld őket.</span>
         </div>
       )}
 
-      <div className="col gap-sm">
-        {resolved.map(({ l, meta }) => (
-          <div key={l.key} className="logflow-lncard" data-tag={meta.tag}>
-            <div className="row" style={{ alignItems: 'center', gap: 9 }}>
-              <div className="row gap-xs flex-1" style={{ minWidth: 0, alignItems: 'center', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{meta.name}</span>
-                <span className="logflow-lntag" data-tag={meta.tag}>{meta.tagLabel}</span>
+      <div className="logflow-lines">
+        {resolved.map(({ l, meta }, i) => (
+          // Üveg (mezo-me75u.2): a sor egy üvegkártya a sor uralkodó makrójának hue-jában; minden
+          // benne (címke, léptető, makró-cellák, finomhangolás) lapos cella — üveg az üvegben nincs.
+          <div key={l.key} className="logflow-lncard glass" data-tag={meta.tag}
+            style={{ '--c': lineHue(meta.contribution), '--i': i } as CSSProperties}>
+            <div className="logflow-lntop">
+              <div className="logflow-lnname">
+                <span className="logflow-lnlabel">{meta.name}</span>
+                <span className="logflow-lntag" data-tag={meta.tag} data-ai={meta.aiMark ? '' : undefined}>
+                  <Icon3D name={TAG_ICON[meta.tag]} size={15} />
+                  {meta.tag}
+                  {meta.aiMark && (
+                    <>
+                      <Icon3D name="t-score" size={13} className="logflow-lntag-ai" />
+                      <span className="sr-only"> · AI</span>
+                    </>
+                  )}
+                </span>
               </div>
-              <button onClick={() => removeLine(l.key)} aria-label={`${meta.name} eltávolítása`} style={{ padding: 3, color: 'var(--text-tertiary)', flexShrink: 0 }}>
+              <button className="logflow-lnx" onClick={() => removeLine(l.key)} aria-label={`${meta.name} eltávolítása`}>
                 <Icon name="x" size={12} />
               </button>
             </div>
-            <div className="row" style={{ alignItems: 'center', gap: 6, marginTop: 8 }}>
+            <div className="logflow-lnstep">
               <button onClick={() => bump(l.key, -1, meta.step, meta.min)} aria-label={`${meta.name} csökkentés`} className="logflow-stepbtn">−</button>
               <input
                 type="text" inputMode="decimal" value={l.amount}
@@ -728,8 +756,8 @@ export function MealComposer({
                 className="logflow-amtinput"
               />
               <button onClick={() => bump(l.key, 1, meta.step, meta.min)} aria-label={`${meta.name} növelés`} className="logflow-stepbtn">+</button>
-              <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)' }}>{l.unit}</span>
-              <span className="logflow-lnkcal"><b>{meta.contribution.kcal}</b><small>kcal</small></span>
+              <span className="logflow-lnunit">{l.unit}</span>
+              <span className="logflow-lnkcal uv-tint"><b>{meta.contribution.kcal}</b><small>kcal</small></span>
             </div>
             <div className="logflow-lnmac">
               <span className="mz-c-coral"><b>{meta.contribution.p} g</b><small>feh.</small></span>
@@ -737,15 +765,16 @@ export function MealComposer({
               <span className="mz-c-lav"><b>{meta.contribution.f} g</b><small>zsír</small></span>
             </div>
             {l.source !== 'estimate' && (
-              <div style={{ marginTop: 6 }}>
+              <div className="logflow-lnnutri">
                 <NutrientCells nutrients={meta.nutrients} perLabel={`${l.amount} ${l.unit}`} />
               </div>
             )}
             {l.needsReview && (
               <p className="logflow-lnnote">
+                <Icon3D name="t-score" size={14} />
                 {l.source === 'pantry'
-                  ? '✨ Ezt a kamrádból párosítottuk név alapján — ellenőrizd, hogy tényleg ez a tétel, és nézd át a mennyiséget.'
-                  : '✨ Az AI nem teljesen biztos ebben a sorban — nézd át a mennyiséget.'}
+                  ? 'Ezt a kamrádból párosítottuk név alapján — ellenőrizd, hogy tényleg ez a tétel, és nézd át a mennyiséget.'
+                  : 'Az AI nem teljesen biztos ebben a sorban — nézd át a mennyiséget.'}
               </p>
             )}
             {l.source === 'recipe' && (() => {
@@ -754,22 +783,21 @@ export function MealComposer({
               const open = !!expanded[l.key]
               const touched = Object.keys(l.overrides ?? {}).length
               return (
-                <div style={{ marginTop: 9, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
-                  <button
+                <div className="logflow-tune">
+                  <button className="logflow-tune-head"
                     onClick={() => setExpanded(p => ({ ...p, [l.key]: !p[l.key] }))}
-                    aria-label="Hozzávalók finomhangolása" aria-expanded={open}
-                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>
+                    aria-label="Hozzávalók finomhangolása" aria-expanded={open}>
+                    <span className="uv-eyebrow">
                       HOZZÁVALÓK · {r.ingredients.length}{touched ? ` · ${touched} MÓDOSÍTVA` : ''}
                     </span>
-                    <span style={{ fontSize: 9.5, fontWeight: 600, color: 'var(--coral)' }}>
+                    <span className="logflow-tune-toggle">
                       {open ? 'összecsuk ▴' : 'finomhangolás ▾'}
                     </span>
                   </button>
                   {open && (
                     <>
                       {r.servings > 1 && (
-                        <div style={{ marginTop: 5, fontSize: 9.5, color: 'var(--text-tertiary)' }}>
+                        <div className="logflow-tune-note">
                           a teljes recepthez ({r.servings} adag)
                         </div>
                       )}
@@ -800,8 +828,7 @@ export function MealComposer({
                         )
                       })}
                       {touched > 0 && (
-                        <button onClick={() => resetOverrides(l.key)} aria-label="Alaphelyzet"
-                          style={{ marginTop: 7, fontSize: 10, fontWeight: 600, color: 'var(--coral)' }}>
+                        <button className="logflow-tune-reset" onClick={() => resetOverrides(l.key)} aria-label="Alaphelyzet">
                           Alaphelyzet
                         </button>
                       )}
@@ -814,10 +841,10 @@ export function MealComposer({
         ))}
       </div>
 
-      {showConfirm && <div className="rad-12" style={{ padding: '11px 12px', marginTop: 12, background: 'color-mix(in srgb, var(--sage) 5%, transparent)', border: '1px solid var(--line)' }}>
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
-          <span className="label-mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--coral)' }}>EZ AZ ÉTKEZÉS</span>
-          <span className="label-mono" style={{ fontSize: 8.5, color: 'var(--text-tertiary)' }}>{lines.length} tétel</span>
+      {showConfirm && <div className="logflow-total glass">
+        <div className="logflow-total-head">
+          <span className="uv-eyebrow">EZ AZ ÉTKEZÉS</span>
+          <span className="uv-eyebrow">{lines.length} tétel</span>
         </div>
         {/* The derived name IS the meal title (no name field, mezo-byo1) — shown where it
             will land, honest to what save() sends. */}
@@ -827,23 +854,24 @@ export function MealComposer({
           { label: 'fehérje', value: `${total.p} g`, tone: 'coral' },
           { label: 'szénh.', value: `${total.c} g`, tone: 'gold' },
           { label: 'zsír', value: `${total.f} g`, tone: 'lav' },
-        ]} />
-        <div style={{ marginTop: 6 }}><NutrientCells nutrients={totalNutrients} size="md" /></div>
-        <div style={{ marginTop: 9, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
-          <div className="row" style={{ justifyContent: 'space-between', fontVariantNumeric: 'tabular-nums', fontSize: 8.5, color: 'var(--text-tertiary)', marginBottom: 5 }}>
-            <span>{totalsDayLabel} <b style={{ color: 'var(--text-secondary)' }}>{fuel.consumed.kcal}</b> <span style={{ color: 'var(--coral)' }}>+{total.kcal}</span> = <b style={{ color: 'var(--text-secondary)' }}>{after}</b></span>
-            <span>cél <b style={{ color: 'var(--text-secondary)' }}>{fuel.targets.kcal}</b> kcal</span>
+        ]} className="logflow-total-cells" />
+        <div className="logflow-total-nutri"><NutrientCells nutrients={totalNutrients} size="md" /></div>
+        <div className="logflow-total-day">
+          <div className="logflow-total-dayline">
+            <span>{totalsDayLabel} <b>{fuel.consumed.kcal}</b> <span className="logflow-total-add">+{total.kcal}</span> = <b>{after}</b></span>
+            <span>cél <b>{fuel.targets.kcal}</b> kcal</span>
           </div>
-          <div style={{ height: 5, background: 'var(--surface-2)', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: nowPct + '%', background: 'var(--text-tertiary)' }} />
-            <div style={{ position: 'absolute', left: nowPct + '%', top: 0, bottom: 0, width: addPct + '%', background: 'var(--coral)' }} />
+          {/* Üveg (mezo-me75u.2, `.daybar`): az eddigi nap zsályában, ez az étkezés lilában. */}
+          <div className="logflow-daybar" aria-hidden="true">
+            <b style={{ width: nowPct + '%' }} />
+            <i style={{ width: addPct + '%' }} />
           </div>
         </div>
       </div>}
 
       {/* A8: a szerkesztő idő-mezője — az étkezés SAJÁT ideje, amit a user át is írhat. */}
       {editMealId != null && (
-        <label className="fmx-edit-time">
+        <label className="fmx-edit-time uv-flat">
           <span className="label-mono">MIKOR ETTÉL?</span>
           <input type="time" value={editTime} aria-label="Mikor ettél?"
             onChange={(e) => setEditTime(e.target.value)} />
@@ -856,7 +884,7 @@ export function MealComposer({
       <div className="row gap-sm logflow-actions" style={{ margin: '14px 0 12px' }}>
         <button className="cta-ghost" onClick={onCancel} style={{ flex: 1 }}>Mégse</button>
         {showConfirm && (
-          <button className="cta-primary" disabled={!canSave} onClick={save} style={{ flex: 1.8 }}>
+          <button className="cta-primary logflow-save glass" disabled={!canSave} onClick={save} style={{ flex: 1.8 }}>
             {editMealId != null
               ? <><Icon name="check" size={15} /> Mentem a javítást</>
               : saveLabel ?? <><Icon name="check" size={15} /> Logolás · +10 XP</>}

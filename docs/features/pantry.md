@@ -2,7 +2,7 @@
 title: Pantry (Kamra)
 type: feature-domain
 status: done
-updated: 2026-09-21
+updated: 2026-09-23
 tags: [fuel, pantry, frontend, data-layer, backend, multi-user]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/pantry
@@ -19,6 +19,8 @@ related: [fuel, recipe, _platform-data-layer, _platform-auth-security]
 # Pantry (Kamra) — Feature Documentation
 
 > One-line: the shelf at route `/fuel/kamra` (tab "Fuel" → tile "Kamra"): a SHARED definition catalog (`pantry_catalog`) + PER-USER state rows (`pantry_item`). **Status: ✅ backend + FE dual-mode done; split into catalog/state by S4 (`mezo-qw37.4`).**
+>
+> **2026-09-23 — Üveg (`mezo-me75u.2`).** The Kamra list, item page and its four sheets wear the dark glass (see [`fuel.md`](fuel.md)); source badges are 3D icons (`pantryProvenance.ts`). Behavior unchanged.
 
 ## 1. Summary
 

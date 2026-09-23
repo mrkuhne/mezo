@@ -2,11 +2,12 @@
 // Mezo · KamraItemDetailPage — EGY kamra-tétel Titán részletező oldala
 // (Fuel Titanium S4, mezo-hygp; fagyasztott manifeszt B6 · B7 · B12).
 //
-// Jóváhagyott vizuális referencia: docs/design_2.0/prototypes/companion-titanium/fuel-pages.js
-// `pantryDetailPage` (:93), a fuel-pages.css „Konyha v2" (:497) blokkjával. Anatómia:
-// al-fejléc (‹ Kamra + kategória/név + forrás-chip) → osztott hős (ikon + kcal/100 g vagy adag;
-// jobbra „A polcodon" és a felvétel módja) → FORRÁS-kártya → étel: Makró-gyűrűk + Minőség
-// lapkák /100 g; kiegészítő: a napi protokoll ajtaja → Receptekben → Logolás → műveletek.
+// Jóváhagyott vizuális referencia (Üvegesítés U2, mezo-me75u.2): docs/design_2.0/prototypes/
+// uveg-fuel-tobbi.html `kamraItem()`. Anatómia: al-fejléc (kerek üveg ‹ + kategória/név +
+// lapos forrás-chip) → keret nélküli halo-hős (nagy 3D ikon + kcal/100 g vagy adag; jobbra két
+// ÜVEG info-sor: „A polcodon" arany, a felvétel módja ég) → Forrás (lapos cella) → étel:
+// Makró-gyűrűk + Minőség lapkák /100 g (a megosztott üveg-blokkok); kiegészítő: a napi protokoll
+// üveg-ajtaja → Receptekben (lapos chipek) → Logolás (üveg CTA) → két lapos művelet.
 //
 // B14 owner-DROP, ITT A HELYE: a „Legutóbbi importok" feed megszűnt, és a per-tétel EREDET
 // (forrás + mikor) erre a lapra, a `Forrás` kártyára került. Ez a DROP ellenpárja, nem a
@@ -26,7 +27,7 @@ import type { IngredientStock, PantryItem, PantryItemInput } from '@/data/types'
 import { usePantry, usePantryActions, useStackDay, useRecipes } from '@/data/hooks'
 import { buildKamraItems } from '@/features/fuel/logic/kamraItems'
 import { SHOW_PANTRY_STOCK } from '@/data/_client/flags'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { ContentIcon, Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { hu1, huInt } from '@/shared/lib/huNum'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { mealMacroShare } from '@/features/fuel/logic/mealShare'
@@ -43,12 +44,12 @@ function isFullStock(s: NonNullable<PantryItem['stock']>): s is IngredientStock 
   return 'expires' in s
 }
 
-/** Egy tétel arca: ház-hue + clay szimbólum (a prototípus `pantryStyle`-ja ház-tokenekkel). */
-const KIND_FACE: Record<string, { color: string; icon: ClayIconName }> = {
-  food: { color: 'var(--dv-sage)', icon: 'i-gabona' },
-  supplement: { color: 'var(--dv-lav)', icon: 'i-kiegeszito' },
-  stim: { color: 'var(--dv-coral)', icon: 'i-lang' },
-  med: { color: 'var(--dv-sky)', icon: 'i-injekcio' },
+/** Egy tétel arca: ház-hue + 3D szimbólum — ugyanaz, amit a Kamra csempéje visel. */
+const KIND_FACE: Record<string, { color: string; icon: Icon3DName }> = {
+  food: { color: 'var(--dv-sage)', icon: 't-carb' },
+  supplement: { color: 'var(--dv-lav)', icon: 't-supps' },
+  stim: { color: 'var(--dv-coral)', icon: 't-bolt' },
+  med: { color: 'var(--dv-sky)', icon: 't-syringe' },
 }
 
 // Build a complete PantryItemInput from the displayed item — prefills every
@@ -109,7 +110,7 @@ export function KamraItemDetailPage() {
     return (
       <div className="fmx-page">
         <div className="fmx-subhead">
-          <button type="button" onClick={() => navigate('/fuel/kamra')} aria-label="Vissza">‹ Kamra</button>
+          <button type="button" className="glass is-round" onClick={() => navigate('/fuel/kamra')} aria-label="Vissza">‹</button>
           <span><strong>Nincs ilyen tétel.</strong></span>
         </div>
         <p className="fmx-block-empty">
@@ -129,7 +130,7 @@ export function KamraItemDetailPage() {
   // ingredient id, not 'stash-<id>'): prefer stashRefId when present, else the backend id.
   const stackKey = item.stashRefId ?? backendId
   const catLabel = categoryMeta[item.category ?? '']?.label ?? item.category
-  const face = KIND_FACE[item.kind] ?? { color: 'var(--dv-amber)', icon: 'i-polc' as ClayIconName }
+  const face = KIND_FACE[item.kind] ?? { color: 'var(--dv-amber)', icon: 't-stack' as Icon3DName }
   const prov = pantryProvenance(item)
   const isFood = item.kind === 'food'
 
@@ -161,30 +162,32 @@ export function KamraItemDetailPage() {
   // A prototípus per-100 g minőség-lapkái: három tárolt tény + a feldolgozottság (NOVA).
   const nova = item.nova != null ? NOVA[item.nova] : null
   const qualityTiles: FuelNutriTile[] = [
-    { label: `Cukor · ${perLabel}`, value: item.sugarG == null ? null : hu1(item.sugarG), unit: 'g', icon: 'i-termes', color: 'var(--dv-rose)' },
-    { label: `Só · ${perLabel}`, value: item.saltG == null ? null : hu1(item.saltG), unit: 'g', icon: 'i-kristaly', color: 'var(--dv-sky)' },
-    { label: `Telített zsír · ${perLabel}`, value: item.saturatedFatG == null ? null : hu1(item.saturatedFatG), unit: 'g', icon: 'i-avokado', color: 'var(--dv-amber)' },
-    { label: nova ? nova.short : 'Feldolgozottság', value: item.nova == null ? null : String(item.nova), unit: 'NOVA', icon: 'i-retegek', color: nova?.color ?? 'var(--dv-sky)' },
+    // Üveg (mezo-me75u.2): cukor = a cukorkocka, só = a sószóró, telített zsír = a zsírcsepp,
+    // NOVA = a feldolgozottság rétegei (uveg-fuel-tobbi.html `kamraItem()` Minőség).
+    { label: `Cukor · ${perLabel}`, value: item.sugarG == null ? null : hu1(item.sugarG), unit: 'g', icon: 't-sugar', color: 'var(--macro-carbs)' },
+    { label: `Só · ${perLabel}`, value: item.saltG == null ? null : hu1(item.saltG), unit: 'g', icon: 't-salt', color: 'var(--dv-sky)' },
+    { label: `Telített zsír · ${perLabel}`, value: item.saturatedFatG == null ? null : hu1(item.saturatedFatG), unit: 'g', icon: 't-fat', color: 'var(--macro-fat)' },
+    { label: nova ? nova.short : 'Feldolgozottság', value: item.nova == null ? null : String(item.nova), unit: 'NOVA', icon: 't-processing', color: nova?.color ?? 'var(--dv-sky)' },
   ]
 
   return (
-    <div className="fmx-page fkx-detail" style={{ '--block-color': face.color } as React.CSSProperties}>
+    <div className="fmx-page fkx-detail fkx-kitem" style={{ '--block-color': face.color } as React.CSSProperties}>
       <EntranceGroup>
         <div className="fmx-subhead">
-          <button type="button" onClick={() => navigate('/fuel/kamra')} aria-label="Vissza">‹ Kamra</button>
+          <button type="button" className="glass is-round" onClick={() => navigate('/fuel/kamra')} aria-label="Vissza">‹</button>
           <span>
             <small>{(catLabel ?? 'KAMRA').toLocaleUpperCase('hu-HU')}</small>
             <strong>{item.name}</strong>
           </span>
-          <span className="fkx-source-chip">
-            <ClayIcon name={prov.icon} size={20} />{prov.kind}
+          <span className="fkx-source-chip uv-flat">
+            <Icon3D name={prov.icon} size={20} />{prov.kind}
           </span>
         </div>
 
         <div className="fmx-detail-hero">
           <span className="fmx-detail-glow" aria-hidden="true" />
           <div className="fmx-detail-left">
-            <span className="fmx-detail-art" aria-hidden="true"><ClayIcon name={face.icon} size={96} /></span>
+            <span className="fmx-detail-art uv-float" aria-hidden="true"><ContentIcon name={face.icon} size={96} /></span>
             <div className="fmx-detail-kcal">
               {isFood ? (
                 <>
@@ -200,15 +203,15 @@ export function KamraItemDetailPage() {
             </div>
           </div>
           <div className="fmx-detail-right">
-            <div className="fmx-detail-when">
-              <span className="fmx-di-art" aria-hidden="true"><ClayIcon name="i-polc" size={30} /></span>
+            <div className="fmx-detail-when glass">
+              <span className="fmx-di-art" aria-hidden="true"><Icon3D name="t-stack" size={32} /></span>
               <span>
                 <strong>A polcodon</strong>
                 <small>{item.brand ?? (catLabel ?? 'nincs márka megadva')}</small>
               </span>
             </div>
-            <div className="fmx-detail-share">
-              <span className="fmx-di-art" aria-hidden="true"><ClayIcon name={prov.icon} size={30} /></span>
+            <div className="fmx-detail-share glass">
+              <span className="fmx-di-art" aria-hidden="true"><Icon3D name={prov.icon} size={32} /></span>
               <span>
                 <strong>{prov.sourceLabel}</strong>
                 <small>{prov.when ?? 'a felvétel ideje nincs rögzítve'}</small>
@@ -217,9 +220,11 @@ export function KamraItemDetailPage() {
           </div>
         </div>
 
-        {/* B14 ellenpárja: a per-tétel EREDET itt él, nem egy import-feedben. */}
-        <section className="fkx-source" aria-label="Forrás">
-          <span aria-hidden="true"><ClayIcon name={prov.icon} size={34} /></span>
+        {/* B14 ellenpárja: a per-tétel EREDET itt él, nem egy import-feedben. Üvegben lapos
+            cella: tény, nem tárgy (bible §3 rank 3). */}
+        <div className="fmx-section fkx-source-head"><h2>Forrás</h2></div>
+        <section className="fkx-source uv-flat" aria-label="Forrás">
+          <span aria-hidden="true"><Icon3D name={prov.icon} size={30} /></span>
           <span className="fkx-source-copy">
             <strong>Így került a polcra: {prov.kind}</strong>
             <small>{prov.sourceLabel} · {prov.when ?? 'az időpont nincs rögzítve'}</small>
@@ -254,8 +259,8 @@ export function KamraItemDetailPage() {
         {!isFood && (
           <>
             <div className="fmx-section"><h2>A napodban</h2></div>
-            <button type="button" className="fkx-door" onClick={() => navigate('/fuel/stack')}>
-              <span aria-hidden="true"><ClayIcon name="i-idozito" size={26} /></span>
+            <button type="button" className="fkx-door glass" onClick={() => navigate('/fuel/stack')}>
+              <span aria-hidden="true"><Icon3D name="t-clock" size={34} /></span>
               <span>
                 <strong>{item.protocol ?? 'Nincs időzítve'}</strong>
                 <small>
@@ -288,10 +293,10 @@ export function KamraItemDetailPage() {
             <div className="fmx-section"><h2>Receptekben</h2></div>
             <div className="fkx-used">
               {usedInRecipes.map(r => (
-                <button key={r.id} type="button"
-                  style={{ '--fkx': recipeSlotFace(r.category).color } as React.CSSProperties}
+                <button key={r.id} type="button" className="uv-flat"
+                  style={{ '--c': recipeSlotFace(r.category).color } as React.CSSProperties}
                   onClick={() => navigate(`/fuel/recipes/${r.id}`)}>
-                  <span aria-hidden="true"><ClayIcon name="i-tanyer" size={22} /></span>
+                  <span aria-hidden="true"><Icon3D name="t-plate" size={20} /></span>
                   <span>{r.name}</span>
                 </button>
               ))}
@@ -300,8 +305,8 @@ export function KamraItemDetailPage() {
         )}
 
         {hasAnyMacro && (
-          <button type="button" className="fkx-cta is-primary" onClick={() => setLogOpen(true)}>
-            <span aria-hidden="true"><ClayIcon name="i-tanyer" size={28} /></span>
+          <button type="button" className="fkx-cta glass" onClick={() => setLogOpen(true)}>
+            <span aria-hidden="true"><Icon3D name="t-plate" size={28} /></span>
             <span>Logolás · mai étkezésbe</span>
             <b aria-hidden="true">›</b>
           </button>
@@ -309,7 +314,7 @@ export function KamraItemDetailPage() {
 
         <div className="fkx-actions">
           <button type="button" onClick={() => setEditOpen(true)}>
-            <span aria-hidden="true"><ClayIcon name="i-beallitas" size={20} /></span>Szerkesztés
+            <span aria-hidden="true"><Icon3D name="t-gear" size={24} /></span>Szerkesztés
           </button>
           <button type="button" className="fkx-del" onClick={remove}>
             {delArmed ? 'Biztos? Még egy érintés a törléshez' : 'Törlés'}

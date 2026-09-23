@@ -65,24 +65,28 @@ test('the fake "Avg fit" stat is gone', () => {
 })
 
 // Titán anatómia (mezo-hygp): a Mozaik-váz (coral MozaikPage + PageHero nagy számmal +
-// `.fh-segtabs` + `.fh-lsthead` + `.mz-rcpcard`) helyét a prototípus `receptekPage`-e vette át:
-// al-fejléc + darabszámos blokk-szűrők + két-hasábos csempe-rács.
-test('Titán váz: al-fejléc, darabszámos szűrők, csempe-rács', () => {
+// `.fh-segtabs` + `.fh-lsthead` + `.mz-rcpcard`) helyét a prototípus `receptekPage`-e vette át.
+// Üveg U2 (mezo-me75u.2, owner 2026-09-23): a két-hasábos csempe-rács helyén SORONKÉNT EGY recept,
+// minden sor egy üveg a saját blokk-hue-jában.
+test('Üveg váz: al-fejléc, darabszámos szűrők, soronként egy üveg recept', () => {
   const { container } = renderView()
   expect(container.querySelector('.mz-page')).toBeNull()
   expect(container.querySelector('.fh-segtabs')).toBeNull()
   expect(container.querySelector('.fh-lsthead')).toBeNull()
   expect(container.querySelector('.mz-rcpcard')).toBeNull()
   expect(container.querySelector('.fmx-subhead')).not.toBeNull()
-  expect(container.querySelectorAll('.fkx-tile-grid .fkx-recipe').length).toBeGreaterThan(0)
+  expect(container.querySelector('.fkx-tile-grid')).toBeNull()
+  const rows = container.querySelectorAll('.fkx-recipe-list > .fkx-recipe-row')
+  expect(rows.length).toBeGreaterThan(0)
+  for (const row of rows) expect(row.classList.contains('glass')).toBe(true)
 })
 
-// Entrance choreography: a rács minden csempéje EGY EntranceGroupon belül kel fel.
-test('every tile rises inside one EntranceGroup', () => {
+// Entrance choreography: a lista minden sora EGY EntranceGroupon belül kel fel.
+test('every row rises inside one EntranceGroup', () => {
   const { container } = renderView()
   const play = container.querySelector('.mz-play')
   expect(play).not.toBeNull()
-  const tiles = [...container.querySelectorAll('.fkx-recipe')]
+  const tiles = [...container.querySelectorAll('.fkx-recipe-row')]
   expect(tiles.length).toBeGreaterThan(0)
   expect(tiles.every(t => t.classList.contains('rise') && play!.contains(t))).toBe(true)
 })
@@ -112,7 +116,7 @@ test('Új navigates to the editor route', async () => {
 
 test('tapping a card navigates to the detail route', async () => {
   renderView()
-  const cards = screen.getAllByRole('button').filter(b => b.className.includes('fkx-recipe'))
+  const cards = screen.getAllByRole('button').filter(b => b.classList.contains('fkx-recipe-row'))
   expect(cards.length).toBeGreaterThan(0)
   await userEvent.click(cards[0])
   expect(screen.getByTestId('location').textContent).toMatch(/^\/fuel\/recipes\/.+/)
@@ -133,7 +137,7 @@ test('the typebar has a Snack segment with a live count matching the snack recip
 // implicit default and never earns a tag.
 test('the library card tags a non-standard role, and only that card (mezo-uavr)', () => {
   renderView()
-  const cards = screen.getAllByRole('button').filter(b => b.className.includes('fkx-recipe'))
+  const cards = screen.getAllByRole('button').filter(b => b.classList.contains('fkx-recipe-row'))
   const { result } = renderHook(() => useRecipes(), { wrapper: QueryWrapper })
   const nonStandard = result.current.recipes.filter(r => r.role !== 'standard')
   // the seed must actually mix roles, otherwise this asserts nothing

@@ -23,9 +23,9 @@ afterEach(() => {
 async function landAiDraft() {
   const onClose = vi.fn()
   const view = render(<LogFlowPage onClose={onClose} />, { wrapper: QueryWrapper })
-  await userEvent.click(screen.getByRole('button', { name: '✨ AI · fotó vagy szöveg' }))
+  await userEvent.click(screen.getByRole('button', { name: 'AI · fotó vagy szöveg' }))
   await userEvent.type(screen.getByRole('textbox', { name: 'Mit ettél?' }), 'csirkés wrap')
-  await userEvent.click(screen.getByRole('button', { name: '✨ Elemzés' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Elemzés' }))
   await screen.findByText('Csirkés wrap')
   return view
 }

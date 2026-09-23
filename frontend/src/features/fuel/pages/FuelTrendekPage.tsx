@@ -43,7 +43,7 @@ import { useFuelDay } from '@/data/fuel/fuelHooks'
 import { usePatterns } from '@/data/insights/patternsHooks'
 import { hu1, huInt } from '@/shared/lib/huNum'
 import { addDays, huMonthDayDow } from '@/shared/lib/dates'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useFuelCountUp } from '@/features/fuel/components/FuelMacroRings'
@@ -54,13 +54,14 @@ import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import { hhmmFromLoggedAt } from '@/features/fuel/logic/buildDayPlan'
 import { buildWeekView, mealDayScore, loggedKcalAvg, weekDeltas, type WeekDayVM, type WeekDelta } from '@/features/fuel/logic/fuelWeekView'
 
-/** A három mutató-csempe — a prototípus `TX_STAT`-ja ház-tokenekkel és clay-szimbólumokkal. */
+/** A három mutató-csempe — üveg (mezo-me75u.2, prototypes/uveg-fuel-tobbi.html `trendek()` `.st`):
+ *  napi átlag arany tányér, étkezés-minőség lila pont, heti súlyátlag égkék mérleg. */
 const STAT_FACE: Record<'avg' | 'score' | 'weight', {
-  label: string; icon: ClayIconName; color: string; unit: string; dec: 0 | 1
+  label: string; icon: Icon3DName; color: string; unit: string; dec: 0 | 1
 }> = {
-  avg: { label: 'Napi átlag', icon: 'i-tanyer', color: 'var(--dv-sage)', unit: 'kcal', dec: 0 },
-  score: { label: 'Étkezés-minőség', icon: 'i-feldolgozas', color: 'var(--dv-lav)', unit: '', dec: 1 },
-  weight: { label: 'Heti súlyátlag', icon: 'i-suly', color: 'var(--dv-rose)', unit: 'kg', dec: 1 },
+  avg: { label: 'Napi átlag', icon: 't-plate', color: 'var(--dv-amber)', unit: 'kcal', dec: 0 },
+  score: { label: 'Étkezés-minőség', icon: 't-score', color: 'var(--dv-lav)', unit: '', dec: 1 },
+  weight: { label: 'Heti súlyátlag', icon: 't-weight', color: 'var(--dv-sky)', unit: 'kg', dec: 1 },
 }
 
 /** Egy felszámoló numerál. Üres érték „—" — a count-up hookot akkor sem hívjuk feltételesen
@@ -91,16 +92,16 @@ function TileDelta({ delta, unit, dec }: { delta: WeekDelta; unit: string; dec: 
   )
 }
 
-function StatTile({ kind, value, delta }: {
-  kind: keyof typeof STAT_FACE; value: number | null; delta?: WeekDelta
+function StatTile({ kind, value, delta, index }: {
+  kind: keyof typeof STAT_FACE; value: number | null; delta?: WeekDelta; index: number
 }) {
   const face = STAT_FACE[kind]
   return (
     <div
-      className={`ftx-tile is-${kind}`}
-      style={{ '--ftx-tile-color': face.color } as React.CSSProperties}
+      className={`ftx-tile glass is-${kind}`}
+      style={{ '--ftx-tile-color': face.color, '--c': face.color, '--i': index } as React.CSSProperties}
     >
-      <span className="ftx-tile-art" aria-hidden="true"><ClayIcon name={face.icon} size={32} /></span>
+      <span className="ftx-tile-art" aria-hidden="true"><Icon3D name={face.icon} size={32} /></span>
       <strong>
         <CountNumeral value={value} dec={face.dec} />
         {face.unit && <small>{face.unit}</small>}
@@ -124,7 +125,7 @@ function WeekDayBar({ day, max, onOpen }: { day: WeekDayVM; max: number; onOpen:
     <button
       type="button"
       className={`ftx-day${day.weekend ? ' is-weekend' : ''}${day.logged ? '' : ' is-empty'}`
-        + `${day.over ? ' is-over' : ''}`}
+        + `${day.over ? ' is-over' : ''}${day.training ? ' is-train' : ''}`}
       aria-label={aria}
       onClick={onOpen}
     >
@@ -151,11 +152,11 @@ function WeekDayBar({ day, max, onOpen }: { day: WeekDayVM; max: number; onOpen:
 /** Hétköznap vs hétvége — kitöltődő sáv, a prototípus `tx-splitrow`-ja. A sáv a kerethez mért
  *  százalékot rajzolja, 130%-ra skálázva (a keret fölötti tartomány is elfér benne). */
 function SplitRow({ label, icon, color, pct }: {
-  label: string; icon: ClayIconName; color: string; pct: number | null
+  label: string; icon: Icon3DName; color: string; pct: number | null
 }) {
   return (
     <div className="ftx-splitrow" style={{ '--ftx-split-color': color } as React.CSSProperties}>
-      <span className="ftx-split-art" aria-hidden="true"><ClayIcon name={icon} size={34} /></span>
+      <span className="ftx-split-art" aria-hidden="true"><Icon3D name={icon} size={30} /></span>
       <span className="ftx-split-copy">
         <strong>{label}</strong>
         <i aria-hidden="true">
@@ -212,14 +213,16 @@ function DayMealList({ date, onOpenMeal }: { date: string; onOpenMeal: (mealId: 
           {fuel.meals.map((meal) => (
             <li key={meal.id}>
               <button type="button" className="ftx-meal" onClick={() => onOpenMeal(meal.id)}>
-                <span aria-hidden="true"><ClayIcon name="i-tanyer" size={28} /></span>
+                <span aria-hidden="true"><Icon3D name="t-plate" size={28} /></span>
                 <span className="ftx-meal-copy">
                   <strong>{mealDisplayName(meal) ?? 'Étkezés'}</strong>
                   <small>
                     {hhmmFromLoggedAt(meal.loggedAt, '—')} · {huInt(meal.kcal)} kcal
                   </small>
                 </span>
-                {meal.score != null && <b className="ftx-meal-score">{hu1(meal.score * 10)}</b>}
+                {meal.score != null && (
+                  <b className="ftx-meal-score"><Icon3D name="t-score" size={20} />{hu1(meal.score * 10)}</b>
+                )}
                 <b aria-hidden="true">›</b>
               </button>
             </li>
@@ -318,13 +321,14 @@ export function FuelTrendekPage() {
     <MozaikPage tone="sage" className="ftx-page">
       <EntranceGroup>
         <PageBody className="ftx-body">
-          <div className="ftx-hero">
+          <div className="ftx-hero uv-halo">
             <span className="ftx-glow" aria-hidden="true" />
             <h1>Trendek</h1>
             {/* A hét-váltó (prototípus `tx-weeknav`): a nyitott hét és a múlt hét között lép. */}
             <div className="ftx-weeknav">
               <button
                 type="button"
+                className="uv-flat"
                 aria-pressed={showingPrevious}
                 disabled={showingPrevious || previousKnownEmpty}
                 onClick={() => setSearchParams({ [WEEK_PARAM]: PREV_WEEK_VALUE })}
@@ -334,6 +338,7 @@ export function FuelTrendekPage() {
               <strong className="ftx-week">{deriveWeekTitle(start === '' ? thisMonday : start)}</strong>
               <button
                 type="button"
+                className="uv-flat"
                 aria-pressed={!showingPrevious}
                 disabled={!showingPrevious}
                 onClick={() => setSearchParams({})}
@@ -359,26 +364,27 @@ export function FuelTrendekPage() {
                 <WeekDayBar key={day.date} day={day} max={max} onOpen={() => setOpenDate(day.date)} />
               ))}
             </div>
-            <p className="ftx-read">{read}</p>
+            <p className="ftx-read uv-voice">{read}</p>
             <p className="ftx-hint">A szám a nap pontja · koppints a részletekért</p>
           </div>
 
           <div className="ftx-tiles">
-            <StatTile kind="avg" value={avgKcal} delta={deltas.avg} />
+            <StatTile kind="avg" value={avgKcal} delta={deltas.avg} index={2} />
             {/* A heti étkezés-pont 0..1-ben érkezik; a 0–10-es skála a ház olvasata. A csempe
                 neve `score`, a delta kulcsa `quality` — a prototípus szótára, egy helyen kötve. */}
             <StatTile
               kind="score"
               value={vm.mealScoreAvg == null ? null : vm.mealScoreAvg * 10}
               delta={deltas.quality}
+              index={3}
             />
-            <StatTile kind="weight" value={vm.weightAvgKg} delta={deltas.weight} />
+            <StatTile kind="weight" value={vm.weightAvgKg} delta={deltas.weight} index={4} />
           </div>
 
           <h2 className="ftx-section">Hétköznap és hétvége</h2>
-          <div className="ftx-split">
-            <SplitRow label="Hétköznap" icon="i-nap" color="var(--dv-sage)" pct={vm.weekdayAvgPct} />
-            <SplitRow label="Hétvége" icon="i-hold" color="var(--dv-amber)" pct={vm.weekendAvgPct} />
+          <div className="ftx-split glass" style={{ '--c': 'var(--dv-amber)', '--i': 5 } as React.CSSProperties}>
+            <SplitRow label="Hétköznap" icon="t-sun" color="var(--dv-sage)" pct={vm.weekdayAvgPct} />
+            <SplitRow label="Hétvége" icon="t-moon" color="var(--dv-amber)" pct={vm.weekendAvgPct} />
             {delta == null ? (
               <p className="ftx-split-note">
                 A kettő összevetéséhez mindkét oldalon kell legalább egy naplózott nap — amíg nincs,
@@ -399,15 +405,16 @@ export function FuelTrendekPage() {
             <>
               <h2 className="ftx-section">Mintázatok</h2>
               <div className="ftx-patterns">
-                {patternRefs.map(ref => (
+                {patternRefs.map((ref, i) => (
                   <button
                     key={ref.pairKey}
                     type="button"
-                    className="ftx-pattern"
+                    className="ftx-pattern glass"
+                    style={{ '--c': 'var(--dv-lav)', '--i': 7 + i } as React.CSSProperties}
                     onClick={() => navigate(ref.route)}
                   >
                     <span className="ftx-pattern-art" aria-hidden="true">
-                      <ClayIcon name="i-minta" size={36} />
+                      <Icon3D name="t-pattern" size={40} />
                     </span>
                     <span className="ftx-pattern-copy">
                       <strong>{ref.title}</strong>

@@ -1,4 +1,5 @@
 // Mezo · ReceptPickSheet — the ★-filter + coral kind-wash picker face (mezo-byo1).
+// Üveg U2 (mezo-me75u.2): the ★ literal became the 3D star icon; the chip reads „csillagos".
 import type { ReactNode } from 'react'
 import { render, screen, renderHook, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -35,11 +36,11 @@ test('the ★ csillagos chip narrows to starred recipes; toggling off restores t
   expect(starred).toBeTruthy()
   expect(unstarred).toBeTruthy()
 
-  await userEvent.click(screen.getByRole('button', { name: '★ csillagos' }))
+  await userEvent.click(screen.getByRole('button', { name: 'csillagos' }))
   expect(screen.getByText(starred!.name)).toBeInTheDocument()
   expect(screen.queryByText(unstarred!.name)).not.toBeInTheDocument()
 
-  await userEvent.click(screen.getByRole('button', { name: '★ csillagos' }))
+  await userEvent.click(screen.getByRole('button', { name: 'csillagos' }))
   expect(screen.getByText(unstarred!.name)).toBeInTheDocument()
 })
 
@@ -47,7 +48,7 @@ test('the ★ filter composes with search; an empty intersection says so honestl
   const { wrapper } = renderSheet()
   const { recipes } = renderHook(() => useRecipes(), { wrapper }).result.current
   const unstarred = recipes.find(r => !r.starred)!
-  await userEvent.click(screen.getByRole('button', { name: '★ csillagos' }))
+  await userEvent.click(screen.getByRole('button', { name: 'csillagos' }))
   await userEvent.type(screen.getByLabelText('Keresés a receptek között'), unstarred.name)
   expect(screen.queryByText(unstarred.name)).not.toBeInTheDocument()
   expect(screen.getByText('Nincs ilyen recept.')).toBeInTheDocument()

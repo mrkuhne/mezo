@@ -11,10 +11,12 @@
 // Contribution = round(macro * amount/per) — the SAME amount/per rule as the
 // backend mapper and the mock hook (replaces NewRecipeSheet's unit==='g' hack).
 //
-// F7.3 Mozaik re-face (mezo-d20.8.3.1): MozaikPage(sage) shell + PageHead, the
-// title block is mz-eyebrow + display name (the typed name, or the "—"/"Új
-// recept" placeholder), field cards go .mz-qcard, and the live total renders in
-// the mz-statstrip. Body/editor flows unchanged.
+// Üveg U2 (mezo-me75u.2, prototypes/src/uveg-fuel-tobbi-body.html `editor()`): the Fuel sub-head
+// (round glass ‹ + FUEL · RECEPTEK eyebrow + the typed name / "Új recept" as the h1), ONE sage
+// glass form card (név, slot + csillag, szerep, adag/idő steppers — all flat inside), the live
+// total as a lavender glass card (flat basis switch + four tinted stats), each picked line a
+// glass card in its category hue, the kamra-add and the empty list dashed, flat tag chips, and
+// the portaled save bar with a flat Mégse + a sage glass Mentés. Body/editor flows unchanged.
 // ============================================================
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -22,7 +24,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import type { Ingredient, Recipe, RecipeCategory, RecipeInput, RecipeRole } from '@/data/types'
 import { useRecipes, useRecipeActions } from '@/data/hooks'
 import { Icon } from '@/shared/ui/Icon'
-import { MozaikPage, PageHead, PageBody, StatStrip, StatCell } from '@/shared/ui/mozaik'
+import { ContentIcon } from '@/shared/ui/clay'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { ROLE_OPTIONS } from '@/features/fuel/logic/recipeRole'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
@@ -55,11 +57,11 @@ function contributionOf(line: DraftLine, ing: Ingredient | undefined) {
 
 function Stepper({ value, unit, onChange, min = 0 }: { value: number; unit: string; onChange: (v: number) => void; min?: number }) {
   return (
-    <div className="row" style={{ alignItems: 'center', background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', display: 'inline-flex' }}>
-      <button onClick={() => onChange(Math.max(min, value - 1))} style={{ width: 30, height: 30, display: 'grid', placeItems: 'center', color: 'var(--coral)', fontSize: 16 }} aria-label="Csökkentés">−</button>
-      <span style={{ minWidth: 36, textAlign: 'center', fontVariantNumeric: 'tabular-nums', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{value}</span>
-      <button onClick={() => onChange(value + 1)} style={{ width: 30, height: 30, display: 'grid', placeItems: 'center', color: 'var(--coral)', fontSize: 16 }} aria-label="Növelés">+</button>
-      <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', padding: '0 8px 0 2px' }}>{unit}</span>
+    <div className="fkx-step">
+      <button type="button" onClick={() => onChange(Math.max(min, value - 1))} aria-label="Csökkentés">−</button>
+      <b>{value}</b>
+      <small>{unit}</small>
+      <button type="button" onClick={() => onChange(value + 1)} aria-label="Növelés">+</button>
     </div>
   )
 }
@@ -90,7 +92,7 @@ function AmountField({ value, onChange, label }: { value: number; onChange: (n: 
       value={text}
       onChange={e => commit(e.target.value)}
       aria-label={label}
-      style={{ width: 42, textAlign: 'center', fontVariantNumeric: 'tabular-nums', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', background: 'transparent' }}
+      className="fkx-amt"
     />
   )
 }
@@ -129,14 +131,13 @@ export function RecipeEditorPage() {
   // initialData); in real mode a cold hard-reload may show this briefly until the list resolves.
   if (isEditMode && !editing) {
     return (
-      <MozaikPage tone="sage">
-        <PageHead onBack={() => navigate(-1)} label="‹ Receptek" />
-        <PageBody>
-          <div className="mz-qcard" style={{ padding: 20, textAlign: 'center' }}>
-            <span className="text-tertiary" style={{ fontSize: 12 }}>Nincs ilyen recept.</span>
-          </div>
-        </PageBody>
-      </MozaikPage>
+      <div className="fmx-page fkx-reditor">
+        <div className="fmx-subhead">
+          <button type="button" className="glass is-round" onClick={() => navigate(-1)} aria-label="Vissza">‹</button>
+          <span><small>Fuel · Receptek</small></span>
+        </div>
+        <div className="fkx-notfound uv-empty">Nincs ilyen recept.</div>
+      </div>
     )
   }
 
@@ -197,173 +198,153 @@ export function RecipeEditorPage() {
   const catColor = (cat: string | null | undefined): string => (cat && categoryMeta[cat]?.color) || 'var(--success)'
 
   return (
-    <MozaikPage tone="sage">
-      <PageHead onBack={() => navigate(-1)} label="‹ Receptek" />
+    <div className="fmx-page fkx-reditor">
       <EntranceGroup>
-      <PageBody>
-        <div className="rise" style={{ padding: '2px 2px 12px' }}>
-          <span className="mz-eyebrow">Fuel · Receptek</span>
-          <h1 style={{ fontFamily: 'var(--ff-display)', fontSize: 24, fontWeight: 600, lineHeight: 1.15, margin: '4px 0 0', color: 'var(--text-primary)' }}>
-            {name || (isEditMode ? '—' : 'Új recept')}
-          </h1>
+        <div className="fmx-subhead rise">
+          <button type="button" className="glass is-round" onClick={() => navigate(-1)} aria-label="Vissza">‹</button>
+          <span>
+            <small>Fuel · Receptek</small>
+            <h1 className="fkx-title">{name || (isEditMode ? '—' : 'Új recept')}</h1>
+          </span>
         </div>
 
-        {/* Név */}
-        <div className="mz-qcard rise" style={{ padding: '10px 12px', marginBottom: 9 }}>
-          <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>NÉV</span>
-          <input
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder="pl. Tonhalsaláta · postworkout"
-            aria-label="Recept neve"
-            style={{ fontSize: 14, color: 'var(--text-primary)', marginTop: 4, width: '100%' }}
-          />
-        </div>
+        {/* EGY üveg űrlap-kártya (prototípus `.fcard`): minden mező lapos cella benne. */}
+        <div className="fkx-fcard glass rise" style={{ '--c': 'var(--dv-sage)' } as React.CSSProperties}>
+          <label className="fkx-field">
+            <span>NÉV</span>
+            <input
+              className="fkx-inp"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="pl. Tonhalsaláta · postworkout"
+              aria-label="Recept neve"
+            />
+          </label>
 
-        {/* Slot + csillag */}
-        <div className="mz-qcard rise" style={{ padding: '10px 12px', marginBottom: 9 }}>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>SLOT</span>
-            <button onClick={() => setStarred(s => !s)} className="chip" style={{ padding: '4px 8px', color: starred ? 'var(--warning)' : 'var(--text-tertiary)' }} aria-label="Csillag">
-              <Icon name="bookmark" size={11} /> {starred ? 'Csillagos' : 'Csillag'}
-            </button>
-          </div>
-          <div className="row gap-xs flex-wrap" style={{ marginTop: 8 }}>
-            {SLOTS.map(s => (
-              <button key={s.id} onClick={() => setSlot(s.id)} className={'chip' + (slot === s.id ? ' brand' : '')} style={{ fontSize: 9, padding: '6px 10px' }}>
-                {s.label}
+          <div className="fkx-field">
+            <span>SLOT</span>
+            <div className="fkx-chips">
+              {SLOTS.map(sl => (
+                <button key={sl.id} type="button" onClick={() => setSlot(sl.id)}
+                  className={'fkx-chip' + (slot === sl.id ? ' is-on' : '')} aria-pressed={slot === sl.id}>
+                  {sl.label}
+                </button>
+              ))}
+              <button type="button" onClick={() => setStarred(v => !v)} aria-label="Csillag" aria-pressed={starred}
+                className={'fkx-chip is-star' + (starred ? ' is-on' : '')}>
+                <ContentIcon name="t-star" size={18} /> {starred ? 'Csillagos' : 'Csillag'}
               </button>
-            ))}
+            </div>
+          </div>
+
+          {/* Szerep — the scoring rubric the template is judged under (mezo-uavr) */}
+          <div className="fkx-field">
+            <span>SZEREP</span>
+            <div className="fkx-chips">
+              {ROLE_OPTIONS.map(o => (
+                <button key={o.id} type="button" onClick={() => setRole(o.id)}
+                  className={'fkx-chip is-role' + (role === o.id ? ' is-on' : '')} aria-pressed={role === o.id}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+            <p className="fkx-hint">
+              A szerep dönti el, milyen mérce szerint pontozzuk: edzés körül a gyors szénhidrát üzemanyag, nem hiba.
+            </p>
+          </div>
+
+          <div className="fkx-two">
+            <div className="fkx-field">
+              <span>ADAG</span>
+              <Stepper value={servings} unit="adag" min={1} onChange={setServings} />
+            </div>
+            <div className="fkx-field">
+              <span>ELŐ + FŐZÉS</span>
+              <Stepper value={mins} unit="perc" min={0} onChange={setMins} />
+            </div>
           </div>
         </div>
 
-        {/* Szerep — the scoring rubric the template is judged under (mezo-uavr) */}
-        <div className="mz-qcard rise" style={{ padding: '10px 12px', marginBottom: 9 }}>
-          <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>SZEREP</span>
-          <div className="row gap-xs flex-wrap" style={{ marginTop: 8 }}>
-            {ROLE_OPTIONS.map(o => (
-              <button key={o.id} onClick={() => setRole(o.id)} className={'chip' + (role === o.id ? ' brand' : '')} style={{ fontSize: 9, padding: '6px 10px' }}>
-                {o.label}
-              </button>
-            ))}
+        {/* Élő összeg — levendula üveg, lapos bázis-váltóval és négy tintás számmal. */}
+        <div className="fmx-section fmx-section-row fkx-sec"><h2>Makró-összeg</h2></div>
+        <div className="fkx-fcard glass rise" style={{ '--c': 'var(--dv-lav)' } as React.CSSProperties}>
+          <ServingToggle value={basis} servings={servings} onChange={setBasis} />
+          <div className="fkx-stats">
+            <div className="fkx-stat" style={{ '--c': 'var(--dv-amber)' } as React.CSSProperties}><b>{shownTotal.kcal}</b><small>kcal</small></div>
+            <div className="fkx-stat" style={{ '--c': 'var(--macro-protein)' } as React.CSSProperties}><b>{shownTotal.p}</b><small>fehérje</small></div>
+            <div className="fkx-stat" style={{ '--c': 'var(--macro-carbs)' } as React.CSSProperties}><b>{shownTotal.c}</b><small>szénhidrát</small></div>
+            <div className="fkx-stat" style={{ '--c': 'var(--macro-fat)' } as React.CSSProperties}><b>{shownTotal.f}</b><small>zsír</small></div>
           </div>
-          <p className="text-tertiary" style={{ fontSize: 10, marginTop: 7, lineHeight: 1.4 }}>
-            A szerep dönti el, milyen mérce szerint pontozzuk: edzés körül a gyors szénhidrát üzemanyag, nem hiba.
+          <p className="fkx-other">
+            {otherLabel} = <b>{otherTotal.kcal} kcal</b> · P {otherTotal.p} · C {otherTotal.c} · F {otherTotal.f}
           </p>
         </div>
 
-        {/* Adag & idő */}
-        <div className="row gap-sm" style={{ marginBottom: 9 }}>
-          <div className="mz-qcard flex-1" style={{ padding: '10px 12px', marginBottom: 0 }}>
-            <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>ADAG</span>
-            <div style={{ marginTop: 6 }}><Stepper value={servings} unit="adag" min={1} onChange={setServings} /></div>
-          </div>
-          <div className="mz-qcard flex-1" style={{ padding: '10px 12px', marginBottom: 0 }}>
-            <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>ELŐ + FŐZÉS</span>
-            <div style={{ marginTop: 6 }}><Stepper value={mins} unit="perc" min={0} onChange={setMins} /></div>
-          </div>
-        </div>
-
-        {/* Live total — mz-statstrip (F7.3) */}
-        <div className="mz-qcard" style={{ padding: '11px 12px', marginBottom: 12 }}>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <span className="mz-eyebrow">Makró-összeg</span>
-            <ServingToggle value={basis} servings={servings} onChange={setBasis} />
-          </div>
-          <StatStrip>
-            <StatCell value={shownTotal.kcal} label="kcal" />
-            <StatCell value={shownTotal.p} label="fehérje" />
-            <StatCell value={shownTotal.c} label="szénhidrát" />
-            <StatCell value={shownTotal.f} label="zsír" />
-          </StatStrip>
-          <div className="label-mono" style={{ textAlign: 'center', marginTop: 9, paddingTop: 8, borderTop: '1px solid var(--border-subtle)', fontSize: 8.5, color: 'var(--text-tertiary)' }}>
-            {otherLabel} = <span style={{ color: 'var(--text-secondary)' }}>{otherTotal.kcal} kcal</span> · P {otherTotal.p} · C {otherTotal.c} · F {otherTotal.f}
-          </div>
-        </div>
-
         {/* Hozzávalók */}
-        <div className="row" style={{ alignItems: 'center', gap: 9, margin: '4px 2px 10px' }}>
-          <span className="label-mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--text-tertiary)' }}>HOZZÁVALÓK</span>
-          <span className="label-mono" style={{ fontSize: 9.5, color: 'var(--coral)' }}>{lines.length}</span>
-          <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border-subtle),transparent)' }} />
-        </div>
+        <div className="fmx-section fmx-section-row fkx-sec"><h2>Hozzávalók</h2><small>{lines.length}</small></div>
 
-        <div className="col gap-sm" style={{ marginBottom: 3 }}>
+        <div className="fkx-lines">
           {lines.length === 0 && (
-            <div className="mz-qcard" style={{ padding: 14, textAlign: 'center', borderStyle: 'dashed' }}>
-              <span className="text-tertiary" style={{ fontSize: 11 }}>Még nincs hozzávaló. Nyomd a Kamrából hozzáad gombot.</span>
+            <div className="fkx-lines-empty uv-empty">
+              Még nincs hozzávaló. Nyomd a Kamrából hozzáad gombot.
             </div>
           )}
           {resolved.map(({ line, ing }, i) => (
-            <div key={i} className="mz-qcard" style={{ marginBottom: 0, padding: '11px 12px', borderLeft: '2px solid ' + catColor(ing?.category) }}>
-              <div className="row" style={{ alignItems: 'center', gap: 10 }}>
-                <div className="col flex-1" style={{ minWidth: 0 }}>
-                  <div className="row gap-xs" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{ing?.name ?? line.refId}</span>
-                    {ing && ing.kind !== 'food' && (
-                      <span className="label-mono" style={{ fontSize: 7.5, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '1px 4px', color: 'var(--text-tertiary)', border: '1px solid var(--border-subtle)', background: 'var(--surface-2)' }}>
-                        {kindLabel(ing.kind)}
-                      </span>
-                    )}
-                  </div>
-                  {ing?.brand && <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)', marginTop: 2 }}>{ing.brand}</span>}
-                </div>
-                <div className="row" style={{ alignItems: 'center', background: 'var(--surface-2)', display: 'inline-flex' }}>
-                  <button onClick={() => setLines(prev => prev.map((p, idx) => idx === i ? { ...p, amount: Math.max(0, p.amount - 10) } : p))} style={{ width: 25, height: 28, display: 'grid', placeItems: 'center', color: 'var(--coral)', fontSize: 14 }} aria-label={`${ing?.name ?? 'tétel'} csökkentés`}>−</button>
-                  <AmountField value={line.amount} onChange={n => setLines(prev => prev.map((p, idx) => idx === i ? { ...p, amount: n } : p))} label={`${ing?.name ?? 'tétel'} mennyiség`} />
-                  <button onClick={() => setLines(prev => prev.map((p, idx) => idx === i ? { ...p, amount: p.amount + 10 } : p))} style={{ width: 25, height: 28, display: 'grid', placeItems: 'center', color: 'var(--coral)', fontSize: 14 }} aria-label={`${ing?.name ?? 'tétel'} növelés`}>+</button>
-                  <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)', padding: '0 6px 0 1px' }}>{line.unit}</span>
-                </div>
-                <button onClick={() => setLines(prev => prev.filter((_, idx) => idx !== i))} aria-label="Eltávolítás" style={{ padding: 3, color: 'var(--text-tertiary)', flexShrink: 0 }}>
+            <div key={i} className="fkx-lcard glass" style={{ '--c': catColor(ing?.category) } as React.CSSProperties}>
+              <div className="fkx-lcard-top">
+                <span className="fkx-lcard-name">
+                  <strong>{ing?.name ?? line.refId}</strong>
+                  {ing && ing.kind !== 'food' && <span className="fkx-tagf">{kindLabel(ing.kind)}</span>}
+                  {ing?.brand && <small>{ing.brand}</small>}
+                </span>
+                <button type="button" className="fkx-x" onClick={() => setLines(prev => prev.filter((_, idx) => idx !== i))} aria-label="Eltávolítás">
                   <Icon name="x" size={12} />
                 </button>
               </div>
-              <div style={{ marginTop: 9 }}>
+              <div className="fkx-step is-amount">
+                <button type="button" onClick={() => setLines(prev => prev.map((p, idx) => idx === i ? { ...p, amount: Math.max(0, p.amount - 10) } : p))} aria-label={`${ing?.name ?? 'tétel'} csökkentés`}>−</button>
+                <AmountField value={line.amount} onChange={n => setLines(prev => prev.map((p, idx) => idx === i ? { ...p, amount: n } : p))} label={`${ing?.name ?? 'tétel'} mennyiség`} />
+                <small>{line.unit}</small>
+                <button type="button" onClick={() => setLines(prev => prev.map((p, idx) => idx === i ? { ...p, amount: p.amount + 10 } : p))} aria-label={`${ing?.name ?? 'tétel'} növelés`}>+</button>
+              </div>
+              <div className="fkx-lcard-macros">
                 <MacroCells macros={contributionOf(line, ing)} perLabel={`${line.amount} ${line.unit}`} />
               </div>
             </div>
           ))}
-        </div>
 
-        <button
-          onClick={() => setPickerOpen(true)}
-          className="rad-12"
-          style={{ width: '100%', padding: 11, marginTop: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 12, fontWeight: 600, color: 'var(--coral)', background: 'color-mix(in srgb, var(--sage) 8%, transparent)', border: '1px dashed var(--line)' }}
-        >
-          <Icon name="plus" size={14} /> Kamrából hozzáad
-        </button>
+          <button type="button" onClick={() => setPickerOpen(true)} className="fkx-addline uv-empty">
+            <ContentIcon name="t-stack" size={24} /> ＋ Kamrából hozzáad
+          </button>
+        </div>
 
         {/* Címkék */}
-        <div className="row" style={{ alignItems: 'center', gap: 9, margin: '16px 2px 10px' }}>
-          <span className="label-mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--text-tertiary)' }}>CÍMKÉK</span>
-          <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border-subtle),transparent)' }} />
-        </div>
-        <div className="row gap-xs flex-wrap" style={{ alignItems: 'center' }}>
+        <div className="fmx-section fmx-section-row fkx-sec"><h2>Címkék</h2></div>
+        <div className="fkx-chips fkx-tags">
           {tags.map(t => (
-            <button key={t} onClick={() => setTags(prev => prev.filter(x => x !== t))} className="chip" style={{ fontSize: 10, padding: '6px 10px' }}>
+            <button key={t} type="button" onClick={() => setTags(prev => prev.filter(x => x !== t))} className="fkx-chip">
               {t} <Icon name="x" size={9} />
             </button>
           ))}
           <input
+            className="fkx-chip is-input"
             value={tagDraft}
             onChange={e => setTagDraft(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }}
             placeholder="＋ címke"
             aria-label="Új címke"
-            style={{ fontSize: 10, color: 'var(--text-tertiary)', padding: '6px 10px', border: '1px dashed var(--border-strong)', minWidth: 80 }}
           />
         </div>
         <div style={{ height: 96 }} />
-      </PageBody>
       </EntranceGroup>
 
       {/* Save bar — portaled into the phone screen (like Sheet) so it pins to the
           device viewport just above the tab bar instead of scrolling with / floating
           over the recipe content, which used to clip the last rows (mezo-3vu4). */}
       {createPortal(
-        <div className="recipe-save-bar">
-          <button className="cta-ghost" onClick={() => navigate(-1)} style={{ flex: 1 }}>Mégse</button>
-          <button className="cta-primary" disabled={!canSave} onClick={save} style={{ flex: 1.8 }}>
+        <div className="recipe-save-bar fkx-savebar">
+          <button type="button" className="fkx-btn is-flat" onClick={() => navigate(-1)}>Mégse</button>
+          <button type="button" className="fkx-btn glass" style={{ '--c': 'var(--dv-sage)' } as React.CSSProperties} disabled={!canSave} onClick={save}>
             <Icon name="check" size={15} /> Mentés
           </button>
         </div>,
@@ -377,7 +358,7 @@ export function RecipeEditorPage() {
           addedRefIds={lines.map(l => l.refId)}
         />
       )}
-    </MozaikPage>
+    </div>
   )
 }
 

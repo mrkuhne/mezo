@@ -8,19 +8,33 @@
 //                   confirm carries an `origin: 'photo'` provenance marker (no URL).
 // All modes end in usePantryActions().importItem and close; Link/Fotó saves pass the draft's
 // provenance (source/sourceUrl/confidence/price) through saveDraft.
+// Üveg (mezo-me75u.2, uveg-fuel-tobbi.html `SH.import`): one gold glass sheet; the Fotó/Link
+// switch is a flat segmented pill (the active arm filled gold), the photo drops are dashed
+// (free space to fill, bible §3 rank 4), the fields, the searching card and the draft preview
+// are flat cells, Mégse/Vissza flat and the go button a gold-lit flat pill (never glass in glass).
 // ============================================================
 import { useState, type ChangeEvent } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { StatCell } from '@/shared/ui/StatCell'
+import { Icon3D } from '@/shared/ui/clay'
 import { SourceBadge } from '@/features/fuel/components/SourceBadge'
+import { KamraSheetHead, KAMRA_SHEET_CLASS } from '@/features/fuel/sheets/KamraSheetHead'
 import { NutrientCells } from '@/features/fuel/components/NutrientCells'
 import { usePantry, usePantryActions } from '@/data/hooks'
 import { factsOf } from '@/data/fuel/recipeMacros'
 import type { PantryScrapeDraft } from '@/data/types'
 
 type Phase = 'input' | 'searching' | 'preview'
+
+/** One number of the draft's macro row — the macro band hue on the value (prototype `.stat`). */
+function DraftStat({ label, val, color }: { label: string; val: string; color: string }) {
+  return (
+    <span className="fkk-stat" style={{ '--c': color } as React.CSSProperties}>
+      <b>{val}</b>
+      <small>{label}</small>
+    </span>
+  )
+}
 type Mode = 'link' | 'photo'
 
 // The contract's PantryImportRequest category enum — the draft's pick list.
@@ -122,85 +136,57 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Sheet onClose={onClose} labelledBy="import-item-title">
+    <Sheet onClose={onClose} labelledBy="import-item-title" className={KAMRA_SHEET_CLASS}>
       {(close) => (
         <>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-            <div className="col">
-              <Eyebrow brand>Import · Fotó & Link</Eyebrow>
-              <div id="import-item-title" className="h-display size-md" style={{ marginTop: 4 }}>Új tétel a Kamrába</div>
-            </div>
-            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}>
-              <Icon name="x" size={12} />
-            </button>
-          </div>
+          <KamraSheetHead icon="t-camera" eyebrow="Import · Fotó & Link" title="Új tétel a Kamrába"
+            titleId="import-item-title" onClose={close} />
 
-          <p className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5, marginBottom: 14 }}>
+          <p className="fkk-sh-lead">
             Fotózd le a termék címkéjét, vagy illeszd be egy termékoldal linkjét — a nevet, makrókat
             és tápértékeket az AI olvassa ki.
           </p>
 
-          <div className="row gap-xs" style={{ marginBottom: 14 }}>
-            <button
-              className="chip"
-              aria-pressed={mode === 'photo'}
-              onClick={() => switchMode('photo')}
-              style={{
-                flex: 1, justifyContent: 'center', fontSize: 11, padding: '8px 0',
-                background: mode === 'photo' ? 'color-mix(in srgb, var(--coral) 8%, transparent)' : 'transparent',
-                borderColor: mode === 'photo' ? 'var(--line)' : 'var(--border-subtle)',
-                color: mode === 'photo' ? 'var(--text-primary)' : 'var(--text-tertiary)',
-              }}
-            >
+          <div className="fkk-seg">
+            <button type="button" aria-pressed={mode === 'photo'} onClick={() => switchMode('photo')}>
               Fotó
             </button>
-            <button
-              className="chip"
-              aria-pressed={mode === 'link'}
-              onClick={() => switchMode('link')}
-              style={{
-                flex: 1, justifyContent: 'center', fontSize: 11, padding: '8px 0',
-                background: mode === 'link' ? 'color-mix(in srgb, var(--coral) 8%, transparent)' : 'transparent',
-                borderColor: mode === 'link' ? 'var(--line)' : 'var(--border-subtle)',
-                color: mode === 'link' ? 'var(--text-primary)' : 'var(--text-tertiary)',
-              }}
-            >
+            <button type="button" aria-pressed={mode === 'link'} onClick={() => switchMode('link')}>
               Link
             </button>
           </div>
 
           {phase === 'input' && mode === 'link' && (
             <>
-              <div className="card" style={{ padding: '10px 12px', marginBottom: 10 }}>
-                <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>Termékoldal linkje</span>
+              <label className="fkk-field">
+                <span className="uv-eyebrow">Termékoldal linkje</span>
                 <input
+                  className="fkk-inp"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') void scan() }}
                   inputMode="url"
                   placeholder="https://…"
                   aria-label="Termékoldal linkje"
-                  style={{ fontSize: 13, color: 'var(--text-primary)', marginTop: 4, width: '100%' }}
                 />
-              </div>
+              </label>
 
-              {error && (
-                <p style={{ fontSize: 11, color: 'var(--error)', marginBottom: 10 }}>{error}</p>
-              )}
+              {error && <p className="fkk-sh-error">{error}</p>}
 
-              <p className="text-secondary" style={{ fontSize: 11, lineHeight: 1.5, marginBottom: 14 }}>
+              <p className="fkk-sh-hint">
                 Illeszd be egy termékoldal linkjét (pl. myprotein.hu, gymbeam.hu) — az AI kiolvassa
                 a nevet, makrókat és tápértékeket.
               </p>
 
-              <div className="row gap-sm">
-                <button className="cta-ghost flex-1" onClick={close}>Mégse</button>
+              <div className="fkk-sh-acts">
+                <button type="button" className="fkk-btn is-flat" onClick={close}>Mégse</button>
                 <button
-                  className="cta-primary flex-1"
+                  type="button"
+                  className="fkk-btn is-go"
                   onClick={() => void scan()}
                   disabled={!url.trim().startsWith('http')}
                 >
-                  <Icon name="sparkle" size={14} /> Beolvasás
+                  <Icon3D name="t-score" size={22} /> Beolvasás
                 </button>
               </div>
             </>
@@ -208,83 +194,70 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
 
           {phase === 'input' && mode === 'photo' && (
             <>
-              <div className="card" style={{ padding: '10px 12px', marginBottom: 10 }}>
-                <label className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-                  Címke fotó
+              <div className="fkk-drop uv-empty">
+                <label>
+                  <span className="fkk-drop-art" aria-hidden="true"><Icon3D name="t-camera" size={40} /></span>
+                  <strong>Címke fotó</strong>
                   <input
                     type="file"
                     accept="image/*"
                     capture="environment"
                     aria-label="Címke fotó"
                     onChange={pickPhoto(setPhotoFile)}
-                    style={{ fontSize: 12, color: 'var(--text-primary)', marginTop: 6, width: '100%' }}
                   />
                 </label>
-                {photoFile && (
-                  <span className="text-secondary" style={{ fontSize: 11 }}>✓ {photoFile.name}</span>
-                )}
+                {photoFile && <span className="fkk-drop-file">✓ {photoFile.name}</span>}
               </div>
-              <div className="card" style={{ padding: '10px 12px', marginBottom: 10 }}>
-                <label className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-                  Előlap fotó (opcionális — ha a név nem látszik a címkén)
+              <div className="fkk-drop uv-empty">
+                <label>
+                  <small>Előlap fotó (opcionális — ha a név nem látszik a címkén)</small>
                   <input
                     type="file"
                     accept="image/*"
                     capture="environment"
                     aria-label="Előlap fotó"
                     onChange={pickPhoto(setPhotoFile2)}
-                    style={{ fontSize: 12, color: 'var(--text-primary)', marginTop: 6, width: '100%' }}
                   />
                 </label>
-                {photoFile2 && (
-                  <span className="text-secondary" style={{ fontSize: 11 }}>✓ {photoFile2.name}</span>
-                )}
+                {photoFile2 && <span className="fkk-drop-file">✓ {photoFile2.name}</span>}
               </div>
 
-              {error && (
-                <p style={{ fontSize: 11, color: 'var(--error)', marginBottom: 10 }}>{error}</p>
-              )}
+              {error && <p className="fkk-sh-error">{error}</p>}
 
-              <p className="text-secondary" style={{ fontSize: 11, lineHeight: 1.5, marginBottom: 14 }}>
+              <p className="fkk-sh-hint">
                 Fotózd le a termék tápérték-táblázatát — az AI kiolvassa a makrókat /100 g bázison.
                 A fotó nem kerül tárolásra.
               </p>
 
-              <div className="row gap-sm">
-                <button className="cta-ghost flex-1" onClick={close}>Mégse</button>
+              <div className="fkk-sh-acts">
+                <button type="button" className="fkk-btn is-flat" onClick={close}>Mégse</button>
                 <button
-                  className="cta-primary flex-1"
+                  type="button"
+                  className="fkk-btn is-go"
                   onClick={() => void extractPhotos()}
                   disabled={!photoFile}
                 >
-                  <Icon name="sparkle" size={14} /> Beolvasás
+                  <Icon3D name="t-score" size={22} /> Beolvasás
                 </button>
               </div>
             </>
           )}
 
           {phase === 'searching' && (
-            <div className="card" style={{
-              padding: 24, textAlign: 'center',
-              background: 'color-mix(in srgb, var(--coral) 4%, transparent)',
-              borderColor: 'var(--line)',
-            }}>
-              <Icon name="search" size={20} color="var(--coral)" />
-              <div style={{ fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 600, color: 'var(--text-primary)', marginTop: 10 }}>
+            <div className="fkk-searching uv-flat">
+              <span aria-hidden="true"><Icon3D name={mode === 'photo' ? 't-camera' : 't-link'} size={44} /></span>
+              <strong>
                 Keresés <SourceBadge source={mode === 'photo' ? 'photo' : (draft?.source ?? 'web')} size="lg" />
-              </div>
-              <div className="np-twinkle" style={{
-                width: 12, height: 12, borderRadius: '50%', margin: '16px auto 0',
-                border: '1.5px solid var(--coral)',
-              }} />
+              </strong>
+              <i className="np-twinkle" aria-hidden="true" />
             </div>
           )}
 
           {phase === 'preview' && (mode === 'link' || mode === 'photo') && (
             <>
               {draft == null && (
-                <div className="card" style={{ padding: 14, marginBottom: 12, textAlign: 'center' }}>
-                  <span className="text-secondary" style={{ fontSize: 12 }}>
+                <div className="fkk-draft is-none uv-empty">
+                  <span>
                     {mode === 'photo'
                       ? 'Nem találtam használható adatot a fotón — próbáld élesebb képpel, adj hozzá előlap fotót (név/márka), vagy vidd fel kézzel.'
                       : 'Ezen az oldalon nem találtam tápértéket — vidd fel kézzel a Kamrában.'}
@@ -293,53 +266,49 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
               )}
 
               {draft != null && (
-                <div className="card" style={{
-                  padding: 14, marginBottom: 12,
-                  background: 'color-mix(in srgb, var(--coral) 4%, transparent)',
-                  borderColor: 'var(--line)',
-                }}>
-                  <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Eyebrow brand>Polcra kerül · /{draft.per}{draft.unit}</Eyebrow>
+                <div className="fkk-draft uv-flat">
+                  <div className="fkk-draft-top">
+                    <span className="uv-eyebrow">Polcra kerül · /{draft.per}{draft.unit}</span>
                     <SourceBadge source={draft.source} />
                   </div>
-                  <div className="card" style={{ padding: '8px 10px', margin: '10px 0' }}>
-                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>Név</span>
+                  <label className="fkk-field">
+                    <span className="uv-eyebrow">Név</span>
                     <input
+                      className="fkk-inp"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       aria-label="Tétel neve"
-                      style={{ fontSize: 13, color: 'var(--text-primary)', marginTop: 2, width: '100%' }}
                     />
-                  </div>
-                  <div className="card" style={{ padding: '8px 10px', marginBottom: 10 }}>
-                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>Kategória</span>
+                  </label>
+                  <label className="fkk-field">
+                    <span className="uv-eyebrow">Kategória</span>
                     <select
+                      className="fkk-inp"
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
                       aria-label="Kategória"
-                      style={{ fontSize: 13, color: 'var(--text-primary)', marginTop: 2, width: '100%', background: 'transparent' }}
                     >
                       {CONTRACT_CATEGORIES.map(c => (
                         <option key={c} value={c}>{categoryMeta[c]?.label ?? c}</option>
                       ))}
                     </select>
+                  </label>
+                  <div className="fkk-stats">
+                    <DraftStat label={`kcal / ${draft.per}${draft.unit}`} val={String(draft.kcal ?? '—')} color="var(--dv-amber)" />
+                    <DraftStat label="P" val={(draft.proteinG ?? '—') + 'g'} color="var(--macro-protein)" />
+                    <DraftStat label="C" val={(draft.carbsG ?? '—') + 'g'} color="var(--macro-carbs)" />
+                    <DraftStat label="F" val={(draft.fatG ?? '—') + 'g'} color="var(--macro-fat)" />
                   </div>
-                  <div className="card row" style={{ padding: 10, justifyContent: 'space-between', background: 'var(--surface-1)' }}>
-                    <StatCell label={`kcal / ${draft.per}${draft.unit}`} val={String(draft.kcal ?? '—')} sub="" color="var(--coral)" />
-                    <StatCell label="P" val={(draft.proteinG ?? '—') + 'g'} sub="" color="var(--cat-physiology)" />
-                    <StatCell label="C" val={(draft.carbsG ?? '—') + 'g'} sub="" color="var(--warning)" />
-                    <StatCell label="F" val={(draft.fatG ?? '—') + 'g'} sub="" color="var(--cat-preference)" />
-                  </div>
-                  <div style={{ marginTop: 8 }}>
+                  <div className="fkk-draft-nutri">
                     <NutrientCells nutrients={factsOf(draft)} />
                   </div>
                   {draft.needsReview && (
-                    <p style={{ fontSize: 11, color: 'var(--warning)', marginTop: 10 }}>
+                    <p className="fkk-sh-warn">
                       Az AI nem teljesen biztos a számokban — ellenőrizd őket mentés előtt.
                     </p>
                   )}
                   {mode === 'photo' && !photoFile2 && (!name.trim() || draft.needsReview) && (
-                    <label className="chip" style={{ marginTop: 10, fontSize: 10, padding: '6px 10px', cursor: 'pointer' }}>
+                    <label className="fkk-sh-addphoto">
                       <Icon name="camera" size={11} /> + előlap fotó (név/márka)
                       <input
                         type="file"
@@ -363,16 +332,15 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
                       />
                     </label>
                   )}
-                  {error && (
-                    <p style={{ fontSize: 11, color: 'var(--error)', marginTop: 8 }}>{error}</p>
-                  )}
+                  {error && <p className="fkk-sh-error">{error}</p>}
                 </div>
               )}
 
-              <div className="row gap-sm">
-                <button className="cta-ghost flex-1" onClick={() => setPhase('input')}>Vissza</button>
+              <div className="fkk-sh-acts">
+                <button type="button" className="fkk-btn is-flat" onClick={() => setPhase('input')}>Vissza</button>
                 <button
-                  className="cta-primary flex-1"
+                  type="button"
+                  className="fkk-btn is-go"
                   onClick={() => void saveDraft(close)}
                   // Name guard (mezo-a74c): a photo draft can arrive with an unreadable → empty
                   // name; the contract requires name minLength 1, so block the save until typed.
@@ -383,8 +351,6 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
               </div>
             </>
           )}
-
-          <div style={{ height: 24 }} />
         </>
       )}
     </Sheet>

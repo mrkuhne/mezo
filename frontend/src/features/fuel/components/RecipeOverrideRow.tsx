@@ -50,28 +50,23 @@ export function RecipeOverrideRow({ name, unit, originalAmount, amount, kcal, on
     if (parsed !== null && parsed !== amount) onChange(parsed)
   }
 
+  // Üveg (mezo-me75u.2): a sor a composer üveg sor-kártyáján BELÜL ül, tehát lapos — a
+  // módosított sor egy borostyán-árnyalatú cella, a léptető egy lapos kapszula.
   return (
-    <div className="row" style={{ alignItems: 'center', gap: 7, padding: '7px 0',
-      borderTop: '1px solid var(--border-subtle)',
-      background: changed ? 'color-mix(in srgb, var(--coral) 9%, transparent)' : undefined }}>
-      <span style={{ flex: 1, minWidth: 0, fontSize: 11.5,
-        color: changed ? 'var(--text-primary)' : 'var(--text-secondary)',
-        fontWeight: changed ? 600 : 400 }}>
+    <div className={`flp-ovr${changed ? ' is-changed' : ''}`}>
+      <span className="flp-ovr-name">
         {name}
         {changed && (
           <>
-            <span className="label-mono" style={{ fontSize: 7, marginLeft: 5, padding: '2px 4px',
-              color: 'var(--coral)', background: 'color-mix(in srgb, var(--coral) 14%, transparent)' }}>MÓD</span>
-            <span style={{ fontSize: 9.5, marginLeft: 5, color: 'var(--text-tertiary)',
-              textDecoration: 'line-through' }}>{formatAmount(originalAmount)} {unit}</span>
+            <span className="flp-ovr-mod">MÓD</span>
+            <span className="flp-ovr-was">{formatAmount(originalAmount)} {unit}</span>
           </>
         )}
       </span>
 
-      <div className="row" style={{ alignItems: 'center', background: 'var(--surface-2)', display: 'inline-flex' }}>
+      <div className="flp-ovr-step">
         <button onClick={() => onChange(Math.max(0, Math.round((amount - step) * 1000) / 1000))}
-          aria-label={`${name} csökkentés`}
-          style={{ width: 19, height: 22, display: 'grid', placeItems: 'center', color: 'var(--coral)' }}>−</button>
+          aria-label={`${name} csökkentés`}>−</button>
         {editing ? (
           <input
             autoFocus type="text" inputMode="decimal" value={draft}
@@ -79,31 +74,23 @@ export function RecipeOverrideRow({ name, unit, originalAmount, amount, kcal, on
             onChange={(e) => setDraft(e.target.value)}
             onBlur={commit}
             onKeyDown={(e) => { if (e.key === 'Enter') commit() }}
-            style={{ width: 40, textAlign: 'center', fontSize: 10.5, fontWeight: 600,
-              background: 'var(--surface-1)', border: '1px solid var(--coral)',
-              color: 'var(--text-primary)' }}
           />
         ) : (
-          <button
+          <button className="flp-ovr-amt"
             onClick={() => { setDraft(formatAmount(amount)); setEditing(true) }}
-            aria-label={`${name} mennyiség szerkesztése`}
-            style={{ minWidth: 26, textAlign: 'center', fontVariantNumeric: 'tabular-nums',
-              fontSize: 10.5, fontWeight: 600, color: 'var(--text-primary)' }}>
+            aria-label={`${name} mennyiség szerkesztése`}>
             {formatAmount(amount)}
           </button>
         )}
         <button onClick={() => onChange(Math.round((amount + step) * 1000) / 1000)}
-          aria-label={`${name} növelés`}
-          style={{ width: 19, height: 22, display: 'grid', placeItems: 'center', color: 'var(--coral)' }}>+</button>
-        <span className="label-mono" style={{ fontSize: 7.5, color: 'var(--text-tertiary)', padding: '0 5px 0 1px' }}>{unit}</span>
+          aria-label={`${name} növelés`}>+</button>
+        <span className="flp-ovr-unit">{unit}</span>
       </div>
 
-      <span className="label-mono" style={{ fontSize: 8.5, color: 'var(--text-tertiary)',
-        minWidth: 34, textAlign: 'right' }}>{kcal}</span>
+      <span className="flp-ovr-kcal">{kcal}</span>
 
       {changed && (
-        <button onClick={onReset} aria-label={`${name} visszaállítás`}
-          style={{ padding: 2, color: 'var(--text-tertiary)', flexShrink: 0 }}>
+        <button className="flp-ovr-reset" onClick={onReset} aria-label={`${name} visszaállítás`}>
           <Icon name="x" size={10} />
         </button>
       )}

@@ -53,13 +53,15 @@ async function closePicker() {
   await waitForElementToBeRemoved(() => screen.queryByText('Válassz hozzávalót'), { timeout: 2000 })
 }
 
-// F7.3 Mozaik re-face (mezo-d20.8.3.1): MozaikPage(sage) shell, mz-eyebrow over
-// ("Fuel · Receptek") + the heading keeps the current title content (the typed
-// name, or the "Új recept" placeholder).
-test('Mozaik shell: sage page + eyebrow, the heading keeps the current title content', async () => {
+// Üveg U2 (mezo-me75u.2): the Fuel sub-head over ONE sage glass form card; the eyebrow
+// ("Fuel · Receptek") + the heading keeps the current title content (the typed name, or the
+// "Új recept" placeholder).
+test('Üveg shell: sub-head + eyebrow over a glass form card, the heading keeps the title', async () => {
   const qc = newQc()
   const { container } = renderNew(qc)
-  expect(container.querySelector('.mz-page.mz-p-sage')).toBeInTheDocument()
+  expect(container.querySelector('.mz-page')).toBeNull()
+  expect(container.querySelector('.fmx-page.fkx-reditor .fmx-subhead')).toBeInTheDocument()
+  expect(container.querySelector('.fkx-fcard.glass')).toBeInTheDocument()
   expect(screen.getByText('Fuel · Receptek')).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Új recept' })).toBeInTheDocument()
   await userEvent.type(screen.getByPlaceholderText(/Tonhalsaláta/), 'Teszt recept')
@@ -276,8 +278,8 @@ test('edit mode: the SZEREP control is seeded from the edited recipe', async () 
 
   renderEdit(r.id, qc)
   await screen.findByPlaceholderText(/Tonhalsaláta/)
-  expect(screen.getByRole('button', { name: 'Edzés előtt' }).className).toContain('brand')
-  expect(screen.getByRole('button', { name: 'Általános' }).className).not.toContain('brand')
+  expect(screen.getByRole('button', { name: 'Edzés előtt' })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByRole('button', { name: 'Általános' })).toHaveAttribute('aria-pressed', 'false')
 })
 
 test('the SZEREP helper text frames the role as a different rubric, not a bonus', async () => {

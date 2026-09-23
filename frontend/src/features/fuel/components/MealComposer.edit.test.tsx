@@ -141,9 +141,9 @@ test('új étkezésnél nincs törlés gomb', () => {
 test('szerkesztésnél nem jelentünk AI-piszkozat-visszajelzést', async () => {
   const user = userEvent.setup()
   const { unmount } = renderComposer({ editMealId: 'meal-1' })
-  await user.click(screen.getByRole('button', { name: '✨ AI · fotó vagy szöveg' }))
+  await user.click(screen.getByRole('button', { name: 'AI · fotó vagy szöveg' }))
   await user.type(screen.getByLabelText('Mit ettél?'), 'egy wrap')
-  await user.click(screen.getByRole('button', { name: '✨ Elemzés' }))
+  await user.click(screen.getByRole('button', { name: 'Elemzés' }))
   expect(await screen.findByText('Csirkés wrap')).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: /Mentem a javítást/ }))
   unmount()

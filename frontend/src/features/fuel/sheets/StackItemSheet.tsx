@@ -11,6 +11,12 @@
 // firing the mutation (the row itself unmounts on the next projectStackDay recompute); "+ Még egy
 // bevétel" deliberately leaves the sheet open, since adding a second occurrence for the same item
 // is a multi-step edit the user may want to repeat.
+//
+// ÜVEG (mezo-me75u.2; prototypes/uveg-fuel-tobbi.html `SH.stackitem`): the sheet itself is ONE
+// gold glass surface (`fsx-sheet`); inside it nothing is glass — the placement line is a flat
+// cell (the manual pin wears the 3D pin, the automatic reason Mezo's serif voice), the zone and
+// "+ még egy" pickers are flat chips (the chosen one filled), the inputs are flat wells, the
+// removal is a warm-tinted flat button. Behavior unchanged.
 // ============================================================
 import { useState } from 'react'
 import { useProtocolActions, useStack } from '@/data/hooks'
@@ -19,8 +25,7 @@ import type { StackDayEntry } from '@/features/fuel/logic/projectStackDay'
 import type { StackZoneKey } from '@/data/types'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { Display } from '@/shared/ui/Display'
+import { Icon3D } from '@/shared/ui/clay'
 
 export function StackItemSheet({ entry, onClose }: { entry: StackDayEntry; onClose: () => void }) {
   const { stash } = useStack()
@@ -32,111 +37,104 @@ export function StackItemSheet({ entry, onClose }: { entry: StackDayEntry; onClo
   const [addDose, setAddDose] = useState(stashItem?.dose ?? '')
 
   return (
-    <Sheet onClose={onClose} labelledBy="stack-item-title">
+    <Sheet onClose={onClose} labelledBy="stack-item-title" className="glass is-still fsx-sheet is-gold">
       {(close) => (
         <div className="stk-item-sheet">
           {/* Header */}
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-            <div className="col">
-              <Eyebrow brand>Stack · időzítés</Eyebrow>
-              <div id="stack-item-title" style={{ marginTop: 4 }}>
-                <Display size="md">{entry.name}</Display>
-              </div>
-              {entry.dose && (
-                <span className="label-mono text-tertiary" style={{ fontSize: 11, marginTop: 2 }}>{entry.dose}</span>
-              )}
+          <div className="fsx-shh">
+            <span className="fsx-shh-art" aria-hidden="true"><Icon3D name="t-supps" size={48} /></span>
+            <div className="fsx-shh-copy">
+              <span className="uv-eyebrow">Stack · időzítés</span>
+              <div id="stack-item-title" className="fsx-shh-title"><strong>{entry.name}</strong></div>
+              {entry.dose && <small>{entry.dose}</small>}
             </div>
-            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}>
+            <button type="button" className="fsx-shh-x" aria-label="Bezárás" onClick={close}>
               <Icon name="x" size={12} />
             </button>
           </div>
 
-          {/* Placement — F7.3: the tinted hero band (mz-sheet-hero), the sheet's headline */}
-          <div className="mz-sheet-hero" style={{ padding: 12, marginBottom: 14, display: 'block' }}>
+          {/* Placement — the sheet's headline line: a flat cell, never glass in glass */}
+          <div className="fsx-sh-cell uv-flat">
             {entry.pinned ? (
               <>
-                <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
-                  „📌 Ide raktad kézzel ({STACK_ZONE_LABEL[entry.persistedZone]})"
-                </p>
+                <span aria-hidden="true"><Icon3D name="t-pin" size={28} /></span>
+                <p>Ide raktad kézzel ({STACK_ZONE_LABEL[entry.persistedZone]})</p>
                 <button
                   type="button"
-                  className="cta-ghost"
-                  style={{ marginTop: 8 }}
+                  className="fsx-chip is-on"
                   onClick={() => { unpinItem(entry.occurrenceId); close() }}
                 >
                   Vissza autóra
                 </button>
               </>
             ) : (
-              <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
-                {entry.reason ?? 'Automatikusan időzítve.'}
-              </p>
+              <>
+                <span aria-hidden="true"><Icon3D name="t-bolt" size={28} /></span>
+                <p className="uv-voice">{entry.reason ?? 'Automatikusan időzítve.'}</p>
+              </>
             )}
           </div>
 
           {/* Zone picker */}
-          <Eyebrow>Mozgatás másik zónába</Eyebrow>
-          <div className="row gap-xs flex-wrap" style={{ margin: '8px 0 14px' }}>
-            {STACK_ZONE_ORDER.map(zone => {
-              const isCurrent = zone === entry.persistedZone
-              return (
-                <button
-                  key={zone}
-                  type="button"
-                  className="chip"
-                  disabled={isCurrent}
-                  onClick={isCurrent ? undefined : () => { moveItem(entry.occurrenceId, zone); close() }}
-                >
-                  {STACK_ZONE_LABEL[zone]}{isCurrent && ' ✓'}
-                </button>
-              )
-            })}
+          <div className="fsx-sh-field">
+            <span className="uv-eyebrow">Mozgatás másik zónába</span>
+            <div className="fsx-chips">
+              {STACK_ZONE_ORDER.map(zone => {
+                const isCurrent = zone === entry.persistedZone
+                return (
+                  <button
+                    key={zone}
+                    type="button"
+                    className="fsx-chip"
+                    disabled={isCurrent}
+                    onClick={isCurrent ? undefined : () => { moveItem(entry.occurrenceId, zone); close() }}
+                  >
+                    {STACK_ZONE_LABEL[zone]}{isCurrent && ' ✓'}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* Dose editor */}
-          <Eyebrow>Dózis</Eyebrow>
-          <div className="card" style={{ padding: '8px 12px', margin: '8px 0 14px' }}>
+          <div className="fsx-sh-field">
+            <span className="uv-eyebrow">Dózis</span>
             <input
+              className="fsx-sh-input"
               aria-label="Dózis"
               value={dose}
               onChange={e => setDoseValue(e.target.value)}
               onBlur={() => setDose(entry.occurrenceId, dose)}
-              style={{ fontSize: 13, color: 'var(--text-primary)', width: '100%' }}
             />
           </div>
 
           {/* + Még egy bevétel */}
-          <Eyebrow>+ Még egy bevétel</Eyebrow>
-          <div className="card" style={{ padding: 12, margin: '8px 0 14px' }}>
-            <div className="row gap-xs flex-wrap" style={{ marginBottom: 8 }}>
+          <div className="fsx-sh-field">
+            <span className="uv-eyebrow">+ Még egy bevétel</span>
+            <div className="fsx-chips is-coral">
               {STACK_ZONE_ORDER.map(zone => (
                 <button
                   key={zone}
                   type="button"
-                  className="chip"
+                  className={zone === addZone ? 'fsx-chip is-on' : 'fsx-chip'}
                   aria-pressed={zone === addZone}
-                  style={
-                    zone === addZone
-                      ? { borderColor: 'var(--coral)', color: 'var(--coral-deep)', background: 'color-mix(in srgb, var(--coral) 6%, transparent)' }
-                      : undefined
-                  }
                   onClick={() => setAddZone(zone)}
                 >
                   {STACK_ZONE_LABEL[zone]}
                 </button>
               ))}
             </div>
-            <div className="row gap-sm" style={{ alignItems: 'center' }}>
+            <div className="fsx-sh-addrow is-coral">
               <input
+                className="fsx-sh-input"
                 aria-label="Új bevétel dózisa"
                 value={addDose}
                 onChange={e => setAddDose(e.target.value)}
                 placeholder="Dózis"
-                style={{ flex: 1, fontSize: 13, color: 'var(--text-primary)' }}
               />
               <button
                 type="button"
-                className="chip brand"
+                className="fsx-chip is-on"
                 onClick={() => addItem(entry.pantryItemId, { slotKey: addZone, dose: addDose || undefined })}
               >
                 <Icon name="plus" size={11} /> Hozzáadás
@@ -145,16 +143,13 @@ export function StackItemSheet({ entry, onClose }: { entry: StackDayEntry; onClo
           </div>
 
           {entry.dailyTotalHint && (
-            <p className="label-mono text-tertiary" style={{ fontSize: 9, lineHeight: 1.5, marginBottom: 14 }}>
-              {entry.dailyTotalHint}
-            </p>
+            <p className="fsx-sh-hint">{entry.dailyTotalHint}</p>
           )}
 
           {/* Footer */}
           <button
             type="button"
-            className="cta-ghost"
-            style={{ width: '100%', color: 'var(--error)', borderColor: 'var(--error)' }}
+            className="fsx-sh-btn is-warn"
             onClick={() => { removeAllFor(entry.pantryItemId); close() }}
           >
             <Icon name="trash" size={12} /> Eltávolítás a stackből

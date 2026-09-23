@@ -62,7 +62,9 @@ test('a turn renders the draft on the canvas — pantry rows + the BECSLÉS row 
   // pantry line names land as rows, the AI line carries the MealComposer becslés tag
   expect(screen.getByText('Csirkemell · friss')).toBeInTheDocument()
   expect(screen.getByText('Citrom + fűszerek')).toBeInTheDocument()
-  expect(screen.getByText('✨ becslés')).toBeInTheDocument()
+  // Üveg U2: the ✨ emoji became the 3D score icon — the tag reads just „becslés"
+  expect(screen.getByText('becslés')).toBeInTheDocument()
+  expect(screen.queryByText(/✨/)).toBeNull()
 
   // …and while it is there, `draftToInput` returns null → the gate note shows, save disabled
   expect(screen.getByText(/becslés-sorok: cseréld kamra-itemre/)).toBeInTheDocument()
@@ -77,7 +79,7 @@ test('Csere swaps the estimate line for a pantry item — the gate opens and sav
   const pick = await screen.findAllByRole('button', { name: /hozzáadása$/ })
   await userEvent.click(pick[0])
 
-  await waitFor(() => expect(screen.queryByText('✨ becslés')).not.toBeInTheDocument())
+  await waitFor(() => expect(screen.queryByText('becslés')).not.toBeInTheDocument())
   expect(screen.queryByText(/becslés-sorok: cseréld/)).not.toBeInTheDocument()
 
   const save = screen.getByRole('button', { name: /Mentés a Receptkönyvbe/ })
@@ -106,7 +108,7 @@ test('a preset chip sets the goal and sends its own instruction turn', async () 
   await waitFor(() => expect(turnImpl).toHaveBeenCalledTimes(2))
   expect(turnImpl.mock.calls[1][0].goal).toBe('high_protein')
   // the goal rides on the canvas as the prototype's cél-chip
-  expect(await screen.findByText('Magas fehérje', { selector: '.logflow-lntag' })).toBeInTheDocument()
+  expect(await screen.findByText('Magas fehérje', { selector: '.fkx-chip.is-goal' })).toBeInTheDocument()
 })
 
 // M1 (mezo-uavr wipe class): a ?recipeId session that never touches a goal preset must save the

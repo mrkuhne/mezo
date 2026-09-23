@@ -560,6 +560,47 @@ describe('the fuel-trendek section is registered and re-dressed (mezo-ju4j6.8)',
   })
 })
 
+describe('the uveg fuel trendek section re-dresses Trendek + Fuel settings (mezo-me75u.2)', () => {
+  const section = () => stripComments(slice('── uveg fuel trendek (', '── /uveg fuel trendek '))
+
+  test('the week picture and the day arc are frameless halos (bible §5)', () => {
+    const css = section()
+    expect(css).toMatch(/\.ftx-hero\.uv-halo \{[^}]*background: none/)
+    expect(css).toMatch(/\.fset-hero\.uv-halo \{[^}]*background: none[^}]*box-shadow: none/)
+    expect(css).toMatch(/\.fset-arc-glow \{[^}]*drop-shadow/)
+  })
+
+  test('the primary objects are glass, the cells inside the day card are flat (bible §3.4, U1 rule 5)', () => {
+    const css = section()
+    for (const sel of ['.ftx-tile.glass', '.ftx-split.glass', '.ftx-horizon.glass', '.ftx-pattern.glass',
+      '.fset-card.glass', '.fset-goal.glass', '.fset-slots.glass', '.fsl-slotrow.glass', '.fsl-edit.glass']) {
+      expect(css, `${sel} missing from the uveg fuel trendek block`).toContain(sel)
+    }
+    expect(css).toMatch(/\.ftx-dim \{[^}]*rgba\(245, 239, 230, 0\.04\)/)
+    expect(css).toMatch(/\.ftx-glass-link \{[^}]*color-mix/)
+    expect(css).not.toMatch(/\.ftx-glass-link[^{]*\.glass/)
+  })
+
+  test('shame-free: over-target is gold, an unlogged day is a hatched gap, never an error', () => {
+    const css = section()
+    expect(css).toMatch(/\.ftx-day\.is-over \.ftx-fill \{[^}]*var\(--dv-amber\)/)
+    expect(css).toMatch(/\.ftx-gap \{[^}]*repeating-linear-gradient/)
+    expect(css).not.toMatch(/\.ftx-[a-z-]*\.is-error/)
+  })
+
+  test('empty and free states are dashed, with no glass (bible §3 rank 4)', () => {
+    const css = section()
+    expect(css).toMatch(/\.ftx-horizon\.uv-empty\.is-waiting \{[^}]*dashed[^}]*box-shadow: none/)
+    expect(css).toContain('.fsl-add.uv-empty')
+  })
+
+  test('the Σ budget pill is lit, coral when off; no infinite loop of its own', () => {
+    const css = section()
+    expect(css).toMatch(/\.fsl-pillsum\.is-off \{[^}]*var\(--dv-coral\)/)
+    expect(css).not.toContain('infinite')
+  })
+})
+
 /**
  * Fix round 1 (mezo-88iwa.13, T12 Task 2 review): GlassBox is a Sheet-SIBLING
  * dialog — pages that host a <Sheet> may also open a GlassBox on top of it — so
@@ -1153,10 +1194,11 @@ describe('the fuel-konyha section is registered and re-dressed (mezo-ju4j6.9)', 
   // only next to something that isn't one. The Receptműhely is now the page's single lifted
   // tile, so this guard checks THAT — a hue-token lift on the hero and the hairline idiom
   // still in use — rather than demanding every tile be lifted.
-  test('the Receptműhely is the block\'s one lifted wash tile (§2.2 A + §3.4)', () => {
+  // Üvegesítés U2 (mezo-me75u.2): the Konyha hub's posters left this block — they are `.glass`
+  // now (the `uveg fuel konyha` block guards them), so the workshop's wash-tile lift is gone.
+  test('the block keeps the hairline idiom and never lifts by a raw shadow (§2.2 A)', () => {
     const css = rules()
     expect(css.match(/border: 0\.5px solid rgba\(43, 33, 24, 0\.06\)/g) ?? []).not.toHaveLength(0)
-    expect(css).toMatch(/\.fkx-poster\.is-workshop \{[^}]*box-shadow: var\(--mz-shadow-lav\)/)
     expect(css, 'a lifted tile must be lifted by a TOKEN, never a raw shadow').not.toMatch(
       /box-shadow: 0 \d+px [^;]*rgba\(0, 0, 0/)
   })
@@ -1267,35 +1309,35 @@ describe('the depth & focus ranking holds across the swept screens (mezo-ju4j6.1
       .toContain('inset 0 0 0 1px var(--border-subtle)')
     expect(body, `${selector} must not carry a §2.2 A wash gradient`).not.toContain('linear-gradient(150deg')
   }
-  /** A demoted surface that keeps its own hue: the §2.2 B cell — flat tint, no shadow. */
-  const expectCellGrade = (selector: string, hue: string, hero: string) => {
-    const body = rule(selector)
-    expect(body, `${selector} must sit below "${hero}" as a §2.2 B cell`).toContain('box-shadow: none')
-    expect(body, `${selector} keeps its own hue, flat`).toContain(`color-mix(in srgb, var(${hue})`)
-    expect(body, `${selector} must not carry a §2.2 A wash gradient`).not.toContain('linear-gradient(150deg')
-  }
+  // (the §2.2 B `expectCellGrade` helper retired with its last user, the Trendek tiles — they are
+  //  glass since Üvegesítés U2, mezo-me75u.2)
 
   // Üvegesítés U1 (mezo-me75u.1): the score hero is a FRAMELESS halo now, so the dimensions are
   // the page's primary objects — glass tiles (guarded in the fuel-mai block above), no longer cells.
 
-  test('Fuel · Kiegészítők: the ring + KÖVETKEZIK is the hero, the time bands are house rows', () => {
-    expectHouseGrade('.fsx-band', 'a napi gyűrű és a KÖVETKEZIK sor')
-    // …and the wash comes back on exactly one band: the one that is due now (§4.4).
-    expect(stripComments(rawCss)).toMatch(/\.fsx-band\.is-due \{[^}]*linear-gradient\(150deg/)
-    // §4.4: a finished band is never dimmed away.
-    expect(rule('.fsx-band.is-complete')).toContain('opacity: 1')
+  // Üvegesítés U2 (mezo-me75u.2): the ring is a FRAMELESS halo now, so the time bands are the
+  // page's glass primary objects (the class is set in the TSX, the hue through `--c` on the same
+  // element; guarded in the uveg fuel stack block below). The due band glows harder and a finished
+  // one dims — the owner-approved prototype (uveg-fuel-tobbi.html `.band.due` / `.band.done`)
+  // overrides the restored world's "never dim" rule.
+  test('Fuel · Kiegészítők: the ring halo is the hero, the due band out-glows its glass siblings', () => {
+    expect(rule('.fsx-band.glass.is-due')).toContain('0 0 34px -4px color-mix(in srgb, var(--c) 45%')
+    expect(rule('.fsx-band.glass.is-complete')).toContain('opacity: 0.72')
+    expect(rule('.fsx-page .fsx-hero')).toContain('background: none')
   })
 
-  test('Fuel · Trendek: the week picture is the hero, the glance tiles and split rows drop', () => {
-    expectCellGrade('.ftx-tile', '--ftx-tile-color', 'a hét képe — halo-sáv + napi oszlopok')
-    expectHouseGrade('.ftx-splitrow', 'a hét képe — halo-sáv + napi oszlopok')
+  // Üvegesítés U2 (mezo-me75u.2): the week picture is a FRAMELESS halo now, so the glance tiles,
+  // the weekday/weekend card and the horizon are the page's glass primary objects (guarded in the
+  // uveg fuel trendek block below); only the day card's dimensions stay flat cells.
+  test('Fuel · Trendek: the day card\'s dimensions stay flat below its own numeral', () => {
     expectHouseGrade('.ftx-dim', 'az üvegdoboz saját 40px-es számjegye')
   })
 
-  test('Fuel · Konyha: only the Receptműhely stays a wash tile', () => {
+  // Üvegesítés U2 (mezo-me75u.2): the three posters wear glass now (guarded in the `uveg fuel
+  // konyha` block); the old block keeps only the parked house-grade base under them.
+  test('Fuel · Konyha: the captures and posters keep a house-grade base under their glass', () => {
     expectHouseGrade('.fkx-capture', 'a Receptműhely')
     expectHouseGrade('.fkx-poster', 'a Receptműhely')
-    expect(stripComments(rawCss)).toMatch(/\.fkx-poster\.is-workshop \{[^}]*linear-gradient\(150deg/)
     // §3.3: the hero's own promise wears the card-title ramp, not the neighbours' size.
     expect(rule('.fkx-ws-copy strong')).toContain('font-size: 24px')
   })
@@ -1391,5 +1433,86 @@ describe('the uveg chrome section is registered (mezo-me75u.1, bible §7)', () =
 
   test('there is no day-part switcher in the glass chrome', () => {
     expect(section()).not.toContain('nap-dpmenu')
+  })
+})
+
+/**
+ * Üvegesítés U2 (mezo-me75u.2): Konyha, Kamra, the Kamra item and the Kamra sheets wear the
+ * üveg ranking (bible §3.4) — primary objects glass in their own hue, secondary cells flat,
+ * free space dashed, and nothing glass inside the glass sheet.
+ */
+describe('the uveg fuel konyha section carries the glass ranking (mezo-me75u.2)', () => {
+  const section = () => stripComments(slice('── uveg fuel konyha (', '── /uveg fuel konyha '))
+
+  test('the block exists and dresses every surface of the slice', () => {
+    const css = section()
+    for (const sel of ['.fkx-capture.glass', '.fkx-page .fkx-poster.glass', '.fkx-kamra .fkx-item.glass',
+      '.fkx-kitem .fkx-door.glass', '.fkx-kitem .fkx-cta.glass', '.sheet.fkk-sheet.glass', '.fkk-kamra-empty',
+      '.fkk-swap']) {
+      expect(css, `${sel} missing from the uveg fuel konyha block`).toContain(sel)
+    }
+  })
+
+  test('glass that must stay put restates its geometry (U1 rules 1–3)', () => {
+    const css = section()
+    // the sheet keeps its absolute anchor and its scroll under `.glass`
+    expect(css).toMatch(/\.sheet\.fkk-sheet\.glass \{[^}]*position: absolute;[^}]*overflow-y: auto;/)
+    // the capture's ＋ stays pinned in the corner under `.glass > *`
+    expect(css).toMatch(/\.fkx-capture\.glass > \.fkx-plus \{[^}]*position: absolute;/)
+  })
+
+  test('the sheet\'s go button is a lit flat pill, never glass in glass (U1 rule 5)', () => {
+    const css = section()
+    expect(css).toMatch(/\.fkk-btn\.is-go \{[^}]*radial-gradient/)
+    expect(css).not.toMatch(/\.fkk-sheet[^{]*\.glass \.glass/)
+  })
+})
+
+/**
+ * Üvegesítés U2 (mezo-me75u.2) — Kiegészítők, Protokoll, Új elem, Gyógyszer and the stack sheets
+ * (prototypes/uveg-fuel-tobbi.html `stack()` … `SH.medform`). The ring is a frameless halo; the
+ * KÖVETKEZIK card, the time bands, the zone groups, the doors and the medication card are glass
+ * in ONE accent each; ticks, rows, chips and fields inside them are flat; the sheets are one
+ * glass surface each.
+ */
+describe('the uveg fuel stack section carries the glass ranking (mezo-me75u.2)', () => {
+  const section = () => stripComments(slice('── uveg fuel stack (', '── /uveg fuel stack '))
+
+  test('the block exists and dresses every surface of the slice', () => {
+    const css = section()
+    for (const sel of ['.fsx-next.glass', '.fsx-band.glass', '.fsx-poster.glass', '.fsx-quiet.glass',
+      '.fmx-glass.fsx-glass', '.fsx-proto-group.glass', '.fsx-pick.glass', '.fsx-form.glass',
+      '.fsx-tunecard.glass', '.fmd-medcard.glass', '.sheet.glass.fsx-sheet', '.fsx-mm.uv-flat']) {
+      expect(css, `${sel} missing from the uveg fuel stack block`).toContain(sel)
+    }
+  })
+
+  test('glass that must stay put restates its geometry (U1 rules 1–3)', () => {
+    const css = section()
+    expect(css).toMatch(/\.sheet\.glass\.fsx-sheet \{[^}]*position: absolute;[^}]*overflow-y: auto;/)
+    expect(css).toMatch(/\.fsx-poster\.glass > \.fsx-poster-go \{[^}]*position: absolute;/)
+    // the old medcard's 5px accent strip must not shrink the glass frame to a strip
+    expect(css).toMatch(/\.fmd-medcard\.glass::before \{[^}]*width: auto;/)
+  })
+
+  test('the tick keeps its 44px hit area and is a flat lit circle, not glass', () => {
+    const css = section()
+    expect(css).toMatch(/\.fsx-band\.glass \.fsx-check,[^{]*\{[^}]*width: 44px; height: 44px;/)
+    expect(css).toMatch(/\.fsx-band\.glass \.fsx-row\.is-done \.fsx-check > span \{[^}]*background: var\(--c\)/)
+  })
+
+  test('inside a glass surface everything is flat or lit, never glass in glass (U1 rule 5)', () => {
+    const css = section()
+    expect(css).toMatch(/\.fsx-glass \.fsx-glass-tick \{[^}]*color-mix\(in srgb, var\(--c\) 20%/)
+    expect(css).toMatch(/\.fsx-sh-btn\.is-lit \{[^}]*color-mix\(in srgb, var\(--c\) 22%/)
+    expect(css).not.toMatch(/\.glass [^{,]*\.glass[\s,{]/)
+  })
+
+  test('the hero art floats only inside the reduced-motion gate', () => {
+    const css = section()
+    const gate = css.indexOf('@media (prefers-reduced-motion: no-preference)')
+    expect(gate).toBeGreaterThan(-1)
+    expect(css.indexOf('animation: uv-float')).toBeGreaterThan(gate)
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{[\s\S]*animation: none;/)
   })
 })

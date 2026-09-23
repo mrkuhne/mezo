@@ -52,7 +52,11 @@ describe('FuelStackPage — mock hub', () => {
     expect(container.querySelector('.mz-page-hero')).toBeNull()
     expect(container.querySelectorAll('.fsx-band').length).toBeGreaterThan(0)
     expect(screen.getByText('MIT VESZEK BE MA?')).toBeInTheDocument()
-    expect(container.querySelector('use[href="#i-kiegeszito"]')).toBeInTheDocument()
+    // Üveg (mezo-me75u.2): the content icons are the Titanium 3D set; the bands are glass.
+    expect(container.querySelector('use[href="#t-supps"]')).toBeInTheDocument()
+    expect(container.querySelector('use[href="#i-kiegeszito"]')).toBeNull()
+    expect(container.querySelectorAll('.fsx-band.glass').length)
+      .toBe(container.querySelectorAll('.fsx-band').length)
   })
 
   test('hozzáférhető haladás-műszer mutatja a mai készültséget', () => {
