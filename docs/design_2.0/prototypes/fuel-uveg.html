@@ -362,6 +362,7 @@ body.dark #shadow feDropShadow{flood-color:#000;flood-opacity:.5}
 .ntf-row.unread{box-shadow:inset 2px 0 0 var(--sky)}
 /* alsó menü: fix, üvegben, Boop a területváltón */
 .tabbar{left:10px;right:10px;bottom:12px;padding:6px 6px;border-radius:28px;gap:2px}
+.tabbar.glass::after{display:none;animation:none}  /* owner 2026-09-23: nincs fényfutás az alsó menün */
 .tb-boop{--c:var(--sage);display:grid;place-items:center;width:62px;height:58px;margin-right:4px;border-radius:22px;flex:0 0 auto;position:relative}
 .tb-boop::after{content:'';position:absolute;right:-4px;top:12px;bottom:12px;width:1px;background:var(--hair)}
 .tb-boop .boop{width:44px;height:44px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.5)) drop-shadow(0 0 12px rgba(143,180,154,.45))}
