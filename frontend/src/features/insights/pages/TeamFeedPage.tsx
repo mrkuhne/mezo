@@ -1,16 +1,13 @@
 import { useMemo, useState } from 'react'
-import {
-  useCharacterFeed, useExperiments, useObservations, usePatternMonitor, usePatterns, usePredictions,
-} from '@/data/hooks'
 import type { TeamCharacterId } from '@/features/insights/logic/team'
-import { buildTeamFeed, withSessionAfterlife, type FeedPost } from '@/features/insights/logic/teamFeed'
+import { withSessionAfterlife, type FeedPost } from '@/features/insights/logic/teamFeed'
 import { FeedPostCard } from '@/features/insights/components/feed/FeedPostCard'
 import { FeedPosterCard } from '@/features/insights/components/feed/FeedPosterCard'
 import { FeedReplySheet, type FeedReplyTarget } from '@/features/insights/components/feed/FeedReplySheet'
 import type { FeedReplyMode } from '@/features/insights/components/feed/FeedTrio'
 import { StoryStrip } from '@/features/insights/components/feed/StoryStrip'
 import { useFeedSession } from '@/features/insights/components/feed/useFeedSession'
-import { localDateString } from '@/shared/lib/dates'
+import { useTeamFeed } from '@/features/insights/components/feed/useTeamFeed'
 import { Icon3D } from '@/shared/ui/clay'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import '@/features/insights/boop-world.css'
@@ -22,39 +19,18 @@ import '@/features/insights/boop-world.css'
  * sáv → napok (naponta egy üveg-poszter, a többi csendes lapos panel) → „Ennyi történt”.
  */
 export function TeamFeedPage() {
-  const patterns = usePatterns()
-  const monitor = usePatternMonitor()
-  const predictions = usePredictions()
-  const experiments = useExperiments()
-  const observations = useObservations()
-  const characterFeed = useCharacterFeed(60)
+  const { feed, today, loading, degraded } = useTeamFeed()
   const session = useFeedSession()
   const [reply, setReply] = useState<FeedReplyTarget | null>(null)
-  const today = localDateString()
-
-  // Betöltés-kapu AZ ÜRES-ÁLLAPOT ELŐTT (mezo-yew): félkész adatból nem villan fel „csend van”.
-  const loading = patterns.isPending || monitor.isPending || predictions.isPending
-    || experiments.isPending || observations.isPending || characterFeed.isLoading
-
-  const feed = useMemo(() => buildTeamFeed({
-    patterns: patterns.patterns,
-    monitorPairs: monitor.monitor?.pairs ?? [],
-    predictions: predictions.predictions,
-    experiments: experiments.experiments,
-    observations: observations.observations,
-    characterItems: characterFeed.items,
-    today,
-  }), [patterns.patterns, monitor.monitor, predictions.predictions, experiments.experiments,
-    observations.observations, characterFeed.items, today])
   const days = useMemo(() => withSessionAfterlife(feed.days, session.afterlife, today), [feed.days, session.afterlife, today])
 
+  // Betöltés-kapu AZ ÜRES-ÁLLAPOT ELŐTT (mezo-yew): félkész adatból nem villan fel „csend van”.
   if (loading) return <ScreenSkeleton />
 
   const posts = days.flatMap(d => [...(d.poster ? [d.poster] : []), ...d.posts])
   const waitingBy: Partial<Record<TeamCharacterId, boolean>> = {}
   for (const p of posts) if (p.waiting) waitingBy[p.author] = true
   const waitingCount = posts.filter(p => p.waiting).length
-  const degraded = patterns.degraded || observations.degraded
   const openReply = (post: FeedPost, mode: FeedReplyMode) => setReply({ post, mode })
   const toFirstWaiting = () =>
     document.querySelector('[data-waiting]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
