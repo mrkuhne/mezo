@@ -1720,7 +1720,7 @@ function fal(){return `${topbar()}
     ${phead('mezo','vasárnap 19:30 · heti konzílium')}
     <p class="pbody">Vasárnap leültünk mind az öten, és végigvettük a hetedet. 📔 <b>Két dolog került a rólad szóló képbe</b> (a hétvégi lefekvés-minta és a meccs előtti szénhidrát), egyet nyugdíjaztunk, mert három hete nem erősödik. A Szkeptikus két felvetést visszadobott — jogosan: kevés még mögöttük a nap. <b>Jövő héten a vacsora-ügy a fókusz.</b></p>
     <div class="well"><div class="kchips"><span class="g">+2 bekerült</span><span class="a">1 nyugdíjazva</span><span class="s">2 visszadobva</span></div></div>
-    <div class="sum"><span class="minis">${av('szunya',true)}${av('mocor',true)}${av('falat',true)}</span><button data-toast="Az ülés jegyzőkönyve — a Konzílium oldala">Az ülés jegyzőkönyve · 4 forduló</button></div>
+    <div class="sum"><span class="minis">${av('szunya',true)}${av('mocor',true)}${av('falat',true)}</span><button data-go="#konzilium">Az ülés jegyzőkönyve · 4 forduló</button></div>
     ${acts()}
   </article>
   <article class="post rise" style="--c:var(--sky);--i:12">
@@ -1736,7 +1736,7 @@ function csapat(){const R=[['szunya','Most figyeli: a késői vacsorák és az �
   return `${topbar()}<div class="pgh rise" style="--i:0"><small>ŐK FIGYELNEK RÁD</small><h1>A csapat</h1></div>
   <div class="rows" style="padding-top:6px">${R.map(([id,s,m],i)=>{const p=CH[id];return `<button class="rowg glass lift rise" style="--c:${p.c};--i:${i+1}" data-go="#szoba/${id}">${av(id)}<span style="flex:1;min-width:0"><b>${p.n} · ${p.a.toLowerCase()}</b><small>${s}</small></span><em>${m} érett</em></button>`}).join('')}</div>
   <div class="dash rise" style="--i:6">${av('szk')}<span><b style="color:var(--ink)">A Szkeptikus</b> nem posztol — a beszélgetésekben kérdez vissza, mielőtt bármi bekerülne rólad. A gépezet a <b style="color:var(--ink)">Gépteremben</b> él.</span></div>
-  <div class="rows" style="margin-top:2px"><button class="rowg glass lift rise" style="--c:#8E86A3;--i:7" data-toast="Gépterem + a régi teljes menü — nem része ennek a körnek">${I('info')}<span style="flex:1"><b>Gépterem · Összes funkció</b><small>A motorháztető és a régi eszköztár — dev-ajtó</small></span><em>›</em></button></div>`}
+  <div class="rows" style="margin-top:2px"><button class="rowg glass lift rise" style="--c:#8E86A3;--i:7" data-go="#gepterem">${I('info')}<span style="flex:1"><b>Gépterem · Összes funkció</b><small>A motorháztető és a régi eszköztár — dev-ajtó</small></span><em>›</em></button></div>`}
 
 const ROOMS={
   szunya:{quote:'„Az éjszakáid a szakterületem. Amit itt látsz, azt mind a te naplódból tanultam.”',stats:[['72%','ÉRETTSÉG'],['15','ÉJSZAKA / 60 NAP'],['3','BEÉPÜLT TUDÁS']],rows:[
@@ -1776,9 +1776,9 @@ const ROOMS={
     arch:[],
     ask:'Kevés az adata: két hétből 4 este. Ma bejelentkezést kért tőled.'},
   mezo:{quote:'„Én fogom össze a csapatot. Csak az kerül a rólad szóló képbe, amiben egyetértünk.”',stats:[['66%','ÉRETTSÉG'],['2','BEKERÜLT A HÉTEN'],['4','FORDULÓ']],rows:[
-    ['KONZÍLIUM','var(--gold)','vasárnap','journal','Mi került be rólad a héten?','2 bekerült · 1 nyugdíjazva — a jegyzőkönyv olvasható','',0],
-    ['KRÓNIKA','var(--lav)','készül','book','A heted története','Memoár-fejezet érkezik vasárnap estére','',0],
-    ['DEV','#8E86A3','ajtó','info','Gépterem · Összes funkció','Futások, adatforrások, memória — a motorháztető alatt','',0]],
+    ['KONZÍLIUM','var(--gold)','vasárnap','journal','Mi került be rólad a héten?','2 bekerült · 1 nyugdíjazva — a jegyzőkönyv olvasható','#konzilium',0],
+    ['KRÓNIKA','var(--lav)','készül','book','A heted története','Memoár-fejezet érkezik vasárnap estére','#memoar',0],
+    ['DEV','#8E86A3','ajtó','info','Gépterem · Összes funkció','Futások, adatforrások, memória — a motorháztető alatt','#gepterem',0]],
     mat:[50,53,55,58,60,62,64,66],
     tud:[['Szereted látni, mi miből következik — az indoklás neked jár','a te kérésed','aug. 20.','TŐLED'],
          ['Új munkarendet próbálsz szeptembertől','életesemény · tőled','szept. 1.','TŐLED']],
@@ -2021,6 +2021,31 @@ function napemlek(id){const days={'21':['Vasárnap · szeptember 21.','Meccs, ko
     <button class="case glass lift rise" style="--c:var(--lav);--s:#8E86A3;--i:4" data-toast="Hasonló napok keresése — a megvalósításban él"><span class="cmain">${I('history')}<span class="ctxt"><b>Mikor volt még ilyen napom?</b><small>hasonló emlékek visszakeresése</small></span><span class="chev">›</span></span></button>
   </div>`}
 
+function konzilium(){return `${topbar()}<div class="dhead rise"><button class="back glass" data-back>‹</button><span class="t"><small>HETI KONZÍLIUM · VASÁRNAP 19:30 · 4 FORDULÓ</small><strong>Az ülés jegyzőkönyve</strong></span></div>
+  <p class="pbody rise" style="padding:0 18px 8px;font-size:12.5px;color:var(--sub)">Hetente a csapat átnézi a heted, megvitatja egymás felvetéseit, a Szkeptikus kikérdezi őket — és Mezo dönt, mi kerül a rólad szóló képbe.</p>
+  <div class="rows">
+    <div class="case glass rise" style="--c:var(--gold);--s:var(--lav);--i:1"><span class="crow"><span class="st">1 · JAVASLATOK</span><em>5 felvetés</em></span>
+      <span class="cmain"><span class="ctxt"><b>Ki mit hozott az asztalra</b><small>Szunya 2 · Falat 2 · Mocor 1 — mind konkrét napokra hivatkozva</small></span></span></div>
+    <div class="case glass rise" style="--c:var(--gold);--s:var(--sky);--i:2"><span class="crow"><span class="st">2 · KERESZT-VITA</span><em>4 hozzászólás</em></span>
+      <span class="cmain"><span class="ctxt"><b>Ahol egymás felvetéseit nézték</b><small>Falat a vacsora-üggyel Szunya mellé állt; Mocor az energia-sejtésnél kért több napot</small></span></span></div>
+    <div class="case glass rise" style="--c:var(--gold);--s:#8E86A3;--i:3"><span class="crow"><span class="st">3 · SZKEPTIKUS</span><em>4 vizsgálat · 2 visszadobva</em></span>
+      <span class="cmain"><span class="ctxt"><b>A kételkedés köre</b><small>„A hétvégi késés csak a röplabda?” — kevés nap, visszadobva; a vacsora-ügynél hétköznap/hétvége szétválasztást kért</small></span></span></div>
+    <div class="case glass rise" style="--c:var(--gold);--s:var(--sage);--i:4"><span class="crow"><span class="st">4 · MEZO DÖNT</span><em>2 bekerült · 1 nyugdíjazva</em></span>
+      <span class="cmain"><span class="ctxt"><b>Ami a képedbe került</b><small>a hétvégi lefekvés-minta + a meccs előtti szénhidrát; a reggeli-cukor ügy nyugdíjba ment</small></span></span></div>
+  </div>
+  <div class="sec"><h2>Beszélgetés az ülésről</h2><span class="hint">1 HOZZÁSZÓLÁS</span></div>
+  <div class="tcmt rise" style="--c:#8E86A3;--i:5"><div class="th">${av('szk',true)}<b>Szkeptikus</b></div>
+    <p>A jegyzőkönyv kedvéért: a két bekerült állítás közül a szénhidrát-ügy <b>két meccsnapon</b> áll — ha a következő kettőből egy is ellene szól, visszahozom az asztalra.</p></div>
+  <div style="padding:2px 16px 0">${rrow()}</div>
+  <div class="rows" style="margin-top:12px"><button class="case glass lift rise" style="--c:var(--gold);--s:var(--sage);--i:6" data-go="#rolad"><span class="cmain">${I('shield')}<span class="ctxt"><b>Mi változott a dossziédban</b><small>a bekerült állítások a Rólad oldalon élnek</small></span><span class="chev">›</span></span></button></div>`}
+
+function gepterem(){return `${topbar()}<div class="dhead rise"><button class="back glass" data-back>‹</button><span class="t"><small>DEV-AJTÓ · A MOTORHÁZTETŐ ALATT</small><strong>Gépterem</strong></span></div>
+  <div class="dash rise" style="--i:1;margin-top:4px">${I('info')}<span>Ez nem a fal része — ide akkor jössz, ha a <b style="color:var(--ink)">gépezetre</b> vagy kíváncsi. Minden, amit a csapat mond, innen ellenőrizhető.</span></div>
+  <div class="rows" style="margin-top:10px">
+    ${[['history','Futások','ma hajnali kör · 40 detektor · 3 új észrevétel'],['stack','Adatforrások','5 bekötött kör · étkezés, alvás, edzés, check-in, súly'],['bolt','Detektor-katalógus','mi mindenre figyel a csapat — 40 aktív'],['ring','Memória-rétegek','napi összegzők → heti tömörítés → hosszú táv'],['clock','Költség és keretek','a hét AI-kerete és a futások ára'],['book','Összes funkció','a régi teljes menü — minden eszköz egy helyen']].map(([ic,t,sub],i)=>`
+    <button class="case glass lift rise" style="--c:#8E86A3;--s:#8E86A3;--i:${i+2}" data-toast="${t} — a megvalósításban a mai oldal él tovább, üvegben"><span class="cmain">${I(ic)}<span class="ctxt"><b>${t}</b><small>${sub}</small></span><span class="chev">›</span></span></button>`).join('')}
+  </div>`}
+
 function stub(t,small){return `${topbar()}<div class="pgh rise"><small>${small}</small><h1>${t}</h1></div>
   <div class="dash rise" style="--i:1;margin-top:8px">${I('info')}<span>Ez a felület tartalmilag változatlan marad — ebben a körben csak az üveg-anyagot kapja meg. A részletes átöltöztetése a saját szeletében történik.</span></div>`}
 
@@ -2045,10 +2070,10 @@ function closeSheet(){$('#scrim').classList.remove('on');$('#sheet').classList.r
 let hist=[],pillT=null,pillUsed=false;
 function render(){
   const h=location.hash||'#fal',[r,id]=h.slice(1).split('/');
-  const html=r==='csapat'?csapat():r==='szoba'?szoba(id):r==='poszt'?(id==='kiserlet'?pkiserlet():id==='sejtes'?psejtes():id==='dontes'?pdontes():id==='elorejelzes'?pelorejelzes():poszt()):r==='bizonyitek'?bizonyitek():r==='tud'?tudja(id):r==='ugyek'?ugyek(id):r==='elsonap'?elsonap():r==='ikonok'?ikonok():r==='rolad'?rolad():r==='emlekek'?emlekek():r==='memoar'?memoar():r==='nap'?napemlek(id):fal();
+  const html=r==='csapat'?csapat():r==='szoba'?szoba(id):r==='poszt'?(id==='kiserlet'?pkiserlet():id==='sejtes'?psejtes():id==='dontes'?pdontes():id==='elorejelzes'?pelorejelzes():poszt()):r==='bizonyitek'?bizonyitek():r==='tud'?tudja(id):r==='ugyek'?ugyek(id):r==='konzilium'?konzilium():r==='gepterem'?gepterem():r==='elsonap'?elsonap():r==='ikonok'?ikonok():r==='rolad'?rolad():r==='emlekek'?emlekek():r==='memoar'?memoar():r==='nap'?napemlek(id):fal();
   $('#scroll').innerHTML=html;$('#scroll').scrollTop=0;closeSheet();ntfOpen=false;$('#ntf')?.classList.remove('on');$('#switcher')?.classList.remove('on');
   document.querySelectorAll('#jump a').forEach(a=>a.setAttribute('aria-current',String(a.getAttribute('href').slice(1).split('/')[0]===r)));
-  document.querySelectorAll('.tb').forEach(t=>t.classList.toggle('on',t.dataset.tab===(r==='szoba'||r==='tud'||r==='ugyek'?'csapat':r==='poszt'||r==='bizonyitek'||r==='elsonap'||r==='ikonok'?'fal':r==='memoar'||r==='nap'?'emlekek':r)));
+  document.querySelectorAll('.tb').forEach(t=>t.classList.toggle('on',t.dataset.tab===(r==='szoba'||r==='tud'||r==='ugyek'||r==='konzilium'||r==='gepterem'?'csapat':r==='poszt'||r==='bizonyitek'||r==='elsonap'||r==='ikonok'?'fal':r==='memoar'||r==='nap'?'emlekek':r)));
   /* korong: csak a falon, egyszer, ~9 mp után */
   clearTimeout(pillT);$('#pill').classList.remove('on');
   if(r==='fal'&&!pillUsed)pillT=setTimeout(()=>$('#pill').classList.add('on'),9000);
