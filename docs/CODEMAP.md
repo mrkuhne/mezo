@@ -195,8 +195,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### biometrics
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-22, mixed) ·
-  [docs/features/today.md](features/today.md) (updated 2026-09-22, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-23, mixed) ·
+  [docs/features/today.md](features/today.md) (updated 2026-09-23, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
   - **sub-features:** `checkin`, `profile`, `sleep`, `weight`
@@ -336,8 +336,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/companion.md](features/companion.md) (updated 2026-09-20, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-18, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-18, in-progress) ·
-  [docs/features/me.md](features/me.md) (updated 2026-09-22, mixed) ·
-  [docs/features/settings.md](features/settings.md) (updated 2026-09-20, done)
+  [docs/features/me.md](features/me.md) (updated 2026-09-23, mixed) ·
+  [docs/features/settings.md](features/settings.md) (updated 2026-09-23, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/companion`
   - **sub-features:** `advisor`, `embedding`, `feedback`, `flags`, `graph`, `llm`, `memory`, `profile`, `quarterly`,
@@ -563,7 +563,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### fuel
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-20, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-23, done) ·
   [docs/features/pantry.md](features/pantry.md) (updated 2026-09-21, done) ·
   [docs/features/recipe.md](features/recipe.md) (updated 2026-09-21, done) ·
   [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-20, done) ·
@@ -662,7 +662,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### goal
 
 *BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-20, done) ·
-  [docs/features/me.md](features/me.md) (updated 2026-09-22, mixed)
+  [docs/features/me.md](features/me.md) (updated 2026-09-23, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/goal`
   - **sub-features:** `engine`
@@ -903,7 +903,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/habit.md](features/habit.md) (updated 2026-09-18, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-18, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-18, in-progress) ·
-  [docs/features/me.md](features/me.md) (updated 2026-09-22, mixed) ·
+  [docs/features/me.md](features/me.md) (updated 2026-09-23, mixed) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-20, done) ·
   [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-20, mixed)
 
@@ -956,7 +956,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### meal
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-20, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-23, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/meal`
   - **entities→tables:** `MealEntity`→`meal`, `MealItemEntity`→`meal_item`, `WaterLogEntity`→`water_log`
@@ -1060,7 +1060,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### nutrition
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-20, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-23, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/nutrition`
   - **entities→tables:** `DietSettingsEntity`→`diet_settings`
@@ -1079,7 +1079,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### pantry
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-20, done) ·
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-23, done) ·
   [docs/features/pantry.md](features/pantry.md) (updated 2026-09-21, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/pantry`
@@ -1110,7 +1110,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### people
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-22, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-23, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/people`
   - **entities→tables:** `MentionEntity`→`mention`, `PersonEntity`→`person`
@@ -1275,7 +1275,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### quickinput
 
-*FE-ui* · read next: [docs/features/today.md](features/today.md) (updated 2026-09-22, mixed)
+*FE-ui* · read next: [docs/features/today.md](features/today.md) (updated 2026-09-23, mixed)
 
 - **FE ui** `frontend/src/features/quickinput`
   - **sheets:** QuickInputSheet.tsx, QuickSleepSheet.tsx
@@ -1328,7 +1328,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### settings
 
-*FE-ui* · read next: [docs/features/settings.md](features/settings.md) (updated 2026-09-20, done)
+*FE-ui* · read next: [docs/features/settings.md](features/settings.md) (updated 2026-09-23, done)
 
 - **FE ui** `frontend/src/features/settings`
   - **pages:** AccountSettingsPage.tsx, MeSettingsPage.tsx, MezoPersonalPage.tsx, MezoSettingsPage.tsx,
@@ -1362,7 +1362,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/needs.md](features/needs.md) (updated 2026-09-18, done) ·
   [docs/features/proactive.md](features/proactive.md) (updated 2026-09-22, complete) ·
   [docs/features/ritual.md](features/ritual.md) (updated 2026-09-22, done) ·
-  [docs/features/today.md](features/today.md) (updated 2026-09-22, mixed)
+  [docs/features/today.md](features/today.md) (updated 2026-09-23, mixed)
 
 - **FE data** `frontend/src/data/today`
   - **hooks (via `@/data/hooks`):** `resolveBriefing`, `useAdviceActions`, `useCheckins`, `useCompanionFeed`,
@@ -1384,7 +1384,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### train
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-20, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-23, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-20, done) ·
   [docs/features/train.md](features/train.md) (updated 2026-09-22, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-20, done)
@@ -1559,9 +1559,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   Island.tsx, ItemCard.tsx, ItemRow.tsx, NumberInput.tsx, ProgressBar.tsx, RefTag.tsx, ScoreRing.tsx,
   ScreenSkeleton.tsx, Sheet.tsx, Skeleton.tsx, SortableList.tsx, Spinner.tsx, StatCell.tsx, StatStrip.tsx, Stepper.tsx,
   ToastProvider.tsx, Toggle.tsx, ToolChip.tsx, ToolChipRow.tsx, TrendChart.tsx, capture.css, clay/boop/Boop.tsx,
-  clay/boop/boop.svg, clay/clay-icons.svg, clay/clay-spots.svg, clay/index.tsx, kalauz/KalauzSheet.tsx,
-  kalauz/KalauzWelcome.tsx, mozaik/GlassBox.tsx, mozaik/arrival.tsx, mozaik/index.tsx, mozaik/motion.tsx,
-  sectionLabel.ts
+  clay/boop/boop.svg, clay/clay-icons.svg, clay/clay-spots.svg, clay/index.tsx, clay/titanium-icons.svg,
+  kalauz/KalauzSheet.tsx, kalauz/KalauzWelcome.tsx, mozaik/GlassBox.tsx, mozaik/arrival.tsx, mozaik/index.tsx,
+  mozaik/motion.tsx, sectionLabel.ts
 
 ### test infrastructure — `backend/src/test/java/io/mrkuhne/mezo/support`, `frontend/src/test`
 
@@ -1590,8 +1590,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### scripts
 
 - **scripts/:** backup-live-db.sh, check-beads-backup.mjs, check-generator-toolchain.mjs, com.mezo.db-backup.plist,
-  gen-body-geometry.mjs, gen-codemap.mjs, gen-codemap.test.mjs, import-exercise-images.mjs, lint-conflict-markers.mjs,
-  lint-docs.mjs, lint-liquibase.mjs, purge-restart.sql, setup-git.sh
+  gen-body-geometry.mjs, gen-codemap.mjs, gen-codemap.test.mjs, gen-titanium-sprite.mjs, import-exercise-images.mjs,
+  lint-conflict-markers.mjs, lint-docs.mjs, lint-liquibase.mjs, purge-restart.sql, setup-git.sh
 
 ## Unaligned
 

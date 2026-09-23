@@ -1,8 +1,8 @@
 ---
-title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0)
+title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0 → Üveg)
 type: feature-platform
 status: in-progress
-updated: 2026-09-22
+updated: 2026-09-23
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -16,6 +16,18 @@ related: [_platform-data-layer, _platform-notifications, today, train, me, fuel,
 ---
 
 # Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0) — Feature Documentation
+
+> ## ⚠️ 2026-09-23 — the Üveg direction (owner decision, epic `mezo-me75u`)
+>
+> The restored Mozaik/Clay world read flat to the owner. The living direction is now **Üveg**:
+> the Mozaik colors (`--dv-*`, `--macro-*`) on the warm-graphite dark, wearing Titanium's
+> material (3D icon sprite, glass cards with a colored gradient frame, sheen, glow). **Dark
+> only**; light is parked, not deleted. Canon: the
+> [üveg style bible](../design_2.0/2026-09-23-uveg-style-bible.md); session driver `/uvegesites`,
+> one slice per session. **U1 (`mezo-me75u.1`) shipped the foundation** — see §3 *Üveg
+> foundation* below: the dark-only lock, the one glass kit, the Titanium sprite + `ContentIcon`,
+> the glass chrome, and Fuel · Mai / meal detail / score. Until `mezo-me75u` closes the app is
+> deliberately mixed-look; everything below this banner is the restored-world ledger.
 
 > ## ⚠️ 2026-09-17 — design direction reversal (owner decision, epic `mezo-ju4j6`)
 >
@@ -149,6 +161,51 @@ main.tsx
 - **Elevation & bezel tokens (theme-driven).** Light mode lifts cards off the canvas; dark stays flat. Three tokens carry this, now defined in `:root` (light/Napív) and overridden in the `data-theme="dark"` block: `--card-elevation` (light = a two-layer warm-tinted drop-shadow, dark = `none`), `--card-border` (light `rgba(43,33,24,0.10)`, dark `var(--border-subtle)`), and `--page-glow` (the desktop bezel's radial-gradient center stop — `.app-root` is token-driven in both themes, `prototype.css:137`). `.card` applies both via `border: 1px solid var(--card-border)` + `filter: var(--card-elevation)` (`prototype.css:375,377`). **Why `drop-shadow` (a `filter`), not `box-shadow`:** historically, the notch `clip-path` on `.card.notch-*` clipped a `box-shadow` to the chamfered silhouette (the shadow disappeared), whereas `filter: drop-shadow()` is applied _after_ the clip and traces the notched outline correctly. Napív retired the chamfer clip-path long ago, and the Napív vocabulary sweep (`mezo-x3x0`) then **deleted the `.notch-*` utilities outright** — cards carry a plain `border-radius` on `.card` and non-card inset radii use the `.rad-12/-16/-20/-24` utilities (`prototype.css:385–388`), so this constraint no longer applies — but the `filter`-based elevation tokens were kept as-is (harmless, not a functional issue). Glass surfaces (`PatternCard`, `MacroCells`, `RecipeDetailPage`'s `MacroHeroCell`) use `var(--surface-glass)` rather than a hardcoded white `rgba()` so they read correctly in both themes.
 - **Tailwind bridge (build-time, runtime-live).** `frontend/src/index.css` does `@import "tailwindcss"` + `@theme inline { … }`, mapping the **DS ramps** (`--color-primary(-bg/-soft/-hover/-deep)`, secondary/accent/status stops, `--color-surface-page/card/elevated/recess`, `--color-divider`, `--color-text-muted/disabled`, `--color-dv-*`) plus the legacy names (which resolve through the alias bridge) and the fonts (`--font-display/body/serif/mono`) onto Tailwind tokens. Utilities emit `var(--…)` refs, so `data-theme` flips utilities live with no rebuild.
 - **Anchor-mode wiring.** `AppLayout.tsx:12–16` reads `useTodayScenario().anchorMode` and passes `anchor = scenario.anchorMode && location.pathname.startsWith('/today')` into `<PhoneFrame anchor={anchor}>`, which toggles `.phone-screen.anchor`. **Since the AnchorMode Napiv restyle (`mezo-8141`, S3 Task 9) this class no longer swaps a dedicated canvas skin** — it only mutes the daypart `.sky` band (`opacity:.35; filter:saturate(.6)`); and since the three-islands re-composition (`mezo-euze`) anchor mode is no longer a separate view at all — `AnchorModeView` is deleted, its successor `AnchorIsland` renders as the **sky melt** (`.sky-islands.is-anchor` collapses the three islands into one warm anchor island; the `.anch*` card family is deleted except `.coach-bubble.anch-coach`, the anchor's companion voice). This is the one place the shell reaches _up_ into the data layer.
+
+### Üveg foundation (`mezo-me75u.1`, 2026-09-23)
+
+The first üvegesítés slice. Every later slice reuses these pieces untouched; a slice that needs
+something new extends the kit, never forks a second recipe.
+
+- **Dark-only lock (bible §8).** `THEME_LOCK: Theme | null = 'dark'` in
+  `frontend/src/shared/lib/theme.ts` outranks the stored mode, circadian `auto` and every force
+  claim: `ThemeProvider` computes the old `claimed` theme and applies `lock ?? claimed`. The
+  stored mode is still read and written, so lifting the lock (`null`) restores each user's own
+  choice. `ThemeProvider` takes `lock` as a prop (default `THEME_LOCK`) so the parked machinery
+  keeps its own tests with `lock={null}`. `index.html` boots `data-theme="dark"` unconditionally,
+  and its `theme-color` meta plus the PWA manifest (`vite.config.ts`) agree on `#191614`. The
+  settings page hides its Téma picker while the lock holds (`BeallitasokPage`, code kept).
+- **The glass kit — `── uveg kit (` block, end of `prototype.css`.** One `.glass` recipe (bible §3:
+  tinted body + blur, `::before` gradient hairline frame, `::after` 7 s sheen, lift + `--c` glow +
+  top edge + inner floor), with `.is-still` (no sheen) and `.is-round` (overflow visible for
+  badges, no sheen). Plus the rank-3 flat cell `.uv-flat`, the rank-4 dashed `.uv-empty`, the
+  52px lit `.uv-well`, the `.uv-halo`, the `.uv-ring-*` / `.uv-bar` recipes, `.uv-eyebrow` /
+  `.uv-voice` / `.uv-tint`, the dark `--macro-*` values, the `.uv-aurora` field (painted by
+  `PhoneFrame`, replacing the dark daypart sky), and the `uv-*` keyframes behind the
+  reduced-motion gate. Every glass surface takes ONE accent through `--c`, set on the same
+  element (inline or from a hue variable on that element — never hoisted onto an ancestor).
+  `prototypeCssStructure.test.ts` guards the four layers, that exactly one `.glass {` rule exists,
+  and that the sheen is gated.
+- **Content icons: the Titanium sprite.** `docs/design_2.0/assets/titanium-icons.svg` is
+  generated by `scripts/gen-titanium-sprite.mjs` from the 62 companion-titanium symbols (verbatim
+  art, ids namespaced `t-*`, defs `tg-*`) plus the approved custom icons in
+  `docs/design_2.0/assets/titanium-custom.svg`, and copied verbatim to
+  `frontend/src/shared/ui/clay/titanium-icons.svg`. `ClaySprites` mounts it beside the clay set.
+  `Icon3D` renders a `t-*` symbol (64×64); inside a `.glass` it picks up the accent halo.
+  `ContentIcon` takes a clay OR a `t-*` name: clay names with a context-free meaning go through
+  `CLAY_TO_3D`, unmapped clay names fall back to the clay icon, so a surface can migrate while its
+  view-model still speaks clay. A glyph that means two things is mapped at its call site with a
+  `t-*` name. **Chrome keeps the clay icons; content wears the 3D set.** New glyphs go on the
+  slice prototype's "Új ikonok" sheet first (U1: `prototypes/uveg-alap-ikonok.html`).
+- **Glass chrome — `── uveg chrome (` block (bible §7).** Same content and behavior, glass
+  material: the header's round `.glass.is-round` buttons (badges outside), the gradient "boop"
+  wordmark, the header fade with a backdrop blur, `DayOrb` redrawn as a glass sphere holding a
+  waving coral liquid (`data-level` = the liquid surface; tone still from `intensity`), the
+  notification panel as a sky glass card; ONE floating `.tab-bar.glass.is-still` (10px off the
+  sides, 12px off the bottom, `--c` = the domain accent from `[data-domain]`, living Boop in a lit
+  well); the `DomainSwitcher` as a glass card of five Boops above the bar (tab summaries stay in
+  the accessible name); the FAB as a breathing lavender glass square. There is no day-part
+  switcher and no sheen on the bar.
 
 ### Loading skeletons (mezo-f2z)
 
