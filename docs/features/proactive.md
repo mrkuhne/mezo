@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-09-22
+updated: 2026-09-23
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -13,6 +13,8 @@ related: [companion, today, insights, train, me, _platform-api-backend, _platfor
 ---
 
 # Proactive layer (companion feed, weekly prose, predictions) — Feature Documentation
+
+> **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The Mezo messages page (`/nap/uzenetek`: Üzenetek, Életjelek, Észrevételek) wears glass: Boop halo hero, flat segmented tabs, lavender glass message and observation cards with 3D art, 3D tally marks instead of ✓/✕. Behavior unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
 
 > One-line: the Phase-4 layer where the companion **speaks first**. **The original B stage (dawn
 > briefing) and H stage (in-day heartbeat) were REDESIGNED into a single event/cron-driven

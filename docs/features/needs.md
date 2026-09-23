@@ -2,7 +2,7 @@
 title: Needs
 type: feature-domain
 status: done
-updated: 2026-09-18
+updated: 2026-09-23
 tags: [today, ritual, growth, gamification, frontend, data-layer, backend]
 key_files:
   - frontend/src/features/today/logic/needs.ts
@@ -14,6 +14,8 @@ related: [today, ritual, _platform-data-layer, growth]
 ---
 
 # Needs — Életjel-ringek (Sims-style Needs)
+
+> **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The Életjelek page and strip wear glass (six need-hue tiles, segmented hero ring, 3D need icons). The unused `emoji` field was dropped from `NEED_META` / `NeedState` (mezo-z5lov). The needs engine is unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
 
 > Six real-time decaying "life-sign" rings. Since the Design 2.0 re-face (mezo-d20.2.6) the Nap
 > hub carries them as ONE segmented six-arc ring tile, which opens the **Életjel page**

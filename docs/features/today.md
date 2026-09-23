@@ -5,6 +5,8 @@ status: mixed
 updated: 2026-09-23
 tags: [today, nap, mozaik, biometrics, frontend, data-layer, ritual, needs]
 # 8 load-bearing paths (was 10 — the three named Nap components are all under
+
+> **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The whole Nap area wears the dark glass: the Mai hub (frameless orbit with 3D nodes, glass fuel card + Mezo observation, the "Mai pillanatok" rows now carry a 3D kind icon — owner decision), Check-in, Életjelek, Küldetések, Rutin, the Mezo messages page, `/nap/gyors` and every capture sheet. Text-glyph marks became `t-tick` with accessible names. `shared/ui/Island.tsx` (dead) was removed. Behavior, routes and data are unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
 # `features/today/components`, which tracks them and their siblings together).
 key_files:
   - frontend/src/features/today/pages
