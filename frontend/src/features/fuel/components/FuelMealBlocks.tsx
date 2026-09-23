@@ -287,9 +287,13 @@ function BlockCard({ tile, rows, dayKcal, fiberTargetG, onLogInto, onOpenMeal, o
             {/* A vércukor-chip a pontszámtól BALRA (a jóváhagyott prototípus rendje,
                 fuel-dashboard.js `glucoseChip`): a mini görbe maga az ikon, a sáv színében.
                 Sáv nélküli sor (nincs szénhidrát-adat) semmit nem mutat — nem találgatunk. */}
-            <GlycemicChip row={r} onOpen={() => onOpenGlycemic(r.mealId)} />
-            {/* A chip célja változatlan: az ÉRTÉKELÉS (mezo-jb84). */}
-            <FuelScoreChip scorePct={r.scorePct} onOpen={() => onOpenScore(r.mealId)} />
+            {/* Üveg (mezo-me75u.1): the two chips are one group, so at 320px they wrap TOGETHER
+                under the rings (right-aligned) instead of splitting across two lines. */}
+            <span className="fmx-meal-chips">
+              <GlycemicChip row={r} onOpen={() => onOpenGlycemic(r.mealId)} />
+              {/* A chip célja változatlan: az ÉRTÉKELÉS (mezo-jb84). */}
+              <FuelScoreChip scorePct={r.scorePct} onOpen={() => onOpenScore(r.mealId)} />
+            </span>
           </div>
         </div>
       ))}

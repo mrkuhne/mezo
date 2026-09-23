@@ -11710,13 +11710,16 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   text-align: left; color: var(--ink); font-family: inherit; }
 .fmx-meal-main strong { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden; font-size: 16px; font-weight: 500; letter-spacing: -0.3px; line-height: 1.3; }
-.fmx-meal-bottom { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
-.fmx-meal-bottom .fmx-score { margin-left: auto; }
+.fmx-meal-bottom { display: flex; align-items: center; gap: 10px; margin-top: 10px;
+  /* Üveg (mezo-me75u.1): at 320px the four rings + spark + score pill do not fit one line —
+     the chip pair wraps under the rings (right-aligned) instead of overlapping them. */
+  flex-wrap: wrap; row-gap: 8px; }
+.fmx-meal-bottom .fmx-mrings { flex: 0 1 auto; }
+.fmx-meal-chips { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 /* A vércukor-chip (mezo-ya2wp): a mini görbe MAGA az ikon, a sáv színében — a pontszám-chip
    BAL oldalán, ahogy a jóváhagyott prototípus rendelte. Ekkor a chip viszi a jobbra-tolást,
    a pontszám pedig mellé simul, hogy a két chip egy csoportként olvasson. */
-.fmx-meal-bottom .fmx-glu-chip { margin-left: auto; }
-.fmx-meal-bottom .fmx-glu-chip + .fmx-score { margin-left: 0; }
+
 /* Üveg §3 rank 3: a chip INSIDE the glass block is a flat cell (the prototype's `.spark`) —
    never glass in glass. The band hue is the curve's colour and the hairline. */
 .fmx-glu-chip { --glu-color: var(--dv-sky);
@@ -16577,6 +16580,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .tab-bar.glass[data-domain] { height: auto; bottom: calc(12px + env(safe-area-inset-bottom)); padding-bottom: 6px; }
 }
 @media (max-width: 360px) {
+  /* 320px: the wordmark + five round controls must share one row without overlapping. */
+  .app-head { gap: 5px; }
+  .app-head-wordmark { font-size: 22px; letter-spacing: -1px; }
+  .nap-roundbtn.glass { width: 36px; height: 36px; }
+  .nap-avatar.glass { width: 42px; height: 42px; }
   .tab-bar.glass[data-domain] .tab-boop { flex-basis: 50px; width: 50px; }
   .tab-bar.glass[data-domain] .tab-item:not(.tab-boop) { font-size: 9px; }
 }

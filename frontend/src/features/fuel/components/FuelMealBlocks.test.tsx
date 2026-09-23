@@ -209,7 +209,9 @@ test('a vércukor-chip a pont-chip bal oldalán áll, és a sáv színét viseli
   expect(chip.className).toContain('lvl-low')
   expect(chip.getAttribute('aria-label')).toBe('Vércukor-válasz: alacsony')
   // A sorrend a lényeg: gyűrűk → vércukor → pontszám.
-  const order = Array.from(bottom.children).map(el => el.className.split(' ')[0])
+  // (Üveg, mezo-me75u.1: the two chips ride in one `.fmx-meal-chips` group so they wrap together.)
+  const order = Array.from(bottom.querySelectorAll('.fmx-mrings, .fmx-glu-chip, .fmx-score'))
+    .map(el => el.className.split(' ')[0])
   expect(order).toEqual(['fmx-mrings', 'fmx-glu-chip', 'fmx-score'])
   // A chip a görbét hordja, nem számot — glikémiás index sehol.
   expect(chip.querySelector('.fmx-glu-mini')).not.toBeNull()
