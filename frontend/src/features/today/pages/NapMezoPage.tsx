@@ -157,18 +157,22 @@ export function NapMezoPage() {
   // Észrevételek fül (Reflexió S5, mezo-eq85.5). A pöttye MÁS FAJTA, mint a fenti kettőé: nem
   // a szál belépéskori olvasatlan-pillanatképéből származik (az egyszeri, `null`-őrzött effect,
   // az észrevételek viszont aszinkron érkeznek), hanem SZÁRMAZTATOTT — akkor ég, ha van
-  // válaszra váró friss kártya. A fül megnyitásával magától elalszik, mert a válasz után a
+  // válaszra váró friss vagy visszatérő kártya. A fül megnyitásával magától elalszik, mert a válasz után a
   // kártya `repliedChoice`-t kap.
   const obs = useObservations()
   const observationReply = useObservationReply()
-  const freshUnanswered = obs.observations.filter((o) => o.card === 'fresh' && !o.repliedChoice).length
+  const unansweredObservations = obs.observations.filter((o) =>
+    (o.card === 'fresh' || o.card === 'return') && !o.repliedChoice).length
   // A napi keret maradéka: a backend `mezo.companion.reflection.notice` konfigjának emberi
   // tükre — a szám és a 22:00 nincs a dróton, ezért az `OBSERVATION_BUDGET` konstansból jön.
   // A `fresh` ÉS a `return` kártya EGYARÁNT beleszámít: szerver oldalon ugyanaz az esemény-fajta
   // mindkettő (az `ObservationBudget` a MA felszínre került összes észrevétel-eseményt vonja le
   // a napi keretből), a `return` csak annyiban más, hogy egy korábbi válasz UTÁN mutatjuk. Ha
   // csak a `fresh`-t vonnánk le, a lábléc egy visszatérő kártya mellett eggyel többet ígérne.
-  const surfacedToday = obs.observations.filter((o) => o.card === 'fresh' || o.card === 'return').length
+  const observationDay = localDateString(tick)
+  const surfacedToday = obs.observations.filter((o) =>
+    (o.card === 'fresh' || o.card === 'return')
+      && localDateString(new Date(o.occurredAt)) === observationDay).length
   const budgetLeft = Math.max(0, OBSERVATION_BUDGET.perDay - surfacedToday)
 
   const { uzenetek, eletjelek } = useMemo(() => partitionMezoThread(messages), [messages])
@@ -372,7 +376,7 @@ export function NapMezoPage() {
           <button type="button" role="tab" aria-selected={tab === 'eszrevetelek'}
             className={cn(tab === 'eszrevetelek' && 'on')} onClick={() => setTab('eszrevetelek')}>
             Észrevételek
-            {freshUnanswered > 0 && tab !== 'eszrevetelek' && <span className="nap-mzdot" />}
+            {unansweredObservations > 0 && tab !== 'eszrevetelek' && <span className="nap-mzdot" />}
           </button>
         </div>
         {tab === 'uzenetek' && (

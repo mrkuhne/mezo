@@ -904,6 +904,28 @@ mezo:
       note-min-chars: 1
       # Per-user, per-run cap on note embeddings — the one-time history backfill spreads over nights
       note-batch-size: 200
+    observation-context:
+      # Inclusive direct evidence window ending on the requested observation day.
+      lookback-days: 28
+      # Per-source accepted records; selection interleaves populated sources.
+      max-records-per-source: 20
+      # Bound database reads even when many assistant messages are discarded.
+      scan-records-per-source: 200
+      # Preserve original prose first, then metric fields within each excerpt.
+      excerpt-max-chars: 700
+      # Total original evidence prompt budget in characters.
+      max-chars: 24000
+    observation-inbox:
+      # Recovery audit window in days; unanswered inbox cards do not expire.
+      lookback-days: 90
+      # Lifetime of an owner-scoped recovery dry-run token.
+      recovery-ttl-minutes: 30
+      # Maximum owned hypothesis audit logs inspected in a recovery pass.
+      recovery-max-logs: 60
+      # Maximum distinct, revalidated topics in a recovery preview (not the daily display cap).
+      recovery-max-candidates: 10
+      # Maximum audit text supplied to recovery in one pass.
+      recovery-max-chars: 40000
     reflection:
       # Reflexió (mezo-eq85): text signals, quick notices, the 03:40 nightly reflection.
       # Off = no TextSignal* bean exists — no extraction call, and the four TEXT_* metrics report
@@ -1014,6 +1036,8 @@ mezo:
       policies:
         reflection:
           # Offline consumer (mezo-eq85): deeper, no latency gate, reranker allowed.
+          # Inclusive event-date window; undated and older evidence cannot support fresh observations.
+          lookback-days: 90
           candidate-limit: 30
           max-tokens: 800
           rerank: true

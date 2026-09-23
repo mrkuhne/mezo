@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-20
+updated: 2026-09-23
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -1397,27 +1397,21 @@ feeding back into the nightly revision, and a one-line morning digest of what th
   `occurred_at`) before S4 could add two more. It returns the event FLUSHED (the notice needs its id
   for the dedup key) and pins the detail the copies disagreed on: `occurred_at` truncated to MICROS, because
   `timestamptz` ROUNDS nanos and the re-read row would otherwise differ by 1 µs (mezo-mfmb).
-- **`ObservationFeedService` is the Észrevételek tab's read model** — four card kinds in one fixed
-  order, newest first inside each group: `fresh` (today's surfaced observations), `return` (today's
-  observations on a row you had ALREADY answered before the event — the LLM text references that
-  reply because the prompt carried it), `watching` (every `monitoring` row with a test plan) and
-  `confirmed` (rows the day's window confirmed). An EVENT card's id is the event id, a ROW card's is
-  the pattern id; `text`/`question` are split on the payload's LAST `\n`, the exact inverse of what
-  the notice joined. Answering a card does not make it vanish — it fills `repliedChoice`, and the FE
-  decides what to do with an acknowledged card. `repliedChoice` on an event card is the newest reply
-  **at or after** its own moment; on a row card it is the row's newest reply outright — deliberately
-  NOT anchored on `lastDetectedAt`, which the nightly pass bumps, because that would silently drop
-  the user's answer and re-arm the chips, and a re-armed „nem stimmel” is what turns a first doubt
-  into a verdict.
-- **Only reflection-owned rows reach this surface, on the read AND the write side.**
-  `PatternEntity.REFLECTION_OWNED_KINDS = {reflection, ai_hypothesis}` + `isReflectionOwned()`: a
-  `statistical` catalog row can legitimately be `monitoring` with a stamped plan (`PatternDetectionService.stampTestPlan`,
-  the Minták "figyeld" button) or user-confirmed, but its lifecycle belongs to the nightly Pearson
-  job and nothing maintains its `belief` — so it never renders as an észrevétel, and a chip reply
-  aimed at it 404s exactly like a foreign row. `ObservationSourceIcon` (pure, static) maps the
-  plan's `seriesA` to the card's glyph (`people:`/`topic:` → `naplo`, `sleep*` → `alvas`,
-  `late-meal-hour` → `vacsora`, `train*`/`gym*` → `edzes`, no plan → `mezo`); `hold` is in the wire
-  vocabulary but has **no v1 producer**.
+- **`ObservationFeedService` serves the shared observation inbox.** An omitted date or explicit
+  today includes older unanswered observations without a calendar-day expiry,
+  newest event per pattern. Questions take precedence over a separate watching row for that
+  same thread. Historical dates return that day's events, without today's standing watching
+  state. The groups remain `fresh`, `return`, `watching`, `confirmed`; an event retains its
+  source dates and reply state rather than becoming a new question each morning.
+- **Monitored statistical rows are visible, but retain their statistical lifecycle.** Their
+  `kind=statistical` and detail key travel on the API; the UI shows a detail link without
+  reflection reply chips or synthetic hit/miss tallies. The reflection reply endpoint still
+  rejects statistical rows. Reflection-owned event cards retain the three replies.
+- **Current provenance is checked on reads.** Grounded rows and each observation event retain canonical source references; historical events validate their own references even after newer evidence replaces a thread’s sources. Internal reference keys are omitted from displayed evidence;
+  deleted/foreign sources suppress the associated card. Closed/refuted/dormant rows do not
+  return to the current inbox. A pending grounded event can consume an available daily slot
+  on a later inbox read; publication is serialized per owner with the same advisory lock used
+  by quick notices and nightly candidates. Original evidence dates are not rewritten.
 - **`ReflectionReplyService` — three chips, and code owns every consequence.** The reply is always
   appended as a `user_reply(channel="chip", choice, text≤500)` event; `watch` on a still-`proposed`
   row starts `monitoring`; the **second** `reject` refutes it (one is a doubt, not a verdict — the
@@ -1430,52 +1424,35 @@ feeding back into the nightly revision, and a one-line morning digest of what th
   `ReflectionReplyRecorder`'s `REQUIRES_NEW`): the only caller is the controller, so there is no
   caller transaction to poison, and the reply, the status move and the seeded conversation must
   commit or fail as ONE act — a refuted row with no reply behind it is worse than an error.
-**Cold start — how the Észrevételek tab deadlocked in production, and the two doors out
-(`mezo-5543y`, fixed 2026-09-16).** The tab shipped with S5 and stayed empty for its whole first
-week on the live instance. Nothing was broken: `GET /api/companion/observation` answered `200 []`
-every time, because **no observation had ever been produced**. The three producers were in a circle,
-and each one needed one of the others to have gone first:
+**Grounded questions before statistical proof (`mezo-hben1`, [ADR 0050](../decisions/0050-grounded-observations-before-statistical-proof.md)).**
+`HypothesisPipelineService` accepts the model's `observation`, `question`, canonical
+`evidenceRefs` and stable `topicKey` only after source membership validation and independent
+critique (`grounded=true`, `contradicted=false`, `actionable=true`). Low statistical scores
+alone do not suppress a source-grounded question. The existing statistical score remains
+separate from deterministic belief and user replies. Legacy answer shapes retain their
+original weighted keep/revise path.
 
-| Producer | Needed | Reality on a fresh account |
-|---|---|---|
-| `fresh` card (`QuickNoticeService`) | an open row to hang on, or a model-supplied plan | no rows at all ⇒ `TOUCHES_OPEN` cannot fire; without a plan the notice was dropped |
-| `watching` card (`ReflectionReplyService`) | the user answering a `fresh` card | there were none to answer |
-| open rows (`HypothesisPipelineService`) | critique score ≥ 0.75 | `CRITIQUE_PROMPT` orders a LOW `statistical` score without a concrete r/n, and that factor weighs most (0.35) — a FIRST hypothesis cannot structurally clear the bar |
+`ObservationContextService` reads original records through the existing `PersonalRecordQuery`
+catalogue: journal, gratitude, user chat, check-in notes/numbers, sleep/run/workout/exercise/sport
+notes and dated activity/habit/meal/water/weight/intention records. It excludes assistant text,
+uses original dates (including workout-parent dates), and round-robins sources within bounded
+28-day, per-source and total-character limits. Canonical keys map to readable source/date/excerpt
+labels. `exists` revalidates ownership/deletion without imposing the generation window.
+Related REFLECTION memory retrieval runs even without yesterday's text signal and is bounded
+by its configured 90-day policy before retrieval/fusion; other consumers keep their policies.
 
-VictoriaLogs showed the nightly pass logging `Reflection propose … : 0` every night from the
-feature's first run; every quick-notice exit was `log.debug`, so the same-day half left no trace at
-all. Both halves are fixed, deliberately in two independent places so neither is a single point of
-failure:
+`GroundedHypothesisPublisher` saves the candidate and observation atomically. Same-topic or
+same-test-plan candidates enrich one unanswered card; unchanged evidence does not spend a
+new slot. Closed topics remain closed. Over-budget grounded events remain queued; quiet hours
+control pushes, not the visibility of a nightly question. Nightly/recovered candidates do not
+send pushes. The shared publication cap still applies. A plan-less row can receive a personal
+reply but never promises a measurement after eight days.
 
-- **The holding row** (same-day). A notice that resolved to nothing — no named key, no valid plan, no
-  touched row, **and no settled ground** — now creates a plan-less `reflection` row to carry the
-  observation. Plan-less is the honest shape and an already-supported one: the nightly evaluation
-  skips `test_plan = null` rows, `ObservationFeedService` keeps them out of `watching`,
-  `QuickNoticePreScreen.touchesOpen` ignores them, and `ObservationSourceIcon` already renders a
-  plan-less row as Mezo's own voice. `hypothesis_key` stays **null** so the row is un-addressable (a
-  model may not name it for revision) and several may coexist under the partial unique index. It is
-  created **only when the notice will actually be surfaced** — a row per invisible card would litter
-  the Minták screen for ever (`QuickNoticeBudgetOffIT`).
-- **The cold-start keep floor** (nightly). While the account has NO open reflection-owned row,
-  `keepFloor` returns `cold-start-keep-threshold` (0.55) instead of 0.75. It is consulted **last**, on
-  the better of the original and its revision, so a lower bar never costs a revise pass; it is read
-  ONCE per round, so a row persisted early cannot raise the bar on its own siblings mid-round; and it
-  is boot-validated to sit between the revise and keep bands (`@AssertTrue` on `Hypotheses`).
-- **Three user-visible consequences.** (1) A holding row appears on the **Minták** screen like any
-  other `proposed` reflection row, carrying the notice's first sentence as its title and no
-  statistics. (2) It gets **no "Részletek és előzmények" link**: `GET /api/companion/pattern/pair/{pairKey}`
-  resolves the key against the CATALOG first and then as a `hypothesis_key` carrying a test plan, and
-  a holding row satisfies neither (`note-<uuid>`, no key), so the link would 404. `PatternDecisionCard`
-  suppresses it for a **plan-less `reflection` row specifically** — deliberately narrow, because
-  "no `testPlan`" alone proves nothing about the key: a `statistical` row has no plan either and its
-  detail page works fine, its `pairKey` being a catalog key. (3) A `watch` chip on a card with no
-  test plan must not promise what nothing will deliver: `ObservationCard` branches its acknowledgement
-  on `minN != null` — „Rendben, megjegyeztem. Ha összeáll belőle egy minta, szólok." instead of
-  „Nyolc napnál újra szólok." The reply is not wasted either way; it lands in the row's event stream
-  and the nightly prompt reads it back as the user's own words.
-- **Observability, because the absence of logs was the whole problem.** The pre-screen's "not salient"
-  exit and the notice's drop (with its REASON: settled / no row and no plan / over budget) are INFO
-  now, as is the proposal round's `N proposal(s), M persisted, keep floor F`.
+`ObservationRecoveryService` is owner-only: `preview` reads bounded owned audit proposals,
+rechecks current original sources, deduplicates themes and returns a short-lived server-held
+plan. `apply` revalidates and applies those exact candidates; repeat calls reuse the result.
+Deleted/changed sources cannot be applied. Restart/expiry requires a new preview. This is a
+recovery of still-relevant questions, not manufactured historical events or user confirmations.
 
 - **The user's own words feed the nightly revision (`HypothesisPipelineService`).** Each open row now
   renders as `… · kulcs: <hypothesisKey> · „<the newest user_reply text>"` — the key so a revision can
@@ -5823,10 +5800,12 @@ an empty list that reads as "nothing happened today". Every non-2xx returns `Sys
 
 | Method + path | Returns | Status | Notes |
 |---|---|---|---|
-| `GET /api/companion/observation?date=` | `ObservationResponse[]` | 200 · 401 | The Észrevételek tab's cards for ONE day (`date` optional, default today) — `ObservationFeedService.forDay`, groups concatenated in the fixed order `fresh`, `return`, `watching`, `confirmed`, newest first inside each. Reflection-owned rows only (`reflection`/`ai_hypothesis`); a `statistical` catalog row never appears even when it is `monitoring` with a plan. |
+| `GET /api/companion/observation?date=` | `ObservationResponse[]` | 200 · 401 | Current shared inbox when date is absent/today; a historical date reads only its own events. Includes older unanswered cards and monitored statistical rows; one question card per thread. Canonical source ownership/deletion is rechecked. |
 | `POST /api/companion/pattern/{patternId}/reply` | `PatternReplyResponse` | 200 · 400 · 401 · 404 | The chip answer — `PatternReplyRequest {choice: watch\|reject\|talk, text? ≤500}` (`ReflectionReplyService.reply`). `watch` on a `proposed` row ⇒ `monitoring`; the SECOND `reject` ⇒ `refuted`; `talk` ⇒ a `seedPatternId` conversation whose id rides back in `conversationId`. 404 `COMPANION_PATTERN_NOT_FOUND` for a missing, foreign **or** statistical row (no existence leak, no 403). |
 
-**Schemas:** `ObservationResponse {id, patternId, hypothesisKey, card fresh|return|watching|confirmed,
+| `POST /api/companion/observation/recovery` | `ObservationRecoveryResponse` | 200 · 400 · 401 · 403 | OWNER-only `mode=preview` or `mode=apply, planId`. Preview has no pattern/event writes; apply consumes exactly the server-held candidates and never pushes. Expired/unknown plan: `OBSERVATION_RECOVERY_EXPIRED`. |
+
+**Schemas:** `ObservationResponse {id, patternId, kind?, hypothesisKey, card fresh|return|watching|confirmed,
 occurredAt, title, text, question?, evidence[], status, evidenceHits, evidenceMisses, minN, belief?,
 repliedChoice watch|reject|talk?, sourceIcon naplo|alvas|edzes|vacsora|hold|mezo}` — `id` is the
 EVENT id on an event card (`fresh`/`return`) and the ROW id on a row card (`watching`/`confirmed`),
@@ -8920,6 +8899,14 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   pre-graph mock fact-edges) is still mock-only real-mode-`[]` — see [`insights.md` §2.4/§5.1](insights.md).
 
 ## 10. Key files
+
+**Grounded observation inbox and recovery**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/ObservationContextService.java` — bounded original-source evidence and current provenance validation.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/GroundedHypothesisPublisher.java` — atomic grounded publication and topic deduplication.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/ObservationFeedService.java` — persistent inbox, queued release and historical day reads.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/ObservationRecoveryService.java` — exact dry-run/apply, owned audit input and expiring previews.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/ObservationRecoveryController.java` — owner-only recovery contract.
+
 
 **Editable personal context (`mezo-txunr.1`)**
 

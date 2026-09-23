@@ -38,7 +38,7 @@ class MemoryPlatformPropertiesIT {
         PREFIX + "reranker.timeout-ms=200",
         PREFIX + "indicators.old-after-days=365",
         PREFIX + "policies.reflection.candidate-limit=30", PREFIX + "policies.reflection.max-tokens=800",
-        PREFIX + "policies.reflection.rerank=true",
+        PREFIX + "policies.reflection.rerank=true", PREFIX + "policies.reflection.lookback-days=90",
         PREFIX + "policies.morning-briefing.enabled=true", PREFIX + "policies.morning-briefing.candidate-limit=20",
         PREFIX + "policies.morning-briefing.max-tokens=600", PREFIX + "policies.morning-briefing.rerank=false",
         PREFIX + "policies.morning-briefing.deep=false",
@@ -85,6 +85,7 @@ class MemoryPlatformPropertiesIT {
             assertThat(properties.policies().reflection().candidateLimit()).isEqualTo(30);
             assertThat(properties.policies().reflection().maxTokens()).isEqualTo(800);
             assertThat(properties.policies().reflection().rerank()).isTrue();
+            assertThat(properties.policies().reflection().lookbackDays()).isEqualTo(90);
             assertThat(properties.policies().morningBriefing().candidateLimit()).isEqualTo(20);
             assertThat(properties.policies().morningBriefing().maxTokens()).isEqualTo(600);
             assertThat(properties.policies().morningBriefing().rerank()).isFalse();
@@ -145,6 +146,8 @@ class MemoryPlatformPropertiesIT {
     void testBinding_shouldFailStartup_whenReflectionPolicyBoundsExceedTheirUpperLimit() {
         assertInvalid(PREFIX + "policies.reflection.candidate-limit=101");
         assertInvalid(PREFIX + "policies.reflection.max-tokens=6001");
+        assertInvalid(PREFIX + "policies.reflection.lookback-days=91");
+        assertInvalid(PREFIX + "policies.reflection.lookback-days=0");
     }
 
     private void assertInvalid(String property) {

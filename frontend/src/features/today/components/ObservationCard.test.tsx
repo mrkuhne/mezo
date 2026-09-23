@@ -33,8 +33,7 @@ test('a fresh card renders the italic Mezo sentence, the question and three chip
   expect(document.querySelector('.nap-obs-ask')?.textContent).toContain('Figyeljem tovább?')
   const chips = document.querySelectorAll('.nap-obs-chips button')
   expect(chips).toHaveLength(3)
-  expect([...chips].map((c) => c.textContent)).toEqual(['Igen, figyeld', 'Nem stimmel', 'Mesélj'])
-  // the source icon (wire `naplo` → clay i-naplo) wears its 3D face (üveg bible §4)
+  expect([...chips].map((c) => c.textContent)).toEqual(['Igen, jellemző', 'Nem stimmel', 'Beszéljük meg'])
   expect(document.querySelector('.nap-obs use[href="#t-journal"]')).not.toBeNull()
   expect(document.querySelector('.nap-obs.glass')).not.toBeNull()
 })
@@ -55,19 +54,19 @@ describe('az eyebrow ideje HELYI idő, nem UTC', () => {
   })
 })
 
-test('a return card offers exactly the two verdict chips mapped to watch / reject', async () => {
+test('a return card offers the same three replies as a fresh card', async () => {
   const onReply = renderCard(back)
   const chips = document.querySelectorAll('.nap-obs-chips button')
-  expect([...chips].map((c) => c.textContent)).toEqual(['Így van', 'Kivétel volt'])
+  expect([...chips].map((c) => c.textContent)).toEqual(['Igen, jellemző', 'Nem stimmel', 'Beszéljük meg'])
   expect(screen.getByText('FIGYELEM')).toBeInTheDocument()
 
-  await userEvent.click(screen.getByRole('button', { name: 'Így van' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Igen, jellemző' }))
   expect(onReply).toHaveBeenCalledWith(back.patternId, 'watch')
 })
 
-test('a return card’s "Kivétel volt" chip answers reject', async () => {
+test('a return card’s "Nem stimmel" chip answers reject', async () => {
   const onReply = renderCard(back)
-  await userEvent.click(screen.getByRole('button', { name: 'Kivétel volt' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Nem stimmel' }))
   expect(onReply).toHaveBeenCalledWith(back.patternId, 'reject')
 })
 
@@ -82,27 +81,23 @@ test('watching and confirmed cards carry no chips at all — nothing to answer',
   expect(screen.getByText('BEÉPÜLT')).toBeInTheDocument()
 })
 
-test('tapping „Igen, figyeld" replies watch and flips the card to its acknowledgement line', async () => {
+test('tapping „Igen, jellemző" replies watch and flips the card to its acknowledgement line', async () => {
   const onReply = renderCard(fresh)
-  await userEvent.click(screen.getByRole('button', { name: 'Igen, figyeld' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Igen, jellemző' }))
 
   expect(onReply).toHaveBeenCalledWith(fresh.patternId, 'watch')
   expect(document.querySelector('.nap-obs-chips')).toBeNull()
   expect(document.querySelector('.nap-obs-ack')?.textContent)
-    .toBe('Rendben, figyelem. Nyolc napnál újra szólok.')
+    .toBe('Megjegyeztem, hogy ez jellemző rád. Az összefüggést tovább figyelem.')
 })
 
-// mezo-5543y: a hideg indítás „tartó sora" NEM hordoz teszt-tervet — a szerver ilyenkor `minN`
-// nélkül küldi a kártyát, mert nincs mit mérni rajta. A rendes nyugtázás nyolc napot ígér; egy
-// mérhetetlen észrevételnél ez olyan ígéret lenne, amit semmi nem tud betartani (az éjszakai
-// kiértékelés a terv nélküli sorokat átugorja, tehát soha nem szólna újra).
 test('a measurable-less fresh card acknowledges without promising a day count', async () => {
   const onReply = renderCard({ ...fresh, minN: undefined })
-  await userEvent.click(screen.getByRole('button', { name: 'Igen, figyeld' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Igen, jellemző' }))
 
   expect(onReply).toHaveBeenCalledWith(fresh.patternId, 'watch')
   expect(document.querySelector('.nap-obs-ack')?.textContent)
-    .toBe('Rendben, megjegyeztem. Ha összeáll belőle egy minta, szólok.')
+    .toBe('Megjegyeztem, hogy ez jellemző rád. Az összefüggést tovább figyelem.')
 })
 
 test('a card the server already knows the answer to opens acknowledged, without chips', () => {
@@ -119,7 +114,7 @@ test('the chip group is disabled while that card’s reply is in flight — no d
       <ObservationCard item={fresh} onReply={onReply} pending />
     </MemoryRouter>,
   )
-  const chip = screen.getByRole('button', { name: 'Igen, figyeld' })
+  const chip = screen.getByRole('button', { name: 'Igen, jellemző' })
   expect(chip).toBeDisabled()
   await userEvent.click(chip)
   expect(onReply).not.toHaveBeenCalled()
@@ -156,7 +151,7 @@ test('a row with no hypothesis key offers no lab link to a page that cannot exis
   expect(screen.queryByRole('link', { name: 'Laborfüzet ›' })).toBeNull()
 })
 
-test('„Mesélj" replies talk and, with a conversation id back, opens that chat thread', async () => {
+test('„Beszéljük meg" replies talk and, with a conversation id back, opens that chat thread', async () => {
   const onReply = vi.fn().mockResolvedValue({ conversationId: 'conv-9' })
   render(
     <MemoryRouter initialEntries={['/nap/uzenetek']}>
@@ -166,12 +161,12 @@ test('„Mesélj" replies talk and, with a conversation id back, opens that chat
       </Routes>
     </MemoryRouter>,
   )
-  await userEvent.click(screen.getByRole('button', { name: 'Mesélj' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Beszéljük meg' }))
   expect(onReply).toHaveBeenCalledWith(fresh.patternId, 'talk')
   expect(await screen.findByText('chat:conv-9')).toBeInTheDocument()
 })
 
-test('„Mesélj" without a conversation id stays put and only acknowledges', async () => {
+test('„Beszéljük meg" without a conversation id stays put and only acknowledges', async () => {
   const onReply = vi.fn().mockResolvedValue({})
   render(
     <MemoryRouter initialEntries={['/nap/uzenetek']}>
@@ -181,7 +176,7 @@ test('„Mesélj" without a conversation id stays put and only acknowledges', as
       </Routes>
     </MemoryRouter>,
   )
-  await userEvent.click(screen.getByRole('button', { name: 'Mesélj' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Beszéljük meg' }))
   expect(await screen.findByText('Megnyitom a chatet ezzel a szállal.')).toBeInTheDocument()
   expect(screen.queryByText(/^chat:/)).toBeNull()
 })
@@ -191,9 +186,33 @@ test('egy elbukott válasz NEM hazudik nyugtázást — a chipek visszajönnek h
   render(
     <MemoryRouter><ObservationCard item={fresh} onReply={onReply} /></MemoryRouter>,
   )
-  await userEvent.click(screen.getByRole('button', { name: 'Igen, figyeld' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Igen, jellemző' }))
 
   expect(await screen.findByText('Nem sikerült elküldeni — próbáld újra.')).toBeInTheDocument()
   expect(document.querySelector('.nap-obs-ack')).toBeNull()
-  expect(screen.getByRole('button', { name: 'Igen, figyeld' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Igen, jellemző' })).toBeInTheDocument()
+})
+
+
+test('statistical watching exposes source evidence and detail link without invented reflection tally', () => {
+  renderCard({ ...watching, kind: 'statistical', evidenceHits: 0, evidenceMisses: 0,
+    minN: undefined, evidence: ['2026-09-09 · Check-in: stressz'], hypothesisKey: 'stress_sleep' })
+  expect(screen.getByText('2026-09-09 · Check-in: stressz')).toBeInTheDocument()
+  expect(document.querySelector('.nap-obs-tally')).toBeNull()
+  expect(document.querySelector('.nap-obs-prog')).toBeNull()
+  expect(document.querySelector('.nap-obs .eb')?.textContent).not.toContain('0. napja')
+  expect(screen.getByRole('link', { name: 'Laborfüzet ›' })).toHaveAttribute('href', '/mezo/patterns/stress_sleep')
+  expect(screen.queryByRole('group', { name: 'Válaszod az észrevételre' })).toBeNull()
+})
+
+test('return confirmation records experience without calling it measured proof', async () => {
+  renderCard(back)
+  await userEvent.click(screen.getByRole('button', { name: 'Igen, jellemző' }))
+  expect(document.querySelector('.nap-obs-ack')?.textContent)
+    .toBe('Megjegyeztem, hogy ez jellemző rád. Az összefüggést tovább figyelem.')
+})
+
+test('older unanswered card retains its original observation date', () => {
+  renderCard({ ...fresh, occurredAt: '2026-05-22T12:12:00Z' })
+  expect(document.querySelector('.nap-obs .eb')?.textContent).toContain('2026-05-22')
 })

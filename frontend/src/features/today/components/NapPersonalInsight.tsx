@@ -52,9 +52,9 @@ function InsightContent({ item }: { item: Observation }) {
     {item.question && <p className="nap-personal-question"><SafeMarkdown text={item.question} /></p>}
     {item.evidence.length > 0 && <details className="nap-personal-evidence"><summary>Miből látom?</summary><ul>{item.evidence.map((evidence, index) => <li key={index}><SafeMarkdown text={evidence} /></li>)}</ul></details>}
     {asks ? <div className="nap-personal-actions" role="group" aria-label="Válaszod az észrevételre">
-      <button type="button" className="is-primary" disabled={pending} onClick={() => { void answer('watch') }}>{item.card === 'return' ? 'Így van' : 'Igen, figyeld'}</button>
-      <button type="button" disabled={pending} onClick={() => { void answer('reject') }}>{item.card === 'return' ? 'Kivétel volt' : 'Nem stimmel'}</button>
-      {item.card === 'fresh' && <button type="button" disabled={pending} onClick={() => { void answer('talk') }}>Mesélj erről</button>}
+      <button type="button" className="is-primary" disabled={pending} onClick={() => { void answer('watch') }}>Igen, jellemző</button>
+      <button type="button" disabled={pending} onClick={() => { void answer('reject') }}>Nem stimmel</button>
+      <button type="button" disabled={pending} onClick={() => { void answer('talk') }}>Beszéljük meg</button>
     </div> : <>
       {answered && <p role="status" className="nap-personal-ack">Megjegyeztem a válaszod.</p>}
       <button type="button" className="nap-personal-chat" onClick={openChat}>Beszéljünk róla <span aria-hidden="true">↗</span></button>

@@ -24,33 +24,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Reflexió S4 (mezo-eq85.4, spec 2026-09-06 §5): the Észrevételek tab's read model. Four card
- * kinds in ONE fixed order — {@code fresh} (today's surfaced observations), {@code return}
- * (today's observations that answer an earlier reply of yours), {@code watching} (what the engine
- * is testing right now) and {@code confirmed} (what it settled today) — newest first inside each
- * group. The order is the message: what Mezo noticed today comes before what it is still chewing.
- *
- * <p>Read-only by construction: it appends nothing and moves nothing. Everything it shows was
- * written by the nightly pass, the quick notice or {@link ReflectionReplyService}.
- *
- * <p><b>Only reflection-owned rows reach this surface.</b> The {@code watching} and
- * {@code confirmed} groups are read from the ROW table, and a {@code statistical} catalog row can
- * legitimately be {@code monitoring} with a stamped test plan (the Minták screen's "figyeld"
- * button, plus {@code PatternDetectionService.stampTestPlan}) or {@code confirmed} by the user —
- * so both groups filter on {@link PatternEntity#REFLECTION_OWNED_KINDS}. Otherwise a row whose
- * lifecycle the Pearson job owns, and whose {@code belief} nothing maintains, would render as an
- * Észrevétel and be chip-refutable.
- *
- * <p><b>{@code repliedChoice} — the rule.</b> An EVENT card ({@code fresh}/{@code return}) shows
- * the newest {@code user_reply} at or after its own event, because that is the answer to THAT
- * observation. A ROW card ({@code watching}/{@code confirmed}) shows the row's newest
- * {@code user_reply} OUTRIGHT — it is a standing card about the row itself, and it has no moment
- * of its own to anchor on. It deliberately does NOT anchor on {@code lastDetectedAt}, which the
- * nightly evaluation bumps every night: that would silently drop the user's chip answer and re-arm
- * the chips, and a re-armed „nem stimmel” is what turns a first doubt into a {@code refuted}
- * verdict.
- */
+/** Shared current inbox and day-bound historical events. Replies are event-relative, while
+ * standing watching rows retain their latest personal reply. Statistical watching rows are
+ * read-only on this surface and keep their separate lifecycle. Pending grounded publication
+ * is serialized with all other observation writers inside the caller's transaction. */
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(
@@ -66,6 +43,9 @@ public class ObservationFeedService {
     /** How many of a row's newest replies are read back — far more than any card ever needs. */
     private static final int REPLY_LOOKBACK = 10;
 
+    private final ObservationOwnerLock ownerLock;
+    private final ObservationBudget observationBudget;
+    private final ObservationContextService observationContextService;
     private final PatternRepository patternRepository;
     private final PatternEventRepository patternEventRepository;
 
@@ -76,55 +56,72 @@ public class ObservationFeedService {
      *            so asking for a past day gives back what that day actually looked like instead of
      *            a moving target.
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<ObservationResponse> forDay(UUID userId, LocalDate day) {
         LocalDate target = day == null ? LocalDate.now() : day;
         ZoneId zone = ZoneId.systemDefault();
         Instant from = target.atStartOfDay(zone).toInstant();
         Instant to = target.plusDays(1).atStartOfDay(zone).toInstant();
 
+        boolean inbox = target.equals(LocalDate.now());
+        Instant historyFrom = inbox ? Instant.EPOCH : from;
+        if (inbox) releasePending(userId, historyFrom, to);
         List<PatternEventEntity> dayEvents = patternEventRepository
                 .findByCreatedByAndKindInAndOccurredAtGreaterThanEqualAndOccurredAtLessThanAndDeletedFalse(
                         userId, List.of(PatternEventEntity.KIND_OBSERVATION,
-                                PatternEventEntity.KIND_CONFIRMED), from, to);
+                                PatternEventEntity.KIND_CONFIRMED), historyFrom, to);
 
         Map<UUID, PatternEntity> rows = new HashMap<>();
         List<ObservationResponse> fresh = new ArrayList<>();
         List<ObservationResponse> returning = new ArrayList<>();
         Map<UUID, List<PatternEventEntity>> repliesByRow = new HashMap<>();
 
+        var emitted = new java.util.HashSet<UUID>();
         for (PatternEventEntity event : newestFirst(dayEvents)) {
             if (!PatternEventEntity.KIND_OBSERVATION.equals(event.getKind())
                     || !Boolean.TRUE.equals(event.getPayload().surfaced())) {
                 continue; // an over-budget notice was stored, but the user never saw it
             }
             PatternEntity row = row(userId, rows, event.getPatternId());
-            if (row == null) {
-                continue; // the row was deleted out from under its own history
+            if (row == null || !row.isReflectionOwned() || !validEvidence(userId, row)
+                    || !validEventEvidence(userId, event)
+                    || (inbox && (PatternEntity.isUserFrozen(row.getStatus())
+                    || PatternEntity.STATUS_DORMANT.equals(row.getStatus())
+                    || PatternEntity.STATUS_REFUTED.equals(row.getStatus())))) {
+                continue;
             }
+            if (!emitted.add(row.getId())) continue;
             List<PatternEventEntity> replies = replies(userId, repliesByRow, row.getId());
+            if (event.getOccurredAt().isBefore(from) && choiceAfter(replies, event.getOccurredAt()) != null) {
+                continue; // old answered cards are history, never fresh questions again
+            }
             boolean answeredBefore = replies.stream()
                     .anyMatch(reply -> reply.getOccurredAt().isBefore(event.getOccurredAt()));
             (answeredBefore ? returning : fresh).add(eventCard(row, event,
                     answeredBefore ? CARD_RETURN : CARD_FRESH, replies));
         }
 
-        List<ObservationResponse> watching = patternRepository
+        List<ObservationResponse> watching = inbox ? patternRepository
                 .findByCreatedByAndKindInAndStatusAndDeletedFalseOrderByLastDetectedAtDesc(
-                        userId, PatternEntity.REFLECTION_OWNED_KINDS, PatternEntity.STATUS_MONITORING)
+                        userId, List.of(PatternEntity.KIND_REFLECTION, PatternEntity.KIND_AI_HYPOTHESIS,
+                                PatternEntity.KIND_STATISTICAL), PatternEntity.STATUS_MONITORING)
                 .stream()
                 .filter(row -> row.getTestPlan() != null)
+                .filter(row -> validEvidence(userId, row))
+                .filter(row -> java.util.stream.Stream.concat(fresh.stream(), returning.stream())
+                        .noneMatch(card -> card.getPatternId().equals(row.getId())))
                 .map(row -> rowCard(row, CARD_WATCHING, row.getLastDetectedAt(),
                         replies(userId, repliesByRow, row.getId())))
-                .toList();
+                .toList() : List.of();
 
         List<ObservationResponse> confirmed = new ArrayList<>();
         for (PatternEventEntity event : newestFirst(dayEvents)) {
-            if (!PatternEventEntity.KIND_CONFIRMED.equals(event.getKind())) {
+            if (!PatternEventEntity.KIND_CONFIRMED.equals(event.getKind())
+                    || event.getOccurredAt().isBefore(from)) {
                 continue;
             }
             PatternEntity row = row(userId, rows, event.getPatternId());
-            if (row == null || !row.isReflectionOwned()) {
+            if (row == null || !row.isReflectionOwned() || !validEvidence(userId, row)) {
                 continue; // a statistical row the user confirmed belongs to Minták, not here
             }
             // one card per row even if the day carries several confirmations — the newest wins
@@ -152,6 +149,73 @@ public class ObservationFeedService {
                 .findByIdAndCreatedByAndDeletedFalse(id, userId).orElse(null));
     }
 
+    /** A queued card spends its shared daily slot only when it becomes visible. */
+    private void releasePending(UUID userId, Instant from, Instant to) {
+        ownerLock.lock(userId);
+        int remaining = observationBudget.remainingToday(userId, Instant.now());
+        if (remaining == 0) return;
+        var pending = patternEventRepository
+                .findByCreatedByAndKindInAndOccurredAtGreaterThanEqualAndOccurredAtLessThanAndDeletedFalse(
+                        userId, List.of(PatternEventEntity.KIND_OBSERVATION), from, to).stream()
+                .filter(e -> "grounded".equals(e.getPayload().channel()))
+                .filter(e -> !Boolean.TRUE.equals(e.getPayload().surfaced()))
+                .sorted(Comparator.comparing(PatternEventEntity::getOccurredAt)).toList();
+        for (var event : pending) {
+            if (remaining == 0) break;
+            var row = patternRepository.findByIdAndCreatedByAndDeletedFalse(event.getPatternId(), userId).orElse(null);
+            if (row == null || !row.isReflectionOwned() || !validEvidence(userId, row)
+                    || !validEventEvidence(userId, event)
+                    || PatternEntity.isUserFrozen(row.getStatus())
+                    || PatternEntity.STATUS_DORMANT.equals(row.getStatus())
+                    || PatternEntity.STATUS_REFUTED.equals(row.getStatus())) continue;
+            var latest = patternEventRepository
+                    .findFirstByCreatedByAndPatternIdAndKindAndDeletedFalseOrderByOccurredAtDesc(
+                            userId, row.getId(), PatternEventEntity.KIND_OBSERVATION);
+            if (latest.isEmpty() || !latest.get().getId().equals(event.getId())) continue;
+            var reply = patternEventRepository
+                    .findFirstByCreatedByAndPatternIdAndKindAndDeletedFalseOrderByOccurredAtDesc(
+                            userId, row.getId(), PatternEventEntity.KIND_USER_REPLY);
+            if (reply.isPresent() && !reply.get().getOccurredAt().isBefore(event.getOccurredAt())) continue;
+            var p = event.getPayload();
+            event.setPayload(new PatternEventPayloadEnvelope(p.r(), p.n(), p.p(), p.reinforcementCount(),
+                    p.factId(), p.hit(), p.verdict(), p.channel(), p.choice(), p.text(), p.evidenceRefs(), true));
+            // Publication happens now; original source dates remain in the evidence, and the
+            // row's created_at still records when the candidate was generated.
+            event.setOccurredAt(Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS));
+            patternEventRepository.saveAndFlush(event);
+            remaining--;
+        }
+    }
+
+    private boolean validEvidence(UUID userId, PatternEntity row) {
+        if (row.getEvidence() == null || row.getEvidence().items() == null) return true;
+        if (row.getEvidence().items().stream().noneMatch(ref -> ref != null
+                && ref.startsWith("observation-topic:"))) return true;
+        // Grounded rows use the original-record catalogue. Legacy quick notices use a different
+        // reference vocabulary (e.g. gratitude/chat_day); preserve their existing read semantics.
+        return row.getEvidence().items().stream()
+                .filter(ref -> ref != null && ref.matches("[a-z_]+:[0-9a-fA-F-]{36}"))
+                .allMatch(ref -> observationContextService.exists(userId, ref));
+    }
+
+    /** Historical snapshots carry their own provenance: the thread may now reference newer sources. */
+    private boolean validEventEvidence(UUID userId, PatternEventEntity event) {
+        if (!"grounded".equals(event.getPayload().channel())) return true;
+        var refs = event.getPayload().evidenceRefs();
+        return refs == null || refs.stream().filter(ObservationFeedService::canonicalReference)
+                .allMatch(ref -> observationContextService.exists(userId, ref));
+    }
+
+    private static boolean canonicalReference(String ref) {
+        return ref != null && ref.matches("[a-z_]+:[0-9a-fA-F-]{36}");
+    }
+
+    private static List<String> displayEvidence(List<String> refs) {
+        return refs == null ? List.of() : refs.stream().filter(Objects::nonNull)
+                .filter(ref -> !canonicalReference(ref) && !ref.startsWith("observation-topic"))
+                .toList();
+    }
+
     /** The row's newest replies, freshest first — owned, so a foreign row yields nothing. */
     private List<PatternEventEntity> replies(UUID userId, Map<UUID, List<PatternEventEntity>> cache,
                                              UUID patternId) {
@@ -173,7 +237,8 @@ public class ObservationFeedService {
                 .occurredAt(toOffset(event.getOccurredAt()))
                 .text(split[0])
                 .question(split[1])
-                .evidence(payload.evidenceRefs() == null ? List.of() : payload.evidenceRefs())
+                .evidence("grounded".equals(payload.channel()) ? displayEvidence(payload.evidenceRefs())
+                        : payload.evidenceRefs() == null ? List.of() : payload.evidenceRefs())
                 .repliedChoice(choiceAfter(replies, event.getOccurredAt()))
                 .build();
     }
@@ -187,7 +252,7 @@ public class ObservationFeedService {
                 // no prose of its own: on these cards the tallies ARE the message
                 .text("")
                 .question(null)
-                .evidence(row.getEvidence() == null ? List.of() : row.getEvidence().items())
+                .evidence(displayEvidence(row.getEvidence() == null ? null : row.getEvidence().items()))
                 // the ROW's newest answer, NOT one anchored on `occurredAt`: `lastDetectedAt` is
                 // bumped by the nightly evaluation, which would re-arm the chips every night
                 .repliedChoice(newestChoice(replies))
@@ -197,7 +262,9 @@ public class ObservationFeedService {
     private ObservationResponse.ObservationResponseBuilder base(PatternEntity row, String card) {
         return ObservationResponse.builder()
                 .patternId(row.getId())
-                .hypothesisKey(row.getHypothesisKey())
+                .kind(row.getKind())
+                .hypothesisKey(PatternEntity.KIND_STATISTICAL.equals(row.getKind())
+                        ? row.getPairKey() : row.getHypothesisKey())
                 .card(card)
                 .title(row.getTitle())
                 .status(row.getStatus())

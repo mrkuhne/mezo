@@ -2,7 +2,7 @@
 title: Platform · Data Layer & Dual-Mode
 type: feature-platform
 status: done
-updated: 2026-09-20
+updated: 2026-09-23
 tags: [platform, data-layer, frontend]
 key_files:
   - frontend/src/data/hooks.ts
@@ -229,6 +229,8 @@ The FE keeps its own *domain* types in `frontend/src/data/types.ts` (`WeightEntr
 For mock-only features (Fuel/Insights/People) there is no contract fragment yet — the "data model" is the static shape returned by the hook (`data/fuel/fuel.ts`, `data/insights/insights.ts`, `data/me/people.ts`, …). The backend plugs in by adding `api/feature/<x>/<x>.yml` → client → hook branch (see §7).
 
 ## 6. Integrations
+
+**Observation inbox → Today / Insights:** observation mappings preserve the optional pattern `kind`, original source labels and event timestamp. Persistent unanswered cards may predate today; they remain visible without inflating today’s publication count. Statistical monitoring stays distinguishable from a reflection question and opens pattern details. See [companion](companion.md) and [today](today.md).
 
 This layer is the hub; every feature is a spoke. Concrete, bidirectional seams:
 

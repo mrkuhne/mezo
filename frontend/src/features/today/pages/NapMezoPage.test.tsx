@@ -743,7 +743,7 @@ test('kikapcsolt társ esetén őszinte sor jön, üres állapot helyett', async
 test('a chip-válasz a sor azonosítójával megy tovább a hookhoz', async () => {
   obsMock.observations = [obsSeed[0]]
   renderTab()
-  await userEvent.click(await screen.findByRole('button', { name: 'Igen, figyeld' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Igen, jellemző' }))
   expect(obsMock.reply).toHaveBeenCalledWith(obsSeed[0].patternId, 'watch')
 })
 
@@ -754,4 +754,22 @@ test('a ?n= deeplink az Észrevételek fület is felülírja — mindig az Üzen
   expect(await screen.findByText('07:05 · Reggeli briefing')).toBeInTheDocument()
   expect(screen.getByRole('tab', { name: /Üzenetek/ })).toHaveAttribute('aria-selected', 'true')
   expect(screen.queryByText('Anna és az alvásod')).toBeNull()
+})
+
+test('older persistent cards do not consume today’s publication budget', async () => {
+  obsMock.observations = [
+    { ...obsSeed[0], occurredAt: '2026-05-20T12:00:00' },
+    { ...obsSeed[1], occurredAt: '2026-05-21T12:00:00' },
+    { ...obsSeed[0], id: 'today-new', occurredAt: '2026-05-22T12:00:00' },
+  ]
+  renderTab()
+  expect(await screen.findByText('Ma még 1 észrevétel fér a keretbe · 22:00 után csendben maradok')).toBeInTheDocument()
+})
+
+test('an unanswered return from a previous day lights the observation dot', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  obsMock.observations = [{ ...obsSeed[1], occurredAt: '2026-05-20T12:00:00' }]
+  renderTab('')
+  await screen.findByText('07:05 · Reggeli briefing')
+  expect(screen.getByRole('tab', { name: /Észrevételek/ }).querySelector('.nap-mzdot')).not.toBeNull()
 })

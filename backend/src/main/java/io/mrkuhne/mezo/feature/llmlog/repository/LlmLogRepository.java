@@ -19,6 +19,11 @@ import org.springframework.data.repository.query.Param;
  */
 public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
 
+    List<LlmLogEntity> findByCreatedByAndFeatureAndOperationAndCreatedAtAfterOrderByCreatedAtDesc(
+            UUID createdBy, String feature, String operation, Instant since,
+            org.springframework.data.domain.Pageable pageable);
+
+
     /**
      * Call count + summed cost of every audit row written at or after {@code since} (mezo-h3gb) —
      * the single primitive behind the day/week/month summary, called once per period start.

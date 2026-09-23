@@ -40,7 +40,7 @@ describe('TeamFeedPage (mock mode)', () => {
     for (const article of document.querySelectorAll('article')) {
       const scoped = within(article as HTMLElement)
       const decided = article.querySelector('.tf-after')
-      if (!decided) expect(scoped.getByRole('button', { name: 'Elmesélem' })).toBeInTheDocument()
+      if (!decided) expect(scoped.getByRole('button', { name: /Elmesélem|Beszéljük meg/ })).toBeInTheDocument()
     }
   })
 

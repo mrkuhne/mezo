@@ -37,6 +37,7 @@ export function toObservation(w: ObservationResponse): Observation {
     patternId: w.patternId,
     hypothesisKey: w.hypothesisKey ?? undefined,
     // wire strings come from our own backend CHECK constraints
+    kind: w.kind as Observation['kind'],
     card: w.card as ObservationCardKind,
     occurredAt: w.occurredAt,
     title: w.title,
