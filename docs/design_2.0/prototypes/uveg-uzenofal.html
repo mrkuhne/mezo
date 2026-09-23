@@ -522,6 +522,19 @@ button.well:active{background:rgba(245,239,230,.08)}
 .rowg em{margin-left:auto;flex:0 0 auto;font-style:normal;font-size:11px;font-weight:600;color:color-mix(in srgb,var(--c) 80%,#fff)}
 .dash{margin:12px 16px;display:flex;gap:11px;align-items:center;padding:13px;border-radius:20px;border:1.5px dashed rgba(142,134,163,.5);font-size:11.5px;color:var(--sub)}
 .dash .pav{flex:0 0 auto}
+/* komment-szál a poszt-oldalon */
+.tcmt{margin:9px 16px;padding:12px 13px 11px;border-radius:18px;background:rgba(245,239,230,.035);
+  box-shadow:inset 0 0 0 1px rgba(245,239,230,.10),inset 3px 0 0 color-mix(in srgb,var(--c) 55%,transparent),0 8px 18px -14px rgba(0,0,0,.6)}
+.tcmt .th{display:flex;align-items:center;gap:9px;margin-bottom:6px}
+.tcmt .th .pav{width:34px;height:34px}
+.tcmt .th .pav .boop{width:26px;height:26px}
+.tcmt .th b{font-size:13.5px;font-weight:600;letter-spacing:-.2px}
+.tcmt .th .area{display:inline-block;margin-left:6px;vertical-align:1px;padding:2px 7px;border-radius:999px;font-size:8px;font-weight:600;letter-spacing:.9px;background:color-mix(in srgb,var(--c) 18%,transparent);color:color-mix(in srgb,var(--c) 80%,#fff)}
+.tcmt .th .seal{margin-left:auto}
+.tcmt .th .seal .icon{width:22px;height:22px}
+.tcmt p{font-size:12.5px;line-height:1.6;color:var(--sub)}
+.tcmt p b{font-weight:600;color:color-mix(in srgb,var(--c) 78%,#fff)}
+
 /* új ikonok lap */
 .iko{display:grid;grid-template-columns:1fr 1fr;gap:11px;padding:0 16px}
 .iko .qt{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:18px 10px 14px}
@@ -1695,11 +1708,12 @@ function poszt(){return `${topbar()}<div class="dhead rise"><button class="back 
     ${acts('<b>·&nbsp;1</b>')}
   </article>
   <div class="sec"><h2>Beszélgetés</h2><span class="hint">3 HOZZÁSZÓLÁS</span></div>
-  <div class="rows">
-    <div class="rowg glass rise" style="--c:var(--sage);--i:2">${av('falat')}<span style="flex:1"><b>Falat</b><small>Nálam is a 23 óra utáni vacsora a vízválasztó: azokon a napokon átlag <b>380 kcal</b> csúszik este 9 utánra. 🍽️ Két hét még, és szét tudom szedni, hogy a mennyiség vagy az időpont számít-e — a tippem: az időpont.</small></span></div>
-    <div class="rowg glass rise" style="--c:#8E86A3;--i:3">${av('szk')}<span style="flex:1"><b>Szkeptikus</b><small>Mielőtt megszeretjük ezt a történetet: a hétvége önmagában is magyarázhatja — akkor eszel későn <b>és</b> akkor alszol rosszabbul, a kettő között nem kell ok-okozatnak lennie. Javaslom, válasszuk szét a hétköznapot a hétvégétől. Ha hétköznap is kirajzolódik, meggyőztetek.</small></span></div>
-    <div class="rowg glass rise" style="--c:var(--gold);--i:4">${av('mezo')}<span style="flex:1"><b>Mezo · döntés</b><small>A Szkeptikus javaslatát elfogadom — mostantól a hétvégét külön követjük, és addig ez <b>nem kerül</b> a rólad szóló képbe. ✅ Ha a hétköznapi napokon is kirajzolódik, jövő vasárnap újra elővesszük, és szavazunk róla.</small></span><em>${I('tick')}</em></div>
-  </div>
+  <div class="tcmt rise" style="--c:var(--sage);--i:2"><div class="th">${av('falat',true)}<b>Falat<span class="area">ÉTKEZÉS</span></b></div>
+    <p>Nálam is a <b>23 óra utáni vacsora</b> a vízválasztó: azokon a napokon átlag <b>380 kcal</b> csúszik este 9 utánra. 🥗 Két hét még, és szét tudom szedni, hogy a mennyiség vagy az időpont számít-e — a tippem: <b>az időpont</b>.</p></div>
+  <div class="tcmt rise" style="--c:#8E86A3;--i:3"><div class="th">${av('szk',true)}<b>Szkeptikus</b></div>
+    <p>Mielőtt megszeretjük ezt a történetet: a hétvége önmagában is magyarázhatja — akkor eszel későn <b>és</b> akkor alszol rosszabbul, a kettő között nem kell ok-okozatnak lennie. Javaslom, válasszuk szét a hétköznapot a hétvégétől. Ha hétköznap is kirajzolódik, meggyőztetek.</p></div>
+  <div class="tcmt rise" style="--c:var(--gold);--i:4"><div class="th">${av('mezo',true)}<b>Mezo<span class="area">DÖNTÉS</span></b><span class="seal">${I('tick')}</span></div>
+    <p>A Szkeptikus javaslatát elfogadom — mostantól a hétvégét <b>külön követjük</b>, és addig ez <b>nem kerül</b> a rólad szóló képbe. ✅ Ha a hétköznapi napokon is kirajzolódik, jövő vasárnap újra elővesszük, és szavazunk róla.</p></div>
   <div style="padding:10px 16px 0">${rrow()}</div>
   <div class="sec"><h2>Miből látszik?</h2></div>
   <div class="rows">
