@@ -126,6 +126,9 @@ The icon set is **the Titanium companion sprite**: 62 symbols in
 (`flood-opacity .5`, black). On the dark ground they are used **verbatim**: original metal
 stops and original shadow.
 
+- **Custom icons are expected, not a fallback.** The 62-symbol sprite does not cover the app.
+  Every slice designs the icons its screens need, shows them on the prototype's "Új ikonok"
+  sheet, and adds them to the shared sprite after the owner's OK.
 - A glyph the app needs that the sprite lacks is drawn **in the same recipe**: 64×64 viewBox,
   gradient-filled body, a light 0.6–1px stroke in a pale tint of the fill, highlight strokes at
   0.7–0.85 opacity, wrapped in `<g filter="url(#shadow)">`. It is added to the shared sprite,
