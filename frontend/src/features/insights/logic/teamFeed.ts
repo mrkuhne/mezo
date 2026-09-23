@@ -9,8 +9,8 @@
  * a felhasználó vagy a motor által lezárt minta (rejected/refuted/dormant), az észrevétel-feed
  * SOR-kártyái (watching/confirmed — azok a mintát ismétlik) és a return-események (Act II).
  */
-import type { CharacterFeedItem } from '@/data/character/characterApi'
-import type { Experiment, Observation, Pattern, PatternMonitorPair, Prediction } from '@/data/types'
+import type { CharacterFeedItem, CharacterReplySource } from '@/data/character/characterApi'
+import type { Experiment, Observation, ObservationChoice, Pattern, PatternMonitorPair, Prediction } from '@/data/types'
 import { addDays, huMonthDayDow, localDateString } from '@/shared/lib/dates'
 import { TEAM, characterForMetricDomain, characterForPersona, type TeamCharacterId } from './team'
 
@@ -51,6 +51,12 @@ export interface FeedPost {
   sourceRoute: string
   /** Rád vár (story-pötty + szűrő forrása). */
   waiting: boolean
+  /** Észrevétel-kérdés: a hármas a meglévő chip-választ hívja (`useObservationReply`). */
+  observation?: { patternId: string }
+  /** Karakter-poszt: az „Elmesélem” a meglévő hozzászólás-szálba ír (`useCharacterReplies`). */
+  thread?: CharacterReplySource
+  /** A döntés látható nyoma a poszton (spec §2.8) — a rekordból vagy a munkamenetből. */
+  afterlife?: string
 }
 
 export interface FeedDay {
@@ -80,6 +86,20 @@ export interface TeamFeed {
   freshByCharacter: Record<TeamCharacterId, boolean>
 }
 
+/** Az utóélet-címkék EGY helyen (spec §2.8): minta-döntés, észrevétel-válasz. */
+export const AFTERLIFE = {
+  confirm: 'Megerősítetted · bekerült a rólad szóló képbe',
+  reject: 'Nem így érzed · feljegyeztük, nem hozzuk elő újra',
+  watch: 'Figyeljük tovább · szólunk, ha kiderül',
+  talk: 'Elmesélted · a csapat mérlegeli',
+} as const
+
+const OBSERVATION_AFTERLIFE: Record<ObservationChoice, string> = {
+  watch: AFTERLIFE.watch,
+  reject: AFTERLIFE.reject,
+  talk: AFTERLIFE.talk,
+}
+
 /** Az őszinteség-sáv címkéje: minN alatt kimondjuk, hogy kevés az adat (spec §2.7). */
 export function honestyFor(n: number, minN: number): FeedHonesty {
   return { n, minN, label: n < minN ? 'még kevés adat' : 'kezd úgy tűnni' }
@@ -103,12 +123,23 @@ function postableAuthor(id: TeamCharacterId): TeamCharacterId {
 }
 
 function dayKeyOf(iso: string): string {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? iso.slice(0, 10) : localDateString(d)
+  if (ISO_DAY.test(iso)) return iso
+  const d = /^\d{4}-\d{2}-\d{2}T/.test(iso) ? new Date(iso) : new Date(Number.NaN)
+  return Number.isNaN(d.getTime()) ? iso : localDateString(d)
+}
+
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/
+
+/** A datált napok elöl, a legfrissebb az első; a kijelző-szövegű „napok” a végén. */
+function byDayDesc(a: string, b: string): number {
+  const ia = ISO_DAY.test(a), ib = ISO_DAY.test(b)
+  if (ia !== ib) return ia ? -1 : 1
+  return b.localeCompare(a)
 }
 
 function dayLabel(key: string, today: string): string {
+  // Kijelző-szövegű dátum (pl. a mock „Máj 22”) — már emberi címke, nem értelmezzük újra.
+  if (!ISO_DAY.test(key)) return key
   if (key === today) return 'Ma'
   if (key === addDays(today, -1)) return 'Tegnap'
   return huMonthDayDow(key)
@@ -159,6 +190,8 @@ function observationPost(o: Observation, patterns: Pattern[], pairs: PatternMoni
     ...(o.minN != null ? { honesty: honestyFor(n, o.minN) } : {}),
     sourceRoute: pattern ? `/mezo/patterns/${pattern.pairKey}` : '/mezo/patterns',
     waiting: Boolean(o.question) && !o.repliedChoice,
+    observation: { patternId: o.patternId },
+    ...(o.repliedChoice ? { afterlife: OBSERVATION_AFTERLIFE[o.repliedChoice] } : {}),
   }
 }
 
@@ -201,15 +234,27 @@ function characterPost(item: CharacterFeedItem): FeedPost {
     body: item.text,
     sourceRoute: conference ? '/mezo/karakter/konzilium' : '/mezo/karakter/feed',
     waiting: false,
+    ...(item.sourceType && item.sourceId
+      ? { thread: { sourceType: item.sourceType, sourceId: item.sourceId, sourceIndex: item.sourceIndex ?? 0 } }
+      : {}),
   }
 }
 
 const POSTER_RANK: Partial<Record<FeedPostKind, number>> = { kiserlet: 1, konzilium: 2 }
 
-/** A nap posztere: waiting > kiserlet > konzilium > a nap első (legfrissebb) posztja. */
+/** Ennyi poszttól számít „mozgalmasnak” egy nap: ott a legfrissebb is kiemelhető. */
+const BUSY_DAY = 3
+
+/**
+ * A nap posztere: waiting > kiserlet > konzilium; ezek híján csak mozgalmas napon a legfrissebb.
+ * Egy csendes nap magányos posztja csendes marad — különben ritka falon minden üveg lenne, és
+ * a rangsor (restored bible §3.4: az üveg a kivétel) szétesne.
+ */
 function pickPoster(posts: FeedPost[]): FeedPost | undefined {
   const rank = (p: FeedPost) => (p.waiting ? 0 : (POSTER_RANK[p.kind] ?? 3))
-  return posts.reduce<FeedPost | undefined>((best, p) => (!best || rank(p) < rank(best) ? p : best), undefined)
+  const best = posts.reduce<FeedPost | undefined>((b, p) => (!b || rank(p) < rank(b) ? p : b), undefined)
+  if (!best) return undefined
+  return rank(best) < 3 || posts.length >= BUSY_DAY ? best : undefined
 }
 
 export function buildTeamFeed(input: TeamFeedInput): TeamFeed {
@@ -229,7 +274,7 @@ export function buildTeamFeed(input: TeamFeedInput): TeamFeed {
   }
 
   const days: FeedDay[] = [...byDay.entries()]
-    .sort(([a], [b]) => b.localeCompare(a))
+    .sort(([a], [b]) => byDayDesc(a, b))
     .map(([key, dayPosts]) => {
       const sorted = [...dayPosts].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
       const poster = pickPoster(sorted)
@@ -240,4 +285,45 @@ export function buildTeamFeed(input: TeamFeedInput): TeamFeed {
   for (const post of byDay.get(today) ?? []) freshByCharacter[post.author] = true
 
   return { days, waitingCount: posts.filter(p => p.waiting).length, freshByCharacter }
+}
+
+export interface SessionAfterlife {
+  label: string
+  /** A poszt a döntés pillanatában — ha a rekord közben kiesik a folyamból, ebből marad a helyén. */
+  snapshot: FeedPost
+}
+
+/**
+ * A munkamenetben hozott döntések nyoma a falon (spec §2.8): az eldöntött poszt a helyén marad,
+ * a hármas helyén az utóélet-címkével. Egy elvetett minta a rekordok közül azonnal kiesik — a
+ * pillanatképe ilyenkor a saját napjára kerül vissza, hogy a döntés ne tűnjön el a szem elől.
+ */
+export function withSessionAfterlife(
+  days: FeedDay[],
+  entries: Record<string, SessionAfterlife>,
+  today: string,
+): FeedDay[] {
+  const ids = Object.keys(entries)
+  if (ids.length === 0) return days
+  const settle = (p: FeedPost): FeedPost => {
+    const entry = entries[p.id]
+    if (!entry) return p
+    const { decision: _decision, ...rest } = p
+    return { ...rest, afterlife: entry.label, waiting: false }
+  }
+  const present = new Set(days.flatMap(d => [...(d.poster ? [d.poster.id] : []), ...d.posts.map(p => p.id)]))
+  const out = days.map(d => ({
+    ...d,
+    posts: d.posts.map(settle),
+    ...(d.poster ? { poster: settle(d.poster) } : {}),
+  }))
+  for (const id of ids) {
+    if (present.has(id)) continue
+    const post = settle(entries[id].snapshot)
+    const key = dayKeyOf(post.occurredAt)
+    const day = out.find(d => d.key === key)
+    if (day) day.posts = [...day.posts, post].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
+    else out.push({ key, label: dayLabel(key, today), posts: [post] })
+  }
+  return out.sort((a, b) => byDayDesc(a.key, b.key))
 }

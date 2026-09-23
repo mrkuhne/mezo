@@ -206,6 +206,9 @@ something new extends the kit, never forks a second recipe.
   `t-pin`, `t-weight`, `t-pattern`, `t-chef`; sheet: `prototypes/uveg-fuel-tobbi.html#ikonok`),
   and `CLAY_TO_3D` now maps the rest of Fuel's clay names. Each U2 surface owns one block at the
   end of `prototype.css`: `── uveg fuel konyha|receptek|log|stack|trendek (`.
+- **Csapat-fal (`mezo-a9bo7.8`) additions.** 4 icons for the wall's unified trio and reply sheet
+  (`t-thumb-up`, `t-thumb-down`, `t-send`, `t-flask`; sheet: `prototypes/uveg-uzenofal.html#ikonok`),
+  copied from that prototype's sprite with the `tg-*` gradient namespace.
 - **Glass chrome — `── uveg chrome (` block (bible §7).** Same content and behavior, glass
   material: the header's round `.glass.is-round` buttons (badges outside), the gradient "boop"
   wordmark, the opaque black header background, `DayOrb` redrawn as a glass sphere holding a
