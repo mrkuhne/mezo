@@ -26,6 +26,8 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
@@ -151,7 +153,7 @@ public class MemoryContextService {
             MemoryRequest request, RetrieveOptions options, boolean fallbackOnTotalFailure) {
         RetrievalServingMode servingMode = options.servingMode();
         long started = System.nanoTime();
-        PreparedMemoryQuery query = queryPreparer.prepare(request, options.rewrite());
+        PreparedMemoryQuery query = boundedQuery(request, queryPreparer.prepare(request, options.rewrite()));
         if (query.mode() == QueryMode.NO_MEMORY_NEEDED) {
             AuditResult audit = writeAudit(options, new AuditCommand(
                     request, query, properties.servingEmbeddingVersion(), null, servingMode,
@@ -164,7 +166,7 @@ public class MemoryContextService {
 
         RetrievalBatch batch = retrieveCandidates(request, query);
         Map<String, List<MemoryCandidate>> candidates =
-                aboveRelevanceFloor(batch.candidates(), request.consumerPolicy());
+                aboveRelevanceFloor(withinPolicyWindow(batch.candidates(), request, query), request.consumerPolicy());
         List<FusedCandidate> ranked = fusion.fuse(candidates, query, request.asOf());
         // mezo-eq85.10 fix round 2, FIX A: the ratio is over the retrievers that were ASKED, not
         // over every registered bean. A retriever the run skipped a priori (see
@@ -216,6 +218,31 @@ public class MemoryContextService {
                 new MemoryContext(items, promptBlock, refs, audit.runId(), audit.traceId());
         return new RetrievalOutcome(context, query, ranked, Set.copyOf(selectedIds), batch.trace(),
                 errorCode, durationMs, reranked, audit.runId());
+    }
+
+    /** Apply the reflection window before dense/lexical SQL limits and token selection. */
+    private PreparedMemoryQuery boundedQuery(MemoryRequest request, PreparedMemoryQuery query) {
+        if (request.consumerPolicy() != ConsumerPolicy.REFLECTION) return query;
+        LocalDate earliest = request.asOf().minusDays(properties.policies().reflection().lookbackDays() - 1L);
+        LocalDate from = query.from().filter(date -> date.isAfter(earliest)).orElse(earliest);
+        LocalDate to = query.to().filter(date -> date.isBefore(request.asOf())).orElse(request.asOf());
+        return new PreparedMemoryQuery(query.mode(), query.rawQuery(), query.denseQuery(),
+                Optional.of(from), Optional.of(to));
+    }
+
+    /** Facts/graph adapters may not implement range filtering, so enforce it before fusion too. */
+    private Map<String, List<MemoryCandidate>> withinPolicyWindow(
+            Map<String, List<MemoryCandidate>> candidates, MemoryRequest request, PreparedMemoryQuery query) {
+        if (request.consumerPolicy() != ConsumerPolicy.REFLECTION) return candidates;
+        LocalDate from = query.from().orElseThrow();
+        LocalDate to = query.to().orElseThrow();
+        var filtered = new LinkedHashMap<String, List<MemoryCandidate>>();
+        candidates.forEach((retriever, found) -> filtered.put(retriever, found.stream()
+                .filter(candidate -> candidate.occurredOn() != null
+                        && !candidate.occurredOn().isBefore(from)
+                        && !candidate.occurredOn().isAfter(to))
+                .toList()));
+        return Map.copyOf(filtered);
     }
 
     /**

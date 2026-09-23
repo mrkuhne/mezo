@@ -172,7 +172,9 @@ public record MemoryPlatformProperties(
             /** Maximum memory-context budget for one reflection call, in estimated tokens. */
             @Min(60) @Max(6000) int maxTokens,
             /** Allows the LLM reranker on every reflection retrieval (no latency gate offline). */
-            boolean rerank) {
+            boolean rerank,
+            /** Inclusive original-event lookback for REFLECTION only; undated candidates are excluded. */
+            @Min(1) @Max(90) int lookbackDays) {
     }
 
     /**

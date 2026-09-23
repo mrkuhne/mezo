@@ -40,6 +40,7 @@ class ReflectionMemoryGatewayIT extends AbstractIntegrationTest {
     private static final String VERSION = "gemini-embedding-001-768-v1";
 
     @Autowired private ReflectionMemoryGateway gateway;
+    @Autowired private MemoryContextService contextService;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private MemoryItemPopulator memoryPopulator;
     @Autowired private MemoryItemRepository itemRepository;
@@ -79,9 +80,38 @@ class ReflectionMemoryGatewayIT extends AbstractIntegrationTest {
         assertThat(gateway.contextFor(owner, null, false)).isEmpty();
     }
 
+    @Test
+    void testReflectionRetrieval_shouldBoundCandidatesToNinetyDays_whenNoExplicitDatesRequested() {
+        UUID owner = databasePopulator.populateUser("reflection-window@test.local");
+        item(owner, "Anna friss találkozó [fake-embed:1]", LocalDate.now().minusDays(89));
+        item(owner, "Anna túl régi találkozó [fake-embed:1]", LocalDate.now().minusDays(90));
+        var request = new MemoryRequest(owner,
+                io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy.REFLECTION,
+                "Anna találkozó [fake-embed:1]", java.util.List.of(), LocalDate.now(), 800, null, false);
+        var result = contextService.retrieveDetailed(request,
+                new MemoryContextService.RetrieveOptions(false,
+                        io.mrkuhne.mezo.feature.companion.memory.dto.RetrievalServingMode.NEW, false, false));
+        assertThat(result.query().from()).contains(LocalDate.now().minusDays(89));
+        assertThat(result.query().to()).contains(LocalDate.now());
+        assertThat(result.context().promptBlock()).contains("friss találkozó").doesNotContain("túl régi");
+        assertThat(result.ranked()).allSatisfy(candidate ->
+                assertThat(candidate.candidate().occurredOn()).isBetween(LocalDate.now().minusDays(89), LocalDate.now()));
+        var chat = new MemoryRequest(owner,
+                io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy.CHAT_AMBIENT,
+                request.currentQuery(), java.util.List.of(), LocalDate.now(), 800, null, false);
+        assertThat(contextService.retrieveDetailed(chat,
+                new MemoryContextService.RetrieveOptions(false,
+                        io.mrkuhne.mezo.feature.companion.memory.dto.RetrievalServingMode.NEW, false, false))
+                .query().from()).isEmpty();
+    }
+
     private void item(UUID owner, String content) {
+        item(owner, content, LocalDate.now().minusDays(3));
+    }
+
+    private void item(UUID owner, String content, LocalDate date) {
         MemoryItemEntity item = memoryPopulator.item(owner, "journal_entry", UUID.randomUUID(),
-                "Anna napló", content, LocalDate.now().minusDays(3), new String[]{"alvas"},
+                "Anna napló", content, date, new String[]{"alvas"},
                 new String[]{"Anna"}, MemoryProvenanceEnvelope.empty());
         item.setSalience(new BigDecimal("0.900"));
         itemRepository.saveAndFlush(item);

@@ -117,7 +117,7 @@ class MemoryCandidateFusionTest {
                 new MemoryPlatformProperties.Reranker(false, 0.002, 20, 600, 200),
                 new MemoryPlatformProperties.Indicators(365),
                 new MemoryPlatformProperties.Policies(
-                        new MemoryPlatformProperties.ReflectionPolicy(30, 800, true),
+                        new MemoryPlatformProperties.ReflectionPolicy(30, 800, true, 90),
                         new MemoryPlatformProperties.PolicyLimits(true, 20, 600, false, false),
                         new MemoryPlatformProperties.PolicyLimits(true, 30, 1200, true, true),
                         new MemoryPlatformProperties.PolicyLimits(true, 30, 800, true, false),
