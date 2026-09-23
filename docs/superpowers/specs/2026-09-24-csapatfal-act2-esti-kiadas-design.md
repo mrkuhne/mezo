@@ -62,8 +62,11 @@ marad — 21:00 és 23:45 között újrapróbál; `catch-up-days: 2` marad). Lé
    `(sourceKind, sourceId, character, genre, title, recordText, facts[], refs[], priority, waiting, changedAt)`.
    - `character_observation` pending → a meglévő konzílium-kör (lásd 3.) eredménye: minden
      vita-szál egy jelölt, gazdája a vezető szakértő karaktere.
-   - Companion: döntésre váró minta (`kerdes`, waiting), friss megerősített minta (`megfigyeles`),
-     monitorozott pár `n < minN` és `n ≥ 5` (`sejtes` = **gyűlik**), friss grounded észrevétel.
+   - Companion (repository-olvasással, a `CharacterMetaReads` mintájára — a proactive/companion
+     *service*-getterek LLM-generálást indíthatnak, ezért tilosak): döntésre váró minta, köztük a
+     grounded éjszakai észrevétel is (`PatternEntity status=proposed` → `kerdes`, waiting), friss
+     megerősített minta (`megfigyeles`, `lastDetectedAt` az utolsó kiadás óta), monitorozott pár
+     `n < minN` és `n ≥ 5` a `PatternMonitorService.monitor()` válaszából (`sejtes` = **gyűlik**).
    - Proactive: lezárt előrejelzés (`elorejelzes`), futó kísérlet mérföldkő (`kiserlet`).
    - H5-től: Falat napi értékelés (`ertekeles`), Derű adatkérés (`keres`).
    A `facts[]` a jelölt **összes számszerű és tényszerű állítása** a rekordból (pl. `"5 közös nap"`,
@@ -81,21 +84,31 @@ marad — 21:00 és 23:45 között újrapróbál; `catch-up-days: 2` marad). Lé
    - 6-nál vágás; ha < 3, feltöltés gyűlik/kérés jelöltekkel 3-ig; ha így is < 3, annyi, amennyi van;
    - rank 1 = a nap posztere.
 5. **Hang** (H3-tól; H1–H2-ben a `body` = `recordText`): lásd 3.4.
-6. **Publikálás** egy tranzakcióban: `team_edition` + `team_edition_post` sorok, run-napló
-   (`character_run.kind = 'EDITION'`), H2-től push-értesítés (`AppNotificationService.emit`).
+6. **Publikálás** egy tranzakcióban: `team_edition` + `team_edition_post` sorok; utána külön
+   (`REQUIRES_NEW`, a meglévő `CharacterRunLog.record` szerint) a run-napló
+   (`character_run.kind = 'EDITION'`), H2-től push-értesítés (`AppNotificationEmitter.emit`).
 
-Idempotencia: a meglévő lease (owner+nap) + egyedi index `team_edition (created_by, day) where is_deleted = false`.
-Egy nap kiadása egyszer születik; hibánál a lease újrapróbál, `max-attempts: 3` után a nap kimarad
-(őszinte hiány, nem pótlás).
+**Beillesztés (terv-pontosítás 2026-09-24):** a kiadás NEM a konzílium `publish`/`quiet` ágán belül
+fut (a konzílium D-1 éjszakai futás nélkül el sem indul, és csendes napon a `publish` kimarad),
+hanem a `CharacterCouncilJob`-ban a `council.run` UTÁN, külön `try`-ban: `TeamEditionService.run(owner, day)`.
+A napi `DAILY` konferenciát (ha van) forrásként olvassa. Így a kiadás akkor is megszületik, ha a
+konzílium csendes vagy hibázott.
+
+Idempotencia: egyedi index `team_edition (created_by, day) where is_deleted = false`; ha a napra már
+van élő kiadás, a futás azonnal visszatér; párhuzamos futásnál az egyedi-index ütközés = a másik
+nyert (nem hiba). Hibánál a következő `*/15` tick újrapróbál 23:45-ig; utána a nap kimarad
+(őszinte hiány, nem pótlás). A névütközés ellen: a meglévő `character_council_edition` a konzílium
+lease-sora — az új táblák és osztályok MINDIG `team_edition*` / `TeamEdition*` nevűek.
 
 ### 3.3 Adatmodell (új migráció `db/changelog/1.1.0/script/`)
 
 - `team_edition`: `id, created_by (FK app_user), day date, status (PUBLISHED|QUIET), generated_at,
-  conference_id (nullable FK character_conference), audit-oszlopok`; egyedi `(created_by, day)` élő sorokra.
+  conference_id (nullable FK character_conference), created_at, is_deleted` (a ház `OwnedEntity`-je
+  csak `created_by/created_at/is_deleted` oszlopot ad; `updated_at` nincs); egyedi `(created_by, day)` élő sorokra.
 - `team_edition_post`: `id, edition_id (FK), rank smallint, character_key varchar(16)
   (CHECK szunya|mocor|falat|deru|mezo), genre varchar(16) (CHECK megfigyeles|sejtes|kerdes|kiserlet|
   elorejelzes|konzilium|keres|ertekeles), source_kind, source_id, title text null, body text,
-  voiced boolean, facts jsonb, refs jsonb, guests jsonb default '[]' (H4), audit-oszlopok`;
+  voiced boolean, facts jsonb, refs jsonb, guests jsonb default '[]' (H4), created_by, created_at, is_deleted`;
   egyedi `(edition_id, rank)`.
 - `character_run.kind` CHECK bővül: `'EDITION'`.
 - jsonb-feltételhez `jsonb_exists()`, soha nem `?` (Liquibase-csapda).
@@ -113,7 +126,9 @@ Egy nap kiadása egyszer születik; hibánál a lease újrapróbál, `max-attemp
   (karakter, műfaj, rekord-szöveg, `facts[]`), kimenet JSON `[{rank, title?, body}]`. Prompt-marker
   `CSAPATFAL-ESTI-KIADAS` + `FakeCompanionLlm` `startsWith` tükör; `LlmCallContext("character_edition",
   "voice", …)`; a `PromptPersona.VOICE_HU` a törzsben (proactive.md §7 szabálya); a hívás a
-  `CharacterCouncilBudget`-ből foglal; a `character_edition` slug a `throttled-features` listára kerül.
+  `CharacterCouncilBudget.run(owner, false, …)` SAJÁT ciklusában fut (nem a konzílium 14-es keretén
+  belül); a `character_edition` slug (az `LlmCallContext` ELSŐ argumentuma) a `throttled-features`
+  listára kerül.
 - **Tény-őr** (`EditionVoiceGuard`, tiszta függvény) posztonként: (a) a `body` minden számjegy-
   sorozata szerepel a `facts[]`/`recordText` számai között (normalizálva: szóköz, tizedesvessző);
   (b) 2–4 mondat; (c) emoji csak a karakter saját készletéből, a Szkeptikusnál egy sem; (d) tiltott
@@ -134,12 +149,14 @@ Egy nap kiadása egyszer születik; hibánál a lease újrapróbál, `max-attemp
 ### 3.6 Falat és Derű napi műsora (H5)
 
 - **Falat — `ertekeles`**: a nap (21:00-ig) étkezéseiből három determinisztikus tény-csomag:
-  *a tányér* (`MealCoachService` napi értékelésének pont/megjegyzés-tényei), *a cél* (`DailyTargets`
-  vs. tényleges kcal/fehérje; a súly-EWMA iránya, ha van), *az edzés* (`WorkoutWindowQueryService`:
+  *a tányér* (a napi étkezések `MealEntity.score` átlaga és a `breakdown` gyenge pontja — a
+  `MealCoachService` NEM hívható, mert LLM-et indít), *a cél* (`FuelDayService.dailyTargets` vs.
+  tényleges kcal/fehérje), *az edzés* (`WorkoutWindowQueryService`:
   volt-e edzés, és az étkezés időzítése hozzá). Csak az a szólam kerül a posztba, amelyhez van adat;
   0 étkezés → nincs jelölt. Nyitott napról beszél, ezt a poszt ki is mondja („eddig ma”).
-- **Derű — `keres`**: ha az elmúlt 14 napban < 8 esti bejelentkezés volt, jelölt születik a valós
-  számmal („14 napból 4 estéről tudok”) és CTA-val a bejelentkezésre. Heti egynél többször nem.
+- **Derű — `keres`**: ha az elmúlt 14 napból < 8 napon volt bejelentkezés (bármely napszakban —
+  a `CheckInEntity` nem ismer „esti” fogalmat), jelölt születik a valós számmal („14 napból 4 napról
+  tudok”) és CTA-val a bejelentkezésre. Heti egynél többször nem.
   A Derűhöz nem kötött kérés-jelöltek (pl. alvás-naplózás) Mocor/Szunya gazdával ugyanígy
   képezhetők — H5 csak Derű esetét szállítja.
 
@@ -159,7 +176,11 @@ Egy nap kiadása egyszer születik; hibánál a lease újrapróbál, `max-attemp
 - Kapcsoló: `mezo.feature.team-edition.enabled` (backend futás, alapból be) — H1-től élesen fut, de
   a fal csak H2-től olvassa; addig a kiadás a Gépteremben és az API-n látszik. A kapcsoló
   kikapcsolásával a konzílium a kiadás-lépések nélkül fut (vészfék).
-- A Gépterem Futások listája az `EDITION` futásokat is mutatja (H1 láthatósága).
+- A Gépterem Futások listája az `EDITION` futásokat is mutatja (H1 láthatósága) — ehhez a
+  `character.yml` `CharacterRunSummary.kind` enumja, a generált FE-típus, a `runLabels.ts`
+  `KIND_BADGE/KIND_LABEL` és a mockok EGYÜTT bővülnek (különben a `GET /runs` 500-at dob).
+- Push (H2): új `AppNotificationKind.TEAM_EDITION("team_edition", "pattern", "/mezo")` — a `pattern`
+  push-családon utazik (a `OBSERVATION_NEW` precedense), + a FE értesítés-regiszterek.
 
 ## 4. Hibakezelés és őszinteség
 
