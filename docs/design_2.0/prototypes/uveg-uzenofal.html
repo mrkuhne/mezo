@@ -1598,6 +1598,9 @@ button.well:active{background:rgba(245,239,230,.08)}
       <a href="#tud/szunya" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#i-journal"/></svg>Amit rólad tud (Szunya)</a>
       <a href="#poszt/dontes" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#i-sprout"/></svg>Döntés-flow (Rád vár)</a>
       <a href="#elsonap" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#i-sprout"/></svg>Első nap (új user)</a>
+      <a href="#konzilium" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#i-journal"/></svg>Konzílium-jegyzőkönyv</a>
+      <a href="#memoar" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#i-book"/></svg>Heti memoár-fejezet</a>
+      <a href="#gepterem" class="glass" style="--c:#8E86A3"><svg class="icon"><use href="#i-info"/></svg>Gépterem (dev-ajtó)</a>
       <a href="#ikonok" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#i-flask"/></svg>Új ikonok · jóváhagyásra</a>
     </nav>
     <span class="ov">MIT PRÓBÁLJ KI</span>
@@ -1607,6 +1610,9 @@ button.well:active{background:rgba(245,239,230,.08)}
       <li>„Mind a 3 hozzászólás” → a poszt saját oldala</li>
       <li>Koppints a grafikonra → „Miből látszik?” lap alulról</li>
       <li>~9 mp után beúszik az „1 új bejegyzés” korong — koppints rá</li>
+      <li>Rólad: a döntő-postaláda „Igen, jegyezd meg” gombja élőben beépít</li>
+      <li>Emlékek: naptár-pötty → napi krónika → kapcsolódó ügy</li>
+      <li>Szoba: Amit rólad tud → Elhallgattatom · Lezárt ügyek</li>
       <li>Alsó menü: Boop → területváltó · fejléc: csengő, töltődő kör</li>
     </ul>
     <label class="toggle"><input type="checkbox" id="still"> Mozgás kikapcsolása (összehasonlításhoz)</label>
@@ -1849,7 +1855,33 @@ function elsonap(){return `${topbar()}<div class="pgh rise" style="--i:0"><small
   </article>
   ${[['szunya','Én az <b>éjszakáidra</b> figyelek majd. 🌙 Még semmit sem tudok rólad — pár naplózott alvás után jelentkezem az első észrevétellel. Addig is egy titok: már az is rengeteget elárul, hogy <b>mikor</b> fekszel le, nem csak az, hogy mennyit alszol.',1],['falat','Én a <b>tányérodat</b> nézem: mit eszel, mikor, és mit tesz ez a céljaiddal. 🍳 Az első naplózott étkezés után már mondok valamit — nem pontozni fogok, hanem észrevenni. A kedvenc kérdésem: <b>mi vált be?</b> Azt ugyanis érdemes megismételni.',0],['mocor','Én a <b>mozgásodra</b> és a terhelésedre figyelek — meg arra, hogy a naplózás ne maradjon el. 💪 Nem hajtalak, de észreveszem, és szólok, ha három nap ugyanaz megy: a tested a <b>változatosságból</b> épül, nem a megszokásból.',0],['deru','Én arra figyelek, <b>hogy vagy</b>. 🌤️ Ehhez a te szavad kell: egy-egy rövid esti bejelentkezés — cserébe én veszem észre, mi mozgatja a hangulatod, és szólok, mielőtt te is éreznéd. Az energiád történetét szerintem együtt fogjuk megfejteni.',0]].map(([id,t,bar],i)=>`
   <article class="post rise" style="--c:${CH[id].c};--i:${i+2}">${phead(id,'bemutatkozás')}<p class="pbody">${t}</p>
-  ${bar?'<div class="well"><div class="honest"><span>0 / 8 nap</span><span class="bar" style="--c:var(--lav)"><b style="--w:3%"></b></span><span>ismerkedünk</span></div></div>':''}</article>`).join('')}`}
+  ${bar?'<div class="well"><div class="honest"><span>0 / 8 nap</span><span class="bar" style="--c:var(--lav)"><b style="--w:3%"></b></span><span>ismerkedünk</span></div></div>':''}</article>`).join('')}
+
+  <div class="fday rise"><span>2. NAP · AZ ELSŐ SZAVAK</span></div>
+  <article class="post rise" style="--c:var(--sage)">
+    ${phead('falat','este · az első naplózott étkezésed után')}
+    <p class="pbody">Megvolt az első közös vacsoránk! 🍳 Egy tányérból még nem olvasok — de azt már látom, hogy <b>este 8 után</b> ettél, és ezt megjegyeztem. Ha pár nap múlva mintát látok az időpontjaidban, szólok. Addig: minden tányér, amit felírsz, egy mondattal okosabbá tesz.</p>
+    <div class="well"><div class="honest"><span>1 / 8 nap</span><span class="bar" style="--c:var(--sage)"><b style="--w:12%"></b></span><span>ismerkedünk</span></div></div>
+  </article>
+  <article class="post rise" style="--c:var(--gold)">
+    ${phead('mezo','este · hogyan tanulunk')}
+    <p class="pbody">Egy kis házirend, hogy átlásd: 📔 amit mondunk, arra mindig rákoppinthatsz — <b>Miből látszik?</b> Ott vannak a napok, a források, minden. Amit pedig te mondasz nekünk („Ez talál” / „Nem így érzem”), abból mi tanulunk. Nincs kioktatás, nincs tananyag — <b>a fal magyarázza önmagát</b>.</p>
+  </article>
+
+  <div class="fday rise"><span>4. NAP · AZ ELSŐ ÉSZREVÉTEL</span></div>
+  <article class="post rise" style="--c:var(--lav)">
+    ${phead('szunya','reggel · első megfigyelés')}
+    <p class="pbody">Három éjszakád van a naplóban, és máris feltűnt valami: mindhárom este <b>23 után</b> feküdtél, de ma reggel — a legkorábbi kelés után — voltál a legfrissebb. 🌙 Ez még csak egy szál, de már húzom. Öt éjszaka múlva mondok róla többet.</p>
+    <div class="well"><div class="honest"><span>3 / 8 nap</span><span class="bar" style="--c:var(--lav)"><b style="--w:37%"></b></span><span>gyűlik</span></div></div>
+  </article>
+
+  <div class="fday rise"><span>7. NAP · AZ ELSŐ KIADÁS</span></div>
+  <article class="glass poster rise" style="--c:var(--lav)">
+    ${phead('mezo','vasárnap este · az első konzíliumotok','<span class="flag" style="color:#CBC1EC;background:rgba(171,159,210,.16);box-shadow:inset 0 0 0 1px rgba(171,159,210,.35)">Első kiadás</span>')}
+    <h3 class="claim">Egy hét — és már van mit megbeszélnünk.</h3>
+    <p class="pbody" style="--c:var(--lav)">Ma este leültünk először mind az öten. ✅ Két dolog már <b>gyűlik</b> (Szunya lefekvés-szála és Falat vacsoraidő-figyelése), és egy kérésünk van: Derűnek kellenének az esti bejelentkezések. Mostantól minden este itt találsz minket — keveset írunk, de azt komolyan.</p>
+    <div class="sum"><span class="minis">${av('szunya',true)}${av('falat',true)}${av('deru',true)}</span><button data-go="#konzilium">Így zajlik majd a konzílium ›</button></div>
+  </article>`}
 
 function ikonok(){const K=[['thumb-up','Ez talál','a posztok visszajelző gombja — lime, mert megerősítés'],['thumb-down','Nem így érzem','a tanító gomb — arany, mert figyelmet kér, nem hibát jelez'],['send','Küldés','a válaszmező küldője — kék, mint az idő/víz család'],['flask','Kísérlet','a próbák jele a falon és a szobákban — lila-titán lombik']];
   return `${topbar()}<div class="pgh rise" style="--i:0"><small>JÓVÁHAGYÁSRA</small><h1>Új ikonok</h1></div>
