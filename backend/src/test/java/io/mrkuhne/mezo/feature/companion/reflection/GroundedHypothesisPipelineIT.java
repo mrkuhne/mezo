@@ -21,6 +21,7 @@ import tools.jackson.databind.ObjectMapper;
 @ActiveProfiles("companion-fake")
 class GroundedHypothesisPipelineIT extends AbstractIntegrationTest {
     @Autowired private HypothesisPipelineService pipeline;
+    @Autowired private io.mrkuhne.mezo.feature.companion.reflection.service.ObservationFeedService feed;
     @Autowired private PatternRepository patterns;
     @Autowired private PatternEventRepository events;
     @Autowired private UserPopulator users;
@@ -205,6 +206,55 @@ class GroundedHypothesisPipelineIT extends AbstractIntegrationTest {
         assertThat(updated.getEvidence().items()).contains("journal_entry:" + fresh.getId())
                 .doesNotContain("journal_entry:" + old.getId());
         assertThat(events.findByCreatedByAndPatternIdAndDeletedFalseOrderByOccurredAtAsc(owner, row.getId())).hasSize(1);
+    }
+
+    @Test
+    void testApply_shouldKeepCanonicalEvidencePerEvent_whenAnsweredThreadGetsNewSources() {
+        UUID owner = users.createUser().getId();
+        var old = journals.createEntry(owner, LocalDate.now().minusDays(2), "Munka után kimerültem.", "quickinput");
+        String first = proposal("journal_entry:" + old.getId(), false, Map.of());
+        assertThat(pipeline.apply(owner, pipeline.preview(owner, "[fake-hypotheses:" + first + "]").getFirst())).isTrue();
+        var row = patterns.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(owner).getFirst();
+        eventPopulator.userReply(owner, row.getId(), "chip", "watch", "Igen, jellemző.");
+        journalRepository.delete(old);
+        var fresh = journals.createEntry(owner, LocalDate.now().minusDays(1), "Munka után megint elfáradtam.", "quickinput");
+        String next = proposal("journal_entry:" + fresh.getId(), false, Map.of());
+        assertThat(pipeline.apply(owner, pipeline.preview(owner, "[fake-hypotheses:" + next + "]").getFirst())).isTrue();
+        var observations = events.findByCreatedByAndPatternIdAndDeletedFalseOrderByOccurredAtAsc(owner, row.getId())
+                .stream().filter(e -> PatternEventEntity.KIND_OBSERVATION.equals(e.getKind())).toList();
+        assertThat(observations).hasSize(2);
+        assertThat(observations.getFirst().getPayload().evidenceRefs()).contains("journal_entry:" + old.getId())
+                .doesNotContain("journal_entry:" + fresh.getId());
+        assertThat(observations.getLast().getPayload().evidenceRefs()).contains("journal_entry:" + fresh.getId())
+                .doesNotContain("journal_entry:" + old.getId());
+        assertThat(patterns.findByIdAndCreatedByAndDeletedFalse(row.getId(), owner).orElseThrow().getEvidence().items())
+                .doesNotContain("journal_entry:" + old.getId());
+    }
+
+    @Test
+    void testForDay_shouldSuppressDeletedHistoricalEvidence_whenThreadHasANewValidObservation() {
+        UUID owner = users.createUser().getId();
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        var old = journals.createEntry(owner, yesterday.minusDays(1), "Munka után kimerültem.", "quickinput");
+        String first = proposal("journal_entry:" + old.getId(), false, Map.of());
+        assertThat(pipeline.apply(owner, pipeline.preview(owner, "[fake-hypotheses:" + first + "]").getFirst())).isTrue();
+        var row = patterns.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(owner).getFirst();
+        var firstEvent = events.findFirstByCreatedByAndPatternIdAndKindAndDeletedFalseOrderByOccurredAtDesc(
+                owner, row.getId(), PatternEventEntity.KIND_OBSERVATION).orElseThrow();
+        var originalAt = yesterday.atTime(10, 0).atZone(java.time.ZoneId.systemDefault()).toInstant();
+        firstEvent.setOccurredAt(originalAt);
+        events.saveAndFlush(firstEvent);
+        eventPopulator.userReply(owner, row.getId(), "chip", "watch", "Igen, jellemző.", originalAt.plusSeconds(60));
+        assertThat(feed.forDay(owner, yesterday)).hasSize(1);
+        journalRepository.delete(old);
+        var fresh = journals.createEntry(owner, yesterday, "Munka után megint elfáradtam.", "quickinput");
+        String next = proposal("journal_entry:" + fresh.getId(), false, Map.of());
+        assertThat(pipeline.apply(owner, pipeline.preview(owner, "[fake-hypotheses:" + next + "]").getFirst())).isTrue();
+        assertThat(feed.forDay(owner, yesterday)).isEmpty();
+        assertThat(feed.forDay(owner, LocalDate.now())).singleElement().satisfies(card -> {
+            assertThat(card.getEvidence()).anyMatch(label -> label.contains("Munka után megint elfáradtam"));
+            assertThat(card.getEvidence()).noneMatch(label -> label.matches("[a-z_]+:[0-9a-fA-F-]{36}"));
+        });
     }
 
     private void seed(UUID owner, String ref, boolean contradicted) {

@@ -44,9 +44,9 @@ public class GroundedHypothesisPublisher {
     private final ObservationOwnerLock ownerLock;
     private final ObservationContextService sources;
 
-    private static PatternEventPayloadEnvelope groundedObservation(String text, List<String> labels, boolean surfaced) {
+    private static PatternEventPayloadEnvelope groundedObservation(String text, List<String> evidenceRefs, boolean surfaced) {
         return new PatternEventPayloadEnvelope(null, null, null, null, null,
-                null, null, "grounded", null, text, labels, surfaced);
+                null, null, "grounded", null, text, evidenceRefs, surfaced);
     }
 
     @Transactional
@@ -128,18 +128,21 @@ public class GroundedHypothesisPublisher {
         var reply = events.findFirstByCreatedByAndPatternIdAndKindAndDeletedFalseOrderByOccurredAtDesc(
                 owner, row.getId(), PatternEventEntity.KIND_USER_REPLY);
         String text = h.observation().trim() + "\n\n" + h.question().trim();
-        List<String> labels = h.evidenceRefs().stream().distinct().map(candidate.evidence()::get).toList();
+        // Each event owns its provenance snapshot: the row may later replace/prune sources,
+        // but historical cards must still be checked against the sources they actually quoted.
+        List<String> evidence = h.evidenceRefs().stream().distinct()
+                .flatMap(ref -> java.util.stream.Stream.of(ref, candidate.evidence().get(ref))).toList();
         if (newest.isPresent() && (reply.isEmpty() || reply.get().getOccurredAt().isBefore(newest.get().getOccurredAt()))) {
             // Same unanswered card: enrich it without creating another event or spending another slot.
             var event = newest.get();
-            event.setPayload(groundedObservation(text, labels, Boolean.TRUE.equals(event.getPayload().surfaced())));
+            event.setPayload(groundedObservation(text, evidence, Boolean.TRUE.equals(event.getPayload().surfaced())));
             events.saveAndFlush(event);
             log.info("Grounded hypothesis merged for owner {} topic {}", owner, topic);
             return false;
         }
         boolean surfaced = budget.remainingToday(owner, Instant.now()) > 0;
         appender.append(owner, row.getId(), PatternEventEntity.KIND_OBSERVATION,
-                groundedObservation(text, labels, surfaced));
+                groundedObservation(text, evidence, surfaced));
         log.info("Grounded hypothesis {} for owner {} topic {}", surfaced ? "published" : "pending", owner, topic);
         return true;
     }
