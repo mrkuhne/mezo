@@ -49,12 +49,16 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
-- **2026-09-23 — Contextual Mezo feed direction approved (`mezo-7nron`; implementation pending).**
-  Immediate reactions across all active daily message kinds will share chat's personal context,
-  read tools and dated conversational continuity. Relevant cross-domain connections, recognition
-  of progress and respectful challenge are explicit goals. [Design](../superpowers/specs/2026-09-23-contextual-mezo-feed-design.md)
-  · [implementation plan](../superpowers/plans/2026-09-23-contextual-mezo-feed.md)
-  · [ADR 0050](../decisions/0050-contextual-mezo-feed.md). No runtime behavior changed in this design delivery.
+- **2026-09-24 — Contextual Mezo feed implemented (`mezo-7nron`).** Eight active daily
+  message kinds share dated continuity, personal/chat memory and bounded read tools. Fresh
+  weight/sleep evidence distinguishes raw observations from smoothed trends; actor attribution
+  and internal provenance follow each generation. A reasoned answer-or-read loop reuses chat
+  execution primitives. Synthetic provider review: all 12 cases at least 8/10; switch defaults
+  on after full-suite plus targeted corrective verification. Existing daily messages stay intact.
+  [Evaluation and gate details](../features/contextual-feed-evaluation.md) ·
+  [ADR 0050](../decisions/0050-contextual-mezo-feed.md) ·
+  [ADR 0051](../decisions/0051-contextual-feed-reasoned-read-loop.md).
+  First naturally generated production samples remain a read-only follow-up (`mezo-7bzwr`).
 
 | Date | Milestone |
 |---|---|

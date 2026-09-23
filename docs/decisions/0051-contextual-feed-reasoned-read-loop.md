@@ -1,6 +1,6 @@
 # 0051 — Preserve reasoning while reading contextual feed evidence
 
-- **Status:** Accepted, activation gated by evaluation
+- **Status:** Accepted — evaluation completed, activation default enabled
 - **Date:** 2026-09-23
 - **Driver:** mezo-7nron.6
 

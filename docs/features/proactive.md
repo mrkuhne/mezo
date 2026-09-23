@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-09-23
+updated: 2026-09-24
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -2621,7 +2621,7 @@ dual-mode.
 
 ### Contextual feed foundation (mezo-7nron.2)
 
-The optional `mezo.feature.contextual-feed.enabled` seam is off by default. When enabled, all eight active daily kinds use `FeedGenerationService` after their existing
+The `mezo.feature.contextual-feed.enabled` switch defaults to true. All eight active daily kinds use `FeedGenerationService` after their existing
 eligibility and existing-row checks. `FeedMessagePrompts` defines their distinct purpose; the
 common brief requires continuity, relevant connections and correction of stale interpretations.
 Morning/window generation can proceed without summaries when a current weight or recent sleep
@@ -3729,7 +3729,7 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedGenerationService.java` — structured contextual generation, source validation and audit.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/FeedGenerationTrace.java` — optional internal provenance in the existing JSONB envelope.
 
-**Contextual feed foundation (disabled by default)**
+**Contextual feed foundation (enabled; switch-off rollback)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedEvidenceAssembler.java` — dated raw weight/sleep evidence and explicitly scoped trend rates.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedContextAssembler.java` — shared personal context, event evidence, prior feed and RAG composition.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedContinuityService.java` — bounded owned history and dated source references.

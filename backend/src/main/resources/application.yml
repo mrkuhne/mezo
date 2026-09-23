@@ -288,9 +288,9 @@ mezo:
     # Cheapest same-category item must cost <= this fraction of the priciest (0.8 = 20% cheaper)
     cheaper-ratio: 0.8
   feature:
-    # Shared personal feed context; enabled after all integration/evaluation slices.
+    # Shared personal feed context; rollback by setting this switch false (ADR 0050/0051).
     contextual-feed:
-      enabled: false
+      enabled: true
     # Gamified progression engine (post-workout level-up + XP). No matchIfMissing — declared explicitly.
     progression:
       enabled: true

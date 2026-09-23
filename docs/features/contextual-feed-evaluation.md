@@ -1,7 +1,7 @@
 ---
 title: Contextual feed evaluation
 type: feature-domain
-status: in-progress
+status: complete
 updated: 2026-09-24
 tags: [proactive, companion-feed, ai, backend]
 key_files:
@@ -59,7 +59,7 @@ Normal gate: `cd backend && ./mvnw clean test -Dmezo.test.use-testcontainers=tru
 Provider replay requires all of `-Dmezo.excludedTestGroups=`,
 `-Dmezo.eval.contextual-feed=true`, `-Dmezo.eval.model=<deployed-model>` and
 `-Dtest=ContextualFeedProviderEvalIT`. An explicit model without its API key fails visibly.
-The evidence commit keeps the production feature switch off; activation is a separate commit after the review and corrective gates.
+The production switch `mezo.feature.contextual-feed.enabled` now defaults to true in a separate activation commit. Setting it false restores the legacy path. Existing daily rows are retained, so changes appear on subsequent natural generation events. Deployment and production-message observation are distinct from this configuration change.
 
 ## 7. Verification
 
@@ -127,6 +127,8 @@ all 11 architecture rules plus the shared generator, all-kind integration and le
 passed **51 tests, zero failures/errors**. The full suite was not repeated after this narrowly
 scoped exception-type correction; the release evidence is the full run plus that targeted
 corrective gate, not a claim of one entirely green full-suite invocation.
+
+After the separate default-on change, a clean activation gate passed **76 tests, zero failures/errors**: all architecture rules, contextual generation/all kinds/corpus, legacy generator, async events, advice cards and API switch-off behavior.
 
 Independent code review found no actionable correctness/security defects. CODEMAP and conflict
 marker checks pass. Doc lint has zero errors; strict repository-wide doc lint still reports
