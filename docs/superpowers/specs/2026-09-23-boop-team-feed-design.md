@@ -35,7 +35,8 @@ lekerül a főútvonalról.
    **Mezo** (döntéshozó) külön figuraként él tovább a beszélgetésekben; a Szkeptikus nem
    posztol, nem kap story-kört.
 3. **Ritmus:** reggeli felütés → napközben csak „kopogtatás” (döntés/kérdés/kérés) →
-   **esti szertartás**: naponta egyszer 2–4 válogatott poszt. Keveset, de várhatót; a fal
+   **esti szertartás**: naponta egyszer 3–6 válogatott poszt (2026-09-24: 2–4 → 3–6, 21:00, lásd
+   [a II. felvonás specjét](2026-09-24-csapatfal-act2-esti-kiadas-design.md)). Keveset, de várhatót; a fal
    2 perc alatt elolvasható. A többi a naplóban marad, visszakereshetően.
 4. **Karakter-profilszobák:** a régi funkcióoldalak tartalma az 5 karakter szobáiba
    költözik (mit figyel most · mit tanult meg rólad · mit kér tőled), a területfüggetlen
@@ -71,6 +72,8 @@ lekerül a főútvonalról.
       („két hétből 4 estéről tudom… ha ma bejelentkezel…”), CTA-val.
     - *A „gyűlik” állapot is tartalom:* a küszöb (min-n=8) alatt 5 közös naptól őszinte
       „még csak sejtés” poszt mehet ki — a köztes izgalom nem vész el.
+    - *(2026-09-24: a kritikus-újrahangolást a `mezo-hben1` grounded ága szállítja — az alábbi
+      „mind eldobta” állapot addig volt igaz.)*
     - *Szabad AI-felfedezés felszabadítása:* az éjszakai hipotézis-javaslatokat a belső
       kritikus 2026-08-30 óta mind eldobta (keep floor vs. statisztika-nélküli-új-ötlet
       csapda). Újrahangolás: a sejtés alacsony, őszinte bizalommal szülessen meg, a szigor
@@ -268,6 +271,6 @@ owner OK → commit.
 
 ## 9. Nyitott kérdések
 
-- A karakterek végleges nevei (munkanevek: Szunya/Mocor/Falat/Derű; Mezo marad).
+- ~~A karakterek végleges nevei~~ — **lezárva 2026-09-24:** Szunya · Mocor · Falat · Derű · Mezo véglegesek.
 - Mezo arany színe végleges-e (a prototípusban jóváhagyva; ünnepi arany anyaggal rokon).
 - A „Rád vár” szűrés kell-e a falra külön nézetként, vagy elég a strip + pötty.
