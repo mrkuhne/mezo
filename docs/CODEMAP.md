@@ -555,7 +555,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### feedback
 
-*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-09-22, mixed)
+*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-09-23, mixed)
 
 - **FE data** `frontend/src/data/feedback`
   - **hooks (via `@/data/hooks`):** `useFeedback`
@@ -734,7 +734,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### insights
 
 *FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-20, mixed) ·
-  [docs/features/insights.md](features/insights.md) (updated 2026-09-22, mixed)
+  [docs/features/insights.md](features/insights.md) (updated 2026-09-23, mixed)
 
 - **FE data** `frontend/src/data/insights`
   - **hooks (via `@/data/hooks`):** `MemoryRetrievalFeedback`, `MemoryRetrievalFeedbackAction`,
