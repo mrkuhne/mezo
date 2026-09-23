@@ -78,8 +78,10 @@ function Room({ id }: { id: RoomId }) {
         <div className="tf-gauge">
           <svg viewBox="0 0 64 64" className="uv-ring" aria-hidden="true">
             <circle className="uv-ring-track" cx="32" cy="32" r={RING_R} />
-            <circle className="uv-ring-prog" cx="32" cy="32" r={RING_R}
-              strokeDasharray={`${Math.max(0.5, (maturity / 100) * RING_C)} ${RING_C}`} />
+            {maturity > 0 && (
+              <circle className="uv-ring-prog" cx="32" cy="32" r={RING_R}
+                strokeDasharray={`${(maturity / 100) * RING_C} ${RING_C}`} />
+            )}
           </svg>
           <span className="tf-gauge-value">{maturity > 0 ? `${maturity}%` : '—'}</span>
           <span className="tf-gauge-label">{maturity > 0 ? 'Érettség' : 'Ismerkedik'}</span>
@@ -104,7 +106,7 @@ function Room({ id }: { id: RoomId }) {
 
       <div className="tf-sec">
         <h2>Amit rólad tud</h2>
-        {dims.length > 0 && <Link className="tf-hint" to={claimsRoute}>Mind · {claims.length} →</Link>}
+        {dims.length > 0 && claims.length > 0 && <Link className="tf-hint" to={claimsRoute}>Mind · {claims.length} →</Link>}
       </div>
       <div className="tf-tlist">
         {claims.length === 0 && (
