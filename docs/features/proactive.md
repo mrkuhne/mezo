@@ -2621,8 +2621,15 @@ dual-mode.
 
 ### Contextual feed foundation (mezo-7nron.2)
 
-The optional `mezo.feature.contextual-feed.enabled` seam is off by default. Existing writers
-are unchanged until integration. `FeedContextAssembler` combines fresh evidence, bounded dated
+The optional `mezo.feature.contextual-feed.enabled` seam is off by default. When enabled, all eight active daily kinds use `FeedGenerationService` after their existing
+eligibility and existing-row checks. `FeedMessagePrompts` defines their distinct purpose; the
+common brief requires continuity, relevant connections and correction of stale interpretations.
+Morning/window generation can proceed without summaries when a current weight or recent sleep
+record exists. Advice keeps candidate ranking, facts, action catalog, question-card verbatim text
+and cooldowns. Its numerical/register guards remain; hydration retains its probe and template.
+Advice/hydration fall back to deterministic copy on unusable generation; other kinds persist no
+row. Applied advice retains the original trace, and subsequent history includes the action and
+its timestamp. The disabled path still runs the previous generators. `FeedContextAssembler` combines fresh evidence, bounded dated
 `FeedContinuityService` history, chat personal context, snapshot and shared RAG. History defaults
 to 14 days, 12 messages (six same-kind reserved), 8000 characters total and 800 per excerpt.
 `FeedGenerationService` uses the existing companion LLM tool loop and shared read-only registry
@@ -2631,7 +2638,8 @@ Source chips are accepted only when their `(kind,id)` exists in collected eviden
 this pair-based selection also supports sources discovered after the initial prompt was built.
 Malformed/failed generation returns null to the caller's existing fallback policy. The internal
 nullable JSONB `trace` records the context cutoff, prior message/retrieval IDs, executed tool calls,
-collected source refs and degraded reason. No raw tool results or public DTO changes are added.
+collected source refs and degraded reason. No raw tool results or public DTO changes are added. Advice fallback is explicitly marked
+`advice_template_fallback`; old deterministic hydration fallback has no generation trace.
 Async sleep/weight listeners bind the event owner through `LlmActorContext.runAs`, restoring it
 when generation ends. `ContextualFeedProperties` owns all history/evidence/tool budgets.
 
@@ -3704,6 +3712,8 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
   a wider "one owner zone for every job-minted today" sweep is out of this slice's scope.
 
 ## 10. Key files
+
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedMessagePrompts.java` — eight per-kind purposes layered onto the shared brief.
 
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedGenerationService.java` — structured contextual generation, source validation and audit.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/FeedGenerationTrace.java` — optional internal provenance in the existing JSONB envelope.

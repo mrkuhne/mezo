@@ -65,6 +65,10 @@ class AdviceApplyServiceIT extends AbstractIntegrationTest {
     void testApply_shouldStampAppliedAndRunTheEffectOnce() {
         UUID owner = userPopulator.createUser().getId();
         CompanionMessageEntity card = seedCardWithOfferedAction(owner);
+        var trace = new io.mrkuhne.mezo.feature.proactive.entity.FeedGenerationTrace(1, Instant.now(),
+                List.of(), List.of(), null, List.of(), null);
+        card.setContent(card.getContent().withTrace(trace));
+        companionMessageRepository.saveAndFlush(card);
         CompanionMessageEnvelope beforeApply = card.getContent();
         countingMutationPort.reset();
 
@@ -87,7 +91,7 @@ class AdviceApplyServiceIT extends AbstractIntegrationTest {
     private CompanionMessageEnvelope withoutApplied(CompanionMessageEnvelope content) {
         return new CompanionMessageEnvelope(content.eyebrow(), content.body(), content.refs(),
                 content.interventionKey(), content.setupKey(), content.adviceKey(), content.facts(),
-                content.suggestions(), content.actions(), null);
+                content.suggestions(), content.actions(), null, content.trace());
     }
 
     /** Idempotence is the point (S5): a second apply of the SAME action must run the effect ZERO

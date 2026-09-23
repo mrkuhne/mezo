@@ -75,7 +75,7 @@ public class FeedGenerationService {
             String prompt = "Üzenettípus: " + kind + "; mai dátum: " + date + "\n" + assembled.text()
                     + "\n[Elérhető források]\n" + mapper.writeValueAsString(eventRefs) + "\n" + mapper.writeValueAsString(assembled.refs());
             String raw = calls.runWith(new LlmCallContext("proactive_feed", kind, null, null),
-                    () -> llm.complete(SYSTEM_PROMPT, prompt, tools.feedCallbacks(audit), toolContext));
+                    () -> llm.complete(SYSTEM_PROMPT + "\n[Mai feladat]\n" + FeedMessagePrompts.task(kind), prompt, tools.feedCallbacks(audit), toolContext));
             var json = mapper.readTree(raw);
             if (!json.path("eyebrow").isString() || json.path("eyebrow").asText().isBlank()
                     || !json.path("body").isArray() || json.path("body").isEmpty()) return null;

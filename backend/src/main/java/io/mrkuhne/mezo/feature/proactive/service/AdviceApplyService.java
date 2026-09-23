@@ -123,7 +123,7 @@ public class AdviceApplyService {
                 new CompanionMessageEnvelope.Applied(actionKey, Instant.now().truncatedTo(ChronoUnit.MICROS));
         card.setContent(new CompanionMessageEnvelope(content.eyebrow(), content.body(), content.refs(),
                 content.interventionKey(), content.setupKey(), content.adviceKey(), content.facts(),
-                content.suggestions(), content.actions(), stamp));
+                content.suggestions(), content.actions(), stamp, content.trace()));
 
         CompanionMessageEntity saved = companionMessageRepository.saveAndFlush(card);
         log.info("Advice action {} applied to card {} for user {}", actionKey, cardId, userId);

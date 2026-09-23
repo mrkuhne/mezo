@@ -271,6 +271,7 @@ public class CompanionMessageGenerator {
      *  (it also runs with companion off), so the bean can be absent. Absent ⇒ every message ships
      *  exactly as it did pre-S7, with no {@code [Hosszú távú memória]} block. */
     private final ObjectProvider<MemoryContextBlock> memoryContextBlock;
+    private final ObjectProvider<FeedGenerationService> contextualFeed;
 
     /**
      * Generates (or returns the existing) morning message for one day. Returns null when there
@@ -288,6 +289,14 @@ public class CompanionMessageGenerator {
         List<DailySummaryEntity> past = dailySummaryRepository
                 .findByCreatedByAndSummaryDateGreaterThanEqualOrderBySummaryDateDesc(
                         userId, date.minusDays(properties.feed().pastDays()));
+        if (contextualFeed.getIfAvailable() != null) {
+            if (past.isEmpty() && !hasRecentEvent(userId, date)) return null;
+            String facts = past.stream().filter(p -> !p.getSummaryDate().isAfter(date))
+                    .map(p -> p.getSummaryDate() + ": " + p.getNarrative()).collect(Collectors.joining("\n"));
+            var digest = reflectionDigest(userId, date);
+            return generateContextual(userId, date, "morning", facts + missedWorkoutsBlock(userId, date)
+                    + (digest == null ? "" : "\nÉszrevétel: " + digest.sentence()));
+        }
         if (past.isEmpty()) {
             log.debug("No daily summaries for {} in the {}-day window before {} — no morning message",
                     userId, properties.feed().pastDays(), date);
@@ -417,6 +426,9 @@ public class CompanionMessageGenerator {
             log.debug("No fresh sleep log for {} on {} — no sleep-reaction message", userId, date);
             return null;
         }
+        if (contextualFeed.getIfAvailable() != null) {
+            return generateContextual(userId, date, "sleep", "");
+        }
         String snapshot = contextSnapshotAssembler.render(userId, date);
         List<CompanionMessageEnvelope.Ref> candidates =
                 new ArrayList<>(presentCandidates(SLEEP_CANDIDATES, snapshot));
@@ -476,6 +488,9 @@ public class CompanionMessageGenerator {
         if (weight == null || !weight.getDate().equals(date)) {
             log.debug("No today's weigh-in for {} on {} — no weight-reaction message", userId, date);
             return null;
+        }
+        if (contextualFeed.getIfAvailable() != null) {
+            return generateContextual(userId, date, "weight", "");
         }
         String snapshot = contextSnapshotAssembler.render(userId, date);
         List<CompanionMessageEnvelope.Ref> candidates =
@@ -543,6 +558,13 @@ public class CompanionMessageGenerator {
         List<DailySummaryEntity> past = dailySummaryRepository
                 .findByCreatedByAndSummaryDateGreaterThanEqualOrderBySummaryDateDesc(
                         userId, date.minusDays(properties.feed().pastDays()));
+        if (contextualFeed.getIfAvailable() != null) {
+            if (past.isEmpty() && !hasRecentEvent(userId, date)) return null;
+            String facts = past.stream().filter(p -> !p.getSummaryDate().isAfter(date))
+                    .map(p -> p.getSummaryDate() + ": " + p.getNarrative()).collect(Collectors.joining("\n"));
+            return generateContextual(userId, date, kind, facts + hydrationBlock(userId, date, LocalTime.now())
+                    + batchLoggerBlock(userId, date));
+        }
         if (past.isEmpty()) {
             log.debug("No daily summaries for {} in the {}-day window before {} — no {} message",
                     userId, properties.feed().pastDays(), date, kind);
@@ -683,6 +705,10 @@ public class CompanionMessageGenerator {
                     userId, date, now);
             return null;
         }
+        if (contextualFeed.getIfAvailable() != null) {
+            var generated = generateContextual(userId, date, "hydration", hydrationBlock(userId, date, now));
+            if (generated != null) return generated;
+        }
         ProactiveProperties.Hydration cfg = properties.hydration();
         String body = cfg.checkpointTemplate()
                 .replace("{logged}", String.valueOf(shortfall.loggedMl()))
@@ -763,6 +789,9 @@ public class CompanionMessageGenerator {
         if (!silentNames.isEmpty()) {
             payload.append("CSENDBEN MARADT: ").append(String.join(", ", silentNames)).append('\n');
         }
+        if (contextualFeed.getIfAvailable() != null) {
+            return generateContextual(userId, date, "people", payload.toString());
+        }
         appendCandidates(payload, candidates);
 
         String answer = llmCallContextHolder.runWith(
@@ -780,6 +809,25 @@ public class CompanionMessageGenerator {
         message.setKind(CompanionMessageEntity.KIND_PEOPLE);
         message.setContent(new CompanionMessageEnvelope(
                 parsed.eyebrow(), parsed.body(), resolveRefs(parsed.refIndexes(), candidates)));
+        message.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
+        return companionMessageRepository.saveAndFlush(message);
+    }
+
+    private boolean hasRecentEvent(UUID userId, LocalDate date) {
+        return weightLogRepository.findFirstByCreatedByAndDeletedFalseOrderByDateDescCreatedAtDesc(userId)
+                .filter(w -> w.getDate().equals(date)).isPresent()
+                || sleepLogRepository.findFirstByCreatedByAndDeletedFalseOrderByDateDesc(userId)
+                .filter(w -> !w.getDate().isAfter(date) && !w.getDate().isBefore(date.minusDays(1))).isPresent();
+    }
+
+    private CompanionMessageEntity generateContextual(UUID userId, LocalDate date, String kind, String facts) {
+        var generated = contextualFeed.getObject().generate(userId, date, kind, facts);
+        if (generated == null) return null;
+        var message = new CompanionMessageEntity();
+        message.setCreatedBy(userId);
+        message.setMessageDate(date);
+        message.setKind(kind);
+        message.setContent(generated.envelope());
         message.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         return companionMessageRepository.saveAndFlush(message);
     }

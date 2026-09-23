@@ -120,9 +120,10 @@ public class AdviceCardService {
         // Round 2 S5 (bd mezo-d58h.7.5): a verbatim candidate (the once-ever questions) IS its own
         // body — AdviceProseGenerator's prompt would turn a question into advice and drop the
         // 👍/👎 answer key. Nothing else about delivery changes: same gate, same rank, same row.
-        String prose = candidate.verbatim()
-            ? candidate.fallbackProse()
-            : adviceProseGenerator.write(userId, candidate);
+        GeneratedFeedMessage generated = !candidate.verbatim() && adviceProseGenerator.contextualEnabled()
+                ? adviceProseGenerator.writeContextual(userId, today, candidate) : null;
+        String prose = candidate.verbatim() ? candidate.fallbackProse()
+                : generated != null ? String.join("\n\n", generated.body()) : adviceProseGenerator.write(userId, candidate);
         // mezo-wtl0 — GROUNDING and DISPLAY are two different things, and this is the seam that
         // separates them. AdviceProseGenerator above is still handed candidate.suggestions()
         // UNCHANGED: they are the model's only source for the actual recommendation, so removing
@@ -144,6 +145,12 @@ public class AdviceCardService {
             candidate.adviceKey(), candidate.interventionKey(), candidate.setupKey(),
             candidate.facts(), displayedSuggestions,
             adviceActionCatalog.forCard(userId, candidate.adviceKey())));
+        if (generated != null) {
+            var content = row.getContent();
+            row.setContent(new CompanionMessageEnvelope(content.eyebrow(), generated.body(), generated.refs(),
+                    content.interventionKey(), content.setupKey(), content.adviceKey(), content.facts(),
+                    content.suggestions(), content.actions(), content.applied(), generated.trace()));
+        }
         row.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         CompanionMessageEntity saved = companionMessageRepository.saveAndFlush(row);
         log.info("Advice {} delivered for user {}", candidate.adviceKey(), userId);

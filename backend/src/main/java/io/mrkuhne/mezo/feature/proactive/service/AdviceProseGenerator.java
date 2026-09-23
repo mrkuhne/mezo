@@ -80,6 +80,23 @@ public class AdviceProseGenerator {
     private final CompanionLlm companionLlm;
     private final LlmCallContextHolder llmCallContextHolder;
     private final PromptPersona promptPersona;
+    private final org.springframework.beans.factory.ObjectProvider<FeedGenerationService> contextualFeed;
+
+    public boolean contextualEnabled() { return contextualFeed.getIfAvailable() != null; }
+
+    public GeneratedFeedMessage writeContextual(UUID userId, java.time.LocalDate date, AdviceCandidate candidate) {
+        String grounding = renderGrounding(candidate);
+        var generated = contextualFeed.getObject().generate(userId, date, "advice", grounding);
+        if (generated != null) {
+            String prose = String.join("\n\n", generated.body());
+            if (ProseNumberGuard.grounded(prose, grounding) && !FORMAL_ADDRESS.matcher(prose).find()) return generated;
+        }
+        return new GeneratedFeedMessage(candidate.eyebrow(), java.util.List.of(candidate.fallbackProse()),
+                java.util.List.of(), new io.mrkuhne.mezo.feature.proactive.entity.FeedGenerationTrace(
+                        1, java.time.Instant.now(), java.util.List.of(), java.util.List.of(), null,
+                        java.util.List.of(), "advice_template_fallback"));
+    }
+
 
     /** The card's body text — model prose when it is usable, the template otherwise. Never blank. */
     public String write(UUID userId, AdviceCandidate candidate) {

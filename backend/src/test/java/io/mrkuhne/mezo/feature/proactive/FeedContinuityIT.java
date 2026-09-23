@@ -66,4 +66,16 @@ class FeedContinuityIT extends AbstractIntegrationTest {
         assertThat(result.text()).isEmpty();
         assertThat(result.priorMessageIds()).isEmpty();
     }
+    @Test
+    void testRender_shouldIncludeAppliedAction_whenAdviceWasActedOn() {
+        var user = users.populateUser("feed-acted@test.local");
+        var row = messages.createMessage(user, DAY.minusDays(1), "advice", "Javaslat", List.of("Korábbi javaslat"), NOW.minusSeconds(86400));
+        var c = row.getContent();
+        row.setContent(new io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEnvelope(c.eyebrow(), c.body(), c.refs(),
+                null, null, "sleep_debt", List.of(), List.of(), List.of(),
+                new io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEnvelope.Applied("shift_sleep_anchor", NOW.minusSeconds(3600))));
+        repository.saveAndFlush(row);
+        assertThat(service.render(user, DAY, NOW, "sleep").text()).contains("végrehajtott művelet=shift_sleep_anchor", "2026-09-23T09:00:00Z");
+    }
+
 }
