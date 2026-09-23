@@ -2,7 +2,7 @@
 title: Today
 type: feature-domain
 status: mixed
-updated: 2026-09-23
+updated: 2026-09-24
 tags: [today, nap, mozaik, biometrics, frontend, data-layer, ritual, needs]
 # 8 load-bearing paths (was 10 — the three named Nap components are all under
 
@@ -64,7 +64,7 @@ The page scrolls. Rough-day mode quiets the decorative motion while preserving t
 
 ## 2. User-facing behavior
 
-Shared-shell integration: the Mezo domain now starts at `BoopWorldPage` with its own function navigation; `BoopNavigation` in `AppLayout` is excluded from all `/nap` routes. Today's routes, header DayOrb, Mezo message shortcut and logging flows are unchanged. See [Insights](insights.md) for the separate social entry.
+Shared-shell integration: the Mezo domain now starts at the csapat-üzenőfal (`TeamFeedPage`) with its own function navigation; `BoopNavigation` in `AppLayout` is excluded from all `/nap` routes. Today's routes, header DayOrb, Mezo message shortcut and logging flows are unchanged. See [Insights](insights.md) for the separate social entry.
 
 The global header uses a Beállítások cog instead of the daypart picker. Day-face resolution and existing `/nap?dp=` deep links still work; the aurora and day orb retain their existing behavior. `/settings/nap` links shared sleep anchors, Fuel cadence and notification preferences instead of storing duplicate daily-rhythm values. See [central settings](settings.md).
 

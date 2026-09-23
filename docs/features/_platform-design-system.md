@@ -2,7 +2,7 @@
 title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0 → Üveg)
 type: feature-platform
 status: in-progress
-updated: 2026-09-23
+updated: 2026-09-24
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -125,7 +125,7 @@ The design system has no "flows" of its own; it provides the chrome and the idio
 
 1. **App shell / navigation.** `PhoneFrame` owns the phone viewport and `.screen-content` is its scroller. On narrow screens and installed PWAs the frame becomes full-bleed. `TabBar` is absolutely anchored at bottom 0, left/right 0 of that viewport, so content scrolls while navigation stays in place. Its graphite surface has one top divider and no floating capsule/gutter/shadow. Desktop height is 88px; mobile height is 76px plus `env(safe-area-inset-bottom)`. Contextual links retain at least 44px touch height. Existing scroll clearance, FAB/save-bar positioning and chrome-free workout/sport-log/night/ritual exceptions remain.
 
-   The Mezo domain uses **Üzenőfal / Menü / Rólad / Emlékek** (`/mezo`, `/mezo/menu`, `/mezo/rolad`, `/mezo/emlekek`). `activeTabRoute` maps deep pages to their owning tab before remembering a domain's last destination; specific feed/engine paths outrank the broad character prefix. `BoopNavigation` provides visible lateral function links on content pages and the canonical weekly review. Existing DayOrb and domain switch remain.
+   The Mezo domain uses **Üzenőfal / A csapat / Rólad / Emlékek** (`/mezo`, `/mezo/csapat`, `/mezo/rolad`, `/mezo/emlekek`; `mezo-a9bo7.10` — the old Menü is the Gépterem's „Összes funkció” grid). `activeTabRoute` maps deep pages to their owning tab before remembering a domain's last destination; specific feed/engine paths outrank the broad character prefix. `BoopNavigation` provides visible lateral function links on content pages and the canonical weekly review. Existing DayOrb and domain switch remain.
 
    `navModel.ts` supplies the five domains, their four labels/icons/routes, deep-route ownership and in-session last-tab memory. The leading switch button opens `DomainSwitcher`: five Titanium cards (gold Nap, lime Edzés, cyan Fuel, lavender Mezo, rose Én), each with its icon, four-tab summary and a check on the current domain. Only the cards are visible: no heading, handle or enclosing drawer. A named modal portal covers `.phone-screen` with 22px blur; without backdrop-filter it uses an opaque dim surface. Short viewports scroll the cards. Current-card focus, Tab/Shift-Tab containment, Escape/backdrop dismissal, focus restoration and inert background siblings are owned by `DomainSwitcher`; `.screen-content` is scroll-locked while it is open. Reduced motion omits the staggered entrance. Navigation's dark palette is scoped through `--nav-*` tokens; page theme preferences are unchanged. The prototype's trial light palette was explicitly rejected.
 

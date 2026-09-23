@@ -2,7 +2,7 @@
 title: Insights (the Mezo tab)
 type: feature-domain
 status: mixed
-updated: 2026-09-23
+updated: 2026-09-24
 tags: [insights, mezo-tab, frontend, data-layer]
 key_files:
   - frontend/src/features/insights
@@ -20,7 +20,7 @@ related: [_platform-data-layer, _platform-design-system, today, me, character, c
 
 > One-line: the **pattern/companion "AI brain" surface** — where mezo reflects back what it has *learned* about the user (detected patterns, memoir, knowledge base, chat, predictions, experiments). **Status: 🔶 mixed** — **Chat** (companion V0.4), **Patterns** (V3.1), **Knowledge** (V1.2) are ✅ real over the companion backend ([`companion.md`](companion.md)); **Memoir** is ✅ real since **proactive W2 (`mezo-h4wp.4`)** — the tab un-ghosted, rendering the companion's generated weekly memoir (anniversary/archive stay mock-only; the mock-only demo reaction row was RETIRED at Phase 5 W4.1 `mezo-b3pp.15` in favour of real 👍/👎 feedback chips that render in both modes — §2.3, closes `mezo-kr9v`); **Predictions** is ✅ real since **proactive P1 (`mezo-h4wp.7`)** — the tab un-ghosted, rendering pattern-grounded forecasts with deterministic validation („tanulom" on null confidence, honest accuracy header); and **Experiments** is ✅ real since **proactive P2 (`mezo-h4wp.8`)** — the last tab un-ghosted, rendering companion-proposed N=1 experiments with an L2 accept/dismiss write path + deterministic outcomes. **All proactive-epic tabs are now real** (`PHASE3_TAB_IDS` is empty; the proactive epic is complete) — plus the post-epic **Memória** tab (§2.9, `mezo-al1i`, a read-only observatory over the memory pipeline itself), never phase-gated, for **all seven remaining Insights tabs real** today. **Phase-2 exit audit passed (mezo-t16y.4, 2026-07-05):** the sub-nav hiding + per-page `PhaseTeaserCard` guards re-verified; no fabricated Insights number reaches a live user. **Reached as the `Mezo` tab** — the fourth of the five first-class tabs, promoted out of a hidden ✨-icon link in Today's header by Design 2.0 ([ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md)). **The name changed with the promotion: the section is called `Mezo`, its routes are `/mezo/*`, and `/insights/*` is a redirect** (§2). **The post-epic Motor tab (was §2.8, `mezo-viqs`/`mezo-18bx`) is RETIRED (`mezo-tk88.4`)** — its pattern-gate diagnostics were folded into the Patterns tab's own dashboard (new §2.1: hero + decision inbox + lifecycle sections + a collapsed „Adat-egészség" coverage panel) and the per-pattern **pattern-pair detail page** (§2.1b, `mezo-tk88.5` — `PatternDetailPage.tsx`); `/mezo/motor` now redirects to `/mezo/patterns` (`router.tsx`). **The Weekly tab (was §2.2, `mezo-t16y.1`/D′) is also RETIRED (`mezo-p2tr`)** — the weekly score review, its growth card and the weekly tervjavaslat prose all moved to **`/me/week`** (the `Heti` hub + view-pages, backed by the backend-computed `GET /api/me/week` — [`me.md`](me.md)); `/mezo/weekly` now redirects to `/me/week` (`router.tsx`).
 
-> **Boop V3:** the root is the existing social council feed, the menu exposes original feature names, and content opens on full pages. Actual Mozaik/Clay assets, the header and contextual bottom dock remain. See [ADR 0049](../decisions/0049-boop-shared-social-ai-world.md).
+> **Csapat-üzenőfal (Act I, `mezo-a9bo7`, 2026-09-24):** the root is the five-character social wall (`TeamFeedPage`) in the dark glass canon; the dock is **Üzenőfal · A csapat · Rólad · Emlékek**; the old 12-tile menu is the Gépterem's „Összes funkció” dev-menu. Every post is a view of an existing record ([ADR 0049](../decisions/0049-boop-shared-social-ai-world.md)); content still opens on full pages.
 
 ---
 
@@ -48,12 +48,13 @@ Driving specs: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (Sli
 
 The communication profile now belongs to `/settings/mezo/communication`, alongside explicit user instructions and the learned-profile inclusion switch. The Tudástár no longer has a communication tile; `?view=profil` redirects to the canonical editor. `/settings/mezo/context` shows the exact backend-assembled personal blocks, source links and inclusion status. See [central settings](settings.md) and [companion](companion.md).
 
-**Route: `/mezo`** renders `BoopWorldPage`, the social entry. The persistent Mezo dock is **Üzenőfal / Menü / Rólad / Emlékek**. Each content page retains its original route and name. `BoopNavigation` in `AppLayout` provides direct Minták, Előrejelzések, Diagnózis, Kísérletek and Heti links plus Összes funkció; the weekly review stays canonical at `/me/week`.
+**Route: `/mezo`** renders `TeamFeedPage`, the csapat-üzenőfal (§3). The persistent Mezo dock is **Üzenőfal / A csapat / Rólad / Emlékek** (`navModel.ts`, spec §2.5, `mezo-a9bo7.10`). Ownership keeps the highlight from jumping: a post's deep pages (patterns, predictions, experiments, diagnózis, coaching, chat, karakter-feed) light **Üzenőfal**; the rooms and the machinery behind them (`/mezo/csapat/*`, konzílium, Gépterem incl. „Összes funkció”, memória) light **A csapat**. Each content page retains its original route and name. `BoopNavigation` in `AppLayout` still provides direct Minták, Előrejelzések, Diagnózis, Kísérletek and Heti chips plus „Összes funkció” on the legacy feature pages — it stays OFF the rooms and the Gépterem subtree (the prototype has no chip strip there); the weekly review stays canonical at `/me/week`.
 
 | Surface | Route | Component |
 |---|---|---|
-| Üzenőfal | `/mezo` | `BoopWorldPage` |
-| Menü | `/mezo/menu` | `BoopMenuPage` |
+| Üzenőfal | `/mezo` | `TeamFeedPage` |
+| A csapat / szoba | `/mezo/csapat`, `/mezo/csapat/:id` | `TeamPage`, `CharacterRoomPage` |
+| Összes funkció (dev-menü) | `/mezo/karakter/gepterem/osszes` (`/mezo/menu` redirects here) | `BoopMenuPage` |
 | Rólad | `/mezo/rolad` | `BoopAboutPage` |
 | Emlékek / napi részlet | `/mezo/emlekek`, `/mezo/emlekek/:date` | `BoopMemoriesPage`, `MemoryDayPage` |
 | Minták / részlet | `/mezo/patterns`, `/mezo/patterns/:key` | `PatternsPage`, existing detail pages |
@@ -61,13 +62,26 @@ The communication profile now belongs to `/settings/mezo/communication`, alongsi
 | Kísérletek / részlet | `/mezo/experiments`, `/mezo/experiments/:id` | `ExperimentsPage`, `ExperimentDetailPage` |
 | Tudástár / kapcsolat | `/mezo/knowledge`, `/mezo/knowledge/node/:id` | `KnowledgeListPage`, `KnowledgeNodePage` |
 
-The menu catalog is `logic/boopNavigation.ts`; it also exposes Diagnózis, Heti, Karakter, Konzílium, Coaching, Beszélgetés and Gépterem. Menu tiles use actual Clay icons, wash tokens and reduced-motion-aware entrance/hover animation. They do not invent live counts or rewards.
+The menu catalog is `logic/boopNavigation.ts` (`BOOP_DESTINATIONS` + `ALL_FEATURES_ROUTE`); since `mezo-a9bo7.10` it is the Gépterem's „Összes funkció” grid (spec §2.4: a dev-menu opened from the Gépterem tile and the chips' „Összes funkció” link, not a tab), and the list pages' back chip returns to it. It also exposes Diagnózis, Heti, Karakter, Konzílium, Coaching, Beszélgetés and Gépterem. Menu tiles use actual Clay icons, wash tokens and reduced-motion-aware entrance/hover animation. They do not invent live counts or rewards.
 
 **The rename is a redirect, not a break (`mezo-d20.1.1`).** `router.tsx` mounts `{ path: 'insights/*', element: <LegacyPathRedirect prefix="/insights" to="/mezo" /> }` — a component that rewrites `location.pathname` and re-navigates with `replace`, **preserving the subpath and the query string**. So `/insights` → `/mezo`, `/insights/knowledge` → `/mezo/knowledge`, `/insights/patterns/late_meal__sleep_quality?x=1` → the same under `/mezo`. PWA bookmarks and any in-app `navigate()` not yet migrated keep working; `PatternsPage`'s own row links still emit `/insights/patterns/{key}` and arrive correctly through this hop. The two older intra-section redirects survive underneath, now on `/mezo`: **`/mezo/weekly` → `/me/week`** (the Heti retirement, `mezo-p2tr`) and **`/mezo/motor` → `/mezo/patterns`** (the Motor retirement, `mezo-tk88.4`).
 
 ### 2.0 Social entry and navigation
 
-`BoopWorldPage` embeds `KarakterHubPage` with its existing bootstrap/loading/degraded and council-feed behavior. Real reactions, contextual replies and glass evidence stay in the character feature. Below the feed, current discoveries link to an actual proposed pattern, latest prediction and active experiment when present; these are source-record links, not invented expert posts. Cross-engine topic conversations require the separate backend extension in ADR 0049.
+The old `BoopWorldPage` (the embedded `KarakterHubPage` council feed + „Amit közben figyelünk” discovery links) is **deleted** (`mezo-a9bo7.10`): the wall renders the same records as character posts (§3). Cross-engine topic conversations require the separate backend extension in ADR 0049 (Act II).
+
+**Hidegindítás (`mezo-a9bo7.10`, spec §2.6).** When `buildTeamFeed` yields no day AND the dossier is untouched (`isDossierEmpty(overview)`, the Karakter hub's own predicate), the wall shows `components/feed/IntroPosts.tsx`: Mezo's glass „Szia! Mi leszünk a te kis csapatod.” poster + the four flat intros, copy **verbatim** from the prototype's `elsonap` day 1. They are static UI copy, not records — no „Miből látszik?”, no trio, no maturity band — followed by „Kezdjük el a dossziét”, wired to the SAME `useCharacterBootstrap()` mutation as `KarakterHubPage` (created/conflict → „Elindult…”, empty → „Még nincs elég történet…”). A started dossier with no records gets the plain „Még csend van a falon” note instead. The `/mezo` kalauz bubble series is **retired** (`tutorial/registry/mezo.ts` is now empty; the orphaned `minta` fogalom went with it) — the intros replace it.
+
+#### 2.0a Hangkönyv-vázlat (spec §7/6 — the Act II generator prompts start here)
+
+Common rules for every character sentence: 2–4 sentences, tegeződő spoken Hungarian, zero jargon („intake”, „7-day MA”, „±0.3 kg” are banned), concrete numbers with **bold** emphasis, uncertainty said as uncertainty („lehet”, „kezd úgy tűnni”, „még csak sejtem”), every claim with „Miből látszik?”. Emoji only inside character sentences, from the character's own set — never as UI glyphs. Act I writes NO record text; this governs only the static intros and every future generator.
+
+- **Szunya · alvás** — calm, a little secretive night-watcher; never scolds about bedtime, notices timing rather than totals. Emoji: 🌙. *„Még semmit sem tudok rólad — pár naplózott alvás után jelentkezem az első észrevétellel.”* · *„Ez még csak egy szál, de már húzom.”*
+- **Mocor · mozgás** — energetic but not a drill sergeant; watches load, variety and logging discipline. Banned: pushing, guilt. Emoji: ⚡💪. *„Nem hajtalak, de észreveszem, és szólok, ha három nap ugyanaz megy.”* · *„a tested a **változatosságból** épül, nem a megszokásból.”*
+- **Falat · étkezés** — curious foodie, never scores a plate; hunts for what worked so it can be repeated. Emoji: 🍽️🥦 (🍳 in the prototype intro). *„nem pontozni fogok, hanem észrevenni.”* · *„minden tányér, amit felírsz, egy mondattal okosabbá tesz.”*
+- **Derű · közérzet** — warm, asks for the user's own words (check-ins), promises to notice mood drivers early; the most data-hungry voice (Act II „adat-éhség”). Emoji: 🌤️. *„Ehhez a te szavad kell: egy-egy rövid esti bejelentkezés.”* · *„Az energiád történetét szerintem együtt fogjuk megfejteni.”*
+- **Mezo · a csapat** — the gold host: convenes the weekly konzílium, explains how the team learns, owns memoir/diagnosis/knowledge. Emoji: 📔✅ (👋🔍 in the intro). *„**csak az kerül a rólad szóló képbe, amiben egyetértünk**”* · *„Nincs kioktatás, nincs tananyag — **a fal magyarázza önmagát**.”*
+- **A Szkeptikus** — never posts, has no ring or room; speaks only inside conversations, dry, no emoji, always offers the alternative explanation. *„Szép együttfutás, de a hétvége önmagában is magyarázhatja…”*
 
 `BoopAboutPage` embeds `DimensionsPage` and links to the canonical facts, graph and communication editor. The embedded flag suppresses only the duplicate character section header. `BoopMemoriesPage` combines the existing weekly memoir/archive and daily summaries/search without depending on the memory overview. Daily summaries open full pages with previous/next navigation; search `?q=` survives detail/back. Prediction/experiment details retain feedback and decisions, and expose honest loading/error/missing states. Patterns preserve bucket/domain/sort/page through their detail links; prediction/experiment lists preserve their URL filters.
 
@@ -605,9 +619,9 @@ where the winning rule cleared up before the observer was opened. See
 
 ## 3. Architecture & data flow
 
-The social root reuses the character reads plus `usePatterns`, `usePredictions` and `useExperiments`. The menu has no data reads. All existing hooks share their TanStack caches with detail pages; no new backend endpoint or topic state is introduced by the navigation change.
+The social root is `TeamFeedPage` (below) plus `useCharacterOverview` for the cold-start gate. The „Összes funkció” grid has no data reads. All existing hooks share their TanStack caches with detail pages; no new backend endpoint or topic state is introduced by the navigation change.
 
-**Csapat-üzenőfal domain-réteg (`mezo-a9bo7.7`, Act I slice A1 — not yet mounted).** The wall that
+**Csapat-üzenőfal domain-réteg (`mezo-a9bo7.7`, Act I slice A1).** The wall that
 replaces the Boop hub root (`/mezo`, spec `docs/superpowers/specs/2026-09-23-boop-team-feed-design.md`,
 plan `docs/superpowers/plans/2026-09-24-csapatfal-act1.md`) sits on two pure modules:
 `logic/team.ts` (the 5 postable characters + the non-posting Szkeptikus; `characterForMetricDomain`,
@@ -628,7 +642,7 @@ only a busy day (≥3 posts) promotes its newest — a quiet day's lone post sta
 sparse wall turns all-glass and the §3.4 ranking collapses (seen live in A2). The `tf-*` CSS section at the end of
 `boop-world.css` is the prototype's (`uveg-uzenofal.html`) wall/room anatomy on the shared U1 `.glass` kit.
 
-**A fal (`mezo-a9bo7.8`, slice A2 — built, mounted at A4 together with the dock switch).**
+**A fal (`mezo-a9bo7.8`, slice A2 — mounted on `/mezo` at A4, `mezo-a9bo7.10`).**
 `pages/TeamFeedPage.tsx` reads `usePatterns`, `usePatternMonitor` (pair domains for routing),
 `usePredictions`, `useExperiments`, `useObservations`, `useCharacterFeed(60)`; it shows `ScreenSkeleton`
 until ALL are settled (no empty-state flash, mezo-yew), then header → `StoryStrip` → „Rád vár” strip →
@@ -650,7 +664,7 @@ a coral dot = something waits on you there; each ring links to `/mezo/csapat/<id
 The trio's four icons (`t-thumb-up`, `t-thumb-down`, `t-send`, `t-flask`) joined the Titanium sprite
 from the prototype's approved „Új ikonok” sheet.
 
-**Szobák + A csapat (`mezo-a9bo7.9`, slice A3 — routed, not yet in the dock).** `/mezo/csapat`
+**Szobák + A csapat (`mezo-a9bo7.9`, slice A3 — the „A csapat” dock tab since A4).** `/mezo/csapat`
 (`pages/TeamPage.tsx`) lists the five rooms as `glass tf-rowg` rows in the character accent: „Most
 figyeli” = the room's first case, the badge = room maturity („ismerkedik” at 0), then the Szkeptikus
 explainer (`tf-dash`, no room) and the Gépterem door. `/mezo/csapat/:id` (`pages/CharacterRoomPage.tsx`;
@@ -1036,10 +1050,10 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 ## 10. Key files
 
 **Feature (`frontend/src/features/insights/`):** — the directory keeps its `insights` name; the tab is called `Mezo` (§2)
-- `pages/{BoopWorldPage,BoopMenuPage,BoopAboutPage,BoopMemoriesPage,MemoryDayPage,KnowledgeNodePage,PredictionDetailPage,ExperimentDetailPage}.tsx` — social entry, direct navigation and full detail pages.
+- `pages/{BoopMenuPage,BoopAboutPage,BoopMemoriesPage,MemoryDayPage,KnowledgeNodePage,PredictionDetailPage,ExperimentDetailPage}.tsx` — the „Összes funkció” grid, Rólad, Emlékek and full detail pages.
 - `logic/team.ts` + `logic/teamFeed.ts` (+ `teamFeed.fixtures.ts`) — **`mezo-a9bo7.7`** the csapat-üzenőfal character registry and record→post builder (§3); pure, unit-tested
-- `pages/TeamFeedPage.tsx` + `components/feed/{FeedTrio,FeedPostCard,FeedPosterCard,FeedPostHead,FeedReplySheet,StoryStrip}.tsx` + `useFeedSession.ts` + `useTeamFeed.ts` — **`mezo-a9bo7.8`** the csapat-üzenőfal wall, the unified trio and the reply sheet (§3); not routed until A4
-- `pages/{TeamPage,CharacterRoomPage}.tsx` + `components/feed/RoomCaseCard.tsx` + `logic/teamRooms.ts` — **`mezo-a9bo7.9`** A csapat and the five character rooms (§3); routed at `/mezo/csapat[/:id]`, dock entry at A4
+- `pages/TeamFeedPage.tsx` + `components/feed/{FeedTrio,FeedPostCard,FeedPosterCard,FeedPostHead,FeedReplySheet,StoryStrip}.tsx` + `useFeedSession.ts` + `useTeamFeed.ts` — **`mezo-a9bo7.8`** the csapat-üzenőfal wall, the unified trio and the reply sheet (§3); `/mezo` since A4 (`mezo-a9bo7.10`), with `IntroPosts.tsx` as the cold start (§2.0)
+- `pages/{TeamPage,CharacterRoomPage}.tsx` + `components/feed/RoomCaseCard.tsx` + `logic/teamRooms.ts` — **`mezo-a9bo7.9`** A csapat and the five character rooms (§3); routed at `/mezo/csapat[/:id]`, the „A csapat” dock tab since A4
 - `components/BoopNavigation.tsx`, `logic/boopNavigation.ts`, `boop-world.css` — shared function catalog, crosslinks and app-token visuals.
 - `pages/MezoHubPage.tsx` — unmounted previous hub, retained source/tests.
 - **`InsightsSection.tsx` and `pages/tabs.ts` are DELETED (`mezo-d20.5.1`)** — the shell, `INSIGHTS_TABS`, `visibleInsightsTabs()` and the (already-empty) `PHASE3_TAB_IDS` are gone, along with the app-wide `features/progression/components/AppHero.tsx` and `shared/ui/SubNavDropdown.tsx` they depended on. `InsightsSubNav.tsx` had already been superseded by the dropdown in `mezo-ugqb`; `components/PhaseTeaserCard.tsx` by the empty gate set in `mezo-mifi`
