@@ -16,15 +16,14 @@ it. The owner set this flow on 2026-09-23.
 - **Colors** are Mozaik's: the `--dv-*` accents and the `--macro-*` band. **Ground** is the app's
   own warm graphite dark `#191614`, never the cold Titanium graphite.
 - **Dark only.** Light mode is parked, not deleted. Do not design, prototype or verify light.
-- **The app chrome keeps its content and wears glass** (bible §7, approved 2026-09-23).
-  - **Header:** the "boop" wordmark, ? (kalauz), settings, messages, notifications (with the
-    panel) and the filling day orb.
-  - **Bottom menu:** fixed, with the living Boop on the domain switcher, and the nav-model tabs
-    with their clay icons.
-  - **No day-part switcher, ever.**
-  - U1 builds the chrome once. Every later slice **reuses it untouched**. A slice's prototype
-    copies the chrome from `fuel-uveg.html` verbatim, with only the domain Boop, the tabs and the
-    accent swapped for its area.
+- **The header keeps its content and wears glass** (bible §7.1, approved 2026-09-23): the
+  "boop" wordmark, ? (kalauz), settings, messages, notifications (with the panel) and the
+  filling day orb. **No day-part switcher, ever.** U1 builds it once, and every later slice
+  reuses it untouched.
+- **The bottom menu is NOT changed** (bible §7.2, owner correction 2026-09-23). It stays the
+  live docked full-width bar with the living Boop, the hairline, the clay-icon tabs and the
+  whole-screen domain switcher, in its existing dark set. Do not glass it, float it, or touch its
+  markup, CSS or icons.
 - **Behavior is frozen.** This is visual work only. A class rename or a `data-*` styling hook is
   fine. A changed route, hook, API contract, mutation or state machine is not. If a slice seems
   to need one, stop and ask the owner.
@@ -64,10 +63,10 @@ it. The owner set this flow on 2026-09-23.
   the actual fields; never invent features).
 - Apply the **§3.4 ranking first**. Name the one thing each screen says, and give that thing
   the loudest treatment. Not everything is glass (bible §3).
-- **The chrome comes from `fuel-uveg.html` verbatim**: the header with its sprites and day orb,
-  the notification panel, the glass TabBar with the living Boop, and the domain switcher. Swap
-  only what the area changes: the active domain's Boop, its `navModel` tabs and labels, and
-  `--c`. Do not redesign the chrome in a slice prototype.
+- **The chrome comes from `fuel-uveg.html` verbatim**: the glass header with its day orb and
+  notification panel, and the docked bottom bar exactly as live. Swap only the active domain's
+  Boop, its `navModel` tabs and labels, and the accent. Do not redesign either in a slice
+  prototype.
 - Verify it yourself before showing it:
   - Serve it over HTTP from the prototypes dir (`python3 -m http.server <port> --bind 127.0.0.1`,
     run in the background). A `file://` page renders as a script-less snapshot in the in-app
