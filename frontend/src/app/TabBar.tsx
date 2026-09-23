@@ -38,16 +38,19 @@ export function TabBar() {
           mezo-88iwa.5): the négy fül itself has no page-level DOM of its own — this bar
           IS the négy fül, on every /train/* route. Scoped to the train domain only, so
           the other domains' bars don't spuriously satisfy the anchor lookup. */}
-      <nav className="tab-bar" data-domain={domain.id} aria-label={`${domain.name} menü`} data-kalauz-anchor={domainId === 'train' ? 'train-tabs' : undefined}>
+      {/* Üveg (bible §7.2, mezo-me75u.1): ONE floating `.glass` bar tinted by the active
+          domain (`--c` from `[data-domain]`), and no sheen — a sweep through the always-visible
+          menu reads as flicker (owner 2026-09-23). */}
+      <nav className="tab-bar glass is-still" data-domain={domain.id} aria-label={`${domain.name} menü`} data-kalauz-anchor={domainId === 'train' ? 'train-tabs' : undefined}>
         <button
           type="button"
-          className="tab-item domain-switch np-press"
+          className="tab-item domain-switch tab-boop np-press"
           aria-haspopup="dialog"
           aria-expanded={switcherOpen}
           aria-label={`Területváltó: ${domain.name}`}
           onClick={() => setSwitcherOpen(true)}
         >
-          <span className="tab-ico"><Boop domain={domain.id} size={40} alive /></span>
+          <span className="tab-ico"><Boop domain={domain.id} size={44} alive /></span>
         </button>
         {domain.tabs.map((tab) => {
           const active = tab.route === activeRoute

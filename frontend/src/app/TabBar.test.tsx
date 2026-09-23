@@ -287,3 +287,16 @@ test('navigation uses living Boops and an avatar-only corner button', async () =
   expect(avatars).toHaveLength(5)
   for (const avatar of avatars) expect(avatar).toHaveClass('is-alive')
 })
+
+// Üveg (bible §7.2, mezo-me75u.1): one floating glass bar in the active domain's accent, with
+// NO sheen (owner 2026-09-23); the switcher is a glass card whose five Boops stay the buttons.
+test('the bar is one still glass surface and the switcher a glass card', async () => {
+  renderAt('/fuel', <TabBar />)
+  const bar = screen.getByRole('navigation', { name: 'Fuel menü' })
+  expect(bar).toHaveClass('tab-bar', 'glass', 'is-still')
+  expect(bar).toHaveAttribute('data-domain', 'fuel')
+  await userEvent.click(screen.getByRole('button', { name: 'Területváltó: Fuel' }))
+  const dialog = screen.getByRole('dialog', { name: 'Területváltó' })
+  expect(dialog).toHaveClass('domain-switcher', 'glass')
+  expect(within(dialog).getByRole('button', { name: /^Fuel —/ })).toHaveAttribute('aria-current', 'true')
+})

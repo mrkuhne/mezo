@@ -4,6 +4,7 @@ import { ClayIcon } from '@/shared/ui/clay'
 import { Icon } from '@/shared/ui/Icon'
 import { SettingsFrame, useSettingsOrigin } from '@/features/settings/components/SettingsFrame'
 import { isMockMode } from '@/data/_client/mode'
+import { THEME_LOCK } from '@/shared/lib/theme'
 import { useAuthActions, useLlmUsageSummary, useMe, useNotificationPrefs } from '@/data/hooks'
 import { ChangePasswordSheet } from '@/features/auth/sheets/ChangePasswordSheet'
 import { formatRollupCost } from '@/features/me/logic/llmCallFormat'
@@ -69,6 +70,9 @@ export function BeallitasokPage() {
 
   return (
     <SettingsFrame title="Otthon az appban." subtitle="Ugyanaz a világ. A saját fényeiddel és szokásaiddal.">
+      {/* Dark-only lock (üveg bible §8, mezo-me75u.1): the theme choice is hidden while the
+          lock holds — the picker's code stays so light can return by lifting THEME_LOCK. */}
+      {THEME_LOCK === null && <>
       <h2 className="settings-section-label">Téma</h2>
       <div className="settings-theme-options">
         {THEME_OPTIONS.map(o => <button key={o.key} className={`settings-theme-choice settings-theme-${o.key}`} aria-pressed={mode === o.key} onClick={() => setMode(o.key)}>
@@ -78,6 +82,7 @@ export function BeallitasokPage() {
       </div>
       <p className="settings-theme-description">{THEME_OPTIONS.find(o => o.key === mode)?.desc}</p>
       <section className="settings-wash settings-fuel settings-theme-note"><p className="settings-editorial">Jó itt lenni.<br />Nappal és este is.</p><p>A megjelenés ezen az eszközön érvényes. A cirkadián mód a saját alváscélodat követi.</p></section>
+      </>}
 
       <h2 className="settings-section-label">Fiók</h2>
       <button type="button" aria-label="Fiókadatok szerkesztése" onClick={() => navigate('/settings/account', { state: originState })} className="settings-account-wash settings-me">

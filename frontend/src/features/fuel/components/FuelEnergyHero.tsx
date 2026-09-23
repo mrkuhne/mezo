@@ -25,7 +25,7 @@
 import { useId, useState } from 'react'
 import { pct } from '@/shared/lib/pct'
 import { huInt } from '@/shared/lib/huNum'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { ContentIcon, type ClayIconName } from '@/shared/ui/clay'
 import { heroEquationLines, type EquationLine, type KeretHeroVM } from '@/features/fuel/logic/keretHero'
 import { FuelMacroRings, useFuelCountUp } from '@/features/fuel/components/FuelMacroRings'
 import { GlassBox } from '@/features/fuel/components/GlassBox'
@@ -65,7 +65,7 @@ function EquationBox({ vm, past, onClose, onFull }: {
       labelledBy={titleId}
     >
       <div className="fmx-glass-hero">
-        <ClayIcon name="i-fuel" size={56} />
+        <ContentIcon name="i-fuel" size={56} />
         <div>
           <strong>{huInt(Math.abs(vm.remainingKcal))}</strong>
           <small id={titleId}>kcal {over ? 'a keret felett' : past ? 'fért még bele' : 'fér még bele ma'}</small>
@@ -81,7 +81,7 @@ function EquationBox({ vm, past, onClose, onFull }: {
         {lines.map(line => (
           <div key={line.key} className={`fmx-node${line.key === 'remaining' ? ' is-total' : ''}`}
             style={{ '--node-color': NODE[line.key].color } as React.CSSProperties}>
-            <span className="fmx-node-art"><ClayIcon name={NODE[line.key].icon} size={24} /></span>
+            <span className="fmx-node-art"><ContentIcon name={NODE[line.key].icon} size={24} /></span>
             <span className="fmx-node-copy">
               <strong>{line.label}</strong>
               <small>{NODE[line.key].sub}</small>
@@ -141,7 +141,7 @@ export function FuelEnergyHero({ vm, past = false, onOpenEnergy, onWater }: {
             <circle className="fmx-gauge-base" cx="80" cy="80" r="69" pathLength={100} />
             <circle className="fmx-gauge-progress" cx="80" cy="80" r="69" pathLength={100} />
           </svg>
-          <span className="fmx-gauge-art"><ClayIcon name="i-fuel" size={71} /></span>
+          <span className="fmx-gauge-art"><ContentIcon name="i-fuel" size={71} /></span>
         </div>
         <div className="fmx-hero-side is-lead">
           {/* ONE sentence for the screen reader; the count-up digits are its decoration. */}
@@ -152,7 +152,9 @@ export function FuelEnergyHero({ vm, past = false, onOpenEnergy, onWater }: {
           <small aria-hidden="true">{over ? 'A KERET FELETT' : 'MÉG BELEFÉR'}</small>
         </div>
       </div>
-      <button type="button" className="fmx-tapchip"
+      {/* Üveg (mezo-me75u.1): a glass pill in the water accent, outside any card. */}
+      <button type="button" className="fmx-tapchip glass"
+        style={{ '--c': 'var(--dv-sky)' } as React.CSSProperties}
         onClick={() => setBoxOpen(true)}>
         <span>Miből jön össze?</span>
         <b aria-hidden="true">›</b>

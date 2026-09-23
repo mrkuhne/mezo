@@ -1,25 +1,20 @@
 // ============================================================
 // Mezo · DayOrb — a fejléc napi állapotjelzője (mezo-idz2).
-// A meglévő `#s-orb` clay sprite szürkén, alulról fölfelé kitöltve. A sprite-hoz NEM
-// nyúlunk (1:1 asset-kontraktus, shared/ui/clay/index.tsx): az alap egy `<use>` szürke-
-// szűrővel, a kitöltés az orb testének újrarajzolása a nap tónusával, clipPath-be zárva.
-// Buta prezentáció: a számokat a `useDayOrbFill` hook adja.
+// Üveg (bible §7.1, mezo-me75u.1): egy üveggömb, benne korall folyadék, ami alulról a
+// `pct`-ig emelkedik, lassú vízszintes hullámmal (csökkentett mozgásnál áll), korall
+// derengéssel és egy fehér fényívvel bal fent. A tónus (`intensity`) a folyadék
+// gradiensét festi a kifakult és a telt végpont között. A gömb üvegét a gomb adja
+// (`.nap-avatar.glass`), ez az svg a belseje. Buta prezentáció: a számokat a
+// `useDayOrbFill` hook adja.
 // ============================================================
 import { useId } from 'react'
-import type { ClaySpotName } from '@/shared/ui/clay'
 
-/** Az alap sprite — a `ClaySpotName` unión keresztül nevezve, hogy egy sprite-átnevezés
- *  tsc-n bukjon, ne csendben, futásidőben (a `<use href>`-hez kézzel írt `'#s-orb'`
- *  string ezt megkerülte). A `ClaySpot` komponens nem jó ide: az orbnak a saját svg-jén
- *  belül, saját `className`-mel kell a `<use>`. */
-const ORB_SPRITE: ClaySpotName = 's-orb'
-
-/** A `#s-orb` teste: `circle cx=50 cy=48 r=34` → y-ban 14…82. */
-const ORB_TOP = 14
-const ORB_BOTTOM = 82
+/** A gömb teste: `circle cx=50 cy=50 r=40` → y-ban 10…90. */
+const ORB_TOP = 10
+const ORB_BOTTOM = 90
 const ORB_SPAN = ORB_BOTTOM - ORB_TOP
 
-/** A tónus két végpontja. A telt hármas maga az `sg-orb` gradiens a sprite-ból. */
+/** A tónus két végpontja — a folyadék gradiense (fent → lent). */
 const PALE = ['#f3e2d9', '#e3bdab', '#c69c89'] as const
 const FULL = ['#ffc3a8', '#ff7a55', '#d8481f'] as const
 
@@ -51,38 +46,33 @@ export function DayOrb({ pct, intensity, size = 40 }: DayOrbProps) {
   const t = Math.max(0, Math.min(1, intensity))
   const stops = [lerpHex(PALE[0], FULL[0], t), lerpHex(PALE[1], FULL[1], t), lerpHex(PALE[2], FULL[2], t)]
 
+  /** A folyadék felszíne: hullám a `fillY` szinten (fél hullámhossz 30, amplitúdó 6). */
+  const wave = `M-10 ${fillY} Q5 ${fillY - 6} 20 ${fillY} T50 ${fillY} T80 ${fillY} T110 ${fillY} T140 ${fillY} V110 H-10Z`
+
   return (
     <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true" className="dayorb">
       <defs>
-        <clipPath id={`dayorb-fill-${uid}`}>
-          <rect x="0" y={fillY} width="100" height={100 - fillY} />
-        </clipPath>
         <clipPath id={`dayorb-body-${uid}`}>
-          <circle cx="50" cy="48" r="34" />
+          <circle cx="50" cy="50" r="40" />
         </clipPath>
-        <radialGradient id={`dayorb-grad-${uid}`} cx="35%" cy="28%" r="80%">
+        <linearGradient id={`dayorb-grad-${uid}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor={stops[0]} />
-          <stop offset="0.45" stopColor={stops[1]} />
+          <stop offset="0.5" stopColor={stops[1]} />
           <stop offset="1" stopColor={stops[2]} />
-        </radialGradient>
+        </linearGradient>
       </defs>
 
-      <use href={`#${ORB_SPRITE}`} className="dayorb-base" />
+      <circle className="dayorb-glass" cx="50" cy="50" r="40" />
 
       {clipped > 0 && (
-        <g clipPath={`url(#dayorb-fill-${uid})`} className="dayorb-fill">
-          <ellipse cx="50" cy="90" rx="26" ry="6" fill={stops[2]} opacity="0.28" />
-          <circle cx="50" cy="48" r="34" fill={`url(#dayorb-grad-${uid})`} />
-          <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 32)" />
-          <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="4" strokeLinecap="round" />
+        <g clipPath={`url(#dayorb-body-${uid})`} className="dayorb-liquid" data-level={fillY}>
+          {clipped < 100
+            ? <g className="dayorb-wave"><path d={wave} fill={`url(#dayorb-grad-${uid})`} /></g>
+            : <circle cx="50" cy="50" r="40" fill={`url(#dayorb-grad-${uid})`} />}
         </g>
       )}
 
-      {clipped > 0 && clipped < 100 && (
-        <g clipPath={`url(#dayorb-body-${uid})`}>
-          <rect className="dayorb-meniscus" x="8" y={fillY - 1} width="84" height="2" rx="1" fill={stops[2]} opacity="0.7" />
-        </g>
-      )}
+      <path className="dayorb-hi" d="M27 30 A28 28 0 0 1 42 21" />
     </svg>
   )
 }

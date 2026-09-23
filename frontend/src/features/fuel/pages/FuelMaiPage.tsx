@@ -71,7 +71,7 @@ import { buildKeretHero, asPastDayHero, doneMealRows } from '@/features/fuel/log
 import { buildWindowLane, asPastDayLane, tileKey } from '@/features/fuel/logic/fuelSwimlane'
 import { backfillDate, earliestBackfillDate } from '@/features/fuel/logic/backfillWindow'
 import { addDays, localDateString, huMonthDay } from '@/shared/lib/dates'
-import { ClayIcon } from '@/shared/ui/clay'
+import { ContentIcon } from '@/shared/ui/clay'
 import { DayNavigator } from '@/shared/ui/DayNavigator'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { FuelEnergyHero } from '@/features/fuel/components/FuelEnergyHero'
@@ -202,7 +202,7 @@ export function FuelMaiPage() {
         <button type="button" className="fmx-loggeneric rise" style={{ '--d': '110ms' } as React.CSSProperties}
           aria-label="Logolás ablakon kívül"
           onClick={() => navigate(`/fuel/log/uj${dayParam ? `?${dayParam}` : ''}`)}>
-          <ClayIcon name="i-fuel" size={30} />
+          <ContentIcon name="i-fuel" size={30} />
           <span className="txt"><b>Logolj bármit</b> · ablakon kívül is</span>
           <span className="chev" aria-hidden="true">›</span>
         </button>
@@ -215,7 +215,9 @@ export function FuelMaiPage() {
           <button type="button" className="fmx-pastchip rise" style={{ '--d': '130ms' } as React.CSSProperties}
             aria-label={`Pótlás · ${huMonthDay(yesterday).toLowerCase()}. · ${yMissed} ablak pótolható`}
             onClick={() => navigate(`/fuel?d=${yesterday}`)}>
-            ↺ {huMonthDay(yesterday).toLowerCase()}. · {yMissed} ablak pótolható
+            {/* Üveg (mezo-me75u.1): the history clock replaces the ↺ glyph (uveg-alap-ikonok.html). */}
+            <ContentIcon name="t-history" size={22} />
+            <span>{huMonthDay(yesterday).toLowerCase()}. · {yMissed} ablak pótolható</span>
           </button>
         )}
 

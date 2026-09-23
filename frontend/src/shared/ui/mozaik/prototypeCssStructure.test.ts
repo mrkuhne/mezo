@@ -375,39 +375,51 @@ describe('the fuel-mai section is registered and re-dressed (mezo-ju4j6.6, widen
     }
   })
 
-  test('the whole block carries no Titanium material the style bible forbids', () => {
+  // Üvegesítés U1 (mezo-me75u.1): the block now wears the ÜVEG ranking (bible §3.4) instead of
+  // the restored-world materials — primary objects are `.glass` (the class is set in the TSX,
+  // the accent through `--c` on the same element), chips inside a card are flat cells, empty /
+  // unknown states are dashed, and the heroes are frameless halos.
+  test('the primary objects take their glass accent from their own hue, on the same element', () => {
     const css = rules()
     expect(css.length).toBeGreaterThan(10_000)
-    // §2.3: decorative frosting is gone. The ONE surviving backdrop-filter is the Fuel
-    // GlassBox's own backdrop, where the blur is functional separation (§7.1b).
-    expect(css).not.toContain('var(--surface-glass)')
-    // Exactly one element still blurs — the Fuel GlassBox backdrop (prefixed pair) — and the
-    // card it covers explicitly turns its own frosting off.
-    expect(css.match(/backdrop-filter: blur\(/g) ?? []).toHaveLength(2)
-    expect(css).toContain('backdrop-filter: none')
-    // §6.1: clay icons carry their own volume — no drop-shadow haloes on them.
-    expect(css).not.toContain('drop-shadow')
-    // §2.2 A: card shadows are --mz-shadow* tokens, never a raw black drop.
-    expect(css).not.toContain('rgba(0, 0, 0,')
-  })
-
-  test('the tappable chips are --mz-cell-* pairs, not bordered tint boxes (§2.2 B)', () => {
-    const css = rules()
-    for (const token of ['--mz-cell-sage-bg', '--mz-cell-lav-bg', '--mz-cell-amber-bg',
-      '--mz-cell-sky-bg', '--mz-cell-coral-bg']) {
-      expect(css, `${token} missing — a chip in this block is not a restored cell chip`).toContain(token)
+    for (const [sel, hue] of [['.fmx-block', '--block-color'], ['.fmx-ing-row', '--ing-color'],
+      ['.fmx-nutri-tile', '--nt-color'], ['.fmx-micro-card', '--mc-color'], ['.fmx-dim', '--dim-color']]) {
+      expect(css).toMatch(new RegExp(`\\${sel} \\{[^}]*--c: var\\(${hue}\\)`))
     }
+    // the old wash-tile material is gone from these surfaces
+    expect(css).not.toMatch(/\.fmx-block \{[^}]*linear-gradient\(150deg/)
+    expect(css).not.toMatch(/\.fmx-ing-row \{[^}]*box-shadow: var\(--mz-shadow\)/)
   })
 
-  test('both sub-page heroes are halo bands, not glowing posters (§2.2 C)', () => {
+  test('chips inside a glass card are flat, never glass (bible §3 rank 3)', () => {
     const css = rules()
-    expect(css).toContain('background: var(--halo-violet)')       // the AI score hero
-    expect(css).toContain('.fmx-score-glow { display: none; }')   // its decorative glow, retired
-    expect(css).toContain('.fmx-detail-glow { display: none; }')  // the meal detail's, likewise
+    expect(css).toMatch(/\.fmx-glu-chip \{[^}]*background: rgba\(245, 239, 230, 0\.04\)/)
+    expect(css).toMatch(/\.fmx-score \{[^}]*rgba\(245, 239, 230, 0\.05\)/)
+    expect(css).not.toMatch(/\.fmx-score \{[^}]*backdrop-filter/)
+    expect(css).toMatch(/\.fmx-glass-callout \{[^}]*background: rgba\(245, 239, 230, 0\.05\)/)
   })
 
-  test('the hero is a halo band, not a framed poster (§2.2 C, §8.1)', () => {
-    expect(rawCss).toContain('.fh-hero { border-radius: 21px; overflow: hidden; background: var(--halo-sage); }')
+  test('empty and unknown states are dashed, with no glass (bible §3 rank 4)', () => {
+    const css = rules()
+    expect(css).toMatch(/\.fmx-block\.is-open \{[^}]*1\.5px dashed/)
+    expect(css).toMatch(/\.fmx-nutri-tile\.is-unknown \{[^}]*dashed[^}]*backdrop-filter: none/)
+    expect(css).toMatch(/\.fmx-dim\.is-degraded \{[^}]*dashed[^}]*backdrop-filter: none/)
+  })
+
+  test('the heroes are frameless halos with big numerals (bible §5)', () => {
+    const css = rules()
+    expect(css).toMatch(/\.fmx-hero::before \{[^}]*radial-gradient/)
+    expect(css).toMatch(/\.fmx-detail-hero::before \{[^}]*radial-gradient/)
+    expect(css).toMatch(/\.fmx-score-hero::before \{[^}]*radial-gradient/)
+    expect(css).toMatch(/\.fmx-score-value \{[^}]*font-size: 92px/)
+    expect(rawCss).toContain(':root[data-theme="dark"] .fh-hero { background: none; border-radius: 0; }')
+  })
+
+  test('hero art floats and the reward numeral glows only inside the reduced-motion gate', () => {
+    const css = rules()
+    const gate = css.indexOf('@media (prefers-reduced-motion: no-preference)')
+    expect(css.indexOf('animation: uv-float')).toBeGreaterThan(gate)
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{[\s\S]*\.fmx-gauge-art, \.fmx-detail-art, \.fmx-score-art, \.fmx-score-value span \{ animation: none; \}/)
   })
 })
 
@@ -1263,9 +1275,8 @@ describe('the depth & focus ranking holds across the swept screens (mezo-ju4j6.1
     expect(body, `${selector} must not carry a §2.2 A wash gradient`).not.toContain('linear-gradient(150deg')
   }
 
-  test('Fuel · étkezés-értékelés: the score is the hero, the six dimensions are cells', () => {
-    expectCellGrade('.fmx-dim', '--dim-color', 'a 9,2 pontszám a halo-sávban')
-  })
+  // Üvegesítés U1 (mezo-me75u.1): the score hero is a FRAMELESS halo now, so the dimensions are
+  // the page's primary objects — glass tiles (guarded in the fuel-mai block above), no longer cells.
 
   test('Fuel · Kiegészítők: the ring + KÖVETKEZIK is the hero, the time bands are house rows', () => {
     expectHouseGrade('.fsx-band', 'a napi gyűrű és a KÖVETKEZIK sor')
@@ -1314,5 +1325,71 @@ describe('the depth & focus ranking holds across the swept screens (mezo-ju4j6.1
     expectHouseGrade('.domain-row', 'az a terület, ahol éppen állsz')
     expect(stripComments(rawCss)).toMatch(/\.domain-row\.current \{[^}]*background: var\(--mz-wash-sand\)/)
     expect(stripComments(rawCss)).toMatch(/\.domain-row\.current\[data-domain="fuel"\]\s*\{[^}]*var\(--mz-wash-sage\)/)
+  })
+})
+
+/**
+ * Üvegesítés U1 (mezo-me75u.1): the ONE glass recipe every slice reuses (üveg style bible §3).
+ * A second glass recipe or palette is the failure mode this guards: the kit lives in one block,
+ * carries all four layers of the card, and keeps its sheen inside the reduced-motion gate.
+ */
+describe('the uveg kit section is registered and carries the §3 recipe (mezo-me75u.1)', () => {
+  const START_MARKER = '── uveg kit ('
+  const END_MARKER = '── /uveg kit '
+  const section = () => slice(START_MARKER, END_MARKER)
+  const rules = () => stripComments(section())
+
+  test('both markers are present, in order', () => {
+    expect(rawCss.indexOf(START_MARKER)).toBeGreaterThan(-1)
+    expect(rawCss.indexOf(END_MARKER)).toBeGreaterThan(rawCss.indexOf(START_MARKER))
+  })
+
+  test('the glass card has its four layers: body, gradient frame, top edge + glow, sheen', () => {
+    const css = rules()
+    expect(css).toMatch(/\.glass \{[^}]*backdrop-filter: blur\(16px\) saturate\(1\.5\)/)
+    expect(css).toMatch(/\.glass \{[^}]*0 0 26px -6px color-mix\(in srgb, var\(--c\) 30%, transparent\)/)
+    expect(css).toMatch(/\.glass \{[^}]*inset 0 1px 0 rgba\(255, 244, 230, 0\.10\)/)
+    expect(css).toMatch(/\.glass::before \{[^}]*mask-composite: exclude/)
+    expect(css).toMatch(/\.glass::after \{[^}]*skewX\(-20deg\)/)
+  })
+
+  test('there is exactly ONE .glass recipe in the whole stylesheet', () => {
+    expect(stripComments(rawCss).match(/^\.glass \{/gm) ?? []).toHaveLength(1)
+  })
+
+  test('the sheen only runs inside the reduced-motion gate; still/round glass never sweeps', () => {
+    const css = rules()
+    const gate = css.indexOf('@media (prefers-reduced-motion: no-preference)')
+    expect(gate).toBeGreaterThan(-1)
+    expect(css.indexOf('animation: uv-sheen')).toBeGreaterThan(gate)
+    expect(css).toMatch(/\.glass\.is-still::after, \.glass\.is-round::after \{[^}]*display: none/)
+  })
+
+  test('the ground is the warm graphite, never the cold Titanium one', () => {
+    const css = rules()
+    for (const cold of ['#0B0D12', '#13151D', '#20222A']) expect(css).not.toContain(cold)
+  })
+})
+
+describe('the uveg chrome section is registered (mezo-me75u.1, bible §7)', () => {
+  const section = () => stripComments(slice('── uveg chrome (', '── /uveg chrome '))
+
+  test('the block exists and styles the header, the bar, the switcher and the FAB', () => {
+    const css = section()
+    for (const sel of ['.nap-roundbtn.glass', '.nap-avatar.glass', '.nap-ntfpanel.glass',
+      '.tab-bar.glass[data-domain]', '.domain-switcher.glass', '.quicklog-fab.glass']) {
+      expect(css, `${sel} missing from the uveg chrome block`).toContain(sel)
+    }
+  })
+
+  test('the orb wave only moves inside the reduced-motion gate', () => {
+    const css = section()
+    const gate = css.indexOf('@media (prefers-reduced-motion: no-preference)')
+    expect(gate).toBeGreaterThan(-1)
+    expect(css.indexOf('.dayorb-wave { animation')).toBeGreaterThan(gate)
+  })
+
+  test('there is no day-part switcher in the glass chrome', () => {
+    expect(section()).not.toContain('nap-dpmenu')
   })
 })

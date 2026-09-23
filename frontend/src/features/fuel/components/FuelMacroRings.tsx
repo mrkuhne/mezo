@@ -19,7 +19,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 import { useSettledArrival } from '@/shared/ui/mozaik/arrival'
 import { hu1, huInt } from '@/shared/lib/huNum'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { ContentIcon, type ClayIconName } from '@/shared/ui/clay'
 import type { RingVM } from '@/features/fuel/logic/keretHero'
 
 /** Owner-approved macro identity (spec §Owner decisions) — one clay symbol per ring. */
@@ -100,7 +100,7 @@ function RingCell({ ring, onWater }: { ring: RingVM; onWater?: () => void }) {
   const body = (
     <>
       <span className="fmx-ico" aria-hidden="true">
-        <ClayIcon name={RING_ICON[ring.key]} size={29} />
+        <ContentIcon name={RING_ICON[ring.key]} size={29} />
       </span>
       <div
         className={`fmx-ring${empty ? ' is-empty' : ''}`}
@@ -122,12 +122,13 @@ function RingCell({ ring, onWater }: { ring: RingVM; onWater?: () => void }) {
   if (ring.key === 'water' && onWater) {
     return (
       <button type="button" className="fmx-cell" onClick={onWater}
+        style={{ '--macro-color': ring.color } as React.CSSProperties}
         aria-label={`Víz logolása · ${ring.value} / ${ring.target}`}>
         {body}
       </button>
     )
   }
-  return <div className="fmx-cell">{body}</div>
+  return <div className="fmx-cell" style={{ '--macro-color': ring.color } as React.CSSProperties}>{body}</div>
 }
 
 export function FuelMacroRings({ rings, onWater }: { rings: RingVM[]; onWater?: () => void }) {

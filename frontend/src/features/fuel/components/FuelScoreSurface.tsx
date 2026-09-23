@@ -16,9 +16,8 @@
 import { useId, useState, type ReactNode } from 'react'
 import { hu1 } from '@/shared/lib/huNum'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
-import { ClayIcon } from '@/shared/ui/clay'
+import { ContentIcon, type Icon3DName } from '@/shared/ui/clay'
 import type { MealBreakdown, MealDimension } from '@/data/types'
-import { dimensionFace } from '@/features/fuel/logic/dimensionFace'
 import { dimWeightPct } from '@/features/fuel/logic/scoreArithmetic'
 import { formatImpact } from '@/features/fuel/logic/formatImpact'
 import { MacroPanel } from '@/features/fuel/components/MacroPanel'
@@ -28,18 +27,26 @@ import { ContextPanel } from '@/features/fuel/components/ContextPanel'
 import { MealTimingStrip } from '@/features/fuel/components/MealTimingStrip'
 import { GlassBox } from '@/features/fuel/components/GlassBox'
 
+/** Üveg (mezo-me75u.1): each dimension's 3D face (fuel-uveg.html; Adag + the fallback heart on
+ *  uveg-alap-ikonok.html). `dimensionFace` keeps its clay names for the not-yet-re-dressed
+ *  score sheet; this page reads the 3D ones by dimension id. */
+const DIM_3D: Record<MealDimension['id'], Icon3DName> = {
+  macro: 't-macro', nova: 't-processing', context: 't-clock', micro: 't-micro', who: 't-shield',
+  fat_quality: 't-avocado', plant_diversity: 't-sprout', energy_density: 't-bolt', portion: 't-portion',
+}
+const dim3d = (dim: MealDimension): Icon3DName => DIM_3D[dim.id] ?? 't-heart'
+
 /** Egy dimenzió tizedes pontszáma a 0–10-es skálán („8,6"); degradáltnál nincs szám. */
 const dimValue = (d: MealDimension) => hu1(d.score * 10)
 
 function DimTile({ dim, onOpen }: { dim: MealDimension; onOpen: () => void }) {
-  const face = dimensionFace(dim)
   const degraded = dim.weight === 0
   return (
-    <button type="button" className={`fmx-dim${degraded ? ' is-degraded' : ''}`} onClick={onOpen}
+    <button type="button" className={`fmx-dim${degraded ? ' is-degraded' : ' glass'}`} onClick={onOpen}
       style={{ '--dim-color': dim.color } as React.CSSProperties}
       aria-label={`${dim.label}: ${degraded ? 'kimaradt, kevés adat' : dimValue(dim)} — részletek`}>
       <span className="fmx-dim-top">
-        <span className="fmx-dim-art" aria-hidden="true"><ClayIcon name={face.icon} size={34} /></span>
+        <span className="fmx-dim-art" aria-hidden="true"><ContentIcon name={dim3d(dim)} size={34} /></span>
         <strong>{degraded ? '—' : dimValue(dim)}</strong>
       </span>
       <span className="fmx-dim-label">{dim.label}</span>
@@ -56,7 +63,6 @@ function DimTile({ dim, onOpen }: { dim: MealDimension; onOpen: () => void }) {
  *  `showModal()` a FuelEnergyHero mintája (jsdom-ban nincs dialog-implementáció). */
 function DimGlass({ dim, onClose }: { dim: MealDimension; onClose: () => void }) {
   const titleId = useId()
-  const face = dimensionFace(dim)
   const degraded = dim.weight === 0
 
 
@@ -65,7 +71,7 @@ function DimGlass({ dim, onClose }: { dim: MealDimension; onClose: () => void })
       labelledBy={titleId}
       style={{ '--dim-color': dim.color } as React.CSSProperties}>
       <div className="fmx-glass-hero is-dim">
-        <ClayIcon name={face.icon} size={58} />
+        <ContentIcon name={dim3d(dim)} size={58} />
         <div>
           <strong>{degraded ? '—' : dimValue(dim)}</strong>
           <small id={titleId}>{dim.label}</small>
@@ -82,7 +88,7 @@ function DimGlass({ dim, onClose }: { dim: MealDimension; onClose: () => void })
       <p className="fmx-glass-lead"><SafeMarkdown text={dim.detail} /></p>
       {degraded && (
         <div className="fmx-glass-callout">
-          <ClayIcon name="i-eletjel" size={26} />
+          <ContentIcon name="i-eletjel" size={26} />
           <p>
             <small>ŐSZINTÉN</small>
             Ehhez az étkezéshez nem volt elég adat, ezért ez a szempont kimaradt, és a többi
@@ -106,7 +112,7 @@ function DimGlass({ dim, onClose }: { dim: MealDimension; onClose: () => void })
       )}
       {dim.note && (
         <div className="fmx-glass-callout">
-          <ClayIcon name="i-kristaly" size={26} />
+          <ContentIcon name="i-kristaly" size={26} />
           <p><small>MEZO JEGYZETE</small><SafeMarkdown text={dim.note} /></p>
         </div>
       )}
@@ -141,14 +147,14 @@ export function FuelScoreSurface({
       {/* Középre zárt hero: a szám mellől a „/10" elmarad (owner). */}
       <div className="fmx-score-hero">
         <span className="fmx-score-glow" aria-hidden="true" />
-        <span className="fmx-score-art" aria-hidden="true"><ClayIcon name="i-kristaly" size={92} /></span>
+        <span className="fmx-score-art" aria-hidden="true"><ContentIcon name="i-kristaly" size={92} /></span>
         <strong className="fmx-score-value" aria-label={`AI értékelés: ${hu1(scorePct / 10)} a tízes skálán`}>
           <span aria-hidden="true">{hu1(scorePct / 10)}</span>
         </strong>
         {tagline && <em>{tagline}</em>}
         {summary && <p><SafeMarkdown text={summary} /></p>}
         {!summary && coachPending && <p className="fmx-score-pending">Mezo olvasata készül…</p>}
-        <span className="fmx-score-conf">
+        <span className="fmx-score-conf glass">
           <i style={{ '--w': `${Math.round(breakdown.confidence * 100)}%` } as React.CSSProperties} aria-hidden="true" />
           Bizonyosság {Math.round(breakdown.confidence * 100)}%
         </span>
@@ -168,8 +174,8 @@ export function FuelScoreSurface({
         <>
           <div className="fmx-section"><h2>Ha feljebb vinnéd</h2></div>
           {improve.map((it, i) => (
-            <div key={i} className="fmx-improve">
-              <ClayIcon name="i-lang" size={26} />
+            <div key={i} className="fmx-improve glass">
+              <ContentIcon name="i-lang" size={26} />
               <p><SafeMarkdown text={it.text} /></p>
               <b>{formatImpact(it.impact)}</b>
             </div>

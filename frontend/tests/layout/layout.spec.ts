@@ -342,6 +342,17 @@ for (const [path, lastSelector] of FUEL_DEPTH) {
 
     const last = page.locator(lastSelector).last()
     await last.scrollIntoViewIfNeeded()
+    // Üveg (mezo-me75u.1): the bottom menu FLOATS now (a glass bar 12px off the edge), so a card
+    // can be "in the scroller's viewport" yet under the bar — `scrollIntoViewIfNeeded` then does
+    // nothing. Reachability means: the scroller can lift the card's bottom above the bar.
+    await last.evaluate(element => {
+      const scroller = document.querySelector('.screen-content') as HTMLElement
+      const tabbar = document.querySelector('.tab-bar')?.getBoundingClientRect()
+      if (!tabbar) return
+      const overlap = element.getBoundingClientRect().bottom - tabbar.top
+      scroller.style.scrollBehavior = 'auto'
+      if (overlap > 0) scroller.scrollTop += overlap + 4
+    })
     await expect(last).toBeVisible()
     const reachable = await last.evaluate(element => {
       const scroller = document.querySelector('.screen-content')!.getBoundingClientRect()

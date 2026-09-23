@@ -19,9 +19,12 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 390, height: 852 }
       await expect(nav).toBeVisible()
       const phone = await page.locator('.phone-screen').boundingBox()
       const before = await nav.boundingBox()
-      expect(before!.x).toBeCloseTo(phone!.x, 0)
-      expect(before!.width).toBeCloseTo(phone!.width, 0)
-      expect(before!.y + before!.height).toBeCloseTo(phone!.y + phone!.height, 0)
+      // Üveg (bible §7.2, mezo-me75u.1): ONE floating glass bar, 10px off the sides and 12px
+      // off the bottom — fixed, whatever the page scrolls.
+      expect(before!.x).toBeCloseTo(phone!.x + 10, 0)
+      expect(before!.width).toBeCloseTo(phone!.width - 20, 0)
+      expect(before!.y + before!.height).toBeCloseTo(phone!.y + phone!.height - 12, 0)
+      await expect(nav).toHaveClass(/\bglass\b/)
       const links = nav.getByRole('link')
       await expect(links).toHaveCount(4)
       for (const link of await links.all()) {
@@ -46,8 +49,9 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 390, height: 852 }
       await expect(nav).toHaveAttribute('inert', '')
       expect(await page.locator('.screen-content').evaluate(el => getComputedStyle(el).overflowY)).toBe('hidden')
       for (const card of await dialog.getByRole('button').all()) await expect(card).toBeInViewport()
-      const style = await dialog.evaluate(el => ({ background: getComputedStyle(el).backgroundColor, border: getComputedStyle(el).borderWidth }))
-      expect(style.background).toBe('rgba(0, 0, 0, 0)')
+      // The switcher is ONE glass card (bible §7.2) — no sheet chrome, no hard border.
+      await expect(dialog).toHaveClass(/\bglass\b/)
+      const style = await dialog.evaluate(el => ({ border: getComputedStyle(el).borderWidth }))
       expect(parseFloat(style.border)).toBe(0)
       await page.keyboard.press('Escape')
       await expect(dialog).not.toBeVisible()

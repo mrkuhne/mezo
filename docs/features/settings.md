@@ -2,7 +2,7 @@
 title: Central settings and personal context
 type: feature-platform
 status: done
-updated: 2026-09-20
+updated: 2026-09-23
 tags: [frontend, platform, ai]
 key_files:
   - frontend/src/features/settings
@@ -13,6 +13,11 @@ related: [_platform-design-system, companion, me, fuel, train, insights, _platfo
 ---
 
 # Central settings
+
+> **2026-09-23 (`mezo-me75u.1`):** the app is locked to dark (üveg style bible §8). The
+> Téma picker on `/settings` is hidden while `THEME_LOCK` holds; its code and the stored
+> preference are kept so light can return. The header's controls are unchanged in content and
+> wear glass (see [design system](_platform-design-system.md) §3 *Üveg foundation*).
 
 ## 1. Summary
 

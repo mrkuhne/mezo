@@ -25,7 +25,7 @@
 // `useReducedMotion` kapuz — a CSS `reduce` ága pedig külön is kivezeti.
 // ============================================================
 import { useId } from 'react'
-import { ClayIcon } from '@/shared/ui/clay'
+import { ContentIcon } from '@/shared/ui/clay'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 import { GlassBox } from '@/features/fuel/components/GlassBox'
 import type { GlycemicBand, GlycemicLevel } from '@/features/fuel/logic/glycemicBand'
@@ -83,7 +83,7 @@ export function GlycemicGlass({ band, onClose }: { band: GlycemicBand; onClose: 
   return (
     <GlassBox onClose={onClose} className={`fmx-glu-glass lvl-${band.level}`} labelledBy={titleId}>
       <div className="fmx-glass-hero fmx-glu-hero">
-        <span aria-hidden="true"><ClayIcon name="i-vercukor" size={56} /></span>
+        <span aria-hidden="true"><ContentIcon name="i-vercukor" size={56} /></span>
         <div>
           {/* A SÁV SZAVA áll ott, ahol máshol a nagy szám — szándékosan. */}
           <strong>{band.label}</strong>
@@ -130,15 +130,15 @@ export function GlycemicGlass({ band, onClose }: { band: GlycemicBand; onClose: 
 
       <div className="fmx-glu-expect">
         <div>
-          <span aria-hidden="true"><ClayIcon name="i-lang" size={26} /></span>
+          <span aria-hidden="true"><ContentIcon name="i-lang" size={26} /></span>
           <span><small>Energia</small><b>{band.expect.energy}</b></span>
         </div>
         <div>
-          <span aria-hidden="true"><ClayIcon name="i-idozito" size={26} /></span>
+          <span aria-hidden="true"><ContentIcon name="i-idozito" size={26} /></span>
           <span><small>Alapszint</small><b>{band.expect.back}</b></span>
         </div>
         <div>
-          <span aria-hidden="true"><ClayIcon name="i-tanyer" size={26} /></span>
+          <span aria-hidden="true"><ContentIcon name="i-tanyer" size={26} /></span>
           <span><small>Éhség</small><b>{band.expect.hunger}</b></span>
         </div>
       </div>
@@ -149,7 +149,7 @@ export function GlycemicGlass({ band, onClose }: { band: GlycemicBand; onClose: 
       </p>
 
       <div className="fmx-glu-tip">
-        <span aria-hidden="true"><ClayIcon name="i-noveny" size={30} /></span>
+        <span aria-hidden="true"><ContentIcon name="i-noveny" size={30} /></span>
         <span><strong>{band.tip.title}</strong><p>{band.tip.body}</p></span>
       </div>
 

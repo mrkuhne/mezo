@@ -23,7 +23,7 @@
 import type { ReactNode } from 'react'
 import { pct } from '@/shared/lib/pct'
 import { hu1, huInt } from '@/shared/lib/huNum'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { ContentIcon, type ClayIconName, type Icon3DName } from '@/shared/ui/clay'
 import type { Nutrients } from '@/data/types'
 import type { MealShareRow } from '@/features/fuel/logic/mealShare'
 import type { MealQualityTruth } from '@/features/fuel/logic/mealQualityTruth'
@@ -42,15 +42,17 @@ export const NOVA: Record<number, { short: string; color: string }> = {
  * Hozzávaló-hue + clay ikon élelmiszer-család szerint (prototípus `ingredientStyle`, :93),
  * a ház tokenjeire és a ház clay-készletére fordítva — új gradiens/ikon nem kellett hozzá.
  */
-export function ingredientStyle(name: string): { color: string; icon: ClayIconName } {
+export function ingredientStyle(name: string): { color: string; icon: Icon3DName } {
+  // Üveg (mezo-me75u.1): the 3D content set — dairy = the protein blob, honey/sugar = the
+  // sugar cubes (fuel-uveg.html + uveg-alap-ikonok.html).
   const n = name.toLocaleLowerCase('hu-HU')
-  if (/csirke|lazac|tojás|hús|pulyka|tonhal|marha|hal/.test(n)) return { color: 'var(--coral)', icon: 'i-hus' }
-  if (/joghurt|skyr|túró|tej|sajt/.test(n)) return { color: 'var(--lav)', icon: 'i-kiegeszito' }
-  if (/zab|rizs|tortilla|bulgur|kenyér|tészta|burgonya/.test(n)) return { color: 'var(--amber)', icon: 'i-gabona' }
-  if (/olaj|vaj|avok|mogyoró|mandula|mag/.test(n)) return { color: 'var(--sage)', icon: 'i-avokado' }
-  if (/méz|cukor|szirup/.test(n)) return { color: 'var(--rose)', icon: 'i-termes' }
-  if (/zöldség|gyümölcs|brokkoli|paprika|banán|erdei|saláta|spenót|áfonya/.test(n)) return { color: 'var(--sage)', icon: 'i-noveny' }
-  return { color: 'var(--sky)', icon: 'i-tanyer' }
+  if (/csirke|lazac|tojás|hús|pulyka|tonhal|marha|hal/.test(n)) return { color: 'var(--coral)', icon: 't-meat' }
+  if (/joghurt|skyr|túró|tej|sajt/.test(n)) return { color: 'var(--lav)', icon: 't-protein' }
+  if (/zab|rizs|tortilla|bulgur|kenyér|tészta|burgonya/.test(n)) return { color: 'var(--amber)', icon: 't-carb' }
+  if (/olaj|vaj|avok|mogyoró|mandula|mag/.test(n)) return { color: 'var(--sage)', icon: 't-avocado' }
+  if (/méz|cukor|szirup/.test(n)) return { color: 'var(--rose)', icon: 't-sugar' }
+  if (/zöldség|gyümölcs|brokkoli|paprika|banán|erdei|saláta|spenót|áfonya/.test(n)) return { color: 'var(--sage)', icon: 't-fiber' }
+  return { color: 'var(--sky)', icon: 't-plate' }
 }
 
 // ── Makrók ────────────────────────────────────────────────────────────────────────────────
@@ -71,8 +73,9 @@ function ShareRing({ label, grams, sharePct, color, icon, frame }: {
   // A felszámolás azt a számot kíséri, ami NAGY — az most a gramm.
   const counted = useFuelCountUp(grams ?? 0)
   return (
-    <div className="fmx-cell">
-      <span className="fmx-ico" aria-hidden="true"><ClayIcon name={icon} size={29} /></span>
+    // Üveg (mezo-me75u.1): each share is its own glass tile in the macro hue.
+    <div className="fmx-cell glass" style={{ '--macro-color': color } as React.CSSProperties}>
+      <span className="fmx-ico" aria-hidden="true"><ContentIcon name={icon} size={30} /></span>
       <div className={`fmx-ring is-share${sharePct == null ? ' is-empty' : ''}`}
         style={{ '--macro-color': color, '--ring-progress': String(sharePct ?? 0) } as React.CSSProperties}>
         <svg viewBox="0 0 80 80" aria-hidden="true">
@@ -136,7 +139,7 @@ export interface FuelIngredientRowVM {
   /** Mennyiség emberi alakban („150 g"). */
   amount: string
   /** A sor eredete — felirat + clay ikon; elhagyható, ha a felület nem tud eredetet. */
-  origin?: { label: string; icon: ClayIconName }
+  origin?: { label: string; icon: ClayIconName | Icon3DName }
   nova?: number | null
 }
 
@@ -153,14 +156,14 @@ export function FuelIngredientSection({ rows, empty }: { rows: FuelIngredientRow
             const style = ingredientStyle(row.name)
             const nova = row.nova != null ? NOVA[row.nova] : null
             return (
-              <div key={row.key} className="fmx-ing-row"
+              <div key={row.key} className="fmx-ing-row glass"
                 style={{ '--ing-color': style.color } as React.CSSProperties}>
-                <span className="fmx-ing-art" aria-hidden="true"><ClayIcon name={style.icon} size={29} /></span>
+                <span className="fmx-ing-art" aria-hidden="true"><ContentIcon name={style.icon} size={34} /></span>
                 <span className="fmx-ing-copy">
                   <strong>{row.name}</strong>
                   <span className="fmx-ing-meta">
                     {row.origin && (
-                      <em><ClayIcon name={row.origin.icon} size={13} />{row.origin.label}</em>
+                      <em><ContentIcon name={row.origin.icon} size={13} />{row.origin.label}</em>
                     )}
                     {nova && (
                       <em className="is-nova" style={{ '--nova': nova.color } as React.CSSProperties}>
@@ -205,7 +208,7 @@ const TRUTH_OF: Record<QualityTileKey, keyof MealQualityTruth> = {
 
 export function qualityTiles(lines: FuelQualityLine[]): {
   key: QualityTileKey; label: string; value: number | null; unit: string
-  icon: ClayIconName; color: string
+  icon: Icon3DName; color: string
 }[] {
   const lineKcal = lines.reduce((s, l) => s + (l.kcal ?? 0), 0)
   const hasNova = lines.length > 0 && lines.every(l => l.nova != null)
@@ -220,9 +223,11 @@ export function qualityTiles(lines: FuelQualityLine[]): {
     : null
   const ultra = hasNova ? lines.filter(l => l.nova === 4).length : null
   return [
-    { key: 'base', label: 'Alapanyag-arány', value: baseShare, unit: '%', icon: 'i-termes', color: 'var(--amber)' },
-    { key: 'density', label: 'Energiasűrűség', value: density, unit: 'kcal/100 g', icon: 'i-lang', color: 'var(--coral)' },
-    { key: 'ultra', label: 'Ultra-feldolgozott', value: ultra, unit: 'tétel', icon: 'i-retegek', color: ultra ? 'var(--coral)' : 'var(--sky)' },
+    // Üveg (mezo-me75u.1): alapanyag = the processing gear, energy = the bolt (fuel-uveg.html),
+    // ultra = the sealed pack (uveg-alap-ikonok.html).
+    { key: 'base', label: 'Alapanyag-arány', value: baseShare, unit: '%', icon: 't-processing', color: 'var(--amber)' },
+    { key: 'density', label: 'Energiasűrűség', value: density, unit: 'kcal/100 g', icon: 't-bolt', color: 'var(--coral)' },
+    { key: 'ultra', label: 'Ultra-feldolgozott', value: ultra, unit: 'tétel', icon: 't-ultra', color: ultra ? 'var(--coral)' : 'var(--sky)' },
   ]
 }
 
@@ -233,7 +238,9 @@ export interface FuelNutriTile {
    *  nem csak szám: a vércukor-kártya a sáv szavát viseli itt, szándékosan szám helyett. */
   value: string | null
   unit: string
-  icon: ClayIconName
+  /** Üveg (mezo-me75u.1): a 3D content icon; a clay name still renders through `CLAY_TO_3D`
+   *  (or as clay) for the surfaces not yet re-dressed (Kamra item). */
+  icon: ClayIconName | Icon3DName
   color: string
   /** Megadva a lapka gombbá válik és ezt hívja. A többi lapka nem interaktív. */
   onOpen?: () => void
@@ -248,13 +255,14 @@ export function FuelNutriTiles({ tiles }: { tiles: FuelNutriTile[] }) {
         const body = (
           <>
             <span className="fmx-nt-top">
-              <span className="fmx-nt-art" aria-hidden="true"><ClayIcon name={t.icon} size={34} /></span>
+              <span className="fmx-nt-art" aria-hidden="true"><ContentIcon name={t.icon} size={36} /></span>
               <strong>{t.value == null ? '—' : t.value}{t.value != null && t.unit !== '' && <small>{t.unit}</small>}</strong>
             </span>
             <span className="fmx-nt-label">{t.label}</span>
           </>
         )
-        const cls = `fmx-nutri-tile${t.value == null ? ' is-unknown' : ''}`
+        // Üveg: a known value is a glass tile; the honest gap (`is-unknown`) is the dashed state.
+        const cls = `fmx-nutri-tile${t.value == null ? ' is-unknown' : ' glass'}`
         const style = { '--nt-color': t.color } as React.CSSProperties
         // Csak a `onOpen`-t hordozó lapka gomb — a többi nem koppintható, és nem is úgy néz ki.
         return t.onOpen ? (
@@ -305,7 +313,7 @@ export function FuelQualitySection({ lines, truth, glycemic, onOpenGlycemic }: {
       // mért adatként bemutatni tilos.
       value: glycemic.label,
       unit: glycemic.sugarEstimated ? 'becsült' : '',
-      icon: 'i-vercukor',
+      icon: 't-glucose',
       color: GLYCEMIC_COLOR[glycemic.level],
       onOpen: onOpenGlycemic,
     })
@@ -332,14 +340,14 @@ const STATUS_LABEL: Record<MicroStatus, string> = { good: 'rendben', ok: 'oké',
 /** A NÉGY tárolt tény egy étkezés-méretű kerethez mérve (prototípus `microCardsHtml`, :114).
  *  Más nem jön ide: vitamin/ásványi anyag a produkcióban nem létezik (mezo-vj61). */
 function microRows(n: Nutrients): {
-  label: string; value: number | null; allot: number; icon: ClayIconName; color: string;
+  label: string; value: number | null; allot: number; icon: Icon3DName; color: string;
   status: (v: number) => MicroStatus; kind: string
 }[] {
   return [
-    { label: 'Rost', value: n.fiberG, allot: 7, icon: 'i-noveny', color: 'var(--sage)', status: v => (v >= 6 ? 'good' : 'ok'), kind: 'cél' },
-    { label: 'Cukor', value: n.sugarG, allot: 25, icon: 'i-termes', color: 'var(--rose)', status: v => (v <= 12 ? 'good' : v <= 22 ? 'ok' : 'low'), kind: 'keret' },
-    { label: 'Só', value: n.saltG, allot: 1.7, icon: 'i-kristaly', color: 'var(--sky)', status: v => (v <= 1 ? 'good' : 'ok'), kind: 'keret' },
-    { label: 'Telített zsír', value: n.saturatedFatG, allot: 7, icon: 'i-avokado', color: 'var(--amber)', status: v => (v <= 5 ? 'good' : v <= 9 ? 'ok' : 'low'), kind: 'keret' },
+    { label: 'Rost', value: n.fiberG, allot: 7, icon: 't-fiber', color: 'var(--sage)', status: v => (v >= 6 ? 'good' : 'ok'), kind: 'cél' },
+    { label: 'Cukor', value: n.sugarG, allot: 25, icon: 't-sugar', color: 'var(--rose)', status: v => (v <= 12 ? 'good' : v <= 22 ? 'ok' : 'low'), kind: 'keret' },
+    { label: 'Só', value: n.saltG, allot: 1.7, icon: 't-salt', color: 'var(--sky)', status: v => (v <= 1 ? 'good' : 'ok'), kind: 'keret' },
+    { label: 'Telített zsír', value: n.saturatedFatG, allot: 7, icon: 't-avocado', color: 'var(--amber)', status: v => (v <= 5 ? 'good' : v <= 9 ? 'ok' : 'low'), kind: 'keret' },
   ]
 }
 
@@ -360,7 +368,7 @@ export function FuelMicroSection({ nutrients, frame }: { nutrients: Nutrients; f
             return (
               <div key={row.label} className="fmx-micro-card is-unknown"
                 style={{ '--mc-color': row.color } as React.CSSProperties}>
-                <span className="fmx-mc-art" aria-hidden="true"><ClayIcon name={row.icon} size={29} /></span>
+                <span className="fmx-mc-art" aria-hidden="true"><ContentIcon name={row.icon} size={34} /></span>
                 <span className="fmx-mc-copy">
                   <strong>{row.label}</strong>
                   <small>a forrás nem adott értéket</small>
@@ -372,9 +380,9 @@ export function FuelMicroSection({ nutrients, frame }: { nutrients: Nutrients; f
           const status = row.status(row.value)
           const share = Math.round(pct(row.value, row.allot))
           return (
-            <div key={row.label} className={`fmx-micro-card is-${status}`}
+            <div key={row.label} className={`fmx-micro-card is-${status} glass`}
               style={{ '--mc-color': row.color } as React.CSSProperties}>
-              <span className="fmx-mc-art" aria-hidden="true"><ClayIcon name={row.icon} size={29} /></span>
+              <span className="fmx-mc-art" aria-hidden="true"><ContentIcon name={row.icon} size={34} /></span>
               <span className="fmx-mc-copy">
                 <strong>{row.label}</strong>
                 <i aria-hidden="true"><b style={{ '--w': `${Math.min(100, share)}%` } as React.CSSProperties} /></i>

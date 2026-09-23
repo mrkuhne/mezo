@@ -54,7 +54,7 @@ export function FuelMealScorePage() {
     return (
       <div className="fmx-page">
         <div className="fmx-subhead">
-          <button type="button" onClick={() => navigate('/fuel')} aria-label="Vissza a Mai oldalra">‹</button>
+          <button type="button" className="glass is-round" onClick={() => navigate('/fuel')} aria-label="Vissza a Mai oldalra">‹</button>
           <span><strong>Ez az étkezés nincs meg</strong></span>
         </div>
         <p className="fmx-block-empty">Lehet, hogy egy másik napon logoltad, vagy közben törölted.</p>
@@ -67,7 +67,7 @@ export function FuelMealScorePage() {
     return (
       <div className="fmx-page">
         <div className="fmx-subhead">
-          <button type="button" onClick={back} aria-label="Vissza az étkezéshez">‹</button>
+          <button type="button" className="glass is-round" onClick={back} aria-label="Vissza az étkezéshez">‹</button>
           <span><small>AI ÉRTÉKELÉS</small><strong>{mealDisplayName(meal) ?? 'Étkezés'}</strong></span>
         </div>
         <p className="fmx-block-empty">
@@ -84,7 +84,7 @@ export function FuelMealScorePage() {
   return (
     <div className="fmx-page">
       <div className="fmx-subhead">
-        <button type="button" onClick={back} aria-label="Vissza az étkezéshez">‹</button>
+        <button type="button" className="glass is-round" onClick={back} aria-label="Vissza az étkezéshez">‹</button>
         <span>
           <small>AI ÉRTÉKELÉS</small>
           <strong>{mealDisplayName(meal) ?? 'Étkezés'}</strong>

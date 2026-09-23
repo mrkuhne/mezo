@@ -17,6 +17,8 @@ export function PhoneFrame({ children, anchor = false, clock }: { children: Reac
       <div className="phone">
         <div className={cn('phone-screen', anchor && 'anchor')} data-day={daypart}>
           <div className="sky" aria-hidden="true" />
+          {/* Üveg (bible §1, mezo-me75u.1): the blurred color field the glass refracts. */}
+          <div className="uv-aurora" aria-hidden="true"><i /><i /><i /><i /></div>
           <div className="dynamic-island" />
           <StatusBar clock={clock} />
           {children}

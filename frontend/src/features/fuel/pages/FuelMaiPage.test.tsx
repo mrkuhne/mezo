@@ -167,7 +167,7 @@ test('a műszer íve a nap elfogyasztott részét rajzolja ki', () => {
   const progress = Number(gauge.style.getPropertyValue('--fuel-progress'))
   expect(progress).toBeGreaterThan(0)
   expect(progress).toBeLessThanOrEqual(100)
-  expect(container.querySelector('.fmx-gauge use')!.getAttribute('href')).toBe('#i-fuel')
+  expect(container.querySelector('.fmx-gauge use')!.getAttribute('href')).toBe('#t-bowl')
 })
 
 // mezo-jb84: a chip a JÓVÁHAGYOTT üvegdobozt nyitja — élesben a régi, közös lap jött fel

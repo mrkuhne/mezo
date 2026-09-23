@@ -239,3 +239,41 @@ change. Every later slice verifies **dark only**.
 
 *(Each `/uvegesites` slice appends its lessons here as numbered rules, the way the
 2026-09-17 bible's Appendices A–E grew. Start numbering at U1.)*
+
+### U1 · Alap + Fuel mag (`mezo-me75u.1`, 2026-09-23)
+
+The kit lives at the END of `prototype.css` (`── uveg kit (`, `── uveg chrome (`). What the first
+slice paid for:
+
+1. **`.glass` wins ties it was never meant to win.** It comes last, so at equal specificity it
+   overrides `position`, `overflow`, `background` and `box-shadow` of earlier rules. The FAB lost
+   `position: absolute` to `.glass { position: relative }`; restate geometry in a
+   `.<thing>.glass` rule of the slice's block.
+2. **`.glass > *` makes every child `position: relative; z-index: 1`.** An absolutely placed
+   child (a badge, a dot) must restate `position: absolute` in a rule that outranks it, or it
+   drops into the flow (the header badges did).
+3. **`.glass` clips (`overflow: hidden`).** A glass surface that scrolls (the Fuel glass boxes)
+   or lets something stick out (the time box's stopwatch, round buttons with badges) must say so
+   on `.<thing>.glass`, and turn the sheen off where it would clip oddly.
+4. **Publish the hue on the element that wears the glass.** `--c: var(--block-color)` works only
+   when `--block-color` is set on that same element. The Fuel rings set `--macro-color` on an
+   inner child, so the glass tile around them saw nothing; the TSX now sets it on the tile too.
+5. **Never glass in glass, even when a prototype draws it.** `fuel-uveg.html` has a
+   `.score.glass` pill inside a `.block.glass`; the build makes it a flat lavender-lit pill. Same
+   for the glucose spark, tags and callouts inside a glass box.
+6. **Empty is dashed, not glass.** A meal block with nothing logged is free space
+   (`.fmx-block.is-open`); an unknown tile, micro card or degraded dimension is dashed, with the
+   glass layers (`::before`, `::after`, `backdrop-filter`) switched off explicitly.
+7. **Icons: map meanings, not glyphs.** `CLAY_TO_3D` holds only context-free meanings. A clay
+   glyph that means two things (the flask = "becslés" source AND the fat-quality dimension;
+   `i-termes` = raw-material share AND honey) gets a `t-*` name at its call site. Unmapped clay
+   names fall back to clay, so a half-migrated surface never breaks.
+8. **320px is the chrome's hardest width.** The wordmark and five round controls overlap unless
+   they shrink at ≤360px; a row with rings + two chips must wrap the chips as ONE group
+   (`.fmx-meal-chips`), or the second chip wraps alone to the left.
+9. **A floating bar changes what "reachable" means.** A card can sit inside the scroller's
+   viewport yet under the glass bar, so `scrollIntoViewIfNeeded` does nothing. Layout specs lift
+   the card above the bar's top instead (tests/layout/layout.spec.ts).
+10. **The dark lock is the theme provider's, not the pages'.** `ThemeProvider` takes `lock`
+    (default `THEME_LOCK`); tests of the parked light/auto/claim machinery pass `lock={null}`, and
+    any spec that seeded a light preference now expects dark.
