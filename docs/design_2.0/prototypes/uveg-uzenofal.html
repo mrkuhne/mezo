@@ -555,6 +555,17 @@ button.well:active{background:rgba(245,239,230,.08)}
 .case .chev{flex:0 0 auto;font-size:15px;color:var(--faint)}
 .case .bar{margin-top:11px;height:5px}
 
+/* D3: dosszié */
+.quote{margin:9px 16px;padding:15px 16px;border-radius:20px}
+.quote p{font-family:var(--serif);font-style:italic;font-size:16.5px;line-height:1.45;color:var(--ink)}
+.quote small{display:block;margin-top:7px;font-size:10.5px;color:var(--faint)}
+.quote .crow{display:flex;gap:8px;margin-top:11px}
+.lifer{display:flex;gap:12px;align-items:flex-start;padding:11px 2px;border-bottom:1px solid var(--hair)}
+.lifer u{flex:0 0 auto;width:10px;height:10px;margin-top:4px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px rgba(255,190,96,.6);text-decoration:none}
+.lifer b{display:block;font-size:13.5px;font-weight:600;color:var(--ink)}
+.lifer small{display:block;margin-top:2px;font-size:11px;color:var(--sub)}
+.lifer em{margin-left:auto;flex:0 0 auto;font-style:normal;font-size:10.5px;color:var(--faint);font-variant-numeric:tabular-nums}
+
 /* komment-szál a poszt-oldalon */
 .tcmt{margin:9px 16px;padding:12px 13px 11px;border-radius:18px;background:rgba(245,239,230,.035);
   box-shadow:inset 0 0 0 1px rgba(245,239,230,.10),inset 3px 0 0 color-mix(in srgb,var(--c) 55%,transparent),0 8px 18px -14px rgba(0,0,0,.6)}
@@ -1909,6 +1920,47 @@ function bizonyitek(){const rows=[['szept. 8.','20:10','6,1','hit'],['szept. 9.'
   </div></div>
   <div class="note glass rise" style="--c:var(--lav);--i:3;margin-top:12px">${I('info')}<div><small>ŐSZINTESÉG</small><p>Ez együttjárás, nem bizonyított ok-okozat. A hiányzó napokon nem volt mindkét adat — azok nem számítanak sem mellette, sem ellene.</p></div></div>`}
 
+function rolad(){return `${topbar()}
+  <div class="pgh rise" style="--i:0"><small>A KÖZÖS KÉP · AMIT A CSAPAT KIMONDOTT RÓLAD</small><h1>Rólad</h1></div>
+  <div class="quote glass rise" style="--c:var(--rose);--i:1">
+    <p>„Szereted látni, mi miből következik — a kész válasz nem elég, az út is kell.”</p>
+    <small>Így fogalmaz most rólad a csapat · javítható benyomás, nem címke</small>
+    <span class="crow"><button class="chip glass" style="--c:var(--sage)" data-toast="Talál — megerősítetted, a benyomás erősödik">${I('thumb-up')}Talál</button><button class="chip glass" style="--c:var(--gold)" data-sheet="reply">${I('chat')}Pontosítom</button></span>
+  </div>
+
+  <div class="sec"><h2>Döntésre vár</h2><span class="hint">2 JELÖLT</span></div>
+  <div class="rows">
+    <div class="case glass rise" style="--c:var(--gold);--s:var(--gold);--i:2" id="inbox-1">
+      <span class="crow"><span class="st">TÉNYJELÖLT</span><em>Falat hozta · ma</em></span>
+      <span class="cmain">${I('note')}<span class="ctxt"><b>„Hétvégén előfordul, hogy az étkezéseimet utólag rögzítem.”</b><small>Az üres délelőttöt így nem nézi kihagyott étkezésnek</small></span></span>
+      <span class="crow" style="margin:10px 0 0" data-inbox="inbox-1"><button class="chip glass" style="--c:var(--sage)" data-keep>${I('tick')}Igen, jegyezd meg</button><button class="chip glass" style="--c:var(--gold)" data-sheet="reply">${I('chat')}Pontosítom</button><button class="chip glass" style="--c:#8E86A3" data-toast="Most nem került be — később újra megkérdezzük">${I('skip')}Most ne</button></span>
+    </div>
+    <div class="case glass rise" style="--c:var(--gold);--s:var(--gold);--i:3" id="inbox-2">
+      <span class="crow"><span class="st">ÉLETESEMÉNY-JELÖLT</span><em>Mezo hozta · tegnap</em></span>
+      <span class="cmain">${I('journal')}<span class="ctxt"><b>Új munkarendet próbálsz szeptembertől</b><small>A chatben említetted — ha bekerül, a csapat ehhez méri a heteidet</small></span></span>
+      <span class="crow" style="margin:10px 0 0" data-inbox="inbox-2"><button class="chip glass" style="--c:var(--sage)" data-keep>${I('tick')}Igen, jegyezd meg</button><button class="chip glass" style="--c:var(--gold)" data-sheet="reply">${I('chat')}Pontosítom</button><button class="chip glass" style="--c:#8E86A3" data-toast="Most nem került be — később újra megkérdezzük">${I('skip')}Most ne</button></span>
+    </div>
+  </div>
+
+  <div class="sec"><h2>A tények rólad</h2><span class="hint">9 AKTÍV</span></div>
+  <div class="rows">
+    ${[['SZUNYA','var(--lav)','Hétvégén átlag 40 perccel később fekszel','te erősítetted meg · szept. 20.'],
+       ['FALAT','var(--sage)','A fehérje-célod stabilan megvan','21 nap átlaga · szept. 15.'],
+       ['MOCOR','var(--sky)','Kihagyott nap után erősebben jössz vissza','5 visszatérés · szept. 12.'],
+       ['TŐLED','var(--gold)','Szereted érteni a javaslatok indoklását','saját kérésed · aug. 20.']].map(([who,c,t,src],i)=>`
+    <div class="case glass rise" style="--c:${c};--s:${c};--i:${i+4}"><span class="crow"><span class="st">${who}</span><em>${src}</em></span><span class="cmain"><span class="ctxt"><b>${t}</b></span></span></div>`).join('')}
+    <button class="case glass lift rise" style="--c:var(--rose);--s:#8E86A3;--i:8" data-toast="A teljes ténylista — kereséssel és kapcsolókkal (megvalósításban)"><span class="cmain">${I('book')}<span class="ctxt"><b>Mind a 9 tény</b><small>kereséssel, forrással és Elhallgattatom-kapcsolóval</small></span><span class="chev">›</span></span></button>
+  </div>
+
+  <div class="sec"><h2>Életesemények</h2></div>
+  <div class="rows"><div class="glass case rise" style="--c:var(--gold);--i:9;padding-top:8px">
+    <span class="lifer"><u></u><span style="flex:1"><b>Új munkarend</b><small>szeptembertől próbálod · tőled tudjuk</small></span><em>szept. 1.</em></span>
+    <span class="lifer"><u></u><span style="flex:1"><b>Röplabda-szezon indult</b><small>heti 1-2 meccs — a csapat ehhez igazítja a képet</small></span><em>aug. 18.</em></span>
+    <span class="lifer" style="border-bottom:0"><u style="background:#8E86A3;box-shadow:none"></u><span style="flex:1"><b>Nyaralás</b><small>lezárult időszak — a nyári hetek külön mércével számítanak</small></span><em>júl. 20–31.</em></span>
+  </div></div>
+
+  <div class="note glass rise" style="--c:var(--rose);--i:10;margin-top:12px">${I('shield')}<div><small>A TE KEZEDBEN</small><p>Minden, ami itt áll, forrással együtt él — és bármit elhallgattathatsz vagy pontosíthatsz. A csapat csak azt használja, amit itt jóváhagytál.</p></div></div>`}
+
 function stub(t,small){return `${topbar()}<div class="pgh rise"><small>${small}</small><h1>${t}</h1></div>
   <div class="dash rise" style="--i:1;margin-top:8px">${I('info')}<span>Ez a felület tartalmilag változatlan marad — ebben a körben csak az üveg-anyagot kapja meg. A részletes átöltöztetése a saját szeletében történik.</span></div>`}
 
@@ -1933,7 +1985,7 @@ function closeSheet(){$('#scrim').classList.remove('on');$('#sheet').classList.r
 let hist=[],pillT=null,pillUsed=false;
 function render(){
   const h=location.hash||'#fal',[r,id]=h.slice(1).split('/');
-  const html=r==='csapat'?csapat():r==='szoba'?szoba(id):r==='poszt'?(id==='kiserlet'?pkiserlet():id==='sejtes'?psejtes():id==='dontes'?pdontes():id==='elorejelzes'?pelorejelzes():poszt()):r==='bizonyitek'?bizonyitek():r==='tud'?tudja(id):r==='ugyek'?ugyek(id):r==='elsonap'?elsonap():r==='ikonok'?ikonok():r==='rolad'?stub('Rólad','A KÖZÖS KÉP'):r==='emlekek'?stub('Emlékek','A TE TÖRTÉNETED'):fal();
+  const html=r==='csapat'?csapat():r==='szoba'?szoba(id):r==='poszt'?(id==='kiserlet'?pkiserlet():id==='sejtes'?psejtes():id==='dontes'?pdontes():id==='elorejelzes'?pelorejelzes():poszt()):r==='bizonyitek'?bizonyitek():r==='tud'?tudja(id):r==='ugyek'?ugyek(id):r==='elsonap'?elsonap():r==='ikonok'?ikonok():r==='rolad'?rolad():r==='emlekek'?stub('Emlékek','A TE TÖRTÉNETED'):fal();
   $('#scroll').innerHTML=html;$('#scroll').scrollTop=0;closeSheet();ntfOpen=false;$('#ntf')?.classList.remove('on');$('#switcher')?.classList.remove('on');
   document.querySelectorAll('#jump a').forEach(a=>a.setAttribute('aria-current',String(a.getAttribute('href').slice(1).split('/')[0]===r)));
   document.querySelectorAll('.tb').forEach(t=>t.classList.toggle('on',t.dataset.tab===(r==='szoba'||r==='tud'||r==='ugyek'?'csapat':r==='poszt'||r==='bizonyitek'||r==='elsonap'||r==='ikonok'?'fal':r)));
@@ -1951,6 +2003,8 @@ document.addEventListener('click',e=>{
     $('#today').prepend(el);$('#scroll').scrollTo({top:0,behavior:'smooth'});return}
   if(e.target.closest('[data-back]')){hist.length?history.back():(location.hash='#fal');return}
   if(castb){const id=castb.dataset.cast;seen.add(id);hist.push(location.hash);location.hash='#szoba/'+id;return}
+  const keep=e.target.closest('[data-keep]');
+  if(keep){const row=keep.closest('[data-inbox]');if(row){row.outerHTML='<span class="after big" style="margin-top:10px">'+I('tick')+'Bekerült a rólad szóló képbe — a forrásával együtt</span>';toast('Elmentve. A Rólad oldalon bármikor visszavonhatod.');return}}
   if(vote&&vote.closest('[data-decide]')&&vote.dataset.vote==='up'){const po=$('#dontes-poster');if(po){po.querySelector('[data-decide]').outerHTML='<span class="after big">'+I('tick')+'Megerősítetted · bekerült a rólad szóló képbe — Mezo jóváhagyta</span>';toast('Bekerült. Bármikor visszavonhatod a Rólad oldalon.');return}}
   if(vote){const was=vote.getAttribute('aria-pressed')==='true';vote.closest('.acts').querySelectorAll('[data-vote]').forEach(x=>x.setAttribute('aria-pressed','false'));vote.setAttribute('aria-pressed',String(!was));
     if(!was)toast(vote.dataset.vote==='up'?'„Ez talál” — köszönjük, feljegyeztük.':'„Nem így érzem” — ebből tanulunk a legtöbbet. Írd meg válaszban is!');return}
