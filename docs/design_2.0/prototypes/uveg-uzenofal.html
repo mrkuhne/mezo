@@ -529,7 +529,7 @@ button.well:active{background:rgba(245,239,230,.08)}
 .case .crow em{margin-left:auto;font-style:normal;font-size:10.5px;font-weight:600;color:var(--faint);font-variant-numeric:tabular-nums}
 .case .cmain{display:flex;align-items:center;gap:12px}
 .case .cmain .icon{width:36px;height:36px;flex:0 0 auto}
-.case .cmain>span{flex:1;min-width:0}
+.case .ctxt{flex:1 1 auto;min-width:0}
 .case b{display:block;font-size:15px;font-weight:650;letter-spacing:-.25px;line-height:1.32}
 .case small{display:block;margin-top:4px;font-size:11.5px;color:var(--sub);line-height:1.45}
 .case .chev{flex:0 0 auto;font-size:15px;color:var(--faint)}
@@ -1710,7 +1710,7 @@ function szoba(id){const p=CH[id]||CH.szunya,r=ROOMS[id]||ROOMS.szunya;
   <div class="sec"><h2>Most ezen dolgozik</h2></div>
   <div class="rows">${r.rows.map(([st,sc,meta,ic,title,sub,go,pct],i)=>`<button class="case glass lift rise" style="--c:${p.c};--s:${sc};--i:${i+4}" ${go?`data-go="${go}"`:'data-toast="Saját oldala a megvalósításban nyílik meg"'}>
   <span class="crow"><span class="st">${st}</span><em>${meta}</em></span>
-  <span class="cmain">${I(ic)}<span><b>${title}</b><small>${sub}</small></span><span class="chev">›</span></span>
+  <span class="cmain">${I(ic)}<span class="ctxt"><b>${title}</b><small>${sub}</small></span><span class="chev">›</span></span>
   ${pct?`<span class="bar" style="--c:${sc}"><b style="--w:${pct}%;--i:${i}"></b></span>`:''}
 </button>`).join('')}</div>
   <div class="sec"><h2>${p.n} jegyzete</h2></div>
