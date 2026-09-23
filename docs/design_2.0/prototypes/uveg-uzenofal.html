@@ -522,6 +522,26 @@ button.well:active{background:rgba(245,239,230,.08)}
 .rowg em{margin-left:auto;flex:0 0 auto;font-style:normal;font-size:11px;font-weight:600;color:color-mix(in srgb,var(--c) 80%,#fff)}
 .dash{margin:12px 16px;display:flex;gap:11px;align-items:center;padding:13px;border-radius:20px;border:1.5px dashed rgba(142,134,163,.5);font-size:11.5px;color:var(--sub)}
 .dash .pav{flex:0 0 auto}
+/* D1: összevetés, bizonyíték-sor, válasz-lépések */
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:10px 0 2px}
+.vs .well{margin:0}
+.vs small{display:block;font-size:8.5px;font-weight:700;letter-spacing:1px;color:var(--faint);margin-bottom:5px}
+.vs p{font-size:12px;line-height:1.5;color:var(--ink)}
+.evrow{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--hair);font-size:11.5px;color:var(--sub);font-variant-numeric:tabular-nums}
+.evrow i{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+.evrow i.hit{background:var(--lav);box-shadow:0 0 8px rgba(171,159,210,.7)}
+.evrow i.miss{background:rgba(245,239,230,.16)}
+.evrow b{flex:1;font-weight:600;color:var(--ink)}
+.evrow em{font-style:normal}
+.steps{display:grid;gap:9px;margin-top:12px}
+.step{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair);font-size:12px;line-height:1.45;color:var(--sub)}
+.step u{flex:0 0 auto;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;text-decoration:none;font-size:10.5px;font-weight:700;background:rgba(171,159,210,.2);color:#CBC1EC}
+.step b{color:var(--ink)}
+.sheet textarea{width:100%;min-height:84px;margin:4px 0 10px;padding:11px 12px;border-radius:14px;border:0;background:rgba(245,239,230,.06);box-shadow:inset 0 0 0 1px var(--hair);color:var(--ink);font:inherit;font-size:13px;resize:vertical}
+.sheet .send{display:flex;align-items:center;gap:8px;width:100%;justify-content:center;padding:12px;border-radius:16px;font-size:13px;font-weight:650}
+.sheet .send .icon{width:18px;height:18px}
+.after.big{font-size:12px;padding:8px 13px}
+
 /* ügy-kártya a szobákban */
 .case{display:block;width:100%;padding:13px 14px 14px;border-radius:20px;text-align:left}
 .case .crow{display:flex;align-items:center;gap:8px;margin-bottom:9px}
@@ -1543,6 +1563,8 @@ button.well:active{background:rgba(245,239,230,.08)}
       <a href="#fal" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#c-i-mezo"/></svg>Üzenőfal</a>
       <a href="#csapat" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#c-i-emberek"/></svg>A csapat + szobák</a>
       <a href="#poszt/vacsora" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#i-chat"/></svg>Egy poszt saját oldala</a>
+      <a href="#poszt/kiserlet" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#i-flask"/></svg>Kísérlet oldala</a>
+      <a href="#poszt/dontes" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#i-sprout"/></svg>Döntés-flow (Rád vár)</a>
       <a href="#elsonap" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#i-sprout"/></svg>Első nap (új user)</a>
       <a href="#ikonok" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#i-flask"/></svg>Új ikonok · jóváhagyásra</a>
     </nav>
@@ -1585,8 +1607,8 @@ const phead=(id,meta,right='')=>{const p=CH[id];return `<div class="ph" style="-
 const acts=(extra='')=>`<div class="acts">
   <button data-vote="up" aria-pressed="false">${I('thumb-up')}Ez talál${extra}</button>
   <button data-vote="down" aria-pressed="false">${I('thumb-down')}Nem így érzem</button>
-  <button data-toast="Elmesélem — válasz a csapatnak (a demó nem futtat AI-t)">${I('chat')}Elmesélem</button></div>`;
-const rrow=()=>`<button class="rrow" data-toast="Válasz — a demó nem ment semmit"><span class="me">Te</span>Te hogy látod? Válaszolj…${I('send')}</button>`;
+  <button data-sheet="reply">${I('chat')}Elmesélem</button></div>`;
+const rrow=()=>`<button class="rrow" data-sheet="reply"><span class="me">Te</span>Te hogy látod? Válaszolj…${I('send')}</button>`;
 const chart=(h=84)=>`<svg viewBox="0 0 296 ${h}" class="chart" aria-hidden="true">
   <path class="grid" d="M8 ${h-20} H288"/>
   <path class="l1" d="M8,44 C30,40 44,52 62,48 C80,44 92,26 112,30 C132,34 142,54 162,58 C182,62 194,40 214,36 C234,32 250,50 288,46" pathLength="100"/>
@@ -1643,15 +1665,15 @@ function fal(){return `${topbar()}
   <article class="post rise" style="--c:var(--sky);--i:7">
     ${phead('mocor','20:30 · még csak sejtés')}
     <p class="pbody">Kezd összeállni egy kép: az <b>egyhangúbb hetek</b> után esik az energiád — ha három napig ugyanaz a terhelés megy, a negyediken laposabb a reggeli jelentkezésed. ⚡ Még csak 5 közös napom van a 8-ból, úgyhogy nem mondom ki. Ha jövő héten becsúszik egy változatosabb blokk, sokat fogok tanulni belőle.</p>
-    <div class="well"><div class="honest"><span>5 / 8 nap</span><span class="bar" style="--c:var(--lav)"><b style="--w:62%"></b></span><span>még kevés adat</span></div></div>
+    <button class="well" data-go="#poszt/sejtes"><div class="honest"><span>5 / 8 nap</span><span class="bar" style="--c:var(--lav)"><b style="--w:62%"></b></span><span>még kevés adat</span></div></button>
     ${acts()}
   </article>
 
   <article class="post rise" style="--c:var(--sage);--i:8">
     ${phead('falat','20:30 · közös kísérlet Mocorral · 4/7 nap')}
     <p class="pbody"><b>Szénhidrát a meccs előtt</b> 🏐 — két meccsnapon próbáltuk, és mindkétszer stabilabb volt az ugrásod a végjátékban, a 4. szettben is. Ma este megint meccs: ha 17 óráig bekerül a <b>80 g szénhidrát</b>, holnapra majdnem kész a kép.</p>
-    <button class="well" data-toast="A kísérlet története — saját oldala a következő körben" style="--c:var(--sage)"><div class="dcell"><span class="hit">Cs</span><span class="hit">P</span><span>Szo</span><span class="hit">V</span><span class="now">H</span><span>K</span><span>Sze</span></div></button>
-    <div class="sum"><span class="minis">${av('mocor',true)}</span><button data-toast="Mocor követi a kísérletet">Mocor követi a kísérletet</button></div>
+    <button class="well" data-go="#poszt/kiserlet" style="--c:var(--sage)"><div class="dcell"><span class="hit">Cs</span><span class="hit">P</span><span>Szo</span><span class="hit">V</span><span class="now">H</span><span>K</span><span>Sze</span></div></button>
+    <div class="sum"><span class="minis">${av('mocor',true)}</span><button data-go="#poszt/kiserlet">Mocor követi · a kísérlet oldala</button></div>
     ${acts()}
   </article>
 
@@ -1669,7 +1691,13 @@ function fal(){return `${topbar()}
     <div class="sum"><span class="minis">${av('szunya',true)}${av('mocor',true)}${av('falat',true)}</span><button data-toast="Az ülés jegyzőkönyve — a Konzílium oldala">Az ülés jegyzőkönyve · 4 forduló</button></div>
     ${acts()}
   </article>
-  <div class="fday rise" style="--i:12"><span>ENNYI TÖRTÉNT</span></div>
+  <article class="post rise" style="--c:var(--sky);--i:12">
+    ${phead('mocor','vasárnap · lezárt előrejelzés')}
+    <p class="pbody"><b>Ez most nem jött be.</b> Könnyebbnek vártam a jó alvás utáni edzést, te ugyanolyannak érezted. Ez is számít — ebből a jelből mostantól óvatosabban következtetek. ⚡</p>
+    <div class="sum"><button data-go="#poszt/elorejelzes">Ezt vártam — és ez történt · a teljes kép</button></div>
+    ${acts()}
+  </article>
+  <div class="fday rise" style="--i:13"><span>ENNYI TÖRTÉNT</span></div>
   <p style="text-align:center;font-size:11.5px;color:var(--faint);padding:0 40px 10px" class="rise">A folyamatban lévő ügyeket közben tovább figyeljük.</p>`}
 
 function csapat(){const R=[['szunya','Most figyeli: a késői vacsorák és az éjszakád · 1 új dolga van neked','72%'],['mocor','Most figyeli: a terhelésed · 1 sejtésen dolgozik','60%'],['falat','Most figyeli: a vacsoraidőd · 1 aktív kísérlete fut','80%'],['deru','Kevés az adata — ma kért tőled egy bejelentkezést','30%'],['mezo','Vasárnapi konzílium: 2 dolog került a közös képbe','66%']];
@@ -1685,14 +1713,14 @@ const ROOMS={
     ['BEKERÜLT','var(--sage)','szept. 20.','tick','Hétvégén 40 perccel később fekszel','Te erősítetted meg — a rólad szóló kép része','',0]],
     ask:'Kérése: két hétből csak 6 éjszakát naplóztál — minden hiányzó éjszaka egy nappal tolja ki, mire biztosat mondhat.'},
   mocor:{quote:'„A terhelésed és az erőd — és az, hogy a napló ne maradjon el. Nem hajtalak, de észreveszem.”',stats:[['60%','ÉRETTSÉG'],['15','EDZÉSNAP / 60 NAP'],['1','SEJTÉS']],rows:[
-    ['SEJTÉS','var(--sky)','5 / 8 nap','bolt','Az egyhangú hetek viszik el az energiádat?','Még nem mondja ki — egy változatosabb hét kellene hozzá','',62],
-    ['KÍSÉRLET','var(--lav)','4 / 7 nap','flask','Séta ebéd után — nyugodtabb lesz a délután?','Falattal közös próba, együtt nézik majd az eredményt','',57],
-    ['NEM JÖTT BE','#8E86A3','lezárva','down','Könnyebb az edzés, ha jól aludtál?','Nem igazolódott — ebből a jelből óvatosabban következtet','',0]],
+    ['SEJTÉS','var(--sky)','5 / 8 nap','bolt','Az egyhangú hetek viszik el az energiádat?','Még nem mondja ki — egy változatosabb hét kellene hozzá','#poszt/sejtes',62],
+    ['KÍSÉRLET','var(--lav)','4 / 7 nap','flask','Séta ebéd után — nyugodtabb lesz a délután?','Falattal közös próba, együtt nézik majd az eredményt','#poszt/kiserlet',57],
+    ['NEM JÖTT BE','#8E86A3','lezárva','down','Könnyebb az edzés, ha jól aludtál?','Nem igazolódott — ebből a jelből óvatosabban következtet','#poszt/elorejelzes',0]],
     ask:'Kérése: a szettek súlyát is írd fel — abból látja a valódi terhelést.'},
   falat:{quote:'„A tányérod, a célod és az edzésed üzemanyaga. Minden este három szólamban értékelek.”',stats:[['80%','ÉRETTSÉG'],['28','KAJANAP / 60 NAP'],['1','AKTÍV KÍSÉRLET']],rows:[
-    ['KÍSÉRLET','var(--lav)','4 / 7 nap','flask','Meccs előtti szénhidrát — stabilabb az ugrásod?','Mocorral közös próba · ma este megint meccs 🏐','',57],
+    ['KÍSÉRLET','var(--lav)','4 / 7 nap','flask','Meccs előtti szénhidrát — stabilabb az ugrásod?','Mocorral közös próba · ma este megint meccs 🏐','#poszt/kiserlet',57],
     ['RÁD VÁR','var(--coral)','14 közös nap','moon','Rosszabbul alszol, ha későn vacsorázol?','Szunyával közös ügy — ő hozta, Falat a vacsora-oldalt nézi','#poszt/vacsora',0],
-    ['DÖNTÉSRE VÁR','var(--gold)','18 nap','sprout','Korábbi vacsora, nyugodtabb este?','Elég napja van hozzá — most a te döntésed kell','',0]],
+    ['DÖNTÉSRE VÁR','var(--gold)','18 nap','sprout','Korábbi vacsora, nyugodtabb este?','Elég napja van hozzá — most a te döntésed kell','#poszt/dontes',0]],
     ask:'Napi műsora: a tányér · a cél · az edzés — minden este.'},
   deru:{quote:'„Én arra figyelek, hogy vagy. Ehhez a te szavad kell — egy-egy rövid esti bejelentkezés.”',stats:[['30%','ÉRETTSÉG'],['8','BEJELENTKEZÉS / 60 NAP'],['0','NYITOTT ÜGY']],rows:[
     ['KÉRÉS','var(--rose)','1 perc','heart','Bejelentkezel ma este?','Hétvégére már látja, mi mozgatja az energiádat','',0]],
@@ -1752,15 +1780,105 @@ function ikonok(){const K=[['thumb-up','Ez talál','a posztok visszajelző gombj
   <p style="padding:0 18px 10px;font-size:12.5px;color:var(--sub);line-height:1.5" class="rise">A Titanium 3D készlet 62 jeléből ezek hiányoznak a falhoz. Ugyanabban a receptben készültek (64×64, gradiens test, halvány kontúr, csúcsfény, vetett árnyék). Jóváhagyás után a közös készletbe kerülnek.</p>
   <div class="iko">${K.map(([n,t,d],i)=>`<div class="qt glass rise" style="--c:var(--lav);--i:${i+1}">${I(n)}<b>${t}</b><small>${d}</small></div>`).join('')}</div>`}
 
+function pkiserlet(){return `${topbar()}<div class="dhead rise"><button class="back glass" data-back>‹</button><span class="t"><small>KÖZÖS KÍSÉRLET · FALAT × MOCOR · 4/7 NAP</small><strong>Meccs előtti szénhidrát</strong></span></div>
+  <article class="glass poster rise" style="--c:var(--sage);--i:1;margin-top:6px">
+    ${phead('falat','a kísérlet gazdája · Mocorral közösen','<span class="flag" style="color:#CBC1EC;background:rgba(171,159,210,.16);box-shadow:inset 0 0 0 1px rgba(171,159,210,.35)">Kísérlet</span>')}
+    <h3 class="claim">Stabilabb az ugrásod, ha meccs előtt szénhidrátot kapsz?</h3>
+    <p class="pbody" style="--c:var(--sage)">A terv egyszerű: meccsnapokon <b>17 óráig 80 g szénhidrát</b>, aztán megnézzük, mit mond a 4. szett. 🏐 Két meccsnapon már próbáltuk — mindkétszer stabilabb volt a végjáték.</p>
+    <div class="well"><div class="dcell" style="--c:var(--sage)"><span class="hit">Cs</span><span class="hit">P</span><span>Szo</span><span class="hit">V</span><span class="now">H</span><span>K</span><span>Sze</span></div></div>
+    <button class="chip glass" style="--c:var(--sage);margin-top:10px" data-toast="Ma esti adag megjelölése — a demó nem ment">${I('tick')}Ma esti adag: megvolt</button>
+  </article>
+  <div class="sec"><h2>Eddigi meccsnapok</h2><span class="hint">2 / 2 TALÁLAT</span></div>
+  <div class="rows">
+    <div class="case glass rise" style="--c:var(--sage);--s:var(--sage);--i:2"><span class="crow"><span class="st">TALÁLAT</span><em>szept. 18. · csütörtök</em></span><span class="cmain">${I('up')}<span class="ctxt"><b>4. szett: az ugrásmagasság kitartott</b><small>80 g szénhidrát 16:40-ig · a meccs utáni jelentkezésed: „végig volt erőm”</small></span></span></div>
+    <div class="case glass rise" style="--c:var(--sage);--s:var(--sage);--i:3"><span class="crow"><span class="st">TALÁLAT</span><em>szept. 21. · vasárnap</em></span><span class="cmain">${I('up')}<span class="ctxt"><b>Végjátékban is stabil láb</b><small>75 g szénhidrát 17:00-ig · Mocor a szettenkénti bontást is átnézte</small></span></span></div>
+  </div>
+  <div class="sec"><h2>Beszélgetés</h2><span class="hint">1 HOZZÁSZÓLÁS</span></div>
+  <div class="tcmt rise" style="--c:var(--sky);--i:4"><div class="th">${av('mocor',true)}<b>Mocor<span class="area">MOZGÁS</span></b></div>
+    <p>A szettenkénti bontásban is látszik: a 4. szett ugrásai a 2. szetthez képest csak <b>4%-ot</b> estek — a próba előtt ez <b>11%</b> volt. 💪 Még két meccsnap, és kimondhatjuk. Addig ne változtass semmi máson, mert összekeveri a képet.</p></div>
+  ${acts()}
+  <div style="padding:2px 16px 0">${rrow()}</div>`}
+
+function psejtes(){return `${topbar()}<div class="dhead rise"><button class="back glass" data-back>‹</button><span class="t"><small>MÉG CSAK SEJTÉS · MOZGÁS</small><strong>Az egyhangú hetek viszik el az energiádat?</strong></span></div>
+  <article class="glass poster rise" style="--c:var(--sky);--i:1;margin-top:6px">
+    ${phead('mocor','5/8 közös nap · még kevés adat','<span class="flag" style="color:#9FC6E8;background:rgba(127,178,222,.14);box-shadow:inset 0 0 0 1px rgba(127,178,222,.35)">Sejtés</span>')}
+    <h3 class="claim">Ha három napig ugyanaz megy, a negyediken laposabb vagy.</h3>
+    <p class="pbody" style="--c:var(--sky)">Ötször láttam eddig: három egyforma terhelésű nap után a reggeli energiád <b>átlag 1,2 ponttal</b> alacsonyabb. ⚡ Ez még nem bizonyíték — nyolc közös nap kell, hogy kimondjam, és a Szkeptikus is figyel.</p>
+    <div class="well"><div class="honest"><span>5 / 8 nap</span><span class="bar" style="--c:var(--sky)"><b style="--w:62%"></b></span><span>még kevés adat</span></div></div>
+  </article>
+  <div class="sec"><h2>Mi kellene még?</h2></div>
+  <div class="rows">
+    <div class="case glass rise" style="--c:var(--sky);--s:var(--sky);--i:2"><span class="cmain">${I('bolt')}<span class="ctxt"><b>Egy változatosabb hét</b><small>Ha jövő héten vegyes a terhelés, és az energiád NEM esik — az ellene szól, és azt is megköszönöm</small></span></span></div>
+    <div class="case glass rise" style="--c:var(--sky);--s:var(--sky);--i:3"><span class="cmain">${I('heart')}<span class="ctxt"><b>3 további reggeli jelentkezés</b><small>Derű gyűjti — az energiapontod nélkül nincs mihez mérni</small></span></span></div>
+  </div>
+  <div class="sec"><h2>Beszélgetés</h2><span class="hint">1 HOZZÁSZÓLÁS</span></div>
+  <div class="tcmt rise" style="--c:#8E86A3;--i:4"><div class="th">${av('szk',true)}<b>Szkeptikus</b></div>
+    <p>Öt eset kevés, és a hét vége felé amúgy is fáradtabb az ember. Kérlek, a nyolcból legalább kettő legyen <b>hét eleji</b> egyforma-blokk, különben a naptár magyarázza, nem a terhelés.</p></div>
+  ${acts()}
+  <div style="padding:2px 16px 0">${rrow()}</div>`}
+
+function pdontes(){return `${topbar()}<div class="dhead rise"><button class="back glass" data-back>‹</button><span class="t"><small>DÖNTÉSRE VÁR · ÉTKEZÉS</small><strong>Korábbi vacsora, nyugodtabb este?</strong></span></div>
+  <article class="glass poster rise" style="--c:var(--gold);--i:1;margin-top:6px" id="dontes-poster">
+    ${phead('falat','18 összevethető nap · elég adat van','<span class="flag">Rád vár</span>')}
+    <h3 class="claim">A 19 óra előtti vacsoráid után nyugodtabbak az estéid.</h3>
+    <p class="pbody" style="--c:var(--gold)">18 napot tudtam összevetni: a korai vacsorás estéken kevesebb a késő esti nassolás és <b>korábbi a lefekvés</b> is. 🥦 A számok szerint ez már nem véletlen — de a te megerősítésed nélkül nem kerül a rólad szóló képbe.</p>
+    <button class="well" data-sheet="evidence">${chart(70)}</button>
+    <div class="acts" data-decide>
+      <button data-vote="up" aria-pressed="false">${I('thumb-up')}Ez talál</button>
+      <button data-vote="down" aria-pressed="false">${I('thumb-down')}Nem így érzem</button>
+      <button data-sheet="reply">${I('chat')}Elmesélem</button>
+    </div>
+    <p class="pbody" style="font-size:11px;color:var(--faint);margin-top:6px">Az „Ez talál” itt döntés: a megfigyelés bekerül a rólad szóló képbe. Bármikor visszavonhatod.</p>
+  </article>
+  <div class="sec"><h2>Ha bekerül, mire használjuk?</h2></div>
+  <div class="rows">
+    <div class="case glass rise" style="--c:var(--gold);--s:var(--gold);--i:2"><span class="cmain">${I('clock')}<span class="ctxt"><b>Az esti javaslatok időzítése</b><small>Falat 18 óra körül szól majd, nem fél tízkor</small></span></span></div>
+    <div class="case glass rise" style="--c:var(--gold);--s:var(--gold);--i:3"><span class="cmain">${I('moon')}<span class="ctxt"><b>Szunya vacsora-ügye</b><small>Ez a minta a késői-vacsora vizsgálat egyik építőköve lesz</small></span></span></div>
+  </div>`}
+
+function pelorejelzes(){return `${topbar()}<div class="dhead rise"><button class="back glass" data-back>‹</button><span class="t"><small>LEZÁRT ELŐREJELZÉS · MOZGÁS</small><strong>Könnyebb az edzés, ha jól aludtál?</strong></span></div>
+  <article class="glass poster rise" style="--c:var(--sky);--i:1;margin-top:6px">
+    ${phead('mocor','vasárnap zárult · nem igazolódott','<span class="flag" style="color:#FFD99A;background:rgba(255,190,96,.14);box-shadow:inset 0 0 0 1px rgba(255,190,96,.35)">Nem jött be</span>')}
+    <h3 class="claim">Ezt vártam — és ez történt.</h3>
+    <div class="vs">
+      <div class="well"><small>EZT VÁRTAM</small><p>A jó éjszaka utáni edzés <b>könnyebbnek</b> érződik majd — 7-es erőfeszítés-érzet alatt.</p></div>
+      <div class="well"><small>EZ TÖRTÉNT</small><p>Ugyanolyannak érezted: <b>7,5 és 8</b> között, a jó éjszakák után is.</p></div>
+    </div>
+    <p class="pbody" style="--c:var(--sky);margin-top:8px">Ez is számít — sőt. ⚡ Ebből azt tanultam, hogy nálad az alvás <b>nem az érzeten</b> látszik meg, hanem máshol; Szunyával most azt nézzük, a súlyoknál jelentkezik-e. A becsléseimet ezért óvatosabbra vettem ennél a jelnél.</p>
+  </article>
+  <div class="sec"><h2>Beszélgetés</h2><span class="hint">1 HOZZÁSZÓLÁS</span></div>
+  <div class="tcmt rise" style="--c:var(--lav);--i:2"><div class="th">${av('szunya',true)}<b>Szunya<span class="area">ALVÁS</span></b></div>
+    <p>Örülök, hogy kimondtad. 🌙 Nálam közben az látszik, hogy a jó éjszakák utáni napokon <b>korábban</b> kezded az edzést — lehet, hogy ott a hatás, nem az érzetben. Felveszem gyűlő ügynek.</p></div>
+  ${acts()}
+  <div style="padding:2px 16px 0">${rrow()}</div>`}
+
+function bizonyitek(){const rows=[['szept. 8.','20:10','6,1','hit'],['szept. 9.','18:35','7,8','hit'],['szept. 10.','21:05','5,9','hit'],['szept. 11.','19:20','7,1','miss'],['szept. 13.','22:00','5,4','hit'],['szept. 14.','18:50','7,6','hit'],['szept. 15.','19:05','6,2','miss'],['szept. 16.','21:30','5,8','hit'],['szept. 18.','18:20','7,9','hit'],['szept. 19.','20:45','6,4','miss'],['szept. 20.','22:15','5,6','hit'],['szept. 21.','19:00','7,4','hit'],['szept. 22.','20:30','6,0','hit'],['ma','—','még nincs','miss']];
+  return `${topbar()}<div class="dhead rise"><button class="back glass" data-back>‹</button><span class="t"><small>MIBŐL LÁTSZIK? · KÉSŐI VACSORA ↑ ROSSZABB ÉJSZAKA</small><strong>A 14 közös nap</strong></span></div>
+  <article class="glass poster rise" style="--c:var(--lav);--i:1;margin-top:6px">
+    <p class="pbody" style="--c:var(--lav)">Két jel együttfutása: az <b>utolsó étkezésed ideje</b> és a <b>másnapi alvásminőség</b>. A lila pötty = a minta mellett szóló nap. A csapat addig nem mond ki semmit, amíg a hétvégét külön nem látta — ez a Szkeptikus feltétele.</p>
+    <div class="well">${chart()}</div>
+  </article>
+  <div class="sec"><h2>A napok egyenként</h2><span class="hint">11 MELLETTE · 3 ELLENE</span></div>
+  <div class="rows"><div class="glass case rise" style="--c:var(--lav);--i:2;padding-top:6px">
+    ${rows.map(r=>`<span class="evrow"><i class="${r[3]}"></i><b>${r[0]}</b><em>vacsora ${r[1]}</em><em>alvás ${r[2]}</em></span>`).join('')}
+  </div></div>
+  <div class="note glass rise" style="--c:var(--lav);--i:3;margin-top:12px">${I('info')}<div><small>ŐSZINTESÉG</small><p>Ez együttjárás, nem bizonyított ok-okozat. A hiányzó napokon nem volt mindkét adat — azok nem számítanak sem mellette, sem ellene.</p></div></div>`}
+
 function stub(t,small){return `${topbar()}<div class="pgh rise"><small>${small}</small><h1>${t}</h1></div>
   <div class="dash rise" style="--i:1;margin-top:8px">${I('info')}<span>Ez a felület tartalmilag változatlan marad — ebben a körben csak az üveg-anyagot kapja meg. A részletes átöltöztetése a saját szeletében történik.</span></div>`}
 
 /* lapok alulról */
 function openSheet(kind){const sh=$('#sheet');
-  if(kind==='evidence'){sh.style.setProperty('--c','var(--lav)');
+  if(kind==='reply'){sh.style.setProperty('--c','var(--lav)');
+    sh.innerHTML=`<div class="grab"></div><div class="sh-top">${I('chat')}<span><strong>Elmesélem</strong><small>a te részed a történetben</small></span></div>
+    <p>Mi az, amit csak te tudhatsz erről? A válaszod a témához kerül, és a csapat újraértékeli vele a képet.</p>
+    <textarea placeholder="Például: két este későig dolgoztam, azért csúszott a vacsora…"></textarea>
+    <button class="send glass" style="--c:var(--lav)" data-reply-send>${I('send')}Válasz küldése · demó</button>`}
+  else if(kind==='evidence'){sh.style.setProperty('--c','var(--lav)');
     sh.innerHTML=`<div class="grab"></div><div class="sh-top">${I('info')}<span><strong>Miből látszik?</strong><small>Késői vacsora ↔ rosszabb éjszaka</small></span><b class="tint">14 nap</b></div>
     <p>Két jel együttfutása: az utolsó étkezés ideje és a másnapi alvásminőség. Még gyűlik — a csapat nem mond ki biztosat, amíg a hétvégét külön nem látta.</p>
-    <ul><li><i></i><span>Közös napok</span><em>14</em></li><li><i></i><span>Forrás</span><em>étkezés-napló + alvás-napló</em></li><li><i></i><span>Állapot</span><em>gyűlik · a Szkeptikus vizsgálja</em></li></ul>`}
+    <ul><li><i></i><span>Közös napok</span><em>14</em></li><li><i></i><span>Forrás</span><em>étkezés-napló + alvás-napló</em></li><li><i></i><span>Állapot</span><em>gyűlik · a Szkeptikus vizsgálja</em></li></ul>
+    <button class="send glass" style="--c:var(--lav);margin-top:12px" data-go="#bizonyitek/vacsora">${I('info')}A napok egyenként →</button>`}
   else{sh.style.setProperty('--c','#8E86A3');
     sh.innerHTML=`<div class="grab"></div><div class="sh-top">${I('info')}<span><strong>Ehhez a bejegyzéshez</strong><small>a poszt saját menüje</small></span></div>
     <ul><li><i></i><span>Miből látszik?</span><em>bizonyíték</em></li><li><i></i><span>A téma története</span><em>idővonal</em></li><li><i></i><span>Ritkábban ilyet</span><em>a csapat tanul belőle</em></li></ul>`}
@@ -1770,10 +1888,10 @@ function closeSheet(){$('#scrim').classList.remove('on');$('#sheet').classList.r
 let hist=[],pillT=null,pillUsed=false;
 function render(){
   const h=location.hash||'#fal',[r,id]=h.slice(1).split('/');
-  const html=r==='csapat'?csapat():r==='szoba'?szoba(id):r==='poszt'?poszt():r==='elsonap'?elsonap():r==='ikonok'?ikonok():r==='rolad'?stub('Rólad','A KÖZÖS KÉP'):r==='emlekek'?stub('Emlékek','A TE TÖRTÉNETED'):fal();
+  const html=r==='csapat'?csapat():r==='szoba'?szoba(id):r==='poszt'?(id==='kiserlet'?pkiserlet():id==='sejtes'?psejtes():id==='dontes'?pdontes():id==='elorejelzes'?pelorejelzes():poszt()):r==='bizonyitek'?bizonyitek():r==='elsonap'?elsonap():r==='ikonok'?ikonok():r==='rolad'?stub('Rólad','A KÖZÖS KÉP'):r==='emlekek'?stub('Emlékek','A TE TÖRTÉNETED'):fal();
   $('#scroll').innerHTML=html;$('#scroll').scrollTop=0;closeSheet();ntfOpen=false;$('#ntf')?.classList.remove('on');$('#switcher')?.classList.remove('on');
   document.querySelectorAll('#jump a').forEach(a=>a.setAttribute('aria-current',String(a.getAttribute('href').slice(1).split('/')[0]===r)));
-  document.querySelectorAll('.tb').forEach(t=>t.classList.toggle('on',t.dataset.tab===(r==='szoba'||r==='poszt'?'csapat':r==='elsonap'||r==='ikonok'?'fal':r)));
+  document.querySelectorAll('.tb').forEach(t=>t.classList.toggle('on',t.dataset.tab===(r==='szoba'?'csapat':r==='poszt'||r==='bizonyitek'||r==='elsonap'||r==='ikonok'?'fal':r)));
   /* korong: csak a falon, egyszer, ~9 mp után */
   clearTimeout(pillT);$('#pill').classList.remove('on');
   if(r==='fal'&&!pillUsed)pillT=setTimeout(()=>$('#pill').classList.add('on'),9000);
@@ -1788,8 +1906,15 @@ document.addEventListener('click',e=>{
     $('#today').prepend(el);$('#scroll').scrollTo({top:0,behavior:'smooth'});return}
   if(e.target.closest('[data-back]')){hist.length?history.back():(location.hash='#fal');return}
   if(castb){const id=castb.dataset.cast;seen.add(id);hist.push(location.hash);location.hash='#szoba/'+id;return}
+  if(vote&&vote.closest('[data-decide]')&&vote.dataset.vote==='up'){const po=$('#dontes-poster');if(po){po.querySelector('[data-decide]').outerHTML='<span class="after big">'+I('tick')+'Megerősítetted · bekerült a rólad szóló képbe — Mezo jóváhagyta</span>';toast('Bekerült. Bármikor visszavonhatod a Rólad oldalon.');return}}
   if(vote){const was=vote.getAttribute('aria-pressed')==='true';vote.closest('.acts').querySelectorAll('[data-vote]').forEach(x=>x.setAttribute('aria-pressed','false'));vote.setAttribute('aria-pressed',String(!was));
     if(!was)toast(vote.dataset.vote==='up'?'„Ez talál” — köszönjük, feljegyeztük.':'„Nem így érzem” — ebből tanulunk a legtöbbet. Írd meg válaszban is!');return}
+  if(e.target.closest('[data-reply-send]')){const sh=$('#sheet');const txt=sh.querySelector('textarea');if(txt&&!txt.value.trim()){toast('Írj pár szót — ebből tanul a csapat.');return}
+    sh.innerHTML=`<div class="grab"></div><div class="sh-top">${I('sprout')}<span><strong>Megvan — köszönjük!</strong><small>így folytatódik</small></span></div>
+    <div class="steps">
+    <span class="step"><u>1</u><span><b>A válaszod a témánál marad</b> — a te szavaiddal, forrásként megjelölve.</span></span>
+    <span class="step"><u>2</u><span><b>A csapat újraértékel</b> — megnézik, melyik magyarázatot erősíti vagy gyengíti. Ezt itt olvashatod majd.</span></span>
+    <span class="step"><u>3</u><span><b>Ha új tudás születik</b>, külön megmutatjuk — te hagyod jóvá, mielőtt bekerül a rólad szóló képbe.</span></span></div>`;return}
   if(sh){openSheet(sh.dataset.sheet);return}
   if(go){e.preventDefault();e.stopPropagation();hist.push(location.hash);location.hash=go.dataset.go;return}
   if(tt){toast(tt.dataset.toast);return}
