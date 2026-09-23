@@ -131,9 +131,9 @@ corrective gate, not a claim of one entirely green full-suite invocation.
 After the separate default-on change, a clean activation gate passed **76 tests, zero failures/errors**: all architecture rules, contextual generation/all kinds/corpus, legacy generator, async events, advice cards and API switch-off behavior.
 
 Independent code review found no actionable correctness/security defects. CODEMAP and conflict
-marker checks pass. Doc lint has zero errors; strict repository-wide doc lint still reports
-`today.md` stale from the earlier character-room routing change (`mezo-6gtwa`), with fuel/habit
-key-file-count warnings. These predate this feature.
+marker checks pass. Post-merge doc lint passes: 74 docs, zero stale/error findings; only the existing fuel/habit
+key-file-count warnings remain. Concurrent main updates resolved the initially observed Today
+staleness (`mezo-6gtwa`).
 
 ## 8. Limitations
 
