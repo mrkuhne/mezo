@@ -469,6 +469,9 @@ public class HypothesisPipelineService {
         // Source dates remain in proposal evidence, but must not become explicit retrieval bounds:
         // the memory query analyzer otherwise silently narrows the related-memory 90-day window.
         query = query.replaceAll("\\b\\d{4}-\\d{2}-\\d{2}\\b", "").trim();
+        int queryEnd = Math.min(query.length(), properties.embedding().embedMaxChars());
+        if (queryEnd > 0 && Character.isHighSurrogate(query.charAt(queryEnd - 1))) queryEnd--;
+        query = query.substring(0, queryEnd);
         return query.isBlank() ? "" : gateway.contextFor(userId, query, true);
     }
 

@@ -1440,6 +1440,8 @@ uses original dates (including workout-parent dates), and round-robins sources w
 labels. `exists` revalidates ownership/deletion without imposing the generation window.
 Related REFLECTION memory retrieval runs even without yesterday's text signal and is bounded
 by its configured 90-day policy before retrieval/fusion; other consumers keep their policies.
+The stripped retrieval query is capped by `embedding.embed-max-chars`; the proposal retains
+its full bounded original evidence.
 
 `GroundedHypothesisPublisher` saves the candidate and observation atomically. Same-topic or
 same-test-plan candidates enrich one unanswered card; unchanged evidence does not spend a

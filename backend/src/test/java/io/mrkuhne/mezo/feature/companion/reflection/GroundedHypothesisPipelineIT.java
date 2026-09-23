@@ -21,6 +21,8 @@ import tools.jackson.databind.ObjectMapper;
 @ActiveProfiles("companion-fake")
 class GroundedHypothesisPipelineIT extends AbstractIntegrationTest {
     @Autowired private HypothesisPipelineService pipeline;
+    @Autowired private io.mrkuhne.mezo.feature.companion.config.CompanionProperties companionProperties;
+    @Autowired private io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm fakeLlm;
     @Autowired private io.mrkuhne.mezo.feature.companion.reflection.service.ObservationFeedService feed;
     @Autowired private PatternRepository patterns;
     @Autowired private PatternEventRepository events;
@@ -172,6 +174,30 @@ class GroundedHypothesisPipelineIT extends AbstractIntegrationTest {
         String context = "[fake-hypotheses:[" + objects + "]]";
         assertThat(pipeline.preview(owner, context)).hasSize(properties.propose().maxPerNight());
         assertThat(pipeline.preview(owner, context, 3)).hasSize(3);
+    }
+
+    @Test
+    void testRun_shouldBoundMemoryQueryButKeepOriginalProposalEvidence_whenFallbackSourcesAreLong() {
+        UUID owner = users.createUser().getId();
+        UUID first = null;
+        for (int i = 0; i < 6; i++) {
+            var entry = journals.createEntry(owner, LocalDate.now().minusDays(i + 2L),
+                    "LONG_SOURCE_" + i + " Munka után " + "elfáradtam ".repeat(50), "quickinput");
+            if (first == null) first = entry.getId();
+        }
+        seed(owner, "journal_entry:" + first, false);
+        int previousMessages = fakeLlm.userMessages().size();
+        pipeline.run(owner, null);
+        assertThat(retrievals.findAll().stream().filter(r -> owner.equals(r.getCreatedBy())
+                && "REFLECTION".equals(r.getConsumerPolicy())).toList())
+                .singleElement().satisfies(r -> assertThat(r.getRawQuery())
+                        .hasSizeLessThanOrEqualTo(companionProperties.embedding().embedMaxChars()));
+        assertThat(fakeLlm.userMessages().subList(previousMessages, fakeLlm.userMessages().size()))
+                .anySatisfy(prompt -> {
+                    assertThat(prompt.length()).isGreaterThan(companionProperties.embedding().embedMaxChars());
+                    assertThat(prompt).contains("LONG_SOURCE_0", "LONG_SOURCE_1", "LONG_SOURCE_2",
+                            "LONG_SOURCE_3", "LONG_SOURCE_4", "LONG_SOURCE_5");
+                });
     }
 
     @Test
