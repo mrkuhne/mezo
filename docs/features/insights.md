@@ -650,6 +650,21 @@ a coral dot = something waits on you there; each ring links to `/mezo/csapat/<id
 The trio's four icons (`t-thumb-up`, `t-thumb-down`, `t-send`, `t-flask`) joined the Titanium sprite
 from the prototype's approved „Új ikonok” sheet.
 
+**Szobák + A csapat (`mezo-a9bo7.9`, slice A3 — routed, not yet in the dock).** `/mezo/csapat`
+(`pages/TeamPage.tsx`) lists the five rooms as `glass tf-rowg` rows in the character accent: „Most
+figyeli” = the room's first case, the badge = room maturity („ismerkedik” at 0), then the Szkeptikus
+explainer (`tf-dash`, no room) and the Gépterem door. `/mezo/csapat/:id` (`pages/CharacterRoomPage.tsx`;
+unknown id or `szkeptikus` → an honest „Nincs ilyen szoba”) follows the prototype room rhythm: hero
+(Boop + `ROOM_COPY.quote`) → maturity ring + „Ügy a falon” + „Beépült tudás” → cases (`RoomCaseCard`:
+the first `glass tf-case`, the rest flat `tf-flatc`, waiting-first, each linking to the post's
+`sourceRoute`) → growth curve → claims list → „Kérése hozzád” note. Logic lives in `logic/teamRooms.ts`:
+the room's dimensions are the dossier dimensions whose `expertKey` folds into the character
+(`characterForPersona`), maturity = their mean, claims = their `topClaims`; cases = `buildTeamFeed` posts
+the character authored OR guests on. **Honesty:** no maturity-history record exists, so the curve is the
+character's cumulative post count per week over 8 weeks (the prototype's normalised formula), with a
+text instead of a chart under 2 posts. Both pages share the wall's data load via
+`components/feed/useTeamFeed.ts`. Mezo wears the gold and the Szkeptikus the slate Boop (`BoopVariant`).
+
 The Insights data flow is a **degenerate (truncated) version** of mezo's standard `view → hook → mock/real → api → backend → db` pipeline — it stops at the hook:
 
 ```
@@ -1023,7 +1038,8 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 **Feature (`frontend/src/features/insights/`):** — the directory keeps its `insights` name; the tab is called `Mezo` (§2)
 - `pages/{BoopWorldPage,BoopMenuPage,BoopAboutPage,BoopMemoriesPage,MemoryDayPage,KnowledgeNodePage,PredictionDetailPage,ExperimentDetailPage}.tsx` — social entry, direct navigation and full detail pages.
 - `logic/team.ts` + `logic/teamFeed.ts` (+ `teamFeed.fixtures.ts`) — **`mezo-a9bo7.7`** the csapat-üzenőfal character registry and record→post builder (§3); pure, unit-tested
-- `pages/TeamFeedPage.tsx` + `components/feed/{FeedTrio,FeedPostCard,FeedPosterCard,FeedPostHead,FeedReplySheet,StoryStrip}.tsx` + `useFeedSession.ts` — **`mezo-a9bo7.8`** the csapat-üzenőfal wall, the unified trio and the reply sheet (§3); not routed until A4
+- `pages/TeamFeedPage.tsx` + `components/feed/{FeedTrio,FeedPostCard,FeedPosterCard,FeedPostHead,FeedReplySheet,StoryStrip}.tsx` + `useFeedSession.ts` + `useTeamFeed.ts` — **`mezo-a9bo7.8`** the csapat-üzenőfal wall, the unified trio and the reply sheet (§3); not routed until A4
+- `pages/{TeamPage,CharacterRoomPage}.tsx` + `components/feed/RoomCaseCard.tsx` + `logic/teamRooms.ts` — **`mezo-a9bo7.9`** A csapat and the five character rooms (§3); routed at `/mezo/csapat[/:id]`, dock entry at A4
 - `components/BoopNavigation.tsx`, `logic/boopNavigation.ts`, `boop-world.css` — shared function catalog, crosslinks and app-token visuals.
 - `pages/MezoHubPage.tsx` — unmounted previous hub, retained source/tests.
 - **`InsightsSection.tsx` and `pages/tabs.ts` are DELETED (`mezo-d20.5.1`)** — the shell, `INSIGHTS_TABS`, `visibleInsightsTabs()` and the (already-empty) `PHASE3_TAB_IDS` are gone, along with the app-wide `features/progression/components/AppHero.tsx` and `shared/ui/SubNavDropdown.tsx` they depended on. `InsightsSubNav.tsx` had already been superseded by the dropdown in `mezo-ugqb`; `components/PhaseTeaserCard.tsx` by the empty gate set in `mezo-mifi`
