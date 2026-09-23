@@ -1,5 +1,16 @@
 # Design 2.0 — index and status
 
+> ## ▶ 2026-09-23 — "Üveg": Mozaik colors, Titanium material, dark only
+>
+> The owner found the restored Mozaik world flat. The living direction is now the **Üveg** style:
+> Mozaik colors on the warm-graphite dark ground, with the Titanium *material* (3D icon sprite,
+> glass cards with a gradient frame, sheen, glow). **Dark only**, and the bottom TabBar with the
+> Boop characters is untouched. **Canon:**
+> [2026-09-23 üveg style bible](2026-09-23-uveg-style-bible.md) + the approved prototype
+> [prototypes/fuel-uveg.html](prototypes/fuel-uveg.html). **How:** epic `mezo-me75u` (U1–U11),
+> one slice per fresh session via the `/uvegesites` skill. The 2026-09-17 bible below stays canon
+> for everything the üveg bible does not override (ranking §3.4, card anatomy, Appendices A–E).
+
 > ## ⚠️ 2026-09-17 — direction reversal
 >
 > The **Titanium** skin (dark liquid metal, shipped ~2026-09-09 → 2026-09-17) was **rejected by
