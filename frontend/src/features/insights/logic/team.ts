@@ -6,7 +6,7 @@
  * backend-personának pontosan egy gazdája van; ismeretlen kulcs → Mezo (biztonságos default).
  */
 import type { MetricDomain } from '@/data/types'
-import type { BoopDomain } from '@/shared/ui/clay'
+import type { BoopVariant } from '@/shared/ui/clay'
 
 export type TeamCharacterId = 'szunya' | 'mocor' | 'falat' | 'deru' | 'mezo' | 'szkeptikus'
 
@@ -16,21 +16,23 @@ export interface TeamCharacter {
   name: string
   /** Tárgyeset a poszt-fejléchez („bevonta Szunyát”) — a munkanévvel együtt cserélendő. */
   nameAcc: string
+  /** Eszközhatározó („közös ügy Falattal”) — a munkanévvel együtt cserélendő. */
+  nameIns: string
   area: string
-  /** A legközelebbi meglévő clay-figura; az arany/pala variánsok a T7-ben érkeznek. */
-  boop: BoopDomain
+  /** A karakter clay-figurája (Mezo arany, Szkeptikus palaszürke — mezo-a9bo7.9). */
+  boop: BoopVariant
   accent: 'lav' | 'sky' | 'sage' | 'rose' | 'gold' | 'slate'
   /** A Szkeptikus sosem posztol és nincs story-köre (spec §2.2). */
   postable: boolean
 }
 
 export const TEAM: Record<TeamCharacterId, TeamCharacter> = {
-  szunya: { id: 'szunya', name: 'Szunya', nameAcc: 'Szunyát', area: 'alvás', boop: 'mezo', accent: 'lav', postable: true },
-  mocor: { id: 'mocor', name: 'Mocor', nameAcc: 'Mocort', area: 'mozgás', boop: 'train', accent: 'sky', postable: true },
-  falat: { id: 'falat', name: 'Falat', nameAcc: 'Falatot', area: 'étkezés', boop: 'fuel', accent: 'sage', postable: true },
-  deru: { id: 'deru', name: 'Derű', nameAcc: 'Derűt', area: 'közérzet', boop: 'me', accent: 'rose', postable: true },
-  mezo: { id: 'mezo', name: 'Mezo', nameAcc: 'Mezót', area: 'a csapat', boop: 'nap', accent: 'gold', postable: true },
-  szkeptikus: { id: 'szkeptikus', name: 'Szkeptikus', nameAcc: 'a Szkeptikust', area: '', boop: 'mezo', accent: 'slate', postable: false },
+  szunya: { id: 'szunya', name: 'Szunya', nameAcc: 'Szunyát', nameIns: 'Szunyával', area: 'alvás', boop: 'mezo', accent: 'lav', postable: true },
+  mocor: { id: 'mocor', name: 'Mocor', nameAcc: 'Mocort', nameIns: 'Mocorral', area: 'mozgás', boop: 'train', accent: 'sky', postable: true },
+  falat: { id: 'falat', name: 'Falat', nameAcc: 'Falatot', nameIns: 'Falattal', area: 'étkezés', boop: 'fuel', accent: 'sage', postable: true },
+  deru: { id: 'deru', name: 'Derű', nameAcc: 'Derűt', nameIns: 'Derűvel', area: 'közérzet', boop: 'me', accent: 'rose', postable: true },
+  mezo: { id: 'mezo', name: 'Mezo', nameAcc: 'Mezót', nameIns: 'Mezóval', area: 'a csapat', boop: 'gold', accent: 'gold', postable: true },
+  szkeptikus: { id: 'szkeptikus', name: 'Szkeptikus', nameAcc: 'a Szkeptikust', nameIns: 'a Szkeptikussal', area: '', boop: 'slate', accent: 'slate', postable: false },
 }
 
 const DOMAIN_OWNER: Record<MetricDomain, TeamCharacterId> = {

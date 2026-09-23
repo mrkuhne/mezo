@@ -54,4 +54,17 @@ describe('Boop', () => {
       expect(svg.querySelector('[fill^="url(#"]'), `${domain.id} gradiens nélkül`).not.toBeNull()
     }
   })
+
+  // A csapat-üzenőfal két szerepe (mezo-a9bo7.9): az arany Mezo és a palaszürke Szkeptikus
+  // NEM navigációs terület, csak karakter-figura — külön variáns, a meglévők érintetlenek.
+  test('az arany és a palaszürke karakter-variáns saját gradienst visel', () => {
+    for (const domain of ['gold', 'slate'] as const) {
+      const { container } = render(<Boop domain={domain} />)
+      const svg = container.querySelector('svg.boop')!
+      expect(svg.innerHTML, `${domain} üres`).toContain('boop-body')
+      const fill = svg.querySelector('.boop-body [fill^="url(#"]')!.getAttribute('fill')!
+      expect(fill).toContain(`boop-${domain}-body`)
+      expect(svg.querySelector(`[id$="boop-${domain}-body"]`), `${domain} gradiens-definíció`).not.toBeNull()
+    }
+  })
 })

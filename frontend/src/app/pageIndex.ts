@@ -102,6 +102,7 @@ export const PAGE_INDEX: IndexedPage[] = [
   { route: '/mezo/menu', label: 'Menü', hint: 'Minden Boop-funkció a saját nevén, közvetlenül.' },
   { route: '/mezo/rolad', label: 'Rólad', hint: 'Karakter, tudástár és saját kommunikációs kérések.' },
   { route: '/mezo', label: 'Üzenőfal', hint: 'A csapat beszélgetései, válaszaid és kapcsolódó felfedezések.' },
+  { route: '/mezo/csapat', label: 'A csapat', hint: 'Az öt karakter szobája: mit figyelnek most, és mennyit tudnak rólad.' },
   { route: '/mezo/emlekek', label: 'Emlékek', hint: 'Napi emlékek, heti memoár és hasonló napok keresése.' },
   { route: '/mezo/patterns', label: 'Minták', hint: 'Az ismétlődő összefüggések a napjaidban.' },
   { route: '/mezo/predictions', label: 'Előrejelzések', hint: 'Mire számíthatsz a jelenlegi irány mellett.' },

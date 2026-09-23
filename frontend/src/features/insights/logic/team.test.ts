@@ -27,3 +27,8 @@ test('backend-persona → karakter beolvadás (spec §2.2)', () => {
   expect(characterForPersona('szkeptikus')).toBe('szkeptikus')
   expect(characterForPersona('ismeretlen-uj-persona')).toBe('mezo') // biztonságos default
 })
+
+test('Mezo arany, a Szkeptikus palaszürke figurát visel (mezo-a9bo7.9)', () => {
+  expect(TEAM.mezo.boop).toBe('gold')
+  expect(TEAM.szkeptikus.boop).toBe('slate')
+})

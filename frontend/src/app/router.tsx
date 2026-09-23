@@ -65,6 +65,8 @@ import { RecipeDetailPage } from '@/features/fuel/pages/RecipeDetailPage'
 import { RecipeEditorPage } from '@/features/fuel/pages/RecipeEditorPage'
 import { RecipeWorkshopPage } from '@/features/fuel/pages/RecipeWorkshopPage'
 import { BoopWorldPage } from '@/features/insights/pages/BoopWorldPage'
+import { TeamPage } from '@/features/insights/pages/TeamPage'
+import { CharacterRoomPage } from '@/features/insights/pages/CharacterRoomPage'
 import { BoopMenuPage } from '@/features/insights/pages/BoopMenuPage'
 import { BoopAboutPage } from '@/features/insights/pages/BoopAboutPage'
 import { PatternsPage } from '@/features/insights/pages/PatternsPage'
@@ -398,6 +400,8 @@ export const routes: RouteObject[] = [
       // MozaikPage scaffolds as their F4 slices land). Minták — previously the /mezo
       // index — lives at /mezo/patterns, next to the pattern-pair detail leaf above.
       { path: 'mezo', element: <BoopWorldPage /> },
+      { path: 'mezo/csapat', element: <TeamPage /> },
+      { path: 'mezo/csapat/:id', element: <CharacterRoomPage /> },
       { path: 'mezo/emlekek', element: <BoopMemoriesPage /> },
       { path: 'mezo/emlekek/:date', element: <MemoryDayPage /> },
       { path: 'mezo/knowledge/node/:id', element: <KnowledgeNodePage /> },

@@ -22,10 +22,16 @@ import { cn } from '@/shared/lib/cn'
  *  a hívó azt adja át, amit amúgy is a kezében tart. */
 export type BoopDomain = 'nap' | 'train' | 'fuel' | 'mezo' | 'me'
 
+/** Minden rajzolható figura: a navigációs területek + a csapat-üzenőfal két karakter-szerepe
+ *  (arany Mezo, palaszürke Szkeptikus — mezo-a9bo7.9). Külön típus, hogy a navigáció
+ *  azonosítói közé ne csússzon be egy nem-terület. */
+export type BoopVariant = BoopDomain | 'gold' | 'slate'
+
 /** domain → szimbólum. Az Én területé `boop-en` (a `me` a route, az `en` a szín neve) —
  *  ez az EGY eltérés, és pont ez ejtette ki némán az Én sorát az első körben. */
-const SYMBOL: Record<BoopDomain, string> = {
+const SYMBOL: Record<BoopVariant, string> = {
   nap: 'boop-nap', train: 'boop-train', fuel: 'boop-fuel', mezo: 'boop-mezo', me: 'boop-en',
+  gold: 'boop-gold', slate: 'boop-slate',
 }
 
 /** A sprite EGYSZER, modul-szinten szétszedve: a közös `<defs>` és domainenként a törzs. */
@@ -47,7 +53,7 @@ function defsFor(symbolId: string): string {
 }
 
 export function Boop({ domain, size = 44, alive = false, className }: {
-  domain: BoopDomain
+  domain: BoopVariant
   size?: number
   /** Él-e a figura: pislogás + tekintet + szemöldök + lélegzet. */
   alive?: boolean
