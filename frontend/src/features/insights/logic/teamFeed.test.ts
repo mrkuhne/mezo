@@ -1,6 +1,6 @@
-import { buildTeamFeed, ownerForPattern } from './teamFeed'
+import { buildTeamFeed, ownerForPattern, withSessionAfterlife } from './teamFeed'
 import {
-  TODAY, YESTERDAY, activeExperiment, freshObservation, input, lateMealPattern, missedPrediction,
+  TODAY, YESTERDAY, activeExperiment, characterItems, freshObservation, input, lateMealPattern, missedPrediction,
   monitoringPattern, pairs,
 } from './teamFeed.fixtures'
 
@@ -116,4 +116,61 @@ test('üres bemenet → üres fal', () => {
   })
   expect(empty.days).toEqual([])
   expect(empty.waitingCount).toBe(0)
+})
+
+test('észrevétel-poszt: a chip-válasz horgonya a minta-azonosító', () => {
+  const o = allPosts().find(p => p.id === `observation:${freshObservation.id}`)!
+  expect(o.observation).toEqual({ patternId: freshObservation.patternId })
+  expect(o.afterlife).toBeUndefined()
+})
+
+test('megválaszolt észrevétel: a rekord hozza az utóéletet, és már nem vár rád', () => {
+  const replied = buildTeamFeed({ ...input, observations: [{ ...freshObservation, repliedChoice: 'watch' }] })
+  const o = replied.days.flatMap(d => [...(d.poster ? [d.poster] : []), ...d.posts]).find(p => p.id === `observation:${freshObservation.id}`)!
+  expect(o.waiting).toBe(false)
+  expect(o.afterlife).toMatch(/figyeljük tovább/i)
+})
+
+test('karakter-poszt: a válasz-szál forrása a feed-elem saját forrása', () => {
+  const [edzo] = characterItems
+  const c = allPosts().find(p => p.body === edzo.text)!
+  expect(c.thread).toEqual({ sourceType: 'OBSERVATION', sourceId: edzo.sourceId, sourceIndex: 0 })
+})
+
+test('withSessionAfterlife: az eltűnt, most eldöntött poszt a saját napján marad, utóélettel', () => {
+  const q = allPosts().find(p => p.id === `pattern:${lateMealPattern.id}`)!
+  const after = buildTeamFeed({ ...input, patterns: input.patterns.filter(p => p.id !== lateMealPattern.id) })
+  const days = withSessionAfterlife(after.days, { [q.id]: { label: 'Elvetetted', snapshot: q } }, TODAY)
+  const back = days.find(d => d.key === TODAY)!.posts.find(p => p.id === q.id)!
+  expect(back.afterlife).toBe('Elvetetted')
+  expect(back.waiting).toBe(false)
+  expect(back.decision).toBeUndefined()
+})
+
+test('withSessionAfterlife: a még élő poszt utóéletet kap, nem duplikálódik', () => {
+  const q = allPosts().find(p => p.id === `pattern:${lateMealPattern.id}`)!
+  const days = withSessionAfterlife(buildTeamFeed(input).days, { [q.id]: { label: 'Megerősítetted', snapshot: q } }, TODAY)
+  const hits = days.flatMap(d => [...(d.poster ? [d.poster] : []), ...d.posts]).filter(p => p.id === q.id)
+  expect(hits).toHaveLength(1)
+  expect(hits[0].afterlife).toBe('Megerősítetted')
+})
+
+test('withSessionAfterlife: üres bejegyzés-térkép → változatlan napok', () => {
+  const days = buildTeamFeed(input).days
+  expect(withSessionAfterlife(days, {}, TODAY)).toBe(days)
+})
+
+
+test('nem-ISO dátum (mock kijelző-szöveg) → a címke maga a szöveg, a datált napok után', () => {
+  const feed = buildTeamFeed({ ...input, predictions: [{ ...missedPrediction, date: 'Máj 22' }] })
+  const last = feed.days[feed.days.length - 1]
+  expect(last.label).toBe('Máj 22')
+  expect(feed.days.every(d => !/undefined/i.test(d.label))).toBe(true)
+})
+
+test('ritmus: egy csendes nap magányos posztja nem lesz üveg-poszter', () => {
+  const feed = buildTeamFeed({ ...input, predictions: [missedPrediction], experiments: [], patterns: [], observations: [], characterItems: [] })
+  expect(feed.days).toHaveLength(1)
+  expect(feed.days[0].poster).toBeUndefined()
+  expect(feed.days[0].posts).toHaveLength(1)
 })

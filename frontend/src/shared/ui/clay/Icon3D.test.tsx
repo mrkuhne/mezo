@@ -11,7 +11,7 @@ test('the sprite carries the 62 companion-titanium symbols plus the approved cus
   const ids = symbolIds()
   expect(ids.length).toBeGreaterThanOrEqual(62)
   expect(new Set(ids).size).toBe(ids.length)
-  for (const id of ['t-bowl', 't-score', 't-meat', 't-carb', 't-avocado', 't-water', 't-fiber']) {
+  for (const id of ['t-bowl', 't-score', 't-meat', 't-carb', 't-avocado', 't-water', 't-fiber', 't-thumb-up', 't-thumb-down', 't-send', 't-flask']) {
     expect(ids, id).toContain(id)
   }
 })

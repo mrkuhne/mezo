@@ -620,9 +620,34 @@ band ("még kevés adat" below `minN`); confirmed pattern with a `lastDetectedAt
 experiment → `kiserlet` on today; resolved prediction → `elorejelzes`; character-feed items → persona-routed
 `megfigyeles`, konzílium items → `konzilium` by Mezo. Not posts: pending predictions, proposed/completed
 experiments (no event date), rejected/refuted/dormant patterns, watching/confirmed observation row-cards.
-Days group by local date (Ma / Tegnap / `huMonthDayDow`), each with at most ONE poster (waiting >
-kiserlet > konzilium > newest) — the only glass box of the day. The `tf-*` CSS section at the end of
+Days group by local date (Ma / Tegnap / `huMonthDayDow`; a non-ISO display date such as the mock
+predictions' „Máj 22” is kept verbatim and sorts after the dated days), each with at most ONE poster —
+the only glass box of the day. The poster must be *earned*: waiting > kiserlet > konzilium; without one,
+only a busy day (≥3 posts) promotes its newest — a quiet day's lone post stays a flat panel, otherwise a
+sparse wall turns all-glass and the §3.4 ranking collapses (seen live in A2). The `tf-*` CSS section at the end of
 `boop-world.css` is the prototype's (`uveg-uzenofal.html`) wall/room anatomy on the shared U1 `.glass` kit.
+
+**A fal (`mezo-a9bo7.8`, slice A2 — built, mounted at A4 together with the dock switch).**
+`pages/TeamFeedPage.tsx` reads `usePatterns`, `usePatternMonitor` (pair domains for routing),
+`usePredictions`, `useExperiments`, `useObservations`, `useCharacterFeed(60)`; it shows `ScreenSkeleton`
+until ALL are settled (no empty-state flash, mezo-yew), then header → `StoryStrip` → „Rád vár” strip →
+day sections (`FeedPosterCard` = `glass tf-poster`, `FeedPostCard` = flat `tf-post`) → „Ennyi történt”.
+Every post carries „Miből látszik?” (`sourceRoute`, an existing deep page) and the unified trio
+(`components/feed/FeedTrio.tsx`, spec §2.8): on a pattern question it is the existing pattern decision
+(`usePatternActions().decide(id, 'confirm' | 'reject')`), on an observation question the existing chip
+reply (`useObservationReply().reply(patternId, 'watch' | 'reject')`), elsewhere a session-local,
+reversible vote that writes nothing. „Nem így érzem” also opens the reply sheet (the character asks back).
+After a decision the trio is replaced by the afterlife label (`AFTERLIFE` in `teamFeed.ts`); a record-borne
+one comes from `Observation.repliedChoice`, a session one from `useFeedSession` (query cache, survives
+remounts) via `withSessionAfterlife`, which also keeps a just-rejected post on its day after its record
+drops out of the stream. `FeedReplySheet` (a `GlassBox`) picks the channel from the post: `thread`
+(character-feed source) → `useCharacterReplies` + `useCharacterReplyDraft`; `observation` → the existing
+„talk” reply, then `/mezo/chat?c=<id>`; neither (pattern/experiment/prediction) → an honest hand-off to
+`/mezo/chat` with the post text as `compose` state. `StoryStrip` rings: fresh today AND not seen
+(`localStorage['tf-seen:<id>:<day>']`, try/catch — blocked storage = every fresh ring stays „new”);
+a coral dot = something waits on you there; each ring links to `/mezo/csapat/<id>` (the A3 room route).
+The trio's four icons (`t-thumb-up`, `t-thumb-down`, `t-send`, `t-flask`) joined the Titanium sprite
+from the prototype's approved „Új ikonok” sheet.
 
 The Insights data flow is a **degenerate (truncated) version** of mezo's standard `view → hook → mock/real → api → backend → db` pipeline — it stops at the hook:
 
@@ -997,6 +1022,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 **Feature (`frontend/src/features/insights/`):** — the directory keeps its `insights` name; the tab is called `Mezo` (§2)
 - `pages/{BoopWorldPage,BoopMenuPage,BoopAboutPage,BoopMemoriesPage,MemoryDayPage,KnowledgeNodePage,PredictionDetailPage,ExperimentDetailPage}.tsx` — social entry, direct navigation and full detail pages.
 - `logic/team.ts` + `logic/teamFeed.ts` (+ `teamFeed.fixtures.ts`) — **`mezo-a9bo7.7`** the csapat-üzenőfal character registry and record→post builder (§3); pure, unit-tested
+- `pages/TeamFeedPage.tsx` + `components/feed/{FeedTrio,FeedPostCard,FeedPosterCard,FeedPostHead,FeedReplySheet,StoryStrip}.tsx` + `useFeedSession.ts` — **`mezo-a9bo7.8`** the csapat-üzenőfal wall, the unified trio and the reply sheet (§3); not routed until A4
 - `components/BoopNavigation.tsx`, `logic/boopNavigation.ts`, `boop-world.css` — shared function catalog, crosslinks and app-token visuals.
 - `pages/MezoHubPage.tsx` — unmounted previous hub, retained source/tests.
 - **`InsightsSection.tsx` and `pages/tabs.ts` are DELETED (`mezo-d20.5.1`)** — the shell, `INSIGHTS_TABS`, `visibleInsightsTabs()` and the (already-empty) `PHASE3_TAB_IDS` are gone, along with the app-wide `features/progression/components/AppHero.tsx` and `shared/ui/SubNavDropdown.tsx` they depended on. `InsightsSubNav.tsx` had already been superseded by the dropdown in `mezo-ugqb`; `components/PhaseTeaserCard.tsx` by the empty gate set in `mezo-mifi`
