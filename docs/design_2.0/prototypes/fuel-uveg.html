@@ -46,8 +46,6 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-a
   background:linear-gradient(180deg,rgba(251,246,239,.92) 60%,rgba(251,246,239,0));backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .logo{font-weight:700;font-size:25px;letter-spacing:-1.2px}
 .logo b{color:var(--sage)}
-.daypart{display:flex;align-items:center;gap:6px;padding:6px 13px 6px 7px;border-radius:999px;font-size:12.5px;font-weight:500}
-.daypart .icon{width:24px;height:24px}
 .avatar{position:relative;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:600;font-size:15px;color:#fff;
   background:linear-gradient(145deg,#C9BEE8,#8A7DB8);box-shadow:0 6px 14px -6px rgba(93,79,160,.6),inset 0 1px 0 rgba(255,255,255,.6)}
 .avatar small{position:absolute;right:-4px;bottom:-3px;padding:1px 5px;border-radius:8px;font-size:9px;background:#fff;color:#5D4FA0;box-shadow:0 2px 6px rgba(0,0,0,.12)}
@@ -323,6 +321,78 @@ body.dark #shadow feDropShadow{flood-color:#000;flood-opacity:.5}
 .themes button{padding:7px 16px;border-radius:999px;font-size:12.5px;font-weight:500;color:var(--sub)}
 .themes button[aria-pressed="true"]{background:var(--ink);color:var(--page)}
 
+
+/* ══ ÉLES KERET ÜVEGBEN: fejléc + alsó menü (tartalom = élesben, anyag = üveg) ══ */
+.topbar{justify-content:flex-start;gap:8px;padding:16px 14px 12px}
+.wordmark{flex:1;font-weight:700;font-size:27px;letter-spacing:-1.3px;
+  background:linear-gradient(120deg,#F5EFE6 0%,#E6DDFF 55%,#E9C48A 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 14px rgba(171,159,210,.28))}
+.rbtn{--c:#8A7A6A;position:relative;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto}
+.rbtn .icon{width:23px;height:23px}
+.rbtn.glass{overflow:visible}
+.rbtn.glass::after{display:none}
+.rbtn.q{--c:var(--gold);font-weight:600;font-size:17px;color:#FFD99A}
+.rbtn .badge{position:absolute;top:-3px;right:-4px;z-index:4;min-width:17px;height:17px;padding:0 5px;border-radius:9px;display:grid;place-items:center;
+  font-size:10px;font-weight:700;color:#191614;background:linear-gradient(135deg,#FFB39C,#FF7E5C);box-shadow:0 0 10px rgba(255,126,92,.7),0 0 0 2px #191614}
+.rbtn .dot{position:absolute;top:1px;right:1px;z-index:4;width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px var(--gold),0 0 0 2px #191614}
+.rbtn.is-open{--c:var(--sky)}
+/* a töltődő nap-kör */
+.orb{--c:var(--coral);width:46px;height:46px;border-radius:50%;padding:0;flex:0 0 auto;position:relative}
+.orb svg{position:absolute;inset:4px;width:38px;height:38px;overflow:visible}
+.orb .orb-glass{fill:rgba(245,239,230,.05);stroke:rgba(245,239,230,.14);stroke-width:1}
+.orb .orb-liquid{filter:drop-shadow(0 0 6px rgba(255,126,92,.65))}
+.orb .orb-hi{fill:none;stroke:rgba(255,255,255,.55);stroke-width:2.2;stroke-linecap:round}
+@media (prefers-reduced-motion:no-preference){body:not(.still) .orb .wave{animation:wave 3.2s ease-in-out infinite}}
+@keyframes wave{0%,100%{transform:translateX(0)}50%{transform:translateX(-8px)}}
+/* értesítés-panel */
+.ntf{position:absolute;left:10px;right:10px;top:70px;z-index:45;padding:14px 14px 10px;border-radius:24px;opacity:0;transform:translateY(-8px) scale(.98);pointer-events:none;transition:.28s var(--ease)}
+.ntf.on{opacity:1;transform:none;pointer-events:auto}
+.ntf-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ntf-head strong{font-size:16px;font-weight:600}
+.ntf-head button{font-size:11.5px;color:var(--sky);font-weight:600}
+.ntf-chips{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.ntf-chips span{padding:5px 10px;border-radius:999px;font-size:11px;font-weight:600;background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair);color:var(--sub)}
+.ntf-chips span.on{color:#191614;background:var(--sky);box-shadow:0 0 12px rgba(127,178,222,.5)}
+.ntf-day{font-size:9.5px;font-weight:600;letter-spacing:1.3px;color:var(--faint);margin:8px 2px 6px}
+.ntf-row{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:14px;background:rgba(245,239,230,.04);margin-bottom:6px}
+.ntf-row .icon{width:28px;height:28px}
+.ntf-row strong{display:block;font-size:13px;font-weight:600}
+.ntf-row small{display:block;font-size:11.5px;color:var(--sub);margin-top:2px;line-height:1.35}
+.ntf-row em{margin-left:auto;font-style:normal;font-size:10.5px;color:var(--faint);white-space:nowrap}
+.ntf-row.unread{box-shadow:inset 2px 0 0 var(--sky)}
+/* alsó menü: fix, üvegben, Boop a területváltón */
+.tabbar{left:10px;right:10px;bottom:12px;padding:6px 6px;border-radius:28px;gap:2px}
+.tb-boop{--c:var(--sage);display:grid;place-items:center;width:62px;height:58px;margin-right:4px;border-radius:22px;flex:0 0 auto;position:relative}
+.tb-boop::after{content:'';position:absolute;right:-4px;top:12px;bottom:12px;width:1px;background:var(--hair)}
+.tb-boop .boop{width:44px;height:44px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.5)) drop-shadow(0 0 12px rgba(143,180,154,.45))}
+.tb{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0 5px;border-radius:20px;font-size:10px;font-weight:500;color:var(--faint)}
+.tb .icon{width:27px;height:27px;filter:grayscale(.45) brightness(.8)}
+.tb.on{color:var(--ink);font-weight:600;background:radial-gradient(80% 90% at 50% 20%,rgba(143,180,154,.22),transparent 70%);box-shadow:inset 0 0 0 1px rgba(143,180,154,.28),0 0 16px -4px rgba(143,180,154,.5)}
+.tb.on .icon{filter:drop-shadow(0 4px 6px rgba(0,0,0,.5)) drop-shadow(0 0 10px rgba(143,180,154,.6))}
+.tb.on::after{display:none}
+/* területváltó */
+.switcher{position:absolute;left:10px;right:10px;bottom:92px;z-index:46;padding:16px 14px 14px;border-radius:26px;opacity:0;transform:translateY(14px);pointer-events:none;transition:.32s var(--ease)}
+.switcher.on{opacity:1;transform:none;pointer-events:auto}
+.switcher small{display:block;font-size:9.5px;font-weight:600;letter-spacing:1.4px;color:var(--faint);margin:0 4px 10px}
+.sw-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.sw{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 0 8px;border-radius:18px;font-size:11px;font-weight:600;color:var(--sub)}
+.sw .boop{width:46px;height:46px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.5)) drop-shadow(0 0 10px color-mix(in srgb,var(--c) 45%,transparent))}
+.sw.on{color:var(--ink);background:radial-gradient(80% 90% at 50% 25%,color-mix(in srgb,var(--c) 26%,transparent),transparent 72%);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 45%,transparent)}
+.boop{display:block}
+.boop .boop-eye,.boop .boop-pupil,.boop .boop-brow,.boop .boop-body{transform-box:fill-box}
+.boop .boop-eye,.boop .boop-pupil,.boop .boop-brow{transform-origin:center}
+.boop .boop-body{transform-origin:50% 96%}
+@media (prefers-reduced-motion:no-preference){
+  body:not(.still) .boop.is-alive .boop-eye{animation:boop-blink 6s infinite}
+  body:not(.still) .boop.is-alive .boop-pupil{animation:boop-look 9s infinite}
+  body:not(.still) .boop.is-alive .boop-brow{animation:boop-brow 9s infinite}
+  body:not(.still) .boop.is-alive .boop-body{animation:boop-breathe 4.2s ease-in-out infinite}
+}
+@keyframes boop-blink{0%,41%,45%,100%{transform:scaleY(1)}43%{transform:scaleY(.08)}}
+@keyframes boop-look{0%,20%{transform:translateX(0)}26%,38%{transform:translateX(-3px)}46%,58%{transform:translateX(3px)}66%,100%{transform:translateX(0)}}
+@keyframes boop-brow{0%,66%{transform:translateY(0)}72%,82%{transform:translateY(-1.6px)}88%,100%{transform:translateY(0)}}
+@keyframes boop-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.018)}}
+
 /* ── Motion (one-shot rise + periodic sheen) ──── */
 @media (prefers-reduced-motion:no-preference){
   body:not(.still) .rise{animation:rise .7s var(--ease) both;animation-delay:calc(var(--i,0)*70ms)}
@@ -408,18 +478,865 @@ body.dark #shadow feDropShadow{flood-color:#000;flood-opacity:.5}
 
 
 </defs></svg>
+
+<!-- éles clay-ikonok (fejléc + alsó menü, c- előtaggal) és a Boop-figurák, verbatim a frontendből -->
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="ig-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
+    <linearGradient id="ig-ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD979"/><stop offset="1" stop-color="#DA9E22"/></linearGradient>
+    <linearGradient id="ig-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="0.5" stop-color="#E05535"/><stop offset="1" stop-color="#B03E1E"/></linearGradient>
+    <radialGradient id="ig-bowl" cx="38%" cy="35%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="0.5" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="ig-orb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFC3A8"/><stop offset="0.45" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/></radialGradient>
+    <linearGradient id="ig-shelf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#AE9F8E"/></linearGradient>
+    <radialGradient id="ig-drop" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.5" stop-color="#5FA1C8"/><stop offset="1" stop-color="#2E6E96"/></radialGradient>
+    <radialGradient id="ig-moonfull" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#F2EDFD"/><stop offset="0.45" stop-color="#B7A9E8"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-crater" cx="40%" cy="35%" r="80%"><stop offset="0" stop-color="#8F81C6"/><stop offset="1" stop-color="#6D5FB0"/></radialGradient>
+    <radialGradient id="ig-harvest" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFF3C9"/><stop offset="0.5" stop-color="#E8B93A"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-moon" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#E6DFF9"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-heart" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#F0B9D2"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
+    <radialGradient id="ig-spark" cx="38%" cy="32%" r="90%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <linearGradient id="ig-book" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D89A6A"/><stop offset="1" stop-color="#9C5F33"/></linearGradient>
+    <radialGradient id="ig-targ" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#FF9A78"/><stop offset="0.6" stop-color="#E05535"/><stop offset="1" stop-color="#A83A1B"/></radialGradient>
+    <linearGradient id="ig-caps" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9FBF8E"/><stop offset="1" stop-color="#5B7A4C"/></linearGradient>
+    <linearGradient id="ig-scale" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#A79885"/></linearGradient>
+    <radialGradient id="ig-ball" cx="36%" cy="30%" r="82%"><stop offset="0" stop-color="#F5CBDE"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
+    <linearGradient id="ig-shoe" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9CC4E0"/><stop offset="1" stop-color="#33749C"/></linearGradient>
+    <linearGradient id="ig-arcbar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#B03E1E"/></linearGradient>
+    <radialGradient id="ig-p1" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFB597"/><stop offset="1" stop-color="#C44B26"/></radialGradient>
+    <radialGradient id="ig-p2" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#5B7A4C"/></radialGradient>
+    <radialGradient id="ig-ngold" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-nlav" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#D4CBF0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-nsage" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C4DBB4"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="ig-bell" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <linearGradient id="ig-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#4E6B42"/></linearGradient>
+    <radialGradient id="ig-coin" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.5" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-flame" cx="40%" cy="35%" r="85%"><stop offset="0" stop-color="#FFC69E"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C43D14"/></radialGradient>
+    <radialGradient id="ig-flin" cx="45%" cy="40%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="1" stop-color="#F0B429"/></radialGradient>
+    <linearGradient id="ig-gear" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4B6A5"/><stop offset="1" stop-color="#8C7F72"/></linearGradient>
+    <linearGradient id="ig-mic" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B7A9E6"/><stop offset="1" stop-color="#5D4FA0"/></linearGradient>
+    <linearGradient id="ig-jar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EDCF96"/><stop offset="1" stop-color="#B08A3E"/></linearGradient>
+    <linearGradient id="ig-wood" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D89A6A"/><stop offset="1" stop-color="#9C5F33"/></linearGradient>
+    <radialGradient id="ig-face" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9C2"/><stop offset="0.6" stop-color="#F2C063"/><stop offset="1" stop-color="#C08A22"/></radialGradient>
+    <linearGradient id="ig-env" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#D8481F"/></linearGradient>
+    <linearGradient id="ig-stone1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4B6A5"/><stop offset="1" stop-color="#8C7F72"/></linearGradient>
+    <linearGradient id="ig-stone2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D8CBBA"/><stop offset="1" stop-color="#A79885"/></linearGradient>
+    <radialGradient id="ig-stone3" cx="38%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.6" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+
+    <symbol id="c-i-nap" viewBox="0 0 100 100">
+      <g>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(45 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(90 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(135 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(180 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(225 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(270 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="24" fill="url(#ig-sun)"/>
+      <ellipse cx="42" cy="41" rx="8.5" ry="6" fill="rgba(255,255,255,0.6)" transform="rotate(-22 42 41)"/>
+    </symbol>
+
+    <symbol id="c-i-edzes" viewBox="0 0 100 100">
+      <rect x="12" y="26" width="15" height="48" rx="7.5" fill="url(#ig-plate)"/>
+      <rect x="73" y="26" width="15" height="48" rx="7.5" fill="url(#ig-plate)"/>
+      <rect x="25" y="45" width="50" height="10" rx="5" fill="#8C7F72"/>
+      <ellipse cx="18" cy="33" rx="3.5" ry="5" fill="rgba(255,255,255,0.45)"/>
+    </symbol>
+
+    <symbol id="c-i-fuel" viewBox="0 0 100 100">
+      <path d="M12 46a38 34 0 0 0 76 0Z" fill="url(#ig-bowl)"/>
+      <rect x="9" y="41" width="82" height="9" rx="4.5" fill="#A8C494"/>
+      <ellipse cx="30" cy="56" rx="8" ry="5" fill="rgba(255,255,255,0.35)" transform="rotate(-18 30 56)"/>
+      <path d="M38 30c0-6 5-6 5-12M57 30c0-6 5-6 5-12" fill="none" stroke="#A8C494" stroke-width="6" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="c-i-mezo" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="34" fill="url(#ig-orb)"/>
+      <ellipse cx="38" cy="35" rx="11" ry="7.5" fill="rgba(255,255,255,0.6)" transform="rotate(-24 38 35)"/>
+      <path d="M28 63a28 28 0 0 0 12 10" fill="none" stroke="rgba(255,220,200,0.5)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="c-i-polc" viewBox="0 0 100 100">
+      <rect x="14" y="14" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="54" y="14" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="14" y="54" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="54" y="54" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <ellipse cx="24" cy="22" rx="6" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-20 24 22)"/>
+    </symbol>
+
+    <symbol id="c-i-viz" viewBox="0 0 100 100">
+      <path d="M50 8c13 18 24 29 24 43a24 24 0 0 1-48 0C26 37 37 26 50 8Z" fill="url(#ig-drop)"/>
+      <ellipse cx="41" cy="44" rx="7" ry="10" fill="rgba(255,255,255,0.5)" transform="rotate(18 41 44)"/>
+    </symbol>
+
+    <symbol id="c-i-alvas" viewBox="0 0 100 100">
+      <path d="M68 72A32 32 0 1 1 56 14a26 26 0 0 0 12 58Z" fill="url(#ig-moon)"/>
+      <ellipse cx="34" cy="32" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-28 34 32)"/>
+      <circle cx="76" cy="24" r="4" fill="#C9962E"/>
+    </symbol>
+
+    <symbol id="c-i-eletjel" viewBox="0 0 100 100">
+      <path d="M50 86C22 65 13 49 13 35a19 19 0 0 1 37-6 19 19 0 0 1 37 6c0 14-9 30-37 51Z" fill="url(#ig-heart)"/>
+      <ellipse cx="34" cy="34" rx="9" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-24 34 34)"/>
+    </symbol>
+
+    <symbol id="c-i-minta" viewBox="0 0 100 100">
+      <path d="M50 8 L59 41 L92 50 L59 59 L50 92 L41 59 L8 50 L41 41 Z" fill="url(#ig-spark)" stroke="url(#ig-spark)" stroke-width="7" stroke-linejoin="round"/>
+      <ellipse cx="42" cy="38" rx="7" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 42 38)"/>
+      <circle cx="80" cy="20" r="5" fill="#9C8FD0"/>
+    </symbol>
+
+    <symbol id="c-i-naplo" viewBox="0 0 100 100">
+      <rect x="22" y="12" width="56" height="76" rx="9" fill="url(#ig-book)"/>
+      <rect x="22" y="12" width="12" height="76" rx="6" fill="#7E4A24"/>
+      <rect x="70" y="18" width="5" height="64" rx="2.5" fill="#F4E7D6"/>
+      <ellipse cx="46" cy="24" rx="10" ry="5.5" fill="rgba(255,255,255,0.4)" transform="rotate(-16 46 24)"/>
+      <path d="M44 44h22M44 56h16" stroke="rgba(255,240,220,0.65)" stroke-width="5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="c-i-cel" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="36" fill="url(#ig-targ)"/>
+      <circle cx="50" cy="50" r="24" fill="#FDF6EC"/>
+      <circle cx="50" cy="50" r="14" fill="url(#ig-targ)"/>
+      <circle cx="50" cy="50" r="5.5" fill="#C9962E"/>
+      <ellipse cx="37" cy="34" rx="10" ry="6.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 34)"/>
+    </symbol>
+
+    <symbol id="c-i-stack" viewBox="0 0 100 100">
+      <g transform="rotate(-32 50 50)">
+        <rect x="16" y="36" width="68" height="28" rx="14" fill="url(#ig-caps)"/>
+        <path d="M50 36h20a14 14 0 0 1 0 28H50Z" fill="#F0E7D4"/>
+        <ellipse cx="30" cy="43" rx="8" ry="4" fill="rgba(255,255,255,0.5)"/>
+      </g>
+    </symbol>
+
+    <symbol id="c-i-suly" viewBox="0 0 100 100">
+      <rect x="18" y="18" width="64" height="64" rx="16" fill="url(#ig-scale)"/>
+      <rect x="36" y="30" width="28" height="15" rx="5" fill="#4E4437"/>
+      <rect x="48.5" y="33" width="3" height="9" rx="1.5" fill="#FFD979"/>
+      <ellipse cx="30" cy="27" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-20 30 27)"/>
+    </symbol>
+
+    <symbol id="c-i-sport" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="36" fill="url(#ig-ball)"/>
+      <path d="M18 34q32 14 66-2M26 76q26-24 56-8M48 14q-6 38 8 72" fill="none" stroke="#F5DCE9" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="36" cy="33" rx="9" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-24 36 33)"/>
+    </symbol>
+
+    <symbol id="c-i-futas" viewBox="0 0 100 100">
+      <path d="M12 64c2-20 14-30 32-30 8 0 12 6 18 12s16 8 26 10v10a8 8 0 0 1-8 8H20a8 8 0 0 1-8-8Z" fill="url(#ig-shoe)"/>
+      <rect x="10" y="70" width="80" height="12" rx="6" fill="#DDEBF4"/>
+      <path d="M40 46l8 6M50 41l8 6" stroke="#E6F2FA" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="30" cy="44" rx="8" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-16 30 44)"/>
+    </symbol>
+
+    <symbol id="c-i-meso" viewBox="0 0 100 100">
+      <rect x="14" y="54" width="11" height="24" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="29" y="38" width="11" height="40" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="44" y="26" width="11" height="52" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="59" y="36" width="11" height="42" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="74" y="52" width="11" height="26" rx="5" fill="url(#ig-arcbar)"/>
+      <ellipse cx="48" cy="31" rx="4" ry="3" fill="rgba(255,255,255,0.5)"/>
+    </symbol>
+
+    <symbol id="c-i-emberek" viewBox="0 0 100 100">
+      <circle cx="64" cy="34" r="14" fill="url(#ig-p2)"/>
+      <path d="M42 84a22 21 0 0 1 44 0Z" fill="url(#ig-p2)"/>
+      <circle cx="36" cy="40" r="16" fill="url(#ig-p1)"/>
+      <path d="M12 88a24 22 0 0 1 48 0Z" fill="url(#ig-p1)"/>
+      <ellipse cx="30" cy="33" rx="6" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-22 30 33)"/>
+    </symbol>
+
+    <symbol id="c-i-tudas" viewBox="0 0 100 100">
+      <path d="M32 32 L70 42 M36 36 L50 70 M68 44 L52 70" stroke="#C9BCAD" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="30" cy="30" r="13" fill="url(#ig-ngold)"/>
+      <circle cx="72" cy="42" r="11" fill="url(#ig-nlav)"/>
+      <circle cx="50" cy="73" r="12" fill="url(#ig-nsage)"/>
+      <ellipse cx="26" cy="25" rx="4.5" ry="3" fill="rgba(255,255,255,0.55)" transform="rotate(-22 26 25)"/>
+    </symbol>
+
+    <symbol id="c-i-ertesites" viewBox="0 0 100 100">
+      <rect x="45" y="8" width="10" height="10" rx="5" fill="#B57E14"/>
+      <path d="M50 14a27 27 0 0 1 27 27v17l9 13H14l9-13V41a27 27 0 0 1 27-27Z" fill="url(#ig-bell)"/>
+      <circle cx="50" cy="80" r="8" fill="#B57E14"/>
+      <ellipse cx="37" cy="32" rx="8" ry="5.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 32)"/>
+    </symbol>
+
+    <symbol id="c-i-growth" viewBox="0 0 100 100">
+      <path d="M50 90V50" stroke="#5B7A4C" stroke-width="7" stroke-linecap="round"/>
+      <path d="M50 56C34 52 26 40 28 24c16 2 24 14 22 32Z" fill="url(#ig-leaf)"/>
+      <path d="M50 66c14-4 22-14 20-28-14 2-22 14-20 28Z" fill="url(#ig-leaf)"/>
+      <ellipse cx="36" cy="36" rx="6" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-40 36 36)"/>
+    </symbol>
+
+    <symbol id="c-i-erme" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="35" fill="url(#ig-coin)"/>
+      <circle cx="50" cy="50" r="25" fill="none" stroke="rgba(255,240,200,0.55)" stroke-width="3.5"/>
+      <path d="M40 60V44l10 9 10-9v16" fill="none" stroke="#8A5E07" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="38" cy="34" rx="9" ry="6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 38 34)"/>
+    </symbol>
+
+    <symbol id="c-i-lang" viewBox="0 0 100 100">
+      <path d="M50 8c4 14 22 20 22 40a22 22 0 0 1-44 0c0-11 6-16 9-24 5 6 9 7 13-16Z" fill="url(#ig-flame)"/>
+      <path d="M50 42c2 8 10 10 10 19a10 10 0 0 1-20 0c0-5 3-8 5-12 2 3 4 3 5-7Z" fill="url(#ig-flin)"/>
+    </symbol>
+
+    <symbol id="c-i-beallitas" viewBox="0 0 100 100">
+      <g>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(45 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(90 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(135 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(180 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(225 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(270 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="26" fill="url(#ig-gear)"/>
+      <circle cx="50" cy="50" r="11" fill="#FDF6EC"/>
+      <ellipse cx="38" cy="36" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-24 38 36)"/>
+    </symbol>
+
+    <symbol id="c-i-mikrofon" viewBox="0 0 100 100">
+      <rect x="36" y="10" width="28" height="46" rx="14" fill="url(#ig-mic)"/>
+      <path d="M26 44a24 24 0 0 0 48 0" fill="none" stroke="#8C7F72" stroke-width="7" stroke-linecap="round"/>
+      <rect x="46.5" y="70" width="7" height="12" rx="3.5" fill="#8C7F72"/>
+      <rect x="36" y="84" width="28" height="7" rx="3.5" fill="#8C7F72"/>
+      <ellipse cx="43" cy="20" rx="5" ry="7" fill="rgba(255,255,255,0.45)" transform="rotate(-14 43 20)"/>
+    </symbol>
+
+    <symbol id="c-i-kamra" viewBox="0 0 100 100">
+      <rect x="30" y="10" width="40" height="13" rx="6" fill="#8C7F72"/>
+      <rect x="26" y="24" width="48" height="64" rx="13" fill="url(#ig-jar)"/>
+      <rect x="26" y="42" width="48" height="7" fill="rgba(255,255,255,0.28)"/>
+      <ellipse cx="37" cy="34" rx="6" ry="8" fill="rgba(255,255,255,0.4)" transform="rotate(12 37 34)"/>
+    </symbol>
+
+    <symbol id="c-i-recept" viewBox="0 0 100 100">
+      <g transform="rotate(-30 50 50)">
+        <ellipse cx="50" cy="30" rx="17" ry="21" fill="url(#ig-wood)"/>
+        <ellipse cx="50" cy="28" rx="9.5" ry="12.5" fill="#8A5227"/>
+        <rect x="45" y="48" width="10" height="44" rx="5" fill="url(#ig-wood)"/>
+        <ellipse cx="41" cy="17" rx="6" ry="4" fill="rgba(255,255,255,0.4)" transform="rotate(-20 41 17)"/>
+      </g>
+    </symbol>
+
+    <symbol id="c-i-rend" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="76" rx="34" ry="16" fill="url(#ig-stone1)"/>
+      <ellipse cx="50" cy="52" rx="26" ry="13" fill="url(#ig-stone2)"/>
+      <ellipse cx="50" cy="31" rx="17" ry="10.5" fill="url(#ig-stone3)"/>
+      <ellipse cx="42" cy="26" rx="6" ry="3.5" fill="rgba(255,255,255,0.55)" transform="rotate(-14 42 26)"/>
+      <ellipse cx="38" cy="47" rx="8" ry="4" fill="rgba(255,255,255,0.35)" transform="rotate(-10 38 47)"/>
+      <ellipse cx="34" cy="70" rx="10" ry="4.5" fill="rgba(255,255,255,0.28)" transform="rotate(-8 34 70)"/>
+    </symbol>
+
+    <symbol id="c-i-level" viewBox="0 0 100 100">
+      <rect x="12" y="25" width="76" height="53" rx="12" fill="url(#ig-env)"/>
+      <path d="M17 32 L50 58 L83 32" fill="none" stroke="#A83A1B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="26" cy="34" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-18 26 34)"/>
+    </symbol>
+
+    <symbol id="c-i-hajnal" viewBox="0 0 100 100">
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(-44 50 64)"/>
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(44 50 64)"/>
+      <path d="M27 64a23 23 0 0 1 46 0Z" fill="url(#ig-sun)"/>
+      <ellipse cx="41" cy="52" rx="8" ry="5" fill="rgba(255,255,255,0.6)" transform="rotate(-20 41 52)"/>
+      <rect x="14" y="64" width="72" height="8" rx="4" fill="#C4B6A5"/>
+    </symbol>
+
+    <symbol id="c-i-video" viewBox="0 0 100 100">
+      <rect x="12" y="22" width="76" height="56" rx="16" fill="url(#ig-drop)"/>
+      <path d="M44 38 L64 50 L44 62 Z" fill="#F4FAFD" stroke="#F4FAFD" stroke-width="7" stroke-linejoin="round"/>
+      <ellipse cx="27" cy="32" rx="9" ry="5.5" fill="rgba(255,255,255,0.5)" transform="rotate(-18 27 32)"/>
+    </symbol>
+
+    <symbol id="c-i-idozito" viewBox="0 0 100 100">
+      <rect x="43" y="8" width="14" height="10" rx="5" fill="#5B7A4C"/>
+      <rect x="47" y="16" width="6" height="8" fill="#5B7A4C"/>
+      <rect x="68" y="16" width="12" height="7" rx="3.5" fill="#5B7A4C" transform="rotate(42 74 20)"/>
+      <circle cx="50" cy="56" r="32" fill="url(#ig-nsage)"/>
+      <circle cx="50" cy="56" r="21" fill="#F2F7EC"/>
+      <path d="M50 56 L50 42" stroke="#4E6B42" stroke-width="6" stroke-linecap="round"/>
+      <path d="M50 56 L60 62" stroke="#4E6B42" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="37" cy="38" rx="8" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 38)"/>
+    </symbol>
+
+    <symbol id="c-i-kihivas" viewBox="0 0 100 100">
+      <rect x="28" y="10" width="9" height="82" rx="4.5" fill="#8C7F72"/>
+      <path d="M37 14 L84 22 L66 34 L84 46 L37 54 Z" fill="url(#ig-plate)"/>
+      <ellipse cx="48" cy="23" rx="8" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-10 48 23)"/>
+      <circle cx="32.5" cy="13" r="5.5" fill="#C9962E"/>
+    </symbol>
+
+    <symbol id="c-i-checkin" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="35" fill="url(#ig-face)"/>
+      <circle cx="38" cy="44" r="4.5" fill="#6E4B12"/>
+      <circle cx="62" cy="44" r="4.5" fill="#6E4B12"/>
+      <path d="M36 59q14 12 28 0" fill="none" stroke="#6E4B12" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="37" cy="33" rx="9" ry="6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 33)"/>
+    </symbol>
+
+    <symbol id="c-i-injekcio" viewBox="0 0 100 100">
+      <g transform="rotate(-38 50 50)">
+        <rect x="20" y="40" width="44" height="20" rx="7" fill="#F0E7D4"/>
+        <rect x="24" y="44" width="26" height="12" rx="5" fill="url(#ig-nlav)"/>
+        <rect x="10" y="44" width="10" height="12" rx="4" fill="url(#ig-scale)"/>
+        <rect x="2" y="47" width="9" height="6" rx="3" fill="url(#ig-scale)"/>
+        <rect x="64" y="45" width="6" height="10" rx="2" fill="url(#ig-scale)"/>
+        <path d="M70 50h20" stroke="#8C7F72" stroke-width="4" stroke-linecap="round"/>
+        <ellipse cx="32" cy="46.5" rx="8" ry="3" fill="rgba(255,255,255,0.5)"/>
+      </g>
+    </symbol>
+
+    <symbol id="c-i-reggeli" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="56" rx="35" ry="26" fill="#F7F0E1"/>
+      <ellipse cx="44" cy="49" rx="10" ry="6" fill="rgba(255,255,255,0.7)" transform="rotate(-18 44 49)"/>
+      <circle cx="52" cy="56" r="13" fill="url(#ig-sun)"/>
+      <ellipse cx="48" cy="51" rx="4.5" ry="3" fill="rgba(255,255,255,0.6)"/>
+    </symbol>
+
+    <symbol id="c-i-ebed" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="66" rx="38" ry="13" fill="url(#ig-scale)"/>
+      <ellipse cx="50" cy="60" rx="25" ry="11" fill="url(#ig-bowl)"/>
+      <ellipse cx="42" cy="56" rx="8" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-16 42 56)"/>
+      <path d="M40 44q-3-6 0-12M52 46q-3-6 0-12M64 44q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="c-i-snack" viewBox="0 0 100 100">
+      <circle cx="50" cy="58" r="26" fill="url(#ig-p2)"/>
+      <path d="M50 33q-2-8 5-13" stroke="#9C5F33" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="63" cy="27" rx="10" ry="6" fill="url(#ig-leaf)" transform="rotate(-22 63 27)"/>
+      <ellipse cx="41" cy="49" rx="8" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 41 49)"/>
+    </symbol>
+
+    <symbol id="c-i-vacsora" viewBox="0 0 100 100">
+      <path d="M17 52h66v5a27 27 0 0 1-27 27H44a27 27 0 0 1-27-27Z" fill="url(#ig-moon)"/>
+      <ellipse cx="50" cy="52" rx="33" ry="7.5" fill="#E6DFF9"/>
+      <path d="M42 40q-3-6 0-12M58 40q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="33" cy="64" rx="8" ry="4.5" fill="rgba(255,255,255,0.35)" transform="rotate(-14 33 64)"/>
+    </symbol>
+    <symbol id="c-i-muhely" viewBox="0 0 100 100">
+      <path d="M20 56h60v4a25 25 0 0 1-25 25H45a25 25 0 0 1-25-25Z" fill="url(#ig-plate)"/>
+      <ellipse cx="50" cy="56" rx="30" ry="7" fill="#FFB597"/>
+      <path d="M17 60q-7 2-4 9M83 60q7 2 4 9" stroke="#B03E1E" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M40 46q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <path d="M67 14l4.5 11 11 4.5-11 4.5-4.5 11-4.5-11-11-4.5 11-4.5Z" fill="url(#ig-spark)"/>
+      <path d="M50 8l2.5 6 6 2.5-6 2.5-2.5 6-2.5-6-6-2.5 6-2.5Z" fill="url(#ig-spark)"/>
+      <ellipse cx="35" cy="67" rx="8" ry="4.5" fill="rgba(255,255,255,0.35)" transform="rotate(-14 35 67)"/>
+    </symbol>
+    <symbol id="c-i-memoar" viewBox="0 0 100 100">
+      <path d="M50 26 Q34 16 16 22 L16 74 Q34 68 50 78 Z" fill="url(#ig-book)"/>
+      <path d="M50 26 Q66 16 84 22 L84 74 Q66 68 50 78 Z" fill="#F0E7D4"/>
+      <path d="M60 24 v22 l6 -5 6 5 V22" fill="url(#ig-flame)"/>
+      <path d="M58 38h18M58 48h18M58 58h16" stroke="#D8CCBB" stroke-width="3.5" stroke-linecap="round" opacity="0"/>
+      <ellipse cx="30" cy="32" rx="9" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-12 30 32)"/>
+    </symbol>
+    <symbol id="c-i-lombik" viewBox="0 0 100 100">
+      <path d="M42 14h16v22l20 34a12 12 0 0 1-10 18H32a12 12 0 0 1-10-18l20-34Z" fill="#F0E7D4"/>
+      <path d="M35 58h30l13 12a12 12 0 0 1-10 18H32a12 12 0 0 1-10-18Z" fill="url(#ig-nsage)"/>
+      <rect x="38" y="10" width="24" height="9" rx="4.5" fill="url(#ig-leaf)"/>
+      <circle cx="46" cy="72" r="4.5" fill="rgba(255,255,255,0.5)"/>
+      <circle cx="58" cy="79" r="3" fill="rgba(255,255,255,0.4)"/>
+      <circle cx="72" cy="30" r="5" fill="#9C8FD0"/>
+      <ellipse cx="42" cy="30" rx="4" ry="9" fill="rgba(255,255,255,0.5)" transform="rotate(8 42 30)"/>
+    </symbol>
+    <symbol id="c-i-kristaly" viewBox="0 0 100 100">
+      <path d="M28 82h44l-6 10H34Z" fill="url(#ig-wood)"/>
+      <circle cx="50" cy="48" r="33" fill="url(#ig-nlav)"/>
+      <path d="M36 56q14 10 28 0" stroke="rgba(255,255,255,0.45)" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="38" cy="36" rx="10" ry="6.5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 38 36)"/>
+      <path d="M80 12 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 Z" fill="url(#ig-spark)"/>
+    </symbol>
+    <symbol id="c-i-retegek" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="72" rx="34" ry="13" fill="url(#ig-nsage)"/>
+      <ellipse cx="50" cy="54" rx="34" ry="13" fill="url(#ig-ngold)"/>
+      <ellipse cx="50" cy="36" rx="34" ry="13" fill="url(#ig-nlav)"/>
+      <ellipse cx="50" cy="33" rx="34" ry="13" fill="url(#ig-nlav)"/>
+      <ellipse cx="38" cy="28" rx="11" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-8 38 28)"/>
+    </symbol>
+    <symbol id="c-i-heti" viewBox="0 0 100 100">
+      <rect x="14" y="20" width="72" height="66" rx="12" fill="url(#ig-nlav)"/>
+      <rect x="14" y="20" width="72" height="16" rx="8" fill="#4A3E86"/>
+      <circle cx="32" cy="18" r="5" fill="#7E4A24"/><circle cx="68" cy="18" r="5" fill="#7E4A24"/>
+      <rect x="26" y="60" width="10" height="14" rx="4" fill="rgba(255,255,255,0.55)"/>
+      <rect x="42" y="50" width="10" height="24" rx="4" fill="rgba(255,255,255,0.8)"/>
+      <rect x="58" y="44" width="10" height="30" rx="4" fill="#FFE9A8"/>
+      <ellipse cx="36" cy="46" rx="10" ry="4" fill="rgba(255,255,255,0.35)" transform="rotate(-10 36 46)"/>
+    </symbol>
+    <symbol id="c-i-hold" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="40" fill="url(#ig-moonfull)"/>
+      <ellipse cx="36" cy="30" rx="10" ry="6.5" fill="rgba(255,255,255,0.55)" transform="rotate(-26 36 30)"/>
+      <circle cx="63" cy="42" r="7" fill="url(#ig-crater)" opacity="0.85"/>
+      <circle cx="44" cy="62" r="5" fill="url(#ig-crater)" opacity="0.7"/>
+      <circle cx="62" cy="66" r="3.5" fill="url(#ig-crater)" opacity="0.6"/>
+    </symbol>
+
+    <symbol id="c-i-termes" viewBox="0 0 100 100">
+      <path d="M50 6c5 20 12 27 32 32-20 5-27 12-32 32-5-20-12-27-32-32 20-5 27-12 32-32Z" fill="url(#ig-harvest)"/>
+      <ellipse cx="41" cy="30" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-30 41 30)"/>
+      <circle cx="81" cy="74" r="6" fill="url(#ig-harvest)"/>
+      <circle cx="18" cy="80" r="4" fill="url(#ig-harvest)" opacity="0.8"/>
+    </symbol>
+
+    <!-- ============ F7.4 · Életterület-ikonográfia (mezo-d20.8.4) ============
+         A 8 LIFE skill clay szimbóluma — a Growth-sorok, a hála-bejegyzések és a
+         Napzárás act-3 emoji-maradékának váltása. Nyelv: 100×100, közös ig-*
+         gradiensek, fehér spekuláris folt. -->
+    <radialGradient id="ig-life-eye" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.55" stop-color="#4E8FB8"/><stop offset="1" stop-color="#25577A"/></radialGradient>
+    <linearGradient id="ig-life-pan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8C7F72"/><stop offset="1" stop-color="#5E544A"/></linearGradient>
+    <radialGradient id="ig-life-pillow" cx="36%" cy="30%" r="90%"><stop offset="0" stop-color="#F2EDFD"/><stop offset="0.5" stop-color="#B7A9E8"/><stop offset="1" stop-color="#7A6BbD"/></radialGradient>
+
+    <symbol id="c-i-life-tudatossag" viewBox="0 0 100 100">
+      <path d="M28 92a55 40 0 0 1 44 0c2-16-4-26-10-32H38c-6 6-12 16-10 32Z" fill="url(#ig-nlav)"/>
+      <circle cx="50" cy="38" r="17" fill="url(#ig-moonfull)"/>
+      <path d="M24 22a30 30 0 0 1 52 0" fill="none" stroke="#C9962E" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="44" cy="31" rx="6" ry="4" fill="rgba(255,255,255,0.55)" transform="rotate(-22 44 31)"/>
+    </symbol>
+    <symbol id="c-i-life-szemlelet" viewBox="0 0 100 100">
+      <path d="M8 50C20 30 36 20 50 20s30 10 42 30C80 70 64 80 50 80S20 70 8 50Z" fill="url(#ig-stone2)"/>
+      <circle cx="50" cy="50" r="19" fill="url(#ig-life-eye)"/>
+      <circle cx="50" cy="50" r="8" fill="#1D3B52"/>
+      <ellipse cx="43" cy="42" rx="6" ry="4.5" fill="rgba(255,255,255,0.7)" transform="rotate(-24 43 42)"/>
+    </symbol>
+    <symbol id="c-i-life-konyha" viewBox="0 0 100 100">
+      <path d="M74 42 92 24" stroke="url(#ig-wood)" stroke-width="11" stroke-linecap="round"/>
+      <circle cx="44" cy="56" r="32" fill="url(#ig-life-pan)"/>
+      <circle cx="44" cy="56" r="24" fill="#F4E7D6"/>
+      <circle cx="40" cy="53" r="11" fill="url(#ig-sun)"/>
+      <ellipse cx="30" cy="38" rx="8" ry="5" fill="rgba(255,255,255,0.45)" transform="rotate(-24 30 38)"/>
+    </symbol>
+    <symbol id="c-i-life-penzugyek" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="74" rx="30" ry="13" fill="url(#ig-coin)"/>
+      <ellipse cx="50" cy="58" rx="30" ry="13" fill="url(#ig-coin)" stroke="#A9770F" stroke-width="2"/>
+      <ellipse cx="50" cy="42" rx="30" ry="13" fill="url(#ig-coin)" stroke="#A9770F" stroke-width="2"/>
+      <ellipse cx="50" cy="40" rx="20" ry="7.5" fill="none" stroke="rgba(255,240,200,0.6)" stroke-width="3"/>
+      <ellipse cx="38" cy="36" rx="8" ry="4" fill="rgba(255,255,255,0.55)" transform="rotate(-12 38 36)"/>
+    </symbol>
+    <symbol id="c-i-life-produktivitas" viewBox="0 0 100 100">
+      <rect x="16" y="16" width="68" height="68" rx="16" fill="url(#ig-stone1)"/>
+      <path d="M32 52l14 14 24-30" fill="none" stroke="url(#ig-leaf)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="72" cy="26" r="6" fill="#C9962E"/>
+      <ellipse cx="32" cy="26" rx="9" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-18 32 26)"/>
+    </symbol>
+    <symbol id="c-i-life-tanulas" viewBox="0 0 100 100">
+      <path d="M50 26C40 18 28 16 14 18v56c14-2 26 0 36 8V26Z" fill="url(#ig-book)"/>
+      <path d="M50 26c10-8 22-10 36-8v56c-14-2-26 0-36 8V26Z" fill="url(#ig-shelf)"/>
+      <path d="M50 26v56" stroke="#7E4A24" stroke-width="4" stroke-linecap="round"/>
+      <path d="M60 34c8-3 14-4 20-4M60 46c8-3 14-4 20-4" stroke="rgba(120,90,50,0.4)" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="28" cy="28" rx="8" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-16 28 28)"/>
+    </symbol>
+    <symbol id="c-i-life-kapcsolatok" viewBox="0 0 100 100">
+      <circle cx="36" cy="50" r="22" fill="none" stroke="url(#ig-heart)" stroke-width="11"/>
+      <circle cx="64" cy="50" r="22" fill="none" stroke="url(#ig-drop)" stroke-width="11"/>
+      <path d="M50 33a22 22 0 0 1 0 34 22 22 0 0 1 0-34Z" fill="rgba(142,63,111,0.35)"/>
+      <ellipse cx="28" cy="36" rx="6" ry="4" fill="rgba(255,255,255,0.6)" transform="rotate(-30 28 36)"/>
+    </symbol>
+    <symbol id="c-i-life-regeneracio" viewBox="0 0 100 100">
+      <path d="M14 46c-4 14-2 24 4 30 8 8 56 8 64 0 6-6 8-16 4-30-10-8-62-8-72 0Z" fill="url(#ig-life-pillow)"/>
+      <path d="M30 60c12 6 28 6 40 0" fill="none" stroke="rgba(93,79,160,0.45)" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="74" cy="26" r="5" fill="#C9962E"/>
+      <path d="M28 22h12l-12 12h12" fill="none" stroke="#9C8FD0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="30" cy="50" rx="10" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-10 30 50)"/>
+    </symbol>
+
+    <!-- ============================================================
+         Titanium-only symbols, redrawn in the clay material (mezo-ju4j6.3).
+         These 13 have NO pre-Titanium ancestor — they were authored during the
+         Titanium period (Fuel fülsor, makró-identitás, értékelés-dimenziók,
+         vércukor-válasz, ⓘ). The subject of each is kept 1:1 with its Titanium
+         version; only the MATERIAL changes, per the style bible §6.1 recipe:
+         viewBox 0 0 100 100, per-object named gradient off the closed clay
+         palette, one upper-left white specular, no ig-shadow filter, no strokes.
+         Hue assignments: style bible §6.2 table.
+         ============================================================ -->
+    <radialGradient id="ig-info" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#EFEAFB"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+
+    <symbol id="c-i-tanyer" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="53" rx="39" ry="36" fill="url(#ig-plate)"/>
+      <ellipse cx="50" cy="52" rx="26" ry="23" fill="#FFB597"/>
+      <path d="M36 54c2-9 11-14 18-10 7 4 9 12 4 17-6 7-19 6-22-1Z" fill="url(#ig-bowl)"/>
+      <circle cx="63" cy="45" r="6.5" fill="url(#ig-harvest)"/>
+      <ellipse cx="33" cy="32" rx="10" ry="5.5" fill="rgba(255,255,255,0.55)" transform="rotate(-22 33 32)"/>
+    </symbol>
+
+    <symbol id="c-i-kiegeszito" viewBox="0 0 100 100">
+      <rect x="31" y="10" width="38" height="13" rx="6.5" fill="url(#ig-stone2)"/>
+      <rect x="24" y="22" width="52" height="68" rx="15" fill="url(#ig-caps)"/>
+      <rect x="33" y="40" width="34" height="33" rx="9" fill="#EAF2E0"/>
+      <g transform="rotate(-32 50 56)">
+        <rect x="35" y="49" width="30" height="15" rx="7.5" fill="url(#ig-bowl)"/>
+        <path d="M50 49v15" stroke="#EAF2E0" stroke-width="2"/>
+      </g>
+      <ellipse cx="35" cy="32" rx="7" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-22 35 32)"/>
+    </symbol>
+
+    <symbol id="c-i-trend" viewBox="0 0 100 100">
+      <rect x="9" y="16" width="82" height="69" rx="18" fill="url(#ig-stone2)"/>
+      <rect x="18" y="25" width="64" height="51" rx="12" fill="#F6F1E8"/>
+      <path d="M26 66 44 48 57 56 76 33" fill="none" stroke="url(#ig-drop)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="76" cy="33" r="7.5" fill="url(#ig-harvest)"/>
+      <ellipse cx="31" cy="23" rx="10" ry="3.6" fill="rgba(255,255,255,0.55)"/>
+    </symbol>
+
+    <symbol id="c-i-fazek" viewBox="0 0 100 100">
+      <path d="M34 8c-4 7 4 10 1 17M50 4c-4 8 4 11 1 18M66 9c-4 7 4 10 1 17" fill="none" stroke="#C9E6F5" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
+      <rect x="43" y="26" width="14" height="10" rx="5" fill="url(#ig-wood)"/>
+      <rect x="12" y="34" width="76" height="11" rx="5.5" fill="url(#ig-stone2)"/>
+      <path d="M8 53h12a5 5 0 0 1 0 10H8a5 5 0 0 1 0-10Z" fill="url(#ig-wood)"/>
+      <path d="M80 53h12a5 5 0 0 1 0 10H80a5 5 0 0 1 0-10Z" fill="url(#ig-wood)"/>
+      <path d="M19 47h62l-5 35a8 8 0 0 1-8 7H32a8 8 0 0 1-8-7Z" fill="url(#ig-bowl)"/>
+      <ellipse cx="36" cy="59" rx="6.5" ry="11" fill="rgba(255,255,255,0.4)" transform="rotate(10 36 59)"/>
+      <ellipse cx="30" cy="38" rx="9" ry="3" fill="rgba(255,255,255,0.5)"/>
+    </symbol>
+
+    <symbol id="c-i-hus" viewBox="0 0 100 100">
+      <path d="M21 63a8 8 0 1 1 6-13 8 8 0 1 1 10 10l-5 5a8 8 0 1 1-10 10 8 8 0 1 1-6-12Z" fill="url(#ig-stone2)"/>
+      <path d="M38 32c19-11 44-6 50 9 6 16-6 34-25 39-17 5-31-3-34-17-3-13 2-25 9-31Z" fill="url(#ig-orb)"/>
+      <path d="M47 41c14-8 30-5 34 6 5 11-4 23-17 27-12 3-22-2-24-11-2-9 2-18 7-22Z" fill="#D8481F" opacity="0.4"/>
+      <ellipse cx="46" cy="38" rx="10" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 46 38)"/>
+    </symbol>
+
+    <symbol id="c-i-gabona" viewBox="0 0 100 100">
+      <path d="M50 93V36" stroke="url(#ig-shelf)" stroke-width="6" stroke-linecap="round"/>
+      <path d="M50 22C56 12 66 10 72 15C70 24 60 29 50 27C40 29 30 24 28 15C34 10 44 12 50 22Z" fill="url(#ig-harvest)"/>
+      <path d="M50 46C59 36 72 36 76 43C71 53 59 56 50 49C41 56 29 53 24 43C28 36 41 36 50 46Z" fill="url(#ig-harvest)"/>
+      <path d="M50 70C59 60 72 60 76 67C71 77 59 80 50 73C41 80 29 77 24 67C28 60 41 60 50 70Z" fill="url(#ig-harvest)"/>
+      <ellipse cx="38" cy="42" rx="7" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-28 38 42)"/>
+    </symbol>
+
+    <symbol id="c-i-avokado" viewBox="0 0 100 100">
+      <path d="M50 6c15 0 27 15 27 34C77 64 64 94 50 94S23 64 23 40C23 21 35 6 50 6Z" fill="url(#ig-bowl)"/>
+      <path d="M50 13c11 0 20 12 20 27C70 62 60 87 50 87S30 62 30 40C30 25 39 13 50 13Z" fill="#E9DDA6"/>
+      <ellipse cx="50" cy="52" rx="15" ry="17" fill="url(#ig-wood)"/>
+      <ellipse cx="45" cy="45" rx="5" ry="3.2" fill="rgba(255,255,255,0.45)" transform="rotate(-24 45 45)"/>
+      <ellipse cx="37" cy="26" rx="5.5" ry="9" fill="rgba(255,255,255,0.45)" transform="rotate(12 37 26)"/>
+    </symbol>
+
+    <symbol id="c-i-noveny" viewBox="0 0 100 100">
+      <path d="M50 93V66" stroke="url(#ig-leaf)" stroke-width="6" stroke-linecap="round"/>
+      <path d="M78 15C44 15 19 38 19 68c0 9 3 16 6 19C28 62 44 44 66 34 48 50 37 66 34 86c6 3 16 3 24 0 23-9 32-36 20-71Z" fill="url(#ig-leaf)"/>
+      <path d="M34 86C37 66 48 50 66 34" fill="none" stroke="#DCEBCE" stroke-width="3.5" stroke-linecap="round" opacity="0.8"/>
+      <ellipse cx="42" cy="42" rx="8" ry="4.5" fill="rgba(255,255,255,0.4)" transform="rotate(-38 42 42)"/>
+    </symbol>
+
+    <symbol id="c-i-makro" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="39" fill="url(#ig-plate)"/>
+      <path d="M50 50 50 18A32 32 0 0 1 77.7 66Z" fill="url(#ig-orb)"/>
+      <path d="M50 50 77.7 66A32 32 0 0 1 22.3 66Z" fill="url(#ig-harvest)"/>
+      <path d="M50 50 22.3 66A32 32 0 0 1 50 18Z" fill="url(#ig-bowl)"/>
+      <circle cx="50" cy="50" r="11" fill="url(#ig-plate)"/>
+      <ellipse cx="32" cy="29" rx="9" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 32 29)"/>
+    </symbol>
+
+    <symbol id="c-i-mikro" viewBox="0 0 100 100">
+      <path d="M50 46 25 24M50 46 78 28M50 46 53 80" stroke="url(#ig-nlav)" stroke-width="5" stroke-linecap="round" opacity="0.65"/>
+      <circle cx="50" cy="46" r="17" fill="url(#ig-nlav)"/>
+      <circle cx="25" cy="24" r="11" fill="url(#ig-nlav)"/>
+      <circle cx="78" cy="28" r="9" fill="url(#ig-nlav)"/>
+      <circle cx="53" cy="80" r="10" fill="url(#ig-nlav)"/>
+      <ellipse cx="43" cy="39" rx="6.5" ry="3.6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 43 39)"/>
+      <ellipse cx="21" cy="20" rx="4" ry="2.4" fill="rgba(255,255,255,0.5)" transform="rotate(-24 21 20)"/>
+    </symbol>
+
+    <symbol id="c-i-feldolgozas" viewBox="0 0 100 100">
+      <path d="M16 20h68L60 54v26a10 10 0 0 1-20 0V54Z" fill="url(#ig-stone2)"/>
+      <path d="M28 28h44L56 55v25a6 6 0 0 1-12 0V55Z" fill="#F6F1E8"/>
+      <circle cx="39" cy="37" r="5" fill="url(#ig-bowl)"/>
+      <circle cx="54" cy="34" r="4" fill="url(#ig-harvest)"/>
+      <circle cx="61" cy="41" r="3.4" fill="url(#ig-bowl)"/>
+      <ellipse cx="34" cy="24" rx="10" ry="3.4" fill="rgba(255,255,255,0.55)"/>
+    </symbol>
+
+    <symbol id="c-i-vercukor" viewBox="0 0 100 100">
+      <path d="M20 78C33 76 33 22 50 22 70 22 68 68 92 76V84H20Z" fill="url(#ig-drop)" opacity="0.32"/>
+      <path d="M20 78C33 76 33 22 50 22 70 22 68 68 92 76" fill="none" stroke="url(#ig-drop)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M12 10V84H92" fill="none" stroke="url(#ig-shelf)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="50" cy="22" r="8.5" fill="url(#ig-harvest)"/>
+      <ellipse cx="46" cy="19" rx="4" ry="2.4" fill="rgba(255,255,255,0.55)" transform="rotate(-24 46 19)"/>
+    </symbol>
+
+    <symbol id="c-i-info" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="39" fill="url(#ig-info)"/>
+      <circle cx="50" cy="32" r="5.5" fill="#F4F0FD"/>
+      <rect x="44.5" y="44" width="11" height="27" rx="5.5" fill="#F4F0FD"/>
+      <ellipse cx="32" cy="30" rx="9" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 32 30)"/>
+    </symbol>
+
+    <!-- Edzés-verdikt + rekord (mezo-ju4j6.11): saját agyag ikonok a Titán-kori
+         szöveg-glifák (▲/▼) és az érme-korong helyére. §6.1 recept. -->
+    <radialGradient id="ig-trendup" cx="36%" cy="28%" r="86%"><stop offset="0" stop-color="#D7EBC4"/><stop offset="0.5" stop-color="#7FA06C"/><stop offset="1" stop-color="#3F5A33"/></radialGradient>
+    <radialGradient id="ig-trenddown" cx="36%" cy="28%" r="86%"><stop offset="0" stop-color="#FFE6BE"/><stop offset="0.5" stop-color="#E7A93F"/><stop offset="1" stop-color="#9A6B12"/></radialGradient>
+    <radialGradient id="ig-medaldisc" cx="34%" cy="26%" r="88%"><stop offset="0" stop-color="#FFF3C9"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#9C6C0E"/></radialGradient>
+    <radialGradient id="ig-medalcore" cx="38%" cy="30%" r="84%"><stop offset="0" stop-color="#FFFBEA"/><stop offset="0.6" stop-color="#F7D774"/><stop offset="1" stop-color="#C08F1B"/></radialGradient>
+    <linearGradient id="ig-medalband-l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#C64B26"/></linearGradient>
+    <linearGradient id="ig-medalband-r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB49A"/><stop offset="1" stop-color="#D8613B"/></linearGradient>
+  </defs>
+  <symbol id="c-i-trend-fel" viewBox="0 0 100 100">
+      <title>Erősebb a tervnél</title>
+      <ellipse cx="50" cy="92" rx="22" ry="4" fill="#3F5A33" opacity="0.14"/>
+      <path d="M50 12 L82 50 Q84 54 79 54 L64 54 L64 80 Q64 86 58 86 L42 86 Q36 86 36 80 L36 54 L21 54 Q16 54 18 50 Z" fill="url(#ig-trendup)"/>
+      <ellipse cx="41" cy="32" rx="8.5" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-22 41 32)"/>
+    </symbol>
+  
+    <symbol id="c-i-trend-le" viewBox="0 0 100 100">
+      <title>Gyengébb a tervnél</title>
+      <ellipse cx="50" cy="92" rx="22" ry="4" fill="#9A6B12" opacity="0.14"/>
+      <path d="M50 88 L82 50 Q84 46 79 46 L64 46 L64 20 Q64 14 58 14 L42 14 Q36 14 36 20 L36 46 L21 46 Q16 46 18 50 Z" fill="url(#ig-trenddown)"/>
+      <ellipse cx="41" cy="26" rx="8" ry="4.6" fill="rgba(255,255,255,0.5)" transform="rotate(-22 41 26)"/>
+    </symbol>
+  
+    <symbol id="c-i-erem" viewBox="0 0 100 100">
+      <title>Rekord</title>
+      <ellipse cx="50" cy="94" rx="22" ry="4" fill="#9C6C0E" opacity="0.14"/>
+      <path d="M28 8 L42 8 L54 40 L40 46 Z" fill="url(#ig-medalband-l)"/>
+      <path d="M72 8 L58 8 L46 40 L60 46 Z" fill="url(#ig-medalband-r)"/>
+      <circle cx="50" cy="62" r="27" fill="url(#ig-medaldisc)"/>
+      <circle cx="50" cy="62" r="18" fill="url(#ig-medalcore)"/>
+      <ellipse cx="39" cy="48" rx="9" ry="5.5" fill="rgba(255,255,255,0.55)" transform="rotate(-22 39 48)"/>
+    </symbol>
+</svg>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  
+  <defs>
+    <radialGradient id="bg-boop-train-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#C4E1FA"/><stop offset="0.5" stop-color="#6BA6D6"/><stop offset="1" stop-color="#356FA0"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-train-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6BA6D6"/><stop offset="1" stop-color="#356FA0"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-train-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#C4E1FA"/><stop offset="0.55" stop-color="#6BA6D6"/><stop offset="1" stop-color="#356FA0"/>
+    </radialGradient>
+    <radialGradient id="bg-boop-fuel-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#B9D3A8"/><stop offset="0.5" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-fuel-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-fuel-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#B9D3A8"/><stop offset="0.55" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/>
+    </radialGradient>
+    <radialGradient id="bg-boop-nap-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#FFC3A8"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-nap-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-nap-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#FFC3A8"/><stop offset="0.55" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/>
+    </radialGradient>
+    <radialGradient id="bg-boop-mezo-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#DDD3F5"/><stop offset="0.5" stop-color="#9B8FC4"/><stop offset="1" stop-color="#5D4FA0"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-mezo-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9B8FC4"/><stop offset="1" stop-color="#5D4FA0"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-mezo-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#DDD3F5"/><stop offset="0.55" stop-color="#9B8FC4"/><stop offset="1" stop-color="#5D4FA0"/>
+    </radialGradient>
+    <radialGradient id="bg-boop-en-body" cx="36%" cy="30%" r="86%">
+      <stop offset="0" stop-color="#F8CBDD"/><stop offset="0.5" stop-color="#E27A8B"/><stop offset="1" stop-color="#8E3F6F"/>
+    </radialGradient>
+    <linearGradient id="bg-boop-en-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E27A8B"/><stop offset="1" stop-color="#8E3F6F"/>
+    </linearGradient>
+    <radialGradient id="bg-boop-en-ear" cx="38%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#F8CBDD"/><stop offset="0.55" stop-color="#E27A8B"/><stop offset="1" stop-color="#8E3F6F"/>
+    </radialGradient>
+  </defs>
+  <symbol id="boop-train" viewBox="0 0 100 100">
+    <title>Boop — Edzés · kék</title>
+    
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#356FA0" opacity="0.16"/>
+    
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-train-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-train-ear)" transform="rotate(24 78 28)"/>
+    
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-train-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-train-foot)"/>
+    
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-train-body)"/>
+      
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
+      
+      
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#356FA0" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#356FA0" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+    </g>
+  </symbol>
+  <symbol id="boop-fuel" viewBox="0 0 100 100">
+    <title>Boop — Fuel · zsálya</title>
+    
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#4E6B42" opacity="0.16"/>
+    
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-fuel-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-fuel-ear)" transform="rotate(24 78 28)"/>
+    
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-fuel-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-fuel-foot)"/>
+    
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-fuel-body)"/>
+      
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
+      
+      
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#4E6B42" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#4E6B42" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+    </g>
+  </symbol>
+  <symbol id="boop-nap" viewBox="0 0 100 100">
+    <title>Boop — Nap · narancssárga</title>
+    
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#D8481F" opacity="0.16"/>
+    
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-nap-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-nap-ear)" transform="rotate(24 78 28)"/>
+    
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-nap-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-nap-foot)"/>
+    
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-nap-body)"/>
+      
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
+      
+      
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#D8481F" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#D8481F" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+    </g>
+  </symbol>
+  <symbol id="boop-mezo" viewBox="0 0 100 100">
+    <title>Boop — Boop · levendula</title>
+    
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#5D4FA0" opacity="0.16"/>
+    
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-mezo-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-mezo-ear)" transform="rotate(24 78 28)"/>
+    
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-mezo-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-mezo-foot)"/>
+    
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-mezo-body)"/>
+      
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
+      
+      
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#5D4FA0" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#5D4FA0" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+    </g>
+  </symbol>
+  <symbol id="boop-en" viewBox="0 0 100 100">
+    <title>Boop — Én · rózsa</title>
+    
+    <ellipse cx="50" cy="90" rx="25" ry="4.6" fill="#8E3F6F" opacity="0.16"/>
+    
+    <ellipse class="boop-ear" cx="22" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-en-ear)" transform="rotate(-24 22 28)"/>
+    <ellipse class="boop-ear" cx="78" cy="28" rx="7.5" ry="10" fill="url(#bg-boop-en-ear)" transform="rotate(24 78 28)"/>
+    
+    <ellipse cx="37" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-en-foot)"/>
+    <ellipse cx="63" cy="85.5" rx="9" ry="5" fill="url(#bg-boop-en-foot)"/>
+    
+    <g class="boop-body">
+      <ellipse cx="50" cy="52" rx="32" ry="33.5" fill="url(#bg-boop-en-body)"/>
+      
+      <ellipse cx="37.5" cy="33" rx="10" ry="6.2" fill="rgba(255,255,255,0.55)" transform="rotate(-22 37.5 33)"/>
+      
+      
+      <path class="boop-brow boop-brow-l" d="M33.6 39.6 Q38.4 36.4 43.2 38.8" fill="none" stroke="#8E3F6F" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <path class="boop-brow boop-brow-r" d="M56.8 38.8 Q61.6 36.4 66.4 39.6" fill="none" stroke="#8E3F6F" stroke-opacity="0.65" stroke-width="2.2" stroke-linecap="round"/>
+      <g class="boop-eye boop-eye-l">
+        <ellipse cx="38.4" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        
+        <g class="boop-pupil">
+          <circle cx="38.4" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="37.0" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+      <g class="boop-eye boop-eye-r">
+        <ellipse cx="61.6" cy="50" rx="6.6" ry="8.4" fill="#FFF9F0"/>
+        <g class="boop-pupil">
+          <circle cx="61.6" cy="51.4" r="3.4" fill="#3A2A22"/>
+          <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
+        </g>
+      </g>
+    </g>
+  </symbol>
+</svg>
+
 <div class="stage">
   <div class="phone" id="phone">
     <div class="aurora"><i></i><i></i><i></i><i></i></div>
     <div class="scroll" id="scroll"></div>
     <button class="fab glass" data-toast="Logolás — ez a prototípusban nem nyílik meg">＋</button>
-    <nav class="tabbar glass" style="--c:var(--sage)">
-      <span class="tb-domain"><svg class="icon"><use href="#i-bowl"/></svg>Fuel</span>
-      <button class="tb on" data-go="#mai"><svg class="icon"><use href="#i-plate"/></svg>Mai</button>
-      <button class="tb" data-toast="Konyha — nem része ennek a körnek"><svg class="icon"><use href="#i-pot"/></svg>Konyha</button>
-      <button class="tb" data-toast="Trendek — nem része ennek a körnek"><svg class="icon"><use href="#i-trend"/></svg>Trendek</button>
-      <button class="tb" data-toast="Kiegészítők — nem része ennek a körnek"><svg class="icon"><use href="#i-supps"/></svg>Kiegészítők</button>
-    </nav>
+    <nav class="tabbar glass" style="--c:var(--sage)" id="tabbar"></nav>
+    <div class="ntf glass" id="ntf" style="--c:var(--sky)"></div>
+    <div class="switcher glass" id="switcher" style="--c:var(--sage)"></div>
     <div class="scrim" id="scrim"></div>
     <div class="sheet glass" id="sheet"></div>
     <div class="toast" id="toast"></div>
@@ -427,9 +1344,8 @@ body.dark #shadow feDropShadow{flood-color:#000;flood-opacity:.5}
   <aside class="notes">
     <span class="ov">FUEL · ÜVEG-ANYAG · PROTOTÍPUS</span>
     <h1>Mozaik színek,<br>Titanium-anyaggal</h1>
-    <p>A színvilág a mostani marad — világos és meleg sötét alapon is megnézheted. Ami visszajön a Titanium-korszakból: a 3D ikonok, az üvegdoboz, a színes gradiens-keret, a fényfutás és a finom derengés a dobozok körül.</p>
-    <div class="themes" id="themes"><button data-theme="light">Világos</button><button data-theme="dark">Sötét</button></div>
-    <nav id="jump">
+    <p>A színvilág a mostani, az alap a meleg sötét (csak sötét mód). Ami visszajön a Titanium-korszakból: a 3D ikonok, az üvegdoboz, a színes gradiens-keret, a fényfutás és a finom derengés a dobozok körül.</p>
+        <nav id="jump">
       <a href="#mai" class="glass"><svg class="icon"><use href="#i-plate"/></svg>Fuel · Mai</a>
       <a href="#meal/reggeli" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#i-bowl"/></svg>Kaja részletei</a>
       <a href="#score/reggeli" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#i-score"/></svg>AI értékelés részletei</a>
@@ -440,6 +1356,8 @@ body.dark #shadow feDropShadow{flood-color:#000;flood-opacity:.5}
       <li>Koppints a lila csillagos pontszámra → értékelés</li>
       <li>Az értékelésben koppints egy csempére → részletek alulról</li>
       <li>Nézd a dobozokon végigfutó fényt (~7 mp-enként)</li>
+      <li>Fejléc: csengő → értesítés-panel; kérdőjel, üzenetek, töltődő kör</li>
+      <li>Alsó menü: koppints a Boopra → területváltó</li>
     </ul>
     <label class="toggle"><input type="checkbox" id="still"> Mozgás kikapcsolása (összehasonlításhoz)</label>
   </aside>
@@ -447,6 +1365,9 @@ body.dark #shadow feDropShadow{flood-color:#000;flood-opacity:.5}
 
 <script>
 const $=s=>document.querySelector(s);
+const C=n=>`<svg class="icon" aria-hidden="true"><use href="#c-i-${n}"/></svg>`;
+const B=(d,alive=true)=>`<svg class="boop ${alive?'is-alive':''}" viewBox="0 0 100 100" aria-hidden="true"><use href="#boop-${d}"/></svg>`;
+let ntfOpen=false;
 const I=(n,c='')=>`<svg class="icon ${c}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 const ring=(p,c,r=34,vb=80)=>`<svg viewBox="0 0 ${vb} ${vb}" aria-hidden="true"><circle class="ring-track" cx="${vb/2}" cy="${vb/2}" r="${r}" pathLength="100"/><circle class="ring-prog" cx="${vb/2}" cy="${vb/2}" r="${r}" pathLength="100" style="--p:${p};--c:${c}"/></svg>`;
 const fmt=n=>String(n).replace('.',',');
@@ -504,7 +1425,13 @@ function mai(){
     <div class="empty-block rise" style="--c:var(--rose);--i:6">${I('moon')}<div><strong>Vacsora</strong><small>17:30 – 21:00 · még üres</small></div><em>＋ logolás</em></div>
   </div>`;
 }
-function topbar(){return `<header class="topbar"><span class="logo">mezo<b>·</b></span><span class="daypart glass" style="--c:var(--gold)">${I('sun')}Napközben ⌄</span><span class="avatar">D<small>12</small></span></header>`}
+function topbar(){return `<header class="topbar"><span class="wordmark">boop</span>
+  <button class="rbtn q glass" data-toast="Kalauz ehhez az oldalhoz">?<i class="dot"></i></button>
+  <button class="rbtn glass" data-toast="Beállítások">${C('beallitas')}</button>
+  <button class="rbtn glass" style="--c:var(--lav)" data-toast="Mezo üzenetei — Beszélgetés oldal">${C('level')}<b class="badge">2</b></button>
+  <button class="rbtn glass ${ntfOpen?'is-open':''}" style="--c:var(--sky)" data-ntf>${C('ertesites')}<b class="badge">3</b></button>
+  <button class="orb glass" aria-label="A mai nap: 64% rögzítve" data-toast="A mai nap oldala — 64% rögzítve"><svg viewBox="0 0 40 40"><defs><clipPath id="orbc"><circle cx="20" cy="20" r="16"/></clipPath><linearGradient id="orbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC3A8"/><stop offset=".5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C8431F"/></linearGradient></defs><circle class="orb-glass" cx="20" cy="20" r="16"/><g clip-path="url(#orbc)"><g class="wave"><path class="orb-liquid" fill="url(#orbg)" d="M-4 17 Q2 14 8 17 T20 17 T32 17 T44 17 T56 17 V44 H-4Z"/></g></g><path class="orb-hi" d="M11 12 A11 11 0 0 1 17 8.5"/></svg></button>
+</header>`}
 function dhead(slot,name,id,withScore=true){const m=MEALS[id];return `<div class="dhead rise"><button class="back glass" data-back>‹</button><span class="t"><small>${slot}</small><strong>${name}</strong></span>${withScore?`<button class="score glass big" data-go="#score/${id}">${I('score')}${fmt(m.score)}</button>`:''}</div>`}
 
 function meal(id){
@@ -564,7 +1491,7 @@ let hist=[];
 function render(){
   const h=location.hash||'#mai', [r,id]=h.slice(1).split('/');
   const html=r==='meal'?meal(id):r==='score'?score(id):mai();
-  $('#scroll').innerHTML=html; $('#scroll').scrollTop=0; closeSheet();
+  $('#scroll').innerHTML=html; $('#scroll').scrollTop=0; closeSheet();ntfOpen=false;$('#ntf')?.classList.remove('on');$('#switcher')?.classList.remove('on');
   document.querySelectorAll('#jump a').forEach(a=>a.setAttribute('aria-current',String(a.getAttribute('href').split('/')[0]===('#'+r).split('/')[0]||(r==='mai'&&a.getAttribute('href')==='#mai'))));
 }
 let toastT;
@@ -580,9 +1507,31 @@ document.addEventListener('click',e=>{
 addEventListener('hashchange',render);
 $('#still').addEventListener('change',e=>document.body.classList.toggle('still',e.target.checked));
 function setTheme(t){document.body.classList.toggle('dark',t==='dark');document.querySelectorAll('#themes button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.theme===t)));document.querySelector('meta[name=theme-color]').content=t==='dark'?'#191614':'#FBF6EF';try{localStorage.setItem('fuel-uveg-theme',t)}catch(e){}}
-document.querySelectorAll('#themes button').forEach(b=>b.addEventListener('click',()=>setTheme(b.dataset.theme)));
-let t0='dark';try{t0=localStorage.getItem('fuel-uveg-theme')||'dark'}catch(e){}
-setTheme(t0);
+setTheme('dark');
+
+function tabbar(){
+  const tabs=[['Mai','tanyer','#mai'],['Kiegészítők','kiegeszito',''],['Trendek','trend',''],['Konyha','fazek','']];
+  $('#tabbar').innerHTML=`<button class="tb-boop" data-switch aria-label="Területváltó: Fuel">${B('fuel')}</button>`+
+    tabs.map(([l,ic,go])=>`<button class="tb ${l==='Mai'?'on':''}" ${go?`data-go="${go}"`:`data-toast="${l} — nem része ennek a körnek"`}>${C(ic)}<span>${l}</span></button>`).join('');
+  const D=[['nap','Nap','var(--gold)'],['train','Edzés','var(--coral)'],['fuel','Fuel','var(--sage)'],['mezo','Mezo','var(--lav)'],['en','Én','var(--rose)']];
+  $('#switcher').innerHTML=`<small>TERÜLETVÁLTÓ</small><div class="sw-grid">${D.map(([d,n,c])=>`<button class="sw ${d==='fuel'?'on':''}" style="--c:${c}" ${d==='fuel'?'data-switch':`data-toast="${n} — másik terület, nem része ennek a körnek"`}>${B(d)}${n}</button>`).join('')}</div>`;
+  $('#ntf').innerHTML=`<div class="ntf-head"><strong>Értesítések</strong><button data-toast="Mind olvasott">Mind olvasott</button></div>
+  <div class="ntf-chips"><span class="on">Mind 5</span><span>Olvasatlan 3</span><span>Fuel 2</span><span>Edzés 1</span><span>Mezo 2</span></div>
+  <div class="ntf-day">MA</div>
+  <div class="ntf-row unread">${I('score')}<span><strong>Reggeli értékelve: 8,2</strong><small>Fehérjében erős, tiszta tányér.</small></span><em>08:04</em></div>
+  <div class="ntf-row unread">${I('water')}<span><strong>Még 1,2 liter víz fér bele</strong><small>A délutáni ablakban érdemes pótolni.</small></span><em>11:30</em></div>
+  <div class="ntf-row unread">${I('dumbbell')}<span><strong>Ma 17:30: Felsőtest A</strong><small>A kihívás már elkészült hozzá.</small></span><em>00:05</em></div>
+  <div class="ntf-day">TEGNAP</div>
+  <div class="ntf-row">${I('moon')}<span><strong>Napzárás kész</strong><small>7 jel rögzítve, 3 szokás pipálva.</small></span><em>21:48</em></div>`;
+}
+function toggleNtf(v){ntfOpen=v??!ntfOpen;$('#ntf').classList.toggle('on',ntfOpen);document.querySelector('[data-ntf]')?.classList.toggle('is-open',ntfOpen);$('#scrim').classList.toggle('on',ntfOpen||$('#switcher').classList.contains('on'))}
+function toggleSwitch(v){const on=v??!$('#switcher').classList.contains('on');$('#switcher').classList.toggle('on',on);$('#scrim').classList.toggle('on',on)}
+document.addEventListener('click',e=>{
+  if(e.target.closest('[data-ntf]')){e.stopPropagation();toggleNtf();return}
+  if(e.target.closest('[data-switch]')){e.stopPropagation();toggleSwitch();return}
+  if(e.target.id==='scrim'){toggleNtf(false);toggleSwitch(false)}
+},true);
+tabbar();
 render();
 </script>
 </body>

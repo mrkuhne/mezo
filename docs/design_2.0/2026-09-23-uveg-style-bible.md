@@ -18,8 +18,9 @@
 > - **Dark only.** The app is locked to dark. Light mode is **parked, not deleted**: its CSS
 >   stays in place so it can return later. Nobody designs or verifies light until the owner
 >   asks for it back.
-> - **The bottom menu is untouched.** The live `TabBar`, with the small Boop characters and its
->   fixed position, stays exactly as it ships today (§7).
+> - **Header and bottom menu keep their content** (the "boop" wordmark, ?, settings, messages,
+>   notifications, the filling day orb; the fixed TabBar with the living Boop and the domain
+>   switcher), and **wear glass** (§7). There is no day-part switcher.
 >
 > The 2026-09-17 bible remains canon for **everything this document does not override**: card
 > anatomy (§3), the §3.4 ranking rule, data-as-graphics (§4), ceremony *pattern*, and the
@@ -167,14 +168,54 @@ One-shot choreography is rAF-driven in the app (`shared/ui/mozaik/motion.tsx`). 
 keyframes above describe the *look*; reuse the kit's arrival and motion primitives rather than
 new timers.
 
-## 7. What stays exactly as it is
+## 7. App chrome: same content, glass material (owner-approved 2026-09-23)
 
-- **The bottom navigation.** `app/TabBar.tsx` + the domain switcher, the Boop characters, the
-  fixed position and their CSS. **Do not restyle, re-skin, re-position or glass it.** The
-  prototype's glass tab bar is a placeholder only.
+The header and the bottom menu keep **exactly the content and behavior they ship with today**.
+Only their material changes to glass. The reference is the chrome in
+[`prototypes/fuel-uveg.html`](prototypes/fuel-uveg.html), approved by the owner on 2026-09-23.
+
+### 7.1 Header (`app/AppHeader.tsx`)
+
+| Element | Keep | Glass treatment |
+| --- | --- | --- |
+| **"boop" wordmark** (left) | text, position | gradient text (ink → pale lavender → warm gold) with a soft lavender `drop-shadow` |
+| **? (Kalauz)** | shown only when the page has a kalauz, plus the gold "unseen" dot | 40px round `.glass` button, `--c` amber, `?` glyph in pale gold |
+| **Settings (gear)** | route + return state | 40px round `.glass`, neutral `--c` |
+| **Messages** | route, unread badge | 40px round `.glass`, `--c` lavender |
+| **Notifications (bell)** | the panel (filter chips, day groups, 30-row cap, mark-all-read) | 40px round `.glass`, `--c` sky, `is-open` state. The **panel** is a `.glass` card under the header: chips as flat cells (the active one filled sky with a glow), rows as flat `rgba(245,239,230,.04)` cells, unread rows marked by a 2px sky inset edge |
+| **Day orb ("töltődő kör")** | fill % = today's recorded signals, intensity, and the tap going to today's day page | a 46px `.glass` sphere holding a **coral liquid** clipped to the circle, rising from the bottom to `pct`, with a slow horizontal wave (3.2s, reduced-motion: still) and a `0 0 6px` coral glow, plus a white highlight arc top-left |
+
+- **Badges** sit *outside* the button. Round header buttons therefore set
+  `overflow: visible` and **drop the sheen** (`::after` off), or the badge clips to a quarter
+  circle. Badge: coral gradient pill, `0 0 10px` coral glow, `0 0 0 2px var(--page)` ring.
+- Existing clay icons (`i-beallitas`, `i-level`, `i-ertesites`) stay in the header. **Chrome
+  keeps the live clay icons; content uses the Titanium 3D set (§4).**
+- **There is no day-part switcher.** The "Napközben ⌄" pill in the first prototype draft was
+  obsolete and is gone. Never add one.
+- The condensed-on-scroll behavior (`useCondensedHeader`) and `HeaderAurora` stay. The
+  aurora may be retuned to the §1 dark aurora hues.
+
+### 7.2 Bottom menu (`app/TabBar.tsx` + `DomainSwitcher`)
+
+- **Fixed** at the bottom, floating 10–12px off the edges, as **one `.glass` bar**
+  (`--c` = the active domain accent, radius 28px).
+- **Left: the living Boop** of the active domain (`<Boop alive>`, blink/look/brow/breathe), about
+  44px, inside a lit 62×58 well with a domain-accent halo, separated from the tabs by a hairline.
+  Tapping it opens the **domain switcher**.
+- **Tabs:** the live `navModel` tabs, in their order, with their clay icons and labels.
+  Inactive tabs are dimmed (`grayscale(.45) brightness(.8)`). The **active** tab gets a soft
+  radial accent wash, a 1px accent inset ring and an outer accent glow, and its icon gets a halo.
+- **Domain switcher:** a `.glass` card above the bar with the "TERÜLETVÁLTÓ" eyebrow and all five
+  living Boops (Nap, Edzés, Fuel, Mezo, Én), each tinted by its domain. The current domain is
+  shown lit (radial wash + inset ring).
+- The **FAB (+)** stays where it is, as a lavender `.glass` rounded square with the breathing glow.
+
+### 7.3 What stays exactly as it is
+
 - **Behavior.** Every slice is visual only. A changed route, hook, contract, mutation or state
   machine is out of scope. Stop and ask the owner.
-- **The Boop character art** (`shared/ui/clay/boop`).
+- **The chrome's content** (§7.1–7.2): which buttons exist, their order, badges, the panel's
+  logic, the nav model, and the Boop character art (`shared/ui/clay/boop`).
 - **Light mode CSS.** It is parked, not deleted.
 
 ## 8. Dark-only lock
