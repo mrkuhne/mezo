@@ -151,6 +151,7 @@
 .tf-after { display: inline-flex; align-items: center; gap: 6px; margin: 8px 0 4px; font-size: 11px; font-weight: 600; color: #a9d4b3;
   background: color-mix(in srgb, var(--dv-sage) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-sage) 30%, transparent); border-radius: 999px; padding: 6px 11px; }
 .tf-after .t-ico { width: 15px; height: 15px; }
+.tf-error { margin: 6px 0 0; font-size: 11.5px; color: #FFB39C; }
 
 /* a nap posztere: `class="glass tf-poster"` — az egyetlen hangos elem a napban */
 .tf-poster { margin: 10px 16px 14px; padding: 14px 14px 10px; }
