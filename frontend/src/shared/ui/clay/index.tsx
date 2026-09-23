@@ -169,4 +169,4 @@ export function ContentIcon({ name, size = 32, className }: {
 
 // Boop (mezo-ju4j6.15) — a kabalafigura a clay készlet része, de SAJÁT komponenssel jön:
 // példányonként inline SVG, mert mozog (lásd `boop/Boop.tsx` fejlécét).
-export { Boop, type BoopDomain } from './boop/Boop'
+export { Boop, type BoopDomain, type BoopVariant } from './boop/Boop'
