@@ -930,6 +930,22 @@ unified so `challenges` drives both modes). See [train.md §Active workout](trai
 
 ## 3. Architecture & data flow
 
+### Contextual event evidence (mezo-7nron.3; disabled foundation)
+
+`FeedEvidenceAssembler.render(userId, date, kind)` provides a mandatory 28-day raw weight
+window, per-day averages, latest raw measurement and difference from the previous measured
+calendar day's last entry. It separately labels the existing EWMA whole-history rate and
+trailing-28-day rate with the actual observed date ranges; neither is called the last week's
+change. A single observed day has no direction. Existing goal-engine calculations are unchanged.
+The active goal's dates and target accompany the series. If stored trend data extends beyond
+the requested date, that non-historical trend is omitted rather than passed off as an as-of value.
+
+Sleep evidence spans seven calendar days, keeps recorded durations/quality/notes, counts
+missing nights without interpreting them as sleeplessness, and includes the snapshot's current
+sleep target and planned-versus-completed training block. Other kinds return no event-specific
+block. These services are still disconnected from the live generators until the integration slice.
+
+
 **The unified feed read (`mezo-gst9` — persisted rows · lazy cron-kind miss-recovery · no 404):**
 
 ```
@@ -3690,6 +3706,7 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 ## 10. Key files
 
 **Contextual feed foundation (disabled by default)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedEvidenceAssembler.java` — dated raw weight/sleep evidence and explicitly scoped trend rates.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedContextAssembler.java` — shared personal context, event evidence, prior feed and RAG composition.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedContinuityService.java` — bounded owned history and dated source references.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/config/ContextualFeedProperties.java` — validated history, evidence and tool limits.
