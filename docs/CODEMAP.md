@@ -770,8 +770,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     SimilarDayCard.tsx, TestPlanTiles.tsx, TokenColumns.tsx, ToolWorkStrip.tsx, VerdictArc.tsx, experimentStatus.tsx
   - **logic:** boopNavigation.ts, chatRefs.ts, coachingCopy.ts, diagnosisCatalog.ts, diagnosisCopy.ts, domains.ts,
     factCopy.ts, findings.ts, humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternCatalog.ts,
-    patternEvidence.ts, patternHistory.ts, predictionStatus.ts, quickQuestions.ts, toolDomains.ts, useStickToBottom.ts,
-    useVoiceInput.ts, verdicts.ts
+    patternEvidence.ts, patternHistory.ts, predictionStatus.ts, quickQuestions.ts, team.ts, teamFeed.fixtures.ts,
+    teamFeed.ts, toolDomains.ts, useStickToBottom.ts, useVoiceInput.ts, verdicts.ts
   - **root:** boop-world.css
 
 ### intention
