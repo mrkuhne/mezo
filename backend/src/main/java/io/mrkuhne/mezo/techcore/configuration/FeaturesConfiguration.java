@@ -112,6 +112,8 @@ public class FeaturesConfiguration {
     /** Proactive layer (mezo-h4wp) — companion-feed + weekly prose + predictions.
      *  Every proactive bean conditions on BOTH this AND COMPANION_SWITCH (the generators call the
      *  CompanionLlm port, whose beans only exist when the companion is on). */
+    public static final String CONTEXTUAL_FEED_SWITCH = "mezo.feature.contextual-feed.enabled";
+
     public static final String PROACTIVE_SWITCH = "mezo.feature.proactive.enabled";
 
     /** Karakter dossier (mezo-1gim) — dimensions/claims/observations/conferences + reads.

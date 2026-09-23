@@ -12,6 +12,18 @@ import org.springframework.data.repository.query.Param;
 
 public interface CompanionMessageRepository extends JpaRepository<CompanionMessageEntity, UUID> {
 
+    /** Bounded, owner-scoped history; SQLRestriction excludes soft-deleted rows. */
+    @Query("""
+            select m from CompanionMessageEntity m
+            where m.createdBy = :userId and m.messageDate between :from and :to
+              and m.generatedAt < :asOf
+              and ((:sameKind = true and m.kind = :kind) or (:sameKind = false and m.kind <> :kind))
+            order by m.generatedAt desc, m.id desc
+            """)
+    List<CompanionMessageEntity> findContinuity(UUID userId, LocalDate from, LocalDate to,
+            Instant asOf, String kind, boolean sameKind, org.springframework.data.domain.Pageable page);
+
+
     /**
      * Transaction-scoped advisory lock keyed on the user (bd mezo-d58h.4 concurrency fix):
      * {@code AdviceCardService.deliver} takes this before the incumbent read.

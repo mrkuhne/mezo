@@ -288,6 +288,9 @@ mezo:
     # Cheapest same-category item must cost <= this fraction of the priciest (0.8 = 20% cheaper)
     cheaper-ratio: 0.8
   feature:
+    # Shared personal feed context; enabled after all integration/evaluation slices.
+    contextual-feed:
+      enabled: false
     # Gamified progression engine (post-workout level-up + XP). No matchIfMissing — declared explicitly.
     progression:
       enabled: true
@@ -2125,6 +2128,16 @@ mezo:
     # Per-detector kill switches (spec §5) — empty = every detector enabled; keyed by detector key.
     detector: {}
   proactive:
+    contextual-feed:
+      history-days: 14 # Inclusive calendar-day window.
+      history-max-messages: 12 # Total selected prior messages.
+      same-kind-reserved: 6 # Preserve longitudinal continuity for this event kind.
+      history-max-chars: 8000 # Entire history block, including source labels.
+      message-max-chars: 800 # Maximum body excerpt; full source remains readable.
+      weight-days: 28 # Mandatory raw measurement window.
+      sleep-days: 7 # Mandatory recent-night window.
+      max-tool-calls: 6 # Enforced through the shared audited callback wrapper.
+      max-refs: 12 # Bounded source references per generated message.
     weekly:
       # W1 Monday-dawn plan-suggestion schedule (server zone); gathered from the finished previous week
       cron: "0 0 6 * * MON"
