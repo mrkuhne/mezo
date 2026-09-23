@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
@@ -37,6 +39,7 @@ class ObservationRecoveryApiIT extends ApiIntegrationTest {
     @Autowired private LlmLogRepository logRepository;
     @Autowired private PatternRepository patterns;
     @Autowired private ObjectMapper json;
+    @Autowired private io.mrkuhne.mezo.feature.companion.service.HypothesisPipelineService pipeline;
 
     private UUID owner() { return users.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId(); }
 
@@ -83,6 +86,69 @@ class ObservationRecoveryApiIT extends ApiIntegrationTest {
                 ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
     }
 
+    @Test
+    void testPreview_shouldReportLlmFailure_whenProposalTransportFails() {
+        seedLog(owner());
+        summaries.summary(owner(), LocalDate.now().minusDays(1), "[fake-fail]");
+        assertPreviewFailure();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"[not-json]", "[{}]", "[null]"})
+    void testPreview_shouldReportLlmFailure_whenProposalOutputIsMalformed(String output) {
+        seedLog(owner());
+        summaries.summary(owner(), LocalDate.now().minusDays(1), "[fake-hypotheses:" + output + "]");
+        assertPreviewFailure();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{not-json}", "{}"})
+    void testPreview_shouldReportLlmFailure_whenCritiqueOutputIsMalformed(String output) {
+        seed(output);
+        assertPreviewFailure();
+    }
+
+    @Test
+    void testPreview_shouldReportLlmFailure_whenCritiqueTransportFails() {
+        UUID source = seed();
+        // The JSON escape prevents the proposal-call fake from seeing the failure marker.
+        // Deserialization restores it only in the candidate that the critique call receives.
+        String proposal = json.writeValueAsString(List.of(Map.of("title", "[fake-fail]",
+                "mechanism", "Kapcsolat", "category", "trigger", "observation", "Munka után elfáradtál.",
+                "question", "Jellemző?", "evidenceRefs", List.of("journal_entry:" + source), "topicKey", "work-energy")))
+                .replace("[fake-fail]", "\\u005bfake-fail\\u005d");
+        summaries.summary(owner(), LocalDate.now(), "[fake-hypotheses:" + proposal + "]");
+        assertPreviewFailure();
+    }
+
+    @Test
+    void testPreview_shouldReturnSuccessfulEmptyPlan_whenModelExplicitlyReturnsNoProposals() {
+        seedLog(owner());
+        summaries.summary(owner(), LocalDate.now().minusDays(1), "[fake-hypotheses:[]]");
+        assertThat(request(Map.of("mode", "preview")).path("candidates").size()).isZero();
+    }
+
+    @Test
+    void testPreview_shouldReturnSuccessfulEmptyPlan_whenValidCritiqueRejectsCandidate() {
+        seed(json.writeValueAsString(Map.of("statistical", .1, "confounders", .2, "l3align", .4,
+                "actionability", .2, "grounded", false, "contradicted", true, "actionable", false,
+                "reasoning", "A forrás nem támasztja alá.")));
+        assertThat(request(Map.of("mode", "preview")).path("candidates").size()).isZero();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"[fake-fail]", "[fake-hypotheses:[not-json]]"})
+    void testRun_shouldRemainFailSoft_whenNightlyProposalCallFails(String script) {
+        summaries.summary(owner(), LocalDate.now().minusDays(1), script);
+        assertThat(pipeline.run(owner(), null)).isZero();
+    }
+
+    private void assertPreviewFailure() {
+        String body = postForBody(URL, Map.of("mode", "preview"), ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(body, "OBSERVATION_RECOVERY_LLM_FAILED");
+        assertThat(patterns.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(owner())).isEmpty();
+    }
+
     private JsonNode request(Map<String, String> body) {
         return json.readTree(postForBody(URL, body, ownerAuthHeaders(), HttpStatus.OK, String.class));
     }
@@ -95,11 +161,14 @@ class ObservationRecoveryApiIT extends ApiIntegrationTest {
     }
 
     private UUID seed() {
+        return seed(json.writeValueAsString(Map.of("statistical", .1, "confounders", .2,
+                "l3align", .4, "actionability", .8, "grounded", true, "contradicted", false,
+                "actionable", true, "reasoning", "Eredeti napló alapján kérdez.")));
+    }
+
+    private UUID seed(String critique) {
         UUID owner = owner();
         var journal = journals.createEntry(owner, LocalDate.now().minusDays(2), "Munka után kimerültem.", "quickinput");
-        String critique = json.writeValueAsString(Map.of("statistical", .1, "confounders", .2,
-                "l3align", .4, "actionability", .8, "grounded", true, "contradicted", false,
-                "actionable", true, "reasoning", "Eredeti napló alapján kérdez."));
         String proposal = json.writeValueAsString(List.of(Map.of("title", "Munka és energia [fake-critique:" + critique + "]",
                 "mechanism", "Lehetséges kapcsolat", "category", "trigger", "observation", "Munka után kimerültséget írtál.",
                 "question", "Rád illik?", "evidenceRefs", List.of("journal_entry:" + journal.getId()), "topicKey", "work-energy")));

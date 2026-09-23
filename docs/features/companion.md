@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-23
+updated: 2026-09-24
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -1451,8 +1451,12 @@ reply but never promises a measurement after eight days.
 `ObservationRecoveryService` is owner-only: `preview` reads bounded owned audit proposals,
 rechecks current original sources, deduplicates themes and returns a short-lived server-held
 plan. `apply` revalidates and applies those exact candidates; repeat calls reuse the result.
-Deleted/changed sources cannot be applied. Restart/expiry requires a new preview. This is a
-recovery of still-relevant questions, not manufactured historical events or user confirmations.
+Deleted/changed sources cannot be applied. Restart/expiry requires a new preview. Transport
+failures and malformed proposal/critique output abort preview with the standard HTTP 400
+`OBSERVATION_RECOVERY_LLM_FAILED` error; they never create a successful empty recovery plan.
+An explicit empty proposal list or a valid critique rejecting every candidate remains a
+successful empty result. Nightly runs retain their fail-soft behavior. This is a recovery of
+still-relevant questions, not manufactured historical events or user confirmations.
 
 - **The user's own words feed the nightly revision (`HypothesisPipelineService`).** Each open row now
   renders as `… · kulcs: <hypothesisKey> · „<the newest user_reply text>"` — the key so a revision can
