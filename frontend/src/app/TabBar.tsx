@@ -17,7 +17,17 @@ import {
 // FOUR contextual tabs. The active domain is the first path segment; the active tab is
 // the longest-matching-prefix among the domain's four routes. Tapping the switch mark
 // opens the domain-switcher dialog. Replaces the always-flat five-domain bar (d20.1.1).
-export function TabBar() {
+export interface TabBarProps {
+  /**
+   * Per-tab-route dot flags (A napom, mezo-yjzhw.4): `dots['/nap/napom']` true renders a
+   * small dot on that tab, telling the reader a fresh morning review is waiting without
+   * making them open the page first. Keyed by the tab's own route, not the domain, so it
+   * composes with any future per-tab signal without a shape change.
+   */
+  dots?: Partial<Record<string, boolean>>
+}
+
+export function TabBar({ dots }: TabBarProps = {}) {
   const location = useLocation()
   const [switcherOpen, setSwitcherOpen] = useState(false)
 
@@ -61,7 +71,10 @@ export function TabBar() {
               className={cn('tab-item', active && 'active')}
               aria-current={active ? 'page' : undefined}
             >
-              <span className="tab-ico"><ClayIcon name={tab.icon} size={27} /></span>
+              <span className="tab-ico">
+                {dots?.[tab.route] && <i className="tb-dot" aria-label="kész a tegnapi értékelés" />}
+                <ClayIcon name={tab.icon} size={27} />
+              </span>
               <span>{tab.label}</span>
             </Link>
           )

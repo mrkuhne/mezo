@@ -1374,7 +1374,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     todayHooks.ts
 - **FE ui** `frontend/src/features/today`
   - **pages:** EletjelPage.tsx, NapCheckinPage.tsx, NapGyorsPage.tsx, NapHubPage.css, NapHubPage.tsx,
-    NapKuldetesekPage.tsx, NapMezoPage.tsx, NapRutinPage.tsx
+    NapKuldetesekPage.tsx, NapMezoPage.tsx, NapRutinPage.tsx, NapomPage.tsx
   - **sheets:** ActivityLogSheet.tsx, CheckInSheet.tsx, IntentionSheet.tsx, ReflectSheet.tsx
   - **components:** ActivityLogCard.tsx, DailyQuestList.tsx, DailyQuestsCard.tsx, DailyQuestsSheet.tsx,
     EletjelStrip.tsx, MezoMessagesSheet.tsx, NapCompanion.tsx, NapFuelGraphic.css, NapFuelGraphic.tsx,

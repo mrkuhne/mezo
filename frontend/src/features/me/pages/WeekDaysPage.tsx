@@ -39,7 +39,9 @@ export function WeekDaysPage() {
   const { measured, best, worst, learning } = summariseDays(days, today)
   const title = deriveWeekTitle(start)
 
-  const openDay = (dateIso: string) => navigate(`/me/week/napok/${dateIso}?start=${start}`)
+  // A napom (mezo-yjzhw.4) is now a single day's own address — the mosaic (this page)
+  // survives at `/me/week/napok`, but a tile opens `/nap/napom/:date` directly.
+  const openDay = (dateIso: string) => navigate(`/nap/napom/${dateIso}?start=${start}`)
 
   return (
     <MozaikPage tone="sage" className="wkd-page">

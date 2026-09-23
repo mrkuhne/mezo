@@ -26,6 +26,14 @@ export interface IndexedPage {
   label: string
   /** One short line: what you can DO here. This is the part that protects a function. */
   hint: string
+  /**
+   * Overrides the group heading `groupsForDomain` would otherwise derive from
+   * `activeTabRoute` (the owning tab's label). Only needed for a page a tab `owns` for
+   * NAVIGATION purposes (so the bar lights the right tab) but that should not be filed
+   * under that tab's own pages in the leltár — `/ritual` (owned by Rutin, mezo-yjzhw.4)
+   * is the one case: it is Nap's Napzárás page, not part of the Rutin page's group.
+   */
+  group?: string
 }
 
 /**
@@ -56,13 +64,14 @@ export const PAGE_INDEX: IndexedPage[] = [
   { route: '/settings/account', label: 'Fiókadatok', hint: 'A neved és az e-mail-címed javítása.' },
   // ── Nap ──────────────────────────────────────────────────────────────────
   { route: '/nap', label: 'Mai', hint: 'A napod központja: mit csináltál, mi van hátra, hogy vagy.' },
+  { route: '/nap/napom', label: 'A napom', hint: 'A mai napod olvasata és a legjobb következő lépés.' },
   { route: '/nap/uzenetek', label: 'Beszélgetés', hint: 'Boop üzenetei és a válaszaid egy szálon.' },
   { route: '/nap/rutin', label: 'Rutin', hint: 'A mai szokásaid: mit pipáltál ki, mi maradt.' },
   { route: '/nap/kuldetesek', label: 'Napi küldetések', hint: 'A mai apró feladatok és a jutalmuk.' },
   { route: '/nap/checkin', label: 'Check-in', hint: 'Hogy vagy most — négy lépés, fél perc.' },
   { route: '/nap/gyors', label: 'Gyors logolás', hint: 'Egy mozdulattal rögzíthető dolgok rácsa.' },
   { route: '/nap/eletjel', label: 'Életjel', hint: 'A mai alapjeleid egy helyen.' },
-  { route: '/ritual', label: 'Napzárás', hint: 'Az esti zárókör: mit hoztál ma, mi jön holnap.' },
+  { route: '/ritual', label: 'Napzárás', hint: 'Az esti zárókör: mit hoztál ma, mi jön holnap.', group: 'Napzárás' },
 
   // ── Edzés ────────────────────────────────────────────────────────────────
   { route: '/train/mai', label: 'Mai edzés', hint: 'A mai nap edzésképe és az indítás.' },

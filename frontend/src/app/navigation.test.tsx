@@ -305,6 +305,13 @@ test('/nap/gyors resolves from the router config to the full-page quick-log pick
   expect(router.state.location.pathname).toBe('/nap/gyors')
 })
 
+// A napom (mezo-yjzhw.4): its route sits deeper than the tab itself (`/nap/napom/:date`),
+// so the longest-prefix rule (navModel.activeTabRoute) needs to still land on the tab.
+test('/nap/napom/2026-09-23 lights the „A napom" tab', async () => {
+  renderApp('/nap/napom/2026-09-23')
+  expect(await screen.findByRole('link', { name: /A napom/ })).toHaveAttribute('aria-current', 'page')
+})
+
 test('/insights/chat redirects into the Mezo tab preserving the subpath', async () => {
   const router = createMemoryRouter(routes, { initialEntries: ['/insights/chat'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)

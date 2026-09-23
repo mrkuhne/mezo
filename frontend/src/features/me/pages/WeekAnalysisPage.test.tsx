@@ -73,7 +73,7 @@ describe('WeekAnalysisPage (mock mode)', () => {
     const { container } = renderAt(`?start=${mockMeWeekStart}`)
     expect(container.querySelector('[aria-hidden="true"] .wka-col')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: /^Szerda, Máj 20/ }))
-    expect(mockNavigate).toHaveBeenCalledWith('/me/week/napok/2026-05-20')
+    expect(mockNavigate).toHaveBeenCalledWith('/nap/napom/2026-05-20')
   })
 
   test('CONTRACT: an unscored day shows „—", never 0 — and its accessible name separates tanulom from nincs adat', () => {

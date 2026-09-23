@@ -46,7 +46,7 @@ function renderFabAt(path: string) {
 test('the bar shows the switch mark + the current domain (Nap) and its four tabs', () => {
   renderAt('/nap', <TabBar />)
   expect(screen.getByRole('button', { name: 'Területváltó: Nap' })).toBeInTheDocument()
-  for (const label of ['Mai', 'Beszélgetés', 'Rutin', 'Napzárás']) {
+  for (const label of ['Mai', 'A napom', 'Beszélgetés', 'Rutin']) {
     expect(screen.getByText(label)).toBeInTheDocument()
   }
   // The other domains' tabs are NOT on the bar — this is a contextual bar, not a flat one.
@@ -55,9 +55,16 @@ test('the bar shows the switch mark + the current domain (Nap) and its four tabs
   expect(screen.queryByText('Súly')).not.toBeInTheDocument()
 })
 
+// A napom tab dot (mezo-yjzhw.4): AppLayout decides morning mode and passes it in via
+// `dots`, keyed by the tab's own route — TabBar just renders what it is told.
+test('a dots entry for the tab route renders the „kész a tegnapi értékelés" dot', () => {
+  renderAt('/nap', <TabBar dots={{ '/nap/napom': true }} />)
+  expect(screen.getByLabelText('kész a tegnapi értékelés')).toBeInTheDocument()
+})
+
 test("each tab renders its clay icon via a sprite use ref (Nap's four + the switch mark)", () => {
   const { container } = renderAt('/nap', <TabBar />)
-  for (const sym of ['i-mezo', 'i-nap', 'i-rend', 'i-hold']) {
+  for (const sym of ['i-mezo', 'i-nap', 'i-heti', 'i-rend']) {
     expect(container.querySelector(`use[href="#${sym}"]`)).not.toBeNull()
   }
 })
@@ -171,7 +178,7 @@ test('the switch mark opens the domain-switcher dialog listing the five domains'
     expect(within(dialog).getByText(name)).toBeInTheDocument()
   }
   // Each domain lists its four tab labels joined by " · ".
-  expect(within(dialog).getByText('Mai · Beszélgetés · Rutin · Napzárás')).toBeInTheDocument()
+  expect(within(dialog).getByText('Mai · A napom · Beszélgetés · Rutin')).toBeInTheDocument()
   expect(within(dialog).getByText('Üzenőfal · Menü · Rólad · Emlékek')).toBeInTheDocument()
 })
 

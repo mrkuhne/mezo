@@ -176,7 +176,7 @@ export function AppHeader() {
           ezért nincs rajta badge. */}
       <button type="button" className="nap-avatar glass is-round" aria-label={dayOrb.label}
         style={{ '--c': 'var(--dv-coral)' } as React.CSSProperties}
-        onClick={() => navigate(`/me/week/napok/${localDateString()}`)}>
+        onClick={() => navigate(`/nap/napom/${localDateString()}`)}>
         <DayOrb pct={dayOrb.pct} intensity={dayOrb.intensity} size={38} />
       </button>
 

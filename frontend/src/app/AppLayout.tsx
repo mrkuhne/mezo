@@ -14,12 +14,21 @@ import { MezoThreadProvider } from '@/features/today/MezoThreadProvider'
 import { ArrivalProvider } from '@/shared/ui/mozaik/arrival'
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary'
 import { ToastProvider } from '@/shared/ui/ToastProvider'
-import { useTodayScenario, useScheduleSnapshotWriter } from '@/data/hooks'
+import { useTodayScenario, useScheduleSnapshotWriter, useDayEvaluation, normalizeDayEvaluation } from '@/data/hooks'
 import { useScreenTracking } from '@/app/useScreenTracking'
+import { isMorningMode } from '@/features/today/logic/napom'
+import { localDateString, addDays } from '@/shared/lib/dates'
 
 export function AppLayout() {
   const navigate = useNavigate()
   const scenario = useTodayScenario()
+  // A napom's tab dot (mezo-yjzhw.4): morning mode is decided from YESTERDAY's evaluation —
+  // if the overnight review scored it and the reader hasn't opened A napom since, the tab
+  // carries a dot. AppLayout mounts once per session (see the snapshot-writer comment
+  // below), so this is one query for the whole app, not one per page.
+  const yesterdayIso = addDays(localDateString(), -1)
+  const yesterdayEval = useDayEvaluation(yesterdayIso)
+  const morning = isMorningMode(yesterdayEval.data ? normalizeDayEvaluation(yesterdayEval.data) : null)
   // App-open notification-schedule snapshot (N3, bd mezo-h4wp.6.3): AppLayout is the root
   // route element (children of `/`) and, unlike a page under the Outlet, mounts exactly once
   // for the whole app session — nested route changes only swap the Outlet's child, never
@@ -106,7 +115,7 @@ export function AppLayout() {
                   nem mountol ott, ahol egyik sincs. */}
               {hideChrome ? screen : <MezoThreadProvider>{screen}</MezoThreadProvider>}
             </TutorialProvider>
-            {!hideChrome && !inSettings && <TabBar />}
+            {!hideChrome && !inSettings && <TabBar dots={{ '/nap/napom': morning }} />}
             {/* Decision B (mezo-d20.1.1): quick log = floating coral FAB, present on
                 every tab, absent on the chrome-free full-screen flows. */}
             {!hideFab && <QuickLogFab />}
