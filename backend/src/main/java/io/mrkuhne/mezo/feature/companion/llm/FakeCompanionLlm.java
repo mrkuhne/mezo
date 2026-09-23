@@ -1325,6 +1325,15 @@ public class FakeCompanionLlm implements CompanionLlm {
     @Override
     public String completeSmart(String systemPrompt, String turnContext, List<Turn> history,
                                 String userMessage) {
+        // mezo-renhu: the hypothesis critique/revision moved its shared weekly context into
+        // turnContext (the cacheable head) and kept only the hypothesis in the user message.
+        // Re-joined, they reach the one-shot dispatch exactly as before: the marker still leads the
+        // system prompt, and the sentinels are read from the user message, i.e. the hypothesis.
+        if (systemPrompt.startsWith(HypothesisPipelineService.CRITIQUE_MARKER)
+                || systemPrompt.startsWith(HypothesisPipelineService.REVISE_MARKER)) {
+            return complete(CompanionLlm.joinInstructions(systemPrompt, turnContext), history, userMessage,
+                    List.of(), Map.of());
+        }
         if (userMessage.contains(FAIL_COMPLETE) || systemPrompt.contains(FAIL_COMPLETE)) {
             throw new IllegalStateException("FAKE-LLM forced complete failure");
         }
