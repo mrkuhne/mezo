@@ -47,7 +47,7 @@ describe('EnergyBreakdownSheet', () => {
   it('highlights the initial section', () => {
     // Sheet renders into a portal (document.body), not the render container.
     render(<EnergyBreakdownSheet breakdown={fuelBreakdown} initial="deficit" onClose={vi.fn()} />)
-    const hl = document.body.querySelector('.seg.hl')
+    const hl = document.body.querySelector('.flp-eblk.is-hl')
     expect(hl?.textContent).toMatch(/Deficit/)
   })
 })

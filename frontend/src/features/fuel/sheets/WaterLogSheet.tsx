@@ -55,8 +55,8 @@ export function WaterLogSheet({ currentMl, targetMl, onLog, onClose }: {
                 key={ml}
                 type="button"
                 aria-pressed={chip === ml}
-                className={'chip' + (chip === ml ? ' brand' : '')}
-                style={{ padding: '10px 16px', fontSize: 13 }}
+                // Üveg (mezo-me75u.2, `SH.water`): lapos égszín-cellák, a választott kitöltve, fénnyel.
+                className={'flp-wchip' + (chip === ml ? ' is-on' : '')}
                 onClick={() => pickChip(ml)}
               >
                 {ml} ml
@@ -72,13 +72,9 @@ export function WaterLogSheet({ currentMl, targetMl, onLog, onClose }: {
               aria-label="Víz mennyisége kézzel (ml)"
               value={manual}
               onChange={e => editManual(e.target.value)}
-              style={{
-                width: 120, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 13, fontWeight: 700,
-                padding: '9px 12px', borderRadius: 'var(--r-lg)', border: '1px solid var(--divider)',
-                background: 'var(--surface-page)', color: 'var(--text-primary)',
-              }}
+              className="flp-winput"
             />
-            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>ml kézzel</span>
+            <span className="flp-wunit">ml kézzel</span>
           </div>
           <CtaPrimary style={{ marginTop: 22, width: '100%' }} disabled={!canSave} onClick={() => save(close)}>
             <Icon name="check" size={14} /> Mentés

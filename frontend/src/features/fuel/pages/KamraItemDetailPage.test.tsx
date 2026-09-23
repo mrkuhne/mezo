@@ -35,11 +35,14 @@ function renderDetail(id: string, qc: QueryClient) {
 
 const newQc = () => new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
-test('back chip reads "‹ Kamra" (Kamra v2 Mozaik re-face, mezo-d20.4.5)', () => {
-  // Was a standalone "Fuel · Kamra" breadcrumb line (Direction A) — the prototype's
-  // #page-kitem carries no separate eyebrow, just the back chip itself as the trail.
+test('the back control is the round glass ‹ (Üveg U2, mezo-me75u.2)', () => {
+  // Was the "‹ Kamra" text chip (Kamra v2, mezo-d20.4.5). The approved üveg prototype
+  // (uveg-fuel-tobbi.html `kamraItem()`) draws the shared 44px round glass back button, the
+  // same one every re-dressed Fuel detail page wears; the accessible name still says where it goes.
   renderDetail('ing-csirkemell', newQc())
-  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Kamra')
+  const back = screen.getByRole('button', { name: 'Vissza' })
+  expect(back).toHaveTextContent('‹')
+  expect(back).toHaveClass('glass', 'is-round')
 })
 
 // Titán anatómia (mezo-hygp): a Mozaik `MCells`/`km-ncells` celláit a prototípus

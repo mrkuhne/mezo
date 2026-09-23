@@ -8,8 +8,13 @@
 // szekcionált blokkokkal. Anatómia: üveg-hero (az adag a nagy szám) → chipek (sáv · eredet ·
 // mai állapot) → egyérintéses pipa → termékadatok → „Miért így" → kamra-kapcsolat → határvonal.
 //
-// A kártya natív <GlassBox onClose={onClose} class="glass">: Escape és backdrop a platformtól, a `showModal`/`close`
-// feature-detektált (a ház mintája: FuelEnergyHero). A jsdom nem hoz HTMLDialogElement-et.
+// A kártya a Fuel `GlassBox`-a (portál a telefon-keretbe, Escape + hátlap zár).
+//
+// ÜVEG (mezo-me75u.2; prototypes/uveg-fuel-tobbi.html `openItem()`): a doboz maga az EGYETLEN
+// üveg (zsálya). Benne semmi sem üveg (bible §3.4 + U1 5. szabály): a chipek lapos cellák, a
+// Bevettem egy megvilágított lapos gomb, a termékadatok 2×2-es lapos cellarács, a „Miért így"
+// Mezo saját hangja (serif dőlt), a kamra-kapcsolat megvilágított lapos sor, az őszinte-null
+// blokkok szaggatottak. Ikonok: Titanium 3D (Icon3D).
 //
 // Őszinte-null: ha a termékről nem tudjuk, mennyi van egy egységben, NEM találunk ki darabszámot
 // — megmondjuk, mit nem tudunk, és felajánljuk a beállítót. Az elhelyezés indoka a motorból jön
@@ -18,7 +23,7 @@
 import { useId } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStack } from '@/data/hooks'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import type { BandRow } from '@/features/fuel/logic/stackBands'
 import type { StackPlacementSource } from '@/data/types'
 import { GlassBox } from '@/features/fuel/components/GlassBox'
@@ -47,12 +52,9 @@ export function FuelStackItemGlass({ row, onClose, onToggle }: {
     : null
 
   return (
-    <GlassBox onClose={onClose}
-      className="fsx-glass glass"
-      labelledBy={titleId}
-    >
+    <GlassBox onClose={onClose} className="fsx-glass" labelledBy={titleId}>
       <div className="fsx-glass-hero">
-        <span aria-hidden="true"><ClayIcon name="i-kiegeszito" size={56} /></span>
+        <span aria-hidden="true"><Icon3D name="t-supps" size={56} /></span>
         <div>
           <strong>{row.dose ?? '—'}</strong>
           <small id={titleId}>{row.name} · naponta</small>
@@ -70,7 +72,7 @@ export function FuelStackItemGlass({ row, onClose, onToggle }: {
       </div>
 
       <button type="button" className={`fsx-glass-tick${taken ? ' is-done' : ''}`} onClick={onToggle}>
-        <span aria-hidden="true"><ClayIcon name={taken ? 'i-hold' : 'i-stack'} size={26} /></span>
+        <span aria-hidden="true"><Icon3D name={taken ? 't-moon' : 't-protocol'} size={26} /></span>
         <span>{taken ? 'Mégsem vettem be' : 'Bevettem'}</span>
         <b aria-hidden="true">{taken ? '↺' : '✓'}</b>
       </button>
@@ -78,7 +80,7 @@ export function FuelStackItemGlass({ row, onClose, onToggle }: {
       {row.dose || stock ? (
         <div className="fsx-glass-block is-dose">
           <div className="fsx-glass-block-head">
-            <span aria-hidden="true"><ClayIcon name="i-polc" size={26} /></span>
+            <span aria-hidden="true"><Icon3D name="t-stack" size={22} /></span>
             <strong>Ebből a termékből</strong>
           </div>
           <dl className="fsx-glass-rows">
@@ -93,7 +95,7 @@ export function FuelStackItemGlass({ row, onClose, onToggle }: {
       ) : (
         <div className="fsx-glass-block is-quiet">
           <div className="fsx-glass-block-head">
-            <span aria-hidden="true"><ClayIcon name="i-polc" size={26} /></span>
+            <span aria-hidden="true"><Icon3D name="t-stack" size={22} /></span>
             <strong>Termékadatok</strong>
           </div>
           <p>
@@ -102,7 +104,7 @@ export function FuelStackItemGlass({ row, onClose, onToggle }: {
           </p>
           <button type="button" className="fsx-glass-link"
             onClick={() => { onClose(); navigate('/fuel/stack/manage/add') }}>
-            <span aria-hidden="true"><ClayIcon name="i-beallitas" size={26} /></span>
+            <span aria-hidden="true"><Icon3D name="t-gear" size={26} /></span>
             <span>Beállítom</span>
             <b aria-hidden="true">›</b>
           </button>
@@ -111,7 +113,7 @@ export function FuelStackItemGlass({ row, onClose, onToggle }: {
 
       <div className="fsx-glass-block is-why">
         <div className="fsx-glass-block-head">
-          <span aria-hidden="true"><ClayIcon name="i-lang" size={26} /></span>
+          <span aria-hidden="true"><Icon3D name="t-bolt" size={22} /></span>
           <strong>Miért így</strong>
         </div>
         <p>
@@ -125,7 +127,7 @@ export function FuelStackItemGlass({ row, onClose, onToggle }: {
       {item ? (
         <button type="button" className="fsx-glass-link is-shelf"
           onClick={() => { onClose(); navigate(`/fuel/kamra/${item.id}`) }}>
-          <span aria-hidden="true"><ClayIcon name="i-kamra" size={30} /></span>
+          <span aria-hidden="true"><Icon3D name="t-stack" size={30} /></span>
           <span>
             <strong>{item.name}</strong>
             <small>{stock ? `${stock} a kamrádban` : 'a kamrádban'}</small>
@@ -135,7 +137,7 @@ export function FuelStackItemGlass({ row, onClose, onToggle }: {
       ) : (
         <div className="fsx-glass-block is-quiet">
           <div className="fsx-glass-block-head">
-            <span aria-hidden="true"><ClayIcon name="i-kamra" size={26} /></span>
+            <span aria-hidden="true"><Icon3D name="t-stack" size={22} /></span>
             <strong>Nincs a kamrádban</strong>
           </div>
           <p>

@@ -2,10 +2,11 @@
 // Mezo · FuelKamraPage (Kamra) — a Konyha másik ajtaja mögötti polc
 // (Fuel Titanium S4, mezo-hygp; fagyasztott manifeszt B6 · B7 · B13).
 //
-// Jóváhagyott vizuális referencia: docs/design_2.0/prototypes/companion-titanium/fuel-pages.js
-// `kamraPage` (:83) + `pantryTile` (:78), a fuel-pages.css „Konyha v2" (:497) blokkjával.
-// Anatómia: al-fejléc (‹ vissza + KONYHA/Kamra, a három felvevő-ajtóval) → kereső → típus-
-// szűrők a saját darabszámukkal → két-hasábos csempe-rács → „Okosabb csere" (B13).
+// Jóváhagyott vizuális referencia (Üvegesítés U2, mezo-me75u.2): docs/design_2.0/prototypes/
+// uveg-fuel-tobbi.html `kamra()`. Anatómia: al-fejléc (kerek üveg ‹ + KONYHA/Kamra, jobbra a
+// három felvevő-ajtó lapos chipként) → kereső → típus-szűrők a saját darabszámukkal (lapos
+// chipek, a kiválasztott a hue-jával kitöltve) → két-hasábos ÜVEG csempe-rács a tétel hue-jában
+// → „Okosabb csere" (B13, szaggatott: javaslat, nem tárgy). Üres kamra = szaggatott hívás.
 //
 // B14 owner-DROP: a „Legutóbbi importok" feed LEVÁLT erről a lapról. Az import-rekord
 // továbbra is íródik, de a per-tétel EREDET (forrás + mikor) a tétel részletlapjának
@@ -22,7 +23,7 @@ import { useNavigate } from 'react-router-dom'
 import type { PantryItem } from '@/data/types'
 import { usePantry } from '@/data/hooks'
 import { buildKamraItems } from '@/features/fuel/logic/kamraItems'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { hu1, huInt } from '@/shared/lib/huNum'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { SuggestionCard } from '@/features/fuel/components/SuggestionCard'
@@ -35,31 +36,35 @@ import KamraSkeleton from '@/features/fuel/pages/KamraSkeleton'
 
 const TYPE_FILTERS = [
   { id: 'all', label: 'Mind', color: 'var(--dv-amber)', icon: null },
-  { id: 'food', label: 'Étel', color: 'var(--dv-sage)', icon: 'i-gabona' },
-  { id: 'supplement', label: 'Supp', color: 'var(--dv-lav)', icon: 'i-kiegeszito' },
-  { id: 'stim', label: 'Stim', color: 'var(--dv-coral)', icon: 'i-lang' },
-  { id: 'med', label: 'Gyógyszer', color: 'var(--dv-sky)', icon: 'i-injekcio' },
-] as const satisfies readonly { id: string; label: string; color: string; icon: ClayIconName | null }[]
+  { id: 'food', label: 'Étel', color: 'var(--dv-sage)', icon: 't-carb' },
+  { id: 'supplement', label: 'Supp', color: 'var(--dv-lav)', icon: 't-supps' },
+  { id: 'stim', label: 'Stim', color: 'var(--dv-coral)', icon: 't-bolt' },
+  { id: 'med', label: 'Gyógyszer', color: 'var(--dv-sky)', icon: 't-syringe' },
+] as const satisfies readonly { id: string; label: string; color: string; icon: Icon3DName | null }[]
 
-/** Egy tétel arca: ház-hue + clay szimbólum (a prototípus `pantryStyle`-ja ház-tokenekkel). */
-const KIND_FACE: Record<string, { color: string; icon: ClayIconName }> = {
-  food: { color: 'var(--dv-sage)', icon: 'i-gabona' },
-  supplement: { color: 'var(--dv-lav)', icon: 'i-kiegeszito' },
-  stim: { color: 'var(--dv-coral)', icon: 'i-lang' },
-  med: { color: 'var(--dv-sky)', icon: 'i-injekcio' },
+/** Egy tétel arca: ház-hue + 3D szimbólum (Üveg, mezo-me75u.2: étel = gabona, supp = kapszulák,
+ *  stim = villám, gyógyszer = fecskendő, ismeretlen = a polc). */
+const KAMRA_KIND_FACE: Record<string, { color: string; icon: Icon3DName }> = {
+  food: { color: 'var(--dv-sage)', icon: 't-carb' },
+  supplement: { color: 'var(--dv-lav)', icon: 't-supps' },
+  stim: { color: 'var(--dv-coral)', icon: 't-bolt' },
+  med: { color: 'var(--dv-sky)', icon: 't-syringe' },
 }
+const KAMRA_UNKNOWN_FACE: { color: string; icon: Icon3DName } = { color: 'var(--dv-amber)', icon: 't-stack' }
 
-function PantryTile({ item, onOpen }: { item: PantryItem; onOpen: () => void }) {
-  const face = KIND_FACE[item.kind] ?? { color: 'var(--dv-amber)', icon: 'i-polc' as ClayIconName }
+type Hue = React.CSSProperties & Record<'--c' | '--i', string | number>
+
+function PantryTile({ item, index, onOpen }: { item: PantryItem; index: number; onOpen: () => void }) {
+  const face = KAMRA_KIND_FACE[item.kind] ?? KAMRA_UNKNOWN_FACE
   const prov = pantryProvenance(item)
   const kcal = item.macros?.kcal ?? null
   const protein = item.macros?.p ?? null
   return (
-    <button type="button" className="fkx-item rise"
-      style={{ '--fkx': face.color } as React.CSSProperties} onClick={onOpen}>
+    <button type="button" className="fkx-item glass rise"
+      style={{ '--c': face.color, '--i': Math.min(index, 8) } as Hue} onClick={onOpen}>
       <span className="fkx-item-top">
-        <span className="fkx-item-art" aria-hidden="true"><ClayIcon name={face.icon} size={42} /></span>
-        <em title={prov.sourceLabel}><ClayIcon name={prov.icon} size={18} /></em>
+        <span className="fkx-item-art" aria-hidden="true"><Icon3D name={face.icon} size={42} /></span>
+        <em title={prov.sourceLabel}><Icon3D name={prov.icon} size={17} /></em>
       </span>
       <strong>{item.name}</strong>
       <span className="fkx-item-fact">
@@ -69,7 +74,7 @@ function PantryTile({ item, onOpen }: { item: PantryItem; onOpen: () => void }) 
       </span>
       {item.kind === 'food' && protein != null && (
         <span className="fkx-protein">
-          <i aria-hidden="true"><b style={{ '--w': `${Math.min(100, (protein / 25) * 100)}%` } as React.CSSProperties} /></i>
+          <i className="uv-bar" aria-hidden="true"><b style={{ '--w': `${Math.min(100, (protein / 25) * 100)}%` } as React.CSSProperties} /></i>
           <small>{hu1(protein)} g fehérje</small>
         </span>
       )}
@@ -123,33 +128,32 @@ export function FuelKamraPage() {
   if (pending) return <KamraSkeleton />
 
   return (
-    <div className="fmx-page fkx-library">
+    <div className="fmx-page fkx-library fkx-kamra">
       <EntranceGroup>
         <div className="fmx-subhead">
-          <button type="button" onClick={() => navigate('/fuel/konyha')} aria-label="Vissza a Konyhába">‹</button>
+          <button type="button" className="glass is-round" onClick={() => navigate('/fuel/konyha')} aria-label="Vissza a Konyhába">‹</button>
           <span>
             <small>KONYHA</small>
             <strong>Kamra</strong>
           </span>
-        </div>
-
-        <div className="fkx-head-acts">
-          <button type="button" className="fkx-head-act" onClick={() => setCatalogOpen(true)}>Közös</button>
-          <button type="button" className="fkx-head-act" onClick={() => setImportOpen(true)}>Import</button>
-          <button type="button" className="fkx-head-act" onClick={() => setAddOpen(true)}>＋ Új tétel</button>
+          <div className="fkx-head-acts">
+            <button type="button" className="fkx-head-act" onClick={() => setCatalogOpen(true)}>Közös</button>
+            <button type="button" className="fkx-head-act" onClick={() => setImportOpen(true)}>Import</button>
+            <button type="button" className="fkx-head-act is-on" onClick={() => setAddOpen(true)}>＋ Új tétel</button>
+          </div>
         </div>
 
         {allItems.length === 0 ? (
-          <div className="fkx-empty">
-            <span aria-hidden="true"><ClayIcon name="i-polc" size={52} /></span>
+          <div className="fkk-kamra-empty uv-empty rise">
+            <span aria-hidden="true"><Icon3D name="t-stack" size={52} /></span>
             <strong>A kamra üres</strong>
             <p>Vedd fel az első tételt — vagy válassz a közös katalógusból —, és itt jelenik meg a polcodon.</p>
-            <button type="button" onClick={() => setAddOpen(true)}>Első tétel felvétele ＋</button>
+            <button type="button" className="glass" onClick={() => setAddOpen(true)}>Első tétel felvétele ＋</button>
           </div>
         ) : (
           <>
-            <label className="fkx-search">
-              <span aria-hidden="true"><ClayIcon name="i-polc" size={26} /></span>
+            <label className="fkx-search uv-flat rise">
+              <span aria-hidden="true"><Icon3D name="t-stack" size={22} /></span>
               <input type="search" value={query} onChange={e => setQuery(e.target.value)}
                 placeholder="Keress tétel, márka…" aria-label="Keresés a kamrában" />
               {query && (
@@ -160,9 +164,9 @@ export function FuelKamraPage() {
             <div className="fkx-filters" role="group" aria-label="Kamra-szűrő" data-kalauz-anchor="kamra-tabs">
               {TYPE_FILTERS.map(t => (
                 <button key={t.id} type="button" aria-pressed={typeFilter === t.id}
-                  style={{ '--fkx': t.color } as React.CSSProperties}
+                  style={{ '--c': t.color } as React.CSSProperties}
                   onClick={() => setTypeFilter(t.id)}>
-                  {t.icon && <span aria-hidden="true"><ClayIcon name={t.icon} size={16} /></span>}
+                  {t.icon && <span aria-hidden="true"><Icon3D name={t.icon} size={18} /></span>}
                   {t.label}<b>{counts[t.id] ?? 0}</b>
                 </button>
               ))}
@@ -185,8 +189,8 @@ export function FuelKamraPage() {
 
             {filtered.length > 0 ? (
               <div className="fkx-tile-grid">
-                {filtered.map(it => (
-                  <PantryTile key={it.id} item={it} onOpen={() => navigate(`/fuel/kamra/${it.id}`)} />
+                {filtered.map((it, i) => (
+                  <PantryTile key={it.id} item={it} index={i} onOpen={() => navigate(`/fuel/kamra/${it.id}`)} />
                 ))}
               </div>
             ) : (

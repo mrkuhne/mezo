@@ -132,7 +132,9 @@ describe('FuelStackProtocolPage — mock', () => {
     expect(screen.getByText('v3 · 86% bizalom')).toBeInTheDocument()
     expect(screen.getByRole('listitem', { name: /Kreatin monohidrát/ })).toBeInTheDocument()
     expect(screen.getAllByText('auto').length).toBeGreaterThan(0)
-    expect(container.querySelector('use[href="#i-stack"]')).toBeInTheDocument()
+    // Üveg (mezo-me75u.2): the hero wears the 3D protocol icon; every zone group is glass.
+    expect(container.querySelector('use[href="#t-protocol"]')).toBeInTheDocument()
+    expect(container.querySelectorAll('.fsx-proto-group.glass').length).toBeGreaterThan(0)
     expect(screen.queryByRole('button', { name: /bevétel jelölése/ })).not.toBeInTheDocument()
   })
 

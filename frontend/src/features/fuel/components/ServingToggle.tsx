@@ -1,7 +1,7 @@
 // ============================================================
 // Mezo · ServingToggle (/adag ↔ egész)
 // The segmented basis switch from docs/design/recipes-detail.html (.segtoggle).
-// Used by RecipeDetailPage's macro hero and RecipeEditorPage's live total card.
+// Used by RecipeDetailPage's macro hero, RecipeEditorPage's live total card and the Műhely hero.
 // `servings` is the real recipe value; the "whole" label echoes it.
 // ============================================================
 export type ServingBasis = 'serving' | 'whole'
@@ -18,23 +18,15 @@ const SEGS: { id: ServingBasis; label: (n: number) => string }[] = [
 ]
 
 export function ServingToggle({ value, servings, onChange }: ServingToggleProps) {
+  // Üveg U2 (mezo-me75u.2, prototype `.seg`): a flat recessed pill; the active basis fills sage
+  // and glows. Styled in prototype.css `── uveg fuel receptek (`.
   return (
-    <div className="row" style={{ gap: 5, padding: 4, background: 'var(--surface-2)', borderRadius: 10 }}>
+    <div className="fkx-seg" role="group" aria-label="Makró-bázis">
       {SEGS.map(s => {
         const active = value === s.id
         return (
-          <button
-            key={s.id}
-            onClick={() => onChange(s.id)}
-            className="rad-12 flex-1"
-            style={{
-              padding: '7px 0', textAlign: 'center',
-              fontVariantNumeric: 'tabular-nums', fontSize: 9, letterSpacing: '0.06em',
-              fontWeight: active ? 600 : 400,
-              color: active ? 'var(--text-inverse)' : 'var(--text-tertiary)',
-              background: active ? 'var(--coral)' : 'transparent',
-            }}
-          >
+          <button key={s.id} type="button" className={active ? 'is-on' : undefined}
+            aria-pressed={active} onClick={() => onChange(s.id)}>
             {s.label(servings)}
           </button>
         )

@@ -18,7 +18,7 @@
 // SZÉGYENMENTES: a felület LEÍR, nem értékel, és nem állít okozatiságot — „egyik sem ok, csak
 // együttjárás" (a prototípus `trendHorizonGlass`-ának hangja).
 // ============================================================
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 
 export interface HorizonWeek {
   /** A hét ISO hétfője — a sorrend hitelforrása. */
@@ -74,9 +74,9 @@ export function FuelHorizon({ weeks }: { weeks: HorizonWeek[] }) {
   // Egy pontból nincs trend — nem találunk ki vonalat.
   if (weeks.length < 2) {
     return (
-      <div className="ftx-horizon is-waiting">
+      <div className="ftx-horizon uv-empty is-waiting">
         <p className="ftx-horizon-wait">
-          <span aria-hidden="true"><ClayIcon name="i-trend" size={30} /></span>
+          <span aria-hidden="true"><Icon3D name="t-trend" size={30} /></span>
           <span>Néhány hét kell még ehhez a képhez — egyetlen hétből nincs trend, és nem rajzolunk
             olyat, ami nincs.</span>
         </p>
@@ -99,7 +99,7 @@ export function FuelHorizon({ weeks }: { weeks: HorizonWeek[] }) {
   const kcalUnbroken = kcalPoints.every(p => p != null)
 
   return (
-    <div className="ftx-horizon">
+    <div className="ftx-horizon glass" style={{ '--c': 'var(--dv-sage)', '--i': 6 } as React.CSSProperties}>
       <svg
         className="ftx-horizon-chart"
         viewBox="0 0 336 150"

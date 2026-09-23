@@ -24,12 +24,17 @@
 //
 // Őszinte-null: ha egy elhelyezéshez a motor nem adott indokot, NEM írunk helyette kitaláltat.
 // A betöltési hiba őszinte hibaállapot, nem üres lista.
+//
+// ÜVEG (mezo-me75u.2; prototypes/uveg-fuel-tobbi.html `protokoll()`): a hős keret nélküli arany
+// halo a nagy 3D protokoll-ikonnal; alatta három lapos számcella; minden zóna egy üvegkártya a
+// saját színében, benne lapos, hajszál-választott sorok (az indok Mezo hangján, serif dőlttel);
+// az étkezési kötések lapos cellában; az Új elem egy lila üveg-sor. Ikonok: Titanium 3D.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useFuelDay, useProtocol, useRecipes, useStackDay } from '@/data/hooks'
 import { addDays, localDateString } from '@/shared/lib/dates'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { StackPageScaffold } from '@/features/fuel/components/StackPageScaffold'
 import { StackMealMatch } from '@/features/fuel/components/StackMealMatch'
 import { matchMealsToStack } from '@/features/fuel/logic/matchMealsToStack'
@@ -37,18 +42,18 @@ import type { StackDayEntry } from '@/features/fuel/logic/projectStackDay'
 import { StackItemSheet } from '@/features/fuel/sheets/StackItemSheet'
 import type { StackZoneKey } from '@/data/types'
 
-/** Zóna-arcok a ház tokenjeivel (a prototípus `ZONE_STYLE`-ja — beégetett hexek nélkül). */
-const ZONE_FACE: Partial<Record<StackZoneKey, { icon: ClayIconName; color: string }>> = {
-  wake: { icon: 'i-hajnal', color: 'var(--dv-amber)' },
-  breakfast: { icon: 'i-reggeli', color: 'var(--dv-amber)' },
-  pre_workout: { icon: 'i-edzes', color: 'var(--dv-coral)' },
-  post_workout: { icon: 'i-edzes', color: 'var(--dv-coral)' },
-  lunch: { icon: 'i-ebed', color: 'var(--dv-sage)' },
-  dinner: { icon: 'i-vacsora', color: 'var(--dv-sky)' },
-  evening: { icon: 'i-hold', color: 'var(--dv-lav)' },
-  bedtime: { icon: 'i-alvas', color: 'var(--dv-lav)' },
+/** Zóna-arcok a ház tokenjeivel: 3D ikon + az üvegkártya `--c` színe. */
+const ZONE_FACE: Partial<Record<StackZoneKey, { icon: Icon3DName; color: string }>> = {
+  wake: { icon: 't-dawn', color: 'var(--dv-amber)' },
+  breakfast: { icon: 't-sun', color: 'var(--dv-amber)' },
+  pre_workout: { icon: 't-dumbbell', color: 'var(--dv-coral)' },
+  post_workout: { icon: 't-dumbbell', color: 'var(--dv-coral)' },
+  lunch: { icon: 't-bowl', color: 'var(--dv-sage)' },
+  dinner: { icon: 't-moon', color: 'var(--dv-sky)' },
+  evening: { icon: 't-moon', color: 'var(--dv-lav)' },
+  bedtime: { icon: 't-sleep', color: 'var(--dv-lav)' },
 }
-const FALLBACK_FACE = { icon: 'i-kiegeszito' as ClayIconName, color: 'var(--dv-sage)' }
+const FALLBACK_FACE = { icon: 't-supps' as Icon3DName, color: 'var(--dv-sage)' }
 
 export function FuelStackProtocolPage() {
   const navigate = useNavigate()
@@ -68,15 +73,15 @@ export function FuelStackProtocolPage() {
 
   return (
     <StackPageScaffold
-      tone="sage" backTo="/fuel/stack" backLabel="‹ Stack" icon="i-stack"
-      name="Protokoll"
+      tone="sage" backTo="/fuel/stack" backLabel="‹ Stack" icon="t-protocol"
+      name="Protokoll" accent="var(--dv-amber)"
       big={ready ? `${protocol.itemCount} tétel` : undefined}
       sub={ready ? `v${protocol.version} · ${Math.round(protocol.confidence * 100)}% bizalom` : undefined}
     >
-      {pending && <div className="stk-detail-state">Protokoll betöltése…</div>}
-      {error && <div className="stk-detail-state">A protokoll most nem tölthető be.</div>}
+      {pending && <div className="stk-detail-state uv-empty">Protokoll betöltése…</div>}
+      {error && <div className="stk-detail-state uv-empty">A protokoll most nem tölthető be.</div>}
       {!pending && !error && rows.length === 0 && (
-        <div className="stk-detail-state">Még nincs protokolltétel.</div>
+        <div className="stk-detail-state uv-empty">Még nincs protokolltétel.</div>
       )}
 
       {!pending && !error && rows.length > 0 && (
@@ -87,17 +92,17 @@ export function FuelStackProtocolPage() {
             <div><strong>{pinnedCount}</strong><small>kézzel elhelyezve</small></div>
           </div>
 
-          {slots.map(slot => {
+          {slots.map((slot, index) => {
             const face = ZONE_FACE[slot.zone] ?? FALLBACK_FACE
             return (
               <section
-                className="fsx-proto-group rise"
+                className="fsx-proto-group glass rise"
                 key={`${slot.zone}-${slot.time}`}
-                style={{ '--fsx-zone-color': face.color } as React.CSSProperties}
+                style={{ '--fsx-zone-color': face.color, '--c': face.color, '--i': index + 1 } as React.CSSProperties}
                 aria-label={`${slot.label} · ${slot.time}`}
               >
                 <div className="fsx-proto-title">
-                  <span aria-hidden="true"><ClayIcon name={face.icon} size={26} /></span>
+                  <span aria-hidden="true"><Icon3D name={face.icon} size={34} /></span>
                   <strong>{slot.label}</strong>
                   <time>{slot.time}</time>
                   <b>{slot.entries.length}</b>
@@ -109,7 +114,7 @@ export function FuelStackProtocolPage() {
                         aria-label={`${entry.name} beállítások`}
                         onClick={() => setOpenEntry(entry)}>
                         <span className="fsx-proto-line-art" aria-hidden="true">
-                          <ClayIcon name="i-kiegeszito" size={30} />
+                          <Icon3D name="t-supps" size={28} />
                         </span>
                         <span className="fsx-proto-line-copy">
                           <strong>{entry.name}</strong>
@@ -134,12 +139,11 @@ export function FuelStackProtocolPage() {
               `/fuel/stack/meals` tartalma), nem külön oldal. */}
           <section className="fsx-proto-meals rise" aria-label="Étkezési kötések">
             <div className="fsx-proto-title">
-              <span aria-hidden="true"><ClayIcon name="i-recept" size={26} /></span>
               <strong>Étkezéshez</strong>
               <b>{mealMatchCount}</b>
             </div>
             {mealMatchCount > 0 ? <StackMealMatch result={mealMatch} /> : (
-              <p className="fsx-proto-quiet">
+              <p className="fsx-proto-quiet uv-flat">
                 Ha egy tétel zsíros vagy fehérjés étkezést kér, itt jelenik meg a hozzá illő fogás
                 és a visszajelzés.
               </p>
@@ -148,17 +152,14 @@ export function FuelStackProtocolPage() {
         </>
       )}
 
-      <button type="button" className="fsx-poster is-setup rise"
+      <button type="button" className="fsx-poster glass is-setup is-row rise"
         onClick={() => navigate('/fuel/stack/manage/add')}>
-        <span className="fsx-poster-head">
-          <span aria-hidden="true"><ClayIcon name="i-beallitas" size={30} /></span>
-          <strong>Új elem</strong>
-          <b aria-hidden="true">↗</b>
-        </span>
+        <span className="fsx-poster-art" aria-hidden="true"><Icon3D name="t-gear" size={40} /></span>
         <span className="fsx-poster-copy">
           <strong>Új elem beállítása</strong>
           <small>Megmondom, mennyit vegyél be belőle, mikor és miért.</small>
         </span>
+        <b aria-hidden="true">↗</b>
       </button>
 
       <p className="fsx-note">

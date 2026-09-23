@@ -25,6 +25,12 @@
 // sor NEM ad tápanyag-számot, mert a modell tápanyag-tényt SOHA nem találhat ki.
 // Vizuális referencia: a prototípus `muhelyPage` (:115) vászon-dokk tagolása, `runTurn` (:158)
 // és `saveWorkshop` (:171).
+//
+// Üveg U2 (mezo-me75u.2, prototypes/src/uveg-fuel-tobbi-body.html `muhely()`): the Fuel sub-head,
+// the empty canvas as a frameless lavender halo with the big 3D chef, the draft hero as the U1
+// split halo (flat stepper + basis switch), every ingredient line a glass card in its dominant
+// macro's hue, the steps strip a glass row, and the docked chat a lavender glass card with flat
+// preset chips, context chips and composer. The ✨ tag/note became the 3D score icon + text.
 // ============================================================
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -41,9 +47,9 @@ import {
   lineMacros, recipeToDraft, scaleServings,
 } from '@/data/fuel/workshopState'
 import { Icon } from '@/shared/ui/Icon'
-import { ClayIcon } from '@/shared/ui/clay'
+import { ContentIcon } from '@/shared/ui/clay'
 import { useToast } from '@/shared/ui/ToastProvider'
-import { MozaikPage, PageHead, PageBody, CollapsibleStrip } from '@/shared/ui/mozaik'
+import { CollapsibleStrip } from '@/shared/ui/mozaik'
 import { huInt } from '@/shared/lib/huNum'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { IngredientPickerSheet } from '@/features/fuel/sheets/IngredientPickerSheet'
@@ -90,7 +96,7 @@ const GOAL_MESSAGE: Record<WorkshopGoal, string> = {
 const FLASH_MS = 2600
 
 const ERROR_COPY = 'A Műhely most nem elérhető — az üzeneted megvan.'
-const GATE_NOTE = '✨ becslés-sorok: cseréld kamra-itemre vagy töröld a mentéshez'
+const GATE_NOTE = 'becslés-sorok: cseréld kamra-itemre vagy töröld a mentéshez'
 
 export function RecipeWorkshopPage() {
   const navigate = useNavigate()
@@ -317,18 +323,14 @@ export function RecipeWorkshopPage() {
   const previewNutrients = basis === 'whole' ? rawNutrients : scaleNutrients(rawNutrients, 1 / per)
 
   return (
-    <MozaikPage tone="sage">
-      <PageHead onBack={() => navigate('/fuel/recipes')} label="‹ Receptek" />
+    <div className="fmx-page fkx-workshop">
       <EntranceGroup>
-        <PageBody principle="A Műhely hozzávalót és mennyiséget javasol — a makrókat mindig a kamra-tények adják.">
-          <div className="rise" style={{ padding: '2px 2px 12px' }}>
-            <span className="mz-eyebrow">Fuel · Receptek</span>
-            <div className="row" style={{ alignItems: 'center', gap: 7, marginTop: 4 }}>
-              <ClayIcon name="i-muhely" size={22} />
-              <h1 style={{ fontFamily: 'var(--ff-display)', fontSize: 22, fontWeight: 600, lineHeight: 1.15, margin: 0, color: 'var(--text-primary)' }}>
-                Receptműhely
-              </h1>
-            </div>
+          <div className="fmx-subhead rise">
+            <button type="button" className="glass is-round" onClick={() => navigate('/fuel/recipes')} aria-label="Vissza">‹</button>
+            <span>
+              <small>Fuel · Receptek</small>
+              <h1 className="fkx-title">Receptműhely</h1>
+            </span>
           </div>
 
           {!draft && (
@@ -337,9 +339,9 @@ export function RecipeWorkshopPage() {
                NB: a „Mit főzzünk ki?" a CHAT nyitó kérdése (prototípus-szöveg), NEM a B17
                „mit főzzünk az itthon lévőből" felület — az owner azt kivette, és nem is épült
                meg: itt te mondod meg a célt, nem a kamra-készlet generál listát. */
-            <div className="fkx-ws-empty rise">
+            <div className="fkx-ws-empty uv-halo rise" style={{ '--c': 'var(--dv-lav)' } as React.CSSProperties}>
               <span className="fkx-ws-glow" aria-hidden="true" />
-              <span className="fkx-ws-art" aria-hidden="true"><ClayIcon name="i-muhely" size={96} /></span>
+              <span className="fkx-ws-art" aria-hidden="true"><ContentIcon name="t-chef" size={104} /></span>
               <strong>Mit főzzünk ki?</strong>
               <p>
                 Válassz egy célt alul, vagy írd le a saját szavaiddal. Én hozzávalót és
@@ -352,19 +354,17 @@ export function RecipeWorkshopPage() {
           {draft && (
             <>
               {/* Név + cél-chip */}
-              <div className="mz-qcard rise" style={{ padding: '10px 12px', marginBottom: 9 }}>
-                <div className="row" style={{ alignItems: 'center', gap: 7 }}>
-                  <input
-                    value={draft.name}
-                    onChange={e => setDraft(d => (d ? { ...d, name: e.target.value } : d))}
-                    aria-label="Recept neve"
-                    placeholder="Recept neve"
-                    style={{ flex: 1, minWidth: 0, fontFamily: 'var(--ff-display)', fontSize: 16, color: 'var(--text-primary)' }}
-                  />
-                  {goal && (
-                    <span className="logflow-lntag" data-tag="becslés" style={{ flex: 'none' }}>{GOAL_LABEL[goal]}</span>
-                  )}
-                </div>
+              <div className="fkx-ws-name rise">
+                <input
+                  className="fkx-inp"
+                  value={draft.name}
+                  onChange={e => setDraft(d => (d ? { ...d, name: e.target.value } : d))}
+                  aria-label="Recept neve"
+                  placeholder="Recept neve"
+                />
+                {goal && (
+                  <span className="fkx-chip is-goal">{GOAL_LABEL[goal]}</span>
+                )}
               </div>
 
               {/* Titán hős: bal = tál-ikon és ALATTA a kcal; jobb = adag-stepper és a bázis-váltó.
@@ -373,7 +373,7 @@ export function RecipeWorkshopPage() {
               <div className="fmx-detail-hero fkx-ws-hero">
                 <span className="fmx-detail-glow" aria-hidden="true" />
                 <div className="fmx-detail-left">
-                  <span className="fmx-detail-art" aria-hidden="true"><ClayIcon name="i-tanyer" size={96} /></span>
+                  <span className="fmx-detail-art" aria-hidden="true"><ContentIcon name="t-plate" size={96} /></span>
                   <div className="fmx-detail-kcal">
                     <strong>{huInt(shown.kcal)}</strong>
                     <small>kcal {basis === 'whole' ? '· egész' : '/ adag'}</small>
@@ -395,7 +395,7 @@ export function RecipeWorkshopPage() {
 
               {/* Őszinte-null: ha egy sor makrója nem oldható fel, azt MEGMONDJUK, nem pótoljuk. */}
               {unresolved > 0 && (
-                <p className="fmx-nutri-note">
+                <p className="fmx-nutri-note fkx-callout">
                   {unresolved} sorhoz nincs tápérték a kamrában — a számokból kimarad, nem találgatjuk.
                 </p>
               )}
@@ -405,7 +405,7 @@ export function RecipeWorkshopPage() {
 
               <section className="fmx-detail-sec">
                 <div className="fmx-section"><h2>Hozzávalók</h2></div>
-                <div className="col gap-sm">
+                <div className="fkx-lines">
                   {draft.lines.map((line, i) => (
                     <WorkshopIngredientRow
                       key={`${lineKey(line)}-${i}`}
@@ -418,7 +418,7 @@ export function RecipeWorkshopPage() {
                     />
                   ))}
                   {draft.lines.length === 0 && (
-                    <p className="fmx-block-empty">
+                    <p className="fmx-block-empty fkx-lines-empty uv-empty">
                       Nincs hozzávaló — kérj egyet alul, vagy válassz a kamrából.
                     </p>
                   )}
@@ -433,16 +433,13 @@ export function RecipeWorkshopPage() {
               <FuelMicroNote />
 
               {draft.steps.length > 0 && (
-                <div style={{ marginTop: 10 }}>
-                  <CollapsibleStrip eyebrow="Elkészítés" summary={`${draft.steps.length} lépés`}>
-                    <div className="col gap-sm">
+                <div className="fkx-ws-steps">
+                  <CollapsibleStrip className="glass" eyebrow="Elkészítés" summary={`${draft.steps.length} lépés`}>
+                    <ol className="fkx-steps">
                       {draft.steps.map((s, i) => (
-                        <div key={i} className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-                          <span className="label-mono" style={{ fontSize: 9, color: 'var(--dv-coral)', minWidth: 14 }}>{i + 1}.</span>
-                          <span style={{ fontSize: 11.5, lineHeight: 1.45, color: 'var(--text-primary)' }}>{s}</span>
-                        </div>
+                        <li key={i}><b>{i + 1}.</b><span>{s}</span></li>
                       ))}
-                    </div>
+                    </ol>
                   </CollapsibleStrip>
                 </div>
               )}
@@ -452,23 +449,24 @@ export function RecipeWorkshopPage() {
 
           {/* Clearance for the portaled save bar + chat dock (the RecipeEditorPage idiom) —
               only under a draft; the empty canvas is short enough to clear the dock already. */}
+          <p className="fkx-principle">A Műhely hozzávalót és mennyiséget javasol — a makrókat mindig a kamra-tények adják.</p>
           {draft && <div style={{ height: 190 }} />}
-        </PageBody>
       </EntranceGroup>
 
       {/* Mentés-sáv + dokkolt chat — portaled into the phone screen (the .recipe-save-bar
           idiom) so both pin to the device viewport above the tab bar instead of scrolling
           away under a canvas that grows with every turn. */}
       {createPortal(
-        <div className="wsh-bottom">
+        <div className="wsh-bottom fkx-wsbottom">
           {draft && (
             <div>
               {!input && (
-                <p className="label-mono" style={{ fontSize: 9.5, color: 'var(--text-tertiary)', textAlign: 'center', marginBottom: 7, lineHeight: 1.5 }}>
-                  {GATE_NOTE}
+                <p className="fkx-gate">
+                  <ContentIcon name="t-score" size={16} />{GATE_NOTE}
                 </p>
               )}
-              <button className="cta-primary" disabled={!canSave} onClick={save} style={{ width: '100%' }}>
+              <button type="button" className="fkx-btn glass" style={{ '--c': 'var(--dv-sage)' } as React.CSSProperties}
+                disabled={!canSave} onClick={save}>
                 <Icon name="check" size={15} /> {sourceRecipeId ? 'Recept frissítése' : 'Mentés a Receptkönyvbe'}
               </button>
             </div>
@@ -499,6 +497,6 @@ export function RecipeWorkshopPage() {
           addedRefIds={picker === 'context' ? [] : (draft?.lines.map(l => l.refId ?? '') ?? [])}
         />
       )}
-    </MozaikPage>
+    </div>
   )
 }

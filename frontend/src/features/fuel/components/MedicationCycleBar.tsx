@@ -11,6 +11,10 @@
 // Presentational only — takes the derived MedicationCycle.week (built by the hook /
 // backend, current cell flagged) and renders it. Semantic <ul>/<li> so the view's
 // tests (and screen readers) can address the strip + the current cell (aria-current).
+//
+// ÜVEG (mezo-me75u.2; prototypes/uveg-fuel-tobbi.html `.cycle`): flat cells inside the sky glass
+// medication card — peak warm coral, stable sky, trough lavender, today lit sky with a glow.
+// Styled in the `uveg fuel stack` block of prototype.css; markup unchanged.
 // ============================================================
 import { cn } from '@/shared/lib/cn'
 import type { MedicationCycleCell } from '@/data/types'

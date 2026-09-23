@@ -7,7 +7,7 @@
 // Saját fájl, mert a mock-seed MINDEN receptje egy adagos (`pantry.ts` `servings: 1`), tehát a
 // lap alap-tesztje ezt nem tudná megmérni: itt a `useRecipes` ad egy négy adagos receptet.
 // ============================================================
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import type { Recipe } from '@/data/types'
@@ -53,4 +53,25 @@ test('a csempe kcal-száma egy ADAGRA vetít, nem a teljes receptre', async () =
   expect(card).toHaveTextContent('620')
   expect(card.textContent).not.toContain('2 480')
   expect(card).toHaveTextContent('kcal / adag')
+})
+
+// Üveg U2 (mezo-me75u.2, owner 2026-09-23): a lista soronként EGY recept, és a sor a három
+// makrót is ADAGRA vetítve mutatja — grammban, nem a teljes recept grammjaiban.
+test('a sor makró-sávja adagonkénti grammot mutat és mond ki', async () => {
+  const { FuelRecipesPage } = await import('@/features/fuel/pages/FuelRecipesPage')
+  render(
+    <QueryWrapper><MemoryRouter><FuelRecipesPage /></MemoryRouter></QueryWrapper>,
+  )
+  const card = screen.getByRole('button', { name: new RegExp(FOUR_SERVINGS.name) })
+  // 140/4 = 35 · 240/4 = 60 · 84/4 = 21
+  const strip = within(card).getByRole('img', {
+    name: 'Makrók adagonként: fehérje 35 g, szénhidrát 60 g, zsír 21 g',
+  })
+  expect(strip).toHaveTextContent('35')
+  expect(strip).toHaveTextContent('60')
+  expect(strip).toHaveTextContent('21')
+  expect(strip.textContent).not.toContain('140')
+  expect(strip.textContent).not.toContain('240')
+  // a több adagos recept meta-sora kimondja az adagszámot
+  expect(card).toHaveTextContent('4 adag')
 })

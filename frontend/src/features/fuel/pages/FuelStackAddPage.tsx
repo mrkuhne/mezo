@@ -22,6 +22,13 @@
 // import végpontja nem adja vissza a létrehozott tétel azonosítóját, ezért egy linkről/fotóról/
 // kézzel megadott, a polcon még NEM szereplő terméket nem veszünk fel találgatott azonosítóval:
 // megmondjuk, hogy előbb a Kamrába kell kerülnie, és odavisszük. A javaslat ilyenkor is teljes.
+//
+// ÜVEG (mezo-me75u.2; prototypes/uveg-fuel-tobbi.html `stackUj()`): hős nélküli fejléc (a lépés/3
+// a jobb szélen), lapos lépés-pirulák (az aktív lila, a kész lila gyűrű); a Kamra-tételek lila
+// üveg-sorok, a többi forrás lapos cella; az adatok egy lila üvegkártyán lapos mezőkkel (a benne
+// ülő gomb megvilágított LAPOS, mert üveg az üvegben nincs); a javaslat keret nélküli lila halo a
+// nagy számmal, a finomhangolás egy üvegkártya, a figyelmeztetés arany bal-élű lapos sáv.
+// Ikonok: Titanium 3D.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -29,8 +36,7 @@ import { usePantryActions, useProtocol, useProtocolActions, useStack } from '@/d
 import { STACK_ZONE_LABEL, STACK_ZONE_ORDER } from '@/data/fuel/stackZones'
 import { doseAdvice } from '@/features/fuel/logic/doseAdvice'
 import { StackPageScaffold } from '@/features/fuel/components/StackPageScaffold'
-import { Icon } from '@/shared/ui/Icon'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { useToast } from '@/shared/ui/ToastProvider'
 import type { StackZoneKey, SupplementStashItem } from '@/data/types'
 
@@ -188,7 +194,7 @@ export function FuelStackAddPage() {
       tone="lav"
       backTo={step === 1 ? '/fuel/stack' : '/fuel/stack/protocol'}
       backLabel={backLabel}
-      icon="i-beallitas" name="Új elem beállítása"
+      icon="t-gear" name="Új elem beállítása" variant="compact" accent="var(--dv-lav)"
       big={`${step}/3`} sub={STEPS[step - 1]}
     >
       <ol className="fsx-steps rise" aria-label="A beállítás lépései">
@@ -208,21 +214,22 @@ export function FuelStackAddPage() {
             ez mennyi az ajánlott napi mennyiségből.
           </p>
           <label className="fsx-search">
-            <Icon name="search" size={15} />
+            <span aria-hidden="true"><Icon3D name="t-stack" size={22} /></span>
             <span className="sr-only">Keresés a Kamrában</span>
             <input type="search" aria-label="Keresés a Kamrában" value={query}
               onChange={event => setQuery(event.target.value)} placeholder="Név vagy márka…" />
           </label>
           <div className="fsx-picks">
-            {free.map(item => (
-              <button type="button" className="fsx-pick" key={item.id}
+            {free.map((item, index) => (
+              <button type="button" className="fsx-pick glass" key={item.id}
+                style={{ '--i': index } as React.CSSProperties}
                 onClick={() => pickPantry(item)}>
-                <span className="fsx-pick-art" aria-hidden="true"><ClayIcon name="i-kiegeszito" size={34} /></span>
+                <span className="fsx-pick-art" aria-hidden="true"><Icon3D name="t-supps" size={40} /></span>
                 <span>
                   <strong>{item.name}</strong>
                   <small>{item.brand ? `${item.brand} · ` : ''}{item.dose}</small>
                 </span>
-                {occupied.has(item.id) && <em className="fsx-pick-flag">a stackben</em>}
+                {occupied.has(item.id) && <em className="fsx-pick-flag uv-flat">a stackben</em>}
                 <b aria-hidden="true">›</b>
               </button>
             ))}
@@ -231,24 +238,24 @@ export function FuelStackAddPage() {
             )}
           </div>
           <p className="fsx-section">Vagy</p>
-          <button type="button" className="fsx-pick is-wide" onClick={() => startArm('link')}>
-            <span className="fsx-pick-art" aria-hidden="true"><ClayIcon name="i-level" size={34} /></span>
+          <button type="button" className="fsx-pick is-wide uv-flat" onClick={() => startArm('link')}>
+            <span className="fsx-pick-art" aria-hidden="true"><Icon3D name="t-link" size={34} /></span>
             <span>
               <strong>Termék linkje</strong>
               <small>Bemásolod a webshop oldalát, kiolvasom a termék adatait</small>
             </span>
             <b aria-hidden="true">›</b>
           </button>
-          <button type="button" className="fsx-pick is-wide" onClick={() => startArm('photo')}>
-            <span className="fsx-pick-art" aria-hidden="true"><ClayIcon name="i-mikro" size={34} /></span>
+          <button type="button" className="fsx-pick is-wide uv-flat" onClick={() => startArm('photo')}>
+            <span className="fsx-pick-art" aria-hidden="true"><Icon3D name="t-camera" size={34} /></span>
             <span>
               <strong>Címkefotóról</strong>
               <small>Lefotózod a hátoldalt, kiolvasom, amit a címke mond</small>
             </span>
             <b aria-hidden="true">›</b>
           </button>
-          <button type="button" className="fsx-pick is-wide" onClick={() => startArm('manual')}>
-            <span className="fsx-pick-art" aria-hidden="true"><ClayIcon name="i-naplo" size={34} /></span>
+          <button type="button" className="fsx-pick is-wide uv-flat" onClick={() => startArm('manual')}>
+            <span className="fsx-pick-art" aria-hidden="true"><Icon3D name="t-journal" size={34} /></span>
             <span>
               <strong>Beírom kézzel</strong>
               <small>Ha nincs nálad a termék</small>
@@ -267,9 +274,9 @@ export function FuelStackAddPage() {
                 <input name="url" type="url" value={url} placeholder="https://…"
                   onChange={event => setUrl(event.target.value)} />
               </label>
-              <button type="button" className="fsx-primary" disabled={reading}
+              <button type="button" className="fsx-primary glass" disabled={reading}
                 onClick={() => { void readUrl() }}>
-                <span aria-hidden="true"><Icon name="anchor" size={22} /></span>
+                <span aria-hidden="true"><Icon3D name="t-link" size={26} /></span>
                 <span>{reading ? 'Beolvasom…' : 'Beolvasom'}</span>
                 <b aria-hidden="true">✦</b>
               </button>
@@ -291,7 +298,7 @@ export function FuelStackAddPage() {
             Ezek a termék saját adatai. Ebből számolom ki, hány egység kell naponta — amit nem
             tudok, azt inkább megkérdezem, mint hogy kitaláljam.
           </p>
-          <form className="fsx-form" onSubmit={submitFacts}>
+          <form className="fsx-form glass" onSubmit={submitFacts}>
             <label className="fsx-field">
               Termék neve
               <input name="name" defaultValue={facts.name} key={`name-${facts.name}`}
@@ -322,8 +329,8 @@ export function FuelStackAddPage() {
                   placeholder="90" />
               </label>
             </div>
-            <button type="submit" className="fsx-primary">
-              <span aria-hidden="true"><Icon name="sparkle" size={22} /></span>
+            <button type="submit" className="fsx-primary is-lit">
+              <span aria-hidden="true"><Icon3D name="t-score" size={26} /></span>
               <span>Tovább a javaslathoz</span>
               <b aria-hidden="true">›</b>
             </button>
@@ -339,7 +346,7 @@ export function FuelStackAddPage() {
           {!advice && (
             <>
               <div className="fsx-callout">
-                <span aria-hidden="true"><ClayIcon name="i-kiegeszito" size={26} /></span>
+                <span aria-hidden="true"><Icon3D name="t-supps" size={26} /></span>
                 <p>
                   <small>ŐSZINTÉN</small>
                   Ezt a hatóanyagot még nem ismerem, ezért nem találok ki hozzá adagot. Írd be,
@@ -356,7 +363,7 @@ export function FuelStackAddPage() {
 
           {advice?.unknownProduct && (
             <div className="fsx-callout">
-              <span aria-hidden="true"><ClayIcon name="i-kiegeszito" size={26} /></span>
+              <span aria-hidden="true"><Icon3D name="t-supps" size={26} /></span>
               <p>
                 <small>HIÁNYZIK EGY ADAT</small>
                 {advice.substance}-ra ismerem az ajánlott napi {advice.range[0]}–{advice.range[1]}{' '}
@@ -368,8 +375,8 @@ export function FuelStackAddPage() {
 
           {advice && !advice.unknownProduct && (
             <>
-              <div className="fsx-advice">
-                <span className="fsx-advice-art" aria-hidden="true"><ClayIcon name="i-kiegeszito" size={56} /></span>
+              <div className="fsx-advice uv-halo">
+                <span className="fsx-advice-art" aria-hidden="true"><Icon3D name="t-supps" size={64} /></span>
                 <strong>{advice.units} {advice.unitForm}</strong>
                 <em>naponta</em>
                 <p>
@@ -381,35 +388,36 @@ export function FuelStackAddPage() {
                   <span className="fsx-advice-days">A doboz ~{advice.days} napra elég</span>
                 )}
               </div>
-              <div className="fsx-dose-why">
-                <span aria-hidden="true"><ClayIcon name="i-lang" size={24} /></span>
+              <div className="fsx-dose-why uv-flat">
+                <span aria-hidden="true"><Icon3D name="t-bolt" size={28} /></span>
                 <p>{advice.reason}</p>
               </div>
-              <div className="fsx-tune">
-                <span className="fsx-overline">NAPI MENNYISÉG</span>
-                <div className="fsx-stepper">
-                  <button type="button" aria-label="Kevesebb"
-                    onClick={() => setDailyOverride(Math.max(
-                      facts.perUnit ?? 1, (advice.daily ?? 0) - (facts.perUnit ?? 1),
-                    ))}>−</button>
-                  <span><strong>{advice.daily}</strong><small>{advice.unit}</small></span>
-                  <button type="button" aria-label="Több"
-                    onClick={() => setDailyOverride((advice.daily ?? 0) + (facts.perUnit ?? 1))}>＋</button>
+              <div className="fsx-tunecard glass">
+                <div className="fsx-tune">
+                  <span className="fsx-overline">NAPI MENNYISÉG</span>
+                  <div className="fsx-stepper">
+                    <button type="button" aria-label="Kevesebb"
+                      onClick={() => setDailyOverride(Math.max(
+                        facts.perUnit ?? 1, (advice.daily ?? 0) - (facts.perUnit ?? 1),
+                      ))}>−</button>
+                    <span><strong>{advice.daily}</strong><small>{advice.unit}</small></span>
+                    <button type="button" aria-label="Több"
+                      onClick={() => setDailyOverride((advice.daily ?? 0) + (facts.perUnit ?? 1))}>＋</button>
+                  </div>
                 </div>
-              </div>
-              <div className="fsx-tune">
-                <span className="fsx-overline">MIKOR</span>
-                <div className="fsx-zones">
-                  {STACK_ZONE_ORDER.map(key => (
-                    <button type="button" key={key}
-                      aria-pressed={(zone ?? advice.zone) === key}
-                      onClick={() => setZone(key)}>{STACK_ZONE_LABEL[key]}</button>
-                  ))}
+                <div className="fsx-tune">
+                  <span className="fsx-overline">MIKOR</span>
+                  <div className="fsx-zones">
+                    {STACK_ZONE_ORDER.map(key => (
+                      <button type="button" key={key}
+                        aria-pressed={(zone ?? advice.zone) === key}
+                        onClick={() => setZone(key)}>{STACK_ZONE_LABEL[key]}</button>
+                    ))}
+                  </div>
                 </div>
               </div>
               {advice.caution && (
                 <div className="fsx-callout is-warn">
-                  <span aria-hidden="true"><Icon name="warning" size={24} /></span>
                   <p><small>AMIRE FIGYELJ</small>{advice.caution}</p>
                 </div>
               )}
@@ -417,13 +425,13 @@ export function FuelStackAddPage() {
           )}
 
           {facts.pantryItemId ? (
-            <button type="button" className="fsx-primary is-save"
+            <button type="button" className="fsx-primary glass is-save"
               onClick={() => {
                 void save(advice && !advice.unknownProduct
                   ? `${advice.units} ${advice.unitForm} · ${advice.daily} ${advice.unit}`
                   : manualDose.trim())
               }}>
-              <span aria-hidden="true"><ClayIcon name="i-stack" size={26} /></span>
+              <span aria-hidden="true"><Icon3D name="t-protocol" size={26} /></span>
               <span>
                 Felveszem a protokollba ·{' '}
                 {STACK_ZONE_LABEL[zone ?? advice?.zone ?? STACK_ZONE_ORDER[0]]}
@@ -432,7 +440,7 @@ export function FuelStackAddPage() {
             </button>
           ) : (
             <div className="fsx-callout">
-              <span aria-hidden="true"><ClayIcon name="i-kamra" size={26} /></span>
+              <span aria-hidden="true"><Icon3D name="t-stack" size={26} /></span>
               <p>
                 <small>EGY LÉPÉS MÉG</small>
                 A protokoll a Kamrádban lévő termékeket követi, ez pedig még nincs a polcon. Vedd
@@ -441,8 +449,8 @@ export function FuelStackAddPage() {
             </div>
           )}
           {!facts.pantryItemId && (
-            <button type="button" className="fsx-primary" onClick={() => navigate('/fuel/kamra')}>
-              <span aria-hidden="true"><ClayIcon name="i-kamra" size={26} /></span>
+            <button type="button" className="fsx-primary glass" onClick={() => navigate('/fuel/kamra')}>
+              <span aria-hidden="true"><Icon3D name="t-stack" size={26} /></span>
               <span>Felveszem a Kamrába</span>
               <b aria-hidden="true">›</b>
             </button>

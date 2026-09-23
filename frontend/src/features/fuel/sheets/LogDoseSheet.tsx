@@ -7,6 +7,10 @@
 // <Sheet> portal + chamfer Field cards). Fields: Dátum (default today) · Időpont
 // (optional) · Dózis (prefilled from the last dose) · Jegyzet (optional) → on save
 // builds a MedicationDoseInput and calls useMedicationActions().logDose, then closes.
+//
+// ÜVEG (mezo-me75u.2; prototypes/uveg-fuel-tobbi.html `SH.dose`): the sheet is ONE sky glass
+// surface (`fsx-sheet`), the fields are eyebrow-labelled flat wells, Mégse is flat and the
+// save a lit sky button (lit flat, never glass in glass). Behavior unchanged.
 // ============================================================
 import { useState } from 'react'
 import { useMedication, useMedicationActions } from '@/data/hooks'
@@ -14,32 +18,16 @@ import { localDateString, offsetIso } from '@/shared/lib/dates'
 import type { MedicationDoseInput } from '@/data/types'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { Display } from '@/shared/ui/Display'
+import { Icon3D } from '@/shared/ui/clay'
 
-const fieldLabelStyle = { fontSize: 8, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-tertiary)' } as const
-const fieldInputStyle = { fontSize: 14, color: 'var(--text-primary)', marginTop: 3, width: '100%' } as const
-const grid2 = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 } as const
-
-// A single chamfered form field card (label on top, control below) — the
-// AddPantryItemSheet idiom. The <label> wraps the control so getByLabelText resolves it.
+// A single form field: an eyebrow caption over a flat well. The <label> wraps the control so
+// getByLabelText resolves it.
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="card" style={{ padding: '8px 10px' }}>
-      <label className="label-mono col" style={{ ...fieldLabelStyle, gap: 0 }}>
-        {label}
-        {children}
-      </label>
-    </div>
-  )
-}
-
-function SectionHead({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="row" style={{ alignItems: 'center', gap: 8, margin: '14px 2px 8px' }}>
-      <span className="label-mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--text-tertiary)' }}>{children}</span>
-      <span style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
-    </div>
+    <label className="fsx-sh-field">
+      <span className="uv-eyebrow">{label}</span>
+      {children}
+    </label>
   )
 }
 
@@ -78,64 +66,56 @@ export function LogDoseSheet({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Sheet onClose={onClose} labelledBy="log-dose-title">
+    <Sheet onClose={onClose} labelledBy="log-dose-title" className="glass is-still fsx-sheet is-sky">
       {(close) => (
         <>
           {/* Header */}
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-            <div className="col">
-              <Eyebrow brand>Beadás · {med.name || 'Gyógyszer'}</Eyebrow>
-              <div id="log-dose-title" style={{ marginTop: 4 }}>
-                <Display size="md">Új beadás</Display>
-              </div>
+          <div className="fsx-shh">
+            <span className="fsx-shh-art" aria-hidden="true"><Icon3D name="t-syringe" size={48} /></span>
+            <div className="fsx-shh-copy">
+              <span className="uv-eyebrow">Beadás · {med.name || 'Gyógyszer'}</span>
+              <div id="log-dose-title" className="fsx-shh-title"><strong>Új beadás</strong></div>
             </div>
-            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}>
+            <button type="button" className="fsx-shh-x" aria-label="Bezárás" onClick={close}>
               <Icon name="x" size={12} />
             </button>
           </div>
 
           {/* Mikor — date + optional time */}
-          <SectionHead>Mikor</SectionHead>
-          <div style={grid2}>
+          <div className="fsx-sh-two">
             <Field label="Dátum">
-              <input type="date" value={date} onChange={e => setDate(e.target.value)} style={fieldInputStyle} />
+              <input className="fsx-sh-input" type="date" value={date} onChange={e => setDate(e.target.value)} />
             </Field>
             <Field label="Időpont">
-              <input type="time" value={time} onChange={e => setTime(e.target.value)} style={fieldInputStyle} />
+              <input className="fsx-sh-input" type="time" value={time} onChange={e => setTime(e.target.value)} />
             </Field>
           </div>
 
           {/* Dózis */}
-          <SectionHead>Dózis</SectionHead>
-          <div style={{ marginBottom: 8 }}>
-            <Field label="Dózis">
-              <div className="row gap-xs" style={{ marginTop: 3, alignItems: 'center' }}>
-                <input
-                  inputMode="decimal"
-                  value={dose}
-                  onChange={e => setDose(e.target.value)}
-                  placeholder={String(med.defaultDose)}
-                  style={{ fontSize: 14, color: 'var(--text-primary)', width: '60%' }}
-                />
-                <span className="label-mono" style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{med.doseUnit || 'mg'}</span>
-              </div>
-            </Field>
-          </div>
+          <Field label="Dózis">
+            <span className="fsx-sh-unitrow">
+              <input
+                className="fsx-sh-input"
+                inputMode="decimal"
+                value={dose}
+                onChange={e => setDose(e.target.value)}
+                placeholder={String(med.defaultDose)}
+              />
+              <span className="fsx-sh-unit">{med.doseUnit || 'mg'}</span>
+            </span>
+          </Field>
 
           {/* Jegyzet */}
-          <SectionHead>Jegyzet</SectionHead>
-          <div style={{ marginBottom: 8 }}>
-            <Field label="Jegyzet">
-              <input value={note} onChange={e => setNote(e.target.value)} placeholder="pl. hétfő reggel · subQ has" style={fieldInputStyle} />
-            </Field>
-          </div>
+          <Field label="Jegyzet">
+            <input className="fsx-sh-input" value={note} onChange={e => setNote(e.target.value)} placeholder="pl. hétfő reggel · subQ has" />
+          </Field>
 
           {/* Actions */}
-          <div className="row gap-sm" style={{ marginTop: 14 }}>
-            <button className="cta-ghost flex-1" onClick={close}>
+          <div className="fsx-sh-pair">
+            <button type="button" className="fsx-sh-btn uv-flat" onClick={close}>
               Mégse
             </button>
-            <button className="cta-primary flex-1" disabled={!canSave} onClick={() => submit(close)}>
+            <button type="button" className="fsx-sh-btn is-lit" disabled={!canSave} onClick={() => submit(close)}>
               <Icon name="check" size={14} /> Beadás
             </button>
           </div>

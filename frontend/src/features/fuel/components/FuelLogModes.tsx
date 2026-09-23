@@ -19,9 +19,9 @@
 //   • a hang nem új backend: a leiratozott mondat ugyanabba a szövegmezőbe megy (A6),
 //   • előzmény nélkül a szokásosak fül őszintén üres — nem találunk ki szokásokat.
 // ============================================================
+import type { CSSProperties } from 'react'
 import { huInt } from '@/shared/lib/huNum'
-import { Icon } from '@/shared/ui/Icon'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
 import type { UsualMeal } from '@/features/fuel/logic/usualMeals'
 import type { MealSlot } from '@/data/types'
@@ -29,12 +29,13 @@ import type { MealSlot } from '@/data/types'
 export type LogMode = 'photo' | 'voice' | 'text' | 'usual'
 
 /** A négy mód a jóváhagyott sorrendben. A címkék a fülek EGYETLEN szövegei (a tesztje ezt
- *  a sorrendet és ezeket a szavakat őrzi), az ikonok a ház meglévő clay-készletéből valók. */
-const MODES: { id: LogMode; label: string; icon: ClayIconName }[] = [
-  { id: 'photo', label: 'Fotó', icon: 'i-video' },
-  { id: 'voice', label: 'Hang', icon: 'i-mikrofon' },
-  { id: 'text', label: 'Gépelés', icon: 'i-naplo' },
-  { id: 'usual', label: 'Szokásosak', icon: 'i-heti' },
+ *  a sorrendet és ezeket a szavakat őrzi). Üveg (mezo-me75u.2, uveg-fuel-tobbi `log()`): a
+ *  Titanium 3D ikonok, és minden fül a SAJÁT hue-jában világít, ha aktív. */
+const MODES: { id: LogMode; label: string; icon: Icon3DName; color: string }[] = [
+  { id: 'photo', label: 'Fotó', icon: 't-camera', color: 'var(--dv-coral)' },
+  { id: 'voice', label: 'Hang', icon: 't-mic', color: 'var(--dv-lav)' },
+  { id: 'text', label: 'Gépelés', icon: 't-journal', color: 'var(--dv-sage)' },
+  { id: 'usual', label: 'Szokásosak', icon: 't-repeat', color: 'var(--dv-amber)' },
 ]
 
 const SLOT_LABEL: Record<MealSlot, string> = {
@@ -52,10 +53,10 @@ function usualHint(u: UsualMeal): string {
 function PhotoView({ onPhoto }: { onPhoto: (file: File) => void }) {
   return (
     <div className="fmx-camera">
-      <label className="fmx-finder">
+      <label className="fmx-finder glass">
         <span aria-hidden="true" /><span aria-hidden="true" />
         <span aria-hidden="true" /><span aria-hidden="true" />
-        <ClayIcon name="i-tanyer" size={92} />
+        <Icon3D name="t-plate" size={92} className="uv-float" />
         <b>Fotózd le a tányért</b>
         <input type="file" accept="image/*" capture="environment" aria-label="Étel fotó · kamera"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) onPhoto(f) }} />
@@ -80,11 +81,11 @@ function VoiceView({ onTranscript }: { onTranscript: (text: string) => void }) {
 
   return (
     <div className="fmx-voice">
-      <button type="button" className={`fmx-mic${recording ? ' is-live' : ''}`}
+      <button type="button" className={`fmx-mic glass${recording ? ' is-live' : ''}`}
         onClick={voice.toggle}
         disabled={voice.state === 'unsupported' || voice.state === 'transcribing'}
         aria-label={label} aria-pressed={recording}>
-        <Icon name={recording ? 'voice-wave' : 'mic'} size={28} />
+        <Icon3D name="t-mic" size={62} />
       </button>
       <p className="fmx-mode-hint">
         {voice.state === 'unsupported'
@@ -104,8 +105,8 @@ function TextView() {
   return (
     <div className="fmx-typed">
       <p className="fmx-mode-hint">
-        Írd le egy mondatban, mit ettél — lent a ✨ mezőben. Az AI tételekre bontja, te pedig
-        átírhatod, mielőtt mentünk.
+        Írd le egy mondatban, mit ettél — lent a <Icon3D name="t-score" size={15} className="fmx-inline-ico" /> mezőben.
+        Az AI tételekre bontja, te pedig átírhatod, mielőtt mentünk.
       </p>
     </div>
   )
@@ -114,7 +115,7 @@ function TextView() {
 function UsualView({ usuals, onUsual }: { usuals: UsualMeal[]; onUsual: (u: UsualMeal) => void }) {
   if (usuals.length === 0) {
     return (
-      <p className="fmx-mode-empty">
+      <p className="fmx-mode-empty uv-empty">
         Még tanulom, mit szoktál enni. Pár logolás után itt lesznek a szokásosaid — addig fotó,
         hang vagy gépelés.
       </p>
@@ -125,8 +126,8 @@ function UsualView({ usuals, onUsual }: { usuals: UsualMeal[]; onUsual: (u: Usua
       <p className="fmx-mode-hint">Amihez ilyenkor a leggyakrabban nyúlsz — egy koppintás, aztán jóváhagyod.</p>
       <div className="fmx-usuals">
         {usuals.map(u => (
-          <button key={u.key} type="button" className="fmx-usual" onClick={() => onUsual(u)}>
-            <span className="fmx-usual-art" aria-hidden="true"><ClayIcon name="i-tanyer" size={34} /></span>
+          <button key={u.key} type="button" className="fmx-usual glass" onClick={() => onUsual(u)}>
+            <span className="fmx-usual-art uv-well" aria-hidden="true"><Icon3D name="t-plate" size={34} /></span>
             <span className="fmx-usual-copy">
               <strong>{u.title}</strong>
               <small>{usualHint(u)}</small>
@@ -146,9 +147,9 @@ function UsualView({ usuals, onUsual }: { usuals: UsualMeal[]; onUsual: (u: Usua
  */
 function FailedView({ onMode }: { onMode: (m: LogMode) => void }) {
   return (
-    <div className="fmx-failed">
+    <div className="fmx-failed uv-empty">
       <span className="fmx-failed-art" aria-hidden="true">
-        <ClayIcon name="i-video" size={34} />
+        <Icon3D name="t-camera" size={62} />
         <i>?</i>
       </span>
       <small>ŐSZINTÉN SZÓLVA</small>
@@ -179,12 +180,13 @@ export function FuelLogModes({ mode, onMode, onPhoto, onUsual, onTranscript, fai
        A héj nélküli LogFlow-overlayben ugyanezt a nevet a composer forrás-sora viseli, tehát
        mindkét felületen pontosan egy elem hordozza, és a „Mutasd meg" sosem mutat a semmibe. */
     <div className="fmx-logmodes" data-kalauz-anchor="log-forrasok">
-      <div className="fmx-modes" role="tablist" aria-label="Naplózási mód">
+      <div className="fmx-modes glass" role="tablist" aria-label="Naplózási mód">
         {MODES.map(m => (
           <button key={m.id} type="button" role="tab" aria-selected={mode === m.id}
             className={`fmx-mode${mode === m.id ? ' is-active' : ''}`}
+            style={{ '--c': m.color } as CSSProperties}
             onClick={() => onMode(m.id)}>
-            <ClayIcon name={m.icon} size={24} />
+            <Icon3D name={m.icon} size={30} />
             <span>{m.label}</span>
           </button>
         ))}

@@ -5,11 +5,14 @@
 // items, each with its count, as multi-select chamfer chips. Clear + Apply close the
 // loop. The parent owns the committed selection; this sheet edits a local draft and
 // commits it on Apply (or Clear-then-Apply). Wraps the shared <Sheet> shell.
+// Üveg (mezo-me75u.2, uveg-fuel-tobbi.html `SH.catfilter`): one gold glass sheet; the category
+// chips are flat cells with their category dot, a selected one filled in its own hue; the
+// apply button the gold-lit flat CTA (never glass in glass).
 // ============================================================
 import { useState } from 'react'
 import { pantryCategoryMeta } from '@/data/fuel/pantry'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { KamraSheetHead, KAMRA_SHEET_CLASS } from '@/features/fuel/sheets/KamraSheetHead'
 
 export interface CategoryOption { key: string; label: string; color: string; count: number }
 
@@ -34,57 +37,46 @@ export function CategoryFilterSheet({
   const count = totalIfApplied(draft)
 
   return (
-    <Sheet onClose={onClose} labelledBy="category-filter-title">
+    <Sheet onClose={onClose} labelledBy="category-filter-title" className={KAMRA_SHEET_CLASS}>
       {(close) => (
         <>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div id="category-filter-title"><Eyebrow brand>Kategória szűrő</Eyebrow></div>
-            <button
-              onClick={() => setDraft([])}
-              className="label-mono"
-              style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: draft.length ? 'var(--coral)' : 'var(--text-tertiary)' }}
-              disabled={!draft.length}
-            >
-              {draft.length} kiválasztva · törlés
-            </button>
-          </div>
+          <KamraSheetHead eyebrow="Kategória szűrő" title="Mit mutassak?" titleId="category-filter-title"
+            action={(
+              <button type="button" className="fkk-sh-clear" onClick={() => setDraft([])} disabled={!draft.length}>
+                {draft.length} kiválasztva · törlés
+              </button>
+            )} />
 
-          <div className="row flex-wrap" style={{ gap: 7 }}>
+          <div className="fkk-sh-chips is-wrap">
             {options.map(opt => {
               const on = draft.includes(opt.key)
               return (
                 <button
                   key={opt.key}
+                  type="button"
                   onClick={() => toggle(opt.key)}
                   aria-pressed={on}
-                  className="rad-16 row"
-                  style={{
-                    alignItems: 'center', gap: 6, padding: '7px 11px',
-                    fontSize: 10, letterSpacing: '0.04em', textTransform: 'uppercase',
-                    color: on ? 'var(--coral)' : 'var(--text-secondary)',
-                    background: on ? 'color-mix(in srgb, var(--sage) 12%, transparent)' : 'var(--surface-2)',
-                    border: '1px solid ' + (on ? 'color-mix(in srgb, var(--sage) 30%, transparent)' : 'var(--border-subtle)'),
-                  }}
+                  className={on ? 'is-on' : undefined}
+                  style={{ '--c': opt.color } as React.CSSProperties}
                 >
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: opt.color, flexShrink: 0 }} />
+                  <i className="fkk-sh-dot" aria-hidden="true" />
                   {opt.label}
-                  <span style={{ fontSize: 9, color: on ? 'var(--coral)' : 'var(--text-tertiary)' }}>{opt.count}</span>
+                  <b>{opt.count}</b>
                 </button>
               )
             })}
             {options.length === 0 && (
-              <span className="text-tertiary" style={{ fontSize: 12 }}>Nincs szűrhető kategória.</span>
+              <span className="fkk-sh-none">Nincs szűrhető kategória.</span>
             )}
           </div>
 
           <button
-            className="cta-primary"
-            style={{ marginTop: 16 }}
+            type="button"
+            className="fkk-btn is-go fkk-sh-apply"
             onClick={() => { onApply(draft); close() }}
           >
             Szűrés ({count} tétel)
           </button>
-          <div style={{ height: 24 }} />
         </>
       )}
     </Sheet>

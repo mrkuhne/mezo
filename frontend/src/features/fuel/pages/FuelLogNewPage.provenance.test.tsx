@@ -101,7 +101,7 @@ test('E10: a fotós út `ai-photo` provenance-szal mentődik a /fuel/log/uj lapr
 test('E10: a gépelt AI-út `ai-text` provenance-szal mentődik, a nyers szöveggel', async () => {
   renderAt('/fuel/log/uj?ai=1')
   await userEvent.type(await screen.findByLabelText('Mit ettél?'), 'csirkés wrap')
-  await userEvent.click(screen.getByRole('button', { name: '✨ Elemzés' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Elemzés' }))
   await screen.findByText('Csirkés wrap')
   await save()
   await vi.waitFor(() => expect(logged.calls.length).toBe(1))
@@ -113,7 +113,7 @@ test('E10: a gépelt AI-út `ai-text` provenance-szal mentődik, a nyers szöveg
 test('E9: az érintetlen AI-piszkozat mentése `accepted`-et jelent a saját draftId-jével', async () => {
   renderAt('/fuel/log/uj?ai=1')
   await userEvent.type(await screen.findByLabelText('Mit ettél?'), 'csirkés wrap')
-  await userEvent.click(screen.getByRole('button', { name: '✨ Elemzés' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Elemzés' }))
   await screen.findByText('Csirkés wrap')
   await save()
   await vi.waitFor(() => expect(reportDraftOutcome)
@@ -124,7 +124,7 @@ test('E9: az érintetlen AI-piszkozat mentése `accepted`-et jelent a saját dra
 test('E9: a piszkozat megpiszkálása után `edited` megy el, nem `accepted`', async () => {
   renderAt('/fuel/log/uj?ai=1')
   await userEvent.type(await screen.findByLabelText('Mit ettél?'), 'csirkés wrap')
-  await userEvent.click(screen.getByRole('button', { name: '✨ Elemzés' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Elemzés' }))
   await screen.findByText('Csirkés wrap')
   await userEvent.click(screen.getByRole('button', { name: 'Csirkés wrap növelés' }))
   await save()
@@ -137,7 +137,7 @@ test('E9: a piszkozat megpiszkálása után `edited` megy el, nem `accepted`', a
 test('E9: mentés nélkül elhagyott piszkozat `discarded`-ot jelent', async () => {
   const view = renderAt('/fuel/log/uj?ai=1')
   await userEvent.type(await screen.findByLabelText('Mit ettél?'), 'csirkés wrap')
-  await userEvent.click(screen.getByRole('button', { name: '✨ Elemzés' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Elemzés' }))
   await screen.findByText('Csirkés wrap')
   view.unmount()
   await vi.waitFor(() => expect(reportDraftOutcome)

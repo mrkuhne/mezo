@@ -8,11 +8,14 @@
 // The error path is the F7.5 retry-bubble idiom VERBATIM (`.mzc-bub-err` + `.mzc-ebtn`,
 // ChatPage): amber, never red — a hiccup, not a scolding (ADR 0010) — with `Újra`
 // re-sending the SAME failed message and `Szerkesztés` handing the text back to the field.
+// Üveg U2 (mezo-me75u.2, prototype `muhely()` dock): the dock is ONE lavender glass card; the
+// preset chips (each with its 3D goal icon), context chips, last-reply preview and composer are
+// flat inside it, the send button a lit lavender disc. The thread sheet's bubbles are flat cells.
 // ============================================================
 import { useState } from 'react'
 import { Icon } from '@/shared/ui/Icon'
 import { Sheet } from '@/shared/ui/Sheet'
-import { ClayIcon } from '@/shared/ui/clay'
+import { ContentIcon, type Icon3DName } from '@/shared/ui/clay'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Display } from '@/shared/ui/Display'
 import type { WorkshopGoal } from '@/data/types'
@@ -38,12 +41,12 @@ export interface WorkshopChatDockProps {
   onDropContext: (name: string) => void
 }
 
-const PRESETS: { id: WorkshopGoal; label: string }[] = [
-  { id: 'high_protein', label: 'Magas fehérje' },
-  { id: 'pre_workout', label: 'Edzés előtt' },
-  { id: 'post_workout', label: 'Edzés után' },
-  { id: 'before_bed', label: 'Lefekvés előtt' },
-  { id: 'breakfast', label: 'Reggeli' },
+const PRESETS: { id: WorkshopGoal; label: string; icon: Icon3DName }[] = [
+  { id: 'high_protein', label: 'Magas fehérje', icon: 't-meat' },
+  { id: 'pre_workout', label: 'Edzés előtt', icon: 't-bolt' },
+  { id: 'post_workout', label: 'Edzés után', icon: 't-dumbbell' },
+  { id: 'before_bed', label: 'Lefekvés előtt', icon: 't-moon' },
+  { id: 'breakfast', label: 'Reggeli', icon: 't-sun' },
 ]
 
 export function WorkshopChatDock({
@@ -54,7 +57,7 @@ export function WorkshopChatDock({
   const lastReply = [...history].reverse().find(m => m.role === 'assistant')?.text ?? null
 
   return (
-    <div className="wsh-dock">
+    <div className="wsh-dock glass" style={{ '--c': 'var(--dv-lav)' } as React.CSSProperties}>
       <div className="wsh-presets" role="group" aria-label="Cél-presetek">
         {PRESETS.map(p => (
           <button
@@ -65,21 +68,20 @@ export function WorkshopChatDock({
             disabled={busy}
             onClick={() => onGoal(p.id)}
           >
-            {p.label}
+            <ContentIcon name={p.icon} size={18} />{p.label}
           </button>
         ))}
       </div>
 
       {contextNames.length > 0 && (
-        <div className="row gap-xs flex-wrap" style={{ padding: '0 2px' }}>
+        <div className="fkx-chips">
           {contextNames.map(n => (
             <button
               key={n}
               type="button"
-              className="chip"
+              className="fkx-chip"
               onClick={() => onDropContext(n)}
               aria-label={`${n} elvétele a következő körből`}
-              style={{ fontSize: 9, padding: '4px 9px' }}
             >
               {n} <Icon name="x" size={9} />
             </button>
@@ -88,9 +90,7 @@ export function WorkshopChatDock({
       )}
 
       {busy && (
-        <p className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', padding: '0 4px' }}>
-          A Műhely dolgozik…
-        </p>
+        <p className="wsh-busy">A Műhely dolgozik…</p>
       )}
 
       {error && (
@@ -105,15 +105,15 @@ export function WorkshopChatDock({
 
       {lastReply && !error && (
         <button type="button" className="wsh-last" onClick={() => setThreadOpen(true)}>
-          <ClayIcon name="i-muhely" size={18} />
+          <ContentIcon name="t-chef" size={22} />
           <span className="tx">{lastReply}</span>
-          <span aria-hidden="true" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>▲</span>
+          <span aria-hidden="true" className="wsh-last-chev">▲</span>
         </button>
       )}
 
-      <div className="row gap-sm" style={{ alignItems: 'center', paddingBottom: 4 }}>
+      <div className="wsh-composer">
         <button type="button" className="wsh-cbtn" aria-label="Kamra" onClick={onOpenPantry}>
-          <ClayIcon name="i-polc" size={17} />
+          <ContentIcon name="t-stack" size={22} />
         </button>
         <div className="wsh-cfield">
           <input
@@ -136,35 +136,26 @@ export function WorkshopChatDock({
       </div>
 
       {threadOpen && (
-        <Sheet onClose={() => setThreadOpen(false)} labelledBy="workshop-thread-title">
+        <Sheet onClose={() => setThreadOpen(false)} className="fkx-rsheet-host" labelledBy="workshop-thread-title">
           {close => (
             <>
-              <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div className="fkx-rsheet-head">
+                <ContentIcon name="t-chef" size={40} />
                 <div className="col">
                   <Eyebrow brand>Műhely · beszélgetés</Eyebrow>
                   <div id="workshop-thread-title" style={{ marginTop: 4 }}>
                     <Display size="md">Amiről eddig beszéltünk</Display>
                   </div>
                 </div>
-                <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}>
+                <button className="fkx-rsheet-x" aria-label="Bezárás" onClick={close}>
                   <Icon name="x" size={12} />
                 </button>
               </div>
-              <div className="col gap-sm" style={{ maxHeight: 420, overflowY: 'auto' }}>
+              <div className="fkx-rsheet fkx-thread">
                 {history.map((m, i) => (
-                  <div
-                    key={i}
-                    className="mz-qcard"
-                    style={{
-                      marginBottom: 0, padding: '9px 11px', maxWidth: '92%',
-                      alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-                      background: m.role === 'user' ? 'var(--mz-tone-coral)' : 'var(--surface-card)',
-                    }}
-                  >
-                    <span className="label-mono" style={{ fontSize: 7.5, letterSpacing: '0.14em', color: 'var(--text-tertiary)' }}>
-                      {m.role === 'user' ? 'TE' : 'MŰHELY'}
-                    </span>
-                    <p style={{ fontSize: 12, lineHeight: 1.5, marginTop: 3, color: 'var(--text-primary)' }}>{m.text}</p>
+                  <div key={i} className={'fkx-bubble uv-flat' + (m.role === 'user' ? ' is-user' : '')}>
+                    <span className="uv-eyebrow">{m.role === 'user' ? 'TE' : 'MŰHELY'}</span>
+                    <p>{m.text}</p>
                   </div>
                 ))}
               </div>

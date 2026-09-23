@@ -41,23 +41,30 @@ test('renders a suggestion row: recipe Link with the correct href + metric + rea
   expect(screen.getByText(suggestion.zoneLabel)).toBeInTheDocument()
 })
 
-test('renders an ok (✓) verdict row without advice', () => {
-  renderResult({ suggestions: [], verdicts: [okVerdict] })
-  expect(screen.getByText('✓')).toBeInTheDocument()
+// Üveg (mezo-me75u.2): the ✓/⚠ glyphs became a lit 3D tick and a warning-tinted flat marker —
+// same meaning, no emoji-like glyphs. The markers stay aria-hidden (the row text carries it).
+const okMarks = (c: HTMLElement) => c.querySelectorAll('.fsx-mm-mark.is-ok use[href="#t-tick"]')
+const warnMarks = (c: HTMLElement) => c.querySelectorAll('.fsx-mm-mark.is-warn')
+
+test('renders an ok (lit tick) verdict row without advice', () => {
+  const { container } = renderResult({ suggestions: [], verdicts: [okVerdict] })
+  expect(okMarks(container)).toHaveLength(1)
+  expect(warnMarks(container)).toHaveLength(0)
   expect(screen.getByText(okVerdict.mealTitle)).toBeInTheDocument()
   expect(screen.getByText(okVerdict.metric)).toBeInTheDocument()
 })
 
-test('renders a not-ok (⚠) verdict row with its advice text', () => {
-  renderResult({ suggestions: [], verdicts: [warnVerdict] })
-  expect(screen.getByText('⚠')).toBeInTheDocument()
+test('renders a not-ok (warning marker) verdict row with its advice text', () => {
+  const { container } = renderResult({ suggestions: [], verdicts: [warnVerdict] })
+  expect(warnMarks(container)).toHaveLength(1)
+  expect(okMarks(container)).toHaveLength(0)
   expect(screen.getByText(warnVerdict.mealTitle)).toBeInTheDocument()
   expect(screen.getByText(warnVerdict.advice!)).toBeInTheDocument()
 })
 
 test('renders suggestions and verdicts together (the section is not either/or)', () => {
-  renderResult({ suggestions: [suggestion], verdicts: [okVerdict, warnVerdict] })
+  const { container } = renderResult({ suggestions: [suggestion], verdicts: [okVerdict, warnVerdict] })
   expect(screen.getByRole('link', { name: suggestion.recipeName })).toBeInTheDocument()
-  expect(screen.getAllByText('✓')).toHaveLength(1)
-  expect(screen.getAllByText('⚠')).toHaveLength(1)
+  expect(okMarks(container)).toHaveLength(1)
+  expect(warnMarks(container)).toHaveLength(1)
 })
