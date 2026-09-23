@@ -3,9 +3,17 @@
 Dátum: 2026-09-23 · Állapot: **jóváhagyott prototípussal, spec review alatt**
 Előzmény: Boop V3 social navigáció (`mezo-dcuyw`, ADR 0049) · vizuális kánon: restored-world
 style bible + ADR 0032/0033 (Huawei/Mozaik csempe→oldal idióma).
-Jóváhagyott prototípus: [`assets/boop-team-feed-v3.html`](assets/boop-team-feed-v3.html)
-(V5 · social fal — a brainstorm 2026-09-22/23-i körein az owner minden alábbi döntést
-egyenként hagyott jóvá; a végső prototípusra: „tetszik, mehet”).
+Jóváhagyott prototípus: **[`docs/design_2.0/prototypes/uveg-uzenofal.html`](../../design_2.0/prototypes/uveg-uzenofal.html)**
+(a social-fal az **üveg-kánonban** — 2026-09-23 este az owner jóváhagyta, a poszt-panelek
+tagolásával és a karakterhangú szövegekkel együtt). Történeti előzmény:
+[`assets/boop-team-feed-v3.html`](assets/boop-team-feed-v3.html) (a világos Mozaik-változat,
+amelyen a szerkezeti döntések születtek).
+
+> **Vizuális kánon-váltás, 2026-09-23:** az egész app a sötét **üveg-anyagra** vált
+> (Üvegesítés program, epic `mezo-me75u`, `/uvegesites` skill, üveg style bible). Ez a spec
+> minden felülete az üveg-kánonban készül, **csak sötét módban**; a §3-ban leírt anatómia a
+> jóváhagyott üveg-prototípus szerint értendő. A Mezo-domain üvegesítés-szeleteivel (U8/U9)
+> ez az epic ad tartalmi irányt — azok e spec felületeit kapják meg.
 
 ## 1. Vízió
 
@@ -71,7 +79,22 @@ lekerül a főútvonalról.
       a tányér (önmagában) · a cél (súly/deficit) · az edzés (teljesítmény-kapcsolat).
     - *Kérdéslista-bővítés + gyakoribb előrejelzés:* a II. felvonás után.
 
-## 3. A fal anatómiája (a jóváhagyott prototípus szerint)
+11. **Üveg-kánon, sötét-only (2026-09-23):** anyag a Titaniumtól (üvegkártya gradiens-kerettel,
+    fényfutás, derengés, 3D ikonkészlet), színek a Mozaiktól, alap a meleg grafit `#191614`.
+    A fal rangsora: a nap posztere az egyetlen üvegdoboz; a csendes posztok halvány, lekerekített
+    lapos panelben ülnek (leheletnyi kiemelés + vékony keret — jól látható poszthatárokkal,
+    üveg-tulajdonságok nélkül); a csapat-sorok és szoba-sorok üvegben, karakterszín-kerettel.
+    A chrome (fejléc + alsó üveg-menü az élő Booppal) a `fuel-uveg.html`-ből jön, változatlanul.
+    Négy új ikon készült a Titanium-receptben (Ez talál, Nem így érzem, Küldés, Kísérlet) —
+    owner-jóváhagyással a közös készletbe kerülnek.
+12. **Karakterhang-szabály (2026-09-23):** a posztok és hozzászólások nem egymondatosak —
+    2–4 mondat, konkrét számokkal, kiemelésekkel, a karakter saját hangján, mértékkel adagolt
+    **emojival a szövegben** (Szunya 🌙, Mocor ⚡💪, Falat 🍽️🥦, Derű 🌤️, Mezo 📔✅; a
+    Szkeptikus szárazon, emoji nélkül). Az emoji KIZÁRÓLAG a karakterek mondataiban élhet —
+    a felület glifái (gombok, csempék, ikonok) továbbra is a sprite-készletből jönnek, emoji ott
+    tilos marad.
+
+## 3. A fal anatómiája (a jóváhagyott üveg-prototípus szerint)
 
 **Oldal-csontváz, fentről:** aurora-fejléc (felület, nem sáv; napszak-színű) → „Üzenőfal”
 cím (Geist, sans) → **story-sáv** → „N új bejegyzés” korong (időzítve, sosem szúr be
@@ -222,9 +245,18 @@ Gate-ek: mindkét FE-mód; mobil 320px; reduced-motion; navigációs tesztek; CO
 10. Étkezés-boop napi három-szólamú értékelése; adatéhség-posztok.
 11. Később: kérdéslista-bővítés, gyakoribb előrejelzés.
 
-**Folyamat-infrastruktúra (owner-kérés):** egy **epic bead** saját leírással + szeletekkel,
-és egy **saját session-skill** (a `/visszaoltoztetes` mintájára), ami friss kontexttel
-indítva a soron következő szeletet viszi. A spec jóváhagyása után jön létre.
+**Design-körök a megvalósítás előtt (owner-döntés, 2026-09-23):** a kapcsolódó al- és
+mélyoldalak MIND prototípusban készülnek el először, körönként owner-jóváhagyással, a
+jóváhagyott `uveg-uzenofal.html` bővítésével (egy összefüggő, kattintható világ marad):
+**D1** a fal mélye (poszt-oldal minden műfajra, válasz-flow) → **D2** az 5 szoba teljes
+mélysége + karakter-aloldalak → **D3** Rólad (dosszié) → **D4** Emlékek → **D5** Mezo-szoba
+mélye (konzílium, heti fejezet, Gépterem) → **D6** első használat + kalauz-kivezetés.
+Beadek: `mezo-a9bo7.1`–`.6`. A megvalósítási (I–II. felvonás) szeletbontás a design-körök
+végén készül, a kész prototípus-világ mint parity-referencia alapján.
+
+**Folyamat-infrastruktúra:** epic `mezo-a9bo7` + a **`/csapatfal` session-skill**
+(a `/uvegesites` mintájára): friss session → soron következő D-kör → prototípus-bővítés →
+owner OK → commit.
 
 ## 8. Nem cél (out of scope)
 
