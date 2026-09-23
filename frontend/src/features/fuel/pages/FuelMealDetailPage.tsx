@@ -37,7 +37,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useFuelDay } from '@/data/hooks'
 import { pct } from '@/shared/lib/pct'
 import { hu1, huInt } from '@/shared/lib/huNum'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { ContentIcon, type ClayIconName, type Icon3DName } from '@/shared/ui/clay'
 import type { MealItemLine, MealSlot } from '@/data/types'
 import { hhmmFromLoggedAt, mealSlotKey } from '@/features/fuel/logic/buildDayPlan'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
@@ -63,10 +63,12 @@ const BLOCK: Record<MealSlot, { color: string; icon: ClayIconName; label: string
 }
 
 /** A sor eredete — a logolt `MealItemLine.source` háza szerinti arca. */
-const SOURCE: Record<MealItemLine['source'], { label: string; icon: ClayIconName }> = {
-  recipe: { label: 'recept', icon: 'i-recept' },
-  pantry: { label: 'kamra', icon: 'i-kamra' },
-  estimate: { label: 'becslés', icon: 'i-lombik' },
+const SOURCE: Record<MealItemLine['source'], { label: string; icon: Icon3DName }> = {
+  // Üveg (mezo-me75u.1): the 3D set — kamra = the stack, becslés = the chat (fuel-uveg.html),
+  // recept = the book (uveg-alap-ikonok.html).
+  recipe: { label: 'recept', icon: 't-book' },
+  pantry: { label: 'kamra', icon: 't-stack' },
+  estimate: { label: 'becslés', icon: 't-chat' },
 }
 
 /** A sor grammos tömege, ha grammban van megadva — különben null (nem találgatunk). */
@@ -96,7 +98,7 @@ export function FuelMealDetailPage() {
     return (
       <div className="fmx-page">
         <div className="fmx-subhead">
-          <button type="button" onClick={() => navigate('/fuel')} aria-label="Vissza a Mai oldalra">‹</button>
+          <button type="button" className="glass is-round" onClick={() => navigate('/fuel')} aria-label="Vissza a Mai oldalra">‹</button>
           <span><strong>Ez az étkezés nincs meg</strong></span>
         </div>
         <p className="fmx-block-empty">
@@ -139,7 +141,7 @@ export function FuelMealDetailPage() {
   return (
     <div className="fmx-page" style={{ '--block-color': block.color } as React.CSSProperties}>
       <div className="fmx-subhead">
-        <button type="button" onClick={() => navigate('/fuel')} aria-label="Vissza a Mai oldalra">‹</button>
+        <button type="button" className="glass is-round" onClick={() => navigate('/fuel')} aria-label="Vissza a Mai oldalra">‹</button>
         <span>
           <small>{block.label.toLocaleUpperCase('hu-HU')}{ctx && ctx !== 'standard' ? ` · ${MEAL_CONTEXT_LABEL[ctx].toLocaleUpperCase('hu-HU')}` : ''}</small>
           <strong>{mealDisplayName(meal) ?? 'Étkezés'}</strong>
@@ -150,7 +152,7 @@ export function FuelMealDetailPage() {
       <div className="fmx-detail-hero">
         <span className="fmx-detail-glow" aria-hidden="true" />
         <div className="fmx-detail-left">
-          <span className="fmx-detail-art" aria-hidden="true"><ClayIcon name={block.icon} size={96} /></span>
+          <span className="fmx-detail-art" aria-hidden="true"><ContentIcon name={block.icon} size={96} /></span>
           <div className="fmx-detail-kcal">
             <strong>{huInt(meal.kcal)}</strong><small>kcal</small>
           </div>
@@ -162,15 +164,15 @@ export function FuelMealDetailPage() {
             <FuelScoreChip scorePct={meal.score == null ? null : Math.round(meal.score * 100)}
               onOpen={toScore} size="big" />
           </div>
-          <div className="fmx-detail-when">
-            <span className="fmx-di-art" aria-hidden="true"><ClayIcon name={block.icon} size={30} /></span>
+          <div className="fmx-detail-when glass">
+            <span className="fmx-di-art" aria-hidden="true"><ContentIcon name={block.icon} size={30} /></span>
             <span>
               <strong>{block.label}</strong>
               <small>{time === '—' ? 'az időpont nem ismert' : `${time}-kor logoltad`}</small>
             </span>
           </div>
-          <div className="fmx-detail-share">
-            <span className="fmx-di-art" aria-hidden="true"><ClayIcon name="i-cel" size={30} /></span>
+          <div className="fmx-detail-share glass">
+            <span className="fmx-di-art" aria-hidden="true"><ContentIcon name="i-cel" size={30} /></span>
             <span>
               <strong>{dayShare == null ? 'a napod — %-a' : `a napod ${dayShare}%-a`}</strong>
               <small>{dayTarget > 0 ? `a ${huInt(dayTarget)} kcal-os keretből` : 'a napi keret még nem ismert'}</small>

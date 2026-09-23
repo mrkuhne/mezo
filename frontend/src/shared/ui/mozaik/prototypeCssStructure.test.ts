@@ -375,39 +375,51 @@ describe('the fuel-mai section is registered and re-dressed (mezo-ju4j6.6, widen
     }
   })
 
-  test('the whole block carries no Titanium material the style bible forbids', () => {
+  // Üvegesítés U1 (mezo-me75u.1): the block now wears the ÜVEG ranking (bible §3.4) instead of
+  // the restored-world materials — primary objects are `.glass` (the class is set in the TSX,
+  // the accent through `--c` on the same element), chips inside a card are flat cells, empty /
+  // unknown states are dashed, and the heroes are frameless halos.
+  test('the primary objects take their glass accent from their own hue, on the same element', () => {
     const css = rules()
     expect(css.length).toBeGreaterThan(10_000)
-    // §2.3: decorative frosting is gone. The ONE surviving backdrop-filter is the Fuel
-    // GlassBox's own backdrop, where the blur is functional separation (§7.1b).
-    expect(css).not.toContain('var(--surface-glass)')
-    // Exactly one element still blurs — the Fuel GlassBox backdrop (prefixed pair) — and the
-    // card it covers explicitly turns its own frosting off.
-    expect(css.match(/backdrop-filter: blur\(/g) ?? []).toHaveLength(2)
-    expect(css).toContain('backdrop-filter: none')
-    // §6.1: clay icons carry their own volume — no drop-shadow haloes on them.
-    expect(css).not.toContain('drop-shadow')
-    // §2.2 A: card shadows are --mz-shadow* tokens, never a raw black drop.
-    expect(css).not.toContain('rgba(0, 0, 0,')
-  })
-
-  test('the tappable chips are --mz-cell-* pairs, not bordered tint boxes (§2.2 B)', () => {
-    const css = rules()
-    for (const token of ['--mz-cell-sage-bg', '--mz-cell-lav-bg', '--mz-cell-amber-bg',
-      '--mz-cell-sky-bg', '--mz-cell-coral-bg']) {
-      expect(css, `${token} missing — a chip in this block is not a restored cell chip`).toContain(token)
+    for (const [sel, hue] of [['.fmx-block', '--block-color'], ['.fmx-ing-row', '--ing-color'],
+      ['.fmx-nutri-tile', '--nt-color'], ['.fmx-micro-card', '--mc-color'], ['.fmx-dim', '--dim-color']]) {
+      expect(css).toMatch(new RegExp(`\\${sel} \\{[^}]*--c: var\\(${hue}\\)`))
     }
+    // the old wash-tile material is gone from these surfaces
+    expect(css).not.toMatch(/\.fmx-block \{[^}]*linear-gradient\(150deg/)
+    expect(css).not.toMatch(/\.fmx-ing-row \{[^}]*box-shadow: var\(--mz-shadow\)/)
   })
 
-  test('both sub-page heroes are halo bands, not glowing posters (§2.2 C)', () => {
+  test('chips inside a glass card are flat, never glass (bible §3 rank 3)', () => {
     const css = rules()
-    expect(css).toContain('background: var(--halo-violet)')       // the AI score hero
-    expect(css).toContain('.fmx-score-glow { display: none; }')   // its decorative glow, retired
-    expect(css).toContain('.fmx-detail-glow { display: none; }')  // the meal detail's, likewise
+    expect(css).toMatch(/\.fmx-glu-chip \{[^}]*background: rgba\(245, 239, 230, 0\.04\)/)
+    expect(css).toMatch(/\.fmx-score \{[^}]*rgba\(245, 239, 230, 0\.05\)/)
+    expect(css).not.toMatch(/\.fmx-score \{[^}]*backdrop-filter/)
+    expect(css).toMatch(/\.fmx-glass-callout \{[^}]*background: rgba\(245, 239, 230, 0\.05\)/)
   })
 
-  test('the hero is a halo band, not a framed poster (§2.2 C, §8.1)', () => {
-    expect(rawCss).toContain('.fh-hero { border-radius: 21px; overflow: hidden; background: var(--halo-sage); }')
+  test('empty and unknown states are dashed, with no glass (bible §3 rank 4)', () => {
+    const css = rules()
+    expect(css).toMatch(/\.fmx-block\.is-open \{[^}]*1\.5px dashed/)
+    expect(css).toMatch(/\.fmx-nutri-tile\.is-unknown \{[^}]*dashed[^}]*backdrop-filter: none/)
+    expect(css).toMatch(/\.fmx-dim\.is-degraded \{[^}]*dashed[^}]*backdrop-filter: none/)
+  })
+
+  test('the heroes are frameless halos with big numerals (bible §5)', () => {
+    const css = rules()
+    expect(css).toMatch(/\.fmx-hero::before \{[^}]*radial-gradient/)
+    expect(css).toMatch(/\.fmx-detail-hero::before \{[^}]*radial-gradient/)
+    expect(css).toMatch(/\.fmx-score-hero::before \{[^}]*radial-gradient/)
+    expect(css).toMatch(/\.fmx-score-value \{[^}]*font-size: 92px/)
+    expect(rawCss).toContain(':root[data-theme="dark"] .fh-hero { background: none; border-radius: 0; }')
+  })
+
+  test('hero art floats and the reward numeral glows only inside the reduced-motion gate', () => {
+    const css = rules()
+    const gate = css.indexOf('@media (prefers-reduced-motion: no-preference)')
+    expect(css.indexOf('animation: uv-float')).toBeGreaterThan(gate)
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{[\s\S]*\.fmx-gauge-art, \.fmx-detail-art, \.fmx-score-art, \.fmx-score-value span \{ animation: none; \}/)
   })
 })
 
@@ -1263,9 +1275,8 @@ describe('the depth & focus ranking holds across the swept screens (mezo-ju4j6.1
     expect(body, `${selector} must not carry a §2.2 A wash gradient`).not.toContain('linear-gradient(150deg')
   }
 
-  test('Fuel · étkezés-értékelés: the score is the hero, the six dimensions are cells', () => {
-    expectCellGrade('.fmx-dim', '--dim-color', 'a 9,2 pontszám a halo-sávban')
-  })
+  // Üvegesítés U1 (mezo-me75u.1): the score hero is a FRAMELESS halo now, so the dimensions are
+  // the page's primary objects — glass tiles (guarded in the fuel-mai block above), no longer cells.
 
   test('Fuel · Kiegészítők: the ring + KÖVETKEZIK is the hero, the time bands are house rows', () => {
     expectHouseGrade('.fsx-band', 'a napi gyűrű és a KÖVETKEZIK sor')

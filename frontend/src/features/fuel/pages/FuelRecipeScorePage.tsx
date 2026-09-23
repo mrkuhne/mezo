@@ -35,7 +35,7 @@ export function FuelRecipeScorePage() {
     return (
       <div className="fmx-page">
         <div className="fmx-subhead">
-          <button type="button" onClick={() => navigate('/fuel/recipes')} aria-label="Vissza a receptekhez">‹</button>
+          <button type="button" className="glass is-round" onClick={() => navigate('/fuel/recipes')} aria-label="Vissza a receptekhez">‹</button>
           <span><small>AI ÉRTÉKELÉS</small><strong>Recept</strong></span>
         </div>
         <p className="fmx-nodata">Ez a recept nincs meg.</p>
@@ -49,7 +49,7 @@ export function FuelRecipeScorePage() {
     return (
       <div className="fmx-page">
         <div className="fmx-subhead">
-          <button type="button" onClick={back} aria-label="Vissza a recepthez">‹</button>
+          <button type="button" className="glass is-round" onClick={back} aria-label="Vissza a recepthez">‹</button>
           <span><small>AI ÉRTÉKELÉS</small><strong>{recipe.name}</strong></span>
         </div>
         <p className="fmx-nodata">
@@ -64,7 +64,7 @@ export function FuelRecipeScorePage() {
   return (
     <div className="fmx-page">
       <div className="fmx-subhead">
-        <button type="button" onClick={back} aria-label="Vissza a recepthez">‹</button>
+        <button type="button" className="glass is-round" onClick={back} aria-label="Vissza a recepthez">‹</button>
         <span>
           <small>AI ÉRTÉKELÉS</small>
           <strong>{recipe.name}</strong>

@@ -24,7 +24,8 @@ test('öt gyűrű, mindegyik a saját ikonjával a gyűrű fölött', () => {
   const cells = container.querySelectorAll('.fmx-cell')
   expect(cells).toHaveLength(5)
   expect(Array.from(cells).map(c => c.querySelector('use')?.getAttribute('href'))).toEqual([
-    '#i-hus', '#i-gabona', '#i-avokado', '#i-noveny', '#i-viz',
+    // Üveg (mezo-me75u.1): the same identity in the Titanium 3D set (CLAY_TO_3D).
+    '#t-meat', '#t-carb', '#t-avocado', '#t-fiber', '#t-water',
   ])
   // az ikon a gyűrű ELŐTT áll a DOM-ban — a vizuális „fölötte" ennek a CSS-párja
   for (const cell of cells) {

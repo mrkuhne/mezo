@@ -31,7 +31,8 @@ const vm = (over: Partial<Parameters<typeof buildKeretHero>[0]> = {}) =>
 test('a maradék kcal a domináns szám, a tál az ívben ül', () => {
   const { container } = render(<FuelEnergyHero vm={vm()} />)
   expect(container.querySelector('.fmx-hero-remaining')).toHaveTextContent('2 060')
-  expect(container.querySelector('.fmx-gauge use')!.getAttribute('href')).toBe('#i-fuel')
+  // Üveg (mezo-me75u.1): the bowl is the 3D sprite's (fuel-uveg.html).
+  expect(container.querySelector('.fmx-gauge use')!.getAttribute('href')).toBe('#t-bowl')
 })
 
 // A2: a gyűrűsor a hero része — öt cella, a makró-identitás sorrendjében.

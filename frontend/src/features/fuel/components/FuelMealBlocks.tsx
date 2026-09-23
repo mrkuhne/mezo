@@ -30,7 +30,7 @@ import { useState } from 'react'
 import { pct } from '@/shared/lib/pct'
 import { huInt, hu1 } from '@/shared/lib/huNum'
 import { toMin, toHHmm } from '@/data/fuel/fuelConfig'
-import { ClayIcon } from '@/shared/ui/clay'
+import { ContentIcon } from '@/shared/ui/clay'
 import { glycemicBand } from '@/features/fuel/logic/glycemicBand'
 import { GlycemicGlass, GlycemicMiniCurve } from '@/features/fuel/components/GlycemicGlass'
 import { macroEnergyShares, fiberSharePct } from '@/features/fuel/logic/mealShare'
@@ -57,7 +57,7 @@ function RingCell({ color, icon, grams, sharePct }: {
 }) {
   return (
     <span className="fmx-mcell" style={{ '--macro-color': color } as React.CSSProperties}>
-      <ClayIcon name={icon} size={15} />
+      <ContentIcon name={icon} size={15} />
       <span className={`fmx-mring${grams == null ? ' is-null' : ''}`}>
         <svg viewBox="0 0 40 40" aria-hidden="true">
           <circle className="tr" cx="20" cy="20" r="16" pathLength={100} />
@@ -177,7 +177,7 @@ function TimeBox({ label, blockColor, row, onClose }: {
   return (
     <GlassBox onClose={onClose} labelledBy="fmx-timebox-title" className="fmx-timebox"
       style={{ '--block-color': blockColor } as React.CSSProperties}>
-      <span className="fmx-timebox-art" aria-hidden="true"><ClayIcon name="i-idozito" size={54} /></span>
+      <span className="fmx-timebox-art" aria-hidden="true"><ContentIcon name="i-idozito" size={54} /></span>
       <div className="fmx-timebox-eyebrow" id="fmx-timebox-title">Logolva</div>
       <div className="fmx-timebox-time">{row.time}</div>
       <div className="fmx-timebox-sub">{row.name ? `${label} · ${row.name}` : label}</div>
@@ -201,7 +201,8 @@ export function FuelScoreChip({ scorePct, onOpen, size }: {
   if (scorePct == null) {
     return (
       <span className={`${cls} is-pending`}>
-        <ClayIcon name="i-kristaly" size={size === 'big' ? 34 : 28} />
+        {/* Üveg (mezo-me75u.1): the sparkle = „értékelés folyamatban" (uveg-alap-ikonok.html). */}
+        <ContentIcon name="t-other" size={size === 'big' ? 34 : 28} />
         <b>folyamatban</b>
       </span>
     )
@@ -209,7 +210,7 @@ export function FuelScoreChip({ scorePct, onOpen, size }: {
   const value = hu1(scorePct / 10)
   return (
     <button type="button" className={cls} onClick={onOpen} aria-label={`AI értékelés: ${value}`}>
-      <ClayIcon name="i-kristaly" size={size === 'big' ? 34 : 28} />
+      <ContentIcon name="i-kristaly" size={size === 'big' ? 34 : 28} />
       <b>{value}</b>
     </button>
   )
@@ -254,10 +255,12 @@ function BlockCard({ tile, rows, dayKcal, fiberTargetG, onLogInto, onOpenMeal, o
     : null
 
   return (
-    <section className={`fmx-block is-${tile.state}`} aria-label={tile.label}
+    // Üveg (mezo-me75u.1, §3.4): a logged block is glass in its slot hue; an empty one is the
+    // dashed free state (`is-open`), no glass.
+    <section className={`fmx-block is-${tile.state} ${rows.length > 0 ? 'glass' : 'is-open'}`} aria-label={tile.label}
       style={{ '--block-color': BLOCK_COLOR[tile.slotKey] } as React.CSSProperties}>
       <div className="fmx-block-head">
-        <span className="fmx-block-art" aria-hidden="true"><ClayIcon name={tile.icon} size={38} /></span>
+        <span className="fmx-block-art" aria-hidden="true"><ContentIcon name={tile.icon} size={38} /></span>
         <strong className="fmx-block-name">{tile.label}</strong>
         {/* A két kör EGY csoport a jobb szélen (owner 2026-09-16): az óra korábban a név után
             állt, így rövid néven — „Tízórai" — gazdátlanul lebegett a sor közepén. */}
@@ -265,7 +268,7 @@ function BlockCard({ tile, rows, dayKcal, fiberTargetG, onLogInto, onOpenMeal, o
           {rows.length > 0 && (
             <button type="button" className="fmx-clock" onClick={() => onOpenTime(rows[0].mealId)}
               aria-label={`${tile.label} · logolás ideje`}>
-              <ClayIcon name="i-idozito" size={21} />
+              <ContentIcon name="i-idozito" size={21} />
             </button>
           )}
           <BudgetRing kcal={rows.length ? loggedKcal : tile.kcal} dayKcal={dayKcal} logged={rows.length > 0} />

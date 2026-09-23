@@ -113,6 +113,41 @@ export function Icon3D({ name, size = 32, className }: { name: Icon3DName; size?
   )
 }
 
+/**
+ * Content icons during the mixed-look üvegesítés (bible §4): a surface that still carries CLAY
+ * names in its view-model renders them through this map onto the Titanium 3D set. Only
+ * context-free meanings live here — a clay glyph that means two things (the flask is both an
+ * "estimate" source and the fat-quality dimension) is mapped at its call site instead, by
+ * passing an `Icon3DName` directly. Unmapped clay names fall back to the clay icon, so a slice
+ * can migrate one surface at a time. Every entry was approved on a slice's "Új ikonok" sheet
+ * or already shown on its approved prototype (U1: prototypes/fuel-uveg.html +
+ * prototypes/uveg-alap-ikonok.html).
+ */
+export const CLAY_TO_3D: Partial<Record<ClayIconName, Icon3DName>> = {
+  // macros + water (fuel-uveg.html)
+  'i-hus': 't-meat', 'i-gabona': 't-carb', 'i-avokado': 't-avocado', 'i-noveny': 't-fiber',
+  'i-viz': 't-water',
+  // meal slots (fuel-uveg.html; the snack apple on uveg-alap-ikonok.html)
+  'i-reggeli': 't-sun', 'i-ebed': 't-bowl', 'i-vacsora': 't-moon', 'i-snack': 't-snack',
+  'i-tanyer': 't-plate', 'i-fuel': 't-bowl',
+  // score, time, day share, energy, sources
+  'i-kristaly': 't-score', 'i-idozito': 't-clock', 'i-cel': 't-ring', 'i-lang': 't-bolt',
+  'i-edzes': 't-dumbbell', 'i-recept': 't-book', 'i-kamra': 't-stack', 'i-kiegeszito': 't-supps',
+  'i-makro': 't-macro', 'i-mikro': 't-micro', 'i-feldolgozas': 't-processing',
+  'i-vercukor': 't-glucose', 'i-eletjel': 't-heart',
+}
+
+/** A content icon: a Titanium name renders as is, a clay name through `CLAY_TO_3D`, and an
+ *  unmapped clay name as the clay icon (the not-yet-re-dressed fallback). */
+export function ContentIcon({ name, size = 32, className }: {
+  name: ClayIconName | Icon3DName; size?: number; className?: string
+}) {
+  const t = name.startsWith('t-') ? (name as Icon3DName) : CLAY_TO_3D[name as ClayIconName]
+  return t
+    ? <Icon3D name={t} size={size} className={className} />
+    : <ClayIcon name={name as ClayIconName} size={size} className={className} />
+}
+
 // Boop (mezo-ju4j6.15) — a kabalafigura a clay készlet része, de SAJÁT komponenssel jön:
 // példányonként inline SVG, mert mozog (lásd `boop/Boop.tsx` fejlécét).
 export { Boop, type BoopDomain } from './boop/Boop'

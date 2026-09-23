@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react'
-import { ClaySprites, Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import { CLAY_TO_3D, ClaySprites, ContentIcon, Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import titaniumRaw from './titanium-icons.svg?raw'
 
 // Üveg style bible §4 (mezo-me75u.1): the CONTENT icon set is the Titanium companion sprite,
@@ -44,4 +44,25 @@ test('Icon3D renders an aria-hidden 64-viewBox svg with a use ref, carrying the 
   expect(svg.getAttribute('aria-hidden')).toBe('true')
   expect(svg.getAttribute('class')).toBe('t-ico x')
   expect(svg.querySelector('use')!.getAttribute('href')).toBe('#t-bowl')
+})
+
+describe('ContentIcon — clay names onto the 3D set during the mixed look', () => {
+  test('a Titanium name renders as the 3D icon', () => {
+    const { container } = render(<ContentIcon name="t-score" size={20} />)
+    expect(container.querySelector('use')!.getAttribute('href')).toBe('#t-score')
+    expect(container.querySelector('svg')!.getAttribute('viewBox')).toBe('0 0 64 64')
+  })
+  test('a mapped clay name renders its 3D counterpart', () => {
+    const { container } = render(<ContentIcon name="i-hus" />)
+    expect(container.querySelector('use')!.getAttribute('href')).toBe('#t-meat')
+  })
+  test('an unmapped clay name falls back to the clay icon', () => {
+    const { container } = render(<ContentIcon name="i-meso" />)
+    expect(container.querySelector('use')!.getAttribute('href')).toBe('#i-meso')
+    expect(container.querySelector('svg')!.getAttribute('viewBox')).toBe('0 0 100 100')
+  })
+  test('every mapping target exists in the sprite', () => {
+    const ids = new Set(symbolIds())
+    for (const t of Object.values(CLAY_TO_3D)) expect(ids.has(t!), t).toBe(true)
+  })
 })
