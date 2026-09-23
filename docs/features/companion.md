@@ -2937,6 +2937,30 @@ pair, and the AI-napló header renders the quotient as *„N% gyorsítótárból
 prompt tokens hides the figure rather than reporting 0% — no data and no hits are different
 statements.
 
+**GPT-5.6 caches at MESSAGE BOUNDARIES, not arbitrary token prefixes (`mezo-renhu`, verified
+2026-09-24 against the same guide).** In the default implicit mode a request writes its prefix at
+*the end of the latest eligible message*, and a later request looks up only message endings: its
+own, up to 20 earlier user-message endings, and *the endpoint of the initial consecutive block of
+developer (system) messages*. A shared chunk that sits INSIDE a message — ahead of a per-call tail
+in the same message — has no boundary of its own and can never be read back, however byte-identical
+it is. Production confirms both halves: chat turns hit a constant ~5,900 cached tokens (the persona
++ tool schemas, i.e. the leading system block), while `companion_hypothesis` hit **0 of 220k**
+tokens over 45 calls (14 days to 2026-09-23) because each critique sent `HIPOTÉZIS: … KONTEXTUS:
+<weekly context>` as ONE user message. The night's critiques and revisions now send the shared
+weekly context as the `turnContext` of `completeSmart(system, turnContext, [], hypothesis)`
+(`HypothesisPipelineService.sharedContext`/`critiqueQuestion`/`reviseQuestion`), so the adapter
+emits `[system prompt, system context, user hypothesis]` and the leading block ends right after the
+context — the second and later critique of a night read it from cache
+(`GeminiCompanionLlmPromptOrderTest.testCompleteSmart_shouldCloseTheLeadingSystemBlockWithTurnContext_whenHistoryIsEmpty`,
+`HypothesisCritiquePrefixTest`). `FakeCompanionLlm.completeSmart` re-joins the halves for the two
+markers, so the one-shot dispatch and its `[fake-critique:…]`/`[fake-revise:…]` sentinels (read
+from the hypothesis) are unchanged. Two corollaries for any future caching work: (1) the propose
+call cannot share with the critiques — its system prompt differs from the first token; (2) calls
+of DIFFERENT features never share a cache entry either, because each opens with its own system
+prompt, so clustering unrelated nightly jobs into one 30-minute window buys nothing. The guide also
+states that GPT-5.6 cache WRITES cost **1.25×** the uncached input rate; the per-row `cost_usd`
+does not model that surcharge yet.
+
 The `CompanionLlm` port's `complete`/`stream` are now **5-arg and ABSTRACT**
 (`system, List<Turn> history, user, tools, toolContext` — `CompanionLlm.java:33-38`); the old 4-arg
 two-string-plus-tools shape became a `default` delegating with `List.of()`

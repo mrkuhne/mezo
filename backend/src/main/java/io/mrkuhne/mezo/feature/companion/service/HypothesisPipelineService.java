@@ -615,19 +615,40 @@ public class HypothesisPipelineService {
         return new SystemRuntimeErrorException(SystemMessage.error("OBSERVATION_RECOVERY_LLM_FAILED").build());
     }
 
+    /**
+     * The weekly context every critique and revision of the night shares (mezo-renhu). It travels as
+     * the {@code turnContext}, i.e. the second leading system message, because GPT-5.6 caches only
+     * at message boundaries — the end of that leading block is one. Inside the user message, BEHIND
+     * the per-hypothesis text, it had no boundary of its own: 0 cached tokens on 45 production calls.
+     */
+    static String sharedContext(String context) {
+        return "\n\nKONTEXTUS:\n" + context;
+    }
+
+    /** The per-hypothesis half of a critique — the user message, AFTER the cacheable head. */
+    static String critiqueQuestion(Hypothesis hypothesis) {
+        return "HIPOTÉZIS: " + hypothesis.title() + "\nMECHANIZMUS: " + hypothesis.mechanism()
+                + "\nMEGFIGYELÉS: " + hypothesis.observation() + "\nKÉRDÉS: " + hypothesis.question()
+                + "\nFORRÁSOK: " + hypothesis.evidenceRefs();
+    }
+
+    /** The per-hypothesis half of a revision — the user message, AFTER the cacheable head. */
+    static String reviseQuestion(Hypothesis hypothesis, Critique critique) {
+        return "HIPOTÉZIS: " + hypothesis.title() + "\nMECHANIZMUS: " + hypothesis.mechanism()
+                + "\nKRITIKA: " + (critique.reasoning() == null ? "" : critique.reasoning());
+    }
+
     private Critique critique(String context, Hypothesis hypothesis) {
         return critique(context, hypothesis, false);
     }
 
     private Critique critique(String context, Hypothesis hypothesis, boolean strict) {
-        String payload = "HIPOTÉZIS: " + hypothesis.title() + "\nMECHANIZMUS: " + hypothesis.mechanism()
-                + "\nMEGFIGYELÉS: " + hypothesis.observation() + "\nKÉRDÉS: " + hypothesis.question()
-                + "\nFORRÁSOK: " + hypothesis.evidenceRefs() + "\n\nKONTEXTUS:\n" + context;
         String raw;
         try {
             raw = llmCallContextHolder.runWith(
                     new LlmCallContext("companion_hypothesis", "critique", null, null),
-                    () -> companionLlm.completeSmart(CRITIQUE_PROMPT, payload));
+                    () -> companionLlm.completeSmart(CRITIQUE_PROMPT, sharedContext(context), List.of(),
+                            critiqueQuestion(hypothesis)));
         } catch (RuntimeException failure) {
             if (strict) throw previewFailure();
             throw failure;
@@ -642,12 +663,10 @@ public class HypothesisPipelineService {
     }
 
     private Hypothesis revise(String context, Hypothesis hypothesis, Critique critique) {
-        String payload = "HIPOTÉZIS: " + hypothesis.title() + "\nMECHANIZMUS: " + hypothesis.mechanism()
-                + "\nKRITIKA: " + (critique.reasoning() == null ? "" : critique.reasoning())
-                + "\n\nKONTEXTUS:\n" + context;
         String raw = llmCallContextHolder.runWith(
                 new LlmCallContext("companion_hypothesis", "revise", null, null),
-                () -> companionLlm.completeSmart(REVISE_PROMPT, payload));
+                () -> companionLlm.completeSmart(REVISE_PROMPT, sharedContext(context), List.of(),
+                        reviseQuestion(hypothesis, critique)));
         Hypothesis revised = parseObject(raw, new TypeReference<Hypothesis>() {});
         // A revision is a REWORDING: the test — and therefore the identity — is the original's.
         // The S4 revision fields ride along untouched: this stage never invents one, and must not
