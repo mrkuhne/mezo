@@ -16,9 +16,15 @@ it. The owner set this flow on 2026-09-23.
 - **Colors** are Mozaik's: the `--dv-*` accents and the `--macro-*` band. **Ground** is the app's
   own warm graphite dark `#191614`, never the cold Titanium graphite.
 - **Dark only.** Light mode is parked, not deleted. Do not design, prototype or verify light.
-- **The bottom menu is untouched.** `app/TabBar.tsx`, the domain switcher, the small Boop
-  characters and the fixed position stay exactly as they ship. Do not restyle, glass or move
-  them, even though the reference prototype shows a glass tab bar (that bar is a placeholder).
+- **The app chrome keeps its content and wears glass** (bible §7, approved 2026-09-23).
+  - **Header:** the "boop" wordmark, ? (kalauz), settings, messages, notifications (with the
+    panel) and the filling day orb.
+  - **Bottom menu:** fixed, with the living Boop on the domain switcher, and the nav-model tabs
+    with their clay icons.
+  - **No day-part switcher, ever.**
+  - U1 builds the chrome once. Every later slice **reuses it untouched**. A slice's prototype
+    copies the chrome from `fuel-uveg.html` verbatim, with only the domain Boop, the tabs and the
+    accent swapped for its area.
 - **Behavior is frozen.** This is visual work only. A class rename or a `data-*` styling hook is
   fine. A changed route, hook, API contract, mutation or state machine is not. If a slice seems
   to need one, stop and ask the owner.
@@ -58,8 +64,10 @@ it. The owner set this flow on 2026-09-23.
   the actual fields; never invent features).
 - Apply the **§3.4 ranking first**. Name the one thing each screen says, and give that thing
   the loudest treatment. Not everything is glass (bible §3).
-- Keep the bottom area honest: draw the live Boop TabBar as a **plain placeholder strip
-  labelled "alsó menü: változatlan"** so the owner never thinks it is being redesigned.
+- **The chrome comes from `fuel-uveg.html` verbatim**: the header with its sprites and day orb,
+  the notification panel, the glass TabBar with the living Boop, and the domain switcher. Swap
+  only what the area changes: the active domain's Boop, its `navModel` tabs and labels, and
+  `--c`. Do not redesign the chrome in a slice prototype.
 - Verify it yourself before showing it:
   - Serve it over HTTP from the prototypes dir (`python3 -m http.server <port> --bind 127.0.0.1`,
     run in the background). A `file://` page renders as a script-less snapshot in the in-app
@@ -86,7 +94,8 @@ it. The owner set this flow on 2026-09-23.
 - FE tests in **both** modes, with `CI=true`: `VITE_USE_MOCK` unset (mock) and
   `VITE_USE_MOCK=false` (real). The affected `frontend/tests/layout` specs. `pnpm build`.
 - A runtime pass with the `verify` skill, **dark only**. Click every route in the slice. Check
-  320px width. Check reduced motion. Confirm the TabBar is pixel-identical to before.
+  320px width. Check reduced motion. Confirm the header and the TabBar look and behave exactly as
+  after U1 (the chrome is not a slice's to change).
 - A **reverse parity checklist** pasted into the bd issue: every control, state, empty/error/
   loading state and data field of each touched screen, ticked as still present.
 - Run `node scripts/gen-codemap.mjs` after file moves **and after every merge**. If docs changed,
