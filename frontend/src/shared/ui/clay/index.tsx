@@ -75,9 +75,11 @@ export type Icon3DName =
   // U2 (mezo-me75u.2) — owner OK on prototypes/uveg-fuel-tobbi.html#ikonok
   | 't-mic' | 't-gear' | 't-syringe' | 't-protocol' | 't-dawn' | 't-sleep' | 't-flame'
   | 't-calendar' | 't-pin' | 't-weight' | 't-pattern' | 't-chef'
+  // A2 (mezo-a9bo7.8) — owner OK on prototypes/uveg-uzenofal.html#ikonok: the csapat-fal trio
+  | 't-thumb-up' | 't-thumb-down' | 't-send' | 't-flask'
   // U3 (mezo-me75u.3) — owner OK on prototypes/uveg-nap.html#ikonok
   | 't-checkin' | 't-quick' | 't-steps' | 't-people' | 't-chain' | 't-quest' | 't-harvest'
-  | 't-coin' | 't-orb' | 't-flask' | 't-scroll'
+  | 't-coin' | 't-orb' | 't-scroll'
 
 /** Mounts the clay + Titanium <symbol>/<gradient> defs once (main.tsx). */
 export const ClaySprites = memo(function ClaySprites() {

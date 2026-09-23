@@ -164,6 +164,11 @@ main.tsx
 
 ### Üveg foundation (`mezo-me75u.1`, 2026-09-23)
 
+The shell uses a uniform black canvas (`mezo-x4r3c`, owner request): page background,
+opaque sticky header, desktop status bar and browser/PWA theme color all use `#000000`.
+Dark-mode sky, aurora, header washes and decorative shapes are hidden so no colored band
+separates the header from the page. Content cards retain their accents.
+
 The first üvegesítés slice. Every later slice reuses these pieces untouched; a slice that needs
 something new extends the kit, never forks a second recipe.
 
@@ -173,16 +178,15 @@ something new extends the kit, never forks a second recipe.
   stored mode is still read and written, so lifting the lock (`null`) restores each user's own
   choice. `ThemeProvider` takes `lock` as a prop (default `THEME_LOCK`) so the parked machinery
   keeps its own tests with `lock={null}`. `index.html` boots `data-theme="dark"` unconditionally,
-  and its `theme-color` meta plus the PWA manifest (`vite.config.ts`) agree on `#191614`. The
+  and its `theme-color` meta plus the PWA manifest (`vite.config.ts`) agree on `#000000`. The
   settings page hides its Téma picker while the lock holds (`BeallitasokPage`, code kept).
 - **The glass kit — `── uveg kit (` block, end of `prototype.css`.** One `.glass` recipe (bible §3:
   tinted body + blur, `::before` gradient hairline frame, `::after` 7 s sheen, lift + `--c` glow +
   top edge + inner floor), with `.is-still` (no sheen) and `.is-round` (overflow visible for
   badges, no sheen). Plus the rank-3 flat cell `.uv-flat`, the rank-4 dashed `.uv-empty`, the
   52px lit `.uv-well`, the `.uv-halo`, the `.uv-ring-*` / `.uv-bar` recipes, `.uv-eyebrow` /
-  `.uv-voice` / `.uv-tint`, the dark `--macro-*` values, the `.uv-aurora` field (painted by
-  `PhoneFrame`, replacing the dark daypart sky), and the `uv-*` keyframes behind the
-  reduced-motion gate. Every glass surface takes ONE accent through `--c`, set on the same
+  `.uv-voice` / `.uv-tint`, the dark `--macro-*` values, the parked `.uv-aurora` field,
+  and the `uv-*` keyframes behind the reduced-motion gate. Every glass surface takes ONE accent through `--c`, set on the same
   element (inline or from a hue variable on that element — never hoisted onto an ancestor).
   `prototypeCssStructure.test.ts` guards the four layers, that exactly one `.glass {` rule exists,
   and that the sheen is gated.
@@ -202,15 +206,18 @@ something new extends the kit, never forks a second recipe.
   `t-pin`, `t-weight`, `t-pattern`, `t-chef`; sheet: `prototypes/uveg-fuel-tobbi.html#ikonok`),
   and `CLAY_TO_3D` now maps the rest of Fuel's clay names. Each U2 surface owns one block at the
   end of `prototype.css`: `── uveg fuel konyha|receptek|log|stack|trendek (`.
-- **U3 (`mezo-me75u.3`) additions.** 11 owner-approved icons (`t-checkin`, `t-quick`, `t-steps`,
-  `t-people`, `t-chain`, `t-quest`, `t-harvest`, `t-coin`, `t-orb`, `t-flask`, `t-scroll`, plus the
-  `tg-rose` / `tg-glass` gradients; sheet: `prototypes/uveg-nap.html#ikonok`); `CLAY_TO_3D` gained the
+- **Csapat-fal (`mezo-a9bo7.8`) additions.** 4 icons for the wall's unified trio and reply sheet
+  (`t-thumb-up`, `t-thumb-down`, `t-send`, `t-flask`; sheet: `prototypes/uveg-uzenofal.html#ikonok`),
+  copied from that prototype's sprite with the `tg-*` gradient namespace.
+- **U3 (`mezo-me75u.3`) additions.** 10 owner-approved icons (`t-checkin`, `t-quick`, `t-steps`,
+  `t-people`, `t-chain`, `t-quest`, `t-harvest`, `t-coin`, `t-orb`, `t-scroll`, plus the
+  `tg-rose` gradient; Kísérlet reuses the csapat-fal `t-flask`; sheet: `prototypes/uveg-nap.html#ikonok`); `CLAY_TO_3D` gained the
   context-free Nap meanings (check-in, emberek, rend, kihívás, érme, memoár, heti, tudás, futás).
   `CaptureArt` is a kind → 3D map (`CAPTURE_ART`), so every capture header wears the 3D set. Blocks:
   `── uveg nap mai|oldalak|rogzites|uzenetek|napzaras (`. `shared/ui/Island.tsx` (dead) is gone.
 - **Glass chrome — `── uveg chrome (` block (bible §7).** Same content and behavior, glass
   material: the header's round `.glass.is-round` buttons (badges outside), the gradient "boop"
-  wordmark, the header fade with a backdrop blur, `DayOrb` redrawn as a glass sphere holding a
+  wordmark, the opaque black header background, `DayOrb` redrawn as a glass sphere holding a
   waving coral liquid (`data-level` = the liquid surface; tone still from `intensity`), the
   notification panel as a sky glass card; ONE floating `.tab-bar.glass.is-still` (10px off the
   sides, 12px off the bottom, `--c` = the domain accent from `[data-domain]`, living Boop in a lit

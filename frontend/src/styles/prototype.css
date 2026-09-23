@@ -510,7 +510,7 @@
   --error-hover: #F5A19D;
   --error-deep:  #F7B3AE;
 
-  --surface-page:     #191614;
+  --surface-page:     #000000;
   --surface-card:     #221E1B;
   --surface-elevated: #2A2521;
   --surface-recess:   rgba(245, 239, 230, 0.05);
@@ -15511,8 +15511,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .uv-aurora i:nth-child(2) { width: 260px; height: 260px; right: -100px; top: -40px; background: #C98A3A; }
 .uv-aurora i:nth-child(3) { width: 280px; height: 280px; left: 40px; top: 520px;   background: #6D5FA8; }
 .uv-aurora i:nth-child(4) { width: 220px; height: 220px; right: -80px; top: 760px; background: #B8584A; }
-/* The aurora replaces the daypart sky band in the glass world. */
-:root[data-theme="dark"] .phone-screen .sky { display: none; }
+/* Keep the dark shell uniformly black, without decorative background fields. */
+:root[data-theme="dark"] .phone-screen .sky,
+:root[data-theme="dark"] .uv-aurora { display: none; }
 
 /* §3 the glass card */
 .glass {
@@ -15627,14 +15628,14 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    slice reuses it untouched. The chrome keeps the live CLAY icons; content wears
    the Titanium 3D set. No day-part switcher. No sheen on the bottom bar.
    ═══════════════════════════════════════════════════════════════════════════ */
-/* §7.1 header ground: the warm-graphite fade the content scrolls under, with the
-   aurora's hues as two faint blobs (HeaderAurora keeps its markup). */
-:root[data-theme="dark"] .app-head-bg .app-head-wash { background: linear-gradient(180deg, rgba(25, 22, 20, 0.94) 60%, rgba(25, 22, 20, 0)); }
-/* the content scrolling under the header is blurred, not merely dimmed (fuel-uveg.html `.topbar`) */
-:root[data-theme="dark"] .app-head-bg { -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
-:root[data-theme="dark"] .app-head-bg .app-head-blob.b1 { background: #6D5FA8; opacity: 0.18; }
-:root[data-theme="dark"] .app-head-bg .app-head-blob.b2 { background: #C98A3A; opacity: 0.14; }
-:root[data-theme="dark"] .app-head-bg .app-head-deco { opacity: 0.35; }
+/* Shared black canvas (mezo-x4r3c): opaque header, page and status bar agree.
+   Keep the parked light decoration; dark chrome has no colored wash or backdrop. */
+:root[data-theme="dark"] .app-head-bg {
+  background: var(--canvas);
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+:root[data-theme="dark"] .app-head-bg > * { display: none; }
 .app-head { display: flex; align-items: center; gap: 8px; }
 /* The tallest control is now the 46px orb (was the 42px round button): the condensed rhythm
    derives from it so the header still lands on --mzh-head-cond-h. */
