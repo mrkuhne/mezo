@@ -1380,9 +1380,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     EletjelStrip.tsx, MezoMessagesSheet.tsx, NapCompanion.tsx, NapFuelGraphic.css, NapFuelGraphic.tsx,
     NapPersonalInsight.css, NapPersonalInsight.tsx, ObservationCard.tsx
   - **logic:** chainMilestone.ts, chainPrompt.ts, dayArc.ts, dayFace.ts, dayOrbFill.ts, dayOrbTone.ts, habitAction.ts,
-    habitCelebration.ts, habitClayIcon.ts, itemIcon.ts, mezoMessages.ts, napTimeline.ts, needs.ts, needsInputs.ts,
-    needsNudges.ts, nextStep.ts, nudgeSeen.ts, questAction.ts, todayItems.ts, useDayFace.ts, useDayOrbFill.ts,
-    useMinuteTick.ts, useNeeds.ts, windDown.ts
+    habitCelebration.ts, habitClayIcon.ts, itemIcon.ts, mezoMessages.ts, napTimeline.ts, napom.ts, needs.ts,
+    needsInputs.ts, needsNudges.ts, nextStep.ts, nudgeSeen.ts, questAction.ts, todayItems.ts, useDayFace.ts,
+    useDayOrbFill.ts, useMinuteTick.ts, useNeeds.ts, windDown.ts
   - **root:** MezoThreadProvider.tsx
 
 ### train
