@@ -614,12 +614,13 @@ plan `docs/superpowers/plans/2026-09-24-csapatfal-act1.md`) sits on two pure mod
 `characterForPersona` — every metric domain and backend persona has exactly one owner, unknown → Mezo;
 the working names live ONLY here) and `logic/teamFeed.ts` (`buildTeamFeed`, `ownerForPattern`). The
 builder maps the existing hooks' records to `FeedPost`s without writing any text of its own (ADR 0049:
-`body` is always the record's own field): proposed pattern / fresh observation with a question →
+`body` uses the record's own prose, question and source/date evidence labels): proposed pattern / fresh or return observation with a question →
 `kerdes` (`waiting`, pattern `decision` anchor); monitoring pattern → `sejtes` with an `n/minN` honesty
 band ("még kevés adat" below `minN`); confirmed pattern with a `lastDetectedAt` → `megfigyeles`; active
 experiment → `kiserlet` on today; resolved prediction → `elorejelzes`; character-feed items → persona-routed
 `megfigyeles`, konzílium items → `konzilium` by Mezo. Not posts: pending predictions, proposed/completed
 experiments (no event date), rejected/refuted/dormant patterns, watching/confirmed observation row-cards.
+Fresh and return questions retain their original dates even when an older unanswered event is returned by today's persistent inbox. An observation post replaces the matching pattern post so one question is not repeated.
 Days group by local date (Ma / Tegnap / `huMonthDayDow`; a non-ISO display date such as the mock
 predictions' „Máj 22” is kept verbatim and sorts after the dated days), each with at most ONE poster —
 the only glass box of the day. The poster must be *earned*: waiting > kiserlet > konzilium; without one,
@@ -635,12 +636,12 @@ day sections (`FeedPosterCard` = `glass tf-poster`, `FeedPostCard` = flat `tf-po
 Every post carries „Miből látszik?” (`sourceRoute`, an existing deep page) and the unified trio
 (`components/feed/FeedTrio.tsx`, spec §2.8): on a pattern question it is the existing pattern decision
 (`usePatternActions().decide(id, 'confirm' | 'reject')`), on an observation question the existing chip
-reply (`useObservationReply().reply(patternId, 'watch' | 'reject')`), elsewhere a session-local,
+reply (`useObservationReply().reply(patternId, 'watch' | 'reject')`) with `Igen, jellemző` / `Nem stimmel` / `Beszéljük meg` labels on both fresh and return questions, elsewhere a session-local,
 reversible vote that writes nothing. „Nem így érzem” also opens the reply sheet (the character asks back).
 After a decision the trio is replaced by the afterlife label (`AFTERLIFE` in `teamFeed.ts`); a record-borne
 one comes from `Observation.repliedChoice`, a session one from `useFeedSession` (query cache, survives
 remounts) via `withSessionAfterlife`, which also keeps a just-rejected post on its day after its record
-drops out of the stream. `FeedReplySheet` (a `GlassBox`) picks the channel from the post: `thread`
+drops out of the stream. An answered observation snapshot suppresses its duplicate monitoring pattern; a newer question supersedes the old snapshot. The acknowledgement records personal experience, not statistical proof or an eight-day promise. `FeedReplySheet` (a `GlassBox`) picks the channel from the post: `thread`
 (character-feed source) → `useCharacterReplies` + `useCharacterReplyDraft`; `observation` → the existing
 „talk” reply, then `/mezo/chat?c=<id>`; neither (pattern/experiment/prediction) → an honest hand-off to
 `/mezo/chat` with the post text as `compose` state. `StoryStrip` rings: fresh today AND not seen
@@ -830,9 +831,9 @@ on, `AdviceRankPort`/`DailyCardPort`). The hub tile on `MezoHubPage.tsx:146-151,
 SAME `useCoachingTrace()` the hub page itself reads — no separate teaser/copy.
 
 ### 5.9 Észrevételek — the observation feed Today mounts (✅ Reflexió S5, `mezo-eq85.5`)
-**Owned here, rendered there.** `data/insights/observationsHooks.ts` + `observationsApi.ts` are the FE half of slice 4's two endpoints, and the only consumer is Today's `NapMezoPage` third tab ([today.md](today.md) §2) via `features/today/components/ObservationCard.tsx` — the same "an Insights-owned hook that Today mounts" shape as `FeedbackChips` (§5.7).
+**Owned here, rendered there.** `data/insights/observationsHooks.ts` + `observationsApi.ts` are the FE half of slice 4's two endpoints, shared by Today's `NapMezoPage` third tab and `NapPersonalInsight` ([today.md](today.md) §2), plus `TeamFeedPage`. All use the same observation records and reply cache; there is no second inbox or confirmation store.
 
-- **`useObservations(date?)`** → `{ observations, degraded, isPending, isError, refetch }`. `useDualQuery` on `['observations', date ?? 'today']`; mock mode serves the four-card prototype seed in `data/insights/observations.ts` (one per card kind), real mode `GET /api/companion/observation` mapped by `toObservation`. A **404 is `degraded`, not an error** (the companion switched off) — the standard `usePatterns` idiom. The server already orders the feed, so nothing sorts here.
+- **`useObservations(date?)`** → `{ observations, degraded, isPending, isError, refetch }`. `useDualQuery` on `['observations', date ?? 'today']`; mock mode serves the four-card prototype seed in `data/insights/observations.ts` (one per card kind), real mode `GET /api/companion/observation` mapped by `toObservation`. A **404 is `degraded`, not an error** (the companion switched off) — the standard `usePatterns` idiom. Today's request (omitted or explicit current date) retains the latest unanswered event per pattern from previous days; historical dates remain day-bound. `toObservation` preserves the optional `kind`, original event date and readable source/date evidence labels. `kind=statistical` watching rows link to pattern details without a reflection tally. The server already orders the feed, so nothing sorts here.
 - **`useObservationReply()`** → `{ reply(patternId, choice, text?), pendingPatternId }`. Real mode POSTs `POST /api/companion/pattern/{patternId}/reply` and invalidates the `['observations']` prefix; mock mode writes `repliedChoice` straight into the cached cards and answers the `talk` branch with `{ conversationId: 'mock-conv' }`. `pendingPatternId` names the row whose reply is in flight — the card uses it to disable its chip group, because **the backend reply is not idempotent** and a double tap posts twice.
 - **`sourceIcon` mapping.** The wire sends bare surface names (`naplo`/`alvas`/`edzes`/`vacsora`/`hold`/`mezo`); the clay set is `i-` prefixed. `observationsApi.ts` holds the explicit `Record` — there is no shared domain→icon map to reuse — and falls back to `i-mezo` for anything it does not know, so a newer backend value can never blank a card's disc.
 
