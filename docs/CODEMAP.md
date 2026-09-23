@@ -564,8 +564,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### fuel
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-23, done) ·
-  [docs/features/pantry.md](features/pantry.md) (updated 2026-09-21, done) ·
-  [docs/features/recipe.md](features/recipe.md) (updated 2026-09-21, done) ·
+  [docs/features/pantry.md](features/pantry.md) (updated 2026-09-23, done) ·
+  [docs/features/recipe.md](features/recipe.md) (updated 2026-09-23, done) ·
   [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-20, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-20, done)
 
@@ -1081,7 +1081,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### pantry
 
 *BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-23, done) ·
-  [docs/features/pantry.md](features/pantry.md) (updated 2026-09-21, done)
+  [docs/features/pantry.md](features/pantry.md) (updated 2026-09-23, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/pantry`
   - **entities→tables:** `PantryCatalogEntity`→`pantry_catalog`, `PantryImportEntity`→`pantry_import`,
@@ -1284,7 +1284,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### recipe
 
-*BE + API* · read next: [docs/features/recipe.md](features/recipe.md) (updated 2026-09-21, done)
+*BE + API* · read next: [docs/features/recipe.md](features/recipe.md) (updated 2026-09-23, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/recipe`
   - **entities→tables:** `RecipeEntity`→`recipe`, `RecipeIngredientEntity`→`recipe_ingredient`
