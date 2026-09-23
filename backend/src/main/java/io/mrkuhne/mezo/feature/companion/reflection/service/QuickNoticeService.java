@@ -107,6 +107,7 @@ public class QuickNoticeService {
     private final PromptPersona promptPersona;
     private final QuickNoticePreScreen preScreen;
     private final ObservationBudget observationBudget;
+    private final ObservationOwnerLock observationOwnerLock;
     private final TestPlanValidator testPlanValidator;
     private final ReflectionMemoryGateway reflectionMemoryGateway;
     private final TextSignalRepository textSignalRepository;
@@ -146,6 +147,7 @@ public class QuickNoticeService {
         // answer: a row exists to carry a card the user can SEE, so an over-budget notice must not
         // create one. Moving the read earlier is safe — it is a pure count of today's surfaced
         // events, and nothing between here and the append writes one.
+        observationOwnerLock.lock(userId);
         boolean surfaced = observationBudget.allows(userId, Instant.now());
         Resolution resolved = resolveTarget(userId, answer, trigger, open, evidenceRefs);
         PatternEntity target = resolved.row() != null

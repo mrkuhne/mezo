@@ -9,6 +9,8 @@ import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
+import io.mrkuhne.mezo.feature.companion.entity.PatternEventPayloadEnvelope;
+import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.entity.TestPlanEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
@@ -58,6 +60,7 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private PatternEventPopulator patternEventPopulator;
     @Autowired private PatternRepository patternRepository;
+    @Autowired private PatternEventRepository eventRepository;
     @Autowired private AiConversationRepository conversationRepository;
     @Autowired private UserPopulator userPopulator;
     @Autowired private AppUserRepository appUserRepository;
@@ -130,9 +133,9 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
                 "/api/companion/observation?date=" + TODAY, ownerAuthHeaders(),
                 HttpStatus.OK, ObservationResponse.class);
 
-        // one `return` card for the event, one `watching` card for the row itself
+        // One thread, one card: the question takes precedence over the standing watching row.
         assertThat(cards).extracting(ObservationResponse::getCard)
-                .containsExactly("return", "watching");
+                .containsExactly("return");
         assertThat(cards.getFirst().getSourceIcon()).isEqualTo("naplo");
     }
 
@@ -234,7 +237,7 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
      * surface as an Észrevétel card, nor be answerable through the chip endpoint (S4 review).
      */
     @Test
-    void testObservationEndpoints_shouldIgnoreStatisticalRows_whenTheyAreMonitoringOrConfirmed() {
+    void testObservationEndpoints_shouldShowStatisticalMonitoringWithoutReflectionReplies() {
         UUID owner = ownerId();
         PatternEntity stat = patternPopulator.statistical(owner, "pair-monitored",
                 PatternEntity.STATUS_MONITORING);
@@ -247,7 +250,11 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
                 PatternEventEntity.KIND_CONFIRMED, dayAt(0));
 
         assertThat(getForList("/api/companion/observation?date=" + TODAY, ownerAuthHeaders(),
-                HttpStatus.OK, ObservationResponse.class)).isEmpty();
+                HttpStatus.OK, ObservationResponse.class)).singleElement().satisfies(card -> {
+                    assertThat(card.getPatternId()).isEqualTo(stat.getId());
+                    assertThat(card.getKind()).isEqualTo("statistical");
+                    assertThat(card.getHypothesisKey()).isEqualTo(stat.getPairKey());
+                });
 
         postForBody("/api/companion/pattern/" + stat.getId() + "/reply",
                 new PatternReplyRequest().choice("reject"),
@@ -292,4 +299,104 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
 
         assertThat(body).contains("choice");
     }
+    @Test
+    void testInbox_shouldKeepNewestUnansweredCard_whenOriginalDayPassed() {
+        UUID owner = ownerId();
+        PatternEntity row = patternPopulator.reflection(owner, plan("topic:munka"),
+                PatternEntity.STATUS_PROPOSED);
+        Instant yesterday = dayAt(0).minusSeconds(86400);
+        patternEventPopulator.observation(owner, row.getId(), "Régi megfogalmazás.\nRád illik?",
+                List.of(), true, yesterday.minusSeconds(60));
+        PatternEventEntity latest = patternEventPopulator.observation(owner, row.getId(),
+                "Munka után feszültebbnek írtad le magad.\nRád illik?", List.of(), true, yesterday);
+        assertThat(getForList("/api/companion/observation", ownerAuthHeaders(),
+                HttpStatus.OK, ObservationResponse.class)).singleElement().satisfies(card -> {
+                    assertThat(card.getId()).isEqualTo(latest.getId());
+                    assertThat(card.getOccurredAt().toInstant()).isEqualTo(yesterday);
+                });
+        // Explicit today is the same inbox, not a different data product.
+        assertThat(getForList("/api/companion/observation?date=" + TODAY, ownerAuthHeaders(),
+                HttpStatus.OK, ObservationResponse.class)).hasSize(1);
+    }
+
+    @Test
+    void testInbox_shouldNotResurfaceOldAnsweredCard_whenUserAlreadyReplied() {
+        UUID owner = ownerId();
+        PatternEntity row = patternPopulator.reflection(owner, plan("topic:munka"),
+                PatternEntity.STATUS_PROPOSED);
+        Instant yesterday = dayAt(0).minusSeconds(86400);
+        patternEventPopulator.observation(owner, row.getId(), "Munka és stressz.\nRád illik?",
+                List.of(), true, yesterday);
+        patternEventPopulator.userReply(owner, row.getId(), "chip", "reject", null,
+                yesterday.plusSeconds(30));
+        assertThat(getForList("/api/companion/observation", ownerAuthHeaders(),
+                HttpStatus.OK, ObservationResponse.class)).isEmpty();
+    }
+
+    @Test
+    void testHistoricalDay_shouldNotIncludeLaterObservation_whenInboxHasUnansweredCards() {
+        UUID owner = ownerId();
+        PatternEntity row = patternPopulator.reflection(owner, plan("topic:munka"),
+                PatternEntity.STATUS_PROPOSED);
+        patternEventPopulator.observation(owner, row.getId(), "Mai észrevétel.\nRád illik?",
+                List.of(), true, dayAt(0));
+        assertThat(getForList("/api/companion/observation?date=" + TODAY.minusDays(1), ownerAuthHeaders(),
+                HttpStatus.OK, ObservationResponse.class)).isEmpty();
+    }
+
+    @Test
+    void testInbox_shouldReleaseDeferredGroundedEvent_whenNextDayHasBudget() {
+        UUID owner = ownerId();
+        PatternEntity row = patternPopulator.reflection(owner, plan("topic:munka"),
+                PatternEntity.STATUS_PROPOSED);
+        PatternEventEntity event = patternEventPopulator.observation(owner, row.getId(),
+                "Korábbi forrásból észrevétel.\nRád illik?", List.of("Napló · " + TODAY.minusDays(1)),
+                false, dayAt(0).minusSeconds(86400));
+        var old = event.getPayload();
+        event.setPayload(new PatternEventPayloadEnvelope(null, null, null, null, null,
+                null, null, "grounded", null, old.text(), old.evidenceRefs(), false));
+        eventRepository.saveAndFlush(event);
+        assertThat(getForList("/api/companion/observation", ownerAuthHeaders(),
+                HttpStatus.OK, ObservationResponse.class)).singleElement().satisfies(card -> {
+                    assertThat(card.getId()).isEqualTo(event.getId());
+                    assertThat(card.getEvidence()).containsExactly("Napló · " + TODAY.minusDays(1));
+                });
+        assertThat(getForList("/api/companion/observation", ownerAuthHeaders(),
+                HttpStatus.OK, ObservationResponse.class)).hasSize(1);
+    }
+
+    @Test
+    void testHistoricalDay_shouldExcludeCurrentWatchingState_whenAskingForPastDay() {
+        patternPopulator.reflection(ownerId(), plan("topic:munka"), PatternEntity.STATUS_MONITORING);
+        assertThat(getForList("/api/companion/observation?date=" + TODAY.minusDays(3), ownerAuthHeaders(),
+                HttpStatus.OK, ObservationResponse.class)).isEmpty();
+    }
+
+    @Test
+    void testInbox_shouldHideRefutedCard_whenLifecycleRefutesUnansweredPattern() {
+        UUID owner = ownerId();
+        PatternEntity row = patternPopulator.reflection(owner, plan("topic:munka"), PatternEntity.STATUS_REFUTED);
+        patternEventPopulator.observation(owner, row.getId(), "Már cáfolt észrevétel.\nIgaz?", List.of(), true, dayAt(0));
+        assertThat(getForList("/api/companion/observation", ownerAuthHeaders(),
+                HttpStatus.OK, ObservationResponse.class)).isEmpty();
+    }
+
+    @Test
+    void testInbox_shouldKeepDeferredCardPending_whenMidnightPublicationExhaustsDailyBudget() {
+        UUID owner = ownerId();
+        PatternEntity shown = patternPopulator.reflection(owner, plan("topic:munka"), PatternEntity.STATUS_PROPOSED);
+        patternEventPopulator.observation(owner, shown.getId(), "Első.\nIgaz?", List.of(), true, dayAt(0));
+        patternEventPopulator.observation(owner, shown.getId(), "Második.\nIgaz?", List.of(), true, dayAt(60));
+        PatternEntity waiting = patternPopulator.reflection(owner, plan("topic:sport"), PatternEntity.STATUS_PROPOSED);
+        var pending = patternEventPopulator.observation(owner, waiting.getId(), "Várakozó.\nIgaz?", List.of(), false,
+                dayAt(0).minusSeconds(86400));
+        var p = pending.getPayload();
+        pending.setPayload(new PatternEventPayloadEnvelope(null, null, null, null, null,
+                null, null, "grounded", null, p.text(), p.evidenceRefs(), false));
+        eventRepository.saveAndFlush(pending);
+        assertThat(getForList("/api/companion/observation", ownerAuthHeaders(), HttpStatus.OK,
+                ObservationResponse.class)).extracting(ObservationResponse::getId).doesNotContain(pending.getId());
+        assertThat(eventRepository.findById(pending.getId()).orElseThrow().getPayload().surfaced()).isFalse();
+    }
+
 }

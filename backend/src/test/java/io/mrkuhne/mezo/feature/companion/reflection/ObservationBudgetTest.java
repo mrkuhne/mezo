@@ -68,8 +68,8 @@ class ObservationBudgetTest {
     @Test
     void ignoresUnsurfacedEvents_forBothCapAndGap() {
         PatternEventEntity unsurfaced = event(NOON.minus(10, ChronoUnit.MINUTES), false);
-        when(patternEventRepository.findByCreatedByAndKindAndOccurredAtAfterAndDeletedFalse(
-                eq(USER_ID), eq(PatternEventEntity.KIND_OBSERVATION), any(Instant.class)))
+        when(patternEventRepository.findByCreatedByAndKindInAndOccurredAtGreaterThanEqualAndOccurredAtLessThanAndDeletedFalse(
+                eq(USER_ID), eq(List.of(PatternEventEntity.KIND_OBSERVATION)), any(Instant.class), any(Instant.class)))
                 .thenReturn(List.of(unsurfaced));
         ObservationBudget budget = budget(notice(2, 4, "22:00", "07:00"));
 
@@ -110,8 +110,8 @@ class ObservationBudgetTest {
 
     private void stubSurfacedEvents(List<Instant> occurredAts) {
         List<PatternEventEntity> events = occurredAts.stream().map(at -> event(at, true)).toList();
-        when(patternEventRepository.findByCreatedByAndKindAndOccurredAtAfterAndDeletedFalse(
-                eq(USER_ID), eq(PatternEventEntity.KIND_OBSERVATION), any(Instant.class)))
+        when(patternEventRepository.findByCreatedByAndKindInAndOccurredAtGreaterThanEqualAndOccurredAtLessThanAndDeletedFalse(
+                eq(USER_ID), eq(List.of(PatternEventEntity.KIND_OBSERVATION)), any(Instant.class), any(Instant.class)))
                 .thenReturn(events);
     }
 

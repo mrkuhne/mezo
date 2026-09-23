@@ -1,7 +1,7 @@
 # Észrevételek — releváns sejtések és többféle személyes forrás
 
 Dátum: 2026-09-23 · Driver: `mezo-hben1`
-Állapot: az alapirány jóváhagyva; a forrásbővítéssel kiegészített terv review alatt.
+Állapot: teljes terv jóváhagyva az owner által, a forrásbővítéssel és visszatöltéssel együtt.
 
 ## 1. Probléma és cél
 

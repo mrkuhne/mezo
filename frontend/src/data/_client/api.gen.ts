@@ -2108,6 +2108,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/observation/recovery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tulajdonosi észrevétel-visszaállítás előnézete vagy alkalmazása
+         * @description Csak OWNER. A preview a saját, korábbi hipotézisnaplókból az aktuális eredeti forrásokkal újraellenőrzött jelölteket készít, de nem ment mintát vagy észrevételt. Az apply a szerveren tárolt, lejáró planId pontos jelöltjeit alkalmazza, ismételt alkalmazás nem duplikál. Nincs push és automatikus felhasználói válasz.
+         */
+        post: operations["recoverObservations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/observation": {
         parameters: {
             query?: never;
@@ -2116,8 +2136,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Az Észrevételek fül kártyái egy napra (mezo-eq85.4)
-         * @description Négy kártyafajta, EBBEN a sorrendben: `fresh` (a nap felszínre engedett észrevételei, amikre még nem válaszoltál), `return` (a nap észrevételei egy KORÁBBI válaszod után — a szöveg már hivatkozik rá), `watching` (amit épp figyel a motor), `confirmed` (amit a KÉRT naptári napon erősített meg). Csoporton belül a legfrissebb elöl. `date` nélkül a mai nap.
+         * Észrevételek tartós bejövő listája vagy egy korábbi nap
+         * @description Mai dátummal vagy date nélkül a legfrissebb megválaszolatlan észrevétel mintánként a korábbi napokról is megmarad. Korábbi dátum esetén csak az adott nap eseményei. Sorrend: fresh, return, watching, confirmed; csoporton belül a legfrissebb elöl. A watching a figyelt statisztikai mintákat is tartalmazza. A confirmed a kért naptári nap megerősítése. A források eredeti dátuma változatlan.
          */
         get: operations["listObservations"];
         put?: never;
@@ -7719,6 +7739,29 @@ export interface components {
         PatternDecisionRequest: {
             decision: string;
         };
+        ObservationRecoveryRequest: {
+            mode: string;
+            /**
+             * Format: uuid
+             * @description Apply esetén kötelező, preview esetén kihagyandó.
+             */
+            planId?: string | null;
+        };
+        ObservationRecoveryResponse: {
+            /** Format: uuid */
+            planId: string;
+            /** Format: date-time */
+            expiresAt: string;
+            applied: boolean;
+            created: number;
+            candidates: components["schemas"]["ObservationRecoveryCandidate"][];
+        };
+        ObservationRecoveryCandidate: {
+            title: string;
+            text: string;
+            question: string;
+            evidence: string[];
+        };
         /** @description Egy kártya az Észrevételek fülön (Reflexió S4, mezo-eq85.4). A `fresh`/`return` kártyák egy `observation` ESEMÉNYT jelenítenek meg (az `id` az esemény azonosítója), a `watching`/`confirmed` kártyák magát a sort (az `id` a minta azonosítója) — a `patternId` mindig a soré, mert a chip-válasz arra megy. */
         ObservationResponse: {
             /**
@@ -7731,9 +7774,11 @@ export interface components {
              * @description A sor, amire a chip-válasz megy.
              */
             patternId: string;
-            /** @description A sor stabil identitása (ref-…) — a statisztikai sorokon pair:<key>. */
+            /** @description A sor stabil identitása (ref-…) — a statisztikai sorokon a pairKey. */
             hypothesisKey?: string | null;
-            /** @description fresh = még válasz nélküli mai észrevétel; return = mai észrevétel egy korábbi válaszod UTÁN; watching = épp figyelt sor; confirmed = a KÉRT naptári napon megerősített sor (a nap saját [00:00, 24:00) ablaka, nem egy mozgó 24 órás visszatekintés). */
+            /** @description A minta eredete; statisztikai mintán a reflexiós evidenceHits/evidenceMisses nem értelmezhető. */
+            kind?: string;
+            /** @description fresh = még válasz nélküli észrevétel; return = észrevétel egy korábbi válaszod UTÁN; watching = épp figyelt sor; confirmed = a KÉRT naptári napon megerősített sor (a nap saját [00:00, 24:00) ablaka, nem egy mozgó 24 órás visszatekintés). */
             card: string;
             /**
              * Format: date-time
@@ -7746,7 +7791,7 @@ export interface components {
             text: string;
             /** @description A kérdés, amire a chipek válaszolnak — az observation payload utolsó sora; null, ha nincs. */
             question?: string | null;
-            /** @description Az észrevétel forrás-hivatkozásai (journal_entry:<uuid>, sleep:<date>) — watching/confirmed kártyán a sor saját bizonyíték-chipjei. */
+            /** @description Az észrevétel ellenőrzött forrásainak olvasható címkéi és eredeti dátumai — watching/confirmed kártyán a sor saját bizonyíték-chipjei. */
             evidence: string[];
             /** @description A sor státusza a kártya kiadásának pillanatában. */
             status: string;
@@ -17630,6 +17675,53 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
+            };
+        };
+    };
+    recoverObservations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ObservationRecoveryRequest"];
+            };
+        };
+        responses: {
+            /** @description Preview or applied result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObservationRecoveryResponse"];
+                };
+            };
+            /** @description Invalid or expired preview */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Owner role required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -916,12 +916,14 @@ mezo:
       # Total original evidence prompt budget in characters.
       max-chars: 24000
     observation-inbox:
-      # Pending history and recovery window in days.
+      # Recovery audit window in days; unanswered inbox cards do not expire.
       lookback-days: 90
       # Lifetime of an owner-scoped recovery dry-run token.
       recovery-ttl-minutes: 30
       # Maximum owned hypothesis audit logs inspected in a recovery pass.
       recovery-max-logs: 60
+      # Maximum distinct, revalidated topics in a recovery preview (not the daily display cap).
+      recovery-max-candidates: 10
       # Maximum audit text supplied to recovery in one pass.
       recovery-max-chars: 40000
     reflection:
@@ -1034,6 +1036,8 @@ mezo:
       policies:
         reflection:
           # Offline consumer (mezo-eq85): deeper, no latency gate, reranker allowed.
+          # Inclusive event-date window; undated and older evidence cannot support fresh observations.
+          lookback-days: 90
           candidate-limit: 30
           max-tokens: 800
           rerank: true

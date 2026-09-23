@@ -99,6 +99,8 @@ tags:
       generált interfész elkülönüljön a beszélgetés-CRUD felülettől; a
       válasz-végpont ugyanezt a felületet zárja le (a /pattern/{id}/decision a
       KATALÓGUS-kártyák külön, felhasználói ítélete marad).
+  - name: CompanionObservationRecovery
+    description: Owner-only preview and exact-plan recovery of grounded observations.
   - name: People
     description: Inner-circle persons + mention logging (Emberek)
   - name: Proactive
@@ -5441,19 +5443,54 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/observation/recovery:
+    post:
+      tags:
+        - CompanionObservationRecovery
+      operationId: recoverObservations
+      summary: Tulajdonosi észrevétel-visszaállítás előnézete vagy alkalmazása
+      description: >-
+        Csak OWNER. A preview a saját, korábbi hipotézisnaplókból az aktuális
+        eredeti forrásokkal újraellenőrzött jelölteket készít, de nem ment
+        mintát vagy észrevételt. Az apply a szerveren tárolt, lejáró planId
+        pontos jelöltjeit alkalmazza, ismételt alkalmazás nem duplikál. Nincs
+        push és automatikus felhasználói válasz.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObservationRecoveryRequest'
+      responses:
+        '200':
+          description: Preview or applied result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObservationRecoveryResponse'
+        '400':
+          description: Invalid or expired preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Authentication required
+        '403':
+          description: Owner role required
   /api/companion/observation:
     get:
       tags:
         - CompanionObservation
       operationId: listObservations
-      summary: Az Észrevételek fül kártyái egy napra (mezo-eq85.4)
+      summary: Észrevételek tartós bejövő listája vagy egy korábbi nap
       description: >-
-        Négy kártyafajta, EBBEN a sorrendben: `fresh` (a nap felszínre engedett
-        észrevételei, amikre még nem válaszoltál), `return` (a nap észrevételei
-        egy KORÁBBI válaszod után — a szöveg már hivatkozik rá), `watching`
-        (amit épp figyel a motor), `confirmed` (amit a KÉRT naptári napon
-        erősített meg). Csoporton belül a legfrissebb elöl. `date` nélkül a mai
-        nap.
+        Mai dátummal vagy date nélkül a legfrissebb megválaszolatlan észrevétel
+        mintánként a korábbi napokról is megmarad. Korábbi dátum esetén csak az
+        adott nap eseményei. Sorrend: fresh, return, watching, confirmed;
+        csoporton belül a legfrissebb elöl. A watching a figyelt statisztikai
+        mintákat is tartalmazza. A confirmed a kért naptári nap megerősítése. A
+        források eredeti dátuma változatlan.
       parameters:
         - name: date
           in: query
@@ -19317,6 +19354,60 @@ components:
         decision:
           type: string
           pattern: ^(confirm|monitor|reject)$
+    ObservationRecoveryRequest:
+      type: object
+      required:
+        - mode
+      properties:
+        mode:
+          type: string
+          pattern: ^(preview|apply)$
+        planId:
+          type: string
+          format: uuid
+          nullable: true
+          description: 'Apply esetén kötelező, preview esetén kihagyandó.'
+    ObservationRecoveryResponse:
+      type: object
+      required:
+        - planId
+        - expiresAt
+        - applied
+        - created
+        - candidates
+      properties:
+        planId:
+          type: string
+          format: uuid
+        expiresAt:
+          type: string
+          format: date-time
+        applied:
+          type: boolean
+        created:
+          type: integer
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/ObservationRecoveryCandidate'
+    ObservationRecoveryCandidate:
+      type: object
+      required:
+        - title
+        - text
+        - question
+        - evidence
+      properties:
+        title:
+          type: string
+        text:
+          type: string
+        question:
+          type: string
+        evidence:
+          type: array
+          items:
+            type: string
     ObservationResponse:
       type: object
       description: >-
@@ -19351,13 +19442,19 @@ components:
         hypothesisKey:
           type: string
           nullable: true
-          description: 'A sor stabil identitása (ref-…) — a statisztikai sorokon pair:<key>.'
+          description: A sor stabil identitása (ref-…) — a statisztikai sorokon a pairKey.
+        kind:
+          type: string
+          pattern: ^(statistical|reflection|ai_hypothesis)$
+          description: >-
+            A minta eredete; statisztikai mintán a reflexiós
+            evidenceHits/evidenceMisses nem értelmezhető.
         card:
           type: string
           pattern: ^(fresh|return|watching|confirmed)$
           description: >-
-            fresh = még válasz nélküli mai észrevétel; return = mai észrevétel
-            egy korábbi válaszod UTÁN; watching = épp figyelt sor; confirmed = a
+            fresh = még válasz nélküli észrevétel; return = észrevétel egy
+            korábbi válaszod UTÁN; watching = épp figyelt sor; confirmed = a
             KÉRT naptári napon megerősített sor (a nap saját [00:00, 24:00)
             ablaka, nem egy mozgó 24 órás visszatekintés).
         occurredAt:
@@ -19385,9 +19482,8 @@ components:
           items:
             type: string
           description: >-
-            Az észrevétel forrás-hivatkozásai (journal_entry:<uuid>,
-            sleep:<date>) — watching/confirmed kártyán a sor saját
-            bizonyíték-chipjei.
+            Az észrevétel ellenőrzött forrásainak olvasható címkéi és eredeti
+            dátumai — watching/confirmed kártyán a sor saját bizonyíték-chipjei.
         status:
           type: string
           pattern: ^(proposed|monitoring|confirmed|rejected|refuted|dormant)$

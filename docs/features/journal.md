@@ -555,6 +555,8 @@ mock seed (`decisionMock.ts`) covers all three states — ripening, due, reviewe
 
 ## 5. Integrations
 
+**Grounded observations:** nightly hypothesis generation also reads original journal and gratitude text alongside check-ins, user chat messages and dated activity records over 28 days. Related reflection memory can look back 90 days; a new observation still needs valid, owner-scoped original source references. Notes are not restricted to food or sleep themes. See [companion observations](companion.md) for grounding, deduplication and reply semantics.
+
 **Companion source access:** Journal, gratitude and decision records (including outcomes) are available to chat through the owner-scoped full-source reader. Canonical memory indexes the complete text in ordered chunks; older missed records are repaired in bounded nightly batches. See [companion source access](companion.md#complete-personal-source-access-mezo-rj21410) for ownership, pagination and continuation rules.
 
 - **→ Companion (embed pipeline, wired, one-way OUT — `journal_entry`):** every journal write feeds

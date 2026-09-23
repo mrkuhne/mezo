@@ -2155,6 +2155,8 @@ On the contract-first pipeline ([`_platform-api-backend.md`](_platform-api-backe
 `api.gen.ts` types (FE). Drift = compile error.
 
 ### 5.4 Proactive → Today FE (✅ `mezo-gst9` wired — dual-mode read, replaces the B1.2+H1 seams)
+The same Mezo page also hosts the separate persistent observation inbox. Its unanswered older cards remain visible, but only publications dated today count against the displayed daily observation budget; an unanswered return card activates the tab indicator. See [companion](companion.md) for observation generation and [today](today.md) for presentation.
+
 The Today `MezoChip` message thread ([today.md](today.md)) is the consumer. `useCompanionFeed(date =
 localDateString())` (`data/today/feedHooks.ts`, `['companionFeed', date]`) reads `GET
 /api/proactive/feed?date=<local>` via `feedApi.get` (`data/today/feedApi.ts`, `toFeedMessages`

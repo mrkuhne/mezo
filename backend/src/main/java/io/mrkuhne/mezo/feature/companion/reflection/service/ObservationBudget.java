@@ -57,9 +57,10 @@ public class ObservationBudget {
     private List<PatternEventEntity> surfacedToday(UUID userId, Instant now) {
         ZoneId zone = ZoneId.systemDefault();
         Instant startOfToday = now.atZone(zone).toLocalDate().atStartOfDay(zone).toInstant();
+        Instant endOfToday = now.atZone(zone).toLocalDate().plusDays(1).atStartOfDay(zone).toInstant();
         return patternEventRepository
-                .findByCreatedByAndKindAndOccurredAtAfterAndDeletedFalse(
-                        userId, PatternEventEntity.KIND_OBSERVATION, startOfToday)
+                .findByCreatedByAndKindInAndOccurredAtGreaterThanEqualAndOccurredAtLessThanAndDeletedFalse(
+                        userId, List.of(PatternEventEntity.KIND_OBSERVATION), startOfToday, endOfToday)
                 .stream()
                 .filter(e -> Boolean.TRUE.equals(e.getPayload().surfaced()))
                 .toList();
