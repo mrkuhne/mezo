@@ -555,7 +555,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### feedback
 
-*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-09-23, mixed)
+*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-09-22, mixed)
 
 - **FE data** `frontend/src/data/feedback`
   - **hooks (via `@/data/hooks`):** `useFeedback`
@@ -734,7 +734,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### insights
 
 *FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-20, mixed) ·
-  [docs/features/insights.md](features/insights.md) (updated 2026-09-23, mixed)
+  [docs/features/insights.md](features/insights.md) (updated 2026-09-22, mixed)
 
 - **FE data** `frontend/src/data/insights`
   - **hooks (via `@/data/hooks`):** `MemoryRetrievalFeedback`, `MemoryRetrievalFeedbackAction`,
@@ -757,22 +757,21 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     CoachingCardPage.tsx, CoachingHubPage.tsx, CoachingObserverPage.tsx, DiagnosisDetailPage.tsx,
     DiagnosisListPage.tsx, ExperimentDetailPage.tsx, ExperimentsPage.tsx, KnowledgeListPage.tsx, KnowledgeNodePage.tsx,
     MemoirArchivePage.tsx, MemoirChapterPage.tsx, MemoirPage.tsx, MemoryDayPage.tsx, MemoryPage.tsx, MezoHubPage.tsx,
-    PatternDetailPage.tsx, PatternsPage.tsx, PredictionDetailPage.tsx, PredictionsPage.tsx, TeamFeedPage.tsx
+    PatternDetailPage.tsx, PatternsPage.tsx, PredictionDetailPage.tsx, PredictionsPage.tsx
   - **sheets:** ConversationActionsSheet.tsx, ConversationPickerSheet.tsx, NodeDetailSheet.tsx
   - **components:** BoopNavigation.tsx, CategoryHeader.tsx, ChatMessage.tsx, CoachingRuleTile.tsx, EvidenceLog.tsx,
-    FactCandidateCard.tsx, FactsView.tsx, FeedPostCard.tsx, FeedPostHead.tsx, FeedPosterCard.tsx, FeedReplySheet.tsx,
-    FeedTrio.tsx, FeedbackChips.tsx, HowItWorksView.tsx, HypothesisStateCard.tsx, KategoriakView.tsx, KindNodeList.tsx,
-    KindTileGrid.tsx, KnowledgeBaseView.tsx, KnowledgeFactRow.tsx, LifeEventAcceptedCard.tsx,
-    LifeEventCandidateCard.tsx, LifecycleSection.tsx, MemoryAuditPanel.tsx, MemoryJournalPanel.tsx,
-    MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx, PatternArtifactDetail.tsx,
-    PatternDecisionCard.tsx, PatternDetailHero.tsx, PatternDomainMark.tsx, PatternEvidenceChart.tsx,
-    PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx, PatternStrengthChart.tsx, ProfileNodeCard.tsx,
-    ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx, SimilarDayCard.tsx, StoryStrip.tsx, TestPlanTiles.tsx,
-    TokenColumns.tsx, ToolWorkStrip.tsx, VerdictArc.tsx, experimentStatus.tsx, useFeedSession.ts
+    FactCandidateCard.tsx, FactsView.tsx, FeedbackChips.tsx, HowItWorksView.tsx, HypothesisStateCard.tsx,
+    KategoriakView.tsx, KindNodeList.tsx, KindTileGrid.tsx, KnowledgeBaseView.tsx, KnowledgeFactRow.tsx,
+    LifeEventAcceptedCard.tsx, LifeEventCandidateCard.tsx, LifecycleSection.tsx, MemoryAuditPanel.tsx,
+    MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx,
+    PatternArtifactDetail.tsx, PatternDecisionCard.tsx, PatternDetailHero.tsx, PatternDomainMark.tsx,
+    PatternEvidenceChart.tsx, PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx,
+    PatternStrengthChart.tsx, ProfileNodeCard.tsx, ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx,
+    SimilarDayCard.tsx, TestPlanTiles.tsx, TokenColumns.tsx, ToolWorkStrip.tsx, VerdictArc.tsx, experimentStatus.tsx
   - **logic:** boopNavigation.ts, chatRefs.ts, coachingCopy.ts, diagnosisCatalog.ts, diagnosisCopy.ts, domains.ts,
     factCopy.ts, findings.ts, humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternCatalog.ts,
-    patternEvidence.ts, patternHistory.ts, predictionStatus.ts, quickQuestions.ts, team.ts, teamFeed.fixtures.ts,
-    teamFeed.ts, toolDomains.ts, useStickToBottom.ts, useVoiceInput.ts, verdicts.ts
+    patternEvidence.ts, patternHistory.ts, predictionStatus.ts, quickQuestions.ts, toolDomains.ts, useStickToBottom.ts,
+    useVoiceInput.ts, verdicts.ts
   - **root:** boop-world.css
 
 ### intention
@@ -1558,12 +1557,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   safeMarkdown.tsx, screenScroll.ts, seenMessages.ts, theme.ts, toastBus.ts, tutorialSeen.ts, userScope.ts
 - **ui:** AdherenceBar.tsx, CaptureArt.tsx, CaptureHeader.tsx, Chip.tsx, CoachBubble.tsx, CountUp.tsx, Cta.tsx,
   DatePicker.tsx, DayNavigator.tsx, DayOrb.tsx, Display.tsx, ErrorBoundary.tsx, Eyebrow.tsx, GhostState.tsx, Icon.tsx,
-  Island.tsx, ItemCard.tsx, ItemRow.tsx, NumberInput.tsx, ProgressBar.tsx, RefTag.tsx, ScoreRing.tsx,
-  ScreenSkeleton.tsx, Sheet.tsx, Skeleton.tsx, SortableList.tsx, Spinner.tsx, StatCell.tsx, StatStrip.tsx, Stepper.tsx,
-  ToastProvider.tsx, Toggle.tsx, ToolChip.tsx, ToolChipRow.tsx, TrendChart.tsx, capture.css, clay/boop/Boop.tsx,
-  clay/boop/boop.svg, clay/clay-icons.svg, clay/clay-spots.svg, clay/index.tsx, clay/titanium-icons.svg,
-  kalauz/KalauzSheet.tsx, kalauz/KalauzWelcome.tsx, mozaik/GlassBox.tsx, mozaik/arrival.tsx, mozaik/index.tsx,
-  mozaik/motion.tsx, sectionLabel.ts
+  ItemCard.tsx, ItemRow.tsx, NumberInput.tsx, ProgressBar.tsx, RefTag.tsx, ScoreRing.tsx, ScreenSkeleton.tsx,
+  Sheet.tsx, Skeleton.tsx, SortableList.tsx, Spinner.tsx, StatCell.tsx, StatStrip.tsx, Stepper.tsx, ToastProvider.tsx,
+  Toggle.tsx, ToolChip.tsx, ToolChipRow.tsx, TrendChart.tsx, capture.css, clay/boop/Boop.tsx, clay/boop/boop.svg,
+  clay/clay-icons.svg, clay/clay-spots.svg, clay/index.tsx, clay/titanium-icons.svg, kalauz/KalauzSheet.tsx,
+  kalauz/KalauzWelcome.tsx, mozaik/GlassBox.tsx, mozaik/arrival.tsx, mozaik/index.tsx, mozaik/motion.tsx,
+  sectionLabel.ts
 
 ### test infrastructure — `backend/src/test/java/io/mrkuhne/mezo/support`, `frontend/src/test`
 

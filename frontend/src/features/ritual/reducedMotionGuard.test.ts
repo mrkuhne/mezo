@@ -145,11 +145,21 @@ for (const rule of rules) {
   }
 }
 
+// Ritual-family selectors whose animation is opt-in under `no-preference` (mechanism b). Since the
+// Üveg re-dress (mezo-me75u.3, bible §6) every LOOP (twinkle, float, breathing glow) lives here;
+// only one-shot reveals stay outside a media query.
+const optInRitualSelectors: string[] = []
+for (const rule of rules) {
+  if (rule.media !== 'no-preference' || !activeAnimation(rule.body)) continue
+  optInRitualSelectors.push(...splitSelectorList(rule.selector).filter(isRitualSelector))
+}
+
 describe('reduced-motion guard — ritual animation families (mezo-mzbz)', () => {
   it('parses a non-trivial set of ritual animations (guards against a vacuous pass)', () => {
-    // The current file has 12 active ritual animations; a parser regression that found far
-    // fewer would make the coverage assertion below pass vacuously.
-    expect(animatingRitualSelectors.length).toBeGreaterThanOrEqual(10)
+    // The file has ~8 unconditional one-shot ritual animations plus ~5 opt-in loops; a parser
+    // regression that found far fewer would make the coverage assertion below pass vacuously.
+    expect(animatingRitualSelectors.length).toBeGreaterThanOrEqual(6)
+    expect(animatingRitualSelectors.length + optInRitualSelectors.length).toBeGreaterThanOrEqual(10)
   })
 
   it('neutralises every ritual-family animation under prefers-reduced-motion: reduce', () => {

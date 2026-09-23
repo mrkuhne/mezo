@@ -2,7 +2,7 @@
 title: Intention — Daily Creed, Foci & Evening Reflection
 type: feature-domain
 status: done
-updated: 2026-09-21
+updated: 2026-09-23
 tags: [today, habit, growth, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/intention
@@ -14,6 +14,8 @@ related: [today, habit, growth, _platform-data-layer, _platform-api-backend]
 ---
 
 # Intention — Daily Creed, Foci & Evening Reflection
+
+> **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The intention and reflect sheets opened from Nap · Rutin wear the floating glass sheet with lit flat buttons. Behavior unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
 
 > A two-layer intentionality practice — a standing **creed** (one editable north-star sentence) + up to **3 daily foci** + a holistic **evening reflection** (`igen`/`részben`/`nem`) — surfaced on the Nap spine (`/nap`) as the hub's **Kreed tile** opening `IntentionSheet` (the Design 2.0 re-face, mezo-d20.2.1, replaced the `IntentionBanner` creed chip + evening reflection block), plus two **DERIVED** habits in the morning/evening chains and one **DERIVED** `growth_intention` daily quest. **Status: ✅ done** (backend + FE real + FE mock). It has **no route/tab of its own** — it rides Today, [habit.md](habit.md), and [growth.md](growth.md). Driving spec: [`2026-07-20-daily-intention-design.md`](../superpowers/specs/2026-07-20-daily-intention-design.md); tone ADR [0010](../decisions/0010-gamified-growth-xp-feedback-not-payment.md) (XP is feedback, not payment). bd `mezo-a686`.
 

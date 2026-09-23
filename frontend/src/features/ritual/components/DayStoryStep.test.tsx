@@ -69,7 +69,10 @@ describe('DayStoryStep', () => {
     const rows = container.querySelectorAll('.rz-ev')
     expect(rows).toHaveLength(recap.events.length)
     expect(screen.getByText('Pull A — kész')).toBeInTheDocument()
-    expect(screen.getByText('17:30 ✓')).toBeInTheDocument()
+    // The data's „✓" glyph renders as the 3D tick (Üveg, mezo-me75u.3): the time stays as text.
+    expect(screen.getByText('17:30')).toBeInTheDocument()
+    expect(rows[0].querySelector('use[href="#t-tick"]')).not.toBeNull()
+    expect(screen.queryByText(/✓/)).not.toBeInTheDocument()
     expect(screen.getByText('4 étkezés')).toBeInTheDocument()
     expect(screen.getByText('132 g fehérje')).toBeInTheDocument()
   })
@@ -82,6 +85,8 @@ describe('DayStoryStep', () => {
 
     expect(rows[0].querySelector('.ok')).not.toBeNull() // Pull A — done: true
     expect(rows[1].querySelector('.ok')).toBeNull() // 4 étkezés — done: false
+    // …and only a done row the data marked „✓" carries the tick
+    expect(rows[1].querySelector('use[href="#t-tick"]')).toBeNull()
   })
 
   test('thinDay renders the soft acceptance line above whatever events exist — never a gap list', () => {

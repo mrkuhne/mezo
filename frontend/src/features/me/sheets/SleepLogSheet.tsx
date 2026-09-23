@@ -1,8 +1,7 @@
 import { useState, type CSSProperties } from 'react'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { Sheet } from '@/shared/ui/Sheet'
 import { CaptureHeader } from '@/shared/ui/CaptureHeader'
-import { Icon } from '@/shared/ui/Icon'
 import { TimePicker } from '@/features/me/components/TimePicker'
 import { useSleep, useSleepShot } from '@/data/hooks'
 import type { SleepEntry, SleepLogInput, SleepShotDraft } from '@/data/types'
@@ -137,17 +136,16 @@ export function SleepLogSheet({
   }
 
   return (
-    <Sheet onClose={onClose} labelledBy="sleep-log-title" className="capture-sheet capture-tone-sleep">
+    <Sheet onClose={onClose} labelledBy="sleep-log-title" className="capture-sheet capture-tone-sleep glass">
       {(close) => (
         <div className="col" style={{ padding: '4px 4px 8px' }}>
           <CaptureHeader id="sleep-log-title" kind="sleep" title="Hogyan aludtunk?"
             subtitle="Az éjszakád, néhány mozdulattal." onClose={close} />
 
-          <div className="row gap-xs" style={{ marginBottom: 14 }}>
+          <div className="row capture-segs">
             {(['manual', 'shot'] as const).map((m) => (
-              <button key={m} className="chip" aria-pressed={mode === m}
-                onClick={() => { setMode(m); setShotPhase('pick'); setShotError(null) }}
-                style={{ flex: 1, justifyContent: 'center', fontSize: 11, padding: '8px 0' }}>
+              <button key={m} className="chip capture-seg" aria-pressed={mode === m}
+                onClick={() => { setMode(m); setShotPhase('pick'); setShotError(null) }}>
                 {m === 'manual' ? 'Kézi' : 'Screenshot'}
               </button>
             ))}
@@ -155,41 +153,38 @@ export function SleepLogSheet({
 
           {isShot && shotPhase === 'pick' && (
             <div className="col gap-sm" style={{ marginBottom: 14 }}>
-              <label className="chip" style={{ justifyContent: 'center', padding: '14px 0', fontSize: 12, cursor: 'pointer', borderColor: 'var(--lav-deep)', color: 'var(--lav-deep)' }}>
-                <Icon name="camera" size={14} color="var(--lav-deep)" /> Sleep Cycle screenshot kiválasztása
+              <label className="chip capture-shot-pick">
+                <Icon3D name="t-camera" size={22} /> Sleep Cycle screenshot kiválasztása
                 <input type="file" accept="image/*" aria-label="Sleep Cycle screenshot"
                   style={{ display: 'none' }} onChange={onPick} />
               </label>
-              {shotError && <span style={{ fontSize: 10, color: 'var(--warning)' }}>{shotError}</span>}
+              {shotError && <span className="capture-warn">{shotError}</span>}
             </div>
           )}
 
           {isShot && shotPhase === 'drafting' && (
-            <div className="card" style={{
-              padding: 24, textAlign: 'center', marginBottom: 14,
-              background: 'var(--wash-lav)', borderColor: 'var(--lav-deep)',
-            }}>
-              <Icon name="sparkle" size={20} color="var(--lav-deep)" />
-              <div style={{ fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 600, color: 'var(--text-primary)', marginTop: 10 }}>
-                Elemzem a screenshotot…
-              </div>
-              <div className="np-twinkle" style={{
-                width: 12, height: 12, borderRadius: '50%', margin: '16px auto 0',
-                border: '1.5px solid var(--lav-deep)',
-              }} />
+            <div className="capture-drafting">
+              <Icon3D name="t-sleep" size={44} />
+              <div className="capture-drafting-title">Elemzem a screenshotot…</div>
+              <div className="np-twinkle capture-drafting-dot" />
             </div>
           )}
 
           {showInputs && (
             <>
               {/* The saved duration remains the hero in manual and screenshot review modes. */}
-              <div className="card capture-hero" style={{ padding: 18, marginBottom: 14 }}>
-                <div className="capture-night-arc" aria-hidden="true" />
+              {/* Üveg (mezo-me75u.3, `SH.sleep`): the hours are the one loud value — a frameless
+                  lavender wash, the glowing numeral over the night arc, the two times under it. */}
+              <div className="capture-hero">
                 <div className="row" style={{ justifyContent: 'center', alignItems: 'baseline', gap: 6 }}>
                   <span className="capture-hero-value">{durationH}</span>
                   <span className="capture-hero-unit">h</span>
                 </div>
-                <div className="row gap-lg mt-lg" style={{ justifyContent: 'center' }}>
+                <svg className="capture-night-arc" viewBox="0 0 220 70" aria-hidden="true">
+                  <path d="M10 64 Q110 -18 210 64" className="capture-night-arc-track" />
+                  <path d="M10 64 Q110 -18 210 64" className="capture-night-arc-fill" />
+                </svg>
+                <div className="row gap-lg" style={{ justifyContent: 'center' }}>
                   <TimePicker label="Lefekvés" val={bedtime} onChange={setBedtime} />
                   <TimePicker label="Ébredés" val={wakeup} onChange={setWakeup} />
                 </div>
@@ -234,9 +229,9 @@ export function SleepLogSheet({
                   })}
                 </div>
                 {nightTrace && (
-                  <div className="row gap-sm" style={{ alignItems: 'flex-start', background: 'var(--mz-cell-lav-bg)', borderRadius: 14, padding: '11px 13px' }}>
-                    <ClayIcon name="i-hold" size={18} />
-                    <span style={{ fontSize: 11.5, lineHeight: 1.55, color: 'var(--mz-cell-lav-ink)', flex: 1 }}>
+                  <div className="row gap-sm capture-note">
+                    <Icon3D name="t-moon" size={24} />
+                    <span className="capture-note-text">
                       Az éjjel {nightTrace.count}× jártál az éjszakai módban — előtöltöttem. Írd felül, ha máshogy emlékszel.
                     </span>
                   </div>
@@ -275,10 +270,10 @@ export function SleepLogSheet({
                       style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 13 }} />
                   </div>
                   {sleepLog.some((s) => s.date === date) && (
-                    <span style={{ fontSize: 10, color: 'var(--warning)' }}>Erre a napra már van bejegyzés — mentéskor új sor készül.</span>
+                    <span className="capture-warn">Erre a napra már van bejegyzés — mentéskor új sor készül.</span>
                   )}
                   {draft?.needsReview && (
-                    <span style={{ fontSize: 10, color: 'var(--warning)' }}>Az AI bizonytalan volt — nézd át az értékeket mentés előtt.</span>
+                    <span className="capture-warn">Az AI bizonytalan volt — nézd át az értékeket mentés előtt.</span>
                   )}
                 </>
               )}
@@ -292,10 +287,10 @@ export function SleepLogSheet({
                 </div>
               </div>
 
-              <div className="row gap-sm mt-lg">
+              <div className="capture-actions">
                 <button className="cta-ghost flex-1" onClick={close}>Mégse</button>
-                <button className="cta-primary flex-1" onClick={() => (isShot ? saveShot(close) : save(close))}>
-                  <Icon name="check" size={14} /> Mentés
+                <button className="cta-primary capture-save flex-1" onClick={() => (isShot ? saveShot(close) : save(close))}>
+                  <Icon3D name="t-tick" size={22} /> Mentés
                 </button>
               </div>
             </>

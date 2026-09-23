@@ -10,7 +10,7 @@ const bed = '23:00'
 /** A minimal, otherwise-irrelevant NeedState — only `key`/`band` drive `deriveNudges`. */
 const state = (key: NeedKey, band: NeedBand, pct = 50): NeedState => ({
   key, band, pct,
-  emoji: NEED_META[key].emoji, label: NEED_META[key].label, color: NEED_META[key].color,
+  label: NEED_META[key].label, color: NEED_META[key].color,
   ratePerHour: 5, zeroAt: null, lastFill: null, todayFills: [],
 })
 

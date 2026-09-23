@@ -7,8 +7,8 @@
 //     ezért kap vizuális elsőbbséget (a rutin-logolás a rács alsó
 //     kétharmadában marad, hüvelykujj-közelben).
 //   · 9 egyenrangú csempe 3×3-ban, CSAK címmel (tulajdonosi döntés, 2026-09-21,
-//     mezo-reocc: a korábbi élő alszövegek kikerültek). Agyag-ikon + a csempe saját
-//     színű, emelt mosása (visszaöltöztetés, stíluskönyv §2.2 A / §6).
+//     mezo-reocc: a korábbi élő alszövegek kikerültek). Üveg (mezo-me75u.3): 3D ikon, az
+//     oldalon a csempe saját színű üveglapka, a sheetben lapos, megvilágított cella.
 //   · Étkezés DINAMIKUS: aktív ablakkal a `/fuel/log/uj?w=<tileKey>` logolóba
 //     visz, ablak nélkül a szabad tétel ágra. A hely/ikon/címke fix — csak a cél
 //     változik.
@@ -22,11 +22,13 @@
 // variánsban nincs külső Sheet: a rács simán `onDone`-t hívja, az al-sheetek pedig
 // ugyanúgy modális `Sheet`-ként úsznak az oldal fölött (a brief elfogadja ezt).
 // ============================================================
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
-import { Boop, ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { Boop, Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import { CAPTURE_ART, CaptureArt } from '@/shared/ui/CaptureArt'
+import { cn } from '@/shared/lib/cn'
 import '@/features/quickinput/QuickLogSurface.css'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
 import { JournalSheet } from '@/features/me/sheets/JournalSheet'
@@ -45,14 +47,22 @@ import { useCheckins, useFuelPreview, useFuelDay, useWaterActions, useWeight, us
  * mezo-7lst — 'water' and 'sport' joined it too, for the Víz/Sport tiles). */
 type Phase = 'menu' | 'sleep' | 'naplo-pick' | 'aktivitas' | 'journal' | 'gratitude' | 'checkin' | 'weight' | 'water' | 'sport'
 
-function Tile({ icon, label, tone, onClick, disabled }: {
-  icon: ClayIconName; label: string
-  tone?: 'sky' | 'lav' | 'sage' | 'coral' | 'gold' | 'rose'
+type Tone = 'sky' | 'lav' | 'sage' | 'coral' | 'gold' | 'rose'
+
+/** One quick-log door. Üveg (mezo-me75u.3, bible §3.4 rank 2): on the page a `.glass` tile in its
+ *  OWN hue (`--c` from the tone class, set on the tile itself — U1 rule 4); inside the glass sheet a
+ *  flat-lit tile, never glass in glass (U1 rule 5). The art is the capture family's 3D mark, (`CAPTURE_ART`), so
+ *  the tile and the sheet it opens show one and the same symbol (restored bible rule 28). */
+function Tile({ icon, label, tone, glass, index, onClick, disabled }: {
+  icon: Icon3DName; label: string; tone: Tone; glass: boolean; index: number
   onClick?: () => void; disabled?: boolean
 }) {
   return (
-    <button type="button" className={tone ? `quicklog-tile tone-${tone} np-press` : 'quicklog-tile np-press'} onClick={onClick} disabled={disabled}>
-      <ClayIcon name={icon} size={60} className="quicklog-art" />
+    <button type="button"
+      className={cn('quicklog-tile', `tone-${tone}`, 'np-press', glass && 'glass rise')}
+      style={{ '--i': index } as CSSProperties}
+      onClick={onClick} disabled={disabled}>
+      <Icon3D name={icon} size={54} className="quicklog-art" />
       <span className="quicklog-label">{label}</span>
     </button>
   )
@@ -126,31 +136,54 @@ export function QuickLogSurface({ variant, onDone }: { variant: 'sheet' | 'page'
     )
   }
 
+  // Üveg (mezo-me75u.3, prototypes/src/uveg-nap-body.html `gyors()` / `qsurface()` / `SH.quick` /
+  // `SH.naplopick`): the page wears glass (the chat row lavender, the tiles each in its hue); the
+  // sheet is ONE glass surface already, so its rows and tiles are flat-lit (`data-variant`).
+  const onPage = variant === 'page'
   const grid = (close: () => void) => (
-    <div className="quicklog">
+    <div className="quicklog" data-variant={variant}>
       {phase === 'naplo-pick' ? (
         <>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <button type="button" className="cta-ghost" onClick={() => setPhase('menu')}
-              style={{ padding: '4px 8px', fontSize: 14 }}>
-              ← Vissza
+          <div className="quicklog-tool">
+            <button type="button" className="quicklog-back" onClick={() => setPhase('menu')} aria-label="Vissza">
+              <Icon name="chevron-left" size={18} />
             </button>
+            <span className="quicklog-eyebrow">Naplózás</span>
+            <span aria-hidden="true" />
           </div>
-          <h2 id="quicklog-title">Mit naplózol?</h2>
-          <div className="quicklog-grid mt-lg">
-            <Tile icon="i-lang" label="Aktivitás" onClick={() => setPhase('aktivitas')} />
-            <Tile icon="i-naplo" label="Napló" onClick={() => setPhase('journal')} />
-            <Tile icon="i-growth" label="Hála" onClick={() => setPhase('gratitude')} />
+          <div className="quicklog-head">
+            <CaptureArt kind="journal" className="quicklog-head-art" />
+            <h2 id="quicklog-title">Mit naplózol?</h2>
+          </div>
+          <div className="quicklog-grid quicklog-pick">
+            <Tile icon={CAPTURE_ART.activity} label="Aktivitás" tone="sage" glass={onPage} index={0} onClick={() => setPhase('aktivitas')} />
+            <Tile icon={CAPTURE_ART.journal} label="Napló" tone="sage" glass={onPage} index={1} onClick={() => setPhase('journal')} />
+            <Tile icon="t-sprout" label="Hála" tone="sage" glass={onPage} index={2} onClick={() => setPhase('gratitude')} />
           </div>
         </>
       ) : (
         <>
-          <h2 id="quicklog-title">{variant === 'page' ? 'Mi érkezett?' : 'Gyors logolás'}</h2>
-          <p className="quicklog-sub">Egy pillanat. És a napod része.</p>
+          {onPage ? (
+            <div className="quicklog-page-head">
+              <h2 id="quicklog-title">Mi érkezett?</h2>
+              <p className="quicklog-sub">Egy pillanat. És a napod része.</p>
+            </div>
+          ) : (
+            <>
+              <span className="quicklog-eyebrow">Gyors rögzítés</span>
+              <div className="quicklog-head">
+                <CaptureArt kind="quick" className="quicklog-head-art" />
+                <div>
+                  <h2 id="quicklog-title">Gyors logolás</h2>
+                  <p className="quicklog-sub">Egy pillanat. És a napod része.</p>
+                </div>
+              </div>
+            </>
+          )}
 
           <button
             type="button"
-            className="quicklog-chat np-press"
+            className={cn('quicklog-chat np-press', onPage && 'glass rise')}
             onClick={() => { close(); navigate('/mezo/chat') }}
           >
             <span className="quicklog-chat-mark" aria-hidden="true"><Boop domain="mezo" size={42} /></span>
@@ -162,25 +195,25 @@ export function QuickLogSurface({ variant, onDone }: { variant: 'sheet' | 'page'
           </button>
 
           <div className="quicklog-grid">
-            <Tile icon="i-fuel" label="Étkezés" tone="coral"
+            <Tile icon={CAPTURE_ART.food} label="Étkezés" tone="coral" glass={onPage} index={2}
               onClick={() => { close(); navigate(foodTarget) }} />
-            <Tile icon="i-viz" label="Víz" tone="sky"
+            <Tile icon={CAPTURE_ART.water} label="Víz" tone="sky" glass={onPage} index={3}
               onClick={() => setPhase('water')} />
-            <Tile icon="i-stack" label="Stack" tone="gold"
+            <Tile icon={CAPTURE_ART.stack} label="Stack" tone="gold" glass={onPage} index={4}
               onClick={() => { close(); navigate('/fuel/stack') }} />
-            <Tile icon="i-edzes" label="Edzés" tone="coral"
+            <Tile icon={CAPTURE_ART.training} label="Edzés" tone="coral" glass={onPage} index={5}
               onClick={() => { close(); navigate('/train') }} />
-            <Tile icon="i-sport" label="Sport" tone="rose"
+            <Tile icon={CAPTURE_ART.sport} label="Sport" tone="rose" glass={onPage} index={6}
               onClick={() => setPhase('sport')} />
-            <Tile icon="i-suly" label="Súly" tone="sky"
+            <Tile icon={CAPTURE_ART.weight} label="Súly" tone="sky" glass={onPage} index={7}
               onClick={() => setPhase('weight')} />
-            <Tile icon="i-checkin" label="Check-in" tone="rose"
+            <Tile icon={CAPTURE_ART.checkin} label="Check-in" tone="rose" glass={onPage} index={8}
               onClick={() => {
                 if (nextCheckInIdx >= 0) { setCheckInIdx(nextCheckInIdx); setPhase('checkin') }
                 else { close(); navigate('/nap') }
               }} />
-            <Tile icon="i-naplo" label="Napló" tone="sage" onClick={() => setPhase('naplo-pick')} />
-            <Tile icon="i-alvas" label="Alvás" tone="lav" onClick={() => setPhase('sleep')} />
+            <Tile icon={CAPTURE_ART.journal} label="Napló" tone="sage" glass={onPage} index={9} onClick={() => setPhase('naplo-pick')} />
+            <Tile icon={CAPTURE_ART.sleep} label="Alvás" tone="lav" glass={onPage} index={10} onClick={() => setPhase('sleep')} />
           </div>
         </>
       )}
@@ -197,7 +230,7 @@ export function QuickLogSurface({ variant, onDone }: { variant: 'sheet' | 'page'
   if (variant === 'page') return grid(() => {})
 
   return (
-    <Sheet onClose={onDone} labelledBy="quicklog-title" className="capture-sheet capture-tone-chat">
+    <Sheet onClose={onDone} labelledBy="quicklog-title" className="capture-sheet capture-tone-quick glass">
       {(close) => grid(close)}
     </Sheet>
   )

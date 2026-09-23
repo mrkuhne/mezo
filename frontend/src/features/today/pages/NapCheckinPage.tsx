@@ -7,13 +7,18 @@
 // real CheckInSheet measurement flow from here — the sheet stays
 // the flow, this page is the day overview. Data layer reused
 // verbatim: useCheckins + isFillableSlot.
+// ÜVEG (mezo-me75u.3, prototypes/uveg-nap.html `checkin()`): a vissza-gomb kis üveg-pirula,
+// a hős KERET NÉLKÜLI halo (3D check-in ikon + nagy szám), a négy slot EGY rózsa üvegkártya
+// lapos sorai. A kész sor megvilágított pipája a 3D t-tick, a soron következő sor a kártyán
+// BELÜL világít (nem üveg az üvegben), a jövőbeli sor szaggatott körrel halványul.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCheckins } from '@/data/hooks'
 import { isFillableSlot } from '@/features/today/logic/todayItems'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
-import { MozaikPage, PageHead, PageHero, PageBody, MCells } from '@/shared/ui/mozaik'
+import { Icon3D } from '@/shared/ui/clay'
+import { MozaikPage, PageBody, MCells } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import type { CheckinSlot, CheckinValues } from '@/data/types'
 
@@ -42,7 +47,7 @@ export function NapCheckinPage() {
     if (slot.state === 'done') {
       return (
         <div key={i} className="nck-row" data-kalauz-anchor={i === 0 ? 'checkin-sor' : undefined}>
-          <span className="nck-tick f">✓</span>
+          <span className="nck-tick f" role="img" aria-label="kész"><Icon3D name="t-tick" size={30} /></span>
           <div className="nck-grow">
             <div className="nck-t">{name} · {slot.time}</div>
             {slot.note && <div className="nck-sub">{slot.note}</div>}
@@ -54,6 +59,7 @@ export function NapCheckinPage() {
     if (i === nextIdx) {
       return (
         <div key={i} className="nck-row nck-hot" data-kalauz-anchor={i === 0 ? 'checkin-sor' : undefined}>
+          <span className="nck-tick" aria-hidden="true" />
           <div className="nck-grow">
             <div className="nck-t nck-rose">
               {slot.state === 'now' ? `${name} · most esedékes` : `${name} · ${slot.time}`}
@@ -69,7 +75,7 @@ export function NapCheckinPage() {
     // future (or non-next missed) slot — muted, honest: no values, no affordance
     return (
       <div key={i} className="nck-row nck-dim" data-kalauz-anchor={i === 0 ? 'checkin-sor' : undefined}>
-        <span className="nck-tick" aria-hidden="true" />
+        <span className="nck-tick is-dash" aria-hidden="true" />
         <div className="nck-grow">
           <div className="nck-t">{name} · {slot.time} körül</div>
           <div className="nck-sub">később esedékes</div>
@@ -79,13 +85,21 @@ export function NapCheckinPage() {
   }
 
   return (
-    <MozaikPage tone="rose">
-      <PageHead onBack={() => navigate(-1)} label="‹ Ma" />
-      <PageHero icon="i-checkin" big={`${done}/${checkins.length}`} name="Check-in"
-        sub="négy pillanatkép a napodról" />
+    <MozaikPage tone="rose" className="nap-oldal nck-page">
+      <div className="mz-page-head nap-backrow">
+        <button type="button" className="mz-backbtn glass nap-back" onClick={() => navigate(-1)} aria-label="Vissza">
+          <b aria-hidden="true">‹</b> Ma
+        </button>
+      </div>
+      <section className="nap-hero uv-halo" style={{ '--c': 'var(--dv-rose)', '--c2': 'var(--dv-lav)' } as React.CSSProperties}>
+        <Icon3D name="t-checkin" size={86} className="nap-hero-art uv-float" />
+        <div className="nap-hero-num">{done}<small>/{checkins.length}</small></div>
+        <div className="nap-hero-nm">Check-in</div>
+        <div className="nap-hero-sb">négy pillanatkép a napodról</div>
+      </section>
       <PageBody principle="A kimaradt slot nem vész el — Pótold bármikor, a társ nem büntet.">
         <EntranceGroup>
-          <div className="nck-card rise" style={{ '--d': '40ms' } as React.CSSProperties}>
+          <div className="nck-card glass rise" style={{ '--d': '40ms' } as React.CSSProperties}>
             {checkins.map(slotRow)}
           </div>
         </EntranceGroup>

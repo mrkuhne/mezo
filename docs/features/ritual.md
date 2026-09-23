@@ -2,7 +2,7 @@
 title: Ritual — Napzárás Sleep-Anchored Daily Closing
 type: feature-domain
 status: done
-updated: 2026-09-22
+updated: 2026-09-23
 tags: [today, habit, growth, intention, proactive, companion, backend, frontend, data-layer, progression, needs, phase-5]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/ritual
@@ -15,6 +15,8 @@ related: [today, habit, growth, intention, proactive, _platform-design-system, n
 ---
 
 # Ritual — Napzárás Sleep-Anchored Daily Closing
+
+> **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The six Napzárás acts wear the dark glass: 3D moon / harvest art, amber and lavender lit primaries, glass loop rows and note/handoff boxes, the XP count-up as gradient text; the night-wash act tokens became warm graphite and the ✓/✕ glyphs became 3D ticks and a worded Kilépés. Behavior (acts, day close, confetti, count-up) unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
 
 > A full-screen, sleep-anchored **6-act evening closing ritual** at route `/ritual` (`AppLayout` child, chrome hidden — the `train/session` precedent: the `hideChrome` list suppresses the shell `AppHeader`, the `TabBar` and the `QuickLogFab` alike), entered from the Nap hub's Este panel **Napzárás CTA** (`NapHubPage`, the `DaypartEvening` successor since mezo-d20.2.1 — see [today.md](today.md)) or the evening habit chain. **Status: ✅ done** (backend R1+R2 + FE R3); `/ritual` visual goldens + the formal reduced-motion audit shipped in **R4** (`mezo-mzbz`).
 

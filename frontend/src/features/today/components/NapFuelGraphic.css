@@ -1,52 +1,41 @@
+/* Nap · Mai üzemanyag-kártya — GEOMETRIA és tipográfia. Az ANYAG (üveg, amber keret, izzó
+   ívek, lapos makró-cellák, szaggatott üres állapot) a prototype.css `── uveg nap mai (`
+   blokkjában él (üvegesítés U3, mezo-me75u.3; prototypes/uveg-nap.html#mai `.fuelc`).
+   Itt SZÁNDÉKOSAN nincs háttér, árnyék, position vagy overflow a gyökéren: a `.glass`
+   ezekben dönt (bible U1 1. szabály). */
 .nap-fuel {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  margin-block: 18px;
-  padding: 23px 12px 19px;
-  border-radius: 22px;
+  margin: 6px 0 0;
+  padding: 16px 14px 14px;
   color: var(--text-primary);
-  /* Visszaöltöztetés (mezo-ju4j6.10): mosott arany csempe (stíluskönyv §2.2 A) — hajszálvékony
-     perem + hue-árnyék token, nem hideg köd két radiális folttal. */
-  border: 0.5px solid rgba(43, 33, 24, 0.06);
-  background: var(--mz-wash-gold);
-  box-shadow: var(--mz-shadow-gold);
 }
 .nap-fuel-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-/* Szemöldök (§3.2): kiskapitális, a Nap arany tintájában. */
-.nap-fuel-heading h2 { margin: 0; font-size: 9.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--mz-cell-gold-ink); }
-.nap-fuel-heading > span { color: var(--text-muted); font-size: 11px; white-space: nowrap; }
-.nap-fuel-reactor { position: relative; max-width: 340px; width: 100%; aspect-ratio: 340 / 274; margin-inline: auto; }
+.nap-fuel-heading h2 { margin: 0; font-family: var(--ff-display); font-size: 18px; font-weight: 600; letter-spacing: -0.5px; line-height: 1.2; }
+.nap-fuel-reactor { position: relative; max-width: 300px; width: 100%; aspect-ratio: 340 / 274; margin: 8px auto 0; }
 .nap-fuel-reactor svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .nap-fuel-core {
   position: absolute; top: 48.175%; left: 50%; transform: translate(-50%, -50%);
   width: 36%; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  border: 0; border-radius: 50%; color: var(--text-primary); cursor: pointer;
-  /* A mag ikon-pajzs anyagú (§3.1): világos felület + hajszál belső perem, glória nélkül. */
-  background: var(--surface-1);
-  box-shadow: inset 0 0 0 1px var(--border-subtle);
+  border: 0; border-radius: 50%; cursor: pointer; padding: 0;
 }
-.nap-fuel-core strong { font-family: var(--ff-display); font-size: clamp(24px, 7vw, 34px); font-weight: 200; letter-spacing: -0.04em; line-height: 1.15; font-variant-numeric: tabular-nums; }
-.nap-fuel-core span { font-size: 12px; color: var(--text-secondary); margin-top: 5px; }
-.nap-fuel-core small { font-size: 10px; color: var(--text-muted); margin-top: 8px; }
-.nap-fuel-remaining { position: absolute; inset: auto 0 0; text-align: center; font-size: 12px; color: var(--text-secondary); }
-.nap-fuel-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 18px; }
-.nap-fuel-macro { background: transparent; border: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 8px 2px 12px; display: flex; flex-direction: column; align-items: center; min-height: 100px; min-width: 0; color: var(--text-primary); cursor: pointer; transition: background .25s; }
-.nap-fuel-macro[aria-pressed=true] { background: linear-gradient(transparent, color-mix(in srgb, var(--fuel-color) 12%, transparent)); border-bottom-color: var(--fuel-color); }
-.nap-fuel-macro > span { font-size: 12px; color: var(--fuel-color); margin-top: 8px; }
-.nap-fuel-macro strong { font-family: var(--ff-display); font-size: 22px; font-weight: 200; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; margin-top: 4px; }
-.nap-fuel-macro small { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
-/* A makró arca AGYAG szimbólum (§6) — az elmosódott gradiens-kavics megszűnt. */
-.nap-fuel-bead { display: grid; place-items: center; width: 34px; height: 34px; }
-.nap-fuel-detail { min-height: 36px; margin: 12px 0 0; text-align: center; font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
-.nap-fuel-arc { transition: opacity .3s, filter .3s, stroke-dasharray .5s; }
-.nap-fuel[data-active] .nap-fuel-arc { opacity: .2; }
+.nap-fuel-core strong { font-family: var(--ff-display); font-size: clamp(24px, 7vw, 30px); font-weight: 300; letter-spacing: -1.6px; line-height: 1; font-variant-numeric: tabular-nums; }
+.nap-fuel-core span { font-size: 10px; margin-top: 4px; }
+.nap-fuel-core small { font-size: 9.5px; margin-top: 2px; text-align: center; padding: 0 6px; }
+.nap-fuel-remaining { position: absolute; inset: auto 0 0; text-align: center; font-size: 13px; }
+.nap-fuel-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.nap-fuel-macro { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; min-height: 96px; padding: 10px 4px 9px; border: 0; border-radius: 16px; cursor: pointer; text-align: center; transition: background .25s, box-shadow .25s; }
+.nap-fuel-macro > span { font-size: 11px; }
+.nap-fuel-macro strong { font-family: var(--ff-display); font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.nap-fuel-macro small { font-size: 9.5px; overflow-wrap: anywhere; }
+.nap-fuel-bead { display: grid; place-items: center; width: 32px; height: 32px; }
+.nap-fuel-detail { min-height: 36px; margin: 10px 0 0; text-align: center; font-size: 12px; line-height: 1.45; }
+.nap-fuel-arc { transition: opacity .3s, stroke-dasharray .5s; }
+.nap-fuel[data-active] .nap-fuel-arc { opacity: .28; }
 .nap-fuel[data-active=p] [data-macro=p] .nap-fuel-arc,
 .nap-fuel[data-active=c] [data-macro=c] .nap-fuel-arc,
 .nap-fuel[data-active=f] [data-macro=f] .nap-fuel-arc { opacity: 1; }
 .nap-fuel button:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 3px; }
-.nap-fuel-state { min-height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--text-secondary); text-align: center; font-size: 13px; }
-.nap-fuel-state button { min-width: 64px; min-height: 44px; font-weight: 600; color: var(--text-primary); background: var(--surface-1); border: 0; box-shadow: inset 0 0 0 1px var(--border-subtle); border-radius: 14px; }
+.nap-fuel-state { min-height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center; font-size: 13px; }
+.nap-fuel-state button { min-width: 64px; min-height: 44px; padding: 0 18px; font-weight: 600; border: 0; border-radius: 999px; }
 @media (prefers-reduced-motion: reduce) {
   .nap-fuel-arc, .nap-fuel-macro { transition: none; }
 }

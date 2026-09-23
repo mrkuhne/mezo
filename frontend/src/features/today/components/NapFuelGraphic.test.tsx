@@ -48,12 +48,34 @@ describe('NapFuelGraphic', () => {
     expect(retry).toHaveBeenCalledOnce()
   })
 
-  it('keeps gradient references unique across multiple mounted graphics', () => {
+  it('keeps each mounted graphic self-contained: arcs glow in their own macro colour, no shared gradient ids', () => {
+    // Üveg U3: the per-instance gradients (and their id-collision risk) are gone — every arc
+    // carries its macro accent on its own group (`--c`), so two mounted graphics cannot clash.
     const { container } = render(<><NapFuelGraphic consumed={consumed} targets={targets} /><NapFuelGraphic consumed={zero} targets={targets} /></>)
-    const ids = [...container.querySelectorAll('linearGradient')].map(el => el.id)
-    expect(new Set(ids).size).toBe(6)
+    expect(container.querySelectorAll('linearGradient')).toHaveLength(0)
+    expect(container.querySelector('[data-macro="p"]')).toHaveStyle({ '--c': 'var(--macro-protein)' })
+    expect(container.querySelector('[data-macro="p"] .nap-fuel-arc')).toHaveClass('uv-ring-prog')
     for (const region of screen.getAllByRole('region', { name: /mai energiabevitel/i })) {
       expect(within(region).getAllByRole('button')).toHaveLength(4)
     }
+  })
+
+  it('wears the üveg ranking: amber glass with flat 3D macro chips, a dashed card on an empty day', () => {
+    const { container, rerender } = render(<NapFuelGraphic consumed={consumed} targets={targets} />)
+    const card = screen.getByRole('region', { name: /mai energiabevitel/i })
+    expect(card).toHaveClass('glass')
+    expect(card).not.toHaveClass('uv-empty')
+    expect(card).toHaveStyle({ '--c': 'var(--dv-amber)' })
+    const icons = [...container.querySelectorAll('.nap-fuel-macro use')].map(u => u.getAttribute('href'))
+    expect(icons).toEqual(['#t-meat', '#t-carb', '#t-avocado'])
+    expect(container.querySelector('.nap-fuel-macro .glass')).toBeNull()
+    rerender(<NapFuelGraphic consumed={zero} targets={targets} />)
+    expect(card).toHaveClass('uv-empty')
+    expect(card).not.toHaveClass('glass')
+    // loading and failure keep the glass (they are not free space)
+    rerender(<NapFuelGraphic consumed={zero} targets={targets} isPending />)
+    expect(card).toHaveClass('glass')
+    rerender(<NapFuelGraphic consumed={zero} targets={targets} isError onRetry={() => {}} />)
+    expect(card).toHaveClass('glass')
   })
 })

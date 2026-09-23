@@ -301,3 +301,32 @@ stack|trendek (`), so five builders could work in parallel without touching each
     not glass (rule 5).
 16. **Test the meaning, not the emoji.** Tests that matched `'kamra ✨'`, `★` or `✓/⚠` now assert
     the accessible text or a data hook (`data-ai`, a marker role). Swap the assertion, never delete it.
+
+### U3 · Nap (`mezo-me75u.3`, 2026-09-23)
+
+Five parallel builders again (`── uveg nap mai|oldalak|rogzites|uzenetek|napzaras (`), plus 11 new
+sprite icons (`t-checkin t-quick t-steps t-people t-chain t-quest t-harvest t-coin t-orb t-flask
+t-scroll`). Prototype: [`prototypes/uveg-nap.html`](prototypes/uveg-nap.html).
+
+17. **Plant every builder's block marker BEFORE dispatch, and edit only between the anchors.** The
+    controller committed five empty `── uveg nap <area> (` / `── /uveg nap <area> ──` pairs first. Two
+    builders still rewrote the whole of `prototype.css` in one read-modify-write; nothing was lost
+    this time, but a whole-file save during another builder's edit silently drops it. Diff every
+    block at integration.
+18. **Sweep for dead code before you re-dress.** Island, DailyQuestsCard, ActivityLogCard and
+    MezoMessagesSheet had no importer; restyling them would have been wasted work, and their emoji
+    looked like live bugs. Grep importers up to a route first and hand builders only live files.
+19. **A text glyph is an icon too.** `✓ ✕ ·` marks (check-in, rutin, küldetés, ritual loops,
+    observation tallies) become `t-tick` / `t-skip` / a flat dot, and the meaning moves to an
+    accessible name (`kész`, `bejött`) that tests assert (rule 16). Typographic arrows (`‹ › ↗`)
+    stay.
+20. **One clay glyph, three meanings on one screen: map at the call site.** `i-kristaly` is the
+    Gyors-logolás node (`t-quick`), a forecast in the notification panel (`t-orb`) and the AI score
+    (`t-score`); `i-sport` is Aktivitás (`t-steps`) and the Sport tile (`t-volley`). Only
+    context-free meanings go into `CLAY_TO_3D`.
+21. **A shared frame that takes no class is not a reason to reskin it for everyone.** `PageHead` /
+    `PageHero` (shared/ui/mozaik) serve Én, Train and Fuel too, so the Nap pages render their own glass
+    back pill and halo hero (`.nap-back`, `.nap-hero`). The next slice that meets them should extend
+    the kit (a `className` / `variant` prop) instead of copying the markup a third time.
+22. **`build.sh` rebuilds every prototype.** Running it whole rewrites ~36 older files against the
+    current sprite. Run only your slice's line.

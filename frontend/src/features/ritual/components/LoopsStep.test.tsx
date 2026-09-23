@@ -83,9 +83,11 @@ describe('LoopsStep', () => {
   test('a fully-done check-in day renders the dim summary row, not the open row', () => {
     stubReduced()
     setup({ checkins: DONE_CHECKINS, intention: intentionDay({ foci: [FOCUS], reflection: null }) })
-    render(<LoopsStep onNext={vi.fn()} onOpenCheckIn={vi.fn()} onOpenJournal={vi.fn()} />)
+    const { container } = render(<LoopsStep onNext={vi.fn()} onOpenCheckIn={vi.fn()} onOpenJournal={vi.fn()} />)
 
     expect(screen.getByText('4/4 check-in kész')).toBeInTheDocument()
+    // the dim row's closed mark is the 3D tick
+    expect(container.querySelector('.rz-loop-done use[href="#t-tick"]')).not.toBeNull()
     expect(screen.queryByRole('button', { name: 'Koppints' })).not.toBeInTheDocument()
   })
 
@@ -102,7 +104,7 @@ describe('LoopsStep', () => {
     expect(reflect).toHaveBeenCalledWith('partial')
   })
 
-  test('once reflection is set, the reflect row collapses to the checkmark line (no buttons)', () => {
+  test('once reflection is set, the reflect row collapses to the tick line (no buttons)', () => {
     stubReduced()
     // check-in stays open so the "nothing open" beat does not swallow the collapse row too.
     setup({ checkins: OPEN_CHECKINS, intention: intentionDay({ foci: [FOCUS], reflection: 'yes' }) })
@@ -136,9 +138,11 @@ describe('LoopsStep', () => {
   test('nothing open (check-ins done, reflected) shows the single "Minden hurok zárva" beat, not the individual closed rows', () => {
     stubReduced()
     setup({ checkins: DONE_CHECKINS, intention: intentionDay({ foci: [FOCUS], reflection: 'partial' }) })
-    render(<LoopsStep onNext={vi.fn()} onOpenCheckIn={vi.fn()} onOpenJournal={vi.fn()} />)
+    const { container } = render(<LoopsStep onNext={vi.fn()} onOpenCheckIn={vi.fn()} onOpenJournal={vi.fn()} />)
 
-    expect(screen.getByText('Minden hurok zárva ✓')).toBeInTheDocument()
+    // The closed mark is the 3D tick now, not a „✓" glyph (Üveg, mezo-me75u.3).
+    expect(screen.getByText('Minden hurok zárva')).toBeInTheDocument()
+    expect(container.querySelector('.rz-loop-beat use[href="#t-tick"]')).not.toBeNull()
     expect(screen.queryByText('4/4 check-in kész')).not.toBeInTheDocument()
     expect(screen.queryByText('A mai szándékodra reflektáltál.')).not.toBeInTheDocument()
     // the journal invite is evergreen — still present even once the beat replaces the rest
@@ -148,8 +152,9 @@ describe('LoopsStep', () => {
   test('nothing open with no focus at all also shows the beat', () => {
     stubReduced()
     setup({ checkins: DONE_CHECKINS, intention: intentionDay({ foci: [], reflection: null }) })
-    render(<LoopsStep onNext={vi.fn()} onOpenCheckIn={vi.fn()} onOpenJournal={vi.fn()} />)
-    expect(screen.getByText('Minden hurok zárva ✓')).toBeInTheDocument()
+    const { container } = render(<LoopsStep onNext={vi.fn()} onOpenCheckIn={vi.fn()} onOpenJournal={vi.fn()} />)
+    expect(screen.getByText('Minden hurok zárva')).toBeInTheDocument()
+    expect(container.querySelector('.rz-loop-beat use[href="#t-tick"]')).not.toBeNull()
   })
 
   test('Tovább always fires onNext, even with open loops remaining (soft — nothing mandatory)', async () => {

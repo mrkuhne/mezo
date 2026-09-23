@@ -10,7 +10,7 @@
 //   3. napszak-ikon — végső tartalék, mindig ad találatot.
 // Pure: no React, no hooks, no side effects.
 // ============================================================
-import type { ClayIconName } from '@/shared/ui/clay'
+import type { ClayIconName, Icon3DName } from '@/shared/ui/clay'
 import type { HabitChainInfo, HabitDaypart } from '@/data/types'
 
 /** 1. fok — a teljes beépített katalógus (mirrors `itemIcon.ts`'s HABIT_ICON keys). */
@@ -59,4 +59,28 @@ export function habitClayIcon(habitKey: string, chain: HabitChainInfo): ClayIcon
   const bySkill = skillKey ? SKILL_CLAY[skillKey] : undefined
   if (bySkill) return bySkill
   return DAYPART_CLAY[chain.daypart]
+}
+
+/**
+ * Üveg (mezo-me75u.3, prototypes/uveg-nap.html `rutin()`): a Rutin-sor 3D ikonja. A clay-név a
+ * közös `CLAY_TO_3D`-n át megy (ContentIcon), KIVÉVE ahol a clay-glifa itt mást jelent, mint a
+ * közös térképben (bible U1 7. szabály: a jelentést térképezzük, nem a glifát):
+ *   morning_workout  i-sport   → t-run      (a futó alak, nem a sport-labda)
+ *   protein_breakfast i-reggeli → t-protein (fehérje, nem a reggeli napja)
+ *   evening_ritual   i-lang    → t-moon     (az esti rituálé, nem az energia-villám)
+ *   wind_down        i-rend    → t-sleep    (lecsendesedés, nem a lánc)
+ */
+const HABIT_3D: Record<string, Icon3DName> = {
+  morning_workout: 't-run',
+  protein_breakfast: 't-protein',
+  evening_ritual: 't-moon',
+  wind_down: 't-sleep',
+}
+
+/** A Rutin-sor tartalom-ikonja: a hívóhelyi 3D név, különben a szokás clay-neve (a ContentIcon
+ *  fordítja 3D-re). `chain` hiányában a napszak-ikon. */
+export function habitContentIcon(
+  habitKey: string, chain: HabitChainInfo | undefined, daypart: HabitDaypart,
+): ClayIconName | Icon3DName {
+  return HABIT_3D[habitKey] ?? (chain ? habitClayIcon(habitKey, chain) : DAYPART_CLAY[daypart])
 }

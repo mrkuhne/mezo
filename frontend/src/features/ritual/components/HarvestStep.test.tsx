@@ -62,21 +62,21 @@ describe('HarvestStep', () => {
     expect(screen.getByText('A MAI TERMÉS')).toBeInTheDocument()
     expect(screen.getByText('115')).toBeInTheDocument()
 
-    // Label and amount are separate spans since the Mozaik night pass (mezo-d20.8.1.1) — the
-    // chip is a night-washed tile with a clay spot, not one emoji-prefixed string.
+    // Label and amount are separate spans — the chip is a flat cell with a 3D icon (Üveg,
+    // mezo-me75u.3), not one emoji-prefixed string.
     expect(screen.getByText('Küldetések')).toBeInTheDocument()
     expect(container.querySelector('.rz-chip-xp')).toHaveTextContent('+45')
     expect(screen.getByText('Rutin')).toBeInTheDocument()
     expect(screen.getByText('Napló')).toBeInTheDocument()
     expect(screen.getByText('Edzés')).toBeInTheDocument()
-    // One clay spot per visible source, and the quest source resolves to i-kihivas.
-    expect(container.querySelectorAll('.rz-chip .rz-nw-spot')).toHaveLength(4)
-    expect(container.querySelector('.rz-chip use')).toHaveAttribute('href', '#i-kihivas')
+    // One 3D icon per visible source, and the quest source resolves to t-quest.
+    expect(container.querySelectorAll('.rz-chip .t-ico')).toHaveLength(4)
+    expect(container.querySelector('.rz-chip use')).toHaveAttribute('href', '#t-quest')
 
     // Scoped to the coin row: a source chip also reads +20 (GYM), so a bare text query is ambiguous.
     const coins = [...container.querySelectorAll('.rz-coin-chip')].map((c) => c.textContent?.trim())
     expect(coins).toEqual(['+10', '+20'])
-    expect(container.querySelectorAll('.rz-coin-chip use')).toHaveLength(2)
+    expect(container.querySelectorAll('.rz-coin-chip use[href="#t-coin"]')).toHaveLength(2)
 
     // Skill highlight = the LIFE skill with the highest progressPct < 100 in the mock
     // profile: `connection` (Kapcsolatok, progressPct 60, Lv 1) — bar + level only, the

@@ -1,60 +1,56 @@
 /* ============================================================
-   Nap · Mai (NapHubPage) — visszaöltöztetve a Mozaik/Clay világba (mezo-ju4j6.10).
-   A GEOMETRIA marad: kiskapitális fejléc + állítás, a pálya (orbit) az öt művelettel és a
+   Nap · Mai (NapHubPage) — üvegesítve (U3, mezo-me75u.3; prototypes/uveg-nap.html#mai).
+   Ez a fájl a GEOMETRIÁT tartja: a lapos fejléc, a pálya (orbit) az öt művelettel és a
    középponttal, alatta az üzemanyag-kártya, Mezo észrevétele és a Mai pillanatok.
-   Az ANYAG cserél a stíluskönyv szerint: meleg arany/levendula halo-sáv a hideg köd helyén,
-   agyag szimbólum ikon-pajzson a gradiens-kavicsok helyén, display-tipográfia.
-   A középpont az agyag Mezo-jel — ez egyben a Boop-avatar foglalt helye (Phase 8b).
+   Az ANYAG (arany+levendula halo, döntött gyűrű, 3D ikonok izzása és lebegése, a pillanat-sorok
+   hajszálai) a prototype.css `── uveg nap mai (` blokkjában él, a lap gyökeréhez kötve.
    ============================================================ */
 .nap-center { padding-bottom: 24px; }
-.nap-center-heading { padding: 16px 8px 0; }
-/* Szemöldök (§3.2 1. ütem): kiskapitális, a Nap arany tintájában. */
-.nap-center-heading p { font-size: 9.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--mz-cell-gold-ink); margin: 0 0 10px; }
-.nap-center-timeline header p { font-size: 9.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--mz-cell-gold-ink); margin: 0 0 10px; }
-.nap-center-heading h1 { font-family: var(--ff-display); font-size: clamp(28px,8vw,36px); line-height: 1.08; font-weight: 700; letter-spacing: -.03em; margin: 0; }
-.nap-center-heading h1 span { color: var(--mz-cell-lav-ink); }
+.nap-center-heading { padding: 6px 8px 0; }
+.nap-center-heading p { margin: 0; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; text-transform: uppercase; }
+.nap-center-heading h1 { margin: 6px 0 0; font-family: var(--ff-display); font-size: clamp(26px, 8vw, 30px); line-height: 1.1; font-weight: 600; letter-spacing: -1.1px; }
 
-/* A pálya: halo-sáv (§2.2 C), nem doboz — arany középpont, levendula kísérettel. */
-.nap-center-orbit { position: relative; height: 366px; isolation: isolate; background: radial-gradient(ellipse at 50% 46%, color-mix(in srgb,var(--dv-amber) 26%,transparent) 0%, transparent 58%), radial-gradient(ellipse at 50% 50%, color-mix(in srgb,var(--dv-lav) 14%,transparent), transparent 64%); }
-.nap-center-orbit::before { content: ''; position: absolute; inset: 36px 32px 28px; border: 1px solid color-mix(in srgb,var(--dv-amber) 26%,transparent); border-radius: 50%; transform: rotate(-17deg); box-shadow: 0 0 0 18px color-mix(in srgb,var(--dv-amber) 4%,transparent),0 0 0 38px color-mix(in srgb,var(--dv-lav) 3%,transparent); pointer-events: none; }
-.nap-center-companion { position: absolute; width: 172px; height: 172px; left: calc(50% - 86px); top: 111px; z-index: 1; }
+/* A pálya: keret nélküli hős (bible §3.4 1.) — a halo és a döntött gyűrű a blokkban. */
+.nap-center-orbit { position: relative; height: 376px; margin-top: 4px; isolation: isolate; }
+.nap-center-companion { position: absolute; width: 170px; height: 170px; left: calc(50% - 85px); top: calc(50% - 85px); z-index: 2; }
 
-/* Az öt művelet: PUSZTA agyag szimbólum (§6) — se fém-gradiens, se ikon-glória, és (owner
-   2026-09-18) se ikon-pajzs: a pályán a szimbólum maga áll, keret és korong nélkül, nagyobban. */
-.nap-center-node { position: absolute; width: 112px; min-height: 94px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; background: transparent; border: 0; z-index: 2; font-family: var(--ff-display); font-size: 13px; font-weight: 600; color: var(--text-primary); cursor: pointer; border-radius: 20px; }
-.nap-center-node small { font-size: 10.5px; color: var(--sub); font-weight: 500; }
-.nap-node-membrane { top: 5px; left: calc(50% - 56px); }
-.nap-node-crystal { top: 116px; left: 0; }
-.nap-node-pages { top: 116px; right: 0; }
-.nap-node-ribbon { bottom: 4px; left: 28px; }
-.nap-node-chat { bottom: 4px; right: 28px; }
+/* Az öt művelet: PUSZTA 3D ikon (~62px), keret és korong nélkül. */
+.nap-center-node { position: absolute; width: 104px; min-height: 94px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 0; background: transparent; border: 0; z-index: 3; font-family: var(--ff-display); font-size: 13.5px; font-weight: 600; letter-spacing: -.2px; color: var(--text-primary); cursor: pointer; border-radius: 20px; text-align: center; }
+.nap-center-node > span:not(.nap-center-art) { margin-top: 4px; }
+.nap-center-node small { font-family: var(--ff-body); font-size: 10.5px; font-weight: 500; letter-spacing: 0; margin-top: 1px; }
+.nap-node-membrane { top: 0; left: calc(50% - 52px); }
+.nap-node-crystal { top: 128px; left: 4px; }
+.nap-node-pages { top: 128px; right: 4px; }
+.nap-node-ribbon { bottom: 0; left: 30px; }
+.nap-node-chat { bottom: 0; right: 30px; }
 .nap-center-art { display: grid; place-items: center; width: 66px; height: 66px; transition: transform .3s; }
 .nap-center-node:hover .nap-center-art { transform: translateY(-3px); }
 .nap-center button:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 3px; }
 
-/* Mai pillanatok: halk sorok, a régi világ lista-anyagával. */
-.nap-center-timeline { padding: 28px 8px 0; }
-.nap-center-timeline h2 { font-family: var(--ff-display); font-size: 24px; font-weight: 700; letter-spacing: -.02em; margin: 0 0 14px; }
-.nap-center-timeline>p { color: var(--sub); font-size: 13px; }
+/* Mai pillanatok: LAPOS sorok hajszállal (a rangsor alja) — idő · 3D ikon · szöveg · ↗. */
+.nap-center-timeline { padding: 26px 10px 0; }
+.nap-center-timeline header p { margin: 0; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; text-transform: uppercase; }
+.nap-center-timeline h2 { font-family: var(--ff-display); font-size: 20px; font-weight: 600; letter-spacing: -.6px; margin: 4px 0 8px; }
+.nap-center-timeline>p { font-size: 13px; }
 .nap-center-timeline ol { list-style: none; margin: 0; padding: 0; }
-.nap-center-timeline li { position: relative; border-bottom: 1px solid var(--divider); }
-.nap-center-timeline li button { width: 100%; display: grid; grid-template-columns: 42px minmax(0,1fr) 14px; gap: 12px; align-items: start; text-align: left; color: var(--text-primary); background: transparent; padding: 14px 0; border: 0; cursor: pointer; }
-.nap-center-timeline time { font-size: 10px; color: var(--sub); padding-top: 3px; font-variant-numeric: tabular-nums; }
-.nap-center-timeline strong { font-size: 12.5px; font-weight: 600; }
-.nap-moment-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; color: var(--sub); font-size: 12px; line-height: 1.5; margin-top: 4px; }
+.nap-center-timeline li { position: relative; }
+.nap-center-timeline li button { width: 100%; display: grid; grid-template-columns: 44px 30px minmax(0,1fr) auto; gap: 10px; align-items: center; text-align: left; color: var(--text-primary); background: transparent; padding: 12px 0; border: 0; cursor: pointer; }
+.nap-center-timeline time { font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.nap-center-timeline strong { display: block; font-size: 14px; font-weight: 600; }
+.nap-moment-text { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; font-size: 12px; line-height: 1.45; margin-top: 1px; }
 
-/* 320px: a megemelt szemöldök- és címtipográfia lépcsőzése (stíluskönyv A.2 5. szabály). */
+/* 320px: a pálya összehúzódik (stíluskönyv A.2 5. szabály). */
 @media (max-width: 360px) {
-  .nap-center-node { width: 94px; font-size: 12px; }
+  .nap-center-node { width: 92px; font-size: 12px; }
   .nap-center-art { width: 56px; height: 56px; }
-  .nap-node-membrane { left: calc(50% - 47px); }
-  .nap-node-ribbon { left: 20px; }
-  .nap-node-chat { right: 20px; }
+  .nap-node-membrane { left: calc(50% - 46px); }
+  .nap-node-crystal { left: 0; }
+  .nap-node-pages { right: 0; }
+  .nap-node-ribbon { left: 16px; }
+  .nap-node-chat { right: 16px; }
   .nap-center-companion { transform: scale(.85); }
 }
-/* Ebben a blokkban nincs végtelen animáció (a Titán-kori kavics-hurkok az anyaggal együtt
-   megszűntek), ezért a csökkentett-mozgás ág csak az egyetlen átmenetet vezeti ki. */
 @media (prefers-reduced-motion: reduce) { .nap-center-art { transition: none; } }
 .nap-center-node:disabled { opacity: .5; cursor: wait; }
-.nap-center-read-error { color: var(--sub); font-size: 12px; padding: 0 8px; }
-.nap-center-read-error button { color: var(--mz-cell-lav-ink); padding: 8px; font-weight: 600; }
+.nap-center-read-error { font-size: 12px; padding: 0 8px; }
+.nap-center-read-error button { padding: 8px; font-weight: 600; }

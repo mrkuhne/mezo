@@ -1516,3 +1516,43 @@ describe('the uveg fuel stack section carries the glass ranking (mezo-me75u.2)',
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{[\s\S]*animation: none;/)
   })
 })
+
+/**
+ * Üvegesítés U3 (mezo-me75u.3) — the Nap area (prototypes/uveg-nap.html). One block per surface
+ * group so five builders could work in parallel: the Mai hub, the four sub-pages, the quick-log +
+ * capture sheets, the Mezo messages + notification panel, and the Napzárás acts. Heroes are
+ * frameless halos; primary objects glass in ONE accent; rows, chips and cells inside them flat or
+ * lit; free space dashed; never glass in glass.
+ */
+const U3_BLOCKS: Array<[string, string[]]> = [
+  ['mai', ['.nap-hub .nap-center-orbit', '.nap-hub .nap-fuel.glass', '.nap-hub .nap-fuel.uv-empty',
+    '.nap-hub .nap-fuel-macro', '.nap-hub .nap-personal.glass', '.nap-hub .nap-personal.uv-empty',
+    '.nap-hub .nap-center-timeline .nap-moment-ico']],
+  ['oldalak', ['.nck-card.glass', '.nck-row.nck-hot', '.ej-tile.glass', '.ej-tile.glass.ej-warn', '.nq-card.glass',
+    '.nq-empty.uv-empty', '.nr-vcard.glass', '.nr-row.now', '.sheet.glass.nap-glass-sheet']],
+  ['rogzites', ['.sheet.capture-sheet.glass', '.capture-hero-value', '.capture-scale-cell', '.quicklog-tile.glass',
+    '.quicklog-chat.glass', '.quicklog[data-variant="sheet"] .quicklog-chat', '.cta-primary']],
+  ['uzenetek', ['.nap-mzmsg.glass', '.nap-mzrow.uv-flat', '.nap-mz-cta.glass', '.nap-ejstrip.glass', '.nap-ejcell',
+    '.nap-obs.glass', '.nap-obs-empty.uv-empty', '.nap-ntfpanel.glass .nap-ntfico .t-ico']],
+  ['napzaras', ['.rz-screen[data-act=', '.rz-exit', '.rz-cta', '.rz-reflect-box.glass', '.rz-loop.glass',
+    '.rz-xp-num', '.rz-skill-row.glass', '.rz-note.glass', '.rz-handoff.glass']],
+]
+
+describe.each(U3_BLOCKS)('the uveg nap %s section carries the glass ranking (mezo-me75u.3)', (name, sels) => {
+  const section = () => stripComments(slice(`── uveg nap ${name} (`, `── /uveg nap ${name} `))
+
+  test('the block exists and dresses every surface of the group', () => {
+    const css = section()
+    for (const sel of sels) expect(css, `${sel} missing from the uveg nap ${name} block`).toContain(sel)
+  })
+
+  test('never glass inside glass (U1 rule 5)', () => {
+    expect(section()).not.toMatch(/\.glass [^{,]*\.glass[\s,{]/)
+  })
+})
+
+test('the U3 capture sheet floats and scrolls under `.glass` (U1 rules 1–3, U2 rule 15)', () => {
+  const css = stripComments(slice('── uveg nap rogzites (', '── /uveg nap rogzites '))
+  expect(css).toMatch(/\.sheet\.capture-sheet\.glass[^{]*\{[^}]*position: absolute;/)
+  expect(css).toMatch(/\.sheet\.capture-sheet\.glass[^{]*\{[^}]*overflow-y: auto;/)
+})

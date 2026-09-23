@@ -61,3 +61,18 @@ test('a new observation resets local reply state after the current one was answe
 test('the observations link opens the observations tab directly', () => {
   mount(); expect(screen.getByRole('link', { name: 'Összes észrevétel ↗' })).toHaveAttribute('href', '/nap/uzenetek?tab=eszrevetelek')
 })
+test('wears the üveg ranking: lavender glass with the 3D score art, dashed when there is nothing to say', () => {
+  const view = mount()
+  const card = screen.getByRole('region', { name: 'Személyes Mezo-észrevétel' })
+  expect(card).toHaveClass('glass')
+  expect(card).toHaveStyle({ '--c': 'var(--dv-lav)' })
+  expect(card.querySelector('.nap-personal-art use')).toHaveAttribute('href', '#t-score')
+  // the first answer is the lit pill; nothing inside the card is glass (U1 rule 5)
+  expect(screen.getByRole('button', { name: 'Igen, figyeld' })).toHaveClass('is-primary')
+  expect(card.querySelector('.glass')).toBeNull()
+  view.unmount()
+  mocks.feed.mockReturnValue(feed({ observations: [] })); mount()
+  const empty = screen.getByRole('region', { name: 'Személyes Mezo-észrevétel' })
+  expect(empty).toHaveClass('uv-empty')
+  expect(empty).not.toHaveClass('glass')
+})

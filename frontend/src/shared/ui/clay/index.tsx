@@ -77,6 +77,9 @@ export type Icon3DName =
   | 't-calendar' | 't-pin' | 't-weight' | 't-pattern' | 't-chef'
   // A2 (mezo-a9bo7.8) — owner OK on prototypes/uveg-uzenofal.html#ikonok: the csapat-fal trio
   | 't-thumb-up' | 't-thumb-down' | 't-send' | 't-flask'
+  // U3 (mezo-me75u.3) — owner OK on prototypes/uveg-nap.html#ikonok
+  | 't-checkin' | 't-quick' | 't-steps' | 't-people' | 't-chain' | 't-quest' | 't-harvest'
+  | 't-coin' | 't-orb' | 't-scroll'
 
 /** Mounts the clay + Titanium <symbol>/<gradient> defs once (main.tsx). */
 export const ClaySprites = memo(function ClaySprites() {
@@ -145,6 +148,12 @@ export const CLAY_TO_3D: Partial<Record<ClayIconName, Icon3DName>> = {
   'i-mikrofon': 't-mic', 'i-suly': 't-weight', 'i-minta': 't-pattern', 'i-polc': 't-stack',
   'i-video': 't-camera', 'i-naplo': 't-journal', 'i-hold': 't-moon', 'i-nap': 't-sun',
   'i-trend': 't-trend', 'i-fazek': 't-pot', 'i-stack': 't-protocol', 'i-beallitas': 't-gear',
+  // U3 (mezo-me75u.3): Nap (prototypes/uveg-nap.html + its Új ikonok sheet). Ambiguous clay
+  // glyphs stay at their call sites: i-kristaly on the Gyors node → t-quick and as a forecast →
+  // t-orb, i-sport (Aktivitás → t-steps, the Sport tile → t-volley), i-lombik, i-termes, i-mezo.
+  'i-checkin': 't-checkin', 'i-emberek': 't-people', 'i-rend': 't-chain', 'i-kihivas': 't-quest',
+  'i-erme': 't-coin', 'i-memoar': 't-scroll', 'i-heti': 't-calendar', 'i-tudas': 't-book',
+  'i-futas': 't-run',
 }
 
 /** A content icon: a Titanium name renders as is, a clay name through `CLAY_TO_3D`, and an

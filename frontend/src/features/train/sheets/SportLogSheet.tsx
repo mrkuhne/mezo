@@ -8,6 +8,7 @@
 import { useState, type CSSProperties } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 import { CaptureHeader } from '@/shared/ui/CaptureHeader'
 import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import type { SportSessionCreateRequest } from '@/data/train/trainApi'
@@ -161,7 +162,7 @@ export function SportLogSheet({ onClose, onSave, initialSport, date }: {
   const isVolleyball = kind === 'volleyball'
 
   return (
-    <Sheet onClose={onClose} labelledBy="sport-log-title" className="capture-sheet capture-tone-sport">
+    <Sheet onClose={onClose} labelledBy="sport-log-title" className="capture-sheet capture-tone-sport glass">
       {(close) => (
         <>
           <CaptureHeader id="sport-log-title" title="Hogy ment?" eyebrow={`Sport log · ${SPORT_LABELS[kind]}`}
@@ -170,7 +171,7 @@ export function SportLogSheet({ onClose, onSave, initialSport, date }: {
           {/* Kind selector — the sheet's own pinned three ids (see LOG_SHEET_SPORT_KINDS
               above, mezo-ltqdh): the fields below are volleyball-shaped, so the seven
               newer wire ids belong to the full-screen flow, not here. */}
-          <div className="row gap-xs" role="group" aria-label="Sport típus" style={{ marginBottom: 14 }}>
+          <div className="row capture-segs" role="group" aria-label="Sport típus">
             {LOG_SHEET_SPORT_KINDS.map((k) => {
               const active = kind === k
               return (
@@ -179,14 +180,7 @@ export function SportLogSheet({ onClose, onSave, initialSport, date }: {
                   type="button"
                   aria-pressed={active}
                   onClick={() => setKind(k)}
-                  className="flex-1 rad-12 capture-seg"
-                  style={{
-                    padding: '10px',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    letterSpacing: '0.14em',
-                    textTransform: 'uppercase',
-                  }}
+                  className="capture-seg"
                 >
                   {SPORT_LABELS[k]}
                 </button>
@@ -233,12 +227,12 @@ export function SportLogSheet({ onClose, onSave, initialSport, date }: {
           </div>
 
           {/* Footer */}
-          <div className="row gap-sm mt-lg">
+          <div className="capture-actions">
             <CtaGhost className="flex-1" onClick={close}>
               Mégse
             </CtaGhost>
             <CtaPrimary
-              className="flex-1"
+              className="capture-save flex-1"
               disabled={saving}
               onClick={() => {
                 // date/time default to "now" server-side when `date` is omitted — the
@@ -255,7 +249,7 @@ export function SportLogSheet({ onClose, onSave, initialSport, date }: {
                 if (onSave) { setSaving(true); onSave(body, close) } else { close() }
               }}
             >
-              <Icon name="check" size={14} /> Mentés
+              <Icon3D name="t-tick" size={22} /> Mentés
             </CtaPrimary>
           </div>
         </>

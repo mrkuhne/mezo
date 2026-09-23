@@ -6,10 +6,10 @@
 // (`logWater`) and wires it into `onLog` — this component has no `@/data/*` import.
 // Design: docs/superpowers/specs/2026-08-09-fuel-keret-hero-design.md §1.2.
 // ============================================================
-import { useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { CaptureHeader } from '@/shared/ui/CaptureHeader'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 import { CtaPrimary } from '@/shared/ui/Cta'
 import { hu1 } from '@/shared/lib/huNum'
 
@@ -39,16 +39,18 @@ export function WaterLogSheet({ currentMl, targetMl, onLog, onClose }: {
   }
 
   return (
-    <Sheet onClose={onClose} labelledBy="water-log-title" className="capture-sheet capture-tone-water">
+    <Sheet onClose={onClose} labelledBy="water-log-title" className="capture-sheet capture-tone-water glass">
       {(close) => (
         <div className="col" style={{ padding: '4px 4px 8px', textAlign: 'center' }}>
           <CaptureHeader id="water-log-title" title="Mennyit ittál?" subtitle="Egy korty szünet." kind="water" eyebrow="Víz" onClose={close} />
-          <div className="capture-water-hero" style={{ '--capture-fill': selected ? `${Math.max(12, 85 - selected / 12)}%` : '100%' } as CSSProperties}>
-            <output className="capture-water-value" aria-label="Rögzítendő vízmennyiség" aria-live="polite">{selected ?? '—'}<small> ml</small></output>
+          {/* Üveg (mezo-me75u.3, `SH.water`): the one loud value — a frameless sky wash with the
+              64px/200 glowing numeral; today's running total is its sub line. */}
+          <div className="capture-hero capture-water-hero">
+            <output className="capture-hero-value capture-water-value" aria-label="Rögzítendő vízmennyiség" aria-live="polite">{selected ?? '—'}<small> ml</small></output>
+            <p className="capture-hero-sub">
+              ma eddig {hu1(currentMl / 1000)} / {hu1(targetMl / 1000)} l
+            </p>
           </div>
-          <p style={{ fontSize: 11.5, color: 'var(--text-tertiary)', marginTop: 4 }}>
-            ma eddig {hu1(currentMl / 1000)} / {hu1(targetMl / 1000)} l
-          </p>
           <div className="row gap-sm mt-lg" style={{ justifyContent: 'center' }}>
             {CHIP_ML.map(ml => (
               <button
@@ -76,8 +78,8 @@ export function WaterLogSheet({ currentMl, targetMl, onLog, onClose }: {
             />
             <span className="flp-wunit">ml kézzel</span>
           </div>
-          <CtaPrimary style={{ marginTop: 22, width: '100%' }} disabled={!canSave} onClick={() => save(close)}>
-            <Icon name="check" size={14} /> Mentés
+          <CtaPrimary className="capture-save" style={{ marginTop: 22, width: '100%' }} disabled={!canSave} onClick={() => save(close)}>
+            <Icon3D name="t-tick" size={22} /> Mentés
           </CtaPrimary>
         </div>
       )}

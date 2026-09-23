@@ -1,34 +1,24 @@
-.nap-personal {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  padding: 22px;
-  /* Visszaöltöztetés (mezo-ju4j6.10): mosott levendula csempe (§2.2 A). */
-  border-radius: 22px;
-  border: 0.5px solid rgba(43, 33, 24, 0.06);
-  background: var(--mz-wash-lav);
-  box-shadow: var(--mz-shadow-lav);
-  color: var(--text-primary);
-}
-.nap-personal-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; position: relative; z-index: 1; }
-.nap-personal-heading > span, .nap-personal-eyebrow { font-size: 9.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--mz-cell-lav-ink); }
-.nap-personal-heading a { font-size: 10px; color: var(--text-secondary); }
-.nap-personal h2 { margin: 26px 80px 14px 0; font-family: var(--ff-display); font-size: 24px; font-weight: 700; line-height: 1.2; letter-spacing: -.02em; }
-.nap-personal-copy { position: relative; font-size: 16px; line-height: 1.6; max-width: 36em; margin: 0; overflow-wrap: anywhere; }
-.nap-personal-copy strong { color: var(--mz-cell-lav-ink); font-weight: 700; }
-.nap-personal-question { color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
-/* A kártya jele AGYAG szimbólum (§6): a Titán-kori forgó pálya-rajz (három maszkolt gyűrű +
-   izzó mag, végtelen hurokkal) az anyagával együtt megszűnt. A helye és a mérete ugyanaz. */
-.nap-personal-art { pointer-events: none; position: absolute; top: 40px; right: 14px; width: 76px; height: 76px; display: grid; place-items: center; z-index: 0; }
-.nap-personal-evidence { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--divider); font-size: 12px; color: var(--text-secondary); }
-.nap-personal-evidence summary { cursor: pointer; padding: 7px 0; color: var(--text-primary); }
-.nap-personal-evidence ul { margin: 8px 0; padding-left: 18px; line-height: 1.6; }
-.nap-personal-evidence li + li { margin-top: 7px; }
-.nap-personal-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 16px; }
-/* Cella-chip (§2.2 B): lapos levendula pár, keret és árnyék nélkül. */
-.nap-personal-actions button, .nap-personal-chat { min-height: 44px; padding: 10px 14px; border-radius: 999px; border: 0; background: var(--mz-cell-lav-bg); color: var(--mz-cell-lav-ink); font-size: 12px; font-weight: 600; text-decoration: none; }
-.nap-personal-actions button:first-child { color: var(--mz-cell-lav-ink); }
-.nap-personal-actions button:disabled { opacity: .5; cursor: wait; }
-.nap-personal-chat { display: inline-flex; align-items: center; gap: 20px; margin-top: 18px; }
-.nap-personal-ack { font-size: 12px; color: var(--mz-cell-lav-ink); margin-bottom: 0; }
+/* Nap · Mai Mezo-észrevétel — GEOMETRIA és tipográfia. Az ANYAG (levendula üveg, 3D kristály,
+   lapos/lit válasz-pillek, lapos bizonyíték-chipek, szaggatott üres állapot) a prototype.css
+   `── uveg nap mai (` blokkjában él (üvegesítés U3, mezo-me75u.3; prototypes/uveg-nap.html#mai
+   `.obs`). A gyökéren nincs háttér/árnyék/position/overflow: a `.glass` dönt (U1 1. szabály). */
+.nap-personal { margin: 14px 0 0; padding: 16px 16px 14px; color: var(--text-primary); }
+.nap-personal-heading { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-right: 70px; }
+.nap-personal-heading > span, .nap-personal-eyebrow { display: block; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; text-transform: uppercase; }
+.nap-personal-heading a { font-size: 11.5px; font-weight: 600; text-decoration: none; }
+.nap-personal h2 { margin: 10px 70px 0 0; font-family: var(--ff-display); font-size: 19px; font-weight: 600; line-height: 1.2; letter-spacing: -.5px; }
+.nap-personal-copy { font-size: 13.5px; line-height: 1.5; max-width: 36em; margin: 8px 0 0; overflow-wrap: anywhere; }
+.nap-personal-copy strong { font-weight: 600; }
+.nap-personal-question { margin: 8px 0 0; font-size: 15px; line-height: 1.45; }
+.nap-personal-art { pointer-events: none; top: 12px; right: 12px; width: 58px; height: 58px; display: grid; place-items: center; }
+.nap-personal-evidence { margin-top: 10px; font-size: 12.5px; }
+.nap-personal-evidence summary { cursor: pointer; padding: 6px 0; font-weight: 600; }
+.nap-personal-evidence ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
+.nap-personal-evidence li { min-width: 0; max-width: 100%; padding: 7px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+.nap-personal-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.nap-personal-actions button, .nap-personal-chat { min-height: 44px; padding: 8px 14px; border-radius: 999px; border: 0; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.nap-personal-actions button.is-primary { font-weight: 700; }
+.nap-personal-actions button:disabled { opacity: .45; cursor: wait; }
+.nap-personal-chat { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; }
+.nap-personal-ack { font-size: 13px; margin: 12px 0 0; }
 .nap-personal :focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 4px; }
