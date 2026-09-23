@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import rawCss from '@/styles/prototype.css?raw'
 
 /**
- * Napzárás night-sky token guard (mezo-d20.8.1.1).
+ * Napzárás night-sky token guard (mezo-d20.8.1.1; warm-graphite values since Üveg U3, mezo-me75u.3).
  *
  * The ritual's darkening arc is driven by six `--rz-sky-N` gradients selected by
  * `.rz-screen[data-act="N"]`. Like the Mozaik `--mz-*` family, each has to be declared in BOTH
@@ -40,12 +40,12 @@ describe('Napzárás night-sky tokens', () => {
     }
   })
 
-  it('never inlines the night-wash values — consumers must go through the token', () => {
-    // The point is NOT that one rule may use `var(--rz-nw-wash)`: consuming a token in several
-    // places is exactly what a token is for, and several ritual surfaces legitimately do. What
-    // must never happen is a rule re-typing the literal gradient, because that is how the
-    // panel-rhythm regression happened (mezo-d20.11.2) — a value copied per surface, until the
-    // next surface quietly gets a slightly different one and nothing fails.
+  it('the retired night-wash skin stays retired — neither inlined nor consumed', () => {
+    // The night-washed tile (`--rz-nw-*`, mezo-d20.8.1.1) was the ritual's pre-Üveg skin; U3
+    // (mezo-me75u.3) replaced it with the uveg kit's .glass / .uv-flat. What must never happen is
+    // a rule re-typing the old literal gradient (the panel-rhythm regression, mezo-d20.11.2 — a
+    // value copied per surface) or reaching for the dropped tokens, which would now resolve to
+    // nothing and silently paint a transparent tile.
     const WASH_LITERAL = 'linear-gradient(150deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.05))'
     // Comments are stripped first: a `/* … */` block sitting above a rule would otherwise be
     // swallowed into the selector capture, and this file's rules are heavily commented.
@@ -54,7 +54,8 @@ describe('Napzárás night-sky tokens', () => {
       .filter(([, sel, body]) => body.includes(WASH_LITERAL) && !sel.trim().startsWith(':root'))
       .map(([, sel]) => sel.trim())
     expect(inlined).toEqual([])
-    // …and the token itself is declared in both roots, like every other --rz-* token.
-    expect(rootBlocks().filter((b) => b.includes('--rz-nw-wash:'))).toHaveLength(2)
+    // …and no rule consumes a retired --rz-nw-* token (the roots no longer declare them).
+    expect(bare.match(/var\(--rz-nw-[a-z]+\)/g) ?? []).toEqual([])
+    expect(rootBlocks().filter((b) => b.includes('--rz-nw-wash:'))).toHaveLength(0)
   })
 })

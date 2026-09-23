@@ -141,12 +141,14 @@ function renderPage() {
   )
 }
 
-test('the hero is the breathing orb with the Mezo · ma name and the honest message count', async () => {
+test('the hero is the living Mezo Boop with the Mezo · ma name and the honest message count', async () => {
   feedMock.useCompanionFeed.mockReturnValue([morningMsg, sleepMsg])
   renderPage()
   expect(await screen.findByText('Mezo · ma')).toBeInTheDocument()
   expect(screen.getByText('2 üzenet · a napod fonala')).toBeInTheDocument()
-  expect(document.querySelector('.mz-page-hero.orb use[href="#s-orb"]')).not.toBeNull()
+  // üveg (mezo-me75u.3): the clay s-orb spot became the living Mezo Boop in a frameless halo
+  expect(document.querySelector('.mz-page-hero.nap-mzhero.uv-halo .boop.is-alive')).not.toBeNull()
+  expect(document.querySelector('.mz-page-hero use[href="#s-orb"]')).toBeNull()
   expect(document.querySelector('.mz-page.mz-p-coral')).not.toBeNull()
 })
 
@@ -166,9 +168,10 @@ test('feed messages render as thread cards: time · eyebrow head, body, refs, da
   expect(await screen.findByText('07:05 · Reggeli briefing')).toBeInTheDocument()
   expect(screen.getByText(/W3-csúcs/)).toBeInTheDocument()
   expect(screen.getByText(/Pull A$/)).toBeInTheDocument() // the ref tag
-  // kind → spot mapping: morning → s-reggel, sleep → s-este
-  expect(document.querySelector('.nap-mzmsg use[href="#s-reggel"]')).not.toBeNull()
-  expect(document.querySelector('.nap-mzmsg use[href="#s-este"]')).not.toBeNull()
+  // kind → 3D art mapping (mezo-me75u.3): morning → t-dawn, sleep → t-moon, in a lit well
+  expect(document.querySelector('.nap-mzmsg .uv-well use[href="#t-dawn"]')).not.toBeNull()
+  expect(document.querySelector('.nap-mzmsg .uv-well use[href="#t-moon"]')).not.toBeNull()
+  expect(document.querySelectorAll('.nap-mzmsg.glass')).toHaveLength(2)
 })
 
 test('no morning message in the feed → the labelled demo briefing leads the thread', async () => {
@@ -482,8 +485,10 @@ test('mezo-z4h4: a nudge card head shows the need\'s clay icon instead of a dayp
   renderPage()
   await userEvent.click(await screen.findByRole('tab', { name: /Életjelek/ }))
   expect(await screen.findByText(/alig ittál/)).toBeInTheDocument()
-  // hidratacio → i-viz (NEED_ICON, needs.ts), the same clay icon EletjelPage's VITAL_TILE uses.
-  expect(document.querySelector('.nap-mzmsg use[href="#i-viz"]')).not.toBeNull()
+  // hidratacio → i-viz (NEED_ICON, needs.ts), the same clay icon EletjelPage's VITAL_TILE uses —
+  // worn as its 3D face (CLAY_TO_3D i-viz → t-water, mezo-me75u.3), on a card in the need's hue.
+  expect(document.querySelector('.nap-mzmsg use[href="#t-water"]')).not.toBeNull()
+  expect((document.querySelector('.nap-mzmsg.glass') as HTMLElement).style.getPropertyValue('--c')).toBe('var(--dv-sky)')
   // Copy no longer starts with the 💧 emoji — the icon replaces it.
   expect(document.querySelector('.nap-mzmsg .txt')?.textContent).not.toMatch(/💧/)
 })
@@ -510,10 +515,10 @@ test('az Életjelek tab a 6 gyűrű státusz-sávját mutatja, riasztás nélkü
   expect(screen.getByText('82%')).toBeInTheDocument()
   const okLine = screen.getByText(/Minden gyűrű rendben/)
   expect(okLine).toBeInTheDocument()
-  // mezo-z4h4: emoji→icon pass — the trailing ✓ glyph is now the Icon component, not a
-  // literal character in the text content.
+  // mezo-z4h4: emoji→icon pass — the ✓ glyph is an icon, not a literal character in the text
+  // content; since mezo-me75u.3 it is the 3D tick.
   expect(okLine.textContent).not.toMatch(/✓/)
-  expect(okLine.querySelector('svg polyline[points="4,12 10,18 20,6"]')).not.toBeNull()
+  expect(okLine.querySelector('use[href="#t-tick"]')).not.toBeNull()
   expect(document.querySelectorAll('.nap-ejcell')).toHaveLength(6)
 })
 

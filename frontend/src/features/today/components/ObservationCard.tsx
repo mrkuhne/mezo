@@ -4,10 +4,13 @@
 // Poszter-anatómia: eyebrow + clay-korong + EGY dőlt mondat + chipek; a `watching`
 // kártyán a próza helyett a SZÁMOK beszélnek (tally + haladás-sáv + Laborfüzet-link).
 // A chipek a slice 4 `POST /api/companion/pattern/{id}/reply` végpontjára felelnek.
+// Üveg (mezo-me75u.3, prototypes/uveg-nap.html#uzenetek/eszrevetelek): a kártya egy `.glass`
+// (fresh/return lavender, watching sky, confirmed sage), a forrás 3D-ikonja egy lit wellben,
+// a válasz-pillek laposak (az igen lit), a tally jelei 3D pipa/kihagyás + lapos pötty.
 // ============================================================
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ClayIcon } from '@/shared/ui/clay'
+import { ContentIcon, Icon3D, type ClayIconName, type Icon3DName } from '@/shared/ui/clay'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { cn } from '@/shared/lib/cn'
 import { timeLabel } from '@/features/notification/logic/stamp'
@@ -20,6 +23,24 @@ const CARD_CLASS: Record<ObservationCardKind, string> = {
   watching: 'nap-obs-watch',
   confirmed: 'nap-obs-done',
 }
+
+/** A kártya egyetlen üveg-akcentusa (`--c`, bible §2). */
+const CARD_HUE: Record<ObservationCardKind, string> = {
+  fresh: 'var(--dv-lav)',
+  return: 'var(--dv-lav)',
+  watching: 'var(--dv-sky)',
+  confirmed: 'var(--dv-sage)',
+}
+
+/** A forrás-ikon 3D-arca. Az `i-mezo` (Mezo saját ötlete) kétértelmű a `CLAY_TO_3D`-ben, ezért
+ *  itt, a hívásnál kap nevet: a prototípus észrevétel-art-ja (`t-score`). A többi a közös
+ *  térképen megy (i-naplo → t-journal, i-alvas → t-sleep, i-edzes → t-dumbbell, …). */
+function sourceArt(icon: ClayIconName): ClayIconName | Icon3DName {
+  return icon === 'i-mezo' ? 't-score' : icon
+}
+
+/** A tally-slot elérhető szövege — a korábbi ✓/✕/· glifák jelentése, most hangban. */
+const SLOT_TEXT = { hit: 'bejött', miss: 'nem jött be', none: 'még nincs adat' } as const
 
 const STATE_PILL: Record<ObservationCardKind, string> = {
   fresh: 'ÚJ',
@@ -93,14 +114,15 @@ export function ObservationCard({ item, onReply, pending = false }: {
 
   const seen = item.evidenceHits + item.evidenceMisses
   const need = item.minN ?? 8
-  const slots = Array.from({ length: Math.max(need, seen) }, (_, i) =>
+  const slots: (keyof typeof SLOT_TEXT)[] = Array.from({ length: Math.max(need, seen) }, (_, i) =>
     i < item.evidenceHits ? 'hit' : i < seen ? 'miss' : 'none',
   )
 
   return (
-    <article className={cn('nap-obs', CARD_CLASS[item.card], answered && 'answered')}>
+    <article className={cn('nap-obs', 'glass', CARD_CLASS[item.card], answered && 'answered')}
+      style={{ '--c': CARD_HUE[item.card] } as React.CSSProperties}>
       <div className="nap-obs-top">
-        <span className="nap-obs-disc"><ClayIcon name={item.sourceIcon} size={24} /></span>
+        <span className="nap-obs-disc uv-well"><ContentIcon name={sourceArt(item.sourceIcon)} size={30} /></span>
         <div>
           <div className="eb">{eyebrow(item)}</div>
           <div className="ttl">{item.title}</div>
@@ -122,7 +144,10 @@ export function ObservationCard({ item, onReply, pending = false }: {
         <>
           <div className="nap-obs-tally" aria-label="Napok: bejött, nem jött be, még nincs adat">
             {slots.map((s, i) => (
-              <i key={i} className={s}>{s === 'hit' ? '✓' : s === 'miss' ? '✕' : '·'}</i>
+              <i key={i} className={s} data-slot={s}>
+                {s === 'hit' ? <Icon3D name="t-tick" size={17} /> : s === 'miss' ? <Icon3D name="t-skip" size={17} /> : null}
+                <span className="sr-only">{SLOT_TEXT[s]}</span>
+              </i>
             ))}
           </div>
           <div className="nap-obs-progcopy"><span>Bizonyíték</span><strong>{seen} / {need} nap</strong></div>
@@ -151,7 +176,7 @@ export function ObservationCard({ item, onReply, pending = false }: {
         <div className="nap-obs-err" role="alert">Nem sikerült elküldeni — próbáld újra.</div>
       )}
       {answered && (
-        <div className="nap-obs-ack">{ackLine(answered)}</div>
+        <div className="nap-obs-ack"><Icon3D name="t-tick" size={24} /><span>{ackLine(answered)}</span></div>
       )}
     </article>
   )

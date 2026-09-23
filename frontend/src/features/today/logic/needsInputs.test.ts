@@ -302,7 +302,7 @@ describe('buildNeedsEvents — ⚡ rend (habit ticks)', () => {
 })
 
 const needState = (key: NeedState['key'], pct: number): NeedState => ({
-  key, emoji: '', label: '', color: '', pct, ratePerHour: 0, zeroAt: null, band: 'green',
+  key, label: '', color: '', pct, ratePerHour: 0, zeroAt: null, band: 'green',
   lastFill: null, todayFills: [],
 })
 

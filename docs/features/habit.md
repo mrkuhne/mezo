@@ -2,7 +2,7 @@
 title: Habit — Morning & Evening Routine Engine
 type: feature-domain
 status: done
-updated: 2026-09-18
+updated: 2026-09-23
 tags: [today, nap, me, growth, fuel, train, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/habit
@@ -18,6 +18,8 @@ related: [today, growth, me, fuel, train, intention, _platform-data-layer, _plat
 ---
 
 # Habit — Morning & Evening Routine Engine
+
+> **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The Nap · Rutin page wears glass: one amber glass card per group, lit 3D ticks, 3D habit icons via `habitContentIcon` (call-site: morning_workout → t-run, protein_breakfast → t-protein, evening_ritual → t-moon, wind_down → t-sleep). Behavior unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
 
 > Two fixed habit-stacking chains — a **morning** and an **evening** routine — surfaced on the **Nap** tab as a **„Rutin" tile** on the daypart mosaic (`/nap`), which opens the chains' own full page at **`/nap/rutin`** (tick), and on the **Én** tab as a wide Rutin tile off the Én hub's mosaic, opening **`/me/rutin`** (`RutinHubPage`, `mezo-3zue.3` — build and edit; the routine surface left the Growth family for good, absorbing the former `/me/growth/rutin` overview and the former `/me/routines/edit` editor into one page). **Status: ✅ done** (backend + FE real + FE mock). **The Design 2.0 redesign (`mezo-d20`) changed only where the chains are drawn** — the catalog, the evaluator, the closure classes, the XP tail and every hook are untouched; see [today.md](today.md) for the render-layer history. Driving spec: [`2026-07-19-morning-evening-routine-habit-engine-design.md`](../superpowers/specs/2026-07-19-morning-evening-routine-habit-engine-design.md); driving ADR [0010](../decisions/0010-gamified-growth-xp-feedback-not-payment.md) (XP is feedback, not payment). bd `mezo-d1jb`.
 

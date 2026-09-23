@@ -14,12 +14,16 @@
 // `partitionMezoThread`/`MezoMessageItem.source === 'eletjel'` a kulcs (mezoMessages.ts).
 // Régebbi Üzenetek-kártyák alapból összecsukva (`.nap-mzrow`), belépéskori
 // olvasatlan-pillanatkép tab-pöttyökhöz, a `?n=` deeplink mindig az Üzenetek tabra kényszerít.
+// Üveg (mezo-me75u.3, prototypes/uveg-nap.html#uzenetek): kis üveg vissza-pill, keret nélküli
+// lavender+arany halo-hős az élő Mezo-Boop-pal, lapos szegmentált fülsor; a teljes üzenet
+// `.glass` (lavender, a nudge a saját igény-színében), a régebbiek lapos egysoros cellák, a
+// fej art-ja 3D ikon egy lit wellben. Csak a bőr változott: szál, fülek, chipek érintetlenek.
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ClayIcon, ClaySpot, type ClaySpotName } from '@/shared/ui/clay'
+import { Boop, ContentIcon, Icon3D, type ClayIconName, type Icon3DName } from '@/shared/ui/clay'
 import { Icon } from '@/shared/ui/Icon'
-import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
+import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { GhostState } from '@/shared/ui/GhostState'
 import { SkeletonCard, SkeletonText } from '@/shared/ui/Skeleton'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -27,7 +31,7 @@ import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { cn } from '@/shared/lib/cn'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { RefChips } from '@/features/insights/components/RefChips'
-import { EletjelStrip } from '@/features/today/components/EletjelStrip'
+import { EletjelStrip, needHueForIcon } from '@/features/today/components/EletjelStrip'
 import { useAdviceActions, useCompanionFeed, useFeedback, useObservations, useObservationReply } from '@/data/hooks'
 import { ObservationCard } from '@/features/today/components/ObservationCard'
 import { OBSERVATION_BUDGET } from '@/data/insights/observations'
@@ -37,12 +41,15 @@ import { useNeeds } from '@/features/today/logic/useNeeds'
 import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
 import { localDateString } from '@/shared/lib/dates'
 
-/** Prototype: each message head carries a daypart clay spot (s-reggel / s-este /
- *  s-energia). Our messages carry a KIND, not a spot — this is the visual mapping. */
-function messageSpot(m: MezoMessageItem): ClaySpotName {
-  if (m.kind === 'sleep' || m.kind === 'evening') return 's-este'
-  if (m.kind === 'morning' || m.id === 'briefing-demo') return 's-reggel'
-  return 's-energia'
+/** The message head's art (üveg, mezo-me75u.3): a nudge carries its need's own clay icon (it
+ *  renders through `CLAY_TO_3D`); a companion message carries a KIND, mapped here onto the 3D
+ *  daypart set — evening/sleep → the moon, morning → the dawn, anything else → the bolt. The well
+ *  around it takes the art's hue. */
+function messageArt(m: MezoMessageItem): { name: ClayIconName | Icon3DName; hue?: string } {
+  if (m.icon) return { name: m.icon }
+  if (m.kind === 'sleep' || m.kind === 'evening') return { name: 't-moon', hue: 'var(--dv-lav)' }
+  if (m.kind === 'morning' || m.id === 'briefing-demo') return { name: 't-dawn', hue: 'var(--dv-amber)' }
+  return { name: 't-bolt', hue: 'var(--dv-amber)' }
 }
 
 export function NapMezoPage() {
@@ -228,15 +235,20 @@ export function NapMezoPage() {
   // kézi kinyitása miatt látszik teljes kártyaként — a legújabb üzenet és a deeplink-cél
   // mindig teljes kártya marad, összecsukás-gomb nélkül (az Életjelek pane pedig eleve nem
   // ad át semmit, tehát ott is hiányzik).
-  const renderCard = (m: MezoMessageItem, i: number, opts?: { collapsible?: boolean }) => (
+  const renderCard = (m: MezoMessageItem, i: number, opts?: { collapsible?: boolean }) => {
+    const art = messageArt(m)
+    return (
     <div
       key={m.id}
       ref={m.id === scrollTargetId ? linkedCardRef : undefined}
-      className="nap-mzmsg rise"
-      style={{ '--d': `${40 + i * 60}ms` } as React.CSSProperties}
+      className="nap-mzmsg glass rise"
+      style={{ '--d': `${40 + i * 60}ms`, '--i': i, '--c': needHueForIcon(m.icon) ?? 'var(--dv-lav)' } as React.CSSProperties}
     >
       <div className="nap-mzmsg-h">
-        {m.icon ? <ClayIcon name={m.icon} size={35} /> : <ClaySpot name={messageSpot(m)} size={35} />}
+        <span className="nap-mzmsg-art uv-well" aria-hidden="true"
+          style={art.hue ? { '--c': art.hue } as React.CSSProperties : undefined}>
+          <ContentIcon name={art.name} size={30} />
+        </span>
         <div className="t">{m.time ? `${m.time} · ${m.eyebrow}` : m.eyebrow}</div>
         {opts?.collapsible && (
           <button
@@ -265,7 +277,7 @@ export function NapMezoPage() {
       )}
       {m.facts && m.facts.length > 0 && (
         <>
-          <div className="nap-mzmsg-meta">Miből gondolom</div>
+          <div className="nap-mzmsg-meta is-eb">Miből gondolom</div>
           <ul className="nap-mzmsg-facts">
             {m.facts.map((f, j) => (
               <li key={j}>{f}</li>
@@ -283,7 +295,7 @@ export function NapMezoPage() {
       {m.kind === 'advice' && m.artifactId != null && m.actions && m.actions.length > 0 && (
         m.applied ? (
           <div className="nap-mzmsg-applied">
-            <Icon name="check" size={12} />
+            <Icon3D name="t-tick" size={20} />
             {m.actions.find((a) => a.key === m.applied!.actionKey)?.label ?? m.applied.actionKey}
           </div>
         ) : (
@@ -311,10 +323,10 @@ export function NapMezoPage() {
           (mezo-d58h.7.6): ott a 👍/👎 maga a VÁLASZ, nem a kártya értékelése, ezért „A
           válaszod" felirat, a kérdés saját szavai a chipeken, és nincs indok-sor. */}
       {m.artifactId != null && (
-        <div className="mt-sm">
+        <div className="nap-mzmsg-fb">
           {isQuestionCard(m)
-            ? <div className="nap-mzmsg-meta">A válaszod</div>
-            : (m.kind === 'intervention' || m.kind === 'advice') && <div className="nap-mzmsg-meta">Segített?</div>}
+            ? <div className="nap-mzmsg-meta is-eb">A válaszod</div>
+            : (m.kind === 'intervention' || m.kind === 'advice') && <div className="nap-mzmsg-meta is-eb">Segített?</div>}
           <FeedbackChips
             key={m.artifactId}
             value={feedback.get(m.artifactId)}
@@ -327,15 +339,22 @@ export function NapMezoPage() {
         </div>
       )}
     </div>
-  )
+    )
+  }
 
   return (
-    <MozaikPage tone="coral">
-      <PageHead onBack={() => navigate(-1)} label="‹ Ma" />
-      {/* Prototype hero order is orb → name → sub (no bignum), so the orb hero is
-          composed from the mz-page-hero classes rather than PageHero's nm/row/sb recipe. */}
-      <div className="mz-page-hero orb">
-        <ClaySpot name="s-orb" size={83} />
+    <MozaikPage tone="coral" className="nap-mzpage">
+      {/* The house PageHead markup (same button, same name), worn as a small still glass pill
+          (üveg, mezo-me75u.3) — PageHead itself takes no class. */}
+      <div className="mz-page-head">
+        <button type="button" className="mz-backbtn glass is-still" onClick={() => navigate(-1)} aria-label="Vissza">
+          ‹ Ma
+        </button>
+      </div>
+      {/* Hero (rank 1): no card — a frameless lavender + gold halo around the living Mezo Boop,
+          then name → sub (no bignum). */}
+      <div className="mz-page-hero nap-mzhero uv-halo">
+        <Boop domain="mezo" size={90} alive />
         <div className="mz-hero-nm">Mezo · ma</div>
         {/* Today's own message count (Finding 3) — a cross-day deeplink prepends one extra card
             to the Üzenetek pane that is not part of today's thread; the label must not count it.
@@ -343,7 +362,7 @@ export function NapMezoPage() {
         <div className="mz-hero-sb">{messages.length} üzenet · a napod fonala</div>
       </div>
       <PageBody>
-        <div className="nap-mzseg" role="tablist" aria-label="Mezo tartalom" data-kalauz-anchor="uzenetek-tabs">
+        <div className="nap-mzseg uv-flat" role="tablist" aria-label="Mezo tartalom" data-kalauz-anchor="uzenetek-tabs">
           <button type="button" role="tab" aria-selected={tab === 'uzenetek'}
             className={cn(tab === 'uzenetek' && 'on')} onClick={() => setTab('uzenetek')}>
             Üzenetek
@@ -369,21 +388,27 @@ export function NapMezoPage() {
                     isExpanded(m.id) && i !== displayUzenetek.length - 1 && m.id !== scrollTargetId,
                 })
               ) : (
-                <button type="button" key={m.id} className="nap-mzrow rise"
+                <button type="button" key={m.id} className="nap-mzrow uv-flat rise"
                   style={{ '--d': `${40 + i * 60}ms` } as React.CSSProperties}
                   aria-expanded="false" onClick={() => expand(m.id)}>
-                  {m.icon && <ClayIcon name={m.icon} size={16} />}
-                  <span className="t">{m.time ? `${m.time} · ${m.eyebrow}` : m.eyebrow}</span>
-                  <span className="pv">{m.paragraphs[0]}</span>
-                  {m.meta && <span className="mt">{m.meta}</span>}
+                  <ContentIcon name={messageArt(m).name} size={24} />
+                  <span className="grow">
+                    <span className="hd">
+                      <span className="t">{m.time ? `${m.time} · ${m.eyebrow}` : m.eyebrow}</span>
+                      {m.meta && <span className="mt">{m.meta}</span>}
+                    </span>
+                    <span className="pv">{m.paragraphs[0]}</span>
+                  </span>
                   <span className="chev" aria-hidden="true">
                     <Icon name="chevron-down" size={12} />
                   </span>
                 </button>
               ),
             )}
-            <button type="button" className="nap-mz-cta rise" style={{ '--d': `${40 + displayUzenetek.length * 60}ms` } as React.CSSProperties}
+            <button type="button" className="nap-mz-cta glass rise"
+              style={{ '--d': `${40 + displayUzenetek.length * 60}ms`, '--c': 'var(--dv-lav)' } as React.CSSProperties}
               onClick={() => navigate('/mezo/chat')}>
+              <Boop domain="mezo" size={30} />
               Beszélgess Mezóval ›
             </button>
           </EntranceGroup>
@@ -401,11 +426,13 @@ export function NapMezoPage() {
               {eletjelek.map((m, i) => renderCard(m, i))}
               {!needs.isPending && eletjelek.length === 0 && attention.length === 0 && (
                 <p className="nap-ejok rise" style={{ '--d': '100ms' } as React.CSSProperties}>
-                  Minden gyűrű rendben — ma nincs teendő. <Icon name="check" size={12} />
+                  <Icon3D name="t-tick" size={22} />
+                  Minden gyűrű rendben — ma nincs teendő.
                 </p>
               )}
               {!needs.isPending && eletjelek.length === 0 && attention.length > 0 && (
                 <p className="nap-ejok warn rise" style={{ '--d': '100ms' } as React.CSSProperties}>
+                  <Icon3D name="t-heart" size={22} />
                   {attention.length === 1
                     ? 'Egy gyűrű figyelmet kér'
                     : `${attention.length} gyűrű figyelmet kér`}
@@ -423,20 +450,22 @@ export function NapMezoPage() {
               <SkeletonCard><SkeletonText lines={3} /></SkeletonCard>
             )}
             {!obs.isPending && obs.isError && (
-              <GhostState
-                message="Az észrevételeket most nem sikerült betölteni."
-                ctaLabel="Újra"
-                onCta={() => obs.refetch()}
-              />
+              <div className="nap-obs-ghost">
+                <GhostState
+                  message="Az észrevételeket most nem sikerült betölteni."
+                  ctaLabel="Újra"
+                  onCta={() => obs.refetch()}
+                />
+              </div>
             )}
             {!obs.isPending && !obs.isError && obs.degraded && (
-              <p className="nap-obs-empty rise" style={{ '--d': '100ms' } as React.CSSProperties}>
+              <p className="nap-obs-empty uv-empty rise" style={{ '--d': '100ms' } as React.CSSProperties}>
                 A társ jelenleg nincs bekapcsolva — most nincs mit észrevennem. A napló, az
                 edzés és a Fuel változatlanul működik.
               </p>
             )}
             {!obs.isPending && !obs.isError && !obs.degraded && obs.observations.length === 0 && (
-              <p className="nap-obs-empty rise" style={{ '--d': '100ms' } as React.CSSProperties}>
+              <p className="nap-obs-empty uv-empty rise" style={{ '--d': '100ms' } as React.CSSProperties}>
                 Még nincs észrevétel — Mezo figyel.
               </p>
             )}
@@ -454,7 +483,7 @@ export function NapMezoPage() {
             {!obs.isPending && !obs.isError && !obs.degraded && obs.observations.length > 0 && (
               <div className="nap-obs-quiet rise"
                 style={{ '--d': `${40 + obs.observations.length * 60}ms` } as React.CSSProperties}>
-                <ClayIcon name="i-hold" size={16} />
+                <Icon3D name="t-moon" size={22} />
                 Ma még {budgetLeft} észrevétel fér a keretbe · {OBSERVATION_BUDGET.quietFrom} után
                 csendben maradok
               </div>

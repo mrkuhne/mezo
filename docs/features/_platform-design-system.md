@@ -209,6 +209,12 @@ something new extends the kit, never forks a second recipe.
 - **Csapat-fal (`mezo-a9bo7.8`) additions.** 4 icons for the wall's unified trio and reply sheet
   (`t-thumb-up`, `t-thumb-down`, `t-send`, `t-flask`; sheet: `prototypes/uveg-uzenofal.html#ikonok`),
   copied from that prototype's sprite with the `tg-*` gradient namespace.
+- **U3 (`mezo-me75u.3`) additions.** 10 owner-approved icons (`t-checkin`, `t-quick`, `t-steps`,
+  `t-people`, `t-chain`, `t-quest`, `t-harvest`, `t-coin`, `t-orb`, `t-scroll`, plus the
+  `tg-rose` gradient; Kísérlet reuses the csapat-fal `t-flask`; sheet: `prototypes/uveg-nap.html#ikonok`); `CLAY_TO_3D` gained the
+  context-free Nap meanings (check-in, emberek, rend, kihívás, érme, memoár, heti, tudás, futás).
+  `CaptureArt` is a kind → 3D map (`CAPTURE_ART`), so every capture header wears the 3D set. Blocks:
+  `── uveg nap mai|oldalak|rogzites|uzenetek|napzaras (`. `shared/ui/Island.tsx` (dead) is gone.
 - **Glass chrome — `── uveg chrome (` block (bible §7).** Same content and behavior, glass
   material: the header's round `.glass.is-round` buttons (badges outside), the gradient "boop"
   wordmark, the opaque black header background, `DayOrb` redrawn as a glass sphere holding a

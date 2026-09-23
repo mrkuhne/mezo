@@ -88,10 +88,12 @@ test('clicking Kezdjük advances from act 1 to act 2 (DayStoryStep)', async () =
   expect(screen.queryByText('A nap véget ért.')).not.toBeInTheDocument()
 })
 
-test('the ✕ exit (Kilépés) navigates straight to /today, consequence-free from act 1', async () => {
+test('the Kilépés exit navigates straight to /today, consequence-free from act 1', async () => {
   stubReduced()
   const user = userEvent.setup()
   renderApp()
+  // a worded flat pill now, not a „✕" glyph (Üveg, mezo-me75u.3)
+  expect(screen.getByRole('button', { name: 'Kilépés' })).toHaveTextContent('Kilépés')
   await user.click(screen.getByRole('button', { name: 'Kilépés' }))
   // Today's face-independent landmark: a daypart's own content would make the exit
   // assertion clock-dependent, so anchor on the daypart switcher (mezo-puci).
@@ -156,7 +158,7 @@ test('entering act 5 while useNeeds is still pending calls close(undefined) — 
   expect(close).toHaveBeenCalledWith(undefined)
 })
 
-test('the ✕ exit before act 5 never calls close (consequence-free up to the Harvest act)', async () => {
+test('the Kilépés exit before act 5 never calls close (consequence-free up to the Harvest act)', async () => {
   stubReduced()
   const { close, consumeLevelUps } = setupCloseSpies()
   const user = userEvent.setup()

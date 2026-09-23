@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-09-22
+updated: 2026-09-23
 tags: [train, running, sport, frontend, backend, data-layer, progression, hypertrophy]
 key_files:
   - frontend/src/features/train
@@ -17,6 +17,8 @@ related: [_platform-data-layer, _platform-design-system, today, fuel]
 ---
 
 # Train — Feature Documentation
+
+> **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The sport capture sheet wears the U3 capture look (glass floating sheet, 3D header art, scale cells, the shared lit Mentés). Behavior unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
 
 > The strength + conditioning area (plan, execute, log, analyze). **Status: ✅ done (FE mock + FE real + Spring Boot backend)** — the only gaps are clearly-flagged Phase-3 AI/analysis features. Lives under the **`Edzés`** domain in the docked bottom `TabBar` (`app/navModel.ts`'s `train` row) — **four owner-approved tabs (2026-09-12, Train Titanium T4, `mezo-88iwa.5`)**: `Mai` (`/train/mai`) · `Terv` (`/train/mesocycles`) · `Terhelés` (`/train/week`) · `Gyakorlatok` (`/train/exercises`). **The six-tile Mozaik hub is retired** — `/train` itself has no face of its own any more; it index-redirects to `Mai` (below). The nine-tab `SubNavDropdown` shell and its `tabs.ts` were already gone before this ([ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md), [ADR 0033](../decisions/0033-mozaik-2-tile-language.md)); Train Titanium T4 retired the hub that replaced them.
 

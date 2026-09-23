@@ -3,6 +3,7 @@ import { useGratitudeActions, useGratitudeEntries, useRitualActions, useRitualDa
 import { GratitudeRows } from '@/features/me/components/GratitudeRows'
 import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
 import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
 
@@ -94,7 +95,7 @@ export function ReflectionStep({ onNext }: { onNext: () => void }) {
     <div className="rz-act rz-reflect">
       <div className="rz-story-eyebrow">Ma milyen volt</div>
       <h2 className="rz-reflect-title">Milyen volt a napod valójában?</h2>
-      <div className="rz-reflect-box">
+      <div className="rz-reflect-box glass">
         <textarea
           className="rz-reflect-input"
           value={text}
@@ -110,12 +111,12 @@ export function ReflectionStep({ onNext }: { onNext: () => void }) {
           aria-label={recording ? 'Felvétel leállítása' : 'Hangbevitel'}
           aria-pressed={recording}
         >
-          <Icon name={recording ? 'voice-wave' : 'mic'} size={14} />
+          {recording ? <Icon name="voice-wave" size={14} /> : <Icon3D name="t-mic" size={20} />}
         </button>
       </div>
       {voice.error && <p className="rz-reflect-hint">{voice.error}</p>}
       {!savedPending && (
-        <div className="rz-reflect-gratitude">
+        <div className="rz-reflect-gratitude glass">
           <div className="rz-story-eyebrow">Amiért hálás vagy</div>
           {savedErrored ? (
             // No input rows here either — see the `slots` comment above for why an errored

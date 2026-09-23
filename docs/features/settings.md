@@ -14,6 +14,8 @@ related: [_platform-design-system, companion, me, fuel, train, insights, _platfo
 
 # Central settings
 
+> **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The header notification panel's chip and row icons are the 3D set (call-site: forecast → t-orb, experiment → t-flask, habit formation → t-harvest); the deprecated notification `emoji` field is gone. Behavior unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
+
 > **2026-09-23 (`mezo-me75u.1`):** the app is locked to dark (üveg style bible §8). The
 > Téma picker on `/settings` is hidden while `THEME_LOCK` holds; its code and the stored
 > preference are kept so light can return. The header's controls are unchanged in content and

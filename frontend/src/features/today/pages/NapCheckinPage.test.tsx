@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { NapCheckinPage } from '@/features/today/pages/NapCheckinPage'
@@ -67,8 +67,10 @@ function renderPage(initialEntries: string[] = ['/nap/checkin']) {
 
 test('the hero counts the done slots and carries the prototype copy verbatim', async () => {
   renderPage()
-  expect(await screen.findByText('2/4')).toBeInTheDocument()
-  expect(screen.getByText('Check-in')).toBeInTheDocument()
+  // Üveg (mezo-me75u.3): the numeral carries the total as a small "/n" — assert the reading
+  expect(await screen.findByText('Check-in')).toBeInTheDocument()
+  expect(document.querySelector('.nap-hero-num')).toHaveTextContent('2/4')
+  expect(document.querySelector('.nap-hero use[href="#t-checkin"]')).not.toBeNull()
   expect(screen.getByText('négy pillanatkép a napodról')).toBeInTheDocument()
   expect(screen.getByText('A kimaradt slot nem vész el — Pótold bármikor, a társ nem büntet.')).toBeInTheDocument()
 })
@@ -82,6 +84,9 @@ test('done slots render their measured values as mini-cells; non-done slots show
   expect(screen.getAllByText('Energia')).toHaveLength(2)
   // the saved note surfaces on its row
   expect(screen.getByText('Nyugodt ébredés · pihenve')).toBeInTheDocument()
+  // a done slot is marked by the lit 3D tick (it replaced the ✓ glyph), one per done slot
+  expect(screen.getAllByRole('img', { name: 'kész' })).toHaveLength(2)
+  expect(document.querySelectorAll('.nck-tick.f use[href="#t-tick"]')).toHaveLength(2)
 })
 
 test('the future slot renders muted as "később esedékes" and is not interactive', async () => {
@@ -104,7 +109,7 @@ test('the hot slot opens the real CheckInSheet and a save flips the day to 3/4',
     if (skip) await userEvent.click(skip)
   }
   await userEvent.click(await screen.findByRole('button', { name: /Mentés/ }))
-  expect(await screen.findByText('3/4')).toBeInTheDocument()
+  await waitFor(() => expect(document.querySelector('.nap-hero-num')).toHaveTextContent('3/4'))
   // the slot row settled: no fill affordance left for it, its values render as mini-cells
   expect(screen.queryByText('Délután · most esedékes')).not.toBeInTheDocument()
   expect(document.querySelectorAll('.mz-mcells')).toHaveLength(3)

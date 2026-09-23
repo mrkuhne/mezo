@@ -1882,38 +1882,36 @@ export interface AppNotificationView {
 
 /** Per-kind ikon + tint osztály-utótag (a mockup családi színei). A `tint` a sor ikon-tokjának
  *  washát adja, a `clay` a Mozaik-nyelv ikonját — a feed-oldal (`NotificationFeedPage`) ezt a
- *  kettőt rendereli. Az `emoji` a törölt dropdown-panel öröksége, olvasója már nincs. */
+ *  kettőt rendereli. (A régi, olvasó nélküli `emoji` mező a mezo-me75u.3-ban ment ki: a tartalom
+ *  3D-ikont visel, emoji nincs — üveg bible §4.) */
 export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, {
-  /** @deprecated Nincs olvasója a repóban a NotificationPanel törlése óta (mezo-nol0) — a feed
-   *  a `clay` ikont rajzolja. Nem törlöm: a 12 soros literál nyesése ezt az ágat túllépő változás. */
-  emoji: string
   tint: string
   clay: ClayIconName
 }> = {
-  pattern_inbox: { emoji: '🧩', tint: 'pattern', clay: 'i-minta' },
-  pattern_signal: { emoji: '🧩', tint: 'pattern', clay: 'i-minta' },
-  hypothesis_new: { emoji: '🧩', tint: 'pattern', clay: 'i-minta' },
-  fact_candidate: { emoji: '📚', tint: 'knowledge', clay: 'i-tudas' },
-  fact_reinforced: { emoji: '📚', tint: 'knowledge', clay: 'i-tudas' },
-  memoir_ready: { emoji: '✍️', tint: 'memoir', clay: 'i-memoar' },
-  prediction_new: { emoji: '🔮', tint: 'prediction', clay: 'i-kristaly' },
-  prediction_outcome: { emoji: '🔮', tint: 'prediction', clay: 'i-kristaly' },
-  experiment_proposed: { emoji: '🧪', tint: 'experiment', clay: 'i-lombik' },
-  experiment_closed: { emoji: '🧪', tint: 'experiment', clay: 'i-lombik' },
-  challenge_event: { emoji: '🏆', tint: 'experiment', clay: 'i-kihivas' },
-  memory_note: { emoji: '🗂', tint: 'memory', clay: 'i-rend' },
-  weekly_review_ready: { emoji: '🗓', tint: 'memoir', clay: 'i-heti' },
-  life_goal_plan: { emoji: '🎯', tint: 'experiment', clay: 'i-cel' },
-  goal_suggestion: { emoji: '🎯', tint: 'goal', clay: 'i-cel' },
-  person_candidate: { emoji: '🧑', tint: 'people', clay: 'i-emberek' },
-  graph_candidate: { emoji: '🕸', tint: 'people', clay: 'i-retegek' },
-  habit_formation: { emoji: '🌱', tint: 'habit', clay: 'i-termes' },
-  character_portrait: { emoji: '🪞', tint: 'character', clay: 'i-eletjel' },
-  konzilium_verdict: { emoji: '⚖️', tint: 'character', clay: 'i-muhely' },
+  pattern_inbox: { tint: 'pattern', clay: 'i-minta' },
+  pattern_signal: { tint: 'pattern', clay: 'i-minta' },
+  hypothesis_new: { tint: 'pattern', clay: 'i-minta' },
+  fact_candidate: { tint: 'knowledge', clay: 'i-tudas' },
+  fact_reinforced: { tint: 'knowledge', clay: 'i-tudas' },
+  memoir_ready: { tint: 'memoir', clay: 'i-memoar' },
+  prediction_new: { tint: 'prediction', clay: 'i-kristaly' },
+  prediction_outcome: { tint: 'prediction', clay: 'i-kristaly' },
+  experiment_proposed: { tint: 'experiment', clay: 'i-lombik' },
+  experiment_closed: { tint: 'experiment', clay: 'i-lombik' },
+  challenge_event: { tint: 'experiment', clay: 'i-kihivas' },
+  memory_note: { tint: 'memory', clay: 'i-rend' },
+  weekly_review_ready: { tint: 'memoir', clay: 'i-heti' },
+  life_goal_plan: { tint: 'experiment', clay: 'i-cel' },
+  goal_suggestion: { tint: 'goal', clay: 'i-cel' },
+  person_candidate: { tint: 'people', clay: 'i-emberek' },
+  graph_candidate: { tint: 'people', clay: 'i-retegek' },
+  habit_formation: { tint: 'habit', clay: 'i-termes' },
+  character_portrait: { tint: 'character', clay: 'i-eletjel' },
+  konzilium_verdict: { tint: 'character', clay: 'i-muhely' },
 }
 
 /** Semleges bejegyzés egy olyan fajtára, amit ez a build még nem ismer. */
-const FALLBACK_KIND_META = { emoji: '🔔', tint: 'memory', clay: 'i-ertesites' } as const
+const FALLBACK_KIND_META = { tint: 'memory', clay: 'i-ertesites' } as const
 
 /** A leképezés TOTÁLIS olvasója. A wire-kind sima string: a backend enum bővülhet anélkül, hogy
  *  ez a build tudna róla, és egy hiányzó kulcson a nyers indexelés `undefined`-et ad, amitől a

@@ -341,24 +341,24 @@ describe('needsAt', () => {
     ])
   })
 
-  test('every ring carries its NEED_META emoji/label/color', () => {
+  test('every ring carries its NEED_META label/color (no emoji — mezo-z5lov)', () => {
     const inputs: NeedsInputs = { wakeTime: wake, bedTime: bed, events: empty() }
     const states = needsAt(d('2026-08-17T12:00:00'), inputs)
     for (const state of states) {
       const meta = NEED_META[state.key]
-      expect(state.emoji).toBe(meta.emoji)
+      expect(state).not.toHaveProperty('emoji')
       expect(state.label).toBe(meta.label)
       expect(state.color).toBe(meta.color)
     }
   })
 
   test('NEED_META colors match the design spec', () => {
-    expect(NEED_META.energia).toEqual({ emoji: '🍽️', label: 'Energia', color: 'var(--dv-sage)' })
-    expect(NEED_META.hidratacio).toEqual({ emoji: '💧', label: 'Hidratáció', color: 'var(--dv-sky)' })
-    expect(NEED_META.pihenes).toEqual({ emoji: '😴', label: 'Pihenés', color: 'var(--dv-lav)' })
-    expect(NEED_META.mozgas).toEqual({ emoji: '💪', label: 'Mozgás', color: 'var(--dv-coral)' })
-    expect(NEED_META.lelek).toEqual({ emoji: '💗', label: 'Lélek', color: 'var(--dv-rose)' })
-    expect(NEED_META.rend).toEqual({ emoji: '⚡', label: 'Rend', color: 'var(--accent-base)' })
+    expect(NEED_META.energia).toEqual({ label: 'Energia', color: 'var(--dv-sage)' })
+    expect(NEED_META.hidratacio).toEqual({ label: 'Hidratáció', color: 'var(--dv-sky)' })
+    expect(NEED_META.pihenes).toEqual({ label: 'Pihenés', color: 'var(--dv-lav)' })
+    expect(NEED_META.mozgas).toEqual({ label: 'Mozgás', color: 'var(--dv-coral)' })
+    expect(NEED_META.lelek).toEqual({ label: 'Lélek', color: 'var(--dv-rose)' })
+    expect(NEED_META.rend).toEqual({ label: 'Rend', color: 'var(--accent-base)' })
   })
 
   test('NEEDS_TUNING carries the exact spec values', () => {

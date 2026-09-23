@@ -70,14 +70,14 @@ export function JournalSheet({ onClose, onBack, entry, initialMode }: JournalShe
     : 'Mi jár a fejedben?'
 
   return (
-    <Sheet onClose={onClose} labelledBy="journal-title" className="capture-sheet capture-tone-journal">
+    <Sheet onClose={onClose} labelledBy="journal-title" className="capture-sheet capture-tone-journal glass">
       {(close) => (
         <div className="col" style={{ padding: '4px 4px 8px' }}>
           <CaptureHeader id="journal-title" kind="journal" title={title}
             subtitle="A gondolataidnak itt van helye." onClose={close} onBack={onBack} />
 
           {!entry && (
-            <div className="row gap-sm" role="group" aria-label="Bejegyzés típusa" style={{ marginBottom: 12 }}>
+            <div className="row capture-chips" role="group" aria-label="Bejegyzés típusa">
               <button
                 type="button"
                 className="chip"
@@ -133,13 +133,7 @@ export function JournalSheet({ onClose, onBack, entry, initialMode }: JournalShe
                   />
                   <button
                     type="button"
-                    className={cn('chip', recording && 'chat-mic-live')}
-                    style={{
-                      position: 'absolute', top: 8, right: 8, padding: 8,
-                      ...(recording
-                        ? { background: 'var(--wash-amber)', borderColor: 'var(--coral-deep)', color: 'var(--coral-deep)' }
-                        : {}),
-                    }}
+                    className={cn('chip capture-mic', recording && 'chat-mic-live is-live')}
                     onClick={voice.toggle}
                     disabled={voice.state === 'unsupported' || voice.state === 'transcribing'}
                     aria-label={recording ? 'Felvétel leállítása' : 'Hangbevitel'}
@@ -169,10 +163,10 @@ export function JournalSheet({ onClose, onBack, entry, initialMode }: JournalShe
             </div>
           </div>
 
-          <div className="row gap-sm mt-lg">
+          <div className="capture-actions">
             <button className="cta-ghost flex-1" onClick={close}>Mégse</button>
             <button
-              className="cta-primary flex-1"
+              className="cta-primary capture-save flex-1"
               onClick={() => save(close)}
               disabled={(() => {
                 if (mode === 'gratitude') {
@@ -200,9 +194,8 @@ export function JournalSheet({ onClose, onBack, entry, initialMode }: JournalShe
                   </button>
                   <button
                     type="button"
-                    className="cta-primary flex-1"
+                    className="cta-primary capture-danger flex-1"
                     disabled={busy}
-                    style={{ background: 'var(--error)', borderColor: 'var(--error)', color: '#fff' }}
                     onClick={() => void removeNote(entry.id).then(close)}
                   >
                     Biztosan törlöd?
@@ -211,9 +204,8 @@ export function JournalSheet({ onClose, onBack, entry, initialMode }: JournalShe
               ) : (
                 <button
                   type="button"
-                  className="cta-ghost"
+                  className="cta-ghost capture-danger-ghost"
                   disabled={busy}
-                  style={{ borderColor: 'color-mix(in srgb, var(--error) 30%, transparent)', color: 'var(--error)' }}
                   onClick={() => setConfirmingDelete(true)}
                 >
                   Törlés

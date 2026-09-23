@@ -5,13 +5,14 @@ import { NapHubPage } from '@/features/today/pages/NapHubPage'
 
 const store = vi.hoisted(() => ({
   save: vi.fn(), pending: false, error: false, retry: vi.fn(),
+  notes: [] as object[],
   slots: [{ time: '08:00', state: 'done', note: null, values: null }, { time: '12:00', state: 'now', note: null, values: null }],
 }))
 vi.mock('@/data/hooks', () => ({
   useTodayScenario: () => ({ anchorMode: false }),
   useCheckins: () => ({ checkins: store.slots, saveCheckIn: store.save, isPending: store.pending, isError: store.error, refetch: store.retry }),
   useFuelDay: () => ({ fuel: { consumed: { kcal: 900 }, targets: { kcal: 2000 }, meals: [] }, isPending: false }),
-  useJournalNotes: () => ({ data: [], isPending: false }),
+  useJournalNotes: () => ({ data: store.notes, isPending: false }),
   useActivities: () => ({ data: [], isPending: false }),
 }))
 vi.mock('@/features/today/logic/useNeeds', () => ({ useNeeds: () => ({ states: [] }) }))
@@ -60,4 +61,27 @@ it('waits for persisted slots before offering capture and exposes retry on read 
   expect(screen.getByRole('button', { name: 'Check-in'  })).toBeDisabled()
   await userEvent.click(screen.getByRole('button', { name: 'Check-in újratöltése' }))
   expect(store.retry).toHaveBeenCalled(); store.error = false
+})
+
+it('the orbit nodes are bare Titanium 3D icons (call-site names for the ambiguous clay glyphs)', () => {
+  const { container } = setup()
+  const art = (label: string) => screen.getByRole('button', { name: label }).querySelector('use')?.getAttribute('href')
+  expect(art('Check-in')).toBe('#t-checkin')
+  expect(art('Gyors logolás')).toBe('#t-quick')
+  expect(art('Napló')).toBe('#t-journal')
+  expect(art('Aktivitás')).toBe('#t-steps')
+  expect(art('Chat')).toBe('#t-chat')
+  // the orbit is the frameless hero: no glass anywhere in it
+  expect(container.querySelector('.nap-center-orbit .glass')).toBeNull()
+  expect(container.querySelector('.nap-center-orbit')).not.toHaveClass('glass')
+})
+it('Mai pillanatok rows stay flat and carry a 3D icon per kind', async () => {
+  store.notes = [{ id: 'n1', occurredOn: '2026-09-17', text: 'Jó nap', createdAt: '2026-09-17T09:00:00' }]
+  const { container } = setup()
+  const row = container.querySelector('.nap-center-timeline li button') as HTMLElement
+  expect(row).toHaveAttribute('data-kind', 'journal')
+  expect(row.querySelector('use')).toHaveAttribute('href', '#t-journal')
+  expect(row).toHaveTextContent('Jó nap')
+  expect(container.querySelector('.nap-center-timeline .glass')).toBeNull()
+  store.notes = []
 })

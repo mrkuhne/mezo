@@ -75,11 +75,12 @@ function renderPage() {
   )
 }
 
-test('gold-tone scaffold: ‹ Ma back chip navigates back, hajtás spot + 1/4 hero + subline', async () => {
+test('gold-tone scaffold: ‹ Ma back chip navigates back, 3D quest art + 1/4 hero + subline', async () => {
   const { container } = renderPage()
   expect(container.querySelector('.mz-page.mz-p-gold')).not.toBeNull()
-  expect(container.querySelector('use[href="#s-hajtas"]')).not.toBeNull()
-  expect(screen.getByText('1/4')).toBeInTheDocument()
+  // Üveg (mezo-me75u.3): the hero art is the 3D quest icon (it replaced the clay hajtás spot)
+  expect(container.querySelector('.nap-hero use[href="#t-quest"]')).not.toBeNull()
+  expect(container.querySelector('.nap-hero-num')).toHaveTextContent('1/4')
   expect(screen.getByText('Napi küldetések')).toBeInTheDocument()
   expect(screen.getByText('ajánlatok a mai napra')).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
@@ -88,12 +89,14 @@ test('gold-tone scaffold: ‹ Ma back chip navigates back, hajtás spot + 1/4 he
 
 test('each quest renders as a card: title, why, XP pill; the completed card closes green with the XP credit line', () => {
   const { container } = renderPage()
-  expect(container.querySelectorAll('.mz-qcard')).toHaveLength(4)
+  expect(container.querySelectorAll('.nq-card.glass')).toHaveLength(4)
   expect(screen.getByText('Mai tervezett edzés — csináld végig')).toBeInTheDocument()
   expect(screen.getByText('A memóriád ma is éhes — egy mondat elég.')).toBeInTheDocument()
   expect(screen.getByText('+25 XP')).toBeInTheDocument()
-  const doneCard = container.querySelector('.mz-qcard.done')!
-  expect(doneCard).toHaveTextContent('✓ kész · +15 XP jóváírva')
+  const doneCard = container.querySelector('.nq-card.done')!
+  // the completed mark is the 3D tick now (it replaced the ✓ glyph) — same credit line
+  expect(doneCard).toHaveTextContent('kész · +15 XP jóváírva')
+  expect(doneCard.querySelector('.nq-state.f use[href="#t-tick"]')).not.toBeNull()
   expect(doneCard.querySelector('button')).toBeNull() // a closed offer carries no affordance
 })
 
@@ -137,7 +140,8 @@ test('honest empty state: no quests drawn → the empty line, no fabricated 0/0 
   store.quests = []
   const { container } = renderPage()
   expect(screen.getByText('Ma nincs kisorsolt küldetés.')).toBeInTheDocument()
-  expect(container.querySelector('.mz-bignum')).toBeNull()
+  expect(container.querySelector('.nap-hero-num')).toBeNull()
+  expect(container.querySelector('.nq-empty.uv-empty')).not.toBeNull()
 })
 
 // Titánium Nap/Mai (mezo-mhum, manifest C1 — DEFER): a küldetés-csempe lekerült a

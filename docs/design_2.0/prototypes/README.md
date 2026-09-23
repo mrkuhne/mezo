@@ -36,6 +36,7 @@ they inline come from `../assets/`.
 | `growth-tab.html` | https://claude.ai/code/artifact/393bca87-9095-42dd-ac55-127162ad0412 |
 | `rutin-epito.html` | https://claude.ai/code/artifact/78c8f0f9-925f-44a9-93b4-3e9cc077e162 (Rutin-építő — széles Rutin csempe az Én hubon, /me/rutin hub erő-csíkokkal, 4 lépéses szokás-recept wizard Fogg / Clear keretre, szokás-szerkesztő — mezo-3zue) |
 | `celok.html` | https://claude.ai/code/artifact/e404d1d4-55c3-4e81-a8b4-716c6ba45f87 |
+| `uveg-nap.html` | https://claude.ai/artifact/FXaXB8k3zHoFLPwEmYe3F3 (Üvegesítés U3 · Nap — dark glass, built by `build.sh` last line; new icons in `src/uveg-sprite-nap-uj.svg.part` until they move into the shared sprite — mezo-me75u.3) |
 | `minta-reszlet.html` | — (emberi következtetés + bináris összevetés + rétegzett diagnosztika — mezo-0469) |
 | `rutin-szerkeszto-valasztas.html` | — (not yet published; hol lakjon a recept/stacking szerkesztése — három IA-lehetőség egymás mellett — mezo-08zl) |
 | `sablonok.html` | https://claude.ai/code/artifact/39b9e61d-c187-40a7-807e-b67d02c16b90 (Sablonok redesign — poszter-kártya cél-washsal, volumen-ív, nap-szalag, egy Indítás CTA + ⋯ menü, sablon-előnézet oldal) |

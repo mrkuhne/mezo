@@ -29,6 +29,15 @@ describe('APP_NOTIFICATION_KIND_META', () => {
     expect(Object.keys(APP_NOTIFICATION_KIND_META)).toHaveLength(BACKEND_KINDS.length)
   })
 
+  // mezo-me75u.3: a tartalom 3D ikont visel, emoji nincs (üveg bible §4) — a régi, olvasó
+  // nélküli `emoji` mező kiment; a bejegyzés csak a clay nevet és a tintet hordozza.
+  it('nincs emoji mező, csak clay + tint', () => {
+    for (const meta of Object.values(APP_NOTIFICATION_KIND_META)) {
+      expect(Object.keys(meta).sort()).toEqual(['clay', 'tint'])
+    }
+    expect(Object.keys(notificationKindMeta('brand_new_backend_kind')).sort()).toEqual(['clay', 'tint'])
+  })
+
   it('a heti értesítés a heti clay ikont viszi', () => {
     expect(APP_NOTIFICATION_KIND_META.weekly_review_ready.clay).toBe('i-heti')
   })

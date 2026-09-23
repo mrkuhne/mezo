@@ -8,7 +8,7 @@
  * `TodoCard` rows on `FaceEvening` rather than in the retired `RoutineCard`
  * (integration, not duplication — this component never renders prep-step UI itself).
  */
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 
 export function ReleaseStep({ prepStartsAt, bedTime, closingNote, onFinish }: {
   prepStartsAt: string
@@ -18,35 +18,38 @@ export function ReleaseStep({ prepStartsAt, bedTime, closingNote, onFinish }: {
 }) {
   return (
     <div className="rz-act rz-release">
-      <svg className="rz-circle" viewBox="0 0 100 100" width="110" aria-hidden="true">
-        <circle className="rz-ring" cx="50" cy="50" r="42" />
-        {/* The same clay moon act 1 opened on, now at the centre of the closed circle: the
-            arc the day drew in act 2 comes back round it, which is the whole gesture of the act. */}
-        <g className="rz-circle-moon" transform="translate(28 28)">
-          <ClayIcon name="i-hold" size={44} />
-        </g>
-      </svg>
-      <p className="rz-end">A nap le van zárva. Elengedheted.</p>
+      {/* Üveg (mezo-me75u.3): the drawn lavender ring closes round the same 3D moon act 1 opened
+          on — the arc the day drew in act 2 comes back round, which is the whole gesture. */}
+      <div className="rz-circle" aria-hidden="true">
+        <svg className="rz-circle-svg uv-ring" viewBox="0 0 100 100">
+          <circle className="uv-ring-track" cx="50" cy="50" r="44" />
+          <circle className="rz-ring" cx="50" cy="50" r="44" pathLength={100} />
+        </svg>
+        <Icon3D name="t-moon" size={80} className="rz-circle-moon" />
+      </div>
+      <p className="rz-end">A nap le van zárva. <span className="rz-end-soft">Elengedheted.</span></p>
       {closingNote != null && (
-        <p className="rz-note rz-nw">
+        <p className="rz-note glass">
           <span className="rz-note-eyebrow">Mezo · napzárás</span>
-          „{closingNote}"
+          <span className="rz-note-quote uv-voice">„{closingNote}"</span>
         </p>
       )}
-      <div className="rz-handoff rz-nw">
+      <div className="rz-handoff glass">
         <div className="rz-handoff-eyebrow">MOST JÖN · ALVÁS-ELŐKÉSZÍTÉS</div>
         <div className="rz-handoff-steps">
           <span className="rz-handoff-step">
-            <ClayIcon name="i-alvas" size={15} /> Lecsendesítés — képernyők le
+            <Icon3D name="t-sleep" size={32} />
+            <span className="rz-handoff-label">Lecsendesítés — képernyők le</span>
             <span className="rz-handoff-time">{prepStartsAt}</span>
           </span>
           <span className="rz-handoff-step">
-            <ClayIcon name="i-alvas" size={15} /> Villanyoltás
+            <Icon3D name="t-moon" size={32} />
+            <span className="rz-handoff-label">Villanyoltás</span>
             <span className="rz-handoff-time">{bedTime}</span>
           </span>
         </div>
-        <button className="rz-handoff-cta" onClick={onFinish}>Esti rutin indítása →</button>
       </div>
+      <button className="rz-handoff-cta" onClick={onFinish}>Esti rutin indítása →</button>
     </div>
   )
 }

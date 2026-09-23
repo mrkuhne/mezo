@@ -34,7 +34,6 @@ export interface NeedsInputs {
 
 export interface NeedState {
   key: NeedKey
-  emoji: string // 🍽️ 💧 😴 💪 💗 ⚡
   label: string // Energia · Hidratáció · Pihenés · Mozgás · Lélek · Rend
   color: string // CSS var name
   pct: number // 0..100, rounded to integer
@@ -92,13 +91,13 @@ export const NEEDS_TUNING: {
   },
 } as const
 
-export const NEED_META: Record<NeedKey, { emoji: string; label: string; color: string }> = {
-  energia: { emoji: '🍽️', label: 'Energia', color: 'var(--dv-sage)' },
-  hidratacio: { emoji: '💧', label: 'Hidratáció', color: 'var(--dv-sky)' },
-  pihenes: { emoji: '😴', label: 'Pihenés', color: 'var(--dv-lav)' },
-  mozgas: { emoji: '💪', label: 'Mozgás', color: 'var(--dv-coral)' },
-  lelek: { emoji: '💗', label: 'Lélek', color: 'var(--dv-rose)' },
-  rend: { emoji: '⚡', label: 'Rend', color: 'var(--accent-base)' },
+export const NEED_META: Record<NeedKey, { label: string; color: string }> = {
+  energia: { label: 'Energia', color: 'var(--dv-sage)' },
+  hidratacio: { label: 'Hidratáció', color: 'var(--dv-sky)' },
+  pihenes: { label: 'Pihenés', color: 'var(--dv-lav)' },
+  mozgas: { label: 'Mozgás', color: 'var(--dv-coral)' },
+  lelek: { label: 'Lélek', color: 'var(--dv-rose)' },
+  rend: { label: 'Rend', color: 'var(--accent-base)' },
 }
 
 /** mezo-z4h4: EGY forrás a NeedKey → domain clay ikon leképezésnek — az Életjel oldal
@@ -328,7 +327,6 @@ export function needsAt(now: Date, inputs: NeedsInputs): NeedState[] {
 
     return {
       key,
-      emoji: meta.emoji,
       label: meta.label,
       color: meta.color,
       pct,

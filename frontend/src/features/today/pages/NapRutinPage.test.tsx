@@ -124,11 +124,14 @@ test('gold page anatomy: back chip, hero with spot + done/total + chain name, pr
   renderPage()
   expect(await screen.findByRole('button', { name: 'Vissza' })).toBeInTheDocument()
   expect(document.querySelector('.mz-page.mz-p-gold')).not.toBeNull()
+  // every chain group is ONE amber glass card
+  expect(document.querySelectorAll('.nr-vcard.glass').length).toBeGreaterThan(0)
   // morning group: 2 of 5 done
-  expect(screen.getByText('2/5')).toBeInTheDocument()
+  expect(document.querySelector('.nap-hero-num')).toHaveTextContent('2/5')
   expect(screen.getByText('Reggeli rutin')).toBeInTheDocument()
   expect(screen.getByText('5 elem · lánc')).toBeInTheDocument()
-  expect(document.querySelector('.mz-page-hero use[href="#s-reggel"]')).not.toBeNull()
+  // Üveg (mezo-me75u.3): the morning face's hero art is the 3D dawn (it replaced the clay spot)
+  expect(document.querySelector('.nap-hero use[href="#t-dawn"]')).not.toBeNull()
   expect(screen.getByText('A lánc-erő az elmúlt 28 nap konzisztenciája — egy kihagyás nem nullázza, csak halványítja.')).toBeInTheDocument()
 })
 
@@ -147,9 +150,9 @@ test('the stat strip carries perfect days, chain strength and today XP for the s
 test('?dp=este shows the evening group first (hero) with the morning group below', async () => {
   renderPage('/nap/rutin?dp=este')
   expect(await screen.findByText('Esti rutin')).toBeInTheDocument()
-  expect(screen.getByText('0/2')).toBeInTheDocument()
+  expect(document.querySelector('.nap-hero-num')).toHaveTextContent('0/2')
   expect(screen.getByText('2 elem · lánc')).toBeInTheDocument()
-  expect(document.querySelector('.mz-page-hero use[href="#s-este"]')).not.toBeNull()
+  expect(document.querySelector('.nap-hero use[href="#t-moon"]')).not.toBeNull()
   expect(screen.getByText('tökéletes este')).toBeInTheDocument()
   // the other group is still listed below
   expect(screen.getByText('Reggeli rutin')).toBeInTheDocument()
@@ -196,6 +199,8 @@ test('a pending MANUAL row ticks through the habit check write', async () => {
     .map((e) => e.closest('.nr-row'))
     .find((r): r is HTMLElement => r !== null)!
   expect((row as HTMLElement).querySelector('.nr-tick.f')).not.toBeNull()
+  // the lit tick carries the 3D t-tick (it replaced the ✓ glyph)
+  expect((row as HTMLElement).querySelector('.nr-tick.f use[href="#t-tick"]')).not.toBeNull()
 })
 
 test('a done MANUAL row unticks (the prototype tick toggles both ways)', async () => {
@@ -239,15 +244,15 @@ test('the back chip navigates back', async () => {
 
 // ── 1:1 fidelity audit (mezo-d20.11) ────────────────────────────────────────────
 
-test('every habrow carries the habit OWN clay icon (prototype #page-hab items[].i)', async () => {
+test('every habrow carries the habit OWN icon, in 3D (prototype #page-hab items[].i)', async () => {
   renderPage()
   await screen.findByText('50 fekvőtámasz')
   const rows = document.querySelectorAll('.nr-row')
   expect(rows.length).toBeGreaterThan(0)
-  const hrefs = [...rows].map((r) => r.querySelector('use')?.getAttribute('href'))
-  expect(hrefs).toContain('#i-suly')   // morning_weigh_in
-  expect(hrefs).toContain('#i-hajnal') // wake_on_time
-  expect(hrefs).toContain('#i-edzes')  // morning_pushups
+  const hrefs = [...rows].map((r) => r.querySelector('.nr-ic use')?.getAttribute('href'))
+  expect(hrefs).toContain('#t-weight')   // morning_weigh_in (i-suly)
+  expect(hrefs).toContain('#t-dawn')     // wake_on_time (i-hajnal)
+  expect(hrefs).toContain('#t-dumbbell') // morning_pushups (i-edzes)
   expect(new Set(hrefs).size).toBeGreaterThan(1) // NOT one fixed icon for every row
 })
 

@@ -6,12 +6,16 @@
 // the data layer (useDailyQuests/useQuestActions) and the smart-action
 // dispatch are the hub's, verbatim — ADR 0010 keeps quests OFFERS: no
 // failure state, no countdowns, nothing self-completes from the UI.
+// ÜVEG (mezo-me75u.3, prototypes/uveg-nap.html `kuldetesek()`): frameless halo hero (3D quest
+// + done/n), each quest ONE glass card in its slot hue with the icon in a lit well, a flat-lit
+// gold XP pill, a solid pill CTA in the card hue and a ghost "Csere" pill; the completed card
+// dims and marks itself with the 3D tick. The empty state is dashed.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ClayIcon, ClaySpot, type ClayIconName } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
+import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
 import { useCheckins, useDailyQuests, useQuestActions, useWaterActions } from '@/data/hooks'
@@ -20,13 +24,15 @@ import { isFillableSlot } from '@/features/today/logic/todayItems'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import type { DailyQuest, QuestSlot } from '@/data/types'
 
-const SLOT_ICON: Record<QuestSlot, ClayIconName> = { BODY: 'i-edzes', FUELBIO: 'i-fuel', GROWTH: 'i-naplo' }
+/** The slot's 3D icon and glass hue (uveg-nap.html `QUESTS`). */
+const SLOT_ICON: Record<QuestSlot, Icon3DName> = { BODY: 't-dumbbell', FUELBIO: 't-bowl', GROWTH: 't-journal' }
+const SLOT_HUE: Record<QuestSlot, string> = { BODY: 'var(--dv-coral)', FUELBIO: 'var(--dv-sage)', GROWTH: 'var(--dv-lav)' }
 
 /** The card's quiet state line. Offered quests close themselves from real logs
  *  (derived evaluation) — the copy says so; terminal states reuse the sheet's
  *  established labels. Never a failure tone (ADR 0010). */
 function stateLine(q: DailyQuest): { text: string; done?: boolean } {
-  if (q.status === 'completed') return { text: `✓ kész · +${q.xp} XP jóváírva`, done: true }
+  if (q.status === 'completed') return { text: `kész · +${q.xp} XP jóváírva`, done: true }
   if (q.status === 'expired') return { text: 'Lejárt' }
   if (q.status === 'rerolled') return { text: 'Újrasorsolva' }
   return {
@@ -68,42 +74,51 @@ export function NapKuldetesekPage() {
   const done = quests.filter((q) => q.status === 'completed').length
 
   return (
-    <MozaikPage tone="gold" className="nap-quest-page">
-      <PageHead label="‹ Ma" onBack={() => navigate(-1)} />
-      <div className="mz-page-hero">
-        <ClaySpot name="s-hajtas" size={71} />
-        {quests.length > 0 && <div className="mz-bignum">{done}/{quests.length}</div>}
-        <div className="mz-hero-nm">Napi küldetések</div>
-        <div className="mz-hero-sb">ajánlatok a mai napra</div>
+    <MozaikPage tone="gold" className="nap-quest-page nap-oldal">
+      <div className="mz-page-head nap-backrow">
+        <button type="button" className="mz-backbtn glass nap-back" onClick={() => navigate(-1)} aria-label="Vissza">
+          <b aria-hidden="true">‹</b> Ma
+        </button>
       </div>
+      <section className="nap-hero uv-halo" style={{ '--c': 'var(--dv-amber)', '--c2': 'var(--dv-coral)' } as React.CSSProperties}>
+        <Icon3D name="t-quest" size={86} className="nap-hero-art uv-float" />
+        {quests.length > 0 && <div className="nap-hero-num">{done}<small>/{quests.length}</small></div>}
+        <div className="nap-hero-nm">Napi küldetések</div>
+        <div className="nap-hero-sb">ajánlatok a mai napra</div>
+      </section>
       <PageBody principle="A küldetés ajánlat: ha kimarad, csendben lejár — bukás nincs. A Csere naponta egyszer ingyenes.">
-        <EntranceGroup>
+        <EntranceGroup className="nq-list">
           {quests.length === 0 ? (
-            <div className="mz-quest-empty">Ma nincs kisorsolt küldetés.</div>
+            <div className="nq-empty uv-empty">Ma nincs kisorsolt küldetés.</div>
           ) : quests.map((q, i) => {
             const st = stateLine(q)
             const offered = q.status === 'offered'
             const label = offered ? questActionLabel(q) : null
             return (
-              <div key={q.id} className={cn('mz-qcard rise', q.status === 'completed' && 'done')}
-                style={{ '--d': `${40 + i * 60}ms` } as React.CSSProperties}>
-                <div className="mz-qrow">
-                  <ClayIcon name={SLOT_ICON[q.slot]} size={31} />
-                  <div className="mz-qgrow">
-                    <div className="mz-qtitle">{q.title}</div>
-                    <div className="mz-qwhy">{q.why}</div>
+              <div key={q.id} className={cn('nq-card glass rise', q.status === 'completed' && 'done')}
+                style={{ '--d': `${40 + i * 60}ms`, '--i': i, '--c': SLOT_HUE[q.slot] } as React.CSSProperties}>
+                <div className="nq-top">
+                  <span className="uv-well nq-well"><Icon3D name={SLOT_ICON[q.slot]} size={34} /></span>
+                  <div className="nq-grow">
+                    <div className="nq-title">{q.title}</div>
+                    <div className="nq-why uv-voice">{q.why}</div>
                   </div>
-                  <span className="mz-qxp">+{q.xp} XP</span>
+                  <span className="nq-xp">+{q.xp} XP</span>
                 </div>
-                <div className="mz-qfoot">
-                  <span className={cn('mz-qstate', st.done && 'f')}>{st.text}</span>
+                <div className="nq-foot">
+                  <span className={cn('nq-state', st.done && 'f')}>
+                    {st.done
+                      ? <Icon3D name="t-tick" size={20} className="nq-state-tick" />
+                      : <i className="nq-state-dot" aria-hidden="true" />}
+                    {st.text}
+                  </span>
                   {label && (
-                    <button type="button" className="mz-qbtn primary np-press" onClick={() => actQuest(q)}>
+                    <button type="button" className="nq-btn primary np-press" onClick={() => actQuest(q)}>
                       {label}
                     </button>
                   )}
                   {offered && rerollsLeft > 0 && (
-                    <button type="button" className="mz-qbtn np-press" disabled={pending} onClick={() => reroll(q.id)}>
+                    <button type="button" className="nq-btn np-press" disabled={pending} onClick={() => reroll(q.id)}>
                       Csere · {rerollsLeft} maradt
                     </button>
                   )}
