@@ -7,13 +7,17 @@
 // Tick semantics are the Today feature's, verbatim (ADR 0010): MANUAL rows
 // check/uncheck through useHabitActions, DERIVED rows open their log
 // surface via logic/habitAction — nothing here self-completes a derivation.
+// ÜVEG (mezo-me75u.3, prototypes/uveg-nap.html `rutin()`): flat round day arrows, a frameless
+// halo hero (3D dawn / sun / moon), three flat stat cells with gold numerals, and each chain
+// group as ONE amber glass card of flat rows: a round tick (done = lit 3D t-tick), the habit's
+// 3D icon, a gold strength bar; the "Most jön" row lights up inside the card (no nested glass).
 // ============================================================
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
+import { ContentIcon, Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { DayNavigator } from '@/shared/ui/DayNavigator'
 import { EntranceGroup, useCountUpOnChange } from '@/shared/ui/mozaik/motion'
-import { MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip } from '@/shared/ui/mozaik'
+import { MozaikPage, PageBody, StatCell, StatStrip } from '@/shared/ui/mozaik'
 import { cn } from '@/shared/lib/cn'
 import { addDays, localDateString } from '@/shared/lib/dates'
 import { emitToast } from '@/shared/lib/toastBus'
@@ -26,7 +30,7 @@ import { habitAction, habitHint } from '@/features/today/logic/habitAction'
 import { celebrationFor } from '@/features/today/logic/habitCelebration'
 import { daypartMilestone } from '@/features/today/logic/chainMilestone'
 import { nextInChain } from '@/features/today/logic/chainPrompt'
-import { habitClayIcon, DAYPART_CLAY } from '@/features/today/logic/habitClayIcon'
+import { habitContentIcon } from '@/features/today/logic/habitClayIcon'
 import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
 import { ReflectSheet } from '@/features/today/sheets/ReflectSheet'
 import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
@@ -40,7 +44,9 @@ import type { HabitDaypart, HabitItem } from '@/data/types'
 type Face = 'reggel' | 'napkozben' | 'este'
 const FACE_ORDER: Face[] = ['reggel', 'napkozben', 'este']
 const FACE_DAYPART: Record<Face, HabitDaypart> = { reggel: 'MORNING', napkozben: 'DAY', este: 'EVENING' }
-const FACE_SPOT: Record<Face, 's-reggel' | 's-energia' | 's-este'> = { reggel: 's-reggel', napkozben: 's-energia', este: 's-este' }
+const FACE_ART: Record<Face, Icon3DName> = { reggel: 't-dawn', napkozben: 't-sun', este: 't-moon' }
+// the hero halo's second hue (uveg-nap.html `rutin()`): coral by day, lavender at night
+const FACE_HALO2: Record<Face, string> = { reggel: 'var(--dv-coral)', napkozben: 'var(--dv-coral)', este: 'var(--dv-lav)' }
 const FACE_TITLE: Record<Face, string> = { reggel: 'Reggeli rutin', napkozben: 'Napközbeni rutin', este: 'Esti rutin' }
 // Only the two seeded dayparts have a 30-day perfect counter in the summary contract — the DAY
 // face therefore shows no such cell at all rather than a fabricated zero (honesty rule).
@@ -194,15 +200,24 @@ export function NapRutinPage() {
     : null
 
   return (
-    <MozaikPage tone="gold" className="nr-page">
-      <PageHead onBack={() => navigate(-1)} label="‹ Ma" />
+    <MozaikPage tone="gold" className="nr-page nap-oldal">
+      <div className="mz-page-head nap-backrow">
+        <button type="button" className="mz-backbtn glass nap-back" onClick={() => navigate(-1)} aria-label="Vissza">
+          <b aria-hidden="true">‹</b> Ma
+        </button>
+      </div>
       <EntranceGroup>
-        <DayNavigator date={date} onChange={setDate} maxDate={today} minDate={yesterday} />
+        <div className="nr-daynav">
+          <DayNavigator date={date} onChange={setDate} maxDate={today} minDate={yesterday} />
+        </div>
         {hero && (
-          <PageHero name={FACE_TITLE[hero.face]} big={`${hero.done}/${hero.items.length}`}
-            sub={`${hero.items.length} elem · lánc`}>
-            <div className="nr-herospot"><ClaySpot name={FACE_SPOT[hero.face]} size={71} /></div>
-          </PageHero>
+          <section className="nap-hero uv-halo"
+            style={{ '--c': 'var(--dv-amber)', '--c2': FACE_HALO2[hero.face] } as React.CSSProperties}>
+            <Icon3D name={FACE_ART[hero.face]} size={86} className="nap-hero-art uv-float" />
+            <div className="nap-hero-num">{hero.done}<small>/{hero.items.length}</small></div>
+            <div className="nap-hero-nm">{FACE_TITLE[hero.face]}</div>
+            <div className="nap-hero-sb">{`${hero.items.length} elem · lánc`}</div>
+          </section>
         )}
         <PageBody principle="A lánc-erő az elmúlt 28 nap konzisztenciája — egy kihagyás nem nullázza, csak halványítja.">
           {hero && (
@@ -220,30 +235,28 @@ export function NapRutinPage() {
                   <span className="nr-groupcount">{g.done}/{g.items.length}</span>
                 </div>
               )}
-              <div className="nr-vcard">
+              <div className="nr-vcard glass" style={{ '--c': 'var(--dv-amber)', '--i': gi } as React.CSSProperties}>
                 {g.items.map((h, ri) => {
                   const act = tickAction(h)
                   const done = h.status === 'done'
                   const hint = habitHint(h)
                   const chain = catalog.chains.find((c) => c.chainKey === h.chain)
-                  const icon = chain
-                    ? habitClayIcon(h.key, chain)
-                    : DAYPART_CLAY[FACE_DAYPART[g.face]]
+                  const icon = habitContentIcon(h.key, chain, FACE_DAYPART[g.face])
                   const isNow = promptRow?.key === h.key
                   return (
-                    <div key={h.key} className={cn('nr-row', isNow && 'now')}>
+                    <div key={h.key} className={cn('nr-row', isNow && 'now', done && 'is-done')}>
                       {act ? (
                         <button type="button" className="nr-tickbtn" aria-label={h.title}
                           disabled={pending} onClick={act}>
-                          <span className={cn('nr-tick', done && 'f')}>{done ? '✓' : ''}</span>
+                          <span className={cn('nr-tick', done && 'f')}>{done && <Icon3D name="t-tick" size={30} />}</span>
                         </button>
                       ) : (
                         <span className="nr-tickbtn" aria-hidden="true">
-                          <span className={cn('nr-tick', done && 'f')}>{done ? '✓' : ''}</span>
+                          <span className={cn('nr-tick', done && 'f')}>{done && <Icon3D name="t-tick" size={30} />}</span>
                         </span>
                       )}
-                      {/* prototype #page-hab habrow: tick · the habit's OWN clay icon · name+bar · % */}
-                      <ClayIcon name={icon} size={28} />
+                      {/* prototype #page-hab habrow: tick · the habit's OWN icon (3D) · name+bar · % */}
+                      <span className="nr-ic" aria-hidden="true"><ContentIcon name={icon} size={30} /></span>
                       <div className="nr-grow">
                         {isNow && <span className="mz-eyebrow nr-nowtag">Most jön</span>}
                         {/* a row carrying its own external content (linkUrl — e.g. `morning_video`)

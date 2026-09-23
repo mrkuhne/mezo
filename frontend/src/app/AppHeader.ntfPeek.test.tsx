@@ -110,6 +110,14 @@ test('a napot csoportcímke viszi, a sor a puszta órát', async () => {
     .toEqual(['Ma', 'Tegnap', 'aug. 15.'])
 })
 
+// Üveg (mezo-me75u.3): a panel TARTALMA a 3D készletet viseli. A `memory_note` clay jele
+// (`i-rend`) a közös térképen a Rend-lánc (`t-chain`) lenne — itt a hívásnál tárolt jegyzet lesz.
+test('a sor ikonja 3D, a kétértelmű clay jel a hívásnál kap nevet', async () => {
+  const rows = await openPeek()
+  expect(rows[0].querySelector('.nap-ntfico use[href="#t-stack"]')).not.toBeNull()
+  expect(rows[0].querySelector('.nap-ntfico use[href="#i-rend"]')).toBeNull()
+})
+
 test('az olvasatlan sor pöttyöt és felolvasható jelzést kap, az olvasott egyiket sem', async () => {
   const rows = await openPeek()
   expect(rows.map((r) => r.classList.contains('unread'))).toEqual([true, false, false])

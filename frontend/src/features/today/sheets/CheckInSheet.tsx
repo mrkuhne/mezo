@@ -4,7 +4,7 @@
 // + opcionális voice/free note
 // ============================================================
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 import { Sheet } from '@/shared/ui/Sheet'
 import { CaptureHeader } from '@/shared/ui/CaptureHeader'
 import { CaptureArt } from '@/shared/ui/CaptureArt'
@@ -116,64 +116,43 @@ export function CheckInSheet({
   }
 
   return (
-    <Sheet onClose={onClose} labelledBy="checkin-title" className="capture-sheet capture-tone-checkin">
+    <Sheet onClose={onClose} labelledBy="checkin-title" className="capture-sheet capture-tone-checkin glass">
       {(close) => (
       <>
       <CaptureHeader id="checkin-title" title="Hogy vagyunk?" eyebrow={`Heartbeat · ${slot.time}`}
         kind="checkin" onClose={close} />
 
-      {/* Step progress */}
-      <div className="row gap-xs" style={{ margin: '16px 0 18px' }}>
-        {[0, 1, 2, 3, 4].map(i => (
-          <div key={i} style={{
-            flex: 1, height: 4, borderRadius: 2,
-            background: i <= step ? 'var(--primary-base)' : 'var(--surface-recess)',
-            transition: 'background 0.3s ease',
-          }} />
-        ))}
+      {/* Üveg (mezo-me75u.3, `SH.checkin`): five lit progress segments, the step's number as the
+          one loud value (the 3D mark + a glowing numeral on a frameless halo in the step's hue),
+          the 1–10 scale as recess → tinted → solid cells. */}
+      <div className="capture-prog" aria-hidden="true">
+        {[0, 1, 2, 3, 4].map(i => <i key={i} className={i <= step ? 'on' : undefined} />)}
       </div>
 
       {/* Step body */}
       {!isLast && (
-        <div className="col gap-lg">
+        <div className="col capture-step" style={{ '--c': dim.color } as CSSProperties}>
           <div className="col gap-xs">
-            <span className="label-mono" style={{ color: dim.color }}>
+            <span className="capture-stepl">
               {String(step + 1).padStart(2, '0')} / 04 · {dim.label}
             </span>
-            <div style={{
-              fontFamily: 'var(--ff-display)',
-              fontSize: 18, fontWeight: 600,
-              lineHeight: 1.25, color: 'var(--text-primary)',
-              textTransform: 'uppercase', letterSpacing: '0.02em',
-              marginTop: 6,
-            }}>
+            <div className="capture-stepq">
               {dim.sub}
             </div>
           </div>
 
           {/* Selected value display */}
-          <div className="capture-check-orbit" data-step={dim.id} style={{ color: dim.color }}>
-            <CaptureArt kind="checkin" />
-            <div style={{
-              fontFamily: 'var(--ff-display)',
-              fontSize: 56, fontWeight: 200, letterSpacing: '-0.04em',
-              lineHeight: 1, color: dim.color,
-              transition: 'color var(--duration-normal) var(--ease-out)',
-            }}>
+          <div className="capture-check-orbit" data-step={dim.id}>
+            <CaptureArt kind="checkin" size={58} />
+            <div className="capture-check-value">
               {values[dim.id]}
+              <small> / 10</small>
             </div>
-            <span className="label-mono" style={{ color: 'var(--text-muted)', marginTop: 4 }}>
-              / 10
-            </span>
           </div>
 
           {/* 1-10 scale */}
           <div>
-            <div className="row capture-rating-scale" style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(10, 1fr)',
-              gap: 4,
-            }}>
+            <div className="capture-rating-scale">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => {
                 const active = values[dim.id] === n
                 const filled = values[dim.id] >= n
@@ -183,28 +162,28 @@ export function CheckInSheet({
                     onClick={() => handleSetValue(n)}
                     className="capture-scale-cell"
                     data-state={active ? 'active' : filled ? 'filled' : undefined}
-                    style={{ '--cell-hue': dim.color, padding: '14px 0', fontSize: 13 } as CSSProperties}
+                    style={{ '--cell-hue': dim.color } as CSSProperties}
                   >
                     {n}
                   </button>
                 )
               })}
             </div>
-            <div className="row mt-sm" style={{ justifyContent: 'space-between' }}>
-              <span className="label-mono" style={{ color: 'var(--text-muted)' }}>{dim.lowLabel}</span>
-              <span className="label-mono" style={{ color: 'var(--text-muted)' }}>{dim.highLabel}</span>
+            <div className="capture-scale-l">
+              <span>{dim.lowLabel}</span>
+              <span>{dim.highLabel}</span>
             </div>
           </div>
 
-          {/* Nav */}
-          <div className="row gap-sm" style={{ paddingTop: 8 }}>
-            {step > 0 && (
-              <button className="cta-ghost flex-1" style={{ padding: '10px' }} onClick={() => setStep(s => s - 1)}>
-                ← Vissza
+          {/* Nav — typographic arrows (aria-hidden), the names stay „Vissza" / „Kihagy" */}
+          <div className="capture-stepnav">
+            {step > 0 ? (
+              <button type="button" onClick={() => setStep(s => s - 1)}>
+                <span aria-hidden="true">‹</span> Vissza
               </button>
-            )}
-            <button className="cta-ghost flex-1" style={{ padding: '10px' }} onClick={() => setStep(s => s + 1)}>
-              Kihagy →
+            ) : <span />}
+            <button type="button" onClick={() => setStep(s => s + 1)}>
+              Kihagy <span aria-hidden="true">›</span>
             </button>
           </div>
         </div>
@@ -214,36 +193,25 @@ export function CheckInSheet({
       {isLast && (
         <div className="col gap-lg">
           <div className="col gap-xs">
-            <span className="eyebrow brand">Megvan · összegzés</span>
-            <div style={{
-              fontFamily: 'var(--ff-display)',
-              fontSize: 18, fontWeight: 600,
-              lineHeight: 1.25, color: 'var(--text-primary)',
-              textTransform: 'uppercase', letterSpacing: '0.02em',
-              marginTop: 6,
-            }}>
+            <span className="capture-sum-eyebrow">Megvan · összegzés</span>
+            <div className="capture-sum-title">
               Bármi még amit szeretnél?
             </div>
           </div>
 
           {/* Summary grid */}
-          <div className="row gap-sm" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+          <div className="capture-sum4">
             {CHECKIN_DIMS.map(d => (
               <button
                 key={d.id}
+                type="button"
                 onClick={() => setStep(CHECKIN_DIMS.findIndex(x => x.id === d.id))}
-                className="card"
-                style={{ padding: 12, textAlign: 'left', background: 'var(--surface-1)' }}
+                className="capture-sum"
+                style={{ '--c': d.color } as CSSProperties}
               >
-                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className="label-mono" style={{ color: d.color }}>{d.label}</span>
-                  <span style={{ fontFamily: 'var(--ff-display)', fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', color: d.color, lineHeight: 1 }}>
-                    {values[d.id]}
-                  </span>
-                </div>
-                <div className="bar mt-sm" style={{ height: 3 }}>
-                  <div className="bar-fill" style={{ width: (values[d.id] * 10) + '%', background: d.color }} />
-                </div>
+                <small>{d.label}</small>
+                <b>{values[d.id]}</b>
+                <span className="uv-bar" aria-hidden="true"><b style={{ '--w': (values[d.id] * 10) + '%' } as CSSProperties} /></span>
               </button>
             ))}
           </div>
@@ -272,8 +240,8 @@ export function CheckInSheet({
 
           {/* Save */}
           {saveError && <p role="alert">A mentés nem sikerült. A szöveged megmaradt, próbáld újra.</p>}
-          <button className="cta-primary" disabled={saving} onClick={() => { void save(close) }}>
-            <Icon name="check" size={16} />
+          <button className="cta-primary capture-save" disabled={saving} onClick={() => { void save(close) }}>
+            <Icon3D name="t-tick" size={22} />
             <span>{saving ? 'Mentés…' : `Mentés · ${slot.time}`}</span>
           </button>
         </div>

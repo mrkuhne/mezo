@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { CaptureHeader } from '@/shared/ui/CaptureHeader'
-import { Icon } from '@/shared/ui/Icon'
 import { useActivityActions } from '@/data/hooks'
 import { buildQuestRewardToast } from '@/features/progression/logic/rewardToast'
 import { LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
-import { ClayIcon } from '@/shared/ui/clay'
+import { ContentIcon, Icon3D } from '@/shared/ui/clay'
 import { localDateString } from '@/shared/lib/dates'
 import { emitToast } from '@/shared/lib/toastBus'
 import type { ActivityEntry, DailyQuest, LifeSkillKey } from '@/data/types'
@@ -62,20 +61,19 @@ export function ActivityLogSheet({ onClose, onBack, quest, entry }: ActivityLogS
   const doneMeta = skillMeta(result?.entry.skillKey)
 
   return (
-    <Sheet onClose={onClose} labelledBy="activity-log-title" className="capture-sheet capture-tone-journal">
+    <Sheet onClose={onClose} labelledBy="activity-log-title" className="capture-sheet capture-tone-journal glass">
       {(close) => (
         <div className="col" style={{ padding: '4px 4px 8px' }}>
           <CaptureHeader id="activity-log-title" title="Mi történt ma?" eyebrow="Tevékenységnapló"
-            subtitle="A kis lépések is a napod részei." kind="journal" onClose={close} onBack={onBack} />
+            subtitle="A kis lépések is a napod részei." kind="activity" onClose={close} onBack={onBack} />
 
           {quest && phase === 'compose' && (
-            <div className="card" style={{ padding: 12, marginBottom: 14, background: 'var(--primary-bg)', borderColor: 'var(--primary-soft)' }}>
-              <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-                <Icon name="sparkle" size={11} color="var(--primary-deep)" />
-                <div className="col" style={{ flex: 1, gap: 3 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.4 }}>{quest.title}</span>
-                  <span className="text-tertiary" style={{ fontSize: 12 }}>+{quest.xp} XP a teljesítésért</span>
-                </div>
+            // Üveg (mezo-me75u.3, `SH.activity`): the quest banner is a flat gold callout, not a card.
+            <div className="capture-quest">
+              <Icon3D name="t-quest" size={24} />
+              <div className="col" style={{ flex: 1, gap: 3 }}>
+                <span className="capture-quest-title">{quest.title}</span>
+                <span className="capture-quest-xp">+{quest.xp} XP a teljesítésért</span>
               </div>
             </div>
           )}
@@ -91,9 +89,9 @@ export function ActivityLogSheet({ onClose, onBack, quest, entry }: ActivityLogS
                 </div>
                 <p className="text-tertiary" style={{ fontSize: 12, lineHeight: 1.5 }}>Az AI besorolja, és a megfelelő LIFE skillhez írja az XP-t.</p>
               </div>
-              <div className="row gap-sm mt-lg">
+              <div className="capture-actions">
                 <button className="cta-ghost flex-1" onClick={close}>Mégse</button>
-                <button className="cta-primary flex-1" onClick={submit} disabled={!text.trim() || pending}>Naplózom</button>
+                <button className="cta-primary capture-save flex-1" onClick={submit} disabled={!text.trim() || pending}>Naplózom</button>
               </div>
             </>
           )}
@@ -104,11 +102,10 @@ export function ActivityLogSheet({ onClose, onBack, quest, entry }: ActivityLogS
               <div className="card" style={{ padding: 10 }}>
                 <p className="text-tertiary" style={{ font: 'italic 500 14px/1.45 var(--ff-serif)' }}>„{pickTarget.text}"</p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 4 }}>
+              <div className="capture-skillchips">
                 {LIFE_SKILLS.map(s => (
-                  <button key={s.key} className="chip" disabled={pending} onClick={() => pick(s.key)}
-                    style={{ justifyContent: 'flex-start', cursor: 'pointer' }}>
-                    <ClayIcon name={s.clayIcon} size={13} /> {s.name}
+                  <button key={s.key} className="capture-skillchip" disabled={pending} onClick={() => pick(s.key)}>
+                    <ContentIcon name={s.clayIcon} size={26} /> {s.name}
                   </button>
                 ))}
               </div>
@@ -117,24 +114,21 @@ export function ActivityLogSheet({ onClose, onBack, quest, entry }: ActivityLogS
 
           {phase === 'done' && result && (
             <>
-              <div className="col gap-sm">
-                <div className="card" style={{ padding: 14, background: 'var(--primary-bg)', borderColor: 'var(--primary-soft)' }}>
-                  <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 5 }}>{doneMeta ? <><ClayIcon name={doneMeta.clayIcon} size={14} /> {doneMeta.name}</> : result.entry.text}</span>
-                    <span className="chip" style={{ whiteSpace: 'nowrap' }}>+{result.entry.xpAwarded} XP</span>
-                  </div>
-                </div>
+              {/* Üveg (mezo-me75u.3, `SH.activity` done): the coin, the skill as a flat chip and the
+                  earned XP as the one gold numeral. */}
+              <div className="capture-gotit">
+                <Icon3D name="t-coin" size={70} className="capture-gotit-art" />
+                <span className="capture-gotit-skill">{doneMeta ? <><ContentIcon name={doneMeta.clayIcon} size={20} /> {doneMeta.name}</> : result.entry.text}</span>
+                <b className="capture-xp">+{result.entry.xpAwarded} XP</b>
                 {result.completedQuest && (
-                  <div className="card" style={{ padding: 10 }}>
-                    <div className="row gap-sm" style={{ alignItems: 'center' }}>
-                      <Icon name="check" size={12} color="var(--success-hover)" />
-                      <span style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.4 }}>Küldetés teljesítve: {result.completedQuest.title} (+{result.completedQuest.xp} XP)</span>
-                    </div>
-                  </div>
+                  <p className="capture-gotit-quest">
+                    <Icon3D name="t-tick" size={18} />
+                    <span>Küldetés teljesítve: {result.completedQuest.title} (+{result.completedQuest.xp} XP)</span>
+                  </p>
                 )}
               </div>
-              <div className="row gap-sm mt-lg">
-                <button className="cta-primary flex-1" onClick={close}>Kész</button>
+              <div className="capture-actions is-single">
+                <button className="cta-primary capture-save flex-1" onClick={close}>Kész</button>
               </div>
             </>
           )}

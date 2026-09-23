@@ -202,6 +202,12 @@ something new extends the kit, never forks a second recipe.
   `t-pin`, `t-weight`, `t-pattern`, `t-chef`; sheet: `prototypes/uveg-fuel-tobbi.html#ikonok`),
   and `CLAY_TO_3D` now maps the rest of Fuel's clay names. Each U2 surface owns one block at the
   end of `prototype.css`: `── uveg fuel konyha|receptek|log|stack|trendek (`.
+- **U3 (`mezo-me75u.3`) additions.** 11 owner-approved icons (`t-checkin`, `t-quick`, `t-steps`,
+  `t-people`, `t-chain`, `t-quest`, `t-harvest`, `t-coin`, `t-orb`, `t-flask`, `t-scroll`, plus the
+  `tg-rose` / `tg-glass` gradients; sheet: `prototypes/uveg-nap.html#ikonok`); `CLAY_TO_3D` gained the
+  context-free Nap meanings (check-in, emberek, rend, kihívás, érme, memoár, heti, tudás, futás).
+  `CaptureArt` is a kind → 3D map (`CAPTURE_ART`), so every capture header wears the 3D set. Blocks:
+  `── uveg nap mai|oldalak|rogzites|uzenetek|napzaras (`. `shared/ui/Island.tsx` (dead) is gone.
 - **Glass chrome — `── uveg chrome (` block (bible §7).** Same content and behavior, glass
   material: the header's round `.glass.is-round` buttons (badges outside), the gradient "boop"
   wordmark, the header fade with a backdrop blur, `DayOrb` redrawn as a glass sphere holding a

@@ -34,7 +34,9 @@ test('a fresh card renders the italic Mezo sentence, the question and three chip
   const chips = document.querySelectorAll('.nap-obs-chips button')
   expect(chips).toHaveLength(3)
   expect([...chips].map((c) => c.textContent)).toEqual(['Igen, figyeld', 'Nem stimmel', 'Mesélj'])
-  expect(document.querySelector('.nap-obs use[href="#i-naplo"]')).not.toBeNull()
+  // the source icon (wire `naplo` → clay i-naplo) wears its 3D face (üveg bible §4)
+  expect(document.querySelector('.nap-obs use[href="#t-journal"]')).not.toBeNull()
+  expect(document.querySelector('.nap-obs.glass')).not.toBeNull()
 })
 
 // A dróton az időpont UTC-ben jön (`…T12:12:00Z`). A nyers karakterlánc-szeletelés az UTC
@@ -123,12 +125,21 @@ test('the chip group is disabled while that card’s reply is in flight — no d
   expect(onReply).not.toHaveBeenCalled()
 })
 
-test('a watching card shows the 8-slot tally as text glyphs, the 5 / 8 progress and the lab link', () => {
+test('a watching card shows the 8-slot tally (hit / miss / empty marks), the 5 / 8 progress and the lab link', () => {
   renderCard(watching)
   expect(screen.getByText('GYŰLIK')).toBeInTheDocument()
   const slots = document.querySelectorAll('.nap-obs-tally i')
   expect(slots).toHaveLength(8)
-  expect([...slots].map((s) => s.textContent).join('')).toBe('✓✓✓✓✕···')
+  // mezo-me75u.3: the ✓/✕/· text glyphs became 3D tick / skip marks + a flat dot — the
+  // meaning stays in the data hook AND in each slot's accessible text.
+  expect([...slots].map((s) => s.getAttribute('data-slot')))
+    .toEqual(['hit', 'hit', 'hit', 'hit', 'miss', 'none', 'none', 'none'])
+  expect([...slots].map((s) => s.textContent)).toEqual([
+    'bejött', 'bejött', 'bejött', 'bejött', 'nem jött be', 'még nincs adat', 'még nincs adat', 'még nincs adat',
+  ])
+  expect(slots[0].querySelector('use[href="#t-tick"]')).not.toBeNull()
+  expect(slots[4].querySelector('use[href="#t-skip"]')).not.toBeNull()
+  expect(document.querySelector('.nap-obs-tally')?.textContent).not.toMatch(/[✓✕·]/)
   expect(document.querySelector('.nap-obs-tally')).toHaveAttribute(
     'aria-label', 'Napok: bejött, nem jött be, még nincs adat',
   )

@@ -25,7 +25,6 @@ vi.mock('@/features/today/logic/useNeeds', async (importOriginal) => {
   const { NEED_META, bandOf: band } = await import('@/features/today/logic/needs')
   const states = (Object.keys(PCTS) as NeedKey[]).map((key): NeedState => ({
     key,
-    emoji: NEED_META[key].emoji,
     label: NEED_META[key].label,
     color: NEED_META[key].color,
     pct: PCTS[key],
@@ -111,6 +110,18 @@ test('six need tiles render with the prototype-verbatim labels and their pct', a
   for (const pct of [72, 43, 88, 30, 60, 55]) {
     expect(screen.getByText(`${pct}%`)).toBeInTheDocument()
   }
+})
+
+test('Üveg (mezo-me75u.3): six glass tiles, each on its need 3D icon; the hero disc holds the 3D heart', async () => {
+  renderPage()
+  await screen.findByRole('button', { name: 'Étel logolása' })
+  const tiles = document.querySelectorAll('.ej-tile.glass')
+  expect(tiles).toHaveLength(6)
+  const icons = [...tiles].map((t) => t.querySelector('use')?.getAttribute('href'))
+  expect(icons).toEqual(['#t-bowl', '#t-water', '#t-sleep', '#t-dumbbell', '#t-people', '#t-chain'])
+  expect(document.querySelector('.ej-bigring .ej-core use[href="#t-heart"]')).not.toBeNull()
+  // the static Rend tile is glass too, but still not a button
+  expect(document.querySelector('.ej-tile.is-static')?.tagName).toBe('DIV')
 })
 
 test('the Víz tile logs +2,5 dl IN PLACE — no navigation, no sheet', async () => {

@@ -1,7 +1,7 @@
 // Global header: settings entry keeps the originating page for return navigation.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { ClayIcon, ContentIcon, type ClayIconName, type Icon3DName } from '@/shared/ui/clay'
 import { DayOrb } from '@/shared/ui/DayOrb'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
@@ -23,6 +23,20 @@ import { useCondensedHeader } from '@/app/useCondensedHeader'
  *  fejléc-panel nem a feed második példánya, és egy több százas lista görgetése ott a helyes. */
 const NTF_PANEL_CAP = 30
 type NtfFilter = 'all' | 'unread' | NotificationCategoryId
+
+/** The notification panel's CONTENT icons wear the 3D set (üveg bible §4/§7.1, mezo-me75u.3,
+ *  prototypes/uveg-nap.html — the bell). The chrome buttons above keep their clay icons. The clay
+ *  names that mean something else elsewhere are named here, at the call site (bible rule 7); the
+ *  rest go through `CLAY_TO_3D`, and an unmapped one (the `i-ertesites` fallback) stays clay. */
+const NTF_3D: Partial<Record<ClayIconName, Icon3DName>> = {
+  'i-kristaly': 't-orb',     // Jóslatok / prediction_* — a forecast, not a score
+  'i-lombik': 't-flask',     // Kísérletek
+  'i-termes': 't-harvest',   // habit_formation
+  'i-retegek': 't-people',   // graph_candidate (an Emberek-category row)
+  'i-muhely': 't-chef',      // konzilium_verdict
+  'i-rend': 't-stack',       // memory_note — a stored note, not the Rend chain
+}
+const ntfIcon = (name: ClayIconName): ClayIconName | Icon3DName => NTF_3D[name] ?? name
 
 export function AppHeader() {
   const navigate = useNavigate()
@@ -202,7 +216,7 @@ export function AppHeader() {
                 aria-label={`${c.label}, ${c.n} értesítés`}
                 className={cn(c.id === activeNtfFilter && 'on')}
                 onClick={() => setNtfFilter(c.id)}>
-                {c.icon && <ClayIcon name={c.icon} size={17} />}
+                {c.icon && <ContentIcon name={ntfIcon(c.icon)} size={17} />}
                 <span>{c.label}</span>
                 <span className="n">{c.n}</span>
               </button>
@@ -228,7 +242,7 @@ export function AppHeader() {
                       className={cn('nap-ntfrow', n.readAt === null && 'unread')}
                       onClick={() => { setNtfOpen(false); if (n.deeplink) navigate(n.deeplink) }}>
                       <span className={cn('nap-ntfico', meta.tint)} aria-hidden="true">
-                        <ClayIcon name={meta.clay} size={24} />
+                        <ContentIcon name={ntfIcon(meta.clay)} size={28} />
                       </span>
                       <span className="nap-ntftxt">
                         <span className="nap-ntf-t">{n.title}</span>

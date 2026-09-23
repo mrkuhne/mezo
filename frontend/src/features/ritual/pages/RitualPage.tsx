@@ -36,7 +36,7 @@ function StarField() {
   )
 }
 
-/** Past acts are lavender clay beads, the current one gold — reporting progress, never navigable. */
+/** Past acts are dim amber dots, the current one a lit amber pill — reporting progress, never navigable. */
 function beadClass(i: number, act: number) {
   if (i + 1 === act) return 'rz-dot cur'
   return i + 1 < act ? 'rz-dot on' : 'rz-dot'
@@ -120,6 +120,8 @@ export function RitualPage() {
 
   return (
     <div className="rz-screen" data-act={act}>
+      {/* Üveg (mezo-me75u.3): the blurred colour field the act's glass refracts (bible §1). */}
+      <div className="uv-aurora rz-aurora" aria-hidden="true"><i /><i /><i /><i /></div>
       <StarField />
       <div className="rz-top">
         <div className="rz-dots" aria-hidden="true">
@@ -127,7 +129,7 @@ export function RitualPage() {
             <span key={i} className={beadClass(i, act)} />
           ))}
         </div>
-        <button className="rz-exit" aria-label="Kilépés" onClick={() => navigate('/nap')}>✕</button>
+        <button className="rz-exit" aria-label="Kilépés" onClick={() => navigate('/nap')}>Kilépés</button>
       </div>
 
       {act === 1 && <ArrivalStep onNext={() => setAct(2)} />}

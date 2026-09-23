@@ -1557,12 +1557,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   safeMarkdown.tsx, screenScroll.ts, seenMessages.ts, theme.ts, toastBus.ts, tutorialSeen.ts, userScope.ts
 - **ui:** AdherenceBar.tsx, CaptureArt.tsx, CaptureHeader.tsx, Chip.tsx, CoachBubble.tsx, CountUp.tsx, Cta.tsx,
   DatePicker.tsx, DayNavigator.tsx, DayOrb.tsx, Display.tsx, ErrorBoundary.tsx, Eyebrow.tsx, GhostState.tsx, Icon.tsx,
-  Island.tsx, ItemCard.tsx, ItemRow.tsx, NumberInput.tsx, ProgressBar.tsx, RefTag.tsx, ScoreRing.tsx,
-  ScreenSkeleton.tsx, Sheet.tsx, Skeleton.tsx, SortableList.tsx, Spinner.tsx, StatCell.tsx, StatStrip.tsx, Stepper.tsx,
-  ToastProvider.tsx, Toggle.tsx, ToolChip.tsx, ToolChipRow.tsx, TrendChart.tsx, capture.css, clay/boop/Boop.tsx,
-  clay/boop/boop.svg, clay/clay-icons.svg, clay/clay-spots.svg, clay/index.tsx, clay/titanium-icons.svg,
-  kalauz/KalauzSheet.tsx, kalauz/KalauzWelcome.tsx, mozaik/GlassBox.tsx, mozaik/arrival.tsx, mozaik/index.tsx,
-  mozaik/motion.tsx, sectionLabel.ts
+  ItemCard.tsx, ItemRow.tsx, NumberInput.tsx, ProgressBar.tsx, RefTag.tsx, ScoreRing.tsx, ScreenSkeleton.tsx,
+  Sheet.tsx, Skeleton.tsx, SortableList.tsx, Spinner.tsx, StatCell.tsx, StatStrip.tsx, Stepper.tsx, ToastProvider.tsx,
+  Toggle.tsx, ToolChip.tsx, ToolChipRow.tsx, TrendChart.tsx, capture.css, clay/boop/Boop.tsx, clay/boop/boop.svg,
+  clay/clay-icons.svg, clay/clay-spots.svg, clay/index.tsx, clay/titanium-icons.svg, kalauz/KalauzSheet.tsx,
+  kalauz/KalauzWelcome.tsx, mozaik/GlassBox.tsx, mozaik/arrival.tsx, mozaik/index.tsx, mozaik/motion.tsx,
+  sectionLabel.ts
 
 ### test infrastructure — `backend/src/test/java/io/mrkuhne/mezo/support`, `frontend/src/test`
 

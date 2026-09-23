@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { mockHabitCatalog } from '@/data/habit/habitMock'
-import { CURATED_HABIT_KEYS, habitClayIcon } from '@/features/today/logic/habitClayIcon'
+import { CLAY_TO_3D, type ClayIconName } from '@/shared/ui/clay'
+import { CURATED_HABIT_KEYS, habitClayIcon, habitContentIcon } from '@/features/today/logic/habitClayIcon'
 import type { HabitChainInfo, HabitDefInfo } from '@/data/types'
 
 const def = (habitKey: string, skillKey: string): HabitDefInfo => ({
@@ -36,5 +37,28 @@ describe('habitClayIcon — a prototípus per-szokás `data-habicon`-ja', () => 
       .flatMap((c) => c.defs.map((d) => d.habitKey))
       .filter((k) => !CURATED_HABIT_KEYS.includes(k))
     expect(missing).toEqual([])
+  })
+})
+
+describe('habitContentIcon — a Rutin-sor 3D ikonja (Üveg, mezo-me75u.3)', () => {
+  test('a kétértelmű clay-glifák hívóhelyi 3D nevet kapnak', () => {
+    const c = chain([])
+    expect(habitContentIcon('morning_workout', c, 'MORNING')).toBe('t-run')
+    expect(habitContentIcon('protein_breakfast', c, 'MORNING')).toBe('t-protein')
+    expect(habitContentIcon('evening_ritual', c, 'EVENING')).toBe('t-moon')
+    expect(habitContentIcon('wind_down', c, 'EVENING')).toBe('t-sleep')
+  })
+
+  test('a többi a clay-névre esik vissza, lánc nélkül a napszakéra', () => {
+    expect(habitContentIcon('morning_weigh_in', chain([]), 'MORNING')).toBe('i-suly')
+    expect(habitContentIcon('x', undefined, 'EVENING')).toBe('i-alvas')
+  })
+
+  test('minden kurált szokás 3D ikonon ül (nincs clay-tartalék a Rutin-lapon)', () => {
+    for (const key of CURATED_HABIT_KEYS) {
+      const name = habitContentIcon(key, chain([]), 'MORNING')
+      const is3D = name.startsWith('t-') || CLAY_TO_3D[name as ClayIconName] !== undefined
+      expect(is3D, key).toBe(true)
+    }
   })
 })

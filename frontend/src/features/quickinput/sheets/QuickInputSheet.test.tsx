@@ -142,11 +142,13 @@ test('a navigating tile closes the sheet and routes to its target', async () => 
 
 // ── Quick Log tile redesign (mezo-7lst) ────────────────────────────────────
 
-test('each tile carries its own decorative clay symbol, not a Titanium sculpture (mezo-reocc)', () => {
+// Üveg (mezo-me75u.3): the tiles wear the capture family's Titanium 3D marks (bible §4) — the same
+// symbol the capture sheet each opens shows in its header (CaptureArt, restored bible rule 28).
+test('each tile carries its own decorative 3D capture symbol (mezo-me75u.3)', () => {
   renderSheet()
   const art: Record<string, string> = {
-    'Étkezés': 'i-fuel', 'Víz': 'i-viz', 'Stack': 'i-stack', 'Edzés': 'i-edzes', 'Sport': 'i-sport',
-    'Súly': 'i-suly', 'Check-in': 'i-checkin', 'Napló': 'i-naplo', 'Alvás': 'i-alvas',
+    'Étkezés': 't-bowl', 'Víz': 't-water', 'Stack': 't-supps', 'Edzés': 't-dumbbell', 'Sport': 't-volley',
+    'Súly': 't-weight', 'Check-in': 't-checkin', 'Napló': 't-journal', 'Alvás': 't-sleep',
   }
   for (const [label, symbol] of Object.entries(art)) {
     const button = screen.getByRole('button', { name: label })
@@ -351,7 +353,9 @@ test('driving a check-in all the way to Mentés closes the sheet (regression)', 
   // Skip every dimension (the auto-advance-on-tap step) to reach the summary/save step —
   // agnostic to which slot index was picked, since it only depends on the dimension count.
   for (let i = 0; i < CHECKIN_DIMS.length; i++) {
-    await userEvent.click(screen.getByText('Kihagy →'))
+    // the step nav's arrows are typographic and aria-hidden (Üveg, mezo-me75u.3): the button's
+    // name is the word itself
+    await userEvent.click(screen.getByRole('button', { name: /^Kihagy/ }))
   }
 
   const saveButton = await screen.findByText(/Mentés ·/)

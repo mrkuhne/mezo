@@ -3,7 +3,7 @@ import { useCheckins, useIntentionActions, useIntentionDay } from '@/data/hooks'
 import type { Reflection } from '@/data/types'
 import { openLoops } from '@/features/ritual/logic/openLoops'
 import { localDateString } from '@/shared/lib/dates'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 
 const REFLECT_LABEL: Record<Reflection, string> = { yes: 'Igen', partial: 'Részben', no: 'Nem' }
 
@@ -19,7 +19,7 @@ const REFLECT_LABEL: Record<Reflection, string> = { yes: 'Igen', partial: 'Rész
  *
  * The reflect row is INLINE (the IntentionBanner precedent, IntentionBanner.tsx:85-100) rather
  * than a sheet: the three Igen/Részben/Nem buttons call `useIntentionActions(date).reflect`
- * directly, collapsing to a checkmark line once `reflection` is set. It only renders at all
+ * directly, collapsing to a 3D-tick line once `reflection` is set. It only renders at all
  * when the day HAS a focus — with none, there is nothing to reflect on (openLoops.ts).
  *
  * The journal row is deliberately EVERGREEN — no closed state, never glows, and excluded from
@@ -51,24 +51,26 @@ export function LoopsStep({ onNext, onOpenCheckIn, onOpenJournal }: {
       <p className="rz-loops-sub">Zárd le, ami még nyitva — aztán elengedheted.</p>
 
       {nothingOpen ? (
-        <div className="rz-loop rz-nw rz-loop-beat np-anim" style={{ '--i': 0 } as CSSProperties}>
-          Minden hurok zárva ✓
+        <div className="rz-loop glass rz-loop-beat np-anim" data-hue="sage" style={{ '--i': 0 } as CSSProperties}>
+          <Icon3D name="t-tick" size={24} className="rz-loop-mk" />
+          <span className="rz-loop-text">Minden hurok zárva</span>
         </div>
       ) : (
         <>
           <div
-            className={`rz-loop rz-nw np-anim${checkinOpen ? (firstOpen === 'checkin' ? ' glow' : '') : ' rz-loop-done'}`}
+            data-hue="rose"
+            className={`rz-loop glass np-anim${checkinOpen ? (firstOpen === 'checkin' ? ' glow' : '') : ' rz-loop-done'}`}
             style={{ '--i': 0 } as CSSProperties}
           >
             {checkinOpen ? (
               <>
-                <span className="rz-nw-spot" aria-hidden="true"><ClayIcon name="i-checkin" size={19} /></span>
+                <Icon3D name="t-checkin" size={38} className="rz-loop-ico" />
                 <span className="rz-loop-text">{nextSlot?.time} check-in kimaradt</span>
                 <button className="rz-loop-act" onClick={onOpenCheckIn}>Koppints</button>
               </>
             ) : (
               <>
-                <span className="rz-loop-mk" aria-hidden="true">✓</span>
+                <Icon3D name="t-tick" size={24} className="rz-loop-mk" />
                 <span className="rz-loop-text">{checkinsDone}/{checkins.length} check-in kész</span>
               </>
             )}
@@ -76,12 +78,13 @@ export function LoopsStep({ onNext, onOpenCheckIn, onOpenJournal }: {
 
           {hasFoci && (
             <div
-              className={`rz-loop rz-nw np-anim${reflectOpen ? (firstOpen === 'reflect' ? ' glow' : '') : ' rz-loop-done'}`}
+              data-hue="amber"
+              className={`rz-loop glass np-anim${reflectOpen ? (firstOpen === 'reflect' ? ' glow' : '') : ' rz-loop-done'}`}
               style={{ '--i': 1 } as CSSProperties}
             >
               {reflectOpen ? (
                 <>
-                  <span className="rz-nw-spot" aria-hidden="true"><ClayIcon name="i-cel" size={19} /></span>
+                  <Icon3D name="t-ring" size={38} className="rz-loop-ico" />
                   <span className="rz-loop-text">Szándékkal élted a napot?</span>
                   <span className="rz-loop-chips">
                     {(['yes', 'partial', 'no'] as Reflection[]).map((v) => (
@@ -91,7 +94,7 @@ export function LoopsStep({ onNext, onOpenCheckIn, onOpenJournal }: {
                 </>
               ) : (
                 <>
-                  <span className="rz-loop-mk" aria-hidden="true">✓</span>
+                  <Icon3D name="t-tick" size={24} className="rz-loop-mk" />
                   <span className="rz-loop-text">A mai szándékodra reflektáltál.</span>
                 </>
               )}
@@ -100,8 +103,8 @@ export function LoopsStep({ onNext, onOpenCheckIn, onOpenJournal }: {
         </>
       )}
 
-      <div className="rz-loop rz-nw np-anim" style={{ '--i': 2 } as CSSProperties}>
-        <span className="rz-nw-spot" aria-hidden="true"><ClayIcon name="i-naplo" size={19} /></span>
+      <div className="rz-loop glass np-anim" data-hue="sage" style={{ '--i': 2 } as CSSProperties}>
+        <Icon3D name="t-journal" size={38} className="rz-loop-ico" />
         <span className="rz-loop-text">Történt még valami ma?</span>
         <button className="rz-loop-act" onClick={onOpenJournal}>Napló</button>
       </div>
