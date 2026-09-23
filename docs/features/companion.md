@@ -8902,8 +8902,14 @@ The feed reuses the chat read stack through `CompanionToolRegistry.feedCallbacks
 domain readers, `PersonalRecordTools`, and `FeedContextTools` memory search. It excludes the
 current-conversation history tool. `PersonalMemorySearchService` shares the existing memory
 adapter with chat while attributing feed retrieval to its own operation; no synthetic conversation
-ID is created. Feed memory output omits undated legacy fact assertions. The gated proactive writers now use
+ID is created. Feed memory output omits undated legacy fact assertions. Feed also reuses `ToolCatalogue`,
+`PlanValidator`, `PlanExecutor` and `ToolOutcomeDigest` in its optional reasoned read loop
+([ADR 0051](../decisions/0051-contextual-feed-reasoned-read-loop.md)); the chat path is unchanged.
+The gated proactive writers now use
 this stack for all eight daily kinds; verbatim question cards preserve their existing wording.
+`get_weight_trend` labels its full-history and trailing-28-day **EWMA** slopes with actual dates;
+`weeks` controls the displayed weekly points, not the fitted full-history slope. Raw endpoint
+change is distinct from those smoothed rates. The underlying trend calculation is unchanged.
 
 ## 10. Key files
 

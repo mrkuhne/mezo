@@ -18,7 +18,9 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(properties = "mezo.feature.contextual-feed.enabled=true")
 class FeedGenerationServiceIT extends AbstractIntegrationTest {
     @Autowired private tools.jackson.databind.ObjectMapper mapper;
+    @Autowired private io.mrkuhne.mezo.support.populator.WeightLogPopulator weights;
     @Autowired private FeedGenerationService generator;
+    @Autowired private io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm fake;
     @Autowired private DatabasePopulator users;
     @Autowired private CompanionMessagePopulator messages;
     @Autowired private CompanionMessageRepository repository;
@@ -63,6 +65,47 @@ class FeedGenerationServiceIT extends AbstractIntegrationTest {
                 CompanionMessageEnvelope.class);
         assertThat(legacy.trace()).isNull();
         assertThat(legacy.body()).containsExactly("Szöveg");
+    }
+
+    @Test
+    void testGenerate_shouldResolveOnlyCollectedSources_whenModelSelectsForeignAndInventedIds() {
+        var user = users.populateUser("feed-citations@test.local");
+        var other = users.populateUser("feed-citations-other@test.local");
+        var date = LocalDate.now();
+        var own = weights.createWeightLog(user, date, new java.math.BigDecimal("81.2"));
+        var foreign = weights.createWeightLog(other, date, new java.math.BigDecimal("91.2"));
+        var prior = messages.createMessage(user, date.minusDays(1), "weight", "Korábban", List.of("Előzmény"));
+        String answer = mapper.writeValueAsString(java.util.Map.of("eyebrow", "Mérés", "body", List.of("Mai mérés"),
+                "sourceRefs", List.of(java.util.Map.of("kind", "weight_log", "id", own.getId().toString()),
+                        java.util.Map.of("kind", "companion_message", "id", prior.getId().toString()),
+                        java.util.Map.of("kind", "weight_log", "id", foreign.getId().toString()),
+                        java.util.Map.of("kind", "weight_log", "id", "invented"))));
+        String script = java.util.Base64.getEncoder().encodeToString(answer.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        var result = generator.generate(user, date, "weight", "[fake-contextual-json:" + script + "]");
+        assertThat(result).isNotNull();
+        assertThat(result.refs()).extracting(r -> r.kind()).containsExactly("Weight", "Memory");
+        assertThat(result.refs().getFirst().label()).contains("Súlymérés");
+        assertThat(result.refs().getLast().label()).contains("Korábbi Mezo");
+        assertThat(result.trace().sourceRefs()).extracting(r -> r.id()).contains(own.getId().toString())
+                .doesNotContain(foreign.getId().toString(), "invented");
+    }
+
+    @Test
+    void testGenerate_shouldUseOneReasonedCall_whenEvidenceAlreadySuffices() {
+        var user = users.populateUser("feed-reasoned@test.local");
+        int before = fake.feedSmartCallCount();
+        assertThat(generator.generate(user, LocalDate.now(), "morning", "Mai feljegyzés")).isNotNull();
+        assertThat(fake.feedSmartCallCount() - before).isEqualTo(1);
+    }
+
+    @Test
+    void testGenerate_shouldStopRepeatedReads_whenModelRequestsSameToolAgain() {
+        var user = users.populateUser("feed-repeat@test.local");
+        var result = generator.generate(user, LocalDate.now(), "weight",
+                "[fake-tool:get_weight_log {\"days\":7}] [fake-feed-repeat-read]");
+        assertThat(result).isNotNull();
+        assertThat(result.trace().toolCalls().calls()).hasSize(1);
+        assertThat(result.trace().degradedReason()).isEqualTo("read_loop_stopped");
     }
 
 }

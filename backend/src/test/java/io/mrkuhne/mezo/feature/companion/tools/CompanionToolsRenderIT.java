@@ -135,7 +135,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         }
         String out = biometricsTools.getWeightTrend(2, ctx(owner));
         assertThat(out).startsWith("Súlytrend (2 hét): trendsúly ").contains(" kg")
-                .contains("Heti trendpontok: ");
+                .contains("Heti trendpontok: ", "teljes EWMA-sor", "nem az utolsó hét", "EWMA-pontok üteme");
         assertThat(audit.toRefsEnvelope().refs())
                 .extracting(r -> r.kind()).containsExactly("WeightTrend");
     }
@@ -159,7 +159,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
         String out = biometricsTools.getWeightTrend(2, ctx(owner));
 
-        assertThat(out).doesNotContain(".");
+        assertThat(out).doesNotContainPattern("\\d\\.\\d");
         assertThat(out).matches("(?s).*trendsúly \\d+,\\d kg.*")
                 .matches("(?s).*heti ütem -?\\d+,\\d{2} kg.*")
                 .matches("(?s).*\\(-?\\d+,\\d{2}%/hét\\).*")

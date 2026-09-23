@@ -35,7 +35,8 @@ class FeedEvidenceAssemblerIT extends AbstractIntegrationTest {
         goals.createGoalFull(user, DAY.minusDays(3), DAY.plusDays(90), null, null, null, null);
         String result = evidence.render(user, DAY, "weight");
         assertThat(result).contains("2026-09-17", "79,0 kg", "85,0 kg", "2026-09-20",
-                "teljes mérési időszak", "2026-08-04", "28 nap", "2026-08-27", "kg/hét")
+                "teljes mérési időszak", "2026-08-04", "28 nap", "2026-08-27", "kg/hét",
+                "nyers végpontkülönbség", "EWMA-pontok meredeksége", "nem a nyers méréssor üteme", "eltelt idő: 6 nap")
                 .doesNotContain("123,4 kg");
     }
 

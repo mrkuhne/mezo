@@ -68,7 +68,9 @@ public class BiometricsTools {
     // one hand the model the same number the same way. ToolText.num stays for payloads it PARSES.
 
     @Tool(name = "get_weight_trend", description = "Súlytrend az elmúlt hetekre: EWMA trendsúly, "
-            + "heti ütem (kg és %), 4 hetes ütem, heti trendpontok. Használd, amikor a user a súlyáról, "
+            + "a teljes EWMA-sor hétre átszámított meredeksége és az utolsó 28 nap EWMA-pontjainak üteme, "
+            + "nem a nyers mérések heti változása. A weeks csak a megjelenített heti pontok ablakát adja. "
+            + "Használd, amikor a user a súlyáról, "
             + "súlyváltozásáról, fogyásról vagy annak üteméről kérdez."
             + " Teljes részletek, további mezők és előzmények: read_personal_records(source=weight_log, id/from/to/parentId/offset/contentOffset).")
     public String getWeightTrend(
@@ -96,6 +98,14 @@ public class BiometricsTools {
             b.append(", 4 hetes ütem ")
                     .append(ToolText.huRate(trend.getLast4wRateKgPerWeek())).append(" kg/hét");
         }
+        var series = trend.getEwmaSeries();
+        var last = series.getLast().getDate();
+        var recent = series.stream().filter(p -> !p.getDate().isBefore(last.minusDays(28))).toList();
+        b.append("\nA heti ütem alapja a teljes EWMA-sor: ").append(series.getFirst().getDate())
+                .append(" – ").append(last).append("; nem az utolsó hét nyers súlyváltozása.");
+        if (recent.size() >= 2) b.append("\nA 4 hetes jelzés az EWMA-pontok üteme: ")
+                .append(recent.getFirst().getDate()).append(" – ").append(last)
+                .append("; nem a nyers méréssor üteme. A simítás régebbi mérések hatását is őrzi.");
         LocalDate from = LocalDate.now().minusWeeks(w);
         // one point per ISO week (the last EWMA point of each week) — token budget by construction
         Map<Integer, String> weekly = new LinkedHashMap<>();

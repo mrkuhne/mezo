@@ -676,10 +676,11 @@ public class CompanionMessageGenerator {
      * when {@link HydrationShortfallProbe} reports a shortfall; no shortfall ⇒ null ⇒ no row, which
      * is the normal case, not a failure.
      *
-     * <p><b>Deliberately LLM-free</b> (the {@code intervention}/{@code setup} config-text
+     * <p><b>Legacy path is LLM-free</b> (the {@code intervention}/{@code setup} config-text
      * precedent): the message is three numbers and one sentence, it must never drift in tone, and
      * a per-hour-shaped job is the wrong place to spend a model call. The template lives in
-     * {@code mezo.proactive.hydration.checkpoint-template}.
+     * {@code mezo.proactive.hydration.checkpoint-template}. The contextual path uses the shared
+     * reasoned generator after the same probe; this template remains its failure fallback.
      *
      * <p>Idempotent: an existing row for the day is returned untouched — the (created_by,
      * message_date, kind) partial unique index means at most one checkpoint per user per day.
@@ -718,7 +719,11 @@ public class CompanionMessageGenerator {
         message.setCreatedBy(userId);
         message.setMessageDate(date);
         message.setKind(CompanionMessageEntity.KIND_HYDRATION);
-        message.setContent(new CompanionMessageEnvelope(cfg.checkpointEyebrow(), List.of(body), List.of()));
+        var content = new CompanionMessageEnvelope(cfg.checkpointEyebrow(), List.of(body), List.of());
+        if (contextualFeed.getIfAvailable() != null) content = content.withTrace(
+                new io.mrkuhne.mezo.feature.proactive.entity.FeedGenerationTrace(1, Instant.now(), List.of(),
+                        List.of(), null, List.of(), "hydration_template_fallback"));
+        message.setContent(content);
         message.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         return companionMessageRepository.saveAndFlush(message);
     }
