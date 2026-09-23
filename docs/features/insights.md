@@ -2,7 +2,7 @@
 title: Insights (the Mezo tab)
 type: feature-domain
 status: mixed
-updated: 2026-09-22
+updated: 2026-09-23
 tags: [insights, mezo-tab, frontend, data-layer]
 key_files:
   - frontend/src/features/insights
@@ -607,6 +607,23 @@ where the winning rule cleared up before the observer was opened. See
 
 The social root reuses the character reads plus `usePatterns`, `usePredictions` and `useExperiments`. The menu has no data reads. All existing hooks share their TanStack caches with detail pages; no new backend endpoint or topic state is introduced by the navigation change.
 
+**Csapat-üzenőfal domain-réteg (`mezo-a9bo7.7`, Act I slice A1 — not yet mounted).** The wall that
+replaces the Boop hub root (`/mezo`, spec `docs/superpowers/specs/2026-09-23-boop-team-feed-design.md`,
+plan `docs/superpowers/plans/2026-09-24-csapatfal-act1.md`) sits on two pure modules:
+`logic/team.ts` (the 5 postable characters + the non-posting Szkeptikus; `characterForMetricDomain`,
+`characterForPersona` — every metric domain and backend persona has exactly one owner, unknown → Mezo;
+the working names live ONLY here) and `logic/teamFeed.ts` (`buildTeamFeed`, `ownerForPattern`). The
+builder maps the existing hooks' records to `FeedPost`s without writing any text of its own (ADR 0049:
+`body` is always the record's own field): proposed pattern / fresh observation with a question →
+`kerdes` (`waiting`, pattern `decision` anchor); monitoring pattern → `sejtes` with an `n/minN` honesty
+band ("még kevés adat" below `minN`); confirmed pattern with a `lastDetectedAt` → `megfigyeles`; active
+experiment → `kiserlet` on today; resolved prediction → `elorejelzes`; character-feed items → persona-routed
+`megfigyeles`, konzílium items → `konzilium` by Mezo. Not posts: pending predictions, proposed/completed
+experiments (no event date), rejected/refuted/dormant patterns, watching/confirmed observation row-cards.
+Days group by local date (Ma / Tegnap / `huMonthDayDow`), each with at most ONE poster (waiting >
+kiserlet > konzilium > newest) — the only glass box of the day. The `tf-*` CSS section at the end of
+`boop-world.css` is the prototype's (`uveg-uzenofal.html`) wall/room anatomy on the shared U1 `.glass` kit.
+
 The Insights data flow is a **degenerate (truncated) version** of mezo's standard `view → hook → mock/real → api → backend → db` pipeline — it stops at the hook:
 
 ```
@@ -979,6 +996,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 
 **Feature (`frontend/src/features/insights/`):** — the directory keeps its `insights` name; the tab is called `Mezo` (§2)
 - `pages/{BoopWorldPage,BoopMenuPage,BoopAboutPage,BoopMemoriesPage,MemoryDayPage,KnowledgeNodePage,PredictionDetailPage,ExperimentDetailPage}.tsx` — social entry, direct navigation and full detail pages.
+- `logic/team.ts` + `logic/teamFeed.ts` (+ `teamFeed.fixtures.ts`) — **`mezo-a9bo7.7`** the csapat-üzenőfal character registry and record→post builder (§3); pure, unit-tested
 - `components/BoopNavigation.tsx`, `logic/boopNavigation.ts`, `boop-world.css` — shared function catalog, crosslinks and app-token visuals.
 - `pages/MezoHubPage.tsx` — unmounted previous hub, retained source/tests.
 - **`InsightsSection.tsx` and `pages/tabs.ts` are DELETED (`mezo-d20.5.1`)** — the shell, `INSIGHTS_TABS`, `visibleInsightsTabs()` and the (already-empty) `PHASE3_TAB_IDS` are gone, along with the app-wide `features/progression/components/AppHero.tsx` and `shared/ui/SubNavDropdown.tsx` they depended on. `InsightsSubNav.tsx` had already been superseded by the dropdown in `mezo-ugqb`; `components/PhaseTeaserCard.tsx` by the empty gate set in `mezo-mifi`
