@@ -44,3 +44,5 @@ cat src/fuel-kartya-ido-head.html "$A/clay-icons.svg" src/fuel-kartya-ido-body.h
 echo "OK — 36 prototype files assembled."
 # Üvegesítés U2 (mezo-me75u.2): dark-only; fuel-uveg.html chrome sprite + the shared 3D sprite (U2 icons now live in it).
 { cat src/uveg-fuel-tobbi-head.html; printf '</head>\n<body>\n'; cat src/uveg-sprite-fuel.svg.part ../../../frontend/src/shared/ui/clay/titanium-icons.svg src/uveg-fuel-tobbi-body.html; } > uveg-fuel-tobbi.html
+# Üvegesítés U3 (mezo-me75u.3): Nap. Same chrome + shared sprite; the U3 icons ride in their own part until the owner's OK.
+{ cat src/uveg-nap-head.html; printf '</head>\n<body>\n'; cat src/uveg-sprite-fuel.svg.part ../../../frontend/src/shared/ui/clay/titanium-icons.svg src/uveg-sprite-nap-uj.svg.part src/uveg-nap-body.html; } > uveg-nap.html
