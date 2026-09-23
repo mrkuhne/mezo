@@ -203,6 +203,9 @@ Only their material changes to glass. The reference is the chrome in
 
 - **Fixed** at the bottom, floating 10–12px off the edges, as **one `.glass` bar**
   (`--c` = the active domain accent, radius 28px).
+- **No sheen on the bar** (owner, 2026-09-23). The periodic light sweep (`.glass::after`) is
+  switched off on the TabBar. A sweep passing through the always-visible menu reads as random
+  flicker. The frame, glow and top edge stay.
 - **Left: the living Boop** of the active domain (`<Boop alive>`, blink/look/brow/breathe), about
   44px, inside a lit 62×58 well with a domain-accent halo, separated from the tabs by a hairline.
   Tapping it opens the **domain switcher**.

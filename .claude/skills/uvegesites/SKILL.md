@@ -22,6 +22,7 @@ it. The owner set this flow on 2026-09-23.
   - **Bottom menu:** fixed, with the living Boop on the domain switcher, and the nav-model tabs
     with their clay icons.
   - **No day-part switcher, ever.**
+  - **No sheen (light sweep) on the bottom menu bar.**
   - U1 builds the chrome once. Every later slice **reuses it untouched**. A slice's prototype
     copies the chrome from `fuel-uveg.html` verbatim, with only the domain Boop, the tabs and the
     accent swapped for its area.
