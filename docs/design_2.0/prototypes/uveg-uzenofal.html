@@ -509,6 +509,29 @@ button.well:active{background:rgba(245,239,230,.08)}
 .rhero .boop{width:92px;height:92px;margin:0 auto;filter:drop-shadow(0 10px 12px rgba(0,0,0,.5)) drop-shadow(0 0 16px color-mix(in srgb,var(--c) 45%,transparent))}
 .rhero h3{font-size:24px;font-weight:700;letter-spacing:-.7px;margin-top:6px}
 .rhero p{font-family:var(--serif);font-style:italic;font-size:14.5px;line-height:1.45;color:var(--sub);max-width:300px;margin:6px auto 0}
+.rgauges{display:flex;align-items:center;justify-content:center;gap:22px;padding:12px 16px 2px}
+.rgauge{position:relative;width:64px;height:64px;display:grid;place-items:center;text-align:center}
+.rgauge svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.rgauge .ring-track,.rgauge .ring-prog{stroke-width:5.5}
+.rgauge b{font-size:15px;font-weight:600;letter-spacing:-.5px}
+.rgauge small{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:5px;font-size:7.5px;font-weight:700;letter-spacing:1px;color:var(--faint);white-space:nowrap}
+.rnum{text-align:center;padding-bottom:12px}
+.rnum b{display:block;font-size:26px;font-weight:300;letter-spacing:-1.2px}
+.rnum small{display:block;margin-top:4px;font-size:7.5px;font-weight:700;letter-spacing:1px;color:var(--faint);white-space:nowrap}
+.case.flatc{background:rgba(245,239,230,.035);box-shadow:inset 0 0 0 1px rgba(245,239,230,.10)}
+.matwell{position:relative;margin:0 16px;padding:12px 6px 6px;border-radius:16px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.matwell .marea{stroke:none}
+.matnow{position:absolute;right:14px;top:10px;font-size:15px;font-weight:600;letter-spacing:-.4px}
+.matcap{display:flex;justify-content:space-between;padding:2px 10px 4px;font-size:9px;color:var(--faint)}
+.matcap em{font-style:normal}
+.tlist{margin:0 16px;padding:2px 12px;border-radius:16px;background:rgba(245,239,230,.03);box-shadow:inset 0 0 0 1px var(--hair)}
+.trow{display:flex;gap:10px;align-items:center;width:100%;padding:11px 2px;border-bottom:1px solid var(--hair);text-align:left}
+.tlist .trow:last-child{border-bottom:0}
+.tst{flex:0 0 auto;padding:3px 8px;border-radius:999px;font-size:7.5px;font-weight:700;letter-spacing:.8px;background:color-mix(in srgb,var(--s) 20%,transparent);color:color-mix(in srgb,var(--s) 85%,#fff)}
+.ttx{flex:1;min-width:0}
+.ttx b{display:block;font-size:12.5px;font-weight:600;line-height:1.35;color:var(--ink)}
+.ttx small{display:block;margin-top:1px;font-size:10px;color:var(--faint)}
+.tlink .icon{width:22px;height:22px;flex:0 0 auto}
 .rstat{display:flex;justify-content:center;gap:8px;padding:12px 16px 4px}
 .rstat .qt{flex:1;text-align:center;padding:11px 6px}
 .rstat strong{font-size:24px;font-weight:500;letter-spacing:-1px}
@@ -1806,25 +1829,38 @@ const ROOMS={
     ask:'A közös kép gondnoka: minden tény, esemény és döntés nála kereshető vissza.'}
 };
 function szoba(id){const p=CH[id]||CH.szunya,r=ROOMS[id]||ROOMS.szunya;
+  const mn=Math.min(...r.mat),mx=Math.max(...r.mat),sp=(mx-mn)||1;
+  const pts=r.mat.map((v,j)=>[(14+j*38.6),(46-((v-mn)/sp)*30)]);
+  const line=pts.map((q,j)=>(j?'L':'M')+q[0].toFixed(1)+','+q[1].toFixed(1)).join(' ');
   return `${topbar()}<div class="dhead rise"><button class="back glass" data-back>‹</button><span class="t"><small>${p.a}</small><strong>${p.n}</strong></span></div>
-  <section class="rhero rise" style="--c:${p.c};--i:1">${B(p.b)}<h3>${p.n} · ${p.a.toLowerCase()}</h3><p>${r.quote}</p></section>
-  <section class="rstat rise" style="--i:2">${r.stats.map(([v,l],i)=>`<div class="qt glass" style="--c:${p.c};--i:${i+2}"><strong class="tint">${v}</strong><small>${l}</small></div>`).join('')}</section>
+  <section class="rhero rise" style="--c:${p.c};--i:1">${B(p.b)}<h3>${p.n} · ${p.a.toLocaleLowerCase('hu-HU')}</h3><p>${r.quote}</p></section>
+  <section class="rgauges rise" style="--i:2">
+    <div class="rgauge" style="--c:${p.c}">${ring(r.mat[7],p.c,26,64)}<b>${r.mat[7]}%</b><small>ÉRETTSÉG</small></div>
+    <div class="rnum"><b>${r.stats[1][0]}</b><small>${r.stats[1][1]}</small></div>
+    <div class="rnum"><b>${r.stats[2][0]}</b><small>${r.stats[2][1]}</small></div>
+  </section>
   <div class="sec"><h2>Most ezen dolgozik</h2></div>
-  <div class="rows">${r.rows.map(([st,sc,meta,ic,title,sub,go,pct],i)=>`<button class="case glass lift rise" style="--c:${p.c};--s:${sc};--i:${i+4}" ${go?`data-go="${go}"`:'data-toast="Saját oldala a megvalósításban nyílik meg"'}>
+  <div class="rows">${r.rows.map(([st,sc,meta,ic,title,sub,go,pct],i)=>`<button class="case ${i===0?'glass lift':'flatc'} rise" style="--c:${p.c};--s:${sc};--i:${i+3}" ${go?`data-go="${go}"`:'data-toast="Saját oldala a megvalósításban nyílik meg"'}>
   <span class="crow"><span class="st">${st}</span><em>${meta}</em></span>
   <span class="cmain">${I(ic)}<span class="ctxt"><b>${title}</b><small>${sub}</small></span><span class="chev">›</span></span>
   ${pct?`<span class="bar" style="--c:${sc}"><b style="--w:${pct}%;--i:${i}"></b></span>`:''}
 </button>`).join('')}</div>
-  <div class="sec"><h2>Így érik a képe rólad</h2><span class="hint">8 HÉT</span></div>
-  <div class="rows"><div class="glass case rise" style="--c:${p.c};--i:6">
-    <span class="crow"><span class="st" style="--s:${p.c}">ÉRETTSÉG</span><em>+${r.mat[7]-r.mat[4]}% az elmúlt 3 hétben</em></span>
-    <span class="well" style="margin:0"><svg viewBox="0 0 296 60" class="chart" aria-hidden="true"><path class="grid" d="M8 50 H288"/><path class="l1 draw" style="stroke:${p.c}" pathLength="100" d="M8,${56-r.mat[0]*0.55} ${r.mat.map((v,j)=>'L'+(8+j*40)+','+(56-v*0.55).toFixed(1)).join(' ')}"/></svg></span>
-  </div></div>
+  <div class="sec"><h2>Így érik a képe rólad</h2><span class="hint">+${r.mat[7]-r.mat[4]}% · 3 HÉT</span></div>
+  <div class="matwell rise" style="--c:${p.c};--i:6">
+    <svg viewBox="0 0 330 60" class="chart" aria-hidden="true">
+      <path class="grid" d="M14 50 H316"/>
+      <path class="marea" d="${line} L${pts[7][0].toFixed(1)},50 L14,50 Z" style="fill:color-mix(in srgb,${p.c} 14%,transparent)"/>
+      <path class="l1 draw" style="stroke:${p.c}" pathLength="100" d="${line}"/>
+      <circle class="pt" cx="${pts[7][0].toFixed(1)}" cy="${pts[7][1].toFixed(1)}" r="4.5" style="fill:${p.c};--pd:1.2s"/>
+    </svg>
+    <span class="matnow" style="color:color-mix(in srgb,${p.c} 82%,#fff)">${r.mat[7]}%</span>
+    <span class="matcap"><em>8 hete</em><em>ma</em></span>
+  </div>
   <div class="sec"><h2>Amit rólad tud</h2><button class="hint" data-go="#tud/${id}" style="color:${p.c}">MIND · ${r.tud.length} →</button></div>
-  <div class="rows">${r.tud.slice(0,2).map(([t,src,d,st],i)=>`<div class="case glass rise" style="--c:${p.c};--s:${st==='TŐLED'?'var(--gold)':'var(--sage)'};--i:${i+7}"><span class="crow"><span class="st">${st}</span><em>${d}</em></span><span class="cmain"><span class="ctxt"><b>${t}</b><small>${src}</small></span></span></div>`).join('')}</div>
-  ${r.arch.length?`<div class="rows" style="margin-top:10px"><button class="case glass lift rise" style="--c:${p.c};--s:#8E86A3;--i:9" data-go="#ugyek/${id}"><span class="cmain">${I('history')}<span class="ctxt"><b>Lezárt és nyugdíjazott ügyei</b><small>${r.arch.length} lezárt · az őszinteség itt is látszik</small></span><span class="chev">›</span></span></button></div>`:''}
+  <div class="tlist rise" style="--i:7">${r.tud.slice(0,3).map(([t,src,d,st])=>`<span class="trow"><span class="tst" style="--s:${st==='TŐLED'?'var(--gold)':'var(--sage)'}">${st}</span><span class="ttx"><b>${t}</b><small>${src} · ${d}</small></span></span>`).join('')}
+  ${r.arch.length?`<button class="trow tlink" data-go="#ugyek/${id}">${I('history')}<span class="ttx"><b>Lezárt és nyugdíjazott ügyei · ${r.arch.length}</b><small>az őszinteség itt is látszik</small></span><span class="chev">›</span></button>`:''}</div>
   <div class="sec"><h2>${p.n} jegyzete</h2></div>
-  <div class="note glass rise" style="--c:${p.c};--i:10">${I('score')}<div><small>KÉRÉSE HOZZÁD</small><p>${r.ask}</p></div></div>`}
+  <div class="note glass rise" style="--c:${p.c};--i:8">${I('score')}<div><small>KÉRÉSE HOZZÁD</small><p>${r.ask}</p></div></div>`}
 
 function tudja(id){const p=CH[id]||CH.szunya,r=ROOMS[id]||ROOMS.szunya;
   return `${topbar()}<div class="dhead rise"><button class="back glass" data-back>‹</button><span class="t"><small>${p.n.toLocaleUpperCase('hu-HU')} · AMIT RÓLAD TUD</small><strong>${r.tud.length} beépült tudás</strong></span></div>
