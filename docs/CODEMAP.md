@@ -333,7 +333,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *BE + API + FE-data* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-09-09, done) ·
   [docs/features/character.md](features/character.md) (updated 2026-09-24, shipped) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-09-23, mixed) ·
+  [docs/features/companion.md](features/companion.md) (updated 2026-09-24, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-23, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-18, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-23, mixed) ·
@@ -738,7 +738,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### insights
 
-*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-23, mixed) ·
+*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-24, mixed) ·
   [docs/features/insights.md](features/insights.md) (updated 2026-09-24, mixed)
 
 - **FE data** `frontend/src/data/insights`
@@ -875,7 +875,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### llmlog
 
 *BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-21, done) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-09-23, mixed)
+  [docs/features/companion.md](features/companion.md) (updated 2026-09-24, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`
