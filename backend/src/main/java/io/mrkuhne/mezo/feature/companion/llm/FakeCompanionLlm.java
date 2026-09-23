@@ -641,6 +641,9 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  re-confirm) rather than only their edge-count side effects — {@code llm_log_history} is
      *  written only by the REAL {@code GeminiCompanionLlm} adapter's {@code recorded(...)} wrapper,
      *  never by this fake, so it cannot serve as the call-count oracle under {@code companion-fake}. */
+    private final java.util.concurrent.atomic.AtomicInteger feedSmartCalls = new java.util.concurrent.atomic.AtomicInteger();
+    public int feedSmartCallCount() { return feedSmartCalls.get(); }
+
     private final java.util.concurrent.atomic.AtomicInteger completeCallCount =
             new java.util.concurrent.atomic.AtomicInteger();
     private volatile List<Turn> lastMemoryRewriteHistory = List.of();
@@ -721,6 +724,9 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith("KONTEXTUSOS-MEZO-UZENET")) {
             toolEchoes(userMessage, tools, toolContext);
             if (userMessage.contains("[fake-contextual-malformed]")) return "not-json";
+            var scripted = Pattern.compile("\\[fake-contextual-json:([A-Za-z0-9+/=]+)]").matcher(userMessage);
+            if (scripted.find()) return new String(java.util.Base64.getDecoder().decode(scripted.group(1)),
+                    java.nio.charset.StandardCharsets.UTF_8);
             return "{\"eyebrow\":\"Mezo\",\"body\":[\"A mai esemény az előzmények tükrében.\"],\"sourceRefs\":[]}";
         }
         if (systemPrompt.startsWith(LlmMemoryQueryRewriter.REWRITE_MARKER)) {
@@ -1309,6 +1315,19 @@ public class FakeCompanionLlm implements CompanionLlm {
         }
         if (userMessage.contains(EMPTY_ANSWER)) {
             return "";
+        }
+        if (systemPrompt.startsWith("KONTEXTUSOS-MEZO-UZENET")) {
+            feedSmartCalls.incrementAndGet();
+            if (!userMessage.contains("[Feed: csak végső válasz]")
+                    && (!userMessage.contains("ESZKÖZHÍVÁSOK ÉS A KIMENETÜK:")
+                        || userMessage.contains("[fake-feed-repeat-read]"))) {
+                var requested = new java.util.StringJoiner(",");
+                var match = TOOL_SENTINEL.matcher(userMessage);
+                while (match.find()) requested.add("{\"tool\":\"" + match.group(1) + "\",\"args\":"
+                        + (match.group(2) == null ? "{}" : match.group(2)) + ",\"why\":\"fixture read\"}");
+                if (requested.length() > 0) return "{\"needsData\":true,\"steps\":[" + requested + "]}";
+            }
+            return complete(systemPrompt, history, userMessage, List.of(), Map.of());
         }
         if (systemPrompt.startsWith(TurnPlanner.PROMPT_MARKER)) {
             if (turnContext.contains("[Beszélgetési adat-előkészítés]")) {

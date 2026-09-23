@@ -90,7 +90,9 @@ class ContextualFeedKindsIT extends AbstractIntegrationTest {
         sleepGoals.goal(user);
         training.createGymSlot(user, date.getDayOfWeek().getValue() - 1, "18:00");
         water.createWaterLog(user, date, 400);
-        assertThat(generator.generateHydrationCheckpoint(user, date, LocalTime.of(15, 0)).getContent().body().getFirst())
-                .contains("400", "2000", "4000");
+        var hydration = generator.generateHydrationCheckpoint(user, date, LocalTime.of(15, 0));
+        assertThat(hydration.getContent().body().getFirst()).contains("400", "2000", "4000");
+        assertThat(hydration.getContent().trace()).isNotNull();
+        assertThat(hydration.getContent().trace().degradedReason()).isEqualTo("hydration_template_fallback");
     }
 }

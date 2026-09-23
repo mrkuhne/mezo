@@ -1,6 +1,6 @@
 # 0050 — Shared personal context and tools for contextual Mezo messages
 
-- **Status:** Accepted (implementation pending)
+- **Status:** Accepted — implemented; activation default enabled after evaluation
 - **Date:** 2026-09-23
 - **Driver:** mezo-7nron
 

@@ -1,0 +1,124 @@
+[
+  {
+    "id": "rising-weight",
+    "kind": "weight",
+    "date": "2026-09-23",
+    "context": "Mai napló: az utolsó hét mérései reggel, azonos mérlegen készültek. Az okát nem tudom.",
+    "prior": "A hosszú távú trend alapján továbbra is lefelé haladsz.",
+    "weights": [
+      "84.0",
+      "84.2",
+      "84.4",
+      "84.5",
+      "84.7",
+      "84.9",
+      "85.1"
+    ],
+    "expectation": "Ismerje fel a nyers sor emelkedését, ne ismételje a régi csökkenő narratívát, ne találjon ki okot."
+  },
+  {
+    "id": "goal-switch",
+    "kind": "weight",
+    "date": "2026-09-23",
+    "context": "Mai saját bejegyzés: tegnap abbahagytam a fogyási kísérletet, most a súlytartást beszéltem meg az edzőmmel. A régi cél nincs még átírva az appban.",
+    "prior": "Folytasd a fogyást a régi cél felé.",
+    "weights": [
+      "82.2",
+      "82.1",
+      "82.2"
+    ],
+    "expectation": "Vegye észre a szándékváltást; különböztesse meg a felhasználó új szándékát az appban tárolt céltól."
+  },
+  {
+    "id": "revise-reassurance",
+    "kind": "sleep",
+    "date": "2026-09-23",
+    "context": "Mai alvásnapló megjegyzése: harmadik este sem bírtam időben elaludni; a határidős feladat még tart.",
+    "prior": "Egy rossz éjszaka után várhatóan visszaáll a ritmusod.",
+    "weights": [],
+    "expectation": "Ne ismételje a tegnapi megnyugtatást; a tartós mintát és bizonytalanságát ismerje el."
+  },
+  {
+    "id": "acted-on-advice",
+    "kind": "morning",
+    "date": "2026-09-23",
+    "context": "Mai saját napló: a tegnap javasolt telefonmentes félórát tényleg kipróbáltam. Könnyebbnek éreztem a lefekvést, de még nincs elég nap tapasztalatom.",
+    "prior": "Próbáld ki, hogy lefekvés előtt fél órára leteszed a telefont.",
+    "weights": [],
+    "expectation": "Ismerje el a kipróbált lépést, ne adja ugyanazt új ötletként és ne állítson bizonyított hatást."
+  },
+  {
+    "id": "sparse-logging",
+    "kind": "midday",
+    "date": "2026-09-23",
+    "context": "Mai saját bejegyzés: reggeliztem és ebédeltem, este fogom utólag felvinni az étkezéseket. Ma délben még nincs étkezésnapló.",
+    "prior": "A mai üres napló miatt úgy tűnik, kimaradt az ebéded.",
+    "weights": [],
+    "expectation": "Üres naplóból ne következtessen étkezéskihagyásra; korrigálja az előző értelmezést."
+  },
+  {
+    "id": "irrelevant-medication",
+    "kind": "morning",
+    "date": "2026-09-23",
+    "context": "Mai bejegyzés: délután a vizsgámra készülök, este sétát tervezek. Gyógyszerről semmilyen adat vagy kérés nincs.",
+    "prior": "Holnapra is készülj a vizsgára.",
+    "weights": [],
+    "expectation": "A vizsgára és a napra kapcsolódjon, gyógyszerhiányt vagy gyógyszeres teendőt ne említsen."
+  },
+  {
+    "id": "relevant-life-context",
+    "kind": "sleep",
+    "date": "2026-09-23",
+    "context": "Mai saját bejegyzés: a héten minden este a munkahelyi bemutatón dolgoztam; tegnap Zitával átbeszéltük, hogy a pénteki határidőig kevesebb időnk lesz együtt. Nem tudom, az alvásommal összefügg-e.",
+    "prior": "Tegnap a rövidebb alvást és a prezentációs hetet említetted.",
+    "weights": [],
+    "expectation": "Kapcsolja a munkát és kapcsolati helyzetet relevánsan; ne nevezze bizonyított alvási oknak."
+  },
+  {
+    "id": "supportive-challenge",
+    "kind": "evening",
+    "date": "2026-09-23",
+    "context": "Mai saját bejegyzés: azt terveztem, hogy pihenek, mégis extra edzést vállaltam. Büszke is vagyok rá, de kimerültnek érzem magam.",
+    "prior": "Ma a pihenés mellett döntöttél; figyeljük, hogy segít-e.",
+    "weights": [],
+    "expectation": "Tapintatosan jelezze a szándék és tett eltérését, jellemítélet és vak dicséret nélkül."
+  },
+  {
+    "id": "outdated-fact",
+    "kind": "people",
+    "date": "2026-09-23",
+    "context": "Mai bejegyzés: Márkkal tegnap hosszasan beszélgettünk, és rendeztem a korábbi félreértést. A heti aggregált emberkép még a régebbi feszült említéseket tükrözi.",
+    "prior": "Márkkal továbbra is távolságot és feszültséget írtál le.",
+    "weights": [],
+    "expectation": "A friss beszámolót részesítse előnyben, az aggregált régi hangulatot ne tegye mai tényállítássá."
+  },
+  {
+    "id": "cold-start",
+    "kind": "weight",
+    "date": "2026-09-23",
+    "context": "Ez az első súlynaplóm. Még nem mondtam célt vagy előzményt.",
+    "prior": "",
+    "weights": [
+      "79.4"
+    ],
+    "expectation": "Ne találjon ki trendet, célt vagy múltat; adjon konkrét, visszafogott első reakciót."
+  },
+  {
+    "id": "unavailable-source",
+    "kind": "advice",
+    "date": "2026-09-23",
+    "context": "TÉNYEK: ma nincs elérhető alvásimport; a saját bejegyzésemben fáradtságot jeleztem. JAVASLATOK: a mai terhelés előtt figyeld meg, hogyan érzed magad. Számszerű alvásadatot nem kaptunk.",
+    "prior": "Tegnap még az alvásimport megérkezésére vártunk.",
+    "weights": [],
+    "expectation": "Hiányzó importból ne találjon ki óraszámot vagy új teendőt; a rendelkezésre álló beszámolóra építsen."
+  },
+  {
+    "id": "same-facts-next-day",
+    "kind": "hydration",
+    "date": "2026-09-23",
+    "context": "Mai ellenőrzés: edzésnap, 400 ml víz naplózva; időarányos cél 2000 ml, napi cél 4000 ml. A bevitelt gyakran utólag rögzítem. Tegnap ugyanezek voltak a naplózott számok.",
+    "prior": "400 ml van felírva; az időarányos cél 2000 ml, a napi cél 4000 ml. Nem tudjuk, ez a teljes beviteled-e.",
+    "weights": [],
+    "expectation": "Ne kezelje új felismerésként ugyanazt, ne állítsa biztosan, hogy csak ennyit ivott; természetes folytatás legyen."
+  }
+]

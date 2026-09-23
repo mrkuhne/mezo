@@ -65,6 +65,18 @@ public class FeedEvidenceAssembler {
                 .append("; ").append(properties.weightDays()).append(" nap]\n");
         Map<LocalDate, List<WeightLogEntity>> days = rows.stream().collect(Collectors.groupingBy(
                 WeightLogEntity::getDate, TreeMap::new, Collectors.toList()));
+        var recentRaw = rows.stream().filter(r -> !r.getDate().isBefore(date.minusDays(6))).toList();
+        if (recentRaw.stream().map(WeightLogEntity::getDate).distinct().count() >= 2) {
+            text.append("Friss NYERS sor: ").append(recentRaw.getFirst().getDate()).append(" – ")
+                    .append(recentRaw.getLast().getDate()).append("; eltelt idő: ")
+                    .append(java.time.temporal.ChronoUnit.DAYS.between(recentRaw.getFirst().getDate(), recentRaw.getLast().getDate()))
+                    .append(" nap (nem a mérési napok száma); nyers végpontkülönbség: ")
+                    .append(ToolText.huWeight(recentRaw.getLast().getWeightKg().subtract(recentRaw.getFirst().getWeightKg())))
+                    .append(" kg ezen időszak alatt; ez NEM kg/hét és NEM EWMA-meredekség.\n");
+        }
+        if (!rows.isEmpty() && rows.getLast().getNote() != null) {
+            text.append("Legfrissebb mérési megjegyzés: ").append(rows.getLast().getNote()).append('\n');
+        }
         days.forEach((day, values) -> {
             BigDecimal mean = values.stream().map(WeightLogEntity::getWeightKg).reduce(BigDecimal.ZERO, BigDecimal::add)
                     .divide(BigDecimal.valueOf(values.size()), 3, RoundingMode.HALF_UP);
@@ -103,7 +115,7 @@ public class FeedEvidenceAssembler {
             var recent = series.stream().filter(p -> !p.getDate().isBefore(cutoff)).toList();
             if (recent.size() >= 2) text.append("Utolsó 28 nap trendpontjai: ")
                     .append(recent.getFirst().getDate()).append(" – ").append(last)
-                    .append("; meredekség: ").append(ToolText.huRate(trend.getLast4wRateKgPerWeek())).append(" kg/hét\n");
+                    .append("; EWMA-pontok meredeksége: ").append(ToolText.huRate(trend.getLast4wRateKgPerWeek())).append(" kg/hét; ez nem a nyers méréssor üteme.\n");
         }
         goals.findByCreatedByAndStatusAndDeletedFalseOrderByCreatedAtDesc(userId, "active").stream().findFirst()
                 .ifPresent(g -> text.append("Aktív cél: ").append(g.getTitle()).append("; ")

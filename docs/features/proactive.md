@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-09-23
+updated: 2026-09-24
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -23,7 +23,7 @@ related: [companion, today, insights, train, me, _platform-api-backend, _platfor
 > The old `briefing` + `heartbeat_note` tables and their generators/jobs/read-path staleness
 > machinery are GONE (dropped, no data migration — the disposable generated rows were never worth
 > preserving). One new table, `companion_message`, holds **nine kinds**: `morning` (dawn cron, the
-> briefing's successor — sleep/weight-free by construction, spec §3), `sleep` (fired by a sleep-log
+> briefing's successor; contextual mode may connect relevant sleep/weight evidence), `sleep` (fired by a sleep-log
 > event), `weight` (fired by a weight-log event), `midday`/`evening` (the heartbeat's two window
 > crons, ported near-verbatim), `people` (since
 > **Emberek S6**, `mezo-06o0.8`, 2026-09-01 — fired by the dawn cron alongside
@@ -841,15 +841,15 @@ plan: [`docs/superpowers/plans/2026-08-31-diagnosis-report-backend.md`](../super
 
 **Live since `mezo-gst9` — the Today MezoChip message thread.** When Daniel opens the app the
 `MezoChip`'s preview shows the **latest** companion-feed message, and tapping it opens the full
-thread: a **morning** message about his day (never HIS night or weight — sleep/weight-free by
-construction, so it can't be stale or wrong about them), a **sleep** reaction the moment he logs
+thread: a **morning** message about his day (the legacy writer excludes sleep/weight; contextual
+mode may connect relevant dated evidence), a **sleep** reaction the moment he logs
 last night, a **weight** reaction the moment he weighs in, and **midday**/**evening** notes at their
 usual windows — each with **real reference chips** where the kind carries them (morning/sleep/
 weight) and **no label** — zero demo copy, except the one honest exception below. The dawn/midday/
 evening crons usually write the cron kinds ahead of time; a missed one lazily generates on the next
 GET. The sleep/weight messages are event-triggered — they appear within moments of logging (the FE
-polls every 60s and also invalidates on the log's own mutation), not on any fixed clock, so they are
-never stale by construction (the point of the whole redesign — see §1).
+polls every 60s and also invalidates on the log's own mutation), not on any fixed clock, so they use the evidence available at generation time (later same-day corrections do not
+automatically regenerate an existing row).
 
 **The honest fallback.** While the day's `morning` message hasn't landed yet — the proactive/
 companion/cron switch is off, generation failed / the narrative window is empty, the read is still
@@ -2621,7 +2621,7 @@ dual-mode.
 
 ### Contextual feed foundation (mezo-7nron.2)
 
-The optional `mezo.feature.contextual-feed.enabled` seam is off by default. When enabled, all eight active daily kinds use `FeedGenerationService` after their existing
+The `mezo.feature.contextual-feed.enabled` switch defaults to true. All eight active daily kinds use `FeedGenerationService` after their existing
 eligibility and existing-row checks. `FeedMessagePrompts` defines their distinct purpose; the
 common brief requires continuity, relevant connections and correction of stale interpretations.
 Morning/window generation can proceed without summaries when a current weight or recent sleep
@@ -2632,14 +2632,25 @@ row. Applied advice retains the original trace, and subsequent history includes 
 its timestamp. The disabled path still runs the previous generators. `FeedContextAssembler` combines fresh evidence, bounded dated
 `FeedContinuityService` history, chat personal context, snapshot and shared RAG. History defaults
 to 14 days, 12 messages (six same-kind reserved), 8000 characters total and 800 per excerpt.
-`FeedGenerationService` uses the existing companion LLM tool loop and shared read-only registry
-(six calls, twelve refs); it can search memory and read original sources without a conversation ID.
+Fresh weight evidence separately labels raw endpoint change and the EWMA-point slopes; the
+shared weight-trend tool now also states the actual slope windows. This prevents a lagged
+smoothed decline from being presented as the latest raw sequence's weekly movement.
+`FeedGenerationService` uses the existing smart completion port with an answer-or-read JSON
+protocol ([ADR 0051](../decisions/0051-contextual-feed-reasoned-read-loop.md)). Sufficient context
+returns an answer in one call; otherwise the chat's `ToolCatalogue`, `PlanValidator`,
+`PlanExecutor` and `ToolOutcomeDigest` supply actual read results for a subsequent reasoned pass.
+The shared read-only registry is bounded to six executed reads and twelve refs; duplicate reads
+stop, and total model passes are at most max-tool-calls + one. There is no separate mandatory
+planner or judge, and no fabricated conversation ID. This avoids the current OpenAI adapter's
+reasoning=none constraint for native tool-carrying completions.
 Source chips are accepted only when their `(kind,id)` exists in collected evidence or tool refs;
 this pair-based selection also supports sources discovered after the initial prompt was built.
+Internal source kinds are mapped to the existing public chip vocabulary (Weight/SleepLog/Memory);
+source IDs remain in the private trace, and prior AI messages are labelled as earlier Mezo messages.
 Malformed/failed generation returns null to the caller's existing fallback policy. The internal
 nullable JSONB `trace` records the context cutoff, prior message/retrieval IDs, executed tool calls,
 collected source refs and degraded reason. No raw tool results or public DTO changes are added. Advice fallback is explicitly marked
-`advice_template_fallback`; old deterministic hydration fallback has no generation trace.
+`advice_template_fallback`; hydration fallback is marked `hydration_template_fallback`.
 Async sleep/weight listeners bind the event owner through `LlmActorContext.runAs`, restoring it
 when generation ends. `ContextualFeedProperties` owns all history/evidence/tool budgets.
 
@@ -3718,7 +3729,7 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedGenerationService.java` — structured contextual generation, source validation and audit.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/FeedGenerationTrace.java` — optional internal provenance in the existing JSONB envelope.
 
-**Contextual feed foundation (disabled by default)**
+**Contextual feed foundation (enabled; switch-off rollback)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedEvidenceAssembler.java` — dated raw weight/sleep evidence and explicitly scoped trend rates.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedContextAssembler.java` — shared personal context, event evidence, prior feed and RAG composition.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedContinuityService.java` — bounded owned history and dated source references.

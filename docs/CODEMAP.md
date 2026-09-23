@@ -42,7 +42,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [nutrition](#nutrition) | ✓ | 1 | · | · | [fuel](features/fuel.md) |
 | [pantry](#pantry) | ✓ | 1 | · | · | [fuel](features/fuel.md), [pantry](features/pantry.md) |
 | [people](#people) | ✓ | 1 | · | · | [me](features/me.md) |
-| [proactive](#proactive) | ✓ | 2 | · | · | [proactive](features/proactive.md) |
+| [proactive](#proactive) | ✓ | 2 | · | · | [contextual-feed-evaluation](features/contextual-feed-evaluation.md), [proactive](features/proactive.md) |
 | [progression](#progression) | ✓ | 1 | ✓ | ✓ | [growth](features/growth.md) |
 | [quest](#quest) | ✓ | 1 | ✓ | · | [growth](features/growth.md) |
 | [quickinput](#quickinput) | · | · | · | ✓ | [today](features/today.md) |
@@ -1141,7 +1141,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### proactive
 
-*BE + API* · read next: [docs/features/proactive.md](features/proactive.md) (updated 2026-09-23, complete)
+*BE + API* · read next: [docs/features/contextual-feed-evaluation.md](features/contextual-feed-evaluation.md) (updated 2026-09-24, complete) ·
+  [docs/features/proactive.md](features/proactive.md) (updated 2026-09-24, complete)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/proactive`
   - **entities→tables:** `ChallengeEntity`→`challenge`, `CompanionMessageEntity`→`companion_message`,
@@ -1188,7 +1189,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/proactive/challenge/{id}/decision · GET /api/proactive/weekly-review/{start} ·
     POST /api/proactive/weekly-review/{start}/regenerate · GET /api/proactive/weekly-review/{start}/lessons ·
     GET /api/proactive/weekly-review/{start}/digest
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 105 IT + 8 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 107 IT + 8 unit
   - **ITs:** `AdviceApplyServiceIT`, `AdviceCardServiceIT`, `AdviceObserverPortsIT`, `AdviceProseGeneratorIT`,
     `ChallengeGeneratorIT`, `ChallengeGeneratorMemoryDisabledIT`, `ChallengeGeneratorMemoryIT`, `ChallengeJobIT`,
     `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`, `ChallengePersistenceIT`, `ChallengePregenerateJobIT`,
@@ -1196,18 +1197,18 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CompanionMessageGeneratorMemoryIT`, `CompanionMessageHydrationIT`, `CompanionMessageInterventionPersistenceIT`,
     `CompanionMessageJobIT`, `CompanionMessageJobSwitchOffIT`, `CompanionMessageMissedWorkoutsIT`,
     `CompanionMessagePersistenceIT`, `CompanionMessageRetroLoggingIT`, `CompanionMessageSetupPersistenceIT`,
-    `ContextSnapshotOwnerZoneIT`, `ContextualFeedKindsIT`, `ContextualFeedPropertiesIT`, `DiagnosisControllerIT`,
-    `DiagnosisExperimentIT`, `DiagnosisGeneratorIT`, `DiagnosisGeneratorMemoryDisabledIT`,
-    `DiagnosisGeneratorMemoryIT`, `ExperimentJobIT`, `ExperimentJobSwitchOffIT`, `ExperimentOutcomeIT`,
-    `ExperimentPersistenceIT`, `ExperimentProposalGeneratorIT`, `ExperimentProposalGeneratorMemoryDisabledIT`,
-    `ExperimentProposalGeneratorMemoryIT`, `FatigueEvidenceCollectorIT`, `FeatureAbandonmentDetectorIT`,
-    `FeedContextAssemblerIT`, `FeedContinuityIT`, `FeedEvidenceAssemblerIT`, `FeedGenerationServiceIT`,
-    `FlatFeedbackDetectorIT`, `GrowthDigestBlockIT`, `HighlightCitationIT`, `HydrationPropertiesIT`,
-    `HydrationShortfallProbeIT`, `InterventionConfigIT`, `InterventionServiceIT`, `InterventionSwitchOffIT`,
-    `LogFreshnessProbeIT`, `MemoirGeneratorIT`, `MemoirGeneratorMemoryDisabledIT`, `MemoirGeneratorMemoryIT`,
-    `MemoirJobIT`, `MemoirJobSwitchOffIT`, `MemoirPersistenceIT`, `OneTimeQuestionServiceIT`,
-    `OneTimeQuestionSwitchOffIT`, `OverloadChallengeGeneratorIT`, `PlanFeasibilityIT`, `PredictionGeneratorIT`,
-    `PredictionGeneratorMemoryDisabledIT`, `PredictionGeneratorMemoryIT`, `PredictionJobIT`,
+    `ContextSnapshotOwnerZoneIT`, `ContextualFeedEvaluationIT`, `ContextualFeedKindsIT`, `ContextualFeedPropertiesIT`,
+    `ContextualFeedProviderEvalIT`, `DiagnosisControllerIT`, `DiagnosisExperimentIT`, `DiagnosisGeneratorIT`,
+    `DiagnosisGeneratorMemoryDisabledIT`, `DiagnosisGeneratorMemoryIT`, `ExperimentJobIT`, `ExperimentJobSwitchOffIT`,
+    `ExperimentOutcomeIT`, `ExperimentPersistenceIT`, `ExperimentProposalGeneratorIT`,
+    `ExperimentProposalGeneratorMemoryDisabledIT`, `ExperimentProposalGeneratorMemoryIT`, `FatigueEvidenceCollectorIT`,
+    `FeatureAbandonmentDetectorIT`, `FeedContextAssemblerIT`, `FeedContinuityIT`, `FeedEvidenceAssemblerIT`,
+    `FeedGenerationServiceIT`, `FlatFeedbackDetectorIT`, `GrowthDigestBlockIT`, `HighlightCitationIT`,
+    `HydrationPropertiesIT`, `HydrationShortfallProbeIT`, `InterventionConfigIT`, `InterventionServiceIT`,
+    `InterventionSwitchOffIT`, `LogFreshnessProbeIT`, `MemoirGeneratorIT`, `MemoirGeneratorMemoryDisabledIT`,
+    `MemoirGeneratorMemoryIT`, `MemoirJobIT`, `MemoirJobSwitchOffIT`, `MemoirPersistenceIT`,
+    `OneTimeQuestionServiceIT`, `OneTimeQuestionSwitchOffIT`, `OverloadChallengeGeneratorIT`, `PlanFeasibilityIT`,
+    `PredictionGeneratorIT`, `PredictionGeneratorMemoryDisabledIT`, `PredictionGeneratorMemoryIT`, `PredictionJobIT`,
     `PredictionJobSwitchOffIT`, `PredictionPersistenceIT`, `PredictionValidationIT`, `ProactiveApiAdviceApplyIT`,
     `ProactiveApiChallengeIT`, `ProactiveApiCompanionOffIT`, `ProactiveApiExperimentIT`, `ProactiveApiFeedIT`,
     `ProactiveApiIT`, `ProactiveApiSwitchOffIT`, `ProactiveMemoirArchiveIT`, `ProactiveMemoirArchiveSwitchOffIT`,
@@ -1374,7 +1375,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/intention.md](features/intention.md) (updated 2026-09-23, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-18, in-progress) ·
   [docs/features/needs.md](features/needs.md) (updated 2026-09-23, done) ·
-  [docs/features/proactive.md](features/proactive.md) (updated 2026-09-23, complete) ·
+  [docs/features/proactive.md](features/proactive.md) (updated 2026-09-24, complete) ·
   [docs/features/ritual.md](features/ritual.md) (updated 2026-09-23, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-09-24, mixed)
 

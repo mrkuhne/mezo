@@ -1,0 +1,563 @@
+{
+  "review": "Codex qualitative review of synthetic outputs, not independent human review",
+  "dimensions": [
+    "grounding",
+    "continuity",
+    "relevant connections",
+    "usefulness",
+    "natural voice"
+  ],
+  "results": [
+    {
+      "id": "rising-weight",
+      "arm": "legacy-prompt-control",
+      "model": "gpt-5.6-terra",
+      "run": "weight-elapsed-days-rerun",
+      "provenance": "Transcribed from provider report displayed in tool output; original target report removed by Maven clean.",
+      "eyebrow": "Mai súlymérés",
+      "body": [
+        "A mai mérés 85,1 kg, ami 0,2 kg-mal magasabb az előző mért napénál. Az elmúlt hét nyers mérései emelkedtek, miközben a simított trend 90,7 kg.",
+        "Aktív testsúlycél nincs rögzítve, ezért ehhez most nem lehet viszonyítani. Egyetlen mérésből nem érdemes messzemenő következtetést levonni."
+      ],
+      "millis": 7810,
+      "costUsd": 0.007906,
+      "scores": [
+        2,
+        1,
+        1,
+        1,
+        1
+      ],
+      "total": 6,
+      "reviewNote": "Same rich context, existing per-kind legacy prompt; control is not the exact production pipeline."
+    },
+    {
+      "id": "rising-weight",
+      "arm": "contextual",
+      "model": "gpt-5.6-terra",
+      "run": "weight-elapsed-days-rerun",
+      "provenance": "Transcribed from provider report displayed in tool output; original target report removed by Maven clean.",
+      "eyebrow": "Hat napja emelkedő nyers sor",
+      "body": [
+        "A mai 85,1 kg újabb 0,2 kg-mal van a tegnapi fölött. A reggeli, azonos mérlegen készült hét egymást követő mérés 84,0-ról 85,1 kg-ra ment fel, tehát ez most nem egyetlen kiugró érték, hanem következetes emelkedés.",
+        "Ez eltér a tegnap még lefelé mutató hosszabb távú képtől: a friss nyers adatsor most felfelé mozog. Az okát ezekből a mérésekből nem lehet megállapítani, de a következő néhány reggeli mérés megmutatja, folytatódik-e ez a szakasz vagy visszarendeződik."
+      ],
+      "millis": 6593,
+      "costUsd": 0.021588,
+      "scores": [
+        2,
+        2,
+        2,
+        2,
+        1
+      ],
+      "total": 9,
+      "reviewNote": "Correct fresh direction and correction of old narrative; statistical wording still prominent."
+    },
+    {
+      "id": "goal-switch",
+      "arm": "legacy-prompt-control",
+      "model": "gpt-5.6-terra",
+      "run": "weight-elapsed-days-rerun",
+      "provenance": "Transcribed from provider report displayed in tool output; original target report removed by Maven clean.",
+      "eyebrow": "Mai testsúlymérés",
+      "body": [
+        "A most rögzített mérés 82,2 kg. Ez megegyezik a 82,2 kg-os trenddel; a heti trend lényegében stabil (-0,02 kg/hét).",
+        "Az appban még a régi, 80,0 kg-os fogyási cél látszik, miközben ma már súlytartást beszéltél meg az edződdel. Egyetlen mérésből nem érdemes messzemenő következtetést levonni."
+      ],
+      "millis": 7258,
+      "costUsd": 0.008,
+      "scores": [
+        2,
+        2,
+        2,
+        1,
+        1
+      ],
+      "total": 8,
+      "reviewNote": "Same rich context, existing per-kind legacy prompt; control is not the exact production pipeline."
+    },
+    {
+      "id": "goal-switch",
+      "arm": "contextual",
+      "model": "gpt-5.6-terra",
+      "run": "weight-elapsed-days-rerun",
+      "provenance": "Transcribed from provider report displayed in tool output; original target report removed by Maven clean.",
+      "eyebrow": "Stabil kezdés a súlytartáshoz",
+      "body": [
+        "A mai 82,2 kg gyakorlatilag a tegnapi 82,1 kg körül maradt: a három friss mérés 82,1–82,2 kg között mozog. Ez nyugodt, stabil nyers sor, ami jól illik ahhoz, hogy tegnap lezártad a fogyási kísérletet és súlytartásról egyeztettél az edződdel.",
+        "A korábbi fogyási irány már nem aktuális: érdemes az appban is átírni vagy lezárni a régi, 80 kg-os cut célt, hogy a további visszajelzések a mostani szándékodhoz igazodjanak."
+      ],
+      "millis": 5423,
+      "costUsd": 0.0206,
+      "scores": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "total": 10,
+      "reviewNote": "New intent takes precedence while old stored target is explicitly distinguished."
+    },
+    {
+      "id": "revise-reassurance",
+      "arm": "legacy-prompt-control",
+      "model": "gpt-5.6-terra",
+      "run": "full-reasoned-corpus",
+      "provenance": "Extracted from saved provider JSON.",
+      "eyebrow": "Rövidebb, gyengébb éjszaka",
+      "body": [
+        "Az 5,4 órás, 4/10-es alvásod az előző két nap 5,5–5,8 órás és 5/10-es mintájánál is gyengébb; alváscél nincs rögzítve.",
+        "Ma pihenőnap van, ami jól illeszkedik a 4/10-es reggeli energiához: a határidős feladatnál várhatóan kevesebb fókusz és energiatartalék áll rendelkezésre."
+      ],
+      "millis": 14715,
+      "costUsd": 0.01072,
+      "scores": [
+        2,
+        1,
+        1,
+        1,
+        1
+      ],
+      "total": 6,
+      "reviewNote": "Same rich context, existing per-kind legacy prompt; control is not the exact production pipeline."
+    },
+    {
+      "id": "revise-reassurance",
+      "arm": "contextual",
+      "model": "gpt-5.6-terra",
+      "run": "full-reasoned-corpus",
+      "provenance": "Extracted from saved provider JSON.",
+      "eyebrow": "Harmadik rövid éjszaka",
+      "body": [
+        "Az 5,4 órás, 4/10-es mai alvás már a harmadik egymást követő rövid éjszaka. Az előző napi várakozás, hogy egy rossz éjszaka után visszaállhat a ritmus, most nem igazolódott: a késői elalvás ismétlődik, miközben a határidős feladat még tart.",
+        "A mai energiaértéked 4/10, ezért érdemes a határidős munkában egy világos esti lezárási pontot kijelölni, nem nyitva hagyni a feladatot az elalvás idejére is. Ma pihenőnap szerepel a tervben, és eddig nincs rögzített edzés; ez most teret hagyhat annak, hogy az alvás kapjon elsőbbséget."
+      ],
+      "millis": 14125,
+      "costUsd": 0.024464,
+      "scores": [
+        2,
+        2,
+        2,
+        2,
+        1
+      ],
+      "total": 9,
+      "reviewNote": "Revises failed reassurance without asserting work caused sleep difficulty; slightly long."
+    },
+    {
+      "id": "acted-on-advice",
+      "arm": "legacy-prompt-control",
+      "model": "gpt-5.6-terra",
+      "run": "full-reasoned-corpus",
+      "provenance": "Extracted from saved provider JSON.",
+      "eyebrow": "Mai terv: tudatos pihenő és következetes kerettartás",
+      "body": [
+        "Ma gym-pihenőnap van. Az elmúlt 7 napban még nem szerepel edzés, sport vagy futás, így a mai nap jó alkalom a ritmus nyugodt felépítésére.",
+        "A mai kalóriakeret 3100 kcal, a napi célok pedig 220 g fehérje, 380 g szénhidrát, 95 g zsír és 4000 ml víz. Gyógyszerhez nincs rögzített mai adat; változtatást ne eszközölj, a szokásos, orvossal egyeztetett tervet kövesd.",
+        "Fókusz: rögzítsd az első étkezésedet; tervezz be egy könnyű, pihenőnaphoz illő mozgásos vagy sétás blokkot; készítsd elő a nap hátralévő étkezéseit a kerethez."
+      ],
+      "millis": 14772,
+      "costUsd": 0.009792,
+      "scores": [
+        1,
+        0,
+        0,
+        1,
+        1
+      ],
+      "total": 3,
+      "reviewNote": "Same rich context, existing per-kind legacy prompt; control is not the exact production pipeline."
+    },
+    {
+      "id": "acted-on-advice",
+      "arm": "contextual",
+      "model": "gpt-5.6-terra",
+      "run": "full-reasoned-corpus",
+      "provenance": "Extracted from saved provider JSON.",
+      "eyebrow": "Egy jó esti jelzés",
+      "body": [
+        "Tegnap kipróbáltad a telefonmentes félórát, és könnyebbnek érezted tőle a lefekvést. Ez még nem végleges minta, de mára érdemes ugyanígy megismételni: ne változtass rajta, csak adj neki még egy alkalmat.",
+        "A reggeli energiád 4/10, miközben a stresszed alacsony. Ma legyen kímélőbb a tempó: a pihenőnapon ne a nagy lendületet várd magadtól, hanem válassz egy könnyen elkezdhető, konkrét feladatot, és hagyj teret a feltöltődésnek."
+      ],
+      "millis": 5687,
+      "costUsd": 0.01802,
+      "scores": [
+        2,
+        2,
+        2,
+        2,
+        1
+      ],
+      "total": 9,
+      "reviewNote": "Recognizes tried advice and subjective benefit, without claiming established effect; some generic second-paragraph guidance."
+    },
+    {
+      "id": "sparse-logging",
+      "arm": "legacy-prompt-control",
+      "model": "gpt-5.6-terra",
+      "run": "full-reasoned-corpus",
+      "provenance": "Extracted from saved provider JSON.",
+      "eyebrow": null,
+      "body": [
+        "Eddig pihenőnap van: nem szerepel elvégzett gym-edzés, sport vagy futás. Reggeliztél és ebédeltél, ugyanakkor a napló jelenleg 0/3100 kcal és 0/220 g fehérje bevitelét mutatja, mert az étkezéseket este tervezed rögzíteni.\n\nMa már nincs tervezett gym-edzés; a táplálkozási keret napló szerinti hátralévő része 3100 kcal, 220 g fehérje, 380 g szénhidrát és 95 g zsír. Az étkezésnapló a reggeli és ebéd ellenére még hiányos, de ezt utólag fogod felvinni.\n\nA hátralévő időben tartsd szem előtt az esti étkezések pontos rögzítését, és a vacsorát igazítsd majd a ténylegesen felvitt napi kerethez."
+      ],
+      "millis": 12663,
+      "costUsd": 0.009882,
+      "scores": [
+        2,
+        1,
+        1,
+        1,
+        1
+      ],
+      "total": 6,
+      "reviewNote": "Same rich context, existing per-kind legacy prompt; control is not the exact production pipeline."
+    },
+    {
+      "id": "sparse-logging",
+      "arm": "contextual",
+      "model": "gpt-5.6-terra",
+      "run": "full-reasoned-corpus",
+      "provenance": "Extracted from saved provider JSON.",
+      "eyebrow": "Az étkezések megvoltak",
+      "body": [
+        "Reggeliztél és ebédeltél, csak a rögzítés marad estére. Így a déli üres étkezésnapló most nem kimaradt étkezést jelent.",
+        "Az alacsony, 4/10-es reggeli energia mellett délután érdemes lehet figyelned rá, hogyan alakul a közérzeted az eddigi étkezések után."
+      ],
+      "millis": 4905,
+      "costUsd": 0.016922,
+      "scores": [
+        2,
+        2,
+        2,
+        1,
+        2
+      ],
+      "total": 9,
+      "reviewNote": "Corrects empty-log inference; next step is modest."
+    },
+    {
+      "id": "irrelevant-medication",
+      "arm": "legacy-prompt-control",
+      "model": "gpt-5.6-terra",
+      "run": "full-reasoned-corpus",
+      "provenance": "Extracted from saved provider JSON.",
+      "eyebrow": "Mai terv: vizsgafelkészülés és esti séta",
+      "body": [
+        "Ma gym-pihenőnap van, estére pedig sétát tervezel. Délután a vizsgára készülsz, ezért érdemes a mozgást könnyű, levezető keretként megtartani.",
+        "A mai kalóriakeret 3100 kcal, a fehérjecél 220 g. Gyógyszerrel kapcsolatban nincs rögzített adat vagy teendő.",
+        "Az elmúlt 7 napban nem volt naplózott gym-edzés, sport vagy futás; a mai séta lehet egy egyszerű visszakapcsolódás az aktivitáshoz.",
+        "Fókuszpontok: kezdd el a délutáni tanulást egy konkrét vizsgatémával; tartsd meg az esti sétát; étkezésenként figyelj a fehérjére."
+      ],
+      "millis": 4089,
+      "costUsd": 0.006464,
+      "scores": [
+        2,
+        1,
+        1,
+        1,
+        1
+      ],
+      "total": 6,
+      "reviewNote": "Same rich context, existing per-kind legacy prompt; control is not the exact production pipeline."
+    },
+    {
+      "id": "irrelevant-medication",
+      "arm": "contextual",
+      "model": "gpt-5.6-terra",
+      "run": "full-reasoned-corpus",
+      "provenance": "Extracted from saved provider JSON.",
+      "eyebrow": "Vizsgafókusz, könnyű este",
+      "body": [
+        "Ma délután a vizsgára készülés a fő feladatod; ez folytatja a tegnapi előretekintést. Az alacsony, 4/10-es reggeli energiával érdemes rövid, jól körülhatárolt tanulási blokkokban haladnod, a legfontosabb témákkal kezdve.",
+        "Az esti séta jó lezárás lehet a koncentrált délután után: tartsd könnyűnek, inkább átmozgatásnak és fej-kiszellőztetésnek, ne plusz teljesítményfeladatnak."
+      ],
+      "millis": 5255,
+      "costUsd": 0.017774,
+      "scores": [
+        2,
+        2,
+        2,
+        2,
+        1
+      ],
+      "total": 9,
+      "reviewNote": "Relevant exam/energy/walk connection; no irrelevant medication discussion."
+    },
+    {
+      "id": "relevant-life-context",
+      "arm": "legacy-prompt-control",
+      "model": "gpt-5.6-terra",
+      "run": "full-reasoned-corpus",
+      "provenance": "Extracted from saved provider JSON.",
+      "eyebrow": "Rövid és gyenge minőségű alvás",
+      "body": [
+        "Az 5,4 órás, 4/10-es alvás a rendelkezésre álló három éjszaka közül a legrövidebb és legalacsonyabb minőségű; alváscél nincs rögzítve.",
+        "Ma pihenőnap van, ami jól illik ehhez. Az alacsony, 4/10-es energiaszint mellett érdemes a fókuszt igénylő feladatokat egyszerűbb blokkokra bontanod, és kímélned az energiatartalékaidat."
+      ],
+      "millis": 4324,
+      "costUsd": 0.00685,
+      "scores": [
+        2,
+        0,
+        1,
+        1,
+        1
+      ],
+      "total": 5,
+      "reviewNote": "Same rich context, existing per-kind legacy prompt; control is not the exact production pipeline."
+    },
+    {
+      "id": "relevant-life-context",
+      "arm": "contextual",
+      "model": "gpt-5.6-terra",
+      "run": "full-reasoned-corpus",
+      "provenance": "Extracted from saved provider JSON.",
+      "eyebrow": "Rövidülő éjszakák a határidő előtt",
+      "body": [
+        "A mai 5,4 órás, 4/10-es alvás a harmadik egymást követő rövid éjszaka: 5,8-ról 5,5-re, majd 5,4 órára csökkent. A reggeli 4/10-es energiaszint mellett ez ma inkább kímélő tempót indokolhat.",
+        "A munkahelyi bemutatón végzett esti munka és a Zitával megbeszélt, péntekig szűkösebb közös idő egyaránt jelen van ezen a héten; nem biztos, hogy ezek állnak az alvás mögött, de érdemes lehet ma estére legalább egy világos lezárási pontot hagyni a prezentációban és külön időt szánni a kapcsolódásra.",
+        "Mára gym-pihenőnap van betervezve, és eddig nem szerepel elvégzett edzés a naplóban. Ez jól illik ahhoz, hogy a pénteki határidőig most az alvás rendezése és az energia megőrzése kapjon helyet."
+      ],
+      "millis": 10873,
+      "costUsd": 0.022954,
+      "scores": [
+        2,
+        2,
+        2,
+        2,
+        1
+      ],
+      "total": 9,
+      "reviewNote": "Connects work and relationship context without causal certainty; could be shorter."
+    },
+    {
+      "id": "supportive-challenge",
+      "arm": "legacy-prompt-control",
+      "model": "gpt-5.6-terra",
+      "run": "full-reasoned-corpus",
+      "provenance": "Extracted from saved provider JSON.",
+      "eyebrow": null,
+      "body": [
+        "Ma eddig nincs elvégzett edzés naplózva: gym 0, sport 0, futás 0 alkalom. A bevitel jelenleg 0/3100 kcal, miközben a check-inben 4/10-es energiát és kimerültséget jeleztél.\n\nA napi terv pihenőnap volt, de extra edzést vállaltál; ez még nincs elvégzettként rögzítve. A mai étkezési keret 3100 kcal, ezért a hátralévő időben legyen helye a feltöltődésnek is.\n\nAlvás- és testsúlyadat ma nincs rögzítve. Ha az extra edzés még előtted van, a kimerültséghez igazítsd a terhelést; utána pedig tedd első helyre az étkezést és a nyugodt regenerációt."
+      ],
+      "millis": 16073,
+      "costUsd": 0.014106,
+      "scores": [
+        2,
+        1,
+        1,
+        1,
+        1
+      ],
+      "total": 6,
+      "reviewNote": "Same rich context, existing per-kind legacy prompt; control is not the exact production pipeline."
+    },
+    {
+      "id": "supportive-challenge",
+      "arm": "contextual",
+      "model": "gpt-5.6-terra",
+      "run": "full-reasoned-corpus",
+      "provenance": "Extracted from saved provider JSON.",
+      "eyebrow": "Büszkeség és jelzés egyszerre",
+      "body": [
+        "Ma a tervezett pihenő helyett plusz edzést vállaltál, és érthető, hogy büszke vagy rá. Közben a kimerültséget érdemes ugyanilyen komolyan venni: a nap még nem lezárt, most inkább a visszatöltődésé legyen a főszerep.",
+        "Tegnap a pihenés mellett döntöttél, ma pedig ettől eltért a nap. Nem kell ezt hibának címkézni, de jó jelzés lehet arra, hogy az extra vállalás mellett mennyi tartalékod maradt valójában."
+      ],
+      "millis": 5943,
+      "costUsd": 0.017898,
+      "scores": [
+        2,
+        2,
+        2,
+        1,
+        2
+      ],
+      "total": 9,
+      "reviewNote": "Acknowledges pride and fatigue without endorsing extra load; useful reflection but no specific experiment."
+    },
+    {
+      "id": "outdated-fact",
+      "arm": "legacy-prompt-control",
+      "model": "gpt-5.6-terra",
+      "run": "full-reasoned-corpus",
+      "provenance": "Extracted from saved provider JSON.",
+      "eyebrow": "Emberek",
+      "body": [
+        "A heti összesítésben nincs adat az emberi körödről."
+      ],
+      "millis": 5955,
+      "costUsd": 0.00516,
+      "scores": [
+        1,
+        0,
+        0,
+        0,
+        1
+      ],
+      "total": 2,
+      "reviewNote": "Same rich context, existing per-kind legacy prompt; control is not the exact production pipeline."
+    },
+    {
+      "id": "outdated-fact",
+      "arm": "contextual",
+      "model": "gpt-5.6-terra",
+      "run": "full-reasoned-corpus",
+      "provenance": "Extracted from saved provider JSON.",
+      "eyebrow": "Rendeződött a félreértés",
+      "body": [
+        "Jó, hogy Márkkal hosszasan át tudtátok beszélni, és rendeztétek a korábbi félreértést. Ez már más helyzet, mint a tegnap még feszültséget jelző kép.",
+        "A heti emberkép ettől még átmenetileg a régebbi említéseket tükrözheti, de a mostani beszélgetés alapján köztetek enyhült a helyzet."
+      ],
+      "millis": 4406,
+      "costUsd": 0.017444,
+      "scores": [
+        2,
+        2,
+        2,
+        1,
+        2
+      ],
+      "total": 9,
+      "reviewNote": "Fresh resolved misunderstanding supersedes stale aggregate; appropriate acknowledgment rather than forced advice."
+    },
+    {
+      "id": "cold-start",
+      "arm": "legacy-prompt-control",
+      "model": "gpt-5.6-terra",
+      "run": "weight-elapsed-days-rerun",
+      "provenance": "Transcribed from provider report displayed in tool output; original target report removed by Maven clean.",
+      "eyebrow": "Első súlynapló-bejegyzés",
+      "body": [
+        "A most rögzített mérésed 79,4 kg. A heti trend jelenleg szintén 79,4 kg, de ez még csak egyetlen mérési nap alapján áll össze.",
+        "Mivel még nincs megadott célod és nincs elég adat az irány megállapításához, ebből az egy mérésből nem érdemes messzemenő következtetést levonni."
+      ],
+      "millis": 4026,
+      "costUsd": 0.004368,
+      "scores": [
+        1,
+        2,
+        2,
+        1,
+        1
+      ],
+      "total": 7,
+      "reviewNote": "Same rich context, existing per-kind legacy prompt; control is not the exact production pipeline."
+    },
+    {
+      "id": "cold-start",
+      "arm": "contextual",
+      "model": "gpt-5.6-terra",
+      "run": "weight-elapsed-days-rerun",
+      "provenance": "Transcribed from provider report displayed in tool output; original target report removed by Maven clean.",
+      "eyebrow": "Első rögzített súly",
+      "body": [
+        "A mai 79,4 kg lesz a kiinduló mért értéked. Mivel ez az első mérésed, ebből még nem lehet irányt vagy változási ütemet olvasni; néhány további, hasonló körülmények között rögzített mérés már megmutatja majd a mintát.",
+        "Ha szeretnéd értelmezhetővé tenni a sort, mérj rendszeresen — például reggel, mosdó után, evés-ivás előtt — és később ehhez lehet célértéket is rendelni."
+      ],
+      "millis": 5509,
+      "costUsd": 0.017932,
+      "scores": [
+        2,
+        2,
+        2,
+        2,
+        1
+      ],
+      "total": 9,
+      "reviewNote": "No invented history or trend; appropriate one-point limitation, somewhat generic measurement guidance."
+    },
+    {
+      "id": "unavailable-source",
+      "arm": "legacy-prompt-control",
+      "model": "gpt-5.6-terra",
+      "run": "full-reasoned-corpus",
+      "provenance": "Extracted from saved provider JSON.",
+      "eyebrow": null,
+      "body": [
+        "Ma nem érkezett alvásimport, és a saját bejegyzésedben fáradtságot jeleztél. A mai terhelés előtt figyeld meg, hogyan érzed magad."
+      ],
+      "millis": 1594,
+      "costUsd": 0.00263,
+      "scores": [
+        2,
+        1,
+        2,
+        2,
+        2
+      ],
+      "total": 9,
+      "reviewNote": "Same rich context, existing per-kind legacy prompt; control is not the exact production pipeline."
+    },
+    {
+      "id": "unavailable-source",
+      "arm": "contextual",
+      "model": "gpt-5.6-terra",
+      "run": "full-reasoned-corpus",
+      "provenance": "Extracted from saved provider JSON.",
+      "eyebrow": "Fáradtabb reggel",
+      "body": [
+        "Ma sincs alvásadat, de a saját jelzésed alapján fáradtabbnak érzed magad. Mielőtt bármilyen terhelésbe kezdenél, érdemes a pillanatnyi közérzetedhez igazítani az elvárásaidat; ma ez beszédesebb, mint egy hiányzó alvásmérés.",
+        "Tegnap még az alvásimport érkezésére vártunk, ez továbbra sem változott. A fáradtságjelzésed viszont már elég ok arra, hogy figyeld, mennyire vagy valóban terhelhető."
+      ],
+      "millis": 5746,
+      "costUsd": 0.018056,
+      "scores": [
+        2,
+        2,
+        2,
+        1,
+        1
+      ],
+      "total": 8,
+      "reviewNote": "No invented sleep hours; follows prior unavailable import. Repetitive and comparative fatigue phrasing could be tighter."
+    },
+    {
+      "id": "same-facts-next-day",
+      "arm": "legacy-prompt-control",
+      "model": "gpt-5.6-terra",
+      "run": "full-reasoned-corpus",
+      "provenance": "Extracted from saved provider JSON.",
+      "eyebrow": null,
+      "body": [
+        "Ma 400 ml víz van naplózva, miközben az időarányos cél 2000 ml, a napi cél pedig 4000 ml. Mivel a folyadékbevitelt gyakran utólag rögzíted, ez nem feltétlenül tükrözi a tényleges elfogyasztott mennyiséget; tegnap is ugyanezek a naplózott értékek szerepeltek."
+      ],
+      "millis": 2817,
+      "costUsd": 0.002796,
+      "scores": [
+        2,
+        2,
+        2,
+        1,
+        2
+      ],
+      "total": 9,
+      "reviewNote": "Same rich context, existing per-kind legacy prompt; control is not the exact production pipeline."
+    },
+    {
+      "id": "same-facts-next-day",
+      "arm": "contextual",
+      "model": "gpt-5.6-terra",
+      "run": "full-reasoned-corpus",
+      "provenance": "Extracted from saved provider JSON.",
+      "eyebrow": "Hidratációs ellenőrzés",
+      "body": [
+        "Ma eddig 400 ml szerepel a naplóban, ami az időarányos 2000 ml-es cél alatt van. Mivel gyakran utólag rögzíted az ivást, ez nem feltétlenül a tényleges beviteledet mutatja.",
+        "Tegnap is ugyanennyi volt felírva, ezért érdemes most ránézni, hogy a már megivott folyadékok felkerüljenek a naplóba. Edzésnapként a nap hátralévő részében különösen hasznos lehet kéznél tartani egy palackot és több részletben inni."
+      ],
+      "millis": 3557,
+      "costUsd": 0.018034,
+      "scores": [
+        2,
+        2,
+        2,
+        2,
+        1
+      ],
+      "total": 9,
+      "reviewNote": "Recognizes repeated numbers and late logging; offers relevant small action."
+    }
+  ]
+}
