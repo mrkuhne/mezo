@@ -16365,3 +16365,166 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .uv-glow { animation: uv-glow 5s ease-in-out 1s infinite; }
 }
 /* ── /uveg kit ─────────────────────────────────────────────────────────────── */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ── uveg chrome (mezo-me75u.1) ──────────────────────────────────────────────
+   The app chrome keeps its CONTENT and behavior and wears glass (üveg bible §7,
+   approved on prototypes/fuel-uveg.html 2026-09-23). Built once here; every later
+   slice reuses it untouched. The chrome keeps the live CLAY icons; content wears
+   the Titanium 3D set. No day-part switcher. No sheen on the bottom bar.
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* §7.1 header ground: the warm-graphite fade the content scrolls under, with the
+   aurora's hues as two faint blobs (HeaderAurora keeps its markup). */
+:root[data-theme="dark"] .app-head-bg .app-head-wash { background: linear-gradient(180deg, rgba(25, 22, 20, 0.94) 60%, rgba(25, 22, 20, 0)); }
+:root[data-theme="dark"] .app-head-bg .app-head-blob.b1 { background: #6D5FA8; opacity: 0.18; }
+:root[data-theme="dark"] .app-head-bg .app-head-blob.b2 { background: #C98A3A; opacity: 0.14; }
+:root[data-theme="dark"] .app-head-bg .app-head-deco { opacity: 0.35; }
+.app-head { display: flex; align-items: center; gap: 8px; }
+/* The tallest control is now the 46px orb (was the 42px round button): the condensed rhythm
+   derives from it so the header still lands on --mzh-head-cond-h. */
+.app-head.is-cond { padding-top: calc(var(--mzh-head-cond-h) - 46px); }
+.app-head-wordmark {
+  font-size: 27px; letter-spacing: -1.3px;
+  background: linear-gradient(120deg, #F5EFE6 0%, #E6DDFF 55%, #E9C48A 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 14px rgba(171, 159, 210, 0.28));
+}
+/* round glass buttons (40px) — the badge sits OUTSIDE, so is-round keeps overflow visible */
+.nap-roundbtn.glass { width: 40px; height: 40px; border: 0; }
+.nap-roundbtn.glass.is-open {
+  background:
+    radial-gradient(90% 90% at 50% 30%, color-mix(in srgb, var(--c) 36%, transparent), transparent 70%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.60));
+  border: 0;
+}
+.nap-q.glass .nap-q-glyph { font-family: var(--ff-body); font-style: normal; font-size: 17px; font-weight: 600; color: #FFD99A; }
+.nap-roundbtn.glass .nap-badge {
+  position: absolute; top: -3px; right: -4px; z-index: 4; min-width: 17px; height: 17px; padding: 0 5px; border-radius: 9px;
+  font-size: 10px; font-weight: 700; color: #191614;
+  background: linear-gradient(135deg, #FFB39C, #FF7E5C);
+  box-shadow: 0 0 10px rgba(255, 126, 92, 0.7), 0 0 0 2px var(--canvas);
+}
+.nap-roundbtn.glass .nap-offnow {
+  position: absolute; top: 1px; right: 1px; z-index: 4; width: 8px; height: 8px;
+  background: var(--dv-amber); box-shadow: 0 0 8px var(--dv-amber), 0 0 0 2px var(--canvas);
+}
+/* the filling day orb: a 46px glass sphere with the coral liquid (DayOrb) inside */
+.nap-avatar.glass { width: 46px; height: 46px; padding: 0; }
+.nap-avatar.glass .dayorb { overflow: visible; }
+.dayorb-glass { fill: rgba(245, 239, 230, 0.05); stroke: rgba(245, 239, 230, 0.14); stroke-width: 2.5; }
+.dayorb-liquid { filter: drop-shadow(0 0 6px rgba(255, 126, 92, 0.65)); }
+.dayorb-hi { fill: none; stroke: rgba(255, 255, 255, 0.55); stroke-width: 5.5; stroke-linecap: round; }
+@keyframes uv-orbwave { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-20px); } }
+@media (prefers-reduced-motion: no-preference) {
+  .dayorb-wave { animation: uv-orbwave 3.2s ease-in-out infinite; }
+}
+/* §7.1 notification panel: a .glass card; chips + rows flat, unread = a 2px sky inset edge */
+.app-head > .nap-ntfpanel.glass { border: 0; }
+.nap-ntfpanel.glass .nap-ntfeyebrow { color: var(--text-muted); letter-spacing: 1.3px; }
+.nap-ntfpanel.glass .nap-ntfcnt { color: #191614; background: var(--dv-sky); box-shadow: 0 0 12px rgba(127, 178, 222, 0.5); }
+.nap-ntfpanel.glass .nap-ntfcnt.is-none { color: var(--text-muted); background: rgba(245, 239, 230, 0.05); box-shadow: none; }
+.nap-ntfpanel.glass .nap-ntfallread { color: var(--dv-sky); }
+.nap-ntfpanel.glass .nap-ntftabs button {
+  border: 0; background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+  font-size: 12px; font-weight: 600; padding: 6px 11px;
+}
+.nap-ntfpanel.glass .nap-ntftabs button.on {
+  color: #191614; background: var(--dv-sky); box-shadow: 0 0 12px rgba(127, 178, 222, 0.5);
+}
+.nap-ntfpanel.glass .nap-ntftabs button.on .n { color: #191614; }
+.nap-ntfpanel.glass .nap-ntfday { background: rgba(34, 30, 27, 0.94); box-shadow: 0 6px 8px -6px rgba(34, 30, 27, 0.94); color: var(--text-muted); letter-spacing: 1.3px; }
+.nap-ntfpanel.glass .nap-ntfrow { background: rgba(245, 239, 230, 0.04); margin-bottom: 6px; }
+.nap-ntfpanel.glass .nap-ntfrow.unread { background: rgba(245, 239, 230, 0.04); box-shadow: inset 2px 0 0 var(--dv-sky); }
+.nap-ntfpanel.glass .nap-ntf-dot { background: var(--dv-sky); box-shadow: 0 0 8px var(--dv-sky); }
+.nap-ntfpanel.glass .nap-ntfrow.unread .nap-ntf-when { color: var(--dv-sky); }
+.nap-ntfpanel.glass .nap-ntfico { box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08); }
+.nap-ntfpanel.glass .nap-ntfft { border-top-color: var(--divider); }
+.nap-ntfpanel.glass .nap-ntfft button { color: var(--dv-sky); }
+
+/* §7.2 bottom menu — domain accents for --c (the §2 dark dv values) */
+.tab-bar[data-domain="nap"],   .domain-row[data-domain="nap"]   { --c: var(--dv-amber); }
+.tab-bar[data-domain="train"], .domain-row[data-domain="train"] { --c: var(--dv-coral); }
+.tab-bar[data-domain="fuel"],  .domain-row[data-domain="fuel"]  { --c: var(--dv-sage); }
+.tab-bar[data-domain="mezo"],  .domain-row[data-domain="mezo"]  { --c: var(--dv-lav); }
+.tab-bar[data-domain="me"],    .domain-row[data-domain="me"]    { --c: var(--dv-rose); }
+.tab-bar.glass[data-domain] {
+  position: absolute; left: 10px; right: 10px; bottom: 12px; height: auto; z-index: 40;
+  display: flex; align-items: stretch; gap: 2px; padding: 6px;
+  border: 0; border-radius: 28px;
+}
+.tab-bar.glass[data-domain] .tab-boop {
+  position: relative; flex: 0 0 62px; width: 62px; height: 58px; margin-right: 4px; padding: 0;
+  display: grid; place-items: center; border: 0; border-radius: 22px;
+  background: radial-gradient(80% 90% at 50% 35%, color-mix(in srgb, var(--c) 22%, transparent), transparent 72%);
+}
+.tab-bar.glass[data-domain] .tab-boop::after {
+  content: ''; position: absolute; right: -4px; top: 12px; bottom: 12px; width: 1px; background: var(--divider);
+}
+.tab-bar.glass[data-domain] .tab-boop .tab-ico { width: 44px; height: 44px; }
+.tab-bar.glass[data-domain] .tab-boop .tab-ico svg {
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 12px color-mix(in srgb, var(--c) 45%, transparent));
+}
+.tab-bar.glass[data-domain] .tab-item:not(.tab-boop) {
+  flex: 1; min-width: 0; gap: 3px; padding: 6px 0 5px; border-radius: 20px;
+  font-size: 10px; font-weight: 500; color: var(--text-muted);
+}
+.tab-bar.glass[data-domain] .tab-item:not(.tab-boop):not(.active) .tab-ico svg { filter: grayscale(0.45) brightness(0.8); }
+.tab-bar.glass[data-domain] .tab-item.active {
+  color: var(--text-primary); font-weight: 600;
+  background: radial-gradient(80% 90% at 50% 20%, color-mix(in srgb, var(--c) 22%, transparent), transparent 70%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 28%, transparent), 0 0 16px -4px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.tab-bar.glass[data-domain] .tab-item.active .tab-ico svg {
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 10px color-mix(in srgb, var(--c) 60%, transparent));
+}
+.phone-screen:has(.tab-bar.glass[data-domain]) > .home-indicator { background: var(--text-primary); }
+@media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+  .tab-bar.glass[data-domain] { height: auto; bottom: calc(12px + env(safe-area-inset-bottom)); padding-bottom: 6px; }
+}
+@media (max-width: 360px) {
+  .tab-bar.glass[data-domain] .tab-boop { flex-basis: 50px; width: 50px; }
+  .tab-bar.glass[data-domain] .tab-item:not(.tab-boop) { font-size: 9px; }
+}
+/* §7.2 domain switcher: a glass card above the bar; five living Boops in a row */
+.domain-switcher-overlay {
+  align-items: flex-end; padding: 24px 10px calc(92px + env(safe-area-inset-bottom));
+  background: rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+}
+.domain-switcher.glass { --c: var(--dv-sage); max-width: none; padding: 16px 14px 14px; border-radius: 26px; }
+.domain-eyebrow { display: block; margin: 0 4px 10px; }
+.domain-switcher.glass .domain-list { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.domain-switcher.glass .domain-row {
+  flex-direction: column; justify-content: center; gap: 5px; min-height: 0; padding: 10px 0 8px;
+  border: 0; border-radius: 18px; background: none; box-shadow: none; text-align: center;
+}
+.domain-switcher.glass .domain-row .domain-row-mark svg {
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 10px color-mix(in srgb, var(--c) 45%, transparent));
+}
+.domain-switcher.glass .domain-row-text { align-items: center; gap: 0; }
+.domain-switcher.glass .domain-row-text strong { font: 600 11px/1.2 var(--ff-body); color: var(--text-secondary); }
+.domain-switcher.glass .domain-row.current {
+  border: 0;
+  background: radial-gradient(80% 90% at 50% 25%, color-mix(in srgb, var(--c) 26%, transparent), transparent 72%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent);
+}
+.domain-switcher.glass .domain-row.current .domain-row-text strong { color: var(--text-primary); }
+.domain-switcher.glass .domain-all {
+  margin-top: 12px; padding: 11px 16px; border: 0;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+  color: var(--text-secondary);
+}
+@media (max-width: 360px) {
+  .domain-switcher.glass .domain-row { padding: 8px 0 6px; }
+  .domain-switcher.glass .domain-row-text strong { font-size: 10px; }
+}
+/* §7.2 FAB: a lavender glass rounded square with the breathing glow */
+.quicklog-fab.glass {
+  position: absolute; right: 18px; bottom: calc(96px + env(safe-area-inset-bottom)); width: 58px; height: 58px;
+  border: 0; border-radius: 20px; color: #E6DDFF;
+}
+.quicklog-fab.glass svg { width: 26px; height: 26px; }
+@media (prefers-reduced-motion: no-preference) {
+  .quicklog-fab.glass { animation: uv-breathe 3s ease-in-out infinite; }
+}
+/* ── /uveg chrome ──────────────────────────────────────────────────────────── */

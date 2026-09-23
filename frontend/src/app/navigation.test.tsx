@@ -359,7 +359,10 @@ test('the sticky header keeps its compact aurora without covering content or dou
   expect.soft(screen.getByLabelText('Beállítások').querySelector('svg')).toHaveAttribute('width', '24')
   expect.soft(screen.getByLabelText(/Mezo üzenetei/).querySelector('svg')).toHaveAttribute('width', '23')
   expect.soft(screen.getByLabelText(/Értesítések/).querySelector('svg')).toHaveAttribute('width', '23')
-  expect.soft(napHeader.querySelector('.nap-avatar svg')).toHaveAttribute('width', '42')
+  // Üveg (bible §7.1, mezo-me75u.1): the day orb is a 46px glass sphere holding a 38px liquid.
+  expect.soft(napHeader.querySelector('.nap-avatar svg')).toHaveAttribute('width', '38')
+  expect.soft(napHeader.querySelector('.nap-avatar')).toHaveClass('glass', 'is-round')
+  for (const btn of napHeader.querySelectorAll('.nap-roundbtn')) expect.soft(btn).toHaveClass('glass', 'is-round')
   nap.unmount()
 
   const { container } = renderApp('/mezo/chat')

@@ -119,7 +119,10 @@ export function AppHeader() {
           A gombsor BAL szélén, minden oldalon ugyanott; arany pont = T3 oldal még nem látott
           kalauzzal (T1/T2 magától felugrik, ott a pont fölösleges). */}
       {kalauz.current && (
-        <button type="button" className={cn('nap-roundbtn', 'nap-q', kalauz.openId === kalauz.current.id && 'is-open')}
+        // Üveg (bible §7.1, mezo-me75u.1): every round header button is a `.glass is-round`
+        // — overflow visible so the badge is not clipped, no sheen — tinted through `--c`.
+        <button type="button" className={cn('nap-roundbtn', 'nap-q', 'glass', 'is-round', kalauz.openId === kalauz.current.id && 'is-open')}
+          style={{ '--c': 'var(--dv-amber)' } as React.CSSProperties}
           aria-label="Kalauz ehhez az oldalhoz" aria-haspopup="dialog"
           onClick={() => { setNtfOpen(false); kalauz.open(kalauz.current!.id) }}>
           <span className="nap-q-glyph" aria-hidden="true">?</span>
@@ -127,12 +130,14 @@ export function AppHeader() {
         </button>
       )}
 
-      <button type="button" className="nap-roundbtn" aria-label="Beállítások"
+      <button type="button" className="nap-roundbtn glass is-round" aria-label="Beállítások"
+        style={{ '--c': 'var(--text-muted)' } as React.CSSProperties}
         onClick={() => navigate('/settings', { state: { from: pathname.startsWith('/settings') ? state?.from : pathname + search } })}>
         <ClayIcon name="i-beallitas" size={24} />
       </button>
 
-      <button type="button" className="nap-roundbtn"
+      <button type="button" className="nap-roundbtn glass is-round"
+        style={{ '--c': 'var(--dv-lav)' } as React.CSSProperties}
         aria-label={unreadMsgs > 0 ? `Mezo üzenetei, ${unreadMsgs} olvasatlan` : 'Mezo üzenetei'}
         onClick={() => navigate('/nap/uzenetek')}>
         <ClayIcon name="i-level" size={23} />
@@ -142,7 +147,8 @@ export function AppHeader() {
       {/* A csengő wrapperének NINCS `nap-dpwrap`-ja: a panel nem a gomb alá tapad, hanem a
           fejléc két széléhez (`.nap-ntfpanel`, a `<header>` gyereke) — ez adja a teljes
           szélességet, amiben egy cím és két sor törzs is kifér (mezo-g9fz). */}
-      <button type="button" className={cn('nap-roundbtn', ntfOpen && 'is-open')}
+      <button type="button" className={cn('nap-roundbtn', 'glass', 'is-round', ntfOpen && 'is-open')}
+        style={{ '--c': 'var(--dv-sky)' } as React.CSSProperties}
         aria-haspopup="dialog" aria-expanded={ntfOpen}
         aria-label={unreadNtf > 0 ? `Értesítések, ${unreadNtf} olvasatlan` : 'Értesítések'}
         onClick={() => { setNtfOpen((o) => !o) }}>
@@ -154,9 +160,10 @@ export function AppHeader() {
           „Én" fül, tehát duplikátum volt. Most a nap állapotjelzője: alulról fölfelé telik
           a rögzített jelek szerint, és a mai nap-oldalra visz. A töltöttség maga a jelzés,
           ezért nincs rajta badge. */}
-      <button type="button" className="nap-avatar" aria-label={dayOrb.label}
+      <button type="button" className="nap-avatar glass is-round" aria-label={dayOrb.label}
+        style={{ '--c': 'var(--dv-coral)' } as React.CSSProperties}
         onClick={() => navigate(`/me/week/napok/${localDateString()}`)}>
-        <DayOrb pct={dayOrb.pct} intensity={dayOrb.intensity} size={42} />
+        <DayOrb pct={dayOrb.pct} intensity={dayOrb.intensity} size={38} />
       </button>
 
       {ntfOpen && <>
@@ -170,7 +177,8 @@ export function AppHeader() {
         <div className="nap-ntfscrim" aria-hidden="true" onClick={() => setNtfOpen(false)} />
         {/* `dialog`, nem `menu`: a panel szűrő-chipeket és egy „Mind olvasott" gombot is
             tartalmaz, amik nem `menuitem`-ek — egy `role="menu"` alattuk hazug fa lenne. */}
-        <div className="nap-ntfpanel" role="dialog" aria-label="Értesítések">
+        <div className="nap-ntfpanel glass" role="dialog" aria-label="Értesítések"
+          style={{ '--c': 'var(--dv-sky)' } as React.CSSProperties}>
           <div className="nap-ntfhd">
             <span className="nap-ntfeyebrow">Értesítések</span>
             <span className={cn('nap-ntfcnt', unreadNtf === 0 && 'is-none')}>

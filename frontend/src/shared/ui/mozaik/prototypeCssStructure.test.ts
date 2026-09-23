@@ -1359,3 +1359,26 @@ describe('the uveg kit section is registered and carries the §3 recipe (mezo-me
     for (const cold of ['#0B0D12', '#13151D', '#20222A']) expect(css).not.toContain(cold)
   })
 })
+
+describe('the uveg chrome section is registered (mezo-me75u.1, bible §7)', () => {
+  const section = () => stripComments(slice('── uveg chrome (', '── /uveg chrome '))
+
+  test('the block exists and styles the header, the bar, the switcher and the FAB', () => {
+    const css = section()
+    for (const sel of ['.nap-roundbtn.glass', '.nap-avatar.glass', '.nap-ntfpanel.glass',
+      '.tab-bar.glass[data-domain]', '.domain-switcher.glass', '.quicklog-fab.glass']) {
+      expect(css, `${sel} missing from the uveg chrome block`).toContain(sel)
+    }
+  })
+
+  test('the orb wave only moves inside the reduced-motion gate', () => {
+    const css = section()
+    const gate = css.indexOf('@media (prefers-reduced-motion: no-preference)')
+    expect(gate).toBeGreaterThan(-1)
+    expect(css.indexOf('.dayorb-wave { animation')).toBeGreaterThan(gate)
+  })
+
+  test('there is no day-part switcher in the glass chrome', () => {
+    expect(section()).not.toContain('nap-dpmenu')
+  })
+})

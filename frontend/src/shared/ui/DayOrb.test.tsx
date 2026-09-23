@@ -1,37 +1,40 @@
 import { render } from '@testing-library/react'
 import { DayOrb } from '@/shared/ui/DayOrb'
 
-/** A `#s-orb` teste y-ban 14…82 közt fut; a clip-rect teteje `82 − pct/100 × 68`. */
-function clipTop(container: HTMLElement): number {
-  const rect = container.querySelector('clipPath rect')
-  return Number(rect?.getAttribute('y'))
+/** Üveg (bible §7.1, mezo-me75u.1): a gömb teste y-ban 10…90 közt fut; a folyadék
+ *  felszíne `90 − pct/100 × 80`, a `.dayorb-liquid` `data-level`-jén olvasható. 0%-on nincs
+ *  folyadék — ott a szint maga az alj (90). */
+function level(container: HTMLElement): number {
+  const liquid = container.querySelector('.dayorb-liquid')
+  return liquid ? Number(liquid.getAttribute('data-level')) : 90
 }
 
-test('0%-on nincs kitöltés és nincs menisz — csak a szürke alap', () => {
+test('0%-on nincs folyadék és nincs hullám — csak az üres üveggömb', () => {
   const { container } = render(<DayOrb pct={0} intensity={0.5} />)
-  expect(container.querySelectorAll('use')).toHaveLength(1)
-  expect(container.querySelector('use')).toHaveClass('dayorb-base')
-  expect(container.querySelector('.dayorb-meniscus')).toBeNull()
+  expect(container.querySelector('.dayorb-glass')).not.toBeNull()
+  expect(container.querySelector('.dayorb-liquid')).toBeNull()
+  expect(container.querySelector('.dayorb-wave')).toBeNull()
 })
 
-test('részleges töltésnél a clip teteje a pct-ből jön', () => {
+test('részleges töltésnél a felszín a pct-ből jön', () => {
   const { container } = render(<DayOrb pct={50} intensity={0.5} />)
-  expect(clipTop(container)).toBeCloseTo(48, 5) // 82 − 0.5 × 68
+  expect(level(container)).toBeCloseTo(50, 5) // 90 − 0.5 × 80
 })
 
-test('0%-on a clip teteje az orb alja, 100%-on a teteje', () => {
-  expect(clipTop(render(<DayOrb pct={0} intensity={0.5} />).container)).toBeCloseTo(82, 5)
-  expect(clipTop(render(<DayOrb pct={100} intensity={0.5} />).container)).toBeCloseTo(14, 5)
+test('0%-on a felszín a gömb alja, 100%-on a teteje', () => {
+  expect(level(render(<DayOrb pct={0} intensity={0.5} />).container)).toBeCloseTo(90, 5)
+  expect(level(render(<DayOrb pct={100} intensity={0.5} />).container)).toBeCloseTo(10, 5)
 })
 
-test('100%-on nincs menisz — a felszín nem látszik, ha tele van', () => {
+test('100%-on nincs hullám — tele gömbnek nincs felszíne', () => {
   const { container } = render(<DayOrb pct={100} intensity={1} />)
-  expect(container.querySelector('.dayorb-meniscus')).toBeNull()
+  expect(container.querySelector('.dayorb-wave')).toBeNull()
+  expect(container.querySelector('.dayorb-liquid circle')).not.toBeNull()
 })
 
-test('részleges töltésnél VAN menisz', () => {
+test('részleges töltésnél VAN hullámzó felszín', () => {
   const { container } = render(<DayOrb pct={40} intensity={0.5} />)
-  expect(container.querySelector('.dayorb-meniscus')).not.toBeNull()
+  expect(container.querySelector('.dayorb-wave path')).not.toBeNull()
 })
 
 test('intensity=0 a kifakult végpontot adja, intensity=1 a teltet', () => {
@@ -43,8 +46,8 @@ test('intensity=0 a kifakult végpontot adja, intensity=1 a teltet', () => {
 })
 
 test('a pct a 0…100 tartományra szorul', () => {
-  expect(clipTop(render(<DayOrb pct={-20} intensity={0.5} />).container)).toBeCloseTo(82, 5)
-  expect(clipTop(render(<DayOrb pct={140} intensity={0.5} />).container)).toBeCloseTo(14, 5)
+  expect(level(render(<DayOrb pct={-20} intensity={0.5} />).container)).toBeCloseTo(90, 5)
+  expect(level(render(<DayOrb pct={140} intensity={0.5} />).container)).toBeCloseTo(10, 5)
 })
 
 test('két példány clipPath id-je különbözik — a defs nem ütközik', () => {
@@ -67,7 +70,7 @@ test('a svg dekoratív — a gomb adja az akadálymentes nevet', () => {
 // bukhatnának — itt hangosan bukik helyette.
 test('a generált id url(#…)-ben biztonságos marad', () => {
   const { container } = render(<DayOrb pct={50} intensity={0.5} />)
-  const ids = [...container.querySelectorAll('clipPath, radialGradient')].map((n) => n.id)
+  const ids = [...container.querySelectorAll('clipPath, linearGradient')].map((n) => n.id)
   expect(ids.length).toBeGreaterThan(0)
   for (const id of ids) expect(id).toMatch(/^[A-Za-z0-9_-]+$/)
 })

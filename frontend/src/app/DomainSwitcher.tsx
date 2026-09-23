@@ -58,7 +58,10 @@ export function DomainSwitcher({ currentDomainId, onClose }: {
     <div ref={overlayRef} className="domain-switcher-overlay" onClick={event => {
       if (event.target === event.currentTarget) onClose()
     }}>
-      <div ref={dialogRef} className="domain-switcher" role="dialog" aria-modal="true" aria-label="Területváltó">
+      {/* Üveg (bible §7.2, mezo-me75u.1): a `.glass` card above the bar — the eyebrow and the
+          five living Boops, each in its domain hue; the current one lit. */}
+      <div ref={dialogRef} className="domain-switcher glass" role="dialog" aria-modal="true" aria-label="Területváltó">
+        <small className="uv-eyebrow domain-eyebrow" aria-hidden="true">Területváltó</small>
         <div className="domain-list">
           {DOMAINS.map(domain => {
             const current = domain.id === currentDomainId
@@ -73,9 +76,10 @@ export function DomainSwitcher({ currentDomainId, onClose }: {
                   onClose()
                   navigate(routeForDomain(domain.id))
                 }}>
-                <span className="domain-row-mark"><Boop domain={domain.id} size={44} alive /></span>
-                <span className="domain-row-text"><strong>{domain.name}</strong><small>{summary}</small></span>
-                <b className="domain-row-end" aria-hidden="true">{current ? '✓' : '↗'}</b>
+                <span className="domain-row-mark"><Boop domain={domain.id} size={46} alive /></span>
+                {/* The four tab labels ride in the accessible name (aria-label); the glass
+                    grid shows the name only, as the approved prototype does. */}
+                <span className="domain-row-text"><strong>{domain.name}</strong><small className="sr-only">{summary}</small></span>
               </button>
             )
           })}

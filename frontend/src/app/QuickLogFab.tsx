@@ -16,7 +16,9 @@ export function QuickLogFab() {
     <>
       <button
         type="button"
-        className="quicklog-fab np-press"
+        // Üveg (bible §7.2, mezo-me75u.1): a lavender `.glass` rounded square, breathing glow.
+        className="quicklog-fab glass np-press"
+        style={{ '--c': 'var(--dv-lav)' } as React.CSSProperties}
         aria-label="Gyors logolás"
         onClick={() => (onNapHub ? navigate('/nap/gyors') : setOpen(true))}
       >
