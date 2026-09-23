@@ -14,6 +14,7 @@
 import { memo } from 'react'
 import claySpotsRaw from './clay-spots.svg?raw'
 import clayIconsRaw from './clay-icons.svg?raw'
+import titaniumIconsRaw from './titanium-icons.svg?raw'
 
 export type ClayIconName =
   | 'i-nap' | 'i-edzes' | 'i-fuel' | 'i-mezo' | 'i-polc' | 'i-viz' | 'i-alvas'
@@ -55,13 +56,30 @@ export type ClaySpotName =
   // Szekció-spotok a shell-fejléchez (mezo-8az6): a Fuel és az Én darabja hiányzott.
   | 's-fuel' | 's-en'
 
-/** Mounts the clay <symbol>/<gradient> defs once. Rendered by AppLayout. */
+/** The Titanium 3D content icons (üveg style bible §4, mezo-me75u.1): the companion-titanium
+ *  sprite's 62 symbols verbatim + the custom icons drawn in its recipe, namespaced `t-*` (defs
+ *  `tg-*`) so they share one DOM with the clay set. Source of truth + generator:
+ *  docs/design_2.0/assets/titanium-icons.svg ← scripts/gen-titanium-sprite.mjs. CHROME keeps
+ *  the clay icons (header, tabs); CONTENT wears these. */
+export type Icon3DName =
+  | 't-sun' | 't-water' | 't-moon' | 't-bolt' | 't-book' | 't-ring' | 't-gem' | 't-heart'
+  | 't-dumbbell' | 't-volley' | 't-kettle' | 't-run' | 't-history' | 't-play' | 't-note'
+  | 't-up' | 't-down' | 't-hold' | 't-record' | 't-journal' | 't-tick' | 't-skip' | 't-star'
+  | 't-star-half' | 't-star-empty' | 't-repeat' | 't-peak' | 't-bike' | 't-swim' | 't-football'
+  | 't-basket' | 't-tennis' | 't-hike' | 't-trx' | 't-crossfit' | 't-other' | 't-info'
+  | 't-bowl' | 't-stack' | 't-chat' | 't-person' | 't-meat' | 't-avocado' | 't-protein'
+  | 't-carb' | 't-fat' | 't-fiber' | 't-macro' | 't-micro' | 't-processing' | 't-clock'
+  | 't-shield' | 't-sugar' | 't-salt' | 't-sprout' | 't-camera' | 't-link' | 't-plate'
+  | 't-supps' | 't-trend' | 't-pot' | 't-score' | 't-snack' | 't-ultra' | 't-glucose'
+  | 't-portion'
+
+/** Mounts the clay + Titanium <symbol>/<gradient> defs once (main.tsx). */
 export const ClaySprites = memo(function ClaySprites() {
   return (
     <span
       aria-hidden="true"
       // Verbatim sprite injection — the raw files are the 1:1 asset contract.
-      dangerouslySetInnerHTML={{ __html: clayIconsRaw + claySpotsRaw }}
+      dangerouslySetInnerHTML={{ __html: clayIconsRaw + claySpotsRaw + titaniumIconsRaw }}
     />
   )
 })
@@ -82,6 +100,17 @@ export function ClayIcon(props: ClayProps<ClayIconName>) {
 
 export function ClaySpot(props: ClayProps<ClaySpotName>) {
   return <ClayUse {...props} />
+}
+
+/** A Titanium 3D sprite icon (bible §4). 64×64 art; inside a `.glass` it picks up the accent
+ *  halo from the uveg kit (`.glass .t-ico`). */
+export function Icon3D({ name, size = 32, className }: { name: Icon3DName; size?: number; className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" width={size} height={size} aria-hidden="true"
+      className={className ? `t-ico ${className}` : 't-ico'}>
+      <use href={`#${name}`} />
+    </svg>
+  )
 }
 
 // Boop (mezo-ju4j6.15) — a kabalafigura a clay készlet része, de SAJÁT komponenssel jön:

@@ -1316,3 +1316,46 @@ describe('the depth & focus ranking holds across the swept screens (mezo-ju4j6.1
     expect(stripComments(rawCss)).toMatch(/\.domain-row\.current\[data-domain="fuel"\]\s*\{[^}]*var\(--mz-wash-sage\)/)
   })
 })
+
+/**
+ * Üvegesítés U1 (mezo-me75u.1): the ONE glass recipe every slice reuses (üveg style bible §3).
+ * A second glass recipe or palette is the failure mode this guards: the kit lives in one block,
+ * carries all four layers of the card, and keeps its sheen inside the reduced-motion gate.
+ */
+describe('the uveg kit section is registered and carries the §3 recipe (mezo-me75u.1)', () => {
+  const START_MARKER = '── uveg kit ('
+  const END_MARKER = '── /uveg kit '
+  const section = () => slice(START_MARKER, END_MARKER)
+  const rules = () => stripComments(section())
+
+  test('both markers are present, in order', () => {
+    expect(rawCss.indexOf(START_MARKER)).toBeGreaterThan(-1)
+    expect(rawCss.indexOf(END_MARKER)).toBeGreaterThan(rawCss.indexOf(START_MARKER))
+  })
+
+  test('the glass card has its four layers: body, gradient frame, top edge + glow, sheen', () => {
+    const css = rules()
+    expect(css).toMatch(/\.glass \{[^}]*backdrop-filter: blur\(16px\) saturate\(1\.5\)/)
+    expect(css).toMatch(/\.glass \{[^}]*0 0 26px -6px color-mix\(in srgb, var\(--c\) 30%, transparent\)/)
+    expect(css).toMatch(/\.glass \{[^}]*inset 0 1px 0 rgba\(255, 244, 230, 0\.10\)/)
+    expect(css).toMatch(/\.glass::before \{[^}]*mask-composite: exclude/)
+    expect(css).toMatch(/\.glass::after \{[^}]*skewX\(-20deg\)/)
+  })
+
+  test('there is exactly ONE .glass recipe in the whole stylesheet', () => {
+    expect(stripComments(rawCss).match(/^\.glass \{/gm) ?? []).toHaveLength(1)
+  })
+
+  test('the sheen only runs inside the reduced-motion gate; still/round glass never sweeps', () => {
+    const css = rules()
+    const gate = css.indexOf('@media (prefers-reduced-motion: no-preference)')
+    expect(gate).toBeGreaterThan(-1)
+    expect(css.indexOf('animation: uv-sheen')).toBeGreaterThan(gate)
+    expect(css).toMatch(/\.glass\.is-still::after, \.glass\.is-round::after \{[^}]*display: none/)
+  })
+
+  test('the ground is the warm graphite, never the cold Titanium one', () => {
+    const css = rules()
+    for (const cold of ['#0B0D12', '#13151D', '#20222A']) expect(css).not.toContain(cold)
+  })
+})

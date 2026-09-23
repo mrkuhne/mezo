@@ -16219,3 +16219,149 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .mno-group a small { font: 400 11.5px/1.45 var(--ff-body); color: var(--text-secondary); }
 .mno-group a:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: -2px; }
 /* ── /oldal-leltár ─────────────────────────────────────────────────────────── */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ── uveg kit (mezo-me75u.1) ─────────────────────────────────────────────────
+   The Üveg material, ONCE, for every slice: Mozaik colors on the warm-graphite
+   dark, wearing Titanium's glass (docs/design_2.0/2026-09-23-uveg-style-bible.md,
+   reference prototypes/fuel-uveg.html). Dark only — the app is locked (bible §8).
+   Every glass surface takes ONE accent through `--c`; frame, glow, inner floor,
+   icon halo and numeral tint all derive from it. Never glass inside glass (§3.4).
+   Classes:
+     .glass            the card (§3): body + ::before gradient frame + ::after sheen
+     .glass.is-still   no sheen (always-visible chrome: TabBar, round header buttons)
+     .glass.is-round   a round button: overflow visible (badges), no sheen (§7.1)
+     .uv-flat          secondary cell/chip inside a card (§3 rank 3)
+     .uv-empty         empty/free state: dashed accent outline, no glass (§3 rank 4)
+     .uv-well          52px lit icon well for row art (§4)
+     .uv-halo          frameless hero halo (§5)
+     .uv-ring-track / .uv-ring-prog   ring recipe (§5); the svg needs overflow visible
+     .uv-bar > b       bar recipe (§5)
+     .uv-eyebrow / .uv-voice / .uv-tint   type recipes (§5)
+     .uv-aurora        the blurred color field the glass refracts (§1)
+     .t-ico            a Titanium 3D sprite icon (Icon3D); inside .glass it gets a halo (§4)
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* §2: the macro band's dark values (the ramp only carried light ones). */
+:root[data-theme="dark"] {
+  --macro-protein: #F07E78;
+  --macro-carbs:   #E3A45A;
+  --macro-fat:     #D8B640;
+  --macro-fiber:   #86BC63;
+  --uv-ease: cubic-bezier(.2, .78, .24, 1);
+}
+
+/* §1 aurora — fixed decoration behind the scroller; no motion, no interaction. */
+.uv-aurora { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.uv-aurora i { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.22; }
+.uv-aurora i:nth-child(1) { width: 300px; height: 300px; left: -90px; top: 60px;   background: #5E8A67; }
+.uv-aurora i:nth-child(2) { width: 260px; height: 260px; right: -100px; top: -40px; background: #C98A3A; }
+.uv-aurora i:nth-child(3) { width: 280px; height: 280px; left: 40px; top: 520px;   background: #6D5FA8; }
+.uv-aurora i:nth-child(4) { width: 220px; height: 220px; right: -80px; top: 760px; background: #B8584A; }
+/* The aurora replaces the daypart sky band in the glass world. */
+:root[data-theme="dark"] .phone-screen .sky { display: none; }
+
+/* §3 the glass card */
+.glass {
+  --c: var(--dv-sage);
+  position: relative; isolation: isolate; overflow: hidden;
+  border-radius: 22px;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.60));
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  backdrop-filter: blur(16px) saturate(1.5);
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.10),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.glass::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.3px;
+  pointer-events: none; z-index: 2;
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--c) 80%, transparent) 0%,
+    rgba(255, 244, 230, 0.16) 30%,
+    color-mix(in srgb, var(--c) 18%, transparent) 62%,
+    color-mix(in srgb, var(--c) 60%, transparent) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.glass::after {
+  content: ''; position: absolute; top: -20%; bottom: -20%; left: -40%; width: 28%;
+  pointer-events: none; z-index: 3; opacity: 0;
+  transform: skewX(-20deg) translateX(-120%);
+  background: linear-gradient(90deg, transparent, rgba(255, 244, 230, 0.16), transparent);
+}
+.glass > * { position: relative; z-index: 1; }
+.glass.is-still::after, .glass.is-round::after { display: none; animation: none; }
+.glass.is-round { overflow: visible; border-radius: 50%; }
+/* §3 rank 3 + 4 */
+.uv-flat { background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.uv-empty {
+  border: 1.5px dashed color-mix(in srgb, var(--c, var(--dv-sage)) 45%, transparent);
+  background: rgba(245, 239, 230, 0.025); box-shadow: none;
+}
+
+/* §4 icons — the Titanium sprite (shared/ui/clay/titanium-icons.svg via Icon3D). */
+.t-ico { display: block; flex: 0 0 auto; overflow: visible; }
+.glass .t-ico {
+  filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.55))
+          drop-shadow(0 0 10px color-mix(in srgb, var(--c) 40%, transparent));
+}
+.uv-well {
+  width: 52px; height: 52px; border-radius: 50%; flex: 0 0 auto;
+  display: grid; place-items: center;
+  background: radial-gradient(circle at 35% 28%, #3A332D, color-mix(in srgb, var(--c, var(--dv-sage)) 14%, #1E1B18));
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08),
+    inset 0 -6px 12px -8px color-mix(in srgb, var(--c, var(--dv-sage)) 70%, transparent),
+    0 0 14px -4px color-mix(in srgb, var(--c, var(--dv-sage)) 50%, transparent);
+}
+
+/* §5 data graphics */
+.uv-halo { position: relative; isolation: isolate; }
+.uv-halo::before {
+  content: ''; position: absolute; left: 50%; top: 50%; z-index: -1; pointer-events: none;
+  width: 340px; height: 280px; transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse at 50% 42%,
+    color-mix(in srgb, var(--c, var(--dv-sky)) 30%, transparent),
+    color-mix(in srgb, var(--c2, var(--dv-amber)) 12%, transparent) 38%, transparent 66%);
+}
+.uv-ring { overflow: visible; }
+.uv-ring-track { fill: none; stroke: rgba(245, 239, 230, 0.07); }
+.uv-ring-prog {
+  fill: none; stroke: var(--c); stroke-linecap: round;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--c) 55%, transparent));
+}
+.uv-bar { position: relative; display: block; height: 5px; border-radius: 3px; background: rgba(245, 239, 230, 0.07); }
+.uv-bar > b {
+  position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 3px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 55%, #fff), var(--c));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.uv-eyebrow { font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-muted); }
+.uv-voice { font-family: var(--ff-serif); font-style: italic; }
+.uv-tint { color: color-mix(in srgb, var(--c) 78%, var(--text-primary)); }
+
+/* §6 motion — the look; one-shot choreography stays on the kit's rAF primitives. */
+@keyframes uv-sheen {
+  0%, 70% { opacity: 0; transform: skewX(-20deg) translateX(-120%); }
+  74% { opacity: 1; } 92% { opacity: 0.9; }
+  100% { opacity: 0; transform: skewX(-20deg) translateX(620%); }
+}
+@keyframes uv-float { 0%, 100% { transform: translateY(2px) rotate(-3deg); } 50% { transform: translateY(-4px) rotate(1deg); } }
+@keyframes uv-glow {
+  0%, 100% { filter: drop-shadow(0 6px 14px rgba(171, 159, 210, 0.28)); }
+  50% { filter: drop-shadow(0 6px 26px rgba(171, 159, 210, 0.55)); }
+}
+@keyframes uv-breathe {
+  0%, 100% { box-shadow: 0 16px 30px -16px rgba(0, 0, 0, 0.75), 0 0 18px -6px rgba(171, 159, 210, 0.45), inset 0 1px 0 rgba(255, 244, 230, 0.10); }
+  50% { box-shadow: 0 16px 34px -14px rgba(0, 0, 0, 0.8), 0 0 26px rgba(171, 159, 210, 0.55), inset 0 1px 0 rgba(255, 244, 230, 0.10); }
+}
+@keyframes uv-wave { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-8px); } }
+@media (prefers-reduced-motion: no-preference) {
+  .glass::after { animation: uv-sheen 7s ease-in-out infinite; animation-delay: calc(1.2s + var(--i, 0) * 0.45s); }
+  .uv-float { animation: uv-float 5s ease-in-out 1s infinite; }
+  .uv-glow { animation: uv-glow 5s ease-in-out 1s infinite; }
+}
+/* ── /uveg kit ─────────────────────────────────────────────────────────────── */

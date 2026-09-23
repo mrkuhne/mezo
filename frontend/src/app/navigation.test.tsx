@@ -43,20 +43,15 @@ test('switches domains via the switcher, then between tabs by clicking the botto
   expect(screen.getByRole('link', { name: 'Menü' }).className).toContain('active')
   expect(screen.getByRole('navigation', { name: 'Boop funkciók' })).toBeInTheDocument()
 })
-test('Me screen theme selector flips data-theme', async () => {
-  // Default is now circadian-auto (wall-clock dependent); preset manual light so this
-  // navigation smoke test stays deterministic. Auto/circadian resolution is covered by
-  // CircadianTheme.test + ThemeProvider.test.
-  // The Me shell dissolved (mezo-d20.6.1): "Beállítások" is now a hub tile that navigates to
-  // its own full page (`/me/beallitasok`, `BeallitasokPage`), not the retired SubNavDropdown's
-  // ⚙️ extra action or a settings sheet.
+// Üvegesítés (mezo-me75u.1, bible §8): the app is dark-only — the settings page has no theme
+// selector while the lock holds, and a stored light preference does not reach the document.
+test('Me settings: no theme selector under the dark-only lock, the app stays dark', async () => {
   localStorage.setItem('mezo-theme', 'light')
   renderApp('/me')
   await userEvent.click(await screen.findByRole('button', { name: 'Beállítások' }))
   await userEvent.click(screen.getByRole('link', { name: /Megjelenés és alkalmazás/ }))
-  // Manual light => no attribute (light is the CSS base); choosing Sötét flips to dark.
-  expect(document.documentElement.getAttribute('data-theme')).toBeNull()
-  await userEvent.click(screen.getByRole('button', { name: /Sötét/ }))
+  expect(await screen.findByText('Fiók')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Sötét/ })).toBeNull()
   expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
 })
 
