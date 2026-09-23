@@ -72,6 +72,9 @@ export type Icon3DName =
   | 't-shield' | 't-sugar' | 't-salt' | 't-sprout' | 't-camera' | 't-link' | 't-plate'
   | 't-supps' | 't-trend' | 't-pot' | 't-score' | 't-snack' | 't-ultra' | 't-glucose'
   | 't-portion'
+  // U2 (mezo-me75u.2) — owner OK on prototypes/uveg-fuel-tobbi.html#ikonok
+  | 't-mic' | 't-gear' | 't-syringe' | 't-protocol' | 't-dawn' | 't-sleep' | 't-flame'
+  | 't-calendar' | 't-pin' | 't-weight' | 't-pattern' | 't-chef'
 
 /** Mounts the clay + Titanium <symbol>/<gradient> defs once (main.tsx). */
 export const ClaySprites = memo(function ClaySprites() {
@@ -135,6 +138,11 @@ export const CLAY_TO_3D: Partial<Record<ClayIconName, Icon3DName>> = {
   'i-edzes': 't-dumbbell', 'i-recept': 't-book', 'i-kamra': 't-stack', 'i-kiegeszito': 't-supps',
   'i-makro': 't-macro', 'i-mikro': 't-micro', 'i-feldolgozas': 't-processing',
   'i-vercukor': 't-glucose', 'i-eletjel': 't-heart',
+  // U2 (mezo-me75u.2): the rest of Fuel (prototypes/uveg-fuel-tobbi.html + its Új ikonok sheet)
+  'i-muhely': 't-chef', 'i-injekcio': 't-syringe', 'i-hajnal': 't-dawn', 'i-alvas': 't-sleep',
+  'i-mikrofon': 't-mic', 'i-suly': 't-weight', 'i-minta': 't-pattern', 'i-polc': 't-stack',
+  'i-video': 't-camera', 'i-naplo': 't-journal', 'i-hold': 't-moon', 'i-nap': 't-sun',
+  'i-trend': 't-trend', 'i-fazek': 't-pot', 'i-stack': 't-protocol', 'i-beallitas': 't-gear',
 }
 
 /** A content icon: a Titanium name renders as is, a clay name through `CLAY_TO_3D`, and an
