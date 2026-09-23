@@ -152,6 +152,14 @@
 @keyframes fresh{0%{box-shadow:0 0 0 0 rgba(255,126,92,0)}25%{box-shadow:0 0 0 2px rgba(255,126,92,.55),0 0 26px rgba(255,126,92,.45)}100%{box-shadow:0 0 0 0 rgba(255,126,92,0)}}
 .kv div.fresh,.drow.fresh,.tile.fresh{border-radius:14px}
 
+/* a + gomb alatt is kiférjen az utolsó kártya */
+.scroll{padding-bottom:184px}
+/* fül-pötty + tovább a mai napra */
+.tb .tdot{position:absolute;top:4px;left:calc(50% + 8px);z-index:2;width:8px;height:8px;border-radius:50%;background:#C9BDF0;box-shadow:0 0 8px #AB9FD2,0 0 0 2px #191614}
+.tonext{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 16px 0;padding:14px 16px;border-radius:20px;width:calc(100% - 32px);text-align:left}
+.tonext strong{display:block;font-size:16px;font-weight:600;margin-top:3px}
+.tonext .eb{color:#FFB39C}
+.tonext b{font-size:24px;font-weight:300;color:#FFB39C}
 /* gyors logolás lap */
 .qgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
 .qb{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 4px 12px;border-radius:18px;font-size:12.5px;font-weight:600;background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
@@ -201,7 +209,7 @@
       <p class="desc" id="layDesc"></p>
     </div>
 
-    <div class="opt"><small>NAPSZAK A MAI KÁRTYÁN</small>
+    <div class="opt"><small>NAPSZAK</small>
       <div class="seg" data-opt="phase" style="--c:var(--lav)">
         <button data-v="morning">Reggel · tegnap még nem nézted</button><button data-v="day">Napközben</button>
       </div>
@@ -230,7 +238,7 @@ const B=(d,alive=false)=>`<svg class="boop ${alive?'is-alive':''}" viewBox="0 0 
 const I=(n,c='')=>`<svg class="icon ${c}" aria-hidden="true"><use href="#t-${n}"/></svg>`;
 const bar=(w,c,g)=>`<span class="bar" style="--c:${c}"><b style="--w:${Math.max(2,Math.min(100,w))}%"></b>${g!=null?`<u style="--g:${g}%"></u>`:''}</span>`;
 const hu=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
-const S={place:'A',lay:'A',phase:'morning',seen:false,fresh:new Set()};
+const S={place:'C',lay:'B',phase:'morning',seen:false,fresh:new Set()};
 
 /* ── adatok ─────────────────────────────────────────────── */
 const T={kcal:2060,kcalG:2782,prot:148,protG:166,nova:68,micro:80,work:0,workG:1,sleepMin:436,sleepQ:7,ck:2,ckG:4,rhythm:74,updated:'14:20'};
@@ -258,7 +266,7 @@ function reading(){
 function leadCard(){
   if(!T.work)return ['dumbbell','var(--coral)','MOST ÉRDEMES · DÉLUTÁN','17:30-ra be van írva az edzés','Utána egy fehérjés vacsora, és a tápanyag is kész.','Edzés'];
   if(T.ck<T.ckG)return ['checkin','var(--sky)','MOST ÉRDEMES · ESTE','Egy esti check-in hiányzik','Fél perc. Utána teljes a napod képe.','Check-in'];
-  return ['moon','var(--lav)','MOST ÉRDEMES · ESTE','Készen állsz a napzárásra','Hajnalban megírom, milyen napod volt.','Napzárás'];
+  return ['moon','var(--lav)','MOST ÉRDEMES · ESTE','Készen állsz a napzárásra','A napzárás innen és az esti rutinból is indul. Hajnalban megírom, milyen napod volt.','Napzárás'];
 }
 const Y={score:82,base:79,corr:3,label:'Erős nap',
   dims:{nutrition:[88,'2 690 / 2 782 kcal · fehérje 171 g'],quality:[71,'feldolgozatlan 64% · mikro 78%'],training:[100,'1/1 edzés · felsőtest'],sleep:[76,'6ó 44p · minőség 7/10'],logging:[75,'3/4 check-in'],rhythm:[80,'a heted üteme']},
@@ -288,9 +296,9 @@ function topbar(){
 </header>`}
 function tabbar(active){
   const tabs=[['Mai','nap','#mai'],['Beszélgetés','mezo',''],['Rutin','rend',''],['Napzárás','hold','']];
-  if(S.place==='C')tabs.splice(1,0,['A napom','heti','#nap/2026-09-24']);
+  if(S.place==='C'){const y=S.phase==='morning'&&!S.seen;tabs.splice(3,1);tabs.splice(1,0,['A napom','heti',y?'#nap/2026-09-23':'#nap/2026-09-24',y])}
   $('#tabbar').innerHTML=`<button class="tb-boop" aria-label="Területváltó">${B('nap')}</button>`+
-    tabs.map(([l,ic,go])=>`<button class="tb ${l===active?'on':''}" ${go?`data-go="${go}"`:`data-toast="${l} — nem része ennek a tervnek"`}>${C(ic)}<span>${l}</span></button>`).join('');
+    tabs.map(([l,ic,go,dot])=>`<button class="tb ${l===active?'on':''}" ${go?`data-go="${go}"`:`data-toast="${l} — nem része ennek a tervnek"`}>${dot?'<i class="tdot" aria-label="kész a tegnapi értékelés"></i>':''}${C(ic)}<span>${l}</span></button>`).join('');
 }
 const fr=k=>S.fresh.has(k)?'fresh':'';
 
@@ -363,7 +371,7 @@ function dayBody(iso,embedded){
       <p class="reading">${reading()}</p>
       <span class="upd">Napközben nincs pontszám. Hajnali 3-kor zárom a napot, és reggelre megírom, milyen volt.</span>
     </section>
-    <div class="lead glass rise" style="--c:${lc};--i:3">${I(lic)}<span class="grow"><span class="eb">${leb}</span><strong>${lt}</strong><small>${ls}</small></span><button class="go" data-toast="${lgo} megnyitása">${lgo} ›</button></div>
+    <div class="lead glass rise" style="--c:${lc};--i:3">${I(lic)}<span class="grow"><span class="eb">${leb}</span><strong>${lt}</strong><small>${ls}</small></span><button class="go" data-toast="${lgo==='Napzárás'?'A napzárás indul (az esti rutinból is elérhető)':lgo+' megnyitása'}">${lgo} ›</button></div>
     <div class="sec rise" style="--i:3"><h2>Ma eddig</h2><span class="eb">6 TERÜLET</span></div>
     ${dimsToday()}`;
   }
@@ -383,11 +391,12 @@ function dayBody(iso,embedded){
       <div class="fb">Stimmel?<button data-toast="Köszönöm, jegyzem">${I('thumb-up')}</button><button data-toast="Mi nem stimmel? (itt jönnének az okok)">${I('thumb-down')}</button></div></div>
     <div class="sec rise" style="--i:4"><h2>A hat terület</h2><span class="eb">PONT / 100</span></div>
     ${dimsClosed()}
-    <p class="foot">Ha utólag beírsz még valamit erre a napra, a jegyzetet egyszer újraírom.</p>`;
+    <p class="foot">Ha utólag beírsz még valamit erre a napra, a jegyzetet egyszer újraírom.</p>
+    ${S.place==='C'&&iso==='2026-09-23'?`<button class="tonext glass rise" style="--c:var(--coral)" data-go="#nap/2026-09-24"><span><span class="eb">REGGELI ÖSSZEFOGLALÓ · KÉSZ</span><strong>Tovább a mai napra</strong></span><b>›</b></button>`:''}`;
 }
 function nap(iso){
   if(iso==='2026-09-23')S.seen=true;
-  const from=S.place==='C'?'':`<div class="backrow rise"><button class="backbtn glass" data-go="#mai"><b>‹</b>Mai</button><span class="eb">SZEP 21 – 27</span></div>`;
+  const from=S.place==='C'?`<div class="backrow rise"><span class="eb" style="margin-left:0">A NAPOM</span><span class="eb">SZEP 21 – 27</span></div>`:`<div class="backrow rise"><button class="backbtn glass" data-go="#mai"><b>‹</b>Mai</button><span class="eb">SZEP 21 – 27</span></div>`;
   return `${topbar()}${from}${week(iso)}${dayBody(iso)}`;
 }
 
@@ -416,7 +425,7 @@ function log(k){
 const DESC={
   place:{A:'Az Áttekintés helyett a Mai oldal tetején ül egy „A napod” kártya. Reggel a tegnapot mutatja, utána a mai napot élőben. Ez az, amit választottál.',
     B:'A Mai oldal első képernyője maga a mai nap. A Napközpont többi része (a Boop és a körülötte lévő gombok, az üzemanyag) lejjebb csúszik.',
-    C:'A lenti menü kap egy ötödik fület „A napom” néven. Figyeld meg, mennyire összeszorul a menü.'},
+    C:'A lenti menüben „A napom” fül a Napzárás helyén. A napzárás az esti rutinból és este a napi oldalról érhető el. Reggel a fül a tegnappal nyílik, amíg meg nem nézted (pötty jelzi).'},
   lay:{A:'Gyűrű, egy mondat, egy „most érdemes” kártya, alatta a hat terület 2×3-as csempékben. Egy pillantásra áttekinthető.',
     B:'Ugyanez a teteje, de a hat terület egymás alatti sorokban van, hosszabb szöveggel és sávval. Több részlet, több görgetés.'}};
 function render(){
@@ -424,7 +433,7 @@ function render(){
   const onDay=r==='nap';
   $('#scroll').innerHTML=onDay?nap(id||'2026-09-24'):mai();
   $('#scroll').scrollTop=0;closeSheet();
-  tabbar(onDay?(S.place==='C'&&id==='2026-09-24'?'A napom':'Mai'):'Mai');
+  tabbar(onDay&&S.place==='C'?'A napom':'Mai');
   document.querySelectorAll('[data-opt]').forEach(g=>g.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===S[g.dataset.opt])));
   $('#placeDesc').textContent=DESC.place[S.place];$('#layDesc').textContent=DESC.lay[S.lay];
   document.querySelectorAll('#jump a').forEach(a=>a.setAttribute('aria-current',String(a.getAttribute('href')===(h==='#nap'?'#nap/2026-09-24':h))));
