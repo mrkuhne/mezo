@@ -55,7 +55,13 @@ it. The owner set this flow on 2026-09-23.
 3. **If everything is closed**, say so in two sentences and stop. Do not invent a slice.
 4. Run `bd update <id> --claim`, then work in an isolated worktree on `feat/uveg-<topic>`.
 
-### 1. Prototype (skip only where the bead says "PROTOTÍPUS: már JÓVÁHAGYVA")
+### 1. Prototype: ALWAYS
+
+Every slice starts with a clickable prototype and the owner's OK. The only exception is U1,
+whose bead says "PROTOTÍPUS: már JÓVÁHAGYVA": its screens were approved in `fuel-uveg.html`.
+**Even in U1, any icon the approved prototype did not already show goes on an "Új ikonok"
+sheet for the owner's OK before it ships.**
+
 - One self-contained HTML page: `docs/design_2.0/prototypes/uveg-<topic>.html`. **Start by
   copying `fuel-uveg.html`**: it carries the sprite, the `.glass` recipe, aurora, rings, sheet,
   motion and the side-notes panel. Delete its light theme and its toggle; the new page is dark only.
@@ -63,6 +69,14 @@ it. The owner set this flow on 2026-09-23.
   back buttons and the key sheets/dialogs. Non-scope taps show a toast. Use real-looking
   Hungarian content that mirrors what the live screen shows (read the page components for
   the actual fields; never invent features).
+- **Icons are part of every prototype (owner, 2026-09-23).** List every icon the slice's
+  screens show: content icons, empty states and tiles. Map each one to the Titanium 3D sprite.
+  **Where no symbol fits well, draw a custom one** in the bible §4 recipe (64×64, gradient body,
+  pale stroke, highlight strokes, `#shadow` filter). Do not settle for a near-miss, and do not
+  reuse an unrelated glyph. Put an **"Új ikonok" sheet** in the prototype: each new icon large,
+  on glass, with its name and where it appears, so the owner approves the icons together with
+  the screens. After the OK, the new symbols go into the shared sprite (never inlined into a
+  page), and later slices reuse them.
 - Apply the **§3.4 ranking first**. Name the one thing each screen says, and give that thing
   the loudest treatment. Not everything is glass (bible §3).
 - **The chrome comes from `fuel-uveg.html` verbatim**: the header with its sprites and day orb,
@@ -87,7 +101,8 @@ it. The owner set this flow on 2026-09-23.
 - Remove the old skin of the surfaces you touch in the same change (Mozaik wash tiles →
   glass/flat per ranking). Move the CSS section and `prototypeCssStructure.test.ts` in the same
   commit.
-- Remove emoji you meet: each becomes a sprite symbol (draw missing glyphs per bible §4).
+- Remove emoji you meet: each becomes a sprite symbol. A new glyph needs the owner's OK on the
+  prototype's "Új ikonok" sheet first.
 - Write TDD where logic changes (it rarely should). Update any test that asserts the old skin, in
   the same commit, making it assert the new ranking instead.
 
