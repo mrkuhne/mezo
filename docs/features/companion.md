@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-23
+updated: 2026-09-24
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -1440,6 +1440,8 @@ uses original dates (including workout-parent dates), and round-robins sources w
 labels. `exists` revalidates ownership/deletion without imposing the generation window.
 Related REFLECTION memory retrieval runs even without yesterday's text signal and is bounded
 by its configured 90-day policy before retrieval/fusion; other consumers keep their policies.
+The stripped retrieval query is capped by `embedding.embed-max-chars`; the proposal retains
+its full bounded original evidence.
 
 `GroundedHypothesisPublisher` saves the candidate and observation atomically. Same-topic or
 same-test-plan candidates enrich one unanswered card; unchanged evidence does not spend a
@@ -1450,9 +1452,17 @@ reply but never promises a measurement after eight days.
 
 `ObservationRecoveryService` is owner-only: `preview` reads bounded owned audit proposals,
 rechecks current original sources, deduplicates themes and returns a short-lived server-held
+plan. Proposal calls use the existing nightly batch size (at least one for explicit recovery),
+request only the remaining candidate allowance, and stop at the recovery cap, a bounded number
+of rounds, or a round without a new normalized topic. Later rounds include selected topic keys
+and titles to avoid repeats. A failed later round aborts the preview without caching a partial
 plan. `apply` revalidates and applies those exact candidates; repeat calls reuse the result.
-Deleted/changed sources cannot be applied. Restart/expiry requires a new preview. This is a
-recovery of still-relevant questions, not manufactured historical events or user confirmations.
+Deleted/changed sources cannot be applied. Restart/expiry requires a new preview. Transport
+failures and malformed proposal/critique output abort preview with the standard HTTP 400
+`OBSERVATION_RECOVERY_LLM_FAILED` error; they never create a successful empty recovery plan.
+An explicit empty proposal list or a valid critique rejecting every candidate remains a
+successful empty result. Nightly runs retain their fail-soft behavior. This is a recovery of
+still-relevant questions, not manufactured historical events or user confirmations.
 
 - **The user's own words feed the nightly revision (`HypothesisPipelineService`).** Each open row now
   renders as `… · kulcs: <hypothesisKey> · „<the newest user_reply text>"` — the key so a revision can

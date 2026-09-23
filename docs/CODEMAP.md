@@ -333,7 +333,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *BE + API + FE-data* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-09-09, done) ·
   [docs/features/character.md](features/character.md) (updated 2026-09-24, shipped) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-09-23, mixed) ·
+  [docs/features/companion.md](features/companion.md) (updated 2026-09-24, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-23, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-18, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-23, mixed) ·
@@ -472,7 +472,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/companion`
   - **hooks (via `@/data/hooks`):** `useAccountSettings`, `useCompanionPreferences`, `usePersonalContext`
   - **modules:** preferencesApi.ts, preferencesHooks.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 257 IT + 85 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 258 IT + 85 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,
@@ -527,10 +527,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MetricSeriesDerivedIT`, `MetricSeriesExpansionIT`, `MetricSeriesNutrientIT`, `MetricSeriesServiceIT`,
     `NoteEmbeddingBudgetIT`, `NoteEmbeddingCatchUpIT`, `NoteEmbeddingSwitchOffIT`, `NoteEmbeddingWriterIT`,
     `NoteMentionCatchUpIT`, `NoteVectorLifecycleBudgetIT`, `NoteVectorLifecycleIT`, `ObservationContextServiceIT`,
-    `ObservationRecoveryApiIT`, `OpenAiProviderWiringIT`, `PatternDetectionJobSwitchOffIT`,
-    `PatternDetectionServiceIT`, `PeriodSummaryPersistenceIT`, `PeriodSummaryServiceIT`,
-    `PersonExtractionMemoryDisabledIT`, `PersonExtractionMemoryIT`, `PersonExtractionServiceIT`,
-    `PersonGraphEdgeAdapterIT`, `PersonalBaselineContextIT`, `PersonalContextAssemblerIT`,
+    `ObservationRecoveryApiIT`, `ObservationRecoveryBatchApiIT`, `OpenAiProviderWiringIT`,
+    `PatternDetectionJobSwitchOffIT`, `PatternDetectionServiceIT`, `PeriodSummaryPersistenceIT`,
+    `PeriodSummaryServiceIT`, `PersonExtractionMemoryDisabledIT`, `PersonExtractionMemoryIT`,
+    `PersonExtractionServiceIT`, `PersonGraphEdgeAdapterIT`, `PersonalBaselineContextIT`, `PersonalContextAssemblerIT`,
     `PersonalContextConversationIT`, `PersonalRecordIT`, `PersonalRecordLimitsIT`, `PostTurnActorIT`,
     `ProfileAssemblerIT`, `ProfileAssemblerJobIT`, `ProfileAssemblerJobSwitchOffIT`,
     `ProfileAssemblerMemoryDisabledIT`, `ProfileAssemblerMemoryIT`, `ProfileAssemblerWindowHeaderIT`,
@@ -571,7 +571,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-23, done) ·
   [docs/features/pantry.md](features/pantry.md) (updated 2026-09-23, done) ·
   [docs/features/recipe.md](features/recipe.md) (updated 2026-09-23, done) ·
-  [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-23, done) ·
+  [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-24, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-23, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/fuel`
@@ -738,7 +738,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### insights
 
-*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-23, mixed) ·
+*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-24, mixed) ·
   [docs/features/insights.md](features/insights.md) (updated 2026-09-24, mixed)
 
 - **FE data** `frontend/src/data/insights`
@@ -875,7 +875,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### llmlog
 
 *BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-21, done) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-09-23, mixed)
+  [docs/features/companion.md](features/companion.md) (updated 2026-09-24, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`
