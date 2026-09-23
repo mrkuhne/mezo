@@ -9,7 +9,7 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { seedAllKalauzSeen } from '@/test/kalauz'
 import { FUEL_KALAUZ } from '@/features/tutorial/registry/fuel'
 import { TRAIN_KALAUZ } from '@/features/tutorial/registry/train'
-import { KALAUZ_REGISTRY } from '@/features/tutorial/registry'
+import { findKalauz, KALAUZ_REGISTRY } from '@/features/tutorial/registry'
 
 beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
@@ -44,9 +44,9 @@ test.each(['/nap?dp=reggel', '/nap?dp=nap', '/nap?dp=este', '/nap?day=rough'])(
 // A /mezo döntéskártyája (:174) és a /me cél-kártyája (:108) adat-feltételes, ezért NEM
 // anchor: a „Mutasd meg" gomb némán eltűnne. A chat-nyitó és az identitás-hős
 // feltétel nélkül renderel.
-test('/mezo — a mezo-chat anchor jelen van', () => {
-  renderAt('/mezo')
-  expect(hasAnchor('mezo-chat')).not.toBeNull()
+// A /mezo kalauza kivezetve (mezo-a9bo7.10): a fal bemutatkozó posztjai váltják.
+test('/mezo — nincs kalauz, a csapat posztokban mutatkozik be', () => {
+  expect(findKalauz('/mezo')).toBeNull()
 })
 
 test('/me — a me-idhero anchor jelen van', () => {
@@ -152,7 +152,7 @@ test('az Edzés kalauz minden horgonya szerepel a fenti körben', () => {
 test('a kalauz MINDEN horgonya szerepel a fenti körökben (mezo-ju4j6.16)', () => {
   const covered = new Set([
     // fájl eleji körök
-    'nap-hero', 'mezo-chat', 'me-idhero',
+    'nap-hero', 'me-idhero',
     // S3a — Nap + Edzés aloldalak
     'uzenetek-tabs', 'rutin-lista', 'checkin-sor', 'eletjel-gyuru',
     'train-tabs', 'mai-napsav', 'heti-terheles', 'sport-tabs', 'futas-tabs',

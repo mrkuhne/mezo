@@ -1,53 +1,10 @@
 // ============================================================
-// Mezo · a Mezo hub kalauza (mezo-gb1s.3).
-// A tab a társ „agya": chat, minták, memoár, tudástár, előrejelzések, kísérletek,
-// diagnózis, memória (docs/features/insights.md). A laikusnak a legfontosabb üzenet,
-// hogy Mezo nem a semmiből tanácsol — a saját adataiból olvas; ezért a fogalom-kártya
-// a `minta`, és a hogyan-kártya a chat-nyitóra mutat, ami feltétel nélkül renderel.
+// Mezo · a Mezo-világ kalauza — KIVEZETVE (mezo-a9bo7.10).
+// A /mezo főoldala a csapat-üzenőfal; ott a bemutatkozás maga is posztokban történik
+// (spec 2026-09-23 §2.6, `IntroPosts`), ezért a buborék-sorozat megszűnt. A tömb azért
+// marad, hogy egy jövőbeli Mezo-aloldal kalauza ide kerülhessen — a /mezo-ra NE.
+// Előzmény: mezo-gb1s.3 (a régi hub kalauza: chat-nyitó, minták, menü).
 // ============================================================
-import { fogalom } from '@/features/tutorial/registry/fogalmak'
 import type { KalauzEntry } from '@/features/tutorial/registry/types'
 
-export const MEZO_KALAUZ: KalauzEntry[] = [
-  {
-    id: 'mezo',
-    route: '/mezo',
-    tier: 'T1',
-    version: 2,
-    label: 'Mezo',
-    cards: [
-      {
-        kind: 'intro', spot: 'i-mezo', orb: 's-orb',
-        title: 'Ez Mezo.',
-        voice: 'Itt lakik a társad: amit megtanult rólad, és amit ebből gondol. Beszélgethetsz vele, vagy csak elolvashatod, mit vett észre.',
-      },
-      {
-        kind: 'fogalom', spot: 'i-minta', orb: 's-orb',
-        title: 'Amit észrevesz.',
-        voice: 'Mezo nem a semmiből tanácsol — a saját napjaidból olvas ki ismétlődő összefüggéseket, és megmutatja őket.',
-        ...fogalom('minta'),
-      },
-      {
-        kind: 'hogyan', spot: 'i-mikrofon', orb: 's-orb-figyel', anchor: 'mezo-chat',
-        title: 'Kérdezz, ahogy egy embertől.',
-        voice: 'A Beszélgetés Booppal gomb a közvetlen chatet nyitja. Az üzenőfalon egy bejegyzésre válaszolhatsz, a chatben saját kérdést is indíthatsz.',
-      },
-      {
-        kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
-        title: 'Amikor elakadsz, vagy csak kíváncsi vagy.',
-        voice: 'Az üzenőfalon követheted a csapat új beszélgetéseit. A Menüben a Minták, Előrejelzések, Diagnózis, Kísérletek és Heti a saját nevükön várnak.',
-      },
-      {
-        kind: 'kapcsolat', orb: 's-orb-unnepel',
-        title: 'Egy agy, sok szoba.',
-        voice: 'A mintáktól a memoárig ugyanaz a tudás jelenik meg más formában. Válaszd azt, ami épp érdekel.',
-        links: [
-          { to: '/mezo/chat', label: 'Chat', icon: 'i-mezo' },
-          { to: '/mezo/patterns', label: 'Minták', icon: 'i-minta', effect: 'amit észrevett' },
-          { to: '/mezo/memoir', label: 'Memoár', icon: 'i-memoar', effect: 'a heted, elmesélve' },
-          { to: '/mezo/knowledge', label: 'Tudástár', icon: 'i-tudas', effect: 'amit rólad megjegyzett' },
-        ],
-      },
-    ],
-  },
-]
+export const MEZO_KALAUZ: KalauzEntry[] = []

@@ -5,6 +5,7 @@ import { server } from '@/test/msw/server'
 import { API_BASE } from '@/data/_client/api'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { TeamFeedPage } from '@/features/insights/pages/TeamFeedPage'
+import { MOCK_OVERVIEW } from '@/data/character/characterMock'
 
 const renderPage = () =>
   render(<MemoryRouter><TeamFeedPage /></MemoryRouter>, { wrapper: QueryWrapper })
@@ -64,9 +65,39 @@ describe('TeamFeedPage (real mode)', () => {
     expect(screen.queryByRole('heading', { name: 'Üzenőfal' })).not.toBeInTheDocument()
   })
 
-  test('üres rekordkészlet → őszinte üres fal, kitalált poszt nélkül', async () => {
+  const emptyRecords = () => {
     for (const path of ['/api/companion/pattern', '/api/companion/observation', '/api/proactive/prediction', '/api/proactive/experiment', '/api/character/feed'])
       server.use(http.get(`${API_BASE}${path}`, () => HttpResponse.json([])))
+  }
+
+  test('hidegindítás: üres fal + érintetlen dosszié → az öt bemutatkozó poszt, rekord-poszt nélkül', async () => {
+    emptyRecords() // az alap MSW-dosszié üres (MOCK_OVERVIEW_EMPTY)
+    renderPage()
+    expect(await screen.findByRole('heading', { name: 'Szia! Mi leszünk a te kis csapatod.' })).toBeInTheDocument()
+    const intros = document.querySelectorAll('article[data-intro]')
+    expect([...intros].map(a => a.getAttribute('data-intro'))).toEqual(['mezo', 'szunya', 'falat', 'mocor', 'deru'])
+    expect(document.querySelectorAll('article:not([data-intro])')).toHaveLength(0)
+    expect(document.querySelectorAll('.tf-poster')).toHaveLength(1) // csak Mezo üveg
+    // statikus bemutatkozás, nem állítás: se „Miből látszik?”, se hármas
+    expect(screen.queryByRole('link', { name: 'Miből látszik?' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Ez talál/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Kezdjük el a dossziét' })).toBeInTheDocument()
+    expect(screen.queryByText(/csend van a falon/i)).not.toBeInTheDocument()
+  })
+
+  test('a „Kezdjük el a dossziét” a dosszié-indító mutációt hívja', async () => {
+    emptyRecords()
+    let started = 0
+    server.use(http.post(`${API_BASE}/api/character/bootstrap`, () => { started++; return new HttpResponse(null, { status: 204 }) }))
+    renderPage()
+    ;(await screen.findByRole('button', { name: 'Kezdjük el a dossziét' })).click()
+    expect(await screen.findByText(/Még nincs elég történet/)).toBeInTheDocument()
+    expect(started).toBe(1)
+  })
+
+  test('üres rekordkészlet, de már elindult dosszié → őszinte üres fal, bemutatkozás nélkül', async () => {
+    emptyRecords()
+    server.use(http.get(`${API_BASE}/api/character`, () => HttpResponse.json(MOCK_OVERVIEW)))
     renderPage()
     expect(await screen.findByText(/csend van a falon/i)).toBeInTheDocument()
     expect(document.querySelectorAll('article')).toHaveLength(0)

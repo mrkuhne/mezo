@@ -55,7 +55,6 @@ test.each([
   // router.trainIndexRedirect.test.tsx dolga.
   ['/train/mai', 'train-mai'],
   ['/fuel', 'fuel'],
-  ['/mezo', 'mezo'],
   ['/me', 'me'],
 ])('a %s fejléce a kalauz-gombot (%s) + a négy alap-kontrollt viseli', (path, id) => {
   expect(findKalauz(path)?.id).toBe(id)
@@ -68,6 +67,14 @@ test.each([
 // (mezo-gb1s.5: minden Nap/Edzés T2 aloldal kalauzos) egy T3-váró heti alnézet; az S4
 // (mezo-gb1s.9) ezt is kalauzossá teszi majd — akkor a fixture-t újra költöztetni
 // (vagy a tesztet kivezetni: chrome-os, kalauz nélküli route nem marad).
+// A /mezo kalauza kivezetve (mezo-a9bo7.10): a csapat-üzenőfal posztokban mutatkozik be.
+test('a /mezo fejlécén nincs „?" gomb — a fal maga mutatkozik be', () => {
+  expect(findKalauz('/mezo')).toBeNull()
+  const { container } = renderAt('/mezo')
+  const labels = [...container.querySelectorAll('.nap-head button')].map((b) => b.getAttribute('aria-label'))
+  expect(labels).toEqual(BASE_CONTROLS)
+})
+
 test('a kalauz nélküli aloldal fejlécén nincs „?" gomb', () => {
   expect(findKalauz('/me/week/napok')).toBeNull()
   const { container } = renderAt('/me/week/napok')
