@@ -71,6 +71,16 @@ témaszál, esti kurátor, hypothesis-critic retune, Derű adat-éhség, Falat n
 Coordinate with `mezo-me75u` U8/U9: those slices re-dress the EXISTING deep pages using this
 prototype as parity — never build the same screen twice.
 
+**Last, after EVERYTHING above is done (Act I A4 and all of Act II): the real maturity curve
+(`mezo-a9bo7.11`, owner decision 2026-09-24).** Until then the room curve stays what A3 shipped —
+„Így gyűlik a tudása rólad”, the character's cumulative weekly post count (honest: no maturity
+history exists, ADR 0049). Do NOT pull this forward. When its turn comes it needs its own short
+spec + plan: a weekly per-dimension maturity snapshot (backend table + migration, written beside
+the council run), an API for the history, and the room's „Így érik a képe rólad” curve drawn
+from it with the prototype's normalised formula (`logic/teamRooms.ts` `growthPoints`). No
+backfilled or invented points — the curve fills from the day it ships; too few points → the
+honest text, never a decorative chart.
+
 ## Procedure (one design round)
 
 1. `bd update <id> --claim`. Work on a branch (worktree), e.g. `feat/csapatfal-d1`.
