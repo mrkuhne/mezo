@@ -54,6 +54,8 @@ public class FeedContinuityService {
         for (var row : rows) {
             String label = "source=companion_message;id=" + row.getId() + ";kind=" + row.getKind()
                     + ";date=" + row.getMessageDate() + ";generated=" + row.getGeneratedAt() + "\n";
+            var applied = row.getContent().applied();
+            if (applied != null) label += "végrehajtott művelet=" + applied.actionKey() + "; időpont=" + applied.at() + "\n";
             String body = row.getContent().eyebrow() + ": " + String.join(" ", row.getContent().body());
             int room = Math.min(properties.messageMaxChars(), perRow - label.length() - 14);
             if (room < 1) continue;

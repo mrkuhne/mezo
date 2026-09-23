@@ -8902,7 +8902,8 @@ The feed reuses the chat read stack through `CompanionToolRegistry.feedCallbacks
 domain readers, `PersonalRecordTools`, and `FeedContextTools` memory search. It excludes the
 current-conversation history tool. `PersonalMemorySearchService` shares the existing memory
 adapter with chat while attributing feed retrieval to its own operation; no synthetic conversation
-ID is created. Feed memory output omits undated legacy fact assertions.
+ID is created. Feed memory output omits undated legacy fact assertions. The gated proactive writers now use
+this stack for all eight daily kinds; verbatim question cards preserve their existing wording.
 
 ## 10. Key files
 
