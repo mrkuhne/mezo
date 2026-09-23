@@ -141,8 +141,17 @@ From top to bottom:
   - `dimensionNotes`: the six "Miből jött össze" rows show score, weight % and the fact line.
     Tapping a row expands its metric chips and the note, so six notes never render at once.
   - `context`: flat chips under "A nap körülményei · nem számít a pontba".
-- **Open question to the owner:** a warmer, shorter voice for the review prompt (prototype
-  "Emberibb hang"). If approved it becomes a separate prompt-only slice.
+- **Warmer voice, approved by the owner (2026-09-24).** The review prompt is rewritten to the
+  prototype's "Emberibb hang": the same facts, told shorter and plainer, in second person.
+  - No passive bureaucratic phrasing ("került rögzítésre"), no engine vocabulary (base, nova,
+    dimenzió, Q7, "kontextus").
+  - Numbers stay but are rounded and humanised ("4 g-mal maradt el a céltól").
+  - The narrative is at most 2 short paragraphs: what went well, then the one thing to change
+    today.
+  - Notes are one or two sentences each; the adjustment reason is one sentence in the first
+    person ("Levontam 2 pontot, mert…"); highlights are plain phrases.
+  - This is a prompt-only change. The envelope shape is unchanged, the model tier is
+    unchanged, and cached reviews regenerate only on their next hash miss.
 
 ## Out of scope
 
@@ -180,6 +189,8 @@ From top to bottom:
    page.
 3. **Live today.** The invalidation helper wired into the logging mutations, polling and the
    pulse.
+4. **Warmer review voice.** Rewrite the `DayReviewLlm` prompt with golden examples from the
+   prototype, plus a prompt test that bans the listed phrases.
 
 ## Prior art
 
