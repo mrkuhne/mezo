@@ -393,16 +393,16 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `PatternEventAppender`, `PatternGate`, `PatternImpactSource`, `PatternMonitorService`, `PatternPairDetailService`,
     `PatternRetractedEvent`, `PatternService`, `PearsonCorrelation`, `PeopleSnapshotBlock`, `PeriodSummaryService`,
     `PersonExtractionResult`, `PersonExtractionService`, `PersonGraphEdgeAdapter`, `PersonalBaselineContext`,
-    `PersonalContextAssembler`, `PersonalRecordService`, `PlanExecutor`, `PlanValidator`, `ProfileAssembler`,
-    `ProfileAssemblerJob`, `ProfilePromptAssembler`, `PromptMemoryAssembler`, `ProvenanceRetentionJob`,
-    `QuarterlyReviewJob`, `QuarterlyReviewService`, `Quarters`, `QuickNoticePreScreen`, `QuickNoticeService`,
-    `ReflectionDigestService`, `ReflectionJob`, `ReflectionMemoryGateway`, `ReflectionPromptBlock`,
-    `ReflectionReplyRecorder`, `ReflectionReplyService`, `SeasonSuggestion`, `SimilarDaysRecall`, `TestPlanValidator`,
-    `TextSignalCatchUpService`, `TextSignalExtractor`, `TextSignalListener`, `TextSignalSeriesService`,
-    `TextSignalService`, `ToolCatalogue`, `ToolOutcomeDigest`, `TraceDisposition`, `TranscriptionService`,
-    `TurnAnswerer`, `TurnGear`, `TurnGearAnalyzer`, `TurnGearRouter`, `TurnPhase`, `TurnPlan`, `TurnPlanParser`,
-    `TurnPlanner`, `TurnProvenance`, `UnavailableReason`, `ValidatedPlan`, `WeekContextRenderer`, `WeeklyScoreService`,
-    `WeightByDateSupport`
+    `PersonalContextAssembler`, `PersonalMemorySearchService`, `PersonalRecordService`, `PlanExecutor`,
+    `PlanValidator`, `ProfileAssembler`, `ProfileAssemblerJob`, `ProfilePromptAssembler`, `PromptMemoryAssembler`,
+    `ProvenanceRetentionJob`, `QuarterlyReviewJob`, `QuarterlyReviewService`, `Quarters`, `QuickNoticePreScreen`,
+    `QuickNoticeService`, `ReflectionDigestService`, `ReflectionJob`, `ReflectionMemoryGateway`,
+    `ReflectionPromptBlock`, `ReflectionReplyRecorder`, `ReflectionReplyService`, `SeasonSuggestion`,
+    `SimilarDaysRecall`, `TestPlanValidator`, `TextSignalCatchUpService`, `TextSignalExtractor`, `TextSignalListener`,
+    `TextSignalSeriesService`, `TextSignalService`, `ToolCatalogue`, `ToolOutcomeDigest`, `TraceDisposition`,
+    `TranscriptionService`, `TurnAnswerer`, `TurnGear`, `TurnGearAnalyzer`, `TurnGearRouter`, `TurnPhase`, `TurnPlan`,
+    `TurnPlanParser`, `TurnPlanner`, `TurnProvenance`, `UnavailableReason`, `ValidatedPlan`, `WeekContextRenderer`,
+    `WeeklyScoreService`, `WeightByDateSupport`
   - **controllers→contract:** `CompanionController`→`CompanionApi`,
     `CompanionFeedbackController`→`CompanionFeedbackApi`, `CompanionFlagTraceController`→`CompanionFlagsApi`,
     `CompanionObservationController`→`CompanionObservationApi`,
@@ -422,12 +422,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `AllHealthyRule`, `BiometricsTools`, `CharacterPromptSource`, `ChatHistory`, `CheckInNoteSourceAdapter`,
     `ClinicalOutputCheck`, `CompanionAdvisorChain`, `CompanionHelloRunner`, `CompanionLlm`, `CompanionToolRegistry`,
     `ConsumerPolicy`, `ConversationContextTools`, `DayReviewJson`, `DayReviewLlmAdapter`, `EmbeddingPort`,
-    `EnergyDipMealTimingRule`, `FakeCompanionLlm`, `FakeEmbeddingAdapter`, `FeedbackRollupStatsEnvelope`,
-    `FlagPayloadEnvelope`, `FuelTools`, `GeminiCompanionLlm`, `GeminiEmbeddingAdapter`, `GoalTools`,
-    `GoogleGenAiUsageExtractor`, `GraphEdgeEvidence`, `GraphProposedEdge`, `GrowthTools`, `HabitSuggestLlmAdapter`,
-    `HighlightCitationSource`, `IgnoredNudgeRule`, `InsightsTools`, `JointOveruseRule`, `LateEatingRule`,
-    `LifeGoalGraphSource`, `LifeGoalProposeLlmAdapter`, `LifeGoalProposePort`, `LifeGoalSource`, `LifeGoalText`,
-    `LifeGoalTools`, `LlmModelRouter`, `LlmRoundUsage`, `LlmRoundUsageAdvisor`, `LlmUsageExtractor`,
+    `EnergyDipMealTimingRule`, `FakeCompanionLlm`, `FakeEmbeddingAdapter`, `FeedContextTools`,
+    `FeedbackRollupStatsEnvelope`, `FlagPayloadEnvelope`, `FuelTools`, `GeminiCompanionLlm`, `GeminiEmbeddingAdapter`,
+    `GoalTools`, `GoogleGenAiUsageExtractor`, `GraphEdgeEvidence`, `GraphProposedEdge`, `GrowthTools`,
+    `HabitSuggestLlmAdapter`, `HighlightCitationSource`, `IgnoredNudgeRule`, `InsightsTools`, `JointOveruseRule`,
+    `LateEatingRule`, `LifeGoalGraphSource`, `LifeGoalProposeLlmAdapter`, `LifeGoalProposePort`, `LifeGoalSource`,
+    `LifeGoalText`, `LifeGoalTools`, `LlmModelRouter`, `LlmRoundUsage`, `LlmRoundUsageAdvisor`, `LlmUsageExtractor`,
     `LoadFuelMismatchRule`, `LoggingGapRule`, `MealCoachLlmAdapter`, `MealDraftLlmAdapter`, `MealRhythmDriftRule`,
     `MedicationTools`, `MemoryCandidate`, `MemoryContext`, `MemoryContextItem`, `MemoryEmbeddingWriter`,
     `MemoryProvenanceEnvelope`, `MemoryRequest`, `MemoryTools`, `MesoPlanLlmAdapter`, `MissedWorkoutsRule`,
@@ -472,7 +472,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/companion`
   - **hooks (via `@/data/hooks`):** `useAccountSettings`, `useCompanionPreferences`, `usePersonalContext`
   - **modules:** preferencesApi.ts, preferencesHooks.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 256 IT + 85 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 257 IT + 85 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,
@@ -497,7 +497,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `DailySummaryJobIT`, `DailySummaryJobSwitchOffIT`, `DailySummaryServiceIT`, `DayEvaluationApiIT`,
     `DayEvaluationSwitchOffApiIT`, `DayReviewRepositoryIT`, `DayScoreServiceIT`, `DayScoreServiceWindowFetchCountIT`,
     `EnergyDipMealTimingRuleSwitchOffIT`, `FactCandidateServiceIT`, `FactExtractionServiceIT`,
-    `FakeEmbeddingAdapterIT`, `FeedbackLearningJobSwitchOffIT`, `FeedbackLearningPropertiesIT`,
+    `FakeEmbeddingAdapterIT`, `FeedReadToolsIT`, `FeedbackLearningJobSwitchOffIT`, `FeedbackLearningPropertiesIT`,
     `FeedbackLearningServiceIT`, `FeedbackRollupPersistenceIT`, `FlagEvaluationListenerIT`,
     `FlagEvaluatorAcuteBadDayIT`, `FlagEvaluatorEnergyDipIT`, `FlagEvaluatorIgnoredNudgeIT`,
     `FlagEvaluatorJointOveruseIT`, `FlagEvaluatorLateEatingIT`, `FlagEvaluatorLoadFuelMismatchIT`,
@@ -1157,24 +1157,24 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CompanionMessageGenerator`, `CompanionMessageJob`, `DailyCardAdapter`, `DiagnosisGenerator`, `DiagnosisRecipe`,
     `DiagnosisService`, `ExperimentJob`, `ExperimentOutcomeService`, `ExperimentProposalGenerator`,
     `FatigueEvidenceCollector`, `FeatureAbandonmentDetector`, `FeedContext`, `FeedContextAssembler`,
-    `FeedContinuityService`, `FeedEvidenceAssembler`, `FeedMessageKindService`, `FlatFeedbackDetector`,
-    `GrowthDigestBlock`, `HighlightCitationSourceAdapter`, `HydrationShortfallProbe`, `InterventionEventListener`,
-    `InterventionService`, `LightenTomorrowAdapter`, `LogFreshnessProbe`, `MemoirGenerator`, `MemoirJob`,
-    `MetricWindowEvaluator`, `OneTimeQuestionService`, `OverloadChallengeGenerator`, `PatternImpactService`,
-    `PeopleMezoNoteAdapter`, `PlanFeasibilityCalculator`, `PredictionGenerator`, `PredictionJob`,
-    `PredictionValidationService`, `ProactiveChallengeService`, `ProactiveExperimentService`, `ProactiveFeedService`,
-    `ProactiveMemoirService`, `ProactivePredictionService`, `ProactiveWeeklySuggestionService`, `ProseNumberGuard`,
-    `QuestionAnswerListener`, `QuestionAnswerService`, `RetroLoggingProbe`, `SetupCheckJob`, `SetupCheckService`,
-    `SleepAnchorShiftAdapter`, `SportSlotSkipAdapter`, `WeekReviewSourceAdapter`, `WeeklyLessonService`,
-    `WeeklyReviewContextSources`, `WeeklyReviewDigestService`, `WeeklyReviewGenerator`, `WeeklyReviewJob`,
-    `WeeklyReviewService`, `WeeklyReviewWeekWindow`, `WeeklySuggestionGenerator`, `WeeklySuggestionJob`,
-    `WeightDecomposition`, `WeightDecompositionInputsAssembler`
+    `FeedContinuityService`, `FeedEvidenceAssembler`, `FeedGenerationService`, `FeedMessageKindService`,
+    `FlatFeedbackDetector`, `GeneratedFeedMessage`, `GrowthDigestBlock`, `HighlightCitationSourceAdapter`,
+    `HydrationShortfallProbe`, `InterventionEventListener`, `InterventionService`, `LightenTomorrowAdapter`,
+    `LogFreshnessProbe`, `MemoirGenerator`, `MemoirJob`, `MetricWindowEvaluator`, `OneTimeQuestionService`,
+    `OverloadChallengeGenerator`, `PatternImpactService`, `PeopleMezoNoteAdapter`, `PlanFeasibilityCalculator`,
+    `PredictionGenerator`, `PredictionJob`, `PredictionValidationService`, `ProactiveChallengeService`,
+    `ProactiveExperimentService`, `ProactiveFeedService`, `ProactiveMemoirService`, `ProactivePredictionService`,
+    `ProactiveWeeklySuggestionService`, `ProseNumberGuard`, `QuestionAnswerListener`, `QuestionAnswerService`,
+    `RetroLoggingProbe`, `SetupCheckJob`, `SetupCheckService`, `SleepAnchorShiftAdapter`, `SportSlotSkipAdapter`,
+    `WeekReviewSourceAdapter`, `WeeklyLessonService`, `WeeklyReviewContextSources`, `WeeklyReviewDigestService`,
+    `WeeklyReviewGenerator`, `WeeklyReviewJob`, `WeeklyReviewService`, `WeeklyReviewWeekWindow`,
+    `WeeklySuggestionGenerator`, `WeeklySuggestionJob`, `WeightDecomposition`, `WeightDecompositionInputsAssembler`
   - **controllers→contract:** `DiagnosisController`→`DiagnosisApi`, `ProactiveController`→`ProactiveApi`
   - **mappers:** `ChallengeDisplay`, `ProactiveMapper`
   - **config:** `ContextualFeedProperties`, `DiagnosisProperties`, `ProactiveProperties`, `QuestionProperties`,
     `SetupCheckProperties`
   - **other:** `AdviceActionKey`, `ChallengeRefsEnvelope`, `CompanionMessageEnvelope`, `DiagnosisEvidenceEnvelope`,
-    `DiagnosisSuspectsEnvelope`, `MemoirAnchorsEnvelope`, `WeeklyReviewDayNotesEnvelope`,
+    `DiagnosisSuspectsEnvelope`, `FeedGenerationTrace`, `MemoirAnchorsEnvelope`, `WeeklyReviewDayNotesEnvelope`,
     `WeeklyReviewHighlightsEnvelope`
 - **Contract** `api/feature/diagnosis/diagnosis.yml` — 4 operations
   - **endpoints:** GET /api/proactive/diagnosis · POST /api/proactive/diagnosis · GET /api/proactive/diagnosis/{id} ·
@@ -1187,7 +1187,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/proactive/challenge/{id}/decision · GET /api/proactive/weekly-review/{start} ·
     POST /api/proactive/weekly-review/{start}/regenerate · GET /api/proactive/weekly-review/{start}/lessons ·
     GET /api/proactive/weekly-review/{start}/digest
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 103 IT + 8 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 104 IT + 8 unit
   - **ITs:** `AdviceApplyServiceIT`, `AdviceCardServiceIT`, `AdviceObserverPortsIT`, `AdviceProseGeneratorIT`,
     `ChallengeGeneratorIT`, `ChallengeGeneratorMemoryDisabledIT`, `ChallengeGeneratorMemoryIT`, `ChallengeJobIT`,
     `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`, `ChallengePersistenceIT`, `ChallengePregenerateJobIT`,
@@ -1200,12 +1200,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ExperimentJobSwitchOffIT`, `ExperimentOutcomeIT`, `ExperimentPersistenceIT`, `ExperimentProposalGeneratorIT`,
     `ExperimentProposalGeneratorMemoryDisabledIT`, `ExperimentProposalGeneratorMemoryIT`, `FatigueEvidenceCollectorIT`,
     `FeatureAbandonmentDetectorIT`, `FeedContextAssemblerIT`, `FeedContinuityIT`, `FeedEvidenceAssemblerIT`,
-    `FlatFeedbackDetectorIT`, `GrowthDigestBlockIT`, `HighlightCitationIT`, `HydrationPropertiesIT`,
-    `HydrationShortfallProbeIT`, `InterventionConfigIT`, `InterventionServiceIT`, `InterventionSwitchOffIT`,
-    `LogFreshnessProbeIT`, `MemoirGeneratorIT`, `MemoirGeneratorMemoryDisabledIT`, `MemoirGeneratorMemoryIT`,
-    `MemoirJobIT`, `MemoirJobSwitchOffIT`, `MemoirPersistenceIT`, `OneTimeQuestionServiceIT`,
-    `OneTimeQuestionSwitchOffIT`, `OverloadChallengeGeneratorIT`, `PlanFeasibilityIT`, `PredictionGeneratorIT`,
-    `PredictionGeneratorMemoryDisabledIT`, `PredictionGeneratorMemoryIT`, `PredictionJobIT`,
+    `FeedGenerationServiceIT`, `FlatFeedbackDetectorIT`, `GrowthDigestBlockIT`, `HighlightCitationIT`,
+    `HydrationPropertiesIT`, `HydrationShortfallProbeIT`, `InterventionConfigIT`, `InterventionServiceIT`,
+    `InterventionSwitchOffIT`, `LogFreshnessProbeIT`, `MemoirGeneratorIT`, `MemoirGeneratorMemoryDisabledIT`,
+    `MemoirGeneratorMemoryIT`, `MemoirJobIT`, `MemoirJobSwitchOffIT`, `MemoirPersistenceIT`,
+    `OneTimeQuestionServiceIT`, `OneTimeQuestionSwitchOffIT`, `OverloadChallengeGeneratorIT`, `PlanFeasibilityIT`,
+    `PredictionGeneratorIT`, `PredictionGeneratorMemoryDisabledIT`, `PredictionGeneratorMemoryIT`, `PredictionJobIT`,
     `PredictionJobSwitchOffIT`, `PredictionPersistenceIT`, `PredictionValidationIT`, `ProactiveApiAdviceApplyIT`,
     `ProactiveApiChallengeIT`, `ProactiveApiCompanionOffIT`, `ProactiveApiExperimentIT`, `ProactiveApiFeedIT`,
     `ProactiveApiIT`, `ProactiveApiSwitchOffIT`, `ProactiveMemoirArchiveIT`, `ProactiveMemoirArchiveSwitchOffIT`,

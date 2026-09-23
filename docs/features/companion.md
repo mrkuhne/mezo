@@ -8898,7 +8898,16 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   `GET /api/companion/graph/edge/count`; only `useKnowledge()`'s own legacy `edges` field (the
   pre-graph mock fact-edges) is still mock-only real-mode-`[]` — see [`insights.md` §2.4/§5.1](insights.md).
 
+The feed reuses the chat read stack through `CompanionToolRegistry.feedCallbacks(audit)`:
+domain readers, `PersonalRecordTools`, and `FeedContextTools` memory search. It excludes the
+current-conversation history tool. `PersonalMemorySearchService` shares the existing memory
+adapter with chat while attributing feed retrieval to its own operation; no synthetic conversation
+ID is created. Feed memory output omits undated legacy fact assertions.
+
 ## 10. Key files
+
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PersonalMemorySearchService.java` — shared memory-search invocation and logging scope.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/FeedContextTools.java` — conversation-independent memory search for the feed.
 
 **Grounded observation inbox and recovery**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/ObservationContextService.java` — bounded original-source evidence and current provenance validation.

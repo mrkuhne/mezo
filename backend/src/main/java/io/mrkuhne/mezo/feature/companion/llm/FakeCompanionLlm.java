@@ -690,9 +690,18 @@ public class FakeCompanionLlm implements CompanionLlm {
         return List.copyOf(userMessages);
     }
 
+    private final java.util.Map<String, java.util.UUID> feedActors = new java.util.concurrent.ConcurrentHashMap<>();
+    public java.util.UUID feedActor(String kind) { return feedActors.get(kind); }
+
     @Override
     public String complete(String systemPrompt, List<Turn> history, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
+        for (String kind : List.of("sleep", "weight")) {
+            if (systemPrompt.startsWith("sleep".equals(kind) ? SLEEP_MARKER_MIRROR : WEIGHT_MARKER_MIRROR)) {
+                var actor = LlmActorContext.capture();
+                if (actor == null) feedActors.remove(kind); else feedActors.put(kind, actor);
+            }
+        }
         completeCallCount.incrementAndGet();
         lastUserMessage = userMessage;
         userMessages.add(userMessage);
@@ -708,6 +717,11 @@ public class FakeCompanionLlm implements CompanionLlm {
         // reach this same forced-failure path.
         if (userMessage.contains(FAIL_COMPLETE) || systemPrompt.contains(FAIL_COMPLETE)) {
             throw new IllegalStateException("FAKE-LLM forced complete failure");
+        }
+        if (systemPrompt.startsWith("KONTEXTUSOS-MEZO-UZENET")) {
+            toolEchoes(userMessage, tools, toolContext);
+            if (userMessage.contains("[fake-contextual-malformed]")) return "not-json";
+            return "{\"eyebrow\":\"Mezo\",\"body\":[\"A mai esemény az előzmények tükrében.\"],\"sourceRefs\":[]}";
         }
         if (systemPrompt.startsWith(LlmMemoryQueryRewriter.REWRITE_MARKER)) {
             lastMemoryRewriteHistory = List.copyOf(history);

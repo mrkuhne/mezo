@@ -4,7 +4,7 @@ import io.mrkuhne.mezo.feature.companion.CharacterPromptSource;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.ConversationProperties;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
-import io.mrkuhne.mezo.feature.companion.memory.service.ChatMemoryContextAdapter;
+import io.mrkuhne.mezo.feature.companion.service.PersonalMemorySearchService;
 import io.mrkuhne.mezo.feature.companion.reflection.service.ReflectionPromptBlock;
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
@@ -12,8 +12,6 @@ import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
 import io.mrkuhne.mezo.feature.companion.service.ConversationHistory;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
 import io.mrkuhne.mezo.feature.companion.service.PeopleSnapshotBlock;
-import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
-import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.util.List;
@@ -39,13 +37,12 @@ public class ConversationContextTools {
     private final PeopleSnapshotBlock people;
     private final ObjectProvider<CharacterPromptSource> character;
     private final ObjectProvider<ReflectionPromptBlock> reflection;
-    private final ChatMemoryContextAdapter memory;
+    private final PersonalMemorySearchService memory;
     private final AiMessageRepository messages;
     private final AiConversationRepository conversations;
     private final ConversationHistory historyRenderer;
     private final ConversationProperties properties;
     private final CompanionProperties companionProperties;
-    private final LlmCallContextHolder callContext;
 
     @Tool(name = "get_personal_context", description = "Személyes háttér rövid, korlátozott összefoglalója; nem a teljes adattár. "
             + "scope=facts (alapértelmezés): megerősített tények; people: ismert emberek és kapcsolatuk; "
@@ -78,8 +75,8 @@ public class ConversationContextTools {
         }
         UUID conversation = (UUID)ctx.getContext().get(CONVERSATION_ID);
         List<CompanionLlm.Turn> history = (List<CompanionLlm.Turn>)ctx.getContext().getOrDefault(HISTORY, List.of());
-        var payload = callContext.runWith(new LlmCallContext("companion_chat", "memory_read", "conversation", conversation),
-                () -> memory.resolve(ToolContexts.userId(ctx), conversation, query, history, LocalDate.now()));
+        var payload = memory.search(ToolContexts.userId(ctx), conversation, query, history,
+                LocalDate.now(), "companion_chat", "memory_read");
         var audit = ToolContexts.audit(ctx);
         payload.refs().forEach(ref -> audit.addRef(ref.kind(), ref.id(), ref.label()));
         audit.addRecalled(payload.recalled());
