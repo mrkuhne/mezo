@@ -541,6 +541,10 @@ button.well:active{background:rgba(245,239,230,.08)}
 .sheet .send{display:flex;align-items:center;gap:8px;width:100%;justify-content:center;padding:12px;border-radius:16px;font-size:13px;font-weight:650}
 .sheet .send .icon{width:18px;height:18px}
 .after.big{font-size:12px;padding:8px 13px}
+.inboxa{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:11px}
+.inboxa .chip{justify-content:center;white-space:nowrap;padding:10px 8px}
+.inboxa .chip.main{grid-column:1/-1;font-weight:650}
+.sheet .sh-top b{white-space:nowrap}
 
 /* ügy-kártya a szobákban */
 .case{display:block;width:100%;padding:13px 14px 14px;border-radius:20px;text-align:left}
@@ -1961,7 +1965,7 @@ function pelorejelzes(){return `${topbar()}<div class="dhead rise"><button class
   <div style="padding:2px 16px 0">${rrow()}</div>`}
 
 function bizonyitek(){const rows=[['szept. 8.','20:10','6,1','hit'],['szept. 9.','18:35','7,8','hit'],['szept. 10.','21:05','5,9','hit'],['szept. 11.','19:20','7,1','miss'],['szept. 13.','22:00','5,4','hit'],['szept. 14.','18:50','7,6','hit'],['szept. 15.','19:05','6,2','miss'],['szept. 16.','21:30','5,8','hit'],['szept. 18.','18:20','7,9','hit'],['szept. 19.','20:45','6,4','miss'],['szept. 20.','22:15','5,6','hit'],['szept. 21.','19:00','7,4','hit'],['szept. 22.','20:30','6,0','hit'],['ma','—','még nincs','miss']];
-  return `${topbar()}<div class="dhead rise"><button class="back glass" data-back>‹</button><span class="t"><small>MIBŐL LÁTSZIK? · KÉSŐI VACSORA ↑ ROSSZABB ÉJSZAKA</small><strong>A 14 közös nap</strong></span></div>
+  return `${topbar()}<div class="dhead rise"><button class="back glass" data-back>‹</button><span class="t"><small>MIBŐL LÁTSZIK?</small><strong>Rosszabbul alszol, ha későn vacsorázol?</strong></span></div>
   <article class="glass poster rise" style="--c:var(--lav);--i:1;margin-top:6px">
     <p class="pbody" style="--c:var(--lav)">Két jel együttfutása: az <b>utolsó étkezésed ideje</b> és a <b>másnapi alvásminőség</b>. A lila pötty = a minta mellett szóló nap. A csapat addig nem mond ki semmit, amíg a hétvégét külön nem látta — ez a Szkeptikus feltétele.</p>
     <div class="well">${chart()}</div>
@@ -1985,12 +1989,12 @@ function rolad(){return `${topbar()}
     <div class="case glass rise" style="--c:var(--gold);--s:var(--gold);--i:2" id="inbox-1">
       <span class="crow"><span class="st">TÉNYJELÖLT</span><em>Falat hozta · ma</em></span>
       <span class="cmain">${I('note')}<span class="ctxt"><b>„Hétvégén előfordul, hogy az étkezéseimet utólag rögzítem.”</b><small>Az üres délelőttöt így nem nézi kihagyott étkezésnek</small></span></span>
-      <span class="crow" style="margin:10px 0 0" data-inbox="inbox-1"><button class="chip glass" style="--c:var(--sage)" data-keep>${I('tick')}Igen, jegyezd meg</button><button class="chip glass" style="--c:var(--gold)" data-sheet="reply">${I('chat')}Pontosítom</button><button class="chip glass" style="--c:#8E86A3" data-toast="Most nem került be — később újra megkérdezzük">${I('skip')}Most ne</button></span>
+      <span class="inboxa" data-inbox="inbox-1"><button class="chip glass main" style="--c:var(--sage)" data-keep>${I('tick')}Igen, jegyezd meg</button><button class="chip glass" style="--c:var(--gold)" data-sheet="reply">${I('chat')}Pontosítom</button><button class="chip glass" style="--c:#8E86A3" data-toast="Most nem került be — később újra megkérdezzük">${I('skip')}Most ne</button></span>
     </div>
     <div class="case glass rise" style="--c:var(--gold);--s:var(--gold);--i:3" id="inbox-2">
       <span class="crow"><span class="st">ÉLETESEMÉNY-JELÖLT</span><em>Mezo hozta · tegnap</em></span>
       <span class="cmain">${I('journal')}<span class="ctxt"><b>Új munkarendet próbálsz szeptembertől</b><small>A chatben említetted — ha bekerül, a csapat ehhez méri a heteidet</small></span></span>
-      <span class="crow" style="margin:10px 0 0" data-inbox="inbox-2"><button class="chip glass" style="--c:var(--sage)" data-keep>${I('tick')}Igen, jegyezd meg</button><button class="chip glass" style="--c:var(--gold)" data-sheet="reply">${I('chat')}Pontosítom</button><button class="chip glass" style="--c:#8E86A3" data-toast="Most nem került be — később újra megkérdezzük">${I('skip')}Most ne</button></span>
+      <span class="inboxa" data-inbox="inbox-2"><button class="chip glass main" style="--c:var(--sage)" data-keep>${I('tick')}Igen, jegyezd meg</button><button class="chip glass" style="--c:var(--gold)" data-sheet="reply">${I('chat')}Pontosítom</button><button class="chip glass" style="--c:#8E86A3" data-toast="Most nem került be — később újra megkérdezzük">${I('skip')}Most ne</button></span>
     </div>
   </div>
 
@@ -2089,9 +2093,10 @@ function openSheet(kind){const sh=$('#sheet');
     <textarea placeholder="Például: két este későig dolgoztam, azért csúszott a vacsora…"></textarea>
     <button class="send glass" style="--c:var(--lav)" data-reply-send>${I('send')}Válasz küldése · demó</button>`}
   else if(kind==='evidence'){sh.style.setProperty('--c','var(--lav)');
-    sh.innerHTML=`<div class="grab"></div><div class="sh-top">${I('info')}<span><strong>Miből látszik?</strong><small>Késői vacsora ↔ rosszabb éjszaka</small></span><b class="tint">14 nap</b></div>
-    <p>Két jel együttfutása: az utolsó étkezés ideje és a másnapi alvásminőség. Még gyűlik — a csapat nem mond ki biztosat, amíg a hétvégét külön nem látta.</p>
-    <ul><li><i></i><span>Közös napok</span><em>14</em></li><li><i></i><span>Forrás</span><em>étkezés-napló + alvás-napló</em></li><li><i></i><span>Állapot</span><em>gyűlik · a Szkeptikus vizsgálja</em></li></ul>
+    sh.innerHTML=`<div class="grab"></div><div class="sh-top">${I('info')}<span><strong>Rosszabbul alszol, ha későn vacsorázol?</strong><small>ez látszik eddig a naplóidból</small></span><b class="tint">14 nap</b></div>
+    <p>A 14 estéből, ahol vacsora-idő és alvás is rögzült: a <b>21 óra utáni</b> vacsorák másnapján az alvásod átlag <b>6,0 pont</b> — a korábbi vacsorák után <b>7,5</b>. Ez másfél pont különbség, és 11 nap szól mellette, 3 ellene.</p>
+    <ul><li><i></i><span>Késői vacsora után · 5 este</span><em>alvás átlag 6,0</em></li><li><i></i><span>Korai vacsora után · 9 este</span><em>alvás átlag 7,5</em></li><li><i></i><span>Ami még hiányzik</span><em>a hétvége külön vizsgálata — a Szkeptikus kérése</em></li></ul>
+    <p style="margin-top:10px;font-size:11.5px;color:var(--faint)">Ez együttjárás, nem bizonyított ok-okozat — ezért még nem került a rólad szóló képbe.</p>
     <button class="send glass" style="--c:var(--lav);margin-top:12px" data-go="#bizonyitek/vacsora">${I('info')}A napok egyenként →</button>`}
   else{sh.style.setProperty('--c','#8E86A3');
     sh.innerHTML=`<div class="grab"></div><div class="sh-top">${I('info')}<span><strong>Ehhez a bejegyzéshez</strong><small>a poszt saját menüje</small></span></div>
