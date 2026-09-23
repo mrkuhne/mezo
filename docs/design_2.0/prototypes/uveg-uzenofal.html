@@ -522,6 +522,19 @@ button.well:active{background:rgba(245,239,230,.08)}
 .rowg em{margin-left:auto;flex:0 0 auto;font-style:normal;font-size:11px;font-weight:600;color:color-mix(in srgb,var(--c) 80%,#fff)}
 .dash{margin:12px 16px;display:flex;gap:11px;align-items:center;padding:13px;border-radius:20px;border:1.5px dashed rgba(142,134,163,.5);font-size:11.5px;color:var(--sub)}
 .dash .pav{flex:0 0 auto}
+/* ügy-kártya a szobákban */
+.case{display:block;width:100%;padding:13px 14px 14px;border-radius:20px;text-align:left}
+.case .crow{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.case .st{padding:4px 10px;border-radius:999px;font-size:8.5px;font-weight:700;letter-spacing:1px;background:color-mix(in srgb,var(--s) 20%,transparent);color:color-mix(in srgb,var(--s) 85%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--s) 40%,transparent)}
+.case .crow em{margin-left:auto;font-style:normal;font-size:10.5px;font-weight:600;color:var(--faint);font-variant-numeric:tabular-nums}
+.case .cmain{display:flex;align-items:center;gap:12px}
+.case .cmain .icon{width:36px;height:36px;flex:0 0 auto}
+.case .cmain>span{flex:1;min-width:0}
+.case b{display:block;font-size:15px;font-weight:650;letter-spacing:-.25px;line-height:1.32}
+.case small{display:block;margin-top:4px;font-size:11.5px;color:var(--sub);line-height:1.45}
+.case .chev{flex:0 0 auto;font-size:15px;color:var(--faint)}
+.case .bar{margin-top:11px;height:5px}
+
 /* komment-szál a poszt-oldalon */
 .tcmt{margin:9px 16px;padding:12px 13px 11px;border-radius:18px;background:rgba(245,239,230,.035);
   box-shadow:inset 0 0 0 1px rgba(245,239,230,.10),inset 3px 0 0 color-mix(in srgb,var(--c) 55%,transparent),0 8px 18px -14px rgba(0,0,0,.6)}
@@ -1667,27 +1680,27 @@ function csapat(){const R=[['szunya','Most figyeli: a késői vacsorák és az �
 
 const ROOMS={
   szunya:{quote:'„Az éjszakáid a szakterületem. Amit itt látsz, azt mind a te naplódból tanultam.”',stats:[['72%','ÉRETTSÉG'],['15','ÉJSZAKA / 60 NAP'],['3','BEÉPÜLT TUDÁS']],rows:[
-    ['moon','Késői vacsora ↔ rosszabb éjszaka','Rád vár · Falattal közös ügy · 14 közös nap','#poszt/vacsora'],
-    ['clock','Lefekvés-ingadozás ↔ hétfői mélypont','Gyűlik · 6/8 nap — kb. egy hét múlva szólal meg',''],
-    ['tick','Hétvégén 40 perccel később fekszel','Megerősítetted · bekerült a rólad szóló képbe','']],
+    ['RÁD VÁR','var(--coral)','14 közös nap','moon','Rosszabbul alszol, ha későn vacsorázol?','Falattal közös ügy — a te szemed hiányzik hozzá','#poszt/vacsora',0],
+    ['GYŰLIK','var(--gold)','6 / 8 nap','clock','A hétfői mélypontot a lefekvés ingadozása okozza?','Kb. egy hét, és megszólal — addig csendben számol','',75],
+    ['BEKERÜLT','var(--sage)','szept. 20.','tick','Hétvégén 40 perccel később fekszel','Te erősítetted meg — a rólad szóló kép része','',0]],
     ask:'Kérése: két hétből csak 6 éjszakát naplóztál — minden hiányzó éjszaka egy nappal tolja ki, mire biztosat mondhat.'},
   mocor:{quote:'„A terhelésed és az erőd — és az, hogy a napló ne maradjon el. Nem hajtalak, de észreveszem.”',stats:[['60%','ÉRETTSÉG'],['15','EDZÉSNAP / 60 NAP'],['1','SEJTÉS']],rows:[
-    ['bolt','Egyhangú hét ↔ eső energia','Még csak sejtés · 5/8 nap',''],
-    ['flask','Ebéd utáni séta próba','4/7 nap · Falattal közös',''],
-    ['down','„Könnyebb edzés jó alvás után”','Nem jött be — óvatosabban következtet','']],
+    ['SEJTÉS','var(--sky)','5 / 8 nap','bolt','Az egyhangú hetek viszik el az energiádat?','Még nem mondja ki — egy változatosabb hét kellene hozzá','',62],
+    ['KÍSÉRLET','var(--lav)','4 / 7 nap','flask','Séta ebéd után — nyugodtabb lesz a délután?','Falattal közös próba, együtt nézik majd az eredményt','',57],
+    ['NEM JÖTT BE','#8E86A3','lezárva','down','Könnyebb az edzés, ha jól aludtál?','Nem igazolódott — ebből a jelből óvatosabban következtet','',0]],
     ask:'Kérése: a szettek súlyát is írd fel — abból látja a valódi terhelést.'},
   falat:{quote:'„A tányérod, a célod és az edzésed üzemanyaga. Minden este három szólamban értékelek.”',stats:[['80%','ÉRETTSÉG'],['28','KAJANAP / 60 NAP'],['1','AKTÍV KÍSÉRLET']],rows:[
-    ['flask','Szénhidrát a meccs előtt','Aktív kísérlet · 4/7 nap · Mocorral közös',''],
-    ['moon','Késői vacsora ↔ rosszabb éjszaka','Szunyával közös ügy','#poszt/vacsora'],
-    ['sprout','Korábbi vacsora, nyugodtabb este?','Döntésre vár · 18 összevethető nap','']],
+    ['KÍSÉRLET','var(--lav)','4 / 7 nap','flask','Meccs előtti szénhidrát — stabilabb az ugrásod?','Mocorral közös próba · ma este megint meccs 🏐','',57],
+    ['RÁD VÁR','var(--coral)','14 közös nap','moon','Rosszabbul alszol, ha későn vacsorázol?','Szunyával közös ügy — ő hozta, Falat a vacsora-oldalt nézi','#poszt/vacsora',0],
+    ['DÖNTÉSRE VÁR','var(--gold)','18 nap','sprout','Korábbi vacsora, nyugodtabb este?','Elég napja van hozzá — most a te döntésed kell','',0]],
     ask:'Napi műsora: a tányér · a cél · az edzés — minden este.'},
   deru:{quote:'„Én arra figyelek, hogy vagy. Ehhez a te szavad kell — egy-egy rövid esti bejelentkezés.”',stats:[['30%','ÉRETTSÉG'],['8','BEJELENTKEZÉS / 60 NAP'],['0','NYITOTT ÜGY']],rows:[
-    ['heart','Bejelentkezem · 1 perc','Hétvégére már tud mondani valamit a stresszről','']],
+    ['KÉRÉS','var(--rose)','1 perc','heart','Bejelentkezel ma este?','Hétvégére már látja, mi mozgatja az energiádat','',0]],
     ask:'Kevés az adata: két hétből 4 este. Ma bejelentkezést kért tőled.'},
   mezo:{quote:'„Én fogom össze a csapatot. Csak az kerül a rólad szóló képbe, amiben egyetértünk.”',stats:[['66%','ÉRETTSÉG'],['2','BEKERÜLT A HÉTEN'],['4','FORDULÓ']],rows:[
-    ['journal','Vasárnapi konzílium','2 bekerült · 1 nyugdíjazva · a jegyzőkönyv olvasható',''],
-    ['book','A heted története','Memoár-fejezet készül vasárnap estére',''],
-    ['info','Gépterem · Összes funkció','Futások, adatforrások, memória — dev-ajtó','']],
+    ['KONZÍLIUM','var(--gold)','vasárnap','journal','Mi került be rólad a héten?','2 bekerült · 1 nyugdíjazva — a jegyzőkönyv olvasható','',0],
+    ['KRÓNIKA','var(--lav)','készül','book','A heted története','Memoár-fejezet érkezik vasárnap estére','',0],
+    ['DEV','#8E86A3','ajtó','info','Gépterem · Összes funkció','Futások, adatforrások, memória — a motorháztető alatt','',0]],
     ask:'A közös kép gondnoka: minden tény, esemény és döntés nála kereshető vissza.'}
 };
 function szoba(id){const p=CH[id]||CH.szunya,r=ROOMS[id]||ROOMS.szunya;
@@ -1695,7 +1708,11 @@ function szoba(id){const p=CH[id]||CH.szunya,r=ROOMS[id]||ROOMS.szunya;
   <section class="rhero rise" style="--c:${p.c};--i:1">${B(p.b)}<h3>${p.n} · ${p.a.toLowerCase()}</h3><p>${r.quote}</p></section>
   <section class="rstat rise" style="--i:2">${r.stats.map(([v,l],i)=>`<div class="qt glass" style="--c:${p.c};--i:${i+2}"><strong class="tint">${v}</strong><small>${l}</small></div>`).join('')}</section>
   <div class="sec"><h2>Most ezen dolgozik</h2></div>
-  <div class="rows">${r.rows.map(([ic,b,s,go],i)=>`<button class="rowg glass lift rise" style="--c:${p.c};--i:${i+4}" ${go?`data-go="${go}"`:'data-toast="Saját oldala a megvalósításban nyílik meg"'}>${I(ic)}<span style="flex:1;min-width:0"><b>${b}</b><small>${s}</small></span><em>›</em></button>`).join('')}</div>
+  <div class="rows">${r.rows.map(([st,sc,meta,ic,title,sub,go,pct],i)=>`<button class="case glass lift rise" style="--c:${p.c};--s:${sc};--i:${i+4}" ${go?`data-go="${go}"`:'data-toast="Saját oldala a megvalósításban nyílik meg"'}>
+  <span class="crow"><span class="st">${st}</span><em>${meta}</em></span>
+  <span class="cmain">${I(ic)}<span><b>${title}</b><small>${sub}</small></span><span class="chev">›</span></span>
+  ${pct?`<span class="bar" style="--c:${sc}"><b style="--w:${pct}%;--i:${i}"></b></span>`:''}
+</button>`).join('')}</div>
   <div class="sec"><h2>${p.n} jegyzete</h2></div>
   <div class="note glass rise" style="--c:${p.c};--i:8">${I('score')}<div><small>KÉRÉSE HOZZÁD</small><p>${r.ask}</p></div></div>`}
 
