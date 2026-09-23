@@ -545,6 +545,14 @@ button.well:active{background:rgba(245,239,230,.08)}
 .inboxa .chip{justify-content:center;white-space:nowrap;padding:10px 8px}
 .inboxa .chip.main{grid-column:1/-1;font-weight:650}
 .sheet .sh-top b{white-space:nowrap}
+.evcmp{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:2px 0 10px}
+.evc{padding:14px 10px 12px;border-radius:16px;text-align:center;background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair),inset 0 -14px 24px -16px color-mix(in srgb,var(--c) 50%,transparent)}
+.evc small{display:block;font-size:8.5px;font-weight:700;letter-spacing:1.1px;color:var(--faint)}
+.evc strong{display:block;font-weight:300;font-size:36px;line-height:1.05;letter-spacing:-1.8px;margin:7px 0 4px;color:color-mix(in srgb,var(--c) 82%,#fff);filter:drop-shadow(0 0 12px color-mix(in srgb,var(--c) 45%,transparent))}
+.evc span{font-size:10px;color:var(--sub)}
+.evmiss{padding:12px 14px;border-radius:14px;border:1.5px dashed rgba(142,134,163,.45)}
+.evmiss small{display:block;font-size:8.5px;font-weight:700;letter-spacing:1.1px;color:var(--faint)}
+.evmiss p{font-size:12px;line-height:1.5;color:var(--sub);margin-top:5px}
 
 /* ügy-kártya a szobákban */
 .case{display:block;width:100%;padding:13px 14px 14px;border-radius:20px;text-align:left}
@@ -2095,7 +2103,8 @@ function openSheet(kind){const sh=$('#sheet');
   else if(kind==='evidence'){sh.style.setProperty('--c','var(--lav)');
     sh.innerHTML=`<div class="grab"></div><div class="sh-top">${I('info')}<span><strong>Rosszabbul alszol, ha későn vacsorázol?</strong><small>ez látszik eddig a naplóidból</small></span><b class="tint">14 nap</b></div>
     <p>A 14 estéből, ahol vacsora-idő és alvás is rögzült: a <b>21 óra utáni</b> vacsorák másnapján az alvásod átlag <b>6,0 pont</b> — a korábbi vacsorák után <b>7,5</b>. Ez másfél pont különbség, és 11 nap szól mellette, 3 ellene.</p>
-    <ul><li><i></i><span>Késői vacsora után · 5 este</span><em>alvás átlag 6,0</em></li><li><i></i><span>Korai vacsora után · 9 este</span><em>alvás átlag 7,5</em></li><li><i></i><span>Ami még hiányzik</span><em>a hétvége külön vizsgálata — a Szkeptikus kérése</em></li></ul>
+    <div class="evcmp"><div class="evc" style="--c:var(--gold)"><small>KÉSŐI VACSORA UTÁN</small><strong>6,0</strong><span>alvás-átlag · 5 ilyen este</span></div><div class="evc" style="--c:var(--sage)"><small>KORAI VACSORA UTÁN</small><strong>7,5</strong><span>alvás-átlag · 9 ilyen este</span></div></div>
+    <div class="evmiss"><small>AMI MÉG HIÁNYZIK</small><p>A hétvége külön vizsgálata — addig a Szkeptikus nem enged kimondani semmit.</p></div>
     <p style="margin-top:10px;font-size:11.5px;color:var(--faint)">Ez együttjárás, nem bizonyított ok-okozat — ezért még nem került a rólad szóló képbe.</p>
     <button class="send glass" style="--c:var(--lav);margin-top:12px" data-go="#bizonyitek/vacsora">${I('info')}A napok egyenként →</button>`}
   else{sh.style.setProperty('--c','#8E86A3');
