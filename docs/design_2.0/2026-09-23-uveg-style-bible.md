@@ -277,3 +277,27 @@ slice paid for:
 10. **The dark lock is the theme provider's, not the pages'.** `ThemeProvider` takes `lock`
     (default `THEME_LOCK`); tests of the parked light/auto/claim machinery pass `lock={null}`, and
     any spec that seeded a light preference now expects dark.
+
+### U2 · Fuel többi (`mezo-me75u.2`, 2026-09-23)
+
+Each surface got its own block at the end of `prototype.css` (`── uveg fuel konyha|receptek|log|
+stack|trendek (`), so five builders could work in parallel without touching each other's rules.
+
+11. **Old house rules outrank `.glass` too, not only earlier kit-less ones.** Sub-head buttons,
+    CTA rules, empty-state buttons and save bars kept their own `background`/`box-shadow` at a
+    higher specificity. Restate the glass body and shadow on `.<scope> .x.glass` inside the slice's
+    block, or the element keeps its old skin under a glass frame.
+12. **The kit halo is 340px; a 320px screen is not.** A `.uv-halo` hero scrolls the page sideways
+    at 320px. Clip it with `overflow-x: clip` on the hero (never `hidden` on the scroller, which
+    kills sticky children).
+13. **Scope the rules, because the old classes are shared.** `fkx-*`, `logflow-*` and `fkp-*` are
+    used by more than one surface (Kamra and Receptek; the composer and the Műhely). Scope overrides
+    to the page root (`.fkx-kamra`, `.logflow-composer`), or one surface's re-dress repaints another.
+14. **Header chip rows must be able to shrink.** The layout spec swaps every ≥10-char label for a
+    long name; a `flex: 0 0 auto` / `white-space: nowrap` chip row then pushes the page 300px wide.
+    Chip rows wrap, chips carry `min-width: 0` + ellipsis.
+15. **Sheets float.** Every U2 sheet sits 10px off the left, right and bottom edges with a 30px
+    radius on all corners (the prototype `.sheet`); buttons inside a glass sheet are lit flat pills,
+    not glass (rule 5).
+16. **Test the meaning, not the emoji.** Tests that matched `'kamra ✨'`, `★` or `✓/⚠` now assert
+    the accessible text or a data hook (`data-ai`, a marker role). Swap the assertion, never delete it.

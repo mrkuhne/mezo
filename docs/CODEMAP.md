@@ -608,8 +608,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     KamraItemDetailPage.tsx, KamraSkeleton.tsx, LogFlowPage.tsx, RecipeDetailPage.tsx, RecipeEditorPage.tsx,
     RecipeWorkshopPage.tsx, RecipesSkeleton.tsx
   - **sheets:** AddPantryItemSheet.tsx, CatalogSearchSheet.tsx, CategoryFilterSheet.tsx, EnergyBreakdownSheet.tsx,
-    ImportItemSheet.tsx, IngredientPickerSheet.tsx, KamraPickSheet.tsx, LogDoseSheet.tsx, MealScoreSheet.tsx,
-    MedicationFormSheet.tsx, ReceptPickSheet.tsx, RecipeScoreSheet.tsx, StackItemSheet.tsx, WaterLogSheet.tsx
+    ImportItemSheet.tsx, IngredientPickerSheet.tsx, KamraPickSheet.tsx, KamraSheetHead.tsx, LogDoseSheet.tsx,
+    MealScoreSheet.tsx, MedicationFormSheet.tsx, ReceptPickSheet.tsx, RecipeScoreSheet.tsx, StackItemSheet.tsx,
+    WaterLogSheet.tsx
   - **components:** ContextPanel.tsx, DietSuggestionBanner.tsx, DimensionCard.tsx, FuelEnergyHero.tsx, FuelHorizon.tsx,
     FuelLogModes.tsx, FuelMacroRings.tsx, FuelMealBlocks.tsx, FuelMealCeremony.tsx, FuelQualityBlocks.tsx,
     FuelScoreSurface.tsx, FuelStackItemGlass.tsx, FuelWaterModule.tsx, FuelWeekDayGlass.tsx, GlassBox.tsx,

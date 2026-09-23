@@ -16418,10 +16418,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fkx-kamra .fmx-subhead { flex-wrap: wrap; row-gap: 8px; }
 /* the title keeps its word; the three header chips wrap to their own row when they don't fit */
 .fkx-kamra .fmx-subhead > span { min-width: 92px; }
-.fkx-kamra .fkx-head-acts { display: flex; gap: 6px; margin: 0 0 0 auto; flex: 0 0 auto; }
+.fkx-kamra .fkx-head-acts { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 0 auto; flex: 0 1 auto; min-width: 0; max-width: 100%; }
 .fkx-kamra .fkx-head-acts .fkx-head-act { margin-left: 0; min-height: 36px; padding: 7px 12px; border: 0; border-radius: 999px;
   font-size: 12px; font-weight: 600; white-space: nowrap; color: var(--text-secondary);
-  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+  min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .fkx-kamra .fkx-head-acts .fkx-head-act.is-on { color: #191614; background: var(--dv-amber);
   box-shadow: 0 0 12px color-mix(in srgb, var(--dv-amber) 50%, transparent); }
 .fkx-kamra .fkx-search { gap: 10px; margin: 0 0 10px; padding: 3px 14px; border: 0; border-radius: 16px; }
@@ -17003,6 +17004,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .fkx-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fkx-two { grid-template-columns: minmax(0, 1fr); }
 }
+/* the 340px kit halo is wider than a 320px screen: clip it sideways, never scroll */
+.fkx-ws-empty.uv-halo { overflow-x: clip; }
 /* ── /uveg fuel receptek ── */
 
 /* ── uveg fuel log (mezo-me75u.2) ── /fuel/log/uj, composer, pick/víz/energia sheets ── */

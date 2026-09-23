@@ -29,6 +29,16 @@ related: [_platform-data-layer, _platform-design-system, train, today, _platform
 > icons are the Titanium 3D set (`ContentIcon`). Behavior, routes and data are unchanged. Look:
 > [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference
 > [`fuel-uveg.html`](../design_2.0/prototypes/fuel-uveg.html).
+>
+> **2026-09-23 — Üveg U2 (`mezo-me75u.2`).** The rest of Fuel wears the same glass: Konyha,
+> Kamra (+ item page and its four sheets), Receptek, recipe detail / editor / Műhely, the meal log
+> (`/fuel/log/uj`, composer, Kamra picker, energy + water sheets), Kiegészítők (hub, Protokoll,
+> Új elem, Gyógyszer, stack sheets), Trendek (+ day card) and the Fuel settings
+> (`/settings/fuel`, `/settings/fuel/slots`). One content change, owner-approved: the **Receptek
+> list is one recipe per row with per-serving protein / carb / fat grams** (`macros ÷ servings`)
+> instead of the two-column tile grid. The remaining emoji (energy sheet, composer, stack pin,
+> slots, workshop) became 3D sprite icons; 12 new icons joined the sprite. Parity reference
+> [`uveg-fuel-tobbi.html`](../design_2.0/prototypes/uveg-fuel-tobbi.html).
 
 ## 1. Summary
 
