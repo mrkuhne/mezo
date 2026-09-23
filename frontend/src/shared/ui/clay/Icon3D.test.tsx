@@ -16,6 +16,15 @@ test('the sprite carries the 62 companion-titanium symbols plus the approved cus
   }
 })
 
+// U3 (mezo-me75u.3): the Nap icons the owner approved on prototypes/uveg-nap.html#ikonok.
+test('the sprite carries the U3 Nap icons', () => {
+  const ids = symbolIds()
+  for (const id of ['t-checkin', 't-quick', 't-steps', 't-people', 't-chain', 't-quest',
+    't-harvest', 't-coin', 't-orb', 't-flask', 't-scroll'] satisfies Icon3DName[]) {
+    expect(ids, id).toContain(id)
+  }
+})
+
 test('every symbol is 64×64 art (Icon3D renders viewBox 0 0 64 64)', () => {
   const { container } = render(<ClaySprites />)
   const syms = container.querySelectorAll('symbol[id^="t-"]')
