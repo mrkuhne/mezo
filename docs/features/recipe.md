@@ -2,7 +2,7 @@
 title: Recipes (Receptek)
 type: feature-domain
 status: done
-updated: 2026-09-21
+updated: 2026-09-23
 tags: [fuel, recipe, frontend, data-layer, backend, llm]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/recipe
@@ -19,6 +19,8 @@ related: [fuel, pantry, _platform-data-layer, companion]
 # Recipes (Receptek) — Feature Documentation
 
 > One-line: the recipe library at `/fuel/recipes` (tab "Fuel" → tile "Receptek") — an owned `recipe` + `recipe_ingredient` aggregate whose lines reference the user's `pantry_item` rows with a frozen per-basis macro/nutrient snapshot, a deterministic mezo-fit score at read, a lazily-materialized AI breakdown, and the stateless Receptműhely AI turn. **Status: ✅ backend + FE dual-mode done.**
+>
+> **2026-09-23 — Üveg (`mezo-me75u.2`).** The list, detail, editor, Műhely and the recipe picker wear the dark glass. The **Receptek list is now one recipe per row** with the per-serving protein / carb / fat grams (`macros ÷ max(1, servings)`) and per-serving kcal, replacing the two-column tile grid (owner decision). Everything else is visual only.
 
 ## 1. Summary
 
