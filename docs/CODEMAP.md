@@ -757,17 +757,18 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     CoachingCardPage.tsx, CoachingHubPage.tsx, CoachingObserverPage.tsx, DiagnosisDetailPage.tsx,
     DiagnosisListPage.tsx, ExperimentDetailPage.tsx, ExperimentsPage.tsx, KnowledgeListPage.tsx, KnowledgeNodePage.tsx,
     MemoirArchivePage.tsx, MemoirChapterPage.tsx, MemoirPage.tsx, MemoryDayPage.tsx, MemoryPage.tsx, MezoHubPage.tsx,
-    PatternDetailPage.tsx, PatternsPage.tsx, PredictionDetailPage.tsx, PredictionsPage.tsx
+    PatternDetailPage.tsx, PatternsPage.tsx, PredictionDetailPage.tsx, PredictionsPage.tsx, TeamFeedPage.tsx
   - **sheets:** ConversationActionsSheet.tsx, ConversationPickerSheet.tsx, NodeDetailSheet.tsx
   - **components:** BoopNavigation.tsx, CategoryHeader.tsx, ChatMessage.tsx, CoachingRuleTile.tsx, EvidenceLog.tsx,
-    FactCandidateCard.tsx, FactsView.tsx, FeedbackChips.tsx, HowItWorksView.tsx, HypothesisStateCard.tsx,
-    KategoriakView.tsx, KindNodeList.tsx, KindTileGrid.tsx, KnowledgeBaseView.tsx, KnowledgeFactRow.tsx,
-    LifeEventAcceptedCard.tsx, LifeEventCandidateCard.tsx, LifecycleSection.tsx, MemoryAuditPanel.tsx,
-    MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx,
-    PatternArtifactDetail.tsx, PatternDecisionCard.tsx, PatternDetailHero.tsx, PatternDomainMark.tsx,
-    PatternEvidenceChart.tsx, PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx,
-    PatternStrengthChart.tsx, ProfileNodeCard.tsx, ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx,
-    SimilarDayCard.tsx, TestPlanTiles.tsx, TokenColumns.tsx, ToolWorkStrip.tsx, VerdictArc.tsx, experimentStatus.tsx
+    FactCandidateCard.tsx, FactsView.tsx, FeedPostCard.tsx, FeedPostHead.tsx, FeedPosterCard.tsx, FeedReplySheet.tsx,
+    FeedTrio.tsx, FeedbackChips.tsx, HowItWorksView.tsx, HypothesisStateCard.tsx, KategoriakView.tsx, KindNodeList.tsx,
+    KindTileGrid.tsx, KnowledgeBaseView.tsx, KnowledgeFactRow.tsx, LifeEventAcceptedCard.tsx,
+    LifeEventCandidateCard.tsx, LifecycleSection.tsx, MemoryAuditPanel.tsx, MemoryJournalPanel.tsx,
+    MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx, PatternArtifactDetail.tsx,
+    PatternDecisionCard.tsx, PatternDetailHero.tsx, PatternDomainMark.tsx, PatternEvidenceChart.tsx,
+    PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx, PatternStrengthChart.tsx, ProfileNodeCard.tsx,
+    ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx, SimilarDayCard.tsx, StoryStrip.tsx, TestPlanTiles.tsx,
+    TokenColumns.tsx, ToolWorkStrip.tsx, VerdictArc.tsx, experimentStatus.tsx, useFeedSession.ts
   - **logic:** boopNavigation.ts, chatRefs.ts, coachingCopy.ts, diagnosisCatalog.ts, diagnosisCopy.ts, domains.ts,
     factCopy.ts, findings.ts, humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternCatalog.ts,
     patternEvidence.ts, patternHistory.ts, predictionStatus.ts, quickQuestions.ts, team.ts, teamFeed.fixtures.ts,

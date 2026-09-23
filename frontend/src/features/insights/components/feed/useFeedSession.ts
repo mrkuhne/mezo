@@ -19,13 +19,14 @@ const EMPTY: FeedSessionState = { afterlife: {}, votes: {} }
 
 export function useFeedSession() {
   const qc = useQueryClient()
-  const { data = EMPTY } = useQuery({
+  const query = useQuery({
     queryKey: KEY,
     queryFn: async () => EMPTY,
     enabled: false,
     staleTime: Infinity,
     gcTime: Infinity,
   })
+  const data = query.data ?? EMPTY
   const update = (fn: (s: FeedSessionState) => FeedSessionState) =>
     qc.setQueryData<FeedSessionState>(KEY, current => fn(current ?? EMPTY))
   return {

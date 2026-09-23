@@ -160,3 +160,17 @@ test('withSessionAfterlife: üres bejegyzés-térkép → változatlan napok', (
   expect(withSessionAfterlife(days, {}, TODAY)).toBe(days)
 })
 
+
+test('nem-ISO dátum (mock kijelző-szöveg) → a címke maga a szöveg, a datált napok után', () => {
+  const feed = buildTeamFeed({ ...input, predictions: [{ ...missedPrediction, date: 'Máj 22' }] })
+  const last = feed.days[feed.days.length - 1]
+  expect(last.label).toBe('Máj 22')
+  expect(feed.days.every(d => !/undefined/i.test(d.label))).toBe(true)
+})
+
+test('ritmus: egy csendes nap magányos posztja nem lesz üveg-poszter', () => {
+  const feed = buildTeamFeed({ ...input, predictions: [missedPrediction], experiments: [], patterns: [], observations: [], characterItems: [] })
+  expect(feed.days).toHaveLength(1)
+  expect(feed.days[0].poster).toBeUndefined()
+  expect(feed.days[0].posts).toHaveLength(1)
+})

@@ -123,12 +123,23 @@ function postableAuthor(id: TeamCharacterId): TeamCharacterId {
 }
 
 function dayKeyOf(iso: string): string {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? iso.slice(0, 10) : localDateString(d)
+  if (ISO_DAY.test(iso)) return iso
+  const d = /^\d{4}-\d{2}-\d{2}T/.test(iso) ? new Date(iso) : new Date(Number.NaN)
+  return Number.isNaN(d.getTime()) ? iso : localDateString(d)
+}
+
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/
+
+/** A datált napok elöl, a legfrissebb az első; a kijelző-szövegű „napok” a végén. */
+function byDayDesc(a: string, b: string): number {
+  const ia = ISO_DAY.test(a), ib = ISO_DAY.test(b)
+  if (ia !== ib) return ia ? -1 : 1
+  return b.localeCompare(a)
 }
 
 function dayLabel(key: string, today: string): string {
+  // Kijelző-szövegű dátum (pl. a mock „Máj 22”) — már emberi címke, nem értelmezzük újra.
+  if (!ISO_DAY.test(key)) return key
   if (key === today) return 'Ma'
   if (key === addDays(today, -1)) return 'Tegnap'
   return huMonthDayDow(key)
@@ -231,10 +242,19 @@ function characterPost(item: CharacterFeedItem): FeedPost {
 
 const POSTER_RANK: Partial<Record<FeedPostKind, number>> = { kiserlet: 1, konzilium: 2 }
 
-/** A nap posztere: waiting > kiserlet > konzilium > a nap első (legfrissebb) posztja. */
+/** Ennyi poszttól számít „mozgalmasnak” egy nap: ott a legfrissebb is kiemelhető. */
+const BUSY_DAY = 3
+
+/**
+ * A nap posztere: waiting > kiserlet > konzilium; ezek híján csak mozgalmas napon a legfrissebb.
+ * Egy csendes nap magányos posztja csendes marad — különben ritka falon minden üveg lenne, és
+ * a rangsor (restored bible §3.4: az üveg a kivétel) szétesne.
+ */
 function pickPoster(posts: FeedPost[]): FeedPost | undefined {
   const rank = (p: FeedPost) => (p.waiting ? 0 : (POSTER_RANK[p.kind] ?? 3))
-  return posts.reduce<FeedPost | undefined>((best, p) => (!best || rank(p) < rank(best) ? p : best), undefined)
+  const best = posts.reduce<FeedPost | undefined>((b, p) => (!b || rank(p) < rank(b) ? p : b), undefined)
+  if (!best) return undefined
+  return rank(best) < 3 || posts.length >= BUSY_DAY ? best : undefined
 }
 
 export function buildTeamFeed(input: TeamFeedInput): TeamFeed {
@@ -254,7 +274,7 @@ export function buildTeamFeed(input: TeamFeedInput): TeamFeed {
   }
 
   const days: FeedDay[] = [...byDay.entries()]
-    .sort(([a], [b]) => b.localeCompare(a))
+    .sort(([a], [b]) => byDayDesc(a, b))
     .map(([key, dayPosts]) => {
       const sorted = [...dayPosts].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
       const poster = pickPoster(sorted)
@@ -305,5 +325,5 @@ export function withSessionAfterlife(
     if (day) day.posts = [...day.posts, post].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
     else out.push({ key, label: dayLabel(key, today), posts: [post] })
   }
-  return out.sort((a, b) => b.key.localeCompare(a.key))
+  return out.sort((a, b) => byDayDesc(a.key, b.key))
 }
