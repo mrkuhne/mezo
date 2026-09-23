@@ -2603,6 +2603,24 @@ dual-mode.
 
 ## 7. How to extend it
 
+### Contextual feed foundation (mezo-7nron.2)
+
+The optional `mezo.feature.contextual-feed.enabled` seam is off by default. It currently
+assembles input only; existing message generators still use their established paths.
+`FeedContextAssembler` combines fresh event evidence, `FeedContinuityService`, the chat's
+`PersonalContextAssembler`, the current snapshot and the shared dated memory block.
+No undated knowledge-fact dump is added by this seam. Prior messages are labelled as previous
+interpretations, with their source IDs, business dates and generation timestamps.
+
+Continuity reads at most two bounded pages for one owner in the last 14 inclusive calendar
+days, strictly before `asOf`. Six of twelve slots are reserved for same-kind messages; other
+kinds fill the remaining slots, followed by any additional same-kind history. The final
+selection is chronological, with UUID tie-breaking. Rendered history is bounded to 8,000
+characters and individual excerpts to 800; truncated excerpts carry a source-readable ID.
+The new `mezo.proactive.contextual-feed` validated properties also declare the future event
+window/tool budgets. The switch gates all new context services and does not alter delivery.
+
+
 - **`mezo-gst9` shipped (companion feed: 5 kinds, 2 triggers, 1 table) — the current extension
   pattern for anything that speaks first.** `CompanionMessageJob` (`@Scheduled`, three-switch,
   today-only, per-user isolation), `CompanionMessageEventListener` (`@Async`
@@ -3670,6 +3688,12 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
   a wider "one owner zone for every job-minted today" sweep is out of this slice's scope.
 
 ## 10. Key files
+
+**Contextual feed foundation (disabled by default)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedContextAssembler.java` — shared personal context, event evidence, prior feed and RAG composition.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedContinuityService.java` — bounded owned history and dated source references.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/config/ContextualFeedProperties.java` — validated history, evidence and tool limits.
+
 
 **API contract**
 - `api/feature/proactive/proactive.yml` — 9 endpoints (**feed** (replaces briefing + heartbeat) +
