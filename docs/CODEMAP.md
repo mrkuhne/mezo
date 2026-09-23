@@ -919,8 +919,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `useSleepShot`, `useSuggestionActions`, `useWeekLessons`, `useWeeklyReview`, `useWeight`
   - **modules:** biometricHooks.ts, biometricProfileApi.ts, biometricsApi.ts, dayEvaluation.ts, dayEvaluationApi.ts,
     dayEvaluationHooks.ts, goalApi.ts, goalHooks.ts, goalLinkApi.ts, goalOverviewHooks.ts, goalSettingsHooks.ts,
-    goals.ts, llmUsageApi.ts, llmUsageHooks.ts, meHooks.ts, meWeek.ts, meWeekApi.ts, meWeekHooks.ts, people.ts,
-    peopleApi.ts, peopleHooks.ts, sleep.ts, sleepGoal.ts, sleepHooks.ts, sleepShot.ts, weekLessons.ts,
+    goals.ts, liveDay.ts, llmUsageApi.ts, llmUsageHooks.ts, meHooks.ts, meWeek.ts, meWeekApi.ts, meWeekHooks.ts,
+    people.ts, peopleApi.ts, peopleHooks.ts, sleep.ts, sleepGoal.ts, sleepHooks.ts, sleepShot.ts, weekLessons.ts,
     weekLessonsHooks.ts, weeklyReviewApi.ts, weeklyReviewHooks.ts, weeklyReviewMock.ts, weightHooks.ts
 - **FE ui** `frontend/src/features/me`
   - **pages:** BeallitasokPage.tsx, CelPage.tsx, CelWizardPage.tsx, CelokPage.tsx, ChainPage.tsx, EnHubPage.tsx,
