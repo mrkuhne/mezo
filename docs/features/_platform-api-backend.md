@@ -318,6 +318,13 @@ Constructor injection only (Lombok `@RequiredArgsConstructor`), never field inje
 
 ## 7. How to extend it
 
+The contextual daily-feed foundation (`mezo-7nron.2/.3`) declares
+`FeaturesConfiguration.CONTEXTUAL_FEED_SWITCH` (`mezo.feature.contextual-feed.enabled`,
+default false). Its context/history/evidence services require that switch plus companion and
+proactive. Validated limits live under `mezo.proactive.contextual-feed`; this foundation adds
+no endpoint or table. See [proactive](proactive.md) for the context and evidence boundaries.
+
+
 The concrete recipe to add a new **backed feature or endpoint** (this is also the path to give Fuel/Insights/People a backend). Read the referenced `docs/references/*.md` *before* writing each layer — they are mandatory house standards.
 
 1. **bd issue + `feat/<topic>` branch** (one issue/branch per change; merge `--no-ff` into main).
