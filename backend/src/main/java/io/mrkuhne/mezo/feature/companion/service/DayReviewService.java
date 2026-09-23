@@ -170,7 +170,7 @@ public class DayReviewService {
 
     /**
      * The server-side mirror of the frontend's {@code weekDay.ts} four states, plus the
-     * {@code in_progress} the frontend never needed (its week view has no live day page):
+     * {@code in_progress} the live day page (A napom) renders it:
      * <pre>
      *   date &gt; today                      -&gt; future        (nothing has happened yet)
      *   date == today                     -&gt; in_progress   (still gathering; no overall score)
@@ -178,10 +178,9 @@ public class DayReviewService {
      *   closed &amp;&amp; nothing was logged      -&gt; empty         ("nincs adat")
      *   closed &amp;&amp; something was logged    -&gt; thin          ("tanulom" — &lt;2 DONE dimensions)
      * </pre>
-     * {@code empty} asks the day's OWN logs, not the dimension statuses: on a closed day the
-     * {@code logging} dimension is always DONE (a genuinely untouched day scores a real 0, by
-     * design) and {@code rhythm} is computed from PRIOR days, so "all dimensions degraded" would
-     * never fire and every untouched day would read as {@code thin}.
+     * {@code empty} asks the day's OWN logs, not the dimension statuses: a fully untouched closed
+     * day has {@code logging} NO_DATA (mezo-el0t), and {@code rhythm} is computed from PRIOR days,
+     * so {@code empty} asks the day's own logs.
      */
     private static String state(DayInputs inputs, DayEvaluation evaluation, LocalDate today) {
         LocalDate date = inputs.date();

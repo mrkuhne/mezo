@@ -481,6 +481,10 @@ mezo:
       # off = the DailySummaryJob bean does not exist
       daily-summary-job:
         enabled: true
+      # A napom S1: nightly day-review pre-warm (schedule: mezo.companion.day-review-warmup.cron);
+      # off = the DayReviewWarmupJob bean does not exist
+      day-review-warmup-job:
+        enabled: true
       # Karakter nightly observation pass (mezo-1gim.3, schedule: mezo.character.observation.cron);
       # off = the CharacterObservationJob bean does not exist
       character-reply-job:
@@ -684,6 +688,7 @@ mezo:
         - proactive_weekly_review
         - companion_quarterly
         - companion_hypothesis
+        - day_review
       # Never capped: the owner's admin dry-run replay bills the INSPECTED user but has to stay
       # usable on exactly the accounts that hit their ceiling (LlmCallContext.FEATURE_ADMIN_REPLAY),
       # and the boot smoke call is how we find out the provider works at all.
@@ -2029,6 +2034,12 @@ mezo:
       rhythm-window-days: 7
       rhythm-min-days: 3
       log-timely-min: 120
+    # A napom S1 (spec 2026-09-24): yesterday's review is written overnight so the morning read is
+    # a cache hit. 02:50 sits between 02:40 patterns and 03:00 SUN hypotheses; the post-midnight
+    # XP/habit chain (00:05–00:20) has long finished.
+    day-review-warmup:
+      cron: "0 50 2 * * *"
+      catch-up-days: 3
   # Karakter S2 nightly expert observation pass (mezo-1gim.3, spec §5/§6) — the 7-expert team
   # writes observations onto the CORE dimensions; the job switch lives under mezo.techcore.cron.
   character:
