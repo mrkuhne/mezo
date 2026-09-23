@@ -1,9 +1,13 @@
 ---
 name: visszaoltoztetes
-description: Session driver for the surfaces the Boop visszaöltöztetés (Titanium visual rollback) did not reach. The epic mezo-ju4j6 itself CLOSED 2026-09-21 — this skill now drives the leftover re-dress beads labelled epic:boop-visszaoltoztetes. Use when the user invokes /visszaoltoztetes or asks to continue the visszaöltöztetés / Titanium rollback work.
+description: SUPERSEDED 2026-09-23 by /uvegesites (the Üveg direction, epic mezo-me75u) — use /uvegesites for any re-dress work. Historical: session driver for the surfaces the Boop visszaöltöztetés (Titanium visual rollback) did not reach. The epic mezo-ju4j6 itself CLOSED 2026-09-21 — this skill now drives the leftover re-dress beads labelled epic:boop-visszaoltoztetes. Use when the user invokes /visszaoltoztetes or asks to continue the visszaöltöztetés / Titanium rollback work.
 ---
 
 # Visszaöltöztetés session driver — the remaining surfaces
+
+> **SUPERSEDED 2026-09-23.** The owner moved the direction to **Üveg** (Mozaik colors +
+> Titanium material, dark only). Use **`/uvegesites`**. `mezo-z5lov` (emoji) is folded into
+> slice U11 of epic `mezo-me75u`; `mezo-17vnf` (dead module) is a plain chore anyone can take.
 
 > **The programme is finished; the app is not uniformly finished.** Epic `mezo-ju4j6`
 > (19 beads, 2026-09-17 → 2026-09-21) closed: shell, navigation, GlassBox, all of Fuel,
