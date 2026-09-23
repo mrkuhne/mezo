@@ -153,6 +153,26 @@ From top to bottom:
   - This is a prompt-only change. The envelope shape is unchanged, the model tier is
     unchanged, and cached reviews regenerate only on their next hash miss.
 
+### 6. Evening Napzárás card on Mai (owner, 2026-09-24)
+
+The Napzárás tab leaves the bar, so the Mai page (Napközpont, U3 glass) gets the evening entry:
+
+- **From 20:00 local time until the ritual is closed**, a lavender glass card sits at the top of
+  Napközpont, under the hub head. It shows a moon art, the "ESTE · NAPZÁRÁS" eyebrow, "Tegyük le
+  a napot.", the line "Amit megőriznél, és amit elengednél. Kb. 3 perc.", flat chips from today
+  (kcal, edzés x/y, check-in x/y, N/6 terület kész), and a filled "Napzárás indítása ›" CTA that
+  goes to `/ritual`.
+- **Once the ritual is closed** (`ritual_day.closed_at` for today), the card shrinks to a flat
+  "Letetted a napot · Hajnalban megírom, milyen napod volt." row with an "A napom ›" link.
+- **The window ends** at the next day's morning boundary. A day nobody closes simply loses the
+  card in the morning. The 03:00 job closes the day's review regardless.
+- On A napom, the evening "most érdemes" card offers the same Napzárás.
+- `features/today/logic/nextStep.ts` already words this ("Tegyük le a napot.") but **has no
+  importer** besides its test. Either wire the card through it or delete it. Do not leave two
+  sources of the evening copy.
+- The 20:00 threshold is a named constant (`NAPZARAS_CARD_FROM_HOUR = 20`). It is not the
+  `dayFace` "este" boundary.
+
 ## Out of scope
 
 - The Heti hub, the days mosaic and the weekly score (they only get the new link target).
@@ -189,7 +209,9 @@ From top to bottom:
    page.
 3. **Live today.** The invalidation helper wired into the logging mutations, polling and the
    pulse.
-4. **Warmer review voice.** Rewrite the `DayReviewLlm` prompt with golden examples from the
+4. **Evening Napzárás card on Mai** (§6). This ships together with slice 2, because the tab
+   leaves the bar in that slice.
+5. **Warmer review voice.** Rewrite the `DayReviewLlm` prompt with golden examples from the
    prototype, plus a prompt test that bans the listed phrases.
 
 ## Prior art

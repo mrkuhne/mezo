@@ -181,6 +181,26 @@
 .mnote p+p{margin-top:10px}
 .dnote{font-size:14px;line-height:1.55;color:var(--sub)}
 .napod .say{font-size:14px;font-weight:500;line-height:1.45}
+/* esti napzárás-kártya a Mai oldalon (owner 2026-09-24: 20:00 után) */
+.zcard{margin:14px 16px 0;padding:16px 14px 14px;overflow:hidden}
+.zhalo{position:absolute;right:-60px;top:-70px;width:220px;height:200px;z-index:0;pointer-events:none;background:radial-gradient(circle,rgba(171,159,210,.34),rgba(255,190,96,.10) 45%,transparent 70%)}
+.ztop{display:flex;gap:12px;align-items:center}
+.ztop .zart{width:64px;height:64px;flex:0 0 auto}
+.ztop .eb{color:#C9BDF0}
+.ztop strong{display:block;font-size:20px;font-weight:600;letter-spacing:-.5px;margin-top:3px}
+.ztop small{display:block;font-size:12.5px;color:var(--sub);margin-top:3px;line-height:1.4}
+.zchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.zchips .flat{font-size:11px;padding:5px 10px 5px 6px}
+.zchips .flat .icon{width:16px;height:16px}
+.zgo{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:14px;padding:12px;border-radius:16px;font-size:15px;font-weight:600;color:#191614;background:linear-gradient(135deg,#C9BDF0,#AB9FD2);box-shadow:0 0 18px rgba(171,159,210,.45)}
+.zgo .icon{width:24px;height:24px;filter:none!important}
+.zgo b{font-weight:400;font-size:18px}
+.zdone{display:flex;align-items:center;gap:12px;margin:14px 16px 0;padding:12px 14px;border-radius:18px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.zdone .icon{width:36px;height:36px}
+.zdone span{flex:1;min-width:0}
+.zdone strong{display:block;font-size:14px;font-weight:600}
+.zdone small{display:block;font-size:11.5px;color:var(--sub);margin-top:2px}
+.zdone button{font-size:12px;font-weight:600;color:#FFB39C;white-space:nowrap}
 /* a + gomb alatt is kiférjen az utolsó kártya */
 .scroll{padding-bottom:184px}
 /* fül-pötty + tovább a mai napra */
@@ -247,7 +267,7 @@
 
     <div class="opt"><small>NAPSZAK</small>
       <div class="seg" data-opt="phase" style="--c:var(--lav)">
-        <button data-v="morning">Reggel · tegnap még nem nézted</button><button data-v="day">Napközben</button>
+        <button data-v="morning">Reggel · tegnap még nem nézted</button><button data-v="day">Napközben</button><button data-v="evening">Este 20:00 után</button>
       </div>
     </div>
 
@@ -261,6 +281,7 @@
       <li>Eltűnt az oldal tetejéről az „Összes funkció” gombsor, és alulról a + gombbal ütköző csempesor.</li>
       <li>A „‹ Napok” lista helyett felül egy heti sáv van: bármelyik napra egy koppintás.</li>
       <li>Lezárt napon a Mezo jegyzete kerül előre. Hajnali 3-kor készül el, így reggel már nem kell rá várni.</li>
+      <li>Este 20:00 után a Mai oldal tetején megjelenik a napzárás. Lezárás után egy kis „Letetted a napot” sorrá húzódik össze.</li>
       <li>Napközben egy mondat mondja el, hogy áll a napod. Ezt egyszerű szabályok írják, nem a mesterséges intelligencia.</li>
     </ul>
     <label class="toggle"><input type="checkbox" id="still"> Mozgás kikapcsolása</label>
@@ -274,7 +295,7 @@ const B=(d,alive=false)=>`<svg class="boop ${alive?'is-alive':''}" viewBox="0 0 
 const I=(n,c='')=>`<svg class="icon ${c}" aria-hidden="true"><use href="#t-${n}"/></svg>`;
 const bar=(w,c,g)=>`<span class="bar" style="--c:${c}"><b style="--w:${Math.max(2,Math.min(100,w))}%"></b>${g!=null?`<u style="--g:${g}%"></u>`:''}</span>`;
 const hu=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
-const S={place:'C',lay:'B',phase:'morning',voice:'now',seen:false,fresh:new Set(),open:new Set(),adj:false};
+const S={place:'C',lay:'B',phase:'morning',voice:'warm',seen:false,fresh:new Set(),open:new Set(),adj:false,ritual:false};
 
 /* ── adatok ─────────────────────────────────────────────── */
 const T={kcal:2060,kcalG:2782,prot:148,protG:166,nova:68,micro:80,work:0,workG:1,sleepMin:436,sleepQ:7,ck:2,ckG:4,rhythm:74,updated:'14:20'};
@@ -300,6 +321,7 @@ function reading(){
   return 'Minden a helyén. Ma este nyugodtan zárhatod a napot.';
 }
 function leadCard(){
+  if(S.phase==='evening'&&!S.ritual)return ['moon','var(--lav)','MOST ÉRDEMES · ESTE','Tegyük le a napot','Amit megőriznél, és amit elengednél. Hajnalban megírom, milyen napod volt.','Napzárás'];
   if(!T.work)return ['dumbbell','var(--coral)','MOST ÉRDEMES · DÉLUTÁN','17:30-ra be van írva az edzés','Utána egy fehérjés vacsora, és a tápanyag is kész.','Edzés'];
   if(T.ck<T.ckG)return ['checkin','var(--sky)','MOST ÉRDEMES · ESTE','Egy esti check-in hiányzik','Fél perc. Utána teljes a napod képe.','Check-in'];
   return ['moon','var(--lav)','MOST ÉRDEMES · ESTE','Készen állsz a napzárásra','A napzárás innen és az esti rutinból is indul. Hajnalban megírom, milyen napod volt.','Napzárás'];
@@ -388,6 +410,16 @@ function napodCard(){
     <div class="cta"><span>A napom részletesen ›</span><small>tegnap: ${Y.score} · a hét legjobbja</small></div>
   </button>`;
 }
+function closeCard(){
+  if(S.ritual)return `<div class="zdone rise" style="--i:1">${I('moon')}<span><strong>Letetted a napot</strong><small>Hajnalban megírom, milyen napod volt.</small></span><button data-go="#nap/2026-09-24">A napom ›</button></div>`;
+  const d=todayDims();
+  return `<section class="zcard glass rise" style="--c:var(--lav);--i:1">
+    <div class="zhalo"></div>
+    <div class="ztop">${I('moon','zart')}<span><span class="eb">ESTE · NAPZÁRÁS</span><strong>Tegyük le a napot.</strong><small>Amit megőriznél, és amit elengednél. Kb. 3 perc.</small></span></div>
+    <div class="zchips"><span class="flat">${I('bowl')}${hu(T.kcal)} kcal</span><span class="flat">${I('dumbbell')}edzés ${T.work}/${T.workG}</span><span class="flat">${I('checkin')}check-in ${T.ck}/${T.ckG}</span><span class="flat">${doneCount(d)}/6 terület kész</span></div>
+    <button class="zgo" data-ritual>${I('moon')}Napzárás indítása<b>›</b></button>
+  </section>`;
+}
 function mai(){
   const card=S.place==='A'?napodCard():'';
   if(S.place==='B')return `${topbar()}<div class="hubhead rise"><span class="eb">NAPKÖZPONT · A NAPOD</span></div>${dayBody('2026-09-24',true)}
@@ -395,6 +427,7 @@ function mai(){
   return `${topbar()}
   <div class="hubhead rise"><span class="eb">NAPKÖZPONT</span><h1>A napod.<br><span>Minden kapcsolódik.</span></h1></div>
   ${card}
+  ${S.phase==='evening'?closeCard():''}
   <div class="rest">${B('mezo')}Itt folytatódik a Napközpont úgy, ahogy most van: a Boop és a körülötte lévő gombok, az üzemanyag-kártya, a Mezo észrevétele és a mai pillanatok.${S.place==='C'?'<br><b>A C változatban itt nincs kártya: a napi nézet a lenti „A napom” fülön él.</b>':''}</div>`;
 }
 
@@ -437,7 +470,7 @@ function dayBody(iso,embedded){
       <p class="reading">${reading()}</p>
       <span class="upd">Napközben nincs pontszám. Hajnali 3-kor zárom a napot, és reggelre megírom, milyen volt.</span>
     </section>
-    <div class="lead glass rise" style="--c:${lc};--i:3">${I(lic)}<span class="grow"><span class="eb">${leb}</span><strong>${lt}</strong><small>${ls}</small></span><button class="go" data-toast="${lgo==='Napzárás'?'A napzárás indul (az esti rutinból is elérhető)':lgo+' megnyitása'}">${lgo} ›</button></div>
+    <div class="lead glass rise" style="--c:${lc};--i:3">${I(lic)}<span class="grow"><span class="eb">${leb}</span><strong>${lt}</strong><small>${ls}</small></span><button class="go" ${lgo==='Napzárás'?'data-ritual':''} data-toast="${lgo==='Napzárás'?'A napzárás indul (az esti rutinból is elérhető)':lgo+' megnyitása'}">${lgo} ›</button></div>
     <div class="sec rise" style="--i:3"><h2>Ma eddig</h2><span class="eb">6 TERÜLET</span></div>
     ${dimsToday()}`;
   }
@@ -517,6 +550,7 @@ document.addEventListener('click',e=>{
   const t=e.target;
   const op=t.closest('[data-opt] button');if(op){S[op.parentNode.dataset.opt]=op.dataset.v;if(op.parentNode.dataset.opt==='phase')S.seen=false;soft();return}
   const dm=t.closest('[data-dim]');if(dm){const k=dm.dataset.dim;S.open.has(k)?S.open.delete(k):S.open.add(k);soft();return}
+  if(t.closest('[data-ritual]')){S.ritual=true;soft();toast('Napzárás kész · a szertartás maga változatlan');return}
   if(t.closest('[data-adj]')){S.adj=!S.adj;soft();return}
   const lg=t.closest('[data-log]');if(lg){if(!lg.disabled)log(lg.dataset.log);return}
   if(t.closest('[data-sheet]')){openSheet();return}
