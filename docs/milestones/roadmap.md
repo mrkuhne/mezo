@@ -49,6 +49,13 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-09-23 — Contextual Mezo feed direction approved (`mezo-7nron`; implementation pending).**
+  Immediate reactions across all active daily message kinds will share chat's personal context,
+  read tools and dated conversational continuity. Relevant cross-domain connections, recognition
+  of progress and respectful challenge are explicit goals. [Design](../superpowers/specs/2026-09-23-contextual-mezo-feed-design.md)
+  · [implementation plan](../superpowers/plans/2026-09-23-contextual-mezo-feed.md)
+  · [ADR 0050](../decisions/0050-contextual-mezo-feed.md). No runtime behavior changed in this design delivery.
+
 | Date | Milestone |
 |---|---|
 | 2026-09-22 | **Boop V3 navigation (`mezo-dcuyw`)** — social council entry, original-name direct menu, persistent four-tab dock, full prediction/experiment/knowledge/memory details and canonical knowledge decisions. Existing typed data and actions retained; cross-engine topic unification is a separate backend extension. See [insights.md](../features/insights.md). |
