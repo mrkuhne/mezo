@@ -1450,6 +1450,10 @@ reply but never promises a measurement after eight days.
 
 `ObservationRecoveryService` is owner-only: `preview` reads bounded owned audit proposals,
 rechecks current original sources, deduplicates themes and returns a short-lived server-held
+plan. Proposal calls use the existing nightly batch size (at least one for explicit recovery),
+request only the remaining candidate allowance, and stop at the recovery cap, a bounded number
+of rounds, or a round without a new normalized topic. Later rounds include selected topic keys
+and titles to avoid repeats. A failed later round aborts the preview without caching a partial
 plan. `apply` revalidates and applies those exact candidates; repeat calls reuse the result.
 Deleted/changed sources cannot be applied. Restart/expiry requires a new preview. Transport
 failures and malformed proposal/critique output abort preview with the standard HTTP 400

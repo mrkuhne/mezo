@@ -657,6 +657,10 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  {@link #lastUserMessage}, which the next call overwrites. Same channel, same intent: no
      *  per-detail sentinel. */
     private final List<String> userMessages = new java.util.concurrent.CopyOnWriteArrayList<>();
+    private final List<String> recoveryProposalPrompts = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    /** Scripted recovery integration tests can verify each provider request's actual cap. */
+    public List<String> recoveryProposalPrompts() { return List.copyOf(recoveryProposalPrompts); }
     /** mezo-rj214.7 final fix wave: the {@link io.mrkuhne.mezo.techcore.security.LlmActorContext}
      *  actor visible on the CALLING thread at the advisor's corrective-retry call — {@code
      *  llm_log_history.created_by} is not observable under this profile (see the "Call counter"
@@ -989,6 +993,17 @@ public class FakeCompanionLlm implements CompanionLlm {
                             + "\"hypothesisKey\":null,\"newTestPlan\":null,\"evidenceRefs\":[]}";
         }
         if (systemPrompt.startsWith(HypothesisPipelineService.HYPOTHESIS_MARKER)) {
+            if (userMessage.contains("[fake-recovery-batch:")) {
+                recoveryProposalPrompts.add(systemPrompt);
+                Matcher round = Pattern.compile("Visszaállítási kör: (\\d+)\\.").matcher(userMessage);
+                int batch = round.find() ? Integer.parseInt(round.group(1)) : 1;
+                Matcher scripted = Pattern.compile("\\[fake-recovery-batch:" + batch + ":([A-Za-z0-9+/=]+)]")
+                        .matcher(userMessage);
+                if (!scripted.find()) return "[]";
+                String response = new String(java.util.Base64.getDecoder().decode(scripted.group(1)), StandardCharsets.UTF_8);
+                if (FAIL_COMPLETE.equals(response)) throw new IllegalStateException("FAKE-LLM forced recovery batch failure");
+                return response;
+            }
             Matcher m = HYPOTHESES_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1) : "[]";
         }

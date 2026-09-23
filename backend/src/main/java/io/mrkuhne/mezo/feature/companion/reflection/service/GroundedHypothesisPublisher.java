@@ -49,6 +49,12 @@ public class GroundedHypothesisPublisher {
                 null, null, "grounded", null, text, evidenceRefs, surfaced);
     }
 
+    /** One identity normalization for both preview deduplication and persisted threads. */
+    public static String normalizedTopicKey(String topicKey) {
+        return Arrays.stream(topicKey.trim().toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}]+"))
+                .filter(token -> !token.isBlank()).distinct().sorted().collect(Collectors.joining("-"));
+    }
+
     @Transactional
     public boolean publish(UUID owner, GroundedCandidate candidate) {
         ownerLock.lock(owner);
@@ -67,9 +73,7 @@ public class GroundedHypothesisPublisher {
             if (revised == null || plan.isEmpty() || TestPlanEnvelope.key(plan.get()).equals(revised.getHypothesisKey())) return false;
         }
         final UUID revisedId = revised == null ? null : revised.getId();
-        String normalizedTopic = Arrays.stream(h.topicKey().trim().toLowerCase(Locale.ROOT)
-                        .split("[^\\p{L}\\p{N}]+"))
-                .filter(token -> !token.isBlank()).distinct().sorted().collect(Collectors.joining("-"));
+        String normalizedTopic = normalizedTopicKey(h.topicKey());
         String topic = "observation-topic:" + HypothesisPipelineService.hypothesisKey(normalizedTopic);
         String topicLabel = "observation-topic-key:" + normalizedTopic;
         String key = plan.map(TestPlanEnvelope::key).orElseGet(() -> HypothesisPipelineService.hypothesisKey(normalizedTopic));
