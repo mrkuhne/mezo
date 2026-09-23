@@ -95,7 +95,7 @@ From top to bottom:
    - A closed day's centre shows the score as a gradient numeral with its label, plus
      "alap X · a Mezo szerint ±Y".
 3. **Today only:**
-   - **The reading.** One Fraunces-italic sentence, built by a pure rule function
+   - **The reading.** One upright Geist sentence (no italic, see below), built by a pure rule function
      `dayReading(dims, now)`, never by an LLM. Example: "Fehérjéből már csak 18 g hiányzik, az
      edzés még hátravan." Below it: "Napközben nincs pontszám…".
    - **The "most érdemes" card.** A pure `nextBestAction(dims, now)` that returns one
@@ -126,6 +126,23 @@ From top to bottom:
 - **"Frissült hh:mm".** This is the query's `dataUpdatedAt`. When a value changes on refetch,
   its row gets a one-shot coral pulse, with a reduced-motion branch.
 - The header orb's tone reads the same query, so it becomes live too.
+
+### 5. Closed day: every review layer, upright type
+
+- **Owner decision (2026-09-24): no italic serif for Mezo's text.** The Fraunces italic "voice
+  copy" (üveg bible §5) is unreadable at paragraph length. All Mezo prose on this page (the
+  reading, the narrative, the dimension notes) is upright Geist: 15px/1.6 for the narrative,
+  14px/1.55 for notes. Record this in the üveg bible appendix as a slice lesson.
+- The closed-day page shows **every `DayReviewJson` layer** (prototype v3):
+  - `adjustment`: a "alap X · a Mezo szerint ±Y ▾" pill under the ring. Tapping it expands the
+    reason.
+  - `narrative` + `highlights` (key / pattern / win as flat cells, not glass) + the feedback vote
+    ("Segített?") + "Beszélgess a napról ›" in the "Mezo · a napodról" card.
+  - `dimensionNotes`: the six "Miből jött össze" rows show score, weight % and the fact line.
+    Tapping a row expands its metric chips and the note, so six notes never render at once.
+  - `context`: flat chips under "A nap körülményei · nem számít a pontba".
+- **Open question to the owner:** a warmer, shorter voice for the review prompt (prototype
+  "Emberibb hang"). If approved it becomes a separate prompt-only slice.
 
 ## Out of scope
 
