@@ -18,9 +18,10 @@
 > - **Dark only.** The app is locked to dark. Light mode is **parked, not deleted**: its CSS
 >   stays in place so it can return later. Nobody designs or verifies light until the owner
 >   asks for it back.
-> - **Header and bottom menu keep their content** (the "boop" wordmark, ?, settings, messages,
->   notifications, the filling day orb; the fixed TabBar with the living Boop and the domain
->   switcher), and **wear glass** (§7). There is no day-part switcher.
+> - **The header keeps its content and wears glass** (the "boop" wordmark, ?, settings,
+>   messages, notifications, the filling day orb). There is no day-part switcher.
+> - **The bottom menu is unchanged.** It stays the live docked bar with the living Boop, in its
+>   existing dark set (§7.2).
 >
 > The 2026-09-17 bible remains canon for **everything this document does not override**: card
 > anatomy (§3), the §3.4 ranking rule, data-as-graphics (§4), ceremony *pattern*, and the
@@ -171,7 +172,7 @@ new timers.
 ## 7. App chrome: same content, glass material (owner-approved 2026-09-23)
 
 The header and the bottom menu keep **exactly the content and behavior they ship with today**.
-Only their material changes to glass. The reference is the chrome in
+The **header** changes its material to glass. The **bottom menu** does not change at all (§7.2). The reference is the chrome in
 [`prototypes/fuel-uveg.html`](prototypes/fuel-uveg.html), approved by the owner on 2026-09-23.
 
 ### 7.1 Header (`app/AppHeader.tsx`)
@@ -195,20 +196,22 @@ Only their material changes to glass. The reference is the chrome in
 - The condensed-on-scroll behavior (`useCondensedHeader`) and `HeaderAurora` stay. The
   aurora may be retuned to the §1 dark aurora hues.
 
-### 7.2 Bottom menu (`app/TabBar.tsx` + `DomainSwitcher`)
+### 7.2 Bottom menu (`app/TabBar.tsx` + `DomainSwitcher`): UNCHANGED, not glass
 
-- **Fixed** at the bottom, floating 10–12px off the edges, as **one `.glass` bar**
-  (`--c` = the active domain accent, radius 28px).
-- **Left: the living Boop** of the active domain (`<Boop alive>`, blink/look/brow/breathe), about
-  44px, inside a lit 62×58 well with a domain-accent halo, separated from the tabs by a hairline.
-  Tapping it opens the **domain switcher**.
-- **Tabs:** the live `navModel` tabs, in their order, with their clay icons and labels.
-  Inactive tabs are dimmed (`grayscale(.45) brightness(.8)`). The **active** tab gets a soft
-  radial accent wash, a 1px accent inset ring and an outer accent glow, and its icon gets a halo.
-- **Domain switcher:** a `.glass` card above the bar with the "TERÜLETVÁLTÓ" eyebrow and all five
-  living Boops (Nap, Edzés, Fuel, Mezo, Én), each tinted by its domain. The current domain is
-  shown lit (radial wash + inset ring).
-- The **FAB (+)** stays where it is, as a lavender `.glass` rounded square with the breathing glow.
+**Correction, 2026-09-23 (owner):** the bottom menu is **not** re-dressed. It stays exactly the
+live **docked bar**:
+
+- flush with the bottom edge, full width, 88px, with a top hairline;
+- the living Boop in the 56px domain-switch column, separated by a hairline;
+- the `navModel` tabs with their clay icons, idle ones grayscale at .48 opacity, the active one
+  in full color with its label in the domain `--nav-accent`;
+- the whole-screen `DomainSwitcher` overlay.
+
+In the dark-only app it wears its **existing dark set** (`:root[data-theme="dark"]` →
+`--nav-surface #241E1A`, `--nav-surface-top #2C2521`, `--nav-line`, the lifted `--nav-*`
+accents in the "Docked navigation chrome" section of `prototype.css`). **Do not touch its
+markup, geometry, CSS or icons.** A glass floating pill or a glass switcher card is wrong, even
+though an earlier draft of the prototype showed one.
 
 ### 7.3 What stays exactly as it is
 

@@ -92,9 +92,10 @@ result:**
 > the **Mozaik colors** (`--dv-*`, `--macro-*`) on the app's **warm-graphite dark** ground,
 > wearing the **Titanium material**: the 3D icon sprite, glass cards with a colored gradient
 > frame, the periodic light sweep and a soft color glow. **Dark only**; light mode is parked,
-> not deleted. **The app chrome keeps its content and wears glass:** the header (the "boop"
-> wordmark, ?, settings, messages, notifications, the filling day orb; no day-part switcher) and
-> the fixed bottom menu (living Boop + domain switcher, nav tabs). See bible §7.
+> not deleted. **The header keeps its content and wears glass** (the "boop" wordmark, ?,
+> settings, messages, notifications, the filling day orb; no day-part switcher). **The bottom
+> menu is unchanged:** it stays the live docked bar with the living Boop, in its dark set. See
+> bible §7.
 
 Every UI design, mockup, and prototype MUST follow the **Üveg** language. Canon, in order:
 
