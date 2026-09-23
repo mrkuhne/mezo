@@ -52,22 +52,24 @@ The load-bearing ones:
 ## The rounds
 
 `bd list --label epic:boop-team-feed` is the authority. Take the lowest open `mezo-a9bo7.N`
-unless the owner names one. `bd show <id>` carries the scope. Current plan:
+unless the owner names one. `bd show <id>` carries the scope.
 
-| Round | Scope |
-| --- | --- |
-| D1 | A fal mélye: poszt-oldal minden műfajra (kísérlet, előrejelzés, döntés-flow), Elmesélem válasz-flow, mélyebb Miből látszik |
-| D2 | Mind az 5 szoba teljes mélysége + karakter-aloldalak (minták/kísérletek listái, érettség-történet) |
-| D3 | Rólad: a dosszié (tények, karaktervonások, életesemények, egy döntő-postaláda) |
-| D4 | Emlékek: napló, heti memoár-fejezet, visszakeresés |
-| D5 | Mezo-szoba mélye: konzílium-jegyzőkönyv, heti fejezet, Gépterem dev-ajtó |
-| D6 | Első használat napról napra + kalauz-kivezetés |
+**Design rounds D1–D6 (`mezo-a9bo7.1`–`.6`): DONE, 2026-09-24.** The complete clickable
+world is the approved `uveg-uzenofal.html`; the owner iterated it live (comment threads,
+case cards, evidence stat-cards, room rhythm). Do not reopen them — new visual feedback is
+an iteration on the prototype file, committed straight to the epic.
 
-After D6: write the implementation plan (superpowers:writing-plans) for Act I (the stage —
-FE over existing data) and Act II (the voice — cross-engine témaszál + esti kurátor +
-hypothesis-critic retune), cut the implementation beads under `mezo-a9bo7`, and coordinate
-with `mezo-me75u` U8/U9 (those slices receive these surfaces; do not build the same screen
-twice).
+**Implementation phase — Act I ("A színpad"), slices A1–A4 (`mezo-a9bo7.7`–`.10`):**
+the plan is **`docs/superpowers/plans/2026-09-24-csapatfal-act1.md`** — task-by-task, TDD,
+with exact files, interfaces and commands. One fresh session = one slice (A1→A4, in order;
+A2 depends on A1; T5+T8 merge to main together). Execute with
+superpowers:subagent-driven-development or superpowers:executing-plans over the plan's
+tasks for that slice, then the plan's gates (T10 applies at A4).
+
+After Act I ships: Act II ("A hang") gets its own spec-refinement + plan (cross-engine
+témaszál, esti kurátor, hypothesis-critic retune, Derű adat-éhség, Falat napi három szólam).
+Coordinate with `mezo-me75u` U8/U9: those slices re-dress the EXISTING deep pages using this
+prototype as parity — never build the same screen twice.
 
 ## Procedure (one design round)
 
