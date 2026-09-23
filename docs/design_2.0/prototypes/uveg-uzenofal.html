@@ -555,6 +555,26 @@ button.well:active{background:rgba(245,239,230,.08)}
 .case .chev{flex:0 0 auto;font-size:15px;color:var(--faint)}
 .case .bar{margin-top:11px;height:5px}
 
+/* D4: emlékek */
+.search{display:flex;align-items:center;gap:9px;margin:6px 16px 4px;padding:12px 14px;border-radius:16px;background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair);font-size:13px;color:var(--faint)}
+.search .icon{width:20px;height:20px}
+.bookc{margin:10px 16px 4px;padding:17px 16px;border-radius:22px;position:relative;overflow:hidden}
+.bookc::after{display:none}
+.bookc .bk{font-size:9.5px;font-weight:600;letter-spacing:1.4px;color:color-mix(in srgb,var(--c) 80%,#fff)}
+.bookc h3{font-family:var(--serif);font-style:italic;font-weight:500;font-size:26px;line-height:1.15;margin:8px 0 8px;color:var(--ink)}
+.bookc p{font-size:12.5px;line-height:1.55;color:var(--sub);max-width:250px}
+.bookc .icon{position:absolute;right:12px;top:16px;width:64px;height:64px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:6px 16px 2px}
+.cal button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0 7px;border-radius:14px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair);font-size:10px;color:var(--faint)}
+.cal b{font-size:14px;font-weight:600;color:var(--ink)}
+.cal i{width:5px;height:5px;border-radius:50%;background:transparent}
+.cal button.has i{background:var(--lav);box-shadow:0 0 6px rgba(171,159,210,.7)}
+.cal button.on{background:radial-gradient(80% 90% at 50% 20%,rgba(171,159,210,.24),transparent 72%);box-shadow:inset 0 0 0 1px rgba(171,159,210,.45)}
+.story{margin:4px 18px;font-family:var(--serif);font-style:italic;font-size:15.5px;line-height:1.65;color:var(--ink)}
+.story b{color:#CBC1EC;font-weight:600}
+.pills{display:flex;gap:6px;flex-wrap:wrap;padding:10px 18px 0}
+.pills span{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;border-radius:999px;padding:5px 11px;background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair);color:var(--sub)}
+
 /* D3: dosszié */
 .quote{margin:9px 16px;padding:15px 16px;border-radius:20px}
 .quote p{font-family:var(--serif);font-style:italic;font-size:16.5px;line-height:1.45;color:var(--ink)}
@@ -1961,6 +1981,46 @@ function rolad(){return `${topbar()}
 
   <div class="note glass rise" style="--c:var(--rose);--i:10;margin-top:12px">${I('shield')}<div><small>A TE KEZEDBEN</small><p>Minden, ami itt áll, forrással együtt él — és bármit elhallgattathatsz vagy pontosíthatsz. A csapat csak azt használja, amit itt jóváhagytál.</p></div></div>`}
 
+function emlekek(){return `${topbar()}
+  <div class="pgh rise" style="--i:0"><small>A TE TÖRTÉNETED · NAPOK, AMIKBŐL ÖSSZEÁLLSZ</small><h1>Emlékek</h1></div>
+  <button class="search rise" style="--i:1" data-toast="Keresés az emlékekben — a megvalósításban él">${I('history')}Mikor éreztem már így magam?</button>
+  <button class="bookc glass lift rise" style="--c:var(--lav);--i:2" data-go="#memoar">${I('journal')}<span class="bk">A HETED TÖRTÉNETE · SZEPT. 15–21.</span><h3>Apró<br>fordulatok.</h3><p>Nem egy nagy elhatározás — egy korábban lezárt este, egy meccs, és egy mondat, amit végre leírtál. Mezo meséli →</p></button>
+  <div class="sec"><h2>A napjaid</h2><span class="hint">PÖTTY = VAN EMLÉKE</span></div>
+  <nav class="cal rise" style="--i:3">
+    ${[['H','15',1],['K','16',1],['Sze','17',0],['Cs','18',1],['P','19',1],['Szo','20',1],['V','21',1]].map(([d,n,has])=>`<button class="${has?'has':''}${n==='21'?' on':''}" ${has?`data-go="#nap/${n}"`:'data-toast="Ezen a napon nem született emlék"'}>${d}<b>${n}</b><i></i></button>`).join('')}
+  </nav>
+  <div class="rows" style="margin-top:12px">
+    <button class="case glass lift rise" style="--c:var(--lav);--s:var(--lav);--i:4" data-go="#nap/21"><span class="crow"><span class="st">VASÁRNAP</span><em>szept. 21.</em></span><span class="cmain">${I('moon')}<span class="ctxt"><b>Meccs, korai vacsora — és a legjobb éjszakád a héten</b><small>3 forrásból · a kísérlet egyik találat-napja</small></span><span class="chev">›</span></span></button>
+    <button class="case glass lift rise" style="--c:var(--lav);--s:var(--lav);--i:5" data-go="#nap/20"><span class="crow"><span class="st">SZOMBAT</span><em>szept. 20.</em></span><span class="cmain">${I('sun')}<span class="ctxt"><b>Lassú reggel, hosszú séta</b><small>2 forrásból</small></span><span class="chev">›</span></span></button>
+  </div>
+  <div class="rows" style="margin-top:10px"><button class="case glass lift rise" style="--c:var(--rose);--s:#8E86A3;--i:6" data-toast="Memoár-archívum — korábbi fejezetek (megvalósításban)"><span class="cmain">${I('book')}<span class="ctxt"><b>Korábbi fejezetek</b><small>a közös könyvetek, hétről hétre</small></span><span class="chev">›</span></span></button></div>`}
+
+function memoar(){return `${topbar()}<div class="dhead rise"><button class="back glass" data-back>‹</button><span class="t"><small>A HETED TÖRTÉNETE · MEZO MESÉLI</small><strong>Apró fordulatok</strong></span></div>
+  <article class="glass poster rise" style="--c:var(--lav);--i:1;margin-top:6px">
+    ${phead('mezo','szept. 15–21. · a napi emlékeidből','<span class="flag" style="color:#CBC1EC;background:rgba(171,159,210,.16);box-shadow:inset 0 0 0 1px rgba(171,159,210,.35)">Heti fejezet</span>')}
+    <p class="story" style="margin:4px 0">Ez a hét nem a nagy elhatározásokról szólt. 📔 Kedden még úgy nézett ki, megint elúszik minden este — aztán csütörtökön <b>17 óráig megvolt a szénhidrát</b>, és a meccs végjátékában is maradt láb. Szombaton lassú reggel, hosszú séta. Vasárnap pedig az történt, amire Szunya hetek óta várt: <b>korai vacsora, 23 előtti lefekvés</b> — és a hét legjobb éjszakája.</p>
+    <p class="story" style="margin:10px 0 4px">Ha a jövő hét is így megy, a vacsora-ügyben ki tudjuk mondani az első biztos mondatot. Erre iszunk — mondjuk egy pohár vizet, 19 óra előtt. 😄</p>
+  </article>
+  <div class="pills rise" style="--i:2"><span>${I('moon')}alvás-napló</span><span>${I('bowl')}étkezés-napló</span><span>${I('volley')}meccsnapok</span><span>${I('chat')}esti jegyzeteid</span></div>
+  <div class="rows" style="margin-top:14px">
+    <button class="case glass lift rise" style="--c:var(--lav);--s:var(--sage);--i:3" data-toast="Visszajelzés mentve — a memoár tanul a hangodból">${I('thumb-up')}<span class="ctxt" style="margin-left:8px"><b>Jó volt így olvasni</b><small>a következő fejezet ehhez a hanghoz igazodik</small></span></button>
+  </div>`}
+
+function napemlek(id){const days={'21':['Vasárnap · szeptember 21.','Meccs, korai vacsora — és a legjobb éjszakád a héten','Délelőtt csend, délután bemelegítés — este pedig meccs. 🏐 A vacsora ezúttal <b>18:40-kor</b> lezárult, és bejött: az éjszakád <b>7,4-es</b> lett, a hét legjobbja. A kísérlet is találatot írt: a 4. szettben stabil maradt az ugrásod.',['alvás 7,4','vacsora 18:40','meccs · találat']],
+  '20':['Szombat · szeptember 20.','Lassú reggel, hosszú séta','Nem történt semmi nagy — és pont ez volt a jó benne. 🌤️ Két forrásból is nyugodt napnak látszik; Derű szerint az ilyen szombatok tartják egyben a heted.',['séta 6,2 km','check-in: nyugodt']]};
+  const d=days[id]||days['21'];
+  return `${topbar()}<div class="dhead rise"><button class="back glass" data-back>‹</button><span class="t"><small>NAPI EMLÉK</small><strong>${d[0]}</strong></span></div>
+  <article class="glass poster rise" style="--c:var(--lav);--i:1;margin-top:6px">
+    ${phead('mezo','a nap krónikája · a naplóidból')}
+    <h3 class="claim">${d[1]}</h3>
+    <p class="story" style="margin:4px 0">${d[2]}</p>
+  </article>
+  <div class="pills rise" style="--i:2">${d[3].map(x=>`<span>${I('tick')}${x}</span>`).join('')}</div>
+  <div class="rows" style="margin-top:14px">
+    <button class="case glass lift rise" style="--c:var(--lav);--s:var(--lav);--i:3" data-go="#poszt/kiserlet"><span class="cmain">${I('flask')}<span class="ctxt"><b>Ehhez a naphoz tartozó ügy</b><small>Meccs előtti szénhidrát · találat-nap</small></span><span class="chev">›</span></span></button>
+    <button class="case glass lift rise" style="--c:var(--lav);--s:#8E86A3;--i:4" data-toast="Hasonló napok keresése — a megvalósításban él"><span class="cmain">${I('history')}<span class="ctxt"><b>Mikor volt még ilyen napom?</b><small>hasonló emlékek visszakeresése</small></span><span class="chev">›</span></span></button>
+  </div>`}
+
 function stub(t,small){return `${topbar()}<div class="pgh rise"><small>${small}</small><h1>${t}</h1></div>
   <div class="dash rise" style="--i:1;margin-top:8px">${I('info')}<span>Ez a felület tartalmilag változatlan marad — ebben a körben csak az üveg-anyagot kapja meg. A részletes átöltöztetése a saját szeletében történik.</span></div>`}
 
@@ -1985,10 +2045,10 @@ function closeSheet(){$('#scrim').classList.remove('on');$('#sheet').classList.r
 let hist=[],pillT=null,pillUsed=false;
 function render(){
   const h=location.hash||'#fal',[r,id]=h.slice(1).split('/');
-  const html=r==='csapat'?csapat():r==='szoba'?szoba(id):r==='poszt'?(id==='kiserlet'?pkiserlet():id==='sejtes'?psejtes():id==='dontes'?pdontes():id==='elorejelzes'?pelorejelzes():poszt()):r==='bizonyitek'?bizonyitek():r==='tud'?tudja(id):r==='ugyek'?ugyek(id):r==='elsonap'?elsonap():r==='ikonok'?ikonok():r==='rolad'?rolad():r==='emlekek'?stub('Emlékek','A TE TÖRTÉNETED'):fal();
+  const html=r==='csapat'?csapat():r==='szoba'?szoba(id):r==='poszt'?(id==='kiserlet'?pkiserlet():id==='sejtes'?psejtes():id==='dontes'?pdontes():id==='elorejelzes'?pelorejelzes():poszt()):r==='bizonyitek'?bizonyitek():r==='tud'?tudja(id):r==='ugyek'?ugyek(id):r==='elsonap'?elsonap():r==='ikonok'?ikonok():r==='rolad'?rolad():r==='emlekek'?emlekek():r==='memoar'?memoar():r==='nap'?napemlek(id):fal();
   $('#scroll').innerHTML=html;$('#scroll').scrollTop=0;closeSheet();ntfOpen=false;$('#ntf')?.classList.remove('on');$('#switcher')?.classList.remove('on');
   document.querySelectorAll('#jump a').forEach(a=>a.setAttribute('aria-current',String(a.getAttribute('href').slice(1).split('/')[0]===r)));
-  document.querySelectorAll('.tb').forEach(t=>t.classList.toggle('on',t.dataset.tab===(r==='szoba'||r==='tud'||r==='ugyek'?'csapat':r==='poszt'||r==='bizonyitek'||r==='elsonap'||r==='ikonok'?'fal':r)));
+  document.querySelectorAll('.tb').forEach(t=>t.classList.toggle('on',t.dataset.tab===(r==='szoba'||r==='tud'||r==='ugyek'?'csapat':r==='poszt'||r==='bizonyitek'||r==='elsonap'||r==='ikonok'?'fal':r==='memoar'||r==='nap'?'emlekek':r)));
   /* korong: csak a falon, egyszer, ~9 mp után */
   clearTimeout(pillT);$('#pill').classList.remove('on');
   if(r==='fal'&&!pillUsed)pillT=setTimeout(()=>$('#pill').classList.add('on'),9000);
