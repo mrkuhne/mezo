@@ -11764,9 +11764,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
     0 0 16px -6px color-mix(in srgb, var(--dv-lav) 60%, transparent); }
 .fmx-score svg { filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 8px color-mix(in srgb, var(--dv-lav) 45%, transparent)); }
 .fmx-score b { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.fmx-score.is-pending { background: rgba(245, 239, 230, 0.025); box-shadow: none;
-  border: 1.5px dashed color-mix(in srgb, var(--dv-lav) 40%, transparent); color: var(--sub); }
-.fmx-score.is-pending b { font-size: 9px; font-weight: 600; letter-spacing: 0.6px; }
+/* The pending pill keeps its pre-üveg footprint (7/11 padding, 1.2px border, 8px word): it sits
+   in the recipe tiles' corner, and any growth pushes the tile past a 375px lane (mezo-me75u.1). */
+.fmx-score.is-pending { padding: 7px 11px 7px 7px; background: rgba(245, 239, 230, 0.025); box-shadow: none;
+  border: 1.2px dashed color-mix(in srgb, var(--dv-lav) 40%, transparent); color: var(--sub); }
+.fmx-score.is-pending b { font-size: 8px; font-weight: 600; letter-spacing: 0.6px; }
 .fmx-score.is-big { padding: 8px 16px 8px 8px; }
 .fmx-score.is-big b { font-size: 20px; }
 
