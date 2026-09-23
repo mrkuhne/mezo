@@ -1616,6 +1616,28 @@ svg{overflow:visible}
 @keyframes fresh{0%{box-shadow:0 0 0 0 rgba(255,126,92,0)}25%{box-shadow:0 0 0 2px rgba(255,126,92,.55),0 0 26px rgba(255,126,92,.45)}100%{box-shadow:0 0 0 0 rgba(255,126,92,0)}}
 .kv div.fresh,.drow.fresh,.tile.fresh{border-radius:14px}
 
+/* lezárt nap: gépi szövegek */
+.corr{margin:10px auto 0;padding:6px 12px;border-radius:999px;background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair);color:var(--sub);font-size:11.5px}
+.corr i{font-style:normal;color:var(--faint);margin-left:2px}
+.adjwhy{max-width:320px;margin:10px auto 0;font-size:12.5px;line-height:1.5;color:var(--sub)}
+.mnote p{font-size:15px}
+.hls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.hl{padding:10px 12px;border-radius:14px;background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair);min-width:0}
+.hl:first-child{grid-column:1 / -1}
+.hl .eb{font-size:9px}
+.hl strong{display:block;font-size:13.5px;font-weight:600;margin-top:3px;line-height:1.3}
+.hl-key .eb{color:#C9BDF0}.hl-pattern .eb{color:#FFD99A}.hl-win .eb{color:#A9CFA0}
+.talk{display:flex;align-items:center;gap:10px;width:100%;margin-top:10px;padding:10px 12px;border-radius:14px;background:rgba(171,159,210,.10);box-shadow:inset 0 0 0 1px rgba(171,159,210,.3);font-size:13.5px;font-weight:600;color:#E6DDFF}
+.talk .icon{width:26px;height:26px;filter:none!important}
+.talk span{flex:1}
+.drow.dx{text-align:left}
+.drow .wt{font-style:normal;font-size:9.5px;font-weight:600;letter-spacing:1px;color:var(--faint);margin-left:4px;text-transform:uppercase}
+.dmore{grid-column:1 / -1;display:block;padding-top:10px;border-top:1px solid var(--hair)}
+.dchips{display:flex;flex-wrap:wrap;gap:6px}
+.dchips .flat{font-size:11px;padding:5px 10px}
+.dnote{display:block;font-family:var(--serif);font-style:italic;font-size:14.5px;line-height:1.5;color:var(--ink);margin-top:10px}
+.ctx{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px}
+.ctx .flat b{color:var(--ink)}
 /* a + gomb alatt is kiférjen az utolsó kártya */
 .scroll{padding-bottom:184px}
 /* fül-pötty + tovább a mai napra */
@@ -1673,6 +1695,13 @@ svg{overflow:visible}
       <p class="desc" id="layDesc"></p>
     </div>
 
+    <div class="opt"><small>A GÉPI SZÖVEG HANGJA (LEZÁRT NAP)</small>
+      <div class="seg" data-opt="voice" style="--c:var(--sage)">
+        <button data-v="now">Mostani szöveg</button><button data-v="warm">Emberibb hang (javaslat)</button>
+      </div>
+      <p class="desc">Ugyanazok a tények. A mostani a te valódi szerdai szövegeid. A javaslat ugyanezt mondja el rövidebben, barátibb hangon.</p>
+    </div>
+
     <div class="opt"><small>NAPSZAK</small>
       <div class="seg" data-opt="phase" style="--c:var(--lav)">
         <button data-v="morning">Reggel · tegnap még nem nézted</button><button data-v="day">Napközben</button>
@@ -1702,7 +1731,7 @@ const B=(d,alive=false)=>`<svg class="boop ${alive?'is-alive':''}" viewBox="0 0 
 const I=(n,c='')=>`<svg class="icon ${c}" aria-hidden="true"><use href="#t-${n}"/></svg>`;
 const bar=(w,c,g)=>`<span class="bar" style="--c:${c}"><b style="--w:${Math.max(2,Math.min(100,w))}%"></b>${g!=null?`<u style="--g:${g}%"></u>`:''}</span>`;
 const hu=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
-const S={place:'C',lay:'B',phase:'morning',seen:false,fresh:new Set()};
+const S={place:'C',lay:'B',phase:'morning',voice:'now',seen:false,fresh:new Set(),open:new Set(),adj:false};
 
 /* ── adatok ─────────────────────────────────────────────── */
 const T={kcal:2060,kcalG:2782,prot:148,protG:166,nova:68,micro:80,work:0,workG:1,sleepMin:436,sleepQ:7,ck:2,ckG:4,rhythm:74,updated:'14:20'};
@@ -1732,9 +1761,34 @@ function leadCard(){
   if(T.ck<T.ckG)return ['checkin','var(--sky)','MOST ÉRDEMES · ESTE','Egy esti check-in hiányzik','Fél perc. Utána teljes a napod képe.','Check-in'];
   return ['moon','var(--lav)','MOST ÉRDEMES · ESTE','Készen állsz a napzárásra','A napzárás innen és az esti rutinból is indul. Hajnalban megírom, milyen napod volt.','Napzárás'];
 }
-const Y={score:82,base:79,corr:3,label:'Erős nap',
-  dims:{nutrition:[88,'2 690 / 2 782 kcal · fehérje 171 g'],quality:[71,'feldolgozatlan 64% · mikro 78%'],training:[100,'1/1 edzés · felsőtest'],sleep:[76,'6ó 44p · minőség 7/10'],logging:[75,'3/4 check-in'],rhythm:[80,'a heted üteme']},
-  prose:['Erős, kiegyensúlyozott nap volt. A fehérjét az ebéd és a vacsora hozta, az edzés végig megvolt, és ami a legtöbbet számított: nem csúszott el az este.','Egy dolog maradt nyitva. A késői vacsora után rövidebb lett az alvás, ezért ma érdemes egy órával korábban enni.']};
+const Y={score:87,base:89,corr:-2,label:'A hét legjobb napja',
+  dims:{nutrition:[100,'2 962 / 2 782 kcal · fehérje 162 / 166 g'],quality:[79,'nova 71% · mikro 100%'],training:[100,'2/2 edzés'],sleep:[79,'6 óra · minőség Q7'],logging:[85,'check-in 2/4 · étkezések időben'],rhythm:[64,'7/7 nap a héten']},
+  weight:{nutrition:30,quality:15,training:20,sleep:15,logging:10,rhythm:10},
+  chips:{nutrition:['kcal · 2962 / 2782','fehérje · 162 / 166 g','c · f · 379 g · 80 g','sáv · edzésnapi +150 kcal'],quality:['nova · 71%','mikro · 100%'],training:['edzés · 2 / 2'],sleep:['alvás · 6 h','minőség · Q7'],logging:['check-in · 2 / 4','időben · 100%'],rhythm:['ritmus · 7 / 7']},
+  ctx:[['energia','5,5 / 10'],['súlytrend','+0,07 kg / hét'],['alváscél','2 napja elmarad'],['víz','jelölve']],
+  now:{
+    prose:['A 2/2 edzés mellett az edzésnapi +150 kcal-os sáv kontextusában 2962 kcal került rögzítésre a 2782-es alapcélhoz képest, 162 g fehérjével a 166 g-os cél közelében. A minőségi képet a 71%-os nova és a 100%-os mikroérték adja, miközben az étkezések időben történő rögzítése 100%-os volt.',
+      'A 7/7-es ritmus és a víz jelölése mellett a check-in 2/4 alkalommal teljesült. A mai 89-es base az előző napok 28–83-as tartománya fölé került; közben az alvás 6 óra volt Q7 minőséggel, az energia 5.5/10, az alváscél pedig 2 napja nem teljesül, a súlytrend pedig 0.07 kg/hét.'],
+    hl:[['key','A NAP KULCSA','Mikroérték: 100%'],['pattern','FELISMERT MINTA','7/7 napos ritmus, mai base: 89'],['win','JÓ IRÁNY','2/2 edzés teljesült']],
+    adj:'A mai 6 órás alvás bekerül a pontszámba, de az alváscél 2 napja fennálló elmaradása nem jelenik meg külön ismétlődő jelként; az 5.5/10-es energia mellett ezért −2 korrekció indokolt.',
+    notes:{nutrition:'A 2962 kcal 180 kcal-lal haladja meg a 2782-es alapcélt; az edzés 2/2 teljesült, és az edzésnapi +150 kcal-os sáv külön kontextust ad ehhez. A fehérje 162 g volt a 166 g-os célhoz képest.',
+      quality:'A nova 71% mellett a mikroérték 100% lett. Az étkezések időben történő rögzítése 100%-os volt, így a minőségi adatok mellett a naplózás időzítése is teljes képet ad.',
+      training:'Mindkét tervezett edzés teljesült, ezért a training dimenzió 2/2-t mutat. Ehhez kapcsolódik az edzésnapi +150 kcal-os táplálkozási sáv és a 2962 kcal-os bevitel.',
+      sleep:'Az alvás 6 óra volt Q7 minőséggel. Az energia 5.5/10, valamint az alváscél 2 napja fennálló elmaradása a jelenlegi alvásadat mellett ismétlődő kontextust jelez.',
+      logging:'A check-in 2/4 alkalommal teljesült, az étkezések időben történő rögzítése 100%-os volt.',
+      rhythm:'A 7/7-es ritmus mellett a mai 89-es base az előző napok 28–83-as tartománya fölé került.'}},
+  warm:{
+    prose:['A hét legjobb napja volt. Mindkét edzés megvolt, és a tányér is rendben volt: 2 962 kcal az edzésnapi kerettel együtt, a fehérje pedig csak 4 g-mal maradt el a céltól. A mikrotápanyagok teljesen megvoltak.',
+      'Egy dolog lóg ki: két napja nem jön össze az alváscél. Tegnap is csak 6 óra lett, és ez az 5,5-ös energiádon is látszott. Ma este ez a legjobb befektetés.'],
+    hl:[['key','A NAP KULCSA','Minden mikrotápanyag megvolt'],['pattern','FELISMERT MINTA','Egész héten minden nap mozogtál'],['win','JÓ IRÁNY','Mindkét edzés megvolt']],
+    adj:'Levontam 2 pontot, mert a rövid alvás már második napja ismétlődik, és ez az energiádon is látszott.',
+    notes:{nutrition:'180 kcal-lal a keret fölött, de edzésnapon ez belefér. A fehérje szinte pont a célon.',
+      quality:'Jó arány: a nagy része feldolgozatlan étel volt, és a mikrotápanyagok is mind megvoltak.',
+      training:'Mindkét tervezett edzés megvolt.',
+      sleep:'6 óra, jó minőségben, de már második napja rövid. Az energiádon is látszott.',
+      logging:'Az ételeket időben írtad be. A check-inből kettő maradt ki.',
+      rhythm:'A mai nap kiugrott a hét eddigi napjai közül.'}}};
+const V=()=>Y[S.voice];
 const WEEK=[['2026-09-21','H',21,'th'],['2026-09-22','K',22,'sc'],['2026-09-23','Sze',23,'sc'],['2026-09-24','Cs',24,'today'],['2026-09-25','P',25,'fut'],['2026-09-26','Szo',26,'fut'],['2026-09-27','V',27,'fut']];
 const DAYNAME={'2026-09-21':['Hétfő','szep 21'],'2026-09-22':['Kedd','szep 22'],'2026-09-23':['Szerda','szep 23'],'2026-09-24':['Csütörtök','szep 24']};
 
@@ -1771,9 +1825,9 @@ function napodCard(){
   if(S.phase==='morning'&&!S.seen){
     return `<button class="napod glass rise" style="--c:var(--lav);--i:1" data-go="#nap/2026-09-23">
       <div class="top"><span class="eb">TEGNAP · SZERDA · LEZÁRVA</span><span class="flat">${I('scroll')}Mezo jegyzete</span></div>
-      <div class="body">${segRing(DIM.map(([k,,,c])=>[Y.dims[k][0],c]),'mini',`<span><strong class="grad">${Y.score}</strong><em>ERŐS NAP</em></span>`)}
+      <div class="body">${segRing(DIM.map(([k,,,c])=>[Y.dims[k][0],c]),'mini',`<span><strong class="grad">${Y.score}</strong><em>A HÉT LEGJOBBJA</em></span>`)}
         <div class="bars6">${DIM.map(([k,l,,c])=>`<div><span>${l}</span>${bar(Y.dims[k][0],c)}<em>${Y.dims[k][0]}</em></div>`).join('')}</div></div>
-      <p class="say">„Erős, kiegyensúlyozott nap: az este sem csúszott el.”</p>
+      <p class="say">„A hét legjobb napja volt. Egy dolog lóg ki: az alvás.”</p>
       <div class="cta"><span>Átnézem a tegnapot ›</span><small>utána a mai napod jön ide</small></div>
     </button>`;
   }
@@ -1788,7 +1842,7 @@ function napodCard(){
         <div class="${fr('ck')}">${I('checkin')}<span>Check-in</span><b>${T.ck} <small>/ ${T.ckG}</small></b></div>
       </div></div>
     <p class="say">${reading()}</p>
-    <div class="cta"><span>A napom részletesen ›</span><small>tegnap: ${Y.score} · erős nap</small></div>
+    <div class="cta"><span>A napom részletesen ›</span><small>tegnap: ${Y.score} · a hét legjobbja</small></div>
   </button>`;
 }
 function mai(){
@@ -1819,10 +1873,15 @@ function dimsToday(){
       <span class="end"><b>${x.big}${x.unit==='%'?'<small>%</small>':''}</b><span class="st ${x.st==='kész'?'ok':''}">${x.st.toUpperCase()}</span></span></div>`}).join('')}</div>`;
 }
 function dimsClosed(){
-  if(S.lay==='A')return `<div class="tiles">${DIM.map(([k,l,ic,c],i)=>{const [s,v]=Y.dims[k];
-    return `<div class="tile glass rise" style="--c:${c};--i:${i+4}"><div class="tile-top">${I(ic)}<strong>${s}</strong></div><span class="l">${l}</span><span class="v">${v}</span>${bar(s,c)}</div>`}).join('')}</div>`;
-  return `<div class="rows">${DIM.map(([k,l,ic,c],i)=>{const [s,v]=Y.dims[k];
-    return `<div class="drow glass rise" style="--c:${c};--i:${i+4}"><span class="well">${I(ic)}</span><span class="mid"><strong>${l}</strong><small>${v}</small>${bar(s,c)}</span><span class="end"><b>${s}</b></span></div>`}).join('')}</div>`;
+  if(S.lay==='A')return `<div class="tiles">${DIM.map(([k,l,ic,c],i)=>{const [sc,v]=Y.dims[k];
+    return `<div class="tile glass rise" style="--c:${c};--i:${i+4}"><div class="tile-top">${I(ic)}<strong>${sc}</strong></div><span class="l">${l}</span><span class="v">${v}</span>${bar(sc,c)}</div>`}).join('')}</div>`;
+  return `<div class="rows">${DIM.map(([k,l,ic,c],i)=>{const [sc,v]=Y.dims[k],o=S.open.has(k);
+    return `<button class="drow dx glass rise ${o?'is-open':''}" style="--c:${c};--i:${i+4}" data-dim="${k}" aria-expanded="${o}">
+      <span class="well">${I(ic)}</span>
+      <span class="mid"><strong>${l} <em class="wt">súly ${Y.weight[k]}%</em></strong><small>${v}</small>${bar(sc,c)}</span>
+      <span class="end"><b>${sc}</b><span class="st">${o?'BEZÁR':'MEZO ›'}</span></span>
+      ${o?`<span class="dmore"><span class="dchips">${Y.chips[k].map(t=>`<span class="flat">${t}</span>`).join('')}</span><span class="dnote">${V().notes[k]}</span></span>`:''}
+    </button>`}).join('')}</div>`;
 }
 function dayBody(iso,embedded){
   const [dn,dd]=DAYNAME[iso]||['',''];
@@ -1845,16 +1904,23 @@ function dayBody(iso,embedded){
     <div class="rows" style="margin-top:6px">${DIM.map(([k,l,ic,c],i)=>`<div class="drow ${k==='sleep'?'glass':'open'} rise" style="--c:${c};--i:${i+4}"><span class="well">${I(ic)}</span><span class="mid"><strong>${l}</strong><small>${k==='sleep'?'7ó 02p · minőség 6/10':'nincs adat'}</small></span><span class="end"><b>${k==='sleep'?'70':'–'}</b></span></div>`).join('')}</div>`;
   }
   // lezárt, pontozott nap (szerda; a kedd ugyanígy nézne ki)
+  const v=V();
   return `<section class="dhero rise" style="--c:var(--lav);--c2:var(--gold);--i:2">
       <h1>${dn} <span>· ${dd}</span></h1><span class="sub eb">LEZÁRVA · HAJNALI 3:04</span>
       ${segRing(DIM.map(([k,,,c])=>[Y.dims[k][0],c]),'segring',`<span><strong class="grad">${Y.score}</strong><em>${Y.label.toUpperCase()}</em></span>`)}
-      <span class="corr">alap ${Y.base} · a Mezo szerint <b>+${Y.corr}</b></span>
+      <button class="corr" data-adj aria-expanded="${S.adj}">alap ${Y.base} · a Mezo szerint <b>${Y.corr>0?'+':'−'}${Math.abs(Y.corr)}</b> <i>${S.adj?'▴':'▾'}</i></button>
+      ${S.adj?`<p class="adjwhy">${v.adj}</p>`:''}
     </section>
-    <div class="mnote glass rise" style="--i:3"><div class="hrow">${I('scroll')}<span><span class="eb">MEZO JEGYZETE</span></span></div>
-      ${Y.prose.map(p=>`<p>${p}</p>`).join('')}
-      <div class="fb">Stimmel?<button data-toast="Köszönöm, jegyzem">${I('thumb-up')}</button><button data-toast="Mi nem stimmel? (itt jönnének az okok)">${I('thumb-down')}</button></div></div>
-    <div class="sec rise" style="--i:4"><h2>A hat terület</h2><span class="eb">PONT / 100</span></div>
+    <div class="mnote glass rise" style="--i:3"><div class="hrow">${I('scroll')}<span><span class="eb">MEZO · A NAPODRÓL</span></span></div>
+      ${v.prose.map(p=>`<p>${p}</p>`).join('')}
+      <div class="hls">${v.hl.map(([kd,eb,t])=>`<div class="hl hl-${kd}"><span class="eb">${eb}</span><strong>${t}</strong></div>`).join('')}</div>
+      <div class="fb">Segített?<button data-toast="Köszönöm, jegyzem" aria-label="Segített">${I('thumb-up')}</button><button data-toast="Mi nem talált? (itt jönnének az okok)" aria-label="Nem talált">${I('thumb-down')}</button></div>
+      <button class="talk" data-toast="Beszélgetés a napról (Mezo chat)">${I('chat')}<span>Beszélgess a napról</span><b>›</b></button>
+    </div>
+    <div class="sec rise" style="--i:4"><h2>Miből jött össze</h2><span class="eb">KOPPINTS A RÉSZLETEKÉRT</span></div>
     ${dimsClosed()}
+    <div class="sec rise" style="--i:5"><h2>A nap körülményei</h2><span class="eb">NEM SZÁMÍT A PONTBA</span></div>
+    <div class="ctx rise" style="--i:5">${Y.ctx.map(([a,b])=>`<span class="flat">${a} · <b>${b}</b></span>`).join('')}</div>
     <p class="foot">Ha utólag beírsz még valamit erre a napra, a jegyzetet egyszer újraírom.</p>
     ${S.place==='C'&&iso==='2026-09-23'?`<button class="tonext glass rise" style="--c:var(--coral)" data-go="#nap/2026-09-24"><span><span class="eb">REGGELI ÖSSZEFOGLALÓ · KÉSZ</span><strong>Tovább a mai napra</strong></span><b>›</b></button>`:''}`;
 }
@@ -1907,6 +1973,8 @@ let toastT;function toast(t){clearTimeout(toastT);$('#toast').textContent=t;$('#
 document.addEventListener('click',e=>{
   const t=e.target;
   const op=t.closest('[data-opt] button');if(op){S[op.parentNode.dataset.opt]=op.dataset.v;if(op.parentNode.dataset.opt==='phase')S.seen=false;soft();return}
+  const dm=t.closest('[data-dim]');if(dm){const k=dm.dataset.dim;S.open.has(k)?S.open.delete(k):S.open.add(k);soft();return}
+  if(t.closest('[data-adj]')){S.adj=!S.adj;soft();return}
   const lg=t.closest('[data-log]');if(lg){if(!lg.disabled)log(lg.dataset.log);return}
   if(t.closest('[data-sheet]')){openSheet();return}
   const go=t.closest('[data-go]');if(go){e.preventDefault();if(location.hash===go.dataset.go)render();else location.hash=go.dataset.go;return}
