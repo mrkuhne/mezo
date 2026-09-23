@@ -21,8 +21,8 @@ const EMPTY_OBSERVATIONS: ObservationsBootstrap = { observations: [], degraded: 
  * A nap észrevétel-feedje (Reflexió S5, mezo-eq85.5) — a Nap→Mezo oldal harmadik füle.
  *
  * A szerver MÁR rendezve adja a listát (fresh → return → watching → confirmed, csoporton
- * belül a legfrissebb elöl); itt nem rendezünk újra. Egy `monitoring` sor jogosan
- * szerepelhet KÉTSZER (esemény-kártya + sor-kártya) — a lista kulcsa ezért `item.id`.
+ * belül a legfrissebb elöl); itt nem rendezünk újra. A
+ * korábbi megválaszolatlan észrevétele ma is látszik; a lista kulcsa `item.id`.
  * Kikapcsolt társ (404) ⇒ `degraded`, nem hiba.
  */
 export function useObservations(date?: string) {
@@ -43,7 +43,7 @@ export function useObservations(date?: string) {
 }
 
 /**
- * A chip-válasz (Igen, figyeld / Nem stimmel / Mesélj).
+ * A chip-válasz (Igen, jellemző / Nem stimmel / Beszéljük meg).
  *
  * A szerver oldalon NEM idempotens — a hívó felület felel azért, hogy egy kártyán egyszer
  * fusson le (a chip-csoport tiltása a `pending` alatt + a válasz utáni elrejtés).

@@ -52,7 +52,7 @@ test('döntés-poszton a Nem így érzem elvet és visszakérdez (megnyitja a v�
 
 test('észrevétel-kérdésen a hármas a meglévő chip-választ hívja', async () => {
   renderTrio(obsPost)
-  await userEvent.click(screen.getByRole('button', { name: /ez talál/i }))
+  await userEvent.click(screen.getByRole('button', { name: 'Igen, jellemző' }))
   expect(reply).toHaveBeenCalledWith('op-1', 'watch')
   expect(await screen.findByText(/figyeljük tovább/i)).toBeInTheDocument()
 })
@@ -60,7 +60,7 @@ test('észrevétel-kérdésen a hármas a meglévő chip-választ hívja', async
 test('sikertelen észrevétel-válasz: nincs hamis utóélet, őszinte hibaüzenet', async () => {
   reply.mockRejectedValueOnce(new Error('boom'))
   renderTrio(obsPost)
-  await userEvent.click(screen.getByRole('button', { name: /ez talál/i }))
+  await userEvent.click(screen.getByRole('button', { name: 'Igen, jellemző' }))
   expect(await screen.findByRole('alert')).toHaveTextContent(/nem sikerült/i)
   expect(screen.queryByText(/figyeljük tovább/i)).not.toBeInTheDocument()
 })
@@ -91,4 +91,14 @@ test('a rekordból hozott utóélet a hármas helyén áll', () => {
   renderTrio({ ...obsPost, afterlife: 'Figyeljük tovább · szólunk, ha kiderül' })
   expect(screen.getByText(/figyeljük tovább/i)).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /ez talál/i })).not.toBeInTheDocument()
+})
+
+
+test('observation trio offers the approved replies and talk handoff', async () => {
+  const onReply = vi.fn()
+  renderTrio(obsPost, onReply)
+  for (const name of ['Igen, jellemző', 'Nem stimmel', 'Beszéljük meg'])
+    expect(screen.getByRole('button', { name })).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Beszéljük meg' }))
+  expect(onReply).toHaveBeenCalledWith(obsPost, 'tell')
 })

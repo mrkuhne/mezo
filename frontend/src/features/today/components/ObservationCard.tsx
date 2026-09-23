@@ -28,53 +28,30 @@ const STATE_PILL: Record<ObservationCardKind, string> = {
   confirmed: 'BEÉPÜLT',
 }
 
-/**
- * A nyugtázó sor a prototípus `data-ack` szövegeiből, emoji nélkül (házszabály).
- *
- * `measurable` (mezo-5543y): van-e a kártya mögött MÉRHETŐ teszt. A hideg indítás „tartó sora"
- * teszt-terv nélkül születik (a szerver ilyenkor `minN` nélkül küldi a kártyát), az éjszakai
- * kiértékelés pedig a terv nélküli sorokat átugorja — ott a „Nyolc napnál újra szólok" olyan
- * ígéret lenne, amit semmi nem tart be. A válasz ettől még nem vész el: bekerül a sor
- * történetébe, és az éjszakai kör a saját szavaidként olvassa vissza.
- */
-function ackLine(card: ObservationCardKind, choice: ObservationChoice, measurable: boolean): string {
+/** A felhasználó tapasztalata külön marad a mért bizonyítéktól. */
+function ackLine(choice: ObservationChoice): string {
   if (choice === 'talk') return 'Megnyitom a chatet ezzel a szállal.'
-  if (card === 'return') {
-    return choice === 'watch'
-      ? 'Beírtam a bizonyítékok közé.'
-      : 'Rendben, kivételként jegyzem, nem számít bele.'
-  }
-  if (choice !== 'watch') return 'Értem, nem stimmel. Nem hozom fel újra ebben a formában.'
-  return measurable
-    ? 'Rendben, figyelem. Nyolc napnál újra szólok.'
-    : 'Rendben, megjegyeztem. Ha összeáll belőle egy minta, szólok.'
+  if (choice === 'reject') return 'Értem, nem stimmel. Nem hozom fel újra ebben a formában.'
+  return 'Megjegyeztem, hogy ez jellemző rád. Az összefüggést tovább figyelem.'
 }
 
-/** A `fresh` kártya három, a `return` kettő chipet ad; a sor-kártyákon nincs mit megválaszolni. */
 function chipsFor(card: ObservationCardKind): { label: string; choice: ObservationChoice; tone?: 'yes' | 'talk' }[] {
-  if (card === 'fresh') {
-    return [
-      { label: 'Igen, figyeld', choice: 'watch', tone: 'yes' },
-      { label: 'Nem stimmel', choice: 'reject' },
-      { label: 'Mesélj', choice: 'talk', tone: 'talk' },
-    ]
-  }
-  if (card === 'return') {
-    return [
-      { label: 'Így van', choice: 'watch', tone: 'yes' },
-      { label: 'Kivétel volt', choice: 'reject' },
-    ]
-  }
-  return []
+  if (card !== 'fresh' && card !== 'return') return []
+  return [
+    { label: 'Igen, jellemző', choice: 'watch', tone: 'yes' },
+    { label: 'Nem stimmel', choice: 'reject' },
+    { label: 'Beszéljük meg', choice: 'talk', tone: 'talk' },
+  ]
 }
 
 function eyebrow(item: Observation): string {
   // A dróton UTC-ben jön (`…T12:12:00Z`) — a nyers karakterlánc-szeletelés az UTC órát írná ki,
   // ezért a közös, helyi idejű `timeLabel` formázza (ugyanaz, amit a fejléc és az értesítés-feed használ).
-  const time = timeLabel(item.occurredAt)
+  const time = `${item.occurredAt.slice(0, 10)} · ${timeLabel(item.occurredAt)}`
   if (item.card === 'fresh') return `${time} · Feltűnt`
-  if (item.card === 'return') return 'Visszatérés · egy korábbi válaszod után'
-  if (item.card === 'watching') return `Figyelem · ${item.evidenceHits + item.evidenceMisses}. napja`
+  if (item.card === 'return') return `${time} · Visszatérés`
+  if (item.card === 'watching') return item.kind === 'statistical' || item.minN == null
+    ? 'Figyelt összefüggés' : `Figyelem · ${item.evidenceHits + item.evidenceMisses} megfigyelt nap`
   return 'Megerősítve'
 }
 
@@ -141,7 +118,7 @@ export function ObservationCard({ item, onReply, pending = false }: {
         </div>
       )}
 
-      {item.card === 'watching' && (
+      {item.card === 'watching' && item.kind !== 'statistical' && item.minN != null && (
         <>
           <div className="nap-obs-tally" aria-label="Napok: bejött, nem jött be, még nincs adat">
             {slots.map((s, i) => (
@@ -152,10 +129,12 @@ export function ObservationCard({ item, onReply, pending = false }: {
           <div className="nap-obs-prog" aria-label={`${seen} a szükséges ${need} napból`}>
             <i style={{ '--w': `${Math.min(100, (seen / need) * 100)}%` } as React.CSSProperties} />
           </div>
-          {item.hypothesisKey && (
-            <Link className="nap-obs-more" to={`/mezo/patterns/${item.hypothesisKey}`}>Laborfüzet ›</Link>
-          )}
+
         </>
+      )}
+
+      {item.card === 'watching' && item.hypothesisKey && (
+        <Link className="nap-obs-more" to={`/mezo/patterns/${item.hypothesisKey}`}>Laborfüzet ›</Link>
       )}
 
       {chips.length > 0 && (
@@ -172,7 +151,7 @@ export function ObservationCard({ item, onReply, pending = false }: {
         <div className="nap-obs-err" role="alert">Nem sikerült elküldeni — próbáld újra.</div>
       )}
       {answered && (
-        <div className="nap-obs-ack">{ackLine(item.card, answered, item.minN != null)}</div>
+        <div className="nap-obs-ack">{ackLine(answered)}</div>
       )}
     </article>
   )

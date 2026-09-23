@@ -59,15 +59,15 @@ export function FeedTrio({ post, onReply }: { post: FeedPost; onReply: (post: Fe
       <div className="tf-acts">
         <button type="button" aria-pressed={vote === 'up'} disabled={busy} onClick={() => void answer('up')}>
           <Icon3D name="t-thumb-up" size={19} />
-          Ez talál
+          {post.observation ? 'Igen, jellemző' : 'Ez talál'}
         </button>
         <button type="button" aria-pressed={vote === 'down'} disabled={busy} onClick={() => void answer('down')}>
           <Icon3D name="t-thumb-down" size={19} />
-          Nem így érzem
+          {post.observation ? 'Nem stimmel' : 'Nem így érzem'}
         </button>
-        <button type="button" onClick={() => onReply(post, 'tell')}>
+        <button type="button" disabled={busy} onClick={() => onReply(post, 'tell')}>
           <Icon3D name="t-chat" size={19} />
-          Elmesélem
+          {post.observation ? 'Beszéljük meg' : 'Elmesélem'}
         </button>
       </div>
       {error && <p className="tf-error" role="alert">{error}</p>}

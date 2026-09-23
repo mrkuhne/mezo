@@ -58,7 +58,7 @@ test('fresh észrevétel → kérdés-poszt, válaszig Rád vár', () => {
   const o = allPosts().find(p => p.id === `observation:${freshObservation.id}`)!
   expect(o.kind).toBe('kerdes')
   expect(o.waiting).toBe(true)
-  expect(o.body).toBe(freshObservation.text)
+  expect(o.body).toContain(freshObservation.text)
   expect(o.honesty).toEqual({ n: 4, minN: 8, label: 'még kevés adat' })
   const answered = buildTeamFeed({ ...input, observations: [{ ...freshObservation, repliedChoice: 'watch' }] })
     .days.flatMap(d => [...(d.poster ? [d.poster] : []), ...d.posts])
@@ -173,4 +173,30 @@ test('ritmus: egy csendes nap magányos posztja nem lesz üveg-poszter', () => {
   expect(feed.days).toHaveLength(1)
   expect(feed.days[0].poster).toBeUndefined()
   expect(feed.days[0].posts).toHaveLength(1)
+})
+
+
+test('persistent return questions keep their source date and replace duplicate pattern posts', () => {
+  const observation = { ...freshObservation, card: 'return' as const, patternId: lateMealPattern.id,
+    occurredAt: '2026-08-30T08:00:00Z', evidence: ['2026-08-29 · Napló: munkahelyi feszültség'] }
+  const posts = buildTeamFeed({ ...input, observations: [observation] }).days
+    .flatMap(d => [...(d.poster ? [d.poster] : []), ...d.posts])
+  expect(posts.filter(p => p.id === `pattern:${lateMealPattern.id}`)).toHaveLength(0)
+  const post = posts.find(p => p.id === `observation:${observation.id}`)!
+  expect(post.waiting).toBe(true)
+  expect(post.occurredAt).toBe(observation.occurredAt)
+  expect(post.body).toContain(observation.question)
+  expect(post.body).toContain(observation.evidence[0])
+})
+
+test('answered observation snapshot does not duplicate its monitoring pattern after refresh', () => {
+  const observation = { ...freshObservation, patternId: monitoringPattern.id }
+  const before = buildTeamFeed({ ...input, observations: [observation] }).days
+    .flatMap(d => [...(d.poster ? [d.poster] : []), ...d.posts])
+  const post = before.find(p => p.id === `observation:${observation.id}`)!
+  const after = buildTeamFeed({ ...input, observations: [] })
+  const visible = withSessionAfterlife(after.days, { [post.id]: { label: 'Jellemző rád', snapshot: post } }, TODAY)
+    .flatMap(d => [...(d.poster ? [d.poster] : []), ...d.posts])
+  expect(visible.filter(p => p.id === post.id || p.id === `pattern:${monitoringPattern.id}`)).toHaveLength(1)
+  expect(visible.find(p => p.id === post.id)?.afterlife).toBe('Jellemző rád')
 })

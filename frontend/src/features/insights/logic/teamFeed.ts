@@ -7,7 +7,7 @@
  *
  * Mi NEM poszt (zaj, spec §2.3): függő előrejelzés, javasolt/lezárt kísérlet (nincs dátumuk),
  * a felhasználó vagy a motor által lezárt minta (rejected/refuted/dormant), az észrevétel-feed
- * SOR-kártyái (watching/confirmed — azok a mintát ismétlik) és a return-események (Act II).
+ * SOR-kártyái (watching/confirmed — azok a mintát ismétlik) ; a fresh és return események ugyanazon válaszfolyam részei.
  */
 import type { CharacterFeedItem, CharacterReplySource } from '@/data/character/characterApi'
 import type { Experiment, Observation, ObservationChoice, Pattern, PatternMonitorPair, Prediction } from '@/data/types'
@@ -90,7 +90,7 @@ export interface TeamFeed {
 export const AFTERLIFE = {
   confirm: 'Megerősítetted · bekerült a rólad szóló képbe',
   reject: 'Nem így érzed · feljegyeztük, nem hozzuk elő újra',
-  watch: 'Figyeljük tovább · szólunk, ha kiderül',
+  watch: 'Jellemző rád · feljegyeztük, figyeljük tovább',
   talk: 'Elmesélted · a csapat mérlegeli',
 } as const
 
@@ -176,7 +176,7 @@ function patternPost(p: Pattern, pairs: PatternMonitorPair[], today: string): Fe
 }
 
 function observationPost(o: Observation, patterns: Pattern[], pairs: PatternMonitorPair[]): FeedPost | null {
-  if (o.card !== 'fresh') return null
+  if (o.card !== 'fresh' && o.card !== 'return') return null
   const pattern = patterns.find(p => p.id === o.patternId)
   const owner = pattern ? ownerForPattern(pattern, pairs) : { author: 'mezo' as const }
   const n = o.evidenceHits + o.evidenceMisses
@@ -186,9 +186,9 @@ function observationPost(o: Observation, patterns: Pattern[], pairs: PatternMoni
     ...owner,
     occurredAt: o.occurredAt,
     title: o.title,
-    body: o.text,
+    body: [o.text, o.question, ...o.evidence].filter(Boolean).join('\n\n'),
     ...(o.minN != null ? { honesty: honestyFor(n, o.minN) } : {}),
-    sourceRoute: pattern ? `/mezo/patterns/${pattern.pairKey}` : '/mezo/patterns',
+    sourceRoute: o.hypothesisKey ? `/mezo/patterns/${o.hypothesisKey}` : pattern ? `/mezo/patterns/${pattern.pairKey}` : '/mezo/patterns',
     waiting: Boolean(o.question) && !o.repliedChoice,
     observation: { patternId: o.patternId },
     ...(o.repliedChoice ? { afterlife: OBSERVATION_AFTERLIFE[o.repliedChoice] } : {}),
@@ -259,8 +259,10 @@ function pickPoster(posts: FeedPost[]): FeedPost | undefined {
 
 export function buildTeamFeed(input: TeamFeedInput): TeamFeed {
   const { patterns, monitorPairs, today } = input
+  const observationPatternIds = new Set(input.observations
+    .filter(o => o.card === 'fresh' || o.card === 'return').map(o => o.patternId))
   const posts = [
-    ...patterns.map(p => patternPost(p, monitorPairs, today)),
+    ...patterns.filter(p => !observationPatternIds.has(p.id)).map(p => patternPost(p, monitorPairs, today)),
     ...input.observations.map(o => observationPost(o, patterns, monitorPairs)),
     ...input.experiments.map(e => experimentPost(e, today)),
     ...input.predictions.map(predictionPost),
@@ -303,8 +305,18 @@ export function withSessionAfterlife(
   entries: Record<string, SessionAfterlife>,
   today: string,
 ): FeedDay[] {
-  const ids = Object.keys(entries)
-  if (ids.length === 0) return days
+  if (Object.keys(entries).length === 0) return days
+  const currentObservations = new Map(days.flatMap(d => [...(d.poster ? [d.poster] : []), ...d.posts])
+    .filter(p => p.observation).map(p => [p.observation!.patternId, p.id]))
+  // A newer question supersedes the previous answer snapshot for the same pattern.
+  const ids = Object.keys(entries).filter(id => {
+    const patternId = entries[id].snapshot.observation?.patternId
+    return !patternId || !currentObservations.has(patternId) || currentObservations.get(patternId) === id
+  })
+  const coveredPatterns = new Set(ids.flatMap(id => {
+    const patternId = entries[id].snapshot.observation?.patternId
+    return patternId ? [`pattern:${patternId}`] : []
+  }))
   const settle = (p: FeedPost): FeedPost => {
     const entry = entries[p.id]
     if (!entry) return p
@@ -312,10 +324,10 @@ export function withSessionAfterlife(
     return { ...rest, afterlife: entry.label, waiting: false }
   }
   const present = new Set(days.flatMap(d => [...(d.poster ? [d.poster.id] : []), ...d.posts.map(p => p.id)]))
-  const out = days.map(d => ({
+  const out: FeedDay[] = days.map(d => ({
     ...d,
-    posts: d.posts.map(settle),
-    ...(d.poster ? { poster: settle(d.poster) } : {}),
+    posts: d.posts.filter(p => !coveredPatterns.has(p.id)).map(settle),
+    poster: d.poster && !coveredPatterns.has(d.poster.id) ? settle(d.poster) : undefined,
   }))
   for (const id of ids) {
     if (present.has(id)) continue
@@ -325,5 +337,5 @@ export function withSessionAfterlife(
     if (day) day.posts = [...day.posts, post].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
     else out.push({ key, label: dayLabel(key, today), posts: [post] })
   }
-  return out.sort((a, b) => byDayDesc(a.key, b.key))
+  return out.filter(d => d.poster || d.posts.length > 0).sort((a, b) => byDayDesc(a.key, b.key))
 }

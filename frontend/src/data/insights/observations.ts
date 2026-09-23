@@ -60,7 +60,7 @@ export const observations: Observation[] = [
     title: 'Késői vacsora → rosszabb alvás',
     // A watching kártyán a szöveg ÜRES — ott a számok beszélnek (wire-szerződés).
     text: '',
-    question: 'Eddig **4-szer bejött, 1-szer nem**. Nyolc napnál mondok többet.',
+    question: 'Eddig **4-szer bejött, 1-szer nem**. További megfigyelésekből derülhet ki, tartós-e az összefüggés.',
     evidence: [],
     status: 'monitoring',
     evidenceHits: 4,

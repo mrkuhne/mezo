@@ -1976,11 +1976,12 @@ export type ObservationCardKind = 'fresh' | 'return' | 'watching' | 'confirmed'
 /** Egy nap észrevétel-feedjének egy kártyája — a `GET /api/companion/observation` sora. */
 export interface Observation {
   /** A lista stabil kulcsa: esemény-id (fresh/return) vagy minta-id (watching/confirmed).
-   *  Egy `monitoring` sor JOGOSAN szerepelhet kétszer (esemény + sor) — nem duplikátum. */
+   *  A mai listában mintánként a legfrissebb megválaszolatlan esemény marad látható. */
   id: string
   /** A sor, amire a chip-válasz megy. */
   patternId: string
   hypothesisKey?: string
+  kind?: 'statistical' | 'reflection' | 'ai_hypothesis'
   card: ObservationCardKind
   occurredAt: string
   title: string
