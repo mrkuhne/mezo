@@ -196,7 +196,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### biometrics
 
 *BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-23, mixed) ·
-  [docs/features/today.md](features/today.md) (updated 2026-09-23, mixed)
+  [docs/features/today.md](features/today.md) (updated 2026-09-24, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
   - **sub-features:** `checkin`, `profile`, `sleep`, `weight`
@@ -236,7 +236,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### character
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-22, shipped)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-24, shipped)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
   - **sub-features:** `detector`
@@ -332,7 +332,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### companion
 
 *BE + API + FE-data* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-09-09, done) ·
-  [docs/features/character.md](features/character.md) (updated 2026-09-22, shipped) ·
+  [docs/features/character.md](features/character.md) (updated 2026-09-24, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-09-23, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-23, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-18, in-progress) ·
@@ -1289,7 +1289,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### quickinput
 
-*FE-ui* · read next: [docs/features/today.md](features/today.md) (updated 2026-09-23, mixed)
+*FE-ui* · read next: [docs/features/today.md](features/today.md) (updated 2026-09-24, mixed)
 
 - **FE ui** `frontend/src/features/quickinput`
   - **sheets:** QuickInputSheet.tsx, QuickSleepSheet.tsx
@@ -1376,7 +1376,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/needs.md](features/needs.md) (updated 2026-09-23, done) ·
   [docs/features/proactive.md](features/proactive.md) (updated 2026-09-23, complete) ·
   [docs/features/ritual.md](features/ritual.md) (updated 2026-09-23, done) ·
-  [docs/features/today.md](features/today.md) (updated 2026-09-23, mixed)
+  [docs/features/today.md](features/today.md) (updated 2026-09-24, mixed)
 
 - **FE data** `frontend/src/data/today`
   - **hooks (via `@/data/hooks`):** `resolveBriefing`, `useAdviceActions`, `useCheckins`, `useCompanionFeed`,
@@ -1531,7 +1531,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### tutorial
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/tutorial.md](features/tutorial.md) (updated 2026-09-22, mixed)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/tutorial.md](features/tutorial.md) (updated 2026-09-24, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/tutorial`
   - **entities→tables:** `TutorialProgressEntity`→`tutorial_progress`
