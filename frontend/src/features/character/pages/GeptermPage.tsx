@@ -17,6 +17,7 @@ import { useCharacterRuns } from '@/data/hooks'
 import { mondayIso } from '@/data/fuel/fuelWeekHooks'
 import { addDays } from '@/shared/lib/dates'
 import { lastRunLine } from '@/features/character/runLabels'
+import { ALL_FEATURES_ROUTE } from '@/features/insights/logic/boopNavigation'
 
 const PRINCIPLE = 'Minden Karakter-hívás mentve — feature=character, lépésenként (observe / '
   + 'propose / skeptic / integrate / portrait). Semmi nem tűnik el.'
@@ -42,7 +43,7 @@ export function GeptermPage() {
 
   return (
     <div className="kr-hub">
-      <PageHead onBack={() => navigate('/mezo/menu')} label="‹ Menü" />
+      <PageHead onBack={() => navigate('/mezo/csapat')} label="‹ A csapat" />
       <PageHero icon="i-retegek" iconSize={34} name="Gépterem" sub="Boop működése · források, memória és futások">
         {lastRun != null && <p className="kr-runlede">{lastRunLine(lastRun)}</p>}
       </PageHero>
@@ -80,6 +81,9 @@ export function GeptermPage() {
             line="rétegek, eredet és költségek" onClick={() => navigate('/mezo/memoria')} />
           <Tile icon="i-minta" eyebrow="Megfigyelők" delayMs={260}
             line="a coaching javaslatainak háttere" onClick={() => navigate('/mezo/coaching/megfigyelo')} />
+          {/* The old 12-tile menu lives here as a dev-menu (csapat-üzenőfal spec §2.4). */}
+          <Tile icon="i-minta" eyebrow="Összes funkció" delayMs={300}
+            line="a régi teljes menü — minden eszköz egy helyen" onClick={() => navigate(ALL_FEATURES_ROUTE)} />
         </Mosaic>
       </PageBody>
     </div>

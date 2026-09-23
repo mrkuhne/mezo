@@ -14,7 +14,7 @@ export function BoopMemoriesPage() {
   const archive = useMemoirArchive()
   const journal = useMemorySummaries()
   return <MozaikPage tone="lav">
-    <PageHead label="‹ Menü" onBack={() => navigate('/mezo/menu')} />
+    <PageHead label="‹ Üzenőfal" onBack={() => navigate('/mezo')} />
     <PageHero icon="i-memoar" name="Emlékek" sub="A napjaid és a közös történetünk" />
     <PageBody><EntranceGroup className="col gap-md">
       <Link to="/mezo/memoir" className="mz-memoir rise" style={{ textDecoration: 'none', color: 'inherit' }}>

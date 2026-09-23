@@ -5,9 +5,12 @@ import { FeedPostCard } from '@/features/insights/components/feed/FeedPostCard'
 import { FeedPosterCard } from '@/features/insights/components/feed/FeedPosterCard'
 import { FeedReplySheet, type FeedReplyTarget } from '@/features/insights/components/feed/FeedReplySheet'
 import type { FeedReplyMode } from '@/features/insights/components/feed/FeedTrio'
+import { IntroPosts } from '@/features/insights/components/feed/IntroPosts'
 import { StoryStrip } from '@/features/insights/components/feed/StoryStrip'
 import { useFeedSession } from '@/features/insights/components/feed/useFeedSession'
 import { useTeamFeed } from '@/features/insights/components/feed/useTeamFeed'
+import { useCharacterOverview } from '@/data/hooks'
+import { isDossierEmpty } from '@/features/character/dossierState'
 import { Icon3D } from '@/shared/ui/clay'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import '@/features/insights/boop-world.css'
@@ -20,12 +23,13 @@ import '@/features/insights/boop-world.css'
  */
 export function TeamFeedPage() {
   const { feed, today, loading, degraded } = useTeamFeed()
+  const { overview, isLoading: overviewLoading } = useCharacterOverview()
   const session = useFeedSession()
   const [reply, setReply] = useState<FeedReplyTarget | null>(null)
   const days = useMemo(() => withSessionAfterlife(feed.days, session.afterlife, today), [feed.days, session.afterlife, today])
 
   // Betöltés-kapu AZ ÜRES-ÁLLAPOT ELŐTT (mezo-yew): félkész adatból nem villan fel „csend van”.
-  if (loading) return <ScreenSkeleton />
+  if (loading || overviewLoading) return <ScreenSkeleton />
 
   const posts = days.flatMap(d => [...(d.poster ? [d.poster] : []), ...d.posts])
   const waitingBy: Partial<Record<TeamCharacterId, boolean>> = {}
@@ -56,7 +60,10 @@ export function TeamFeedPage() {
           A csapat egy része most nem elérhető — amit látsz, az a legutóbbi állapot. Amint újra bekapcsol, a hiányzó bejegyzések is visszatérnek.
         </p>
       )}
-      {days.length === 0 ? (
+      {days.length === 0 && isDossierEmpty(overview) ? (
+        // Hidegindítás (spec §2.6): semmi rekord ÉS érintetlen dosszié → a csapat bemutatkozik.
+        <IntroPosts />
+      ) : days.length === 0 ? (
         <p className="tf-note">Még csend van a falon. Ahogy naplózol, a csapat itt szólal meg — minden bejegyzés a te adataidból születik.</p>
       ) : (
         days.map(day => (

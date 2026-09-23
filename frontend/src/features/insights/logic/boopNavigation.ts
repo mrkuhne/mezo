@@ -10,6 +10,12 @@ export interface BoopDestination {
   primary?: boolean
 }
 
+/**
+ * The old 12-tile grid lives on as the „Összes funkció” dev-menu beside the Gépterem
+ * (csapat-üzenőfal spec §2.4, mezo-a9bo7.10) — no longer a dock tab. `/mezo/menu` redirects here.
+ */
+export const ALL_FEATURES_ROUTE = '/mezo/karakter/gepterem/osszes'
+
 /** Original feature names and canonical records; menu and crosslinks share this catalog. */
 export const BOOP_DESTINATIONS: BoopDestination[] = [
   { label: 'Minták', to: '/mezo/patterns', icon: 'i-minta', wash: 'lav', description: 'Amit újra és újra észreveszünk', primary: true },

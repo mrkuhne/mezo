@@ -75,18 +75,18 @@ describe('mezo nav (real mode default)', () => {
   // WITHOUT a PageHead, so a user who tapped a tile could only leave via the tab bar. Every
   // sibling now owns the prototype's `‹ Mezo` chip.
   test.each([
-    ['/mezo/patterns', '‹ Menü'],
+    ['/mezo/patterns', '‹ Összes funkció'],
     ['/mezo/memoir', '‹ Mezo'],
     ['/mezo/knowledge', '‹ Mezo'],
-    ['/mezo/predictions', '‹ Menü'],
-    ['/mezo/experiments', '‹ Menü'],
+    ['/mezo/predictions', '‹ Összes funkció'],
+    ['/mezo/experiments', '‹ Összes funkció'],
     ['/mezo/memoria', '‹ Mezo'],
   ])('%s owns a back chip that returns to the hub', async (path, label) => {
     const router = renderApp(path)
     const back = await screen.findByRole('button', { name: 'Vissza' })
     expect(back).toHaveTextContent(label)
     await userEvent.click(back)
-    await waitFor(() => expect(router.state.location.pathname).toBe(label === '‹ Menü' ? '/mezo/menu' : '/mezo'))
+    await waitFor(() => expect(router.state.location.pathname).toBe(label === '‹ Összes funkció' ? '/mezo/karakter/gepterem/osszes' : '/mezo'))
   })
 
   // /mezo/chat dropped the shared PageHead for its own orb-led header (mezo-vdf4) — the back
@@ -112,6 +112,12 @@ describe('mezo nav (real mode default)', () => {
     const router = renderApp('/mezo/menu')
     await userEvent.click(await screen.findByRole('link', { name: 'Heti' }))
     expect(router.state.location.pathname).toBe('/me/week')
+  })
+
+  test('/mezo/menu redirects to the Gépterem’s „Összes funkció” grid (mezo-a9bo7.10)', async () => {
+    const router = renderApp('/mezo/menu')
+    expect(await screen.findByRole('heading', { name: 'Összes funkció' })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/mezo/karakter/gepterem/osszes')
   })
 
   test('/mezo/weekly stays an honest redirect to /me/week (mezo-p2tr)', async () => {

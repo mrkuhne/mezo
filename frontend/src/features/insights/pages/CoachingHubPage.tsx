@@ -12,6 +12,7 @@ import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { useCoachingTrace } from '@/data/hooks'
 import { VerdictArc } from '@/features/insights/components/VerdictArc'
 import { STATE_LABEL, WINNER_LABEL, splitOf, winnerRuleOf } from '@/features/insights/logic/coachingCopy'
+import { ALL_FEATURES_ROUTE } from '@/features/insights/logic/boopNavigation'
 
 export function CoachingHubPage() {
   const navigate = useNavigate()
@@ -23,7 +24,7 @@ export function CoachingHubPage() {
 
   return (
     <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate('/mezo/menu')} label="‹ Menü" />
+      <PageHead onBack={() => navigate(ALL_FEATURES_ROUTE)} label="‹ Összes funkció" />
       <PageHero spot="s-orb-figyel" iconSize={54} name="Proaktív coaching"
         big={split.total === 0 ? undefined : flagged}
         sub={split.total === 0 ? 'a motor döntése, ahogy megszületett' : `${split.total} szabály · ma ennyi jelzett`}>

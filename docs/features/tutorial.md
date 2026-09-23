@@ -2,7 +2,7 @@
 title: Mezo-kalauz (in-app page guides)
 type: feature
 status: mixed
-updated: 2026-09-22
+updated: 2026-09-24
 tags: [tutorial, onboarding, frontend, backend]
 key_files:
   - frontend/src/features/tutorial
@@ -67,7 +67,7 @@ pager, not a bottom sheet) and its registry entry
 
 ## 2. User-facing behavior
 
-The Mezo tour uses registry version 2: the social feed/replies and direct original-name menu replace the old mosaic-hub description. The `mezo-chat` anchor is on `BoopWorldPage`'s actual chat link.
+The `/mezo` tour is **retired** (`mezo-a9bo7.10`, csapat-üzenőfal spec §2.6): the wall introduces the team in five static intro posts (`IntroPosts.tsx`) instead of a bubble series. `MEZO_KALAUZ` is an empty array kept for future Mezo subpages; the `mezo-chat` anchor and the `minta` fogalom are gone.
 
 The registry points persistent preferences to the central `/settings` menu. Train schedule guidance describes the header settings entry and Train group; the former local Időpontok chip is absent. General settings retains tutorial reset through the same TutorialProvider.
 
@@ -208,10 +208,7 @@ Gated by the switch `mezo.feature.tutorial.enabled`
     scope of the guide copy — it carries the anchor only so the spotlight does not degrade there.
   - `train-hero` — all six `.eh-hero` variants in
     `frontend/src/features/train/pages/EdzesHubPage.tsx`.
-  - `mezo-chat` — the composer-shaped chat opener, one node, in
-    `frontend/src/features/insights/pages/BoopWorldPage.tsx` (the `Mezo` tab's page module still
-    lives under `features/insights` — see [`insights.md`](insights.md) for the tab-rename
-    history).
+  - ~~`mezo-chat`~~ — retired with the `/mezo` tour (`mezo-a9bo7.10`); the wall introduces itself in posts.
   - `me-idhero` — the identity hero, one node, in `frontend/src/features/me/pages/EnHubPage.tsx`.
 - **`BeallitasokPage`** (`frontend/src/features/me/pages/BeallitasokPage.tsx:70-87`) — the
   "Kalauzok újranézése" row calls `useTutorial().resetAll()` and reflects its promise in an
@@ -449,7 +446,6 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
   (one per daypart face).
 - `frontend/src/features/train/pages/EdzesHubPage.tsx` — `data-kalauz-anchor="train-hero"` × 6
   (one per hero variant).
-- `frontend/src/features/insights/pages/BoopWorldPage.tsx` — `data-kalauz-anchor="mezo-chat"`.
 - `frontend/src/features/me/pages/EnHubPage.tsx` — `data-kalauz-anchor="me-idhero"`.
 
 **Frontend — data layer**

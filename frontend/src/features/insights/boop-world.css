@@ -19,19 +19,8 @@
 .boop-world-navigation a{display:inline-flex;align-items:center;min-height:40px;padding:7px 10px;text-decoration:none;color:var(--text-secondary);border:1px solid var(--border-subtle);border-radius:12px;background:var(--surface-card)}
 .boop-world-navigation a[aria-current=page]{background:var(--mz-wash-lav);color:var(--lav-deep)}
 .boop-world-navigation .boop-world-menu-link{border:0;background:transparent;color:var(--lav-deep);padding-left:0;min-height:32px}
-.boop-world-social>.boop-world-page{padding-bottom:0}
-.boop-world-social .kr-social{padding-top:0}
-.boop-world-links{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
-.boop-world-links a{display:inline-flex;gap:7px;align-items:center;min-height:42px;border-radius:14px;padding:8px 12px;background:var(--surface-card);border:1px solid var(--border-subtle);color:var(--text-primary);font-size:12px;text-decoration:none}
-.boop-world-discoveries{margin:0 24px 22px}
-.boop-world-discoveries h2{font-size:17px;margin:18px 0 12px}
-.boop-world-story{display:block;color:var(--text-primary);text-decoration:none;border-radius:20px;padding:18px;margin:12px 0;background:var(--mz-wash-lav);border:1px solid var(--border-subtle)}
-.boop-world-story-head{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--text-secondary);margin-bottom:12px}
-.boop-world-story strong{display:block;font-size:17px;line-height:1.4}
-.boop-world-story p{font-size:13px;color:var(--text-secondary);line-height:1.6;margin:9px 0}
-.boop-world-story small{font-size:12px;color:var(--lav-deep)}
 @media(hover:hover) and (prefers-reduced-motion:no-preference){.boop-world-tile:hover{transform:translateY(-4px)}.boop-world-tile:hover svg{transform:rotate(-7deg) scale(1.07)}}
-@media(max-width:360px){.boop-world-page{padding-left:16px;padding-right:16px}.boop-world-navigation{margin-left:16px;margin-right:16px}.boop-world-tile{padding:14px;min-height:135px}.boop-world-tile strong{font-size:14px}.boop-world-discoveries{margin-left:16px;margin-right:16px}}
+@media(max-width:360px){.boop-world-page{padding-left:16px;padding-right:16px}.boop-world-navigation{margin-left:16px;margin-right:16px}.boop-world-tile{padding:14px;min-height:135px}.boop-world-tile strong{font-size:14px}}
 @media(prefers-reduced-motion:reduce){.boop-world-tile,.boop-world-tile svg{transition:none;animation:none}}
 
 /* ══ team-feed (mezo-a9bo7.7) · a csapat-üzenőfal az üveg-kánonban ══════════════════════════
@@ -40,7 +29,8 @@
    (U1) — itt második üveg-recept NINCS: a poszter / sor / első ügy `class="glass tf-…"`.
    Rangsor (restored bible §3.4): naponta EGY üveg (a poszter); csendes poszt, média-well,
    ügy-kártya és tudás-lista lapos panel — látható határ, üveg-tulajdonság nélkül.
-   A fenti `boop-world-*` szabályok a régi hub-főoldalé; a T5 (TeamFeedPage) csere után törlendők. */
+   A fenti `boop-world-*` szabályok az „Összes funkció” rácsé (Gépterem dev-menü) és a Boop-oldalak
+   chip-sávjáé; a régi hub-főoldal szabályai a fal-cserével (mezo-a9bo7.10) törlődtek. */
 
 /* karakter-akcentusok — a `--c` az üveg/avatár/terület-címke egyetlen színforrása */
 .tf-c-lav { --c: var(--dv-lav); }
@@ -232,6 +222,9 @@
 .tf-reply-text:focus-visible { outline: none; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--dv-lav) 70%, transparent); }
 .tf-send { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; border-radius: 18px; font-size: 14px; font-weight: 600; color: var(--text-primary); }
 .tf-send:disabled { opacity: 0.55; }
+/* hidegindítás (mezo-a9bo7.10) — Mezo „Új arc” jelzője arany, a dosszié-indító a bemutatkozók alatt */
+.tf-flag.tf-flag-new { color: #FFD99A; background: color-mix(in srgb, var(--dv-amber) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 35%, transparent); }
+.tf-send.tf-intro-cta { width: auto; margin: 14px 24px 4px; }
 .tf-steps-title { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; font-size: 17px; font-weight: 650; letter-spacing: -0.3px; color: var(--text-primary); }
 .tf-steps ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
 .tf-steps strong { color: var(--text-primary); }

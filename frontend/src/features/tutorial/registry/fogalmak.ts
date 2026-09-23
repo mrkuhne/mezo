@@ -9,7 +9,7 @@
 // ============================================================
 
 export type FogalomKey =
-  | 'napszak' | 'mezociklus' | 'makro' | 'minta' | 'szint' | 'eletjel' | 'rir'
+  | 'napszak' | 'mezociklus' | 'makro' | 'szint' | 'eletjel' | 'rir'
   | 'ablak' | 'stack' | 'pontszam'
 
 export interface Fogalom {
@@ -37,12 +37,6 @@ export const FOGALMAK: Record<FogalomKey, Fogalom> = {
   makro: {
     term: 'makró',
     def: 'A három „építőanyag": **fehérje** (izom), **szénhidrát** (üzemanyag), **zsír** (hormonok). A kalória ezekből adódik össze.',
-  },
-  // Forrás: docs/features/insights.md §2.1 + companion.md; features/insights/logic/{lifecycle,verdicts}.ts
-  // A példa szándékosan „kevés alvás", nem „rossz alvás": a `rossz` tiltott tő a hang-lintben.
-  minta: {
-    term: 'minta',
-    def: 'Egy ismétlődő összefüggés a saját adataidban, amit Mezo vesz észre — például „kevés alvás után több szénhidrát".',
   },
   // Forrás: features/today/logic/needs.ts (hat NeedKey) + EletjelPage.tsx VITAL_TILE
   // (a csempe-nyelv nevei: Étel, Víz, Alvás, Mozgás, Kapcsolat, Rend) — a definíció a

@@ -95,8 +95,16 @@ export const DOMAINS: NavDomain[] = [
     id: 'mezo',
     name: 'Mezo',
     tabs: [
-      { label: 'Üzenőfal', route: '/mezo', icon: 'i-mezo', owns: ['/mezo/karakter/feed'] },
-      { label: 'Menü', route: '/mezo/menu', icon: 'i-minta', owns: ['/mezo/patterns', '/mezo/predictions', '/mezo/diagnozis', '/mezo/experiments', '/mezo/coaching', '/mezo/karakter/gepterem', '/mezo/karakter/konzilium', '/mezo/karakter/csapat', '/mezo/memoria', '/mezo/chat'] },
+      // Csapat-üzenőfal (mezo-a9bo7.10, spec §2.5): the dock is Üzenőfal · A csapat · Rólad ·
+      // Emlékek. „A kijelölés nem ugrál": every page a POST opens into (records, their lists,
+      // the reply chat) stays under Üzenőfal; the team's own rooms and the machinery behind
+      // them (konzílium, Gépterem + its „Összes funkció” grid, memória) stay under A csapat.
+      { label: 'Üzenőfal', route: '/mezo', icon: 'i-mezo',
+        owns: ['/mezo/karakter/feed', '/mezo/patterns', '/mezo/predictions', '/mezo/experiments',
+          '/mezo/diagnozis', '/mezo/coaching', '/mezo/chat'] },
+      { label: 'A csapat', route: '/mezo/csapat', icon: 'i-emberek',
+        owns: ['/mezo/karakter/gepterem', '/mezo/karakter/konzilium', '/mezo/karakter/csapat',
+          '/mezo/memoria'] },
       { label: 'Rólad', route: '/mezo/rolad', icon: 'i-kristaly', owns: ['/mezo/knowledge', '/mezo/karakter'] },
       { label: 'Emlékek', route: '/mezo/emlekek', icon: 'i-memoar', owns: ['/mezo/memoir'] },
     ],

@@ -99,9 +99,8 @@ export const PAGE_INDEX: IndexedPage[] = [
   { route: '/fuel/gyogyszer', label: 'Gyógyszer', hint: 'A gyógyszereid külön nyilvántartva.' },
 
   // ── Mezo ─────────────────────────────────────────────────────────────────
-  { route: '/mezo/menu', label: 'Menü', hint: 'Minden Boop-funkció a saját nevén, közvetlenül.' },
   { route: '/mezo/rolad', label: 'Rólad', hint: 'Karakter, tudástár és saját kommunikációs kérések.' },
-  { route: '/mezo', label: 'Üzenőfal', hint: 'A csapat beszélgetései, válaszaid és kapcsolódó felfedezések.' },
+  { route: '/mezo', label: 'Üzenőfal', hint: 'Az öt karakter posztjai: mit vettek észre, és mit kérdeznek tőled.' },
   { route: '/mezo/csapat', label: 'A csapat', hint: 'Az öt karakter szobája: mit figyelnek most, és mennyit tudnak rólad.' },
   { route: '/mezo/emlekek', label: 'Emlékek', hint: 'Napi emlékek, heti memoár és hasonló napok keresése.' },
   { route: '/mezo/patterns', label: 'Minták', hint: 'Az ismétlődő összefüggések a napjaidban.' },
@@ -112,6 +111,7 @@ export const PAGE_INDEX: IndexedPage[] = [
   { route: '/mezo/karakter/csapat', label: 'A csapat', hint: 'A belső hangok, akik tanácsot adnak.' },
   { route: '/mezo/karakter/konzilium', label: 'Konzílium', hint: 'A csapat együtt beszéli meg az ügyedet.' },
   { route: '/mezo/karakter/gepterem', label: 'Gépterem', hint: 'Ami a motorháztető alatt történik.' },
+  { route: '/mezo/karakter/gepterem/osszes', label: 'Összes funkció', hint: 'A régi teljes menü — minden Boop-eszköz a saját nevén.' },
   { route: '/mezo/karakter/gepterem/futasok', label: 'Futások', hint: 'Az elemzési körök naplója.' },
   { route: '/mezo/karakter/gepterem/adatforrasok', label: 'Adatforrások', hint: 'Miből dolgozik az elemzés.' },
   { route: '/mezo/karakter/gepterem/detektorok', label: 'Detektorok', hint: 'A szabályok, amik a jeleket keresik.' },
