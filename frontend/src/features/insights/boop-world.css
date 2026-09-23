@@ -33,3 +33,193 @@
 @media(hover:hover) and (prefers-reduced-motion:no-preference){.boop-world-tile:hover{transform:translateY(-4px)}.boop-world-tile:hover svg{transform:rotate(-7deg) scale(1.07)}}
 @media(max-width:360px){.boop-world-page{padding-left:16px;padding-right:16px}.boop-world-navigation{margin-left:16px;margin-right:16px}.boop-world-tile{padding:14px;min-height:135px}.boop-world-tile strong{font-size:14px}.boop-world-discoveries{margin-left:16px;margin-right:16px}}
 @media(prefers-reduced-motion:reduce){.boop-world-tile,.boop-world-tile svg{transition:none;animation:none}}
+
+/* ══ team-feed (mezo-a9bo7.7) · a csapat-üzenőfal az üveg-kánonban ══════════════════════════
+   Paritás-forrás: docs/design_2.0/prototypes/uveg-uzenofal.html „ÜZENŐFAL” blokkja, `tf-` prefixszel,
+   tokenekre írva (üveg-biblia §1–2). Az üveg-anyag a KÖZÖS `.glass` kit a prototype.css végén
+   (U1) — itt második üveg-recept NINCS: a poszter / sor / első ügy `class="glass tf-…"`.
+   Rangsor (restored bible §3.4): naponta EGY üveg (a poszter); csendes poszt, média-well,
+   ügy-kártya és tudás-lista lapos panel — látható határ, üveg-tulajdonság nélkül.
+   A fenti `boop-world-*` szabályok a régi hub-főoldalé; a T5 (TeamFeedPage) csere után törlendők. */
+
+/* karakter-akcentusok — a `--c` az üveg/avatár/terület-címke egyetlen színforrása */
+.tf-c-lav { --c: var(--dv-lav); }
+.tf-c-sky { --c: var(--dv-sky); }
+.tf-c-sage { --c: var(--dv-sage); }
+.tf-c-rose { --c: var(--dv-rose); }
+.tf-c-gold { --c: var(--dv-amber); }
+.tf-c-slate { --c: #8E86A3; }
+
+/* oldalfej */
+.tf-head { padding: 4px 18px 8px; }
+.tf-head small { display: block; font-size: 9.5px; font-weight: 600; letter-spacing: 1.5px; color: var(--text-muted); text-transform: uppercase; }
+.tf-head h1 { font-size: 29px; font-weight: 700; letter-spacing: -1.1px; margin: 2px 0 0; color: var(--text-primary); }
+
+/* story-sáv */
+.tf-cast { display: flex; justify-content: space-between; gap: 2px; padding: 8px 12px 6px; }
+.tf-castb { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; position: relative;
+  padding: 2px 0; font-size: 9.5px; color: var(--text-muted); text-align: center; text-decoration: none; }
+.tf-castb .tf-castname { font-size: 11px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.2px; }
+.tf-ring { width: 58px; height: 58px; border-radius: 50%; padding: 2.5px; background: rgba(245, 239, 230, 0.13); transition: background 0.4s, filter 0.4s; }
+.tf-ring.is-new { background: conic-gradient(from 210deg, var(--dv-lav), var(--dv-sky), var(--dv-rose), var(--dv-amber), var(--dv-lav));
+  filter: drop-shadow(0 0 9px color-mix(in srgb, var(--dv-lav) 40%, transparent)); }
+.tf-ring > i { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: var(--surface-page); padding: 2px; }
+.tf-ring > i > * { width: 100%; height: 100%; }
+.tf-dot { position: absolute; top: 0; right: 9px; width: 11px; height: 11px; border-radius: 50%; background: var(--dv-coral);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--dv-coral) 80%, transparent), 0 0 0 2px var(--surface-page); }
+
+/* rád-vár sáv (üveg: `class="glass tf-strip"`) */
+.tf-strip { display: flex; align-items: center; gap: 10px; margin: 8px 16px 2px; padding: 11px 14px; border-radius: 18px; font-size: 12.5px; color: var(--text-primary); text-decoration: none; }
+.tf-strip .t-ico { width: 24px; height: 24px; }
+.tf-strip .tf-strip-text { flex: 1; min-width: 0; font-weight: 600; }
+.tf-strip .tf-strip-count { font-style: normal; font-weight: 600; color: var(--dv-lav); }
+
+/* napelválasztó */
+.tf-day { display: flex; align-items: center; gap: 10px; margin: 16px 18px 2px; color: var(--text-muted); }
+.tf-day::before, .tf-day::after { content: ''; flex: 1; height: 1px; background: var(--divider); }
+.tf-day > span { font-size: 9.5px; font-weight: 600; letter-spacing: 1.5px; white-space: nowrap; text-transform: uppercase; }
+
+/* csendes poszt: lapos, hajszálvonal — SOSEM üveg (rangsor) */
+.tf-post { margin: 9px 12px; padding: 13px 14px 9px; border-radius: 20px; background: rgba(245, 239, 230, 0.035);
+  box-shadow: inset 0 0 0 1px rgba(245, 239, 230, 0.10), 0 8px 18px -14px rgba(0, 0, 0, 0.6); }
+.tf-ph { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 7px; }
+.tf-av { width: 42px; height: 42px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%;
+  background: radial-gradient(circle at 35% 28%, #3A332D, color-mix(in srgb, var(--c) 14%, #1E1B18));
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08), 0 0 12px -4px color-mix(in srgb, var(--c) 50%, transparent); }
+.tf-av > * { width: 34px; height: 34px; }
+.tf-who { flex: 1; min-width: 0; padding-top: 1px; }
+.tf-who .tf-name { font-size: 14px; font-weight: 600; letter-spacing: -0.2px; margin-right: 6px; color: var(--text-primary); }
+.tf-area { display: inline-block; vertical-align: 1px; padding: 2.5px 8px; border-radius: 999px; font-size: 8.5px; font-weight: 600; letter-spacing: 1px;
+  text-transform: uppercase; background: color-mix(in srgb, var(--c) 18%, transparent); color: color-mix(in srgb, var(--c) 80%, #fff); }
+.tf-who .tf-meta { display: block; font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
+.tf-body { font-size: 14px; line-height: 1.55; color: var(--text-primary); margin: 0; overflow-wrap: anywhere; }
+.tf-body strong { color: color-mix(in srgb, var(--c) 75%, #fff); }
+
+/* média-well: lapos cella a poszton belül */
+.tf-well { display: block; width: 100%; margin: 10px 0 2px; padding: 11px 12px; border-radius: 16px; background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.tf-well .tf-cap { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 10px; color: var(--text-secondary); }
+.tf-well .tf-cap em { font-style: normal; margin-left: auto; color: var(--text-muted); }
+.tf-chart { width: 100%; height: auto; display: block; }
+.tf-chart .tf-grid { stroke: rgba(245, 239, 230, 0.12); stroke-width: 1; stroke-dasharray: 3 4; }
+.tf-chart .tf-l1 { stroke: var(--dv-lav); stroke-width: 2.5; fill: none; stroke-linecap: round; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--dv-lav) 55%, transparent)); }
+.tf-chart .tf-l2 { stroke: var(--dv-sky); stroke-width: 2.5; fill: none; stroke-linecap: round; opacity: 0.85; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--dv-sky) 45%, transparent)); }
+.tf-bars { display: grid; gap: 8px; }
+.tf-bars > div { display: flex; align-items: center; gap: 9px; font-size: 11px; }
+.tf-bars .uv-bar { flex: 1; }
+.tf-bars .tf-bar-label { width: 56px; flex: 0 0 auto; font-size: 8.5px; font-weight: 600; letter-spacing: 0.8px; color: var(--dv-sage); text-transform: uppercase; }
+.tf-bars .tf-bar-value { width: 56px; flex: 0 0 auto; text-align: right; font-size: 10.5px; color: var(--text-secondary); font-weight: 600; }
+/* őszinteség-sáv: n / minN — a „még kevés adat” kimondva */
+.tf-honest { display: flex; align-items: center; gap: 10px; font-size: 10.5px; color: var(--text-secondary); white-space: nowrap; }
+.tf-honest .uv-bar { flex: 1; }
+.tf-days { display: flex; gap: 5px; }
+.tf-days > span { flex: 1; height: 30px; display: grid; place-items: center; border-radius: 9px; border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent); font-size: 10px; color: var(--text-secondary); }
+.tf-days > .is-hit { background: var(--dv-sage); border: 0; color: var(--text-inverse); box-shadow: 0 0 10px color-mix(in srgb, var(--dv-sage) 40%, transparent); }
+.tf-days > .is-now { border: 2px solid var(--dv-coral); box-shadow: 0 0 10px color-mix(in srgb, var(--dv-coral) 40%, transparent); color: var(--text-primary); }
+.tf-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.tf-chips > span { min-width: 0; font-size: 10.5px; font-weight: 600; border-radius: 999px; padding: 5px 11px; background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); color: var(--text-secondary); }
+.tf-chips > .is-good { color: #a9d4b3; }
+.tf-chips > .is-warn { color: #ffd699; }
+.tf-chips > .is-quiet { color: #b9b2cc; }
+
+/* összesítő sor a gombok FELETT */
+.tf-sum { display: flex; align-items: center; gap: 6px; margin: 9px 0 0; font-size: 11px; color: var(--text-secondary); }
+.tf-sum .tf-minis { display: flex; }
+.tf-sum .tf-minis .tf-av { width: 22px; height: 22px; margin-right: -7px; border: 1.5px solid var(--surface-page); }
+.tf-sum .tf-minis .tf-av > * { width: 17px; height: 17px; }
+.tf-sum a, .tf-sum button { font-size: 11px; color: var(--text-secondary); padding: 4px 2px; text-decoration: none; }
+
+/* akciósor: balra zárt, könnyű — az egységes hármas (Ez talál · Nem így érzem · Elmesélem) */
+.tf-acts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+.tf-acts button { display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 9px; border-radius: 14px; font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+.tf-acts .t-ico { width: 19px; height: 19px; }
+.tf-acts button[aria-pressed="true"] { color: #CBC1EC; background: color-mix(in srgb, var(--dv-lav) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-lav) 30%, transparent); }
+.tf-acts button:disabled { opacity: 0.55; }
+
+/* hozzászólás-előnézet + válasz-sor */
+.tf-cmt { display: flex; gap: 8px; align-items: flex-start; margin-top: 8px; }
+.tf-cmt .tf-av { width: 24px; height: 24px; }
+.tf-cmt .tf-av > * { width: 18px; height: 18px; }
+.tf-cmt p { margin: 0; font-size: 12px; line-height: 1.5; color: var(--text-secondary); }
+.tf-cmt p .tf-cmt-name { color: var(--text-primary); margin-right: 3px; font-weight: 600; }
+.tf-more { display: block; padding: 7px 0 3px; font-size: 11.5px; color: var(--text-muted); text-decoration: none; }
+.tf-rrow { display: flex; align-items: center; gap: 9px; width: 100%; margin-top: 9px; padding: 9px 12px; border-radius: 999px; background: rgba(245, 239, 230, 0.04);
+  box-shadow: inset 0 0 0 1px var(--divider); font-size: 12px; color: var(--text-muted); text-align: left; }
+.tf-rrow .tf-me { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto;
+  background: color-mix(in srgb, var(--dv-lav) 20%, transparent); color: #CBC1EC; font-size: 10px; font-weight: 700; }
+.tf-rrow .t-ico { width: 18px; height: 18px; margin-left: auto; }
+/* utóélet: a hármas után látható nyom („Megerősítetted · bekerült…”) */
+.tf-after { display: inline-flex; align-items: center; gap: 6px; margin: 8px 0 4px; font-size: 11px; font-weight: 600; color: #a9d4b3;
+  background: color-mix(in srgb, var(--dv-sage) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-sage) 30%, transparent); border-radius: 999px; padding: 6px 11px; }
+.tf-after .t-ico { width: 15px; height: 15px; }
+
+/* a nap posztere: `class="glass tf-poster"` — az egyetlen hangos elem a napban */
+.tf-poster { margin: 10px 16px 14px; padding: 14px 14px 10px; }
+.tf-poster .tf-claim { font-size: 19px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.25; margin: 2px 0 6px; color: var(--text-primary); }
+.tf-poster .tf-well { background: rgba(25, 22, 20, 0.45); }
+.tf-flag { margin-left: auto; flex: 0 0 auto; font-size: 10px; font-weight: 700; letter-spacing: 0.4px; color: #FFB39C;
+  background: color-mix(in srgb, var(--dv-coral) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 35%, transparent); border-radius: 999px; padding: 5px 10px; }
+/* „Miből látszik?” — minden állítás forrás-linkje */
+.tf-source { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; font-size: 11px; font-weight: 600; color: color-mix(in srgb, var(--c) 78%, var(--text-primary)); text-decoration: none; }
+
+/* ügy-kártya a szobákban: az első `class="glass tf-case"`, a többi `class="tf-case tf-flatc"` */
+.tf-case { display: block; width: 100%; padding: 13px 14px 14px; border-radius: 20px; text-align: left; color: var(--text-primary); text-decoration: none; }
+.tf-case.tf-flatc { background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px rgba(245, 239, 230, 0.10); }
+.tf-case .tf-crow { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+.tf-st { padding: 4px 10px; border-radius: 999px; font-size: 8.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  background: color-mix(in srgb, var(--s, var(--c)) 20%, transparent); color: color-mix(in srgb, var(--s, var(--c)) 85%, #fff); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--s, var(--c)) 40%, transparent); }
+.tf-case .tf-crow em { margin-left: auto; font-style: normal; font-size: 10.5px; font-weight: 600; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.tf-case .tf-cmain { display: flex; align-items: center; gap: 12px; }
+.tf-case .tf-cmain .t-ico { width: 36px; height: 36px; }
+.tf-case .tf-ctxt { flex: 1 1 auto; min-width: 0; }
+.tf-case .tf-ctitle { display: block; font-size: 15px; font-weight: 650; letter-spacing: -0.25px; line-height: 1.32; }
+.tf-case .tf-csub { display: block; margin-top: 4px; font-size: 11.5px; color: var(--text-secondary); line-height: 1.45; }
+.tf-case .uv-bar { margin-top: 11px; }
+
+/* szoba: hero, gyűrűk, érettség-görbe, tudás-lista */
+.tf-rhero { position: relative; text-align: center; padding: 8px 24px 4px; overflow-x: clip; }
+.tf-rhero::before { content: ''; position: absolute; left: 50%; top: 0; width: 320px; max-width: 100%; height: 250px; transform: translateX(-50%); z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--c) 30%, transparent), color-mix(in srgb, var(--dv-amber) 8%, transparent) 40%, transparent 66%); }
+.tf-rhero .tf-rboop { width: 92px; height: 92px; margin: 0 auto;
+  filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 16px color-mix(in srgb, var(--c) 45%, transparent)); }
+.tf-rhero h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.7px; margin: 6px 0 0; color: var(--text-primary); }
+.tf-rhero p { font-family: var(--ff-serif); font-style: italic; font-size: 14.5px; line-height: 1.45; color: var(--text-secondary); max-width: 300px; margin: 6px auto 0; }
+.tf-gauges { display: flex; align-items: center; justify-content: center; gap: 22px; padding: 12px 16px 2px; }
+.tf-gauge { position: relative; width: 64px; height: 64px; display: grid; place-items: center; text-align: center; }
+.tf-gauge svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.tf-gauge .uv-ring-track, .tf-gauge .uv-ring-prog { stroke-width: 5.5; }
+.tf-gauge .tf-gauge-value { font-size: 15px; font-weight: 600; letter-spacing: -0.5px; }
+.tf-gauge .tf-gauge-label { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 5px; font-size: 7.5px; font-weight: 700; letter-spacing: 1px; color: var(--text-muted); white-space: nowrap; text-transform: uppercase; }
+.tf-rnum { text-align: center; padding-bottom: 12px; }
+.tf-rnum .tf-rnum-value { display: block; font-size: 26px; font-weight: 300; letter-spacing: -1.2px; }
+.tf-rnum .tf-rnum-label { display: block; margin-top: 4px; font-size: 7.5px; font-weight: 700; letter-spacing: 1px; color: var(--text-muted); white-space: nowrap; text-transform: uppercase; }
+.tf-matwell { position: relative; margin: 0 16px; padding: 12px 6px 6px; border-radius: 16px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.tf-matwell .tf-marea { stroke: none; }
+.tf-matnow { position: absolute; right: 14px; top: 10px; font-size: 15px; font-weight: 600; letter-spacing: -0.4px; }
+.tf-matcap { display: flex; justify-content: space-between; padding: 2px 10px 4px; font-size: 9px; color: var(--text-muted); }
+.tf-tlist { margin: 0 16px; padding: 2px 12px; border-radius: 16px; background: rgba(245, 239, 230, 0.03); box-shadow: inset 0 0 0 1px var(--divider); }
+.tf-trow { display: flex; gap: 10px; align-items: center; width: 100%; padding: 11px 2px; border-bottom: 1px solid var(--divider); text-align: left; color: var(--text-primary); text-decoration: none; }
+.tf-tlist .tf-trow:last-child { border-bottom: 0; }
+.tf-trow .tf-ttx { flex: 1; min-width: 0; }
+.tf-trow .tf-ttitle { display: block; font-size: 12.5px; font-weight: 600; line-height: 1.35; }
+.tf-trow .tf-tsub { display: block; margin-top: 1px; font-size: 10px; color: var(--text-muted); }
+.tf-trow .t-ico { width: 22px; height: 22px; }
+
+/* A csapat: karakter-sorok (`class="glass tf-rowg"` a karakter akcentusával) + magyarázó (szaggatott) */
+.tf-rows { display: grid; gap: 10px; padding: 0 16px; }
+.tf-rowg { display: flex; align-items: center; gap: 11px; width: 100%; padding: 12px 13px; border-radius: 19px; color: var(--text-primary); text-decoration: none; }
+.tf-rowg .tf-av { width: 44px; height: 44px; }
+.tf-rowg .tf-rowtxt { flex: 1; min-width: 0; }
+.tf-rowg .tf-rowname { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: -0.2px; }
+.tf-rowg .tf-rowsub { display: block; margin-top: 2px; font-size: 11px; color: var(--text-secondary); line-height: 1.35; }
+.tf-rowg .tf-rowbadge { margin-left: auto; flex: 0 0 auto; font-size: 11px; font-weight: 600; color: color-mix(in srgb, var(--c) 80%, #fff); }
+.tf-dash { margin: 12px 16px; display: flex; gap: 11px; align-items: center; padding: 13px; border-radius: 20px; border: 1.5px dashed rgba(142, 134, 163, 0.5); font-size: 11.5px; color: var(--text-secondary); }
+
+@media (max-width: 360px) {
+  .tf-ring { width: 50px; height: 50px; }
+  .tf-acts button { padding: 8px 6px; }
+  .tf-poster { margin-left: 12px; margin-right: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tf-ring { transition: none; }
+}
+/* ══ /team-feed ════════════════════════════════════════════════════════════════════════════ */
