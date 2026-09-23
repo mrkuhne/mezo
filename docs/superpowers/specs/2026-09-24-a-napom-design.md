@@ -37,7 +37,7 @@ the day view's evening "most érdemes" card.
 ### 1. Overnight close (backend, invisible)
 
 - **`DayReviewWarmupJob`** in `feature/companion/service`, modelled on `DailySummaryJob`:
-  - Cron `${mezo.companion.day-review-warmup.cron:0 0 3 * * *}`.
+  - Cron `mezo.companion.day-review-warmup.cron` = `0 50 2 * * *`. 03:00 is taken by SUN hypotheses and 03:10 by feedback-learning; 02:50 is still "around three".
   - `@ConditionalOnProperty` on `COMPANION_SWITCH`, `DAY_REVIEW_SWITCH` and a new
     `mezo.techcore.cron.day-review-warmup.enabled` switch (constant in `FeaturesConfiguration`).
   - Runs `userFanOut.forEachActiveUser`. For each user it calls `DayReviewService.assemble(user,
@@ -49,8 +49,8 @@ the day view's evening "most érdemes" card.
   catch-up window, regenerates the review exactly once. This is the owner's "egyszer újraírjuk".
 - **Budget.** Add `day_review` to the LLM budget `throttled-features` list. The slug must match
   `LlmCallContext`'s first argument exactly.
-- **Ordering.** 03:00 runs after the post-midnight chain (quest 00:05, habit 00:10, life-goal
-  00:20) that writes XP and habit completions into `DayInputs`, and before graph (03:20) and
+- **Ordering.** 02:50 runs after the post-midnight chain (quest 00:05, habit 00:10, life-goal
+  00:20) that writes XP and habit completions into `DayInputs`, and before SUN hypotheses (03:00), graph (03:20) and
   reflection (03:40). The scheduler pool is 4.
 - **States already exist.** `scored` / `thin` / `empty` / `future` / `in_progress` stay as they
   are. `thin` and `empty` render the honest "kevés az adat" page instead of an empty shell.
@@ -117,10 +117,10 @@ From top to bottom:
 
 ### 4. Live today (frontend)
 
-- **Invalidate on log.** Every logging mutation that feeds `DayInputs` also invalidates
-  `['dayEvaluation', today]` and `['meWeek', mondayOf(today)]`. That covers fuel meal and quick
-  log, workout finish and sport log, check-in, sleep, weight, water and habit ticks. Use one
-  shared helper (`invalidateTodayDay(queryClient)`) so the list lives in one place.
+- **Invalidate on log.** The global `MutationCache.onSuccess` calls `invalidateTodayDay(client)`,
+  which invalidates `['dayEvaluation', today]` and `['meWeek', monday]`. Every successful write
+  can move a day input, so no individual logging mutation has to be wired by hand. Invalidation
+  refetches only active queries.
 - **Poll while open.** `useDayEvaluation` gets `refetchInterval: 60_000` for today only, in
   real mode only (the precedent is `feedHooks.ts:45`). Mock mode keeps `staleTime: Infinity`.
 - **"Frissült hh:mm".** This is the query's `dataUpdatedAt`. When a value changes on refetch,
