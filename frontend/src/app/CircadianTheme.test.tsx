@@ -9,7 +9,8 @@ import { QueryWrapper } from '@/test/queryWrapper'
 const renderIt = () =>
   render(
     <QueryWrapper>
-      <ThemeProvider>
+      {/* The circadian resolver is parked behind the dark-only lock (mezo-me75u.1). */}
+      <ThemeProvider lock={null}>
         <CircadianTheme />
       </ThemeProvider>
     </QueryWrapper>,

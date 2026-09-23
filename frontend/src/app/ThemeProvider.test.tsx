@@ -26,7 +26,9 @@ function Probe() {
     </div>
   )
 }
-const renderProbe = () => render(<ThemeProvider><Probe /></ThemeProvider>)
+// The light/auto/claim machinery is PARKED behind the dark-only lock (üveg bible §8,
+// mezo-me75u.1); these tests exercise it with the lock lifted (`lock={null}`).
+const renderProbe = () => render(<ThemeProvider lock={null}><Probe /></ThemeProvider>)
 
 describe('ThemeProvider (mode API, mezo-d71m)', () => {
   beforeEach(() => localStorage.clear())
@@ -83,17 +85,42 @@ describe('ThemeProvider (mode API, mezo-d71m)', () => {
       return <><Owner theme={a} /><Owner theme={b} /></>
     }
     const { rerender } = render(
-      <ThemeProvider><Two a="dark" b={null} /></ThemeProvider>,
+      <ThemeProvider lock={null}><Two a="dark" b={null} /></ThemeProvider>,
     )
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
 
     // The second owner claims, then the first releases — the override must survive.
-    rerender(<ThemeProvider><Two a="dark" b="dark" /></ThemeProvider>)
-    rerender(<ThemeProvider><Two a={null} b="dark" /></ThemeProvider>)
+    rerender(<ThemeProvider lock={null}><Two a="dark" b="dark" /></ThemeProvider>)
+    rerender(<ThemeProvider lock={null}><Two a={null} b="dark" /></ThemeProvider>)
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
 
     // Only when the LAST claim goes does the user's real preference come back.
-    rerender(<ThemeProvider><Two a={null} b={null} /></ThemeProvider>)
+    rerender(<ThemeProvider lock={null}><Two a={null} b={null} /></ThemeProvider>)
     expect(document.documentElement.getAttribute('data-theme')).toBeNull()
+  })
+})
+
+describe('ThemeProvider dark-only lock (üveg bible §8, mezo-me75u.1)', () => {
+  beforeEach(() => localStorage.clear())
+  afterEach(() => document.documentElement.removeAttribute('data-theme'))
+
+  test('the app resolves to dark by default — no stored mode, auto, daytime', () => {
+    render(<ThemeProvider><Probe /></ThemeProvider>)
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+    expect(screen.getByTestId('state')).toHaveTextContent('auto/dark')
+  })
+
+  test('a stored light preference is kept (parked) but not applied', () => {
+    localStorage.setItem('mezo-theme', 'light')
+    render(<ThemeProvider><Probe /></ThemeProvider>)
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+    fireEvent.click(screen.getByText('mode-light'))
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+    expect(localStorage.getItem('mezo-theme')).toBe('light')
+  })
+
+  test('a light force claim cannot break the lock', () => {
+    render(<ThemeProvider><Owner theme="light" /></ThemeProvider>)
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
   })
 })

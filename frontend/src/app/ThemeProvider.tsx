@@ -2,7 +2,7 @@ import {
   createContext, useCallback, useContext, useEffect, useId, useState, type ReactNode,
 } from 'react'
 import {
-  applyTheme, DEFAULT_MODE, readStoredMode, writeStoredMode, type Theme, type ThemeMode,
+  applyTheme, DEFAULT_MODE, readStoredMode, THEME_LOCK, writeStoredMode, type Theme, type ThemeMode,
 } from '@/shared/lib/theme'
 
 interface ThemeContextValue {
@@ -24,7 +24,12 @@ interface ThemeContextValue {
 interface ForceClaim { id: string, theme: Theme }
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
+export function ThemeProvider({ children, lock = THEME_LOCK }: {
+  children: ReactNode
+  /** The dark-only lock (bible §8). Defaults to the app-wide `THEME_LOCK`; `null` runs the
+   *  parked light/auto/claim machinery (its own tests pass `null`). */
+  lock?: Theme | null
+}) {
   const [mode, setModeState] = useState<ThemeMode>(() => readStoredMode() ?? DEFAULT_MODE)
   // Light until the circadian resolver reports in — matches the CSS base theme (no attribute).
   const [autoTheme, setAutoTheme] = useState<Theme>('light')
@@ -37,7 +42,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [claims, setClaims] = useState<ForceClaim[]>([])
   const resolved: Theme = mode === 'auto' ? autoTheme : mode
   // The topmost claim wins when any is held; otherwise the normal mode/circadian resolution.
-  const theme: Theme = claims.length > 0 ? claims[claims.length - 1].theme : resolved
+  const claimed: Theme = claims.length > 0 ? claims[claims.length - 1].theme : resolved
+  // The dark-only lock outranks everything: the stored mode is still read and persisted (so
+  // lifting the lock restores each user's own choice), it just isn't applied.
+  const theme: Theme = lock ?? claimed
 
   // Persist only the real preference — the transient override must never be written to storage.
   useEffect(() => { writeStoredMode(mode) }, [mode])

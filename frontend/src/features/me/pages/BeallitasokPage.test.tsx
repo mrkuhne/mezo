@@ -43,12 +43,13 @@ function renderPage() {
   )
 }
 
-test('a Téma választó helyben él az oldalon és átbillenti a data-theme-et', async () => {
+// Üvegesítés (mezo-me75u.1, bible §8): the app is dark-only — the theme picker is hidden
+// (its code is parked) and the page renders dark whatever the stored preference says.
+test('a sötét zár alatt nincs Téma választó, és az oldal sötét', async () => {
   renderPage()
-  expect(await screen.findByText('Téma')).toBeInTheDocument()
-  // Manual light => no attribute (light is the CSS base); choosing Sötét flips to dark.
-  expect(document.documentElement.getAttribute('data-theme')).toBeNull()
-  await userEvent.click(screen.getByRole('button', { name: /Sötét/ }))
+  expect(await screen.findByText('Fiók')).toBeInTheDocument()
+  expect(screen.queryByText('Téma')).toBeNull()
+  expect(screen.queryByRole('button', { name: /Sötét/ })).toBeNull()
   expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
 })
 

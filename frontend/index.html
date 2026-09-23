@@ -9,7 +9,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#FBF6EF" />
+    <meta name="theme-color" content="#191614" />
     <!-- Installed-PWA chrome (mezo-cp8w → status bar): on Android + Safari-browser the
          dynamic `theme-color` meta (applyTheme in shared/lib/theme.ts) already tints the
          system bar per theme. iOS home-screen PWAs ignore theme-color, so the OS status
@@ -31,9 +31,12 @@
       (function () {
         var t = null
         try { t = localStorage.getItem('mezo-theme') } catch (e) {}
-        /* Napív: light is the CSS base (no attribute). Only an explicit stored 'dark'
-           adds data-theme="dark". Invalid/missing values fall through to light. */
-        if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark')
+        /* Üvegesítés dark-only lock (bible §8, mezo-me75u.1): the app always boots dark, so the
+           first paint never flashes light. THEME_LOCK in shared/lib/theme.ts is the same lock;
+           the parked light path (only an explicit stored 'dark' set the attribute) returns
+           when both are lifted. */
+        var locked = true
+        if (locked || t === 'dark') document.documentElement.setAttribute('data-theme', 'dark')
       })()
     </script>
   </head>

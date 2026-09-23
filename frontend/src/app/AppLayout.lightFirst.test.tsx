@@ -29,10 +29,11 @@ afterEach(() => {
   document.documentElement.removeAttribute('data-theme')
 })
 
-function renderAt(path: string) {
+function renderAt(path: string, lock: 'dark' | null = null) {
   return render(
     <QueryWrapper>
-      <ThemeProvider>
+      {/* `lock={null}`: the parked light path — AppLayout itself must never force a theme. */}
+      <ThemeProvider lock={lock}>
         <MemoryRouter initialEntries={[path]}>
           <Routes>
             <Route element={<AppLayout />}>
@@ -70,6 +71,14 @@ test.each(FORMERLY_TITAN)('%s a felhasználó világos beállítását tartja, n
   localStorage.setItem('mezo-theme', 'light')
   renderAt(path)
   expect(document.documentElement.getAttribute('data-theme')).not.toBe('dark')
+})
+
+// Üvegesítés (mezo-me75u.1): a sötét zár az app ALAPÁLLAPOTA — a tárolt világos beállítás
+// megmarad, de nem érvényesül. A zár a téma-szolgáltatóé, nem a shellé (a fenti teszt).
+test.each(FORMERLY_TITAN)('%s a sötét zár alatt sötét, világos beállítás mellett is', path => {
+  localStorage.setItem('mezo-theme', 'light')
+  renderAt(path, 'dark')
+  expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
 })
 
 // A chrome-kapuk (hideChrome/hideFab) FÜGGETLENEK a bőrtől, és a keep-listán vannak —

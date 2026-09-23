@@ -36,6 +36,8 @@ function stubReduced() {
   }))
 }
 
+// The force-claim stack is parked behind the dark-only lock (üveg bible §8, mezo-me75u.1):
+// these tests exercise it with the lock lifted.
 beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   localStorage.clear()
@@ -53,7 +55,7 @@ afterEach(() => {
 
 test('a /nap felől érkező Napzárás rituálé sötét marad világos beállítás mellett is', async () => {
   const router = createMemoryRouter(routes, { initialEntries: ['/nap'] })
-  render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
+  render(<QueryWrapper><ThemeProvider lock={null}><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
   // A shellnek már NINCS saját sötét igénye: a Nap a beállított világos témán indul.
   expect(document.documentElement.getAttribute('data-theme')).not.toBe('dark')
 
@@ -66,7 +68,7 @@ test('a /nap felől érkező Napzárás rituálé sötét marad világos beáll�
 // A kontroll-útvonal a /me: a rituáléból kilépve a felhasználó saját beállítása tér vissza.
 test('a rituáléból kilépve a világos beállítás visszatér (a /me nem sötét)', async () => {
   const router = createMemoryRouter(routes, { initialEntries: ['/nap'] })
-  render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
+  render(<QueryWrapper><ThemeProvider lock={null}><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
   await act(async () => { await router.navigate('/ritual') })
   expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
 
