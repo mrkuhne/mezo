@@ -43,6 +43,16 @@ test('the sprite carries the U5 Terv icons', () => {
   }
 })
 
+// U6 (mezo-me75u.6): the Én I icons the owner approved on prototypes/uveg-en.html#ikonok —
+// the Értelem life dimension, the goal signal sources, the weekly discoveries, and the two
+// night-mode tools (guided breathing, the 20-minute get-up rule).
+test('the sprite carries the U6 Én icons', () => {
+  const ids = symbolIds()
+  for (const id of ['t-compass', 't-signal', 't-lens', 't-breath', 't-candle'] satisfies Icon3DName[]) {
+    expect(ids, id).toContain(id)
+  }
+})
+
 test('every symbol is 64×64 art (Icon3D renders viewBox 0 0 64 64)', () => {
   const { container } = render(<ClaySprites />)
   const syms = container.querySelectorAll('symbol[id^="t-"]')
