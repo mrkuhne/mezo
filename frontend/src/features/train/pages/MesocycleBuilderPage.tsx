@@ -68,8 +68,8 @@ export function MesocycleBuilderPage() {
   if (!meso) {
     return (
       <MozaikPage tone="coral">
-        <PageHead onBack={backToLibrary} label="‹ Mezociklus" />
-        <PageBody>
+        <PageHead glass onBack={backToLibrary} label="Mezociklus" />
+        <PageBody className="tv-run">
           <p className="text-secondary" style={{ fontSize: 13 }}>
             Ez a mesociklus nem található.
           </p>
@@ -104,12 +104,12 @@ export function MesocycleBuilderPage() {
 
   return (
     <MozaikPage tone="coral">
-      <PageHead onBack={backToLibrary} label="‹ Mezociklus" />
+      <PageHead glass onBack={backToLibrary} label="Mezociklus" />
       <EntranceGroup>
-        <PageHero icon="i-meso" name={meso.title} sub={sub} />
-        <PageBody>
+        <PageHero art="t-peak" accent="var(--dv-coral)" name={meso.title} sub={sub} />
+        <PageBody className="tv-run">
           {active && (
-            <div className="mz-card rise" style={{ ...delay(30), padding: '10px 12px' }}>
+            <div className="mz-card glass rise" style={{ ...delay(30), padding: '10px 12px' }}>
               <div className="row" style={{ alignItems: 'center', gap: 8 }}>
                 <span className="mz-eyebrow mz-grow">A blokk íve</span>
                 <span className="mz-phchip">{phase}</span>
@@ -131,7 +131,7 @@ export function MesocycleBuilderPage() {
           )}
 
           {decider && (
-            <div className="mz-coach rise" style={delay(60)}>
+            <div className="mz-coach glass rise" style={delay(60)}>
               <span className="dot" aria-hidden="true" />
               <span>{decider}</span>
             </div>
@@ -141,6 +141,7 @@ export function MesocycleBuilderPage() {
             <div style={{ marginTop: 11 }}>
               <Mosaic>
                 <Tile
+                  className="glass"
                   wash="coral"
                   eyebrow="Heti vizsgálat"
                   delayMs={90}
@@ -164,7 +165,7 @@ export function MesocycleBuilderPage() {
                 </Tile>
                 {/* A FORECAST, not a destination — the rollover runs on its own, so this
                     tile deliberately has no onClick (prototype: cursor:default). */}
-                <Tile wash="sage" eyebrow="Hétfőn jön" delayMs={120}>
+                <Tile className="glass" wash="sage" eyebrow="Hétfőn jön" delayMs={120}>
                   <span className="mz-rollchips">
                     {/* Five muscles, then a „+N" — the tile is a forecast at a glance, and a
                         10-muscle block wrapped it into an unreadable chip wall. */}
