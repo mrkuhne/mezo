@@ -365,6 +365,10 @@ mezo:
     # LLM-calling character beans (Slice 2+) additionally require the companion switch.
     character:
       enabled: true
+    # Esti kiadás (mezo-a9bo7 H1, csapatfal) — a napi csapat-üzenőfal összefoglaló; needs the
+    # character + companion switches too (the collector reads companion/proactive sources).
+    team-edition:
+      enabled: true
     # Gamified growth E1 (ADR 0010) — daily quests (catalog-driven, derived completion).
     # Off => the /api/quest surface 404s and no quest beans exist.
     quest:
@@ -2075,7 +2079,8 @@ mezo:
       # Local preparation time and retry tick; never run before ready-at.
       cron: "0 */15 * * * *"
       zone: Europe/Budapest
-      ready-at: "05:15"
+      # Esti kiadás (mezo-a9bo7, ADR 0052): a konzílium és a kiadás 21:00-tól fut
+      ready-at: "21:00"
       # Recover two recent editions; bound topics and abandoned lease duration.
       catch-up-days: 2
       max-topics: 6

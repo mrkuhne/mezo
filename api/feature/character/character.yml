@@ -205,6 +205,41 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/character/edition:
+    get:
+      tags: [Character]
+      operationId: getTeamEditions
+      summary: >-
+        The esti kiadás timeline over an inclusive day window (csapatfal H1, mezo-a9bo7.12):
+        one row per day an edition was generated, each with its ranked posts — a day with no
+        row means no edition was generated for it (honest "nincs adat" — never fabricated)
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Editions, newest day first (possibly empty — never a 404)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TeamEdition' }
+        '400':
+          description: to before from, or the span exceeds 62 days
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/character/run/{runId}:
     get:
       tags: [Character]
@@ -754,7 +789,7 @@ components:
       required: [id, kind, day, observationCount, callCount, detectorKeys, expertKeys]
       properties:
         id: { type: string, format: uuid }
-        kind: { type: string, enum: [NIGHTLY, WEEKLY, MONTHLY, BOOTSTRAP] }
+        kind: { type: string, enum: [NIGHTLY, WEEKLY, MONTHLY, BOOTSTRAP, EDITION] }
         day:
           type: string
           format: date
@@ -817,3 +852,32 @@ components:
         observations:
           type: array
           items: { $ref: '#/components/schemas/CharacterRunObservation' }
+    TeamEdition:
+      type: object
+      required: [day, status, posts]
+      properties:
+        day: { type: string, format: date }
+        status: { type: string, enum: [PUBLISHED, QUIET] }
+        posts: { type: array, items: { $ref: '#/components/schemas/TeamEditionPost' } }
+    TeamEditionPost:
+      type: object
+      required: [rank, characterKey, genre, sourceKind, sourceId, sourceRoute, body, voiced, guests]
+      properties:
+        rank: { type: integer, minimum: 1, maximum: 6 }
+        characterKey: { type: string, enum: [szunya, mocor, falat, deru, mezo] }
+        genre: { type: string, enum: [megfigyeles, sejtes, kerdes, kiserlet, elorejelzes, konzilium, keres, ertekeles] }
+        sourceKind: { type: string, enum: [pattern, pair, prediction, experiment, konzilium] }
+        sourceId: { type: string }
+        sourceRoute: { type: string }
+        title: { type: string, nullable: true }
+        body: { type: string }
+        voiced: { type: boolean }
+        guests:
+          type: array
+          items:
+            type: object
+            required: [characterKey, body, voiced]
+            properties:
+              characterKey: { type: string, enum: [szunya, mocor, falat, deru, mezo, szkeptikus] }
+              body: { type: string }
+              voiced: { type: boolean }

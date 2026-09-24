@@ -13,6 +13,8 @@ import io.mrkuhne.mezo.api.dto.CharacterOverviewResponse;
 import io.mrkuhne.mezo.api.dto.CharacterRunResponse;
 import io.mrkuhne.mezo.api.dto.CharacterRunSummary;
 import io.mrkuhne.mezo.api.dto.ConferenceSkepticVerdict;
+import io.mrkuhne.mezo.api.dto.TeamEdition;
+import io.mrkuhne.mezo.api.dto.TeamEditionPost;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterObservationEntity;
@@ -20,13 +22,20 @@ import io.mrkuhne.mezo.feature.character.entity.CharacterRunEntity;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceTranscriptEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.EditionFactsEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.EditionGuestsEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.EditionRefsEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ObservationDimensionKeysEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ObservationSignalsEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.RunDetectorKeysEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.RunExpertKeysEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.TeamEditionEntity;
+import io.mrkuhne.mezo.feature.character.entity.TeamEditionPostEntity;
 import io.mrkuhne.mezo.feature.character.repository.CharacterConferenceRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterObservationRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterRunRepository;
+import io.mrkuhne.mezo.feature.character.repository.TeamEditionPostRepository;
+import io.mrkuhne.mezo.feature.character.repository.TeamEditionRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import java.math.BigDecimal;
@@ -48,6 +57,12 @@ class CharacterApiIT extends ApiIntegrationTest {
 
     @Autowired
     private CharacterRunRepository runRepository;
+
+    @Autowired
+    private TeamEditionRepository editionRepository;
+
+    @Autowired
+    private TeamEditionPostRepository editionPostRepository;
 
     @Autowired
     private DatabasePopulator databasePopulator;
@@ -255,6 +270,86 @@ class CharacterApiIT extends ApiIntegrationTest {
         String body = getForBody("/api/character/runs?from=2026-01-01&to=2026-12-31",
                 ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
         assertHasRequestError(body, "CHARACTER_RUN_RANGE_INVALID");
+    }
+
+    private TeamEditionEntity saveEdition(UUID owner, LocalDate day) {
+        TeamEditionEntity edition = new TeamEditionEntity();
+        edition.setCreatedBy(owner);
+        edition.setDay(day);
+        edition.setStatus("PUBLISHED");
+        edition.setGeneratedAt(Instant.now());
+        return editionRepository.saveAndFlush(edition);
+    }
+
+    private TeamEditionPostEntity savePost(UUID owner, UUID editionId, int rank, String characterKey) {
+        TeamEditionPostEntity post = new TeamEditionPostEntity();
+        post.setCreatedBy(owner);
+        post.setEditionId(editionId);
+        post.setRank((short) rank);
+        post.setCharacterKey(characterKey);
+        post.setGenre("megfigyeles");
+        post.setSourceKind("pattern");
+        post.setSourceId("pattern-" + rank);
+        post.setSourceRoute("/mezo/patterns/pattern-" + rank);
+        post.setTitle(null);
+        post.setBody("Poszt " + rank);
+        post.setVoiced(false);
+        post.setFacts(new EditionFactsEnvelope(List.of("tény " + rank)));
+        post.setRefs(new EditionRefsEnvelope(List.of()));
+        post.setGuests(new EditionGuestsEnvelope(List.of()));
+        return editionPostRepository.saveAndFlush(post);
+    }
+
+    @Test
+    void edition_rangeQuery_ordersDayDesc_andPostsRankAsc() {
+        UUID owner = ownerId();
+        LocalDate day1 = LocalDate.of(2026, 9, 10);
+        LocalDate day2 = LocalDate.of(2026, 9, 12);
+        TeamEditionEntity edition1 = saveEdition(owner, day1);
+        savePost(owner, edition1.getId(), 2, "mocor");
+        savePost(owner, edition1.getId(), 1, "szunya");
+        saveEdition(owner, day2); // QUIET-ish: no posts saved, but status stays PUBLISHED here
+
+        TeamEdition[] editions = getForBody(
+                "/api/character/edition?from=2026-09-01&to=2026-09-30",
+                ownerAuthHeaders(), HttpStatus.OK, TeamEdition[].class);
+        assertThat(editions).hasSize(2);
+        assertThat(editions[0].getDay()).isEqualTo(day2); // newest day first
+        assertThat(editions[0].getPosts()).isEmpty();
+        assertThat(editions[1].getDay()).isEqualTo(day1);
+        assertThat(editions[1].getPosts()).hasSize(2);
+        assertThat(editions[1].getPosts().get(0).getRank()).isEqualTo(1);
+        assertThat(editions[1].getPosts().get(0).getCharacterKey())
+                .isEqualTo(TeamEditionPost.CharacterKeyEnum.SZUNYA);
+        assertThat(editions[1].getPosts().get(1).getRank()).isEqualTo(2);
+        assertThat(editions[1].getPosts().get(1).getCharacterKey())
+                .isEqualTo(TeamEditionPost.CharacterKeyEnum.MOCOR);
+
+        TeamEdition[] outsideWindow = getForBody(
+                "/api/character/edition?from=2026-10-01&to=2026-10-31",
+                ownerAuthHeaders(), HttpStatus.OK, TeamEdition[].class);
+        assertThat(outsideWindow).isEmpty();
+    }
+
+    @Test
+    void edition_spanExceeds62Days_400() {
+        String body = getForBody("/api/character/edition?from=2026-01-01&to=2026-12-31",
+                ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(body, "CHARACTER_RUN_RANGE_INVALID");
+    }
+
+    @Test
+    void runs_withAnEditionRow_200NotAFailure() {
+        UUID owner = ownerId();
+        LocalDate day = LocalDate.of(2026, 9, 15);
+        saveRun(owner, "EDITION", day, null);
+
+        CharacterRunSummary[] runs = getForBody(
+                "/api/character/runs?from=2026-09-01&to=2026-09-30",
+                ownerAuthHeaders(), HttpStatus.OK, CharacterRunSummary[].class);
+        assertThat(runs).hasSize(1);
+        assertThat(runs[0].getKind()).isEqualTo(CharacterRunSummary.KindEnum.EDITION);
+        assertThat(runs[0].getDay()).isEqualTo(day);
     }
 
     @Test

@@ -18,7 +18,13 @@ import type {
   CharacterRunSummary,
   ConferenceThread,
   ConferenceTurn,
+  TeamEdition,
 } from '@/data/character/characterApi'
+// The esti kiadás mock (csapatfal H1, mezo-a9bo7.12) reuses EXISTING mock-seed records — never
+// an invented pattern/prediction/experiment — so its posts stay honest with the rest of the mock
+// world (the insights hooks' own MOCK_PATTERNS/predictions/experiments read from these same
+// arrays).
+import { experiments as insightExperiments, patterns as insightPatterns, predictions as insightPredictions } from '@/data/insights/insights'
 
 // conf tier -> a representative number that maps back to the same word via confidenceWord().
 const BIZTOS = 0.8
@@ -1423,13 +1429,36 @@ const BOOTSTRAP_RUN: CharacterRunSummary = {
 
 const BOOTSTRAP_DETAIL: CharacterRunResponse = { summary: BOOTSTRAP_RUN, observations: [] }
 
+// EDITION (csapatfal H1, mezo-a9bo7.12, Task 6) — CharacterRunLog.record always writes EDITION
+// rows as status SUCCESS, callCount 0, detectorKeys [] (not detector-driven, like WEEKLY/MONTHLY/
+// BOOTSTRAP); observationCount is the published post count (TeamEditionService's `ranked.size()`)
+// — derived from MOCK_EDITIONS' own post count so it can never drift.
+const EDITION_RUN: CharacterRunSummary = {
+  id: 'run-edition-1',
+  kind: 'EDITION',
+  day: '2026-08-30', // MOCK_EDITIONS[0].day — a plain literal here avoids a forward reference
+  status: 'SUCCESS',
+  failureCount: 0,
+  observationCount: 3, // MOCK_EDITIONS[0].posts.length
+  callCount: 0,
+  detectorKeys: [],
+  // Distinct posting characterKeys from MOCK_EDITIONS[0].posts (falat, mocor, mocor) — mirrors
+  // TeamEditionService.run's `ranked.stream().map(c -> c.character().key()).distinct().toList()`
+  // (fix round, mezo-a9bo7.12: this used to be a bare [], which starved RunPage's "Posztoló
+  // karakterek" chips of any real data in mock mode).
+  expertKeys: ['falat', 'mocor'],
+  conferenceId: null,
+}
+
 /** The full run-log seed — 21 nightly rows (Aug 10–30, incl. quiet nights) + one WEEKLY, one
- *  MONTHLY, one BOOTSTRAP, newest day first (mirrors the backend's day-desc ordering). */
+ *  MONTHLY, one BOOTSTRAP, one EDITION, newest day first (mirrors the backend's day-desc
+ *  ordering). */
 export const MOCK_RUNS: CharacterRunSummary[] = [
   ...MOCK_RUNS_NIGHTLY,
   WEEKLY_RUN,
   MONTHLY_RUN,
   BOOTSTRAP_RUN,
+  EDITION_RUN,
 ].sort((a, b) => (a.day < b.day ? 1 : a.day > b.day ? -1 : 0))
 
 export const MOCK_RUN_DETAIL: Record<string, CharacterRunResponse> = {
@@ -1437,6 +1466,10 @@ export const MOCK_RUN_DETAIL: Record<string, CharacterRunResponse> = {
   'run-w2': WEEKLY_DETAIL,
   'run-m1': MONTHLY_DETAIL,
   'run-b0': BOOTSTRAP_DETAIL,
+  // observations stays empty: EDITION runs don't carry SignalChainCard-shaped observations — the
+  // run's own content is its posts, surfaced on CharacterFeedPage/MOCK_EDITIONS (fix round,
+  // mezo-a9bo7.12).
+  'run-edition-1': { summary: EDITION_RUN, observations: [] },
 }
 
 // The social fixture reuses an existing stored debate, with its exact author and comments.
@@ -1466,3 +1499,81 @@ export const MOCK_CLAIM_REVISIONS: Record<string, CharacterClaimRevisionDto[]> =
     reason: SOCIAL_PROPOSAL.chair?.reason ?? '',
   }],
 }
+
+// ============================================================
+// Esti kiadás (csapatfal H1, mezo-a9bo7.12, Task 6) — ONE edition on the mock world's "today"
+// (the newest seeded nightly day, MOCK_RUNS_NIGHTLY's last entry — 2026-08-30), 3 posts that
+// each point at an EXISTING mock-seed record (never a fabricated one): a pattern, a resolved
+// prediction, an active experiment. `body` is that record's own mock text; `voiced` is false
+// everywhere (H1 ships the raw candidate text — see TeamEditionService's class javadoc, H3
+// replaces it with the character-voiced text).
+// ============================================================
+const EDITION_DAY = MOCK_RUNS_NIGHTLY[MOCK_RUNS_NIGHTLY.length - 1].day // '2026-08-30'
+
+const EDITION_PATTERN = insightPatterns.find((p) => p.id === 'p1')!
+const EDITION_PREDICTION = insightPredictions.find((p) => p.id === 'pred3')!
+const EDITION_EXPERIMENT = insightExperiments.find((e) => e.id === 'exp1')!
+
+// Fix round (mezo-a9bo7.12): the mock used to disagree with what the backend actually produces
+// (controller ruling — the backend is the truth, the plan's "minta pairKey" meant the ROUTE, not
+// sourceId). Corrected against EditionCandidateCollector/EditionSelector:
+//  · sourceKind is lowercase (`pattern`/`prediction`/`experiment`, api/feature/character/
+//    character.yml's TeamEditionPost.sourceKind enum) — the backend's own SOURCE_* constants.
+//  · a pattern's sourceId is its OWN id (`pattern.getId()`), never the pairKey — the pairKey only
+//    ever appears in sourceRoute (`/mezo/patterns/{pairKey}`).
+//  · genre follows the pattern's status: EDITION_PATTERN (p1) is `confirmed` -> MEGFIGYELES
+//    (`sejtes` is the DIFFERENT source, a gathering monitor PAIR, sor 3 — never a pattern's genre).
+//  · a prediction candidate is ALWAYS `elorejelzes` (predictionCandidate() hardcodes EditionGenre.
+//    ELOREJELZES) — `ertekeles` is a genre no collector method ever emits.
+//  · characterKey mirrors metricADomain (pattern) / the FE team registry's domain routing: p1's
+//    pairKey `sport-load~next-sleep-quality` leads with the train-domain metric -> Mocor; exp1
+//    (glikogén-feltöltés, a fuel-domain hypothesis) -> Falat, matching TeamCharacter.
+//    forMetricDomain('fuel'). pred3's own metric (RPE, a training-intensity number) is the same
+//    train domain as the pattern's -> Mocor, per TeamCharacter.forMetricDomain('train').
+//  · rank order follows EditionSelector.score: waiting patterns (proposed, +100) > kiserlet (70)
+//    > elorejelzes (60) > megfigyeles (50); none of these three is `waiting`, so a confirmed
+//    pattern (50) sits below the experiment (70) and the prediction (60).
+export const MOCK_EDITIONS: TeamEdition[] = [
+  {
+    day: EDITION_DAY,
+    status: 'PUBLISHED',
+    posts: [
+      {
+        rank: 1,
+        characterKey: 'falat',
+        genre: 'kiserlet',
+        sourceKind: 'experiment',
+        sourceId: EDITION_EXPERIMENT.id,
+        sourceRoute: `/mezo/experiments/${EDITION_EXPERIMENT.id}`,
+        title: EDITION_EXPERIMENT.title,
+        body: EDITION_EXPERIMENT.hypothesis,
+        voiced: false,
+        guests: [],
+      },
+      {
+        rank: 2,
+        characterKey: 'mocor',
+        genre: 'elorejelzes',
+        sourceKind: 'prediction',
+        sourceId: EDITION_PREDICTION.id,
+        sourceRoute: `/mezo/predictions/${EDITION_PREDICTION.id}`,
+        title: EDITION_PREDICTION.title,
+        body: EDITION_PREDICTION.actual ?? EDITION_PREDICTION.basis ?? '',
+        voiced: false,
+        guests: [],
+      },
+      {
+        rank: 3,
+        characterKey: 'mocor',
+        genre: 'megfigyeles',
+        sourceKind: 'pattern',
+        sourceId: EDITION_PATTERN.id,
+        sourceRoute: `/mezo/patterns/${EDITION_PATTERN.pairKey}`,
+        title: EDITION_PATTERN.title,
+        body: EDITION_PATTERN.mechanism,
+        voiced: false,
+        guests: [],
+      },
+    ],
+  },
+]

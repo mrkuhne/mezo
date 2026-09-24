@@ -244,10 +244,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CharacterCouncilEditionEntity`→`character_council_edition`, `CharacterDimensionEntity`→`character_dimension`,
     `CharacterObservationEntity`→`character_observation`,
     `CharacterPortraitRevisionEntity`→`character_portrait_revision`, `CharacterReplyEntity`→`character_reply`,
-    `CharacterRunEntity`→`character_run`
+    `CharacterRunEntity`→`character_run`, `TeamEditionEntity`→`team_edition`,
+    `TeamEditionPostEntity`→`team_edition_post`
   - **repositories:** `CharacterClaimRepository`, `CharacterClaimRevisionRepository`, `CharacterConferenceRepository`,
     `CharacterCouncilEditionRepository`, `CharacterDimensionRepository`, `CharacterObservationRepository`,
-    `CharacterPortraitRevisionRepository`, `CharacterReplyRepository`, `CharacterRunRepository`
+    `CharacterPortraitRevisionRepository`, `CharacterReplyRepository`, `CharacterRunRepository`,
+    `TeamEditionPostRepository`, `TeamEditionRepository`
   - **services:** `CharacterBootstrapService`, `CharacterClaimRevisionService`, `CharacterConferenceJob`,
     `CharacterConferenceService`, `CharacterConfidenceWords`, `CharacterCoreCatalog`, `CharacterCouncilBudget`,
     `CharacterCouncilEvidenceTools`, `CharacterCouncilJob`, `CharacterCouncilPeriodTools`,
@@ -269,23 +271,25 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ClaimFeedbackEnvelope`, `ClaimRevisionSnapshot`, `ComfortEatingDetector`, `ConferenceDeliberationEnvelope`,
     `ConferenceOutcomeEnvelope`, `ConferenceTranscriptEnvelope`, `DecisionProfileDetector`,
     `DecisionReviewBacklogDetector`, `DetectorGates`, `DetectorInput`, `DetectorRegistry`, `DetectorSignal`,
-    `ExperimentOutcomeLedgerDetector`, `GratitudeFocusDetector`, `HrRecoveryTrendDetector`,
-    `HydrationConsistencyDetector`, `JournalNoteDetector`, `JournalSilenceDetector`,
-    `KnowledgeRejectionPatternDetector`, `LateEatingPatternDetector`, `LoggingGapDetector`, `MacroAdherenceDetector`,
-    `MedCycleCovarianceDetector`, `MentionContextShiftDetector`, `MesoAdherenceDetector`,
+    `EditionCandidate`, `EditionCandidateCollector`, `EditionFactsEnvelope`, `EditionGenre`, `EditionGuestsEnvelope`,
+    `EditionRef`, `EditionRefsEnvelope`, `EditionSelector`, `ExperimentOutcomeLedgerDetector`,
+    `GratitudeFocusDetector`, `HrRecoveryTrendDetector`, `HydrationConsistencyDetector`, `JournalNoteDetector`,
+    `JournalSilenceDetector`, `KnowledgeRejectionPatternDetector`, `LateEatingPatternDetector`, `LoggingGapDetector`,
+    `MacroAdherenceDetector`, `MedCycleCovarianceDetector`, `MentionContextShiftDetector`, `MesoAdherenceDetector`,
     `NeedsDomainImbalanceDetector`, `NiggleMapDetector`, `NightActivityDetector`, `ObservationDimensionKeysEnvelope`,
-    `ObservationSignalsEnvelope`, `PeopleMoodLinkDetector`, `PredictionCalibrationDetector`,
+    `ObservationSignalsEnvelope`, `PeopleMoodLinkDetector`, `PredictionCalibrationDetector`, `PriorShowing`,
     `ProgressionAdherenceDetector`, `PromiseVsDeliveryDetector`, `ProteinTrainingMismatchDetector`,
     `QuestCompletionCalibrationDetector`, `RestartPatternDetector`, `RetroLoggingRatioDetector`,
     `RirCalibrationDetector`, `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`, `SelfCalibrationDetector`,
     `SleepPerformanceChainDetector`, `SportInterferenceDetector`, `StackSkipPatternDetector`,
-    `StreakBreakResponseDetector`, `TrailingWindow`, `UnderLoggingDetector`, `WeekendGapDetector`
-- **Contract** `api/feature/character/character.yml` — 16 operations
+    `StreakBreakResponseDetector`, `TeamCharacter`, `TeamEditionReads`, `TeamEditionService`, `TrailingWindow`,
+    `UnderLoggingDetector`, `WeekendGapDetector`
+- **Contract** `api/feature/character/character.yml` — 17 operations
   - **endpoints:** GET /api/character · GET /api/character/dimension/{key} · GET /api/character/experts ·
     GET /api/character/feed · POST /api/character/bootstrap · GET /api/character/conference ·
-    POST /api/character/conference · GET /api/character/runs · GET /api/character/run/{runId} ·
-    GET /api/character/conference/{conferenceId} · GET /api/character/replies · POST /api/character/replies ·
-    POST /api/character/replies/{replyId}/retry · GET /api/character/council ·
+    POST /api/character/conference · GET /api/character/runs · GET /api/character/edition ·
+    GET /api/character/run/{runId} · GET /api/character/conference/{conferenceId} · GET /api/character/replies ·
+    POST /api/character/replies · POST /api/character/replies/{replyId}/retry · GET /api/character/council ·
     GET /api/character/claims/{claimId}/revisions · POST /api/character/revisions/{revisionId}/undo
 - **FE data** `frontend/src/data/character`
   - **hooks (via `@/data/hooks`):** `useCharacterClaimRevisions`, `useCharacterCouncilStatus`, `useCharacterReplies`,
@@ -304,7 +308,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **logic:** conferencePostItem.ts
   - **root:** character.css, deliberationLabels.ts, deliberationStats.ts, dossierState.ts, expertColors.ts,
     feedDayLabel.ts, inventory.ts, runLabels.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 46 IT + 8 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 50 IT + 12 unit
   - **ITs:** `CharacterApiCompanionOffIT`, `CharacterApiIT`, `CharacterApiSwitchOffIT`, `CharacterBootstrapIT`,
     `CharacterBootstrapMemoryDisabledIT`, `CharacterBootstrapMemoryIT`, `CharacterClaimRevisionIT`,
     `CharacterClaimTemporalIT`, `CharacterConferenceJobIT`, `CharacterConferenceListIT`,
@@ -318,7 +322,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CharacterReplyCompanionOffIT`, `CharacterReplyDiscussionIT`, `CharacterReplyRecoveryIT`, `CharacterRunLogIT`,
     `CharacterSignalReadsIT`, `CharacterWeeklySynthesisIT`, `ClaimLifecycleIT`, `ConferenceDeliberationEnvelopeIT`,
     `KonziliumCrossTalkRoundIT`, `KonziliumProposalRoundIT`, `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`,
-    `PortraitWriterNameIT`
+    `PortraitWriterNameIT`, `TeamEditionReadsIT`, `TeamEditionSchemaIT`, `TeamEditionServiceIT`,
+    `TeamEditionServiceSwitchOffIT`
   - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `ChallengePopulator`,
     `CharacterClaimRevisionPopulator`, `CharacterCouncilPopulator`, `CharacterReplyPopulator`, `CheckInPopulator`,
     `DailySummaryPopulator`, `DatabasePopulator`, `ExperimentPopulator`, `GraphPopulator`, `JournalPopulator`,
@@ -574,7 +579,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/pantry.md](features/pantry.md) (updated 2026-09-23, done) ·
   [docs/features/recipe.md](features/recipe.md) (updated 2026-09-24, done) ·
   [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-24, done) ·
-  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-23, done)
+  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-24, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/fuel`
   - **entities→tables:** `FuelSettingsEntity`→`fuel_settings`, `MealSlotTemplateEntity`→`meal_slot_template`,
@@ -644,7 +649,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### gamification
 
 *BE + API + FE-data* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-09-18, done) ·
-  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-23, done)
+  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-24, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/gamification`
   - **entities→tables:** `CoinEventEntity`→`coin_event`, `GamificationProfileEntity`→`gamification_profile`,
@@ -916,7 +921,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-18, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-24, mixed) ·
   [docs/features/today.md](features/today.md) (updated 2026-09-24, mixed) ·
-  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-23, done) ·
+  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-24, done) ·
   [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-20, mixed)
 
 - **FE data** `frontend/src/data/me`
@@ -1404,7 +1409,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-24, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-20, done) ·
   [docs/features/train.md](features/train.md) (updated 2026-09-24, done) ·
-  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-23, done)
+  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-24, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
   - **sub-features:** `signal`

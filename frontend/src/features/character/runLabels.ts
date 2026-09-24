@@ -13,6 +13,7 @@ export const KIND_BADGE: Record<CharacterRunSummary['kind'], string> = {
   WEEKLY: 'HETI',
   MONTHLY: 'HAVI',
   BOOTSTRAP: 'BOOTSTRAP',
+  EDITION: 'kiadás',
 }
 
 export const KIND_LABEL: Record<CharacterRunSummary['kind'], string> = {
@@ -20,6 +21,7 @@ export const KIND_LABEL: Record<CharacterRunSummary['kind'], string> = {
   WEEKLY: 'Konzílium',
   MONTHLY: 'Havi mélyolvasás',
   BOOTSTRAP: 'Bootstrap',
+  EDITION: 'Esti kiadás',
 }
 
 export const QUIET_LEDE = 'Csendes éjszaka — egyetlen jel sem tüzelt, senkit sem hívtunk.'
@@ -91,6 +93,13 @@ export function runHeroLede(run: CharacterRunSummary, expertName: (key: string) 
     return `Havonta egyszer az egész eddigi képet újranézzük — ezúttal ${run.observationCount} `
       + 'állítást mérlegeltünk újra.'
   }
+  // EDITION (fix round, mezo-a9bo7.12): observationCount is the ranked post count the writer
+  // actually published (TeamEditionService.run's `ranked.size()`) — the same honest count
+  // runRowSubline already uses for this kind; never fall through to the BOOTSTRAP sentence.
+  if (run.kind === 'EDITION') {
+    if (run.observationCount === 0) return 'A mai esti kiadás csendes volt — nem került bele poszt.'
+    return `A mai esti kiadásba ${run.observationCount} poszt került.`
+  }
   return 'Ez volt az első nap — a csapat elolvasta a teljes addigi történetedet, és felépítette az '
     + `első portrékat (${run.observationCount} kezdő állítás).`
 }
@@ -109,6 +118,9 @@ export function runRowSubline(run: CharacterRunSummary): string {
   }
   if (run.kind === 'WEEKLY') return `${run.observationCount} megfigyelés feldolgozva`
   if (run.kind === 'MONTHLY') return `${run.observationCount} állítás újramérlegelve`
+  // EDITION: observationCount is the ranked post count the writer actually published
+  // (TeamEditionService.run's `ranked.size()`, csapatfal H1) — never a fabricated call count.
+  if (run.kind === 'EDITION') return `${run.observationCount} poszt`
   return `${run.observationCount} kezdő állítás`
 }
 

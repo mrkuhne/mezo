@@ -1910,6 +1910,9 @@ export const handlers = [
     const detail = MOCK_RUN_DETAIL[params.id as string]
     return detail != null ? HttpResponse.json(detail) : new HttpResponse(null, { status: 404 })
   }),
+  // Esti kiadás (csapatfal H1, mezo-a9bo7.12, Task 6) — unlike `runs` above, real mode's default
+  // fixture is the honest EMPTY timeline; per-test server.use() overrides opt into a seeded one.
+  http.get(`${API_BASE}/api/character/edition`, () => HttpResponse.json([])),
 
   // Life goals (mezo-iizd.1) — default fixtures mirroring the mock seed so real-mode component
   // tests that render these hooks without a per-test server.use() get the same four goals.

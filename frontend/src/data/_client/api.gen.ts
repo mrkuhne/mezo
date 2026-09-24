@@ -3996,6 +3996,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/character/edition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The esti kiadás timeline over an inclusive day window (csapatfal H1, mezo-a9bo7.12): one row per day an edition was generated, each with its ranked posts — a day with no row means no edition was generated for it (honest "nincs adat" — never fabricated) */
+        get: operations["getTeamEditions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/character/run/{runId}": {
         parameters: {
             query?: never;
@@ -10017,7 +10034,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            kind: "NIGHTLY" | "WEEKLY" | "MONTHLY" | "BOOTSTRAP";
+            kind: "NIGHTLY" | "WEEKLY" | "MONTHLY" | "BOOTSTRAP" | "EDITION";
             /**
              * Format: date
              * @description The anchor day — the observed day for NIGHTLY, week_start for WEEKLY, the month's first day for MONTHLY, the run date for BOOTSTRAP
@@ -10055,6 +10072,33 @@ export interface components {
         CharacterRunResponse: {
             summary: components["schemas"]["CharacterRunSummary"];
             observations: components["schemas"]["CharacterRunObservation"][];
+        };
+        TeamEdition: {
+            /** Format: date */
+            day: string;
+            /** @enum {string} */
+            status: "PUBLISHED" | "QUIET";
+            posts: components["schemas"]["TeamEditionPost"][];
+        };
+        TeamEditionPost: {
+            rank: number;
+            /** @enum {string} */
+            characterKey: "szunya" | "mocor" | "falat" | "deru" | "mezo";
+            /** @enum {string} */
+            genre: "megfigyeles" | "sejtes" | "kerdes" | "kiserlet" | "elorejelzes" | "konzilium" | "keres" | "ertekeles";
+            /** @enum {string} */
+            sourceKind: "pattern" | "pair" | "prediction" | "experiment" | "konzilium";
+            sourceId: string;
+            sourceRoute: string;
+            title?: string | null;
+            body: string;
+            voiced: boolean;
+            guests: {
+                /** @enum {string} */
+                characterKey: "szunya" | "mocor" | "falat" | "deru" | "mezo" | "szkeptikus";
+                body: string;
+                voiced: boolean;
+            }[];
         };
         DiagnosisGenerateRequest: {
             phenomenon: string;
@@ -22604,6 +22648,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CharacterRunSummary"][];
+                };
+            };
+            /** @description to before from, or the span exceeds 62 days */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getTeamEditions: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Editions, newest day first (possibly empty — never a 404) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamEdition"][];
                 };
             };
             /** @description to before from, or the span exceeds 62 days */

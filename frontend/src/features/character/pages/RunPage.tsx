@@ -39,6 +39,7 @@ import {
 } from '@/features/character/runLabels'
 import { huMonthDay } from '@/shared/lib/dates'
 import type { CharacterRunSummary } from '@/data/character/characterApi'
+import { TEAM, type TeamCharacterId } from '@/features/insights/logic/team'
 
 /** BINDING RULING (task-4 brief): callCount is honest ONLY for NIGHTLY — a "hívás" step for
  *  WEEKLY/MONTHLY/BOOTSTRAP would render their deliberate `callCount: 0` (see
@@ -75,6 +76,16 @@ const OP_LABEL: Record<CharacterRunSummary['kind'], string> = {
   WEEKLY: 'javaslat / döntés',
   MONTHLY: 'áttekintés',
   BOOTSTRAP: 'áttekintés',
+  EDITION: 'poszt',
+}
+
+/** Fix round (mezo-a9bo7.12): EDITION runs post AS the team characters (szunya/mocor/falat/
+ *  deru/mezo, matching the backend's `TeamCharacter.key()`) — they are not "called experts" like
+ *  NIGHTLY/WEEKLY/MONTHLY/BOOTSTRAP's expertKeys. Resolves the display name from the shared FE
+ *  team registry (features/insights/logic/team.ts, the one place munkanevek live); an unknown key
+ *  falls back to itself, same honesty rule as the expert catalog lookup below. */
+function teamCharacterName(key: string): string {
+  return TEAM[key as TeamCharacterId]?.name ?? key
 }
 
 export function RunPage() {
@@ -153,7 +164,7 @@ export function RunPage() {
           </>
         )}
 
-        {summary.kind !== 'NIGHTLY' && (
+        {summary.kind !== 'NIGHTLY' && summary.kind !== 'EDITION' && (
           <>
             <div className="kr-runsubttl">Hívott szakértők</div>
             <div className="kr-opchips">
@@ -177,6 +188,25 @@ export function RunPage() {
                 Teljes transzkript megnyitása ›
               </button>
             )}
+          </>
+        )}
+
+        {/* Fix round (mezo-a9bo7.12): EDITION posts AS the team characters — "Hívott szakértők" +
+           a "consumed observations" flow strip / transcript link are all NIGHTLY/WEEKLY/MONTHLY/
+           BOOTSTRAP concepts that don't apply here (the run's own content IS the edition's posts,
+           surfaced on CharacterFeedPage — no separate transcript to open). Chips get their own
+           honest header and resolve names from the FE team registry, not the expert catalog. */}
+        {summary.kind === 'EDITION' && (
+          <>
+            <div className="kr-runsubttl">Posztoló karakterek</div>
+            <div className="kr-opchips">
+              {summary.expertKeys.map((key) => (
+                <div className="kr-opchip" key={key}>
+                  <PersonaOrb expertKey={key} size={20} />
+                  <div className="kr-opchip-tx"><b>{teamCharacterName(key)}</b><small>{OP_LABEL.EDITION}</small></div>
+                </div>
+              ))}
+            </div>
           </>
         )}
 
