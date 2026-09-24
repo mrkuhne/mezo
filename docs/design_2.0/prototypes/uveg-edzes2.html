@@ -2316,24 +2316,32 @@ svg{overflow:visible}
 .plarc i.deload{background:repeating-linear-gradient(135deg,rgba(127,178,222,.34) 0 4px,rgba(127,178,222,.1) 4px 8px)}
 .plarcnote{display:flex;justify-content:space-between;padding:16px 2px 0;font-size:10px;color:var(--faint)}
 
+/* ── A NAP KÁRTYÁJA ───────────────────────────────────────
+   Két zóna, minden kártyán azonos szerkezettel:
+     1. fejléc-sáv   szemöldök + cím  ·  állapot  ·  nyíl
+        ─ hajszálvonal ─
+     2. tartalom     testtérkép (fix 62px)  |  3 egyenlő blokk + izomsor
+   Egy közös bal margó (14px), egy közös ritmus (9px), egy hangsúly:
+   hogy MIT edzel (térkép + cím). A számok egyenrangúak és halkabbak. */
 .pldays{display:grid;gap:8px;padding:0 16px}
-.plday{--c:var(--coral);display:block;width:100%;padding:13px 14px;border-radius:20px}
-.pldayh{display:flex;align-items:center;gap:8px}
-.pltag{font-size:9.5px;font-weight:600;letter-spacing:1.2px;color:var(--faint)}
+.plday{--c:var(--coral);display:block;width:100%;padding:0;border-radius:20px;text-align:left}
+.plhead{display:flex;align-items:center;gap:10px;padding:12px 14px 11px}
+.plheadtxt{flex:1;min-width:0}
+.pltag{display:block;font-size:9.5px;font-weight:600;letter-spacing:1.3px;color:var(--faint)}
+.plheadtxt strong{display:block;font-size:17px;font-weight:600;letter-spacing:-.45px;margin-top:2px}
+.plchev{flex:0 0 auto;color:var(--faint);font-size:19px;font-weight:400;line-height:1}
+.plcontent{display:grid;grid-template-columns:62px 1fr;gap:13px;align-items:center;
+  padding:11px 14px 13px;border-top:1px solid var(--hair)}
+.plcol{min-width:0}
 .pltoday{padding:2px 7px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.6px;color:#191614;
   background:var(--c);box-shadow:0 0 10px color-mix(in srgb,var(--c) 60%,transparent)}
-.pldayh strong{font-size:15.5px;font-weight:600;letter-spacing:-.3px;margin-left:2px}
-.pldayh b{margin-left:auto;color:var(--faint);font-size:19px;font-weight:400}
-/* az anatómia a kártya fő grafikája — ez mondja meg, mit csinál a nap */
-.plchips{display:flex;gap:9px;margin-top:12px;flex-wrap:wrap}
-.plchip{display:flex;flex-direction:column;align-items:center;gap:3px}
-.plchip b{font-size:11px;font-weight:600;color:var(--sub);letter-spacing:-.2px}
-.plchips.sm{gap:7px;margin-top:8px}
-.plchips.sm .plchip b{font-size:10px}
-.plline{display:block;margin-top:11px;font-size:11.5px;color:var(--faint);letter-spacing:.1px}
-/* a három tény: ugyanaz a doboz, kisebben (tulajdonosi kérés 2026-09-24) */
-.plfacts{display:flex;gap:5px;margin-top:9px}
-.plfacts i{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:0;padding:6px 3px 5px;
+/* az izomsor: a blokkokkal azonos bal élen, egy ritmussal alattuk */
+.plchips{display:flex;gap:7px;margin-top:9px}
+.plchip{display:flex;flex-direction:column;align-items:center;gap:2px}
+.plchip b{font-size:10px;font-weight:600;color:var(--sub);letter-spacing:-.2px}
+/* három egyenlő blokk EGY rácsban — ugyanaz a bal él, mint az alatta futó izomsoré */
+.plfacts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.plfacts i{min-width:0;display:flex;flex-direction:column;align-items:center;gap:0;padding:6px 3px 5px;
   border-radius:12px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair);font-style:normal}
 .plfacts i .icon{width:17px;height:17px}
 .plfacts i b{font-size:13.5px;font-weight:600;letter-spacing:-.3px;margin-top:1px}
@@ -2347,22 +2355,25 @@ svg{overflow:visible}
 .plstamp.is-today{color:#191614;background:var(--c);box-shadow:0 0 16px -2px color-mix(in srgb,var(--c) 75%,transparent)}
 .plstamp.is-today .icon{filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
 .plstamp.is-next{padding:5px 11px;color:var(--faint);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
-/* a hét három rangja */
+/* a hét három rangja — a SZERKEZET azonos, csak a szín és a hangerő más */
 .plday.flatcard{background:rgba(245,239,230,.035);box-shadow:inset 0 0 0 1px var(--hair)}
 .plday.is-next .mchp{opacity:.72}
-.plchips.sm .plchip .mchp{width:30px;height:30px}
-.plday.is-next .pldayh strong{color:var(--sub)}
+.plday.is-next .plheadtxt strong{color:var(--sub)}
 .plday.is-now{box-shadow:0 18px 34px -16px rgba(0,0,0,.8),
   0 0 30px -4px color-mix(in srgb,var(--c) 45%,transparent),
   inset 0 1px 0 rgba(255,244,230,.12),
   inset 0 -14px 26px -18px color-mix(in srgb,var(--c) 60%,transparent)}
-/* a nap kártyája: mini testtérkép balra, a tartalom jobbra */
-.plday.is-b{display:grid;grid-template-columns:62px 1fr;gap:13px;align-items:center}
-.plmap{width:62px;height:112px;display:grid;place-items:center}
+.plchip .mchp{width:30px;height:30px}
+.plmap{width:62px;height:104px;display:grid;place-items:center}
 .plmap svg{width:100%;height:100%;overflow:visible}
-.plday.is-b .plbody{min-width:0}
-.plday.is-b .plchips{margin-top:8px}
-@media (max-width:360px){.plfacts i small{font-size:7.5px}.plstamp{font-size:11px;padding:4px 9px 4px 7px}}
+@media (max-width:360px){
+  .plfacts i small{font-size:7.5px}
+  .plstamp{font-size:11px;padding:4px 9px 4px 7px}
+  .plcontent{grid-template-columns:52px 1fr;gap:10px;padding:10px 12px 12px}
+  .plmap{width:52px;height:90px}
+  .plhead{padding:11px 12px 10px}
+  .plchips{gap:5px}
+}
 .plday.rest{display:flex;align-items:center;gap:8px;padding:11px 14px;background:rgba(245,239,230,.035);
   box-shadow:inset 0 0 0 1px var(--hair);border-radius:17px}
 .plday.rest .icon{width:24px;height:24px;margin-left:auto}
@@ -2890,14 +2901,24 @@ function dayCard(d,i){
   const facts=done
     ? [[part?`${d.done.sets}/${d.sets}`:d.done.sets,'szett','dumbbell'],[d.done.min,'perc','clock'],[d.done.rec,'rekord','record']]
     : [[d.sets,'szett','dumbbell'],[today?d.min:'~'+d.min,'perc','clock'],[d.ex.length,'gyakorlat','protocol']];
-  return `<button class="plday ${skin} ${state} is-b rise" style="${del};--c:${c}"
+  /* A kártya két zónából áll, minden állapotban ugyanúgy:
+       fejléc-sáv  — szemöldök (nap) + cím (mit edzel) · állapot · nyíl
+       ─ hajszálvonal ─
+       tartalom    — bal: testtérkép (fix 62px) · jobb: 3 egyenlő blokk, alatta az izomsor
+     A kártya EGY dolgot mond hangosan: mit edzel. A számok szándékosan egyenrangúak. */
+  return `<button class="plday ${skin} ${state} rise" style="${del};--c:${c}"
       data-go="#nap/${d.d}" aria-label="${d.full} · ${d.t}${done?(part?' · részben megvolt':' · megvolt'):today?' · ma':''}">
-    <span class="plmap">${heat(dayView(d),d.mus.map(([k])=>[k,.9]))}</span>
-    <span class="plbody">
-      <span class="pldayh"><span class="pltag">${d.full.toUpperCase()}</span><strong>${d.t}</strong>${stamp}<b>›</b></span>
-      <span class="plfacts">${facts.map(([v,l,ic])=>
-        `<i>${I(ic)}<b>${v}</b><small>${l}</small></i>`).join('')}</span>
-      <span class="plchips sm">${d.mus.map(([k,s])=>`<span class="plchip">${mchp(k,'sm')}<b>${s}</b></span>`).join('')}</span>
+    <span class="plhead">
+      <span class="plheadtxt"><span class="pltag">${d.full.toUpperCase()}</span><strong>${d.t}</strong></span>
+      ${stamp}<b class="plchev">›</b>
+    </span>
+    <span class="plcontent">
+      <span class="plmap">${heat(dayView(d),d.mus.map(([k])=>[k,.9]))}</span>
+      <span class="plcol">
+        <span class="plfacts">${facts.map(([v,l,ic])=>
+          `<i>${I(ic)}<b>${v}</b><small>${l}</small></i>`).join('')}</span>
+        <span class="plchips">${d.mus.map(([k,s])=>`<span class="plchip">${mchp(k,'sm')}<b>${s}</b></span>`).join('')}</span>
+      </span>
     </span>
   </button>`;
 }
