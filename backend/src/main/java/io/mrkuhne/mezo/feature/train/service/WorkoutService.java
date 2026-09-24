@@ -95,6 +95,7 @@ public class WorkoutService {
     // progressionGate); off ⇒ getToday attaches no prescribedSets and the FE falls back to the logger.
     private final SetRecommendationService setRecommendationService;
     private final ExerciseHistoryResolver historyResolver;
+    private final WeightGapService weightGapService;
     private final ObjectProvider<HypertrophyDriveGate> hypertrophyGate;
     // Fix zárás (mezo-z2ul): lazy closing-exercise ensure behind its own switch. The gate bean
     // exists ONLY when mezo.feature.closing-block.enabled=true (mirrors hypertrophyGate).
@@ -595,7 +596,7 @@ public class WorkoutService {
                 SystemMessage.error("TRAIN_WORKOUT_NOT_ACTIVE").build(), HttpStatus.CONFLICT);
         }
         // The exercise must hang off the instance's template day — child writes verify the chain.
-        exerciseRepository.findById(req.getExerciseId())
+        ExerciseEntity exercise = exerciseRepository.findById(req.getExerciseId())
             .filter(e -> createdBy.equals(e.getCreatedBy())
                 && instance.getTemplateSessionId().equals(e.getWorkoutSessionId()))
             .orElseThrow(WorkoutService::notFound);
@@ -615,6 +616,10 @@ public class WorkoutService {
         set.setTargetReps(req.getTargetReps());
         ExerciseSetEntity saved = exerciseSetRepository.save(set);
         exerciseSetRepository.flush(); // the replay reads through the repository — the row must be visible
+        if (hypertrophyGate.getIfAvailable() != null) {
+            // Per-machine weight memory (mezo-bk7l2): heal this weight, learn a near-swapped gap.
+            weightGapService.onLogged(createdBy, exercise, set.getKind(), req.getWeightKg(), req.getPrescribedWeightKg());
+        }
         ExerciseSetResponse response = mapper.toSetResponse(saved);
         // Medals are derived and purely decorative (mezo-wp6n) — the set write above is the user's
         // real data and must survive a failure in the replay-derivation that follows it. Degrade to
@@ -645,6 +650,11 @@ public class WorkoutService {
         set.setNote(req.getNote());
         ExerciseSetEntity saved = exerciseSetRepository.save(set);
         exerciseSetRepository.flush(); // the medal replay reads through the repository
+        if (hypertrophyGate.getIfAvailable() != null) {
+            // An edit to a weight proves it exists on the machine (mezo-bk7l2) — heal only, never learn.
+            exerciseRepository.findById(set.getExerciseId()).ifPresent(ex ->
+                weightGapService.onLogged(createdBy, ex, set.getKind(), req.getWeightKg(), null));
+        }
         ExerciseSetResponse response = mapper.toSetResponse(saved);
         // Same rationale as logSet: medals are derived and decorative, the user's edit must survive
         // a failure in the replay-derivation that follows it.

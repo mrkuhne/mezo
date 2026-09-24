@@ -15,7 +15,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 /** Hypertrophy Drive tuning (mezo.hypertrophy): plate rounding, load increments per exercise
- * type, the count-keyed warmup ladders, and the default warmup-set count for new exercises. */
+ * type, the count-keyed warmup ladders, the default warmup-set count for new exercises, and the
+ * near-swap threshold of the per-machine weight memory. */
 @Validated
 @ConfigurationProperties(prefix = "mezo.hypertrophy")
 public record HypertrophyProperties(
@@ -25,7 +26,10 @@ public record HypertrophyProperties(
     // keyed by warmupSets count (1, 2, 3 — counts above 3 reuse the 3-ladder, see
     // SetRecommendationService); each ladder entry is a %working-weight rung with absolute reps.
     @NotNull @Size(min = 1) Map<Integer, @Valid List<@Valid Ramp>> warmupLadders,
-    @NotNull @PositiveOrZero Integer defaultWarmupSets   // 2
+    @NotNull @PositiveOrZero Integer defaultWarmupSets,  // 2
+    // Per-machine weight memory (mezo-bk7l2): a logged weight within max(increment, this share of
+    // the prescription) of the prescribed one marks the prescribed weight as missing on the machine.
+    @NotNull @Positive @DecimalMax("0.5") BigDecimal gapNearFraction  // 0.10
 ) {
     /** One warmup rung: a fraction of the working weight and an absolute rep count. */
     public record Ramp(

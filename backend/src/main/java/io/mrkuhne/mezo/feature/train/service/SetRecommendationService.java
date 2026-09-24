@@ -12,6 +12,8 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,6 +29,7 @@ public class SetRecommendationService {
 
     private final ExerciseHistoryResolver historyResolver;
     private final HypertrophyProperties props;
+    private final WeightGapService weightGapService;
 
     /** Plan-1 shape: prescribes against the exercise's own template {@code workingSets}. */
     public Prescription prescribe(UUID createdBy, ExerciseEntity ex, boolean deloadWeek) {
@@ -54,13 +57,32 @@ public class SetRecommendationService {
             base = d.base();
             workingReps = d.workingReps();
             rationale = d.rationale();
+            BigDecimal deltaKg = d.deltaKg();
+            // Per-machine weight memory (mezo-bk7l2): only a WEIGHT/DELOAD move computes a new kg —
+            // REP/HOLD reuse the logged weight, which logging itself proved to exist.
+            if (d.lever() == ProgressionDecider.Lever.WEIGHT || d.lever() == ProgressionDecider.Lever.DELOAD) {
+                Set<BigDecimal> gaps = weightGapService.gaps(createdBy, ex);
+                if (gaps.contains(WeightSnapper.norm(base))) {
+                    Optional<WeightSnapper.Snap> snap = WeightSnapper.snap(
+                        base, workingReps, ex.getTargetRir(), ex.getRepMin(), ex.getRepMax(), ref.getWeightKg(),
+                        gaps, historyResolver.workingWeightsEverLogged(createdBy, ex), props.plateStep());
+                    if (snap.isPresent()) {
+                        rationale = rationale + " · " + strip(base) + " kg nincs a gépen → "
+                            + strip(snap.get().weightKg()) + " kg";
+                        base = snap.get().weightKg();
+                        workingReps = snap.get().reps();
+                        // Direction-preserving snap → never zero (WeightSnapper), so the lever stands.
+                        deltaKg = base.subtract(ref.getWeightKg());
+                    }
+                }
+            }
             progression = ProgressionSignal.builder()
                 .lever(ProgressionSignal.LeverEnum.fromValue(d.lever().name().toLowerCase()))
-                .deltaKg(d.deltaKg())
+                .deltaKg(deltaKg)
                 .deltaReps(d.deltaReps())
-                .targetWeightKg(d.base())
-                .targetReps(d.workingReps())
-                .rationale(d.rationale())
+                .targetWeightKg(base)
+                .targetReps(workingReps)
+                .rationale(rationale)
                 .build();
         } else if (ref != null) {
             base = null; // weightless history (plyo/bodyweight)
@@ -139,6 +161,10 @@ public class SetRecommendationService {
         }
         extended.addAll(ladder3);
         return extended;
+    }
+
+    private static String strip(BigDecimal x) {
+        return x.stripTrailingZeros().toPlainString();
     }
 
     private BigDecimal roundClamp(BigDecimal x) {

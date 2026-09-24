@@ -5842,6 +5842,8 @@ export interface components {
             targetWeightKg?: number | null;
             /** @description The Progresszió-prescribed reps for this set, snapshotted at log time */
             targetReps?: number | null;
+            /** @description The engine's ORIGINAL working weight for this slot, before any on-card weight swap (targetWeightKg carries the swap-adjusted target since mezo-l95v4). A logged weight near it but different teaches the per-machine weight memory that the prescribed weight is missing on this exercise (mezo-bk7l2). */
+            prescribedWeightKg?: number | null;
         };
         /** @description Full replacement of one logged set's performance fields (mezo-l3on). Deliberately NOT a partial patch — an absent optional field CLEARS it, which avoids the JSON null vs. missing tri-state. setIndex, kind, exerciseId and the target* prescription snapshot are immutable. */
         SetUpdateRequest: {
