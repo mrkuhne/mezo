@@ -15,6 +15,8 @@ key_files:
 related: [goal-engine, growth, companion, me, today, train, ../research/entities/exist-io.md, ../research/concepts/goal-type-taxonomies.md, ../research/concepts/perma-and-wellbeing-taxonomies.md, ../research/concepts/goal-conflict.md, ../research/concepts/goal-pursuit-evidence.md]
 ---
 
+> **2026-09-24 — Üveg U6 (`mezo-me75u.6`).** Célok, Cél, the new-goal wizard, Jelek and the pillar catalog sheet wear the dark glass material: the PERMAH ring is a frameless halo, goal tiles and pillar cards are glass in their dimension colour (`DIMENSION_ACCENT` in `logic/lifegoalLabels.ts`), the done tick and the wizard's frame glyphs are 3D icons with accessible names. Behavior unchanged. Parity reference [`uveg-en.html`](../design_2.0/prototypes/uveg-en.html).
+
 # Life goals — Feature Documentation
 
 > One-line: general-purpose life goals ("Célok") at route `/me/goals` (tab "Én"), tagged to a

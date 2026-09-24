@@ -39,8 +39,8 @@ describe('WeekDiscoveriesPage (mock mode)', () => {
     expect(screen.getByText('új nyom a memóriában')).toBeInTheDocument()
     expect(container.querySelectorAll('.wkd-tile')).toHaveLength(5)
 
-    expect(screen.getByText('✓ Megerősítve')).toBeInTheDocument()   // pattern `event`
-    expect(screen.getByText('◐ Folyamatban')).toBeInTheDocument()   // prediction `status`
+    expect(screen.getByText('Megerősítve')).toBeInTheDocument()   // pattern `event`
+    expect(screen.getByText('Folyamatban')).toBeInTheDocument()   // prediction `status`
     expect(screen.getByText('Nyaralás kezdete')).toBeInTheDocument()
     expect(screen.getByText('máj 23.')).toBeInTheDocument()          // lifeEvents[].occurredOn
     expect(screen.getByText('Új bejegyzés készült a hétről')).toBeInTheDocument()
@@ -112,13 +112,21 @@ describe('WeekDiscoveriesPage (real mode)', () => {
       ),
     )
     const { container } = renderPage()
-    await waitFor(() => expect(screen.getByText('▲ Erősödött')).toBeInTheDocument())
-    expect(screen.getByText('★ Előléptetve')).toBeInTheDocument()
-    expect(screen.getByText('✓ Bevált')).toBeInTheDocument()
-    const missed = screen.getByText('✗ Nem jött be')
-    expect(missed).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText('Erősödött')).toBeInTheDocument())
+    // The status chips (not the tile titles, which here reuse the same words): the plain word
+    // carries the meaning, a Titanium 3D icon the look — no ✓ ▲ ★ ◐ ✗ text glyphs (üveg U6).
+    const chip = (label: string) =>
+      [...container.querySelectorAll('.wkd-stch')].find((c) => c.textContent === label)
+    const art = (el: Element | undefined) => el?.querySelector('use')?.getAttribute('href')
+    expect(art(chip('Erősödött'))).toBe('#t-up')
+    expect(art(chip('Előléptetve'))).toBe('#t-record')
+    expect(art(chip('Bevált'))).toBe('#t-tick')
+    const missed = chip('Nem jött be')
+    expect(missed).toBeDefined()
+    expect(art(missed)).toBe('#t-skip')
     // amber (`warn`), the terracotta floor — the guardrail is "never red"
     expect(missed).toHaveClass('warn')
+    expect(container.textContent).not.toMatch(/[✓▲★◐✗]/)
     expect(container.querySelector('.mz-bignum')?.textContent).toBe('4')
   })
 })

@@ -16,15 +16,16 @@ export function GoalPlansPage() {
   const loading = goalPending || pending
   const invalid = overview?.courseStatus === 'invalid'
 
-  return <MozaikPage tone="sky" className="goal-detail-page goal-detail-plans-page">
-    <PageHead onBack={() => navigate('/me/goals/weight')} label="‹ Cél" />
+  return <MozaikPage tone="sky" className="goal-detail-page uv-goal goal-detail-plans-page">
+    <PageHead glass onBack={() => navigate('/me/goals/weight')} label="Cél" />
     {loading ? <div className="goal-detail-loading" role="status" aria-label="Betöltés…"><span /><span /><span /></div> : !overview || invalid ? (
-      <EntranceGroup><PageHero icon="i-meso" name="Tervkapcsolatok" big="Céljavítás szükséges" /><PageBody><div className="goal-detail-notice rise">A kapcsolati idővonal a cél javítása után áll helyre.</div></PageBody></EntranceGroup>
+      <EntranceGroup><PageHero art="t-calendar" accent="var(--dv-sky)" name="Tervkapcsolatok" big="Céljavítás szükséges" /><PageBody><div className="goal-detail-notice rise">A kapcsolati idővonal a cél javítása után áll helyre.</div></PageBody></EntranceGroup>
     ) : <EntranceGroup>
       <PageBody principle="A mesociklus önmagában nem emeli a kalóriát: a szakaszokat és a guardokat adja. Az edzőtermi/sport heti rend és a futóterv sessionjei módosítják az EAT-et.">
         <GoalDetailHero
           tone="plans"
           icon="i-meso"
+          art="t-calendar"
           name="Tervkapcsolatok"
           eyebrow="Cél alatt futó tervek"
           big={`${overview.plans.activeLinkCount} aktív`}

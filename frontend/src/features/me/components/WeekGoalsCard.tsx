@@ -15,9 +15,10 @@ export function WeekGoalsCard() {
   if (isPending || isError || today.goals.length === 0) return null
 
   return (
-    <div className="lg-wcard rise" style={{ '--d': '210ms' } as CSSProperties}>
+    // Üveg (mezo-me75u.6): one sage glass card; rows and the goal chip inside it stay flat.
+    <div className="lg-wcard glass rise" style={{ '--d': '210ms' } as CSSProperties}>
       <div className="lg-wcard-top">
-        <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-lav-ink)' }}>Célok · a hét iránya</span>
+        <span className="mz-eyebrow lg-wcard-eb">Célok · a hét iránya</span>
         <span className="lg-wcard-cnt">{today.goals.length} cél</span>
       </div>
       {today.goals.map((g) => {

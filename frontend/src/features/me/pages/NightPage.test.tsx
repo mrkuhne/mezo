@@ -21,6 +21,9 @@ describe('NightPage', () => {
     expect(screen.getByText('Felébredtél?')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Ébren vagyok' })).toBeInTheDocument()
     expect(screen.queryByText(/\d{1,2}:\d{2}/)).toBeNull() // never render a clock
+    // Üveg (mezo-me75u.6): the moon is the t-moon sprite, never the 🌙 emoji
+    expect(document.querySelector('.night-moon use')).toHaveAttribute('href', '#t-moon')
+    expect(document.body.textContent).not.toMatch(/🌙|🫁|🧘|🚶|🕯️/u)
   })
 
   test('Ébren vagyok -> waiting with the three tools, and records the night trace', () => {
@@ -30,6 +33,12 @@ describe('NightPage', () => {
     expect(screen.getByRole('button', { name: /Légzés/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Testpásztázás/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /4K-séta/ })).toBeInTheDocument()
+    // Üveg (mezo-me75u.6): the tool rows wear the 3D sprite, not 🫁 🧘 🚶
+    const art = (name: RegExp) =>
+      screen.getByRole('button', { name }).querySelector('use')?.getAttribute('href')
+    expect(art(/Légzés/)).toBe('#t-breath')
+    expect(art(/Testpásztázás/)).toBe('#t-person')
+    expect(art(/4K-séta/)).toBe('#t-steps')
     expect(localStorage.getItem(userScopedKey('night-wake:2026-07-24'))).not.toBeNull() // same value today (anon scope, no AuthGate here); derived so it self-corrects if that ever changes
   })
 
@@ -48,6 +57,7 @@ describe('NightPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Testpásztázás/ }))
     act(() => vi.advanceTimersByTime(NIGHT_WATCHDOG_MIN * 60_000 + WATCHDOG_TICK_MS))
     expect(screen.getByText(/Kelj fel/)).toBeInTheDocument()
+    expect(document.querySelector('.night-glow use')).toHaveAttribute('href', '#t-candle') // 🕯️ → t-candle
   })
 
   test('Visszafeküdtem starts a fresh waiting round', () => {

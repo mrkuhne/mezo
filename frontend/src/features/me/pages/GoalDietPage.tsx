@@ -22,15 +22,16 @@ export function GoalDietPage() {
   const loading = goalPending || pending
   const invalid = overview?.courseStatus === 'invalid' || overview?.diet.todayDayType === 'unavailable'
 
-  return <MozaikPage tone="sage" className="goal-detail-page goal-detail-diet-page">
-    <PageHead onBack={() => navigate('/me/goals/weight')} label="‹ Cél" />
+  return <MozaikPage tone="sage" className="goal-detail-page uv-goal goal-detail-diet-page">
+    <PageHead glass onBack={() => navigate('/me/goals/weight')} label="Cél" />
     {loading ? <div className="goal-detail-loading" role="status" aria-label="Betöltés…"><span /><span /><span /></div> : !overview || invalid ? (
-      <EntranceGroup><PageHero icon="i-fuel" name="Mai étrendi keret" big="Céljavítás szükséges" /><PageBody><div className="goal-detail-notice rise">A kalóriakeret csak koherens célból számolható újra.</div></PageBody></EntranceGroup>
+      <EntranceGroup><PageHero art="t-bowl" accent="var(--dv-sage)" name="Mai étrendi keret" big="Céljavítás szükséges" /><PageBody><div className="goal-detail-notice rise">A kalóriakeret csak koherens célból számolható újra.</div></PageBody></EntranceGroup>
     ) : <EntranceGroup>
       <PageBody principle="A napi szám mögött mindig látható marad a heti logika.">
         <GoalDetailHero
           tone="nutrition"
           icon="i-fuel"
+          art="t-bowl"
           name="Mai étrendi keret"
           eyebrow={`Ma · ${DAY_TYPE[overview.diet.todayDayType]}`}
           big={overview.diet.todayKcal == null ? '—' : `${huInt(overview.diet.todayKcal)} kcal`}

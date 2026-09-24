@@ -23,3 +23,10 @@ export const ARROW_GLYPH: Record<TrendArrow, string> = { up: '↗', flat: '→',
 export const ARROW_CLASS: Record<TrendArrow, string> = { up: 'up', flat: 'flat', down: 'down', insufficient: 'none' }
 // prototype celok.html data-dots/data-hm characters: h=hit, p=partial, m=miss, n=no_data.
 export const DOT_CLASS: Record<PillarDayStatus, string> = { hit: 'h', partial: 'p', miss: 'm', no_data: 'n' }
+
+// Üveg (mezo-me75u.6): each PERMAH dimension's dark accent token — the one `--c` a goal's glass
+// surfaces, its PageHero halo and its PERMAH arc wear (same six hues as `wash`, amber for gold).
+export const DIMENSION_ACCENT: Record<LifeGoalDimension, string> = {
+  positive_emotion: 'var(--dv-amber)', engagement: 'var(--dv-lav)', relationships: 'var(--dv-rose)',
+  meaning: 'var(--dv-coral)', accomplishment: 'var(--dv-sky)', health: 'var(--dv-sage)',
+}

@@ -36,9 +36,13 @@ test('walks all five steps: extrinsic why gets the reframe offer, proposal pilla
   fireEvent.change(screen.getByLabelText('A cél, a te szavaiddal'), { target: { value: 'Félmaraton tavasszal' } })
   fireEvent.change(screen.getByLabelText('Miért fontos? · egy mondat'), { target: { value: 'hogy jobban nézzek ki a strandon' } })
   fireEvent.click(screen.getByRole('button', { name: 'Tovább →' }))
-  await waitFor(() => expect(screen.getByText('⚠ Külső keret')).toBeInTheDocument())
+  // Üveg (mezo-me75u.6): the ⚠ / ✓ glyphs are 3D t-info / t-tick icons now — the meaning is
+  // their accessible name, the frame's own words stay the label.
+  await waitFor(() => expect(screen.getByText('Külső keret')).toBeInTheDocument())
+  expect(screen.getByRole('img', { name: 'figyelmeztetés' })).toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: 'Egészség-keret · elfogadom' }))
-  expect(screen.getByText('✓ Belső keret · egészség + képesség')).toBeInTheDocument()
+  expect(screen.getByText('Belső keret · egészség + képesség')).toBeInTheDocument()
+  expect(screen.getByRole('img', { name: 'rendben' })).toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: 'Pillérek →' }))
   const toggles = screen.getAllByRole('button', { name: / ki$/ })
   expect(toggles.length).toBeGreaterThanOrEqual(2)

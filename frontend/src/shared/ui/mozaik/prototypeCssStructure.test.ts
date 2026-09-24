@@ -1592,3 +1592,45 @@ describe.each(U4_BLOCKS)('the uveg edzes %s section carries the glass ranking (m
   })
 })
 
+
+/**
+ * Üvegesítés U6 (mezo-me75u.6) — Én I (prototypes/uveg-en.html). One block per surface group so six
+ * builders could work in parallel: the Én hub, Célok (+ Cél, wizard, Jelek, pillar sheet), the weight
+ * goal and its sub-pages, the daily weight page, Alvás + night mode, and the week pages. Heroes are
+ * frameless halos; primary objects glass in ONE accent; cells and chips inside flat or lit; free
+ * space dashed; never glass in glass.
+ */
+const U6_BLOCKS: Array<[string, string[]]> = [
+  ['hub', ['.enh-hub .enh-idhero.uv-halo', '.enh-hub .enh-goalcard.glass', '.enh-hub .enh-newgoal.uv-empty',
+    '.enh-hub .mz-tile.enh-tile.glass', '.enh-hub .enh-titlech', '.enh-hub .enh-lv']],
+  ['celok', ['.enc-celok .enc-tile.glass', '.enc-celok .enc-hero.uv-halo', '.enc-celok .enc-xrow.glass',
+    '.enc-celok .enc-newtile.uv-empty', '.enc-cel .lg-pillar.glass', '.enc-cel .lg-why.glass',
+    '.enc-wiz .lg-fcard.glass', '.sheet.glass.enc-pcat']],
+  ['sulycel', ['.goal-hub-page .goal-course-hero.uv-halo', '.goal-hub-page .goal-hub-mosaic .mz-tile.glass',
+    '.goal-hub-page .goal-empty-new.uv-empty', '.uv-goal .goal-detail-card.glass', '.goal-gate .goal-gate-card.glass',
+    '.goal-planner-page .gp-traj.glass', '.sheet.glass.goal-attach-sheet']],
+  ['suly', ['.wt-page .wt-chart.glass', '.wt-page .wt-week.glass', '.wt-page .wt-chart.wt-chart-empty',
+    '.wt-page .wt-dayrow', '.wt-page .wt-ask', '.wt-page .wt-seg-btn.is-on']],
+  ['alvas', ['.alv-page .alv-goal.glass', '.alv-page .alv-ring.glass', '.alv-page .sstat.glass', '.alv-page .sesc.glass',
+    '.alv-page .alv-last.glass', '.alv-page .alv-night.glass', '.sheet.glass.sst-sheet', '.alv-page .slr.is-warn']],
+  ['het', ['.wkh-page .wkh-wide.glass', '.wkh-page .wkh-sm.glass', '.wkh-page .lg-wcard.glass', '.wkh-page .wkn-card.glass',
+    '.wk-analysis-page .wka-rev.glass', '.wkd-page .wkd-tile.glass', '.wkd-page .wkd-tile.uv-empty',
+    '.wkf-page .wkd-tile.glass', '.wkt-page .wkt-card.glass']],
+]
+
+describe.each(U6_BLOCKS)('the uveg en %s section carries the glass ranking (mezo-me75u.6)', (name, sels) => {
+  const section = () => stripComments(slice(`── uveg en ${name} (`, `── /uveg en ${name} `))
+
+  test('the block exists and dresses every surface of the group', () => {
+    const css = section()
+    for (const sel of sels) expect(css, `${sel} missing from the uveg en ${name} block`).toContain(sel)
+  })
+
+  test('never glass inside glass (U1 rule 5)', () => {
+    expect(section()).not.toMatch(/\.glass [^{,]*\.glass[\s,{]/)
+  })
+
+  test('the ground is written as a token that exists (--canvas, never the undefined --page)', () => {
+    expect(section()).not.toContain('var(--page)')
+  })
+})

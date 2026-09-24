@@ -1,3 +1,4 @@
+import { Icon3D } from '@/shared/ui/clay'
 import type { GoalOverviewResponse } from '@/data/me/goalApi'
 import { hu1 } from '@/shared/lib/huNum'
 
@@ -13,8 +14,11 @@ export function GoalGuardCard({ kind, status }:
   const title = kind === 'strength' ? 'Erővédelem' : 'Izomvédelem'
   const state = inactive ? 'Nincs bekapcsolva' : alert ? 'Beavatkozás kell' : 'Rendben'
   return (
-    <section className={`goal-detail-card goal-guard-card rise ${inactive ? 'goal-guard-inactive' : alert ? 'goal-guard-alert' : 'goal-guard-ok'}`}>
-      <div className="goal-guard-head"><span className="goal-detail-kicker">{title}</span><b>{state}</b></div>
+    <section className={`goal-detail-card goal-guard-card rise ${inactive ? 'goal-guard-inactive uv-empty' : alert ? 'goal-guard-alert glass' : 'goal-guard-ok glass'}`}>
+      <div className="goal-guard-head">
+        {!inactive && <Icon3D name={alert ? 't-info' : 't-tick'} size={30} className="goal-guard-ico" />}
+        <span className="goal-detail-kicker">{title}</span><b>{state}</b>
+      </div>
       {!inactive && kind === 'strength' && <strong className="goal-guard-value">{status.e1rmTrendPct < 0 ? '−' : '+'}{hu1(Math.abs(status.e1rmTrendPct))}%</strong>}
       {!inactive && kind === 'muscle' && (
         <div className="goal-guard-metrics">

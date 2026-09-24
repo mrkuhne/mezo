@@ -11,11 +11,15 @@
 // since — finally becomes the anchor-chip row, and that the closed-week-with-
 // no-review branch stops borrowing the running week's „Hétfő reggel érkezik"
 // ghost (handoff §4: that text is a lie on a week that is already over).
+//
+// Üveg (mezo-me75u.6, prototype uveg-en-body.html `elemzes()`): the frameless t-score halo
+// hero, the score-bar card and the review card as lavender `.glass`, the review prose upright
+// (bible rule 23), the „amire épült" chips flat with 3D icons, the tanulságok strip gold glass.
 // ============================================================
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useMeWeek, useWeeklyReview, useFeedback } from '@/data/hooks'
-import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
-import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Skeleton } from '@/shared/ui/Skeleton'
@@ -24,7 +28,14 @@ import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { WeekScoreBars } from '@/features/me/components/week/WeekScoreBars'
 import { useChatHandoff } from '@/features/me/logic/useChatHandoff'
 import { humanGeneratedAt } from '@/features/me/logic/humanGeneratedAt'
-import { highlightChips } from '@/features/me/logic/weekHighlight'
+import { highlightChips, type HighlightTone } from '@/features/me/logic/weekHighlight'
+
+/** The „amire épült" chip's 3D art. The tone is 1:1 with the highlight kind (Minta · Tudás ·
+ *  Életesemény · Emlék), and the clay `i-cel` means „cél" elsewhere, so the mapping lives at
+ *  the call site (bible rule 20) instead of in CLAY_TO_3D. */
+const HIGHLIGHT_ART: Record<HighlightTone, Icon3DName> = {
+  lav: 't-pattern', gold: 't-book', sky: 't-pin', rose: 't-scroll',
+}
 import { isCurrentWeek, resolveWeekStart, weekHubPath } from '@/features/me/logic/weekNav'
 import { deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { localDateString } from '@/shared/lib/dates'
@@ -54,24 +65,19 @@ export function WeekAnalysisPage() {
 
   return (
     <MozaikPage tone="lav" className="wk-analysis-page">
-      <PageHead label="‹ Heti" onBack={() => navigate(weekHubPath(start))}>
+      <PageHead glass label="Heti" onBack={() => navigate(weekHubPath(start))}>
         <span className="mz-eyebrow wka-headwk">{deriveWeekTitle(start)}</span>
       </PageHead>
 
-      <div className="mz-page-hero">
-        <div className="mz-hero-nm">Heti elemzés</div>
-        <div className="mz-hero-row">
-          <ClaySpot name="s-orb" size={59} />
-          <span className="mz-bignum">
-            {score != null ? (<>{score}<span className="wka-heroU"> / 100</span></>) : 'tanulom'}
-          </span>
-        </div>
-        <div className="mz-hero-sb">
-          {score != null
-            ? (review ? 'napi pontszámok · a Mezo olvasata' : 'napi pontszámok · elemzés nélkül')
-            : 'még gyűjtöm az adatokat a heti értékeléshez'}
-        </div>
-      </div>
+      <PageHero
+        art="t-score"
+        accent="var(--dv-lav)"
+        name="Heti elemzés"
+        big={score != null ? (<>{score}<small className="wka-heroU"> / 100</small></>) : 'tanulom'}
+        sub={score != null
+          ? (review ? 'napi pontszámok · a Mezo olvasata' : 'napi pontszámok · elemzés nélkül')
+          : 'még gyűjtöm az adatokat a heti értékeléshez'}
+      />
 
       <PageBody>
         {isError ? (
@@ -85,7 +91,7 @@ export function WeekAnalysisPage() {
         ) : (
           <EntranceGroup replayKey={start}>
             {days.length > 0 && (
-              <div className="wka-card rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+              <div className="wka-card glass rise" style={{ '--d': '0ms' } as React.CSSProperties}>
                 <div className="wka-cardhead">
                   <span className="mz-eyebrow">Napi pontszám</span>
                   <span className="wka-hint">koppints egy napra</span>
@@ -94,9 +100,9 @@ export function WeekAnalysisPage() {
               </div>
             )}
 
-            <div className="wka-rev rise" style={{ '--d': '120ms' } as React.CSSProperties}>
+            <div className="wka-rev glass rise" style={{ '--d': '120ms' } as React.CSSProperties}>
               <div className="wka-revhead">
-                <ClaySpot name="s-orb" size={31} />
+                <Icon3D name="t-score" size={34} />
                 <span className="mz-eyebrow wka-revlab">Mezo · heti elemzés</span>
                 {review && stamp && <span className="wka-stamp">{stamp}</span>}
               </div>
@@ -111,7 +117,7 @@ export function WeekAnalysisPage() {
                         {chips.map((c, i) => {
                           const inner = (
                             <>
-                              <ClayIcon name={c.icon} size={15} />
+                              <Icon3D name={HIGHLIGHT_ART[c.tone]} size={20} />
                               <span><em>{c.kindLabel}</em>{c.label}</span>
                             </>
                           )
@@ -142,7 +148,7 @@ export function WeekAnalysisPage() {
                       </button>
                     )}
                     <button type="button" className="wka-chatch" disabled={chat.pending} onClick={() => chat.open({ kind: 'week', date: start })}>
-                      {chat.pending ? (<><Spinner size="sm" label="" />Indítás…</>) : '💬 Beszélgess a hétről ›'}
+                      {chat.pending ? (<><Spinner size="sm" label="" />Indítás…</>) : (<><Icon3D name="t-chat" size={20} />Beszélgess a hétről ›</>)}
                     </button>
                     <span className="wka-fb">
                       <FeedbackChips
@@ -162,7 +168,7 @@ export function WeekAnalysisPage() {
                   </p>
                   <div className="wka-revfoot">
                     <button type="button" className="wka-chatch" disabled={chat.pending} onClick={() => chat.open({ kind: 'week', date: start })}>
-                      {chat.pending ? (<><Spinner size="sm" label="" />Indítás…</>) : '💬 Beszélgess a hétről ›'}
+                      {chat.pending ? (<><Spinner size="sm" label="" />Indítás…</>) : (<><Icon3D name="t-chat" size={20} />Beszélgess a hétről ›</>)}
                     </button>
                   </div>
                 </>
@@ -172,13 +178,13 @@ export function WeekAnalysisPage() {
                     Ez a hét lezárt, de <b>nem készült elemzés</b> — a hét adatai megvannak, bármikor pótolható.
                   </p>
                   <div className="wka-revfoot">
-                    <button type="button" className="wka-chatch" disabled={regenerating} onClick={() => void regenerate()}>
+                    <button type="button" className="wka-chatch is-lit" disabled={regenerating} onClick={() => void regenerate()}>
                       {regenerating
                         ? (<><Spinner size="sm" label="" />Elemzés készül…</>)
-                        : '✦ Készítsd el most'}
+                        : (<><Icon3D name="t-score" size={20} />Készítsd el most</>)}
                     </button>
                     <button type="button" className="wka-chatch" disabled={chat.pending} onClick={() => chat.open({ kind: 'week', date: start })}>
-                      {chat.pending ? (<><Spinner size="sm" label="" />Indítás…</>) : '💬 Beszélgess a hétről ›'}
+                      {chat.pending ? (<><Spinner size="sm" label="" />Indítás…</>) : (<><Icon3D name="t-chat" size={20} />Beszélgess a hétről ›</>)}
                     </button>
                   </div>
                 </>
@@ -187,11 +193,11 @@ export function WeekAnalysisPage() {
 
             <button
               type="button"
-              className="wka-lessgo rise"
+              className="wka-lessgo glass rise"
               style={{ '--d': '200ms' } as React.CSSProperties}
               onClick={() => navigate(`/me/week/tanulsagok?start=${start}`)}
             >
-              <ClayIcon name="i-kristaly" size={28} />
+              <Icon3D name="t-gem" size={40} />
               <span className="grow">
                 <span className="lb">A hét tanulságai</span>
                 <span className="sub">még nincs javaslat</span>

@@ -21,7 +21,7 @@ export function GoalConnectionTimeline({ plans, totalWeeks, onDetach }: {
   ]
   return (
     <div className="goal-connection-stack">
-      <section className="goal-detail-card goal-connection rise" aria-label="Kapcsolt tervek idővonala">
+      <section className="goal-detail-card goal-connection glass rise" aria-label="Kapcsolt tervek idővonala">
         <div className="goal-week-ruler" style={{ '--goal-weeks': totalWeeks } as CSSProperties} aria-hidden="true">{Array.from({ length: totalWeeks }, (_, i) => <span key={i}>{i + 1}</span>)}</div>
         {lanes.map((lane) => (
           <div className="goal-plan-lane" key={lane.type}>
@@ -42,7 +42,7 @@ export function GoalConnectionTimeline({ plans, totalWeeks, onDetach }: {
         ))}
         {plans.gaps.length > 0 && <div className="goal-gap-row">{plans.gaps.map((gap) => <span key={`${gap.fromWeek}-${gap.toWeek}`}>{weekRange(gap.fromWeek, gap.toWeek)} fedezetlen</span>)}</div>}
       </section>
-      <section className="goal-detail-card goal-sport-schedule rise" aria-label="Sport heti rend">
+      <section className="goal-detail-card goal-sport-schedule glass rise" aria-label="Sport heti rend">
         <div className="goal-detail-kicker">Sport · heti rend</div>
         {plans.sportSchedule.length ? plans.sportSchedule.map((slot) => (
           <div className="goal-sport-row" key={slot.id}>

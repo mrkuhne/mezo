@@ -1,18 +1,19 @@
 import { useNavigate } from 'react-router-dom'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { GhostState } from '@/shared/ui/GhostState'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
-import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
+import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useSignalCatalog } from '@/data/hooks'
 import type { SignalCatalogEntry } from '@/data/lifegoal/lifegoalApi'
 
 // A prototípus celok.html #page-jelek (docs/design_2.0/prototypes/src/celok-body.html:480) a
-// vizuális igazság: hero = „x / y forrás él", aztán Él és Alszik szekció, soronként clay ikon,
+// vizuális igazság: hero = „x / y forrás él", aztán Él és Alszik szekció, soronként egy ikon,
 // „n / 7 nap · csoport" és a tápált pillérek chipjei. Semmi új naplózó — ez a transzparencia-oldal.
-const GROUP_ICON: Record<string, ClayIconName> = {
-  'Alvás': 'i-alvas', 'Fuel': 'i-fuel', 'Edzés': 'i-edzes', 'Elme': 'i-checkin',
-  'Activity': 'i-mezo', 'Emberek': 'i-emberek', 'Életjel': 'i-eletjel',
+// Üveg (mezo-me75u.6, prototypes/uveg-en.html#jelek): a csoport-ikonok a Titanium 3D készletből.
+const GROUP_ICON: Record<string, Icon3DName> = {
+  'Alvás': 't-sleep', 'Fuel': 't-bowl', 'Edzés': 't-dumbbell', 'Elme': 't-checkin',
+  'Activity': 't-steps', 'Emberek': 't-people', 'Életjel': 't-heart',
 }
 
 export default function JelekPage() {
@@ -22,8 +23,8 @@ export default function JelekPage() {
   if (isPending) return <ScreenSkeleton />
   if (isError && entries.length === 0) {
     return (
-      <MozaikPage tone="sage">
-        <PageHead onBack={() => navigate('/me/goals')} label="‹ Célok" />
+      <MozaikPage tone="sage" className="enc-page enc-jelek">
+        <PageHead glass onBack={() => navigate('/me/goals')} label="Célok" />
         <PageBody>
           <GhostState message="Nem sikerült betölteni a jeleket." ctaLabel="Újra" onCta={refetch} />
         </PageBody>
@@ -37,7 +38,7 @@ export default function JelekPage() {
   const row = (e: SignalCatalogEntry, i: number, off: boolean) => (
     <li key={e.id} className={`lg-sig rise${off ? ' off' : ''}`} style={{ '--d': `${60 + i * 20}ms` } as React.CSSProperties}
         aria-label={e.label}>
-      <ClayIcon name={GROUP_ICON[e.group] ?? 'i-retegek'} size={24} />
+      <Icon3D name={GROUP_ICON[e.group] ?? 't-signal'} size={36} />
       <div className="grow">
         <b>{e.label}</b>
         <small>{off ? 'nincs adat 7 napja' : `${e.daysWithData} / 7 nap`} · {e.group}</small>
@@ -50,20 +51,21 @@ export default function JelekPage() {
   )
 
   return (
-    <MozaikPage tone="sage">
-      <PageHead onBack={() => navigate('/me/goals')} label="‹ Célok" />
+    <MozaikPage tone="sage" className="enc-page enc-jelek">
+      <PageHead glass onBack={() => navigate('/me/goals')} label="Célok" />
       <PageBody principle="Nincs külső forrás — se naptár, se időjárás, se GitHub. Ami itt nincs, azt a rendszer nem tudja.">
         <EntranceGroup>
-          <div className="lg-hero rise" style={{ '--d': '0ms', marginBottom: 12 } as React.CSSProperties}>
-            <ClayIcon name="i-retegek" size={44} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 22, fontWeight: 700 }}>Jelek</div>
-              <div style={{ fontSize: 26, fontWeight: 200 }} aria-label={`${live.length} élő forrás a ${entries.length}-ból`}>
-                {live.length}<span style={{ fontSize: 15, color: 'var(--text-secondary)' }}> / {entries.length}</span>
-              </div>
-              <div className="mz-eyebrow">forrás él · volt adata az elmúlt 7 napban</div>
-            </div>
-          </div>
+          <PageHero
+            art="t-signal"
+            accent="var(--dv-sage)"
+            name="Jelek"
+            big={(
+              <span aria-label={`${live.length} élő forrás a ${entries.length}-ból`}>
+                {live.length}<small> / {entries.length}</small>
+              </span>
+            )}
+            sub="forrás él · volt adata az elmúlt 7 napban"
+          />
           <p className="lg-sighint rise" style={{ '--d': '40ms' } as React.CSSProperties}>
             Semmi újat nem kell naplóznod. Ezekből számolom a pilléreket — ami alszik, ott a pillér üres marad, nem nulla.
           </p>

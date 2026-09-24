@@ -9,7 +9,7 @@ export function GoalSegmentRail({ label, fromWeek, toWeek, nextLabel, nextFromWe
   nextChangeDate?: string | null
 }) {
   return (
-    <section className="goal-detail-card goal-segment-rail rise" aria-label="Célszakaszok">
+    <section className="goal-detail-card goal-segment-rail glass rise" aria-label="Célszakaszok">
       <div className="goal-segment-node is-current">
         <span className="goal-detail-kicker">Most</span>
         <strong>{label}</strong>

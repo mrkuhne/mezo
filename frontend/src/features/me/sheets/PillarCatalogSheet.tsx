@@ -1,5 +1,6 @@
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 import { useSignalCatalog } from '@/data/hooks'
 import type { SignalCatalogEntry } from '@/data/lifegoal/lifegoalApi'
 
@@ -13,22 +14,21 @@ export function PillarCatalogSheet({ onClose, onPick }: { onClose: () => void; o
   const groups = Array.from(new Set(entries.map((e) => e.group)))
 
   return (
-    <Sheet onClose={onClose} labelledBy="pillar-catalog-title">
+    <Sheet onClose={onClose} labelledBy="pillar-catalog-title" className="glass is-still enc-pcat">
       {(close) => (
-        <div className="col gap-sm" style={{ padding: '4px 4px 8px' }}>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <h2 id="pillar-catalog-title" style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>
-              Pillér a katalógusból
-            </h2>
-            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}>
+        <div className="enc-pcat-body">
+          <div className="enc-pcat-head">
+            <Icon3D name="t-signal" size={44} />
+            <h2 id="pillar-catalog-title">Pillér a katalógusból</h2>
+            <button type="button" className="enc-pcat-x" aria-label="Bezárás" onClick={close}>
               <Icon name="x" size={12} />
             </button>
           </div>
 
           {groups.map((group) => (
-            <div key={group} className="col gap-sm mt-sm">
+            <div key={group} className="enc-pcat-sec">
               <span className="mz-eyebrow">{group}</span>
-              <div className="row gap-sm" style={{ flexWrap: 'wrap' }}>
+              <div className="enc-pcat-chips">
                 {entries.filter((e) => e.group === group).map((e) => (
                   <button
                     key={e.label}
@@ -43,8 +43,8 @@ export function PillarCatalogSheet({ onClose, onPick }: { onClose: () => void; o
             </div>
           ))}
 
-          <div className="row gap-sm mt-lg">
-            <button type="button" className="cta-ghost flex-1" onClick={close}>Mégse</button>
+          <div className="enc-pcat-foot">
+            <button type="button" className="cta-ghost" onClick={close}>Mégse</button>
           </div>
         </div>
       )}

@@ -47,7 +47,8 @@ function hourTicks(startMin: number, spanMin: number) {
 /**
  * "Az éjszaka íve" (mezo-fk9a) — the quantised hypnogram as a hanging depth silhouette,
  * plus the two half-night rails and the front-load sentence. Returns null when the row has
- * no valid hypnogram, so callers need no guard.
+ * no valid hypnogram, so callers need no guard. Üveg (mezo-me75u.6): a lavender glass card,
+ * the silhouette glows (`.alv-page .nac-bars` in the `── uveg en alvas (` block).
  */
 export function NightArcCard({ entry }: { entry: SleepEntry }) {
   const stages = parseHypnogram(entry)
@@ -61,9 +62,10 @@ export function NightArcCard({ entry }: { entry: SleepEntry }) {
   const ticks = hourTicks(toMin(entry.bedtime), spanMin)
 
   return (
-    <div className="card" style={{ padding: 14 }}>
+    <div className="nac glass">
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block', overflow: 'visible' }}
            role="img" aria-label="Az éjszaka lefutása fázisonként">
+        <g className="nac-bars">
         {stages.map((s, i) => (
           <rect
             key={i}
@@ -77,47 +79,48 @@ export function NightArcCard({ entry }: { entry: SleepEntry }) {
             opacity={s === 'A' ? 0.45 : 0.92}
           />
         ))}
+        </g>
         {ticks.map(t => (
           <g key={t.label}>
-            <line x1={t.x} y1={TOP} x2={t.x} y2={TOP + INNER_H} stroke="var(--border-subtle)" strokeWidth="1" />
-            <text data-hour-tick x={t.x} y={H - 5} textAnchor="middle" fontSize="8.5" fontWeight="800" fill="var(--faint)">
+            <line x1={t.x} y1={TOP} x2={t.x} y2={TOP + INNER_H} stroke="var(--divider)" strokeWidth="1" />
+            <text data-hour-tick x={t.x} y={H - 5} textAnchor="middle" fontSize="8.5" fontWeight="800" fill="var(--text-muted)">
               {t.label}
             </text>
           </g>
         ))}
-        <text x={0} y={H - 5} textAnchor="start" fontSize="8.5" fontWeight="800" fill="var(--faint)">
+        <text x={0} y={H - 5} textAnchor="start" fontSize="8.5" fontWeight="800" fill="var(--text-muted)">
           {entry.bedtime}
         </text>
-        <text x={W} y={H - 5} textAnchor="end" fontSize="8.5" fontWeight="800" fill="var(--faint)">
+        <text x={W} y={H - 5} textAnchor="end" fontSize="8.5" fontWeight="800" fill="var(--text-muted)">
           {entry.wakeup}
         </text>
       </svg>
 
-      <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
-        <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>
+      <div className="nac-halves">
+        <span className="nac-eb">
           Első fél
         </span>
         {/* showLegend MUST stay false: `first` is built from hypnogram bucket counts
             (halfNightSplit), and PhaseRail's legend would print a phase % computed from those
             counts — exactly the ADR-0015-banned computation (display-only hypnogram, never a
             ratio statistic). */}
-        <div style={{ marginTop: 6 }}><PhaseRail breakdown={first} showLegend={false} /></div>
-        <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)', display: 'block', marginTop: 12 }}>
+        <div className="nac-rail"><PhaseRail breakdown={first} showLegend={false} /></div>
+        <span className="nac-eb">
           Második fél
         </span>
         {/* Same constraint as the first-half rail above — `second` is equally bucket-derived. */}
-        <div style={{ marginTop: 6 }}><PhaseRail breakdown={second} showLegend={false} /></div>
+        <div className="nac-rail"><PhaseRail breakdown={second} showLegend={false} /></div>
       </div>
 
       {frontLoad != null && (
-        <p style={{ marginTop: 13, paddingTop: 12, borderTop: '1px solid var(--border-subtle)', fontSize: 11.5, fontWeight: 700, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-          A mély alvásod <b style={{ color: 'var(--text-primary)' }}>{frontLoad}%-a</b> az éjszaka
+        <p className="nac-lead">
+          A mély alvásod <b>{frontLoad}%-a</b> az éjszaka
           első felében volt — ez a normális minta. A REM a hajnali órákban sűrűsödik, ezért a
           korán kelés aránytalanul azt vágja le.
         </p>
       )}
 
-      <p style={{ marginTop: 10, fontSize: 10.5, fontWeight: 700, color: 'var(--faint)', lineHeight: 1.5 }}>
+      <p className="nac-foot">
         A sziluett magassága a fázist kódolja, nem mért mélységet. {bucketMin} perces felbontás.
       </p>
     </div>
