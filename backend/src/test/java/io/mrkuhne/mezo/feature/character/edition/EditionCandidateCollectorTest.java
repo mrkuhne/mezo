@@ -16,15 +16,20 @@ import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope.Change;
 import io.mrkuhne.mezo.feature.character.service.edition.EditionCandidate;
 import io.mrkuhne.mezo.feature.character.service.edition.EditionCandidateCollector;
+import io.mrkuhne.mezo.feature.character.service.edition.EditionMeal;
 import io.mrkuhne.mezo.feature.character.service.edition.EditionGenre;
 import io.mrkuhne.mezo.feature.character.service.edition.GuestSeed;
 import io.mrkuhne.mezo.feature.character.service.edition.TeamCharacter;
 import io.mrkuhne.mezo.feature.character.service.edition.TeamEditionReads;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
 import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
+import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService.Window;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
@@ -559,6 +564,83 @@ class EditionCandidateCollectorTest {
 
         assertThat(c.refs()).containsExactly(
                 new io.mrkuhne.mezo.feature.character.entity.EditionRef("pattern", p.getId().toString()));
+    }
+
+    // ---- H5 (mezo-a9bo7.16): Falat napi értékelése — ERTEKELES -------------------------------
+
+    private static final Instant BREAKFAST = Instant.parse("2026-09-24T06:30:00Z");
+    private static final Instant DINNER = Instant.parse("2026-09-24T17:15:00Z");
+
+    private static EditionMeal meal(Instant at, String score, String kcal) {
+        return new EditionMeal(at, score == null ? null : new BigDecimal(score), new BigDecimal(kcal));
+    }
+
+    private List<EditionCandidate> falat() {
+        return collector.collect(OWNER, DAY, null).stream().filter(c -> "fuel_day".equals(c.sourceKind())).toList();
+    }
+
+    @Test void falat_noMeals_noCandidate() {
+        when(reads.targets(OWNER, DAY)).thenReturn(new DailyTargets(2400, 160, 250, 80, "goal"));
+        when(reads.windows(OWNER, DAY)).thenReturn(List.of(
+                new Window(LocalTime.of(18, 0), LocalTime.of(19, 0), "gym", true, "Pull")));
+
+        assertThat(falat()).isEmpty();
+    }
+
+    @Test void falat_plateOnly_whenNoTargetAndNoTraining() {
+        when(reads.meals(OWNER, DAY)).thenReturn(List.of(
+                meal(BREAKFAST, "71", "450.4"), meal(DINNER, "80", "700")));
+
+        List<EditionCandidate> out = falat();
+
+        assertThat(out).hasSize(1);
+        EditionCandidate c = out.get(0);
+        assertThat(c.genre()).isEqualTo(EditionGenre.ERTEKELES);
+        assertThat(c.character()).isEqualTo(TeamCharacter.FALAT);
+        assertThat(c.sourceId()).isEqualTo("2026-09-24");
+        assertThat(c.sourceRoute()).isEqualTo("/fuel");
+        assertThat(c.changedAt()).isEqualTo(DINNER);
+        assertThat(c.waiting()).isFalse();
+        assertThat(c.recordText()).isEqualTo("Eddig ma 2 étkezésed van, átlagosan 76 pontos.");
+        assertThat(c.facts()).containsExactly("2", "76");
+        assertThat(c.refs()).containsExactly(
+                new io.mrkuhne.mezo.feature.character.entity.EditionRef("fuel_day", "2026-09-24"));
+    }
+
+    @Test void falat_allThreeVoices_doneTrainingNamed() {
+        when(reads.meals(OWNER, DAY)).thenReturn(List.of(
+                meal(DINNER, "80", "700"), meal(BREAKFAST, "70", "450.5")));
+        when(reads.targets(OWNER, DAY)).thenReturn(new DailyTargets(2400, 160, 250, 80, "goal"));
+        when(reads.windows(OWNER, DAY)).thenReturn(List.of(
+                new Window(LocalTime.of(7, 0), LocalTime.of(8, 0), "run", false, "Könnyű futás"),
+                new Window(LocalTime.of(18, 0), LocalTime.of(19, 0), "gym", true, "Pull")));
+
+        EditionCandidate c = falat().get(0);
+
+        assertThat(c.changedAt()).isEqualTo(DINNER); // a legkésőbbi, nem a lista utolsója
+        assertThat(c.recordText()).isEqualTo("Eddig ma 2 étkezésed van, átlagosan 75 pontos. "
+                + "A napi célod 2400 kcal, eddig 1151 kcal ment be. "
+                + "Ma volt edzésed (Pull).");
+        assertThat(c.facts()).containsExactly("2", "75", "2400", "1151");
+    }
+
+    @Test void falat_scheduledTrainingOnly_isAnnouncedAsPlanned() {
+        when(reads.meals(OWNER, DAY)).thenReturn(List.of(meal(BREAKFAST, "70", "400")));
+        when(reads.windows(OWNER, DAY)).thenReturn(List.of(
+                new Window(LocalTime.of(18, 0), LocalTime.of(19, 0), "gym", false, "Pull")));
+
+        assertThat(falat().get(0).recordText())
+                .isEqualTo("Eddig ma 1 étkezésed van, átlagosan 70 pontos. Ma Pull edzés van betervezve.");
+    }
+
+    @Test void falat_noScoreDay_skipsThePlateButKeepsTheGoal() {
+        when(reads.meals(OWNER, DAY)).thenReturn(List.of(meal(BREAKFAST, null, "400"), meal(DINNER, null, "600")));
+        when(reads.targets(OWNER, DAY)).thenReturn(new DailyTargets(2400, 160, 250, 80, "config"));
+
+        EditionCandidate c = falat().get(0);
+
+        assertThat(c.recordText()).isEqualTo("A napi célod 2400 kcal, eddig 1000 kcal ment be.");
+        assertThat(c.facts()).containsExactly("2400", "1000");
     }
 
     // Mockito ArgumentMatchers shortcuts (kept local, avoids a static-import clash with the DTO builders).
