@@ -1,85 +1,39 @@
 // ============================================================
-// Mezo · CrossLoadRow — one cross-system impact row in the SportPage
-// cross-load list: system icon + uppercase label, the affected target,
-// an impact readout and the reasoning. Warning rows get an amber tint
-// + a 2px left strip. Ported from prototype sport.jsx CrossLoadRow.
+// Mezo · CrossLoadRow — one cross-system impact row inside the SportPage
+// Cross-load glass card. Üveg re-dress (mezo-me75u.4, prototype
+// uveg-edzes-body.html `sport('cross')` `.xl .lines`): a FLAT row (it sits inside
+// the lavender glass — never glass in glass) with the system's Titanium 3D icon,
+// the uppercase system label, the affected target, the impact readout and the
+// reasoning. A warning row keeps its amber meaning: an amber-tinted flat cell
+// with a 2px amber inset edge. Ported from prototype sport.jsx CrossLoadRow.
 // ============================================================
-import { Icon } from '@/shared/ui/Icon'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { SYSTEM_LABELS } from '@/data/train/train'
 import type { CrossLoadRow as CrossLoadRowData } from '@/data/types'
 
-const FALLBACK = { label: 'tool', color: 'var(--text-secondary)', icon: 'tool' as const }
+/** The cross-load system → its 3D glyph (the line-icon names in SYSTEM_LABELS stay for
+ *  other surfaces). An unknown system falls back to the info glyph. */
+const SYSTEM_ART: Record<string, Icon3DName> = {
+  Train: 't-dumbbell', Fuel: 't-plate', Sleep: 't-sleep', Weight: 't-weight', Insights: 't-pattern',
+}
 
 interface CrossLoadRowProps {
   item: CrossLoadRowData
 }
 
 export function CrossLoadRow({ item }: CrossLoadRowProps) {
-  const sys = SYSTEM_LABELS[item.system] ?? { ...FALLBACK, label: item.system }
+  const label = SYSTEM_LABELS[item.system]?.label ?? item.system
   return (
-    <div
-      className="card"
-      style={{
-        padding: 14,
-        borderColor: item.warning ? 'color-mix(in srgb, var(--warning) 30%, transparent)' : 'var(--border-subtle)',
-        background: item.warning ? 'color-mix(in srgb, var(--warning) 4%, transparent)' : 'var(--surface-1)',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      {item.warning && (
-        <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--warning)' }} />
-      )}
-      <div
-        className="row"
-        style={{ justifyContent: 'space-between', alignItems: 'flex-start', paddingLeft: item.warning ? 6 : 0 }}
-      >
-        <div className="row gap-sm" style={{ alignItems: 'flex-start', flex: 1 }}>
-          <Icon name={sys.icon} size={14} color={sys.color} />
-          <div className="col flex-1">
-            <span className="label-mono" style={{ fontSize: 9, color: sys.color, letterSpacing: '0.14em' }}>
-              {sys.label.toUpperCase()}
-            </span>
-            <span
-              style={{
-                fontSize: 13,
-                color: 'var(--text-primary)',
-                marginTop: 4,
-                fontFamily: 'var(--ff-display)',
-                fontWeight: 500,
-                lineHeight: 1.2,
-                display: 'block',
-              }}
-            >
-              {item.target}
-            </span>
-          </div>
+    <div className={item.warning ? 'uvs-xrow is-warn' : 'uvs-xrow'}>
+      <Icon3D name={SYSTEM_ART[item.system] ?? 't-info'} size={26} />
+      <div className="uvs-xrow-body">
+        <div className="uvs-xrow-top">
+          <span className="uvs-xrow-sys">{label.toUpperCase()}</span>
+          <span className="uvs-xrow-imp">{item.impact}</span>
         </div>
-        <span
-          className="label-mono"
-          style={{
-            fontSize: 11,
-            color: item.warning ? 'var(--warning)' : 'var(--coral)',
-            whiteSpace: 'nowrap',
-            marginLeft: 12,
-          }}
-        >
-          {item.impact}
-        </span>
+        <strong>{item.target}</strong>
+        <p>{item.why}</p>
       </div>
-      <p
-        className="text-secondary mt-sm"
-        style={{
-          fontSize: 12,
-          lineHeight: 1.5,
-          paddingTop: 8,
-          marginTop: 8,
-          borderTop: '1px solid var(--border-subtle)',
-          paddingLeft: item.warning ? 6 : 0,
-        }}
-      >
-        {item.why}
-      </p>
     </div>
   )
 }

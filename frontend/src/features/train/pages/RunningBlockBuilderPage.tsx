@@ -1,32 +1,26 @@
 // ============================================================
 // Mezo · RunningBlockBuilderPage — full-screen takeover for a single running
-// block (sibling route /train/futas/:id, NO sub-nav). Own back-button header
-// (← Futás), status-aware eyebrow + auto-save indicator + ⋯ overflow menu
-// (Duplikálás / Törlés), editable title + goal, a 1–8 add/remove week row
-// driving the RunWeekEditor, and a single status-dependent bottom CTA
-// (Aktiválás | Lezárás). Edits auto-save (debounced) and flush on back.
-// Accent --sky. Mirrors MesocycleBuilderPage's shell.
+// block (sibling route /train/futas/:id, NO sub-nav). Glass back pill (‹ Futás),
+// status-aware eyebrow + auto-save indicator + ⋯ overflow menu (Duplikálás /
+// Törlés), editable title + goal, a 1–8 add/remove week row driving the
+// RunWeekEditor, and a single status-dependent bottom CTA (Aktiválás | Lezárás).
+// Edits auto-save (debounced) and flush on back.
+// Üveg re-dress (mezo-me75u.4, prototype uveg-edzes-body.html `futasterv()` +
+// `SH.blkmenu`): the form is ONE sky glass card with flat inputs, week chips and
+// flat week-editor rows inside; the saved state wears the 3D tick; the CTA is the
+// lit sky primary; the ⋯ menu a glass round button over a glass menu card.
 // ============================================================
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useRunning } from '@/data/hooks'
-import { Icon } from '@/shared/ui/Icon'
-import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
+import type { CSSProperties } from 'react'
+import { Icon3D } from '@/shared/ui/clay'
+import { MozaikPage, PageHead } from '@/shared/ui/mozaik'
 import { RunWeekEditor } from '@/features/train/components/RunWeekEditor'
 import { toUpsert, duplicateDraft, addWeek, removeLastWeek } from '@/data/train/runningDraft'
 import type { RunningBlockUpsertRequest } from '@/data/train/runningApi'
 
-const RUN = 'var(--sky)'
-
-const fieldStyle: React.CSSProperties = {
-  background: 'var(--surface-2)',
-  border: '1px solid var(--border-subtle)',
-  color: 'var(--text-primary)',
-  fontFamily: 'var(--ff-body)',
-  fontSize: 13,
-  padding: '10px 12px',
-  width: '100%',
-}
+const SKY = { '--c': 'var(--dv-sky)' } as CSSProperties
 
 export function RunningBlockBuilderPage() {
   const { id } = useParams<{ id: string }>()
@@ -81,21 +75,19 @@ export function RunningBlockBuilderPage() {
 
   if (!block) {
     return (
-      <div style={{ padding: '24px' }}>
-        <p className="text-secondary" style={{ fontSize: 13 }}>
-          Ez a futóterv nem található.
-        </p>
-        <div className="mt-lg">
-          <CtaGhost onClick={backToList}>
-            ← Futás
-          </CtaGhost>
-        </div>
-      </div>
+      <MozaikPage tone="sky" className="uvs-page uvs-rbb">
+        <PageHead glass onBack={backToList} label="Futás" />
+        <p className="uvs-ghost uv-empty uv-voice" style={SKY}>Ez a futóterv nem található.</p>
+      </MozaikPage>
     )
   }
 
   if (!draft.structure) {
-    return <div style={{ padding: 24 }}><span className="text-secondary" style={{ fontSize: 13 }}>Betöltés…</span></div>
+    return (
+      <MozaikPage tone="sky" className="uvs-page uvs-rbb">
+        <p className="uvs-ghost uv-empty" style={SKY}>Betöltés…</p>
+      </MozaikPage>
+    )
   }
 
   const statusEyebrow =
@@ -109,113 +101,109 @@ export function RunningBlockBuilderPage() {
 
   return (
     // Inside AppLayout's .screen-content scroller — no nested wrapper.
-    <div>
-      {/* Breadcrumb — pinned below the status bar like native nav chrome */}
-      <div className="sticky-top" style={{ padding: '8px 24px' }}>
-        <button type="button" onClick={backToList} className="row gap-sm">
-          <span style={{ color: RUN, fontSize: 14 }}>←</span>
-          <span className="eyebrow" style={{ color: RUN }}>Futás</span>
-        </button>
+    <MozaikPage tone="sky" className="uvs-page uvs-rbb">
+      <PageHead glass onBack={backToList} label="Futás">
+        <OverflowMenu
+          onDuplicate={() => saveRunningBlock(null, duplicateDraft(block), { onSuccess: backToList })}
+          onDelete={() => deleteRunningBlock(block.id, { onSuccess: backToList })}
+        />
+      </PageHead>
+
+      {/* Header — eyebrow, the builder status line and the auto-save state */}
+      <div className="uvs-rbb-head">
+        <span className="uv-eyebrow">Edzés · Futás</span>
+        <p>
+          <span className="uv-tint" style={SKY}>Builder · {statusEyebrow}</span>
+          <span className={dirty || runningMutationPending ? 'uvs-save' : 'uvs-save is-saved'}>
+            {runningMutationPending ? 'Mentés…' : dirty ? 'Nem mentve' : <><Icon3D name="t-tick" size={16} />Mentve</>}
+          </span>
+        </p>
       </div>
 
-      {/* Header */}
-      <div className="pghead-np">
-        <div>
-          <div className="over">Edzés · Futás</div>
-        </div>
-        <div className="row gap-md">
-          <span className="label-mono" style={{ fontSize: 9, color: dirty ? 'var(--text-tertiary)' : 'var(--success)' }}>
-            {runningMutationPending ? 'Mentés…' : dirty ? 'Nem mentve' : '✓ Mentve'}
-          </span>
-          <OverflowMenu
-            onDuplicate={() => saveRunningBlock(null, duplicateDraft(block), { onSuccess: backToList })}
-            onDelete={() => deleteRunningBlock(block.id, { onSuccess: backToList })}
-          />
-        </div>
-      </div>
-      <div style={{ padding: '6px 24px 4px' }}>
-        <span className="eyebrow" style={{ color: RUN }}>Builder · {statusEyebrow}</span>
-        <div className="col gap-sm mt-sm">
+      {/* The one glass surface: name, goal, weeks, the week editor — flat inside */}
+      <section className="uvs-bform glass" style={SKY}>
+        <label className="uvs-field">
+          <span className="uv-eyebrow">Terv neve</span>
           <input
             aria-label="Cím"
+            className="uvs-inp is-title"
             value={draft.title}
             onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
             placeholder="Terv neve"
-            style={{ ...fieldStyle, fontFamily: 'var(--ff-display)', fontSize: 22, textTransform: 'uppercase', letterSpacing: '0.01em' }}
           />
+        </label>
+        <label className="uvs-field">
+          <span className="uv-eyebrow">Cél (pl. sprint-állóképesség)</span>
           <input
             aria-label="Cél"
+            className="uvs-inp"
             value={draft.goal ?? ''}
             onChange={(e) => setDraft((d) => ({ ...d, goal: e.target.value }))}
             placeholder="Cél (pl. sprint-állóképesség)"
-            style={fieldStyle}
           />
-        </div>
-      </div>
+        </label>
 
-      {/* Week add/remove row — 1–8 */}
-      <div style={{ padding: '16px 24px 4px' }}>
-        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 8 }}>
-          <span className="label-mono">Hetek · 1–8</span>
+        {/* Week add/remove row — 1–8 */}
+        <div className="uvs-field">
+          <span className="uv-eyebrow">Hetek · 1–8</span>
+          <div className="uvs-weeks">
+            {Array.from({ length: draft.weeks || 1 }, (_, i) => i + 1).map((w) => {
+              const active = w === clampedWeek
+              return (
+                <button key={w} type="button" aria-pressed={active} onClick={() => setSelectedWeek(w)} className="uvs-wk">
+                  {w}
+                </button>
+              )
+            })}
+            {(draft.weeks || 1) > 1 && (
+              <button type="button" aria-label="Utolsó hét eltávolítása" onClick={removeWeek} className="uvs-wk is-minus">−</button>
+            )}
+            {(draft.weeks || 1) < 8 && (
+              <button type="button" aria-label="Hét hozzáadása" onClick={addWeekToDraft} className="uvs-wk is-add">＋</button>
+            )}
+          </div>
         </div>
-        <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
-          {Array.from({ length: draft.weeks || 1 }, (_, i) => i + 1).map((w) => {
-            const active = w === clampedWeek
-            return (
-              <button key={w} type="button" aria-pressed={active} onClick={() => setSelectedWeek(w)} className="rad-12"
-                style={{ minWidth: 38, padding: '8px 10px', background: active ? 'color-mix(in srgb, var(--sky) 8%, transparent)' : 'var(--surface-1)', border: `1px solid ${active ? 'color-mix(in srgb, var(--sky) 40%, transparent)' : 'var(--border-subtle)'}`, color: active ? RUN : 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', fontSize: 11, fontWeight: 600, letterSpacing: '0.1em' }}>
-                {w}
-              </button>
-            )
-          })}
-          {(draft.weeks || 1) > 1 && (
-            <button type="button" aria-label="Utolsó hét eltávolítása" onClick={removeWeek} className="rad-12"
-              style={{ minWidth: 38, padding: '8px 10px', background: 'var(--surface-1)', border: '1px solid var(--border-subtle)', color: 'var(--text-tertiary)', fontSize: 14 }}>−</button>
-          )}
-          {(draft.weeks || 1) < 8 && (
-            <button type="button" aria-label="Hét hozzáadása" onClick={addWeekToDraft} className="rad-12"
-              style={{ minWidth: 38, padding: '8px 10px', background: 'transparent', border: '1px dashed color-mix(in srgb, var(--sky) 45%, transparent)', color: RUN, fontSize: 14 }}>＋</button>
-          )}
-        </div>
-      </div>
 
-      {/* Week editor */}
-      <div style={{ padding: '12px 24px 8px' }}>
+        {/* Week editor */}
         <RunWeekEditor
           structure={draft.structure}
           weekNumber={clampedWeek}
           onStructure={(s) => setDraft((d) => ({ ...d, structure: s }))}
         />
-      </div>
+      </section>
 
-      {/* Single status CTA */}
-      <div className="col gap-sm" style={{ padding: '16px 24px 32px' }}>
+      {/* Single status CTA — the lit sky primary */}
+      <div className="uvs-rbb-cta">
         {block.status === 'planned' && (
-          <CtaPrimary onClick={() => { activateRunningBlock(block.id); backToList() }} disabled={runningMutationPending}>
-            <Icon name="check" size={16} /> Aktiválás · {block.startDate}
-          </CtaPrimary>
+          <button type="button" className="uvs-primary" style={SKY} onClick={() => { activateRunningBlock(block.id); backToList() }} disabled={runningMutationPending}>
+            <Icon3D name="t-tick" size={22} /> Aktiválás · {block.startDate}
+          </button>
         )}
         {block.status === 'active' && (
-          <CtaGhost style={{ padding: 12, borderColor: 'color-mix(in srgb, var(--error) 30%, transparent)', color: 'var(--error)' }}
+          <button type="button" className="uvs-primary" style={SKY}
             onClick={() => { closeRunningBlock(block.id); backToList() }} disabled={runningMutationPending}>
             Lezárás
-          </CtaGhost>
+          </button>
         )}
       </div>
-    </div>
+    </MozaikPage>
   )
 }
 
 function OverflowMenu({ onDuplicate, onDelete }: { onDuplicate: () => void; onDelete: () => void }) {
   const [open, setOpen] = useState(false)
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="uvs-menu">
       <button type="button" aria-label="További műveletek" aria-expanded={open} onClick={() => setOpen((o) => !o)}
-        className="rad-12" style={{ width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 16 }}>⋯</button>
+        className="uvs-menubtn glass is-round">⋯</button>
       {open && (
-        <div className="card" style={{ position: 'absolute', right: 0, top: 40, zIndex: 20, minWidth: 150, background: 'var(--surface-3)', border: '1px solid var(--border-strong)' }}>
-          <button type="button" onClick={() => { setOpen(false); onDuplicate() }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '11px 14px', fontSize: 13, color: 'var(--text-primary)', borderBottom: '1px solid var(--border-subtle)' }}>Duplikálás</button>
-          <button type="button" onClick={() => { setOpen(false); onDelete() }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '11px 14px', fontSize: 13, color: 'var(--error)' }}>Törlés</button>
+        <div className="uvs-menucard glass" style={SKY}>
+          <button type="button" onClick={() => { setOpen(false); onDuplicate() }}>
+            <Icon3D name="t-repeat" size={28} /><strong>Duplikálás</strong>
+          </button>
+          <button type="button" className="is-warn" onClick={() => { setOpen(false); onDelete() }}>
+            <Icon3D name="t-skip" size={28} /><strong>Törlés</strong>
+          </button>
         </div>
       )}
     </div>

@@ -14,6 +14,13 @@
 // single session's recap, the cabinet is a chronological record and must not
 // re-sort by tier. Every data hook + the grouping/labels are verbatim from
 // before this slice — only the face changed.
+//
+// Üveg re-dress (mezo-me75u.4, prototypes/uveg-edzes.html#medals): the glass back
+// pill + the PageHero halo variant (t-record art, amber) replace the clay s-medal spot
+// hero; each cabinet row is ONE amber glass row (sage for a target) with its tier icon
+// in a lit well and a small lit REKORD/CÉL tag above the value; the chip is a flat
+// amber-lit pill; the empty cabinet is the dashed `.uv-empty`. CSS: the
+// `── uveg edzes gyakorlatok (` block of prototype.css, scoped to `.gyx-medals`.
 // ============================================================
 import { useNavigate } from 'react-router-dom'
 import { useMedals } from '@/data/hooks'
@@ -22,8 +29,9 @@ import {
   MEDAL_TIER_COPY, MEDAL_TYPE_LABEL, MEDAL_UNIT_LABEL, formatMedalNumber, medalValueLabel,
 } from '@/features/train/logic/medalLabels'
 import { huMonthDay, huMonthDayDow, localDateString } from '@/shared/lib/dates'
-import { ClaySpot } from '@/shared/ui/clay'
-import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
+import { cn } from '@/shared/lib/cn'
+import { Icon3D } from '@/shared/ui/clay'
+import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
 
@@ -43,35 +51,32 @@ function groupByDate(medals: Medal[]): DateGroup[] {
     .map(([date, ms]) => ({ date, medals: ms }))
 }
 
-function MedalRow({ medal }: { medal: Medal }) {
-  const tierCopy = MEDAL_TIER_COPY[medal.tier]
+function MedalRow({ medal, index }: { medal: Medal; index: number }) {
+  const tier = MEDAL_TIER_COPY[medal.tier]
   const typeLabel = MEDAL_TYPE_LABEL[medal.type] ?? medal.type
   return (
-    <div className="mz-facttile mz-w-gold">
-      <span className="mz-fic" aria-hidden="true" style={{ fontSize: 15, color: tierCopy.color }}>{tierCopy.glyph}</span>
-      <span className="mz-fact-grow">
-        <span className="mz-fact-tx" style={{ display: 'block', fontWeight: 700 }}>{medal.exerciseName}</span>
-        <span className="label-mono" style={{ display: 'block', fontSize: 9, color: 'var(--mz-ink-mut)', marginTop: 2 }}>
-          {typeLabel}
-        </span>
+    <div
+      className={cn('mz-facttile mz-w-gold gyx-medal glass', medal.tier === 'TARGET' && 'is-target')}
+      data-tier={medal.tier}
+      style={{ '--c': tier.accent, '--i': index } as React.CSSProperties}
+    >
+      <span className="uv-well gyx-well" aria-hidden="true"><Icon3D name={tier.icon} size={34} /></span>
+      <span className="gyx-grow">
+        <span className="gyx-type">{typeLabel}</span>
+        <strong className="gyx-name">{medal.exerciseName}</strong>
         {/* RECORD only — TARGET_HIT never carries a previousValue (nothing beaten).
             previousDate can be null (mock-mode medalEvaluator shape) — drop the
             "…óta állt" clause cleanly rather than render a dangling date. */}
         {medal.tier === 'RECORD' && medal.previousValue != null && (
-          <span className="mz-fact-sb" style={{ display: 'block' }}>
+          <span className="gyx-prev">
             {`Előző: ${formatMedalNumber(medal.previousValue)} ${MEDAL_UNIT_LABEL[medal.unit] ?? ''}`.trim()}
             {medal.previousDate ? ` · ${huMonthDay(medal.previousDate)} óta állt` : ''}
           </span>
         )}
       </span>
-      <span
-        className="mz-qxp"
-        style={medal.tier === 'RECORD' ? undefined : { color: 'var(--mz-cell-sage-ink)', background: 'var(--mz-cell-sage-bg)' }}
-      >
-        {medal.tier === 'RECORD' ? 'REKORD' : 'CÉL'}
-      </span>
-      <span className="label-mono" style={{ fontSize: 9, color: tierCopy.color, flexShrink: 0, marginLeft: 6 }}>
-        {medalValueLabel(medal)}
+      <span className="gyx-end">
+        <span className="gyx-tag">{tier.tag}</span>
+        <b className="gyx-val">{medalValueLabel(medal)}</b>
       </span>
     </div>
   )
@@ -117,58 +122,57 @@ export function MedalsPage() {
   const monthCount = medals.filter((m) => m.date.startsWith(thisMonth)).length
 
   return (
-    <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate('/train')} label="‹ Edzés" />
+    <MozaikPage tone="gold" className="gyx-page gyx-medals">
+      <PageHead glass onBack={() => navigate('/train')} label="Edzés" />
       <EntranceGroup>
-        {/* PageHero's `icon` is a ClayIconName (small tile icons) — the hero here
-            wants the bigger clay SPOT the prototype uses (`s-medal`, 58px), so the
-            anatomy is hand-rolled with the same mz-page-hero/-hero-row/-bignum/-sb
-            classes rather than stretching the shared primitive's icon prop. */}
-        <div className="mz-page-hero" data-kalauz-anchor="medals-hero">
-          <div className="mz-hero-nm">Medálok</div>
-          <div className="mz-hero-row">
-            <ClaySpot name="s-medal" size={58} />
-            <span className="mz-bignum">{medals.length}</span>
-          </div>
-          {medals.length > 0 && <div className="mz-hero-sb">{`ebből ${monthCount} e hónapban`}</div>}
-        </div>
+        <PageHero
+          art="t-record"
+          accent="var(--dv-amber)"
+          big={medals.length}
+          name="Medálok"
+          sub={medals.length > 0 ? `ebből ${monthCount} e hónapban` : undefined}
+          kalauzAnchor="medals-hero"
+        />
         <PageBody>
           {medals.length === 0 ? (
-            <p className="text-tertiary" style={{ fontSize: 12, textAlign: 'center', padding: 20 }}>
-              Még nincs medálod — az első megdöntött rekord ide kerül.
-            </p>
+            <div className="gyx-empty uv-empty">
+              <Icon3D name="t-record" size={70} />
+              <p>Még nincs medálod — az első megdöntött rekord ide kerül.</p>
+            </div>
           ) : (
             <>
-              <span className="chip">{medals.length} medál</span>
+              <div className="gyx-chiprow">
+                <span className="gyx-count uv-flat"><Icon3D name="t-record" size={18} />{medals.length} medál</span>
+              </div>
               {/* Honest backfill note (spec §13 "Backfill surprise"): the server replays
                   the whole existing set history, so the cabinet can already be full on
                   first open — this says so instead of implying every row was live. */}
-              <p className="text-tertiary" style={{ fontSize: 11, lineHeight: 1.5, margin: '10px 0 16px' }}>
+              <p className="gyx-note">
                 A medálok visszamenőleg, a korábban logolt szetteid alapján épültek fel — nem mindegyiket élőben szerezted.
               </p>
               {/* The prototype's #page-medal stagger: each date group's eyebrow +
                   its cards ride one running 60ms cadence (40 · 100 · 160 …). The
                   armed EntranceGroup above was shipping with nothing to animate. */}
-              <div className="col gap-md">
+              <div className="gyx-groups">
                 {(() => {
                   let d = 40
                   const nextD = () => { const v = d; d += 60; return v }
                   return groups.map((g) => (
                     <div key={g.date}>
                       <span
-                        className="mz-eyebrow rise"
-                        style={{ display: 'block', marginBottom: 8, '--d': `${nextD()}ms` } as React.CSSProperties}
+                        className="mz-eyebrow uv-eyebrow gyx-date rise"
+                        style={{ '--d': `${nextD()}ms` } as React.CSSProperties}
                       >
                         {huMonthDayDow(g.date)}
                       </span>
-                      <div className="col gap-sm">
+                      <div className="gyx-list">
                         {g.medals.map((m, i) => (
                           <div
                             key={`${m.type}-${m.exerciseName}-${m.date}-${m.setIndex ?? i}`}
                             className="rise"
                             style={{ '--d': `${nextD()}ms` } as React.CSSProperties}
                           >
-                            <MedalRow medal={m} />
+                            <MedalRow medal={m} index={i} />
                           </div>
                         ))}
                       </div>

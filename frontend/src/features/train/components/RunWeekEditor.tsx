@@ -4,6 +4,10 @@
 // session is a two-zone card: Menetrend (plan-level weekday grid + time,
 // constant across weeks) and Terhelés (week-level load controls). Sprint =
 // rounds + rest steppers; Piramis = tappable work-second pills. Accent --sky.
+// Üveg re-dress (mezo-me75u.4, prototype uveg-edzes-body.html `futasterv()` `.wkrow`):
+// it renders inside the builder's sky glass form, so every session card is a FLAT row
+// and the segment pills flat chips (never glass in glass); styles live in the
+// `uveg edzes sport` block of prototype.css, scoped to `.uvs-rbb`.
 // ============================================================
 import { CompactStepper } from '@/features/train/components/CompactStepper'
 import { WeekdayGrid } from '@/features/train/components/WeekdayGrid'
@@ -14,13 +18,9 @@ import {
 } from '@/data/train/runningDraft'
 import type { RunningBlockStructureDto, RunPrescribedSession } from '@/data/train/runningApi'
 
-const RUN = 'var(--sky)'
-
 // 15 → 30 → 45 → 60 → 15 cycle for the pyramid segment pills.
 const WORK_CYCLE = [15, 30, 45, 60]
 const nextWork = (v: number) => WORK_CYCLE[(WORK_CYCLE.indexOf(v) + 1) % WORK_CYCLE.length] ?? 15
-
-const hintStyle: React.CSSProperties = { fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }
 
 export function RunWeekEditor({ structure, weekNumber, onStructure }: {
   structure: RunningBlockStructureDto
@@ -29,16 +29,16 @@ export function RunWeekEditor({ structure, weekNumber, onStructure }: {
 }) {
   const week = structure?.weeks?.find((w) => w.weekNumber === weekNumber)
   if (!week) {
-    return <span className="text-tertiary" style={{ fontSize: 11, fontStyle: 'italic' }}>Ez a hét nincs a tervben.</span>
+    return <p className="uvs-wked-none uv-empty">Ez a hét nincs a tervben.</p>
   }
   const sprint = sprintOf(week)
   const pyramid = pyramidOf(week)
 
   return (
-    <div className="col gap-md">
+    <div className="uvs-wked">
       {sprint && (
         <SessionCard session={sprint} structure={structure} weekNumber={weekNumber} onStructure={onStructure}>
-          <div className="row gap-sm">
+          <div className="uvs-wked-steps">
             <CompactStepper label="kör" value={sprint.rounds ?? 0} step={1} integer
               onChange={(n) => onStructure(setSprintRounds(structure, weekNumber, n))} />
             <CompactStepper label="mp pihenő" value={restSec(sprint)} step={5} integer
@@ -49,7 +49,7 @@ export function RunWeekEditor({ structure, weekNumber, onStructure }: {
       {pyramid && (
         <SessionCard session={pyramid} structure={structure} weekNumber={weekNumber} onStructure={onStructure}>
           <PyramidPills values={workSecs(pyramid)} onChange={(arr) => onStructure(setPyramidWork(structure, weekNumber, arr))} />
-          <span style={{ ...hintStyle, marginTop: 4 }}>pihenő = szakasz × 2 · automatikus</span>
+          <span className="uvs-hint">pihenő = szakasz × 2 · automatikus</span>
         </SessionCard>
       )}
     </div>
@@ -64,28 +64,27 @@ function SessionCard({ session, structure, weekNumber, onStructure, children }: 
   children: React.ReactNode
 }) {
   return (
-    <div className="card col" style={{ padding: 12, gap: 9, position: 'relative' }}>
-      <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: RUN }} />
-      <span className="label-mono" style={{ color: RUN }}>{session.label}</span>
+    <div className="uvs-wkrow">
+      <span className="uvs-wkrow-title">{session.label}</span>
 
       {/* Menetrend — plan-level day + time */}
-      <span style={hintStyle}>Nap · minden héten</span>
+      <span className="uvs-hint">Nap · minden héten</span>
       <WeekdayGrid value={session.dayOfWeek} onChange={(d) => onStructure(setSessionDay(structure, session.key, d))} />
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
-        <span style={hintStyle}>Időpont · minden héten</span>
+      <div className="uvs-wkrow-time">
+        <span className="uvs-hint">Időpont · minden héten</span>
         <input
           type="time"
+          className="uvs-inp"
           aria-label={`${session.label} időpont`}
           value={session.timeOfDay ?? ''}
           onChange={(e) => onStructure(setSessionTime(structure, session.key, e.target.value))}
-          style={{ background: 'var(--surface-2)', border: '1px solid color-mix(in srgb, var(--sky) 30%, transparent)', color: RUN, fontVariantNumeric: 'tabular-nums', fontSize: 13, fontWeight: 600, padding: '6px 10px' }}
         />
       </div>
 
-      <div style={{ height: 1, background: 'var(--border-subtle)', margin: '3px 0' }} />
+      <div className="uvs-wkrow-rule" aria-hidden="true" />
 
       {/* Terhelés — week-level */}
-      <span style={hintStyle}>Terhelés · {weekNumber}. hét</span>
+      <span className="uvs-hint">Terhelés · {weekNumber}. hét</span>
       {children}
     </div>
   )
@@ -96,14 +95,14 @@ function PyramidPills({ values, onChange }: { values: number[]; onChange: (next:
   const remove = (i: number) => onChange(values.filter((_, idx) => idx !== i))
   const append = () => onChange([...values, 30])
   return (
-    <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+    <div className="uvs-chips">
       {values.map((v, i) => (
-        <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontVariantNumeric: 'tabular-nums', fontSize: 11, fontWeight: 600, padding: '5px 8px', borderRadius: 2, color: RUN, border: '1px solid color-mix(in srgb, var(--sky) 35%, transparent)', background: 'color-mix(in srgb, var(--sky) 8%, transparent)' }}>
-          <button type="button" aria-label={`${v} mp szakasz váltása`} onClick={() => cycle(i)} style={{ color: 'inherit' }}>{v}</button>
-          <button type="button" aria-label={`${v} mp szakasz törlése`} onClick={() => remove(i)} style={{ color: 'var(--text-tertiary)', fontSize: 11, lineHeight: 1 }}>×</button>
+        <span key={i} className="uvs-chip is-work">
+          <button type="button" aria-label={`${v} mp szakasz váltása`} onClick={() => cycle(i)}>{v}</button>
+          <button type="button" className="uvs-chip-x" aria-label={`${v} mp szakasz törlése`} onClick={() => remove(i)}>×</button>
         </span>
       ))}
-      <button type="button" onClick={append} style={{ fontSize: 11, fontWeight: 600, padding: '5px 8px', borderRadius: 2, color: RUN, border: '1px dashed color-mix(in srgb, var(--sky) 45%, transparent)', background: 'transparent' }}>＋ szakasz</button>
+      <button type="button" className="uvs-chip is-add" onClick={append}>＋ szakasz</button>
     </div>
   )
 }

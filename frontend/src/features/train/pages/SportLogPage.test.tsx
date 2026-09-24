@@ -287,14 +287,14 @@ test('an own kcal override reaches the ceremony as "Saját értéked", not an es
 
 // ---- copy discipline ----
 
-test('no emoji anywhere on either step — the art is clay', async () => {
+test('no emoji anywhere on either step — the art is the 3D sprite', async () => {
   const { container } = renderPage()
   const emoji = /\p{Extended_Pictographic}/u
   expect(container.textContent ?? '').not.toMatch(emoji)
   await pick(/Röplabda/)
   await screen.findByLabelText('Időtartam')
   expect(container.textContent ?? '').not.toMatch(emoji)
-  // the clay art is an <svg><use> reference, never a glyph
+  // the art is a Titanium 3D sprite <svg><use> reference (the sport's own glyph), never a glyph
   expect(within(container).getByLabelText('Időtartam')).toBeInTheDocument()
-  expect(container.querySelector('.sp-head-art svg use')).not.toBeNull()
+  expect(container.querySelector('.sp-head-art svg use')?.getAttribute('href')).toBe('#t-volley')
 })

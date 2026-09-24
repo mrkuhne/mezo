@@ -32,7 +32,7 @@ const renderView = () => render(<SportPage />, { wrapper: Wrapper })
 // the RPE explainer are gone (the court lives on each slot row's meta line).
 test('page head: ‹ Edzés back chip + the ＋ Log pgact', () => {
   renderView()
-  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Edzés')
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent(/‹\s*Edzés/) // üveg: the glass back pill `‹ Edzés` (mezo-me75u.4)
   expect(screen.getByRole('button', { name: '＋ Log' })).toHaveClass('mz-pgact')
   expect(screen.queryByRole('heading', { name: 'Röplabda' })).not.toBeInTheDocument()
 })

@@ -37,7 +37,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuickLogSport } from '@/data/hooks'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { GlassBox } from '@/shared/ui/mozaik/GlassBox'
 import { SportCeremony } from '@/features/train/components/SportCeremony'
 import { sportStars } from '@/features/train/logic/sportScore'
@@ -134,13 +134,20 @@ export function toCreateRequest(
   }
 }
 
+// Üveg re-dress (mezo-me75u.4, prototype uveg-edzes-body.html `sportlog()`): the picker
+// is a 3-col grid of glass tiles, each with the sport's OWN 3D icon (`art3d`, rose; Futás
+// sky); the form is one rose glass card with flat steppers/chips/range inside, the kcal
+// door a sage glass card, and the save a lit rose primary in a sticky blurred foot bar.
+// Every rule is scoped to `.uvs-log` (prototype.css `uveg edzes sport`).
+const tileAccent = (s: Sport | RunTile) => (s.id === 'run' ? 'var(--dv-sky)' : 'var(--dv-rose)')
+
 // ── step one: which sport ────────────────────────────────────────────────────
 
 function SportPickGrid({ onPick, onLeave }: { onPick: (id: string) => void; onLeave: () => void }) {
   return (
-    <div className="sp-page">
+    <div className="sp-page uvs-log">
       <header className="sp-head">
-        <button type="button" aria-label="Vissza" onClick={onLeave}>‹</button>
+        <button type="button" className="glass is-round" aria-label="Vissza" onClick={onLeave}>‹</button>
         <span>
           <small>NAPLÓZÁS</small>
           <strong>Mi volt ma mozgás?</strong>
@@ -150,15 +157,15 @@ function SportPickGrid({ onPick, onLeave }: { onPick: (id: string) => void; onLe
         Válaszd ki, mit csináltál. A következő lapon csak azt kérdezem, ami annál a sportnál tényleg számít.
       </p>
       <div className="sp-grid">
-        {SPORTS.map((sport) => (
+        {SPORTS.map((sport, i) => (
           <button
             key={sport.id}
             type="button"
-            className="sp-tile"
-            style={{ '--sp-color': sport.color } as CSSProperties}
+            className="sp-tile glass"
+            style={{ '--sp-color': sport.color, '--c': tileAccent(sport), '--i': i } as CSSProperties}
             onClick={() => onPick(sport.id)}
           >
-            <span className="sp-tile-art"><ClayIcon name={sport.art} size={44} /></span>
+            <span className="sp-tile-art"><Icon3D name={sport.art3d} size={50} /></span>
             <strong>{sport.name}</strong>
             <small>~{('fields' in sport && sport.fields.find((f) => f.key === 'minutes')?.value) || sport.targetMinutes} perc</small>
           </button>
@@ -260,10 +267,10 @@ function SportForm({ sport, values, mode, kcalOverride, saving, saveError, onVal
   const modesField = sport.fields.find((f): f is Extract<SportField, { type: 'modes' }> => f.type === 'modes')
   const title = sport.id === 'other' && values.name ? String(values.name) : sport.name
   return (
-    <div className="sp-page" style={{ '--sp-color': sport.color } as CSSProperties}>
+    <div className="sp-page uvs-log" style={{ '--sp-color': sport.color, '--c': 'var(--dv-rose)' } as CSSProperties}>
       <header className="sp-head">
-        <button type="button" aria-label="Vissza a sportválasztóhoz" onClick={onBack}>‹</button>
-        <span className="sp-head-art"><ClayIcon name={sport.art} size={34} /></span>
+        <button type="button" className="glass is-round" aria-label="Vissza a sportválasztóhoz" onClick={onBack}>‹</button>
+        <span className="sp-head-art"><Icon3D name={sport.art3d} size={44} /></span>
         <span><small>NAPLÓZÁS · MA</small><strong>{title}</strong></span>
       </header>
 
@@ -277,7 +284,7 @@ function SportForm({ sport, values, mode, kcalOverride, saving, saveError, onVal
         </div>
       )}
 
-      <div className="sp-form">
+      <div className="sp-form glass" style={{ '--c': 'var(--dv-rose)' } as CSSProperties}>
         {visibleFields(sport, mode)
           .filter((f) => f.type !== 'modes')
           .map((f) => (
@@ -287,8 +294,8 @@ function SportForm({ sport, values, mode, kcalOverride, saving, saveError, onVal
 
       {/* The estimate is the backend's; the last word is the athlete's. No number here —
           see the honesty note at the top of the file. */}
-      <button type="button" className="sp-kcal" onClick={onAskKcal}>
-        <span className="sp-kcal-art"><ClayIcon name="i-tanyer" size={42} /></span>
+      <button type="button" className="sp-kcal glass" style={{ '--c': 'var(--dv-sage)' } as CSSProperties} onClick={onAskKcal}>
+        <span className="sp-kcal-art"><Icon3D name="t-plate" size={40} /></span>
         <span className="sp-kcal-copy">
           <strong>Kalória: becslést mentünk</strong>
           <small>A pontos értéket mentés után mutatjuk — a te súlyodból és a mozgás fajtájából jön.</small>
@@ -312,7 +319,7 @@ function SportForm({ sport, values, mode, kcalOverride, saving, saveError, onVal
 
       <div className="sp-foot">
         <button type="button" className="wo-close-cta" disabled={saving} onClick={onSave}>
-          <span className="wo-close-art"><ClayIcon name="i-sport" size={26} /></span>
+          <span className="wo-close-art"><Icon3D name={sport.art3d} size={26} /></span>
           <span><strong>Naplózom</strong><small>{values.minutes} perc</small></span>
           <u className="chip-sheen" />
         </button>

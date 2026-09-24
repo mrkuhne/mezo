@@ -2,7 +2,7 @@
 // Mezo · WorkoutSummary — the explicit-finish summary / review screen,
 // colorful pill/chip redesign (mezo-w943, spec 2026-08-10; supersedes the
 // grey 2026-07-15 layout). One shell, two modes:
-//   'closing': pre-finish — hero + halo(fire) + the closing note field + "Edzés lezárása ✓".
+//   'closing': pre-finish — hero + halo + the closing note field + "Edzés lezárása".
 //   'closed':  the same shell read-only (post-finish + /train/review), with the saved note.
 // The note (mezo-d20.8.2.2) is REAL since F7.2's tail: its value and its writes belong to the
 // page (this shell has two callers), so everything here is props.
@@ -11,13 +11,14 @@
 import { useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import type { Medal } from '@/data/train/medalTypes'
-import { muscleColor, regionColor } from '@/features/train/logic/muscleColors'
+import { muscleColor, muscleRegion, regionColor } from '@/features/train/logic/muscleColors'
 import { MEDAL_TYPE_LABEL, MEDAL_UNIT_LABEL, formatMedalNumber, medalValueLabel } from '@/features/train/logic/medalLabels'
 import { deriveSummaryStats, type SummaryExerciseInput, type SummarySetChip } from '@/features/train/logic/summaryStats'
 import type { WorkoutComparison } from '@/features/train/logic/workoutComparison'
 import { ExerciseReview } from '@/features/train/components/ExerciseReview'
-import { Icon } from '@/shared/ui/Icon'
-import { ClaySpot } from '@/shared/ui/clay'
+import { MuscleChip } from '@/features/train/components/MuscleChip'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import { PageHead } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
 export type SummaryExercise = SummaryExerciseInput
@@ -31,12 +32,16 @@ export interface SummaryChallenge {
   detail?: string
 }
 
-const CHALLENGE_COPY: Record<SummaryChallenge['state'], { glyph: string; label: string; cls: string }> = {
-  hit: { glyph: '✓', label: 'megcsináltad', cls: 'hit' },
-  miss: { glyph: '◯', label: 'nem jött össze', cls: 'miss' },
-  skipped: { glyph: '⊘', label: 'skippelted', cls: 'skip' },
-  inconclusive: { glyph: '◌', label: 'nem értékelhető', cls: 'skip' },
+/** Outcome → 3D mark (null = a quiet flat dot) + the visible label that carries the meaning. */
+const CHALLENGE_COPY: Record<SummaryChallenge['state'], { icon: Icon3DName | null; label: string; cls: string }> = {
+  hit: { icon: 't-tick', label: 'megcsináltad', cls: 'hit' },
+  miss: { icon: 't-skip', label: 'nem jött össze', cls: 'miss' },
+  skipped: { icon: null, label: 'skippelted', cls: 'skip' },
+  inconclusive: { icon: null, label: 'nem értékelhető', cls: 'skip' },
 }
+
+/** The wire label may carry an emoji ('⚡ Túlterhelés') — the surface stays emoji-free. */
+const cleanLabel = (label: string) => label.replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').trim()
 
 const hu = (n: number, digits = 1) => n.toLocaleString('hu-HU', { maximumFractionDigits: digits })
 
@@ -93,13 +98,9 @@ export function WorkoutSummary({
   const chalHit = challenges.filter((c) => c.state === 'hit').length
   const chalMiss = challenges.filter((c) => c.state !== 'hit').length
 
-  // The tone is the page's own, as in the prototype (`p-coral` closing / `p-sage` closed) —
-  // the report had no page tone at all before mezo-d20.8.2.1.
-  const tone = mode === 'closing' ? 'mz-p-coral' : 'mz-p-sage'
-
   if (openEx) {
     return (
-      <div className={`wr-root ${tone}`}>
+      <div className="wr-root uv-rev">
         <ExerciseReview
           exercise={openEx}
           medals={s.records.filter((m) => m.exerciseName === openEx.name)}
@@ -110,21 +111,18 @@ export function WorkoutSummary({
     )
   }
 
+  // Üveg re-dress (mezo-me75u.4, prototype uveg-edzes.html#review): a frameless halo hero,
+  // flat chips/cells, glass for the primary objects (comparison, medals, targets, challenges,
+  // exercise tiles, the note) — one accent each, never glass in glass. `.uv-rev` scopes it.
   return (
-    <div className={`wr-root ${tone}`}>
-      <div className="wsum-top">
-        <button onClick={onExit}>
-          <span className="wsum-xi" aria-hidden="true">{mode === 'closing' ? '✕' : '←'}</span>
-          {mode === 'closing' ? 'Bezárás' : 'Vissza'}
-        </button>
-      </div>
+    <div className="wr-root uv-rev">
+      <PageHead glass label={mode === 'closing' ? 'Bezárás' : 'Vissza'} onBack={onExit} />
 
       {/* The report had NO entrance choreography at all — the F9 audit's class A
           (docs/design_2.0/2026-08-29-fidelity-audit-findings.md §A). */}
       <EntranceGroup>
-      <div className="wsum-hero rise" style={{ '--d': '0ms' } as CSSProperties}>
-        <div className={`wsum-halo ${mode === 'closing' ? 'fire' : 'calm'}`} aria-hidden="true" />
-        <div className={`wsum-over${mode === 'closed' ? ' closed' : ''}`}>{eyebrow}</div>
+      <section className="wsum-hero uv-halo rise" style={{ '--d': '0ms' } as CSSProperties}>
+        <div className={`wsum-over uv-eyebrow${mode === 'closed' ? ' closed' : ''}`}>{eyebrow}</div>
         <h2>{title}</h2>
         <div className="wsum-num" aria-label={`${s.doneSets} / ${s.plannedSets} szett`}>
           <span aria-hidden="true">
@@ -145,16 +143,18 @@ export function WorkoutSummary({
               ? <> · <b>{actualMin} perc</b></>
               : durationMin ? <> · ~{durationMin} perc</> : null}
         </div>
-      </div>
+      </section>
 
       {s.regions.length > 0 && (
         <div className="wsum-regrow rise" style={{ '--d': '70ms' } as CSSProperties}>
           {s.regions.map((r) => {
-            const fam = regionColor(r.region)
+            // The region's art is the real anatomy of the first exercise that trained it.
+            const token = r.off ? null : s.exercises.find((e) => muscleRegion(e.muscle) === r.region)?.muscle ?? null
             return (
-              <span key={r.region} className={`wsum-reg${r.off ? ' off' : ''}`}
-                style={r.off ? undefined : { '--fam-wash': fam.wash, '--fam-deep': fam.deep } as CSSProperties}>
-                {r.label}{r.off ? null : <span className="n">{r.sets} szett</span>}
+              <span key={r.region} className={`wsum-reg uv-flat${r.off ? ' off' : ''}`}
+                style={{ '--c': regionColor(r.region).rail } as CSSProperties}>
+                {token && <span className="wr-mchp sm" aria-hidden="true"><MuscleChip token={token} size={28} /></span>}
+                {r.label}{r.off ? null : <span className="n"> · {r.sets} szett</span>}
               </span>
             )
           })}
@@ -164,30 +164,32 @@ export function WorkoutSummary({
       {/* No comparison → no tile. There is deliberately no empty state: a first instance of a
           template day has nothing to be compared against, and saying so would be noise. */}
       {comparison && (
-        <div className="wr-cmp rise" style={{ '--d': '110ms' } as CSSProperties}>
-          <div className="eyebrow">Mihez képest</div>
-          <div className="wr-cmp-ref">
-            <b>Előző {title} · {comparison.refDateLabel}</b>
-            <span className="ago">{comparison.gapLabel}</span>
+        <article className="wr-cmp glass rise" style={{ '--d': '110ms' } as CSSProperties}>
+          <div className="wr-cmp-head">
+            <span className="uv-eyebrow">Mihez képest</span>
+            <span className="wr-cmp-ref">
+              <b>Előző {title} · {comparison.refDateLabel}</b>
+              <span className="ago">{comparison.gapLabel}</span>
+            </span>
           </div>
           <div className="wr-cmp-cells">
             {comparison.cells.map((c) => (
-              <div key={c.key} className="wr-cmp-cell">
-                <span className={`v${c.tone === 'up' ? ' up' : ''}`}>{c.value}</span>
+              <div key={c.key} className="wr-cmp-cell uv-flat">
                 <span className="l">{c.label}</span>
+                <span className={`v${c.tone === 'up' ? ' up' : ''}`}>{c.value}</span>
                 {c.was && <span className="was">{c.was}</span>}
               </div>
             ))}
           </div>
-        </div>
+        </article>
       )}
 
       <div className="wsum-stripwrap rise" style={{ '--d': '150ms' } as CSSProperties}>
         <div className="mz-statstrip">
-          <div className="mz-statcell"><div className="v">{hu(s.volumeT)}<span className="u">t</span></div><div className="l">Volumen</div></div>
-          <div className="mz-statcell"><div className={`v${s.records.length ? ' gold' : ''}`}>{s.records.length}</div><div className="l">Rekord</div></div>
-          <div className="mz-statcell"><div className={`v${s.targetCount ? ' green' : ''}`}>{s.targetCount}<span className="u">✓</span></div><div className="l">Célszett</div></div>
-          <div className="mz-statcell"><div className="v">{s.avgRir == null ? '–' : hu(s.avgRir)}</div><div className="l">Ø RIR</div></div>
+          <div className="mz-statcell uv-flat"><div className="v">{hu(s.volumeT)}<span className="u">t</span></div><div className="l">Volumen</div></div>
+          <div className={`mz-statcell uv-flat${s.records.length ? ' is-gold' : ''}`}><div className={`v${s.records.length ? ' gold' : ''}`}>{s.records.length}</div><div className="l">Rekord</div></div>
+          <div className={`mz-statcell uv-flat${s.targetCount ? ' is-ok' : ''}`}><div className={`v${s.targetCount ? ' green' : ''}`}>{s.targetCount}</div><div className="l">Célszett</div></div>
+          <div className="mz-statcell uv-flat"><div className="v">{s.avgRir == null ? '–' : hu(s.avgRir)}</div><div className="l">Ø RIR</div></div>
         </div>
       </div>
 
@@ -195,8 +197,8 @@ export function WorkoutSummary({
         <div className="wsum-sec rise" style={{ '--d': '200ms' } as CSSProperties}>
           <div className="wsum-slabel">Medálok <span className="cnt">{s.records.length} rekord · {s.targetCount} cél</span></div>
           {s.records.map((m, i) => (
-            <div key={`${m.type}-${m.exerciseName}-${m.date}-${m.setIndex ?? i}`} className="wsum-medal">
-              <div className="disc" aria-hidden="true"><ClaySpot name="s-medal" size={26} /></div>
+            <div key={`${m.type}-${m.exerciseName}-${m.date}-${m.setIndex ?? i}`} className="wsum-medal glass">
+              <span className="uv-well" aria-hidden="true"><Icon3D name="t-record" size={34} /></span>
               <div className="tx">
                 <div className="t">{MEDAL_TYPE_LABEL[m.type] ?? m.type}</div>
                 <div className="m">{m.exerciseName}{m.type === 'E1RM' && m.weightKg != null && m.reps != null ? ` · ${formatMedalNumber(m.weightKg)} × ${m.reps}-ből becsülve` : ''}</div>
@@ -210,13 +212,13 @@ export function WorkoutSummary({
             </div>
           ))}
           {s.targetCount > 0 && (
-            <div className="wsum-targets">
-              <div className="tick" aria-hidden="true">✓</div>
-              <div style={{ flex: 1 }}>
+            <div className="wsum-targets glass">
+              <div className="wsum-targets-head">
+                <Icon3D name="t-tick" size={30} />
                 <div className="t">{s.targetCount} célszett teljesítve</div>
-                <div className="chips">
-                  {s.targetGroups.map((g) => <span key={g.exerciseName}>{g.exerciseName} ×{g.count}</span>)}
-                </div>
+              </div>
+              <div className="chips">
+                {s.targetGroups.map((g) => <span key={g.exerciseName} className="uv-flat">{g.exerciseName} ×{g.count}</span>)}
               </div>
             </div>
           )}
@@ -226,19 +228,24 @@ export function WorkoutSummary({
       {challenges.length > 0 && (
         <div className="wsum-sec rise" style={{ '--d': '250ms' } as CSSProperties}>
           <div className="wsum-slabel">Kihívások <span className="cnt">{chalHit} megvan · {chalMiss} kimaradt</span></div>
-          {challenges.map((c) => {
-            const copy = CHALLENGE_COPY[c.state]
-            return (
-              <div key={c.id} className={`wsum-chal ${copy.cls}`}>
-                <div className="st" aria-hidden="true">{copy.glyph}</div>
-                <div className="tx">
-                  <div className="t">{c.typeLabel}{c.exercise ? ` · ${c.exercise}` : ''}</div>
-                  <div className="m">{c.detail ?? c.target}</div>
+          <div className="wsum-chals glass">
+            {challenges.map((c) => {
+              const copy = CHALLENGE_COPY[c.state]
+              return (
+                <div key={c.id} className={`wsum-chal ${copy.cls}`}>
+                  {/* The mark is decoration: the visible outcome label carries the meaning. */}
+                  <span className="st" aria-hidden="true">
+                    {copy.icon ? <Icon3D name={copy.icon} size={30} /> : <i className="dot" />}
+                  </span>
+                  <div className="tx">
+                    <div className="t">{cleanLabel(c.typeLabel)}{c.exercise ? ` · ${c.exercise}` : ''}</div>
+                    <div className="m">{c.detail ?? c.target}</div>
+                  </div>
+                  <div className="out">{copy.label}</div>
                 </div>
-                <div className="out">{copy.label}</div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
       )}
 
@@ -250,14 +257,14 @@ export function WorkoutSummary({
           <span className="hint">koppints egy csempére ›</span>
         </div>
         <div className="wr-lane">
-          {s.exercises.map((e) => {
+          {s.exercises.map((e, i) => {
             const fam = muscleColor(e.muscle)
-            const famStyle = { '--fam-rail': fam.rail, '--fam-wash': fam.wash, '--fam-deep': fam.deep } as CSSProperties
+            const famStyle = { '--c': fam.rail, '--fam-rail': fam.rail, '--i': i } as CSSProperties
             return (
               <button
                 key={e.id}
                 type="button"
-                className={`wr-extile${e.abandoned ? ' dead' : ''}`}
+                className={`wr-extile glass${e.abandoned ? ' dead' : ''}`}
                 style={famStyle}
                 aria-label={`${e.name} — ${e.abandoned ? 'kihagyva' : `${e.doneSets} / ${e.plannedSets} szett`}`}
                 onClick={() => setOpenExId(e.id)}
@@ -273,10 +280,10 @@ export function WorkoutSummary({
                 </span>
                 {/* solid = logged · gold = medal · faint = warmup · dashed = missed */}
                 <span className="wr-setbars" aria-hidden="true">
-                  {e.chips.map((c, i) => (
-                    <i key={i} className={c.record ? 'med' : c.warmup ? 'warm' : ''} />
+                  {e.chips.map((c, j) => (
+                    <i key={j} className={c.record ? 'med' : c.warmup ? 'warm' : ''} />
                   ))}
-                  {Array.from({ length: e.missing }, (_, i) => <i key={`m${i}`} className="miss" />)}
+                  {Array.from({ length: e.missing }, (_, j) => <i key={`m${j}`} className="miss" />)}
                 </span>
                 <span className="foot">
                   {e.abandoned ? 'nincs szett' : `${e.doneSets}/${e.plannedSets} szett`}
@@ -304,7 +311,7 @@ export function WorkoutSummary({
           {noteEditing ? (
             <div className="wsum-note-ed">
               <button type="button" className="save" onClick={onNoteSave}>Mentés</button>
-              <button type="button" className="cancel" onClick={onNoteCancel}>Mégse</button>
+              <button type="button" className="cancel uv-flat" onClick={onNoteCancel}>Mégse</button>
             </div>
           ) : (
             <p className="wsum-note-hint">Nem kötelező — később is hozzáírhatod.</p>
@@ -315,18 +322,20 @@ export function WorkoutSummary({
       {/* `closed`: the saved sentence, or — only where revisiting is the point — a quiet way to
           add one. No note and no editor means nothing renders (ADR 0010). */}
       {mode === 'closed' && !noteEditing && note ? (
-        <div className="wsum-note-r">
-          <span className="wsum-note-lbl">Amit aznap írtál</span>
-          <p>{note}</p>
-          {onEditNote ? (
-            <button type="button" className="wsum-note-edit" aria-label="Jegyzet szerkesztése" onClick={onEditNote}>
-              <Icon name="pencil" size={12} />
-            </button>
-          ) : null}
-        </div>
+        <article className="wsum-note-r glass">
+          <div className="wsum-note-head">
+            <span className="wsum-note-lbl uv-eyebrow">Amit aznap írtál</span>
+            {onEditNote ? (
+              <button type="button" className="wsum-note-edit uv-flat" aria-label="Jegyzet szerkesztése" onClick={onEditNote}>
+                <Icon3D name="t-note" size={20} />
+              </button>
+            ) : null}
+          </div>
+          <p className="uv-voice">{note}</p>
+        </article>
       ) : null}
       {mode === 'closed' && !noteEditing && !note && onEditNote ? (
-        <button type="button" className="wsum-note-add" onClick={onEditNote}>
+        <button type="button" className="wsum-note-add uv-empty" onClick={onEditNote}>
           ＋ Jegyzet ehhez az edzéshez
         </button>
       ) : null}
@@ -337,16 +346,16 @@ export function WorkoutSummary({
       <div className="wsum-ctas">
         {mode === 'closing' ? (
           <>
-            <button className="cta-primary" disabled={finishPending} onClick={onFinish}>
-              <Icon name="check" size={16} />
-              <span>Edzés lezárása ✓</span>
+            <button className="wsum-finish glass" disabled={finishPending} onClick={onFinish}>
+              <Icon3D name="t-tick" size={36} />
+              <span>Edzés lezárása</span>
             </button>
-            <button type="button" className="cta-ghost" style={{ padding: 12 }} onClick={onBack}>
+            <button type="button" className="wsum-ghost uv-flat" onClick={onBack}>
               ← Vissza az edzéshez
             </button>
           </>
         ) : (
-          <button className="cta-ghost" style={{ padding: 12 }} onClick={onExit}>
+          <button className="wsum-ghost uv-flat" onClick={onExit}>
             ← Vissza
           </button>
         )}

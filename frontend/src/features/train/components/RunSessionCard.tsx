@@ -1,41 +1,21 @@
 // ============================================================
 // Mezo · RunSessionCard — pure presentational card for ONE prescribed
-// running session (sprint / pyramid / steady). Mirrors the .seg-pill +
-// .rpe-tag look from the Futás mockup (futas-app-faithful.html). Running
-// accent is the Napiv --tag-run/--wash-run pair; a stag-run FUTÁS tag marks
-// the session type. No hooks, no data fetching — props in, markup out.
+// running session (sprint / pyramid / steady). Üveg re-dress (mezo-me75u.4,
+// prototype uveg-edzes-body.html `futas('het')` `.rsc`): a sky glass card —
+// the tag line (stag-run FUTÁS + day · time, the RPE target as a flat chip),
+// the session name (+ a lit MA pill), flat segment chips tinted by role, and
+// the CTA: a lit sky „Naplózd ›"/„Pótold ›" pill, a quiet „Naplózás ›" for a
+// future day, or KÉSZ with the 3D tick. No hooks — props in, markup out.
 // ============================================================
+import type { CSSProperties } from 'react'
 import type { RunPrescribedSession, RunSegment } from '@/data/train/runningApi'
 import { DAY_ORDER } from '@/data/train/train'
+import { Icon3D } from '@/shared/ui/clay'
 
-const RUN = 'var(--tag-run)'
-
-// Mockup's .seg-pill: mono, small, tinted by role. work = --tag-run, warmup/
-// cooldown = --warning, rest/other = neutral surface-2.
+// Segment chips are flat (they sit inside the glass): work = sky-tinted,
+// warmup/cooldown = amber-tinted, rest/notes = neutral.
 function Pill({ text, tone }: { text: string; tone: 'work' | 'warm' | 'rest' }) {
-  const style =
-    tone === 'work'
-      ? { color: RUN, borderColor: 'color-mix(in srgb, var(--tag-run) 35%, transparent)', background: 'var(--wash-run)' }
-      : tone === 'warm'
-        ? { color: 'var(--warning)', borderColor: 'rgba(245, 158, 11, 0.3)', background: 'var(--surface-2)' }
-        : { color: 'var(--text-secondary)', borderColor: 'var(--border-subtle)', background: 'var(--surface-2)' }
-  return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 5,
-        fontSize: 11,
-        fontWeight: 600,
-        padding: '3px 8px',
-        border: '1px solid',
-        borderRadius: 2,
-        ...style,
-      }}
-    >
-      {text}
-    </span>
-  )
+  return <span className={`uvs-chip is-${tone}`}>{text}</span>
 }
 
 const secLabel = (sec: number) => `${Math.round(sec / 60)}p`
@@ -79,93 +59,38 @@ export function RunSessionCard({ session, ctaState, onLog }: {
 }) {
   const dayLabel = DAY_ORDER[session.dayOfWeek] ?? ''
   const { min, max } = session.rpeTarget
-  // High-intensity sprint targets (min >= 9) get the terracotta --error tag (light
-  // theme's --error-base IS terracotta, #C4634B — never a true alarm red); otherwise amber --warning.
+  // High-intensity sprint targets (min >= 9) get the coral chip; otherwise amber.
   const hot = session.kind === 'sprint' && min >= 9
-  const rpeStyle = hot
-    ? { color: 'var(--error)', background: 'color-mix(in srgb, var(--error) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--error) 35%, transparent)' }
-    : { color: 'var(--warning)', background: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.35)' }
 
   return (
-    <div
-      className="card"
-      style={{ padding: 0, overflow: 'hidden', position: 'relative' }}
-    >
-      <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: RUN }} />
-      <div style={{ padding: '13px 14px 13px 16px' }}>
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-          <div className="row" style={{ alignItems: 'center', gap: 10 }}>
-            <span className="stag stag-run">FUTÁS</span>
-            <span className="label-mono" style={{ color: 'var(--text-primary)' }}>{dayLabel}</span>
-            {session.timeOfDay && (
-              <span style={{ fontSize: 11, color: RUN }}>{session.timeOfDay}</span>
-            )}
-            <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{session.label}</span>
-            {ctaState === 'today' && (
-              <span className="excat-tag" style={{ background: 'var(--wash-run)', color: RUN }}>MA</span>
-            )}
-          </div>
-          <span
-            style={{
-              fontVariantNumeric: 'tabular-nums',
-              fontSize: 10,
-              fontWeight: 600,
-              letterSpacing: '0.06em',
-              padding: '2px 8px',
-              borderRadius: 10,
-              border: '1px solid',
-              ...rpeStyle,
-            }}
-          >
-            RPE {min}–{max}
-          </span>
-        </div>
-        <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
-          {segmentPills(session).map((p) => (
-            <Pill key={p.key} text={p.text} tone={p.tone} />
-          ))}
-        </div>
-        <div className="row" style={{ justifyContent: 'flex-end', marginTop: 10 }}>
-          {ctaState === 'done' ? (
-            <span
-              className="excat-tag"
-              style={{ background: 'color-mix(in srgb, var(--success) 16%, transparent)', color: 'var(--success)' }}
-            >
-              KÉSZ ✓
-            </span>
-          ) : ctaState === 'future' ? (
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: 'var(--text-tertiary)',
-              }}
-            >
-              Naplózás ▸
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={onLog}
-              style={{
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: RUN,
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                padding: 0,
-              }}
-            >
-              {ctaState === 'today' ? 'Naplózd ›' : 'Pótold ›'}
-            </button>
-          )}
-        </div>
+    <article className="uvs-rsc glass" style={{ '--c': 'var(--dv-sky)' } as CSSProperties}>
+      <div className="uvs-rsc-top">
+        <span className="uvs-tagl">
+          <span className="stag stag-run">FUTÁS</span>
+          <em>{dayLabel}{session.timeOfDay ? ` · ${session.timeOfDay}` : ''}</em>
+        </span>
+        <span className={hot ? 'uvs-chip is-rpe is-hot' : 'uvs-chip is-rpe'}>RPE {min}–{max}</span>
       </div>
-    </div>
+      <div className="uvs-rsc-name">
+        <strong>{session.label}</strong>
+        {ctaState === 'today' && <span className="uvs-tag is-lit">MA</span>}
+      </div>
+      <div className="uvs-chips">
+        {segmentPills(session).map((p) => (
+          <Pill key={p.key} text={p.text} tone={p.tone} />
+        ))}
+      </div>
+      <div className="uvs-rsc-cta">
+        {ctaState === 'done' ? (
+          <span className="uvs-ok"><Icon3D name="t-tick" size={18} />KÉSZ</span>
+        ) : ctaState === 'future' ? (
+          <span className="uvs-later">Naplózás ›</span>
+        ) : (
+          <button type="button" className="uvs-pill" onClick={onLog}>
+            {ctaState === 'today' ? 'Naplózd ›' : 'Pótold ›'}
+          </button>
+        )}
+      </div>
+    </article>
   )
 }

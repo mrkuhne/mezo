@@ -12,9 +12,9 @@
 //             Per-set logging (weight/reps/RIR), Múlt hét comparison,
 //             set dots, today's set history, PR toast + feedback debrief
 //   summary → the post-finish two-step closing ceremony (WorkoutCeremony): stars +
-//             counters + stats + records, then muscles + kcal. NO challenge outcomes —
-//             the küldetés rows left the ceremony in T-P1 Task 3 (their home is the
-//             review page's `Kihívások` strip and the header ⋯ menu's Küldetések glass).
+//             counters + stats + records + the accepted küldetések' outcomes (owner-
+//             approved, mezo-me75u.4), then muscles + kcal. The full challenge strip
+//             lives on the review page; picking them, in the header ⋯ Küldetések glass.
 //   complete→ the SAME ceremony read back settled (no pass) + the pending-sets note
 // Every exit (Bezárás / back / Mentés) navigates back to /train.
 // Ported from prototype train.jsx (the active-workout TrainSection).
@@ -65,12 +65,12 @@ import {
 } from '@/features/train/logic/workoutState'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
+import { cleanTypeLabel } from '@/features/train/components/ChallengeCard'
 import { MedalToast } from '@/features/train/components/MedalToast'
 import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
-import { WorkoutCeremony } from '@/features/train/components/WorkoutCeremony'
+import { WorkoutCeremony, ceremonyChallenges, ceremonyRecord } from '@/features/train/components/WorkoutCeremony'
 import { cerScore, muscleStarRows } from '@/features/train/logic/cerScore'
-import { medalValueLabel, MEDAL_TYPE_LABEL } from '@/features/train/logic/medalLabels'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { trainDayEnergy } from '@/features/train/logic/trainDayEnergy'
 import { actualMinutes, type SessionTiming } from '@/features/train/logic/actualDuration'
@@ -386,10 +386,9 @@ function ActiveWorkoutSession({
     }
   }
 
-  // The küldetés rows T7 Task 4 carried into the ceremony are GONE (mezo-e1ii9, Task 3):
-  // the prototype's close has no challenge strip on either of its two steps. The outcomes
-  // keep their other home — the review page (WorkoutReviewPage → WorkoutSummary's own
-  // challenge strip, fed by the same `useChallenges` list).
+  // The ceremony's stats card lists the ACCEPTED challenges with their outcome again
+  // (owner-approved in the üveg prototype, mezo-me75u.4 — `ceremonyChallenges` below); the
+  // review page (WorkoutReviewPage → WorkoutSummary) keeps the full challenge strip.
 
   // Starting the workout is no longer a tap — entering the route IS the start (mezo-e1ii9,
   // the prototype's `openSession()`). BOTH old "⚡ Kezdjük el" paths survive verbatim, they
@@ -804,7 +803,11 @@ function ActiveWorkoutSession({
         xpGained={xpGained}
         records={sessionMedals
           .filter((m) => m.tier === 'RECORD')
-          .map((m) => ({ name: `${MEDAL_TYPE_LABEL[m.type]} · ${m.exerciseName}`, value: medalValueLabel(m) }))}
+          .map(ceremonyRecord)}
+        // The stats card's Küldetések (owner-approved, mezo-me75u.4): the session's ACCEPTED
+        // challenges with their server-resolved outcome — the same `useChallenges` list and
+        // accept map the header's Küldetések glass reads; no new fetch.
+        challenges={ceremonyChallenges(challenges, acceptedMap)}
         muscles={muscleStarRows(session, W.exercises)}
         kcal={kcal}
         // The honest pending-sets line now lives on the live ceremony itself: `pendingAtClose`
@@ -1023,6 +1026,7 @@ function ActiveWorkoutSession({
               note: actual?.note ?? '',
             }}
             canDelete={canRemoveSet(session, ex.id)}
+            muscle={ex.muscle}
             onSave={(v) => handleSetSave(ex, idx, v)}
             onDelete={() => handleSetDelete(ex, idx)}
             onClose={() => setEditingSet(null)}
@@ -1040,24 +1044,24 @@ function ActiveWorkoutSession({
         />
       )}
       {addSetPrompt && (
-        <Sheet onClose={() => setAddSetPrompt(null)} labelledBy="add-set-prompt-title" className="sheet-nested">
+        <Sheet onClose={() => setAddSetPrompt(null)} labelledBy="add-set-prompt-title" className="sheet-nested glass wos-sheet">
           {(close) => (
-            <div style={{ padding: '4px 2px 2px' }}>
-              <span className="eyebrow" style={{ color: 'var(--coral-deep)' }}>Extra szett hozzáadva</span>
-              <h3
-                id="add-set-prompt-title"
-                style={{ fontFamily: 'var(--ff-display)', fontSize: 20, fontWeight: 600, marginTop: 8, color: 'var(--text-primary)' }}
-              >
-                A tervbe is felvegyük?
-              </h3>
-              <p style={{ fontSize: 13, marginTop: 8, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+            <>
+              {/* U4: a floating coral glass sheet — the prototype's `extra` sheet. */}
+              <div className="wos-sheet-head">
+                <Icon3D name="t-weight" size={52} className="wos-sheet-art3d" />
+                <span className="wos-sheet-title">
+                  <span className="wos-sheet-eb">Extra szett hozzáadva</span>
+                  <h3 id="add-set-prompt-title">A tervbe is felvegyük?</h3>
+                </span>
+              </div>
+              <p className="wos-sheet-lead">
                 Csak erre az alkalomra szól, vagy minden hétre — ilyenkor a mesociklus terve is eggyel több szettet ír elő ennél a gyakorlatnál.
               </p>
-              <div className="col gap-sm" style={{ marginTop: 16 }}>
+              <div className="wos-sheet-two">
                 <button
                   type="button"
-                  className="cta-primary"
-                  style={{ padding: '12px 18px', fontSize: 14 }}
+                  className="wos-primary"
                   onClick={() => {
                     writeExtraSetToTemplate(addSetPrompt.exerciseId)
                     close()
@@ -1065,38 +1069,35 @@ function ActiveWorkoutSession({
                 >
                   Minden hétre
                 </button>
-                <button
-                  type="button"
-                  className="cta-ghost"
-                  style={{ padding: 12, fontSize: 13 }}
-                  onClick={close}
-                >
+                <button type="button" className="wos-pill is-block" onClick={close}>
                   Csak ma
                 </button>
               </div>
-            </div>
+            </>
           )}
         </Sheet>
       )}
 
-      <div>
+      <div className="wos">
         {/* Header — the one piece of chrome the card list keeps: back pill, the
             session title + its live set-progress line, and the ⋯ that opens the
             session/exercise actions for the exercise that is up now. Sticky by
             `.wk-top` itself (position: sticky; top: 0). */}
-        <div className="wk-top np-anim" data-kalauz-anchor="session-start" style={{ '--i': 0 } as React.CSSProperties}>
-          <button type="button" className="back np-press" aria-label="Vissza" onClick={onExit}>‹</button>
+        {/* Üvegesítés U4 (mezo-me75u.4): a sticky FLAT header — round flat buttons, the title and
+            "n/m szett" with the done count lit coral. Skin: `uveg edzes session` block. */}
+        <div className="wk-top wos-top np-anim" data-kalauz-anchor="session-start" style={{ '--i': 0 } as React.CSSProperties}>
+          <button type="button" className="back wos-rb np-press" aria-label="Vissza" onClick={onExit}>‹</button>
           <div className="tt wkx-tt">
             <div className="t1">{W.title}</div>
-            <div className="t2">{doneSets}/{totalSets} szett</div>
+            <div className="t2"><b>{doneSets}</b>/{totalSets} szett</div>
           </div>
           {/* Mini ? (D11): ez az oldal chrome-mentes, a fejléc globális ?-e itt nem létezik.
               A kalauz horgonya és újranyitása a prep breadcrumbról ide költözött (mezo-e1ii9)
               — a kártyalista fejléce AZ indítás most. */}
           {kalauz.current && (
-            <button type="button" className="nap-roundbtn nap-q" aria-label="Kalauz ehhez az oldalhoz"
-              aria-haspopup="dialog" style={{ marginLeft: 'auto' }} onClick={() => kalauz.open(kalauz.current!.id)}>
-              <span className="nap-q-glyph" aria-hidden="true">?</span>
+            <button type="button" className="wos-rb wos-q np-press" aria-label="Kalauz ehhez az oldalhoz"
+              aria-haspopup="dialog" onClick={() => kalauz.open(kalauz.current!.id)}>
+              <span aria-hidden="true">?</span>
             </button>
           )}
           <button
@@ -1104,8 +1105,7 @@ function ActiveWorkoutSession({
             aria-label="Gyakorlat műveletek"
             disabled={!!feedbackEx}
             onClick={() => setGlass({ kind: 'menu', id: current.id })}
-            className="back np-press"
-            style={{ marginLeft: kalauz.current ? 8 : 'auto', fontSize: 15 }}
+            className="back wos-rb np-press"
           >
             ⋯
           </button>
@@ -1113,29 +1113,39 @@ function ActiveWorkoutSession({
 
         {/* Session progress bar: one segment per exercise, flex-weighted by its
             planned set count, family-coloured; opacity signals done/current/upcoming. */}
-        <div className="wkx-progressbar" aria-hidden="true">
-          {progressSegments.map((seg, i) => (
-            <span
-              key={i}
-              style={{
-                flex: seg.weight,
-                background: muscleColor(seg.colorMuscle).rail,
-                opacity: seg.state === 'done' ? 1 : seg.state === 'current' ? 0.45 : 0.25,
-              }}
-            />
-          ))}
+        {/* U4: each segment is a muscle-tinted track whose lit fill grows with the exercise's
+            logged share (prototype `.pbar`); `data-state` keeps the done/current/upcoming read. */}
+        <div className="wkx-progressbar wos-pbar" aria-hidden="true">
+          {progressSegments.map((seg, i) => {
+            const ex = W.exercises[i]
+            const planned = ex ? effectiveSetCount(session, ex.id) : 0
+            const fill = seg.state === 'done' ? 100 : planned > 0 ? Math.min(100, ((session.logged[ex.id]?.length ?? 0) / planned) * 100) : 0
+            return (
+              <span
+                key={i}
+                data-state={seg.state}
+                style={{ flex: seg.weight, '--c': muscleColor(seg.colorMuscle).rail } as React.CSSProperties}
+              >
+                <b style={{ width: `${fill}%` }} />
+              </span>
+            )
+          })}
         </div>
 
         {/* Niggle banner if active */}
         {niggleActive && (
-          <div style={{ padding: '8px 24px' }}>
+          <div className="wos-warn-wrap">
             {/* The real `detail` prose (mezo-e1ii9 fix round 1): the backend ships a
                 per-niggle sentence and it had no reader once the prep mosaic's niggle
                 tile retired — the banner printed only the muscle + a hardcoded line.
-                The generic line stays as the fallback for a warning with no detail. */}
-            <div className="warmstrip">
-              ⚠ {W.niggleWarning?.muscleLabel ?? 'Jobb váll'} aktív ·{' '}
-              {W.niggleWarning?.detail || 'óvatos, először warm-up'}
+                The generic line stays as the fallback for a warning with no detail.
+                U4: an amber callout led by the 3D bandage (the ⚠ glyph retired). */}
+            <div className="warmstrip wos-warn" role="note" aria-label="Sérülés-figyelmeztetés">
+              <Icon3D name="t-bandage" size={30} />
+              <span>
+                <b>{W.niggleWarning?.muscleLabel ?? 'Jobb váll'} aktív</b> ·{' '}
+                {W.niggleWarning?.detail || 'óvatos, először warm-up'}
+              </span>
             </div>
           </div>
         )}
@@ -1165,6 +1175,28 @@ function ActiveWorkoutSession({
           )}
           {/* The day-level overload tally (mezo-88iwa.4) — its only surface since the prep
               mosaic retired. Honest-empty: nothing to say, nothing rendered. */}
+          {/* Owner-approved U4 addition (mezo-me75u.4): at the START of the workout (no set logged
+              yet) the day's quests sit on top as one glass row that opens the SAME Küldetések
+              glass the ⋯ menu reaches. Only when there is something to show — a list, or one
+              still being generated. The ⋯ menu entry stays. */}
+          {doneSets === 0 && (challengesPending || challenges.length > 0) && (
+            <button
+              type="button"
+              className="wos-fresh glass"
+              onClick={() => setGlass({ kind: 'challenges', id: current.id })}
+            >
+              <Icon3D name="t-quest" size={42} />
+              <span className="wos-fresh-copy">
+                <strong>A mai küldetések</strong>
+                <small>
+                  {challengesPending
+                    ? 'készül…'
+                    : `${challenges.filter((c) => acceptedMap[c.id]).length} / ${challenges.length} elfogadva`}
+                </small>
+              </span>
+              <b className="wos-chev" aria-hidden="true">›</b>
+            </button>
+          )}
           <WorkoutOverloadLine overload={W.overloadSummary} />
           {session.order.map((id) => {
             const e = W.exercises.find((x) => x.id === id)
@@ -1181,7 +1213,7 @@ function ActiveWorkoutSession({
                 logBlocked={logBlocked}
                 challenge={(() => {
                   const c = challenges.find((x) => x.exerciseId === id && acceptedMap[x.id])
-                  return c ? { label: c.typeLabel, target: c.target } : null
+                  return c ? { label: cleanTypeLabel(c.typeLabel), target: c.target } : null
                 })()}
                 onLogSet={(input) => handleLogSet(e, input)}
                 onTapDoneRow={(idx) => setEditingSet({ exerciseId: id, idx })}
@@ -1196,13 +1228,13 @@ function ActiveWorkoutSession({
               finishCta): `skip` when nothing is logged, `partial` (gold) while sets remain
               unticked, `full` (green) once every non-skipped exercise is done. Replaces
               Task 4's temporary plain button. */}
+          {/* U4: a FLAT button — t-skip while nothing is logged, t-star while partial, t-tick
+              once everything is done (the three states keep their `is-*` hooks). */}
           <button type="button" className={`wo-finish is-${finishState}`} onClick={handleFinishTap} disabled={logBlocked}>
-            <span className="wo-finish-glow" aria-hidden="true" />
             <span className="wo-finish-art">
-              <Icon name={finishState === 'skip' ? 'x' : finishState === 'full' ? 'check' : 'sparkle'} size={finishState === 'skip' ? 30 : 34} />
+              <Icon3D name={finishState === 'skip' ? 't-skip' : finishState === 'full' ? 't-tick' : 't-star'} size={26} />
             </span>
             <strong>{finishState === 'skip' ? 'Edzés kihagyása' : 'Edzés befejezése'}</strong>
-            <u className="chip-sheen" />
           </button>
         </div>
       </div>
@@ -1251,50 +1283,43 @@ function NoteEditSheet({
 }) {
   const [text, setText] = useState(initialNote)
   return (
-    <Sheet onClose={onClose} labelledBy="note-edit-title" className="sheet-nested">
+    <Sheet onClose={onClose} labelledBy="note-edit-title" className="sheet-nested glass wos-sheet is-lav">
       {(close) => (
-        <div style={{ padding: '4px 2px 2px' }}>
-          <span className="eyebrow" style={{ color: 'var(--coral-deep)' }}>Gyakorlat-jegyzet</span>
-          <h3
-            id="note-edit-title"
-            style={{ fontFamily: 'var(--ff-display)', fontSize: 20, fontWeight: 600, marginTop: 8, color: 'var(--text-primary)' }}
-          >
-            Jegyzet a gyakorlathoz
-          </h3>
+        <>
+          {/* U4: a floating lavender glass sheet — the prototype's `note` sheet. */}
+          <div className="wos-sheet-head">
+            <Icon3D name="t-note" size={52} className="wos-sheet-art3d" />
+            <span className="wos-sheet-title">
+              <span className="wos-sheet-eb">Gyakorlat-jegyzet</span>
+              <h3 id="note-edit-title">Jegyzet a gyakorlathoz</h3>
+            </span>
+          </div>
           <textarea
+            className="wos-sheet-ta"
             aria-label="Gyakorlat-jegyzet szerkesztése"
             value={text}
             onChange={(e) => setText(e.target.value)}
             maxLength={500}
             rows={4}
             placeholder="Forma-emlékeztető, beállítás, fájdalom-jelzés…"
-            style={{
-              width: '100%',
-              marginTop: 14,
-              fontSize: 13,
-              padding: '10px 12px',
-              background: 'var(--surface-2)',
-              lineHeight: 1.5,
-              resize: 'none',
-            }}
           />
-          <div className="col gap-sm" style={{ marginTop: 16 }}>
+          <div className="wos-sheet-two">
+            <button type="button" className="wos-pill is-block" onClick={close}>
+              Mégse
+            </button>
             <button
               type="button"
-              className="cta-primary"
-              style={{ padding: '12px 18px', fontSize: 14 }}
+              className="wos-primary"
               onClick={() => {
                 onSave(text.trim())
                 close()
               }}
             >
+              <Icon3D name="t-tick" size={22} />
               Mentés
             </button>
-            <button type="button" className="cta-ghost" style={{ padding: 12, fontSize: 13 }} onClick={close}>
-              Mégse
-            </button>
           </div>
-        </div>
+        </>
       )}
     </Sheet>
   )

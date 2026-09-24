@@ -39,7 +39,7 @@ const cards = () => Array.from(document.querySelectorAll<HTMLElement>('.gy-card'
 test('the poster carries the prototype eyebrow, title and lead verbatim', async () => {
   const { container } = renderPage()
   await screen.findByText('A mozdulataid')
-  const hero = container.querySelector('.pl-dhero')!
+  const hero = container.querySelector('.gyx-hero')!
   expect(within(hero as HTMLElement).getByText('Gyakorlatok')).toBeInTheDocument()
   expect(within(hero as HTMLElement).getByText(
     'Minden gyakorlat egy helyen — a rekordjaiddal és a medáljaiddal együtt.',
@@ -49,7 +49,7 @@ test('the poster carries the prototype eyebrow, title and lead verbatim', async 
 test('the poster foot shows three REAL counts (katalógus · rekordos sorok · medálok)', async () => {
   const { container } = renderPage()
   await screen.findByText('A mozdulataid')
-  const foot = container.querySelector('.pl-poster-foot')!
+  const foot = container.querySelector('.gyx-foot')!
   // 6 catalogue rows; 3 of them carry a record (Dead Hang's record has no catalogue row);
   // 2 medals land on catalogue rows (Leg Press's medal has no catalogue row).
   expect(foot.textContent).toBe('6 gyakorlat3 rekorddal2 medál')
@@ -61,7 +61,7 @@ test('the counts stay honest at zero — an empty catalogue says 0 of everything
   )
   const { container } = renderPage()
   await screen.findByText('A mozdulataid')
-  expect(container.querySelector('.pl-poster-foot')!.textContent).toBe('0 gyakorlat0 rekorddal0 medál')
+  expect(container.querySelector('.gyx-foot')!.textContent).toBe('0 gyakorlat0 rekorddal0 medál')
   expect(screen.getByText('Nincs ilyen gyakorlat a tárban.')).toBeInTheDocument()
 })
 
@@ -199,7 +199,7 @@ test('the poster foot’s medal count is a doorway to the medal vitrine — the 
   const user = userEvent.setup()
   const { container } = renderPage()
   await screen.findByText('A mozdulataid')
-  const foot = container.querySelector('.pl-poster-foot')!
+  const foot = container.querySelector('.gyx-foot')!
 
   // Only the medal segment is a button; „gyakorlat" and „rekorddal" stay plain text.
   expect(within(foot as HTMLElement).getAllByRole('button')).toHaveLength(1)
@@ -235,4 +235,26 @@ test('the medals query’s own pending state is folded into the skeleton gate �
   expect(screen.getByRole('status', { name: 'Betöltés…' })).toBeInTheDocument()
   await screen.findByText('A mozdulataid')
   expect(screen.queryByRole('status', { name: 'Betöltés…' })).not.toBeInTheDocument()
+})
+
+// Üvegesítés (mezo-me75u.4, prototypes/uveg-edzes.html#exercises): the ranking, not the paint.
+test('üveg: a halo hero with the 3D t-muscle art, glass cards tinted by their own muscle, t-record medal counts', async () => {
+  const { container } = renderPage()
+  await screen.findByText('A mozdulataid')
+  const hero = container.querySelector('.gyx-hero')!
+  expect(hero).toHaveClass('uv-halo')
+  expect(hero).not.toHaveClass('glass')
+  expect(hero.querySelector('use')!.getAttribute('href')).toBe('#t-muscle')
+  for (const card of cards()) {
+    expect(card).toHaveClass('glass')
+    // the hue is published on the element that wears the glass (bible U1 rule 4)
+    expect(card.style.getPropertyValue('--c')).not.toBe('')
+    expect(card.querySelector('.glass')).toBeNull()
+  }
+  const row = cards().find((c) => c.textContent?.includes('Chest Supported Row'))!
+  expect(row.querySelector('.gy-medals use')!.getAttribute('href')).toBe('#t-record')
+  // the region chips are flat pills; the active one says so to assistive tech too
+  const chips = screen.getByRole('group', { name: 'Izomcsoport-szűrő' })
+  expect(within(chips).getByRole('button', { name: 'Mind' })).toHaveClass('is-on')
+  expect(chips.querySelector('.glass')).toBeNull()
 })

@@ -96,3 +96,16 @@ test('edit mode carries the row\'s existing demo stills through unchanged', asyn
     imageEndUrl: '/exercises/box-jump-b.jpg',
   })
 })
+
+// Üveg (mezo-me75u.4, bible U2 rule 15): one floating glass sheet, flat controls inside it.
+test('the sheet is ONE glass surface; the active chip is lit, nothing inside is glass', async () => {
+  render(<CatalogExerciseSheet onClose={vi.fn()} />)
+  const dialog = screen.getByRole('dialog')
+  expect(dialog).toHaveClass('glass')
+  expect(dialog).toHaveClass('gyx-sheet')
+  expect(dialog.querySelector('.glass')).toBeNull()
+  expect(screen.getByRole('button', { name: 'compound' })).toHaveClass('is-on')
+  await userEvent.click(screen.getByRole('button', { name: 'isolation' }))
+  expect(screen.getByRole('button', { name: 'isolation' })).toHaveClass('is-on')
+  expect(screen.getByRole('button', { name: 'compound' })).not.toHaveClass('is-on')
+})

@@ -49,6 +49,15 @@
 //   · the `Saját` / `Közös · {név}` AUTHORSHIP stamps (`authoredByMe` / `authorName`,
 //     mapped in trainHooks.ts since mezo-qw37.5 and rendered nowhere in the app until
 //     now) — they sit in the hero, where the exercise says who it belongs to.
+//
+// Üveg re-dress (mezo-me75u.4, prototypes/uveg-edzes.html#exercise): the glass back pill;
+// a frameless halo hero in the muscle color with the big anatomy in a lit well; the three
+// records as amber glass tiles (t-ring / t-weight / t-protocol) with pale-gold values; the
+// next target an amber callout with t-record (was the clay i-erme); the curve ONE glass card
+// in the muscle color (StrengthCurve wears the glass itself, so its honest empty lines stay
+// plain text); the medals amber glass rows with a t-record well; „Hol szerepel" and
+// „Gyakorlat kezelése" flat rows with 3D icons. CSS: the `── uveg edzes gyakorlatok (`
+// block of prototype.css, scoped to `.gyx-story`.
 // ============================================================
 import { useState, type CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -56,7 +65,7 @@ import { useMedals, useMesoTemplates, useTrain } from '@/data/hooks'
 import { huMonthDayAged } from '@/shared/lib/dates'
 import { hu1, huInt } from '@/shared/lib/huNum'
 import { useBackNav } from '@/shared/hooks/useBackNav'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
@@ -114,8 +123,8 @@ export function ExerciseStoryPage() {
 
   if (!row) {
     return (
-      <MozaikPage tone="gold">
-        <PageHead onBack={goBack} label="‹ Gyakorlatok" />
+      <MozaikPage tone="gold" className="gyx-page gyx-story">
+        <PageHead glass onBack={goBack} label="Gyakorlatok" />
         <PageBody>
           <GhostState message="Ez a gyakorlat nincs a tárban." />
         </PageBody>
@@ -126,7 +135,8 @@ export function ExerciseStoryPage() {
   const item = exerciseLibrary.find((e) => exerciseKey(e) === row.key)
   const region = muscleRegion(row.muscle)
   const tone: PageTone = region ? REGION_TONE[region] : 'gold'
-  const accent = { '--mus-color': muscleColor(row.muscle).rail } as CSSProperties
+  const musColor = muscleColor(row.muscle).rail
+  const accent = { '--mus-color': musColor } as CSSProperties
   const record = row.record
   const since = record ? sinceFact(record) : null
   const target = record ? nextTarget(record) : null
@@ -184,43 +194,47 @@ export function ExerciseStoryPage() {
       : null
 
   return (
-    <MozaikPage tone={tone}>
-      <PageHead onBack={goBack} label="‹ Gyakorlatok" />
+    <MozaikPage tone={tone} className="gyx-page gyx-story">
+      <PageHead glass onBack={goBack} label="Gyakorlatok" />
       <EntranceGroup>
-        <header className="pl-dhero gy-hero rise" style={{ ...accent, ...delay(40) }}>
-          <span className="pl-dhero-wash" aria-hidden="true" />
-          <span className="gy-hero-art" aria-hidden="true">
-            <MuscleChip token={row.muscle} size={68} className="icon" />
-            <i />
-            <i />
+        <header
+          className="gyx-hero is-story uv-halo rise"
+          style={{ ...accent, '--c': musColor, ...delay(40) } as CSSProperties}
+        >
+          <span className="gyx-mchp is-lg" aria-hidden="true">
+            <MuscleChip token={row.muscle} size={68} />
           </span>
-          <span className="pl-dhero-tag tr-eyebrow">{row.muscleLabel}</span>
-          <h2>{row.name}</h2>
-          {/* The authorship stamp — server-derived, and the app's FIRST renderer for it. */}
-          {authorStamp && <p className="pl-sub-say">{authorStamp}</p>}
-          {record ? (
-            <div className="pl-poster-foot">
-              <span>{record.sessionCount} alkalom</span>
-              {/* An absolute „óta" only when the series covers the whole history; a bounded
-                  one says so (see `sinceFact`) rather than passing a window start off as a start. */}
-              {since && (
-                <span>
-                  {since.kind === 'since'
-                    ? `${huMonthDayAged(since.date)} óta`
-                    : `ebből az utolsó ${since.sessions} látszik`}
-                </span>
-              )}
-              {/* A bodyweight exercise really has moved 0 kg — that is not a missing
-                  figure to em-dash, it is a different fact, so it says the true one. */}
-              {record.totalVolume > 0
-                ? <span>{volumeLabel(record.totalVolume)} összsúly</span>
-                : <span>{huInt(record.totalReps)} ismétlés</span>}
-            </div>
-          ) : (
-            <p className="pl-say">
-              Ezzel a gyakorlattal még nincs naplózott alkalmad — az első edzés után itt gyűlnek a rekordjaid.
-            </p>
-          )}
+          <span className="gyx-hero-copy">
+            <span className="gyx-hero-tagrow">
+              <span className="gyx-hero-tag uv-eyebrow">{row.muscleLabel}</span>
+              {/* The authorship stamp — server-derived, and the app's FIRST renderer for it. */}
+              {authorStamp && <span className="gyx-stamp">{authorStamp}</span>}
+            </span>
+            <h2>{row.name}</h2>
+            {record ? (
+              <div className="gyx-foot">
+                <span>{record.sessionCount} alkalom</span>
+                {/* An absolute „óta" only when the series covers the whole history; a bounded
+                    one says so (see `sinceFact`) rather than passing a window start off as a start. */}
+                {since && (
+                  <span>
+                    {since.kind === 'since'
+                      ? `${huMonthDayAged(since.date)} óta`
+                      : `ebből az utolsó ${since.sessions} látszik`}
+                  </span>
+                )}
+                {/* A bodyweight exercise really has moved 0 kg — that is not a missing
+                    figure to em-dash, it is a different fact, so it says the true one. */}
+                {record.totalVolume > 0
+                  ? <span>{volumeLabel(record.totalVolume)} összsúly</span>
+                  : <span>{huInt(record.totalReps)} ismétlés</span>}
+              </div>
+            ) : (
+              <p className="gyx-say">
+                Ezzel a gyakorlattal még nincs naplózott alkalmad — az első edzés után itt gyűlnek a rekordjaid.
+              </p>
+            )}
+          </span>
         </header>
 
         <PageBody className="pl-sub">
@@ -234,11 +248,12 @@ export function ExerciseStoryPage() {
                 />
               </h3>
               <div className="gy-recs rise" style={{ ...accent, ...delay(70) }}>
-                <div className="gy-rec">
+                <div className="gy-rec glass" style={{ '--i': 0 } as CSSProperties}>
+                  <Icon3D name="t-ring" size={34} />
                   <span className="tr-eyebrow">Becsült 1RM</span>
                   <strong>{hasE1rm ? <>{hu1(bestE1rm!)} <small>kg</small></> : '—'}</strong>
                   {hasE1rm && (
-                    <i className="gy-rec-bar">
+                    <i className="gy-rec-bar uv-bar">
                       {e1rmShare != null && <b style={{ '--w': `${e1rmShare}%` } as CSSProperties} />}
                     </i>
                   )}
@@ -247,7 +262,8 @@ export function ExerciseStoryPage() {
                       a number that is not there. */}
                   {hasE1rm && <small>Becslés, nem mérés</small>}
                 </div>
-                <div className="gy-rec">
+                <div className="gy-rec glass" style={{ '--i': 1 } as CSSProperties}>
+                  <Icon3D name="t-weight" size={34} />
                   <span className="tr-eyebrow">Legjobb szett</span>
                   <strong>
                     {record.bestSet
@@ -262,12 +278,13 @@ export function ExerciseStoryPage() {
                       be an em dash captioning an em dash. */}
                   {record.bestSet && (
                     <>
-                      <i className="gy-rec-bar"><b style={{ '--w': '100%' } as CSSProperties} /></i>
+                      <i className="gy-rec-bar uv-bar"><b style={{ '--w': '100%' } as CSSProperties} /></i>
                       <small>{huMonthDayAged(record.bestSet.date)}</small>
                     </>
                   )}
                 </div>
-                <div className="gy-rec">
+                <div className="gy-rec glass" style={{ '--i': 2 } as CSSProperties}>
+                  <Icon3D name="t-protocol" size={34} />
                   <span className="tr-eyebrow">Legtöbb volumen</span>
                   <strong>
                     {record.bestSessionVolume
@@ -276,7 +293,7 @@ export function ExerciseStoryPage() {
                   </strong>
                   {record.bestSessionVolume && (
                     <>
-                      <i className="gy-rec-bar"><b style={{ '--w': '100%' } as CSSProperties} /></i>
+                      <i className="gy-rec-bar uv-bar"><b style={{ '--w': '100%' } as CSSProperties} /></i>
                       <small>
                         {`${huMonthDayAged(record.bestSessionVolume.date)} a csúcs · ${volumeLabel(record.totalVolume)} összesen`}
                       </small>
@@ -289,7 +306,7 @@ export function ExerciseStoryPage() {
                 // A TARGET, not a forecast: the app is not predicting this, it is naming
                 // the smallest next step past a record you already hold.
                 <p className="gy-next rise" style={{ ...accent, ...delay(100) }}>
-                  <ClayIcon name="i-erme" size={20} className="icon" />
+                  <Icon3D name="t-record" size={24} />
                   <span>
                     Következő cél:{' '}
                     <b>{target.kg != null ? `${hu1(target.kg)} kg × ${target.reps}` : `${target.reps} ismétlés`}</b>
@@ -315,13 +332,17 @@ export function ExerciseStoryPage() {
           {myMedals.length > 0 ? (
             <div className="gy-medal-rows rise" style={delay(160)}>
               {myMedals.map((m, i) => (
-                <span key={`${m.date}-${m.type}-${i}`} className="gy-medal">
-                  <ClayIcon name="i-erme" size={24} className="icon" />
-                  <span>
-                    <strong>{MEDAL_TYPE_LABEL[m.type] ?? m.type}</strong>
-                    <small>{medalValueLabel(m)}</small>
+                <span
+                  key={`${m.date}-${m.type}-${i}`}
+                  className="gy-medal glass"
+                  style={{ '--i': i } as CSSProperties}
+                >
+                  <span className="uv-well gyx-well" aria-hidden="true"><Icon3D name="t-record" size={34} /></span>
+                  <span className="gyx-grow">
+                    <span className="gyx-type">{MEDAL_TYPE_LABEL[m.type] ?? m.type}</span>
+                    <strong className="gy-medal-date">{huMonthDayAged(m.date)}</strong>
                   </span>
-                  <small className="gy-medal-date">{huMonthDayAged(m.date)}</small>
+                  <b className="gyx-val">{medalValueLabel(m)}</b>
                 </span>
               ))}
             </div>
@@ -343,6 +364,7 @@ export function ExerciseStoryPage() {
                   className="pl-row"
                   onClick={() => navigate(`/train/mesocycles/${d.mesoId}/days/${encodeURIComponent(d.day)}`)}
                 >
+                  <Icon3D name="t-peak" size={30} />
                   <span><strong>{d.type}</strong><small>A futó tervedben · {d.day}</small></span>
                   <b aria-hidden="true">›</b>
                 </button>
@@ -354,6 +376,7 @@ export function ExerciseStoryPage() {
                   className="pl-row"
                   onClick={() => navigate(`/train/templates/${t.id}`)}
                 >
+                  <Icon3D name="t-stack" size={30} />
                   <span><strong>{t.name}</strong><small>Sablon a polcodon</small></span>
                   <b aria-hidden="true">›</b>
                 </button>
@@ -370,12 +393,14 @@ export function ExerciseStoryPage() {
               <div className="rise" style={delay(220)}>
                 {item.editable && (
                   <button type="button" className="pl-row" onClick={() => setEditing(true)}>
+                    <Icon3D name="t-note" size={30} />
                     <span><strong>Szerkesztés</strong><small>Név, izom, típus — és a törlés</small></span>
                     <b aria-hidden="true">›</b>
                   </button>
                 )}
                 {item.mediaEditable && (
                   <button type="button" className="pl-row" onClick={() => setVideoing(true)}>
+                    <Icon3D name="t-camera" size={30} />
                     <span>
                       <strong>Demó videó</strong>
                       <small>{item.videoUrl ? 'Csere vagy eltávolítás' : 'Még nincs videó — tegyél fel egyet'}</small>

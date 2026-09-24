@@ -11,6 +11,7 @@
 // separate copy rather than a duplicate of this table.
 // ============================================================
 import type { Medal, MedalType } from '@/data/train/medalTypes'
+import type { Icon3DName } from '@/shared/ui/clay'
 
 type MedalUnit = NonNullable<Medal['unit']>
 
@@ -31,14 +32,17 @@ export const MEDAL_TYPE_LABEL: Record<MedalType, string> = {
 export const MEDAL_UNIT_LABEL: Record<MedalUnit, string> = { KG: 'kg', REPS: 'rep' }
 
 /**
- * Tier → glyph + color, the two-tier split every medal row surface uses (mezo-wp6n):
- * RECORD reads as an achievement (amber, 🏅), TARGET_HIT stays quiet (sage, ✓). Was
- * duplicated byte-for-byte in MedalsPage.tsx and WorkoutSummary.tsx; hoisted here
- * alongside the rest of the shared medal vocabulary (Finding 3 of the final review).
+ * Tier → 3D icon + tag + accent, the two-tier split every medal row surface uses (mezo-wp6n):
+ * RECORD reads as an achievement (amber, the `t-record` medal), TARGET_HIT stays quiet (sage,
+ * the `t-tick`). Was a 🏅 / ✓ text glyph until the üvegesítés (mezo-me75u.4, bible U3 rule 19:
+ * a text glyph is an icon too) — the meaning now rides the visible `tag` ("REKORD" / "CÉL"),
+ * the icon is decoration beside it. Only MedalsPage consumes this table today.
  */
-export const MEDAL_TIER_COPY: Record<Medal['tier'], { glyph: string; color: string }> = {
-  RECORD: { glyph: '🏅', color: 'var(--amber-deep)' },
-  TARGET: { glyph: '✓', color: 'var(--sage-deep)' },
+export const MEDAL_TIER_COPY: Record<Medal['tier'], {
+  icon: Extract<Icon3DName, 't-record' | 't-tick'>; tag: string; accent: string
+}> = {
+  RECORD: { icon: 't-record', tag: 'REKORD', accent: 'var(--dv-amber)' },
+  TARGET: { icon: 't-tick', tag: 'CÉL', accent: 'var(--dv-sage)' },
 }
 
 /** Hungarian number formatting — the single `toLocaleString('hu-HU')` for medals. */

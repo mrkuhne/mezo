@@ -6,9 +6,13 @@
 // confidence + refs + tool transparency, accept/skip actions.
 // "a try maga a jutalom" · no FOMO · no penalty if skipped.
 // Ported from prototype challenges.jsx.
+// Üvegesítés U4 (mezo-me75u.4): a FLAT card inside the Küldetések glass (never glass in glass),
+// coral-lit once accepted. Every glyph is a 3D sprite icon or gone: the ⚔️ of "Elfogadom", the
+// ✓/◯/◌ of the outcome chips, and any emoji a `typeLabel` carries (the mock seed's "⚡
+// Túlterhelés") — stripped at render time, the data stays untouched. Skin: `uveg edzes session`.
 // ============================================================
 import type { Challenge, ChallengeStatus } from '@/data/types'
-import { Icon } from '@/shared/ui/Icon'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { RefTag } from '@/shared/ui/RefTag'
 import { ToolChip } from '@/shared/ui/ToolChip'
 
@@ -16,13 +20,18 @@ import { ToolChip } from '@/shared/ui/ToolChip'
 // outcome chip + line replace it. Chips mirror the experiments-tab wording
 // (ExperimentsPage.statusLabel) so the two proactive surfaces read alike.
 const RESOLVED: ReadonlyArray<ChallengeStatus> = ['hit', 'miss', 'inconclusive']
-type OutcomeState = { label: string; color: string }
+type OutcomeState = { label: string; icon: Icon3DName; tone: 'hit' | 'quiet' }
 const OUTCOME: Record<'hit' | 'miss' | 'inconclusive', OutcomeState> = {
-  // hit = confirmed (success green); miss = muted/neutral, NO red, no-penalty
-  // tone; inconclusive = tertiary "not evaluable" (no logged sets).
-  hit: { label: '✓ Megerősítve', color: 'var(--success)' },
-  miss: { label: '◯ Nem igazolódott', color: 'var(--text-tertiary)' },
-  inconclusive: { label: '◌ Nem értékelhető', color: 'var(--text-tertiary)' },
+  // hit = confirmed (lit); miss/inconclusive = muted/neutral, NO red, no-penalty tone.
+  hit: { label: 'Megerősítve', icon: 't-tick', tone: 'hit' },
+  miss: { label: 'Nem igazolódott', icon: 't-hold', tone: 'quiet' },
+  inconclusive: { label: 'Nem értékelhető', icon: 't-info', tone: 'quiet' },
+}
+
+/** A `typeLabel` without the leading emoji some sources still carry ("⚡ Túlterhelés" →
+ *  "Túlterhelés"). Render-time only: the mock seed and the wire stay as they are. */
+export function cleanTypeLabel(label: string): string {
+  return label.replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u, '').trim() || label
 }
 
 export function ChallengeCard({
@@ -39,113 +48,71 @@ export function ChallengeCard({
   const outcome = resolved ? OUTCOME[c.status as 'hit' | 'miss' | 'inconclusive'] : null
 
   return (
-    <div
-      className="card"
-      style={{ padding: 16, border: '1px solid var(--coral)', background: 'var(--wash-gym)' }}
-    >
-      {/* Header row: type + exercise name (coral-deep) · risk tag right (tertiary) —
-          the outcome chip takes the right slot once the workout is decided. */}
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--coral-deep)' }}>
-          {c.typeLabel} · {c.exercise}
-        </span>
+    <div className={accepted ? 'wos-chc is-accepted' : 'wos-chc'}>
+      {/* Header row: type + exercise name · risk tag right — the outcome chip takes the
+          right slot once the workout is decided. */}
+      <div className="wos-chc-head">
+        <span className="wos-chc-type">{cleanTypeLabel(c.typeLabel)} · {c.exercise}</span>
         {outcome ? (
-          <span
-            className="chip"
-            style={{
-              fontSize: 9,
-              padding: '3px 8px',
-              color: outcome.color,
-              borderColor: `color-mix(in srgb, ${outcome.color} 40%, transparent)`,
-            }}
-          >
+          <span className={`wos-chc-outcome is-${outcome.tone}`}>
+            <Icon3D name={outcome.icon} size={16} />
             {outcome.label}
           </span>
         ) : (
-          <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-            {c.risk === 'low' ? 'alacsony kockázat' : 'közép kockázat'}
-          </span>
+          <small className="wos-chc-risk">{c.risk === 'low' ? 'alacsony kockázat' : 'közép kockázat'}</small>
         )}
       </div>
 
       {/* Target + confidence */}
-      <div className="col mt-sm">
-        <div
-          style={{
-            fontFamily: 'var(--ff-display)',
-            fontSize: 22,
-            fontWeight: 600,
-            lineHeight: 1.15,
-            color: 'var(--text-primary)',
-            textTransform: 'uppercase',
-          }}
-        >
-          {c.target}
-        </div>
-        <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', marginTop: 4 }}>
-          conf {c.confidence == null ? 'tanulom' : `${(c.confidence * 100).toFixed(0)}%`}
-        </span>
-      </div>
+      <div className="wos-chc-target">{c.target}</div>
+      <span className="wos-chc-conf">
+        conf {c.confidence == null ? 'tanulom' : `${(c.confidence * 100).toFixed(0)}%`}
+      </span>
 
       {/* Why / glory line — the quest pitch, shown until the workout is decided. */}
       {!resolved && (
-        <p style={{ fontSize: 12, marginTop: 10, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-          {c.why} <span style={{ color: 'var(--coral-deep)', fontWeight: 600 }}>· {c.glory}</span>
+        <p className="wos-chc-why">
+          {c.why} <b>· {c.glory}</b>
         </p>
       )}
 
       {/* Refs */}
-      <div className="row gap-xs flex-wrap mt-sm">
-        {c.refs.map((r, i) => (
-          <RefTag key={i} kind={r.kind} label={r.label} />
-        ))}
-      </div>
+      {c.refs.length > 0 && (
+        <div className="wos-chc-refs">
+          {c.refs.map((r, i) => (
+            <RefTag key={i} kind={r.kind} label={r.label} />
+          ))}
+        </div>
+      )}
 
       {/* Tool transparency */}
-      <div className="row gap-xs flex-wrap mt-sm">
-        {c.tools?.map((t, i) => (
-          <ToolChip key={i} {...t} />
-        ))}
-      </div>
+      {!!c.tools?.length && (
+        <div className="wos-chc-refs">
+          {c.tools.map((t, i) => (
+            <ToolChip key={i} {...t} />
+          ))}
+        </div>
+      )}
 
       {/* Outcome line — the workout is decided; the action row is hidden. */}
       {resolved && c.outcome && (
-        <p className="mt-md" style={{ fontSize: 12, color: outcome!.color, lineHeight: 1.45 }}>
-          {c.outcome}
-        </p>
+        <p className={`wos-chc-outline is-${outcome!.tone}`}>{c.outcome}</p>
       )}
 
       {/* Actions — hidden once the challenge is resolved (workout decided). */}
       {!resolved && (
-        <div
-          className="row gap-sm mt-md"
-          style={{ paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}
-        >
+        <div className="wos-chc-acts">
           <button
             type="button"
             onClick={onToggle}
             aria-pressed={accepted}
-            className="chip"
-            style={{
-              flex: 1,
-              justifyContent: 'center',
-              background: accepted ? 'var(--coral-deep)' : 'var(--coral)',
-              borderColor: 'var(--coral)',
-              color: 'var(--text-inverse)',
-              fontSize: 11,
-            }}
+            className="wos-pill is-lit"
           >
-            {accepted ? (
-              <>
-                <Icon name="check" size={11} />
-                Elfogadva
-              </>
-            ) : (
-              '⚔️ Elfogadom'
-            )}
+            <Icon3D name={accepted ? 't-tick' : 't-quest'} size={20} />
+            {accepted ? 'Elfogadva' : 'Elfogadom'}
           </button>
           {!accepted && (
-            <button type="button" className="chip">
+            <button type="button" className="wos-pill">
               Passz
             </button>
           )}

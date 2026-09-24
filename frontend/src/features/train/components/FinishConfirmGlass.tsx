@@ -8,9 +8,14 @@
 // Opened by the finish CTA / the dock's "Lezárás →" whenever pending sets remain; a zero-
 // pending finish (the CTA's `full` state) skips this glass entirely and finishes right
 // away — see ActiveWorkoutPage. `onConfirm` runs the EXISTING `finishAndCelebrate` path.
+//
+// Üvegesítés U4 (mezo-me75u.4): a coral glass — the pending list as FLAT rows (MuscleChip ·
+// name · "N szett") and ONE lit coral primary whose sub-count sits on its own line under the
+// label (3D t-tick instead of the old check glyph); "Mégse" is a flat pill. Skin: the
+// `uveg edzes session` block (`.gl-card:has(> .wos-gb-fin)`).
 // ============================================================
 import { GlassBox } from '@/shared/ui/mozaik/GlassBox'
-import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 
 export interface FinishConfirmPendingRow {
@@ -42,9 +47,7 @@ export function FinishConfirmGlass({
   const zero = loggedCount === 0
   return (
     <GlassBox open={open} onClose={onClose} label="Lezárás megerősítése" tint="#d9c395" variant="confirm">
-      <span className="wo-confirm-art">
-        <Icon name="x" size={54} />
-      </span>
+      <div className="wos-gb wos-gb-fin glass is-still">
       <h2>{zero ? 'Egy szettet sem rögzítettél ma.' : `Van még ${pendingTotal} bepipálatlan szetted.`}</h2>
       <p>
         Ha most befejezed az edzést, {zero ? (
@@ -56,25 +59,23 @@ export function FinishConfirmGlass({
       <div className="wo-confirm-list">
         {pending.map((row) => (
           <span key={row.id}>
-            <MuscleChip token={row.muscle} size={24} />
+            <span className="wos-fin-art"><MuscleChip token={row.muscle} size={24} /></span>
             <strong>{row.name}</strong>
             <b>{row.left} szett</b>
           </span>
         ))}
       </div>
-      <button type="button" className="wo-close-cta" disabled={finishPending} onClick={onConfirm}>
-        <span className="wo-close-art">
-          <Icon name="check" size={34} />
-        </span>
-        <span>
+      <button type="button" className="wos-primary" disabled={finishPending} onClick={onConfirm}>
+        <Icon3D name={zero ? 't-skip' : 't-tick'} size={26} />
+        <span className="wos-primary-copy">
           <strong>{zero ? 'Kihagyom a mai edzést' : 'Befejezem így'}</strong>
           <small>{loggedCount} elvégzett · {pendingTotal} kihagyott</small>
         </span>
-        <u className="chip-sheen" />
       </button>
-      <button type="button" className="wo-secondary" onClick={onClose}>
+      <button type="button" className="wos-pill is-block" onClick={onClose}>
         Mégse, visszamegyek
       </button>
+      </div>
     </GlassBox>
   )
 }

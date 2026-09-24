@@ -5,7 +5,7 @@
 // page (DS page-header + „Top gyakorlatok · rekordjaid" top-5 + dashed ghost rows +
 // the ⋯/▶ roundel sheets). Ported 1:1 from the prototype's `gyHome`
 // (docs/design_2.0/prototypes/companion-titanium/gyak-pages.js:35-50):
-//   `.pl-dhero.pl-lhero` — the poster: GYAKORLATOK eyebrow, „A mozdulataid", the lead
+//   `.gyx-hero`     — the poster: GYAKORLATOK eyebrow, „A mozdulataid", the lead
 //                   sentence, and three REAL foot facts (N gyakorlat · N rekorddal ·
 //                   N medál — the catalogue, its record rows and the medals joined onto
 //                   them; all three honest at zero). The medal fact is also the vitrine's
@@ -17,19 +17,27 @@
 //                   name, the muscle label, and either the best estimated 1RM („becsült
 //                   1RM") with its medal count, or „még nincs naplózva". Tap → the
 //                   exercise's own story at `/train/exercises/:key` (P2 Task 5).
-//   `.pl-add`       — the list's trailing „＋ Új gyakorlat" row (fix round 1): the only
+//   `.gyx-add`      — the list's trailing „＋ Új gyakorlat" row (fix round 1): the only
 //                   surviving door onto `CatalogExerciseSheet`'s CREATE mode. Per-exercise
 //                   edit/delete and the video sheet stay unreached — Task 5's story page.
 //
 // Every join is pure and lives in `logic/exerciseLibrary.ts` (identity via the shared
 // `recordFor` rule). No numbers are invented here: an absent estimate is an em dash.
+//
+// Üveg re-dress (mezo-me75u.4, prototypes/uveg-edzes.html#exercises): the poster is a
+// frameless amber halo hero with the 3D `t-muscle` art (was the clay i-polc); the search
+// and the region chips are flat cells (active chip filled amber); every `.gy-card` is ONE
+// glass row whose `--c` is its own muscle color (published on the row itself), the
+// anatomy in a lit well, and an amber `t-record` medal count (was the clay i-erme); the
+// no-match line is dashed, „＋ Új gyakorlat" a dashed amber add row. CSS: the
+// `── uveg edzes gyakorlatok (` block of prototype.css, scoped to `.gyx-catalog`.
 // ============================================================
 import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMedals, useTrain } from '@/data/hooks'
 import { hu1 } from '@/shared/lib/huNum'
 import { cn } from '@/shared/lib/cn'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { Icon } from '@/shared/ui/Icon'
 import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -64,45 +72,42 @@ export function ExercisesPage() {
   const shown = filterLibraryRows(rows, query, region)
 
   return (
-    <MozaikPage tone="gold">
+    <MozaikPage tone="gold" className="gyx-page gyx-catalog">
       <EntranceGroup>
         <header
-          className="pl-dhero pl-lhero rise"
-          style={{ '--mus-color': 'var(--amber)', ...delay(40) } as CSSProperties}
+          className="gyx-hero uv-halo rise"
+          style={{ '--c': 'var(--dv-amber)', ...delay(40) } as CSSProperties}
         >
-          <span className="pl-dhero-wash" aria-hidden="true" />
-          <span className="pl-lhero-art" aria-hidden="true">
-            <ClayIcon name="i-polc" size={60} className="icon" />
-            <i />
-            <i />
+          <Icon3D name="t-muscle" size={84} className="gyx-hero-art uv-float" />
+          <span className="gyx-hero-copy">
+            <span className="gyx-hero-tag uv-eyebrow">Gyakorlatok</span>
+            <h2>A mozdulataid</h2>
+            <p className="gyx-say">Minden gyakorlat egy helyen — a rekordjaiddal és a medáljaiddal együtt.</p>
+            <div className="gyx-foot">
+              <span>{counts.total} gyakorlat</span>
+              <span>{counts.logged} rekorddal</span>
+              {/* The vitrine's only doorway (mezo-lf3cv fix round 1): `navModel.ts` has
+                  claimed `/train/medals` as this tab's owned route since the catalogue
+                  replaced the old page's „Medálok" row, but nothing linked it since —
+                  this segment is now the link, the other two foot facts stay plain text. */}
+              <button
+                type="button"
+                className="gyx-foot-link"
+                aria-label={`${counts.medals} medál · a medálvitrinbe`}
+                onClick={() => navigate('/train/medals')}
+              >
+                {counts.medals} medál
+              </button>
+            </div>
           </span>
-          <span className="pl-dhero-tag tr-eyebrow">Gyakorlatok</span>
-          <h2>A mozdulataid</h2>
-          <p className="pl-say">Minden gyakorlat egy helyen — a rekordjaiddal és a medáljaiddal együtt.</p>
-          <div className="pl-poster-foot">
-            <span>{counts.total} gyakorlat</span>
-            <span>{counts.logged} rekorddal</span>
-            {/* The vitrine's only doorway (mezo-lf3cv fix round 1): `navModel.ts` has
-                claimed `/train/medals` as this tab's owned route since the catalogue
-                replaced the old page's „Medálok" row, but nothing linked it since —
-                this segment is now the link, the other two foot facts stay plain text. */}
-            <button
-              type="button"
-              className="pl-poster-foot-link"
-              aria-label={`${counts.medals} medál · a medálvitrinbe`}
-              onClick={() => navigate('/train/medals')}
-            >
-              {counts.medals} medál
-            </button>
-          </div>
         </header>
 
         <PageBody className="pl-sub">
           {/* The prototype's `.wz-pick-search` chrome was not ported (it belongs to the
               wizard's CSS); the house search field wears the `.gy-search` row. */}
           <label className="gy-search rise" data-kalauz-anchor="exercises-kereso" style={delay(70)}>
-            <span className="searchfield">
-              <Icon name="search" size={16} color="var(--text-tertiary)" />
+            <span className="gyx-search uv-flat">
+              <Icon name="search" size={18} color="var(--text-muted)" />
               <input
                 type="search"
                 aria-label="Keresés a gyakorlatok között"
@@ -115,16 +120,15 @@ export function ExercisesPage() {
           </label>
 
           <div
-            className="row gap-xs rise"
+            className="gyx-chips rise"
             role="group"
             aria-label="Izomcsoport-szűrő"
-            style={{ overflowX: 'auto', scrollbarWidth: 'none', margin: '0 0 10px', paddingBottom: 4, ...delay(90) }}
+            style={delay(90)}
           >
             <button
               type="button"
-              className={cn('chip tapchip', region === null && 'brand')}
+              className={cn('gyx-chip', region === null && 'is-on')}
               aria-pressed={region === null}
-              style={{ flexShrink: 0 }}
               onClick={() => setRegion(null)}
             >
               Mind
@@ -133,9 +137,8 @@ export function ExercisesPage() {
               <button
                 key={r.key}
                 type="button"
-                className={cn('chip tapchip', region === r.key && 'brand')}
+                className={cn('gyx-chip', region === r.key && 'is-on')}
                 aria-pressed={region === r.key}
-                style={{ flexShrink: 0 }}
                 onClick={() => setRegion(region === r.key ? null : r.key)}
               >
                 {r.label}
@@ -145,7 +148,7 @@ export function ExercisesPage() {
 
           <EntranceGroup className="gy-list" replayKey={`${region ?? 'mind'}:${query}`}>
             {shown.length === 0 && (
-              <p className="pl-foot-say">Nincs ilyen gyakorlat a tárban.</p>
+              <p className="gyx-empty uv-empty">Nincs ilyen gyakorlat a tárban.</p>
             )}
             {shown.map((row, i) => (
               // No `aria-label` (mezo-lf3cv fix round 1): an explicit label REPLACES the
@@ -155,11 +158,15 @@ export function ExercisesPage() {
               <button
                 key={row.key}
                 type="button"
-                className="gy-card rise"
-                style={{ '--mus-color': muscleColor(row.muscle).rail, ...delay(Math.min(i, 8) * 30) } as CSSProperties}
+                className="gy-card glass rise"
+                style={{
+                  '--c': muscleColor(row.muscle).rail, '--i': Math.min(i, 8), ...delay(Math.min(i, 8) * 30),
+                } as CSSProperties}
                 onClick={() => navigate(`/train/exercises/${row.key}`)}
               >
-                <MuscleChip token={row.muscle} size={34} className="icon" />
+                <span className="gyx-mchp" aria-hidden="true">
+                  <MuscleChip token={row.muscle} size={40} />
+                </span>
                 <span className="gy-card-name">
                   <strong>{row.name}</strong>
                   <small>{row.muscleLabel}</small>
@@ -174,8 +181,9 @@ export function ExercisesPage() {
                         (house honesty rule; matches gyRows() in the prototype). */}
                     {row.medalCount > 0 && (
                       <span className="gy-medals">
-                        <ClayIcon name="i-erme" size={15} className="icon" />
+                        <Icon3D name="t-record" size={16} />
                         {row.medalCount}
+                        <span className="sr-only"> medál</span>
                       </span>
                     )}
                   </span>
@@ -194,7 +202,7 @@ export function ExercisesPage() {
               (`MesoDayPage`'s „＋ Gyakorlat hozzáadása"); it opens `CatalogExerciseSheet` in
               CREATE mode only — per-exercise edit/delete and the demo-video sheet stay
               unreached, they belong to the story page (Task 5). */}
-          <button type="button" className="pl-add rise" style={delay(120)} onClick={() => setCreating(true)}>
+          <button type="button" className="gyx-add rise" style={delay(120)} onClick={() => setCreating(true)}>
             ＋ Új gyakorlat
           </button>
         </PageBody>

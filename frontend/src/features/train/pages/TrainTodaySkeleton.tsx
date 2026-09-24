@@ -1,86 +1,73 @@
 // Layout-aware loading skeleton for TrainTodayPage (mezo-f2z). Mirrors the real
-// Mai shape — DayStrip (7 chips) → the `.tr-day` poster (over-line / big title /
-// sub-line / constellation / chip row / in-poster CTA) → the energy card →
-// the muscle-impact card → the „Vagy inkább" pair — so the swap to real content
-// does not reflow. The weekly timeline it used to mirror moved to Heti
-// (mezo-9bbc), and TrainWeekSkeleton mirrors it there; the legacy `.page-header`
-// placeholder went with the header itself (Titanium face, mezo-88iwa.6).
-// Built from the Skeleton primitives; sizes track the `.tr-day`/`.tr-start` geometry.
-import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
+// Mai shape — DayStrip (7 cells) → the frameless gym hero (status pill / big art /
+// eyebrow / big title / sub-line / muscle chips / fact pills / the glass CTA row) → the
+// energy card → the muscle-impact card → the „Vagy inkább" pair — so the swap to real
+// content does not reflow. The weekly timeline it used to mirror moved to Heti
+// (mezo-9bbc), and TrainWeekSkeleton mirrors it there.
+// ÜVEG (mezo-me75u.4): sizes track the glass geometry of the `.trm` block in prototype.css
+// (`uveg edzes mai`); the placeholders sit on the same `.trm-sec` rail as the real sections.
+import { Skeleton } from '@/shared/ui/Skeleton'
 
 export default function TrainTodaySkeleton() {
   return (
-    <div role="status" aria-label="Betöltés…">
-      {/* DayStrip — 7 chips at the real `.daychip` geometry (62×66, radius 20) and
-          the real `.daystrip` padding/gap, so the navigator does not pop in. */}
-      <div style={{ display: 'flex', gap: 9, padding: '2px 24px 6px', overflow: 'hidden' }}>
+    <div role="status" aria-label="Betöltés…" className="trm trm-sk">
+      {/* DayStrip — 7 flat cells in one row (`.trm-daystrip`: a 7-column grid, cell 62px
+          tall, radius 15), so the navigator does not pop in. */}
+      <div className="trm-daystrip">
         {Array.from({ length: 7 }, (_, i) => (
-          <Skeleton key={i} width={62} height={66} radius={20} style={{ flex: 'none' }} />
+          <Skeleton key={i} className="trm-sk-day" width="100%" height={62} radius={15} />
         ))}
       </div>
-      {/* Today's poster — a rounded 26px card that pays its own 20px padding since the
-          surfaces-parity pass restored the prototype's poster (mezo-fsz2r Task 3). */}
-      <div style={{ padding: '0 6px 14px' }}>
-        <SkeletonCard style={{ padding: 20, borderRadius: 26 }}>
-          <Skeleton width="40%" height={12} />
-          <div style={{ marginTop: 10 }}><Skeleton width="62%" height={27} /></div>
-          <div style={{ marginTop: 8 }}><Skeleton width="50%" height={13} /></div>
-          {/* the muscle constellation — four 28px chips */}
-          <div className="row gap-sm" style={{ marginTop: 14 }}>
-            {Array.from({ length: 4 }, (_, i) => (
-              <Skeleton key={i} width={28} height={28} radius={8} />
-            ))}
-          </div>
-          <div className="row gap-sm mt-md">
-            {Array.from({ length: 3 }, (_, i) => (
-              <Skeleton key={i} width={78} height={24} radius={999} />
-            ))}
-          </div>
-          {/* the in-poster CTA (`.tr-start`) — padding 15px 18px + strong (16px/1.5 =
-              24px) + small (12px/1.5 = 18px, +2px margin-top) = 30 + 24 + 2 + 18 = 74px. */}
-          <Skeleton className="mt-md" width="100%" height={74} radius={22} />
-        </SkeletonCard>
+      {/* The frameless hero — centred: status pill, 98px art, eyebrow, 38px title, sub-line,
+          the muscle-chip row, the fact pills, then the glass CTA row. */}
+      <div className="trm-sk-hero">
+        <Skeleton width={110} height={22} radius={999} />
+        <Skeleton width={98} height={98} radius={30} />
+        <Skeleton width="46%" height={11} />
+        <Skeleton width="58%" height={38} />
+        <Skeleton width="44%" height={13} />
+        <div className="trm-sk-row">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} width={28} height={28} radius={999} />
+          ))}
+        </div>
+        <div className="trm-sk-row">
+          {Array.from({ length: 3 }, (_, i) => (
+            <Skeleton key={i} width={78} height={30} radius={999} />
+          ))}
+        </div>
+        {/* the glass CTA row (`.trm-start`) — padding 12px + the 46px art + 12px = 70px. */}
+        <Skeleton width="100%" height={70} radius={22} />
       </div>
-      {/* The energy card (`.tr-energy`) — final render order (Task 5, mezo-88iwa.6) is
-          poster → energy card → muscle-impact card → the „Vagy inkább" pair, not pair-
-          directly-under-poster any more, so the skeleton must reserve the SAME two cards'
-          worth of space in between or the real content swap reflows.
-          Height derived from `.tr-energy`'s own CSS (prototype.css, browser default
-          line-height ≈ 1.2× font-size for these single-line labels). The card LOST its box
-          (padding/border/fill) in the surfaces-parity pass — the prototype gives the section
-          none (mezo-fsz2r Task 3) — so the 32px of padding that used to head this sum is gone:
-            `.tr-eyebrow` (10px)                    ≈ 10*1.2         = 12
-          + `h3` (margin 4/0/12, 15px)               4 + 15*1.2 + 12 = 34
-          + `.tr-energy-main` (36px display strong, the tallest baseline sibling)
-                                                          36*1.2      = 43
-          + `.tr-energy-split` (margin-top 10, 2× 12px lines, 4px gap)
-                                                     10 + 12*1.2*2 + 4 = 43
-          + `.tr-energy-note` (margin-top 12, 11px)  12 + 11*1.2     = 25
-          ────────────────────────────────────────────────────────────
-                                                                 total ≈ 157px */}
-      <div style={{ padding: '0 6px 14px' }}>
-        <Skeleton width="100%" height={157} radius={22} />
+      {/* The energy card (`.trm-energy`, glass):
+            padding 15 + 15                                    = 30
+          + `.trm-chead` (the 40px flame, the tallest cell)      = 40
+          + `.trm-energy-main` (margin-top 8, 46px numeral)      = 54
+          + `.trm-esplit` (margin 10/0/8, 8px bar)               = 26
+          + `.trm-energy-split` (one 11.5px line ≈ 16)           = 16
+          + `.trm-energy-note` (margin-top 10, 11px ≈ 16)        = 26
+          ─────────────────────────────────────────────────────────────
+                                                          total ≈ 192px */}
+      <div className="trm-sec">
+        <Skeleton width="100%" height={192} radius={22} />
       </div>
-      {/* The muscle-impact card (`.tr-mus`) — same derivation approach. `dayImpact`
-          always surfaces the four BIG_FAMILIES rows at minimum (`muscleColors.ts`), so
-          4 rows is the typical/reserved count (matches the poster's own 4-chip
-          constellation placeholder above).
-          Boxless too, same as `.tr-energy` above — no padding in the sum:
-            `.tr-eyebrow` (10px)                     ≈ 10*1.2         = 12
-          + `h3` (margin 4/0/14, 15px)                4 + 15*1.2 + 14 = 36
-          + 4× `.tr-mus-row` (30px `.tr-mus-art`, the tallest cell; margin-top 10 on
-            every row but the first)                  30 + 3*(10+30) = 150
-          + `.tr-mus-note` (margin-top 12, 11px)      12 + 11*1.2     = 25
-          ────────────────────────────────────────────────────────────
-                                                                 total ≈ 223px */}
-      <div style={{ padding: '0 6px 14px' }}>
-        <Skeleton width="100%" height={223} radius={22} />
+      {/* The muscle-impact card (`.trm-mus`, glass). `dayImpact` always surfaces the four
+          big families at minimum, so 4 rows is the reserved count:
+            padding 15 + 15                                    = 30
+          + `.trm-chead`                                         = 40
+          + 4× `.trm-mus-row` (margin-top 10 + the 28px well)    = 152
+          + `.trm-mus-note` (margin-top 10, two 11px lines ≈ 32) = 42
+          ─────────────────────────────────────────────────────────────
+                                                          total ≈ 264px */}
+      <div className="trm-sec">
+        <Skeleton width="100%" height={264} radius={22} />
       </div>
-      {/* the „Vagy inkább" pair (`.tr-alt`) — min-height 44px + margin-bottom 16px. */}
-      <div style={{ padding: '0 6px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
-          <Skeleton width="100%" height={44} radius={16} />
-          <Skeleton width="100%" height={44} radius={16} />
+      {/* the „Vagy inkább" pair (`.trm-alt`) — padding 13 + 13, the 44px art, the eyebrow
+          and the title with their 6px gaps ≈ 110px each. */}
+      <div className="trm-sec">
+        <div className="trm-alt">
+          <Skeleton width="100%" height={110} radius={20} />
+          <Skeleton width="100%" height={110} radius={20} />
         </div>
       </div>
     </div>

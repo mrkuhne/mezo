@@ -1,31 +1,20 @@
 // ============================================================
-// Mezo · RunWeekStrip — the N-segment week progress strip for a running
-// block (medcycle-bar idiom). past = dim --tag-run, now = glowing --tag-run, future =
-// faint surface-2. Presentational; mirrors the .wkstrip markup in the Futás
-// mockups. Used by RunningPage's hero cards.
+// Mezo · RunWeekStrip — the N-cell week progress strip for a running block.
+// Üveg re-dress (mezo-me75u.4, prototype uveg-edzes-body.html `.wkstrip`): one
+// flat numbered cell per week — done weeks sky-tinted, the current week filled
+// sky with a glow, future weeks a quiet recess. Presentational; used by
+// RunningPage's block cards (it sits inside their glass, so it stays flat).
 // ============================================================
 export function RunWeekStrip({ weeks, currentWeek }: { weeks: number; currentWeek: number }) {
   return (
-    <div className="row" style={{ gap: 3, height: 6, marginTop: 12 }}>
+    <div className="uvs-wkstrip" style={{ gridTemplateColumns: `repeat(${Math.max(1, weeks)}, minmax(0, 1fr))` }}>
       {Array.from({ length: weeks }, (_, i) => {
         const n = i + 1
         const state = n < currentWeek ? 'past' : n === currentWeek ? 'now' : 'future'
         return (
-          <span
-            key={n}
-            style={{
-              flex: 1,
-              borderRadius: 1,
-              background:
-                state === 'now'
-                  ? 'var(--tag-run)'
-                  : state === 'past'
-                    ? 'color-mix(in srgb, var(--tag-run) 50%, var(--surface-2))'
-                    : 'var(--surface-2)',
-              opacity: state === 'future' ? 0.5 : 1,
-              boxShadow: state === 'now' ? '0 0 8px var(--tag-run)' : 'none',
-            }}
-          />
+          <i key={n} className={`is-${state}`} aria-current={state === 'now' ? 'step' : undefined}>
+            {n}
+          </i>
         )
       })}
     </div>

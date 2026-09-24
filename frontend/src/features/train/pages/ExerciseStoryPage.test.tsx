@@ -47,14 +47,14 @@ const section = (container: HTMLElement, heading: string) => {
 test('the hero carries the muscle eyebrow, the name and the three real foot facts', async () => {
   const { container } = renderStory(ROW)
   await screen.findByText('Chest Supported Row')
-  const hero = container.querySelector('.pl-dhero.gy-hero') as HTMLElement
+  const hero = container.querySelector('.gyx-hero.is-story') as HTMLElement
   expect(within(hero).getByText('Hát (közép)')).toBeInTheDocument()
   // 21 sessions · 6 of them produced an e1RM point. That is an ELIGIBILITY shortfall, not
   // the wire's window (the cap is 52 and the series is nowhere near it), so the middle fact
   // is the absolute date the row actually carries — „az utolsó 6" would be a falsehood: the
   // missing 15 sessions are scattered through the history, not cut off the front.
   // · 182 450 kg → tonnes
-  expect(hero.querySelector('.pl-poster-foot')!.textContent).toBe('21 alkalomÁpr 21 óta182,4 t összsúly')
+  expect(hero.querySelector('.gyx-foot')!.textContent).toBe('21 alkalomÁpr 21 óta182,4 t összsúly')
 })
 
 test('a series the wire actually CAPPED says „ebből az utolsó N látszik", not an „óta" date', async () => {
@@ -74,7 +74,7 @@ test('a series the wire actually CAPPED says „ebből az utolsó N látszik", n
   )
   const { container } = renderStory(ROW)
   await screen.findByText('Chest Supported Row')
-  expect(container.querySelector('.pl-poster-foot')!.textContent).toContain('ebből az utolsó 52 látszik')
+  expect(container.querySelector('.gyx-foot')!.textContent).toContain('ebből az utolsó 52 látszik')
 })
 
 test('the hero shows the authorship stamp — the first renderer in the app for it', async () => {
@@ -99,7 +99,7 @@ test('a never-logged exercise gets the prototype’s empty-state prose and NO re
 test('a bodyweight row says ISMÉTLÉS instead of faking 0 t of volume', async () => {
   const { container } = renderStory(PLYO)
   await screen.findByText('Box Jump')
-  expect(container.querySelector('.pl-poster-foot')!.textContent).toBe('6 alkalomMáj 26 óta186 ismétlés')
+  expect(container.querySelector('.gyx-foot')!.textContent).toBe('6 alkalomMáj 26 óta186 ismétlés')
 })
 
 test('a series that covers every session keeps the absolute „óta" date — with its YEAR', async () => {
@@ -120,7 +120,7 @@ test('a series that covers every session keeps the absolute „óta" date — wi
   )
   const { container } = renderStory(ROW)
   await screen.findByText('Chest Supported Row')
-  expect(container.querySelector('.pl-poster-foot')!.textContent).toContain('2025. Szep 3 óta')
+  expect(container.querySelector('.gyx-foot')!.textContent).toContain('2025. Szep 3 óta')
 })
 
 // ── Rekordjaid ────────────────────────────────────────────────────────────────────────
@@ -330,7 +330,41 @@ test('a media-only row offers the video but not the edit', async () => {
 test('the back pill says ‹ Gyakorlatok', async () => {
   renderStory(ROW)
   await screen.findByText('Chest Supported Row')
-  expect(screen.getByRole('button', { name: 'Vissza' }).textContent).toBe('‹ Gyakorlatok')
+  // Üveg (mezo-me75u.4): the glass back pill — the arrow is its own decorative glyph.
+  const back = screen.getByRole('button', { name: 'Vissza' })
+  expect(back.textContent).toBe('‹Gyakorlatok')
+  expect(back).toHaveClass('glass')
+})
+
+// ── the üveg ranking (mezo-me75u.4, prototypes/uveg-edzes.html#exercise) ──────────────
+
+test('üveg: halo hero, three amber glass record tiles with 3D icons, glass curve + medal rows, flat rows with icons', async () => {
+  const { container } = renderStory(ROW)
+  await screen.findByText('Chest Supported Row')
+  const hero = container.querySelector('.gyx-hero.is-story') as HTMLElement
+  expect(hero).toHaveClass('uv-halo')
+  expect(hero).not.toHaveClass('glass')
+  expect(hero.style.getPropertyValue('--c')).not.toBe('')
+  const icon = (el: Element) => el.querySelector('use')?.getAttribute('href')
+  const recs = Array.from(container.querySelectorAll('.gy-rec'))
+  expect(recs.map(icon)).toEqual(['#t-ring', '#t-weight', '#t-protocol'])
+  recs.forEach((r) => expect(r).toHaveClass('glass'))
+  expect(icon(container.querySelector('.gy-next')!)).toBe('#t-record')
+  expect(container.querySelector('.gy-curve-box')).toHaveClass('glass')
+  const medal = section(container, 'Medáljaid').querySelector('.gy-medal')!
+  expect(medal).toHaveClass('glass')
+  expect(icon(medal)).toBe('#t-record')
+  // never glass inside glass
+  for (const g of Array.from(container.querySelectorAll('.glass'))) {
+    expect(g.querySelector('.glass')).toBeNull()
+  }
+  // „Hol szerepel" + „Gyakorlat kezelése": flat rows, each with its 3D icon
+  const used = await screen.findByText('A futó tervedben · Csü')
+  expect(icon(used.closest('button')!)).toBe('#t-peak')
+  expect(icon(screen.getByText('Sablon a polcodon').closest('button')!)).toBe('#t-stack')
+  expect(icon(screen.getByText('Szerkesztés').closest('button')!)).toBe('#t-note')
+  expect(icon(screen.getByText('Demó videó').closest('button')!)).toBe('#t-camera')
+  expect(screen.getByText('Szerkesztés').closest('button')).not.toHaveClass('glass')
 })
 
 test('an unknown key is a ghost, not a blank screen', async () => {

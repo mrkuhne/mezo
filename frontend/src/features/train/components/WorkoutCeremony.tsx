@@ -8,9 +8,10 @@
 //
 //   Step 1 `.cer-screen.is-staged` (jutalomoldalak, mezo-p2777 — spec
 //     docs/superpowers/specs/2026-09-22-jutalomoldalak-design.md) — ONE hero: the five-star
-//     ARC over the stone FUSE (no star numeral — owner D3: the stars are the reward). Then,
-//     beat by beat, the verdict, ONE card (the record strip, the honest minutes + XP pair,
-//     the quiet szett/ismétlés/kg×rep tally), the pending-sets line and exactly ONE way on:
+//     ARC over the FUSE (no star numeral — owner D3: the stars are the reward). Then,
+//     beat by beat, the verdict, the amber glass RECORDS card (only when records exist),
+//     the stats glass card (minutes + XP, the quiet szett/ismétlés/kg×rep tally and the
+//     accepted küldetések with their outcome), the pending-sets line and exactly ONE way on:
 //     `Részletek`. One rAF pass (2700 ms) burns the fuse and lights the stars over the first
 //     1700 ms, toggles the beat classes `is-b1/2/3`, and runs the card's tally at the end.
 //   Step 2 `.cer-details-screen` — a recap chip (mini stars + verdict) tying it to step one,
@@ -27,20 +28,82 @@
 // is guarded by a ref, so neither a re-render nor a trip to step 2 and back can restart it
 // (the ceremony plays exactly once per close).
 //
-// The küldetés rows and the streak line that T7 carried here are GONE: neither has a
-// prototype counterpart in the ceremony. The challenge outcomes keep their other home — the
-// review page (`WorkoutReviewPage` → `WorkoutSummary`'s own challenge strip).
+// Üveg re-dress (mezo-me75u.4, prototype uveg-edzes.html#cer): 3D sprite stars, glass cards
+// (`.uv-cer` scopes every override — SportCeremony shares the `.cer-*` family). The owner
+// approved one content addition there: the stats card's `Küldetések · hit / total` section —
+// the session's ACCEPTED challenges, each with a round outcome icon (accessible name only).
+// The streak line T7 carried stays gone.
 //
 // Every number is a prop: this component computes nothing and fabricates nothing. A tile
 // whose input is unknown is not rendered — never a 0 (minutes, XP, kcal).
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
+import type { Challenge } from '@/data/types'
+import type { Medal } from '@/data/train/medalTypes'
 import { verdictFor, type CerScore, type MuscleStarRow } from '@/features/train/logic/cerScore'
 import { muscleColor } from '@/features/train/logic/muscleColors'
+import { MEDAL_TYPE_LABEL, formatMedalNumber } from '@/features/train/logic/medalLabels'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
-import { ClayIcon } from '@/shared/ui/clay'
-import { Icon } from '@/shared/ui/Icon'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+
+/** One record row of the step-one records card: the exercise, the medal type label
+ *  (MEDAL_TYPE_LABEL) and the plain achieved values as chips ('105 kg', '10 ism.'). */
+export interface CeremonyRecord { name: string; kind: string; values: string[] }
+
+/** One ACCEPTED challenge of the session with its outcome (the stats card's Küldetések). */
+export interface CeremonyChallenge {
+  id: string
+  type: string
+  typeLabel: string
+  exercise?: string
+  target: string
+  status: 'hit' | 'miss' | 'inconclusive'
+}
+
+/** hu-HU number with the locale's (narrow) no-break spaces normalised to a plain space. */
+const huNum = (n: number) => formatMedalNumber(n).replace(/[\u00a0\u202f]/g, ' ')
+
+/**
+ * A RECORD medal as the ceremony's chip row — the medal's own fields, never a recomputation.
+ * WEIGHT: the load, then the reps; REPS_AT_WEIGHT: the reps, then the load; E1RM and
+ * SESSION_VOLUME: their derived headline in kg (see medalLabels' DERIVED_HEADLINE_TYPES).
+ */
+export function ceremonyRecord(m: Medal): CeremonyRecord {
+  const kg = m.weightKg != null ? `${huNum(m.weightKg)} kg` : null
+  const reps = m.reps != null ? `${m.reps} ism.` : null
+  let values: string[]
+  switch (m.type) {
+    case 'WEIGHT':
+      values = kg ? [kg, ...(reps ? [reps] : [])] : [`${huNum(m.value)} kg`]
+      break
+    case 'REPS_AT_WEIGHT':
+    case 'TARGET_HIT':
+      values = [reps ?? `${m.value} ism.`, ...(kg ? [kg] : [])]
+      break
+    default:
+      values = [`${huNum(m.value)} kg`]
+  }
+  return { name: m.exerciseName, kind: MEDAL_TYPE_LABEL[m.type] ?? m.type, values }
+}
+
+/**
+ * The session's ACCEPTED challenges with their outcome, for the stats card. `accepted` is the
+ * page's own accept map; an `inconclusive` challenge was accepted too (the map only counts
+ * accepted/hit/miss). Anything not yet resolved to hit/miss reads as `inconclusive`.
+ */
+export function ceremonyChallenges(challenges: Challenge[], accepted: Record<string, boolean>): CeremonyChallenge[] {
+  return challenges
+    .filter((c) => accepted[c.id] || c.status === 'inconclusive')
+    .map((c) => ({
+      id: c.id,
+      type: c.type,
+      typeLabel: c.typeLabel,
+      exercise: c.exercise,
+      target: c.target,
+      status: c.status === 'hit' || c.status === 'miss' ? c.status : 'inconclusive',
+    }))
+}
 
 export interface WorkoutCeremonyProps {
   score: CerScore
@@ -50,8 +113,11 @@ export interface WorkoutCeremonyProps {
   minutes: number | null
   /** The finish response's real XP; null hides the tile. */
   xpGained: number | null
-  /** The RECORD-tier medals earned this session, already rendered to copy. */
-  records: Array<{ name: string; value: string }>
+  /** The RECORD-tier medals earned this session, as chip rows (see `ceremonyRecord`). */
+  records: CeremonyRecord[]
+  /** The session's ACCEPTED challenges with their outcome (see `ceremonyChallenges`);
+   *  empty/absent hides the stats card's Küldetések section. */
+  challenges?: CeremonyChallenge[]
   muscles: MuscleStarRow[]
   /** The T5 `trainDayEnergy` estimate; null hides the tile (never a 0 kcal). */
   kcal: { value: number; known: true } | null
@@ -103,8 +169,56 @@ function starClass(index: number, progressed: number): string {
   return ''
 }
 
+/** A star slot as the 3D sprite: lit, half or the dimmed empty star. */
+function starIcon(cls: string): Icon3DName {
+  return cls === 'is-lit' ? 't-star' : cls === 'is-half' ? 't-star-half' : 't-star-empty'
+}
+
+/** The mini star row (recap chip, muscle rows) — drawn, not written. */
+function MiniStars({ ratio }: { ratio: number }) {
+  return (
+    <span className="cer-starrow mini" aria-hidden="true">
+      {STAR_SLOTS.map((s) => {
+        const cls = starClass(s, ratio)
+        return (
+          <i key={s} className={cls} style={{ '--s': s } as CSSProperties}>
+            <Icon3D name={starIcon(cls)} size={16} />
+          </i>
+        )
+      })}
+    </span>
+  )
+}
+
+/** Record type label → its 3D icon (the medal type, not a generic medal). */
+const RECORD_KIND_ICON: Record<string, Icon3DName> = {
+  'Súly-rekord': 't-weight', 'Rep-rekord': 't-repeat', '1RM-rekord': 't-ring', 'Volumen-rekord': 't-protocol',
+}
+/** Challenge type → its 3D icon. */
+const CHALLENGE_TYPE_ICON: Record<string, Icon3DName> = {
+  overload: 't-up', PR: 't-record', Depth: 't-hold', Volume: 't-protocol', Tempo: 't-clock',
+}
+const CHALLENGE_OUTCOME: Record<CeremonyChallenge['status'], { icon: Icon3DName; label: string }> = {
+  hit: { icon: 't-tick', label: 'teljesült' },
+  miss: { icon: 't-skip', label: 'nem teljesült' },
+  inconclusive: { icon: 't-skip', label: 'nem értékelhető' },
+}
+
+/** The wire label may carry an emoji ('⚡ Túlterhelés'); the chip's icon is the 3D one. */
+const cleanLabel = (label: string) => label.replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').trim()
+
+/** '107.5 kg × 8' → ['107,5 kg', '8 ism.']; free-text pieces pass through as they are. */
+export function targetChips(target: string): string[] {
+  return target.split(/ × | · /).map((p) => p.trim()).filter(Boolean).map((p) => {
+    const kg = /^(\d+(?:[.,]\d+)?)\s*kg$/i.exec(p)
+    if (kg) return `${kg[1].replace('.', ',')} kg`
+    if (/^\d+$/.test(p)) return `${p} ism.`
+    return p
+  })
+}
+
 export function WorkoutCeremony({
-  score, eyebrow, minutes, xpGained, records, muscles, kcal,
+  score, eyebrow, minutes, xpGained, records, challenges = [], muscles, kcal,
   note, onNote, onClose, onGoFuel, settled = false, pendingSets = 0, reducedMotion,
 }: WorkoutCeremonyProps) {
   // The pass is skipped entirely for the recap read-back and for reduced motion — both
@@ -199,33 +313,28 @@ export function WorkoutCeremony({
       // The `key` is load-bearing: both steps return a bare <div> at the same position, and
       // React would otherwise REUSE step one's DOM nodes (the ceremony stage included) for
       // step two's — leaving the still-running rAF pass writing into the details screen.
-      <div key="details" className={`cer-details-screen${detailsTold ? ' is-told' : ''}`}>
+      <div key="details" className={`cer-details-screen uv-cer${detailsTold ? ' is-told' : ''}`}>
         {/* Step two's focus target, unconditionally — a session with no muscle rows must
             still land focus here on entry, not on <body> (mezo-e1ii9 Task 3, fix round 1). */}
         <h2 className="sr-only" tabIndex={-1} ref={detailsHeadingRef}>
           Az edzés részletei
         </h2>
-        {/* The recap chip: step one's verdict in one line, so step two reads as its sequel. */}
-        <div className="cer-recap-chip">
-          <span className="cer-starrow mini" aria-hidden="true">
-            {STAR_SLOTS.map((s) => (
-              <i key={s} className={starClass(s, score.ratio)}>
-                <ClayIcon name="i-termes" size={15} className="icon" />
-              </i>
-            ))}
-          </span>
+        {/* The recap pill: step one's verdict in one line, so step two reads as its sequel. */}
+        <div className="cer-recap-chip uv-flat">
+          <MiniStars ratio={score.ratio} />
           <span>{verdictFor(score.stars)}</span>
         </div>
 
+        {/* The kcal hero: a frameless sage halo, no card (§3.4 rank 1). */}
         {kcal && (
-          <button type="button" className="cer-kcal" onClick={onGoFuel}>
+          <button type="button" className="cer-kcal uv-halo" onClick={onGoFuel}>
             <span className="cer-kcal-line">
-              <ClayIcon name="i-fuel" size={62} className="icon" />
+              <Icon3D name="t-bowl" size={66} className="cer-kcal-art" />
               <b>+</b><strong>{huNumber(kcal.value)}</strong><small>kcal</small>
             </span>
             <span className="cer-kcal-copy">Ennyit nyertél a mai mozgással</span>
             <span className="cer-recap-note">Becslés, nem mérés</span>
-            <i className="cer-kcal-go">›</i>
+            <i className="cer-kcal-go" aria-hidden="true">›</i>
           </button>
         )}
 
@@ -234,32 +343,31 @@ export function WorkoutCeremony({
             <div className="cer-section">
               <strong>Izomcsoportok fejlődése a mai edzésen</strong>
             </div>
-            <div className="cer-mstars">
-              {muscles.map((row, i) => (
-                <div
-                  key={row.muscle}
-                  className="cer-mstar"
-                  style={{ '--ex-color': muscleColor(row.muscle).rail, '--i': i } as CSSProperties}
-                >
-                  <span className="cer-mstar-art"><MuscleChip token={row.muscle} size={40} /></span>
-                  <span className="cer-mstar-copy">
-                    <strong>{row.label}</strong>
-                    <small>{row.done} / {row.plan} szett</small>
-                  </span>
-                  <span className="cer-starrow mini" aria-hidden="true">
-                    {STAR_SLOTS.map((s) => (
-                      <i key={s} className={starClass(s, row.ratio)} style={{ '--s': s } as CSSProperties}>
-                        <ClayIcon name="i-termes" size={15} className="icon" />
-                      </i>
-                    ))}
-                  </span>
-                  {/* The fill width is an inline custom property, so the reveal is a
-                      frame-independent CSS transition on a value that is already there. */}
-                  <span className="cer-mstar-track">
-                    <i className="fill" style={{ '--w': `${row.ratio * 100}%` } as CSSProperties} />
-                  </span>
-                </div>
-              ))}
+            {/* ONE coral glass card; each row wears its own muscle colour (`--c`) on its art
+                and its bar — flat inside the glass, never a card in a card. */}
+            <div className="cer-mstars glass">
+              {muscles.map((row, i) => {
+                const color = muscleColor(row.muscle).rail
+                return (
+                  <div
+                    key={row.muscle}
+                    className="cer-mstar"
+                    style={{ '--ex-color': color, '--c': color, '--i': i } as CSSProperties}
+                  >
+                    <span className="cer-mstar-art"><MuscleChip token={row.muscle} size={40} /></span>
+                    <span className="cer-mstar-copy">
+                      <strong>{row.label}</strong>
+                      <small>{row.done} / {row.plan} szett</small>
+                    </span>
+                    <MiniStars ratio={row.ratio} />
+                    {/* The fill width is an inline custom property, so the reveal is a
+                        frame-independent CSS transition on a value that is already there. */}
+                    <span className="cer-mstar-track">
+                      <i className="fill" style={{ '--w': `${row.ratio * 100}%` } as CSSProperties} />
+                    </span>
+                  </div>
+                )
+              })}
             </div>
           </section>
         )}
@@ -280,15 +388,15 @@ export function WorkoutCeremony({
         </div>
 
         <div className="cer-cta">
-          <button type="button" className="wo-close-cta is-done" onClick={onClose}>
-            <span className="wo-close-art"><Icon name="check" size={34} /></span>
+          <button type="button" className="cer-go is-done glass" onClick={onClose}>
+            <Icon3D name="t-tick" size={44} />
             <span>
               <strong>Vissza a mai napra</strong>
               <small>Az edzés lezárva és elmentve</small>
             </span>
-            <u className="chip-sheen" />
+            <em aria-hidden="true">›</em>
           </button>
-          <button type="button" className="wo-secondary" onClick={() => setStep('summary')}>
+          <button type="button" className="cer-back uv-flat" onClick={() => setStep('summary')}>
             Vissza az értékeléshez
           </button>
         </div>
@@ -300,12 +408,14 @@ export function WorkoutCeremony({
     )
   }
 
+  const hitCount = challenges.filter((c) => c.status === 'hit').length
+
   // ---------- step one: the ceremony owns the screen, and ends with the way on ----------
   return (
     <div
       key="summary"
       ref={rootRef}
-      className={`cer-screen is-staged${told ? `${ALL_BEATS} is-told` : ''}`}
+      className={`cer-screen is-staged uv-cer${told ? `${ALL_BEATS} is-told` : ''}`}
     >
       <section
         ref={stageRef}
@@ -314,16 +424,19 @@ export function WorkoutCeremony({
       >
         <span className="cer-sky" aria-hidden="true" />
         <span className="cer-eyebrow">{eyebrow}</span>
-        {/* The hero: five stars on an arc, the middle one largest (sizes live in the CSS). */}
+        {/* The hero: five 3D stars on an arc, the middle one largest (sizes live in the CSS).
+            Each slot carries all three states; the pass's is-lit / is-half class picks one. */}
         <div className="cer-stars" aria-hidden="true">
           {STAR_SLOTS.map((i) => (
             <i key={i} data-cer-star={i} className={told ? starClass(i, progressed) : undefined}>
               <b className="cer-aura" />
-              <ClayIcon name="i-termes" size={56} className="icon" />
+              <Icon3D name="t-star-empty" size={56} className="cer-star-off" />
+              <Icon3D name="t-star-half" size={56} className="cer-star-half" />
+              <Icon3D name="t-star" size={56} className="cer-star-on" />
             </i>
           ))}
         </div>
-        {/* The fuse: the stone bar, five segments — one per star. */}
+        {/* The fuse: a recessed track, the gold fill, the comet orb and four segment ticks. */}
         <div className="cer-bar" aria-hidden="true">
           <i className="cer-fill" />
           <span className="cer-comet" />
@@ -336,51 +449,100 @@ export function WorkoutCeremony({
           {huStars(score.stars)} csillag az ötből
         </h1>
         <p className="cer-verdict">{verdictFor(score.stars)}</p>
-        {/* ONE card for every secondary number — never a scatter of peer tiles. */}
-        <div className="cer-card">
-          {records.length > 0 && (
+
+        {/* The records: their OWN amber glass card, only when the session set any. */}
+        {records.length > 0 && (
+          <article className="cer-card cer-records glass">
             <div className="cer-record">
-              <ClayIcon name="i-erme" size={38} className="icon" />
+              <span className="uv-well"><Icon3D name="t-record" size={40} /></span>
               <span>
-                <strong>{records.length === 1 ? 'Új rekord' : `${records.length} új rekord`}</strong>
-                <small>{records.map((r) => `${r.name} · ${r.value}`).join(' · ')}</small>
+                <span className="uv-eyebrow">Ez a tiéd mostantól</span>
+                <strong>{records.length} új rekord</strong>
               </span>
             </div>
-          )}
+            {records.map((r, i) => (
+              <div key={`${r.name}-${r.kind}-${i}`} className="cer-rec-row">
+                <strong>{r.name}</strong>
+                <span className="cer-vals">
+                  <span className="cer-tchip">
+                    <Icon3D name={RECORD_KIND_ICON[r.kind] ?? 't-record'} size={24} />
+                    {r.kind}
+                  </span>
+                  {r.values.map((v) => <b key={v} className="is-lit">{v}</b>)}
+                </span>
+              </div>
+            ))}
+          </article>
+        )}
+
+        {/* ONE card for every other number: minutes + XP, the tally, the küldetések. */}
+        <article className="cer-card cer-sum glass">
           {minutes != null || xpGained != null ? (
             <div className="cer-stats">
               {minutes != null && (
                 <span>
-                  <ClayIcon name="i-idozito" size={30} className="icon" />
-                  <strong>{minutes}<i>′</i></strong><small>a pulton töltött idő</small>
+                  <Icon3D name="t-clock" size={32} />
+                  <span>
+                    <strong>{minutes}<i>′</i></strong><small>a pulton töltött idő</small>
+                  </span>
                 </span>
               )}
               {xpGained != null && (
                 <span>
-                  <ClayIcon name="i-kristaly" size={30} className="icon" />
-                  <strong>+{huNumber(xpGained)}</strong><small>szerzett XP</small>
+                  <Icon3D name="t-coin" size={32} />
+                  <span>
+                    <strong>+{huNumber(xpGained)}</strong><small>szerzett XP</small>
+                  </span>
                 </span>
               )}
             </div>
           ) : null}
           <div className="cer-tally">
             <span>
-              <ClayIcon name="i-suly" size={20} className="icon" />
+              <Icon3D name="t-weight" size={24} />
               <b data-cer-count="sets">{counterValue(score.done.sets)}</b>
               <small>szett</small>
             </span>
             <span>
-              <ClayIcon name="i-edzes" size={20} className="icon" />
+              <Icon3D name="t-dumbbell" size={24} />
               <b data-cer-count="reps">{counterValue(score.done.reps)}</b>
               <small>ismétlés</small>
             </span>
             <span>
-              <ClayIcon name="i-stack" size={20} className="icon" />
+              <Icon3D name="t-protocol" size={24} />
               <b data-cer-count="volume">{counterValue(score.done.volume, true)}</b>
               <small>kg × rep</small>
             </span>
           </div>
-        </div>
+          {/* Owner-approved addition (mezo-me75u.4): the session's ACCEPTED challenges with
+              their outcome, revealed on beat 3. The outcome is an icon with an accessible
+              name — no outcome text, and a miss only dims (the report never punishes). */}
+          {challenges.length > 0 && (
+            <div className="cer-quests">
+              <span className="uv-eyebrow">Küldetések · {hitCount} / {challenges.length}</span>
+              {challenges.map((c) => {
+                const out = CHALLENGE_OUTCOME[c.status]
+                return (
+                  <div key={c.id} className={`cer-quest is-${c.status}`}>
+                    <span className="cer-quest-body">
+                      {c.exercise && <strong>{c.exercise}</strong>}
+                      <span className="cer-vals">
+                        <span className="cer-tchip is-coral">
+                          <Icon3D name={CHALLENGE_TYPE_ICON[c.type] ?? 't-quest'} size={24} />
+                          {cleanLabel(c.typeLabel)}
+                        </span>
+                        {targetChips(c.target).map((v, j) => <b key={`${v}-${j}`}>{v}</b>)}
+                      </span>
+                    </span>
+                    <span className="cer-quest-res" role="img" aria-label={out.label}>
+                      <Icon3D name={out.icon} size={30} />
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </article>
         {/* The honest tail: the close did not tick everything (prototype recap()). */}
         {pendingSets > 0 && (
           <p className="cer-recap-note">{pendingSets} szett kihagyott státusszal zárult.</p>
@@ -389,16 +551,14 @@ export function WorkoutCeremony({
 
       {/* The single way on — the prototype's only CTA on this screen. */}
       <div className="cer-foot">
-        {/* `.cer-cta` is what carries the CTA chrome (`.cer-cta .wo-close-cta`, prototype.css) —
-            the wrapper is the style hook, not decoration. */}
         <div className="cer-cta">
-          <button type="button" className="wo-close-cta" onClick={() => setStep('details')}>
-            <span className="wo-close-art"><ClayIcon name="i-naplo" size={34} className="icon" /></span>
+          <button type="button" className="cer-go glass" onClick={() => setStep('details')}>
+            <Icon3D name="t-journal" size={44} />
             <span>
               <strong>Részletek</strong>
               <small>Izomcsoportok és a nyert kalória</small>
             </span>
-            <u className="chip-sheen" />
+            <em aria-hidden="true">›</em>
           </button>
         </div>
       </div>

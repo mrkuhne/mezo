@@ -8,6 +8,11 @@
 // deleteCatalogExercise (moved here from the page's RowActions, mezo-kaui).
 // The mutation's onSuccess closes the sheet (animated). Follows the
 // ExercisePickerSheet / SportLogSheet visual idiom (chip picker + notch cards).
+//
+// Üveg (mezo-me75u.4, bible U2 rule 15): ONE floating amber glass sheet (10px off the
+// edges, 30px radius), the t-muscle 3D art in the head; every control inside is a flat
+// cell or a lit flat pill (never glass in glass) — the active chip / type filled amber,
+// Mentés a lit amber pill. CSS: the `── uveg edzes gyakorlatok (` block, `.gyx-sheet`.
 // ============================================================
 import { useState } from 'react'
 import { useTrain } from '@/data/hooks'
@@ -17,8 +22,7 @@ import type { CatalogExerciseCreateRequest } from '@/data/train/trainApi'
 import type { ExerciseLibraryItem } from '@/data/types'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
-import { Display } from '@/shared/ui/Display'
-import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
+import { Icon3D } from '@/shared/ui/clay'
 import { cn } from '@/shared/lib/cn'
 
 // The 21 head/zone-specific catalog muscle tokens (mezo-wu1s), region-grouped for the
@@ -36,18 +40,16 @@ const round2 = (n: number) => Math.round(n * 100) / 100
 // --- DecimalStep: label + display + 44px ± buttons over a 0–1 / step-0.05 range ---
 function DecimalStep({ label, val, onChange }: { label: string; val: number; onChange: (n: number) => void }) {
   return (
-    <div className="col gap-sm">
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <span className="label-mono">{label}</span>
-        <span style={{ fontFamily: 'var(--ff-display)', fontSize: 22, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1 }}>
-          {val.toFixed(2)}
-        </span>
+    <div className="gyx-sh-field">
+      <div className="gyx-sh-steprow">
+        <span className="uv-eyebrow">{label}</span>
+        <span className="gyx-sh-num">{val.toFixed(2)}</span>
       </div>
-      <div className="stepper rad-12">
+      <div className="gyx-sh-stepper uv-flat">
         <button type="button" aria-label={`${label} csökkentése`} onClick={() => onChange(round2(Math.max(0, val - 0.05)))}>
           <Icon name="minus" size={14} />
         </button>
-        <span className="stepper-display" aria-hidden="true">{val.toFixed(2)}</span>
+        <span className="gyx-sh-stepval" aria-hidden="true">{val.toFixed(2)}</span>
         <button type="button" aria-label={`${label} növelése`} onClick={() => onChange(round2(Math.min(1, val + 0.05)))}>
           <Icon name="plus" size={14} />
         </button>
@@ -55,14 +57,6 @@ function DecimalStep({ label, val, onChange }: { label: string; val: number; onC
     </div>
   )
 }
-
-const fieldStyle = {
-  width: '100%',
-  padding: '10px 12px',
-  fontSize: 14,
-  background: 'var(--surface-1)',
-  border: '1px solid var(--border-subtle)',
-} as const
 
 interface CatalogExerciseSheetProps {
   onClose: () => void
@@ -110,53 +104,48 @@ export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProp
   }
 
   return (
-    <Sheet onClose={onClose} labelledBy="catalog-exercise-title">
+    <Sheet onClose={onClose} labelledBy="catalog-exercise-title" className="glass is-still gyx-sheet">
       {(close) => (
         <>
           {/* Header */}
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-            <div className="col">
-              <span className="eyebrow brand">Gyakorlat · Katalógus</span>
-              <div id="catalog-exercise-title" style={{ marginTop: 4 }}>
-                <Display size="md">{isEdit ? 'Gyakorlat szerkesztése' : 'Új gyakorlat'}</Display>
-              </div>
+          <div className="gyx-shh">
+            <Icon3D name="t-muscle" size={48} />
+            <div className="gyx-shh-copy">
+              <span className="uv-eyebrow">Gyakorlat · Katalógus</span>
+              <h3 id="catalog-exercise-title">{isEdit ? 'Gyakorlat szerkesztése' : 'Új gyakorlat'}</h3>
             </div>
-            <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
-              <Icon name="x" size={12} />
+            <button type="button" className="gyx-shh-x" onClick={close} aria-label="Bezárás">
+              <Icon name="x" size={14} />
             </button>
           </div>
 
           {/* Name */}
-          <div className="col gap-sm" style={{ marginBottom: 14 }}>
-            <span className="label-mono">Név</span>
+          <div className="gyx-sh-field">
+            <span className="uv-eyebrow">Név</span>
             <input
               aria-label="Név"
-              className="rad-12"
+              className="gyx-sh-input"
               placeholder="pl. Cable Pull-Around"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              style={fieldStyle}
             />
           </div>
 
           {/* Muscle picker (21 tokens, region-grouped) */}
-          <div className="col gap-sm" style={{ marginBottom: 14 }}>
-            <span className="label-mono">Izomcsoport</span>
-            <div className="col gap-sm" role="group" aria-label="Izomcsoport">
+          <div className="gyx-sh-field">
+            <span className="uv-eyebrow">Izomcsoport</span>
+            <div className="gyx-sh-groups" role="group" aria-label="Izomcsoport">
               {REGION_MUSCLES.map((g) => (
-                <div key={g.region} className="col gap-xs">
-                  <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)' }}>
-                    {REGION_LABELS[g.region]}
-                  </span>
-                  <div className="row gap-xs" style={{ flexWrap: 'wrap' }}>
+                <div key={g.region} className="gyx-sh-group">
+                  <span className="gyx-sh-sub">{REGION_LABELS[g.region]}</span>
+                  <div className="gyx-sh-chips">
                     {g.muscles.map((m) => (
                       <button
                         key={m}
                         type="button"
                         aria-pressed={muscle === m}
                         onClick={() => setMuscle(m as MuscleKey)}
-                        className={cn('chip', muscle === m && 'brand')}
-                        style={{ fontSize: 10, padding: '6px 10px' }}
+                        className={cn('gyx-chip', muscle === m && 'is-on')}
                       >
                         {MUSCLE_LABELS[m] ?? m}
                       </button>
@@ -168,9 +157,9 @@ export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProp
           </div>
 
           {/* Type segmented */}
-          <div className="col gap-sm" style={{ marginBottom: 14 }}>
-            <span className="label-mono">Típus</span>
-            <div className="row gap-xs" role="group" aria-label="Típus">
+          <div className="gyx-sh-field">
+            <span className="uv-eyebrow">Típus</span>
+            <div className="gyx-sh-types" role="group" aria-label="Típus">
               {TYPES.map((t) => {
                 const active = type === t
                 return (
@@ -179,17 +168,7 @@ export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProp
                     type="button"
                     aria-pressed={active}
                     onClick={() => setType(t)}
-                    className="flex-1 rad-12"
-                    style={{
-                      padding: '10px',
-                      background: active ? 'color-mix(in srgb, var(--coral) 8%, transparent)' : 'var(--surface-1)',
-                      border: `1px solid ${active ? 'color-mix(in srgb, var(--coral) 40%, transparent)' : 'var(--border-subtle)'}`,
-                      color: active ? 'var(--coral)' : 'var(--text-secondary)',
-                      fontSize: 10,
-                      fontWeight: 600,
-                      letterSpacing: '0.14em',
-                      textTransform: 'uppercase',
-                    }}
+                    className={cn('gyx-chip gyx-sh-type', active && 'is-on')}
                   >
                     {t}
                   </button>
@@ -199,21 +178,20 @@ export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProp
           </div>
 
           {/* Stim + fatigue steppers */}
-          <div className="col gap-md" style={{ marginBottom: 14 }}>
+          <div className="gyx-sh-steps">
             <DecimalStep label="Stim" val={stim} onChange={setStim} />
             <DecimalStep label="Fáradtság" val={fatigue} onChange={setFatigue} />
           </div>
 
           {/* Video URL */}
-          <div className="col gap-sm" style={{ marginBottom: 4 }}>
-            <span className="label-mono">Videó URL</span>
+          <div className="gyx-sh-field">
+            <span className="uv-eyebrow">Videó URL</span>
             <input
               aria-label="Videó URL"
-              className="rad-12"
+              className="gyx-sh-input"
               placeholder="https://youtu.be/…"
               value={videoUrl}
               onChange={(e) => setVideoUrl(e.target.value)}
-              style={fieldStyle}
             />
           </div>
 
@@ -221,32 +199,32 @@ export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProp
           {isEdit && (
             <button
               type="button"
-              className="chip"
+              className={cn('gyx-sh-del', confirmDelete && 'is-armed')}
               aria-label="Gyakorlat törlése"
               onClick={() => {
                 if (!confirmDelete) { setConfirmDelete(true); return }
                 deleteCatalogExercise(edit.catalogId ?? edit.id, { onSuccess: close })
               }}
-              style={{
-                alignSelf: 'center', marginTop: 14, background: 'transparent',
-                borderColor: 'transparent', color: 'var(--warning)',
-              }}
             >
-              <Icon name="trash" size={12} color="var(--warning)" />
+              <Icon name="trash" size={13} />
               {confirmDelete ? 'Biztos? Koppints a törléshez' : 'Gyakorlat törlése'}
             </button>
           )}
 
           {/* Footer */}
-          <div className="row gap-sm mt-lg">
-            <CtaGhost className="flex-1" onClick={close}>
+          <div className="gyx-sh-two">
+            <button type="button" className="gyx-sh-btn" onClick={close}>
               Mégse
-            </CtaGhost>
-            <CtaPrimary className="flex-1" disabled={!trimmed || saving} onClick={() => submit(close)}>
-              <Icon name="check" size={14} /> Mentés
-            </CtaPrimary>
+            </button>
+            <button
+              type="button"
+              className="gyx-sh-btn is-primary"
+              disabled={!trimmed || saving}
+              onClick={() => submit(close)}
+            >
+              <Icon3D name="t-tick" size={20} /> Mentés
+            </button>
           </div>
-          <div style={{ height: 8 }} />
         </>
       )}
     </Sheet>

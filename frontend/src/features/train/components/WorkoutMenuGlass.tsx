@@ -16,12 +16,19 @@
 // YouTube/Instagram idiom the exercise picker also uses — the third user, the
 // pre-Titanium `ExerciseRecordSheet`, was deleted in mezo-lf3cv) rather than
 // inventing a second embed path.
+//
+// Üvegesítés U4 (mezo-me75u.4): the three glasses wear the dark glass (coral `--c`), their rows
+// are FLAT cells with Titanium 3D icons (Videó t-camera, Küldetések t-quest, Jegyzet t-note,
+// Szett ± t-weight, Előrébb t-up, Hátrébb t-down, kihagyás t-skip / visszavétel t-repeat). The
+// body roots carry `.wos-gb` so the `uveg edzes session` block can scope the shared GlassBox
+// (`.gl-card:has(> .wos-gb)`) without re-skinning every other GlassBox caller.
 // ============================================================
 import type { Challenge, LoggedWorkoutExercise } from '@/data/types'
 import { videoEmbed } from '@/features/train/components/VideoDemo'
 import { ChallengeCard } from '@/features/train/components/ChallengeCard'
 import { ChallengeGenerationLoader } from '@/features/train/components/ChallengeGenerationLoader'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { MuscleChip } from '@/features/train/components/MuscleChip'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { GlassBox } from '@/shared/ui/mozaik/GlassBox'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
@@ -62,22 +69,24 @@ export interface WorkoutMenuGlassProps {
 }
 
 function MenuRow({
-  icon, label, hint, disabled, onClick,
+  icon, label, hint, disabled, warn, onClick,
 }: {
-  icon: ClayIconName
+  icon: Icon3DName
   label: string
   hint: string
   disabled?: boolean
+  /** The destructive-ish row (Gyakorlat kihagyása) reads coral. */
+  warn?: boolean
   onClick: () => void
 }) {
   return (
-    <button type="button" className="wo-menu-row" disabled={disabled} onClick={onClick}>
-      <ClayIcon name={icon} size={28} />
+    <button type="button" className={warn ? 'wo-menu-row is-warn' : 'wo-menu-row'} disabled={disabled} onClick={onClick}>
+      <Icon3D name={icon} size={32} />
       <span>
         <strong>{label}</strong>
         <small>{hint}</small>
       </span>
-      <b>›</b>
+      <b aria-hidden="true">›</b>
     </button>
   )
 }
@@ -107,37 +116,42 @@ export function WorkoutMenuGlass({
   }
 
   return (
-    <GlassBox open={open} onClose={onClose} label={exercise.name} tint={tint} variant="menu">
-      <div className="wo-menu">
+    <GlassBox
+      open={open} onClose={onClose} label={exercise.name} tint={tint} variant="menu"
+      eyebrow="Gyakorlat"
+      art={<span className="wos-gb-art"><MuscleChip token={exercise.muscle} size={40} /></span>}
+    >
+      <div className="wo-menu wos-gb wos-gb-menu glass is-still">
         {exercise.videoUrl && (
-          <MenuRow icon="i-video" label="Videó" hint="A gyakorlathoz csatolt felvétel" onClick={onVideo} />
+          <MenuRow icon="t-camera" label="Videó" hint="A gyakorlathoz csatolt felvétel" onClick={onVideo} />
         )}
         {/* The day's quests (mezo-e1ii9): the home the retired prep mosaic's Küldetések
             tile handed over to. Like Videó, it switches the page to its OWN glass. */}
         <MenuRow
-          icon="i-kihivas" label="Küldetések"
+          icon="t-quest" label="Küldetések"
           hint={challengeHint(challengesPending, acceptedChallenges, totalChallenges)}
           onClick={onChallenges}
         />
-        <MenuRow icon="i-checkin" label="Jegyzet" hint={noteHint(hasNote)} onClick={fire(onEditNote)} />
+        <MenuRow icon="t-note" label="Jegyzet" hint={noteHint(hasNote)} onClick={fire(onEditNote)} />
         <MenuRow
-          icon="i-suly" label="Szett hozzáadása" hint={`Most ${slotCount} szett van`}
+          icon="t-weight" label="Szett hozzáadása" hint={`Most ${slotCount} szett van`}
           disabled={skipped} onClick={fire(onAddSet)}
         />
         <MenuRow
-          icon="i-suly" label="Szett elvétele" hint="Csak bepipálatlan utolsó szett"
+          icon="t-weight" label="Szett elvétele" hint="Csak bepipálatlan utolsó szett"
           disabled={skipped || !canRemoveTrailingSet} onClick={fire(onRemoveSet)}
         />
         <MenuRow
-          icon="i-stack" label="Előrébb" hint="Egy hellyel korábban"
+          icon="t-up" label="Előrébb" hint="Egy hellyel korábban"
           disabled={position === 0} onClick={fire(onMoveEarlier)}
         />
         <MenuRow
-          icon="i-stack" label="Hátrébb" hint="Egy hellyel később"
+          icon="t-down" label="Hátrébb" hint="Egy hellyel később"
           disabled={position === orderLength - 1} onClick={fire(onMoveLater)}
         />
         <MenuRow
-          icon="i-eletjel"
+          icon={skipped ? 't-repeat' : 't-skip'}
+          warn={!skipped}
           label={skipped ? 'Visszavesszük' : 'Gyakorlat kihagyása'}
           hint={skipped ? 'Újra bekerül a mai munkába' : 'A már logolt szettjeid megmaradnak'}
           onClick={fire(onToggleSkip)}
@@ -160,6 +174,7 @@ export function WorkoutVideoGlass({ open, exercise, tint, onClose }: WorkoutVide
   const embed = videoEmbed(exercise?.videoUrl)
   return (
     <GlassBox open={open} onClose={onClose} label={exercise ? `${exercise.name} · videó` : 'Videó'} tint={tint}>
+      <div className="wos-gb wos-gb-video glass is-still">
       {embed ? (
         <div className="wo-video-frame" style={{ aspectRatio: embed.aspectRatio }}>
           <iframe
@@ -171,11 +186,12 @@ export function WorkoutVideoGlass({ open, exercise, tint, onClose }: WorkoutVide
           />
         </div>
       ) : (
-        <div className="wo-video-frame">
-          <ClayIcon name="i-video" size={62} />
+        <div className="wo-video-frame uv-empty">
+          <Icon3D name="t-camera" size={62} />
           <span>Nincs elérhető videó</span>
         </div>
       )}
+      </div>
     </GlassBox>
   )
 }
@@ -206,28 +222,27 @@ export function WorkoutChallengesGlass({
 }: WorkoutChallengesGlassProps) {
   const acceptedCount = challenges.filter((c) => accepted[c.id]).length
   return (
-    <GlassBox open={open} onClose={onClose} label="Küldetések" tint={tint}>
-      <div className="col gap-md">
-        <div className="row gap-sm" style={{ alignItems: 'center' }}>
-          <ClayIcon name="i-kihivas" size={30} />
-          <span className="eyebrow">
-            {pending ? 'A mai küldetések · készül…' : `A mai küldetések · ${acceptedCount}/${challenges.length} elfogadva`}
-          </span>
-        </div>
+    <GlassBox
+      open={open} onClose={onClose} label="A mai küldetések" tint={tint}
+      eyebrow="Küldetések"
+      art={<Icon3D name="t-quest" size={52} className="wos-gb-art3d" />}
+    >
+      <div className="wos-gb wos-gb-chal glass is-still">
+        <p className="wos-gb-sub">{pending ? 'készül…' : `${acceptedCount} / ${challenges.length} elfogadva`}</p>
         {pending ? (
           <ChallengeGenerationLoader />
         ) : challenges.length === 0 ? (
-          <span className="text-tertiary" style={{ fontSize: 13 }}>Ma nincs kihívás</span>
+          <p className="wos-gb-empty uv-empty">Ma nincs kihívás</p>
         ) : (
-          <EntranceGroup className="col gap-md">
+          <EntranceGroup className="wos-chlist">
             {challenges.map((c) => (
               <ChallengeCard key={c.id} challenge={c} accepted={!!accepted[c.id]} onToggle={() => onToggle(c.id)} />
             ))}
           </EntranceGroup>
         )}
-        <span className="text-tertiary" style={{ fontSize: 12 }}>
+        <p className="wos-gb-note">
           Passzolni ér — a kihívás ajánlat, nem elvárás. Az eredmény a záráskor derül ki, és sosem piros.
-        </span>
+        </p>
       </div>
     </GlassBox>
   )

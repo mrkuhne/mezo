@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { medalValueLabel } from '@/features/train/logic/medalLabels'
+import { MEDAL_TIER_COPY, medalValueLabel } from '@/features/train/logic/medalLabels'
 import type { Medal } from '@/data/train/medalTypes'
 
 // Base RECORD-tier medal; each case overrides only what it exercises.
@@ -59,5 +59,20 @@ describe('medalValueLabel', () => {
     }
     expect(medalValueLabel(medal)).toBe('30,7 kg')
     expect(medalValueLabel(medal)).not.toBe('22 kg × 12')
+  })
+})
+
+// Üvegesítés (mezo-me75u.4): the tier copy carries 3D icon names, never a 🏅 / ✓ text glyph —
+// and the two tiers stay visibly distinct (their own icon, tag and accent).
+describe('MEDAL_TIER_COPY', () => {
+  test('RECORD is the amber t-record medal tagged REKORD, TARGET the sage t-tick tagged CÉL', () => {
+    expect(MEDAL_TIER_COPY.RECORD).toEqual({ icon: 't-record', tag: 'REKORD', accent: 'var(--dv-amber)' })
+    expect(MEDAL_TIER_COPY.TARGET).toEqual({ icon: 't-tick', tag: 'CÉL', accent: 'var(--dv-sage)' })
+  })
+
+  test('no tier carries a text glyph', () => {
+    for (const copy of Object.values(MEDAL_TIER_COPY)) {
+      expect(JSON.stringify(copy)).not.toMatch(/🏅|✓/)
+    }
   })
 })
