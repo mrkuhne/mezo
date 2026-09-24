@@ -27,7 +27,7 @@ class EditionSelectorTest {
     private static EditionCandidate c(String kind, String id, TeamCharacter character, EditionGenre genre,
             boolean waiting, Instant changedAt) {
         return new EditionCandidate(kind, id, character, genre, "title-" + id, "record-" + id,
-                List.of(), List.of(), waiting, false, changedAt, "route-" + id);
+                List.of(), List.of(), waiting, false, changedAt, "route-" + id, List.of());
     }
 
     private static <T> List<T> concat(List<T> a, List<T> b) {

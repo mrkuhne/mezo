@@ -267,6 +267,25 @@ an error, and the next `*/15` tick retries any real failure until 23:45.
   whole edition) back to `voiced=false` + the record's own text. The writer NEVER throws and always
   returns exactly one `VoicedText` per candidate, so the edition is published either way (ADR 0049:
   dry beats invented).
+- **Vendég-sorok (H4, `mezo-a9bo7.15`):** a post can carry up to **2 guest lines** — two
+  characters talking. The collector plants `GuestSeed(character, fallbackText)`s on the candidate
+  (`EditionCandidate.guests`, capped at `MAX_GUESTS=2`): a **konzílium thread** seeds the first peer
+  reaction of its lead item whose `forPersona` character is postable and differs from the lead
+  (fallback = that reaction's `argument`), plus the **Szkeptikus** when the skeptic round gave a
+  verdict (fallback = its `argument`; a blank argument keeps the seed with a null fallback); a
+  **two-domain pattern / gathering pair** seeds the B-side `forMetricDomain` character when it
+  differs from the A-side host (null fallback — nothing to quote). Predictions and experiments get
+  none. The writer lists the seeds as a `vendégek: <name>; <name>` line in the post block; the answer
+  contract grows an optional `"guests":[{"character":"<TeamCharacter key>","body":"…"}]`. Per seed,
+  in seed order: the model's line for that character wins if it passes `EditionVoiceGuard.checkGuest`
+  (the same number/emoji/jargon rules against the CANDIDATE's facts + record text, but **1–2
+  sentences**) → `voiced=true`; otherwise the non-blank fallback text with `voiced=false`; otherwise
+  the guest is dropped. Lines for characters not seeded are ignored, and a guest line never affects
+  the post (nor vice versa). The whole-call fallback (LLM error / unparseable / empty) still carries
+  the fallback guests. `publish` writes them to `team_edition_post.guests`
+  (`EditionGuestsEnvelope.Guest(characterKey, body, voiced)`). The fake answers
+  `FakeCompanionLlm.EDITION_GUEST_BODY` per listed guest, mapping display names back to keys with a
+  literal `TeamCharacter` mirror (companion must not import character).
 - **Switch:** `mezo.feature.team-edition.enabled` (default `true`) gates the `TeamEditionService`
   bean on top of the character + companion switches; off ⇒ the council still runs its
   dossier-decision role, just without the edition step. `EditionCandidateCollector` is gated by
@@ -1326,7 +1345,9 @@ Social additions: `service/CharacterReplyService.java` (owned save/list/retry), 
   `logic/team.ts` mirror), `EditionGenre`, `EditionCandidate` + `PriorShowing`,
   `EditionCandidateCollector` (source→candidate, read-only), `EditionSelector` (pure scoring/pick
   function), `TeamEditionReads` (repository-only companion/proactive reads),
-  `TeamEditionService` (run/publish, writes the EDITION run row); `entity/TeamEditionEntity.java`,
+  `TeamEditionService` (run/publish, writes the EDITION run row), `EditionVoiceWriter` +
+  `EditionVoiceGuard` + `VoicedText` (H3 voice), `GuestSeed` + `VoicedGuest` (H4 guest lines);
+  `entity/TeamEditionEntity.java`,
   `TeamEditionPostEntity.java` + `EditionFactsEnvelope`/`EditionRefsEnvelope`/`EditionGuestsEnvelope`;
   `repository/TeamEditionRepository.java`, `TeamEditionPostRepository.java`
 - `service/CharacterFeedbackService.java` — TALAL/NEM_IGAZ/PONTOSITOM

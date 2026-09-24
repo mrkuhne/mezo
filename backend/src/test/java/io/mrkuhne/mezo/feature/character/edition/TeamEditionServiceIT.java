@@ -5,11 +5,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
+import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.ConferenceTranscriptEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.EditionFactsEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.EditionGuestsEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.EditionRefsEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.TeamEditionEntity;
 import io.mrkuhne.mezo.feature.character.entity.TeamEditionPostEntity;
+import io.mrkuhne.mezo.feature.character.repository.CharacterConferenceRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterRunRepository;
 import io.mrkuhne.mezo.feature.character.repository.TeamEditionPostRepository;
 import io.mrkuhne.mezo.feature.character.repository.TeamEditionRepository;
@@ -55,6 +60,7 @@ class TeamEditionServiceIT extends AbstractIntegrationTest {
     @Autowired private TeamEditionPostRepository posts;
     @Autowired private CharacterRunRepository runs;
     @Autowired private AppNotificationRepository appNotifications;
+    @Autowired private CharacterConferenceRepository conferences;
 
     private UUID owner() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -192,5 +198,64 @@ class TeamEditionServiceIT extends AbstractIntegrationTest {
         assertThat(postsOf(today)).extracting(TeamEditionPostEntity::getSourceId)
                 .doesNotContain(pattern.getId().toString());
         assertThat(today.getStatus()).isEqualTo("QUIET"); // the only candidate in the world, and it's banned
+    }
+
+    // ---- vendég-sorok (H4, mezo-a9bo7.15) ------------------------------------------------------
+
+    private static final String PEER_ARGUMENT = "A késői vacsora is közrejátszhat.";
+    private static final String SKEPTIC_ARGUMENT = "A hétvége önmagában is megmagyarázza.";
+
+    /** A nap DAILY konzíliuma egy szállal: Szunya javasol, Falat reagál, a Szkeptikus ítél. */
+    private void dailyConference(UUID owner, String proposalText) {
+        var item = new ConferenceDeliberationEnvelope.Item(0, "szomnologus", proposalText, "NEW", null, false,
+                List.of(new ConferenceDeliberationEnvelope.PeerReaction("taplalkozo", "SUPPORT", PEER_ARGUMENT)),
+                new ConferenceDeliberationEnvelope.SkepticVerdict("WEAKEN", SKEPTIC_ARGUMENT, null), null);
+        CharacterConferenceEntity conference = new CharacterConferenceEntity();
+        conference.setCreatedBy(owner);
+        conference.setKind("DAILY");
+        conference.setWeekStart(DAY);
+        conference.setGeneratedAt(Instant.parse("2026-09-24T18:00:00Z"));
+        conference.setTranscript(new ConferenceTranscriptEnvelope(List.of()));
+        conference.setOutcome(new ConferenceOutcomeEnvelope(List.of()));
+        conference.setDeliberation(new ConferenceDeliberationEnvelope(List.of(
+                new ConferenceDeliberationEnvelope.Thread("sleep", "Alvás", List.of(item)))));
+        conferences.saveAndFlush(conference);
+    }
+
+    private TeamEditionPostEntity konziliumPost(UUID owner) {
+        TeamEditionEntity edition = editions.findByCreatedByAndDay(owner, DAY).orElseThrow();
+        return postsOf(edition).stream().filter(p -> "konzilium".equals(p.getSourceKind()))
+                .findFirst().orElseThrow();
+    }
+
+    /** A konzílium-szál vendége a résztvevő szakértő karaktere + a Szkeptikus, hangosan mentve. */
+    @Test
+    void run_konziliumThread_publishesTheParticipantsAsVoicedGuests() {
+        UUID owner = userPopulator.createUser().getId();
+        dailyConference(owner, "Az esti lefekvés és a másnapi energia együtt mozog.");
+
+        service.run(owner, DAY);
+
+        TeamEditionPostEntity post = konziliumPost(owner);
+        assertThat(post.getCharacterKey()).isEqualTo("szunya");
+        assertThat(post.getGuests().guests()).containsExactly(
+                new EditionGuestsEnvelope.Guest("falat", FakeCompanionLlm.EDITION_GUEST_BODY, true),
+                new EditionGuestsEnvelope.Guest("szkeptikus", FakeCompanionLlm.EDITION_GUEST_BODY, true));
+    }
+
+    /** Hibás hang-válasz: a konzílium-vendégek a saját meglévő érvükkel, hangtalanul jelennek meg. */
+    @Test
+    void run_malformedVoice_konziliumPostKeepsTheFallbackGuests() {
+        UUID owner = userPopulator.createUser().getId();
+        dailyConference(owner, "Az esti lefekvés és a másnapi energia együtt mozog. "
+                + FakeCompanionLlm.EDITION_MALFORMED);
+
+        service.run(owner, DAY);
+
+        TeamEditionPostEntity post = konziliumPost(owner);
+        assertThat(post.getVoiced()).isFalse();
+        assertThat(post.getGuests().guests()).containsExactly(
+                new EditionGuestsEnvelope.Guest("falat", PEER_ARGUMENT, false),
+                new EditionGuestsEnvelope.Guest("szkeptikus", SKEPTIC_ARGUMENT, false));
     }
 }

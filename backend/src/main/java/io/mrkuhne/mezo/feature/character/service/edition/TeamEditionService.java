@@ -129,7 +129,10 @@ public class TeamEditionService {
             post.setVoiced(text.voiced());
             post.setFacts(new EditionFactsEnvelope(candidate.facts()));
             post.setRefs(new EditionRefsEnvelope(candidate.refs()));
-            post.setGuests(new EditionGuestsEnvelope(List.of()));
+            // H4 (mezo-a9bo7.15): a vendég-sorok a writer döntése szerint (hangos vagy a mag saját szövege).
+            post.setGuests(new EditionGuestsEnvelope(text.guests().stream()
+                    .map(g -> new EditionGuestsEnvelope.Guest(g.character().key(), g.body(), g.voiced()))
+                    .toList()));
             posts.saveAndFlush(post);
         }
         return edition;

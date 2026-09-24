@@ -38,6 +38,7 @@ public final class EditionVoiceGuard {
 
     private static final int MIN_SENTENCES = 2;
     private static final int MAX_SENTENCES = 4;
+    private static final int GUEST_MAX_SENTENCES = 2;
 
     private static final Pattern NUMBERS = Pattern.compile("\\d+(?:[.,]\\d+)?");
 
@@ -73,6 +74,24 @@ public final class EditionVoiceGuard {
         }
         int sentences = sentenceCount(body);
         return sentences < MIN_SENTENCES || sentences > MAX_SENTENCES ? Optional.of(SENTENCES) : Optional.empty();
+    }
+
+    /**
+     * A vendég-sor őre (H4, mezo-a9bo7.15): ugyanaz a szám-, emoji- és szaknyelv-szabály, mint a
+     * posztnál — a számokat a POSZT jelöltjének tényeihez és rekordszövegéhez mérve —, de 1–2
+     * mondat: a vendég egy rövid reakció, nem második poszt.
+     *
+     * @return üres, ha a vendég-sor kimehet; különben a bukás oka.
+     */
+    public static Optional<String> checkGuest(TeamCharacter who, String body, List<String> facts, String recordText) {
+        if (body == null || body.isBlank()) {
+            return Optional.of(SENTENCES);
+        }
+        Optional<String> content = checkTitle(who, body, facts, recordText);
+        if (content.isPresent()) {
+            return content;
+        }
+        return sentenceCount(body) > GUEST_MAX_SENTENCES ? Optional.of(SENTENCES) : Optional.empty();
     }
 
     /**

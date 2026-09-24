@@ -121,4 +121,50 @@ class EditionVoiceGuardTest {
                 FACTS, RECORD))
                 .isEmpty();
     }
+
+    // ---- vendég-sorok (H4, mezo-a9bo7.15) ------------------------------------------------------
+
+    @Test
+    void guest_oneSentence_passes() {
+        assertThat(EditionVoiceGuard.checkGuest(TeamCharacter.FALAT, "Én is figyelek erre.", FACTS, RECORD))
+                .isEmpty();
+    }
+
+    @Test
+    void guest_twoSentences_pass() {
+        assertThat(EditionVoiceGuard.checkGuest(TeamCharacter.FALAT,
+                "Én is figyelek erre. Az 5 közös nap nálam is látszik.", FACTS, RECORD))
+                .isEmpty();
+    }
+
+    @Test
+    void guest_threeSentences_areRejected() {
+        assertThat(EditionVoiceGuard.checkGuest(TeamCharacter.FALAT, "Egy. Kettő. Három.", FACTS, RECORD))
+                .contains("sentences");
+    }
+
+    @Test
+    void guest_blank_isRejected() {
+        assertThat(EditionVoiceGuard.checkGuest(TeamCharacter.FALAT, "  ", FACTS, RECORD))
+                .contains("sentences");
+    }
+
+    @Test
+    void guest_inventedNumber_isRejected() {
+        assertThat(EditionVoiceGuard.checkGuest(TeamCharacter.FALAT, "Nálam 9 nap gyűlt össze.", FACTS, RECORD))
+                .contains("number");
+    }
+
+    @Test
+    void guest_skepticWithEmoji_isRejected() {
+        assertThat(EditionVoiceGuard.checkGuest(TeamCharacter.SZKEPTIKUS,
+                "A hétvége is magyarázhatja 🌙.", FACTS, RECORD))
+                .contains("emoji");
+    }
+
+    @Test
+    void guest_jargon_isRejected() {
+        assertThat(EditionVoiceGuard.checkGuest(TeamCharacter.FALAT, "Ez csak korreláció.", FACTS, RECORD))
+                .contains("jargon");
+    }
 }

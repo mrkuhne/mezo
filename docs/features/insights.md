@@ -692,6 +692,20 @@ honest fallback). **The wall does not branch on it:** both go through the existi
 `renderInline(…, { boldOnly: true })`, so the voice's `**kiemelés**` renders and nothing else about
 the card changes. The FE never composes text of its own (ADR 0049).
 
+**Vendég-sorok (H4, `mezo-a9bo7.15`).** An edition post may carry up to 2 guest lines — two
+characters talking under the post (`TeamEditionPost.guests`, written and fact-guarded by the
+backend). `editionPost` maps them to `FeedPost.guests: { author, body }[]` (the key is omitted when
+the list is empty; the older single `guest` = „bevonta X” is a different field and stays as is).
+The Szkeptikus is a valid guest author: he never posts, but here he speaks, wearing the slate Boop
+through the same `TEAM` registry. `components/feed/FeedGuests.tsx` renders them as the prototype's
+comment preview (`uveg-uzenofal.html` `.cmt` → `.tf-cmt` in `boop-world.css`): the small
+`FeedAvatar`, the name in ink, the character's sentence through the same `renderInline(…,
+{ boldOnly: true })` — a flat row, never glass (the poster already is the glass), **at most 2
+rows**, and nothing when there are none. `FeedPosterCard` and `FeedPostCard` put it **above the
+trio**. The UI adds no emoji or text of its own; only the character's sentence may carry its
+emoji, and the Szkeptikus's line has none. The mock's rank-1 post carries the two-guest example
+(Mocor on the 4. set, the Szkeptikus with the alternative explanation).
+
 The mock edition sits on the REAL today (`characterMock.ts`), not on the frozen August mock world's
 last night, otherwise the wall's 14-day window could never contain it; its rank-1 post is the
 `voiced: true` example (Falat's voice over exp1's own numbers). Publishing also emits ONE
@@ -1086,8 +1100,8 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 **Feature (`frontend/src/features/insights/`):** — the directory keeps its `insights` name; the tab is called `Mezo` (§2)
 - `pages/{BoopMenuPage,BoopAboutPage,BoopMemoriesPage,MemoryDayPage,KnowledgeNodePage,PredictionDetailPage,ExperimentDetailPage}.tsx` — the „Összes funkció” grid, Rólad, Emlékek and full detail pages.
 - `logic/team.ts` + `logic/teamFeed.ts` (+ `teamFeed.fixtures.ts`) — **`mezo-a9bo7.7`** the csapat-üzenőfal character registry and record→post builder (§3); pure, unit-tested
-- `logic/teamEdition.ts` — **`mezo-a9bo7.13`** the esti kiadás → wall merge (`editionPost`, `mergeWall`, §3); pure, unit-tested
-- `pages/TeamFeedPage.tsx` + `components/feed/{FeedTrio,FeedPostCard,FeedPosterCard,FeedPostHead,FeedReplySheet,StoryStrip}.tsx` + `useFeedSession.ts` + `useTeamFeed.ts` — **`mezo-a9bo7.8`** the csapat-üzenőfal wall, the unified trio and the reply sheet (§3); `/mezo` since A4 (`mezo-a9bo7.10`), with `IntroPosts.tsx` as the cold start (§2.0)
+- `logic/teamEdition.ts` — **`mezo-a9bo7.13`** the esti kiadás → wall merge (`editionPost`, `mergeWall`, §3; guest lines since `mezo-a9bo7.15`); pure, unit-tested
+- `pages/TeamFeedPage.tsx` + `components/feed/{FeedTrio,FeedPostCard,FeedPosterCard,FeedPostHead,FeedGuests,FeedReplySheet,StoryStrip}.tsx` + `useFeedSession.ts` + `useTeamFeed.ts` — **`mezo-a9bo7.8`** the csapat-üzenőfal wall, the unified trio and the reply sheet (§3); `/mezo` since A4 (`mezo-a9bo7.10`), with `IntroPosts.tsx` as the cold start (§2.0)
 - `pages/{TeamPage,CharacterRoomPage}.tsx` + `components/feed/RoomCaseCard.tsx` + `logic/teamRooms.ts` — **`mezo-a9bo7.9`** A csapat and the five character rooms (§3); routed at `/mezo/csapat[/:id]`, the „A csapat” dock tab since A4
 - `components/BoopNavigation.tsx`, `logic/boopNavigation.ts`, `boop-world.css` — shared function catalog, crosslinks and app-token visuals.
 - `pages/MezoHubPage.tsx` — unmounted previous hub, retained source/tests.

@@ -118,3 +118,24 @@ test('a rád várók száma és a friss karakterek az összefésült falból sz�
   expect(wall.freshByCharacter.mezo).toBe(true) // a mai észrevétel-kopogtatás gazdája
   expect(wall.freshByCharacter.szunya).toBe(false) // csak tegnapi posztja volt
 })
+
+// H4 (mezo-a9bo7.15): két karakter beszélget a poszt alatt — a vendég-sorok a kiadás saját
+// szövegei (ADR 0049), a leképezés csak átnevez; üres listánál a kulcs el sem jön.
+test('editionPost: a vendég-sorok átjönnek (a Szkeptikus is), üresen a kulcs hiányzik', () => {
+  const e = edition(TODAY, [
+    post(1, {
+      guests: [
+        { characterKey: 'falat', body: 'Nálam a vacsora-oldal ugyanezt mutatja.', voiced: true },
+        { characterKey: 'szkeptikus', body: 'A hétvége önmagában is magyarázhatja.', voiced: true },
+      ],
+    }),
+    post(2),
+  ])
+  expect(editionPost(e, e.posts[0]).guests).toEqual([
+    { author: 'falat', body: 'Nálam a vacsora-oldal ugyanezt mutatja.' },
+    { author: 'szkeptikus', body: 'A hétvége önmagában is magyarázhatja.' },
+  ])
+  expect('guests' in editionPost(e, e.posts[1])).toBe(false)
+  // a régi, egyetlen „bevonta X” mező érintetlen marad
+  expect(editionPost(e, e.posts[0]).guest).toBeUndefined()
+})

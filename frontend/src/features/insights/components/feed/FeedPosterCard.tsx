@@ -3,6 +3,7 @@ import type { FeedPost } from '@/features/insights/logic/teamFeed'
 import { renderInline } from '@/shared/lib/markdown'
 import { Icon3D } from '@/shared/ui/clay'
 import { HonestyWell, SourceLink } from './FeedPostCard'
+import { FeedGuests } from './FeedGuests'
 import { FeedPostHead } from './FeedPostHead'
 import { FeedTrio, type FeedReplyMode } from './FeedTrio'
 
@@ -23,6 +24,7 @@ export function FeedPosterCard({ post, onReply }: { post: FeedPost; onReply: (po
       <p className="tf-body">{renderInline(post.body, { boldOnly: true })}</p>
       <HonestyWell post={post} />
       <SourceLink post={post} />
+      <FeedGuests guests={post.guests} />
       <FeedTrio post={post} onReply={onReply} />
       <button type="button" className="tf-rrow" onClick={() => onReply(post, 'tell')}>
         <span className="tf-me">Te</span>

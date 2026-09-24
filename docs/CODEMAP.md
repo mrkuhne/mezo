@@ -81,7 +81,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### admin
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-21, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-24, done) ·
   [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-09-09, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/admin`
@@ -164,7 +164,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### auth
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-21, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-24, done) ·
   [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-09-20, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/auth`
@@ -273,7 +273,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `DecisionReviewBacklogDetector`, `DetectorGates`, `DetectorInput`, `DetectorRegistry`, `DetectorSignal`,
     `EditionCandidate`, `EditionCandidateCollector`, `EditionFactsEnvelope`, `EditionGenre`, `EditionGuestsEnvelope`,
     `EditionRef`, `EditionRefsEnvelope`, `EditionSelector`, `EditionVoiceGuard`, `EditionVoiceWriter`,
-    `ExperimentOutcomeLedgerDetector`, `GratitudeFocusDetector`, `HrRecoveryTrendDetector`,
+    `ExperimentOutcomeLedgerDetector`, `GratitudeFocusDetector`, `GuestSeed`, `HrRecoveryTrendDetector`,
     `HydrationConsistencyDetector`, `JournalNoteDetector`, `JournalSilenceDetector`,
     `KnowledgeRejectionPatternDetector`, `LateEatingPatternDetector`, `LoggingGapDetector`, `MacroAdherenceDetector`,
     `MedCycleCovarianceDetector`, `MentionContextShiftDetector`, `MesoAdherenceDetector`,
@@ -284,7 +284,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `RirCalibrationDetector`, `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`, `SelfCalibrationDetector`,
     `SleepPerformanceChainDetector`, `SportInterferenceDetector`, `StackSkipPatternDetector`,
     `StreakBreakResponseDetector`, `TeamCharacter`, `TeamEditionReads`, `TeamEditionService`, `TrailingWindow`,
-    `UnderLoggingDetector`, `VoicedText`, `WeekendGapDetector`
+    `UnderLoggingDetector`, `VoicedGuest`, `VoicedText`, `WeekendGapDetector`
 - **Contract** `api/feature/character/character.yml` — 17 operations
   - **endpoints:** GET /api/character · GET /api/character/dimension/{key} · GET /api/character/experts ·
     GET /api/character/feed · POST /api/character/bootstrap · GET /api/character/conference ·
@@ -774,16 +774,16 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     TeamPage.tsx
   - **sheets:** ConversationActionsSheet.tsx, ConversationPickerSheet.tsx, NodeDetailSheet.tsx
   - **components:** BoopNavigation.tsx, CategoryHeader.tsx, ChatMessage.tsx, CoachingRuleTile.tsx, EvidenceLog.tsx,
-    FactCandidateCard.tsx, FactsView.tsx, FeedPostCard.tsx, FeedPostHead.tsx, FeedPosterCard.tsx, FeedReplySheet.tsx,
-    FeedTrio.tsx, FeedbackChips.tsx, HowItWorksView.tsx, HypothesisStateCard.tsx, IntroPosts.tsx, KategoriakView.tsx,
-    KindNodeList.tsx, KindTileGrid.tsx, KnowledgeBaseView.tsx, KnowledgeFactRow.tsx, LifeEventAcceptedCard.tsx,
-    LifeEventCandidateCard.tsx, LifecycleSection.tsx, MemoryAuditPanel.tsx, MemoryJournalPanel.tsx,
-    MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx, PatternArtifactDetail.tsx,
-    PatternDecisionCard.tsx, PatternDetailHero.tsx, PatternDomainMark.tsx, PatternEvidenceChart.tsx,
-    PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx, PatternStrengthChart.tsx, ProfileNodeCard.tsx,
-    ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx, RoomCaseCard.tsx, SimilarDayCard.tsx, StoryStrip.tsx,
-    TestPlanTiles.tsx, TokenColumns.tsx, ToolWorkStrip.tsx, VerdictArc.tsx, experimentStatus.tsx, useFeedSession.ts,
-    useTeamFeed.ts
+    FactCandidateCard.tsx, FactsView.tsx, FeedGuests.tsx, FeedPostCard.tsx, FeedPostHead.tsx, FeedPosterCard.tsx,
+    FeedReplySheet.tsx, FeedTrio.tsx, FeedbackChips.tsx, HowItWorksView.tsx, HypothesisStateCard.tsx, IntroPosts.tsx,
+    KategoriakView.tsx, KindNodeList.tsx, KindTileGrid.tsx, KnowledgeBaseView.tsx, KnowledgeFactRow.tsx,
+    LifeEventAcceptedCard.tsx, LifeEventCandidateCard.tsx, LifecycleSection.tsx, MemoryAuditPanel.tsx,
+    MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx,
+    PatternArtifactDetail.tsx, PatternDecisionCard.tsx, PatternDetailHero.tsx, PatternDomainMark.tsx,
+    PatternEvidenceChart.tsx, PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx,
+    PatternStrengthChart.tsx, ProfileNodeCard.tsx, ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx,
+    RoomCaseCard.tsx, SimilarDayCard.tsx, StoryStrip.tsx, TestPlanTiles.tsx, TokenColumns.tsx, ToolWorkStrip.tsx,
+    VerdictArc.tsx, experimentStatus.tsx, useFeedSession.ts, useTeamFeed.ts
   - **logic:** boopNavigation.ts, chatRefs.ts, coachingCopy.ts, diagnosisCatalog.ts, diagnosisCopy.ts, domains.ts,
     factCopy.ts, findings.ts, humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternCatalog.ts,
     patternEvidence.ts, patternHistory.ts, predictionStatus.ts, quickQuestions.ts, team.ts, teamEdition.ts,
@@ -883,7 +883,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### llmlog
 
-*BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-21, done) ·
+*BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-24, done) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-09-24, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`

@@ -4,6 +4,7 @@ import { TEAM } from '@/features/insights/logic/team'
 import type { FeedPost } from '@/features/insights/logic/teamFeed'
 import { renderInline } from '@/shared/lib/markdown'
 import { Icon3D } from '@/shared/ui/clay'
+import { FeedGuests } from './FeedGuests'
 import { FeedPostHead } from './FeedPostHead'
 import { FeedTrio, type FeedReplyMode } from './FeedTrio'
 
@@ -51,6 +52,7 @@ export function FeedPostCard({ post, onReply }: { post: FeedPost; onReply: (post
       <PostBody post={post} />
       <HonestyWell post={post} />
       <SourceLink post={post} />
+      <FeedGuests guests={post.guests} />
       <FeedTrio post={post} onReply={onReply} />
     </article>
   )
