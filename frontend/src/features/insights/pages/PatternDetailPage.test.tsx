@@ -116,7 +116,11 @@ describe('PatternDetailPage (mock mode)', () => {
     // állapot-kártya
     expect(screen.getByText('FIGYELEM')).toBeInTheDocument()
     expect(screen.getByText('Hipotézis: Ha Anna szerepel a hála-naplóban, másnap többet alszol?')).toBeInTheDocument()
-    expect(screen.getByText('Ígéretes, de még gyűlik.')).toBeInTheDocument()
+    // a grafikon 16 napja (4 Annás + 12 másik) ≥ a terv 8-as minimuma (mezo-twizx)
+    expect(screen.getByText('Ígéretes — elég nap van a döntéshez.')).toBeInTheDocument()
+    expect(document.querySelector('.pdt-answer-sub')?.textContent)
+      .toBe('4 ilyen napot tudok összevetni 12 másikkal — elég ahhoz, hogy dönts.')
+    expect(screen.getByText('12 + 4 nap')).toBeInTheDocument()
     expect(screen.getByText('38%')).toBeInTheDocument()
     // a négy szekció, a prototípus sorrendjében
     expect(screen.getByText('A teszt-terv')).toBeInTheDocument()
@@ -363,7 +367,7 @@ describe('PatternDetailPage (real mode)', () => {
     expect(await screen.findByText('Bizonyíték-napló')).toBeInTheDocument()
     expect(screen.getByText('FIGYELEM')).toBeInTheDocument()
     expect(screen.getByText('A teszt-terv')).toBeInTheDocument()
-    expect(screen.getByText('Ígéretes, de még gyűlik.')).toBeInTheDocument()
+    expect(screen.getByText('Ígéretes — elég nap van a döntéshez.')).toBeInTheDocument()
     expect(screen.getByText(/Igen, figyeld — de nem Anna miatt/)).toBeInTheDocument()
     // nyers r/p sosem a kártya arcán — csak a becsukott Háttér fold alatt
     expect(document.querySelector('.pdt-state-card')?.textContent).not.toContain('0.31')
