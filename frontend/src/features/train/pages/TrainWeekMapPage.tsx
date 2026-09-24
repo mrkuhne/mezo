@@ -78,7 +78,7 @@ export function TrainWeekMapPage() {
   if (!activeMeso) {
     return (
       <MozaikPage tone="gold">
-        <PageBody>
+        <PageBody className="tw-map">
           <GhostState lines={3} message="Az izomtérkép itt jelenik majd meg — előbb tervezz egy mesociklust."
             ctaLabel="+ Tervezz mesociklust" onCta={() => navigate('/train/mesocycles/new')} />
         </PageBody>
@@ -128,7 +128,7 @@ export function TrainWeekMapPage() {
 
         {/* `.pl-sub` only re-widths the quiet `.pl-row` doorway below (prototype.css:15215)
             — the prototype's own subpage container carries it for exactly that reason. */}
-        <PageBody className="pl-sub">
+        <PageBody className="pl-sub tw-map">
           <div className="segtabs ld-modes" role="group" aria-label="Nézet">
             <button type="button" className="segtab" aria-pressed={mode === 'done'} onClick={() => setMode('done')}>
               Eddig megvolt

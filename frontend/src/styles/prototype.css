@@ -21814,3 +21814,138 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* a hole is „–", never 0 — and the better side is sage, the weaker side is NOT red (page rule) */
 .tv-cmp .pl-cmp-better { color: #bfe0a8; }
 /* ── /uveg edzes2 konyvtar ── */
+
+/* ── uveg edzes2 sablonok (mezo-me75u.5) ── /train/templates(+/:id), /…/templates/:id, /…/new, /train/custom ── */
+/* Ranking (bible §3.4, prototype uveg-edzes2.html#sablonok/#sablon/#ujterv/#sajat): the template
+   CARD is the primary object and wears glass; its fact cells, muscle chips and day rows are flat.
+   The editors (template day plan, custom composer) are FORMS — a form is not a poster, so only
+   its cards wear glass and every control stays flat, the way the U2 composer settled it. */
+.tv-tpls { --c: var(--dv-sage); }
+.tv-tpl { --c: var(--dv-sage); }
+.tv-wizard { --c: var(--dv-lav); }
+.tv-custom { --c: var(--dv-coral); }
+
+.tv-tpls .pl-lib-card.glass {
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 20%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 26%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.tv-tpls .pl-lib-card .pl-lib-facts > * {
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+/* the filled CTA restates every colour (the U2 rule 11 trap, paid for on the library page) */
+.tv-tpls .pl-lib-new {
+  border: 0; color: #191614; background: var(--c);
+  box-shadow:
+    0 12px 26px -14px color-mix(in srgb, var(--c) 90%, transparent),
+    0 0 18px -4px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.tv-tpls .pl-lib-new strong { color: #191614; }
+.tv-tpls .pl-lib-new small { color: rgba(25, 22, 20, 0.72); }
+.tv-tpls .pl-lib-new b { color: rgba(25, 22, 20, 0.8); }
+.tv-tpls .pl-lib-new-art {
+  background: rgba(255, 244, 230, 0.28); box-shadow: inset 0 0 0 1px rgba(255, 244, 230, 0.4);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+}
+
+/* the template's own page: the week's days are glass cards, the exercise rows flat inside */
+.tv-tpl .pl-lib-card.is-open {
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 18%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 24px -8px color-mix(in srgb, var(--c) 24%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1);
+}
+/* an off day is a quiet row — a week is also its off days (page rule), not a card */
+.tv-tpl .pl-row.is-quiet {
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+/* Törlés keeps its warning tone: a destructive action is never the page's lit primary
+   (U4 rule 29) — it stays a flat coral outline */
+.tv-tpl .pl-danger {
+  color: #ffb39c; background: rgba(255, 126, 92, 0.07);
+  box-shadow: inset 0 0 0 1px rgba(255, 126, 92, 0.35);
+}
+
+/* the wizard: one question per glass card, the answers as flat chips */
+.tv-wizard .mz-card, .tv-wizard .pl-block {
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 18%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 24px -8px color-mix(in srgb, var(--c) 24%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1);
+}
+
+/* the custom composer is a FORM: its head and save bar sit on the app ground, its recipe
+   rows are flat cells. The only lit control is „Indítás ma" — the one constructive CTA. */
+.tv-custom .card {
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.tv-custom .np-cta {
+  color: #191614; background: var(--c); border: 0;
+  box-shadow:
+    0 12px 26px -14px color-mix(in srgb, var(--c) 90%, transparent),
+    0 0 18px -4px color-mix(in srgb, var(--c) 60%, transparent);
+}
+/* ── /uveg edzes2 sablonok ── */
+
+/* ── uveg edzes2 het (mezo-me75u.5) ── /train/week/terkep, /train/week/jelek, /train/week/mozgas ── */
+/* The Terhelés LANDING (/train/week) was dressed in U4 (`.tw-load`); these are its three
+   sub-pages, and they inherit the shared `ld-` family from it. Ranking (bible §3.4): the body
+   map and the taxonomy grid ARE the page — they get the halo and no box; the legend, the
+   untouched-muscle rows and the movement rows are flat; only the two movement SUMMARY cards
+   (terem / sport) are glass, because they carry the page's two numbers. */
+.tw-map { --c: var(--dv-coral); }
+.tw-signals { --c: var(--dv-coral); }
+.tw-move { --c: var(--dv-coral); }
+
+/* the map is a frameless halo, like every other hero in this slice */
+.tw-map .ld-map-page { position: relative; overflow-x: clip; }
+.tw-map .ld-map-page::before {
+  content: ''; position: absolute; left: 50%; top: 42%; z-index: -1; pointer-events: none;
+  width: 350px; height: 300px; transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse, color-mix(in srgb, var(--c) 26%, transparent), transparent 66%);
+}
+.tw-map .ld-legend, .tw-map .ld-wait > * {
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+
+/* „Minden izomjel": the taxonomy drawn. A LIVE cell is lit by its own region hue; an unlit one
+   stays flat — a muscle the week's log cannot speak for is never guessed lit (page rule). */
+.tw-signals .mm-cell {
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.tw-signals .mm-cell.is-live {
+  background: radial-gradient(90% 100% at 50% 0%,
+    color-mix(in srgb, var(--mm-color, var(--c)) 20%, transparent), rgba(245, 239, 230, 0.03));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--mm-color, var(--c)) 50%, transparent),
+    0 0 13px -4px var(--mm-color, var(--c));
+}
+
+/* „Minden mozgásod": two summary cards, never merged into one number (page rule) */
+.tw-move .ld-move-card {
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 20%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 26%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 50%, transparent);
+}
+/* the sport side keeps its own hue, so „becslés" and „mért" never look like one number */
+.tw-move .ld-move-card.is-sport { --c: var(--dv-rose); }
+.tw-move .ld-move-row {
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+/* ── /uveg edzes2 het ── */
