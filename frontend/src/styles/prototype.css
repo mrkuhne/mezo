@@ -18860,3 +18860,21 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .rz-conf { display: none; } /* decorative burst only — no motion, no point showing it static */
 }
 /* ── /uveg nap napzaras ── */
+
+/* ── uveg edzes mai (mezo-me75u.4) ── /train/mai: day strip, today hero, session cards, energy + muscle-impact cards, alt pair, rows ── */
+/* ── /uveg edzes mai ── */
+
+/* ── uveg edzes session (mezo-me75u.4) ── /train/session: header, progress, banners, workout cards + set rows, dock, GlassBox dialogs, session sheets ── */
+/* ── /uveg edzes session ── */
+
+/* ── uveg edzes zaras (mezo-me75u.4) ── the closing ceremony (WorkoutCeremony, 2 steps) + /train/review/:id (WorkoutSummary, ExerciseReview) ── */
+/* ── /uveg edzes zaras ── */
+
+/* ── uveg edzes terheles (mezo-me75u.4) ── /train/gym = /train/week: BodyMap hero, map card, muscle-group tiles + detail glass, sport/movement cards ── */
+/* ── /uveg edzes terheles ── */
+
+/* ── uveg edzes sport (mezo-me75u.4) ── /train/sport, /train/sport/log, /train/futas, /train/futas/:id + sport/run log sheets ── */
+/* ── /uveg edzes sport ── */
+
+/* ── uveg edzes gyakorlatok (mezo-me75u.4) ── /train/medals, /train/exercises, /train/exercises/:key ── */
+/* ── /uveg edzes gyakorlatok ── */

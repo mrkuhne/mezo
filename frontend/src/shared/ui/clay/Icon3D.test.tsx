@@ -25,6 +25,14 @@ test('the sprite carries the U3 Nap icons', () => {
   }
 })
 
+// U4 (mezo-me75u.4): the Edzés icons the owner approved on prototypes/uveg-edzes.html#ikonok.
+test('the sprite carries the U4 Edzés icons', () => {
+  const ids = symbolIds()
+  for (const id of ['t-muscle', 't-bandage'] satisfies Icon3DName[]) {
+    expect(ids, id).toContain(id)
+  }
+})
+
 test('every symbol is 64×64 art (Icon3D renders viewBox 0 0 64 64)', () => {
   const { container } = render(<ClaySprites />)
   const syms = container.querySelectorAll('symbol[id^="t-"]')
@@ -66,8 +74,8 @@ describe('ContentIcon — clay names onto the 3D set during the mixed look', () 
     expect(container.querySelector('use')!.getAttribute('href')).toBe('#t-meat')
   })
   test('an unmapped clay name falls back to the clay icon', () => {
-    const { container } = render(<ContentIcon name="i-meso" />)
-    expect(container.querySelector('use')!.getAttribute('href')).toBe('#i-meso')
+    const { container } = render(<ContentIcon name="i-retegek" />)
+    expect(container.querySelector('use')!.getAttribute('href')).toBe('#i-retegek')
     expect(container.querySelector('svg')!.getAttribute('viewBox')).toBe('0 0 100 100')
   })
   test('every mapping target exists in the sprite', () => {
