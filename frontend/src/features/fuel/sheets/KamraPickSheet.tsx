@@ -94,7 +94,7 @@ export function KamraPickSheet({
 
           <div className="row gap-sm flp-search">
             <Icon name="search" size={14} color="var(--text-muted)" />
-            <input autoFocus value={query} onChange={e => setQuery(e.target.value)}
+            <input value={query} onChange={e => setQuery(e.target.value)}
               placeholder="Keress a Kamrában…" aria-label="Keresés a kamrában" />
           </div>
 
