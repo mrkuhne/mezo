@@ -110,7 +110,8 @@ export function NapomDimensionRow({ dimension, mode, goalTick = false, fresh = f
       // The name is the label and the score; the fact line is the description — the whole body
       // (weight, bar, status word, open chips) is too much to announce as a name (mezo-yjzhw.7).
       aria-label={`${meta.label}, ${score == null ? 'nincs adat' : `${score} pont`}`}
-      aria-describedby={factLine ? factId : undefined}
+      // A no-data row's fact line is just "nincs adat", which the name already says — no echo.
+      aria-describedby={factLine && !(score == null && facts.length === 0) ? factId : undefined}
       onClick={() => setOpen((o) => !o)}
     >
       {body}

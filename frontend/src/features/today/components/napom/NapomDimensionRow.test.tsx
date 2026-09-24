@@ -41,7 +41,9 @@ describe('NapomDimensionRow', () => {
     render(<NapomDimensionRow dimension={{ ...nutrition, score: null, status: 'NO_DATA', facts: [] }} mode="scored" i={0} />)
     const row = screen.getByRole('button', { name: 'Tápanyag, nincs adat' })
     expect(row).toHaveAttribute('aria-expanded', 'false')
-    expect(row).toHaveAccessibleDescription('nincs adat')
+    // the name already says it — the fact line must not announce it a second time
+    expect(row).not.toHaveAttribute('aria-describedby')
+    expect(row).toHaveAccessibleDescription('')
   })
 
   test('today: status word by status, no weight, NO_DATA is a dashed row with a dash for the value', () => {

@@ -107,6 +107,7 @@ export function NapomPage() {
   // evaluation with a review behind it. Opening yesterday before the close (in_progress, or
   // scored with no prose) must not swallow the morning dot the review will earn later.
   const viewed = evalQuery.data
+  const evaluation = viewed ? normalizeDayEvaluation(viewed) : null
   const reviewShown = viewed?.state === 'scored' && viewed.reviewId != null
   useEffect(() => {
     if (!deciding && date === yesterday && reviewShown) markSeen(yesterday)
@@ -116,7 +117,7 @@ export function NapomPage() {
   // per row (score · status · the fact line the reader sees) plus the N/6 centre. Anything else
   // (loading, a past or closed day) is `null`, which resets the baseline — so the first render,
   // the mock seed, a date change and past days never pulse.
-  const liveEval = !deciding && date === today && viewed?.state === 'in_progress' ? normalizeDayEvaluation(viewed) : null
+  const liveEval = !deciding && date === today && evaluation?.state === 'in_progress' ? evaluation : null
   const fresh = useChangedKeys(liveEval ? pulseSnapshot(liveEval) : null, date)
 
   // Hooks first, THEN the bail-out: a malformed `:date` must not crash the page.
@@ -124,7 +125,6 @@ export function NapomPage() {
 
   const days = week?.days ?? []
   const day = days.find((d) => d.date === date) ?? null
-  const evaluation = evalQuery.data ? normalizeDayEvaluation(evalQuery.data) : null
   const isToday = date === today
   const loading = deciding || (evaluation == null && evalQuery.error == null)
   const failed = !loading && evaluation == null

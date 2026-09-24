@@ -191,7 +191,7 @@ look: rose/coral accents, a frameless halo hero, glass rows, no glass inside gla
   (`pulseSnapshot`, `features/today/pages/NapomPage.tsx:63`) and hands it to
   `useChangedKeys(snapshot, date)` (`features/today/logic/useChangedKeys.ts:29`, `FRESH_PULSE_MS`
   at `:13`), which reports the ids that changed since the previous snapshot and clears them after
-  the pulse or on the next change (`NapomPage.tsx:120`). The snapshot is `null` unless the page
+  the pulse or on the next change (`NapomPage.tsx:121`). The snapshot is `null` unless the page
   shows today's open evaluation, so the first render, the mock seed, a date change and past days
   never pulse. A fresh row gets `is-fresh` plus an `i.napom-fresh` overlay
   (`NapomDimensionRow.tsx:69`, `NapomSegRing.tsx:47`) — an overlay, because the row's own
