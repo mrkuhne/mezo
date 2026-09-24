@@ -15,7 +15,8 @@
 //
 // Minden állapot LOKÁLIS (nincs perzisztálás): egy műhely-menet a mentésig él. A ?recipeId
 // paraméter egy meglévő receptből tölti a vázlatot (`recipeToDraft`) + a base-metát, és
-// mentéskor update-et csinál create helyett.
+// mentéskor update-et csinál create helyett. A ?fromMeal (+ ?d) paraméter egy LOGOLT étkezésből
+// tölti (`mealToDraft`, mezo-n9wgg): az új recept create-tel mentődik, az étkezés érintetlen.
 //
 // S4 (Fuel Titanium, mezo-hygp) — ÉLŐ ELŐNÉZET: a vászon azokat a blokkokat rajzolja, amiket a
 // recept-részletlap (és az étkezés-részletlap) visz — Makrók / Hozzávalók / Minőség /
@@ -37,14 +38,14 @@ import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import type { Recipe, RecipeRole, WorkshopDraft, WorkshopGoal, WorkshopLine } from '@/data/types'
-import { useRecipes, useRecipeActions, useWorkshop } from '@/data/hooks'
+import { useFuelDay, useRecipes, useRecipeActions, useWorkshop } from '@/data/hooks'
 import { isMockMode } from '@/data/_client/mode'
 import { recipeApi } from '@/data/fuel/recipeApi'
 import { usePickableIngredients, type PickableIngredient } from '@/data/fuel/pantryPickables'
 import { NO_NUTRIENTS, roundMacro, scaleNutrients } from '@/data/fuel/recipeMacros'
 import {
   draftNutrients, draftQualityLines, draftTotals, draftToInput, diffLineKeys, goalRole, lineKey,
-  lineMacros, recipeToDraft, scaleServings,
+  lineMacros, mealToDraft, recipeToDraft, scaleServings,
 } from '@/data/fuel/workshopState'
 import { Icon } from '@/shared/ui/Icon'
 import { ContentIcon } from '@/shared/ui/clay'
@@ -102,7 +103,9 @@ export function RecipeWorkshopPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const seedId = params.get('recipeId')
-  const { recipes } = useRecipes()
+  const fromMealId = seedId ? null : params.get('fromMeal')
+  const fromMealDay = params.get('d')
+  const { recipes, pending: recipesPending } = useRecipes()
   const { create, update } = useRecipeActions()
   const { workshopTurn } = useWorkshop()
   const pool = usePickableIngredients()
@@ -149,6 +152,20 @@ export function RecipeWorkshopPage() {
       role: seedRecipe.role,
     })
     setSourceRecipeId(seedRecipe.id)
+  }
+
+  // ?fromMeal seed (mezo-n9wgg) — a logged meal becomes a NEW recipe: the meal resolves exactly
+  // as on its detail page (`useFuelDay(?d)` + find), and a recipe line waits for the recipe list
+  // so it can expand into ingredients. `sourceRecipeId` stays null → save is a create; the
+  // logged meal itself is never touched.
+  const { fuel: fromMealFuel } = useFuelDay(fromMealDay ?? undefined)
+  const seedMeal = fromMealId ? fromMealFuel.meals.find(m => m.id === fromMealId) : undefined
+  const mealSeedKey = seedMeal ? `meal:${seedMeal.id}` : null
+  const mealSeedReady = seedMeal != null
+    && (!recipesPending || !seedMeal.mealItems.some(l => l.source === 'recipe'))
+  if (seedMeal && mealSeedReady && seededFrom !== mealSeedKey) {
+    setSeededFrom(mealSeedKey)
+    setDraft(mealToDraft(seedMeal, recipes, pool))
   }
 
   // The gold flash is a one-shot: clear the keys 2.6 s after a turn (the CSS keyframe's length),
