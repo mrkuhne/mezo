@@ -1,7 +1,16 @@
 # Mezo emlékezete — confirmed-insight persistence, person memory, effect tracking, transparency hub
 
-**Date:** 2026-09-24 · **Status:** approved in brainstorm, pending owner spec review
-**Epic:** to be filed in beads after spec approval (working name: *Mezo emlékezete*)
+**Date:** 2026-09-24 · **Status:** approved; programme running via the `/emlekezet` skill
+**Epic:** `mezo-d6ivw` (slices `mezo-d6ivw.1`–`.6` = S1–S6 below)
+
+> **Addendum (owner, 2026-09-24, after spec approval):** the programme's standing goal is
+> wider than the six slices — the separate learning subsystems (RAG/unified memory, knowledge
+> facts + graph, Konzílium, chat, proactive messages) must converge into **one coherent
+> engine and one AI experience**, and that experience most likely lives on the **csapatfal**
+> (mezo-a9bo7 world). Therefore **every slice session opens with a brainstorm**
+> (brainstorm-recon: web prior art + codebase terrain) that re-examines the slice against
+> this goal before planning; spec deltas land as dated sections here. Driver:
+> `.claude/skills/emlekezet/SKILL.md`.
 
 ## Problem
 
