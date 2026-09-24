@@ -57,7 +57,7 @@ test.each([
   { name: 'confirmed', pairPatch: { verdict: 'frozen' as const, status: 'confirmed' as const }, status: 'confirmed' as const, pill: 'Megerősítve', action: false },
   { name: 'rejected', pairPatch: { verdict: 'frozen' as const, status: 'rejected' as const }, status: 'rejected' as const, pill: 'Elvetve', action: false },
 ])('$name maps to the intended hero and action state', ({ pairPatch, status, pill, action }) => {
-  const { container } = render(<PatternDetailHero pair={{ ...pair, ...pairPatch }} pattern={pattern(status)} onDecide={vi.fn()} />)
+  const { container } = render(<PatternDetailHero pair={{ ...pair, ...pairPatch }} pattern={pattern(status)} dayCount={24} onDecide={vi.fn()} />)
   expect(screen.getByText(pill)).toBeInTheDocument()
   expect(container.querySelector('[data-pattern-domain="train"] svg')).not.toBeNull()
   expect(container.textContent).not.toMatch(/🏋️/)

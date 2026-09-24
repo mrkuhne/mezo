@@ -70,3 +70,40 @@ test('prediction filters retain the selected state when returning from a detail'
   expect(screen.getByRole('button', { name: 'Lezárt' })).toHaveAttribute('aria-pressed', 'true')
   expect(screen.queryByText('Függő jóslat')).not.toBeInTheDocument()
 })
+
+// Üvegesítés U8a (mezo-me75u.13): ONE glass hero; pending = expectation + confidence ring,
+// resolved = „Ezt vártam — és ez történt"; back returns to where the user came from.
+test('a pending forecast wears one glass hero with the confidence ring and asks what happened below', async () => {
+  server.use(http.get(`${API_BASE}/api/proactive/prediction`, () => HttpResponse.json([{ ...prediction, status: 'pending', actual: null, confidence: 0.64 }])))
+  show('/mezo/predictions/p1')
+  expect(await screen.findByRole('heading', { name: 'Mennyire biztos benne Boop?' })).toBeInTheDocument()
+  const glass = document.querySelectorAll('.glass:not(.uv-back)')
+  expect(glass).toHaveLength(1)
+  expect(glass[0]).toHaveClass('pdt-hero')
+  expect(document.querySelector('.pdt-ring-n')?.textContent).toBe('64%')
+  expect(screen.getByText('Mi történt?')).toBeInTheDocument()
+  expect(screen.queryByText('Ezt vártam')).not.toBeInTheDocument()
+})
+test('a resolved forecast shows what was expected against what happened inside the hero', async () => {
+  server.use(http.get(`${API_BASE}/api/proactive/prediction`, () => HttpResponse.json([prediction])))
+  show('/mezo/predictions/p1')
+  expect(await screen.findByText('Ezt vártam')).toBeInTheDocument()
+  expect(screen.getByText('Alvás javul.')).toBeInTheDocument()
+  expect(screen.getByText('Megfigyelt eredmény: 6 óra').closest('.pdt-hero')).not.toBeNull()
+  expect(screen.queryByText('Mi történt?')).not.toBeInTheDocument()
+  expect(document.querySelectorAll('.glass:not(.uv-back)')).toHaveLength(1)
+})
+test('from the list the back pill says Vissza and pops to the list', async () => {
+  server.use(http.get(`${API_BASE}/api/proactive/prediction`, () => HttpResponse.json([prediction])))
+  show('/mezo/predictions')
+  await userEvent.click(await screen.findByRole('link', { name: 'Alvás javul' }))
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent(/‹\s*Vissza/)
+})
+test('an active experiment hero shows where we are: day ring and one cell per day', async () => {
+  server.use(http.get(`${API_BASE}/api/proactive/experiment`, () => HttpResponse.json([{ ...experiment, status: 'active', startDate: '2026-07-01' }])))
+  show('/mezo/experiments/e1')
+  expect(await screen.findByRole('heading', { name: 'Hol tartunk?' })).toBeInTheDocument()
+  expect(document.querySelectorAll('.glass:not(.uv-back)')).toHaveLength(1)
+  expect(document.querySelectorAll('.pdt-dcells span')).toHaveLength(7)
+  expect(screen.queryByRole('group', { name: 'Döntés a kísérletről' })).not.toBeInTheDocument()
+})

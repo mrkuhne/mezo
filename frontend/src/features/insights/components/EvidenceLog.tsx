@@ -1,6 +1,8 @@
 // ============================================================
 // Mezo · EvidenceLog — a laborfüzet „Bizonyíték-napló" idővonala (Reflexió S6, mezo-eq85.6)
-// Vizuális igazság: docs/design_2.0/prototypes/eszrevetelek.html #labScreen `.log`/`.timeline`.
+// Vizuális igazság (üvegben, mezo-me75u.13): prototypes/uveg-uzenofal.html #minta/viz `.tl`/`.ev` —
+// lapos panel, idővonal tónus-pöttyökkel, ÁLLÓ (nem dőlt) szöveg; a te válaszod egy halk,
+// levendula-szélű cellában áll (bible U-függelék 23: bekezdés-hosszon nincs dőlt serif).
 // MINDEN, ami a hipotézissel történt, időrendben: az észrevétel, a TE válaszod (idézve, a
 // saját hangodon), az átfogalmazás, és éjszakánként egy bizonyíték-sor. A döntés- és
 // motor-események a `PatternJournal` régi, bevált szövegeit tartják meg.
@@ -17,7 +19,7 @@ export interface EvidenceLogRow {
   label: string
   tone: LogTone
   text: string
-  /** `user_reply`: a te szavaid — idézőjelben, dőlten. */
+  /** `user_reply`: a te szavaid — idézőjelben, a saját cellájukban. */
   quoted?: boolean
 }
 
@@ -125,17 +127,15 @@ export function EvidenceLog({ events }: { events: PatternEvent[] }) {
   const rows = evidenceLogRows(events)
   if (rows.length === 0) {
     return (
-      <section className="pdt-log">
-        <p className="pdt-note">Még nincs bejegyzés — az első bizonyíték-éjszaka tölti fel.</p>
-      </section>
+      <p className="pdt-log-empty uv-empty rise">Még nincs bejegyzés — az első bizonyíték-éjszaka tölti fel.</p>
     )
   }
   return (
-    <section className="pdt-log">
+    <section className="pdt-flat pdt-log rise">
       <div className="pdt-timeline">
         {rows.map((row, i) => (
           <div key={`${row.stamp}-${i}`} className={`pdt-event pdt-event-${row.tone}${row.quoted ? ' pdt-event-you' : ''}`}>
-            <time>{row.stamp} <em>{row.label}</em></time>
+            <span className="pdt-evh"><time>{row.stamp}</time> <em>{row.label}</em></span>
             <p><SafeMarkdown text={row.text} /></p>
           </div>
         ))}

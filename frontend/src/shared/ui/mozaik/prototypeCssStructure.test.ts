@@ -1634,3 +1634,42 @@ describe.each(U6_BLOCKS)('the uveg en %s section carries the glass ranking (mezo
     expect(section()).not.toContain('var(--page)')
   })
 })
+
+/**
+ * Üvegesítés U8a (mezo-me75u.13) — the „Miből látszik?" deep pages (prototypes/uveg-uzenofal.html
+ * #minta/*, #elore/*, #kiserlet-oldal/*): pattern detail (laborfüzet, catalog, saved observation),
+ * prediction and experiment. ONE glass hero per page, everything else flat, empty/error/loading
+ * dashed; the evidence log is upright. The Mozaik-wash `.pdt-*` blocks it replaced are gone.
+ */
+describe('the uveg mezo mibol section carries the glass ranking (mezo-me75u.13)', () => {
+  const section = () => stripComments(slice('── uveg mezo mibol (', '── /uveg mezo mibol '))
+
+  test('the block exists and dresses every surface of the three pages', () => {
+    const css = section()
+    for (const sel of ['.pdt-page .pdt-hero.glass', '.pdt-pill', '.pdt-ring', '.pdt-dec', '.pdt-flat', '.pdt-fold',
+      '.pdt-plan-strip .is-key', '.pdt-event-you p', '.pdt-vs', '.pdt-dcells span.is-done', '.pdt-feedback .chip',
+      '.pdt-state.uv-empty', '.pdt-log-empty.uv-empty', '.pdt-chart-empty.uv-empty', '.pdt-body']) {
+      expect(css, `${sel} missing from the uveg mezo mibol block`).toContain(sel)
+    }
+  })
+
+  test('the hero is the ONLY glass surface the block dresses, and never glass in glass', () => {
+    const css = section()
+    const glassSelectors = (css.match(/[^{}]*\.glass[^{}]*\{/g) ?? []).map((s) => s.trim())
+    expect(glassSelectors).toEqual(['.pdt-page .pdt-hero.glass {'])
+    expect(css).not.toMatch(/\.glass [^{,]*\.glass[\s,{]/)
+  })
+
+  test('the evidence log is upright prose (bible U23) and the ground token exists', () => {
+    const css = section()
+    expect(css).not.toMatch(/font-style:\s*italic/)
+    expect(css).not.toContain('var(--ff-serif)')
+    expect(css).not.toContain('var(--page)')
+  })
+
+  test('the Mozaik-wash pattern-detail blocks it replaced are gone', () => {
+    expect(rawCss).not.toContain('Minta-részlet — közérthető bizonyítékfolyam')
+    expect(rawCss).not.toContain('Laborfüzet — a reflexiós hipotézis részletoldala')
+    expect(stripComments(rawCss)).not.toMatch(/\.pdt-state-card\b|\.pdt-belief-ring\b|\.pdt-hero-decision\b/)
+  })
+})

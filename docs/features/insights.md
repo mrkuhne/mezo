@@ -2,7 +2,7 @@
 title: Insights (the Mezo tab)
 type: feature-domain
 status: mixed
-updated: 2026-09-24
+updated: 2026-09-25
 tags: [insights, mezo-tab, frontend, data-layer]
 key_files:
   - frontend/src/features/insights
@@ -208,12 +208,26 @@ for the same reason.
 The per-pattern drill-down is a full leaf
 route, **`/mezo/patterns/:pairKey`** (`router.tsx`, registered above the rest of the `/mezo` routes,
 same idiom as `fuel/recipes/:id`). It was the first `/insights` page with no section chrome; since
-`mezo-d20.5.1` every page in the tab is like it. Since **`mezo-fy97`** every
-branch (loaded, pending, error, not-found) renders inside a local `DetailFrame`: page padding
-(`14px 16px 24px` — the sibling route sits outside `InsightsSection`'s padded outlet, so the page
-brings its own) + the house full-page header row (back chip `‹ Minták` to **`/mezo/patterns`**,
-`aria-label="Vissza"` + `h1` „Minta részletei" — the `AiUsagePage` idiom; the mockup's bare
-`← Minták` text link rendered glued edge-to-edge in the real shell, user QA). Reached from the dashboard's „Részletek és előzmények →" (decision cards, §2.1 step 2) and
+`mezo-d20.5.1` every page in the tab is like it. Every branch (loaded, pending, error, not-found)
+renders inside `PatternFrame` → the shared **`DetailFrame`** (`components/DetailHero.tsx`).
+
+**Üveg (Üvegesítés U8a, `mezo-me75u.13`; parity: `docs/design_2.0/prototypes/uveg-uzenofal.html`
+`#minta/*`, `#elore/*`, `#kiserlet-oldal/*`, owner OK 2026-09-24).** The pattern, prediction and
+experiment detail pages share one anatomy from `components/DetailHero.tsx`: `DetailFrame` (the kit's
+glass back pill `PageHead glass` + a quiet right-aligned eyebrow „Minta részletei" / „Előrejelzés" /
+„Kísérlet", an `EntranceGroup` body with 64px end padding so the last card clears the glass bar and
+FAB), **ONE `.glass` hero per page** (`DetailHero`: lit well + eyebrow + title + `StatePill`, one
+accent via `.pdt-tone-*`), the big `DayRing` (n / minimum), `DecisionRow` (icon-over-word cells,
+`t-tick` / `t-lens` / `t-skip`) + `DecisionNote`, `SectionHead`, and `DetailState` (dashed empty /
+error / loading). Everything below the hero is a flat panel (`.pdt-flat`, `.pdt-fold`); the evidence
+log is upright prose (bible U23). CSS: `prototype.css` `── uveg mezo mibol (` (guarded in
+`prototypeCssStructure.test.ts`); the old Mozaik-wash `.pdt-*` blocks were deleted with it.
+**Back goes where you came from** (owner, 2026-09-24): `useBackTo(fallback, label)`
+(`shared/hooks/useBackNav.ts`) pops history when there is an in-app entry behind the page (the wall,
+a list, a room — the label then reads the neutral „‹ Vissza", since the origin is not knowable from a
+plain link) and, on a direct open (`location.key === 'default'` or the browser router's
+`history.state.idx === 0`), navigates to the list with its search params and names it
+(„‹ Minták" / „‹ Előrejelzések" / „‹ Kísérletek"). Reached from the dashboard's „Részletek és előzmények →" (decision cards, §2.1 step 2) and
 every `LifecycleMiniRow`'s `→` link (§2.1 step 3), plus the legacy `?pair=` query param redirect
 (§2.1).
 
@@ -225,19 +239,24 @@ state**, unknown `pairKey` and the companion switch off are deliberately indisti
 discipline as the monitor's `degraded`) + `usePatterns()` to resolve persisted rows that have no
 catalogued monitor pair + `usePatternMonitor()` (§2.1, re-read here purely for the
 diagnostics section's window/lag/`sourceHu` meta — "cached" in practice since the dashboard already
-warmed the query on the way in). **States:** `isPending` → `GhostState`; a genuine fetch failure
-(`isError`) → `GhostState` + retry (`refetch`); successful pair detail → the rich story flow below;
+warmed the query on the way in). **States:** `isPending` → dotted `DetailState` („A minta
+betöltése…", `role=status`); a genuine fetch failure (`isError`) → dashed `DetailState` + „Újra"
+(`refetch`, `role=alert`); successful pair detail → the rich story flow below;
 pair 404 + a persisted pattern with the same `pairKey` → `PatternArtifactDetail`; only a key absent
-from both reads becomes the honest „Nincs ilyen minta." card. The fallback reuses
-`PatternDecisionCard` while proposed; judged rows receive a read-only status hero plus only their
-saved mechanism/evidence and an explicit explanation that no chart is available. It never invents
+from both reads becomes the honest dashed „Nincs ilyen minta." state. The fallback's proposed row is
+a glass hero (confidence pill, „Amit eddig látunk" + the saved mechanism, the three-decision
+explainer and the decisions — the list's `PatternDecisionCard` is no longer reused here); judged
+rows receive a read-only status hero plus only their saved mechanism/evidence and an explicit
+explanation that no chart is available. It never invents
 paired days, history or statistics.
 
 **Top to bottom (`mezo-0469`; normative visual spec:
 `docs/superpowers/specs/2026-09-04-pattern-detail-redesign-design.md`):**
 
-1. **Story hero (`PatternDetailHero`)** — hypothesis and finding are separate deterministic
-   sentences (no LLM). „Azt vizsgáljuk…” says the question; the large answer says what is currently
+1. **Story hero (`PatternDetailHero`)** — the page's one glass hero: domain well
+   (`PATTERN_DOMAIN_ART`, `data-pattern-domain`), a `DayRing` with the plotted day count (the
+   weekend tally `groupCount / requiredPerGroup` while `imbalanced_groups`), hypothesis and finding
+   as separate deterministic sentences (no LLM). „Azt vizsgáljuk…” says the question; the large answer says what is currently
    knowable. State mapping: `imbalanced_groups`/other non-live → „Még gyűlik”; live weak → „Még
    bizonytalan”; live strong + proposed → „Döntésre vár” and three decision buttons; monitoring →
    „Figyeljük”; confirmed/rejected → read-only judged summary. A stale proposed row therefore has
@@ -272,7 +291,7 @@ visual truth: `docs/design_2.0/prototypes/eszrevetelek.html` `#labScreen`).** Wh
 catalog blocks above are for correlation pairs; a self-proposed, falsifiable hypothesis is a lab
 notebook. Rows without a plan are untouched by this branch.
 
-1. **`HypothesisStateCard`** replaces `PatternDetailHero`: clay `i-lombik` disc + eyebrow
+1. **`HypothesisStateCard`** replaces `PatternDetailHero` (the „Igaz ez rám?" glass hero): `t-flask` well + eyebrow
    (`{categoryLabel} · {domén}`) + a state pill off the persisted row status — `FIGYELEM`
    (`monitoring`), `GYŰLIK` (`proposed`), `BEÉPÜLT` (`confirmed`), `ELENGEDVE` (`refuted`),
    `PIHEN` (`dormant`), `ELVETVE` (`rejected`). Then `Hipotézis: {cím}?`, ONE human answer
@@ -286,9 +305,10 @@ notebook. Rows without a plan are untouched by this branch.
    **Every day number on the card is `dayCount` = `PatternPairDetail.days.length`** — the very
    points „Az eddigi napok" plots — never the post-proposal monitoring tally, which is 0 on a fresh
    proposal while the chart already shows its days (`mezo-twizx`: „0 nap bizonyíték" above an
-   8-day chart). The tally only speaks once it reaches `minN`. and the **belief ring** — a conic gradient at `--v: {belief×100}%`
-   with the percentage, the word `bizonyosság` and the "a számítás és a te válaszaid mozgatják"
-   line. `belief` is the backend's deterministic number; **no ring at all when it is absent**,
+   8-day chart). The tally only speaks once it reaches `minN`. The big **day ring** shows `dayCount/minN` (just
+   `dayCount` past the minimum), lavender while gathering and gold once it is decidable. The
+   **belief strip** — a flat cell inside the hero (`--v: {belief×100}%`) with the big light
+   percentage, the word `bizonyosság` and the "a számítás és a te válaszaid mozgatják" line. `belief` is the backend's deterministic number; **no ring at all when it is absent**,
    never an invented one, and raw `r`/`p` never reach the card. The three decision buttons
    (`confirm`/`monitor`/`reject` → `usePatternActions().decide`) disappear on a
    `confirmed`/`rejected` row — the same read-only rule the catalog hero has.
@@ -301,7 +321,7 @@ notebook. Rows without a plan are untouched by this branch.
    catalog layout uses, so the two readings can never disagree.
 4. **„Bizonyíték-napló" (`EvidenceLog`)** — everything that happened, oldest first, stamped
    `Szept. 6. · 14:12` (LOCAL time; the wire is UTC). Per kind: `observation` (coral),
-   `user_reply` (lavender, your own words quoted in serif italic, `te`), `revised` (gold),
+   `user_reply` (lavender, your own words quoted, upright, in a lavender-edged cell, `te`), `revised` (gold),
    `evidence` (gold — `Bejött` / `Nem jött be` + `· n nap` from `hit`, or, when the gate could not
    say, ONE sentence per `PatternGate.Verdict`: `Kevés nap` (`FEW_DAYS`), `Még vékony csoport`
    (`IMBALANCED_GROUPS`), `Nem mozdult` (`DEGENERATE`), `Nincs adat` (`NO_DATA` and any unknown
@@ -1068,7 +1088,9 @@ All tests are **frontend Vitest** (no backend tests exist). They assert **verbat
   `HH:mm`/`igen`/`nem` table cells, rounded `r/p` in the diagnostics — full-precision doubles never
   reach the DOM); pair 404 + persisted hypothesis renders the honest artifact fallback without
   charts/diagnostics, while a key missing from both reads renders not-found. Both header assertions target the `DetailFrame`
-  back row (`link name="Vissza"` + `heading "Minta részletei"`). `logic/metricFormat.test.ts` —
+  back pill (`button name="Vissza"`, text `‹ Minták` on a direct open) and the „Minta részletei" eyebrow;
+  `mezo-me75u.13` adds the ranking assertions (exactly one `.glass` surface besides the back pill,
+  the hero ring and the days card agree on the day count). `logic/metricFormat.test.ts` —
   pure: clock folding (incl. the bedtime `+24` shift and the `:60` minute carry), binary mapping,
   decimal trimming, axis-end labels, and the `formatR`/`formatP` precision rules.
   `PatternDecisionCard.test.tsx` is unchanged by the new optional
@@ -1112,7 +1134,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 
 **Deferred / known gaps after Design 2.0** (recorded honestly, not fixed):
 
-- **No page under `/mezo/*` has a back affordance except `PatternDetailPage`.** None mounts `PageHead`, so the `‹ vissza` chip the Nap/Én/Fuel siblings carry is missing across the whole tab; the tab bar and browser back are the only way up from Minták, Memoár, Tudástár, Chat, Előrejelzések, Kísérletek and Memória. On a hub-and-siblings IA this is the most visible unfinished edge in the tab.
+- **No page under `/mezo/*` has a back affordance except the three detail leaves** (`PatternDetailPage`, `PredictionDetailPage`, `ExperimentDetailPage` — `useBackTo`, §2.1b). None mounts `PageHead`, so the `‹ vissza` chip the Nap/Én/Fuel siblings carry is missing across the whole tab; the tab bar and browser back are the only way up from Minták, Memoár, Tudástár, Chat, Előrejelzések, Kísérletek and Memória. On a hub-and-siblings IA this is the most visible unfinished edge in the tab.
 - **`components/MotorStateHero.tsx` is orphaned** — `PatternsPage` inlined its own hero + lifecycle grid in the `mezo-d20.5.3` re-face and no longer imports it, and nothing else does. `components/MetricCoverageRing.tsx` is half-orphaned in the same way: only its exported `lastSeenLabel` helper is still imported, the ring markup having moved into the page. Both files survive with their behaviour documented above; deleting them means moving `lastSeenLabel` somewhere and dropping their tests, which was left for a deliberate pass. ([me.md §9](me.md) records four Me-side components in the same state.)
 - **The Memória ↔ Minták cross-link is still one-way and still goes through a redirect.** `MemoryPage`/`MemoryLayersPanel` link to `/mezo/motor`, which `<Navigate>`s to `/mezo/patterns`; Design 2.0 repointed the prefix but did not shorten the hop or add the reverse link the retired `MotorPage` used to carry (the pre-existing note above §3 covers the reverse-link half).
 - **RESOLVED — `Heti`'s designed destination has landed.** This bullet used to track the tile as IN FLIGHT: shipping to a working `/me/week` page (`mezo-p2tr`) while the Design 2.0-specified **Heti hub + four view-pages + a day page**, plus its two backend legs (weekly knowledge candidates, a persisted weekly score + trend endpoint), were still being built on a separate machine under [`docs/design_2.0/2026-08-28-heti-implementation-handoff.md`](../design_2.0/2026-08-28-heti-implementation-handoff.md). That work is done: `mezo-d20.6.10` split `/me/week` into `WeekHubPage`/`WeekAnalysisPage`/`WeekDaysPage`/`WeekLessonsPage`/`WeekDiscoveriesPage` + the pre-existing `WeekDayPage`, and the trend endpoint + `weekly_score` cache landed as `mezo-d20.7.5`–`.7.8` ([`me.md`](me.md) §2 has the per-page breakdown). **The day page itself later moved on** (`mezo-yjzhw.4`, 2026-09-24) into its own Nap-domain tab, "A napom" ([today.md](today.md)); `/me/week/napok/:date` now redirects there. One loose end: `WeekHubPage`'s 8-week score-trend spark is still wired to a hardcoded empty array in the FE even though the backend trend endpoint it would read is live — the spark never renders in this build.
@@ -1135,7 +1157,9 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `frontend/src/shared/ui/mozaik/{index.tsx,motion.tsx}` + `frontend/src/shared/ui/clay/index.tsx` — the primitives the re-faced pages compose (`Tile`/`Mosaic`/`PageHero`; `EntranceGroup`/`useCountUp`; `ClayIcon`/`ClaySpot`). **Not Insights-owned** — [`_platform-design-system.md`](_platform-design-system.md)
 - `pages/PatternsPage.tsx` — lifecycle catalogue (§2.1): hero + clickable 3×2 status selector + one active bucket + `PatternFilterSheet` + five-item pager + „Adat-egészség" coverage strip; owns selection/filter/sort/page state, while `patternCatalog.ts` owns pure derivations
 - `pages/PatternDetailPage.tsx` — dual-source detail leaf (§2.1b, `/mezo/patterns/:pairKey`): rich pair-backed evidence/history flow when `usePatternPairDetail` succeeds; `PatternArtifactDetail` when only `usePatterns` resolves the key; honest retry/not-found states otherwise
-- `components/PatternArtifactDetail.tsx` — pairless persisted-pattern fallback: proposed rows reuse `PatternDecisionCard`; judged rows show a read-only status hero, saved mechanism/evidence and no fabricated graph/statistics
+- `components/DetailHero.tsx` — **`mezo-me75u.13`**, the shared üveg anatomy of the three „Miből látszik?" detail pages (§2.1b): `DetailFrame`, `DetailHero`, `StatePill`, `DayRing`, `DecisionRow` + `patternDecisionButtons` + `DecisionNote`, `SectionHead`, `DetailState`
+- `pages/PredictionDetailPage.tsx` · `pages/ExperimentDetailPage.tsx` — the prediction / experiment detail leaves on the same anatomy (§2.1b Üveg): prediction hero = expectation + confidence ring while pending, „Ezt vártam / Ez történt" once resolved, then flat „Mennyire biztos…", „Miből következik?", „Mi történt?", „Hasznos volt?" (`FeedbackChips glyph3d`); experiment hero = „Hol tartunk?" day ring + day cells (active), the question + Elfogadom/Elvetem (proposed, live mode only) or the result; status words from `PREDICTION_STATE` / `experimentStateOf` (the lists keep `PREDICTION_STATUS` / `experimentChipOf`)
+- `components/PatternArtifactDetail.tsx` — pairless persisted-pattern fallback: proposed rows get their own glass decision hero (the list's `PatternDecisionCard` is not reused); judged rows show a read-only status hero, saved mechanism/evidence and no fabricated graph/statistics
 - `components/PatternFilterSheet.tsx` + `PatternDomainMark.tsx` — house `Sheet` filter/sort controls and the shared Clay domain mark; no emoji domain controls
 - `logic/patternCatalog.ts` — initial bucket, pairless `other` domain, filter/sort and five-item clamped pagination; pure and unit-tested
 - `pages/MemoirPage.tsx · KnowledgeListPage.tsx · ChatPage.tsx · PredictionsPage.tsx · ExperimentsPage.tsx` — the other 5 content sub-tabs, **all real dual-mode** (Memoir W2, Predictions P1, Experiments P2 — each with an honest null-state; ExperimentsPage adds the L2 accept/dismiss + propose write actions)
@@ -1151,7 +1175,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `data/insights/predictionsApi.ts` + `predictionsHooks.ts` — **P1** the Predictions consumer (`usePredictions()` → `GET /api/proactive/prediction`, list; `[]`→still-learning null-state)
 - **`components/PatternCard.tsx` is DELETED (`mezo-tk88.4`)** — superseded by `PatternDecisionCard.tsx` below (the flat-inbox card had no lifecycle awareness; `highlighted`/`?pair=` scroll-and-ring is gone too, replaced by the `?pair=` → detail-route redirect, §2.1)
 - `components/MotorStateHero.tsx` — **`mezo-tk88.4`**, the dashboard hero (§2.1 step 1): question count + confirmed/decide prose, the six `BUCKET_ORDER` tiles, the domain-chip filter row (`onToggleDomain`, the „Mind" chip's same-batch multi-toggle) — pure props, `bucketize()`'s counts computed by the caller
-- `components/PatternDecisionCard.tsx` — **`mezo-tk88.4`**, the dashboard decision-inbox card (§2.1 step 2): category/confidence chips, the deterministic `findingSentence` block (never raw `r/p/n`), optional decision explainer, Confirm/Monitor/Reject and the detail link. Since `mezo-0469` the detail page no longer reuses this inbox-shaped card; its state-table hero is separate below.
+- `components/PatternDecisionCard.tsx` — **`mezo-tk88.4`**, the dashboard decision-inbox card (§2.1 step 2): category/confidence chips, the deterministic `findingSentence` block (never raw `r/p/n`), optional decision explainer, Confirm/Monitor/Reject and the detail link. Since `mezo-0469` the pair-backed detail page no longer reuses this inbox-shaped card, and since `mezo-me75u.13` neither does the pairless fallback.
 - `components/LifecycleSection.tsx` — **`mezo-tk88.4`**, dashboard-only `LifecycleSection` (collapsible title+count card) + `LifecycleMiniRow` (title + one-line sub + detail link) for the five buckets and „Adat-egészség”. The detail page's former mismatched diagnostics reuse ended in `mezo-0469`.
 - `components/PatternDetailHero.tsx` (+ test) — **`mezo-0469`**, the detail state table and deterministic question/conclusion split; it is the sole owner of group-progress rendering and detail-page CTA eligibility.
 - `components/PatternEvidenceChart.tsx` (+ test) — **`mezo-0469`**, value-kind-adaptive binary/numeric SVG evidence chart with real ticks, conditional medians/trend and accessible latest-point ring; replaces the deleted `PatternScatter`.

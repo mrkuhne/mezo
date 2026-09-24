@@ -1,23 +1,27 @@
 // ============================================================
-// Mezo · HypothesisStateCard — a laborfüzet állapot-kártyája (Reflexió S6, mezo-eq85.6)
-// Vizuális igazság: docs/design_2.0/prototypes/eszrevetelek.html #labScreen `.state-card`.
-// Poszter-anatómia: eyebrow + clay-lombik + állapot-pirula, alatta a hipotézis kérdése,
-// EGY emberi válasz-mondat, a két csoport összevetése és a bizonyosság-gyűrű.
-// A gyűrű száma a szerver DETERMINISZTIKUS `belief`-je — sosem LLM-becslés, és nyers
+// Mezo · HypothesisStateCard — a laborfüzet „Igaz ez rám?" hero-ja (Reflexió S6, mezo-eq85.6;
+// üvegben: Üvegesítés U8a, mezo-me75u.13 — prototypes/uveg-uzenofal.html #minta/viz).
+// Az oldal EGYETLEN üveg-hero-ja: kút a lombikkal + eyebrow + cím + állapot-pirula, alatta a
+// hipotézis kérdése, a nagy NAP-gyűrű (n / a terv minimuma) mellett EGY emberi válasz-mondat,
+// a bizonyosság-sáv és — amíg dönthető — a három döntés a magyarázó sorral.
+// A bizonyosság a szerver DETERMINISZTIKUS `belief`-je — sosem LLM-becslés, és nyers
 // r/p SOHA nem kerül a kártya arcára (az a `Háttér` fold dolga).
 // ============================================================
-import { ClayIcon } from '@/shared/ui/clay'
+import type { Icon3DName } from '@/shared/ui/clay'
 import { DOMAIN_META } from '@/features/insights/logic/domains'
+import {
+  DayRing, DecisionNote, DecisionRow, DetailHero, StatePill, patternDecisionButtons, type DetailTone,
+} from '@/features/insights/components/DetailHero'
 import type { Pattern, PatternMonitorPair, PatternRowStatus, PatternStatus, PatternTestPlan } from '@/data/types'
 
-/** A prototípus állapot-pirulái — a hat perzisztált sor-státusz emberi szava. */
-const STATE_PILL: Record<PatternRowStatus, string> = {
-  monitoring: 'FIGYELEM',
-  proposed: 'GYŰLIK',
-  confirmed: 'BEÉPÜLT',
-  refuted: 'ELENGEDVE',
-  dormant: 'PIHEN',
-  rejected: 'ELVETVE',
+/** A prototípus állapot-pirulái — a hat perzisztált sor-státusz emberi szava, tónusa és jele. */
+const STATE_PILL: Record<PatternRowStatus, { label: string; tone: DetailTone; art: Icon3DName }> = {
+  monitoring: { label: 'FIGYELEM', tone: 'sky', art: 't-lens' },
+  proposed: { label: 'GYŰLIK', tone: 'lav', art: 't-clock' },
+  confirmed: { label: 'BEÉPÜLT', tone: 'sage', art: 't-tick' },
+  refuted: { label: 'ELENGEDVE', tone: 'mute', art: 't-skip' },
+  dormant: { label: 'PIHEN', tone: 'mute', art: 't-clock' },
+  rejected: { label: 'ELVETVE', tone: 'mute', art: 't-skip' },
 }
 
 /** `Hipotézis: {cím}?` — a cím záró írásjele nélkül, hogy sose legyen „…?." vagy „…??". */
@@ -67,34 +71,35 @@ export function HypothesisStateCard({ pattern, pair, dayCount, plan, onDecide }:
   // A már megítélt sor olvasható állapot-hero: a döntést nem lehet kétszer meghozni (a
   // katalógus-hero rég érvényes szabálya, ld. PatternDetailHero).
   const decidable = status !== 'confirmed' && status !== 'rejected'
+  const pill = status === 'proposed' && enoughDays
+    ? { label: 'DÖNTHETSZ', tone: 'gold' as const, art: 't-sprout' as const }
+    : STATE_PILL[status]
 
   return (
-    <section className="pdt-state-card" aria-labelledby="pdt-answer">
-      <div className="pdt-hero-top">
-        <span className="pdt-hero-icon"><ClayIcon name="i-lombik" size={26} /></span>
-        <span>
-          <small>{pattern.categoryLabel} · {domain.label.toLowerCase()}</small>
-          <b>{pair.title}</b>
-        </span>
-        <span className="pdt-state-pill">
-          {status === 'proposed' && enoughDays ? 'DÖNTHETSZ' : STATE_PILL[status]}
-        </span>
+    <DetailHero tone="lav" art="t-flask" labelledBy="pdt-answer"
+      eyebrow={`${pattern.categoryLabel} · ${domain.label.toLowerCase()}`} title={pair.title}
+      pill={<StatePill label={pill.label} tone={pill.tone} art={pill.art} />}>
+      <p className="pdt-hypothesis">{hypothesisQuestion(pattern.title)}</p>
+
+      <div className="pdt-core">
+        {/* a gyűrű UGYANAZT a napszámot mondja, mint a lenti grafikon (mezo-twizx) */}
+        <DayRing value={dayCount} of={dayCount <= minN ? minN : undefined}
+          pct={minN > 0 ? dayCount / minN * 100 : 100} unit="NAP" tone={enoughDays ? 'gold' : 'lav'}
+          ariaLabel={`${dayCount} nap a terv ${minN} napos minimumából`} />
+        <div className="pdt-answer">
+          <h1 id="pdt-answer">{hypothesisAnswer(pattern, minN, dayCount)}</h1>
+          <p className="pdt-answer-sub">
+            {pair.groupOneDays != null && pair.groupZeroDays != null
+              ? <><b>{pair.groupOneDays}</b> ilyen napot tudok összevetni <b>{pair.groupZeroDays}</b> másikkal</>
+              : <><b>{dayCount}</b> napot tudok összevetni</>}
+            {enoughDays ? ' — elég ahhoz, hogy dönts.' : <>. <b>{minN}</b> napnál mondok többet.</>}
+          </p>
+        </div>
       </div>
 
-      <p className="pdt-hypothesis">{hypothesisQuestion(pattern.title)}</p>
-      <h1 id="pdt-answer">{hypothesisAnswer(pattern, minN, dayCount)}</h1>
-      <p className="pdt-answer-sub">
-        {pair.groupOneDays != null && pair.groupZeroDays != null
-          ? <><b>{pair.groupOneDays}</b> ilyen napot tudok összevetni <b>{pair.groupZeroDays}</b> másikkal</>
-          : <><b>{dayCount}</b> napot tudok összevetni</>}
-        {enoughDays ? ' — elég ahhoz, hogy dönts.' : <>. <b>{minN}</b> napnál mondok többet.</>}
-      </p>
-
       {belief != null && (
-        <div className="pdt-belief">
-          <div className="pdt-belief-ring" style={{ '--v': `${belief}%` } as React.CSSProperties}>
-            <div className="in">{belief}%<small>bizonyosság</small></div>
-          </div>
+        <div className="pdt-belief" style={{ '--v': `${belief}%` } as React.CSSProperties}>
+          <strong>{belief}%<small>bizonyosság</small></strong>
           <p>
             A bizonyosságot a <b>számítás</b> és a <b>te válaszaid</b> mozgatják. Mezo csak
             megfogalmazza. Te bármikor felülírhatod.
@@ -103,12 +108,12 @@ export function HypothesisStateCard({ pattern, pair, dayCount, plan, onDecide }:
       )}
 
       {decidable && (
-        <div className="pdt-actions">
-          <button type="button" className="pdt-action-primary" onClick={() => onDecide('confirm')}>Megerősítem</button>
-          <button type="button" onClick={() => onDecide('monitor')}>Figyeljük</button>
-          <button type="button" onClick={() => onDecide('reject')}>Elvetem</button>
-        </div>
+        <>
+          <DecisionRow label="Döntés a mintáról"
+            buttons={patternDecisionButtons((verb) => onDecide(verb))} />
+          <DecisionNote />
+        </>
       )}
-    </section>
+    </DetailHero>
   )
 }

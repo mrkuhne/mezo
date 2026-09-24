@@ -1,22 +1,13 @@
 // ============================================================
 // Mezo · TestPlanTiles — a laborfüzet „A teszt-terv" szekciója (Reflexió S6, mezo-eq85.6)
-// Vizuális igazság: docs/design_2.0/prototypes/eszrevetelek.html #labScreen `.plan-grid`
-// + `.plan-strip`. A terv ELŐRE rögzített (falszifikálhatóság): a két csempe és a négy
-// szám mind a `testPlan`-ből jön, sosem a mai adatból — így nem lehet utólag kitalálni.
+// Vizuális igazság (üvegben, mezo-me75u.13): docs/design_2.0/prototypes/uveg-uzenofal.html
+// #minta/viz `.plan2` + `.pstrip` — EGY lapos panel, benne a két lapos csempe (HA… → …AKKOR)
+// és a négy szám, a minimum kiemelve. A terv ELŐRE rögzített (falszifikálhatóság): a két
+// csempe és a négy szám mind a `testPlan`-ből jön, sosem a mai adatból.
 // ============================================================
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
+import { PATTERN_DOMAIN_ART } from '@/features/insights/components/PatternDomainMark'
 import type { MetricDomain, PatternMetricValueKind, PatternMonitorPair, PatternTestPlan } from '@/data/types'
-
-/** Domén → clay szimbólum. Reflexió-sorozat lehet `people:`/`topic:` kulcs is (domén `mind`),
- *  ezért a doménre képezünk, nem a metrika-katalógusra (az ilyen kulcsra nem is találna). */
-const DOMAIN_CLAY: Record<MetricDomain, ClayIconName> = {
-  sleep: 'i-alvas',
-  train: 'i-edzes',
-  fuel: 'i-fuel',
-  mind: 'i-naplo',
-  body: 'i-suly',
-  other: 'i-eletjel',
-}
 
 function valueKindLine(kind: PatternMetricValueKind | undefined): string {
   if (kind === 'binary') return 'napi jel · 0 / 1'
@@ -33,7 +24,7 @@ function PlanTile({ side, label, name, kind, domain }: {
 }) {
   return (
     <article className={`pdt-plan-tile pdt-plan-tile-${side}`}>
-      <span className="pdt-plan-src"><ClayIcon name={DOMAIN_CLAY[domain ?? 'other']} size={18} /></span>
+      <span className="pdt-plan-src"><Icon3D name={PATTERN_DOMAIN_ART[domain ?? 'other']} size={28} /></span>
       <div className="pdt-tile-label">{label}</div>
       <div className="pdt-plan-nm">{name}</div>
       <div className="pdt-plan-sb">{valueKindLine(kind)}</div>
@@ -45,19 +36,20 @@ function PlanTile({ side, label, name, kind, domain }: {
  *  backend a teszt-tervből épít szintetikus párt, ezért az érték-fajta és a domén sosem hiányzik. */
 export function TestPlanTiles({ plan, pair }: { plan: PatternTestPlan; pair: PatternMonitorPair }) {
   return (
-    <>
-      <section className="pdt-plan-grid" aria-label="A teszt-terv két fele">
+    <section className="pdt-flat pdt-plan rise" aria-label="A teszt-terv">
+      <div className="pdt-plan-grid" role="group" aria-label="A teszt-terv két fele">
         <PlanTile side="a" label="Ha…" name={plan.seriesALabel}
           kind={pair.metricAValueKind} domain={pair.metricADomain} />
+        <span className="pdt-plan-arrow" aria-hidden="true">→</span>
         <PlanTile side="b" label="…akkor" name={plan.seriesBLabel}
           kind={pair.metricBValueKind} domain={pair.metricBDomain} />
-      </section>
-      <div className="pdt-plan-strip">
-        <span><b>+{plan.lagDays} nap</b>eltolás</span>
-        <span><b>{plan.minN} nap</b>kell minimum</span>
-        <span><b>{plan.expectedDirection === 'positive' ? 'több' : 'kevesebb'}</b>várt irány</span>
-        <span><b>{plan.windowDays} nap</b>ablak</span>
       </div>
-    </>
+      <div className="pdt-plan-strip">
+        <span><b>+{plan.lagDays}<i> nap</i></b>eltolás</span>
+        <span className="is-key"><b>{plan.minN}<i> nap</i></b>kell minimum</span>
+        <span className="is-word"><b>{plan.expectedDirection === 'positive' ? 'több' : 'kevesebb'}</b>várt irány</span>
+        <span><b>{plan.windowDays}<i> nap</i></b>ablak</span>
+      </div>
+    </section>
   )
 }

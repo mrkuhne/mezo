@@ -142,10 +142,13 @@ test('a proposed row below the plan minimum still says it is collecting', () => 
   expect(screen.getByText('GYŰLIK')).toBeInTheDocument()
 })
 
-test('the belief ring shows the percentage as a conic gradient and never a raw statistic', () => {
+test('the belief strip shows the percentage as a flat cell inside the glass hero, never a raw statistic', () => {
   const { container } = render(<HypothesisStateCard pattern={pattern()} pair={pair} dayCount={16} plan={plan} onDecide={vi.fn()} />)
-  const ring = container.querySelector('.pdt-belief-ring') as HTMLElement
-  expect(ring.style.getPropertyValue('--v')).toBe('38%')
+  const strip = container.querySelector('.pdt-belief') as HTMLElement
+  expect(strip.style.getPropertyValue('--v')).toBe('38%')
+  // never glass inside glass (bible U1 rule 5): the hero is the one glass surface
+  expect(strip.closest('.glass')).toHaveClass('pdt-hero')
+  expect(strip).not.toHaveClass('glass')
   expect(screen.getByText('38%')).toBeInTheDocument()
   expect(screen.getByText('bizonyosság')).toBeInTheDocument()
   expect(screen.getByText(/Te bármikor felülírhatod/)).toBeInTheDocument()
@@ -156,7 +159,33 @@ test('no belief on the row means no ring at all — never an invented number', (
   const { container } = render(
     <HypothesisStateCard pattern={pattern({ belief: undefined })} pair={pair} dayCount={16} plan={plan} onDecide={vi.fn()} />,
   )
-  expect(container.querySelector('.pdt-belief-ring')).toBeNull()
+  expect(container.querySelector('.pdt-belief')).toBeNull()
+})
+
+// Üvegesítés U8a (mezo-me75u.13): the day ring and the answer read the SAME count (mezo-twizx).
+test('the day ring shows the plotted days over the plan minimum, gold once there are enough', () => {
+  const { container, rerender } = render(
+    <HypothesisStateCard pattern={pattern({ status: 'proposed' })} pair={pair} dayCount={5} plan={plan} onDecide={vi.fn()} />,
+  )
+  expect(screen.getByRole('img', { name: '5 nap a terv 8 napos minimumából' })).toHaveClass('pdt-tone-lav')
+  expect(container.querySelector('.pdt-ring-n')?.textContent).toBe('5/8')
+  rerender(<HypothesisStateCard pattern={pattern({ status: 'proposed' })} pair={pair} dayCount={8} plan={plan} onDecide={vi.fn()} />)
+  expect(screen.getByRole('img', { name: '8 nap a terv 8 napos minimumából' })).toHaveClass('pdt-tone-gold')
+  expect(container.querySelector('.pdt-ring-n')?.textContent).toBe('8/8')
+  // past the minimum the ring just counts
+  rerender(<HypothesisStateCard pattern={pattern({ status: 'proposed' })} pair={pair} dayCount={16} plan={plan} onDecide={vi.fn()} />)
+  expect(container.querySelector('.pdt-ring-n')?.textContent).toBe('16')
+})
+
+test('decidable rows carry the three decisions with the one-line explanation; judged rows none', () => {
+  const { container, rerender } = render(
+    <HypothesisStateCard pattern={pattern({ status: 'monitoring' })} pair={pair} dayCount={16} plan={plan} onDecide={vi.fn()} />,
+  )
+  expect(screen.getByRole('group', { name: 'Döntés a mintáról' })).toBeInTheDocument()
+  expect(container.querySelector('.pdt-decnote')?.textContent).toContain('befagy, többé nem hozom elő')
+  rerender(<HypothesisStateCard pattern={pattern({ status: 'confirmed' })} pair={pair} dayCount={16} plan={plan} onDecide={vi.fn()} />)
+  expect(screen.queryByRole('group', { name: 'Döntés a mintáról' })).not.toBeInTheDocument()
+  expect(container.querySelector('.pdt-decnote')).toBeNull()
 })
 
 test('the three decide buttons report the decision verbs', () => {

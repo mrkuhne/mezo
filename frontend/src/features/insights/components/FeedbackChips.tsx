@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { cn } from '@/shared/lib/cn'
 import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 import type { ArtifactFeedback, FeedbackReason, FeedbackVerdict } from '@/data/feedback/feedbackTypes'
 
 const REASONS: { value: FeedbackReason; label: string }[] = [
@@ -43,6 +44,7 @@ export function FeedbackChips({
   onVote,
   label,
   answers,
+  glyph3d = false,
 }: {
   value: ArtifactFeedback | undefined
   onVote: (verdict: FeedbackVerdict, reason?: FeedbackReason) => void
@@ -54,6 +56,10 @@ export function FeedbackChips({
    *  („pontatlan"/„túl sok"/… are complaints about a card, and this card asked a question).
    *  Re-tapping the recorded answer still retracts it, exactly as in rating mode. */
   answers?: { up: string; down: string }
+  /** Üveg-felületen (mezo-me75u.13) a hüvelykujjak a Titanium 3D sprite jelei (`t-thumb-up` /
+   *  `t-thumb-down`, a csapat-fal jóváhagyott párja). Alapból a vonalas ikon marad, így a
+   *  többi, még nem üvegesített felület változatlan. */
+  glyph3d?: boolean
 }) {
   // Only the "opened by thumb-down before any vote exists" case needs state; a stored `down` speaks for
   // itself through `isDown` below.
@@ -96,7 +102,7 @@ export function FeedbackChips({
           aria-pressed={isUp}
           style={{ padding: '6px 12px' }}
         >
-          <Icon name="thumb-up" size={13} /> {answers ? answers.up : 'Segített'}
+          {glyph3d ? <Icon3D name="t-thumb-up" size={19} /> : <Icon name="thumb-up" size={13} />} {answers ? answers.up : 'Segített'}
         </button>
         <button
           type="button"
@@ -105,7 +111,7 @@ export function FeedbackChips({
           aria-pressed={isDown}
           style={{ padding: '6px 12px' }}
         >
-          <Icon name="thumb-down" size={13} /> {answers ? answers.down : 'Nem talált'}
+          {glyph3d ? <Icon3D name="t-thumb-down" size={19} /> : <Icon name="thumb-down" size={13} />} {answers ? answers.down : 'Nem talált'}
         </button>
       </div>
       {showReasons && (

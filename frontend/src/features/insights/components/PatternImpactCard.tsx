@@ -16,19 +16,9 @@ function openClosedCaption(refs: PatternImpactRef[]): string {
 
 function ImpactRow({ title, sub, to }: { title: string; sub: string; to: string }) {
   return (
-    <Link
-      to={to}
-      className="row"
-      style={{
-        justifyContent: 'space-between', alignItems: 'center', gap: 10,
-        padding: '10px 2px', borderBottom: '1px solid var(--border-subtle)', textDecoration: 'none',
-      }}
-    >
-      <div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{title}</div>
-        <div style={{ fontSize: 10.5, color: 'var(--text-tertiary)', marginTop: 2 }}>{sub}</div>
-      </div>
-      <span style={{ color: 'var(--lav-deep)', fontWeight: 700 }}>→</span>
+    <Link to={to} className="pdt-trow">
+      <span className="pdt-trow-t"><b>{title}</b><small>{sub}</small></span>
+      <span className="pdt-chev" aria-hidden="true">›</span>
     </Link>
   )
 }
@@ -43,17 +33,11 @@ export function PatternImpactCard({ pattern, impact }: { pattern: Pattern | null
   const judged = pattern?.status === 'confirmed'
 
   return (
-    <div
-      className="card"
-      style={{
-        padding: '15px 16px',
-        ...(judged ? { background: 'var(--success-bg)', borderColor: 'var(--success-soft)' } : {}),
-      }}
-    >
-      <span className="eyebrow" style={judged ? { color: 'var(--success-deep)' } : undefined}>
-        Mit kezd ezzel az app
-      </span>
-      <div style={{ marginTop: 6 }}>
+    // Üvegben (mezo-me75u.13, uveg-uzenofal.html #minta/hetvege `.imp`): lapos panel — a
+    // megítélt minta zsálya eyebrow-t kap, a sorok lapos „ajtók" chevronnal.
+    <section className={`pdt-flat pdt-impact rise${judged ? ' is-judged' : ''}`}>
+      <span className="pdt-impact-eb">Mit kezd ezzel az app</span>
+      <div className="pdt-impact-rows">
         {judged ? (
           <>
             {impact.fact && (
@@ -86,11 +70,11 @@ export function PatternImpactCard({ pattern, impact }: { pattern: Pattern | null
             )}
           </>
         ) : (
-          <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+          <p className="pdt-impact-future">
             Ha megerősíted: bekerül a Tudástárba és a társ fejébe, előrejelzés és kísérlet épülhet rá.
           </p>
         )}
       </div>
-    </div>
+    </section>
   )
 }
