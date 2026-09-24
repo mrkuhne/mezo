@@ -2,7 +2,7 @@
 title: Habit — Morning & Evening Routine Engine
 type: feature-domain
 status: done
-updated: 2026-09-23
+updated: 2026-09-25
 tags: [today, nap, me, growth, fuel, train, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/habit
@@ -18,6 +18,8 @@ related: [today, growth, me, fuel, train, intention, _platform-data-layer, _plat
 ---
 
 # Habit — Morning & Evening Routine Engine
+
+> **2026-09-25 — Üveg U7 (`mezo-me75u.7`).** The rutin hub, chain, Szokásaid, habit page, habit editor and wizard wear the dark glass material (root `.rt-uv`); every glyph (⚓ ◈ 💡 ✂ ⏸ ✨ ✓ ★) is a 3D sprite icon. A missed day in the history stays neutral (ADR 0010). Behavior unchanged. Parity reference [`uveg-en2.html`](../design_2.0/prototypes/uveg-en2.html).
 
 > **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The Nap · Rutin page wears glass: one amber glass card per group, lit 3D ticks, 3D habit icons via `habitContentIcon` (call-site: morning_workout → t-run, protein_breakfast → t-protein, evening_ritual → t-moon, wind_down → t-sleep). Behavior unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
 

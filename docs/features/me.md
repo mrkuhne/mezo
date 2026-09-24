@@ -2,7 +2,7 @@
 title: Me Area
 type: feature-domain
 status: mixed
-updated: 2026-09-24
+updated: 2026-09-25
 tags: [me, biometrics, progression, frontend, backend, data-layer, notification]
 key_files:
   - frontend/src/features/me
@@ -16,6 +16,8 @@ related: [_platform-data-layer, _platform-design-system, _platform-notifications
 ---
 
 # Me Area — Feature Documentation
+
+> **2026-09-25 — Üveg U7 (`mezo-me75u.7`).** The Én II surfaces wear the dark glass material: Növekedés (`/me/growth/skillek|naplo|kituntetesek`, badge emoji → 3D sprite via `BadgesCard.badgeArt`), the rutin family (`/me/rutin/*`), Napló, Emberek (`/me/people/*`, avatars ringed by `peopleVisuals.toneColor`) and the notification feed. `GoalSettingsPage` now wears the U6 goal look. Behavior unchanged. Parity reference [`uveg-en2.html`](../design_2.0/prototypes/uveg-en2.html).
 
 > **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The weight and sleep capture sheets (also opened from Én) wear the U3 capture look: glass floating sheet, 3D header art, one loud value with glow, scale cells, the shared lit Mentés. Behavior unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
 
