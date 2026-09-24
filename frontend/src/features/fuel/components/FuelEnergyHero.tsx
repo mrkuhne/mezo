@@ -34,7 +34,7 @@ import { GlassBox } from '@/features/fuel/components/GlassBox'
 // in house tokens so the box reads in both themes.
 const NODE: Record<EquationLine['key'], { color: string; icon: ClayIconName; sub: string }> = {
   base: { color: 'var(--amber)', icon: 'i-cel', sub: 'az alapanyagcseréd és az életmódod' },
-  activity: { color: 'var(--sage)', icon: 'i-edzes', sub: 'a mai betáblázott mozgásodból' },
+  activity: { color: 'var(--sage)', icon: 'i-edzes', sub: 'a ma rögzített mozgásodból' },
   eaten: { color: 'var(--coral)', icon: 'i-fuel', sub: 'amit ma eddig logoltál' },
   remaining: { color: 'var(--sky)', icon: 'i-lang', sub: 'a mai kereted maradéka' },
 }

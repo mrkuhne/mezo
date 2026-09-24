@@ -159,7 +159,7 @@ describe('useDayRecap (real mode)', () => {
   // mezo-cq06 — a skip_sport_slot advice action hides one dated occurrence of a recurring sport
   // slot; the rest-day fallback (`train.sport.schedule.volleyball.sessions.find(s => s.today)`)
   // used to keep reporting it regardless, contradicting the backend's own
-  // `hasScheduledTrainingOn`. Pin a Tuesday (fake `Date` only — trainHooks.ts derives the
+  // `WorkoutWindowQueryService.windowsFor` (skip-aware schedule read). Pin a Tuesday (fake `Date` only — trainHooks.ts derives the
   // schedule's `today` flag from `new Date()`) so the fixture's Kedd slot deterministically
   // matches "today", instead of depending on the weekday the suite happens to run.
   describe('rest-day sport fallback honours a sport-slot skip', () => {

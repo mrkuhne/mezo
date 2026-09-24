@@ -290,10 +290,8 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('useFuelTimeline (rea
   })
 
   // mezo-rilew — the owner logged an unplanned volleyball session and the Fuel calorie target did
-  // not move: `deriveBlocks` was schedule-only, so a session that consumed no planned occurrence
-  // produced no block, and the day's `eat` term summed to zero over it. The day TYPE stays
-  // schedule-derived on purpose (the backend classifies the same date schedule-only) — what an
-  // ad-hoc session changes is what you BURNT, not where the plan prefers your calories.
+  // not move. mezo-u13jv (owner decision 2026-09-24) went further: only LOGGED movement raises the
+  // target at all — a planned session not yet done adds nothing, a logged one adds its energy.
   describe('an ad-hoc logged sport session raises the day\'s calorie target (mezo-rilew)', () => {
     const goalWithTdee = {
       ...goalWithSettings,
@@ -338,6 +336,27 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('useFuelTimeline (rea
         // block at — the point is that it is billed at all.
         expect(withSession.activity).toBeGreaterThan(0)
         expect(withSession.target).toBe(withoutSession.target + withSession.activity)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('a PLANNED sport slot that was not played yet adds no movement energy (mezo-u13jv)', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(`${today}T20:00:00`)) // 2026-07-02 is a Thursday → dayOfWeek 3
+      try {
+        server.use(
+          // MSW picks the FIRST matching handler — the planned slot must precede scheduleFree()'s empty one.
+          http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([
+            { id: 'a0000000-0000-4000-8000-000000000001', dayOfWeek: 3, time: '18:00', durationMin: 90, kind: 'training', sport: 'volleyball' },
+          ])),
+          ...scheduleFree(),
+          http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+        )
+        const { Wrapper } = sharedWrapper()
+        const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })
+        await waitFor(() => expect(result.current.blocks.some(b => b.kind === 'sport')).toBe(true))
+        expect(result.current.plan.energy?.activity).toBe(0)
       } finally {
         vi.useRealTimers()
       }

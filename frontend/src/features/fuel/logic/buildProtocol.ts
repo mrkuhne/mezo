@@ -70,6 +70,59 @@ export function deriveBlocks(
 }
 
 /**
+ * Today's LOGGED training blocks — the movement that actually happened (mezo-u13jv, owner decision
+ * 2026-09-24). This, not the plan, is what raises the day's calorie target: it feeds the `eat` term
+ * and the training/rest-day kcal pick. A planned session not yet done contributes nothing until it
+ * is logged; it still shapes the meal windows via {@link deriveBlocks}. The frontend twin of the
+ * backend's `WorkoutWindowQueryService.hasLoggedTrainingOn`.
+ *
+ * - gym: today counts once a gym workout was COMPLETED (`gymDone`); the block borrows the planned
+ *   gym block's time/duration when there is one, else the completed workout's own start and length.
+ * - sport: every sport session logged today, at its own clock time and duration.
+ * - run: every run logged today, at its own duration, timed at the planned run when there is one.
+ *
+ * Only `kind` and `durationMin` bill energy; the time is carried for the breakdown sheet.
+ */
+export function deriveLoggedBlocks(input: {
+  planned: PlannerBlock[]
+  gymDone: boolean
+  completedGym?: { startedAt?: string; finishedAt?: string; title?: string | null } | null
+  sportSessions: SportSession[]
+  runLogs: { date: string; durationMin?: number | null }[]
+  todayIso?: string
+}): PlannerBlock[] {
+  const todayIso = input.todayIso ?? localDateString(new Date())
+  const blocks: PlannerBlock[] = []
+  if (input.gymDone) {
+    const plannedGym = input.planned.find(b => b.kind === 'gym')
+    const started = input.completedGym?.startedAt ? new Date(input.completedGym.startedAt) : null
+    const finished = input.completedGym?.finishedAt ? new Date(input.completedGym.finishedAt) : null
+    const loggedMin = started && finished ? Math.round((finished.getTime() - started.getTime()) / 60000) : null
+    blocks.push({
+      kind: 'gym',
+      time: plannedGym?.time ?? (started ? toHHmm(started.getHours() * 60 + started.getMinutes()) : '12:00'),
+      durationMin: plannedGym?.durationMin ?? (loggedMin != null && loggedMin > 0 ? loggedMin : null),
+      label: plannedGym?.label ?? input.completedGym?.title ?? 'Gym',
+    })
+  }
+  for (const s of input.sportSessions) {
+    if (s.isoDate !== todayIso || !s.time) continue
+    blocks.push({
+      kind: 'sport',
+      time: s.time,
+      durationMin: s.duration ?? null,
+      label: SPORT_TITLES[sportOf({ sport: s.sport as SportKind })],
+    })
+  }
+  const plannedRun = input.planned.find(b => b.kind === 'run')
+  for (const r of input.runLogs) {
+    if (r.date !== todayIso) continue
+    blocks.push({ kind: 'run', time: plannedRun?.time ?? '12:00', durationMin: r.durationMin ?? null, label: plannedRun?.label ?? 'Futás' })
+  }
+  return blocks
+}
+
+/**
  * Today's sport blocks: the planned occurrences RECONCILED with what was actually logged
  * (mezo-rilew) — the frontend twin of the backend's `WorkoutWindowQueryService
  * .addSportWindowsForDay`, so the two sides read one day the same way.
