@@ -3,7 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-09-21
 - **Driver:** mezo-zwy6v
-- **Részben módosítja:** ADR 0052 (esti kiadás, 2026-09-24)
+- **Részben módosította:** ADR 0052 (esti kiadás, 2026-09-24)
 
 ## Context
 

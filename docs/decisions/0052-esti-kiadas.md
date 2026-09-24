@@ -17,13 +17,22 @@ amely mindent lát, nem egy új, párhuzamos csatorna.
 
 A konzílium 21:00-kor (Europe/Budapest) fut — nem reggel —, majd közvetlenül utána, külön
 `try`-ban (a konzílium csendes vagy hibás kimenetétől függetlenül) lefut a `team_edition` kiadás:
-3–6 rangsorolt poszt minden forrásból (minta, monitorozott pár „gyűlik", lezárt előrejelzés, futó
+**0–6** rangsorolt poszt minden forrásból (minta, monitorozott pár „gyűlik", lezárt előrejelzés, futó
 kísérlet mérföldköve, a napi konzílium vita-szálai), karakterenként legfeljebb 2, forrásrekordonként
 legfeljebb 1, 7 napos ismétlés-tilalommal, csendes napon feltöltéssel „gyűlik"/„kérés" jelöltekből 3-ig
-(fabrikált poszt soha). A konzílium dosszié-döntési szerepe (proposal → cross-talk → verdict →
-publish, claim-életciklus) VÁLTOZATLAN marad — a kiadás csak a fal-publikálás új helye, a kimenetét
-jelöltként fogyasztja. A névütközés elkerülésére az új táblák és osztályok mindig `team_edition*` /
-`TeamEdition*` nevűek, a meglévő `character_council_edition` (a konzílium lease-sora) érintetlen.
+(fabrikált poszt soha) — ha még feltöltéssel sincs 3 jelölt, a kiadás `QUIET` státusszal, **0
+poszttal** publikálódik (sosem kényszerít ki 3-at a semmiből). A kiadás CSAK a mai napra fut (a
+job `offset == 0`-ra szűri) — egy kimaradt korábbi nap sosem pótlódik utólag, őszinte hiány marad,
+nem egy múltbeli nap "bepótolt" posztjai (ez lenne az egyetlen mód, ahogy egy régi nap
+posztjai véletlenül belekerülhetnének a repeat-ban ablakába). Naponta legfeljebb egy élő kiadás:
+`uq_team_edition_day` egyedi indexe teszi idempotenssé a minden `*/15`-ös tiken újra meghívott
+`TeamEditionService#run`-t — egy már létező napi sor gyors, írásmentes SELECT-tel azonnal visszatér,
+egy párhuzamos versenyfutás vesztese pedig az egyedi-kulcs ütközésen csendben elnyelődik (kivéve, ha
+az ütközés más okból jött — az visszadobódik és a következő tiken újrapróbálkozik). A konzílium
+dosszié-döntési szerepe (proposal → cross-talk → verdict → publish, claim-életciklus) VÁLTOZATLAN
+marad — a kiadás csak a fal-publikálás új helye, a kimenetét jelöltként fogyasztja. A névütközés
+elkerülésére az új táblák és osztályok mindig `team_edition*` / `TeamEdition*` nevűek, a meglévő
+`character_council_edition` (a konzílium lease-sora) érintetlen.
 
 ## Consequences
 

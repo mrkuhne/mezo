@@ -64,6 +64,19 @@ describe('runHeroLede', () => {
     const text = runHeroLede(run({ kind: 'BOOTSTRAP', observationCount: 9, day: '2026-07-15' }))
     expect(text).toContain('9 kezdő állítás')
   })
+
+  // Fix round (mezo-a9bo7.12): EDITION used to fall through to the BOOTSTRAP sentence
+  // ("felépítette az első portrékat") — false for a kiadás run.
+  test('an EDITION lede reports the published post count, never the BOOTSTRAP sentence', () => {
+    const text = runHeroLede(run({ kind: 'EDITION', observationCount: 4, day: '2026-09-24' }))
+    expect(text).toBe('A mai esti kiadásba 4 poszt került.')
+    expect(text).not.toContain('portrékat')
+  })
+
+  test('a quiet EDITION (0 posts) gets its own honest zero-post sentence', () => {
+    const text = runHeroLede(run({ kind: 'EDITION', observationCount: 0, day: '2026-09-24' }))
+    expect(text).toBe('A mai esti kiadás csendes volt — nem került bele poszt.')
+  })
 })
 
 describe('runRowSubline — the honest-callCount ruling', () => {

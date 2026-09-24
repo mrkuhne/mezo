@@ -495,7 +495,7 @@ describe('real mode', () => {
         capturedUrl = request.url
         return HttpResponse.json([
           { day: '2026-08-30', status: 'PUBLISHED', posts: [
-            { rank: 1, characterKey: 'mocor', genre: 'sejtes', sourceKind: 'PATTERN', sourceId: 'sport-load~next-sleep-quality', sourceRoute: '/mezo/patterns/sport-load~next-sleep-quality', body: 'b', voiced: false, guests: [] },
+            { rank: 1, characterKey: 'mocor', genre: 'megfigyeles', sourceKind: 'pattern', sourceId: 'p1', sourceRoute: '/mezo/patterns/sport-load~next-sleep-quality', body: 'b', voiced: false, guests: [] },
           ] },
         ])
       }),

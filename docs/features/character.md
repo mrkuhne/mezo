@@ -9,6 +9,7 @@ key_files:
   - api/feature/character/character.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/CharacterPromptSource.java
   - backend/src/main/resources/db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_tables.sql
+  - backend/src/main/resources/db/changelog/1.0.0/script/202608311600_mezo-1gim.14_create_character_run.sql
   - backend/src/main/resources/db/changelog/1.1.0/script/202609241200_mezo-a9bo7_team_edition.sql
   - frontend/src/data/character
   - frontend/src/features/character
@@ -152,7 +153,7 @@ them absence IS the signal (see §9's round-3 gate rule).
 
 ### Social navigation and contextual replies (mezo-njcgs)
 
-The primary reading order is Üzenőfal → a post's evidence/conversation → optional personal reply → processing outcome → Rólad. The user cannot create a new post. Feed cards retain real author identity (including **Te** for self-report), show stored conference peer reactions only when their claim matches, and offer **Miből látszik?** through `CharacterEvidenceSheet`. The interface uses the menu’s original Boop avatar family (five hues shared across nine role-marked personas) and theme-aware Clay/Mozaik materials, with reduced-motion-aware transitions. A single editorial morning scene previews an actual post and links to that same conversation; it does not create a second list of invented highlights. Technical history and archived councils remain available.
+The primary reading order is Üzenőfal → a post's evidence/conversation → optional personal reply → processing outcome → Rólad. The user cannot create a new post. Feed cards retain real author identity (including **Te** for self-report), show stored conference peer reactions only when their claim matches, and offer **Miből látszik?** through `CharacterEvidenceSheet`. The interface uses the menu’s original Boop avatar family (five hues shared across nine role-marked personas) and theme-aware Clay/Mozaik materials, with reduced-motion-aware transitions. A single editorial evening scene (the esti kiadás moved this from morning to 21:00, csapatfal H1 — see [ADR 0052](../decisions/0052-esti-kiadas.md)) previews an actual post and links to that same conversation; it does not create a second list of invented highlights. Technical history and archived councils remain available.
 
 `CharacterReplyThread` persists replies through `useCharacterReplies`; failed saves retain both the draft and idempotency key. Saved/processing replies poll while mounted. Failed or stalled processing can retry the saved reply. Updated/withdrawn outcomes earn the **Közösen pontosítva** marker; unchanged or clarification outcomes do not claim a profile change. `Pontosítom` on claims uses this same durable flow; **Talál** and **Nem igaz** retain the existing feedback endpoint.
 
@@ -251,9 +252,11 @@ an error, and the next `*/15` tick retries any real failure until 23:45.
   (`CharacterRunLog.record`).
 - **H1 voice:** every post's `body` is the source record's own text verbatim (`voiced=false`
   everywhere) — the character-voiced rewrite (`EditionVoiceWriter` + `EditionVoiceGuard`) is H3.
-- **Switch:** `mezo.feature.team-edition.enabled` (default `true`) gates `TeamEditionService`
-  and `EditionCandidateCollector` beans on top of the character + companion switches; off ⇒ the
-  council still runs its dossier-decision role, just without the edition step.
+- **Switch:** `mezo.feature.team-edition.enabled` (default `true`) gates the `TeamEditionService`
+  bean on top of the character + companion switches; off ⇒ the council still runs its
+  dossier-decision role, just without the edition step. `EditionCandidateCollector` is gated by
+  the character + companion switches ONLY (no `TEAM_EDITION_SWITCH`) — it collects read-only, so
+  there is nothing edition-specific to turn off in it independently of its caller.
 - **Surface (H1):** `GET /api/character/edition?from=&to=` (62-day range cap, same shape as
   `/runs`) and the `EDITION` row in Gépterem Futások — the csapat-üzenőfal itself only reads
   editions from H2 (`docs/features/insights.md` §3).
@@ -575,14 +578,16 @@ Migration: `db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_
 
 The two run-timeline endpoints below are `CHARACTER_SWITCH`-gated only, same as every other read
 in §4's table — run reads work with the companion switch off too (`CharacterApiCompanionOffIT`
-covers this). `GET /api/character/edition` additionally needs `TEAM_EDITION_SWITCH` (see the Esti
+covers this). `GET /api/character/edition` is no different: it reads the same repositories
+(always-beans, no conditional wiring) behind only `CHARACTER_SWITCH` — `TEAM_EDITION_SWITCH`
+gates the writer (`TeamEditionService`/`EditionCandidateCollector`), not this read (see the Esti
 kiadás subsection above).
 
 | Method + path | Returns | Notes |
 |---|---|---|
 | `GET /api/character/runs?from=&to=` | `CharacterRunSummary[]` | Both dates required, day-desc order; `400 CHARACTER_RUN_RANGE_INVALID` if `to < from` or the span exceeds 62 days; `[]` honest empty; `EDITION` rows included (`kind` enum widened, csapatfal H1) |
 | `GET /api/character/run/{runId}` | `CharacterRunResponse` (`{summary, observations[]}`) | Observations resolved by `(created_by, day)` for NIGHTLY rows, by `consumed_by_conference_id` for conference-kind rows; each `CharacterRunObservation.signals[]` carries `refCount` (a COUNT, not raw ref ids — the v4.1 "N forrás-hivatkozás" decision, raw ids stay backend-side); `404 CHARACTER_RUN_NOT_FOUND` for unknown/foreign ids |
-| `GET /api/character/edition?from=&to=` | `TeamEdition[]` (`{day, status, posts[]}`) | Csapatfal H1 (`mezo-a9bo7.12`, [ADR 0052](../decisions/0052-esti-kiadas.md)); same 62-day range cap and day-desc order as `/runs`; a day with no row means no edition ran that day, never fabricated; `TEAM_EDITION_SWITCH`-gated on top of the two switches above |
+| `GET /api/character/edition?from=&to=` | `TeamEdition[]` (`{day, status, posts[]}`) | Csapatfal H1 (`mezo-a9bo7.12`, [ADR 0052](../decisions/0052-esti-kiadas.md)); same 62-day range cap and day-desc order as `/runs`; a day with no row means no edition ran that day, never fabricated; `CHARACTER_SWITCH`-gated only, same as `/runs` — `TEAM_EDITION_SWITCH` gates the writer, not this read |
 
 **`callCount` is honest-per-kind, not uniformly precise** — a deliberate ruling, not an
 oversight: NIGHTLY's `callCount` is exact (one LLM call per fired expert that night).
@@ -1234,8 +1239,8 @@ Social additions: `service/CharacterReplyService.java` (owned save/list/retry), 
 **Backend — feature package** (`backend/src/main/java/io/mrkuhne/mezo/feature/character/`):
 - `config/CharacterProperties.java` — every `mezo.character.*` tunable (§ below)
 - `controller/CharacterController.java` — the 10 endpoints (the original 7 + the 3 Gépterem
-  endpoints: 2 run-timeline + esti kiadás), `CHARACTER_SWITCH`-gated (`GET /edition` also needs
-  `TEAM_EDITION_SWITCH`)
+  endpoints: 2 run-timeline + esti kiadás), `CHARACTER_SWITCH`-gated only (`GET /edition` needs no
+  extra switch — `TEAM_EDITION_SWITCH` gates the writer, not this read)
 - `entity/` — `CharacterDimensionEntity`, `CharacterClaimEntity`, `CharacterObservationEntity`,
   `CharacterConferenceEntity`, `CharacterPortraitRevisionEntity`, `CharacterRunEntity` (S9) +
   the typed-jsonb envelope records used by their jsonb columns (`ClaimEvidenceEnvelope`,

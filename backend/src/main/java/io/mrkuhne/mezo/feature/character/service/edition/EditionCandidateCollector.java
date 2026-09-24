@@ -78,7 +78,10 @@ public class EditionCandidateCollector {
             experimentCandidate(experiment, day).ifPresent(out::add);
         }
         reads.dailyConference(owner, day).ifPresent(conference -> out.addAll(konziliumCandidates(conference)));
-        return List.copyOf(out);
+        // Fix round (mezo-a9bo7.12): a poszt body NOT NULL — egy üres/hiányzó recordText-ű jelölt
+        // (pl. mechanism nélküli proposed minta) minden tiken eldobná a publish-t. Egyetlen helyen
+        // szűrünk: minden forrás ugyanide fut be, mielőtt a EditionSelector látná.
+        return out.stream().filter(c -> !isBlank(c.recordText())).toList();
     }
 
     /** Sor 1 (`proposed` → KERDES) és sor 2 (`confirmed` és friss → MEGFIGYELES). */
@@ -105,8 +108,12 @@ public class EditionCandidateCollector {
                 ? List.of(String.format("%d nap", pattern.getN()))
                 : List.of();
         String id = pattern.getId().toString();
+        // Fix round (mezo-a9bo7.12): mechanism lehet null/üres egy frissen javasolt mintán — cím
+        // nélkül a poszt body-ja NOT NULL, ezért title-re esünk vissza (a collect()-végi szűrő dobja
+        // el, ha még az is üres).
+        String recordText = isBlank(pattern.getMechanism()) ? pattern.getTitle() : pattern.getMechanism();
         return new EditionCandidate(SOURCE_PATTERN, id, character, genre, pattern.getTitle(),
-                pattern.getMechanism(), facts, List.of(new EditionRef(SOURCE_PATTERN, id)),
+                recordText, facts, List.of(new EditionRef(SOURCE_PATTERN, id)),
                 waiting, false, pattern.getLastDetectedAt(), "/mezo/patterns/" + pattern.getPairKey());
     }
 

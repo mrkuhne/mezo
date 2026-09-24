@@ -25106,6 +25106,12 @@ components:
             - ertekeles
         sourceKind:
           type: string
+          enum:
+            - pattern
+            - pair
+            - prediction
+            - experiment
+            - konzilium
         sourceId:
           type: string
         sourceRoute:

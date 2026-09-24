@@ -288,7 +288,7 @@ class CharacterApiIT extends ApiIntegrationTest {
         post.setRank((short) rank);
         post.setCharacterKey(characterKey);
         post.setGenre("megfigyeles");
-        post.setSourceKind("PATTERN");
+        post.setSourceKind("pattern");
         post.setSourceId("pattern-" + rank);
         post.setSourceRoute("/mezo/patterns/pattern-" + rank);
         post.setTitle(null);

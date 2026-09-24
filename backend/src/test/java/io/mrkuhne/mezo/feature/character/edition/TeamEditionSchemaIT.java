@@ -65,7 +65,7 @@ class TeamEditionSchemaIT extends AbstractIntegrationTest {
         post.setRank(rank);
         post.setCharacterKey(characterKey);
         post.setGenre("megfigyeles");
-        post.setSourceKind("PATTERN");
+        post.setSourceKind("pattern");
         post.setSourceId("pattern-1");
         post.setSourceRoute("/train/patterns/1");
         post.setTitle("Cím");

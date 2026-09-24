@@ -159,6 +159,39 @@ class EditionCandidateCollectorTest {
         assertThat(out.get(0).facts()).isEmpty(); // n=0 -> no fact
     }
 
+    // ---- Fix round (mezo-a9bo7.12): blank mechanism must not kill the whole edition ------------
+
+    @Test void proposedPatternWithBlankMechanismFallsBackToTitle() {
+        PatternEntity p = pattern(PatternEntity.STATUS_PROPOSED, "pair-1", 1, Instant.now());
+        p.setMechanism("   ");
+        when(reads.patterns(OWNER)).thenReturn(List.of(p));
+
+        List<EditionCandidate> out = collector.collect(OWNER, DAY, null);
+
+        assertThat(out).hasSize(1);
+        assertThat(out.get(0).recordText()).isEqualTo(p.getTitle());
+    }
+
+    @Test void proposedPatternWithNullMechanismFallsBackToTitle() {
+        PatternEntity p = pattern(PatternEntity.STATUS_PROPOSED, "pair-1", 1, Instant.now());
+        p.setMechanism(null);
+        when(reads.patterns(OWNER)).thenReturn(List.of(p));
+
+        List<EditionCandidate> out = collector.collect(OWNER, DAY, null);
+
+        assertThat(out).hasSize(1);
+        assertThat(out.get(0).recordText()).isEqualTo(p.getTitle());
+    }
+
+    @Test void proposedPatternWithBlankMechanismAndBlankTitleIsDropped() {
+        PatternEntity p = pattern(PatternEntity.STATUS_PROPOSED, "pair-1", 1, Instant.now());
+        p.setMechanism(null);
+        p.setTitle("  ");
+        when(reads.patterns(OWNER)).thenReturn(List.of(p));
+
+        assertThat(collector.collect(OWNER, DAY, null)).isEmpty();
+    }
+
     // ---- sor 2: PatternEntity confirmed + friss -> MEGFIGYELES ---------------------------------
 
     @Test void confirmedPatternNewerThanLastEditionBecomesMegfigyeles() {

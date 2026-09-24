@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { RunPage } from './RunPage'
 import { MOCK_EXPERTS, MOCK_RUN_DETAIL } from '@/data/character/characterMock'
+import { TEAM } from '@/features/insights/logic/team'
 import type { CharacterRunResponse, CharacterRunSummary } from '@/data/character/characterApi'
 
 const mockNavigate = vi.fn()
@@ -132,5 +133,45 @@ describe('RunPage', () => {
     renderRun()
     await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
     expect(mockNavigate).toHaveBeenCalledWith('/mezo/karakter/gepterem/futasok')
+  })
+
+  // Fix round (mezo-a9bo7.12): an EDITION run used to render the BOOTSTRAP hero sentence, list
+  // its posting characters under "Hívott szakértők", and show the council's consumed-observation
+  // flow strip / transcript link — none of which describe what an esti kiadás run actually did.
+  describe('an EDITION run', () => {
+    beforeEach(() => {
+      hoisted.id = 'run-edition-1'
+      hoisted.run = MOCK_RUN_DETAIL['run-edition-1']
+    })
+
+    test('gets its own honest hero sentence, never the BOOTSTRAP fallback', () => {
+      renderRun()
+      expect(screen.getByText('A mai esti kiadásba 3 poszt került.')).toBeInTheDocument()
+      expect(screen.queryByText(/portrékat/)).not.toBeInTheDocument()
+    })
+
+    test('renders NO flow strip, NO "Hívott szakértők" section, NO transcript link', () => {
+      renderRun()
+      expect(screen.queryByRole('group', { name: 'Futás-lánc' })).not.toBeInTheDocument()
+      expect(screen.queryByText('Hívott szakértők')).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Teljes transzkript megnyitása ›' })).not.toBeInTheDocument()
+    })
+
+    test('relabels the chips "Posztoló karakterek" and shows team display names, not raw keys', () => {
+      renderRun()
+      expect(screen.getByText('Posztoló karakterek')).toBeInTheDocument()
+      expect(screen.getByText(TEAM.falat.name)).toBeInTheDocument()
+      expect(screen.getByText(TEAM.mocor.name)).toBeInTheDocument()
+      expect(screen.queryByText('falat')).not.toBeInTheDocument()
+    })
+
+    test('a zero-post EDITION gets the honest quiet sentence', () => {
+      hoisted.run = {
+        summary: { ...MOCK_RUN_DETAIL['run-edition-1'].summary, observationCount: 0, expertKeys: [] },
+        observations: [],
+      }
+      renderRun()
+      expect(screen.getByText('A mai esti kiadás csendes volt — nem került bele poszt.')).toBeInTheDocument()
+    })
   })
 })

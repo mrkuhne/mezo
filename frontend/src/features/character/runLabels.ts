@@ -93,6 +93,13 @@ export function runHeroLede(run: CharacterRunSummary, expertName: (key: string) 
     return `Havonta egyszer az egész eddigi képet újranézzük — ezúttal ${run.observationCount} `
       + 'állítást mérlegeltünk újra.'
   }
+  // EDITION (fix round, mezo-a9bo7.12): observationCount is the ranked post count the writer
+  // actually published (TeamEditionService.run's `ranked.size()`) — the same honest count
+  // runRowSubline already uses for this kind; never fall through to the BOOTSTRAP sentence.
+  if (run.kind === 'EDITION') {
+    if (run.observationCount === 0) return 'A mai esti kiadás csendes volt — nem került bele poszt.'
+    return `A mai esti kiadásba ${run.observationCount} poszt került.`
+  }
   return 'Ez volt az első nap — a csapat elolvasta a teljes addigi történetedet, és felépítette az '
     + `első portrékat (${run.observationCount} kezdő állítás).`
 }

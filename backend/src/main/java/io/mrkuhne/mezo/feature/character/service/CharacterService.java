@@ -488,7 +488,7 @@ public class CharacterService {
                 .rank(post.getRank().intValue())
                 .characterKey(TeamEditionPost.CharacterKeyEnum.fromValue(post.getCharacterKey()))
                 .genre(TeamEditionPost.GenreEnum.fromValue(post.getGenre()))
-                .sourceKind(post.getSourceKind())
+                .sourceKind(TeamEditionPost.SourceKindEnum.fromValue(post.getSourceKind()))
                 .sourceId(post.getSourceId())
                 .sourceRoute(post.getSourceRoute())
                 .title(post.getTitle())

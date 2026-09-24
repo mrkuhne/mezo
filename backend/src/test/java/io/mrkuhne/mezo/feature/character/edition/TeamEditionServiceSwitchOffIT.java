@@ -30,7 +30,12 @@ class TeamEditionServiceSwitchOffIT {
     @ActiveProfiles("companion-fake")
     @TestPropertySource(properties = {
         "mezo.feature.team-edition.enabled=false",
-        "mezo.techcore.cron.character-council-job.enabled=true"
+        "mezo.techcore.cron.character-council-job.enabled=true",
+        // Fix round (mezo-a9bo7.12): without this, the job's ready-at gate (default 21:00) can
+        // skip its council/edition path entirely depending on wall-clock time, silently turning
+        // this into a no-op test that would pass even if job::run threw. 00:00 always clears the
+        // gate, so the job path this test exercises actually runs on every invocation.
+        "mezo.character.council.ready-at=00:00"
     })
     class Disabled extends AbstractIntegrationTest {
 

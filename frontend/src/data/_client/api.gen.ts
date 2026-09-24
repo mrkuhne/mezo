@@ -10086,7 +10086,8 @@ export interface components {
             characterKey: "szunya" | "mocor" | "falat" | "deru" | "mezo";
             /** @enum {string} */
             genre: "megfigyeles" | "sejtes" | "kerdes" | "kiserlet" | "elorejelzes" | "konzilium" | "keres" | "ertekeles";
-            sourceKind: string;
+            /** @enum {string} */
+            sourceKind: "pattern" | "pair" | "prediction" | "experiment" | "konzilium";
             sourceId: string;
             sourceRoute: string;
             title?: string | null;
