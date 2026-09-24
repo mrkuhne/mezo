@@ -1,9 +1,14 @@
 /**
  * A csapat-üzenőfal karakter-regisztrye (mezo-a9bo7.7, spec 2026-09-23 §2.2 + §4).
  *
- * Öt posztoló boop karakter + a csak beszélgetésben megszólaló Szkeptikus. A munkanevek
- * (owner-döntésre cserélhetők) KIZÁRÓLAG itt élnek. Minden metrika-doménnek és minden
- * backend-personának pontosan egy gazdája van; ismeretlen kulcs → Mezo (biztonságos default).
+ * Öt posztoló boop karakter + a csak beszélgetésben megszólaló Szkeptikus. Minden metrika-doménnek
+ * és minden backend-personának pontosan egy gazdája van; ismeretlen kulcs → Mezo (biztonságos
+ * default).
+ *
+ * A nevek H3 (mezo-a9bo7.14) óta KÉT helyen élnek, más okból: itt a MEGJELENÍTÉSÉRT (ez a tábla
+ * dönti el, mi van a kártyán), a backend `TeamCharacter` enumjában pedig a HANGÉRT (a generátor
+ * prompt karakter-blokkja). A két táblát ugyanaz az eset-lista rögzíti mindkét oldalon
+ * (`team.test.ts` ↔ `TeamCharacterTest`) — névcserénél MINDKETTŐT át kell írni.
  */
 import type { MetricDomain } from '@/data/types'
 import type { BoopVariant } from '@/shared/ui/clay'
