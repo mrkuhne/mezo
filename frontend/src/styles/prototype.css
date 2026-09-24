@@ -19810,7 +19810,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .cer-screen.uv-cer .cer-card.glass {
   --c: var(--dv-amber); margin: 0; padding: 14px; border: 0; border-radius: 24px; text-align: left;
 }
-.cer-screen.uv-cer .cer-card.glass + .cer-card.glass { margin-top: 12px; }
+.cer-screen.uv-cer .cer-card.cer-records + .cer-card.cer-sum { margin-top: 12px; }
 /* the records card: header row — t-record in a lit well, eyebrow, "<n> új rekord" */
 .cer-screen.is-staged.uv-cer .cer-card .cer-record {
   display: flex; align-items: center; gap: 12px; margin: 0; padding: 0 0 10px;
@@ -20337,7 +20337,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .tw-load .ld-map-card.glass { --c: var(--dv-lav); margin-top: 10px; }
 .tw-load .ld-sport.glass { --c: var(--dv-rose); margin-top: 20px; padding: 14px; }
 .tw-load .ld-move-card.glass { --c: var(--dv-amber); margin-top: 12px; padding: 14px; }
-.tw-load .ld-map-mini { width: auto; height: 96px; flex: 0 0 auto; overflow: visible; }
+.tw-load .ld-map-mini { width: auto; max-width: 42%; height: 96px; flex: 0 1 auto; overflow: visible; }
+.tw-load .ld-map-card .ld-map-copy { flex: 1 1 auto; min-width: 0; }
 .tw-load .ld-map-copy strong, .tw-load .ld-sport-copy strong {
   display: block; margin-top: 2px; font-size: 15.5px; font-weight: 600; letter-spacing: -0.3px; color: var(--text-primary);
 }
@@ -20526,6 +20527,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .uvs-primary .t-ico { filter: none; }
 .uvs-primary:disabled { opacity: 0.45; box-shadow: none; }
+/* closing a block ends it — the warning tone stays (flat, coral outline), never the lit primary */
+.uvs-primary.is-warn { color: #FFB39C; background: rgba(255, 126, 92, 0.07); box-shadow: inset 0 0 0 1px rgba(255, 126, 92, 0.35); }
 :is(.uvs-pill, .uvs-primary):focus-visible { outline: 2px solid color-mix(in srgb, var(--c) 70%, var(--text-primary)); outline-offset: 3px; }
 /* a flat field (builder inputs, sheet fields) */
 .uvs-inp {
@@ -20996,7 +20999,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .uvs-page .uvs-seg .segtab { padding: 8px 10px; font-size: 12px; }
   .uvs-sport .spw-dlbl { width: 36px; }
   .uvs-page .uvs-mb { grid-template-columns: 76px minmax(0, 1fr) 22px; }
-  .uvs-log .sp-grid { gap: 7px; }
+  .uvs-log .sp-grid { gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .uvs-log .sp-tile-art .t-ico { width: 42px; height: 42px; }
   .uvs-log .sp-kcal.glass { grid-template-columns: 34px 1fr; }
   .uvs-log .sp-kcal > b { grid-area: auto; grid-column: 1 / -1; justify-self: start; }
@@ -21212,7 +21215,10 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .gyx-story .gy-rec-bar.uv-bar b { height: auto; }
 @media (max-width: 360px) {
   .gyx-story .gy-recs { grid-template-columns: minmax(0, 1fr); }
+  .gyx-medals .gyx-val { font-size: 16px; }
 }
+/* a long value ("22 kg × 12") wraps inside its column instead of clipping at the glass edge */
+.gyx-medals .gyx-end .gyx-val { white-space: normal; overflow-wrap: anywhere; }
 /* the next target: an amber callout (flat, a lit left edge) */
 .gyx-story .gy-next {
   --c: var(--dv-amber);

@@ -172,7 +172,7 @@ export function RunningBlockBuilderPage() {
         />
       </section>
 
-      {/* Single status CTA — the lit sky primary */}
+      {/* Single status CTA — Aktiválás is the lit sky primary; Lezárás keeps its warning tone */}
       <div className="uvs-rbb-cta">
         {block.status === 'planned' && (
           <button type="button" className="uvs-primary" style={SKY} onClick={() => { activateRunningBlock(block.id); backToList() }} disabled={runningMutationPending}>
@@ -180,7 +180,7 @@ export function RunningBlockBuilderPage() {
           </button>
         )}
         {block.status === 'active' && (
-          <button type="button" className="uvs-primary" style={SKY}
+          <button type="button" className="uvs-primary is-warn"
             onClick={() => { closeRunningBlock(block.id); backToList() }} disabled={runningMutationPending}>
             Lezárás
           </button>
