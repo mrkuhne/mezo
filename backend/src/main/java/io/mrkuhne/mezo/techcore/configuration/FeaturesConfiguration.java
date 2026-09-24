@@ -123,6 +123,13 @@ public class FeaturesConfiguration {
      *  LLM-calling character beans (Slice 2+) additionally require {@link #COMPANION_SWITCH}. */
     public static final String CHARACTER_SWITCH = "mezo.feature.character.enabled";
 
+    /** Esti kiadás (mezo-a9bo7 H1, csapatfal) — a napi csapat-üzenőfal összefoglaló. Off ⇒ the
+     *  TeamEditionService bean does not exist; CharacterCouncilJob consumes it via
+     *  ObjectProvider#ifAvailable, so the nightly council pass is unaffected. Array-AND'ed with
+     *  {@link #CHARACTER_SWITCH} and {@link #COMPANION_SWITCH} (the collector reads companion/
+     *  proactive sources). */
+    public static final String TEAM_EDITION_SWITCH = "mezo.feature.team-edition.enabled";
+
     /** Companion-feed morning/midday/evening crons (mezo-gst9) — techcore cron zone
      *  (schedules: mezo.proactive.feed.*-cron). */
     public static final String FEED_JOB_SWITCH = "mezo.techcore.cron.feed-job.enabled";
