@@ -1255,7 +1255,10 @@
 .cch .icon{width:48px;height:48px}
 .cch .eb{color:#FFD08A}
 .cch strong{display:block;font-size:19px;font-weight:600;letter-spacing:-.4px;color:#FFE0AE;margin-top:1px}
-.rrow2{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;padding:10px 0;border-top:1px solid var(--hair)}
+.rrow2{display:grid;gap:5px;padding:11px 0;border-top:1px solid var(--hair)}
+.rrow2 strong{font-size:15px;font-weight:600}
+.rk{font-size:11.5px;color:var(--sub)}
+.rrow2 .vals,.chr .vals{justify-content:flex-start;margin-top:3px}
 .rrow2 .rt strong{display:block;font-size:14.5px;font-weight:600;margin-top:3px}
 .rrow2 small{grid-column:1/3;font-size:10.5px;color:var(--faint)}
 .kt{display:inline-block;padding:2px 8px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:1.1px;color:#FFD08A;background:rgba(255,190,96,.1);box-shadow:inset 0 0 0 1px rgba(255,190,96,.35)}
@@ -1671,7 +1674,7 @@ function ikonok(){
 
 
 /* ── LEZÁRÓ CEREMÓNIA ────────────────────────────────────── */
-const CER={stars:4.5,ratio:.9,sets:14,reps:142,vol:4180,min:71,xp:185,pending:2,kcal:540,rec:[['Chest Supported Row','Súly-rekord',['105 kg','× 10 ism.'],'előző: 102,5 kg'],['Lat Pulldown · Pronated','Rep-rekord',['12 ism.','@ 74,5 kg'],'előző: 11 ism.']],chal:[[1,'Túlterhelés','Chest Supported Row',['107,5 kg','× 8 ism.']],[0,'Mélység','Lat Pulldown · Pronated',['utolsó szett','RIR 0']]],
+const CER={stars:4.5,ratio:.9,sets:14,reps:142,vol:4180,min:71,xp:185,pending:2,kcal:540,rec:[['Chest Supported Row','Súly-rekord',['105 kg','10 ism.']],['Lat Pulldown · Pronated','Rep-rekord',['12 ism.','74,5 kg']]],chal:[[1,'Túlterhelés','Chest Supported Row',['107,5 kg','8 ism.']],[0,'Mélység','Lat Pulldown · Pronated',['utolsó szett','RIR 0']]],
   mus:[['back-wide','Hát (széles)',6,6],['back-mid','Hát (közép)',4,4],['shoulder-rear','Váll (hátsó)',3,3],['biceps-brachialis','Kar',1,3]]};
 const VERD=[[5,'Hibátlan nap.'],[4,'Erős nap.'],[3,'Rendben volt.'],[1.5,'Elindult.'],[0,'Ma nem jött össze.']];
 const verdict=st=>VERD.find(([m])=>st>=m)[1];
@@ -1692,10 +1695,10 @@ function cer(v){
     <div class="fuse" aria-hidden="true"><b></b><em></em>${[1,2,3,4].map(i=>`<u style="--at:${i*20}%"></u>`).join('')}</div></section>
   <section class="cres"><h1 class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">4,5 csillag az ötből</h1><p class="verdict">${verdict(CER.stars)}</p>
     <article class="ccard crecs glass"><div class="cch">${I('record')}<span><span class="eb">EZ A TIÉD MOSTANTÓL</span><strong>${CER.rec.length} új rekord</strong></span></div>
-      ${CER.rec.map(([n,k,ch,prev])=>`<div class="rrow2"><span class="rt"><span class="kt">${k.toUpperCase()}</span><strong>${n}</strong></span><span class="vals">${ch.map((c,i)=>`<b class="${i?'':'lit'}">${c}</b>`).join('')}</span><small>${prev}</small></div>`).join('')}</article>
+      ${CER.rec.map(([n,k,ch])=>`<div class="rrow2"><strong>${n}</strong><span class="rk">${k}</span><span class="vals">${ch.map(c=>`<b class="lit">${c}</b>`).join('')}</span></div>`).join('')}</article>
     <article class="ccard glass" style="margin-top:12px"><div class="cstats"><span>${I('clock')}<span><strong>${CER.min}<i>′</i></strong><small>a pulton töltött idő</small></span></span><span>${I('coin')}<span><strong>+${CER.xp}</strong><small>szerzett XP</small></span></span></div>
       <div class="ctally"><span>${I('weight')}<b data-c="sets">0</b><small>szett</small></span><span>${I('dumbbell')}<b data-c="reps">0</b><small>ismétlés</small></span><span>${I('protocol')}<b data-c="vol">0</b><small>kg × rep</small></span></div>
-      <div class="cchal"><span class="eb">KÜLDETÉSEK · 1 / 2</span>${CER.chal.map(([ok,t,ex,ch])=>`<div class="chr ${ok?'hit':'miss'}"><span class="cb"><span class="top"><span class="kt">${t.toUpperCase()}</span></span><strong>${ex}</strong><span class="vals">${ch.map(c=>`<b>${c}</b>`).join('')}</span></span><span class="res" aria-label="${ok?'teljesült':'nem teljesült'}">${I(ok?'tick':'skip')}</span></div>`).join('')}</div></article>
+      <div class="cchal"><span class="eb">KÜLDETÉSEK · 1 / 2</span>${CER.chal.map(([ok,t,ex,ch])=>`<div class="chr ${ok?'hit':'miss'}"><span class="cb"><strong>${ex}</strong><span class="rk">${t}</span><span class="vals">${ch.map(c=>`<b>${c}</b>`).join('')}</span></span><span class="res" aria-label="${ok?'teljesült':'nem teljesült'}">${I(ok?'tick':'skip')}</span></div>`).join('')}</div></article>
     <p class="cnote">${CER.pending} szett kihagyott státusszal zárult.</p></section>
   <div class="cfoot"><button class="ccta glass lift" data-go="#cer/reszletek">${I('journal')}<span><strong>Részletek</strong><small>Izomcsoportok és a nyert kalória</small></span><em>›</em></button></div></div>`;
 }
