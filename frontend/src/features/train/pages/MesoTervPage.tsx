@@ -40,18 +40,13 @@
 import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
-import { useWeekMuscleLog } from '@/data/train/weekMuscleLogHooks'
-import type { Mesocycle, MesoDay, MesoPhase } from '@/data/types'
-import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
+import type { Mesocycle, MesoPhase } from '@/data/types'
 import { cn } from '@/shared/lib/cn'
 import { GhostState } from '@/shared/ui/GhostState'
-import { ClayIcon, Icon3D } from '@/shared/ui/clay'
-import { MesoDayCard } from '@/features/train/components/MesoDayCard'
-import { doneByDay } from '@/features/train/logic/mesoWeekDone'
+import { ClayIcon } from '@/shared/ui/clay'
+import { MesoWeekDays, trainingDay } from '@/features/train/components/MesoWeekDays'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { nextRolloverChips, phaseChip, runBands, weekDots, type Phase } from '@/features/train/logic/mesoBands'
-import { todayDayToken } from '@/features/train/logic/mesoDates'
-import { isOffDay } from '@/features/train/logic/offDay'
 import { MesoCloseSheet } from '@/features/train/sheets/MesoCloseSheet'
 import MesoTervSkeleton from '@/features/train/pages/MesoTervSkeleton'
 
@@ -68,15 +63,6 @@ const PHASE_HEIGHT: Record<MesoPhase, number> = { MEV: 34, MAV: 66, MRV: 100, De
  *  list bans „rámpa"/„blokk" in user-facing copy (T9 fix round 1), so `phaseChip`'s own
  *  „Rámpa" label needs its own honest translation here too, not just „Deload". */
 const PHASE_LABEL: Record<Phase, string> = { Rámpa: 'Emelkedés', Csúcs: 'Csúcshét', Deload: 'Pihenőhét' }
-
-/** The day IF the block actually trains on it, else null — rest (`muscle: ''`) and sport
- *  (`muscle: 'sport'`) days are off-days by the shared rule, and an empty exercise list is
- *  an off-day too. Returns the day rather than a boolean so the off-day branch can still
- *  read the ORIGINAL row (a type predicate would narrow it away to `undefined` there, and
- *  the sport row needs its `type` to name itself). */
-function trainingDay(day: MesoDay | undefined): MesoDay | null {
-  return day && !isOffDay(day) && day.exercises.length > 0 ? day : null
-}
 
 /** The block's ONE sentence: where you are, what this week weighs, and when the
  *  pihenőhét lands — folded into a single plain clause chain, never a paragraph. */
@@ -95,12 +81,6 @@ function blockSentence(meso: Mesocycle): string {
 
 export function MesoTervPage() {
   const { mesocycles, workoutPending } = useTrain()
-  // U5 (mezo-me75u.5): the week list separates „megvolt · ma · jön", so a day the athlete
-  // already trained shows what HAPPENED. Same cached reads the Terhelés tab makes
-  // (weekMuscleLogHooks) — no second source of truth, and no new endpoint. Mock mode has no
-  // persisted instances, so every day there honestly renders as planned.
-  const { details } = useWeekMuscleLog()
-  const doneDays = doneByDay(details)
   const navigate = useNavigate()
   const [closing, setClosing] = useState(false)
 
@@ -175,7 +155,6 @@ export function MesoTervPage() {
 
   const phase = phaseChip(meso)
   const dots = weekDots(meso)
-  const today = todayDayToken()
   const done = ((meso.currentWeek - 1) / meso.weeks) * 100
 
   return (
@@ -240,8 +219,6 @@ export function MesoTervPage() {
           </button>
         </div>
 
-        {/* „A heted" — every weekday, in order: a card for the training days, a slim
-            row for the rest/sport ones. The MA chip marks today wherever it lands. */}
         {/* The heading rides the SAME 20px gutter as the `.pl-days` list under it (the
             prototype's `.pl-h3` and `.pl-days` share one inset, plan.css:175-176) — the
             surfaces slice moved the list back to the prototype's own gutter, so the
@@ -252,44 +229,10 @@ export function MesoTervPage() {
         >
           A HETED
         </div>
-        <div className="pl-days">
-          {DAY_ORDER.map((token, i) => {
-            const day = meso.days?.find((d) => d.day === token)
-            const training = trainingDay(day)
-            const isToday = token === today
-            const name = DAY_LABELS[token] ?? token
-            if (!training) {
-              const sport = day?.muscle === 'sport'
-              // The off-day row speaks the SAME vocabulary as the cards above it (U5): one
-              // eyebrow, one stamp word, the 3D icon set — only the rank is quieter. A week
-              // is also its off days; they are a slim row, never a card.
-              return (
-                <div key={token} className="tv-dayrest rise" style={delay(110 + i * 20)}>
-                  <span className="tv-day-tag">{name}</span>
-                  <em>{sport ? (day?.type ?? 'sportnap') : 'pihenőnap'}</em>
-                  {isToday && (
-                    <span className="tv-day-stamp is-today">
-                      <Icon3D name="t-play" size={17} />
-                      Ma
-                    </span>
-                  )}
-                  <Icon3D name={sport ? 't-volley' : 't-moon'} size={24} />
-                </div>
-              )
-            }
-            return (
-              <MesoDayCard
-                key={token}
-                day={training}
-                name={name}
-                isToday={isToday}
-                done={isToday ? null : (doneDays.get(token) ?? null)}
-                delayMs={110 + i * 20}
-                onOpen={() => navigate(`/train/mesocycles/${meso.id}/days/${encodeURIComponent(token)}`)}
-              />
-            )
-          })}
-        </div>
+        <MesoWeekDays
+          meso={meso}
+          onOpenDay={(token) => navigate(`/train/mesocycles/${meso.id}/days/${encodeURIComponent(token)}`)}
+        />
 
         {dests}
 

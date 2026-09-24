@@ -65,17 +65,22 @@ test('the two status tiles are there — the week one navigates, the rollover fo
   expect(screen.getByText('a heti görgetés hajnalban fut')).toBeInTheDocument()
 })
 
-test('the day mosaic shows the training days only — no Rest, no sport day', () => {
+// U5 (mezo-me75u.5): the page renders the SAME `MesoWeekDays` list the Terv landing does,
+// so the week is shown WHOLE — a training day is a card (a button), an off day is a slim
+// row (not a button). What the old assertion protected still holds: you cannot tap into
+// a rest or sport day, because it never became a card.
+test('the week shows training days as cards — a Rest or sport day is not tappable', () => {
   setup()
-  expect(screen.getByRole('button', { name: 'Hét · Push nap' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Csü · Pull nap' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: /Vas ·/ })).not.toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: /Szo ·/ })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Hétfő · Push' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /^Csütörtök · Pull/ })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Vasárnap/ })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Szombat/ })).not.toBeInTheDocument()
+  expect(screen.getByText('pihenőnap')).toBeInTheDocument()
 })
 
-test('tapping a day tile opens that day on its own route, with the token URL-encoded', async () => {
+test('tapping a day card opens that day on its own route, with the token URL-encoded', async () => {
   const router = setup()
-  await userEvent.click(screen.getByRole('button', { name: 'Hét · Push nap' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Hétfő · Push' }))
   await waitFor(() =>
     expect(router.state.location.pathname).toBe('/train/mesocycles/meso-hyp-04/days/H%C3%A9t'),
   )
