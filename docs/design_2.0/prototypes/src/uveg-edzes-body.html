@@ -1160,6 +1160,81 @@
 .curve{--c:var(--coral);margin:0 16px;padding:14px;border-radius:22px}
 .curve svg{width:100%;height:120px;margin-top:6px;overflow:visible}
 .newgrid3{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}
+
+/* ── LEZÁRÓ CEREMÓNIA (jutalomoldal, 2 lépés) — üveg, arany fénnyel ── */
+.phone.cermode .scroll{padding-bottom:40px}
+.cer{position:relative;overflow-x:clip;text-align:center;padding:40px 16px 8px}
+.cer::before{content:'';position:absolute;left:50%;top:40%;width:420px;height:380px;transform:translate(-50%,-50%);z-index:-1;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 45%,rgba(255,190,96,calc(.12 + var(--p,0)*.26)),rgba(255,126,92,calc(var(--p,0)*.14)) 42%,transparent 68%);transition:none}
+.cer .eb{color:#FFD08A;letter-spacing:1.6px}
+.cstars{position:relative;height:118px;margin:14px auto 0;width:300px}
+.cstars i{position:absolute;bottom:0;width:52px;height:52px;display:grid;place-items:center;transform:translateX(-50%)}
+.cstars i:nth-child(1){left:14%;bottom:6px}.cstars i:nth-child(2){left:32%;bottom:34px;width:62px;height:62px}
+.cstars i:nth-child(3){left:50%;bottom:46px;width:78px;height:78px}.cstars i:nth-child(4){left:68%;bottom:34px;width:62px;height:62px}.cstars i:nth-child(5){left:86%;bottom:6px}
+.cstars .icon{width:100%;height:100%;transition:transform .45s var(--ease),filter .45s var(--ease)}
+.cstars i .icon.off{position:absolute;inset:0;opacity:.55}
+.cstars i .icon.on{position:absolute;inset:0;opacity:0;transform:scale(.6)}
+.cstars i.is-lit .icon.on{opacity:1;transform:none;filter:drop-shadow(0 8px 10px rgba(0,0,0,.5)) drop-shadow(0 0 16px rgba(255,190,96,.75))}
+.cstars i.is-lit .icon.off{opacity:0}
+.cstars i.is-half .icon.half{opacity:1;transform:none;filter:drop-shadow(0 0 12px rgba(255,190,96,.55))}
+.cstars i.is-half .icon.off{opacity:0}
+.cstars i .icon.half{position:absolute;inset:0;opacity:0;transform:scale(.6)}
+.fuse{position:relative;height:12px;margin:22px 26px 0;border-radius:6px;background:rgba(245,239,230,.06);box-shadow:inset 0 2px 4px rgba(0,0,0,.55),inset 0 0 0 1px var(--hair)}
+.fuse b{position:absolute;inset:0 auto 0 0;width:calc(var(--p,0)*100%);border-radius:6px;background:linear-gradient(90deg,#8a5a20,#FFBE60 70%,#FFE9C2);box-shadow:0 0 12px rgba(255,190,96,.6)}
+.fuse em{position:absolute;top:50%;left:calc(var(--p,0)*100%);width:20px;height:20px;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle at 40% 35%,#fff,#FFD08A 45%,rgba(255,190,96,0) 72%);box-shadow:0 0 18px 4px rgba(255,190,96,.7)}
+.fuse u{position:absolute;top:2px;bottom:2px;width:1.5px;background:rgba(25,22,20,.7);left:var(--at)}
+.cres{padding:6px 16px 0;text-align:center}
+.verdict{font-size:34px;font-weight:600;letter-spacing:-1.2px;margin:18px 0 14px;background:linear-gradient(90deg,#F5EFE6,#FFE0AE 55%,#FFBE60);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 14px rgba(255,190,96,.35));opacity:0;transform:translateY(10px);transition:.6s var(--ease)}
+.b1 .verdict{opacity:1;transform:none}
+.ccard{--c:var(--gold);padding:14px;border-radius:24px;text-align:left;opacity:0;transform:translateY(14px);transition:.6s var(--ease)}
+.b2 .ccard{opacity:1;transform:none}
+.crec{display:flex;align-items:center;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--hair);transition:.5s var(--ease);transform:scale(.96);opacity:.4}
+.b3 .crec{transform:none;opacity:1}
+.crec strong{display:block;font-size:16px;font-weight:600;color:#FFE0AE}
+.crec small{display:block;font-size:11.5px;color:var(--sub);margin-top:2px;line-height:1.4}
+.cstats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.cstats>span{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:14px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.cstats .icon{width:32px;height:32px}
+.cstats strong{display:block;font-size:20px;font-weight:600;letter-spacing:-.5px}
+.cstats strong i{font-style:normal;color:var(--faint)}
+.cstats small{display:block;font-size:10.5px;color:var(--faint)}
+.ctally{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.ctally>span{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px}
+.ctally .icon{width:24px;height:24px;filter:none}
+.ctally b{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
+.ctally small{font-size:10px;color:var(--faint)}
+.cnote{font-size:11.5px;color:var(--faint);text-align:center;margin-top:10px;line-height:1.45}
+.cfoot{padding:18px 16px 0;opacity:0;transition:.6s var(--ease) .1s}
+.b2 .cfoot{opacity:1}
+.ccta{--c:var(--gold);display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px 12px 12px;border-radius:22px;text-align:left}
+.ccta .icon{width:44px;height:44px}
+.ccta span{flex:1}
+.ccta strong{display:block;font-size:17px;font-weight:600}
+.ccta small{display:block;font-size:11.5px;color:var(--sub);margin-top:1px}
+.ccta em{font-style:normal;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:19px;color:#191614;background:var(--c);box-shadow:0 0 16px color-mix(in srgb,var(--c) 60%,transparent)}
+.ccta.sage{--c:var(--sage)}
+.mstars{display:inline-flex;gap:2px}
+.mstars .icon{width:16px;height:16px;filter:none}
+.recap{display:flex;justify-content:center;padding:28px 16px 0}
+.recap .flat{padding:6px 14px 6px 10px;color:var(--ink)}
+.kcalh{position:relative;overflow-x:clip;display:block;width:100%;text-align:center;padding:18px 16px 10px}
+.kcalh::before{content:'';position:absolute;left:50%;top:50%;width:340px;height:240px;transform:translate(-50%,-50%);z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,rgba(143,180,154,.32),rgba(255,190,96,.10) 42%,transparent 68%)}
+.kcalh .line{display:flex;align-items:center;justify-content:center;gap:8px}
+.kcalh .icon{width:66px;height:66px;filter:drop-shadow(0 10px 12px rgba(0,0,0,.5)) drop-shadow(0 0 16px rgba(143,180,154,.45))}
+.kcalh b{font-size:60px;font-weight:300;letter-spacing:-3px;color:#D6EDC7;text-shadow:0 0 20px rgba(143,180,154,.45)}
+.kcalh b small{font-size:18px;letter-spacing:0;color:var(--sub);margin-left:4px}
+.kcalh p{font-size:13.5px;color:var(--ink);margin-top:2px}
+.kcalh .go{position:absolute;right:22px;top:50%;font-size:22px;color:var(--faint)}
+.cmus{--c:var(--coral);margin:0 16px;padding:8px 14px;border-radius:22px}
+.cmus .r{display:grid;grid-template-columns:40px 1fr auto;grid-template-rows:auto auto;column-gap:10px;row-gap:6px;align-items:center;padding:10px 0;border-top:1px solid var(--hair)}
+.cmus .r:first-child{border-top:0}
+.cmus .r .mchp{grid-row:1/3}
+.cmus .r strong{font-size:14px;font-weight:600}
+.cmus .r small{display:block;font-size:11px;color:var(--faint)}
+.cmus .r .bar{grid-column:2/4;height:5px}
+.cnoteb{margin:14px 16px 0;display:grid;gap:6px}
+.cnoteb>span{font-size:13px;font-weight:600}
+.cnoteb small{font-size:11px;color:var(--faint)}
 @media (max-width:360px){.sstrip4.q{grid-template-columns:repeat(2,1fr)}.thero h1{font-size:32px}.lhero{grid-template-columns:100px 1fr}.lhero .body{width:100px;height:180px}.lhero .num{font-size:52px}.spgrid{grid-template-columns:repeat(2,1fr)}.wset{grid-template-columns:18px 1fr 1fr 1fr 34px 24px;gap:4px;font-size:13px}.musrow{grid-template-columns:28px 54px 1fr 50px;gap:7px}.wtop{grid-template-columns:34px 1fr auto 34px 34px;gap:6px}.wtop .rb{width:34px;height:34px}.dstrip{gap:3px;padding:2px 10px 4px}.recs3{grid-template-columns:1fr 1fr}}
 </style>
 
@@ -1184,6 +1259,7 @@
     <nav id="jump">
       <a href="#mai" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-dumbbell"/></svg>Mai</a>
       <a href="#session" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-clock"/></svg>Edzés közben</a>
+      <a href="#cer" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-star"/></svg>Edzés lezárása (jutalomoldal)</a>
       <a href="#review" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-record"/></svg>Összegzés (lezárt edzés)</a>
       <a href="#gym" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-muscle"/></svg>Terhelés (Gym)</a>
       <a href="#sport" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-volley"/></svg>Sport</a>
@@ -1200,6 +1276,7 @@
       <li>Edzés közben: <a href="#" data-gbox="menu">gyakorlat-menü</a> · <a href="#" data-gbox="recs">rekordok</a> · <a href="#" data-gbox="fin">befejezés</a> · <a href="#" data-rest>pihenő-óra</a></li>
       <li>Lapok: <a href="#" data-sheet="set">szett szerkesztése</a> · <a href="#" data-sheet="rp">szett-visszajelzés</a> · <a href="#" data-sheet="extra">extra szett</a> · <a href="#" data-sheet="note">jegyzet</a></li>
       <li><a href="#" data-sheet="sportlog">Sport log lap</a> · <a href="#" data-sheet="runlog">Futás log lap</a></li>
+      <li>Jutalomoldal: <a href="#cer">1. lépés (újrajátszás)</a> · <a href="#cer/reszletek">2. lépés · részletek</a></li>
       <li><a href="#medals/ures">Medálok · üres</a> · <a href="#futasterv">Futóterv szerkesztése</a></li>
     </ul>
     <label class="toggle"><input type="checkbox" id="still"> Mozgás kikapcsolása</label>
@@ -1517,6 +1594,46 @@ function ikonok(){
   <p class="p-note">Az izom-kis-képek (egy izom a testen kiemelve) és a testtérkép nem ikonok: azok a valódi anatómiát rajzolják, és maradnak — csak üveg-kútba kerülnek.</p>`;
 }
 
+
+/* ── LEZÁRÓ CEREMÓNIA ────────────────────────────────────── */
+const CER={stars:4.5,ratio:.9,sets:14,reps:142,vol:4180,min:71,xp:185,pending:2,kcal:540,rec:[['Chest Supported Row','105 kg'],['Lat Pulldown','12 @ 74,5']],
+  mus:[['back-wide','Hát (széles)',6,6],['back-mid','Hát (közép)',4,4],['shoulder-rear','Váll (hátsó)',3,3],['biceps-brachialis','Kar',1,3]]};
+const VERD=[[5,'Hibátlan nap.'],[4,'Erős nap.'],[3,'Rendben volt.'],[1.5,'Elindult.'],[0,'Ma nem jött össze.']];
+const verdict=st=>VERD.find(([m])=>st>=m)[1];
+const starCls=(i,p)=>{const t=(i+1)/5;return p>=t-.001?'is-lit':p>=t-.1?'is-half':''};
+const mini=r=>`<span class="mstars" aria-hidden="true">${[0,1,2,3,4].map(i=>{const c=starCls(i,r);return I(c==='is-lit'?'star':c==='is-half'?'star-half':'star-empty')}).join('')}</span>`;
+const hu=n=>Math.round(n).toLocaleString('hu-HU').replace(/[  ]/g,' ');
+function cer(v){
+  if(v==='reszletek') return `<div class="recap rise"><span class="flat">${mini(CER.ratio)}${verdict(CER.stars)}</span></div>
+    <button class="kcalh rise" style="--i:1" data-toast="Fuel · Mai (a mozgás hozzáadja a keretedhez)"><span class="line">${I('bowl')}<b>+${hu(CER.kcal)}<small>kcal</small></b></span><p>Ennyit nyertél a mai mozgással</p><span class="cnote" style="display:block;margin-top:4px">Becslés, nem mérés</span><i class="go">›</i></button>
+    ${eyeb('A MAI EDZÉSEN','Izomcsoportok fejlődése')}
+    <article class="cmus glass rise" style="--i:2">${CER.mus.map(([k,l,d,p],i)=>`<div class="r" style="--c:${muscleColor(k)}">${mchp(k)}<span><strong>${l}</strong><small>${d} / ${p} szett</small></span>${mini(d/p)}${bar(d/p*100,muscleColor(k),i)}</div>`).join('')}</article>
+    <label class="cnoteb rise"><span>Hogy ment?</span><span class="inp ph ta">Pl. rosszul aludtam, de a húzódzkodás jól ment…</span><small>Nem kötelező — később is hozzáírhatod.</small></label>
+    <div class="cfoot" style="opacity:1"><button class="ccta sage glass lift" data-go="#mai">${I('tick')}<span><strong>Vissza a mai napra</strong><small>Az edzés lezárva és elmentve</small></span><em>›</em></button>
+    <button class="btn flatb" style="margin-top:8px" data-go="#cer">Vissza az értékeléshez</button></div>
+    <p class="p-note">A csillagok a tervezett szettből, ismétlésből és súlyból számolnak, nem AI-értékelés.</p>`;
+  return `<div id="cerroot"><section class="cer" id="cerstage" style="--p:0"><span class="eb">EDZÉS LEZÁRVA</span>
+    <div class="cstars" aria-hidden="true">${[0,1,2,3,4].map(i=>`<i data-star="${i}">${I('star-empty','off')}${I('star-half','half')}${I('star','on')}</i>`).join('')}</div>
+    <div class="fuse" aria-hidden="true"><b></b><em></em>${[1,2,3,4].map(i=>`<u style="--at:${i*20}%"></u>`).join('')}</div></section>
+  <section class="cres"><h1 class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">4,5 csillag az ötből</h1><p class="verdict">${verdict(CER.stars)}</p>
+    <article class="ccard glass"><div class="crec"><span class="well" style="--c:var(--gold)">${I('record')}</span><span><strong>${CER.rec.length} új rekord</strong><small>${CER.rec.map(r=>r.join(' · ')).join(' · ')}</small></span></div>
+      <div class="cstats"><span>${I('clock')}<span><strong>${CER.min}<i>′</i></strong><small>a pulton töltött idő</small></span></span><span>${I('coin')}<span><strong>+${CER.xp}</strong><small>szerzett XP</small></span></span></div>
+      <div class="ctally"><span>${I('weight')}<b data-c="sets">0</b><small>szett</small></span><span>${I('dumbbell')}<b data-c="reps">0</b><small>ismétlés</small></span><span>${I('protocol')}<b data-c="vol">0</b><small>kg × rep</small></span></div></article>
+    <p class="cnote">${CER.pending} szett kihagyott státusszal zárult.</p></section>
+  <div class="cfoot"><button class="ccta glass lift" data-go="#cer/reszletek">${I('journal')}<span><strong>Részletek</strong><small>Izomcsoportok és a nyert kalória</small></span><em>›</em></button></div></div>`;
+}
+function runCer(){
+  const root=$('#cerroot'),stage=$('#cerstage'); if(!root)return;
+  const D=2700,S=1700,B={b1:1750,b2:2050,b3:2350},ease=t=>1-(1-t)**3;
+  const instant=document.body.classList.contains('still')||matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const paint=ms=>{const p=ease(Math.min(1,ms/S))*CER.ratio;stage.style.setProperty('--p',p);
+    stage.querySelectorAll('[data-star]').forEach(st=>{const c=starCls(+st.dataset.star,p);st.classList.toggle('is-lit',c==='is-lit');st.classList.toggle('is-half',c==='is-half')});
+    const t=ease(Math.max(0,Math.min(1,(ms-B.b2)/(D-B.b2))));
+    root.querySelectorAll('[data-c]').forEach(el=>{const v={sets:CER.sets,reps:CER.reps,vol:CER.vol}[el.dataset.c]*t;el.textContent=el.dataset.c==='vol'?hu(v):Math.round(v)});
+    for(const k of ['b1','b2','b3'])root.classList.toggle(k,ms>=B[k])};
+  if(instant){paint(D);return}
+  const t0=performance.now();const f=now=>{const ms=Math.min(D,now-t0);paint(ms);if(ms<D&&stage.isConnected)requestAnimationFrame(f)};requestAnimationFrame(f);
+}
 /* ── GlassBox dialógusok ─────────────────────────────────── */
 const GB={
   menu:['var(--coral)',()=>`<div class="gb-top"><span class="eb">GYAKORLAT</span><button data-closegb aria-label="Bezárás">×</button></div><div class="gb-title">${mchp('back-mid')}<span><h3>Chest Supported Row</h3><p>4 szett · Hát (közép)</p></span></div>
@@ -1531,7 +1648,7 @@ const GB={
   fin:['var(--coral)',()=>`<div class="gb-top"><span class="eb">EDZÉS BEFEJEZÉSE</span><button data-closegb aria-label="Bezárás">×</button></div>
     <h3 style="font-size:20px;font-weight:600;letter-spacing:-.5px;margin-bottom:10px">Van még 13 bepipálatlan szetted.</h3>
     <div class="fin-list">${EX.map(e=>`<div>${mchp(e.k,'sm')}<span>${e.n}</span><em>${e.sets.filter(s=>typeof s[0]!=='number').length} szett</em></div>`).join('')}</div>
-    <button class="primary stack" style="--c:var(--coral)" data-go="#review">${I('tick')}<span>Befejezem így<small>3 elvégzett · 13 kihagyott</small></span></button>
+    <button class="primary stack" style="--c:var(--coral)" data-go="#cer">${I('tick')}<span>Befejezem így<small>3 elvégzett · 13 kihagyott</small></span></button>
     <button class="btn flatb" style="margin-top:8px" data-closegb>Mégse, visszamegyek</button>`],
   grp:['var(--coral)',(g)=>{const [k,l,d,p,w]=GR[g||0];return `<div class="gb-top"><span class="eb">IZOMCSOPORT · EZEN A HÉTEN</span><button data-closegb aria-label="Bezárás">×</button></div><div class="gb-title">${mchp(k,'lg')}<span><h3>${l}</h3><p>${d} / ${p} szett</p></span></div>
     <div class="grows"><div><span>${l} (fej 1)</span><em>6 szett · 8–10 ismétlés · 2×/hét — a heti tervből</em></div><div><span>${l} (fej 2)</span><em>4 szett · 10–12 ismétlés · 2×/hét — a heti tervből</em></div></div>
@@ -1573,15 +1690,16 @@ function openSheet(k){const [c,f]=SH[k];const sh=$('#sheet');closeGb();sh.style.
 function closeSheet(){$('#scrim').classList.remove('on');$('#sheet').classList.remove('on')}
 
 /* ── router ─────────────────────────────────────────────── */
-const TAB={mai:'Mai',session:'Mai',review:'Mai',sport:'Mai',sportlog:'Mai',futas:'Terv',futasterv:'Terv',gym:'Terhelés',medals:'Gyakorlatok',exercises:'Gyakorlatok',exercise:'Gyakorlatok',ikonok:'Mai'};
-const NOCHROME=['session','sportlog'];
+const TAB={mai:'Mai',session:'Mai',review:'Mai',sport:'Mai',sportlog:'Mai',futas:'Terv',futasterv:'Terv',gym:'Terhelés',cer:'Mai',medals:'Gyakorlatok',exercises:'Gyakorlatok',exercise:'Gyakorlatok',ikonok:'Mai'};
+const NOCHROME=['session','sportlog','cer'];
 function render(){
   const h=location.hash||'#mai', [r,id]=h.slice(1).split('/');
-  const VW={mai:()=>mai(id),session,review:()=>review(id),gym,sport:()=>sport(id||'terv'),sportlog:()=>sportlog(id),futas:()=>futas(id||'het'),futasterv,medals:()=>medals(id),exercises,exercise,ikonok};
+  const VW={mai:()=>mai(id),session,review:()=>review(id),gym,sport:()=>sport(id||'terv'),sportlog:()=>sportlog(id),futas:()=>futas(id||'het'),futasterv,medals:()=>medals(id),exercises,exercise,ikonok,cer:()=>cer(id)};
   $('#scroll').innerHTML=(VW[r]||VW.mai)(); $('#scroll').scrollTop=0; closeSheet(); closeGb();
   ntfOpen=false;$('#ntf').classList.remove('on');$('#switcher').classList.remove('on');
   $('#phone').classList.toggle('nochrome',NOCHROME.includes(r));
   $('#dockwrap').innerHTML=r==='session'?dock():'';
+  $('#phone').classList.toggle('cermode',r==='cer'); if(r==='cer'&&!id)runCer();
   tabbar(TAB[r]||'Mai');
   document.querySelectorAll('#jump a').forEach(a=>a.setAttribute('aria-current',String(a.getAttribute('href')==='#'+r)));
 }
@@ -1590,6 +1708,7 @@ function toast(t){clearTimeout(toastT);$('#toast').textContent=t;$('#toast').cla
 function soft(){const y=$('#scroll').scrollTop;render();$('#scroll').scrollTop=y}
 document.addEventListener('click',e=>{
   const t=e.target, go=t.closest('[data-go]'), tt=t.closest('[data-toast]'), sh=t.closest('[data-sheet]'), gb=t.closest('[data-gbox]');
+  if(t.closest('a[href="#cer"]')&&location.hash==='#cer'){e.preventDefault();render();return}
   if(t.closest('[data-closesheet]')){closeSheet();return}
   if(t.closest('[data-closegb]')){closeGb();return}
   const st=t.closest('[data-state]'); if(st){e.preventDefault();dayState=st.dataset.state;location.hash='#mai';soft();return}
