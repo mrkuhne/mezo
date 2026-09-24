@@ -45,16 +45,22 @@ public class CharacterCouncilJob {
                         }
                     }
                     council.run(user.getId(), day);
-                    // Esti kiadás (mezo-a9bo7, ADR 0052): SAJÁT try/catch — egy kiadás-hiba sosem
-                    // dönti be a konzíliumot, és fordítva. TeamEditionService#run idempotens (a
-                    // (created_by, day) élő kiadás gyors SELECT-je), ezért veszélytelen minden
-                    // */15 tiken újra meghívni, catch-up napokra is: egy sikertelen/hiányzó kiadás
-                    // magától újrapróbálkozik a következő tiken 23:45-ig, egy már kész kiadás
-                    // pedig azonnal no-op.
+                }
+                catch (RuntimeException e) { log.warn("Daily council failed for owner {} day {}", user.getId(), day, e); }
+
+                // Esti kiadás (mezo-a9bo7, ADR 0052): a konzílium fenti try/catch-ÉN KÍVÜL, saját
+                // try/catch-ben — a kiadás akkor is megszülethet, ha a konzílium (vagy a rá épülő
+                // megfigyelés-generálás) ezen a napon hibázott, és egy kiadás-hiba sosem dönti be
+                // a konzíliumot. CSAK a MAI napra (offset == 0): a kiadás sosem "pótol" egy
+                // kimaradt korábbi napot — spec: "utána a nap kimarad, őszinte hiány, nem pótlás".
+                // TeamEditionService#run idempotens (a (created_by, day) élő kiadás gyors
+                // SELECT-je), ezért veszélytelen minden 15 perces tiken újra meghívni a mai napra:
+                // egy sikertelen/hiányzó kiadás magától újrapróbálkozik a következő tiken
+                // 23:45-ig, egy már kész kiadás pedig azonnal no-op.
+                if (offset == 0) {
                     try { editions.ifAvailable(svc -> svc.run(user.getId(), day)); }
                     catch (RuntimeException e) { log.warn("Esti kiadás failed for owner {} day {}", user.getId(), day, e); }
                 }
-                catch (RuntimeException e) { log.warn("Daily council failed for owner {} day {}", user.getId(), day, e); }
             }
         });
     }

@@ -10,11 +10,14 @@ import io.mrkuhne.mezo.feature.character.repository.TeamEditionPostRepository;
 import io.mrkuhne.mezo.feature.character.repository.TeamEditionRepository;
 import io.mrkuhne.mezo.feature.character.service.CharacterRunLog;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -69,7 +72,14 @@ public class TeamEditionService {
         try {
             self.getObject().publish(owner, day, conferenceId, ranked, texts);
         } catch (DataIntegrityViolationException raced) {
-            return; // egy párhuzamos futás nyert (uq_team_edition_day) — a mi próbálkozásunk eldobható
+            // Csak akkor "a párhuzamos futás nyert" (uq_team_edition_day), ha VALÓBAN van már élő
+            // kiadás erre a napra — egy MÁS okból dobott DataIntegrityViolationException (pl. egy
+            // rossz jelölt-adat) nem nyelhető el csendben: visszadobjuk, a hívó (CharacterCouncilJob)
+            // saját try/catch-e naplózza, és a következő tiken újrapróbálkozik.
+            if (editions.findByCreatedByAndDay(owner, day).isPresent()) {
+                return;
+            }
+            throw raced;
         }
         runLog.record(owner, "EDITION", day, ranked.size(), 0, List.of(),
                 ranked.stream().map(c -> c.character().key()).distinct().toList(), conferenceId);
@@ -81,6 +91,9 @@ public class TeamEditionService {
     @Transactional
     public TeamEditionEntity publish(UUID owner, LocalDate day, UUID conferenceId,
             List<EditionCandidate> ranked, List<TeamEditionService.VoicedText> voiced) {
+        if (voiced.size() != ranked.size()) {
+            throw new SystemRuntimeErrorException(SystemMessage.error("TEAM_EDITION_VOICED_SIZE_MISMATCH").build());
+        }
         TeamEditionEntity edition = new TeamEditionEntity();
         edition.setCreatedBy(owner);
         edition.setDay(day);
@@ -121,7 +134,7 @@ public class TeamEditionService {
             return List.of();
         }
         var editionsById = priorEditions.stream()
-                .collect(java.util.stream.Collectors.toMap(TeamEditionEntity::getId, e -> e));
+                .collect(Collectors.toMap(TeamEditionEntity::getId, e -> e));
         List<TeamEditionPostEntity> priorPosts =
                 posts.findByEditionIdInOrderByEditionIdAscRankAsc(editionsById.keySet());
         List<PriorShowing> out = new ArrayList<>();

@@ -97,7 +97,9 @@ class TeamEditionServiceIT extends AbstractIntegrationTest {
 
         assertThat(editionCountAfterFirst).isEqualTo(1);
         assertThat(editionCountAfterSecond).isEqualTo(1);
-        assertThat(runs.findByCreatedByAndKindAndDay(owner, "EDITION", DAY)).isPresent();
+        long editionRunRowCount = runs.findByCreatedByAndDayBetweenOrderByDayDescGeneratedAtDesc(owner, DAY, DAY)
+                .stream().filter(r -> "EDITION".equals(r.getKind())).count();
+        assertThat(editionRunRowCount).isEqualTo(1); // exactly one EDITION run row, not just "present"
     }
 
     @Test
