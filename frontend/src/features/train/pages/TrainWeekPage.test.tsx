@@ -430,16 +430,59 @@ test('ⓘ beside „Izomcsoportok ezen a héten" explains the bar, word for word
 })
 
 // The prototype puts this one INSIDE the sport card (load-pages.js:95), not beside the
-// heading above it. Its art override there is `volley`, which has no clay equivalent —
-// `i-sport`, the card's own glyph, is the honest neighbour.
+// heading above it. Its art override there is `volley` — in üveg (mezo-me75u.4) the
+// Titanium t-volley itself, the card's own glyph.
 test('ⓘ inside the sport card explains how sport relates to the sets, word for word', async () => {
   const { container } = renderPage()
   const btn = await screen.findByRole('button', { name: 'A sport és a szettek — mit jelent?' })
   expect(btn.closest('.ld-sport')).toBe(container.querySelector('.ld-sport'))
+  expect(btn.querySelector('use')?.getAttribute('href')).toBe('#t-volley')
   fireEvent.click(btn)
   expect(
     within(screen.getByRole('dialog', { name: 'A sport és a szettek' })).getByText(
       'A sportod a heti mozgásod és a pihenésed része — a szettszámokba nem számít bele, mert ott a terved emelkedését követjük. A regenerációnál viszont figyelembe vesszük.',
     ),
   ).toBeInTheDocument()
+})
+
+// ── Üveg (mezo-me75u.4, prototype uveg-edzes.html#gym) ─────────────────────────────────
+// The ranking of bible §3.4 as DOM facts: the hero stays a halo (no glass), the map doorway,
+// every group tile, the sport card and the movement doorway are glass, each group tile wears
+// ITS muscle hue as `--c` on itself (rule 4), the chips are flat, the free state is dashed,
+// and every icon is a Titanium 3D sprite symbol — no clay, no text glyph.
+test('üveg: halo hero, glass doorways + tiles with their own --c, flat chips, dashed free state', () => {
+  const { container } = renderPage()
+  expect(container.querySelector('.tw-load')).not.toBeNull()
+  const hero = container.querySelector('.ld-hero') as HTMLElement
+  expect(hero.classList.contains('glass')).toBe(false)
+  expect(hero.querySelector('.glass')).toBeNull()
+  expect(container.querySelector('.ld-map-card')!.classList.contains('glass')).toBe(true)
+  expect(container.querySelector('.ld-move-card')!.classList.contains('glass')).toBe(true)
+  const tiles = [...container.querySelectorAll('.ld-group')] as HTMLElement[]
+  expect(tiles.length).toBeGreaterThan(0)
+  for (const tile of tiles) {
+    expect(tile.classList.contains('glass')).toBe(true)
+    const c = tile.style.getPropertyValue('--c')
+    expect(c).not.toBe('')
+    expect(c).toBe(tile.style.getPropertyValue('--mus-color'))
+    // never glass in glass
+    expect(tile.querySelector('.glass')).toBeNull()
+  }
+  expect(hero.querySelectorAll('.tw-chip')).toHaveLength(2)
+  const custom = screen.getByRole('button', { name: /Saját edzés/ })
+  expect(custom.classList.contains('uv-empty')).toBe(true)
+  expect(custom.classList.contains('glass')).toBe(false)
+})
+
+test('üveg: the medal chip, the ⓘ buttons and the doorway art are Titanium 3D icons', () => {
+  const { container } = renderPage()
+  const hrefs = (root: Element) => [...root.querySelectorAll('use')].map((u) => u.getAttribute('href'))
+  const medal = container.querySelector('.ld-hero-medal') as HTMLElement
+  expect(hrefs(medal)).toEqual(['#t-record'])
+  expect(hrefs(screen.getByRole('button', { name: 'Miből áll össze a szám? — mit jelent?' }))).toEqual(['#t-info'])
+  expect(hrefs(screen.getByRole('button', { name: 'Mit mutat a sáv? — mit jelent?' }))).toEqual(['#t-info'])
+  expect(hrefs(container.querySelector('.ld-move-card .ld-sport-art')!)).toEqual(['#t-bolt'])
+  // no clay glyph left anywhere on the page (the body maps and muscle chips draw paths, not <use>)
+  const all = [...container.querySelectorAll('use')].map((u) => u.getAttribute('href') ?? '')
+  expect(all.filter((h) => !h.startsWith('#t-'))).toEqual([])
 })

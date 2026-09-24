@@ -80,6 +80,8 @@ export type Icon3DName =
   // U3 (mezo-me75u.3) — owner OK on prototypes/uveg-nap.html#ikonok
   | 't-checkin' | 't-quick' | 't-steps' | 't-people' | 't-chain' | 't-quest' | 't-harvest'
   | 't-coin' | 't-orb' | 't-scroll'
+  // U4 (mezo-me75u.4) — owner OK on prototypes/uveg-edzes.html#ikonok
+  | 't-muscle' | 't-bandage'
 
 /** Mounts the clay + Titanium <symbol>/<gradient> defs once (main.tsx). */
 export const ClaySprites = memo(function ClaySprites() {
@@ -154,6 +156,10 @@ export const CLAY_TO_3D: Partial<Record<ClayIconName, Icon3DName>> = {
   'i-checkin': 't-checkin', 'i-emberek': 't-people', 'i-rend': 't-chain', 'i-kihivas': 't-quest',
   'i-erme': 't-coin', 'i-memoar': 't-scroll', 'i-heti': 't-calendar', 'i-tudas': 't-book',
   'i-futas': 't-run',
+  // U4 (mezo-me75u.4): Edzés (prototypes/uveg-edzes.html). The set-verdict glyphs, the medal and
+  // the mesocycle are context-free; i-growth (overload here, growth on Én) and i-sport stay at
+  // their call sites.
+  'i-trend-fel': 't-up', 'i-trend-le': 't-down', 'i-erem': 't-record', 'i-meso': 't-peak',
 }
 
 /** A content icon: a Titanium name renders as is, a clay name through `CLAY_TO_3D`, and an

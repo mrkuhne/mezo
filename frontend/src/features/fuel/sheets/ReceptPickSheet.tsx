@@ -81,7 +81,7 @@ export function ReceptPickSheet({ onPick, onClose }: { onPick: (r: Recipe) => vo
           <div className="fkx-search-row">
             <div className="fkx-search-field">
               <ContentIcon name="t-book" size={20} />
-              <input autoFocus value={query} onChange={e => setQuery(e.target.value)}
+              <input value={query} onChange={e => setQuery(e.target.value)}
                 placeholder="Keress receptet…" aria-label="Keresés a receptek között" />
             </div>
             <button type="button" className={'fkx-chip is-star' + (onlyStar ? ' is-on' : '')}

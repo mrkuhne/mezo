@@ -1,4 +1,4 @@
-import { deriveBlocks, deriveProtocolAnchors } from '@/features/fuel/logic/buildProtocol'
+import { deriveBlocks, deriveLoggedBlocks, deriveProtocolAnchors } from '@/features/fuel/logic/buildProtocol'
 import { todayIdx } from '@/data/train/runningAgenda'
 import { localDateString } from '@/shared/lib/dates'
 import type { GymSchedule, SportSession, VolleyballSession } from '@/data/types'
@@ -38,7 +38,7 @@ describe('deriveProtocolAnchors', () => {
 // --- deriveBlocks — sport-slot skip (mezo-cq06) ---
 // The fuel protocol used to keep anchoring the pre-workout meal / calorie budget on today's
 // sport block even after a skip_sport_slot advice action hid that exact dated occurrence — the
-// one FE read that visibly contradicted the backend's `hasScheduledTrainingOn`.
+// one FE read that visibly contradicted the backend's `WorkoutWindowQueryService.windowsFor` (skip-aware schedule read).
 describe('deriveBlocks — sport-slot skip', () => {
   const sport = (overrides: Partial<VolleyballSession> = {}): VolleyballSession => ({
     day: 'Kedd', time: '18:00', duration: 90, court: 'BVSC', intensity: 'közepes', role: 'edzés',
@@ -128,5 +128,46 @@ describe('deriveBlocks — ad-hoc logged sport session', () => {
   test('no sessions passed keeps every caller byte-identical (default param)', () => {
     const blocks = deriveBlocks(null, { schedule: { volleyball: { team: '', sessions: [planned()], season: '', weeklyHours: 0 } } }, null)
     expect(blocks.filter((b) => b.kind === 'sport')).toHaveLength(1)
+  })
+})
+
+// --- deriveLoggedBlocks — only LOGGED movement raises the calorie target (mezo-u13jv) ---
+// Owner decision 2026-09-24: a planned session not yet done must not raise the day's calorie
+// target; only movement that was actually logged does.
+describe('deriveLoggedBlocks', () => {
+  const today = '2026-07-02'
+  const plannedGym = { kind: 'gym' as const, time: '17:00', durationMin: 75, label: 'Láb nap' }
+  const plannedRun = { kind: 'run' as const, time: '07:00', durationMin: null, label: 'Sprint' }
+  const session = (isoDate: string): SportSession => ({
+    id: 's1', sport: 'volleyball', date: '', isoDate, time: '18:00', duration: 90,
+    setsPlayed: null, rounds: null, intensity: null, rpe: 7, shoulderStrain: null,
+    jumpCount: null, notes: null, kcal: null, kcalIsEstimate: null,
+  })
+  const none = { gymDone: false, sportSessions: [], runLogs: [], todayIso: today }
+
+  test('a planned-but-not-done day yields NO logged blocks', () => {
+    expect(deriveLoggedBlocks({ ...none, planned: [plannedGym, plannedRun] })).toEqual([])
+  })
+
+  test('a completed gym workout yields the planned gym block', () => {
+    expect(deriveLoggedBlocks({ ...none, planned: [plannedGym], gymDone: true })).toEqual([plannedGym])
+  })
+
+  test('an unplanned completed gym workout is timed and sized from the workout itself', () => {
+    const blocks = deriveLoggedBlocks({
+      ...none, planned: [], gymDone: true,
+      completedGym: { startedAt: '2026-07-02T09:00:00', finishedAt: '2026-07-02T10:10:00', title: 'Saját' },
+    })
+    expect(blocks).toEqual([{ kind: 'gym', time: '09:00', durationMin: 70, label: 'Saját' }])
+  })
+
+  test('only today\'s sport sessions and runs count', () => {
+    const blocks = deriveLoggedBlocks({
+      ...none, planned: [plannedRun],
+      sportSessions: [session(today), session('2026-06-30')],
+      runLogs: [{ date: today, durationMin: 30 }, { date: '2026-06-30', durationMin: 40 }],
+    })
+    expect(blocks.map(b => [b.kind, b.durationMin])).toEqual([['sport', 90], ['run', 30]])
+    expect(blocks[1].time).toBe('07:00') // the run borrows the planned run's time
   })
 })

@@ -8,13 +8,13 @@
 // shell is CONTEXT — the comparison against the previous instance of the same
 // template day, the reference top set per exercise, and the stepping along that
 // same chain. All of it rides existing endpoints; no contract changed.
+// Üveg re-dress (mezo-me75u.4): the shell's look lives in WorkoutSummary / ExerciseReview.
 // ============================================================
 import { useState } from 'react'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useChallenges, useMedals, useTemplateDayChain, useWorkoutDetail, useWorkoutNote } from '@/data/hooks'
 import { huMonthDay, huMonthDayDow } from '@/shared/lib/dates'
-import { GhostState } from '@/shared/ui/GhostState'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { actualMinutes } from '@/features/train/logic/actualDuration'
 import { deriveSummaryStats } from '@/features/train/logic/summaryStats'
@@ -73,8 +73,12 @@ export function WorkoutReviewPage() {
   if (pending) return <ScreenSkeleton />
   if (error || !detail) {
     return (
-      <div style={{ padding: 24 }}>
-        <GhostState lines={3} message="Ez az edzés nem található." ctaLabel="← Vissza az edzésekhez" onCta={() => navigate('/train')} />
+      // Üveg (mezo-me75u.4): the missing workout is an empty state — dashed, no glass.
+      <div className="wr-root uv-rev">
+        <div className="wr-empty uv-empty">
+          <p>Ez az edzés nem található.</p>
+          <button type="button" className="uv-flat" onClick={() => navigate('/train')}>← Vissza az edzésekhez</button>
+        </div>
       </div>
     )
   }

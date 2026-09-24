@@ -89,7 +89,7 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
             </button>
           </div>
           <p className="flp-elead">
-            A napi cél nem statikus — az alapanyagcserédből, a mai betáblázott mozgásból{deficit ? ' és a célod deficitjéből' : ''} áll össze.
+            A napi cél nem statikus — az alapanyagcserédből, {movement.isWeeklyAvg ? 'a heti betáblázott mozgásból' : 'a ma rögzített mozgásodból'}{deficit ? ' és a célod deficitjéből' : ''} áll össze.
           </p>
 
           {/* Equation bar — at-a-glance summary */}
@@ -148,7 +148,9 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
               )}
             </div>
             <p className="flp-ewhy">
-              A <b>{movement.isWeeklyAvg ? 'heti' : 'mai'}</b> betáblázott edzéseid becsült energiája (MET-alapú, a testsúlyoddal skálázva). Mozgós napon több, pihenőnapon 0 — <b>ezért nem fix</b> a napi cél.
+              {movement.isWeeklyAvg
+                ? <>A <b>heti</b> betáblázott edzéseid becsült energiája (MET-alapú, a testsúlyoddal skálázva). Mozgós napon több, pihenőnapon 0 — <b>ezért nem fix</b> a napi cél.</>
+                : <>A <b>ma</b> rögzített edzéseid becsült energiája (MET-alapú, a testsúlyoddal skálázva). A tervezett, de még el nem végzett edzés nem számít bele — <b>a keret akkor nő, amikor rögzíted</b>.</>}
             </p>
           </Seg>
 

@@ -129,7 +129,9 @@ test('none of the retired prep surfaces survive: no start CTA, no XP forecast, n
   for (const label of RETIRED_TILE_LABELS) {
     expect(screen.queryByRole('button', { name: label })).toBeNull()
   }
-  // The Küldetések TILE is gone too — the name survives only as the ⋯ menu's row.
+  // The prep mosaic's Küldetések TILE is gone too (its exact-named tile button). Its successor
+  // is the owner-approved start row card (U4, mezo-me75u.4) — a glass row whose name carries
+  // the accepted count, covered by its own tests below — plus the ⋯ menu's row.
   expect(screen.queryByRole('button', { name: 'A mai küldetések' })).toBeNull()
 })
 
@@ -163,6 +165,39 @@ test('the ⋯ menu carries a Küldetések row with the day\'s accepted/total hin
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
   expect(screen.getByText('Küldetések')).toBeInTheDocument()
   expect(screen.getByText('0/4 elfogadva')).toBeInTheDocument()
+})
+
+// ── The start-of-workout quest row (owner-approved U4 addition, mezo-me75u.4) ──────────
+const questRow = () => screen.queryByRole('button', { name: /^A mai küldetések/ })
+
+test('at 0 logged sets a glass "A mai küldetések" row tops the list with the accepted count', () => {
+  setup()
+  const row = questRow()
+  expect(row).not.toBeNull()
+  expect(row).toHaveClass('glass')
+  expect(row).toHaveTextContent('0 / 4 elfogadva')
+  // It sits at the top of the list, above every exercise card.
+  const list = document.querySelector('.wo-list')!
+  expect(list.firstElementChild).toBe(row)
+})
+
+test('the quest row opens the SAME Küldetések glass the ⋯ menu reaches', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(questRow()!)
+  expect(screen.getByRole('dialog', { name: 'A mai küldetések' })).toBeInTheDocument()
+  expect(screen.getByText(/Passzolni ér/)).toBeInTheDocument()
+  expect(screen.getByText('conf 72%')).toBeInTheDocument()
+})
+
+test('the quest row leaves once the first set is logged — the ⋯ menu entry stays', async () => {
+  const user = userEvent.setup()
+  setup()
+  expect(questRow()).not.toBeNull()
+  await logSet(user)
+  expect(questRow()).toBeNull()
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  expect(screen.getByText('Küldetések')).toBeInTheDocument()
 })
 
 // Byte-parity guard: the Phase-1 mock seed still renders its fabricated confidence
@@ -248,7 +283,9 @@ test('the sticky header shows the workout title, the live set counter and the Vi
   // No exercise counter / dots / jump trigger anymore — every exercise is on screen,
   // so the header only carries the session's own set progress. WORKING sets only
   // (mezo-i8ahy): 15 = 3+3+3+3+3, the warm-up ramps count for nothing on screen.
-  expect(screen.getByText('0/15 szett')).toBeInTheDocument()
+  // U4 (mezo-me75u.4): the done count is its own lit <b>, so the counter reads as one line.
+  expect(container.querySelector('.wk-top .t2')).toHaveTextContent('0/15 szett')
+  expect(container.querySelector('.wk-top .t2 b')).toHaveTextContent('0')
   expect(container.querySelectorAll('.exdots i')).toHaveLength(0)
   expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Gyakorlat műveletek' })).toBeInTheDocument()
@@ -256,12 +293,12 @@ test('the sticky header shows the workout title, the live set counter and the Vi
 
 test('completing a set marks the row done and advances the header counter', async () => {
   const user = userEvent.setup()
-  setup()
-  expect(screen.getByText('0/15 szett')).toBeInTheDocument()
+  const { container } = setup()
+  expect(container.querySelector('.wk-top .t2')).toHaveTextContent('0/15 szett')
   expect(doneRowsOf(EX1)).toHaveLength(0)
   await user.click(submitOf(EX1))
   expect(doneRowsOf(EX1)).toHaveLength(1)
-  expect(screen.getByText('1/15 szett')).toBeInTheDocument()
+  expect(container.querySelector('.wk-top .t2')).toHaveTextContent('1/15 szett')
 })
 
 // ---- rest wiring: "Szett kész ✓" morphs the dock into its resting look (mezo-xt65,
@@ -523,6 +560,49 @@ test('real mode: only working sets reach the wire, each with its RIR', async () 
   expect(bodies[0].setIndex).toBe(0)
   expect(bodies[0].rir).toBe(1) // the prescribed working RIR target
   expect(bodies[0].targetWeightKg).toBe(105) // the WORKING prescription snapshot, not the ramp's
+})
+
+test('real mode: a swapped weight logs the adjusted target snapshot (mezo-l95v4)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    {
+      ...REAL_TODAY,
+      exercises: [
+        {
+          ...REAL_TODAY.exercises[0],
+          warmupSets: 1, workingSets: 1, repMin: 8, repMax: 10,
+          prescribedSets: [
+            { kind: 'warmup', targetWeightKg: 52.5, targetReps: 10, targetRIR: null },
+            { kind: 'working', targetWeightKg: 105, targetReps: 10, targetRIR: 1 },
+          ],
+        },
+      ],
+    },
+    calls,
+  )
+  const bodies: Record<string, unknown>[] = []
+  server.use(
+    http.post(`${API_BASE}/api/train/workouts/:id/sets`, async ({ request }) => {
+      const body = (await request.json()) as Record<string, unknown>
+      bodies.push(body)
+      return HttpResponse.json({ id: 'st-' + body.setIndex, exerciseId: body.exerciseId, setIndex: body.setIndex }, { status: 201 })
+    }),
+  )
+  const user = userEvent.setup()
+  setup()
+  await enterList()
+  await waitFor(() => expect(calls).toContain('start:d-1'))
+  const kg = kgInput(EX1)
+  await user.clear(kg)
+  await user.type(kg, '100')
+  await user.click(submitOf(EX1))
+  await waitFor(() => expect(bodies).toHaveLength(1))
+  // 105 × 10 @ RIR 1 → 100 kg: rtf 11 → e1rm 143,5 → 13,05 − 1 → 12.
+  expect(bodies[0].weightKg).toBe(100)
+  expect(bodies[0].reps).toBe(12)
+  expect(bodies[0].targetWeightKg).toBe(100)
+  expect(bodies[0].targetReps).toBe(12)
 })
 
 // ---- real medals (mezo-wp6n): replaces the scripted 105 kg demo toast ----
@@ -1157,7 +1237,7 @@ test('real mode: an edit PUTs the FIRST logged set\'s OWN server id, and deletin
   // marker keeps discriminating the two rows through the edit.
   await user.click(doneRowsOf(EX1)[0])
   await user.click(within(screen.getByRole('dialog')).getByLabelText('Ismétlés növelése'))
-  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Mentés ✓' }))
+  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Mentés' }))
   await waitFor(() => expect(calls).toContain('put:st-0'))
   expect(putBodies['st-0']).toMatchObject({ weightKg: 102.5, reps: 10 }) // lastWeek reps 9 + 1
 
@@ -1897,10 +1977,12 @@ test('real mode: a proposed challenge with null confidence renders "tanulom" and
   await openChallenges(user)
   expect(await screen.findByText('conf tanulom')).toBeInTheDocument()
   expect(screen.queryByText(/get_pr_history/)).not.toBeInTheDocument() // live sends no tools
-  expect(screen.getByText('⚔️ Elfogadom')).toBeInTheDocument()
+  // U4 (mezo-me75u.4): the ⚔️ emoji became the 3D quest icon — the label is plain text now.
+  expect(screen.getByText('Elfogadom')).toBeInTheDocument()
+  expect(screen.queryByText(/⚔/)).not.toBeInTheDocument()
 })
 
-test('real mode: clicking "⚔️ Elfogadom" POSTs an accept decision for the challenge', async () => {
+test('real mode: clicking "Elfogadom" POSTs an accept decision for the challenge', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useChallengeHandlers([challengeWire()], calls)
@@ -1908,7 +1990,7 @@ test('real mode: clicking "⚔️ Elfogadom" POSTs an accept decision for the ch
   setup()
   await enterList()
   await openChallenges(user)
-  await user.click(await screen.findByText('⚔️ Elfogadom'))
+  await user.click(await screen.findByText('Elfogadom'))
   await waitFor(() => expect(calls).toContain('decide:chal-1:accept'))
 })
 
@@ -1928,7 +2010,7 @@ test('real mode: clicking "Passz" POSTs a dismiss decision for the challenge', a
   await waitFor(() => expect(calls).toContain('decide:chal-1:dismiss'))
 })
 
-test('real mode: a resolved (hit) challenge shows the ✓ Megerősítve chip + outcome, no action row', async () => {
+test('real mode: a resolved (hit) challenge shows the Megerősítve chip (3D tick, no ✓ glyph) + outcome, no action row', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useChallengeHandlers(
@@ -1939,11 +2021,30 @@ test('real mode: a resolved (hit) challenge shows the ✓ Megerősítve chip + o
   setup()
   await enterList()
   await openChallenges(user)
-  expect(await screen.findByText('✓ Megerősítve')).toBeInTheDocument()
+  expect(await screen.findByText('Megerősítve')).toBeInTheDocument()
   expect(screen.getByText('110 kg × 8 — cél igazolva (+2.5 kg)')).toBeInTheDocument()
   // the workout is decided → the accept/skip row is hidden
-  expect(screen.queryByText('⚔️ Elfogadom')).not.toBeInTheDocument()
+  expect(screen.queryByText('Elfogadom')).not.toBeInTheDocument()
   expect(screen.queryByText('Elfogadva')).not.toBeInTheDocument()
+})
+
+// The owner-approved quest row (U4) is shown only when there is something to open.
+test('real mode: a day with NO challenges (resolved empty) shows no quest row', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useChallengeHandlers([], calls)
+  setup()
+  await enterList()
+  await waitFor(() => expect(screen.queryByRole('button', { name: /^A mai küldetések/ })).toBeNull())
+})
+
+test('real mode: a proposed challenge surfaces the quest row with its real count', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useChallengeHandlers([challengeWire()], calls)
+  setup()
+  await enterList()
+  expect(await screen.findByRole('button', { name: /^A mai küldetések/ })).toHaveTextContent('0 / 1 elfogadva')
 })
 
 test('a logged working set shows its RIR in the row\'s own RIR cell', async () => {
@@ -2003,7 +2104,7 @@ test('mock mode: a logged set row opens the edit sheet, and saving rewrites the 
   await user.click(firstRow())
   const sheet = within(screen.getByRole('dialog'))
   await user.click(sheet.getByLabelText('Ismétlés növelése'))
-  await user.click(sheet.getByRole('button', { name: 'Mentés ✓' }))
+  await user.click(sheet.getByRole('button', { name: 'Mentés' }))
 
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   // Fix round 1 (I3): assert the EXACT rewritten label, not just "it changed" — a save
@@ -2088,15 +2189,16 @@ test('each card carries its own progression banner — the reference content is 
   // banner is now the single statement of progression, the cue reserved for first-ever
   // exercises only).
   // A címke jele AGYAG-SZIMBÓLUM, nem emodzsi (stíluskönyv §2.3; mezo-ju4j6.16) — a `⚡`
-  // helyén `<ClayIcon name="i-lang">` áll, ezért a felirat szövege önmagában „Progresszió".
+  // helyén jel áll, ezért a felirat szövege önmagában „Progresszió". U4 (mezo-me75u.4): a jel
+  // a Titanium 3D villám (`t-bolt`), nem a korábbi agyag `i-lang`.
   const banner1 = card(EX1).querySelector('.pobanner') as HTMLElement
   expect(within(banner1).getByText('Progresszió')).toBeInTheDocument()
-  expect(banner1.querySelector('use[href="#i-lang"]')).not.toBeNull()
+  expect(banner1.querySelector('use[href="#t-bolt"]')).not.toBeNull()
   expect(within(banner1).getByText('+2,5 kg ↑')).toBeInTheDocument()
 
   const banner3 = card(EX3).querySelector('.pobanner') as HTMLElement
   expect(within(banner3).getByText('Progresszió')).toBeInTheDocument()
-  expect(banner3.querySelector('use[href="#i-lang"]')).not.toBeNull()
+  expect(banner3.querySelector('use[href="#t-bolt"]')).not.toBeNull()
   expect(within(banner3).getByText('+1 rep ↑')).toBeInTheDocument()
 })
 

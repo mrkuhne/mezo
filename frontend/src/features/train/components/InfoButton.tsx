@@ -33,7 +33,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { GlassBox } from '@/shared/ui/mozaik/GlassBox'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { ContentIcon, type ClayIconName, type Icon3DName } from '@/shared/ui/clay'
 
 /** The prototype's fixed explain-layer accent (navigation.js:91, `--ex-color:#bca6f1`). */
 export const INFO_TINT = '#bca6f1'
@@ -48,7 +48,10 @@ export interface InfoButtonProps {
   title: string
   /** The owner-iterated explanation, word for word. May contain an interpolated value. */
   copy: string
-  icon?: ClayIconName
+  /** A clay name (the default `i-info`, unmapped in CLAY_TO_3D, so it still renders the clay
+   *  glyph) or — on a page already re-dressed in üveg (mezo-me75u.4) — a Titanium 3D name
+   *  (`t-info`). Rendered through ContentIcon, so existing callers are unchanged. */
+  icon?: ClayIconName | Icon3DName
 }
 
 export function InfoButton({ title, copy, icon = DEFAULT_INFO_ICON }: InfoButtonProps) {
@@ -71,14 +74,14 @@ export function InfoButton({ title, copy, icon = DEFAULT_INFO_ICON }: InfoButton
         aria-label={`${title} — mit jelent?`}
         onClick={() => setOpen(true)}
       >
-        <ClayIcon name={icon} size={22} className="icon" />
+        <ContentIcon name={icon} size={22} className="icon" />
       </button>
       <GlassBox
         open={open}
         onClose={() => setOpen(false)}
         label={title}
         tint={INFO_TINT}
-        art={<ClayIcon name={icon} size={34} />}
+        art={<ContentIcon name={icon} size={34} />}
         eyebrow="MEZO · RÉSZLET"
       >
         <p className="pl-info-copy">{copy}</p>

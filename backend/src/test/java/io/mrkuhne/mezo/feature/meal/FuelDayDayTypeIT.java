@@ -24,8 +24,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Slice 3 (mezo-sxlj): {@code targetSet} picks the date's {@code trainingDayKcal} when any
- * workout window covers it, else {@code restDayKcal}, deriving the serve-time carb delta
+ * Slice 3 (mezo-sxlj): {@code targetSet} picks the date's {@code trainingDayKcal} once movement
+ * was actually LOGGED on it (mezo-u13jv — a planned session alone never raises the target), else
+ * {@code restDayKcal}, deriving the serve-time carb delta
  * (protein/fat constant) — never stored. {@code dailyTargets} (the meal scorer's base, mezo-3g5w)
  * applies the SAME pick, so a meal logged on a training day is judged against the training-day
  * budget the Fuel-day hero shows (score↔hero coherence).
@@ -96,7 +97,7 @@ class FuelDayDayTypeIT extends AbstractIntegrationTest {
         gymRepo.save(g);
     }
 
-    /** An ad-hoc LOGGED sport session — no matching schedule slot or event, played on {@code date}. */
+    /** A LOGGED sport session played on {@code date} — with or without a matching plan. */
     private void seedLoggedSportSession(UUID owner, LocalDate date) {
         SportSessionEntity s = new SportSessionEntity();
         s.setCreatedBy(owner);
@@ -106,7 +107,7 @@ class FuelDayDayTypeIT extends AbstractIntegrationTest {
         sportSessionRepository.save(s);
     }
 
-    /** A dated, one-off sport EVENT on {@code date} (mezo-e1sp) — schedule-derived, unlike a logged session. */
+    /** A dated, one-off sport EVENT on {@code date} (mezo-e1sp) — a plan, not logged movement. */
     private void seedSportEvent(UUID owner, LocalDate date) {
         SportEventEntity e = new SportEventEntity();
         e.setCreatedBy(owner);
@@ -123,6 +124,7 @@ class FuelDayDayTypeIT extends AbstractIntegrationTest {
         UUID owner = seedGoalWithDayTypeSegment();
         LocalDate monday = LocalDate.of(2026, 6, 1); // dayOfWeek 0
         seedGymSlot(owner, 0);
+        seedLoggedSportSession(owner, monday);
 
         FuelDayResponse day = fuelDayService.getDay(owner, monday);
 
@@ -156,17 +158,17 @@ class FuelDayDayTypeIT extends AbstractIntegrationTest {
         assertThat(day.getTargets().getC()).isEqualByComparingTo(BigDecimal.valueOf(segmentCarbsG()));
     }
 
-    // -- Finding 1 (mezo-sxlj final fix wave): classification is SCHEDULE-based, mirroring the FE's
-    // deriveBlocks and the engine's weekly split basis — an ad-hoc logged session must not flip the
-    // day, only a genuine schedule/event/prescribed-run source may.
+    // -- mezo-u13jv (owner decision 2026-09-24): classification is LOGGED-movement based — the plan
+    // alone (a gym slot, a dated sport event) never raises the day's target; a logged session does,
+    // planned or not.
 
     @Test
-    void adHocLoggedSportSessionDoesNotMakeItATrainingDay() {
+    void plannedGymSlotAloneKeepsItARestDay() {
         UUID owner = seedGoalWithDayTypeSegment();
-        LocalDate tuesday = LocalDate.of(2026, 6, 2); // dayOfWeek 1 — no schedule seeded
-        seedLoggedSportSession(owner, tuesday);
+        LocalDate monday = LocalDate.of(2026, 6, 1); // dayOfWeek 0
+        seedGymSlot(owner, 0);
 
-        FuelDayResponse day = fuelDayService.getDay(owner, tuesday);
+        FuelDayResponse day = fuelDayService.getDay(owner, monday);
 
         assertThat(day.getTargets().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(REST_DAY_KCAL));
         assertThat(day.getTargets().getC())
@@ -174,16 +176,29 @@ class FuelDayDayTypeIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void datedSportEventMakesItATrainingDay() {
+    void adHocLoggedSportSessionMakesItATrainingDay() {
+        UUID owner = seedGoalWithDayTypeSegment();
+        LocalDate tuesday = LocalDate.of(2026, 6, 2); // dayOfWeek 1 — no schedule seeded
+        seedLoggedSportSession(owner, tuesday);
+
+        FuelDayResponse day = fuelDayService.getDay(owner, tuesday);
+
+        assertThat(day.getTargets().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(TRAINING_DAY_KCAL));
+        assertThat(day.getTargets().getC())
+            .isEqualByComparingTo(BigDecimal.valueOf(segmentCarbsG() + 38));
+    }
+
+    @Test
+    void datedSportEventNotYetPlayedKeepsItARestDay() {
         UUID owner = seedGoalWithDayTypeSegment();
         LocalDate wednesday = LocalDate.of(2026, 6, 3); // dayOfWeek 2 — no schedule seeded
         seedSportEvent(owner, wednesday);
 
         FuelDayResponse day = fuelDayService.getDay(owner, wednesday);
 
-        assertThat(day.getTargets().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(TRAINING_DAY_KCAL));
+        assertThat(day.getTargets().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(REST_DAY_KCAL));
         assertThat(day.getTargets().getC())
-            .isEqualByComparingTo(BigDecimal.valueOf(segmentCarbsG() + 38));
+            .isEqualByComparingTo(BigDecimal.valueOf(segmentCarbsG() - 50));
     }
 
     // -- Finding 3 (mezo-sxlj final fix wave): a partial split (only one of the two day-type fields
@@ -209,7 +224,7 @@ class FuelDayDayTypeIT extends AbstractIntegrationTest {
     void dailyTargetsOnTrainingDayReturnsTrainingKcalAndDeltaAdjustedCarbs() {
         UUID owner = seedGoalWithDayTypeSegment();
         LocalDate monday = LocalDate.of(2026, 6, 1);
-        seedGymSlot(owner, 0);
+        seedLoggedSportSession(owner, monday);
 
         DailyTargets t = fuelDayService.dailyTargets(owner, monday);
 

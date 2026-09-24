@@ -28,11 +28,17 @@
 // than cached, for the same reason GlassBox re-queries: `.phone-screen` may not exist yet
 // when this component first mounts. The dock is rendered only by the active phase, so the
 // portal unmounts with it.
+//
+// Üvegesítés U4 (mezo-me75u.4): ONE fixed glass bar with NO sheen (`.glass.is-still`, like the
+// TabBar — a sweep through always-visible chrome reads as flicker). Coral while idle; while
+// resting the SAME bar turns sky and the SAME ring fills around a 3D clock. Skin lives in the
+// `uveg edzes session` block of prototype.css.
 // ============================================================
 import type { CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { fmtMMSS } from '@/features/train/logic/restTimer'
 import { cn } from '@/shared/lib/cn'
+import { Icon3D } from '@/shared/ui/clay'
 
 export interface WorkoutDockProps {
   /** True while a rest is counting down (running OR paused) — `useRestTimer().status !== 'idle'`. */
@@ -69,13 +75,13 @@ export function WorkoutDock({
   const target = document.querySelector('.phone-screen') ?? document.body
 
   return createPortal(
-    <div className={cn('wo-dock', resting && 'is-resting')} role="status">
+    <div className={cn('wo-dock glass is-still', resting && 'is-resting')} role="status">
       <span className="wo-dock-ring" style={{ '--ring': ring } as CSSProperties}>
-        <svg viewBox="0 0 44 44" aria-hidden="true">
-          <circle className="track" cx={22} cy={22} r={18} pathLength={100} />
-          <circle className="fill" cx={22} cy={22} r={18} pathLength={100} />
+        <svg viewBox="0 0 48 48" aria-hidden="true">
+          <circle className="track" cx={24} cy={24} r={20} pathLength={100} />
+          <circle className="fill" cx={24} cy={24} r={20} pathLength={100} />
         </svg>
-        <b>{resting ? '' : doneSets}</b>
+        {resting ? <Icon3D name="t-clock" size={34} className="wo-dock-clock" /> : <b>{doneSets}</b>}
       </span>
       <span className="wo-dock-copy">
         <small aria-live="polite">{resting ? `PIHENŐ · ${(exerciseName ?? '').toUpperCase()}` : 'ELVÉGZETT MUNKA'}</small>
@@ -83,8 +89,8 @@ export function WorkoutDock({
       </span>
       {resting ? (
         <span className="wo-dock-acts">
-          <button type="button" onClick={onExtend}>+30s</button>
-          <button type="button" onClick={onSkipRest}>Kész</button>
+          <button type="button" className="wo-dock-ghost" onClick={onExtend}>+30s</button>
+          <button type="button" className="wo-dock-go" onClick={onSkipRest}>Kész</button>
         </span>
       ) : (
         <button type="button" className="wo-dock-finish" disabled={finishDisabled} onClick={onFinish}>

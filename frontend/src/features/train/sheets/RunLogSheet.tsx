@@ -1,7 +1,16 @@
+// ============================================================
+// Mezo · RunLogSheet — logs one prescribed run. Üveg re-dress (mezo-me75u.4,
+// prototype uveg-edzes-body.html `SH.runlog`): the shared floating capture sheet
+// (one sky glass surface, bible U2 rule 15) with the capture header anatomy
+// (centred eyebrow · close, the 68px 3D run art + title), flat steppers/scale/field
+// inside, Mégse flat and Mentés the one lit primary. The capture header is written
+// out here (same classes as CaptureHeader) because the shared CaptureArt set has no
+// run kind.
+// ============================================================
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
-import { Display } from '@/shared/ui/Display'
+import { Icon3D } from '@/shared/ui/clay'
 import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import { NumberStep, ScaleRow } from '@/features/train/sheets/SportLogSheet'
 import type { RunSessionLogRequest } from '@/data/train/runningApi'
@@ -28,18 +37,20 @@ export function RunLogSheet({ ctx, onClose, onSave, date }: {
   const logDate = date ?? localDateString()
 
   return (
-    <Sheet onClose={onClose} labelledBy="run-log-title">
+    <Sheet onClose={onClose} labelledBy="run-log-title" className="capture-sheet capture-tone-run glass">
       {(close) => (
         <>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-            <div className="col">
-              <span className="eyebrow" style={{ color: 'var(--sky)' }}>Futás log · {ctx.label}</span>
-              <div id="run-log-title" style={{ marginTop: 4 }}><Display size="md">Hogy ment?</Display></div>
+          <header className="capture-header">
+            <div className="capture-toolbar">
+              <span />
+              <span className="capture-eyebrow">Futás log · {ctx.label}</span>
+              <button type="button" className="capture-dismiss" onClick={close} aria-label="Bezárás"><Icon name="x" size={18} /></button>
             </div>
-            <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
-              <Icon name="x" size={12} />
-            </button>
-          </div>
+            <div className="capture-heading">
+              <Icon3D name="t-run" size={68} className="capture-art" />
+              <div><h2 id="run-log-title">Hogy ment?</h2></div>
+            </div>
+          </header>
           <div className="col gap-md">
             {/* Shown for pyramid sessions TOO (not just sprint) — the designed fix for the
                 real completedRounds scoring bug: capture the value honestly on every kind
@@ -47,20 +58,18 @@ export function RunLogSheet({ ctx, onClose, onSave, date }: {
             <NumberStep
               label="Teljesített körök"
               hint={ctx.isSprint ? undefined : 'piramis-szakaszok · a haladás ebből számol'}
-              val={rounds} step={1} min={0} max={30} onChange={setRounds} color="var(--sky)"
+              val={rounds} step={1} min={0} max={30} onChange={setRounds} color="var(--dv-sky)"
             />
-            <ScaleRow label="RPE · érzékelt nehézség" val={rpe} onChange={setRpe} color="var(--sky)" />
+            <ScaleRow label="RPE · érzékelt nehézség" val={rpe} onChange={setRpe} color="var(--dv-sky)" />
             <NumberStep label="Pulzus-megnyugvás · mp" val={hr} step={5} min={0} max={300} onChange={setHr} />
             <div className="col gap-sm">
               <span className="label-mono">Jegyzet</span>
-              <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="opcionális"
-                style={{ background: 'var(--surface-2)', padding: '12px 14px', fontSize: 14, color: 'var(--text-primary)',
-                         clipPath: 'polygon(4px 0,100% 0,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px)' }} />
+              <input className="uvs-inp" aria-label="Futás jegyzet" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="opcionális" />
             </div>
           </div>
-          <div className="row gap-sm mt-lg">
+          <div className="capture-actions">
             <CtaGhost className="flex-1" onClick={close}>Mégse</CtaGhost>
-            <CtaPrimary className="flex-1" disabled={saving} onClick={() => {
+            <CtaPrimary className="capture-save flex-1" disabled={saving} onClick={() => {
               const body: RunSessionLogRequest = {
                 blockId: ctx.blockId, weekNumber: ctx.weekNumber, sessionKey: ctx.sessionKey, date: logDate,
                 completedRounds: rounds, rpeActual: rpe, hrRecoverySec: hr,
@@ -70,7 +79,7 @@ export function RunLogSheet({ ctx, onClose, onSave, date }: {
               // immediately when no handler is wired.
               if (onSave) { setSaving(true); onSave(body, close) } else { close() }
             }}>
-              <Icon name="check" size={14} /> Mentés
+              <Icon3D name="t-tick" size={22} /> Mentés
             </CtaPrimary>
           </div>
         </>

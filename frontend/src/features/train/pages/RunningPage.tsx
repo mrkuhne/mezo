@@ -1,31 +1,28 @@
 // ============================================================
-// Mezo · RunningPage (Futás) — Mozaik 2.0 re-face (mezo-d20.11).
-// Source of truth: docs/design_2.0/prototypes/src/edzes-body.html #page-futas
-// (p-sky tone, ×1.18): page-head (‹ Edzés + the Tervek-only `＋ Új terv`
-// pgact) → compact hero (page name, i-futas clay spot + `Hét cur/weeks`) →
-// the live stat strip → three segments (E heti edzés · Napló · Tervek).
+// Mezo · RunningPage (Futás) — Mozaik 2.0 re-face (mezo-d20.11), üveg re-dress
+// (mezo-me75u.4, prototype docs/design_2.0/prototypes/src/uveg-edzes-body.html
+// `futas()`): glass back pill (+ the Tervek-only lit sky `＋ Új terv` pill) → the
+// frameless sky halo hero (t-run, `Hét cur/weeks`) → three flat stat cells → the
+// flat segmented control (active segment filled sky) → the segment.
 //
-// The old face — an `Edzés · Futás` eyebrow + an `Intervallum` h1, with the
-// week number and stat row repeated INSIDE the week view's block card — is
-// gone: the number is now stated exactly once, in the page hero. The block
-// card keeps what only it can say (goal eyebrow, phase label, week strip).
+// Ranking (bible §3.4): the block card, the prescribed session cards, the
+// cross-load note, the HR-recovery card and the logged-run rows are sky `.glass`
+// (the planned block lavender); chips/segments/week cells inside them flat; the
+// archived blocks flat rows; every empty state dashed (`.uv-empty`).
 // With no active block the big number is `—`, never a fabricated `0/0`.
 //
-// Napiv --tag-run/--wash-run sky vocabulary and the stag-run FUTÁS type tag on
-// session rows/cards are unchanged, as is every data hook and mutation.
+// The stag-run FUTÁS type tag on session rows/cards is unchanged, as is every
+// data hook and mutation.
 // ============================================================
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStickyTab } from '@/shared/hooks/useStickyTab'
 import { useRunning } from '@/data/hooks'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import type { RunningBlockResponse, RunSessionLogResponse, RunSessionLogRequest, RunPrescribedSession } from '@/data/train/runningApi'
 import { newDraft } from '@/data/train/runningDraft'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { GhostState } from '@/shared/ui/GhostState'
-import { Display } from '@/shared/ui/Display'
-import { ClayIcon } from '@/shared/ui/clay'
-import { MozaikPage, PageHead, PageBody, StatCell } from '@/shared/ui/mozaik'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import { MozaikPage, PageHead, PageHero, PageBody, StatCell } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { huMonthDay, huMonthDayDow } from '@/shared/lib/dates'
 import { RunWeekStrip } from '@/features/train/components/RunWeekStrip'
@@ -34,7 +31,7 @@ import { RunCrossLoadCard } from '@/features/train/components/RunCrossLoadCard'
 import { RunLogSheet } from '@/features/train/sheets/RunLogSheet'
 import { todayIdx, dateForDayOfWeek } from '@/data/train/runningAgenda'
 
-const RUN = 'var(--tag-run)'
+const SKY = { '--c': 'var(--dv-sky)' } as CSSProperties
 
 type RunLogCtx = { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number; date: string }
 
@@ -60,6 +57,16 @@ const STATUS_LABELS: Record<RunningBlockResponse['status'], string> = {
   archived: 'archív',
 }
 
+/** The dashed empty state (bible §3 rank 4): no glass, no glow. */
+function UvEmpty({ art, message }: { art: Icon3DName; message: string }) {
+  return (
+    <div className="uvs-ghost uv-empty rise" style={SKY}>
+      <Icon3D name={art} size={56} />
+      <p className="uv-voice">{message}</p>
+    </div>
+  )
+}
+
 export function RunningPage() {
   const { runningBlocks, activeRunningBlock, runSessions, runningPending, saveRunningBlock, logRunSession } = useRunning()
   // Sticky so returning from the builder (＋ Új terv) lands back on the segment
@@ -74,10 +81,9 @@ export function RunningPage() {
     saveRunningBlock(null, newDraft(start, end), { onSuccess: (b) => openBuilder(b.id) })
   }
 
-  // Hero + stat strip (prototype #page-futas): `Hét cur/weeks` over the active
-  // block, and the three live cells beneath it. With NO active block the big
-  // number is `—` (never a fabricated 0/0) and the strip switches to the
-  // library's own honest counts — the prototype's own no-block branch.
+  // Hero + stat strip: `Hét cur/weeks` over the active block, and the three live
+  // cells beneath it. With NO active block the big number is `—` (never a
+  // fabricated 0/0) and the strip switches to the library's own honest counts.
   const activeWeek = activeRunningBlock?.structure.weeks.find(
     (w) => w.weekNumber === activeRunningBlock.currentWeek,
   )
@@ -91,28 +97,28 @@ export function RunningPage() {
   ).length
 
   return (
-    <MozaikPage tone="sky">
-      <PageHead onBack={() => navigate('/train')} label="‹ Edzés">
-        {/* `＋ Új terv` chip lives on the Tervek (blocks) segment */}
+    <MozaikPage tone="sky" className="uvs-page uvs-futas">
+      <PageHead glass onBack={() => navigate('/train')} label="Edzés">
+        {/* `＋ Új terv` lives on the Tervek (blocks) segment — a lit sky pill */}
         {view === 'blocks' && (
-          <button type="button" onClick={createBlock} className="mz-pgact">
+          <button type="button" onClick={createBlock} className="mz-pgact uvs-act" style={SKY}>
             ＋ Új terv
           </button>
         )}
       </PageHead>
       {/* One-shot entrance choreography, re-armed on a segment switch. */}
       <EntranceGroup replayKey={view}>
-        <div className="mz-page-hero">
-          <div className="mz-hero-nm">Futás</div>
-          <div className="mz-hero-row">
-            <ClayIcon name="i-futas" size={85} />
-            <span className="mz-bignum">
-              {activeRunningBlock ? `${activeRunningBlock.currentWeek}/${activeRunningBlock.weeks}` : '—'}
-            </span>
-          </div>
-        </div>
+        <PageHero
+          art="t-run"
+          accent="var(--dv-sky)"
+          name="Futás"
+          big={activeRunningBlock
+            ? <>{activeRunningBlock.currentWeek}<small>/{activeRunningBlock.weeks}</small></>
+            : '—'}
+          sub={activeRunningBlock ? `hét a blokkból · ${activeRunningBlock.title}` : undefined}
+        />
         <PageBody>
-          <div className="mz-statstrip rise" style={{ '--d': '30ms' } as React.CSSProperties}>
+          <div className="mz-statstrip uvs-strip rise" style={{ '--d': '30ms' } as CSSProperties}>
             {activeRunningBlock ? (
               <>
                 <StatCell value={`${doneThisWeek}/${prescribed.length}`} label="e heti edzés" />
@@ -128,11 +134,8 @@ export function RunningPage() {
             )}
           </div>
 
-          {/* View switcher */}
-          {/* Same `.segtabs` control Sport uses (mezo-setx.6.5): the selected segment
-              speaks PRIMARY, because ADR 0018 D5 keeps the run sky in the data-viz
-              band and off buttons. */}
-          <div className="segtabs rise" data-kalauz-anchor="futas-tabs" style={{ '--d': '60ms', marginTop: 12 } as React.CSSProperties}>
+          {/* View switcher — the flat segmented control, active segment filled sky. */}
+          <div className="segtabs uvs-seg rise" data-kalauz-anchor="futas-tabs" style={{ '--d': '60ms', ...SKY } as CSSProperties}>
             {SUB_VIEWS.map((v) => (
               <button
                 key={v.id}
@@ -155,7 +158,7 @@ export function RunningPage() {
   )
 }
 
-// === E heti edzés: active block hero + this week's prescribed sessions ===
+// === E heti edzés: the active block card + this week's prescribed sessions ===
 function RunWeekView({ block, sessions: logs, pending, onLog }: {
   block: RunningBlockResponse | null
   sessions: RunSessionLogResponse[]
@@ -165,24 +168,12 @@ function RunWeekView({ block, sessions: logs, pending, onLog }: {
   const [logCtx, setLogCtx] = useState<RunLogCtx | null>(null)
   const { showLevelUp } = useLevelUp()
 
-  // Real-mode initial load: neutral skeleton until the query resolves, so the
-  // no-active-block ghost doesn't flash before data lands. Mock mode is
+  // Real-mode initial load: a neutral placeholder until the query resolves, so the
+  // no-active-block empty state doesn't flash before data lands. Mock mode is
   // synchronous (pending === false) so this never triggers there.
-  if (pending) {
-    return (
-      <div style={{ paddingTop: 8 }}>
-        <GhostState lines={3} message="Betöltés…" />
-      </div>
-    )
-  }
+  if (pending) return <UvEmpty art="t-clock" message="Betöltés…" />
 
-  if (!block) {
-    return (
-      <div style={{ paddingTop: 8 }}>
-        <GhostState lines={3} message="Nincs aktív futóterved — a Tervek fülön aktiválj egyet." />
-      </div>
-    )
-  }
+  if (!block) return <UvEmpty art="t-run" message="Nincs aktív futóterved — a Tervek fülön aktiválj egyet." />
 
   const week = block.structure.weeks.find((w) => w.weekNumber === block.currentWeek)
   const prescribed = week?.sessions ?? []
@@ -192,57 +183,28 @@ function RunWeekView({ block, sessions: logs, pending, onLog }: {
     isDone(s.key) ? 'done' : s.dayOfWeek === today ? 'today' : s.dayOfWeek < today ? 'past' : 'future'
 
   return (
-    <div style={{ paddingTop: 8 }}>
-      {/* Block card — the prototype's `blokk-kártya`: goal eyebrow, phase label
-          and the week strip. The `Hét cur/weeks` big number and the stat row it
-          used to repeat now live in the PAGE hero + strip (mezo-d20.11), so the
-          number is stated once. */}
-      <div
-        className="card rise"
-        style={{
-          padding: 18,
-          background:
-            'linear-gradient(180deg, var(--wash-run) 0%, var(--surface-1) 100%)',
-          borderColor: 'color-mix(in srgb, var(--tag-run) 30%, transparent)',
-          position: 'relative',
-          overflow: 'hidden',
-          marginBottom: 16,
-          '--d': '90ms',
-        } as React.CSSProperties}
-      >
-        <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: RUN }} />
-        <span
-          style={{
-            position: 'absolute',
-            right: -50,
-            top: -50,
-            width: 160,
-            height: 160,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, var(--wash-run), transparent 70%)',
-          }}
-        />
-        <div style={{ position: 'relative' }}>
-          <span className="eyebrow" style={{ color: RUN }}>{block.goal || 'Intervallum-blokk'}</span>
-          {week?.phaseLabel && (
-            <div className="text-secondary" style={{ fontSize: 14, marginTop: 4 }}>{week.phaseLabel}</div>
-          )}
-          <RunWeekStrip weeks={block.weeks} currentWeek={block.currentWeek} />
-        </div>
-      </div>
+    <div className="uvs-sec">
+      {/* Block card — goal eyebrow, the block's name, the phase label and the week
+          strip. The `Hét cur/weeks` numeral lives in the PAGE hero, stated once. */}
+      <article className="uvs-blk glass rise" style={{ '--d': '90ms', ...SKY } as CSSProperties}>
+        <span className="uv-eyebrow uv-tint">{block.goal || 'Intervallum-blokk'}</span>
+        <strong>{block.title}</strong>
+        {week?.phaseLabel && <small>{week.phaseLabel}</small>}
+        <RunWeekStrip weeks={block.weeks} currentWeek={block.currentWeek} />
+      </article>
 
       {/* This week's sessions */}
       {week ? (
         <>
-          <div className="rise" style={{ marginBottom: 12, '--d': '120ms' } as React.CSSProperties}>
-            <Eyebrow>E hét · {prescribed.length} edzés</Eyebrow>
+          <div className="uvs-sechead rise" style={{ '--d': '120ms' } as CSSProperties}>
+            <span className="uv-eyebrow">E hét · {prescribed.length} edzés</span>
           </div>
-          <div className="col gap-sm">
+          <div className="uvs-list">
             {prescribed.map((s, i) => {
               const cta = ctaStateFor(s)
               const loggable = cta === 'today' || cta === 'past'
               return (
-                <div key={s.key} className="rise" style={{ '--d': `${150 + i * 45}ms` } as React.CSSProperties}>
+                <div key={s.key} className="rise" style={{ '--d': `${150 + i * 45}ms`, '--i': i + 1 } as CSSProperties}>
                   <RunSessionCard
                     session={s}
                     ctaState={cta}
@@ -264,16 +226,14 @@ function RunWeekView({ block, sessions: logs, pending, onLog }: {
           </div>
           {/* Derived cross-load → gym leg volume (static in Phase 2) */}
           <div
-            className="rise"
-            style={{ marginTop: 16, '--d': `${150 + prescribed.length * 45}ms` } as React.CSSProperties}
+            className="uvs-sec rise"
+            style={{ '--d': `${150 + prescribed.length * 45}ms` } as CSSProperties}
           >
             <RunCrossLoadCard />
           </div>
         </>
       ) : (
-        <span className="text-meta-sm text-tertiary">
-          Az aktuális hét ({block.currentWeek}) nincs a tervben.
-        </span>
+        <UvEmpty art="t-calendar" message={`Az aktuális hét (${block.currentWeek}) nincs a tervben.`} />
       )}
 
       {logCtx && (
@@ -288,32 +248,21 @@ function RunWeekView({ block, sessions: logs, pending, onLog }: {
   )
 }
 
-// (RunStat retired with the duplicated in-card stat row, mezo-d20.11 — the
-//  page-level `.mz-statstrip` + StatCell is the one stat vocabulary now.)
-
 // === Napló: logged run sessions, newest first ===
 function RunLogView({ sessions }: { sessions: RunSessionLogResponse[] }) {
-  if (sessions.length === 0) {
-    return (
-      <div style={{ paddingTop: 8 }}>
-        <span className="text-meta-sm text-tertiary">
-          Még nincs logolt futás.
-        </span>
-      </div>
-    )
-  }
+  if (sessions.length === 0) return <UvEmpty art="t-journal" message="Még nincs logolt futás." />
   const ordered = [...sessions].sort((a, b) => b.date.localeCompare(a.date))
   return (
-    <div style={{ paddingTop: 8 }}>
-      <div className="rise" style={{ '--d': '30ms' } as React.CSSProperties}>
+    <div className="uvs-sec">
+      <div className="rise" style={{ '--d': '30ms' } as CSSProperties}>
         <RunHrTrend logs={ordered} />
       </div>
-      <div className="rise" style={{ marginBottom: 12, '--d': '60ms' } as React.CSSProperties}>
-        <Eyebrow>Utolsó {ordered.length} futás</Eyebrow>
+      <div className="uvs-sechead rise" style={{ '--d': '60ms' } as CSSProperties}>
+        <span className="uv-eyebrow">Utolsó {ordered.length} futás</span>
       </div>
-      <div className="col gap-sm">
+      <div className="uvs-list">
         {ordered.map((s, i) => (
-          <div key={s.id} className="rise" style={{ '--d': `${90 + i * 45}ms` } as React.CSSProperties}>
+          <div key={s.id} className="rise" style={{ '--d': `${90 + i * 45}ms`, '--i': i } as CSSProperties}>
             <RunLogCard session={s} />
           </div>
         ))}
@@ -323,78 +272,71 @@ function RunLogView({ sessions }: { sessions: RunSessionLogResponse[] }) {
 }
 
 // Pulzus-megnyugvás (HR-recovery) trend — lower mp = better recovery, so a
-// non-positive delta reads as improvement (success), a rise reads as amber
-// (never red — a slower recovery isn't a failure state). `logs` is newest-first.
+// non-positive delta reads as improvement, a rise reads as amber (never red — a
+// slower recovery isn't a failure state). `logs` is newest-first. A sky glass
+// card: the delta big, the line glowing sky, each point's value + date flat below.
+const HR_W = 300
+const HR_H = 100
 function RunHrTrend({ logs }: { logs: RunSessionLogResponse[] }) {
   const withHr = logs.filter((l) => l.hrRecoverySec != null).slice(0, 6).reverse()
   if (withHr.length < 2) return null
-  const max = Math.max(...withHr.map((l) => l.hrRecoverySec!))
-  const delta = withHr[withHr.length - 1].hrRecoverySec! - withHr[0].hrRecoverySec!
+  const vals = withHr.map((l) => l.hrRecoverySec!)
+  const lo = Math.min(...vals)
+  const hi = Math.max(...vals)
+  const span = Math.max(1, hi - lo)
+  const pts = vals.map((v, i) => [
+    10 + (i * (HR_W - 20)) / (vals.length - 1),
+    HR_H - 12 - ((v - lo) / span) * (HR_H - 24),
+  ] as const)
+  const delta = vals[vals.length - 1] - vals[0]
   return (
-    <div className="card" style={{ padding: 14, marginBottom: 14 }}>
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <Eyebrow>Pulzus-megnyugvás · utolsó {withHr.length} futás</Eyebrow>
-        <span style={{ fontSize: 12, fontWeight: 700, color: delta <= 0 ? 'var(--success)' : 'var(--warning)' }}>
-          {delta <= 0 ? '' : '+'}{delta} mp
-        </span>
+    <article className="uvs-hrc glass" style={SKY}>
+      <div className="uvs-chead">
+        <Icon3D name="t-heart" size={40} />
+        <span className="uv-eyebrow uv-tint">Pulzus-megnyugvás · utolsó {withHr.length} futás</span>
       </div>
-      <div className="row" style={{ gap: 8, alignItems: 'flex-end', height: 64, marginTop: 12 }}>
+      <div className={delta <= 0 ? 'uvs-hr-delta is-better' : 'uvs-hr-delta is-worse'}>
+        <b>{delta <= 0 ? '' : '+'}{delta} mp</b>
+      </div>
+      <svg className="uvs-hr-line" viewBox={`0 0 ${HR_W} ${HR_H}`} aria-hidden="true">
+        <path d={`M${pts.map((p) => p.join(' ')).join(' L')}`} />
+        {pts.map(([x, y], i) => (
+          <circle key={i} cx={x} cy={y} r={i === pts.length - 1 ? 5 : 3.5} className={i === pts.length - 1 ? 'is-last' : undefined} />
+        ))}
+      </svg>
+      {/* one label per point, spread edge to edge so each sits under its dot */}
+      <div className="uvs-hr-cols">
         {withHr.map((l) => (
-          <div key={l.id} className="col" style={{ alignItems: 'center', flex: 1, height: '100%', justifyContent: 'flex-end', gap: 4 }}>
-            <span style={{ fontSize: 10, fontWeight: 600, color: RUN }}>{l.hrRecoverySec}</span>
-            <div style={{
-              width: '100%',
-              maxWidth: 22,
-              height: `${Math.max(14, Math.round((l.hrRecoverySec! / max) * 100))}%`,
-              minHeight: 6,
-              borderRadius: 2,
-              background: 'linear-gradient(180deg, var(--wash-run), var(--tag-run))',
-            }} />
-            <span className="text-tertiary" style={{ fontSize: 9, marginTop: 2 }}>{huMonthDay(l.date)}</span>
+          <div key={l.id}>
+            <b>{l.hrRecoverySec}</b>
+            <small>{huMonthDay(l.date)}</small>
           </div>
         ))}
       </div>
-      <p className="text-tertiary" style={{ fontSize: 11, marginTop: 8 }}>
-        mp a nyugalmi pulzusig — alacsonyabb = jobb regeneráció
-      </p>
-    </div>
-  )
-}
-
-function RunLogChip({ text }: { text: string }) {
-  return (
-    <span className="excat-tag" style={{ background: 'var(--wash-run)', color: RUN }}>
-      {text}
-    </span>
+      <p className="uvs-fnote">mp a nyugalmi pulzusig — alacsonyabb = jobb regeneráció</p>
+    </article>
   )
 }
 
 function RunLogCard({ session }: { session: RunSessionLogResponse }) {
-  const chips: string[] = []
-  if (session.rpeActual != null) chips.push(`RPE ${session.rpeActual}`)
-  if (session.completedRounds != null) chips.push(`${session.completedRounds} kör`)
-  if (session.hrRecoverySec != null) chips.push(`${session.hrRecoverySec}mp pulzus`)
-
   return (
-    <div className="card" style={{ padding: '13px 14px' }}>
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-        <div className="row" style={{ alignItems: 'center', gap: 10 }}>
-          <span className="stag stag-run">FUTÁS</span>
-          <span className="label-mono" style={{ color: 'var(--text-primary)' }}>{huMonthDayDow(session.date)}</span>
-          <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>{sessionKeyLabel(session.sessionKey)}</span>
-        </div>
+    <article className="uvs-rsc glass" style={SKY}>
+      <div className="uvs-tagl">
+        <span className="stag stag-run">FUTÁS</span>
+        <em>{huMonthDayDow(session.date)}</em>
+        <strong>{sessionKeyLabel(session.sessionKey)}</strong>
       </div>
-      {chips.length > 0 && (
-        <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
-          {chips.map((c) => (
-            <RunLogChip key={c} text={c} />
-          ))}
+      {(session.rpeActual != null || session.completedRounds != null || session.hrRecoverySec != null) && (
+        <div className="uvs-chips">
+          {session.rpeActual != null && <span className="uvs-chip">RPE {session.rpeActual}</span>}
+          {session.completedRounds != null && <span className="uvs-chip">{session.completedRounds} kör</span>}
+          {session.hrRecoverySec != null && (
+            <span className="uvs-chip"><Icon3D name="t-heart" size={16} />{session.hrRecoverySec}mp pulzus</span>
+          )}
         </div>
       )}
-      {session.notes && (
-        <p className="text-secondary" style={{ fontSize: 14, marginTop: 8, lineHeight: 1.5 }}>{session.notes}</p>
-      )}
-    </div>
+      {session.notes && <p className="uvs-rsc-note">{session.notes}</p>}
+    </article>
   )
 }
 
@@ -404,85 +346,44 @@ function RunBlocksView({ blocks, onOpen }: { blocks: RunningBlockResponse[]; onO
   const planned = blocks.filter((b) => b.status === 'planned')
   const archived = blocks.filter((b) => b.status === 'archived')
 
-  if (blocks.length === 0) {
-    return (
-      <div style={{ paddingTop: 8 }}>
-        <GhostState lines={2} message="Még nincs futóterved — itt fognak élni a blokkjaid." />
-      </div>
-    )
-  }
+  if (blocks.length === 0) return <UvEmpty art="t-calendar" message="Még nincs futóterved — itt fognak élni a blokkjaid." />
 
   // One running stagger index across the three status sections, so the whole
   // library reads as a single entrance rather than three restarts.
   let d = 30
   const nextD = () => { const v = d; d += 45; return v }
+  const sections: { label: string; list: RunningBlockResponse[]; render: (b: RunningBlockResponse) => React.ReactNode }[] = [
+    { label: 'Aktív', list: active, render: (b) => <RunActiveBlockCard block={b} onOpen={onOpen} /> },
+    { label: 'Tervezett', list: planned, render: (b) => <RunCompactBlockCard block={b} onOpen={onOpen} /> },
+    { label: 'Archív', list: archived, render: (b) => <RunCompactBlockCard block={b} onOpen={onOpen} /> },
+  ]
   return (
     <>
-      <div style={{ paddingTop: 8 }}>
-        <div className="rise" style={{ marginBottom: 12, '--d': `${nextD()}ms` } as React.CSSProperties}>
-          <Eyebrow>Aktív · {active.length}</Eyebrow>
+      {sections.map((sec) => (
+        <div key={sec.label} className="uvs-sec">
+          <div className="uvs-sechead rise" style={{ '--d': `${nextD()}ms` } as CSSProperties}>
+            <span className="uv-eyebrow">{sec.label} · {sec.list.length}</span>
+          </div>
+          <div className="uvs-list">
+            {sec.list.map((b, i) => (
+              <div key={b.id} className="rise" style={{ '--d': `${nextD()}ms`, '--i': i } as CSSProperties}>
+                {sec.render(b)}
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="col gap-sm">
-          {active.map((b) => (
-            <div key={b.id} className="rise" style={{ '--d': `${nextD()}ms` } as React.CSSProperties}>
-              <RunActiveBlockCard block={b} onOpen={onOpen} />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ paddingTop: 4 }}>
-        <div className="rise" style={{ marginBottom: 12, '--d': `${nextD()}ms` } as React.CSSProperties}>
-          <Eyebrow>Tervezett · {planned.length}</Eyebrow>
-        </div>
-        <div className="col gap-sm">
-          {planned.map((b) => (
-            <div key={b.id} className="rise" style={{ '--d': `${nextD()}ms` } as React.CSSProperties}>
-              <RunCompactBlockCard block={b} onOpen={onOpen} />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ paddingTop: 4 }}>
-        <div className="rise" style={{ marginBottom: 12, '--d': `${nextD()}ms` } as React.CSSProperties}>
-          <Eyebrow>Archív · {archived.length}</Eyebrow>
-        </div>
-        <div className="col gap-sm">
-          {archived.map((b) => (
-            <div key={b.id} className="rise" style={{ '--d': `${nextD()}ms` } as React.CSSProperties}>
-              <RunCompactBlockCard block={b} onOpen={onOpen} />
-            </div>
-          ))}
-        </div>
-      </div>
+      ))}
     </>
   )
 }
 
 function RunStatusChip({ status }: { status: RunningBlockResponse['status'] }) {
-  const style =
-    status === 'active'
-      ? { color: RUN, background: 'var(--wash-run)', borderColor: 'color-mix(in srgb, var(--tag-run) 40%, transparent)' }
-      : status === 'planned'
-        ? { color: 'var(--warning)', background: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.3)' }
-        : { color: 'var(--text-tertiary)', background: 'var(--surface-2)', borderColor: 'var(--divider)' }
-  return (
-    <span
-      style={{
-        fontSize: 9.5,
-        fontWeight: 800,
-        letterSpacing: '0.10em',
-        textTransform: 'uppercase',
-        padding: '2px 7px',
-        borderRadius: 'var(--r-sm)',
-        border: '1px solid',
-        ...style,
-      }}
-    >
-      {STATUS_LABELS[status]}
-    </span>
-  )
+  return <span className={`uvs-status is-${status}`}>{STATUS_LABELS[status]}</span>
+}
+
+/** Enter/Space open a role=button card — kept from the pre-üveg cards. */
+const openOnKey = (open: () => void) => (e: React.KeyboardEvent) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open() }
 }
 
 function RunActiveBlockCard({ block, onOpen }: { block: RunningBlockResponse; onOpen: (id: string) => void }) {
@@ -491,38 +392,22 @@ function RunActiveBlockCard({ block, onOpen }: { block: RunningBlockResponse; on
       role="button"
       tabIndex={0}
       onClick={() => onOpen(block.id)}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(block.id) } }}
-      className="card"
-      style={{
-        padding: 16,
-        position: 'relative',
-        overflow: 'hidden',
-        cursor: 'pointer',
-        background: 'linear-gradient(180deg, var(--wash-run), var(--surface-1))',
-        borderColor: 'color-mix(in srgb, var(--tag-run) 30%, transparent)',
-      }}
+      onKeyDown={openOnKey(() => onOpen(block.id))}
+      className="uvs-plan glass"
+      style={SKY}
     >
-      <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: RUN }} />
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div className="col">
-          {block.goal && <span className="eyebrow" style={{ color: RUN }}>{block.goal}</span>}
-          <div style={{ marginTop: 5 }}>
-            <Display size="md">{block.title}</Display>
-          </div>
-          <span className="text-secondary" style={{ fontSize: 14, marginTop: 4 }}>
-            {huMonthDay(block.startDate)} – {huMonthDay(block.endDate)} · {block.weeks} hét
-          </span>
+      <div className="uvs-plan-top">
+        <div className="uvs-plan-copy">
+          {block.goal && <span className="uv-eyebrow uv-tint">{block.goal}</span>}
+          <strong>{block.title}</strong>
+          <small>{huMonthDay(block.startDate)} – {huMonthDay(block.endDate)} · {block.weeks} hét</small>
         </div>
         <RunStatusChip status="active" />
       </div>
       <RunWeekStrip weeks={block.weeks} currentWeek={block.currentWeek} />
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-        <span className="eyebrow text-tertiary">
-          Hét {block.currentWeek} / {block.weeks}
-        </span>
-        <span className="eyebrow" style={{ color: RUN }}>
-          Builder ▸
-        </span>
+      <div className="uvs-plan-foot">
+        <span className="uv-eyebrow">Hét {block.currentWeek} / {block.weeks}</span>
+        <span className="uvs-plan-go">Builder ›</span>
       </div>
     </div>
   )
@@ -530,27 +415,25 @@ function RunActiveBlockCard({ block, onOpen }: { block: RunningBlockResponse; on
 
 function RunCompactBlockCard({ block, onOpen }: { block: RunningBlockResponse; onOpen: (id: string) => void }) {
   const isArchived = block.status === 'archived'
+  // Archived = a flat row (history, not a live object); planned = a lavender glass card.
   return (
     <div
       role="button"
       tabIndex={0}
       onClick={() => onOpen(block.id)}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(block.id) } }}
-      className="card"
-      style={{ padding: 14, opacity: isArchived ? 0.7 : 1, cursor: 'pointer' }}
+      onKeyDown={openOnKey(() => onOpen(block.id))}
+      className={isArchived ? 'uvs-arch uv-flat' : 'uvs-plan is-compact glass'}
+      style={isArchived ? undefined : ({ '--c': 'var(--dv-lav)' } as CSSProperties)}
     >
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-        <div className="col">
-          <span className="label-mono" style={{ color: 'var(--text-primary)' }}>{block.title}</span>
-          <span className="eyebrow text-tertiary" style={{ marginTop: 4 }}>
-            {huMonthDay(block.startDate)} – {huMonthDay(block.endDate)} · {block.weeks} hét
-          </span>
+      <div className="uvs-plan-top">
+        {isArchived && <Icon3D name="t-history" size={30} />}
+        <div className="uvs-plan-copy">
+          <strong>{block.title}</strong>
+          <small>{huMonthDay(block.startDate)} – {huMonthDay(block.endDate)} · {block.weeks} hét</small>
         </div>
         <RunStatusChip status={block.status} />
       </div>
-      {isArchived && block.summary && (
-        <p className="text-secondary" style={{ fontSize: 14, marginTop: 8, lineHeight: 1.5 }}>{block.summary}</p>
-      )}
+      {isArchived && block.summary && <p className="uvs-arch-sum">{block.summary}</p>}
     </div>
   )
 }

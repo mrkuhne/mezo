@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockStructure;
+import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
@@ -302,35 +303,56 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testHasScheduledTrainingOn_shouldReturnFalse_whenTheOnlyScheduledThingIsASkippedSportSlot() {
+    void testHasLoggedTrainingOn_shouldReturnFalse_whenTheDayIsOnlyPlanned() {
         UUID owner = owner();
         LocalDate wed = LocalDate.of(2026, 6, 24);          // Wednesday → dayOfWeek index 2
-        train.createScheduleSlot(owner, 2, "17:00", 60, "training");
-        skips.createSkip(owner, 2, "17:00", wed);
-
-        assertThat(service.hasScheduledTrainingOn(owner, wed)).isFalse();
-    }
-
-    @Test
-    void testHasScheduledTrainingOn_shouldReturnTrue_whenASkippedSportSlotCoexistsWithAGymSlot() {
-        UUID owner = owner();
-        LocalDate wed = LocalDate.of(2026, 6, 24);
-        train.createScheduleSlot(owner, 2, "17:00", 60, "training");
-        skips.createSkip(owner, 2, "17:00", wed);
         train.createGymSlot(owner, 2, "09:00");
-
-        assertThat(service.hasScheduledTrainingOn(owner, wed)).isTrue();
-    }
-
-    @Test
-    void testHasScheduledTrainingOn_shouldReturnTrue_whenASkippedSportSlotCoexistsWithAOneOffSportEvent() {
-        UUID owner = owner();
-        LocalDate wed = LocalDate.of(2026, 6, 24);
         train.createScheduleSlot(owner, 2, "17:00", 60, "training");
-        skips.createSkip(owner, 2, "17:00", wed);
         train.createSportEvent(owner, wed, "19:30", 120);
 
-        assertThat(service.hasScheduledTrainingOn(owner, wed)).isTrue();
+        assertThat(service.hasLoggedTrainingOn(owner, wed)).isFalse();
+    }
+
+    @Test
+    void testHasLoggedTrainingOn_shouldReturnTrue_whenAGymWorkoutWasCompletedThatDay() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);
+        UUID mesoId = train.createActiveMeso(owner).getId();
+        WorkoutSessionEntity template = train.createTemplateDay(owner, mesoId, "Sze");
+        train.createWorkoutInstance(owner, template, wed, "completed");
+
+        assertThat(service.hasLoggedTrainingOn(owner, wed)).isTrue();
+    }
+
+    @Test
+    void testHasLoggedTrainingOn_shouldReturnFalse_whenTheGymWorkoutIsStillInProgress() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);
+        UUID mesoId = train.createActiveMeso(owner).getId();
+        WorkoutSessionEntity template = train.createTemplateDay(owner, mesoId, "Sze");
+        train.createWorkoutInstance(owner, template, wed, "active");
+
+        assertThat(service.hasLoggedTrainingOn(owner, wed)).isFalse();
+    }
+
+    @Test
+    void testHasLoggedTrainingOn_shouldReturnTrue_whenASportSessionWasLoggedThatDay() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);
+        train.createSportSession(owner, wed, 90);
+
+        assertThat(service.hasLoggedTrainingOn(owner, wed)).isTrue();
+        assertThat(service.hasLoggedTrainingOn(owner, wed.plusDays(1))).isFalse();
+    }
+
+    @Test
+    void testHasLoggedTrainingOn_shouldReturnTrue_whenARunWasLoggedThatDay() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);
+        UUID blockId = running.createBlock(owner, "Sprint", "active").getId();
+        running.createRunLog(owner, blockId, 1, "tue-sprint", wed, 6, 8, null, null, 30);
+
+        assertThat(service.hasLoggedTrainingOn(owner, wed)).isTrue();
     }
 
     /**

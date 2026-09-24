@@ -27,7 +27,7 @@ export interface SportSlotSkip {
 }
 
 /** True when `skips` hides the (weekday, time) occurrence pinned to `date` — the SAME identity
- *  match every skip-aware FE read shares with the backend's own `hasScheduledTrainingOn`
+ *  match every skip-aware FE read shares with the backend's own `WorkoutWindowQueryService.windowsFor` (skip-aware schedule read)
  *  (mezo-cq06): weekday index (0=Hét..6=Vas, matching `DAY_ORDER`) + the unnormalised `"HH:mm"`
  *  time string, compared as-is + the exact ISO date. Exported so the other date-specific FE
  *  reads (fuel protocol, Today hero, day-orb fill, ritual recap, fuel week) can match a skip the

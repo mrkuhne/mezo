@@ -32,9 +32,10 @@ import { MozaikPage } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { DAY_COPY, dayState, dayVerdict, huDowFull, isValidIsoDate, mondayOf } from '@/features/me/logic/weekDay'
 import { dayReading, doneCount, isMorningMode, markSeen, nextBestAction } from '@/features/today/logic/napom'
+import { useChangedKeys } from '@/features/today/logic/useChangedKeys'
 import { NapomWeekStrip } from '@/features/today/components/napom/NapomWeekStrip'
 import { NapomSegRing } from '@/features/today/components/napom/NapomSegRing'
-import { NAPOM_DIMENSIONS, NapomDimensionRow, type NapomRowMode } from '@/features/today/components/napom/NapomDimensionRow'
+import { NAPOM_DIMENSIONS, NapomDimensionRow, factLineOf, type NapomRowMode } from '@/features/today/components/napom/NapomDimensionRow'
 import { NapomLeadCard } from '@/features/today/components/napom/NapomLeadCard'
 import { NapomReviewCard } from '@/features/today/components/napom/NapomReviewCard'
 
@@ -53,6 +54,17 @@ const placeholder = (id: NormalizedDayDimension['id']): NormalizedDayDimension =
 /** The six rows in `DAY_DIMENSIONS` order, whatever order the wire sent. */
 const rowsOf = (ev: NormalizedDayEvaluation | null) =>
   NAPOM_DIMENSIONS.map((m) => ev?.dimensions.find((d) => d.id === m.key) ?? placeholder(m.key))
+
+/** The pulse snapshot's key for the ring centre (`N/6` done count) — not a dimension id. */
+const CENTER = '·center'
+
+/** `id → what the reader sees` for today's open evaluation: each row's score, status and fact
+ *  line, and the centre's done count. A change in any of them pulses that row / the centre. */
+function pulseSnapshot(ev: NormalizedDayEvaluation): Record<string, string> {
+  const snap: Record<string, string> = { [CENTER]: String(doneCount(ev)) }
+  for (const d of rowsOf(ev)) snap[d.id] = `${d.score ?? '–'}|${d.status}|${factLineOf(d, 'today')}`
+  return snap
+}
 
 function SectionTitle({ title, eyebrow, i }: { title: string; eyebrow: string; i: number }) {
   return (
@@ -95,17 +107,24 @@ export function NapomPage() {
   // evaluation with a review behind it. Opening yesterday before the close (in_progress, or
   // scored with no prose) must not swallow the morning dot the review will earn later.
   const viewed = evalQuery.data
+  const evaluation = viewed ? normalizeDayEvaluation(viewed) : null
   const reviewShown = viewed?.state === 'scored' && viewed.reviewId != null
   useEffect(() => {
     if (!deciding && date === yesterday && reviewShown) markSeen(yesterday)
   }, [deciding, date, yesterday, reviewShown])
+
+  // The live pulse (spec §4, mezo-yjzhw.6): only TODAY's open evaluation is compared, one entry
+  // per row (score · status · the fact line the reader sees) plus the N/6 centre. Anything else
+  // (loading, a past or closed day) is `null`, which resets the baseline — so the first render,
+  // the mock seed, a date change and past days never pulse.
+  const liveEval = !deciding && date === today && evaluation?.state === 'in_progress' ? evaluation : null
+  const fresh = useChangedKeys(liveEval ? pulseSnapshot(liveEval) : null, date)
 
   // Hooks first, THEN the bail-out: a malformed `:date` must not crash the page.
   if (!valid) return <Navigate to="/nap/napom" replace />
 
   const days = week?.days ?? []
   const day = days.find((d) => d.date === date) ?? null
-  const evaluation = evalQuery.data ? normalizeDayEvaluation(evalQuery.data) : null
   const isToday = date === today
   const loading = deciding || (evaluation == null && evalQuery.error == null)
   const failed = !loading && evaluation == null
@@ -134,7 +153,7 @@ export function NapomPage() {
     if (open) {
       const done = doneCount(evaluation)
       return (
-        <NapomSegRing segments={segments} label={`${done} / 6 terület kész`}>
+        <NapomSegRing segments={segments} label={`${done} / 6 terület kész`} fresh={fresh.has(CENTER)}>
           <span><strong>{done}<small>/6</small></strong><em>TERÜLET KÉSZ</em></span>
         </NapomSegRing>
       )
@@ -147,7 +166,11 @@ export function NapomPage() {
     )
   })()
 
-  const action = isToday && evaluation && open ? nextBestAction(evaluation, day, new Date(), todayRitual.data.closed) : null
+  // No lead card until today's ritual state is KNOWN (mezo-yjzhw.7): real mode's pending ritual
+  // reads as "not closed", which would flash the evening napzárás offer on a closed day.
+  const action = isToday && evaluation && open && !todayRitual.isPending
+    ? nextBestAction(evaluation, day, new Date(), todayRitual.data.closed)
+    : null
   const rowMode: NapomRowMode = loading ? 'loading' : scored ? 'scored' : open ? 'today' : 'plain'
 
   return (
@@ -223,6 +246,7 @@ export function NapomPage() {
                 dimension={d}
                 mode={rowMode}
                 goalTick={d.id === 'nutrition' && day?.kcalTarget != null}
+                fresh={fresh.has(d.id)}
                 i={k + 5}
               />
             ))}

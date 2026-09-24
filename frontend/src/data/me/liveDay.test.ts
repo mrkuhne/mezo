@@ -8,8 +8,10 @@ test('invalidateTodayDay marks today\'s evaluation and this week stale, nothing 
   qc.setQueryData(['dayEvaluation', '2026-09-24'], { x: 1 })
   qc.setQueryData(['dayEvaluation', '2026-09-23'], { x: 1 })
   qc.setQueryData(['meWeek', '2026-09-21'], { x: 1 })
+  qc.setQueryData(['meWeek', '2026-09-14'], { x: 1 }) // last week — must stay valid
   await invalidateTodayDay(qc, now)
   expect(qc.getQueryState(['dayEvaluation', '2026-09-24'])?.isInvalidated).toBe(true)
   expect(qc.getQueryState(['meWeek', '2026-09-21'])?.isInvalidated).toBe(true)
   expect(qc.getQueryState(['dayEvaluation', '2026-09-23'])?.isInvalidated).toBe(false)
+  expect(qc.getQueryState(['meWeek', '2026-09-14'])?.isInvalidated).toBe(false)
 })

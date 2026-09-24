@@ -12,11 +12,12 @@ const record: Medal = {
 }
 
 describe('MedalChip', () => {
-  it('renders a clay medal glyph named in Hungarian for a RECORD medal', () => {
+  it('renders the 3D record medal named in Hungarian for a RECORD medal', () => {
     render(<MedalChip medal={record} />)
     const chip = screen.getByRole('img', { name: 'Súly-rekord' })
-    // mezo-ju4j6.11: a jel a SAJÁT agyag érem (`i-erem`), nem a korábbi érme-korong (`i-erme`)
-    expect(chip.querySelector('use')!.getAttribute('href')).toBe('#i-erem')
+    // mezo-ju4j6.11: a jel az érem (`i-erem`), nem a korábbi érme-korong (`i-erme`); U4
+    // (mezo-me75u.4): `i-erem` renders as the Titanium 3D `t-record` through CLAY_TO_3D.
+    expect(chip.querySelector('use')!.getAttribute('href')).toBe('#t-record')
   })
 
   it.each([

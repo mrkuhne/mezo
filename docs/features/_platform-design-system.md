@@ -17,6 +17,8 @@ related: [_platform-data-layer, _platform-notifications, today, train, me, fuel,
 
 # Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0) — Feature Documentation
 
+> **2026-09-24 — Üveg U4 (`mezo-me75u.4`).** The Mozaik page frame gained its üveg variant: `PageHead glass` (a glass back pill `‹ label`) and `PageHero art` + `accent` (a frameless halo hero with a 3D icon), with the CSS at the end of the `── uveg kit (` section. Two new sprite icons (`t-muscle`, `t-bandage`, drawn in `titanium-custom.svg`, regenerated with `scripts/gen-titanium-sprite.mjs`) and five context-free `CLAY_TO_3D` entries (`i-trend-fel/le`, `i-erem`, `i-meso`). Six `── uveg edzes <area> (` blocks in `prototype.css`, guarded by `prototypeCssStructure.test.ts`.
+
 > ## ⚠️ 2026-09-23 — the Üveg direction (owner decision, epic `mezo-me75u`)
 >
 > The restored Mozaik/Clay world read flat to the owner. The living direction is now **Üveg**:
@@ -227,10 +229,15 @@ something new extends the kit, never forks a second recipe.
 - **A napom tab dot (`mezo-yjzhw.4`).** The `── uveg napom (mezo-yjzhw.4)` block at the end of
   `prototype.css` styles `/nap/napom[/:date]` (week strip, six-segment ring, reading, lead card,
   drill-down rows, review layers — all scoped to `.napom-page`) plus one rule that lives in the
-  chrome instead: `.tab-bar.glass .tab-ico > .tb-dot` (`prototype.css:525`), an 8px lavender glow
+  chrome instead: `.tab-bar.glass .tab-ico > .tb-dot` (`prototype.css:18915`), an 8px lavender glow
   dot pinned to the top-right of the A napom tab's icon, decoration only (`aria-hidden`) — the
   tab's accessible description carries the meaning. See [today.md](today.md) and
   [ritual.md](ritual.md).
+  Since `mezo-yjzhw.6/.7` the block names its tints once as `--napom-*` tokens (declared on
+  `.napom-page, .nap-center, .tab-bar`), draws its hairlines from `--divider` /
+  `--surface-recess` / `--text-primary` mixes, and carries the live pulse: an `i.napom-fresh`
+  overlay with `@keyframes napom-fresh` (outer ring, the ring centre) / `napom-fresh-in` (inset,
+  the clipped glass rows), inside `prefers-reduced-motion: no-preference` only.
 
 ### Loading skeletons (mezo-f2z)
 

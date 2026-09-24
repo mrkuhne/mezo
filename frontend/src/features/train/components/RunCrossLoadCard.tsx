@@ -1,23 +1,31 @@
-import { Icon } from '@/shared/ui/Icon'
+import type { CSSProperties } from 'react'
+import { Icon3D } from '@/shared/ui/clay'
 
 /**
  * Derived, presentational cross-load note — sprint eccentric load carries over to gym leg
  * volume, like the volleyball cross-load. Phase 2 shows it statically; wiring into the
  * volume-recompute engine is Phase 3.
+ * Üveg re-dress (mezo-me75u.4, prototype uveg-edzes-body.html `futas('het')` `.xl`): a sky
+ * glass card with a 3D head icon; the note itself is a flat line inside.
  */
 export function RunCrossLoadCard() {
   return (
-    <div className="card" style={{ padding: 12, background: 'var(--wash-run)', borderColor: 'color-mix(in srgb, var(--tag-run) 25%, transparent)' }}>
-      <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-        <Icon name="sparkle" size={12} color="var(--tag-run)" />
-        <div className="col flex-1">
-          <span className="eyebrow" style={{ color: 'var(--tag-run)' }}>Cross-load → kondi</span>
-          <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
-            A sprintek hamstring/quad eccentric terhelése automatikusan levonódik a láb-volumenből
-            (<strong>Comb / Lábhajlító MAV −2</strong>) — ahogy a röplabdánál. A volumen-motorba kötés a Phase 3 pattern-engine része.
-          </p>
+    <article className="uvs-xl glass" style={{ '--c': 'var(--dv-sky)' } as CSSProperties}>
+      <div className="uvs-chead">
+        <Icon3D name="t-chain" size={40} />
+        <span className="uv-eyebrow uv-tint">Cross-load → kondi</span>
+      </div>
+      <div className="uvs-xl-lines">
+        <div className="uvs-xrow">
+          <Icon3D name="t-run" size={26} />
+          <div className="uvs-xrow-body">
+            <p>
+              A sprintek hamstring/quad eccentric terhelése automatikusan levonódik a láb-volumenből
+              (<strong>Comb / Lábhajlító MAV −2</strong>) — ahogy a röplabdánál. A volumen-motorba kötés a Phase 3 pattern-engine része.
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+    </article>
   )
 }

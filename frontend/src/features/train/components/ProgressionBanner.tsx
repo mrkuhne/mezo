@@ -5,9 +5,11 @@
 // it once, in its cue line — the banner said the same thing a second time, in words,
 // right under its own numbers. Three visual states by lever: weight=coral, rep=sage,
 // hold/deload=amber back-off. Presentational only; replaces the .aistrip strip.
+// Üvegesítés U4 (mezo-me75u.4): a t-bolt label + two FLAT cells inside the card's glass, the
+// goal cell accent-lit (skin: `uveg edzes session` block) — never a glass of its own.
 // ============================================================
 import type { LastWeekSet, ProgressionSignal } from '@/data/types'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 
 const fmt = (n: number) => n.toLocaleString('hu-HU')
 
@@ -40,7 +42,7 @@ export function ProgressionBanner({ progression, lastWeek, bare = false }: {
               azonosítja, nem a haladás irányát. (A `SPORT_EMOJI` térkép ugyan még él a
               `sportKinds.ts`-ben, de az EGYETLEN fogyasztója, a `logic/weeklyLoad.ts`,
               maga is importáló nélküli holt modul — a képernyőre nem jut emodzsi onnan.) */}
-          <span className="txt"><ClayIcon name="i-lang" size={14} className="icon" /> Progresszió</span>
+          <span className="txt"><Icon3D name="t-bolt" size={20} className="icon" /> Progresszió</span>
           <span className="delta">{progressionDeltaLabel(p)}</span>
         </div>
       )}

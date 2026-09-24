@@ -27,17 +27,25 @@
 //     INLINE on the row (prototype `setRow()`, session.js:71), the L/B/R side segment
 //     for isolation work, and the ✓ that submits
 //   · rows AFTER the cursor show their prescribed targets, quiet and inert
+//
+// Üvegesítés U4 (mezo-me75u.4): each card is ONE glass with `--c` = the exercise's muscle color
+// (a skipped card is the dashed free state instead, never glass). Inside it everything is flat:
+// the MuscleChip in a lit well, round flat header buttons (records t-journal, ⋮), flat pills
+// (accepted challenge t-quest, note t-note, coaching cue t-info), the progression cells, and
+// the set rows — a done row's tick is a lit disc holding the 3D t-tick, its verdict a 3D mark
+// (t-tick in range / t-up above / t-down below / t-record for a record). No text glyphs.
 // ============================================================
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import type { LastWeekSet, LoggedWorkoutExercise } from '@/data/types'
 import type { Medal } from '@/data/train/medalTypes'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { RIR_MAX } from '@/features/train/logic/rir'
 import { setStatus } from '@/features/train/logic/workoutCardMeta'
+import { adjustedRange, adjustedTarget, equivalentReps } from '@/features/train/logic/repEquivalence'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { MedalChip } from '@/features/train/components/MedalChip'
 import { ProgressionBanner } from '@/features/train/components/ProgressionBanner'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import {
   type Session,
   type SetSide,
@@ -57,11 +65,9 @@ export function prefill(e: LoggedWorkoutExercise): LastWeekSet {
  *  mark, with the sentence carried by title + aria-label. Pouring the words into the cell
  *  itself overflowed it (fix wave I2).
  *
- *  Visszaöltöztetés (mezo-ju4j6.11): a Titán-kori szöveg-glifák (`▲`/`▼`) helyén a ház SAJÁT
- *  agyag szimbólumai állnak, 24px-en — a korábbi 10–12px-es glifa a 22px-es cellában
- *  olvashatatlan volt (owner 2026-09-19: „az ikon mellette béna, saját ikon kell"). A `ok`
- *  állapot marad szöveges pipa: az egy nyugalmi jel, nem esemény. */
-const VERDICT_ICON = { below: 'i-trend-le', above: 'i-trend-fel' } as const
+ *  Visszaöltöztetés (mezo-ju4j6.11) put the house clay trend marks here; U4 (mezo-me75u.4) makes
+ *  all three states Titanium 3D marks — the in-range `ok` loses its text ✓ too. */
+const VERDICT_ICON = { ok: 't-tick', below: 't-down', above: 't-up' } as const
 const VERDICT_LABEL = {
   ok: 'A javasolt rep-sávban',
   below: 'Cél alatt — a javasolt rep-sáv alatt',
@@ -135,29 +141,35 @@ export function WorkoutCard({
   const [reps, setReps] = useState(0)
   const [rir, setRir] = useState(0)
   const [side, setSide] = useState<SetSide | null>(null)
+  // The cursor slot's prescription — read by the prefill, the kg field and the swap caption.
+  const cursorTarget = prescribedAt(session, id, slotIndex(session, id, cursor))
   useEffect(() => {
     // Every visible slot is a WORKING set now, so the prescription is read through the
     // visible→model mapping and the warmup branch is gone with the warmup rows.
-    const t = prescribedAt(session, id, slotIndex(session, id, cursor))
+    const t = cursorTarget
     const prev = logged[cursor - 1]
     const p = prefill(exercise)
     // The just-logged set wins over the static engine target; the engine seeds only the
-    // first working set.
-    setWeight(prev?.weight ?? t?.targetWeightKg ?? p.weight)
-    setReps(t?.targetReps ?? prev?.reps ?? p.reps)
+    // first working set. A weight carried over from a swapped set keeps its equivalent
+    // reps (mezo-l95v4).
+    const w = prev?.weight ?? t?.targetWeightKg ?? p.weight
+    setWeight(w)
+    setReps(equivalentReps(t, w) ?? t?.targetReps ?? prev?.reps ?? p.reps)
     setRir(t?.targetRIR ?? prev?.rir ?? p.rir)
     setSide(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, cursor, count])
 
-  const cardClass = 'wo-card' + (skipped ? ' is-skipped' : complete ? ' is-complete' : '')
+  // Skipped = the dashed free state (bible §3 rank 4), everything else ONE glass card.
+  const cardClass = 'wo-card' + (skipped ? ' is-skipped uv-empty' : ' glass' + (complete ? ' is-complete' : ''))
+  const hasPills = !!challenge || !!note || (!skipped && !!cue)
 
   return (
     <section
       className={cardClass}
       aria-label={exercise.name}
       aria-busy={busy || undefined}
-      style={{ '--ex-color': family.rail } as React.CSSProperties}
+      style={{ '--ex-color': family.rail, '--c': family.rail } as React.CSSProperties}
     >
       <header className="wo-card-head">
         <span className="wo-card-art">
@@ -165,7 +177,7 @@ export function WorkoutCard({
         </span>
         <span className="wo-card-copy">
           <strong>{exercise.name}</strong>
-          {skipped && <small>KIHAGYVA</small>}
+          {skipped && <small className="is-skip">KIHAGYVA</small>}
         </span>
         <button
           type="button"
@@ -173,7 +185,7 @@ export function WorkoutCard({
           aria-label={`${exercise.name} · előzmények és rekordok`}
           onClick={onOpenRecords}
         >
-          <ClayIcon name="i-naplo" size={24} />
+          <Icon3D name="t-journal" size={22} />
         </button>
         <button
           type="button"
@@ -186,29 +198,34 @@ export function WorkoutCard({
         </button>
       </header>
 
-      {challenge && (
-        <div className="wo-note" title={challenge.label} aria-label={`Elfogadott kihívás — ${challenge.label}`}>
-          <ClayIcon name="i-kihivas" size={18} />
-          <span className="ntext">{challenge.target}</span>
-        </div>
-      )}
+      {hasPills && (
+        <div className="wos-pills">
+          {challenge && (
+            <div className="wo-note wos-pill-quest" title={challenge.label} aria-label={`Elfogadott kihívás — ${challenge.label}`}>
+              <Icon3D name="t-quest" size={18} />
+              <span className="ntext">{challenge.target}</span>
+            </div>
+          )}
 
-      {note && (
-        <button type="button" className="wo-note exercise-note-pill" aria-label="Gyakorlat-jegyzet" onClick={onEditNote}>
-          <ClayIcon name="i-checkin" size={18} />
-          <span className="ntext">{note}</span>
-        </button>
+          {note && (
+            <button type="button" className="wo-note exercise-note-pill" aria-label="Gyakorlat-jegyzet" onClick={onEditNote}>
+              <Icon3D name="t-note" size={18} />
+              <span className="ntext">{note}</span>
+            </button>
+          )}
+
+          {/* The cue slot stays wired for the coaching-cue field; see the note at `cue`. */}
+          {!skipped && cue && (
+            <div className="wo-cue">
+              <Icon3D name="t-info" size={18} />
+              <p>{cue}</p>
+            </div>
+          )}
+        </div>
       )}
 
       {!skipped && (
         <>
-          {/* The cue slot stays wired for the coaching-cue field; see the note at `cue`. */}
-          {cue && (
-            <div className="wo-cue">
-              <ClayIcon name="i-minta" size={20} />
-              <p>{cue}</p>
-            </div>
-          )}
           {exercise.progression && (
             <ProgressionBanner progression={exercise.progression} lastWeek={exercise.lastWeek} />
           )}
@@ -219,7 +236,7 @@ export function WorkoutCard({
               <span>KG</span>
               <span>ISM</span>
               <span>RIR</span>
-              <span>✓</span>
+              <span />
               <span />
             </div>
 
@@ -238,7 +255,8 @@ export function WorkoutCard({
                 // POST is KNOWN to have failed is not in flight — it is tappable again.
                 const rowFailed = !!actual.localId && !!failedLocalIds?.has(actual.localId)
                 const rowDisabled = !actual.id && !rowFailed
-                const status = setStatus(exercise, { reps: actual.reps, kind: 'working' })
+                // A swapped weight is judged against its shifted range (mezo-l95v4).
+                const status = setStatus(adjustedRange(exercise, t, actual.weight), { reps: actual.reps, kind: 'working' })
                 const medals = (medalsBySetIdx[i] ?? []).filter((m) => m.tier === 'RECORD')
                 const ariaLabel = `${setSlotLabel(i)} szerkesztése — ${actual.weight ?? '—'} kg × ${actual.reps ?? '—'} — RIR ${actual.rir ?? '—'}`
                 return (
@@ -254,17 +272,17 @@ export function WorkoutCard({
                     <span className="wo-field num">{actual.weight.toLocaleString('hu-HU')}</span>
                     <span className="wo-field num">{actual.reps}</span>
                     <span className="wo-field small num">{actual.rir}</span>
-                    <span className="wo-check is-checked" aria-hidden="true">✓</span>
-                    {/* Icon-only: the medal wins the 22px cell when there is one, otherwise
-                        the rep-range glyph. Either way the words live on the title. */}
+                    <span className="wo-check is-checked" aria-hidden="true">
+                      <Icon3D name="t-tick" size={22} />
+                    </span>
+                    {/* Icon-only: the medal wins the cell when there is one, otherwise the
+                        rep-range mark. Either way the words live on the title + aria-label. */}
                     <span className={`wo-verdict is-${status}`} title={VERDICT_LABEL[status]}>
                       {medals.length > 0
                         ? medals.map((m, mi) => <MedalChip key={mi} medal={m} />)
-                        : status === 'ok' ? (
-                          <span className="wkx-stat-ok" role="img" aria-label={VERDICT_LABEL.ok}>✓</span>
-                        ) : (
+                        : (
                           <span className="wo-verdict-mark" role="img" aria-label={VERDICT_LABEL[status]}>
-                            <ClayIcon name={VERDICT_ICON[status]} size={24} />
+                            <Icon3D name={VERDICT_ICON[status]} size={24} />
                           </span>
                         )}
                     </span>
@@ -274,9 +292,10 @@ export function WorkoutCard({
 
               // ---- THE editable row: the cursor slot, and only it ----
               if (i === cursor) {
+                const adj = weightless ? null : adjustedTarget(cursorTarget, weight)
                 return (
+                  <Fragment key={i}>
                   <form
-                    key={i}
                     className="wo-row is-current"
                     onSubmit={(e) => {
                       e.preventDefault()
@@ -290,7 +309,14 @@ export function WorkoutCard({
                         aria-label={`${exercise.name}, ${setSlotLabel(i)}, súly`}
                         disabled={weightless}
                         value={weightless ? 0 : weight}
-                        onChange={(e) => setWeight(Number(e.target.value))}
+                        onChange={(e) => {
+                          const w = Number(e.target.value)
+                          setWeight(w)
+                          // The reps follow the kg at equivalent effort (mezo-l95v4); typed
+                          // reps stand until the kg moves again.
+                          const r = equivalentReps(cursorTarget, w)
+                          if (r != null) setReps(r)
+                        }}
                       />
                     </label>
                     <label className="wo-field">
@@ -313,8 +339,8 @@ export function WorkoutCard({
                         onChange={(e) => setRir(Math.min(RIR_MAX, Math.max(0, Number(e.target.value))))}
                       />
                     </label>
-                    <button type="submit" className="wo-check" disabled={logBlocked} aria-pressed={false} aria-label={`${setSlotLabel(i)} mentése`}>
-                      ✓
+                    <button type="submit" className="wo-check is-submit" disabled={logBlocked} aria-pressed={false} aria-label={`${setSlotLabel(i)} mentése`}>
+                      <Icon3D name="t-tick" size={24} />
                     </button>
                     <span className="wo-verdict" />
 
@@ -334,15 +360,23 @@ export function WorkoutCard({
                       </span>
                     )}
                   </form>
+                  {adj && cursorTarget?.targetWeightKg != null && (
+                    <p className="wo-adjust">
+                      {`${adj.targetWeightKg.toLocaleString('hu-HU')} kg-hoz igazítva · ajánlás ${cursorTarget.targetWeightKg.toLocaleString('hu-HU')} × ${cursorTarget.targetReps}`}
+                    </p>
+                  )}
+                  </Fragment>
                 )
               }
 
               // ---- LATER pending row: the prescribed target, quiet and inert ----
+              // …or, after a weight swap, the swapped weight at its equivalent reps (mezo-l95v4).
+              const later = weightless ? null : adjustedTarget(t, weight)
               return (
                 <div key={i} className="wo-row" aria-label={`${setSlotLabel(i)} · terv`}>
                   {idxCell}
-                  <span className="wo-field num">{t?.targetWeightKg != null ? t.targetWeightKg.toLocaleString('hu-HU') : '—'}</span>
-                  <span className="wo-field num">{`${exercise.repMin}–${exercise.repMax}`}</span>
+                  <span className="wo-field num">{later ? later.targetWeightKg.toLocaleString('hu-HU') : t?.targetWeightKg != null ? t.targetWeightKg.toLocaleString('hu-HU') : '—'}</span>
+                  <span className="wo-field num">{later ? String(later.targetReps) : `${exercise.repMin}–${exercise.repMax}`}</span>
                   <span className="wo-field small num">{t?.targetRIR ?? exercise.targetRIR}</span>
                   <span className="wo-check" aria-hidden="true" />
                   <span className="wo-verdict" />

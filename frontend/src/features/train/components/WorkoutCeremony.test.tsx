@@ -1,8 +1,11 @@
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test, vi, afterEach } from 'vitest'
-import { WorkoutCeremony } from '@/features/train/components/WorkoutCeremony'
+import {
+  WorkoutCeremony, ceremonyChallenges, ceremonyRecord, targetChips, type CeremonyChallenge,
+} from '@/features/train/components/WorkoutCeremony'
 import type { CerScore, MuscleStarRow } from '@/features/train/logic/cerScore'
+import type { Challenge } from '@/data/types'
 
 const SCORE: CerScore = {
   target: { sets: 12, reps: 120, volume: 9000 },
@@ -137,18 +140,33 @@ test('step one writes no star numeral — the stars themselves are the reward', 
   expect(stage.textContent).not.toMatch(/4,5|\b4\b/)
 })
 
-test('the tally, the stats and the record live in ONE card under the verdict', () => {
+const REC_ROW = { name: 'Chest Supported Row', kind: 'Súly-rekord', values: ['105 kg', '10 ism.'] }
+
+test('the records get their OWN glass card first; the tally and the stats share the second', () => {
   const { container } = render(<WorkoutCeremony {...props({
-    minutes: 47, xpGained: 240, records: [{ name: 'Chest Supported Row', value: '80 kg × 10' }],
+    minutes: 47, xpGained: 240, records: [REC_ROW],
   })} />)
-  const card = container.querySelector('.cer-result .cer-card') as HTMLElement
-  expect(card).not.toBeNull()
-  expect(card.querySelector('.cer-record')).not.toBeNull()
-  expect(card.querySelector('.cer-stats')).not.toBeNull()
-  expect(card.querySelector('[data-cer-count="sets"]')).toHaveTextContent('9')
+  const cards = container.querySelectorAll<HTMLElement>('.cer-result .cer-card.glass')
+  expect(cards).toHaveLength(2)
+  // Card one: the records, and nothing else.
+  expect(cards[0]).toHaveClass('cer-records')
+  expect(cards[0].querySelector('.cer-record')).not.toBeNull()
+  expect(cards[0].querySelector('.cer-stats')).toBeNull()
+  // Card two: every other number — minutes + XP and the tally.
+  expect(cards[1].querySelector('.cer-stats')).not.toBeNull()
+  expect(cards[1].querySelector('[data-cer-count="sets"]')).toHaveTextContent('9')
   // The counters left the stage: the hero is stars + fuse only.
   expect(container.querySelector('.cer [data-cer-count]')).toBeNull()
   expect(container.querySelector('.cer-verdict')).toHaveTextContent('Erős nap.')
+})
+
+test('the hero stars are the 3D sprite — every slot carries the lit, half and empty star', () => {
+  const { container } = render(<WorkoutCeremony {...props()} />)
+  const slots = container.querySelectorAll('.cer-stars i')
+  slots.forEach((slot) => {
+    const refs = [...slot.querySelectorAll('use')].map((u) => u.getAttribute('href'))
+    expect(refs).toEqual(['#t-star-empty', '#t-star-half', '#t-star'])
+  })
 })
 
 test('settled skips the pass entirely and marks the stage settled', () => {
@@ -187,20 +205,95 @@ test('the minutes tile shows only when a measured value is passed', () => {
   expect(screen.getByText('a pulton töltött idő')).toBeInTheDocument()
 })
 
-test('the records strip names the session\'s real records; absent when there are none', () => {
+test('the records card names each record with a type chip and plain value chips; absent when none', () => {
   const { container, rerender } = render(<WorkoutCeremony {...props()} />)
-  expect(container.querySelector('.cer-record')).toBeNull()
+  expect(container.querySelector('.cer-records')).toBeNull()
   rerender(<WorkoutCeremony {...props({ records: [
-    { name: 'Chest Supported Row', value: '80 kg × 10' },
-    { name: 'Lat Pulldown', value: '65 kg × 12' },
+    REC_ROW,
+    { name: 'Lat Pulldown', kind: 'Rep-rekord', values: ['12 ism.', '74,5 kg'] },
   ] })} />)
   expect(screen.getByText('2 új rekord')).toBeInTheDocument()
-  expect(screen.getByText('Chest Supported Row · 80 kg × 10 · Lat Pulldown · 65 kg × 12')).toBeInTheDocument()
+  expect(screen.getByText('Ez a tiéd mostantól')).toBeInTheDocument()
+  const rows = container.querySelectorAll<HTMLElement>('.cer-rec-row')
+  expect(rows).toHaveLength(2)
+  expect(rows[0]).toHaveTextContent('Chest Supported Row')
+  // The type chip carries its own 3D icon, then the values as lit pills — no ×, no @, no előző.
+  const chip = rows[0].querySelector('.cer-tchip') as HTMLElement
+  expect(chip).toHaveTextContent('Súly-rekord')
+  expect(chip.querySelector('use')?.getAttribute('href')).toBe('#t-weight')
+  expect([...rows[0].querySelectorAll('b.is-lit')].map((b) => b.textContent)).toEqual(['105 kg', '10 ism.'])
+  expect(rows[1].querySelector('.cer-tchip use')?.getAttribute('href')).toBe('#t-repeat')
+  expect(container.querySelector('.cer-records')!.textContent).not.toMatch(/×|@|előző/)
 })
 
-test('one record reads singular', () => {
-  render(<WorkoutCeremony {...props({ records: [{ name: 'Chest Supported Row', value: '80 kg × 10' }] })} />)
-  expect(screen.getByText('Új rekord')).toBeInTheDocument()
+test('one record reads "1 új rekord"', () => {
+  render(<WorkoutCeremony {...props({ records: [REC_ROW] })} />)
+  expect(screen.getByText('1 új rekord')).toBeInTheDocument()
+})
+
+// ---- the stats card's Küldetések (owner-approved, mezo-me75u.4) ----
+
+const CHALS: CeremonyChallenge[] = [
+  { id: 'c1', type: 'overload', typeLabel: '⚡ Túlterhelés', exercise: 'Chest Supported Row', target: '107.5 kg × 8', status: 'hit' },
+  { id: 'c2', type: 'Depth', typeLabel: 'Mélység', exercise: 'Lat Pulldown', target: 'Az utolsó szett RIR 0-ig', status: 'miss' },
+  { id: 'c3', type: 'Volume', typeLabel: 'Volumen', exercise: 'Face Pull', target: '+1 szett · 4×15-20', status: 'inconclusive' },
+]
+
+test('the Küldetések section lists the accepted challenges with an outcome icon and its accessible name', () => {
+  const { container } = render(<WorkoutCeremony {...props({ challenges: CHALS })} />)
+  const section = container.querySelector('.cer-sum .cer-quests') as HTMLElement
+  expect(section).not.toBeNull()
+  expect(section).toHaveTextContent('Küldetések · 1 / 3')
+  expect(screen.getByRole('img', { name: 'teljesült' })).toBeInTheDocument()
+  expect(screen.getByRole('img', { name: 'nem teljesült' })).toBeInTheDocument()
+  expect(screen.getByRole('img', { name: 'nem értékelhető' })).toBeInTheDocument()
+  const rows = section.querySelectorAll<HTMLElement>('.cer-quest')
+  expect(rows[0]).toHaveClass('is-hit')
+  expect(rows[0].querySelector('.cer-quest-res use')?.getAttribute('href')).toBe('#t-tick')
+  expect(rows[1]).toHaveClass('is-miss')
+  expect(rows[1].querySelector('.cer-quest-res use')?.getAttribute('href')).toBe('#t-skip')
+  // The type chip: 3D icon + the label, cleaned of its emoji; the target split into chips.
+  const chip = rows[0].querySelector('.cer-tchip') as HTMLElement
+  expect(chip.textContent).toBe('Túlterhelés')
+  expect(chip.querySelector('use')?.getAttribute('href')).toBe('#t-up')
+  expect([...rows[0].querySelectorAll('.cer-vals > b')].map((b) => b.textContent)).toEqual(['107,5 kg', '8 ism.'])
+  expect(rows[1].querySelector('.cer-tchip use')?.getAttribute('href')).toBe('#t-hold')
+  // No outcome TEXT — the icon's accessible name carries it.
+  expect(section.textContent).not.toMatch(/teljesült|megcsináltad|nem jött össze/)
+})
+
+test('no accepted challenges → no Küldetések section', () => {
+  const { container } = render(<WorkoutCeremony {...props({ challenges: [] })} />)
+  expect(container.querySelector('.cer-quests')).toBeNull()
+  expect(screen.queryByText(/Küldetések/)).not.toBeInTheDocument()
+})
+
+test('ceremonyRecord renders the medal fields as plain chips, with a decimal comma', () => {
+  const base = { tier: 'RECORD', exerciseName: 'Row', date: '2026-09-24', unit: 'KG' } as const
+  expect(ceremonyRecord({ ...base, type: 'WEIGHT', value: 107.5, weightKg: 107.5, reps: 10 }))
+    .toEqual({ name: 'Row', kind: 'Súly-rekord', values: ['107,5 kg', '10 ism.'] })
+  expect(ceremonyRecord({ ...base, type: 'REPS_AT_WEIGHT', unit: 'REPS', value: 12, weightKg: 74.5, reps: 12 }).values)
+    .toEqual(['12 ism.', '74,5 kg'])
+  expect(ceremonyRecord({ ...base, type: 'E1RM', value: 126.7, weightKg: 105, reps: 10 }).values).toEqual(['126,7 kg'])
+  // hu-HU groups only from five digits (2450, but 12 450) — the locale's rule, not ours.
+  expect(ceremonyRecord({ ...base, type: 'SESSION_VOLUME', value: 2450 }).values[0]).toMatch(/^2 ?450 kg$/)
+})
+
+test('ceremonyChallenges keeps only the accepted ones and resolves every non-hit/miss to inconclusive', () => {
+  const list = [
+    { id: 'a', type: 'PR', typeLabel: 'PR', exerciseId: 'x', target: '1', risk: 'low', why: '', refs: [], glory: '', status: 'hit' },
+    { id: 'b', type: 'Depth', typeLabel: 'Mélység', exerciseId: 'x', target: '1', risk: 'low', why: '', refs: [], glory: '', status: 'accepted' },
+    { id: 'c', type: 'Volume', typeLabel: 'Volumen', exerciseId: 'x', target: '1', risk: 'low', why: '', refs: [], glory: '', status: 'proposed' },
+    { id: 'd', type: 'Tempo', typeLabel: 'Tempó', exerciseId: 'x', target: '1', risk: 'low', why: '', refs: [], glory: '', status: 'inconclusive' },
+  ] as Challenge[]
+  const rows = ceremonyChallenges(list, { a: true, b: true })
+  expect(rows.map((r) => [r.id, r.status])).toEqual([['a', 'hit'], ['b', 'inconclusive'], ['d', 'inconclusive']])
+})
+
+test('targetChips splits on × and ·, and unit-labels the load and the reps', () => {
+  expect(targetChips('107.5 kg × 8')).toEqual(['107,5 kg', '8 ism.'])
+  expect(targetChips('+1 szet · 4×15-20')).toEqual(['+1 szet', '4×15-20'])
+  expect(targetChips('Az utolsó szet RIR 0-ig')).toEqual(['Az utolsó szet RIR 0-ig'])
 })
 
 test('the muscle rows carry the label, done/plan and a fill width from the ratio', async () => {
@@ -398,14 +491,14 @@ test('leaving step one mid-pass still brings back the FINAL numbers, not zeroes'
 
 // ---- what the prototype's ceremony does NOT have (mezo-e1ii9, Task 3) ----
 
-test('no küldetés strip anywhere — neither step has a prototype counterpart for it', async () => {
+test('the old küldetés strip and its outcome copy stay gone — step two carries no challenges', async () => {
   const user = userEvent.setup()
-  const { container } = render(<WorkoutCeremony {...props({ kcal: { value: 420, known: true } })} />)
+  const { container } = render(<WorkoutCeremony {...props({ kcal: { value: 420, known: true }, challenges: CHALS })} />)
   expect(container.querySelector('.cer-chals')).toBeNull()
   expect(container.textContent).not.toMatch(/skippelted|megcsináltad|nem értékelhető/i)
   await goToDetails(user)
   expect(container.querySelector('.cer-chals')).toBeNull()
-  expect(container.textContent).not.toMatch(/skippelted|megcsináltad|nem értékelhető/i)
+  expect(container.querySelector('.cer-quests')).toBeNull()
 })
 
 test('no streak line anywhere — the ceremony carries its own XP and nothing else', async () => {

@@ -7,6 +7,10 @@
 // report lives inside ActiveWorkoutPage's phase machine and has no route of its
 // own, so a routed variant would mean two mechanisms for one screen — and the
 // one that is harder to reach would be the one that drifts.
+//
+// Üveg re-dress (mezo-me75u.4, prototype uveg-edzes.html#review/gyak): a halo hero in the
+// muscle colour with the real anatomy in a lit well, a flat stat strip, the medal as an amber
+// glass row, the sets as flat rows and a missed set as a dashed ghost.
 // ============================================================
 import type { CSSProperties } from 'react'
 import { MUSCLE_LABELS } from '@/data/train/train'
@@ -14,7 +18,9 @@ import { muscleColor } from '@/features/train/logic/muscleColors'
 import { MEDAL_TYPE_LABEL, MEDAL_UNIT_LABEL, formatMedalNumber, medalValueLabel } from '@/features/train/logic/medalLabels'
 import type { SummaryExerciseView, SummarySetChip } from '@/features/train/logic/summaryStats'
 import type { Medal } from '@/data/train/medalTypes'
-import { ClaySpot } from '@/shared/ui/clay'
+import { MuscleChip } from '@/features/train/components/MuscleChip'
+import { Icon3D } from '@/shared/ui/clay'
+import { PageHead } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
 const hu = (n: number, digits = 1) => n.toLocaleString('hu-HU', { maximumFractionDigits: digits })
@@ -41,41 +47,36 @@ export function ExerciseReview({
 }) {
   const e = exercise
   const fam = muscleColor(e.muscle)
-  const famStyle = { '--fam-rail': fam.rail, '--fam-wash': fam.wash, '--fam-deep': fam.deep } as CSSProperties
+  const famStyle = { '--c': fam.rail, '--fam-rail': fam.rail } as CSSProperties
   // Working sets are numbered 1..n on their own; a warmup carries `B` instead, so the third
   // working set never reads as "4" just because a warmup preceded it.
   let workingIdx = 0
 
   return (
-    <div style={famStyle}>
-      <div className="wsum-top">
-        <button onClick={onBack}>
-          <span className="wsum-xi" aria-hidden="true">←</span>
-          Vissza a riporthoz
-        </button>
-      </div>
+    <div className="wr-ex" style={famStyle}>
+      <PageHead glass label="Vissza a riporthoz" onBack={onBack} />
 
       <EntranceGroup>
-        <div className="wr-exhero">
-          <span className="mono" aria-hidden="true">{e.name.charAt(0)}</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
+        <section className="wr-exhero uv-halo">
+          <span className="wr-mchp lg" aria-hidden="true"><MuscleChip token={e.muscle} size={68} /></span>
+          <div className="wr-exhero-tx">
+            <span className="mus uv-eyebrow">{MUSCLE_LABELS[e.muscle] ?? e.muscle}</span>
             <div className="nm">{e.name}</div>
             <div className="sb">
-              <span className="mus">{MUSCLE_LABELS[e.muscle] ?? e.muscle}</span>
               <span>{e.abandoned ? 'kihagyva' : `${e.doneSets}/${e.plannedSets} szett`}</span>
               {e.repMin != null && e.repMax != null && <span>cél {e.repMin}–{e.repMax} ism.</span>}
             </div>
           </div>
-        </div>
+        </section>
 
         <div className="wsum-stripwrap">
           <div className="mz-statstrip">
-            <div className="mz-statcell"><div className="v">{e.topChip ? setLabel(e.topChip) : '–'}</div><div className="l">Top szett</div></div>
-            <div className="mz-statcell"><div className="v">{hu(e.volumeKg, 0)}</div><div className="l">kg volumen</div></div>
-            <div className="mz-statcell"><div className="v">{e.avgRir == null ? '–' : hu(e.avgRir)}</div><div className="l">Ø RIR</div></div>
+            <div className="mz-statcell uv-flat"><div className="v">{e.topChip ? setLabel(e.topChip) : '–'}</div><div className="l">Top szett</div></div>
+            <div className="mz-statcell uv-flat"><div className="v">{hu(e.volumeKg, 0)}</div><div className="l">kg volumen</div></div>
+            <div className="mz-statcell uv-flat"><div className="v">{e.avgRir == null ? '–' : hu(e.avgRir)}</div><div className="l">Ø RIR</div></div>
             {/* Same gate as the comparison tile: no reference, or closing mode → the cell is
                 absent and the strip narrows to three. Comparison never enters by a side door. */}
-            {prevTop && <div className="mz-statcell"><div className="v">{setLabel(prevTop)}</div><div className="l">Előzőleg</div></div>}
+            {prevTop && <div className="mz-statcell uv-flat"><div className="v">{setLabel(prevTop)}</div><div className="l">Előzőleg</div></div>}
           </div>
         </div>
 
@@ -83,8 +84,8 @@ export function ExerciseReview({
           <div className="wsum-sec">
             <div className="wsum-slabel">Medál</div>
             {medals.map((m, i) => (
-              <div key={`${m.type}-${m.date}-${m.setIndex ?? i}`} className="wsum-medal">
-                <div className="disc" aria-hidden="true"><ClaySpot name="s-medal" size={26} /></div>
+              <div key={`${m.type}-${m.date}-${m.setIndex ?? i}`} className="wsum-medal glass">
+                <span className="uv-well" aria-hidden="true"><Icon3D name="t-record" size={34} /></span>
                 <div className="tx">
                   <div className="t">{MEDAL_TYPE_LABEL[m.type] ?? m.type}</div>
                   <div className="m">

@@ -6,14 +6,20 @@
 // The strip is wider than the viewport (7 × 62 px + gaps ≈ 536 px on a 440 px
 // phone), so on mount the selected chip is centred — a `?day=6` drill-in from
 // Heti would otherwise land with its own chip off-screen (spec §5a).
+// ÜVEG (mezo-me75u.4, prototypes/uveg-edzes.html `dstrip()`): seven FLAT cells in one row
+// (the week fits the width now, so the mount-centring is a harmless no-op on wide screens and
+// still helps a narrow one); today lit coral (radial wash + inset ring); a done day carries
+// one small 3D t-tick per logged session instead of the old `✓` glyphs, an unlogged scheduled
+// day carries its modality dots only (the `—` glyph is gone), a rest day reads „pihenő”.
 // ============================================================
 import { useEffect, useRef } from 'react'
 import { cn } from '@/shared/lib/cn'
+import { Icon3D } from '@/shared/ui/clay'
 import { DAY_LABELS } from '@/data/train/train'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 import type { DayStripItem } from '@/features/train/logic/dayStripItems'
 
-/** Spoken done-state of a chip — the visual `✓✓`/`—`/`pihenő` marker in words. */
+/** Spoken done-state of a chip — the visual tick / dots / `pihenő` marker in words. */
 function doneLabel(it: DayStripItem): string {
   if (it.sessionCount === 0) return 'pihenő'
   if (it.doneCount === 0) return 'nincs naplózva'
@@ -44,7 +50,7 @@ export function DayStrip({
   }, [])
 
   return (
-    <div className="daystrip" role="tablist" aria-label="Hét napjai" data-kalauz-anchor={kalauzAnchor}>
+    <div className="trm-daystrip" role="tablist" aria-label="Hét napjai" data-kalauz-anchor={kalauzAnchor}>
       {items.map((it) => {
         const empty = it.sessionCount === 0
         const isSelected = it.day === selected
@@ -55,22 +61,24 @@ export function DayStrip({
             role="tab"
             ref={isSelected ? selectedRef : undefined}
             aria-selected={isSelected}
-            className={cn('daychip', it.isToday && 'today', isSelected && 'sel', empty && 'rest')}
+            className={cn('trm-day', it.isToday && 'today', isSelected && 'sel', empty && 'rest')}
             onClick={() => onSelect(it.day)}
             // The label REPLACES the chip's content as its accessible name, so the day
             // number and the done marker have to be spoken here — the dots are decorative
             // and stay `aria-hidden` (mezo-9bbc final review).
             aria-label={`${DAY_LABELS[it.day] ?? it.day}${it.isToday ? ' · ma' : ''} · ${it.dayNumber}. · ${doneLabel(it)}`}
           >
-            <span className="dl">{it.isToday ? 'MA' : it.day}</span>
-            <span className="dn">{it.dayNumber}</span>
-            <span className="dots" aria-hidden="true">
+            <span className="trm-day-dl">{it.isToday ? 'MA' : it.day}</span>
+            <span className="trm-day-dn">{it.dayNumber}</span>
+            <span className="trm-day-dots" aria-hidden="true">
               {it.dots.map((tone, i) => (
                 <span key={`${tone}-${i}`} className={cn('dot', `dot-${tone}`)} />
               ))}
             </span>
-            <span className="ck">
-              {empty ? 'pihenő' : it.doneCount > 0 ? '✓'.repeat(it.doneCount) : '—'}
+            <span className="trm-day-ck" aria-hidden="true">
+              {empty
+                ? 'pihenő'
+                : Array.from({ length: it.doneCount }, (_, i) => <Icon3D key={i} name="t-tick" size={14} />)}
             </span>
           </button>
         )

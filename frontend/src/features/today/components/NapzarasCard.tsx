@@ -18,7 +18,9 @@ export function NapzarasCard({ now }: { now: Date }) {
   const { checkins } = useCheckins()
   const evaluation = useDayEvaluation(date)
   const inWindow = isNapzarasCardWindow(now, false)
-  if (!inWindow) return null
+  // Real mode: a pending ritual reads as "not closed" — render nothing until it is KNOWN, or a
+  // closed day flashes the full card before collapsing to the done row (mezo-yjzhw.7).
+  if (!inWindow || ritual.isPending) return null
 
   if (ritual.data.closed) {
     return (

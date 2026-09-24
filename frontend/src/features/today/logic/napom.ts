@@ -58,7 +58,8 @@ export function nextBestAction(
       to: '/ritual',
     }
   }
-  if (!trainingDone(ev) && dim(ev, 'training')?.status !== 'NO_DATA') {
+  const t = dim(ev, 'training')
+  if (t?.status !== 'DONE' && t?.status !== 'NO_DATA') {
     return {
       kind: 'workout',
       eyebrow: 'MOST ÉRDEMES · DÉLUTÁN',

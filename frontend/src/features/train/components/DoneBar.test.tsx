@@ -7,6 +7,8 @@ test('renders the summary and the quiet detail line', () => {
   expect(screen.getByText('RPE 8 · 60 perc')).toBeInTheDocument()
   expect(screen.getByText('07:12-kor logolva')).toBeInTheDocument()
   expect(container.querySelector('.donebar')).toBeInTheDocument()
+  // the done mark is the 3D t-tick with a spoken meaning (üveg, mezo-me75u.4)
+  expect(screen.getByRole('img', { name: 'kész' }).querySelector('use')?.getAttribute('href')).toBe('#t-tick')
   // no handler -> not a button
   expect(screen.queryByRole('button')).not.toBeInTheDocument()
 })

@@ -69,3 +69,8 @@ test('a starred recipe row carries the ★ mark', () => {
   const starredCount = recipes.filter(r => r.starred).length
   expect(screen.getAllByLabelText('csillagos')).toHaveLength(starredCount)
 })
+
+test('opening the sheet does NOT focus the search box — no surprise mobile keyboard', () => {
+  renderSheet()
+  expect(screen.getByRole('textbox', { name: 'Keresés a receptek között' })).not.toHaveFocus()
+})

@@ -633,10 +633,17 @@ const NAPOM_ROUTES: Array<[string, string]> = [
 for (const [name, path] of NAPOM_ROUTES) {
   test(`A napom · ${name} stays contained and its last row clears the tab bar @ 320px`, async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 820 })
+    // Clock: 2026-05-21 is the mock `inProgress` fixture's date, so "today" is the live day; it is
+    // the Thursday of the mock week that opens on the `scored` fixture (2026-05-18), so both routes
+    // share one fully seeded week strip. 13:42 keeps us before the 20:00 napzárás window.
     await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
+    // The bare route would open morning mode: the mock's yesterday (2026-05-20) is a scored day
+    // with an unseen review. Mark it seen first so "today (live)" really renders the live day.
+    await page.addInitScript(() => { localStorage.setItem('napom.seen.2026-05-20', '1') })
     await page.goto(path)
     await page.waitForLoadState('networkidle')
     await page.evaluate(() => document.fonts.ready)
+    if (path === '/nap/napom') await expect(page.locator('.napom-hero h1')).toContainText('Csütörtök')
 
     // No horizontal scroll at the app's hardest width (U1 rule 8).
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)

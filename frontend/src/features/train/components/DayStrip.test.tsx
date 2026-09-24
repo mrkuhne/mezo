@@ -36,13 +36,13 @@ const items: DayStripItem[] = [
 
 test('renders one chip per day with tone-coloured dots', () => {
   const { container } = render(<DayStrip items={items} selected="Kedd" onSelect={() => {}} />)
-  expect(container.querySelectorAll('.daychip')).toHaveLength(4)
-  expect(container.querySelectorAll('.daychip')[1].querySelectorAll('.dot-cross, .dot-run, .dot-sport')).toHaveLength(3)
+  expect(container.querySelectorAll('.trm-day')).toHaveLength(4)
+  expect(container.querySelectorAll('.trm-day')[1].querySelectorAll('.dot-cross, .dot-run, .dot-sport')).toHaveLength(3)
 })
 
 test('marks today, the selection and an empty rest day distinctly', () => {
   const { container } = render(<DayStrip items={items} selected="Kedd" onSelect={() => {}} />)
-  const chips = container.querySelectorAll('.daychip')
+  const chips = container.querySelectorAll('.trm-day')
   expect(chips[1].className).toContain('today')
   expect(chips[1].className).toContain('sel')
   expect(chips[3].className).toContain('rest')
@@ -51,12 +51,19 @@ test('marks today, the selection and an empty rest day distinctly', () => {
   expect(screen.getByText('Hét')).toBeInTheDocument()
 })
 
-test('shows a done marker per logged session and a dash when nothing is logged', () => {
-  render(<DayStrip items={items} selected="Kedd" onSelect={() => {}} />)
-  expect(screen.getByText('✓✓')).toBeInTheDocument()   // Hét: 2 of 2
-  expect(screen.getByText('✓')).toBeInTheDocument()     // Kedd: 1 of 3
-  expect(screen.getByText('—')).toBeInTheDocument()     // Sze: scheduled, nothing logged
+// ÜVEG (mezo-me75u.4): the `✓` glyphs became one small 3D t-tick per logged session, and the
+// `—` of an unlogged scheduled day is gone (its modality dots already say "scheduled") —
+// the spoken state lives in the chip's aria-label (asserted below).
+test('shows a 3D tick per logged session, none when nothing is logged, pihenő on a rest day', () => {
+  const { container } = render(<DayStrip items={items} selected="Kedd" onSelect={() => {}} />)
+  const ticks = (i: number) => [...container.querySelectorAll('.trm-day')[i].querySelectorAll('.trm-day-ck use')]
+    .map((u) => u.getAttribute('href'))
+  expect(ticks(0)).toEqual(['#t-tick', '#t-tick'])  // Hét: 2 of 2
+  expect(ticks(1)).toEqual(['#t-tick'])             // Kedd: 1 of 3
+  expect(ticks(2)).toEqual([])                      // Sze: scheduled, nothing logged
   expect(screen.getByText('pihenő')).toBeInTheDocument()// Vas: no sessions
+  // no text glyph marks survive
+  expect(screen.queryByText(/✓|—/)).not.toBeInTheDocument()
 })
 
 test('selecting a day calls onSelect with its day key', () => {
@@ -83,7 +90,7 @@ test('centres the selected chip on mount', () => {
   const spy = stubScrollIntoView()
   const { container } = render(<DayStrip items={items} selected="Vas" onSelect={() => {}} />)
   expect(spy).toHaveBeenCalledTimes(1)
-  expect(spy.mock.instances[0]).toBe(container.querySelectorAll('.daychip')[3])
+  expect(spy.mock.instances[0]).toBe(container.querySelectorAll('.trm-day')[3])
   expect(spy.mock.calls[0][0]).toMatchObject({ inline: 'center' })
 })
 
