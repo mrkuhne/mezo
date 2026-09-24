@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-09-23
+updated: 2026-09-24
 tags: [train, running, sport, frontend, backend, data-layer, progression, hypertrophy]
 key_files:
   - frontend/src/features/train
@@ -17,6 +17,8 @@ related: [_platform-data-layer, _platform-design-system, today, fuel]
 ---
 
 # Train — Feature Documentation
+
+> **2026-09-24 — Üveg U4 (`mezo-me75u.4`).** The Train area wears the dark glass: Mai (frameless today hero + glass CTA, glass session/energy/muscle cards), the in-workout screen (glass workout cards in the muscle colour, 3D set verdicts, the no-sheen dock whose resting ring fills around a 3D clock, glass dialogs, floating sheets), the two-step closing ceremony (3D stars; a separate records card with type + value chips; the stats card now also lists the session's **accepted challenges** with a round hit/miss icon — owner-approved content, fed by the existing `useChallenges` list via `ceremonyChallenges()`), the review, Terhelés, Sport + log (per-sport 3D icons via `Sport.art3d`), Futás + builder, Medálok (`medalLabels` tier → t-record/t-tick), Gyakorlatok + story. A second owner-approved addition: a **„A mai küldetések” row** at the top of the workout list opens the existing Küldetések glass until the first set is logged. Behavior otherwise unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md) (U4 rules 23–30), parity reference [`uveg-edzes.html`](../design_2.0/prototypes/uveg-edzes.html).
 
 > **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The sport capture sheet wears the U3 capture look (glass floating sheet, 3D header art, scale cells, the shared lit Mentés). Behavior unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
 
