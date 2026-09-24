@@ -21448,3 +21448,129 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .nap-center .nap-zdone small { display: block; font-size: 11.5px; color: var(--text-secondary); margin-top: 2px; }
 .nap-center .nap-zdone a { font-size: 12px; font-weight: 600; color: var(--napom-coral-ink); white-space: nowrap; }
 /* ── /uveg napom ── */
+
+/* ── uveg edzes2 terv (mezo-me75u.5) ── /train/mesocycles + /train/mesocycles/:id: the week's day cards ── */
+/* Ranking (bible §3.4, prototype uveg-edzes2.html#terv): the card's ONE loud thing is WHAT you
+   train — the body map and the title. The three fact boxes are deliberately equal and quiet, and
+   the muscle chips are detail. State changes colour and volume, never structure:
+     megvolt / részben → glass, calm     ma → glass + accent glow     jön → flat fill
+   Everything is scoped to `.tv-day`; the older `.pl-day` rules above are untouched (they still
+   serve nothing here, and the U5 sweep removes them once every `pl-day` consumer is migrated). */
+.tv-day {
+  --c: var(--dv-coral);
+  position: relative; isolation: isolate; overflow: hidden;
+  display: block; width: 100%; padding: 0; border-radius: 20px; text-align: left;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  backdrop-filter: blur(16px) saturate(1.5);
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.tv-day::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.3px;
+  pointer-events: none; z-index: 2;
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--c) 80%, transparent) 0%,
+    rgba(255, 244, 230, 0.16) 30%,
+    color-mix(in srgb, var(--c) 18%, transparent) 62%,
+    color-mix(in srgb, var(--c) 60%, transparent) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+/* „jön": not glass. Not everything is glass (bible §3) — the quiet rank is a flat fill. */
+.tv-day.is-next {
+  background: rgba(245, 239, 230, 0.035);
+  backdrop-filter: none;
+  box-shadow: inset 0 0 0 1px var(--divider);
+}
+.tv-day.is-next::before { display: none; }
+.tv-day.is-next .muscle-chip, .tv-day.is-next .body-map-figure { opacity: 0.72; }
+.tv-day.is-next .tv-day-id strong { color: var(--text-secondary); }
+/* „ma": the loudest card in the list. */
+.tv-day.is-now {
+  box-shadow:
+    0 18px 34px -16px rgba(0, 0, 0, 0.8),
+    0 0 30px -4px color-mix(in srgb, var(--c) 45%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.12),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 60%, transparent);
+}
+
+/* zone 1 — the header band: eyebrow over title, stamp + chevron on a shared right edge */
+.tv-day-head { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; padding: 12px 14px 11px; }
+.tv-day-id { flex: 1; min-width: 0; }
+.tv-day-tag { display: block; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); text-transform: uppercase; }
+.tv-day-id strong { display: block; font-size: 17px; font-weight: 600; letter-spacing: -0.45px; color: var(--text-primary); margin-top: 2px; }
+.tv-day-chev { flex: 0 0 auto; color: var(--text-muted); font-size: 19px; font-weight: 400; line-height: 1; }
+.tv-day-stamp {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 11px 5px 8px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.2px; white-space: nowrap;
+}
+.tv-day-stamp .t-ico { width: 17px; height: 17px; filter: none; }
+.tv-day-stamp.is-done { color: #bfe0a8; background: rgba(134, 188, 99, 0.14); box-shadow: inset 0 0 0 1px rgba(134, 188, 99, 0.45); }
+.tv-day-stamp.is-part { color: #ffd08a; background: rgba(255, 190, 96, 0.14); box-shadow: inset 0 0 0 1px rgba(255, 190, 96, 0.45); }
+.tv-day-stamp.is-today { color: #191614; background: var(--c); box-shadow: 0 0 16px -2px color-mix(in srgb, var(--c) 75%, transparent); }
+.tv-day-stamp.is-today .t-ico { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35)); }
+.tv-day-stamp.is-next { padding: 5px 11px; color: var(--text-muted); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+
+/* zone 2 — content: a fixed map column, then the data, on one shared left edge */
+.tv-day-body {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 13px; align-items: center;
+  padding: 11px 14px 13px; border-top: 1px solid var(--divider);
+}
+.tv-day-map { width: 62px; height: 104px; display: grid; place-items: center; }
+.tv-day-map .body-map-figure { width: 100%; height: 100%; overflow: visible; }
+.tv-day-col { min-width: 0; }
+/* three EQUAL boxes in a real grid — never "whatever width is left" */
+.tv-day-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tv-day-facts i {
+  min-width: 0; display: flex; flex-direction: column; align-items: center;
+  padding: 6px 3px 5px; border-radius: 12px; font-style: normal;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.tv-day-facts .t-ico { width: 17px; height: 17px; }
+.tv-day-facts b { font-size: 13.5px; font-weight: 600; letter-spacing: -0.3px; color: var(--text-primary); margin-top: 1px; }
+.tv-day-facts small { font-size: 8px; font-weight: 600; letter-spacing: 0.4px; color: var(--text-muted); }
+/* the muscle row shares the boxes' left edge and the one 9px rhythm */
+.tv-day-chips { display: flex; gap: 7px; margin-top: 9px; }
+.tv-day-chip { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.tv-day-chip b { font-size: 10px; font-weight: 600; letter-spacing: -0.2px; color: var(--text-secondary); }
+/* bible §4: row art sits in a lit well, tinted by the muscle's own hue — without it the
+   chips read as bare silhouettes next to the body map (owner-approved prototype look). */
+.tv-day-chip .muscle-chip {
+  /* --mc comes from the chip span (MesoDayCard); the card accent is only the fallback. */
+  --mc: var(--c);
+  border-radius: 50%; overflow: hidden;
+  background: radial-gradient(circle at 35% 28%, #3a332d, color-mix(in srgb, var(--mc) 16%, #1e1b18));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 244, 230, 0.08),
+    inset 0 -6px 12px -8px color-mix(in srgb, var(--mc) 70%, transparent),
+    0 0 12px -4px color-mix(in srgb, var(--mc) 55%, transparent);
+}
+
+/* 320px is the hardest width (U1 rule 8): the map column and the rhythm shrink, nothing wraps out */
+@media (max-width: 360px) {
+  .tv-day-head { padding: 11px 12px 10px; }
+  .tv-day-body { grid-template-columns: 52px minmax(0, 1fr); gap: 10px; padding: 10px 12px 12px; }
+  .tv-day-map { width: 52px; height: 90px; }
+  .tv-day-facts small { font-size: 7.5px; }
+  .tv-day-stamp { font-size: 11px; padding: 4px 9px 4px 7px; }
+  .tv-day-chips { gap: 5px; }
+}
+/* the off-day row: the SAME vocabulary as the cards (eyebrow, stamp, 3D icon), one rank quieter.
+   A week is also its off days — they are a row, never a card (bible §3: not everything is glass). */
+.tv-dayrest {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px; border-radius: 17px;
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.tv-dayrest em { flex: 1; min-width: 0; font-style: normal; font-size: 12.5px; color: var(--text-secondary); }
+.tv-dayrest .t-ico { flex: 0 0 auto; }
+.tv-dayrest .tv-day-tag { flex: 0 0 auto; }
+
+/* ── /uveg edzes2 terv ── */

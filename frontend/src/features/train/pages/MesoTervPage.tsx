@@ -11,9 +11,14 @@
 //                   phase pill, the block's name, ONE plain sentence, the week arc.
 //                   The WHOLE poster is the builder's door (/train/mesocycles/:id),
 //                   the same whole-card idiom the old hub hero carried.
-//   „A heted"     — one `.pl-day` card per TRAINING day (full weekday name, `MA`
-//                   chip on today, boxed szett/perc/gyakorlat facts, per-muscle
-//                   mini bars) → the day's own page; rest/sport days are slim rows.
+//   „A heted"     — one `MesoDayCard` per TRAINING day → the day's own page;
+//                   rest/sport days stay slim rows. U5 (mezo-me75u.5) replaced the
+//                   old identical-looking `.pl-day` tiles: the card now carries the
+//                   day's body map and muscle chips (so Push / Legs / Pull read as
+//                   three different cards), and the week's three ranks are drawn
+//                   apart — „megvolt · ma · jön". A done day's numbers come off the
+//                   week's completed instances (`doneByDay`, mesoWeekDone.ts), never
+//                   the plan, so a „Megvolt" stamp never sits over a planned figure.
 //   `.pl-dests`   — the two quiet doorways: „Melyik izmod hol tart" → …/week
 //                   (this is the old `Heti vizsgálat` tile's reachability, kept)
 //                   and „Edzéstervek" → …/konyvtar (which owns `Új blokk`, so the
@@ -35,17 +40,18 @@
 import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
+import { useWeekMuscleLog } from '@/data/train/weekMuscleLogHooks'
 import type { Mesocycle, MesoDay, MesoPhase } from '@/data/types'
 import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import { cn } from '@/shared/lib/cn'
 import { GhostState } from '@/shared/ui/GhostState'
-import { ClayIcon } from '@/shared/ui/clay'
+import { ClayIcon, Icon3D } from '@/shared/ui/clay'
+import { MesoDayCard } from '@/features/train/components/MesoDayCard'
+import { doneByDay } from '@/features/train/logic/mesoWeekDone'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { nextRolloverChips, phaseChip, runBands, weekDots, type Phase } from '@/features/train/logic/mesoBands'
 import { todayDayToken } from '@/features/train/logic/mesoDates'
 import { isOffDay } from '@/features/train/logic/offDay'
-import { SESSION_MUSCLE_CAP } from '@/features/train/logic/setBudget'
-import { dayTileData } from '@/features/train/wizard/dayTiles'
 import { MesoCloseSheet } from '@/features/train/sheets/MesoCloseSheet'
 import MesoTervSkeleton from '@/features/train/pages/MesoTervSkeleton'
 
@@ -89,6 +95,12 @@ function blockSentence(meso: Mesocycle): string {
 
 export function MesoTervPage() {
   const { mesocycles, workoutPending } = useTrain()
+  // U5 (mezo-me75u.5): the week list separates „megvolt · ma · jön", so a day the athlete
+  // already trained shows what HAPPENED. Same cached reads the Terhelés tab makes
+  // (weekMuscleLogHooks) — no second source of truth, and no new endpoint. Mock mode has no
+  // persisted instances, so every day there honestly renders as planned.
+  const { details } = useWeekMuscleLog()
+  const doneDays = doneByDay(details)
   const navigate = useNavigate()
   const [closing, setClosing] = useState(false)
 
@@ -248,50 +260,33 @@ export function MesoTervPage() {
             const name = DAY_LABELS[token] ?? token
             if (!training) {
               const sport = day?.muscle === 'sport'
+              // The off-day row speaks the SAME vocabulary as the cards above it (U5): one
+              // eyebrow, one stamp word, the 3D icon set — only the rank is quieter. A week
+              // is also its off days; they are a slim row, never a card.
               return (
-                <div key={token} className="pl-day is-rest rise" style={delay(110 + i * 20)}>
-                  <span className="pl-day-tag">{name}</span>
-                  {isToday && <span className="pl-today">MA</span>}
-                  <span className="pl-day-rest">
-                    <ClayIcon name={sport ? 'i-sport' : 'i-hold'} size={22} className="icon" />
-                    {sport ? (day?.type ?? 'sportnap') : 'pihenőnap'}
-                  </span>
+                <div key={token} className="tv-dayrest rise" style={delay(110 + i * 20)}>
+                  <span className="tv-day-tag">{name}</span>
+                  <em>{sport ? (day?.type ?? 'sportnap') : 'pihenőnap'}</em>
+                  {isToday && (
+                    <span className="tv-day-stamp is-today">
+                      <Icon3D name="t-play" size={17} />
+                      Ma
+                    </span>
+                  )}
+                  <Icon3D name={sport ? 't-volley' : 't-moon'} size={24} />
                 </div>
               )
             }
-            const tile = dayTileData(training)
             return (
-              <button
-                type="button"
+              <MesoDayCard
                 key={token}
-                className={cn('pl-day rise', isToday && 'is-now')}
-                style={delay(110 + i * 20)}
-                aria-label={`${name}${isToday ? ' · ma' : ''} · ${training.type}`}
-                onClick={() => navigate(`/train/mesocycles/${meso.id}/days/${encodeURIComponent(token)}`)}
-              >
-                <span className="pl-day-head">
-                  <span className="pl-day-tag">{name}</span>
-                  {isToday && <span className="pl-today">MA</span>}
-                  <strong>{training.type}</strong>
-                  <b aria-hidden="true">›</b>
-                </span>
-                <span className="pl-day-facts">
-                  <i><ClayIcon name="i-edzes" size={22} className="icon" /><b>{tile.sets}</b><small>szett</small></i>
-                  <i><ClayIcon name="i-idozito" size={22} className="icon" /><b>{tile.minutes}</b><small>perc</small></i>
-                  <i><ClayIcon name="i-stack" size={22} className="icon" /><b>{training.exercises.length}</b><small>gyakorlat</small></i>
-                </span>
-                <span className="pl-day-bars">
-                  {tile.muscles.map((m) => (
-                    <i
-                      key={m.label}
-                      style={{
-                        '--mus-color': m.color,
-                        '--w': `${Math.min(100, (m.sets / SESSION_MUSCLE_CAP) * 100)}%`,
-                      } as CSSProperties}
-                    />
-                  ))}
-                </span>
-              </button>
+                day={training}
+                name={name}
+                isToday={isToday}
+                done={isToday ? null : (doneDays.get(token) ?? null)}
+                delayMs={110 + i * 20}
+                onOpen={() => navigate(`/train/mesocycles/${meso.id}/days/${encodeURIComponent(token)}`)}
+              />
             )
           })}
         </div>
