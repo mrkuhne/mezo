@@ -344,12 +344,12 @@ The live day page (`features/today/pages/NapomPage.tsx`, `/nap/napom[/:date]`) r
     Mezo prose follows the same rule; only the short lead lines keep the serif italic.
 24. **A live page's "friss" state comes from `dataUpdatedAt`, never from a clock.** Today's
     "ÉLŐ · FRISSÜLT hh:mm" status line reads the query's own `dataUpdatedAt`
-    (`NapomPage.tsx:165`, `dayEvaluationHooks.ts:43,65`), not `Date.now()` or a tick timer — the
+    (`NapomPage.tsx:190`, `dayEvaluationHooks.ts:43,65`), not `Date.now()` or a tick timer — the
     same value the 60 s poll and the mutation-cache invalidation both bump on a real change, so
     the displayed timestamp always matches the data actually on screen, including right after an
     optimistic write.
 25. **A tab dot sits outside the icon with a `0 0 0 2px var(--page)` ring, like the header
-    badges.** The morning-mode dot on the "A napom" tab (`tb-dot`, `prototype.css:18864`) is
+    badges.** The morning-mode dot on the "A napom" tab (`tb-dot`, `prototype.css:18915`) is
     absolutely positioned at the icon's top-right corner (outside its box, `top:-2px;
     right:-5px`), lavender-filled with a lavender glow, and rung with `0 0 0 2px var(--canvas)`
     (the app's `--canvas` alias for `--page`, `prototype.css:824`) — the same silhouette-cutting

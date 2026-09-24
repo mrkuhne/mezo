@@ -2,7 +2,7 @@ import { act, render, screen, waitFor } from '@testing-library/react'
 import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { afterEach, expect, test, vi } from 'vitest'
 import { setToken } from '@/data/_client/api'
-import { localDateString } from '@/shared/lib/dates'
+import { localDateString, mondayOf } from '@/shared/lib/dates'
 import { QueryProvider } from './QueryProvider'
 
 /**
@@ -31,7 +31,7 @@ test('real mode with no token renders the login page, not the app', async () => 
   expect(await screen.findByRole('heading', { name: 'Bejelentkezés' })).toBeInTheDocument()
 })
 
-test('a successful mutation invalidates today\'s day evaluation (A napom S3, mezo-yjzhw.3)', async () => {
+test('a successful mutation invalidates today\'s day evaluation and this week (A napom S3, mezo-yjzhw.3)', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   const today = localDateString()
   let clientRef: QueryClient | undefined
@@ -40,6 +40,7 @@ test('a successful mutation invalidates today\'s day evaluation (A napom S3, mez
     const qc = useQueryClient()
     clientRef = qc
     qc.setQueryData(['dayEvaluation', today], { seeded: true })
+    qc.setQueryData(['meWeek', mondayOf(today)], { seeded: true })
     const mutation = useMutation({ mutationFn: async () => 'ok' })
     return <button onClick={() => mutation.mutate()}>go</button>
   }
@@ -50,5 +51,6 @@ test('a successful mutation invalidates today\'s day evaluation (A napom S3, mez
 
   await waitFor(() => {
     expect(clientRef?.getQueryState(['dayEvaluation', today])?.isInvalidated).toBe(true)
+    expect(clientRef?.getQueryState(['meWeek', mondayOf(today)])?.isInvalidated).toBe(true)
   })
 })

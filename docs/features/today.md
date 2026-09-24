@@ -4,27 +4,27 @@ type: feature-domain
 status: mixed
 updated: 2026-09-24
 tags: [today, nap, mozaik, biometrics, frontend, data-layer, ritual, needs, napom]
-# 8 load-bearing paths (was 10 — the three named Nap components are all under
-
-> **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The whole Nap area wears the dark glass: the Mai hub (frameless orbit with 3D nodes, glass fuel card + Mezo observation, the "Mai pillanatok" rows now carry a 3D kind icon — owner decision), Check-in, Életjelek, Küldetések, Rutin, the Mezo messages page, `/nap/gyors` and every capture sheet. Text-glyph marks became `t-tick` with accessible names. `shared/ui/Island.tsx` (dead) was removed. Behavior, routes and data are unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
-
-> **2026-09-24 — A napom (`mezo-yjzhw`).** The day page behind the header's day orb moved off `/me/week/napok/:date` onto its own Nap-domain tab, **A napom** (`/nap/napom`, `/nap/napom/:date`), replacing the Napzárás tab. It is a live day view (six-segment ring, a rule-based one-line reading, a "most érdemes" next-step card) by day, and a fully-reviewed closed day (every `DayReviewJson` layer, upright Geist prose) once the overnight warm-up job has run. The Napzárás ritual itself is unchanged; its evening entry point moved to a new card on Mai (`NapzarasCard`). Design: [`specs/2026-09-24-a-napom-design.md`](../superpowers/specs/2026-09-24-a-napom-design.md).
-# `features/today/components`, which tracks them and their siblings together).
+# 8 load-bearing paths. A napom's entry points are pages (NapomPage), components (napom/*),
+# logic (napom.ts), data/me/liveDay.ts, router.tsx and DayReviewWarmupJob. AppHeader.tsx is
+# settings.md's; backend biometrics (check-in included) is me.md's — both named in the body.
+# quickinput stays: this is its only feature doc (CODEMAP would orphan it).
 key_files:
   - frontend/src/features/today/pages
   - frontend/src/features/today/components
   - frontend/src/features/today/logic
-  - frontend/src/features/quickinput
-  - frontend/src/app/AppHeader.tsx
   - frontend/src/app/router.tsx
   - frontend/src/data/today
+  - frontend/src/features/quickinput
   - frontend/src/data/me/liveDay.ts
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DayReviewWarmupJob.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/checkin
 related: [_platform-data-layer, _platform-design-system, me, insights, companion, proactive, train, growth, habit, intention, ritual, needs]
 ---
 
 # Today — Feature Documentation
+
+> **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The whole Nap area wears the dark glass: the Mai hub (frameless orbit with 3D nodes, glass fuel card + Mezo observation, the "Mai pillanatok" rows now carry a 3D kind icon — owner decision), Check-in, Életjelek, Küldetések, Rutin, the Mezo messages page, `/nap/gyors` and every capture sheet. Text-glyph marks became `t-tick` with accessible names. `shared/ui/Island.tsx` (dead) was removed. Behavior, routes and data are unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
+
+> **2026-09-24 — A napom (`mezo-yjzhw`).** The day page behind the header's day orb moved off `/me/week/napok/:date` onto its own Nap-domain tab, **A napom** (`/nap/napom`, `/nap/napom/:date`), replacing the Napzárás tab. It is a live day view (six-segment ring, a rule-based one-line reading, a "most érdemes" next-step card) by day, and a fully-reviewed closed day (every `DayReviewJson` layer, upright Geist prose) once the overnight warm-up job has run. The Napzárás ritual itself is unchanged; its evening entry point moved to a new card on Mai (`NapzarasCard`). Design: [`specs/2026-09-24-a-napom-design.md`](../superpowers/specs/2026-09-24-a-napom-design.md).
 
 > The Nap tab at `/nap` is the default landing page. **Napközpont** (`mezo-26fw0`) combines five immediate capture actions around the Titanium companion, actual daily nutrition, one grounded Mezo observation and a recorded-moments timeline. Existing shell navigation and sibling pages remain. Design: [approved Napközpont spec](../superpowers/specs/2026-09-17-napkozpont-design.md).
 
@@ -184,9 +184,21 @@ look: rose/coral accents, a frameless halo hero, glass rows, no glass inside gla
   (bible §5 appendix rule 24) — so the header orb, which reads the same query, is live too.
   **By design, today's evaluation therefore polls once a minute in real mode wherever the header
   orb is mounted — i.e. on every screen — so the orb stays live**, not only while A napom is open.
-- **Deliberate deviation: no per-row "pulse on change".** The spec (§4) planned a one-shot coral
-  pulse on a row whose value changed on refetch; it was not built in this branch (follow-up
-  `mezo-yjzhw.6`).
+- **One-shot pulse on a changed value (`mezo-yjzhw.6`, spec §4).** When today's evaluation
+  refetches (the 60 s poll or a write's invalidation) and a row's displayed value moves — its
+  score, status or fact line — that row plays one 1.6 s coral ring-and-glow; the ring centre
+  does the same when the `N/6` done count moves. `NapomPage` builds a flat snapshot per render
+  (`pulseSnapshot`, `features/today/pages/NapomPage.tsx:63`) and hands it to
+  `useChangedKeys(snapshot, date)` (`features/today/logic/useChangedKeys.ts:29`, `FRESH_PULSE_MS`
+  at `:13`), which reports the ids that changed since the previous snapshot and clears them after
+  the pulse or on the next change (`NapomPage.tsx:120`). The snapshot is `null` unless the page
+  shows today's open evaluation, so the first render, the mock seed, a date change and past days
+  never pulse. A fresh row gets `is-fresh` plus an `i.napom-fresh` overlay
+  (`NapomDimensionRow.tsx:69`, `NapomSegRing.tsx:47`) — an overlay, because the row's own
+  `animation` (the `.rise` entrance) and `box-shadow` (the `.glass` stack) must not be replaced
+  mid-pulse. The look (`@keyframes napom-fresh`/`napom-fresh-in`, the `uveg napom` block of
+  `styles/prototype.css`) lives inside `prefers-reduced-motion: no-preference`; reduced motion
+  shows nothing.
 - **Week strip.** `NapomWeekStrip` renders the 7-day range with a state mark per day (scored,
   thin, today, future); tapping a day navigates to `/nap/napom/<date>`.
 - **A malformed `:date` redirects to `/nap/napom`** (bare), unlike the old `WeekDayPage`, which

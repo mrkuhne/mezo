@@ -16,6 +16,9 @@ describe('NapomDimensionRow', () => {
     const { container } = render(<NapomDimensionRow dimension={nutrition} mode="scored" goalTick i={0} />)
     const row = screen.getByRole('button', { name: /^Tápanyag/ })
     expect(row).toHaveAttribute('aria-expanded', 'false')
+    // a11y (mezo-yjzhw.7): a short name, the fact line as the description — not the whole body
+    expect(row).toHaveAccessibleName('Tápanyag, 82 pont')
+    expect(row).toHaveAccessibleDescription('kcal 2980 / 3100 · fehérje 205 / 220 g')
     expect(screen.getByText('súly 30%')).toBeInTheDocument()
     expect(screen.getByText('kcal 2980 / 3100 · fehérje 205 / 220 g')).toBeInTheDocument()
     expect(screen.getByText('82')).toBeInTheDocument()
@@ -32,6 +35,13 @@ describe('NapomDimensionRow', () => {
     await user.click(row)
     expect(row).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByText('A fehérjecélt majdnem hoztad.')).toBeNull()
+  })
+
+  test('scored with no score: the name says "nincs adat"', () => {
+    render(<NapomDimensionRow dimension={{ ...nutrition, score: null, status: 'NO_DATA', facts: [] }} mode="scored" i={0} />)
+    const row = screen.getByRole('button', { name: 'Tápanyag, nincs adat' })
+    expect(row).toHaveAttribute('aria-expanded', 'false')
+    expect(row).toHaveAccessibleDescription('nincs adat')
   })
 
   test('today: status word by status, no weight, NO_DATA is a dashed row with a dash for the value', () => {

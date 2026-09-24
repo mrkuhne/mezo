@@ -18641,6 +18641,21 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 
 /* page root: clear the FAB and the floating bar (rule 9) */
 .napom-page { padding-bottom: calc(var(--screen-bottom-pad) + 72px); font-style: normal; }
+
+/* the block's tints, named once (mezo-yjzhw.7). Light inks of the --dv-* hues for type and
+   marks on the dark ground, the lit-well gradient stops, and the dark ink on an accent button.
+   Declared on every root this block styles: the page, the Mai napzárás card, the tab bar. */
+.napom-page, .nap-center, .tab-bar {
+  --napom-lav-ink: #C9BDF0;
+  --napom-lav-hi: #E6DDFF;
+  --napom-gold-ink: #E9C48A;
+  --napom-gold-hi: #FFD99A;
+  --napom-sage-ink: #A9CFA0;
+  --napom-coral-ink: #FFB39C;
+  --napom-well-hi: #3A332D;
+  --napom-well-lo: #1E1B18;
+  --napom-on-accent: #191614;
+}
 .napom-page .rise { --d: calc(var(--i, 0) * 70ms); }
 .napom-page .uv-eyebrow { display: block; }
 
@@ -18649,7 +18664,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%;
   padding: 6px 11px; border: 0; border-radius: 999px;
   font: 600 11.5px/1.3 var(--ff-body); color: var(--text-secondary);
-  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+  background: var(--surface-recess); box-shadow: inset 0 0 0 1px var(--divider);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .napom-page .napom-flat b { color: var(--text-primary); font-weight: 600; }
@@ -18671,14 +18686,14 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   font: 600 10px/1.2 var(--ff-body); color: var(--text-muted);
 }
 .napom-page .napom-wd b { font-size: 14px; font-weight: 600; letter-spacing: -0.3px; color: var(--text-secondary); }
-.napom-page .napom-wd i { width: 22px; height: 4px; border-radius: 2px; background: rgba(245, 239, 230, 0.08); }
-.napom-page .napom-wd.is-sc i { background: linear-gradient(90deg, #C9BDF0, #E9C48A); box-shadow: 0 0 6px rgba(201, 189, 240, 0.5); }
-.napom-page .napom-wd.is-th i { background: repeating-linear-gradient(90deg, rgba(245, 239, 230, 0.35) 0 3px, transparent 3px 6px); }
+.napom-page .napom-wd i { width: 22px; height: 4px; border-radius: 2px; background: color-mix(in srgb, var(--text-primary) 8%, transparent); }
+.napom-page .napom-wd.is-sc i { background: linear-gradient(90deg, var(--napom-lav-ink), var(--napom-gold-ink)); box-shadow: 0 0 6px color-mix(in srgb, var(--napom-lav-ink) 50%, transparent); }
+.napom-page .napom-wd.is-th i { background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--text-primary) 35%, transparent) 0 3px, transparent 3px 6px); }
 .napom-page .napom-wd.is-today i { background: var(--dv-coral); box-shadow: 0 0 8px var(--dv-coral); }
 .napom-page .napom-wd.is-fut { opacity: 0.4; cursor: default; }
 .napom-page .napom-wd.is-on {
-  background: radial-gradient(80% 100% at 50% 0%, rgba(245, 239, 230, 0.10), transparent 75%);
-  box-shadow: inset 0 0 0 1px rgba(245, 239, 230, 0.14);
+  background: radial-gradient(80% 100% at 50% 0%, color-mix(in srgb, var(--text-primary) 10%, transparent), transparent 75%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-primary) 14%, transparent);
 }
 .napom-page .napom-wd.is-on b { color: var(--text-primary); }
 .napom-page .napom-wd:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: -2px; }
@@ -18689,21 +18704,21 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .napom-page .napom-hero h1 { font: 600 22px/1.2 var(--ff-body); letter-spacing: -0.6px; color: var(--text-primary); margin: 0; }
 .napom-page .napom-hero h1 span { color: var(--text-secondary); font-weight: 400; }
 .napom-page .napom-sub { margin-top: 4px; font-size: 11px; }
-.napom-page .napom-live { display: inline-flex; align-items: center; gap: 6px; color: #FFB39C; }
+.napom-page .napom-live { display: inline-flex; align-items: center; gap: 6px; color: var(--napom-coral-ink); }
 .napom-page .napom-live i { width: 7px; height: 7px; border-radius: 50%; background: var(--dv-coral); box-shadow: 0 0 8px var(--dv-coral); }
 @keyframes napom-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.7); } }
 
 /* the six-segment ring */
 .napom-page .napom-segring { position: relative; width: 212px; height: 212px; margin: 10px auto 0; }
 .napom-page .napom-segring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
-.napom-page .napom-seg-t { fill: none; stroke: rgba(245, 239, 230, 0.07); stroke-width: 12; stroke-linecap: round; }
+.napom-page .napom-seg-t { fill: none; stroke: var(--divider); stroke-width: 12; stroke-linecap: round; }
 .napom-page .napom-seg-p {
   fill: none; stroke: var(--c); stroke-width: 12; stroke-linecap: round;
   filter: drop-shadow(0 0 5px color-mix(in srgb, var(--c) 60%, transparent));
 }
 .napom-page .napom-core {
   position: absolute; inset: 36px; border-radius: 50%; display: grid; place-items: center; text-align: center;
-  background: radial-gradient(circle at 35% 30%, #3A332D, #1E1B18);
+  background: radial-gradient(circle at 35% 30%, var(--napom-well-hi), var(--napom-well-lo));
   box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08),
     inset 0 -12px 22px -12px color-mix(in srgb, var(--c, var(--dv-coral)) 55%, transparent),
     0 14px 26px -14px #000;
@@ -18716,7 +18731,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .napom-page .napom-core .napom-grad {
   font-size: 64px; letter-spacing: -4px;
-  background: linear-gradient(135deg, #C9BDF0 0%, #E6DDFF 45%, #E9C48A 100%);
+  background: linear-gradient(135deg, var(--napom-lav-ink) 0%, var(--napom-lav-hi) 45%, var(--napom-gold-ink) 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
   filter: drop-shadow(0 6px 16px rgba(155, 143, 196, 0.35));
 }
@@ -18727,9 +18742,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   display: inline-flex; align-items: center; gap: 6px; margin: 10px auto 0; padding: 6px 12px; min-height: 32px;
   border: 0; border-radius: 999px; cursor: pointer;
   font: 500 11.5px/1.3 var(--ff-body); color: var(--text-secondary);
-  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+  background: var(--surface-recess); box-shadow: inset 0 0 0 1px var(--divider);
 }
-.napom-page .napom-corr b { color: #C9BDF0; }
+.napom-page .napom-corr b { color: var(--napom-lav-ink); }
 .napom-page .napom-corr i { font-style: normal; color: var(--text-muted); margin-left: 2px; }
 .napom-page .napom-adjwhy { max-width: 320px; margin: 10px auto 0; font: 400 12.5px/1.5 var(--ff-body); color: var(--text-secondary); }
 
@@ -18768,14 +18783,14 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .napom-page button.napom-drow { cursor: pointer; }
 .napom-page .napom-drow.is-open {
   position: relative; overflow: visible;
-  background: rgba(245, 239, 230, 0.025);
+  background: color-mix(in srgb, var(--text-primary) 2.5%, transparent);
   border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent);
   box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
 }
 .napom-page .napom-drow.is-open::before, .napom-page .napom-drow.is-open::after { display: none; }
 .napom-page .napom-well {
   width: 48px; height: 48px; border-radius: 50%; flex: 0 0 auto; display: grid; place-items: center;
-  background: radial-gradient(circle at 35% 28%, #3A332D, color-mix(in srgb, var(--c) 14%, #1E1B18));
+  background: radial-gradient(circle at 35% 28%, var(--napom-well-hi), color-mix(in srgb, var(--c) 14%, var(--napom-well-lo)));
   box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08),
     inset 0 -6px 12px -8px color-mix(in srgb, var(--c) 70%, transparent),
     0 0 14px -4px color-mix(in srgb, var(--c) 50%, transparent);
@@ -18791,7 +18806,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .napom-page .napom-bar { height: 6px; }
 .napom-page .napom-bar u {
   position: absolute; top: -3px; bottom: -3px; left: var(--g); width: 2px; margin-left: -2px; border-radius: 1px;
-  background: rgba(245, 239, 230, 0.55);
+  background: color-mix(in srgb, var(--text-primary) 55%, transparent);
 }
 .napom-page .napom-end { display: block; text-align: right; }
 .napom-page .napom-end b { display: block; font-size: 22px; font-weight: 500; letter-spacing: -0.9px; color: color-mix(in srgb, var(--c) 75%, var(--text-primary)); }
@@ -18806,21 +18821,21 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* the Mezo's note (closed, scored day) */
 .napom-page .napom-note.glass { margin: 16px 16px 0; padding: 16px; border: 0; color: var(--text-primary); }
 .napom-page .napom-note-head { display: flex; align-items: center; gap: 10px; }
-.napom-page .napom-note-head .uv-eyebrow { color: #C9BDF0; }
+.napom-page .napom-note-head .uv-eyebrow { color: var(--napom-lav-ink); }
 .napom-page .napom-note p { margin: 10px 0 0; font: normal 400 15px/1.6 var(--ff-body); color: var(--text-primary); }
 .napom-page .napom-hls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
 .napom-page .napom-hl { min-width: 0; padding: 10px 12px; border-radius: 14px; }
 .napom-page .napom-hl.is-key { grid-column: 1 / -1; }
 .napom-page .napom-hl .uv-eyebrow { font-size: 9px; }
 .napom-page .napom-hl strong { display: block; margin-top: 3px; font: 600 13.5px/1.3 var(--ff-body); overflow-wrap: anywhere; }
-.napom-page .napom-hl.is-key .uv-eyebrow { color: #C9BDF0; }
-.napom-page .napom-hl.is-pattern .uv-eyebrow { color: #FFD99A; }
-.napom-page .napom-hl.is-win .uv-eyebrow { color: #A9CFA0; }
+.napom-page .napom-hl.is-key .uv-eyebrow { color: var(--napom-lav-ink); }
+.napom-page .napom-hl.is-pattern .uv-eyebrow { color: var(--napom-gold-hi); }
+.napom-page .napom-hl.is-win .uv-eyebrow { color: var(--napom-sage-ink); }
 .napom-page .napom-fb { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--divider); }
 .napom-page .napom-talk {
   display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; margin-top: 10px; padding: 10px 12px;
   border: 0; border-radius: 14px; cursor: pointer; text-align: left;
-  font: 600 13.5px/1.3 var(--ff-body); color: #E6DDFF;
+  font: 600 13.5px/1.3 var(--ff-body); color: var(--napom-lav-hi);
   background: color-mix(in srgb, var(--dv-lav) 10%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-lav) 30%, transparent);
 }
@@ -18835,7 +18850,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .napom-page .napom-nodata {
   --c: var(--dv-sky);
   display: grid; justify-items: center; gap: 6px; margin: 16px; padding: 18px; border-radius: 22px; text-align: center;
-  border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent); background: rgba(245, 239, 230, 0.025);
+  border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent); background: color-mix(in srgb, var(--text-primary) 2.5%, transparent);
 }
 .napom-page .napom-nodata .t-ico { opacity: 0.9; }
 .napom-page .napom-nodata strong { font: 600 16px/1.3 var(--ff-body); color: var(--text-primary); }
@@ -18848,9 +18863,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   width: calc(100% - 32px); margin: 16px 16px 0; padding: 14px 16px; border: 0; border-radius: 20px;
   text-align: left; cursor: pointer; font-family: var(--ff-body); color: var(--text-primary);
 }
-.napom-page .napom-tonext .uv-eyebrow { color: #FFB39C; }
+.napom-page .napom-tonext .uv-eyebrow { color: var(--napom-coral-ink); }
 .napom-page .napom-tonext strong { display: block; margin-top: 3px; font-size: 16px; font-weight: 600; }
-.napom-page .napom-tonext b { font-size: 24px; font-weight: 300; color: #FFB39C; }
+.napom-page .napom-tonext b { font-size: 24px; font-weight: 300; color: var(--napom-coral-ink); }
 
 @media (max-width: 360px) {
   .napom-page .napom-segring { width: 190px; height: 190px; }
@@ -18862,11 +18877,43 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .napom-page .napom-go { margin-left: 56px; }
 }
 
-/* motion: only the live dot pulses and the arcs/bars glide; the reduced branch sits still */
+/* motion: the live dot pulses, the arcs/bars glide, and a changed value flashes once; the
+   reduced branch sits still */
 @media (prefers-reduced-motion: no-preference) {
   .napom-page .napom-live i { animation: napom-pulse 1.8s ease-in-out infinite; }
   .napom-page .napom-seg-p { transition: stroke-dasharray 0.9s var(--uv-ease); }
   .napom-page .napom-bar > b { transition: width 0.9s var(--uv-ease); }
+}
+
+/* the live pulse (mezo-yjzhw.6, prototype `@keyframes fresh`): when today's refetch moves a
+   row's value (or the N/6 centre's), a coral ring + glow fades out over 1.6 s, once
+   (`useChangedKeys`, FRESH_PULSE_MS). It is a dedicated overlay (`i.napom-fresh`), not the
+   row's own box-shadow: the row's `animation` is the `.rise` entrance and its `box-shadow` is
+   the `.glass` stack (rules 1–3) — neither may be replaced mid-pulse — and not `::after`,
+   which is the sheen. The glass row clips (rule 3), so its ring is drawn INSIDE the edge; the
+   centre does not clip, so its ring is the prototype's outer one. In a row it sits at
+   z-index -1 of the row's own stacking context (`.glass` isolates; a dashed row is isolated
+   here): over the fill, under the frame and the content. Reduced motion: never shown. */
+.napom-page .napom-fresh { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .napom-page .napom-drow.is-fresh { isolation: isolate; }
+  .napom-page .napom-drow > .napom-fresh,
+  .napom-page .napom-core > .napom-fresh {
+    display: block; position: absolute; inset: 0; z-index: -1;
+    border-radius: inherit; pointer-events: none;
+    animation: napom-fresh-in 1.6s var(--uv-ease) both;
+  }
+  .napom-page .napom-core > .napom-fresh { z-index: 0; animation-name: napom-fresh; }
+}
+@keyframes napom-fresh {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--dv-coral) 0%, transparent); }
+  25% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--dv-coral) 55%, transparent), 0 0 26px color-mix(in srgb, var(--dv-coral) 45%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--dv-coral) 0%, transparent); }
+}
+@keyframes napom-fresh-in {
+  0% { box-shadow: inset 0 0 0 0 color-mix(in srgb, var(--dv-coral) 0%, transparent); }
+  25% { box-shadow: inset 0 0 0 2.5px color-mix(in srgb, var(--dv-coral) 55%, transparent), inset 0 0 26px color-mix(in srgb, var(--dv-coral) 45%, transparent); }
+  100% { box-shadow: inset 0 0 0 0 color-mix(in srgb, var(--dv-coral) 0%, transparent); }
 }
 
 /* chrome: the A napom tab dot (8px lavender, glow, a canvas ring), top-right of the icon.
@@ -18875,7 +18922,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .tab-bar.glass .tab-ico > .tb-dot {
   position: absolute; top: -2px; right: -5px; z-index: 2;
   width: 8px; height: 8px; border-radius: 50%;
-  background: #C9BDF0; box-shadow: 0 0 8px var(--dv-lav), 0 0 0 2px var(--canvas);
+  background: var(--napom-lav-ink); box-shadow: 0 0 8px var(--dv-lav), 0 0 0 2px var(--canvas);
 }
 /* rule 2: `.glass > *` would drop the sr-only description into the bar's flex row */
 .tab-bar.glass > .sr-only { position: absolute; }
@@ -18903,11 +18950,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .nap-center .nap-zchips span {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 5px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; color: var(--text-secondary);
-  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+  background: var(--surface-recess); box-shadow: inset 0 0 0 1px var(--divider);
 }
 .nap-center .nap-zgo {
   display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 14px;
-  padding: 12px; border-radius: 16px; border: 0; font: 600 15px var(--ff-body); color: #191614;
+  padding: 12px; border-radius: 16px; border: 0; font: 600 15px var(--ff-body); color: var(--napom-on-accent);
   background: linear-gradient(135deg, var(--dv-lav), color-mix(in srgb, var(--dv-lav) 78%, black));
   box-shadow: 0 0 18px color-mix(in srgb, var(--dv-lav) 45%, transparent);
 }
@@ -18921,5 +18968,5 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .nap-center .nap-zdone span { flex: 1; min-width: 0; }
 .nap-center .nap-zdone strong { display: block; font-size: 14px; font-weight: 600; color: var(--text-primary); }
 .nap-center .nap-zdone small { display: block; font-size: 11.5px; color: var(--text-secondary); margin-top: 2px; }
-.nap-center .nap-zdone a { font-size: 12px; font-weight: 600; color: #FFB39C; white-space: nowrap; }
+.nap-center .nap-zdone a { font-size: 12px; font-weight: 600; color: var(--napom-coral-ink); white-space: nowrap; }
 /* ── /uveg napom ── */

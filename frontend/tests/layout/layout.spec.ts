@@ -633,6 +633,9 @@ const NAPOM_ROUTES: Array<[string, string]> = [
 for (const [name, path] of NAPOM_ROUTES) {
   test(`A napom · ${name} stays contained and its last row clears the tab bar @ 320px`, async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 820 })
+    // Clock: 2026-05-21 is the mock `inProgress` fixture's date, so "today" is the live day; it is
+    // the Thursday of the mock week that opens on the `scored` fixture (2026-05-18), so both routes
+    // share one fully seeded week strip. 13:42 keeps us before the 20:00 napzárás window.
     await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
     await page.goto(path)
     await page.waitForLoadState('networkidle')

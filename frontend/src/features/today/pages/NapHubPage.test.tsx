@@ -7,6 +7,7 @@ const store = vi.hoisted(() => ({
   save: vi.fn(), pending: false, error: false, retry: vi.fn(),
   notes: [] as object[],
   slots: [{ time: '08:00', state: 'done', note: null, values: null }, { time: '12:00', state: 'now', note: null, values: null }],
+  tick: new Date('2026-09-17T14:00:00'),
 }))
 vi.mock('@/data/hooks', () => ({
   useTodayScenario: () => ({ anchorMode: false }),
@@ -14,15 +15,26 @@ vi.mock('@/data/hooks', () => ({
   useFuelDay: () => ({ fuel: { consumed: { kcal: 900 }, targets: { kcal: 2000 }, meals: [] }, isPending: false }),
   useJournalNotes: () => ({ data: store.notes, isPending: false }),
   useActivities: () => ({ data: [], isPending: false }),
-  // NapzarasCard's own hooks (mezo-yjzhw.4): the mocked 14:00 tick below is outside the
-  // evening window, so the card renders nothing here regardless of these values — kept
-  // trivially "not closed" so a future window change doesn't crash this suite.
+  // NapzarasCard's own hooks (mezo-yjzhw.4): at the default 14:00 tick the card renders
+  // nothing; the 20:30 test below opens its window. Today is an open, in-progress day with
+  // the training done — `normalizeDayEvaluation` is the identity here, so this is the
+  // normalized shape.
   useRitualDay: () => ({ data: { closed: false }, isPending: false }),
-  useDayEvaluation: () => ({ data: undefined, isPending: true }),
+  useDayEvaluation: () => ({
+    data: {
+      date: '2026-09-17', state: 'in_progress', score: null, base: null, adjustment: null,
+      narrative: [], highlights: [], context: [],
+      dimensions: [
+        { id: 'training', label: 'Edzés', weight: 0.2, score: 100, status: 'DONE', facts: [{ label: 'edzés', value: '1/1' }], note: null },
+        { id: 'nutrition', label: 'Táplálkozás', weight: 0.3, score: 45, status: 'IN_PROGRESS', facts: [], note: null },
+      ],
+    },
+    isPending: false,
+  }),
   normalizeDayEvaluation: (raw: unknown) => raw,
 }))
 vi.mock('@/features/today/logic/useNeeds', () => ({ useNeeds: () => ({ states: [] }) }))
-vi.mock('@/features/today/logic/useMinuteTick', () => ({ useMinuteTick: () => new Date('2026-09-17T14:00:00') }))
+vi.mock('@/features/today/logic/useMinuteTick', () => ({ useMinuteTick: () => store.tick }))
 vi.mock('@/features/today/logic/useDayFace', () => ({ useDayFace: () => ({ face: 'nap' }) }))
 vi.mock('@/features/today/components/NapPersonalInsight', () => ({ NapPersonalInsight: () => <div>Valódi megfigyelés</div> }))
 vi.mock('@/features/today/components/NapFuelGraphic', () => ({ NapFuelGraphic: () => <div>Makrók</div> }))
@@ -90,4 +102,16 @@ it('Mai pillanatok rows stay flat and carry a 3D icon per kind', async () => {
   expect(row).toHaveTextContent('Jó nap')
   expect(container.querySelector('.nap-center-timeline .glass')).toBeNull()
   store.notes = []
+})
+
+it('at 20:30 the evening napzárás card renders on the page with the day\'s chips', () => {
+  store.tick = new Date('2026-09-17T20:30:00')
+  try {
+    setup()
+    expect(screen.getByText('Tegyük le a napot.')).toBeInTheDocument()
+    expect(screen.getByText('edzés 1/1')).toBeInTheDocument()
+    expect(screen.getByText('1/6 terület kész')).toBeInTheDocument()
+  } finally {
+    store.tick = new Date('2026-09-17T14:00:00')
+  }
 })

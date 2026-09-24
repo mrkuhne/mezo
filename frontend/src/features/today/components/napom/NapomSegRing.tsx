@@ -14,10 +14,12 @@ export interface SegRingSegment {
 const R = 42
 const GAP = 3.2
 
-export function NapomSegRing({ segments, label, children }: {
+export function NapomSegRing({ segments, label, fresh = false, children }: {
   segments: readonly SegRingSegment[]
   /** The ring's accessible name — the centre's meaning in words, never a bare numeral. */
   label: string
+  /** The centre's value just changed on a live refetch: the one-shot coral pulse (mezo-yjzhw.6). */
+  fresh?: boolean
   children?: ReactNode
 }) {
   const n = segments.length
@@ -41,7 +43,10 @@ export function NapomSegRing({ segments, label, children }: {
           )
         })}
       </svg>
-      <div className="napom-core">{children}</div>
+      <div className={fresh ? 'napom-core is-fresh' : 'napom-core'}>
+        {fresh && <i className="napom-fresh" aria-hidden="true" />}
+        {children}
+      </div>
     </div>
   )
 }

@@ -6,7 +6,7 @@
 //   plain   — a thin/empty closed day: value only, no status word, no bar.
 //   loading — a dashed placeholder, nothing claimed.
 // A row with no score (NO_DATA, or still open) is dashed free space, not glass (bible U1 rule 6).
-import { useState, type CSSProperties } from 'react'
+import { useId, useState, type CSSProperties } from 'react'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { cn } from '@/shared/lib/cn'
 import { DAY_DIMENSIONS, type DayDimensionKey } from '@/features/me/logic/weekDay'
@@ -34,36 +34,46 @@ const TODAY_WORD: Record<DimensionStatus, string> = { DONE: 'KÉSZ', IN_PROGRESS
 
 export type NapomRowMode = 'today' | 'scored' | 'plain' | 'loading'
 
-export function NapomDimensionRow({ dimension, mode, goalTick = false, i }: {
+/** The row's one-line fact summary (`kcal 2980 / 3100 · fehérje 205 / 220 g`, or `nincs adat`).
+ *  Exported so the page's live-pulse snapshot compares exactly the line the reader sees. */
+export function factLineOf(dimension: NormalizedDayDimension, mode: NapomRowMode): string {
+  if (mode === 'loading') return ''
+  if (dimension.facts.length > 0) return dimension.facts.map((f) => `${f.label} ${f.value}`).join(' · ')
+  return dimension.status === 'NO_DATA' ? 'nincs adat' : ''
+}
+
+export function NapomDimensionRow({ dimension, mode, goalTick = false, fresh = false, i }: {
   dimension: NormalizedDayDimension
   mode: NapomRowMode
   /** Nutrition only, when the day has a kcal target: the goal tick at the bar's end. */
   goalTick?: boolean
+  /** Today's value just changed on a live refetch: play the one-shot coral pulse (mezo-yjzhw.6). */
+  fresh?: boolean
   /** Entrance stagger index. */
   i: number
 }) {
   const [open, setOpen] = useState(false)
+  const factId = useId()
   const meta = NAPOM_DIMENSIONS.find((d) => d.key === dimension.id) ?? NAPOM_DIMENSIONS[0]
   const { score, status, facts, note } = dimension
   const dashed = mode === 'loading' || score == null
-  const factLine = mode === 'loading'
-    ? ''
-    : facts.length > 0
-      ? facts.map((f) => `${f.label} ${f.value}`).join(' · ')
-      : status === 'NO_DATA' ? 'nincs adat' : ''
+  const factLine = factLineOf(dimension, mode)
   // An open (NYITVA / nincs adat) row is free space: no bar, no goal tick (prototype `.drow.open`).
   const showBar = !dashed && (mode === 'today' || mode === 'scored')
   const word = mode === 'today' ? TODAY_WORD[status] : mode === 'scored' ? (open ? 'BEZÁR' : 'MEZO ›') : null
 
   const body = (
     <>
+      {/* The pulse is its own overlay, not the row's box-shadow: the row's `.rise` entrance and
+          `.glass` stack both own `animation`/`box-shadow` (bible U1 rules 1–3). */}
+      {fresh && <i className="napom-fresh" aria-hidden="true" />}
       <span className="napom-well"><Icon3D name={meta.icon} size={32} /></span>
       <span className="napom-mid">
         <strong>
           {meta.label}
           {mode === 'scored' && <em className="napom-wt"> súly {Math.round(dimension.weight * 100)}%</em>}
         </strong>
-        <small>{factLine}</small>
+        <small id={factId}>{factLine}</small>
         {showBar && (
           <span className="napom-bar uv-bar">
             <b style={{ '--w': `${Math.max(2, Math.min(100, score ?? 0))}%` } as CSSProperties} />
@@ -88,11 +98,21 @@ export function NapomDimensionRow({ dimension, mode, goalTick = false, i }: {
     </>
   )
 
-  const className = cn('napom-drow rise', dashed ? 'is-open' : 'glass', open && 'is-expanded')
+  const className = cn('napom-drow rise', dashed ? 'is-open' : 'glass', open && 'is-expanded', fresh && 'is-fresh')
   const style = { '--c': meta.color, '--i': i } as CSSProperties
   if (mode !== 'scored') return <div className={className} style={style}>{body}</div>
   return (
-    <button type="button" className={className} style={style} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+    <button
+      type="button"
+      className={className}
+      style={style}
+      aria-expanded={open}
+      // The name is the label and the score; the fact line is the description — the whole body
+      // (weight, bar, status word, open chips) is too much to announce as a name (mezo-yjzhw.7).
+      aria-label={`${meta.label}, ${score == null ? 'nincs adat' : `${score} pont`}`}
+      aria-describedby={factLine ? factId : undefined}
+      onClick={() => setOpen((o) => !o)}
+    >
       {body}
     </button>
   )
