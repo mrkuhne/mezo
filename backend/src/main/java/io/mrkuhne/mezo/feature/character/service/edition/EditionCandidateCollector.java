@@ -114,7 +114,8 @@ public class EditionCandidateCollector {
         String recordText = isBlank(pattern.getMechanism()) ? pattern.getTitle() : pattern.getMechanism();
         return new EditionCandidate(SOURCE_PATTERN, id, character, genre, pattern.getTitle(),
                 recordText, facts, List.of(new EditionRef(SOURCE_PATTERN, id)),
-                waiting, false, pattern.getLastDetectedAt(), "/mezo/patterns/" + pattern.getPairKey());
+                waiting, false, pattern.getLastDetectedAt(), "/mezo/patterns/" + pattern.getPairKey(),
+                pair != null ? crossDomainGuest(pair, character) : List.of());
     }
 
     /** Sor 3 (monitor pár, `5 <= n < minN` → SEJTES „gyűlik"). */
@@ -129,7 +130,16 @@ public class EditionCandidateCollector {
                 String.format("%d kell", minN));
         return Optional.of(new EditionCandidate(SOURCE_PAIR, pair.getKey(), character, EditionGenre.SEJTES,
                 pair.getTitle(), pair.getTitle(), facts, List.of(new EditionRef(SOURCE_PAIR, pair.getKey())),
-                false, false, null, "/mezo/patterns/" + pair.getKey()));
+                false, false, null, "/mezo/patterns/" + pair.getKey(), crossDomainGuest(pair, character)));
+    }
+
+    /**
+     * H4 (mezo-a9bo7.15): egy két doménes párnál a B-oldal karaktere vendégként hozzászólhat —
+     * idézhető meglévő szöveg nincs, ezért a mag visszaesése null (hang nélkül kimarad).
+     */
+    private static List<GuestSeed> crossDomainGuest(PatternMonitorPair pair, TeamCharacter host) {
+        TeamCharacter other = TeamCharacter.forMetricDomain(pair.getMetricBDomain());
+        return other != host && other.postable() ? List.of(new GuestSeed(other, null)) : List.of();
     }
 
     /** Sor 4 (`validated`/`missed`, `validTo` a [day-7,day] ablakban → ELOREJELZES). */
@@ -140,7 +150,7 @@ public class EditionCandidateCollector {
         String id = prediction.getId().toString();
         return new EditionCandidate(SOURCE_PREDICTION, id, character, EditionGenre.ELOREJELZES, null,
                 recordText, List.of(), List.of(new EditionRef(SOURCE_PREDICTION, id)),
-                false, false, changedAt, "/mezo/predictions/" + id);
+                false, false, changedAt, "/mezo/predictions/" + id, List.of());
     }
 
     /** Sor 5 (`active`, a futó nap ∈ {1, ceil(total/2), total} → KISERLET). */
@@ -167,7 +177,7 @@ public class EditionCandidateCollector {
         return Optional.of(new EditionCandidate(SOURCE_EXPERIMENT, id, character, EditionGenre.KISERLET,
                 experiment.getTitle(), experiment.getHypothesis(), facts,
                 List.of(new EditionRef(SOURCE_EXPERIMENT, id)), false, false, changedAt,
-                "/mezo/experiments/" + id));
+                "/mezo/experiments/" + id, List.of()));
     }
 
     /**
@@ -201,9 +211,39 @@ public class EditionCandidateCollector {
             String sourceId = conference.getId() + ":" + i;
             out.add(new EditionCandidate(SOURCE_KONZILIUM, sourceId, character, EditionGenre.KONZILIUM, null,
                     firstItem.text(), List.of(), List.of(new EditionRef(SOURCE_KONZILIUM, sourceId)),
-                    false, claimChange, conference.getGeneratedAt(), "/mezo/karakter/konzilium"));
+                    false, claimChange, conference.getGeneratedAt(), "/mezo/karakter/konzilium",
+                    konziliumGuests(firstItem, character)));
         }
         return out;
+    }
+
+    /**
+     * H4 (mezo-a9bo7.15): a szál vendégei — legfeljebb EGY másik résztvevő (az első olyan
+     * reakció, amelynek karaktere posztolhat és nem a vezető), meg a Szkeptikus, ha a skeptic-kör
+     * ítélt. A visszaesésük a SAJÁT, már elhangzott érvük; üres érvnél a mag megmarad, visszaesés
+     * nélkül (ha a hang nem ad neki sort, kimarad).
+     */
+    private static List<GuestSeed> konziliumGuests(ConferenceDeliberationEnvelope.Item item, TeamCharacter lead) {
+        List<GuestSeed> seeds = new ArrayList<>(2);
+        if (item.reactions() != null) {
+            item.reactions().stream()
+                    .filter(reaction -> reaction != null && reaction.expertKey() != null)
+                    .filter(reaction -> {
+                        TeamCharacter who = TeamCharacter.forPersona(reaction.expertKey());
+                        return who.postable() && who != lead;
+                    })
+                    .findFirst()
+                    .ifPresent(reaction -> seeds.add(new GuestSeed(TeamCharacter.forPersona(reaction.expertKey()),
+                            blankToNull(reaction.argument()))));
+        }
+        if (item.skeptic() != null) {
+            seeds.add(new GuestSeed(TeamCharacter.SZKEPTIKUS, blankToNull(item.skeptic().argument())));
+        }
+        return seeds;
+    }
+
+    private static String blankToNull(String s) {
+        return isBlank(s) ? null : s.strip();
     }
 
     /**

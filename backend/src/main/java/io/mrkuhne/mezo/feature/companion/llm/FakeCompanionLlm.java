@@ -302,6 +302,18 @@ public class FakeCompanionLlm implements CompanionLlm {
     /** The edition prompt's post blocks, as {@link #editionUserPosts} reads them back. */
     private static final Pattern EDITION_POST_HEAD = Pattern.compile("^\\[poszt (\\d+)]$");
     private static final String EDITION_RECORD_PREFIX = "rekord: ";
+    private static final String EDITION_GUESTS_PREFIX = "vendégek: ";
+
+    /** The unscripted guest line (csapatfal H4, mezo-a9bo7.15): one sentence, no number, no emoji —
+     *  it passes {@code EditionVoiceGuard.checkGuest} for every character, the Szkeptikus included. */
+    public static final String EDITION_GUEST_BODY = "Én is figyelek erre.";
+
+    /** displayName -> key. Mirrors {@code feature.character...TeamCharacter} LITERALLY: companion must
+     *  not import character (cycle rule, see {@link #OBSERVATION_MARKER_MIRROR}). A drift shows up as
+     *  a missing guest line in EditionVoiceWriterIT / TeamEditionServiceIT. */
+    private static final Map<String, String> EDITION_GUEST_KEYS = Map.of(
+            "Szunya", "szunya", "Mocor", "mocor", "Falat", "falat",
+            "Derű", "deru", "Mezo", "mezo", "Szkeptikus", "szkeptikus");
 
     /**
      * The unscripted edition answer for one post: the record's own text plus a second sentence, so
@@ -1256,7 +1268,8 @@ public class FakeCompanionLlm implements CompanionLlm {
      * the prompt's post blocks back and answers one {@link #editionBody} per post — a real answer
      * shape that passes the fact guard, so an IT gets {@code voiced=true} without a model.
      * {@link #EDITION_MALFORMED} and {@link #EDITION_JSON_SENTINEL} (both planted in a candidate's
-     * record text) script the two failure shapes.
+     * record text) script the two failure shapes. A post block with a {@code vendégek:} line (H4)
+     * also gets one {@link #EDITION_GUEST_BODY} per listed guest.
      */
     private static String editionAnswer(String userMessage) {
         if (userMessage.contains(EDITION_MALFORMED)) {
@@ -1267,15 +1280,44 @@ public class FakeCompanionLlm implements CompanionLlm {
             return new String(java.util.Base64.getDecoder().decode(scripted.group(1)),
                     java.nio.charset.StandardCharsets.UTF_8);
         }
+        var guests = editionUserGuests(userMessage);
         StringBuilder sb = new StringBuilder("[");
         for (var post : editionUserPosts(userMessage).entrySet()) {
             if (sb.length() > 1) {
                 sb.append(',');
             }
             sb.append("{\"rank\":").append(post.getKey())
-                    .append(",\"body\":\"").append(jsonEscape(editionBody(post.getValue()))).append("\"}");
+                    .append(",\"body\":\"").append(jsonEscape(editionBody(post.getValue()))).append('"');
+            List<String> postGuests = guests.getOrDefault(post.getKey(), List.of());
+            if (!postGuests.isEmpty()) {
+                sb.append(",\"guests\":[");
+                for (int i = 0; i < postGuests.size(); i++) {
+                    sb.append(i > 0 ? "," : "").append("{\"character\":\"").append(jsonEscape(postGuests.get(i)))
+                            .append("\",\"body\":\"").append(jsonEscape(EDITION_GUEST_BODY)).append("\"}");
+                }
+                sb.append(']');
+            }
+            sb.append('}');
         }
         return sb.append(']').toString();
+    }
+
+    /** rank -> guest keys, read back from the edition prompt's {@code vendégek: A; B} lines (H4). */
+    private static Map<Integer, List<String>> editionUserGuests(String userMessage) {
+        var guests = new java.util.HashMap<Integer, List<String>>();
+        Integer rank = null;
+        for (String line : userMessage.split("\n", -1)) {
+            Matcher head = EDITION_POST_HEAD.matcher(line.strip());
+            if (head.matches()) {
+                rank = Integer.valueOf(head.group(1));
+            } else if (rank != null && line.startsWith(EDITION_GUESTS_PREFIX)) {
+                guests.put(rank, java.util.Arrays.stream(line.substring(EDITION_GUESTS_PREFIX.length()).split(";"))
+                        .map(String::strip)
+                        .map(name -> EDITION_GUEST_KEYS.getOrDefault(name, name.toLowerCase(java.util.Locale.ROOT)))
+                        .toList());
+            }
+        }
+        return guests;
     }
 
     /** rank -> record text, read back from the edition prompt's {@code [poszt N]} blocks. */

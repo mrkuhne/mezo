@@ -9,12 +9,15 @@ import io.mrkuhne.mezo.api.dto.PatternMonitorResponse;
 import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope.Item;
+import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope.PeerReaction;
+import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope.SkepticVerdict;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope.Thread;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope.Change;
 import io.mrkuhne.mezo.feature.character.service.edition.EditionCandidate;
 import io.mrkuhne.mezo.feature.character.service.edition.EditionCandidateCollector;
 import io.mrkuhne.mezo.feature.character.service.edition.EditionGenre;
+import io.mrkuhne.mezo.feature.character.service.edition.GuestSeed;
 import io.mrkuhne.mezo.feature.character.service.edition.TeamCharacter;
 import io.mrkuhne.mezo.feature.character.service.edition.TeamEditionReads;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
@@ -58,13 +61,17 @@ class EditionCandidateCollectorTest {
     }
 
     private static PatternMonitorPair pair(String key, String title, String domainA, Integer n) {
+        return pair(key, title, domainA, domainA, n);
+    }
+
+    private static PatternMonitorPair pair(String key, String title, String domainA, String domainB, Integer n) {
         return PatternMonitorPair.builder()
                 .key(key).title(title).category("physiology").categoryLabel("Élettan")
                 .lagDays(0).metricAKey("a").metricALabel("A").metricAValueKind("number")
                 .metricBKey("b").metricBLabel("B").metricBValueKind("number")
                 .mechanismHu("mech").questionHu("q").expectedDirection("positive")
                 .whenPositiveHu("pos").whenNegativeHu("neg")
-                .metricADomain(domainA).metricBDomain(domainA)
+                .metricADomain(domainA).metricBDomain(domainB)
                 .verdict("live").alignedDays(n == null ? 0 : n).n(n).build();
     }
 
@@ -455,6 +462,91 @@ class EditionCandidateCollectorTest {
         when(reads.dailyConference(OWNER, DAY)).thenReturn(Optional.of(conf));
 
         assertThat(collector.collect(OWNER, DAY, null)).isEmpty();
+    }
+
+    // ---- vendég-magok (H4, mezo-a9bo7.15) -------------------------------------------------------
+
+    @Test void konziliumThreadSeedsThePeerAndTheSkeptic() {
+        Item item = new Item(0, "szomnologus", "Alvás felvetés", "NEW", null, false,
+                List.of(new PeerReaction("taplalkozo", "SUPPORT", "A késői vacsora is közrejátszhat."),
+                        new PeerReaction("edzo", "NUANCE", "Az edzés ideje is számít.")),
+                new SkepticVerdict("WEAKEN", "A hétvége önmagában is megmagyarázza.", null), null);
+        Thread thread = new Thread("dim-sleep", "Cím", List.of(item));
+        when(reads.dailyConference(OWNER, DAY)).thenReturn(Optional.of(conference(List.of(thread), List.of())));
+
+        EditionCandidate c = collector.collect(OWNER, DAY, null).get(0);
+
+        assertThat(c.guests()).containsExactly(
+                new GuestSeed(TeamCharacter.FALAT, "A késői vacsora is közrejátszhat."),
+                new GuestSeed(TeamCharacter.SZKEPTIKUS, "A hétvége önmagában is megmagyarázza."));
+    }
+
+    @Test void konziliumReactionFromTheLeadsOwnCharacterIsNotASeed() {
+        // "drill" and "edzo" are both Mocor — the lead cannot be its own guest.
+        Item item = new Item(0, "edzo", "Edzés felvetés", "NEW", null, false,
+                List.of(new PeerReaction("drill", "SUPPORT", "Egyetértek.")), null, null);
+        Thread thread = new Thread("dim-train", "Cím", List.of(item));
+        when(reads.dailyConference(OWNER, DAY)).thenReturn(Optional.of(conference(List.of(thread), List.of())));
+
+        assertThat(collector.collect(OWNER, DAY, null).get(0).guests()).isEmpty();
+    }
+
+    @Test void konziliumSkepticReactionIsNotAPeerSeed() {
+        Item item = new Item(0, "edzo", "Edzés felvetés", "NEW", null, false,
+                List.of(new PeerReaction("szkeptikus", "CHALLENGE", "Kétlem.")), null, null);
+        Thread thread = new Thread("dim-train", "Cím", List.of(item));
+        when(reads.dailyConference(OWNER, DAY)).thenReturn(Optional.of(conference(List.of(thread), List.of())));
+
+        assertThat(collector.collect(OWNER, DAY, null).get(0).guests()).isEmpty();
+    }
+
+    @Test void konziliumBlankArgumentKeepsTheSeedWithoutFallback() {
+        Item item = new Item(0, "edzo", "Edzés felvetés", "NEW", null, false,
+                List.of(new PeerReaction("szomnologus", "SUPPORT", " ")), null, null);
+        Thread thread = new Thread("dim-train", "Cím", List.of(item));
+        when(reads.dailyConference(OWNER, DAY)).thenReturn(Optional.of(conference(List.of(thread), List.of())));
+
+        assertThat(collector.collect(OWNER, DAY, null).get(0).guests())
+                .containsExactly(new GuestSeed(TeamCharacter.SZUNYA, null));
+    }
+
+    @Test void crossDomainPatternSeedsTheOtherDomainsCharacter() {
+        PatternEntity p = pattern(PatternEntity.STATUS_PROPOSED, "pair-x", 12, Instant.now());
+        when(reads.patterns(OWNER)).thenReturn(List.of(p));
+        when(reads.monitor(OWNER)).thenReturn(
+                monitorResponse(List.of(pair("pair-x", "Pair title", "sleep", "fuel", 40)), 10));
+
+        EditionCandidate c = collector.collect(OWNER, DAY, null).get(0);
+
+        assertThat(c.character()).isEqualTo(TeamCharacter.SZUNYA);
+        assertThat(c.guests()).containsExactly(new GuestSeed(TeamCharacter.FALAT, null));
+    }
+
+    @Test void sameDomainPatternHasNoSeed() {
+        PatternEntity p = pattern(PatternEntity.STATUS_PROPOSED, "pair-1", 12, Instant.now());
+        when(reads.patterns(OWNER)).thenReturn(List.of(p));
+        when(reads.monitor(OWNER)).thenReturn(
+                monitorResponse(List.of(pair("pair-1", "Pair title", "sleep", 40)), 10));
+
+        assertThat(collector.collect(OWNER, DAY, null).get(0).guests()).isEmpty();
+    }
+
+    @Test void crossDomainGatheringPairSeedsTheOtherDomainsCharacter() {
+        when(reads.monitor(OWNER)).thenReturn(
+                monitorResponse(List.of(pair("pair-g", "Pair title", "train", "mind", 6)), 10));
+
+        EditionCandidate c = collector.collect(OWNER, DAY, null).get(0);
+
+        assertThat(c.genre()).isEqualTo(EditionGenre.SEJTES);
+        assertThat(c.guests()).containsExactly(new GuestSeed(TeamCharacter.DERU, null));
+    }
+
+    @Test void predictionHasNoSeed() {
+        PredictionEntity p = prediction(PredictionEntity.STATUS_VALIDATED, DAY.minusDays(1),
+                PredictionEntity.METRIC_SLEEP_AVG, "actual", "basis");
+        when(reads.resolvedPredictions(eq(OWNER), any(), any())).thenReturn(List.of(p));
+
+        assertThat(collector.collect(OWNER, DAY, null).get(0).guests()).isEmpty();
     }
 
     // ---- refs --------------------------------------------------------------------------------

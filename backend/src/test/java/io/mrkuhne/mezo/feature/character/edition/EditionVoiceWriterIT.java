@@ -7,7 +7,9 @@ import io.mrkuhne.mezo.feature.character.service.CharacterCouncilBudget;
 import io.mrkuhne.mezo.feature.character.service.edition.EditionCandidate;
 import io.mrkuhne.mezo.feature.character.service.edition.EditionGenre;
 import io.mrkuhne.mezo.feature.character.service.edition.EditionVoiceWriter;
+import io.mrkuhne.mezo.feature.character.service.edition.GuestSeed;
 import io.mrkuhne.mezo.feature.character.service.edition.TeamCharacter;
+import io.mrkuhne.mezo.feature.character.service.edition.VoicedGuest;
 import io.mrkuhne.mezo.feature.character.service.edition.VoicedText;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
@@ -47,7 +49,13 @@ class EditionVoiceWriterIT extends AbstractIntegrationTest {
 
     private static EditionCandidate candidate(TeamCharacter who, EditionGenre genre, String record, String... facts) {
         return new EditionCandidate("pattern", UUID.randomUUID().toString(), who, genre, "A cím",
-                record, List.of(facts), List.of(), false, false, null, "/mezo/patterns/x");
+                record, List.of(facts), List.of(), false, false, null, "/mezo/patterns/x", List.of());
+    }
+
+    private static EditionCandidate withGuests(EditionCandidate c, GuestSeed... seeds) {
+        return new EditionCandidate(c.sourceKind(), c.sourceId(), c.character(), c.genre(), c.title(),
+                c.recordText(), c.facts(), c.refs(), c.waiting(), c.claimChange(), c.changedAt(),
+                c.sourceRoute(), List.of(seeds));
     }
 
     private static String scripted(String json) {
@@ -183,5 +191,97 @@ class EditionVoiceWriterIT extends AbstractIntegrationTest {
             assertThat(text.voiced()).isFalse();
             assertThat(text.body()).isEqualTo(SLEEP_RECORD);
         });
+    }
+
+    // ---- vendég-sorok (H4, mezo-a9bo7.15) ------------------------------------------------------
+
+    private static final String SKEPTIC_FALLBACK = "A hétvége önmagában is megmagyarázza.";
+
+    /** Az alap fake minden felsorolt vendégnek ad egy sort, ami átmegy a vendég-őrön. */
+    @Test
+    void write_defaultAnswer_voicesEveryGuestInSeedOrder() {
+        UUID owner = users.populateUser("edition-voice-guests@test.local");
+        var ranked = List.of(withGuests(candidate(TeamCharacter.SZUNYA, EditionGenre.KONZILIUM, SLEEP_RECORD),
+                new GuestSeed(TeamCharacter.FALAT, null),
+                new GuestSeed(TeamCharacter.SZKEPTIKUS, SKEPTIC_FALLBACK)));
+
+        List<VoicedText> out = writer.write(owner, ranked);
+
+        assertThat(out.get(0).voiced()).isTrue();
+        assertThat(out.get(0).guests()).containsExactly(
+                new VoicedGuest(TeamCharacter.FALAT, FakeCompanionLlm.EDITION_GUEST_BODY, true),
+                new VoicedGuest(TeamCharacter.SZKEPTIKUS, FakeCompanionLlm.EDITION_GUEST_BODY, true));
+    }
+
+    @Test
+    void write_candidateWithoutSeeds_hasNoGuests() {
+        UUID owner = users.populateUser("edition-voice-noguests@test.local");
+
+        List<VoicedText> out = writer.write(owner,
+                List.of(candidate(TeamCharacter.SZUNYA, EditionGenre.MEGFIGYELES, SLEEP_RECORD)));
+
+        assertThat(out.get(0).guests()).isEmpty();
+    }
+
+    /**
+     * A kitalált szám CSAK a vendég-sort buktatja: mag-szöveg nélkül a vendég kimarad, konzílium-maggal
+     * a meglévő érv jön vissza hangtalanul — a poszt maga hangos marad. A magok közt nem szereplő
+     * karakter sora figyelmen kívül marad.
+     */
+    @Test
+    void write_guestWithInventedNumber_dropsOrFallsBack_whileThePostStaysVoiced() {
+        UUID owner = users.populateUser("edition-voice-guest-number@test.local");
+        String cleanVoice = "Kezd úgy tűnni, hogy csúszik a lefekvésed. Még figyelem tovább.";
+        String script = scripted("[{\"rank\":1,\"body\":\"" + cleanVoice + "\",\"guests\":["
+                + "{\"character\":\"falat\",\"body\":\"Nálam 9 nap gyűlt össze.\"},"
+                + "{\"character\":\"szkeptikus\",\"body\":\"Ebben 12 hét van.\"},"
+                + "{\"character\":\"mocor\",\"body\":\"Én is itt vagyok.\"}]}]");
+        // The script rides on post 2: its base64 would otherwise lend post 1 random digits.
+        var ranked = List.of(withGuests(
+                candidate(TeamCharacter.SZUNYA, EditionGenre.KONZILIUM, SLEEP_RECORD),
+                new GuestSeed(TeamCharacter.FALAT, null),
+                new GuestSeed(TeamCharacter.SZKEPTIKUS, SKEPTIC_FALLBACK)),
+                candidate(TeamCharacter.MOCOR, EditionGenre.KISERLET, TRAIN_RECORD + " " + script));
+
+        List<VoicedText> out = writer.write(owner, ranked);
+
+        assertThat(out.get(0).voiced()).isTrue();
+        assertThat(out.get(0).body()).isEqualTo(cleanVoice);
+        assertThat(out.get(0).guests()).containsExactly(
+                new VoicedGuest(TeamCharacter.SZKEPTIKUS, SKEPTIC_FALLBACK, false));
+    }
+
+    /** Egy megbukott poszt nem viszi magával a jó vendég-sort. */
+    @Test
+    void write_rejectedPost_keepsItsVoicedGuest() {
+        UUID owner = users.populateUser("edition-voice-guest-survives@test.local");
+        String script = scripted("[{\"rank\":1,\"body\":\"Már 9 közös nap gyűlt össze. Még figyelem.\","
+                + "\"guests\":[{\"character\":\"falat\",\"body\":\"A vacsora is számít.\"}]}]");
+        var ranked = List.of(withGuests(
+                candidate(TeamCharacter.SZUNYA, EditionGenre.MEGFIGYELES, SLEEP_RECORD),
+                new GuestSeed(TeamCharacter.FALAT, null)),
+                candidate(TeamCharacter.MOCOR, EditionGenre.KISERLET, TRAIN_RECORD + " " + script));
+
+        List<VoicedText> out = writer.write(owner, ranked);
+
+        assertThat(out.get(0).voiced()).isFalse();
+        assertThat(out.get(0).guests()).containsExactly(
+                new VoicedGuest(TeamCharacter.FALAT, "A vacsora is számít.", true));
+    }
+
+    /** Hibás válasz: a poszt a rekordszövegen, a konzílium-vendég a saját érvén — mind hangtalanul. */
+    @Test
+    void write_unparseableAnswer_keepsTheFallbackGuests() {
+        UUID owner = users.populateUser("edition-voice-guest-malformed@test.local");
+        String broken = SLEEP_RECORD + " " + FakeCompanionLlm.EDITION_MALFORMED;
+        var ranked = List.of(withGuests(candidate(TeamCharacter.SZUNYA, EditionGenre.KONZILIUM, broken),
+                new GuestSeed(TeamCharacter.FALAT, "A késői vacsora is közrejátszhat."),
+                new GuestSeed(TeamCharacter.SZKEPTIKUS, null)));
+
+        List<VoicedText> out = writer.write(owner, ranked);
+
+        assertThat(out.get(0).voiced()).isFalse();
+        assertThat(out.get(0).guests()).containsExactly(
+                new VoicedGuest(TeamCharacter.FALAT, "A késői vacsora is közrejátszhat.", false));
     }
 }

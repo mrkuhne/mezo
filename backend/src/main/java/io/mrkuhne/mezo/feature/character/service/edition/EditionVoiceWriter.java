@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeSet;
@@ -57,10 +58,17 @@ public class EditionVoiceWriter {
             Szabályok: 2–4 mondat; a megadott tényeken kívül SEMMILYEN számot nem írhatsz; tilos új állítás; a
             bizonytalanság bizonytalan marad („lehet”, „kezd úgy tűnni”, „még csak sejtem”); a **kiemelés** két
             csillaggal; emoji csak a karakter saját készletéből, mértékkel; a Szkeptikus nem használ emojit;
-            szaknyelv tilos.""";
+            szaknyelv tilos.
+            Vendégek: ha egy posztnál „vendégek:” sor áll, az ott felsorolt karakterek (és csak ők) egy-egy
+            1–2 mondatos sorral reagálhatnak a posztra, a saját hangjukon, ugyanezekkel a szabályokkal; a
+            Szkeptikus sora mindig az alternatív magyarázatot kínálja, emoji nélkül.""";
 
     private static final String ANSWER_CONTRACT =
-            "Válasz: KIZÁRÓLAG JSON tömb: [{\"rank\":1,\"title\":\"…vagy null\",\"body\":\"…\"}]";
+            "Válasz: KIZÁRÓLAG JSON tömb: [{\"rank\":1,\"title\":\"…vagy null\",\"body\":\"…\","
+                    + "\"guests\":[{\"character\":\"falat\",\"body\":\"…\"}]}] — a guests elhagyható, "
+                    + "legfeljebb 2 elem, a character a vendég kulcsa ("
+                    + Arrays.stream(TeamCharacter.values()).map(TeamCharacter::key).collect(Collectors.joining(", "))
+                    + ")";
 
     /** A műfaj egy mondatban — ez mondja meg a karakternek, MIT csinál ezzel a rekorddal. */
     private static final Map<EditionGenre, String> GENRE_HINT = Map.of(
@@ -83,7 +91,11 @@ public class EditionVoiceWriter {
     private final ObjectMapper objectMapper;
 
     /** A modell egy poszt-átirata. A {@code rank} köti a jelölthöz; minden más mező opcionális. */
-    private record Draft(Integer rank, String title, String body) {
+    private record Draft(Integer rank, String title, String body, List<GuestDraft> guests) {
+    }
+
+    /** A modell egy vendég-sora; a {@code character} a {@link TeamCharacter#key()}. */
+    private record GuestDraft(String character, String body) {
     }
 
     /**
@@ -92,7 +104,7 @@ public class EditionVoiceWriter {
      */
     public List<VoicedText> write(UUID owner, List<EditionCandidate> ranked) {
         List<VoicedText> fallback = ranked.stream()
-                .map(c -> new VoicedText(c.title(), c.recordText(), false))
+                .map(c -> new VoicedText(c.title(), c.recordText(), false, guests(c, null)))
                 .toList();
         if (ranked.isEmpty()) {
             return fallback;
@@ -120,7 +132,11 @@ public class EditionVoiceWriter {
         }
         List<VoicedText> out = new ArrayList<>(ranked.size());
         for (int i = 0; i < ranked.size(); i++) {
-            out.add(voiced(ranked.get(i), byRank.get(i + 1)).orElse(fallback.get(i)));
+            EditionCandidate candidate = ranked.get(i);
+            Draft draft = byRank.get(i + 1);
+            List<VoicedGuest> guests = guests(candidate, draft);
+            VoicedText post = voiced(candidate, draft).orElse(fallback.get(i));
+            out.add(new VoicedText(post.title(), post.body(), post.voiced(), guests));
         }
         return List.copyOf(out);
     }
@@ -139,6 +155,45 @@ public class EditionVoiceWriter {
             return Optional.empty();
         }
         return Optional.of(new VoicedText(title(candidate, draft), body, true));
+    }
+
+    /**
+     * A jelölt vendég-sorai a magok sorrendjében (H4, mezo-a9bo7.15): a modell sora az adott
+     * karakterre, ha átmegy a {@link EditionVoiceGuard#checkGuest} őrön ({@code voiced=true}); különben
+     * a mag saját visszaesése ({@code voiced=false}); ha az sincs, a vendég kimarad. A magok közt nem
+     * szereplő karakterek sorai figyelmen kívül maradnak. A poszt sorsát ez nem érinti.
+     */
+    private List<VoicedGuest> guests(EditionCandidate candidate, Draft draft) {
+        if (candidate.guests().isEmpty()) {
+            return List.of();
+        }
+        Map<String, String> modelLines = new HashMap<>();
+        if (draft != null && draft.guests() != null) {
+            for (GuestDraft guest : draft.guests()) {
+                if (guest != null && guest.character() != null && guest.body() != null) {
+                    modelLines.putIfAbsent(guest.character().strip().toLowerCase(Locale.ROOT),
+                            guest.body().strip());
+                }
+            }
+        }
+        List<VoicedGuest> out = new ArrayList<>(candidate.guests().size());
+        for (GuestSeed seed : candidate.guests()) {
+            String line = modelLines.get(seed.character().key());
+            if (line != null) {
+                Optional<String> rejected = EditionVoiceGuard.checkGuest(seed.character(), line,
+                        candidate.facts(), candidate.recordText());
+                if (rejected.isEmpty()) {
+                    out.add(new VoicedGuest(seed.character(), line, true));
+                    continue;
+                }
+                log.info("Edition guest line rejected for source {} / {} ({})",
+                        candidate.sourceKey(), seed.character().key(), rejected.get());
+            }
+            if (seed.fallbackText() != null && !seed.fallbackText().isBlank()) {
+                out.add(new VoicedGuest(seed.character(), seed.fallbackText(), false));
+            }
+        }
+        return List.copyOf(out);
     }
 
     /** A modell címe csak akkor nyer, ha a tény-őr azt is átengedi; különben a rekord saját címe. */
@@ -210,6 +265,11 @@ public class EditionVoiceWriter {
             sb.append("rekord: ").append(oneLine(c.recordText())).append('\n');
             if (c.facts() != null && !c.facts().isEmpty()) {
                 sb.append("tények: ").append(String.join("; ", c.facts())).append('\n');
+            }
+            if (!c.guests().isEmpty()) {
+                sb.append("vendégek: ").append(c.guests().stream()
+                        .map(g -> g.character().displayName())
+                        .collect(Collectors.joining("; "))).append('\n');
             }
             sb.append('\n');
         }
