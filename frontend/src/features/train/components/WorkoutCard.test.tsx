@@ -248,3 +248,52 @@ test('a plyo exercise logs weightKg 0 and disables the kg input', async () => {
   await user.click(screen.getByRole('button', { name: '1. szett mentése' }))
   expect(props.onLogSet).toHaveBeenCalledWith(expect.objectContaining({ weight: 0 }))
 })
+
+test('changing the kg recomputes the reps at equivalent effort and says so (mezo-l95v4)', async () => {
+  const user = userEvent.setup()
+  const { container } = renderCard()
+  const kg = screen.getByLabelText(/súly$/)
+  await user.clear(kg)
+  await user.type(kg, '100')
+  expect(screen.getByLabelText(/ismétlés$/)).toHaveValue(12)
+  expect(container.querySelector('.wo-adjust')).toHaveTextContent('100 kg-hoz igazítva · ajánlás 105 × 10')
+})
+
+test('typed reps win until the kg changes again; back to target restores it', async () => {
+  const user = userEvent.setup()
+  const { container } = renderCard()
+  const kg = screen.getByLabelText(/súly$/)
+  const reps = screen.getByLabelText(/ismétlés$/)
+  await user.clear(kg)
+  await user.type(kg, '100')
+  await user.clear(reps)
+  await user.type(reps, '14')
+  expect(reps).toHaveValue(14)
+  await user.clear(kg)
+  await user.type(kg, '105')
+  expect(reps).toHaveValue(10)
+  expect(container.querySelector('.wo-adjust')).toBeNull()
+})
+
+test('the later rows follow the swapped weight with the equivalent reps', async () => {
+  const user = userEvent.setup()
+  renderCard()
+  const kg = screen.getByLabelText(/súly$/)
+  await user.clear(kg)
+  await user.type(kg, '102.5')
+  const later = screen.getByLabelText('2. szett · terv')
+  expect(later).toHaveTextContent('102,5')
+  expect(later).toHaveTextContent('11')
+  expect(later).not.toHaveTextContent('8–10')
+})
+
+test('the next set prefills the carried weight with equivalent reps, and the verdict shifts', () => {
+  const exercise = makeExercise()
+  let session = makeSession([{ id: 'ex1', warmupSets: 2, workingSets: 3, prescribedSets: PRESCRIBED }])
+  session = completeSet(session, 'ex1', { weight: 100, reps: 11, rir: 2, id: 's0' })
+  const { container } = renderCard({ exercise, session })
+  expect(screen.getByLabelText(/súly$/)).toHaveValue(100)
+  expect(screen.getByLabelText(/ismétlés$/)).toHaveValue(12)
+  // 11 reps at 100 kg sits inside the shifted 10–12 range, not "above" 8–10.
+  expect(container.querySelector('.wo-row.is-done .wo-verdict')).toHaveClass('is-ok')
+})
