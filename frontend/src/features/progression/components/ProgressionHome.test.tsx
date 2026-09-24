@@ -24,9 +24,11 @@ describe('StreakCard', () => {
     expect(card.textContent).toMatch(/napos sorozat/)
     expect(card.textContent).toMatch(/következő mérföldkő/)
     expect(within(card).getByText(/Streak-mentő/)).toBeInTheDocument()
-    // clay flame, not the 🔥 emoji
-    expect(card.querySelector('use')?.getAttribute('href')).toBe('#i-lang')
-    expect(card.textContent).not.toContain('🔥')
+    // üveg (mezo-me75u.7): the 3D flame, not the 🔥 emoji; the saver wears t-shield + t-coin
+    expect(card.querySelector('use')?.getAttribute('href')).toBe('#t-flame')
+    expect(card.querySelector('.gr-saver use[href="#t-shield"]')).not.toBeNull()
+    expect(card.querySelector('.gr-saver-sub use[href="#t-coin"]')).not.toBeNull()
+    expect(card.textContent).not.toMatch(/[🔥🧊🪙💪]/u)
   })
 })
 
@@ -44,8 +46,10 @@ describe('TitlesSection', () => {
     fireEvent.click(within(sec).getByRole('tab', { name: 'Bolt' }))
     expect(within(sec).getByRole('tab', { name: 'Bolt' })).toHaveAttribute('aria-selected', 'true')
     expect(within(sec).getByRole('tab', { name: 'Létra' })).toHaveAttribute('aria-selected', 'false')
-    // shop rows price in coins + the saver row appended
-    expect(within(sec).getAllByText(/🪙 \d+/).length).toBeGreaterThan(0)
+    // shop rows price in coins (a t-coin icon + "érme" for screen readers) + the saver row appended
+    expect(sec.querySelectorAll('.gr-titrow .sub use[href="#t-coin"]').length).toBeGreaterThan(0)
+    expect(within(sec).getAllByText(/^érme:/).length).toBeGreaterThan(0)
+    expect(sec.textContent).not.toContain('🪙')
     expect(within(sec).getByText(/Streak-mentő/)).toBeInTheDocument()
   })
 

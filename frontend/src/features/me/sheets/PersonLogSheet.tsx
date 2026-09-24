@@ -1,8 +1,7 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
-import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
-import { affectColor } from '@/data/me/people'
+import { Icon3D } from '@/shared/ui/clay'
+import { toneColor } from '@/features/me/logic/peopleVisuals'
 import type { Affect, MentionLogInput, PersonEntry } from '@/data/types'
 
 const TONES: [Affect, string][] = [
@@ -33,73 +32,66 @@ export function PersonLogSheet({
     close()
   }
 
+  // Üveg (mezo-me75u.7, prototype sheet `plog`): ONE floating rose glass sheet (bible U2 rule 15);
+  // the voice hint, the chips, the note box and Mégse are flat, Mentés is the lit rose pill.
+  // The person and tone chips light up in the chosen person's / tone's colour.
   return (
-    <Sheet onClose={onClose} labelledBy="person-log-title">
+    <Sheet onClose={onClose} labelledBy="person-log-title" className="glass ppl-sheet">
       {(close) => (
-        <div className="col" style={{ padding: '4px 4px 8px' }}>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-            <div className="col">
-              <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>People · gyors log</span>
-              <div id="person-log-title" className="h-display size-md" style={{ marginTop: 4 }}>Mit jegyzünk meg?</div>
+        <div className="ppl-sh">
+          <div className="ppl-shh">
+            <Icon3D name="t-people" size={48} />
+            <div className="ppl-shh-tx">
+              <span className="ppl-sh-eye">Emberek · gyors log</span>
+              <div id="person-log-title" className="ppl-sh-title">Mit jegyzünk meg?</div>
             </div>
-            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}><Icon name="x" size={12} /></button>
+            <button type="button" className="ppl-sh-x" aria-label="Bezárás" onClick={close}>
+              <span aria-hidden="true">✕</span>
+            </button>
           </div>
-          <div className="card" style={{ padding: 18, marginBottom: 14, textAlign: 'center',
-            background: 'linear-gradient(180deg, var(--wash-lav) 0%, var(--surface-1) 100%)' }}>
-            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--lav-deep)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
-              <Icon name="mic" size={26} color="var(--text-inverse)" />
-            </div>
-            <div style={{ fontFamily: 'var(--ff-display)', fontSize: 14, fontWeight: 600, marginTop: 12 }}>Tartsd nyomva · mondd el</div>
-            <span className="text-secondary" style={{ fontSize: 11, marginTop: 4, display: 'block', lineHeight: 1.5 }}>
-              Mezo kihallja a nevet, a hangulatot, és magától beköti.
+          <div className="ppl-sh-voice">
+            <span className="ppl-sh-mic"><Icon3D name="t-mic" size={30} /></span>
+            <span className="ppl-sh-voicetx">
+              <strong>Tartsd nyomva · mondd el</strong>
+              <small>Mezo kihallja a nevet, a hangulatot, és magától beköti.</small>
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '14px 0' }}>
-            <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
-            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>vagy gyors chip</span>
-            <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
-          </div>
-          <div className="col gap-sm">
-            <span style={SECTION_LABEL}>Ki?</span>
-            <div className="row gap-xs flex-wrap">
+          <div className="ppl-sh-or"><span>vagy gyors chip</span></div>
+          <div className="ppl-sh-field">
+            <span className="ppl-sh-lbl">Ki?</span>
+            <div className="ppl-sh-chips">
               {people.map(p => (
-                <button key={p.id} onClick={() => setChosen(p.id)}
-                  className="chip"
-                  style={{ padding: '6px 10px', fontSize: 11,
-                    background: chosen === p.id ? `color-mix(in srgb, ${affectColor(p.affect_baseline)} 14%, transparent)` : 'var(--surface-2)',
-                    borderColor: chosen === p.id ? affectColor(p.affect_baseline) : 'var(--border-subtle)',
-                    color: chosen === p.id ? affectColor(p.affect_baseline) : 'var(--text-secondary)' }}>
+                <button key={p.id} type="button" onClick={() => setChosen(p.id)}
+                  className={`ppl-sh-chip${chosen === p.id ? ' on' : ''}`}
+                  aria-pressed={chosen === p.id}
+                  style={{ '--c': toneColor(p.affect_baseline) } as CSSProperties}>
                   {p.initial} · {p.name}
                 </button>
               ))}
             </div>
           </div>
-          <div className="col gap-sm mt-md">
-            <span style={SECTION_LABEL}>Hogy érzed</span>
-            <div className="row gap-xs">
+          <div className="ppl-sh-field">
+            <span className="ppl-sh-lbl">Hogy érzed</span>
+            <div className="ppl-sh-chips ppl-sh-tones">
               {TONES.map(([k, l]) => (
-                <button key={k} onClick={() => setTone(k)}
-                  className="chip flex-1"
-                  style={{ padding: '8px 10px', fontSize: 11, justifyContent: 'center',
-                    background: tone === k ? `color-mix(in srgb, ${affectColor(k)} 14%, transparent)` : 'var(--surface-2)',
-                    borderColor: tone === k ? affectColor(k) : 'var(--border-subtle)',
-                    color: tone === k ? affectColor(k) : 'var(--text-secondary)' }}>{l}</button>
+                <button key={k} type="button" onClick={() => setTone(k)}
+                  className={`ppl-sh-chip${tone === k ? ' on' : ''}`}
+                  aria-pressed={tone === k}
+                  style={{ '--c': toneColor(k) } as CSSProperties}>
+                  <i className="ppl-sh-dot" aria-hidden="true" />{l}
+                </button>
               ))}
             </div>
           </div>
-          <div className="col gap-sm mt-md">
-            <span style={SECTION_LABEL}>Egy mondat · opcionális</span>
-            <div className="card" style={{ padding: 10 }}>
-              <textarea value={text} onChange={e => setText(e.target.value.slice(0, 240))}
-                placeholder='pl. "Petrával hosszú vacsi, csendben"'
-                style={{ width: '100%', minHeight: 60, resize: 'none', fontSize: 13, lineHeight: 1.45 }} />
-            </div>
+          <div className="ppl-sh-field">
+            <span className="ppl-sh-lbl">Egy mondat · opcionális</span>
+            <textarea className="ppl-sh-ta" value={text} onChange={e => setText(e.target.value.slice(0, 240))}
+              placeholder='pl. "Petrával hosszú vacsi, csendben"' />
           </div>
-          <div className="row gap-sm mt-lg">
-            <button className="cta-ghost flex-1" onClick={close}>Mégse</button>
-            <button className="cta-primary flex-1" onClick={() => save(close)}>
-              <Icon name="check" size={14} /> Mentés
+          <div className="ppl-sh-pair">
+            <button type="button" className="ppl-sh-ghost" onClick={close}>Mégse</button>
+            <button type="button" className="ppl-sh-cta" onClick={() => save(close)}>
+              <Icon3D name="t-tick" size={18} /> Mentés
             </button>
           </div>
         </div>

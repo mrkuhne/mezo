@@ -24467,25 +24467,2306 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 /* ── /uveg mezo mibol ── */
 /* ── uveg en2 novekedes (mezo-me75u.7) ── /me/growth/skillek, /me/growth/naplo, /me/growth/kituntetesek ── */
+/* Reference: docs/design_2.0/prototypes/src/uveg-en2-body.html `skillek()`, `gnaplo()`, `kitunt()`
+   (owner OK). Every rule is scoped to a page root — `.grs-page` (Skillek), `.grn-page` (Napló),
+   `.gra-page` (Kitüntetések) — because the `gr-*` family is shared with the Rutin hub (`gr-band`,
+   `gr-band-top`, `gr-band-chip`; bible rule 13). Ranking (§3.4): each hero is a frameless halo
+   (PageHero `art`); the streak is a second frameless coral halo with the big t-flame. Primary
+   objects wear glass with ONE `--c`: the three skill bands (lav / sage / amber), the „Ez a hét" tile
+   and each journal day (sky), the titles card and the perks card (amber). Everything inside them —
+   chips, Lv plaques, mini-cells, the segment, the saver row, title/perk rows — is flat; the badge
+   cells are flat with a glowing sage ring. The empty journal and the no-perk card are dashed. */
+.grs-page.mz-page, .grn-page.mz-page, .gra-page.mz-page { background: transparent; }
+.grs-page .mz-page-body, .grn-page .mz-page-body, .gra-page .mz-page-body { padding: 2px 16px 20px; }
+.grs-page .mz-principle, .grn-page .mz-principle, .gra-page .mz-principle {
+  margin: 22px 6px 0; padding-top: 12px; border-top: 1px solid var(--divider);
+  font-size: 11.5px; font-weight: 400; line-height: 1.5; text-align: center; color: var(--text-muted);
+}
+.grs-page .mz-eyebrow, .grn-page .mz-eyebrow, .gra-page .mz-eyebrow {
+  font-size: 9.5px; font-weight: 600; letter-spacing: 1.4px; color: var(--text-muted);
+}
+.grs-page .mz-page-hero.uv-hero { --c2: var(--dv-amber); }
+.grn-page .mz-page-hero.uv-hero { --c2: var(--dv-lav); }
+.gra-page .mz-page-hero.uv-hero { --c2: var(--dv-amber); }
 
+/* ── the band card: the glass body restated (`.gr-band.lav|sage|amber|sky` outrank .glass, rule 11) ── */
+.grs-page .gr-band.glass, .grn-page .gr-band.glass, .gra-page .gr-band.glass,
+.grn-page .gr-day.glass {
+  display: block; width: 100%; margin: 0 0 10px; padding: 14px 14px 12px; border: 0; border-radius: 22px;
+  color: var(--text-primary);
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.60));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.10),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.grs-page .gr-band-top, .grn-page .gr-band-top, .gra-page .gr-titcard .gr-titworn {
+  display: flex; align-items: center; gap: 10px; min-width: 0; margin-bottom: 10px;
+}
+.grs-page .gr-band-art, .grn-page .gr-band-art { flex: 0 0 auto; }
+.grs-page .gr-band-ttl, .grn-page .gr-band-ttl {
+  flex: 1; min-width: 0; font-size: 15.5px; font-weight: 600; letter-spacing: -0.3px; color: var(--text-primary);
+}
+/* the band chip: a flat accent chip (prototype `.flatchip`), shrinkable (rule 14) */
+.grs-page .gr-band-chip, .grn-page .gr-band-chip {
+  flex: 0 1 auto; min-width: 0; margin-left: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 4px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0; text-transform: none;
+  color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--c) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent);
+}
+/* the foot line: label left, value right, over a hairline (prototype `.foot2`) */
+.grs-page .gr-band.glass .gr-band-foot, .grn-page .gr-band.glass .gr-band-foot {
+  display: flex; justify-content: space-between; gap: 10px; margin-top: 10px; padding: 10px 0 0;
+  border-top: 1px solid var(--divider); font-size: 12px; font-weight: 400; color: var(--text-secondary);
+}
+.grs-page .gr-band.glass .gr-band-foot b, .grn-page .gr-band.glass .gr-band-foot b { font-weight: 600; color: var(--text-primary); }
+
+/* ═══ Skillek ═══ */
+/* stat strip: three flat cells; the muscle best lit gold (prototype `.sstrip4 .cell.gold`) */
+.grs-page .grs-stats.mz-statstrip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+.grs-page .grs-stats .mz-statcell {
+  min-width: 0; padding: 10px 6px; border: 0; border-radius: 16px; text-align: center;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.grs-page .grs-stats .mz-statcell b { display: block; font-size: 20px; font-weight: 600; letter-spacing: -0.6px; color: var(--text-primary); }
+.grs-page .grs-stats .mz-statcell:nth-child(3) b {
+  color: color-mix(in srgb, var(--dv-amber) 70%, var(--text-primary));
+  text-shadow: 0 0 12px color-mix(in srgb, var(--dv-amber) 45%, transparent);
+}
+.grs-page .grs-stats .mz-statcell small { display: block; margin-top: 2px; font-size: 10px; line-height: 1.3; color: var(--text-muted); }
+
+/* skill row: icon / monogram well · name + meter (+ perk hint, goal chip) · Lv plaque */
+.grs-page .gr-skl { display: flex; align-items: center; gap: 11px; padding: 8px 0; }
+.grs-page .gr-skl + .gr-skl { border-top: 1px solid var(--divider); }
+.grs-page .gr-band:not(.expanded) .gr-skl.more { display: none; }
+.grs-page .gr-skl-ic {
+  width: 34px; height: 34px; flex: 0 0 auto; display: grid; place-items: center;
+  border-radius: 50%; background: none; font: 700 12px/1 var(--ff-body);
+}
+.grs-page .gr-skl-ic.mono {
+  color: color-mix(in srgb, var(--c) 85%, var(--text-primary));
+  background: radial-gradient(circle at 35% 28%, #3A332D, color-mix(in srgb, var(--c) 16%, #1E1B18));
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08), 0 0 10px -3px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.grs-page .gr-skl-grow { flex: 1; min-width: 0; }
+.grs-page .gr-skl-nm {
+  display: block; width: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 14px; font-weight: 600; color: var(--text-primary);
+}
+.grs-page .gr-skl .gr-tbar, .grs-page .gr-skl .gr-tbar i { overflow: visible; }
+.grs-page .gr-skl .gr-tbar { display: block; height: 5px; margin-top: 6px; border-radius: 3px; background: rgba(245, 239, 230, 0.07); }
+.grs-page .gr-skl .gr-tbar i {
+  border-radius: 3px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 55%, #fff), var(--c));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.grs-page .gr-skl-perk { display: block; margin-top: 4px; font-size: 10.5px; font-weight: 500; color: var(--text-muted); }
+.grs-page .gr-skl .lg-goalchip {
+  max-width: 100%; margin-top: 5px; padding: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 10.5px; font-weight: 500; color: var(--text-secondary); background: none;
+}
+.grs-page .gr-skl .lg-goalchip i { box-shadow: 0 0 5px var(--dc, var(--dv-coral)); }
+/* the Lv plaque (prototype `.lvp`) */
+.grs-page .gr-skl-lv {
+  flex: 0 0 auto; min-width: 0; padding: 4px 9px; border-radius: 10px;
+  font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--c) 85%, var(--text-primary));
+  background: color-mix(in srgb, var(--c) 12%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 32%, transparent);
+}
+/* „Mind a n ▸": a flat full-width button (prototype `.skmore`) */
+.grs-page .gr-expand {
+  display: block; width: 100%; min-height: 36px; margin-top: 8px; padding: 8px; border-radius: 12px;
+  font-size: 12px; font-weight: 600; text-align: center; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.03);
+}
+.grs-page .gr-expand:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+
+/* ═══ Napló ═══ */
+.grn-page .gr-band.glass .mz-mcells { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin-top: 8px; }
+.grn-page .gr-band.glass .mz-mcells .mz-c-sage  { --c: var(--dv-sage); }
+.grn-page .gr-band.glass .mz-mcells .mz-c-amber { --c: var(--dv-amber); }
+.grn-page .gr-band.glass .mz-mcells .mz-c-lav   { --c: var(--dv-lav); }
+.grn-page .gr-band.glass .mz-mcells .mz-c-sky   { --c: var(--dv-sky); }
+.grn-page .gr-band.glass .mz-mcells > span {
+  min-width: 0; padding: 5px 2px 4px; border-radius: 10px; text-align: center;
+  background: color-mix(in srgb, var(--c) 10%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 28%, transparent);
+}
+.grn-page .gr-band.glass .mz-mcells b { display: block; font-size: 14px; font-weight: 600; color: color-mix(in srgb, var(--c) 85%, var(--text-primary)); }
+.grn-page .gr-band.glass .mz-mcells small {
+  display: block; margin: 0; font-size: 9px; font-weight: 500; letter-spacing: 0; text-transform: none; opacity: 1;
+  color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* day head over each day card (prototype `.dayh`) */
+.grn-page .gr-dayhd { display: flex; align-items: baseline; gap: 8px; padding: 16px 2px 6px; }
+.grn-page .gr-dayhd .dow { font-size: 14px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--text-primary); }
+.grn-page .gr-dayhd .dt { font-size: 11px; color: var(--text-muted); }
+.grn-page .gr-dayhd .xp {
+  margin-left: auto; font-size: 12px; font-weight: 700; color: color-mix(in srgb, var(--dv-lav) 70%, var(--text-primary));
+}
+.grn-page .gr-day.glass { padding: 4px 14px; }
+.grn-page .gr-jrow { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; font-size: 13.5px; }
+.grn-page .gr-jrow + .gr-jrow { border-top: 1px solid var(--divider); }
+.grn-page .gr-jrow .gr-jk { width: 26px; height: 26px; margin-top: 1px; flex: 0 0 auto; }
+.grn-page .gr-jrow .gr-jdot { display: grid; place-items: center; }
+.grn-page .gr-jrow .gr-jdot i { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); }
+.grn-page .gr-jgrow { flex: 1; min-width: 0; }
+.grn-page .gr-jrow .tx { display: block; font-size: 13.5px; font-weight: 600; line-height: 1.35; color: var(--text-primary); }
+.grn-page .gr-jmeta {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; margin-top: 3px;
+  font-size: 11px; font-style: normal; color: var(--text-muted);
+}
+.grn-page .gr-jmeta .gr-jskill { width: 14px; height: 14px; filter: none; }
+.grn-page .gr-jrow.gone { opacity: 0.5; }
+.grn-page .gr-jrow.gone .tx { font-weight: 500; color: var(--text-primary); }
+/* no entry yet: the dashed empty state, no glass */
+.grn-page .gr-jempty.uv-empty {
+  --c: var(--dv-sky); margin: 12px 0 0; padding: 18px 16px; border-radius: 22px;
+  font-size: 12.5px; font-weight: 400; line-height: 1.5; text-align: center; color: var(--text-secondary);
+}
+
+/* ═══ Kitüntetések ═══ */
+/* section heads (prototype `.h3`): eyebrow left, the count right */
+.gra-page .gr-h3 { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 18px 2px 8px; }
+.gra-page .gr-h3-em { font-size: 11px; font-style: normal; font-weight: 500; color: var(--text-muted); }
+.gra-page .gr-h3-em.gr-coins { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: var(--text-secondary); }
+
+/* the streak: a frameless coral halo, the big flame, the numeral, a glowing milestone bar */
+.gra-page .gr-streak.gr-band {
+  --c: var(--dv-coral);
+  position: relative; isolation: isolate; overflow: visible;
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center;
+  margin: 0; padding: 14px 4px 8px; border: 0; border-radius: 0; background: none; box-shadow: none;
+}
+/* the halo overflows only to the LEFT (never scrollable) and stays below the scroller's top edge,
+   which would otherwise cut it flat (the body scrolls, so it clips) */
+.gra-page .gr-streak.gr-band::before {
+  content: ''; position: absolute; left: 24%; top: 44%; z-index: -1; pointer-events: none;
+  width: 320px; height: 220px; transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse at 50% 50%,
+    color-mix(in srgb, var(--dv-coral) 30%, transparent),
+    color-mix(in srgb, var(--dv-amber) 12%, transparent) 42%, transparent 66%);
+}
+.gra-page .gr-streak .gr-flame {
+  width: 86px; height: 86px;
+  filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 16px color-mix(in srgb, var(--dv-coral) 45%, transparent));
+}
+.gra-page .gr-streak-body { min-width: 0; }
+.gra-page .gr-streak-num { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 4px; }
+.gra-page .gr-streak-n {
+  font-family: var(--ff-display); font-size: 52px; font-weight: 300; letter-spacing: -3px; line-height: 1; color: var(--text-primary);
+}
+.gra-page .gr-streak-u { font-size: 14px; font-weight: 400; color: var(--text-secondary); }
+.gra-page .gr-streak .gr-msbar { height: 5px; margin-top: 8px; border-radius: 3px; overflow: visible; background: rgba(245, 239, 230, 0.07); }
+.gra-page .gr-streak .gr-msbar i {
+  border-radius: 3px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--dv-coral) 55%, #fff), var(--dv-coral));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--dv-coral) 60%, transparent);
+}
+.gra-page .gr-streak-next { margin-top: 6px; font-size: 12px; line-height: 1.45; color: var(--text-secondary); }
+.gra-page .gr-streak-next b { font-weight: 600; color: var(--text-primary); }
+.gra-page .gr-streak-p { margin-top: 4px; font-size: 11.5px; line-height: 1.45; color: var(--text-muted); }
+/* the saver: a flat row (prototype `.saver`) — under the streak AND at the end of the shop list */
+.gra-page .gr-saver {
+  display: flex; align-items: center; gap: 11px; min-width: 0; padding: 11px 12px; border-radius: 18px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.gra-page .gr-streak .gr-saver { grid-column: 1 / -1; margin-top: 6px; }
+.gra-page .gr-titlist .gr-saver { margin-top: 8px; }
+.gra-page .gr-saver-art { width: 34px; height: 34px; filter: none; }
+.gra-page .gr-saver-grow { flex: 1; min-width: 0; }
+.gra-page .gr-saver-nm { font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+.gra-page .gr-saver-sub { display: flex; align-items: center; gap: 4px; margin-top: 2px; font-size: 11px; color: var(--text-muted); }
+.gra-page .gr-coin { width: 14px; height: 14px; filter: none; }
+.gra-page .gr-h3-em .gr-coin { width: 16px; height: 16px; }
+
+/* action pills: constructive buys are lit (coral on the streak, gold in the titles card); Felvesz flat */
+.gra-page .gr-titact {
+  flex: 0 0 auto; min-height: 36px; padding: 7px 13px; border: 0; border-radius: 999px;
+  font: 600 12px/1.2 var(--ff-body); color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.gra-page .gr-titact.buy {
+  --c: var(--dv-amber); font-weight: 700; color: #191614; background: var(--c);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.gra-page .gr-streak .gr-titact.buy { --c: var(--dv-coral); }
+.gra-page .gr-titact:disabled { opacity: 0.45; cursor: default; }
+.gra-page .gr-titact:focus-visible { outline: 2px solid var(--c, var(--dv-amber)); outline-offset: 2px; }
+.gra-page .gr-titact.worn {
+  min-height: 0; padding: 0; font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--dv-amber) 70%, var(--text-primary)); background: none; box-shadow: none;
+}
+
+/* titles: ONE amber glass card — worn title, a flat segment (the active one lit), flat rows */
+.gra-page .gr-titcard.glass { margin: 0; }
+.gra-page .gr-titcard .gr-titworn { margin-bottom: 0; font-size: 15.5px; font-weight: 600; letter-spacing: -0.3px; color: var(--text-primary); }
+.gra-page .gr-titcard .gr-titworn b { font-weight: 600; color: color-mix(in srgb, var(--dv-amber) 70%, var(--text-primary)); }
+.gra-page .gr-titcard .gr-seg {
+  display: inline-flex; gap: 2px; margin: 12px 0 4px; padding: 3px; border-radius: 999px;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.gra-page .gr-titcard .gr-seg button {
+  flex: 0 0 auto; min-height: 36px; padding: 7px 16px; border-radius: 999px;
+  font-size: 12.5px; font-weight: 600; color: var(--text-secondary); background: none; box-shadow: none;
+}
+.gra-page .gr-titcard .gr-seg button.on {
+  color: #191614; background: var(--dv-amber); box-shadow: 0 0 12px color-mix(in srgb, var(--dv-amber) 45%, transparent);
+}
+.gra-page .gr-titcard .gr-seg button:focus-visible { outline: 2px solid var(--dv-amber); outline-offset: 2px; }
+.gra-page .gr-titcard .gr-titnote { margin-top: 8px; font-size: 12.5px; color: var(--text-secondary); }
+.gra-page .gr-titrow { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 0; }
+.gra-page .gr-titrow + .gr-titrow { border-top: 1px solid var(--divider); }
+.gra-page .gr-titrow .nm { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.gra-page .gr-titrow.lock .nm { font-weight: 500; color: var(--text-secondary); }
+.gra-page .gr-titrow:has(.worn) .nm { color: color-mix(in srgb, var(--dv-amber) 70%, var(--text-primary)); }
+.gra-page .gr-titrow .sub { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-muted); }
+.gra-page .gr-lockmk { font-size: 10px; font-weight: 700; letter-spacing: 0.8px; color: var(--text-muted); }
+
+/* badges: flat cells, each a glowing sage ring around its 3D art */
+.gra-page .gr-bdggrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.gra-page .gr-bdg {
+  --c: var(--dv-sage);
+  display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; padding: 10px 4px 9px;
+  border: 0; border-radius: 16px; text-align: center;
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.gra-page .gr-bdg:not(.done) { opacity: 0.72; }
+.gra-page .gr-bdg .gr-ring {
+  position: relative; width: 54px; height: 54px; display: grid; place-items: center; background: none;
+}
+.gra-page .gr-bdg .gr-ring::after { display: none; }
+.gra-page .gr-bdg .gr-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.gra-page .gr-bdg .gr-ring .uv-ring-track, .gra-page .gr-bdg .gr-ring .uv-ring-prog { stroke-width: 5; }
+.gra-page .gr-bdg .gr-bdg-art { position: relative; width: 28px; height: 28px; }
+.gra-page .gr-bdg b { font-size: 11px; font-weight: 600; line-height: 1.25; color: var(--text-primary); overflow-wrap: anywhere; }
+.gra-page .gr-bdg small {
+  display: inline-flex; align-items: center; gap: 3px; font-size: 9.5px; font-weight: 500;
+  font-variant-numeric: tabular-nums; color: var(--text-muted);
+}
+.gra-page .gr-bdg.done small { font-weight: 600; color: color-mix(in srgb, var(--dv-sage) 60%, var(--text-primary)); }
+.gra-page .gr-bdg .gr-bdg-tick { width: 12px; height: 12px; filter: none; }
+
+/* perks: ONE amber glass card of flat rows; none yet → dashed */
+.gra-page .gr-perks.glass { margin: 0; padding: 4px 14px 12px; }
+.gra-page .gr-perks.uv-empty { margin: 0; padding: 16px; border-radius: 22px; background: rgba(245, 239, 230, 0.025); box-shadow: none; }
+.gra-page .gr-perks .gr-band-foot {
+  margin: 0; padding: 10px 0 0; font-size: 12px; font-weight: 400; line-height: 1.5; color: var(--text-secondary);
+}
+.gra-page .gr-perks.glass .gr-band-foot { border-top: 1px solid var(--divider); }
+.gra-page .gr-perks.uv-empty .gr-band-foot { padding: 0; text-align: center; }
+.gra-page .gr-perkrow { display: flex; align-items: center; gap: 10px; padding: 9px 0; }
+.gra-page .gr-perkrow + .gr-perkrow { border-top: 1px solid var(--divider); }
+.gra-page .gr-perk-pi {
+  flex: 0 0 auto; width: auto; height: auto; padding: 4px 9px; border-radius: 10px;
+  font-size: 11.5px; font-weight: 700; color: color-mix(in srgb, var(--dv-amber) 85%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-amber) 12%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 32%, transparent);
+}
+.gra-page .gr-perk-grow { flex: 1; min-width: 0; }
+.gra-page .gr-perkrow .pn { font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+.gra-page .gr-perkrow .pe { font-size: 11px; font-weight: 400; color: var(--text-muted); }
+.gra-page .gr-perkrow .pl { margin: 0; font-size: inherit; font-weight: 500; color: var(--text-secondary); }
+
+/* motion: the hero flame drifts like every üveg hero icon; reduced motion shows it still */
+@media (prefers-reduced-motion: no-preference) {
+  .gra-page .gr-streak .gr-flame { animation: uv-float 5s ease-in-out 1s infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gra-page .gr-streak .gr-flame { animation: none; }
+}
 /* ── /uveg en2 novekedes ── */
 
 /* ── uveg en2 rutin (mezo-me75u.7) ── /me/rutin(+/uj,/lanc/:key,/szokasok,/szokas/:key(+/szerkesztes)) + rutin sheets ── */
+/* Ranking (bible §3.4, prototype uveg-en2.html #rutin/#lanc/#szokasok/#szokas/#szerk/#uj, sheets
+   `ai`/`chain`/`anchor`). Every rule is scoped to a page root — `.rt-uv` plus one of `.rt-hub`,
+   `.rt-lanc`, `.rt-szokasok`, `.rt-szokas`, `.rt-szerk`, `.rt-wiz` — or to the rutin sheets
+   (`.rt-sheet`): the `rt-*` / `gr-*` families are old shared names (rule 13). /nap/rutin is U3's
+   (`.nr-page`) and is not touched here.
+   Hub: the halo hero, flat stat cells, a flat day pill, then ONE loud glass — „Következik" with its
+   lit gold tick well — the gold active-chain glass, two glass doors, a flat „＋ Új lánc". Chain page
+   (lavender): one glass stack card holding the rope rows (flat nodes, flat anchor chips). Szokásaid:
+   flat stage filters, a 2-col grid of glass habit tiles tinted by their stage (rule 46). Szokás:
+   glass poster / context rings / history / recipe, every inner row flat. Editor + wizard: forms, so
+   the controls stay flat on the ground; the recipe sentence, the framework cards and the effort card
+   are the glass objects. Danger buttons stay flat coral outlines (rule 29). */
 
+/* the ground: the aurora shows through; quiet principle footnote; kit eyebrows */
+.rt-uv.mz-page { background: transparent; }
+.rt-uv .mz-page-body { padding: 2px 16px 24px; }
+.rt-uv .uv-hero { --c2: var(--dv-lav); }
+.rt-lanc .uv-hero { --c2: var(--dv-amber); }
+.rt-uv .mz-principle {
+  margin: 22px 10px 0; padding-top: 12px; border-top: 1px solid var(--divider);
+  font-size: 11.5px; font-weight: 400; line-height: 1.5; text-align: center; color: var(--text-muted);
+}
+.rt-uv .mz-eyebrow { font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+
+/* the glass body restated where an old `rt-*` / `gr-*` / `mz-*` rule would keep its light skin
+   (rule 11): washes, borders, coloured shadows and the `.is-fogg.on`-style modifiers. */
+.rt-hub .rt-nextcard.glass, .rt-hub .rt-chaintile.glass, .rt-hub .mz-tile.glass.rt-door, .rt-hub .gr-chain.glass,
+.rt-lanc .rt-macard.glass, .rt-szokasok .rt-htile.glass, .rt-szokas .rt-poster.glass, .rt-szokas .rt-ctxgrid.glass,
+.rt-uv .rt-fcard.glass, .rt-uv .rt-sentence.glass, .rt-wiz .rt-fwcard.glass, .sheet.glass.rt-sheet {
+  border: 0;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+
+/* the head's lit action pill („AI javaslat", „Szerkesztés", „Mentés"): constructive → lit */
+.rt-uv .mz-page-head .mz-pgact.rt-act {
+  --c: var(--dv-amber);
+  margin-left: auto; display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 14px;
+  border: 0; border-radius: 999px; font: 700 12.5px/1.2 var(--ff-body); white-space: nowrap; cursor: pointer;
+  color: var(--canvas); background: var(--c);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.rt-uv .mz-page-head .mz-pgact.rt-act.is-lav { --c: var(--dv-lav); }
+.rt-uv .mz-pgact.rt-act .t-ico { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)); }
+.rt-uv .mz-pgact.rt-act:disabled { opacity: 0.45; box-shadow: none; cursor: default; }
+.rt-uv .mz-pgact.rt-act:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
+/* ghost pills (the wizard's „Mégse" and „← Vissza") */
+.rt-uv .rt-ghostpill {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 0 14px;
+  border: 0; border-radius: 999px; font: 600 12.5px/1.2 var(--ff-body); cursor: pointer;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.rt-wiz .mz-page-head .pgact.rt-ghostpill { margin-left: auto; }
+/* the lit CTA (wizard „Tovább / Mentés", sheet „Javasolj / Mentés") — every colour restated (rule 36) */
+.rt-uv .cta-primary.rt-litpill, .rt-sheet .cta-primary.rt-litpill {
+  --c: var(--dv-amber);
+  width: 100%; min-height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 0 16px; border: 0; border-radius: 999px; font: 700 14px/1.2 var(--ff-body);
+  color: var(--canvas); background: var(--c);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.rt-sheet.is-lav .cta-primary.rt-litpill { --c: var(--dv-lav); }
+.rt-uv .cta-primary.rt-litpill .t-ico, .rt-sheet .cta-primary.rt-litpill .t-ico { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)); }
+.rt-uv .cta-primary.rt-litpill:disabled, .rt-sheet .cta-primary.rt-litpill:disabled { opacity: 0.42; box-shadow: none; }
+/* flat full-width buttons („＋ Új lánc", „＋ Új habit ebbe a láncba") */
+.rt-hub .cta-ghost.rt-flatbtn, .rt-lanc .rt-addrow {
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 46px;
+  margin: 10px 0 0; padding: 12px 16px; border: 0; border-radius: 18px; cursor: pointer;
+  font: 600 14px/1.2 var(--ff-body); color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+/* the dashed empty line (rank 4) */
+.rt-uv .rt-emptyline, .rt-sheet .rt-emptyline {
+  --c: var(--dv-amber);
+  display: block; margin: 10px 0 0; padding: 14px 16px; border-radius: 16px;
+  font-size: 12.5px; line-height: 1.5; text-align: center; color: var(--text-secondary);
+}
+.rt-sheet.is-lav .rt-emptyline { --c: var(--dv-lav); }
+.rt-lanc .rt-emptyline { --c: var(--dv-lav); }
+
+/* ── the form language (flat controls on the ground) ── */
+.rt-uv .rt-fcard:not(.glass) { margin: 18px 0 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.rt-uv .rt-fcard.glass { --c: var(--dv-amber); margin: 16px 0 0; padding: 14px 15px; border-radius: 22px; }
+.rt-uv .rt-flabel, .rt-sheet .rt-flabel {
+  display: flex; align-items: baseline; gap: 7px; margin: 0 2px 7px;
+  font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted);
+}
+.rt-uv .rt-opt, .rt-sheet .rt-opt { font-weight: 500; letter-spacing: 0.2px; text-transform: none; color: var(--text-muted); }
+.rt-uv .rt-fin, .rt-sheet .rt-fin {
+  display: block; width: 100%; margin-top: 8px; padding: 11px 13px; border: 0; border-radius: 13px;
+  font: 400 14px/1.3 var(--ff-body); color: var(--text-primary); color-scheme: dark;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.rt-uv .rt-flabel + .rt-fin, .rt-sheet .rt-flabel + .rt-fin { margin-top: 0; }
+.rt-uv .rt-fin + .rt-flabel, .rt-uv .rt-hint + .rt-flabel { margin-top: 14px; }
+.rt-uv .rt-fin::placeholder, .rt-sheet .rt-fin::placeholder { color: var(--text-muted); }
+.rt-uv .rt-fin:focus, .rt-sheet .rt-fin:focus {
+  outline: none; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--dv-amber) 70%, transparent);
+}
+.rt-uv .rt-hint, .rt-sheet .rt-hint { margin-top: 7px; font-size: 11.5px; line-height: 1.5; color: var(--text-muted); }
+/* chips: flat, the picked one lit in its accent */
+.rt-uv .rt-chips, .rt-sheet .rt-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.rt-uv .rt-chips button, .rt-sheet .rt-chips button {
+  --c: var(--dv-lav);
+  display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; min-height: 34px; padding: 7px 12px;
+  border: 0; border-radius: 999px; font: 600 12px/1.2 var(--ff-body); cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.rt-uv .rt-chips.is-gold button, .rt-sheet .rt-chips.is-gold button { --c: var(--dv-amber); }
+.rt-uv .rt-chips.is-sage button, .rt-sheet .rt-chips.is-sage button { --c: var(--dv-sage); }
+.rt-uv .rt-chips button.on, .rt-sheet .rt-chips button.on {
+  color: var(--canvas); background: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.rt-uv .rt-chips button .t-ico, .rt-sheet .rt-chips button .t-ico { width: 18px; height: 18px; filter: none; }
+.rt-uv .rt-chip-src { font-size: 10px; font-weight: 700; letter-spacing: 0; color: inherit; opacity: 0.65; }
+/* the two-way segmented pill (Keret, Hogyan pipálódik?) */
+.rt-uv .rt-swseg {
+  display: flex; gap: 0; padding: 3px; border-radius: 999px;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.rt-uv .rt-swseg button {
+  --c: var(--dv-amber);
+  flex: 1; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 38px; padding: 6px 10px; border: 0; border-radius: 999px; background: none; cursor: pointer;
+  font: 600 12.5px/1.2 var(--ff-body); color: var(--text-secondary);
+}
+.rt-uv .rt-swseg button .t-ico { width: 20px; height: 20px; filter: none; }
+.rt-uv .rt-swseg button.on, .rt-uv .rt-swseg button.on.is-clear {
+  color: var(--canvas); background: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 45%, transparent);
+}
+/* tips + warnings: a faint accent cell with its 3D icon (💡 ⚓ ◈ ✂ ⏸ ⚠ → sprite symbols) */
+.rt-uv .rt-tip, .rt-uv .rt-warn {
+  --c: var(--dv-amber);
+  display: flex; gap: 10px; align-items: flex-start; margin: 12px 0 0; padding: 11px 13px; border-radius: 16px;
+  font-size: 12.5px; font-weight: 400; line-height: 1.5; color: var(--text-secondary);
+  background: color-mix(in srgb, var(--c) 7%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 22%, transparent);
+}
+.rt-uv .rt-tip.is-lav { --c: var(--dv-lav); }
+.rt-uv .rt-tip.is-warn, .rt-uv .rt-warn { --c: var(--dv-coral); }
+.rt-uv .rt-tip .t-ico, .rt-uv .rt-warn .t-ico { flex: none; width: 26px; height: 26px; }
+.rt-uv .rt-tip b, .rt-uv .rt-warn b { font-weight: 600; color: var(--text-primary); }
+.rt-uv .rt-lockline { display: flex; gap: 7px; align-items: flex-start; margin-top: 8px; font-size: 11.5px; line-height: 1.45; color: var(--text-muted); }
+.rt-uv .rt-lockline .t-ico { flex: none; width: 16px; height: 16px; margin-top: 1px; filter: none; }
+.rt-uv .rt-lockline b { font-weight: 600; color: var(--text-secondary); }
+/* the recipe sentence: ONE gold glass, the filled slots lit, the open ones dashed */
+.rt-uv .rt-sentence.glass { --c: var(--dv-amber); display: block; margin: 12px 0 0; padding: 14px 15px 15px; border-radius: 22px; }
+.rt-uv .rt-sentence-lb {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 8px;
+  font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+}
+.rt-uv .rt-sentence-lb .t-ico { width: 18px; height: 18px; filter: none; }
+.rt-uv .rt-sentence-lb-sub { color: var(--text-muted); }
+.rt-uv .rt-sentence-tx { margin: 0; font-family: var(--ff-body); font-style: normal; font-size: 15px; line-height: 1.6; color: var(--text-secondary); }
+.rt-uv .rt-sentence.is-big .rt-sentence-tx { font-size: 16.5px; }
+.rt-uv .rt-sentence .rt-blank {
+  display: inline-block; min-width: 70px; padding: 0 2px; border-bottom: 1.5px dashed color-mix(in srgb, var(--c) 60%, transparent);
+  color: var(--text-muted);
+}
+.rt-uv .rt-sentence .rt-blank.is-filled {
+  display: inline; min-width: 0; padding: 0 4px; border-bottom: 0; border-radius: 6px; font-weight: 600;
+  color: var(--text-primary); background: color-mix(in srgb, var(--c) 14%, transparent);
+}
+/* the effort grid (Fogg ability factors): flat 3-way pills, the grade colour carries the grade */
+.rt-uv .rt-effrow { padding: 8px 0; }
+.rt-uv .rt-effrow + .rt-effrow { border-top: 1px solid var(--divider); }
+.rt-uv .rt-effrow-h { display: flex; align-items: baseline; gap: 8px; margin-bottom: 7px; }
+.rt-uv .rt-effrow-h b { font-size: 12.5px; font-weight: 600; color: var(--text-primary); }
+.rt-uv .rt-effrow-h small { margin-left: auto; font-size: 10.5px; color: var(--text-muted); text-align: right; }
+.rt-uv .rt-seg3 {
+  display: flex; gap: 0; padding: 3px; border-radius: 999px;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.rt-uv .rt-seg3 button {
+  --c: var(--dv-amber);
+  flex: 1; min-width: 0; min-height: 32px; padding: 5px 6px; border: 0; border-radius: 999px; background: none; cursor: pointer;
+  font: 600 11px/1.2 var(--ff-body); color: var(--text-secondary);
+}
+.rt-uv .rt-seg3 button.is-sage { --c: var(--dv-sage); }
+.rt-uv .rt-seg3 button.is-coral { --c: var(--dv-coral); }
+.rt-uv .rt-seg3 button.is-sage.on, .rt-uv .rt-seg3 button.is-gold.on, .rt-uv .rt-seg3 button.is-coral.on {
+  font-weight: 700; color: var(--canvas); background: var(--c);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 45%, transparent);
+}
+.rt-uv .rt-effout {
+  display: flex; align-items: baseline; gap: 10px; margin-top: 10px; padding: 11px 0 0; border-radius: 0;
+  border-top: 1px solid var(--divider); background: none; box-shadow: none;
+}
+.rt-uv .rt-effout-lvl { font-size: 17px; font-weight: 600; color: color-mix(in srgb, var(--dv-amber) 70%, var(--text-primary)); }
+.rt-uv .rt-effout-lvl small { font-size: 11px; font-weight: 400; color: var(--text-muted); }
+.rt-uv .rt-effout-xp b { font: 300 22px/1 var(--ff-display); letter-spacing: -0.5px; color: var(--text-primary); }
+.rt-uv .rt-effout-xp small { font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.2px; color: var(--text-muted); }
+.rt-uv .rt-fcard.glass > .rt-hint, .rt-uv .rt-fcard.glass > .rt-lockline { margin-top: 10px; }
+/* destructive: flat coral outlines, never lit (rule 29); deleting is the quieter, two-tap one */
+.rt-uv .rt-danger, .rt-sheet .rt-danger {
+  display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; min-height: 48px;
+  margin: 8px 0 0; padding: 11px 16px; border: 0; border-radius: 18px; cursor: pointer; text-align: left;
+  font: 600 14px/1.3 var(--ff-body); color: color-mix(in srgb, var(--dv-coral) 55%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-coral) 7%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 35%, transparent);
+}
+.rt-uv .rt-danger .t-ico, .rt-sheet .rt-danger .t-ico { flex: none; width: 24px; height: 24px; }
+.rt-uv .rt-fcard + .rt-danger, .rt-uv .rt-addrow + .rt-danger { margin-top: 18px; }
+.rt-uv .rt-danger.is-hard { color: var(--text-secondary); background: none; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 22%, transparent); }
+.rt-uv .rt-danger.is-hard.is-armed {
+  color: color-mix(in srgb, var(--dv-coral) 60%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-coral) 10%, transparent); box-shadow: inset 0 0 0 1.5px var(--dv-coral);
+}
+.rt-uv .rt-danger:disabled, .rt-sheet .rt-danger:disabled { opacity: 0.45; cursor: default; }
+
+/* ── Rutin hub ── */
+.rt-hub .mz-statstrip.rt-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.rt-hub .rt-strip .mz-statcell {
+  min-width: 0; padding: 10px 6px; border: 0; border-radius: 14px; text-align: center;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.rt-hub .rt-strip .mz-statcell b { font: 600 20px/1.15 var(--ff-display); letter-spacing: -0.6px; color: var(--text-primary); }
+.rt-hub .rt-strip .mz-statcell:first-child b {
+  color: color-mix(in srgb, var(--dv-amber) 70%, var(--text-primary));
+  text-shadow: 0 0 12px color-mix(in srgb, var(--dv-amber) 45%, transparent);
+}
+.rt-hub .rt-strip .mz-statcell small { display: block; margin-top: 2px; font-size: 10px; line-height: 1.3; color: var(--text-muted); }
+/* the day pill: DayNavigator styles itself inline — the scoped !important is U3's precedent
+   (.nr-page .nr-daynav) and the only way to re-dress it without touching the shared markup */
+.rt-hub .gr-daynav {
+  margin: 12px 0 4px; padding: 4px; border-radius: 999px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.rt-hub .gr-daynav > div { width: 100%; }
+.rt-hub .gr-daynav > div > button {
+  width: 34px !important; height: 34px !important; border: 0 !important; border-radius: 50% !important;
+  color: var(--text-secondary) !important; background: transparent !important;
+}
+.rt-hub .gr-daynav > div > button:disabled { opacity: 0.3 !important; }
+.rt-hub .gr-daynav button[aria-label="Dátum kiválasztása"] {
+  font-size: 13px !important; font-weight: 600 !important; color: var(--text-primary) !important;
+}
+/* „Következik": the loudest thing on the hub — gold glass, big name, the lit gold tick well */
+.rt-hub .rt-nextcard.glass {
+  --c: var(--dv-amber);
+  display: flex; align-items: center; gap: 14px; margin: 12px 0 10px; padding: 16px; border-radius: 24px;
+}
+.rt-hub .rt-nextcard-tx { flex: 1; min-width: 0; }
+.rt-hub .rt-nextcard-eb {
+  font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 80%, var(--text-primary));
+}
+.rt-hub .rt-nextcard-nm {
+  margin-top: 3px; font-size: 19px; font-weight: 600; letter-spacing: -0.5px; line-height: 1.25; color: var(--text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rt-hub .rt-nextcard-cue { margin-top: 4px; font-size: 12px; line-height: 1.4; color: var(--text-secondary); }
+.rt-hub .rt-nextcard .rt-bigtick, .rt-hub .rt-nextcard .rt-bigtick.is-allon {
+  width: 62px; height: 62px; flex: none; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center; color: var(--text-primary);
+  background: radial-gradient(circle at 35% 28%, #4A3F2F, color-mix(in srgb, var(--dv-amber) 22%, #1E1B18));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 244, 230, 0.12),
+    0 0 20px -2px color-mix(in srgb, var(--dv-amber) 55%, transparent),
+    inset 0 0 0 1.5px color-mix(in srgb, var(--dv-amber) 55%, transparent);
+}
+.rt-hub .rt-bigtick:focus-visible { outline: 2px solid var(--dv-amber); outline-offset: 3px; }
+/* the active chain: gold glass with the day's dots and the count on the right */
+.rt-hub .rt-chaintile.glass {
+  --c: var(--dv-amber);
+  display: flex; align-items: center; gap: 12px; width: 100%; margin: 0 0 10px; padding: 13px 14px; border-radius: 20px;
+  font: inherit; text-align: left; color: var(--text-primary); cursor: pointer;
+}
+.rt-hub .rt-chaintile-bd { flex: 1; min-width: 0; }
+.rt-hub .rt-chaintile-eb {
+  display: block; font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rt-hub .rt-chdots { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.rt-hub .rt-chdots i { flex: 0 0 9px; width: 9px; height: 9px; border-radius: 50%; background: rgba(245, 239, 230, 0.1); box-shadow: none; }
+.rt-hub .rt-chdots i.is-d { background: var(--c); box-shadow: 0 0 6px var(--c); }
+.rt-hub .rt-chdots i.is-now {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--c), 0 0 8px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.rt-hub .rt-chaintile-dg {
+  flex: none; margin: 0; font: 600 20px/1 var(--ff-display); letter-spacing: -0.6px; font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.rt-hub .rt-chaintile-dg small { margin-left: 3px; font-size: 10.5px; font-weight: 500; letter-spacing: 0; color: var(--text-muted); }
+.rt-hub .rt-chaintile-cv { flex: none; font-size: 20px; color: var(--text-muted); }
+/* the two doors: glass tiles, icon top-left, eyebrow, the line */
+.rt-hub .mz-mosaic.rt-doors { gap: 10px; }
+.rt-hub .mz-tile.glass.rt-door {
+  display: flex; flex-direction: column; gap: 4px; min-width: 0; min-height: 128px; padding: 13px 13px 12px;
+  border-radius: 20px; text-align: left; color: var(--text-primary);
+}
+.rt-hub .mz-tile.rt-door.is-lav { --c: var(--dv-lav); }
+.rt-hub .mz-tile.rt-door.is-sage { --c: var(--dv-sage); }
+.rt-hub .rt-door .mz-spotwrap { order: 1; flex: none; display: block; margin-bottom: auto; padding: 0; }
+.rt-hub .rt-door .mz-tile-top { order: 2; margin-top: 8px; }
+.rt-hub .rt-door .mz-eyebrow { color: color-mix(in srgb, var(--c) 70%, var(--text-primary)); }
+.rt-hub .rt-door .mz-tile-line {
+  order: 3; text-align: left; font-size: 14px; font-weight: 600; letter-spacing: -0.2px; line-height: 1.3; color: var(--text-primary);
+}
+/* a past day: the summary lead, lavender callouts, one gold glass per chain with flat rows */
+.rt-hub .rt-pastsum { padding: 10px 2px 12px; }
+.rt-hub .gr-daysum { font-size: 13.5px; font-weight: 400; line-height: 1.5; color: var(--text-secondary); }
+.rt-hub .gr-daysum b { font-weight: 600; color: var(--text-primary); }
+.rt-hub .gr-daysum .rt-xp { color: color-mix(in srgb, var(--dv-amber) 70%, var(--text-primary)); }
+.rt-hub .gr-softnote {
+  --c: var(--dv-lav);
+  margin-top: 10px; padding: 12px 14px; border-radius: 18px; font-size: 13px; font-weight: 400; line-height: 1.45;
+  color: var(--text-secondary); background: color-mix(in srgb, var(--c) 8%, transparent); box-shadow: inset 3px 0 0 var(--c);
+}
+.rt-hub .gr-chain.glass { --c: var(--dv-amber); margin: 0 0 10px; padding: 14px 15px 8px; border-radius: 22px; }
+.rt-hub .gr-chain .gr-band-top { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.rt-hub .gr-chain .gr-band-top .mz-eyebrow {
+  flex: 1; min-width: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.3px; text-transform: none; color: var(--text-primary);
+}
+.rt-hub .gr-chain .gr-band-chip {
+  flex: none; margin-left: auto; padding: 4px 9px; border-radius: 10px; font-size: 11.5px; font-weight: 700; letter-spacing: 0;
+  color: color-mix(in srgb, var(--c) 85%, var(--text-primary));
+  background: color-mix(in srgb, var(--c) 12%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 32%, transparent);
+}
+.rt-hub .gr-chain .gr-chainrow { gap: 10px; padding: 9px 0; font-size: 13.5px; }
+.rt-hub .gr-chain .gr-chainrow + .gr-chainrow { border-top: 1px solid var(--divider); }
+.rt-hub .gr-chain .gr-chainrow .tx { font-weight: 600; color: var(--text-primary); }
+.rt-hub .gr-chain .gr-chainrow.skip .tx { opacity: 0.5; color: var(--text-primary); }
+.rt-hub .gr-chain .gr-chainrow .gr-ck, .rt-hub .gr-chain .gr-chainrow.done .gr-ck {
+  width: 26px; height: 26px; border: 0; background: none; color: inherit;
+}
+.rt-hub .gr-chain .rt-dotgone { display: grid; place-items: center; }
+.rt-hub .gr-chain .rt-dotgone i { width: 8px; height: 8px; border-radius: 50%; background: rgba(245, 239, 230, 0.18); }
+
+/* ── Lánc (lavender) ── */
+.rt-lanc .rt-fcard:not(.glass) { margin-top: 14px; }
+.rt-lanc .rt-macard.glass { --c: var(--dv-lav); display: block; margin: 14px 0 0; padding: 12px 14px; border-radius: 22px; }
+.rt-lanc .rt-macard-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 2px; padding: 2px 0 4px; }
+.rt-lanc .rt-macard-t { font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted); }
+.rt-lanc .rt-macard-c { margin-left: auto; font-size: 11px; font-weight: 600; color: var(--text-muted); }
+.rt-lanc .rt-stackrow { grid-template-columns: 30px minmax(0, 1fr) auto; column-gap: 12px; padding: 0; }
+.rt-lanc .rt-srail { height: 58px; }
+.rt-lanc .rt-srail::before, .rt-lanc .rt-srail::after { width: 2px; height: 14px; background: color-mix(in srgb, var(--c) 40%, transparent); }
+.rt-lanc .rt-srail.is-linked::before { background: color-mix(in srgb, var(--c) 55%, transparent); }
+.rt-lanc .rt-srail.is-broken::before {
+  background: repeating-linear-gradient(180deg, color-mix(in srgb, var(--c) 45%, transparent) 0 4px, transparent 4px 8px);
+}
+/* the rope starts at the first row: the head, not a row, is the card's first div */
+.rt-lanc .rt-macard-head + .rt-stackrow .rt-srail::before { display: none; }
+.rt-lanc .rt-snode {
+  width: 30px; height: 30px; border: 0; border-radius: 50%; display: grid; place-items: center;
+  font-size: 14px; color: var(--text-muted); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.rt-lanc .rt-snode .t-ico { width: 22px; height: 22px; }
+.rt-lanc .rt-snode.on {
+  background: color-mix(in srgb, var(--c) 18%, #1E1B18);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 60%, transparent), 0 0 10px -2px var(--c);
+}
+.rt-lanc .rt-snode.next {
+  color: color-mix(in srgb, var(--dv-amber) 70%, var(--text-primary)); background: transparent;
+  box-shadow: inset 0 0 0 2px var(--dv-amber), 0 0 12px -2px var(--dv-amber);
+}
+.rt-lanc .rt-sbody { min-width: 0; }
+.rt-lanc .rt-sbody-nm { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.rt-lanc .rt-achip, .rt-lanc .rt-achip.is-linked, .rt-lanc .rt-achip.is-foreign, .rt-lanc .rt-achip.is-free {
+  display: inline-flex; align-items: center; gap: 4px; max-width: 100%; margin-top: 4px; padding: 2px 8px 2px 4px;
+  border-radius: 999px; font: 400 10.5px/1.3 var(--ff-body); letter-spacing: 0; text-transform: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.rt-lanc .rt-achip.is-foreign { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 40%, transparent); }
+.rt-lanc .rt-achip .t-ico { flex: none; width: 15px; height: 15px; filter: none; }
+.rt-lanc .rt-smini.uv-bar { width: 46px; flex: none; overflow: visible; background: rgba(245, 239, 230, 0.07); }
+.rt-lanc .rt-smove { gap: 2px; }
+.rt-lanc .rt-smove button {
+  width: 26px; height: 20px; border: 0; border-radius: 7px; font-size: 10px; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.rt-lanc .rt-stackrow.is-inert .rt-sbody { opacity: 0.5; }
+
+/* ── Szokásaid ── */
+.rt-szokasok .rt-fgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 4px 0 12px; }
+.rt-szokasok .rt-ftile {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; padding: 10px 4px 9px;
+  border: 0; border-radius: 16px; text-align: center; font: inherit; color: var(--text-primary); cursor: pointer;
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.rt-szokasok .rt-ftile b { font: 600 19px/1 var(--ff-display); letter-spacing: 0; color: var(--text-primary); }
+.rt-szokasok .rt-ftile small { margin: 0; font-size: 9.5px; font-weight: 500; line-height: 1.25; color: var(--text-muted); overflow-wrap: anywhere; }
+.rt-szokasok .rt-fdots { display: flex; gap: 3px; margin: 0; }
+.rt-szokasok .rt-fdots i { flex: none; width: 5px; height: 5px; border-radius: 50%; background: rgba(245, 239, 230, 0.12); }
+.rt-szokasok .rt-fdots i.on { background: var(--c); box-shadow: 0 0 4px var(--c); }
+.rt-szokasok .rt-ftile.on {
+  background: color-mix(in srgb, var(--c) 14%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 50%, transparent), 0 0 12px -4px var(--c);
+}
+.rt-szokasok .rt-ftile.on small { color: var(--text-primary); }
+.rt-szokasok .rt-ftile.is-zero { opacity: 0.45; }
+.rt-szokasok .rt-ftile:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.rt-szokasok .rt-hgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.rt-szokasok .rt-htile.glass {
+  display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 13px; border-radius: 20px;
+  font: inherit; text-align: left; color: var(--text-primary); cursor: pointer;
+}
+.rt-szokasok .rt-htop { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.rt-szokasok .rt-hleft { flex: 1; min-width: 0; }
+.rt-szokasok .rt-hnm { font-size: 14px; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.rt-szokasok .rt-hstage {
+  margin-top: 3px; font: 500 10.5px/1.3 var(--ff-body); letter-spacing: 0; text-transform: none;
+  color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+}
+.rt-szokasok .rt-hreps { margin-top: 10px; font: 300 26px/1 var(--ff-display); letter-spacing: -1px; color: var(--text-primary); }
+.rt-szokasok .rt-hreps small { margin-left: 3px; font-size: 10.5px; font-weight: 400; letter-spacing: 0; color: var(--text-muted); }
+.rt-szokasok .rt-hright { flex: none; width: auto; }
+.rt-szokasok .rt-harc { width: 46px; height: 46px; }
+.rt-szokasok .rt-harc text { font-size: 12px; font-weight: 600; fill: var(--text-primary); }
+.rt-szokasok .rt-heta {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin-top: auto; padding-top: 7px;
+  border-top: 1px solid var(--divider);
+}
+.rt-szokasok .rt-heta b { font-size: 12px; font-weight: 600; color: color-mix(in srgb, var(--c) 70%, var(--text-primary)); }
+.rt-szokasok .rt-heta span { font-size: 10.5px; line-height: 1.35; color: var(--text-muted); }
+
+/* ── Szokás ── */
+.rt-szokas .rt-flabel { margin: 18px 2px 8px; }
+.rt-szokas .rt-flabel .rt-fwband-sw {
+  margin-left: auto; padding: 0; border: 0; background: none; cursor: pointer;
+  font: 600 12px/1.2 var(--ff-body); letter-spacing: 0; text-transform: none;
+  color: color-mix(in srgb, var(--dv-amber) 70%, var(--text-primary));
+}
+.rt-szokas .rt-poster.glass { --c: var(--dv-amber); margin: 12px 0 0; padding: 15px 15px 14px; border-radius: 22px; }
+.rt-szokas .rt-poster.glass.is-settled { --c: var(--dv-sage); }
+.rt-szokas .rt-poster svg { overflow: visible; }
+.rt-szokas .rt-poster-eb { font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.3px; color: var(--text-muted); }
+.rt-szokas .rt-poster-big { margin-top: 3px; font-size: 18px; font-weight: 600; color: var(--text-primary); }
+.rt-szokas .rt-poster-sub { font-size: 11.5px; line-height: 1.45; color: var(--text-secondary); }
+.rt-szokas .rt-poster-note { margin-top: 10px; font-size: 11.5px; line-height: 1.5; color: var(--text-muted); }
+.rt-szokas .rt-curve-band { fill: color-mix(in srgb, var(--c) 16%, transparent); }
+.rt-szokas .rt-curve-past { stroke: var(--c); filter: drop-shadow(0 0 4px color-mix(in srgb, var(--c) 55%, transparent)); }
+.rt-szokas .rt-curve-next { stroke: var(--c); }
+.rt-szokas .rt-curve-thr { stroke: color-mix(in srgb, var(--dv-sage) 55%, transparent); }
+.rt-szokas .rt-curve-thrlb { fill: var(--dv-sage); }
+.rt-szokas .rt-curve-dot { fill: var(--canvas); stroke: var(--c); }
+.rt-szokas .rt-curve-ax { fill: var(--text-muted); }
+.rt-szokas .rt-msrail::before { background: rgba(245, 239, 230, 0.08); }
+.rt-szokas .rt-msrail li i { background: var(--canvas); box-shadow: inset 0 0 0 2px rgba(245, 239, 230, 0.14); }
+.rt-szokas .rt-msrail li.is-past i { background: color-mix(in srgb, var(--c) 55%, transparent); box-shadow: none; }
+.rt-szokas .rt-msrail li.is-now i { background: var(--canvas); box-shadow: 0 0 0 3px var(--c), 0 0 12px var(--c); animation: none; }
+.rt-szokas .rt-msrail li span { font: 500 9.5px/1.25 var(--ff-body); letter-spacing: 0; text-transform: none; color: var(--text-muted); }
+.rt-szokas .rt-msrail li.is-past span { color: var(--text-secondary); }
+.rt-szokas .rt-msrail li.is-now span { font-weight: 600; color: var(--text-primary); }
+@media (prefers-reduced-motion: no-preference) {
+  .rt-szokas .rt-poster:not(.is-settled) .rt-msrail li.is-now i { animation: rt-mspulse 2.4s ease-in-out infinite; }
+}
+.rt-szokas .rt-etaband {
+  gap: 12px; margin-top: 12px; padding: 10px 13px; border-radius: 16px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.rt-szokas .rt-etaband-n {
+  display: inline-flex; align-items: center; font: 300 24px/1 var(--ff-display);
+  color: color-mix(in srgb, var(--c) 70%, var(--text-primary));
+}
+.rt-szokas .rt-etaband-n.is-dot i { display: block; width: 8px; height: 8px; border-radius: 50%; background: rgba(245, 239, 230, 0.25); }
+.rt-szokas .rt-etaband-l { font-size: 11.5px; line-height: 1.45; color: var(--text-secondary); }
+.rt-szokas .rt-etaband-l b { font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.2px; color: var(--text-muted); }
+/* the three context rings share ONE lavender glass; the cells inside are bare */
+.rt-szokas .rt-ctxgrid.glass {
+  --c: var(--dv-lav);
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 14px 10px 12px; border-radius: 22px;
+}
+.rt-szokas .rt-ctxcell {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; padding: 0;
+  border-radius: 0; text-align: center; background: none; box-shadow: none;
+}
+.rt-szokas .rt-ctxcell svg { overflow: visible; }
+.rt-szokas .rt-ctxcell b { margin-top: 4px; font-size: 12px; font-weight: 600; color: var(--text-primary); }
+.rt-szokas .rt-ctxcell small { font-size: 10.5px; line-height: 1.3; color: var(--text-muted); }
+/* the lifetime history: one gold glass; pipa lit gold, a missed day a coral ring, no row faint */
+.rt-szokas .rt-fcard.rt-histcard.glass { margin: 0; padding: 14px 14px 12px; }
+.rt-szokas .rt-cal i { width: 12px; height: 12px; border-radius: 3px; background: rgba(245, 239, 230, 0.05); }
+.rt-szokas .rt-cal i.is-done, .rt-szokas .rt-cal-lg em.is-done {
+  background: color-mix(in srgb, var(--c) 70%, transparent); box-shadow: 0 0 6px -1px var(--c);
+}
+/* a missed day is neutral, never failure-red (ADR 0010: no failure styling) */
+.rt-szokas .rt-cal i.is-miss, .rt-szokas .rt-cal-lg em.is-miss {
+  background: transparent; box-shadow: inset 0 0 0 1.5px rgba(245, 239, 230, 0.28);
+}
+.rt-szokas .rt-cal-lg { gap: 12px; margin-top: 9px; font-size: 10.5px; color: var(--text-muted); }
+.rt-szokas .rt-cal-lg em { width: 9px; height: 9px; border-radius: 3px; background: rgba(245, 239, 230, 0.08); }
+.rt-szokas .rt-wday-bar { height: 44px; border-radius: 7px; background: rgba(245, 239, 230, 0.05); }
+.rt-szokas .rt-wday-bar i {
+  background: linear-gradient(0deg, var(--c), color-mix(in srgb, var(--c) 55%, #fff));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.rt-szokas .rt-wday span { font-size: 10px; font-weight: 600; color: var(--text-muted); }
+.rt-szokas .rt-histcard .rt-hint { margin-top: 10px; }
+
+/* ── Szerkesztés ── */
+.rt-szerk .uv-hero .uv-hero-art { order: 0; }
+.rt-szerk .uv-hero .rt-hero-eb { order: 1; margin-top: 4px; color: color-mix(in srgb, var(--c) 70%, var(--text-primary)); }
+.rt-szerk .uv-hero .mz-hero-nm { order: 2; margin-top: 2px; }
+.rt-szerk .rt-pickrow {
+  display: flex; align-items: center; gap: 11px; width: 100%; margin-top: 0; padding: 10px 12px; border: 0; border-radius: 14px;
+  font: inherit; text-align: left; color: var(--text-primary); cursor: pointer;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.rt-szerk .rt-pickrow .t-ico { flex: none; width: 28px; height: 28px; }
+.rt-szerk .rt-pickrow-gr { font-size: 13.5px; font-weight: 600; }
+.rt-szerk .rt-pickrow-cv { color: var(--text-muted); }
+
+/* ── Új szokás-recept (wizard) ── */
+.rt-wiz .stepper-head { margin: 12px 2px 8px; }
+.rt-wiz .stepper-title { font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted); }
+.rt-wiz .stepper-count { color: color-mix(in srgb, var(--dv-amber) 75%, var(--text-primary)); }
+.rt-wiz .stepper-dots { gap: 6px; }
+.rt-wiz .stepper-dot { flex: 1; width: auto; height: 6px; border: 0; border-radius: 999px; background: rgba(245, 239, 230, 0.07); }
+.rt-wiz .stepper-dot.done { background: color-mix(in srgb, var(--dv-amber) 45%, transparent); }
+.rt-wiz .stepper-dot.active { background: var(--dv-amber); box-shadow: 0 0 8px color-mix(in srgb, var(--dv-amber) 60%, transparent); }
+.rt-wiz .stepper-label { flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; color: var(--text-secondary); }
+.rt-wiz .rt-wtitle { padding: 10px 2px 2px; text-align: left; font-size: 19px; font-weight: 600; letter-spacing: -0.5px; color: var(--text-primary); }
+.rt-wiz .rt-wsub { padding: 0 2px 4px; text-align: left; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+/* the framework cards: gold glass; the picked one glows */
+.rt-wiz .rt-fwcard.glass {
+  --c: var(--dv-amber);
+  display: flex; gap: 12px; align-items: flex-start; width: 100%; margin: 12px 0 0; padding: 14px; border-radius: 20px;
+  font: inherit; text-align: left; color: var(--text-primary); cursor: pointer;
+}
+.rt-wiz .rt-fwcard.glass.on {
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 30%, transparent), transparent 66%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 30px -4px color-mix(in srgb, var(--c) 55%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.12);
+}
+.rt-wiz .rt-fwcard .rt-fwsgn, .rt-wiz .rt-fwcard.glass.on .rt-fwsgn {
+  width: 44px; height: 44px; flex: none; display: grid; place-items: center; border-radius: 0; background: none; color: inherit;
+}
+.rt-wiz .rt-fwcard b { display: block; font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.rt-wiz .rt-fwcard small { display: block; margin-top: 3px; font-size: 12px; line-height: 1.45; color: var(--text-secondary); }
+.rt-wiz .rt-fwwho { margin-top: 8px; font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-muted); }
+.rt-wiz .rt-fwloop { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 10px; }
+.rt-wiz .rt-fwloop span {
+  padding: 3px 9px; border-radius: 999px; font: 500 11.5px/1.3 var(--ff-body); letter-spacing: 0; text-transform: none;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.rt-wiz .rt-fwloop i { font-style: normal; font-size: 11px; color: var(--text-muted); }
+/* life areas: flat cells with the 3D life icons, the picked one lavender-lit */
+.rt-wiz .rt-lifegrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.rt-wiz .rt-lifegrid button {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; padding: 8px 2px;
+  border: 0; border-radius: 14px; cursor: pointer;
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.rt-wiz .rt-lifegrid button small {
+  max-width: 100%; font-size: 10px; font-weight: 600; color: var(--text-secondary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rt-wiz .rt-lifegrid button.on {
+  background: color-mix(in srgb, var(--dv-lav) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-lav) 55%, transparent);
+}
+.rt-wiz .rt-lifegrid button.on small { color: var(--text-primary); }
+/* the commitment tick — gates the save, never a habit tick */
+.rt-wiz .rt-commit {
+  display: flex; align-items: center; gap: 12px; width: 100%; margin: 14px 0 0; padding: 12px 14px;
+  border: 0; border-radius: 16px; font: inherit; text-align: left; color: var(--text-primary); cursor: pointer;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.rt-wiz .rt-commit.on {
+  background: color-mix(in srgb, var(--dv-amber) 8%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 45%, transparent);
+}
+.rt-wiz .rt-commit .rt-commit-box {
+  width: 24px; height: 24px; flex: none; border: 0; border-radius: 7px; display: grid; place-items: center;
+  background: none; box-shadow: inset 0 0 0 1.5px var(--dv-amber);
+}
+.rt-wiz .rt-commit.on .rt-commit-box { background: var(--dv-amber); box-shadow: 0 0 10px var(--dv-amber); }
+.rt-wiz .rt-commit-box .t-ico { width: 20px; height: 20px; filter: none; }
+.rt-wiz .rt-commit b { display: block; font-size: 13.5px; font-weight: 600; }
+.rt-wiz .rt-commit small { display: block; font-size: 11.5px; line-height: 1.4; color: var(--text-secondary); }
+.rt-wiz .rt-wnav { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 10px; margin-top: 18px; }
+.rt-wiz .rt-wnav > :only-child { grid-column: 1 / -1; }
+.rt-wiz .rt-wnav .rt-ghostpill { min-height: 46px; font-size: 14px; }
+
+/* ── the rutin sheets (AI javaslat, Új rutin, Mihez kötöd?): ONE floating glass (U2 rule 15) ── */
+.sheet.glass.rt-sheet {
+  --c: var(--dv-amber);
+  position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
+  overflow-x: hidden; overflow-y: auto; border-radius: 30px; padding: 4px 18px 18px;
+}
+.sheet.glass.rt-sheet.is-lav { --c: var(--dv-lav); }
+.sheet.glass.rt-sheet .sheet-handle { background: rgba(245, 239, 230, 0.22); }
+.rt-sheet .rt-shh { display: flex; align-items: flex-start; gap: 12px; margin: 4px 0 8px; }
+.rt-sheet .rt-shh > .t-ico { flex: none; }
+.rt-sheet .rt-shh-t { flex: 1; min-width: 0; }
+.rt-sheet .rt-shh-eb {
+  display: block; font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 80%, var(--text-primary));
+}
+.rt-sheet .rt-shh h2 { margin: 2px 0 0; font: 600 21px/1.2 var(--ff-display); letter-spacing: -0.6px; color: var(--text-primary); }
+.rt-sheet .rt-shh .rt-hint { margin: 4px 0 0; }
+.rt-sheet .rt-shx {
+  flex: none; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.rt-sheet .rt-field { display: block; margin-top: 6px; }
+.rt-sheet .rt-field .rt-fin { margin-top: 0; }
+/* the AI proposals: flat rows inside the glass (never glass in glass, rule 5) */
+.rt-sheet .card.rt-aicard {
+  padding: 13px 14px; border: 0; border-radius: 16px; filter: none;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.rt-sheet .rt-aicard.is-off p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+.rt-sheet .rt-aicard-t { font: 600 15px/1.25 var(--ff-display); color: var(--text-primary); }
+.rt-sheet .rt-aicard-why { margin: 5px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+.rt-sheet .rt-aicard-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.rt-sheet .rt-aicard-chips .chip {
+  min-width: 0; max-width: 100%; padding: 3px 9px; border: 0; border-radius: 999px; font-size: 11px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.rt-sheet .rt-aicard-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.rt-sheet .rt-aicard-acts .chip { min-height: 36px; padding: 7px 14px; border: 0; border-radius: 999px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.rt-sheet .rt-aicard-acts .chip.rt-aicard-ok {
+  color: var(--canvas); background: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 45%, transparent);
+}
+.rt-sheet .rt-aicard-acts .chip.rt-aicard-no {
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+/* the anchor picker: flat option rows, the chosen one lit with a glowing radio */
+.rt-sheet .rt-optgrp {
+  margin: 14px 2px 8px; font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted);
+}
+.rt-sheet .rt-optrow {
+  display: flex; align-items: center; gap: 11px; width: 100%; margin: 0 0 6px; padding: 10px 12px; border: 0; border-radius: 14px;
+  font: inherit; text-align: left; color: var(--text-primary); cursor: pointer;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.rt-sheet .rt-optrow .t-ico { flex: none; width: 28px; height: 28px; }
+.rt-sheet .rt-optrow-nm { font-size: 13.5px; font-weight: 600; }
+.rt-sheet .rt-optrow-nm small { font-size: 11px; font-weight: 400; color: var(--text-muted); }
+.rt-sheet .rt-optrow-rad { width: 18px; height: 18px; border: 0; border-radius: 50%; background: none; box-shadow: inset 0 0 0 1.5px var(--text-muted); }
+.rt-sheet .rt-optrow.on {
+  background: color-mix(in srgb, var(--c) 10%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent);
+}
+.rt-sheet .rt-optrow.on .rt-optrow-rad { background: none; box-shadow: inset 0 0 0 5px var(--c), 0 0 8px var(--c); }
+.rt-sheet .rt-optrow.is-unlink { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 30%, transparent); }
+.rt-sheet .rt-optrow.is-unlink .rt-optrow-nm { color: color-mix(in srgb, var(--dv-coral) 55%, var(--text-primary)); }
+
+@media (max-width: 360px) {
+  .rt-szokasok .rt-fgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rt-wiz .rt-lifegrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .rt-hub .rt-nextcard .rt-bigtick { width: 54px; height: 54px; }
+}
 /* ── /uveg en2 rutin ── */
 
 /* ── uveg en2 naplo (mezo-me75u.7) ── /me/naplo + journal / decision sheets ── */
+/* Reference: docs/design_2.0/prototypes/src/uveg-en2-body.html `naplo()`, SH.journal, SH.decision
+   (CSS `.decc .rate .decdone .month .jnote`). Ranking (bible §3.4): the hero is the frameless sage
+   t-journal halo with the gratitude streak as the numeral (PageHero `art`); the Hálanapló streak is
+   ONE sage glass card; each open decision is ONE gold glass card (1–4 flat, „5 · bevált" the lit
+   gold pill; the settled row a t-tick line inside that same gold glass); the notes are flat cells;
+   the empty window is dashed. Everything is scoped to `.mzj-page` / `.mzj-decsheet` — the old
+   `mzh-*`/`mzp-*`/`mem-*` classes serve the Mezo hub, predictions and memoir too (U2 rule 13).
+   The JournalSheet is the shared capture sheet (glass since U3, `── uveg nap rogzites (`, also
+   opened from Nap and quick input — rule 43), so it is not restyled here; the DecisionReviewSheet
+   joins that same capture-sheet material in gold and only its header + quote are dressed below. */
+.mzj-page { --c: var(--dv-sage); }
+.mzj-page.mz-page { background: transparent; }
+
+/* page head: the lit sage „Új bejegyzés" pill with t-note (a filled CTA restates every colour, rule 36) */
+.mzj-page .mz-pgact.mzj-newbtn {
+  display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 62%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  border: 0; padding: 8px 14px 8px 10px; min-height: 40px; border-radius: 999px;
+  font: 700 12.5px/1.2 var(--ff-body); color: #191614; background: var(--dv-sage);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--dv-sage) 55%, transparent);
+}
+.mzj-page .mz-pgact.mzj-newbtn .t-ico { flex: 0 0 auto; filter: none; }
+.mzj-page .mz-pgact.mzj-newbtn:focus-visible { outline: 2px solid var(--dv-sage); outline-offset: 3px; }
+
+/* hero: sage halo, a warm second hue */
+.mzj-page .mz-page-hero.uv-hero { --c2: var(--dv-amber); }
+
+/* section eyebrows (`h3('DÖNTÉSEK')`, the month line) */
+.mzj-page .mz-eyebrow.mzj-sech, .mzj-page .mz-eyebrow.mzj-month {
+  display: block; margin: 8px 2px 2px; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.mzj-page .mz-eyebrow.mzj-month { margin: 6px 2px 8px; }
+
+/* ── the Hálanapló streak: ONE sage glass card ── */
+.mzj-page .mzj-grat.glass { --c: var(--dv-sage); padding: 15px 15px 14px; border: 0; border-radius: 22px; }
+.mzj-page .mzj-grat-top { display: flex; align-items: center; gap: 10px; }
+.mzj-page .mzj-grat-top > .t-ico { width: 34px; height: 34px; }
+.mzj-page .mzj-grat .mzj-gtitle { display: block; font-size: 15px; font-weight: 600; letter-spacing: -0.3px; color: var(--text-primary); }
+.mzj-page .mzj-grat .mzj-gsub { margin-top: 3px; font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); }
+/* „él a sorozat": a flat sage chip with the t-flame (secondary, inside the glass) */
+.mzj-page .mzj-gchip {
+  flex: 0 1 auto; min-width: 0; display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px 4px 6px;
+  border-radius: 999px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 600 11px/1.2 var(--ff-body); color: color-mix(in srgb, var(--dv-sage) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-sage) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-sage) 30%, transparent);
+}
+.mzj-page .mzj-gchip .t-ico { flex: 0 0 auto; filter: none; }
+
+/* ── a decision: ONE gold glass card (the prototype `.decc`) ── */
+.mzj-page .mzj-deccard.glass { --c: var(--dv-amber); padding: 15px; border: 0; border-radius: 22px; }
+.mzj-page .mzj-dechead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.mzj-page .mzj-dechead .mz-eyebrow {
+  min-width: 0; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--dv-amber) 70%, var(--text-muted));
+}
+.mzj-page .mzj-decchip {
+  min-width: 0; max-width: 100%; display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px 4px 6px;
+  border-radius: 999px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 600 11px/1.2 var(--ff-body); color: color-mix(in srgb, var(--dv-amber) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-amber) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 30%, transparent);
+}
+.mzj-page .mzj-decchip.is-wait { color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.mzj-page .mzj-decchip .t-ico { flex: 0 0 auto; filter: none; }
+.mzj-page .mzj-deccard .mzj-decq { margin: 8px 0 0; font-size: 15px; font-weight: 400; line-height: 1.5; color: var(--text-primary); }
+/* the 1–5 row: four flat cells + the lit gold „5 · bevált" */
+.mzj-page .mzj-rate { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.8fr); gap: 6px; margin-top: 12px; }
+.mzj-page .mzj-rate button {
+  min-width: 0; min-height: 44px; padding: 0 6px; border: 0; border-radius: 12px; cursor: pointer;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center;
+  font: 600 14px/1 var(--ff-body); font-variant-numeric: tabular-nums;
+}
+.mzj-page .mzj-rate .mzj-rate-n { color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.mzj-page .mzj-rate .mzj-rate-cta {
+  font-size: 13px; font-weight: 700; color: #191614; background: var(--dv-amber);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--dv-amber) 50%, transparent);
+}
+.mzj-page .mzj-rate button:focus-visible { outline: 2px solid var(--dv-amber); outline-offset: 2px; }
+.mzj-page .mzj-deccard .mzj-decfoot { margin: 8px 0 0; padding: 0; font-size: 11px; font-weight: 400; line-height: 1.4; color: var(--text-muted); }
+/* the settled state: a t-tick line, inside the same gold glass */
+.mzj-page .mzj-decdone {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  font: 600 13px/1.3 var(--ff-body); color: color-mix(in srgb, var(--dv-sage) 60%, #fff);
+}
+.mzj-page .mzj-decdone > .t-ico { flex: 0 0 auto; }
+.mzj-page .mzj-decdone .mzj-decprose {
+  margin-left: auto; min-height: 44px; padding: 6px 4px 6px 10px; border: 0; background: none; cursor: pointer;
+  font: 600 12px/1.2 var(--ff-body); color: color-mix(in srgb, var(--dv-amber) 60%, #fff); box-shadow: none;
+}
+.mzj-page .mzj-decdone .mzj-decprose:focus-visible { outline: 2px solid var(--dv-amber); outline-offset: 2px; border-radius: 10px; }
+@media (max-width: 360px) {
+  .mzj-page .mzj-rate { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .mzj-page .mzj-rate .mzj-rate-cta { grid-column: 1 / -1; }
+}
+
+/* ── the notes: flat cells (secondary, not glass — the prototype `.jnote`) ── */
+.mzj-page .mzj-note {
+  display: block; width: 100%; margin: 0; padding: 13px 15px; border: 0; border-radius: 18px;
+  text-align: left; cursor: pointer; font-family: inherit;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.mzj-page .mzj-note:focus-visible { outline: 2px solid var(--dv-sage); outline-offset: 2px; }
+.mzj-page .mzj-note-dl {
+  display: block; font: 600 10.5px/1.2 var(--ff-body); letter-spacing: 1px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--dv-sage) 70%, var(--text-primary));
+}
+.mzj-page .mzj-note-bd { margin: 5px 0 0; font-size: 14px; font-weight: 400; line-height: 1.55; color: var(--text-primary); overflow-wrap: anywhere; }
+/* „Korábbi hónapok": a flat pager (the prototype `.btn.flatb`) */
+.mzj-page .mzj-more {
+  display: flex; align-items: center; justify-content: center; width: 100%; min-height: 48px; margin-top: 4px;
+  padding: 12px 16px; border: 0; border-radius: 18px; cursor: pointer;
+  font: 600 14px/1.2 var(--ff-body); color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.mzj-page .mzj-more:focus-visible { outline: 2px solid var(--dv-sage); outline-offset: 2px; }
+
+/* ── states: loading skeletons flat on the dark ground, the error ghost flat, the empty window dashed ── */
+.mzj-page .mzj-skel.card {
+  border: 0; border-radius: 18px; filter: none;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.mzj-page .mzj-ghost > .card, .mzj-page .mzj-empty > .card { border: 0; filter: none; background: none; box-shadow: none; }
+.mzj-page .mzj-ghost { border-radius: 18px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.mzj-page .mzj-empty.uv-empty { --c: var(--dv-sage); border-radius: 22px; }
+.mzj-page :is(.mzj-ghost, .mzj-empty) .cta-primary {
+  width: auto; min-height: 44px; padding: 10px 18px; border: 0; border-radius: 999px;
+  font: 700 13px/1.2 var(--ff-body); color: #191614; background: var(--dv-sage);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--dv-sage) 50%, transparent);
+}
+
+/* ── the decision review sheet: the shared glass capture sheet, in gold ── */
+.mzj-decsheet { --capture-accent: var(--dv-amber); }
+.mzj-decsheet .mzj-dsh-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.mzj-decsheet .mzj-dsh-head > .t-ico {
+  width: 48px; height: 48px; flex: 0 0 auto;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 14px color-mix(in srgb, var(--dv-amber) 45%, transparent));
+}
+.mzj-decsheet .mzj-grow { flex: 1; min-width: 0; }
+.mzj-decsheet .mzj-dsh-eb {
+  display: block; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted);
+}
+.mzj-decsheet .mzj-dsh-title { margin: 2px 0 0; font: 600 21px/1.2 var(--ff-display); letter-spacing: -0.6px; color: var(--text-primary); }
+.mzj-decsheet .mzj-dsh-quote {
+  padding: 12px 14px; border-radius: 16px;
+  background: color-mix(in srgb, var(--dv-amber) 7%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 26%, transparent);
+}
+.mzj-decsheet .mzj-dsh-quote p { font-size: 14.5px; line-height: 1.55; color: var(--text-primary); }
+.mzj-decsheet .mzj-dsh-rate { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.mzj-decsheet .mzj-dsh-rate .chip { justify-content: center; min-height: 44px; padding: 0; border-radius: 12px; font-size: 14px; }
 
 /* ── /uveg en2 naplo ── */
 
 /* ── uveg en2 emberek (mezo-me75u.7) ── /me/people(+/jeloltek,/kor,/emlitesek,/heti,/:id) + person log / edit sheets ── */
+/* Reference: docs/design_2.0/prototypes/src/uveg-en2-body.html `emberek()`, `jeloltek()`, `kor()`,
+   `emlitesek()`, `heti()`, `ember()` and the `plog` / `pedit` sheets (owner OK). Every rule is
+   scoped to a page root — `.ppl-hub`, `.ppl-jel`, `.ppl-kor`, `.ppl-eml`, `.ppl-heti`,
+   `.ppl-detail` (all `.ppl-page`) — or to the portalled `.ppl-sheet`, because the old `ppl-*`
+   skin further up is unscoped and light-world (bible rule 13); the old candidate / badge / FIGYELEM
+   pulses are switched off here, not deleted. Ranking (§3.4): every hero is a frameless halo (the
+   person page keeps its own ringed-avatar hero); the hub tiles, person cards, candidate card,
+   rhythm / tone / direction / moment / quiet cards and the person page's section cards are
+   `.glass` with ONE `--c`; stat cells, chips, mention rows, timeline / graph / quiet rows are flat;
+   empty is dashed. Colour carries the TONE (rule 46): the `--ppl-tone-*` tokens resolve to the
+   Mozaik accents inside these roots — Jó sage, OK sky, Vegyes amber, Nehéz coral. */
+.ppl-page.mz-page { background: transparent; }
+.ppl-page, .ppl-sheet {
+  --ppl-tone-jo: var(--dv-sage);
+  --ppl-tone-ok: var(--dv-sky);
+  --ppl-tone-vegyes: var(--dv-amber);
+  --ppl-tone-nehez: var(--dv-coral);
+}
+.ppl-hub, .ppl-kor, .ppl-detail { --c: var(--dv-rose); }
+.ppl-jel { --c: var(--dv-amber); }
+.ppl-eml { --c: var(--dv-sky); }
+.ppl-heti { --c: var(--dv-lav); }
+.ppl-page .mz-page-hero.uv-hero { --c2: var(--dv-lav); }
+
+/* ── the glass body, restated: the old wash / card rules outrank `.glass` (rule 11) ── */
+.ppl-hub .ppl-hub-tile.glass, .ppl-kor .ppl-tile.glass, .ppl-jel .ppl-candt.glass,
+.ppl-eml .ppl-rhythm.glass, .ppl-heti .ppl-tonemixc.glass, .ppl-heti .ppl-dirt.glass,
+.ppl-heti .ppl-momentt.glass, .ppl-heti .ppl-quietcard.glass,
+.ppl-detail .ppl-trendcard.glass, .ppl-detail .ppl-ctxcard.glass, .ppl-detail .ppl-evtcard.glass,
+.ppl-detail .ppl-tlcard.glass {
+  border: 0; color: var(--text-primary);
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.60));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.10),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.ppl-hub .ppl-hub-tile:focus-visible, .ppl-kor .ppl-tile:focus-visible, .ppl-heti .ppl-dirt:focus-visible,
+.ppl-detail .ppl-evt:focus-visible, .ppl-page .ppl-act:focus-visible, .ppl-eml .ppl-fchip:focus-visible,
+.ppl-detail .ppl-logcta:focus-visible {
+  outline: 2px solid var(--c); outline-offset: 2px;
+}
+
+/* ── the page head: the lit „Log" pill (t-mic) and the flat „＋ Új személy" / „Szerkesztés" ── */
+.ppl-page .mz-page-head .pgact.ppl-act {
+  min-width: 0; min-height: 40px; padding: 0 14px; gap: 6px; border: 0; border-radius: 999px;
+  font: 700 12.5px/1.2 var(--ff-body); overflow: hidden; text-overflow: ellipsis;
+}
+.ppl-page .mz-page-head .pgact.ppl-act { margin-left: auto; }
+.ppl-page .pgact.ppl-act-lit {
+  color: #191614; background: var(--c);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.ppl-page .pgact.ppl-act-flat {
+  font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.ppl-page .ppl-act .t-ico { width: 18px; height: 18px; filter: none; }
+.ppl-page .mz-page-head .pgact.ppl-act + .pgact.ppl-act { margin-left: 0; }
+
+/* ── flat stat cells (hub + person page) ── */
+.ppl-page .ppl-stats.mz-statstrip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ppl-page .ppl-stats .mz-statcell {
+  min-width: 0; padding: 10px 6px; border: 0; border-radius: 14px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.ppl-page .ppl-stats .mz-statcell b {
+  font-size: 20px; font-weight: 600; letter-spacing: -0.6px; color: var(--text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ppl-page .ppl-stats .mz-statcell small { display: block; margin-top: 2px; font-size: 10px; line-height: 1.3; color: var(--text-muted); }
+.ppl-detail .ppl-stat-tone {
+  color: color-mix(in srgb, var(--c) 80%, var(--text-primary));
+  text-shadow: 0 0 12px color-mix(in srgb, var(--c) 45%, transparent);
+}
+
+/* ── section eyebrows, footnotes, the dashed empty state ── */
+.ppl-page .ppl-lsec { display: flex; align-items: baseline; gap: 10px; padding: 18px 2px 8px; }
+.ppl-page .ppl-lsec .mz-eyebrow { font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; color: var(--text-muted); }
+.ppl-page .ppl-lsec .ppl-cnt, .ppl-page .ppl-lsec .ppl-lcnt {
+  margin-left: auto; font-size: 11px; font-weight: 500; color: var(--text-muted);
+}
+.ppl-page .ppl-foot {
+  margin: 18px 6px 0; padding: 12px 0 0; border-top: 1px solid var(--divider);
+  font-size: 11.5px; font-weight: 400; line-height: 1.5; color: var(--text-muted); text-align: center;
+}
+.ppl-page .ppl-empty.uv-empty {
+  padding: 14px 16px; border-radius: 20px; text-align: left;
+  border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent);
+  background: rgba(245, 239, 230, 0.025); box-shadow: none;
+  font-size: 12.5px; font-weight: 400; line-height: 1.5; color: var(--text-secondary);
+}
+
+/* ── the person avatar: a lit well ringed in the person's tone (`--pc`, or the card's `--c`) ── */
+.ppl-page .ppl-mavat, .ppl-page .ppl-fp-avat {
+  --ring: var(--pc, var(--c));
+  flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%;
+  font-family: var(--ff-body); font-weight: 600; color: var(--text-primary);
+  background: radial-gradient(circle at 35% 28%, #3A332D, color-mix(in srgb, var(--ring) 16%, #1E1B18));
+}
+.ppl-page .ppl-mavat {
+  width: 26px; height: 26px; font-size: 11px;
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--ring) 70%, transparent);
+}
+
+/* ═══ Hub ═══ */
+.ppl-hub .mz-mosaic { gap: 10px; }
+.ppl-hub .ppl-hub-tile.ppl-hub-gold { --c: var(--dv-amber); }
+.ppl-hub .ppl-hub-tile.ppl-hub-rose { --c: var(--dv-rose); }
+.ppl-hub .ppl-hub-tile.ppl-hub-sky  { --c: var(--dv-sky); }
+.ppl-hub .ppl-hub-tile.ppl-hub-lav  { --c: var(--dv-lav); }
+.ppl-hub .ppl-hub-tile.glass {
+  display: flex; flex-direction: column; align-items: stretch; gap: 5px; min-width: 0; min-height: 138px;
+  padding: 13px; border-radius: 20px; text-align: left;
+}
+.ppl-hub .ppl-hub-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; min-height: 42px; }
+.ppl-hub .ppl-hub-top .t-ico { width: 42px; height: 42px; }
+.ppl-hub .ppl-hub-tile .mz-eyebrow {
+  margin-top: auto; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px;
+  color: color-mix(in srgb, var(--c) 70%, var(--text-primary));
+}
+.ppl-hub .ppl-hub-main {
+  font-size: 14.5px; font-weight: 600; letter-spacing: -0.2px; line-height: 1.3; color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+.ppl-hub .ppl-hub-line {
+  margin: 0; font-size: 11px; font-weight: 400; line-height: 1.35; color: var(--text-secondary);
+  -webkit-line-clamp: 2;
+}
+/* the count badge: a lit pill in the tile's hue (the flag count coral) */
+.ppl-hub .ppl-hub-top .ppl-hub-badge {
+  position: static; min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px;
+  display: grid; place-items: center; font-size: 11px; font-weight: 700; color: #191614;
+  background: var(--c); box-shadow: 0 0 10px color-mix(in srgb, var(--c) 55%, transparent); animation: none;
+}
+.ppl-hub .ppl-hub-top .ppl-hub-badge.ppl-hub-badge-alert {
+  background: var(--dv-coral); box-shadow: 0 0 10px color-mix(in srgb, var(--dv-coral) 55%, transparent);
+}
+/* the facepile: tone-ringed wells, overlapping, cut by a ground ring */
+.ppl-hub .ppl-facepile { display: flex; padding-top: 4px; }
+.ppl-hub .ppl-facepile .ppl-fp-avat {
+  width: 28px; height: 28px; margin: 0 -6px 0 0; font-size: 11px;
+  box-shadow: 0 0 0 2px var(--canvas), 0 0 0 3.5px color-mix(in srgb, var(--ring) 60%, transparent);
+}
+.ppl-hub .ppl-facepile .ppl-fp-avat:first-child { margin-left: 0; }
+
+/* ═══ Jelöltek ═══ */
+.ppl-jel .ppl-candt.glass { --c: var(--dv-amber); display: block; margin-bottom: 12px; padding: 15px; border-radius: 22px; text-align: left; }
+/* the old light candidate pulse would repaint the glass shadow: off, but the entrance stays */
+.ppl-jel .ppl-candt.glass { animation: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .ppl-jel .mz-play .ppl-candt.glass.rise {
+    animation: mz-rise 0.5s cubic-bezier(0.22, 0.9, 0.32, 1.15) forwards; animation-delay: var(--d, 0ms);
+  }
+}
+.ppl-jel .ppl-candt-head { display: flex; align-items: center; gap: 10px; }
+.ppl-jel .ppl-candt-head .t-ico { width: 38px; height: 38px; }
+.ppl-jel .ppl-candt-head b { flex: 1; min-width: 0; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+.ppl-jel .ppl-candchip {
+  flex: 0 0 auto; padding: 4px 9px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--c) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent);
+}
+.ppl-jel .ppl-candt-q {
+  margin-top: 10px; font-family: var(--ff-body); font-style: normal; font-size: 14px; font-weight: 400;
+  line-height: 1.55; color: var(--text-primary);
+}
+.ppl-jel .ppl-candt-ev { margin-top: 8px; font-size: 11.5px; font-weight: 500; color: var(--text-muted); }
+.ppl-jel .ppl-candbtns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.ppl-jel .ppl-candbtns button {
+  min-width: 0; min-height: 44px; padding: 8px 12px; border: 0; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font: 700 12.5px/1.25 var(--ff-body); cursor: pointer;
+}
+.ppl-jel .ppl-candbtns .ppl-ghost {
+  font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.ppl-jel .ppl-candbtns .ppl-cta-gold {
+  color: #191614; background: var(--dv-amber);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--dv-amber) 55%, transparent);
+}
+.ppl-jel .ppl-candbtns .t-ico { width: 18px; height: 18px; filter: none; }
+.ppl-jel .ppl-candbtns button:focus-visible { outline: 2px solid var(--dv-amber); outline-offset: 2px; }
+
+/* ═══ A köröm: person cards, glass in the person's own tone (PersonCard sets --c) ═══ */
+.ppl-kor .ppl-grid { gap: 10px; }
+.ppl-kor .ppl-tile.glass {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0;
+  padding: 14px 10px 12px; border-radius: 20px; text-align: center;
+}
+.ppl-kor .ppl-avat {
+  position: relative; width: 50px; height: 50px; border-radius: 50%;
+  background: conic-gradient(var(--c) var(--av), rgba(245, 239, 230, 0.08) 0);
+  box-shadow: 0 0 14px -3px var(--c);
+}
+.ppl-kor .ppl-avat .ppl-avin {
+  width: 42px; height: 42px; font-family: var(--ff-body); font-size: 17px; font-weight: 600; color: var(--text-primary);
+  background: radial-gradient(circle at 35% 28%, #3A332D, color-mix(in srgb, var(--c) 16%, #1E1B18));
+}
+.ppl-kor .ppl-nm { margin-top: 4px; font-size: 14.5px; font-weight: 600; color: var(--text-primary); max-width: 100%; overflow-wrap: anywhere; }
+.ppl-kor .ppl-rl {
+  font-size: 10.5px; font-weight: 400; letter-spacing: 0; text-transform: none; line-height: 1.3; color: var(--text-muted);
+  max-width: 100%; overflow-wrap: anywhere;
+}
+.ppl-kor .ppl-spark { height: 22px; gap: 3px; }
+.ppl-kor .ppl-spark i { width: 5px; background: var(--c); box-shadow: 0 0 5px -1px var(--c); }
+.ppl-kor .ppl-ctxdots { gap: 4px; }
+.ppl-kor .ppl-ctxdots i { box-shadow: 0 0 5px var(--dc); }
+.ppl-kor .ppl-mt { font-size: 10.5px; line-height: 1.3; color: var(--text-muted); }
+
+/* ═══ Említések ═══ */
+.ppl-eml .ppl-rhythm.glass { --c: var(--dv-sky); display: block; margin-bottom: 6px; padding: 15px 15px 12px; border-radius: 22px; }
+.ppl-eml .ppl-rhythm .mz-tile-top { display: flex; align-items: baseline; justify-content: space-between; }
+.ppl-eml .ppl-rhythm .mz-eyebrow { font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; color: var(--text-muted); }
+.ppl-eml .ppl-rhythm-count { font-size: 11px; font-weight: 500; color: var(--text-muted); }
+.ppl-eml .ppl-rcols { gap: 8px; height: 78px; margin-top: 12px; }
+.ppl-eml .ppl-rbar {
+  max-width: 22px; margin: 0 auto; border-radius: 6px 6px 3px 3px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tc) 60%, #fff), var(--tc));
+  box-shadow: 0 0 8px -2px var(--tc);
+}
+.ppl-eml .ppl-rbar[data-empty] { background: rgba(245, 239, 230, 0.12); box-shadow: none; }
+.ppl-eml .ppl-rcol-today .ppl-rbar { box-shadow: 0 0 8px -2px var(--tc), 0 0 0 1.5px color-mix(in srgb, var(--text-primary) 55%, transparent); }
+.ppl-eml .ppl-rax { gap: 8px; margin-top: 5px; }
+.ppl-eml .ppl-rax span { font-size: 9.5px; font-weight: 500; letter-spacing: 0; color: var(--text-muted); }
+.ppl-eml .ppl-rax .ppl-rax-today { font-weight: 700; color: var(--text-primary); }
+/* filter chips: flat; the active one lit in its own colour (scope chips sky) */
+.ppl-eml .ppl-chiprow { gap: 6px; margin: 10px 0 12px; }
+.ppl-eml .ppl-fchip {
+  --c: var(--dv-sky);
+  min-width: 0; min-height: 36px; padding: 6px 11px; border: 0; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 6px;
+  font: 600 11.5px/1.2 var(--ff-body); color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.ppl-eml .ppl-fchip-dot { margin: 0; width: 7px; height: 7px; background: var(--c); box-shadow: 0 0 6px var(--c); }
+.ppl-eml .ppl-fchip.on {
+  color: #191614; background: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.ppl-eml .ppl-fchip.on .ppl-fchip-dot { background: #191614; box-shadow: none; }
+/* mention rows: a SECONDARY list — flat tone-edged cells, never glass */
+.ppl-eml .ppl-mrowt {
+  display: block; margin-bottom: 8px; padding: 12px 14px; border: 0; border-radius: 18px;
+  background: rgba(245, 239, 230, 0.03); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.ppl-eml .ppl-mrowt.ppl-tw-jo, .ppl-eml .ppl-mrowt.ppl-tw-vegyes, .ppl-eml .ppl-mrowt.ppl-tw-nehez {
+  background: color-mix(in srgb, var(--tc) 6%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px var(--divider), inset 3px 0 0 color-mix(in srgb, var(--tc) 70%, transparent);
+}
+.ppl-eml .ppl-mtop { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; min-width: 0; }
+.ppl-eml .ppl-srcdisc { width: 22px; height: 22px; background: none; box-shadow: none; }
+.ppl-eml .ppl-srcdisc .t-ico { width: 22px; height: 22px; }
+.ppl-eml .ppl-mname { flex: 0 1 auto; min-width: 0; font-size: 13.5px; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ppl-eml .ppl-msrc {
+  flex: 0 1 auto; min-width: 0; font-size: 11px; font-weight: 400; letter-spacing: 0; text-transform: none;
+  color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ppl-eml .ppl-mundo {
+  width: 32px; height: 32px; margin-left: auto; opacity: 1; font-size: 12px; color: var(--text-muted);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.ppl-eml .ppl-mundo:hover { background: rgba(245, 239, 230, 0.09); }
+.ppl-eml .ppl-mundo:focus-visible { outline: 2px solid var(--dv-sky); outline-offset: 2px; }
+.ppl-eml .ppl-mx {
+  margin: 7px 0 0; font-family: var(--ff-body); font-style: normal; font-size: 13.5px; font-weight: 400;
+  line-height: 1.5; color: var(--text-primary);
+}
+.ppl-eml .ppl-mchips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ppl-eml .ppl-mchips > * {
+  min-width: 0; max-width: 100%; display: inline-flex; align-items: center; gap: 5px; margin: 0;
+  padding: 4px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0; text-transform: none;
+}
+.ppl-eml .ppl-ctxch {
+  color: color-mix(in srgb, var(--dc) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--dc) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dc) 30%, transparent);
+}
+/* FIGYELEM stays a coral flat pill, calm (the old amber pulse is off) */
+.ppl-eml .ppl-mchips .ppl-figy {
+  padding: 3px 7px; border-radius: 6px; font-size: 9.5px; font-weight: 700; letter-spacing: 1px;
+  color: #FFB39C; background: rgba(255, 126, 92, 0.1); box-shadow: inset 0 0 0 1px rgba(255, 126, 92, 0.35); animation: none;
+}
+.ppl-eml .ppl-mchips .ppl-mtie {
+  color: color-mix(in srgb, var(--dv-sky) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-sky) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-sky) 30%, transparent);
+}
+.ppl-eml .ppl-mtie .t-ico { width: 16px; height: 16px; filter: none; }
+.ppl-eml .ppl-mtie .ppl-mtielbl { font-size: 11px; font-weight: 600; color: inherit; }
+.ppl-eml .ppl-mtie .ppl-mtielbl::after { content: ' ·'; }
+.ppl-eml .ppl-mtie .ppl-mtiechip {
+  min-width: 0; padding: 0; font-size: 11px; font-weight: 600; color: inherit; background: none;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ═══ Heti kép ═══ */
+.ppl-heti .ppl-tonemixc.glass { --c: var(--dv-lav); display: block; padding: 15px 15px 14px; border-radius: 22px; }
+/* no toned mention yet: the card itself is free space — dashed, no glass */
+.ppl-heti .ppl-tonemixc.uv-empty { display: block; padding: 15px; border-radius: 22px; }
+.ppl-heti .ppl-tonemix-emptytx { margin: 10px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+.ppl-heti .ppl-tonemixc .mz-tile-top { display: flex; align-items: baseline; justify-content: space-between; }
+.ppl-heti .ppl-tonemixc .mz-eyebrow { font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; color: var(--text-muted); }
+.ppl-heti .ppl-mixcnt { font-size: 11px; font-weight: 500; color: var(--text-muted); }
+.ppl-heti .ppl-tonemix { height: 12px; margin-top: 12px; border-radius: 6px; background: rgba(245, 239, 230, 0.07); }
+.ppl-heti .ppl-tonemix i { box-sizing: border-box; border-right: 2px solid rgba(30, 27, 24, 0.9); box-shadow: 0 0 8px -2px var(--tc); }
+.ppl-heti .ppl-tonemix i:last-child { border-right: 0; }
+.ppl-heti .ppl-mixleg { gap: 14px; margin-top: 10px; }
+.ppl-heti .ppl-mixleg span { gap: 6px; font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+.ppl-heti .ppl-mixleg i { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 5px var(--tc); }
+/* direction cards: glass in the direction's colour */
+.ppl-heti .ppl-dirgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.ppl-heti .ppl-dirt.glass {
+  display: flex; flex-direction: column; align-items: stretch; gap: 6px; min-width: 0;
+  padding: 12px; border-radius: 20px; text-align: left;
+}
+.ppl-heti .ppl-dirhead { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ppl-heti .ppl-dirhead b { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ppl-heti .ppl-dirt .ppl-arr2 { font-size: 20px; font-weight: 600; line-height: 1; color: var(--c); text-shadow: 0 0 10px color-mix(in srgb, var(--c) 50%, transparent); }
+.ppl-heti .ppl-dirt .ppl-spark { height: 22px; }
+.ppl-heti .ppl-dirt .ppl-spark i { width: 5px; box-shadow: 0 0 5px -1px var(--c); }
+.ppl-heti .ppl-dirt .ppl-why2 { font-size: 11px; line-height: 1.35; color: var(--text-secondary); }
+.ppl-heti .ppl-dirt .ppl-wk { font-size: 9.5px; font-weight: 700; letter-spacing: 1px; color: var(--text-muted); }
+/* the week's moment: glass in the mention's tone; the quote upright, a one-liner size (rule 23) */
+.ppl-heti .ppl-momentt.glass { display: block; padding: 14px 15px; border-radius: 22px; }
+.ppl-heti .ppl-momenthead { display: flex; align-items: center; gap: 10px; }
+.ppl-heti .ppl-momenthead b { font-size: 14px; font-weight: 600; }
+.ppl-heti .ppl-momenthead .ppl-mt { font-size: 11px; color: var(--text-muted); }
+.ppl-heti .ppl-tonedot {
+  width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto;
+  background: var(--c); box-shadow: 0 0 6px var(--c);
+}
+.ppl-heti .ppl-bigq {
+  margin-top: 10px; font-family: var(--ff-body); font-style: normal; font-size: 16px; font-weight: 400;
+  line-height: 1.5; color: var(--text-primary);
+}
+/* the quiet people: flat rows inside ONE rose glass card */
+.ppl-heti .ppl-quietcard.glass { --c: var(--dv-rose); display: block; padding: 4px 14px; border-radius: 22px; }
+.ppl-heti .ppl-quiett {
+  display: flex; align-items: center; gap: 10px; margin: 0; padding: 10px 0;
+  border: 0; border-radius: 0; background: none;
+}
+.ppl-heti .ppl-quiett + .ppl-quiett { border-top: 1px solid var(--divider); }
+.ppl-heti .ppl-qnm { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.ppl-heti .ppl-qtx { margin-top: 1px; font-size: 11px; color: var(--text-muted); }
+.ppl-heti .ppl-quietbtn {
+  flex: 0 0 auto; min-height: 36px; padding: 0 12px; border: 0; border-radius: 999px; cursor: pointer;
+  font: 600 12px/1 var(--ff-body); color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.ppl-heti .ppl-quietbtn:focus-visible { outline: 2px solid var(--dv-rose); outline-offset: 2px; }
+
+/* ═══ The person page ═══ */
+/* the avatar hero: frameless rose→lavender halo, the big avatar ringed in the person's tone */
+.ppl-detail .mz-page-hero.ppl-phero.uv-halo {
+  --c: var(--dv-rose); --c2: var(--dv-lav);
+  overflow-x: clip; display: flex; flex-direction: column; align-items: center; gap: 0;
+  padding: 10px 20px 12px; background: none; border: 0; box-shadow: none;
+}
+.ppl-detail .ppl-phero.uv-halo::before { top: 40%; width: 340px; height: 260px; }
+.ppl-detail .ppl-avat-lg {
+  width: 104px; height: 104px; border-radius: 50%;
+  background: conic-gradient(var(--c) var(--av), rgba(245, 239, 230, 0.08) 0);
+  box-shadow: 0 0 30px -4px var(--c);
+}
+.ppl-detail .ppl-avat-lg .ppl-avin {
+  width: 94px; height: 94px; font-family: var(--ff-display); font-size: 38px; font-weight: 300; color: var(--text-primary);
+  background: radial-gradient(circle at 35% 28%, #3A332D, color-mix(in srgb, var(--c) 16%, #1E1B18));
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.1);
+}
+.ppl-detail .ppl-phero .mz-hero-nm { margin-top: 14px; font-size: 26px; font-weight: 600; letter-spacing: -0.7px; color: var(--text-primary); max-width: 100%; overflow-wrap: anywhere; }
+.ppl-detail .ppl-phero .mz-hero-sb { margin-top: 3px; font-size: 12.5px; color: var(--text-secondary); }
+.ppl-detail .ppl-trendcard.glass, .ppl-detail .ppl-ctxcard.glass { display: block; margin: 0; padding: 15px 15px 12px; border-radius: 22px; }
+.ppl-detail .ppl-ctxcard.glass { --c: var(--dv-rose); }
+.ppl-detail .ppl-affbars { gap: 4px; height: 64px; margin-top: 0; }
+.ppl-detail .ppl-affbars i {
+  border-radius: 4px 4px 2px 2px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 60%, #fff), var(--c));
+  box-shadow: 0 0 6px -2px var(--c);
+}
+.ppl-detail .ppl-affax { margin-top: 6px; font-size: 10px; font-weight: 500; letter-spacing: 0; color: var(--text-muted); }
+.ppl-detail .ppl-trendcard.uv-empty { display: block; margin: 0; padding: 15px; border-radius: 22px; }
+.ppl-detail .ppl-trend-emptytx { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+/* contexts: the kit bar recipe in each context's colour */
+.ppl-detail .ppl-ctxbar { display: grid; grid-template-columns: 96px minmax(0, 1fr) 38px; align-items: center; gap: 10px; padding: 5px 0; }
+.ppl-detail .ppl-ctxbar .ppl-ctxlb { width: auto; font-size: 12.5px; font-weight: 400; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ppl-detail .ppl-ctxbar .ppl-ctxtr { height: 6px; border-radius: 3px; background: rgba(245, 239, 230, 0.07); overflow: visible; }
+.ppl-detail .ppl-ctxbar .ppl-ctxtr div {
+  border-radius: 3px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--dc) 55%, #fff), var(--dc));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--dc) 60%, transparent);
+}
+.ppl-detail .ppl-ctxbar .ppl-ctxpc { width: auto; font-size: 11.5px; font-weight: 500; color: var(--text-muted); }
+/* graph edges: flat rows inside ONE lavender glass */
+.ppl-detail .ppl-evtcard.glass { --c: var(--dv-lav); display: block; padding: 4px 14px; border-radius: 22px; }
+.ppl-detail .ppl-evt {
+  display: flex; align-items: center; gap: 11px; width: 100%; margin: 0; padding: 10px 0;
+  border: 0; border-radius: 0; background: none; box-shadow: none; color: var(--text-primary); text-align: left;
+}
+.ppl-detail .ppl-evt + .ppl-evt { border-top: 1px solid var(--divider); }
+.ppl-detail .ppl-evt-amber { --k: var(--dv-amber); }
+.ppl-detail .ppl-evt-sage { --k: var(--dv-sage); }
+.ppl-detail .ppl-evt-lav { --k: var(--dv-lav); }
+.ppl-detail .ppl-evtpic {
+  width: 30px; height: 30px; border-radius: 0; background: none; box-shadow: none;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--k) 45%, transparent));
+}
+.ppl-detail .ppl-evtpic .t-ico { width: 30px; height: 30px; }
+.ppl-detail .ppl-evt b { display: block; font-size: 13.5px; font-weight: 600; }
+.ppl-detail .ppl-evtmt { font-size: 11px; color: var(--text-muted); }
+.ppl-detail .ppl-chev { flex: 0 0 auto; font-size: 20px; line-height: 1; color: var(--text-muted); }
+/* known facts: flat lavender chips, no card */
+.ppl-detail .ppl-factcard { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; }
+.ppl-detail .ppl-fact {
+  min-width: 0; max-width: 100%; margin: 0; padding: 4px 9px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  color: color-mix(in srgb, var(--dv-lav) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-lav) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-lav) 30%, transparent);
+}
+/* the timeline: flat rows inside ONE rose glass */
+.ppl-detail .ppl-tlcard.glass { --c: var(--dv-rose); display: block; padding: 4px 14px; border-radius: 22px; }
+.ppl-detail .ppl-mrowt.ppl-tlrow {
+  display: flex; gap: 10px; margin: 0; padding: 10px 0; border: 0; border-radius: 0; background: none; box-shadow: none;
+}
+.ppl-detail .ppl-tlrow + .ppl-tlrow { border-top: 1px solid var(--divider); }
+.ppl-detail .ppl-tlrow > .t-ico { width: 24px; height: 24px; margin-top: 1px; }
+.ppl-detail .ppl-tlbody { flex: 1; min-width: 0; }
+.ppl-detail .ppl-tlrow .ppl-mtop { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ppl-detail .ppl-tldot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; background: var(--tc); box-shadow: 0 0 5px var(--tc); }
+.ppl-detail .ppl-mtime { font-size: 11px; font-weight: 400; color: var(--text-muted); }
+.ppl-detail .ppl-tlrow .ppl-mtiechip {
+  padding: 0; font-size: 11px; font-weight: 400; color: var(--text-muted); background: none;
+}
+.ppl-detail .ppl-tlrow .ppl-mtiechip::before { content: '· '; }
+.ppl-detail .ppl-tlrow .ppl-mx {
+  margin: 4px 0 0; font-family: var(--ff-body); font-style: normal; font-size: 13.5px; font-weight: 400;
+  line-height: 1.5; color: var(--text-primary);
+}
+/* „Log most": the lit rose pill */
+.ppl-detail .ppl-logcta {
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 48px; margin-top: 18px;
+  border: 0; border-radius: 999px; cursor: pointer;
+  font: 700 14.5px/1 var(--ff-body); color: #191614; background: var(--dv-rose);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--dv-rose) 55%, transparent);
+}
+.ppl-detail .ppl-logcta .t-ico { width: 20px; height: 20px; filter: none; }
+
+/* ═══ The person log / edit sheets: ONE floating rose glass each (U2 rule 15) ═══ */
+.sheet.glass.ppl-sheet {
+  --c: var(--dv-rose);
+  position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
+  max-height: calc(100% - 70px); overflow-x: hidden; overflow-y: auto;
+  padding: 4px 18px 20px; border: 0; border-radius: 30px; color: var(--text-primary);
+}
+.sheet.glass.ppl-sheet .sheet-handle { width: 40px; height: 5px; background: rgba(245, 239, 230, 0.22); }
+.ppl-sheet .ppl-sh { display: flex; flex-direction: column; gap: 12px; padding: 4px 0 4px; }
+.ppl-sheet .ppl-shh { display: flex; align-items: flex-start; gap: 12px; }
+.ppl-sheet .ppl-shh > .t-ico { width: 48px; height: 48px; }
+.ppl-sheet .ppl-shh-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ppl-sheet .ppl-sh-eye { font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase; color: color-mix(in srgb, var(--c) 70%, var(--text-muted)); }
+.ppl-sheet .ppl-sh-title { font-size: 21px; font-weight: 600; letter-spacing: -0.6px; color: var(--text-primary); }
+.ppl-sheet .ppl-sh-x {
+  width: 36px; height: 36px; flex: 0 0 auto; display: grid; place-items: center; border: 0; border-radius: 50%;
+  cursor: pointer; font-size: 13px; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.ppl-sheet .ppl-sh-voice {
+  display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 16px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.ppl-sheet .ppl-sh-mic {
+  width: 52px; height: 52px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%;
+  background: radial-gradient(circle at 35% 28%, #3A332D, color-mix(in srgb, var(--c) 14%, #1E1B18));
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08), 0 0 14px -4px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.ppl-sheet .ppl-sh-mic .t-ico { width: 30px; height: 30px; }
+.ppl-sheet .ppl-sh-voicetx { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ppl-sheet .ppl-sh-voicetx strong { font-size: 14px; font-weight: 600; }
+.ppl-sheet .ppl-sh-voicetx small { font-size: 11px; line-height: 1.45; color: var(--text-muted); }
+.ppl-sheet .ppl-sh-or { display: flex; align-items: center; gap: 10px; }
+.ppl-sheet .ppl-sh-or::before, .ppl-sheet .ppl-sh-or::after { content: ''; flex: 1; height: 1px; background: var(--divider); }
+.ppl-sheet .ppl-sh-or span { font: 600 9.5px/1 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted); }
+.ppl-sheet .ppl-sh-field { display: grid; gap: 6px; min-width: 0; }
+.ppl-sheet .ppl-sh-lbl { font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted); }
+.ppl-sheet .ppl-sh-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ppl-sheet .ppl-sh-chip {
+  --c: var(--dv-rose);
+  min-width: 0; max-width: 100%; min-height: 36px; padding: 7px 12px; border: 0; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  font: 600 12px/1.2 var(--ff-body); color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.ppl-sheet .ppl-sh-chip.on { color: #191614; background: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
+.ppl-sheet .ppl-sh-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--c); box-shadow: 0 0 6px var(--c); }
+.ppl-sheet .ppl-sh-chip.on .ppl-sh-dot { background: #191614; box-shadow: none; }
+.ppl-sheet .ppl-sh-chip:focus-visible, .ppl-sheet .ppl-sh-x:focus-visible, .ppl-sheet .ppl-sh-ghost:focus-visible,
+.ppl-sheet .ppl-sh-cta:focus-visible, .ppl-sheet .ppl-sh-delbtn:focus-visible, .ppl-sheet .ppl-sh-aliasx:focus-visible {
+  outline: 2px solid var(--dv-rose); outline-offset: 2px;
+}
+.ppl-sheet .ppl-sh-alias { cursor: default; padding-right: 6px; color: var(--text-primary); }
+.ppl-sheet .ppl-sh-aliasx {
+  width: 22px; height: 22px; display: grid; place-items: center; border: 0; border-radius: 50%; cursor: pointer;
+  font-size: 10px; color: var(--text-muted); background: rgba(245, 239, 230, 0.06);
+}
+.ppl-sheet .ppl-sh-aliasinp { width: 128px; cursor: text; color: var(--text-primary); color-scheme: dark; }
+.ppl-sheet .ppl-sh-inp, .ppl-sheet .ppl-sh-ta {
+  width: 100%; min-width: 0; padding: 11px 13px; border: 0; border-radius: 14px;
+  font: 400 14px/1.45 var(--ff-body); color: var(--text-primary); color-scheme: dark;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.ppl-sheet .ppl-sh-ta { min-height: 72px; resize: none; }
+.ppl-sheet .ppl-sh-inp::placeholder, .ppl-sheet .ppl-sh-ta::placeholder, .ppl-sheet .ppl-sh-aliasinp::placeholder { color: var(--text-muted); }
+.ppl-sheet .ppl-sh-inp:focus-visible, .ppl-sheet .ppl-sh-ta:focus-visible, .ppl-sheet .ppl-sh-aliasinp:focus-visible {
+  outline: none; box-shadow: inset 0 0 0 1.5px var(--dv-rose);
+}
+.ppl-sheet .ppl-sh-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding-top: 4px; }
+.ppl-sheet .ppl-sh-ghost, .ppl-sheet .ppl-sh-cta {
+  min-width: 0; min-height: 46px; border: 0; border-radius: 999px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font: 700 13.5px/1 var(--ff-body);
+}
+.ppl-sheet .ppl-sh-ghost { font-weight: 600; color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.ppl-sheet .ppl-sh-cta { color: #191614; background: var(--dv-rose); box-shadow: 0 0 14px color-mix(in srgb, var(--dv-rose) 55%, transparent); }
+.ppl-sheet .ppl-sh-cta:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
+.ppl-sheet .ppl-sh-cta .t-ico, .ppl-sheet .ppl-sh-delbtn .t-ico { width: 18px; height: 18px; filter: none; }
+/* Törlés keeps its warning tone: a flat coral outline (U4 rule 29) */
+.ppl-sheet .ppl-sh-del { display: grid; gap: 6px; }
+.ppl-sheet .ppl-sh-delbtn {
+  min-height: 44px; border: 0; border-radius: 999px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font: 600 13px/1 var(--ff-body); color: #FFB39C;
+  background: rgba(255, 126, 92, 0.06); box-shadow: inset 0 0 0 1px rgba(255, 126, 92, 0.4);
+}
+.ppl-sheet .ppl-sh-delwarn { font-size: 11.5px; line-height: 1.45; text-align: center; color: var(--text-secondary); }
+.ppl-sheet .ppl-sh-foot { font-size: 11px; line-height: 1.5; text-align: center; color: var(--text-muted); }
+
+@media (max-width: 360px) {
+  .ppl-page .ppl-stats .mz-statcell b { font-size: 17px; }
+  .ppl-hub .ppl-hub-tile.glass, .ppl-heti .ppl-dirt.glass { padding: 12px 11px; }
+  .ppl-detail .ppl-ctxbar { grid-template-columns: 78px minmax(0, 1fr) 34px; gap: 8px; }
+  .ppl-page .mz-page-head .pgact.ppl-act { padding: 0 11px; font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ppl-hub .ppl-hub-tile, .ppl-kor .ppl-tile, .ppl-heti .ppl-dirt { transition: none; }
+}
 
 /* ── /uveg en2 emberek ── */
 
 /* ── uveg en2 ertesitesek (mezo-me75u.7) ── /me/ertesitesek + /settings/notifications ── */
+/* Ranking (bible §3.4, prototype uveg-en2.html `ertesitesek()` / `bert()`). Every rule is scoped
+   to a page root — `.nf-page` (the feed) or `.ntf-page` (the settings) — because the header
+   notification panel (`── uveg nap uzenetek (`) speaks the same vocabulary (rule 13).
+   Feed: the halo PageHero (t-bell, sky); day eyebrows; each notification is a FLAT row (rank 3)
+   with the kind's 3D icon in a lit 42px well tinted by its family; an unread row (the opening
+   snapshot) gets a sky wash, a sky inset edge and a glowing sky dot; loading = flat skeleton
+   rows; empty = dashed sky outline. Settings: the halo PageHero; the NAPI TERHELÉS preview is ONE
+   sky glass card (lit sky bars, coral inside a dense window, flat coral note); the master switch
+   is a one-row sky glass card; the test CTA is a flat pill; each category group is ONE sky glass
+   card with flat hairline-separated rows (the `.srows` pattern) and sky-lit switches (`.uv-tgl`,
+   the Toggle `glass` variant); the install gate is an amber glass notice. */
+
+/* the ground: the aurora shows through; quiet eyebrows and principle footnotes */
+.nf-page.mz-page, .ntf-page.mz-page { background: transparent; }
+.nf-page .mz-page-body, .ntf-page .mz-page-body { padding: 2px 16px 22px; }
+
+/* ── feed (/me/ertesitesek) ── */
+.nf-page .nf-group + .nf-group { margin-top: 2px; }
+.nf-page .nf-daylabel {
+  padding: 16px 4px 8px; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.nf-page .nf-row {
+  --c: var(--dv-sky);
+  display: flex; align-items: flex-start; gap: 12px; position: relative; width: 100%;
+  padding: 12px 14px 12px 12px; border: 0; border-radius: 18px; text-align: left; color: inherit;
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.nf-page .nf-row + .nf-row { margin-top: 7px; }
+.nf-page .nf-row:focus-visible { outline: 2px solid var(--dv-sky); outline-offset: 2px; }
+.nf-page .nf-row.unread {
+  background: color-mix(in srgb, var(--dv-sky) 7%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px var(--divider), inset 2px 0 0 var(--dv-sky);
+}
+.nf-page .nf-row .nf-dot {
+  position: absolute; left: auto; top: auto; right: 14px; bottom: 14px; transform: none;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--dv-sky); box-shadow: 0 0 8px var(--dv-sky);
+}
+/* the kind's family tint publishes `--c` on the well itself (rule 4) — the same families the
+   old `.nf-ico.*` washes drew, now lighting the kit well */
+.nf-page .nf-ico.uv-well { width: 42px; height: 42px; border-radius: 50%; }
+.nf-page .nf-ico.pattern, .nf-page .nf-ico.character { --c: var(--dv-lav); }
+.nf-page .nf-ico.knowledge, .nf-page .nf-ico.habit { --c: var(--dv-sage); }
+.nf-page .nf-ico.prediction, .nf-page .nf-ico.people { --c: var(--dv-sky); }
+.nf-page .nf-ico.experiment, .nf-page .nf-ico.memoir { --c: var(--dv-amber); }
+.nf-page .nf-ico.goal { --c: var(--dv-coral); }
+.nf-page .nf-ico.memory { --c: var(--text-muted); }
+.nf-page .nf-ico .t-ico { filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.5)); }
+.nf-page .nf-txt { flex: 1; min-width: 0; display: block; }
+.nf-page .nf-t { display: block; font: 600 14px/1.3 var(--ff-body); color: var(--text-primary); }
+.nf-page .nf-x {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  margin-top: 3px; font: 400 12px/1.4 var(--ff-body); color: var(--text-secondary);
+}
+.nf-page .nf-time {
+  flex: 0 0 auto; margin-top: 2px; white-space: nowrap; font: 500 11px/1 var(--ff-body);
+  color: var(--text-muted); font-variant-numeric: tabular-nums;
+}
+.nf-page .nf-loading { display: flex; flex-direction: column; gap: 7px; padding-top: 14px; }
+.nf-page .nf-skel { background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider); }
+.nf-page .nf-empty.uv-empty {
+  --c: var(--dv-sky);
+  margin: 14px 0 0; padding: 22px 16px; border-radius: 18px; text-align: center;
+  font-size: 13.5px; color: var(--text-secondary);
+}
+.nf-page .nf-note {
+  margin: 22px 10px 0; font-size: 12px; line-height: 1.55; text-align: center; color: var(--text-muted);
+}
+
+/* ── settings (/settings/notifications) ── */
+.ntf-page .eyebrow {
+  display: block; padding: 18px 4px 8px; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px;
+  text-transform: uppercase; color: var(--text-muted);
+}
+/* the glass body restated where the old Mozaik rules keep a border / light skin (rule 11) */
+.ntf-page .ntf-prev.glass, .ntf-page .ntf-masterrow.glass, .ntf-page .ntf-cats.glass, .ntf-page .ntf-gate.glass {
+  border: 0;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+
+/* NAPI TERHELÉS — one sky glass card, lit bars, coral where the day crowds */
+.ntf-page .ntf-prev.glass { display: block; padding: 14px 15px 13px; border-radius: 22px; }
+.ntf-page .ntf-prev-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.ntf-page .ntf-prev-eb {
+  font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 70%, var(--text-primary));
+}
+.ntf-page .ntf-prev-total { font-size: 15px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.ntf-page .ntf-prev-bars { display: flex; align-items: flex-end; gap: 2px; height: 54px; margin-top: 12px; }
+.ntf-page .ntf-prev-bars i { flex: 1; min-height: 2px; border-radius: 2px 2px 1px 1px; background: rgba(245, 239, 230, 0.08); }
+.ntf-page .ntf-prev-bars i.on {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--dv-sky) 55%, #fff), var(--dv-sky));
+  box-shadow: 0 0 6px -1px var(--dv-sky);
+}
+.ntf-page .ntf-prev-bars i.hot {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--dv-coral) 50%, #fff), var(--dv-coral));
+  box-shadow: 0 0 6px -1px var(--dv-coral);
+}
+.ntf-page .ntf-prev-axis {
+  display: flex; justify-content: space-between; margin-top: 5px;
+  font-size: 9.5px; color: var(--text-muted); font-variant-numeric: tabular-nums;
+}
+.ntf-page .ntf-prev-warn {
+  display: flex; align-items: center; gap: 9px; margin: 12px 0 0; padding: 9px 11px; border-radius: 14px;
+  font-size: 12px; font-weight: 500; line-height: 1.4;
+  color: color-mix(in srgb, var(--dv-coral) 65%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-coral) 10%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 30%, transparent);
+}
+.ntf-page .ntf-prev-warn .t-ico { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.45)); }
+
+/* the master switch — a one-row sky glass card */
+.ntf-page .ntf-masterrow.glass { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 22px; }
+.ntf-page .ntf-mic.uv-well, .ntf-page .ntf-cic.uv-well { width: 42px; height: 42px; border-radius: 50%; }
+.ntf-page .ntf-master-tx, .ntf-page .ntf-cat-tx { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.ntf-page .ntf-master-nm, .ntf-page .ntf-cat-nm { font-size: 14.5px; font-weight: 600; color: var(--text-primary); }
+.ntf-page .ntf-master-sb, .ntf-page .ntf-cat-sb {
+  margin-top: 1px; font-size: 11.5px; line-height: 1.35; color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+.ntf-page .ntf-err { margin: -4px 4px 0; font-size: 12px; }
+
+/* the test CTA — a flat pill (the prototype `btn flatb`), not a lit primary */
+.ntf-page .ntf-testrow { border: 0; padding: 0; background: none; box-shadow: none; border-radius: 0; }
+.ntf-page .ntf-testrow .cta-primary.ntf-testbtn {
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 46px; padding: 0 16px;
+  border: 0; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.ntf-page .ntf-testrow .cta-primary.ntf-testbtn:disabled { opacity: 0.5; }
+.ntf-page .ntf-testbtn .t-ico { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.45)); }
+.ntf-page .ntf-testres { margin: 8px 4px 0; font-size: 12px; }
+
+/* the category groups — ONE glass card each, flat hairline-separated rows (.srows / .srow3) */
+.ntf-page .ntf-cats.glass { display: block; padding: 4px 14px; border-radius: 22px; }
+.ntf-page .ntf-catrow {
+  display: flex; align-items: center; gap: 12px; margin: 0; padding: 11px 0;
+  border: 0; border-radius: 0; background: none; box-shadow: none; opacity: 1;
+}
+.ntf-page .ntf-catrow + .ntf-catrow { border-top: 1px solid var(--divider); }
+/* an off category keeps its row; only the art and the words quieten (the switch says "off") */
+.ntf-page .ntf-catrow.off .ntf-cic { filter: saturate(0.35) brightness(0.8); }
+.ntf-page .ntf-catrow.off .ntf-cat-nm { color: var(--text-secondary); }
+.ntf-page .ntf-leadch {
+  flex: 0 0 auto; padding: 2px 7px; border-radius: 999px; font-size: 10.5px; font-weight: 700;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.06); font-variant-numeric: tabular-nums;
+}
+.ntf-page .ntf-foot { margin: 0; padding: 18px 10px 0; font-size: 12px; font-weight: 400; line-height: 1.55; text-align: center; color: var(--text-muted); }
+
+/* the sky-lit switch (Toggle `glass`) — lit in the surrounding card's `--c` */
+.ntf-page .uv-tgl {
+  position: relative; flex: 0 0 auto; width: 44px; height: 26px; padding: 0; border: 0; border-radius: 999px;
+  cursor: pointer; background: rgba(245, 239, 230, 0.1); box-shadow: inset 0 0 0 1px var(--divider);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+.ntf-page .uv-tgl-knob {
+  position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%;
+  background: #B7A899; transition: left 0.2s var(--uv-ease, ease), background 0.2s ease;
+}
+.ntf-page .uv-tgl.is-on {
+  background: color-mix(in srgb, var(--c, var(--dv-sky)) 70%, #1E1B18);
+  box-shadow: 0 0 12px -2px var(--c, var(--dv-sky));
+}
+.ntf-page .uv-tgl.is-on .uv-tgl-knob { left: 21px; background: #FFF6EA; }
+.ntf-page .uv-tgl:disabled { cursor: not-allowed; opacity: 0.45; }
+.ntf-page .uv-tgl:focus-visible { outline: 2px solid var(--c, var(--dv-sky)); outline-offset: 2px; }
+
+/* the install gate — the page's one object, an amber glass notice */
+.ntf-page .ntf-gate.glass { display: flex; align-items: flex-start; gap: 12px; padding: 14px 15px; border-radius: 22px; }
+.ntf-page .ntf-gate p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--text-secondary); }
+.ntf-page .ntf-gate strong { color: color-mix(in srgb, var(--c) 70%, var(--text-primary)); font-weight: 600; }
 
 /* ── /uveg en2 ertesitesek ── */
 
 /* ── uveg en2 beallitasok (mezo-me75u.7) ── /settings/* (SettingsFrame, SettingsRow), /settings/me/goal, /settings/account, /settings/mezo/* ── */
+/* Prototype uveg-en2 `beall() btrain() bme() bcel() bmezo() bnap() balt() bfiok() bszemely()`.
+   Ranking: the hero is a FRAMELESS halo with the domain's Boop (owner, „vegyes", 2026-09-24); the
+   „Innen érkeztél" card, the domain tiles, each section's row card, the editorial card and the forms
+   are `.glass`; rows, stat cells, day cells, inputs and chips inside them are flat.
+   `--sa` is the settings accent a domain class publishes; every glass here sets `--c: var(--sa)` on
+   ITSELF (rule 4). settings.css / personal-settings.css / goalSettingsEditor.css load after this
+   file, so every glass body is restated at a higher specificity (rule 11).
+   Fuel's own settings pages (/settings/fuel, /settings/fuel/slots) import only
+   `useSettingsOrigin` — no SettingsFrame markup — so nothing here reaches them. */
+.settings-page, .settings-guard-sheet { --sa: var(--dv-lav); }
+.settings-page.settings-fuel, .settings-page .settings-fuel { --sa: var(--dv-sage); }
+.settings-page.settings-train, .settings-page .settings-train { --sa: var(--dv-coral); }
+.settings-page.settings-mezo, .settings-page .settings-mezo { --sa: var(--dv-lav); }
+.settings-page.settings-me, .settings-page .settings-me { --sa: var(--dv-rose); }
+.settings-page.settings-nap, .settings-page .settings-nap { --sa: var(--dv-amber); }
+.settings-page .settings-sky { --sa: var(--dv-sky); }
+main.settings-page {
+  max-width: 540px; margin: 0 auto; padding: 4px 16px 100px;
+  background: transparent; color: var(--text-primary);
+}
+.settings-page a:focus-visible, .settings-page button:focus-visible,
+.settings-page input:focus-visible, .settings-page textarea:focus-visible { outline: 2px solid var(--sa); outline-offset: 3px; }
+
+/* ── breadcrumb: the glass back pill + the „SAJÁT RITMUSODRA" tag (prototype `.bc`) ── */
+.settings-page .settings-breadcrumb { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0; }
+.settings-page .settings-back.glass {
+  --c: #8A7A6A; display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px 0 11px;
+  border: 0; border-radius: 999px; font-size: 13.5px; font-weight: 600; color: var(--text-secondary);
+}
+.settings-page .settings-back b { font-size: 19px; font-weight: 400; line-height: 1; margin-top: -2px; }
+.settings-page .settings-breadcrumb > span { font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; color: var(--text-muted); }
+
+/* ── hero: frameless halo, upright Geist copy left, the Boop tilted 7° right (prototype `.sthero`) ── */
+.settings-page .settings-hero {
+  --c: var(--sa); position: relative; isolation: isolate; overflow: visible;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  margin: 0; padding: 12px 4px 10px;
+}
+/* the halo stays inside the page's side padding, so it needs no clip (a clip drew a hard edge) */
+.settings-page .settings-hero::before {
+  content: ''; position: absolute; right: -14px; top: 50%; z-index: -1; pointer-events: none;
+  width: 300px; max-width: calc(100% + 28px); height: 240px; transform: translateY(-50%);
+  background: radial-gradient(farthest-side at 55% 50%,
+    color-mix(in srgb, var(--c) 30%, transparent),
+    color-mix(in srgb, var(--dv-amber) 10%, transparent) 42%, transparent 72%);
+}
+.settings-page .settings-hero .settings-kicker {
+  display: block; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px;
+  color: color-mix(in srgb, var(--c) 70%, var(--text-primary));
+}
+.settings-page .settings-hero h1 {
+  margin: 5px 0 0; font-family: var(--ff-body); font-style: normal; font-size: 27px; font-weight: 600;
+  letter-spacing: -0.8px; line-height: 1.12; color: var(--text-primary); overflow-wrap: anywhere;
+}
+.settings-page .settings-hero p { margin: 6px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); }
+.settings-page .settings-hero > .boop {
+  flex: none; transform: rotate(7deg);
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 16px color-mix(in srgb, var(--c) 40%, transparent));
+}
+
+/* ── section eyebrows, footnotes (prototype `h3()` / `principle()`) ── */
+.settings-page .settings-section-label {
+  margin: 22px 2px 8px; font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.4px; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.settings-page .settings-footnote, .settings-page .settings-note {
+  margin: 0; padding: 22px 10px 0; border: 0; text-align: center;
+  font-size: 12px; line-height: 1.55; color: var(--text-muted);
+}
+.settings-page .settings-gap { height: 10px; }
+
+/* ── the glass bodies, restated (rule 11: the feature sheets load after this file) ── */
+.settings-page .settings-current.glass, .settings-page .settings-domain.glass,
+.settings-page .settings-wash.glass, .settings-page .settings-rows.glass,
+.settings-page .settings-account-wash.glass, .settings-page .personal-editor.glass,
+.settings-page .personal-core.glass, .settings-page .personal-learned.glass,
+.settings-page .personal-context-list.glass {
+  --c: var(--sa); border: 0;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+
+/* ── hub: „Innen érkeztél" (prototype `.from`) ── */
+.settings-page .settings-current.glass {
+  display: flex; align-items: center; gap: 12px; margin: 6px 0 0; padding: 12px 14px; border-radius: 20px;
+  color: var(--text-primary);
+}
+.settings-page .settings-current > div { flex: 1; min-width: 0; }
+.settings-page .settings-current .settings-kicker { display: block; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; color: var(--text-muted); }
+.settings-page .settings-current strong { display: block; margin: 2px 0 0; font-family: var(--ff-body); font-size: 15px; font-weight: 600; }
+.settings-page .settings-current p { margin: 0; font-size: 11.5px; line-height: 1.35; color: var(--text-secondary); }
+.settings-page .settings-current > span[aria-hidden] { flex: none; font-size: 18px; color: var(--text-muted); }
+
+/* ── hub: the domain tiles, one accent each; Nap spans both columns (prototype `.domg .domt`) ── */
+.settings-page .settings-domain-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: stretch; }
+.settings-page .settings-domain.glass {
+  display: flex; flex-direction: column; gap: 3px; min-width: 0; min-height: 162px; margin: 0;
+  padding: 13px; border-radius: 22px; color: var(--text-primary);
+}
+.settings-page .settings-domain > .boop { margin-bottom: auto; }
+.settings-page .settings-domain strong {
+  display: block; margin: 8px 0 0; font-family: var(--ff-body); font-size: 17px; font-weight: 600; letter-spacing: -0.4px;
+}
+.settings-page .settings-domain p { margin: 0; font-size: 12px; line-height: 1.35; color: var(--text-secondary); }
+.settings-page .settings-domain small { display: block; margin-top: 4px; font-size: 10.5px; line-height: 1.35; color: var(--text-muted); }
+.settings-page .settings-domain > .settings-domain-arrow {
+  position: absolute; top: 12px; right: 14px; font-size: 14px; color: color-mix(in srgb, var(--c) 70%, var(--text-muted));
+}
+.settings-page .settings-domain.glass:last-child {
+  grid-column: 1 / -1; display: grid; grid-template-columns: 54px minmax(0, 1fr); column-gap: 12px; row-gap: 3px;
+  align-items: center; min-height: 0;
+}
+.settings-page .settings-domain.glass:last-child > .boop { grid-column: 1; grid-row: 1 / 4; margin: 0; align-self: center; }
+.settings-page .settings-domain.glass:last-child > strong,
+.settings-page .settings-domain.glass:last-child > p,
+.settings-page .settings-domain.glass:last-child > small { grid-column: 2; margin-top: 0; }
+
+/* ── the section card: flat rows, hairline between, a lit 42px well (prototype `.srows .srow3`) ── */
+.settings-page .settings-rows.glass { display: block; margin: 0; padding: 4px 14px; border-radius: 22px; }
+.settings-page .settings-rows .settings-row {
+  display: flex; align-items: center; gap: 12px; width: 100%; margin: 0; padding: 11px 0;
+  border: 0; background: none; text-align: left; font: inherit; color: var(--text-primary); cursor: pointer;
+}
+.settings-page .settings-rows .settings-row + .settings-row { border-top: 1px solid var(--divider); }
+.settings-page .settings-row-art.uv-well {
+  --c: var(--sa); flex: 0 0 42px; width: 42px; height: 42px; min-width: 0; padding: 0; border-radius: 50%;
+  background: radial-gradient(circle at 35% 28%, #3A332D, color-mix(in srgb, var(--c) 14%, #1E1B18));
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08),
+    inset 0 -6px 12px -8px color-mix(in srgb, var(--c) 70%, transparent),
+    0 0 14px -4px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.settings-page .settings-row-copy { flex: 1; min-width: 0; }
+.settings-page .settings-rows .settings-row strong { display: block; font-size: 14.5px; font-weight: 600; color: var(--text-primary); }
+.settings-page .settings-rows .settings-row small { display: block; margin-top: 1px; font-size: 11.5px; line-height: 1.35; color: var(--text-muted); }
+.settings-page .settings-rows .settings-row em {
+  display: inline-block; margin-top: 5px; padding: 3px 8px; border-radius: 999px;
+  font-size: 10px; font-weight: 700; font-style: normal; letter-spacing: 0.6px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--dv-amber) 70%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-amber) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 30%, transparent);
+}
+.settings-page .settings-chev { flex: none; font-size: 20px; line-height: 1; color: var(--text-muted); }
+.settings-page .settings-row .settings-row-end { flex: none; }
+.settings-page .settings-rows .settings-logout strong { color: color-mix(in srgb, var(--dv-coral) 60%, var(--text-primary)); }
+.settings-page .settings-rows .settings-row:disabled { opacity: 0.55; cursor: default; }
+
+/* ── the editorial card: upright lead, the big numbers as flat cells, the week as lit day cells ── */
+.settings-page .settings-wash.glass { margin: 6px 0 12px; padding: 16px; border-radius: 22px; }
+.settings-page .settings-wash .settings-editorial {
+  margin: 0; font-family: var(--ff-body); font-style: normal; font-size: 15px; font-weight: 500;
+  line-height: 1.5; letter-spacing: 0; color: var(--text-primary);
+}
+.settings-page .settings-wash p:not(.settings-editorial) { margin: 8px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+.settings-page .settings-wash .settings-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.settings-page .settings-stats > div {
+  min-width: 0; padding: 10px 8px; border-radius: 14px; text-align: center;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.settings-page .settings-stats strong {
+  display: block; font-family: var(--ff-body); font-size: 18px; font-weight: 600; letter-spacing: -0.3px;
+  font-variant-numeric: tabular-nums; color: var(--text-primary); overflow-wrap: anywhere;
+}
+.settings-page .settings-stats small {
+  display: block; margin-top: 2px; font-size: 9.5px; font-weight: 600; letter-spacing: 1.1px; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.settings-page .settings-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; margin-top: 12px; }
+.settings-page .settings-day {
+  min-width: 0; padding: 8px 0 7px; border-radius: 12px; text-align: center;
+  font-size: 9.5px; font-weight: 600; color: var(--text-muted);
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.settings-page .settings-day strong { display: block; margin-top: 4px; font-size: 11px; font-weight: 600; color: var(--text-primary); }
+.settings-page .settings-day.is-on {
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.settings-page .settings-day.is-on strong { color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+
+/* ── editor pages: the lit primary pill, status + retry ── */
+.settings-page .settings-open-button {
+  display: flex; align-items: center; justify-content: center; width: 100%; min-height: 44px; margin: 0 0 12px;
+  padding: 0 18px; border: 0; border-radius: 999px; font: inherit; font-size: 13.5px; font-weight: 700;
+  color: #191614; background: var(--sa); box-shadow: 0 0 14px color-mix(in srgb, var(--sa) 55%, transparent); cursor: pointer;
+}
+.settings-page .settings-open-button:disabled { opacity: 0.45; box-shadow: none; cursor: default; }
+.settings-page .settings-status { margin: 0 2px 10px; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+.settings-page .settings-status button, .settings-page [role="alert"] > button {
+  margin-left: 6px; padding: 5px 12px; border: 0; border-radius: 999px; font: inherit; font-size: 12px; font-weight: 600;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); cursor: pointer;
+}
+
+/* ── Megjelenés és alkalmazás: the account card (prototype `balt()` — a `.from` with a well) ── */
+.settings-page .settings-account-wash.glass {
+  display: flex; align-items: center; gap: 12px; width: 100%; margin: 0 0 10px; padding: 12px 14px;
+  border-radius: 20px; text-align: left; font: inherit; color: var(--text-primary); cursor: pointer;
+}
+.settings-page .settings-account-wash > span:nth-of-type(2) { flex: 1; min-width: 0; }
+.settings-page .settings-account-wash strong { display: block; font-family: var(--ff-body); font-size: 15px; font-weight: 600; }
+.settings-page .settings-account-wash small { display: block; margin-top: 1px; font-size: 11.5px; overflow-wrap: anywhere; color: var(--text-secondary); }
+
+/* ── forms: a glass card, flat inputs, the lit CTA (prototype `bfiok()` / `bszemely()`) ── */
+.settings-page .personal-editor.glass { --sa: var(--dv-lav); margin: 12px 0 10px; padding: 16px; border-radius: 22px; }
+.settings-page .personal-editor.settings-account.glass { --sa: var(--dv-rose); display: grid; gap: 12px; margin-top: 6px; }
+.settings-page .settings-account label {
+  display: grid; gap: 6px; margin: 0; font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.settings-page .personal-editor input:not([type="checkbox"]), .settings-page .personal-editor textarea {
+  display: block; width: 100%; box-sizing: border-box; margin: 0; padding: 11px 13px; border: 0; border-radius: 13px;
+  font: 400 16px/1.4 var(--ff-body); letter-spacing: 0; text-transform: none; color: var(--text-primary); color-scheme: dark;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.settings-page .personal-editor textarea { min-height: 150px; padding: 13px; border-radius: 16px; font-size: 14px; line-height: 1.55; resize: vertical; }
+.settings-page .personal-editor input:focus-visible, .settings-page .personal-editor textarea:focus-visible {
+  outline: none; box-shadow: inset 0 0 0 1.5px var(--c);
+}
+.settings-page .personal-editor .settings-kicker { display: block; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; color: var(--text-muted); }
+.settings-page .personal-editor h2 {
+  margin: 3px 0 0; font-family: var(--ff-body); font-style: normal; font-size: 17px; font-weight: 600; letter-spacing: -0.3px;
+  color: var(--text-primary);
+}
+.settings-page .personal-editor p { margin: 6px 0 10px; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+.settings-page .personal-editor.settings-account p { margin: 0; }
+.settings-page .personal-field-foot { display: flex; justify-content: space-between; margin: 6px 0 12px; font-size: 10.5px; color: var(--text-muted); }
+.settings-page .personal-switch {
+  display: flex; align-items: center; gap: 12px; margin: 0 0 12px; padding: 12px 0 0; border-top: 1px solid var(--divider);
+}
+.settings-page .personal-switch strong { display: block; font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.settings-page .personal-switch small { display: block; margin-top: 4px; font-size: 11.5px; line-height: 1.45; color: var(--text-muted); }
+/* the checkbox wears the prototype `.tgl`: a track with a knob, lit in the accent when on */
+.settings-page .personal-switch input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none; flex: none; width: 44px; height: 26px; margin: 0; border-radius: 999px; cursor: pointer;
+  background: radial-gradient(circle at 13px 50%, #B7A899 0 10px, transparent 10.5px), rgba(245, 239, 230, 0.1);
+  box-shadow: inset 0 0 0 1px var(--divider); transition: background 0.2s;
+}
+.settings-page .personal-switch input[type="checkbox"]:checked {
+  background: radial-gradient(circle at 31px 50%, #FFF6EA 0 10px, transparent 10.5px), color-mix(in srgb, var(--c) 70%, #1E1B18);
+  box-shadow: 0 0 12px -2px var(--c);
+}
+.settings-page .personal-switch input[type="checkbox"]:disabled { opacity: 0.5; }
+.settings-page .personal-editor .cta-primary {
+  display: flex; align-items: center; justify-content: center; width: 100%; min-height: 44px; margin: 2px 0 0; padding: 0 18px;
+  border: 0; border-radius: 999px; font: inherit; font-size: 13.5px; font-weight: 700;
+  color: #191614; background: var(--c); box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.settings-page .personal-editor .cta-primary:disabled { opacity: 0.45; box-shadow: none; }
+.settings-page .personal-editor [role="status"] { color: color-mix(in srgb, var(--dv-sage) 75%, var(--text-primary)); }
+.settings-page .personal-editor [role="alert"] { color: color-mix(in srgb, var(--dv-coral) 65%, var(--text-primary)); }
+
+/* ── Rólam: the core facts card, the sources, the learned profile ── */
+.settings-page .personal-sources { margin: 6px 0 0; }
+.settings-page .personal-sources > .settings-kicker {
+  display: block; margin: 22px 2px 8px; font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.4px; color: var(--text-muted);
+}
+.settings-page .personal-core.glass { --sa: var(--dv-rose); margin: 0; padding: 14px 16px; border-radius: 22px; }
+.settings-page .personal-core h2 {
+  margin: 0; font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted);
+}
+.settings-page .personal-core p { margin: 6px 0 0; font-size: 14px; line-height: 1.55; color: var(--text-primary); white-space: pre-wrap; overflow-wrap: anywhere; }
+.settings-page .personal-learned.glass { margin: 12px 0 10px; padding: 16px; border-radius: 22px; }
+.settings-page .personal-learned h2 {
+  margin: 0 0 10px; font-family: var(--ff-body); font-style: normal; font-size: 15.5px; font-weight: 600; letter-spacing: -0.3px;
+  color: var(--text-primary);
+}
+.settings-page .personal-learned p { margin: 8px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+.settings-page .personal-learned .mz-facttile {
+  border-radius: 16px; background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+
+/* ── Ezt kapja meg Mezo: one lav card, hairline sections, an included/left-out chip (prototype `.ctxsec`) ── */
+.settings-page .personal-scope { margin: 6px 2px 10px; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+.settings-page .personal-context-list.glass { margin: 0; padding: 4px 14px; border-radius: 22px; }
+.settings-page .personal-context-section { padding: 12px 0; border: 0; }
+.settings-page .personal-context-section + .personal-context-section { border-top: 1px solid var(--divider); }
+.settings-page .personal-context-section header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.settings-page .personal-context-section h2 {
+  flex: 1; min-width: 0; margin: 0; font-family: var(--ff-body); font-style: normal; font-size: 14px; font-weight: 600; color: var(--text-primary);
+}
+.settings-page .personal-context-section header > span {
+  --k: var(--dv-sage); flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px 3px 5px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 600; color: color-mix(in srgb, var(--k) 80%, var(--text-primary));
+  background: color-mix(in srgb, var(--k) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k) 35%, transparent);
+}
+.settings-page .personal-context-section header > span[data-included="false"] { --k: var(--dv-coral); }
+.settings-page .personal-context-section header > span .t-ico { filter: none; }
+.settings-page .personal-context-section small { display: block; margin-top: 6px; font-size: 10.5px; color: var(--text-muted); }
+.settings-page .personal-context-section p {
+  margin: 6px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.settings-page .personal-context-section a {
+  display: inline-block; margin-top: 6px; font-size: 12px; font-weight: 600; color: color-mix(in srgb, var(--dv-lav) 70%, var(--text-primary));
+}
+.settings-page .personal-context-section a::after { content: ' ›'; }
+.settings-page .personal-raw {
+  margin: 10px 0 0; padding: 12px 14px; border-radius: 18px;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.settings-page .personal-raw summary { font-size: 14px; font-weight: 600; color: var(--text-secondary); cursor: pointer; text-align: center; }
+.settings-page .personal-raw pre { margin: 10px 0 0; font-size: 12px; line-height: 1.6; color: var(--text-secondary); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* ── the unsaved-changes guard: ONE floating lav glass sheet (rule 15), lit + flat pills ── */
+.sheet.glass.settings-guard-sheet {
+  --c: var(--dv-lav);
+  position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
+  overflow-x: hidden; overflow-y: auto; border: 0; border-radius: 30px; padding: 4px 18px 18px;
+}
+.sheet.glass.settings-guard-sheet .sheet-handle { background: rgba(245, 239, 230, 0.22); }
+.settings-guard-sheet .settings-guard-body { display: grid; gap: 10px; padding: 6px 0 0; }
+.settings-guard-sheet .settings-guard-body h2 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -0.5px; color: var(--text-primary); }
+.settings-guard-sheet .settings-guard-body p { margin: 0 0 4px; font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+.settings-guard-sheet .settings-guard-body .cta-primary, .settings-guard-sheet .settings-guard-body .cta-ghost {
+  display: flex; align-items: center; justify-content: center; width: 100%; min-height: 44px; margin: 0; padding: 0 16px;
+  border: 0; border-radius: 999px; font: inherit; font-size: 13.5px; cursor: pointer;
+}
+.settings-guard-sheet .settings-guard-body .cta-primary {
+  font-weight: 700; color: #191614; background: var(--c); box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.settings-guard-sheet .settings-guard-body .cta-ghost {
+  font-weight: 600; color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+
+/* ── /settings/me/goal: rose; halo hero (U6's .goal-dhero-settings), editor + saved goal as glass ── */
+.goal-detail-settings-page.uv-goal { --c: var(--dv-rose); }
+.goal-detail-settings-page .goal-pace-editor.glass, .goal-detail-settings-page .goal-settings-grid.glass {
+  --c: var(--dv-rose); border: 0; border-radius: 22px;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 20%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 26%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.goal-detail-settings-page .goal-pace-editor.glass { display: grid; gap: 10px; margin: 12px 0; padding: 16px; }
+.goal-detail-settings-page .goal-pace-editor .eyebrow {
+  display: block; font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted);
+}
+.goal-detail-settings-page .goal-pace-editor h2 {
+  margin: -6px 0 0; font-family: var(--ff-body); font-size: 18px; font-weight: 600; letter-spacing: -0.4px; line-height: 1.2; color: var(--text-primary);
+}
+.goal-detail-settings-page .goal-pace-editor p { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+.goal-detail-settings-page .goal-pace-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.goal-detail-settings-page .goal-pace-fields label {
+  display: grid; align-content: end; gap: 6px; min-width: 0;
+  font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-muted);
+}
+.goal-detail-settings-page .goal-pace-fields input {
+  width: 100%; min-width: 0; box-sizing: border-box; padding: 11px 13px; border: 0; border-radius: 13px;
+  font: 600 16px/1.3 var(--ff-body); letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums;
+  color: var(--text-primary); color-scheme: dark; background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.goal-detail-settings-page .goal-pace-fields input:focus-visible { outline: none; box-shadow: inset 0 0 0 1.5px var(--c); }
+/* the computed date: a sage-lit callout (prototype `.callout`), flat — never glass in glass */
+.goal-detail-settings-page .goal-pace-arrival {
+  display: grid; gap: 3px; padding: 12px 14px; border: 0; border-radius: 15px;
+  background: color-mix(in srgb, var(--dv-sage) 9%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-sage) 30%, transparent);
+}
+.goal-detail-settings-page .goal-pace-arrival span {
+  font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.2px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--dv-sage) 80%, var(--text-primary));
+}
+.goal-detail-settings-page .goal-pace-arrival output { font-family: var(--ff-body); font-size: 17px; font-weight: 600; color: var(--text-primary); }
+.goal-detail-settings-page .goal-pace-verdict {
+  padding: 11px 13px; border-radius: 14px; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.goal-detail-settings-page .goal-pace-verdict strong { color: var(--text-primary); font-weight: 600; }
+.goal-detail-settings-page .goal-pace-editor [role="status"] { color: color-mix(in srgb, var(--dv-sage) 75%, var(--text-primary)); }
+.goal-detail-settings-page .goal-pace-editor [role="alert"] { font-size: 12.5px; color: color-mix(in srgb, var(--dv-coral) 65%, var(--text-primary)); }
+.goal-detail-settings-page .goal-pace-editor [role="alert"] button {
+  margin-left: 6px; min-height: 0; padding: 5px 12px; border: 0; border-radius: 999px; font: inherit; font-size: 12px; font-weight: 600;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.goal-detail-settings-page .goal-pace-editor .cta-primary,
+.goal-detail-settings-page .mz-page-body > .cta-primary {
+  display: flex; align-items: center; justify-content: center; width: 100%; min-height: 44px; padding: 0 18px;
+  border: 0; border-radius: 999px; font: inherit; font-size: 13.5px; font-weight: 700;
+  color: #191614; background: var(--dv-rose); box-shadow: 0 0 14px color-mix(in srgb, var(--dv-rose) 55%, transparent);
+}
+.goal-detail-settings-page .goal-pace-editor .cta-primary:disabled { opacity: 0.45; box-shadow: none; }
+/* the saved goal: label ↔ value rows split by hairlines (prototype `.titrow`) */
+.goal-detail-settings-page .goal-settings-grid.glass { display: block; padding: 4px 14px; }
+.goal-detail-settings-page .goal-settings-grid > div {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 11px 0; border-radius: 0; background: none;
+}
+.goal-detail-settings-page .goal-settings-grid > div + div { border-top: 1px solid var(--divider); }
+.goal-detail-settings-page .goal-settings-grid small {
+  font-size: 13px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text-secondary);
+}
+.goal-detail-settings-page .goal-settings-grid strong { font-size: 13.5px; font-weight: 600; text-align: right; color: var(--text-primary); }
+/* the guards: flat chips with the shield, the active ones lit sage */
+.goal-detail-settings-page .goal-settings-guards { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+.goal-detail-settings-page .goal-settings-guards span {
+  display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px 4px 6px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 600; color: var(--text-muted);
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.goal-detail-settings-page .goal-settings-guards span .t-ico { opacity: 0.45; filter: grayscale(0.6); }
+.goal-detail-settings-page .goal-settings-guards span.is-on {
+  color: color-mix(in srgb, var(--dv-sage) 80%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-sage) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-sage) 35%, transparent);
+}
+.goal-detail-settings-page .goal-settings-guards span.is-on .t-ico { opacity: 1; filter: none; }
+/* „Cél szerkesztése": a flat full-width button (prototype `.btn.flatb`) */
+.goal-detail-settings-page .goal-settings-edit {
+  width: 100%; min-height: 48px; margin-top: 12px; padding: 12px 16px; border: 0; border-radius: 18px;
+  font: inherit; font-size: 14.5px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+
+@media (max-width: 360px) {
+  .settings-page .settings-hero > .boop { width: 72px; height: 72px; }
+  .settings-page .settings-hero h1 { font-size: 24px; }
+  .settings-page .settings-domain.glass { min-height: 150px; }
+  .settings-page .settings-week { gap: 3px; }
+  .settings-page .settings-day strong { font-size: 9.5px; }
+  .goal-detail-settings-page .goal-pace-fields { grid-template-columns: 1fr; }
+}
 
 /* ── /uveg en2 beallitasok ── */

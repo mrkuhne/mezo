@@ -93,7 +93,7 @@ test('renders the Napló hero and the back chip', () => {
   renderPage()
   expect(screen.getByText('Napló')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
-  expect(screen.getByText('‹ Én')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹Én')
 })
 
 test('the hero shows the honest streak derived from the gratitude fixture', () => {
@@ -247,7 +247,7 @@ test('tapping a rating settles the card to the sage acknowledgement and calls re
   await user.click(screen.getByRole('button', { name: '5 · bevált' }))
 
   expect(reviewDecision).toHaveBeenCalledWith('dec2', 5)
-  expect(await screen.findByText('✓ Visszanézve · 5/5')).toBeInTheDocument()
+  expect(await screen.findByText('Visszanézve · 5/5')).toBeInTheDocument()
   expect(screen.queryByText(/Esti edzésre váltok/)).not.toBeInTheDocument()
 })
 
@@ -262,7 +262,7 @@ test('a lower rating (1–4) also settles the card, with that rating in the ackn
   await user.click(screen.getByRole('button', { name: '2' }))
 
   expect(reviewDecision).toHaveBeenCalledWith('dec2', 2)
-  expect(await screen.findByText('✓ Visszanézve · 2/5')).toBeInTheDocument()
+  expect(await screen.findByText('Visszanézve · 2/5')).toBeInTheDocument()
 })
 
 test('does not list already-reviewed decisions among the open ones', () => {

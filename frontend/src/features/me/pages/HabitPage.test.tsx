@@ -152,10 +152,11 @@ describe('HabitPage — a részletek oldala (mezo-bk26 után)', () => {
 
   test('an evening habit does not wear the dawn icon', () => {
     const { container } = renderPage('bed')
-    expect(container.querySelector('.mz-page-hero use')).toHaveAttribute('href', '#i-alvas')
+    // Üveg (mezo-me75u.7): the daypart wears the Titanium set — „este" is the moon, not sleep
+    expect(container.querySelector('.mz-page-hero use')).toHaveAttribute('href', '#t-moon')
     // …and a morning habit still wears the dawn one
     expect(renderPage('intent').container.querySelector('.mz-page-hero use'))
-      .toHaveAttribute('href', '#i-hajnal')
+      .toHaveAttribute('href', '#t-dawn')
   })
 
   test('an unknown habit key bounces back to the rutin hub', () => {

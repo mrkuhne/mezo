@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { Chip } from '@/shared/ui/Chip'
+import { Icon3D } from '@/shared/ui/clay'
 import { useHabitAiSuggest, useHabitCatalog } from '@/data/hooks'
 import type { HabitSuggestion } from '@/data/types'
 
@@ -10,9 +11,6 @@ const HINT_MAX = 200
 // Shared with RoutineWizardPage, which claims the value once on mount and deletes it.
 const SUGGESTION_KEY = 'mezo.routineWizard.suggestion'
 
-const ROW: React.CSSProperties = { padding: '9px 12px', background: 'var(--surface-2)' }
-const LABEL: React.CSSProperties = { fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }
-const TEXT_INPUT: React.CSSProperties = { width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 13 }
 
 /**
  * AI habit suggestion sheet (routine editor, mezo-n5e9.3): an optional "Szándék" hint →
@@ -64,80 +62,75 @@ export function AiSuggestSheet({ chainKey, onClose }: { chainKey?: string; onClo
   }
 
   return (
-    <Sheet onClose={onClose} labelledBy="ai-suggest-title">
+    <Sheet className="glass rt-sheet is-lav" onClose={onClose} labelledBy="ai-suggest-title">
       {(close) => (
-        <div className="col gap-sm" style={{ padding: '4px 4px 8px' }}>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <h2 id="ai-suggest-title" style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>
-              <span aria-hidden="true">✨</span> AI javaslat
-            </h2>
-            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}>
+        <div className="col gap-sm">
+          <div className="rt-shh">
+            <Icon3D name="t-spark" size={46} />
+            <span className="rt-shh-t">
+              <span className="rt-shh-eb">Rutin</span>
+              <h2 id="ai-suggest-title">AI javaslat</h2>
+            </span>
+            <button className="chip rt-shx" aria-label="Bezárás" onClick={close}>
               <Icon name="x" size={12} />
             </button>
           </div>
 
           {unavailable ? (
-            <div className="card" style={{ padding: 14 }}>
-              <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.5 }}>
-                Az AI-javasló most nem elérhető — próbáld később.
-              </p>
+            <div className="card rt-aicard is-off">
+              <p>Az AI-javasló most nem elérhető — próbáld később.</p>
             </div>
           ) : (
             <>
-              <div className="row" style={ROW}>
-                <div className="col" style={{ width: '100%' }}>
-                  <span style={LABEL}>Szándék (opcionális)</span>
-                  <input
-                    aria-label="Szándék"
-                    value={hint}
-                    maxLength={HINT_MAX}
-                    onChange={(e) => setHint(e.target.value)}
-                    placeholder="pl. jobb esti lezárás"
-                    style={TEXT_INPUT}
-                  />
-                </div>
-              </div>
+              <label className="rt-field">
+                <span className="rt-flabel">Szándék (opcionális)</span>
+                <input
+                  className="rt-fin"
+                  aria-label="Szándék"
+                  value={hint}
+                  maxLength={HINT_MAX}
+                  onChange={(e) => setHint(e.target.value)}
+                  placeholder="pl. jobb esti lezárás"
+                />
+              </label>
 
               <button
                 type="button"
-                className="cta-primary"
+                className="cta-primary rt-litpill"
                 disabled={suggestPending}
-                style={{ opacity: suggestPending ? 0.5 : 1 }}
                 onClick={run}
               >
-                <span aria-hidden="true">✨</span> Javasolj
+                <Icon3D name="t-spark" size={20} />Javasolj
               </button>
 
               {cards && cards.length === 0 && (
-                <span style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', padding: '8px 0' }}>
+                <span className="rt-emptyline uv-empty">
                   Nincs javaslat — próbálj pontosabb szándékkal.
                 </span>
               )}
 
               {cards?.map((s, i) => (
-                <div key={`${s.chainKey}-${s.title}-${i}`} className="card" style={{ padding: 14 }}>
-                  <div style={{ fontFamily: 'var(--ff-display)', fontSize: 15, lineHeight: 1.2 }}>{s.title}</div>
-                  <p className="text-secondary mt-sm" style={{ fontSize: 12, lineHeight: 1.5 }}>{s.why}</p>
-                  <div className="row gap-sm mt-sm" style={{ flexWrap: 'wrap', alignItems: 'center' }}>
+                <div key={`${s.chainKey}-${s.title}-${i}`} className="card rt-aicard">
+                  <div className="rt-aicard-t">{s.title}</div>
+                  <p className="rt-aicard-why">{s.why}</p>
+                  <div className="rt-aicard-chips">
                     <Chip>{s.anchorCopy}</Chip>
                     <Chip>{s.skillKey}</Chip>
                     <Chip>{s.xp} XP</Chip>
                     <Chip>{chainTitle(s.chainKey)}</Chip>
                   </div>
-                  <div className="row gap-sm mt-md">
+                  <div className="rt-aicard-acts">
                     <button
                       type="button"
-                      className="chip"
+                      className="chip rt-aicard-ok"
                       onClick={() => accept(s, close)}
-                      style={{ fontSize: 11, padding: '6px 12px', background: 'var(--wash-lav)', borderColor: 'var(--lav-deep)', color: 'var(--lav-deep)' }}
                     >
                       Megnyitom a varázslóban
                     </button>
                     <button
                       type="button"
-                      className="chip"
+                      className="chip rt-aicard-no"
                       onClick={() => dismiss(s)}
-                      style={{ fontSize: 11, padding: '6px 12px' }}
                     >
                       Elvetem
                     </button>

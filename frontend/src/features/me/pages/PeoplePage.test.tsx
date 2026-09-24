@@ -139,7 +139,7 @@ test('the Jelöltek tile navigates, through the REAL app router, to the real emp
   )
   fireEvent.click(screen.getByRole('button', { name: 'Jelöltek' }))
   expect(await screen.findByText('Nincs több jelölt — az éjszakai kör hajnalban néz újra.')).toBeInTheDocument()
-  expect(screen.getByText('‹ Kapcsolatok')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹Kapcsolatok')
   expect(router.state.location.pathname).toBe('/me/people/jeloltek')
 })
 
@@ -161,7 +161,9 @@ test('Jelöltek carries the candidate-count badge and names the candidate on the
   renderPage()
   const tile = screen.getByRole('button', { name: 'Jelöltek' })
   expect(tile.querySelector('.ppl-hub-badge')?.textContent).toBe('1')
-  expect(screen.getByText('Marci · új arc a szövegeidben')).toBeInTheDocument()
+  // Üveg (mezo-me75u.7): the line splits into the tile's name line + its sub line.
+  expect(tile.querySelector('.ppl-hub-main')?.textContent).toBe('Marci')
+  expect(tile.querySelector('.ppl-hub-line')?.textContent).toBe('új arc a szövegeidben')
 })
 
 test('Jelöltek carries no badge and reads the honest quiet line when there is no candidate', () => {
@@ -169,7 +171,8 @@ test('Jelöltek carries no badge and reads the honest quiet line when there is n
   renderPage()
   const tile = screen.getByRole('button', { name: 'Jelöltek' })
   expect(tile.querySelector('.ppl-hub-badge')).toBeNull()
-  expect(screen.getByText('nincs új arc — az éjszakai kör figyel')).toBeInTheDocument()
+  expect(tile.querySelector('.ppl-hub-main')?.textContent).toBe('Nincs új arc')
+  expect(tile.querySelector('.ppl-hub-line')?.textContent).toBe('az éjszakai kör figyel')
 })
 
 test('A köröm shows a facepile of the first four people\'s initials', () => {
@@ -202,7 +205,8 @@ test('the header keeps the back chip left and both actions right, Log first (mez
   const { container } = renderPage()
   const head = container.querySelector('.mz-page-head')!
   const labels = [...head.children].map((el) => el.textContent?.replace(/\s+/g, ' ').trim())
-  expect(labels).toEqual(['‹ Én', 'Log', '＋ Új személy'])
+  // Üveg: the glass back pill draws the ‹ as its own (aria-hidden) glyph next to the label.
+  expect(labels).toEqual(['‹Én', 'Log', '＋ Új személy'])
   // The right-hand group starts at the first action — without this the three chips read as
   // one crowded left-packed row (the prototype pins the pair to the right edge).
   expect((head.children[1] as HTMLElement).style.marginLeft).toBe('auto')
@@ -226,9 +230,12 @@ test('CONTRACT (mezo-06o0.14): no header action paints itself in the page wash',
   const head = container.querySelector('.mz-page-head')!
   const actions = [...head.children].slice(1) as HTMLElement[]
   expect(actions).toHaveLength(2)
+  // Üveg (mezo-me75u.7): the actions carry their own skin as a class — Log the lit pill,
+  // „＋ Új személy" the flat one — and never an inline page-wash background.
+  expect(actions.map((a) => a.classList.contains('ppl-act-lit') ? 'lit' : a.classList.contains('ppl-act-flat') ? 'flat' : '?'))
+    .toEqual(['lit', 'flat'])
   for (const action of actions) {
     expect(action.style.background).not.toContain('--mz-cell-rose-bg')
-    expect(action.style.background).toBeTruthy()
   }
 })
 
@@ -245,6 +252,6 @@ describe('Jelöltek route mounted directly', () => {
     const router = createMemoryRouter(localRoutes, { initialEntries: ['/me/people/jeloltek'] })
     render(<RouterProvider router={router} />, { wrapper: QueryWrapper })
     expect(screen.getByText('Nincs több jelölt — az éjszakai kör hajnalban néz újra.')).toBeInTheDocument()
-    expect(screen.getByText('‹ Kapcsolatok')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹Kapcsolatok')
   })
 })

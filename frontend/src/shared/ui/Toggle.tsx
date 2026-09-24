@@ -3,12 +3,32 @@ export function Toggle({
   onToggle,
   ariaLabel,
   disabled = false,
+  glass = false,
 }: {
   on: boolean
   onToggle: () => void
   ariaLabel: string
   disabled?: boolean
+  /** Üveg variant (mezo-me75u.7): no inline skin — the track and knob are drawn by the page's
+   *  üveg block (`.uv-tgl`, lit in the surface's `--c` accent when on). The inline default
+   *  below would outrank any stylesheet, so a glass page opts out here instead. */
+  glass?: boolean
 }) {
+  if (glass) {
+    return (
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label={ariaLabel}
+        disabled={disabled}
+        onClick={onToggle}
+        className={on ? 'uv-tgl is-on' : 'uv-tgl'}
+      >
+        <span className="uv-tgl-knob" aria-hidden="true" />
+      </button>
+    )
+  }
   return (
     <button
       type="button"

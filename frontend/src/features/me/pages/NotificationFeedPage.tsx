@@ -14,8 +14,8 @@ import { groupByDay } from '@/features/notification/logic/groupByDay'
 import { timeLabel } from '@/features/notification/logic/stamp'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { ClayIcon } from '@/shared/ui/clay'
-import { GhostState } from '@/shared/ui/GhostState'
+import { ContentIcon } from '@/shared/ui/clay'
+import { ntfIcon } from '@/features/notification/logic/kindIcon'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
@@ -53,7 +53,7 @@ export function NotificationFeedPage() {
 
   return (
     <MozaikPage tone="sky" className="nf-page">
-      <PageHead onBack={() => navigate('/me')} label="‹ Én" />
+      <PageHead glass onBack={() => navigate('/me')} label="Én" />
       {/* A `big`/`sub` az ÉLŐ `items`-ből olvasna 0-t a real-módú hideg-fetch alatt, ami a
           „nincs értesítésed" hazugságot ismételné a fejlécben is — pending alatt egyiket sem
           mutatjuk, ahelyett hogy egy még-be-nem-töltött 0-t állítanánk (fix round 1, item 1).
@@ -61,7 +61,7 @@ export function NotificationFeedPage() {
           a `sub` élő, tehát minden későbbi látogatáson egy nagy `0` állna a „6 értesítés" fölött.
           A `PageHero` `undefined`-ra kapuz, így bignum nélkül rajzol — ugyanaz az elv, amit a
           beállítások oldal mond ki magára („egy szám olyan értesítésekről, amik nem történhetnek"). */}
-      <PageHero icon="i-ertesites" name="Értesítések"
+      <PageHero art="t-bell" accent="var(--dv-sky)" name="Értesítések"
         big={isPending ? undefined : wasUnread.size || undefined}
         sub={isPending ? undefined : `${items.length} értesítés`} />
       <PageBody>
@@ -71,13 +71,14 @@ export function NotificationFeedPage() {
           // would tell the user "nincs értesítésed" and then immediately contradict itself
           // once the feed resolves (fix round 1, item 1). No distinctive feed-row shape to
           // mirror yet, so a generic skeleton stands in (WeekAnalysisPage.tsx idiom).
-          <div className="col gap-sm" role="status" aria-label="Betöltés…">
-            <Skeleton variant="card" height={64} />
-            <Skeleton variant="card" height={64} />
-            <Skeleton variant="card" height={64} />
+          <div className="nf-loading" role="status" aria-label="Betöltés…">
+            <Skeleton variant="card" height={66} radius={18} className="nf-skel" />
+            <Skeleton variant="card" height={66} radius={18} className="nf-skel" />
+            <Skeleton variant="card" height={66} radius={18} className="nf-skel" />
           </div>
         ) : groups.length === 0 ? (
-          <GhostState message="Még nincs értesítésed." />
+          // Üveg (mezo-me75u.7): the empty state is free space — a dashed sky outline, not a card.
+          <p className="nf-empty uv-empty">Még nincs értesítésed.</p>
         ) : (
           <EntranceGroup>
             {groups.map((g, gi) => (
@@ -101,8 +102,10 @@ export function NotificationFeedPage() {
                             aria-hidden pötty). A repó `sr-only` helperje viszi hangba is. */}
                         <span className="sr-only">Olvasatlan</span>
                       </>}
-                      <span className={cn('nf-ico', meta.tint)} aria-hidden="true">
-                        <ClayIcon name={meta.clay} size={20} />
+                      {/* Ugyanaz a 3D ikon, mint a fejléc paneljén (`ntfIcon`, közös térkép), egy
+                          fajta-tintával megvilágított kútban (üveg, mezo-me75u.7). */}
+                      <span className={cn('nf-ico uv-well', meta.tint)} aria-hidden="true">
+                        <ContentIcon name={ntfIcon(meta.clay)} size={28} />
                       </span>
                       <span className="nf-txt">
                         <span className="nf-t">{n.title}</span>
@@ -114,6 +117,7 @@ export function NotificationFeedPage() {
                 })}
               </div>
             ))}
+            <p className="nf-note">Az oldal megnyitásakor minden olvasottá válik.</p>
           </EntranceGroup>
         )}
       </PageBody>

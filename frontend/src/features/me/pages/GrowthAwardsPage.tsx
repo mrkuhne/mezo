@@ -3,6 +3,8 @@
 // #page-kit ×1.18 (spec §6). The progression's home (F7.4): StreakCard + TitlesSection
 // (buy/equip/saver + canMutate gating verbatim — the coin's only sink), the badge grid with
 // progress rings, the perks card. The hub's streak/coin chips and the legacy ?tab=awards land here.
+// Üveg re-dress (mezo-me75u.7, prototype uveg-en2.html `kitunt()`): sage halo hero t-record; the
+// skin of every section is scoped to `.gra-page`.
 // ============================================================
 import { useNavigate } from 'react-router-dom'
 import { useAchievements, useProgressionProfile } from '@/data/hooks'
@@ -24,9 +26,9 @@ export function GrowthAwardsPage() {
   const done = data.badges.filter((b) => b.achieved).length
   const next = nearestMilestone([...(profile.life ?? []), ...(profile.athletic ?? []), ...(profile.muscle ?? [])].map((s) => ({ name: nameOf(s.skillKey), level: s.level })))
   return (
-    <MozaikPage tone="sage">
-      <PageHead onBack={() => navigate('/me/growth')} label="‹ Growth" />
-      <PageHero spot="s-medal" iconSize={59} big={done} name={`/ ${data.badges.length} jelvény`} />
+    <MozaikPage tone="sage" className="gra-page">
+      <PageHead glass onBack={() => navigate('/me/growth')} label="Growth" />
+      <PageHero art="t-record" accent="var(--dv-sage)" name="Kitüntetések" big={<>{done}<small> / {data.badges.length} jelvény</small></>} />
       <PageBody principle="Az érme itt költhető el — címre vagy sorozat-mentőre. Semmi más nem vásárolható, és semmi nem jár le.">
         <EntranceGroup>
           <StreakCard delayMs={0} />

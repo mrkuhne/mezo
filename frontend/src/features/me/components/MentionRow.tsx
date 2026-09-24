@@ -1,8 +1,7 @@
 import type { CSSProperties } from 'react'
-import { Icon } from '@/shared/ui/Icon'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import type { Mention, PersonEntry } from '@/data/types'
-import { CTX_META, SRC_META } from '@/features/me/logic/peopleVisuals'
+import { CTX_META, SRC_META, toneColor } from '@/features/me/logic/peopleVisuals'
 
 /** Prototype `.mrowt.tw-*` wash keys, keyed by `Mention.tone` — mixed/neutral never carry
  *  the same wash: 'neutral'/undefined rows are intentionally left unwashed (the honest
@@ -22,6 +21,12 @@ const TONE_WASH: Partial<Record<NonNullable<Mention['tone']>, string>> = {
  * `personName` initial when the caller has no PersonEntry at hand, e.g. an archived
  * person), and the source disc/context chip now come straight from Task 1's SRC_META/
  * CTX_META rather than a locally re-derived icon map.
+ *
+ * Üveg (mezo-me75u.7, prototype `emlitesek()` `.mention`): a SECONDARY list, so the row is a
+ * flat tone-edged cell, never glass — the wash class paints a 3px tone edge + a faint tone tint
+ * (`--tc`). Top line: the source's 3D icon, the tone-ringed mini avatar, name, time · source,
+ * the undo ✕ in a flat round button. Under the quote ONE wrapping chip line: the context chip,
+ * the coral FIGYELEM pill, the „kapcsolódik" tie chip.
  */
 export function MentionRow({
   mention,
@@ -38,27 +43,23 @@ export function MentionRow({
   const ctx = mention.contextLabel ? CTX_META[mention.contextLabel] : null
   const wash = mention.tone ? TONE_WASH[mention.tone] : undefined
   const initial = person?.initial ?? mention.personName.charAt(0)
-  const style = delayMs !== undefined ? ({ '--d': `${delayMs}ms` } as CSSProperties) : undefined
+  const style = {
+    '--pc': toneColor(person?.affect_baseline ?? 'neutral'),
+    ...(wash && mention.tone ? { '--tc': toneColor(mention.tone) } : {}),
+    ...(delayMs !== undefined ? { '--d': `${delayMs}ms` } : {}),
+  } as CSSProperties
   const undoable = onUndo && (mention.source === 'text' || mention.source === 'chat')
+  const hasChips = Boolean(ctx || mention.flagged || mention.tiedTo)
 
   return (
     <div className={`ppl-mrowt${wash ? ` ${wash}` : ''} rise`} style={style}>
       <div className="ppl-mtop">
         <span className="ppl-srcdisc" title={src.label}>
-          {src.clay ? <ClayIcon name={src.clay} size={13} /> : <Icon name={src.icon ?? 'anchor'} size={12} />}
+          <Icon3D name={src.art} size={22} />
         </span>
         <span className="ppl-mavat">{initial}</span>
         <span className="ppl-mname">{mention.personName}</span>
         <span className="ppl-msrc">{mention.timeLabel} · {src.label}</span>
-        {ctx && (
-          <span
-            className="ppl-ctxch"
-            style={{ background: `color-mix(in srgb, var(${ctx.cssVar}) 16%, transparent)`, color: `var(${ctx.cssVar})` } as CSSProperties}
-          >
-            {ctx.label}
-          </span>
-        )}
-        {mention.flagged && <span className="ppl-figy">FIGYELEM</span>}
         {undoable && (
           <button
             type="button"
@@ -66,15 +67,26 @@ export function MentionRow({
             aria-label="Említés visszavonása"
             onClick={() => onUndo(mention)}
           >
-            <Icon name="x" size={10} />
+            <span aria-hidden="true">✕</span>
           </button>
         )}
       </div>
       <p className="ppl-mx">„{mention.excerpt}”</p>
-      {mention.tiedTo && (
-        <div className="ppl-mtie">
-          <span className="ppl-mtielbl">kapcsolódik</span>
-          <span className="ppl-mtiechip">{mention.tiedTo.label}</span>
+      {hasChips && (
+        <div className="ppl-mchips">
+          {ctx && (
+            <span className="ppl-ctxch" style={{ '--dc': `var(${ctx.cssVar})` } as CSSProperties}>
+              {ctx.label}
+            </span>
+          )}
+          {mention.flagged && <span className="ppl-figy">FIGYELEM</span>}
+          {mention.tiedTo && (
+            <span className="ppl-mtie">
+              <Icon3D name="t-link" size={16} />
+              <span className="ppl-mtielbl">kapcsolódik</span>
+              <span className="ppl-mtiechip">{mention.tiedTo.label}</span>
+            </span>
+          )}
         </div>
       )}
     </div>

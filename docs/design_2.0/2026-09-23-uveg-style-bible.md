@@ -471,3 +471,29 @@ The Észrevételek card, re-thought after the owner found it unreadable. Prototy
     the reading order; the order is sentence → evidence → question + pills (with a hairline).
     Evidence opens by default on an unanswered card and folds once answered.
 
+### U7 · Én II (`mezo-me75u.7`, 2026-09-24)
+
+Növekedés, rutin + szokások, napló, emberek, the full notification feed, and every settings page but
+Fuel's. Blocks: `── uveg en2 novekedes|rutin|naplo|emberek|ertesitesek|beallitasok (`. Ten new sprite
+icons (`t-bell t-anchor t-bulb t-scissors t-spark t-key t-exit t-palette t-flag t-brain`); the last two
+LIFE skills and `i-ertesites` joined `CLAY_TO_3D`. Prototype: [`prototypes/uveg-en2.html`](prototypes/uveg-en2.html).
+
+51. **A product rule outranks the approved prototype's colour.** The prototype drew a missed habit day
+    as a coral outline; ADR 0010 forbids failure styling, and the old grey was deliberate. The build
+    keeps it neutral, pinned by a structure test. Rule 46's twin: before shipping a colour that means
+    "bad", grep the decisions for it.
+52. **Boop stands for a domain, a 3D icon stands for a thing (owner, "vegyes", 2026-09-24).** The settings
+    hero and the domain tiles keep the living Boop; every `SettingsRow` now requires an `icon` and draws
+    it in a lit well, `domain` only tints it. Apply the same split wherever a mascot is used as a list glyph.
+53. **A page that borrows another area's classes owns them before it re-dresses.** The Napló page wore
+    Mezo's `mzh-*`/`mzp-*`/`mem-*` classes; scoping overrides would still have fought the Mezo skin, so it
+    renamed them to its own `mzj-*`. Cheaper than scoping, and the Mezo slice starts clean.
+54. **One list, one icon map.** The header panel and the feed page draw the same notification kinds, so
+    `NTF_3D`/`ntfIcon` moved to `features/notification/logic/kindIcon.ts` (rule 35's twin for icons).
+55. **An inline-styled shared control gets a `glass` prop, not `!important`.** `Toggle` set its colours
+    inline; it now takes `glass` and draws `.uv-tgl` from CSS. Those rules still live in the ertesitesek
+    block — the next slice that passes `<Toggle glass>` moves them into the kit first.
+56. **`PageHero` has no eyebrow slot.** Three builders worked around it (dropped it, or pushed a child up
+    with `order`). The next slice that needs one adds an `eyebrow` prop to the kit.
+57. **The ground is black now.** `--surface-page` became `#000000` in dark (`mezo-x4r3c`, 2026-09-23),
+    so §1's `#191614` is the card family, not the page. Keep writing `var(--canvas)`; never a literal.

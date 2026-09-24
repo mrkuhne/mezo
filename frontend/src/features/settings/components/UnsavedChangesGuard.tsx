@@ -5,7 +5,7 @@ import { Sheet } from '@/shared/ui/Sheet'
 function RouterGuard({ dirty }: { dirty: boolean }) {
   const blocker = useBlocker(dirty)
   if (blocker.state !== 'blocked') return null
-  return <Sheet onClose={() => blocker.reset()} labelledBy="unsaved-settings-title"><div className="col gap-md" style={{ padding: 16 }}>
+  return <Sheet onClose={() => blocker.reset()} labelledBy="unsaved-settings-title" className="glass is-still settings-guard-sheet"><div className="settings-guard-body">
     <h2 id="unsaved-settings-title">Nem mentett módosítások</h2>
     <p>A módosításaid elvesznek, ha most elhagyod az oldalt.</p>
     <button className="cta-primary" type="button" onClick={() => blocker.reset()}>Maradok, folytatom</button>

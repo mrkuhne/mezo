@@ -18,9 +18,10 @@ import { localDateString } from '@/shared/lib/dates'
 import { GhostState } from '@/shared/ui/GhostState'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import type { ClayIconName } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 
-const DAYPART_ICON: Record<HabitDaypart, ClayIconName> = { MORNING: 'i-hajnal', DAY: 'i-nap', EVENING: 'i-alvas' }
+// Üveg (mezo-me75u.7): mapped at the call site — `i-alvas` is sleep in CLAY_TO_3D, „este" here.
+const DAYPART_ART: Record<HabitDaypart, Icon3DName> = { MORNING: 't-dawn', DAY: 't-sun', EVENING: 't-moon' }
 const DAYPARTS: { key: HabitDaypart; label: string }[] = [
   { key: 'MORNING', label: 'Reggel' },
   { key: 'DAY', label: 'Nap' },
@@ -63,16 +64,16 @@ export function ChainPage() {
   if (chain == null) {
     if (isPending) {
       return (
-        <MozaikPage tone="lav">
-          <PageHead onBack={() => navigate('/me/rutin')} label="‹ Rutin" />
+        <MozaikPage tone="lav" className="rt-uv rt-lanc">
+          <PageHead glass onBack={() => navigate('/me/rutin')} label="Rutin" />
           <PageBody><GhostState message="Lánc betöltése…" lines={3} /></PageBody>
         </MozaikPage>
       )
     }
     if (isError) {
       return (
-        <MozaikPage tone="lav">
-          <PageHead onBack={() => navigate('/me/rutin')} label="‹ Rutin" />
+        <MozaikPage tone="lav" className="rt-uv rt-lanc">
+          <PageHead glass onBack={() => navigate('/me/rutin')} label="Rutin" />
           <PageBody>
             <GhostState message="Nem sikerült betölteni a láncot." ctaLabel="Újra" onCta={refetch} />
           </PageBody>
@@ -132,7 +133,7 @@ export function ChainPage() {
             className={cn('rt-snode', status === 'done' && 'on', isNext && 'next')}
             aria-hidden="true"
           >
-            {status === 'done' ? '✓' : isNext ? '›' : ''}
+            {status === 'done' ? <Icon3D name="t-tick" size={22} /> : isNext ? '›' : ''}
           </span>
         </span>
         <button
@@ -143,7 +144,7 @@ export function ChainPage() {
         >
           <span className="rt-sbody-nm">{d.title}</span>
           <span className={cn('rt-achip', `is-${a.kind}`)}>
-            <span aria-hidden="true">{a.kind === 'free' ? '✎' : '⚓'}</span> {a.label}
+            <Icon3D name={a.kind === 'free' ? 't-note' : 't-anchor'} size={15} />{a.label}
           </span>
         </button>
         {editing ? (
@@ -152,8 +153,8 @@ export function ChainPage() {
             <button type="button" aria-label={`${d.title} lejjebb`} disabled={i === defs.length - 1 || pending} onClick={() => move(d.id, 1)}>▼</button>
           </span>
         ) : (
-          <span className="rt-smini" aria-hidden="true">
-            {strength != null && <span style={{ width: `${strength}%` }} />}
+          <span className="rt-smini uv-bar" aria-hidden="true">
+            {strength != null && <b style={{ '--w': `${strength}%` } as CSSProperties} />}
           </span>
         )}
       </div>
@@ -161,11 +162,11 @@ export function ChainPage() {
   }
 
   return (
-    <MozaikPage tone="lav">
-      <PageHead onBack={() => navigate('/me/rutin')} label="‹ Rutin">
+    <MozaikPage tone="lav" className="rt-uv rt-lanc">
+      <PageHead glass onBack={() => navigate('/me/rutin')} label="Rutin">
         <button
           type="button"
-          className="mz-pgact"
+          className="mz-pgact rt-act is-lav"
           disabled={pending}
           onClick={() => (editing ? finishEdit() : setEditing(true))}
         >
@@ -173,8 +174,8 @@ export function ChainPage() {
         </button>
       </PageHead>
       <PageHero
-        icon={DAYPART_ICON[chain.daypart]}
-        iconSize={46}
+        art={DAYPART_ART[chain.daypart]}
+        accent="var(--dv-lav)"
         big={`${doneCount} / ${defs.length}`}
         name={`${chain.title} lánc`}
         sub={defs.map((d) => d.title.split(' · ')[0].toLowerCase()).join(' → ') || 'még nincs szokás a láncban'}
@@ -202,7 +203,7 @@ export function ChainPage() {
                       className={cn(daypart === dp.key && 'on')}
                       onClick={() => setDaypart(dp.key)}
                     >
-                      {dp.label}
+                      <Icon3D name={DAYPART_ART[dp.key]} size={18} />{dp.label}
                     </button>
                   ))}
                 </div>
@@ -210,20 +211,20 @@ export function ChainPage() {
             </>
           )}
 
-          <div className="rt-macard rise" style={rise(60)}>
+          <div className="rt-macard glass rise" style={rise(60)}>
             <div className="rt-macard-head">
               <span className="rt-macard-t">{editing ? 'Sorrend és horgonyok' : 'A lánc sorrendben'}</span>
               <span className="rt-macard-c">{doneCount} / {defs.length} kész</span>
             </div>
             {defs.map((d, i) => stackRow(d, i))}
             {defs.length === 0 && (
-              <p className="rt-hint">Ez a lánc még üres — a „＋ Új habit” sor indítja az első szokást.</p>
+              <p className="rt-hint rt-emptyline uv-empty">Ez a lánc még üres — a „＋ Új habit” sor indítja az első szokást.</p>
             )}
           </div>
 
           {editing && brokenRows.length > 0 && (
             <div className="rt-warn rise" style={rise(75)} data-testid="stack-warn">
-              <span aria-hidden="true">⚠</span>
+              <Icon3D name="t-info" size={26} />
               <span>
                 <b>A sorrend és a horgony nem ugyanazt mondja:</b>{' '}
                 {brokenRows.map((d) => d.title).join(', ')} nem az előző eleméhez kötődik. A kötél
@@ -244,6 +245,7 @@ export function ChainPage() {
           {editing && (
             <>
               <button type="button" className="rt-danger rise" style={rise(110)} disabled={pending} onClick={togglePause}>
+                <Icon3D name={chain.isActive ? 't-hold' : 't-play'} size={22} />
                 {chain.isActive ? 'Lánc szüneteltetése — a szokások megmaradnak' : 'Folytatás — a lánc újra él'}
               </button>
               {isSeed ? (
@@ -258,6 +260,7 @@ export function ChainPage() {
                   disabled={pending}
                   onClick={remove}
                 >
+                  <Icon3D name="t-trash" size={22} />
                   {confirmDelete ? 'Biztosan törlöd? Koppints újra' : 'Lánc törlése'}
                 </button>
               )}

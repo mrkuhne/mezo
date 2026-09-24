@@ -1,6 +1,5 @@
-import { affectColor } from '@/data/me/people'
 import type { MentionContext, PersonEntry } from '@/data/types'
-import { CTX_META } from '@/features/me/logic/peopleVisuals'
+import { CTX_META, toneColor } from '@/features/me/logic/peopleVisuals'
 
 /**
  * Mozaik re-face (mezo-d20.6.7) — prototype en-body .persont: a 2-col washed
@@ -16,6 +15,10 @@ import { CTX_META } from '@/features/me/logic/peopleVisuals'
  * caller that never passes them (or passes an empty array — no trend points, no
  * context-labeled mentions) sees no empty container rendered — never a fabricated
  * flat bar or a colorless dot.
+ *
+ * Üveg (mezo-me75u.7, prototype `kor()` `.pcard`): the card is a `.glass` in the person's OWN
+ * tone (`--c` on the card itself, bible U1 rule 4), the avatar a lit well ringed in that tone
+ * with the affect ring's fill (`--av`) kept, the spark bars and the context dots glow.
  */
 export function PersonCard({ person, delayMs, onTap, spark, ctxDots }: {
   person: PersonEntry
@@ -24,19 +27,20 @@ export function PersonCard({ person, delayMs, onTap, spark, ctxDots }: {
   spark?: number[]
   ctxDots?: MentionContext[]
 }) {
-  const color = affectColor(person.affect_baseline)
+  const color = toneColor(person.affect_baseline)
   const last = person.affectTrend[person.affectTrend.length - 1] ?? 0
   const ringPct = Math.max(0, Math.min(100, Math.round((last / 5) * 100)))
   const style = {
+    '--c': color,
     '--ac': color,
     '--av': `${ringPct}%`,
     ...(delayMs !== undefined ? { '--d': `${delayMs}ms` } : {}),
   } as React.CSSProperties
 
   return (
-    <button type="button" onClick={onTap} className="ppl-tile rise" style={style} aria-label={`${person.name} részletei`}>
+    <button type="button" onClick={onTap} className="ppl-tile glass rise" style={style} aria-label={`${person.name} részletei`}>
       <div className="ppl-avat">
-        <div className="ppl-avin" style={{ color }}>{person.initial}</div>
+        <div className="ppl-avin">{person.initial}</div>
       </div>
       <span className="ppl-nm">{person.name}</span>
       <span className="ppl-rl">{person.relationshipHu}</span>
@@ -47,7 +51,6 @@ export function PersonCard({ person, delayMs, onTap, spark, ctxDots }: {
               key={i}
               style={{
                 height: `${h}px`,
-                background: color,
                 opacity: 0.45 + i * 0.07,
                 '--d': `${250 + i * 40}ms`,
               } as React.CSSProperties}
@@ -58,7 +61,7 @@ export function PersonCard({ person, delayMs, onTap, spark, ctxDots }: {
       {ctxDots && ctxDots.length > 0 && (
         <div className="ppl-ctxdots">
           {ctxDots.slice(0, 3).map((ctx, i) => (
-            <i key={`${ctx}-${i}`} style={{ background: `var(${CTX_META[ctx].cssVar})` }} />
+            <i key={`${ctx}-${i}`} style={{ background: `var(${CTX_META[ctx].cssVar})`, '--dc': `var(${CTX_META[ctx].cssVar})` } as React.CSSProperties} />
           ))}
         </div>
       )}

@@ -1673,3 +1673,52 @@ describe('the uveg mezo mibol section carries the glass ranking (mezo-me75u.13)'
     expect(stripComments(rawCss)).not.toMatch(/\.pdt-state-card\b|\.pdt-belief-ring\b|\.pdt-hero-decision\b/)
   })
 })
+
+// U7 · Én II (mezo-me75u.7, prototypes/uveg-en2.html): six parallel builders, and two of them
+// saved the whole stylesheet once (bible rule 41) — the key selectors below were verified at
+// integration and pin each block so a later whole-file save that drops one fails CI.
+const U7_BLOCKS: Array<[string, string[]]> = [
+  ['novekedes', ['.grs-page .gr-band.glass', '.grs-page .gr-skl-ic.mono', '.grs-page .gr-skl-lv', '.grn-page .gr-day.glass',
+    '.grn-page .gr-jrow .gr-jdot i', '.gra-page .gr-streak.gr-band::before', '.gra-page .gr-titcard.glass',
+    '.gra-page .gr-bdg .gr-ring svg', '.gra-page .gr-perks.glass']],
+  ['rutin', ['.rt-hub .rt-nextcard.glass', '.rt-hub .rt-nextcard .rt-bigtick', '.rt-hub .rt-chaintile.glass',
+    '.rt-hub .mz-tile.glass.rt-door', '.rt-lanc .rt-macard.glass', '.rt-szokasok .rt-htile.glass',
+    '.rt-szokas .rt-poster.glass', '.rt-szokas .rt-ctxgrid.glass', '.rt-wiz .rt-fwcard.glass', '.sheet.glass.rt-sheet']],
+  ['naplo', ['.mzj-page .mz-pgact.mzj-newbtn', '.mzj-page .mzj-grat.glass', '.mzj-page .mzj-deccard.glass',
+    '.mzj-page .mzj-rate .mzj-rate-cta', '.mzj-page .mzj-decdone', '.mzj-page .mzj-note', '.mzj-page .mzj-empty.uv-empty',
+    '.mzj-decsheet .mzj-dsh-head']],
+  ['emberek', ['.ppl-hub .ppl-hub-tile.glass', '.ppl-kor .ppl-tile.glass', '.ppl-jel .ppl-candt.glass',
+    '.ppl-eml .ppl-rhythm.glass', '.ppl-eml .ppl-mrowt.ppl-tw-jo', '.ppl-heti .ppl-dirt.glass', '.ppl-heti .ppl-quietcard.glass',
+    '.ppl-detail .mz-page-hero.ppl-phero.uv-halo', '.ppl-detail .ppl-tlcard.glass', '.sheet.glass.ppl-sheet']],
+  ['ertesitesek', ['.nf-page .nf-row.unread', '.nf-page .nf-row .nf-dot', '.nf-page .nf-ico.uv-well',
+    '.nf-page .nf-empty.uv-empty', '.ntf-page .ntf-prev.glass', '.ntf-page .ntf-prev-bars i.hot',
+    '.ntf-page .ntf-masterrow.glass', '.ntf-page .ntf-cats.glass', '.ntf-page .uv-tgl.is-on', '.ntf-page .ntf-gate.glass']],
+  ['beallitasok', ['.settings-page .settings-back.glass', '.settings-page .settings-hero::before',
+    '.settings-page .settings-current.glass', '.settings-page .settings-domain.glass:last-child',
+    '.settings-page .settings-rows.glass', '.settings-page .settings-row-art.uv-well', '.settings-page .settings-day.is-on',
+    '.settings-page .personal-context-list.glass', '.sheet.glass.settings-guard-sheet',
+    '.goal-detail-settings-page .goal-pace-editor.glass', '.goal-detail-settings-page .goal-settings-grid.glass']],
+]
+
+describe.each(U7_BLOCKS)('the uveg en2 %s section carries the glass ranking (mezo-me75u.7)', (name, sels) => {
+  const section = () => stripComments(slice(`── uveg en2 ${name} (`, `── /uveg en2 ${name} `))
+
+  test('the block exists and dresses every surface of the group', () => {
+    const css = section()
+    for (const sel of sels) expect(css, `${sel} missing from the uveg en2 ${name} block`).toContain(sel)
+  })
+
+  test('never glass inside glass (U1 rule 5)', () => {
+    expect(section()).not.toMatch(/\.glass [^{,]*\.glass[\s,{]/)
+  })
+
+  test('the ground is written as a token that exists (--canvas, never the undefined --page)', () => {
+    expect(section()).not.toContain('var(--page)')
+  })
+})
+
+test('a missed habit day stays neutral, never failure-red (ADR 0010)', () => {
+  const css = stripComments(slice('── uveg en2 rutin (', '── /uveg en2 rutin '))
+  const rule = css.slice(css.indexOf('.rt-szokas .rt-cal i.is-miss'))
+  expect(rule.slice(0, rule.indexOf('}'))).not.toContain('coral')
+})

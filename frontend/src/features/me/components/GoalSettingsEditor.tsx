@@ -19,12 +19,12 @@ export function GoalSettingsEditor({ goal, currentWeight }: { goal: GoalResponse
   const date = deriveGoalTargetDate(today, currentWeight, Number(target), Number(pace), goal.trajectory)
   const request = date ? buildGoalSettingsRequest(goal, Number(target), date) : null
   const state = useGoalSettings(goal, request, date ? { trajectory: goal.trajectory, startDate: today, startWeightKg: currentWeight, targetDate: date, targetWeightKg: Number(target) } : null)
-  if (goal.trajectory === 'maintain') return <section className="goal-pace-editor"><h2>Súlytartás</h2><p>A súlytartásnak nincs elérkezési céldátuma. Az eredeti követési időszak változatlan marad.</p></section>
+  if (goal.trajectory === 'maintain') return <section className="goal-pace-editor glass"><h2>Súlytartás</h2><p>A súlytartásnak nincs elérkezési céldátuma. Az eredeti követési időszak változatlan marad.</p></section>
   const save = async () => {
     if (!request) return
     try { await state.save(request); setDirty(false); setSaved(true) } catch { /* mutation error remains visible below */ }
   }
-  return <section className="goal-pace-editor" aria-label="Súlycél módosítása">
+  return <section className="goal-pace-editor glass" aria-label="Súlycél módosítása">
     <UnsavedChangesGuard dirty={dirty} /><span className="eyebrow">A te tempódban</span><h2>Célból dátum</h2>
     <p>Számítási alap: {hu1(currentWeight)} kg · {today}. A tempó a még hátralévő útra vonatkozik.</p>
     <>{expired && <p>A korábbi céldátum már elmúlt. Adj meg új, vállalható heti tempót; ebből számoljuk az új becsült dátumot.</p>}</>

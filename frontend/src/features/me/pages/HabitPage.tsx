@@ -21,16 +21,17 @@ import { cn } from '@/shared/lib/cn'
 import { GhostState } from '@/shared/ui/GhostState'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import type { ClayIconName } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 
-// The hero icon follows the OWNING CHAIN's daypart (RutinHubPage's DAYPART_ICON map) — a
-// hardcoded dawn spot lied on every evening habit.
-const DAYPART_ICON: Record<HabitDaypart, ClayIconName> = { MORNING: 'i-hajnal', DAY: 'i-nap', EVENING: 'i-alvas' }
+// The hero icon follows the OWNING CHAIN's daypart (RutinHubPage's DAYPART_ART map) — a
+// hardcoded dawn spot lied on every evening habit. Üveg (mezo-me75u.7): mapped here, since
+// `i-alvas` is sleep in CLAY_TO_3D and „este" on a rutin chain.
+const DAYPART_ART: Record<HabitDaypart, Icon3DName> = { MORNING: 't-dawn', DAY: 't-sun', EVENING: 't-moon' }
 
-const FW_LABEL: Record<'FOGG' | 'CLEAR' | 'NONE', string> = {
-  FOGG: '⚓ Szokás-láncolás',
-  CLEAR: '◈ Négy törvény',
-  NONE: '· Keret nélkül',
+const FW_LABEL: Record<'FOGG' | 'CLEAR' | 'NONE', { art: Icon3DName; text: string }> = {
+  FOGG: { art: 't-anchor', text: 'Szokás-láncolás' },
+  CLEAR: { art: 't-gem', text: 'Négy törvény' },
+  NONE: { art: 't-note', text: 'Keret nélkül' },
 }
 
 const PRINCIPLE = 'Ez az oldal a részleteké: a recept itt csak olvasható mondat. A szerkesztés '
@@ -55,8 +56,8 @@ export function HabitPage() {
   if (def == null) {
     if (isPending) {
       return (
-        <MozaikPage tone="gold">
-          <PageHead onBack={() => navigate('/me/rutin')} label="‹ Rutin" />
+        <MozaikPage tone="gold" className="rt-uv rt-szokas">
+          <PageHead glass onBack={() => navigate('/me/rutin')} label="Rutin" />
           <PageBody><GhostState message="Szokás betöltése…" lines={3} /></PageBody>
         </MozaikPage>
       )
@@ -65,8 +66,8 @@ export function HabitPage() {
     // exists, with no word about the failure. Only a catalog that actually answered redirects.
     if (isError) {
       return (
-        <MozaikPage tone="gold">
-          <PageHead onBack={() => navigate('/me/rutin')} label="‹ Rutin" />
+        <MozaikPage tone="gold" className="rt-uv rt-szokas">
+          <PageHead glass onBack={() => navigate('/me/rutin')} label="Rutin" />
           <PageBody>
             <GhostState message="Nem sikerült betölteni a szokást." ctaLabel="Újra" onCta={refetch} />
           </PageBody>
@@ -85,15 +86,15 @@ export function HabitPage() {
   const toEditor = () => navigate(`/me/rutin/szokas/${habitKey}/szerkesztes`)
 
   return (
-    <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate('/me/rutin')} label="‹ Rutin">
-        <button type="button" className="mz-pgact" onClick={toEditor}>Szerkesztés</button>
+    <MozaikPage tone="gold" className="rt-uv rt-szokas">
+      <PageHead glass onBack={() => navigate('/me/rutin')} label="Rutin">
+        <button type="button" className="mz-pgact rt-act" onClick={toEditor}>Szerkesztés</button>
       </PageHead>
       {/* Honesty rule: a definition with no summary row has no 28-day standing yet — show no
           number and no sub rather than a confident "0%  ·  0 pipa · 0 kihagyás". */}
       <PageHero
-        icon={DAYPART_ICON[daypart]}
-        iconSize={46}
+        art={DAYPART_ART[daypart]}
+        accent="var(--dv-amber)"
         big={row?.strengthPct != null ? `${row.strengthPct}%` : undefined}
         name={def.title}
         sub={row != null ? `28 napos erő · ${done28} pipa · ${missed28} kihagyás` : undefined}
@@ -104,7 +105,7 @@ export function HabitPage() {
               dimming was the only signal anywhere, and it is not on this page. */}
           {!def.isActive && (
             <div className="rt-tip is-warn rise" style={rise(40)} data-testid="paused-note">
-              <span aria-hidden="true">⏸</span>
+              <Icon3D name="t-hold" size={26} />
               <span>
                 <b>Szüneteltetve.</b> Ez a szokás most nem jelenik meg a Nap tabon — az erő-történet
                 közben megmarad. A „Folytatás” a szerkesztő oldalon vár.
@@ -124,8 +125,8 @@ export function HabitPage() {
                 <span className="rt-flabel">Kontextus <span className="rt-opt">a legerősebb jel</span></span>
                 <HabitContextRings f={formation} anchored={def.anchorHabitKey != null} />
               </div>
-              <div className="rt-fcard rise" style={rise(100)}>
-                <span className="rt-flabel">Előzmény <span className="rt-opt">az első naptól</span></span>
+              <span className="rt-flabel rise" style={rise(100)}>Előzmény <span className="rt-opt">az első naptól</span></span>
+              <div className="rt-fcard rt-histcard glass rise" style={rise(100)}>
                 <HabitFormationHistory f={formation} />
               </div>
             </>
@@ -142,16 +143,16 @@ export function HabitPage() {
                 style={{ marginLeft: 'auto' }}
                 onClick={toEditor}
               >
-                ✎ szerkesztem ›
+                szerkesztem ›
               </button>
             </span>
           </div>
           <div
-            className={cn('rt-sentence is-big rise', def.framework === 'CLEAR' && 'is-clear')}
+            className={cn('rt-sentence glass is-big rise', def.framework === 'CLEAR' && 'is-clear')}
             style={rise(140)}
             data-testid="recipe-sentence"
           >
-            <span className="rt-sentence-lb">{FW_LABEL[fwKey]}</span>
+            <span className="rt-sentence-lb"><Icon3D name={FW_LABEL[fwKey].art} size={18} />{FW_LABEL[fwKey].text}</span>
             <p className="rt-sentence-tx">
               {routineSentenceParts(recipe).map((part, i) => (
                 part.slot === undefined

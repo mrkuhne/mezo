@@ -48,9 +48,12 @@ test('hero counts completed quests; "Ez a hét" tile shows the 4 cells + savings
   const completed = mockQuestHistory.filter((q) => q.status === 'completed').length
   // scoped: the bare digit also appears elsewhere on the page (day XP, mcells) — the hero's own
   // big-number span is unambiguous.
-  expect(within(container.querySelector('.mz-hero-row')!).getByText(String(completed))).toBeInTheDocument()
+  expect(within(container.querySelector('.mz-bignum')!).getByText(String(completed))).toBeInTheDocument()
   expect(screen.getByText('teljesített küldetés')).toBeInTheDocument()
   expect(screen.getByText('Ez a hét')).toBeInTheDocument()
+  // üveg (mezo-me75u.7): the cell label carries the meaning, no ✓ glyph
+  expect(screen.getByText('küldetés')).toBeInTheDocument()
+  expect(container.textContent).not.toContain('✓')
   expect(screen.getByText('Júl 6 – Júl 12')).toBeInTheDocument()
   // scoped: '6' / '1' collide with other digits on the page — the week tile's own mcells row
   // is unambiguous.

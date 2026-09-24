@@ -27,13 +27,18 @@
 // `PersonAffectTrendCalculator`, the single source of truth the backend and this page now
 // share. S3's local `whyLine` (a deterministic majority-tone stand-in for the "why" line,
 // explicitly temporary per its own comment) is retired along with it.
+//
+// Üveg (mezo-me75u.7, prototype `heti()`): a lavender t-calendar halo hero; the tone mix is ONE
+// lavender glass card (glowing tone slices + dot legend); every direction card is glass in its
+// direction's colour (down = the Nehéz tone, up = Jó, flat = OK); the week's moment is a glass
+// card in that mention's tone; the quiet people sit as flat rows inside ONE rose glass card.
 import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { usePeople } from '@/data/hooks'
 import { toneMix, quietPeople, weekMoment, trendHeights, weekWindow } from '@/features/me/logic/peopleDerive'
-import { TONE_META, SRC_META } from '@/features/me/logic/peopleVisuals'
+import { TONE_META, SRC_META, toneColor } from '@/features/me/logic/peopleVisuals'
 import { PersonLogSheet } from '@/features/me/sheets/PersonLogSheet'
 import type { Mention, PersonEntry } from '@/data/types'
 
@@ -45,7 +50,7 @@ const DIR_ARROW: Record<Direction, string> = { down: '↘', up: '↗', flat: '�
 const DIR_COLOR: Record<Direction, string> = {
   down: 'var(--ppl-tone-nehez)',
   up: 'var(--ppl-tone-jo)',
-  flat: 'var(--mz-ink-mut)',
+  flat: 'var(--ppl-tone-ok)',
 }
 const DIR_WEIGHT: Record<Direction, number> = { down: 0, up: 1, flat: 2 }
 
@@ -57,14 +62,14 @@ function DirCard({ person, weekMentions, onTap, delayMs }: {
 }) {
   const direction = person.direction
   const own = weekMentions.filter((m) => m.person_id === person.id)
-  const style = { '--d': `${delayMs}ms` } as CSSProperties
+  const style = { '--d': `${delayMs}ms`, '--c': DIR_COLOR[direction], '--pc': toneColor(person.affect_baseline) } as CSSProperties
 
   return (
-    <button type="button" className={`ppl-dirt ${direction} rise`} style={style} onClick={onTap}>
-      <div className="row" style={{ gap: 7, width: '100%' }}>
+    <button type="button" className={`ppl-dirt ${direction} glass rise`} style={style} onClick={onTap}>
+      <div className="ppl-dirhead">
         <span className="ppl-mavat">{person.initial}</span>
-        <b style={{ fontSize: 10.5 }}>{person.name}</b>
-        <span className="ppl-arr2" style={{ color: DIR_COLOR[direction], marginLeft: 'auto' }}>{DIR_ARROW[direction]}</span>
+        <b>{person.name}</b>
+        <span className="ppl-arr2">{DIR_ARROW[direction]}</span>
       </div>
       {own.length > 0 && (
         <div className="ppl-spark">
@@ -100,16 +105,16 @@ export function PeopleHetiPage() {
   const quiet = quietPeople(people)
 
   return (
-    <MozaikPage tone="lav">
-      <PageHead onBack={() => navigate('/me/people')} label="‹ Kapcsolatok" />
+    <MozaikPage tone="lav" className="ppl-page ppl-heti">
+      <PageHead glass onBack={() => navigate('/me/people')} label="Kapcsolatok" />
 
-      <PageHero icon="i-heti" name="Heti kép" big={weekMentions.length} sub="említés e héten" />
+      <PageHero art="t-calendar" accent="var(--dv-lav)" big={weekMentions.length} name="Heti kép" sub="említés e héten" />
 
       <PageBody>
         <EntranceGroup>
-          <div className="ppl-tonemixc rise" style={{ '--d': '0ms' } as CSSProperties}>
+          <div className={`ppl-tonemixc rise ${slices.length > 0 ? 'glass' : 'uv-empty'}`} style={{ '--d': '0ms', '--i': 1 } as CSSProperties}>
             <div className="mz-tile-top">
-              <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-lav-ink)' }}>A hét tónusa</span>
+              <span className="mz-eyebrow">A hét tónusa</span>
               <span className="ppl-mixcnt">{weekMentions.length} említés</span>
             </div>
             {slices.length > 0 ? (
@@ -118,28 +123,28 @@ export function PeopleHetiPage() {
                   {slices.map((slice, i) => (
                     <i
                       key={slice.tone}
-                      style={{ width: `${slice.pct}%`, background: `var(${TONE_META[slice.tone].cssVar})`, '--d': `${150 + i * 120}ms` } as CSSProperties}
+                      style={{ width: `${slice.pct}%`, background: `var(${TONE_META[slice.tone].cssVar})`, '--tc': `var(${TONE_META[slice.tone].cssVar})`, '--d': `${150 + i * 120}ms` } as CSSProperties}
                     />
                   ))}
                 </div>
                 <div className="ppl-mixleg">
                   {slices.map((slice) => (
                     <span key={slice.tone}>
-                      <i style={{ background: `var(${TONE_META[slice.tone].cssVar})` } as CSSProperties} />
+                      <i aria-hidden="true" style={{ background: `var(${TONE_META[slice.tone].cssVar})`, '--tc': `var(${TONE_META[slice.tone].cssVar})` } as CSSProperties} />
                       {slice.count} {TONE_META[slice.tone].label.toLowerCase()}
                     </span>
                   ))}
                 </div>
               </>
             ) : (
-              <p className="ppl-empty" style={{ marginTop: 9 }}>Még nincs tónusozott említés ezen a héten.</p>
+              <p className="ppl-tonemix-emptytx">Még nincs tónusozott említés ezen a héten.</p>
             )}
           </div>
 
           {directed.length > 0 && (
             <>
               <div className="ppl-lsec rise" style={{ '--d': '40ms' } as CSSProperties}>
-                <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-lav-ink)' }}>Irányok · 7 nap</span>
+                <span className="mz-eyebrow">Irányok · 7 nap</span>
               </div>
               <div className="ppl-dirgrid">
                 {directed.map(({ person }, i) => (
@@ -158,20 +163,25 @@ export function PeopleHetiPage() {
           {moment && momentPerson && momentSrc && (
             <>
               <div className="ppl-lsec rise" style={{ '--d': '120ms' } as CSSProperties}>
-                <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-rose-ink)' }}>A hét pillanata</span>
+                <span className="mz-eyebrow">A hét pillanata</span>
               </div>
-              <div className="ppl-momentt rise" style={{ '--d': '140ms' } as CSSProperties}>
-                <div className="row" style={{ gap: 8 }}>
+              <div
+                className="ppl-momentt glass rise"
+                style={{
+                  '--d': '140ms',
+                  '--i': 5,
+                  '--c': momentTone ? `var(${momentTone.cssVar})` : 'var(--dv-rose)',
+                  '--pc': toneColor(momentPerson.affect_baseline),
+                } as CSSProperties}
+              >
+                <div className="ppl-momenthead">
                   <span className="ppl-mavat">{momentPerson.initial}</span>
-                  <div className="col" style={{ flex: 1 }}>
-                    <b style={{ fontSize: 10 }}>{momentPerson.name}</b>
+                  <div className="col" style={{ flex: 1, minWidth: 0 }}>
+                    <b>{momentPerson.name}</b>
                     <span className="ppl-mt">{moment.dayLabel} {moment.timeLabel} · {momentSrc.label}</span>
                   </div>
                   {momentTone && (
-                    <span
-                      aria-hidden="true"
-                      style={{ width: 8, height: 8, borderRadius: '50%', background: `var(${momentTone.cssVar})`, flex: 'none' } as CSSProperties}
-                    />
+                    <span className="ppl-tonedot" aria-label={`tónus: ${momentTone.label}`} role="img" />
                   )}
                 </div>
                 <div className="ppl-bigq">„{moment.excerpt}”</div>
@@ -182,21 +192,27 @@ export function PeopleHetiPage() {
           {quiet.length > 0 && (
             <>
               <div className="ppl-lsec rise" style={{ '--d': '170ms' } as CSSProperties}>
-                <span className="mz-eyebrow" style={{ color: 'var(--mz-ink-mut)' }}>Csendben maradt</span>
+                <span className="mz-eyebrow">Csendben maradt</span>
                 <span className="ppl-cnt">{quiet.length}</span>
               </div>
-              {quiet.map((person, i) => (
-                <div key={person.id} className="ppl-quiett rise" style={{ '--d': `${190 + i * 30}ms` } as CSSProperties}>
-                  <span className="ppl-mavat">{person.initial}</span>
-                  <div className="col" style={{ flex: 1 }}>
-                    <div className="ppl-qnm">{person.name}</div>
-                    <div className="ppl-qtx">{person.lastMentionLabel} — jólesne neki egy jel?</div>
+              <div className="ppl-quietcard glass rise" style={{ '--d': '190ms', '--i': 6 } as CSSProperties}>
+                {quiet.map((person) => (
+                  <div
+                    key={person.id}
+                    className="ppl-quiett"
+                    style={{ '--pc': toneColor(person.affect_baseline) } as CSSProperties}
+                  >
+                    <span className="ppl-mavat">{person.initial}</span>
+                    <div className="col" style={{ flex: 1, minWidth: 0 }}>
+                      <div className="ppl-qnm">{person.name}</div>
+                      <div className="ppl-qtx">{person.lastMentionLabel} — jólesne neki egy jel?</div>
+                    </div>
+                    <button type="button" className="ppl-quietbtn" onClick={() => setQuietTarget(person)}>
+                      Írok neki
+                    </button>
                   </div>
-                  <button type="button" className="cta-ghost" style={{ padding: '4px 10px', fontSize: 9 }} onClick={() => setQuietTarget(person)}>
-                    Írok neki
-                  </button>
-                </div>
-              ))}
+                ))}
+              </div>
             </>
           )}
 

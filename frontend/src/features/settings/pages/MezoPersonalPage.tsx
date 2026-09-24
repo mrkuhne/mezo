@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom'
 import { useCompanionPreferences, usePersonalContext, useKnowledgeGraphNodes, useKnowledgeGraphActions } from '@/data/hooks'
 import type { CompanionPreferences } from '@/data/companion/preferencesApi'
 import { isMockMode } from '@/data/_client/mode'
-import { SettingsFrame, SettingsRow, useSettingsOrigin } from '@/features/settings/components/SettingsFrame'
+import { SettingsFrame, SettingsRow, SettingsRows, useSettingsOrigin } from '@/features/settings/components/SettingsFrame'
 import { UnsavedChangesGuard } from '@/features/settings/components/UnsavedChangesGuard'
 import { PROFILE_SOURCE_KIND } from '@/data/insights/graph'
 import { ProfileNodeCard } from '@/features/insights/components/ProfileNodeCard'
+import { Icon3D } from '@/shared/ui/clay'
 import '@/features/settings/personal-settings.css'
 
 type Mode = 'about' | 'communication' | 'context'
@@ -31,11 +32,13 @@ function PersonalEditor({ mode }: { mode: 'about' | 'communication' }) {
   return <>
     <UnsavedChangesGuard dirty={dirty} />
     {about && <div className="personal-sources"><CoreFacts /><span className="settings-kicker">A TÉNYEK FORRÁSA</span>
-      <SettingsRow to="/settings/account" title="Név és fiók" description="A megszólításod innen származik." domain="me" />
-      <SettingsRow to="/settings/me/biometrics" title="Testadatok és életkor" description="Magasság, születési dátum, aktivitás." domain="me" />
-      <SettingsRow to="/settings/me/goal" title="Súly- és edzéscéljaim" description="Az aktív cél és a mért adatok a saját helyükön javíthatók." domain="train" />
+      <SettingsRows domain="me">
+        <SettingsRow to="/settings/account" title="Név és fiók" description="A megszólításod innen származik." icon="t-person" domain="me" />
+        <SettingsRow to="/settings/me/biometrics" title="Testadatok és életkor" description="Magasság, születési dátum, aktivitás." icon="t-heart" domain="me" />
+        <SettingsRow to="/settings/me/goal" title="Súly- és edzéscéljaim" description="Az aktív cél és a mért adatok a saját helyükön javíthatók." icon="t-weight" domain="train" />
+      </SettingsRows>
     </div>}
-    <form className="personal-editor" onSubmit={async (event) => {
+    <form className="personal-editor glass" onSubmit={async (event) => {
       event.preventDefault()
       try { await query.save(values); setDraft(null); setSaved(true) } catch { setSaved(false) }
     }}>
@@ -49,14 +52,14 @@ function PersonalEditor({ mode }: { mode: 'about' | 'communication' }) {
       <button className="cta-primary" type="submit" disabled={!dirty || query.saving}>{query.saving ? 'Mentés…' : 'Változtatások mentése'}</button>
     </form>
     {!about && <LearnedProfile />}
-    <SettingsRow to="/settings/mezo/context" title="Nézd meg, mi kerül be" description="A mentett személyes blokkok pontos előnézete." />
+    <SettingsRows domain="nap"><SettingsRow to="/settings/mezo/context" title="Nézd meg, mi kerül be" description="A mentett személyes blokkok pontos előnézete." icon="t-lens" domain="nap" /></SettingsRows>
   </>
 }
 function LearnedProfile() {
   const { nodes, isPending, isError, refetch } = useKnowledgeGraphNodes()
   const { archive, pending } = useKnowledgeGraphActions()
   const node = nodes.find(n => n.sourceKind === PROFILE_SOURCE_KIND)
-  return <section className="personal-learned"><h2>Amit Mezo tanult a stílusodról</h2>{isError ? <p role="alert">A tanult profil nem tölthető be. <button onClick={refetch}>Újrapróbálom</button></p> : isPending ? <p>Betöltés…</p> : node ? <ProfileNodeCard node={node} onArchive={() => { if (!pending) archive(node.id) }} /> : <p>Még nincs tanult kommunikációs profil.</p>}<p>Az archiválás törli az aktív összegzést; a tanulás később újat készíthet. A kapcsolóval a felhasználását állítod.</p></section>
+  return <section className="personal-learned glass"><h2>Amit Mezo tanult a stílusodról</h2>{isError ? <p role="alert">A tanult profil nem tölthető be. <button onClick={refetch}>Újrapróbálom</button></p> : isPending ? <p>Betöltés…</p> : node ? <ProfileNodeCard node={node} onArchive={() => { if (!pending) archive(node.id) }} /> : <p>Még nincs tanult kommunikációs profil.</p>}<p>Az archiválás törli az aktív összegzést; a tanulás később újat készíthet. A kapcsolóval a felhasználását állítod.</p></section>
 }
 function ContextPreview() {
   const query = usePersonalContext()
@@ -65,8 +68,8 @@ function ContextPreview() {
     <p className="personal-scope">Ez a személyes háttér, nem a teljes rendszerprompt: az alkalmazás szabályai és az adott beszélgetéshez előhívott emlékek külön kerülnek mellé.</p>
     {isMockMode() && <p className="personal-scope">Demó előnézet — itt nincs háttérben futó Mezo-beszélgetés.</p>}
     {query.isError ? <p role="alert">Az előnézet nem tölthető be. <button onClick={query.refetch}>Újrapróbálom</button></p> : !query.data ? <p role="status">Személyes háttér betöltése…</p> : <>
-      <div className="personal-context-list">{query.data.sections.map(section => <section key={section.id} className="personal-context-section">
-        <header><h2>{section.title}</h2><span>{section.included ? 'Bekerül' : 'Nem kerül be'}</span></header><small>{section.source}</small>
+      <div className="personal-context-list glass">{query.data.sections.map(section => <section key={section.id} className="personal-context-section">
+        <header><h2>{section.title}</h2><span data-included={section.included ? 'true' : 'false'}><Icon3D name={section.included ? 't-tick' : 't-skip'} size={16} />{section.included ? 'Bekerül' : 'Nem kerül be'}</span></header><small>{section.source}</small>
         <p>{section.text || 'Nincs hozzáadott tartalom.'}</p>
         {section.editPath?.startsWith('/settings/') && <Link to={section.editPath} state={state}>{section.title} javítása</Link>}
       </section>)}</div>
@@ -78,5 +81,5 @@ function ContextPreview() {
 function CoreFacts() {
   const query = usePersonalContext()
   const core = query.data?.sections.find(section => section.id === 'core')
-  return <section className="personal-core"><h2>Az alapok, amiket ismer</h2>{query.isError ? <p role="alert">Az alapadatok most nem tölthetők be. <button onClick={query.refetch}>Újrapróbálom</button></p> : !query.data ? <p role="status">Alapadatok betöltése…</p> : <p>{core?.text || 'Még nincs személyes alapadat.'}</p>}</section>
+  return <section className="personal-core glass"><h2>Az alapok, amiket ismer</h2>{query.isError ? <p role="alert">Az alapadatok most nem tölthetők be. <button onClick={query.refetch}>Újrapróbálom</button></p> : !query.data ? <p role="status">Alapadatok betöltése…</p> : <p>{core?.text || 'Még nincs személyes alapadat.'}</p>}</section>
 }

@@ -9,6 +9,7 @@ import {
   type EffortState,
 } from '@/features/me/logic/habitEffort'
 import { cn } from '@/shared/lib/cn'
+import { Icon3D } from '@/shared/ui/clay'
 
 const TONES = ['is-sage', 'is-gold', 'is-coral'] as const
 
@@ -55,7 +56,7 @@ export function EffortGrid({ value, onChange, xpOverride }: {
       </div>
       {weakest != null && (
         <div className="rt-tip is-warn" data-testid="effort-tiny">
-          <span aria-hidden="true">✂</span>
+          <Icon3D name="t-scissors" size={26} />
           <span>{EFFORT_ADVICE[weakest]}</span>
         </div>
       )}

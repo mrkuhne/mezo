@@ -1,6 +1,5 @@
 import type { Affect, MentionContext, MentionSource } from '@/data/types'
-import type { IconName } from '@/shared/ui/Icon'
-import type { ClayIconName } from '@/shared/ui/clay'
+import type { Icon3DName } from '@/shared/ui/clay'
 
 /**
  * Emberek S3 hub — visual meta for tones/contexts/sources (mezo-06o0.2).
@@ -15,6 +14,14 @@ export const TONE_META: Record<Affect, ToneMeta> = {
   neutral: { label: 'OK', cssVar: '--ppl-tone-ok' },
   mixed: { label: 'Vegyes', cssVar: '--ppl-tone-vegyes' },
   negative: { label: 'Nehéz', cssVar: '--ppl-tone-nehez' },
+}
+
+/** The tone as a CSS colour — the ring / edge / dot a person or mention wears. On the üveg
+ *  pages the `--ppl-tone-*` tokens resolve to the Mozaik accents (Jó sage, OK sky, Vegyes
+ *  amber, Nehéz coral; `── uveg en2 emberek (` block, mezo-me75u.7), so colour keeps
+ *  carrying the tone (bible U6 rule 46). */
+export function toneColor(a: Affect): string {
+  return `var(${(TONE_META[a] ?? TONE_META.neutral).cssVar})`
 }
 
 /** "Worst first" — the order the weekly-rhythm column picks a day's worst tone in. */
@@ -33,28 +40,31 @@ export const CTX_META: Record<MentionContext, CtxMeta> = {
   egyeb: { label: 'egyéb', cssVar: '--ppl-ctx-egyeb' },
 }
 
-export interface SrcMeta { label: string; clay?: 'i-naplo' | 'i-mezo'; icon?: IconName }
+/** Source → label + its Titanium 3D icon (üveg, mezo-me75u.7). Mapped here, at the call site,
+ *  because the clay glyphs were ambiguous (`i-mezo` is Mezo itself elsewhere; here it means
+ *  "came from a Mezo chat"). */
+export interface SrcMeta { label: string; art: Icon3DName }
 
 export const SRC_META: Record<MentionSource, SrcMeta> = {
-  text: { label: 'napló', clay: 'i-naplo' },
-  chat: { label: 'Mezo-chat', clay: 'i-mezo' },
-  chip: { label: 'kézi', icon: 'check' },
-  voice: { label: 'hang', icon: 'mic' },
-  camera: { label: 'kamera', icon: 'camera' },
+  text: { label: 'napló', art: 't-journal' },
+  chat: { label: 'Mezo-chat', art: 't-chat' },
+  chip: { label: 'kézi', art: 't-tick' },
+  voice: { label: 'hang', art: 't-mic' },
+  camera: { label: 'kamera', art: 't-camera' },
 }
 
-/** Gráf-node fajta → magyar címke, clay ikon és csempe-tónus. A prototípus renderDet()
- *  `.evt.amber` / `.evt.sage` / `.evt.lav` osztályai: életesemény = arany, cél = zsálya,
- *  minden más (minta, preferencia, szezon, belátás, személy) = levendula. */
-export const GRAPH_KIND_META: Record<string, { label: string; clay: ClayIconName; tone: 'amber' | 'sage' | 'lav' }> = {
-  LIFE_EVENT: { label: 'Életesemény', clay: 'i-nap', tone: 'amber' },
-  GOAL: { label: 'Cél', clay: 'i-cel', tone: 'sage' },
-  PATTERN: { label: 'Minta', clay: 'i-minta', tone: 'lav' },
-  PREFERENCE: { label: 'Preferencia', clay: 'i-tudas', tone: 'lav' },
-  SEASON: { label: 'Szezon', clay: 'i-termes', tone: 'lav' },
-  INSIGHT: { label: 'Belátás', clay: 'i-kristaly', tone: 'lav' },
-  PERSON: { label: 'Ember', clay: 'i-emberek', tone: 'lav' },
+/** Gráf-node fajta → magyar címke, 3D ikon és tónus. A tónus a sor ikon-kútjának fénye
+ *  (életesemény = arany, cél = zsálya, minden más = levendula). Az ikonok itt, a hívásnál
+ *  vannak leképezve (i-kristaly / i-termes / i-mezo több jelentésű, bible U3 rule 20). */
+export const GRAPH_KIND_META: Record<string, { label: string; art: Icon3DName; tone: 'amber' | 'sage' | 'lav' }> = {
+  LIFE_EVENT: { label: 'Életesemény', art: 't-pin', tone: 'amber' },
+  GOAL: { label: 'Cél', art: 't-ring', tone: 'sage' },
+  PATTERN: { label: 'Minta', art: 't-pattern', tone: 'lav' },
+  PREFERENCE: { label: 'Preferencia', art: 't-book', tone: 'lav' },
+  SEASON: { label: 'Szezon', art: 't-harvest', tone: 'lav' },
+  INSIGHT: { label: 'Belátás', art: 't-orb', tone: 'lav' },
+  PERSON: { label: 'Ember', art: 't-people', tone: 'lav' },
 }
 
-/** Ismeretlen fajta (egy jövőbeli node-kind) nem tünteti el a csempét: semleges levendula. */
-export const GRAPH_KIND_FALLBACK = { label: 'Csomópont', clay: 'i-tudas', tone: 'lav' } as const
+/** Ismeretlen fajta (egy jövőbeli node-kind) nem tünteti el a sort: semleges levendula. */
+export const GRAPH_KIND_FALLBACK = { label: 'Csomópont', art: 't-book', tone: 'lav' } as const

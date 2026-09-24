@@ -2,7 +2,7 @@
 title: Central settings and personal context
 type: feature-platform
 status: done
-updated: 2026-09-23
+updated: 2026-09-25
 tags: [frontend, platform, ai]
 key_files:
   - frontend/src/features/settings
@@ -78,7 +78,7 @@ communication requests only in the corresponding user-owned text fields.
 
 ## 7. How to extend it
 
-Add a domain route and SettingsRow, reusing its canonical hooks. Preserve origin state and
+Add a domain route and SettingsRow (it requires an `icon` — a Titanium 3D name drawn in a lit well; `domain` only tints it, and Boop stays on the hero and the hub's domain tiles, owner decision 2026-09-24, U7 `mezo-me75u.7`), reusing its canonical hooks. Preserve origin state and
 loading/error states. Add routes to the page inventory. Do not introduce a second store of a
 profile fact or reconstruct real prompt text in the frontend.
 

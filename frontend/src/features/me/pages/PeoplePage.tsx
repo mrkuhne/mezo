@@ -22,14 +22,21 @@
 // server-side and still rendered where it belongs (the sub-pages and the companion feed);
 // only this hub stops showing it. With the band went the page's chat handoff (ADR 0032) —
 // nothing else on the hub opened chat.
+//
+// Üveg (mezo-me75u.7, prototype uveg-en2-body.html `emberek()`): a frameless rose t-people halo
+// hero, flat stat cells, and the four tiles as glass in their own accent (Jelöltek gold with the
+// t-lens + count badge, A köröm rose with a tone-ringed facepile, Említések sky with the t-chat +
+// coral flag badge, Heti kép lavender with the t-calendar). Header: the lit rose „Log" pill with
+// the t-mic, the flat „＋ Új személy" pill. CSS: `── uveg en2 emberek (` in prototype.css.
 // ============================================================
 import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { usePeople } from '@/data/hooks'
 import { hubLines } from '@/features/me/logic/peopleDerive'
+import { toneColor } from '@/features/me/logic/peopleVisuals'
 import { PersonLogSheet } from '@/features/me/sheets/PersonLogSheet'
 import { PersonEditSheet } from '@/features/me/sheets/PersonEditSheet'
 
@@ -45,40 +52,28 @@ export function PeoplePage() {
   const faces = people.slice(0, 4)
 
   return (
-    <MozaikPage tone="rose">
-      <PageHead onBack={() => navigate('/me')} label="‹ Én">
-        {/* mezo-06o0.12 — the prototype (emberek-body.html renderHub) puts the back chip alone
-            on the left and BOTH actions against the right edge, Log first. Shipped left-packed,
-            which reads as one crowded three-button row with the page title right under it. The
-            `margin-left: auto` on the first action is the `.goal-hub-page .pgact` precedent. */}
-        {/* mezo-06o0.14 — these were tinted `--mz-cell-rose-bg`, which is the rose page's OWN
-            wash: on the light theme the pills vanished into the background and the actions read
-            as bare text, while the back chip beside them (`.mz-backbtn`, `--mz-chipbg`) read
-            correctly. The prototype gives the secondary action a translucent-white chip with
-            muted ink and the primary one a solid card-white chip with rose ink. On light these
-            tokens ARE those values to the byte (`--mz-chipbg` rgba(255,255,255,0.7),
-            `--mz-ink-soft` #6E6257, `--surface-card` #FFF, `--mz-cell-rose-ink` #8E3F6F), and all
-            four follow the dark theme too — which a literal hex would not. */}
+    <MozaikPage tone="rose" className="ppl-page ppl-hub">
+      <PageHead glass onBack={() => navigate('/me')} label="Én">
+        {/* mezo-06o0.12 — the back chip alone on the left, BOTH actions against the right edge,
+            Log first (the `margin-left: auto` on the first action). Üveg: Log is the lit rose
+            pill, „＋ Új személy" the flat one — neither paints itself in the page wash
+            (mezo-06o0.14). */}
         <button
           type="button"
-          className="pgact"
+          className="pgact ppl-act ppl-act-lit"
           onClick={() => setLogOpen(true)}
-          style={{ marginLeft: 'auto', background: 'var(--mz-chipbg)', color: 'var(--mz-ink-soft)' }}
+          style={{ marginLeft: 'auto' }}
         >
-          <ClayIcon name="i-mikrofon" size={12} /> Log
+          <Icon3D name="t-mic" size={18} /> Log
         </button>
-        <button
-          type="button"
-          className="pgact"
-          onClick={() => setEditOpen(true)}
-          style={{ background: 'var(--surface-card)', color: 'var(--mz-cell-rose-ink)' }}
-        >
+        <button type="button" className="pgact ppl-act ppl-act-flat" onClick={() => setEditOpen(true)}>
           ＋ Új személy
         </button>
       </PageHead>
 
       <PageHero
-        icon="i-emberek"
+        art="t-people"
+        accent="var(--dv-rose)"
         name="Kapcsolatok"
         big={people.length}
         sub={`aktív kör · ${lines.mentionsThisWeek} említés e héten`}
@@ -86,7 +81,7 @@ export function PeoplePage() {
 
       <PageBody>
         <EntranceGroup>
-          <StatStrip className="rise">
+          <StatStrip className="rise ppl-stats">
             <StatCell value={lines.mentionsThisWeek} label="említés · hét" />
             <StatCell value={lines.topName ?? '—'} label="legtöbbet említett" />
             <StatCell
@@ -96,91 +91,94 @@ export function PeoplePage() {
           </StatStrip>
 
           {/* mezo-06o0.14 — the strip and the mosaic touched: `.mz-statstrip` carries no bottom
-              margin, and the house idiom is that the PAGE supplies the gap (the only other
-              StatStrip + mz-mosaic page, RecipeDetailPage, sets the same 11 inline). The
-              prototype's `.statstrip` has margin-bottom 10 on its 330px frame — 11.8 at ×1.18. */}
+              margin, and the house idiom is that the PAGE supplies the gap. */}
           <div className="mz-mosaic" style={{ marginTop: 11 }}>
             <button
               type="button"
-              className="ppl-hub-tile ppl-hub-gold rise"
+              className="ppl-hub-tile ppl-hub-gold glass rise"
               style={d(60)}
               onClick={() => navigate('/me/people/jeloltek')}
               aria-label="Jelöltek"
             >
-              <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-gold-ink)' }}>Jelöltek</span>
-              <div className="ppl-hub-spot">
-                <span className="ppl-hub-anchor">
-                  <ClayIcon name="i-kristaly" size={40} />
-                  {candidates.length > 0 && <span className="ppl-hub-badge">{candidates.length}</span>}
-                </span>
+              <div className="ppl-hub-top">
+                <Icon3D name="t-lens" size={42} />
+                {candidates.length > 0 && <span className="ppl-hub-badge">{candidates.length}</span>}
               </div>
-              <div className="ppl-hub-line">
-                {candidates.length > 0
-                  ? `${candidates[0].name} · új arc a szövegeidben`
-                  : 'nincs új arc — az éjszakai kör figyel'}
-              </div>
+              <span className="mz-eyebrow">Jelöltek</span>
+              <strong className="ppl-hub-main">{candidates.length > 0 ? candidates[0].name : 'Nincs új arc'}</strong>
+              <span className="ppl-hub-line">
+                {candidates.length > 0 ? 'új arc a szövegeidben' : 'az éjszakai kör figyel'}
+              </span>
             </button>
 
             <button
               type="button"
-              className="ppl-hub-tile ppl-hub-rose rise"
+              className="ppl-hub-tile ppl-hub-rose glass rise"
               style={d(90)}
               onClick={() => navigate('/me/people/kor')}
               aria-label="A köröm"
             >
-              <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-rose-ink)' }}>A köröm</span>
-              <div className="ppl-hub-spot">
+              <div className="ppl-hub-top">
                 <div className="ppl-facepile">
                   {faces.map((p) => (
-                    <span key={p.id} className="ppl-fp-avat">{p.initial}</span>
+                    <span key={p.id} className="ppl-fp-avat" style={{ '--c': toneColor(p.affect_baseline) } as CSSProperties}>
+                      {p.initial}
+                    </span>
                   ))}
                 </div>
               </div>
-              <div className="ppl-hub-line">
-                {people.length} személy · {lines.topName ?? '—'} a legaktívabb
-              </div>
+              <span className="mz-eyebrow">A köröm</span>
+              <strong className="ppl-hub-main">{people.length} személy</strong>
+              <span className="ppl-hub-line">{lines.topName ?? '—'} a legaktívabb</span>
             </button>
 
             <button
               type="button"
-              className="ppl-hub-tile ppl-hub-sky rise"
+              className="ppl-hub-tile ppl-hub-sky glass rise"
               style={d(120)}
               onClick={() => navigate('/me/people/emlitesek')}
               aria-label="Említések"
             >
-              <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-sky-ink)' }}>Említések</span>
-              <div className="ppl-hub-spot">
-                <ClayIcon name="i-naplo" size={40} />
+              <div className="ppl-hub-top">
+                <Icon3D name="t-chat" size={42} />
                 {lines.flagCount > 0 && (
                   <span className="ppl-hub-badge ppl-hub-badge-alert">{lines.flagCount}</span>
                 )}
               </div>
-              <div className="ppl-hub-line">
-                {lines.mentionsThisWeek} e héten · {lines.flagCount > 0 ? `${lines.flagCount} figyelem-jelzés` : 'minden nyugodt'}
-              </div>
+              <span className="mz-eyebrow">Említések</span>
+              <strong className="ppl-hub-main">{lines.mentionsThisWeek} e héten</strong>
+              <span className="ppl-hub-line">
+                {lines.flagCount > 0 ? `${lines.flagCount} figyelem-jelzés` : 'minden nyugodt'}
+              </span>
             </button>
 
             <button
               type="button"
-              className="ppl-hub-tile ppl-hub-lav rise"
+              className="ppl-hub-tile ppl-hub-lav glass rise"
               style={d(150)}
               onClick={() => navigate('/me/people/heti')}
               aria-label="Heti kép"
             >
-              <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-lav-ink)' }}>Heti kép</span>
-              <div className="ppl-hub-spot">
-                <ClayIcon name="i-heti" size={40} />
+              <div className="ppl-hub-top">
+                <Icon3D name="t-calendar" size={42} />
               </div>
-              <div className="ppl-hub-line">
+              <span className="mz-eyebrow">Heti kép</span>
+              <strong className="ppl-hub-main">
                 {lines.downName || lines.upName
                   ? [lines.downName && `${lines.downName} ↘`, lines.upName && `${lines.upName} ↗`]
                       .filter(Boolean)
                       .join(' · ')
-                  : 'nincs kiugró irány e héten'}
-              </div>
+                  : '—'}
+              </strong>
+              <span className="ppl-hub-line">
+                {lines.downName || lines.upName ? 'a hét iránya' : 'nincs kiugró irány e héten'}
+              </span>
             </button>
           </div>
 
+          <p className="ppl-foot rise" style={d(180)}>
+            Az emberek a szövegeidből, a hangjegyeidből és a Mezo-beszélgetésekből kerülnek ide.
+          </p>
         </EntranceGroup>
       </PageBody>
 

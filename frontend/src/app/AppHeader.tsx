@@ -1,7 +1,7 @@
 // Global header: settings entry keeps the originating page for return navigation.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ClayIcon, ContentIcon, type ClayIconName, type Icon3DName } from '@/shared/ui/clay'
+import { ClayIcon, ContentIcon, type ClayIconName } from '@/shared/ui/clay'
 import { DayOrb } from '@/shared/ui/DayOrb'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
@@ -9,6 +9,7 @@ import { notificationKindMeta } from '@/data/types'
 import { useNotificationFeed, useNotificationFeedActions } from '@/data/notification/feedHooks'
 import { groupByDay } from '@/features/notification/logic/groupByDay'
 import { timeLabel } from '@/features/notification/logic/stamp'
+import { ntfIcon } from '@/features/notification/logic/kindIcon'
 import {
   NOTIFICATION_CATEGORIES, notificationCategory, type NotificationCategoryId,
 } from '@/features/notification/logic/category'
@@ -24,20 +25,10 @@ import { useCondensedHeader } from '@/app/useCondensedHeader'
 const NTF_PANEL_CAP = 30
 type NtfFilter = 'all' | 'unread' | NotificationCategoryId
 
-/** The notification panel's CONTENT icons wear the 3D set (üveg bible §4/§7.1, mezo-me75u.3,
- *  prototypes/uveg-nap.html — the bell). The chrome buttons above keep their clay icons. The clay
- *  names that mean something else elsewhere are named here, at the call site (bible rule 7); the
- *  rest go through `CLAY_TO_3D` (the `i-ertesites` fallback became `t-bell` in U7, mezo-me75u.7). */
-const NTF_3D: Partial<Record<ClayIconName, Icon3DName>> = {
-  'i-kristaly': 't-orb',     // Jóslatok / prediction_* — a forecast, not a score
-  'i-lombik': 't-flask',     // Kísérletek
-  'i-termes': 't-harvest',   // habit_formation
-  'i-retegek': 't-people',   // graph_candidate (an Emberek-category row)
-  'i-muhely': 't-chef',      // konzilium_verdict
-  'i-rend': 't-stack',       // memory_note — a stored note, not the Rend chain
-  'i-mezo': 't-chat',        // team_edition — a csapat megszólalt a falon (mezo-a9bo7.13)
-}
-const ntfIcon = (name: ClayIconName): ClayIconName | Icon3DName => NTF_3D[name] ?? name
+// The notification panel's CONTENT icons wear the 3D set (üveg bible §4/§7.1, mezo-me75u.3,
+// prototypes/uveg-nap.html — the bell). The chrome buttons above keep their clay icons. The
+// call-site meanings (`NTF_3D`/`ntfIcon`) are shared with the full feed page since U7
+// (mezo-me75u.7), so both surfaces draw the same icon per kind.
 
 export function AppHeader() {
   const navigate = useNavigate()

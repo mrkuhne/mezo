@@ -12,6 +12,9 @@
 // Card tap navigates straight to `/me/people/:id` (a later task's detail route — not
 // registered yet, same "real navigate() now, real route later" idiom Task 2 used for
 // the hub's own sibling tiles).
+//
+// Üveg (mezo-me75u.7, prototype `kor()`): a rose t-people halo hero, the flat „＋ Új személy"
+// pill, and every person a glass card in their OWN tone (PersonCard sets `--c` on the card).
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -31,19 +34,14 @@ export function PeopleKorPage() {
   const [editOpen, setEditOpen] = useState(false)
 
   return (
-    <MozaikPage tone="rose">
-      <PageHead onBack={() => navigate('/me/people')} label="‹ Kapcsolatok">
-        <button
-          type="button"
-          className="pgact"
-          onClick={() => setEditOpen(true)}
-          style={{ background: 'var(--mz-cell-rose-bg)', color: 'var(--mz-cell-rose-ink)' }}
-        >
+    <MozaikPage tone="rose" className="ppl-page ppl-kor">
+      <PageHead glass onBack={() => navigate('/me/people')} label="Kapcsolatok">
+        <button type="button" className="pgact ppl-act ppl-act-flat" onClick={() => setEditOpen(true)}>
           ＋ Új személy
         </button>
       </PageHead>
 
-      <PageHero icon="i-emberek" name="A köröm" big={people.length} />
+      <PageHero art="t-people" accent="var(--dv-rose)" name="A köröm" big={people.length} />
 
       <PageBody>
         <EntranceGroup>
