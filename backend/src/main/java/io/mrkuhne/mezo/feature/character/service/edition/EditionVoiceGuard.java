@@ -67,24 +67,39 @@ public final class EditionVoiceGuard {
         if (body == null || body.isBlank()) {
             return Optional.of(SENTENCES);
         }
+        Optional<String> content = checkTitle(who, body, facts, recordText);
+        if (content.isPresent()) {
+            return content;
+        }
+        int sentences = sentenceCount(body);
+        return sentences < MIN_SENTENCES || sentences > MAX_SENTENCES ? Optional.of(SENTENCES) : Optional.empty();
+    }
+
+    /**
+     * Ugyanaz a három tartalmi szabály a mondatszám NÉLKÜL — ez a CÍM őre: egy cím egyetlen
+     * töredék, a 2–4 mondatos szabály értelmetlen rá, de a kitalált szám, az idegen emoji és a
+     * szaknyelv ott is ugyanúgy tilos (a fal a címet is kiírja).
+     *
+     * @return üres, ha a cím kimehet; különben {@value #NUMBER}, {@value #EMOJI} vagy {@value #JARGON}.
+     */
+    public static Optional<String> checkTitle(TeamCharacter who, String text, List<String> facts, String recordText) {
+        if (text == null || text.isBlank()) {
+            return Optional.empty();
+        }
         Set<String> allowed = numbersIn(String.join(" ", facts == null ? List.of() : facts)
                 + " " + (recordText == null ? "" : recordText));
-        for (String number : numbersIn(body)) {
+        for (String number : numbersIn(text)) {
             if (!allowed.contains(number)) {
                 return Optional.of(NUMBER);
             }
         }
-        int sentences = sentenceCount(body);
-        if (sentences < MIN_SENTENCES || sentences > MAX_SENTENCES) {
-            return Optional.of(SENTENCES);
-        }
-        Matcher emoji = EMOJI_CHAR.matcher(stripJoiners(body));
+        Matcher emoji = EMOJI_CHAR.matcher(stripJoiners(text));
         while (emoji.find()) {
             if (!who.emoji().contains(emoji.group())) {
                 return Optional.of(EMOJI);
             }
         }
-        String lower = body.toLowerCase(Locale.ROOT);
+        String lower = text.toLowerCase(Locale.ROOT);
         for (String word : FORBIDDEN) {
             if (lower.contains(word)) {
                 return Optional.of(JARGON);

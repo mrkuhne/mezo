@@ -40,9 +40,10 @@ import org.springframework.transaction.annotation.Transactional;
  * történik, KÜLÖN tranzakcióban a self-injection idiómán át (lásd {@code CharacterCouncilService}
  * — ugyanez a minta), hogy a {@code @Transactional} valóban proxy-n át hívódjon.
  *
- * <p>H1-ben a poszt szövege szó szerint a jelölt {@code recordText}-je (a karakter hangján még nem
- * átírt "nyers" szöveg) — {@code voiced=false} mindenhol. H3 cseréli le LLM-generált, karakter
- * hangján írt szövegre.
+ * <p>A poszt szövegét H3 (mezo-a9bo7.14) óta az {@link EditionVoiceWriter} adja: a karakterek saját
+ * hangja egyetlen LLM-hívásból, tény-őrrel. Az író SOHA nem dob és mindig pontosan annyi szöveget
+ * ad vissza, ahány jelölt van — a hang hiánya ({@code voiced=false}, a nyers rekordszöveg) sosem
+ * akadályozza meg a kiadás megjelenését (ADR 0049).
  */
 @Service
 @RequiredArgsConstructor
@@ -56,11 +57,8 @@ public class TeamEditionService {
     private final EditionCandidateCollector collector;
     private final CharacterRunLog runLog;
     private final AppNotificationEmitter appNotifications;
+    private final EditionVoiceWriter voiceWriter;
     private final ObjectProvider<TeamEditionService> self;
-
-    /** A H1 poszt-szöveg forrása — H3 cseréli LLM-generált, karakter hangján írt szövegre. */
-    public record VoicedText(String title, String body, boolean voiced) {
-    }
 
     public void run(UUID owner, LocalDate day) {
         if (editions.findByCreatedByAndDay(owner, day).isPresent()) {
@@ -71,7 +69,7 @@ public class TeamEditionService {
         var prior = priorShowings(owner, day);
         var ranked = EditionSelector.select(collector.collect(owner, day, lastAt), prior, lastAt);
         var conferenceId = reads.dailyConference(owner, day).map(CharacterConferenceEntity::getId).orElse(null);
-        var texts = ranked.stream().map(c -> new VoicedText(c.title(), c.recordText(), false)).toList();
+        var texts = voiceWriter.write(owner, ranked);
         TeamEditionEntity published;
         try {
             published = self.getObject().publish(owner, day, conferenceId, ranked, texts);
@@ -102,7 +100,7 @@ public class TeamEditionService {
      *  a) tranzakcióját poszolja el, {@link #run}-ban elkaphatóan. */
     @Transactional
     public TeamEditionEntity publish(UUID owner, LocalDate day, UUID conferenceId,
-            List<EditionCandidate> ranked, List<TeamEditionService.VoicedText> voiced) {
+            List<EditionCandidate> ranked, List<VoicedText> voiced) {
         if (voiced.size() != ranked.size()) {
             throw new SystemRuntimeErrorException(SystemMessage.error("TEAM_EDITION_VOICED_SIZE_MISMATCH").build());
         }
