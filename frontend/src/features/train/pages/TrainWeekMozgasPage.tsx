@@ -98,7 +98,7 @@ export function TrainWeekMozgasPage() {
   if (!activeMeso) {
     return (
       <MozaikPage tone="gold">
-        <PageBody>
+        <PageBody className="tw-move">
           <GhostState lines={3} message="Minden mozgásod itt jelenik majd meg — előbb tervezz egy mesociklust."
             ctaLabel="+ Tervezz mesociklust" onCta={() => navigate('/train/mesocycles/new')} />
         </PageBody>
@@ -171,7 +171,7 @@ export function TrainWeekMozgasPage() {
           </p>
         </header>
 
-        <PageBody>
+        <PageBody className="tw-move">
           <div className="ld-move-split rise" style={{ '--d': '90ms' } as CSSProperties}>
             <div className="ld-move-box" style={{ '--mus-color': 'var(--tag-gym)' } as CSSProperties}>
               <ClayIcon name="i-edzes" size={26} />

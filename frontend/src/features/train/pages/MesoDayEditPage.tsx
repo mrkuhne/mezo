@@ -53,8 +53,8 @@ export function MesoDayEditPage() {
   if (!meso || !day) {
     return (
       <MozaikPage tone="coral">
-        <PageHead onBack={goBack} label="‹ A nap" />
-        <PageBody>
+        <PageHead glass onBack={goBack} label="A nap" />
+        <PageBody className="tv-dayedit">
           <GhostState message={meso ? 'Ez a nap nincs a tervedben.' : 'Ez a mesociklus nem található.'} />
         </PageBody>
       </MozaikPage>
@@ -63,7 +63,7 @@ export function MesoDayEditPage() {
 
   return (
     <MozaikPage tone={TONE[dayTileData(day).tone]}>
-      <PageHead onBack={goBack} label="‹ A nap" />
+      <PageHead glass onBack={goBack} label="A nap" />
       <EntranceGroup>
         <div className="mz-eyebrow rise" style={{ padding: '14px 24px 0' }}>
           {day.day.toUpperCase()} · {day.type} · A NAP SZERKESZTÉSE

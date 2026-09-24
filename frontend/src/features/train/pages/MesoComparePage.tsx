@@ -167,10 +167,10 @@ export function MesoComparePage() {
 
   return (
     <MozaikPage tone="gold">
-      <PageHead onBack={goBack} label="‹ Mezociklus" />
+      <PageHead glass onBack={goBack} label="Mezociklus" />
       <EntranceGroup>
         <PageHero icon="i-naplo" big={valid ? 'A · B' : undefined} name="Összevetés" sub="Két lezárt futam" />
-        <PageBody>
+        <PageBody className="tv-cmp">
 
       {!valid ? (
         // A hand-typed / stale link, or a selection that never got two runs.

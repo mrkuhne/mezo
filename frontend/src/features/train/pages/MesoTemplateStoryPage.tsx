@@ -120,7 +120,7 @@ export function MesoTemplateStoryPage() {
     return (
       <MozaikPage tone="gold">
         <PageHead onBack={goBack} label="‹ Sablonjaid" />
-        <PageBody>
+        <PageBody className="tv-tpl">
           <GhostState message="Ez a sablon nem található." />
         </PageBody>
       </MozaikPage>
@@ -170,7 +170,7 @@ export function MesoTemplateStoryPage() {
           style={{ '--mus-color': 'var(--tag-gym)', ...delay(40) } as CSSProperties}
         >
           <span className="pl-dhero-wash" aria-hidden="true" />
-          <button type="button" className="mz-backbtn" aria-label="Vissza" onClick={goBack}>
+          <button type="button" className="mz-backbtn glass uv-back" aria-label="Vissza" onClick={goBack}>
             ‹ Sablonjaid
           </button>
           {muscles.length > 0 && (
@@ -201,7 +201,7 @@ export function MesoTemplateStoryPage() {
           </div>
         </header>
 
-        <PageBody className="pl-lib pl-sub">
+        <PageBody className="pl-lib pl-sub tv-tpl">
           <h3 className="pl-h3">A hét felépítése</h3>
           {days.length === 0 && <p className="pl-foot-say">Ennek a sablonnak még nincs heti beosztása.</p>}
           {days.map((day, i) =>

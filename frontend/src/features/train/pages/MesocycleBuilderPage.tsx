@@ -26,12 +26,10 @@ import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import { MozaikPage, Mosaic, PageBody, PageHead, PageHero, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { deciderSentence, nextRolloverChips, phaseChip, runBands, weekDotClass, weekDots } from '@/features/train/logic/mesoBands'
-import { huDate, todayDayToken } from '@/features/train/logic/mesoDates'
+import { huDate } from '@/features/train/logic/mesoDates'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { isOffDay } from '@/features/train/logic/offDay'
-import { SESSION_MUSCLE_CAP } from '@/features/train/logic/setBudget'
-import { DayTile } from '@/features/train/wizard/DayTile'
-import { dayTileData } from '@/features/train/wizard/dayTiles'
+import { MesoWeekDays } from '@/features/train/components/MesoWeekDays'
 import { MesoCloseSheet } from '@/features/train/sheets/MesoCloseSheet'
 
 const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
@@ -70,8 +68,8 @@ export function MesocycleBuilderPage() {
   if (!meso) {
     return (
       <MozaikPage tone="coral">
-        <PageHead onBack={backToLibrary} label="‹ Mezociklus" />
-        <PageBody>
+        <PageHead glass onBack={backToLibrary} label="Mezociklus" />
+        <PageBody className="tv-run">
           <p className="text-secondary" style={{ fontSize: 13 }}>
             Ez a mesociklus nem található.
           </p>
@@ -103,16 +101,15 @@ export function MesocycleBuilderPage() {
   // `now` is the only honest status here: `useTrain()` exposes this week's COMPLETED
   // instances for TODAY alone (completedTodayWorkout), never a per-day list — so a
   // „✓ kész" on Monday's tile would be invented. It lands when the data does.
-  const today = todayDayToken()
 
   return (
     <MozaikPage tone="coral">
-      <PageHead onBack={backToLibrary} label="‹ Mezociklus" />
+      <PageHead glass onBack={backToLibrary} label="Mezociklus" />
       <EntranceGroup>
-        <PageHero icon="i-meso" name={meso.title} sub={sub} />
-        <PageBody>
+        <PageHero art="t-peak" accent="var(--dv-coral)" name={meso.title} sub={sub} />
+        <PageBody className="tv-run">
           {active && (
-            <div className="mz-card rise" style={{ ...delay(30), padding: '10px 12px' }}>
+            <div className="mz-card glass rise" style={{ ...delay(30), padding: '10px 12px' }}>
               <div className="row" style={{ alignItems: 'center', gap: 8 }}>
                 <span className="mz-eyebrow mz-grow">A blokk íve</span>
                 <span className="mz-phchip">{phase}</span>
@@ -134,7 +131,7 @@ export function MesocycleBuilderPage() {
           )}
 
           {decider && (
-            <div className="mz-coach rise" style={delay(60)}>
+            <div className="mz-coach glass rise" style={delay(60)}>
               <span className="dot" aria-hidden="true" />
               <span>{decider}</span>
             </div>
@@ -144,6 +141,7 @@ export function MesocycleBuilderPage() {
             <div style={{ marginTop: 11 }}>
               <Mosaic>
                 <Tile
+                  className="glass"
                   wash="coral"
                   eyebrow="Heti vizsgálat"
                   delayMs={90}
@@ -167,7 +165,7 @@ export function MesocycleBuilderPage() {
                 </Tile>
                 {/* A FORECAST, not a destination — the rollover runs on its own, so this
                     tile deliberately has no onClick (prototype: cursor:default). */}
-                <Tile wash="sage" eyebrow="Hétfőn jön" delayMs={120}>
+                <Tile className="glass" wash="sage" eyebrow="Hétfőn jön" delayMs={120}>
                   <span className="mz-rollchips">
                     {/* Five muscles, then a „+N" — the tile is a forecast at a glance, and a
                         10-muscle block wrapped it into an unreadable chip wall. */}
@@ -187,26 +185,13 @@ export function MesocycleBuilderPage() {
               <div className="mz-eyebrow rise" style={{ ...delay(120), padding: '11px 2px 6px' }}>
                 A heted · koppints egy napra a szerkesztéshez
               </div>
-              <Mosaic>
-                {trainingDays.map((d, i) => {
-                  const tile = dayTileData(d)
-                  return (
-                    <div className="rise" key={d.day} style={delay(150 + i * 50)}>
-                      <DayTile
-                        day={d.day}
-                        type={d.type}
-                        sets={tile.sets}
-                        minutes={tile.minutes}
-                        muscles={tile.muscles}
-                        tone={tile.tone}
-                        cap={SESSION_MUSCLE_CAP}
-                        status={active && d.day === today ? 'now' : null}
-                        onOpen={() => navigate(`/train/mesocycles/${meso.id}/days/${encodeURIComponent(d.day)}`)}
-                      />
-                    </div>
-                  )
-                })}
-              </Mosaic>
+              {/* U5 (mezo-me75u.5): the SAME list the Terv landing draws — one week, one
+                  component, so the two surfaces can never disagree about it. */}
+              <MesoWeekDays
+                meso={meso}
+                firstDelayMs={150}
+                onOpenDay={(token) => navigate(`/train/mesocycles/${meso.id}/days/${encodeURIComponent(token)}`)}
+              />
             </>
           )}
 

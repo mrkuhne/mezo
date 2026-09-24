@@ -32,6 +32,7 @@ export function dayTileData(day: MesoDay): DayTileData {
       sets: r.sets,
       color: muscleColor(r.colorMuscle).deep,
       over: r.over,
+      token: r.colorMuscle,
     })),
     tone: dayTone(day.type),
   }

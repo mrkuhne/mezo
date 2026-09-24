@@ -216,10 +216,10 @@ export function MesocyclePlannerPage() {
 
   return (
     <MozaikPage tone="gold">
-      <PageHead onBack={goBack} label="‹ Mezociklus">
+      <PageHead glass onBack={goBack} label="Mezociklus">
         <span className="mz-stepct">Új blokk · interjú</span>
       </PageHead>
-      <PageBody>
+      <PageBody className="tv-wizard">
         {failed && (
           <div className="mz-confirm" role="alert">
             Nem sikerült a generálás — próbáld újra.

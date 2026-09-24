@@ -109,12 +109,12 @@ export function MesoKonyvtarPage() {
           </div>
         </header>
 
-        <PageBody>
+        <PageBody className="tv-lib">
           <h3 className="pl-h3">Most fut</h3>
           {active ? (
             <button
               type="button"
-              className="pl-lib-card is-now rise"
+              className="pl-lib-card is-now glass rise"
               style={delay(90)}
               aria-label={`Most fut · ${active.title}`}
               onClick={() => navigate('/train/mesocycles')}
@@ -140,7 +140,7 @@ export function MesoKonyvtarPage() {
               <button
                 key={m.id}
                 type="button"
-                className="pl-lib-card is-queued rise"
+                className="pl-lib-card is-queued glass rise"
                 style={delay(120 + i * 30)}
                 aria-label={`Tervezett · ${m.title}`}
                 onClick={() => navigate(`/train/mesocycles/${m.id}`)}

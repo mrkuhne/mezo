@@ -145,7 +145,7 @@ export function MesoFutamokPage() {
           </div>
         </header>
 
-        <PageBody className="pl-lib pl-sub">
+        <PageBody className="pl-lib pl-sub tv-runs">
           {archived.length === 0 ? (
             <p className="pl-foot-say rise" style={delay(90)}>
               Még nincs lezárt futamod — az első terved lezárása után itt lesz a története.
@@ -172,7 +172,7 @@ export function MesoFutamokPage() {
                 return (
                   <div
                     key={m.id}
-                    className={`pl-lib-card is-closed rise${picked ? ' is-picked' : ''}`}
+                    className={`pl-lib-card is-closed glass rise${picked ? ' is-picked' : ''}`}
                     style={delay(90 + i * 30)}
                   >
                     <button

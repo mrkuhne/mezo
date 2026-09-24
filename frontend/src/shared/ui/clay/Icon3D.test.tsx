@@ -33,6 +33,16 @@ test('the sprite carries the U4 Edzés icons', () => {
   }
 })
 
+// U5 (mezo-me75u.5): the Terv/Sablonok icons the owner approved on
+// prototypes/uveg-edzes2.html#ikonok. Each one exists because the 62-symbol set has no
+// honest stand-in: a reusable week plan, two closed runs side by side, and a delete.
+test('the sprite carries the U5 Terv icons', () => {
+  const ids = symbolIds()
+  for (const id of ['t-template', 't-compare', 't-trash'] satisfies Icon3DName[]) {
+    expect(ids, id).toContain(id)
+  }
+})
+
 test('every symbol is 64×64 art (Icon3D renders viewBox 0 0 64 64)', () => {
   const { container } = render(<ClaySprites />)
   const syms = container.querySelectorAll('symbol[id^="t-"]')

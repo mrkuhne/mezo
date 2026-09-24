@@ -13,6 +13,13 @@ export interface DayTileMuscle {
   color: string
   /** over the per-session muscle cap — the model will reshuffle it */
   over: boolean
+  /**
+   * The group's representative catalog token ('back-mid', 'quad', …) — the SAME
+   * `colorMuscle` the colour is derived from. U5's day card draws the anatomy
+   * (MuscleChip + BodyMap) from it, so the chip and the bar can never disagree
+   * about which muscle a row is (mezo-me75u.5).
+   */
+  token: string
 }
 
 interface DayTileProps {

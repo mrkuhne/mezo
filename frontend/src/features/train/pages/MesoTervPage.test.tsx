@@ -203,19 +203,31 @@ describe('the MA chip marks today wherever it lands', () => {
     vi.unstubAllEnvs()
   })
 
-  it('a Thursday puts MA on the Csütörtök card (and its a11y name says · ma)', () => {
+  // U5 (mezo-me75u.5): the marker became the card's state stamp („Ma"), one of the
+  // four the week speaks — Megvolt · Részben · Ma · Jön. Same meaning, new vocabulary.
+  it('a Thursday puts the Ma stamp on the Csütörtök card (and its a11y name says · ma)', () => {
     vi.setSystemTime(new Date('2026-07-16T12:00:00')) // Thursday
     setup()
-    const thursday = screen.getByRole('button', { name: 'Csütörtök · ma · Pull' })
-    expect(thursday).toHaveTextContent('MA')
-    expect(screen.getAllByText('MA')).toHaveLength(1)
+    const thursday = screen.getByRole('button', { name: 'Csütörtök · Pull · ma' })
+    expect(thursday).toHaveTextContent('Ma')
+    expect(screen.getAllByText('Ma')).toHaveLength(1)
   })
 
-  it('a Sunday puts MA on the rest ROW — the chip is not card-only', () => {
+  it('a Sunday puts the Ma stamp on the rest ROW — the marker is not card-only', () => {
     vi.setSystemTime(new Date('2026-07-19T12:00:00')) // Sunday
     setup()
-    expect(screen.getAllByText('MA')).toHaveLength(1)
-    expect(screen.queryByRole('button', { name: /Csütörtök · ma/ })).toBeNull()
+    expect(screen.getAllByText('Ma')).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: /Csütörtök · Pull · ma/ })).toBeNull()
+  })
+
+  // The three ranks are the point of the redesign: with nothing logged (mock mode has no
+  // persisted instances) every training day is honestly „Jön" except today.
+  it('mock mode has no done days, so the week reads Ma + Jön and never Megvolt', () => {
+    vi.setSystemTime(new Date('2026-07-16T12:00:00')) // Thursday
+    setup()
+    expect(screen.queryByText('Megvolt')).toBeNull()
+    expect(screen.queryByText('Részben')).toBeNull()
+    expect(screen.getAllByText('Jön').length).toBeGreaterThan(0)
   })
 })
 

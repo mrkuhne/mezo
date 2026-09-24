@@ -128,8 +128,8 @@ export function MesoWeekPage() {
   if (!meso) {
     return (
       <MozaikPage tone="coral">
-        <PageHead onBack={goBack} label="‹ A terved" />
-        <PageBody>
+        <PageHead glass onBack={goBack} label="A terved" />
+        <PageBody className="tv-week">
           <GhostState message="Ez a mesociklus nem található." />
         </PageBody>
       </MozaikPage>
@@ -142,8 +142,8 @@ export function MesoWeekPage() {
     // user with a dead network to go and train.
     return (
       <MozaikPage tone="coral">
-        <PageHead onBack={goBack} label="‹ A terved" />
-        <PageBody>
+        <PageHead glass onBack={goBack} label="A terved" />
+        <PageBody className="tv-week">
           <GhostState
             message={
               arcError
@@ -169,7 +169,7 @@ export function MesoWeekPage() {
 
   return (
     <MozaikPage tone="coral">
-      <PageHead onBack={goBack} label="‹ A terved" />
+      <PageHead glass onBack={goBack} label="A terved" />
       <EntranceGroup>
         {/* The week, as a poster: eyebrow, the duo body map, one dominant numeral, one
             sentence. Full-bleed via `.pl-dhero`'s own negative margin-inline — a bare
@@ -194,7 +194,7 @@ export function MesoWeekPage() {
           </p>
         </section>
 
-        <PageBody principle="Koppints egy izomra: hol tartasz, mikor és miben dolgozik, honnan jön a szám, és mi volt az előző tervben. Piros itt sincs: a tartás is döntés, nem hiba.">
+        <PageBody className="tv-week" principle="Koppints egy izomra: hol tartasz, mikor és miben dolgozik, honnan jön a szám, és mi volt az előző tervben. Piros itt sincs: a tartás is döntés, nem hiba.">
           {chips.length > 0 && (
             <div className="mz-livebanner rise" style={{ marginBottom: 10 }}>
               <span className="mz-livedot" aria-hidden="true" />
@@ -212,7 +212,7 @@ export function MesoWeekPage() {
                 <button
                   key={t.group}
                   type="button"
-                  className="pl-item rise"
+                  className="pl-item glass rise"
                   style={{ '--mus-color': fam.rail, '--d': `${90 + i * 45}ms` } as CSSProperties}
                   onClick={() => navigate(`/train/mesocycles/${id}/week/${t.group}`)}
                   aria-label={`${t.label} részletek`}

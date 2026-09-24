@@ -129,8 +129,8 @@ export function MesoMusclePage() {
         : 'A heti vizsgálat a terv első edzése után jelenik meg.'
     return (
       <MozaikPage tone="coral">
-        <PageHead onBack={goBack} label="‹ Heti vizsgálat" />
-        <PageBody>
+        <PageHead glass onBack={goBack} label="Heti vizsgálat" />
+        <PageBody className="tv-muscle">
           <GhostState message={message} />
         </PageBody>
       </MozaikPage>
@@ -143,8 +143,8 @@ export function MesoMusclePage() {
   if (!tile || !profile) {
     return (
       <MozaikPage tone="coral">
-        <PageHead onBack={goBack} label="‹ Heti vizsgálat" />
-        <PageBody>
+        <PageHead glass onBack={goBack} label="Heti vizsgálat" />
+        <PageBody className="tv-muscle">
           <GhostState message="Ez az izom nincs a heti vizsgálatban." />
         </PageBody>
       </MozaikPage>
@@ -220,7 +220,7 @@ export function MesoMusclePage() {
 
   return (
     <MozaikPage tone={tone}>
-      <PageHead onBack={goBack} label="‹ Heti vizsgálat" />
+      <PageHead glass onBack={goBack} label="Heti vizsgálat" />
       <EntranceGroup>
         <section className="pl-dhero rise" style={accent}>
           <span className="pl-dhero-wash" aria-hidden="true" />
@@ -239,7 +239,7 @@ export function MesoMusclePage() {
           <p className="pl-sub-say">{next}</p>
         </section>
 
-        <PageBody principle="A baseline sosem íródik felül — a Felülír csak egy újabb réteg rá. Piros itt sincs: a tartás döntés, nem hiba.">
+        <PageBody className="tv-muscle" principle="A baseline sosem íródik felül — a Felülír csak egy újabb réteg rá. Piros itt sincs: a tartás döntés, nem hiba.">
           <div className="pl-mstats rise" style={accent}>
             <span><strong>{freq}</strong><small>edzés hetente</small></span>
             <span><strong>{weekOneValue}</strong><small>szett az 1. héten</small></span>
@@ -256,7 +256,7 @@ export function MesoMusclePage() {
               copy={`A ${tile.mev} alatt nincs elég inger ahhoz, hogy ez az izom fejlődjön. A felső érték az, ameddig ebben a tervben elmész — ezt a fókuszod szabja meg. Fölötte a több munka már nem hoz többet.`}
             />
           </h3>
-          <div className="pl-scale-wrap rise" style={accent}>
+          <div className="pl-scale-wrap glass rise" style={accent}>
             <span className="pl-scale-bar">
               <i className="fill" style={{ '--w': `${nowPct}%` } as CSSProperties} />
               {!merged && <u className="mark is-mev" style={{ '--at': `${lowPct}%` } as CSSProperties} />}

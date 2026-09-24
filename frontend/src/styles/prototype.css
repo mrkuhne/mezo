@@ -21448,3 +21448,504 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .nap-center .nap-zdone small { display: block; font-size: 11.5px; color: var(--text-secondary); margin-top: 2px; }
 .nap-center .nap-zdone a { font-size: 12px; font-weight: 600; color: var(--napom-coral-ink); white-space: nowrap; }
 /* ── /uveg napom ── */
+
+/* ── uveg edzes2 terv (mezo-me75u.5) ── /train/mesocycles + /train/mesocycles/:id: the week's day cards ── */
+/* Ranking (bible §3.4, prototype uveg-edzes2.html#terv): the card's ONE loud thing is WHAT you
+   train — the body map and the title. The three fact boxes are deliberately equal and quiet, and
+   the muscle chips are detail. State changes colour and volume, never structure:
+     megvolt / részben → glass, calm     ma → glass + accent glow     jön → flat fill
+   Everything is scoped to `.tv-day`; the older `.pl-day` rules above are untouched (they still
+   serve nothing here, and the U5 sweep removes them once every `pl-day` consumer is migrated). */
+.tv-day {
+  --c: var(--dv-coral);
+  position: relative; isolation: isolate; overflow: hidden;
+  display: block; width: 100%; padding: 0; border-radius: 20px; text-align: left;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  backdrop-filter: blur(16px) saturate(1.5);
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.tv-day::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.3px;
+  pointer-events: none; z-index: 2;
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--c) 80%, transparent) 0%,
+    rgba(255, 244, 230, 0.16) 30%,
+    color-mix(in srgb, var(--c) 18%, transparent) 62%,
+    color-mix(in srgb, var(--c) 60%, transparent) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+/* „jön": not glass. Not everything is glass (bible §3) — the quiet rank is a flat fill. */
+.tv-day.is-next {
+  background: rgba(245, 239, 230, 0.035);
+  backdrop-filter: none;
+  box-shadow: inset 0 0 0 1px var(--divider);
+}
+.tv-day.is-next::before { display: none; }
+.tv-day.is-next .muscle-chip, .tv-day.is-next .body-map-figure { opacity: 0.72; }
+.tv-day.is-next .tv-day-id strong { color: var(--text-secondary); }
+/* „ma": the loudest card in the list. */
+.tv-day.is-now {
+  box-shadow:
+    0 18px 34px -16px rgba(0, 0, 0, 0.8),
+    0 0 30px -4px color-mix(in srgb, var(--c) 45%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.12),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 60%, transparent);
+}
+
+/* zone 1 — the header band: eyebrow over title, stamp + chevron on a shared right edge */
+.tv-day-head { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; padding: 12px 14px 11px; }
+.tv-day-id { flex: 1; min-width: 0; }
+.tv-day-tag { display: block; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); text-transform: uppercase; }
+.tv-day-id strong { display: block; font-size: 17px; font-weight: 600; letter-spacing: -0.45px; color: var(--text-primary); margin-top: 2px; }
+.tv-day-chev { flex: 0 0 auto; color: var(--text-muted); font-size: 19px; font-weight: 400; line-height: 1; }
+.tv-day-stamp {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 11px 5px 8px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.2px; white-space: nowrap;
+}
+.tv-day-stamp .t-ico { width: 17px; height: 17px; filter: none; }
+.tv-day-stamp.is-done { color: #bfe0a8; background: rgba(134, 188, 99, 0.14); box-shadow: inset 0 0 0 1px rgba(134, 188, 99, 0.45); }
+.tv-day-stamp.is-part { color: #ffd08a; background: rgba(255, 190, 96, 0.14); box-shadow: inset 0 0 0 1px rgba(255, 190, 96, 0.45); }
+.tv-day-stamp.is-today { color: #191614; background: var(--c); box-shadow: 0 0 16px -2px color-mix(in srgb, var(--c) 75%, transparent); }
+.tv-day-stamp.is-today .t-ico { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35)); }
+.tv-day-stamp.is-next { padding: 5px 11px; color: var(--text-muted); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+
+/* zone 2 — content: a fixed map column, then the data, on one shared left edge */
+.tv-day-body {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 13px; align-items: center;
+  padding: 11px 14px 13px; border-top: 1px solid var(--divider);
+}
+.tv-day-map { width: 62px; height: 104px; display: grid; place-items: center; }
+.tv-day-map .body-map-figure { width: 100%; height: 100%; overflow: visible; }
+.tv-day-col { min-width: 0; }
+/* three EQUAL boxes in a real grid — never "whatever width is left" */
+.tv-day-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tv-day-facts i {
+  min-width: 0; display: flex; flex-direction: column; align-items: center;
+  padding: 6px 3px 5px; border-radius: 12px; font-style: normal;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.tv-day-facts .t-ico { width: 17px; height: 17px; }
+.tv-day-facts b { font-size: 13.5px; font-weight: 600; letter-spacing: -0.3px; color: var(--text-primary); margin-top: 1px; }
+.tv-day-facts small { font-size: 8px; font-weight: 600; letter-spacing: 0.4px; color: var(--text-muted); }
+/* the muscle row shares the boxes' left edge and the one 9px rhythm */
+.tv-day-chips { display: flex; gap: 7px; margin-top: 9px; }
+.tv-day-chip { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.tv-day-chip b { font-size: 10px; font-weight: 600; letter-spacing: -0.2px; color: var(--text-secondary); }
+/* bible §4: row art sits in a lit well, tinted by the muscle's own hue — without it the
+   chips read as bare silhouettes next to the body map (owner-approved prototype look). */
+.tv-day-chip .muscle-chip {
+  /* --mc comes from the chip span (MesoDayCard); the card accent is only the fallback. */
+  --mc: var(--c);
+  border-radius: 50%; overflow: hidden;
+  background: radial-gradient(circle at 35% 28%, #3a332d, color-mix(in srgb, var(--mc) 16%, #1e1b18));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 244, 230, 0.08),
+    inset 0 -6px 12px -8px color-mix(in srgb, var(--mc) 70%, transparent),
+    0 0 12px -4px color-mix(in srgb, var(--mc) 55%, transparent);
+}
+
+/* 320px is the hardest width (U1 rule 8): the map column and the rhythm shrink, nothing wraps out */
+@media (max-width: 360px) {
+  .tv-day-head { padding: 11px 12px 10px; }
+  .tv-day-body { grid-template-columns: 52px minmax(0, 1fr); gap: 10px; padding: 10px 12px 12px; }
+  .tv-day-map { width: 52px; height: 90px; }
+  .tv-day-facts small { font-size: 7.5px; }
+  .tv-day-stamp { font-size: 11px; padding: 4px 9px 4px 7px; }
+  .tv-day-chips { gap: 5px; }
+}
+/* the off-day row: the SAME vocabulary as the cards (eyebrow, stamp, 3D icon), one rank quieter.
+   A week is also its off days — they are a row, never a card (bible §3: not everything is glass). */
+.tv-dayrest {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px; border-radius: 17px;
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.tv-dayrest em { flex: 1; min-width: 0; font-style: normal; font-size: 12.5px; color: var(--text-secondary); }
+.tv-dayrest .t-ico { flex: 0 0 auto; }
+.tv-dayrest .tv-day-tag { flex: 0 0 auto; }
+
+/* ── /uveg edzes2 terv ── */
+
+/* ── uveg edzes2 run (mezo-me75u.5) ── /train/mesocycles/:id: the running plan's own page ── */
+/* Ranking (bible §3.4): the hero is the frameless halo the kit's `PageHero art=` already draws;
+   the arc card, Mezo's sentence and the two tiles are glass; chips and bands inside them are
+   flat. U2 rule 11 — the old house rules for `.mz-card`/`.mz-tile`/`.mz-coach` outrank `.glass`
+   at equal specificity, so the glass body is restated HERE, scoped to the page root. */
+.tv-run { --c: var(--dv-coral); }
+
+.tv-run .mz-card.glass,
+.tv-run .mz-coach.glass,
+.tv-run .mz-tile.glass {
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 20%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 28%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 50%, transparent);
+}
+/* one accent per card (bible §2): the arc keeps the plan's coral, the tiles take their own */
+.tv-run .mz-coach.glass { --c: var(--dv-lav); }
+.tv-run .mz-tile.glass.mz-w-sage { --c: var(--dv-sage); }
+
+/* Mezo's own sentence is a ONE-LINER: serif italic stays (bible §5), and rule 23 keeps it
+   to a lead — this card never carries paragraph prose. */
+.tv-run .mz-coach {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 13px 15px; border-radius: 22px; margin-top: 11px;
+  font-family: var(--ff-serif); font-style: italic; font-size: 15.5px; line-height: 1.5;
+  color: var(--text-primary);
+}
+.tv-run .mz-coach .dot {
+  flex: 0 0 auto; width: 8px; height: 8px; margin-top: 7px; border-radius: 50%;
+  background: var(--c); box-shadow: 0 0 8px var(--c);
+}
+
+/* the week-arc card: the dots and the phase chip go flat inside the glass (never glass in glass) */
+.tv-run .mz-phchip {
+  padding: 5px 11px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  color: color-mix(in srgb, var(--c) 75%, #fff);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.tv-run .mz-wdots i.is-now { background: var(--c); box-shadow: 0 0 10px color-mix(in srgb, var(--c) 70%, transparent); }
+.tv-run .mz-arcline b { color: color-mix(in srgb, var(--c) 70%, #fff); }
+
+/* the two tiles: the mini bars and the rollover bands are flat, lit by their own muscle hue */
+/* the mini cluster is a BAR chart, not a colour-block row: at tile width `flex: 1` gave five
+   38px-wide slabs. Narrow, bottom-aligned bars with their own glow read as volume at a glance. */
+.tv-run .mz-wmini { height: 38px; gap: 5px; justify-content: flex-start; }
+.tv-run .mz-wmini b { flex: 0 0 13px; border-radius: 4px; box-shadow: 0 0 8px -2px currentColor; }
+.tv-run .mz-mband {
+  padding: 4px 9px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05);
+  box-shadow: inset 0 0 0 1px var(--divider);
+}
+.tv-run .mz-mband.up {
+  color: #bfe0a8; background: rgba(134, 188, 99, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(134, 188, 99, 0.4);
+}
+/* „Hétfőn jön" is a forecast, not a door — it must not look tappable */
+.tv-run .mz-tile.glass.mz-w-sage .mz-chev { display: none; }
+/* ── /uveg edzes2 run ── */
+
+/* ── uveg edzes2 nap (mezo-me75u.5) ── /train/mesocycles/:id/days/:day (+/edit) ── */
+/* Ranking (bible §3.4, prototype uveg-edzes2.html#nap): the hero is a FRAMELESS halo carrying
+   the day's body map and its one numeral; the exercise cells are the page's primary objects and
+   wear glass; the per-muscle rows and the 4-cell prescription grid inside them stay flat. */
+.tv-day-page { --c: var(--dv-coral); }
+
+/* the hero loses its wash box and becomes a halo (U2 rule 12: clip it, a 340px halo
+   scrolls a 320px screen sideways) */
+.tv-day-page + .mz-page-body, .mz-page-body.tv-day-page { overflow-x: clip; }
+.pl-dhero { position: relative; overflow-x: clip; }
+.pl-dhero .pl-dhero-wash { display: none; }
+.pl-dhero::before {
+  content: ''; position: absolute; left: 50%; top: 50%; z-index: -1; pointer-events: none;
+  width: 340px; height: 260px; transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse at 50% 45%,
+    color-mix(in srgb, var(--mus-color, var(--dv-coral)) 30%, transparent), transparent 66%);
+}
+.pl-dhero-number strong {
+  color: color-mix(in srgb, var(--mus-color, var(--dv-coral)) 42%, #fff);
+  text-shadow: 0 0 22px color-mix(in srgb, var(--mus-color, var(--dv-coral)) 50%, transparent);
+}
+.pl-dhero-art .body-map-figure { filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.5)); }
+
+/* the exercise cell: glass, tinted by the exercise's own muscle */
+.tv-day-page .pl-ex.glass {
+  --c: var(--mus-color, var(--dv-coral));
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 20%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 26%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 50%, transparent);
+}
+/* the prescription grid is flat INSIDE the glass (U1 rule 5) */
+.tv-day-page .pl-ex-grid > * {
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+/* „＋ Gyakorlat hozzáadása" is free space, so it is dashed — never glass (U2 rule 6) */
+.tv-day-page .pl-add {
+  --c: var(--dv-coral);
+  border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent);
+  background: rgba(245, 239, 230, 0.025); box-shadow: none;
+  color: color-mix(in srgb, var(--c) 72%, #fff);
+}
+.tv-day-page .pl-editlink { color: var(--text-secondary); }
+
+/* the day's editor keeps the same ground; MesoExercises owns its own rows */
+.tv-dayedit { --c: var(--dv-coral); }
+/* ── /uveg edzes2 nap ── */
+
+/* ── uveg edzes2 izmok (mezo-me75u.5) ── /…/week + /…/week/:muscle ── */
+/* Ranking (bible §3.4, prototype uveg-edzes2.html#het + #izom): both pages open on the
+   FRAMELESS halo hero the day page already uses (`.pl-dhero`, dressed in the nap block);
+   the muscle rows and THE GAUGE are the primary objects and wear glass; the stat cells,
+   the derivation steps and the versus rows inside stay flat. */
+.tv-week { --c: var(--dv-coral); }
+.tv-muscle { --c: var(--mus-color, var(--dv-coral)); }
+
+/* one verdict row per muscle — glass, tinted by the muscle's own hue (U1 rule 4: the hue
+   is published on the element that wears the glass, and `.pl-item` already carries it) */
+.tv-week .pl-item.glass,
+.tv-muscle .pl-scale-wrap.glass {
+  --c: var(--mus-color, var(--dv-coral));
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 20%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 26%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 50%, transparent);
+}
+/* the room bar and its landmark tick, lit by the muscle (bible §5) */
+.tv-week .pl-item-bar i { box-shadow: 0 0 7px -1px color-mix(in srgb, var(--c) 65%, transparent); }
+
+/* THE GAUGE is this page's one graphic: the fill glows, the marks and captions stay quiet */
+.tv-muscle .pl-scale-fill {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 55%, #fff), var(--c));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.tv-muscle .pl-scale-mark { background: rgba(245, 239, 230, 0.45); }
+/* U1 rule 3: `.glass` clips (overflow: hidden), and the gauge's „most" pin sits ABOVE the
+   track — it was cut in half. The card says so explicitly, and turns the sheen off, since a
+   light sweep with no clip would run off the card's edge. */
+.tv-muscle .pl-scale-wrap.glass { overflow: visible; padding-top: 22px; }
+.tv-muscle .pl-scale-wrap.glass::after { display: none; }
+.tv-muscle .pl-scale-legend { color: var(--text-muted); }
+
+/* flat cells inside the glass, everywhere (U1 rule 5) */
+.tv-muscle .pl-mstats > *,
+.tv-muscle .pl-deriv-step,
+.tv-muscle .pl-versus-row {
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+/* „Most" never turns red on a down move — the muscle keeps its own colour (page rule) */
+.tv-muscle .pl-versus-row.is-now .pl-versus-bar i { background: var(--c); opacity: 1; }
+/* ── /uveg edzes2 izmok ── */
+
+/* ── uveg edzes2 konyvtar (mezo-me75u.5) ── /…/konyvtar, /…/futamok, /…/:id/report, /…/compare ── */
+/* Ranking (bible §3.4, prototype uveg-edzes2.html#konyvtar/#futamok/#riport/#osszevetes):
+   the poster hero stays a frameless halo (`.pl-lhero` rides the `.pl-dhero` rules dressed in
+   the nap block); every run/template CARD is glass; the fact cells, chips and footer actions
+   inside them are flat; the one loud CTA („Új terv összeállítása") is a filled accent button.
+   Each area keeps ONE accent, so the three lists never blur into each other. */
+.tv-lib { --c: var(--dv-sage); }
+.tv-runs { --c: var(--dv-gold, var(--dv-amber)); }
+.tv-report { --c: var(--dv-gold, var(--dv-amber)); }
+.tv-cmp { --c: var(--dv-sky); }
+
+.tv-lib .pl-lib-card.glass,
+.tv-runs .pl-lib-card.glass {
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 20%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 26%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 50%, transparent);
+}
+/* the running plan is the library's loudest row; a queued one is calm and takes the sky hue,
+   so „most fut" and „következik" never read as the same thing */
+.tv-lib .pl-lib-card.is-now.glass { --c: var(--dv-coral); }
+.tv-lib .pl-lib-card.is-queued.glass { --c: var(--dv-sky); }
+
+/* flat inside the glass (U1 rule 5): fact cells, status pills and the card's footer actions */
+.tv-lib .pl-lib-card .pl-lib-facts > *,
+.tv-runs .pl-lib-card .pl-lib-facts > *,
+.tv-runs .pl-lib-foot > * {
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+
+/* the compare SELECTION is a state, not a second card: a lit ring, no extra chrome */
+.tv-runs .pl-lib-card.is-picked.glass {
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 45%, transparent),
+    inset 0 0 0 1.5px color-mix(in srgb, var(--c) 70%, transparent);
+}
+
+/* the one loud CTA — filled, not glass (bible §3: glass is loud only next to what is not) */
+.tv-lib .pl-lib-new,
+.tv-runs .pl-lib-new {
+  border: 0; color: #191614;
+  background: var(--c);
+  box-shadow:
+    0 12px 26px -14px color-mix(in srgb, var(--c) 90%, transparent),
+    0 0 18px -4px color-mix(in srgb, var(--c) 60%, transparent);
+}
+/* A filled CTA has to restate EVERY colour: the old skin's rules set the title, the sub-line
+   and the art well for a dark card, and on an accent fill they read as dark-on-dark. */
+.tv-lib .pl-lib-new strong, .tv-runs .pl-lib-new strong { color: #191614; }
+.tv-lib .pl-lib-new small, .tv-runs .pl-lib-new small { color: rgba(25, 22, 20, 0.72); }
+.tv-lib .pl-lib-new b, .tv-runs .pl-lib-new b { color: rgba(25, 22, 20, 0.8); }
+.tv-lib .pl-lib-new-art, .tv-runs .pl-lib-new-art {
+  background: rgba(255, 244, 230, 0.28); box-shadow: inset 0 0 0 1px rgba(255, 244, 230, 0.4);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+}
+
+/* the report's star hero keeps the gold glow; its blocks are glass, its rows flat */
+.tv-report .pl-lhero-stars { filter: drop-shadow(0 0 14px rgba(255, 190, 96, 0.45)); }
+.tv-report .pl-block,
+.tv-cmp .pl-block {
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 18%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 24px -8px color-mix(in srgb, var(--c) 24%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1);
+}
+/* a hole is „–", never 0 — and the better side is sage, the weaker side is NOT red (page rule) */
+.tv-cmp .pl-cmp-better { color: #bfe0a8; }
+/* ── /uveg edzes2 konyvtar ── */
+
+/* ── uveg edzes2 sablonok (mezo-me75u.5) ── /train/templates(+/:id), /…/templates/:id, /…/new, /train/custom ── */
+/* Ranking (bible §3.4, prototype uveg-edzes2.html#sablonok/#sablon/#ujterv/#sajat): the template
+   CARD is the primary object and wears glass; its fact cells, muscle chips and day rows are flat.
+   The editors (template day plan, custom composer) are FORMS — a form is not a poster, so only
+   its cards wear glass and every control stays flat, the way the U2 composer settled it. */
+.tv-tpls { --c: var(--dv-sage); }
+.tv-tpl { --c: var(--dv-sage); }
+.tv-wizard { --c: var(--dv-lav); }
+.tv-custom { --c: var(--dv-coral); }
+
+.tv-tpls .pl-lib-card.glass {
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 20%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 26%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.tv-tpls .pl-lib-card .pl-lib-facts > * {
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+/* the filled CTA restates every colour (the U2 rule 11 trap, paid for on the library page) */
+.tv-tpls .pl-lib-new {
+  border: 0; color: #191614; background: var(--c);
+  box-shadow:
+    0 12px 26px -14px color-mix(in srgb, var(--c) 90%, transparent),
+    0 0 18px -4px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.tv-tpls .pl-lib-new strong { color: #191614; }
+.tv-tpls .pl-lib-new small { color: rgba(25, 22, 20, 0.72); }
+.tv-tpls .pl-lib-new b { color: rgba(25, 22, 20, 0.8); }
+.tv-tpls .pl-lib-new-art {
+  background: rgba(255, 244, 230, 0.28); box-shadow: inset 0 0 0 1px rgba(255, 244, 230, 0.4);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+}
+
+/* the template's own page: the week's days are glass cards, the exercise rows flat inside */
+.tv-tpl .pl-lib-card.is-open {
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 18%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 24px -8px color-mix(in srgb, var(--c) 24%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1);
+}
+/* an off day is a quiet row — a week is also its off days (page rule), not a card */
+.tv-tpl .pl-row.is-quiet {
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+/* Törlés keeps its warning tone: a destructive action is never the page's lit primary
+   (U4 rule 29) — it stays a flat coral outline */
+.tv-tpl .pl-danger {
+  color: #ffb39c; background: rgba(255, 126, 92, 0.07);
+  box-shadow: inset 0 0 0 1px rgba(255, 126, 92, 0.35);
+}
+
+/* the wizard: one question per glass card, the answers as flat chips */
+.tv-wizard .mz-card, .tv-wizard .pl-block {
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 18%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 24px -8px color-mix(in srgb, var(--c) 24%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1);
+}
+
+/* the custom composer is a FORM: its head and save bar sit on the app ground, its recipe
+   rows are flat cells. The only lit control is „Indítás ma" — the one constructive CTA. */
+.tv-custom .card {
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.tv-custom .np-cta {
+  color: #191614; background: var(--c); border: 0;
+  box-shadow:
+    0 12px 26px -14px color-mix(in srgb, var(--c) 90%, transparent),
+    0 0 18px -4px color-mix(in srgb, var(--c) 60%, transparent);
+}
+/* ── /uveg edzes2 sablonok ── */
+
+/* ── uveg edzes2 het (mezo-me75u.5) ── /train/week/terkep, /train/week/jelek, /train/week/mozgas ── */
+/* The Terhelés LANDING (/train/week) was dressed in U4 (`.tw-load`); these are its three
+   sub-pages, and they inherit the shared `ld-` family from it. Ranking (bible §3.4): the body
+   map and the taxonomy grid ARE the page — they get the halo and no box; the legend, the
+   untouched-muscle rows and the movement rows are flat; only the two movement SUMMARY cards
+   (terem / sport) are glass, because they carry the page's two numbers. */
+.tw-map { --c: var(--dv-coral); }
+.tw-signals { --c: var(--dv-coral); }
+.tw-move { --c: var(--dv-coral); }
+
+/* the map is a frameless halo, like every other hero in this slice */
+.tw-map .ld-map-page { position: relative; overflow-x: clip; }
+.tw-map .ld-map-page::before {
+  content: ''; position: absolute; left: 50%; top: 42%; z-index: -1; pointer-events: none;
+  width: 350px; height: 300px; transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse, color-mix(in srgb, var(--c) 26%, transparent), transparent 66%);
+}
+.tw-map .ld-legend, .tw-map .ld-wait > * {
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+
+/* „Minden izomjel": the taxonomy drawn. A LIVE cell is lit by its own region hue; an unlit one
+   stays flat — a muscle the week's log cannot speak for is never guessed lit (page rule). */
+.tw-signals .mm-cell {
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.tw-signals .mm-cell.is-live {
+  background: radial-gradient(90% 100% at 50% 0%,
+    color-mix(in srgb, var(--mm-color, var(--c)) 20%, transparent), rgba(245, 239, 230, 0.03));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--mm-color, var(--c)) 50%, transparent),
+    0 0 13px -4px var(--mm-color, var(--c));
+}
+
+/* „Minden mozgásod": two summary cards, never merged into one number (page rule) */
+.tw-move .ld-move-card {
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 20%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 26%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 50%, transparent);
+}
+/* the sport side keeps its own hue, so „becslés" and „mért" never look like one number */
+.tw-move .ld-move-card.is-sport { --c: var(--dv-rose); }
+.tw-move .ld-move-row {
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+/* ── /uveg edzes2 het ── */

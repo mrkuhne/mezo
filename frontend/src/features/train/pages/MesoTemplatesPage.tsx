@@ -84,7 +84,7 @@ export function MesoTemplatesPage() {
           </div>
         </header>
 
-        <PageBody className="pl-lib pl-sub">
+        <PageBody className="pl-lib pl-sub tv-tpls">
           {templates.length === 0 && (
             <p className="pl-foot-say rise" style={delay(90)}>
               Még nincs sablonod — az elsőt alább állíthatod össze.
@@ -101,7 +101,7 @@ export function MesoTemplatesPage() {
               <button
                 key={t.id}
                 type="button"
-                className="pl-lib-card rise"
+                className="pl-lib-card glass rise"
                 style={delay(90 + i * 30)}
                 aria-label={`Sablon · ${t.title}`}
                 onClick={() => navigate(`/train/templates/${t.id}`)}

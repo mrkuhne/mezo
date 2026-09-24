@@ -67,7 +67,7 @@ export function TrainWeekJelekPage() {
           </div>
         </header>
 
-        <PageBody>
+        <PageBody className="tw-signals">
           <section className="mm">
             {REGION_MUSCLES.map((group, gi) => (
               <div

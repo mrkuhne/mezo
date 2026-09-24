@@ -71,8 +71,8 @@ export function CustomWorkoutBuilderPage() {
   })
 
   return (
-    <>
-      <div className="pghead-np">
+    <div className="tv-custom">
+      <div className="pghead-np tv-custom-head">
         <div>
           <button
             type="button"
@@ -159,6 +159,6 @@ export function CustomWorkoutBuilderPage() {
       {pickerOpen && (
         <ExercisePickerSheet dayLabel="Saját edzés" onPick={addFromCatalog} onClose={() => setPickerOpen(false)} />
       )}
-    </>
+    </div>
   )
 }
