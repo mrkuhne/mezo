@@ -2,7 +2,7 @@
 title: Admin hub — owner console
 type: feature-domain
 status: done
-updated: 2026-09-21
+updated: 2026-09-24
 tags: [me, auth, admin, llmlog, backend, frontend, data-layer, design]
 key_files:
   - api/feature/admin/admin.yml
@@ -314,7 +314,9 @@ render goes through a `*Label()` helper (`featureLabel`, `screenLabel`, `tableLa
 rather than silently lying about it. `labels.completeness.test.ts` fails CI the moment a new
 backend `LlmCallContext` feature slug ships with no Hungarian entry — it scans
 `backend/src/main/java` for `new LlmCallContext("...")` call sites (plus the named-constant
-variant) and asserts every discovered slug is a `FEATURE_LABELS` key.
+variant) and asserts every discovered slug is a `FEATURE_LABELS` key. Latest entry:
+`character_edition` („Esti kiadás hangja”, csapatfal H3 `mezo-a9bo7.14`) — the evening
+edition's one voice call per day.
 
 **Honesty rules** (repeated across every admin surface, not just this doc's pages): `null` and
 `0` are never conflated — a `null` `errorPct`/`p90LatencyMs`/`acceptedShare`/`costPerUse` means

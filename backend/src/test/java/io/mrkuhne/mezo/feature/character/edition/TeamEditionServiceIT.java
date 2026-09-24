@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.feature.character.repository.TeamEditionPostRepository;
 import io.mrkuhne.mezo.feature.character.repository.TeamEditionRepository;
 import io.mrkuhne.mezo.feature.character.service.edition.TeamEditionService;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
@@ -83,8 +84,10 @@ class TeamEditionServiceIT extends AbstractIntegrationTest {
         assertThat(first.getSourceKind()).isEqualTo("pattern");
         assertThat(first.getSourceId()).isEqualTo(pattern.getId().toString());
         assertThat(first.getGenre()).isEqualTo("kerdes");
-        assertThat(first.getVoiced()).isFalse();
-        assertThat(first.getBody()).isEqualTo(pattern.getMechanism());
+        // H3 (mezo-a9bo7.14): a poszt a karakter hangján szólal meg; a fake determinisztikus hangja
+        // a rekord szövege + egy második mondat, ami átmegy a tény-őrön.
+        assertThat(first.getVoiced()).isTrue();
+        assertThat(first.getBody()).isEqualTo(FakeCompanionLlm.editionBody(pattern.getMechanism()));
         assertThat(first.getTitle()).isEqualTo(pattern.getTitle());
     }
 

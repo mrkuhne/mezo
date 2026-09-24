@@ -285,6 +285,33 @@ public class FakeCompanionLlm implements CompanionLlm {
     private static final String CHAR_PORTRAIT_CANNED_ANSWER =
             "Ezen a héten a fegyelem képe formálódik. Figyeljük tovább.";
 
+    /** Mirror of EditionVoiceWriter.EDITION_MARKER (feature/character) — LITERAL, cycle rule
+     *  (see {@link #OBSERVATION_MARKER_MIRROR}). Drift is caught by EditionVoiceWriterIT's
+     *  equality assertion against the real constant. */
+    public static final String EDITION_MARKER_MIRROR = "CSAPATFAL-ESTI-KIADAS";
+
+    /** Makes the edition answer unparseable JSON — plant it in any candidate's record text. */
+    public static final String EDITION_MALFORMED = "[fake-edition-malformed]";
+
+    /** Scripts the WHOLE edition answer: {@code [fake-edition-json:<base64 of the JSON array>]}
+     *  planted in a candidate's record text is returned decoded, so an IT can drive the fact-guard
+     *  (an invented number, a foreign emoji) without a model. */
+    private static final Pattern EDITION_JSON_SENTINEL =
+            Pattern.compile("\\[fake-edition-json:([A-Za-z0-9+/=]+)]");
+
+    /** The edition prompt's post blocks, as {@link #editionUserPosts} reads them back. */
+    private static final Pattern EDITION_POST_HEAD = Pattern.compile("^\\[poszt (\\d+)]$");
+    private static final String EDITION_RECORD_PREFIX = "rekord: ";
+
+    /**
+     * The unscripted edition answer for one post: the record's own text plus a second sentence, so
+     * the result passes {@code EditionVoiceGuard} (2-4 sentences, no number that is not already in
+     * the record). Public so an IT can state the expected body without re-deriving the rule.
+     */
+    public static String editionBody(String recordText) {
+        return recordText.replaceAll("[.!?…]+$", "") + ". Ez egy második mondat.";
+    }
+
     /** Scripted scrape (mezo-8vum): {@code [fake-scrape:{json}]} payload is returned verbatim. */
     public static final Pattern SCRAPE_SENTINEL =
             Pattern.compile("\\[fake-scrape:(\\{.*?})]", Pattern.DOTALL);
@@ -732,6 +759,9 @@ public class FakeCompanionLlm implements CompanionLlm {
             if (scripted.find()) return new String(java.util.Base64.getDecoder().decode(scripted.group(1)),
                     java.nio.charset.StandardCharsets.UTF_8);
             return "{\"eyebrow\":\"Mezo\",\"body\":[\"A mai esemény az előzmények tükrében.\"],\"sourceRefs\":[]}";
+        }
+        if (systemPrompt.startsWith(EDITION_MARKER_MIRROR)) {
+            return editionAnswer(userMessage);
         }
         if (systemPrompt.startsWith(LlmMemoryQueryRewriter.REWRITE_MARKER)) {
             lastMemoryRewriteHistory = List.copyOf(history);
@@ -1221,6 +1251,49 @@ public class FakeCompanionLlm implements CompanionLlm {
         return m.find() ? m.group(1) : "[]";
     }
 
+    /**
+     * The evening edition's deterministic voice (csapatfal H3, mezo-a9bo7.14). Unscripted, it reads
+     * the prompt's post blocks back and answers one {@link #editionBody} per post — a real answer
+     * shape that passes the fact guard, so an IT gets {@code voiced=true} without a model.
+     * {@link #EDITION_MALFORMED} and {@link #EDITION_JSON_SENTINEL} (both planted in a candidate's
+     * record text) script the two failure shapes.
+     */
+    private static String editionAnswer(String userMessage) {
+        if (userMessage.contains(EDITION_MALFORMED)) {
+            return "not-json";
+        }
+        Matcher scripted = EDITION_JSON_SENTINEL.matcher(userMessage);
+        if (scripted.find()) {
+            return new String(java.util.Base64.getDecoder().decode(scripted.group(1)),
+                    java.nio.charset.StandardCharsets.UTF_8);
+        }
+        StringBuilder sb = new StringBuilder("[");
+        for (var post : editionUserPosts(userMessage).entrySet()) {
+            if (sb.length() > 1) {
+                sb.append(',');
+            }
+            sb.append("{\"rank\":").append(post.getKey())
+                    .append(",\"body\":\"").append(jsonEscape(editionBody(post.getValue()))).append("\"}");
+        }
+        return sb.append(']').toString();
+    }
+
+    /** rank -> record text, read back from the edition prompt's {@code [poszt N]} blocks. */
+    private static java.util.SortedMap<Integer, String> editionUserPosts(String userMessage) {
+        var posts = new java.util.TreeMap<Integer, String>();
+        Integer rank = null;
+        for (String line : userMessage.split("\n", -1)) {
+            Matcher head = EDITION_POST_HEAD.matcher(line.strip());
+            if (head.matches()) {
+                rank = Integer.valueOf(head.group(1));
+            } else if (rank != null && line.startsWith(EDITION_RECORD_PREFIX)) {
+                posts.put(rank, line.substring(EDITION_RECORD_PREFIX.length()).strip());
+                rank = null;
+            }
+        }
+        return posts;
+    }
+
     /** Canned cross-talk answer: one SUPPORT stance per listed peer proposal. The CHALLENGE and
      *  NUANCE paths are exercised only through {@link #CHAR_CROSS_TALK_SENTINEL}. */
     private static String crossTalkCannedAnswer(String userMessage) {
@@ -1427,9 +1500,9 @@ public class FakeCompanionLlm implements CompanionLlm {
         return Flux.just(answer);
     }
 
-    /** Minimal JSON string escaping (backslash, quote, control chars) for {@link #CHAR_PROPOSALS_ECHO}
-     *  and {@link #LIFEGOAL_PROPOSE_SYSTEM_ECHO} — the echo embeds assembled prompt text as one
-     *  JSON string value. */
+    /** Minimal JSON string escaping (backslash, quote, control chars) for {@link #CHAR_PROPOSALS_ECHO},
+     *  {@link #LIFEGOAL_PROPOSE_SYSTEM_ECHO} and {@link #editionAnswer} — each embeds assembled
+     *  prompt text as one JSON string value. */
     private static String jsonEscape(String raw) {
         return raw.replace("\\", "\\\\").replace("\"", "\\\"")
                 .replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");

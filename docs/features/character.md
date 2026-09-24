@@ -250,8 +250,23 @@ an error, and the next `*/15` tick retries any real failure until 23:45.
   `uq_team_edition_day` conflicts surface to the caller's try/catch): one `team_edition` row +
   ranked `team_edition_post` rows, then a `character_run` row with `kind='EDITION'`
   (`CharacterRunLog.record`).
-- **H1 voice:** every post's `body` is the source record's own text verbatim (`voiced=false`
-  everywhere) — the character-voiced rewrite (`EditionVoiceWriter` + `EditionVoiceGuard`) is H3.
+- **Hang (H3, `mezo-a9bo7.14`):** `EditionVoiceWriter.write` rewrites the ranked candidates in the
+  characters' own voices from **one** LLM call per edition (`character_edition` slug — on the
+  `throttled-features` list; `CSAPATFAL-ESTI-KIADAS` marker as the prompt's first line, mirrored
+  literally in `FakeCompanionLlm`). The characters' registry (`TeamCharacter`) carries the voice
+  data the prompt needs: display name, area, own emoji set (base code points, no U+FE0F) and a
+  one-sentence voice rule per character, condensed from the hangkönyv
+  (`docs/features/insights.md` §2.0a). The call rides `CharacterCouncilBudget.run` but is made
+  **after** `council.run` returns, so it opens its OWN cycle and never eats the council's calls.
+- **Tény-őr:** `EditionVoiceGuard.check` (pure) qualifies every post — every number in the body
+  must appear in the candidate's `facts[]`/`recordText` (decimal comma normalised to a dot), 2–4
+  sentences, emoji only from the character's own set (none for the Szkeptikus), and no jargon
+  (`intake`, `korreláció`, `p-érték`, `±`, `baseline`, …; "deficit" deliberately excluded). A model
+  title rides the same content rules without the sentence count (`checkTitle`). Any failure — a
+  rejected post, an unparseable answer, an LLM error, an exhausted budget — falls that post (or the
+  whole edition) back to `voiced=false` + the record's own text. The writer NEVER throws and always
+  returns exactly one `VoicedText` per candidate, so the edition is published either way (ADR 0049:
+  dry beats invented).
 - **Switch:** `mezo.feature.team-edition.enabled` (default `true`) gates the `TeamEditionService`
   bean on top of the character + companion switches; off ⇒ the council still runs its
   dossier-decision role, just without the edition step. `EditionCandidateCollector` is gated by

@@ -76,6 +76,8 @@ The old `BoopWorldPage` (the embedded `KarakterHubPage` council feed + „Amit k
 
 Common rules for every character sentence: 2–4 sentences, tegeződő spoken Hungarian, zero jargon („intake”, „7-day MA”, „±0.3 kg” are banned), concrete numbers with **bold** emphasis, uncertainty said as uncertainty („lehet”, „kezd úgy tűnni”, „még csak sejtem”), every claim with „Miből látszik?”. Emoji only inside character sentences, from the character's own set — never as UI glyphs. Act I writes NO record text; this governs only the static intros and every future generator.
 
+**This section IS the generator prompt's core (csapatfal H3, `mezo-a9bo7.14`).** The backend's `TeamCharacter` enum (`feature/character/service/edition`) carries the same four things per character — display name, area, emoji set, and these rules condensed into one voice sentence — and `EditionVoiceWriter` renders them into the evening edition's single LLM call. The rules above are not advisory there: `EditionVoiceGuard` enforces the number rule (only figures that appear in the source record), the 2–4 sentences, the own-emoji set and the jargon ban on every generated post, and a post that fails falls back to the record's own text with `voiced=false`. Editing this section means editing `TeamCharacter.voice()` with it — see `docs/features/character.md` §Esti kiadás.
+
 - **Szunya · alvás** — calm, a little secretive night-watcher; never scolds about bedtime, notices timing rather than totals. Emoji: 🌙. *„Még semmit sem tudok rólad — pár naplózott alvás után jelentkezem az első észrevétellel.”* · *„Ez még csak egy szál, de már húzom.”*
 - **Mocor · mozgás** — energetic but not a drill sergeant; watches load, variety and logging discipline. Banned: pushing, guilt. Emoji: ⚡💪. *„Nem hajtalak, de észreveszem, és szólok, ha három nap ugyanaz megy.”* · *„a tested a **változatosságból** épül, nem a megszokásból.”*
 - **Falat · étkezés** — curious foodie, never scores a plate; hunts for what worked so it can be repeated. Emoji: 🍽️🥦 (🍳 in the prototype intro). *„nem pontozni fogok, hanem észrevenni.”* · *„minden tányér, amit felírsz, egy mondattal okosabbá tesz.”*
@@ -684,8 +686,15 @@ two in `logic/teamEdition.ts`:
   edition, deduped against the edition by `sourceRoute` — in that case the edition's own post
   carries the „Rád vár” flag. `waitingCount` and the story rings are recomputed from the merged wall.
 
+Since H3 (`mezo-a9bo7.14`) a post's text may be the character's own voice (`voiced: true`, written
+by the backend's `EditionVoiceWriter` — §2.0a) or the source record's raw text (`voiced: false`, the
+honest fallback). **The wall does not branch on it:** both go through the existing
+`renderInline(…, { boldOnly: true })`, so the voice's `**kiemelés**` renders and nothing else about
+the card changes. The FE never composes text of its own (ADR 0049).
+
 The mock edition sits on the REAL today (`characterMock.ts`), not on the frozen August mock world's
-last night, otherwise the wall's 14-day window could never contain it. Publishing also emits ONE
+last night, otherwise the wall's 14-day window could never contain it; its rank-1 post is the
+`voiced: true` example (Falat's voice over exp1's own numbers). Publishing also emits ONE
 `team_edition` notification („Megjött az esti kiadás”, deeplink `/mezo`, dedup key
 `team_edition:<day>`) — a quiet edition stays silent, and the idempotent re-run never notifies twice.
 
