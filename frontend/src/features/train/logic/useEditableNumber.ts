@@ -8,7 +8,8 @@ import type { ChangeEvent, FocusEvent } from 'react'
 // decimal comma), then commits + clamps on blur. The ± buttons keep their
 // own step semantics and call onChange directly — this only adds typing.
 // Exact typed values are honored (weightKg has no multipleOf in the API);
-// decimals round to 1 place to match the stepper's toFixed(1).
+// decimals keep 2 places (a 1,25 kg microplate stays exact — mezo-py1i6); the
+// toFixed(2) only strips float noise.
 // ============================================================
 interface EditableNumberOpts {
   value: number
@@ -39,7 +40,7 @@ export function useEditableNumber({ value, onChange, min = 0, max, integer = fal
       const parsed = integer ? parseInt(raw, 10) : parseFloat(raw)
       setDraft(null)
       if (Number.isNaN(parsed)) return // empty / garbage → revert to committed value
-      let next = integer ? Math.round(parsed) : +parsed.toFixed(1)
+      let next = integer ? Math.round(parsed) : +parsed.toFixed(2)
       next = Math.max(min, next)
       if (max != null) next = Math.min(max, next)
       if (next !== value) onChange(next)

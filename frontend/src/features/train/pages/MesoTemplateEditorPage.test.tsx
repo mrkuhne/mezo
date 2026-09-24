@@ -311,10 +311,10 @@ describe('MesoTemplateEditorPage (real mode)', () => {
     await user.click(tile)
     // Three keystrokes into the empty (placeholder "auto") starting-weight field: pre-fix
     // that was three full-document PUTs (1 → 12 → 125), each regenerating the exercise ids.
-    const weight = await screen.findByRole('spinbutton', { name: 'Kiinduló súly (kg)' })
+    const weight = await screen.findByRole('textbox', { name: 'Kiinduló súly (kg)' })
     await user.type(weight, '125')
     // The local field is authoritative immediately — no wait needed for the UI.
-    expect(weight).toHaveValue(125)
+    expect(weight).toHaveValue('125')
     // Not one PUT per character.
     expect(puts.length).toBe(0)
 

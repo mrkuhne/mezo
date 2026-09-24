@@ -40,7 +40,7 @@ describe('ExerciseCard', () => {
     expect(screen.getByRole('spinbutton', { name: 'Munkaszettek' })).toHaveValue(4)
     expect(screen.getByRole('spinbutton', { name: 'Rep minimum' })).toHaveValue(8)
     expect(screen.getByRole('spinbutton', { name: 'Rep maximum' })).toHaveValue(10)
-    expect(screen.getByRole('spinbutton', { name: 'Kiinduló súly (kg)' })).toHaveValue(84)
+    expect(screen.getByRole('textbox', { name: 'Kiinduló súly (kg)' })).toHaveValue('84')
     expect(screen.getByRole('spinbutton', { name: 'Cél RIR' })).toHaveValue(1)
     expect(screen.getByRole('spinbutton', { name: 'Bemelegítő szettek' })).toHaveValue(1)
     // the retired disclosure must not come back
@@ -59,8 +59,19 @@ describe('ExerciseCard', () => {
   test('an emptied weight field patches null, not zero', async () => {
     const user = userEvent.setup()
     const props = setup()
-    await user.clear(screen.getByRole('spinbutton', { name: 'Kiinduló súly (kg)' }))
+    await user.clear(screen.getByRole('textbox', { name: 'Kiinduló súly (kg)' }))
     expect(props.onChange).toHaveBeenLastCalledWith({ anchorWeightKg: null })
+  })
+
+  test('the starting weight takes the HU decimal comma on a decimal keypad (mezo-py1i6)', async () => {
+    const user = userEvent.setup()
+    const props = setup()
+    const kg = screen.getByRole('textbox', { name: 'Kiinduló súly (kg)' })
+    expect(kg).toHaveAttribute('inputmode', 'decimal')
+    await user.clear(kg)
+    await user.type(kg, '82,5')
+    expect(kg).toHaveValue('82,5')
+    expect(props.onChange).toHaveBeenLastCalledWith({ anchorWeightKg: 82.5 })
   })
 
   test('the Failure/Volume toggle rewrites targetRIR', async () => {
@@ -119,7 +130,7 @@ describe('ExerciseCard', () => {
     const props = setup()
     props.rerender({ ex: { ...EX, workingSets: 7, anchorWeightKg: 100 } })
     expect(screen.getByRole('spinbutton', { name: 'Munkaszettek' })).toHaveValue(7)
-    expect(screen.getByRole('spinbutton', { name: 'Kiinduló súly (kg)' })).toHaveValue(100)
+    expect(screen.getByRole('textbox', { name: 'Kiinduló súly (kg)' })).toHaveValue('100')
   })
 
   test('rep bounds buffer the same way as other number fields', async () => {

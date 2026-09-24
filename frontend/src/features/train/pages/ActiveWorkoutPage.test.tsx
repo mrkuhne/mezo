@@ -60,7 +60,7 @@ function submitOf(name: string): HTMLElement {
 function querySubmitOf(name: string): HTMLElement | null {
   return within(card(name)).queryByRole('button', { name: /szett mentése$/ })
 }
-const kgInput = (name: string) => within(card(name)).getByRole('spinbutton', { name: /súly$/ })
+const kgInput = (name: string) => within(card(name)).getByRole('textbox', { name: /súly$/ })
 const repsInput = (name: string) => within(card(name)).getByRole('spinbutton', { name: /ismétlés$/ })
 async function typeInto(user: ReturnType<typeof userEvent.setup>, input: HTMLElement, value: string | number) {
   await user.clear(input)
@@ -382,7 +382,7 @@ test('mock mode: the editable row pre-fills from the slot\'s prescribed target',
   setup()
   // ex1: the warm-up rungs (52,5×8, 80×3) are never shown, so the cursor row is the
   // first WORKING slot — 105 × 10 (mezo-i8ahy).
-  expect(kgInput(EX1)).toHaveValue(105)
+  expect(kgInput(EX1)).toHaveValue('105')
   expect(repsInput(EX1)).toHaveValue(10)
 })
 
@@ -428,10 +428,13 @@ test('mock mode: only the cursor slot is editable; later slots render their pres
   // Working set 1 is the cursor slot — the ONE editable row of the card, with all three
   // fields (kg, rep, RIR) inline on it.
   expect(rows[0].tagName).toBe('FORM')
-  expect(within(rows[0]).getAllByRole('spinbutton')).toHaveLength(3)
+  // kg is a text field on the decimal keypad (mezo-py1i6); reps + RIR are spinbuttons.
+  expect(within(rows[0]).getAllByRole('textbox')).toHaveLength(1)
+  expect(within(rows[0]).getAllByRole('spinbutton')).toHaveLength(2)
   // Working set 2 is a later pending row: its prescribed target, no inputs at all.
   expect(rows[1].tagName).toBe('DIV')
   expect(within(rows[1]).queryAllByRole('spinbutton')).toHaveLength(0)
+  expect(within(rows[1]).queryAllByRole('textbox')).toHaveLength(0)
   expect(rows[1]).toHaveTextContent('105')
   expect(rows[1]).toHaveTextContent('8–10')
 })
@@ -476,11 +479,11 @@ test('mock mode: every editable row carries its RIR field, and no pill strip sur
 test('mock mode: a deviated working-set weight carries into the next working set', async () => {
   const user = userEvent.setup()
   setup()
-  expect(kgInput(EX1)).toHaveValue(105) // engine seeds working 1
+  expect(kgInput(EX1)).toHaveValue('105') // engine seeds working 1
   await typeInto(user, kgInput(EX1), 107.5)
   await logSet(user) // log working 1 at 107.5
   // The next working set inherits the deviated 107.5, not the static 105 target.
-  await waitFor(() => expect(kgInput(EX1)).toHaveValue(107.5))
+  await waitFor(() => expect(kgInput(EX1)).toHaveValue('107,5'))
 })
 
 test('real mode: null engine targets never reset the weight — the next set inherits it', async () => {
@@ -512,12 +515,12 @@ test('real mode: null engine targets never reset the weight — the next set inh
   await enterList()
   await waitFor(() => expect(calls).toContain('start:d-1'))
   // B1 prefills 0 (nothing to inherit yet) — hand-enter 7.5 kg.
-  expect(kgInput(EX1)).toHaveValue(0)
+  expect(kgInput(EX1)).toHaveValue('0')
   await typeInto(user, kgInput(EX1), 7.5)
   await user.click(submitOf(EX1))
   await waitFor(() => expect(calls).toContain('set:w-1:e-1:0:7.5'))
   // The working set inherits the hand-entered 7.5 instead of resetting to 0.
-  await waitFor(() => expect(kgInput(EX1)).toHaveValue(7.5))
+  await waitFor(() => expect(kgInput(EX1)).toHaveValue('7,5'))
 })
 
 // mezo-i8ahy: the warm-up ramp is prescribed but never shown and never logged, so every
@@ -1693,7 +1696,7 @@ test('real mode: the logging panel pre-fills from the prescribed target (not las
   // first WORKING target = 105 kg × 10 (engine prescription, NOT lastWeek 102.5). The two
   // warm-up rungs in front of it are prescribed but never shown (mezo-i8ahy).
   await waitFor(() => expect(document.querySelector('.wo-card')).not.toBeNull())
-  expect(kgInput(EX1)).toHaveValue(105)
+  expect(kgInput(EX1)).toHaveValue('105')
   expect(repsInput(EX1)).toHaveValue(10)
   // This exercise carries lastWeek, so its rationale prose no longer renders as a .wo-cue
   // (mezo-i8ahy round 2) — the prefill itself, asserted above via the input values, is

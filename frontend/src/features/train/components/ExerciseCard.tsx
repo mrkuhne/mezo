@@ -12,6 +12,7 @@ import { MUSCLE_LABELS } from '@/data/train/train'
 import type { GymExercise } from '@/data/types'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { setStyle } from '@/features/train/logic/setBudget'
+import { formatDecimal, parseDecimal } from '@/features/train/logic/decimalInput'
 import { ClayIcon } from '@/shared/ui/clay'
 
 /** targetRIR values the two style buttons write — mirrors ExerciseAccordionRow's toggle. */
@@ -42,13 +43,17 @@ interface ExerciseCardProps {
 function useBufferedText(value: number | null): [string, (t: string) => void] {
   const [text, setText] = useState(value === null ? '' : String(value))
   useEffect(() => {
-    setText(value === null ? '' : String(value))
+    // Keep the typed text when it already means this value — so "82," (committed as 82)
+    // or "82,5" is not rewritten under the thumb (mezo-py1i6).
+    setText((t) => (parseDecimal(t) === value ? t : value === null ? '' : formatDecimal(value)))
   }, [value])
   return [text, setText]
 }
 
-function NumField({ label, value, min, max, step, placeholder, onCommit }: {
+function NumField({ label, value, min, max, step, placeholder, decimal = false, onCommit }: {
   label: string
+  /** A kg field: text input on the decimal keypad, HU comma or dot (mezo-py1i6). */
+  decimal?: boolean
   value: number | null
   min: number
   max: number
@@ -61,21 +66,21 @@ function NumField({ label, value, min, max, step, placeholder, onCommit }: {
     <label className="mz-exc-fld">
       <span>{label}</span>
       <input
-        type="number"
-        inputMode={step && step < 1 ? 'decimal' : 'numeric'}
+        type={decimal ? 'text' : 'number'}
+        inputMode={decimal || (step && step < 1) ? 'decimal' : 'numeric'}
         aria-label={label}
         className="mz-exc-num"
         value={text}
-        min={min}
-        max={max}
-        step={step}
+        min={decimal ? undefined : min}
+        max={decimal ? undefined : max}
+        step={decimal ? undefined : step}
         placeholder={placeholder}
         onChange={(e) => {
           const raw = e.target.value
           setText(raw)
           if (raw === '') { onCommit(null); return }
-          const n = Number(raw)
-          if (Number.isNaN(n)) return
+          const n = decimal ? parseDecimal(raw) : Number(raw)
+          if (n == null || Number.isNaN(n)) return
           onCommit(Math.min(max, Math.max(min, n)))
         }}
       />
@@ -165,7 +170,7 @@ export function ExerciseCard({
             />
           </span>
         </label>
-        <NumField label="Kiinduló súly (kg)" value={ex.anchorWeightKg ?? null} min={0} max={500} step={2.5}
+        <NumField label="Kiinduló súly (kg)" value={ex.anchorWeightKg ?? null} min={0} max={500} decimal
           placeholder="auto" onCommit={(v) => onChange({ anchorWeightKg: v })} />
         <NumField label="Cél RIR" value={ex.targetRIR} min={0} max={RIR_MAX}
           onCommit={(v) => onChange({ targetRIR: v ?? 0 })} />
