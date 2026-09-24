@@ -2733,7 +2733,11 @@ svg{overflow:visible}
 .vals b.lit{color:#191614;background:linear-gradient(135deg,#FFE0AE,#FFBE60);box-shadow:0 0 12px rgba(255,190,96,.5)}
 .cchal .chr{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-top:1px solid var(--hair)}
 .cchal .chr:first-of-type{border-top:0}
-.cchal .chr>.icon{width:28px;height:28px;margin-top:2px}
+.chr{align-items:center!important}
+.chr .res{flex:0 0 auto;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.chr .res .icon{width:30px;height:30px}
+.chr.hit .res{background:radial-gradient(circle at 35% 30%,rgba(143,180,154,.35),rgba(30,27,24,.6));box-shadow:inset 0 0 0 1.5px rgba(143,180,154,.55),0 0 14px -2px rgba(143,180,154,.6)}
+.chr.miss .res .icon{opacity:.75}
 .chr .cb{flex:1;min-width:0;display:grid;gap:5px}
 .chr .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .chr .kt{color:#FFB39C;background:rgba(255,126,92,.1);box-shadow:inset 0 0 0 1px rgba(255,126,92,.35)}
@@ -3160,7 +3164,7 @@ function cer(v){
       ${CER.rec.map(([n,k,ch,prev])=>`<div class="rrow2"><span class="rt"><span class="kt">${k.toUpperCase()}</span><strong>${n}</strong></span><span class="vals">${ch.map((c,i)=>`<b class="${i?'':'lit'}">${c}</b>`).join('')}</span><small>${prev}</small></div>`).join('')}</article>
     <article class="ccard glass" style="margin-top:12px"><div class="cstats"><span>${I('clock')}<span><strong>${CER.min}<i>′</i></strong><small>a pulton töltött idő</small></span></span><span>${I('coin')}<span><strong>+${CER.xp}</strong><small>szerzett XP</small></span></span></div>
       <div class="ctally"><span>${I('weight')}<b data-c="sets">0</b><small>szett</small></span><span>${I('dumbbell')}<b data-c="reps">0</b><small>ismétlés</small></span><span>${I('protocol')}<b data-c="vol">0</b><small>kg × rep</small></span></div>
-      <div class="cchal"><span class="eb">KÜLDETÉSEK · 1 / 2</span>${CER.chal.map(([ok,t,ex,ch])=>`<div class="chr ${ok?'hit':'miss'}">${I(ok?'tick':'skip')}<span class="cb"><span class="top"><span class="kt">${t.toUpperCase()}</span><em>${ok?'megerősítve':'nem igazolódott'}</em></span><strong>${ex}</strong><span class="vals">${ch.map(c=>`<b>${c}</b>`).join('')}</span></span></div>`).join('')}</div></article>
+      <div class="cchal"><span class="eb">KÜLDETÉSEK · 1 / 2</span>${CER.chal.map(([ok,t,ex,ch])=>`<div class="chr ${ok?'hit':'miss'}"><span class="cb"><span class="top"><span class="kt">${t.toUpperCase()}</span></span><strong>${ex}</strong><span class="vals">${ch.map(c=>`<b>${c}</b>`).join('')}</span></span><span class="res" aria-label="${ok?'teljesült':'nem teljesült'}">${I(ok?'tick':'skip')}</span></div>`).join('')}</div></article>
     <p class="cnote">${CER.pending} szett kihagyott státusszal zárult.</p></section>
   <div class="cfoot"><button class="ccta glass lift" data-go="#cer/reszletek">${I('journal')}<span><strong>Részletek</strong><small>Izomcsoportok és a nyert kalória</small></span><em>›</em></button></div></div>`;
 }
