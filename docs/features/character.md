@@ -257,9 +257,14 @@ an error, and the next `*/15` tick retries any real failure until 23:45.
   dossier-decision role, just without the edition step. `EditionCandidateCollector` is gated by
   the character + companion switches ONLY (no `TEAM_EDITION_SWITCH`) — it collects read-only, so
   there is nothing edition-specific to turn off in it independently of its caller.
-- **Surface (H1):** `GET /api/character/edition?from=&to=` (62-day range cap, same shape as
-  `/runs`) and the `EDITION` row in Gépterem Futások — the csapat-üzenőfal itself only reads
-  editions from H2 (`docs/features/insights.md` §3).
+- **Surface:** `GET /api/character/edition?from=&to=` (62-day range cap, same shape as `/runs`) and
+  the `EDITION` row in Gépterem Futások; since H2 (`mezo-a9bo7.13`) the csapat-üzenőfal itself shows
+  the edition on its day (`docs/features/insights.md` §3).
+- **Értesítés (H2, `mezo-a9bo7.13`):** after a PUBLISHED edition with at least one post, `run` emits
+  ONE `team_edition` notification („Megjött az esti kiadás” · „N bejegyzés a csapattól” · `/mezo`,
+  dedup key `team_edition:<day>`, refId = the edition). A `QUIET` evening notifies nothing, and the
+  idempotent re-runs cannot produce a second row. It rides the `pattern` push family — the
+  `observation_new` precedent ([_platform-notifications.md](_platform-notifications.md)).
 
 ## 2. User-facing behavior
 
