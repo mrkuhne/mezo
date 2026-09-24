@@ -810,6 +810,22 @@
 .mvcard .big,.plposter h2,.plposter p,.dhero2 .num,.whero .num,.lhero2 h1,.lhero2 p{display:block}
 .mrow2>span{min-width:0}
 
+/* A/B váltó a jegyzetpanel tetején (a hosszú ugrólista ALATT senki nem találta meg) */
+.abrow{display:flex;gap:10px;margin:2px 0 10px}
+.abrow a{flex:1;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;text-decoration:none;
+  color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+.abrow a b{font-size:19px;font-weight:700;color:var(--faint)}
+.abrow a span{font-size:12.5px;font-weight:600}
+.abrow a.on{color:#191614;background:var(--coral);box-shadow:0 0 18px -4px var(--coral)}
+.abrow a.on b{color:#191614;opacity:.7}
+.abnote{font-size:12px;color:var(--faint);line-height:1.5;margin-bottom:14px}
+.abnote em{font-style:normal;color:var(--sub);font-weight:600}
+/* és ugyanaz a váltó a telefonban, a „A HETED” sor mellett */
+.abchips{display:flex;gap:5px}
+.abchips button{padding:5px 11px;border-radius:999px;font-size:11px;font-weight:700;color:var(--faint);
+  background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+.abchips button.on{color:#191614;background:var(--coral);box-shadow:0 0 12px -2px var(--coral)}
+
 /* ── közös: szekciófej + üres állapot ── */
 .h3{padding:18px 18px 8px;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .h3 .eb{color:var(--faint)}
@@ -1180,6 +1196,12 @@
     <span class="ov">EDZÉS · ÜVEG · 5. SZELET</span>
     <h1>A Terv és a Hét, üvegben</h1>
     <p>Az Edzés második fele ugyanabban az anyagban: a futó edzésterved és a hetei, a napjai, a „melyik izmod hol tart”, az edzéstervek könyvtára, a lezárt futamok és a riportjuk, a sablonok, a saját edzés, és a Terhelés heti oldalai (izomtérkép, izomjelek, mozgás).</p>
+    <span class="ov">A NAP KÁRTYÁJA — VÁLASSZ</span>
+    <div class="abrow">
+      <a href="#" data-dayv="A" class="on"><b>A</b><span>izomsor</span></a>
+      <a href="#" data-dayv="B"><b>B</b><span>mini testtérkép</span></a>
+    </div>
+    <p class="abnote">A hét három állapota mindkettőben látszik: <em>megvolt</em> (hétfő–szerda), <em>ma</em> (csütörtök), <em>jön</em> (péntek). A kapcsoló a telefonban, az „A HETED” sor mellett is ott van.</p>
     <nav id="jump">
       <a href="#terv" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-peak"/></svg>Terv · a futó terved</a>
       <a href="#run" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-protocol"/></svg>A terv saját oldala</a>
@@ -1200,11 +1222,6 @@
       <a href="#mozgas" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-steps"/></svg>Minden mozgásod</a>
       <a href="#ikonok" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-template"/></svg>Új ikonok</a>
     </nav>
-    <span class="ov">A NAP KÁRTYÁJA — KÉT VÁLTOZAT</span>
-    <ul>
-      <li><a href="#" data-dayv="A" class="on"><b>A</b> — izom-sziluettek sora</a> · <a href="#" data-dayv="B"><b>B</b> — mini testtérkép a kártyán</a></li>
-      <li>Mindkettőben látszik a hét három állapota: <em>megvolt</em> (hétfő, kedd, szerda), <em>ma</em> (csütörtök), <em>jön</em> (péntek).</li>
-    </ul>
     <span class="ov">ÁLLAPOTOK</span>
     <ul>
       <li>Terv: <a href="#" data-state="run">fut egy terv</a> · <a href="#" data-state="none">nem fut terv</a> · <a href="#" data-state="empty">még nincs terved</a></li>
@@ -1382,7 +1399,7 @@ function terv(){
     <span class="plarcnote"><span>${MESO.from}</span><span>${MESO.to}</span></span>
   </button></div>
 
-  <div class="h3 rise" style="--d:90ms"><span class="eb">A HETED</span><em>${trainDays} edzésnap</em></div>
+  <div class="h3 rise" style="--d:90ms"><span class="eb">A HETED</span>${abchips()}</div>
   <div class="pldays">${DAYS.map((d,i)=>dayCard(d,i)).join('')}</div>
   ${dests(true)}
   <div class="p16" style="padding-top:14px;padding-bottom:6px">
@@ -1394,6 +1411,9 @@ function terv(){
 /* A nap kártyája. A kártya EGY dolgot mond: mit dolgoztat meg ez a nap — ezért az
    anatómia a fő grafika, a számok egy halk sorba mennek, és a hét három állapota
    (megvolt · ma · jön) más-más rangot kap (stíluskönyv §3.4). */
+/* a két változat közti váltó — a prototípus döntési kérdése, nem a kész felület része */
+const abchips=()=>`<span class="abchips"><button data-dayv="A" class="${dayVariant==='A'?'on':''}">A</button>
+  <button data-dayv="B" class="${dayVariant==='B'?'on':''}">B</button></span>`;
 const BACKSIDE=['ham','glute','calf','back-mid','back-wide','back-lower','traps','shoulder-rear'];
 function dayView(d){return d.mus.filter(([k])=>BACKSIDE.includes(k)).length>d.mus.length/2?'back':'front'}
 function dayCard(d,i){
@@ -1463,7 +1483,7 @@ function run(){
       <span class="rnroll">${ROLL.map(n=>{const m=WMUS.find(x=>x[0]===n);return `<span><i style="--mc:${mcolor(m[1])}"></i>${n} +2 szett</span>`}).join('')}</span></div>
   </div>
 
-  <div class="h3 rise" style="--d:200ms"><span class="eb">A HETED</span><em>${DAYS.filter(d=>!d.rest&&!d.sport).length} edzésnap</em></div>
+  <div class="h3 rise" style="--d:200ms"><span class="eb">A HETED</span>${abchips()}</div>
   <div class="pldays">${DAYS.map((d,i)=>dayCard(d,i)).join('')}</div>
 
   <div class="p16" style="padding-top:14px">
