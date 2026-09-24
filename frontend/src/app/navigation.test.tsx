@@ -45,7 +45,19 @@ test('switches domains via the switcher, then between tabs by clicking the botto
   await userEvent.click(await screen.findByRole('button', { name: /Összes funkció/ }))
   await userEvent.click(await screen.findByRole('link', { name: 'Előrejelzések' }))
   expect(screen.getByRole('link', { name: 'Üzenőfal' }).className).toContain('active')
-  expect(screen.getByRole('navigation', { name: 'Boop funkciók' })).toBeInTheDocument()
+  // no chip strip (mezo-twizx) — the page's own back chip leads back to the grid
+  expect(screen.queryByRole('navigation', { name: 'Boop funkciók' })).not.toBeInTheDocument()
+  await userEvent.click(await screen.findByRole('button', { name: 'Vissza' }))
+  expect(await screen.findByRole('heading', { name: 'Összes funkció' })).toBeInTheDocument()
+})
+// mezo-twizx: the old „Összes funkció” + chip strip (Minták · Előrejelzések · Diagnózis ·
+// Kísérletek · Heti) is gone from every page — the new dock and the approved üzenőfal prototype
+// have none; the Gépterem's „Összes funkció” grid and each page's own back link carry the way.
+test.each(['/mezo/patterns/ref-anna-sleep', '/mezo/patterns', '/me/week'])('%s — no old chip strip', async (path) => {
+  renderApp(path)
+  expect(await screen.findByRole('button', { name: 'Beállítások' })).toBeInTheDocument()
+  expect(screen.queryByRole('navigation', { name: 'Boop funkciók' })).not.toBeInTheDocument()
+  expect(document.querySelector('.boop-world-navigation')).toBeNull()
 })
 // Üvegesítés (mezo-me75u.1, bible §8): the app is dark-only — the settings page has no theme
 // selector while the lock holds, and a stored light preference does not reach the document.

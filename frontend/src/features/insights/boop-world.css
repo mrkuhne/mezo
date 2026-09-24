@@ -14,13 +14,8 @@
 .boop-world-tile>span{font-size:12px;line-height:1.5;color:var(--text-secondary)}
 .boop-world-tile svg{transition:transform .25s}
 .boop-world-tile:active{transform:scale(.97)}
-.boop-world-navigation{margin:14px 24px 0;font-size:12px}
-.boop-world-navigation>div{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.boop-world-navigation a{display:inline-flex;align-items:center;min-height:40px;padding:7px 10px;text-decoration:none;color:var(--text-secondary);border:1px solid var(--border-subtle);border-radius:12px;background:var(--surface-card)}
-.boop-world-navigation a[aria-current=page]{background:var(--mz-wash-lav);color:var(--lav-deep)}
-.boop-world-navigation .boop-world-menu-link{border:0;background:transparent;color:var(--lav-deep);padding-left:0;min-height:32px}
 @media(hover:hover) and (prefers-reduced-motion:no-preference){.boop-world-tile:hover{transform:translateY(-4px)}.boop-world-tile:hover svg{transform:rotate(-7deg) scale(1.07)}}
-@media(max-width:360px){.boop-world-page{padding-left:16px;padding-right:16px}.boop-world-navigation{margin-left:16px;margin-right:16px}.boop-world-tile{padding:14px;min-height:135px}.boop-world-tile strong{font-size:14px}}
+@media(max-width:360px){.boop-world-page{padding-left:16px;padding-right:16px}.boop-world-tile{padding:14px;min-height:135px}.boop-world-tile strong{font-size:14px}}
 @media(prefers-reduced-motion:reduce){.boop-world-tile,.boop-world-tile svg{transition:none;animation:none}}
 
 /* ══ team-feed (mezo-a9bo7.7) · a csapat-üzenőfal az üveg-kánonban ══════════════════════════

@@ -204,7 +204,7 @@ export function PatternDetailPage() {
   if (pattern?.testPlan) {
     return (
       <DetailFrame>
-        <HypothesisStateCard pattern={pattern} pair={pair} plan={pattern.testPlan}
+        <HypothesisStateCard pattern={pattern} pair={pair} dayCount={days.length} plan={pattern.testPlan}
           onDecide={(status: PatternStatus) => decide(pattern.id, status)} />
 
         <SectionHead title="A teszt-terv" meta="előre rögzítve" />
