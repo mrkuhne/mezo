@@ -24466,3 +24466,26 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .pdt-fold > summary::after { transition: none; }
 }
 /* ── /uveg mezo mibol ── */
+/* ── uveg en2 novekedes (mezo-me75u.7) ── /me/growth/skillek, /me/growth/naplo, /me/growth/kituntetesek ── */
+
+/* ── /uveg en2 novekedes ── */
+
+/* ── uveg en2 rutin (mezo-me75u.7) ── /me/rutin(+/uj,/lanc/:key,/szokasok,/szokas/:key(+/szerkesztes)) + rutin sheets ── */
+
+/* ── /uveg en2 rutin ── */
+
+/* ── uveg en2 naplo (mezo-me75u.7) ── /me/naplo + journal / decision sheets ── */
+
+/* ── /uveg en2 naplo ── */
+
+/* ── uveg en2 emberek (mezo-me75u.7) ── /me/people(+/jeloltek,/kor,/emlitesek,/heti,/:id) + person log / edit sheets ── */
+
+/* ── /uveg en2 emberek ── */
+
+/* ── uveg en2 ertesitesek (mezo-me75u.7) ── /me/ertesitesek + /settings/notifications ── */
+
+/* ── /uveg en2 ertesitesek ── */
+
+/* ── uveg en2 beallitasok (mezo-me75u.7) ── /settings/* (SettingsFrame, SettingsRow), /settings/me/goal, /settings/account, /settings/mezo/* ── */
+
+/* ── /uveg en2 beallitasok ── */
