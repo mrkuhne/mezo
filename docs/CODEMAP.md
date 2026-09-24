@@ -1399,11 +1399,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **components:** ActivityLogCard.tsx, DailyQuestList.tsx, DailyQuestsCard.tsx, DailyQuestsSheet.tsx,
     EletjelStrip.tsx, MezoMessagesSheet.tsx, NapCompanion.tsx, NapFuelGraphic.css, NapFuelGraphic.tsx,
     NapPersonalInsight.css, NapPersonalInsight.tsx, NapomDimensionRow.tsx, NapomLeadCard.tsx, NapomReviewCard.tsx,
-    NapomSegRing.tsx, NapomWeekStrip.tsx, NapzarasCard.tsx, ObservationCard.tsx
+    NapomSegRing.tsx, NapomWeekStrip.tsx, NapzarasCard.tsx, ObservationCard.tsx, ObservationEvidence.tsx
   - **logic:** chainMilestone.ts, chainPrompt.ts, dayArc.ts, dayFace.ts, dayOrbFill.ts, dayOrbTone.ts, habitAction.ts,
     habitCelebration.ts, habitClayIcon.ts, itemIcon.ts, mezoMessages.ts, napTimeline.ts, napom.ts, needs.ts,
-    needsInputs.ts, needsNudges.ts, nudgeSeen.ts, questAction.ts, todayItems.ts, useChangedKeys.ts, useDayFace.ts,
-    useDayOrbFill.ts, useMinuteTick.ts, useMorningMode.ts, useNeeds.ts, windDown.ts
+    needsInputs.ts, needsNudges.ts, nudgeSeen.ts, observationEvidence.ts, questAction.ts, todayItems.ts,
+    useChangedKeys.ts, useDayFace.ts, useDayOrbFill.ts, useMinuteTick.ts, useMorningMode.ts, useNeeds.ts, windDown.ts
   - **root:** MezoThreadProvider.tsx
 
 ### train

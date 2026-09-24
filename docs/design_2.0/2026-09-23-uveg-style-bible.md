@@ -452,3 +452,22 @@ Prototype: [`prototypes/uveg-en.html`](prototypes/uveg-en.html).
 47. **A chrome-less full-screen page gets the calm variant.** The night page hides the header and the
     bar; bright glass there would wake the user. It uses faint lavender flat rows, a soft orb and light
     numerals, with no sheen, and its breathing motion lives only in the no-preference branch.
+
+### Észrevétel-kártya (`mezo-me75u.12`, 2026-09-24)
+
+The Észrevételek card, re-thought after the owner found it unreadable. Prototype:
+[`prototypes/uveg-eszrevetel.html`](prototypes/uveg-eszrevetel.html).
+
+48. **Raw machine text never reaches the screen, even when it is "evidence".** The server sends
+    observation evidence as LLM-context lines (`notes=…; rpe=7.0; kcal_is_estimate=true`). Parse
+    it on the client into rows (icon + title + relative day, labelled value pills, the user's own
+    words as a quote) and drop machine fields; keep an unparseable string as a plain tag. The
+    wire stays as it is (`logic/observationEvidence.ts`).
+49. **A comparison is ONE graphic, not deltas under each number.** The owner rejected „−3 / +2”
+    printed under the second check-in's cells: the relation did not show. Two+ consecutive
+    readings of the same scales get one shared track per dimension (hollow ring = earlier, lit
+    dot = later, the segment glowing in the dimension hue) with `7 → 4` and the delta beside it.
+50. **The question sits on its answers.** Evidence between a question and its reply pills breaks
+    the reading order; the order is sentence → evidence → question + pills (with a hairline).
+    Evidence opens by default on an unanswered card and folds once answered.
+

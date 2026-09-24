@@ -7,13 +7,22 @@
 // Üveg (mezo-me75u.3, prototypes/uveg-nap.html#uzenetek/eszrevetelek): a kártya egy `.glass`
 // (fresh/return lavender, watching sky, confirmed sage), a forrás 3D-ikonja egy lit wellben,
 // a válasz-pillek laposak (az igen lit), a tally jelei 3D pipa/kihagyás + lapos pötty.
+// Újragondolva (mezo-me75u.12, prototypes/uveg-eszrevetel.html): Mezo mondata EGYENES Geist
+// (bible U3/23 — bekezdés-prózán nincs dőlt serif), a bizonyíték tagolt sorok (forrás-ikon +
+// nap, címkézett értékek, a saját jegyzet idézetként; két+ check-in egy közös „Változás”
+// grafikon), a kérdés pedig közvetlenül a válasz-pillek fölött ül. A bizonyíték nyitva indul,
+// megválaszolt kártyán csukva — egy koppintással nyílik.
 // ============================================================
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ContentIcon, Icon3D, type ClayIconName, type Icon3DName } from '@/shared/ui/clay'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { cn } from '@/shared/lib/cn'
-import { timeLabel } from '@/features/notification/logic/stamp'
+import { dayLabel, timeLabel } from '@/features/notification/logic/stamp'
+import { Boop } from '@/shared/ui/clay/boop/Boop'
+import { localDateString } from '@/shared/lib/dates'
+import { EvidenceList } from '@/features/today/components/ObservationEvidence'
+import { parseEvidence } from '@/features/today/logic/observationEvidence'
 import type { Observation, ObservationCardKind, ObservationChoice } from '@/data/types'
 
 /** A prototípus négy kártya-modifikátora — a wire kártyanevek NEM egyeznek vele 1:1. */
@@ -68,9 +77,9 @@ function chipsFor(card: ObservationCardKind): { label: string; choice: Observati
 function eyebrow(item: Observation): string {
   // A dróton UTC-ben jön (`…T12:12:00Z`) — a nyers karakterlánc-szeletelés az UTC órát írná ki,
   // ezért a közös, helyi idejű `timeLabel` formázza (ugyanaz, amit a fejléc és az értesítés-feed használ).
-  const time = `${item.occurredAt.slice(0, 10)} · ${timeLabel(item.occurredAt)}`
-  if (item.card === 'fresh') return `${time} · Feltűnt`
-  if (item.card === 'return') return `${time} · Visszatérés`
+  const time = `${dayLabel(item.occurredAt)} ${timeLabel(item.occurredAt)}`
+  if (item.card === 'fresh') return `Feltűnt · ${time}`
+  if (item.card === 'return') return `Visszatérés · ${time}`
   if (item.card === 'watching') return item.kind === 'statistical' || item.minN == null
     ? 'Figyelt összefüggés' : `Figyelem · ${item.evidenceHits + item.evidenceMisses} megfigyelt nap`
   return 'Megerősítve'
@@ -94,6 +103,11 @@ export function ObservationCard({ item, onReply, pending = false }: {
   const asks = chipsFor(item.card).length > 0
   const answered = asks ? (justAnswered ?? item.repliedChoice ?? null) : null
   const chips = answered ? [] : chipsFor(item.card)
+  // A bizonyíték nyitva indul (ettől hihető az észrevétel); a már megválaszolt kártyán csukva.
+  const [evOpen, setEvOpen] = useState<boolean | null>(null)
+  const evidenceOpen = evOpen ?? !answered
+  const today = localDateString()
+  const records = item.evidence.filter((e) => parseEvidence(e).kind === 'record').length
 
   // Optimista nyugtázás, VISSZAGÖRGETÉSSEL: a kártya azonnal átvált, de ha a hívás elbukik,
   // a chipek visszajönnek egy hibasorral. Nyugtázva hagyni egy el nem küldött választ hazugság
@@ -130,14 +144,21 @@ export function ObservationCard({ item, onReply, pending = false }: {
         <span className="nap-obs-pill">{STATE_PILL[item.card]}</span>
       </div>
 
-      {/* A `watching` kártyán a wire `text` ÜRES — ott nincs mondat, a kérdés-sor viszi a számokat. */}
+      {/* A `watching` kártyán a wire `text` ÜRES — ott nincs mondat, a számok beszélnek. */}
       {item.text !== '' && <p className="nap-obs-say"><SafeMarkdown text={item.text} /></p>}
-      {item.question && <p className="nap-obs-ask"><SafeMarkdown text={item.question} /></p>}
+      {/* A nem-kérdező kártyák (figyelt / megerősített) kérdés-sora a mondat alatt marad. */}
+      {item.question && !asks && <p className="nap-obs-ask"><SafeMarkdown text={item.question} /></p>}
 
       {item.evidence.length > 0 && (
-        <div className="nap-obs-evid">
-          {item.evidence.map((e, i) => <span key={i}>{e}</span>)}
-        </div>
+        <>
+          <div className="nap-obs-evh">
+            <span>Miből látom{records > 0 ? ` · ${records} bejegyzés` : ''}</span>
+            <button type="button" aria-expanded={evidenceOpen} onClick={() => setEvOpen(!evidenceOpen)}>
+              {evidenceOpen ? 'Elrejtem' : 'Megnézem ›'}
+            </button>
+          </div>
+          {evidenceOpen && <EvidenceList evidence={item.evidence} today={today} />}
+        </>
       )}
 
       {item.card === 'watching' && item.kind !== 'statistical' && item.minN != null && (
@@ -163,13 +184,17 @@ export function ObservationCard({ item, onReply, pending = false }: {
       )}
 
       {chips.length > 0 && (
-        <div className="nap-obs-chips" role="group" aria-label="Válaszod az észrevételre">
-          {chips.map((c) => (
-            <button key={c.choice} type="button" className={cn('chip', c.tone)}
-              disabled={pending} onClick={() => { void answer(c.choice) }}>
-              {c.label}
-            </button>
-          ))}
+        <div className="nap-obs-q">
+          <span className="nap-obs-qeb"><Boop domain="mezo" size={18} />Mezo kérdezi</span>
+          {item.question && <p className="nap-obs-ask"><SafeMarkdown text={item.question} /></p>}
+          <div className="nap-obs-chips" role="group" aria-label="Válaszod az észrevételre">
+            {chips.map((c) => (
+              <button key={c.choice} type="button" className={cn('chip', c.tone)}
+                disabled={pending} onClick={() => { void answer(c.choice) }}>
+                {c.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
       {failed && !answered && (
