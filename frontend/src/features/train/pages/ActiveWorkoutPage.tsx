@@ -471,6 +471,9 @@ function ActiveWorkoutSession({
       ...(side ? { side } : {}),
       ...(snapshot?.targetWeightKg != null ? { targetWeightKg: snapshot.targetWeightKg } : {}),
       ...(snapshot?.targetReps != null ? { targetReps: snapshot.targetReps } : {}),
+      // The engine's ORIGINAL weight, before any on-card swap — a near swap away from it teaches
+      // the server's per-machine weight memory that it is missing (mezo-bk7l2).
+      ...(target?.targetWeightKg != null ? { prescribedWeightKg: target.targetWeightKg } : {}),
     }, {
       ctx: { exerciseName: finishing.name, lastWeek: finishing.lastWeek, date: localToday },
       onSuccess: (r) => {

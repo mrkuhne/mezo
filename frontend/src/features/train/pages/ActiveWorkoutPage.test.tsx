@@ -606,6 +606,9 @@ test('real mode: a swapped weight logs the adjusted target snapshot (mezo-l95v4)
   expect(bodies[0].reps).toBe(12)
   expect(bodies[0].targetWeightKg).toBe(100)
   expect(bodies[0].targetReps).toBe(12)
+  // The ENGINE's original, un-adjusted weight rides along — the per-machine weight memory
+  // learns from the near swap 105 → 100 (mezo-bk7l2).
+  expect(bodies[0].prescribedWeightKg).toBe(105)
 })
 
 // ---- real medals (mezo-wp6n): replaces the scripted 105 kg demo toast ----

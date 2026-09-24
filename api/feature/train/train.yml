@@ -3419,6 +3419,16 @@ components:
           maximum: 100
           nullable: true
           description: The Progresszió-prescribed reps for this set, snapshotted at log time
+        prescribedWeightKg:
+          type: number
+          minimum: 0
+          maximum: 999
+          nullable: true
+          description: >-
+            The engine's ORIGINAL working weight for this slot, before any on-card weight swap
+            (targetWeightKg carries the swap-adjusted target since mezo-l95v4). A logged weight
+            near it but different teaches the per-machine weight memory that the prescribed
+            weight is missing on this exercise (mezo-bk7l2).
     SetUpdateRequest:
       type: object
       description: >-

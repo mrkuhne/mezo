@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +36,33 @@ public class ExerciseHistoryResolver {
     /** Records/challenge identity idiom: catalog id when linked, else the exact name. */
     private static String identityKey(UUID catalogId, String name) {
         return catalogId != null ? "c:" + catalogId : "n:" + name;
+    }
+
+    /** The identity key of one template exercise (per-machine weight memory keys on it, mezo-bk7l2). */
+    public static String identityKey(ExerciseEntity ex) {
+        return identityKey(ex.getCatalogId(), ex.getName());
+    }
+
+    /**
+     * Every weight ever logged on this exercise's IDENTITY in a completed instance's working sets
+     * (mezo-bk7l2) — proof those weights exist on the machine. Empty when never trained.
+     */
+    public Set<BigDecimal> workingWeightsEverLogged(UUID createdBy, ExerciseEntity ex) {
+        String key = identityKey(ex);
+        List<UUID> rows = new ArrayList<>();
+        rows.add(ex.getId());
+        for (ExerciseRepository.ExerciseIdentityRow r : exerciseRepository.findIdentityRowsIncludingDeleted(createdBy)) {
+            if (key.equals(identityKey(r.getCatalogId(), r.getName()))) {
+                rows.add(r.getId());
+            }
+        }
+        Set<BigDecimal> out = new HashSet<>();
+        for (ExerciseSetEntity s : exerciseSetRepository.findCompletedWorkingHistory(createdBy, rows)) {
+            if (s.getWeightKg() != null) {
+                out.add(s.getWeightKg());
+            }
+        }
+        return out;
     }
 
     /**

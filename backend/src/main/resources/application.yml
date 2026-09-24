@@ -2585,6 +2585,9 @@ mezo:
       compound: 5.0           # compound lifts progress in 5 kg jumps
       isolation: 2.5          # isolation lifts in 2.5 kg jumps
     default-warmup-sets: 2
+    # Per-machine weight memory (mezo-bk7l2): a swap within max(increment, 10% of the prescribed
+    # kg) is evidence the prescribed weight is missing on that machine; a bigger one is a choice.
+    gap-near-fraction: 0.10
     # Count-keyed absolute-rep warmup ladders (mezo-dnln) — keyed by warmupSets count; each rung
     # is a %working-weight + absolute rep count. Counts above 3 prepend (n-3) repeats of the
     # 3-ladder's first rung ahead of the full 3-ladder (see SetRecommendationService).

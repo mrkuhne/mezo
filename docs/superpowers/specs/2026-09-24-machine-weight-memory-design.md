@@ -55,7 +55,7 @@ used weights, plateStep)`:
 After a snap: working sets carry the snapped weight × reps; `progression.targetWeightKg/
 targetReps` follow; `deltaKg = snapped − ref`. The rationale gets
 ` · {from} kg nincs a gépen → {to} kg`. Warmups keep deriving from the (snapped) base.
-The day tally counts a zero `deltaKg` as `hold`, not `weightUp`.
+The direction rule makes a zero `deltaKg` unreachable, so the day tally needs no change.
 
 ### Frontend
 Only `handleLogSet` changes: it sends `prescribedWeightKg`. Mock mode unchanged.
