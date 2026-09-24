@@ -8,6 +8,8 @@ test('derives strength status from typed fields', () => {
   expect(screen.getByText('Beavatkozás kell')).toBeInTheDocument()
   expect(screen.getByText('−3,2%')).toBeInTheDocument()
   expect(container.firstChild).toHaveClass('goal-guard-alert')
+  expect(container.firstChild).toHaveClass('glass')
+  expect((container.firstChild as HTMLElement).querySelector('use')).toHaveAttribute('href', '#t-info')
 })
 
 test('inactive muscle guard stays neutral', () => {
@@ -15,4 +17,6 @@ test('inactive muscle guard stays neutral', () => {
   expect(screen.getByText('Nincs bekapcsolva')).toBeInTheDocument()
   expect(container.firstChild).toHaveClass('goal-guard-inactive')
   expect(container.firstChild).not.toHaveClass('goal-guard-alert')
+  expect(container.firstChild).toHaveClass('uv-empty')
+  expect(container.firstChild).not.toHaveClass('glass')
 })

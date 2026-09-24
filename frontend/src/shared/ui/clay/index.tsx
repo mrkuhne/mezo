@@ -84,6 +84,7 @@ export type Icon3DName =
   | 't-muscle' | 't-bandage'
   // U5 (mezo-me75u.5) — owner OK on prototypes/uveg-edzes2.html#ikonok
   | 't-template' | 't-compare' | 't-trash'
+  | 't-compass' | 't-signal' | 't-lens' | 't-breath' | 't-candle'
 
 /** Mounts the clay + Titanium <symbol>/<gradient> defs once (main.tsx). */
 export const ClaySprites = memo(function ClaySprites() {
@@ -162,6 +163,11 @@ export const CLAY_TO_3D: Partial<Record<ClayIconName, Icon3DName>> = {
   // the mesocycle are context-free; i-growth (overload here, growth on Én) and i-sport stay at
   // their call sites.
   'i-trend-fel': 't-up', 'i-trend-le': 't-down', 'i-erem': 't-record', 'i-meso': 't-peak',
+  // U6 (mezo-me75u.6): Én I (prototypes/uveg-en.html). The six PERMAH life dimensions are
+  // context-free. i-retegek (Jelek → t-signal, a goal segment → t-peak, the weekly
+  // discoveries → t-lens), i-growth (Én hub → t-up) and i-kristaly stay at their call sites.
+  'i-life-tudatossag': 't-heart', 'i-life-tanulas': 't-book', 'i-life-kapcsolatok': 't-people',
+  'i-life-szemlelet': 't-compass', 'i-life-produktivitas': 't-record', 'i-life-regeneracio': 't-sprout',
 }
 
 /** A content icon: a Titanium name renders as is, a clay name through `CLAY_TO_3D`, and an

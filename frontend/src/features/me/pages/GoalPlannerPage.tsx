@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useGoalCreation, useWeight, useFeasibilityPreview, useBiometricProfile } from '@/data/hooks'
-import { Icon, type IconName } from '@/shared/ui/Icon'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -19,10 +19,10 @@ type Guard = 'strength' | 'muscle'
 const STEP_TITLES = ['Mit építünk?', 'Mennyi időnk van?'] as const
 const STEP_COUNT = 2
 
-const TRAJECTORIES: { id: Trajectory; label: string; sub: string; icon: IconName }[] = [
-  { id: 'cut', label: 'Fogyás', sub: '↓ deficit', icon: 'minus' },
-  { id: 'bulk', label: 'Hízás', sub: '↑ surplus', icon: 'plus' },
-  { id: 'maintain', label: 'Szinten tartás', sub: '≈ tartás', icon: 'check' },
+const TRAJECTORIES: { id: Trajectory; label: string; sub: string; icon: Icon3DName }[] = [
+  { id: 'cut', label: 'Fogyás', sub: '↓ deficit', icon: 't-down' },
+  { id: 'bulk', label: 'Hízás', sub: '↑ surplus', icon: 't-up' },
+  { id: 'maintain', label: 'Szinten tartás', sub: '≈ tartás', icon: 't-hold' },
 ]
 
 const GUARDS: { id: Guard; label: string }[] = [
@@ -116,10 +116,13 @@ function GoalWizard() {
   return (
     // F7.4 Mozaik re-face (mezo-d20.8.4.1, en-mely.html): MozaikPage(coral) shell —
     // the back chip steps back through the wizard before leaving to /me/goals/weight.
-    <MozaikPage tone="coral">
+    // Üveg (mezo-me75u.6, prototype uveg-en.html#sulyuj): a FORM — the chosen trajectory is the
+    // one glass card, everything else is flat; the lit CTA is coral, the draft save a ghost.
+    <MozaikPage tone="coral" className="goal-planner-page">
       <PageHead
+        glass
         onBack={() => (step > 0 ? setStep(step - 1) : backToGoals())}
-        label={step === 0 ? '‹ Cél' : `‹ ${STEP_TITLES[step - 1]}`}
+        label={step === 0 ? 'Cél' : STEP_TITLES[step - 1]}
       />
       <PageBody>
 
@@ -128,110 +131,70 @@ function GoalWizard() {
           step, the way the prototype's `showGr` replays a swapped panel. */}
       <EntranceGroup replayKey={step}>
       {/* Step progress — earlier segments tappable to jump back */}
-      <div className="rise" style={{ '--d': '0ms', padding: '6px 24px 0' } as React.CSSProperties}>
-        <div className="row gap-xs" style={{ marginBottom: 14 }}>
+      <div className="gp-steps rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+        <div className="gp-prog">
           {Array.from({ length: STEP_COUNT }, (_, i) => (
             <button
               key={i}
               type="button"
               aria-label={`${i + 1}. lépés`}
+              className={i <= step ? 'is-on' : undefined}
               onClick={() => {
                 if (i < step) setStep(i)
               }}
-              style={{
-                flex: 1,
-                height: 4,
-                borderRadius: 2,
-                background: i <= step ? 'var(--gradient-cta, var(--coral))' : 'var(--surface-2)',
-                transition: 'all 0.3s ease',
-                padding: 0,
-                cursor: i < step ? 'pointer' : 'default',
-              }}
+              style={{ cursor: i < step ? 'pointer' : 'default' }}
             />
           ))}
         </div>
 
-        <span className="eyebrow" style={{ color: 'var(--coral-deep)' }}>
+        <span className="gp-count">
           {String(step + 1).padStart(2, '0')} / {String(STEP_COUNT).padStart(2, '0')}
         </span>
       </div>
 
       {/* F7.4: Mozaik title block replaces the pghead-np header */}
-      <div className="rise" style={{ '--d': '40ms', padding: '6px 24px 4px' } as React.CSSProperties}>
+      <div className="gp-title rise" style={{ '--d': '40ms' } as React.CSSProperties}>
         <span className="mz-eyebrow">Én · Új cél</span>
-        <h1 style={{ fontFamily: 'var(--ff-display)', fontSize: 24, fontWeight: 600, lineHeight: 1.15, margin: '4px 0 0', color: 'var(--text-primary)' }}>
-          {STEP_TITLES[step]}
-        </h1>
+        <h1>{STEP_TITLES[step]}</h1>
       </div>
 
       {step === 0 && (
-        <div className="rise" style={{ '--d': '80ms', padding: '8px 24px' } as React.CSSProperties}>
-          <div style={{ marginTop: 8 }}>
-            <span className="eyebrow">Súly-trajektória</span>
-          </div>
-          <div className="col gap-sm" style={{ marginTop: 8 }}>
+        <div className="gp-step0 rise" style={{ '--d': '80ms' } as React.CSSProperties}>
+          <span className="gp-label">Súly-trajektória</span>
+          <div className="gp-trajs">
             {TRAJECTORIES.map(t => {
               const sel = trajectory === t.id
               return (
                 <button
                   key={t.id}
                   type="button"
+                  aria-pressed={sel}
                   onClick={() => setTrajectory(t.id)}
-                  className="mz-qcard"
-                  style={{
-                    padding: 14,
-                    textAlign: 'left',
-                    width: '100%',
-                    marginBottom: 0,
-                    background: sel ? 'var(--mz-wash-coral)' : undefined,
-                    border: sel ? '1.5px solid var(--coral)' : undefined,
-                  }}
+                  className={sel ? 'gp-traj glass is-sel' : 'gp-traj'}
                 >
-                  <div className="row gap-md" style={{ alignItems: 'center' }}>
-                    <Icon name={t.icon} size={18} color={sel ? 'var(--coral-deep)' : 'var(--text-secondary)'} />
-                    <div className="col">
-                      <span
-                        style={{
-                          fontFamily: 'var(--ff-display)',
-                          fontSize: 15,
-                          fontWeight: 600,
-                          color: sel ? 'var(--coral-deep)' : 'var(--text-primary)',
-                        }}
-                      >
-                        {t.label}
-                      </span>
-                      <span
-                        style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)', marginTop: 2 }}
-                      >
-                        {t.sub}
-                      </span>
-                    </div>
-                  </div>
+                  <Icon3D name={t.icon} size={40} />
+                  <span className="gp-traj-copy">
+                    <strong>{t.label}</strong>
+                    <small>{t.sub}</small>
+                  </span>
                 </button>
               )
             })}
           </div>
 
-          <div style={{ marginTop: 18 }}>
-            <span className="eyebrow">Mit védesz közben? · gard</span>
-          </div>
-          <div className="row gap-sm" style={{ marginTop: 8, flexWrap: 'wrap' }}>
+          <span className="gp-label gp-label-guards">Mit védesz közben? · gard</span>
+          <div className="gp-guards">
             {GUARDS.map(g => {
               const on = guards.includes(g.id)
               return (
                 <button
                   key={g.id}
                   type="button"
+                  aria-pressed={on}
                   onClick={() => toggleGuard(g.id)}
-                  className="chip"
-                  style={{
-                    padding: '8px 11px',
-                    background: on ? 'var(--wash-sage)' : 'var(--surface-1)',
-                    borderColor: on ? 'var(--sage-deep)' : 'var(--border-subtle)',
-                    color: on ? 'var(--sage-deep)' : 'var(--text-secondary)',
-                  }}
+                  className={on ? 'gp-guard is-on' : 'gp-guard'}
                 >
-                  {on ? '✓ ' : ''}
+                  {on && <Icon3D name="t-tick" size={18} />}
                   {g.label}
                 </button>
               )
@@ -264,14 +227,13 @@ function GoalWizard() {
       )}
 
       {/* Nav */}
-      <div className="rise" style={{ '--d': '130ms', padding: '16px 24px 32px' } as React.CSSProperties}>
+      <div className="gp-foot rise" style={{ '--d': '130ms' } as React.CSSProperties}>
         {step < 1 ? (
-          <div className="row gap-sm">
+          <div className="gp-foot-row">
             {step > 0 && (
               <button
                 type="button"
-                className="cta-ghost flex-1"
-                style={{ padding: 14 }}
+                className="cta-ghost gp-ghost"
                 onClick={() => setStep(step - 1)}
               >
                 Vissza
@@ -279,35 +241,27 @@ function GoalWizard() {
             )}
             <button
               type="button"
-              className="cta-primary"
+              className="cta-primary gp-cta"
               disabled={!canNext}
-              style={{
-                flex: step > 0 ? 2 : 1,
-                opacity: canNext ? 1 : 0.4,
-                pointerEvents: canNext ? 'auto' : 'none',
-                padding: 14,
-              }}
               onClick={() => setStep(step + 1)}
             >
               Tovább →
             </button>
           </div>
         ) : (
-          <div className="col gap-sm">
+          <div className="gp-foot-col">
             <button
               type="button"
-              className="cta-primary"
+              className="cta-primary gp-cta"
               disabled={pending}
-              style={{ padding: 14, opacity: pending ? 0.5 : 1 }}
               onClick={() => save(true)}
             >
-              <Icon name="check" size={16} /> <span>Cél létrehozása + aktiválás</span>
+              <Icon3D name="t-tick" size={20} /> <span>Cél létrehozása + aktiválás</span>
             </button>
             <button
               type="button"
-              className="cta-ghost"
+              className="cta-ghost gp-ghost"
               disabled={pending}
-              style={{ padding: 12, opacity: pending ? 0.5 : 1 }}
               onClick={() => save(false)}
             >
               Mentés tervezettként
@@ -355,15 +309,13 @@ function Step1({
   preview: FeasibilityPreviewResponse | undefined
 }) {
   const field = (label: string, input: ReactNode) => (
-    <div className="col gap-sm">
-      <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)' }}>{label}</span>
-      <div className="mz-qcard" style={{ padding: 10, marginBottom: 0 }}>
+    <div className="gp-field">
+      <span className="gp-label">{label}</span>
+      <div className="gp-inp">
         {input}
       </div>
     </div>
   )
-  const numStyle = { width: '100%', fontSize: 14, color: 'var(--text-primary)' } as const
-  const dateStyle = { width: '100%', fontSize: 13, color: 'var(--text-primary)', colorScheme: 'dark' } as const
 
   // The weeks/kg summary mirrors the backend's derivation basis (Δkg over the
   // window in calendar weeks) so the panel narrates the same quantities the pace
@@ -375,8 +327,8 @@ function Step1({
   )
 
   return (
-    <div style={{ padding: '8px 24px' }}>
-      <div className="col gap-md">
+    <div className="gp-step1">
+      <div className="gp-fields">
         {field(
           'Cél neve',
           <input
@@ -384,10 +336,9 @@ function Step1({
             onChange={e => setTitle(e.target.value)}
             aria-label="Cél neve"
             placeholder="pl. Nyári cut"
-            style={numStyle}
           />,
         )}
-        <div className="row gap-sm">
+        <div className="gp-two">
           <div className="flex-1">
             {field(
               'Kezdés',
@@ -396,7 +347,7 @@ function Step1({
                 value={startDateIso}
                 onChange={e => setStartDateIso(e.target.value)}
                 aria-label="Kezdés"
-                style={dateStyle}
+                className="gp-date"
               />,
             )}
           </div>
@@ -408,12 +359,12 @@ function Step1({
                 value={targetDateIso}
                 onChange={e => setTargetDateIso(e.target.value)}
                 aria-label="Cél dátum"
-                style={dateStyle}
+                className="gp-date"
               />,
             )}
           </div>
         </div>
-        <div className="row gap-sm">
+        <div className="gp-two">
           <div className="flex-1">
             {field(
               'Start súly (kg)',
@@ -423,7 +374,6 @@ function Step1({
                 value={startWeight}
                 onChange={e => setStartWeight(Number(e.target.value))}
                 aria-label="Start súly"
-                style={numStyle}
               />,
             )}
           </div>
@@ -437,7 +387,6 @@ function Step1({
                   value={targetWeight}
                   onChange={e => setTargetWeight(Number(e.target.value))}
                   aria-label="Cél súly"
-                  style={numStyle}
                 />,
               )}
             </div>
@@ -447,10 +396,9 @@ function Step1({
         {/* Live feasibility preview (G6, mezo-06n). maintain has no target weight
             → a simple tartás note; otherwise the backend-derived pace + verdict. */}
         {trajectory === 'maintain' ? (
-          <div className="mz-qcard" style={{ padding: 13, marginBottom: 0 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)' }}>
-              ≈ Tartás — nincs súlyváltozási tempó.
-            </span>
+          <div className="gp-hold">
+            <Icon3D name="t-hold" size={26} />
+            <span>≈ Tartás — nincs súlyváltozási tempó.</span>
           </div>
         ) : preview ? (
           <FeasibilityPanel
@@ -468,7 +416,7 @@ function Step1({
             onChange={e => setIdentity(e.target.value.slice(0, 200))}
             aria-label="Identity frame"
             placeholder='pl. "Erő megtartva — nem csak a szám."'
-            style={{ ...numStyle, minHeight: 48, resize: 'none', lineHeight: 1.45 }}
+            className="gp-ta"
           />,
         )}
       </div>
@@ -477,8 +425,8 @@ function Step1({
 }
 
 // The cél step's live feasibility panel (mockup goal-wizard-v2.html). Two states:
-// withinSafeBand → coral-tinted "X,Y %BW/hét · ✓ Reális" + a kg/weeks summary;
-// otherwise (aggressive) → warning-tinted "X,Y %BW/hét · ⚠ Agresszív" + the
+// withinSafeBand → sage-lit "X,Y %BW/hét · [t-tick] Reális" + a kg/weeks summary;
+// otherwise (aggressive) → amber-lit "X,Y %BW/hét · [t-info] Agresszív" + the
 // "↦ Reális dátum: <date> — Elfogadom" action that bumps the cél-dátum to the
 // cap-paced suggestion (re-previews → flips to feasible). The CTA itself stays
 // enabled (soft — the user MAY proceed); only the panel nudges.
@@ -494,45 +442,31 @@ function FeasibilityPanel({
   onAccept: (dateIso: string) => void
 }) {
   const ok = preview.withinSafeBand
-  const accent = ok ? 'var(--sage-deep)' : 'var(--warning)'
   const withWarnings = ok && preview.verdict === 'feasible-with-warnings'
-  const label = ok ? (withWarnings ? '✓ Reális · figyelővel' : '✓ Reális') : '⚠ Agresszív'
+  const label = ok ? (withWarnings ? 'Reális · figyelővel' : 'Reális') : 'Agresszív'
+  // Üveg: a FLAT lit card (sage = within the safe band, amber = aggressive) — the verdict glyph
+  // is the t-tick / t-info sprite, the meaning stays in the label and in `data-verdict`.
   return (
-    <div
-      className="mz-qcard"
-      style={{
-        padding: '13px 14px',
-        marginBottom: 0,
-        background: ok ? 'var(--mz-wash-sage)' : 'var(--mz-wash-gold)',
-        boxShadow: ok ? 'var(--mz-shadow-sage)' : 'var(--mz-shadow-gold)',
-      }}
-    >
-      <div className="row" style={{ alignItems: 'baseline', gap: 7 }}>
-        <span style={{ fontFamily: 'var(--ff-display)', fontSize: 26, lineHeight: 1, color: accent, fontVariantNumeric: 'tabular-nums' }}>
-          {hu1(preview.derivedRatePctPerWeek)}
-        </span>
-        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)' }}>
-          %BW / hét
-        </span>
-        <span
-          style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', color: accent }}
-        >
+    <div className={ok ? 'gp-feas is-ok' : 'gp-feas is-warn'} data-verdict={ok ? 'ok' : 'aggressive'}>
+      <div className="gp-feas-top">
+        <span className="gp-feas-num">{hu1(preview.derivedRatePctPerWeek)}</span>
+        <span className="gp-feas-unit">%BW / hét</span>
+        <span className="gp-feas-verdict">
+          <Icon3D name={ok ? 't-tick' : 't-info'} size={22} />
           {label}
         </span>
       </div>
-      <div
-        style={{ fontSize: 11.5, lineHeight: 1.45, color: 'var(--text-secondary)', marginTop: 7 }}
-      >
+      <div className="gp-feas-body">
         {ok ? (
           <>
             Fenntartható tempó a biztonságos sávban.{' '}
-            <b style={{ color: 'var(--text-primary)' }}>
+            <b>
               ≈{hu1(deltaKg)} kg · {weeks} hét.
             </b>
           </>
         ) : (
           <>
-            A biztonságos sáv <b style={{ color: 'var(--text-primary)' }}>fölött</b> — izomvesztés- és
+            A biztonságos sáv <b>fölött</b> — izomvesztés- és
             visszahízás-kockázat.
           </>
         )}
@@ -541,18 +475,7 @@ function FeasibilityPanel({
         <button
           type="button"
           onClick={() => onAccept(preview.suggestedTargetDate!)}
-          className="rad-12"
-          style={{
-            marginTop: 11,
-            width: '100%',
-            padding: 9,
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.04em',
-            background: 'rgba(245,158,11,.12)',
-            border: '1px solid color-mix(in srgb, var(--warning) 55%, transparent)',
-            color: 'var(--warning)',
-          }}
+          className="gp-feas-accept"
         >
           ↦ Reális dátum: {huMonthDay(preview.suggestedTargetDate)} — Elfogadom
         </button>

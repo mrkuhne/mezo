@@ -5,7 +5,7 @@
 // IS the /me index, the former sub-tabs are full-page siblings on their stable
 // routes (they keep their current faces until their own F5 slices land).
 // Anatomy: the shell fejléc (app/AppHeader.tsx, mezo-atry) → identity hero (in-level XP ring around
-// the initial, name, equipped title chip, Lv · XP · 🔥 · 🪙, bio line) → the
+// the initial, name, equipped title chip, Lv · XP · streak · coin, bio line) → the
 // ÉLETCÉL-HERO (mezo-iizd.4: the active life goals' dimension chips + the engine's
 // ↗ / → / ↘ counters, opening /me/goals) → the 6-tile mosaic
 // with live bottom lines. Persistent settings live in the shared /settings center.
@@ -23,9 +23,13 @@
 //  · null statistics render `—` in a mini-cell, never 0;
 //  · a tile line vanishes while its source is unresolved/empty — no page ever
 //    shows a fabricated number.
+// Üveg (mezo-me75u.6, prototypes/uveg-en.html#en): the identity hero is the one loud thing —
+// a frameless rose halo, the glowing XP ring, flat stat pills with 3D icons; the goal card and
+// every mosaic tile wear `.glass` in their own accent; the ＋ Új cél door is dashed. CSS:
+// prototype.css `── uveg en hub (`.
 // ============================================================
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { MCells, Mosaic, Tile, type MCell } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import {
@@ -117,10 +121,12 @@ export function EnHubPage() {
           { label: 'csúszik', value: `${ARROW_GLYPH.down} ${arrows.down}`, tone: 'coral' },
         ]
     goalCard = (
-      <button type="button" className="enh-goalcard enh-lgcard rise" style={{ '--d': '70ms' } as React.CSSProperties}
+      <button type="button" className="enh-goalcard enh-lgcard glass rise"
+        style={{ '--d': '70ms', '--c': 'var(--dv-coral)', '--i': 1 } as React.CSSProperties}
         aria-label="Célok · összegzés" onClick={() => navigate('/me/goals')}>
         <div className="enh-goalhead">
-          <span className="mz-eyebrow"><ClayIcon name="i-cel" size={15} /> Célok</span>
+          <Icon3D name="t-ring" size={36} />
+          <span className="enh-goalttl">Célok</span>
           <span className="enh-stch">{activeGoals.length} aktív</span>
         </div>
         <div className="enh-lgdims">
@@ -137,7 +143,8 @@ export function EnHubPage() {
   } else if (!lifeGoalsPending) {
     // Nincs aktív életcél — nincs kitalált gyűrű. Az ajtó a varázslóra nyílik.
     goalCard = (
-      <button type="button" className="enh-newgoal rise" style={{ '--d': '70ms' } as React.CSSProperties}
+      <button type="button" className="enh-newgoal uv-empty rise"
+        style={{ '--d': '70ms', '--c': 'var(--dv-coral)' } as React.CSSProperties}
         onClick={() => navigate('/me/goals/new')}>
         ＋ Új cél
       </button>
@@ -208,26 +215,33 @@ export function EnHubPage() {
     <div className="enh-hub">
       <EntranceGroup className="mz-panel-stack">
         {/* ===== identity hero ===== */}
-        <div className="enh-idhero rise" data-kalauz-anchor="me-idhero" style={{ '--d': '0ms' } as React.CSSProperties}>
+        <div className="enh-idhero uv-halo rise" data-kalauz-anchor="me-idhero" style={{ '--d': '0ms' } as React.CSSProperties}>
           <div className="enh-idring" style={{ '--xp': xpPct } as React.CSSProperties}
             role="img" aria-label={`Szint ${gam.level} — ${xpPct}% a következő szintig`}>
+            <svg className="uv-ring" viewBox="0 0 128 128" aria-hidden="true">
+              <circle className="uv-ring-track" cx="64" cy="64" r="58" pathLength={100} />
+              {xpPct > 0 && (
+                <circle className="uv-ring-prog enh-xpprog" cx="64" cy="64" r="58" pathLength={100}
+                  strokeDasharray={`${xpPct} 100`} />
+              )}
+            </svg>
             <i aria-hidden="true">{initial}</i>
+            <span className="enh-lv" aria-hidden="true">Lv {gam.level}</span>
           </div>
           <div className="enh-nm">{profile?.name ?? ''}</div>
           <button type="button" className={equipped != null ? 'enh-titlech' : 'enh-titlech is-none'}
             aria-label={equipped != null ? `Viselt cím: ${equipped.name} — cím-bolt` : 'Cím-bolt'}
             onClick={() => navigate('/me/growth/kituntetesek')}>
-            {equipped != null ? equipped.name : 'Válassz címet'}
+            {equipped != null ? <><Icon3D name="t-record" size={18} />{equipped.name}</> : 'Válassz címet'}
           </button>
           <div className="enh-idstats">
-            <span>Lv {gam.level}</span>
-            <span>{huInt(gam.totalXp)} XP</span>
-            <button type="button" className="enh-idstat" aria-label="Sorozat részletei"
-              style={{ opacity: gam.streakAlive === false ? 0.45 : 1, display: 'inline-flex', alignItems: 'center', gap: 3 }}
-              onClick={() => navigate('/me/growth/kituntetesek')}><ClayIcon name="i-lang" size={13} /> {gam.streakDays} nap</button>
-            <button type="button" className="enh-idstat" aria-label="Érme — címek"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}
-              onClick={() => navigate('/me/growth/kituntetesek')}><ClayIcon name="i-erme" size={13} /> {gam.coins}</button>
+            <span className="enh-flat is-lv">Lv {gam.level}</span>
+            <span className="enh-flat">{huInt(gam.totalXp)} XP</span>
+            <button type="button" className="enh-idstat enh-flat" aria-label="Sorozat részletei"
+              style={{ opacity: gam.streakAlive === false ? 0.45 : 1 }}
+              onClick={() => navigate('/me/growth/kituntetesek')}><Icon3D name="t-bolt" size={18} /> {gam.streakDays} nap</button>
+            <button type="button" className="enh-idstat enh-flat" aria-label="Érme — címek"
+              onClick={() => navigate('/me/growth/kituntetesek')}><Icon3D name="t-coin" size={18} /> {gam.coins}</button>
           </div>
           {bioBits.length > 0 ? (
             <button type="button" className="enh-bio" aria-label="Biometria szerkesztése"
@@ -249,19 +263,19 @@ export function EnHubPage() {
 
         {/* ===== 6-tile mosaic ===== */}
         <Mosaic>
-          <Tile wash="coral" icon="i-cel" eyebrow="Célok" delayMs={130} className="enh-eb-coral"
+          <Tile wash="coral" art="t-ring" iconSize={44} eyebrow="Célok" delayMs={130} className="glass enh-tile enh-t-celok"
             line={celokLine} onClick={() => navigate('/me/goals')} aria-label="Célok" />
-          <Tile wash="sky" icon="i-suly" eyebrow="Súly" delayMs={170} className="enh-eb-sky"
+          <Tile wash="sky" art="t-weight" iconSize={44} eyebrow="Súly" delayMs={170} className="glass enh-tile enh-t-suly"
             line={sulyLine} onClick={() => navigate('/me/weight')} aria-label="Súly" />
-          <Tile wash="lav" icon="i-alvas" eyebrow="Alvás" delayMs={210} className="enh-eb-lav"
+          <Tile wash="lav" art="t-sleep" iconSize={44} eyebrow="Alvás" delayMs={210} className="glass enh-tile enh-t-alvas"
             line={alvasLine} onClick={() => navigate('/me/sleep')} aria-label="Alvás" />
-          <Tile wash="lav" icon="i-growth" eyebrow="Growth" delayMs={250} className="enh-t-minta enh-eb-lav"
+          <Tile wash="lav" art="t-up" iconSize={44} eyebrow="Growth" delayMs={250} className="glass enh-tile enh-t-growth"
             line={growthLine} onClick={() => navigate('/me/growth')} aria-label="Growth" />
-          <Tile wash="white" icon="i-naplo" eyebrow="Napló" delayMs={290} className="enh-t-kreed enh-eb-coral"
+          <Tile wash="white" art="t-journal" iconSize={44} eyebrow="Napló" delayMs={290} className="glass enh-tile enh-t-naplo"
             line={naploLine} onClick={() => navigate('/me/naplo')} aria-label="Napló" />
-          <Tile wash="rose" icon="i-emberek" eyebrow="Emberek" delayMs={330} className="enh-eb-rose"
+          <Tile wash="rose" art="t-people" iconSize={44} eyebrow="Emberek" delayMs={330} className="glass enh-tile enh-t-emberek"
             line={emberekLine} onClick={() => navigate('/me/people')} aria-label="Emberek" />
-          <Tile wide wash="gold" icon="i-rend" iconSize={34} eyebrow="Rutin" delayMs={410}
+          <Tile wide wash="gold" art="t-chain" iconSize={44} eyebrow="Rutin" delayMs={410} className="glass enh-tile enh-t-rutin"
             line={rutinLine} onClick={() => navigate('/me/rutin')} aria-label="Rutin" />
         </Mosaic>
       </EntranceGroup>

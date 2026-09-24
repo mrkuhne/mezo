@@ -419,3 +419,55 @@ Blocks: `── uveg edzes2 terv|run|nap|izmok|konyvtar|sablonok|het (`. Three n
     comes from `useWeekMuscleLog` — the same cached reads the Terhelés tab makes — so the two
     surfaces cannot disagree and the second visit costs nothing. Mock mode has no persisted
     instances, so a done-state feature is honestly absent there; say so rather than faking it.
+
+### U6 · Én I (`mezo-me75u.6`, 2026-09-24)
+
+Én hub, Célok (+ Cél, wizard, Jelek), the weight goal and its sub-pages, Súly, Alvás + night mode, and
+the four week pages. Blocks: `── uveg en hub|celok|sulycel|suly|alvas|het (`. Five new sprite icons
+(`t-compass t-signal t-lens t-breath t-candle`); the six PERMAH `i-life-*` icons joined `CLAY_TO_3D`.
+Prototype: [`prototypes/uveg-en.html`](prototypes/uveg-en.html).
+
+41. **Builders still rewrite the whole stylesheet: verify by selector, not by line count.** Three of six
+    builders saved `prototype.css` whole (a Python replace, a ranged `sed -i`) despite rule 17. Nothing
+    was lost, but only because integration scripted a check that every builder's reported key selectors
+    were present in its block. Ask every builder for its key selectors and check them, then put them in
+    the `U<n>_BLOCKS` structure test so a later loss fails CI.
+42. **There is no `--page` token in the app.** §1 and §7.1 name the ground `--page`, but the app CSS aliases
+    it as `--canvas`; a badge ring written `0 0 0 2px var(--page)` silently draws nothing. Write
+    `var(--canvas)` in app CSS (the U6 guard rejects `var(--page)`); prototypes may keep `--page`.
+43. **A capture sheet opened from many areas belongs to none of them.** The weight and sleep log sheets
+    have been glass since U3 and open from Nap, Életjel, rutin and quick input too. Leave them to their
+    block; a scoped tweak on the sheet reaches every opener (the sleep sheet's note box went flat
+    everywhere — acceptable, but know it).
+44. **A legacy class with `!important` is renamed, not outranked.** `.lg-tile` carried `!important`
+    backgrounds that no `.glass` rule can beat; the builder renamed it (`.enc-tile`) and kept the
+    animation hooks (`.lg-wk7`). Escalating to `!important` in the üveg block would have poisoned the next
+    slice.
+45. **A status glyph becomes a word with an icon.** ✓ Megerősítve → `t-tick`, ▲ Erősödött → `t-up`,
+    ★ Előléptetve → `t-record`, ◐ Folyamatban → `t-clock`, ✗ Nem jött be → `t-skip`; ⚠ → `t-info`. Reuse
+    this table wherever a status chip carries a glyph.
+46. **Colour that carries data outranks the prototype's colour.** The prototype drew the week's score
+    bars in lavender; the live bars keep their score-band colours (sage/amber/coral), the same bands the
+    day tiles use. A prototype decides the look, not what a colour means.
+47. **A chrome-less full-screen page gets the calm variant.** The night page hides the header and the
+    bar; bright glass there would wake the user. It uses faint lavender flat rows, a soft orb and light
+    numerals, with no sheen, and its breathing motion lives only in the no-preference branch.
+
+### Észrevétel-kártya (`mezo-me75u.12`, 2026-09-24)
+
+The Észrevételek card, re-thought after the owner found it unreadable. Prototype:
+[`prototypes/uveg-eszrevetel.html`](prototypes/uveg-eszrevetel.html).
+
+48. **Raw machine text never reaches the screen, even when it is "evidence".** The server sends
+    observation evidence as LLM-context lines (`notes=…; rpe=7.0; kcal_is_estimate=true`). Parse
+    it on the client into rows (icon + title + relative day, labelled value pills, the user's own
+    words as a quote) and drop machine fields; keep an unparseable string as a plain tag. The
+    wire stays as it is (`logic/observationEvidence.ts`).
+49. **A comparison is ONE graphic, not deltas under each number.** The owner rejected „−3 / +2”
+    printed under the second check-in's cells: the relation did not show. Two+ consecutive
+    readings of the same scales get one shared track per dimension (hollow ring = earlier, lit
+    dot = later, the segment glowing in the dimension hue) with `7 → 4` and the delta beside it.
+50. **The question sits on its answers.** Evidence between a question and its reply pills breaks
+    the reading order; the order is sentence → evidence → question + pills (with a hairline).
+    Evidence opens by default on an unanswered card and folds once answered.
+

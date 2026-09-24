@@ -7,7 +7,6 @@ export interface BoopDestination {
   icon: ClayIconName
   wash: MozaikWash
   description: string
-  primary?: boolean
 }
 
 /**
@@ -18,11 +17,11 @@ export const ALL_FEATURES_ROUTE = '/mezo/karakter/gepterem/osszes'
 
 /** Original feature names and canonical records; menu and crosslinks share this catalog. */
 export const BOOP_DESTINATIONS: BoopDestination[] = [
-  { label: 'Minták', to: '/mezo/patterns', icon: 'i-minta', wash: 'lav', description: 'Amit újra és újra észreveszünk', primary: true },
-  { label: 'Előrejelzések', to: '/mezo/predictions', icon: 'i-kristaly', wash: 'sky', description: 'Mit vártunk, és mi történt?', primary: true },
-  { label: 'Diagnózis', to: '/mezo/diagnozis', icon: 'i-muhely', wash: 'gold', description: 'Keressünk magyarázatot együtt', primary: true },
-  { label: 'Kísérletek', to: '/mezo/experiments', icon: 'i-lombik', wash: 'sage', description: 'Kis változtatás, követhető eredmény', primary: true },
-  { label: 'Heti', to: '/me/week', icon: 'i-heti', wash: 'rose', description: 'Értékelés és a napjaid', primary: true },
+  { label: 'Minták', to: '/mezo/patterns', icon: 'i-minta', wash: 'lav', description: 'Amit újra és újra észreveszünk' },
+  { label: 'Előrejelzések', to: '/mezo/predictions', icon: 'i-kristaly', wash: 'sky', description: 'Mit vártunk, és mi történt?' },
+  { label: 'Diagnózis', to: '/mezo/diagnozis', icon: 'i-muhely', wash: 'gold', description: 'Keressünk magyarázatot együtt' },
+  { label: 'Kísérletek', to: '/mezo/experiments', icon: 'i-lombik', wash: 'sage', description: 'Kis változtatás, követhető eredmény' },
+  { label: 'Heti', to: '/me/week', icon: 'i-heti', wash: 'rose', description: 'Értékelés és a napjaid' },
   { label: 'Karakter', to: '/mezo/karakter/dimenziok', icon: 'i-emberek', wash: 'lav', description: 'Ahogyan a csapat lát téged' },
   { label: 'Tudástár', to: '/mezo/knowledge', icon: 'i-tudas', wash: 'sage', description: 'Tények, események, kapcsolatok' },
   { label: 'Emlékek', to: '/mezo/emlekek', icon: 'i-memoar', wash: 'lav', description: 'Napló, memoár és visszakeresés' },

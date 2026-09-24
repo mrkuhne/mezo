@@ -14,6 +14,11 @@
 // gets no score; a CLOSED week without an analysis says so (and offers to make
 // one) instead of borrowing the running week's „Hétfő reggel érkezik" ghost;
 // a failed load offers a retry instead of rendering as an empty week.
+//
+// Üveg (mezo-me75u.6, prototype uveg-en-body.html `het()`): the hero is a frameless lavender
+// halo (week title, the glowing score ring, the sage delta pill, the subline); the eight
+// cells are lit flat; the four view tiles are `.glass` (analysis lav · lessons gold · days
+// sage · discoveries sky) with Titanium 3D art; the week stepper is two round glass buttons.
 // ============================================================
 import type { CSSProperties } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -27,7 +32,7 @@ import { weeklySuggestionApi, type WeeklySuggestion } from '@/data/insights/week
 import { weeklySuggestion as mockWeeklySuggestion, weeklySuggestionId as mockWeeklySuggestionId } from '@/data/insights/insights'
 import { MozaikPage, PageBody, PageHead, MCells } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { GhostState } from '@/shared/ui/GhostState'
 import { prevMonday, nextMonday, isCurrentWeek } from '@/features/me/logic/weekNav'
 import { scoreBandClass, scoreBandColor, scoreDelta } from '@/features/me/logic/scoreBand'
@@ -71,7 +76,9 @@ function useWeekNextSuggestion(enabled: boolean): WeeklySuggestion | null {
 const d = (ms: number) => ({ '--d': `${ms}ms` } as CSSProperties)
 
 /** The analysis tile's seven day bars — `.wk-minibars` from the Heti foundation.
- *  A day with no score gets the minimum stub, never a bar pretending to be a low score. */
+ *  A day with no score gets the minimum stub, never a bar pretending to be a low score.
+ *  Üveg (mezo-me75u.6): drawn taller (44px well, prototype `.mbars`) with the lavender glow;
+ *  the unscored stub is an outlined 8px cap. */
 function MiniBars({ days }: { days: readonly MeWeekDay[] }) {
   return (
     <div className="wk-minibars" aria-hidden="true">
@@ -80,7 +87,7 @@ function MiniBars({ days }: { days: readonly MeWeekDay[] }) {
           key={day.date}
           className={scoreBandClass(day.score)}
           style={{
-            height: `${day.score == null ? 4 : Math.max(5, Math.round((day.score / 100) * 24))}px`,
+            height: `${day.score == null ? 8 : Math.max(6, Math.round((day.score / 100) * 44))}px`,
             '--d': `${400 + i * 45}ms`,
           } as CSSProperties}
         />
@@ -106,10 +113,10 @@ export function WeekHubPage() {
   const goPage = (slug: string) => navigate(`/me/week/${slug}?start=${start}`)
 
   const head = (
-    <PageHead label="‹ Én" onBack={() => navigate('/me')}>
+    <PageHead glass label="Én" onBack={() => navigate('/me')}>
       <div className="wkh-nav">
-        <button type="button" aria-label="Előző hét" onClick={() => goWeek(prevMonday(start))}>‹</button>
-        <button type="button" aria-label="Következő hét" disabled={isCurrentWeek(start)}
+        <button type="button" className="glass is-round" aria-label="Előző hét" onClick={() => goWeek(prevMonday(start))}>‹</button>
+        <button type="button" className="glass is-round" aria-label="Következő hét" disabled={isCurrentWeek(start)}
           onClick={() => goWeek(nextMonday(start))}>›</button>
       </div>
     </PageHead>
@@ -121,7 +128,7 @@ export function WeekHubPage() {
     return (
       <MozaikPage tone="lav" className="wkh-page">
         {head}
-        <div className="mz-page-hero"><div className="mz-hero-nm">{deriveWeekTitle(start)}</div></div>
+        <section className="wkh-hero uv-halo"><div className="wkh-title">{deriveWeekTitle(start)}</div></section>
         <PageBody>
           <GhostState message="Nem sikerült betölteni a hetet." ctaLabel="Újra" onCta={refetch} />
         </PageBody>
@@ -134,11 +141,11 @@ export function WeekHubPage() {
     return (
       <MozaikPage tone="lav" className="wkh-page">
         {head}
-        <div className="mz-page-hero">
-          <div className="mz-hero-nm">{deriveWeekTitle(start)}</div>
+        <section className="wkh-hero uv-halo">
+          <div className="wkh-title">{deriveWeekTitle(start)}</div>
           <div className="wkh-skel ring" data-testid="wkh-skeleton" aria-hidden="true" />
-          <div className="mz-hero-sb">{isPending ? 'töltöm a hetet…' : ''}</div>
-        </div>
+          <div className="wkh-sub">{isPending ? 'töltöm a hetet…' : ''}</div>
+        </section>
         <PageBody>
           <div className="wkh-skel" style={{ height: 48 }} aria-hidden="true" />
           <div className="wkh-skel" style={{ height: 48 }} aria-hidden="true" />
@@ -171,13 +178,13 @@ export function WeekHubPage() {
     <MozaikPage tone="lav" className="wkh-page">
       {head}
 
-      <div className="mz-page-hero">
-        <div className="mz-hero-nm">{deriveWeekTitle(start)}</div>
+      <section className="wkh-hero uv-halo">
+        <div className="wkh-title">{deriveWeekTitle(start)}</div>
         <div className="wkh-herorow">
           <WeekScoreRing score={score} />
           <div className="wkh-heroside">
             {delta && (
-              <div>
+              <div className="wkh-deltarow">
                 <span className={`wk-delta${delta.direction === 'down' ? ' is-down' : delta.direction === 'flat' ? ' is-flat' : ''}`}>
                   {delta.text}
                 </span>
@@ -192,8 +199,8 @@ export function WeekHubPage() {
             )}
           </div>
         </div>
-        <div className="mz-hero-sb">{weekSubline(phase, review != null, score)}</div>
-      </div>
+        <div className="wkh-sub">{weekSubline(phase, review != null, score)}</div>
+      </section>
 
       <PageBody>
         <EntranceGroup replayKey={start} className="mz-panel-stack">
@@ -209,14 +216,14 @@ export function WeekHubPage() {
           </div>
 
           <div className="wkh-lsec rise" style={d(80)}>
-            <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-lav-ink)' }}>A hét négy nézete</span>
+            <span className="mz-eyebrow wkh-lsec-eb">A hét négy nézete</span>
           </div>
 
           {/* 1 · Heti elemzés — the wide, lavender-ringed tile */}
-          <button type="button" className="wkh-wide rev rise" style={d(110)} onClick={() => goPage('elemzes')}>
+          <button type="button" className="wkh-wide rev glass rise" style={d(110)} onClick={() => goPage('elemzes')}>
             <div className="wkh-row">
-              <ClaySpot name="s-orb" size={31} />
-              <span className="wkh-grow mz-eyebrow" style={{ color: 'var(--mz-cell-lav-ink)' }}>Mezo · heti elemzés</span>
+              <Icon3D name="t-score" size={40} />
+              <span className="wkh-grow wkh-tiletitle">Mezo · heti elemzés</span>
               <span className={`wkh-stch ${stamp.tone}`}>{stamp.text}</span>
               <span className="wkh-chev" aria-hidden="true">›</span>
             </div>
@@ -232,15 +239,15 @@ export function WeekHubPage() {
           {showRepair && (
             <button type="button" className="wkh-genbtn rise" style={d(130)} disabled={regenerating}
               onClick={() => void regenerate()}>
-              {regenerating ? 'Készül…' : '✦ Készítsd el most'}
+              {regenerating ? 'Készül…' : (<><Icon3D name="t-score" size={20} />Készítsd el most</>)}
             </button>
           )}
 
           <div className="wkh-duo rise" style={d(150)}>
             {/* 2 · A hét tanulságai */}
-            <button type="button" className="wkh-sm less" onClick={() => goPage('tanulsagok')}>
+            <button type="button" className="wkh-sm less glass" onClick={() => goPage('tanulsagok')}>
               <div className="picrow">
-                <ClayIcon name="i-kristaly" size={26} />
+                <Icon3D name="t-gem" size={40} />
                 <span className="wkh-chev" style={{ marginLeft: 'auto' }} aria-hidden="true">›</span>
               </div>
               {/* No week-scoped candidate source exists yet (F6.5) — „—", never a borrowed count. */}
@@ -250,9 +257,9 @@ export function WeekHubPage() {
             </button>
 
             {/* 3 · A hét napjai */}
-            <button type="button" className="wkh-sm days" onClick={() => goPage('napok')}>
+            <button type="button" className="wkh-sm days glass" onClick={() => goPage('napok')}>
               <div className="picrow">
-                <ClayIcon name="i-nap" size={26} />
+                <Icon3D name="t-sun" size={40} />
                 <span className="wkh-chev" style={{ marginLeft: 'auto' }} aria-hidden="true">›</span>
               </div>
               <div className="big">{logged}<span> / 7 nap</span></div>
@@ -266,7 +273,7 @@ export function WeekHubPage() {
                       key={day.date}
                       className={state === 'empty' ? 'is-nodata' : state === 'future' ? 'is-future' : undefined}
                       title={DAY_STATE_COPY[state] ?? undefined}
-                      style={{ '--c': scoreBandColor(day.score), '--v': day.score ?? 0 } as CSSProperties}
+                      style={{ '--c': scoreBandColor(day.score), '--v': day.score ?? 0, '--k': i } as CSSProperties}
                     />
                   )
                 })}
@@ -276,11 +283,11 @@ export function WeekHubPage() {
           </div>
 
           {/* 4 · Heti felfedezések */}
-          <button type="button" className="wkh-wide disc rise" style={d(190)} onClick={() => goPage('felfedezesek')}>
+          <button type="button" className="wkh-wide disc glass rise" style={d(190)} onClick={() => goPage('felfedezesek')}>
             <div className="wkh-row">
-              <span className="wkh-pic"><ClayIcon name="i-retegek" size={21} /></span>
+              <Icon3D name="t-lens" size={40} />
               <span className="wkh-grow">
-                <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-sky-ink)' }}>Heti felfedezések</span>
+                <span className="mz-eyebrow wkh-disceb">Heti felfedezések</span>
                 <span className="wkh-disctitle" style={{ display: 'block' }}>
                   {discoveries.count > 0 ? `${discoveries.count} új nyom a memóriában` : 'Csendes hét volt'}
                 </span>

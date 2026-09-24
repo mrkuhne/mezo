@@ -3,7 +3,7 @@ import { Sheet } from '@/shared/ui/Sheet'
 import { Display } from '@/shared/ui/Display'
 import { Icon } from '@/shared/ui/Icon'
 import { useGoal, useGoalActions, useTrain, useRunning } from '@/data/hooks'
-import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
+import { Icon3D } from '@/shared/ui/clay'
 
 // Attach-an-existing-plan picker (G4b hub). Opened from the plan connections page
 // for a given plan type. Lists the user's owned mesocycles
@@ -51,26 +51,29 @@ export function AttachPlanSheet({
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [startWeek, setStartWeek] = useState(1)
 
+  // Üveg (mezo-me75u.6, bible U2 rule 15): ONE floating sky glass sheet; the candidates are
+  // flat rows (the picked one lit), the start-week field is flat, „Csatolás" the lit CTA.
   return (
-    <Sheet onClose={onClose} labelledBy="attach-plan-title">
+    <Sheet onClose={onClose} labelledBy="attach-plan-title" className="glass goal-attach-sheet">
       {(close) => (
-        <div className="col" style={{ padding: '4px 4px 8px' }}>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-            <div className="col">
-              <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Csatolj meglévőt</span>
+        <div className="gas-body">
+          <div className="gas-head">
+            <Icon3D name={planType === 'mesocycle' ? 't-calendar' : 't-run'} size={44} className="gas-art" />
+            <div className="gas-title">
+              <span className="gas-eb">Csatolj meglévőt</span>
               <div id="attach-plan-title"><Display size="md">{TITLE[planType]}</Display></div>
             </div>
-            <button className="chip" aria-label="Bezárás" onClick={close}><Icon name="x" size={12} /></button>
+            <button type="button" className="gas-x" aria-label="Bezárás" onClick={close}><Icon name="x" size={12} /></button>
           </div>
 
           {candidates.length === 0 ? (
-            <p className="text-tertiary" style={{ fontSize: 12, fontStyle: 'italic', lineHeight: 1.5 }}>
+            <p className="gas-empty">
               Nincs csatolható terv — minden meglévő már a cél alatt fut, vagy még nincs ilyen terved.
             </p>
           ) : (
             <>
-              <div className="col gap-sm">
-                <span style={SECTION_LABEL}>Válassz tervet</span>
+              <div className="gas-list">
+                <span className="gas-label">Válassz tervet</span>
                 {candidates.map((c) => {
                   const active = c.id === selectedId
                   return (
@@ -79,30 +82,17 @@ export function AttachPlanSheet({
                       type="button"
                       aria-pressed={active}
                       onClick={() => setSelectedId(c.id)}
-                      className="card"
-                      style={{
-                        padding: '11px 14px',
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                        borderColor: active ? 'var(--lav-deep)' : 'var(--border-subtle)',
-                        background: active ? 'var(--wash-lav)' : 'var(--surface-1)',
-                      }}
+                      className={active ? 'gas-row is-on' : 'gas-row'}
                     >
-                      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{c.title}</span>
-                        <span
-                          style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}
-                        >
-                          {c.weeks} hét
-                        </span>
-                      </div>
+                      <span className="gas-row-nm">{c.title}</span>
+                      <span className="gas-row-wk">{c.weeks} hét</span>
                     </button>
                   )
                 })}
               </div>
 
-              <div className="col gap-sm mt-lg">
-                <span style={SECTION_LABEL}>Kezdő hét</span>
+              <div className="gas-week">
+                <span className="gas-label">Kezdő hét</span>
                 <input
                   type="number"
                   aria-label="Kezdő hét"
@@ -113,32 +103,22 @@ export function AttachPlanSheet({
                     const n = Number(e.target.value)
                     setStartWeek(Number.isNaN(n) ? 1 : Math.min(maxWeek, Math.max(1, n)))
                   }}
-                  className="card"
-                  style={{
-                    padding: '11px 14px',
-                    fontSize: 14,
-                    fontWeight: 700,
-                    fontVariantNumeric: 'tabular-nums',
-                    color: 'var(--text-primary)',
-                    background: 'var(--surface-1)',
-                    border: '1px solid var(--border-subtle)',
-                    width: 96,
-                  }}
+                  className="gas-inp"
                 />
               </div>
 
-              <div className="row gap-sm mt-lg">
-                <button className="cta-ghost flex-1" onClick={close}>Mégse</button>
+              <div className="gas-acts">
+                <button className="cta-ghost gas-ghost" onClick={close}>Mégse</button>
                 <button
                   type="button"
-                  className="cta-primary flex-1"
+                  className="cta-primary gas-cta"
                   disabled={!selectedId || pending}
                   onClick={() => {
                     if (!selectedId) return
                     attachPlan(goalId, { planType, planId: selectedId, startWeek }).then(close)
                   }}
                 >
-                  <Icon name="check" size={14} /> Csatolás
+                  <Icon3D name="t-tick" size={18} /> Csatolás
                 </button>
               </div>
             </>

@@ -6,11 +6,12 @@
 // `useMeWeek` threw `isPending`/`isError` away, so a cold real-mode load
 // and a FAILED fetch both rendered as "nothing logged". They are not the
 // same thing as an empty week, and the UI must not say they are.
+// Üveg (mezo-me75u.6): the empty line and the error box are dashed `uv-empty`, the retry lit.
 // ============================================================
 export function WeekPageSkeleton({ pending = true }: { pending?: boolean }) {
   if (!pending) {
     // Resolved, but no week came back — honest emptiness, not a spinner forever.
-    return <p className="wkd-empty">Ehhez a héthez nincs adat.</p>
+    return <p className="wkd-empty uv-empty">Ehhez a héthez nincs adat.</p>
   }
   return (
     <div className="wkd-skelwrap" role="status" aria-label="Betöltés…">
@@ -23,7 +24,7 @@ export function WeekPageSkeleton({ pending = true }: { pending?: boolean }) {
 
 export function WeekPageError({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="wkd-errbox" role="alert">
+    <div className="wkd-errbox uv-empty" role="alert">
       <p>Nem sikerült betölteni a hét adatait.</p>
       <button type="button" className="wkd-retry" onClick={onRetry}>Próbáld újra</button>
     </div>

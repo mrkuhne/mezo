@@ -128,11 +128,16 @@ test('an unset goal (config-default ghost) says so instead of posing as the user
 })
 
 it('renders the sleep-goal card with derived ends and the regularity band', () => {
-  renderPage()
-  // The bed-rail (mezo-d20.6.4) joins the emoji + time in ONE span per the prototype
-  // (🛏️ {bed} / ☀️ {wake}), so the exact-string match moved to a substring regex.
-  expect(screen.getByText(/🛏️\s*23:15/)).toBeInTheDocument()          // derived bed
-  expect(screen.getAllByText(/☀️\s*06:45/).length).toBeGreaterThan(0) // fixed wake
+  const { container } = renderPage()
+  // Üveg (mezo-me75u.6): the bed-rail ends wear the 3D sprite (t-sleep / t-sun) instead of the
+  // 🛏️ / ☀️ emoji; the meaning moved to an sr-only name next to the time (bible U2 rule 16).
+  const bed = container.querySelector('.alv-end[data-end="bed"]')!
+  const wake = container.querySelector('.alv-end[data-end="wake"]')!
+  expect(bed).toHaveTextContent(/Lefekvés\s*23:15/)                   // derived bed
+  expect(wake).toHaveTextContent(/Ébredés\s*06:45/)                   // fixed wake
+  expect(bed.querySelector('use')).toHaveAttribute('href', '#t-sleep')
+  expect(wake.querySelector('use')).toHaveAttribute('href', '#t-sun')
+  expect(container.textContent).not.toMatch(/🛏️|☀️|🌙/u)
   expect(screen.getByText('7.5 ó cél')).toBeInTheDocument()
   // The phrase now renders twice — the sleep-goal card's regularity quote (SleepPage.tsx) AND the
   // "A rendszeresség a király" education card title mounted since mezo-hd8k — so match like '06:45' above.
@@ -168,6 +173,9 @@ test('renders the night-mode entry row linking to /me/sleep/night', () => {
   renderPage() // the file's existing helper
   const link = screen.getByRole('link', { name: /Éjszakai mód/ })
   expect(link).toHaveAttribute('href', '/me/sleep/night')
+  // Üveg (mezo-me75u.6): the 🌙 emoji became the t-moon sprite on a lavender glass row
+  expect(link).toHaveClass('glass')
+  expect(link.querySelector('use')).toHaveAttribute('href', '#t-moon')
 })
 
 test('the back chip (Mozaik PageHead) navigates back', async () => {

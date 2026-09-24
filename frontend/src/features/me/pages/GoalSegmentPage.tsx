@@ -3,6 +3,7 @@ import { useGoal, useGoalOverview } from '@/data/hooks'
 import { GoalSegmentRail } from '@/features/me/components/GoalSegmentRail'
 import { GoalDetailHero } from '@/features/me/components/GoalDetailHero'
 import { hu1 } from '@/shared/lib/huNum'
+import { Icon3D } from '@/shared/ui/clay'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
@@ -14,17 +15,18 @@ export function GoalSegmentPage() {
   const invalid = overview?.courseStatus === 'invalid'
   const segment = overview?.segment
 
-  return <MozaikPage tone="gold" className="goal-detail-page goal-detail-segment-page">
-    <PageHead onBack={() => navigate('/me/goals/weight')} label="‹ Cél" />
+  return <MozaikPage tone="gold" className="goal-detail-page uv-goal goal-detail-segment-page">
+    <PageHead glass onBack={() => navigate('/me/goals/weight')} label="Cél" />
     {loading ? <div className="goal-detail-loading" role="status" aria-label="Betöltés…"><span /><span /><span /></div> : !overview || invalid ? (
-      <EntranceGroup><PageHero icon="i-retegek" name="Aktuális szakasz" big="Céljavítás szükséges" /><PageBody><div className="goal-detail-notice rise">A szakasz csak koherens célhoz jeleníthető meg.</div></PageBody></EntranceGroup>
+      <EntranceGroup><PageHero art="t-peak" accent="var(--dv-amber)" name="Aktuális szakasz" big="Céljavítás szükséges" /><PageBody><div className="goal-detail-notice rise">A szakasz csak koherens célhoz jeleníthető meg.</div></PageBody></EntranceGroup>
     ) : !segment?.available || !segment.label || segment.fromWeek == null || segment.toWeek == null ? (
-      <EntranceGroup><PageHero icon="i-retegek" name="Aktuális szakasz" big="Nincs aktív szakasz" /><PageBody><div className="goal-detail-notice rise">A célhoz még nem készült szakaszolt terv.</div></PageBody></EntranceGroup>
+      <EntranceGroup><PageHero art="t-peak" accent="var(--dv-amber)" name="Aktuális szakasz" big="Nincs aktív szakasz" /><PageBody><div className="goal-detail-notice rise">A célhoz még nem készült szakaszolt terv.</div></PageBody></EntranceGroup>
     ) : <EntranceGroup>
       <PageBody principle="A szakasz a stratégiát rendezi, nem duplázza a mozgásból számolt energiát.">
         <GoalDetailHero
           tone="segment"
           icon="i-retegek"
+          art="t-peak"
           name="Aktuális szakasz"
           eyebrow={`Aktuális szakasz · W${segment.fromWeek}–${segment.toWeek}`}
           big={segment.label}
@@ -37,7 +39,7 @@ export function GoalSegmentPage() {
         />
         <div className="goal-detail-section-head rise"><span>A teljes ív</span><span>{overview.totalWeeks} hét</span></div>
         <GoalSegmentRail label={segment.label} fromWeek={segment.fromWeek} toWeek={segment.toWeek} nextLabel={segment.nextLabel} nextFromWeek={segment.nextFromWeek} nextChangeDate={segment.nextChangeDate} />
-        <section className="goal-detail-card goal-segment-note rise"><div className="goal-detail-kicker">Mit változtat?</div><p>A fázis módosíthatja a védőkorlátokat és a szakaszolást, de önmagában nem becsül új kalóriaégetést.</p></section>
+        <section className="goal-detail-card goal-segment-note glass rise"><div className="goal-segment-note-head"><Icon3D name="t-info" size={30} /><div className="goal-detail-kicker">Mit változtat?</div></div><p>A fázis módosíthatja a védőkorlátokat és a szakaszolást, de önmagában nem becsül új kalóriaégetést.</p></section>
       </PageBody>
     </EntranceGroup>}
   </MozaikPage>

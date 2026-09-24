@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useGoal, useGoalOverview } from '@/data/hooks'
 import { GoalGuardCard } from '@/features/me/components/GoalGuardCard'
 import { GoalDetailHero } from '@/features/me/components/GoalDetailHero'
+import { Icon3D } from '@/shared/ui/clay'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
@@ -20,15 +21,16 @@ export function GoalGuardsPage() {
   const invalid = overview?.courseStatus === 'invalid'
   const status = overview?.guards.status
 
-  return <MozaikPage tone="lav" className="goal-detail-page goal-detail-guards-page">
-    <PageHead onBack={() => navigate('/me/goals/weight')} label="‹ Cél" />
+  return <MozaikPage tone="lav" className="goal-detail-page uv-goal goal-detail-guards-page">
+    <PageHead glass onBack={() => navigate('/me/goals/weight')} label="Cél" />
     {loading ? <div className="goal-detail-loading" role="status" aria-label="Betöltés…"><span /><span /><span /></div> : !overview || invalid ? (
-      <EntranceGroup><PageHero icon="i-eletjel" name="Védőkorlátok" big="Céljavítás szükséges" /><PageBody><div className="goal-detail-notice rise">A védőkorlátok a cél javítása után értékelhetők újra.</div></PageBody></EntranceGroup>
+      <EntranceGroup><PageHero art="t-shield" accent="var(--dv-lav)" name="Védőkorlátok" big="Céljavítás szükséges" /><PageBody><div className="goal-detail-notice rise">A védőkorlátok a cél javítása után értékelhetők újra.</div></PageBody></EntranceGroup>
     ) : <EntranceGroup>
       <PageBody principle="A védőkorlát lassít vagy jelez; nem büntet és nem diagnosztizál.">
         <GoalDetailHero
           tone="guards"
           icon="i-eletjel"
+          art="t-shield"
           name="Védőkorlátok"
           eyebrow="Célbiztonság"
           big={`${overview.guards.healthyCount} / ${overview.guards.totalCount}`}
@@ -40,7 +42,7 @@ export function GoalGuardsPage() {
           ]}
         />
         <div className="goal-detail-section-head rise"><span>Állapotok</span></div>
-        {overview.guards.topIssueCode && <div className="goal-guard-warning rise">{ISSUE[overview.guards.topIssueCode] ?? 'Az egyik védőkorlát figyelmet kér.'}</div>}
+        {overview.guards.topIssueCode && <div className="goal-guard-warning rise" role="note" aria-label="Figyelmeztetés"><Icon3D name="t-info" size={30} /><span>{ISSUE[overview.guards.topIssueCode] ?? 'Az egyik védőkorlát figyelmet kér.'}</span></div>}
         {status ? <div className="goal-guard-grid">
           <GoalGuardCard kind="strength" status={status.strength} />
           <GoalGuardCard kind="muscle" status={status.muscle} />

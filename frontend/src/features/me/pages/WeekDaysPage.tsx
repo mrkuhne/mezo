@@ -11,12 +11,15 @@
 // The tiles do NOT expand in place (4th design round): a tap deep-links to
 // `/nap/napom/:date` (A napom, mezo-yjzhw.4), which is what makes a single day
 // addressable (audit gap §8.3/6 — a push notification can point at one).
+//
+// Üveg (mezo-me75u.6, prototype uveg-en-body.html `napok()`): the t-sun halo hero, the three
+// cells lit flat, each day tile `.glass` in its score-band hue (future and nincs-adat days
+// dashed), the chips flat with 3D icons.
 // ============================================================
 import { Fragment } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { MozaikPage, PageBody, PageHead, MCells } from '@/shared/ui/mozaik'
+import { MozaikPage, PageBody, PageHead, PageHero, MCells } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { ClayIcon } from '@/shared/ui/clay'
 import { localDateString } from '@/shared/lib/dates'
 import { deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { useMeWeek, useWeeklyReview } from '@/data/hooks'
@@ -45,19 +48,16 @@ export function WeekDaysPage() {
 
   return (
     <MozaikPage tone="sage" className="wkd-page">
-      <PageHead label="‹ Heti" onBack={() => navigate(`/me/week?start=${start}`)}>
+      <PageHead glass label="Heti" onBack={() => navigate(`/me/week?start=${start}`)}>
         <span className="mz-eyebrow wkd-headtitle">{title}</span>
       </PageHead>
-      <div className="mz-page-hero">
-        <div className="mz-hero-nm">A hét napjai</div>
-        <div className="mz-hero-row">
-          <ClayIcon name="i-nap" size={59} />
-          <span className="mz-bignum">
-            {week ? measured : '—'}<span className="wkd-bigunit"> / 7</span>
-          </span>
-        </div>
-        <div className="mz-hero-sb">mért nap · koppints egy csempére</div>
-      </div>
+      <PageHero
+        art="t-sun"
+        accent="var(--dv-sage)"
+        name="A hét napjai"
+        big={<>{week ? measured : '—'}<small className="wkd-bigunit"> / 7</small></>}
+        sub="mért nap · koppints egy csempére"
+      />
       <PageBody>
         {isError ? (
           <WeekPageError onRetry={refetch} />

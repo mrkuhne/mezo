@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
@@ -30,7 +30,8 @@ test('hub shows arrow counters and live tile dots', async () => {
   renderHub()
   await screen.findByText('Célok')
   expect(screen.queryByText(/Az irány-nyíl a 2\. szelettel jön/)).toBeNull()
-  expect(document.querySelectorAll('.lg-tile .lg-wk7 i.h').length).toBeGreaterThan(0)
+  // Üveg (mezo-me75u.6): the goal tile is a glass tile (`.enc-tile`); its seven dots stay `.lg-wk7`.
+  expect(document.querySelectorAll('.enc-tile.glass .lg-wk7 i.h').length).toBeGreaterThan(0)
 })
 
 test('tile tap opens the goal page; ＋ Új cél opens the wizard', () => {
@@ -155,7 +156,11 @@ test('a lezárt cél a saját szekciójában jelenik meg, nem a mozaikban (mezo-
   renderHub()
   await screen.findByText('Célok')
   expect(screen.getByText('Lezárt célok')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /Félmaraton · kész/ })).toBeInTheDocument()
+  const doneRow = screen.getByRole('button', { name: /Félmaraton · kész/ })
+  expect(doneRow).toBeInTheDocument()
+  // the done mark is the 3D t-tick now, its meaning an accessible name instead of a `✓` glyph
+  expect(within(doneRow).getByLabelText('kész')).toBeInTheDocument()
+  expect(doneRow).not.toHaveTextContent('✓')
   // nem szivárog a mozaikba
   expect(screen.queryByRole('button', { name: 'Félmaraton' })).toBeNull()
 })

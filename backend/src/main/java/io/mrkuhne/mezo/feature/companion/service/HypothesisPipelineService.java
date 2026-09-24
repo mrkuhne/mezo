@@ -94,6 +94,7 @@ public class HypothesisPipelineService {
             kapcsolatok, társas program, mozgás, hangulat, stressz és energia közötti aznapi vagy
             következő napi kapcsolatokat is; új témát részesíts előnyben a kaja/alvás ismétlése helyett.
             Az observation óvatos megfigyelés, a question rövid, megválaszolható kérdés legyen.
+            Az observation közvetlenül a megfigyeléssel induljon, meta-bevezető nélkül.
             evidenceRefs: kizárólag az eredeti forráscsomag [típus:azonosító] kulcsai, legalább egy.
             A topicKey rövid, stabil szemantikus kulcs: ugyanannak a témának mindig ugyanaz.
             Meglévő témánál pontosan a nyitott sor „téma” kulcsát használd új szinonima helyett.

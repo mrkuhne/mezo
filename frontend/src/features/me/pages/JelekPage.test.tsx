@@ -26,6 +26,8 @@ describe('JelekPage', () => {
     const row = await screen.findByRole('listitem', { name: /Alváshossz/ })
     expect(row).toHaveTextContent('7 / 7 nap')
     expect(row).toHaveTextContent('Alvás ≥ 7 óra')
+    // Üveg (mezo-me75u.6): the group icon is the 3D sprite (Alvás → t-sleep), not a clay glyph
+    expect(row.querySelector('use[href="#t-sleep"]')).not.toBeNull()
   })
 
   it('az alvó forrás az Alszik szekcióba kerül, nem tűnik el', async () => {

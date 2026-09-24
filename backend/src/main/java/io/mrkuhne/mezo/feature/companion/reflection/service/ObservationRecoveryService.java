@@ -68,7 +68,8 @@ public class ObservationRecoveryService {
                 + "Az audit állítása önmagában NEM bizonyíték. Csak az eredeti személyes források "
                 + "ellenőrizhető azonosítóit hivatkozd, eredeti dátumaikat őrizd meg. "
                 + "Ne állíts új történést vagy automatikus felhasználói megerősítést. "
-                + "Az observation szövegben jelezd, hogy korábbi bejegyzésekhez térsz vissza.\n" + history);
+                + "Az observation közvetlenül a megfigyeléssel kezdődjön: ne vezesd be azzal, hogy "
+                + "korábbi bejegyzésekhez térsz vissza (a kártya eredeti dátuma ezt már mutatja).\n" + history);
         Plan plan = new Plan(now.plus(properties.recoveryTtlMinutes(), ChronoUnit.MINUTES), candidates);
         plans.put(owner, plan); // one preview per owner, bounded even after repeated requests
         return response(plan, false, 0);

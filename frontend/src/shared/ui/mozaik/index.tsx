@@ -27,6 +27,9 @@ interface TileProps {
   wash: MozaikWash
   /** Optional: the prototype's Kreed tile carries prose instead of a spot. */
   icon?: ClayIconName
+  /** Üveg variant (mezo-me75u.6): a Titanium 3D sprite icon in the spot instead of the clay
+   *  `icon`. Opt-in — the glass itself comes from the caller's className (`glass` + an accent). */
+  art?: Icon3DName
   /** The mosaic spot is 40px in the 330px prototype frame → 47 at ×1.18. A handful of
    *  tiles use 38 or 42 there; those pass their own size rather than the whole set drifting. */
   iconSize?: number
@@ -49,12 +52,14 @@ interface TileProps {
   span?: 3 | 4 | 6 | 12
 }
 
-export function Tile({ wash, icon, iconSize = 47, eyebrow, line, dot, badge, delayMs, onClick, className, children, wide, span, ...rest }: TileProps) {
+export function Tile({ wash, icon, art, iconSize = 47, eyebrow, line, dot, badge, delayMs, onClick, className, children, wide, span, ...rest }: TileProps) {
   const cls = cn('mz-tile', `mz-w-${wash}`, 'rise', wide && 'mz-tile-wide mz-tile-row', span && `mz-span-${span}`, className)
   const style = delayMs !== undefined ? ({ '--d': `${delayMs}ms` } as React.CSSProperties) : undefined
+  const spot = art ? <div className="mz-spotwrap"><Icon3D name={art} size={iconSize} /></div>
+    : icon ? <div className="mz-spotwrap"><ClayIcon name={icon} size={iconSize} /></div> : null
   const inner = wide ? (
     <>
-      {icon && <div className="mz-spotwrap"><ClayIcon name={icon} size={iconSize} /></div>}
+      {spot}
       <div className="mz-tile-body">
         <div className="mz-tile-top"><span className="mz-eyebrow">{eyebrow}</span></div>
         {line !== undefined && <div className="mz-tile-line">{line}</div>}
@@ -68,7 +73,7 @@ export function Tile({ wash, icon, iconSize = 47, eyebrow, line, dot, badge, del
         {badge !== undefined ? <span className="mz-badge">{badge}</span>
           : dot ? <span className="mz-dot" aria-hidden="true" /> : null}
       </div>
-      {icon && <div className="mz-spotwrap"><ClayIcon name={icon} size={iconSize} /></div>}
+      {spot}
       {line !== undefined && <div className="mz-tile-line">{line}</div>}
       {children}
     </>

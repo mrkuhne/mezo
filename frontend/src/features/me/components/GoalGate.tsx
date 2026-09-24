@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, type CSSProperties } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 import { useBiometricProfile } from '@/data/hooks'
 
 // Goal-creation hard gate (G6, mezo-06n — Task 7). The engine derives the
@@ -26,90 +27,37 @@ export function GoalGate({ onClose, onComplete }: { onClose: () => void; onCompl
     if (isComplete) onComplete()
   }, [isComplete, onComplete])
 
+  // Üveg (mezo-me75u.6): a dimmed scrim with ONE coral glass card — the missing fields are
+  // flat amber chips with the t-info sprite instead of the "⚠" glyph; the meaning ("hiányzik")
+  // stays in the chip text. Not a GlassBox: this is the page's own full-screen interstitial.
   return (
-    <div
-      className="col"
-      style={{
-        position: 'absolute',
-        inset: 0,
-        zIndex: 60,
-        background: 'radial-gradient(ellipse at center, var(--page-glow) 0%, var(--canvas) 70%)',
-      }}
-    >
-      {/* Top bar: ✕ back + "Új cél" eyebrow, mirroring the wizard chrome. */}
-      <div className="row gap-sm" style={{ padding: '14px 22px', alignItems: 'center' }}>
-        <button
-          type="button"
-          className="chip"
-          aria-label="Bezárás"
-          onClick={onClose}
-          style={{ padding: '6px 8px' }}
-        >
-          <Icon name="x" size={12} />
-        </button>
-        <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Új cél</span>
-      </div>
-
-      {/* Centered gate card (rounded / lav wash idiom). */}
-      <div
-        className="col"
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          textAlign: 'center',
-          padding: '0 28px 40px',
-        }}
-      >
-        <div
-          className="rad-20"
-          style={{
-            width: 64,
-            height: 64,
-            display: 'grid',
-            placeItems: 'center',
-            marginBottom: 18,
-            border: '1.5px solid var(--line)',
-            background: 'var(--wash-lav)',
-          }}
-        >
-          <Icon name="heart" size={28} color="var(--lav-deep)" />
+    <div className="goal-gate">
+      <div className="goal-gate-card glass" style={{ '--c': 'var(--dv-coral)' } as CSSProperties}>
+        {/* Top bar: ✕ back + "Új cél" eyebrow, mirroring the wizard chrome. */}
+        <div className="goal-gate-top">
+          <span className="goal-gate-eb">Új cél</span>
+          <button type="button" className="goal-gate-x" aria-label="Bezárás" onClick={onClose}>
+            <Icon name="x" size={12} />
+          </button>
         </div>
 
-        <div
-          style={{ fontFamily: 'var(--ff-display)', fontSize: 26, lineHeight: 1.08, marginBottom: 10 }}
-        >
-          Előbb: a biometriád
+        <div className="goal-gate-title">
+          <Icon3D name="t-heart" size={52} className="goal-gate-art" />
+          <h3>Előbb: a biometriád</h3>
         </div>
-        <p
-          className="text-secondary"
-          style={{ fontSize: 13, lineHeight: 1.55, maxWidth: 250 }}
-        >
+        <p className="goal-gate-lead">
           A motor a kalória-cél kiszámításához a{' '}
-          <b style={{ color: 'var(--text-primary)' }}>nem · magasság · kor</b> adataidból dolgozik.
+          <b>nem · magasság · kor</b> adataidból dolgozik.
           Állítsd be egyszer a profilban — utána minden cél innen számol.
         </p>
 
         {/* Missing-field chips (warning idiom). */}
         {missing.length > 0 && (
-          <div
-            className="row gap-xs"
-            style={{ flexWrap: 'wrap', justifyContent: 'center', margin: '16px 0 4px' }}
-          >
+          <div className="goal-gate-chips">
             {missing.map((k, i) => (
-              <span
-                key={k}
-                className="chip"
-                style={{
-                  fontSize: 9,
-                  fontWeight: 800,
-                  letterSpacing: '0.06em',
-                  padding: '4px 9px',
-                  color: 'var(--warning)',
-                  borderColor: 'color-mix(in srgb, var(--warning) 40%, transparent)',
-                }}
-              >
-                {i === 0 ? `⚠ hiányzik: ${MISSING_LABEL[k]}` : MISSING_LABEL[k]}
+              <span key={k} className="goal-gate-chip">
+                {i === 0 && <Icon3D name="t-info" size={16} />}
+                {i === 0 ? `hiányzik: ${MISSING_LABEL[k]}` : MISSING_LABEL[k]}
               </span>
             ))}
           </div>
@@ -117,20 +65,13 @@ export function GoalGate({ onClose, onComplete }: { onClose: () => void; onCompl
 
         <button
           type="button"
-          className="cta-primary"
+          className="goal-gate-cta np-press"
           onClick={() => navigate('/settings/me/biometrics', { state: { from: location.pathname + location.search } })}
-          style={{ marginTop: 22, width: '100%', maxWidth: 280 }}
         >
           Biometria beállítása →
         </button>
-        <span
-          className="text-tertiary"
-          style={{ marginTop: 11, fontWeight: 700, fontSize: 10, letterSpacing: '0.06em' }}
-        >
-          egyszeri beállítás · ~20 mp
-        </span>
+        <span className="goal-gate-hint">egyszeri beállítás · ~20 mp</span>
       </div>
-
     </div>
   )
 }

@@ -48,7 +48,7 @@ Driving specs: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (Sli
 
 The communication profile now belongs to `/settings/mezo/communication`, alongside explicit user instructions and the learned-profile inclusion switch. The Tudástár no longer has a communication tile; `?view=profil` redirects to the canonical editor. `/settings/mezo/context` shows the exact backend-assembled personal blocks, source links and inclusion status. See [central settings](settings.md) and [companion](companion.md).
 
-**Route: `/mezo`** renders `TeamFeedPage`, the csapat-üzenőfal (§3). The persistent Mezo dock is **Üzenőfal / A csapat / Rólad / Emlékek** (`navModel.ts`, spec §2.5, `mezo-a9bo7.10`). Ownership keeps the highlight from jumping: a post's deep pages (patterns, predictions, experiments, diagnózis, coaching, chat, karakter-feed) light **Üzenőfal**; the rooms and the machinery behind them (`/mezo/csapat/*`, konzílium, Gépterem incl. „Összes funkció”, memória) light **A csapat**. Each content page retains its original route and name. `BoopNavigation` in `AppLayout` still provides direct Minták, Előrejelzések, Diagnózis, Kísérletek and Heti chips plus „Összes funkció” on the legacy feature pages — it stays OFF the rooms and the Gépterem subtree (the prototype has no chip strip there); the weekly review stays canonical at `/me/week`.
+**Route: `/mezo`** renders `TeamFeedPage`, the csapat-üzenőfal (§3). The persistent Mezo dock is **Üzenőfal / A csapat / Rólad / Emlékek** (`navModel.ts`, spec §2.5, `mezo-a9bo7.10`). Ownership keeps the highlight from jumping: a post's deep pages (patterns, predictions, experiments, diagnózis, coaching, chat, karakter-feed) light **Üzenőfal**; the rooms and the machinery behind them (`/mezo/csapat/*`, konzílium, Gépterem incl. „Összes funkció”, memória) light **A csapat**. Each content page retains its original route and name. There is **no chip strip** on any page any more: the old `BoopNavigation` („Összes funkció” + Minták · Előrejelzések · Diagnózis · Kísérletek · Heti chips above every `/mezo/*` and `/me/week` page) was removed in `mezo-twizx` — the new dock and the approved üzenőfal prototype have none. Those five destinations are reached through the Gépterem's „Összes funkció” grid (`/mezo/karakter/gepterem/osszes`, `BOOP_DESTINATIONS`), and each list page's own `‹ Összes funkció` back chip returns there; the weekly review stays canonical at `/me/week`.
 
 | Surface | Route | Component |
 |---|---|---|
@@ -277,10 +277,16 @@ notebook. Rows without a plan are untouched by this branch.
    (`monitoring`), `GYŰLIK` (`proposed`), `BEÉPÜLT` (`confirmed`), `ELENGEDVE` (`refuted`),
    `PIHEN` (`dormant`), `ELVETVE` (`rejected`). Then `Hipotézis: {cím}?`, ONE human answer
    (`hypothesisAnswer`: `Beépült.` when confirmed → `Ígéretes, de még gyűlik.` while
-   `evidenceHits + evidenceMisses < testPlan.minN` → `Nem igazolódik.` when misses beat hits →
-   `Tartja magát.` at hits ≥ 3×misses → otherwise `Vegyes kép — még figyelem.`), a sub-line that
-   compares the two groups (`groupOneDays` vs `groupZeroDays`, falling back to the evidence-day
-   count) and names `minN`, and the **belief ring** — a conic gradient at `--v: {belief×100}%`
+   the chart has fewer than `testPlan.minN` days → `Ígéretes — elég nap van a döntéshez.` while the
+   nightly tally `evidenceHits + evidenceMisses` is still below `minN` → `Nem igazolódik.` when
+   misses beat hits → `Tartja magát.` at hits ≥ 3×misses → otherwise `Vegyes kép — még figyelem.`),
+   and a sub-line that compares the two groups (`groupOneDays` vs `groupZeroDays`) or else says
+   `{N} napot tudok összevetni`, then either `{minN} napnál mondok többet.` or, once N ≥ minN,
+   `— elég ahhoz, hogy dönts.` (a `proposed` pill then reads `DÖNTHETSZ` instead of `GYŰLIK`).
+   **Every day number on the card is `dayCount` = `PatternPairDetail.days.length`** — the very
+   points „Az eddigi napok" plots — never the post-proposal monitoring tally, which is 0 on a fresh
+   proposal while the chart already shows its days (`mezo-twizx`: „0 nap bizonyíték" above an
+   8-day chart). The tally only speaks once it reaches `minN`. and the **belief ring** — a conic gradient at `--v: {belief×100}%`
    with the percentage, the word `bizonyosság` and the "a számítás és a te válaszaid mozgatják"
    line. `belief` is the backend's deterministic number; **no ring at all when it is absent**,
    never an invented one, and raw `r`/`p` never reach the card. The three decision buttons
@@ -1123,7 +1129,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `logic/teamEdition.ts` — **`mezo-a9bo7.13`** the esti kiadás → wall merge (`editionPost`, `mergeWall`, §3; guest lines since `mezo-a9bo7.15`); pure, unit-tested
 - `pages/TeamFeedPage.tsx` + `components/feed/{FeedTrio,FeedPostCard,FeedPosterCard,FeedPostHead,FeedGuests,FeedReplySheet,StoryStrip}.tsx` + `useFeedSession.ts` + `useTeamFeed.ts` — **`mezo-a9bo7.8`** the csapat-üzenőfal wall, the unified trio and the reply sheet (§3); `/mezo` since A4 (`mezo-a9bo7.10`), with `IntroPosts.tsx` as the cold start (§2.0); `FeedPostCard`'s `RequestCta` (the „Bejelentkezem” CTA on a `keres` post) since `mezo-a9bo7.16`
 - `pages/{TeamPage,CharacterRoomPage}.tsx` + `components/feed/RoomCaseCard.tsx` + `logic/teamRooms.ts` — **`mezo-a9bo7.9`** A csapat and the five character rooms (§3); routed at `/mezo/csapat[/:id]`, the „A csapat” dock tab since A4
-- `components/BoopNavigation.tsx`, `logic/boopNavigation.ts`, `boop-world.css` — shared function catalog, crosslinks and app-token visuals.
+- `logic/boopNavigation.ts`, `boop-world.css` — shared function catalog (`BOOP_DESTINATIONS`, `ALL_FEATURES_ROUTE`) and app-token visuals. (`components/BoopNavigation.tsx`, the old chip strip, was deleted in `mezo-twizx`.)
 - `pages/MezoHubPage.tsx` — unmounted previous hub, retained source/tests.
 - **`InsightsSection.tsx` and `pages/tabs.ts` are DELETED (`mezo-d20.5.1`)** — the shell, `INSIGHTS_TABS`, `visibleInsightsTabs()` and the (already-empty) `PHASE3_TAB_IDS` are gone, along with the app-wide `features/progression/components/AppHero.tsx` and `shared/ui/SubNavDropdown.tsx` they depended on. `InsightsSubNav.tsx` had already been superseded by the dropdown in `mezo-ugqb`; `components/PhaseTeaserCard.tsx` by the empty gate set in `mezo-mifi`
 - `frontend/src/shared/ui/mozaik/{index.tsx,motion.tsx}` + `frontend/src/shared/ui/clay/index.tsx` — the primitives the re-faced pages compose (`Tile`/`Mosaic`/`PageHero`; `EntranceGroup`/`useCountUp`; `ClayIcon`/`ClaySpot`). **Not Insights-owned** — [`_platform-design-system.md`](_platform-design-system.md)
