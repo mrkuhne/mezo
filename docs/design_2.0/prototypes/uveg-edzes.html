@@ -2727,6 +2727,13 @@ svg{overflow:visible}
 .rrow2{display:grid;gap:5px;padding:11px 0;border-top:1px solid var(--hair)}
 .rrow2 strong{font-size:15px;font-weight:600}
 .rk{font-size:11.5px;color:var(--sub)}
+.vals{align-items:center}
+.tchip{display:inline-flex;align-items:center;gap:6px;padding:3px 11px 3px 4px;border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap;color:#FFE0AE;
+  background:radial-gradient(90% 120% at 20% 20%,rgba(255,190,96,.22),rgba(245,239,230,.04));box-shadow:inset 0 0 0 1px rgba(255,190,96,.45),0 0 12px -4px rgba(255,190,96,.55)}
+.tchip .icon{width:24px;height:24px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))!important}
+.tchip.co{color:#FFC9B8;background:radial-gradient(90% 120% at 20% 20%,rgba(255,126,92,.22),rgba(245,239,230,.04));box-shadow:inset 0 0 0 1px rgba(255,126,92,.45),0 0 12px -4px rgba(255,126,92,.55)}
+.vals b{padding:5px 11px}
+@media (max-width:360px){.vals{gap:4px}.vals b{padding:4px 8px;font-size:11.5px}.tchip{font-size:11.5px;padding:2px 8px 2px 3px;gap:4px}.tchip .icon{width:20px;height:20px}.chr .res{width:34px;height:34px}.chr .res .icon{width:26px;height:26px}}
 .rrow2 .vals,.chr .vals{justify-content:flex-start;margin-top:3px}
 .rrow2 .rt strong{display:block;font-size:14.5px;font-weight:600;margin-top:3px}
 .rrow2 small{grid-column:1/3;font-size:10.5px;color:var(--faint)}
@@ -2736,7 +2743,9 @@ svg{overflow:visible}
 .vals b.lit{color:#191614;background:linear-gradient(135deg,#FFE0AE,#FFBE60);box-shadow:0 0 12px rgba(255,190,96,.5)}
 .cchal .chr{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-top:1px solid var(--hair)}
 .cchal .chr:first-of-type{border-top:0}
-.chr{align-items:center!important}
+.chr{position:relative}
+.chr .cb strong{padding-right:46px;min-height:26px;display:flex;align-items:center}
+.cchal .chr .res{position:absolute;right:0;top:6px}
 .chr .res{flex:0 0 auto;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
 .chr .res .icon{width:30px;height:30px}
 .chr.hit .res{background:radial-gradient(circle at 35% 30%,rgba(143,180,154,.35),rgba(30,27,24,.6));box-shadow:inset 0 0 0 1.5px rgba(143,180,154,.55),0 0 14px -2px rgba(143,180,154,.6)}
@@ -3145,6 +3154,7 @@ function ikonok(){
 /* ── LEZÁRÓ CEREMÓNIA ────────────────────────────────────── */
 const CER={stars:4.5,ratio:.9,sets:14,reps:142,vol:4180,min:71,xp:185,pending:2,kcal:540,rec:[['Chest Supported Row','Súly-rekord',['105 kg','10 ism.']],['Lat Pulldown · Pronated','Rep-rekord',['12 ism.','74,5 kg']]],chal:[[1,'Túlterhelés','Chest Supported Row',['107,5 kg','8 ism.']],[0,'Mélység','Lat Pulldown · Pronated',['utolsó szett','RIR 0']]],
   mus:[['back-wide','Hát (széles)',6,6],['back-mid','Hát (közép)',4,4],['shoulder-rear','Váll (hátsó)',3,3],['biceps-brachialis','Kar',1,3]]};
+const KIND_IC={'Súly-rekord':'weight','Rep-rekord':'repeat','1RM-rekord':'ring','Volumen-rekord':'protocol','Túlterhelés':'up','PR-kísérlet':'record','Mélység':'hold','Volumen':'protocol'};
 const VERD=[[5,'Hibátlan nap.'],[4,'Erős nap.'],[3,'Rendben volt.'],[1.5,'Elindult.'],[0,'Ma nem jött össze.']];
 const verdict=st=>VERD.find(([m])=>st>=m)[1];
 const starCls=(i,p)=>{const t=(i+1)/5;return p>=t-.001?'is-lit':p>=t-.1?'is-half':''};
@@ -3164,10 +3174,10 @@ function cer(v){
     <div class="fuse" aria-hidden="true"><b></b><em></em>${[1,2,3,4].map(i=>`<u style="--at:${i*20}%"></u>`).join('')}</div></section>
   <section class="cres"><h1 class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">4,5 csillag az ötből</h1><p class="verdict">${verdict(CER.stars)}</p>
     <article class="ccard crecs glass"><div class="cch">${I('record')}<span><span class="eb">EZ A TIÉD MOSTANTÓL</span><strong>${CER.rec.length} új rekord</strong></span></div>
-      ${CER.rec.map(([n,k,ch])=>`<div class="rrow2"><strong>${n}</strong><span class="rk">${k}</span><span class="vals">${ch.map(c=>`<b class="lit">${c}</b>`).join('')}</span></div>`).join('')}</article>
+      ${CER.rec.map(([n,k,ch])=>`<div class="rrow2"><strong>${n}</strong><span class="vals"><span class="tchip">${I(KIND_IC[k])}${k}</span>${ch.map(c=>`<b class="lit">${c}</b>`).join('')}</span></div>`).join('')}</article>
     <article class="ccard glass" style="margin-top:12px"><div class="cstats"><span>${I('clock')}<span><strong>${CER.min}<i>′</i></strong><small>a pulton töltött idő</small></span></span><span>${I('coin')}<span><strong>+${CER.xp}</strong><small>szerzett XP</small></span></span></div>
       <div class="ctally"><span>${I('weight')}<b data-c="sets">0</b><small>szett</small></span><span>${I('dumbbell')}<b data-c="reps">0</b><small>ismétlés</small></span><span>${I('protocol')}<b data-c="vol">0</b><small>kg × rep</small></span></div>
-      <div class="cchal"><span class="eb">KÜLDETÉSEK · 1 / 2</span>${CER.chal.map(([ok,t,ex,ch])=>`<div class="chr ${ok?'hit':'miss'}"><span class="cb"><strong>${ex}</strong><span class="rk">${t}</span><span class="vals">${ch.map(c=>`<b>${c}</b>`).join('')}</span></span><span class="res" aria-label="${ok?'teljesült':'nem teljesült'}">${I(ok?'tick':'skip')}</span></div>`).join('')}</div></article>
+      <div class="cchal"><span class="eb">KÜLDETÉSEK · 1 / 2</span>${CER.chal.map(([ok,t,ex,ch])=>`<div class="chr ${ok?'hit':'miss'}"><span class="cb"><strong>${ex}</strong><span class="vals"><span class="tchip co">${I(KIND_IC[t])}${t}</span>${ch.map(c=>`<b>${c}</b>`).join('')}</span></span><span class="res" aria-label="${ok?'teljesült':'nem teljesült'}">${I(ok?'tick':'skip')}</span></div>`).join('')}</div></article>
     <p class="cnote">${CER.pending} szett kihagyott státusszal zárult.</p></section>
   <div class="cfoot"><button class="ccta glass lift" data-go="#cer/reszletek">${I('journal')}<span><strong>Részletek</strong><small>Izomcsoportok és a nyert kalória</small></span><em>›</em></button></div></div>`;
 }
