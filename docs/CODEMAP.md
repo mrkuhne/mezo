@@ -21,7 +21,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [aidraft](#aidraft) | · | · | ✓ | · | · |
 | [appnotification](#appnotification) | ✓ | 1 | · | · | [_platform-notifications](features/_platform-notifications.md) |
 | [auth](#auth) | ✓ | 2 | ✓ | ✓ | [admin-hub](features/admin-hub.md), [_platform-auth-security](features/_platform-auth-security.md) |
-| [biometrics](#biometrics) | ✓ | 6 | · | · | [me](features/me.md), [today](features/today.md) |
+| [biometrics](#biometrics) | ✓ | 6 | · | · | [me](features/me.md) |
 | [character](#character) | ✓ | 1 | ✓ | ✓ | [character](features/character.md) |
 | [companion](#companion) | ✓ | 5 | ✓ | · | [admin-memory-explorer](features/admin-memory-explorer.md), [character](features/character.md), [companion](features/companion.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [settings](features/settings.md), [today](features/today.md) |
 | [feedback](#feedback) | · | · | ✓ | · | [insights](features/insights.md) |
@@ -195,8 +195,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### biometrics
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-24, mixed) ·
-  [docs/features/today.md](features/today.md) (updated 2026-09-24, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-24, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
   - **sub-features:** `checkin`, `profile`, `sleep`, `weight`
@@ -576,9 +575,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### fuel
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-23, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-24, done) ·
   [docs/features/pantry.md](features/pantry.md) (updated 2026-09-23, done) ·
-  [docs/features/recipe.md](features/recipe.md) (updated 2026-09-23, done) ·
+  [docs/features/recipe.md](features/recipe.md) (updated 2026-09-24, done) ·
   [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-24, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-24, done)
 
@@ -973,7 +972,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### meal
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-23, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-24, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/meal`
   - **entities→tables:** `MealEntity`→`meal`, `MealItemEntity`→`meal_item`, `WaterLogEntity`→`water_log`
@@ -1077,7 +1076,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### nutrition
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-23, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-24, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/nutrition`
   - **entities→tables:** `DietSettingsEntity`→`diet_settings`
@@ -1096,7 +1095,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### pantry
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-23, done) ·
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-24, done) ·
   [docs/features/pantry.md](features/pantry.md) (updated 2026-09-23, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/pantry`
@@ -1306,7 +1305,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### recipe
 
-*BE + API* · read next: [docs/features/recipe.md](features/recipe.md) (updated 2026-09-23, done)
+*BE + API* · read next: [docs/features/recipe.md](features/recipe.md) (updated 2026-09-24, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/recipe`
   - **entities→tables:** `RecipeEntity`→`recipe`, `RecipeIngredientEntity`→`recipe_ingredient`
@@ -1401,15 +1400,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     NapomSegRing.tsx, NapomWeekStrip.tsx, NapzarasCard.tsx, ObservationCard.tsx
   - **logic:** chainMilestone.ts, chainPrompt.ts, dayArc.ts, dayFace.ts, dayOrbFill.ts, dayOrbTone.ts, habitAction.ts,
     habitCelebration.ts, habitClayIcon.ts, itemIcon.ts, mezoMessages.ts, napTimeline.ts, napom.ts, needs.ts,
-    needsInputs.ts, needsNudges.ts, nudgeSeen.ts, questAction.ts, todayItems.ts, useDayFace.ts, useDayOrbFill.ts,
-    useMinuteTick.ts, useMorningMode.ts, useNeeds.ts, windDown.ts
+    needsInputs.ts, needsNudges.ts, nudgeSeen.ts, questAction.ts, todayItems.ts, useChangedKeys.ts, useDayFace.ts,
+    useDayOrbFill.ts, useMinuteTick.ts, useMorningMode.ts, useNeeds.ts, windDown.ts
   - **root:** MezoThreadProvider.tsx
 
 ### train
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-23, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-24, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-20, done) ·
-  [docs/features/train.md](features/train.md) (updated 2026-09-23, done) ·
+  [docs/features/train.md](features/train.md) (updated 2026-09-24, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-24, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
@@ -1497,21 +1496,21 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     CrossLoadRow.tsx, DayBreakdownCard.tsx, DayLoadPanel.tsx, DayStrip.tsx, DayStripTile.tsx, DerivationSteps.tsx,
     DoneBar.tsx, ExerciseAccordionRow.tsx, ExerciseCard.tsx, ExerciseImage.tsx, ExerciseRecipeRow.tsx,
     ExerciseReview.tsx, FinishConfirmGlass.tsx, InfoButton.tsx, LoadTile.tsx, MedalChip.tsx, MedalToast.tsx,
-    MesoDayEditor.tsx, MesoEditor.tsx, MesoEditorHero.tsx, MesoExercises.tsx, MesoWeekEditor.tsx, MiniBar.tsx,
-    MiniStat.tsx, MorningTrainingCard.tsx, MuscleChip.tsx, MusclePriorityPicker.tsx, PeakFitCard.tsx,
-    ProgressionBanner.tsx, RunCrossLoadCard.tsx, RunSessionCard.tsx, RunWeekEditor.tsx, RunWeekStrip.tsx,
-    SetStepper.tsx, SportCeremony.tsx, SportSessionCard.tsx, SportStat.tsx, StrengthCurve.tsx, StructureLintCard.tsx,
-    TodaySessionCard.tsx, VideoDemo.tsx, WeekLoadPanel.tsx, WeekdayGrid.tsx, WeeklyBandsCard.tsx, WorkoutCard.tsx,
-    WorkoutCeremony.tsx, WorkoutDock.tsx, WorkoutMenuGlass.tsx, WorkoutOverloadLine.tsx, WorkoutRecordsGlass.tsx,
-    WorkoutSummary.tsx, ZoneBar.tsx
+    MesoDayEditor.tsx, MesoEditor.tsx, MesoEditorHero.tsx, MesoExercises.tsx, MesoWeekEditor.tsx, MiniStat.tsx,
+    MorningTrainingCard.tsx, MuscleChip.tsx, MusclePriorityPicker.tsx, PeakFitCard.tsx, ProgressionBanner.tsx,
+    RunCrossLoadCard.tsx, RunSessionCard.tsx, RunWeekEditor.tsx, RunWeekStrip.tsx, SetStepper.tsx, SportCeremony.tsx,
+    SportSessionCard.tsx, StrengthCurve.tsx, StructureLintCard.tsx, TodaySessionCard.tsx, VideoDemo.tsx,
+    WeekLoadPanel.tsx, WeekdayGrid.tsx, WeeklyBandsCard.tsx, WorkoutCard.tsx, WorkoutCeremony.tsx, WorkoutDock.tsx,
+    WorkoutMenuGlass.tsx, WorkoutOverloadLine.tsx, WorkoutRecordsGlass.tsx, WorkoutSummary.tsx, ZoneBar.tsx
   - **logic:** actualDuration.ts, agenda.ts, bodyGeometry.gen.ts, bodyMapShapes.ts, cerScore.ts, dayImpact.ts,
     dayStripItems.ts, exerciseDefaults.ts, exerciseLibrary.ts, growthForecast.ts, gymDayTarget.ts, libraryStory.ts,
     loadWeek.ts, medalLabels.ts, mesoBands.ts, mesoCompare.ts, mesoDates.ts, mesoDays.ts, mesoLoad.ts, mesoPlan.ts,
     mesoWeek.ts, morningWindow.ts, muscleColors.ts, muscleFilters.ts, musclePriorities.ts, muscleWeek.ts, offDay.ts,
-    peakWeekFit.ts, recordFor.ts, restTimer.ts, rir.ts, runToTemplate.ts, sessionLength.ts, sessionState.ts,
-    setBudget.ts, sportKinds.ts, sportMuscleLoad.ts, sportScore.ts, sports.ts, structureLint.ts, summaryStats.ts,
-    tierLabel.ts, trainDayEnergy.ts, useEditableNumber.ts, useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts,
-    weekZone.ts, weeklyBands.ts, weeklyLoad.ts, workoutCardMeta.ts, workoutComparison.ts, workoutState.ts
+    peakWeekFit.ts, recordFor.ts, repEquivalence.ts, restTimer.ts, rir.ts, runToTemplate.ts, sessionLength.ts,
+    sessionState.ts, setBudget.ts, sportKinds.ts, sportMuscleLoad.ts, sportScore.ts, sports.ts, structureLint.ts,
+    summaryStats.ts, tierLabel.ts, trainDayEnergy.ts, useEditableNumber.ts, useRestTimer.ts, warmupSuggest.ts,
+    weekAgenda.ts, weekZone.ts, weeklyBands.ts, weeklyLoad.ts, workoutCardMeta.ts, workoutComparison.ts,
+    workoutState.ts
   - **root:** DayTile.tsx, InterviewStep.tsx, dayTiles.ts, wizardState.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 77 IT + 16 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
