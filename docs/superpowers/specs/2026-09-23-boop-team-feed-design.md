@@ -242,10 +242,20 @@ Gate-ek: mindkét FE-mód; mobil 320px; reduced-motion; navigációs tesztek; CO
 **II. felvonás — a hang (BE-súlyú):**
 7. Cross-engine témaszál + esti kiadás-generátor (kurátor: 2–4 poszt, karakter-routing,
    idempotencia; szabad cron-slot).
+   **Szállítva (II. felvonás, 2026-09-24):** H1–H2 (`mezo-a9bo7.12`/`.13`) — a kiadás 21:00-kor,
+   3–6 poszttal (a [II. felvonás specje](2026-09-24-csapatfal-act2-esti-kiadas-design.md) szerint
+   a 2–4 helyett), a témaszál a H4 vendég-soraiként (a poszt alatt beszélgető karakterek).
 8. Karakterhangok (hangkönyv → generátor-promptok), két-karakteres beszélgetések konkrét
    user-adat-hivatkozással.
+   **Szállítva (II. felvonás, 2026-09-24):** H3 (`mezo-a9bo7.14`, saját hang tény-őrrel) + H4
+   (`mezo-a9bo7.15`, vendég-sorok, a Szkeptikussal együtt).
 9. Hipotézis-kritikus újrahangolása (külön hibajegy, előrehozható) + „gyűlik”-posztok.
+   **A „gyűlik”-posztok szállítva (II. felvonás, 2026-09-24):** H1 (`sejtes` feltöltő-műfaj). A
+   kritikus-újrahangolást NEM a II. felvonás hozta, hanem a párhuzamos `mezo-hben1` (grounded ág).
 10. Étkezés-boop napi három-szólamú értékelése; adatéhség-posztok.
+   **Szállítva (II. felvonás, 2026-09-24):** H5 (`mezo-a9bo7.16`) — Falat napi értékelése (tányér ·
+   cél · edzés) és Derű bejelentkezés-kérése „Bejelentkezem” gombbal. Az adatéhség-posztok közül
+   csak Derűé él; a többi karakter adatkérése még nincs.
 11. Később: kérdéslista-bővítés, gyakoribb előrejelzés.
 
 **Design-körök a megvalósítás előtt (owner-döntés, 2026-09-23):** a kapcsolódó al- és
