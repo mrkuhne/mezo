@@ -50,3 +50,5 @@ echo "OK — 36 prototype files assembled."
 { cat src/uveg-napod-head.html; printf '</head>\n<body>\n'; cat src/uveg-sprite-fuel.svg.part ../../../frontend/src/shared/ui/clay/titanium-icons.svg src/uveg-napod-body.html; } > uveg-napod.html
 # Üvegesítés U4 (mezo-me75u.4): Edzés I. Same chrome + the shared 3D sprite (the U4 icons live in it since the owner's OK). Anatomy is imported from companion-titanium/ (module script, needs HTTP).
 { cat src/uveg-edzes-head.html; printf '</head>\n<body>\n'; cat src/uveg-sprite-fuel.svg.part ../../../frontend/src/shared/ui/clay/titanium-icons.svg src/uveg-edzes-body.html; } > uveg-edzes.html
+# Üvegesítés U5 (mezo-me75u.5): Edzés II — Terv, Sablonok, Egyedi edzés, Hét. Same chrome + the shared 3D sprite; the U5 icons (t-template, t-compare, t-trash) are still inline in the body until the owner OK. Anatomy is imported from companion-titanium/ (module script, needs HTTP).
+{ cat src/uveg-edzes2-head.html; printf "</head>\n<body>\n"; cat src/uveg-sprite-fuel.svg.part ../../../frontend/src/shared/ui/clay/titanium-icons.svg src/uveg-edzes2-body.html; } > uveg-edzes2.html
