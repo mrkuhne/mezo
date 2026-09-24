@@ -395,21 +395,21 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MemoryRetriever`, `MemoryShadowRunner`, `MemorySourceRepairService`, `MesoContextAssembler`,
     `MesoReviewGenerator`, `MesoReviewListener`, `MessageFeedbackRecordedEvent`, `MessageFeedbackService`,
     `MetricDomain`, `MetricKey`, `MetricSeriesService`, `MetricValueKind`, `NudgeSendPort`, `ObservationBudget`,
-    `ObservationContextService`, `ObservationFeedService`, `ObservationOwnerLock`, `ObservationRecoveryService`,
-    `ObservationSourceIcon`, `PatternConfirmedEvent`, `PatternDetectionJob`, `PatternDetectionService`,
-    `PatternEventAppender`, `PatternGate`, `PatternImpactSource`, `PatternMonitorService`, `PatternPairDetailService`,
-    `PatternRetractedEvent`, `PatternService`, `PearsonCorrelation`, `PeopleSnapshotBlock`, `PeriodSummaryService`,
-    `PersonExtractionResult`, `PersonExtractionService`, `PersonGraphEdgeAdapter`, `PersonalBaselineContext`,
-    `PersonalContextAssembler`, `PersonalMemorySearchService`, `PersonalRecordService`, `PlanExecutor`,
-    `PlanValidator`, `ProfileAssembler`, `ProfileAssemblerJob`, `ProfilePromptAssembler`, `PromptMemoryAssembler`,
-    `ProvenanceRetentionJob`, `QuarterlyReviewJob`, `QuarterlyReviewService`, `Quarters`, `QuickNoticePreScreen`,
-    `QuickNoticeService`, `ReflectionDigestService`, `ReflectionJob`, `ReflectionMemoryGateway`,
-    `ReflectionPromptBlock`, `ReflectionReplyRecorder`, `ReflectionReplyService`, `SeasonSuggestion`,
-    `SimilarDaysRecall`, `TestPlanValidator`, `TextSignalCatchUpService`, `TextSignalExtractor`, `TextSignalListener`,
-    `TextSignalSeriesService`, `TextSignalService`, `ToolCatalogue`, `ToolOutcomeDigest`, `TraceDisposition`,
-    `TranscriptionService`, `TurnAnswerer`, `TurnGear`, `TurnGearAnalyzer`, `TurnGearRouter`, `TurnPhase`, `TurnPlan`,
-    `TurnPlanParser`, `TurnPlanner`, `TurnProvenance`, `UnavailableReason`, `ValidatedPlan`, `WeekContextRenderer`,
-    `WeeklyScoreService`, `WeightByDateSupport`
+    `ObservationContextService`, `ObservationFeedService`, `ObservationLead`, `ObservationOwnerLock`,
+    `ObservationRecoveryService`, `ObservationSourceIcon`, `PatternConfirmedEvent`, `PatternDetectionJob`,
+    `PatternDetectionService`, `PatternEventAppender`, `PatternGate`, `PatternImpactSource`, `PatternMonitorService`,
+    `PatternPairDetailService`, `PatternRetractedEvent`, `PatternService`, `PearsonCorrelation`, `PeopleSnapshotBlock`,
+    `PeriodSummaryService`, `PersonExtractionResult`, `PersonExtractionService`, `PersonGraphEdgeAdapter`,
+    `PersonalBaselineContext`, `PersonalContextAssembler`, `PersonalMemorySearchService`, `PersonalRecordService`,
+    `PlanExecutor`, `PlanValidator`, `ProfileAssembler`, `ProfileAssemblerJob`, `ProfilePromptAssembler`,
+    `PromptMemoryAssembler`, `ProvenanceRetentionJob`, `QuarterlyReviewJob`, `QuarterlyReviewService`, `Quarters`,
+    `QuickNoticePreScreen`, `QuickNoticeService`, `ReflectionDigestService`, `ReflectionJob`,
+    `ReflectionMemoryGateway`, `ReflectionPromptBlock`, `ReflectionReplyRecorder`, `ReflectionReplyService`,
+    `SeasonSuggestion`, `SimilarDaysRecall`, `TestPlanValidator`, `TextSignalCatchUpService`, `TextSignalExtractor`,
+    `TextSignalListener`, `TextSignalSeriesService`, `TextSignalService`, `ToolCatalogue`, `ToolOutcomeDigest`,
+    `TraceDisposition`, `TranscriptionService`, `TurnAnswerer`, `TurnGear`, `TurnGearAnalyzer`, `TurnGearRouter`,
+    `TurnPhase`, `TurnPlan`, `TurnPlanParser`, `TurnPlanner`, `TurnProvenance`, `UnavailableReason`, `ValidatedPlan`,
+    `WeekContextRenderer`, `WeeklyScoreService`, `WeightByDateSupport`
   - **controllers→contract:** `CompanionController`→`CompanionApi`,
     `CompanionFeedbackController`→`CompanionFeedbackApi`, `CompanionFlagTraceController`→`CompanionFlagsApi`,
     `CompanionObservationController`→`CompanionObservationApi`,
@@ -479,7 +479,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/companion`
   - **hooks (via `@/data/hooks`):** `useAccountSettings`, `useCompanionPreferences`, `usePersonalContext`
   - **modules:** preferencesApi.ts, preferencesHooks.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 260 IT + 87 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 260 IT + 88 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,

@@ -235,7 +235,7 @@ public class ObservationFeedService {
         return base(row, card)
                 .id(event.getId())
                 .occurredAt(toOffset(event.getOccurredAt()))
-                .text(split[0])
+                .text(ObservationLead.strip(split[0]))
                 .question(split[1])
                 .evidence("grounded".equals(payload.channel()) ? displayEvidence(payload.evidenceRefs())
                         : payload.evidenceRefs() == null ? List.of() : payload.evidenceRefs())

@@ -1476,6 +1476,11 @@ request only the remaining candidate allowance, and stop at the recovery cap, a 
 of rounds, or a round without a new normalized topic. Later rounds include selected topic keys
 and titles to avoid repeats. A failed later round aborts the preview without caching a partial
 plan. `apply` revalidates and applies those exact candidates; repeat calls reuse the result.
+The recovery prompt tells the model to open the observation with the finding itself, not with a
+meta-lead about returning to earlier entries (the card's original date already says so; mezo-23ry3).
+Cards stored before that change still carry „Korábbi bejegyzésekhez visszatérve: …”, so the feed's
+read path strips such a LEADING clause (`ObservationLead`, narrow regex, never mid-sentence) and
+re-capitalizes — no data migration.
 Deleted/changed sources cannot be applied. Restart/expiry requires a new preview. Transport
 failures and malformed proposal/critique output abort preview with the standard HTTP 400
 `OBSERVATION_RECOVERY_LLM_FAILED` error; they never create a successful empty recovery plan.
