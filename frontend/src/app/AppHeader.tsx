@@ -27,7 +27,7 @@ type NtfFilter = 'all' | 'unread' | NotificationCategoryId
 /** The notification panel's CONTENT icons wear the 3D set (üveg bible §4/§7.1, mezo-me75u.3,
  *  prototypes/uveg-nap.html — the bell). The chrome buttons above keep their clay icons. The clay
  *  names that mean something else elsewhere are named here, at the call site (bible rule 7); the
- *  rest go through `CLAY_TO_3D`, and an unmapped one (the `i-ertesites` fallback) stays clay. */
+ *  rest go through `CLAY_TO_3D` (the `i-ertesites` fallback became `t-bell` in U7, mezo-me75u.7). */
 const NTF_3D: Partial<Record<ClayIconName, Icon3DName>> = {
   'i-kristaly': 't-orb',     // Jóslatok / prediction_* — a forecast, not a score
   'i-lombik': 't-flask',     // Kísérletek

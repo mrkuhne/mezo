@@ -53,6 +53,17 @@ test('the sprite carries the U6 Én icons', () => {
   }
 })
 
+// U7 (mezo-me75u.7): the Én II icons the owner approved on prototypes/uveg-en2.html#ikonok —
+// notifications, the habit anchor, tips, "cut it smaller", AI suggestion, account key, sign-out,
+// appearance, and two achievement badges (first quest, LIFE Lv 5).
+test('the sprite carries the U7 Én II icons', () => {
+  const ids = symbolIds()
+  for (const id of ['t-bell', 't-anchor', 't-bulb', 't-scissors', 't-spark', 't-key', 't-exit', 't-palette',
+    't-flag', 't-brain'] satisfies Icon3DName[]) {
+    expect(ids, id).toContain(id)
+  }
+})
+
 test('every symbol is 64×64 art (Icon3D renders viewBox 0 0 64 64)', () => {
   const { container } = render(<ClaySprites />)
   const syms = container.querySelectorAll('symbol[id^="t-"]')
