@@ -18351,39 +18351,129 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 
 /* Észrevételek: the observation card is glass (fresh/return lavender, watching sky, confirmed sage) */
 .nap-obs.glass { margin-bottom: 12px; padding: 16px 16px 14px; border-radius: 22px; }
-.nap-obs-top { display: flex; align-items: center; gap: 11px; }
+.nap-obs-top { display: flex; align-items: flex-start; gap: 12px; }
 .nap-obs-top > div { flex: 1; min-width: 0; }
-.nap-obs-disc.uv-well { width: 44px; height: 44px; }
+.nap-obs-disc.uv-well { width: 46px; height: 46px; }
 .nap-obs .eb {
   font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase;
   color: color-mix(in srgb, var(--c) 85%, var(--text-primary));
 }
-.nap-obs .ttl { margin-top: 3px; font-size: 15px; font-weight: 600; letter-spacing: -0.3px; line-height: 1.25; color: var(--text-primary); }
+.nap-obs .ttl { margin-top: 4px; font-size: 17px; font-weight: 600; letter-spacing: -0.35px; line-height: 1.28; color: var(--text-primary); }
 .nap-obs-pill {
-  margin-left: auto; flex: none; padding: 4px 10px; border-radius: 999px;
+  margin-left: auto; margin-top: 2px; flex: none; padding: 4px 10px; border-radius: 999px;
   font-size: 9px; font-weight: 700; letter-spacing: 1px; color: color-mix(in srgb, var(--c) 85%, var(--text-primary));
   background: color-mix(in srgb, var(--c) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 40%, transparent);
 }
-.nap-obs-say { margin: 12px 0 0; font-family: var(--ff-serif); font-style: italic; font-size: 17px; line-height: 1.3; color: var(--text-primary); }
-.nap-obs-say b, .nap-obs-say strong { font-style: normal; font-weight: 600; }
+/* Mezo's sentence: upright Geist, paragraph measure (bible U3/23 — no italic serif on prose) */
+.nap-obs-say { margin: 12px 0 0; font-size: 15px; line-height: 1.55; letter-spacing: -0.1px; color: var(--text-primary); }
+.nap-obs-say b, .nap-obs-say strong { font-weight: 600; color: color-mix(in srgb, var(--c) 55%, var(--text-primary)); }
 .nap-obs-ask { margin: 8px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
 .nap-obs-ask b, .nap-obs-ask strong { color: var(--text-primary); font-weight: 600; }
-.nap-obs-evid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.nap-obs-evid span {
+/* the question sits right above its reply pills, split from the evidence by a hairline */
+.nap-obs-q { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--divider); }
+.nap-obs-qeb {
+  display: flex; align-items: center; gap: 6px; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px;
+  text-transform: uppercase; color: color-mix(in srgb, var(--c) 85%, var(--text-primary));
+}
+.nap-obs-q .nap-obs-ask { margin-top: 6px; font-size: 15px; font-weight: 500; line-height: 1.45; color: var(--text-primary); }
+/* evidence ("Miből látom"): a hairline eyebrow with its toggle, then FLAT rows (never glass in glass) */
+.nap-obs-evh {
+  display: flex; align-items: center; gap: 8px; margin-top: 16px;
+  font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted);
+}
+.nap-obs-evh::after { content: ''; flex: 1; height: 1px; background: var(--divider); }
+.nap-obs-evh button {
+  order: 2; min-height: 32px; padding: 0; border: 0; background: none; cursor: pointer;
+  font: 600 11.5px var(--ff-body); letter-spacing: 0; text-transform: none; color: color-mix(in srgb, var(--c) 80%, var(--text-primary));
+}
+.nap-obs-evid { display: grid; gap: 8px; margin-top: 8px; }
+.nap-ev-row { padding: 11px 12px 12px; border-radius: 16px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.nap-ev-h { display: flex; align-items: center; gap: 9px; }
+.nap-ev-h .t-ico { flex: none; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
+.nap-ev-src { display: flex; flex-direction: column; min-width: 0; }
+.nap-ev-src strong, .nap-ev-h time { white-space: nowrap; }
+.nap-ev-src strong { font-size: 13.5px; font-weight: 600; line-height: 1.2; color: var(--text-primary); }
+.nap-ev-src small { margin-top: 1px; font-size: 10.5px; color: var(--text-muted); }
+.nap-ev-h time { margin-left: auto; font-size: 11.5px; font-weight: 500; color: var(--text-secondary); font-variant-numeric: tabular-nums; text-align: right; }
+.nap-ev-vals { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+.nap-ev-vals span {
+  display: inline-flex; align-items: baseline; gap: 4px; min-width: 0; padding: 5px 10px; border-radius: 999px;
+  font-size: 12px; color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.nap-ev-vals b { font-size: 13px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.nap-ev-vals i { font-style: normal; font-size: 10.5px; font-weight: 600; color: var(--text-muted); }
+.nap-ev-vals span.hot { background: color-mix(in srgb, var(--c) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent); }
+.nap-ev-vals span.hot b { color: color-mix(in srgb, var(--c) 70%, var(--text-primary)); }
+.nap-ev-cells { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 9px; }
+.nap-ev-cells span {
+  padding: 6px 0 5px; border-radius: 11px; text-align: center;
+  background: color-mix(in srgb, var(--k) 9%, rgba(245, 239, 230, 0.03)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k) 26%, transparent);
+}
+.nap-ev-cells b { display: block; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--k) 80%, var(--text-primary)); }
+.nap-ev-cells small { display: block; margin-top: 1px; font-size: 9.5px; color: var(--text-muted); }
+.nap-ev-quote {
+  margin: 9px 0 0; padding: 1px 0 1px 10px; border-left: 2px solid color-mix(in srgb, var(--c) 55%, transparent);
+  font-size: 13.5px; line-height: 1.5; color: var(--text-primary); overflow-wrap: anywhere;
+}
+.nap-ev-quote.clip { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.nap-ev-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.nap-ev-tags span {
   padding: 5px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; color: var(--text-secondary);
   background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+/* two+ check-ins in a row: ONE shared change graphic — a 1–10 track per dimension,
+   hollow ring = the earlier entry, lit dot = the later one, the segment glows in the dimension hue */
+.nap-ev-shift { padding: 12px 12px 8px; border-radius: 16px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.nap-sh-h { display: flex; align-items: center; gap: 8px; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted); }
+.nap-sh-t {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 5px; letter-spacing: 0; text-transform: none;
+  font-size: 11.5px; font-weight: 500; color: var(--text-secondary); font-variant-numeric: tabular-nums;
+}
+.nap-sh-t b { margin: 0 2px; font-weight: 500; color: var(--text-muted); }
+.nap-sh-t i { width: 8px; height: 8px; border-radius: 50%; }
+.nap-sh-t i.o { box-shadow: inset 0 0 0 1.5px var(--text-secondary); }
+.nap-sh-t i.f { background: var(--text-primary); }
+.nap-sh-row, .nap-sh-sc { display: grid; grid-template-columns: 62px 1fr 50px 30px; align-items: center; gap: 8px; }
+.nap-sh-row { padding-top: 9px; }
+.nap-sh-l { font-size: 12px; font-weight: 600; color: color-mix(in srgb, var(--k) 70%, var(--text-primary)); }
+.nap-sh-tr { position: relative; height: 10px; border-radius: 5px; background: rgba(245, 239, 230, 0.06); }
+.nap-sh-tr .seg {
+  position: absolute; top: 3px; height: 4px; border-radius: 2px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--k) 35%, transparent), var(--k));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--k) 50%, transparent);
+}
+.nap-sh-tr .seg.dn { background: linear-gradient(90deg, var(--k), color-mix(in srgb, var(--k) 35%, transparent)); }
+.nap-sh-tr i { position: absolute; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; }
+.nap-sh-tr i.o { background: var(--surface-card); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--k) 55%, transparent); }
+.nap-sh-tr i.f { background: var(--k); box-shadow: 0 0 10px color-mix(in srgb, var(--k) 70%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+.nap-sh-n { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.nap-sh-n b { margin: 0 3px; font-weight: 400; color: var(--text-muted); }
+.nap-sh-n strong { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.nap-sh-d { justify-self: end; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--k) 80%, var(--text-primary)); }
+.nap-sh-d.z { color: var(--text-muted); }
+.nap-sh-sc { margin-top: 3px; font-size: 9.5px; color: var(--text-muted); }
+.nap-sh-sc .r { grid-column: 2; display: flex; justify-content: space-between; }
+.nap-sh-sc i { font-style: normal; }
+@media (max-width: 360px) {
+  .nap-sh-row, .nap-sh-sc { grid-template-columns: 54px 1fr 46px 26px; gap: 6px; }
+  /* the day label drops under the title instead of squeezing it („Check-/in”) */
+  .nap-ev-h { flex-wrap: wrap; row-gap: 2px; }
+  .nap-ev-h time { flex-basis: 100%; margin-left: 35px; text-align: left; font-size: 11px; }
 }
 /* reply pills: flat; the "yes" one lit in the card hue */
 .nap-obs-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 .nap-obs-chips .chip {
-  flex: 1 1 auto; justify-content: center; min-height: 44px; padding: 8px 14px; border: 0; border-radius: 999px;
+  flex: 1 1 auto; justify-content: center; min-height: 44px; padding: 8px 12px; border: 0; border-radius: 999px;
   font-family: inherit; font-size: 12.5px; font-weight: 600; white-space: normal; cursor: pointer;
   color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
 }
 .nap-obs-chips .chip.yes { color: #191614; font-weight: 700; background: var(--c); box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent); }
 .nap-obs-chips .chip.talk { color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
 .nap-obs-chips .chip:disabled { opacity: 0.5; cursor: default; }
-.nap-obs-ack { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 13px; color: var(--text-secondary); }
+.nap-obs-ack {
+  display: flex; align-items: center; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--divider);
+  font-size: 13.5px; line-height: 1.45; color: var(--text-secondary);
+}
 .nap-obs-err { margin-top: 10px; font-size: 12px; font-weight: 600; color: #FFB39C; }
 /* the watching card's tally: 3D tick (hit) / skip (miss) marks, a flat dot for a day not yet in */
 .nap-obs-tally { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }

@@ -43,7 +43,12 @@ export const observations: Observation[] = [
     title: 'A nehéz hétfők',
     text: 'Kedden azt írtad, a hétfők nehezek. Tegnap hétfő volt, és a hangulatod **4 / 5**-re jött ki.',
     question: 'Ez most **ellene szól**. Egy nap még nem dönt — kíváncsi vagyok, te hogy látod.',
-    evidence: [],
+    // A drót nyers rekord-formája (ObservationContextService) — a kártya tagolt sorokra bontja.
+    evidence: [
+      'Napló · 2026-05-19 · text=A hétfők mindig nehezek, egész nap csak vonszoltam magam; occurred_on=2026-05-19',
+      'Check-in · 2026-05-21 · note=Meglepően jól indult a hét; date=2026-05-21; slot_time=08:00; state=done; energy=6; stress=3; body=7; mental=7',
+      'Check-in · 2026-05-21 · date=2026-05-21; slot_time=20:00; state=done; energy=5; stress=2; body=7; mental=8',
+    ],
     status: 'monitoring',
     evidenceHits: 1,
     evidenceMisses: 2,

@@ -24,7 +24,7 @@ function renderCard(item: Observation, onReply = vi.fn()) {
   return onReply
 }
 
-test('a fresh card renders the italic Mezo sentence, the question and three chips', () => {
+test('a fresh card renders the Mezo sentence, the question and three chips', () => {
   renderCard(fresh)
   expect(screen.getByText('Anna és az alvásod')).toBeInTheDocument()
   expect(screen.getByText('ÚJ')).toBeInTheDocument()
@@ -214,5 +214,50 @@ test('return confirmation records experience without calling it measured proof',
 
 test('older unanswered card retains its original observation date', () => {
   renderCard({ ...fresh, occurredAt: '2026-05-22T12:12:00Z' })
-  expect(document.querySelector('.nap-obs .eb')?.textContent).toContain('2026-05-22')
+  const eb = document.querySelector('.nap-obs .eb')?.textContent ?? ''
+  expect(eb).toMatch(/^Feltűnt · máj\. 22\. \d\d:\d\d$/)
+})
+
+// mezo-me75u.12: a nyers rekord-bizonyíték tagolt sorokká bomlik, két check-in közös
+// változás-grafikont kap, és a kérdés a válasz-pillek fölött ül.
+const RAW_EVIDENCE = [
+  'Sportnapló · 2026-09-17 · notes=Típus: Edzés; sport=volleyball; date=2026-09-17; time=20:46; duration_min=120; rpe=7.0; shoulder_strain=6; kcal=975; kcal_is_estimate=true',
+  'Check-in · 2026-09-22 · note=Jól vagyok; date=2026-09-22; slot_time=14:00; state=done; energy=7; stress=2; body=8; mental=8',
+  'Check-in · 2026-09-22 · note=Jó a randi; date=2026-09-22; slot_time=20:00; state=done; energy=4; stress=1; body=9; mental=10',
+]
+
+test('a Mezo-mondat egyenes szöveg, a nyers bizonyíték tagolt sorokként jelenik meg', () => {
+  renderCard({ ...fresh, evidence: RAW_EVIDENCE })
+  expect(document.body.textContent).not.toContain('shoulder_strain')
+  expect(document.body.textContent).not.toContain('kcal_is_estimate')
+  const rows = document.querySelectorAll('.nap-ev-row')
+  expect(rows).toHaveLength(3)
+  expect(rows[0].querySelector('.nap-ev-src strong')?.textContent).toBe('Röplabda')
+  expect(rows[0].querySelector('use[href="#t-volley"]')).not.toBeNull()
+  expect([...rows[0].querySelectorAll('.nap-ev-vals span')].map((s) => s.textContent))
+    .toEqual(['120perc', 'RPE 7/10', 'Vállterhelés 6/10', '~975kcal'])
+  expect(rows[0].querySelector('.nap-ev-quote')?.textContent).toBe('„Típus: Edzés”')
+  // a két check-in sora számok nélkül; a változás egy közös blokkban
+  expect(document.querySelectorAll('.nap-ev-cells')).toHaveLength(0)
+  const energy = document.querySelector('.nap-sh-row[data-dim="energy"]')
+  expect(energy?.querySelector('.nap-sh-n')?.textContent).toBe('7→4')
+  expect(energy?.querySelector('.nap-sh-d')?.textContent).toBe('−3')
+  expect(document.querySelector('.nap-ev-shift')).toHaveAttribute('aria-label', 'Változás: 14:00 → 20:00')
+  expect(screen.getByText('Miből látom · 3 bejegyzés')).toBeInTheDocument()
+  // a kérdés a válasz-pillek blokkjában ül
+  expect(document.querySelector('.nap-obs-q .nap-obs-ask')?.textContent).toContain('Figyeljem tovább?')
+  expect(document.querySelector('.nap-obs-q .nap-obs-chips')).not.toBeNull()
+})
+
+test('a bizonyíték nyitva indul, csukható; megválaszolt kártyán csukva, koppintásra nyílik', async () => {
+  const { unmount } = render(
+    <MemoryRouter><ObservationCard item={{ ...fresh, evidence: RAW_EVIDENCE }} onReply={vi.fn()} /></MemoryRouter>,
+  )
+  await userEvent.click(screen.getByRole('button', { name: 'Elrejtem' }))
+  expect(document.querySelector('.nap-ev-row')).toBeNull()
+  unmount()
+  renderCard({ ...fresh, evidence: RAW_EVIDENCE, repliedChoice: 'watch' })
+  expect(document.querySelector('.nap-ev-row')).toBeNull()
+  await userEvent.click(screen.getByRole('button', { name: 'Megnézem ›' }))
+  expect(document.querySelectorAll('.nap-ev-row')).toHaveLength(3)
 })
