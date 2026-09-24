@@ -2321,16 +2321,37 @@ svg{overflow:visible}
   background:var(--c);box-shadow:0 0 10px color-mix(in srgb,var(--c) 60%,transparent)}
 .pldayh strong{font-size:15.5px;font-weight:600;letter-spacing:-.3px;margin-left:2px}
 .pldayh b{margin-left:auto;color:var(--faint);font-size:19px;font-weight:400}
-.plfacts{display:flex;gap:6px;margin-top:10px}
-.plfacts i{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 4px 7px;border-radius:13px;
-  background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair);font-style:normal}
-.plfacts i .icon{width:22px;height:22px}
-.plfacts i b{font-size:16px;font-weight:600;letter-spacing:-.4px}
-.plfacts i small{font-size:9.5px;color:var(--faint)}
-.plbars{display:flex;gap:4px;margin-top:9px;height:5px}
-.plbars i{flex:1;border-radius:3px;background:rgba(245,239,230,.07);overflow:hidden}
-.plbars i::after{content:'';display:block;height:100%;width:var(--w);border-radius:3px;background:var(--mc);
-  box-shadow:0 0 7px color-mix(in srgb,var(--mc) 70%,transparent)}
+/* az anatómia a kártya fő grafikája — ez mondja meg, mit csinál a nap */
+.plchips{display:flex;gap:9px;margin-top:12px;flex-wrap:wrap}
+.plchip{display:flex;flex-direction:column;align-items:center;gap:3px}
+.plchip b{font-size:11px;font-weight:600;color:var(--sub);letter-spacing:-.2px}
+.plchips.sm{gap:7px;margin-top:8px}
+.plchips.sm .plchip b{font-size:10px}
+.plline{display:block;margin-top:11px;font-size:11.5px;color:var(--faint);letter-spacing:.1px}
+/* a hét három rangja */
+.plday.flatcard{background:rgba(245,239,230,.035);box-shadow:inset 0 0 0 1px var(--hair)}
+.plday.is-next .mchp{opacity:.72}
+.plchip .mchp{width:46px;height:46px}
+.plchips.sm .plchip .mchp{width:30px;height:30px}
+.pldone.is-part{color:#FFD08A;background:rgba(255,190,96,.12);box-shadow:inset 0 0 0 1px rgba(255,190,96,.4)}
+.plday.is-next .pldayh strong{color:var(--sub)}
+.plday.is-now{box-shadow:0 18px 34px -16px rgba(0,0,0,.8),
+  0 0 30px -4px color-mix(in srgb,var(--c) 45%,transparent),
+  inset 0 1px 0 rgba(255,244,230,.12),
+  inset 0 -14px 26px -18px color-mix(in srgb,var(--c) 60%,transparent)}
+.plday.is-done .pldayh strong{color:var(--text-primary,var(--ink))}
+.pldone{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 5px;border-radius:999px;font-size:9.5px;
+  font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#BFE0A8;
+  background:rgba(134,188,99,.12);box-shadow:inset 0 0 0 1px rgba(134,188,99,.4)}
+.pldone .icon{width:14px;height:14px;filter:none}
+.plnext{padding:2px 8px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+  color:var(--faint);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+/* B változat: mini testtérkép a kártya bal oldalán */
+.plday.is-b{display:grid;grid-template-columns:62px 1fr;gap:13px;align-items:center}
+.plmap{width:62px;height:112px;display:grid;place-items:center}
+.plmap svg{width:100%;height:100%;overflow:visible}
+.plday.is-b .plbody{min-width:0}
+.plday.is-b .plchips{margin-top:8px}
 .plday.rest{display:flex;align-items:center;gap:8px;padding:11px 14px;background:rgba(245,239,230,.035);
   box-shadow:inset 0 0 0 1px var(--hair);border-radius:17px}
 .plday.rest .icon{width:24px;height:24px;margin-left:auto}
@@ -2647,6 +2668,11 @@ svg{overflow:visible}
       <a href="#mozgas" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-steps"/></svg>Minden mozgásod</a>
       <a href="#ikonok" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-template"/></svg>Új ikonok</a>
     </nav>
+    <span class="ov">A NAP KÁRTYÁJA — KÉT VÁLTOZAT</span>
+    <ul>
+      <li><a href="#" data-dayv="A" class="on"><b>A</b> — izom-sziluettek sora</a> · <a href="#" data-dayv="B"><b>B</b> — mini testtérkép a kártyán</a></li>
+      <li>Mindkettőben látszik a hét három állapota: <em>megvolt</em> (hétfő, kedd, szerda), <em>ma</em> (csütörtök), <em>jön</em> (péntek).</li>
+    </ul>
     <span class="ov">ÁLLAPOTOK</span>
     <ul>
       <li>Terv: <a href="#" data-state="run">fut egy terv</a> · <a href="#" data-state="none">nem fut terv</a> · <a href="#" data-state="empty">még nincs terved</a></li>
@@ -2725,14 +2751,14 @@ const WEEK_SETS=[52,61,75,75,84,38];
 const TODAY='Csü';
 
 const DAYS=[
- {d:'Hét',full:'Hétfő',t:'Push',sets:16,min:62,mus:[['chest-mid',4],['chest-upper',3],['shoulder-front',3],['shoulder-side',3],['triceps-medial',3]],
+ {d:'Hét',full:'Hétfő',t:'Push',sets:16,min:62,done:{sets:16,min:68,rec:1},mus:[['chest-mid',4],['chest-upper',3],['shoulder-front',3],['shoulder-side',3],['triceps-medial',3]],
   ex:[['Barbell Bench Press','chest-mid',4,'6–8',1,2,80],['Incline DB Press','chest-upper',3,'8–10',1,2,30],
       ['Overhead Press','shoulder-front',3,'8–10',2,2,45,'Niggle-kíméletes verzió · cable variánssal helyettesítve'],
       ['Lateral Raise','shoulder-side',3,'12–15',1,2,10],['Tricep Pushdown','triceps-medial',3,'10–12',1,2,27]]},
- {d:'Kedd',full:'Kedd',t:'Legs A',sets:12,min:48,mus:[['quad',6],['ham',3],['calf',3]],
+ {d:'Kedd',full:'Kedd',t:'Legs A',sets:12,min:48,done:{sets:12,min:51,rec:0},mus:[['quad',6],['ham',3],['calf',3]],
   ex:[['Front Squat','quad',3,'8–10',2,2,90],['Leg Curl','ham',3,'10–12',1,2,45],
       ['Walking Lunge','quad',3,'12',1,2,20],['Standing Calf Raise','calf',3,'12–15',0,2,60]]},
- {d:'Sze',full:'Szerda',t:'Legs',sets:19,min:70,mus:[['quad',7],['ham',6],['glute',3],['calf',3]],
+ {d:'Sze',full:'Szerda',t:'Legs',sets:19,min:70,done:{sets:17,min:74,rec:2},mus:[['quad',7],['ham',6],['glute',3],['calf',3]],
   ex:[['Barbell Squat','quad',4,'6–8',1,2,120],['Romanian Deadlift','ham',3,'8–10',1,2,100],
       ['Leg Press','quad',3,'10–12',1,2,180],['Leg Curl','ham',3,'10–12',1,2,45],
       ['Hip Thrust','glute',3,'8–10',1,2,110],['Standing Calf Raise','calf',3,'12–15',0,2,60]]},
@@ -2833,19 +2859,40 @@ function terv(){
   </div>
   <div class="foot">A poszter az egész terved ajtaja. Egy nap kártyája a nap saját oldalára visz.</div>`;
 }
+/* A nap kártyája. A kártya EGY dolgot mond: mit dolgoztat meg ez a nap — ezért az
+   anatómia a fő grafika, a számok egy halk sorba mennek, és a hét három állapota
+   (megvolt · ma · jön) más-más rangot kap (stíluskönyv §3.4). */
+const BACKSIDE=['ham','glute','calf','back-mid','back-wide','back-lower','traps','shoulder-rear'];
+function dayView(d){return d.mus.filter(([k])=>BACKSIDE.includes(k)).length>d.mus.length/2?'back':'front'}
 function dayCard(d,i){
   const del=`--d:${110+i*20}ms`;
   if(d.rest||d.sport) return `<div class="plday rest rise" style="${del}">
     <span class="pltag">${d.full.toUpperCase()}</span>${d.d===TODAY?'<span class="pltoday">MA</span>':''}
     <em>${d.sport?'röplabda · meccs':'pihenőnap'}</em>${I(d.sport?'volley':'moon')}</div>`;
-  return `<button class="plday glass rise" style="${del}" data-go="#nap/${d.d}" aria-label="${d.full} · ${d.t}">
-    <span class="pldayh"><span class="pltag">${d.full.toUpperCase()}</span>${d.d===TODAY?'<span class="pltoday">MA</span>':''}
-      <strong>${d.t}</strong><b>›</b></span>
-    <span class="plfacts">
-      <i>${I('dumbbell')}<b>${d.sets}</b><small>szett</small></i>
-      <i>${I('clock')}<b>${d.min}</b><small>perc</small></i>
-      <i>${I('protocol')}<b>${d.ex.length}</b><small>gyakorlat</small></i></span>
-    <span class="plbars">${d.mus.map(([k,s])=>`<i style="--mc:${mcolor(k)};--w:${clamp(s/10*100,8,100)}%"></i>`).join('')}</span>
+  const today=d.d===TODAY, done=!!d.done&&!today;
+  const c=mcolor(d.mus[0][0]);
+  const state=done?'is-done':today?'is-now':'is-next';
+  const skin=done||today?'glass':'flatcard';
+  const part=done&&d.done.sets<d.sets;
+  const stamp=done
+    ? `<span class="pldone${part?' is-part':''}">${I('tick')}${part?'részben':'megvolt'}</span>`
+    : today?'<span class="pltoday">MA</span>':'<span class="plnext">jön</span>';
+  const line=done
+    ? `${part?`${d.done.sets} / ${d.sets}`:d.done.sets} szett · ${d.done.min} perc${d.done.rec?` · ${d.done.rec} rekord`:''}`
+    : `${d.sets} szett · ~${d.min} perc · ${d.ex.length} gyakorlat`;
+  const chips=`<span class="plchips">${d.mus.map(([k,s])=>
+    `<span class="plchip">${mchp(k)}<b>${s}</b></span>`).join('')}</span>`;
+  const head=`<span class="pldayh"><span class="pltag">${d.full.toUpperCase()}</span>${stamp}
+      <strong>${d.t}</strong><b>›</b></span>`;
+  if(dayVariant==='B') return `<button class="plday ${skin} ${state} is-b rise" style="${del};--c:${c}"
+      data-go="#nap/${d.d}" aria-label="${d.full} · ${d.t}${done?' · megvolt':''}">
+    <span class="plmap">${heat(dayView(d),d.mus.map(([k])=>[k,.9]))}</span>
+    <span class="plbody">${head}<span class="plline">${line}</span>
+      <span class="plchips sm">${d.mus.map(([k,s])=>`<span class="plchip">${mchp(k,'sm')}<b>${s}</b></span>`).join('')}</span></span>
+  </button>`;
+  return `<button class="plday ${skin} ${state} rise" style="${del};--c:${c}"
+      data-go="#nap/${d.d}" aria-label="${d.full} · ${d.t}${done?' · megvolt':''}">
+    ${head}${chips}<span class="plline">${line}</span>
   </button>`;
 }
 function dests(withMuscle){
@@ -3462,7 +3509,7 @@ function openSheet(k){const [c,f]=SH[k];const sh=$('#sheet');closeGb();sh.style.
 function closeSheet(){$('#sheet').classList.remove('on');if(!$('#gbox').classList.contains('on'))$('#scrim').classList.remove('on')}
 
 /* ── router ─────────────────────────────────────────────── */
-let tervState='run', cmpMode=false, cmpSel=[];
+let tervState='run', cmpMode=false, cmpSel=[], dayVariant='A';
 const TAB={terv:'Terv',run:'Terv',nap:'Terv',napszerk:'Terv',het:'Terv',izom:'Terv',konyvtar:'Terv',futamok:'Terv',
   riport:'Terv',osszevetes:'Terv',sablonok:'Terv',sablon:'Terv',sablonszerk:'Terv',ujterv:'Terv',ikonok:'Terv',
   sajat:'Mai',terheles:'Terhelés',terkep:'Terhelés',jelek:'Terhelés',mozgas:'Terhelés'};
@@ -3484,6 +3531,9 @@ document.addEventListener('click',e=>{
   if(t.closest('[data-closegb]')){closeGb();return}
   const st=t.closest('[data-state]'); if(st){e.preventDefault();tervState=st.dataset.state;
     if(location.hash!=='#terv'){location.hash='#terv'}else{soft()}return}
+  const dv=t.closest('[data-dayv]'); if(dv){e.preventDefault();dayVariant=dv.dataset.dayv;
+    document.querySelectorAll('[data-dayv]').forEach(a=>a.classList.toggle('on',a.dataset.dayv===dayVariant));
+    if(location.hash!=='#terv'&&location.hash!=='#run'){location.hash='#terv'}else{soft()}return}
   if(t.closest('[data-cmp]')){e.preventDefault();cmpMode=!cmpMode;cmpSel=[];
     if(location.hash!=='#futamok'){location.hash='#futamok'}else{soft()}return}
   const cs=t.closest('[data-cmpsel]'); if(cs){e.preventDefault();const i=+cs.dataset.cmpsel;
