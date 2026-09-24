@@ -471,3 +471,10 @@ The Észrevételek card, re-thought after the owner found it unreadable. Prototy
     the reading order; the order is sentence → evidence → question + pills (with a hairline).
     Evidence opens by default on an unanswered card and folds once answered.
 
+51. **(U8a) One number per page.** A deep page's hero ring, its sentence and its chart must read
+    the SAME day count from the SAME source (the chart's own points) — the owner's "0 nap
+    bizonyíték" next to an 8-day chart was a trust bug, not a styling one. When two honest counts
+    exist (plotted days vs. the calculation's aligned days), name both, never show them bare.
+52. **(U8a) Deep pages go back where you came from.** A "Miből látszik?" page is reached from the
+    wall, a room or a list; its back control steps back through history („‹ Vissza”) and only a
+    direct open falls back to the list by name (`useBackTo`).
