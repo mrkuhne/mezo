@@ -22,7 +22,7 @@
 // ============================================================
 import { useEffect, useState, type CSSProperties } from 'react'
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { useDayEvaluation, useMeWeek, normalizeDayEvaluation } from '@/data/hooks'
+import { useDayEvaluation, useMeWeek, useRitualDay, normalizeDayEvaluation } from '@/data/hooks'
 import { usePrefetchDayEvaluations } from '@/data/me/dayEvaluationHooks'
 import { deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import type { NormalizedDayEvaluation, NormalizedDayDimension } from '@/data/me/dayEvaluation'
@@ -85,6 +85,8 @@ export function NapomPage() {
   const date = hasParam && valid ? param : morning ? yesterday : today
 
   const evalQuery = useDayEvaluation(date)
+  // Today's napzárás state — the lead card only runs for today, so only today's ritual matters.
+  const todayRitual = useRitualDay(today)
   const monday = mondayOf(date)
   const { week } = useMeWeek(monday)
   usePrefetchDayEvaluations([addDays(date, -1), addDays(date, 1)].filter((d) => d <= today))
@@ -145,7 +147,7 @@ export function NapomPage() {
     )
   })()
 
-  const action = isToday && evaluation && open ? nextBestAction(evaluation, day, new Date()) : null
+  const action = isToday && evaluation && open ? nextBestAction(evaluation, day, new Date(), todayRitual.data.closed) : null
   const rowMode: NapomRowMode = loading ? 'loading' : scored ? 'scored' : open ? 'today' : 'plain'
 
   return (

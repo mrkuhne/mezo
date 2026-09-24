@@ -9,7 +9,7 @@
 // that spells out what „tanulom" means.
 //
 // The tiles do NOT expand in place (4th design round): a tap deep-links to
-// `/me/week/napok/:date`, which is what finally makes a single day
+// `/nap/napom/:date` (A napom, mezo-yjzhw.4), which is what makes a single day
 // addressable (audit gap §8.3/6 — a push notification can point at one).
 // ============================================================
 import { Fragment } from 'react'

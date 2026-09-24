@@ -52,6 +52,12 @@ test('before 20:00 renders nothing', () => {
   expect(screen.queryByText('Tegyük le a napot.')).toBeNull()
 })
 
+test('after midnight (00:30) renders nothing — the window ends at midnight', () => {
+  renderCard(new Date(2026, 8, 25, 0, 30))
+  expect(screen.queryByText('Tegyük le a napot.')).toBeNull()
+  expect(screen.queryByText('Letetted a napot')).toBeNull()
+})
+
 test('after 20:00 and not closed: card with CTA to /ritual', async () => {
   renderCard(new Date(2026, 8, 24, 20, 1))
   expect(screen.getByText('Tegyük le a napot.')).toBeInTheDocument()
@@ -64,6 +70,14 @@ test('after closing: the compact done row links to A napom', () => {
   renderCard(new Date(2026, 8, 24, 21, 0))
   expect(screen.getByText('Letetted a napot')).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'A napom ›' })).toHaveAttribute('href', '/nap/napom')
+})
+
+test('the kcal chip uses the HU thousands separator and every fact chip leads with its icon', () => {
+  store.kcal = 2060
+  const { container } = renderCard(new Date(2026, 8, 24, 20, 1))
+  expect(screen.getByText('2 060 kcal')).toBeInTheDocument()
+  const hrefs = [...container.querySelectorAll('.nap-zchips use')].map((u) => u.getAttribute('href'))
+  expect(hrefs).toEqual(['#t-bowl', '#t-dumbbell', '#t-checkin'])
 })
 
 test('renders known chips and omits the kcal chip when unknown', () => {

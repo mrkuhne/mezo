@@ -3,10 +3,11 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useCheckins, useDayEvaluation, useFuelDay, useRitualDay, normalizeDayEvaluation } from '@/data/hooks'
 import { localDateString } from '@/shared/lib/dates'
 import { doneCount, isNapzarasCardWindow } from '@/features/today/logic/napom'
-import { Icon3D } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import { huInt } from '@/shared/lib/huNum'
 
 /** Evening napzárás card on Mai (owner 2026-09-24, mezo-yjzhw.4): from 20:00 local time until
- *  the ritual is closed (or the 05:00 morning boundary), a lavender glass card sits under the
+ *  midnight, unless the ritual is closed, a lavender glass card sits under the
  *  "A napod." heading. After closing it shrinks to a flat done row linking to A napom.
  *  Reference: docs/design_2.0/prototypes/src/uveg-napod-body.html `closeCard()`. */
 export function NapzarasCard({ now }: { now: Date }) {
@@ -36,11 +37,12 @@ export function NapzarasCard({ now }: { now: Date }) {
   const trainingFact = ev?.dimensions.find((d) => d.id === 'training')?.facts.find((f) => f.label === 'edzés')?.value
   const doneCheckins = checkins.filter((c) => c.state === 'done').length
   const kcal = fuel.fuel.consumed?.kcal
-  const chips: string[] = []
-  if (kcal != null) chips.push(`${Math.round(kcal)} kcal`)
-  if (trainingFact) chips.push(`edzés ${trainingFact}`)
-  chips.push(`check-in ${doneCheckins}/4`)
-  if (ev) chips.push(`${doneCount(ev)}/6 terület kész`)
+  // Leading flat icons as the prototype's `closeCard()` chips: bowl · dumbbell · check-in.
+  const chips: { text: string; icon?: Icon3DName }[] = []
+  if (kcal != null) chips.push({ text: `${huInt(kcal)} kcal`, icon: 't-bowl' })
+  if (trainingFact) chips.push({ text: `edzés ${trainingFact}`, icon: 't-dumbbell' })
+  chips.push({ text: `check-in ${doneCheckins}/4`, icon: 't-checkin' })
+  if (ev) chips.push({ text: `${doneCount(ev)}/6 terület kész` })
 
   return (
     <section className="nap-zcard glass rise" style={{ '--c': 'var(--dv-lav)' } as CSSProperties}>
@@ -54,7 +56,12 @@ export function NapzarasCard({ now }: { now: Date }) {
         </span>
       </div>
       <div className="nap-zchips">
-        {chips.map((c) => <span key={c}>{c}</span>)}
+        {chips.map((c) => (
+          <span key={c.text}>
+            {c.icon && <Icon3D name={c.icon} size={16} />}
+            {c.text}
+          </span>
+        ))}
       </div>
       <button type="button" className="nap-zgo" onClick={() => navigate('/ritual')}>
         <Icon3D name="t-moon" size={24} />

@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
@@ -219,6 +219,28 @@ describe('NapomPage (real mode)', () => {
     expect(await screen.findByRole('img', { name: 'Pontszám: 66 / 100' })).toBeInTheDocument()
     expect(screen.queryByRole('img', { name: 'Pontszám: 78 / 100' })).toBeNull()
     expect(screen.getByRole('button', { name: /Segített/ })).toBeInTheDocument()
+  })
+
+  test('at 21:00 the lead offers napzárás — until today\'s ritual is closed', async () => {
+    vi.setSystemTime(new Date(`${mockDayEvaluationDates.inProgress}T21:00:00`))
+    const date = mockDayEvaluationDates.inProgress
+    let closed = false
+    server.use(
+      http.get(`${API_BASE}/api/me/day/:date/evaluation`,
+        () => HttpResponse.json(evaluationFixture(date, { state: 'in_progress', score: null, base: null, narrative: [] }))),
+      http.get(`${API_BASE}/api/ritual/day/:date`, ({ params }) => HttpResponse.json({
+        date: String(params.date), closed, closedAt: closed ? '2026-05-21T19:30:00Z' : null,
+        window: { opensAt: '21:15', prepStartsAt: '21:45', bedTime: '22:30' },
+      })),
+    )
+    const first = renderAt(`/nap/napom/${date}`)
+    expect(await screen.findByText('Tegyük le a napot')).toBeInTheDocument()
+    first.unmount()
+
+    closed = true
+    renderAt(`/nap/napom/${date}`)
+    expect(await screen.findByRole('img', { name: '6 / 6 terület kész' })).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByText('Tegyük le a napot')).toBeNull())
   })
 
   test('a scored evaluation with no narrative renders no review card', async () => {

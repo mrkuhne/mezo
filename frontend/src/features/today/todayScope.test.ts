@@ -35,7 +35,7 @@ const RETIRED_DESIGN_20 = [
 ]
 
 /** Titánium Nap/Mai (mezo-mhum, manifest C6): a „Célok · ma" csempe a nyitóoldalról a társ
- *  KÖVETKEZŐ LÉPÉS-létrájába költözött (`logic/nextStep` goal-foka), a célok otthona az Én
+ *  KÖVETKEZŐ LÉPÉS-létrájába költözött (a `logic/nextStep` azóta törölve, mezo-yjzhw.4), a célok otthona az Én
  *  marad. A csempe-komponens így gazdátlan lett — visszahozni csak tudatos döntésként szabad. */
 const RETIRED_TITANIUM = ['LifeGoalTodayTile.tsx']
 

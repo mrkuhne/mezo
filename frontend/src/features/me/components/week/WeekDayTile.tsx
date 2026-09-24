@@ -4,8 +4,8 @@
 //
 // The tile does NOT expand in place — that was the 4th design round's
 // lesson (a right-column tile growing full-width punches a hole in the
-// 2-column grid). Tapping navigates to `/me/week/napok/:date`, which is
-// also what makes a single day deep-linkable (audit gap §8.3/6).
+// 2-column grid). Tapping navigates to `/nap/napom/:date` (A napom, mezo-yjzhw.4),
+// the day's own deep-linkable address (audit gap §8.3/6).
 //
 // Its four honest states come from `weekDay.ts`, not from ad-hoc null
 // checks: a `tanulom` day and a `nincs adat` day say different things.

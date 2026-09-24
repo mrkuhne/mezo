@@ -447,9 +447,10 @@ The sections below describe its current behavior and the supporting components.
   born in techcore): for every user × every finished day in the catch-up window
   (`summary.catch-up-days`, 7) it generates + embeds what's missing — **idempotent catch-up IS the
   backfill** (missed nights, crashes and pre-V2.2 history self-heal; per-date failures isolated).
-- **`DayReviewWarmupJob`** (`service/DayReviewWarmupJob.java`, A napom S1) — nightly, 02:50
-  (`mezo.companion.day-review-warmup.cron`, sitting between the 02:40 patterns job and 03:00 SUN
-  hypotheses, well after the post-midnight XP/habit chain), switch
+- **`DayReviewWarmupJob`** (`service/DayReviewWarmupJob.java`, A napom S1) — nightly, 02:30
+  (`mezo.companion.day-review-warmup.cron`, the free slot between the 02:20 daily-summary and the
+  02:40 patterns job — 02:50 is the character observation job's — well after the post-midnight
+  XP/habit chain), switch
   `mezo.techcore.cron.day-review-warmup-job.enabled` (`FeaturesConfiguration`, default **true**;
   array-AND'ed with `COMPANION_SWITCH` and `DAY_REVIEW_SWITCH` — off on any of the three and the
   bean does not exist). It closes yesterday's review overnight so the morning read is a cache hit
@@ -460,6 +461,11 @@ The sections below describe its current behavior and the supporting components.
   below). A retroactive log that changes the hash gets rewritten exactly once, by the next run or
   the next read, whichever comes first. Per user × date failures are isolated (one bad day never
   stops the run) — the `DailySummaryJob` idempotent-catch-up idiom one slice over.
+  `DayReviewWarmupJobIT` pins it end to end with a call-counting `@Primary DayReviewLlm` fake:
+  yesterday's row is written, a second run costs no call, a late log costs exactly one more.
+  **At the 90% budget throttle** the `day_review` slug (on `throttled-features`) also refuses
+  **interactive** generation, not just this job's — a scored day read while throttled degrades to
+  its numbers without prose (a cached review is still served).
 - **Embed pipeline** — `MemoryEmbeddingWriter` (feature/companion/embedding/): narrative unit →
   `EmbeddingPort.embedDocuments` → `memory_embedding` row; content capped at
   `embedding.embed-max-chars` BEFORE embedding (the stored text IS what the vector describes);
@@ -6482,7 +6488,7 @@ without a second properties class.
   combination — master off, cron on).
 - `mezo.companion.reflection.cron` = **`0 40 3 * * *`** — 03:40. It **shares that minute with the
   llm-log payload-retention purge** (`mezo.llm-log.retention.cron`), which is a single bounded UPDATE
-  on an unrelated table; every other dawn slot is taken (02:20 summary, 02:40 patterns, 02:50
+  on an unrelated table; every other dawn slot is taken (02:20 summary, 02:30 day-review warm-up, 02:40 patterns, 02:50
   character, 03:00 SUN hypotheses, 03:10 feedback-learning, 03:20 graph, 03:30 MON weekly rung, 03:45
   MON profile, 03:50 monthly rung + audit retention, 04:00 quarterly).
 - `mezo.companion.reflection.catch-up-days` = **7** (`@Min(1) @Max(30)`) — finished days the nightly

@@ -42,6 +42,11 @@ describe('dayReading', () => {
     expect(dayReading(ev, day)).toBe('A tányér rendben van, már csak az edzés maradt a mai napból.')
   })
 
+  test('workout open and no food logged → neutral line, never "the plate is fine"', () => {
+    const day = { ...baseDay, sleepMin: 420 }
+    expect(dayReading(trainingOpenEv, day)).toBe('Az edzés még hátravan a mai napból.')
+  })
+
   test('workout done, check-ins missing', () => {
     const evTrainingDone = withDim(inProgressEv, 'training', { status: 'DONE', score: 85 })
     const day = { ...baseDay, checkinCount: 2, kcal: 2000 }
@@ -65,23 +70,34 @@ describe('nextBestAction', () => {
   const day = { ...baseDay, proteinG: 148, proteinTargetG: 166, kcal: 2000 }
 
   test('evening → napzárás first', () => {
-    expect(nextBestAction(ev, day, new Date(2026, 8, 24, 20, 5))?.kind).toBe('napzaras')
+    expect(nextBestAction(ev, day, new Date(2026, 8, 24, 20, 5), false)?.kind).toBe('napzaras')
+  })
+
+  test('evening with the ritual already closed → falls through, never napzárás', () => {
+    const at21 = new Date(2026, 8, 24, 21, 0)
+    expect(nextBestAction(ev, day, at21, true)?.kind).toBe('workout')
+    const evAllDone = withDim(inProgressEv, 'training', { status: 'DONE', score: 85 })
+    expect(nextBestAction(evAllDone, { ...day, checkinCount: 4 }, at21, true)).toBeNull()
+  })
+
+  test('after midnight → no napzárás lead', () => {
+    expect(nextBestAction(ev, day, new Date(2026, 8, 24, 0, 30), false)?.kind).toBe('workout')
   })
 
   test('afternoon with open training → workout', () => {
-    expect(nextBestAction(ev, day, new Date(2026, 8, 24, 14, 0))?.kind).toBe('workout')
+    expect(nextBestAction(ev, day, new Date(2026, 8, 24, 14, 0), false)?.kind).toBe('workout')
   })
 
   test('training done, check-ins missing → checkin', () => {
     const evTrainingDone = withDim(inProgressEv, 'training', { status: 'DONE', score: 85 })
-    expect(nextBestAction(evTrainingDone, { ...day, checkinCount: 2 }, new Date(2026, 8, 24, 14, 0))?.kind).toBe(
+    expect(nextBestAction(evTrainingDone, { ...day, checkinCount: 2 }, new Date(2026, 8, 24, 14, 0), false)?.kind).toBe(
       'checkin',
     )
   })
 
   test('nothing to suggest → null', () => {
     const evAllDone = withDim(inProgressEv, 'training', { status: 'DONE', score: 85 })
-    expect(nextBestAction(evAllDone, { ...day, checkinCount: 4 }, new Date(2026, 8, 24, 14, 0))).toBeNull()
+    expect(nextBestAction(evAllDone, { ...day, checkinCount: 4 }, new Date(2026, 8, 24, 14, 0), false)).toBeNull()
   })
 })
 
@@ -90,8 +106,10 @@ describe('isNapzarasCardWindow', () => {
     [19, 59, false, false],
     [20, 0, false, true],
     [23, 30, false, true],
-    [2, 0, false, true],
-    [4, 59, false, true],
+    [23, 59, false, true],
+    [0, 30, false, false],
+    [2, 0, false, false],
+    [4, 59, false, false],
     [5, 0, false, false],
     [21, 0, true, false],
   ])('%i:%i closed=%s → %s', (h, m, closed, want) => {

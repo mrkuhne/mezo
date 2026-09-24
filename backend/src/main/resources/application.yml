@@ -922,7 +922,7 @@ mezo:
       # 03:40 — the dawn cluster's remaining free-ish slot; it shares the minute with the llm-log
       # payload-retention purge (mezo.llm-log.retention.cron), which is a single bounded UPDATE on
       # an unrelated table, so there is no contention. Everything else is taken: 02:20 summary,
-      # 02:40 patterns, 02:50 character, 03:00 SUN hypotheses, 03:10 feedback-learning, 03:20 graph,
+      # 02:30 day-review warm-up, 02:40 patterns, 02:50 character, 03:00 SUN hypotheses, 03:10 feedback-learning, 03:20 graph,
       # 03:30 MON weekly rung, 03:45 MON profile, 03:50 monthly rung + audit retention, 04:00 quarterly.
       cron: "0 40 3 * * *"
       # Missing/stale text signals are re-extracted for this many finished days each night.
@@ -1154,7 +1154,7 @@ mezo:
       # that pass are created at weight = confidence × 0.5 and grow only through W2.5 reinforcement.
       edge-confidence-floor: 0.4
       # W2.5 (mezo-b3pp.10): nightly maintenance cron — 03:20, a free dawn slot (02:20 daily-summary,
-      # 02:40 patterns, 03:00 SUN hypotheses, 03:10 feedback-learning, 03:40 llm-log retention).
+      # 02:30 day-review warm-up, 02:40 patterns, 02:50 character, 03:00 SUN hypotheses, 03:10 feedback-learning, 03:40 llm-log retention).
       cron: "0 20 3 * * *"
       # Candidate nodes (never confirmed/rejected by the L2 inbox) older than this many days are
       # soft-deleted — a stale extractor guess stops sitting in the list forever.
@@ -1179,7 +1179,7 @@ mezo:
     consolidation:
       # W3.2 (mezo-b3pp.13, spec §7.2): the ladder's crons — 03:30 Monday (weekly rung, after the
       # 02:20 daily summaries of the same dawn) and 03:50 on the 1st (monthly rung, after that
-      # dawn's weekly one). Free dawn slots: 02:20/02:40/03:00 SUN/03:10/03:20/03:40 are taken.
+      # dawn's weekly one). Free dawn slots: 02:20/02:30/02:40/02:50/03:00 SUN/03:10/03:20/03:40 are taken.
       weekly-cron: "0 30 3 * * MON"
       monthly-cron: "0 50 3 1 * *"
       # Finished weeks/months each run re-offers — the idempotent catch-up doubles as the backfill
@@ -2035,10 +2035,11 @@ mezo:
       rhythm-min-days: 3
       log-timely-min: 120
     # A napom S1 (spec 2026-09-24): yesterday's review is written overnight so the morning read is
-    # a cache hit. 02:50 sits between 02:40 patterns and 03:00 SUN hypotheses; the post-midnight
-    # XP/habit chain (00:05–00:20) has long finished.
+    # a cache hit. 02:30 is a free slot between 02:20 daily-summary and 02:40 patterns (02:50 is
+    # mezo.character.observation.cron); the post-midnight XP/habit chain (00:05–00:20) has long
+    # finished.
     day-review-warmup:
-      cron: "0 50 2 * * *"
+      cron: "0 30 2 * * *"
       catch-up-days: 3
   # Karakter S2 nightly expert observation pass (mezo-1gim.3, spec §5/§6) — the 7-expert team
   # writes observations onto the CORE dimensions; the job switch lives under mezo.techcore.cron.
@@ -2077,9 +2078,9 @@ mezo:
       history-limit: 20
     observation:
       # 02:50 — the brief's suggested 02:40 collides with mezo.companion.patterns.cron (line
-      # above); free dawn slots taken so far: 02:20 summary, 02:40 patterns, 03:00 SUN hypotheses,
-      # 03:10 feedback-learning, 03:20 graph, 03:30 MON weekly rung, 03:40 llm-log retention,
-      # 03:45 MON profile, 03:50 monthly rung, 04:00 quarterly.
+      # above); free dawn slots taken so far: 02:20 summary, 02:30 day-review warm-up, 02:40 patterns,
+      # 03:00 SUN hypotheses, 03:10 feedback-learning, 03:20 graph, 03:30 MON weekly rung,
+      # 03:40 llm-log retention, 03:45 MON profile, 03:50 monthly rung, 04:00 quarterly.
       cron: "0 50 2 * * *"
       # Finished days back the job checks and self-heals (the summary catch-up idiom)
       catch-up-days: 3

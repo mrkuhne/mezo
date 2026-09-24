@@ -26,7 +26,7 @@ class DayReviewWarmupJobTest {
 
     private DayReviewWarmupJob job(int catchUpDays) {
         return new DayReviewWarmupJob(userFanOut, dayReviewService,
-            new DayReviewWarmupProperties("0 50 2 * * *", catchUpDays));
+            new DayReviewWarmupProperties("0 30 2 * * *", catchUpDays));
     }
 
     private void runBodyFor(AppUserEntity... users) {

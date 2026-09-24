@@ -107,7 +107,7 @@ The single FE↔data boundary stays `frontend/src/data/hooks.ts`; every hook is 
 - **`todayItems.ts`** — the six-source normalizer. **Only `isFillableSlot` is still called in production** (by the check-in page, the quest page and the quick-log sheet); `buildTodayItems`/`itemsForFace`/`openCountByFace` and the dedup tables are intact and tested but unrendered (§9).
 - **`itemIcon.ts`** — the emoji ladder, still tested, no renderer (§9). **`dayArc.ts` still belongs to ritual's recap** (`DayStoryStep.tsx`) — do not delete with anything Today-side.
 - **`nextStep.ts` — RETIRED (`mezo-yjzhw.4`).** The hub's computed "next step" ladder never got a second importer besides its own test, and the spec resolved the long-standing "wire it or delete it" gotcha (§9) by deleting it: the evening Napzárás entry it worded moved to **`NapzarasCard`** on `NapHubPage` (from `NAPZARAS_CARD_FROM_HOUR`, see the "A napom" subsection below), and A napom's own "most érdemes" card gets its content from **`nextBestAction`** in `logic/napom.ts` instead — a different, day-page-scoped pure rule, not a revival of this one. `NapHubPage` renders no next-step ladder any more.
-- **`napom.ts`** (`mezo-yjzhw.4`, spec 2026-09-24 §2–§3/§6) — A napom's pure rules, none calling an LLM: `dayReading(evaluation, day): string` (the live day's one-line reading), `nextBestAction(evaluation, day, now): NextAction | null` (the "most érdemes" card: napzárás in its evening window → an undone workout → a missing check-in → nothing), `doneCount(evaluation): number`, `isNapzarasCardWindow(now, ritualClosed): boolean` and its constant `NAPZARAS_CARD_FROM_HOUR = 20` (until 05:00, or until the ritual closes), and the morning-mode pair `isMorningMode(yesterday, storage?): boolean` / `markSeen(dateIso, storage?): void` (a `localStorage` key `napom.seen.<date>`, read/written inside try/catch, firing a `napom:seen` window event on write). `useMorningMode.ts` wraps `isMorningMode` in `useSyncExternalStore`, subscribed to that event plus `storage`, so the tab dot clears the instant yesterday's review is on screen rather than on some unrelated re-render.
+- **`napom.ts`** (`mezo-yjzhw.4`, spec 2026-09-24 §2–§3/§6) — A napom's pure rules, none calling an LLM: `dayReading(evaluation, day): string` (the live day's one-line reading), `nextBestAction(evaluation, day, now, ritualClosed): NextAction | null` (the "most érdemes" card: napzárás in its evening window unless today's ritual is closed → an undone workout → a missing check-in → nothing; `NapomPage` passes `useRitualDay(today).data.closed`), `doneCount(evaluation): number`, `isNapzarasCardWindow(now, ritualClosed): boolean` and its constant `NAPZARAS_CARD_FROM_HOUR = 20` (20:00 until midnight, unless the ritual is closed), and the morning-mode pair `isMorningMode(yesterday, storage?): boolean` / `markSeen(dateIso, storage?): void` (a `localStorage` key `napom.seen.<date>`, read/written inside try/catch, firing a `napom:seen` window event on write). `useMorningMode.ts` wraps `isMorningMode` in `useSyncExternalStore`, subscribed to that event plus `storage`, so the tab dot clears the instant yesterday's review is on screen rather than on some unrelated re-render.
 
 ### The composition
 
@@ -181,20 +181,26 @@ look: rose/coral accents, a frameless halo hero, glass rows, no glass inside gla
   in **real mode only** (mock mode keeps `staleTime: Infinity`, the `feedHooks.ts` precedent). The
   hero's "ÉLŐ · FRISSÜLT hh:mm" status line reads the query's own `dataUpdatedAt`, never a clock
   (bible §5 appendix rule 24) — so the header orb, which reads the same query, is live too.
+  **By design, today's evaluation therefore polls once a minute in real mode wherever the header
+  orb is mounted — i.e. on every screen — so the orb stays live**, not only while A napom is open.
+- **Deliberate deviation: no per-row "pulse on change".** The spec (§4) planned a one-shot coral
+  pulse on a row whose value changed on refetch; it was not built in this branch (follow-up
+  `mezo-yjzhw.6`).
 - **Week strip.** `NapomWeekStrip` renders the 7-day range with a state mark per day (scored,
   thin, today, future); tapping a day navigates to `/nap/napom/<date>`.
 - **A malformed `:date` redirects to `/nap/napom`** (bare), unlike the old `WeekDayPage`, which
   redirected to the days mosaic.
 - **Evening Napzárás card on Mai (`NapzarasCard.tsx`, owner 2026-09-24).** Since the tab left the
   bar, `NapHubPage`'s Mai page renders a lavender glass card from **20:00 local time**
-  (`NAPZARAS_CARD_FROM_HOUR`) until the ritual is closed (or the 05:00 morning boundary,
-  `isNapzarasCardWindow`): moon art, "ESTE · NAPZÁRÁS", "Tegyük le a napot.", flat chips (kcal,
+  (`NAPZARAS_CARD_FROM_HOUR`) until midnight, unless the ritual is closed
+  (`isNapzarasCardWindow`): moon art, "ESTE · NAPZÁRÁS", "Tegyük le a napot.", flat chips (kcal,
   edzés fact, check-in x/4, N/6 terület kész) and a "Napzárás indítása ›" CTA to `/ritual`. Once
   `ritual_day.closed_at` is set for today, the card shrinks to a flat "Letetted a napot" row
-  linking to `/nap/napom`. A day nobody closes simply loses the card at the next morning boundary
+  linking to `/nap/napom`. A day nobody closes simply loses the card at midnight (the napzárás
+  itself stays calendar-based, so after midnight the card would already target the new day)
   — the review still gets written by the overnight warm-up job regardless.
 - **Overnight close (backend).** `DayReviewWarmupJob` pre-warms `day_review` for yesterday (and a
-  catch-up window) every night at 02:50, so the morning read of a closed day is a cache hit, never
+  catch-up window) every night at 02:30, so the morning read of a closed day is a cache hit, never
   a synchronous LLM call. A later log for that day re-writes the review exactly once, on its next
   hash miss. See [companion.md](companion.md).
 
@@ -304,7 +310,7 @@ Scenario links: `/nap?dp=este`, `/nap?day=rough` (demo briefing variant), `/nap?
 `dayFace.test.ts`, `windDown.test.ts`, `questAction.test.ts`, `habitAction.test.ts`, `todayItems.test.ts`, `itemIcon.test.ts`, `needs.test.ts`, `needsInputs.test.ts`, `useNeeds.test.tsx`, `mezoMessages.test.ts`, `dayArc.test.ts` — **all untouched by the redesign, Titanium included.** That is the proof the day model survived a sixth render-layer swap: the whole visual language changed twice over and not one logic assertion moved. `mezoMessages.test.ts` keeps its nudge fixture but builds it by hand now, since `needsNudges.ts` was deleted with its renderer. `nextStep.ts` and its test are **retired** (`mezo-yjzhw.4`, §3). `logic/napom.test.ts` is A napom's pure-logic suite: `dayReading`, `nextBestAction`, `isNapzarasCardWindow`/`NAPZARAS_CARD_FROM_HOUR` and the morning-mode predicate (`isMorningMode`/`markSeen`) across the time-of-day boundaries.
 
 ### A napom (`pages/NapomPage.tsx`, §3)
-`NapomPage.test.tsx` covers all five evaluation states (`scored`/`in_progress`/`thin`/`empty`/`future`), morning mode, the malformed-`:date` bare redirect and the week-strip navigation. `components/napom/{NapomDimensionRow,NapomReviewCard}.test.tsx` cover the row's four modes and the review card's highlight ordering/feedback gating. `useMorningMode.test.tsx` + `app/napomTabDot.test.tsx` cover the tab dot's live subscription, and `app/router.napomRedirect.test.tsx` covers the `/me/week/napok/:date` → `/nap/napom/:date` redirect. `data/me/liveDay.test.ts` covers `invalidateTodayDay`'s exact key list, and `features/today/components/NapzarasCard.test.tsx` covers the card's 20:00–05:00 window and its closed-vs-open rendering. Both modes run with `VITE_USE_MOCK=false` explicitly for the polling and invalidation paths (spec §4/§Testing).
+`NapomPage.test.tsx` covers all five evaluation states (`scored`/`in_progress`/`thin`/`empty`/`future`), morning mode, the malformed-`:date` bare redirect and the week-strip navigation. `components/napom/{NapomDimensionRow,NapomReviewCard}.test.tsx` cover the row's four modes and the review card's highlight ordering/feedback gating. `useMorningMode.test.tsx` + `app/napomTabDot.test.tsx` cover the tab dot's live subscription, and `app/router.napomRedirect.test.tsx` covers the `/me/week/napok/:date` → `/nap/napom/:date` redirect. `data/me/liveDay.test.ts` covers `invalidateTodayDay`'s exact key list, and `features/today/components/NapzarasCard.test.tsx` covers the card's 20:00–midnight window (nothing at 00:30), its closed-vs-open rendering and the HU-grouped, icon-led chips. `NapomPage.test.tsx` (real mode) pins that the 21:00 lead card drops napzárás once today's ritual is closed. Both modes run with `VITE_USE_MOCK=false` explicitly for the polling and invalidation paths (spec §4/§Testing).
 
 ### Pages (`frontend/src/features/today/pages/`)
 Every page ships its own test beside it — `NapHubPage.test.tsx`, `NapGyorsPage.test.tsx` (the FAB's full-page picker, Titanium), `NapMezoPage.test.tsx`, `NapMezoPage.deeplink.test.tsx` (the intervention-push deeplink, §2 — real-mode-only, MSW-served two-day feeds; cross-day merge, same-day scroll-only, no-deeplink, and stale-id-degrades-silently cases), `NapRutinPage.test.tsx`, `NapKuldetesekPage.test.tsx`, `NapCheckinPage.test.tsx`, `EletjelPage.test.tsx`. `TitanCompanion.test.tsx` (`features/today/components/`) covers the companion primitive in isolation: tapping it opens the signals surface with the right label, and its aura color follows the need meta per band.

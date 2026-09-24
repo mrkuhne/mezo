@@ -37,7 +37,7 @@ the day view's evening "most érdemes" card.
 ### 1. Overnight close (backend, invisible)
 
 - **`DayReviewWarmupJob`** in `feature/companion/service`, modelled on `DailySummaryJob`:
-  - Cron `mezo.companion.day-review-warmup.cron` = `0 50 2 * * *`. 03:00 is taken by SUN hypotheses and 03:10 by feedback-learning; 02:50 is still "around three".
+  - Cron `mezo.companion.day-review-warmup.cron` = `0 30 2 * * *`. 03:00 is taken by SUN hypotheses, 03:10 by feedback-learning and 02:50 by the character observation job; 02:30 is the free slot between 02:20 daily-summary and 02:40 patterns (final review, 2026-09-24).
   - `@ConditionalOnProperty` on `COMPANION_SWITCH`, `DAY_REVIEW_SWITCH` and a new
     `mezo.techcore.cron.day-review-warmup.enabled` switch (constant in `FeaturesConfiguration`).
   - Runs `userFanOut.forEachActiveUser`. For each user it calls `DayReviewService.assemble(user,
@@ -49,8 +49,9 @@ the day view's evening "most érdemes" card.
   catch-up window, regenerates the review exactly once. This is the owner's "egyszer újraírjuk".
 - **Budget.** Add `day_review` to the LLM budget `throttled-features` list. The slug must match
   `LlmCallContext`'s first argument exactly.
-- **Ordering.** 02:50 runs after the post-midnight chain (quest 00:05, habit 00:10, life-goal
-  00:20) that writes XP and habit completions into `DayInputs`, and before SUN hypotheses (03:00), graph (03:20) and
+- **Ordering.** 02:30 runs after the post-midnight chain (quest 00:05, habit 00:10, life-goal
+  00:20) that writes XP and habit completions into `DayInputs` and after the 02:20 daily summary,
+  and before patterns (02:40), character observation (02:50), SUN hypotheses (03:00), graph (03:20) and
   reflection (03:40). The scheduler pool is 4.
 - **States already exist.** `scored` / `thin` / `empty` / `future` / `in_progress` stay as they
   are. `thin` and `empty` render the honest "kevés az adat" page instead of an empty shell.
@@ -157,16 +158,17 @@ From top to bottom:
 
 The Napzárás tab leaves the bar, so the Mai page (Napközpont, U3 glass) gets the evening entry:
 
-- **From 20:00 local time until the ritual is closed**, a lavender glass card sits at the top of
+- **From 20:00 until midnight, unless the ritual is closed**, a lavender glass card sits at the top of
   Napközpont, under the hub head. It shows a moon art, the "ESTE · NAPZÁRÁS" eyebrow, "Tegyük le
   a napot.", the line "Amit megőriznél, és amit elengednél. Kb. 3 perc.", flat chips from today
   (kcal, edzés x/y, check-in x/y, N/6 terület kész), and a filled "Napzárás indítása ›" CTA that
   goes to `/ritual`.
 - **Once the ritual is closed** (`ritual_day.closed_at` for today), the card shrinks to a flat
   "Letetted a napot · Hajnalban megírom, milyen napod volt." row with an "A napom ›" link.
-- **The window ends** at the next day's morning boundary. A day nobody closes simply loses the
-  card in the morning. The 03:00 job closes the day's review regardless.
-- On A napom, the evening "most érdemes" card offers the same Napzárás.
+- **The window runs from 20:00 until midnight, unless the ritual is closed.** After midnight the
+  calendar day has turned, so a day nobody closes simply loses the card (final review, 2026-09-24). The 02:30 warm-up job closes the day's review regardless.
+- On A napom, the evening "most érdemes" card offers the same Napzárás in the same window, and
+  never once today's ritual is closed (it falls through to the other next steps).
 - `features/today/logic/nextStep.ts` already words this ("Tegyük le a napot.") but **has no
   importer** besides its test. Either wire the card through it or delete it. Do not leave two
   sources of the evening copy.
