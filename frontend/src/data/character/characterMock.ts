@@ -25,6 +25,7 @@ import type {
 // world (the insights hooks' own MOCK_PATTERNS/predictions/experiments read from these same
 // arrays).
 import { experiments as insightExperiments, patterns as insightPatterns, predictions as insightPredictions } from '@/data/insights/insights'
+import { localDateString } from '@/shared/lib/dates'
 
 // conf tier -> a representative number that maps back to the same word via confidenceWord().
 const BIZTOS = 0.8
@@ -1436,7 +1437,9 @@ const BOOTSTRAP_DETAIL: CharacterRunResponse = { summary: BOOTSTRAP_RUN, observa
 const EDITION_RUN: CharacterRunSummary = {
   id: 'run-edition-1',
   kind: 'EDITION',
-  day: '2026-08-30', // MOCK_EDITIONS[0].day — a plain literal here avoids a forward reference
+  // MOCK_EDITIONS[0].day — the same call rather than the const, which is declared further down
+  // (a forward reference would hit its temporal dead zone at module load).
+  day: localDateString(),
   status: 'SUCCESS',
   failureCount: 0,
   observationCount: 3, // MOCK_EDITIONS[0].posts.length
@@ -1501,14 +1504,19 @@ export const MOCK_CLAIM_REVISIONS: Record<string, CharacterClaimRevisionDto[]> =
 }
 
 // ============================================================
-// Esti kiadás (csapatfal H1, mezo-a9bo7.12, Task 6) — ONE edition on the mock world's "today"
-// (the newest seeded nightly day, MOCK_RUNS_NIGHTLY's last entry — 2026-08-30), 3 posts that
-// each point at an EXISTING mock-seed record (never a fabricated one): a pattern, a resolved
-// prediction, an active experiment. `body` is that record's own mock text; `voiced` is false
-// everywhere (H1 ships the raw candidate text — see TeamEditionService's class javadoc, H3
-// replaces it with the character-voiced text).
+// Esti kiadás (csapatfal H1, mezo-a9bo7.12, Task 6) — ONE edition, 3 posts that each point at an
+// EXISTING mock-seed record (never a fabricated one): a pattern, a resolved prediction, an active
+// experiment. `body` is that record's own mock text; `voiced` is false everywhere (H1 ships the
+// raw candidate text — see TeamEditionService's class javadoc, H3 replaces it with the
+// character-voiced text).
+//
+// H2 (mezo-a9bo7.13): the day is the REAL today, not the seeded August world's last night. The
+// wall asks for `[today-13, today]` (useTeamFeed), so a 2026-08-30 edition could never reach it —
+// mock mode would show the Act I fallback forever and the slice would be undemoable. The edition
+// is the one mock row that must live on the day it is read on; its posts still point at the
+// August seed records, exactly like a real edition ranking older records.
 // ============================================================
-const EDITION_DAY = MOCK_RUNS_NIGHTLY[MOCK_RUNS_NIGHTLY.length - 1].day // '2026-08-30'
+const EDITION_DAY = localDateString()
 
 const EDITION_PATTERN = insightPatterns.find((p) => p.id === 'p1')!
 const EDITION_PREDICTION = insightPredictions.find((p) => p.id === 'pred3')!

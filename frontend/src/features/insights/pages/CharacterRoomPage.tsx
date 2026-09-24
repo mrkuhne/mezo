@@ -51,7 +51,9 @@ function GrowthWell({ series }: { series: number[] }) {
 }
 
 function Room({ id }: { id: RoomId }) {
-  const { feed, today, loading, patterns, pairs } = useTeamFeed()
+  // A szoba a TELJES rekordkészletből él (`rooms`), nem a falból: ami az esti kiadásba nem került
+  // be, az itt marad (spec 2026-09-24 §2, mezo-a9bo7.13).
+  const { rooms, today, loading, patterns, pairs } = useTeamFeed()
   const { overview, isLoading } = useCharacterOverview()
   if (loading || isLoading) return <ScreenSkeleton />
 
@@ -60,9 +62,9 @@ function Room({ id }: { id: RoomId }) {
   const dims = dimensionsFor(id, overview?.dimensions ?? [])
   const maturity = roomMaturity(dims)
   const claims = roomClaims(dims)
-  const cases = roomCases(feed.days, id)
+  const cases = roomCases(rooms.days, id)
   const archived = archivedPatternCount(id, patterns, pairs)
-  const series = weeklyGrowth(feed.days, id, today)
+  const series = weeklyGrowth(rooms.days, id, today)
   // Egy dimenzió → egyenesen oda; több (pl. Derű: test + lélek) → a dimenziók listája.
   const claimsRoute = dims.length === 1 ? `/mezo/karakter/dimenzio/${dims[0].key}` : '/mezo/karakter/dimenziok'
 

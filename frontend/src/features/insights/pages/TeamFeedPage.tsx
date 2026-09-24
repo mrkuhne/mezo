@@ -69,6 +69,15 @@ export function TeamFeedPage() {
         days.map(day => (
           <section key={day.key} className="tf-daysec" aria-label={day.label}>
             <div className="tf-day"><span>{day.label}</span></div>
+            {day.quiet && (
+              // Csendes nap (spec 2026-09-24 §2): az esti kiadás megszületett, de nem volt mit
+              // kitennie. Ez UI-mondat, nem poszt — kitalált töltelék SOHA (ADR 0049).
+              <p className="tf-note">
+                {day.key === today
+                  ? 'Ma csendes nap volt — holnap folytatjuk.'
+                  : 'Csendes nap volt — a csapatnak nem volt mit kitennie.'}
+              </p>
+            )}
             {day.poster && <FeedPosterCard post={day.poster} onReply={openReply} />}
             {day.posts.map(post => <FeedPostCard key={post.id} post={post} onReply={openReply} />)}
           </section>

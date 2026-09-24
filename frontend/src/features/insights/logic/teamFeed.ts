@@ -339,5 +339,6 @@ export function withSessionAfterlife(
     if (day) day.posts = [...day.posts, post].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
     else out.push({ key, label: dayLabel(key, today), posts: [post] })
   }
-  return out.filter(d => d.poster || d.posts.length > 0).sort((a, b) => byDayDesc(a.key, b.key))
+  // A csendes nap (üres kiadás) megmarad: ott a mondat áll a posztok helyén (mezo-a9bo7.13).
+  return out.filter(d => d.quiet || d.poster || d.posts.length > 0).sort((a, b) => byDayDesc(a.key, b.key))
 }

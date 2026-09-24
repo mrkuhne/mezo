@@ -5,7 +5,8 @@ import { server } from '@/test/msw/server'
 import { API_BASE } from '@/data/_client/api'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { TeamFeedPage } from '@/features/insights/pages/TeamFeedPage'
-import { MOCK_OVERVIEW } from '@/data/character/characterMock'
+import { MOCK_EDITIONS, MOCK_OVERVIEW } from '@/data/character/characterMock'
+import { localDateString } from '@/shared/lib/dates'
 
 const renderPage = () =>
   render(<MemoryRouter><TeamFeedPage /></MemoryRouter>, { wrapper: QueryWrapper })
@@ -43,6 +44,20 @@ describe('TeamFeedPage (mock mode)', () => {
       const decided = article.querySelector('.tf-after')
       if (!decided) expect(scoped.getByRole('button', { name: /Elmesélem|Beszéljük meg/ })).toBeInTheDocument()
     }
+  })
+
+  // csapatfal H2 (mezo-a9bo7.13): a kiadás napján a fal a kiadás válogatása.
+  test('a kiadás napján a fal a kiadást mutatja: a rang 1 az üveg-poszter, a többi csendes panel', async () => {
+    renderPage()
+    await screen.findByRole('heading', { name: 'Üzenőfal' })
+    const { day, posts } = MOCK_EDITIONS[0]
+    const section = screen.getByRole('region', { name: 'Ma' })
+    expect(section.querySelector('.tf-poster')!.getAttribute('data-post-id')).toBe(`edition:${day}:1`)
+    const ids = [...section.querySelectorAll('article')].map(a => a.getAttribute('data-post-id')!)
+    expect(ids.filter(id => id.startsWith('edition:'))).toEqual(posts.map(p => `edition:${day}:${p.rank}`))
+    // a rang 2–3 lapos panel marad (naponta egy üveg, restored bible §3.4)
+    for (const p of posts.slice(1))
+      expect(section.querySelector(`[data-post-id="edition:${day}:${p.rank}"]`)!.classList.contains('glass')).toBe(false)
   })
 
   test('a Rád vár sáv csak akkor látszik, ha valami tényleg rád vár', async () => {
@@ -101,6 +116,17 @@ describe('TeamFeedPage (real mode)', () => {
     renderPage()
     expect(await screen.findByText(/csend van a falon/i)).toBeInTheDocument()
     expect(document.querySelectorAll('article')).toHaveLength(0)
+  })
+
+  // csapatfal H2 (mezo-a9bo7.13): a csendes nap kimondva, kitalált töltelék nélkül (ADR 0049).
+  test('csendes nap: a kiadás megszületett, de nem volt mit kitenni', async () => {
+    emptyRecords()
+    server.use(http.get(`${API_BASE}/api/character/edition`, () =>
+      HttpResponse.json([{ day: localDateString(), status: 'QUIET', posts: [] }])))
+    renderPage()
+    expect(await screen.findByText('Ma csendes nap volt — holnap folytatjuk.')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Ma' }).querySelectorAll('article')).toHaveLength(0)
+    expect(screen.queryByText(/csend van a falon/i)).not.toBeInTheDocument()
   })
 
   test('kikapcsolt társ (404) → őszinte „nem elérhető” jelzés, nem hiba', async () => {

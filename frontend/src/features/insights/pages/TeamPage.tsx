@@ -21,7 +21,9 @@ function clip(text: string): string {
  * Szkeptikus magyarázata (nem posztol, nincs szobája) és a Gépterem-ajtó.
  */
 export function TeamPage() {
-  const { feed, loading } = useTeamFeed()
+  // A sorok a szobák ügyeit tükrözik, ezért a TELJES rekordkészletből (`rooms`) élnek, nem a
+  // falból — az esti kiadásból kimaradt ügy is a karakteré marad (mezo-a9bo7.13).
+  const { rooms, loading } = useTeamFeed()
   const { overview, isLoading } = useCharacterOverview()
   if (loading || isLoading) return <ScreenSkeleton />
 
@@ -35,7 +37,7 @@ export function TeamPage() {
       <div className="tf-rows">
         {ROOM_IDS.map(id => {
           const who = TEAM[id]
-          const cases = roomCases(feed.days, id)
+          const cases = roomCases(rooms.days, id)
           const waiting = cases.filter(c => c.waiting).length
           const maturity = roomMaturity(dimensionsFor(id, dims))
           const sub = cases.length === 0
