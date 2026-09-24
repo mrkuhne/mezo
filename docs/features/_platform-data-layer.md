@@ -2,7 +2,7 @@
 title: Platform · Data Layer & Dual-Mode
 type: feature-platform
 status: done
-updated: 2026-09-23
+updated: 2026-09-24
 tags: [platform, data-layer, frontend]
 key_files:
   - frontend/src/data/hooks.ts
@@ -249,6 +249,7 @@ For mock-only features (Fuel/Insights/People) there is no contract fragment yet 
 This layer is the hub; every feature is a spoke. Concrete, bidirectional seams:
 
 - **Karakter replies → profile reads**: `useCharacterReplies` and `useCharacterReplyDraft` are exported through `data/hooks.ts`. Server replies use dual-mode queries; unsent text stays in the authenticated QueryClient and survives thread remounts. Saving cancels older thread reads before inserting the durable response; completed evaluations invalidate character overview, dimension and feed queries. See [character.md](character.md#social-navigation-and-contextual-replies-mezo-njcgs).
+- **Esti kiadás (csapatfal H1, `mezo-a9bo7.12`)**: `useTeamEditions(from, to)` joined the barrel the same way, a plain `useDualQuery` over `GET /api/character/edition`. No view consumes it yet — the wall keeps building itself from the existing pattern/prediction/experiment/observation hooks until H2. See [character.md](character.md#esti-kiadás-csapatfal-h1-mezo-a9bo712-adr-0052).
 
 - **Today ← biometrics / Train / Insights**: `TodayPage` consumes `useToday` (real: composes `useTrain()` + the real date), `useQuickStats` (real: `useSleep`+`useWeight`), and `useFuelPreview` — all sharing the source hooks' TanStack cache keys with their owning tabs. `useTodayScenario` (`data/today/todayHooks.ts`) reads `?day=/medCycleDay=/niggle=/vulnerable=` URL params to drive the day-state demo (survives real mode by design). **Contract crossing the seam:** the `TodayScenario` type (`{ dayState, medCycleDay, niggle, vulnerable, anchorMode, ritual }`).
 - **Me ← biometrics / goal**: `GoalsPage` (the goal command-center — `useGoal` for the hero/timeline + `useGoalActions` for archive/delete/attach/detach + `useWeight` for `weightTrends`; it calls all three, since G1 split `useGoals` and G4b split the goal mutations into `useGoalActions`), `SleepPage` (`useSleep`/`logSleep`), `WeightPage` (`useWeight` + `useGoal` chart reference lines), `FuelStackPage` (`useGoal().linkedMesocycles`), `GoalPlannerPage` (`useGoalCreation`), `ProfilePage`/`PeoplePage` (`useProfile` static / `usePeople` dual-mode since Slice E), `KnowledgePage` (`useKnowledge` — dual-mode since companion V1.2, mock-mode graph). **Contract:** `WeightEntry[]`, `SleepEntry[]`, `CheckinSlot[]`, the `Goal` domain shape **plus the raw `GoalResponse`/`GoalTimelineResponse`** (G4b — the command-center reads the contract directly) from `data/types.ts` / the generated DTOs.

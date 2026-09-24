@@ -664,6 +664,14 @@ a coral dot = something waits on you there; each ring links to `/mezo/csapat/<id
 The trio's four icons (`t-thumb-up`, `t-thumb-down`, `t-send`, `t-flask`) joined the Titanium sprite
 from the prototype's approved „Új ikonok” sheet.
 
+**Esti kiadás (csapatfal H1, `mezo-a9bo7.12`, [ADR 0052](../decisions/0052-esti-kiadas.md)) — not
+read here yet.** The daily council moved to 21:00 and now also publishes a 3–6 post `team_edition`
+per day (see [character.md](character.md) “Esti kiadás”); `useTeamEditions(from, to)` and
+`MOCK_EDITIONS` already exist in `data/character/`, but `TeamFeedPage`/`buildTeamFeed` above still
+build the wall entirely from the I. felvonás sources (`usePatterns`/`usePredictions`/
+`useExperiments`/`useObservations`/`useCharacterFeed`) — the wall starts reading editions, with a
+fallback to today's `buildTeamFeed` on edition-less days, in H2.
+
 **Szobák + A csapat (`mezo-a9bo7.9`, slice A3 — the „A csapat” dock tab since A4).** `/mezo/csapat`
 (`pages/TeamPage.tsx`) lists the five rooms as `glass tf-rowg` rows in the character accent: „Most
 figyeli” = the room's first case, the badge = room maturity („ismerkedik” at 0), then the Szkeptikus

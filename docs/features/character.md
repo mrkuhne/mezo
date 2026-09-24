@@ -9,7 +9,7 @@ key_files:
   - api/feature/character/character.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/CharacterPromptSource.java
   - backend/src/main/resources/db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_tables.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202608311600_mezo-1gim.14_create_character_run.sql
+  - backend/src/main/resources/db/changelog/1.1.0/script/202609241200_mezo-a9bo7_team_edition.sql
   - frontend/src/data/character
   - frontend/src/features/character
 related: [companion, proactive, insights, me, _platform-api-backend]
@@ -220,6 +220,43 @@ new conference. Without fresh pending input, the same item remains WAITING and i
 never automatically refuted. A completed contextual answer closes that post's QUESTION items;
 HYPOTHESIS items remain for evidence review. Defaults are three due items, a three-day recheck
 and a thirty-day maximum horizon. `ConferenceResponse.followups` exposes this owned state.
+
+### Esti kiadás (csapatfal H1, `mezo-a9bo7.12`, [ADR 0052](../decisions/0052-esti-kiadas.md))
+
+The daily council moved from morning to **21:00** (Europe/Budapest, `mezo.character.council.ready-at`)
+and now feeds a second, wider publication step: `TeamEditionService.run`, invoked by
+`CharacterCouncilJob` in its own `try` right after `council.run`, independent of whether that run
+was quiet or failed. Idempotent per `(created_by, day)` — a second call for a day with an existing
+`team_edition` row returns immediately; `uq_team_edition_day` makes a concurrent race a no-op, not
+an error, and the next `*/15` tick retries any real failure until 23:45.
+
+- **Jelöltgyűjtés** (`EditionCandidateCollector`, read-only, no LLM call): one `EditionCandidate`
+  per source — a proposed pattern (`kerdes`, waiting), a freshly confirmed pattern
+  (`megfigyeles`), a monitored pair with `5 ≤ n < minN` ("gyűlik", `sejtes`), a resolved
+  prediction (`elorejelzes`), an active experiment on its day-1/half/last milestone (`kiserlet`),
+  and every thread of the day's `DAILY` conference (`konzilium`, its lead expert as the character,
+  `claimChange=true` when the outcome touched the thread's dimension). Metric domains route
+  through `TeamCharacter.forMetricDomain`; the proactive generators' own `sleep_avg` /
+  `training_volume` / `weight_trend` metric keys are mapped explicitly
+  (`EditionCandidateCollector.GENERATOR_METRIC_DOMAIN`) since they are not `MetricKey` wire keys.
+- **Válogatás** (`EditionSelector`, pure function): scores waiting > claim-change > kísérlet >
+  előrejelzés > értékelés > megfigyelés > konzílium > kérdés > sejtés > kérés, freshness bonus
+  since the last edition; caps at **2 posts/character**, **1 post/source record**; a **7-day
+  repeat ban** unless the source's `changedAt` is after its last showing; **3–6 posts**, filler
+  genres (`sejtes`/`keres`) only top up when the main candidates fall short of 3; a silent day
+  (no candidates at all) publishes a `QUIET` edition with zero posts, never a fabricated one.
+- **Publish** (`TeamEditionService.publish`, `@Transactional`, self-injected so
+  `uq_team_edition_day` conflicts surface to the caller's try/catch): one `team_edition` row +
+  ranked `team_edition_post` rows, then a `character_run` row with `kind='EDITION'`
+  (`CharacterRunLog.record`).
+- **H1 voice:** every post's `body` is the source record's own text verbatim (`voiced=false`
+  everywhere) — the character-voiced rewrite (`EditionVoiceWriter` + `EditionVoiceGuard`) is H3.
+- **Switch:** `mezo.feature.team-edition.enabled` (default `true`) gates `TeamEditionService`
+  and `EditionCandidateCollector` beans on top of the character + companion switches; off ⇒ the
+  council still runs its dossier-decision role, just without the edition step.
+- **Surface (H1):** `GET /api/character/edition?from=&to=` (62-day range cap, same shape as
+  `/runs`) and the `EDITION` row in Gépterem Futások — the csapat-üzenőfal itself only reads
+  editions from H2 (`docs/features/insights.md` §3).
 
 ## 2. User-facing behavior
 
@@ -518,24 +555,34 @@ Migration: `db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_
 - **`character_run`** (S9, `mezo-1gim.14`; migration
   `202608311600_mezo-1gim.14_create_character_run.sql`) — the Gépterem honesty-spine table, one
   row per pipeline EXECUTION (never per intent — a row only exists if the pipeline actually ran).
-  `kind varchar(10)` CHECK `NIGHTLY|WEEKLY|MONTHLY|BOOTSTRAP`, `day date` (the anchor: the
+  `kind varchar(10)` CHECK `NIGHTLY|WEEKLY|MONTHLY|BOOTSTRAP|EDITION` (the last added by the
+  esti kiadás migration below), `day date` (the anchor: the
   observed day for NIGHTLY, `week_start` for WEEKLY, the month's first day for MONTHLY, the run
-  date for BOOTSTRAP), `observation_count int`, `call_count int`, `detector_keys jsonb`
+  date for BOOTSTRAP, the edition day for EDITION), `observation_count int` (the published post
+  count for EDITION), `call_count int`, `detector_keys jsonb`
   (`RunDetectorKeysEnvelope{List<String> keys}`), `expert_keys jsonb`
-  (`RunExpertKeysEnvelope{List<String> keys}`), `conference_id uuid` (soft ref, null for
-  NIGHTLY), `generated_at timestamptz`. Partial unique index
-  `uq_character_run_created_by_kind_day` on `(created_by, kind, day) where is_deleted = false` —
-  the idempotency backstop `CharacterRunLog.record` relies on (see §3).
+  (`RunExpertKeysEnvelope{List<String> keys}`, the distinct posting characters' keys for EDITION),
+  `conference_id uuid` (soft ref, null for NIGHTLY), `generated_at timestamptz`. Partial unique
+  index `uq_character_run_created_by_kind_day` on `(created_by, kind, day) where is_deleted =
+  false` — the idempotency backstop `CharacterRunLog.record` relies on (see §3).
+- **`team_edition`** / **`team_edition_post`** (csapatfal H1, `mezo-a9bo7.12`, migration
+  `db/changelog/1.1.0/script/202609241200_mezo-a9bo7_team_edition.sql`, [ADR 0052](../decisions/0052-esti-kiadas.md))
+  — see the Esti kiadás subsection above for the full shape (`status PUBLISHED|QUIET`, ranked
+  posts with `character_key`/`genre` CHECKs, `facts`/`refs`/`guests` typed jsonb). Unique
+  `(created_by, day)` on live editions; unique `(edition_id, rank)` on live posts.
 
 ### Gépterem API (S9, `mezo-1gim.14`)
 
-Both endpoints below are `CHARACTER_SWITCH`-gated only, same as every other read in §4's table —
-run reads work with the companion switch off too (`CharacterApiCompanionOffIT` covers this).
+The two run-timeline endpoints below are `CHARACTER_SWITCH`-gated only, same as every other read
+in §4's table — run reads work with the companion switch off too (`CharacterApiCompanionOffIT`
+covers this). `GET /api/character/edition` additionally needs `TEAM_EDITION_SWITCH` (see the Esti
+kiadás subsection above).
 
 | Method + path | Returns | Notes |
 |---|---|---|
-| `GET /api/character/runs?from=&to=` | `CharacterRunSummary[]` | Both dates required, day-desc order; `400 CHARACTER_RUN_RANGE_INVALID` if `to < from` or the span exceeds 62 days; `[]` honest empty |
+| `GET /api/character/runs?from=&to=` | `CharacterRunSummary[]` | Both dates required, day-desc order; `400 CHARACTER_RUN_RANGE_INVALID` if `to < from` or the span exceeds 62 days; `[]` honest empty; `EDITION` rows included (`kind` enum widened, csapatfal H1) |
 | `GET /api/character/run/{runId}` | `CharacterRunResponse` (`{summary, observations[]}`) | Observations resolved by `(created_by, day)` for NIGHTLY rows, by `consumed_by_conference_id` for conference-kind rows; each `CharacterRunObservation.signals[]` carries `refCount` (a COUNT, not raw ref ids — the v4.1 "N forrás-hivatkozás" decision, raw ids stay backend-side); `404 CHARACTER_RUN_NOT_FOUND` for unknown/foreign ids |
+| `GET /api/character/edition?from=&to=` | `TeamEdition[]` (`{day, status, posts[]}`) | Csapatfal H1 (`mezo-a9bo7.12`, [ADR 0052](../decisions/0052-esti-kiadas.md)); same 62-day range cap and day-desc order as `/runs`; a day with no row means no edition ran that day, never fabricated; `TEAM_EDITION_SWITCH`-gated on top of the two switches above |
 
 **`callCount` is honest-per-kind, not uniformly precise** — a deliberate ruling, not an
 oversight: NIGHTLY's `callCount` is exact (one LLM call per fired expert that night).
@@ -551,7 +598,8 @@ are re-evaluated-claims / kezdő-állítás counts, not observation counts — l
 
 ### API (`api/feature/character/character.yml`)
 
-All nine endpoints (the original seven + the two Gépterem run endpoints below) gated on
+All ten endpoints (the original seven + the three Gépterem endpoints: the two run-timeline
+endpoints + the esti kiadás endpoint, all below) gated on
 `CHARACTER_SWITCH` (`mezo.feature.character.enabled`); reads still
 work with the companion switch off (S1 deliberately kept dossier reads companion-free —
 `CharacterController` class javadoc), only `POST /api/character/bootstrap` needs
@@ -1185,8 +1233,9 @@ Social additions: `service/CharacterReplyService.java` (owned save/list/retry), 
 
 **Backend — feature package** (`backend/src/main/java/io/mrkuhne/mezo/feature/character/`):
 - `config/CharacterProperties.java` — every `mezo.character.*` tunable (§ below)
-- `controller/CharacterController.java` — the 9 endpoints (the original 7 + the 2 Gépterem run
-  endpoints), `CHARACTER_SWITCH`-gated
+- `controller/CharacterController.java` — the 10 endpoints (the original 7 + the 3 Gépterem
+  endpoints: 2 run-timeline + esti kiadás), `CHARACTER_SWITCH`-gated (`GET /edition` also needs
+  `TEAM_EDITION_SWITCH`)
 - `entity/` — `CharacterDimensionEntity`, `CharacterClaimEntity`, `CharacterObservationEntity`,
   `CharacterConferenceEntity`, `CharacterPortraitRevisionEntity`, `CharacterRunEntity` (S9) +
   the typed-jsonb envelope records used by their jsonb columns (`ClaimEvidenceEnvelope`,
@@ -1248,6 +1297,13 @@ Social additions: `service/CharacterReplyService.java` (owned save/list/retry), 
   stale-chapter retirement (writes the MONTHLY run row, S9)
 - `service/CharacterBootstrapService.java` / `CharacterHistoryReads.java` — one-time bootstrap
   (writes the BOOTSTRAP run row, S9)
+- `service/edition/` (csapatfal H1, `mezo-a9bo7.12`) — `TeamCharacter` (routing registry, the FE
+  `logic/team.ts` mirror), `EditionGenre`, `EditionCandidate` + `PriorShowing`,
+  `EditionCandidateCollector` (source→candidate, read-only), `EditionSelector` (pure scoring/pick
+  function), `TeamEditionReads` (repository-only companion/proactive reads),
+  `TeamEditionService` (run/publish, writes the EDITION run row); `entity/TeamEditionEntity.java`,
+  `TeamEditionPostEntity.java` + `EditionFactsEnvelope`/`EditionRefsEnvelope`/`EditionGuestsEnvelope`;
+  `repository/TeamEditionRepository.java`, `TeamEditionPostRepository.java`
 - `service/CharacterFeedbackService.java` — TALAL/NEM_IGAZ/PONTOSITOM
 - `service/CharacterPromptAssembler.java` — the `[Karakter]` block renderer
 - `service/CharacterService.java` / `CharacterSignalReads.java` /
@@ -1278,7 +1334,9 @@ non-empty, falling back to the existing prose-block rendering otherwise. See §2
 `202609011600_mezo-1gim.15_character_dimension_meta_kind.sql` (round 4 — widens
 `ck_character_dimension_kind` to `CORE|CHAPTER|META`),
 `202609070900_mezo-xlvr_conference_deliberation.sql` (adds the nullable
-`character_conference.deliberation jsonb` column, [ADR 0037](../decisions/0037-konzilium-cross-talk-round.md))
+`character_conference.deliberation jsonb` column, [ADR 0037](../decisions/0037-konzilium-cross-talk-round.md)),
+`202609241200_mezo-a9bo7_team_edition.sql` (csapatfal H1 — `team_edition` + `team_edition_post`,
+widens `ck_character_run_kind` to include `EDITION`, [ADR 0052](../decisions/0052-esti-kiadas.md))
 
 **Daily council files:** `service/CharacterCouncilJob`, `CharacterCouncilService`,
 `CharacterCouncilProcessing`, `CharacterCouncilEvidenceTools`, `CharacterCouncilPeriodTools`,
@@ -1295,8 +1353,12 @@ The API fragment remains `api/feature/character/character.yml`.
   `character-conference-job.enabled: true`, `character-monthly-job.enabled: true` — per-job
   backstop switches
 - `mezo.techcore.cron.character-council-job.enabled: true`; `mezo.character.council.cron:
-  "0 */15 * * * *"`, `zone: Europe/Budapest`, `ready-at: "05:15"`, `catch-up-days: 2`,
+  "0 */15 * * * *"`, `zone: Europe/Budapest`, `ready-at: "21:00"` (moved from the morning
+  `"05:15"` by csapatfal H1/[ADR 0052](../decisions/0052-esti-kiadas.md) — the council and the
+  esti kiadás now both fire in the evening), `catch-up-days: 2`,
   `max-topics: 6`, `lease-minutes: 60`, `max-attempts: 3`
+- `mezo.feature.team-edition.enabled: true` — gates `TeamEditionService`/
+  `EditionCandidateCollector` on top of the character + companion switches ([ADR 0052](../decisions/0052-esti-kiadas.md))
 - `mezo.character.council-debate`: `max-rounds: 3`, `max-participants: 4`, `max-calls: 6`,
   `max-tool-calls: 8`, `max-refs: 24`, `max-comparison-days: 90`
 - `mezo.character.observation.cron: "0 50 2 * * *"`, `observation.catch-up-days: 3`
@@ -1314,7 +1376,8 @@ The API fragment remains `api/feature/character/character.yml`.
 - `characterApi.ts` — the fetch client + `confidenceWord()` (the 0.75/0.5 word thresholds)
 - `characterHooks.ts` — every `useCharacterX()` dual-mode hook (§6), re-exported through
   `frontend/src/data/hooks.ts`, incl. `useCharacterRuns(fromIso, toIso)` /
-  `useCharacterRun(id | null)` (S9)
+  `useCharacterRun(id | null)` (S9) and `useTeamEditions(fromIso, toIso)` (csapatfal H1,
+  `mezo-a9bo7.12`) — the wall itself does not call it until H2
 - `characterMock.ts` — the mock seeds (mirrors the approved prototype's `DIMS`/`CSAPAT`/`FEED`/
   `KONZ`/`TRANSCRIPT` content verbatim, mapped onto the real DTO shapes; S9 adds `MOCK_RUNS`/
   `MOCK_RUN_DETAIL` — 3 seeded weeks of NIGHTLY rows incl. quiet nights + one WEEKLY/MONTHLY/
@@ -1324,7 +1387,10 @@ The API fragment remains `api/feature/character/character.yml`.
   round 4 adds one more per new detector, same day spread, plus `DIM_SEEDS`' one `META` dimension
   entry (`self-audit`, 2 Szkeptikus claims, one ÉRZÉKENY) — all derived counts, never a
   re-pinned literal; day 15 stays a pinned two-signal/one-expert dedup fixture for
-  `characterHooks.test.tsx` untouched by any round)
+  `characterHooks.test.tsx` untouched by any round); csapatfal H1 adds `MOCK_EDITIONS`
+  (`TeamEdition[]`, derived from existing pattern/prediction/experiment mock records, never a
+  fresh fabrication) + `EDITION_RUN` (a `CharacterRunSummary` whose `observationCount` is derived
+  from `MOCK_EDITIONS[0].posts.length` so it cannot drift)
 
 **Frontend — feature package** (`frontend/src/features/character/`):
 - `pages/KarakterHubPage.tsx` — bootstrap ceremony or direct populated social feed
