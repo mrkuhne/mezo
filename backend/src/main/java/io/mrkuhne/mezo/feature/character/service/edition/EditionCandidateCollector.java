@@ -52,10 +52,16 @@ public class EditionCandidateCollector {
     static final String SOURCE_EXPERIMENT = "experiment";
     static final String SOURCE_KONZILIUM = "konzilium";
     static final String SOURCE_FUEL_DAY = "fuel_day";
+    static final String SOURCE_CHECKIN_COVERAGE = "checkin_coverage";
 
     /** A Fuel fül mai napja (FE router: {@code /fuel} → FuelMaiPage). */
     static final String ROUTE_FUEL_DAY = "/fuel";
+    /** A Nap fül „Hogy vagy ma?" bejelentkezése (FE router: {@code /nap/checkin} → NapCheckinPage). */
+    static final String ROUTE_CHECKIN = "/nap/checkin";
 
+    /** Derű ablaka és küszöbe (spec §3.6): 14 napból 8-nál kevesebb bejelentkezett nap → kérés. */
+    private static final int CHECKIN_WINDOW_DAYS = 14;
+    private static final int CHECKIN_MIN_DAYS = 8;
 
     /** A gyűlik-jelölt sávja (spec táblázat 3. sor): `5 <= n < minN`. */
     private static final int PAIR_MIN_N = 5;
@@ -90,6 +96,7 @@ public class EditionCandidateCollector {
         }
         reads.dailyConference(owner, day).ifPresent(conference -> out.addAll(konziliumCandidates(conference)));
         falat(owner, day).ifPresent(out::add);
+        deru(owner, day).ifPresent(out::add);
         // Fix round (mezo-a9bo7.12): a poszt body NOT NULL — egy üres/hiányzó recordText-ű jelölt
         // (pl. mechanism nélküli proposed minta) minden tiken eldobná a publish-t. Egyetlen helyen
         // szűrünk: minden forrás ugyanide fut be, mielőtt a EditionSelector látná.
@@ -320,6 +327,27 @@ public class EditionCandidateCollector {
     private static String labels(List<Window> windows) {
         return windows.stream().map(Window::label).filter(l -> !isBlank(l)).map(String::strip)
                 .distinct().collect(Collectors.joining(", "));
+    }
+
+    /**
+     * H5 (mezo-a9bo7.16, spec §3.6): Derű adatkérése — ha az elmúlt 14 napból (a mai nappal együtt)
+     * 8-nál kevesebb napon volt bejelentkezés, a valós számmal kér egyet. {@code changedAt} = null:
+     * a kérés nem egy forrás-változás, így nem kap frissesség-bónuszt, és feltöltőként a
+     * {@link EditionSelector} tervezett sorrendje szerint a „gyűlik" jelöltek MÖGÉ sorol. A heti
+     * egyszeri korlát a {@link TeamEditionService} dolga (a korábbi kiadásokat az látja).
+     */
+    private Optional<EditionCandidate> deru(UUID owner, LocalDate day) {
+        long days = reads.checkinDays(owner, day.minusDays(CHECKIN_WINDOW_DAYS - 1L), day);
+        if (days >= CHECKIN_MIN_DAYS) {
+            return Optional.empty();
+        }
+        String id = day.toString();
+        String recordText = String.format(
+                "%d napból %d napról tudom, hogy vagy. Egy rövid bejelentkezés ma este sokat segítene.",
+                CHECKIN_WINDOW_DAYS, days);
+        return Optional.of(new EditionCandidate(SOURCE_CHECKIN_COVERAGE, id, TeamCharacter.DERU, EditionGenre.KERES,
+                null, recordText, List.of(String.valueOf(CHECKIN_WINDOW_DAYS), String.valueOf(days)),
+                List.of(new EditionRef(SOURCE_CHECKIN_COVERAGE, id)), false, false, null, ROUTE_CHECKIN, List.of()));
     }
 
     /**

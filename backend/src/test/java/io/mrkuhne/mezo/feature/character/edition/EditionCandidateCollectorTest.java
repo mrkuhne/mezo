@@ -55,6 +55,8 @@ class EditionCandidateCollectorTest {
         when(reads.resolvedPredictions(eq(OWNER), any(), any())).thenReturn(List.of());
         when(reads.activeExperiments(OWNER)).thenReturn(List.of());
         when(reads.dailyConference(eq(OWNER), any())).thenReturn(Optional.empty());
+        // H5 (mezo-a9bo7.16): a Derű-jelölt csak gyér bejelentkezésnél születik — alapból 14/14 nap.
+        when(reads.checkinDays(eq(OWNER), any(), any())).thenReturn(14L);
     }
 
     // ---- helpers -----------------------------------------------------------------------------
@@ -641,6 +643,37 @@ class EditionCandidateCollectorTest {
 
         assertThat(c.recordText()).isEqualTo("A napi célod 2400 kcal, eddig 1000 kcal ment be.");
         assertThat(c.facts()).containsExactly("2400", "1000");
+    }
+
+    // ---- H5 (mezo-a9bo7.16): Derű adatkérése — KERES -----------------------------------------
+
+    private List<EditionCandidate> deru() {
+        return collector.collect(OWNER, DAY, null).stream()
+                .filter(c -> "checkin_coverage".equals(c.sourceKind())).toList();
+    }
+
+    @Test void deru_sevenCheckinDays_asksForACheckin() {
+        when(reads.checkinDays(OWNER, DAY.minusDays(13), DAY)).thenReturn(7L);
+
+        List<EditionCandidate> out = deru();
+
+        assertThat(out).hasSize(1);
+        EditionCandidate c = out.get(0);
+        assertThat(c.genre()).isEqualTo(EditionGenre.KERES);
+        assertThat(c.character()).isEqualTo(TeamCharacter.DERU);
+        assertThat(c.sourceId()).isEqualTo("2026-09-24");
+        assertThat(c.sourceRoute()).isEqualTo("/nap/checkin");
+        assertThat(c.recordText()).isEqualTo(
+                "14 napból 7 napról tudom, hogy vagy. Egy rövid bejelentkezés ma este sokat segítene.");
+        assertThat(c.facts()).containsExactly("14", "7");
+        assertThat(c.changedAt()).isNull();
+        assertThat(c.waiting()).isFalse();
+    }
+
+    @Test void deru_eightCheckinDays_noCandidate() {
+        when(reads.checkinDays(OWNER, DAY.minusDays(13), DAY)).thenReturn(8L);
+
+        assertThat(deru()).isEmpty();
     }
 
     // Mockito ArgumentMatchers shortcuts (kept local, avoids a static-import clash with the DTO builders).

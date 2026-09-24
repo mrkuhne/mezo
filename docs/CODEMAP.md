@@ -272,7 +272,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ConferenceOutcomeEnvelope`, `ConferenceTranscriptEnvelope`, `DecisionProfileDetector`,
     `DecisionReviewBacklogDetector`, `DetectorGates`, `DetectorInput`, `DetectorRegistry`, `DetectorSignal`,
     `EditionCandidate`, `EditionCandidateCollector`, `EditionFactsEnvelope`, `EditionGenre`, `EditionGuestsEnvelope`,
-    `EditionRef`, `EditionRefsEnvelope`, `EditionSelector`, `EditionVoiceGuard`, `EditionVoiceWriter`,
+    `EditionMeal`, `EditionRef`, `EditionRefsEnvelope`, `EditionSelector`, `EditionVoiceGuard`, `EditionVoiceWriter`,
     `ExperimentOutcomeLedgerDetector`, `GratitudeFocusDetector`, `GuestSeed`, `HrRecoveryTrendDetector`,
     `HydrationConsistencyDetector`, `JournalNoteDetector`, `JournalSilenceDetector`,
     `KnowledgeRejectionPatternDetector`, `LateEatingPatternDetector`, `LoggingGapDetector`, `MacroAdherenceDetector`,

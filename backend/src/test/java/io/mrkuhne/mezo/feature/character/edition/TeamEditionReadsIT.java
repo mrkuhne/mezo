@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.PredictionRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.feature.character.service.edition.EditionMeal;
+import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.ExperimentPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
@@ -45,6 +46,7 @@ class TeamEditionReadsIT extends ApiIntegrationTest {
     @Autowired private PredictionRepository predictionRepository;
     @Autowired private ExperimentPopulator experimentPopulator;
     @Autowired private MealPopulator mealPopulator;
+    @Autowired private CheckInPopulator checkInPopulator;
 
     private UUID owner;
 
@@ -130,4 +132,13 @@ class TeamEditionReadsIT extends ApiIntegrationTest {
         assertThat(reads.targets(owner, DAY).kcal()).isPositive(); // config fallback without a goal
     }
 
+    @Test
+    void checkinDays_countsDistinctDaysInsideTheWindow() {
+        checkInPopulator.createCheckIn(owner, DAY, "08:00", 3, 2, null);
+        checkInPopulator.createCheckIn(owner, DAY, "20:00", 3, 2, null);      // same day: counts once
+        checkInPopulator.createCheckIn(owner, DAY.minusDays(13), "08:00", 3, 2, null);
+        checkInPopulator.createCheckIn(owner, DAY.minusDays(14), "08:00", 3, 2, null); // outside
+
+        assertThat(reads.checkinDays(owner, DAY.minusDays(13), DAY)).isEqualTo(2);
+    }
 }

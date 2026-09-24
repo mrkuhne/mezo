@@ -240,6 +240,26 @@ an error, and the next `*/15` tick retries any real failure until 23:45.
   through `TeamCharacter.forMetricDomain`; the proactive generators' own `sleep_avg` /
   `training_volume` / `weight_trend` metric keys are mapped explicitly
   (`EditionCandidateCollector.GENERATOR_METRIC_DOMAIN`) since they are not `MetricKey` wire keys.
+- **Falat és Derű napi műsora (H5, `mezo-a9bo7.16`):** two more sources, both read through
+  `TeamEditionReads` (character → meal/nutrition/train/biometrics repositories and read-only
+  services; `MealCoachService` is NOT used — it calls an LLM).
+  - **Falat — `ertekeles`** (`sourceKind=fuel_day`, `sourceId=<day>`, route `/fuel`): 0 meals on
+    the day → no candidate. Otherwise up to three data-built sentences, each only when its data
+    exists: *the plate* — `"Eddig ma %d étkezésed van, átlagosan %d pontos."` (meal count + the
+    HALF_UP-rounded mean of the non-null `MealEntity.score`s; skipped when no meal is scored);
+    *the goal* — `"A napi célod %d kcal, eddig %d kcal ment be."` (`FuelDayService.dailyTargets`
+    `.kcal()` vs. the day's Σ item kcal via the canonical `MealMapper.contribution`, read as
+    `EditionMeal(loggedAt, score, kcal)` from the fetch-join day finder); *training* —
+    `"Ma volt edzésed (<labels>)."` when a `WorkoutWindowQueryService.Window` is `done`, else
+    `"Ma <labels> edzés van betervezve."` for a scheduled one (labels omitted when null).
+    `facts` = the sentences' numbers as strings; `changedAt` = the latest `loggedAt`.
+  - **Derű — `keres`** (`sourceKind=checkin_coverage`, `sourceId=<day>`, route `/nap/checkin`):
+    `TeamEditionReads.checkinDays(day-13, day)` counts DISTINCT check-in dates (several check-ins
+    on one day count once); `< 8` → `"14 napból %d napról tudom, hogy vagy. Egy rövid bejelentkezés
+    ma este sokat segítene."`, `facts=["14","<days>"]`. `changedAt=null`: the request is not a
+    source change, so it gets no freshness bonus and, as a filler, ranks behind the `sejtes`
+    "gyűlik" candidates. **Weekly once:** `TeamEditionService.run` drops the Derű request before
+    selection when any edition of the previous 6 days (day-6..day-1) carried a `deru`/`keres` post.
 - **Válogatás** (`EditionSelector`, pure function): scores waiting > claim-change > kísérlet >
   előrejelzés > értékelés > megfigyelés > konzílium > kérdés > sejtés > kérés, freshness bonus
   since the last edition; caps at **2 posts/character**, **1 post/source record**; a **7-day
@@ -1344,7 +1364,8 @@ Social additions: `service/CharacterReplyService.java` (owned save/list/retry), 
 - `service/edition/` (csapatfal H1, `mezo-a9bo7.12`) — `TeamCharacter` (routing registry, the FE
   `logic/team.ts` mirror), `EditionGenre`, `EditionCandidate` + `PriorShowing`,
   `EditionCandidateCollector` (source→candidate, read-only), `EditionSelector` (pure scoring/pick
-  function), `TeamEditionReads` (repository-only companion/proactive reads),
+  function), `TeamEditionReads` (repository-only companion/proactive reads; H5: meals as
+  `EditionMeal`, fuel targets, workout windows, check-in days),
   `TeamEditionService` (run/publish, writes the EDITION run row), `EditionVoiceWriter` +
   `EditionVoiceGuard` + `VoicedText` (H3 voice), `GuestSeed` + `VoicedGuest` (H4 guest lines);
   `entity/TeamEditionEntity.java`,

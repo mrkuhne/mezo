@@ -3,6 +3,8 @@ package io.mrkuhne.mezo.feature.character.service.edition;
 import io.mrkuhne.mezo.api.dto.PatternMonitorResponse;
 import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
 import io.mrkuhne.mezo.feature.character.repository.CharacterConferenceRepository;
+import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
+import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.PatternMonitorService;
@@ -30,7 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * The esti kiadás's read composer (Task 4, spec 2026-09-24 §3): a thin, read-only facade over the
- * source repositories/services (five in H1; meals, fuel targets, workout windows since H5) {@link EditionCandidateCollector} folds into edition
+ * source repositories/services (five in H1; meals, fuel targets, workout windows and check-ins since H5) {@link EditionCandidateCollector} folds into edition
  * candidates. Mirrors {@link io.mrkuhne.mezo.feature.character.service.CharacterMetaReads}'s
  * @ConditionalOnProperty / repository-read style — every method is a straight pass-through, no
  * mapping happens here (that is the collector's job), so the collector can be unit-tested against
@@ -59,6 +61,7 @@ public class TeamEditionReads {
     private final MealMapper mealMapper;
     private final FuelDayService fuelDayService;
     private final WorkoutWindowQueryService workoutWindowQueryService;
+    private final CheckInRepository checkInRepository;
 
     @Transactional(readOnly = true)
     public List<PatternEntity> patterns(UUID owner) {
@@ -124,4 +127,12 @@ public class TeamEditionReads {
         return windows == null ? List.of() : windows;
     }
 
+    /** H5: hány KÜLÖNBÖZŐ napon volt bejelentkezés {@code [from, to]}-ban (egy nap több sora egynek számít). */
+    @Transactional(readOnly = true)
+    public long checkinDays(UUID owner, LocalDate from, LocalDate to) {
+        return checkInRepository.findByCreatedByAndDeletedFalseAndDateBetween(owner, from, to).stream()
+                .map(CheckInEntity::getDate)
+                .distinct()
+                .count();
+    }
 }

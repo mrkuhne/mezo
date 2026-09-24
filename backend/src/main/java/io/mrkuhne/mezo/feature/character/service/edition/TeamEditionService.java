@@ -60,14 +60,24 @@ public class TeamEditionService {
     private final EditionVoiceWriter voiceWriter;
     private final ObjectProvider<TeamEditionService> self;
 
+    /** Derű adatkérése legfeljebb ennyi naponta egyszer (spec §3.6: „heti egynél többször nem"). */
+    static final int DERU_REQUEST_EVERY_DAYS = 7;
+
     public void run(UUID owner, LocalDate day) {
         if (editions.findByCreatedByAndDay(owner, day).isPresent()) {
             return; // idempotens: már van élő kiadás erre a napra
         }
         var last = editions.findFirstByCreatedByAndDayLessThanOrderByDayDesc(owner, day);
         Instant lastAt = last.map(TeamEditionEntity::getGeneratedAt).orElse(null);
-        var prior = priorShowings(owner, day);
-        var ranked = EditionSelector.select(collector.collect(owner, day, lastAt), prior, lastAt);
+        var priorPosts = priorPosts(owner, day);
+        var prior = priorShowings(priorPosts);
+        var candidates = collector.collect(owner, day, lastAt);
+        if (deruAskedWithinAWeek(priorPosts, day)) {
+            // H5 (mezo-a9bo7.16): Derű legfeljebb hetente egyszer kér — ha az előző 6 nap bármelyik
+            // kiadásában volt deru/keres poszt, a mai kérés-jelölt kiesik még a válogatás előtt.
+            candidates = candidates.stream().filter(c -> !isDeruRequest(c.character().key(), c.genre().key())).toList();
+        }
+        var ranked = EditionSelector.select(candidates, prior, lastAt);
         var conferenceId = reads.dailyConference(owner, day).map(CharacterConferenceEntity::getId).orElse(null);
         var texts = voiceWriter.write(owner, ranked);
         TeamEditionEntity published;
@@ -138,9 +148,9 @@ public class TeamEditionService {
         return edition;
     }
 
-    /** Az előző 7 nap (day-7 .. day-1) kiadásainak posztjai, sourceKey + kiadás-generatedAt párban
-     *  — ez az {@link EditionSelector} ismétlés-tilalmának bemenete. */
-    private List<PriorShowing> priorShowings(UUID owner, LocalDate day) {
+    /** Az előző 7 nap (day-7 .. day-1) kiadásainak posztjai a saját kiadásukkal párban — ebből
+     *  épül az ismétlés-tilalom és Derű heti korlátja is. */
+    private List<PriorPost> priorPosts(UUID owner, LocalDate day) {
         List<TeamEditionEntity> priorEditions =
                 editions.findByCreatedByAndDayBetweenOrderByDayDesc(owner, day.minusDays(7), day.minusDays(1));
         if (priorEditions.isEmpty()) {
@@ -148,14 +158,32 @@ public class TeamEditionService {
         }
         var editionsById = priorEditions.stream()
                 .collect(Collectors.toMap(TeamEditionEntity::getId, e -> e));
-        List<TeamEditionPostEntity> priorPosts =
-                posts.findByEditionIdInOrderByEditionIdAscRankAsc(editionsById.keySet());
-        List<PriorShowing> out = new ArrayList<>();
-        for (TeamEditionPostEntity post : priorPosts) {
-            TeamEditionEntity edition = editionsById.get(post.getEditionId());
-            String sourceKey = post.getSourceKind() + ":" + post.getSourceId();
-            out.add(new PriorShowing(sourceKey, edition.getGeneratedAt()));
+        List<PriorPost> out = new ArrayList<>();
+        for (TeamEditionPostEntity post : posts.findByEditionIdInOrderByEditionIdAscRankAsc(editionsById.keySet())) {
+            out.add(new PriorPost(editionsById.get(post.getEditionId()), post));
         }
         return out;
+    }
+
+    /** SourceKey + kiadás-generatedAt párok — az {@link EditionSelector} ismétlés-tilalmának bemenete. */
+    private static List<PriorShowing> priorShowings(List<PriorPost> priorPosts) {
+        return priorPosts.stream()
+                .map(p -> new PriorShowing(p.post().getSourceKind() + ":" + p.post().getSourceId(),
+                        p.edition().getGeneratedAt()))
+                .toList();
+    }
+
+    /** Volt-e Derű-kérés az előző 6 nap (day-6 .. day-1) kiadásaiban. */
+    private static boolean deruAskedWithinAWeek(List<PriorPost> priorPosts, LocalDate day) {
+        LocalDate from = day.minusDays(DERU_REQUEST_EVERY_DAYS - 1L);
+        return priorPosts.stream().anyMatch(p -> !p.edition().getDay().isBefore(from)
+                && isDeruRequest(p.post().getCharacterKey(), p.post().getGenre()));
+    }
+
+    private static boolean isDeruRequest(String characterKey, String genreKey) {
+        return TeamCharacter.DERU.key().equals(characterKey) && EditionGenre.KERES.key().equals(genreKey);
+    }
+
+    private record PriorPost(TeamEditionEntity edition, TeamEditionPostEntity post) {
     }
 }
