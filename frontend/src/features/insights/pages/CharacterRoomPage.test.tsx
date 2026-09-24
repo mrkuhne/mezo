@@ -36,6 +36,18 @@ describe('CharacterRoomPage (mock mode)', () => {
     for (const c of cases) expect(c.getAttribute('href')).toMatch(/^\/mezo\//)
   })
 
+  // csapatfal H2 (mezo-a9bo7.13): a fal az esti kiadás válogatása, a szoba viszont a TELJES
+  // rekordkészlet — ami a kiadásba nem került be, itt marad (spec 2026-09-24 §2).
+  test('a szoba ügyei a teljes rekordkészletből jönnek, nem a falra került kiadásból', async () => {
+    renderRoom('mocor')
+    await screen.findByRole('heading', { level: 1, name: 'Mocor · mozgás' })
+    const ids = Array.from(document.querySelectorAll('[data-case-id]')).map(c => c.getAttribute('data-case-id')!)
+    expect(ids.length).toBeGreaterThan(0)
+    // minden ügy egy REKORDRA mutat (minta, észrevétel, kísérlet, előrejelzés, karakter-feed),
+    // sosem egy kiadás-poszt szeletére
+    expect(ids.every(id => /^(pattern|observation|experiment|prediction|character):/.test(id))).toBe(true)
+  })
+
   test('a tudás-görbe a valódi bejegyzésekből rajzolódik, kevés adatnál őszinte szöveg', async () => {
     renderRoom('mocor')
     await screen.findByRole('heading', { level: 1, name: 'Mocor · mozgás' })

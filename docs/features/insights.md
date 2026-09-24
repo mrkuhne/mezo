@@ -664,13 +664,30 @@ a coral dot = something waits on you there; each ring links to `/mezo/csapat/<id
 The trio's four icons (`t-thumb-up`, `t-thumb-down`, `t-send`, `t-flask`) joined the Titanium sprite
 from the prototype's approved „Új ikonok” sheet.
 
-**Esti kiadás (csapatfal H1, `mezo-a9bo7.12`, [ADR 0052](../decisions/0052-esti-kiadas.md)) — not
-read here yet.** The daily council moved to 21:00 and now also publishes a 3–6 post `team_edition`
-per day (see [character.md](character.md) “Esti kiadás”); `useTeamEditions(from, to)` and
-`MOCK_EDITIONS` already exist in `data/character/`, but `TeamFeedPage`/`buildTeamFeed` above still
-build the wall entirely from the I. felvonás sources (`usePatterns`/`usePredictions`/
-`useExperiments`/`useObservations`/`useCharacterFeed`) — the wall starts reading editions, with a
-fallback to today's `buildTeamFeed` on edition-less days, in H2.
+**Esti kiadás a falon (csapatfal H1–H2, `mezo-a9bo7.12`/`.13`,
+[ADR 0052](../decisions/0052-esti-kiadas.md)).** The daily council moved to 21:00 and publishes a
+3–6 post `team_edition` per day (the machinery is in [character.md](character.md) “Esti kiadás”).
+`useTeamFeed` reads `useTeamEditions(today-13, today)` beside the I. felvonás sources and merges the
+two in `logic/teamEdition.ts`:
+
+- `editionPost(edition, post)` produces the SAME `FeedPost` shape the cards already render, so
+  `FeedPosterCard`/`FeedPostCard`/`FeedTrio` are untouched: `id` = `edition:<day>:<rank>`, `kind` =
+  the post's genre, `author` = its `characterKey`, `occurredAt` = the edition's day; a `kerdes` on a
+  pattern keeps the pattern-decision anchor so the trio still decides the real record.
+- `mergeWall(feed, editions, today)`: **a day with an edition IS that edition** — its posts in rank
+  order, rank 1 as the day's single glass poster. What missed the cut stays in the character's room
+  (spec §2) — which is why `useTeamFeed` also returns the untouched build as `rooms`, and
+  `TeamPage`/`CharacterRoomPage` read THAT, never the wall. A `QUIET` edition sets `FeedDay.quiet`
+  and the wall says so in one honest UI sentence instead of posts (filler is never written, ADR
+  0049). Edition-less days are the I. felvonás fallback unchanged, so the switch-on is seamless.
+  Still-open knocks (`waiting` posts) return to the head of TODAY even when their own day became an
+  edition, deduped against the edition by `sourceRoute` — in that case the edition's own post
+  carries the „Rád vár” flag. `waitingCount` and the story rings are recomputed from the merged wall.
+
+The mock edition sits on the REAL today (`characterMock.ts`), not on the frozen August mock world's
+last night, otherwise the wall's 14-day window could never contain it. Publishing also emits ONE
+`team_edition` notification („Megjött az esti kiadás”, deeplink `/mezo`, dedup key
+`team_edition:<day>`) — a quiet edition stays silent, and the idempotent re-run never notifies twice.
 
 **Szobák + A csapat (`mezo-a9bo7.9`, slice A3 — the „A csapat” dock tab since A4).** `/mezo/csapat`
 (`pages/TeamPage.tsx`) lists the five rooms as `glass tf-rowg` rows in the character accent: „Most
@@ -1060,6 +1077,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 **Feature (`frontend/src/features/insights/`):** — the directory keeps its `insights` name; the tab is called `Mezo` (§2)
 - `pages/{BoopMenuPage,BoopAboutPage,BoopMemoriesPage,MemoryDayPage,KnowledgeNodePage,PredictionDetailPage,ExperimentDetailPage}.tsx` — the „Összes funkció” grid, Rólad, Emlékek and full detail pages.
 - `logic/team.ts` + `logic/teamFeed.ts` (+ `teamFeed.fixtures.ts`) — **`mezo-a9bo7.7`** the csapat-üzenőfal character registry and record→post builder (§3); pure, unit-tested
+- `logic/teamEdition.ts` — **`mezo-a9bo7.13`** the esti kiadás → wall merge (`editionPost`, `mergeWall`, §3); pure, unit-tested
 - `pages/TeamFeedPage.tsx` + `components/feed/{FeedTrio,FeedPostCard,FeedPosterCard,FeedPostHead,FeedReplySheet,StoryStrip}.tsx` + `useFeedSession.ts` + `useTeamFeed.ts` — **`mezo-a9bo7.8`** the csapat-üzenőfal wall, the unified trio and the reply sheet (§3); `/mezo` since A4 (`mezo-a9bo7.10`), with `IntroPosts.tsx` as the cold start (§2.0)
 - `pages/{TeamPage,CharacterRoomPage}.tsx` + `components/feed/RoomCaseCard.tsx` + `logic/teamRooms.ts` — **`mezo-a9bo7.9`** A csapat and the five character rooms (§3); routed at `/mezo/csapat[/:id]`, the „A csapat” dock tab since A4
 - `components/BoopNavigation.tsx`, `logic/boopNavigation.ts`, `boop-world.css` — shared function catalog, crosslinks and app-token visuals.

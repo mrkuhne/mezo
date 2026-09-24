@@ -32,6 +32,7 @@ import {
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { makeHookWrapper } from '@/test/queryWrapper'
+import { localDateString } from '@/shared/lib/dates'
 
 // ---------------------------------------------------------------------------
 // confidenceWord — the shared threshold mapping (0.75 / 0.5)
@@ -192,7 +193,9 @@ describe('mock mode', () => {
   }, 10000)
 
   test('useCharacterRuns filters the seeded run log by [from, to], newest day first', async () => {
-    const { result: full } = renderHook(() => useCharacterRuns('2026-07-01', '2026-08-31'), { wrapper: makeHookWrapper() })
+    // The window runs to today because the EDITION row sits on the real today (mezo-a9bo7.13),
+    // while the rest of the seeded log is the frozen August world.
+    const { result: full } = renderHook(() => useCharacterRuns('2026-07-01', localDateString()), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(full.current.isLoading).toBe(false))
     expect(full.current.runs).toEqual(MOCK_RUNS)
     expect(full.current.runs.length).toBeGreaterThan(0)
@@ -259,8 +262,11 @@ describe('mock mode', () => {
 
   // csapatfal H1 (mezo-a9bo7.12, Task 6): useTeamEditions mirrors useCharacterRuns — mock mode
   // serves MOCK_EDITIONS filtered by [from, to].
+  // H2 (mezo-a9bo7.13): the seeded edition sits on the REAL today (the wall reads a [today-13,
+  // today] window), so the window is derived from its own day instead of an August literal.
   test('useTeamEditions filters MOCK_EDITIONS by [from, to], and includes the seeded day', async () => {
-    const { result: full } = renderHook(() => useTeamEditions('2026-08-01', '2026-08-31'), { wrapper: makeHookWrapper() })
+    const seeded = MOCK_EDITIONS[0].day
+    const { result: full } = renderHook(() => useTeamEditions(seeded, seeded), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(full.current.isLoading).toBe(false))
     expect(full.current.editions).toEqual(MOCK_EDITIONS)
     expect(full.current.editions.length).toBeGreaterThan(0)
@@ -271,7 +277,8 @@ describe('mock mode', () => {
   })
 
   test('useTeamEditions seeded edition has 3 posts pointing at real mock-seed records, rank-ordered', async () => {
-    const { result } = renderHook(() => useTeamEditions('2026-08-01', '2026-08-31'), { wrapper: makeHookWrapper() })
+    const seeded = MOCK_EDITIONS[0].day
+    const { result } = renderHook(() => useTeamEditions(seeded, seeded), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(result.current.isLoading).toBe(false))
     const edition = result.current.editions[0]
     expect(edition.posts.map((p) => p.rank)).toEqual([1, 2, 3])

@@ -67,6 +67,8 @@ export interface FeedDay {
   posts: FeedPost[]
   /** A nap egyetlen üveg-posztere (rangsor, restored bible §3.4). */
   poster?: FeedPost
+  /** Csendes nap: az esti kiadás megszületett, de nem volt mit kitennie (H2, spec §2). */
+  quiet?: boolean
 }
 
 export interface TeamFeedInput {
@@ -131,13 +133,13 @@ function dayKeyOf(iso: string): string {
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/
 
 /** A datált napok elöl, a legfrissebb az első; a kijelző-szövegű „napok” a végén. */
-function byDayDesc(a: string, b: string): number {
+export function byDayDesc(a: string, b: string): number {
   const ia = ISO_DAY.test(a), ib = ISO_DAY.test(b)
   if (ia !== ib) return ia ? -1 : 1
   return b.localeCompare(a)
 }
 
-function dayLabel(key: string, today: string): string {
+export function dayLabel(key: string, today: string): string {
   // Kijelző-szövegű dátum (pl. a mock „Máj 22”) — már emberi címke, nem értelmezzük újra.
   if (!ISO_DAY.test(key)) return key
   if (key === today) return 'Ma'
@@ -337,5 +339,6 @@ export function withSessionAfterlife(
     if (day) day.posts = [...day.posts, post].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
     else out.push({ key, label: dayLabel(key, today), posts: [post] })
   }
-  return out.filter(d => d.poster || d.posts.length > 0).sort((a, b) => byDayDesc(a.key, b.key))
+  // A csendes nap (üres kiadás) megmarad: ott a mondat áll a posztok helyén (mezo-a9bo7.13).
+  return out.filter(d => d.quiet || d.poster || d.posts.length > 0).sort((a, b) => byDayDesc(a.key, b.key))
 }

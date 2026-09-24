@@ -852,11 +852,12 @@ across the cron-vs-lazy-GET double-generation race a future producer may have (F
 today — the index is there because a later F2 producer will). `idx_app_notification_created_by_occurred_at`
 serves the feed read (`created_by, occurred_at desc`).
 
-### `AppNotificationKind` — the 21-kind catalog (`feature/appnotification/domain/AppNotificationKind.java`)
+### `AppNotificationKind` — the 22-kind catalog (`feature/appnotification/domain/AppNotificationKind.java`)
 
 The single source of truth for the in-app feed's kind key, its push `familyKey`, and its
-deeplink base — pinned by `AppNotificationKindTest`. **All 21 rows are wired to producers**
-(the original 12 by F2, plus three later domain slices and Reflexió S4's `observation_new`), and **every non-null `familyKey` now maps onto a live push category as of F3**
+deeplink base — pinned by `AppNotificationKindTest`. **All 22 rows are wired to producers**
+(the original 12 by F2, plus three later domain slices, Reflexió S4's `observation_new` and the
+csapatfal's `team_edition`), and **every non-null `familyKey` now maps onto a live push category as of F3**
 (bd `mezo-gzhp.3`, §3b/§4) — the catalog is complete end to end. **The five kinds added by
 `mezo-0cbh` are all deliberately `familyKey = null`**: they carry things you find when you next
 open the app, not things worth a phone buzz — see §9's "what deliberately stays silent".
@@ -883,6 +884,7 @@ open the app, not things worth a phone buzz — see §9's "what deliberately sta
 | `habit_formation` | **null** | `/me/rutin/szokas/{habitKey}` | `mezo-0cbh` — `HabitService.emitFormationIfCrossed`, swept nightly by `HabitJob`; once-ever per habit via the dedup key |
 | `character_portrait` | **null** | `/me/karakter` | `mezo-0cbh` — `CharacterMonthlyService` (the month's first Sunday deep read) |
 | `konzilium_verdict` | **null** | `/me/karakter/konzilium` | `mezo-0cbh` — `CharacterConferenceService` (weekly), **only when `changes` is non-empty** |
+| `team_edition` | `pattern` | `/mezo` | Csapatfal H2 (`mezo-a9bo7.13`) — `TeamEditionService.run`, right after the 21:00 edition is published. **Only a PUBLISHED edition with at least one post notifies**; a `QUIET` (nothing to show) evening stays silent, and the dedup key `team_edition:<day>` keeps the idempotent 15-minute retries down to one row per day. Rides the `pattern` push family (the `observation_new` precedent — same nightly findings, different surface: the wall, not the Észrevételek tab). |
 | `observation_new` | `pattern` | `/nap/uzenetek?tab=eszrevetelek` | Reflexió S4 (`mezo-eq85.4`) — `QuickNoticeService`. **HELD BACK by default (silent launch):** the emit is gated on `mezo.companion.reflection.notice.push-enabled`, shipped `false` until the Észrevételek tab this deeplink points at ships in S5 (`mezo-eq85.5`); observations are still collected and still marked `surfaced` meanwhile, so no row of this kind exists yet in production. With the flag on: **only when the observation was actually surfaced** (`ObservationBudget` allows it: within the daily cap, past the minimum gap, outside quiet hours). Dedup key `observation_new:<pattern_event id>`, so one notice = one row = one push. An over-budget notice is still stored as a `pattern_event` with `payload.surfaced=false` and notifies nothing. |
 
 ### API contract (`api/feature/notification/notification.yml`)

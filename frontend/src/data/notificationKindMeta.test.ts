@@ -19,6 +19,8 @@ const BACKEND_KINDS = [
   // mezo-0cbh
   'person_candidate', 'graph_candidate', 'habit_formation', 'character_portrait',
   'konzilium_verdict',
+  // mezo-a9bo7.13 — az esti kiadás megérkezése a csapat falára
+  'team_edition',
 ] as const
 
 describe('APP_NOTIFICATION_KIND_META', () => {
@@ -40,6 +42,10 @@ describe('APP_NOTIFICATION_KIND_META', () => {
 
   it('a heti értesítés a heti clay ikont viszi', () => {
     expect(APP_NOTIFICATION_KIND_META.weekly_review_ready.clay).toBe('i-heti')
+  })
+
+  it('az esti kiadás a Mezo-világ ikonját viszi', () => {
+    expect(APP_NOTIFICATION_KIND_META.team_edition.clay).toBe('i-mezo')
   })
 
   it('az életcél-terv a cél clay ikonját viszi', () => {

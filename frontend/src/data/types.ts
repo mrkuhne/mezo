@@ -1868,6 +1868,8 @@ export type AppNotificationKindKey =
   // megnyitva megtalálsz, nem amiért rezegjen a telefon.
   | 'person_candidate' | 'graph_candidate' | 'habit_formation' | 'character_portrait'
   | 'konzilium_verdict'
+  // mezo-a9bo7.13: megjött a nap esti kiadása a csapat üzenőfalára.
+  | 'team_edition'
 
 export interface AppNotificationView {
   id: string
@@ -1908,6 +1910,7 @@ export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, {
   habit_formation: { tint: 'habit', clay: 'i-termes' },
   character_portrait: { tint: 'character', clay: 'i-eletjel' },
   konzilium_verdict: { tint: 'character', clay: 'i-muhely' },
+  team_edition: { tint: 'character', clay: 'i-mezo' },
 }
 
 /** Semleges bejegyzés egy olyan fajtára, amit ez a build még nem ismer. */

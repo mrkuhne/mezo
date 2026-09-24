@@ -9,7 +9,7 @@ class AppNotificationKindTest {
 
     @Test
     void testCatalog_shouldPinFifteenKindsWithFamiliesAndDeeplinks_perSpec() {
-        assertThat(AppNotificationKind.values()).hasSize(21);
+        assertThat(AppNotificationKind.values()).hasSize(22);
         assertThat(AppNotificationKind.PATTERN_INBOX.key()).isEqualTo("pattern_inbox");
         assertThat(AppNotificationKind.PATTERN_INBOX.familyKey()).isEqualTo("pattern");
         assertThat(AppNotificationKind.PATTERN_SIGNAL.familyKey()).isEqualTo("pattern");
@@ -56,6 +56,11 @@ class AppNotificationKindTest {
         assertThat(AppNotificationKind.OBSERVATION_NEW.familyKey()).isEqualTo("pattern");
         assertThat(AppNotificationKind.OBSERVATION_NEW.deeplink())
             .isEqualTo("/nap/uzenetek?tab=eszrevetelek");
+        // mezo-a9bo7.13 — az esti kiadás a `pattern` push-családon utazik (az observation_new
+        // precedense), a felülete a csapat üzenőfala.
+        assertThat(AppNotificationKind.TEAM_EDITION.key()).isEqualTo("team_edition");
+        assertThat(AppNotificationKind.TEAM_EDITION.familyKey()).isEqualTo("pattern");
+        assertThat(AppNotificationKind.TEAM_EDITION.deeplink()).isEqualTo("/mezo");
         assertThat(AppNotificationKind.fromKey("pattern_inbox")).contains(AppNotificationKind.PATTERN_INBOX);
         assertThat(AppNotificationKind.fromKey("nope")).isEmpty();
     }
