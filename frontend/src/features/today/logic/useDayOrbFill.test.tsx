@@ -124,7 +124,7 @@ test('a label mindkét módban „A mai napod"-dal kezdődik', () => {
 // `present === 0` ági feltételt a labelben, ez a teszt buktatná.
 // mezo-cq06 — a skip_sport_slot advice action hides one dated occurrence of a recurring sport
 // slot; `sportPlanned` used to stay lit for it regardless, contradicting the backend's own
-// `hasScheduledTrainingOn`. A weekday + date pár a fájl-szintű `clock.now`-ból jön — UGYANABBÓL
+// `WorkoutWindowQueryService.windowsFor` (skip-aware schedule read). A weekday + date pár a fájl-szintű `clock.now`-ból jön — UGYANABBÓL
 // az egyetlen olvasásból, amit a hook is lát (lásd a fenti `useMinuteTick` mockot), tehát a
 // nap-váltás nem tudja szétcsúsztatni a kettőt.
 describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('sportPlanned honours a sport-slot skip (mezo-cq06)', () => {

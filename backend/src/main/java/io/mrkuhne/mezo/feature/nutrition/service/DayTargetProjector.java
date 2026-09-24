@@ -12,8 +12,8 @@ import java.util.function.BooleanSupplier;
  * serves.
  *
  * <p>Day-type pick (slice 3, mezo-sxlj): a segment carrying a day-type split
- * ({@code trainingDayKcal} / {@code restDayKcal}) serves the training-day kcal when the date has a
- * SCHEDULE-derived training source, else the rest-day kcal; the whole kcal delta lands in carbs
+ * ({@code trainingDayKcal} / {@code restDayKcal}) serves the training-day kcal when movement was
+ * actually LOGGED on the date (mezo-u13jv — the plan alone never raises it), else the rest-day kcal; the whole kcal delta lands in carbs
  * (ISSN), derived at serve time and never stored. A pre-slice-3 / uniform segment (both fields
  * null), or one where only the other field is set, keeps the segment kcal unchanged. The
  * {@code trainingDay} probe is a {@link BooleanSupplier} because it is a DB round-trip the
@@ -26,7 +26,7 @@ public final class DayTargetProjector {
 
     /**
      * @param seg         the covering recept segment, or {@code null} when no goal covers the date
-     * @param trainingDay lazily probed schedule-derived day type; only called for a split segment
+     * @param trainingDay lazily probed logged-movement day type; only called for a split segment
      * @param fallback    the static per-field config targets used wherever the segment is silent
      * @return the date's targets; {@code source} is {@code "goal"} iff a segment covered the date
      */
