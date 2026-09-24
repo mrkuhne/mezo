@@ -384,3 +384,38 @@ The workout-closing ceremony moved here from U10 at the owner's request.
 33. **Prototype anatomy: measure, don't trust `BODY.b`.** The generated boxes in
     `companion-titanium/body-geometry.js` are wrong for thin shapes (height 3), so a prototype chip crops
     to nothing; measure the paths with `getBBox()` the way the live `MuscleChip` does.
+
+### U5 · Edzés II (`mezo-me75u.5`, 2026-09-24)
+
+Terv, sablonok, saját edzés and the three Hét sub-pages (the Terhelés landing was U4's).
+Blocks: `── uveg edzes2 terv|run|nap|izmok|konyvtar|sablonok|het (`. Three new sprite icons
+(`t-template t-compare t-trash`). Prototype: [`prototypes/uveg-edzes2.html`](prototypes/uveg-edzes2.html).
+
+34. **„Nice elements" is not a design — decide the composition out loud.** The owner approved
+    the day card's every PIECE in one round and rejected the pile in the next: *„rendszer nélkül
+    összevissza odavágott elemek"*. What settled it was naming the system: two zones split by a
+    hairline, one shared left margin, one rhythm (9px), a shared right edge for status + chevron,
+    three EQUAL boxes in a real grid, and exactly ONE loud thing (what you train). State changes
+    colour and volume, never structure. Decide those five before showing a card, and say them in
+    the reply — the owner reads the rules back.
+35. **One week, one component.** The Terv landing and the run page both draw „A heted"; they were
+    a `.pl-day` loop and a `DayTile` mosaic. Two copies of the same week always drift, so both now
+    render `MesoWeekDays` → `MesoDayCard`. A slice that meets a list ALREADY drawn elsewhere
+    renders that component instead of dressing its own copy.
+36. **A filled CTA must restate every colour.** `.pl-lib-new` inherited the old skin's title,
+    sub-line and art-well colours, all tuned for a dark card — on an accent fill they render
+    dark-on-dark and the button reads as broken. Paid for twice in one slice (library, sablonok).
+37. **A „megvolt" stamp may never sit over a planned number.** A card that can show both the plan
+    and the result reads the result from the instance (`logic/mesoWeekDone.ts`), and where the data
+    cannot answer — a record count lives only on the frozen report — the field is left OUT, not
+    guessed (the MesoFutamokPage rule, now a card rule too).
+38. **`.glass` clips, on every new shape.** U1 rule 3 again: the volume gauge's „most" pin sits
+    ABOVE its track and rendered cut in half. The card declares `overflow: visible`, adds top
+    padding, and drops its sheen — an unclipped sweep would run off the edge.
+39. **A mini bar cluster needs a fixed basis.** `.mz-wmini b { flex: 1 }` is fine in a narrow tile
+    and becomes five 38px colour slabs at half-screen width. Give the bars a `flex: 0 0 13px`
+    basis so the graphic stays a chart.
+40. **Read the week's log from the hook that already fetched it.** The Terv landing's done-state
+    comes from `useWeekMuscleLog` — the same cached reads the Terhelés tab makes — so the two
+    surfaces cannot disagree and the second visit costs nothing. Mock mode has no persisted
+    instances, so a done-state feature is honestly absent there; say so rather than faking it.
