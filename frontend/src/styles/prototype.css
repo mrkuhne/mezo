@@ -12873,6 +12873,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .wo-cue .icon { width: 20px; height: 20px; flex: 0 0 auto; }
 .wo-cue p { margin: 0; font-size: 11.5px; line-height: 1.6; color: var(--sub); }
 
+/* The weight-swap note under the cursor row (mezo-l95v4): quiet, one line. */
+.wo-adjust { margin: 2px 0 6px; padding-left: 4px; font-size: 11px; line-height: 1.4; color: var(--sub); }
+
 /* — set rows —
    The header strip and EVERY row share this one grid (# · KG · REP · RIR · ✓ · verdict),
    verbatim from the prototype (session.css:72). The RIR column is a real field on the row

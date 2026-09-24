@@ -75,6 +75,7 @@ import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { trainDayEnergy } from '@/features/train/logic/trainDayEnergy'
 import { actualMinutes, type SessionTiming } from '@/features/train/logic/actualDuration'
 import { SetEditSheet, type SetEditValues } from '@/features/train/sheets/SetEditSheet'
+import { adjustedTarget } from '@/features/train/logic/repEquivalence'
 
 type Phase = 'active' | 'summary'
 type Side = 'L' | 'B' | 'R'
@@ -447,6 +448,9 @@ function ActiveWorkoutSession({
     // (mezo-i8ahy). Nothing warm-up-kinded is loggable any more — `kind` is always working.
     const target = prescribedAt(session, finishing.id, slotIndex(session, finishing.id, wasSetIdx))
     const kind = target?.kind ?? 'working'
+    // A swapped weight is judged against its equivalent target, so the medal and the
+    // adherence detector see the effort that was actually asked for (mezo-l95v4).
+    const snapshot = (weightless ? null : adjustedTarget(target, weight)) ?? target
     // A client-side identity (mezo-l3on fix-round-2, N1), assigned NOW so the async logSet
     // response (success OR failure) can address THIS exact entry later — never by array
     // index, which shifts under a concurrent edit/delete or a second in-flight log.
@@ -466,8 +470,8 @@ function ActiveWorkoutSession({
       ...(kind === 'warmup' ? {} : { rir }),
       kind,
       ...(side ? { side } : {}),
-      ...(target?.targetWeightKg != null ? { targetWeightKg: target.targetWeightKg } : {}),
-      ...(target?.targetReps != null ? { targetReps: target.targetReps } : {}),
+      ...(snapshot?.targetWeightKg != null ? { targetWeightKg: snapshot.targetWeightKg } : {}),
+      ...(snapshot?.targetReps != null ? { targetReps: snapshot.targetReps } : {}),
     }, {
       ctx: { exerciseName: finishing.name, lastWeek: finishing.lastWeek, date: localToday },
       onSuccess: (r) => {
