@@ -82,6 +82,8 @@ export type Icon3DName =
   | 't-coin' | 't-orb' | 't-scroll'
   // U4 (mezo-me75u.4) — owner OK on prototypes/uveg-edzes.html#ikonok
   | 't-muscle' | 't-bandage'
+  // U5 (mezo-me75u.5) — owner OK on prototypes/uveg-edzes2.html#ikonok
+  | 't-template' | 't-compare' | 't-trash'
 
 /** Mounts the clay + Titanium <symbol>/<gradient> defs once (main.tsx). */
 export const ClaySprites = memo(function ClaySprites() {
