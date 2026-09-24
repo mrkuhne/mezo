@@ -28,12 +28,18 @@ describe('TeamFeedPage (mock mode)', () => {
     expect(document.querySelectorAll('.tf-post.glass')).toHaveLength(0) // a csendes poszt sosem üveg
   })
 
-  test('Miből látszik? minden poszton a meglévő mélyoldalra visz', async () => {
+  // H5 (mezo-a9bo7.16): Derű kérése nem állítás — ott a „Miből látszik?” helyén a „Bejelentkezem”
+  // CTA áll; Falat napi értékelése a Fuel-napra mutat, nem egy /mezo/ mélyoldalra.
+  test('Miből látszik? minden állítás-poszton a meglévő mélyoldalra visz', async () => {
     renderPage()
     await screen.findByRole('heading', { name: 'Üzenőfal' })
     const sources = screen.getAllByRole('link', { name: 'Miből látszik?' })
-    expect(sources).toHaveLength(document.querySelectorAll('article').length)
-    for (const a of sources) expect(a.getAttribute('href')).toMatch(/^\/mezo\//)
+    const ctas = screen.getAllByRole('link', { name: 'Bejelentkezem' })
+    expect(ctas.length).toBeGreaterThan(0)
+    expect(sources).toHaveLength(document.querySelectorAll('article').length - ctas.length)
+    for (const a of sources) expect(a.getAttribute('href')).toMatch(/^\/(mezo\/|fuel$)/)
+    expect(sources.some(a => a.getAttribute('href') === '/fuel')).toBe(true)
+    for (const a of ctas) expect(a.getAttribute('href')).toBe('/nap/checkin')
   })
 
   test('minden poszton ott az egységes hármas', async () => {
@@ -42,7 +48,9 @@ describe('TeamFeedPage (mock mode)', () => {
     for (const article of document.querySelectorAll('article')) {
       const scoped = within(article as HTMLElement)
       const decided = article.querySelector('.tf-after')
-      if (!decided) expect(scoped.getByRole('button', { name: /Elmesélem|Beszéljük meg/ })).toBeInTheDocument()
+      const request = article.querySelector('.tf-cta') // H5: a kérés-poszton CTA áll a hármas helyén
+      if (request) expect(scoped.queryByRole('button', { name: /Ez talál/ })).not.toBeInTheDocument()
+      else if (!decided) expect(scoped.getByRole('button', { name: /Elmesélem|Beszéljük meg/ })).toBeInTheDocument()
     }
   })
 

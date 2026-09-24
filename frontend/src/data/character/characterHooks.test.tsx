@@ -264,12 +264,19 @@ describe('mock mode', () => {
   // serves MOCK_EDITIONS filtered by [from, to].
   // H2 (mezo-a9bo7.13): the seeded edition sits on the REAL today (the wall reads a [today-13,
   // today] window), so the window is derived from its own day instead of an August literal.
+  // H5 (mezo-a9bo7.16): two seeded editions (today + yesterday) — a single-day window returns
+  // exactly that day's edition, the two-day window both.
   test('useTeamEditions filters MOCK_EDITIONS by [from, to], and includes the seeded day', async () => {
     const seeded = MOCK_EDITIONS[0].day
-    const { result: full } = renderHook(() => useTeamEditions(seeded, seeded), { wrapper: makeHookWrapper() })
+    const { result: one } = renderHook(() => useTeamEditions(seeded, seeded), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(one.current.isLoading).toBe(false))
+    expect(one.current.editions).toEqual([MOCK_EDITIONS[0]])
+
+    const prev = MOCK_EDITIONS[1].day
+    const { result: full } = renderHook(() => useTeamEditions(prev, seeded), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(full.current.isLoading).toBe(false))
     expect(full.current.editions).toEqual(MOCK_EDITIONS)
-    expect(full.current.editions.length).toBeGreaterThan(0)
+    expect(full.current.editions).toHaveLength(2)
 
     const { result: outside } = renderHook(() => useTeamEditions('2026-01-01', '2026-01-31'), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(outside.current.isLoading).toBe(false))
@@ -283,9 +290,12 @@ describe('mock mode', () => {
     const edition = result.current.editions[0]
     expect(edition.posts.map((p) => p.rank)).toEqual([1, 2, 3])
     expect(edition.posts.every((p) => p.body.length > 0)).toBe(true)
-    // H3 (mezo-a9bo7.14): a mock mindkét ágat mutatja — a rank 1 a karakter hangján szól, a többi
+    // H3 (mezo-a9bo7.14): a mock mindkét ágat mutatja. H5 (mezo-a9bo7.16): a mai kiadás mindhárom
+    // posztja a karakter hangján szól (kísérlet · Falat értékelése · Derű kérése), a tegnapi kiadás
     // a rekord saját szövegével (a tény-őr bukásának becsületes visszaesése).
-    expect(edition.posts.filter((p) => p.voiced).map((p) => p.rank)).toEqual([1])
+    expect(edition.posts.filter((p) => p.voiced).map((p) => p.rank)).toEqual([1, 2, 3])
+    expect(edition.posts.map((p) => p.genre)).toEqual(['kiserlet', 'ertekeles', 'keres'])
+    expect(MOCK_EDITIONS[1].posts.every((p) => !p.voiced)).toBe(true)
   })
 
   // Fix round 1 (mezo-1gim.14, finding 3): a single expert firing two signals in one night is

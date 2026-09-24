@@ -25,7 +25,7 @@ import type {
 // world (the insights hooks' own MOCK_PATTERNS/predictions/experiments read from these same
 // arrays).
 import { experiments as insightExperiments, patterns as insightPatterns, predictions as insightPredictions } from '@/data/insights/insights'
-import { localDateString } from '@/shared/lib/dates'
+import { addDays, localDateString } from '@/shared/lib/dates'
 
 // conf tier -> a representative number that maps back to the same word via confidenceWord().
 const BIZTOS = 0.8
@@ -1442,14 +1442,14 @@ const EDITION_RUN: CharacterRunSummary = {
   day: localDateString(),
   status: 'SUCCESS',
   failureCount: 0,
-  observationCount: 3, // MOCK_EDITIONS[0].posts.length
+  observationCount: 3, // MOCK_EDITIONS[0].posts.length (H5: kísérlet · értékelés · kérés)
   callCount: 0,
   detectorKeys: [],
-  // Distinct posting characterKeys from MOCK_EDITIONS[0].posts (falat, mocor, mocor) — mirrors
+  // Distinct posting characterKeys from MOCK_EDITIONS[0].posts (falat, falat, deru — H5) — mirrors
   // TeamEditionService.run's `ranked.stream().map(c -> c.character().key()).distinct().toList()`
   // (fix round, mezo-a9bo7.12: this used to be a bare [], which starved RunPage's "Posztoló
   // karakterek" chips of any real data in mock mode).
-  expertKeys: ['falat', 'mocor'],
+  expertKeys: ['falat', 'deru'],
   conferenceId: null,
 }
 
@@ -1508,15 +1508,29 @@ export const MOCK_CLAIM_REVISIONS: Record<string, CharacterClaimRevisionDto[]> =
 // EXISTING mock-seed record (never a fabricated one): a pattern, a resolved prediction, an active
 // experiment. A `voiced: false` poszt body-ja a rekord SAJÁT szövege (ez a tény-őr bukásának
 // becsületes visszaesése is); a `voiced: true` posztot a karakter hangján írja a backend
-// (EditionVoiceWriter, H3) — a mockban az első poszt mutatja ezt az ágat.
+// (EditionVoiceWriter, H3) — a mockban a mai kiadás posztjai szólalnak meg, a tegnapi kiadás a
+// rekord saját szövegével jön (H5).
 //
 // H2 (mezo-a9bo7.13): the day is the REAL today, not the seeded August world's last night. The
 // wall asks for `[today-13, today]` (useTeamFeed), so a 2026-08-30 edition could never reach it —
 // mock mode would show the Act I fallback forever and the slice would be undemoable. The edition
 // is the one mock row that must live on the day it is read on; its posts still point at the
 // August seed records, exactly like a real edition ranking older records.
+//
+// H5 (mezo-a9bo7.16): TWO editions now (today + yesterday), because Derű's `keres` is a FILLER
+// (EditionGenre.filler) — EditionSelector only takes it when fewer than 3 main candidates are
+// eligible, so a keres beside 4 main posts is an edition the backend can never produce. The
+// sequence the selector would really yield:
+//  · yesterday (first edition, everything fresh): the prediction, yesterday's Falat értékelés and
+//    the pattern — 3 main posts, no filler. exp1 is NOT a candidate yesterday: an experiment only
+//    surfaces on its day 1 / middle day / last day (experimentCandidate), and yesterday was day 3.
+//  · today: exp1 reaches its middle day (4 of 7) → candidate; today's Falat értékelés → candidate;
+//    the prediction and the pattern were shown yesterday and have not changed since → skipped
+//    (7-day rule). 2 main candidates < 3 → Derű's keres fills the third slot (4 of 14 check-in
+//    days < 8, and no keres in the previous 6 editions).
 // ============================================================
 const EDITION_DAY = localDateString()
+const EDITION_PREV_DAY = addDays(EDITION_DAY, -1)
 
 const EDITION_PATTERN = insightPatterns.find((p) => p.id === 'p1')!
 const EDITION_PREDICTION = insightPredictions.find((p) => p.id === 'pred3')!
@@ -1532,15 +1546,16 @@ const EDITION_EXPERIMENT = insightExperiments.find((e) => e.id === 'exp1')!
 //  · genre follows the pattern's status: EDITION_PATTERN (p1) is `confirmed` -> MEGFIGYELES
 //    (`sejtes` is the DIFFERENT source, a gathering monitor PAIR, sor 3 — never a pattern's genre).
 //  · a prediction candidate is ALWAYS `elorejelzes` (predictionCandidate() hardcodes EditionGenre.
-//    ELOREJELZES) — `ertekeles` is a genre no collector method ever emits.
+//    ELOREJELZES) — `ertekeles` is Falat's OWN day-review genre (H5: sourceKind `fuel_day`,
+//    EditionCandidateCollector.falat), never a prediction's.
 //  · characterKey mirrors metricADomain (pattern) / the FE team registry's domain routing: p1's
 //    pairKey `sport-load~next-sleep-quality` leads with the train-domain metric -> Mocor; exp1
 //    (glikogén-feltöltés, a fuel-domain hypothesis) -> Falat, matching TeamCharacter.
 //    forMetricDomain('fuel'). pred3's own metric (RPE, a training-intensity number) is the same
 //    train domain as the pattern's -> Mocor, per TeamCharacter.forMetricDomain('train').
 //  · rank order follows EditionSelector.score: waiting patterns (proposed, +100) > kiserlet (70)
-//    > elorejelzes (60) > megfigyeles (50); none of these three is `waiting`, so a confirmed
-//    pattern (50) sits below the experiment (70) and the prediction (60).
+//    > elorejelzes (60) > ertekeles (55) > megfigyeles (50) > … > keres (10, filler); none of these
+//    is `waiting`, so a confirmed pattern (50) sits below the prediction (60) and the értékelés.
 export const MOCK_EDITIONS: TeamEdition[] = [
   {
     day: EDITION_DAY,
@@ -1580,6 +1595,43 @@ export const MOCK_EDITIONS: TeamEdition[] = [
       },
       {
         rank: 2,
+        characterKey: 'falat',
+        genre: 'ertekeles',
+        sourceKind: 'fuel_day',
+        sourceId: EDITION_DAY,
+        sourceRoute: '/fuel',
+        // Falat hangja (insights.md §2.0a): 2–4 mondat, 🍽️/🥦 mértékkel, **kiemelés**. A számok a
+        // mock Fuel-nap SAJÁT számai (data/fuel/fuel.ts `fuelDay`): 3 étkezés (m1 · m2 · m4),
+        // pontjuk 0.92 · 0.91 · 0.85 → átlag 0.89 = **89** pont (a 0..1 skála százalékban, ahogy a
+        // Fuel is mutatja — MealScoreSheet `score * 100`); cél 3100 kcal, bevitel
+        // 580 + 720 + 760 = 2060 kcal. Az edzés-szólam kimarad: a mock napnak nincs edzés-ablaka.
+        body:
+          'Eddig ma **3 étkezésed** van 🍽️, átlagosan **89 pontos** tányérokkal. '
+          + 'A napi **3100 kcal**-os célodból **2060 kcal** ment be — a többit a nap vége dönti el. 🥦',
+        voiced: true,
+        guests: [],
+      },
+      {
+        rank: 3,
+        characterKey: 'deru',
+        genre: 'keres',
+        sourceKind: 'checkin_coverage',
+        sourceId: EDITION_DAY,
+        sourceRoute: '/nap/checkin',
+        // A 4 a jóváhagyott prototípus (uveg-uzenofal.html, Derű `kérés` posztja) száma — a mock
+        // bejelentkezés-hooknak nincs 14 napos története, amiből számolni lehetne.
+        body: '14 napból **4** napról tudom, hogy vagy. 🌤️ Egy rövid bejelentkezés ma este sokat segítene.',
+        voiced: true,
+        guests: [],
+      },
+    ],
+  },
+  {
+    day: EDITION_PREV_DAY,
+    status: 'PUBLISHED',
+    posts: [
+      {
+        rank: 1,
         characterKey: 'mocor',
         genre: 'elorejelzes',
         sourceKind: 'prediction',
@@ -1587,6 +1639,20 @@ export const MOCK_EDITIONS: TeamEdition[] = [
         sourceRoute: `/mezo/predictions/${EDITION_PREDICTION.id}`,
         title: EDITION_PREDICTION.title,
         body: EDITION_PREDICTION.actual ?? EDITION_PREDICTION.basis ?? '',
+        voiced: false,
+        guests: [],
+      },
+      {
+        rank: 2,
+        characterKey: 'falat',
+        genre: 'ertekeles',
+        sourceKind: 'fuel_day',
+        sourceId: EDITION_PREV_DAY,
+        sourceRoute: '/fuel',
+        // A tény-őr bukásának ága (`voiced: false`): a rekord SAJÁT szövege, szó szerint a backend
+        // formátuma (EditionCandidateCollector.falat). A mock Fuel minden napra ugyanazt a napot
+        // adja (fuelHooks seedDayData), ezért a számok a maiéval azonosak.
+        body: 'Eddig ma 3 étkezésed van, átlagosan 89 pontos. A napi célod 3100 kcal, eddig 2060 kcal ment be.',
         voiced: false,
         guests: [],
       },
