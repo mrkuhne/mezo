@@ -2253,6 +2253,29 @@ svg{overflow:visible}
 .icmap .icon{width:34px;height:34px}
 .icmap b{color:var(--ink);font-weight:600}
 @media (max-width:360px){.ev-h time{font-size:11px}.ox-chips button{padding:8px 12px;font-size:12.5px}}
+
+.ev-shift{padding:12px 12px 8px;border-radius:16px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.sh-h{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:600;letter-spacing:1.3px;color:var(--faint)}
+.sh-t{margin-left:auto;display:inline-flex;align-items:center;gap:5px;letter-spacing:0;font-size:11.5px;font-weight:500;color:var(--sub);font-variant-numeric:tabular-nums}
+.sh-t b{font-weight:500;color:var(--faint);margin:0 2px}
+.sh-t i{width:8px;height:8px;border-radius:50%}
+.sh-t i.o{box-shadow:inset 0 0 0 1.5px var(--sub)} .sh-t i.f{background:var(--ink)}
+.sh-row{display:grid;grid-template-columns:62px 1fr 50px 30px;align-items:center;gap:8px;padding:9px 0 0}
+.sh-l{font-size:12px;font-weight:600;color:color-mix(in srgb,var(--k) 70%,var(--ink))}
+.sh-tr{position:relative;height:10px;border-radius:5px;background:rgba(245,239,230,.06)}
+.sh-seg{position:absolute;top:3px;height:4px;border-radius:2px;background:linear-gradient(90deg,color-mix(in srgb,var(--k) 35%,transparent),var(--k));box-shadow:0 0 8px color-mix(in srgb,var(--k) 50%,transparent)}
+.sh-seg.dn{background:linear-gradient(90deg,var(--k),color-mix(in srgb,var(--k) 35%,transparent))}
+.sh-tr i{position:absolute;top:50%;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%}
+.sh-tr i.o{background:#221E1B;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--k) 55%,transparent)}
+.sh-tr i.f{background:var(--k);box-shadow:0 0 10px color-mix(in srgb,var(--k) 70%,transparent),inset 0 1px 0 rgba(255,255,255,.35)}
+.sh-n{font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.sh-n b{font-weight:400;color:var(--faint);margin:0 3px}
+.sh-n strong{font-size:14px;font-weight:600;color:var(--ink)}
+.sh-d{justify-self:end;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;color:color-mix(in srgb,var(--k) 80%,var(--ink))}
+.sh-d.z{color:var(--faint)}
+.sh-sc{display:grid;grid-template-columns:62px 1fr 50px 30px;gap:8px;margin-top:3px;font-size:9.5px;color:var(--faint)}
+.sh-sc .r{grid-column:2;display:flex;justify-content:space-between}.sh-sc i{font-style:normal}
+@media (max-width:360px){.sh-row,.sh-sc{grid-template-columns:54px 1fr 46px 26px;gap:6px}}
 </style>
 
 <div class="stage">
@@ -2281,7 +2304,7 @@ svg{overflow:visible}
     <ul>
       <li>A második kártyán nyomd meg az <b>Igen, jellemző</b> / <b>Nem stimmel</b> gombot</li>
       <li>„Miből látom” mellett: <b>Elrejtem / Megnézem</b> — a bizonyíték csukható</li>
-      <li>A második Check-in sorban a kis „+/−” szám jelzi, mennyit változott az előzőhöz képest</li>
+      <li>A két Check-in alatt a „Változás” grafikon mutatja, honnan hová mozdult a négy érték</li>
       <li>A harmadik kártyán a hosszú naplóbejegyzés 3 sorra rövidül</li>
     </ul>
     <label class="toggle"><input type="checkbox" id="still"> Mozgás kikapcsolása</label>
@@ -2508,13 +2531,13 @@ function parseEv(raw){
   if(cut){const ks=Object.keys(f),last=ks[ks.length-1];if(last&&!PROSE.includes(last))delete f[last]}
   return {src,date,f,cut};
 }
-function evRow(e,prev){
+function evRow(e,noCells){
   const f=e.f, time=f.time||f.slot_time, quote=PROSE.map(k=>f[k]).find(Boolean);
   const vals=[];
   const sp=f.sport?(SPORT[f.sport]||[f.sport,'other']):null;
   let cells='';
-  if(CK.some(([k])=>f[k]!=null)){cells=`<div class="ev-cells">${CK.map(([k,l,c])=>{const v=f[k];if(v==null)return '';const p=prev&&prev.f[k]!=null?+v-+prev.f[k]:null;
-    return `<span class="ev-cell" style="--k:${c}"><b>${n(v)}</b><small>${l}</small>${p?`<em>${p>0?'+':'−'}${Math.abs(p)}</em>`:''}</span>`}).join('')}</div>`}
+  if(!noCells&&CK.some(([k])=>f[k]!=null)){cells=`<div class="ev-cells">${CK.map(([k,l,c])=>{const v=f[k];if(v==null)return '';
+    return `<span class="ev-cell" style="--k:${c}"><b>${n(v)}</b><small>${l}</small></span>`}).join('')}</div>`}
   Object.entries(f).forEach(([k,v])=>{
     if(PROSE.includes(k)||HIDE.includes(k)||CK.some(([c])=>c===k))return;
     if(k==='kcal'){vals.push(`<span class="ev-v"><b>${f.kcal_is_estimate==='true'?'~':''}${n(v)}</b>kcal</span>`);return}
@@ -2525,6 +2548,29 @@ function evRow(e,prev){
   return `<div class="ev-row"><div class="ev-h">${I(sp?sp[1]:SRC[e.src]||'note')}<span class="ev-src"><strong>${sp?sp[0]:e.src}</strong>${sp?`<small>${e.src}</small>`:''}</span><time>${dayLabel(e.date)}${time?` · ${time}`:''}</time></div>
     ${vals.length?`<div class="ev-vals">${vals.join('')}</div>`:''}${cells}
     ${quote?`<p class="ev-quote ${quote.length>140?'clip':''}">„${quote}${e.cut?'…':''}”</p>`:''}</div>`;
+}
+/* Két+ check-in: a sorok csak fejlécet + jegyzetet kapnak, alattuk EGY közös változás-grafikon
+   (1–10 skála, honnan → hová), hogy az összefüggés egy pillantásra látsszon. */
+function evList(ev){
+  const out=[];
+  for(let j=0;j<ev.length;){
+    let k=j; while(k<ev.length&&ev[k].src==='Check-in'&&CK.some(([c])=>ev[k].f[c]!=null))k++;
+    if(k-j>=2){const g=ev.slice(j,k);g.forEach(e=>out.push(evRow(e,true)));out.push(ckShift(g[0],g[g.length-1]));j=k}
+    else{out.push(evRow(ev[j]));j++}
+  }
+  return out.join('');
+}
+function ckShift(a,b){
+  const ta=a.f.slot_time||a.f.time, tb=b.f.slot_time||b.f.time;
+  const same=a.date===b.date;
+  const la=same?ta:`${dayLabel(a.date)}${ta?' '+ta:''}`, lb=same?tb:`${dayLabel(b.date)}${tb?' '+tb:''}`;
+  const X=v=>((+v-1)/9*100).toFixed(1);
+  return `<div class="ev-shift"><div class="sh-h"><span>VÁLTOZÁS</span><span class="sh-t"><i class="o"></i>${la}<b>→</b><i class="f"></i>${lb}</span></div>
+    ${CK.map(([k,l,c])=>{const va=a.f[k],vb=b.f[k];if(va==null||vb==null)return '';const d=+vb-+va,lo=Math.min(+va,+vb),hi=Math.max(+va,+vb);
+      return `<div class="sh-row" style="--k:${c}"><span class="sh-l">${l}</span>
+        <span class="sh-tr"><span class="sh-seg ${d<0?'dn':''}" style="left:${X(lo)}%;width:${X(hi)-X(lo)}%"></span><i class="o" style="left:${X(va)}%"></i><i class="f" style="left:${X(vb)}%"></i></span>
+        <span class="sh-n">${n(va)}<b>→</b><strong>${n(vb)}</strong></span><span class="sh-d ${d===0?'z':''}">${d>0?'+':d<0?'−':'±'}${Math.abs(d)}</span></div>`}).join('')}
+    <div class="sh-sc"><span></span><span class="r"><i>1</i><i>10</i></span></div></div>`;
 }
 const OBS=[
  {id:'volley',card:'fresh',art:'volley',at:'2026-09-23T01:02',title:'A röplabda intenzitása együtt mozoghat a vállterheléssel',
@@ -2554,7 +2600,7 @@ function oxCard(o,i){
     <div class="ox-top"><span class="well" style="--c:var(--lav)">${I(o.art)}</span><div class="grow"><span class="ox-eb">${eb}</span><h3 class="ox-ttl">${o.title}</h3></div><span class="ox-pill">${o.card==='return'?'FIGYELEM':'ÚJ'}</span></div>
     <p class="ox-say">${o.text}</p>
     <div class="ox-evh">MIBŐL LÁTOM · ${ev.length} BEJEGYZÉS<button data-evtoggle>${evOpen?'Elrejtem':'Megnézem ›'}</button></div>
-    ${evOpen?`<div class="ox-ev">${ev.map((e,j)=>evRow(e,j&&ev[j-1].src===e.src?ev[j-1]:null)).join('')}</div>`:''}
+    ${evOpen?`<div class="ox-ev">${evList(ev)}</div>`:''}
     ${a?`<div class="ox-ack">${I('tick')}<span>${ACK[a]}</span></div>`
       :`<div class="ox-ask"><span class="ox-eb">${B('mezo')}Mezo kérdezi</span><p class="ox-q">${o.q}</p>
         <div class="ox-chips"><button class="yes" data-ans="${o.id}:watch">Igen, jellemző</button><button data-ans="${o.id}:reject">Nem stimmel</button><button class="talk" data-ans="${o.id}:talk">Beszéljük meg</button></div></div>`}
