@@ -8,9 +8,9 @@
 // CSS lives in styles/prototype.css §Mozaik — values are the
 // prototype's (en/nap/session heads), ×1.18 (330→390px frame).
 // ============================================================
-import { useId, useState, type ReactNode } from 'react'
+import { useId, useState, type CSSProperties, type ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
-import { ClayIcon, ClaySpot, type ClayIconName, type ClaySpotName } from '@/shared/ui/clay'
+import { ClayIcon, ClaySpot, Icon3D, type ClayIconName, type ClaySpotName, type Icon3DName } from '@/shared/ui/clay'
 
 /** Domain washes — Mozaik 2.0 relaxation: domain color ON the tile (handoff §10). */
 export type MozaikWash =
@@ -136,11 +136,17 @@ export function MozaikPage({ tone, children, className }: { tone: PageTone; chil
   return <div className={cn('mz-page', `mz-p-${tone}`, className)}>{children}</div>
 }
 
-export function PageHead({ onBack, label = '‹ vissza', children }: { onBack: () => void; label?: string; children?: ReactNode }) {
+export function PageHead({ onBack, label = '‹ vissza', glass = false, children }: {
+  onBack: () => void; label?: string
+  /** Üveg variant (bible U3 rule 21, mezo-me75u.4): a small glass back pill `‹ <label>`;
+   *  pass the label WITHOUT the arrow. */
+  glass?: boolean
+  children?: ReactNode
+}) {
   return (
-    <div className="mz-page-head">
-      <button type="button" className="mz-backbtn" onClick={onBack} aria-label="Vissza">
-        {label}
+    <div className={cn('mz-page-head', glass && 'uv-head')}>
+      <button type="button" className={cn('mz-backbtn', glass && 'glass uv-back')} onClick={onBack} aria-label="Vissza">
+        {glass ? <><b aria-hidden="true">‹</b>{label}</> : label}
       </button>
       {children}
     </div>
@@ -151,6 +157,10 @@ interface PageHeroProps {
   icon?: ClayIconName
   /** A clay SPOT (s-*) instead of an icon — Skillek (s-hajtas) / Kitüntetések (s-medal) heroes. */
   spot?: ClaySpotName
+  /** Üveg variant (bible U3 rule 21, mezo-me75u.4): a frameless halo hero — big 3D art, the
+   *  name, the big numeral, the sub line — tinted by `accent` (a CSS color, e.g. var(--dv-rose)). */
+  art?: Icon3DName
+  accent?: string
   /** The prototypes size a hero spot per page (54 and 72 are both common, 48–92 across the
    *  set), so there is no single faithful default — a page that has been checked against its
    *  prototype passes the scaled value. 45 is what every page shipped with. */
@@ -165,8 +175,21 @@ interface PageHeroProps {
   kalauzAnchor?: string
 }
 
-/** Subpage hero recipe (session rounds): title, then icon + big number in ONE row, no subtitle theater. */
-export function PageHero({ icon, spot, iconSize = 45, big, name, sub, children, kalauzAnchor }: PageHeroProps) {
+/** Subpage hero recipe (session rounds): title, then icon + big number in ONE row, no subtitle theater.
+ *  With `art` it is the üveg halo hero instead (art, name, numeral, sub — centred, no box). */
+export function PageHero({ icon, spot, art, accent, iconSize = 45, big, name, sub, children, kalauzAnchor }: PageHeroProps) {
+  if (art) {
+    return (
+      <section className="mz-page-hero uv-hero uv-halo" data-kalauz-anchor={kalauzAnchor}
+        style={accent ? ({ '--c': accent } as CSSProperties) : undefined}>
+        <Icon3D name={art} size={iconSize > 45 ? iconSize : 88} className="uv-hero-art uv-float" />
+        <div className="mz-hero-nm">{name}</div>
+        {big !== undefined && <span className="mz-bignum">{big}</span>}
+        {sub && <div className="mz-hero-sb">{sub}</div>}
+        {children}
+      </section>
+    )
+  }
   return (
     <div className="mz-page-hero" data-kalauz-anchor={kalauzAnchor}>
       <div className="mz-hero-nm">{name}</div>

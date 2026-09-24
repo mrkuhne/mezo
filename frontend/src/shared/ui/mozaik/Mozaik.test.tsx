@@ -114,3 +114,21 @@ test('CollapsibleStrip: closed header carries the summary; toggling flips aria-e
   expect(head).toHaveAttribute('aria-expanded', 'true')
   expect(screen.getByText('set table')).toBeVisible()
 })
+
+// U4 (mezo-me75u.4, bible U3 rule 21): the page frame's üveg variant, so a slice reuses it
+// instead of copying the Nap pages' own glass back pill + halo hero markup.
+test('PageHead `glass` renders the glass back pill with the arrow split from the label', () => {
+  const { container } = render(<PageHead glass label="Edzés" onBack={() => {}} />)
+  const btn = container.querySelector('.mz-backbtn.glass.uv-back')!
+  expect(btn).not.toBeNull()
+  expect(btn).toHaveTextContent('‹Edzés')
+})
+
+test('PageHero `art` renders the frameless halo hero with a 3D icon in the accent', () => {
+  const { container } = render(<PageHero art="t-volley" accent="var(--dv-rose)" big="4/5" name="Sport" sub="a héten" />)
+  const hero = container.querySelector('.mz-page-hero.uv-hero.uv-halo') as HTMLElement
+  expect(hero.style.getPropertyValue('--c')).toBe('var(--dv-rose)')
+  expect(hero.querySelector('use[href="#t-volley"]')).not.toBeNull()
+  expect(hero.querySelector('.mz-bignum')).toHaveTextContent('4/5')
+  expect(hero.querySelector('.mz-hero-row')).toBeNull()
+})
