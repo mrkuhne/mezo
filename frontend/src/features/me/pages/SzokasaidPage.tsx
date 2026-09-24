@@ -20,13 +20,9 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
-// Stage tones on the app's tokens (prototype STAGES colors): mut → gold → deep gold → sage.
-const STAGE_TONE = [
-  { c: 'var(--mz-ink-mut)', w: 'var(--surface-recess)', s: 'color-mix(in srgb, var(--text-primary) 30%, transparent)' },
-  { c: 'var(--accent-base)', w: 'var(--mz-cell-gold-bg)', s: 'color-mix(in srgb, var(--accent-base) 45%, transparent)' },
-  { c: 'var(--accent-deep)', w: 'var(--mz-cell-gold-bg)', s: 'color-mix(in srgb, var(--accent-base) 50%, transparent)' },
-  { c: 'var(--mz-cell-sage-ink)', w: 'var(--mz-cell-sage-bg)', s: 'color-mix(in srgb, var(--mz-cell-sage-ink) 50%, transparent)' },
-] as const
+// Stage tones — the colour carries the stage (bible U6 rule 46), in the üveg dark accents
+// (prototype uveg-en2.html `HAB`): still conscious lavender → building / nearly gold → settled sage.
+const STAGE_TONE = ['var(--dv-lav)', 'var(--dv-amber)', 'var(--dv-amber)', 'var(--dv-sage)'] as const
 
 const PRINCIPLE = 'Minden csempe a saját ívét mutatja: az ismétlésszám a nagy szám, az ív a '
   + 'becsült automatizmus. A kihagyás lassítja a görbét, de sosem nullázza — nincs megtört '
@@ -46,17 +42,19 @@ function stageIdxOf(f: HabitFormation | undefined): number {
 }
 
 /** The prototype's `arcSvg`: the automaticity ring with its % (or an honest dash) inside. */
-function Arc({ pct, color }: { pct: number | null; color: string }) {
+function Arc({ pct }: { pct: number | null }) {
   const r = 21
   const c = 2 * Math.PI * r
   const off = c * (1 - (pct ?? 0) / 100)
   return (
-    <svg className="rt-harc" viewBox="0 0 52 52" aria-hidden="true">
-      <circle cx="26" cy="26" r={r} fill="none" stroke="color-mix(in srgb, var(--text-primary) 9%, transparent)" strokeWidth="5" />
-      <circle
-        cx="26" cy="26" r={r} fill="none" stroke={color} strokeWidth="5" strokeLinecap="round"
-        strokeDasharray={c.toFixed(1)} strokeDashoffset={off.toFixed(1)} transform="rotate(-90 26 26)"
-      />
+    <svg className="rt-harc uv-ring" viewBox="0 0 52 52" aria-hidden="true">
+      <circle className="uv-ring-track" cx="26" cy="26" r={r} strokeWidth="5" />
+      {pct != null && (
+        <circle
+          className="uv-ring-prog" cx="26" cy="26" r={r} strokeWidth="5"
+          strokeDasharray={c.toFixed(1)} strokeDashoffset={off.toFixed(1)} transform="rotate(-90 26 26)"
+        />
+      )}
       <text x="26" y="30" textAnchor="middle" fontSize="13" fill="var(--text-primary)">
         {pct != null ? `${pct}%` : '—'}
       </text>
@@ -80,8 +78,8 @@ export function SzokasaidPage() {
 
   if (defs.length === 0) {
     return (
-      <MozaikPage tone="gold">
-        <PageHead onBack={() => navigate('/me/rutin')} label="‹ Rutin" />
+      <MozaikPage tone="gold" className="rt-uv rt-szokasok">
+        <PageHead glass onBack={() => navigate('/me/rutin')} label="Rutin" />
         <PageBody>
           {isPending ? <GhostState message="Szokások betöltése…" lines={3} />
             : isError ? <GhostState message="Nem sikerült betölteni a szokásokat." ctaLabel="Újra" onCta={refetch} />
@@ -131,8 +129,8 @@ export function SzokasaidPage() {
       <button
         key={d.habitKey}
         type="button"
-        className="rt-htile rise"
-        style={{ ...rise(60 + order * 30), '--hc': tone.c, '--hw': tone.w, '--hs': tone.s } as CSSProperties}
+        className="rt-htile glass rise"
+        style={{ ...rise(60 + order * 30), '--c': tone, '--i': order } as CSSProperties}
         onClick={() => navigate(`/me/rutin/szokas/${d.habitKey}`)}
         data-testid={`habit-tile-${d.habitKey}`}
       >
@@ -143,7 +141,7 @@ export function SzokasaidPage() {
             <span className="rt-hreps">{f?.reps ?? '—'}<small>ismétlés</small></span>
           </span>
           <span className="rt-hright">
-            <Arc pct={enough ? f.automaticityPct : null} color={tone.c} />
+            <Arc pct={enough ? f.automaticityPct : null} />
           </span>
         </span>
         <span className="rt-heta"><b>{etaBig}</b><span>{etaSub}</span></span>
@@ -152,27 +150,26 @@ export function SzokasaidPage() {
   }
 
   return (
-    <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate('/me/rutin')} label="‹ Rutin" />
-      <PageHero big={`${visible.length}`} name="Szokásaid" sub="formálódás szerint rendezve" />
+    <MozaikPage tone="gold" className="rt-uv rt-szokasok">
+      <PageHead glass onBack={() => navigate('/me/rutin')} label="Rutin" />
+      <PageHero art="t-harvest" accent="var(--dv-amber)" big={`${visible.length}`} name="Szokásaid" sub="formálódás szerint rendezve" />
       <PageBody principle={PRINCIPLE}>
         <EntranceGroup replayKey={[...filter].join('-')}>
           <div className="rt-fgrid rise" style={rise(40)}>
             {FORMATION_STAGES.map((s, i) => {
-              const tone = STAGE_TONE[i]
               return (
                 <button
                   key={s.label}
                   type="button"
                   className={cn('rt-ftile', filter.has(i) && 'on', counts[i] === 0 && 'is-zero')}
                   aria-pressed={filter.has(i)}
-                  style={{ '--fc': tone.c, '--fw': tone.w, '--fs': tone.s } as CSSProperties}
+                  style={{ '--c': STAGE_TONE[i] } as CSSProperties}
                   onClick={() => toggle(i)}
                 >
+                  <b>{counts[i]}</b>
                   <span className="rt-fdots" aria-hidden="true">
                     {FORMATION_STAGES.map((x, j) => <i key={x.label} className={cn(j <= i && 'on')} />)}
                   </span>
-                  <b>{counts[i]}</b>
                   <small>{s.label}</small>
                 </button>
               )
@@ -182,7 +179,7 @@ export function SzokasaidPage() {
             {visible.map((d, i) => tile(d, i))}
           </div>
           {visible.length === 0 && (
-            <p className="rt-hint">Ebben a szakaszban most nincs szokásod.</p>
+            <p className="rt-hint rt-emptyline uv-empty">Ebben a szakaszban most nincs szokásod.</p>
           )}
         </EntranceGroup>
       </PageBody>

@@ -213,7 +213,7 @@ test('header actions: ‹ Kapcsolatok back chip returns to the real hub route, L
       </ThemeProvider>
     </QueryWrapper>,
   )
-  expect(screen.getByText('‹ Kapcsolatok')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹Kapcsolatok')
   fireEvent.click(screen.getByText(/Log/))
   expect(screen.getByText('Mit jegyzünk meg?')).toBeInTheDocument()
 })
@@ -227,7 +227,7 @@ test('the ‹ Kapcsolatok back chip navigates to the real /me/people hub (regist
       </ThemeProvider>
     </QueryWrapper>,
   )
-  fireEvent.click(screen.getByText('‹ Kapcsolatok'))
+  fireEvent.click(screen.getByRole('button', { name: 'Vissza' }))
   expect(router.state.location.pathname).toBe('/me/people')
   expect(screen.getByText('Kapcsolatok')).toBeInTheDocument()
 })

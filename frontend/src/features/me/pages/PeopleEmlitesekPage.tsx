@@ -20,11 +20,15 @@
 // card (never a fabricated row); a tone-less row (the night-run hasn't scored it yet) never
 // gets a wash, and the page's own footnote only appears when at least one visible row is
 // actually tone-less — never a blanket disclaimer nobody needed.
+//
+// Üveg (mezo-me75u.7, prototype `emlitesek()`): a sky t-chat halo hero, the lit sky „Log" pill,
+// the week rhythm as ONE sky glass card (tone-coloured glowing bars), the filter chips flat (the
+// active one lit in its own colour), the mention rows flat tone-edged cells (MentionRow).
 import { useMemo, useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { usePeople } from '@/data/hooks'
 import { weeklyRhythm, weekWindow } from '@/features/me/logic/peopleDerive'
 import { TONE_META, CTX_META } from '@/features/me/logic/peopleVisuals'
@@ -54,16 +58,14 @@ function filterKey(f: Filters): string {
 
 function ToneChip({ tone, active, onClick }: { tone: Affect; active: boolean; onClick: () => void }) {
   const meta = TONE_META[tone]
-  const style = active
-    ? ({
-        background: `color-mix(in srgb, var(${meta.cssVar}) 20%, var(--surface-card))`,
-        borderColor: `var(${meta.cssVar})`,
-        color: `var(${meta.cssVar})`,
-      } as CSSProperties)
-    : undefined
   return (
-    <button type="button" className={`ppl-fchip${active ? ' on' : ''}`} style={style} onClick={onClick}>
-      <span className="ppl-fchip-dot" aria-hidden="true" style={{ background: `var(${meta.cssVar})` } as CSSProperties} />
+    <button
+      type="button"
+      className={`ppl-fchip${active ? ' on' : ''}`}
+      style={{ '--c': `var(${meta.cssVar})` } as CSSProperties}
+      onClick={onClick}
+    >
+      <span className="ppl-fchip-dot" aria-hidden="true" />
       {meta.label}
     </button>
   )
@@ -71,16 +73,14 @@ function ToneChip({ tone, active, onClick }: { tone: Affect; active: boolean; on
 
 function CtxChip({ ctx, active, onClick }: { ctx: MentionContext; active: boolean; onClick: () => void }) {
   const meta = CTX_META[ctx]
-  const style = active
-    ? ({
-        background: `color-mix(in srgb, var(${meta.cssVar}) 20%, var(--surface-card))`,
-        borderColor: `var(${meta.cssVar})`,
-        color: `var(${meta.cssVar})`,
-      } as CSSProperties)
-    : undefined
   return (
-    <button type="button" className={`ppl-fchip${active ? ' on' : ''}`} style={style} onClick={onClick}>
-      <span className="ppl-fchip-dot" aria-hidden="true" style={{ background: `var(${meta.cssVar})` } as CSSProperties} />
+    <button
+      type="button"
+      className={`ppl-fchip${active ? ' on' : ''}`}
+      style={{ '--c': `var(${meta.cssVar})` } as CSSProperties}
+      onClick={onClick}
+    >
+      <span className="ppl-fchip-dot" aria-hidden="true" />
       {meta.label}
     </button>
   )
@@ -118,25 +118,20 @@ export function PeopleEmlitesekPage() {
   const personFor = (m: Mention) => people.find((p) => p.id === m.person_id)
 
   return (
-    <MozaikPage tone="sky">
-      <PageHead onBack={() => navigate('/me/people')} label="‹ Kapcsolatok">
-        <button
-          type="button"
-          className="pgact"
-          onClick={() => setLogOpen(true)}
-          style={{ background: 'var(--mz-cell-sky-bg)', color: 'var(--mz-cell-sky-ink)' }}
-        >
-          <ClayIcon name="i-mikrofon" size={12} /> Log
+    <MozaikPage tone="sky" className="ppl-page ppl-eml">
+      <PageHead glass onBack={() => navigate('/me/people')} label="Kapcsolatok">
+        <button type="button" className="pgact ppl-act ppl-act-lit" onClick={() => setLogOpen(true)}>
+          <Icon3D name="t-mic" size={18} /> Log
         </button>
       </PageHead>
 
-      <PageHero icon="i-naplo" name="Említések" big={weekCount} sub="említés e héten" />
+      <PageHero art="t-chat" accent="var(--dv-sky)" name="Említések" big={weekCount} sub="említés e héten" />
 
       <PageBody>
         <EntranceGroup replayKey={filterKey(filters)}>
-          <div className="ppl-rhythm rise" style={{ '--d': '0ms' } as CSSProperties}>
+          <div className="ppl-rhythm glass rise" style={{ '--d': '0ms', '--i': 1 } as CSSProperties}>
             <div className="mz-tile-top">
-              <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-sky-ink)' }}>A hét ritmusa</span>
+              <span className="mz-eyebrow">A hét ritmusa</span>
               <span className="ppl-rhythm-count">{rhythmCount} említés</span>
             </div>
             <div className="ppl-rcols">
@@ -146,7 +141,8 @@ export function PeopleEmlitesekPage() {
                   <div key={i} className={`ppl-rcol${day.isToday ? ' ppl-rcol-today' : ''}`}>
                     <span
                       className="ppl-rbar"
-                      style={{ height: `${rhythmBarHeight(day.count)}px`, background: color, '--d': `${120 + i * 55}ms` } as CSSProperties}
+                      data-empty={day.count === 0 ? 'true' : undefined}
+                      style={{ height: `${rhythmBarHeight(day.count)}px`, '--tc': color, '--d': `${120 + i * 55}ms` } as CSSProperties}
                     />
                   </div>
                 )
@@ -195,7 +191,7 @@ export function PeopleEmlitesekPage() {
           </div>
 
           {filtered.length === 0 ? (
-            <div className="ppl-empty rise">Erre a szűrésre nincs említés — próbáld tágabban.</div>
+            <div className="ppl-empty uv-empty rise">Erre a szűrésre nincs említés — próbáld tágabban.</div>
           ) : (
             filtered.map((mention, i) => (
               <MentionRow

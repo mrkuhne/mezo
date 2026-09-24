@@ -21,7 +21,7 @@ import { NotificationCategoryRow } from '@/features/me/components/NotificationCa
 import { Toggle } from '@/shared/ui/Toggle'
 import { CtaPrimary } from '@/shared/ui/Cta'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { deriveBlocks } from '@/features/fuel/logic/buildProtocol'
@@ -186,9 +186,9 @@ export function NotificationsPage() {
       // mezo-d20.11; mezo-nol0 renamed the chip once the feed took the shared noun).
       // No hero bignum here: on a platform where nothing can fire, a "5 tervezett ma" would be
       // a number about notifications that cannot happen.
-      <MozaikPage tone="sky">
-        <PageHead onBack={() => navigate('/settings', { state: origin.state })} label="‹ Beállítások" />
-        <PageHero icon="i-ertesites" name="Értesítés-beállítások" />
+      <MozaikPage tone="sky" className="ntf-page">
+        <PageHead glass onBack={() => navigate('/settings', { state: origin.state })} label="Beállítások" />
+        <PageHero art="t-bell" accent="var(--dv-sky)" name="Értesítés-beállítások" />
         <PageBody>
           <EntranceGroup className="col gap-md">
             <div className="rise" style={{ '--d': '0ms' } as React.CSSProperties}>
@@ -228,13 +228,14 @@ export function NotificationsPage() {
   const brainCategories = prefs.filter((p) => NOTIFICATION_CATEGORY_META[p.category].section === 'brain')
 
   return (
-    <MozaikPage tone="sky">
-      <PageHead onBack={() => navigate('/settings', { state: origin.state })} label="‹ Beállítások" />
+    <MozaikPage tone="sky" className="ntf-page">
+      <PageHead glass onBack={() => navigate('/settings', { state: origin.state })} label="Beállítások" />
       {/* Prototype #page-ertesites: the hero states today's planned volume, and the sub-line
           qualifies the rhythm. „nyugodt ritmus" is DERIVED (no dense window in the same
           forecast the card below draws), never asserted — a crowded day says so instead. */}
       <PageHero
-        icon="i-ertesites"
+        art="t-bell"
+        accent="var(--dv-sky)"
         name="Értesítés-beállítások"
         big={forecast.total}
         sub={forecast.denseWindows.length === 0 ? 'tervezett ma · nyugodt ritmus' : 'tervezett ma · sűrű ablak'}
@@ -243,21 +244,19 @@ export function NotificationsPage() {
       <EntranceGroup className="col gap-md">
         <NotificationPreviewHeader forecast={forecast} />
 
-        <div className="ntf-masterrow rise" style={{ '--d': '40ms' } as React.CSSProperties}>
-          <span className="ntf-mic" aria-hidden="true"><ClayIcon name="i-ertesites" size={24} /></span>
-          <div className="col" style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
-              Push értesítések
-            </span>
-            <span className="text-tertiary" style={{ fontSize: 11, marginTop: 2 }}>
-              {statusLine}
-            </span>
+        {/* Üveg (mezo-me75u.7): the master switch is its own one-row sky glass card. */}
+        <div className="ntf-masterrow glass rise" style={{ '--d': '40ms', '--c': 'var(--dv-sky)' } as React.CSSProperties}>
+          <span className="ntf-mic uv-well" aria-hidden="true"><Icon3D name="t-bell" size={28} /></span>
+          <div className="ntf-master-tx">
+            <span className="ntf-master-nm">Push értesítések</span>
+            <span className="ntf-master-sb">{statusLine}</span>
           </div>
           {/* Visible-but-inert when denied — the status line already tells the user it's
               recoverable in iOS settings, so the switch stays present and honestly marked
               dead rather than hidden (unlike an unrecoverable dead control, which would be
               hidden instead). Also disabled mid-flight to prevent re-entrant taps. */}
           <Toggle
+            glass
             on={push.enabled}
             onToggle={onToggle}
             ariaLabel="Push értesítések"
@@ -269,18 +268,19 @@ export function NotificationsPage() {
             engedélyezve" — indistinguishable from a tap that never registered. Lives outside
             the washed row (an alert reads oddly nested in a colored tile). */}
         {push.error && (
-          <p className="text-error" style={{ fontSize: 11, margin: '-6px 2px 0' }} role="alert">
+          <p className="text-error ntf-err" role="alert">
             {PUSH_ERROR_COPY[push.error]}
           </p>
         )}
 
         {push.enabled && (
           <div className="ntf-testrow rise" style={{ '--d': '70ms' } as React.CSSProperties}>
-            <CtaPrimary onClick={onTest} disabled={push.busy}>
+            <CtaPrimary className="ntf-testbtn" onClick={onTest} disabled={push.busy}>
+              <Icon3D name="t-send" size={22} />
               Teszt értesítés küldése
             </CtaPrimary>
             {testResult && (
-              <p className="text-tertiary" style={{ fontSize: 11, marginTop: 8 }}>
+              <p className="text-tertiary ntf-testres">
                 {testResult}
               </p>
             )}
@@ -289,7 +289,7 @@ export function NotificationsPage() {
 
         <div className="rise" style={{ '--d': '100ms' } as React.CSSProperties}>
           <Eyebrow>Mezo megszólal</Eyebrow>
-          <div className="mt-sm">
+          <div className="ntf-cats glass" style={{ '--c': 'var(--dv-sky)' } as React.CSSProperties}>
             {proseCategories.map((pref) => (
               <NotificationCategoryRow
                 key={pref.category}
@@ -303,7 +303,7 @@ export function NotificationsPage() {
 
         <div className="rise" style={{ '--d': '140ms' } as React.CSSProperties}>
           <Eyebrow>Emlékeztetők</Eyebrow>
-          <div className="mt-sm">
+          <div className="ntf-cats glass" style={{ '--c': 'var(--dv-sky)' } as React.CSSProperties}>
             {reminderCategories.map((pref) => (
               <NotificationCategoryRow
                 key={pref.category}
@@ -317,7 +317,7 @@ export function NotificationsPage() {
 
         <div className="rise" style={{ '--d': '180ms' } as React.CSSProperties}>
           <Eyebrow>Az agy eseményei</Eyebrow>
-          <div className="mt-sm">
+          <div className="ntf-cats glass" style={{ '--c': 'var(--dv-sky)' } as React.CSSProperties}>
             {brainCategories.map((pref) => (
               <NotificationCategoryRow
                 key={pref.category}

@@ -29,7 +29,7 @@ import { HABIT_METRIC_PALETTE } from '@/features/me/logic/habitMetricPalette'
 import { routineSentenceParts, recipeFromDef, titlePlaceholder, type RoutineRecipe } from '@/features/me/logic/routineSentence'
 import { LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
 import { cn } from '@/shared/lib/cn'
-import { ClayIcon } from '@/shared/ui/clay'
+import { ContentIcon, Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { GhostState } from '@/shared/ui/GhostState'
 import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -101,14 +101,16 @@ function rise(delayMs: number): CSSProperties {
   return { '--d': `${delayMs}ms` } as CSSProperties
 }
 
-function FieldCard({ children, delayMs }: { children: ReactNode; delayMs: number }) {
-  return <div className="rt-fcard rise" style={rise(delayMs)}>{children}</div>
+/** A form section. Üveg (mezo-me75u.7): sections are bare (flat controls on the ground); only the
+ *  effort card is a glass object (prototype uveg-en2.html `uj`). */
+function FieldCard({ children, delayMs, glass = false }: { children: ReactNode; delayMs: number; glass?: boolean }) {
+  return <div className={cn('rt-fcard rise', glass && 'glass')} style={rise(delayMs)}>{children}</div>
 }
 
-function Tip({ tone, sign, children }: { tone?: 'lav' | 'warn'; sign: string; children: ReactNode }) {
+function Tip({ tone, sign, children }: { tone?: 'lav' | 'warn'; sign: Icon3DName; children: ReactNode }) {
   return (
     <div className={cn('rt-tip', tone && `is-${tone}`)}>
-      <span aria-hidden="true">{sign}</span>
+      <Icon3D name={sign} size={26} />
       <span>{children}</span>
     </div>
   )
@@ -212,8 +214,8 @@ export function RoutineWizardPage() {
   // chain the user never saw. The retry ghost is the one RutinHubPage/HabitPage already use.
   if (isError && (catalog?.chains ?? []).length === 0) {
     return (
-      <MozaikPage tone="gold">
-        <PageHead onBack={() => navigate('/me/rutin')} label="‹ Rutin" />
+      <MozaikPage tone="gold" className="rt-uv rt-wiz">
+        <PageHead glass onBack={() => navigate('/me/rutin')} label="Rutin" />
         <PageBody>
           <GhostState message="Nem sikerült betölteni a rutinokat." ctaLabel="Újra" onCta={refetch} />
         </PageBody>
@@ -347,12 +349,13 @@ export function RoutineWizardPage() {
   const stepTitle = STEP_TITLES[stepId]
 
   return (
-    <MozaikPage tone="gold">
+    <MozaikPage tone="gold" className="rt-uv rt-wiz">
       <PageHead
+        glass
         onBack={() => (stepIdx > 0 ? setStepIdx(stepIdx - 1) : navigate('/me/rutin'))}
-        label={stepIdx > 0 ? `‹ ${STEP_TITLES[steps[stepIdx - 1]]}` : '‹ Rutin'}
+        label={stepIdx > 0 ? STEP_TITLES[steps[stepIdx - 1]] : 'Rutin'}
       >
-        <button type="button" className="pgact" onClick={() => navigate('/me/rutin')}>Mégse</button>
+        <button type="button" className="pgact rt-ghostpill" onClick={() => navigate('/me/rutin')}>Mégse</button>
       </PageHead>
       <PageBody>
         <EntranceGroup replayKey={stepId}>
@@ -363,11 +366,12 @@ export function RoutineWizardPage() {
 
           {stepId !== 'fw' && (
             <div
-              className={cn('rt-sentence', framework === 'CLEAR' && 'is-clear', isLast && 'is-big')}
+              className={cn('rt-sentence glass', framework === 'CLEAR' && 'is-clear', isLast && 'is-big')}
               data-testid="recipe-sentence"
             >
               <span className="rt-sentence-lb">
-                {framework === 'FOGG' ? '⚓ Szokás-láncolás' : framework === 'CLEAR' ? '◈ Négy törvény' : '· Keret nélkül'}
+                <Icon3D name={framework === 'FOGG' ? 't-anchor' : framework === 'CLEAR' ? 't-gem' : 't-note'} size={18} />
+                {framework === 'FOGG' ? 'Szokás-láncolás' : framework === 'CLEAR' ? 'Négy törvény' : 'Keret nélkül'}
                 <span className="rt-sentence-lb-sub">· épül, ahogy töltöd</span>
               </span>
               <p className="rt-sentence-tx">
@@ -385,11 +389,11 @@ export function RoutineWizardPage() {
             <>
               <button
                 type="button"
-                className={cn('rt-fwcard is-fogg rise', fwChoice === 'FOGG' && 'on')}
+                className={cn('rt-fwcard glass is-fogg rise', fwChoice === 'FOGG' && 'on')}
                 style={rise(80)}
                 onClick={() => pickFramework('FOGG')}
               >
-                <span className="rt-fwsgn" aria-hidden="true">⚓</span>
+                <span className="rt-fwsgn"><Icon3D name="t-anchor" size={40} /></span>
                 <span className="rt-fwbody">
                   <b>Szokás-láncolás</b>
                   <small>Egy már meglévő szokásod végpillanatához kötöd az újat. Pici viselkedés, azonnali ünneplés — a szokás nő magától.</small>
@@ -399,11 +403,11 @@ export function RoutineWizardPage() {
               </button>
               <button
                 type="button"
-                className={cn('rt-fwcard is-clear rise', fwChoice === 'CLEAR' && 'on')}
+                className={cn('rt-fwcard glass is-clear rise', fwChoice === 'CLEAR' && 'on')}
                 style={rise(120)}
                 onClick={() => pickFramework('CLEAR')}
               >
-                <span className="rt-fwsgn" aria-hidden="true">◈</span>
+                <span className="rt-fwsgn"><Icon3D name="t-gem" size={40} /></span>
                 <span className="rt-fwbody">
                   <b>Négy törvény</b>
                   <small>Tedd nyilvánvalóvá, vonzóvá, könnyűvé és kielégítővé. Akkor válaszd, ha a viselkedésnek valódi akadálya van.</small>
@@ -416,11 +420,11 @@ export function RoutineWizardPage() {
               {prefillDef == null && (
                 <button
                   type="button"
-                  className={cn('rt-fwcard rise', fwChoice === 'NONE' && 'on')}
+                  className={cn('rt-fwcard glass is-none rise', fwChoice === 'NONE' && 'on')}
                   style={rise(150)}
                   onClick={() => pickFramework('NONE')}
                 >
-                  <span className="rt-fwsgn" aria-hidden="true">·</span>
+                  <span className="rt-fwsgn"><Icon3D name="t-note" size={40} /></span>
                   <span className="rt-fwbody">
                     <b>Keret nélkül</b>
                     <small>Nem kérünk keretet — cím, lánc, és kész. Bármikor felvehetsz rá keretet később a szokás oldalán.</small>
@@ -428,7 +432,7 @@ export function RoutineWizardPage() {
                   </span>
                 </button>
               )}
-              <Tip sign="💡">
+              <Tip sign="t-bulb">
                 Nem tudod eldönteni? <b>Szokás-láncolással</b> kezdj — ha a tett tényleg pici, nincs mit legyőzni.
               </Tip>
             </>
@@ -460,7 +464,7 @@ export function RoutineWizardPage() {
                   placeholder="…vagy a saját szavaiddal: „kitöltöttem a reggeli kávét”"
                 />
               </FieldCard>
-              <Tip sign="⚓">
+              <Tip sign="t-anchor">
                 A horgony <b>végpillanata</b> számít: nem „reggel”, hanem „miután letettem a fogkefét”. Ugyanaz a hely, ugyanaz a gyakoriság.
               </Tip>
             </>
@@ -480,7 +484,7 @@ export function RoutineWizardPage() {
                   placeholder="pl. „7:10-kor, a konyhaasztalnál, a jegyzetfüzet a bögre mellett”"
                 />
               </FieldCard>
-              <Tip tone="lav" sign="◈">
+              <Tip tone="lav" sign="t-gem">
                 <b>1. törvény — tedd nyilvánvalóvá.</b> A jelzés legyen látható a térben: a füzet a párnán, a cipő az ajtóban.
               </Tip>
             </>
@@ -509,11 +513,11 @@ export function RoutineWizardPage() {
                   placeholder="pl. „figyel a saját gondolataira”"
                 />
                 <div className="rt-lockline">
-                  <span aria-hidden="true">◈</span>
+                  <Icon3D name="t-gem" size={16} />
                   <span>Clear tézise: a szokás <b>szavazat</b> arra, hogy kinek tartod magad. Ez a mező a Fogg-ágon nincs.</span>
                 </div>
               </FieldCard>
-              <Tip tone="lav" sign="◈">
+              <Tip tone="lav" sign="t-gem">
                 <b>Vonzó</b> — a második törvény. Kösd olyasmihez, amit amúgy is szeretsz, vagy csinálj belőle valamit, ami után vágysz.
               </Tip>
             </>
@@ -534,7 +538,7 @@ export function RoutineWizardPage() {
                   placeholder="pl. „leírok egy mondatot a füzetbe”"
                 />
                 {tooBig && (
-                  <Tip tone="warn" sign="✂">
+                  <Tip tone="warn" sign="t-scissors">
                     Ez nagynak hangzik. <b>Mi a legkisebb változat</b>, amit rossz napon is megteszel? Nőni fog magától.
                   </Tip>
                 )}
@@ -566,14 +570,14 @@ export function RoutineWizardPage() {
                       className={cn(skillKey === s.key && 'on')}
                       onClick={() => setSkillKey(s.key)}
                     >
-                      <ClayIcon name={s.clayIcon} size={21} />
+                      <ContentIcon name={s.clayIcon} size={28} />
                       <small>{s.name}</small>
                     </button>
                   ))}
                 </div>
               </FieldCard>
 
-              <FieldCard delayMs={140}>
+              <FieldCard delayMs={140} glass>
                 <span className="rt-flabel">Mennyibe kerül? <span className="rt-opt">Fogg ability-faktorai</span></span>
                 <EffortGrid
                   value={eff}
@@ -591,14 +595,14 @@ export function RoutineWizardPage() {
                     className={cn(mode === 'MANUAL' && 'on')}
                     onClick={() => setMode('MANUAL')}
                   >
-                    <span aria-hidden="true">✓</span>Kézzel pipálom
+                    <Icon3D name="t-tick" size={20} />Kézzel pipálom
                   </button>
                   <button
                     type="button"
                     className={cn(mode === 'DERIVED' && 'on')}
                     onClick={() => setMode('DERIVED')}
                   >
-                    <span aria-hidden="true">◎</span>Adatból
+                    <Icon3D name="t-signal" size={20} />Adatból
                   </button>
                 </div>
                 {mode === 'DERIVED' && (
@@ -615,7 +619,7 @@ export function RoutineWizardPage() {
                   </>
                 )}
                 <div className="rt-lockline">
-                  <span aria-hidden="true">✓</span>
+                  <Icon3D name="t-tick" size={16} />
                   <span>Ezt <b>később is módosíthatod</b> a szokás oldalán.</span>
                 </div>
               </FieldCard>
@@ -638,7 +642,7 @@ export function RoutineWizardPage() {
                       placeholder="…vagy a sajátod"
                     />
                   </FieldCard>
-                  <Tip sign="⚓">
+                  <Tip sign="t-anchor">
                     Az ünneplés <b>másodperceken belül</b> jön, és tényleg jó érzés. Ettől rögzül a szokás — nem a fegyelemtől.
                   </Tip>
                 </>
@@ -655,7 +659,7 @@ export function RoutineWizardPage() {
                       placeholder="…vagy a sajátod"
                     />
                   </FieldCard>
-                  <Tip tone="lav" sign="◈">
+                  <Tip tone="lav" sign="t-gem">
                     <b>4. törvény — tedd kielégítővé.</b> A logolás maga a jutalom: a pipa és az emelkedő erő-csík. Ezért az első chip az alap.
                   </Tip>
                 </>
@@ -666,7 +670,7 @@ export function RoutineWizardPage() {
                 aria-pressed={committed}
                 onClick={() => setCommitted(!committed)}
               >
-                <span className="rt-commit-box" aria-hidden="true">✓</span>
+                <span className="rt-commit-box" aria-hidden="true">{committed && <Icon3D name="t-tick" size={20} />}</span>
                 <span className="rt-commit-body">
                   <b>Vállalom</b>
                   <small>A pipa egy ígéret, nem beállítás. Holnap reggel ott lesz a Nap tabon.</small>
@@ -678,16 +682,16 @@ export function RoutineWizardPage() {
           {/* Nav */}
           <div className="rt-wnav rise" style={rise(170)}>
             {stepIdx > 0 && (
-              <button type="button" className="cta-ghost flex-1" onClick={() => setStepIdx(stepIdx - 1)}>← Vissza</button>
+              <button type="button" className="cta-ghost rt-ghostpill flex-1" onClick={() => setStepIdx(stepIdx - 1)}>← Vissza</button>
             )}
             <button
               type="button"
-              className="cta-primary"
+              className="cta-primary rt-litpill"
               style={{ flex: stepIdx > 0 ? 2 : 1 }}
               disabled={!canProceed || (isLast && pending)}
               onClick={onNext}
             >
-              {isLast ? '✓ Mentés' : 'Tovább →'}
+              {isLast ? <><Icon3D name="t-tick" size={20} />Mentés</> : 'Tovább →'}
             </button>
           </div>
           <p className="mz-principle">{isLast ? NOTE_LAST : NOTE_DEFAULT}</p>

@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import { cn } from '@/shared/lib/cn'
 import { useHabitCatalogActions } from '@/data/hooks'
 import type { HabitChainInfo, HabitDaypart } from '@/data/types'
 
-const DAYPART_OPTIONS: { id: HabitDaypart; label: string; emoji: string }[] = [
-  { id: 'MORNING', label: 'Reggel', emoji: '🌅' },
-  { id: 'DAY', label: 'Napközben', emoji: '☀️' },
-  { id: 'EVENING', label: 'Este', emoji: '🌙' },
+// Üveg (mezo-me75u.7): the daypart emoji became Titanium sprite icons (bible §4, no emoji).
+const DAYPART_OPTIONS: { id: HabitDaypart; label: string; art: Icon3DName }[] = [
+  { id: 'MORNING', label: 'Reggel', art: 't-dawn' },
+  { id: 'DAY', label: 'Napközben', art: 't-sun' },
+  { id: 'EVENING', label: 'Este', art: 't-moon' },
 ]
 
 // Mirrors HabitAdminService.deleteChain's seed-chain guard (habitAdminHooks.ts's
@@ -39,51 +41,57 @@ export function ChainEditSheet({ chain, onClose }: { chain?: HabitChainInfo; onC
   }
 
   return (
-    <Sheet onClose={onClose} labelledBy="chain-edit-title">
+    <Sheet className="glass rt-sheet" onClose={onClose} labelledBy="chain-edit-title">
       {(close) => (
-        <div className="col gap-sm" style={{ padding: '4px 4px 8px' }}>
-          <h2 id="chain-edit-title" style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>
-            {chain ? 'Rutin szerkesztése' : 'Új rutin'}
-          </h2>
+        <div className="col gap-sm">
+          <div className="rt-shh">
+            <Icon3D name="t-chain" size={46} />
+            <span className="rt-shh-t">
+              <span className="rt-shh-eb">Rutin</span>
+              <h2 id="chain-edit-title">{chain ? 'Rutin szerkesztése' : 'Új rutin'}</h2>
+            </span>
+          </div>
 
-          <input
-            aria-label="Rutin neve"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="pl. Ebéd utáni szünet"
-            style={{ background: 'var(--surface-2)', padding: '9px 12px', fontSize: 13, color: 'var(--text-primary)' }}
-          />
+          <label className="rt-field">
+            <span className="rt-flabel">Név</span>
+            <input
+              className="rt-fin"
+              aria-label="Rutin neve"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="pl. Ebéd utáni szünet"
+            />
+          </label>
 
-          <div className="row gap-sm">
-            {DAYPART_OPTIONS.map((o) => (
-              <button
-                key={o.id}
-                type="button"
-                className="chip"
-                aria-pressed={daypart === o.id}
-                onClick={() => setDaypart(o.id)}
-                style={daypart === o.id
-                  ? { background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' }
-                  : undefined}
-              >
-                {o.emoji} {o.label}
-              </button>
-            ))}
+          <div className="rt-field">
+            <span className="rt-flabel">Napszak</span>
+            <div className="rt-chips is-gold">
+              {DAYPART_OPTIONS.map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  className={cn(daypart === o.id && 'on')}
+                  aria-pressed={daypart === o.id}
+                  onClick={() => setDaypart(o.id)}
+                >
+                  <Icon3D name={o.art} size={18} />{o.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {chain && (
             canDelete ? (
               <button
                 type="button"
-                className="cta-ghost"
+                className="rt-danger"
                 disabled={pending}
-                style={{ opacity: pending ? 0.5 : 1 }}
                 onClick={() => remove(close)}
               >
-                <Icon name="trash" size={13} /> Rutin törlése
+                <Icon3D name="t-trash" size={22} />Rutin törlése
               </button>
             ) : (
-              <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+              <span className="rt-hint">
                 {isSeed ? 'Az alap rutinok nem törölhetők.' : 'Csak üres rutin törölhető.'}
               </span>
             )
@@ -91,12 +99,11 @@ export function ChainEditSheet({ chain, onClose }: { chain?: HabitChainInfo; onC
 
           <button
             type="button"
-            className="cta-primary"
+            className="cta-primary rt-litpill"
             disabled={pending || title.trim().length === 0}
-            style={{ opacity: pending || title.trim().length === 0 ? 0.5 : 1 }}
             onClick={() => save(close)}
           >
-            <Icon name="check" size={14} /> Mentés
+            <Icon3D name="t-tick" size={20} />Mentés
           </button>
         </div>
       )}

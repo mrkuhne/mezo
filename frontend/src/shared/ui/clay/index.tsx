@@ -85,6 +85,9 @@ export type Icon3DName =
   // U5 (mezo-me75u.5) — owner OK on prototypes/uveg-edzes2.html#ikonok
   | 't-template' | 't-compare' | 't-trash'
   | 't-compass' | 't-signal' | 't-lens' | 't-breath' | 't-candle'
+  // U7 (mezo-me75u.7) — owner OK on prototypes/uveg-en2.html#ikonok
+  | 't-bell' | 't-anchor' | 't-bulb' | 't-scissors' | 't-spark' | 't-key' | 't-exit' | 't-palette'
+  | 't-flag' | 't-brain'
 
 /** Mounts the clay + Titanium <symbol>/<gradient> defs once (main.tsx). */
 export const ClaySprites = memo(function ClaySprites() {
@@ -168,6 +171,9 @@ export const CLAY_TO_3D: Partial<Record<ClayIconName, Icon3DName>> = {
   // discoveries → t-lens), i-growth (Én hub → t-up) and i-kristaly stay at their call sites.
   'i-life-tudatossag': 't-heart', 'i-life-tanulas': 't-book', 'i-life-kapcsolatok': 't-people',
   'i-life-szemlelet': 't-compass', 'i-life-produktivitas': 't-record', 'i-life-regeneracio': 't-sprout',
+  // U7 (mezo-me75u.7): Én II (prototypes/uveg-en2.html). The last two LIFE skills and the
+  // notification bell are context-free.
+  'i-life-konyha': 't-pot', 'i-life-penzugyek': 't-coin', 'i-ertesites': 't-bell',
 }
 
 /** A content icon: a Titanium name renders as is, a clay name through `CLAY_TO_3D`, and an

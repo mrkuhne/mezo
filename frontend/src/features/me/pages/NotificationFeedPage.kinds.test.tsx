@@ -57,7 +57,9 @@ test('a heti-összefoglaló értesítés kirajzolódik, nem dönti el az oldalt'
   const { container } = renderPage()
   expect(await screen.findByText('cím a')).toBeInTheDocument()
   expect(screen.getByText('cím b')).toBeInTheDocument()
-  expect(container.querySelector('.nf-ico use[href="#i-heti"]')).not.toBeNull()
+  // Üveg (mezo-me75u.7): a feed ugyanazt a 3D ikont viseli, mint a fejléc panelje — a heti
+  // összefoglaló `i-heti` jele a közös térképen a naptár.
+  expect(container.querySelector('.nf-ico use[href="#t-calendar"]')).not.toBeNull()
 })
 
 test('egy ismeretlen backend-fajta semlegesen rajzolódik, a többi sor megmarad', async () => {
@@ -69,7 +71,7 @@ test('egy ismeretlen backend-fajta semlegesen rajzolódik, a többi sor megmarad
   expect(await screen.findByText('cím x')).toBeInTheDocument()
   expect(screen.getByText('cím y')).toBeInTheDocument()
   // A semleges bejegyzés a csengő-ikon; az oldal él, nem az ErrorBoundary kártyája látszik.
-  expect(container.querySelector('.nf-ico use[href="#i-ertesites"]')).not.toBeNull()
+  expect(container.querySelector('.nf-ico use[href="#t-bell"]')).not.toBeNull()
   expect(screen.queryByText('Valami elromlott ezen a nézeten.')).not.toBeInTheDocument()
 })
 
@@ -82,7 +84,7 @@ test('a céljavaslat cél ikonnal jelenik meg és a konkrét review oldalra navi
   const { container } = renderPage()
 
   const row = await screen.findByRole('button', { name: /cím goal/ })
-  expect(container.querySelector('.nf-ico use[href="#i-cel"]')).not.toBeNull()
+  expect(container.querySelector('.nf-ico use[href="#t-ring"]')).not.toBeNull()
   fireEvent.click(row)
   expect(screen.getByRole('status', { name: 'Aktuális útvonal' })).toHaveTextContent(reviewPath)
 })

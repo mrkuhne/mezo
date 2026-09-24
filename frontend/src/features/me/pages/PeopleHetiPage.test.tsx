@@ -109,7 +109,7 @@ test('hero: "Heti kép" + the week mention bignum', () => {
 
 test('header back chip reads "‹ Kapcsolatok"', () => {
   renderAt('/me/people/heti')
-  expect(screen.getByText('‹ Kapcsolatok')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹Kapcsolatok')
 })
 
 test('the hub tile\'s "Heti kép" navigation lands here (real router wiring)', () => {

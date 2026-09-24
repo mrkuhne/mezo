@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
-import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
+import { Icon3D } from '@/shared/ui/clay'
 import { usePeople } from '@/data/hooks'
 import type { PersonEntry, PersonSaveInput, Relationship } from '@/data/types'
 
@@ -59,45 +58,50 @@ export function PersonEditSheet({ person, onClose }: { person: PersonEntry | nul
     onClose()
   }
 
+  // Üveg (mezo-me75u.7, prototype sheet `pedit`): ONE floating rose glass sheet (bible U2 rule 15);
+  // inputs, alias chips and the relationship chips are flat (the chosen one lit rose), Mégse is
+  // flat, the save is the lit rose pill; Törlés keeps its warning tone as a flat coral outline
+  // (bible U4 rule 29).
   return (
-    <Sheet onClose={onClose} labelledBy="person-edit-title">
+    <Sheet onClose={onClose} labelledBy="person-edit-title" className="glass ppl-sheet">
       {(close) => (
-        <div className="col" style={{ padding: '4px 4px 8px' }}>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-            <div className="col">
-              <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>People</span>
-              <div id="person-edit-title" className="h-display size-md" style={{ marginTop: 4 }}>
+        <div className="ppl-sh">
+          <div className="ppl-shh">
+            <Icon3D name="t-person" size={48} />
+            <div className="ppl-shh-tx">
+              <span className="ppl-sh-eye">Emberek</span>
+              <div id="person-edit-title" className="ppl-sh-title">
                 {person ? 'Személy szerkesztése' : 'Új személy'}
               </div>
             </div>
-            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}><Icon name="x" size={12} /></button>
+            <button type="button" className="ppl-sh-x" aria-label="Bezárás" onClick={close}>
+              <span aria-hidden="true">✕</span>
+            </button>
           </div>
 
-          <div className="col gap-sm">
-            <span style={SECTION_LABEL}>Név</span>
-            <div className="card" style={{ padding: 10 }}>
-              <input
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="pl. Marci"
-                style={{ width: '100%', fontSize: 13 }}
-              />
-            </div>
-          </div>
+          <label className="ppl-sh-field">
+            <span className="ppl-sh-lbl">Név</span>
+            <input
+              className="ppl-sh-inp"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="pl. Marci"
+            />
+          </label>
 
-          <div className="col gap-sm mt-md">
-            <span style={SECTION_LABEL}>Becenevek · a névfigyeléshez</span>
-            <div className="row gap-xs flex-wrap" style={{ alignItems: 'center' }}>
+          <div className="ppl-sh-field">
+            <span className="ppl-sh-lbl">Becenevek · a névfigyeléshez</span>
+            <div className="ppl-sh-chips">
               {aliases.map(a => (
-                <span key={a} className="chip" style={{ padding: '6px 10px', fontSize: 11, gap: 6 }}>
+                <span key={a} className="ppl-sh-chip ppl-sh-alias">
                   {a}
                   <button
                     type="button"
+                    className="ppl-sh-aliasx"
                     aria-label="Becenév törlése"
                     onClick={() => setAliases(aliases.filter(x => x !== a))}
-                    style={{ display: 'inline-flex' }}
                   >
-                    <Icon name="x" size={10} />
+                    <span aria-hidden="true">✕</span>
                   </button>
                 </span>
               ))}
@@ -106,29 +110,22 @@ export function PersonEditSheet({ person, onClose }: { person: PersonEntry | nul
                 onChange={e => setAliasInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addAlias() } }}
                 placeholder="pl. Marcika"
-                className="chip"
-                style={{ padding: '6px 10px', fontSize: 11, width: 120 }}
+                className="ppl-sh-chip ppl-sh-aliasinp"
               />
-              <button type="button" className="chip" onClick={addAlias} style={{ padding: '6px 10px' }}>＋</button>
+              <button type="button" className="ppl-sh-chip ppl-sh-add" onClick={addAlias}>＋</button>
             </div>
           </div>
 
-          <div className="col gap-sm mt-md">
-            <span style={SECTION_LABEL}>Kapcsolat</span>
-            <div className="row gap-xs flex-wrap">
+          <div className="ppl-sh-field">
+            <span className="ppl-sh-lbl">Kapcsolat</span>
+            <div className="ppl-sh-chips">
               {RELS.map(r => (
                 <button
                   key={r.value}
                   type="button"
                   aria-pressed={rel === r.value}
                   onClick={() => setRel(r.value)}
-                  className="chip"
-                  style={{
-                    padding: '6px 10px', fontSize: 11,
-                    background: rel === r.value ? 'var(--wash-lav)' : 'var(--surface-2)',
-                    borderColor: rel === r.value ? 'var(--lav-deep)' : 'var(--border-subtle)',
-                    color: rel === r.value ? 'var(--lav-deep)' : 'var(--text-secondary)',
-                  }}
+                  className={`ppl-sh-chip${rel === r.value ? ' on' : ''}`}
                 >
                   {r.hu}
                 </button>
@@ -136,39 +133,37 @@ export function PersonEditSheet({ person, onClose }: { person: PersonEntry | nul
             </div>
           </div>
 
-          <div className="col gap-sm mt-md">
-            <span style={SECTION_LABEL}>Jegyzet</span>
-            <div className="card" style={{ padding: 10 }}>
-              <textarea
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                placeholder="honnan ismered, mi fontos…"
-                style={{ width: '100%', minHeight: 60, resize: 'none', fontSize: 13, lineHeight: 1.45 }}
-              />
-            </div>
-          </div>
+          <label className="ppl-sh-field">
+            <span className="ppl-sh-lbl">Jegyzet</span>
+            <textarea
+              className="ppl-sh-ta"
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="honnan ismered, mi fontos…"
+            />
+          </label>
 
-          <div className="row gap-sm mt-lg">
-            <button className="cta-ghost flex-1" onClick={close}>Mégse</button>
-            <button className="cta-primary flex-1" disabled={!name.trim()} onClick={submit}>
-              <Icon name="check" size={14} /> {person ? 'Mentés' : 'Felveszem'}
+          <div className="ppl-sh-pair">
+            <button type="button" className="ppl-sh-ghost" onClick={close}>Mégse</button>
+            <button type="button" className="ppl-sh-cta" disabled={!name.trim()} onClick={submit}>
+              <Icon3D name="t-tick" size={18} /> {person ? 'Mentés' : 'Felveszem'}
             </button>
           </div>
 
           {person && (
-            <div className="col gap-sm mt-md">
-              <button className="cta-ghost" onClick={handleDelete} style={{ color: 'var(--rose-deep, #C4694F)' }}>
-                <Icon name="trash" size={14} /> Törlés
+            <div className="ppl-sh-del">
+              <button type="button" className="ppl-sh-delbtn" onClick={handleDelete}>
+                <Icon3D name="t-trash" size={18} /> Törlés
               </button>
               {armDelete && (
-                <span className="text-secondary" style={{ fontSize: 11, textAlign: 'center' }}>
+                <span className="ppl-sh-delwarn">
                   Biztos? Az említések megmaradnak, a személy eltűnik.
                 </span>
               )}
             </div>
           )}
 
-          <span className="text-secondary" style={{ fontSize: 10, lineHeight: 1.5, marginTop: 14, textAlign: 'center' }}>
+          <span className="ppl-sh-foot">
             mentés után a napló · reflexió · chat szövegében minden név- és becenév-találat magától említés lesz
           </span>
         </div>

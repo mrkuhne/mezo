@@ -11,6 +11,7 @@ import type { HabitFormation } from '@/data/types'
 import { FormationCurve } from '@/features/me/components/FormationCurve'
 import { etaPhrase, FORMATION_STAGES, stageIndexOf } from '@/features/me/logic/habitFormation'
 import { cn } from '@/shared/lib/cn'
+import { Icon3D } from '@/shared/ui/clay'
 import { ScoreRing } from '@/shared/ui/ScoreRing'
 
 const FAR_HORIZON_WEEKS = 26
@@ -24,13 +25,13 @@ export function HabitFormationCard({ f }: { f: HabitFormation }) {
   const missingReps = Math.max(0, f.minReps - f.reps)
 
   return (
-    <div className={cn('rt-poster', settled && 'is-settled')} data-testid="formation-card">
+    <div className={cn('rt-poster glass', settled && 'is-settled')} data-testid="formation-card">
       <div className="rt-poster-top">
         <ScoreRing
           pct={enough ? pct / 100 : 0}
           size={82}
           stroke={6}
-          color={settled ? 'var(--sage)' : 'var(--amber)'}
+          color={settled ? 'var(--dv-sage)' : 'var(--dv-amber)'}
           label={enough ? `${pct}%` : '—'}
           sublabel="automatizmus"
         />
@@ -69,7 +70,7 @@ export function HabitFormationCard({ f }: { f: HabitFormation }) {
         )}
         {enough && settled && (
           <>
-            <span className="rt-etaband-n" aria-hidden="true">★</span>
+            <span className="rt-etaband-n" aria-hidden="true"><Icon3D name="t-star" size={30} /></span>
             <span className="rt-etaband-l"><b>beérett</b>a küszöb fölött — jó horgony egy új szokásnak</span>
           </>
         )}
@@ -83,7 +84,7 @@ export function HabitFormationCard({ f }: { f: HabitFormation }) {
             saying "0 hét" or extrapolating would be a lie, so the band names the reason. */}
         {enough && !settled && eta == null && (
           <>
-            <span className="rt-etaband-n" aria-hidden="true">·</span>
+            <span className="rt-etaband-n is-dot" aria-hidden="true"><i /></span>
             <span className="rt-etaband-l"><b>nincs becslés</b>mostanában nem volt ismétlés, amiből tempót számolhatnánk</span>
           </>
         )}

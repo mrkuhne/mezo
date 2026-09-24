@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { Icon } from '@/shared/ui/Icon'
 import { SettingsFrame, useSettingsOrigin } from '@/features/settings/components/SettingsFrame'
 import { isMockMode } from '@/data/_client/mode'
@@ -60,11 +60,12 @@ export function BeallitasokPage() {
     : kalauzState === 'error' ? 'Most nem sikerült — próbáld újra.'
     : 'Az első indítás és az oldal-kalauzok újra megjelennek'
 
-  const row = (icon: 'i-ertesites' | 'i-erme' | 'i-emberek', label: string, line: string | undefined, to: string) => (
-    <button type="button" className="settings-row" aria-label={label} onClick={() => navigate(to, { state: originState })}>
-      <span className="settings-row-art"><ClayIcon name={icon} size={30} /></span>
+  // Üveg (mezo-me75u.7): each row wears a Titanium 3D icon in a lit well; `tone` is the well's accent.
+  const row = (icon: Icon3DName, tone: string, label: string, line: string | undefined, to: string) => (
+    <button type="button" className={`settings-row settings-${tone}`} aria-label={label} onClick={() => navigate(to, { state: originState })}>
+      <span className="settings-row-art uv-well"><Icon3D name={icon} size={28} /></span>
       <span className="settings-row-copy"><strong>{label}</strong>{line && <small>{line}</small>}</span>
-      <span aria-hidden="true">›</span>
+      <span className="settings-chev" aria-hidden="true">›</span>
     </button>
   )
 
@@ -85,21 +86,25 @@ export function BeallitasokPage() {
       </>}
 
       <h2 className="settings-section-label">Fiók</h2>
-      <button type="button" aria-label="Fiókadatok szerkesztése" onClick={() => navigate('/settings/account', { state: originState })} className="settings-account-wash settings-me">
-        <ClayIcon name="i-emberek" size={44} /><span><strong>{me?.name ?? '—'}</strong><small>{me?.email ?? '—'}</small></span><span aria-hidden="true">↗</span>
+      <button type="button" aria-label="Fiókadatok szerkesztése" onClick={() => navigate('/settings/account', { state: originState })} className="settings-account-wash glass settings-me">
+        <span className="settings-row-art uv-well"><Icon3D name="t-person" size={30} /></span><span><strong>{me?.name ?? '—'}</strong><small>{me?.email ?? '—'}</small></span><span className="settings-chev" aria-hidden="true">↗</span>
       </button>
-      <button type="button" className="settings-row" aria-label="Jelszó módosítása" onClick={() => setSheet('password')}><span className="settings-row-copy"><strong>Jelszó módosítása</strong><small>A belépésed maradjon a tiéd</small></span><span aria-hidden="true">›</span></button>
-      {canLogout && <button type="button" className="settings-row settings-logout" aria-label="Kijelentkezés" onClick={logout}><span className="settings-row-copy"><strong>Kijelentkezés</strong></span><span aria-hidden="true">↗</span></button>}
+      <div className="settings-rows glass settings-me">
+        <button type="button" className="settings-row settings-nap" aria-label="Jelszó módosítása" onClick={() => setSheet('password')}><span className="settings-row-art uv-well"><Icon3D name="t-key" size={28} /></span><span className="settings-row-copy"><strong>Jelszó módosítása</strong><small>A belépésed maradjon a tiéd</small></span><span className="settings-chev" aria-hidden="true">›</span></button>
+        {canLogout && <button type="button" className="settings-row settings-train settings-logout" aria-label="Kijelentkezés" onClick={logout}><span className="settings-row-art uv-well"><Icon3D name="t-exit" size={28} /></span><span className="settings-row-copy"><strong>Kijelentkezés</strong></span><span className="settings-chev" aria-hidden="true">↗</span></button>}
+      </div>
 
       <h2 className="settings-section-label">Ami körülvesz</h2>
-      {row('i-ertesites', 'Értesítések', ertesitesLine, '/settings/notifications')}
-      <button type="button" className="settings-row settings-nap" aria-label="Kalauzok újranézése" disabled={kalauzState === 'busy'} onClick={() => {
-        setKalauzState('busy')
-        resetAll().then(() => setKalauzState('done')).catch(() => setKalauzState('error'))
-      }}>
-        <span className="settings-row-art"><ClayIcon name="i-tudas" size={30} /></span><span className="settings-row-copy"><strong>Kalauzok újranézése</strong><small role="status">{kalauzLine}</small></span><span aria-hidden="true">↺</span>
-      </button>
-      {isOwner && <><h2 className="settings-section-label">Tulajdonosi eszközök</h2>{row('i-erme', 'AI-napló', aiLine, '/admin/cost')}{row('i-emberek', 'Admin', 'Meghívók · felhasználók', '/admin')}</>}
+      <div className="settings-rows glass settings-sky">
+        {row('t-bell', 'sky', 'Értesítések', ertesitesLine, '/settings/notifications')}
+        <button type="button" className="settings-row settings-nap" aria-label="Kalauzok újranézése" disabled={kalauzState === 'busy'} onClick={() => {
+          setKalauzState('busy')
+          resetAll().then(() => setKalauzState('done')).catch(() => setKalauzState('error'))
+        }}>
+          <span className="settings-row-art uv-well"><Icon3D name="t-compass" size={28} /></span><span className="settings-row-copy"><strong>Kalauzok újranézése</strong><small role="status">{kalauzLine}</small></span><Icon3D name="t-repeat" size={22} className="settings-row-end" />
+        </button>
+      </div>
+      {isOwner && <><h2 className="settings-section-label">Tulajdonosi eszközök</h2><div className="settings-rows glass settings-mezo">{row('t-coin', 'nap', 'AI-napló', aiLine, '/admin/cost')}{row('t-people', 'mezo', 'Admin', 'Meghívók · felhasználók', '/admin')}</div></>}
       {sheet === 'password' && <ChangePasswordSheet onClose={() => setSheet(null)} />}
     </SettingsFrame>
   )

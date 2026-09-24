@@ -14,20 +14,23 @@ afterEach(() => vi.clearAllMocks())
 
 test('hero: 33 skill + ‹ Growth; stat strip LIFE avg / athlete level / muscle best', () => {
   renderPage()
-  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Growth')
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent(/‹\s*Growth/)
   expect(screen.getByText('33')).toBeInTheDocument()
   expect(screen.getByText('1,8')).toBeInTheDocument()      // hu1(1.75) → "1,8"
   expect(screen.getByText('4,3')).toBeInTheDocument()      // athleteLevel
   expect(screen.getAllByText('Lv 6').length).toBeGreaterThanOrEqual(1)     // best muscle (also a plaque)
 })
 
-test('three bands with derived chips; one .gr-skl per skill; LIFE rows wear clay icons, no emoji', () => {
+test('three glass bands with derived chips; one .gr-skl per skill; LIFE rows wear 3D icons, no emoji', () => {
   const { container } = renderPage()
   expect(screen.getByText('8 skill · 1 085 XP')).toBeInTheDocument()
   expect(screen.getByText('12 skill · átlag 4,6')).toBeInTheDocument()
   expect(screen.getByText('13 izom · legjobb Lv 6')).toBeInTheDocument()
   expect(container.querySelectorAll('.gr-skl')).toHaveLength(33)
   expect(container.querySelectorAll('.gr-band.lav .gr-skl-ic use')).toHaveLength(8)
+  // üveg (mezo-me75u.7): every LIFE skill icon maps through CLAY_TO_3D onto the Titanium set
+  for (const u of container.querySelectorAll('.gr-band.lav .gr-skl-ic use')) expect(u.getAttribute('href')).toMatch(/^#t-/)
+  expect(container.querySelectorAll('.gr-band.glass')).toHaveLength(3)
   expect(container.textContent).not.toMatch(/[🧘🌱🍳💰🎯📚🤝🛌✨]/u)
   expect(screen.getByText('50 000 Ft')).toBeInTheDocument()
 })

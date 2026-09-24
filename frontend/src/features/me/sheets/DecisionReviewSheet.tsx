@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 import { useDecisionActions } from '@/data/hooks'
 import { dayLabel } from '@/features/me/logic/growthJournal'
 import type { DecisionEntry } from '@/data/journal/decisionTypes'
@@ -25,6 +26,11 @@ interface DecisionReviewSheetProps {
 // mounted it, which silently removed `DecisionReviewRequest.outcome` from the product even though
 // the column and the embedding path that reads it stayed live. The PUT it wraps is re-runnable,
 // so re-saving an already-rated decision with text attached is the intended use.
+//
+// Üveg (mezo-me75u.7, prototype uveg-en2 SH.decision): the shared floating glass capture sheet
+// (`capture-sheet glass`, U2 rule 15) in gold — its flat chips, fields and lit Mentés come from the
+// `── uveg nap rogzites (` block; only the header and the decision quote are dressed in
+// `── uveg en2 naplo (` under `.mzj-decsheet`.
 export function DecisionReviewSheet({ decision, today, onClose }: DecisionReviewSheetProps) {
   const { reviewDecision, pending } = useDecisionActions()
   const [rating, setRating] = useState<number | null>(decision.outcomeRating)
@@ -36,33 +42,32 @@ export function DecisionReviewSheet({ decision, today, onClose }: DecisionReview
   }
 
   return (
-    <Sheet onClose={onClose} labelledBy="decision-review-title">
+    <Sheet onClose={onClose} labelledBy="decision-review-title" className="capture-sheet mzj-decsheet glass">
       {(close) => (
         <div className="col" style={{ padding: '4px 4px 8px' }}>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-            <div className="col">
-              <span className="eyebrow">Döntés · {dayLabel(decision.decidedOn, today)}</span>
-              <div id="decision-review-title" className="h-display size-md" style={{ marginTop: 4 }}>
-                Hogyan sült el?
-              </div>
+          <div className="mzj-dsh-head">
+            <Icon3D name="t-compass" size={48} />
+            <div className="mzj-grow">
+              <span className="mzj-dsh-eb">Döntés · {dayLabel(decision.decidedOn, today)}</span>
+              <h2 id="decision-review-title" className="mzj-dsh-title">Hogyan sült el?</h2>
             </div>
-            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}>
-              <Icon name="x" size={12} />
+            <button type="button" className="capture-dismiss" aria-label="Bezárás" onClick={close}>
+              <Icon name="x" size={18} />
             </button>
           </div>
 
-          <div className="card" style={{ padding: 14 }}>
-            <p style={{ fontSize: 14, lineHeight: 1.65, color: 'var(--text-primary)' }}>{decision.decisionText}</p>
+          <div className="mzj-dsh-quote">
+            <p>{decision.decisionText}</p>
           </div>
 
           <div className="col gap-sm mt-lg">
-            <span className="eyebrow text-tertiary">Mennyire vált be? (1–5)</span>
-            <div className="row gap-sm" role="group" aria-label="Értékelés">
+            <span className="mzj-dsh-eb">Mennyire vált be? (1–5)</span>
+            <div className="mzj-dsh-rate" role="group" aria-label="Értékelés">
               {RATINGS.map((value) => (
                 <button
                   key={value}
                   type="button"
-                  className="chip flex-1"
+                  className="chip"
                   aria-pressed={rating === value}
                   onClick={() => setRating(value)}
                 >
@@ -82,10 +87,10 @@ export function DecisionReviewSheet({ decision, today, onClose }: DecisionReview
             </div>
           </div>
 
-          <div className="row gap-sm mt-lg">
-            <button className="cta-ghost flex-1" onClick={close}>Mégse</button>
+          <div className="capture-actions">
+            <button className="cta-ghost" onClick={close}>Mégse</button>
             <button
-              className="cta-primary flex-1"
+              className="cta-primary"
               onClick={() => save(close)}
               disabled={rating === null || pending}
             >

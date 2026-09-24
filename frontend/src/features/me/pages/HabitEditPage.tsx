@@ -27,6 +27,7 @@ import { HABIT_METRIC_PALETTE } from '@/features/me/logic/habitMetricPalette'
 import { routineSentenceParts, titlePlaceholder } from '@/features/me/logic/routineSentence'
 import { recipeFromDef } from '@/features/me/logic/routineSentence'
 import { cn } from '@/shared/lib/cn'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Sheet } from '@/shared/ui/Sheet'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
@@ -42,8 +43,10 @@ function rise(delayMs: number): CSSProperties {
   return { '--d': `${delayMs}ms` } as CSSProperties
 }
 
-function FieldCard({ children, delayMs }: { children: ReactNode; delayMs: number }) {
-  return <div className="rt-fcard rise" style={rise(delayMs)}>{children}</div>
+/** A form section. Üveg (mezo-me75u.7): sections are bare (flat controls on the ground); only the
+ *  effort card is a glass object (prototype uveg-en2.html `szerk`). */
+function FieldCard({ children, delayMs, glass = false }: { children: ReactNode; delayMs: number; glass?: boolean }) {
+  return <div className={cn('rt-fcard rise', glass && 'glass')} style={rise(delayMs)}>{children}</div>
 }
 
 function Field({ label, opt, value, onChange, placeholder, hint }: {
@@ -134,16 +137,16 @@ export function HabitEditPage() {
   if (def == null) {
     if (isPending) {
       return (
-        <MozaikPage tone="gold">
-          <PageHead onBack={() => navigate(backTo)} label="‹ Szokás" />
+        <MozaikPage tone="gold" className="rt-uv rt-szerk">
+          <PageHead glass onBack={() => navigate(backTo)} label="Szokás" />
           <PageBody><GhostState message="Szokás betöltése…" lines={3} /></PageBody>
         </MozaikPage>
       )
     }
     if (isError) {
       return (
-        <MozaikPage tone="gold">
-          <PageHead onBack={() => navigate(backTo)} label="‹ Szokás" />
+        <MozaikPage tone="gold" className="rt-uv rt-szerk">
+          <PageHead glass onBack={() => navigate(backTo)} label="Szokás" />
           <PageBody>
             <GhostState message="Nem sikerült betölteni a szokást." ctaLabel="Újra" onCta={refetch} />
           </PageBody>
@@ -231,30 +234,35 @@ export function HabitEditPage() {
     setAnchorPickerOpen(false)
   }
 
-  const anchorNote = anchor.key != null
-    ? { sign: '⚓', text: <>A <b>{defs.find((d) => d.habitKey === anchor.key)?.title ?? anchor.key}</b> szokásodhoz kötve — koppints a cseréhez.</> }
+  const anchorNote: { sign: Icon3DName; text: ReactNode } = anchor.key != null
+    ? { sign: 't-anchor', text: <>A <b>{defs.find((d) => d.habitKey === anchor.key)?.title ?? anchor.key}</b> szokásodhoz kötve — koppints a cseréhez.</> }
     : anchor.label.trim() !== ''
-      ? { sign: '✎', text: <>Szabad szöveg — nem kötődik szokáshoz, ezért a lánc nem tudja követni.</> }
-      : { sign: '⚠', text: <>Horgony nélkül a szokás nehezebben formálódik: a kontextus-állandóság esik.</> }
+      ? { sign: 't-note', text: <>Szabad szöveg — nem kötődik szokáshoz, ezért a lánc nem tudja követni.</> }
+      : { sign: 't-info', text: <>Horgony nélkül a szokás nehezebben formálódik: a kontextus-állandóság esik.</> }
 
   const showAnchor = framework !== 'CLEAR'
   const candidates = defs.filter((d) => d.habitKey !== def.habitKey && d.isActive)
 
   return (
-    <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate(backTo)} label="‹ Szokás">
-        <button type="button" className="mz-pgact" disabled={!canSave || pending} onClick={save}>Mentés</button>
+    <MozaikPage tone="gold" className="rt-uv rt-szerk">
+      <PageHead glass onBack={() => navigate(backTo)} label="Szokás">
+        <button type="button" className="mz-pgact rt-act" disabled={!canSave || pending} onClick={save}>
+          <Icon3D name="t-tick" size={18} />Mentés
+        </button>
       </PageHead>
-      <PageHero icon="i-recept" iconSize={40} big="Szerkesztés" name={def.title} />
+      <PageHero art="t-book" accent="var(--dv-amber)" name={def.title}>
+        <span className="mz-eyebrow rt-hero-eb">Szerkesztés</span>
+      </PageHero>
       <PageBody principle={PRINCIPLE}>
         <EntranceGroup replayKey={def.id}>
           <div
-            className={cn('rt-sentence rise', framework === 'CLEAR' && 'is-clear')}
+            className={cn('rt-sentence glass rise', framework === 'CLEAR' && 'is-clear')}
             style={rise(40)}
             data-testid="edit-sentence"
           >
             <span className="rt-sentence-lb">
-              {framework === 'CLEAR' ? '◈ Négy törvény' : framework === 'FOGG' ? '⚓ Szokás-láncolás' : '· Keret nélkül'}
+              <Icon3D name={framework === 'CLEAR' ? 't-gem' : framework === 'FOGG' ? 't-anchor' : 't-note'} size={18} />
+              {framework === 'CLEAR' ? 'Négy törvény' : framework === 'FOGG' ? 'Szokás-láncolás' : 'Keret nélkül'}
               <span className="rt-sentence-lb-sub">· együtt változik</span>
             </span>
             <p className="rt-sentence-tx">
@@ -274,19 +282,19 @@ export function HabitEditPage() {
                 className={cn(framework === 'FOGG' && 'on')}
                 onClick={() => setFramework('FOGG')}
               >
-                <span aria-hidden="true">⚓</span>Szokás-láncolás
+                <Icon3D name="t-anchor" size={20} />Szokás-láncolás
               </button>
               <button
                 type="button"
                 className={cn(framework === 'CLEAR' && 'on is-clear')}
                 onClick={() => setFramework('CLEAR')}
               >
-                <span aria-hidden="true">◈</span>Négy törvény
+                <Icon3D name="t-gem" size={20} />Négy törvény
               </button>
             </div>
             {lostOnSwitch.length > 0 && (
               <div className="rt-warn" data-testid="fw-warn">
-                <span aria-hidden="true">⚠</span>
+                <Icon3D name="t-info" size={26} />
                 <span>
                   <b>Váltásnál elveszik:</b> {lostOnSwitch.join(', ')}.
                   {' '}Az új keret mezői üresen indulnak — a Mentésig semmi nem vész el.
@@ -306,6 +314,7 @@ export function HabitEditPage() {
                 data-testid="anchor-pick"
                 onClick={() => setAnchorPickerOpen(true)}
               >
+                <Icon3D name="t-anchor" size={28} />
                 <span className="rt-pickrow-gr">{anchor.label.trim() !== '' ? anchor.label : '— nincs horgony —'}</span>
                 <span className="rt-pickrow-cv" aria-hidden="true">▾</span>
               </button>
@@ -319,7 +328,7 @@ export function HabitEditPage() {
                 />
               )}
               <div className="rt-lockline">
-                <span aria-hidden="true">{anchorNote.sign}</span>
+                <Icon3D name={anchorNote.sign} size={16} />
                 <span>{anchorNote.text}</span>
               </div>
             </FieldCard>
@@ -363,14 +372,14 @@ export function HabitEditPage() {
                 className={cn(mode === 'MANUAL' && 'on')}
                 onClick={() => setMode('MANUAL')}
               >
-                <span aria-hidden="true">✓</span>Kézzel pipálom
+                <Icon3D name="t-tick" size={20} />Kézzel pipálom
               </button>
               <button
                 type="button"
                 className={cn(mode === 'DERIVED' && 'on')}
                 onClick={() => setMode('DERIVED')}
               >
-                <span aria-hidden="true">◎</span>Adatból
+                <Icon3D name="t-signal" size={20} />Adatból
               </button>
             </div>
             {mode === 'DERIVED' && (
@@ -405,7 +414,7 @@ export function HabitEditPage() {
             </div>
           </FieldCard>
 
-          <FieldCard delayMs={175}>
+          <FieldCard delayMs={175} glass>
             <span className="rt-flabel">Mennyibe kerül? <span className="rt-opt">újraértékelhető</span></span>
             <EffortGrid
               value={eff}
@@ -413,12 +422,13 @@ export function HabitEditPage() {
               xpOverride={effortRated(eff) ? undefined : Math.min(XP_MAX, Math.max(XP_MIN, def.xp))}
             />
             <div className="rt-lockline">
-              <span aria-hidden="true">ⓘ</span>
+              <Icon3D name="t-info" size={16} />
               <span>A nehézség <b>változik</b>, ahogy a szokás automatizálódik — érdemes újraértékelni, ha már könnyebben megy. Az XP a nehézségből számolódik (6–14).</span>
             </div>
           </FieldCard>
 
           <button type="button" className="rt-danger rise" style={rise(190)} disabled={pending} onClick={togglePause}>
+            <Icon3D name={def.isActive ? 't-hold' : 't-play'} size={22} />
             {def.isActive ? 'Szüneteltetés — a haladás megmarad' : 'Folytatás — a haladás megmaradt'}
           </button>
           <button
@@ -428,21 +438,24 @@ export function HabitEditPage() {
             disabled={pending}
             onClick={remove}
           >
+            <Icon3D name="t-trash" size={22} />
             {confirmDelete ? 'Biztosan törlöd? Koppints újra' : 'Szokás törlése'}
           </button>
         </EntranceGroup>
       </PageBody>
 
       {anchorPickerOpen && (
-        <Sheet onClose={() => setAnchorPickerOpen(false)} labelledBy="anchor-picker-title">
+        <Sheet className="glass rt-sheet" onClose={() => setAnchorPickerOpen(false)} labelledBy="anchor-picker-title">
           {() => (
-            <div className="col" style={{ padding: '4px 4px 8px' }} data-testid="anchor-sheet">
-              <h2 id="anchor-picker-title" style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>
-                Mihez kötöd?
-              </h2>
-              <p className="rt-hint" style={{ margin: '2px 0 8px' }}>
-                A legerősebb horgony egy szokás, ami már magától megy.
-              </p>
+            <div className="col" data-testid="anchor-sheet">
+              <div className="rt-shh">
+                <Icon3D name="t-anchor" size={46} />
+                <span className="rt-shh-t">
+                  <span className="rt-shh-eb">Horgony</span>
+                  <h2 id="anchor-picker-title">Mihez kötöd?</h2>
+                  <p className="rt-hint">A legerősebb horgony egy szokás, ami már magától megy.</p>
+                </span>
+              </div>
               <div className="rt-optgrp">A szokásaidból</div>
               {candidates.map((d) => {
                 const row = summary.habits.find((h) => h.key === d.habitKey)
@@ -482,6 +495,7 @@ export function HabitEditPage() {
                 className="rt-optrow"
                 onClick={() => pickAnchor({ key: null, label: anchor.key != null ? '' : anchor.label })}
               >
+                <Icon3D name="t-note" size={26} />
                 <span className="rt-optrow-nm">
                   Saját szavakkal…
                   <small>szabad szöveg, nem kötődik szokáshoz</small>
@@ -493,6 +507,7 @@ export function HabitEditPage() {
                 className="rt-optrow is-unlink"
                 onClick={() => pickAnchor({ key: null, label: '' })}
               >
+                <Icon3D name="t-skip" size={26} />
                 <span className="rt-optrow-nm">
                   Leoldom a horgonyt
                   <small>a szokás marad, csak nem kötődik semmihez</small>

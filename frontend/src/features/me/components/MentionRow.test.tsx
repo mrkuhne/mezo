@@ -63,13 +63,14 @@ test('neutral tone renders no wash either (only jo/vegyes/nehez are washed)', ()
   expect(container.querySelector('.ppl-mrowt')?.className).not.toMatch(/ppl-tw-/)
 })
 
-test('the source disc renders the SRC_META clay icon for a text mention, and the icon for a chip mention', () => {
+test('the source disc renders the SRC_META 3D icon: t-journal for a text mention, t-tick for a chip mention', () => {
   const { container: textC } = render(<MentionRow mention={{ ...BASE, source: 'text' }} />)
-  expect(textC.querySelector('.ppl-srcdisc svg use')?.getAttribute('href')).toBe('#i-naplo')
+  expect(textC.querySelector('.ppl-srcdisc svg use')?.getAttribute('href')).toBe('#t-journal')
+  expect(textC.querySelector('.ppl-srcdisc')?.getAttribute('title')).toBe('napló')
 
   const { container: chipC } = render(<MentionRow mention={{ ...BASE, source: 'chip' }} />)
-  expect(chipC.querySelector('.ppl-srcdisc svg use')).toBeNull()
-  expect(chipC.querySelector('.ppl-srcdisc svg')).not.toBeNull()
+  expect(chipC.querySelector('.ppl-srcdisc svg use')?.getAttribute('href')).toBe('#t-tick')
+  expect(chipC.querySelector('.ppl-srcdisc')?.getAttribute('title')).toBe('kézi')
 })
 
 test('the mini avatar shows the PersonEntry initial when a person is passed', () => {

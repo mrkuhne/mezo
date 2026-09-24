@@ -18,16 +18,16 @@ import type { HabitChainInfo, HabitDaypart, HabitItem } from '@/data/types'
 import { AiSuggestSheet } from '@/features/me/sheets/AiSuggestSheet'
 import { ChainEditSheet } from '@/features/me/sheets/ChainEditSheet'
 import { localDateString } from '@/shared/lib/dates'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { DayNavigator } from '@/shared/ui/DayNavigator'
 import { GhostState } from '@/shared/ui/GhostState'
-import { Icon } from '@/shared/ui/Icon'
 import { Mosaic, MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { cn } from '@/shared/lib/cn'
 
-const DAYPART_ICON: Record<HabitDaypart, ClayIconName> = { MORNING: 'i-hajnal', DAY: 'i-nap', EVENING: 'i-alvas' }
-const DAYPART_WASH: Record<HabitDaypart, 'amber' | '' | 'lav'> = { MORNING: 'amber', DAY: '', EVENING: 'lav' }
+// Üveg (mezo-me75u.7): the daypart wears the Titanium set. Mapped HERE, not through CLAY_TO_3D —
+// there `i-alvas` is sleep (t-sleep), but on a rutin chain it means „este" (t-moon).
+const DAYPART_ART: Record<HabitDaypart, Icon3DName> = { MORNING: 't-dawn', DAY: 't-sun', EVENING: 't-moon' }
 const DAYPART_FACE: Record<HabitDaypart, string> = { MORNING: 'reggel', DAY: 'napkozben', EVENING: 'este' }
 const STATUS_SR: Record<HabitItem['status'], string> = { done: 'kész', missed: 'kimaradt', pending: 'nyitott' }
 
@@ -86,7 +86,9 @@ export function RutinHubPage() {
   // Past-day row: status-only, exactly as GrowthRutinPage rendered it.
   const pastRow = (h: HabitItem) => (
     <div key={h.key} className={cn('gr-chainrow', h.status === 'done' && 'done', h.status !== 'done' && 'skip')}>
-      <span className="gr-ck" aria-hidden="true">✓</span>
+      {h.status === 'done'
+        ? <Icon3D name="t-tick" size={24} className="gr-ck" />
+        : <span className="gr-ck rt-dotgone" aria-hidden="true"><i /></span>}
       <span className="sr-only">{STATUS_SR[h.status]}</span>
       <span className="tx">{h.title}</span>
     </div>
@@ -97,11 +99,11 @@ export function RutinHubPage() {
     const items = habits.filter((h) => h.chain === chain.chainKey)
     if (items.length === 0) return null
     return (
-      <div key={chain.id} className={cn('gr-chain', DAYPART_WASH[chain.daypart], 'rise')} style={{ '--d': `${delayMs}ms` } as CSSProperties}>
+      <div key={chain.id} className="gr-chain glass rise" style={{ '--d': `${delayMs}ms` } as CSSProperties}>
         <div className="gr-band-top">
-          <ClayIcon name={DAYPART_ICON[chain.daypart]} size={17} />
+          <Icon3D name={DAYPART_ART[chain.daypart]} size={30} />
           <span className="mz-eyebrow">{chain.title}</span>
-          <span className={cn('gr-band-chip', chain.daypart === 'EVENING' ? 'lav' : 'warn')}>
+          <span className="gr-band-chip">
             {doneOf(items)} / {items.length}
           </span>
         </div>
@@ -111,21 +113,23 @@ export function RutinHubPage() {
   }
 
   return (
-    <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate('/me')} label="‹ Én">
-        <button type="button" className="mz-pgact" onClick={() => setSuggestSheet(true)}><span aria-hidden="true">✨</span> AI javaslat</button>
+    <MozaikPage tone="gold" className="rt-uv rt-hub">
+      <PageHead glass onBack={() => navigate('/me')} label="Én">
+        <button type="button" className="mz-pgact rt-act is-lav" onClick={() => setSuggestSheet(true)}>
+          <Icon3D name="t-spark" size={18} />AI javaslat
+        </button>
       </PageHead>
       {/* Honesty rule (the Én tile's): while the day view is unresolved `doneToday/totalToday`
           reads a confident "0 / 0" that is not a real standing — show no number at all then. */}
       <PageHero
-        icon="i-hajnal" iconSize={52} big={totalToday > 0 ? `${doneToday} / ${totalToday}` : undefined} name="Rutin"
+        art="t-dawn" accent="var(--dv-amber)" big={totalToday > 0 ? `${doneToday} / ${totalToday}` : undefined} name="Rutin"
         sub={isToday && settled > 0 ? `ma · ${settled} szokás már magától megy` : isToday ? 'ma' : undefined}
       />
       <PageBody principle={PRINCIPLE}>
         <EntranceGroup replayKey={date}>
           {/* A 30 napos aggregátum a kiválasztott naptól független, ezért a múltnapi ágon is
               itt marad — a lap identitása nem ugrik napváltáskor. */}
-          <StatStrip className="rise">
+          <StatStrip className="rt-strip rise">
             <StatCell value={summary.perfectMorningDays30} label="tökéletes reggel · 30 n" />
             <StatCell value={summary.perfectEveningDays30} label="tökéletes este · 30 n" />
             <StatCell value={activeDefs.length} label="aktív szokás" />
@@ -142,7 +146,7 @@ export function RutinHubPage() {
               <>
                 {/* KÖVETKEZIK — the one surfaced row. It NAVIGATES to /nap/rutin (the ADR's
                     logging home); the tick-looking button is a door, not a tick. */}
-                <div className="rt-nextcard rise" style={{ '--d': '90ms' } as CSSProperties} data-testid="next-card">
+                <div className="rt-nextcard glass rise" style={{ '--d': '90ms' } as CSSProperties} data-testid="next-card">
                   <div className="rt-nextcard-tx">
                     <div className="rt-nextcard-eb">{next != null ? 'Következik' : 'Mind megvan'}</div>
                     <div className="rt-nextcard-nm">{next != null ? next.title : 'A mai rutin kész'}</div>
@@ -158,7 +162,7 @@ export function RutinHubPage() {
                     aria-label={next != null ? 'Pipálás a Nap oldalon' : 'A Nap oldal megnyitása'}
                     onClick={() => toNap(chainOfKey(next?.chain ?? '')?.daypart ?? activeChain?.daypart)}
                   >
-                    {next != null ? '✓' : '★'}
+                    <Icon3D name={next != null ? 't-tick' : 't-star'} size={40} />
                   </button>
                 </div>
 
@@ -166,55 +170,57 @@ export function RutinHubPage() {
                 {activeChain != null && (
                   <button
                     type="button"
-                    className="rt-chaintile rise"
+                    className="rt-chaintile glass rise"
                     style={{ '--d': '130ms' } as CSSProperties}
                     data-testid="chain-tile"
                     onClick={() => navigate(`/me/rutin/lanc/${encodeURIComponent(activeChain.chainKey)}`)}
                   >
-                    <ClayIcon name={DAYPART_ICON[activeChain.daypart]} size={32} />
-                    <span style={{ flex: 1, minWidth: 0 }}>
+                    <Icon3D name={DAYPART_ART[activeChain.daypart]} size={38} />
+                    <span className="rt-chaintile-bd">
                       <span className="rt-chaintile-eb">Aktív lánc · {activeChain.title}</span>
-                      <span className="rt-chaintile-dg">
-                        {doneOf(chainItems)} / {chainItems.length}<small>kész</small>
-                      </span>
                       <span className="rt-chdots" aria-hidden="true">
                         {chainItems.map((h) => (
                           <i key={h.key} className={cn(h.status === 'done' && 'is-d', next?.key === h.key && 'is-now')} />
                         ))}
                       </span>
                     </span>
+                    <span className="rt-chaintile-dg">
+                      {doneOf(chainItems)} / {chainItems.length}<small>kész</small>
+                    </span>
                     <span className="rt-chaintile-cv" aria-hidden="true">›</span>
                   </button>
                 )}
 
                 {/* SZOKÁSAID + ÉPÍTS */}
-                <Mosaic>
+                <Mosaic className="rt-doors">
                   <Tile
-                    wash="lav" icon="i-rend" iconSize={34} eyebrow="Szokásaid" delayMs={170}
+                    wash="lav" art="t-harvest" iconSize={44} eyebrow="Szokásaid" delayMs={170}
+                    className="glass rt-door is-lav"
                     line={`${activeDefs.length} aktív${settled > 0 ? ` · ${settled} beérett` : ''}`}
                     onClick={() => navigate('/me/rutin/szokasok')} aria-label="Szokásaid"
                   />
                   <Tile
-                    wash="sage" icon="i-recept" iconSize={34} eyebrow="Építs" delayMs={200}
+                    wash="sage" art="t-book" iconSize={44} eyebrow="Építs" delayMs={200}
+                    className="glass rt-door is-sage"
                     line="＋ Új szokás / lánc"
                     onClick={() => navigate('/me/rutin/uj')} aria-label="Építs"
                   />
                 </Mosaic>
                 <button
                   type="button"
-                  className="cta-ghost rise"
-                  style={{ '--d': '240ms', width: '100%', marginTop: 10 } as CSSProperties}
+                  className="cta-ghost rt-flatbtn rise"
+                  style={{ '--d': '240ms' } as CSSProperties}
                   onClick={() => setChainSheet(true)}
                 >
-                  <Icon name="plus" size={12} /> Új lánc
+                  ＋ Új lánc
                 </button>
               </>
             )
           ) : habits.length === 0 ? <GhostState lines={2} message="Nincs rutinadat erre a napra" />
             : (
               <>
-                <div className="gr-chain rise" style={{ '--d': '0ms' } as CSSProperties}>
-                  <div className="gr-daysum">Reggel <b>{doneOf(morning)}/{morning.length}</b> · Este <b>{doneOf(evening)}/{evening.length}</b> · <b style={{ color: 'var(--mz-cell-sage-ink)' }}>+{earnedXp} XP</b></div>
+                <div className="rt-pastsum rise" style={{ '--d': '0ms' } as CSSProperties}>
+                  <div className="gr-daysum">Reggel <b>{doneOf(morning)}/{morning.length}</b> · Este <b>{doneOf(evening)}/{evening.length}</b> · <b className="rt-xp">+{earnedXp} XP</b></div>
                   {missed.map((c) => <div key={c.id} className="gr-softnote">{c.title} kimaradt — a lánc másnap folytatódott. A 30 napos erő ettől nem nullázódik.</div>)}
                 </div>
                 {pastChains.map((c, i) => pastCard(c, 60 + i * 70))}

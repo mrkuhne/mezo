@@ -12,7 +12,7 @@ export function AccountSettingsPage() {
   const dirty = !!draft && (draft.name !== query.data?.name || draft.email !== query.data?.email)
   return <SettingsFrame title="A fiókod" subtitle="Mezo ebből a névből tudja, hogyan szólítson. Az e-mail-címeddel lépsz be." domain="me" parent="/settings/general">
     <UnsavedChangesGuard dirty={dirty} />
-    {query.isError ? <p role="alert">A fiók nem tölthető be. <button onClick={() => void query.refetch()}>Újrapróbálom</button></p> : !values ? <p role="status">Fiók betöltése…</p> : <form className="personal-editor settings-account" onSubmit={async event => {
+    {query.isError ? <p role="alert">A fiók nem tölthető be. <button onClick={() => void query.refetch()}>Újrapróbálom</button></p> : !values ? <p role="status">Fiók betöltése…</p> : <form className="personal-editor settings-account glass" onSubmit={async event => {
       event.preventDefault()
       try { await query.save({ name: values.name.trim(), email: values.email.trim() }); setDraft(null); setSaved(true) } catch { setSaved(false) }
     }}>

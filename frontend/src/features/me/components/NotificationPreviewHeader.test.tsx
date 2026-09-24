@@ -34,4 +34,24 @@ describe('NotificationPreviewHeader', () => {
     expect(warning).toHaveTextContent('21:10')
     expect(warning).toHaveTextContent('2 értesítés')
   })
+
+  // Üveg (mezo-me75u.7): the bars carry the crowding in colour — lit sky for an hour with a
+  // notification, coral inside the dense window, dark when nothing fires; the ⚠ glyph is the 3D
+  // info icon, the words carry the meaning.
+  it('lights the dense-window hours coral and the other busy hours sky', () => {
+    const perHour = Array.from({ length: 24 }, () => 0)
+    perHour[7] = 1
+    perHour[21] = 2
+    render(
+      <NotificationPreviewHeader
+        forecast={forecast({ total: 3, perHour, denseWindows: [{ fromHHmm: '21:00', toHHmm: '21:10', count: 2 }] })}
+      />,
+    )
+    expect(screen.getByTestId('spark-bar-21')).toHaveClass('hot')
+    expect(screen.getByTestId('spark-bar-7')).toHaveClass('on')
+    expect(screen.getByTestId('spark-bar-3')).not.toHaveClass('on')
+    const warning = screen.getByTestId('dense-window-warning')
+    expect(warning).toHaveTextContent(/^Sűrű ablak/)
+    expect(warning.querySelector('use[href="#t-info"]')).not.toBeNull()
+  })
 })

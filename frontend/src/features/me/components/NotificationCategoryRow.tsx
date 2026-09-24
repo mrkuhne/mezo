@@ -1,35 +1,36 @@
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { Toggle } from '@/shared/ui/Toggle'
 import { cn } from '@/shared/lib/cn'
 import { NOTIFICATION_CATEGORY_META } from '@/data/types'
 import type { NotificationCategoryKey, NotificationPrefView } from '@/data/types'
 
-/** One clay icon per category (mezo-d20.6.8 re-face) — a tile pass over the old flat
- *  emoji rows, house pattern (handoff §10 "Tile pass"). Chosen for the closest available
- *  Clay 3D icon (clay-icons.svg's 41-name set); no new sprite art needed for this slice. */
-const CATEGORY_ICON: Record<NotificationCategoryKey, ClayIconName> = {
-  briefing: 'i-hajnal',
-  midday: 'i-mezo',
-  weekly_review: 'i-naplo',
-  memoir: 'i-naplo',
-  gym: 'i-edzes',
-  medication: 'i-injekcio',
-  ritual: 'i-idozito',
-  lights_out: 'i-alvas',
-  wind_down: 'i-alvas',
-  checkin: 'i-checkin',
-  fuel_slot: 'i-fuel',
-  evening: 'i-mezo',
-  sleep_reaction: 'i-alvas',
-  weight_reaction: 'i-suly',
-  pattern: 'i-minta',
-  knowledge: 'i-tudas',
-  prediction: 'i-kristaly',
-  experiment: 'i-lombik',
-  challenge: 'i-kihivas',
-  memory: 'i-retegek',
-  decision_review: 'i-cel',
-  intervention: 'i-cel',
+/** One Titanium 3D icon per category (üveg, mezo-me75u.7 — prototypes/uveg-en2.html `bert()`).
+ *  Mapped HERE, per meaning, not through `CLAY_TO_3D`: the old clay set drew both Napzárás rows,
+ *  the two weekly rows and the two sleep rows with one glyph each, so the clay name cannot say
+ *  which row it is (bible U1 rule 7). */
+const CATEGORY_ICON: Record<NotificationCategoryKey, Icon3DName> = {
+  briefing: 't-dawn',
+  midday: 't-note',
+  weekly_review: 't-score',
+  memoir: 't-calendar',
+  evening: 't-candle',
+  sleep_reaction: 't-sleep',
+  weight_reaction: 't-weight',
+  gym: 't-dumbbell',
+  medication: 't-syringe',
+  ritual: 't-clock',
+  lights_out: 't-moon',
+  wind_down: 't-breath',
+  checkin: 't-checkin',
+  fuel_slot: 't-supps',
+  pattern: 't-pattern',
+  knowledge: 't-book',
+  prediction: 't-orb',
+  experiment: 't-flask',
+  challenge: 't-quest',
+  memory: 't-stack',
+  decision_review: 't-compass',
+  intervention: 't-shield',
 }
 
 interface NotificationCategoryRowProps {
@@ -45,11 +46,10 @@ interface NotificationCategoryRowProps {
 }
 
 /**
- * One settings-list row for a push-notification category — the prototype's washed `.catrow`
- * (en-body.html §értesítés, ×1.18): a category-tinted tile (the row wears the SAME `--wash-*`
- * token `NOTIFICATION_CATEGORY_META.iconBg` already assigned it, rather than a second color
- * table) with a clay icon disc, not a flat list row. Presentational only — no `@/data/*Hooks`/
- * `@/data/hooks` import: label, icon and lead-chip visibility come from
+ * One settings-list row for a push-notification category. Üveg (mezo-me75u.7,
+ * prototypes/uveg-en2.html `.srow3`): a flat row — lit 3D icon well, name, sub-line, the lead
+ * chip, a sky-lit switch — inside the page's one glass card per group. Presentational only — no
+ * `@/data/*Hooks`/`@/data/hooks` import: label and lead-chip visibility come from
  * `NOTIFICATION_CATEGORY_META` (data/types.ts), so this file never hardcodes Hungarian copy;
  * the sub-line is either the caller-supplied derived `subLine` or that same meta's static
  * description. bd mezo-h4wp.6.2/.3, mezo-d20.6.8.
@@ -57,21 +57,20 @@ interface NotificationCategoryRowProps {
 export function NotificationCategoryRow({ pref, onToggle, disabled = false, subLine }: NotificationCategoryRowProps) {
   const meta = NOTIFICATION_CATEGORY_META[pref.category]
   return (
-    <div
-      className={cn('ntf-catrow rise', !pref.enabled && 'off')}
-      style={{ '--cw': `var(${meta.iconBg})` } as React.CSSProperties}
-    >
-      <span className="ntf-cic" aria-hidden="true">
-        <ClayIcon name={CATEGORY_ICON[pref.category]} size={22} />
+    // Üveg (mezo-me75u.7): a flat, hairline-separated row inside the group's ONE glass card
+    // (the prototype `.srows` pattern) — no per-row wash tile any more, never glass in glass.
+    <div className={cn('ntf-catrow rise', !pref.enabled && 'off')}>
+      <span className="ntf-cic uv-well" aria-hidden="true">
+        <Icon3D name={CATEGORY_ICON[pref.category]} size={28} />
       </span>
-      <div className="col" style={{ flex: 1, minWidth: 0 }}>
+      <div className="ntf-cat-tx">
         <span className="ntf-cat-nm">{meta.label}</span>
         <span className="ntf-cat-sb">{subLine ?? meta.description}</span>
       </div>
       {meta.showLeadChip && pref.enabled && (
         <span className="ntf-leadch">−{pref.leadMinutes} perc</span>
       )}
-      <Toggle on={pref.enabled} onToggle={onToggle} ariaLabel={meta.label} disabled={disabled} />
+      <Toggle glass on={pref.enabled} onToggle={onToggle} ariaLabel={meta.label} disabled={disabled} />
     </div>
   )
 }

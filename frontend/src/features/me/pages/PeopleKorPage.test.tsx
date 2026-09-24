@@ -144,7 +144,7 @@ test('the footer legend explains the ring + dots (prototype .foot9, ported as .p
 
 test('header back chip returns to the hub, and Új személy opens PersonEditSheet', () => {
   renderPage()
-  expect(screen.getByText('‹ Kapcsolatok')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹Kapcsolatok')
   fireEvent.click(screen.getByText('＋ Új személy'))
   expect(screen.getByText('Név')).toBeInTheDocument()
 })

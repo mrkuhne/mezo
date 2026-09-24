@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Icon } from '@/shared/ui/Icon'
-import { ClaySpot } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
@@ -54,6 +53,13 @@ function windowFrom(monthsBack: number, todayIso: string): string {
 // carries a follow-up affordance that opens the still-live sheet prefilled with the rating just
 // given; saving re-runs the SAME idempotent PUT, this time with the prose. The prototype's card
 // is untouched — this is purely additive, on a row the prototype leaves empty.
+//
+// Üveg (mezo-me75u.7, prototype uveg-en2 `naplo()` + SH.decision): glass back pill + a lit sage
+// „Új bejegyzés" pill, a frameless t-journal sage halo hero (the streak is the numeral), the
+// Hálanapló streak as ONE sage glass card, each open decision as ONE gold glass card (1–4 flat,
+// „5 · bevált" the lit gold pill; the settled state a t-tick line inside the same gold glass), the
+// notes as flat cells, the empty window dashed. CSS: `── uveg en2 naplo (` in prototype.css, all
+// scoped to `.mzj-page` — the old `mzh-*`/`mzp-*`/`mem-*` classes serve the Mezo pages too.
 export function JournalPage() {
   const navigate = useNavigate()
   const [monthsBack, setMonthsBack] = useState(3)
@@ -99,19 +105,15 @@ export function JournalPage() {
 
   return (
     <MozaikPage tone="sage" className="mzj-page">
-      <PageHead onBack={() => navigate(-1)} label="‹ Én">
-        <button
-          type="button"
-          className="pgact"
-          onClick={() => setAddOpen(true)}
-          style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
-        >
-          <Icon name="plus" size={12} /> Új bejegyzés
+      <PageHead glass onBack={() => navigate(-1)} label="Én">
+        <button type="button" className="mz-pgact mzj-newbtn" onClick={() => setAddOpen(true)}>
+          <Icon3D name="t-note" size={18} /> Új bejegyzés
         </button>
       </PageHead>
 
       <PageHero
-        icon="i-naplo"
+        art="t-journal"
+        accent="var(--dv-sage)"
         name="Napló"
         big={gratitudePending ? undefined : streak}
         sub={gratitudePending ? undefined : `napos hála-sorozat · ${gratitude.length} bejegyzés`}
@@ -126,45 +128,52 @@ export function JournalPage() {
             // decisions fetch must not read as "no open decisions" — an overdue one would silently
             // vanish with no signal. Kept to a single skeleton line + retry — the decisions block is
             // a small section, not the page's main content.
-            <GhostState message="Nem sikerült betölteni a döntéseket." ctaLabel="Újra" onCta={refetchDecisions} lines={1} />
+            <div className="mzj-ghost">
+              <GhostState message="Nem sikerült betölteni a döntéseket." ctaLabel="Újra" onCta={refetchDecisions} lines={1} />
+            </div>
           ) : openDecisions.length > 0 && (
             <div className="col gap-sm">
-              <span className="mz-eyebrow">Döntések</span>
+              <span className="mz-eyebrow mzj-sech">Döntések</span>
               {openDecisions.map((decision, i) => {
                 const rating = decidedRatings[decision.id]
                 if (rating !== undefined) {
                   return (
-                    <div key={decision.id} className="mzh-decdone rise" style={{ '--d': `${i * 50}ms` } as React.CSSProperties}>
-                      <ClaySpot name="s-orb-unnepel" size={26} />
-                      <span>✓ Visszanézve · {rating}/5</span>
-                      {/* The outcome-prose door (mezo-d20.11). The PUT behind it is re-runnable,
-                          so this simply re-saves the same rating with the text attached. */}
-                      <button
-                        type="button"
-                        className="mzj-decprose"
-                        onClick={() => setOutcomeFor({ ...decision, outcomeRating: rating })}
-                      >
-                        Mi lett belőle?
-                      </button>
+                    <div key={decision.id} className="mzj-deccard glass is-done rise"
+                      style={{ '--c': 'var(--dv-amber)', '--i': i, '--d': `${i * 50}ms` } as React.CSSProperties}>
+                      <div className="mzj-decdone">
+                        <Icon3D name="t-tick" size={24} />
+                        <span>Visszanézve · {rating}/5</span>
+                        {/* The outcome-prose door (mezo-d20.11). The PUT behind it is re-runnable,
+                            so this simply re-saves the same rating with the text attached. */}
+                        <button
+                          type="button"
+                          className="mzj-decprose"
+                          onClick={() => setOutcomeFor({ ...decision, outcomeRating: rating })}
+                        >
+                          Mi lett belőle?<span aria-hidden="true"> ›</span>
+                        </button>
+                      </div>
                     </div>
                   )
                 }
                 const due = isDecisionDue(decision, today)
                 return (
-                  <div key={decision.id} className="mzh-deccard rise" style={{ '--d': `${i * 50}ms` } as React.CSSProperties}>
-                    <div className="mzh-dechead">
-                      <span className="mz-eyebrow mzh-eb-gold">Döntés · {dayLabel(decision.decidedOn, today)}</span>
-                      <span className={`mzp-stch ${due ? 'prop' : 'mut'}`} style={{ marginLeft: 'auto' }}>
+                  <div key={decision.id} className="mzj-deccard glass rise"
+                    style={{ '--c': 'var(--dv-amber)', '--i': i, '--d': `${i * 50}ms` } as React.CSSProperties}>
+                    <div className="mzj-dechead">
+                      <span className="mz-eyebrow">Döntés · {dayLabel(decision.decidedOn, today)}</span>
+                      <span className={`mzj-decchip ${due ? 'is-due' : 'is-wait'}`}>
+                        <Icon3D name={due ? 't-repeat' : 't-clock'} size={16} />
                         {due ? 'Nézd vissza' : `Visszanézés: ${dayLabel(decision.reviewDue, today)}`}
                       </span>
                     </div>
                     <p className="mzj-decq">{decision.decisionText}</p>
-                    <div className="mzh-decrow" role="group" aria-label="Mennyire vált be? (1–5)">
+                    <div className="mzj-rate" role="group" aria-label="Mennyire vált be? (1–5)">
                       {[1, 2, 3, 4, 5].map((r) => (
                         <button
                           key={r}
                           type="button"
-                          className={r === 5 ? 'mzh-cta' : 'mzh-ghost'}
+                          className={r === 5 ? 'mzj-rate-cta' : 'mzj-rate-n'}
                           onClick={() => onDecide(decision, r)}
                         >
                           {r === 5 ? '5 · bevált' : r}
@@ -183,7 +192,7 @@ export function JournalPage() {
           {isPending ? (
             <div className="col gap-sm" role="status" aria-label="Betöltés…">
               {Array.from({ length: 3 }, (_, i) => (
-                <SkeletonCard key={i}>
+                <SkeletonCard key={i} className="mzj-skel">
                   <Skeleton width="30%" height={9} />
                   <Skeleton width="90%" height={11} style={{ marginTop: 8 }} />
                   <Skeleton width="70%" height={11} style={{ marginTop: 6 }} />
@@ -196,16 +205,20 @@ export function JournalPage() {
             // state a real empty window gets, hiding the failure (RoutineEditorPage.tsx idiom).
             // Stale-but-present notes (a refetch failing after a successful first load) fall
             // through to the normal list below instead.
-            <GhostState message="Nem sikerült betölteni a naplót." ctaLabel="Újra" onCta={refetch} />
+            <div className="mzj-ghost">
+              <GhostState message="Nem sikerült betölteni a naplót." ctaLabel="Újra" onCta={refetch} />
+            </div>
           ) : notes.length === 0 ? (
             // The empty window and "no entries at all" look identical here — the widen CTA covers
             // both: a user whose newest entry is older than the current window can reach it without
             // the ghost state stranding them (the header's + button still covers "write a new one").
-            <GhostState
-              message="Még nincs bejegyzés — kezdd a + gombbal."
-              ctaLabel="Korábbi hónapok"
-              onCta={widen}
-            />
+            <div className="mzj-empty uv-empty">
+              <GhostState
+                message="Még nincs bejegyzés — kezdd a + gombbal."
+                ctaLabel="Korábbi hónapok"
+                onCta={widen}
+              />
+            </div>
           ) : (
             <>
               {notes.map((note, i) => {
@@ -214,20 +227,20 @@ export function JournalPage() {
                 lastMonth = month
                 return (
                   <div key={note.id}>
-                    {showSeparator && <span className="mz-eyebrow mem-month">{month}</span>}
+                    {showSeparator && <span className="mz-eyebrow mem-month mzj-month">{month}</span>}
                     <button
                       type="button"
-                      className="mem-daycard rise"
+                      className="mzj-note rise"
                       onClick={() => setEditNote(note)}
-                      style={{ display: 'block', width: '100%', textAlign: 'left', '--d': `${40 + i * 30}ms` } as React.CSSProperties}
+                      style={{ '--d': `${40 + i * 30}ms` } as React.CSSProperties}
                     >
-                      <span className="mem-dl">{dayLabel(note.occurredOn, today)}</span>
-                      <p className="mem-bd">{note.text}</p>
+                      <span className="mzj-note-dl">{dayLabel(note.occurredOn, today)}</span>
+                      <p className="mzj-note-bd">{note.text}</p>
                     </button>
                   </div>
                 )
               })}
-              <button type="button" className="mzp-new" onClick={widen}>
+              <button type="button" className="mzj-more" onClick={widen}>
                 Korábbi hónapok
               </button>
             </>

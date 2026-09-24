@@ -266,15 +266,18 @@ describe('NotificationsPage', () => {
   })
 
   // ── Mozaik re-face (mezo-d20.6.8): washed tiles, clay icons, rise stagger ──────────────────
-  it('renders category rows as washed tiles carrying the category clay icon (gym lead-chip row)', async () => {
+  // Üveg (mezo-me75u.7): the rows are flat inside ONE sky glass card per group, and each wears
+  // its category's 3D icon (gym → the dumbbell).
+  it('renders category rows inside a glass group card, carrying the category 3D icon (gym lead-chip row)', async () => {
     hooks.usePushSubscription.mockReturnValue(push({ enabled: true, permission: 'granted' }))
     renderPage()
     const gymRow = (await screen.findByRole('switch', { name: 'Edzés előtt' })).closest('.ntf-catrow')
     expect(gymRow).not.toBeNull()
     expect(gymRow).toHaveClass('rise')
     // the gym-only lead chip sits inside the same washed row, not a plain list row.
+    expect(gymRow?.closest('.ntf-cats')).toHaveClass('glass')
     expect(gymRow?.querySelector('.ntf-leadch')).toHaveTextContent(/−\d+ perc/)
-    expect(gymRow?.querySelector('svg')).not.toBeNull()
+    expect(gymRow?.querySelector('use[href="#t-dumbbell"]')).not.toBeNull()
   })
 
   it('a disabled category row wears the .off dimming class', async () => {
@@ -285,12 +288,12 @@ describe('NotificationsPage', () => {
     expect(row).toHaveClass('off')
   })
 
-  it('the master push row is a washed tile with a clay icon, not a plain card', () => {
+  it('the master push row is a sky glass card with the 3D bell, not a plain card', () => {
     hooks.usePushSubscription.mockReturnValue(push({ enabled: false, permission: 'default' }))
     renderPage()
     const master = screen.getByRole('switch', { name: 'Push értesítések' }).closest('.ntf-masterrow')
-    expect(master).not.toBeNull()
-    expect(master?.querySelector('svg')).not.toBeNull()
+    expect(master).toHaveClass('glass')
+    expect(master?.querySelector('use[href="#t-bell"]')).not.toBeNull()
   })
 
   // Central settings retains the complete notification controls and a parent breadcrumb.
@@ -299,7 +302,8 @@ describe('NotificationsPage', () => {
     const { container } = renderPage()
     expect(await screen.findByText('Értesítés-beállítások')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
-    expect(screen.getByText('‹ Beállítások')).toBeInTheDocument()
+    // the glass back pill draws the ‹ as decoration and carries the parent's name as text
+    expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('Beállítások')
     expect(container.querySelector('.mz-bignum')).not.toBeNull()
   })
 

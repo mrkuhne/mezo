@@ -18,20 +18,20 @@ interface Ring {
 
 export function HabitContextRings({ f, anchored }: { f: HabitFormation; anchored: boolean }) {
   const rings: Ring[] = [
-    { pct: f.timeConstancyPct, label: 'Napszak', sub: 'azonos időben', color: 'var(--amber)' },
+    { pct: f.timeConstancyPct, label: 'Napszak', sub: 'azonos időben', color: 'var(--dv-amber)' },
     {
       pct: f.anchorConstancyPct,
       label: 'Horgony',
       sub: anchored ? 'a horgony után' : 'nincs horgony',
-      color: 'var(--lav)',
+      color: 'var(--dv-lav)',
     },
-    { pct: f.consistencyPct, label: 'Ritmus', sub: 'simított', color: 'var(--sage)' },
+    { pct: f.consistencyPct, label: 'Ritmus', sub: 'simított', color: 'var(--dv-sage)' },
   ]
   return (
-    <div className="rt-ctxgrid" data-testid="formation-context">
+    <div className="rt-ctxgrid glass" data-testid="formation-context">
       {rings.map((r) => (
         <div className="rt-ctxcell" key={r.label}>
-          <ScoreRing pct={(r.pct ?? 0) / 100} size={44} stroke={5} color={r.color}
+          <ScoreRing pct={(r.pct ?? 0) / 100} size={58} stroke={5} color={r.color}
             label={r.pct != null ? `${r.pct}` : '—'} />
           <b>{r.label}</b>
           <small>{r.sub}</small>

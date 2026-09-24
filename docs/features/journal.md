@@ -2,7 +2,7 @@
 title: Journal — Free-Prose Notes + Narrative Memory Embedding
 type: feature-domain
 status: done
-updated: 2026-09-23
+updated: 2026-09-25
 tags: [me, companion, backend, frontend, data-layer, phase-5]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/journal
@@ -16,6 +16,8 @@ related: [me, companion, ritual, _platform-data-layer, _platform-api-backend, _p
 ---
 
 # Journal — Free-Prose Notes + Narrative Memory Embedding
+
+> **2026-09-25 — Üveg U7 (`mezo-me75u.7`).** `/me/naplo` wears the dark glass material with its own `mzj-*` classes (it no longer borrows Mezo's `mzh-*`/`mzp-*`/`mem-*`); the gratitude card, the decision card (lit "5 · bevált") and `DecisionReviewSheet` (the shared capture-sheet glass in gold). Behavior unchanged. Parity reference [`uveg-en2.html`](../design_2.0/prototypes/uveg-en2.html).
 
 > **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The journal / gratitude capture sheet wears the U3 capture look (3D header art, glass floating sheet, the shared lit Mentés). Behavior unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
 
