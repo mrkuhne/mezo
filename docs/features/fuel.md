@@ -2,7 +2,7 @@
 title: Fuel (Nutrition)
 type: feature-domain
 status: done
-updated: 2026-09-23
+updated: 2026-09-24
 tags: [fuel, frontend, data-layer]
 key_files:
   - frontend/src/features/fuel
@@ -91,7 +91,7 @@ have zero consumers first. `.fh-ctx` stayed: `MealScoreSheet` also wears it.
 |---|---|---|---|
 | `/fuel` (index) | the Fuel tab | `FuelMaiPage` | **The Titanium Mai** (S1a–S1d, `mezo-33k6`) — day pager (`?d=`) + remaining-kcal energy hero + 5 macro rings + the day's meal BLOCKS + the generic log action + the water module + 5 tiles + the quiet settings corner |
 | `/fuel/log/uj` | a Mai meal-block CTA | `FuelLogNewPage` | **The logolás saját oldala** (mezo-bq2t) — the full-screen `MealComposer` on its own route; the context lives in the URL: `?d=YYYY-MM-DD` (a past day, clamped to the same 7-day window — anything outside it or unparsable falls back to today), `?w=<ablak-kulcs>` (the tapped window's `${time}-${label}` key; unknown or absent → ablakon-kívüli logolás with the visible MIKOR segment), `?ai=1` (AI-panel armed on mount); Mentés/Mégse both `navigate` back to **`/fuel`** on the same day — S5 (`mezo-qt5q`) retired `/fuel/log`, so the Mai IS the day list (§2) |
-| `/fuel/etkezes/:id` | a logged meal row on the Mai (S1b) | `FuelMealDetailPage` | **One logged meal's Titanium detail page** (A10/A11) — the plate, its macros and its AI chip |
+| `/fuel/etkezes/:id` | a logged meal row on the Mai (S1b) | `FuelMealDetailPage` | **One logged meal's Titanium detail page** (A10/A11) — the plate, its macros and its AI chip; its quiet doors: „Javítom ezt az étkezést” (logger edit) and „Mentsük receptként” (Műhely `?fromMeal=`, `mezo-n9wgg`; „Megnyitom a receptet” for a single-recipe meal) |
 | `/fuel/etkezes/:id/ertekeles` | the detail page's AI chip · a Mai meal row's score chip | `FuelMealScorePage` | The meal's per-dimension AI evaluation; an unscored (fresh) log reads „✨ folyamatban", never a fabricated score |
 | `/fuel/trendek` | the Fuel tab bar „Trendek” | `FuelTrendekPage` | **Titanium S3 (`mezo-83g0`): „Jól ment a hetem?”** — the weekly picture (7 days against their budgets, each carrying its AI day score, tap → the day's glass box), three stat tiles (napi átlag · étkezés-minőség · heti súlyátlag), the weekday/weekend contrast, the intake × weight long horizon, and pattern REFERENCES into Mezo. Supersedes `/fuel/plan` + `/fuel/naplo`, both RETIRED in S5 (`mezo-qt5q`) |
 | `/fuel/konyha` | the Fuel tab bar „Konyha” | `FuelKonyhaPage` | **Titanium S4 (`mezo-hygp`): the merged Konyha HUB** — two capture actions („Recept mentése" · „Új elem a kamrába"), the Receptműhely's own poster, and two door-posters to Receptek / Kamra. Not two inline lists (owner) |

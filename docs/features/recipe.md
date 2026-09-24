@@ -2,7 +2,7 @@
 title: Recipes (Receptek)
 type: feature-domain
 status: done
-updated: 2026-09-23
+updated: 2026-09-24
 tags: [fuel, recipe, frontend, data-layer, backend, llm]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/recipe
@@ -21,6 +21,8 @@ related: [fuel, pantry, _platform-data-layer, companion]
 > One-line: the recipe library at `/fuel/recipes` (tab "Fuel" → tile "Receptek") — an owned `recipe` + `recipe_ingredient` aggregate whose lines reference the user's `pantry_item` rows with a frozen per-basis macro/nutrient snapshot, a deterministic mezo-fit score at read, a lazily-materialized AI breakdown, and the stateless Receptműhely AI turn. **Status: ✅ backend + FE dual-mode done.**
 >
 > **2026-09-23 — Üveg (`mezo-me75u.2`).** The list, detail, editor, Műhely and the recipe picker wear the dark glass. The **Receptek list is now one recipe per row** with the per-serving protein / carb / fat grams (`macros ÷ max(1, servings)`) and per-serving kcal, replacing the two-column tile grid (owner decision). Everything else is visual only.
+>
+> **2026-09-24 — Recipe from a logged meal (`mezo-n9wgg`).** A logged meal's detail page (`/fuel/etkezes/:id`) carries a quiet „Mentsük receptként" door → `/fuel/recipes/muhely?fromMeal=<id>[&d=]`. The Műhely seeds once via `workshopState.mealToDraft`: pantry lines 1:1, estimate lines stay estimates (the save gate makes you „Csere" them), a recipe line expands into its ingredients scaled by `amount / servings` (a since-deleted recipe survives as an estimate), same pantry item + unit merges. Save is a **create**; the logged meal is never touched. A meal that is exactly one recipe line gets „Megnyitom a receptet" instead. Spec: [`2026-09-24-recipe-from-logged-meal-design.md`](../superpowers/specs/2026-09-24-recipe-from-logged-meal-design.md).
 
 ## 1. Summary
 
@@ -33,7 +35,7 @@ Driving specs: [`2026-06-23-fuel-recipes-design.md`](../superpowers/specs/2026-0
 - **`FuelRecipesPage`** (`/fuel/recipes`) — the library, each card carrying the recipe's mezo-fit badge.
 - **`RecipeDetailPage`** (`/fuel/recipes/:id`) — tabs, the AI breakdown prose, a **„Logolás"** action into meal-logging.
 - **`RecipeEditorPage`** (`/fuel/recipes/new`, `/fuel/recipes/:id/edit`) — line editing via `IngredientPickerSheet` sourced from the Kamra, a save bar.
-- **`RecipeWorkshopPage`** (`/fuel/recipes/muhely[?recipeId=]`) — the „✨ Műhely" chat-driven recipe builder: goals `high_protein|pre_workout|post_workout|before_bed|breakfast`, a diff view over the working draft, **„Frissítettem a vázlatot."** as the fallback reply when the model changes nothing narratable, and Save routes through the normal editor path.
+- **`RecipeWorkshopPage`** (`/fuel/recipes/muhely[?recipeId=|?fromMeal=&d=]`) — the „✨ Műhely" chat-driven recipe builder: goals `high_protein|pre_workout|post_workout|before_bed|breakfast`, a diff view over the working draft, **„Frissítettem a vázlatot."** as the fallback reply when the model changes nothing narratable, and Save routes through the normal editor path.
 
 **Since S4:** a Workshop line the LLM could not link to a `pantryItemId` (`null` or hallucinated) but whose stated name matches an entry in the SHARED pantry catalog now arrives on the draft as a `source: "pantry"` line — and that match automatically puts the matched definition on the caller's shelf (`PantryCatalogService.ensureItem`), so the line resolves to a real owned `pantry_item` the moment the recipe is saved.
 

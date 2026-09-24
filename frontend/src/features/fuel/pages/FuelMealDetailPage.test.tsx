@@ -69,10 +69,19 @@ const MEAL: FuelMeal = {
 /** Ugyanaz az étkezés bontás NÉLKÜL — a friss log és a pontozás előtti sor alakja. */
 const MEAL_NO_BREAKDOWN: FuelMeal = { ...MEAL, id: 'meal-no-breakdown', breakdown: undefined }
 
+/** Egyetlen recept-sorból álló étkezés — ez már recept, nem kell új (mezo-n9wgg). */
+const MEAL_ONE_RECIPE: FuelMeal = {
+  ...MEAL, id: 'meal-recipe', breakdown: undefined,
+  mealItems: [{ source: 'recipe', refId: 'rec-9', amount: 1, unit: 'adag', name: 'Zabkása',
+    contribution: { kcal: 400, p: 20, c: 60, f: 8 } }],
+} as FuelMeal
+/** Részletezett sorok nélküli étkezés — nincs miből receptet csinálni. */
+const MEAL_NO_LINES: FuelMeal = { ...MEAL, id: 'meal-empty', breakdown: undefined, mealItems: [] }
+
 const DAY: FuelDay = {
   targets: { kcal: 2400, p: 180, c: 240, f: 72, water: 3000 },
   consumed: { kcal: 430, p: 30, c: 40, f: 12, water: 500 },
-  meals: [MEAL, MEAL_NO_BREAKDOWN],
+  meals: [MEAL, MEAL_NO_BREAKDOWN, MEAL_ONE_RECIPE, MEAL_NO_LINES],
   pacing: { msg: '' },
   micronutrients: [],
   supplements: [],
@@ -96,6 +105,8 @@ function renderAt(id: string, search = '') {
       { path: '/fuel/etkezes/:id/ertekeles', element: <div>SCORE PAGE PROBE</div> },
       { path: '/fuel', element: <div>MAI PROBE</div> },
       { path: '/fuel/log/uj', element: <div>LOGGER PROBE</div> },
+      { path: '/fuel/recipes/muhely', element: <div>WORKSHOP PROBE</div> },
+      { path: '/fuel/recipes/:id', element: <div>RECIPE PROBE</div> },
     ],
     { initialEntries: [`/fuel/etkezes/${id}${search}`] },
   )
@@ -250,4 +261,31 @@ test('korábbi napi étkezésnél a nap is átmegy, hogy az idő-szerződés meg
 test('a részletezőn nincs törlés — az a logolóban, két lépésben él', () => {
   renderAt('meal-1')
   expect(screen.queryByRole('button', { name: /Törlöm/ })).not.toBeInTheDocument()
+})
+
+// ── Logolt étkezésből recept (mezo-n9wgg): a recept ajtaja a javítás ajtaja mellett. ─────────
+
+test('a recept ajtaja a Műhelybe visz, az étkezés soraival előtöltve', async () => {
+  renderAt('meal-1')
+  await userEvent.click(screen.getByRole('button', { name: 'Mentsük receptként' }))
+  expect(router.state.location.pathname + router.state.location.search).toBe('/fuel/recipes/muhely?fromMeal=meal-1')
+})
+
+test('korábbi napi étkezésnél a recept ajtaja is viszi a napot', async () => {
+  renderAt('meal-1', '?d=2026-09-10')
+  await userEvent.click(screen.getByRole('button', { name: 'Mentsük receptként' }))
+  expect(router.state.location.search).toBe('?fromMeal=meal-1&d=2026-09-10')
+})
+
+test('egyetlen receptből álló étkezésnél a meglévő receptet nyitja', async () => {
+  renderAt('meal-recipe')
+  expect(screen.queryByRole('button', { name: 'Mentsük receptként' })).not.toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Megnyitom a receptet' }))
+  expect(router.state.location.pathname).toBe('/fuel/recipes/rec-9')
+})
+
+test('részletezett sorok nélkül nincs recept-ajtó', () => {
+  renderAt('meal-empty')
+  expect(screen.queryByRole('button', { name: 'Mentsük receptként' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Megnyitom a receptet' })).not.toBeInTheDocument()
 })
