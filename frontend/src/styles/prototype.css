@@ -7483,6 +7483,10 @@ button.mz-tile:active { transform: scale(0.96); }
 .spw-ma { color: var(--mz-cell-amber-ink); background: var(--mz-cell-amber-bg); }
 .spw-one { color: var(--mz-cell-rose-ink); background: var(--mz-cell-rose-bg); }
 .spw-logbtn { margin-left: auto; flex: none; min-height: 44px; }
+/* mezo-i6q2b: today's slot once logged — the Mai hero's done colour, no CTA. */
+.spw-done { margin-left: auto; flex: none; font-size: 11px; font-weight: 800;
+  border-radius: 8px; padding: 4px 9px;
+  color: var(--mz-cell-sage-ink); background: var(--mz-cell-sage-bg); }
 /* ═══════════════════════════════════════════════════════════════════════════
    Fuel · 1:1 hűség-audit — hiányzó mozgás + a Stack/Receptek Mozaik-arca
    (mezo-d20.11). Forrás: prototypes/src/fuel-body.html #page-stack / #page-recept
