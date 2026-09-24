@@ -1,9 +1,12 @@
+import type { ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { usePatternActions, useObservationReply } from '@/data/hooks'
 import { MOCK_EDITIONS } from '@/data/character/characterMock'
 import { editionPost } from '@/features/insights/logic/teamEdition'
+import type { FeedPost } from '@/features/insights/logic/teamFeed'
 import { FeedPostCard } from './FeedPostCard'
 import { FeedPosterCard } from './FeedPosterCard'
 
@@ -71,4 +74,55 @@ test('vendég nélküli poszton nincs vendég-sor', () => {
     </QueryWrapper>,
   )
   expect(container.querySelector('.tf-cmt')).toBeNull()
+})
+
+/**
+ * H5 (mezo-a9bo7.16): Derű kérése nem állítás, hanem kérés — a hármas és a „Miből látszik?”
+ * helyén egyetlen „Bejelentkezem” gomb áll (a jóváhagyott prototípus `kérés` posztja), ami a
+ * kiadás saját útvonalára, a bejelentkezésre visz. Poszterként is ugyanígy.
+ */
+const KERES: FeedPost = {
+  id: 'edition:2026-09-24:3',
+  kind: 'keres',
+  author: 'deru',
+  occurredAt: '2026-09-24',
+  body: '14 napból **4** napról tudom, hogy vagy. Egy rövid bejelentkezés ma este sokat segítene.',
+  sourceRoute: '/nap/checkin',
+  waiting: false,
+}
+
+function renderAt(card: ReactNode) {
+  return render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={['/mezo/csapat']}>
+        <Routes>
+          <Route path="/mezo/csapat" element={card} />
+          <Route path="/nap/checkin" element={<p>bejelentkezés-oldal</p>} />
+          <Route path="/fuel" element={<p>fuel-oldal</p>} />
+        </Routes>
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+}
+
+test.each([
+  ['csendes panel', FeedPostCard],
+  ['poszter', FeedPosterCard],
+] as const)('%s: a kérés-poszton „Bejelentkezem” gomb áll, és a bejelentkezésre visz', async (_, Card) => {
+  renderAt(<Card post={KERES} onReply={vi.fn()} />)
+  expect(screen.queryByRole('button', { name: /Ez talál/ })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Elmesélem/ })).not.toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: 'Miből látszik?' })).not.toBeInTheDocument()
+  await userEvent.click(screen.getByRole('link', { name: 'Bejelentkezem' }))
+  expect(await screen.findByText('bejelentkezés-oldal')).toBeInTheDocument()
+})
+
+test('Falat értékelése: nincs CTA, a „Miből látszik?” a Fuel-napra visz, a hármas megvan', async () => {
+  const ertekeles: FeedPost = { ...KERES, id: 'edition:2026-09-24:2', kind: 'ertekeles', author: 'falat', body: 'Eddig ma **3 étkezésed** van.', sourceRoute: '/fuel' }
+  renderAt(<FeedPostCard post={ertekeles} onReply={vi.fn()} />)
+  expect(screen.getByText(/napi értékelés/)).toBeInTheDocument()
+  expect(screen.queryByRole('link', { name: 'Bejelentkezem' })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Ez talál/ })).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('link', { name: 'Miből látszik?' }))
+  expect(await screen.findByText('fuel-oldal')).toBeInTheDocument()
 })

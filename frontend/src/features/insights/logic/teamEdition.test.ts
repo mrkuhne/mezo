@@ -139,3 +139,26 @@ test('editionPost: a vendég-sorok átjönnek (a Szkeptikus is), üresen a kulcs
   // a régi, egyetlen „bevonta X” mező érintetlen marad
   expect(editionPost(e, e.posts[0]).guest).toBeUndefined()
 })
+
+// H5 (mezo-a9bo7.16): Falat napi értékelése és Derű adatkérése — a két új forrás-fajta ugyanúgy
+// a kiadás saját útvonalát viszi; egyik sem kérdés, így egyik sem „vár rád”, és döntés-horgonyt
+// sem kap (az csak a minta-kérdésé).
+test('editionPost: Falat értékelése (fuel_day) → napi értékelés, a Fuel-napra mutat', () => {
+  const e = edition(TODAY, [post(2, { characterKey: 'falat', genre: 'ertekeles', sourceKind: 'fuel_day', sourceId: TODAY, sourceRoute: '/fuel' })])
+  const p = editionPost(e, e.posts[0])
+  expect(p.kind).toBe('ertekeles')
+  expect(p.author).toBe('falat')
+  expect(p.sourceRoute).toBe('/fuel')
+  expect(p.waiting).toBe(false)
+  expect(p.decision).toBeUndefined()
+})
+
+test('editionPost: Derű kérése (checkin_coverage) → kérés, a bejelentkezésre mutat', () => {
+  const e = edition(TODAY, [post(3, { characterKey: 'deru', genre: 'keres', sourceKind: 'checkin_coverage', sourceId: TODAY, sourceRoute: '/nap/checkin' })])
+  const p = editionPost(e, e.posts[0])
+  expect(p.kind).toBe('keres')
+  expect(p.author).toBe('deru')
+  expect(p.sourceRoute).toBe('/nap/checkin')
+  expect(p.waiting).toBe(false)
+  expect(p.decision).toBeUndefined()
+})

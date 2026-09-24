@@ -34,6 +34,22 @@ export function SourceLink({ post }: { post: FeedPost }) {
   )
 }
 
+/**
+ * Derű kérése (H5, mezo-a9bo7.16): a `keres` poszt nem állítás, hanem kérés — ezért a „Miből
+ * látszik?” és a hármas helyén egyetlen gomb áll, ami a kiadás saját útvonalára (a bejelentkezésre)
+ * visz; a jóváhagyott prototípus `kérés` posztja is így néz ki. A csendes panelen üveg-chip, a
+ * poszteren (ami maga az üveg) lapos, színezett pirula — üveg az üvegben nincs (restored bible §3.4).
+ */
+export function RequestCta({ post, onGlass = false }: { post: FeedPost; onGlass?: boolean }) {
+  return (
+    // a `.glass` a saját `--c`-jét állítja, ezért a szín a gombon is kimondva (mint `tf-intro-cta`)
+    <Link className={`${onGlass ? '' : 'glass '}tf-cta tf-c-${TEAM[post.author].accent}`} to={post.sourceRoute}>
+      <Icon3D name="t-heart" size={22} />
+      Bejelentkezem
+    </Link>
+  )
+}
+
 /** A rekord saját szövege; a `**kiemelés**` a karakter-mondatok hangsúlya (spec §2.7). */
 export function PostBody({ post }: { post: FeedPost }) {
   return (
@@ -51,9 +67,15 @@ export function FeedPostCard({ post, onReply }: { post: FeedPost; onReply: (post
       <FeedPostHead post={post} flag={post.waiting ? <span className="tf-flag">Rád vár</span> : undefined} />
       <PostBody post={post} />
       <HonestyWell post={post} />
-      <SourceLink post={post} />
-      <FeedGuests guests={post.guests} />
-      <FeedTrio post={post} onReply={onReply} />
+      {post.kind === 'keres' ? (
+        <RequestCta post={post} />
+      ) : (
+        <>
+          <SourceLink post={post} />
+          <FeedGuests guests={post.guests} />
+          <FeedTrio post={post} onReply={onReply} />
+        </>
+      )}
     </article>
   )
 }

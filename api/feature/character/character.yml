@@ -866,7 +866,7 @@ components:
         rank: { type: integer, minimum: 1, maximum: 6 }
         characterKey: { type: string, enum: [szunya, mocor, falat, deru, mezo] }
         genre: { type: string, enum: [megfigyeles, sejtes, kerdes, kiserlet, elorejelzes, konzilium, keres, ertekeles] }
-        sourceKind: { type: string, enum: [pattern, pair, prediction, experiment, konzilium] }
+        sourceKind: { type: string, enum: [pattern, pair, prediction, experiment, konzilium, fuel_day, checkin_coverage] }
         sourceId: { type: string }
         sourceRoute: { type: string }
         title: { type: string, nullable: true }

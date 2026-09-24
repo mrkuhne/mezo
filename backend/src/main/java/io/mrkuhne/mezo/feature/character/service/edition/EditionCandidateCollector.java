@@ -11,12 +11,18 @@ import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
+import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService.Window;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Objects;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,6 +51,17 @@ public class EditionCandidateCollector {
     static final String SOURCE_PREDICTION = "prediction";
     static final String SOURCE_EXPERIMENT = "experiment";
     static final String SOURCE_KONZILIUM = "konzilium";
+    static final String SOURCE_FUEL_DAY = "fuel_day";
+    static final String SOURCE_CHECKIN_COVERAGE = "checkin_coverage";
+
+    /** A Fuel fül mai napja (FE router: {@code /fuel} → FuelMaiPage). */
+    static final String ROUTE_FUEL_DAY = "/fuel";
+    /** A Nap fül „Hogy vagy ma?" bejelentkezése (FE router: {@code /nap/checkin} → NapCheckinPage). */
+    static final String ROUTE_CHECKIN = "/nap/checkin";
+
+    /** Derű ablaka és küszöbe (spec §3.6): 14 napból 8-nál kevesebb bejelentkezett nap → kérés. */
+    private static final int CHECKIN_WINDOW_DAYS = 14;
+    private static final int CHECKIN_MIN_DAYS = 8;
 
     /** A gyűlik-jelölt sávja (spec táblázat 3. sor): `5 <= n < minN`. */
     private static final int PAIR_MIN_N = 5;
@@ -78,6 +95,8 @@ public class EditionCandidateCollector {
             experimentCandidate(experiment, day).ifPresent(out::add);
         }
         reads.dailyConference(owner, day).ifPresent(conference -> out.addAll(konziliumCandidates(conference)));
+        falat(owner, day).ifPresent(out::add);
+        deru(owner, day).ifPresent(out::add);
         // Fix round (mezo-a9bo7.12): a poszt body NOT NULL — egy üres/hiányzó recordText-ű jelölt
         // (pl. mechanism nélküli proposed minta) minden tiken eldobná a publish-t. Egyetlen helyen
         // szűrünk: minden forrás ugyanide fut be, mielőtt a EditionSelector látná.
@@ -244,6 +263,93 @@ public class EditionCandidateCollector {
 
     private static String blankToNull(String s) {
         return isBlank(s) ? null : s.strip();
+    }
+
+    /**
+     * H5 (mezo-a9bo7.16, spec §3.6): Falat napi értékelése — három adatból épített szólam, és csak
+     * az kerül be, amelyikhez van adat. 0 étkezés → nincs jelölt. A nap még nyitott (21:00), ezért
+     * a szöveg „eddig ma"-t mond. A {@code facts} a szólamok számai, így a tény-őr csak ezeket
+     * engedi a hangos szövegbe.
+     */
+    private Optional<EditionCandidate> falat(UUID owner, LocalDate day) {
+        List<EditionMeal> meals = reads.meals(owner, day);
+        if (meals.isEmpty()) {
+            return Optional.empty();
+        }
+        List<String> sentences = new ArrayList<>(3);
+        List<String> facts = new ArrayList<>(4);
+
+        // a tányér — a pontozott étkezések átlaga (ha egy sincs pontozva, a szólam kimarad). A
+        // `meal.score` 0..1 skálán tárolódik (a Fuel felület `score * 100`-at mutat) — a poszt is
+        // ugyanazt a 0..100-as pontot mondja ki.
+        List<BigDecimal> scores = meals.stream().map(EditionMeal::score).filter(Objects::nonNull).toList();
+        if (!scores.isEmpty()) {
+            int avg = scores.stream().reduce(BigDecimal.ZERO, BigDecimal::add).multiply(BigDecimal.valueOf(100))
+                    .divide(BigDecimal.valueOf(scores.size()), 0, RoundingMode.HALF_UP).intValue();
+            sentences.add(String.format("Eddig ma %d étkezésed van, átlagosan %d pontos.", meals.size(), avg));
+            facts.add(String.valueOf(meals.size()));
+            facts.add(String.valueOf(avg));
+        }
+
+        // a cél — a napi kcal-cél vs. az eddig bevitt kcal
+        DailyTargets targets = reads.targets(owner, day);
+        if (targets != null && targets.kcal() > 0) {
+            int eaten = meals.stream().map(EditionMeal::kcal).filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add)
+                    .setScale(0, RoundingMode.HALF_UP).intValue();
+            sentences.add(String.format("A napi célod %d kcal, eddig %d kcal ment be.", targets.kcal(), eaten));
+            facts.add(String.valueOf(targets.kcal()));
+            facts.add(String.valueOf(eaten));
+        }
+
+        // az edzés — volt-e ma (done), különben van-e betervezve
+        trainingSentence(reads.windows(owner, day)).ifPresent(sentences::add);
+
+        Instant lastMealAt = meals.stream().map(EditionMeal::loggedAt).filter(Objects::nonNull)
+                .max(Comparator.naturalOrder()).orElse(null);
+        String id = day.toString();
+        return Optional.of(new EditionCandidate(SOURCE_FUEL_DAY, id, TeamCharacter.FALAT, EditionGenre.ERTEKELES,
+                null, String.join(" ", sentences), List.copyOf(facts), List.of(new EditionRef(SOURCE_FUEL_DAY, id)),
+                false, false, lastMealAt, ROUTE_FUEL_DAY, List.of()));
+    }
+
+    private static Optional<String> trainingSentence(List<Window> windows) {
+        if (windows == null || windows.isEmpty()) {
+            return Optional.empty();
+        }
+        List<Window> done = windows.stream().filter(Window::done).toList();
+        if (!done.isEmpty()) {
+            String labels = labels(done);
+            return Optional.of(labels.isEmpty() ? "Ma volt edzésed." : "Ma volt edzésed (" + labels + ").");
+        }
+        String labels = labels(windows);
+        return Optional.of(labels.isEmpty() ? "Ma edzés van betervezve." : "Ma " + labels + " edzés van betervezve.");
+    }
+
+    private static String labels(List<Window> windows) {
+        return windows.stream().map(Window::label).filter(l -> !isBlank(l)).map(String::strip)
+                .distinct().collect(Collectors.joining(", "));
+    }
+
+    /**
+     * H5 (mezo-a9bo7.16, spec §3.6): Derű adatkérése — ha az elmúlt 14 napból (a mai nappal együtt)
+     * 8-nál kevesebb napon volt bejelentkezés, a valós számmal kér egyet. {@code changedAt} = null:
+     * a kérés nem egy forrás-változás, így nem kap frissesség-bónuszt, és feltöltőként a
+     * {@link EditionSelector} tervezett sorrendje szerint a „gyűlik" jelöltek MÖGÉ sorol. A heti
+     * egyszeri korlát a {@link TeamEditionService} dolga (a korábbi kiadásokat az látja).
+     */
+    private Optional<EditionCandidate> deru(UUID owner, LocalDate day) {
+        long days = reads.checkinDays(owner, day.minusDays(CHECKIN_WINDOW_DAYS - 1L), day);
+        if (days >= CHECKIN_MIN_DAYS) {
+            return Optional.empty();
+        }
+        String id = day.toString();
+        String recordText = String.format(
+                "%d napból %d napról tudom, hogy vagy. Egy rövid bejelentkezés ma este sokat segítene.",
+                CHECKIN_WINDOW_DAYS, days);
+        return Optional.of(new EditionCandidate(SOURCE_CHECKIN_COVERAGE, id, TeamCharacter.DERU, EditionGenre.KERES,
+                null, recordText, List.of(String.valueOf(CHECKIN_WINDOW_DAYS), String.valueOf(days)),
+                List.of(new EditionRef(SOURCE_CHECKIN_COVERAGE, id)), false, false, null, ROUTE_CHECKIN, List.of()));
     }
 
     /**

@@ -24,7 +24,9 @@ import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
+import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.ExperimentPopulator;
+import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.PredictionPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -61,9 +63,19 @@ class TeamEditionServiceIT extends AbstractIntegrationTest {
     @Autowired private CharacterRunRepository runs;
     @Autowired private AppNotificationRepository appNotifications;
     @Autowired private CharacterConferenceRepository conferences;
+    @Autowired private CheckInPopulator checkInPopulator;
+    @Autowired private MealPopulator mealPopulator;
 
     private UUID owner() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
+    }
+
+    /** H5 (mezo-a9bo7.16): 8 bejelentkezett nap az utolsó 14-ből — így Derű nem kér, és a
+     *  „csendes nap" tesztek valóban üres világot látnak. */
+    private void wellCheckedIn(UUID owner) {
+        for (int i = 0; i < 8; i++) {
+            checkInPopulator.createCheckIn(owner, DAY.minusDays(i), "08:00", 3, 2, null);
+        }
     }
 
     private List<TeamEditionPostEntity> postsOf(TeamEditionEntity edition) {
@@ -117,6 +129,7 @@ class TeamEditionServiceIT extends AbstractIntegrationTest {
     @Test
     void run_emptyUser_publishesQuietEditionWithNoPosts() {
         UUID owner = userPopulator.createUser().getId();
+        wellCheckedIn(owner);
 
         service.run(owner, DAY);
 
@@ -155,6 +168,7 @@ class TeamEditionServiceIT extends AbstractIntegrationTest {
     @Test
     void run_quietEdition_doesNotNotify() {
         UUID owner = userPopulator.createUser().getId();
+        wellCheckedIn(owner);
 
         service.run(owner, DAY);
 
@@ -166,6 +180,7 @@ class TeamEditionServiceIT extends AbstractIntegrationTest {
     @Test
     void run_repeatBan_sameUnchangedSourceShownYesterday_isExcludedToday() {
         UUID owner = userPopulator.createUser().getId();
+        wellCheckedIn(owner);
         PatternEntity pattern = patternPopulator.statistical(owner); // proposed, lastDetectedAt stays null
 
         TeamEditionEntity yesterday = new TeamEditionEntity();
@@ -257,5 +272,93 @@ class TeamEditionServiceIT extends AbstractIntegrationTest {
         assertThat(post.getGuests().guests()).containsExactly(
                 new EditionGuestsEnvelope.Guest("falat", PEER_ARGUMENT, false),
                 new EditionGuestsEnvelope.Guest("szkeptikus", SKEPTIC_ARGUMENT, false));
+    }
+    // ---- Derű adatkérése (H5, mezo-a9bo7.16) ---------------------------------------------------
+
+    /** A múltbeli kiadás egyetlen Derű-kérés posztjával. */
+    private void pastDeruRequest(UUID owner, LocalDate day) {
+        TeamEditionEntity past = new TeamEditionEntity();
+        past.setCreatedBy(owner);
+        past.setDay(day);
+        past.setStatus("PUBLISHED");
+        past.setGeneratedAt(Instant.now());
+        past = editions.saveAndFlush(past);
+        TeamEditionPostEntity post = new TeamEditionPostEntity();
+        post.setCreatedBy(owner);
+        post.setEditionId(past.getId());
+        post.setRank((short) 1);
+        post.setCharacterKey("deru");
+        post.setGenre("keres");
+        post.setSourceKind("checkin_coverage");
+        post.setSourceId(day.toString());
+        post.setSourceRoute("/nap/checkin");
+        post.setBody("14 napból 2 napról tudom, hogy vagy. Egy rövid bejelentkezés ma este sokat segítene.");
+        post.setVoiced(false);
+        post.setFacts(new EditionFactsEnvelope(List.of("14", "2")));
+        post.setRefs(new EditionRefsEnvelope(List.of()));
+        post.setGuests(new EditionGuestsEnvelope(List.of()));
+        posts.saveAndFlush(post);
+    }
+
+    private List<TeamEditionPostEntity> deruRequests(UUID owner) {
+        TeamEditionEntity edition = editions.findByCreatedByAndDay(owner, DAY).orElseThrow();
+        return postsOf(edition).stream().filter(p -> "checkin_coverage".equals(p.getSourceKind())).toList();
+    }
+
+    @Test
+    void run_sparseCheckins_deruAsksWithTheRealCount() {
+        UUID owner = userPopulator.createUser().getId();
+        checkInPopulator.createCheckIn(owner, DAY.minusDays(2), "08:00", 3, 2, null);
+        checkInPopulator.createCheckIn(owner, DAY.minusDays(2), "20:00", 3, 2, null);
+
+        service.run(owner, DAY);
+
+        assertThat(deruRequests(owner)).singleElement().satisfies(p -> {
+            assertThat(p.getCharacterKey()).isEqualTo("deru");
+            assertThat(p.getGenre()).isEqualTo("keres");
+            assertThat(p.getSourceRoute()).isEqualTo("/nap/checkin");
+            assertThat(p.getFacts().facts()).containsExactly("14", "1");
+        });
+    }
+
+    @Test
+    void run_deruAskedSixDaysAgo_doesNotAskAgain() {
+        UUID owner = userPopulator.createUser().getId();
+        pastDeruRequest(owner, DAY.minusDays(6));
+
+        service.run(owner, DAY);
+
+        assertThat(deruRequests(owner)).isEmpty();
+    }
+
+    @Test
+    void run_deruAskedSevenDaysAgo_asksAgain() {
+        UUID owner = userPopulator.createUser().getId();
+        pastDeruRequest(owner, DAY.minusDays(7));
+
+        service.run(owner, DAY);
+
+        assertThat(deruRequests(owner)).hasSize(1);
+    }
+    // ---- Falat napi értékelése (H5, mezo-a9bo7.16) ---------------------------------------------
+
+    @Test
+    void run_mealsToday_falatPublishesTheDayReview() {
+        UUID owner = userPopulator.createUser().getId();
+        wellCheckedIn(owner);
+        mealPopulator.createMealWithItems(owner, DAY, "lunch", Instant.parse("2026-09-24T11:00:00Z"), List.of(
+                new MealPopulator.Line("h5-it-leves", "350", "12", "40", "8", (short) 1)));
+
+        service.run(owner, DAY);
+
+        TeamEditionEntity edition = editions.findByCreatedByAndDay(owner, DAY).orElseThrow();
+        assertThat(postsOf(edition)).filteredOn(p -> "fuel_day".equals(p.getSourceKind()))
+                .singleElement().satisfies(p -> {
+                    assertThat(p.getCharacterKey()).isEqualTo("falat");
+                    assertThat(p.getGenre()).isEqualTo("ertekeles");
+                    assertThat(p.getSourceId()).isEqualTo(DAY.toString());
+                    assertThat(p.getSourceRoute()).isEqualTo("/fuel");
+                    assertThat(p.getFacts().facts()).contains("350");
+                });
     }
 }

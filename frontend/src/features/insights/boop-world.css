@@ -32,13 +32,16 @@
    A fenti `boop-world-*` szabályok az „Összes funkció” rácsé (Gépterem dev-menü) és a Boop-oldalak
    chip-sávjáé; a régi hub-főoldal szabályai a fal-cserével (mezo-a9bo7.10) törlődtek. */
 
-/* karakter-akcentusok — a `--c` az üveg/avatár/terület-címke egyetlen színforrása */
-.tf-c-lav { --c: var(--dv-lav); }
-.tf-c-sky { --c: var(--dv-sky); }
-.tf-c-sage { --c: var(--dv-sage); }
-.tf-c-rose { --c: var(--dv-rose); }
-.tf-c-gold { --c: var(--dv-amber); }
-.tf-c-slate { --c: #8E86A3; }
+/* karakter-akcentusok — a `--c` az üveg/avatár/terület-címke egyetlen színforrása. A `.glass`
+   (styles/prototype.css) a saját `--c: sage` alapját a bundle-ben EZEK UTÁN hozza, azonos
+   specificitással — a `.glass.tf-c-*` pár nélkül minden poszter és üveg-gomb zsályazöld lenne
+   (H5, mezo-a9bo7.16 verify: így is volt). */
+.tf-c-lav, .glass.tf-c-lav { --c: var(--dv-lav); }
+.tf-c-sky, .glass.tf-c-sky { --c: var(--dv-sky); }
+.tf-c-sage, .glass.tf-c-sage { --c: var(--dv-sage); }
+.tf-c-rose, .glass.tf-c-rose { --c: var(--dv-rose); }
+.tf-c-gold, .glass.tf-c-gold { --c: var(--dv-amber); }
+.tf-c-slate, .glass.tf-c-slate { --c: #8E86A3; }
 
 /* oldalfej */
 .tf-head { padding: 4px 18px 8px; }
@@ -151,6 +154,10 @@
   background: color-mix(in srgb, var(--dv-coral) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 35%, transparent); border-radius: 999px; padding: 5px 10px; }
 /* „Miből látszik?” — minden állítás forrás-linkje */
 .tf-source { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; font-size: 11px; font-weight: 600; color: color-mix(in srgb, var(--c) 78%, var(--text-primary)); text-decoration: none; }
+/* Derű kérése (H5): a hármas helyén egy CTA — a prototípus `.chip glass`-a; a poszteren lapos pirula */
+.tf-cta { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; margin: 10px 0 4px; padding: 6px 16px 6px 9px; border-radius: 999px;
+  font-size: 12.5px; font-weight: 600; color: var(--text-primary); text-decoration: none; }
+.tf-poster .tf-cta { background: color-mix(in srgb, var(--c) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 35%, transparent); }
 
 /* ügy-kártya a szobákban: az első `class="glass tf-case"`, a többi `class="tf-case tf-flatc"` */
 .tf-case { display: block; width: 100%; padding: 13px 14px 14px; border-radius: 20px; text-align: left; color: var(--text-primary); text-decoration: none; }

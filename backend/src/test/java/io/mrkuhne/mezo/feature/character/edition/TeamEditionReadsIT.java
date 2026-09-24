@@ -9,9 +9,14 @@ import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.PredictionRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.feature.character.service.edition.EditionMeal;
+import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.ExperimentPopulator;
+import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.PredictionPopulator;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -40,6 +45,8 @@ class TeamEditionReadsIT extends ApiIntegrationTest {
     @Autowired private PredictionPopulator predictionPopulator;
     @Autowired private PredictionRepository predictionRepository;
     @Autowired private ExperimentPopulator experimentPopulator;
+    @Autowired private MealPopulator mealPopulator;
+    @Autowired private CheckInPopulator checkInPopulator;
 
     private UUID owner;
 
@@ -100,5 +107,38 @@ class TeamEditionReadsIT extends ApiIntegrationTest {
     @Test
     void dailyConference_freshOwner_isEmpty() {
         assertThat(reads.dailyConference(owner, DAY)).isEmpty();
+    }
+    // ---- H5 (mezo-a9bo7.16) ------------------------------------------------------------------
+
+    @Test
+    void meals_sumsItemKcal_perMealOfTheDay_only() {
+        Instant at = Instant.parse("2026-09-24T10:00:00Z");
+        mealPopulator.createMealWithItems(owner, DAY, "lunch", at, List.of(
+                new MealPopulator.Line("h5-csirke", "300", "30", "0", "10", (short) 1),
+                new MealPopulator.Line("h5-rizs", "200", "4", "44", "1", (short) 1)));
+        mealPopulator.createMealWithItems(owner, DAY.minusDays(1), "lunch", List.of(
+                new MealPopulator.Line("h5-tegnap", "999", "1", "1", "1", (short) 1)));
+
+        List<EditionMeal> out = reads.meals(owner, DAY);
+
+        assertThat(out).singleElement().satisfies(m -> {
+            assertThat(m.loggedAt()).isEqualTo(at);
+            assertThat(m.kcal()).isEqualByComparingTo(new BigDecimal("500"));
+        });
+    }
+
+    @Test
+    void targets_resolveForTheDay() {
+        assertThat(reads.targets(owner, DAY).kcal()).isPositive(); // config fallback without a goal
+    }
+
+    @Test
+    void checkinDays_countsDistinctDaysInsideTheWindow() {
+        checkInPopulator.createCheckIn(owner, DAY, "08:00", 3, 2, null);
+        checkInPopulator.createCheckIn(owner, DAY, "20:00", 3, 2, null);      // same day: counts once
+        checkInPopulator.createCheckIn(owner, DAY.minusDays(13), "08:00", 3, 2, null);
+        checkInPopulator.createCheckIn(owner, DAY.minusDays(14), "08:00", 3, 2, null); // outside
+
+        assertThat(reads.checkinDays(owner, DAY.minusDays(13), DAY)).isEqualTo(2);
     }
 }

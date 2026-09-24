@@ -161,7 +161,7 @@ describe('RunPage', () => {
       renderRun()
       expect(screen.getByText('Posztoló karakterek')).toBeInTheDocument()
       expect(screen.getByText(TEAM.falat.name)).toBeInTheDocument()
-      expect(screen.getByText(TEAM.mocor.name)).toBeInTheDocument()
+      expect(screen.getByText(TEAM.deru.name)).toBeInTheDocument() // H5: a mai kiadás falat · deru
       expect(screen.queryByText('falat')).not.toBeInTheDocument()
     })
 

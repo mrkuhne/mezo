@@ -706,9 +706,29 @@ trio**. The UI adds no emoji or text of its own; only the character's sentence m
 emoji, and the Szkeptikus's line has none. The mock's rank-1 post carries the two-guest example
 (Mocor on the 4. set, the Szkeptikus with the alternative explanation).
 
+**Falat és Derű napi műsora (H5, `mezo-a9bo7.16`).** Two edition genres come from data the
+characters own rather than from a finding. Falat's **napi értékelés** (`genre: 'ertekeles'`,
+`sourceKind: 'fuel_day'`, `sourceRoute: '/fuel'`) is the three-voice day review — plate (meal count
++ average score), goal (kcal target vs. eaten), training (done/planned window) — and renders as any
+other post: kind label „napi értékelés”, the trio, and „Miből látszik?” to the Fuel day. Derű's
+**kérés** (`genre: 'keres'`, `sourceKind: 'checkin_coverage'`, `sourceRoute: '/nap/checkin'`) asks
+for a check-in when fewer than 8 of the last 14 days have one. A request is not a claim, so the
+card follows the prototype's `kérés` post (`uveg-uzenofal.html`): **the „Miből látszik?” link, the
+guest lines and the trio (and the poster's reply row) give way to ONE „Bejelentkezem” CTA**
+(`RequestCta` in `FeedPostCard.tsx`, the `t-heart` sprite) that links to the post's own
+`sourceRoute`. On the quiet panel it is a small `glass tf-cta` chip; on a poster (already the day's
+glass) it is a flat tinted pill — never glass in glass. `keres` is a filler genre (the selector only
+takes it when fewer than 3 main candidates are eligible), so it is usually the last post of a thin
+day. The `.glass.tf-c-*` accent pairs in `boop-world.css` exist because `.glass` sets its own sage
+`--c` later in the bundle at equal specificity — without them every poster and glass chip on the
+wall was sage regardless of its character.
+
 The mock edition sits on the REAL today (`characterMock.ts`), not on the frozen August mock world's
 last night, otherwise the wall's 14-day window could never contain it; its rank-1 post is the
-`voiced: true` example (Falat's voice over exp1's own numbers). Publishing also emits ONE
+`voiced: true` example (Falat's voice over exp1's own numbers). Since H5 the mock holds TWO editions
+in the sequence the selector would really produce: yesterday (prediction · Falat's értékelés as raw
+`voiced: false` text · pattern) and today (exp1 on its middle day · Falat's voiced értékelés over the
+mock Fuel day's own numbers · Derű's kérés as the filler, since the other two were shown yesterday). Publishing also emits ONE
 `team_edition` notification („Megjött az esti kiadás”, deeplink `/mezo`, dedup key
 `team_edition:<day>`) — a quiet edition stays silent, and the idempotent re-run never notifies twice.
 
@@ -1101,7 +1121,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `pages/{BoopMenuPage,BoopAboutPage,BoopMemoriesPage,MemoryDayPage,KnowledgeNodePage,PredictionDetailPage,ExperimentDetailPage}.tsx` — the „Összes funkció” grid, Rólad, Emlékek and full detail pages.
 - `logic/team.ts` + `logic/teamFeed.ts` (+ `teamFeed.fixtures.ts`) — **`mezo-a9bo7.7`** the csapat-üzenőfal character registry and record→post builder (§3); pure, unit-tested
 - `logic/teamEdition.ts` — **`mezo-a9bo7.13`** the esti kiadás → wall merge (`editionPost`, `mergeWall`, §3; guest lines since `mezo-a9bo7.15`); pure, unit-tested
-- `pages/TeamFeedPage.tsx` + `components/feed/{FeedTrio,FeedPostCard,FeedPosterCard,FeedPostHead,FeedGuests,FeedReplySheet,StoryStrip}.tsx` + `useFeedSession.ts` + `useTeamFeed.ts` — **`mezo-a9bo7.8`** the csapat-üzenőfal wall, the unified trio and the reply sheet (§3); `/mezo` since A4 (`mezo-a9bo7.10`), with `IntroPosts.tsx` as the cold start (§2.0)
+- `pages/TeamFeedPage.tsx` + `components/feed/{FeedTrio,FeedPostCard,FeedPosterCard,FeedPostHead,FeedGuests,FeedReplySheet,StoryStrip}.tsx` + `useFeedSession.ts` + `useTeamFeed.ts` — **`mezo-a9bo7.8`** the csapat-üzenőfal wall, the unified trio and the reply sheet (§3); `/mezo` since A4 (`mezo-a9bo7.10`), with `IntroPosts.tsx` as the cold start (§2.0); `FeedPostCard`'s `RequestCta` (the „Bejelentkezem” CTA on a `keres` post) since `mezo-a9bo7.16`
 - `pages/{TeamPage,CharacterRoomPage}.tsx` + `components/feed/RoomCaseCard.tsx` + `logic/teamRooms.ts` — **`mezo-a9bo7.9`** A csapat and the five character rooms (§3); routed at `/mezo/csapat[/:id]`, the „A csapat” dock tab since A4
 - `components/BoopNavigation.tsx`, `logic/boopNavigation.ts`, `boop-world.css` — shared function catalog, crosslinks and app-token visuals.
 - `pages/MezoHubPage.tsx` — unmounted previous hub, retained source/tests.
