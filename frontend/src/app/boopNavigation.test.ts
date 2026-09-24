@@ -23,7 +23,8 @@ describe('approved Boop navigation', () => {
     expect(activeTabRoute(domain, path)).toBe(expected)
   })
   it('keeps original names and canonical destinations together', () => {
-    expect(BOOP_DESTINATIONS.filter(item => item.primary).map(({label, to}) => [label,to])).toEqual([
+    // the old chip strip's five destinations live on in the „Összes funkció” grid (mezo-twizx)
+    expect(BOOP_DESTINATIONS.slice(0, 5).map(({label, to}) => [label,to])).toEqual([
       ['Minták','/mezo/patterns'], ['Előrejelzések','/mezo/predictions'],
       ['Diagnózis','/mezo/diagnozis'], ['Kísérletek','/mezo/experiments'], ['Heti','/me/week'],
     ])
