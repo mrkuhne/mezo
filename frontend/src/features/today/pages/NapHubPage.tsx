@@ -8,6 +8,7 @@ import { buildNapTimeline } from '@/features/today/logic/napTimeline'
 import { NapCompanion } from '@/features/today/components/NapCompanion'
 import { NapFuelGraphic } from '@/features/today/components/NapFuelGraphic'
 import { NapPersonalInsight } from '@/features/today/components/NapPersonalInsight'
+import { NapzarasCard } from '@/features/today/components/NapzarasCard'
 import type { CSSProperties } from 'react'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -57,6 +58,7 @@ export function NapHubPage() {
     // Az EntranceGroup a ház egyszeri belépő-koreográfiája (`.rise` + `--i` lépcső, 70ms).
     <EntranceGroup className={`nap-hub nap-center${scenario.anchorMode ? ' nap-center-quiet' : ''}`}>
       <div className="nap-center-heading rise" style={{ '--i': 0 } as CSSProperties}><p>NAPKÖZPONT</p><h1>A napod.<br /><span>Minden kapcsolódik.</span></h1></div>
+      <NapzarasCard now={tick} />
       <section className="nap-center-orbit rise" style={{ '--i': 1 } as CSSProperties} aria-label="Gyors műveletek" data-kalauz-anchor="nap-hero">
         <div className="nap-center-companion"><NapCompanion states={needs.states} onOpenSignals={() => navigate('/nap/eletjel')} /></div>
         {actions.map((a, i) => <button type="button" aria-label={a.label} key={a.art} className={`nap-center-node nap-node-${a.art}`} style={{ '--c': a.hue, '--i': i } as CSSProperties} onClick={a.run} disabled={a.art === 'membrane' && (checkinDay.isPending || checkinDay.isError)}>

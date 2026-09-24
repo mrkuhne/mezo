@@ -18868,4 +18868,45 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 /* rule 2: `.glass > *` would drop the sr-only description into the bar's flex row */
 .tab-bar.glass > .sr-only { position: absolute; }
+
+/* esti napzárás-kártya a Mai oldalon (owner 2026-09-24, mezo-yjzhw.4): from 20:00 local time a
+   lavender glass card sits under the "A napod." heading; after closing it shrinks to a flat
+   done row. Reference: uveg-napod-body.html `closeCard()`. Scoped to `.nap-center` (the page
+   root also carries `.nap-hub`, whose flex `gap` already spaces top-level children — no extra
+   margin here). `.glass` restates border-radius/overflow (§3), so only padding + the halo/type/
+   chip geometry need restating (rule 12: `.glass > *` is already global). */
+.nap-center .nap-zcard.glass { padding: 16px 14px 14px; }
+.nap-center .nap-zhalo {
+  position: absolute; right: -60px; top: -70px; width: 220px; height: 200px; z-index: 0; pointer-events: none;
+  background: radial-gradient(circle, color-mix(in srgb, var(--c) 34%, transparent), color-mix(in srgb, var(--dv-amber) 10%, transparent) 45%, transparent 70%);
+}
+.nap-center .nap-ztop { display: flex; gap: 12px; align-items: center; }
+.nap-center .nap-zart { flex: 0 0 auto; }
+.nap-center .nap-zeb {
+  display: block; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 85%, var(--text-primary));
+}
+.nap-center .nap-ztop strong { display: block; font-size: 20px; font-weight: 600; letter-spacing: -0.5px; margin-top: 3px; color: var(--text-primary); }
+.nap-center .nap-ztop small { display: block; font-size: 12.5px; color: var(--text-secondary); margin-top: 3px; line-height: 1.4; }
+.nap-center .nap-zchips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.nap-center .nap-zchips span {
+  padding: 5px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.nap-center .nap-zgo {
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 14px;
+  padding: 12px; border-radius: 16px; border: 0; font: 600 15px var(--ff-body); color: #191614;
+  background: linear-gradient(135deg, var(--dv-lav), color-mix(in srgb, var(--dv-lav) 78%, black));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--dv-lav) 45%, transparent);
+}
+.nap-center .nap-zgo .t-ico { filter: none; }
+.nap-center .nap-zgo b { font-weight: 400; font-size: 18px; }
+.nap-center .nap-zdone {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 18px;
+}
+.nap-center .nap-zdone .t-ico { filter: none; }
+.nap-center .nap-zdone span { flex: 1; min-width: 0; }
+.nap-center .nap-zdone strong { display: block; font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.nap-center .nap-zdone small { display: block; font-size: 11.5px; color: var(--text-secondary); margin-top: 2px; }
+.nap-center .nap-zdone a { font-size: 12px; font-weight: 600; color: #FFB39C; white-space: nowrap; }
 /* ── /uveg napom ── */
