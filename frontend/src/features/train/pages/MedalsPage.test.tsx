@@ -52,17 +52,35 @@ test('the default fixture groups by date with exercise names + type labels under
   expect(screen.getByText('Volumen-rekord')).toBeInTheDocument()
 })
 
-test('RECORD gets the amber medal glyph, TARGET_HIT the quiet sage tick — different colors', async () => {
-  renderView()
+test('RECORD gets the amber t-record medal, TARGET_HIT the quiet sage t-tick — different accents', async () => {
+  const { container } = renderView()
   await screen.findByText('Chest Supported Row')
-  // Two RECORD rows now (WEIGHT + SESSION_VOLUME) share the same glyph/color — any one
-  // of them is representative for the color comparison against the TARGET_HIT tick.
-  const recordGlyphs = screen.getAllByText('🏅')
-  const targetGlyph = screen.getByText('✓')
-  expect(recordGlyphs.length).toBeGreaterThan(0)
-  expect(recordGlyphs[0].style.color).not.toBe('')
-  expect(targetGlyph.style.color).not.toBe('')
-  expect(recordGlyphs[0].style.color).not.toBe(targetGlyph.style.color)
+  // Üvegesítés (mezo-me75u.4): the 🏅 / ✓ text glyphs became 3D sprite icons; the tier
+  // meaning rides the visible REKORD / CÉL tag, the accent rides the glass row's --c.
+  const recordRow = screen.getByText('Chest Supported Row').closest('.mz-facttile') as HTMLElement
+  const targetRow = screen.getByText('Hip Thrust').closest('.mz-facttile') as HTMLElement
+  expect(recordRow.querySelector('use')!.getAttribute('href')).toBe('#t-record')
+  expect(targetRow.querySelector('use')!.getAttribute('href')).toBe('#t-tick')
+  expect(within(recordRow).getByText('REKORD')).toBeInTheDocument()
+  expect(within(targetRow).getByText('CÉL')).toBeInTheDocument()
+  const recordAccent = recordRow.style.getPropertyValue('--c')
+  const targetAccent = targetRow.style.getPropertyValue('--c')
+  expect(recordAccent).not.toBe('')
+  expect(targetAccent).not.toBe('')
+  expect(recordAccent).not.toBe(targetAccent)
+  // no text glyph survives anywhere on the page
+  expect(container.textContent).not.toMatch(/🏅|✓/)
+})
+
+test('each cabinet row is ONE glass surface; the empty cabinet is dashed, never glass', async () => {
+  const { container } = renderView()
+  await screen.findByText('Chest Supported Row')
+  const rows = Array.from(container.querySelectorAll('.mz-facttile'))
+  expect(rows.length).toBe(3)
+  for (const row of rows) {
+    expect(row).toHaveClass('glass')
+    expect(row.querySelector('.glass')).toBeNull()
+  }
 })
 
 // The regression case for mezo-wp6n Finding 1: a real-mode SESSION_VOLUME medal
@@ -157,6 +175,8 @@ test('empty cabinet: an honest single line, no ghost rows, no counter chip, no b
   ).toBeInTheDocument()
   expect(screen.getByText('Medálok')).toBeInTheDocument()
   expect(container.querySelectorAll('.mz-facttile').length).toBe(0)
+  expect(container.querySelector('.uv-empty')).not.toBeNull()
+  expect(container.querySelector('.uv-empty.glass')).toBeNull()
   expect(screen.queryByText(/medál$/)).not.toBeInTheDocument()
   expect(screen.queryByText(/visszamenőleg/)).not.toBeInTheDocument()
 })

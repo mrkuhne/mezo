@@ -5,12 +5,14 @@
 // Ported from prototype train.jsx (FeedbackModal + FeedbackRow); wraps
 // the shared Sheet primitive for the slide-up / drag-to-dismiss motion.
 // T2: the row values are lifted so the save button can persist them.
+// Üvegesítés U4 (mezo-me75u.4): a floating coral glass sheet (bible rule 15) with the muscle in
+// a lit well; the options are flat pills (the chosen one lit), "Hagyjuk" is a flat pill and the
+// save a lit flat pill. Skin: `.wos-sheet` in the `uveg edzes session` block.
 // ============================================================
 import { useRef, useState } from 'react'
 import type { LoggedWorkoutExercise } from '@/data/types'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Display } from '@/shared/ui/Display'
-import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
+import { MuscleChip } from '@/features/train/components/MuscleChip'
 
 function FeedbackRow({
   label,
@@ -24,16 +26,15 @@ function FeedbackRow({
   onChange: (idx: number) => void
 }) {
   return (
-    <div className="col gap-sm">
-      <span className="label-mono">{label}</span>
-      <div className="row gap-xs">
+    <div className="wos-choice">
+      <span className="wos-choice-q">{label}</span>
+      <div className="wos-choice-opts">
         {options.map((o, i) => (
           <button
             key={i}
             type="button"
             aria-pressed={value === i}
-            className={'chip flex-1 ' + (value === i ? 'brand' : '')}
-            style={{ justifyContent: 'center', padding: '10px 6px', fontSize: 11 }}
+            className={value === i ? 'wos-pill is-on' : 'wos-pill'}
             onClick={() => onChange(i)}
           >
             {o}
@@ -78,33 +79,35 @@ export function FeedbackModal({
   }
 
   return (
-    <Sheet onClose={resolveOnce}>
+    <Sheet onClose={resolveOnce} className="glass wos-sheet">
       {(close) => (
         <>
-          <div className="col">
-            <span className="eyebrow" style={{ color: 'var(--coral-deep)' }}>Set debrief · RP feedback</span>
-            <div style={{ marginTop: 6 }}>
-              <Display size="md">{ex.name}</Display>
-            </div>
+          <div className="wos-sheet-head">
+            <span className="wos-sheet-art"><MuscleChip token={ex.muscle} size={48} /></span>
+            <span className="wos-sheet-title">
+              <span className="wos-sheet-eb">Set debrief · RP feedback</span>
+              <h3>{ex.name}</h3>
+            </span>
           </div>
-          <div className="col gap-lg mt-lg">
+          <div className="wos-choices">
             <FeedbackRow label="Pump · érzed?" options={['Semmi', 'Enyhe', 'Jó', 'Brutális']} value={pump} onChange={setPump} />
             <FeedbackRow label="Joint pain" options={['Nincs', 'Enyhe', 'Erős']} value={joint} onChange={setJoint} />
             <FeedbackRow label="Akarunk még?" options={['Kevés volt', 'Pont jó', 'Sok volt']} value={workload} onChange={setWorkload} />
           </div>
-          <div className="row gap-sm mt-xl">
-            <CtaGhost className="flex-1" onClick={close}>
+          <div className="wos-sheet-two">
+            <button type="button" className="wos-pill is-block" onClick={close}>
               Hagyjuk
-            </CtaGhost>
-            <CtaPrimary
-              className="flex-1"
+            </button>
+            <button
+              type="button"
+              className="wos-primary"
               onClick={() => {
                 onSave?.({ pump: pump + 1, jointPain: joint + 1, workload: workload + 1 })
                 close()
               }}
             >
               {isLastExercise ? 'Edzés vége →' : 'Mentés · tovább'}
-            </CtaPrimary>
+            </button>
           </div>
         </>
       )}

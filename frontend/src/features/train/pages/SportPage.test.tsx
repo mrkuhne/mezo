@@ -32,7 +32,7 @@ const renderView = () => render(<SportPage />, { wrapper: Wrapper })
 // the RPE explainer are gone (the court lives on each slot row's meta line).
 test('page head: ‹ Edzés back chip + the ＋ Log pgact', () => {
   renderView()
-  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Edzés')
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent(/‹\s*Edzés/) // üveg: the glass back pill `‹ Edzés` (mezo-me75u.4)
   expect(screen.getByRole('button', { name: '＋ Log' })).toHaveClass('mz-pgact')
   expect(screen.queryByRole('heading', { name: 'Röplabda' })).not.toBeInTheDocument()
 })
@@ -168,7 +168,7 @@ describe('real mode: today\'s slot done-state', () => {
     vi.stubEnv('VITE_USE_MOCK', 'false')
     withTodayTrxSlot('trx')
     renderView()
-    expect(await screen.findByText('✓ Kész')).toBeInTheDocument()
+    expect(await screen.findByText('Kész')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Logold ›' })).not.toBeInTheDocument()
   })
 
@@ -177,7 +177,7 @@ describe('real mode: today\'s slot done-state', () => {
     withTodayTrxSlot('volleyball')
     renderView()
     expect(await screen.findByRole('button', { name: 'Logold ›' })).toBeInTheDocument()
-    expect(screen.queryByText('✓ Kész')).not.toBeInTheDocument()
+    expect(screen.queryByText('Kész')).not.toBeInTheDocument()
   })
 })
 

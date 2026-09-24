@@ -15,8 +15,11 @@
 // exist in clay-icons.svg yet, so every one of the ten wire sports falls
 // back to the generic `i-sport`; only the run tile gets its own `i-futas`.
 // See the task-2 report for the full gap list.
+// Üveg U4 (mezo-me75u.4): the Titanium 3D sprite closes that gap — every tile now also
+// carries `art3d`, its own sport glyph (t-volley, t-bike, t-swim…). `art` is kept as is
+// for the sport ceremony, which re-dresses in its own slice.
 // ============================================================
-import type { ClayIconName } from '@/shared/ui/clay'
+import type { ClayIconName, Icon3DName } from '@/shared/ui/clay'
 import type { SportKind } from '@/features/train/logic/sportKinds'
 
 export type SportFieldKind = 'number' | 'chips' | 'range' | 'modes' | 'text'
@@ -73,6 +76,9 @@ export interface Sport {
   name: string
   /** Clay icon id — see the art-gap note above; every wire sport uses `i-sport` today. */
   art: ClayIconName
+  /** The sport's OWN Titanium 3D icon (üveg U4, mezo-me75u.4) — the art gap closed: the
+   *  picker tile, the form head and the save CTA wear it. `art` stays for the ceremony (U10). */
+  art3d: Icon3DName
   color: string
   targetMinutes: number
   muscles: string[]
@@ -85,6 +91,7 @@ export interface RunTile {
   id: 'run'
   name: string
   art: ClayIconName
+  art3d: Icon3DName
   color: string
   targetMinutes: number
   muscles: string[]
@@ -124,7 +131,7 @@ const trainingMatch = (value: 'training' | 'match' = 'training'): SportModesFiel
 // five deeper stops anyway.
 export const SPORTS: (Sport | RunTile)[] = [
   {
-    id: 'volleyball', name: 'Röplabda', art: 'i-sport', color: '#E27A8B', targetMinutes: 90,
+    id: 'volleyball', name: 'Röplabda', art: 'i-sport', art3d: 't-volley', color: '#E27A8B', targetMinutes: 90,
     muscles: ['shoulder-front', 'calf', 'quad', 'core'],
     fields: [
       trainingMatch(),
@@ -135,7 +142,7 @@ export const SPORTS: (Sport | RunTile)[] = [
     ],
   },
   {
-    id: 'cross', name: 'CrossFit / HIIT', art: 'i-sport', color: '#FF6B4A', targetMinutes: 40,
+    id: 'cross', name: 'CrossFit / HIIT', art: 'i-sport', art3d: 't-crossfit', color: '#FF6B4A', targetMinutes: 40,
     muscles: ['quad', 'back-mid', 'shoulder-side', 'core'],
     fields: [
       minutesField(40),
@@ -144,7 +151,7 @@ export const SPORTS: (Sport | RunTile)[] = [
     ],
   },
   {
-    id: 'trx', name: 'TRX / funkcionális', art: 'i-sport', color: '#9B8FC4', targetMinutes: 45,
+    id: 'trx', name: 'TRX / funkcionális', art: 'i-sport', art3d: 't-trx', color: '#9B8FC4', targetMinutes: 45,
     muscles: ['core', 'chest-mid', 'back-mid', 'shoulder-front'],
     fields: [
       minutesField(45),
@@ -153,7 +160,7 @@ export const SPORTS: (Sport | RunTile)[] = [
     ],
   },
   {
-    id: 'bike', name: 'Kerékpár', art: 'i-sport', color: '#7FA48A', targetMinutes: 60,
+    id: 'bike', name: 'Kerékpár', art: 'i-sport', art3d: 't-bike', color: '#7FA48A', targetMinutes: 60,
     muscles: ['quad', 'glute', 'calf'],
     fields: [
       { key: 'distance', label: 'Táv', unit: 'km', type: 'number', min: 1, max: 300, step: 1, value: 25 },
@@ -163,7 +170,7 @@ export const SPORTS: (Sport | RunTile)[] = [
     ],
   },
   {
-    id: 'swim', name: 'Úszás', art: 'i-sport', color: '#6FA7D8', targetMinutes: 45,
+    id: 'swim', name: 'Úszás', art: 'i-sport', art3d: 't-swim', color: '#6FA7D8', targetMinutes: 45,
     muscles: ['back-wide', 'shoulder-side', 'core', 'triceps-long'],
     fields: [
       { key: 'distance', label: 'Táv', unit: 'm', type: 'number', min: 50, max: 10000, step: 50, value: 1200 },
@@ -173,17 +180,17 @@ export const SPORTS: (Sport | RunTile)[] = [
     ],
   },
   {
-    id: 'football', name: 'Foci', art: 'i-sport', color: '#4E6B42', targetMinutes: 90,
+    id: 'football', name: 'Foci', art: 'i-sport', art3d: 't-football', color: '#4E6B42', targetMinutes: 90,
     muscles: ['quad', 'ham', 'calf', 'core'],
     fields: [trainingMatch(), minutesField(90), intensityField(7)],
   },
   {
-    id: 'basketball', name: 'Kosárlabda', art: 'i-sport', color: '#E05535', targetMinutes: 75,
+    id: 'basketball', name: 'Kosárlabda', art: 'i-sport', art3d: 't-basket', color: '#E05535', targetMinutes: 75,
     muscles: ['quad', 'calf', 'shoulder-side', 'core'],
     fields: [trainingMatch(), minutesField(75), intensityField(7)],
   },
   {
-    id: 'tennis', name: 'Tenisz', art: 'i-sport', color: '#FFB347', targetMinutes: 60,
+    id: 'tennis', name: 'Tenisz', art: 'i-sport', art3d: 't-tennis', color: '#FFB347', targetMinutes: 60,
     muscles: ['shoulder-side', 'core', 'quad', 'triceps-lateral'],
     fields: [
       {
@@ -195,7 +202,7 @@ export const SPORTS: (Sport | RunTile)[] = [
     ],
   },
   {
-    id: 'hike', name: 'Túra', art: 'i-sport', color: '#9C5F33', targetMinutes: 120,
+    id: 'hike', name: 'Túra', art: 'i-sport', art3d: 't-hike', color: '#9C5F33', targetMinutes: 120,
     muscles: ['quad', 'glute', 'calf'],
     fields: [
       { key: 'distance', label: 'Táv', unit: 'km', type: 'number', min: 1, max: 60, step: 0.5, value: 9 },
@@ -210,7 +217,7 @@ export const SPORTS: (Sport | RunTile)[] = [
     ],
   },
   {
-    id: 'other', name: 'Egyéb mozgás', art: 'i-sport', color: '#8C7F72', targetMinutes: 60,
+    id: 'other', name: 'Egyéb mozgás', art: 'i-sport', art3d: 't-other', color: '#8C7F72', targetMinutes: 60,
     muscles: ['core'],
     fields: [
       { key: 'name', label: 'Mi volt?', type: 'text', value: '', placeholder: 'Pl. fallabda, tánc, evezés' },
@@ -220,7 +227,7 @@ export const SPORTS: (Sport | RunTile)[] = [
     ],
   },
   {
-    id: 'run', name: 'Futás', art: 'i-futas', color: '#2E6E96', targetMinutes: 40,
+    id: 'run', name: 'Futás', art: 'i-futas', art3d: 't-run', color: '#2E6E96', targetMinutes: 40,
     muscles: ['quad', 'ham', 'calf', 'core'],
     // No dedicated "/train/futas/new" route exists — running logs through a
     // sheet inside RunningPage's own Napló segment, so that page IS the route.

@@ -45,6 +45,16 @@
 // gold page ground made the screen carry two hues. Style bible A.2 rule 1 — the
 // domain accent wins over the Titanium one. Behaviour unchanged; `PageTone` already
 // ships `coral` and `.mz-p-coral` (prototype.css).
+//
+// ---- ÜVEG (mezo-me75u.4, U4 · prototype uveg-edzes.html#gym) --------------------
+// The page root carries `.tw-load`; every üveg rule lives in the `uveg edzes terheles`
+// block of prototype.css, scoped to it (the `ld-` family is shared with the week
+// sub-pages, which slice U5 re-dresses). Ranking (bible §3.4): the hero is a FRAMELESS
+// coral→lavender halo; the map doorway (lavender), each group tile (its muscle hue,
+// published as `--c` on the tile itself), the sport card (rose) and the movement doorway
+// (amber) are glass; chips, rows and tags inside them are flat; „+ Saját edzés" is the
+// dashed free state. Icons are the Titanium 3D set (t-info, t-record, t-volley, t-bolt,
+// t-coin) — `i-erme` here means the week's MEDALS, hence t-record, not the coin.
 // ============================================================
 import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -56,7 +66,7 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { GlassBox } from '@/shared/ui/mozaik/GlassBox'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { BodyMap } from '@/features/train/components/BodyMap'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { InfoButton } from '@/features/train/components/InfoButton'
@@ -111,7 +121,10 @@ function GroupGlassBody({ group, days, sportSlots, runSessions }: {
   const anySport = rows.some((r) => (load.perMuscle[r.muscle] ?? []).length > 0)
 
   return (
-    <div className="ld-glass" style={{ '--mus-color': muscleColor(group.colorMuscle).rail } as CSSProperties}>
+    <div
+      className="ld-glass tw-glass"
+      style={{ '--mus-color': muscleColor(group.colorMuscle).rail, '--c': muscleColor(group.colorMuscle).rail } as CSSProperties}
+    >
       <div className="ld-glass-hero">
         <strong>{group.doneSets}</strong>
         <small>/ {group.plannedSets} szett</small>
@@ -126,7 +139,7 @@ function GroupGlassBody({ group, days, sportSlots, runSessions }: {
             const xp = forecast.muscleXp[r.muscle]
             return (
               <div key={r.muscle} className="ld-glass-row">
-                <MuscleChip token={r.muscle} size={26} />
+                <span className="tw-well"><MuscleChip token={r.muscle} size={26} /></span>
                 <span className="ld-glass-name">
                   <strong>{MUSCLE_LABELS[r.muscle] ?? r.muscle}</strong>
                   <small>
@@ -142,7 +155,7 @@ function GroupGlassBody({ group, days, sportSlots, runSessions }: {
                     </span>
                   )}
                 </span>
-                {xp ? <b className="ld-glass-xp">+~{xp} XP</b> : null}
+                {xp ? <b className="ld-glass-xp"><Icon3D name="t-coin" size={20} />+~{xp} XP</b> : null}
               </div>
             )
           })}
@@ -232,63 +245,63 @@ export function TrainWeekPage() {
   const glassGroup = groups.find((g) => g.group === openGroup) ?? null
 
   return (
-    <MozaikPage tone="coral">
+    <MozaikPage tone="coral" className="tw-load">
       <EntranceGroup>
         {/* The hero is a DIRECT child of .mz-page, which already pulls itself out of the
             scroller's --screen-gutter — that is the whole full-bleed recipe, no new
             negative-margin invention (prototype.css :4558). */}
         <header className="ld-hero rise" data-kalauz-anchor="heti-terheles" style={{ '--d': '40ms' } as CSSProperties}>
-          <span className="ld-hero-wash" />
           <span className="ld-hero-art">
             <BodyMap heat={heat} views="auto" className="ld-hero-body" ariaLabel="A heti terhelésed a testeden" />
-            <i />
-            <i />
           </span>
-          <span className="ld-eyebrow">
-            Terhelés · {activeMeso.currentWeek}. hét{phase ? ` · ${phase}` : ''}
-          </span>
-          {/* The percent is DRAWN, not spelled out: a big numeral plus a bar that grows on
-              reveal. A bare text percentage would be the one thing the prototype forbids. */}
-          <div className="ld-hero-pct"><b>{totals.percent}</b><em>%</em></div>
-          <p className="ld-hero-sub">
-            a heti munkádból megvan — <b>{totals.doneSets}</b> szett a {totals.plannedSets}-ből
-          </p>
-          <div className="ld-hero-bar">
-            <i style={{ '--w': `${totals.percent}%` } as CSSProperties} />
-          </div>
-          <p className="ld-hero-say">
-            {heroSay(totals, waiting.length)}{' '}
-            <InfoButton
-              title="Miből áll össze a szám?"
-              copy="A futó terved e heti szettjeit számoljuk: amit már elvégeztél, osztva azzal, amit a hét kér. A sport perceit külön mutatjuk — az a pihenésed része, nem a szetteké."
-            />
-          </p>
-          <div className="ld-hero-chips">
-            <button
-              type="button"
-              className="mz-pgact"
-              onClick={() => navigate(`/train/mesocycles/${activeMeso.id}/overview`)}
-              aria-label={`Mezociklus áttekintő · W${activeMeso.currentWeek}/${activeMeso.weeks}`}
-            >
-              W{activeMeso.currentWeek}/{activeMeso.weeks} ›
-            </button>
-            <span className="ld-hero-medal">
-              <ClayIcon name="i-erme" size={16} />
-              {weekMedalCount} medál e héten
+          <div className="tw-hero-main">
+            <span className="ld-eyebrow">
+              Terhelés · {activeMeso.currentWeek}. hét{phase ? ` · ${phase}` : ''}
             </span>
+            {/* The percent is DRAWN, not spelled out: a big numeral plus a bar that grows on
+                reveal. A bare text percentage would be the one thing the prototype forbids. */}
+            <div className="ld-hero-pct"><b>{totals.percent}</b><em>%</em></div>
+            <p className="ld-hero-sub">
+              a heti munkádból megvan — <b>{totals.doneSets}</b> szett a {totals.plannedSets}-ből
+            </p>
+            <div className="ld-hero-bar">
+              <i style={{ '--w': `${totals.percent}%` } as CSSProperties} />
+            </div>
+            <p className="ld-hero-say">
+              <span>{heroSay(totals, waiting.length)}</span>
+              <InfoButton
+                icon="t-info"
+                title="Miből áll össze a szám?"
+                copy="A futó terved e heti szettjeit számoljuk: amit már elvégeztél, osztva azzal, amit a hét kér. A sport perceit külön mutatjuk — az a pihenésed része, nem a szetteké."
+              />
+            </p>
+            <div className="ld-hero-chips">
+              <button
+                type="button"
+                className="mz-pgact tw-chip"
+                onClick={() => navigate(`/train/mesocycles/${activeMeso.id}/overview`)}
+                aria-label={`Mezociklus áttekintő · W${activeMeso.currentWeek}/${activeMeso.weeks}`}
+              >
+                W{activeMeso.currentWeek}/{activeMeso.weeks} ›
+              </button>
+              <span className="ld-hero-medal tw-chip">
+                <Icon3D name="t-record" size={18} />
+                {weekMedalCount} medál e héten
+              </span>
+            </div>
           </div>
         </header>
 
         <PageBody>
-          <h3 className="ld-h3">A tested térképe</h3>
           <button
             type="button"
-            className="ld-map-card rise"
+            className="ld-map-card glass rise"
             style={{ '--d': '110ms' } as CSSProperties}
             onClick={() => navigate('/train/week/terkep')}
           >
             <BodyMap heat={heat} views="both" className="ld-map-mini" ariaLabel="Elöl és hátul: a hét terhelése" />
             <span className="ld-map-copy">
+              <span className="uv-eyebrow tw-eb">A tested térképe</span>
               <strong>Elöl és hátul, ami már dolgozott</strong>
               <small>
                 {waiting.length > 0
@@ -296,12 +309,13 @@ export function TrainWeekPage() {
                   : 'Minden izomcsoportod sorra került ezen a héten.'}
               </small>
             </span>
-            <b>›</b>
+            <b aria-hidden="true">›</b>
           </button>
 
           <h3 className="ld-h3">
             Izomcsoportok ezen a héten
             <InfoButton
+              icon="t-info"
               title="Mit mutat a sáv?"
               copy="A színes rész az elvégzett szett, a halvány a hét teljes kérése. Egy csoportra koppintva látod, melyik része mennyit kapott, és melyik napokon."
             />
@@ -311,25 +325,28 @@ export function TrainWeekPage() {
               <button
                 key={g.group}
                 type="button"
-                className="ld-group rise"
+                className="ld-group glass rise"
                 data-plan={planOverGroups.has(g.group) ? 'over' : undefined}
                 style={{
                   '--mus-color': muscleColor(g.colorMuscle).rail,
+                  // the glass's one accent, published on the element that wears it (bible rule 4)
+                  '--c': muscleColor(g.colorMuscle).rail,
+                  '--i': i,
                   '--d': `${160 + i * 40}ms`,
                 } as CSSProperties}
                 onClick={() => setOpenGroup(g.group)}
                 aria-label={`${g.label} — ezen a héten`}
               >
                 <span className="ld-group-head">
-                  <MuscleChip token={g.colorMuscle} size={26} />
+                  <span className="tw-well"><MuscleChip token={g.colorMuscle} size={26} /></span>
                   <strong>{g.label}</strong>
                   {/* The week's plan asks for a lot here — a flag in the house amber, never a
                       red alarm (the retired ZoneMiniGrid's ⚠ said the same thing in a glyph). */}
                   {planOverGroups.has(g.group) && (
                     <span className="ld-group-much" title="A heti terv sok ide">sok</span>
                   )}
-                  <b>{g.doneSets} / {g.plannedSets} <small>szett</small></b>
                 </span>
+                <b className="tw-group-num">{g.doneSets} / {g.plannedSets} <small>szett</small></b>
                 <span className="ld-group-bar">
                   <i style={{ '--w': `${shareOf(g)}%` } as CSSProperties} />
                 </span>
@@ -340,10 +357,10 @@ export function TrainWeekPage() {
 
           {(sportMinutes > 0 || reach.length > 0) && (
             <>
-              <h3 className="ld-h3">Sport a héten</h3>
-              <section className="ld-sport rise" style={{ '--d': '380ms' } as CSSProperties}>
-                <span className="ld-sport-art"><ClayIcon name="i-sport" size={30} /></span>
+              <section className="ld-sport glass rise" style={{ '--d': '380ms', '--i': groups.length } as CSSProperties}>
+                <span className="ld-sport-art"><Icon3D name="t-volley" size={40} /></span>
                 <span className="ld-sport-copy">
+                  <span className="uv-eyebrow tw-eb">Sport a héten</span>
                   <strong>{sportMinutes} perc sport és futás a heti rendben</strong>
                   <small>
                     {reach.length > 0
@@ -353,11 +370,10 @@ export function TrainWeekPage() {
                   <em>Becslés — a szettszámokba nem számít bele.</em>
                 </span>
                 {/* The ⓘ sits INSIDE the sport card, as the prototype's sportCard()
-                    inlines it (load-pages.js:95). The prototype's art override there is
-                    `volley`, which has no clay equivalent — `i-sport` is the honest
-                    neighbour and the card's own glyph. */}
+                    inlines it (load-pages.js:95). Its art override there is `volley` —
+                    in üveg it is the Titanium t-volley itself, the card's own glyph. */}
                 <InfoButton
-                  icon="i-sport"
+                  icon="t-volley"
                   title="A sport és a szettek"
                   copy="A sportod a heti mozgásod és a pihenésed része — a szettszámokba nem számít bele, mert ott a terved emelkedését követjük. A regenerációnál viszont figyelembe vesszük."
                 />
@@ -367,22 +383,23 @@ export function TrainWeekPage() {
 
           <button
             type="button"
-            className="ld-move-card rise"
-            style={{ '--d': '410ms' } as CSSProperties}
+            className="ld-move-card glass rise"
+            style={{ '--d': '410ms', '--i': groups.length + 1 } as CSSProperties}
             onClick={() => navigate('/train/week/mozgas')}
           >
-            <span className="ld-sport-art"><ClayIcon name="i-lang" size={30} /></span>
+            <span className="ld-sport-art"><Icon3D name="t-bolt" size={40} /></span>
             <span className="ld-map-copy">
+              <span className="uv-eyebrow tw-eb">Mozgás</span>
               <strong>Minden mozgásod a héten</strong>
               <small>Gym és sport együtt, eddig a héten — percek és a belőlük becsült kalória.</small>
             </span>
-            <b>›</b>
+            <b aria-hidden="true">›</b>
           </button>
 
           <button
             type="button"
             onClick={() => setCustomOpen(true)}
-            className="card dashedcta mt-md rise"
+            className="uv-empty tw-custom rise"
             style={{ '--d': '440ms' } as CSSProperties}
           >
             + Saját edzés

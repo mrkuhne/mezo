@@ -22,6 +22,11 @@
 // set logged today (`todayBest`) — comparing on a common (e1RM) scale is how the
 // prototype lets a different weight/rep combo still register as "beating" a record
 // set, and there is no other honest way to rank "which set is better" across reps.
+//
+// Üvegesítés U4 (mezo-me75u.4): an amber glass. The last session is three FLAT KG/REP/RIR cells,
+// the record bars are flat cells with 3D icons (t-ring 1RM, t-weight best set, t-protocol
+// volume) and the kit's bar recipe; a beaten record is the amber-lit "MA MEGDÖNTVE" cell.
+// Skin: `uveg edzes session` block (`.gl-card:has(> .wos-gb-recs)`).
 // ============================================================
 import type { LoggedWorkoutExercise } from '@/data/types'
 import type { ExerciseRecordResponse } from '@/data/train/trainApi'
@@ -30,7 +35,7 @@ import { huMonthDay } from '@/shared/lib/dates'
 import { barProgress, todayBest, type TodaySetLike } from '@/features/train/logic/recordFor'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { GlassBox } from '@/shared/ui/mozaik/GlassBox'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 
 const EM_DASH = '—'
 
@@ -51,7 +56,7 @@ function fmtSet(set: { weightKg?: number; reps: number }): string {
 }
 
 interface RecordBarProps {
-  icon: ClayIconName
+  icon: Icon3DName
   label: string
   /** The record's own value, formatted — em dash when the record doesn't carry this field. */
   value: string
@@ -68,10 +73,10 @@ function RecordBar({ icon, label, value, since, now, target, nowLabel }: RecordB
   const { share, beaten } = barProgress(now, target)
   return (
     <div className={`wo-rec${beaten ? ' is-beaten' : ''}`}>
-      <span className="wo-rec-art"><ClayIcon name={icon} size={34} /></span>
+      <span className="wo-rec-art"><Icon3D name={icon} size={24} /></span>
       <span className="wo-rec-head"><small>{label}</small><strong>{value}</strong></span>
       <span className="wo-rec-since">{since}</span>
-      <span className="wo-rec-track"><i style={{ '--w': `${share}%` } as React.CSSProperties} /></span>
+      <span className="wo-rec-track uv-bar"><b style={{ '--w': `${share}%` } as React.CSSProperties} /></span>
       <span className="wo-rec-now">
         {beaten ? <b>MA MEGDÖNTVE</b> : now > 0 && nowLabel ? `ma ${nowLabel}` : ''}
       </span>
@@ -102,6 +107,7 @@ export function WorkoutRecordsGlass({ open, exercise, record, todaySets, tint, o
 
   return (
     <GlassBox open={open} onClose={onClose} label={`${exercise.name} előzményei és rekordjai`} tint={tint}>
+      <div className="wos-gb wos-gb-recs glass is-still">
       <header className="wo-glass-head">
         <span className="wo-card-art">
           <MuscleChip token={exercise.muscle} size={40} />
@@ -120,13 +126,11 @@ export function WorkoutRecordsGlass({ open, exercise, record, todaySets, tint, o
         <span>A múltkori legjobb munkaszetted</span>
       </h3>
       {exercise.lastWeek ? (
-        <div className="wo-last">
-          <div className="wo-last-head"><span /><span>KG</span><span>REP</span><span>RIR</span></div>
+        <div className="wo-last wos-kgrow">
           <div className="wo-last-row">
-            <span>1</span>
-            <strong>{fmtKg(exercise.lastWeek.weight)}</strong>
-            <strong>{exercise.lastWeek.reps}</strong>
-            <span>{exercise.lastWeek.rir}</span>
+            <span className="wos-kgcell"><small>KG</small><strong>{fmtKg(exercise.lastWeek.weight)}</strong></span>
+            <span className="wos-kgcell"><small>REP</small><strong>{exercise.lastWeek.reps}</strong></span>
+            <span className="wos-kgcell"><small>RIR</small><strong>{exercise.lastWeek.rir}</strong></span>
           </div>
         </div>
       ) : (
@@ -139,7 +143,7 @@ export function WorkoutRecordsGlass({ open, exercise, record, todaySets, tint, o
       )}
       <div className="wo-recs">
         <RecordBar
-          icon="i-cel"
+          icon="t-ring"
           label="BECSÜLT 1RM"
           value={record?.bestE1rm ? `${fmtKg(record.bestE1rm.value)} kg` : EM_DASH}
           since={record?.bestE1rm ? `${huMonthDay(record.bestE1rm.set.date)} óta áll · Becslés, nem mérés` : 'Becslés, nem mérés'}
@@ -148,7 +152,7 @@ export function WorkoutRecordsGlass({ open, exercise, record, todaySets, tint, o
           nowLabel={today.e1rm != null ? `${fmtKg(today.e1rm)} kg` : ''}
         />
         <RecordBar
-          icon="i-suly"
+          icon="t-weight"
           label="LEGJOBB SZETT"
           value={record?.bestSet ? fmtSet(record.bestSet) : EM_DASH}
           since={record?.bestSet ? `${huMonthDay(record.bestSet.date)} óta áll` : ''}
@@ -157,7 +161,7 @@ export function WorkoutRecordsGlass({ open, exercise, record, todaySets, tint, o
           nowLabel={today.e1rmSet ? fmtSet({ weightKg: today.e1rmSet.weight > 0 ? today.e1rmSet.weight : undefined, reps: today.e1rmSet.reps }) : ''}
         />
         <RecordBar
-          icon="i-stack"
+          icon="t-protocol"
           label="LEGTÖBB VOLUMEN egy alkalmon"
           value={record?.bestSessionVolume ? `${fmtWhole(record.bestSessionVolume.volumeKg)} kg × rep` : EM_DASH}
           since={record?.bestSessionVolume ? `${huMonthDay(record.bestSessionVolume.date)} óta áll` : ''}
@@ -185,6 +189,7 @@ export function WorkoutRecordsGlass({ open, exercise, record, todaySets, tint, o
       )}
 
       <p className="wo-glass-note">A hosszabb távú ív a Gyakorlatok-oldal újraépítésével kerül majd ide.</p>
+      </div>
     </GlassBox>
   )
 }

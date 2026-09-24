@@ -1,10 +1,13 @@
 // ============================================================
 // Mezo · DoneBar — the shared "this session is done" bar (mezo-9bbc).
-// A sage check circle + bold summary + optional quiet detail line.
-// Worn by TodaySessionCard's logged state and by the gym hero's Kész
-// state, so every modality reports completion the same way.
+// A done mark + bold summary + optional quiet detail line.
+// Worn by TodaySessionCard's logged state, so every modality reports
+// completion the same way.
+// ÜVEG (mezo-me75u.4, prototypes/uveg-edzes.html `.sess .donebar`): a flat cell inside the
+// glass card (never glass in glass); the done mark is the 3D t-tick, its meaning („kész”)
+// spoken through the mark's accessible name.
 // ============================================================
-import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 
 export function DoneBar({
   summary,
@@ -23,7 +26,7 @@ export function DoneBar({
 }) {
   const inner = (
     <>
-      <span className="donebar-check" aria-hidden="true"><Icon name="check" size={15} /></span>
+      <span className="donebar-check" role="img" aria-label="kész"><Icon3D name="t-tick" size={22} /></span>
       <span className="donebar-txt">
         {summary}
         {detail ? <small className="donebar-detail">{detail}</small> : null}

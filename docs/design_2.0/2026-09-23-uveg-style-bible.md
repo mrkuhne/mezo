@@ -356,3 +356,31 @@ The live day page (`features/today/pages/NapomPage.tsx`, `/nap/napom[/:date]`) r
     trick §7.1's header badges use so the dot reads as sitting on top of the icon rather than
     stuck to it. It is `aria-hidden`; its meaning is carried by an `sr-only` description on the
     tab link, not by the dot itself (`TabBar.tsx:68-88`).
+
+### U4 · Edzés I (`mezo-me75u.4`, 2026-09-24)
+
+Six parallel builders (`── uveg edzes mai|session|zaras|terheles|sport|gyakorlatok (`), two new sprite
+icons (`t-muscle`, `t-bandage`). Prototype: [`prototypes/uveg-edzes.html`](prototypes/uveg-edzes.html).
+The workout-closing ceremony moved here from U10 at the owner's request.
+
+26. **The page frame has its üveg variant now: use it.** `<PageHead glass label="…">` is the glass back
+    pill, `<PageHero art="t-…" accent="var(--dv-…)">` the frameless halo hero (U3 rule 21, done). A slice
+    that meets `PageHead`/`PageHero` switches the prop instead of copying markup.
+27. **`GlassBox` takes no className.** The session builder dressed its dialogs with
+    `.gl-card:has(> .wos-gb.glass)` and an absolutely placed header; that works but is fragile. The next
+    slice that re-dresses a GlassBox should add a glass variant prop to the kit first (bead filed).
+28. **The owner reads chips, not captions.** Record and challenge rows went through four rounds: the
+    settled shape is *name*, then ONE wrapping chip line — a framed type chip with its 3D icon, then the
+    values as lit pills ("105 kg", "10 ism."; no "×", "@" or "előző") — and an outcome is a round icon at
+    the row's top-right, never a word. Reuse this shape for any record/outcome list.
+29. **A destructive action keeps its warning tone.** A builder lit the futóterv "Lezárás" as the page's
+    primary; closing a block ends it, so it stays the flat coral outline. Only constructive CTAs get lit.
+30. **Keep the old icon field when an untouched surface still reads it.** `logic/sports.ts` gained
+    `art3d` beside `art` so the sport picker wears 3D icons while `SportCeremony` (U10) keeps its clay art.
+31. **The glass-in-glass guard regex also fires on sibling combinators.** `.glass + .x.glass` is not
+    nesting, but `/\.glass [^{,]*\.glass/` catches it; write sibling spacing on non-glass class names.
+32. **In the in-app browser a screenshot round trip throttles rAF.** The ceremony looked frozen after
+    4 s; its classes (`is-b1..b3 is-told`) were already set. Check the DOM before calling a pass broken.
+33. **Prototype anatomy: measure, don't trust `BODY.b`.** The generated boxes in
+    `companion-titanium/body-geometry.js` are wrong for thin shapes (height 3), so a prototype chip crops
+    to nothing; measure the paths with `getBBox()` the way the live `MuscleChip` does.

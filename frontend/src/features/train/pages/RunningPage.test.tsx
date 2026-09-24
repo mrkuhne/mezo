@@ -37,7 +37,7 @@ describe('RunningPage (mock mode)', () => {
   // `‹ Edzés` back chip; the page name + `Hét cur/weeks` live in the hero.
   test('page head + Mozaik hero: ‹ Edzés chip, page name, week big number', () => {
     const { container } = renderView()
-    expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Edzés')
+    expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent(/‹\s*Edzés/) // üveg: the glass back pill `‹ Edzés` (mezo-me75u.4)
     expect(container.querySelector('.mz-hero-nm')).toHaveTextContent('Futás')
     // active block rb-active-01: currentWeek 3 / 8 weeks — stated ONCE, in the hero
     expect(container.querySelector('.mz-bignum')).toHaveTextContent('3/8')
@@ -138,8 +138,10 @@ describe('RunningPage (mock mode)', () => {
       renderView()
       expect(screen.getByText('MA')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /Naplózd/ })).toBeInTheDocument()
-      // The already-logged sprint session shows the done badge, not a button.
-      expect(screen.getByText('KÉSZ ✓')).toBeInTheDocument()
+      // The already-logged sprint session shows the done badge (KÉSZ + the 3D tick,
+      // üveg U4 — the ✓ glyph became t-tick), not a button.
+      expect(screen.getByText('KÉSZ')).toBeInTheDocument()
+      expect(screen.getByText('KÉSZ').querySelector('svg use')?.getAttribute('href')).toBe('#t-tick')
     })
 
     test('múlt: today is after the pyramid\'s weekday → "Pótold ›" opens the RunLogSheet', async () => {
@@ -151,11 +153,11 @@ describe('RunningPage (mock mode)', () => {
       await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
     })
 
-    test('jövő: today is before the pyramid\'s weekday → disabled grey "Naplózás ▸", not a button', () => {
+    test('jövő: today is before the pyramid\'s weekday → disabled grey "Naplózás ›", not a button', () => {
       vi.setSystemTime(new Date('2026-07-15T12:00:00')) // Wednesday — Friday's session hasn't happened yet
       renderView()
       expect(screen.queryByRole('button', { name: /Naplózás/ })).not.toBeInTheDocument()
-      expect(screen.getByText('Naplózás ▸')).toBeInTheDocument()
+      expect(screen.getByText('Naplózás ›')).toBeInTheDocument() // üveg: ▸ → the typographic ›
     })
 
     test('pyramid log sheet ALSO shows the completed-rounds stepper (the honest capture for the F6.3 scoring fix)', async () => {

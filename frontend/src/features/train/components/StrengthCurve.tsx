@@ -40,6 +40,11 @@
 //
 // Under two points there is no line to draw and none is faked: the component
 // says so in one sentence (0 points and 1 point say different, true things).
+//
+// Üveg (mezo-me75u.4): the drawn curve is ONE glass card (`.gy-curve-box.glass`) whose
+// `--c` is the caller's inherited `--mus-color`, the line glowing in it (the svg keeps
+// `overflow: visible` so the glow is not clipped to the box). The two honest sentences
+// stay plain text — glass around "nothing to draw" would promise a graphic.
 // ============================================================
 import type { E1rmPoint } from '@/data/train/trainApi'
 import { hu1 } from '@/shared/lib/huNum'
@@ -124,7 +129,7 @@ export function StrengthCurve({ points }: StrengthCurveProps) {
   const gaps = segments.length - 1
 
   return (
-    <div className="gy-curve-box">
+    <div className="gy-curve-box glass">
       <span className="gy-curve-val">
         {/* The LATEST estimate, not the best one — this is „hol tartasz most". The
             record itself is the „BECSÜLT 1RM" card above. */}

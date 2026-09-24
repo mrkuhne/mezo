@@ -6,11 +6,15 @@
 // (full-replace). Real-mode-only affordance: mock mode keeps the
 // static Phase-1 schedule (a read-only seed, no write path), so the
 // editor entry points are hidden there.
+// Üveg re-dress (mezo-me75u.4): the shared floating capture sheet (one rose glass
+// surface, bible U2 rule 15) with the capture header; the day editors and slots are
+// flat cells, the chips flat with the chosen one solid rose, fields flat, Mégse flat
+// and Mentés the one lit primary.
 // ============================================================
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
-import { Display } from '@/shared/ui/Display'
+import { Icon3D } from '@/shared/ui/clay'
+import { CaptureHeader } from '@/shared/ui/CaptureHeader'
 import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import type { SportScheduleSlotInput } from '@/data/train/trainApi'
@@ -75,46 +79,22 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
     } catch { setSaveError(true) } finally { setSaving(false) }
   }
 
-  const inputStyle = {
-    background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
-    color: 'var(--text-primary)', fontSize: 12,
-    padding: '8px 10px', width: '100%',
-  } as const
-
   return (
-    <Sheet onClose={onClose} labelledBy="sport-schedule-title">
+    <Sheet onClose={onClose} labelledBy="sport-schedule-title" className="capture-sheet capture-tone-sport glass uvs-sheet">
       {(close) => (
         <>
-          {/* Header */}
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-            <div className="col">
-              <span className="eyebrow" style={{ color: 'var(--rose)' }}>Sport · heti terv</span>
-              <div style={{ marginTop: 4 }}>
-                <Display size="md">
-                  <span role="heading" aria-level={2} id="sport-schedule-title">Heti rend</span>
-                </Display>
-              </div>
-            </div>
-            <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
-              <Icon name="x" size={12} />
-            </button>
-          </div>
+          <CaptureHeader id="sport-schedule-title" title="Heti rend" eyebrow="Sport · heti terv" kind="sport" onClose={close} />
 
           {/* Day editors */}
           <div className="col gap-sm">
             {DAY_ORDER.map((day, di) => (
-              <div key={day} className="card" style={{ padding: 10 }}>
-                <span
-                  className="label-mono"
-                  style={{ color: days[di].length ? 'var(--rose)' : 'var(--text-tertiary)' }}
-                >
-                  {day}
-                </span>
+              <div key={day} className={days[di].length ? 'uvs-day card has' : 'uvs-day card'}>
+                <span className="uvs-day-lbl">{day}</span>
                 <div className="col gap-sm mt-sm">
                   {days[di].map((d, si) => {
                     const slotName = `${DAY_LABELS[day]} ${si + 1}.`
                     return (
-                      <div key={si} className="card" style={{ padding: 10, background: 'var(--surface-2)' }}>
+                      <div key={si} className="uvs-slot">
                         <div className="row gap-xs" role="group" aria-label={`${slotName} sport`}>
                           {SCHEDULE_SPORT_KINDS.map((k) => (
                             <button
@@ -124,13 +104,6 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
                               aria-pressed={d.sport === k}
                               aria-label={`${slotName} ${SPORT_LABELS[k]}`}
                               onClick={() => patch(di, si, { sport: k, ...(k !== 'volleyball' ? { kind: 'training' as const } : {}) })}
-                              style={{
-                                padding: '6px 8px', fontSize: 9,
-                                color: d.sport === k ? 'var(--rose)' : 'var(--text-tertiary)',
-                                borderColor: d.sport === k
-                                  ? 'color-mix(in srgb, var(--rose) 40%, transparent)'
-                                  : 'var(--border-subtle)',
-                              }}
                             >
                               {SPORT_LABELS[k]}
                             </button>
@@ -140,9 +113,8 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
                             className="chip"
                             aria-label={`${slotName} slot törlése`}
                             onClick={() => removeSlot(di, si)}
-                            style={{ padding: '6px 8px' }}
                           >
-                            <Icon name="x" size={10} />
+                            törlés
                           </button>
                         </div>
                         <div className="col gap-sm mt-md">
@@ -152,7 +124,7 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
                               aria-label={`${slotName} idő`}
                               value={d.time}
                               onChange={(e) => patch(di, si, { time: e.target.value })}
-                              style={{ ...inputStyle, width: 110 }}
+                              className="uvs-inp is-time"
                             />
                             {d.sport === 'volleyball' && (
                               <>
@@ -162,7 +134,6 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
                                   aria-pressed={d.kind === 'training'}
                                   aria-label={`${slotName} edzés`}
                                   onClick={() => patch(di, si, { kind: 'training' })}
-                                  style={{ fontSize: 9, color: d.kind === 'training' ? 'var(--rose)' : 'var(--text-tertiary)' }}
                                 >
                                   edzés
                                 </button>
@@ -172,7 +143,6 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
                                   aria-pressed={d.kind === 'match'}
                                   aria-label={`${slotName} meccs`}
                                   onClick={() => patch(di, si, { kind: 'match' })}
-                                  style={{ fontSize: 9, color: d.kind === 'match' ? 'var(--rose)' : 'var(--text-tertiary)' }}
                                 >
                                   meccs
                                 </button>
@@ -192,14 +162,14 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
                             placeholder="Helyszín"
                             value={d.location}
                             onChange={(e) => patch(di, si, { location: e.target.value })}
-                            style={inputStyle}
+                            className="uvs-inp"
                           />
                           <input
                             aria-label={`${slotName} intenzitás`}
                             placeholder="Intenzitás · pl. közepes"
                             value={d.intensityLabel}
                             onChange={(e) => patch(di, si, { intensityLabel: e.target.value })}
-                            style={inputStyle}
+                            className="uvs-inp"
                           />
                         </div>
                       </div>
@@ -207,10 +177,9 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
                   })}
                   <button
                     type="button"
-                    className="chip"
+                    className="uvs-addslot uv-empty"
                     aria-label={`${DAY_LABELS[day]} sport hozzáadása`}
                     onClick={() => addSlot(di)}
-                    style={{ padding: '8px 10px', fontSize: 9, color: 'var(--text-secondary)' }}
                   >
                     + Sport hozzáadása
                   </button>
@@ -219,12 +188,12 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
             ))}
           </div>
 
-          {saveError && <p role="alert">Nem sikerült menteni. A módosításaid megmaradtak; próbáld újra.</p>}
+          {saveError && <p className="capture-warn capture-section" role="alert">Nem sikerült menteni. A módosításaid megmaradtak; próbáld újra.</p>}
           {/* Footer */}
-          <div className="row gap-sm mt-lg">
+          <div className="capture-actions">
             <CtaGhost className="flex-1" onClick={close}>Mégse</CtaGhost>
-            <CtaPrimary className="flex-1" disabled={saving} onClick={() => save(close)}>
-              <Icon name="check" size={14} /> {saving ? 'Mentés…' : 'Mentés'}
+            <CtaPrimary className="capture-save flex-1" disabled={saving} onClick={() => save(close)}>
+              <Icon3D name="t-tick" size={22} /> {saving ? 'Mentés…' : 'Mentés'}
             </CtaPrimary>
           </div>
         </>

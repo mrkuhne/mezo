@@ -1556,3 +1556,39 @@ test('the U3 capture sheet floats and scrolls under `.glass` (U1 rules 1–3, U2
   expect(css).toMatch(/\.sheet\.capture-sheet\.glass[^{]*\{[^}]*position: absolute;/)
   expect(css).toMatch(/\.sheet\.capture-sheet\.glass[^{]*\{[^}]*overflow-y: auto;/)
 })
+
+/**
+ * Üvegesítés U4 (mezo-me75u.4) — Edzés I (prototypes/uveg-edzes.html). One block per surface group
+ * so six builders could work in parallel: Mai, the in-workout screen, the closing ceremony + review,
+ * Terhelés, Sport + Futás, Medálok + Gyakorlatok. Heroes are frameless halos; primary objects glass
+ * in ONE accent (workout cards and exercise rows take their muscle colour); rows, chips and cells
+ * inside them flat or lit; free space dashed; the dock never sweeps; never glass in glass.
+ */
+const U4_BLOCKS: Array<[string, string[]]> = [
+  ['mai', ['.trm .trm-hero', '.trm .trm-start.glass', '.trm .trm-sess.glass', '.trm .trm-energy.glass',
+    '.trm .trm-mus.glass', '.trm .trm-alt-tile.glass', '.trm .trm-add.uv-empty', '.trm .trm-day']],
+  ['session', ['.wos .wo-card.glass', '.wos .wos-fresh.glass', '.wo-dock.glass', '.wo-dock.glass.is-resting',
+    '.wos .warmstrip.wos-warn', '.wos form.wo-row.is-current', '.gl-card > .wos-gb.glass', '.sheet.glass.wos-sheet']],
+  ['zaras', ['.cer-card.cer-records', '.cer-card.cer-sum', '.cer-quest-res', '.cer-tchip', '.cer-kcal.uv-halo',
+    '.cer-mstars.glass', '.wsum-hero.uv-halo', '.wr-cmp.glass', '.wr-extile.glass', '.wsum-note-add.uv-empty']],
+  ['terheles', ['.tw-load .ld-hero', '.tw-load .ld-map-card.glass', '.tw-load .ld-group.glass', '.tw-load .ld-sport.glass',
+    '.tw-load .ld-move-card.glass', '.tw-load .tw-custom', '.tw-glass .ld-glass-xp']],
+  ['sport', ['.uvs-sport .spw-day.has.glass', '.uvs-sport .spw-day.empty.uv-empty', '.uvs-ssc.glass', '.uvs-xl.glass',
+    '.uvs-blk.glass', '.uvs-rsc.glass', '.uvs-hrc.glass', '.uvs-bform.glass', '.uvs-log .sp-tile.glass', '.uvs-primary.is-warn']],
+  ['gyakorlatok', ['.gyx-medals .mz-facttile.gyx-medal.glass', '.gyx-catalog .gy-card.glass', '.gyx-story .gy-rec.glass',
+    '.gy-curve-box.glass', '.gy-medal.glass', '.gyx-page .gyx-empty.uv-empty', '.sheet.glass.gyx-sheet']],
+]
+
+describe.each(U4_BLOCKS)('the uveg edzes %s section carries the glass ranking (mezo-me75u.4)', (name, sels) => {
+  const section = () => stripComments(slice(`── uveg edzes ${name} (`, `── /uveg edzes ${name} `))
+
+  test('the block exists and dresses every surface of the group', () => {
+    const css = section()
+    for (const sel of sels) expect(css, `${sel} missing from the uveg edzes ${name} block`).toContain(sel)
+  })
+
+  test('never glass inside glass (U1 rule 5)', () => {
+    expect(section()).not.toMatch(/\.glass [^{,]*\.glass[\s,{]/)
+  })
+})
+

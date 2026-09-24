@@ -3,35 +3,39 @@ import { expect, test, vi } from 'vitest'
 import { TodaySessionCard } from '@/features/train/components/TodaySessionCard'
 
 const base = {
-  emoji: '🏃', tag: 'FUTÁS', time: '12:00', title: 'Sprint-intervallum',
+  art: 't-run', tag: 'FUTÁS', time: '12:00', title: 'Sprint-intervallum',
   facts: ['RPE 9–10', '5 kör'], logged: false, stateLabel: 'MOST',
   ctaLabel: 'Naplózd a futást',
 } as const
 
-test('renders tone class, icon shield, eyebrow, title, fact pills and the CTA', () => {
+test('renders the glass card in its tone, the 3D art in a lit well, tag line, title, fact pills and the CTA', () => {
   const onLog = vi.fn()
   const { container } = render(<TodaySessionCard {...base} tone="run" onLog={onLog} />)
-  expect(container.querySelector('.todaycard-run')).toBeInTheDocument()
-  expect(container.querySelector('.todaycard-icon')).toHaveTextContent('🏃')
+  // one glass card, its hue published as --c on the card itself (bible U1 rule 4)
+  const card = container.querySelector('.trm-sess-run.glass') as HTMLElement
+  expect(card).toBeInTheDocument()
+  expect(card.style.getPropertyValue('--c')).toBe('var(--dv-sky)')
+  // the session's 3D art sits in the lit well (the emoji shield is gone)
+  expect(container.querySelector('.trm-sess-well use')?.getAttribute('href')).toBe('#t-run')
   expect(screen.getByText(/FUTÁS/)).toBeInTheDocument()
   expect(screen.getByText('12:00')).toBeInTheDocument()
   expect(screen.getByText('Sprint-intervallum')).toBeInTheDocument()
-  expect(container.querySelectorAll('.metapill')).toHaveLength(2)
+  expect(container.querySelectorAll('.trm-fact')).toHaveLength(2)
   expect(screen.getByText('MOST')).toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: /Naplózd a futást/ }))
   expect(onLog).toHaveBeenCalledTimes(1)
 })
 
-test('each of the five tones gets its own tone class and typetag variant', () => {
+test('each of the five tones gets its own tone class and tag variant', () => {
   for (const tone of ['gym', 'sport', 'cross', 'trx', 'run'] as const) {
     const { container, unmount } = render(<TodaySessionCard {...base} tone={tone} />)
-    expect(container.querySelector(`.todaycard-${tone}`)).toBeInTheDocument()
-    expect(container.querySelector(`.typetag-${tone}`)).toBeInTheDocument()
+    expect(container.querySelector(`.trm-sess-${tone}`)).toBeInTheDocument()
+    expect(container.querySelector(`.trm-tag-${tone}`)).toBeInTheDocument()
     unmount()
   }
 })
 
-test('logged state: check icon, MEGVAN eyebrow, DoneBar instead of the CTA, no state chip', () => {
+test('logged state: 3D done mark, MEGVAN eyebrow, DoneBar instead of the CTA, no state chip', () => {
   const onLog = vi.fn()
   const { container } = render(
     <TodaySessionCard
@@ -43,7 +47,9 @@ test('logged state: check icon, MEGVAN eyebrow, DoneBar instead of the CTA, no s
       onLog={onLog}
     />,
   )
-  expect(container.querySelector('.todaycard.logged')).toBeInTheDocument()
+  expect(container.querySelector('.trm-sess.is-logged')).toBeInTheDocument()
+  // the done mark is the 3D tick, its meaning spoken (the old check glyph is gone)
+  expect(screen.getByRole('img', { name: 'kész' }).querySelector('use')?.getAttribute('href')).toBe('#t-tick')
   expect(screen.getByText(/MEGVAN/)).toBeInTheDocument()
   expect(screen.getByText('RPE 9 · 5/5 kör')).toBeInTheDocument()
   expect(screen.getByText('12:04-kor logolva')).toBeInTheDocument()

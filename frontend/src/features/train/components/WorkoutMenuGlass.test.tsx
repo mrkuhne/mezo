@@ -213,7 +213,9 @@ function challengeProps(over: Partial<React.ComponentProps<typeof WorkoutChallen
 test('challenges glass · pending: the generation loader wins, and NEVER the honest-empty line', () => {
   render(<WorkoutChallengesGlass {...challengeProps({ challenges: [], pending: true })} />)
   expect(screen.getByRole('status')).toBeInTheDocument()
-  expect(screen.getByText(/A mai küldetések · készül…/)).toBeInTheDocument()
+  // U4 (mezo-me75u.4): the glass is titled "A mai küldetések"; its sub-line carries the state.
+  expect(screen.getByRole('dialog', { name: 'A mai küldetések' })).toBeInTheDocument()
+  expect(screen.getByText('készül…')).toBeInTheDocument()
   expect(screen.queryByText('Ma nincs kihívás')).not.toBeInTheDocument()
 })
 
@@ -221,13 +223,13 @@ test('challenges glass · resolved empty: the honest-empty line, no loader, 0/0'
   render(<WorkoutChallengesGlass {...challengeProps({ challenges: [], pending: false })} />)
   expect(screen.queryByRole('status')).not.toBeInTheDocument()
   expect(screen.getByText('Ma nincs kihívás')).toBeInTheDocument()
-  expect(screen.getByText(/A mai küldetések · 0\/0 elfogadva/)).toBeInTheDocument()
+  expect(screen.getByText('0 / 0 elfogadva')).toBeInTheDocument()
 })
 
 test('challenges glass · loaded: the cards render, loader gone, real accepted count', () => {
   render(<WorkoutChallengesGlass {...challengeProps({ accepted: { c1: true } })} />)
   expect(screen.queryByRole('status')).not.toBeInTheDocument()
   expect(screen.queryByText('Ma nincs kihívás')).not.toBeInTheDocument()
-  expect(screen.getByText(/A mai küldetések · 1\/1 elfogadva/)).toBeInTheDocument()
+  expect(screen.getByText('1 / 1 elfogadva')).toBeInTheDocument()
   expect(screen.getByText(/PR-kísérlet/)).toBeInTheDocument()
 })
