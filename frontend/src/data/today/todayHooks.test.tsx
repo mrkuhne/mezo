@@ -144,7 +144,7 @@ test('useToday (real) lets a completed instance win over a lingering open one', 
 // SportSession on TODAY's date, matched by kind (a mixed day flips each hero independently).
 // mezo-cq06 — a skip_sport_slot advice action hides one dated occurrence of a recurring sport
 // slot; the Today hero's `volleyballSessions` used to keep rendering it regardless, contradicting
-// the backend's own `hasScheduledTrainingOn`. Pin a Tuesday so the sport-schedule fixture's own
+// the backend's own `WorkoutWindowQueryService.windowsFor` (skip-aware schedule read). Pin a Tuesday so the sport-schedule fixture's own
 // Kedd 17:00 slot is deterministically "today" (dayOfWeek 1), instead of depending on the day the
 // suite happens to run.
 test('useToday (real) drops today\'s sport session once its dated occurrence is skipped', async () => {

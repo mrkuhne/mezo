@@ -35,12 +35,13 @@
 // the set rows — a done row's tick is a lit disc holding the 3D t-tick, its verdict a 3D mark
 // (t-tick in range / t-up above / t-down below / t-record for a record). No text glyphs.
 // ============================================================
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import type { LastWeekSet, LoggedWorkoutExercise } from '@/data/types'
 import type { Medal } from '@/data/train/medalTypes'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { RIR_MAX } from '@/features/train/logic/rir'
 import { setStatus } from '@/features/train/logic/workoutCardMeta'
+import { adjustedRange, adjustedTarget, equivalentReps } from '@/features/train/logic/repEquivalence'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { MedalChip } from '@/features/train/components/MedalChip'
 import { ProgressionBanner } from '@/features/train/components/ProgressionBanner'
@@ -140,16 +141,20 @@ export function WorkoutCard({
   const [reps, setReps] = useState(0)
   const [rir, setRir] = useState(0)
   const [side, setSide] = useState<SetSide | null>(null)
+  // The cursor slot's prescription — read by the prefill, the kg field and the swap caption.
+  const cursorTarget = prescribedAt(session, id, slotIndex(session, id, cursor))
   useEffect(() => {
     // Every visible slot is a WORKING set now, so the prescription is read through the
     // visible→model mapping and the warmup branch is gone with the warmup rows.
-    const t = prescribedAt(session, id, slotIndex(session, id, cursor))
+    const t = cursorTarget
     const prev = logged[cursor - 1]
     const p = prefill(exercise)
     // The just-logged set wins over the static engine target; the engine seeds only the
-    // first working set.
-    setWeight(prev?.weight ?? t?.targetWeightKg ?? p.weight)
-    setReps(t?.targetReps ?? prev?.reps ?? p.reps)
+    // first working set. A weight carried over from a swapped set keeps its equivalent
+    // reps (mezo-l95v4).
+    const w = prev?.weight ?? t?.targetWeightKg ?? p.weight
+    setWeight(w)
+    setReps(equivalentReps(t, w) ?? t?.targetReps ?? prev?.reps ?? p.reps)
     setRir(t?.targetRIR ?? prev?.rir ?? p.rir)
     setSide(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -250,7 +255,8 @@ export function WorkoutCard({
                 // POST is KNOWN to have failed is not in flight — it is tappable again.
                 const rowFailed = !!actual.localId && !!failedLocalIds?.has(actual.localId)
                 const rowDisabled = !actual.id && !rowFailed
-                const status = setStatus(exercise, { reps: actual.reps, kind: 'working' })
+                // A swapped weight is judged against its shifted range (mezo-l95v4).
+                const status = setStatus(adjustedRange(exercise, t, actual.weight), { reps: actual.reps, kind: 'working' })
                 const medals = (medalsBySetIdx[i] ?? []).filter((m) => m.tier === 'RECORD')
                 const ariaLabel = `${setSlotLabel(i)} szerkesztése — ${actual.weight ?? '—'} kg × ${actual.reps ?? '—'} — RIR ${actual.rir ?? '—'}`
                 return (
@@ -286,9 +292,10 @@ export function WorkoutCard({
 
               // ---- THE editable row: the cursor slot, and only it ----
               if (i === cursor) {
+                const adj = weightless ? null : adjustedTarget(cursorTarget, weight)
                 return (
+                  <Fragment key={i}>
                   <form
-                    key={i}
                     className="wo-row is-current"
                     onSubmit={(e) => {
                       e.preventDefault()
@@ -302,7 +309,14 @@ export function WorkoutCard({
                         aria-label={`${exercise.name}, ${setSlotLabel(i)}, súly`}
                         disabled={weightless}
                         value={weightless ? 0 : weight}
-                        onChange={(e) => setWeight(Number(e.target.value))}
+                        onChange={(e) => {
+                          const w = Number(e.target.value)
+                          setWeight(w)
+                          // The reps follow the kg at equivalent effort (mezo-l95v4); typed
+                          // reps stand until the kg moves again.
+                          const r = equivalentReps(cursorTarget, w)
+                          if (r != null) setReps(r)
+                        }}
                       />
                     </label>
                     <label className="wo-field">
@@ -346,15 +360,23 @@ export function WorkoutCard({
                       </span>
                     )}
                   </form>
+                  {adj && cursorTarget?.targetWeightKg != null && (
+                    <p className="wo-adjust">
+                      {`${adj.targetWeightKg.toLocaleString('hu-HU')} kg-hoz igazítva · ajánlás ${cursorTarget.targetWeightKg.toLocaleString('hu-HU')} × ${cursorTarget.targetReps}`}
+                    </p>
+                  )}
+                  </Fragment>
                 )
               }
 
               // ---- LATER pending row: the prescribed target, quiet and inert ----
+              // …or, after a weight swap, the swapped weight at its equivalent reps (mezo-l95v4).
+              const later = weightless ? null : adjustedTarget(t, weight)
               return (
                 <div key={i} className="wo-row" aria-label={`${setSlotLabel(i)} · terv`}>
                   {idxCell}
-                  <span className="wo-field num">{t?.targetWeightKg != null ? t.targetWeightKg.toLocaleString('hu-HU') : '—'}</span>
-                  <span className="wo-field num">{`${exercise.repMin}–${exercise.repMax}`}</span>
+                  <span className="wo-field num">{later ? later.targetWeightKg.toLocaleString('hu-HU') : t?.targetWeightKg != null ? t.targetWeightKg.toLocaleString('hu-HU') : '—'}</span>
+                  <span className="wo-field num">{later ? String(later.targetReps) : `${exercise.repMin}–${exercise.repMax}`}</span>
                   <span className="wo-field small num">{t?.targetRIR ?? exercise.targetRIR}</span>
                   <span className="wo-check" aria-hidden="true" />
                   <span className="wo-verdict" />

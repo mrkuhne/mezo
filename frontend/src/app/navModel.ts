@@ -47,9 +47,13 @@ export const DOMAINS: NavDomain[] = [
     name: 'Nap',
     tabs: [
       { label: 'Mai', route: '/nap', icon: 'i-nap' },
+      // A napom (mezo-yjzhw.4, owner decision 2026-09-24): replaces the retired Napzárás
+      // tab — the day's own reading + next action, not just the evening close. `/ritual`
+      // itself survives as a reachable page (Rutin's evening row, the leltár, later a
+      // Mai evening card); the Rutin tab OWNS it so the page index files it correctly.
+      { label: 'A napom', route: '/nap/napom', icon: 'i-heti' },
       { label: 'Beszélgetés', route: '/nap/uzenetek', icon: 'i-mezo' },
-      { label: 'Rutin', route: '/nap/rutin', icon: 'i-rend' },
-      { label: 'Napzárás', route: '/ritual', icon: 'i-hold' },
+      { label: 'Rutin', route: '/nap/rutin', icon: 'i-rend', owns: ['/ritual'] },
     ],
   },
   {

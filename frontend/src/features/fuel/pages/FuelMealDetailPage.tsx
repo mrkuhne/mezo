@@ -19,6 +19,8 @@
 //   • szerkesztés NINCS a sorokon — az a logolóban él (S1c): a lap alján egy halk ajtó visz a
 //     `/fuel/log/uj?edit=<id>` javításra (és `&d=`, ha az étkezés korábbi napra esik). A törlés
 //     szándékosan ott, két lépésben lakik — egy részletező lapon egy koppintás nem törölhet.
+//     Alatta a recept ajtaja (mezo-n9wgg): „Mentsük receptként" → Műhely `?fromMeal=<id>`,
+//     vagy „Megnyitom a receptet", ha az étkezés egyetlen recept.
 //
 // ŐSZINTE-NULL, ABSZOLÚT: a mikrotápanyag-rész KIZÁRÓLAG a négy tárolt tényt mutatja
 // (rost, cukor, só, telített zsír — `Nutrients`, mezo-m6uv). Vitamin és ásványi anyag
@@ -137,6 +139,13 @@ export function FuelMealDetailPage() {
   // A8 (S1c, mezo-33k6): a javítás ajtaja. A `&d=` akkor is megy, ha az étkezés korábbi napra
   // esik — így a logoló ugyanannak a napnak az idő-szerződését tartja meg.
   const toEdit = () => navigate(`/fuel/log/uj?edit=${meal.id}${day ? `&d=${day}` : ''}`)
+  // Logolt étkezésből recept (mezo-n9wgg): egyetlen recept-sor = ez már recept, azt nyitjuk;
+  // különben a Műhely az étkezés soraival előtöltve nyílik (a mentés új receptet hoz létre, az
+  // étkezés érintetlen marad). Sorok nélkül nincs miből receptet csinálni — nincs ajtó.
+  const onlyRecipe = lines.length === 1 && lines[0].source === 'recipe' ? lines[0].refId : null
+  const toRecipe = onlyRecipe
+    ? () => navigate(`/fuel/recipes/${onlyRecipe}`)
+    : () => navigate(`/fuel/recipes/muhely?fromMeal=${meal.id}${day ? `&d=${day}` : ''}`)
 
   return (
     <div className="fmx-page" style={{ '--block-color': block.color } as React.CSSProperties}>
@@ -209,6 +218,11 @@ export function FuelMealDetailPage() {
       <button type="button" className="fmx-edit-door" onClick={toEdit}>
         Javítom ezt az étkezést
       </button>
+      {lines.length > 0 && (
+        <button type="button" className="fmx-edit-door" onClick={toRecipe}>
+          {onlyRecipe ? 'Megnyitom a receptet' : 'Mentsük receptként'}
+        </button>
+      )}
 
       <FuelMicroNote />
     </div>

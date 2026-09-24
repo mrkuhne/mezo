@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
 import io.mrkuhne.mezo.feature.companion.config.DayEvaluationProperties;
 import io.mrkuhne.mezo.feature.companion.entity.DayReviewEntity;
 import io.mrkuhne.mezo.feature.companion.repository.DayReviewRepository;
+import io.mrkuhne.mezo.feature.companion.service.DayEvaluationEngine.DayEvaluation;
 import io.mrkuhne.mezo.feature.companion.service.DayEvaluationEngine.DayInputs;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -700,6 +701,28 @@ class DayReviewServiceTest {
         // the model is TOLD the signals — it never invents them
         assertThat(fakeLlm.lastUserMessage).contains("energia").contains("súlytrend")
             .contains("alvás cél alatt");
+    }
+
+    // --- warmer voice (mezo-yjzhw.2): the prompt version rides in the cache key ---------------
+
+    @Test
+    void testInputsHash_shouldDependOnThePromptVersion_whenTheVoiceChanges() throws Exception {
+        DayEvaluation evaluation = new DayEvaluationEngine(props).evaluate(denseClosedDay());
+
+        String hash = DayReviewService.inputsHash(evaluation);
+
+        // the pre-v2 key had no prompt line: recompute it the old way and prove the key moved,
+        // so every cached review regenerates once in the new voice
+        assertThat(hash).isNotEqualTo(DayReviewService.legacyInputsHashForTest(evaluation));
+    }
+
+    @Test
+    void testSystemPrompt_shouldBanTheBureaucraticRegister_whenWritingTheReview() {
+        assertThat(DayReviewService.SYSTEM_PROMPT)
+            .contains("került rögzítésre")        // named as forbidden
+            .contains("Második személyben")
+            .contains("Levontam")                  // the first-person adjustment example
+            .doesNotContain("2-3 bekezdés");       // the old length rule is gone
     }
 
     // --- helpers ------------------------------------------------------------------------------

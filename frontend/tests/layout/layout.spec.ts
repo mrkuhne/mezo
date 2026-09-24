@@ -619,3 +619,55 @@ test('the ⓘ hit box overhangs the button, never the heading text (mezo-b516k f
   expect(probe.atTextEdgeIsHeading, `heading's own text edge (${probe.textEdgeX}, ${probe.textEdgeY}) resolved to ${probe.atTextEdgeTag}, not the heading`).toBe(true)
   expect(probe.atGlyphCenterIsButton, `the glyph's own centre (${probe.glyphCenterX}, ${probe.glyphCenterY}) resolved to ${probe.atGlyphCenterTag}, not the ⓘ button`).toBe(true)
 })
+
+// ── A napom (mezo-yjzhw.5): today live, and a closed/scored day, at 320px ────────────────────
+// The live day page (NapomPage.tsx, /nap/napom[/:date]) replaced WeekDayPage and floats above
+// the same glass tab bar as everything else in this file — the U1 lesson (rule 9) applies here
+// too: a card can sit inside the scroller's own viewport yet UNDER the bar, so the invariant is
+// "no horizontal scroll" + "the last row's bottom clears the bar's top", not mere visibility.
+const NAPOM_ROUTES: Array<[string, string]> = [
+  ['today (live)', '/nap/napom'],
+  ['scored (2026-05-18, the mock fixture)', '/nap/napom/2026-05-18'],
+]
+
+for (const [name, path] of NAPOM_ROUTES) {
+  test(`A napom · ${name} stays contained and its last row clears the tab bar @ 320px`, async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 820 })
+    // Clock: 2026-05-21 is the mock `inProgress` fixture's date, so "today" is the live day; it is
+    // the Thursday of the mock week that opens on the `scored` fixture (2026-05-18), so both routes
+    // share one fully seeded week strip. 13:42 keeps us before the 20:00 napzárás window.
+    await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
+    // The bare route would open morning mode: the mock's yesterday (2026-05-20) is a scored day
+    // with an unseen review. Mark it seen first so "today (live)" really renders the live day.
+    await page.addInitScript(() => { localStorage.setItem('napom.seen.2026-05-20', '1') })
+    await page.goto(path)
+    await page.waitForLoadState('networkidle')
+    await page.evaluate(() => document.fonts.ready)
+    if (path === '/nap/napom') await expect(page.locator('.napom-hero h1')).toContainText('Csütörtök')
+
+    // No horizontal scroll at the app's hardest width (U1 rule 8).
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+
+    // The last dimension row (or, on a thin/empty day, the last rendered section) clears the
+    // floating glass tab bar's top — the same lift-above-the-bar probe the Fuel/Cél specs use.
+    const lastRow = page.locator('.napom-drow, .napom-sec').last()
+    await lastRow.scrollIntoViewIfNeeded()
+    await lastRow.evaluate(element => {
+      const scroller = document.querySelector('.screen-content') as HTMLElement
+      const tabbar = document.querySelector('.tab-bar')?.getBoundingClientRect()
+      if (!tabbar) return
+      const overlap = element.getBoundingClientRect().bottom - tabbar.top
+      scroller.style.scrollBehavior = 'auto'
+      if (overlap > 0) scroller.scrollTop += overlap + 4
+    })
+    await expect(lastRow).toBeVisible()
+    const spacing = await page.evaluate(() => {
+      const rows = document.querySelectorAll('.napom-drow, .napom-sec')
+      const last = rows[rows.length - 1] as HTMLElement
+      const row = last.getBoundingClientRect()
+      const tabbar = document.querySelector('.tab-bar')!.getBoundingClientRect()
+      return { rowBottom: row.bottom, tabbarTop: tabbar.top }
+    })
+    expect(spacing.rowBottom).toBeLessThanOrEqual(spacing.tabbarTop - 1)
+  })
+}

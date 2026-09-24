@@ -175,9 +175,12 @@ class DayEvaluationApiIT extends ApiIntegrationTest {
 
     /** Mirrors {@code DayReviewService#inputsHash} exactly, over the PUBLIC wire response —
      *  dimension order and fact order are preserved end to end, so this is a faithful black-box
-     *  reconstruction, not a guess. */
+     *  reconstruction, not a guess. The {@code prompt|<version>} prefix mirrors
+     *  {@code DayReviewService#PROMPT_VERSION} (mezo-yjzhw.2) folding the warm-voice version into
+     *  the key — a package-private constant this controller-package test can't reference directly,
+     *  so the value is inlined and must move in lockstep with the service's own bump. */
     private static String inputsHash(DayEvaluationResponse response) throws NoSuchAlgorithmException {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder("prompt|v2-warm\n");
         for (DayDimension d : response.getDimensions()) {
             sb.append(d.getId()).append('|')
                 .append(d.getScore() == null ? "" : d.getScore()).append('|')

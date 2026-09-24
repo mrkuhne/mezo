@@ -49,7 +49,8 @@ export function WeekAnalysisPage() {
   const chips = highlightChips(review?.highlights, digest)
   const stamp = humanGeneratedAt(review?.generatedAt)
 
-  const openDay = (dateIso: string) => navigate(`/me/week/napok/${dateIso}`)
+  // A napom (mezo-yjzhw.4): a single day now lives at `/nap/napom/:date`.
+  const openDay = (dateIso: string) => navigate(`/nap/napom/${dateIso}`)
 
   return (
     <MozaikPage tone="lav" className="wk-analysis-page">

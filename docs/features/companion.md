@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-23
+updated: 2026-09-24
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -447,6 +447,25 @@ The sections below describe its current behavior and the supporting components.
   born in techcore): for every user × every finished day in the catch-up window
   (`summary.catch-up-days`, 7) it generates + embeds what's missing — **idempotent catch-up IS the
   backfill** (missed nights, crashes and pre-V2.2 history self-heal; per-date failures isolated).
+- **`DayReviewWarmupJob`** (`service/DayReviewWarmupJob.java`, A napom S1) — nightly, 02:30
+  (`mezo.companion.day-review-warmup.cron`, the free slot between the 02:20 daily-summary and the
+  02:40 patterns job — 02:50 is the character observation job's — well after the post-midnight
+  XP/habit chain), switch
+  `mezo.techcore.cron.day-review-warmup-job.enabled` (`FeaturesConfiguration`, default **true**;
+  array-AND'ed with `COMPANION_SWITCH` and `DAY_REVIEW_SWITCH` — off on any of the three and the
+  bean does not exist). It closes yesterday's review overnight so the morning read is a cache hit
+  instead of a synchronous LLM call: for every active user (`UserFanOut`) it simply calls
+  `DayReviewService.assemble(userId, date)` for every date in the finished-day catch-up window
+  (`DayReviewWarmupProperties.catchUpDays`, shipped **3**) — **no new persistence of its own**,
+  since `assemble` already hashes the day's inputs and upserts `day_review` on a miss (§3/§4
+  below). A retroactive log that changes the hash gets rewritten exactly once, by the next run or
+  the next read, whichever comes first. Per user × date failures are isolated (one bad day never
+  stops the run) — the `DailySummaryJob` idempotent-catch-up idiom one slice over.
+  `DayReviewWarmupJobIT` pins it end to end with a call-counting `@Primary DayReviewLlm` fake:
+  yesterday's row is written, a second run costs no call, a late log costs exactly one more.
+  **At the 90% budget throttle** the `day_review` slug (on `throttled-features`) also refuses
+  **interactive** generation, not just this job's — a scored day read while throttled degrades to
+  its numbers without prose (a cached review is still served).
 - **Embed pipeline** — `MemoryEmbeddingWriter` (feature/companion/embedding/): narrative unit →
   `EmbeddingPort.embedDocuments` → `memory_embedding` row; content capped at
   `embedding.embed-max-chars` BEFORE embedding (the stored text IS what the vector describes);
@@ -1440,6 +1459,8 @@ uses original dates (including workout-parent dates), and round-robins sources w
 labels. `exists` revalidates ownership/deletion without imposing the generation window.
 Related REFLECTION memory retrieval runs even without yesterday's text signal and is bounded
 by its configured 90-day policy before retrieval/fusion; other consumers keep their policies.
+The stripped retrieval query is capped by `embedding.embed-max-chars`; the proposal retains
+its full bounded original evidence.
 
 `GroundedHypothesisPublisher` saves the candidate and observation atomically. Same-topic or
 same-test-plan candidates enrich one unanswered card; unchanged evidence does not spend a
@@ -1450,9 +1471,17 @@ reply but never promises a measurement after eight days.
 
 `ObservationRecoveryService` is owner-only: `preview` reads bounded owned audit proposals,
 rechecks current original sources, deduplicates themes and returns a short-lived server-held
+plan. Proposal calls use the existing nightly batch size (at least one for explicit recovery),
+request only the remaining candidate allowance, and stop at the recovery cap, a bounded number
+of rounds, or a round without a new normalized topic. Later rounds include selected topic keys
+and titles to avoid repeats. A failed later round aborts the preview without caching a partial
 plan. `apply` revalidates and applies those exact candidates; repeat calls reuse the result.
-Deleted/changed sources cannot be applied. Restart/expiry requires a new preview. This is a
-recovery of still-relevant questions, not manufactured historical events or user confirmations.
+Deleted/changed sources cannot be applied. Restart/expiry requires a new preview. Transport
+failures and malformed proposal/critique output abort preview with the standard HTTP 400
+`OBSERVATION_RECOVERY_LLM_FAILED` error; they never create a successful empty recovery plan.
+An explicit empty proposal list or a valid critique rejecting every candidate remains a
+successful empty result. Nightly runs retain their fail-soft behavior. This is a recovery of
+still-relevant questions, not manufactured historical events or user confirmations.
 
 - **The user's own words feed the nightly revision (`HypothesisPipelineService`).** Each open row now
   renders as `… · kulcs: <hypothesisKey> · „<the newest user_reply text>"` — the key so a revision can
@@ -2927,6 +2956,30 @@ pair, and the AI-napló header renders the quotient as *„N% gyorsítótárból
 prompt tokens hides the figure rather than reporting 0% — no data and no hits are different
 statements.
 
+**GPT-5.6 caches at MESSAGE BOUNDARIES, not arbitrary token prefixes (`mezo-renhu`, verified
+2026-09-24 against the same guide).** In the default implicit mode a request writes its prefix at
+*the end of the latest eligible message*, and a later request looks up only message endings: its
+own, up to 20 earlier user-message endings, and *the endpoint of the initial consecutive block of
+developer (system) messages*. A shared chunk that sits INSIDE a message — ahead of a per-call tail
+in the same message — has no boundary of its own and can never be read back, however byte-identical
+it is. Production confirms both halves: chat turns hit a constant ~5,900 cached tokens (the persona
++ tool schemas, i.e. the leading system block), while `companion_hypothesis` hit **0 of 220k**
+tokens over 45 calls (14 days to 2026-09-23) because each critique sent `HIPOTÉZIS: … KONTEXTUS:
+<weekly context>` as ONE user message. The night's critiques and revisions now send the shared
+weekly context as the `turnContext` of `completeSmart(system, turnContext, [], hypothesis)`
+(`HypothesisPipelineService.sharedContext`/`critiqueQuestion`/`reviseQuestion`), so the adapter
+emits `[system prompt, system context, user hypothesis]` and the leading block ends right after the
+context — the second and later critique of a night read it from cache
+(`GeminiCompanionLlmPromptOrderTest.testCompleteSmart_shouldCloseTheLeadingSystemBlockWithTurnContext_whenHistoryIsEmpty`,
+`HypothesisCritiquePrefixTest`). `FakeCompanionLlm.completeSmart` re-joins the halves for the two
+markers, so the one-shot dispatch and its `[fake-critique:…]`/`[fake-revise:…]` sentinels (read
+from the hypothesis) are unchanged. Two corollaries for any future caching work: (1) the propose
+call cannot share with the critiques — its system prompt differs from the first token; (2) calls
+of DIFFERENT features never share a cache entry either, because each opens with its own system
+prompt, so clustering unrelated nightly jobs into one 30-minute window buys nothing. The guide also
+states that GPT-5.6 cache WRITES cost **1.25×** the uncached input rate; the per-row `cost_usd`
+does not model that surcharge yet.
+
 The `CompanionLlm` port's `complete`/`stream` are now **5-arg and ABSTRACT**
 (`system, List<Turn> history, user, tools, toolContext` — `CompanionLlm.java:33-38`); the old 4-arg
 two-string-plus-tools shape became a `default` delegating with `List.of()`
@@ -3619,16 +3672,24 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
   plus — lazily, for a **closed and scored** day only — a cached LLM prose layer over it. **The
   deterministic answer is the answer**: every LLM failure (switch off, provider throw/timeout,
   unparseable answer) degrades to the full evaluation with an EMPTY narrative and NO persisted row
-  — never a 5xx, never a cached lie (the `MealCoachService` contract, one day-shaped level up).
+  — never a 5xx, never a cached lie (the `MealCoachService` contract, one day-shaped level up). The
+  `SYSTEM_PROMPT` (A napom S4, owner 2026-09-24: "emberibb hang") writes in second person,
+  tegeződve, banning bureaucratic passive constructions (`"került rögzítésre"`) and internal
+  jargon (`base`, `nova`, `dimenzió`) in favor of plain Hungarian — a wording change, tracked by
+  `PROMPT_VERSION` below, not a contract or schema change.
   - **Server-side day state** — a five-way mirror of the frontend's four `weekDay.ts` states plus
     `in_progress`: `future` (date after today) → `in_progress` (today, still gathering) →
     `scored` (closed, `base != null`) → `thin`/`empty` (closed, `base == null`: `thin` if anything
     was logged that day, `empty` if nothing was). Prose is generated ONLY in the `scored` state.
   - **Cache, not truth.** `day_review` (migration `202609031300_mezo-jcpt.4_create_day_review.sql`,
     the `weekly_score` shape — soft-delete-aware partial unique index on `(created_by, date)`) holds
-    one live row per user+day, keyed by `inputsHash` — `sha256` over each dimension's
-    `id|score|status` **and its `facts` (label/value pairs, in emission order)** (fixed engine
-    order) plus `base`. The facts are in the key because they are shown to the model and the
+    one live row per user+day, keyed by `inputsHash` — `sha256` over `"prompt|" + PROMPT_VERSION
+    + "\n"` plus each dimension's `id|score|status` **and its `facts` (label/value pairs, in
+    emission order)** (fixed engine order) plus `base`. `PROMPT_VERSION` (currently `v2-warm`, A
+    napom S4) is bumped on any wording change to `SYSTEM_PROMPT`, so changing the prompt's voice
+    invalidates every cached row at once and each regenerates in the new voice on its next read or
+    warm-up pass — the same lever a schema change to the dimension/facts half of the key already
+    used. The facts are in the key because they are shown to the model and the
     narrative typically quotes them: scores are integers 0..100, so a retroactive log can move a
     fact (carbs 312 g → 280 g) without moving the rounded score, and a score-only key would keep
     serving prose quoting the old number. A hash match serves the stored envelope with
@@ -4113,7 +4174,7 @@ percentages must ascend or the context fails to boot):
 | `degrade-at-percent` | `70` | cheap-tier routing |
 | `throttle-cron-at-percent` | `90` | suspend `throttled-features` |
 | `stop-at-percent` | `100` | refuse every capped call |
-| `throttled-features` | 8 slugs | expensive generators nobody is waiting on |
+| `throttled-features` | 9 slugs | expensive generators nobody is waiting on |
 | `exempt-features` | `admin_replay`, `companion_smoke` | never capped |
 | `mezo.companion.llm.<provider>.degrade-model` | empty | where a degraded call lands; empty ⇒ that provider's `chat-model` |
 
@@ -6440,7 +6501,7 @@ without a second properties class.
   combination — master off, cron on).
 - `mezo.companion.reflection.cron` = **`0 40 3 * * *`** — 03:40. It **shares that minute with the
   llm-log payload-retention purge** (`mezo.llm-log.retention.cron`), which is a single bounded UPDATE
-  on an unrelated table; every other dawn slot is taken (02:20 summary, 02:40 patterns, 02:50
+  on an unrelated table; every other dawn slot is taken (02:20 summary, 02:30 day-review warm-up, 02:40 patterns, 02:50
   character, 03:00 SUN hypotheses, 03:10 feedback-learning, 03:20 graph, 03:30 MON weekly rung, 03:45
   MON profile, 03:50 monthly rung + audit retention, 04:00 quarterly).
 - `mezo.companion.reflection.catch-up-days` = **7** (`@Min(1) @Max(30)`) — finished days the nightly
@@ -6942,7 +7003,7 @@ one seam in this doc that fans OUT to three other features at once. The crossing
 | `weekly_review` | `weekly_review` | [`proactive.md` §10](proactive.md) | `WeekReviewCard` (`WeekHubPage` — [`me.md`](me.md)), `mezo-p2tr` |
 | `memoir` | `memoir` | [`proactive.md` §4](proactive.md) | `MemoirPage` ([`insights.md` §2.3](insights.md)) |
 | `prediction` | `prediction` | [`proactive.md` §4](proactive.md) | `PredictionsPage` cards ([`insights.md` §2.6](insights.md)) |
-| `day_review` | `day_review` | this doc (§3/§4, `mezo-jcpt.4`) | `DayReviewCard` (`WeekDayPage` — [`me.md`](me.md)), `mezo-jcpt.9` |
+| `day_review` | `day_review` | this doc (§3/§4, `mezo-jcpt.4`) | `NapomReviewCard` (`NapomPage` — [`today.md`](today.md)), `mezo-jcpt.9` |
 
 Three of those artifacts had **no `id` on the wire** before this slice — `FeedMessageResponse`,
 `WeeklySuggestionResponse` and `MemoirResponse` gained a required `id` (contract-only; the entities
@@ -6952,10 +7013,10 @@ The FE side is a single page-level hook + one shared controlled component
 
 **`weekly_review` and `day_review` both vote on the row that carries the artifact itself, not
 on a separate generated-message row** — `WeeklyReviewEntity.id` and `DayReviewEntity.id`
-respectively — so their FE cards (`WeekReviewCard`, `DayReviewCard`) gate the chip row on that
+respectively — so their FE cards (`WeekReviewCard`, `NapomReviewCard`) gate the chip row on that
 id's presence rather than on any scored/closed state: a scored day whose prose generation failed
-carries no `reviewId` and therefore no chips either (`DayReviewCard.tsx` — see
-[`me.md`](me.md) "Day page").
+carries no `reviewId` and therefore no chips either (`NapomReviewCard.tsx` — see
+[`today.md`](today.md) "A napom").
 
 **A verdict on a once-ever QUESTION card is an ANSWER, not a rating (round 2 S5, `mezo-d58h.7.5`).**
 Proactive's question cards are ordinary `feed_message` artifacts (`companion_message`, `kind=advice`,
@@ -9125,11 +9186,15 @@ change is distinct from those smoothed rates. The underlying trend calculation i
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/{DayReviewEntity,DayReviewJson}.java` + `repository/DayReviewRepository.java` — the `day_review` cache row + its typed jsonb envelope.
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `DAY_REVIEW_SWITCH` (`mezo.feature.day-review.enabled`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609031300_mezo-jcpt.4_create_day_review.sql` (the table) + `202609031200_mezo-jcpt.4_weekly_score_cache_invalidation.sql` (the one-off `weekly_score` purge).
-- `backend/src/main/resources/db/changelog/1.0.0/script/202609050900_mezo-jcpt.9_feedback_day_review_kind.sql` — `day_review` becomes the seventh W4.1 `message_feedback` artifact kind (CK-swap only, no data migration; §5.7 above); `MessageFeedbackEntity.KIND_DAY_REVIEW` + `DayEvaluationResponse.reviewId` (`DayReviewService`'s `ProseResult`, present only when the day carries actual LLM prose) + `DayReviewCard`'s `useFeedback('day_review', reviewId ? [reviewId] : [])` (mounted, gated on `reviewId` — not on `scored`) are the rest of this slice.
+- `backend/src/main/resources/db/changelog/1.0.0/script/202609050900_mezo-jcpt.9_feedback_day_review_kind.sql` — `day_review` becomes the seventh W4.1 `message_feedback` artifact kind (CK-swap only, no data migration; §5.7 above); `MessageFeedbackEntity.KIND_DAY_REVIEW` + `DayEvaluationResponse.reviewId` (`DayReviewService`'s `ProseResult`, present only when the day carries actual LLM prose) + `NapomReviewCard`'s `useFeedback('day_review', reviewId ? [reviewId] : [])` (mounted, gated on `reviewId` — not on `scored`) are the rest of this slice.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/WeeklyScoreRepository.java` — `latestScoreInputWrittenAt` widened to probe `water_log` (§4 accepted-limitation note on the training schedule tables' exclusion).
 - **`config/MeWeekProperties.java` is DELETED** (`mezo-jcpt.7`) — the legacy formula it configured is gone (§3), and a full-repo grep found zero readers: no injection, no field read, no test, no `@Value` (ArchUnit forbids it), no env-var/compose/CI mapping. The record and its `mezo.companion.me-week` block in `application.yml` were removed **together**: the record's components are primitives with no defaults, so the two are a matched pair and a yml-only removal would fail validation in every Spring context. The `me-week` **contract** (the `api/feature/me-week` fragment, the OpenAPI tag, `MeWeekController`/`MeWeekService`, the `MeWeekSubscores` wire shape) is untouched — only the config prefix retired. The `sleep-target-h: 8.0` it carried has no successor: the day evaluation's only sleep target is `DayEvaluationProperties.sleepTargetH` (`7.5`), and `kcal-band`/`xp-baseline` had no reader left at all.
 - Tests: `feature/companion/service/{DayEvaluationEngineTest,DayScoreServiceIT,DayReviewServiceTest}.java`, `feature/companion/config/DayEvaluationPropertiesTest.java`, `feature/companion/controller/{DayEvaluationApiIT,DayEvaluationSwitchOffApiIT}.java`, `feature/companion/DayReviewRepositoryIT.java`, `support/populator/DayReviewPopulator.java` — §8.
-- **FE side** — `frontend/src/data/me/{dayEvaluation.ts,dayEvaluationApi.ts,dayEvaluationHooks.ts}` (dual-mode read + 4 named mock fixtures) + `frontend/src/features/me/pages/WeekDayPage.tsx` + `frontend/src/features/me/components/week/{DayDimensionTile,DayReviewCard}.tsx` + `frontend/src/features/me/logic/weekDay.ts` (`DAY_DIMENSIONS`/`doneDimensionCount`) — documented in [me.md](me.md) (the day page section).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DayReviewWarmupJob.java` (A napom S1) — nightly pre-warm cron; no new persistence, calls `DayReviewService.assemble` per user × finished day.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/DayReviewWarmupProperties.java` — `mezo.companion.day-review-warmup.{cron,catch-up-days}`.
+- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `DAY_REVIEW_WARMUP_JOB_SWITCH` (`mezo.techcore.cron.day-review-warmup-job.enabled`).
+- Tests: `feature/companion/{DayReviewWarmupJobIT,DayReviewWarmupJobSwitchOffIT}.java` + `feature/companion/service/DayReviewWarmupJobTest.java` — §8.
+- **FE side** — `frontend/src/data/me/{dayEvaluation.ts,dayEvaluationApi.ts,dayEvaluationHooks.ts,liveDay.ts}` (dual-mode read + 4 named mock fixtures; `liveDay.ts` invalidates `['dayEvaluation', today]`/`['meWeek', monday]` on every successful mutation) + `frontend/src/features/today/pages/NapomPage.tsx` + `frontend/src/features/today/components/napom/*.tsx` + `frontend/src/features/today/logic/napom.ts` + `frontend/src/features/me/logic/weekDay.ts` (`DAY_DIMENSIONS`/`doneDimensionCount`) — the day page moved off `WeekDayPage` (deleted) onto its own tab, documented in [today.md](today.md) ("A napom").
 
 **Backend — weekly review data layer + anchored conversations (`mezo-p2tr` — §3/§4/§8)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/MeWeekService.java` + `controller/MeWeekController.java` — `GET /api/me/week/{start}` and the shared `renderDayLine` formatter.

@@ -99,7 +99,6 @@ export function IngredientPickerSheet({
             <div className="fkx-search-field">
               <ContentIcon name="t-stack" size={20} />
               <input
-                autoFocus
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 placeholder="Keress a Kamrában…"

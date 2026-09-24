@@ -20,6 +20,34 @@ vi.mock('@/data/fuel/recipeHooks', async importOriginal => {
   return { ...actual, useRecipeActions: () => ({ create: createSpy, update: updateSpy, remove: vi.fn() }) }
 })
 
+// Logolt étkezésből recept (mezo-n9wgg): a `?fromMeal` seed a nap étkezéseit ugyanúgy oldja fel,
+// mint a részletező lap — `useFuelDay` itt egy valódi alakú napot ad.
+const { FROM_MEAL_DAY } = vi.hoisted(() => {
+  const base = { score: null, kcal: 0, p: 0, c: 0, f: 0, items: [], tags: [], loggedAt: '2026-09-24T12:00:00', mealDate: '2026-09-24' }
+  const zabLine = { source: 'pantry', refId: 'ing-zab', amount: 60, unit: 'g', name: 'Zabpehely', contribution: { kcal: 223, p: 8, c: 36, f: 4 } }
+  return {
+    FROM_MEAL_DAY: {
+      targets: { kcal: 2400, p: 180, c: 240, f: 72, water: 3000 },
+      consumed: { kcal: 0, p: 0, c: 0, f: 0, water: 0 },
+      pacing: { msg: '' }, micronutrients: [], supplements: [],
+      meals: [
+        { ...base, id: 'meal-mixed', slot: 'breakfast', title: 'Reggeli tál', mealItems: [
+          zabLine,
+          { source: 'estimate', refId: '', amount: 1, unit: 'adag', name: 'Házi lekvár', contribution: { kcal: 60, p: 0, c: 15, f: 0 } },
+        ] },
+        { ...base, id: 'meal-pantry', slot: 'lunch', title: 'Zabos tál', mealItems: [
+          zabLine,
+          { source: 'pantry', refId: 'ing-turo', amount: 150, unit: 'g', name: 'Túró', contribution: { kcal: 150, p: 25, c: 6, f: 3 } },
+        ] },
+      ],
+    },
+  }
+})
+vi.mock('@/data/hooks', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/data/hooks')>()
+  return { ...actual, useFuelDay: () => ({ fuel: FROM_MEAL_DAY, isPending: false, isError: false, refetch: () => {} }) }
+})
+
 beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   turnImpl.mockReset()
@@ -218,4 +246,36 @@ test('az üres vászon cél-csempéket ad, és egy csempe elindítja a saját k�
   await userEvent.click(screen.getAllByRole('button', { name: /Magas fehérje/ })[0])
   await waitFor(() => expect(turnImpl).toHaveBeenCalledTimes(1))
   expect(turnImpl.mock.calls[0][0].goal).toBe('high_protein')
+})
+
+// ── Logolt étkezésből recept (mezo-n9wgg) ──────────────────────────────────────────────────────
+
+test('?fromMeal seeds the canvas from the logged meal — the estimate line holds the save gate', async () => {
+  renderPage('/fuel/recipes/muhely?fromMeal=meal-mixed')
+  expect(await screen.findByDisplayValue('Reggeli tál')).toBeInTheDocument()
+  expect(screen.getByText('Házi lekvár')).toBeInTheDocument()
+  expect(screen.getByText('becslés')).toBeInTheDocument()
+  expect(screen.getByText(/becslés-sorok: cseréld kamra-itemre/)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Mentés a Receptkönyvbe/ })).toBeDisabled()
+})
+
+test('an all-pantry logged meal saves as a NEW recipe (create, never update)', async () => {
+  renderPage('/fuel/recipes/muhely?fromMeal=meal-pantry')
+  await screen.findByDisplayValue('Zabos tál')
+  await userEvent.click(screen.getByRole('button', { name: /Mentés a Receptkönyvbe/ }))
+  expect(updateSpy).not.toHaveBeenCalled()
+  expect(createSpy).toHaveBeenCalledTimes(1)
+  const [input] = createSpy.mock.calls[0]
+  expect(input).toMatchObject({ name: 'Zabos tál', category: 'lunch', servings: 1 })
+  expect(input.ingredients).toEqual([
+    { pantryItemId: 'ing-zab', amount: 60, unit: 'g' },
+    { pantryItemId: 'ing-turo', amount: 150, unit: 'g' },
+  ])
+  expect(await screen.findByTestId('location')).toHaveTextContent('/fuel/recipes')
+})
+
+test('an unknown ?fromMeal opens the empty workshop', () => {
+  renderPage('/fuel/recipes/muhely?fromMeal=nope')
+  expect(screen.queryByDisplayValue('Zabos tál')).toBeNull()
+  expect(screen.getByLabelText('Üzenet a Műhelynek')).toBeInTheDocument()
 })

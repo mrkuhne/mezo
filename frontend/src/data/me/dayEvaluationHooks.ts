@@ -26,17 +26,21 @@ import { isMockMode } from '@/data/_client/mode'
 import { DEFAULT_QUERY_STALE_TIME_MS } from '@/data/useDualQuery'
 import { dayEvaluationApi } from '@/data/me/dayEvaluationApi'
 import { mockDayEvaluation, type DayEvaluationResponse } from '@/data/me/dayEvaluation'
+import { localDateString } from '@/shared/lib/dates'
 
 export type { DayEvaluationResponse }
 
-/** One place owns the cache identity — the hook below and the prefetch must not drift apart. */
-const dayEvaluationKey = (dateIso: string) => ['dayEvaluation', dateIso] as const
+/** One place owns the cache identity — the hook below and the prefetch must not drift apart.
+ *  Exported (A napom S3) so `liveDay.ts`'s global write-invalidation can target it without
+ *  drifting from this hook's own key shape. */
+export const dayEvaluationKey = (dateIso: string) => ['dayEvaluation', dateIso] as const
 
 export interface DayEvaluationQuery {
   data: DayEvaluationResponse | undefined
   isPending: boolean
   error: Error | null
   refetch: () => void
+  dataUpdatedAt: number
 }
 
 /** `dateIso` — the day to evaluate. */
@@ -47,12 +51,18 @@ export function useDayEvaluation(dateIso: string): DayEvaluationQuery {
     queryFn: mock ? async () => mockDayEvaluation(dateIso) : () => dayEvaluationApi.get(dateIso),
     initialData: mock ? mockDayEvaluation(dateIso) : undefined,
     staleTime: mock ? Infinity : DEFAULT_QUERY_STALE_TIME_MS,
+    // A napom S3: today is LIVE — a write anywhere else invalidates it too (`liveDay.ts`), but a
+    // stale tab with nobody writing (another device, a background tab) still wants to catch up.
+    // Only today polls; a closed day never changes underneath the reader (`feedHooks.ts`'s
+    // `isToday` precedent).
+    refetchInterval: mock || dateIso !== localDateString() ? undefined : 60_000,
   })
   return {
     data: q.data,
     isPending: q.isPending,
     error: q.error,
     refetch: () => { void q.refetch() },
+    dataUpdatedAt: q.dataUpdatedAt,
   }
 }
 

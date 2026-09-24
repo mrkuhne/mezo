@@ -116,6 +116,29 @@ class GeminiCompanionLlmPromptOrderTest {
         assertThat(sent.get(4).getText()).isEqualTo("mostani kérdés");
     }
 
+    /**
+     * mezo-renhu: a history-less smart call with a turn context must send the two instruction halves
+     * as two CONSECUTIVE leading system messages, the user's text last. GPT-5.6 caches only at
+     * message boundaries, one of which is the end of that initial system block — so material that
+     * several calls share (the hypothesis critique's weekly context) gets its own reusable boundary
+     * only when it closes that block instead of riding inside the user message.
+     */
+    @Test
+    void testCompleteSmart_shouldCloseTheLeadingSystemBlockWithTurnContext_whenHistoryIsEmpty() {
+        CapturingChatModel chatModel = new CapturingChatModel();
+        LlmCallContextHolder contextHolder = new LlmCallContextHolder();
+        GeminiCompanionLlm adapter = adapter(chatModel, contextHolder, new NoOpLlmCallRecorder());
+
+        adapter.completeSmart("RENDSZER", "KÖZÖS KONTEXTUS", List.of(), "egyedi kérdés");
+
+        List<Message> sent = chatModel.captured.get().getInstructions();
+        assertThat(sent).extracting(Message::getMessageType).containsExactly(
+                MessageType.SYSTEM, MessageType.SYSTEM, MessageType.USER);
+        assertThat(sent.get(0).getText()).isEqualTo("RENDSZER");
+        assertThat(sent.get(1).getText()).isEqualTo("KÖZÖS KONTEXTUS");
+        assertThat(sent.get(2).getText()).isEqualTo("egyedi kérdés");
+    }
+
     /** A blank volatile half reproduces the pre-split shape exactly — one system message. */
     @Test
     void testComplete_shouldSendOneSystemMessage_whenTurnContextIsBlank() {

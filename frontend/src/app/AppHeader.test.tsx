@@ -148,7 +148,7 @@ test('a nap-orb a mai nap-oldalára visz', async () => {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   renderAt('/fuel')
   await user.click(await screen.findByRole('button', { name: /^A mai napod/ }))
-  expect(screen.getByTestId('loc')).toHaveTextContent(`/me/week/napok/${localDateString()}`)
+  expect(screen.getByTestId('loc')).toHaveTextContent(`/nap/napom/${localDateString()}`)
 })
 
 // ── item 7: a bal felső sarok a „boop" szó-logót viseli (owner 2026-09-12, az új
@@ -205,9 +205,9 @@ test('a Mezo-badge a /nap/uzenetek meglátogatása és elhagyása után eltűnik
     <Routes>
       <Route path="/nap" element={<div>nap-hub</div>} />
       <Route path="/nap/uzenetek" element={<NapMezoPage />} />
-      {/* mezo-idz2: a nap-orb már a mai nap-oldalra (/me/week/napok/<ma>) visz, nem a
-          puszta /me-re — a stub-route ezt a mélyebb útvonalat kell fedje. */}
-      <Route path="/me/week/napok/:date" element={<div>me-hub</div>} />
+      {/* mezo-idz2 / mezo-yjzhw.4: a nap-orb már a mai nap-oldalra (/nap/napom/<ma>) visz,
+          nem a puszta /me-re — a stub-route ezt a mélyebb útvonalat kell fedje. */}
+      <Route path="/nap/napom/:date" element={<div>me-hub</div>} />
     </Routes>
   ))
   const msgBtn = await screen.findByRole('button', { name: /^Mezo üzenetei/ })

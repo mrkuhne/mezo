@@ -162,6 +162,9 @@ export function SportPage() {
               {volleyball ? (
                 <SportWeekView
                   schedule={volleyball}
+                  loggedTodayKinds={sport.sessions
+                    .filter((s) => s.isoDate === localDateString())
+                    .map((s) => s.sport)}
                   onLogSlot={openLog}
                 />
               ) : (
@@ -207,8 +210,11 @@ export function SportPage() {
 }
 
 // === Week view: 7-day schedule — a day with a slot is a rose glass row, a free day dashed ===
-function SportWeekView({ schedule, onEdit, onLogSlot }: {
+function SportWeekView({ schedule, loggedTodayKinds = [], onEdit, onLogSlot }: {
   schedule: SportSchedule['volleyball']
+  /** Sports already logged TODAY (mezo-i6q2b) — today's slot of such a sport swaps its
+   *  „Logold ›" for a done chip. Matched by day AND sport, like the Mai hero. */
+  loggedTodayKinds?: string[]
   onEdit?: () => void
   /** Inline "Logold ›" on today's slot — preselects that slot's sport in the log sheet. */
   onLogSlot?: (initial: SportKind) => void
@@ -262,7 +268,10 @@ function SportWeekView({ schedule, onEdit, onLogSlot }: {
                             </div>
                           )}
                         </div>
-                        {session.today && onLogSlot && (
+                        {session.today && loggedTodayKinds.includes(kind) ? (
+                          // mezo-i6q2b: today's slot once logged — a sage done chip, no CTA.
+                          <span className="spw-done"><Icon3D name="t-tick" size={16} />Kész</span>
+                        ) : session.today && onLogSlot && (
                           <button
                             type="button"
                             className="spw-logbtn"

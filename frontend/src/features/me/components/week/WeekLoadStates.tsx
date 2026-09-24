@@ -29,20 +29,3 @@ export function WeekPageError({ onRetry }: { onRetry: () => void }) {
     </div>
   )
 }
-
-/**
- * The DAY page's evaluation, still in flight (mezo-ahf5b). Its own state on purpose: with no
- * evaluation the day page falls back to the pre-jcpt surface — no dimension tiles, the
- * standalone Fuel card — which is the right answer for a FAILED evaluation and a lie for one
- * that simply has not landed yet. A closed day costs a synchronous LLM call on its first read,
- * so that window is seconds long and was read as „a nap semmit nem gyűjtött".
- */
-export function DayEvaluationSkeleton() {
-  return (
-    <div className="wkd-skelwrap" role="status" aria-label="Az értékelés készül…">
-      <div className="wkd-skel" style={{ height: 96 }} />
-      <div className="wkd-skel" style={{ height: 116 }} />
-      <div className="wkd-skel" style={{ height: 116 }} />
-    </div>
-  )
-}

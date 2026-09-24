@@ -7,6 +7,7 @@
 // `dayEvaluationHooks.ts`'s mock branch.
 import type { components } from '@/data/_client/api.gen'
 import type { DayDimensionKey } from '@/features/me/logic/weekDay'
+import { localDateString } from '@/shared/lib/dates'
 
 /** The generated wire shape — optional arrays/fields, `string`-typed enums. Use
  *  `normalizeDayEvaluation` to get a fully-populated, narrowly-typed shape instead. */
@@ -38,7 +39,7 @@ export interface NormalizedDayEvaluation {
   base: number | null
   /** The `day_review` feedback artifact id (mezo-jcpt.9) — present only on a scored day that
    *  actually has LLM prose, `null` otherwise (the backend makes that unreachable by
-   *  construction). `DayReviewCard` uses its presence, not `state`, to decide whether to mount
+   *  construction). `NapomReviewCard` uses its presence, not `state`, to decide whether to mount
    *  the feedback chips — no id, no chips. */
   reviewId: string | null
   adjustment: { delta: number; reason: string } | null
@@ -253,12 +254,17 @@ const FUTURE_SEED: DayEvaluationResponse = {
   ],
 }
 
-/** `dateIso` → one of the four named fixtures re-dated, or (any other date) the SCORED fixture
- *  re-dated — the same "any requested date gets a plausible re-dated seed" idiom `mockMeWeek`
- *  uses, so the mock day page stays functional when browsing dates outside the four named ones. */
+/** `dateIso` → one of the four named fixtures re-dated; any other date mirrors the backend's
+ *  own contract (A napom review round 1): a date after the device's today is `future`, today
+ *  itself is still OPEN (`in_progress` — the day closes overnight), and only a past day is the
+ *  scored fixture re-dated. The same "any requested date gets a plausible re-dated seed" idiom
+ *  `mockMeWeek` uses, so the mock day page stays functional when browsing any date. */
 export function mockDayEvaluation(dateIso: string): DayEvaluationResponse {
   if (dateIso === mockDayEvaluationDates.inProgress) return { ...IN_PROGRESS_SEED, date: dateIso }
   if (dateIso === mockDayEvaluationDates.thin) return { ...THIN_SEED, date: dateIso }
   if (dateIso === mockDayEvaluationDates.future) return { ...FUTURE_SEED, date: dateIso }
+  const today = localDateString()
+  if (dateIso > today) return { ...FUTURE_SEED, date: dateIso }
+  if (dateIso === today) return { ...IN_PROGRESS_SEED, date: dateIso }
   return { ...SCORED_SEED, date: dateIso }
 }

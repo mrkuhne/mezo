@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
+import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunningBlockRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportEventRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
@@ -46,6 +47,7 @@ public class WorkoutWindowQueryService {
     private final RunningBlockRepository runningBlockRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
     private final SportSessionRepository sportSessionRepository;
+    private final RunSessionLogRepository runSessionLogRepository;
     private final WorkoutService workoutService;
     private final SportSlotSkipService sportSlotSkipService;
     private final TrainProperties props;
@@ -200,32 +202,21 @@ public class WorkoutWindowQueryService {
     }
 
     /**
-     * True when {@code date} carries a SCHEDULE-derived training source (mezo-sxlj Finding 1): a
-     * gym schedule slot whose weekday matches, a sport schedule slot likewise, a dated sport EVENT
-     * on that date, or a prescribed run session in the active running block's week containing that
-     * date — the exact set the FE's {@code deriveBlocks} (buildProtocol.ts) reads to build today's
-     * training blocks. Deliberately EXCLUDES logged sessions ({@code WorkoutSessionRepository} done
-     * instances, ad-hoc {@link SportSessionRepository} rows with no matching plan) — an ad-hoc
-     * logged sport session on an otherwise schedule-free day must NOT flip
-     * {@link io.mrkuhne.mezo.feature.meal.service.FuelDayService}'s day-type kcal pick, only a
-     * planned/dated training source may. {@link #windowsFor} is untouched and keeps counting logged
-     * sessions — that is a different concern (pre/post-workout meal-role scoring).
+     * True when movement was actually LOGGED on {@code date} (mezo-u13jv, owner decision
+     * 2026-09-24): a COMPLETED gym workout instance (meso or custom — the real-load signal, not
+     * plan adherence), a logged sport session, or a logged run. This is the day-type probe behind
+     * {@link io.mrkuhne.mezo.feature.meal.service.FuelDayService}'s training/rest-day kcal pick:
+     * the plan alone never raises the day's calorie target — a planned session not yet done keeps
+     * the rest-day kcal until it is logged. An in-progress gym workout does not count yet.
+     * {@link #windowsFor} is untouched and keeps reading the plan — that is a different concern
+     * (pre/post-workout meal-role scoring looks forward at planned sessions).
      */
     @Transactional(readOnly = true)
-    public boolean hasScheduledTrainingOn(UUID userId, LocalDate date) {
-        int dow = date.getDayOfWeek().getValue() - 1;   // slot tables use 0=Mon..6=Sun
-        boolean gymScheduled = gymRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
-            .anyMatch(s -> s.getDayOfWeek() == dow);
-        boolean sportScheduled = sportRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
-            .filter(s -> s.getDayOfWeek() == dow)
-            .anyMatch(s -> !sportSlotSkipService.isSkipped(userId, dow, s.getTime(), date));
-        boolean sportEvent = !sportEventRepo
-            .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateAscTimeAsc(userId, date, date).isEmpty();
-        boolean prescribedRun = runningBlockRepository.findByCreatedByAndStatusAndDeletedFalse(userId, "active")
-            .stream().findFirst()
-            .map(block -> prescribedRunSessionsOn(block, date).findAny().isPresent())
-            .orElse(false);
-        return gymScheduled || sportScheduled || sportEvent || prescribedRun;
+    public boolean hasLoggedTrainingOn(UUID userId, LocalDate date) {
+        return !workoutSessionRepository.findDoneInstanceDates(userId, date, date).isEmpty()
+            || !sportSessionRepository.findByCreatedByAndDeletedFalseAndDateOrderByTimeAsc(userId, date).isEmpty()
+            || !runSessionLogRepository.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(userId, date, date)
+                .isEmpty();
     }
 
     /** One planned sport occurrence on the date — a weekday-matched recurring slot OR a dated one-off event. */
@@ -276,9 +267,7 @@ public class WorkoutWindowQueryService {
     /**
      * The block's prescribed run session(s) matching {@code date}'s weekday, in the block-week
      * CONTAINING that date (see {@link #addRunWindows}'s javadoc for the week-derivation rationale).
-     * Shared by {@link #addRunWindows} (builds windows) and {@link #hasScheduledTrainingOn}
-     * (existence check only) — one filter, two callers, so they can never disagree on what counts
-     * as "today's prescribed run".
+     * Used by {@link #addRunWindows} to build the day's run windows.
      */
     private Stream<RunningBlockStructure.RunPrescribedSession> prescribedRunSessionsOn(
             RunningBlockEntity block, LocalDate date) {

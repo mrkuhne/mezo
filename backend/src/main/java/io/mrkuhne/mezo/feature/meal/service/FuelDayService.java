@@ -48,12 +48,11 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>Slice 3 (mezo-sxlj): when a segment carries a day-type split ({@code trainingDayKcal} /
  * {@code restDayKcal}), the served kcal is picked at serve time by {@link DayTargetProjector} —
- * a date is a training day when it carries a SCHEDULE-derived training source
- * ({@link WorkoutWindowQueryService#hasScheduledTrainingOn}: gym schedule slots, sport schedule
- * slots, dated sport events, prescribed runs) — the same basis the FE's {@code deriveBlocks} and
- * the engine's weekly split use. An ad-hoc LOGGED session with no matching schedule/event does
- * NOT flip the day. The whole kcal delta lands in carbs (ISSN), derived at serve time and never
- * stored.
+ * a date is a training day only once movement was actually LOGGED on it
+ * ({@link WorkoutWindowQueryService#hasLoggedTrainingOn}: a completed gym workout, a logged sport
+ * session or run — mezo-u13jv). A planned session not yet done keeps the rest-day kcal; the plan
+ * alone never raises the day's calorie target. The whole kcal delta lands in carbs (ISSN), derived
+ * at serve time and never stored.
  */
 @Service
 @RequiredArgsConstructor
@@ -91,7 +90,7 @@ public class FuelDayService {
      * the Terv weekly stats (kcal avg / protein-hit days), the week-centric Fuel Napló page and the
      * Insights Weekly review (Phase-2 roadmap D′).
      *
-     * <p>Slice 3: each of the 7 days does its own {@link WorkoutWindowQueryService#hasScheduledTrainingOn}
+     * <p>Slice 3: each of the 7 days does its own {@link WorkoutWindowQueryService#hasLoggedTrainingOn}
      * lookup via {@link #targetSet} — 7 lookups per call. Acceptable single-owner cost;
      * revisit with a week-bulk query only if it ever shows up in traces.
      *
@@ -210,15 +209,15 @@ public class FuelDayService {
 
     /**
      * The shared segment → served-targets projection ({@link DayTargetProjector}, mezo-u2pd) with
-     * this service's config fallback and the SCHEDULE-derived day-type probe bound in. The probe is
-     * passed lazily because {@link WorkoutWindowQueryService#hasScheduledTrainingOn} is a DB
-     * round-trip a uniform (pre-slice-3) segment must not pay — and it is deliberately NOT
-     * {@code windowsFor}, which also counts ad-hoc LOGGED sessions: an unplanned sport session on
-     * an otherwise rest day must not flip the day-type kcal pick.
+     * this service's config fallback and the LOGGED-movement day-type probe bound in (mezo-u13jv).
+     * The probe is passed lazily because {@link WorkoutWindowQueryService#hasLoggedTrainingOn} is a
+     * DB round-trip a uniform (pre-slice-3) segment must not pay — and it is deliberately NOT
+     * {@code windowsFor}, which reads the plan: a planned session not yet done must not flip the
+     * day-type kcal pick.
      */
     private DailyTargets project(GoalPrescriptionJson.Segment seg, UUID userId, LocalDate date) {
         return DayTargetProjector.project(
-            seg, () -> workoutWindowQueryService.hasScheduledTrainingOn(userId, date), targets);
+            seg, () -> workoutWindowQueryService.hasLoggedTrainingOn(userId, date), targets);
     }
 
     /**

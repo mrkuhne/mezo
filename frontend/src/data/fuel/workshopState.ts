@@ -10,8 +10,10 @@ import {
   factsOf, lineContribution, lineNutrients, roundMacro, sumNutrients, NO_NUTRIENTS,
 } from '@/data/fuel/recipeMacros'
 import type { PickableIngredient } from '@/data/fuel/pantryPickables'
+import { mealSlotKey } from '@/features/fuel/logic/buildDayPlan'
+import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import type {
-  Nutrients, Recipe, RecipeInput, RecipeRole, WorkshopDraft, WorkshopGoal, WorkshopLine,
+  FuelMeal, Nutrients, Recipe, RecipeInput, RecipeRole, WorkshopDraft, WorkshopGoal, WorkshopLine,
 } from '@/data/types'
 
 type Macros = { kcal: number; p: number; c: number; f: number }
@@ -158,6 +160,46 @@ export function recipeToDraft(r: Recipe): WorkshopDraft {
       amount: i.amount,
       unit: i.unit,
     })),
+  }
+}
+
+/**
+ * A logged meal opened in the workshop as a NEW recipe (mezo-n9wgg). Pantry lines map 1:1; an
+ * estimate line stays an estimate (its logged totals as `est`), so the save gate makes the user
+ * swap it for a pantry item; a recipe line expands into the recipe's ingredients scaled to the
+ * logged servings — or, when that recipe is gone, survives as an estimate instead of vanishing.
+ * The same pantry item in the same unit merges into one row (first position kept).
+ */
+export function mealToDraft(meal: FuelMeal, recipes: Recipe[], pool: PickableIngredient[]): WorkshopDraft {
+  const round1 = (n: number) => Math.round(n * 10) / 10
+  const lines: WorkshopLine[] = []
+  const addPantry = (refId: string, name: string, amount: number, unit: string) => {
+    const same = lines.find(l => l.source === 'pantry' && l.refId === refId && l.unit === unit)
+    if (same) same.amount = round1(same.amount + amount)
+    else lines.push({ source: 'pantry', refId, name, amount: round1(amount), unit })
+  }
+  for (const l of meal.mealItems) {
+    const recipe = l.source === 'recipe' ? recipes.find(r => r.id === l.refId) : undefined
+    if (l.source === 'pantry') {
+      addPantry(l.refId, l.name, l.amount, l.unit)
+    } else if (recipe) {
+      const k = l.amount / Math.max(1, recipe.servings)
+      for (const i of recipe.ingredients) {
+        const name = i.name ?? pool.find(p => p.id === i.refId)?.name ?? i.refId
+        addPantry(i.refId, name, i.amount * k, i.unit)
+      }
+    } else {
+      lines.push({
+        source: 'estimate', refId: null, name: l.name, amount: l.amount, unit: l.unit, est: { ...l.contribution },
+      })
+    }
+  }
+  return {
+    name: mealDisplayName(meal) ?? 'Új recept',
+    category: mealSlotKey(meal) ?? 'snack',
+    servings: 1,
+    steps: [],
+    lines,
   }
 }
 

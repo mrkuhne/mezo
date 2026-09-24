@@ -27,7 +27,7 @@ import { useTrain } from '@/data/train/trainHooks'
 import { useRunning } from '@/data/train/runningHooks'
 import { buildDayPlan, deriveDailyBudget } from '@/features/fuel/logic/buildDayPlan'
 import { buildEnergyBreakdown } from '@/features/fuel/logic/buildEnergyBreakdown'
-import { deriveBlocks } from '@/features/fuel/logic/buildProtocol'
+import { deriveBlocks, deriveLoggedBlocks } from '@/features/fuel/logic/buildProtocol'
 import { projectStackDay } from '@/features/fuel/logic/projectStackDay'
 import { resolveDayType } from '@/features/fuel/logic/resolveDayType'
 import { ACTIVITY_SHORT, type ActivityLevel } from '@/features/me/logic/biometricFields'
@@ -76,8 +76,8 @@ export function useFuelTimeline(date: string = localDateString()) {
   const { occurrences } = useProtocol()
   const { stash } = useStack()
   const intakes = useIntakes(date)
-  const { gymSchedule, sport, sportSlotSkips } = useTrain()
-  const { activeRunningBlock } = useRunning()
+  const { gymSchedule, sport, sportSlotSkips, gymDoneDates, completedTodayWorkout } = useTrain()
+  const { activeRunningBlock, runSessions } = useRunning()
   const { settings } = useFuelSettings() // Fuel-owned meal cadence + caffeine cutoff (mezo-53su)
   const { profile } = useBiometricProfile() // NEAT band label for the energy-breakdown sheet (mezo-hobb)
   const { templates } = useSlotTemplates() // Per-day-type meal-slot templates (mezo-7102)
@@ -89,19 +89,27 @@ export function useFuelTimeline(date: string = localDateString()) {
   const bed = sleepGoal.bedTime
   const mealsPerDay = settings.mealsPerDay
 
-  // Two block lists, deliberately (mezo-rilew):
-  //   `blocks` is what the day ACTUALLY holds — the schedule reconciled with the logged sport
-  //     sessions — and it drives the meal windows and the day's activity energy (`eat`), so an
-  //     unplanned session the owner really played finally raises the calorie target instead of
-  //     burning kcal no surface ever adds back.
-  //   `plannedBlocks` is the SCHEDULE-only list and stays the day-type basis. The day type picks
-  //     the slot template and the segment's trainingDay/restDay kcal, and the backend classifies
-  //     the same date schedule-only (`WorkoutWindowQueryService.hasScheduledTrainingOn`) — driving
-  //     it off the logged sessions here would make the two surfaces serve different numbers for
-  //     the same day. `eat` answers "what did I burn", the day-type delta answers "where do I
-  //     prefer my calories": only the first one is a fact about an ad-hoc session.
+  // Three block lists, deliberately:
+  //   `blocks` is what the day holds — the schedule reconciled with the logged sport sessions
+  //     (mezo-rilew) — and it drives the meal windows, so a planned session still gets its
+  //     pre/post-workout fuel before it happens.
+  //   `plannedBlocks` is the SCHEDULE-only list; it picks the meal-slot template (meal timing).
+  //   `loggedBlocks` is the movement that actually HAPPENED (mezo-u13jv, owner decision
+  //     2026-09-24) and is the only thing that raises the calorie target: it feeds the day's
+  //     activity energy (`eat`) AND the training/rest-day kcal pick, the same rule the backend
+  //     serves (`WorkoutWindowQueryService.hasLoggedTrainingOn`). A planned session not yet done
+  //     raises nothing until it is logged.
   const plannedBlocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, sportSlotSkips)
   const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, sportSlotSkips, sport.sessions ?? [])
+  const todayIso = localDateString()
+  const loggedBlocks = deriveLoggedBlocks({
+    planned: plannedBlocks,
+    gymDone: gymDoneDates.includes(todayIso) || completedTodayWorkout != null,
+    completedGym: completedTodayWorkout,
+    sportSessions: sport.sessions ?? [],
+    runLogs: runSessions,
+    todayIso,
+  })
 
   // Day-type template (mezo-7102): today's REAL blocks resolve one of the three canonical day
   // types, which picks the matching cached template (absent → null, buildDayPlan's today-unchanged
@@ -119,8 +127,8 @@ export function useFuelTimeline(date: string = localDateString()) {
     bmr: goalResponse?.tdeeBootstrap?.bmr ?? null,
     neat: goalResponse?.tdeeBootstrap?.neat ?? null,
     weightKg,
-    blocks,
-  }, dayType !== 'rest')
+    blocks: loggedBlocks,
+  }, loggedBlocks.length > 0)
 
   // Protocol slots (mezo-vx9v Task 9): the living protocol's occurrences (Task 5), projected
   // into zoned/timed slots by the same pure `projectStackDay` the Stack page uses (Task 6/8) —
@@ -142,11 +150,11 @@ export function useFuelTimeline(date: string = localDateString()) {
   })
 
   // Dynamic-energy explanation (mezo-hobb): the shared EnergyBreakdownSheet's prop, built from the
-  // day's plan.energy + today's blocks + the current segment + the NEAT band. Null on the static path.
+  // day's plan.energy + today's LOGGED blocks (the ones the activity energy bills) + the current segment + the NEAT band. Null on the static path.
   const tb = goalResponse?.tdeeBootstrap
   const energyBreakdown = buildEnergyBreakdown({
     energy: plan.energy,
-    blocks,
+    blocks: loggedBlocks,
     weightKg,
     tdeeBootstrap: tb ? { bmr: tb.bmr, neat: tb.neat, formula: tb.formula } : null,
     segment,

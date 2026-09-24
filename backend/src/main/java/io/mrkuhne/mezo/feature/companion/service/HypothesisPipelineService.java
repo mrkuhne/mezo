@@ -194,9 +194,9 @@ public class HypothesisPipelineService {
         var sources = sourceContext(userId);
         String context = combinedContext(userId, extraContext, sources);
         if (context == null) return List.of();
-        return propose(userId, context, maxCandidates).stream().filter(this::validProposal)
+        return propose(userId, context, maxCandidates, true).stream()
                 .limit(maxCandidates)
-                .map(h -> vetted(userId, context, h, sources.evidence()))
+                .map(h -> vetted(userId, context, h, sources.evidence(), true))
                 .flatMap(Optional::stream).toList();
     }
 
@@ -231,6 +231,11 @@ public class HypothesisPipelineService {
 
     private Optional<GroundedCandidate> vetted(UUID userId, String context, Hypothesis h,
                                                Map<String, String> evidence) {
+        return vetted(userId, context, h, evidence, false);
+    }
+
+    private Optional<GroundedCandidate> vetted(UUID userId, String context, Hypothesis h,
+                                               Map<String, String> evidence, boolean strict) {
         if (!validProposal(h) || h.observation() == null || h.observation().isBlank()
                 || h.question() == null || h.question().isBlank()
                 || h.topicKey() == null || h.topicKey().isBlank()
@@ -239,7 +244,7 @@ public class HypothesisPipelineService {
             log.info("Grounded hypothesis discarded for user {}: missing question, topic or verified sources", userId);
             return Optional.empty();
         }
-        Critique critique = critique(context, h);
+        Critique critique = critique(context, h, strict);
         if (!Boolean.TRUE.equals(critique.grounded())
                 || !Boolean.FALSE.equals(critique.contradicted())
                 || !Boolean.TRUE.equals(critique.actionable())) {
@@ -464,6 +469,9 @@ public class HypothesisPipelineService {
         // Source dates remain in proposal evidence, but must not become explicit retrieval bounds:
         // the memory query analyzer otherwise silently narrows the related-memory 90-day window.
         query = query.replaceAll("\\b\\d{4}-\\d{2}-\\d{2}\\b", "").trim();
+        int queryEnd = Math.min(query.length(), properties.embedding().embedMaxChars());
+        if (queryEnd > 0 && Character.isHighSurrogate(query.charAt(queryEnd - 1))) queryEnd--;
+        query = query.substring(0, queryEnd);
         return query.isBlank() ? "" : gateway.contextFor(userId, query, true);
     }
 
@@ -558,6 +566,10 @@ public class HypothesisPipelineService {
     }
 
     private List<Hypothesis> propose(UUID userId, String context, int maxCandidates) {
+        return propose(userId, context, maxCandidates, false);
+    }
+
+    private List<Hypothesis> propose(UUID userId, String context, int maxCandidates, boolean strict) {
         String raw;
         try {
             String prompt = promptPersona.render(userId, String.format(Locale.ROOT, PROPOSE_PROMPT,
@@ -568,40 +580,93 @@ public class HypothesisPipelineService {
                     () -> companionLlm.completeSmart(prompt, context));
         } catch (Exception e) {
             log.warn("Hypothesis proposal LLM call failed for user {}", userId, e);
+            if (strict) throw previewFailure();
+            return List.of();
+        }
+        if (raw == null || raw.isBlank()) {
+            if (strict) throw previewFailure();
             return List.of();
         }
         int start = raw.indexOf('[');
         int end = raw.lastIndexOf(']');
         if (start < 0 || end <= start) {
+            if (strict) throw previewFailure();
             return List.of();
         }
+        List<Hypothesis> parsed;
         try {
-            return objectMapper.readValue(raw.substring(start, end + 1), new TypeReference<>() {});
+            parsed = objectMapper.readValue(raw.substring(start, end + 1), new TypeReference<>() {});
         } catch (Exception e) {
             log.warn("Hypothesis proposal was not parseable JSON — dropping: {}", raw, e);
+            if (strict) throw previewFailure();
             return List.of();
         }
+        // An explicit [] is a successful empty result. Broken candidate shapes are not.
+        if (strict && (parsed == null || parsed.stream().anyMatch(h -> !validProposal(h)
+                || h.observation() == null || h.observation().isBlank()
+                || h.question() == null || h.question().isBlank()
+                || h.topicKey() == null || h.topicKey().isBlank() || h.evidenceRefs().isEmpty()))) {
+            throw previewFailure();
+        }
+        return parsed == null ? List.of() : parsed;
+    }
+
+    private static SystemRuntimeErrorException previewFailure() {
+        return new SystemRuntimeErrorException(SystemMessage.error("OBSERVATION_RECOVERY_LLM_FAILED").build());
+    }
+
+    /**
+     * The weekly context every critique and revision of the night shares (mezo-renhu). It travels as
+     * the {@code turnContext}, i.e. the second leading system message, because GPT-5.6 caches only
+     * at message boundaries — the end of that leading block is one. Inside the user message, BEHIND
+     * the per-hypothesis text, it had no boundary of its own: 0 cached tokens on 45 production calls.
+     */
+    static String sharedContext(String context) {
+        return "\n\nKONTEXTUS:\n" + context;
+    }
+
+    /** The per-hypothesis half of a critique — the user message, AFTER the cacheable head. */
+    static String critiqueQuestion(Hypothesis hypothesis) {
+        return "HIPOTÉZIS: " + hypothesis.title() + "\nMECHANIZMUS: " + hypothesis.mechanism()
+                + "\nMEGFIGYELÉS: " + hypothesis.observation() + "\nKÉRDÉS: " + hypothesis.question()
+                + "\nFORRÁSOK: " + hypothesis.evidenceRefs();
+    }
+
+    /** The per-hypothesis half of a revision — the user message, AFTER the cacheable head. */
+    static String reviseQuestion(Hypothesis hypothesis, Critique critique) {
+        return "HIPOTÉZIS: " + hypothesis.title() + "\nMECHANIZMUS: " + hypothesis.mechanism()
+                + "\nKRITIKA: " + (critique.reasoning() == null ? "" : critique.reasoning());
     }
 
     private Critique critique(String context, Hypothesis hypothesis) {
-        String payload = "HIPOTÉZIS: " + hypothesis.title() + "\nMECHANIZMUS: " + hypothesis.mechanism()
-                + "\nMEGFIGYELÉS: " + hypothesis.observation() + "\nKÉRDÉS: " + hypothesis.question()
-                + "\nFORRÁSOK: " + hypothesis.evidenceRefs() + "\n\nKONTEXTUS:\n" + context;
-        String raw = llmCallContextHolder.runWith(
-                new LlmCallContext("companion_hypothesis", "critique", null, null),
-                () -> companionLlm.completeSmart(CRITIQUE_PROMPT, payload));
+        return critique(context, hypothesis, false);
+    }
+
+    private Critique critique(String context, Hypothesis hypothesis, boolean strict) {
+        String raw;
+        try {
+            raw = llmCallContextHolder.runWith(
+                    new LlmCallContext("companion_hypothesis", "critique", null, null),
+                    () -> companionLlm.completeSmart(CRITIQUE_PROMPT, sharedContext(context), List.of(),
+                            critiqueQuestion(hypothesis)));
+        } catch (RuntimeException failure) {
+            if (strict) throw previewFailure();
+            throw failure;
+        }
         Critique parsed = parseObject(raw, new TypeReference<Critique>() {});
+        if (strict && (parsed == null || parsed.grounded() == null || parsed.contradicted() == null
+                || parsed.actionable() == null || !validScore(parsed.statistical())
+                || !validScore(parsed.confounders()) || !validScore(parsed.l3align())
+                || !validScore(parsed.actionability()))) throw previewFailure();
         // a broken critique is a ZERO critique — an unjudgeable hypothesis never survives
         return parsed != null ? parsed : new Critique(0.0, 0.0, 0.0, 0.0, null, false, true, false);
     }
 
     private Hypothesis revise(String context, Hypothesis hypothesis, Critique critique) {
-        String payload = "HIPOTÉZIS: " + hypothesis.title() + "\nMECHANIZMUS: " + hypothesis.mechanism()
-                + "\nKRITIKA: " + (critique.reasoning() == null ? "" : critique.reasoning())
-                + "\n\nKONTEXTUS:\n" + context;
         String raw = llmCallContextHolder.runWith(
                 new LlmCallContext("companion_hypothesis", "revise", null, null),
-                () -> companionLlm.completeSmart(REVISE_PROMPT, payload));
+                () -> companionLlm.completeSmart(REVISE_PROMPT, sharedContext(context), List.of(),
+                        reviseQuestion(hypothesis, critique)));
         Hypothesis revised = parseObject(raw, new TypeReference<Hypothesis>() {});
         // A revision is a REWORDING: the test — and therefore the identity — is the original's.
         // The S4 revision fields ride along untouched: this stage never invents one, and must not
@@ -612,7 +677,12 @@ public class HypothesisPipelineService {
                 hypothesis.observation(), hypothesis.question(), hypothesis.evidenceRefs(), hypothesis.topicKey());
     }
 
+    private static boolean validScore(Double score) {
+        return score != null && Double.isFinite(score) && score >= 0 && score <= 1;
+    }
+
     private <T> T parseObject(String raw, TypeReference<T> type) {
+        if (raw == null || raw.isBlank()) return null;
         int start = raw.indexOf('{');
         int end = raw.lastIndexOf('}');
         if (start < 0 || end <= start) {

@@ -145,6 +145,42 @@ test('real mode: today\'s slot shows an inline Logold chip that preselects the s
   expect(await screen.findByText('Sport log · TRX')).toBeInTheDocument()
 })
 
+// mezo-i6q2b: once today's slot is logged, its inline CTA gives way to a done chip — the
+// match is by DAY and SPORT (the Mai rule), so a different sport logged today leaves it open.
+describe('real mode: today\'s slot done-state', () => {
+  const todayIso = () => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }
+  const withTodayTrxSlot = (loggedSport: string) => {
+    const todayIdx = (new Date().getDay() + 6) % 7
+    server.use(
+      http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([
+        { id: 'sl-today', dayOfWeek: todayIdx, time: '18:00', durationMin: 60, kind: 'training', sport: 'trx', location: 'Life1 Corvin' },
+      ])),
+      http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([
+        { id: 'd1f3a0e2-0000-4000-8000-000000000099', sport: loggedSport, date: todayIso(), time: '18:05', duration: 60, rpe: 7 },
+      ])),
+    )
+  }
+
+  it('a slot logged today shows Kész instead of Logold', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    withTodayTrxSlot('trx')
+    renderView()
+    expect(await screen.findByText('Kész')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Logold ›' })).not.toBeInTheDocument()
+  })
+
+  it('a different sport logged today leaves the slot open', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    withTodayTrxSlot('volleyball')
+    renderView()
+    expect(await screen.findByRole('button', { name: 'Logold ›' })).toBeInTheDocument()
+    expect(screen.queryByText('Kész')).not.toBeInTheDocument()
+  })
+})
+
 test('switching to Cross-load shows the read tool chip', async () => {
   renderView()
   await userEvent.click(screen.getByRole('button', { name: 'Cross-load' }))

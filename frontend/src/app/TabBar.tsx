@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { Boop, ClayIcon } from '@/shared/ui/clay'
@@ -17,9 +17,20 @@ import {
 // FOUR contextual tabs. The active domain is the first path segment; the active tab is
 // the longest-matching-prefix among the domain's four routes. Tapping the switch mark
 // opens the domain-switcher dialog. Replaces the always-flat five-domain bar (d20.1.1).
-export function TabBar() {
+export interface TabBarProps {
+  /**
+   * Per-tab-route dot flags (A napom, mezo-yjzhw.4): `dots['/nap/napom']` true renders a
+   * small dot on that tab, telling the reader a fresh morning review is waiting without
+   * making them open the page first. Keyed by the tab's own route, not the domain, so it
+   * composes with any future per-tab signal without a shape change.
+   */
+  dots?: Partial<Record<string, boolean>>
+}
+
+export function TabBar({ dots }: TabBarProps = {}) {
   const location = useLocation()
   const [switcherOpen, setSwitcherOpen] = useState(false)
+  const dotIdBase = useId()
 
   // Last-tab memory: record every navigation that lands on one of a domain's tab routes.
   useEffect(() => {
@@ -52,20 +63,30 @@ export function TabBar() {
         >
           <span className="tab-ico"><Boop domain={domain.id} size={44} alive /></span>
         </button>
-        {domain.tabs.map((tab) => {
+        {domain.tabs.map((tab, i) => {
           const active = tab.route === activeRoute
+          // The dot is decoration; its meaning rides the link's DESCRIPTION (a visually-hidden
+          // sibling), so the tab's accessible NAME stays exactly its label.
+          const dotId = dots?.[tab.route] ? `${dotIdBase}-dot-${i}` : undefined
           return (
             <Link
               key={tab.route}
               to={tab.route}
               className={cn('tab-item', active && 'active')}
               aria-current={active ? 'page' : undefined}
+              aria-describedby={dotId}
             >
-              <span className="tab-ico"><ClayIcon name={tab.icon} size={27} /></span>
+              <span className="tab-ico">
+                {dotId && <i className="tb-dot" aria-hidden="true" />}
+                <ClayIcon name={tab.icon} size={27} />
+              </span>
               <span>{tab.label}</span>
             </Link>
           )
         })}
+        {domain.tabs.map((tab, i) => dots?.[tab.route] && (
+          <span key={`dot-${tab.route}`} id={`${dotIdBase}-dot-${i}`} className="sr-only">kész a tegnapi értékelés</span>
+        ))}
       </nav>
       {switcherOpen && (
         <DomainSwitcher currentDomainId={domainId} onClose={() => setSwitcherOpen(false)} />

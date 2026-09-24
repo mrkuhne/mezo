@@ -12,7 +12,7 @@
 // this module (via `weekHub.ts`'s `weekHubState`, which is this file's
 // `dayState` under a name its callers already used) exactly like the mosaic
 // and the day page do. The backend's own state names (`empty`/`thin`) win
-// over the hub's old `nodata`/`learning`, because `WeekDayPage` already reads
+// over the hub's old `nodata`/`learning`, because the day page (now A napom) reads
 // them off the wire (`evaluation?.state`) — one vocabulary, not two:
 //
 //   scored  — the Mezo scored the day
@@ -33,9 +33,9 @@ export type WeekDayState = 'scored' | 'thin' | 'empty' | 'future'
 // ── A napi motor hat dimenziója — EGY lista a heti mozaiknak ÉS a nap-oldalnak ────────────────
 // mezo-jcpt.5 óta a `MeWeekDay.subscores` wire-alakja ugyanez a hat kulcs, ezért a korábbi
 // négyes `SUBSCORES` lista megszűnt: az oka (a szűkebb heti wire-alak) elmúlt.
-// A `barClass` mindkét felületen ugyanaz az `is-<key>` név, de KÉT KÜLÖN, scope-olt CSS-családot
-// címez (`.dayev-dim.is-*` a nap-oldalon, `.wkd-sparks i.is-*` a heti csempén) — a két szabálycsalád
-// most már azonos szemantikát kap, de egyiket sem szabad bare szelektorrá oldani.
+// A `barClass` a heti csempe `is-<key>` neve (`.wkd-sparks i.is-*`, scope-olva — sosem bare
+// szelektor). A napi oldal (A napom, mezo-yjzhw.4) ugyanezt a hat kulcsot a saját `--dv-*`
+// színeivel rajzolja, nem ezzel az osztállyal.
 const DAY_DIMENSION_KEYS = ['nutrition', 'quality', 'training', 'sleep', 'logging', 'rhythm'] as const
 export type DayDimensionKey = (typeof DAY_DIMENSION_KEYS)[number]
 
