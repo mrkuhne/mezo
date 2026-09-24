@@ -525,6 +525,49 @@ test('real mode: only working sets reach the wire, each with its RIR', async () 
   expect(bodies[0].targetWeightKg).toBe(105) // the WORKING prescription snapshot, not the ramp's
 })
 
+test('real mode: a swapped weight logs the adjusted target snapshot (mezo-l95v4)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    {
+      ...REAL_TODAY,
+      exercises: [
+        {
+          ...REAL_TODAY.exercises[0],
+          warmupSets: 1, workingSets: 1, repMin: 8, repMax: 10,
+          prescribedSets: [
+            { kind: 'warmup', targetWeightKg: 52.5, targetReps: 10, targetRIR: null },
+            { kind: 'working', targetWeightKg: 105, targetReps: 10, targetRIR: 1 },
+          ],
+        },
+      ],
+    },
+    calls,
+  )
+  const bodies: Record<string, unknown>[] = []
+  server.use(
+    http.post(`${API_BASE}/api/train/workouts/:id/sets`, async ({ request }) => {
+      const body = (await request.json()) as Record<string, unknown>
+      bodies.push(body)
+      return HttpResponse.json({ id: 'st-' + body.setIndex, exerciseId: body.exerciseId, setIndex: body.setIndex }, { status: 201 })
+    }),
+  )
+  const user = userEvent.setup()
+  setup()
+  await enterList()
+  await waitFor(() => expect(calls).toContain('start:d-1'))
+  const kg = kgInput(EX1)
+  await user.clear(kg)
+  await user.type(kg, '100')
+  await user.click(submitOf(EX1))
+  await waitFor(() => expect(bodies).toHaveLength(1))
+  // 105 × 10 @ RIR 1 → 100 kg: rtf 11 → e1rm 143,5 → 13,05 − 1 → 12.
+  expect(bodies[0].weightKg).toBe(100)
+  expect(bodies[0].reps).toBe(12)
+  expect(bodies[0].targetWeightKg).toBe(100)
+  expect(bodies[0].targetReps).toBe(12)
+})
+
 // ---- real medals (mezo-wp6n): replaces the scripted 105 kg demo toast ----
 
 test('mock mode: logging a set that beats the mock lastWeek fires the RECORD medal toast', async () => {
