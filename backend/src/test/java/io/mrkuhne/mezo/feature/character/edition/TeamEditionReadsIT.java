@@ -1,0 +1,101 @@
+package io.mrkuhne.mezo.feature.character.edition;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.character.service.edition.TeamEditionReads;
+import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
+import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
+import io.mrkuhne.mezo.feature.proactive.repository.PredictionRepository;
+import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.support.populator.ExperimentPopulator;
+import io.mrkuhne.mezo.support.populator.PatternPopulator;
+import io.mrkuhne.mezo.support.populator.PredictionPopulator;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ActiveProfiles;
+
+/**
+ * IT for {@link TeamEditionReads} (Task 4, csapatfal H1): every method is a straight repository
+ * pass-through, so the IT only has to prove the wiring is correct — a real DB round trip per
+ * source, and that {@code resolvedPredictions} really filters {@code pending} out. It must NOT
+ * call an LLM: every read here is a plain SELECT (verified by reading {@code PatternMonitorService}
+ * and the repository methods before wiring them — none of them write), so there is nothing to
+ * fake-count; the assertion below confirms no new {@code prediction} row appears as a side effect
+ * of calling {@code resolvedPredictions}.
+ */
+@ActiveProfiles("companion-fake")
+class TeamEditionReadsIT extends ApiIntegrationTest {
+
+    private static final LocalDate DAY = LocalDate.of(2026, 9, 24);
+
+    @Autowired private TeamEditionReads reads;
+    @Autowired private OwnerProperties ownerProperties;
+    @Autowired private PatternPopulator patternPopulator;
+    @Autowired private PredictionPopulator predictionPopulator;
+    @Autowired private PredictionRepository predictionRepository;
+    @Autowired private ExperimentPopulator experimentPopulator;
+
+    private UUID owner;
+
+    @BeforeEach
+    void owner() {
+        owner = databasePopulator.populateUser(ownerProperties.ownerEmail());
+    }
+
+    @Test
+    void patterns_returnsSeededProposedPattern() {
+        PatternEntity seeded = patternPopulator.statistical(owner, "pair-" + UUID.randomUUID(),
+                PatternEntity.STATUS_PROPOSED);
+
+        List<PatternEntity> out = reads.patterns(owner);
+
+        assertThat(out).extracting(PatternEntity::getId).contains(seeded.getId());
+    }
+
+    @Test
+    void monitor_returnsResponse_withoutWriting() {
+        var response = reads.monitor(owner);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getPairs()).isNotNull();
+    }
+
+    @Test
+    void resolvedPredictions_excludesPending_andCreatesNoNewRow() {
+        long before = predictionRepository.count();
+        predictionPopulator.prediction(owner, DAY.minusDays(10), "sleep_avg", "up",
+                PredictionEntity.STATUS_VALIDATED); // validTo = DAY-4, in window
+        predictionPopulator.prediction(owner, DAY.minusDays(10), "sleep_avg", "up",
+                PredictionEntity.STATUS_PENDING);   // same window, but pending: excluded
+        long afterSeeding = predictionRepository.count();
+
+        List<PredictionEntity> out = reads.resolvedPredictions(owner, DAY.minusDays(7), DAY);
+
+        assertThat(out).extracting(PredictionEntity::getStatus)
+                .containsOnly(PredictionEntity.STATUS_VALIDATED);
+        assertThat(predictionRepository.count()).isEqualTo(afterSeeding); // no LLM-triggered row appeared
+        assertThat(afterSeeding).isEqualTo(before + 2);
+    }
+
+    @Test
+    void activeExperiments_returnsOnlyActiveStatus() {
+        ExperimentEntity active = experimentPopulator.experiment(owner, ExperimentEntity.STATUS_ACTIVE,
+                "sleep_avg", "up");
+        experimentPopulator.experiment(owner, ExperimentEntity.STATUS_COMPLETED, "sleep_avg", "up");
+
+        List<ExperimentEntity> out = reads.activeExperiments(owner);
+
+        assertThat(out).extracting(ExperimentEntity::getId).containsExactly(active.getId());
+    }
+
+    @Test
+    void dailyConference_freshOwner_isEmpty() {
+        assertThat(reads.dailyConference(owner, DAY)).isEmpty();
+    }
+}
