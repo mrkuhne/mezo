@@ -5,9 +5,13 @@
 // `H K Sz Cs P Sz V` + direction word. Color is ALWAYS sage
 // (improvement) or amber (not) — never red/error (handoff §2;
 // the prototype's own `.deltap.up` is amber, not red).
+// Üveg (mezo-me75u.6): a glass sky card — lit delta pill (sage/amber), glowing
+// sparkline, flat day rows, the diagnose ask a lit lavender flat button with a
+// t-score icon (was „✦"). CSS: `── uveg en suly (`.
 // ============================================================
 import { useNavigate } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 import { cn } from '@/shared/lib/cn'
 import { huMonthDay, huMonthDayDow } from '@/shared/lib/dates'
 import type { GoalKind } from '@/data/types'
@@ -68,7 +72,7 @@ export function WeeklyWeightCard({ week, dayRows, expanded, onToggle, goalKind, 
   }
 
   return (
-    <div className="wt-week rise" style={delayMs !== undefined ? ({ '--d': `${delayMs}ms` } as React.CSSProperties) : undefined}>
+    <div className="wt-week glass rise" style={delayMs !== undefined ? ({ '--d': `${delayMs}ms` } as React.CSSProperties) : undefined}>
       <button onClick={onToggle} aria-expanded={expanded} className="wt-week-toggle">
         <span className="wt-dl">{rangeLabel(week.startIso, week.endIso)}</span>
         <span className="row" style={{ gap: 8 }}>
@@ -80,19 +84,19 @@ export function WeeklyWeightCard({ week, dayRows, expanded, onToggle, goalKind, 
       </button>
 
       <div className="row" style={{ gap: 8, alignItems: 'baseline', marginTop: 8 }}>
-        <span style={{ fontFamily: 'var(--ff-display)', fontSize: 26, fontWeight: 600, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{week.avg.toFixed(1)}</span>
-        <span style={{ fontSize: 11, color: 'var(--mz-ink-mut)' }}>kg átlag · {week.count} bejegyzés · min {week.low}</span>
+        <span className="wt-avg">{week.avg.toFixed(1)}</span>
+        <span className="wt-avgsub">kg átlag · {week.count} bejegyzés · min {week.low}</span>
       </div>
 
-      <svg viewBox="0 0 300 34" width="100%" height="34" aria-hidden="true" style={{ display: 'block', marginTop: 8 }}>
+      <svg viewBox="0 0 300 34" width="100%" height="34" aria-hidden="true" style={{ display: 'block', marginTop: 8, overflow: 'visible' }}>
         <defs>
           <linearGradient id={`wwc-${week.startIso}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--lav)" stopOpacity="0.22" />
-            <stop offset="100%" stopColor="var(--lav)" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--dv-sky)" stopOpacity="0.26" />
+            <stop offset="100%" stopColor="var(--dv-sky)" stopOpacity="0" />
           </linearGradient>
         </defs>
         <path d={sp.area} fill={`url(#wwc-${week.startIso})`} />
-        <path d={sp.line} fill="none" stroke="var(--lav-deep)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" opacity="0.9" />
+        <path className="wt-spark" d={sp.line} fill="none" stroke="var(--dv-sky)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
       </svg>
       <div className="wt-days">
         <span>H K Sz Cs P Sz V</span>
@@ -106,12 +110,12 @@ export function WeeklyWeightCard({ week, dayRows, expanded, onToggle, goalKind, 
             const good = !flat && isImprovement(r.dod!, goalKind)
             return (
               <div key={r.iso} className="wt-dayrow">
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{huMonthDayDow(r.iso)}</span>
+                <span className="wt-dayname">{huMonthDayDow(r.iso)}</span>
                 <span className="row" style={{ gap: 6, alignItems: 'baseline' }}>
-                  <b style={{ fontFamily: 'var(--ff-display)', fontSize: 16, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{r.value}</b>
-                  <span style={{ fontSize: 11, color: 'var(--mz-ink-mut)' }}>kg</span>
+                  <b className="wt-dayval">{r.value}</b>
+                  <span className="wt-dayunit">kg</span>
                   {r.dod !== null && (
-                    <span className={cn('wt-dod', !flat && !good && 'is-up')} style={flat ? { color: 'var(--mz-ink-mut)' } : undefined}>
+                    <span className={cn('wt-dod', !flat && !good && 'is-up', flat && 'is-flat')}>
                       {fmtSigned(r.dod)}
                     </span>
                   )}
@@ -123,18 +127,19 @@ export function WeeklyWeightCard({ week, dayRows, expanded, onToggle, goalKind, 
       )}
 
       <div className="mzp-decrow" style={{ marginTop: 10 }}>
-        <button type="button" className="mzp-cta" disabled={!live || busy} onClick={onDiagnose}>
-          {generating ? '… a hét adatait olvasom' : '✦ Mi történt ezen a héten?'}
+        <button type="button" className="wt-ask" data-ai="diagnosis" disabled={!live || busy} onClick={onDiagnose}>
+          <Icon3D name="t-score" size={22} />
+          <span>{generating ? '… a hét adatait olvasom' : 'Mi történt ezen a héten?'}</span>
         </button>
       </div>
       {error === 'insufficientWeighins' && (
-        <p style={{ fontSize: 10.5, color: 'var(--mz-ink-soft)', marginTop: 4 }}>{INSUFFICIENT_COPY}</p>
+        <p className="wt-asknote">{INSUFFICIENT_COPY}</p>
       )}
       {error === 'insufficientData' && (
-        <p style={{ fontSize: 10.5, color: 'var(--mz-ink-soft)', marginTop: 4 }}>{INSUFFICIENT_DATA_COPY}</p>
+        <p className="wt-asknote">{INSUFFICIENT_DATA_COPY}</p>
       )}
       {!live && (
-        <p style={{ fontSize: 9, textAlign: 'center', color: 'var(--mz-ink-mut)', marginTop: 4 }}>
+        <p className="wt-askdemo">
           demo — a kérdezés az élő appban fut
         </p>
       )}

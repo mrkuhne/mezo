@@ -107,16 +107,24 @@ test('the identity hero carries the XP ring, the name, the title chip and the Lv
   const ring = await screen.findByRole('img', { name: /Szint 12/ })
   // in-level XP, not total: 60 / 520 ≈ 12%
   expect(ring).toHaveStyle({ '--xp': '12' })
-  expect(screen.getByText('Lv 12')).toBeInTheDocument()
+  // Üveg (mezo-me75u.6): the XP ring is a glowing svg ring — the progress arc carries the
+  // in-level share — and the Lv pill sits on it as well as in the flat stat row
+  expect(ring.querySelector('.uv-ring-prog')?.getAttribute('stroke-dasharray')).toBe('12 100')
+  expect(ring.querySelector('.enh-lv')).toHaveTextContent('Lv 12')
+  expect(document.querySelector('.enh-idstats .enh-flat.is-lv')).toHaveTextContent('Lv 12')
   expect(screen.getByText('3 140 XP')).toBeInTheDocument()
-  // F7.4: the 🔥/🪙 emojis handed over to the clay flame/coin symbols
+  // F7.4 → Üveg (mezo-me75u.6): the streak/coin glyphs are the Titanium bolt and coin symbols
   const streak = screen.getByRole('button', { name: 'Sorozat részletei' })
   expect(streak).toHaveTextContent('6 nap')
-  expect(streak.querySelector('use')?.getAttribute('href')).toBe('#i-lang')
+  expect(streak.querySelector('use')?.getAttribute('href')).toBe('#t-bolt')
   const coins = screen.getByRole('button', { name: 'Érme — címek' })
   expect(coins).toHaveTextContent('240')
-  expect(coins.querySelector('use')?.getAttribute('href')).toBe('#i-erme')
+  expect(coins.querySelector('use')?.getAttribute('href')).toBe('#t-coin')
   expect(document.querySelector('.enh-titlech')).not.toBeNull()
+  // the hero is frameless (a halo, never a card) and keeps the Kalauz anchor
+  const hero = document.querySelector('[data-kalauz-anchor="me-idhero"]')
+  expect(hero).toHaveClass('uv-halo')
+  expect(hero).not.toHaveClass('glass')
 })
 
 test('the bio line opens the canonical biometric settings editor', async () => {
@@ -140,6 +148,11 @@ test('a hero-kártya az életcélokat összegzi és a Célok hubra visz (mezo-ii
   renderHub()
   const card = await screen.findByRole('button', { name: 'Célok · összegzés' })
   expect(card).toBeInTheDocument()
+  // Üveg (mezo-me75u.6): one coral glass; the three direction cells stay flat inside it
+  expect(card).toHaveClass('glass')
+  expect(card.style.getPropertyValue('--c')).toBe('var(--dv-coral)')
+  expect(card.querySelector('use')?.getAttribute('href')).toBe('#t-ring')
+  expect(card.querySelectorAll('.mz-mcells .glass')).toHaveLength(0)
   fireEvent.click(card)
   expect(screen.getByText('CELOK HUB')).toBeInTheDocument()
 })
@@ -161,6 +174,16 @@ test('renders the six small tiles plus the wide Rutin tile, each opening its own
     ['Rutin', '/me/rutin'],
   ]
   for (const [label] of TILES) expect(await screen.findByRole('button', { name: label })).toBeInTheDocument()
+  // Üveg (mezo-me75u.6): every tile is glass with its Titanium 3D icon
+  const ART: [string, string][] = [
+    ['Célok', '#t-ring'], ['Súly', '#t-weight'], ['Alvás', '#t-sleep'], ['Growth', '#t-up'],
+    ['Napló', '#t-journal'], ['Emberek', '#t-people'], ['Rutin', '#t-chain'],
+  ]
+  for (const [label, href] of ART) {
+    const tile = screen.getByRole('button', { name: label })
+    expect(tile).toHaveClass('glass')
+    expect(tile.querySelector('.mz-spotwrap use')?.getAttribute('href')).toBe(href)
+  }
   await userEvent.click(screen.getByRole('button', { name: 'Súly' }))
   expect(screen.getByTestId('loc')).toHaveTextContent('/me/weight')
 })
@@ -227,7 +250,7 @@ test('a beállítások közös fejléc-bejárata mellett nincs helyi csempe', ()
 
 test('the title chip deep-links to the Growth awards tab', async () => {
   renderHub()
-  await screen.findByText('Lv 12')
+  await screen.findByText('3 140 XP')
   const chip = document.querySelector<HTMLButtonElement>('button.enh-titlech')
   expect(chip).not.toBeNull()
   await userEvent.click(chip!)
@@ -279,6 +302,10 @@ test('aktív életcél NÉLKÜL is ott a Célok csempe — a park-csapda ellen (
   // a hero összegző kártyája joggal hiányzik (nincs mit összegezni), a csempe viszont áll
   const tile = await screen.findByRole('button', { name: 'Célok' })
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Célok · összegzés' })).toBeNull())
+  // the ＋ Új cél door is free space: dashed, never glass (bible §3 rank 4)
+  const door = await screen.findByRole('button', { name: '＋ Új cél' })
+  expect(door).toHaveClass('uv-empty')
+  expect(door).not.toHaveClass('glass')
   fireEvent.click(tile)
   expect(screen.getByText('CELOK HUB')).toBeInTheDocument()
   vi.unstubAllEnvs()

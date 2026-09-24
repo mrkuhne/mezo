@@ -21951,25 +21951,2228 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* ── /uveg edzes2 het ── */
 
 /* ── uveg en hub (mezo-me75u.6) ── /me: identity hero, goal card, the tile mosaic ── */
+/* Ranking (bible §3.4, prototype uveg-en.html#en): the identity hero is THE loud thing — no card,
+   a frameless rose→gold halo, the XP ring glowing around the monogram, a lit Lv pill, a lit-gold
+   flat title chip, flat stat pills with 3D icons. The goal card is ONE coral glass with flat
+   dimension chips and three lit mini-cells inside; its empty door is dashed. Every mosaic tile is
+   glass in its own accent. Everything is scoped to `.enh-hub` — `.mz-tile`/`.mz-mcells`/
+   `.lg-goalchip` serve other surfaces (U2 rule 13). */
+.enh-hub { --c: var(--dv-rose); }
+
+/* the identity hero: frameless halo (kit .uv-halo), clipped at 320px (U2 rule 12) */
+.enh-hub .enh-idhero.uv-halo {
+  --c: var(--dv-rose); --c2: var(--dv-amber);
+  overflow-x: clip; gap: 0; padding: 8px 20px 6px;
+}
+.enh-hub .enh-idhero.uv-halo::before { top: 40%; width: 360px; }
+.enh-hub .enh-idring {
+  position: relative; width: 128px; height: 128px; background: none;
+}
+.enh-hub .enh-idring svg {
+  position: absolute; inset: 0; width: 128px; height: 128px; overflow: visible; transform: rotate(-90deg);
+}
+.enh-hub .enh-idring .uv-ring-track, .enh-hub .enh-idring .uv-ring-prog { stroke-width: 6; --c: var(--dv-rose); }
+.enh-hub .enh-idring i {
+  position: absolute; inset: 14px; width: auto; height: auto; border-radius: 50%;
+  display: grid; place-items: center; font-style: normal;
+  font-family: var(--ff-display); font-size: 44px; font-weight: 300; letter-spacing: -2px;
+  color: var(--text-primary);
+  background: radial-gradient(circle at 35% 28%, #3A332D, color-mix(in srgb, var(--dv-rose) 16%, #1E1B18));
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -10px 18px -10px color-mix(in srgb, var(--dv-rose) 70%, transparent);
+}
+.enh-hub .enh-lv {
+  position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%);
+  padding: 3px 10px; border-radius: 999px; white-space: nowrap;
+  font-size: 11px; font-weight: 700; color: var(--text-inverse); background: var(--dv-rose);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--dv-rose) 60%, transparent), 0 0 0 2px var(--canvas);
+}
+.enh-hub .enh-nm {
+  margin-top: 16px; font-size: 28px; font-weight: 600; letter-spacing: -0.8px; color: var(--text-primary);
+  max-width: 100%; overflow-wrap: anywhere;
+}
+/* the title chip: lit gold, FLAT (a chip, never glass) */
+.enh-hub .enh-titlech, .enh-hub .enh-titlech.is-none {
+  margin-top: 6px; display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%;
+  padding: 5px 12px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none;
+  color: color-mix(in srgb, var(--dv-amber) 72%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-amber) 8%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 30%, transparent);
+}
+.enh-hub .enh-titlech.is-none { color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.enh-hub .enh-titlech .t-ico { width: 18px; height: 18px; }
+/* the stat row: flat pills, wrapping (U2 rule 14) */
+.enh-hub .enh-idstats {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 12px;
+  font-size: 12px; font-weight: 600; color: var(--text-secondary);
+}
+.enh-hub .enh-idstats .enh-flat, .enh-hub .enh-idstats button.enh-idstat.enh-flat {
+  display: inline-flex; align-items: center; gap: 6px; min-width: 0;
+  padding: 6px 11px; border-radius: 999px; white-space: nowrap;
+  font: inherit; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.enh-hub .enh-idstats .enh-flat.is-lv {
+  color: color-mix(in srgb, var(--dv-rose) 78%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-rose) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-rose) 30%, transparent);
+}
+.enh-hub .enh-idstats .t-ico { width: 18px; height: 18px; }
+.enh-hub .enh-bio { margin-top: 4px; font-size: 12.5px; color: var(--text-secondary); }
+
+/* the goal card: ONE coral glass; restate the body over the old skin (U2 rule 11) */
+.enh-hub .enh-goalcard.glass {
+  --c: var(--dv-coral);
+  border: 0; border-radius: 22px; padding: 14px 15px; margin-top: 6px;
+  color: var(--text-primary);
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.enh-hub .enh-goalhead { gap: 10px; }
+.enh-hub .enh-goalttl { flex: 1; min-width: 0; font-size: 15.5px; font-weight: 600; letter-spacing: -0.3px; }
+.enh-hub .enh-goalhead .enh-stch {
+  font-size: 11px; font-weight: 600; letter-spacing: 0; border-radius: 999px; padding: 4px 9px;
+  color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--c) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent);
+}
+/* the dimension chips: flat, in their own dimension colour */
+.enh-hub .enh-lgdims { gap: 6px; margin: 10px 0 0; }
+.enh-hub .enh-lgdims .lg-goalchip {
+  min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 4px 9px; gap: 5px; font-size: 11px; font-weight: 600;
+  color: color-mix(in srgb, var(--dc) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--dc) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dc) 30%, transparent);
+}
+.enh-hub .enh-lgdims .lg-goalchip i { box-shadow: 0 0 6px var(--dc); }
+/* the three mini-cells: lit flat cells (never glass inside glass, U1 rule 5) */
+.enh-hub .enh-goalcard .mz-mcells { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 5px; margin-top: 12px; }
+.enh-hub .enh-goalcard .mz-mcells span {
+  padding: 5px 0 4px; border-radius: 10px; color: var(--text-secondary);
+  background: color-mix(in srgb, var(--c) 10%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 28%, transparent);
+}
+.enh-hub .enh-goalcard .mz-mcells .mz-c-sage  { --c: var(--dv-sage); }
+.enh-hub .enh-goalcard .mz-mcells .mz-c-lav   { --c: var(--dv-lav); }
+.enh-hub .enh-goalcard .mz-mcells .mz-c-coral { --c: var(--dv-coral); }
+.enh-hub .enh-goalcard .mz-mcells b { font-size: 14px; font-weight: 600; color: color-mix(in srgb, var(--c) 85%, var(--text-primary)); }
+.enh-hub .enh-goalcard .mz-mcells small {
+  font-size: 9px; font-weight: 500; letter-spacing: 0; text-transform: none; opacity: 1; color: var(--text-muted);
+}
+/* no active goal: the ＋ Új cél door is free space — dashed, no glass (bible §3 rank 4) */
+.enh-hub .enh-newgoal.uv-empty {
+  --c: var(--dv-coral); margin-top: 6px; border-radius: 20px;
+  border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent);
+  background: rgba(245, 239, 230, 0.025); box-shadow: none;
+  font-size: 15px; font-weight: 600; color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+}
+
+/* the mosaic: every tile is glass in its own accent (--c on the tile itself, U1 rule 4) */
+.enh-hub .mz-mosaic { gap: 10px; }
+.enh-hub .enh-t-celok   { --c: var(--dv-coral); --i: 2; }
+.enh-hub .enh-t-suly    { --c: var(--dv-sky);   --i: 3; }
+.enh-hub .enh-t-alvas   { --c: var(--dv-lav);   --i: 4; }
+.enh-hub .enh-t-growth  { --c: var(--dv-lav);   --i: 5; }
+.enh-hub .enh-t-naplo   { --c: var(--text-secondary); --i: 6; }
+.enh-hub .enh-t-emberek { --c: var(--dv-rose);  --i: 7; }
+.enh-hub .enh-t-rutin   { --c: var(--dv-amber); --i: 8; }
+.enh-hub .mz-tile.enh-tile.glass {
+  border: 0; border-radius: 20px; padding: 13px 13px 12px; min-height: 128px; gap: 4px;
+  align-items: flex-start; text-align: left; color: var(--text-primary);
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.enh-hub .enh-tile .mz-spotwrap { order: -1; flex: none; padding: 0; margin-bottom: auto; place-items: start; }
+.enh-hub .enh-tile .mz-tile-top { margin-top: 8px; }
+.enh-hub .enh-tile .mz-eyebrow {
+  font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px;
+  color: color-mix(in srgb, var(--c) 70%, var(--text-primary));
+}
+.enh-hub .enh-tile .mz-tile-line {
+  text-align: left; font-size: 14px; font-weight: 600; letter-spacing: -0.2px; line-height: 1.3;
+  color: var(--text-primary); overflow-wrap: anywhere;
+}
+/* Rutin: the wide row tile */
+.enh-hub .mz-tile.enh-tile.mz-tile-row.glass { flex-direction: row; align-items: center; gap: 12px; min-height: 0; }
+.enh-hub .enh-tile.mz-tile-row .mz-spotwrap { order: 0; margin: 0; }
+.enh-hub .enh-tile.mz-tile-row .mz-tile-top { margin-top: 0; }
+.enh-hub .enh-tile.mz-tile-row .mz-tile-line { margin-top: 2px; font-size: 14px; }
+.enh-hub .enh-tile.mz-tile-row .mz-tile-line small {
+  display: block; margin: 2px 0 0; font-size: 10.5px; font-weight: 500; color: var(--text-muted);
+}
+.enh-hub .enh-tile.mz-tile-row .mz-chev { font-size: 20px; color: var(--text-muted); }
+.enh-hub .enh-tile:focus-visible, .enh-hub .enh-goalcard:focus-visible, .enh-hub .enh-newgoal:focus-visible {
+  outline: 2px solid var(--c); outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes enh-xp-fill { from { stroke-dasharray: 0 100; } }
+  .enh-hub .enh-xpprog { animation: enh-xp-fill 1.1s var(--uv-ease) 0.2s both; }
+}
 
 /* ── /uveg en hub ── */
 
 /* ── uveg en celok (mezo-me75u.6) ── /me/goals, /me/goals/:id, /me/goals/new, /me/goals/signals + pillar catalog sheet ── */
+/* Ranking (bible §3.4, prototype uveg-en.html#celok/#cel/#celuj/#jelek, sheet `pillar`). Every rule
+   is scoped to a page root (.enc-celok, .enc-cel, .enc-wiz, .enc-jelek, all four also .enc-page) or
+   to the catalog sheet (.enc-pcat): the `lg-*` family is shared with the Heti goals card (rule 13).
+   Célok: the hero is a frameless halo with the six-arc PERMAH ring; the dimension band is flat
+   chips; each active goal is a glass tile in its dimension colour; „＋ Új cél" is dashed; parked and
+   done rows are flat; Jelek + Súlycél are glass rows with a lit well. Cél: the halo PageHero, the
+   pillar cards glass with flat chips/dots/heatmap inside, ONE glass „Miért" card with flat HA/AKKOR
+   rows, status actions as outline pills. Wizard: a form, so its cards wear glass and every control
+   stays flat (pressed chips + toggles lit), CTAs lit coral. Jelek: flat rows, a glowing live dot. */
 
+/* the ground: the aurora shows through; quiet principle footnote; eyebrows in the kit recipe */
+.enc-page.mz-page { background: transparent; }
+.enc-page .mz-page-body { padding: 2px 16px 20px; }
+.enc-page .mz-principle {
+  margin: 22px 10px 0; font-size: 12px; font-weight: 400; line-height: 1.55; text-align: center; color: var(--text-muted);
+}
+.enc-page .mz-eyebrow { font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+.enc-page .enc-sec { display: block; padding: 18px 2px 8px; }
+
+/* the six PERMAH dimensions publish their accent as `--c` on the element that carries the class
+   (bible U1 rule 4): the glass tile, the ring arc, the chip, the parked row. */
+.enc-page .lg-d-p, .enc-pcat .lg-d-p { --c: var(--dv-amber); }
+.enc-page .lg-d-e, .enc-pcat .lg-d-e { --c: var(--dv-lav); }
+.enc-page .lg-d-r, .enc-pcat .lg-d-r { --c: var(--dv-rose); }
+.enc-page .lg-d-m, .enc-pcat .lg-d-m { --c: var(--dv-coral); }
+.enc-page .lg-d-a, .enc-pcat .lg-d-a { --c: var(--dv-sky); }
+.enc-page .lg-d-h, .enc-pcat .lg-d-h { --c: var(--dv-sage); }
+
+/* the glass body restated where an old `lg-*` / `mz-*` rule would keep its light skin (rule 11) */
+.enc-celok .enc-tile.glass, .enc-celok .enc-xrow.glass, .enc-cel .lg-pillar.glass, .enc-cel .lg-why.glass,
+.enc-wiz .lg-fcard.glass, .enc-wiz .lg-frame.glass, .enc-wiz .lg-pilcard.glass, .enc-wiz .lg-plan.glass,
+.sheet.glass.enc-pcat {
+  border: 0;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+
+/* the head's lit action pill („＋ Új cél", „＋ Pillér") — a constructive CTA restates every colour */
+.enc-page .enc-pill {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px;
+  border: 0; border-radius: 999px; font: inherit; font-size: 12.5px; font-weight: 700; white-space: nowrap; cursor: pointer;
+  color: #191614; background: var(--dv-sage);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--dv-sage) 55%, transparent);
+}
+.enc-page .enc-pill:disabled { opacity: 0.45; box-shadow: none; cursor: default; }
+.enc-page .enc-pill:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
+
+/* the arrow reads in the surface's accent; „—" (too little data) stays muted */
+.enc-page .lg-arrow.up, .enc-page .lg-arrow.flat, .enc-page .lg-arrow.down { color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.enc-page .lg-arrow.none { color: var(--text-muted); }
+
+/* the seven dots (goal tile + pillar card): flat cells, a hit glows in the accent */
+.enc-page .lg-wk7 { flex-wrap: wrap; gap: 4px; margin-top: auto; padding-top: 6px; }
+.enc-page .lg-wk7 i { width: 12px; height: 12px; border: 0; background: rgba(245, 239, 230, 0.07); box-shadow: inset 0 0 0 1px var(--divider); }
+.enc-page .lg-wk7 i.h { background: var(--c); box-shadow: 0 0 6px color-mix(in srgb, var(--c) 70%, transparent); }
+.enc-page .lg-wk7 i.p { background: linear-gradient(90deg, var(--c) 50%, rgba(245, 239, 230, 0.07) 50%); box-shadow: none; }
+.enc-page .lg-wk7 i.m { background: transparent; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 45%, transparent); }
+.enc-page .lg-wk7 i.n { background: transparent; border: 1px dashed rgba(245, 239, 230, 0.18); box-shadow: none; }
+.enc-page .lg-wk7 .lbl { flex-basis: 100%; margin: 3px 0 0; font-size: 10.5px; font-weight: 500; color: var(--text-muted); }
+
+/* the dimension chips: flat, tinted by their own dimension; a dimension with no goal dims */
+.enc-page .lg-dimband { display: flex; flex-wrap: wrap; gap: 6px; }
+.enc-page .lg-dimchip {
+  min-width: 0; max-width: 100%; gap: 5px; padding: 4px 10px 4px 6px; border: 0; border-radius: 999px;
+  font: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0; text-transform: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--c) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent);
+}
+.enc-page .lg-dimchip .t-ico { width: 16px; height: 16px; filter: none; }
+.enc-page .lg-dimchip b { font-weight: 700; opacity: 0.7; }
+.enc-page .lg-dimchip.empty { opacity: 0.42; }
+
+/* ── Célok ── */
+.enc-celok .enc-title { padding: 6px 2px 2px; }
+.enc-celok .enc-title .nm {
+  display: block; font-family: var(--ff-display); font-size: 26px; font-weight: 600; letter-spacing: -0.7px; color: var(--text-primary);
+}
+.enc-celok .enc-title .mz-eyebrow { margin-top: 3px; }
+.enc-celok .enc-hero {
+  --c: var(--dv-sage); --c2: var(--dv-lav);
+  overflow-x: clip; display: flex; align-items: center; gap: 14px; margin: 0 -16px; padding: 10px 18px 12px;
+}
+/* the hero spans the body's gutters (-16px each side), so its overflow-x clip (rule 12) falls on
+   the SCREEN edge; the halo box fades to nothing vertically inside itself, so no edge shows */
+.enc-celok .enc-hero.uv-halo::before {
+  left: 0; width: 100%; height: 300px; transform: translateY(-50%);
+  background: radial-gradient(ellipse 150px 140px at 84px 50%,
+    color-mix(in srgb, var(--c) 26%, transparent),
+    color-mix(in srgb, var(--c2) 12%, transparent) 45%, transparent 100%);
+}
+.enc-celok .enc-hero-copy { flex: 1; min-width: 0; font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+.enc-celok .enc-hero-copy strong { font-weight: 600; color: var(--text-primary); }
+/* the PERMAH ring: six arcs on a faint track, a live arc thicker and glowing in its own colour */
+.enc-celok .lg-ring { width: 132px; height: 132px; }
+.enc-celok .lg-ring svg { width: 132px; height: 132px; overflow: visible; }
+.enc-celok .lg-ring .arc { stroke: rgba(245, 239, 230, 0.08); stroke-width: 3.6; opacity: 1; }
+.enc-celok .lg-ring .arc.live {
+  stroke: var(--c); stroke-width: 5.5;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--c) 75%, transparent));
+}
+.enc-celok .lg-ring .c b { font-size: 40px; font-weight: 300; letter-spacing: -2px; color: var(--text-primary); }
+.enc-celok .lg-ring .c small { margin-top: 3px; font-size: 10px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text-muted); }
+.enc-celok .lg-dimband { padding: 2px 0 14px; }
+/* the goal tiles: glass in the dimension colour */
+.enc-celok .mz-mosaic { gap: 10px; margin-bottom: 6px; }
+.enc-celok .enc-tile.glass {
+  display: flex; flex-direction: column; gap: 5px; min-width: 0; min-height: 170px; padding: 13px;
+  border-radius: 20px; text-align: left; color: var(--text-primary);
+}
+.enc-celok .enc-tile-top { display: flex; align-items: flex-start; justify-content: space-between; }
+.enc-celok .enc-tile .lg-arrow .g { font-size: 24px; font-weight: 300; line-height: 1; }
+.enc-celok .enc-tile .mz-eyebrow { margin-top: 4px; color: color-mix(in srgb, var(--c) 70%, var(--text-primary)); }
+.enc-celok .enc-tile .nm { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; line-height: 1.25; overflow-wrap: anywhere; }
+.enc-celok .enc-newtile.uv-empty {
+  --c: var(--dv-sage);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  min-height: 170px; border-radius: 20px; text-align: center; color: var(--text-primary);
+}
+.enc-celok .enc-newtile b { font-size: 15px; font-weight: 600; }
+.enc-celok .enc-newtile small { font-size: 10.5px; color: var(--text-muted); }
+/* parked / draft / done rows: flat cells */
+.enc-celok .lg-parkrow {
+  display: flex; align-items: center; gap: 12px; margin-top: 8px; padding: 11px 13px 11px 11px;
+  border: 0; border-radius: 20px; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.enc-celok .lg-parkrow-nav { gap: 12px; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+.enc-celok .lg-parkrow .t-ico { opacity: 0.85; }
+.enc-celok .lg-parkrow .grow { flex: 1; min-width: 0; }
+.enc-celok .lg-parkrow .nm { font-size: 14.5px; font-weight: 600; letter-spacing: -0.2px; color: var(--text-primary); }
+.enc-celok .lg-parkrow .sb { margin-top: 2px; font-size: 11.5px; color: var(--text-secondary); }
+.enc-celok .lg-parkrow .act {
+  flex: none; margin-left: auto; min-height: 32px; padding: 6px 12px; border: 0; border-radius: 999px;
+  font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+  color: color-mix(in srgb, var(--c, var(--dv-sage)) 80%, var(--text-primary));
+  background: rgba(245, 239, 230, 0.05);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, var(--dv-sage)) 35%, transparent);
+}
+.enc-celok .lg-donerow { opacity: 0.85; }
+.enc-celok .lg-donetick { flex: none; margin-left: auto; display: grid; place-items: center; }
+/* Jelek + Súlycél: glass rows with a lit well */
+.enc-celok .enc-xrow.glass {
+  display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 8px; padding: 11px 13px 11px 11px;
+  border-radius: 20px; text-align: left; font: inherit; color: var(--text-primary); cursor: pointer;
+}
+.enc-celok .enc-xrow .grow { flex: 1; min-width: 0; }
+.enc-celok .enc-xrow .nm { font-size: 14.5px; font-weight: 600; letter-spacing: -0.2px; }
+.enc-celok .enc-xrow .sb { margin-top: 2px; font-size: 11.5px; color: var(--text-secondary); }
+.enc-celok .enc-xrow .chev { flex: none; font-size: 20px; color: var(--text-muted); }
+
+/* ── Cél ── */
+.enc-cel .uv-hero .lg-arrow { display: inline-flex; align-items: baseline; gap: 8px; }
+.enc-cel .uv-hero .lg-arrow .g { font-size: 44px; font-weight: 300; }
+.enc-cel .uv-hero .lg-arrow .v { font-size: 58px; font-weight: 300; letter-spacing: -3px; color: var(--text-primary); }
+.enc-cel .uv-hero .lg-arrow .v small { font-size: 20px; letter-spacing: -1px; margin-left: 2px; color: var(--text-muted); }
+/* Hét / Hónap: a flat segmented control, the chosen one lit */
+.enc-cel .enc-seg.lg-chiprow {
+  display: inline-flex; gap: 0; margin: 2px 0 2px; padding: 3px; border-radius: 999px;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.enc-cel .enc-seg .lg-fchip {
+  min-height: 32px; padding: 6px 14px; border: 0; border-radius: 999px; background: transparent;
+  font-size: 12.5px; font-weight: 600; color: var(--text-secondary);
+}
+.enc-cel .enc-seg .lg-fchip.on { color: #191614; background: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 45%, transparent); }
+.enc-cel .enc-none { padding: 0 2px 10px; }
+/* the pillar card: glass; the kind chip, dots and heatmap flat inside */
+.enc-cel .lg-pillar.glass { display: block; margin: 0 0 9px; padding: 13px 14px; border-radius: 20px; }
+.enc-cel .lg-pillar .ph { gap: 9px; }
+.enc-cel .lg-pillar .ph .nm { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 600; color: var(--text-primary); }
+.enc-cel .lg-pillar .ph .lg-arrow .g { font-size: 20px; }
+.enc-cel .lg-pillar .lg-kind {
+  display: inline-flex; min-width: 0; max-width: 100%; margin-top: 7px; padding: 4px 9px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0; text-transform: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--c) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent);
+}
+.enc-cel .lg-pillar .lg-kind.link { --c: var(--dv-lav); }
+.enc-cel .lg-pillar .val { flex-wrap: wrap; gap: 8px; margin-top: 9px; }
+.enc-cel .lg-pillar .val b { font-size: 26px; font-weight: 300; letter-spacing: -1px; color: var(--text-primary); }
+.enc-cel .lg-pillar .val.is-none b { color: var(--text-muted); }
+.enc-cel .lg-pillar .val small { font-size: 11.5px; color: var(--text-muted); }
+.enc-cel .lg-pillar .lg-wk7 { margin-top: 8px; }
+.enc-cel .lg-hm { grid-template-columns: repeat(14, 1fr); gap: 3px; margin-top: 9px; }
+.enc-cel .lg-hm i { height: auto; aspect-ratio: 1; border: 0; border-radius: 3px; background: rgba(245, 239, 230, 0.06); }
+.enc-cel .lg-hm i.h { background: var(--c); box-shadow: 0 0 5px color-mix(in srgb, var(--c) 60%, transparent); }
+.enc-cel .lg-hm i.p { background: color-mix(in srgb, var(--c) 45%, transparent); }
+.enc-cel .lg-hm i.m { background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 35%, transparent); }
+.enc-cel .lg-hm i.n { background: transparent; box-shadow: inset 0 0 0 1px var(--divider); }
+/* a goal conflict: a flat amber-edged cell with the info icon */
+.enc-cel .lg-conflict {
+  align-items: center; gap: 10px; margin: 0 0 8px; padding: 10px 12px; border-radius: 15px;
+  font-size: 12.5px; line-height: 1.45; color: var(--text-secondary);
+  background: color-mix(in srgb, var(--dv-amber) 7%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 30%, transparent);
+}
+/* Miért · ha–akkor: ONE glass card, flat HA/AKKOR rows inside */
+.enc-cel .lg-why.glass { margin: 0 0 10px; padding: 15px 15px 14px; border-radius: 22px; }
+.enc-cel .lg-why .q { font-family: var(--ff-serif); font-style: italic; font-size: 15px; font-weight: 400; line-height: 1.5; color: var(--text-primary); }
+.enc-cel .lg-why .enc-obst { margin-top: 6px; font-size: 10.5px; color: var(--text-muted); }
+.enc-cel .enc-ifthens { display: grid; gap: 6px; margin-top: 10px; }
+.enc-cel .enc-ifthens > div { display: grid; gap: 6px; }
+.enc-cel .lg-why .lg-ifthen {
+  display: grid; grid-template-columns: 54px 1fr; gap: 8px; align-items: baseline; padding: 9px 11px;
+  border: 0; border-radius: 13px; font-size: 13px; line-height: 1.45; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.enc-cel .lg-why .lg-ifthen .ha {
+  width: auto; margin: 0; padding: 0; border-radius: 0; background: none; text-align: left;
+  font-size: 10px; font-weight: 700; letter-spacing: 1.2px; color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+}
+.enc-cel .lg-why em { font-style: normal; color: var(--text-muted); }
+/* the status actions: outline pills — Lezárás / Archiválás end a goal, so nothing here is lit */
+.enc-cel .lg-actrow { flex-wrap: wrap; gap: 8px; margin: 14px 0 10px; }
+.enc-cel .lg-actrow button {
+  --c: var(--dv-coral);
+  flex: 0 1 auto; min-height: 38px; padding: 9px 15px; border: 0; border-radius: 999px;
+  font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  color: color-mix(in srgb, var(--c) 70%, var(--text-primary));
+  background: color-mix(in srgb, var(--c) 6%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 40%, transparent);
+}
+.enc-cel .lg-actrow button.is-lav { --c: var(--dv-lav); }
+.enc-cel .lg-actrow button.is-sage { --c: var(--dv-sage); }
+.enc-cel .lg-actrow button:disabled { opacity: 0.45; cursor: default; }
+
+/* ── Új cél varázsló ── */
+.enc-wiz .enc-wizhead { padding: 6px 2px 0; }
+.enc-wiz .lg-wprog { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin: 0 0 10px; }
+.enc-wiz .lg-wprog i { height: 5px; border-radius: 3px; background: rgba(245, 239, 230, 0.08); }
+.enc-wiz .lg-wprog i.f { background: var(--dv-coral); box-shadow: 0 0 8px var(--dv-coral); }
+.enc-wiz .enc-stepl { display: flex; justify-content: space-between; gap: 10px; }
+.enc-wiz .enc-stepl .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.4px; color: var(--text-muted); }
+.enc-wiz .enc-stepl .eyebrow.is-lit { color: color-mix(in srgb, var(--dv-coral) 80%, var(--text-primary)); }
+.enc-wiz .enc-wiztitle { padding: 10px 2px 4px; }
+.enc-wiz .enc-wiztitle h1 {
+  margin: 4px 0 0; font-family: var(--ff-display); font-size: 25px; font-weight: 600; letter-spacing: -0.7px; color: var(--text-primary);
+}
+.enc-wiz .enc-wizbody { padding: 8px 0 0; }
+.enc-wiz .enc-sec { padding: 14px 2px 8px; }
+.enc-wiz .enc-gap { margin-top: 10px; }
+.enc-wiz .enc-quiet { margin: 0; padding: 10px 2px 0; font-size: 12.5px; line-height: 1.5; color: var(--text-muted); }
+/* every step's card is glass (coral by default, Mezo's reading lavender, the summary its dimension) */
+.enc-wiz .lg-fcard.glass { --c: var(--dv-coral); margin: 0 0 10px; padding: 13px 14px 14px; border-radius: 20px; }
+.enc-wiz .lg-fcard.glass.is-lav { --c: var(--dv-lav); }
+.enc-wiz .lg-flabel { margin-bottom: 7px; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+.enc-wiz .enc-fcopy { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+.enc-wiz .lg-fin {
+  display: block; width: 100%; min-width: 0; padding: 11px 13px; border: 0; border-radius: 13px;
+  font: inherit; font-size: 14px; color: var(--text-primary); color-scheme: dark; outline: none; resize: none;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.enc-wiz .lg-fin::placeholder { color: var(--text-muted); }
+.enc-wiz .lg-fin:focus { box-shadow: inset 0 0 0 1.5px var(--c); }
+.enc-wiz .lg-aiwait {
+  margin: 0 0 10px; padding: 14px; border-radius: 15px; font-size: 12.5px; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+/* the frame card: amber with the info icon, sage with the tick once the inner frame is accepted */
+.enc-wiz .lg-frame.glass { --c: var(--dv-amber); margin: 0 0 10px; padding: 13px 14px 14px; border-radius: 20px; }
+.enc-wiz .lg-frame.glass.ok { --c: var(--dv-sage); }
+.enc-wiz .lg-frame .lb, .enc-wiz .lg-frame.ok .lb {
+  display: flex; align-items: center; gap: 9px; font-size: 14.5px; font-weight: 600; color: var(--text-primary);
+}
+.enc-wiz .enc-mark { flex: none; display: grid; place-items: center; }
+.enc-wiz .lg-frame p { margin-top: 8px; font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+.enc-wiz .lg-frame p b { font-weight: 600; color: var(--text-primary); }
+/* chips: flat, the pressed one lit in the card's accent */
+.enc-wiz .enc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.enc-wiz .enc-chips .chip {
+  min-width: 0; max-width: 100%; min-height: 34px; padding: 7px 12px; border: 0; border-radius: 999px;
+  font: inherit; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.enc-wiz .enc-chips .chip[aria-pressed='true'] {
+  color: #191614; background: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.enc-wiz button.lg-dimchip { min-height: 32px; cursor: pointer; }
+.enc-wiz .lg-dimchip.empty { opacity: 0.55; }
+.enc-wiz .lg-dimchip[aria-pressed='true'] {
+  opacity: 1; color: #191614; background: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent);
+}
+/* the proposed pillars: glass rows with a lit toggle */
+.enc-wiz .lg-pilcard.glass { display: flex; align-items: center; gap: 12px; margin: 0 0 8px; padding: 11px 13px 11px 11px; border-radius: 20px; }
+.enc-wiz .lg-pilcard.off { opacity: 0.55; }
+.enc-wiz .lg-pilcard .grow { flex: 1; min-width: 0; }
+.enc-wiz .lg-pilcard b { font-size: 14.5px; font-weight: 600; color: var(--text-primary); }
+.enc-wiz .lg-pilcard small { margin-top: 2px; font-size: 11.5px; color: var(--text-secondary); }
+.enc-wiz .lg-togg { flex: none; width: 40px; height: 24px; border-radius: 999px; background: rgba(245, 239, 230, 0.1); }
+.enc-wiz .lg-togg::after { top: 3px; left: 3px; width: 18px; height: 18px; background: var(--text-secondary); }
+.enc-wiz .lg-togg.on { background: color-mix(in srgb, var(--c) 70%, transparent); box-shadow: 0 0 10px color-mix(in srgb, var(--c) 50%, transparent); }
+.enc-wiz .lg-togg.on::after { left: 19px; background: var(--text-primary); }
+.enc-wiz .lg-addrow.uv-empty {
+  --c: var(--dv-coral);
+  display: flex; align-items: center; justify-content: center; width: 100%; min-height: 46px; margin-top: 4px; padding: 12px;
+  border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent); border-radius: 20px;
+  font: inherit; font-size: 14px; font-weight: 600; color: var(--text-primary); cursor: pointer;
+}
+.enc-wiz .lg-addrow:disabled { opacity: 0.45; cursor: default; }
+/* the if-then plan cards: glass, the HA/AKKOR tags flat, the text areas bare */
+.enc-wiz .lg-plan.glass { --c: var(--dv-coral); margin: 0 0 8px; padding: 12px 13px 11px; border-radius: 20px; }
+.enc-wiz .lg-prow { align-items: flex-start; gap: 8px; }
+.enc-wiz .lg-prow + .lg-prow { margin-top: 6px; padding-top: 7px; border-top: 1px solid var(--divider); }
+.enc-wiz .lg-ifthen.ha {
+  display: block; flex: none; width: 54px; margin: 0; padding: 4px 0 0; border: 0; border-radius: 0; background: none;
+  text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 1.2px; color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+}
+.enc-wiz .lg-ptxt { font-size: 13px; line-height: 1.45; color: var(--text-primary); color-scheme: dark; background: transparent; }
+.enc-wiz .lg-pfoot {
+  flex-wrap: wrap; gap: 6px; margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--divider);
+  font-size: 11px; font-weight: 500; color: var(--text-muted);
+}
+.enc-wiz .enc-own { margin-left: auto; }
+/* Összegzés: the goal card in its dimension colour, the measures + rules as flat rows */
+.enc-wiz .enc-sumhead { display: flex; align-items: flex-start; gap: 12px; }
+.enc-wiz .enc-sumhead .grow { flex: 1; min-width: 0; }
+.enc-wiz .enc-sumhead b { display: block; font-size: 16px; font-weight: 600; letter-spacing: -0.3px; color: var(--text-primary); overflow-wrap: anywhere; }
+.enc-wiz .enc-sumhead .lg-dimband { margin-top: 8px; }
+.enc-wiz .enc-quote { margin-top: 10px; font-family: var(--ff-serif); font-style: italic; font-size: 14.5px; line-height: 1.5; color: var(--text-primary); }
+.enc-wiz .lg-sumpil {
+  display: flex; align-items: center; gap: 10px; margin: 0 0 6px; padding: 10px 12px; border: 0; border-radius: 15px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.enc-wiz .lg-sumpil b { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.enc-wiz .lg-sumpil small { margin-top: 2px; font-size: 11px; color: var(--text-muted); }
+/* the CTAs: lit coral (every colour restated, rule 36), „Mentés tervezettként" a flat ghost */
+.enc-wiz .enc-wizfoot { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 0 16px; }
+.enc-wiz .enc-wizfoot > button { flex: 1 1 140px; min-width: 0; }
+.enc-wiz .cta-primary {
+  --c: var(--dv-coral);
+  width: auto; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 12px 16px;
+  border: 0; border-radius: 999px; font: inherit; font-size: 14.5px; font-weight: 700; white-space: nowrap; cursor: pointer;
+  color: #191614; background: var(--c);
+  box-shadow: 0 12px 26px -14px color-mix(in srgb, var(--c) 90%, transparent), 0 0 18px -4px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.enc-wiz .cta-primary .t-ico { filter: none; }
+.enc-wiz .cta-primary:disabled { opacity: 0.45; box-shadow: none; cursor: default; }
+.enc-wiz .cta-primary.enc-retry { min-height: 40px; margin-top: 12px; }
+.enc-wiz .cta-ghost {
+  min-height: 46px; padding: 12px 16px; border: 0; border-radius: 999px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.enc-wiz .cta-ghost:disabled { opacity: 0.45; cursor: default; }
+
+/* ── Jelek ── */
+.enc-jelek .lg-sighint { margin: 0; padding: 2px 8px 4px; font-size: 12.5px; line-height: 1.5; text-align: center; color: var(--text-secondary); }
+.enc-jelek .lg-sighead { margin: 18px 2px 8px; }
+.enc-jelek .lg-sighead .cnt { font-size: 11px; color: var(--text-muted); }
+.enc-jelek .lg-sig {
+  display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 10px; align-items: center;
+  margin: 0 0 6px; padding: 10px 12px; border: 0; border-radius: 15px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.enc-jelek .lg-sig b { font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+.enc-jelek .lg-sig small { margin-top: 1px; font-size: 11px; color: var(--text-muted); }
+.enc-jelek .lg-sig i.live { width: 9px; height: 9px; background: var(--dv-sage); box-shadow: 0 0 8px var(--dv-sage); }
+.enc-jelek .lg-sig i.dead { width: 9px; height: 9px; background: transparent; box-shadow: inset 0 0 0 1.5px var(--text-muted); }
+.enc-jelek .lg-sig.off { opacity: 0.5; }
+.enc-jelek .lg-sig.off .t-ico { filter: grayscale(0.6); }
+.enc-jelek .lg-sigchips { gap: 4px; margin-top: 5px; }
+.enc-jelek .lg-sigchips span {
+  min-width: 0; max-width: 100%; padding: 3px 8px; border-radius: 999px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 10.5px; font-weight: 600; color: color-mix(in srgb, var(--dv-sage) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-sage) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-sage) 30%, transparent);
+}
+
+/* ── the pillar catalog: a floating glass sheet (U2 rule 15), its entries flat chips ── */
+.sheet.glass.enc-pcat {
+  --c: var(--dv-sage);
+  position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
+  overflow-x: hidden; overflow-y: auto; border-radius: 30px; padding: 4px 18px 18px;
+}
+.sheet.glass.enc-pcat .sheet-handle { background: rgba(245, 239, 230, 0.22); }
+.enc-pcat .enc-pcat-head { display: flex; align-items: center; gap: 12px; margin: 4px 0 4px; }
+.enc-pcat .enc-pcat-head h2 {
+  flex: 1; min-width: 0; margin: 0; font-family: var(--ff-display); font-size: 21px; font-weight: 600; letter-spacing: -0.6px; color: var(--text-primary);
+}
+.enc-pcat .enc-pcat-x {
+  flex: none; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.enc-pcat .enc-pcat-sec { margin-top: 14px; }
+.enc-pcat .enc-pcat-sec .mz-eyebrow { display: block; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+.enc-pcat .enc-pcat-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.enc-pcat .enc-pcat-chips .chip {
+  min-width: 0; max-width: 100%; min-height: 34px; padding: 7px 12px; border: 0; border-radius: 999px;
+  font: inherit; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.enc-pcat .enc-pcat-chips .chip:focus-visible, .enc-pcat .enc-pcat-chips .chip:hover {
+  color: var(--text-primary); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent);
+}
+.enc-pcat .enc-pcat-foot { margin-top: 16px; }
+.enc-pcat .cta-ghost {
+  width: 100%; min-height: 42px; padding: 10px 16px; border: 0; border-radius: 999px; font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
 /* ── /uveg en celok ── */
 
 /* ── uveg en sulycel (mezo-me75u.6) ── /me/goals/weight(+/diet,/segment,/plans,/guards,/suggestions/:id,/new) + goal gate ── */
+/* Ranking (bible §3.4, prototype uveg-en.html#sulycel / #sulyresz / #sulyuj): the course hero and
+   every sub-page hero are FRAMELESS halos; the mosaic tiles and the sub-pages' content cards are
+   glass, one accent each; cells, lanes, diff rows and chips inside are flat; empty is dashed.
+   Scopes: `.goal-hub-page` (hub + empty), `.uv-goal` (the five sub-pages), `.goal-planner-page`,
+   `.goal-gate`, `.goal-attach-sheet` — the old `goal-*` classes are shared with the goal
+   settings page (not re-dressed yet), so nothing here is unscoped (U2 rule 13). */
+.goal-hub-page.mz-page, .uv-goal.mz-page, .goal-planner-page.mz-page { background: transparent; }
+.goal-hub-page, .goal-planner-page { --c: var(--dv-coral); }
+.goal-detail-diet-page.uv-goal { --c: var(--dv-sage); }
+.goal-detail-segment-page.uv-goal { --c: var(--dv-amber); }
+.goal-detail-plans-page.uv-goal { --c: var(--dv-sky); }
+.goal-detail-guards-page.uv-goal { --c: var(--dv-lav); }
+.goal-suggestion-page.uv-goal { --c: var(--dv-coral); }
 
+/* ── hub: head action + title ── */
+.goal-hub-page .pgact.goal-new-pill {
+  min-height: 38px; padding: 0 14px; font-size: 12.5px; font-weight: 700;
+  color: #191614; background: var(--dv-coral);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--dv-coral) 55%, transparent);
+}
+.goal-hub-page .goal-hub-title .mz-eyebrow { font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.4px; color: var(--text-muted); }
+.goal-hub-page .goal-hub-title h2 { margin-top: 3px; font-size: 19px; font-weight: 600; letter-spacing: -0.5px; line-height: 1.2; color: var(--text-primary); }
+
+/* ── hub: the course hero is a frameless coral halo (U2 rule 12: clip it at 320px) ── */
+.goal-hub-page .goal-course-hero.uv-halo {
+  --c: var(--dv-coral);
+  overflow: visible; overflow-x: clip; min-height: 0; border: 0; border-radius: 0;
+  background: none; box-shadow: none;
+}
+.goal-hub-page .goal-course-hero.uv-halo::before {
+  left: 70%; top: 46%; width: 340px; height: 260px;
+  background: radial-gradient(ellipse at 50% 50%,
+    color-mix(in srgb, var(--dv-coral) 26%, transparent),
+    color-mix(in srgb, var(--dv-sage) 14%, transparent) 42%, transparent 66%);
+}
+.goal-hub-page .goal-course-hero::after { display: none; }
+.goal-hub-page .goal-course-open { padding: 4px 2px 6px; }
+.goal-hub-page .goal-course-top { display: grid; grid-template-columns: minmax(0, 1fr) 112px; gap: 12px; align-items: center; }
+.goal-hub-page .goal-course-message .mz-eyebrow {
+  font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.4px;
+  color: color-mix(in srgb, var(--status, var(--dv-sage)) 78%, var(--text-primary));
+}
+.goal-hub-page .goal-course-hero.is-on_track { --status: var(--dv-sage); }
+.goal-hub-page .goal-course-hero.is-watch { --status: var(--dv-amber); }
+.goal-hub-page .goal-course-hero.is-learning { --status: var(--dv-lav); }
+.goal-hub-page .goal-course-hero.is-invalid { --status: var(--dv-coral); }
+.goal-hub-page .goal-course-message h1 {
+  max-width: none; margin-top: 2px; font-size: 24px; font-weight: 600; line-height: 1.15; letter-spacing: -0.7px;
+  color: var(--text-primary);
+}
+.goal-hub-page .goal-course-message p { max-width: none; margin-top: 5px; font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); }
+/* the completion ring: track + glowing coral progress (bible §5); the svg must not clip the glow */
+.goal-hub-page .goal-course-ring {
+  flex: none; width: 112px; height: 112px; background: none; box-shadow: none;
+}
+.goal-hub-page .goal-course-ring::before { display: none; }
+.goal-hub-page .goal-course-ring svg {
+  position: absolute; inset: 0; width: 112px; height: 112px; overflow: visible; transform: rotate(-90deg);
+}
+.goal-hub-page .goal-course-ring circle { stroke-width: 7; }
+.goal-hub-page .goal-course-ring span {
+  font-family: var(--ff-display); font-size: 30px; font-weight: 300; letter-spacing: -1.4px;
+  font-variant-numeric: tabular-nums; color: var(--text-primary);
+}
+/* „78,4 → 73": big light numerals, the target tinted by the accent */
+.goal-hub-page .goal-course-weights { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-top: 14px; }
+.goal-hub-page .goal-course-weights span { display: inline-flex; align-items: baseline; gap: 6px; text-align: left; }
+.goal-hub-page .goal-course-weights b {
+  display: inline; font-family: var(--ff-display); font-size: 36px; font-weight: 300; letter-spacing: -2px; line-height: 1;
+  color: var(--text-primary);
+}
+.goal-hub-page .goal-course-weights span:last-child b { color: color-mix(in srgb, var(--dv-coral) 70%, var(--text-primary)); }
+.goal-hub-page .goal-course-weights small {
+  display: inline; margin: 0; font-size: 11px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--text-muted);
+}
+.goal-hub-page .goal-course-weights i { height: auto; background: none; font-style: normal; font-size: 18px; color: var(--text-muted); }
+/* pace cells: flat (secondary rank) */
+.goal-hub-page .goal-course-paces { margin-top: 12px; gap: 8px; }
+.goal-hub-page .goal-course-paces span {
+  padding: 9px 11px; border-radius: 14px;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.goal-hub-page .goal-course-paces small {
+  font-size: 10px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--text-muted);
+}
+.goal-hub-page .goal-course-paces b { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.goal-hub-page .goal-course-date { margin-top: 10px; text-align: left; font-size: 12.5px; font-weight: 400; color: var(--text-secondary); }
+.goal-hub-page .goal-course-date b { color: var(--text-primary); font-weight: 600; }
+.goal-hub-page .goal-course-repair {
+  margin: 4px 2px 6px; padding: 9px 15px; font-size: 12.5px; font-weight: 700;
+  color: #191614; background: var(--dv-coral);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--dv-coral) 55%, transparent);
+}
+
+/* ── hub: the mosaic — every tile is glass in its own accent (U2 rule 11: restate the body) ── */
+.goal-hub-page .goal-hub-mosaic .mz-tile.glass {
+  min-height: 150px; padding: 13px; gap: 3px; border: 0; border-radius: 20px;
+  align-items: stretch; text-align: left;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 20%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 28%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.goal-hub-page .goal-hub-mosaic .mz-tile.glass.mz-w-sage { --c: var(--dv-sage); }
+.goal-hub-page .goal-hub-mosaic .mz-tile.glass.mz-w-gold { --c: var(--dv-amber); }
+.goal-hub-page .goal-hub-mosaic .mz-tile.glass.mz-w-sky { --c: var(--dv-sky); }
+.goal-hub-page .goal-hub-mosaic .mz-tile.glass.mz-w-lav { --c: var(--dv-lav); }
+.goal-hub-page .goal-hub-mosaic .mz-tile.glass.mz-w-coral { --c: var(--dv-coral); }
+.goal-hub-page .goal-hub-mosaic .mz-tile.glass.mz-w-white { --c: var(--text-secondary); }
+/* anatomy (prototype .gtile): 3D art first, then eyebrow, value, meta, „Részletek ›" */
+.goal-hub-page .goal-hub-mosaic .mz-spotwrap { order: -1; flex: none; display: block; padding: 0 0 6px; }
+.goal-hub-page .goal-hub-mosaic .mz-tile-top .mz-eyebrow {
+  font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.2px;
+  color: color-mix(in srgb, var(--c) 70%, var(--text-primary));
+}
+.goal-hub-page .goal-hub-mosaic .mz-tile-line { flex: 1; display: flex; text-align: left; font-weight: 400; }
+.goal-hub-page .goal-tile-copy { flex: 1; min-height: 0; align-items: flex-start; }
+.goal-hub-page .goal-tile-copy strong {
+  font-size: 20px; font-weight: 600; letter-spacing: -0.6px; line-height: 1.15; text-align: left; color: var(--text-primary);
+}
+.goal-hub-page .goal-tile-copy small {
+  margin-top: 3px; font-size: 11px; font-weight: 400; line-height: 1.35; text-align: left; color: var(--text-secondary);
+}
+.goal-hub-page .goal-tile-copy em { padding-top: 6px; font-size: 11px; font-weight: 400; color: var(--text-muted); }
+/* the suggestion count sits OUTSIDE the clip, like the header badges (bible §7.1) */
+.goal-hub-page .goal-hub-mosaic .mz-tile.glass.goal-tile-badged { overflow: visible; }
+.goal-hub-page .goal-hub-mosaic .mz-tile.glass.goal-tile-badged::after { display: none; animation: none; }
+.goal-hub-page .goal-hub-mosaic .mz-tile.glass.goal-tile-badged > .mz-tile-top { position: static; }
+.goal-hub-page .goal-hub-mosaic .goal-tile-badged .mz-badge {
+  position: absolute; z-index: 4; top: -6px; right: -6px;
+  min-width: 22px; height: 22px; padding: 0 6px; font-size: 11px; font-weight: 700; color: #fff;
+  background: linear-gradient(180deg, #FF8E6E, #E2553A);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--dv-coral) 60%, transparent), 0 0 0 2px var(--canvas);
+}
+
+/* ── hub: no goal yet — a halo and ONE dashed free tile (never glass) ── */
+.goal-hub-page .goal-empty-hero {
+  --c: var(--dv-coral);
+  overflow-x: clip; display: grid; justify-items: center; gap: 8px; padding: 8px 20px 14px; text-align: center;
+}
+.goal-hub-page .goal-empty-art {
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 18px color-mix(in srgb, var(--c) 42%, transparent));
+}
+.goal-hub-page .goal-empty-hero p { max-width: 300px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+.goal-hub-page .goal-empty-new.uv-empty {
+  --c: var(--dv-coral);
+  width: 100%; min-height: 120px; border-radius: 20px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 6px; cursor: pointer;
+  font: inherit; color: var(--text-primary);
+}
+.goal-hub-page .goal-empty-new strong { font-size: 15px; font-weight: 600; }
+
+/* ── sub-pages: hero = frameless halo with 3D art, big value, three flat pods ── */
+.uv-goal .mz-page-hero.uv-hero .mz-bignum { max-width: 320px; font-size: 30px; letter-spacing: -1px; line-height: 1.1; }
+.goal-dhero { overflow-x: clip; display: grid; justify-items: center; text-align: center; padding: 6px 4px 8px; }
+.goal-dhero.goal-dhero-nutrition { --c: var(--dv-sage); }
+.goal-dhero.goal-dhero-segment { --c: var(--dv-amber); }
+.goal-dhero.goal-dhero-plans { --c: var(--dv-sky); }
+.goal-dhero.goal-dhero-guards { --c: var(--dv-lav); }
+.goal-dhero.goal-dhero-settings { --c: var(--dv-rose); }
+.goal-dhero.uv-halo::before { top: 40%; height: 250px; }
+.goal-dhero .goal-dhero-art {
+  margin: 0 auto;
+  filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 16px color-mix(in srgb, var(--c) 42%, transparent));
+}
+.goal-dhero .goal-dhero-eb {
+  margin-top: 6px; font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.4px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 70%, var(--text-primary));
+}
+.goal-dhero .goal-dhero-num {
+  display: block; margin-top: 4px; font-family: var(--ff-display); font-size: 52px; font-weight: 300;
+  letter-spacing: -2.4px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+.goal-dhero .goal-dhero-desc { max-width: 320px; margin: 6px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); }
+.goal-dhero .goal-dhero-pods { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+.goal-dhero .goal-detail-pod {
+  padding: 9px 6px; border-radius: 14px; text-align: center;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.goal-dhero .goal-detail-pod small {
+  font-size: 10px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--text-muted);
+}
+.goal-dhero .goal-detail-pod strong { margin-top: 2px; font-size: 15px; font-weight: 600; color: var(--text-primary); }
+
+/* ── sub-pages: shared parts ── */
+.uv-goal .goal-detail-section-head {
+  margin: 20px 2px 8px; font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.4px; color: var(--text-muted);
+}
+.uv-goal .goal-detail-kicker { font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+.uv-goal .goal-detail-loading span { background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+/* a notice is a free/empty state: dashed, never glass (bible §3 rank 4) */
+.uv-goal .goal-detail-notice {
+  border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent); border-radius: 18px; padding: 14px 16px;
+  background: rgba(245, 239, 230, 0.025); box-shadow: none; font-size: 12.5px; color: var(--text-secondary);
+}
+/* the content cards are glass (U2 rule 11: the old card skin is restated away here) */
+.uv-goal .goal-detail-card.glass, .uv-goal .gs-reason-card.glass {
+  border: 0; border-radius: 22px; padding: 15px;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 20%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 26%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.uv-goal .goal-diet-week.glass, .uv-goal .goal-guard-ok.glass { --c: var(--dv-sage); }
+.uv-goal .goal-segment-rail.glass, .uv-goal .goal-segment-note.glass { --c: var(--dv-amber); }
+.uv-goal .goal-connection.glass { --c: var(--dv-sky); }
+.uv-goal .goal-sport-schedule.glass { --c: var(--dv-rose); }
+.uv-goal .goal-guard-alert.glass, .uv-goal .gs-reason-card.glass { --c: var(--dv-coral); }
+
+/* diet: macro cells flat, lit by the macro band; the week split flat cells inside one glass */
+.goal-detail-diet-page .goal-detail-macros > span { --c: var(--macro-protein); }
+.goal-detail-diet-page .goal-detail-macros > span:nth-child(2) { --c: var(--macro-carbs); }
+.goal-detail-diet-page .goal-detail-macros > span:nth-child(3) { --c: var(--macro-fat); }
+.goal-detail-diet-page .goal-detail-macros > span {
+  padding: 7px 2px 6px; border-radius: 12px;
+  background: color-mix(in srgb, var(--c) 10%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 28%, transparent);
+  color: color-mix(in srgb, var(--c) 85%, var(--text-primary));
+}
+.goal-detail-diet-page .goal-detail-macros small { color: var(--text-muted); opacity: 1; }
+.uv-goal .goal-diet-comparison { gap: 8px; }
+.uv-goal .goal-diet-comparison > div, .uv-goal .goal-diet-uniform > div {
+  min-height: 0; gap: 3px; padding: 10px 12px; border-radius: 14px;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-goal .goal-diet-comparison > div:nth-child(2) { background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.uv-goal .goal-diet-comparison > div:nth-child(3) {
+  min-height: 0;
+  background: color-mix(in srgb, var(--c) 10%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent);
+}
+.uv-goal .goal-diet-comparison small, .uv-goal .goal-diet-uniform small {
+  font-size: 10px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--text-muted);
+}
+.uv-goal .goal-diet-comparison strong, .uv-goal .goal-diet-uniform strong { font-size: 17px; font-weight: 600; color: var(--text-primary); }
+.uv-goal .goal-diet-comparison > div:nth-child(3) strong { color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.uv-goal .goal-diet-uniform { margin-top: 0; }
+.uv-goal .goal-diet-uniform p { font-size: 12.5px; color: var(--text-secondary); }
+.uv-goal .goal-provenance {
+  margin-top: 10px; border-radius: 15px; padding: 12px 13px;
+  background: color-mix(in srgb, var(--dv-sage) 9%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-sage) 30%, transparent);
+  color: var(--text-secondary);
+}
+.uv-goal .goal-provenance span { font-weight: 600; letter-spacing: 1.2px; color: color-mix(in srgb, var(--dv-sage) 80%, var(--text-primary)); }
+.uv-goal .goal-provenance p { font-size: 12px; }
+
+/* segment: the rail is one amber glass, its nodes plain, the line a lit track */
+.uv-goal .goal-segment-node strong { font-size: 17px; font-weight: 600; color: var(--text-primary); }
+.uv-goal .goal-segment-node.is-current strong { color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.uv-goal .goal-segment-node small { font-size: 11px; font-weight: 400; color: var(--text-muted); }
+.uv-goal .goal-segment-line {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 70%, transparent), rgba(245, 239, 230, 0.07));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--c) 40%, transparent);
+}
+.uv-goal .goal-segment-line span { background: var(--c); box-shadow: 0 0 8px var(--c); }
+.uv-goal .goal-segment-note { margin-top: 10px; }
+.uv-goal .goal-segment-note-head { display: flex; align-items: center; gap: 9px; }
+.uv-goal .goal-segment-note-head .goal-detail-kicker {
+  font-size: 15px; font-weight: 600; letter-spacing: -0.3px; text-transform: none; color: var(--text-primary);
+}
+.uv-goal .goal-segment-note p { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+
+/* plans: lanes and the ruler flat inside the glass; the bars lit by their plan's own hue */
+.uv-goal .goal-week-ruler { font-size: 8.5px; color: var(--text-muted); }
+.uv-goal .goal-plan-lane .goal-detail-kicker { font-size: 10.5px; letter-spacing: 0; text-transform: none; font-weight: 500; }
+.uv-goal .goal-plan-grid {
+  min-height: 44px; padding: 4px; border-radius: 11px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-goal .goal-plan-bar {
+  --bar: var(--dv-coral);
+  min-height: 36px; border-radius: 8px; padding: 5px 5px 5px 9px;
+  color: #191614; background: var(--bar);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--bar) 50%, transparent);
+}
+.uv-goal .goal-plan-bar.goal-plan-running_block { --bar: var(--dv-sky); }
+.uv-goal .goal-plan-bar small { color: rgba(25, 22, 20, 0.72); }
+.uv-goal .goal-plan-clip { background: rgba(25, 22, 20, 0.14); }
+.uv-goal .goal-plan-bar button { width: 26px; height: 26px; color: #191614; background: rgba(25, 22, 20, 0.16); }
+.uv-goal .goal-plan-empty {
+  border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent); border-radius: 10px;
+  background: rgba(245, 239, 230, 0.025); color: var(--text-muted); font-size: 11px;
+}
+.uv-goal .goal-gap-row span {
+  border: 1.5px dashed color-mix(in srgb, var(--dv-coral) 45%, transparent); background: transparent;
+  color: var(--text-secondary); font-size: 10.5px; font-weight: 600;
+}
+.uv-goal .goal-sport-row {
+  margin-top: 6px; padding: 10px 12px; border-top: 0; border-radius: 14px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+  font-size: 11.5px; color: var(--text-secondary);
+}
+.uv-goal .goal-sport-row strong { font-size: 13.5px; color: var(--text-primary); }
+.uv-goal .goal-sport-row small { font-size: 11px; color: var(--text-muted); }
+.uv-goal .goal-sport-schedule .goal-plan-empty { margin-top: 8px; }
+/* „Kapcsolatok bővítése" is a secondary block: flat, its two actions ghost pills */
+.uv-goal .goal-attach-card {
+  margin-top: 12px; border: 0; border-radius: 20px; padding: 14px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-goal .goal-attach-card strong { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.uv-goal .goal-attach-actions button {
+  min-height: 42px; border: 0; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+
+/* guards: the top issue is a flat amber-lit line with t-info; the cards glass by state,
+   an inactive guard dashed */
+.uv-goal .goal-guard-warning {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 12px 13px; border-radius: 15px;
+  background: color-mix(in srgb, var(--dv-amber) 9%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 35%, transparent);
+  font-size: 13px; line-height: 1.45; color: var(--text-secondary);
+}
+.uv-goal .goal-guard-grid { gap: 10px; }
+.uv-goal .goal-guard-head { gap: 10px; }
+.uv-goal .goal-guard-head .goal-detail-kicker {
+  flex: 1; min-width: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.3px; text-transform: none; color: var(--text-primary);
+}
+.uv-goal .goal-guard-head b {
+  padding: 4px 9px; font-size: 11px; font-weight: 600;
+  color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--c) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent);
+}
+.uv-goal .goal-guard-value { margin-top: 10px; font-family: var(--ff-display); color: color-mix(in srgb, var(--c) 78%, var(--text-primary)); }
+.uv-goal .goal-guard-metrics span { background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.uv-goal .goal-guard-metrics b { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+.uv-goal .goal-guard-metrics small { font-size: 10px; color: var(--text-muted); }
+.uv-goal .goal-guard-card ul { font-size: 12.5px; color: var(--text-secondary); }
+.uv-goal .goal-guard-inactive.uv-empty {
+  --c: var(--dv-lav);
+  border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent); border-radius: 22px; padding: 15px;
+  background: rgba(245, 239, 230, 0.025); box-shadow: none;
+}
+.uv-goal .goal-guard-inactive .goal-guard-head b { color: var(--text-muted); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+
+/* suggestion: status chip flat, the reason a coral glass, the diff rows flat */
+.uv-goal .gs-status {
+  display: inline-flex; margin-top: 8px; padding: 4px 10px; font-size: 11px; font-weight: 600; letter-spacing: 0; text-transform: none;
+  --s: var(--dv-amber);
+  color: color-mix(in srgb, var(--s) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--s) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--s) 30%, transparent);
+}
+.uv-goal .gs-status.gs-status-accepted { --s: var(--dv-sage); }
+.uv-goal .gs-status.gs-status-dismissed, .uv-goal .gs-status.gs-status-superseded { --s: var(--text-muted); }
+.uv-goal .gs-reason-card.glass { display: flex; align-items: center; gap: 12px; min-height: 0; margin-bottom: 18px; }
+/* the old decorative ring lived on ::after — the glass sheen owns that slot now */
+.uv-goal .gs-reason-card.glass::after {
+  top: -20%; bottom: -20%; left: -40%; right: auto; width: 28%; height: auto;
+  border: 0; border-radius: 0; box-shadow: none;
+}
+.uv-goal .gs-reason-card > div { flex: 1; min-width: 0; max-width: none; }
+.uv-goal .gs-reason-card p { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+.uv-goal .gs-reason-card b {
+  padding: 3px 8px; border-radius: 999px; font-size: 10.5px; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-goal .gs-reason-card .gs-reason-orb {
+  position: relative; right: auto; top: auto; flex: 0 0 auto; width: 72px; height: 72px; padding: 8px;
+  font-size: 12.5px; font-weight: 700; color: color-mix(in srgb, var(--c) 80%, var(--text-primary));
+  background: radial-gradient(circle at 35% 28%, #3A332D, color-mix(in srgb, var(--c) 16%, #1E1B18));
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08),
+    inset 0 -8px 14px -8px color-mix(in srgb, var(--c) 70%, transparent),
+    0 0 14px -4px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.uv-goal .gs-section-head { font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.4px; color: var(--text-muted); }
+.uv-goal .gs-section-head b { color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.uv-goal .gdiff-grid { gap: 6px; }
+.uv-goal .gdiff-row {
+  min-height: 0; grid-template-rows: auto auto auto; row-gap: 4px; padding: 11px 13px 10px;
+  border: 0; border-radius: 16px; filter: none;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-goal .gdiff-row.gdiff-unchanged { opacity: 0.62; }
+.uv-goal .gdiff-label { font-weight: 600; letter-spacing: 1.2px; color: var(--text-muted); }
+.uv-goal .gdiff-current small, .uv-goal .gdiff-proposed small { font-weight: 500; letter-spacing: 0.6px; color: var(--text-muted); }
+.uv-goal .gdiff-current strong { color: var(--text-secondary); font-weight: 600; }
+.uv-goal .gdiff-proposed strong { color: color-mix(in srgb, var(--dv-coral) 80%, var(--text-primary)); font-weight: 600; }
+.uv-goal .gdiff-arrow { color: var(--text-muted); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.uv-goal .gdiff-delta {
+  font-size: 10.5px; font-weight: 600; color: color-mix(in srgb, var(--dv-coral) 80%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-coral) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 30%, transparent);
+}
+.uv-goal .gdiff-unchanged .gdiff-delta { color: var(--text-muted); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+/* messages: flat, lit by their meaning (amber warns, coral blocks) */
+.uv-goal .gs-message, .uv-goal .gs-history {
+  --m: var(--dv-amber);
+  border-radius: 16px; padding: 13px 14px;
+  background: color-mix(in srgb, var(--m) 9%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--m) 35%, transparent);
+}
+.uv-goal .gs-message.gs-blocker, .uv-goal .gs-message.gs-stale { --m: var(--dv-coral); }
+.uv-goal .gs-history { --m: var(--dv-sage); }
+.uv-goal .gs-message strong, .uv-goal .gs-history strong { color: color-mix(in srgb, var(--m) 80%, var(--text-primary)); }
+.uv-goal .gs-message p, .uv-goal .gs-history p { font-size: 12px; color: var(--text-secondary); }
+.uv-goal .gs-history > span { color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.uv-goal .gs-refresh {
+  font-size: 12px; font-weight: 700; color: #191614; background: var(--dv-coral);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--dv-coral) 55%, transparent);
+}
+/* actions: apply lit coral (constructive) · „Most nem" ghost · „Javaslat elvetése" the flat
+   coral outline (destructive, U4 rule 29 — never the page's lit primary) */
+.uv-goal .gs-actions { grid-template-columns: 1fr 1fr; }
+.uv-goal .gs-actions .gs-apply, .uv-goal .gs-actions .gs-dismiss-confirm { grid-column: 1 / -1; }
+.uv-goal .gs-actions > button { min-height: 44px; border-radius: 999px; font-size: 13px; }
+.uv-goal .gs-actions .gs-apply {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 0; font-weight: 700; color: #191614; background: var(--dv-coral);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--dv-coral) 55%, transparent);
+}
+.uv-goal .gs-actions .gs-apply .t-ico { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)); }
+.uv-goal .gs-actions .gs-apply:disabled { opacity: 0.42; box-shadow: none; }
+.uv-goal .gs-actions .gs-later {
+  border: 0; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-goal .gs-actions .gs-dismiss {
+  border: 0; font-weight: 600; text-decoration: none;
+  color: color-mix(in srgb, var(--dv-coral) 70%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-coral) 6%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 40%, transparent);
+}
+.uv-goal .gs-dismiss-confirm {
+  border-radius: 16px; padding: 9px 10px; font-size: 12px; color: var(--text-secondary);
+  background: color-mix(in srgb, var(--dv-coral) 7%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 30%, transparent);
+}
+.uv-goal .gs-dismiss-confirm button {
+  padding: 8px 11px; font-size: 11.5px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-goal .gs-dismiss-confirm button:first-of-type {
+  color: color-mix(in srgb, var(--dv-coral) 70%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-coral) 8%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 45%, transparent);
+}
+
+/* ── goal gate: a dimmed scrim, ONE coral glass card (not a GlassBox — the page's own overlay) ── */
+.goal-gate {
+  position: absolute; inset: 0; z-index: 60; display: grid; place-items: center; padding: 18px;
+  background: rgba(12, 10, 9, 0.62);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+}
+.goal-gate .goal-gate-card.glass { width: 100%; max-width: 380px; padding: 14px 16px 16px; border-radius: 26px; }
+.goal-gate .goal-gate-card.glass::after { display: none; animation: none; }
+.goal-gate .goal-gate-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.goal-gate .goal-gate-eb {
+  font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.4px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+}
+.goal-gate .goal-gate-x {
+  width: 32px; height: 32px; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.goal-gate .goal-gate-title { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.goal-gate .goal-gate-title h3 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -0.5px; color: var(--text-primary); }
+.goal-gate .goal-gate-lead { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+.goal-gate .goal-gate-lead b { color: var(--text-primary); font-weight: 600; }
+.goal-gate .goal-gate-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.goal-gate .goal-gate-chip {
+  display: inline-flex; align-items: center; gap: 5px; min-width: 0; padding: 4px 9px; border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+  color: color-mix(in srgb, var(--dv-amber) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-amber) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 30%, transparent);
+}
+.goal-gate .goal-gate-chip .t-ico { filter: none; }
+.goal-gate .goal-gate-cta {
+  width: 100%; height: 44px; margin-top: 14px; border: 0; border-radius: 999px; cursor: pointer;
+  font: 700 13.5px/1 var(--ff-body); color: #191614; background: var(--c);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.goal-gate .goal-gate-hint { display: block; margin-top: 8px; text-align: center; font-size: 10.5px; color: var(--text-muted); }
+
+/* ── planner (a FORM): the chosen trajectory is the one glass card, everything else flat ── */
+.goal-planner-page .gp-steps { padding: 6px 2px 0; }
+.goal-planner-page .gp-prog { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin-bottom: 12px; }
+.goal-planner-page .gp-prog button { height: 5px; padding: 0; border: 0; border-radius: 3px; background: rgba(245, 239, 230, 0.08); }
+.goal-planner-page .gp-prog button.is-on { background: var(--c); box-shadow: 0 0 8px var(--c); }
+.goal-planner-page .gp-count { font-size: 11px; font-weight: 600; letter-spacing: 1px; color: var(--text-muted); }
+.goal-planner-page .gp-title { padding: 6px 2px 4px; }
+.goal-planner-page .gp-title .mz-eyebrow { font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.4px; color: color-mix(in srgb, var(--c) 70%, var(--text-primary)); }
+.goal-planner-page .gp-title h1 { margin: 4px 0 0; font-size: 25px; font-weight: 600; letter-spacing: -0.7px; line-height: 1.15; color: var(--text-primary); }
+.goal-planner-page .gp-step0 { padding: 4px 2px 0; }
+.goal-planner-page .gp-label {
+  display: block; margin: 14px 2px 8px; font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.4px;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.goal-planner-page .gp-trajs { display: grid; gap: 8px; }
+.goal-planner-page .gp-traj {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px; border: 0; border-radius: 18px;
+  text-align: left; font: inherit; color: var(--text-primary); cursor: pointer;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.goal-planner-page .gp-traj .t-ico { filter: grayscale(0.3); opacity: 0.8; }
+.goal-planner-page .gp-traj.glass {
+  --c: var(--dv-coral);
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.goal-planner-page .gp-traj.glass .t-ico {
+  opacity: 1;
+  filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 10px color-mix(in srgb, var(--c) 40%, transparent));
+}
+.goal-planner-page .gp-traj-copy { min-width: 0; }
+.goal-planner-page .gp-traj strong { display: block; font-size: 15px; font-weight: 600; }
+.goal-planner-page .gp-traj small { display: block; margin-top: 1px; font-size: 11.5px; color: var(--text-secondary); }
+.goal-planner-page .gp-guards { display: flex; flex-wrap: wrap; gap: 8px; }
+.goal-planner-page .gp-guard {
+  display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 7px 12px; border: 0; border-radius: 999px;
+  font: 600 12px/1.2 var(--ff-body); color: var(--text-secondary); cursor: pointer;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.goal-planner-page .gp-guard.is-on { color: #191614; background: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
+.goal-planner-page .gp-guard .t-ico { filter: none; }
+.goal-planner-page .gp-step1 { padding: 4px 2px 0; }
+.goal-planner-page .gp-fields { display: grid; gap: 12px; }
+.goal-planner-page .gp-field { display: grid; gap: 6px; min-width: 0; }
+.goal-planner-page .gp-field .gp-label { margin: 0 2px; }
+.goal-planner-page .gp-two { display: flex; gap: 10px; }
+.goal-planner-page .gp-two > * { min-width: 0; }
+.goal-planner-page .gp-inp {
+  padding: 10px 12px; border-radius: 14px;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.goal-planner-page .gp-inp:focus-within { box-shadow: inset 0 0 0 1.5px var(--c); }
+.goal-planner-page .gp-inp input, .goal-planner-page .gp-inp textarea {
+  width: 100%; min-width: 0; border: 0; outline: none; background: transparent;
+  font: 14px/1.4 var(--ff-body); color: var(--text-primary); color-scheme: dark;
+}
+.goal-planner-page .gp-inp .gp-date { font-size: 13px; }
+.goal-planner-page .gp-inp .gp-ta { min-height: 48px; resize: none; line-height: 1.45; }
+.goal-planner-page .gp-hold {
+  display: flex; align-items: center; gap: 10px; padding: 12px 13px; border-radius: 15px;
+  font-size: 12.5px; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.goal-planner-page .gp-hold .t-ico { filter: none; }
+/* feasibility: flat lit — sage inside the safe band, amber above it; the sprite carries the verdict */
+.goal-planner-page .gp-feas {
+  --f: var(--dv-sage);
+  padding: 13px 14px; border-radius: 15px;
+  background: color-mix(in srgb, var(--f) 9%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--f) 35%, transparent);
+}
+.goal-planner-page .gp-feas.is-warn { --f: var(--dv-amber); }
+.goal-planner-page .gp-feas-top { display: flex; align-items: baseline; gap: 7px; }
+.goal-planner-page .gp-feas-num {
+  font-family: var(--ff-display); font-size: 26px; font-weight: 300; line-height: 1; letter-spacing: -1px;
+  font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--f) 80%, var(--text-primary));
+}
+.goal-planner-page .gp-feas-unit { font-size: 11px; font-weight: 600; color: var(--text-muted); }
+.goal-planner-page .gp-feas-verdict {
+  margin-left: auto; align-self: center; display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--f) 80%, var(--text-primary));
+}
+.goal-planner-page .gp-feas-verdict .t-ico { filter: none; }
+.goal-planner-page .gp-feas-body { margin-top: 7px; font-size: 12px; line-height: 1.45; color: var(--text-secondary); }
+.goal-planner-page .gp-feas-body b { color: var(--text-primary); }
+.goal-planner-page .gp-feas-accept {
+  width: 100%; margin-top: 11px; padding: 9px; border: 0; border-radius: 12px; cursor: pointer;
+  font: 700 11.5px/1.3 var(--ff-body); letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--dv-amber) 80%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-amber) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 45%, transparent);
+}
+.goal-planner-page .gp-foot { padding: 18px 2px 32px; }
+.goal-planner-page .gp-foot-row { display: flex; gap: 10px; }
+.goal-planner-page .gp-foot-col { display: grid; gap: 10px; }
+/* the lit CTA restates every colour (U5 rule 36) */
+.goal-planner-page .cta-primary.gp-cta {
+  flex: 1; min-height: 46px; padding: 0 18px; gap: 8px; border: 0; border-radius: 999px;
+  font-size: 14px; font-weight: 700; color: #191614; background: var(--c);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.goal-planner-page .cta-primary.gp-cta .t-ico { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)); }
+.goal-planner-page .cta-primary.gp-cta:disabled { opacity: 0.42; box-shadow: none; cursor: default; }
+.goal-planner-page .cta-ghost.gp-ghost {
+  flex: 1; min-height: 44px; border: 0; border-radius: 999px; font-size: 13px; font-weight: 600;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.goal-planner-page .cta-ghost.gp-ghost:disabled { opacity: 0.5; }
+
+/* ── attach-plan sheet: ONE floating sky glass (U2 rule 15), flat rows, the lit CTA ── */
+.sheet.glass.goal-attach-sheet {
+  --c: var(--dv-sky);
+  position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
+  overflow-x: hidden; overflow-y: auto; border: 0; border-radius: 30px; padding: 4px 18px 18px;
+}
+.sheet.glass.goal-attach-sheet .sheet-handle { background: rgba(245, 239, 230, 0.22); }
+.goal-attach-sheet .gas-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.goal-attach-sheet .gas-title { flex: 1; min-width: 0; }
+.goal-attach-sheet .gas-eb {
+  display: block; font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 80%, var(--text-primary));
+}
+.goal-attach-sheet .gas-title h1, .goal-attach-sheet .gas-title h2, .goal-attach-sheet .gas-title div { color: var(--text-primary); }
+.goal-attach-sheet .gas-x {
+  flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.goal-attach-sheet .gas-empty {
+  margin: 0; padding: 14px 16px; border-radius: 16px; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary);
+  border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent); background: rgba(245, 239, 230, 0.025);
+}
+.goal-attach-sheet .gas-list { display: grid; gap: 6px; }
+.goal-attach-sheet .gas-label {
+  display: block; margin: 0 2px 2px; font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.4px;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.goal-attach-sheet .gas-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;
+  padding: 11px 14px; border: 0; border-radius: 14px; text-align: left; cursor: pointer; font: inherit;
+  color: var(--text-primary); background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.goal-attach-sheet .gas-row.is-on {
+  background: color-mix(in srgb, var(--c) 14%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 60%, transparent), 0 0 12px -4px var(--c);
+}
+.goal-attach-sheet .gas-row-nm { min-width: 0; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.goal-attach-sheet .gas-row-wk { flex: none; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.goal-attach-sheet .gas-week { display: grid; gap: 6px; margin-top: 16px; }
+.goal-attach-sheet .gas-inp {
+  width: 96px; padding: 11px 14px; border: 0; border-radius: 13px; outline: none;
+  font: 700 14px/1.2 var(--ff-body); font-variant-numeric: tabular-nums; color: var(--text-primary); color-scheme: dark;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.goal-attach-sheet .gas-inp:focus-visible { box-shadow: inset 0 0 0 1.5px var(--c); }
+.goal-attach-sheet .gas-acts { display: flex; gap: 10px; margin-top: 18px; }
+.goal-attach-sheet .cta-ghost.gas-ghost {
+  flex: 1; min-height: 44px; border: 0; border-radius: 999px; font-size: 13px; font-weight: 600;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.goal-attach-sheet .cta-primary.gas-cta {
+  flex: 1; min-height: 44px; padding: 0 16px; gap: 7px; border: 0; border-radius: 999px;
+  font-size: 13.5px; font-weight: 700; color: #191614; background: var(--c);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.goal-attach-sheet .cta-primary.gas-cta .t-ico { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)); }
+.goal-attach-sheet .cta-primary.gas-cta:disabled { opacity: 0.42; box-shadow: none; }
+
+@media (max-width: 360px) {
+  .goal-hub-page .goal-course-top { grid-template-columns: minmax(0, 1fr) 92px; }
+  .goal-hub-page .goal-course-ring, .goal-hub-page .goal-course-ring svg { width: 92px; height: 92px; }
+  .goal-hub-page .goal-course-ring span { font-size: 25px; }
+  .goal-hub-page .goal-course-weights b { font-size: 30px; }
+  .goal-dhero .goal-dhero-num { font-size: 42px; }
+  .goal-planner-page .gp-two { flex-direction: column; }
+  .uv-goal .gs-actions { grid-template-columns: 1fr; }
+}
 /* ── /uveg en sulycel ── */
 
 /* ── uveg en suly (mezo-me75u.6) ── /me/weight: hero, stat strip, trend chart, weekly history + weight log sheet ── */
+/* Ranking (bible §3.4, prototype uveg-en `suly()`): the loud thing is the change since the start
+   (a frameless t-weight halo hero, PageHero `art`). The trend chart and each week are the primary
+   objects and wear sky glass; the stat cells, the period switch, the day rows, the legend and the
+   „Régebbi hetek" pager are flat. The page CTA is the one lit sky pill. The weight log sheet is
+   the shared capture sheet — already a floating glass sheet since U3 (`── uveg nap rogzites (`),
+   so it is not restyled here (it also serves /nap/gyors). */
+.wt-page { --c: var(--dv-sky); }
+
+/* page head: the lit sky „＋ Súly naplózása" pill (a filled CTA restates every colour, rule 36) */
+.wt-page .mz-pgact.wt-logbtn {
+  min-width: 0; max-width: 60%; overflow: hidden; text-overflow: ellipsis;
+  border: 0; padding: 8px 14px; min-height: 40px; border-radius: 999px;
+  font: 700 12.5px/1.2 var(--ff-body); color: #191614; background: var(--dv-sky);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--dv-sky) 55%, transparent);
+}
+.wt-page .mz-pgact.wt-logbtn:focus-visible { outline: 2px solid var(--dv-sky); outline-offset: 3px; }
+
+/* hero: the big change numeral + the two pills as ONE wrapping group (rule 8, 14) */
+.wt-page .mz-page-hero.uv-hero { --c2: var(--dv-sage); }
+.wt-page .wt-heropills {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px; max-width: 100%;
+}
+.wt-page .wt-heropills > * {
+  min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 5px; margin: 0; padding: 5px 11px; border-radius: 999px;
+  font: 600 11.5px/1.25 var(--ff-body); text-align: center;
+}
+/* lit (the goal progress, sage — never red): a tinted wash, an accent ring, a soft glow */
+.wt-page .wt-goalpill {
+  --c: var(--dv-sage); padding-left: 6px;
+  color: color-mix(in srgb, var(--c) 72%, var(--text-primary));
+  background: radial-gradient(90% 120% at 20% 20%, color-mix(in srgb, var(--c) 26%, transparent), rgba(245, 239, 230, 0.04));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 40%, transparent), 0 0 12px -4px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.wt-page .wt-goalpill .t-ico { filter: none; }
+/* flat (the 4-week tempo) */
+.wt-page .wt-4wk {
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+
+/* stat strip: flat cells; the 7-day delta keeps its inline sage/amber meaning */
+.wt-page .wt-stats.mz-statstrip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.wt-page .wt-stats .mz-statcell {
+  min-width: 0; padding: 10px 6px; border: 0; border-radius: 16px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.wt-page .wt-stats .mz-statcell b { font-size: 18px; font-weight: 600; letter-spacing: -0.5px; color: var(--text-primary); }
+.wt-page .wt-stats .mz-statcell small { display: block; margin-top: 2px; font-size: 10px; color: var(--text-muted); }
+
+/* period switch: a flat segmented control, the active segment lit sky */
+.wt-page .wt-seg {
+  display: flex; width: fit-content; max-width: 100%; margin: 14px auto 12px; padding: 3px; gap: 2px;
+  border-radius: 999px; background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.wt-page .wt-seg-btn {
+  min-width: 0; min-height: 36px; padding: 7px 15px; border: 0; border-radius: 999px; cursor: pointer;
+  font: 600 12.5px/1 var(--ff-body); color: var(--text-secondary); background: none;
+}
+.wt-page .wt-seg-btn.is-on {
+  color: #191614; background: var(--dv-sky);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--dv-sky) 45%, transparent);
+}
+.wt-page .wt-seg-btn:focus-visible { outline: 2px solid var(--dv-sky); outline-offset: 2px; }
+
+/* the trend chart: ONE sky glass card (old `.wt-chart` wash outranks .glass — restate, rule 11) */
+.wt-page .wt-chart.glass {
+  --c: var(--dv-sky);
+  margin-bottom: 12px; padding: 12px 12px 10px; border: 0; border-radius: 22px;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.60));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.10),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.wt-page .wt-chart .wtc-ma { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--dv-sky) 60%, transparent)); }
+.wt-page .wt-chart .wtc-dot { filter: drop-shadow(0 0 8px var(--dv-sky)); }
+/* too few points: the dashed empty state, no glass */
+.wt-page .wt-chart.wt-chart-empty {
+  --c: var(--dv-sky); margin-bottom: 12px; padding: 24px 16px; border-radius: 22px; text-align: center;
+}
+.wt-page .wt-chart-emptytx {
+  font: 600 10.5px/1.4 var(--ff-body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-muted);
+}
+/* the legend is flat: a glowing sky stroke, a dashed sage plan, a sage band swatch */
+.wt-page .wt-leg { justify-content: center; gap: 14px; margin-top: 6px; font-size: 11px; color: var(--text-secondary); }
+.wt-page .wt-leg i { width: 14px; height: 3px; vertical-align: 3px; }
+.wt-page .wt-leg i.is-actual { background: var(--dv-sky); box-shadow: 0 0 5px var(--dv-sky); }
+.wt-page .wt-leg i.is-plan { height: 0; border-radius: 0; background: none; border-top: 2px dashed var(--dv-sage); }
+.wt-page .wt-leg i.is-band { height: 9px; vertical-align: 0; background: color-mix(in srgb, var(--dv-sage) 22%, transparent); }
+
+/* the weekly history section label */
+.wt-page .wt-lsec .mz-eyebrow { font-size: 9.5px; font-weight: 600; letter-spacing: 1.4px; color: var(--text-muted); }
+.wt-page .wt-cnt { font-size: 10.5px; font-weight: 600; color: var(--text-muted); }
+
+/* a week: a sky glass card (old `.wt-week` wash outranks .glass — restate, rule 11) */
+.wt-page .wt-week.glass {
+  --c: var(--dv-sky);
+  margin-bottom: 10px; padding: 12px 14px 13px; border: 0; border-radius: 20px;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 20%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.60));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 24px -8px color-mix(in srgb, var(--c) 28%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.10),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.wt-page .wt-week-toggle { color: var(--text-secondary); }
+.wt-page .wt-week-toggle:focus-visible { outline: 2px solid var(--dv-sky); outline-offset: 2px; border-radius: 12px; }
+.wt-page .wt-dl { font-size: 14.5px; font-weight: 600; letter-spacing: -0.2px; color: var(--text-primary); }
+/* the delta pill is lit: sage when it moves toward the goal, amber when not — never red */
+.wt-page .wt-deltap {
+  padding: 3px 9px; font-size: 11.5px; font-weight: 700; color: #191614; background: var(--dv-sage);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--dv-sage) 55%, transparent);
+}
+.wt-page .wt-deltap.is-up {
+  color: #191614; background: var(--dv-amber);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--dv-amber) 55%, transparent);
+}
+.wt-page .wt-avg {
+  font-family: var(--ff-display); font-size: 26px; font-weight: 300; letter-spacing: -1px;
+  color: var(--text-primary); font-variant-numeric: tabular-nums;
+}
+.wt-page .wt-avgsub { min-width: 0; font-size: 11.5px; color: var(--text-secondary); }
+.wt-page .wt-spark { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--dv-sky) 60%, transparent)); }
+.wt-page .wt-days { font-size: 10px; font-weight: 600; color: var(--text-muted); }
+.wt-page .wt-dir { color: var(--dv-sage); }
+.wt-page .wt-dir.is-warn { color: var(--dv-amber); }
+/* expanded day rows: flat cells */
+.wt-page .wt-dayrow {
+  align-items: center; gap: 10px; padding: 8px 11px; border-radius: 12px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.wt-page .wt-dayname { min-width: 0; font-size: 13px; color: var(--text-secondary); }
+.wt-page .wt-dayval { font-family: var(--ff-display); font-size: 16px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.wt-page .wt-dayunit { font-size: 11px; color: var(--text-muted); }
+.wt-page .wt-dod { min-width: 34px; text-align: right; font-weight: 600; color: var(--dv-sage); }
+.wt-page .wt-dod.is-up { color: var(--dv-amber); }
+.wt-page .wt-dod.is-flat { color: var(--text-muted); }
+/* „Mi történt ezen a héten?": a lit lavender FLAT button (glass-in-glass is forbidden, rule 5) */
+.wt-page .wt-ask {
+  --c: var(--dv-lav);
+  flex: 1; min-width: 0; min-height: 44px; display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px; border: 0; border-radius: 13px; cursor: pointer; text-align: left;
+  font: 600 12.5px/1.3 var(--ff-body); color: color-mix(in srgb, var(--c) 80%, var(--text-primary));
+  background: color-mix(in srgb, var(--c) 9%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 32%, transparent);
+}
+.wt-page .wt-ask .t-ico { filter: none; }
+.wt-page .wt-ask:disabled { opacity: 0.55; cursor: default; }
+.wt-page .wt-ask:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 2px; }
+.wt-page .wt-asknote { margin-top: 6px; font-size: 11px; line-height: 1.45; color: var(--text-secondary); }
+.wt-page .wt-askdemo { margin-top: 5px; font-size: 10px; text-align: center; color: var(--text-muted); }
+
+/* „Régebbi hetek ⌄": a flat pager row (old `.mzp-new` dashed wash — restate) */
+.wt-page .mzp-new.wt-more {
+  margin-top: 4px; border: 0; border-radius: 17px;
+  font: 600 13px/1.2 var(--ff-body); color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.wt-page .mzp-new.wt-more:focus-visible { outline: 2px solid var(--dv-sky); outline-offset: 2px; }
 
 /* ── /uveg en suly ── */
 
 /* ── uveg en alvas (mezo-me75u.6) ── /me/sleep + /me/sleep/night + sleep log / stats sheets ── */
+/* Ranking (bible §3.4, prototype uveg-en.html#alvas / #ejszaka): the hero is the frameless
+   t-sleep halo (PageHero art); the goal card, the two ring tiles, last night, the night arc,
+   the phase average, the trend and the REM scatter are lavender `.glass` (the education card
+   gold, the escalation card amber — it keeps its warning tone, the REM card sky). Chips, the
+   phase reference bands and the 7-night log rows are FLAT; a short/poor night keeps a coral
+   edge. Every rule is scoped to `.alv-page` / `.night` / `.sst-sheet` (U2 rule 13): `.phrail`,
+   `.phref`, `.sstat` and `.night-*` keep their old skins wherever else they render. */
+.alv-page { --c: var(--dv-lav); }
+.alv-page.mz-page {
+  background: radial-gradient(120% 40% at 50% 0%, color-mix(in srgb, var(--dv-lav) 14%, transparent), transparent 70%);
+}
+.alv-page .mz-page-body { overflow-x: hidden; padding: 2px 16px 22px; }
+/* the header's lit lavender „＋ Log" — a filled CTA restates every colour (U5 rule 36) */
+.alv-page .pgact.alv-log {
+  --c: var(--dv-lav); margin-left: auto; min-height: 38px; padding: 0 14px; gap: 5px;
+  font-size: 13px; font-weight: 600; color: #191614; background: var(--c);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.alv-page .pgact.alv-log span { font-size: 15px; line-height: 1; }
+
+/* shared type + chips inside the page */
+.alv-page .alv-eyebrow, .alv-page .mz-eyebrow {
+  font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-muted);
+}
+.alv-page .alv-sec { margin-top: 16px; }
+.alv-page .alv-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 2px 9px; }
+.alv-page .alv-sec-head .eyebrow { min-width: 0; white-space: normal; }
+.alv-page .alv-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.alv-page .alv-chip {
+  --tone: var(--text-secondary);
+  display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%;
+  padding: 4px 10px; border: 0; border-radius: 999px; font: 600 11.5px/1.3 var(--ff-body);
+  color: var(--tone); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+  font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.alv-page .alv-chip b { font-weight: 700; color: var(--text-primary); }
+.alv-page .alv-chip[data-tone] {
+  color: color-mix(in srgb, var(--tone) 80%, var(--text-primary));
+  background: color-mix(in srgb, var(--tone) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 32%, transparent);
+}
+.alv-page .alv-chip[data-tone="sage"] { --tone: var(--dv-sage); }
+.alv-page .alv-chip[data-tone="coral"] { --tone: var(--dv-coral); }
+.alv-page .alv-chip.is-lit, .alv-page .alv-chip.is-on {
+  --tone: var(--dv-lav); cursor: pointer;
+  color: color-mix(in srgb, var(--tone) 80%, var(--text-primary));
+  background: color-mix(in srgb, var(--tone) 12%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 38%, transparent);
+}
+.alv-page .alv-chip.is-on {
+  color: #191614; background: var(--dv-lav); box-shadow: 0 0 12px color-mix(in srgb, var(--dv-lav) 50%, transparent);
+}
+.alv-page .alv-seg { display: flex; flex-wrap: wrap; gap: 5px; min-width: 0; }
+.alv-page .alv-seg .alv-chip { cursor: pointer; }
+
+/* ─ the sleep-goal card: the bed rail as a lit glowing bar between two 3D ends ─ */
+.alv-page .alv-goal.glass { --c: var(--dv-lav); padding: 14px 15px 14px; border-radius: 22px; }
+.alv-page .alv-card-head { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.alv-page .alv-card-title { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.2px; color: var(--text-primary); }
+.alv-page .alv-unset { margin: 8px 0 0; font-size: 12px; line-height: 1.5; color: color-mix(in srgb, var(--dv-amber) 80%, var(--text-primary)); }
+.alv-page .alv-bedrail { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; margin-top: 30px; }
+.alv-page .alv-end { display: grid; justify-items: center; gap: 2px; }
+.alv-page .alv-end b { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.alv-page .alv-rail {
+  position: relative; height: 10px; border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 55%, #fff), var(--c));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.alv-page .alv-rail span {
+  position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%);
+  font-size: 11px; font-weight: 600; color: var(--text-secondary); white-space: nowrap;
+}
+.alv-page .alv-goal-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.alv-page .alv-quote { font-family: var(--ff-serif); font-style: italic; font-size: 13px; color: var(--text-secondary); }
+
+/* ─ the two ring tiles: glass, glowing rings (the svg must not clip the glow) ─ */
+.alv-page .alv-rings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+.alv-page .alv-ring.glass {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0;
+  padding: 14px 10px 12px; border-radius: 20px; text-align: center;
+}
+.alv-page .alv-ring svg { overflow: visible; }
+.alv-page .alv-ring svg circle:first-child { stroke: rgba(245, 239, 230, 0.07); }
+.alv-page .alv-ring svg circle + circle { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--c) 55%, transparent)); }
+.alv-page .alv-ring > div > span { font-weight: 300; letter-spacing: -0.8px; }
+.alv-page .alv-ring strong { margin-top: 4px; font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+.alv-page .alv-ring small { font-size: 10.5px; color: var(--text-muted); }
+
+/* ─ the education card (gold glass) and the escalation card (amber glass, warning tone) ─ */
+.alv-page .alv-edu { margin-top: 10px; }
+.alv-page .sstat.glass, .alv-page .sesc.glass {
+  display: flex; flex-direction: column; gap: 6px; width: 100%; margin-top: 0; padding: 14px 15px;
+  border: 0; border-radius: 22px; text-align: left;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 20%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 28%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.alv-page .sstat.glass { --c: var(--dv-amber); cursor: pointer; }
+.alv-page .sesc.glass { --c: var(--dv-amber); }
+.alv-page .sstat-head { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.alv-page .sstat-eye { flex: 1; min-width: 0; font: 600 15px/1.25 var(--ff-body); letter-spacing: -0.2px; text-transform: none; color: var(--text-primary); }
+.alv-page .sstat-chev { font-size: 20px; line-height: 1; color: color-mix(in srgb, var(--c) 70%, var(--text-muted)); }
+.alv-page .sstat-title { font: 600 14px/1.35 var(--ff-body); color: var(--text-primary); }
+.alv-page .sstat-text { font: 400 13px/1.55 var(--ff-body); color: var(--text-secondary); }
+.alv-page .sstat-src { font: 500 10.5px/1.4 var(--ff-body); color: var(--text-muted); }
+.alv-page .sesc-lead { margin: 0; font: 600 14px/1.5 var(--ff-body); color: var(--text-primary); }
+.alv-page .sesc-body { margin: 0; font: 400 12.5px/1.6 var(--ff-body); color: var(--text-secondary); }
+.alv-page .sesc-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 4px; }
+.alv-page .sesc-cta {
+  border: 0; padding: 10px 16px; border-radius: 999px; font: 600 12.5px/1 var(--ff-body);
+  color: #191614; background: var(--c); box-shadow: 0 0 14px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.alv-page .sesc-quiet { border: 0; background: none; padding: 10px 8px; font: 600 12px/1 var(--ff-body); color: var(--text-muted); }
+
+/* ─ last night: big light numerals, flat chips, the lit phase rail ─ */
+.alv-page .alv-last.glass { --c: var(--dv-lav); margin-top: 12px; padding: 15px; border-radius: 22px; }
+.alv-page .alv-last-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
+.alv-page .alv-last-dur, .alv-page .alv-last-q { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.alv-page .alv-last-q { align-items: flex-end; text-align: right; }
+.alv-page .alv-last-num, .alv-page .alv-last-qnum {
+  font-family: var(--ff-display); font-weight: 300; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text-primary);
+}
+.alv-page .alv-last-num { font-size: 46px; letter-spacing: -2.2px; }
+.alv-page .alv-last-qnum { font-size: 30px; letter-spacing: -1.2px; }
+.alv-page .alv-last-q[data-good="true"] .alv-last-qnum { color: color-mix(in srgb, var(--dv-sage) 80%, var(--text-primary)); }
+.alv-page .alv-last-q[data-good="false"] .alv-last-qnum { color: color-mix(in srgb, var(--dv-amber) 85%, var(--text-primary)); }
+.alv-page .alv-last-num small, .alv-page .alv-last-qnum small { margin-left: 3px; font-size: 15px; letter-spacing: 0; color: var(--text-muted); }
+.alv-page .alv-last-span { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.alv-page .alv-phases { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--divider); }
+.alv-page .alv-phases-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.alv-page .alv-src { font-size: 10.5px; font-weight: 600; color: var(--text-muted); }
+.alv-page .alv-refs { display: grid; gap: 11px; margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--divider); }
+.alv-page .alv-note { margin: 12px 0 0; padding-top: 10px; border-top: 1px solid var(--divider); font-size: 13px; line-height: 1.5; font-style: italic; color: var(--text-secondary); }
+
+/* the phase rail: lit (a soft glow under the segments); the legend and reference bands flat */
+.alv-page .phrail {
+  background: rgba(245, 239, 230, 0.07);
+  box-shadow: inset 0 0 0 1px var(--divider), 0 0 12px -2px color-mix(in srgb, var(--dv-lav) 45%, transparent);
+}
+.alv-page .phleg-it { color: var(--text-secondary); font-weight: 600; }
+.alv-page .phleg-v { color: var(--text-primary); font-weight: 700; }
+.alv-page .phleg-p { color: var(--text-muted); font-weight: 600; }
+.alv-page .phref-t { color: var(--text-secondary); font-weight: 600; }
+.alv-page .phref-t b { font-weight: 600; color: var(--text-primary); }
+.alv-page .phref-t em { font-weight: 600; color: var(--text-muted); }
+.alv-page .phref-bar { background: rgba(245, 239, 230, 0.07); }
+.alv-page .phref-band {
+  top: -2px; bottom: -2px;
+  background: color-mix(in srgb, var(--dv-sage) 22%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-sage) 42%, transparent);
+}
+.alv-page .phref-pin { top: -4px; height: 14px; box-shadow: 0 0 8px rgba(245, 239, 230, 0.35); }
+
+/* ─ the night arc: the hypnogram silhouette glows ─ */
+.alv-page .nac.glass { --c: var(--dv-lav); padding: 14px; border-radius: 22px; }
+.alv-page .nac svg { overflow: visible; }
+.alv-page .nac-bars { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--dv-lav) 55%, transparent)); }
+.alv-page .nac-halves { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--divider); }
+.alv-page .nac-eb {
+  display: block; margin-top: 12px; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.4px;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.alv-page .nac-eb:first-child { margin-top: 0; }
+.alv-page .nac-rail { margin-top: 6px; }
+.alv-page .nac-lead { margin: 13px 0 0; padding-top: 12px; border-top: 1px solid var(--divider); font-size: 13px; line-height: 1.55; color: var(--text-secondary); }
+.alv-page .nac-lead b { color: var(--text-primary); }
+.alv-page .nac-foot { margin: 10px 0 0; font-size: 11px; line-height: 1.5; color: var(--text-muted); }
+
+/* ─ the phase average ─ */
+.alv-page .pac-card.glass { --c: var(--dv-lav); padding: 14px; border-radius: 22px; }
+
+/* ─ the trend: glowing columns + amber quality dots ─ */
+.alv-page .sch.glass { --c: var(--dv-lav); padding: 14px; border-radius: 22px; }
+.alv-page .sch svg { overflow: visible; }
+.alv-page .sch svg rect { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--dv-lav) 35%, transparent)); }
+.alv-page .sch .sch-qline { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--dv-amber) 60%, transparent)); }
+.alv-page .sch .sch-qdot { filter: drop-shadow(0 0 5px var(--dv-amber)); }
+.alv-page .sch-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin-top: 10px; }
+.alv-page .sch-lg { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-secondary); }
+.alv-page .sch-lg i { width: 10px; height: 4px; border-radius: 2px; }
+.alv-page .sch-lg.is-q i { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 6px var(--dv-amber); }
+
+/* ─ the REM scatter (sky) ─ */
+.alv-page .rdc-card.glass { --c: var(--dv-sky); padding: 14px; border-radius: 22px; }
+.alv-page .rdc-card svg { overflow: visible; }
+.alv-page .rdc-dot { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--ph-rem) 70%, transparent)); }
+.alv-page .rdc-lead { margin: 11px 0 0; padding-top: 11px; border-top: 1px solid var(--divider); font-size: 13px; line-height: 1.55; color: var(--text-secondary); }
+.alv-page .rdc-lead b { color: var(--text-primary); }
+
+/* ─ the 7-night log: flat rows; a short/poor night keeps a coral warning edge ─ */
+.alv-page .alv-log-list { display: grid; gap: 5px; }
+.alv-page .slr {
+  display: grid; grid-template-columns: 44px 76px minmax(0, 1fr); align-items: center; gap: 8px;
+  padding: 9px 11px; border-radius: 14px; font-size: 12.5px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.alv-page .slr-date { font-size: 11px; font-weight: 600; letter-spacing: 0.3px; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.alv-page .slr-dur { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.alv-page .slr-dur > b { font-family: var(--ff-display); font-size: 16px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.alv-page .slr-dur > b small { margin-left: 2px; font-size: 10px; color: var(--text-muted); }
+.alv-page .slr-span { font-size: 10.5px; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.alv-page .slr-q { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.alv-page .slr-q-row { display: flex; align-items: center; gap: 7px; }
+.alv-page .slr-q-eb { font-size: 9.5px; font-weight: 600; letter-spacing: 1px; color: var(--text-muted); }
+.alv-page .slr-bar { --c: var(--dv-lav); flex: 1; height: 4px; }
+.alv-page .slr-q-num { min-width: 16px; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--dv-lav) 80%, var(--text-primary)); }
+.alv-page .slr-note { font-size: 11px; line-height: 1.4; font-style: italic; color: var(--text-muted); overflow-wrap: anywhere; }
+.alv-page .slr.is-warn { box-shadow: inset 2px 0 0 #FFB39C, inset 0 0 0 1px rgba(255, 126, 92, 0.25); }
+.alv-page .slr.is-warn .slr-dur > b, .alv-page .slr.is-warn .slr-q-num { color: #FFB39C; }
+.alv-page .slr.is-warn .slr-bar { --c: var(--dv-coral); }
+
+/* ─ empty log: dashed, no glass (rank 4) ─ */
+.alv-page .alv-empty.uv-empty { margin-top: 12px; padding: 16px; border-radius: 18px; font-size: 13px; text-align: center; color: var(--text-muted); }
+
+/* ─ the night-mode entry: a lavender glass row with the 3D moon ─ */
+.alv-page .alv-night.glass {
+  --c: var(--dv-lav); display: flex; align-items: center; gap: 12px; margin-top: 16px;
+  padding: 14px; border-radius: 22px; text-decoration: none; color: inherit;
+}
+.alv-page .alv-night-tx { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.alv-page .alv-night-t1 { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.alv-page .alv-night-t2 { font-size: 11.5px; line-height: 1.4; color: var(--text-secondary); }
+.alv-page .alv-night-chev { font-size: 20px; color: color-mix(in srgb, var(--c) 70%, var(--text-muted)); }
+
+/* ─ NightPage: the calm dark variant — no bright glass, faint lavender flat rows, a soft
+     glowing orb, big light numerals/titles, 3D art at low intensity. Breathing motion lives
+     ONLY in the no-preference branch (the labels' opacity cycle is the pacing and stays). ─ */
+.night .night-back { font-size: 12.5px; font-weight: 500; color: #6D6488; }
+.night .night-eye { font-weight: 600; letter-spacing: 1.6px; color: #8C84B3; }
+.night .night-moon, .night .night-glow { display: grid; place-items: center; margin: 22px auto 16px; }
+.night .night-moon .t-ico { opacity: 0.85; filter: drop-shadow(0 0 22px rgba(171, 159, 210, 0.28)); }
+.night .night-glow .t-ico { opacity: 0.85; filter: drop-shadow(0 0 20px rgba(255, 190, 96, 0.22)); }
+.night .night-title { font-weight: 300; font-size: 30px; letter-spacing: -1px; color: #D9D1EC; }
+.night .night-title-sm { font-size: 25px; }
+.night .night-tx { color: #8A7F9E; font-size: 14px; line-height: 1.6; }
+.night .night-cta {
+  color: #D9D1EC; font-weight: 600; font-size: 15px; border: 0;
+  background: rgba(171, 159, 210, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(171, 159, 210, 0.35), 0 0 20px -6px rgba(171, 159, 210, 0.5);
+}
+.night .night-quiet { font-size: 12.5px; font-weight: 500; color: #6D6488; text-decoration: underline; text-underline-offset: 3px; }
+.night .night-orb, .night .nb-orb { animation: none; }
+.night .night-orb {
+  width: 120px; height: 120px;
+  background: radial-gradient(circle at 40% 35%, rgba(217, 209, 236, 0.35), rgba(109, 95, 168, 0.15) 60%, transparent 72%);
+  box-shadow: 0 0 40px -6px rgba(171, 159, 210, 0.35);
+}
+.night .nb-orb {
+  background: radial-gradient(circle, rgba(171, 159, 210, 0.28), rgba(109, 95, 168, 0.08) 62%, transparent 72%);
+  box-shadow: 0 0 50px -10px rgba(171, 159, 210, 0.5);
+}
+.night .nb-labels span { font-weight: 300; font-size: 22px; color: #D9D1EC; }
+.night .night-tools { gap: 8px; }
+.night .night-tool {
+  gap: 12px; padding: 12px 14px; border: 0; border-radius: 18px;
+  background: rgba(171, 159, 210, 0.06); box-shadow: inset 0 0 0 1px rgba(171, 159, 210, 0.18);
+}
+.night .night-tool-art { display: grid; place-items: center; flex: 0 0 auto; opacity: 0.8; }
+.night .night-tool-tx b { font-size: 14.5px; color: #D9D1EC; }
+.night .night-tool-tx i { font-size: 11.5px; color: #8A7F9E; }
+.night .night-tool-chev { font-size: 20px; color: #6D6488; }
+.night .night-steps li { color: #B6ADCB; }
+.night .night-steps li::before { background: rgba(171, 159, 210, 0.7); box-shadow: 0 0 6px rgba(171, 159, 210, 0.5); }
+.night .night-steps b { color: #D9D1EC; }
+.night .ns-card, .night .nw-stage {
+  border: 0; background: rgba(171, 159, 210, 0.06); box-shadow: inset 0 0 0 1px rgba(171, 159, 210, 0.18);
+}
+.night .ns-part, .night .nw-t { font-weight: 300; color: #D9D1EC; }
+.night .ns-tx, .night .nw-tx, .night .nw-rtx { color: #8A7F9E; }
+.night .ns-dot.on { background: #AB9FD2; box-shadow: 0 0 6px rgba(171, 159, 210, 0.6); }
+.night .nb-hint, .night .ns-hint, .night .nw-note { color: #6D6488; }
+@media (prefers-reduced-motion: no-preference) {
+  .night .night-orb, .night .nb-orb { animation: nb-breath 18s ease-in-out infinite; }
+}
+
+/* ─ the stats sheet: ONE floating gold glass (U2 rule 15); deck rows flat inside ─ */
+.sheet.glass.sst-sheet {
+  --c: var(--dv-amber);
+  position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
+  max-height: calc(100% - 70px); overflow-x: hidden; overflow-y: auto;
+  padding: 4px 18px 22px; border: 0; border-radius: 30px;
+}
+.sheet.glass.sst-sheet .sheet-handle { width: 40px; height: 5px; background: rgba(245, 239, 230, 0.2); }
+.sst-sheet .sst-body { display: flex; flex-direction: column; padding: 4px 0 6px; }
+.sst-sheet .sst-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.sst-sheet .sst-head-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.sst-sheet .sst-eye { font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.4px; text-transform: uppercase; color: color-mix(in srgb, var(--c) 75%, var(--text-muted)); }
+.sst-sheet .sst-title { font-size: 20px; font-weight: 600; letter-spacing: -0.4px; color: var(--text-primary); }
+.sst-sheet .sst-x {
+  width: 36px; height: 36px; flex: 0 0 auto; display: grid; place-items: center; border: 0; border-radius: 50%;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.sst-sheet .sst-rows { display: grid; gap: 7px; }
+.sst-sheet .sstat-row {
+  display: flex; flex-direction: column; gap: 5px; padding: 12px 14px; border: 0; border-radius: 16px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.sst-sheet .sstat-title { font: 600 14px/1.35 var(--ff-body); color: var(--text-primary); }
+.sst-sheet .sstat-text { font: 400 12.5px/1.55 var(--ff-body); color: var(--text-secondary); }
+.sst-sheet .sstat-src { font: 500 10.5px/1.4 var(--ff-body); color: var(--text-muted); }
+.sst-sheet .sstat-foot { margin: 12px 0 0; font-size: 11px; line-height: 1.55; color: var(--text-muted); }
+/* the escalation section stays amber — a flat tinted cell, never glass in glass (U1 rule 5) */
+.sst-sheet .sesc-sheet {
+  display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; padding: 13px 14px; border-radius: 16px;
+  background: color-mix(in srgb, var(--dv-amber) 9%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 2px 0 0 var(--dv-amber), inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 30%, transparent);
+}
+.sst-sheet .sstat-head { display: flex; align-items: center; gap: 8px; }
+.sst-sheet .sstat-eye { font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.4px; text-transform: uppercase; color: color-mix(in srgb, var(--dv-amber) 80%, var(--text-primary)); }
+.sst-sheet .sesc-lead { margin: 0; font: 600 13.5px/1.5 var(--ff-body); color: var(--text-primary); }
+.sst-sheet .sesc-body { margin: 0; font: 400 12.5px/1.6 var(--ff-body); color: var(--text-secondary); }
+.sst-sheet .sesc-body b { color: var(--text-primary); }
+
+/* ─ the sleep log sheet (already the U3 capture glass): its note box is flat, not a card ─ */
+.sheet.capture-tone-sleep .card {
+  padding: 10px; border: 0; border-radius: 14px;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.sheet.capture-tone-sleep textarea { color: var(--text-primary); background: transparent; border: 0; color-scheme: dark; }
 
 /* ── /uveg en alvas ── */
 
 /* ── uveg en het (mezo-me75u.6) ── /me/week(+/elemzes,/napok,/felfedezesek,/tanulsagok) ── */
+/* Reference: docs/design_2.0/prototypes/src/uveg-en-body.html `het()`, `elemzes()`, `napok()`,
+   `felfedezesek()`, `tanulsagok()` (owner OK). Every rule is scoped to a page root — `.wkh-page`
+   (hub), `.wk-analysis-page`, `.wkd-page` (napok), `.wkf-page` (felfedezések), `.wkt-page`
+   (tanulságok) — because `.wkd-tile` is BOTH the day tile and the discovery tile, and `.card`,
+   `.chip`, `.mz-mcells` are shared everywhere (bible rule 13). Ranking (§3.4): the hub hero is a
+   frameless lavender halo with the glowing score ring; the view tiles, the goal / next-week
+   cards, the score-bar and review cards, the day and discovery tiles and the lessons card are
+   `.glass` (ONE `--c` each); cells, chips, stamps and the feedback chips inside them are flat;
+   a nincs-adat / future day, the quiet week and the error boxes are dashed `uv-empty`. */
 
+.wkh-page.mz-page, .wk-analysis-page.mz-page, .wkd-page.mz-page, .wkf-page.mz-page,
+.wkt-page.mz-page { background: transparent; }
+.wkh-page { --c: var(--dv-lav); }
+.wk-analysis-page { --c: var(--dv-lav); }
+.wkd-page { --c: var(--dv-sage); }
+.wkf-page { --c: var(--dv-sky); }
+.wkt-page { --c: var(--dv-amber); }
+.wka-headwk, .wkd-headtitle, .wkf-page .wkl-wk { color: var(--text-muted); }
+
+/* ── the glass body, restated: the old wash / strip / card rules outrank `.glass` (rule 11) ── */
+.wkh-page .wkh-wide.glass, .wkh-page .wkh-sm.glass, .wkh-page .lg-wcard.glass, .wkh-page .wkn-card.glass,
+.wk-analysis-page .wka-card.glass, .wk-analysis-page .wka-rev.glass, .wk-analysis-page .wka-lessgo.glass,
+.wkd-page .wkd-tile.glass, .wkf-page .wkd-tile.glass, .wkt-page .wkt-card.glass {
+  border: 0; border-radius: 22px; color: var(--text-primary);
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.60));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.10),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.wkh-page .wkh-wide:focus-visible, .wkh-page .wkh-sm:focus-visible, .wk-analysis-page .wka-lessgo:focus-visible,
+.wkd-page .wkd-tile:focus-visible, .wkf-page .wkd-tile:focus-visible {
+  outline: 2px solid var(--c); outline-offset: 2px;
+}
+
+/* ── the lit flat mini-cells (prototype `.mcell`): hub (8, two rows of 4) + napok (3) ── */
+.wkh-page .wkh-cellstack { gap: 6px; }
+.wkh-page .wkh-cells.mz-mcells, .wkd-page .wkd-cells.mz-mcells {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px;
+}
+.wkd-page .wkd-cells.mz-mcells { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 12px; }
+.wkh-page .mz-mcells .mz-c-lav, .wkd-page .mz-mcells .mz-c-lav { --c: var(--dv-lav); }
+.wkh-page .mz-mcells .mz-c-sage, .wkd-page .mz-mcells .mz-c-sage { --c: var(--dv-sage); }
+.wkh-page .mz-mcells .mz-c-sky, .wkd-page .mz-mcells .mz-c-sky { --c: var(--dv-sky); }
+.wkh-page .mz-mcells .mz-c-coral, .wkd-page .mz-mcells .mz-c-coral { --c: var(--dv-coral); }
+.wkh-page .mz-mcells .mz-c-amber, .wkd-page .mz-mcells .mz-c-amber { --c: var(--dv-amber); }
+.wkh-page .mz-mcells .mz-c-rose, .wkd-page .mz-mcells .mz-c-rose { --c: var(--dv-rose); }
+.wkh-page .wkh-cells.mz-mcells > span, .wkd-page .wkd-cells.mz-mcells > span {
+  min-width: 0; padding: 7px 2px 6px; border-radius: 10px; text-align: center;
+  background: color-mix(in srgb, var(--c) 10%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 28%, transparent);
+}
+.wkh-page .wkh-cells.mz-mcells b, .wkd-page .wkd-cells.mz-mcells b {
+  font-size: 13.5px; font-weight: 600; color: color-mix(in srgb, var(--c) 85%, var(--text-primary));
+}
+.wkh-page .wkh-cells.mz-mcells small, .wkd-page .wkd-cells.mz-mcells small {
+  display: block; font-size: 9px; font-weight: 500; letter-spacing: 0; text-transform: none; opacity: 1;
+  color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* the unit sits INSIDE <b>, so the shared `.mz-mcells span` cell skin must not reach it */
+.wkh-page .wkh-cells .wkh-cellunit {
+  padding: 0; border-radius: 0; background: none; box-shadow: none;
+  font-size: 9px; font-weight: 500; color: var(--text-muted);
+}
+
+/* ═══ Hub ═══ */
+/* the week stepper: two round glass buttons; the ::after that was the sheen is the 44px hit area */
+.wkh-page .wkh-nav { gap: 6px; }
+.wkh-page .wkh-nav button.glass.is-round {
+  --c: var(--dv-lav); width: 38px; height: 38px; padding: 0; border: 0; border-radius: 50%;
+  display: grid; place-items: center; font-size: 18px; color: var(--text-secondary);
+}
+.wkh-page .wkh-nav button.glass.is-round::after {
+  display: block; content: ''; position: absolute; inset: -3px; width: auto; border-radius: 50%;
+  background: none; opacity: 1; transform: none; animation: none;
+}
+.wkh-page .wkh-nav button.glass.is-round:disabled { opacity: 0.35; cursor: default; }
+.wkh-page .wkh-nav button.glass.is-round:disabled::after { display: none; }
+.wkh-page .wkh-nav button:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 2px; }
+
+/* the hero: a frameless lavender→gold halo, the week title, the ring, the sage delta pill */
+.wkh-page .wkh-hero {
+  --c: var(--dv-lav); --c2: var(--dv-amber);
+  overflow-x: clip; display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 6px 18px 10px;
+}
+.wkh-page .wkh-hero.uv-halo::before { top: 52%; width: 360px; height: 300px; }
+.wkh-page .wkh-title { font-size: 23px; font-weight: 600; letter-spacing: -0.6px; color: var(--text-primary); }
+.wkh-page .wkh-herorow { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 12px; }
+.wkh-page .wkh-heroside { width: auto; text-align: center; }
+.wkh-page .wkh-deltarow { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.wkh-page .wk-delta {
+  padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; color: var(--canvas);
+  background: var(--dv-sage); box-shadow: 0 0 10px color-mix(in srgb, var(--dv-sage) 55%, transparent);
+}
+.wkh-page .wk-delta.is-down {
+  background: var(--dv-amber); box-shadow: 0 0 10px color-mix(in srgb, var(--dv-amber) 55%, transparent);
+}
+.wkh-page .wk-delta.is-flat {
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.wkh-page .wkh-prev { margin-left: 0; font-size: 12px; color: var(--text-muted); }
+.wkh-page .wkh-trendlbl { color: var(--text-muted); }
+.wkh-page .wkh-sub { margin-top: 6px; font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); }
+
+/* the score ring (WeekScoreRing's svg): a lavender sweep with the kit glow; the numeral is the
+   §5 score gradient (ink → pale lavender → warm gold) with the breathing glow */
+.wkh-page .wk-ring { position: relative; width: 150px; height: 150px; background: none; }
+.wkh-page .wk-ring-svg {
+  position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; transform: rotate(-90deg);
+}
+.wkh-page .wk-ring .uv-ring-track, .wkh-page .wk-ring .uv-ring-prog { stroke-width: 5.5; }
+.wkh-page .wk-ring .uv-ring-prog {
+  stroke: var(--dv-lav); filter: drop-shadow(0 0 5px color-mix(in srgb, var(--dv-lav) 60%, transparent));
+}
+.wkh-page .wk-ring .in { position: relative; width: auto; height: auto; background: none; box-shadow: none; gap: 2px; }
+.wkh-page .wk-ring b {
+  font-family: var(--ff-display); font-size: 56px; font-weight: 300; letter-spacing: -3px; line-height: 1;
+  background: linear-gradient(180deg, var(--text-primary), #CFC6EE 60%, #FFD08A);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 12px rgba(171, 159, 210, 0.45));
+}
+.wkh-page .wk-ring b.is-learning {
+  font-size: 22px; font-weight: 500; letter-spacing: -0.4px; background: none; color: var(--text-secondary); filter: none;
+}
+.wkh-page .wk-ring small {
+  font-size: 11px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text-muted);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .wkh-page .wk-ring b:not(.is-learning) { animation: uv-glow 5s ease-in-out 1s infinite; }
+}
+
+/* section label + honesty footnote */
+.wkh-page .wkh-lsec { padding: 10px 2px 0; }
+.wkh-page .wkh-lsec-eb { font-size: 10px; letter-spacing: 1.4px; color: var(--text-muted); }
+.wkh-page .wkh-foot {
+  padding: 12px 10px 0; font-size: 11.5px; font-weight: 400; line-height: 1.5; text-align: center; color: var(--text-muted);
+}
+
+/* the four view tiles: analysis lav (wide), lessons gold + days sage (duo), discoveries sky (wide) */
+.wkh-page .wkh-wide.glass { --c: var(--dv-lav); display: block; width: 100%; padding: 14px 15px; text-align: left; }
+.wkh-page .wkh-wide.disc.glass { --c: var(--dv-sky); }
+.wkh-page .wkh-row { gap: 10px; }
+.wkh-page .wkh-tiletitle { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; color: var(--text-primary); }
+.wkh-page .wkh-chev { font-size: 16px; color: var(--text-muted); }
+.wkh-page .wkh-stch {
+  padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 600; letter-spacing: 0;
+  color: color-mix(in srgb, var(--dv-lav) 80%, var(--text-primary));
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.wkh-page .wkh-stch.warn {
+  color: color-mix(in srgb, var(--dv-amber) 80%, var(--text-primary));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 35%, transparent);
+}
+.wkh-page .wkh-snip { margin-top: 9px; font-size: 13px; font-weight: 400; line-height: 1.5; color: var(--text-secondary); }
+.wkh-page .wk-minibars { gap: 6px; height: 46px; margin-top: 10px; }
+.wkh-page .wk-minibars i {
+  flex: 0 0 14px; border-radius: 4px 4px 2px 2px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 55%, #fff), var(--c));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--c) 45%, transparent);
+}
+.wkh-page .wk-minibars i.sc-non {
+  background: transparent; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 40%, transparent);
+}
+.wkh-page .wkh-widefoot { margin-top: 9px; gap: 8px; font-size: 11px; color: var(--text-muted); }
+.wkh-page .wkh-open { font-size: 11px; font-weight: 600; color: color-mix(in srgb, var(--dv-lav) 80%, var(--text-primary)); }
+.wkh-page .wkh-disceb { color: color-mix(in srgb, var(--dv-sky) 75%, var(--text-primary)); }
+.wkh-page .wkh-disctitle { margin-top: 2px; font-size: 15px; font-weight: 600; letter-spacing: -0.3px; color: var(--text-primary); }
+.wkh-page .wkh-discparts { min-width: 0; font-size: 12px; line-height: 1.4; color: var(--text-secondary); }
+.wkh-page .wkh-discempty { margin-top: 8px; font-size: 12px; color: var(--text-secondary); }
+.wkh-page .wkh-dots { gap: 5px; flex: none; }
+.wkh-page .wkh-dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--dc); box-shadow: 0 0 6px var(--dc); }
+.wkh-page .wkh-dots i.pattern { --dc: var(--dv-lav); }
+.wkh-page .wkh-dots i.fact { --dc: var(--dv-amber); }
+.wkh-page .wkh-dots i.life { --dc: var(--dv-sky); }
+.wkh-page .wkh-dots i.memoir { --dc: var(--dv-rose); }
+.wkh-page .wkh-dots i.prediction { --dc: var(--dv-coral); }
+
+/* „Készítsd el most": the lit lavender CTA with the t-score icon (every colour restated, rule 36) */
+.wkh-page .wkh-genbtn {
+  display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; min-height: 44px;
+  padding: 10px 16px; border: 0; border-radius: 999px; font-size: 13px; font-weight: 700;
+  color: var(--canvas); background: var(--dv-lav);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--dv-lav) 55%, transparent);
+}
+.wkh-page .wkh-genbtn .t-ico { filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35)); }
+.wkh-page .wkh-genbtn:disabled { opacity: 0.55; }
+.wkh-page .wkh-genbtn:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 2px; }
+
+.wkh-page .wkh-duo { gap: 10px; }
+.wkh-page .wkh-sm.glass {
+  --c: var(--dv-amber); display: flex; flex-direction: column; gap: 4px; min-width: 0; min-height: 150px;
+  padding: 14px 15px; text-align: left;
+}
+.wkh-page .wkh-sm.days.glass { --c: var(--dv-sage); }
+.wkh-page .wkh-sm .big { margin-top: 4px; font-size: 24px; font-weight: 300; letter-spacing: -1px; color: var(--text-primary); }
+.wkh-page .wkh-sm .big span { font-size: 12px; font-weight: 500; letter-spacing: 0; color: var(--text-muted); }
+.wkh-page .wkh-sm .lb, .wkh-page .wkh-sm .lb.less, .wkh-page .wkh-sm .lb.days {
+  font-size: 14px; font-weight: 600; color: var(--text-primary);
+}
+.wkh-page .wkh-sm .sub { font-size: 11px; line-height: 1.35; color: var(--text-muted); }
+/* the days tile's 7-segment ring (prototype `seg7`): one arc per day in its band hue; a tanulom day
+   in the muted hue; nincs adat / future as a bare track. The `i`s keep their titles + state classes. */
+.wkh-page .wkh-miniring {
+  position: relative; width: 44px; height: 44px; flex: none; gap: 0; margin-top: auto;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--dv-sage) 45%, transparent));
+}
+.wkh-page .wkh-miniring i {
+  position: absolute; inset: 0; width: auto; height: auto; border-radius: 50%; box-shadow: none; opacity: 1;
+  background: conic-gradient(from calc(var(--k, 0) * 51.43deg + 4deg), var(--c) 0 43deg, transparent 0);
+  -webkit-mask: radial-gradient(circle, transparent 16px, #000 16.5px);
+  mask: radial-gradient(circle, transparent 16px, #000 16.5px);
+}
+.wkh-page .wkh-miniring i::after { display: none; }
+.wkh-page .wkh-miniring i.is-nodata, .wkh-page .wkh-miniring i.is-future {
+  background: conic-gradient(from calc(var(--k, 0) * 51.43deg + 4deg), rgba(245, 239, 230, 0.08) 0 43deg, transparent 0);
+}
+
+/* Célok · a hét iránya: one sage glass; the rows, the goal chip and the CTA inside are flat */
+.wkh-page .lg-wcard.glass { --c: var(--dv-sage); margin-bottom: 0; padding: 4px 15px 14px; }
+.wkh-page .lg-wcard-eb { color: var(--text-muted); }
+.wkh-page .lg-wcard-cnt { font-size: 11px; color: var(--text-muted); }
+.wkh-page .lg-wgrow + .lg-wgrow { border-top: 1px solid var(--divider); }
+.wkh-page .lg-wgrow .nm { font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+.wkh-page .lg-wgrow .x { font-size: 11.5px; line-height: 1.4; color: var(--text-secondary); }
+.wkh-page .lg-goalchip {
+  min-width: 0; padding: 3px 9px 3px 7px; font-size: 11px; font-weight: 600;
+  color: color-mix(in srgb, var(--dc, var(--dv-sage)) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--dc, var(--dv-sage)) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dc, var(--dv-sage)) 30%, transparent);
+}
+.wkh-page .lg-goalchip i { box-shadow: 0 0 5px var(--dc, var(--dv-sage)); }
+.wkh-page .lg-wcard-cta {
+  display: inline-flex; align-items: center; justify-content: center; width: auto; min-height: 44px;
+  margin-top: 10px; padding: 0 14px; border: 0; border-radius: 999px; font-size: 12px; font-weight: 600;
+  color: color-mix(in srgb, var(--dv-sage) 80%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-sage) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-sage) 30%, transparent);
+}
+
+/* Mezo · a következő heted: a lavender glass, prose upright (rule 23) */
+.wkh-page .wkn-card.glass { --c: var(--dv-lav); padding: 15px 15px 14px; }
+.wkh-page .wkn-head { display: flex; align-items: center; gap: 10px; }
+.wkh-page .wkn-eb {
+  min-width: 0; font-size: 10px; letter-spacing: 1.4px; white-space: normal;
+  color: color-mix(in srgb, var(--dv-lav) 75%, var(--text-primary));
+}
+.wkh-page .wkn-prose { margin-top: 9px; font-size: 14px; line-height: 1.55; color: var(--text-primary); }
+.wkh-page .wkn-ghost { margin-top: 9px; font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+
+/* the shared FeedbackChips, flat inside these two cards only (the component serves 15 surfaces) */
+.wkh-page .wkn-fb .chip, .wk-analysis-page .wka-fb .chip {
+  min-height: 36px; border: 0; border-radius: 999px; font-size: 12px; font-weight: 600;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.wkh-page .wkn-fb .chip.brand, .wk-analysis-page .wka-fb .chip.brand {
+  color: var(--canvas); background: var(--dv-lav); box-shadow: 0 0 12px color-mix(in srgb, var(--dv-lav) 50%, transparent);
+}
+
+/* the loading skeleton on the dark ground */
+.wkh-page .wkh-skel, .wkd-page .wkd-skel {
+  background: linear-gradient(100deg, rgba(245, 239, 230, 0.04) 30%, rgba(245, 239, 230, 0.09) 50%, rgba(245, 239, 230, 0.04) 70%);
+  background-size: 300% 100%;
+}
+.wkh-page .wkh-skel.ring { width: 150px; height: 150px; margin: 12px auto 0; }
+
+/* ═══ Heti elemzés ═══ */
+.wk-analysis-page .wka-card.glass { --c: var(--dv-lav); margin-bottom: 10px; padding: 15px 15px 12px; }
+.wk-analysis-page .wka-cardhead .mz-eyebrow {
+  font-size: 15px; font-weight: 600; letter-spacing: -0.3px; text-transform: none; color: var(--text-primary);
+}
+.wk-analysis-page .wka-hint { font-size: 11px; color: var(--text-muted); }
+.wk-analysis-page .wka-dcols { gap: 6px; margin-top: 12px; }
+.wk-analysis-page .wka-col { min-width: 0; min-height: 44px; }
+.wk-analysis-page .wka-col:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 2px; border-radius: 6px; }
+.wk-analysis-page .wka-col .bar {
+  max-width: 26px; border-radius: 6px 6px 3px 3px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bc) 55%, #fff), var(--bc));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--bc) 45%, transparent);
+}
+.wk-analysis-page .wka-col .bar.sc-hi { --bc: var(--dv-sage); }
+.wk-analysis-page .wka-col .bar.sc-mid { --bc: var(--dv-amber); }
+.wk-analysis-page .wka-col .bar.sc-low { --bc: var(--dv-coral); }
+.wk-analysis-page .wka-col .bar.sc-non {
+  background: transparent; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--dv-lav) 40%, transparent);
+}
+.wk-analysis-page .wka-col .vl { font-size: 11px; font-weight: 600; color: var(--text-secondary); }
+.wk-analysis-page .wka-col .dw { font-size: 10.5px; font-weight: 500; letter-spacing: 0; color: var(--text-muted); }
+.wk-analysis-page .wka-col.is-today .vl, .wk-analysis-page .wka-col.is-today .dw { color: var(--dv-coral); }
+
+.wk-analysis-page .wka-rev.glass { --c: var(--dv-lav); margin-bottom: 10px; padding: 15px 15px 14px; }
+.wk-analysis-page .wka-revhead { gap: 10px; }
+.wk-analysis-page .wka-revlab {
+  flex: 1; min-width: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.3px; text-transform: none;
+  color: var(--text-primary);
+}
+.wk-analysis-page .wka-stamp { font-size: 11px; color: var(--text-muted); }
+/* rule 23: multi-sentence Mezo prose is upright Geist, never the italic serif */
+.wk-analysis-page .wka-prose {
+  margin-top: 10px; font-size: 15px; font-weight: 400; font-style: normal; line-height: 1.6; color: var(--text-primary);
+}
+.wk-analysis-page .wka-ghost {
+  margin-top: 10px; font-size: 14px; font-weight: 400; font-style: normal; line-height: 1.55; color: var(--text-secondary);
+}
+.wk-analysis-page .wka-ghost b { font-weight: 600; color: var(--text-primary); }
+.wk-analysis-page .wka-hlab {
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--divider); font-size: 10px; letter-spacing: 1.4px;
+  color: var(--text-muted);
+}
+.wk-analysis-page .wka-hlrow { margin-top: 10px; gap: 6px; }
+.wk-analysis-page .wka-hlch.tone-lav { --hc: var(--dv-lav); }
+.wk-analysis-page .wka-hlch.tone-gold { --hc: var(--dv-amber); }
+.wk-analysis-page .wka-hlch.tone-sky { --hc: var(--dv-sky); }
+.wk-analysis-page .wka-hlch.tone-rose { --hc: var(--dv-rose); }
+.wk-analysis-page .wka-hlch {
+  min-width: 0; max-width: 100%; min-height: 44px; padding: 6px 11px 6px 8px; border: 0; border-radius: 14px;
+  font-size: 12px; font-weight: 600; color: var(--text-primary);
+  background: color-mix(in srgb, var(--hc) 10%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--hc) 30%, transparent);
+}
+.wk-analysis-page .wka-hlch em {
+  font-size: 9.5px; font-weight: 600; letter-spacing: 1.2px; color: color-mix(in srgb, var(--hc) 80%, var(--text-primary));
+}
+.wk-analysis-page .wka-hlch .t-ico, .wk-analysis-page .wka-chatch .t-ico {
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+}
+.wk-analysis-page .wka-hlch:focus-visible { outline: 2px solid var(--hc); outline-offset: 2px; }
+.wk-analysis-page .wka-revfoot { margin-top: 14px; gap: 8px; }
+.wk-analysis-page .wka-chatch {
+  min-height: 44px; padding: 6px 14px; border: 0; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.wk-analysis-page .wka-chatch.is-lit {
+  color: var(--canvas); background: var(--dv-lav); box-shadow: 0 0 14px color-mix(in srgb, var(--dv-lav) 55%, transparent);
+}
+.wk-analysis-page .wka-chatch:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 2px; }
+.wk-analysis-page .wka-fb { width: 100%; margin-left: 0; padding-top: 10px; border-top: 1px solid var(--divider); }
+
+.wk-analysis-page .wka-lessgo.glass { --c: var(--dv-amber); gap: 12px; padding: 13px 14px; border-radius: 20px; }
+.wk-analysis-page .wka-lessgo .lb { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.wk-analysis-page .wka-lessgo .sub { font-size: 11.5px; color: var(--text-muted); }
+.wk-analysis-page .wka-lessgo .chev { font-size: 18px; color: var(--text-muted); }
+
+/* ═══ A hét napjai ═══ */
+.wkd-page .wkd-grid { gap: 10px; }
+.wkd-page .wkd-tile {
+  display: flex; flex-direction: column; gap: 7px; min-width: 0; min-height: 176px; padding: 12px;
+  border-radius: 20px; text-align: left; color: var(--text-primary);
+}
+/* the band hue lives on the tile that wears the glass (rule 4); a tanulom day is lavender */
+.wkd-page .wkd-tile.glass { --c: var(--dv-lav); }
+.wkd-page .wkd-tile.glass.is-hi { --c: var(--dv-sage); }
+.wkd-page .wkd-tile.glass.is-mid { --c: var(--dv-amber); }
+.wkd-page .wkd-tile.glass.is-low { --c: var(--dv-coral); }
+/* nincs adat + future: dashed, no glass (§3 rank 4) */
+.wkd-page .wkd-tile.uv-empty {
+  --c: var(--dv-sage); background: rgba(245, 239, 230, 0.025); box-shadow: none; opacity: 1;
+  border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent);
+}
+.wkd-page .wkd-tile.is-future.uv-empty { opacity: 0.75; cursor: default; }
+.wkd-page .wkd-trow { flex-wrap: wrap; row-gap: 4px; }
+.wkd-page .wkd-dow { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.wkd-page .wkd-dow.is-mut { color: var(--text-muted); }
+.wkd-page .wkd-dte { font-size: 10.5px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--text-muted); }
+.wkd-page .wkd-chv { color: var(--text-muted); }
+.wkd-page .wkd-ma {
+  padding: 2px 6px; border-radius: 999px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.8px;
+  color: var(--canvas); background: var(--c); box-shadow: 0 0 8px var(--c);
+}
+.wkd-page .wkd-scnum { font-size: 30px; font-weight: 300; letter-spacing: -1.4px; }
+.wkd-page .wkd-scnum small { font-size: 12px; font-weight: 400; letter-spacing: 0; color: var(--text-muted); }
+/* „tanulom" / „nincs adat" must fit a 320px half tile beside the six sparks: smaller, and the
+   score row wraps rather than overflow */
+.wkd-page .wkd-scnum.is-dash { font-size: 18px; font-weight: 400; letter-spacing: -0.3px; color: var(--text-secondary); }
+.wkd-page .wkd-sparks i.is-none { background: rgba(245, 239, 230, 0.08); }
+.wkd-page .wkd-chips { gap: 4px; margin-top: auto; }
+.wkd-page .wkd-chip {
+  min-width: 0; gap: 3px; padding: 3px 7px 3px 4px; border-radius: 999px; font-size: 10.5px; font-weight: 600;
+  color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--c) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent);
+}
+.wkd-page .wkd-chip.is-mut { opacity: 0.55; }
+.wkd-page .wkd-chip.is-note { --c: var(--dv-lav); }
+.wkd-page .wkd-chip .t-ico { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.45)); }
+.wkd-page .wkd-note { font-size: 11px; font-weight: 400; line-height: 1.4; color: var(--text-muted); }
+.wkd-page .wkd-legend {
+  justify-content: center; gap: 10px; margin-top: 14px; font-size: 11px; font-weight: 500; color: var(--text-secondary);
+}
+.wkd-page .wkd-legsep { background: var(--divider); opacity: 1; }
+.wkd-page .wkd-foot {
+  padding: 10px 10px 0; font-size: 11.5px; font-weight: 400; line-height: 1.5; text-align: center; color: var(--text-muted);
+}
+.wkd-page .wkd-empty.uv-empty, .wkd-page .wkd-errbox.uv-empty {
+  --c: var(--dv-sage); border-radius: 20px; padding: 16px; font-size: 13px; color: var(--text-secondary);
+}
+.wkd-page .wkd-errbox p { font-size: 13px; color: var(--text-secondary); }
+.wkd-page .wkd-retry {
+  color: var(--canvas); background: var(--dv-sage); box-shadow: 0 0 14px color-mix(in srgb, var(--dv-sage) 55%, transparent);
+}
+@media (max-width: 360px) {
+  .wkh-page .wkh-cells.mz-mcells { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wkd-page .wkd-chip { font-size: 9.5px; }
+}
+
+/* ═══ Heti felfedezések ═══ */
+/* the head card becomes the prototype's plain centred lead (not a lav card) */
+.wkf-page .wkl-head {
+  margin: 0 6px 14px; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none;
+  font-size: 13px; font-weight: 400; line-height: 1.5; text-align: center; color: var(--text-secondary);
+}
+.wkf-page .wkl-head b { font-weight: 600; color: var(--text-primary); }
+.wkf-page .wkd-grid { gap: 10px; }
+.wkf-page .wkd-tile.glass {
+  --c: var(--dv-lav); display: grid; gap: 6px; align-content: start; min-width: 0; min-height: 140px;
+  padding: 13px; border-radius: 20px; text-decoration: none;
+}
+.wkf-page .wkd-tile.wide.glass { min-height: 0; }
+.wkf-page .wkd-tile.gold.glass { --c: var(--dv-amber); }
+.wkf-page .wkd-tile.sky.glass { --c: var(--dv-sky); }
+.wkf-page .wkd-tile.rose.glass { --c: var(--dv-rose); }
+.wkf-page .wkd-tile.pred.glass { --c: var(--dv-coral); }
+.wkf-page .wkd-row { flex-wrap: wrap; gap: 10px; }
+.wkf-page .wkd-grow { flex: 1 1 140px; }
+.wkf-page .wkd-eb { font-size: 10px; font-weight: 600; letter-spacing: 1.4px; color: color-mix(in srgb, var(--c) 72%, var(--text-primary)); }
+.wkf-page .wkd-tile b { display: block; margin-top: 2px; font-size: 14.5px; font-weight: 600; line-height: 1.35; }
+.wkf-page .wkd-meta { font-size: 11px; color: var(--text-muted); }
+.wkf-page .wkd-chev { font-size: 16px; color: var(--text-muted); }
+/* the status chip: flat, its own hue, a 3D icon + the plain word (no ✓ ▲ ★ ◐ ✗ glyphs) */
+.wkf-page .wkd-stch {
+  display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%;
+  padding: 3px 9px 3px 5px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: color-mix(in srgb, var(--sc, var(--text-muted)) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--sc, var(--text-muted)) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sc, var(--text-muted)) 30%, transparent);
+}
+.wkf-page .wkd-stch.ok { --sc: var(--dv-sage); }
+.wkf-page .wkd-stch.lav { --sc: var(--dv-lav); }
+.wkf-page .wkd-stch.warn { --sc: var(--dv-amber); }
+.wkf-page .wkd-stch.mut { --sc: var(--text-muted); }
+.wkf-page .wkd-stch .t-ico { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.45)); }
+.wkf-page .wkl-ghost.uv-empty {
+  --c: var(--dv-sky); margin-bottom: 12px; padding: 14px 16px; border-radius: 20px;
+  background: rgba(245, 239, 230, 0.025); box-shadow: none;
+  border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent);
+}
+.wkf-page .wkl-ghost-tx { font-size: 13px; font-weight: 400; line-height: 1.5; color: var(--text-secondary); }
+.wkf-page .wkl-btn.primary {
+  color: var(--canvas); background: var(--dv-sky); box-shadow: 0 0 14px color-mix(in srgb, var(--dv-sky) 55%, transparent);
+}
+
+/* ═══ A hét tanulságai ═══ */
+.wkt-page .wkt-card.glass { --c: var(--dv-amber); margin-bottom: 0; padding: 16px 15px; }
+.wkt-page .wkt-card p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-secondary); }
+.wkt-page .wkt-links { display: flex; flex-wrap: wrap; gap: 6px; }
+.wkt-page .wkt-link {
+  display: inline-flex; align-items: center; min-width: 0; min-height: 44px; padding: 0 14px; border: 0;
+  border-radius: 999px; font-size: 12.5px; font-weight: 600; text-decoration: none;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.wkt-page .wkt-link.is-lit {
+  color: var(--canvas); background: var(--dv-amber); box-shadow: 0 0 12px color-mix(in srgb, var(--dv-amber) 50%, transparent);
+}
+.wkt-page .wkt-link:focus-visible { outline: 2px solid var(--dv-amber); outline-offset: 2px; }
 /* ── /uveg en het ── */

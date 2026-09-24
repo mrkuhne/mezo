@@ -12,26 +12,32 @@
 // These are TRACES, not proposals: everything here already happened, by itself.
 // That is the whole difference from /me/week/tanulsagok, and the head card in
 // WeekDiscoveriesPage says so.
+//
+// Üveg (mezo-me75u.6): each tile is `.glass` in its tone, with Titanium 3D art. The status
+// chips are flat and carry a 3D icon + the plain word; the old text glyphs (✓ ▲ ★ ◐ ✗) are
+// gone, the meaning lives in the word itself (bible rules 16, 19).
 // ============================================================
 import { Link } from 'react-router-dom'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { huMonthDay } from '@/shared/lib/dates'
 import type { WeeklyReviewDigest } from '@/data/me/weeklyReviewHooks'
 
 /** The digest's own `event` values (wire: confirmed | reinforced | promoted). An
  *  unknown kind renders the muted chip rather than a guess. */
-const PATTERN_EVENT: Record<string, { label: string; chip: string }> = {
-  confirmed: { label: '✓ Megerősítve', chip: 'ok' },
-  reinforced: { label: '▲ Erősödött', chip: 'lav' },
-  promoted: { label: '★ Előléptetve', chip: 'warn' },
+interface StatusChip { label: string; chip: string; art?: Icon3DName }
+
+const PATTERN_EVENT: Record<string, StatusChip> = {
+  confirmed: { label: 'Megerősítve', chip: 'ok', art: 't-tick' },
+  reinforced: { label: 'Erősödött', chip: 'lav', art: 't-up' },
+  promoted: { label: 'Előléptetve', chip: 'warn', art: 't-record' },
 }
 
 /** Prediction outcome (wire: pending | validated | missed). `missed` is amber,
  *  never red — the floor is terracotta. */
-const PREDICTION_STATUS: Record<string, { label: string; chip: string }> = {
-  pending: { label: '◐ Folyamatban', chip: 'lav' },
-  validated: { label: '✓ Bevált', chip: 'ok' },
-  missed: { label: '✗ Nem jött be', chip: 'warn' },
+const PREDICTION_STATUS: Record<string, StatusChip> = {
+  pending: { label: 'Folyamatban', chip: 'lav', art: 't-clock' },
+  validated: { label: 'Bevált', chip: 'ok', art: 't-tick' },
+  missed: { label: 'Nem jött be', chip: 'warn', art: 't-skip' },
 }
 
 /** '2026-05-23' → 'máj 23.' (the prototype's life-event date face). */
@@ -49,11 +55,11 @@ interface TileProps {
   to: string
   tone: 'lav' | 'gold' | 'sky' | 'rose' | 'pred'
   wide?: boolean
-  icon: ClayIconName
+  icon: Icon3DName
   eyebrow: string
   title: string
   delayMs: number
-  chip?: { label: string; chip: string }
+  chip?: StatusChip
   meta?: string
   chev?: boolean
 }
@@ -62,24 +68,28 @@ function DiscoveryTile({ to, tone, wide, icon, eyebrow, title, delayMs, chip, me
   return (
     <Link
       to={to}
-      className={`wkd-tile ${tone}${wide ? ' wide' : ''} rise`}
+      className={`wkd-tile ${tone}${wide ? ' wide' : ''} glass rise`}
       style={{ '--d': `${delayMs}ms` } as React.CSSProperties}
     >
       {/* Wide tiles put the icon, the text and the status chip on ONE row; half tiles
           stack them as flat grid children — the prototype's two `.dsct` shapes. */}
       {wide ? (
         <div className="wkd-row">
-          <span className="wkd-pic"><ClayIcon name={icon} size={20} /></span>
+          <Icon3D name={icon} size={36} />
           <div className="wkd-grow">
             <div className={`wkd-eb ${tone}`}>{eyebrow}</div>
             <b>{title}</b>
           </div>
-          {chip && <span className={`wkd-stch ${chip.chip}`}>{chip.label}</span>}
+          {chip && (
+            <span className={`wkd-stch ${chip.chip}`}>
+              {chip.art && <Icon3D name={chip.art} size={16} />}{chip.label}
+            </span>
+          )}
           {chev && <span className="wkd-chev" aria-hidden="true">›</span>}
         </div>
       ) : (
         <>
-          <span className="wkd-pic"><ClayIcon name={icon} size={20} /></span>
+          <Icon3D name={icon} size={36} />
           <div className={`wkd-eb ${tone}`}>{eyebrow}</div>
           <b>{title}</b>
         </>
@@ -100,7 +110,7 @@ export function WeekDiscoveries({ digest }: { digest: WeeklyReviewDigest | null 
       {digest.patterns.map((p) => (
         <DiscoveryTile
           key={`p-${p.pairKey}`} to={`/mezo/patterns/${p.pairKey}`} tone="lav" wide
-          icon="i-minta" eyebrow="Minta" title={p.title} delayMs={next()}
+          icon="t-pattern" eyebrow="Minta" title={p.title} delayMs={next()}
           chip={PATTERN_EVENT[p.event] ?? { label: p.event, chip: 'mut' }}
         />
       ))}
@@ -109,27 +119,27 @@ export function WeekDiscoveries({ digest }: { digest: WeeklyReviewDigest | null 
           // The SPECIFIC fact, not the list — the id travels in the query so the
           // Tudástár can focus it (see the gap note in the slice report).
           key={`f-${f.id}`} to={`/mezo/knowledge?fact=${f.id}`} tone="gold" wide
-          icon="i-tudas" eyebrow="Új tudás" title={f.text} delayMs={next()} chev
+          icon="t-book" eyebrow="Új tudás" title={f.text} delayMs={next()} chev
         />
       ))}
       {digest.lifeEvents.map((e) => (
         <DiscoveryTile
           key={`l-${e.id}`} to="/mezo/knowledge" tone="sky"
-          icon="i-cel" eyebrow="Életesemény" title={e.title} delayMs={next()}
+          icon="t-pin" eyebrow="Életesemény" title={e.title} delayMs={next()}
           meta={huDayDot(e.occurredOn)}
         />
       ))}
       {digest.memoir && (
         <DiscoveryTile
           key="memoir" to="/mezo/memoir" tone="rose"
-          icon="i-memoar" eyebrow="Emlékkönyv" title="Új bejegyzés készült a hétről"
+          icon="t-scroll" eyebrow="Emlékkönyv" title="Új bejegyzés készült a hétről"
           delayMs={next()} meta="olvasd el ›"
         />
       )}
       {digest.predictions.map((p) => (
         <DiscoveryTile
           key={`r-${p.id}`} to="/mezo/predictions" tone="pred" wide
-          icon="i-kristaly" eyebrow="Előrejelzés" title={p.title} delayMs={next()}
+          icon="t-orb" eyebrow="Előrejelzés" title={p.title} delayMs={next()}
           chip={PREDICTION_STATUS[p.status] ?? { label: p.status, chip: 'mut' }}
         />
       ))}

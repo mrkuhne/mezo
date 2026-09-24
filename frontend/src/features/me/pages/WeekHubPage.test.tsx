@@ -130,14 +130,17 @@ describe('Heti hub (mock mode)', () => {
     expect(screen.getByText('napi pontszám · 5 / 7 nap')).toBeInTheDocument()
   })
 
-  test('closed week WITHOUT an analysis: NOT the running-week ghost, plus „✦ Készítsd el most"', () => {
+  test('closed week WITHOUT an analysis: NOT the running-week ghost, plus „Készítsd el most" (t-score icon, no ✦ glyph)', () => {
     hoisted.dropReview = true
     renderPage(`/me/week?start=${mockMeWeekStart}`)
     expect(screen.getByText('Ez a hét lezárt, de nem készült elemzés — a hét adatai megvannak, bármikor pótolható.')).toBeInTheDocument()
     expect(screen.queryByText(/Hétfő reggel érkezik/)).not.toBeInTheDocument()
     expect(screen.getByText('nincs még')).toBeInTheDocument()
     expect(screen.getByText('lezárt hét · elemzés nélkül')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: '✦ Készítsd el most' }))
+    const gen = screen.getByRole('button', { name: 'Készítsd el most' })
+    // üveg U6: the ✦ glyph became the t-score 3D icon; the words carry the meaning
+    expect(gen.querySelector('use')?.getAttribute('href')).toBe('#t-score')
+    fireEvent.click(gen)
     expect(hoisted.regenerateSpy).toHaveBeenCalledTimes(1)
   })
 
@@ -240,6 +243,6 @@ describe('Heti hub (real mode)', () => {
     renderPage(`/me/week?start=${mockMeWeekStart}`)
     await waitFor(() => expect(screen.getByText('nincs még')).toBeInTheDocument())
     expect(screen.getByText('Ez a hét lezárt, de nem készült elemzés — a hét adatai megvannak, bármikor pótolható.')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '✦ Készítsd el most' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Készítsd el most' })).toBeInTheDocument()
   })
 })

@@ -52,10 +52,14 @@ describe('WeeklyWeightCard (mock mode)', () => {
     expect(screen.getByText('−0.2')).toBeInTheDocument()
   })
 
-  test('the diagnose button is the house pill, disabled in mock (costs a real SMART call), with the demo hint', () => {
+  test('the diagnose button is the lit lavender ask with the t-score icon, disabled in mock (costs a real SMART call), with the demo hint', () => {
     renderCard()
-    const btn = screen.getByRole('button', { name: '✦ Mi történt ezen a héten?' })
-    expect(btn).toHaveClass('mzp-cta')
+    const btn = screen.getByRole('button', { name: 'Mi történt ezen a héten?' })
+    // Üveg (mezo-me75u.6): the „✦" glyph became the t-score sprite icon; the AI meaning is data-ai
+    expect(btn).toHaveClass('wt-ask')
+    expect(btn).toHaveAttribute('data-ai', 'diagnosis')
+    expect(btn.querySelector('use')?.getAttribute('href')).toBe('#t-score')
+    expect(btn.textContent).not.toContain('✦')
     expect(btn).toBeDisabled()
     expect(screen.getByText('demo — a kérdezés az élő appban fut')).toBeInTheDocument()
   })
@@ -76,7 +80,7 @@ describe('WeeklyWeightCard (real mode) — diagnose button', () => {
       }),
     )
     renderCard()
-    const btn = screen.getByRole('button', { name: '✦ Mi történt ezen a héten?' })
+    const btn = screen.getByRole('button', { name: 'Mi történt ezen a héten?' })
     await waitFor(() => expect(btn).toBeEnabled())
     fireEvent.click(btn)
     await waitFor(() => expect(screen.getByText(/diagnózis oldal/)).toBeInTheDocument())
@@ -93,7 +97,7 @@ describe('WeeklyWeightCard (real mode) — diagnose button', () => {
       }),
     )
     renderCard()
-    const btn = screen.getByRole('button', { name: '✦ Mi történt ezen a héten?' })
+    const btn = screen.getByRole('button', { name: 'Mi történt ezen a héten?' })
     await waitFor(() => expect(btn).toBeEnabled())
     fireEvent.click(btn)
     await waitFor(() => expect(screen.getByText(/diagnózis oldal/)).toBeInTheDocument())
@@ -106,7 +110,7 @@ describe('WeeklyWeightCard (real mode) — diagnose button', () => {
         HttpResponse.json([{ code: 'DIAGNOSIS_INSUFFICIENT_WEIGHINS', message: 'too few' }], { status: 409 })),
     )
     renderCard()
-    const btn = screen.getByRole('button', { name: '✦ Mi történt ezen a héten?' })
+    const btn = screen.getByRole('button', { name: 'Mi történt ezen a héten?' })
     await waitFor(() => expect(btn).toBeEnabled())
     fireEvent.click(btn)
     await waitFor(() =>
@@ -125,7 +129,7 @@ describe('WeeklyWeightCard (real mode) — diagnose button', () => {
         HttpResponse.json([{ code: 'DIAGNOSIS_INSUFFICIENT_DATA', message: 'thin' }], { status: 409 })),
     )
     renderCard()
-    const btn = screen.getByRole('button', { name: '✦ Mi történt ezen a héten?' })
+    const btn = screen.getByRole('button', { name: 'Mi történt ezen a héten?' })
     await waitFor(() => expect(btn).toBeEnabled())
     fireEvent.click(btn)
     await waitFor(() =>

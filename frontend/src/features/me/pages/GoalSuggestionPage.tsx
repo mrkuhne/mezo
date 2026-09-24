@@ -4,6 +4,7 @@ import { useGoal, useGoalSuggestionPreview, useSuggestionActions } from '@/data/
 import { ApiError } from '@/data/_client/api'
 import { GoalSuggestionDiffGrid } from '@/features/me/components/GoalSuggestionDiffGrid'
 import { toSuggestionDiffRows } from '@/features/me/logic/goalSuggestionDiff'
+import { Icon3D } from '@/shared/ui/clay'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useToast } from '@/shared/ui/ToastProvider'
@@ -64,18 +65,18 @@ export function GoalSuggestionPage() {
     await refetch()
   }
 
-  return <MozaikPage tone="coral" className="goal-suggestion-page">
-    <PageHead onBack={() => navigate('/me/goals/weight')} label="‹ Cél" />
+  return <MozaikPage tone="coral" className="goal-suggestion-page uv-goal">
+    <PageHead glass onBack={() => navigate('/me/goals/weight')} label="Cél" />
     {goalPending || pending ? <div className="goal-detail-loading" role="status" aria-label="Betöltés…"><span /><span /><span /></div>
       : !preview ? <EntranceGroup>
-        <PageHero icon="i-cel" name="Javaslat" big="Nem található" />
+        <PageHero art="t-note" accent="var(--dv-coral)" name="Javaslat" big="Nem található" />
         <PageBody><div className="goal-detail-notice rise">Ez a javaslat már nem érhető el.</div></PageBody>
       </EntranceGroup> : <EntranceGroup replayKey={`${preview.status}-${stale}`}>
-        <PageHero icon="i-cel" iconSize={58} name="Javaslat" big="Mielőtt alkalmazod" sub={REASON[preview.reasonCode] ?? 'Célhangolási javaslat'}>
+        <PageHero art="t-note" accent="var(--dv-coral)" iconSize={78} name="Javaslat" big="Mielőtt alkalmazod" sub={REASON[preview.reasonCode] ?? 'Célhangolási javaslat'}>
           <span className={`gs-status gs-status-${preview.status}`}>{preview.status === 'proposed' ? 'Átnézésre vár' : HISTORY[preview.status]}</span>
         </PageHero>
         <PageBody principle="Te döntesz: alkalmazás előtt minden változás ugyanazon a nézeten ellenőrizhető.">
-          <section className="gs-reason-card rise" aria-label="A javaslat indoklása">
+          <section className="gs-reason-card glass rise" aria-label="A javaslat indoklása">
             <div>
               <span className="goal-detail-kicker">Miért javasoljuk?</span>
               <p>{REASON_DETAIL[preview.reasonCode] ?? 'Az app a célod és a legfrissebb adatok alapján készítette elő ezt a módosítást.'}</p>
@@ -105,7 +106,7 @@ export function GoalSuggestionPage() {
             <p>A javaslat „előtte–utána” hatását látod; innen már nem indítható új alkalmazás.</p>
           </section> : <div className="gs-actions rise">
             <button type="button" className="gs-apply np-press" disabled={!canApply} onClick={() => void apply()}>
-              {writePending ? 'Alkalmazás…' : 'Módosítások alkalmazása'}
+              <Icon3D name="t-tick" size={20} />{writePending ? 'Alkalmazás…' : 'Módosítások alkalmazása'}
             </button>
             <button type="button" className="gs-later" disabled={writePending} onClick={() => navigate('/me/goals/weight')}>Most nem</button>
             {!confirmDismiss ? <button type="button" className="gs-dismiss" disabled={writePending} onClick={() => setConfirmDismiss(true)}>Javaslat elvetése</button>

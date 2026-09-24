@@ -5,6 +5,7 @@
 import { useFeedback } from '@/data/hooks'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import type { WeeklySuggestion } from '@/data/insights/weeklySuggestionApi'
+import { Icon3D } from '@/shared/ui/clay'
 
 export function WeekNextCard({ suggestion }: { suggestion: WeeklySuggestion | null }) {
   const feedbackIds = suggestion ? [suggestion.id] : []
@@ -14,14 +15,19 @@ export function WeekNextCard({ suggestion }: { suggestion: WeeklySuggestion | nu
   // which had no page padding of its own. Inside the Heti hub's PageBody it made the card
   // narrower than every sibling AND doubled the panel's rhythm (mezo-d20.11.2).
   return (
-    <div className="card" style={{ padding: 18 }}>
-      <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Mezo · a következő heted</span>
+    // Üveg (mezo-me75u.6): a lavender glass card with the t-score art; prose upright (bible
+    // rule 23), the feedback chips flat inside it (styled in the `uveg en het` block).
+    <div className="card wkn-card glass">
+      <div className="wkn-head">
+        <Icon3D name="t-score" size={34} />
+        <span className="eyebrow wkn-eb">Mezo · a következő heted</span>
+      </div>
       {suggestion != null ? (
         <>
-          <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-primary)', lineHeight: 1.5 }}>
+          <p className="wkn-prose">
             {suggestion.prose}
           </p>
-          <div className="mt-md">
+          <div className="mt-md wkn-fb">
             <FeedbackChips
               key={suggestion.id}
               value={feedback.get(suggestion.id)}
@@ -31,7 +37,7 @@ export function WeekNextCard({ suggestion }: { suggestion: WeeklySuggestion | nu
           </div>
         </>
       ) : (
-        <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>
+        <p className="wkn-ghost">
           A társ heti tervjavaslata hamarosan.
         </p>
       )}

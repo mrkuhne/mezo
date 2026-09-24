@@ -36,30 +36,30 @@ export function RemDurationCard({ entries }: { entries: SleepEntry[] }) {
   const py = (r: number) => PAD_T + innerH - ((clamp(r, Y_RANGE[0], Y_RANGE[1]) - Y_RANGE[0]) / (Y_RANGE[1] - Y_RANGE[0])) * innerH
 
   return (
-    <div style={{ padding: '0 24px 16px' }}>
-      <div style={{ marginBottom: 10 }}><Eyebrow>Ha rövidebb az éjszaka</Eyebrow></div>
-      <div className="card" style={{ padding: 14 }}>
+    <div className="rdc">
+      <div className="alv-sec-head"><Eyebrow>Ha rövidebb az éjszaka</Eyebrow></div>
+      <div className="rdc-card glass">
         <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block', overflow: 'visible' }}
              role="img" aria-label="Alváshossz és REM összefüggése">
           {[120, 150, 180].map(g => (
             <g key={g}>
-              <line x1={PAD_L} y1={py(g)} x2={W} y2={py(g)} stroke="var(--border-subtle)" strokeWidth="1" />
-              <text x={0} y={py(g) + 3} fontSize="8.5" fontWeight="800" fill="var(--faint)">{g}p</text>
+              <line x1={PAD_L} y1={py(g)} x2={W} y2={py(g)} stroke="var(--divider)" strokeWidth="1" />
+              <text x={0} y={py(g) + 3} fontSize="8.5" fontWeight="800" fill="var(--text-muted)">{g}p</text>
             </g>
           ))}
           <line x1={px(SHORT_NIGHT_H)} y1={PAD_T} x2={px(SHORT_NIGHT_H)} y2={PAD_T + innerH}
-                stroke="var(--warning)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
-          <text x={px(SHORT_NIGHT_H)} y={H - 5} textAnchor="middle" fontSize="8.5" fontWeight="800" fill="var(--warning)">
+                stroke="var(--dv-coral)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
+          <text x={px(SHORT_NIGHT_H)} y={H - 5} textAnchor="middle" fontSize="8.5" fontWeight="800" fill="var(--dv-coral)">
             {SHORT_NIGHT_H}ó
           </text>
           {points.map((p, i) => (
-            <circle key={i} cx={px(p.hours)} cy={py(p.rem)} r="3.4" fill="var(--ph-rem)"
+            <circle key={i} className="rdc-dot" cx={px(p.hours)} cy={py(p.rem)} r="3.4" fill="var(--ph-rem)"
                     opacity={p.hours < SHORT_NIGHT_H ? 0.5 : 0.95} />
           ))}
         </svg>
-        <p style={{ marginTop: 11, paddingTop: 11, borderTop: '1px solid var(--border-subtle)', fontSize: 11.5, fontWeight: 700, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+        <p className="rdc-lead">
           A {SHORT_NIGHT_H} óra alatti éjszakáidon átlagosan{' '}
-          <b style={{ color: 'var(--text-primary)' }}>{stats.deltaMin} perccel</b> kevesebb a REM-ed.
+          <b>{stats.deltaMin} perccel</b> kevesebb a REM-ed.
           A rövid éjszaka nem arányosan vág — a hajnali REM-et veszi el.
         </p>
       </div>

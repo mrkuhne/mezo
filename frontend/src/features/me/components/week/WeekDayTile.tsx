@@ -12,9 +12,13 @@
 //
 // mezo-jcpt.5: négy sub-jelről hatra — a wire-alak és a nap-oldal ugyanazt a hat
 // dimenzió-idet használja.
+//
+// Üveg (mezo-me75u.6): a scored or „tanulom" day is a `.glass` tile (its hue set per band in
+// the `uveg en het` block); a „nincs adat" day and a future day are dashed `uv-empty`. The
+// chips are flat with Titanium 3D icons. `data-state` is the styling hook for the four states.
 // ============================================================
 import type { CSSProperties } from 'react'
-import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { cn } from '@/shared/lib/cn'
 import { huMonthDay } from '@/shared/lib/dates'
 import { scoreBand, scoreBandInk } from '@/features/me/logic/scoreBand'
@@ -46,7 +50,8 @@ export function WeekDayTile({ day, todayIso, hasNote, delayMs, onOpen }: WeekDay
 
   if (state === 'future') {
     return (
-      <div className="wkd-tile is-future rise" style={style} data-testid="week-day-tile" data-date={day.date}>
+      <div className="wkd-tile is-future uv-empty rise" style={style} data-testid="week-day-tile" data-date={day.date}
+        data-state={state}>
         <div className="wkd-trow">
           <span className="wkd-dow is-mut">{dow}</span>
           <span className="wkd-dte">{tileDate(day.date)}</span>
@@ -61,8 +66,10 @@ export function WeekDayTile({ day, todayIso, hasNote, delayMs, onOpen }: WeekDay
   return (
     <button
       type="button"
-      className={cn('wkd-tile rise', `is-${scoreBand(day.score)}`, state !== 'scored' && 'is-thin')}
+      className={cn('wkd-tile rise', `is-${scoreBand(day.score)}`, state !== 'scored' && 'is-thin',
+        state === 'empty' ? 'uv-empty' : 'glass')}
       style={style}
+      data-state={state}
       onClick={onOpen}
       data-testid="week-day-tile"
       data-date={day.date}
@@ -103,19 +110,19 @@ export function WeekDayTile({ day, todayIso, hasNote, delayMs, onOpen }: WeekDay
 
       <div className="wkd-chips">
         {day.kcal != null && (
-          <span className="wkd-chip"><ClayIcon name="i-fuel" size={12} />{huInt(day.kcal)}</span>
+          <span className="wkd-chip"><Icon3D name="t-bowl" size={16} />{huInt(day.kcal)}</span>
         )}
         {day.sleepMin != null && (
-          <span className="wkd-chip"><ClayIcon name="i-alvas" size={12} />{fmtSleep(day.sleepMin)}</span>
+          <span className="wkd-chip"><Icon3D name="t-sleep" size={16} />{fmtSleep(day.sleepMin)}</span>
         )}
         {day.workoutCount > 0 && (
-          <span className="wkd-chip"><ClayIcon name="i-edzes" size={12} />{day.workoutCount}×</span>
+          <span className="wkd-chip"><Icon3D name="t-dumbbell" size={16} />{day.workoutCount}×</span>
         )}
         <span className={cn('wkd-chip', !day.checkinCount && 'is-mut')}>
-          <ClayIcon name="i-checkin" size={12} />{day.checkinCount}/4
+          <Icon3D name="t-checkin" size={16} />{day.checkinCount}/4
         </span>
         {hasNote && (
-          <span className="wkd-chip is-note"><ClaySpot name="s-orb" size={12} />jegyzet</span>
+          <span className="wkd-chip is-note"><Icon3D name="t-note" size={16} />jegyzet</span>
         )}
       </div>
 

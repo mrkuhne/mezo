@@ -1,3 +1,6 @@
+// Üveg (mezo-me75u.6): one glass sky card — the moving average glows sky, the raw line is
+// faint, the plan is a dashed sage line in its sage tolerance band, the last point a glowing
+// dot; too few points is the dashed empty state. CSS: `── uveg en suly (`.
 import type { WeightEntry } from '@/data/types'
 import type { GoalResponse } from '@/data/me/goalApi'
 import { huMonthDay } from '@/shared/lib/dates'
@@ -18,8 +21,8 @@ export function WeightTrendChart({ log, goalResponse, period }: {
   const data = sliceByPeriod(log, period)
   if (!win || data.length < 2) {
     return (
-      <div className="wt-chart" style={{ padding: 24, textAlign: 'center' }}>
-        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--mz-ink-mut)' }}>Kevés mérés ehhez az ablakhoz</span>
+      <div className="wt-chart wt-chart-empty uv-empty">
+        <span className="wt-chart-emptytx">Kevés mérés ehhez az ablakhoz</span>
       </div>
     )
   }
@@ -54,42 +57,42 @@ export function WeightTrendChart({ log, goalResponse, period }: {
   const lastVal = data[data.length - 1].value
 
   return (
-    <div className="wt-chart">
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }}>
+    <div className="wt-chart glass">
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block', overflow: 'visible' }}>
         <defs>
           <linearGradient id="wtc-area" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--lav)" stopOpacity="0.22" />
-            <stop offset="100%" stopColor="var(--lav)" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--dv-sky)" stopOpacity="0.30" />
+            <stop offset="100%" stopColor="var(--dv-sky)" stopOpacity="0" />
           </linearGradient>
         </defs>
 
         {yTicks.map((t, i) => (
           <g key={i}>
-            <line x1={PX0} x2={PX1} y1={t.y} y2={t.y} stroke="var(--border-subtle)" strokeDasharray="3 4" />
-            <text x={PX0 - 4} y={t.y + 3} fontSize="9" fill="var(--mz-ink-mut)" textAnchor="end" style={{ fontVariantNumeric: 'tabular-nums' }}>{t.label}</text>
+            <line x1={PX0} x2={PX1} y1={t.y} y2={t.y} stroke="var(--divider)" strokeDasharray="3 4" />
+            <text x={PX0 - 4} y={t.y + 3} fontSize="9" fill="var(--text-muted)" textAnchor="end" style={{ fontVariantNumeric: 'tabular-nums' }}>{t.label}</text>
           </g>
         ))}
 
-        {plan && <path d={bandPath} fill="color-mix(in srgb, var(--sage-deep) 14%, transparent)" />}
-        {plan && <path d={planPath} fill="none" stroke="var(--sage-deep)" strokeWidth="1.6" strokeDasharray="5 4" />}
+        {plan && <path className="wtc-band" d={bandPath} fill="color-mix(in srgb, var(--dv-sage) 13%, transparent)" />}
+        {plan && <path className="wtc-plan" d={planPath} fill="none" stroke="var(--dv-sage)" strokeWidth="1.6" strokeDasharray="5 4" />}
 
         <path d={areaPath} fill="url(#wtc-area)" />
-        <path d={path(pts)} fill="none" stroke="var(--lav-deep)" strokeWidth="1" opacity="0.4" strokeLinejoin="round" />
-        <path d={path(maPts)} fill="none" stroke="var(--lav-deep)" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
+        <path className="wtc-raw" d={path(pts)} fill="none" stroke="var(--text-primary)" strokeWidth="1.2" opacity="0.28" strokeLinejoin="round" />
+        <path className="wtc-ma" d={path(maPts)} fill="none" stroke="var(--dv-sky)" strokeWidth="2.6" strokeLinejoin="round" strokeLinecap="round" />
 
-        <circle cx={last.x} cy={last.y} r="4.5" fill="var(--lav-deep)" stroke="var(--canvas)" strokeWidth="2" />
-        <text x={last.x - 8} y={last.y - 8} fontSize="11" fontWeight="700" fill="var(--lav-deep)" textAnchor="end" style={{ fontVariantNumeric: 'tabular-nums' }}>{lastVal.toFixed(1)}</text>
+        <circle className="wtc-dot" cx={last.x} cy={last.y} r="5" fill="var(--dv-sky)" />
+        <text x={last.x - 8} y={last.y - 8} fontSize="11" fontWeight="600" fill="var(--text-primary)" textAnchor="end" style={{ fontVariantNumeric: 'tabular-nums' }}>{lastVal.toFixed(1)}</text>
 
         {xLabels.map((l, i) => (
-          <text key={i} x={l.x} y={H - 8} fontSize="9" fill="var(--mz-ink-mut)"
+          <text key={i} x={l.x} y={H - 8} fontSize="9" fill="var(--text-muted)"
             textAnchor={i === 0 ? 'start' : i === xLabels.length - 1 ? 'end' : 'middle'}>{huMonthDay(l.iso)}</text>
         ))}
       </svg>
 
       <div className="wt-leg">
-        <span><i style={{ background: 'var(--lav-deep)' }} /> tényleges</span>
-        {plan && <span><i style={{ background: 'var(--sage-deep)' }} /> terv</span>}
-        {plan && <span><i style={{ background: 'color-mix(in srgb, var(--sage-deep) 40%, transparent)' }} /> tűréssáv</span>}
+        <span><i className="is-actual" /> tényleges</span>
+        {plan && <span><i className="is-plan" /> terv</span>}
+        {plan && <span><i className="is-band" /> tűréssáv</span>}
       </div>
     </div>
   )

@@ -43,8 +43,8 @@ export function SleepChart({
   const qualPath = data.map((d, i) => (i === 0 ? 'M' : 'L') + xFor(i) + ' ' + yForQual(d.quality)).join(' ')
 
   return (
-    <div className="card" style={{ padding: 14 }}>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display: 'block' }}>
+    <div className="sch glass">
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display: 'block', overflow: 'visible' }}>
         <defs>
           <linearGradient id="sleep-bar" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--lav)" stopOpacity="0.8" />
@@ -91,11 +91,12 @@ export function SleepChart({
           )
         })}
 
-        {/* Quality line */}
+        {/* Quality line — the amber quality trace glows over the columns (üveg U6) */}
         <path
+          className="sch-qline"
           d={qualPath}
           fill="none"
-          stroke="var(--lav-deep)"
+          stroke="var(--dv-amber)"
           strokeWidth="1.8"
         />
 
@@ -103,16 +104,17 @@ export function SleepChart({
         {data.map((d, i) => (
           <circle
             key={i}
+            className="sch-qdot"
             cx={xFor(i)}
             cy={yForQual(d.quality)}
-            r="2.5"
-            fill="var(--lav-deep)"
-            stroke="var(--canvas)"
+            r="3"
+            fill="var(--dv-amber)"
+            stroke="var(--page)"
             strokeWidth="1.2"
           />
         ))}
       </svg>
-      <div className="row mt-sm gap-md" style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
+      <div className="sch-legend">
         {/* Gated on what's actually on screen (whole-branch review FIX 2): the phase swatches
             named colours that could be absent from every bar in the window, and a plain-bar
             window had no key for the colour it showed. A mixed window — the common case —
@@ -122,20 +124,20 @@ export function SleepChart({
           { label: 'könnyű', color: 'var(--ph-light)' },
           { label: 'REM', color: 'var(--ph-rem)' },
         ].map(l => (
-          <div className="row gap-xs" key={l.label}>
-            <div style={{ width: 10, height: 4, background: l.color }} />
-            <span style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{l.label}</span>
+          <div className="sch-lg" key={l.label}>
+            <i style={{ background: l.color }} />
+            <span>{l.label}</span>
           </div>
         ))}
         {hasPlainNight && (
-          <div className="row gap-xs">
-            <div style={{ width: 10, height: 4, background: 'var(--lav)' }} />
-            <span style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>időtartam</span>
+          <div className="sch-lg">
+            <i style={{ background: 'var(--lav)' }} />
+            <span>időtartam</span>
           </div>
         )}
-        <div className="row gap-xs">
-          <div style={{ width: 10, height: 2, background: 'var(--lav-deep)' }} />
-          <span style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>minőség 1-10</span>
+        <div className="sch-lg is-q">
+          <i style={{ background: 'var(--dv-amber)' }} />
+          <span>minőség 1-10</span>
         </div>
       </div>
     </div>

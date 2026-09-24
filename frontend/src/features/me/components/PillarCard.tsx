@@ -1,4 +1,4 @@
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { useSignalCatalog } from '@/data/hooks'
 import type { LifeGoalPillarResponse, PillarProgress } from '@/data/lifegoal/lifegoalApi'
 import { ARROW_CLASS, ARROW_GLYPH, DOT_CLASS, KIND_LABEL } from '@/features/me/logic/lifegoalLabels'
@@ -44,12 +44,15 @@ function valueLine(pillar: LifeGoalPillarResponse, progress: PillarProgress, uni
 // direction. `period` toggles the week 7-dot view vs. the month 28-cell heatmap, both fed
 // by the same `progress.days` (Task 9's Hét/Hónap chips, CelPage-driven).
 export function PillarCard({
-  pillar, progress, delayMs, period = 'week',
+  pillar, progress, delayMs, period = 'week', accent = 'var(--dv-sage)',
 }: {
   pillar: LifeGoalPillarResponse
   progress?: PillarProgress
   delayMs: number
   period?: 'week' | 'month'
+  /** Üveg (mezo-me75u.6): the goal's dimension accent — the card's glass `--c`, set on the
+   *  element that wears `.glass` (bible U1 rule 4). */
+  accent?: string
 }) {
   const honest = !progress || progress.arrow === 'insufficient'
   const arrowClass = honest ? 'none' : ARROW_CLASS[progress!.arrow]
@@ -59,15 +62,15 @@ export function PillarCard({
   const currentValue = progress?.currentValue !== undefined ? `${hu1(progress.currentValue)}${unit ? ` ${unit}` : ''}` : '—'
 
   return (
-    <div className={`lg-pillar rise ${pillar.active ? '' : 'off'}`} style={{ '--d': `${delayMs}ms` } as React.CSSProperties}>
+    <div className={`lg-pillar glass rise ${pillar.active ? '' : 'off'}`} style={{ '--d': `${delayMs}ms`, '--c': accent } as React.CSSProperties}>
       <div className="ph">
-        <ClayIcon name="i-cel" size={22} />
+        <Icon3D name="t-ring" size={30} />
         <span className="nm">{pillar.label}</span>
-        <span className={`lg-kind ${pillar.kind === 'linked' ? 'link' : ''}`}>{KIND_LABEL[pillar.kind]} · {ruleLine(pillar)}</span>
-        <span className={`lg-arrow ${arrowClass}`} style={{ marginLeft: 'auto' }}><span className="g" style={{ fontSize: 18 }}>{arrowGlyph}</span></span>
+        <span className={`lg-arrow ${arrowClass}`}><span className="g">{arrowGlyph}</span></span>
       </div>
+      <span className={`lg-kind ${pillar.kind === 'linked' ? 'link' : ''}`}>{KIND_LABEL[pillar.kind]} · {ruleLine(pillar)}</span>
       {honest
-        ? <div className="val"><b style={{ color: '#A2958A' }}>—</b><small>még nincs adat · az első nyíl 5 adat-nap után</small></div>
+        ? <div className="val is-none"><b>—</b><small>még nincs adat · az első nyíl 5 adat-nap után</small></div>
         : <div className="val"><b>{currentValue}</b><small>{valueLine(pillar, progress!, unit)}</small></div>}
       {period === 'month' && progress
         ? (
@@ -76,7 +79,7 @@ export function PillarCard({
           </div>
         )
         : (
-          <div className="lg-wk7" style={{ marginTop: 8, '--d': `${delayMs}ms` } as React.CSSProperties}>
+          <div className="lg-wk7" style={{ '--d': `${delayMs}ms` } as React.CSSProperties}>
             {(progress ? progress.days.slice(-7) : Array.from({ length: 7 }, () => null)).map((d, i) => (
               <i key={d?.day ?? i} className={d ? DOT_CLASS[d.status] : 'n'} style={{ '--i': i } as React.CSSProperties} />
             ))}

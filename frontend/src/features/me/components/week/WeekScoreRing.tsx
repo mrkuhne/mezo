@@ -3,6 +3,9 @@
 // Source: en-body.html `.wkring` + `ringTo()`, ×1.18. The sweep and the
 // numeral count up together off one `useCountUp`, so they can never drift.
 // Honest state: no score renders `tanulom` + a caption, NOT a zero ring.
+// Üveg (mezo-me75u.6): the sweep is an SVG ring on the kit's recipe (`uv-ring-track` /
+// `uv-ring-prog`, round caps + accent glow) instead of the old conic-gradient disc; the
+// sweep length still comes off the same `useCountUp`, so ring and numeral stay in step.
 // ============================================================
 import type { CSSProperties } from 'react'
 import { useCountUp } from '@/shared/ui/mozaik/motion'
@@ -41,6 +44,13 @@ export function WeekScoreRing({
       role="img"
       aria-label={isLearning ? `Pontszám: ${learningLabel}` : `Pontszám: ${score} / 100`}
     >
+      <svg className="wk-ring-svg uv-ring" viewBox="0 0 100 100" aria-hidden="true">
+        <circle className="uv-ring-track" cx="50" cy="50" r="44" pathLength={100} />
+        {!isLearning && swept > 0 && (
+          <circle className="uv-ring-prog" cx="50" cy="50" r="44" pathLength={100}
+            strokeDasharray={`${swept} 100`} />
+        )}
+      </svg>
       <div className="in">
         {isLearning ? (
           <>

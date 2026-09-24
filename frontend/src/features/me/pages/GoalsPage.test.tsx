@@ -152,3 +152,24 @@ test.each([
   await userEvent.click(screen.getByRole('button', { name }))
   expect(mocks.navigate).toHaveBeenCalledWith(route)
 })
+
+test('üveg: the course hero is a frameless halo, every tile is glass with its 3D sprite', () => {
+  const { container } = render(<GoalsPage />, { wrapper: Wrapper })
+  const hero = container.querySelector('.goal-course-hero')!
+  expect(hero).toHaveClass('uv-halo')
+  expect(hero).not.toHaveClass('glass')
+  expect(hero.querySelector('.uv-ring-prog')).not.toBeNull()
+  const sprites = [...container.querySelectorAll('.goal-hub-mosaic .mz-tile')].map(tile => {
+    expect(tile).toHaveClass('glass')
+    return tile.querySelector('use')?.getAttribute('href')
+  })
+  expect(sprites).toEqual(['#t-bowl', '#t-peak', '#t-calendar', '#t-shield', '#t-note', '#t-gear'])
+})
+
+test('üveg: the empty state is one dashed free tile, never glass', () => {
+  mocks.useGoal.mockReturnValue({ goal: null, goalResponse: null, linkedMesocycles: {}, timeline: null, goalId: null, pending: false })
+  mocks.useGoalOverview.mockReturnValue({ overview: null, pending: false })
+  const { container } = render(<GoalsPage />, { wrapper: Wrapper })
+  expect(screen.getByRole('button', { name: /Új cél/ })).toHaveClass('uv-empty')
+  expect(container.querySelectorAll('.goal-empty-body .glass')).toHaveLength(0)
+})

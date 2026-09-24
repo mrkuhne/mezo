@@ -40,7 +40,10 @@ afterEach(() => vi.unstubAllEnvs())
 
 test('renders the ‹ Én back chip, hero, stat strip, trend chart, weekly history, and opens the log sheet', () => {
   renderPage()
-  expect(screen.getByText('‹ Én')).toBeInTheDocument()
+  // Üveg (mezo-me75u.6): the glass back pill reads „‹ Én" (arrow in its own aria-hidden <b>)
+  const back = screen.getByRole('button', { name: 'Vissza' })
+  expect(back).toHaveClass('glass')
+  expect(back).toHaveTextContent('‹Én')
   expect(screen.getByText('Napi súly')).toBeInTheDocument()
   expect(screen.getByText('Jelenleg')).toBeInTheDocument()
   expect(screen.getByText('Heti előzmény')).toBeInTheDocument()

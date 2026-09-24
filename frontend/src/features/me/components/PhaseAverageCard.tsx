@@ -20,13 +20,13 @@ export function PhaseAverageCard({
   const { avg, nights } = result
 
   return (
-    <div style={{ padding: '0 24px 16px' }}>
-      <div style={{ marginBottom: 10 }}>
+    <div className="pac">
+      <div className="alv-sec-head">
         <Eyebrow>Átlagos összetétel · {nights} éjszakából</Eyebrow>
       </div>
-      <div className="card" style={{ padding: 14 }}>
-        <PhaseRail breakdown={avg} height={20} />
-        <div className="col" style={{ gap: 11, marginTop: 13, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
+      <div className="pac-card glass">
+        <PhaseRail breakdown={avg} height={16} />
+        <div className="alv-refs">
           <PhaseReferenceRow label="Mély" pct={phasePct(avg, 'deep')} range={DEEP_REF} color="var(--ph-deep)" />
           <PhaseReferenceRow label="REM" pct={phasePct(avg, 'rem')} range={REM_REF} color="var(--ph-rem)" />
         </div>

@@ -7,7 +7,7 @@ export function GoalDietWeekCard({ trainingDayKcal, restDayKcal, weekAverageKcal
 }) {
   const split = trainingDayKcal != null && restDayKcal != null
   return (
-    <section className="goal-detail-card goal-diet-week rise" aria-label="Heti kalóriaterv">
+    <section className="goal-detail-card goal-diet-week glass rise" aria-label="Heti kalóriaterv">
       <div className="goal-detail-kicker">Heti ritmus</div>
       {split ? (
         <div className="goal-diet-comparison">

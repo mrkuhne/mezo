@@ -8,6 +8,9 @@
 // (WeeklyWeightCard: delta pill + direction, sage/amber — NEVER red)
 // with the "Régebbi hetek" pager. WeightLogSheet stays exactly as-is;
 // saving flows back through useWeight()'s cache, updating hero + tiles.
+// Üveg (mezo-me75u.6, prototype uveg-en `suly()`): glass back pill + lit sky
+// CTA, t-weight halo hero, flat stat cells, flat segmented period control,
+// one glass sky chart card, glass sky week cards (CSS `── uveg en suly (`).
 // ============================================================
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -42,9 +45,9 @@ export function WeightPage() {
   const eta = latest !== null ? etaWeeks(latest, goal?.targetWeight ?? null, rate) : null
 
   return (
-    <MozaikPage tone="sky">
-      <PageHead onBack={() => navigate(-1)} label="‹ Én">
-        <button type="button" className="mz-pgact" onClick={() => setLogOpen(true)}>
+    <MozaikPage tone="sky" className="wt-page">
+      <PageHead glass onBack={() => navigate(-1)} label="Én">
+        <button type="button" className="mz-pgact wt-logbtn" onClick={() => setLogOpen(true)}>
           ＋ Súly naplózása
         </button>
       </PageHead>
@@ -52,19 +55,20 @@ export function WeightPage() {
         <WeightHero log={weightLog} weightTrends={weightTrends} goal={goal} />
 
         <PageBody>
-          <StatStrip className="rise">
+          <StatStrip className="rise wt-stats">
             <StatCell value={latest === null ? '—' : latest.toFixed(1)} label="Jelenleg" />
             <StatCell value={<span style={{ color: statRateColor(rate, goal?.kind) }}>{fmtSigned(rate)}</span>} label="7-nap/hét" />
             <StatCell value={eta === null ? '—' : `${eta}h`} label="ETA" />
           </StatStrip>
 
-          <div className="row gap-xs rise" style={{ '--d': '40ms', marginTop: 12, marginBottom: 10 } as React.CSSProperties}>
+          <div className="wt-seg rise" style={{ '--d': '40ms' } as React.CSSProperties}>
             {PERIODS.map(p => (
               <button
                 key={p}
                 type="button"
                 onClick={() => setPeriod(p)}
-                className={cn('chip tapchip', period === p && 'brand')}
+                aria-pressed={period === p}
+                className={cn('wt-seg-btn', period === p && 'is-on')}
               >
                 {p}
               </button>
@@ -93,7 +97,7 @@ export function WeightPage() {
             />
           ))}
           {weeks.length > visibleWeeks && (
-            <button type="button" className="mzp-new rise" style={{ '--d': '260ms' } as React.CSSProperties}
+            <button type="button" className="mzp-new wt-more rise" style={{ '--d': '260ms' } as React.CSSProperties}
               onClick={() => setVisibleWeeks(v => v + WEEK_STEP)}>
               Régebbi hetek <Icon name="chevron-down" size={12} />
             </button>

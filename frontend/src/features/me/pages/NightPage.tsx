@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Icon3D } from '@/shared/ui/clay'
 import { NightBreathing } from '@/features/me/components/NightBreathing'
 import { NightBodyScan } from '@/features/me/components/NightBodyScan'
 import { NightWalk } from '@/features/me/components/NightWalk'
@@ -13,6 +14,8 @@ import { recordNightWake } from '@/features/me/logic/nightTrace'
  * of theme, no clock or countdown anywhere. The unified 20-minute rule: "Ébren vagyok"
  * starts a silent timestamp-based watchdog; the calm tools run inside the waiting frame;
  * at ~20 minutes the screen gently flips to the get-out-of-bed prompt.
+ * Üveg (mezo-me75u.6): the calm dark variant — no bright glass, faint lavender flat tool rows,
+ * 3D sprite art (t-moon · t-breath · t-person · t-steps · t-candle), `── uveg en alvas (`.
  */
 export function NightPage() {
   const [phase, setPhase] = useState<NightPhase>('idle')
@@ -43,7 +46,7 @@ export function NightPage() {
       {phase === 'idle' && (
         <div className="night-body">
           <div className="night-eye">Éjszakai mód</div>
-          <div className="night-moon" aria-hidden="true">🌙</div>
+          <div className="night-moon" aria-hidden="true"><Icon3D name="t-moon" size={96} /></div>
           <h1 className="night-title">Felébredtél?</h1>
           <p className="night-tx">
             Ne nézd meg az órát — nem számít, mennyi az idő.
@@ -63,19 +66,19 @@ export function NightPage() {
           <p className="night-tx">Maradj az ágyban, lazíts.<br />Ha segít, válassz egyet:</p>
           <div className="night-tools">
             <button className="night-tool" onClick={() => setTool('breathing')}>
-              <span aria-hidden="true">🫁</span>
+              <span className="night-tool-art" aria-hidden="true"><Icon3D name="t-breath" size={40} /></span>
               <span className="night-tool-tx"><b>Légzés</b><i>be 5 · tartsd 6 · ki 7 — vezetett ütem</i></span>
-              <span aria-hidden="true">›</span>
+              <span className="night-tool-chev" aria-hidden="true">›</span>
             </button>
             <button className="night-tool" onClick={() => setTool('bodyscan')}>
-              <span aria-hidden="true">🧘</span>
+              <span className="night-tool-art" aria-hidden="true"><Icon3D name="t-person" size={40} /></span>
               <span className="night-tool-tx"><b>Testpásztázás</b><i>fejtől lábujjig, lassú vezetéssel</i></span>
-              <span aria-hidden="true">›</span>
+              <span className="night-tool-chev" aria-hidden="true">›</span>
             </button>
             <button className="night-tool" onClick={() => setTool('walk')}>
-              <span aria-hidden="true">🚶</span>
+              <span className="night-tool-art" aria-hidden="true"><Icon3D name="t-steps" size={40} /></span>
               <span className="night-tool-tx"><b>4K-séta</b><i>járj végig fejben egy jól ismert utat</i></span>
-              <span aria-hidden="true">›</span>
+              <span className="night-tool-chev" aria-hidden="true">›</span>
             </button>
           </div>
           <Link to="/me/sleep" className="night-quiet">elalszom · kilépek</Link>
@@ -89,7 +92,7 @@ export function NightPage() {
       {phase === 'getup' && (
         <div className="night-body">
           <div className="night-eye">Ideje felkelni</div>
-          <div className="night-glow" aria-hidden="true">🕯️</div>
+          <div className="night-glow" aria-hidden="true"><Icon3D name="t-candle" size={88} /></div>
           <h1 className="night-title night-title-sm">Kelj fel — ez most a jobb út</h1>
           <ul className="night-steps">
             <li><b>Menj át</b> egy másik, félhomályos helyre.</li>

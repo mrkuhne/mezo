@@ -46,8 +46,17 @@ test('F7.4 Mozaik shell: coral page + eyebrow/h1 block; primary CTA is the house
   expect(screen.getByText('Én · Új cél')).toBeInTheDocument()
   expect(screen.getByText('Mit építünk?')).toBeInTheDocument() // current h1 unchanged
   expect(screen.getByRole('button', { name: /tovább/i })).toHaveClass('cta-primary')
-  // The final step's save CTA carries the same coral pill classes.
+  // Üveg: only the chosen trajectory wears glass; its glyph is the t-down sprite, and a picked
+  // guard chip carries the t-tick sprite instead of the "✓" glyph.
   fireEvent.click(screen.getByRole('button', { name: /fogyás/i }))
+  expect(screen.getByRole('button', { name: /fogyás/i })).toHaveClass('glass')
+  expect(screen.getByRole('button', { name: /fogyás/i }).querySelector('use')).toHaveAttribute('href', '#t-down')
+  expect(screen.getByRole('button', { name: /hízás/i })).not.toHaveClass('glass')
+  fireEvent.click(screen.getByRole('button', { name: /erő megtartása/i }))
+  expect(screen.getByRole('button', { name: /erő megtartása/i })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByRole('button', { name: /erő megtartása/i }).querySelector('use')).toHaveAttribute('href', '#t-tick')
+  expect(screen.getByRole('button', { name: /erő megtartása/i }).textContent).not.toContain('✓')
+  // The final step's save CTA carries the same coral pill classes.
   fireEvent.click(screen.getByRole('button', { name: /tovább/i }))
   expect(screen.getByRole('button', { name: /létrehozása \+ aktiválás/i })).toHaveClass('cta-primary')
 })
@@ -140,7 +149,8 @@ test('GoalPlannerPage real-mode cél step renders the derived rate + verdict fro
   await waitForWizard()
   fireEvent.click(screen.getByRole('button', { name: /fogyás/i }))
   fireEvent.click(screen.getByRole('button', { name: /tovább/i }))
-  await waitFor(() => expect(screen.getByText(/✓\s*Reális/i)).toBeInTheDocument())
+  await waitFor(() => expect(document.querySelector('[data-verdict="ok"]')).toHaveTextContent(/Reális/))
+  expect(document.querySelector('[data-verdict="ok"] use')).toHaveAttribute('href', '#t-tick')
   expect(screen.getByText(/0,6/)).toBeInTheDocument()
   vi.unstubAllEnvs()
 })
@@ -184,7 +194,8 @@ test('GoalPlannerPage real-mode aggressive preview offers a realistic date that 
   fireEvent.click(screen.getByRole('button', { name: /fogyás/i }))
   fireEvent.click(screen.getByRole('button', { name: /tovább/i }))
   // The aggressive panel + the accept action appear.
-  await waitFor(() => expect(screen.getByText(/⚠\s*Agresszív/i)).toBeInTheDocument())
+  await waitFor(() => expect(document.querySelector('[data-verdict="aggressive"]')).toHaveTextContent(/Agresszív/))
+  expect(document.querySelector('[data-verdict="aggressive"] use')).toHaveAttribute('href', '#t-info')
   const accept = screen.getByRole('button', { name: /Elfogadom/i })
   expect(accept).toBeInTheDocument()
   // The first preview body carries the correct draft fields.
@@ -197,7 +208,7 @@ test('GoalPlannerPage real-mode aggressive preview offers a realistic date that 
   expect((screen.getByLabelText('Cél dátum') as HTMLInputElement).value).toBe(suggestedDate)
   await waitFor(() => expect(bodies.some(b => b.targetDate === suggestedDate)).toBe(true))
   // The new preview flips the panel to feasible.
-  await waitFor(() => expect(screen.getByText(/✓\s*Reális/i)).toBeInTheDocument())
+  await waitFor(() => expect(document.querySelector('[data-verdict="ok"]')).toHaveTextContent(/Reális/))
   vi.unstubAllEnvs()
 })
 

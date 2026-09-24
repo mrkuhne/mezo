@@ -1,15 +1,17 @@
 // ============================================================
-// Mezo · SleepPage — Alvás Mozaik re-face (mezo-d20.6.4)
+// Mezo · SleepPage — Alvás Mozaik re-face (mezo-d20.6.4), üveg re-dress (mezo-me75u.6):
+// halo hero, lavender glass cards (gold education card), flat chips/rows — CSS block
+// `── uveg en alvas (` in prototype.css, scoped to `.alv-page`.
 // Source of truth: docs/design_2.0/prototypes/src/en-body.html #page-alvas
 // (p-lav tone, px ×1.18). Anatomy: MozaikPage/PageHead/PageHero scaffold →
-// goal card with the bed-rail (🛏️ bedTime ← duration → ☀️ wakeTime) →
-// Rendszeresség/Hatékonyság washed ring tiles → the daily education card
+// goal card with the bed-rail (t-sleep bedTime ← duration → t-sun wakeTime) →
+// Rendszeresség/Hatékonyság glass ring tiles → the daily education card
 // (SleepStatCard, replaced by SleepEscalationCard while triggered — spec
 // D3/D4 priority KEPT at this position, not the prototype's later slot,
 // since that ordering encodes deliberate walker-education priority) →
 // log-dependent last-night hero (phase rail + reference rows, "a sávban" —
 // never red), night-arc, phase-average, 7-night trend + quality dots,
-// REM-duration, recent log → the DARK Éjszakai mód entry tile LAST,
+// REM-duration, recent log → the Éjszakai mód glass entry row LAST,
 // matching the prototype's own order, and ALWAYS visible regardless of
 // log state (spec D3 — the Today banner is its timed twin, same face).
 // Behavior is the untouched data layer (hooks, mutations, honest states,
@@ -18,7 +20,7 @@
 import { useState } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 import { ScoreRing } from '@/shared/ui/ScoreRing'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -33,7 +35,6 @@ import {
 import { DEEP_REF, parseHypnogram, phaseBreakdown, phasePct, REM_REF } from '@/features/me/logic/sleepPhases'
 import { PhaseRail } from '@/features/me/components/PhaseRail'
 import { PhaseReferenceRow } from '@/features/me/components/PhaseReferenceRow'
-import { SleepStat } from '@/features/me/components/SleepStat'
 import { SleepLogRow } from '@/features/me/components/SleepLogRow'
 import { SleepChart } from '@/features/me/components/SleepChart'
 import { SleepStatCard } from '@/features/me/components/SleepStatCard'
@@ -78,29 +79,31 @@ export function SleepPage() {
   const goodQuality = lastNight ? lastNight.quality > 5 : false
 
   return (
-    <MozaikPage tone="lav">
-      <PageHead onBack={() => navigate(-1)} label="‹ Én">
-        <button type="button" className="pgact" style={{ marginLeft: 'auto' }} onClick={() => setLogOpen(true)}>
-          <Icon name="plus" size={12} /> Log
+    <MozaikPage tone="lav" className="alv-page">
+      <PageHead glass onBack={() => navigate(-1)} label="Én">
+        <button type="button" className="pgact alv-log" onClick={() => setLogOpen(true)}>
+          <span aria-hidden="true">＋</span> Log
         </button>
       </PageHead>
 
       <EntranceGroup>
         <PageHero
-          icon="i-alvas"
+          art="t-sleep"
+          accent="var(--dv-lav)"
           big={lastNight ? (
-            <>{lastNight.duration.toFixed(1)}<span style={{ fontSize: 15, color: 'var(--text-tertiary)' }}> h</span></>
+            <>{lastNight.duration.toFixed(1)}<small>h</small></>
           ) : '–'}
           name="Alvás"
           sub={lastNight ? `tegnap éjjel · ${lastNight.bedtime} → ${lastNight.wakeup} · Q${lastNight.quality}` : undefined}
         />
 
         <PageBody>
-          {/* Sleep-goal card — the bed-rail (spec §5) */}
-          <div className="mzalv-goal rise" style={{ '--d': '0ms' } as React.CSSProperties}>
-            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <span className="mz-eyebrow" style={{ color: 'var(--lav-deep)' }}>Alvás-cél</span>
-              <button type="button" className="chip" onClick={() => navigate('/settings/me/sleep', { state: { from: location.pathname + location.search } })} style={{ fontSize: 9, padding: '3px 8px' }}>
+          {/* Sleep-goal card — the bed-rail (spec §5), a lit lavender glass card (üveg U6) */}
+          <div className="alv-goal glass rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+            <div className="alv-card-head">
+              <Icon3D name="t-ring" size={30} />
+              <strong className="alv-card-title">Alvás-cél</strong>
+              <button type="button" className="alv-chip is-lit" onClick={() => navigate('/settings/me/sleep', { state: { from: location.pathname + location.search } })}>
                 {goal.isSet ? 'szerkeszt' : 'beállítom'}
               </button>
             </div>
@@ -108,47 +111,53 @@ export function SleepPage() {
                 is otherwise indistinguishable from a chosen goal. Saying so here is the whole point
                 of isSet (mezo-k0hp): without it a purged sleep_goal row reads as "8 óra, 06:00". */}
             {!goal.isSet && (
-              <p style={{ margin: '6px 0 0', fontSize: 10, lineHeight: 1.45, color: 'var(--amber-deep)' }}>
+              <p className="alv-unset">
                 Alapértelmezett értékek — még nincs saját alvás-célod. Állítsd be, hogy az alvás-kártya
                 és a terv-javaslatok a te számaidra szóljanak.
               </p>
             )}
-            <div className="mzalv-bedrail">
-              <span className="mzalv-end">🛏️ {goal.bedTime}</span>
-              <div className="mzalv-rail"><span>{(goal.targetMinutes / 60).toFixed(1)} ó cél</span></div>
-              <span className="mzalv-end">☀️ {goal.wakeTime}</span>
+            <div className="alv-bedrail">
+              <span className="alv-end" data-end="bed">
+                <Icon3D name="t-sleep" size={30} />
+                <span className="sr-only">Lefekvés</span>
+                <b>{goal.bedTime}</b>
+              </span>
+              <div className="alv-rail"><span>{(goal.targetMinutes / 60).toFixed(1)} ó cél</span></div>
+              <span className="alv-end" data-end="wake">
+                <Icon3D name="t-sun" size={30} />
+                <span className="sr-only">Ébredés</span>
+                <b>{goal.wakeTime}</b>
+              </span>
             </div>
-            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
-              <span style={{ fontSize: 10, fontStyle: 'italic', color: 'var(--text-tertiary)' }}>
+            <div className="alv-goal-foot">
+              <span className="alv-quote">
                 {goal.isSet ? '„a rendszeresség a király"' : 'alapértelmezett'}
               </span>
-              <span className="chip" style={{ fontSize: 9, padding: '2px 8px', background: 'var(--wash-sage)', color: 'var(--sage-deep)', borderColor: 'transparent' }}>
-                ±{goal.regularityBandMin}p
-              </span>
+              <span className="alv-chip" data-tone="sage">±{goal.regularityBandMin}p</span>
             </div>
           </div>
 
-          {/* Two washed ring tiles — regularity (14-night) + last-night efficiency */}
-          <div className="mz-mosaic rise" style={{ '--d': '50ms', marginTop: 11, marginBottom: 11 } as React.CSSProperties}>
-            <div className="mz-tile mz-w-lav" style={{ alignItems: 'center', textAlign: 'center', gap: 6 }} aria-label="Rendszeresség">
-              <ScoreRing pct={regularity ?? 0} size={64} stroke={5} color="var(--lav-deep)"
+          {/* Two glass ring tiles — regularity (14-night) + last-night efficiency */}
+          <div className="alv-rings rise" style={{ '--d': '50ms' } as React.CSSProperties}>
+            <div className="alv-ring glass" aria-label="Rendszeresség" style={{ '--c': 'var(--dv-lav)' } as React.CSSProperties}>
+              <ScoreRing pct={regularity ?? 0} size={84} stroke={6} color="var(--c)"
                 label={regularity != null ? `${Math.round(regularity * 100)}` : '–'} sublabel="%" />
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)' }}>Rendszeresség</span>
-              <span style={{ fontSize: 9, color: 'var(--faint)' }}>{REGULARITY_WINDOW_DAYS} nap · ±{goal.regularityBandMin}p</span>
+              <strong>Rendszeresség</strong>
+              <small>{REGULARITY_WINDOW_DAYS} nap · ±{goal.regularityBandMin}p</small>
             </div>
-            <div className="mz-tile mz-w-sage" style={{ alignItems: 'center', textAlign: 'center', gap: 6 }} aria-label="Hatékonyság">
-              <ScoreRing pct={(lastEfficiency ?? 0) / 100} size={64} stroke={5}
-                color={lastEfficiency != null && lastEfficiency >= EFFICIENCY_TARGET_PCT ? 'var(--sage-deep)' : 'var(--warning)'}
+            <div className="alv-ring glass" aria-label="Hatékonyság"
+              style={{ '--c': lastEfficiency != null && lastEfficiency >= EFFICIENCY_TARGET_PCT ? 'var(--dv-sage)' : 'var(--dv-amber)' } as React.CSSProperties}>
+              <ScoreRing pct={(lastEfficiency ?? 0) / 100} size={84} stroke={6} color="var(--c)"
                 label={lastEfficiency != null ? `${Math.round(lastEfficiency)}` : '–'} sublabel="%" />
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)' }}>Hatékonyság</span>
-              <span style={{ fontSize: 9, color: 'var(--faint)' }}>cél ≥ {EFFICIENCY_TARGET_PCT}%</span>
+              <strong>Hatékonyság</strong>
+              <small>cél ≥ {EFFICIENCY_TARGET_PCT}%</small>
             </div>
           </div>
 
           {/* Walker education — the escalation card takes priority over the daily stat card
               while the trigger holds and isn't snoozed (spec D3/D4). Kept at this position
               (not the prototype's later slot) — the priority ordering is deliberate. */}
-          <div className="rise" style={{ '--d': '90ms', marginBottom: 11 } as React.CSSProperties}>
+          <div className="alv-edu rise" style={{ '--d': '90ms' } as React.CSSProperties}>
             {showEscalation ? (
               <SleepEscalationCard
                 reason={escalation.reason}
@@ -162,115 +171,66 @@ export function SleepPage() {
 
           {lastNight ? (
             <>
-              {/* Last night hero */}
-              <div
-                className="card rise"
-                style={{
-                  '--d': '130ms',
-                  padding: 20,
-                  marginBottom: 16,
-                  background: 'linear-gradient(180deg, var(--wash-lav) 0%, var(--surface-1) 65%)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                } as React.CSSProperties}
-              >
-                <div style={{ position: 'relative' }}>
-                  <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div className="col">
-                      <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Tegnap éjjel</span>
-                      <div
-                        style={{
-                          fontFamily: 'var(--ff-display)',
-                          fontSize: 48,
-                          fontWeight: 600,
-                          lineHeight: 1,
-                          marginTop: 8,
-                          color: 'var(--ink)',
-                          fontVariantNumeric: 'tabular-nums',
-                        }}
-                      >
-                        {lastNight.duration.toFixed(1)}
-                        <span style={{ fontSize: 14, color: 'var(--text-tertiary)', marginLeft: 4 }}>h</span>
-                      </div>
-                      <span
-                        className="text-secondary"
-                        style={{ fontSize: 11, marginTop: 6, fontWeight: 700, display: 'block' }}
-                      >
-                        {lastNight.bedtime} → {lastNight.wakeup}
-                      </span>
-                    </div>
-                    <div className="col" style={{ alignItems: 'flex-end' }}>
-                      <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>Quality</span>
-                      <div
-                        style={{
-                          fontFamily: 'var(--ff-display)',
-                          fontSize: 32,
-                          fontWeight: 600,
-                          lineHeight: 1,
-                          marginTop: 4,
-                          color: goodQuality ? 'var(--sage-deep)' : 'var(--warning)',
-                          fontVariantNumeric: 'tabular-nums',
-                        }}
-                      >
-                        {lastNight.quality}
-                        <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 2 }}>/10</span>
-                      </div>
-                    </div>
+              {/* Last night — big numerals, flat chips, the lit phase rail */}
+              <div className="alv-last glass rise" style={{ '--d': '130ms' } as React.CSSProperties}>
+                <div className="alv-last-top">
+                  <div className="alv-last-dur">
+                    <span className="alv-eyebrow">Tegnap éjjel</span>
+                    <b className="alv-last-num">
+                      {lastNight.duration.toFixed(1)}
+                      <small>h</small>
+                    </b>
+                    <span className="alv-last-span">{lastNight.bedtime} → {lastNight.wakeup}</span>
                   </div>
-
-                  {/* Étkezés→alvás is a backend stub (mealToSleep hardcoded 0 until Fuel
-                      lands — §5.3), so the strip (mezo-lfw) drops it; awakenings is real
-                      (captured by the log sheet). */}
-                  <div className="row gap-md mt-lg" style={{ paddingTop: 14, borderTop: '1px solid var(--border-subtle)' }}>
-                    <SleepStat label="Ébredés" val={lastNight.awakenings} unit="× éjjel" />
+                  <div className="alv-last-q" data-good={goodQuality ? 'true' : 'false'}>
+                    <span className="alv-eyebrow">Quality</span>
+                    <b className="alv-last-qnum">
+                      {lastNight.quality}
+                      <small>/10</small>
+                    </b>
                   </div>
+                </div>
 
-                  {/* Day-anchor readout — bed-delta vs. goal + night efficiency (spec §5) */}
-                  <div className="col" style={{ gap: 3, marginTop: 8 }}>
-                    {lastBedDelta != null && (
-                      <span style={{ fontSize: 10, color: Math.abs(lastBedDelta) <= goal.regularityBandMin ? 'var(--sage-deep)' : 'var(--warning)', fontVariantNumeric: 'tabular-nums' }}>
-                        {lastBedDelta > 0 ? '+' : lastBedDelta < 0 ? '−' : ''}{Math.abs(lastBedDelta)}p vs. cél lefekvés
-                      </span>
-                    )}
-                    {lastEfficiency != null && (
-                      <span style={{ fontSize: 10, color: 'var(--text-tertiary)', fontVariantNumeric: 'tabular-nums' }}>
-                        hatékonyság {Math.round(lastEfficiency)}%
-                      </span>
-                    )}
-                  </div>
-
-                  {lastPhases && (
-                    <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border-subtle)' }}>
-                      <div className="row" style={{ justifyContent: 'space-between', marginBottom: 8 }}>
-                        <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>
-                          Fázisok
-                        </span>
-                        {lastNight.source === 'screenshot' && (
-                          <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--faint)' }}>screenshotból</span>
-                        )}
-                      </div>
-                      <PhaseRail breakdown={lastPhases} height={20} />
-                      <div className="col" style={{ gap: 11, marginTop: 13, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
-                        <PhaseReferenceRow label="Mély" pct={phasePct(lastPhases, 'deep')} range={DEEP_REF} color="var(--ph-deep)" />
-                        <PhaseReferenceRow label="REM" pct={phasePct(lastPhases, 'rem')} range={REM_REF} color="var(--ph-rem)" />
-                      </div>
-                    </div>
+                {/* Étkezés→alvás is a backend stub (mealToSleep hardcoded 0 until Fuel
+                    lands — §5.3), so the strip (mezo-lfw) drops it; awakenings is real
+                    (captured by the log sheet). Day-anchor readout — bed-delta vs. goal +
+                    night efficiency (spec §5) — as flat chips. */}
+                <div className="alv-chips">
+                  <span className="alv-chip">Ébredés <b>{lastNight.awakenings}</b> × éjjel</span>
+                  {lastBedDelta != null && (
+                    <span className="alv-chip" data-tone={Math.abs(lastBedDelta) <= goal.regularityBandMin ? 'sage' : 'coral'}>
+                      {lastBedDelta > 0 ? '+' : lastBedDelta < 0 ? '−' : ''}{Math.abs(lastBedDelta)}p vs. cél lefekvés
+                    </span>
                   )}
-
-                  {lastNight.notes && (
-                    <p
-                      className="text-secondary mt-md"
-                      style={{ fontSize: 12, fontStyle: 'italic', lineHeight: 1.5, paddingTop: 10, borderTop: '1px solid var(--border-subtle)' }}
-                    >
-                      "{lastNight.notes}"
-                    </p>
+                  {lastEfficiency != null && (
+                    <span className="alv-chip">hatékonyság {Math.round(lastEfficiency)}%</span>
                   )}
                 </div>
+
+                {lastPhases && (
+                  <div className="alv-phases">
+                    <div className="alv-phases-head">
+                      <span className="alv-eyebrow">Fázisok</span>
+                      {lastNight.source === 'screenshot' && (
+                        <span className="alv-src">screenshotból</span>
+                      )}
+                    </div>
+                    <PhaseRail breakdown={lastPhases} height={16} />
+                    <div className="alv-refs">
+                      <PhaseReferenceRow label="Mély" pct={phasePct(lastPhases, 'deep')} range={DEEP_REF} color="var(--ph-deep)" />
+                      <PhaseReferenceRow label="REM" pct={phasePct(lastPhases, 'rem')} range={REM_REF} color="var(--ph-rem)" />
+                    </div>
+                  </div>
+                )}
+
+                {lastNight.notes && (
+                  <p className="alv-note">"{lastNight.notes}"</p>
+                )}
               </div>
 
               {lastArc && (
-                <div className="rise" style={{ '--d': '170ms', marginBottom: 16 } as React.CSSProperties}>
-                  <div style={{ marginBottom: 10 }}><Eyebrow>Az éjszaka íve</Eyebrow></div>
+                <div className="alv-sec rise" style={{ '--d': '170ms' } as React.CSSProperties}>
+                  <div className="alv-sec-head"><Eyebrow>Az éjszaka íve</Eyebrow></div>
                   <NightArcCard entry={lastNight} />
                 </div>
               )}
@@ -278,23 +238,22 @@ export function SleepPage() {
               {/* Fixed window (whole-branch review FIX 4) — the 7d/14d chips that used to drive this
                   live in the Trend block BELOW this card; tapping one retitled or removed a card
                   above it. The card's own heading already discloses its N ("...· N éjszakából"). */}
-              <div className="rise" style={{ '--d': '190ms' } as React.CSSProperties}>
+              <div className="alv-sec rise" style={{ '--d': '190ms' } as React.CSSProperties}>
                 <PhaseAverageCard entries={sleepLog} windowDays={14} />
               </div>
 
               {/* Duration + quality chart — the 7-night stacked phase columns + quality dots */}
-              <div className="rise" style={{ '--d': '210ms', marginBottom: 16 } as React.CSSProperties}>
-                <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
+              <div className="alv-sec rise" style={{ '--d': '210ms' } as React.CSSProperties}>
+                <div className="alv-sec-head alv-trend-head">
                   <Eyebrow>Trend</Eyebrow>
-                  <div className="row gap-xs">
+                  <div className="alv-seg" role="group" aria-label="Időszak">
                     {PERIODS.map(p => (
                       <button
                         key={p}
+                        type="button"
                         onClick={() => setPeriod(p)}
-                        className="chip"
-                        style={period === p
-                          ? { fontSize: 9, padding: '3px 8px', background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' }
-                          : { fontSize: 9, padding: '3px 8px' }}
+                        className={period === p ? 'alv-chip is-on' : 'alv-chip'}
+                        aria-pressed={period === p}
                       >
                         {p}
                       </button>
@@ -304,16 +263,16 @@ export function SleepPage() {
                 <SleepChart entries={sleepLog} period={period} />
               </div>
 
-              <div className="rise" style={{ '--d': '230ms' } as React.CSSProperties}>
+              <div className="alv-sec rise" style={{ '--d': '230ms' } as React.CSSProperties}>
                 <RemDurationCard entries={sleepLog} />
               </div>
 
-              {/* Recent log */}
-              <div className="rise" style={{ '--d': '250ms' } as React.CSSProperties}>
-                <div style={{ marginBottom: 12 }}>
+              {/* Recent log — flat rows; a short or poor night keeps a coral warning edge */}
+              <div className="alv-sec rise" style={{ '--d': '250ms' } as React.CSSProperties}>
+                <div className="alv-sec-head">
                   <Eyebrow>Napló · utolsó 7 éjszaka</Eyebrow>
                 </div>
-                <div className="col gap-sm">
+                <div className="alv-log-list">
                   {sleepLog.slice(-7).reverse().map((n, i) => (
                     <SleepLogRow key={i} night={n} />
                   ))}
@@ -323,22 +282,20 @@ export function SleepPage() {
           ) : (
             // Real mode first paint can have an empty log (no data yet / still loading);
             // the goal card above still renders — only the log-dependent sections wait.
-            <div style={{ padding: '18px 0' }}>
-              <span className="text-tertiary" style={{ fontSize: 12 }}>
-                Még nincs alvásadat.
-              </span>
+            <div className="alv-empty uv-empty">
+              Még nincs alvásadat.
             </div>
           )}
 
-          {/* Night-mode entry — ALWAYS visible (spec D3), LAST (prototype order); the
-              Today banner is the timed twin, same dark literal face. */}
-          <Link to="/me/sleep/night" className="wdb-night rise" style={{ '--d': '290ms', margin: '16px 0 0' } as React.CSSProperties}>
-            <span className="wdb-night-moon" aria-hidden="true">🌙</span>
-            <span className="wdb-night-tx">
-              <span className="wdb-night-t1">Éjszakai mód</span>
-              <span className="wdb-night-t2">Eszközök éjszakai ébredéshez — 20 perces szabály, légzés, 4K-séta.</span>
+          {/* Night-mode entry — ALWAYS visible (spec D3), LAST (prototype order); a lavender
+              glass row with the 3D moon (üveg U6). */}
+          <Link to="/me/sleep/night" className="alv-night glass rise" style={{ '--d': '290ms' } as React.CSSProperties}>
+            <Icon3D name="t-moon" size={50} className="alv-night-art" />
+            <span className="alv-night-tx">
+              <span className="alv-night-t1">Éjszakai mód</span>
+              <span className="alv-night-t2">Eszközök éjszakai ébredéshez — 20 perces szabály, légzés, 4K-séta.</span>
             </span>
-            <span className="wdb-night-chev" aria-hidden="true">›</span>
+            <span className="alv-night-chev" aria-hidden="true">›</span>
           </Link>
         </PageBody>
       </EntranceGroup>
