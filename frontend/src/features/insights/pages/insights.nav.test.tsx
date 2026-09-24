@@ -103,7 +103,8 @@ describe('mezo nav (real mode default)', () => {
   test('the pattern-pair detail goes back to the LIST it was opened from, not the hub', async () => {
     const router = renderApp('/mezo/patterns/late-meal~next-sleep-quality')
     const back = await screen.findByRole('button', { name: 'Vissza' })
-    expect(back).toHaveTextContent('‹ Minták')
+    // a direct open has no in-app history: the pill names and opens the list (mezo-me75u.13)
+    expect(back).toHaveTextContent(/‹\s*Minták/)
     await userEvent.click(back)
     await waitFor(() => expect(router.state.location.pathname).toBe('/mezo/patterns'))
   })

@@ -30,8 +30,8 @@ describe('PatternDetailPage (mock mode)', () => {
 
   test('confirmed showcase pair renders the clear story and a read-only judged state', () => {
     renderAt(`/mezo/patterns/${SHOWCASE_KEY}`)
-    // the house full-page header row (AiUsagePage idiom): back chevron + h1
-    expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Minták')
+    // the glass back pill: a direct open (first history entry) names the list it falls back to
+    expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent(/‹\s*Minták/)
     expect(screen.getByText('Minta részletei')).toBeInTheDocument()
     expect(screen.getByText('Hogyan változott a kapcsolat?')).toBeInTheDocument()
     expect(screen.getByText('Az eddigi napok')).toBeInTheDocument()
@@ -170,11 +170,41 @@ describe('PatternDetailPage (mock mode)', () => {
     expect(screen.queryByRole('button', { name: 'Megerősítem' })).not.toBeInTheDocument()
   })
 
+  // Üvegesítés U8a (mezo-me75u.13): bible §3.4 — ONE glass hero per page, the rest flat (the
+  // glass back pill is the shared page chrome, not content).
+  test.each([
+    ['the laborfüzet', '/mezo/patterns/ref-anna-sleep'],
+    ['the catalog layout', `/mezo/patterns/${SHOWCASE_KEY}`],
+    ['a still-gathering pair', `/mezo/patterns/${GATHERING_KEY}`],
+    ['a saved observation', '/mezo/patterns/hyp-3fa1c2d9'],
+  ])('%s wears exactly one glass surface — the hero', (_name, path) => {
+    renderAt(path)
+    const glass = document.querySelectorAll('.glass:not(.uv-back)')
+    expect(glass).toHaveLength(1)
+    expect(glass[0]).toHaveClass('pdt-hero')
+    expect(document.querySelectorAll('.pdt-hero .glass')).toHaveLength(0)
+  })
+
+  test('the laborfüzet hero ring says the same day count as the days card', () => {
+    renderAt('/mezo/patterns/ref-anna-sleep')
+    // 16 plotted days ≥ the plan minimum of 8: the ring just counts, and the chart says the same
+    expect(screen.getByRole('img', { name: '16 nap a terv 8 napos minimumából' })).toBeInTheDocument()
+    expect(document.querySelector('.pdt-ring-n')?.textContent).toBe('16')
+    expect(document.querySelector('.pdt-days .pdt-chart-title strong')?.textContent).toBe('16 nap')
+  })
+
+  test('the catalog hero ring and the days card agree on the day count', () => {
+    renderAt(`/mezo/patterns/${SHOWCASE_KEY}`)
+    const ring = document.querySelector('.pdt-ring-n')?.textContent
+    const card = document.querySelector('.pdt-days .pdt-chart-title strong')?.textContent
+    expect(card).toBe(`${ring} nap`)
+  })
+
   test('unknown key renders the honest not-found state with a back chip', () => {
     renderAt('/mezo/patterns/nonsense~key')
-    // mezo-d20.11: the ad-hoc chevron became the house PageHead chip, and it goes back to the
-    // LIST the detail was opened from, not the hub.
-    expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Minták')
+    // mezo-d20.11 → mezo-me75u.13: a direct open has no in-app history, so the glass back pill
+    // names and opens the LIST (from the wall it would say „Vissza" and pop to the wall).
+    expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent(/‹\s*Minták/)
     expect(screen.getByText(/Nincs ilyen minta/)).toBeInTheDocument()
   })
 })
@@ -322,7 +352,8 @@ describe('PatternDetailPage (real mode)', () => {
     renderAt(`/mezo/patterns/${weekendKey}`)
 
     expect(await screen.findByText('Még nincs elég hétvégi adat.')).toBeInTheDocument()
-    expect(screen.getByText('1 / 3')).toBeInTheDocument()
+    // the hero ring carries the weekend tally (was the „Hétvégi napok 1 / 3" bar)
+    expect(screen.getByRole('img', { name: '1 a szükséges 3 hétvégi napból' })).toBeInTheDocument()
     expect(screen.getByText('Még 2 hétvégi nap kell.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Megerősítem' })).not.toBeInTheDocument()
     expect(screen.queryByText(/r=-0\.27/)).not.toBeInTheDocument()
@@ -370,7 +401,7 @@ describe('PatternDetailPage (real mode)', () => {
     expect(screen.getByText('Ígéretes — elég nap van a döntéshez.')).toBeInTheDocument()
     expect(screen.getByText(/Igen, figyeld — de nem Anna miatt/)).toBeInTheDocument()
     // nyers r/p sosem a kártya arcán — csak a becsukott Háttér fold alatt
-    expect(document.querySelector('.pdt-state-card')?.textContent).not.toContain('0.31')
+    expect(document.querySelector('.pdt-hero')?.textContent).not.toContain('0.31')
     expect(screen.getByText('0.31').closest('details.pdt-fold')).not.toBeNull()
   })
 

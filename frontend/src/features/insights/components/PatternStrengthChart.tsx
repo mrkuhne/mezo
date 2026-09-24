@@ -25,7 +25,8 @@ function yForAbsR(absR: number): number {
 
 /**
  * Hand-drawn strength-over-time chart (mezo-tk88.5) — |r| per snapshot, dashed guides at the
- * "érezhető"/"határozott" bands, the confirm point picked out in accent. `null` on fewer than 2
+ * "érezhető"/"határozott" bands, the confirm point picked out in accent. Colours live in the
+ * `── uveg mezo mibol (` block (`.pdt-str-*`, mezo-me75u.13). `null` on fewer than 2
  * points; the page shows the empty-state copy instead (Task 13).
  */
 export function PatternStrengthChart({ events }: { events: PatternEvent[] }) {
@@ -43,16 +44,16 @@ export function PatternStrengthChart({ events }: { events: PatternEvent[] }) {
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
-      style={{ width: '100%', height: 'auto' }}
+      className="pdt-str"
       role="img"
       aria-label={`A jel erőssége ${first.absR.toFixed(2)}-ról ${last.absR.toFixed(2)}-ra változott ${chartDateLabel(first.date)} és ${chartDateLabel(last.date)} között`}
     >
-      <line x1={GUIDE_X0} y1={Y_AT_03} x2={GUIDE_X1} y2={Y_AT_03} stroke="var(--border-strong)" strokeWidth="1" strokeDasharray="3 4" />
-      <line x1={GUIDE_X0} y1={Y_AT_06} x2={GUIDE_X1} y2={Y_AT_06} stroke="var(--border-strong)" strokeWidth="1" strokeDasharray="3 4" />
-      <text x={GUIDE_X1} y={Y_AT_03 - 6} fill="var(--text-disabled)" fontSize="8.5" textAnchor="end">érezhető · 0.3</text>
-      <text x={GUIDE_X1} y={Y_AT_06 - 6} fill="var(--text-disabled)" fontSize="8.5" textAnchor="end">határozott · 0.6</text>
+      <line className="pdt-str-guide" x1={GUIDE_X0} y1={Y_AT_03} x2={GUIDE_X1} y2={Y_AT_03} />
+      <line className="pdt-str-guide" x1={GUIDE_X0} y1={Y_AT_06} x2={GUIDE_X1} y2={Y_AT_06} />
+      <text className="pdt-str-note" x={GUIDE_X1} y={Y_AT_03 - 6} textAnchor="end">érezhető · 0.3</text>
+      <text className="pdt-str-note" x={GUIDE_X1} y={Y_AT_06 - 6} textAnchor="end">határozott · 0.6</text>
 
-      <path d={linePath} fill="none" stroke="var(--success-base)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+      <path className="pdt-str-line" d={linePath} />
 
       {points.map((p, i) => {
         const cx = xFor(i)
@@ -60,12 +61,12 @@ export function PatternStrengthChart({ events }: { events: PatternEvent[] }) {
         if (p.kind === 'confirmed') {
           return (
             <g key={`${p.date}-${p.kind}`}>
-              <circle cx={cx} cy={cy} r={8} fill="none" stroke="var(--accent-base)" strokeWidth="2" />
-              <circle cx={cx} cy={cy} r={5} fill="var(--accent-base)" />
+              <circle className="pdt-str-ring" cx={cx} cy={cy} r={8} />
+              <circle className="pdt-str-confirm" cx={cx} cy={cy} r={5} />
             </g>
           )
         }
-        return <circle key={`${p.date}-${p.kind}`} cx={cx} cy={cy} r={4} fill="var(--success-base)" />
+        return <circle key={`${p.date}-${p.kind}`} className="pdt-str-dot" cx={cx} cy={cy} r={4} />
       })}
 
       {points.map((p, i) => {
@@ -76,9 +77,7 @@ export function PatternStrengthChart({ events }: { events: PatternEvent[] }) {
             key={`label-${p.date}-${p.kind}`}
             x={xFor(i)}
             y={LABEL_Y}
-            fill={label.accent ? 'var(--accent-base)' : 'var(--text-disabled)'}
-            fontSize="9"
-            fontWeight={label.accent ? 700 : 400}
+            className={label.accent ? 'pdt-str-tick is-accent' : 'pdt-str-tick'}
             textAnchor="middle"
           >
             {label.text}

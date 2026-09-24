@@ -26,9 +26,9 @@ test('the two tiles spell out the if/then halves of the pre-registered plan', ()
   expect(screen.getByText('…akkor')).toBeInTheDocument()
   expect(screen.getByText('„Anna” a szövegeidben')).toBeInTheDocument()
   expect(screen.getByText('alváshossz')).toBeInTheDocument()
-  // clay ikonok a két sorozat doménjéből — sosem emoji
-  expect(container.querySelector('.pdt-plan-tile-a use')).toHaveAttribute('href', '#i-naplo')
-  expect(container.querySelector('.pdt-plan-tile-b use')).toHaveAttribute('href', '#i-alvas')
+  // 3D sprite ikonok a két sorozat doménjéből — sosem emoji (mezo-me75u.13)
+  expect(container.querySelector('.pdt-plan-tile-a use')).toHaveAttribute('href', '#t-journal')
+  expect(container.querySelector('.pdt-plan-tile-b use')).toHaveAttribute('href', '#t-moon')
 })
 
 test('the strip carries the four pre-registered numbers of the plan', () => {
