@@ -140,6 +140,26 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testListObservations_shouldDropTheRecoveryMetaLead_whenAStoredCardStartsWithIt() {
+        // mezo-23ry3: the recovery prompt once asked the model to announce the return, so stored
+        // cards carry it; the read path strips it without a data migration.
+        UUID owner = ownerId();
+        PatternEntity row = patternPopulator.reflection(owner, plan("sport:vall"),
+                PatternEntity.STATUS_PROPOSED);
+        patternEventPopulator.observation(owner, row.getId(),
+                "Korábbi bejegyzésekhez visszatérve: két röplabdanapon más volt a vállad.\nRád illik?",
+                List.of(), true, dayAt(0));
+
+        List<ObservationResponse> cards = getForList("/api/companion/observation?date=" + TODAY,
+                ownerAuthHeaders(), HttpStatus.OK, ObservationResponse.class);
+
+        assertThat(cards).singleElement().satisfies(card -> {
+            assertThat(card.getText()).isEqualTo("Két röplabdanapon más volt a vállad.");
+            assertThat(card.getQuestion()).isEqualTo("Rád illik?");
+        });
+    }
+
+    @Test
     void testListObservations_shouldHideUnsurfacedObservations_whenTheBudgetSuppressedThem() {
         UUID owner = ownerId();
         PatternEntity row = patternPopulator.reflection(owner, plan("people:anna"),
