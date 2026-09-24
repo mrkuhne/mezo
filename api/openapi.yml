@@ -25112,6 +25112,8 @@ components:
             - prediction
             - experiment
             - konzilium
+            - fuel_day
+            - checkin_coverage
         sourceId:
           type: string
         sourceRoute:

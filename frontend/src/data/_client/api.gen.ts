@@ -10087,7 +10087,7 @@ export interface components {
             /** @enum {string} */
             genre: "megfigyeles" | "sejtes" | "kerdes" | "kiserlet" | "elorejelzes" | "konzilium" | "keres" | "ertekeles";
             /** @enum {string} */
-            sourceKind: "pattern" | "pair" | "prediction" | "experiment" | "konzilium";
+            sourceKind: "pattern" | "pair" | "prediction" | "experiment" | "konzilium" | "fuel_day" | "checkin_coverage";
             sourceId: string;
             sourceRoute: string;
             title?: string | null;
