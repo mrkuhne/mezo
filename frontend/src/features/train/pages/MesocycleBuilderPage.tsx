@@ -29,7 +29,7 @@ import { deciderSentence, nextRolloverChips, phaseChip, runBands, weekDotClass, 
 import { huDate } from '@/features/train/logic/mesoDates'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { isOffDay } from '@/features/train/logic/offDay'
-import { MesoWeekDays, trainingDay } from '@/features/train/components/MesoWeekDays'
+import { MesoWeekDays } from '@/features/train/components/MesoWeekDays'
 import { MesoCloseSheet } from '@/features/train/sheets/MesoCloseSheet'
 
 const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties

@@ -14,6 +14,8 @@ key_files:
   - frontend/src/shared/lib/theme.ts
 related: [_platform-data-layer, _platform-notifications, today, train, me, fuel, growth, ritual]
 ---
+> **2026-09-24 — Üveg U5 (`mezo-me75u.5`).** The kit gained three owner-approved sprite symbols — `t-template` (a reusable week plan), `t-compare` (two closed runs side by side) and `t-trash` (delete) — drawn in the bible §4 recipe and registered in `Icon3DName`. They stay OUT of `CLAY_TO_3D`: each is mapped at its call site, since the clay names they replace (`i-retegek`, `i-polc`) already mean other things elsewhere (U1 rule 7). `prototype.css` gained six slice blocks (`── uveg edzes2 terv|run|nap|izmok|konyvtar|sablonok|het`), each scoped to its page root because the `mz-`/`pl-`/`ld-` families are shared (U2 rule 13). U1 rule 3 was paid for again: `.glass` clips, so the volume gauge's „most" pin — which sits ABOVE the track — had to declare `overflow: visible` and drop its sheen.
+
 
 # Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0) — Feature Documentation
 
