@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { Boop, ClayIcon } from '@/shared/ui/clay'
@@ -30,6 +30,7 @@ export interface TabBarProps {
 export function TabBar({ dots }: TabBarProps = {}) {
   const location = useLocation()
   const [switcherOpen, setSwitcherOpen] = useState(false)
+  const dotIdBase = useId()
 
   // Last-tab memory: record every navigation that lands on one of a domain's tab routes.
   useEffect(() => {
@@ -62,23 +63,30 @@ export function TabBar({ dots }: TabBarProps = {}) {
         >
           <span className="tab-ico"><Boop domain={domain.id} size={44} alive /></span>
         </button>
-        {domain.tabs.map((tab) => {
+        {domain.tabs.map((tab, i) => {
           const active = tab.route === activeRoute
+          // The dot is decoration; its meaning rides the link's DESCRIPTION (a visually-hidden
+          // sibling), so the tab's accessible NAME stays exactly its label.
+          const dotId = dots?.[tab.route] ? `${dotIdBase}-dot-${i}` : undefined
           return (
             <Link
               key={tab.route}
               to={tab.route}
               className={cn('tab-item', active && 'active')}
               aria-current={active ? 'page' : undefined}
+              aria-describedby={dotId}
             >
               <span className="tab-ico">
-                {dots?.[tab.route] && <i className="tb-dot" aria-label="kész a tegnapi értékelés" />}
+                {dotId && <i className="tb-dot" aria-hidden="true" />}
                 <ClayIcon name={tab.icon} size={27} />
               </span>
               <span>{tab.label}</span>
             </Link>
           )
         })}
+        {domain.tabs.map((tab, i) => dots?.[tab.route] && (
+          <span key={`dot-${tab.route}`} id={`${dotIdBase}-dot-${i}`} className="sr-only">kész a tegnapi értékelés</span>
+        ))}
       </nav>
       {switcherOpen && (
         <DomainSwitcher currentDomainId={domainId} onClose={() => setSwitcherOpen(false)} />

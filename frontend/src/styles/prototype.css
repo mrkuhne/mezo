@@ -348,7 +348,7 @@
   --mz-wka-cardshadow: 0 21px 38px -19px rgba(43, 33, 24, 0.32), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
   --mz-wka-hlshadow: 0 5px 12px -7px rgba(43, 33, 24, 0.3);
   /* Heti nap-mozaik — a hat sub-jel hue-ja (mezo-jcpt.5). SZÁNDÉKOSAN azonos szemantika a
-     nap-oldal domain-színeivel (.dayev-dim), hogy egy átkattintás után ne kelljen újratanulni:
+     egykori nap-oldal domain-színeivel, hogy egy átkattintás után ne kelljen újratanulni:
      tápanyag=sage · minőség=gold · edzés=coral · alvás=lavender · logolás=rose · ritmus=sky. */
   --mz-wk-sub-nutrition: #8FAF7E;
   --mz-wk-sub-quality: var(--mz-hl-gold);
@@ -4660,7 +4660,7 @@ button.mz-tile:active { transform: scale(0.96); }
 /* ── Mezo üzenetei page (mezo-d20.2.2): its skin moved to the U3 Üzenetek glass block at the
    end of this file (mezo-me75u.3). Only the advice-card applied/error lines stay here,
    because /coaching/:id (CoachingCardPage) reuses them. ── */
-/* the breathing keyframes stay too: the Mezo head orb (.mzh-orbhero) and .dayev-orbb use them */
+/* the breathing keyframes stay too: the Mezo head orb (.mzh-orbhero) uses them */
 @keyframes mz-orbbreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
 .nap-mzmsg-actionerr { font-size: 11px; color: var(--error-deep); }
 .nap-mzmsg-applied {
@@ -7334,250 +7334,10 @@ button.mz-tile:active { transform: scale(0.96); }
   background: var(--mz-chipbg); box-shadow: 0 7px 17px -9px rgba(43, 33, 24, 0.3);
 }
 
-/* ── nap-oldal ───────────────────────────────────────────────────────────── */
-.wkd-heronm-date { font-weight: 300; color: var(--mz-ink-soft); }
-.wkd-heroma { margin-left: 7px; vertical-align: 2px; }
-.wkd-herorow { display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 5px; }
-.wkd-herochips { max-width: 156px; }
-
-.wk-ring.is-day { width: 87px; height: 87px; }
-.wk-ring.is-day .in { width: 71px; height: 71px; }
-.wk-ring.is-day b { font-size: 28px; }
-.wk-ring.is-day b.is-learning { font-size: 14px; }
-.wk-ring.is-day small { font-size: 7px; }
-
-.wkd-card {
-  border-radius: 21px; padding: 13px 15px 12px; margin-bottom: 12px;
-  background: var(--mz-wash-white); border: 0.5px solid rgba(43, 33, 24, 0.06);
-  box-shadow: var(--mz-shadow);
-}
-.wkd-card .mz-eyebrow { display: block; padding-bottom: 9px; }
-.wkd-subrings { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.wkd-subring { display: grid; justify-items: center; gap: 3.5px; }
-.wkd-subring small {
-  font-size: 7px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
-  color: var(--mz-ink-mut);
-}
-.wkd-sring {
-  width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; flex: none;
-  background: conic-gradient(var(--c) calc(var(--v) * 1%), var(--mz-sc-track) 0);
-}
-.wkd-sring i {
-  width: 28px; height: 28px; border-radius: 50%; background: var(--mz-fh-ringhole);
-  display: grid; place-items: center; font-style: normal; font-size: 10.5px; font-weight: 700;
-  color: var(--c); font-variant-numeric: tabular-nums;
-}
-.wkd-sring.is-dash { background: none; box-shadow: inset 0 0 0 1.5px rgba(43, 33, 24, 0.12); }
-.wkd-sring.is-dash i { background: none; color: var(--mz-ink-mut); }
-.wkd-note-block { margin-top: 11px; }
-
-.wkd-tgrow { display: flex; align-items: center; gap: 8px; padding: 3.5px 0; }
-.wkd-tgrow .nm {
-  font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--mz-ink-mut); width: 47px; flex: none;
-}
-.wkd-tgrow .vl {
-  font-size: 10px; font-weight: 700; width: 97px; text-align: right; flex: none;
-  font-variant-numeric: tabular-nums;
-}
-.wkd-gbar { flex: 1; height: 6px; border-radius: 3.5px; background: var(--mz-gbar-bg); overflow: hidden; }
-.wkd-gbar div {
-  height: 100%; border-radius: 3.5px; transform: scaleX(0); transform-origin: left;
-}
-.wkd-gbar div.is-coral { background: var(--mz-goalfill); }
-.wkd-gbar div.is-sage { background: var(--mz-wk-bar-sage); }
-.wkd-gbar div.is-gold { background: var(--mz-strength); }
-.mz-play .wkd-gbar div {
-  animation: wkd-segfill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 350ms);
-}
-@keyframes wkd-segfill { to { transform: none; } }
-
-.wkd-orbcard {
-  border-radius: 22px; padding: 14px 15px; margin-top: 12px; border: 1px solid var(--mz-mem-ink);
-  background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav);
-}
-.wkd-orbrow { display: flex; align-items: center; gap: 8px; }
-.wkd-orb-eyebrow { color: var(--mz-cell-lav-ink); }
-.wkd-prose { font-size: 12.5px; font-weight: 300; line-height: 1.62; margin-top: 7px; color: var(--text-primary); }
-.wkd-orbfoot { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.wkd-chatch {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px;
-  border: 1px solid rgba(93, 79, 160, 0.3); background: var(--mz-chipbg); border-radius: 999px;
-  padding: 0 13px; font-size: 10px; font-weight: 700; color: var(--mz-cell-lav-ink);
-  font-family: inherit; cursor: pointer;
-}
-.wkd-chatch:disabled { opacity: 0.55; cursor: default; }
-
-.wkd-ghost {
-  border-radius: 21px; padding: 13px 15px; margin-top: 12px;
-  background: var(--mz-wk-thin-bg); border: 1px dashed rgba(43, 33, 24, 0.18); box-shadow: none;
-  display: grid; justify-items: start; gap: 10px;
-}
-.wkd-ghost p { font-size: 11px; font-weight: 300; line-height: 1.5; color: var(--mz-ink-soft); }
-
-.wkd-daynav { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-top: 14px; }
-.wkd-navt {
-  border-radius: 18px; padding: 11px 13px; min-height: 44px; cursor: pointer; text-align: left;
-  font-family: inherit; color: var(--text-primary);
-  border: 0.5px solid rgba(43, 33, 24, 0.07); background: var(--mz-wk-navt-bg);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 9px 19px -12px rgba(43, 33, 24, 0.25);
-}
-.wkd-navt:disabled { opacity: 0.35; cursor: default; }
-.wkd-navt.is-right { text-align: right; }
-.wkd-navt .k {
-  font-size: 7.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--mz-ink-mut);
-}
-.wkd-navt .v { font-size: 12px; font-weight: 700; margin-top: 2px; }
-
 @media (prefers-reduced-motion: reduce) {
   .mz-play .wkd-sparks i { animation: none; transform: none; }
-  .mz-play .wkd-gbar div { animation: none; transform: none; }
   .wkd-skel { animation: none; }
   .wkd-tile { transition: none; }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   Napi értékelés · 6 dimenzió (mezo-jcpt.4)
-   Source: the approved day-evaluation prototype, screens 1 „Lezárt nap" and 2
-   „Ma, napközben" — `.dayring.dash` / `.scorechips` / `.predtile` (+ its six
-   domain washes) / `.sring` / `.fchips` / `.why` / `.stag` / `.revcard` /
-   `.hlch` / `.adj`, scaled ×1.18 (330 → 390px frame).
-
-   SCOPING — every dimension modifier (`is-nutrition` … `is-rhythm`) is written
-   under `.dayev-dim`, NEVER bare: the weekly mosaic owns its OWN identically-named
-   `.wkd-sparks i.is-sleep` / `.wkd-legend i.is-sleep` rules (same six domain hues,
-   `mezo-jcpt.5` unified the palette on purpose), and the two rule families must
-   still never see each other's selectors — scoping, not colour, is what keeps
-   them apart. The six domain colours come from the shared --mz-wash-* /
-   --mz-shadow-* / --mz-cell-*-ink token families, so both themes follow without
-   a parallel palette.
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* ── hero: szaggatott „este zárom" gyűrű + alap/kontextus chip-pár ────────── */
-.wk-ring.dayev-ringdash { background: none; box-shadow: inset 0 0 0 2.5px var(--mz-sc-track); }
-.wk-ring.dayev-ringdash .in { background: none; box-shadow: none; }
-
-.dayev-scorechips { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
-.dayev-scorechips span {
-  font-size: 9px; font-weight: 700; border-radius: 999px; padding: 4px 11px;
-  background: var(--mz-chipbg); color: var(--mz-ink-soft); font-variant-numeric: tabular-nums;
-  box-shadow: 0 5px 12px -7px rgba(43, 33, 24, 0.3);
-}
-.dayev-scorechips span.is-mezo { background: var(--mz-wash-lav); color: var(--mz-cell-lav-ink); }
-
-/* ── dimenzió-csempe ─────────────────────────────────────────────────────── */
-.dayev-dim {
-  border-radius: 21px; padding: 13px 15px 12px; margin-bottom: 11px;
-  border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--mz-wash-white);
-  box-shadow: var(--mz-shadow);
-}
-.dayev-dim.is-nutrition { background: var(--mz-wash-sage);  box-shadow: var(--mz-shadow-sage); }
-.dayev-dim.is-quality   { background: var(--mz-wash-gold);  box-shadow: var(--mz-shadow-gold); }
-.dayev-dim.is-training  { background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
-.dayev-dim.is-sleep     { background: var(--mz-wash-lav);   box-shadow: var(--mz-shadow-lav); }
-.dayev-dim.is-logging   { background: var(--mz-wash-rose);  box-shadow: var(--mz-shadow-rose); }
-.dayev-dim.is-rhythm    { background: var(--mz-wash-sky);   box-shadow: var(--mz-shadow-sky); }
-/* `.dayev-ctx` is the un-scored CONTEXT tile — the same ghost anatomy, but deliberately NOT a
-   `.dayev-dim`: it carries no weight, no score and no ring, and nothing may count it as one of
-   the six dimensions. */
-.dayev-dim.is-ghost,
-.dayev-ctx {
-  background: var(--mz-wk-thin-bg); border: 1px dashed rgba(43, 33, 24, 0.18); box-shadow: none;
-}
-.dayev-ctx { border-radius: 21px; padding: 13px 15px 12px; margin-bottom: 11px; }
-
-.dayev-dimhead { display: flex; align-items: center; gap: 10px; }
-.dayev-dimname { flex: 1; min-width: 0; }
-.dayev-pic {
-  width: 35px; height: 35px; border-radius: 13px; display: grid; place-items: center; flex: none;
-  background: var(--mz-chipbg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08);
-}
-.dayev-dnm { font-size: 12.5px; font-weight: 700; letter-spacing: -0.01em; }
-.dayev-dwt { display: block; margin-top: 2px; }
-.dayev-stag {
-  display: inline-block; font-size: 7px; font-weight: 800; letter-spacing: 0.1em;
-  text-transform: uppercase; border-radius: 6px; padding: 2.5px 7px;
-  background: var(--mz-stch-mut-bg); color: var(--mz-stch-mut-ink);
-}
-/* The prototype's `stag done` — a dimension that has already FINALISED on a day still running. */
-.dayev-stag.is-done { background: var(--mz-stch-ok-bg); color: var(--mz-stch-ok-ink); }
-/* The nutrition tile's goal bars sit directly under its header (prototype screens 1–2). */
-.dayev-goals { margin-top: 7px; }
-.dayev-fchips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
-.dayev-fchip {
-  display: inline-flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 700;
-  color: var(--mz-ink-soft); background: var(--mz-chipbg); border-radius: 8px; padding: 3px 7px;
-  font-variant-numeric: tabular-nums;
-}
-.dayev-why { font-size: 10.5px; font-weight: 300; line-height: 1.5; color: var(--text-primary); margin-top: 8px; }
-.dayev-why.is-mut { color: var(--mz-ink-soft); }
-.dayev-ctxeb { display: block; padding-bottom: 2px; }
-
-/* ── sring (dimenzió-gyűrű) + a „Miből jött össze" hatos sáv ─────────────── */
-.dayev-sring {
-  width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; flex: none;
-  background: conic-gradient(var(--c) calc(var(--v) * 1%), var(--mz-sc-track) 0);
-}
-.dayev-sring i {
-  width: 28px; height: 28px; border-radius: 50%; background: var(--mz-fh-ringhole);
-  display: grid; place-items: center; font-style: normal; font-size: 10.5px; font-weight: 700;
-  color: var(--c); font-variant-numeric: tabular-nums;
-}
-.dayev-sring.is-dash { background: none; box-shadow: inset 0 0 0 1.5px rgba(43, 33, 24, 0.12); }
-.dayev-sring.is-dash i { background: none; color: var(--mz-ink-mut); }
-.dayev-subrings { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
-.dayev-subring { display: grid; justify-items: center; gap: 3.5px; }
-.dayev-subring small {
-  font-size: 6.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
-  color: var(--mz-ink-mut); text-align: center;
-}
-
-/* ── a Mezo napi értékelése (lila revcard) ───────────────────────────────── */
-.dayev-revcard {
-  border-radius: 22px; padding: 14px 15px; margin-bottom: 11px; border: 1px solid var(--mz-mem-ink);
-  background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav);
-}
-.dayev-revhead { display: flex; align-items: center; gap: 8px; }
-.dayev-revlabel { color: var(--mz-cell-lav-ink); }
-.dayev-prose { font-size: 12.5px; font-weight: 300; line-height: 1.62; margin-top: 7px; color: var(--text-primary); }
-.dayev-hlrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px; }
-.dayev-hlch {
-  display: inline-flex; flex-direction: column; border-radius: 11px; padding: 5px 10px;
-  font-size: 10px; font-weight: 600; color: var(--text-primary); background: var(--mz-chipbg);
-  border: 0.5px solid rgba(43, 33, 24, 0.08); box-shadow: 0 5px 12px -7px rgba(43, 33, 24, 0.3);
-}
-.dayev-hlch em {
-  font-style: normal; font-size: 7px; font-weight: 800; letter-spacing: 0.1em;
-  text-transform: uppercase; margin-bottom: 1px;
-}
-.dayev-hlch.is-key em { color: var(--mz-cell-lav-ink); }
-.dayev-hlch.is-pattern em { color: var(--mz-cell-amber-ink); }
-.dayev-hlch.is-win em { color: var(--mz-cell-sage-ink); }
-.dayev-hlch span { text-align: left; line-height: 1.3; }
-.dayev-adj {
-  display: flex; gap: 8px; align-items: baseline; margin-top: 10px; padding-top: 10px;
-  border-top: 1px solid rgba(93, 79, 160, 0.16);
-}
-.dayev-adj b {
-  font-size: 14px; font-weight: 800; color: var(--mz-cell-lav-ink); flex: none;
-  font-variant-numeric: tabular-nums;
-}
-.dayev-adj span { font-size: 10.5px; font-weight: 300; line-height: 1.5; color: var(--mz-ink-soft); }
-
-/* ── napközbeni „figyelő" orb-kártya ─────────────────────────────────────── */
-.dayev-waiting {
-  border-radius: 21px; padding: 13px 15px; margin-bottom: 11px;
-  background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav);
-  display: grid; grid-template-columns: auto 1fr; align-items: center;
-  justify-items: start; gap: 9px;
-}
-.dayev-waiting p { font-size: 11px; font-weight: 300; line-height: 1.5; color: var(--mz-ink-soft); }
-.dayev-waiting > .wkd-chatch { grid-column: 1 / -1; }
-.dayev-orbb { animation: mz-orbbreathe 4.5s ease-in-out infinite; }
-
-@media (prefers-reduced-motion: reduce) {
-  .dayev-orbb { animation: none; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -18860,3 +18620,246 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .rz-conf { display: none; } /* decorative burst only — no motion, no point showing it static */
 }
 /* ── /uveg nap napzaras ── */
+
+/* ── uveg napom (mezo-yjzhw.4) ── /nap/napom[/:date]: week strip, six-segment ring, reading, lead card, rows, review layers, tab dot ── */
+/* Reference: docs/design_2.0/prototypes/src/uveg-napod-body.html `nap()`, `dayBody()`,
+   `dimsToday()`, `dimsClosed()`, `segRing()`, `week()`, layout 2 (rows), owner OK 2026-09-24.
+   Ranking (bible §3.4): the header row and the section titles are flat type; the hero is a
+   FRAMELESS halo clipped with overflow-x: clip (rule 12); the lead card, the Mezo note, every row
+   with data and the "tovább" button are the `.glass` objects; everything inside them is flat
+   (highlight cells, fact chips, the chat button — rule 5); a row with no score, the no-data card,
+   the future card and the loading rows are dashed with the glass layers off (rule 6).
+   Owner 2026-09-24: NO italic serif anywhere — every Mezo sentence is upright Geist.
+   Everything is scoped to `.napom-page` (rule 13), except the tab dot, which lives in the chrome. */
+
+/* page root: clear the FAB and the floating bar (rule 9) */
+.napom-page { padding-bottom: calc(var(--screen-bottom-pad) + 72px); font-style: normal; }
+.napom-page .rise { --d: calc(var(--i, 0) * 70ms); }
+.napom-page .uv-eyebrow { display: block; }
+
+/* flat pill (rank 3) */
+.napom-page .napom-flat {
+  display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%;
+  padding: 6px 11px; border: 0; border-radius: 999px;
+  font: 600 11.5px/1.3 var(--ff-body); color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.napom-page .napom-flat b { color: var(--text-primary); font-weight: 600; }
+
+/* header row */
+.napom-page .napom-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 16px 0; }
+
+/* week strip */
+.napom-page .napom-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; padding: 12px 14px 2px; }
+.napom-page .napom-wd {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; min-height: 44px;
+  padding: 7px 0 6px; border: 0; border-radius: 14px; background: none; cursor: pointer;
+  font: 600 10px/1.2 var(--ff-body); color: var(--text-muted);
+}
+.napom-page .napom-wd b { font-size: 14px; font-weight: 600; letter-spacing: -0.3px; color: var(--text-secondary); }
+.napom-page .napom-wd i { width: 22px; height: 4px; border-radius: 2px; background: rgba(245, 239, 230, 0.08); }
+.napom-page .napom-wd.is-sc i { background: linear-gradient(90deg, #C9BDF0, #E9C48A); box-shadow: 0 0 6px rgba(201, 189, 240, 0.5); }
+.napom-page .napom-wd.is-th i { background: repeating-linear-gradient(90deg, rgba(245, 239, 230, 0.35) 0 3px, transparent 3px 6px); }
+.napom-page .napom-wd.is-today i { background: var(--dv-coral); box-shadow: 0 0 8px var(--dv-coral); }
+.napom-page .napom-wd.is-fut { opacity: 0.4; cursor: default; }
+.napom-page .napom-wd.is-on {
+  background: radial-gradient(80% 100% at 50% 0%, rgba(245, 239, 230, 0.10), transparent 75%);
+  box-shadow: inset 0 0 0 1px rgba(245, 239, 230, 0.14);
+}
+.napom-page .napom-wd.is-on b { color: var(--text-primary); }
+.napom-page .napom-wd:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: -2px; }
+
+/* hero: the frameless halo, clipped so a 320px screen never scrolls sideways (rule 12) */
+.napom-page .napom-hero { overflow-x: clip; text-align: center; padding: 8px 18px 4px; }
+.napom-page .napom-hero::before { top: 44%; width: 360px; height: 300px; }
+.napom-page .napom-hero h1 { font: 600 22px/1.2 var(--ff-body); letter-spacing: -0.6px; color: var(--text-primary); margin: 0; }
+.napom-page .napom-hero h1 span { color: var(--text-secondary); font-weight: 400; }
+.napom-page .napom-sub { margin-top: 4px; font-size: 11px; }
+.napom-page .napom-live { display: inline-flex; align-items: center; gap: 6px; color: #FFB39C; }
+.napom-page .napom-live i { width: 7px; height: 7px; border-radius: 50%; background: var(--dv-coral); box-shadow: 0 0 8px var(--dv-coral); }
+@keyframes napom-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.7); } }
+
+/* the six-segment ring */
+.napom-page .napom-segring { position: relative; width: 212px; height: 212px; margin: 10px auto 0; }
+.napom-page .napom-segring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
+.napom-page .napom-seg-t { fill: none; stroke: rgba(245, 239, 230, 0.07); stroke-width: 12; stroke-linecap: round; }
+.napom-page .napom-seg-p {
+  fill: none; stroke: var(--c); stroke-width: 12; stroke-linecap: round;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--c) 60%, transparent));
+}
+.napom-page .napom-core {
+  position: absolute; inset: 36px; border-radius: 50%; display: grid; place-items: center; text-align: center;
+  background: radial-gradient(circle at 35% 30%, #3A332D, #1E1B18);
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08),
+    inset 0 -12px 22px -12px color-mix(in srgb, var(--c, var(--dv-coral)) 55%, transparent),
+    0 14px 26px -14px #000;
+}
+.napom-page .napom-core strong { display: block; font: 300 46px/1 var(--ff-body); letter-spacing: -2.6px; color: var(--text-primary); }
+.napom-page .napom-core strong small { font-size: 20px; color: var(--text-muted); letter-spacing: -0.5px; }
+.napom-page .napom-core em {
+  display: block; margin-top: 5px; font: normal 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px;
+  color: var(--text-muted); text-transform: uppercase; max-width: 120px;
+}
+.napom-page .napom-core .napom-grad {
+  font-size: 64px; letter-spacing: -4px;
+  background: linear-gradient(135deg, #C9BDF0 0%, #E6DDFF 45%, #E9C48A 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 6px 16px rgba(155, 143, 196, 0.35));
+}
+.napom-page .napom-core .napom-wait { font-size: 20px; font-weight: 500; letter-spacing: -0.4px; color: var(--text-secondary); }
+
+/* base + the Mezo's correction: a flat pill, the reason one tap away */
+.napom-page .napom-corr {
+  display: inline-flex; align-items: center; gap: 6px; margin: 10px auto 0; padding: 6px 12px; min-height: 32px;
+  border: 0; border-radius: 999px; cursor: pointer;
+  font: 500 11.5px/1.3 var(--ff-body); color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.napom-page .napom-corr b { color: #C9BDF0; }
+.napom-page .napom-corr i { font-style: normal; color: var(--text-muted); margin-left: 2px; }
+.napom-page .napom-adjwhy { max-width: 320px; margin: 10px auto 0; font: 400 12.5px/1.5 var(--ff-body); color: var(--text-secondary); }
+
+/* today: the rule-written reading, upright Geist 16/500 */
+.napom-page .napom-reading {
+  max-width: 320px; margin: 12px auto 0;
+  font: normal 500 16px/1.45 var(--ff-body); letter-spacing: -0.2px; color: var(--text-primary);
+}
+.napom-page .napom-upd { display: block; margin-top: 8px; font-size: 10.5px; line-height: 1.45; color: var(--text-muted); }
+
+/* the lead card ("most érdemes") */
+.napom-page .napom-lead.glass { display: flex; gap: 12px; align-items: center; margin: 16px 16px 0; padding: 14px; border: 0; }
+.napom-page .napom-lead-grow { flex: 1; min-width: 0; }
+.napom-page .napom-lead .uv-eyebrow { color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.napom-page .napom-lead strong { display: block; margin-top: 3px; font: 600 15px/1.3 var(--ff-body); letter-spacing: -0.3px; color: var(--text-primary); }
+.napom-page .napom-lead small { display: block; margin-top: 3px; font-size: 11.5px; line-height: 1.4; color: var(--text-secondary); }
+.napom-page .napom-go {
+  flex: 0 0 auto; min-height: 36px; padding: 8px 12px; border: 0; border-radius: 999px; cursor: pointer;
+  font: 600 12px/1.2 var(--ff-body); color: color-mix(in srgb, var(--c) 60%, var(--text-primary));
+  background: color-mix(in srgb, var(--c) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 40%, transparent);
+}
+
+/* section titles */
+.napom-page .napom-sec { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 22px 18px 10px; }
+.napom-page .napom-sec h2 { margin: 0; font: 600 18px/1.2 var(--ff-body); letter-spacing: -0.5px; color: var(--text-primary); }
+.napom-page .napom-sec .uv-eyebrow { text-align: right; }
+
+/* the six rows */
+.napom-page .napom-rows { display: grid; gap: 10px; padding: 0 16px; }
+.napom-page .napom-drow {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center;
+  width: 100%; min-width: 0; padding: 12px 14px 12px 12px; border: 0; border-radius: 20px;
+  font-family: var(--ff-body); text-align: left; color: var(--text-primary);
+}
+.napom-page button.napom-drow { cursor: pointer; }
+.napom-page .napom-drow.is-open {
+  position: relative; overflow: visible;
+  background: rgba(245, 239, 230, 0.025);
+  border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent);
+  box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+.napom-page .napom-drow.is-open::before, .napom-page .napom-drow.is-open::after { display: none; }
+.napom-page .napom-well {
+  width: 48px; height: 48px; border-radius: 50%; flex: 0 0 auto; display: grid; place-items: center;
+  background: radial-gradient(circle at 35% 28%, #3A332D, color-mix(in srgb, var(--c) 14%, #1E1B18));
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08),
+    inset 0 -6px 12px -8px color-mix(in srgb, var(--c) 70%, transparent),
+    0 0 14px -4px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.napom-page .napom-drow.is-open .napom-well { opacity: 0.7; }
+.napom-page .napom-mid { display: block; min-width: 0; }
+.napom-page .napom-mid strong { display: block; font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+.napom-page .napom-wt { font-style: normal; font-size: 9.5px; font-weight: 600; letter-spacing: 1px; color: var(--text-muted); margin-left: 4px; text-transform: uppercase; }
+.napom-page .napom-mid small {
+  display: block; min-height: 1.35em; margin: 2px 0 7px; font-size: 11px; color: var(--text-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.napom-page .napom-bar { height: 6px; }
+.napom-page .napom-bar u {
+  position: absolute; top: -3px; bottom: -3px; left: var(--g); width: 2px; margin-left: -2px; border-radius: 1px;
+  background: rgba(245, 239, 230, 0.55);
+}
+.napom-page .napom-end { display: block; text-align: right; }
+.napom-page .napom-end b { display: block; font-size: 22px; font-weight: 500; letter-spacing: -0.9px; color: color-mix(in srgb, var(--c) 75%, var(--text-primary)); }
+.napom-page .napom-drow.is-open .napom-end b { color: var(--text-muted); }
+.napom-page .napom-st { display: block; font-size: 9.5px; font-weight: 600; letter-spacing: 1px; color: var(--text-muted); white-space: nowrap; }
+.napom-page .napom-st.is-ok, .napom-page button.napom-drow .napom-st { color: color-mix(in srgb, var(--c) 70%, var(--text-primary)); }
+.napom-page .napom-dmore { grid-column: 1 / -1; display: block; padding-top: 10px; border-top: 1px solid var(--divider); }
+.napom-page .napom-dchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.napom-page .napom-dchips .napom-flat { font-size: 11px; padding: 5px 10px; }
+.napom-page .napom-dnote { display: block; margin-top: 10px; font: normal 400 14px/1.55 var(--ff-body); color: var(--text-secondary); }
+
+/* the Mezo's note (closed, scored day) */
+.napom-page .napom-note.glass { margin: 16px 16px 0; padding: 16px; border: 0; color: var(--text-primary); }
+.napom-page .napom-note-head { display: flex; align-items: center; gap: 10px; }
+.napom-page .napom-note-head .uv-eyebrow { color: #C9BDF0; }
+.napom-page .napom-note p { margin: 10px 0 0; font: normal 400 15px/1.6 var(--ff-body); color: var(--text-primary); }
+.napom-page .napom-hls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+.napom-page .napom-hl { min-width: 0; padding: 10px 12px; border-radius: 14px; }
+.napom-page .napom-hl.is-key { grid-column: 1 / -1; }
+.napom-page .napom-hl .uv-eyebrow { font-size: 9px; }
+.napom-page .napom-hl strong { display: block; margin-top: 3px; font: 600 13.5px/1.3 var(--ff-body); overflow-wrap: anywhere; }
+.napom-page .napom-hl.is-key .uv-eyebrow { color: #C9BDF0; }
+.napom-page .napom-hl.is-pattern .uv-eyebrow { color: #FFD99A; }
+.napom-page .napom-hl.is-win .uv-eyebrow { color: #A9CFA0; }
+.napom-page .napom-fb { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--divider); }
+.napom-page .napom-talk {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; margin-top: 10px; padding: 10px 12px;
+  border: 0; border-radius: 14px; cursor: pointer; text-align: left;
+  font: 600 13.5px/1.3 var(--ff-body); color: #E6DDFF;
+  background: color-mix(in srgb, var(--dv-lav) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-lav) 30%, transparent);
+}
+.napom-page .napom-talk .t-ico { filter: none; }
+.napom-page .napom-talk span { flex: 1; }
+
+/* the day's context: flat chips that wrap (rule 14) */
+.napom-page .napom-ctx { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px; }
+.napom-page .napom-foot { margin: 0; padding: 18px 26px 0; font-size: 11px; line-height: 1.5; color: var(--text-muted); text-align: center; }
+
+/* no data / future / failed: dashed, never glass */
+.napom-page .napom-nodata {
+  --c: var(--dv-sky);
+  display: grid; justify-items: center; gap: 6px; margin: 16px; padding: 18px; border-radius: 22px; text-align: center;
+  border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent); background: rgba(245, 239, 230, 0.025);
+}
+.napom-page .napom-nodata .t-ico { opacity: 0.9; }
+.napom-page .napom-nodata strong { font: 600 16px/1.3 var(--ff-body); color: var(--text-primary); }
+.napom-page .napom-nodata p { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+.napom-page .napom-retry { min-height: 36px; cursor: pointer; }
+
+/* morning mode: on to today */
+.napom-page .napom-tonext.glass {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: calc(100% - 32px); margin: 16px 16px 0; padding: 14px 16px; border: 0; border-radius: 20px;
+  text-align: left; cursor: pointer; font-family: var(--ff-body); color: var(--text-primary);
+}
+.napom-page .napom-tonext .uv-eyebrow { color: #FFB39C; }
+.napom-page .napom-tonext strong { display: block; margin-top: 3px; font-size: 16px; font-weight: 600; }
+.napom-page .napom-tonext b { font-size: 24px; font-weight: 300; color: #FFB39C; }
+
+@media (max-width: 360px) {
+  .napom-page .napom-segring { width: 190px; height: 190px; }
+  .napom-page .napom-core { inset: 32px; }
+  .napom-page .napom-core .napom-grad { font-size: 54px; }
+}
+
+/* motion: only the live dot pulses and the arcs/bars glide; the reduced branch sits still */
+@media (prefers-reduced-motion: no-preference) {
+  .napom-page .napom-live i { animation: napom-pulse 1.8s ease-in-out infinite; }
+  .napom-page .napom-seg-p { transition: stroke-dasharray 0.9s var(--uv-ease); }
+  .napom-page .napom-bar > b { transition: width 0.9s var(--uv-ease); }
+}
+
+/* chrome: the A napom tab dot (8px lavender, glow, a canvas ring), top-right of the icon.
+   The dot is decoration (aria-hidden); its meaning is the link's sr-only description. */
+.tab-bar .tab-item .tab-ico { position: relative; }
+.tab-bar.glass .tab-ico > .tb-dot {
+  position: absolute; top: -2px; right: -5px; z-index: 2;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #C9BDF0; box-shadow: 0 0 8px var(--dv-lav), 0 0 0 2px var(--canvas);
+}
+/* rule 2: `.glass > *` would drop the sr-only description into the bar's flex row */
+.tab-bar.glass > .sr-only { position: absolute; }
+/* ── /uveg napom ── */

@@ -38,7 +38,7 @@ export interface NormalizedDayEvaluation {
   base: number | null
   /** The `day_review` feedback artifact id (mezo-jcpt.9) — present only on a scored day that
    *  actually has LLM prose, `null` otherwise (the backend makes that unreachable by
-   *  construction). `DayReviewCard` uses its presence, not `state`, to decide whether to mount
+   *  construction). `NapomReviewCard` uses its presence, not `state`, to decide whether to mount
    *  the feedback chips — no id, no chips. */
   reviewId: string | null
   adjustment: { delta: number; reason: string } | null

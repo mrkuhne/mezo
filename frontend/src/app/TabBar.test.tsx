@@ -58,8 +58,17 @@ test('the bar shows the switch mark + the current domain (Nap) and its four tabs
 // A napom tab dot (mezo-yjzhw.4): AppLayout decides morning mode and passes it in via
 // `dots`, keyed by the tab's own route — TabBar just renders what it is told.
 test('a dots entry for the tab route renders the „kész a tegnapi értékelés" dot', () => {
-  renderAt('/nap', <TabBar dots={{ '/nap/napom': true }} />)
-  expect(screen.getByLabelText('kész a tegnapi értékelés')).toBeInTheDocument()
+  const { container } = renderAt('/nap', <TabBar dots={{ '/nap/napom': true }} />)
+  // the dot is decoration; its meaning is the tab's DESCRIPTION, so the tab's NAME stays „A napom"
+  const tab = screen.getByRole('link', { name: 'A napom' })
+  expect(tab).toHaveAccessibleDescription('kész a tegnapi értékelés')
+  expect(container.querySelector('.tb-dot')).toHaveAttribute('aria-hidden', 'true')
+})
+
+test('without a dot the A napom tab carries no description', () => {
+  const { container } = renderAt('/nap', <TabBar />)
+  expect(screen.getByRole('link', { name: 'A napom' })).not.toHaveAttribute('aria-describedby')
+  expect(container.querySelector('.tb-dot')).toBeNull()
 })
 
 test("each tab renders its clay icon via a sprite use ref (Nap's four + the switch mark)", () => {

@@ -309,7 +309,7 @@ test('/nap/gyors resolves from the router config to the full-page quick-log pick
 // so the longest-prefix rule (navModel.activeTabRoute) needs to still land on the tab.
 test('/nap/napom/2026-09-23 lights the „A napom" tab', async () => {
   renderApp('/nap/napom/2026-09-23')
-  expect(await screen.findByRole('link', { name: /A napom/ })).toHaveAttribute('aria-current', 'page')
+  expect(await screen.findByRole('link', { name: 'A napom' })).toHaveAttribute('aria-current', 'page')
 })
 
 test('/insights/chat redirects into the Mezo tab preserving the subpath', async () => {
