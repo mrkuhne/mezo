@@ -21637,3 +21637,55 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* „Hétfőn jön" is a forecast, not a door — it must not look tappable */
 .tv-run .mz-tile.glass.mz-w-sage .mz-chev { display: none; }
 /* ── /uveg edzes2 run ── */
+
+/* ── uveg edzes2 nap (mezo-me75u.5) ── /train/mesocycles/:id/days/:day (+/edit) ── */
+/* Ranking (bible §3.4, prototype uveg-edzes2.html#nap): the hero is a FRAMELESS halo carrying
+   the day's body map and its one numeral; the exercise cells are the page's primary objects and
+   wear glass; the per-muscle rows and the 4-cell prescription grid inside them stay flat. */
+.tv-day-page { --c: var(--dv-coral); }
+
+/* the hero loses its wash box and becomes a halo (U2 rule 12: clip it, a 340px halo
+   scrolls a 320px screen sideways) */
+.tv-day-page + .mz-page-body, .mz-page-body.tv-day-page { overflow-x: clip; }
+.pl-dhero { position: relative; overflow-x: clip; }
+.pl-dhero .pl-dhero-wash { display: none; }
+.pl-dhero::before {
+  content: ''; position: absolute; left: 50%; top: 50%; z-index: -1; pointer-events: none;
+  width: 340px; height: 260px; transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse at 50% 45%,
+    color-mix(in srgb, var(--mus-color, var(--dv-coral)) 30%, transparent), transparent 66%);
+}
+.pl-dhero-number strong {
+  color: color-mix(in srgb, var(--mus-color, var(--dv-coral)) 42%, #fff);
+  text-shadow: 0 0 22px color-mix(in srgb, var(--mus-color, var(--dv-coral)) 50%, transparent);
+}
+.pl-dhero-art .body-map-figure { filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.5)); }
+
+/* the exercise cell: glass, tinted by the exercise's own muscle */
+.tv-day-page .pl-ex.glass {
+  --c: var(--mus-color, var(--dv-coral));
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 20%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 26%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 50%, transparent);
+}
+/* the prescription grid is flat INSIDE the glass (U1 rule 5) */
+.tv-day-page .pl-ex-grid > * {
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+/* „＋ Gyakorlat hozzáadása" is free space, so it is dashed — never glass (U2 rule 6) */
+.tv-day-page .pl-add {
+  --c: var(--dv-coral);
+  border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent);
+  background: rgba(245, 239, 230, 0.025); box-shadow: none;
+  color: color-mix(in srgb, var(--c) 72%, #fff);
+}
+.tv-day-page .pl-editlink { color: var(--text-secondary); }
+
+/* the day's editor keeps the same ground; MesoExercises owns its own rows */
+.tv-dayedit { --c: var(--dv-coral); }
+/* ── /uveg edzes2 nap ── */
