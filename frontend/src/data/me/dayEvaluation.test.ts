@@ -2,7 +2,7 @@
 // mock builder for the day page's `GET /api/me/day/{date}/evaluation` read. Four named scenarios
 // (scored / in_progress / thin / future) per the slice brief; Task 10 renders its tests against
 // these exact fixtures, so their shape is a contract, not a placeholder.
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import {
   mockDayEvaluation, mockDayEvaluationDates, normalizeDayEvaluation,
 } from '@/data/me/dayEvaluation'
@@ -53,10 +53,30 @@ describe('mockDayEvaluation — the four named scenarios', () => {
     expect(d.narrative).toEqual([])
   })
 
-  test('an unrecognized date falls back to the scored fixture, re-dated', () => {
-    const d = mockDayEvaluation('2026-07-01')
-    expect(d.date).toBe('2026-07-01')
-    expect(d.state).toBe('scored')
+  test('an unrecognized PAST date falls back to the scored fixture, re-dated', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-09-24T10:00:00'))
+    try {
+      const d = mockDayEvaluation('2026-07-01')
+      expect(d.date).toBe('2026-07-01')
+      expect(d.state).toBe('scored')
+    } finally { vi.useRealTimers() }
+  })
+
+  test('an unrecognized date mirrors the backend: today is in_progress, a later date is future', () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-09-24T10:00:00'))
+    try {
+      const today = mockDayEvaluation('2026-09-24')
+      expect(today.date).toBe('2026-09-24')
+      expect(today.state).toBe('in_progress')
+      expect(today.score).toBeNull()
+      const later = mockDayEvaluation('2026-09-25')
+      expect(later.date).toBe('2026-09-25')
+      expect(later.state).toBe('future')
+      // the named fixture dates keep their fixed scenario whatever the clock says
+      expect(mockDayEvaluation(mockDayEvaluationDates.scored).state).toBe('scored')
+    } finally { vi.useRealTimers() }
   })
 })
 

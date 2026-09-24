@@ -75,21 +75,37 @@ import tools.jackson.databind.ObjectMapper;
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
 public class DayReviewService {
 
-    /** Verbatim from the task brief — do not paraphrase; the fake LLM keys off nothing here. */
+    /** A napom S4 (owner 2026-09-24): the warm voice; bump {@link #PROMPT_VERSION} on any
+     *  wording change, so every cached review regenerates once in the new voice. */
+    static final String PROMPT_VERSION = "v2-warm";
+
     static final String SYSTEM_PROMPT = """
-        Egy fitness-app napi értékelő rétege vagy. Megkapod a nap determinisztikus dimenzió-pontjait,
-        tényeit, a nem pontozott kontextus-jeleket (energia, súlytrend) és az előző napok mintáit.
+        Egy fitness-app napi értékelő rétege vagy: a felhasználó reggel ezt olvassa el a tegnapjáról.
+        Megkapod a nap determinisztikus dimenzió-pontjait, tényeit, a nem pontozott kontextus-jeleket
+        (energia, súlytrend) és az előző napok mintáit.
         Válaszolj EGY JSON objektummal:
         {"narrative":[string,...],"dimensionNotes":{"<dim-id>":string},
          "highlights":[{"kind":"key|pattern|win","label":string}],
          "adjustment":{"delta":int,"reason":string} | null}
+        Hang:
+        - Második személyben, tegeződve, mint egy barát, aki érti a számokat. Rövid, egyszerű mondatok.
+        - TILOS a hivatali, szenvedő szerkezet („került rögzítésre", „teljesült", „kontextusában",
+          „indokolt") és a belső szakszavak: base, nova, dimenzió, training, Q7, kontextus, sáv.
+          Mondd ki emberi szóval: „alappont", „feldolgozatlan étel", „alvás minősége 7/10".
+        - A számok maradnak, de kerekítve és emberi viszonyításban („4 g-mal maradt el a céltól").
         Szabályok:
-        - Magyarul, tegeződve, ítélkezésmentesen — tényt nevezel meg, nem minősítesz.
-        - narrative: 2-3 bekezdés, ami ÖSSZEKÖTI a dimenziókat (ok-okozat, minták), nem felolvassa őket.
-        - dimensionNotes: minden DONE dimenzióhoz 1-2 mondat, mindig MÁS adatból hozott kontextussal.
-        - adjustment: CSAK ha a számok nem látnak valamit (edzésnapi refeed, betegnap-jel); delta −5..+5
-          egész, kötelező indoklással. Ha nincs ok, null.
-        - A kapott számoknak soha ne mondj ellent és ne találj ki újakat.
+        - narrative: legfeljebb 2 rövid bekezdés. Az első: mi ment jól és miért. A második: az EGY dolog,
+          amin ma érdemes változtatni. Kösd össze a dimenziókat (ok-okozat), ne sorold fel őket.
+        - dimensionNotes: minden DONE dimenzióhoz 1-2 rövid mondat, más adatból hozott kontextussal.
+        - highlights: rövid, hétköznapi kifejezések (pl. „Mindkét edzés megvolt").
+        - adjustment: CSAK ha a számok nem látnak valamit (edzésnapi refeed, betegnap-jel, ismétlődő
+          rövid alvás); delta −5..+5 egész. Az indoklás EGY mondat, első személyben
+          („Levontam 2 pontot, mert…"). Ha nincs ok, null.
+        - Ítélkezésmentesen: tényt nevezel meg, nem minősítesz. A kapott számoknak soha ne mondj
+          ellent és ne találj ki újakat.
+        Példa a hangra: „A hét legjobb napja volt. Mindkét edzés megvolt, és a tányér is rendben volt:
+        a fehérje csak 4 g-mal maradt el a céltól. Egy dolog lóg ki: két napja nem jön össze az
+        alváscél — ma este ez a legjobb befektetés."
         """;
 
     /** The AI correction's hard bounds — binding (constraints.md), enforced here, not trusted. */
@@ -170,7 +186,7 @@ public class DayReviewService {
 
     /**
      * The server-side mirror of the frontend's {@code weekDay.ts} four states, plus the
-     * {@code in_progress} the frontend never needed (its week view has no live day page):
+     * {@code in_progress} the live day page (A napom) renders it:
      * <pre>
      *   date &gt; today                      -&gt; future        (nothing has happened yet)
      *   date == today                     -&gt; in_progress   (still gathering; no overall score)
@@ -178,10 +194,9 @@ public class DayReviewService {
      *   closed &amp;&amp; nothing was logged      -&gt; empty         ("nincs adat")
      *   closed &amp;&amp; something was logged    -&gt; thin          ("tanulom" — &lt;2 DONE dimensions)
      * </pre>
-     * {@code empty} asks the day's OWN logs, not the dimension statuses: on a closed day the
-     * {@code logging} dimension is always DONE (a genuinely untouched day scores a real 0, by
-     * design) and {@code rhythm} is computed from PRIOR days, so "all dimensions degraded" would
-     * never fire and every untouched day would read as {@code thin}.
+     * {@code empty} asks the day's OWN logs, not the dimension statuses: a fully untouched closed
+     * day has {@code logging} NO_DATA (mezo-el0t), and {@code rhythm} is computed from PRIOR days,
+     * so {@code empty} asks the day's own logs.
      */
     private static String state(DayInputs inputs, DayEvaluation evaluation, LocalDate today) {
         LocalDate date = inputs.date();
@@ -329,8 +344,24 @@ public class DayReviewService {
      * the prior list that moves neither {@code rhythm}'s score nor its facts leaves the key
      * identical while the prompt text differs. The prose rarely quotes the raw list, so the cached
      * sentence stays true.
+     *
+     * <p>The key also carries {@link #PROMPT_VERSION} (mezo-yjzhw.2): the prompt's wording is not
+     * itself hashed, so a voice change alone would otherwise leave every existing key untouched and
+     * keep serving the old-voice prose forever. Folding the version in moves every key exactly once
+     * per wording change, and each stale row regenerates lazily on its next read.
      */
     static String inputsHash(DayEvaluation evaluation) throws NoSuchAlgorithmException {
+        return sha256Hex("prompt|" + PROMPT_VERSION + "\n" + hashBody(evaluation));
+    }
+
+    /** Test-only: the pre-v2 key (no prompt version) — proves the voice change invalidates the
+     *  cache by recomputing the key the old way and diffing it against {@link #inputsHash}. */
+    static String legacyInputsHashForTest(DayEvaluation evaluation) throws NoSuchAlgorithmException {
+        return sha256Hex(hashBody(evaluation));
+    }
+
+    /** The dimension/base half of the key — see {@link #inputsHash} for what wraps it. */
+    private static String hashBody(DayEvaluation evaluation) {
         StringBuilder sb = new StringBuilder();
         for (DayEvaluationEngine.DayDimension d : evaluation.dimensions()) {
             sb.append(d.id()).append('|')
@@ -343,7 +374,7 @@ public class DayReviewService {
             }
         }
         sb.append("base|").append(evaluation.base() == null ? "" : evaluation.base());
-        return sha256Hex(sb.toString());
+        return sb.toString();
     }
 
     /** The checked {@code NoSuchAlgorithmException} is propagated rather than wrapped in a raw

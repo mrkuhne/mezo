@@ -112,7 +112,7 @@ describe('WeekDaysPage (mock mode)', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     const { container } = renderPage(PAST_WEEK)
     await user.click(container.querySelector('[data-date="2026-05-13"]') as HTMLElement)
-    expect(mockNavigate).toHaveBeenCalledWith('/me/week/napok/2026-05-13?start=2026-05-11')
+    expect(mockNavigate).toHaveBeenCalledWith('/nap/napom/2026-05-13?start=2026-05-11')
     // nothing grew inside the grid
     expect(screen.getAllByTestId('week-day-tile')).toHaveLength(7)
   })

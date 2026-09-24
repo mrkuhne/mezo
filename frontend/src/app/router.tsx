@@ -18,6 +18,7 @@ import { NapKuldetesekPage } from '@/features/today/pages/NapKuldetesekPage'
 import { NapCheckinPage } from '@/features/today/pages/NapCheckinPage'
 import { NapGyorsPage } from '@/features/today/pages/NapGyorsPage'
 import { EletjelPage } from '@/features/today/pages/EletjelPage'
+import { NapomPage } from '@/features/today/pages/NapomPage'
 import { TrainTodayPage } from '@/features/train/pages/TrainTodayPage'
 import { TrainWeekPage } from '@/features/train/pages/TrainWeekPage'
 import { TrainWeekMapPage } from '@/features/train/pages/TrainWeekMapPage'
@@ -102,7 +103,6 @@ import { JournalPage } from '@/features/me/pages/JournalPage'
 import { WeekHubPage } from '@/features/me/pages/WeekHubPage'
 import { WeekAnalysisPage } from '@/features/me/pages/WeekAnalysisPage'
 import { WeekDaysPage } from '@/features/me/pages/WeekDaysPage'
-import { WeekDayPage } from '@/features/me/pages/WeekDayPage'
 import { WeekLessonsPage } from '@/features/me/pages/WeekLessonsPage'
 import { WeekDiscoveriesPage } from '@/features/me/pages/WeekDiscoveriesPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
@@ -235,6 +235,15 @@ function MeKnowledgeRedirect() {
   return <Navigate to={`/mezo/knowledge?view=kategoriak${kind ? `&kind=${kind}` : ''}`} replace />
 }
 
+/** `/me/week/napok/:date` — the retired single-day route (mezo-yjzhw.4: A napom replaces
+ *  the Napzárás tab and becomes the day's own address). The mosaic (`/me/week/napok`)
+ *  survives; only the ONE-day deep link forwards, so an old bookmark or push-notification
+ *  link still lands on a day, just the new one. */
+function NapomRedirect() {
+  const { date } = useParams<{ date: string }>()
+  return <Navigate to={`/nap/napom/${date ?? ''}`} replace />
+}
+
 /** `/train` has no face of its own under the four-tab IA (owner 2026-09-12) — it forwards
  *  to Mai, keeping the legacy Heti `?day={0..6}` deep-link intact. */
 function TrainIndex() {
@@ -254,6 +263,10 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <Navigate to="/nap" replace /> },
       { path: 'nap', element: <NapHubPage /> },
+      // A napom (mezo-yjzhw.4): replaces the Napzárás tab — the day's own reading + next
+      // action, deep-linkable by date (a closed day's review, a push notification).
+      { path: 'nap/napom', element: <NapomPage /> },
+      { path: 'nap/napom/:date', element: <NapomPage /> },
       // Nap tile → own full page (mezo-d20.2.2): the hub's Mezo tile.
       { path: 'nap/uzenetek', element: <NapMezoPage /> },
       { path: 'nap/rutin', element: <NapRutinPage /> },
@@ -517,7 +530,7 @@ export const routes: RouteObject[] = [
       // a push notification can point at a day). The day page derives the week from
       // `:date` when `?start=` is absent.
       { path: 'me/week/napok', element: <WeekDaysPage /> },
-      { path: 'me/week/napok/:date', element: <WeekDayPage /> },
+      { path: 'me/week/napok/:date', element: <NapomRedirect /> },
       { path: 'me/week/tanulsagok', element: <WeekLessonsPage /> },
       { path: 'me/week/felfedezesek', element: <WeekDiscoveriesPage /> },
       { path: 'me/goals', element: <CelokPage /> },

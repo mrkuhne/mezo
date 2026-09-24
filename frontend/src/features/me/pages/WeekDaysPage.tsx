@@ -9,7 +9,7 @@
 // that spells out what „tanulom" means.
 //
 // The tiles do NOT expand in place (4th design round): a tap deep-links to
-// `/me/week/napok/:date`, which is what finally makes a single day
+// `/nap/napom/:date` (A napom, mezo-yjzhw.4), which is what makes a single day
 // addressable (audit gap §8.3/6 — a push notification can point at one).
 // ============================================================
 import { Fragment } from 'react'
@@ -39,7 +39,9 @@ export function WeekDaysPage() {
   const { measured, best, worst, learning } = summariseDays(days, today)
   const title = deriveWeekTitle(start)
 
-  const openDay = (dateIso: string) => navigate(`/me/week/napok/${dateIso}?start=${start}`)
+  // A napom (mezo-yjzhw.4) is now a single day's own address — the mosaic (this page)
+  // survives at `/me/week/napok`, but a tile opens `/nap/napom/:date` directly.
+  const openDay = (dateIso: string) => navigate(`/nap/napom/${dateIso}?start=${start}`)
 
   return (
     <MozaikPage tone="sage" className="wkd-page">

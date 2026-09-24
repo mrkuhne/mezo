@@ -14,6 +14,12 @@ vi.mock('@/data/hooks', () => ({
   useFuelDay: () => ({ fuel: { consumed: { kcal: 900 }, targets: { kcal: 2000 }, meals: [] }, isPending: false }),
   useJournalNotes: () => ({ data: store.notes, isPending: false }),
   useActivities: () => ({ data: [], isPending: false }),
+  // NapzarasCard's own hooks (mezo-yjzhw.4): the mocked 14:00 tick below is outside the
+  // evening window, so the card renders nothing here regardless of these values — kept
+  // trivially "not closed" so a future window change doesn't crash this suite.
+  useRitualDay: () => ({ data: { closed: false }, isPending: false }),
+  useDayEvaluation: () => ({ data: undefined, isPending: true }),
+  normalizeDayEvaluation: (raw: unknown) => raw,
 }))
 vi.mock('@/features/today/logic/useNeeds', () => ({ useNeeds: () => ({ states: [] }) }))
 vi.mock('@/features/today/logic/useMinuteTick', () => ({ useMinuteTick: () => new Date('2026-09-17T14:00:00') }))

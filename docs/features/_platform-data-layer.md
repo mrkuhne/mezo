@@ -114,6 +114,20 @@ React view (features/**/*.tsx)
   when the failure is an `ApiError`) through `shared/lib/toastBus` → the `ToastProvider` host in
   `AppLayout`. Every failed mutation is surfaced; per-mutation `onError` handlers still run on top
   for richer handling. Mock-mode mutations no-op successfully, so mock never toasts errors.
+- **Global write-driven today refresh (A napom S3, `mezo-yjzhw.3`):** the same `MutationCache`
+  also carries an `onSuccess` that fires on every successful mutation app-wide and calls
+  `invalidateTodayDay(client)` (`frontend/src/data/me/liveDay.ts:8`), which
+  `invalidateQueries`-es `['dayEvaluation', today]` + `['meWeek', mondayOf(today)]` for today's
+  local date. `client` is a `let`-hoisted binding assigned after the `MutationCache` is
+  constructed (the cache's `onSuccess` closes over it) precisely so it can pass itself in.
+  Because `invalidateQueries` only refetches ACTIVE observers, an unmounted day page just goes
+  stale — no cost when nobody is looking at today. This is why "today" is live without wiring
+  per-mutation invalidation into every meal/set/check-in/sleep/weight/habit call site — see
+  [today.md](today.md). The day-evaluation read itself also polls independently while mounted
+  on today: `useDayEvaluation` (`frontend/src/data/me/dayEvaluationHooks.ts:58`) sets
+  `refetchInterval: 60_000` in real mode when the viewed date is today (mock mode and any
+  non-today date get `undefined` — no polling), a belt-and-braces refresh for whatever the
+  mutation-cache hook doesn't cover (e.g. server-side clock effects, another device's writes).
 - In **real mode** rendering is gated by `AuthGate` (`frontend/src/app/auth/AuthGate.tsx`, mounted inside `QueryProvider`), not by the provider itself: it checks a persisted token against `GET /api/auth/me` and only renders `{children}` once the account resolves to `ready` — otherwise it renders `LoginPage`/`RegisterPage`/`ChangePasswordPage`/a retry screen instead. In **mock mode** `AuthGate` short-circuits straight to `ready`; no login is attempted. See [`_platform-auth-security.md`](_platform-auth-security.md) §2/§3 for the full boot state machine.
 - `setToken` stores the JWT via `tokenStore` (`data/_client/tokenStore.ts`) in **`localStorage`** (key `mezo.auth.token`) — multi-user accounts now exist (`mezo-qw37`), so a real login/register UI persists the token across reloads and across tabs.
 

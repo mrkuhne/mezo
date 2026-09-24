@@ -21,6 +21,12 @@ related: [_platform-design-system, companion, me, fuel, train, insights, _platfo
 > preference are kept so light can return. The header's controls are unchanged in content and
 > wear glass (see [design system](_platform-design-system.md) §3 *Üveg foundation*).
 
+> **2026-09-24 (`mezo-yjzhw.4`):** the header's day orb (`AppHeader.tsx`, the filling coral
+> `nap-avatar` button) now opens `/nap/napom/<today>` — A napom, the day's own reading — instead
+> of the retired `/me/week/napok/<today>` single-day route. Everything else about the header
+> (badges, the gear, the "boop" wordmark) is unchanged. See [ritual.md](ritual.md) and
+> [today.md](today.md).
+
 ## 1. Summary
 
 The header cog opens `/settings`; the previous daypart picker is removed. Preferences are

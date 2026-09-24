@@ -3,10 +3,12 @@ title: Today
 type: feature-domain
 status: mixed
 updated: 2026-09-24
-tags: [today, nap, mozaik, biometrics, frontend, data-layer, ritual, needs]
+tags: [today, nap, mozaik, biometrics, frontend, data-layer, ritual, needs, napom]
 # 8 load-bearing paths (was 10 — the three named Nap components are all under
 
 > **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The whole Nap area wears the dark glass: the Mai hub (frameless orbit with 3D nodes, glass fuel card + Mezo observation, the "Mai pillanatok" rows now carry a 3D kind icon — owner decision), Check-in, Életjelek, Küldetések, Rutin, the Mezo messages page, `/nap/gyors` and every capture sheet. Text-glyph marks became `t-tick` with accessible names. `shared/ui/Island.tsx` (dead) was removed. Behavior, routes and data are unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
+
+> **2026-09-24 — A napom (`mezo-yjzhw`).** The day page behind the header's day orb moved off `/me/week/napok/:date` onto its own Nap-domain tab, **A napom** (`/nap/napom`, `/nap/napom/:date`), replacing the Napzárás tab. It is a live day view (six-segment ring, a rule-based one-line reading, a "most érdemes" next-step card) by day, and a fully-reviewed closed day (every `DayReviewJson` layer, upright Geist prose) once the overnight warm-up job has run. The Napzárás ritual itself is unchanged; its evening entry point moved to a new card on Mai (`NapzarasCard`). Design: [`specs/2026-09-24-a-napom-design.md`](../superpowers/specs/2026-09-24-a-napom-design.md).
 # `features/today/components`, which tracks them and their siblings together).
 key_files:
   - frontend/src/features/today/pages
@@ -16,6 +18,8 @@ key_files:
   - frontend/src/app/AppHeader.tsx
   - frontend/src/app/router.tsx
   - frontend/src/data/today
+  - frontend/src/data/me/liveDay.ts
+  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DayReviewWarmupJob.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/checkin
 related: [_platform-data-layer, _platform-design-system, me, insights, companion, proactive, train, growth, habit, intention, ritual, needs]
 ---
@@ -31,6 +35,7 @@ related: [_platform-data-layer, _platform-design-system, me, insights, companion
 | Route | Page | What it is |
 |---|---|---|
 | `/nap` | **`NapHubPage`** | the Titanium hub (`mezo-mhum`): companion block + one computed next step + six fixed tiles (the header above it is the shell's `AppHeader`, not the hub's — see below) |
+| `/nap/napom`, `/nap/napom/:date` | **`NapomPage`** | "A napom" (`mezo-yjzhw.4`) — the live day view / closed-day review, replacing `WeekDayPage`; see §3 below |
 | `/nap/gyors` | `NapGyorsPage` | the FAB's full-page quick-log picker — the shared `QuickLogSurface` grid, `variant="page"` |
 | `/nap/uzenetek` | `NapMezoPage` | "Mezo · ma" — the day's companion thread as a page |
 | `/nap/rutin` | `NapRutinPage` | the habit chains (`?dp=reggel\|este` preselects which group leads) |
@@ -47,7 +52,7 @@ Until `mezo-atry`, `NapHubPage`'s `.nap-head` was copy-pasted verbatim into the 
 3. **Daypart switch** — a round clay button (`.nap-roundbtn`) carrying a daypart's clay icon (`i-hajnal` / `i-nap` / `i-alvas`). It reads `?dp=` **only on `/nap`**; on every other route it shows the real clock-derived daypart, since there is no page there to preselect a mosaic for. Tapping it opens the same three-icon `role="menu"` popover — its items are `role="menuitemradio"` with `aria-checked`, so the selection is exposed, not merely painted by the `.on` class (`mezo-atry` fix wave). Picking a daypart **always navigates to `/nap`**, carrying `?dp=` only when the pick differs from the clock-derived one (picking the clock's own daypart on `/nap` clears the param instead). The navigation **preserves every other query parameter** (`?day=`, `?medCycleDay=`, `?niggle=`, `?vulnerable=`, `?ritual=` — all app-wide scenario switches read by `useTodayScenario`) and uses `replace`, so daypart-tapping neither drops a scenario nor fills the history stack. The `?dp=`-or-clock resolution itself lives in **`logic/useDayFace.ts`**, shared verbatim with `NapHubPage`. The `.nap-offnow` dot — the ADR 0014 dual-signal ("hol tartok" vs "mit nézek") — appears **only on `/nap`**, and only when the shown daypart differs from the clock's.
 4. **Mezo-messages circle** — a round button (`i-level` clay icon) with an unread-count `.nap-badge`, navigating to `/nap/uzenetek`. This is the tile that used to sit inside every daypart's mosaic (reggel/nap/este all carried a `Mezo` tile); `mezo-atry` moved it into the header instead, so it now appears exactly once per screen instead of once per daypart. The unread count is watermarked in `localStorage` (`lastSeenMessage`, key `mezo.msgseen.<date>`). **The badge and the page read ONE thread** — `MezoThreadProvider` (`frontend/src/features/today/MezoThreadProvider.tsx`), mounted by `AppLayout` around `ScreenContent`, is the single builder of `buildMezoMessages({ feed, demoBriefing, nudges })` and the single writer of the Életjel nudge log. This is not decoration: while the header built its own **nudge-less** thread and the page stamped the watermark with its own (nudge-bearing) last id, the header's `findIndex` could never match, so the badge fell back to the full count and **never cleared** (`mezo-atry` fix wave). The watermark is also React state in the provider, so the badge goes dark the moment the page marks the thread seen — not one navigation later.
 5. **Notification bell** — a second round button with an unread-count `.nap-badge`, opening the `.nap-ntfpanel` **scrollable, full-width notification panel** (mezo-g9fz). It is a child of the `<header>` itself, not of the bell's wrapper — `left: 0; right: 0` against `.app-head` is what makes it full width — and it has three regions: a pinned head (`Értesítések` eyebrow + live unread count + `Mind olvasott`), a horizontally scrollable filter-chip row (`Mind` · `Olvasatlan` · the six categories of `features/notification/logic/category.ts`, each with its clay icon and count, only drawn when non-empty), and the scrolling list, capped at `max-height: min(600px, 74vh)` with sticky `Ma`/`Tegnap`/dated day labels, over an `Összes értesítés ›` foot → `/me/ertesitesek`, the notification **feed page** (`NotificationFeedPage.tsx`), not the preferences page. It shows the newest **30** notifications (`Date.parse(occurredAt)`-sorted BEFORE the slice — the raw arrival order drew today's OLDEST rows, `mezo-tdzy`), each with its kind's clay icon + tint (`APP_NOTIFICATION_KIND_META`), a `.nap-ntf-when` clock (the day is carried by the group label, so `timeLabel()` not `notificationStamp()`), a `deeplink` tap target, and while `readAt === null` the `.nap-ntfrow.unread` wash, a `.nap-ntf-dot` and an `sr-only` „Olvasatlan". Read state here is the LIVE `readAt`, not the feed page's open-time snapshot: in the panel the un-highlighting IS `Mind olvasott`'s feedback. Source: `useNotificationFeed()` + `useNotificationFeedActions()`. The former gap here — the badge had no reachable path that ever called `markAllRead`, so it could never clear (`mezo-61w0`) — is closed twice over: opening the feed page fires `markAllRead()` once, and the panel's own `Mind olvasott` does it without leaving the page. A `.nap-ntfscrim` dims the page behind the panel while keeping the header lit (a stacking trap — see `_platform-notifications.md` §9). See [`_platform-notifications.md`](_platform-notifications.md) for the feed page itself.
-6. **Day orb** — `.nap-avatar` rendering `DayOrb` (`frontend/src/shared/ui/DayOrb.tsx`) — since the Üveg foundation (`mezo-me75u.1`) a glass sphere holding a coral liquid that rises to the day's fill with a slow wave (formerly the bottom-filling variant of the `#s-orb` sprite), filled/tinted from `useDayOrbFill()` → `/me/week/napok/<today's ISO date>`. It is **not** a profile shortcut — that duplicated the bottom "Én" tab and was retired (`mezo-idz2`); this button is the header's daily status indicator instead, and its `aria-label` speaks the day's fill in words (e.g. "A mai napod · 3 a 6 jelből megvan"), not just in color.
+6. **Day orb** — `.nap-avatar` rendering `DayOrb` (`frontend/src/shared/ui/DayOrb.tsx`) — since the Üveg foundation (`mezo-me75u.1`) a glass sphere holding a coral liquid that rises to the day's fill with a slow wave (formerly the bottom-filling variant of the `#s-orb` sprite), filled/tinted from `useDayOrbFill()` → **`/nap/napom/<today's ISO date>`** (`mezo-yjzhw.4` — the retired `/me/week/napok/<today>` target now redirects here). The orb *is* today, so it skips morning mode; the "A napom" tab (§3) is the entry that honours it instead. It is **not** a profile shortcut — that duplicated the bottom "Én" tab and was retired (`mezo-idz2`); this button is the header's daily status indicator instead, and its `aria-label` speaks the day's fill in words (e.g. "A mai napod · 3 a 6 jelből megvan"), not just in color.
 
 **Popover + landmark contract** (`mezo-atry` fix wave, fixed once here instead of five times): the root is a real `<header>` element; both triggers carry `aria-haspopup="menu"`; either popover closes on **Escape**, on an **outside click**, on a pathname change, on re-tapping its trigger and on choosing an item; the bell menu's eyebrow line is `role="presentation"` (a bare `<span>` is not a valid `role="menu"` child) with the label moved onto the menu's `aria-label`. **Focus management is deliberately NOT here** — no focus trap, no roving tabindex; see §9.
 
@@ -102,7 +107,8 @@ The single FE↔data boundary stays `frontend/src/data/hooks.ts`; every hook is 
 - **`windDown.ts`** — the sleep-anchored windows and `minsToBed`/`fmtMinsToBed`/`isDarkWindow`. `minsToBed` now feeds the evening night-door label (C7) rather than an hero countdown; `isDarkWindow` drives the app-level circadian theme (`app/CircadianTheme.tsx`). **`windDownPhase` itself now has no consumer** (§9).
 - **`todayItems.ts`** — the six-source normalizer. **Only `isFillableSlot` is still called in production** (by the check-in page, the quest page and the quick-log sheet); `buildTodayItems`/`itemsForFace`/`openCountByFace` and the dedup tables are intact and tested but unrendered (§9).
 - **`itemIcon.ts`** — the emoji ladder, still tested, no renderer (§9). **`dayArc.ts` still belongs to ritual's recap** (`DayStoryStep.tsx`) — do not delete with anything Today-side.
-- **`nextStep.ts`** (Titanium, `mezo-mhum`) — `nextStep(inputs): NextStep`, the hub's ONE computed ladder: este napzárás → reggel intention → reggel morning-habit → check-in stale → water < 60% → workout planned-not-done → life-goal step → journal fallback. Pure, no hooks; `NapHubPage` composes its inputs from the hooks it already holds (`ritualDay.closed`, `intention`, `morningHabitPending`, `checkinStale`, `fuel.consumed.water`/`targets.water`, `today.workoutType`/`workoutDone`, `goalStep`). Returns `{ title, sub, icon, kind: 'route'|'intention', to }` — `kind: 'intention'` is the one rung with no route, it opens `IntentionSheet` instead.
+- **`nextStep.ts` — RETIRED (`mezo-yjzhw.4`).** The hub's computed "next step" ladder never got a second importer besides its own test, and the spec resolved the long-standing "wire it or delete it" gotcha (§9) by deleting it: the evening Napzárás entry it worded moved to **`NapzarasCard`** on `NapHubPage` (from `NAPZARAS_CARD_FROM_HOUR`, see the "A napom" subsection below), and A napom's own "most érdemes" card gets its content from **`nextBestAction`** in `logic/napom.ts` instead — a different, day-page-scoped pure rule, not a revival of this one. `NapHubPage` renders no next-step ladder any more.
+- **`napom.ts`** (`mezo-yjzhw.4`, spec 2026-09-24 §2–§3/§6) — A napom's pure rules, none calling an LLM: `dayReading(evaluation, day): string` (the live day's one-line reading), `nextBestAction(evaluation, day, now, ritualClosed): NextAction | null` (the "most érdemes" card: napzárás in its evening window unless today's ritual is closed → an undone workout → a missing check-in → nothing; `NapomPage` passes `useRitualDay(today).data.closed`), `doneCount(evaluation): number`, `isNapzarasCardWindow(now, ritualClosed): boolean` and its constant `NAPZARAS_CARD_FROM_HOUR = 20` (20:00 until midnight, unless the ritual is closed), and the morning-mode pair `isMorningMode(yesterday, storage?): boolean` / `markSeen(dateIso, storage?): void` (a `localStorage` key `napom.seen.<date>`, read/written inside try/catch, firing a `napom:seen` window event on write). `useMorningMode.ts` wraps `isMorningMode` in `useSyncExternalStore`, subscribed to that event plus `storage`, so the tab dot clears the instant yesterday's review is on screen rather than on some unrelated re-render.
 
 ### The composition
 
@@ -123,6 +129,81 @@ Owned by the design system, not by Today, but Today is their first and densest c
 - **`motion.tsx`** — `EntranceGroup` (arms `.mz-play` once per mount, replays on `replayKey`) and `useCountUp` (~30 fps ease-out, instant under `prefers-reduced-motion`).
 
 Tokens are the **`--mz-*`** family in `frontend/src/styles/prototype.css` — washes, two-layer + colored shadows, cell bg/ink pairs, page tones, muted/soft ink. See [`_platform-design-system.md`](_platform-design-system.md) and ADR 0033.
+
+### A napom — the live day / closed-day review (`pages/NapomPage.tsx`, `mezo-yjzhw.4`)
+
+`/nap/napom` (today, or yesterday in morning mode) and `/nap/napom/:date` (any day) replace the
+retired `WeekDayPage` at `/me/week/napok/:date`, which now redirects here (`NapomRedirect`,
+`app/router.tsx`). Design of record:
+[`specs/2026-09-24-a-napom-design.md`](../superpowers/specs/2026-09-24-a-napom-design.md). Üveg
+look: rose/coral accents, a frameless halo hero, glass rows, no glass inside glass (bible §3.4).
+
+- **Morning mode.** `isMorningMode(yesterdayEval)` (`logic/napom.ts`) is true when yesterday's
+  evaluation is `scored` with a `reviewId` and its `napom.seen.<date>` `localStorage` key is
+  unset. In morning mode `/nap/napom` (no `:date`) opens **yesterday** and ends with a
+  "Tovább a mai napra ›" card; a page carrying an explicit `:date` always honours it and skips
+  morning mode entirely. Yesterday is marked seen (`markSeen`) once its review is on screen.
+  Morning mode lasts for the current calendar day only. The tab's lavender dot comes from
+  `useMorningMode.ts`, a live `useSyncExternalStore` value (`TabBar.tsx`'s `.tb-dot`, bible §5
+  appendix rule 25) — not a render-time snapshot.
+- **The header day orb navigates straight to `/nap/napom/<today>`** — it *is* today, so it always
+  skips morning mode; the tab is the entry that honours it (§2 above).
+- **The hero.** `NapomSegRing` draws six segments, one per dimension (Tápanyag `t-bowl`/sage,
+  Minőség `t-sprout`/amber, Edzés `t-dumbbell`/coral, Alvás `t-sleep`/lavender, Logolás
+  `t-checkin`/sky, Ritmus `t-chain`/rose). While the day is `in_progress` the centre reads
+  `N/6 · TERÜLET KÉSZ` (`doneCount`) and never shows an overall number; a `scored` day's centre is
+  the gradient score plus its verdict word, with an `AdjustmentPill` below reading
+  "alap X · a Mezo szerint ±Y", expandable to the one-sentence reason. Today additionally renders
+  **the reading** — one upright-Geist sentence from `dayReading(evaluation, day)` — **no italic**
+  (owner decision 2026-09-24, bible §5 appendix rule 23).
+- **The "most érdemes" card** renders only for today, from `nextBestAction(evaluation, day, new
+  Date())`: the evening Napzárás CTA while `isNapzarasCardWindow` holds, else an undone-workout
+  CTA, else a missing check-in CTA, else nothing.
+- **The six dimension rows** (`NapomDimensionRow`) render in four modes: `loading` (dashed
+  placeholder), `today` (a status word — KÉSZ/ÚTON/NYITVA — no weight shown), `scored` (an
+  `aria-expanded` button whose weight % shows and which expands into the dimension's fact chips
+  and Mezo's per-dimension note — never all six open at once), `plain` (a thin/empty closed day:
+  value only). A row with no score is dashed free space, never glass.
+- **Closed-day review — every `DayReviewJson` layer, upright Geist type** (bible §5 appendix rule
+  23: no italic serif for Mezo's paragraph prose on this page, 15px/1.6 narrative, 14px/1.55
+  notes):
+  - `adjustment` — the `AdjustmentPill` above the ring.
+  - `narrative` + `highlights` (key/pattern/win as flat cells, not glass) + the feedback vote +
+    "Beszélgess a napról ›" — all in `NapomReviewCard`, which took over `DayReviewCard`'s
+    feedback/chat wiring (`FeedbackChips` mounts on `reviewId` presence, never on `state` alone).
+  - `dimensionNotes` — each dimension row's own expand-in-place, as above.
+  - `context` — flat chips under "A nap körülményei · nem számít a pontba".
+  - A closed day's foot line: "Ha utólag beírsz még valamit erre a napra, a jegyzetet egyszer
+    újraírom."
+- **Live today.** The global `MutationCache.onSuccess` (`app/providers/QueryProvider.tsx`) calls
+  `invalidateTodayDay(client)` (`data/me/liveDay.ts`) after **every** successful write,
+  invalidating `['dayEvaluation', today]` and `['meWeek', monday]` — so no individual logging
+  mutation is wired by hand. `useDayEvaluation` additionally polls every 60 s for **today only**,
+  in **real mode only** (mock mode keeps `staleTime: Infinity`, the `feedHooks.ts` precedent). The
+  hero's "ÉLŐ · FRISSÜLT hh:mm" status line reads the query's own `dataUpdatedAt`, never a clock
+  (bible §5 appendix rule 24) — so the header orb, which reads the same query, is live too.
+  **By design, today's evaluation therefore polls once a minute in real mode wherever the header
+  orb is mounted — i.e. on every screen — so the orb stays live**, not only while A napom is open.
+- **Deliberate deviation: no per-row "pulse on change".** The spec (§4) planned a one-shot coral
+  pulse on a row whose value changed on refetch; it was not built in this branch (follow-up
+  `mezo-yjzhw.6`).
+- **Week strip.** `NapomWeekStrip` renders the 7-day range with a state mark per day (scored,
+  thin, today, future); tapping a day navigates to `/nap/napom/<date>`.
+- **A malformed `:date` redirects to `/nap/napom`** (bare), unlike the old `WeekDayPage`, which
+  redirected to the days mosaic.
+- **Evening Napzárás card on Mai (`NapzarasCard.tsx`, owner 2026-09-24).** Since the tab left the
+  bar, `NapHubPage`'s Mai page renders a lavender glass card from **20:00 local time**
+  (`NAPZARAS_CARD_FROM_HOUR`) until midnight, unless the ritual is closed
+  (`isNapzarasCardWindow`): moon art, "ESTE · NAPZÁRÁS", "Tegyük le a napot.", flat chips (kcal,
+  edzés fact, check-in x/4, N/6 terület kész) and a "Napzárás indítása ›" CTA to `/ritual`. Once
+  `ritual_day.closed_at` is set for today, the card shrinks to a flat "Letetted a napot" row
+  linking to `/nap/napom`. A day nobody closes simply loses the card at midnight (the napzárás
+  itself stays calendar-based, so after midnight the card would already target the new day)
+  — the review still gets written by the overnight warm-up job regardless.
+- **Overnight close (backend).** `DayReviewWarmupJob` pre-warms `day_review` for yesterday (and a
+  catch-up window) every night at 02:30, so the morning read of a closed day is a cache hit, never
+  a synchronous LLM call. A later log for that day re-writes the review exactly once, on its next
+  hash miss. See [companion.md](companion.md).
 
 ## 4. Data model & API
 
@@ -169,6 +250,8 @@ Mount (`app/router.tsx`):
 ```tsx
 { index: true,               element: <Navigate to="/nap" replace /> },
 { path: 'nap',               element: <NapHubPage /> },
+{ path: 'nap/napom',         element: <NapomPage /> },
+{ path: 'nap/napom/:date',   element: <NapomPage /> },
 { path: 'nap/gyors',         element: <NapGyorsPage /> },
 { path: 'nap/uzenetek',      element: <NapMezoPage /> },
 { path: 'nap/rutin',         element: <NapRutinPage /> },
@@ -176,6 +259,7 @@ Mount (`app/router.tsx`):
 { path: 'nap/checkin',       element: <NapCheckinPage /> },
 { path: 'nap/eletjel',       element: <EletjelPage /> },
 { path: 'today/*',           element: <LegacyPathRedirect prefix="/today" to="/nap" /> },
+{ path: 'me/week/napok/:date', element: <NapomRedirect /> },
 ```
 
 Building sibling pages on the Mozaik language (the Napközpont root uses its own scoped orbital composition):
@@ -224,7 +308,10 @@ Scenario links: `/nap?dp=este`, `/nap?day=rough` (demo briefing variant), `/nap?
 ## 8. Testing
 
 ### Pure logic (`frontend/src/features/today/logic/`)
-`dayFace.test.ts`, `windDown.test.ts`, `questAction.test.ts`, `habitAction.test.ts`, `todayItems.test.ts`, `itemIcon.test.ts`, `needs.test.ts`, `needsInputs.test.ts`, `useNeeds.test.tsx`, `mezoMessages.test.ts`, `dayArc.test.ts` — **all untouched by the redesign, Titanium included.** That is the proof the day model survived a sixth render-layer swap: the whole visual language changed twice over and not one logic assertion moved. `mezoMessages.test.ts` keeps its nudge fixture but builds it by hand now, since `needsNudges.ts` was deleted with its renderer. `nextStep.test.ts` (Titanium, `mezo-mhum`) is the one genuinely new logic test: `describe('nextStep — egy kiemelt lépés')` covers the ladder's priority order end to end — evening napzárás (open vs. closed), morning intention-then-habit ordering, the daytime check-in→water→workout→goal→journal chain, and that check-in outranks water (one thing at a time).
+`dayFace.test.ts`, `windDown.test.ts`, `questAction.test.ts`, `habitAction.test.ts`, `todayItems.test.ts`, `itemIcon.test.ts`, `needs.test.ts`, `needsInputs.test.ts`, `useNeeds.test.tsx`, `mezoMessages.test.ts`, `dayArc.test.ts` — **all untouched by the redesign, Titanium included.** That is the proof the day model survived a sixth render-layer swap: the whole visual language changed twice over and not one logic assertion moved. `mezoMessages.test.ts` keeps its nudge fixture but builds it by hand now, since `needsNudges.ts` was deleted with its renderer. `nextStep.ts` and its test are **retired** (`mezo-yjzhw.4`, §3). `logic/napom.test.ts` is A napom's pure-logic suite: `dayReading`, `nextBestAction`, `isNapzarasCardWindow`/`NAPZARAS_CARD_FROM_HOUR` and the morning-mode predicate (`isMorningMode`/`markSeen`) across the time-of-day boundaries.
+
+### A napom (`pages/NapomPage.tsx`, §3)
+`NapomPage.test.tsx` covers all five evaluation states (`scored`/`in_progress`/`thin`/`empty`/`future`), morning mode, the malformed-`:date` bare redirect and the week-strip navigation. `components/napom/{NapomDimensionRow,NapomReviewCard}.test.tsx` cover the row's four modes and the review card's highlight ordering/feedback gating. `useMorningMode.test.tsx` + `app/napomTabDot.test.tsx` cover the tab dot's live subscription, and `app/router.napomRedirect.test.tsx` covers the `/me/week/napok/:date` → `/nap/napom/:date` redirect. `data/me/liveDay.test.ts` covers `invalidateTodayDay`'s exact key list, and `features/today/components/NapzarasCard.test.tsx` covers the card's 20:00–midnight window (nothing at 00:30), its closed-vs-open rendering and the HU-grouped, icon-led chips. `NapomPage.test.tsx` (real mode) pins that the 21:00 lead card drops napzárás once today's ritual is closed. Both modes run with `VITE_USE_MOCK=false` explicitly for the polling and invalidation paths (spec §4/§Testing).
 
 ### Pages (`frontend/src/features/today/pages/`)
 Every page ships its own test beside it — `NapHubPage.test.tsx`, `NapGyorsPage.test.tsx` (the FAB's full-page picker, Titanium), `NapMezoPage.test.tsx`, `NapMezoPage.deeplink.test.tsx` (the intervention-push deeplink, §2 — real-mode-only, MSW-served two-day feeds; cross-day merge, same-day scroll-only, no-deeplink, and stale-id-degrades-silently cases), `NapRutinPage.test.tsx`, `NapKuldetesekPage.test.tsx`, `NapCheckinPage.test.tsx`, `EletjelPage.test.tsx`. `TitanCompanion.test.tsx` (`features/today/components/`) covers the companion primitive in isolation: tapping it opens the signals surface with the right label, and its aura color follows the need meta per band.
@@ -317,12 +404,13 @@ The orb's **height** (how many of the day's signals are recorded) and its **tone
 - **`NapKuldetesekPage.tsx`** — quest cards + `Csere`, ADR 0010 tone in copy, the hub's smart-action dispatch verbatim.
 - **`NapCheckinPage.tsx`** — the four slots as one card; `MCells` for measured values; `Kitöltöm` on the next fillable slot opens `CheckInSheet`.
 - **`EletjelPage.tsx`** — the six-arc hero ring + six need tiles; the retired `onNeedCta` dispatch verbatim; `rend` non-interactive; nothing renders while `needs.isPending`.
+- **`NapomPage.tsx`** (+ `.test.tsx`, `mezo-yjzhw.4`) — "A napom": the live day view and the closed-day review, replacing `WeekDayPage` (see §3). Parts: `components/napom/{NapomWeekStrip,NapomSegRing,NapomDimensionRow,NapomLeadCard,NapomReviewCard}.tsx`. Logic: `logic/napom.ts` + `logic/useMorningMode.ts`.
 
 **Frontend — sheets** (`frontend/src/features/today/sheets/`): `CheckInSheet.tsx` (Titanium capture, no canned observation), `ActivityLogSheet.tsx`, `IntentionSheet.tsx`, `ReflectSheet.tsx`. Cross-feature hosts the Nap pages open: Fuel's `LogFlowPage`, Me's `SleepLogSheet`. **Retired:** `CreedSheet.tsx`, `NeedRingSheet.tsx`.
 
 **Frontend — components** (`frontend/src/features/today/components/`): **`TitanCompanion.tsx`** (+ `.test.tsx`, Titanium `mezo-mhum`) — the companion primitive `NapHubPage` and the anchor-mode early return both render: its aura tints from `needs.states` (manifest C4) and it opens `/nap/eletjel` on tap. `DailyQuestsCard.tsx`, `ActivityLogCard.tsx`, `DailyQuestList.tsx`, `DailyQuestsSheet.tsx`, `MezoMessagesSheet.tsx` (§9 — all five orphaned since `mezo-rmi0.1` re-faced Growth onto `MaStrip`, no import anywhere in production code, each with only its own test). **Retired by the F8 cleanup** (`mezo-d20.9.1`, pinned by `todayScope.test.ts`): `AnchorIsland`, `ChainCelebrations`, `DailyQuestsChip`, `DayGroups`, `DaypartDay`, `DaypartEvening`, `DaypartMorning`, `DaypartPanel`, `DaypartTabs`, `IntentionBanner`, `MezoChip`, `NeedsRow`, `TodayList`, `TodayRow`, `TodayStats`, `VulnerabilityCard` — together with `pages/TodayPage.tsx` + `pages/TodaySkeleton.tsx`. (Earlier retirements, still gone: `MezoMessage`, `IslandFactsStrip`, `CompanionNoteCard`, the `Island*` family, `FaceHeroCard`, `TodoCard`, `DoneFold`, `WindDownBanner`, `RitualCard`, `RoutineCard`.)
 
-**Frontend — logic** (`frontend/src/features/today/logic/`): `dayFace.ts`, `useMinuteTick.ts`, `windDown.ts`, `questAction.ts`, `habitAction.ts`, `todayItems.ts`, `mezoMessages.ts`, `needs.ts`, `needsInputs.ts`, `useNeeds.ts`, `itemIcon.ts`, `dayArc.ts` (**ritual's**) — every one of them with its test, **and not one of them changed by the redesign, Titanium included**. **`nextStep.ts`** (+ `nextStep.test.ts`) is the one new module the Titanium rebuild added — see §3. **Retired with their renderers:** `islandFacts.ts`, `rowAccessory.ts`, `useWindDownPhase.ts`, `growthToday.ts`, `useChainCelebration.ts`, `needsNudges.ts`. Feature-root guards: `todayScope.test.ts`, `todayTapTargets.test.ts`, `todayCssTokens.test.ts`, `todayReducedMotion.test.ts` (§8).
+**Frontend — logic** (`frontend/src/features/today/logic/`): `dayFace.ts`, `useMinuteTick.ts`, `windDown.ts`, `questAction.ts`, `habitAction.ts`, `todayItems.ts`, `mezoMessages.ts`, `needs.ts`, `needsInputs.ts`, `useNeeds.ts`, `itemIcon.ts`, `dayArc.ts` (**ritual's**) — every one of them with its test, **and not one of them changed by the redesign, Titanium included**. **`napom.ts`** (+ `.test.ts`) + **`useMorningMode.ts`** (+ `.test.tsx`) are A napom's rules (`mezo-yjzhw.4`) — see §3. **Retired with their renderers:** `nextStep.ts` (+ its test), `islandFacts.ts`, `rowAccessory.ts`, `useWindDownPhase.ts`, `growthToday.ts`, `useChainCelebration.ts`, `needsNudges.ts`. Feature-root guards: `todayScope.test.ts`, `todayTapTargets.test.ts`, `todayCssTokens.test.ts`, `todayReducedMotion.test.ts` (§8).
 
 **Frontend — the Mozaik + clay design system** (Today's densest dependency, owned by `_platform-design-system`): `shared/ui/mozaik/index.tsx` (`Tile`, `Mosaic`, `StatStrip`/`StatCell`, `MCells`, `MozaikPage`, `PageHead`, `PageHero`, `PageBody`, `CollapsibleStrip`) + `motion.tsx` (`EntranceGroup`, `useCountUp`) + `Mozaik.test.tsx`/`motion.test.tsx`/`mozaikCssTokens.test.ts`/`prototypeCssStructure.test.ts`; `shared/ui/clay/index.tsx` + `clay-icons.svg` + `clay-spots.svg` (sprites copied verbatim from `docs/design_2.0/assets/`, mounted once by `AppLayout`'s `ClaySprites`).
 

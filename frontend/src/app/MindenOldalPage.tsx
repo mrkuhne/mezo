@@ -43,15 +43,21 @@ export interface PageGroup { heading: string; pages: IndexedPage[] }
  */
 export function groupsForDomain(domain: NavDomain, pages: IndexedPage[]): PageGroup[] {
   const byTab = new Map<string, IndexedPage[]>()
+  // A page can override its heading (`page.group`) when a tab OWNS it for navigation
+  // purposes (so the bar lights the right tab) but it isn't really that tab's own page —
+  // `/ritual`, owned by Rutin, files under „Napzárás" instead (mezo-yjzhw.4).
+  const overrides = new Map<string, IndexedPage[]>()
   const orphans: IndexedPage[] = []
   for (const page of pages) {
     const tabRoute = activeTabRoute(domain, page.route)
     if (tabRoute === null) orphans.push(page)
+    else if (page.group) overrides.set(page.group, [...(overrides.get(page.group) ?? []), page])
     else byTab.set(tabRoute, [...(byTab.get(tabRoute) ?? []), page])
   }
   const groups = domain.tabs
     .map((tab) => ({ heading: tab.label, pages: byTab.get(tab.route) ?? [] }))
     .filter((group) => group.pages.length > 0)
+  for (const [heading, groupPages] of overrides) groups.push({ heading, pages: groupPages })
   if (orphans.length > 0) groups.push({ heading: ORPHAN_GROUP, pages: orphans })
   return groups
 }
