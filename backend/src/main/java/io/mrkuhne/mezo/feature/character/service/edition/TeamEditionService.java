@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.character.service.edition;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
 import io.mrkuhne.mezo.feature.character.entity.EditionFactsEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.EditionGuestsEnvelope;
@@ -53,6 +55,7 @@ public class TeamEditionService {
     private final TeamEditionReads reads;
     private final EditionCandidateCollector collector;
     private final CharacterRunLog runLog;
+    private final AppNotificationEmitter appNotifications;
     private final ObjectProvider<TeamEditionService> self;
 
     /** A H1 poszt-szöveg forrása — H3 cseréli LLM-generált, karakter hangján írt szövegre. */
@@ -69,8 +72,9 @@ public class TeamEditionService {
         var ranked = EditionSelector.select(collector.collect(owner, day, lastAt), prior, lastAt);
         var conferenceId = reads.dailyConference(owner, day).map(CharacterConferenceEntity::getId).orElse(null);
         var texts = ranked.stream().map(c -> new VoicedText(c.title(), c.recordText(), false)).toList();
+        TeamEditionEntity published;
         try {
-            self.getObject().publish(owner, day, conferenceId, ranked, texts);
+            published = self.getObject().publish(owner, day, conferenceId, ranked, texts);
         } catch (DataIntegrityViolationException raced) {
             // Csak akkor "a párhuzamos futás nyert" (uq_team_edition_day), ha VALÓBAN van már élő
             // kiadás erre a napra — egy MÁS okból dobott DataIntegrityViolationException (pl. egy
@@ -83,6 +87,14 @@ public class TeamEditionService {
         }
         runLog.record(owner, "EDITION", day, ranked.size(), 0, List.of(),
                 ranked.stream().map(c -> c.character().key()).distinct().toList(), conferenceId);
+        // H2 (mezo-a9bo7.13): a fal megtelt — szólunk. Csendes napon (0 poszt) NEM értesítünk:
+        // egy néma estéért nem rezeg a telefon. A dedup kulcs a nap, így az idempotens újrafutás
+        // és a 15 perces tikek sem szülnek másodikat.
+        if (!ranked.isEmpty()) {
+            appNotifications.emit(owner, AppNotificationKind.TEAM_EDITION, "Megjött az esti kiadás",
+                    ranked.size() + " bejegyzés a csapattól", AppNotificationKind.TEAM_EDITION.deeplink(),
+                    published.getId(), "team_edition:" + day);
+        }
     }
 
     /** Az adott nap kiadásának mentése — saját tranzakcióban, self-injection-nel hívva (lásd

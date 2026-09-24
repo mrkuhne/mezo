@@ -2,6 +2,8 @@ package io.mrkuhne.mezo.feature.character.edition;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.character.entity.EditionFactsEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.EditionGuestsEnvelope;
@@ -51,6 +53,7 @@ class TeamEditionServiceIT extends AbstractIntegrationTest {
     @Autowired private TeamEditionRepository editions;
     @Autowired private TeamEditionPostRepository posts;
     @Autowired private CharacterRunRepository runs;
+    @Autowired private AppNotificationRepository appNotifications;
 
     private UUID owner() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -111,6 +114,44 @@ class TeamEditionServiceIT extends AbstractIntegrationTest {
         TeamEditionEntity edition = editions.findByCreatedByAndDay(owner, DAY).orElseThrow();
         assertThat(edition.getStatus()).isEqualTo("QUIET");
         assertThat(postsOf(edition)).isEmpty();
+    }
+
+    /** csapatfal H2 (mezo-a9bo7.13): a kiadás megérkezését egyetlen értesítés jelzi, és az
+     *  idempotens második futás nem szül újat (a dedup kulcs a nap). */
+    @Test
+    void run_published_emitsOneEditionNotification_evenWhenRunTwice() {
+        UUID owner = owner();
+        patternPopulator.statistical(owner);
+        experimentPopulator.active(owner, "sleep_avg", "up", DAY, 7);
+
+        service.run(owner, DAY);
+        service.run(owner, DAY);
+
+        TeamEditionEntity edition = editions.findByCreatedByAndDay(owner, DAY).orElseThrow();
+        int postCount = postsOf(edition).size();
+        assertThat(postCount).isPositive();
+        assertThat(appNotifications.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+                .filteredOn(n -> AppNotificationKind.TEAM_EDITION.key().equals(n.getKind()))
+                .singleElement()
+                .satisfies(n -> {
+                    assertThat(n.getTitle()).isEqualTo("Megjött az esti kiadás");
+                    assertThat(n.getBody()).isEqualTo(postCount + " bejegyzés a csapattól");
+                    assertThat(n.getDeeplink()).isEqualTo("/mezo");
+                    assertThat(n.getRefId()).isEqualTo(edition.getId());
+                    assertThat(n.getDedupKey()).isEqualTo("team_edition:" + DAY);
+                });
+    }
+
+    /** Csendes nap: a kiadás megszületik, de nincs mit jelenteni — a telefon néma marad. */
+    @Test
+    void run_quietEdition_doesNotNotify() {
+        UUID owner = userPopulator.createUser().getId();
+
+        service.run(owner, DAY);
+
+        assertThat(appNotifications.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+                .filteredOn(n -> AppNotificationKind.TEAM_EDITION.key().equals(n.getKind()))
+                .isEmpty();
     }
 
     @Test

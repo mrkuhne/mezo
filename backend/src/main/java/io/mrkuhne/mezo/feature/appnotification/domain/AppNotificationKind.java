@@ -55,7 +55,12 @@ public enum AppNotificationKind {
     /** Reflexió S4 (mezo-eq85.4): Mezo észrevett valamit a mai szövegedben. A {@code pattern}
      *  családon utazik, mint a másik három minta-fajta — az észrevétel ugyanarról szól, csak a
      *  felülete más (az Észrevételek fül, nem a Minták lista). */
-    OBSERVATION_NEW("observation_new", "pattern", "/nap/uzenetek?tab=eszrevetelek");
+    OBSERVATION_NEW("observation_new", "pattern", "/nap/uzenetek?tab=eszrevetelek"),
+    /** Csapatfal H2 (mezo-a9bo7.13): megjött a nap esti kiadása a csapat üzenőfalára. A
+     *  {@code pattern} családon utazik — az {@link #OBSERVATION_NEW} precedense: ugyanazokról a
+     *  napi észlelésekről szól, csak a felülete más (az üzenőfal, nem az Észrevételek fül). Csak
+     *  publikált, legalább egy posztot hozó kiadás emitál; a csendes nap néma marad. */
+    TEAM_EDITION("team_edition", "pattern", "/mezo");
 
     private final String key;
     private final String familyKey;

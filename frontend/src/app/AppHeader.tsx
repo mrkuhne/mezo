@@ -35,6 +35,7 @@ const NTF_3D: Partial<Record<ClayIconName, Icon3DName>> = {
   'i-retegek': 't-people',   // graph_candidate (an Emberek-category row)
   'i-muhely': 't-chef',      // konzilium_verdict
   'i-rend': 't-stack',       // memory_note — a stored note, not the Rend chain
+  'i-mezo': 't-chat',        // team_edition — a csapat megszólalt a falon (mezo-a9bo7.13)
 }
 const ntfIcon = (name: ClayIconName): ClayIconName | Icon3DName => NTF_3D[name] ?? name
 
