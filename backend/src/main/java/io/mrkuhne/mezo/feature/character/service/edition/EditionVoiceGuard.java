@@ -86,16 +86,24 @@ public final class EditionVoiceGuard {
         if (text == null || text.isBlank()) {
             return Optional.empty();
         }
-        Set<String> allowed = numbersIn(String.join(" ", facts == null ? List.of() : facts)
-                + " " + (recordText == null ? "" : recordText));
+        String source = String.join(" ", facts == null ? List.of() : facts)
+                + " " + (recordText == null ? "" : recordText);
+        Set<String> allowedNumbers = numbersIn(source);
         for (String number : numbersIn(text)) {
-            if (!allowed.contains(number)) {
+            if (!allowedNumbers.contains(number)) {
                 return Optional.of(NUMBER);
             }
         }
+        // Ugyanaz a logika, mint a számoknál: ami a FORRÁSBAN már ott van, az nem kitalált dísz.
+        // A minta-címek tele vannak ilyen jelekkel („Alvásminőség ↔ edzés-RPE"), és egy idézet
+        // miatt elnémítani az egész posztot rosszabb lenne, mint átengedni. A Szkeptikus kivétel:
+        // az ő hangja szó szerint jeltelen (§3.4), neki a forrásból sem jár egy sem.
+        Set<String> allowedEmoji = who == TeamCharacter.SZKEPTIKUS
+                ? Set.of()
+                : union(who.emoji(), emojiIn(source));
         Matcher emoji = EMOJI_CHAR.matcher(stripJoiners(text));
         while (emoji.find()) {
-            if (!who.emoji().contains(emoji.group())) {
+            if (!allowedEmoji.contains(emoji.group())) {
                 return Optional.of(EMOJI);
             }
         }
@@ -115,6 +123,22 @@ public final class EditionVoiceGuard {
         while (matcher.find()) {
             out.add(matcher.group().replace(',', '.'));
         }
+        return out;
+    }
+
+    /** A szövegben szereplő emoji-grafémák (bázis kódpontok, U+FE0F/ZWJ nélkül). */
+    private static Set<String> emojiIn(String text) {
+        Set<String> out = new HashSet<>();
+        Matcher matcher = EMOJI_CHAR.matcher(stripJoiners(text));
+        while (matcher.find()) {
+            out.add(matcher.group());
+        }
+        return out;
+    }
+
+    private static Set<String> union(Set<String> a, Set<String> b) {
+        Set<String> out = new HashSet<>(a);
+        out.addAll(b);
         return out;
     }
 

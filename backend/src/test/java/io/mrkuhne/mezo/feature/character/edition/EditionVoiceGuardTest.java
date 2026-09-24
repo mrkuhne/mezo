@@ -84,6 +84,35 @@ class EditionVoiceGuardTest {
                 .isEmpty();
     }
 
+    /** Ami a FORRÁSBAN már ott van, az nem kitalált dísz — a minta-címek nyila átmegy. */
+    @Test
+    void symbolQuotedFromTheRecord_passes() {
+        String record = "Alvásminőség ↔ másnapi edzés-RPE: közepes együttmozgás.";
+        assertThat(EditionVoiceGuard.check(TeamCharacter.SZUNYA,
+                "Az **alvásminőség ↔ edzés** szál tovább él. Még figyelem, mi lesz belőle.",
+                List.of(), record))
+                .isEmpty();
+    }
+
+    /** A Szkeptikus kivétel: neki a forrásból sem jár jel — a hangja szó szerint jeltelen. */
+    @Test
+    void skeptic_mayNotEvenQuoteASymbolFromTheRecord() {
+        String record = "Alvásminőség ↔ másnapi edzés-RPE: közepes együttmozgás.";
+        assertThat(EditionVoiceGuard.check(TeamCharacter.SZKEPTIKUS,
+                "Az alvásminőség ↔ edzés szál a hétvégével is magyarázható. Ezt még nem zárnám ki.",
+                List.of(), record))
+                .contains("emoji");
+    }
+
+    /** A saját készleten kívüli emoji akkor is bukik, ha a forrás egy MÁSIKAT tartalmaz. */
+    @Test
+    void foreignEmoji_staysRejectedEvenWhenTheRecordCarriesAnother() {
+        assertThat(EditionVoiceGuard.check(TeamCharacter.SZUNYA,
+                "Ez a szál tovább él 🍽️. Még figyelem, mi lesz belőle.",
+                List.of(), "Alvásminőség ↔ másnapi edzés-RPE."))
+                .contains("emoji");
+    }
+
     /** A variációs szelektor (U+FE0F) nem tesz idegenné egy saját emojit — Falat 🍽️-je a sajátja. */
     @Test
     void variationSelector_doesNotMakeAnEmojiForeign() {
