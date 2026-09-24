@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.api.dto.CharacterFeedItem;
 import io.mrkuhne.mezo.api.dto.CharacterOverviewResponse;
 import io.mrkuhne.mezo.api.dto.CharacterRunResponse;
 import io.mrkuhne.mezo.api.dto.CharacterRunSummary;
+import io.mrkuhne.mezo.api.dto.TeamEdition;
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
 import io.mrkuhne.mezo.feature.character.service.CharacterBootstrapService;
@@ -158,6 +159,14 @@ public class CharacterController implements CharacterApi {
     @Override
     public CharacterRunResponse getCharacterRun(UUID runId) {
         return characterService.run(currentUserId.get(), runId);
+    }
+
+    /** Esti kiadás timeline (csapatfal H1, mezo-a9bo7.12) — mirrors {@link #getCharacterRuns};
+     *  the read has no team-edition switch dependency (the repositories are always beans), only
+     *  this controller's own {@link FeaturesConfiguration#CHARACTER_SWITCH}. */
+    @Override
+    public List<TeamEdition> getTeamEditions(LocalDate from, LocalDate to) {
+        return characterService.editions(currentUserId.get(), from, to);
     }
 
     /**

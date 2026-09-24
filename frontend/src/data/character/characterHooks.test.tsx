@@ -13,6 +13,7 @@ import {
   useCharacterBootstrap,
   useCharacterRuns,
   useCharacterRun,
+  useTeamEditions,
   mockClaimFeedbackLog,
 } from '@/data/character/characterHooks'
 import { confidenceWord } from '@/data/character/characterApi'
@@ -20,6 +21,7 @@ import {
   MOCK_CONFERENCES,
   MOCK_CONFERENCE_DETAIL,
   MOCK_DIMENSIONS,
+  MOCK_EDITIONS,
   MOCK_EXPERTS,
   MOCK_FEED,
   MOCK_OVERVIEW,
@@ -255,6 +257,28 @@ describe('mock mode', () => {
     expect(new Set(weekly.detectorKeys)).toEqual(observedDetectorKeys)
   })
 
+  // csapatfal H1 (mezo-a9bo7.12, Task 6): useTeamEditions mirrors useCharacterRuns — mock mode
+  // serves MOCK_EDITIONS filtered by [from, to].
+  test('useTeamEditions filters MOCK_EDITIONS by [from, to], and includes the seeded day', async () => {
+    const { result: full } = renderHook(() => useTeamEditions('2026-08-01', '2026-08-31'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(full.current.isLoading).toBe(false))
+    expect(full.current.editions).toEqual(MOCK_EDITIONS)
+    expect(full.current.editions.length).toBeGreaterThan(0)
+
+    const { result: outside } = renderHook(() => useTeamEditions('2026-01-01', '2026-01-31'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(outside.current.isLoading).toBe(false))
+    expect(outside.current.editions).toEqual([])
+  })
+
+  test('useTeamEditions seeded edition has 3 posts pointing at real mock-seed records, rank-ordered', async () => {
+    const { result } = renderHook(() => useTeamEditions('2026-08-01', '2026-08-31'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    const edition = result.current.editions[0]
+    expect(edition.posts.map((p) => p.rank)).toEqual([1, 2, 3])
+    expect(edition.posts.every((p) => p.voiced === false)).toBe(true)
+    expect(edition.posts.every((p) => p.body.length > 0)).toBe(true)
+  })
+
   // Fix round 1 (mezo-1gim.14, finding 3): a single expert firing two signals in one night is
   // still one LLM call, not two — the fixture night (Aug 15) exists specifically to pin this.
   test('a night with two signals from the same expert dedups callCount to 1', async () => {
@@ -454,6 +478,34 @@ describe('real mode', () => {
     expect(capturedUrl).toContain('to=2026-08-30')
     expect(result.current.runs).toHaveLength(1)
     expect(result.current.runs[0].id).toBe('r1')
+  })
+
+  // csapatfal H1 (mezo-a9bo7.12, Task 6): real mode's default MSW fixture is the honest EMPTY
+  // timeline (unlike `runs`, which mirrors MOCK_RUNS even in real mode) — this pins that default.
+  test('useTeamEditions real mode defaults to an empty timeline (the honest MSW fixture)', async () => {
+    const { result } = renderHook(() => useTeamEditions('2026-08-01', '2026-08-31'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    expect(result.current.editions).toEqual([])
+  })
+
+  test('useTeamEditions passes from/to as query params and maps the DTO through', async () => {
+    let capturedUrl = ''
+    server.use(
+      http.get(`${API_BASE}/api/character/edition`, ({ request }) => {
+        capturedUrl = request.url
+        return HttpResponse.json([
+          { day: '2026-08-30', status: 'PUBLISHED', posts: [
+            { rank: 1, characterKey: 'mocor', genre: 'sejtes', sourceKind: 'PATTERN', sourceId: 'sport-load~next-sleep-quality', sourceRoute: '/mezo/patterns/sport-load~next-sleep-quality', body: 'b', voiced: false, guests: [] },
+          ] },
+        ])
+      }),
+    )
+    const { result } = renderHook(() => useTeamEditions('2026-08-24', '2026-08-30'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    expect(capturedUrl).toContain('from=2026-08-24')
+    expect(capturedUrl).toContain('to=2026-08-30')
+    expect(result.current.editions).toHaveLength(1)
+    expect(result.current.editions[0].day).toBe('2026-08-30')
   })
 
   test('useCharacterRun maps the DTO through and 404s to null', async () => {

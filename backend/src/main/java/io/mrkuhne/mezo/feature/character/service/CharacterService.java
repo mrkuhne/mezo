@@ -21,6 +21,9 @@ import io.mrkuhne.mezo.api.dto.CharacterRunObservation;
 import io.mrkuhne.mezo.api.dto.CharacterRunObservationSignal;
 import io.mrkuhne.mezo.api.dto.CharacterRunResponse;
 import io.mrkuhne.mezo.api.dto.CharacterRunSummary;
+import io.mrkuhne.mezo.api.dto.TeamEdition;
+import io.mrkuhne.mezo.api.dto.TeamEditionPost;
+import io.mrkuhne.mezo.api.dto.TeamEditionPostGuestsInner;
 import io.mrkuhne.mezo.api.dto.ConferenceChairRuling;
 import io.mrkuhne.mezo.api.dto.ConferenceItem;
 import io.mrkuhne.mezo.api.dto.ConferenceOutcomeCounts;
@@ -34,6 +37,9 @@ import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterObservationEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterPortraitRevisionEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterRunEntity;
+import io.mrkuhne.mezo.feature.character.entity.EditionGuestsEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.TeamEditionEntity;
+import io.mrkuhne.mezo.feature.character.entity.TeamEditionPostEntity;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ObservationSignalsEnvelope;
@@ -43,6 +49,8 @@ import io.mrkuhne.mezo.feature.character.repository.CharacterDimensionRepository
 import io.mrkuhne.mezo.feature.character.repository.CharacterObservationRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterPortraitRevisionRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterRunRepository;
+import io.mrkuhne.mezo.feature.character.repository.TeamEditionPostRepository;
+import io.mrkuhne.mezo.feature.character.repository.TeamEditionRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -87,6 +95,8 @@ public class CharacterService {
     private final CharacterConferenceRepository conferenceRepository;
     private final CharacterPortraitRevisionRepository revisionRepository;
     private final CharacterRunRepository runRepository;
+    private final TeamEditionRepository editionRepository;
+    private final TeamEditionPostRepository editionPostRepository;
 
     /** Idempotent: inserts only the CORE + META catalog entries missing for this owner. Called by
      *  every read below so a first-ever GET always finds all 8 rows already there. */
@@ -428,6 +438,72 @@ public class CharacterService {
         }
         return runRepository.findByCreatedByAndDayBetweenOrderByDayDescGeneratedAtDesc(owner, from, to)
                 .stream().map(this::toRunSummary).toList();
+    }
+
+    /**
+     * The esti kiadás timeline over an inclusive {@code [from, to]} day window (csapatfal H1,
+     * mezo-a9bo7.12), newest day first — mirrors {@link #runs} bit for bit, including the
+     * {@code CHARACTER_RUN_RANGE_INVALID} range validation (the same bounded-window rule, not a
+     * separate error code). Read-only: neither {@link TeamEditionRepository} nor
+     * {@link TeamEditionPostRepository} carries a team-edition-switch condition, so this works
+     * with the writer switch off exactly like {@link #runs} works with the character-run writers
+     * off — only this controller's own {@code CHARACTER_SWITCH} gates the endpoint at all.
+     */
+    @Transactional(readOnly = true)
+    public List<TeamEdition> editions(UUID owner, LocalDate from, LocalDate to) {
+        if (to.isBefore(from)) {
+            throw new SystemRuntimeErrorException(
+                    SystemMessage.error("CHARACTER_RUN_RANGE_INVALID").build(), HttpStatus.BAD_REQUEST);
+        }
+        long spanDays = ChronoUnit.DAYS.between(from, to) + 1; // inclusive
+        if (spanDays > RUN_RANGE_MAX_SPAN_DAYS) {
+            throw new SystemRuntimeErrorException(
+                    SystemMessage.error("CHARACTER_RUN_RANGE_INVALID").build(), HttpStatus.BAD_REQUEST);
+        }
+        List<TeamEditionEntity> editions =
+                editionRepository.findByCreatedByAndDayBetweenOrderByDayDesc(owner, from, to);
+        if (editions.isEmpty()) {
+            return List.of();
+        }
+        List<UUID> editionIds = editions.stream().map(TeamEditionEntity::getId).toList();
+        List<TeamEditionPostEntity> posts =
+                editionPostRepository.findByEditionIdInOrderByEditionIdAscRankAsc(editionIds);
+        java.util.Map<UUID, List<TeamEditionPostEntity>> postsByEdition = new java.util.LinkedHashMap<>();
+        for (TeamEditionPostEntity post : posts) {
+            postsByEdition.computeIfAbsent(post.getEditionId(), id -> new ArrayList<>()).add(post);
+        }
+        return editions.stream().map(e -> toEdition(e, postsByEdition.getOrDefault(e.getId(), List.of()))).toList();
+    }
+
+    private TeamEdition toEdition(TeamEditionEntity edition, List<TeamEditionPostEntity> posts) {
+        return TeamEdition.builder()
+                .day(edition.getDay())
+                .status(TeamEdition.StatusEnum.fromValue(edition.getStatus()))
+                .posts(posts.stream().map(this::toEditionPost).toList())
+                .build();
+    }
+
+    private TeamEditionPost toEditionPost(TeamEditionPostEntity post) {
+        return TeamEditionPost.builder()
+                .rank(post.getRank().intValue())
+                .characterKey(TeamEditionPost.CharacterKeyEnum.fromValue(post.getCharacterKey()))
+                .genre(TeamEditionPost.GenreEnum.fromValue(post.getGenre()))
+                .sourceKind(post.getSourceKind())
+                .sourceId(post.getSourceId())
+                .sourceRoute(post.getSourceRoute())
+                .title(post.getTitle())
+                .body(post.getBody())
+                .voiced(post.getVoiced())
+                .guests(post.getGuests().guests().stream().map(this::toEditionGuest).toList())
+                .build();
+    }
+
+    private TeamEditionPostGuestsInner toEditionGuest(EditionGuestsEnvelope.Guest guest) {
+        return TeamEditionPostGuestsInner.builder()
+                .characterKey(TeamEditionPostGuestsInner.CharacterKeyEnum.fromValue(guest.characterKey()))
+                .body(guest.body())
+                .voiced(guest.voiced())
+                .build();
     }
 
     /**

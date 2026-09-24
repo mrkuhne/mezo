@@ -107,10 +107,21 @@ test('lastRunLine composes the date + row subline', () => {
   expect(lastRunLine(r)).toContain('csendes nap · 0 hívás')
 })
 
-test('KIND_BADGE and KIND_LABEL cover all four run kinds', () => {
-  const kinds: CharacterRunSummary['kind'][] = ['NIGHTLY', 'WEEKLY', 'MONTHLY', 'BOOTSTRAP']
+test('KIND_BADGE and KIND_LABEL cover all five run kinds', () => {
+  const kinds: CharacterRunSummary['kind'][] = ['NIGHTLY', 'WEEKLY', 'MONTHLY', 'BOOTSTRAP', 'EDITION']
   kinds.forEach((k) => {
     expect(KIND_BADGE[k]).toBeTruthy()
     expect(KIND_LABEL[k]).toBeTruthy()
   })
+})
+
+// csapatfal H1 (mezo-a9bo7.12): the esti kiadás's own row label + subline.
+test('EDITION gets its own badge/label, distinct from BOOTSTRAP', () => {
+  expect(KIND_BADGE.EDITION).toBe('kiadás')
+  expect(KIND_LABEL.EDITION).toBe('Esti kiadás')
+})
+
+test('EDITION runRowSubline reports the real published post count, never a fabricated call count', () => {
+  const r = run({ kind: 'EDITION', observationCount: 3 })
+  expect(runRowSubline(r)).toBe('3 poszt')
 })

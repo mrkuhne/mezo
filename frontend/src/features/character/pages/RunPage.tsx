@@ -75,6 +75,7 @@ const OP_LABEL: Record<CharacterRunSummary['kind'], string> = {
   WEEKLY: 'javaslat / döntés',
   MONTHLY: 'áttekintés',
   BOOTSTRAP: 'áttekintés',
+  EDITION: 'poszt',
 }
 
 export function RunPage() {

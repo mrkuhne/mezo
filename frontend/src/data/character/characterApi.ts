@@ -21,6 +21,8 @@ export type CharacterRunSummary = components['schemas']['CharacterRunSummary']
 export type CharacterRunObservationSignal = components['schemas']['CharacterRunObservationSignal']
 export type CharacterRunObservation = components['schemas']['CharacterRunObservation']
 export type CharacterRunResponse = components['schemas']['CharacterRunResponse']
+export type TeamEdition = components['schemas']['TeamEdition']
+export type TeamEditionPost = components['schemas']['TeamEditionPost']
 export type CharacterCouncilStatusResponse = components['schemas']['CharacterCouncilStatusResponse']
 export type CharacterClaimRevisionDto = components['schemas']['CharacterClaimRevisionDto']
 
@@ -73,4 +75,7 @@ export const characterApi = {
   runs: (fromIso: string, toIso: string): Promise<CharacterRunSummary[]> =>
     apiFetch<CharacterRunSummary[]>(`${BASE}/runs?from=${fromIso}&to=${toIso}`),
   run: (id: string): Promise<CharacterRunResponse> => apiFetch<CharacterRunResponse>(`${BASE}/run/${id}`),
+  // Esti kiadás timeline (csapatfal H1, mezo-a9bo7.12) — mirrors `runs`, both `from`/`to` required.
+  editions: (fromIso: string, toIso: string): Promise<TeamEdition[]> =>
+    apiFetch<TeamEdition[]>(`${BASE}/edition?from=${fromIso}&to=${toIso}`),
 }

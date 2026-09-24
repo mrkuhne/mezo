@@ -19,6 +19,7 @@ import type {
   CharacterOverviewResponse,
   CharacterRunResponse,
   CharacterRunSummary,
+  TeamEdition,
 } from '@/data/character/characterApi'
 import {
   MOCK_BOOTSTRAP_CONFERENCE,
@@ -29,6 +30,7 @@ import {
   MOCK_FEED,
   MOCK_OVERVIEW,
   MOCK_OVERVIEW_EMPTY,
+  MOCK_EDITIONS,
   MOCK_RUNS,
   MOCK_RUN_DETAIL,
 } from '@/data/character/characterMock'
@@ -266,6 +268,19 @@ export function useCharacterRuns(fromIso: string, toIso: string): { runs: Charac
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
   return { runs: data, isLoading: isPending }
+}
+
+/** Esti kiadás timeline whose `day` falls within [fromIso, toIso] (inclusive), newest day first
+ *  (csapatfal H1, mezo-a9bo7.12, Task 6) — mirrors {@link useCharacterRuns} bit for bit. */
+export function useTeamEditions(fromIso: string, toIso: string): { editions: TeamEdition[]; isLoading: boolean } {
+  const { data, isPending } = useDualQuery<TeamEdition[]>({
+    queryKey: ['teamEditions', fromIso, toIso],
+    mockData: MOCK_EDITIONS.filter((e) => e.day >= fromIso && e.day <= toIso),
+    realFetch: () => characterApi.editions(fromIso, toIso),
+    realEmpty: [],
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
+  })
+  return { editions: data, isLoading: isPending }
 }
 
 /** One run's full detail (summary + observations). `id === null` (nothing selected yet) never
