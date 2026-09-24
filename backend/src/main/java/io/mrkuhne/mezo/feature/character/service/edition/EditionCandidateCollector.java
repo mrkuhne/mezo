@@ -279,10 +279,12 @@ public class EditionCandidateCollector {
         List<String> sentences = new ArrayList<>(3);
         List<String> facts = new ArrayList<>(4);
 
-        // a tányér — a pontozott étkezések átlaga (ha egy sincs pontozva, a szólam kimarad)
+        // a tányér — a pontozott étkezések átlaga (ha egy sincs pontozva, a szólam kimarad). A
+        // `meal.score` 0..1 skálán tárolódik (a Fuel felület `score * 100`-at mutat) — a poszt is
+        // ugyanazt a 0..100-as pontot mondja ki.
         List<BigDecimal> scores = meals.stream().map(EditionMeal::score).filter(Objects::nonNull).toList();
         if (!scores.isEmpty()) {
-            int avg = scores.stream().reduce(BigDecimal.ZERO, BigDecimal::add)
+            int avg = scores.stream().reduce(BigDecimal.ZERO, BigDecimal::add).multiply(BigDecimal.valueOf(100))
                     .divide(BigDecimal.valueOf(scores.size()), 0, RoundingMode.HALF_UP).intValue();
             sentences.add(String.format("Eddig ma %d étkezésed van, átlagosan %d pontos.", meals.size(), avg));
             facts.add(String.valueOf(meals.size()));

@@ -591,7 +591,7 @@ class EditionCandidateCollectorTest {
 
     @Test void falat_plateOnly_whenNoTargetAndNoTraining() {
         when(reads.meals(OWNER, DAY)).thenReturn(List.of(
-                meal(BREAKFAST, "71", "450.4"), meal(DINNER, "80", "700")));
+                meal(BREAKFAST, "0.71", "450.4"), meal(DINNER, "0.80", "700")));
 
         List<EditionCandidate> out = falat();
 
@@ -611,7 +611,7 @@ class EditionCandidateCollectorTest {
 
     @Test void falat_allThreeVoices_doneTrainingNamed() {
         when(reads.meals(OWNER, DAY)).thenReturn(List.of(
-                meal(DINNER, "80", "700"), meal(BREAKFAST, "70", "450.5")));
+                meal(DINNER, "0.80", "700"), meal(BREAKFAST, "0.70", "450.5")));
         when(reads.targets(OWNER, DAY)).thenReturn(new DailyTargets(2400, 160, 250, 80, "goal"));
         when(reads.windows(OWNER, DAY)).thenReturn(List.of(
                 new Window(LocalTime.of(7, 0), LocalTime.of(8, 0), "run", false, "Könnyű futás"),
@@ -627,7 +627,7 @@ class EditionCandidateCollectorTest {
     }
 
     @Test void falat_scheduledTrainingOnly_isAnnouncedAsPlanned() {
-        when(reads.meals(OWNER, DAY)).thenReturn(List.of(meal(BREAKFAST, "70", "400")));
+        when(reads.meals(OWNER, DAY)).thenReturn(List.of(meal(BREAKFAST, "0.70", "400")));
         when(reads.windows(OWNER, DAY)).thenReturn(List.of(
                 new Window(LocalTime.of(18, 0), LocalTime.of(19, 0), "gym", false, "Pull")));
 

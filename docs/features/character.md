@@ -246,7 +246,7 @@ an error, and the next `*/15` tick retries any real failure until 23:45.
   - **Falat — `ertekeles`** (`sourceKind=fuel_day`, `sourceId=<day>`, route `/fuel`): 0 meals on
     the day → no candidate. Otherwise up to three data-built sentences, each only when its data
     exists: *the plate* — `"Eddig ma %d étkezésed van, átlagosan %d pontos."` (meal count + the
-    HALF_UP-rounded mean of the non-null `MealEntity.score`s; skipped when no meal is scored);
+    HALF_UP-rounded mean of the non-null `MealEntity.score`s — stored on a 0..1 scale, spoken ×100 like the Fuel screen; skipped when no meal is scored);
     *the goal* — `"A napi célod %d kcal, eddig %d kcal ment be."` (`FuelDayService.dailyTargets`
     `.kcal()` vs. the day's Σ item kcal via the canonical `MealMapper.contribution`, read as
     `EditionMeal(loggedAt, score, kcal)` from the fetch-join day finder); *training* —
