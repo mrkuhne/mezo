@@ -395,21 +395,21 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MemoryRetriever`, `MemoryShadowRunner`, `MemorySourceRepairService`, `MesoContextAssembler`,
     `MesoReviewGenerator`, `MesoReviewListener`, `MessageFeedbackRecordedEvent`, `MessageFeedbackService`,
     `MetricDomain`, `MetricKey`, `MetricSeriesService`, `MetricValueKind`, `NudgeSendPort`, `ObservationBudget`,
-    `ObservationContextService`, `ObservationFeedService`, `ObservationOwnerLock`, `ObservationRecoveryService`,
-    `ObservationSourceIcon`, `PatternConfirmedEvent`, `PatternDetectionJob`, `PatternDetectionService`,
-    `PatternEventAppender`, `PatternGate`, `PatternImpactSource`, `PatternMonitorService`, `PatternPairDetailService`,
-    `PatternRetractedEvent`, `PatternService`, `PearsonCorrelation`, `PeopleSnapshotBlock`, `PeriodSummaryService`,
-    `PersonExtractionResult`, `PersonExtractionService`, `PersonGraphEdgeAdapter`, `PersonalBaselineContext`,
-    `PersonalContextAssembler`, `PersonalMemorySearchService`, `PersonalRecordService`, `PlanExecutor`,
-    `PlanValidator`, `ProfileAssembler`, `ProfileAssemblerJob`, `ProfilePromptAssembler`, `PromptMemoryAssembler`,
-    `ProvenanceRetentionJob`, `QuarterlyReviewJob`, `QuarterlyReviewService`, `Quarters`, `QuickNoticePreScreen`,
-    `QuickNoticeService`, `ReflectionDigestService`, `ReflectionJob`, `ReflectionMemoryGateway`,
-    `ReflectionPromptBlock`, `ReflectionReplyRecorder`, `ReflectionReplyService`, `SeasonSuggestion`,
-    `SimilarDaysRecall`, `TestPlanValidator`, `TextSignalCatchUpService`, `TextSignalExtractor`, `TextSignalListener`,
-    `TextSignalSeriesService`, `TextSignalService`, `ToolCatalogue`, `ToolOutcomeDigest`, `TraceDisposition`,
-    `TranscriptionService`, `TurnAnswerer`, `TurnGear`, `TurnGearAnalyzer`, `TurnGearRouter`, `TurnPhase`, `TurnPlan`,
-    `TurnPlanParser`, `TurnPlanner`, `TurnProvenance`, `UnavailableReason`, `ValidatedPlan`, `WeekContextRenderer`,
-    `WeeklyScoreService`, `WeightByDateSupport`
+    `ObservationContextService`, `ObservationFeedService`, `ObservationLead`, `ObservationOwnerLock`,
+    `ObservationRecoveryService`, `ObservationSourceIcon`, `PatternConfirmedEvent`, `PatternDetectionJob`,
+    `PatternDetectionService`, `PatternEventAppender`, `PatternGate`, `PatternImpactSource`, `PatternMonitorService`,
+    `PatternPairDetailService`, `PatternRetractedEvent`, `PatternService`, `PearsonCorrelation`, `PeopleSnapshotBlock`,
+    `PeriodSummaryService`, `PersonExtractionResult`, `PersonExtractionService`, `PersonGraphEdgeAdapter`,
+    `PersonalBaselineContext`, `PersonalContextAssembler`, `PersonalMemorySearchService`, `PersonalRecordService`,
+    `PlanExecutor`, `PlanValidator`, `ProfileAssembler`, `ProfileAssemblerJob`, `ProfilePromptAssembler`,
+    `PromptMemoryAssembler`, `ProvenanceRetentionJob`, `QuarterlyReviewJob`, `QuarterlyReviewService`, `Quarters`,
+    `QuickNoticePreScreen`, `QuickNoticeService`, `ReflectionDigestService`, `ReflectionJob`,
+    `ReflectionMemoryGateway`, `ReflectionPromptBlock`, `ReflectionReplyRecorder`, `ReflectionReplyService`,
+    `SeasonSuggestion`, `SimilarDaysRecall`, `TestPlanValidator`, `TextSignalCatchUpService`, `TextSignalExtractor`,
+    `TextSignalListener`, `TextSignalSeriesService`, `TextSignalService`, `ToolCatalogue`, `ToolOutcomeDigest`,
+    `TraceDisposition`, `TranscriptionService`, `TurnAnswerer`, `TurnGear`, `TurnGearAnalyzer`, `TurnGearRouter`,
+    `TurnPhase`, `TurnPlan`, `TurnPlanParser`, `TurnPlanner`, `TurnProvenance`, `UnavailableReason`, `ValidatedPlan`,
+    `WeekContextRenderer`, `WeeklyScoreService`, `WeightByDateSupport`
   - **controllers→contract:** `CompanionController`→`CompanionApi`,
     `CompanionFeedbackController`→`CompanionFeedbackApi`, `CompanionFlagTraceController`→`CompanionFlagsApi`,
     `CompanionObservationController`→`CompanionObservationApi`,
@@ -479,7 +479,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/companion`
   - **hooks (via `@/data/hooks`):** `useAccountSettings`, `useCompanionPreferences`, `usePersonalContext`
   - **modules:** preferencesApi.ts, preferencesHooks.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 260 IT + 87 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 260 IT + 88 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,
@@ -773,17 +773,17 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     PatternDetailPage.tsx, PatternsPage.tsx, PredictionDetailPage.tsx, PredictionsPage.tsx, TeamFeedPage.tsx,
     TeamPage.tsx
   - **sheets:** ConversationActionsSheet.tsx, ConversationPickerSheet.tsx, NodeDetailSheet.tsx
-  - **components:** BoopNavigation.tsx, CategoryHeader.tsx, ChatMessage.tsx, CoachingRuleTile.tsx, EvidenceLog.tsx,
-    FactCandidateCard.tsx, FactsView.tsx, FeedGuests.tsx, FeedPostCard.tsx, FeedPostHead.tsx, FeedPosterCard.tsx,
-    FeedReplySheet.tsx, FeedTrio.tsx, FeedbackChips.tsx, HowItWorksView.tsx, HypothesisStateCard.tsx, IntroPosts.tsx,
-    KategoriakView.tsx, KindNodeList.tsx, KindTileGrid.tsx, KnowledgeBaseView.tsx, KnowledgeFactRow.tsx,
-    LifeEventAcceptedCard.tsx, LifeEventCandidateCard.tsx, LifecycleSection.tsx, MemoryAuditPanel.tsx,
-    MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx,
-    PatternArtifactDetail.tsx, PatternDecisionCard.tsx, PatternDetailHero.tsx, PatternDomainMark.tsx,
-    PatternEvidenceChart.tsx, PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx,
-    PatternStrengthChart.tsx, ProfileNodeCard.tsx, ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx,
-    RoomCaseCard.tsx, SimilarDayCard.tsx, StoryStrip.tsx, TestPlanTiles.tsx, TokenColumns.tsx, ToolWorkStrip.tsx,
-    VerdictArc.tsx, experimentStatus.tsx, useFeedSession.ts, useTeamFeed.ts
+  - **components:** CategoryHeader.tsx, ChatMessage.tsx, CoachingRuleTile.tsx, EvidenceLog.tsx, FactCandidateCard.tsx,
+    FactsView.tsx, FeedGuests.tsx, FeedPostCard.tsx, FeedPostHead.tsx, FeedPosterCard.tsx, FeedReplySheet.tsx,
+    FeedTrio.tsx, FeedbackChips.tsx, HowItWorksView.tsx, HypothesisStateCard.tsx, IntroPosts.tsx, KategoriakView.tsx,
+    KindNodeList.tsx, KindTileGrid.tsx, KnowledgeBaseView.tsx, KnowledgeFactRow.tsx, LifeEventAcceptedCard.tsx,
+    LifeEventCandidateCard.tsx, LifecycleSection.tsx, MemoryAuditPanel.tsx, MemoryJournalPanel.tsx,
+    MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx, PatternArtifactDetail.tsx,
+    PatternDecisionCard.tsx, PatternDetailHero.tsx, PatternDomainMark.tsx, PatternEvidenceChart.tsx,
+    PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx, PatternStrengthChart.tsx, ProfileNodeCard.tsx,
+    ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx, RoomCaseCard.tsx, SimilarDayCard.tsx, StoryStrip.tsx,
+    TestPlanTiles.tsx, TokenColumns.tsx, ToolWorkStrip.tsx, VerdictArc.tsx, experimentStatus.tsx, useFeedSession.ts,
+    useTeamFeed.ts
   - **logic:** boopNavigation.ts, chatRefs.ts, coachingCopy.ts, diagnosisCatalog.ts, diagnosisCopy.ts, domains.ts,
     factCopy.ts, findings.ts, humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternCatalog.ts,
     patternEvidence.ts, patternHistory.ts, predictionStatus.ts, quickQuestions.ts, team.ts, teamEdition.ts,
@@ -960,7 +960,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     MentionRow.tsx, NightArcCard.tsx, NightBodyScan.tsx, NightBreathing.tsx, NightWalk.tsx,
     NotificationCategoryRow.tsx, NotificationPreviewHeader.tsx, PerksCard.tsx, PermahRing.tsx, PersonCard.tsx,
     PhaseAverageCard.tsx, PhaseRail.tsx, PhaseReferenceRow.tsx, PillarCard.tsx, PushInstallGate.tsx,
-    RemDurationCard.tsx, SkillBandCard.tsx, SleepChart.tsx, SleepEscalationCard.tsx, SleepLogRow.tsx, SleepStat.tsx,
+    RemDurationCard.tsx, SkillBandCard.tsx, SleepChart.tsx, SleepEscalationCard.tsx, SleepLogRow.tsx,
     SleepStatCard.tsx, TimePicker.tsx, WeekDayTile.tsx, WeekDiscoveries.tsx, WeekGoalsCard.tsx, WeekLessonCard.tsx,
     WeekLoadStates.tsx, WeekNextCard.tsx, WeekReviewCard.tsx, WeekScoreBars.tsx, WeekScoreRing.tsx, WeekTrendSpark.tsx,
     WeeklyWeightCard.tsx, WeightHero.tsx, WeightTrendChart.tsx, goalSettingsEditor.css
@@ -1399,11 +1399,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **components:** ActivityLogCard.tsx, DailyQuestList.tsx, DailyQuestsCard.tsx, DailyQuestsSheet.tsx,
     EletjelStrip.tsx, MezoMessagesSheet.tsx, NapCompanion.tsx, NapFuelGraphic.css, NapFuelGraphic.tsx,
     NapPersonalInsight.css, NapPersonalInsight.tsx, NapomDimensionRow.tsx, NapomLeadCard.tsx, NapomReviewCard.tsx,
-    NapomSegRing.tsx, NapomWeekStrip.tsx, NapzarasCard.tsx, ObservationCard.tsx
+    NapomSegRing.tsx, NapomWeekStrip.tsx, NapzarasCard.tsx, ObservationCard.tsx, ObservationEvidence.tsx
   - **logic:** chainMilestone.ts, chainPrompt.ts, dayArc.ts, dayFace.ts, dayOrbFill.ts, dayOrbTone.ts, habitAction.ts,
     habitCelebration.ts, habitClayIcon.ts, itemIcon.ts, mezoMessages.ts, napTimeline.ts, napom.ts, needs.ts,
-    needsInputs.ts, needsNudges.ts, nudgeSeen.ts, questAction.ts, todayItems.ts, useChangedKeys.ts, useDayFace.ts,
-    useDayOrbFill.ts, useMinuteTick.ts, useMorningMode.ts, useNeeds.ts, windDown.ts
+    needsInputs.ts, needsNudges.ts, nudgeSeen.ts, observationEvidence.ts, questAction.ts, todayItems.ts,
+    useChangedKeys.ts, useDayFace.ts, useDayOrbFill.ts, useMinuteTick.ts, useMorningMode.ts, useNeeds.ts, windDown.ts
   - **root:** MezoThreadProvider.tsx
 
 ### train
