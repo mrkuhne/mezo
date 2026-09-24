@@ -403,11 +403,11 @@ export function MesoReportPage() {
           </header>
         ) : (
           <>
-            <PageHead onBack={goBack} label="Vissza" />
+            <PageHead glass onBack={goBack} label="Vissza" />
             <PageHero icon="i-meso" name={`${title} · riport`} sub={heroSub} />
           </>
         )}
-        <PageBody>
+        <PageBody className="tv-report">
       {report?.templateId && (
         <div style={{ padding: '0 0 8px' }}>
           <button

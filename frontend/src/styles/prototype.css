@@ -21737,3 +21737,80 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* „Most" never turns red on a down move — the muscle keeps its own colour (page rule) */
 .tv-muscle .pl-versus-row.is-now .pl-versus-bar i { background: var(--c); opacity: 1; }
 /* ── /uveg edzes2 izmok ── */
+
+/* ── uveg edzes2 konyvtar (mezo-me75u.5) ── /…/konyvtar, /…/futamok, /…/:id/report, /…/compare ── */
+/* Ranking (bible §3.4, prototype uveg-edzes2.html#konyvtar/#futamok/#riport/#osszevetes):
+   the poster hero stays a frameless halo (`.pl-lhero` rides the `.pl-dhero` rules dressed in
+   the nap block); every run/template CARD is glass; the fact cells, chips and footer actions
+   inside them are flat; the one loud CTA („Új terv összeállítása") is a filled accent button.
+   Each area keeps ONE accent, so the three lists never blur into each other. */
+.tv-lib { --c: var(--dv-sage); }
+.tv-runs { --c: var(--dv-gold, var(--dv-amber)); }
+.tv-report { --c: var(--dv-gold, var(--dv-amber)); }
+.tv-cmp { --c: var(--dv-sky); }
+
+.tv-lib .pl-lib-card.glass,
+.tv-runs .pl-lib-card.glass {
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 20%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 26%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 50%, transparent);
+}
+/* the running plan is the library's loudest row; a queued one is calm and takes the sky hue,
+   so „most fut" and „következik" never read as the same thing */
+.tv-lib .pl-lib-card.is-now.glass { --c: var(--dv-coral); }
+.tv-lib .pl-lib-card.is-queued.glass { --c: var(--dv-sky); }
+
+/* flat inside the glass (U1 rule 5): fact cells, status pills and the card's footer actions */
+.tv-lib .pl-lib-card .pl-lib-facts > *,
+.tv-runs .pl-lib-card .pl-lib-facts > *,
+.tv-runs .pl-lib-foot > * {
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+
+/* the compare SELECTION is a state, not a second card: a lit ring, no extra chrome */
+.tv-runs .pl-lib-card.is-picked.glass {
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 45%, transparent),
+    inset 0 0 0 1.5px color-mix(in srgb, var(--c) 70%, transparent);
+}
+
+/* the one loud CTA — filled, not glass (bible §3: glass is loud only next to what is not) */
+.tv-lib .pl-lib-new,
+.tv-runs .pl-lib-new {
+  border: 0; color: #191614;
+  background: var(--c);
+  box-shadow:
+    0 12px 26px -14px color-mix(in srgb, var(--c) 90%, transparent),
+    0 0 18px -4px color-mix(in srgb, var(--c) 60%, transparent);
+}
+/* A filled CTA has to restate EVERY colour: the old skin's rules set the title, the sub-line
+   and the art well for a dark card, and on an accent fill they read as dark-on-dark. */
+.tv-lib .pl-lib-new strong, .tv-runs .pl-lib-new strong { color: #191614; }
+.tv-lib .pl-lib-new small, .tv-runs .pl-lib-new small { color: rgba(25, 22, 20, 0.72); }
+.tv-lib .pl-lib-new b, .tv-runs .pl-lib-new b { color: rgba(25, 22, 20, 0.8); }
+.tv-lib .pl-lib-new-art, .tv-runs .pl-lib-new-art {
+  background: rgba(255, 244, 230, 0.28); box-shadow: inset 0 0 0 1px rgba(255, 244, 230, 0.4);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+}
+
+/* the report's star hero keeps the gold glow; its blocks are glass, its rows flat */
+.tv-report .pl-lhero-stars { filter: drop-shadow(0 0 14px rgba(255, 190, 96, 0.45)); }
+.tv-report .pl-block,
+.tv-cmp .pl-block {
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 18%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 24px -8px color-mix(in srgb, var(--c) 24%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1);
+}
+/* a hole is „–", never 0 — and the better side is sage, the weaker side is NOT red (page rule) */
+.tv-cmp .pl-cmp-better { color: #bfe0a8; }
+/* ── /uveg edzes2 konyvtar ── */
