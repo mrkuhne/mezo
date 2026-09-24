@@ -1235,6 +1235,44 @@
 .cnoteb{margin:14px 16px 0;display:grid;gap:6px}
 .cnoteb>span{font-size:13px;font-weight:600}
 .cnoteb small{font-size:11px;color:var(--faint)}
+
+/* ceremónia: rekordok soronként + küldetések */
+.crec{align-items:flex-start}
+.crec .rl{display:grid;gap:5px;margin-top:6px}
+.crec .rl div{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--sub)}
+.crec .rl div b{color:#FFE0AE;font-weight:600;white-space:nowrap}
+.cchal{margin-top:12px;padding-top:10px;border-top:1px solid var(--hair);transition:.5s var(--ease);opacity:.3}
+.b3 .cchal{opacity:1}
+.cchal .eb{display:block;margin-bottom:6px}
+.cchal div{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:12.5px}
+.cchal div .icon{width:26px;height:26px}
+.cchal div span{flex:1;line-height:1.35}
+.cchal div em{font-style:normal;font-size:10.5px;white-space:nowrap}
+.cchal div.hit em{color:#BFE0A8}
+.cchal div.miss{opacity:.6}
+.cchal div.miss em{color:var(--faint)}
+/* küldetés-választás (Küldetések üvegdoboz) */
+.chc{padding:13px;border-radius:18px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.chc.acc{background:color-mix(in srgb,var(--coral) 9%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--coral) 45%,transparent),0 0 16px -6px var(--coral)}
+.chc .hrow{justify-content:space-between;font-size:11.5px;font-weight:700;color:#FFB39C}
+.chc .hrow small{font-size:9.5px;font-weight:600;letter-spacing:1px;color:var(--faint)}
+.chc .tg{font-size:21px;font-weight:600;letter-spacing:-.4px;margin-top:6px;line-height:1.15}
+.chc .cf{font-size:9.5px;font-weight:600;letter-spacing:1px;color:var(--faint);margin-top:3px}
+.chc p{font-size:12px;line-height:1.5;color:var(--sub);margin-top:8px}
+.chc p b{color:#FFB39C;font-weight:600}
+.chc .refs{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.chc .refs .flat{font-size:10.5px;padding:4px 9px}
+.chc .chacts{display:flex;gap:8px;margin:12px 0 0;padding-top:10px;border-top:1px solid var(--hair);width:100%}
+.chc .chacts .pillx{flex:1;justify-content:center;--c:var(--coral);height:40px}
+.chc .chacts{align-items:center}
+.chlist{display:grid;gap:10px}
+.fresh{--c:var(--coral);display:flex;align-items:center;gap:12px;margin:0 16px 12px;padding:12px 14px;border-radius:20px}
+.fresh .icon{width:42px;height:42px}
+.fresh span{flex:1}
+.fresh strong{display:block;font-size:14.5px;font-weight:600}
+.fresh small{display:block;font-size:11.5px;color:var(--sub);margin-top:2px}
+.dock.rest .dring b{font-size:0}
+.dock.rest .dring .icon{position:absolute;inset:8px;width:32px;height:32px}
 @media (max-width:360px){.sstrip4.q{grid-template-columns:repeat(2,1fr)}.thero h1{font-size:32px}.lhero{grid-template-columns:100px 1fr}.lhero .body{width:100px;height:180px}.lhero .num{font-size:52px}.spgrid{grid-template-columns:repeat(2,1fr)}.wset{grid-template-columns:18px 1fr 1fr 1fr 34px 24px;gap:4px;font-size:13px}.musrow{grid-template-columns:28px 54px 1fr 50px;gap:7px}.wtop{grid-template-columns:34px 1fr auto 34px 34px;gap:6px}.wtop .rb{width:34px;height:34px}.dstrip{gap:3px;padding:2px 10px 4px}.recs3{grid-template-columns:1fr 1fr}}
 </style>
 
@@ -1273,6 +1311,7 @@
     <ul>
       <li>Mai edzés: <a href="#" data-state="plan">betervezve</a> · <a href="#" data-state="run">folyamatban</a> · <a href="#" data-state="done">kész</a></li>
       <li><a href="#mai/pihen">Pihenőnap</a> · <a href="#mai/ures">nincs mesociklus</a></li>
+      <li><a href="#session/uj">Új edzés indítása (0 szett)</a> · <a href="#" data-gbox="chal">küldetés-választás</a> · <a href="#" data-rest>pihenőóra (ketyeg)</a></li>
       <li>Edzés közben: <a href="#" data-gbox="menu">gyakorlat-menü</a> · <a href="#" data-gbox="recs">rekordok</a> · <a href="#" data-gbox="fin">befejezés</a> · <a href="#" data-rest>pihenő-óra</a></li>
       <li>Lapok: <a href="#" data-sheet="set">szett szerkesztése</a> · <a href="#" data-sheet="rp">szett-visszajelzés</a> · <a href="#" data-sheet="extra">extra szett</a> · <a href="#" data-sheet="note">jegyzet</a></li>
       <li><a href="#" data-sheet="sportlog">Sport log lap</a> · <a href="#" data-sheet="runlog">Futás log lap</a></li>
@@ -1346,7 +1385,7 @@ function dstrip(today=true){
 }
 function thero(){
   const st={plan:['plan','BETERVEZVE'],run:['','FOLYAMATBAN'],done:['done','KÉSZ']}[dayState];
-  const cta={plan:['dumbbell','Indítsuk','A mai tervezett edzésed','#session','›'],run:['dumbbell','Folytassuk',`${DONE} szett kész`,'#session','›'],done:['record','Eredmény','16 szett · megnézem','#review','›']}[dayState];
+  const cta={plan:['dumbbell','Indítsuk','A mai tervezett edzésed','#session/uj','›'],run:['dumbbell','Folytassuk',`${DONE} szett kész`,'#session','›'],done:['record','Eredmény','16 szett · megnézem','#review','›']}[dayState];
   return `<section class="thero rise" style="--i:1"><span class="stpill ${st[0]}"><i></i>${st[1]}</span>${I('dumbbell','art')}
     <span class="eb">MA 07:30 · ${MESO.phase} · GYM</span><h1>Pull Day</h1><p>${MESO.name} · ${MESO.week}. hét / ${MESO.of}</p>
     <div class="mchips">${['back-wide','back-mid','shoulder-rear','biceps-brachialis','traps'].map(k=>mchp(k,'sm')).join('')}</div>
@@ -1396,10 +1435,13 @@ function wset(s,i,c){
   if(s[0]==='up') return `<div class="wset up"><span>${i+1}</span><span>${String(s[1]).replace('.',',')}</span><span>${s[2]}</span><span>${s[3]}</span><span class="tk"></span><span></span></div>`;
   return `<button class="wset done" data-sheet="set"><span>${i+1}</span><b>${s[0]}</b><b>${s[1]}</b><span>${s[2]}</span><span class="tk">${I('tick')}</span><span class="vd" aria-label="${V.find(x=>x[0]===s[3])[1]}">${I(s[3])}</span></button>`;
 }
-function session(){
-  let n=0; const seg=EX.map(e=>{const w=e.sets.length;const d=e.sets.filter(s=>typeof s[0]==='number').length;return `<i style="flex:${w};--c:${muscleColor(e.k)}"><b style="width:${d/w*100}%"></b></i>`}).join('');
-  return `<header class="wtop"><button class="rb" data-go="#mai" aria-label="Vissza">‹</button><strong>Pull Day</strong><span class="cnt"><b>${DONE}</b>/${TOTAL} szett</span><button class="rb" data-toast="Kalauz az edzéshez">?</button><button class="rb" data-gbox="menu" aria-label="Menü">⋯</button></header>
+const freshSets=e=>e.sets.map((s,j)=>{const kg=typeof s[0]==='number'?s[0]:s[0]==='cur'?s[1]:s[1];const rep=e===EX[0]?'8–10':(typeof s[0]==='number'||s[0]==='cur')?'8–10':s[2];const rir=typeof s[0]==='number'?s[2]:s[3];return j===0&&e===EX[0]?['cur',kg,10,rir]:['up',kg,rep,rir]});
+function session(v){
+  const fresh=v==='uj';
+  let n=0; const seg=EX.map(e=>{const w=e.sets.length;const d=fresh?0:e.sets.filter(s=>typeof s[0]==='number').length;return `<i style="flex:${w};--c:${muscleColor(e.k)}"><b style="width:${d/w*100}%"></b></i>`}).join('');
+  return `<header class="wtop"><button class="rb" data-go="#mai" aria-label="Vissza">‹</button><strong>Pull Day</strong><span class="cnt"><b>${fresh?0:DONE}</b>/${TOTAL} szett</span><button class="rb" data-toast="Kalauz az edzéshez">?</button><button class="rb" data-gbox="menu" aria-label="Menü">⋯</button></header>
   <div class="pbar">${seg}</div>
+  ${fresh?`<button class="fresh glass lift rise" data-gbox="chal">${I('quest')}<span><strong>A mai küldetések</strong><small>${CHAL.filter(c=>c.acc).length} / ${CHAL.length} elfogadva · a ⋯ menüben is</small></span><b class="chev">›</b></button>`:''}
   <div class="warn rise">${I('bandage')}<span><b>Jobb váll aktív</b> · óvatos, először warm-up</span></div>
   <div class="ovl rise">${I('up')}<span><strong>Túlterhelés · 2× +súly · 1× +rep · 1× −súly</strong><small>Ezek a gyakorlatok adják az XP-lökés nagyját ma.</small></span></div>
   ${EX.map((e,i)=>`<article class="wcard glass rise" style="--c:${muscleColor(e.k)};--i:${i+1}">
@@ -1407,14 +1449,19 @@ function session(){
     ${e.chal||e.note||e.cue?`<div class="wpills">${e.chal?`<span class="flat" style="--c:var(--gold)">${I('quest')}${e.chal}</span>`:''}${e.note?`<span class="flat">${I('note')}${e.note}</span>`:''}${e.cue?`<span class="flat">${I('info')}${e.cue}</span>`:''}</div>`:''}
     <div class="progl">${I('bolt')}PROGRESSZIÓ <span>· ${e.chg}</span></div>
     <div class="prog2"><div class="cell"><small>MÚLT HÉT</small><b>${e.last}</b></div><div class="cell goal"><small>MA A CÉL</small><b>${e.goal}</b></div></div>
-    <div class="sets"><div class="wset h"><span>#</span><span>KG</span><span>ISM</span><span>RIR</span><span></span><span></span></div>${e.sets.map((s,j)=>wset(s,j)).join('')}</div>
+    <div class="sets"><div class="wset h"><span>#</span><span>KG</span><span>ISM</span><span>RIR</span><span></span><span></span></div>${(fresh?freshSets(e):e.sets).map((s,j)=>wset(s,j)).join('')}</div>
   </article>`).join('')}
   <button class="wofin rise" data-gbox="fin">${I('star')}Edzés befejezése</button>
   <p class="p-note">A szett-sor bal oldali pipája ment, a jobb oldali jel az ítélet: ${I('tick','inl')} célsávban · ${I('up','inl')} cél fölött · ${I('down','inl')} cél alatt · ${I('record','inl')} rekord.</p>`;
 }
-function dock(){
-  if(resting) return `<div class="dock rest glass" style="--c:var(--sky)">${I('clock')}<span class="grow"><small>PIHENŐ · CHEST SUPPORTED ROW</small><strong>01:24</strong></span><button class="ghostb" data-toast="+30 mp">+30s</button><button class="go" data-rest>Kész</button></div>`;
-  return `<div class="dock glass"><span class="dring">${ring(DONE/TOTAL*100,'var(--coral)',20,48)}<b>${DONE}</b></span><span class="grow"><small>ELVÉGZETT MUNKA</small><strong>${DONE} / ${TOTAL} szett</strong></span><button class="go" data-gbox="fin">Lezárás →</button></div>`;
+let restLeft=90,restTotal=90,restT=null;
+function startRest(){resting=true;restLeft=restTotal=90;clearInterval(restT);restT=setInterval(()=>{restLeft--;if(restLeft<=0){stopRest();toast('Pihenő vége — jöhet a következő szett');return}paintRest()},1000);if(location.hash.startsWith('#session'))$('#dockwrap').innerHTML=dock()}
+function stopRest(){resting=false;clearInterval(restT);if(location.hash.startsWith('#session'))$('#dockwrap').innerHTML=dock()}
+function paintRest(){const d=document.querySelector('.dock.rest');if(!d)return;d.querySelector('strong').textContent=mmss(restLeft);d.querySelector('.ring-prog').style.setProperty('--p',100-restLeft/restTotal*100)}
+const mmss=n=>`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;
+function dock(done=DONE){
+  if(resting) return `<div class="dock rest glass" style="--c:var(--sky)"><span class="dring">${ring(100-restLeft/restTotal*100,'var(--sky)',20,48)}${I('clock')}</span><span class="grow"><small>PIHENŐ · CHEST SUPPORTED ROW</small><strong>${mmss(restLeft)}</strong></span><button class="ghostb" data-plus30>+30s</button><button class="go" data-reststop>Kész</button></div>`;
+  return `<div class="dock glass"><span class="dring">${ring(done/TOTAL*100,'var(--coral)',20,48)}<b>${done}</b></span><span class="grow"><small>ELVÉGZETT MUNKA</small><strong>${done} / ${TOTAL} szett</strong></span><button class="go" data-gbox="fin" ${done?'':'disabled style="opacity:.45"'}>Lezárás →</button></div>`;
 }
 
 /* ── ÖSSZEGZÉS ───────────────────────────────────────────── */
@@ -1596,7 +1643,7 @@ function ikonok(){
 
 
 /* ── LEZÁRÓ CEREMÓNIA ────────────────────────────────────── */
-const CER={stars:4.5,ratio:.9,sets:14,reps:142,vol:4180,min:71,xp:185,pending:2,kcal:540,rec:[['Chest Supported Row','105 kg'],['Lat Pulldown','12 @ 74,5']],
+const CER={stars:4.5,ratio:.9,sets:14,reps:142,vol:4180,min:71,xp:185,pending:2,kcal:540,rec:[['Chest Supported Row · súly','105 kg'],['Lat Pulldown · ismétlés','12 @ 74,5']],chal:[[1,'Túlterhelés · Chest Supported Row: 107,5 kg × 8'],[0,'Mélység · Lat Pulldown: az utolsó szett RIR 0-ig']],
   mus:[['back-wide','Hát (széles)',6,6],['back-mid','Hát (közép)',4,4],['shoulder-rear','Váll (hátsó)',3,3],['biceps-brachialis','Kar',1,3]]};
 const VERD=[[5,'Hibátlan nap.'],[4,'Erős nap.'],[3,'Rendben volt.'],[1.5,'Elindult.'],[0,'Ma nem jött össze.']];
 const verdict=st=>VERD.find(([m])=>st>=m)[1];
@@ -1616,9 +1663,10 @@ function cer(v){
     <div class="cstars" aria-hidden="true">${[0,1,2,3,4].map(i=>`<i data-star="${i}">${I('star-empty','off')}${I('star-half','half')}${I('star','on')}</i>`).join('')}</div>
     <div class="fuse" aria-hidden="true"><b></b><em></em>${[1,2,3,4].map(i=>`<u style="--at:${i*20}%"></u>`).join('')}</div></section>
   <section class="cres"><h1 class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">4,5 csillag az ötből</h1><p class="verdict">${verdict(CER.stars)}</p>
-    <article class="ccard glass"><div class="crec"><span class="well" style="--c:var(--gold)">${I('record')}</span><span><strong>${CER.rec.length} új rekord</strong><small>${CER.rec.map(r=>r.join(' · ')).join(' · ')}</small></span></div>
+    <article class="ccard glass"><div class="crec"><span class="well" style="--c:var(--gold)">${I('record')}</span><span style="flex:1"><strong>${CER.rec.length} új rekord</strong><span class="rl">${CER.rec.map(([n,v])=>`<div><span>${n}</span><b>${v}</b></div>`).join('')}</span></span></div>
       <div class="cstats"><span>${I('clock')}<span><strong>${CER.min}<i>′</i></strong><small>a pulton töltött idő</small></span></span><span>${I('coin')}<span><strong>+${CER.xp}</strong><small>szerzett XP</small></span></span></div>
-      <div class="ctally"><span>${I('weight')}<b data-c="sets">0</b><small>szett</small></span><span>${I('dumbbell')}<b data-c="reps">0</b><small>ismétlés</small></span><span>${I('protocol')}<b data-c="vol">0</b><small>kg × rep</small></span></div></article>
+      <div class="ctally"><span>${I('weight')}<b data-c="sets">0</b><small>szett</small></span><span>${I('dumbbell')}<b data-c="reps">0</b><small>ismétlés</small></span><span>${I('protocol')}<b data-c="vol">0</b><small>kg × rep</small></span></div>
+      <div class="cchal"><span class="eb">KÜLDETÉSEK · 1 / 2</span>${CER.chal.map(([ok,t])=>`<div class="${ok?'hit':'miss'}">${I(ok?'tick':'skip')}<span>${t}</span><em>${ok?'megerősítve':'nem igazolódott'}</em></div>`).join('')}</div></article>
     <p class="cnote">${CER.pending} szett kihagyott státusszal zárult.</p></section>
   <div class="cfoot"><button class="ccta glass lift" data-go="#cer/reszletek">${I('journal')}<span><strong>Részletek</strong><small>Izomcsoportok és a nyert kalória</small></span><em>›</em></button></div></div>`;
 }
@@ -1634,10 +1682,15 @@ function runCer(){
   if(instant){paint(D);return}
   const t0=performance.now();const f=now=>{const ms=Math.min(D,now-t0);paint(ms);if(ms<D&&stage.isConnected)requestAnimationFrame(f)};requestAnimationFrame(f);
 }
+const CHAL=[
+  {type:'Túlterhelés',ex:'Chest Supported Row',target:'107,5 kg × 8',conf:'tanulom',why:'A mai ajánlott terhelés: +2,5 kg a múlt heti 105-höz képest (RIR 2 stabil).',glory:'Teljesítsd a mai ajánlott terhelést.',refs:[],acc:false},
+  {type:'PR-kísérlet',ex:'Chest Supported Row',target:'107,5 kg × 8',conf:'72%',why:'Március 4 óta 102,5 a stabil ablak. Múlt heti RIR 2 + 7,2 óra alvás — ez a kombináció 4-ből 3-szor bírt el +5 kg-ot.',glory:'Új súly-rekord',refs:['Chest Row 105,8 · márc 4.','Alacsony étvágy + 7h+ alvás → PR-ablak'],acc:false},
+  {type:'Mélység',ex:'Lat Pulldown · Pronated',target:'Az utolsó szett RIR 0-ig',conf:'81%',why:'Múlt héten RIR 2-vel zártuk — a 3. héten (MAV) a 3. szett RIR 0 logikus lépés. A pronált fogás kíméli a vállat.',glory:'Mélyebb inger · a 4. hétre alap',refs:['Lat Pulldown · máj 15.','3. hét · MAV'],acc:false},
+  {type:'Volumen',ex:'Face Pull',target:'+1 szett · 4 × 15–20',conf:'68%',why:'A hátsó váll heti 12 szettet kér nálad, és ezen a héten 9-nél tartunk. A Face Pull kevéssé fáraszt — kockázat nélkül beékelhető.',glory:'Heti volumen-cél teljesítve',refs:['Hátsó váll MAV = 12 szett/hét'],acc:false}];
 /* ── GlassBox dialógusok ─────────────────────────────────── */
 const GB={
   menu:['var(--coral)',()=>`<div class="gb-top"><span class="eb">GYAKORLAT</span><button data-closegb aria-label="Bezárás">×</button></div><div class="gb-title">${mchp('back-mid')}<span><h3>Chest Supported Row</h3><p>4 szett · Hát (közép)</p></span></div>
-    <div class="mrows">${[['camera','Videó','A mozdulat bemutatója','recs'],['quest','Küldetések','1 / 3 elfogadva',''],['note','Jegyzet','Forma-emlékeztető, beállítás…','note'],['weight','Szett hozzáadása','Most 4 szett van','extra'],['weight','Szett elvétele','',''],['up','Előrébb','',''],['down','Hátrébb','',''],['skip','Gyakorlat kihagyása','','']].map(([ic,l,h,sh],i)=>`<button class="${i===7?'warnr':''}" ${sh&&sh!=='recs'?`data-sheet="${sh}"`:`data-toast="${l}"`}>${I(ic)}<span><strong>${l}</strong>${h?`<small>${h}</small>`:''}</span><b class="chev">›</b></button>`).join('')}</div>`],
+    <div class="mrows">${[['camera','Videó','A mozdulat bemutatója','recs'],['quest','Küldetések',`${CHAL.filter(c=>c.acc).length} / ${CHAL.length} elfogadva`,'#chal'],['note','Jegyzet','Forma-emlékeztető, beállítás…','note'],['weight','Szett hozzáadása','Most 4 szett van','extra'],['weight','Szett elvétele','',''],['up','Előrébb','',''],['down','Hátrébb','',''],['skip','Gyakorlat kihagyása','','']].map(([ic,l,h,sh],i)=>`<button class="${i===7?'warnr':''}" ${sh==='#chal'?'data-gbox="chal"':sh&&sh!=='recs'?`data-sheet="${sh}"`:`data-toast="${l}"`}>${I(ic)}<span><strong>${l}</strong>${h?`<small>${h}</small>`:''}</span><b class="chev">›</b></button>`).join('')}</div>`],
   recs:['var(--gold)',()=>`<div class="gb-top"><span class="eb">HÁT (KÖZÉP) · 24 ALKALOM</span><button data-closegb aria-label="Bezárás">×</button></div><div class="gb-title">${mchp('back-mid')}<span><h3>Chest Supported Row</h3></span></div>
     <span class="subh">A MÚLTKORI ALKALOM</span><div class="kgrow"><div class="cell"><small>KG</small><b>102,5</b></div><div class="cell"><small>REP</small><b>9</b></div><div class="cell"><small>RIR</small><b>2</b></div></div>
     <span class="subh">MEGDÖNTHETŐ REKORDOK</span>
@@ -1654,6 +1707,12 @@ const GB={
     <div class="grows"><div><span>${l} (fej 1)</span><em>6 szett · 8–10 ismétlés · 2×/hét — a heti tervből</em></div><div><span>${l} (fej 2)</span><em>4 szett · 10–12 ismétlés · 2×/hét — a heti tervből</em></div></div>
     <div class="chips2" style="display:flex;gap:6px;margin-top:10px"><span class="flat">▲▲ Röpi</span><span class="flat">▲ Futás</span></div>
     <span class="xpchip">${I('coin')}+~40 XP</span><p class="fnote" style="font-size:13px;color:var(--sub)">${w}</p>`}],
+  chal:['var(--coral)',()=>`<div class="gb-top"><span class="eb">KÜLDETÉSEK</span><button data-closegb aria-label="Bezárás">×</button></div>
+    <div class="gb-title">${I('quest')}<span><h3>A mai küldetések</h3><p>${CHAL.filter(c=>c.acc).length} / ${CHAL.length} elfogadva</p></span></div>
+    <div class="chlist">${CHAL.map((c,i)=>`<div class="chc ${c.acc?'acc':''}"><div class="hrow"><span>${c.type} · ${c.ex}</span><small>ALACSONY KOCKÁZAT</small></div><div class="tg">${c.target}</div><div class="cf">BIZTOSSÁG · ${c.conf}</div>
+      <p>${c.why} <b>· ${c.glory}</b></p>${c.refs.length?`<div class="refs">${c.refs.map(r=>`<span class="flat">${r}</span>`).join('')}</div>`:''}
+      <div class="chacts">${c.acc?`<button class="pillx" data-chal="${i}">${I('tick')}Elfogadva</button>`:`<button class="pillx" data-chal="${i}">${I('quest')}Elfogadom</button><button class="pillx ghost" data-toast="Passz — ma kimarad">Passz</button>`}</div></div>`).join('')}</div>
+    <p class="fnote">Passzolni ér — a kihívás ajánlat, nem elvárás. Az eredmény a záráskor derül ki, és sosem piros.</p>`],
   info:['var(--sky)',()=>`<div class="gb-top"><span class="eb">MIBŐL ÁLL ÖSSZE A SZÁM?</span><button data-closegb aria-label="Bezárás">×</button></div><p style="font-size:14px;line-height:1.55;color:var(--sub)">A heti terv minden izomcsoportra kiír valahány szettet. A szám azt mutatja, ezekből mennyi ment már le a héten. A sport és a futás külön látszik — becslés, a szettekbe nem számít bele.</p>`]
 };
 function openGb(k,a){const [c,f]=GB[k];const g=$('#gbox');g.style.setProperty('--c',c);g.innerHTML=f(a);$('#scrim').classList.add('on');g.classList.add('on');g.scrollTop=0}
@@ -1694,11 +1753,11 @@ const TAB={mai:'Mai',session:'Mai',review:'Mai',sport:'Mai',sportlog:'Mai',futas
 const NOCHROME=['session','sportlog','cer'];
 function render(){
   const h=location.hash||'#mai', [r,id]=h.slice(1).split('/');
-  const VW={mai:()=>mai(id),session,review:()=>review(id),gym,sport:()=>sport(id||'terv'),sportlog:()=>sportlog(id),futas:()=>futas(id||'het'),futasterv,medals:()=>medals(id),exercises,exercise,ikonok,cer:()=>cer(id)};
+  const VW={mai:()=>mai(id),session:()=>session(id),review:()=>review(id),gym,sport:()=>sport(id||'terv'),sportlog:()=>sportlog(id),futas:()=>futas(id||'het'),futasterv,medals:()=>medals(id),exercises,exercise,ikonok,cer:()=>cer(id)};
   $('#scroll').innerHTML=(VW[r]||VW.mai)(); $('#scroll').scrollTop=0; closeSheet(); closeGb();
   ntfOpen=false;$('#ntf').classList.remove('on');$('#switcher').classList.remove('on');
   $('#phone').classList.toggle('nochrome',NOCHROME.includes(r));
-  $('#dockwrap').innerHTML=r==='session'?dock():'';
+  $('#dockwrap').innerHTML=r==='session'?dock(id==='uj'?0:DONE):'';
   $('#phone').classList.toggle('cermode',r==='cer'); if(r==='cer'&&!id)runCer();
   tabbar(TAB[r]||'Mai');
   document.querySelectorAll('#jump a').forEach(a=>a.setAttribute('aria-current',String(a.getAttribute('href')==='#'+r)));
@@ -1712,12 +1771,15 @@ document.addEventListener('click',e=>{
   if(t.closest('[data-closesheet]')){closeSheet();return}
   if(t.closest('[data-closegb]')){closeGb();return}
   const st=t.closest('[data-state]'); if(st){e.preventDefault();dayState=st.dataset.state;location.hash='#mai';soft();return}
-  if(t.closest('[data-rest]')){e.preventDefault();resting=!resting;closeSheet();if(location.hash!=='#session')location.hash='#session';else $('#dockwrap').innerHTML=dock();return}
+  if(t.closest('[data-rest]')){e.preventDefault();closeSheet();if(!location.hash.startsWith('#session'))location.hash='#session';setTimeout(startRest,80);return}
+  if(t.closest('[data-reststop]')){stopRest();return}
+  if(t.closest('[data-plus30]')){restLeft+=30;restTotal+=30;paintRest();return}
+  const ch=t.closest('[data-chal]'); if(ch){CHAL[+ch.dataset.chal].acc=!CHAL[+ch.dataset.chal].acc;openGb('chal');const f=document.querySelector('.fresh small');if(f)f.textContent=`${CHAL.filter(c=>c.acc).length} / ${CHAL.length} elfogadva · a ⋯ menüben is`;return}
   if(t.closest('[data-save]')){closeSheet();toast('Mentve');return}
   const sc=t.closest('[data-scale]'); if(sc){sc.parentNode.querySelectorAll('.scell').forEach((b,i)=>{b.className='scell'+(i+1<+sc.dataset.scale?' f':i+1===+sc.dataset.scale?' a':'')});return}
   const nf=t.closest('.ntf-chips span'); if(nf){document.querySelectorAll('.ntf-chips span').forEach(s=>s.classList.toggle('on',s===nf));return}
   if(t.closest('.ntf-row')){toggleNtf(false);toast('Megnyitom az értesítés oldalát');return}
-  if(gb){e.preventDefault();if(gb.dataset.gbox!=='fin'&&gb.dataset.gbox!=='grp'&&gb.dataset.gbox!=='info'&&location.hash!=='#session'){location.hash='#session';setTimeout(()=>openGb(gb.dataset.gbox),60);return}openGb(gb.dataset.gbox,gb.dataset.g);return}
+  if(gb){e.preventDefault();if(!['fin','grp','info'].includes(gb.dataset.gbox)&&!location.hash.startsWith('#session')){location.hash='#session';setTimeout(()=>openGb(gb.dataset.gbox),60);return}openGb(gb.dataset.gbox,gb.dataset.g);return}
   if(sh){e.preventDefault();openSheet(sh.dataset.sheet);return}
   if(go){e.preventDefault();closeSheet();location.hash=go.dataset.go;return}
   if(tt){e.preventDefault();toast(tt.dataset.toast);return}
