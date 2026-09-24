@@ -2194,6 +2194,10 @@ svg{overflow:visible}
 .mchp{--c:var(--coral);width:40px;height:40px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;overflow:hidden;
   background:radial-gradient(circle at 35% 28%,#3A332D,color-mix(in srgb,var(--c) 16%,#1E1B18));box-shadow:inset 0 1px 0 rgba(255,244,230,.08),inset 0 -6px 12px -8px color-mix(in srgb,var(--c) 70%,transparent),0 0 12px -4px color-mix(in srgb,var(--c) 55%,transparent)}
 .mchp svg{width:100%;height:100%}
+.mchp,.mchp.sm,.mchp.lg{flex:0 0 auto!important}  /* sorok „span{flex:1}” szabálya ne húzza szét */
+.primary.stack{flex-direction:row;text-align:left}
+.primary.stack span{display:flex;flex-direction:column;line-height:1.2}
+.primary.stack small{font-size:11.5px;font-weight:600;opacity:.7;margin:2px 0 0}
 .mchp.sm{width:28px;height:28px}
 .mchp.lg{width:68px;height:68px}
 
@@ -2996,7 +3000,7 @@ const GB={
   fin:['var(--coral)',()=>`<div class="gb-top"><span class="eb">EDZÉS BEFEJEZÉSE</span><button data-closegb aria-label="Bezárás">×</button></div>
     <h3 style="font-size:20px;font-weight:600;letter-spacing:-.5px;margin-bottom:10px">Van még 13 bepipálatlan szetted.</h3>
     <div class="fin-list">${EX.map(e=>`<div>${mchp(e.k,'sm')}<span>${e.n}</span><em>${e.sets.filter(s=>typeof s[0]!=='number').length} szett</em></div>`).join('')}</div>
-    <button class="primary" style="--c:var(--coral)" data-go="#review">${I('tick')}Befejezem így<small style="font-weight:600;opacity:.7;margin-left:6px">3 elvégzett · 13 kihagyott</small></button>
+    <button class="primary stack" style="--c:var(--coral)" data-go="#review">${I('tick')}<span>Befejezem így<small>3 elvégzett · 13 kihagyott</small></span></button>
     <button class="btn flatb" style="margin-top:8px" data-closegb>Mégse, visszamegyek</button>`],
   grp:['var(--coral)',(g)=>{const [k,l,d,p,w]=GR[g||0];return `<div class="gb-top"><span class="eb">IZOMCSOPORT · EZEN A HÉTEN</span><button data-closegb aria-label="Bezárás">×</button></div><div class="gb-title">${mchp(k,'lg')}<span><h3>${l}</h3><p>${d} / ${p} szett</p></span></div>
     <div class="grows"><div><span>${l} (fej 1)</span><em>6 szett · 8–10 ismétlés · 2×/hét — a heti tervből</em></div><div><span>${l} (fej 2)</span><em>4 szett · 10–12 ismétlés · 2×/hét — a heti tervből</em></div></div>
