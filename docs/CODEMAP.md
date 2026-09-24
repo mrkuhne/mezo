@@ -272,10 +272,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ConferenceOutcomeEnvelope`, `ConferenceTranscriptEnvelope`, `DecisionProfileDetector`,
     `DecisionReviewBacklogDetector`, `DetectorGates`, `DetectorInput`, `DetectorRegistry`, `DetectorSignal`,
     `EditionCandidate`, `EditionCandidateCollector`, `EditionFactsEnvelope`, `EditionGenre`, `EditionGuestsEnvelope`,
-    `EditionRef`, `EditionRefsEnvelope`, `EditionSelector`, `ExperimentOutcomeLedgerDetector`,
-    `GratitudeFocusDetector`, `HrRecoveryTrendDetector`, `HydrationConsistencyDetector`, `JournalNoteDetector`,
-    `JournalSilenceDetector`, `KnowledgeRejectionPatternDetector`, `LateEatingPatternDetector`, `LoggingGapDetector`,
-    `MacroAdherenceDetector`, `MedCycleCovarianceDetector`, `MentionContextShiftDetector`, `MesoAdherenceDetector`,
+    `EditionRef`, `EditionRefsEnvelope`, `EditionSelector`, `EditionVoiceGuard`, `EditionVoiceWriter`,
+    `ExperimentOutcomeLedgerDetector`, `GratitudeFocusDetector`, `HrRecoveryTrendDetector`,
+    `HydrationConsistencyDetector`, `JournalNoteDetector`, `JournalSilenceDetector`,
+    `KnowledgeRejectionPatternDetector`, `LateEatingPatternDetector`, `LoggingGapDetector`, `MacroAdherenceDetector`,
+    `MedCycleCovarianceDetector`, `MentionContextShiftDetector`, `MesoAdherenceDetector`,
     `NeedsDomainImbalanceDetector`, `NiggleMapDetector`, `NightActivityDetector`, `ObservationDimensionKeysEnvelope`,
     `ObservationSignalsEnvelope`, `PeopleMoodLinkDetector`, `PredictionCalibrationDetector`, `PriorShowing`,
     `ProgressionAdherenceDetector`, `PromiseVsDeliveryDetector`, `ProteinTrainingMismatchDetector`,
@@ -283,7 +284,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `RirCalibrationDetector`, `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`, `SelfCalibrationDetector`,
     `SleepPerformanceChainDetector`, `SportInterferenceDetector`, `StackSkipPatternDetector`,
     `StreakBreakResponseDetector`, `TeamCharacter`, `TeamEditionReads`, `TeamEditionService`, `TrailingWindow`,
-    `UnderLoggingDetector`, `WeekendGapDetector`
+    `UnderLoggingDetector`, `VoicedText`, `WeekendGapDetector`
 - **Contract** `api/feature/character/character.yml` — 17 operations
   - **endpoints:** GET /api/character · GET /api/character/dimension/{key} · GET /api/character/experts ·
     GET /api/character/feed · POST /api/character/bootstrap · GET /api/character/conference ·
@@ -308,7 +309,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **logic:** conferencePostItem.ts
   - **root:** character.css, deliberationLabels.ts, deliberationStats.ts, dossierState.ts, expertColors.ts,
     feedDayLabel.ts, inventory.ts, runLabels.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 50 IT + 12 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 51 IT + 13 unit
   - **ITs:** `CharacterApiCompanionOffIT`, `CharacterApiIT`, `CharacterApiSwitchOffIT`, `CharacterBootstrapIT`,
     `CharacterBootstrapMemoryDisabledIT`, `CharacterBootstrapMemoryIT`, `CharacterClaimRevisionIT`,
     `CharacterClaimTemporalIT`, `CharacterConferenceJobIT`, `CharacterConferenceListIT`,
@@ -321,9 +322,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CharacterPromptAssemblerOversizedDimensionIT`, `CharacterPromptWiringIT`, `CharacterReplyApiIT`,
     `CharacterReplyCompanionOffIT`, `CharacterReplyDiscussionIT`, `CharacterReplyRecoveryIT`, `CharacterRunLogIT`,
     `CharacterSignalReadsIT`, `CharacterWeeklySynthesisIT`, `ClaimLifecycleIT`, `ConferenceDeliberationEnvelopeIT`,
-    `KonziliumCrossTalkRoundIT`, `KonziliumProposalRoundIT`, `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`,
-    `PortraitWriterNameIT`, `TeamEditionReadsIT`, `TeamEditionSchemaIT`, `TeamEditionServiceIT`,
-    `TeamEditionServiceSwitchOffIT`
+    `EditionVoiceWriterIT`, `KonziliumCrossTalkRoundIT`, `KonziliumProposalRoundIT`, `KonziliumUserFeedbackIT`,
+    `KonziliumVerdictRoundIT`, `PortraitWriterNameIT`, `TeamEditionReadsIT`, `TeamEditionSchemaIT`,
+    `TeamEditionServiceIT`, `TeamEditionServiceSwitchOffIT`
   - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `ChallengePopulator`,
     `CharacterClaimRevisionPopulator`, `CharacterCouncilPopulator`, `CharacterReplyPopulator`, `CheckInPopulator`,
     `DailySummaryPopulator`, `DatabasePopulator`, `ExperimentPopulator`, `GraphPopulator`, `JournalPopulator`,

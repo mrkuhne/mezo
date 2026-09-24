@@ -22,6 +22,9 @@ export const FEATURE_LABELS: Record<string, Entry> = {
   // szakértők megfigyelnek, javaslatot tesznek, vitáznak, majd az Integrátor dönt a társ
   // személyiség-dimenzióiról; a döntés a portré prózáját is újraírja.
   character: { label: 'Karakter-fejlődés', hint: 'a társ személyiségének formálása (megfigyelés, vita, döntés, portré)' },
+  // VERIFIED: EditionVoiceWriter — az esti kiadás (21:00) posztjait írja át a csapat öt
+  // karakterének saját hangjára; kiadásonként EGY hívás, tény-őrrel (csak valós szám mehet ki).
+  character_edition: { label: 'Esti kiadás hangja', hint: 'a napi csapatposztok megszövegezése a karakterek hangján' },
   companion: { label: 'Társ (általános)', hint: 'nem besorolt társ-hívások' },
   // VERIFIED: TurnVerdictCheck/CompanionAdvisorChain — nem "tanácsadás", hanem a társ SAJÁT
   // válaszának utólagos ellenőrzése (ismétlés, alátámasztás nélküli állítás) és javító újra-kérés.

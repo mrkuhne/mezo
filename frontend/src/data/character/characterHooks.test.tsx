@@ -282,8 +282,10 @@ describe('mock mode', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false))
     const edition = result.current.editions[0]
     expect(edition.posts.map((p) => p.rank)).toEqual([1, 2, 3])
-    expect(edition.posts.every((p) => p.voiced === false)).toBe(true)
     expect(edition.posts.every((p) => p.body.length > 0)).toBe(true)
+    // H3 (mezo-a9bo7.14): a mock mindkét ágat mutatja — a rank 1 a karakter hangján szól, a többi
+    // a rekord saját szövegével (a tény-őr bukásának becsületes visszaesése).
+    expect(edition.posts.filter((p) => p.voiced).map((p) => p.rank)).toEqual([1])
   })
 
   // Fix round 1 (mezo-1gim.14, finding 3): a single expert firing two signals in one night is

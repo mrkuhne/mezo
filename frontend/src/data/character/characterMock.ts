@@ -1506,9 +1506,9 @@ export const MOCK_CLAIM_REVISIONS: Record<string, CharacterClaimRevisionDto[]> =
 // ============================================================
 // Esti kiadás (csapatfal H1, mezo-a9bo7.12, Task 6) — ONE edition, 3 posts that each point at an
 // EXISTING mock-seed record (never a fabricated one): a pattern, a resolved prediction, an active
-// experiment. `body` is that record's own mock text; `voiced` is false everywhere (H1 ships the
-// raw candidate text — see TeamEditionService's class javadoc, H3 replaces it with the
-// character-voiced text).
+// experiment. A `voiced: false` poszt body-ja a rekord SAJÁT szövege (ez a tény-őr bukásának
+// becsületes visszaesése is); a `voiced: true` posztot a karakter hangján írja a backend
+// (EditionVoiceWriter, H3) — a mockban az első poszt mutatja ezt az ágat.
 //
 // H2 (mezo-a9bo7.13): the day is the REAL today, not the seeded August world's last night. The
 // wall asks for `[today-13, today]` (useTeamFeed), so a 2026-08-30 edition could never reach it —
@@ -1554,8 +1554,14 @@ export const MOCK_EDITIONS: TeamEdition[] = [
         sourceId: EDITION_EXPERIMENT.id,
         sourceRoute: `/mezo/experiments/${EDITION_EXPERIMENT.id}`,
         title: EDITION_EXPERIMENT.title,
-        body: EDITION_EXPERIMENT.hypothesis,
-        voiced: false,
+        // H3 (mezo-a9bo7.14): EZ a poszt szólal meg a karakter hangján (`voiced: true`) — Falat
+        // hangja a hangkönyvből (insights.md §2.0a), a **kiemelés** a fal meglévő `renderInline`-ja.
+        // Minden száma a MOCK-REKORDBÓL való (exp1: 4. nap a 7-ből, 80 g szénhidrát 2 órával
+        // korábban) — kitalált szám a mockban sem lehet, ez a tény-őr szabálya (ADR 0049).
+        body:
+          'Ma a **4. napja** fut a meccs előtti feltöltés 🍽️. A **80 g szénhidrát** 2 órával korábban '
+          + 'eddig tartja magát, a 7 napból még van hátra. Nem pontozlak, csak figyelem, mi marad meg belőle.',
+        voiced: true,
         guests: [],
       },
       {
