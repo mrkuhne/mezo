@@ -810,21 +810,8 @@
 .mvcard .big,.plposter h2,.plposter p,.dhero2 .num,.whero .num,.lhero2 h1,.lhero2 p{display:block}
 .mrow2>span{min-width:0}
 
-/* A/B váltó a jegyzetpanel tetején (a hosszú ugrólista ALATT senki nem találta meg) */
-.abrow{display:flex;gap:10px;margin:2px 0 10px}
-.abrow a{flex:1;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;text-decoration:none;
-  color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
-.abrow a b{font-size:19px;font-weight:700;color:var(--faint)}
-.abrow a span{font-size:12.5px;font-weight:600}
-.abrow a.on{color:#191614;background:var(--coral);box-shadow:0 0 18px -4px var(--coral)}
-.abrow a.on b{color:#191614;opacity:.7}
 .abnote{font-size:12px;color:var(--faint);line-height:1.5;margin-bottom:14px}
 .abnote em{font-style:normal;color:var(--sub);font-weight:600}
-/* és ugyanaz a váltó a telefonban, a „A HETED” sor mellett */
-.abchips{display:flex;gap:5px}
-.abchips button{padding:5px 11px;border-radius:999px;font-size:11px;font-weight:700;color:var(--faint);
-  background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
-.abchips button.on{color:#191614;background:var(--coral);box-shadow:0 0 12px -2px var(--coral)}
 
 /* ── közös: szekciófej + üres állapot ── */
 .h3{padding:18px 18px 8px;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
@@ -876,30 +863,38 @@
 .plchips.sm{gap:7px;margin-top:8px}
 .plchips.sm .plchip b{font-size:10px}
 .plline{display:block;margin-top:11px;font-size:11.5px;color:var(--faint);letter-spacing:.1px}
+/* a három tény: ugyanaz a doboz, kisebben (tulajdonosi kérés 2026-09-24) */
+.plfacts{display:flex;gap:5px;margin-top:9px}
+.plfacts i{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:0;padding:6px 3px 5px;
+  border-radius:12px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair);font-style:normal}
+.plfacts i .icon{width:17px;height:17px}
+.plfacts i b{font-size:13.5px;font-weight:600;letter-spacing:-.3px;margin-top:1px}
+.plfacts i small{font-size:8px;font-weight:600;letter-spacing:.4px;color:var(--faint)}
+/* az állapot a kártya második hangsúlya — jobbra igazítva, saját színnel */
+.plstamp{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:5px 11px 5px 8px;border-radius:999px;
+  font-size:12px;font-weight:700;letter-spacing:.2px;white-space:nowrap}
+.plstamp .icon{width:17px;height:17px;filter:none}
+.plstamp.is-done{color:#BFE0A8;background:rgba(134,188,99,.14);box-shadow:inset 0 0 0 1px rgba(134,188,99,.45)}
+.plstamp.is-part{color:#FFD08A;background:rgba(255,190,96,.14);box-shadow:inset 0 0 0 1px rgba(255,190,96,.45)}
+.plstamp.is-today{color:#191614;background:var(--c);box-shadow:0 0 16px -2px color-mix(in srgb,var(--c) 75%,transparent)}
+.plstamp.is-today .icon{filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
+.plstamp.is-next{padding:5px 11px;color:var(--faint);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
 /* a hét három rangja */
 .plday.flatcard{background:rgba(245,239,230,.035);box-shadow:inset 0 0 0 1px var(--hair)}
 .plday.is-next .mchp{opacity:.72}
-.plchip .mchp{width:46px;height:46px}
 .plchips.sm .plchip .mchp{width:30px;height:30px}
-.pldone.is-part{color:#FFD08A;background:rgba(255,190,96,.12);box-shadow:inset 0 0 0 1px rgba(255,190,96,.4)}
 .plday.is-next .pldayh strong{color:var(--sub)}
 .plday.is-now{box-shadow:0 18px 34px -16px rgba(0,0,0,.8),
   0 0 30px -4px color-mix(in srgb,var(--c) 45%,transparent),
   inset 0 1px 0 rgba(255,244,230,.12),
   inset 0 -14px 26px -18px color-mix(in srgb,var(--c) 60%,transparent)}
-.plday.is-done .pldayh strong{color:var(--text-primary,var(--ink))}
-.pldone{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 5px;border-radius:999px;font-size:9.5px;
-  font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#BFE0A8;
-  background:rgba(134,188,99,.12);box-shadow:inset 0 0 0 1px rgba(134,188,99,.4)}
-.pldone .icon{width:14px;height:14px;filter:none}
-.plnext{padding:2px 8px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
-  color:var(--faint);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
-/* B változat: mini testtérkép a kártya bal oldalán */
+/* a nap kártyája: mini testtérkép balra, a tartalom jobbra */
 .plday.is-b{display:grid;grid-template-columns:62px 1fr;gap:13px;align-items:center}
 .plmap{width:62px;height:112px;display:grid;place-items:center}
 .plmap svg{width:100%;height:100%;overflow:visible}
 .plday.is-b .plbody{min-width:0}
 .plday.is-b .plchips{margin-top:8px}
+@media (max-width:360px){.plfacts i small{font-size:7.5px}.plstamp{font-size:11px;padding:4px 9px 4px 7px}}
 .plday.rest{display:flex;align-items:center;gap:8px;padding:11px 14px;background:rgba(245,239,230,.035);
   box-shadow:inset 0 0 0 1px var(--hair);border-radius:17px}
 .plday.rest .icon{width:24px;height:24px;margin-left:auto}
@@ -1196,12 +1191,7 @@
     <span class="ov">EDZÉS · ÜVEG · 5. SZELET</span>
     <h1>A Terv és a Hét, üvegben</h1>
     <p>Az Edzés második fele ugyanabban az anyagban: a futó edzésterved és a hetei, a napjai, a „melyik izmod hol tart”, az edzéstervek könyvtára, a lezárt futamok és a riportjuk, a sablonok, a saját edzés, és a Terhelés heti oldalai (izomtérkép, izomjelek, mozgás).</p>
-    <span class="ov">A NAP KÁRTYÁJA — VÁLASSZ</span>
-    <div class="abrow">
-      <a href="#" data-dayv="A" class="on"><b>A</b><span>izomsor</span></a>
-      <a href="#" data-dayv="B"><b>B</b><span>mini testtérkép</span></a>
-    </div>
-    <p class="abnote">A hét három állapota mindkettőben látszik: <em>megvolt</em> (hétfő–szerda), <em>ma</em> (csütörtök), <em>jön</em> (péntek). A kapcsoló a telefonban, az „A HETED” sor mellett is ott van.</p>
+    <p class="abnote">A nap kártyája a <em>mini testtérkép</em> változat (jóváhagyva 2026-09-24). A hét három állapota külön látszik rajta: <em>megvolt</em> (hétfő–szerda), <em>ma</em> (csütörtök), <em>jön</em> (péntek).</p>
     <nav id="jump">
       <a href="#terv" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-peak"/></svg>Terv · a futó terved</a>
       <a href="#run" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-protocol"/></svg>A terv saját oldala</a>
@@ -1399,7 +1389,7 @@ function terv(){
     <span class="plarcnote"><span>${MESO.from}</span><span>${MESO.to}</span></span>
   </button></div>
 
-  <div class="h3 rise" style="--d:90ms"><span class="eb">A HETED</span>${abchips()}</div>
+  <div class="h3 rise" style="--d:90ms"><span class="eb">A HETED</span><em>${DAYS.filter(x=>!x.rest&&!x.sport).length} edzésnap</em></div>
   <div class="pldays">${DAYS.map((d,i)=>dayCard(d,i)).join('')}</div>
   ${dests(true)}
   <div class="p16" style="padding-top:14px;padding-bottom:6px">
@@ -1411,9 +1401,6 @@ function terv(){
 /* A nap kártyája. A kártya EGY dolgot mond: mit dolgoztat meg ez a nap — ezért az
    anatómia a fő grafika, a számok egy halk sorba mennek, és a hét három állapota
    (megvolt · ma · jön) más-más rangot kap (stíluskönyv §3.4). */
-/* a két változat közti váltó — a prototípus döntési kérdése, nem a kész felület része */
-const abchips=()=>`<span class="abchips"><button data-dayv="A" class="${dayVariant==='A'?'on':''}">A</button>
-  <button data-dayv="B" class="${dayVariant==='B'?'on':''}">B</button></span>`;
 const BACKSIDE=['ham','glute','calf','back-mid','back-wide','back-lower','traps','shoulder-rear'];
 function dayView(d){return d.mus.filter(([k])=>BACKSIDE.includes(k)).length>d.mus.length/2?'back':'front'}
 function dayCard(d,i){
@@ -1426,25 +1413,24 @@ function dayCard(d,i){
   const state=done?'is-done':today?'is-now':'is-next';
   const skin=done||today?'glass':'flatcard';
   const part=done&&d.done.sets<d.sets;
+  /* az állapot a kártya egyik hangsúlya — jobbra igazítva, saját színnel (tulajdonosi kérés) */
   const stamp=done
-    ? `<span class="pldone${part?' is-part':''}">${I('tick')}${part?'részben':'megvolt'}</span>`
-    : today?'<span class="pltoday">MA</span>':'<span class="plnext">jön</span>';
-  const line=done
-    ? `${part?`${d.done.sets} / ${d.sets}`:d.done.sets} szett · ${d.done.min} perc${d.done.rec?` · ${d.done.rec} rekord`:''}`
-    : `${d.sets} szett · ~${d.min} perc · ${d.ex.length} gyakorlat`;
-  const chips=`<span class="plchips">${d.mus.map(([k,s])=>
-    `<span class="plchip">${mchp(k)}<b>${s}</b></span>`).join('')}</span>`;
-  const head=`<span class="pldayh"><span class="pltag">${d.full.toUpperCase()}</span>${stamp}
-      <strong>${d.t}</strong><b>›</b></span>`;
-  if(dayVariant==='B') return `<button class="plday ${skin} ${state} is-b rise" style="${del};--c:${c}"
-      data-go="#nap/${d.d}" aria-label="${d.full} · ${d.t}${done?' · megvolt':''}">
+    ? `<span class="plstamp ${part?'is-part':'is-done'}">${I('tick')}${part?'Részben':'Megvolt'}</span>`
+    : today?`<span class="plstamp is-today">${I('play')}Ma</span>`
+      :`<span class="plstamp is-next">Jön</span>`;
+  /* a három tény újra dobozban, csak kisebben (tulajdonosi kérés) */
+  const facts=done
+    ? [[part?`${d.done.sets}/${d.sets}`:d.done.sets,'szett','dumbbell'],[d.done.min,'perc','clock'],[d.done.rec,'rekord','record']]
+    : [[d.sets,'szett','dumbbell'],[today?d.min:'~'+d.min,'perc','clock'],[d.ex.length,'gyakorlat','protocol']];
+  return `<button class="plday ${skin} ${state} is-b rise" style="${del};--c:${c}"
+      data-go="#nap/${d.d}" aria-label="${d.full} · ${d.t}${done?(part?' · részben megvolt':' · megvolt'):today?' · ma':''}">
     <span class="plmap">${heat(dayView(d),d.mus.map(([k])=>[k,.9]))}</span>
-    <span class="plbody">${head}<span class="plline">${line}</span>
-      <span class="plchips sm">${d.mus.map(([k,s])=>`<span class="plchip">${mchp(k,'sm')}<b>${s}</b></span>`).join('')}</span></span>
-  </button>`;
-  return `<button class="plday ${skin} ${state} rise" style="${del};--c:${c}"
-      data-go="#nap/${d.d}" aria-label="${d.full} · ${d.t}${done?' · megvolt':''}">
-    ${head}${chips}<span class="plline">${line}</span>
+    <span class="plbody">
+      <span class="pldayh"><span class="pltag">${d.full.toUpperCase()}</span><strong>${d.t}</strong>${stamp}<b>›</b></span>
+      <span class="plfacts">${facts.map(([v,l,ic])=>
+        `<i>${I(ic)}<b>${v}</b><small>${l}</small></i>`).join('')}</span>
+      <span class="plchips sm">${d.mus.map(([k,s])=>`<span class="plchip">${mchp(k,'sm')}<b>${s}</b></span>`).join('')}</span>
+    </span>
   </button>`;
 }
 function dests(withMuscle){
@@ -1483,7 +1469,7 @@ function run(){
       <span class="rnroll">${ROLL.map(n=>{const m=WMUS.find(x=>x[0]===n);return `<span><i style="--mc:${mcolor(m[1])}"></i>${n} +2 szett</span>`}).join('')}</span></div>
   </div>
 
-  <div class="h3 rise" style="--d:200ms"><span class="eb">A HETED</span>${abchips()}</div>
+  <div class="h3 rise" style="--d:200ms"><span class="eb">A HETED</span><em>${DAYS.filter(x=>!x.rest&&!x.sport).length} edzésnap</em></div>
   <div class="pldays">${DAYS.map((d,i)=>dayCard(d,i)).join('')}</div>
 
   <div class="p16" style="padding-top:14px">
@@ -2061,7 +2047,7 @@ function openSheet(k){const [c,f]=SH[k];const sh=$('#sheet');closeGb();sh.style.
 function closeSheet(){$('#sheet').classList.remove('on');if(!$('#gbox').classList.contains('on'))$('#scrim').classList.remove('on')}
 
 /* ── router ─────────────────────────────────────────────── */
-let tervState='run', cmpMode=false, cmpSel=[], dayVariant='A';
+let tervState='run', cmpMode=false, cmpSel=[];
 const TAB={terv:'Terv',run:'Terv',nap:'Terv',napszerk:'Terv',het:'Terv',izom:'Terv',konyvtar:'Terv',futamok:'Terv',
   riport:'Terv',osszevetes:'Terv',sablonok:'Terv',sablon:'Terv',sablonszerk:'Terv',ujterv:'Terv',ikonok:'Terv',
   sajat:'Mai',terheles:'Terhelés',terkep:'Terhelés',jelek:'Terhelés',mozgas:'Terhelés'};
@@ -2083,9 +2069,6 @@ document.addEventListener('click',e=>{
   if(t.closest('[data-closegb]')){closeGb();return}
   const st=t.closest('[data-state]'); if(st){e.preventDefault();tervState=st.dataset.state;
     if(location.hash!=='#terv'){location.hash='#terv'}else{soft()}return}
-  const dv=t.closest('[data-dayv]'); if(dv){e.preventDefault();dayVariant=dv.dataset.dayv;
-    document.querySelectorAll('[data-dayv]').forEach(a=>a.classList.toggle('on',a.dataset.dayv===dayVariant));
-    if(location.hash!=='#terv'&&location.hash!=='#run'){location.hash='#terv'}else{soft()}return}
   if(t.closest('[data-cmp]')){e.preventDefault();cmpMode=!cmpMode;cmpSel=[];
     if(location.hash!=='#futamok'){location.hash='#futamok'}else{soft()}return}
   const cs=t.closest('[data-cmpsel]'); if(cs){e.preventDefault();const i=+cs.dataset.cmpsel;
