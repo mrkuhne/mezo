@@ -110,7 +110,10 @@ describe('NapomPage (mock mode)', () => {
   test('open day: live eyebrow, N/6 centre, reading, no overall number', async () => {
     renderAt(`/nap/napom/${mockDayEvaluationDates.inProgress}`)
     expect(await screen.findByText(/TERÜLET KÉSZ/)).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: '2 / 6 terület kész' })).toBeInTheDocument()
+    const ring = screen.getByRole('img', { name: '2 / 6 terület kész' })
+    // only the two dimensions with progress draw an arc; a 0-progress one is the bare track
+    expect(ring.querySelectorAll('.napom-seg-p')).toHaveLength(2)
+    expect(ring.querySelectorAll('.napom-seg-t')).toHaveLength(6)
     expect(screen.getByText(/ÉLŐ · FRISSÜLT \d{2}:\d{2}/)).toBeInTheDocument()
     expect(screen.queryByText(/alap \d+/)).toBeNull()
     expect(screen.queryByRole('img', { name: /Pontszám/ })).toBeNull()
@@ -172,6 +175,16 @@ describe('NapomPage (mock mode)', () => {
     expect(screen.getByTestId('loc')).toHaveTextContent('/mezo/chat')
   })
 
+  test('a past day still in progress (yesterday before the close): neutral Eddig heading, NOT marked seen', () => {
+    vi.setSystemTime(new Date('2026-05-22T07:00:00'))
+    renderAt(`/nap/napom/${mockDayEvaluationDates.inProgress}`)
+    expect(screen.getByText('Eddig')).toBeInTheDocument()
+    expect(screen.getByText('6 TERÜLET')).toBeInTheDocument()
+    expect(screen.queryByText('Ma eddig')).toBeNull()
+    // the review does not exist yet — opening the day must not swallow tomorrow morning's dot
+    expect(localStorage.getItem(seenKey(mockDayEvaluationDates.inProgress))).toBeNull()
+  })
+
   test('invalid date redirects to /nap/napom', () => {
     renderAt('/nap/napom/xx')
     expect(screen.getByTestId('loc')).toHaveTextContent(/^\/nap\/napom$/)
@@ -224,6 +237,14 @@ describe('NapomPage (real mode)', () => {
     expect(screen.queryByRole('button', { name: /Segített/ })).toBeNull()
   })
 
+  test('yesterday scored WITHOUT a review is not marked seen', async () => {
+    server.use(http.get(`${API_BASE}/api/me/day/:date/evaluation`,
+      ({ params }) => HttpResponse.json(evaluationFixture(String(params.date)))))
+    renderAt('/nap/napom/2026-05-20')
+    expect(await screen.findByText('Miből jött össze')).toBeInTheDocument()
+    expect(localStorage.getItem(seenKey('2026-05-20'))).toBeNull()
+  })
+
   test('an evaluation still in flight is an honest pending state with no number', async () => {
     server.use(http.get(`${API_BASE}/api/me/day/:date/evaluation`, async () => {
       await delay(80)
@@ -231,6 +252,7 @@ describe('NapomPage (real mode)', () => {
     }))
     const { container } = renderAt('/nap/napom/2026-05-11')
     expect(screen.getByRole('img', { name: 'számolom · egy pillanat' })).toBeInTheDocument()
+    expect(container.querySelectorAll('.napom-seg-p')).toHaveLength(0)
     expect(screen.queryByRole('img', { name: /Pontszám/ })).toBeNull()
     expect(container.querySelectorAll('.napom-drow.is-open')).toHaveLength(6)
     expect(await screen.findByRole('img', { name: 'Pontszám: 70 / 100' })).toBeInTheDocument()

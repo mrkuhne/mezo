@@ -51,7 +51,8 @@ export function NapomDimensionRow({ dimension, mode, goalTick = false, i }: {
     : facts.length > 0
       ? facts.map((f) => `${f.label} ${f.value}`).join(' · ')
       : status === 'NO_DATA' ? 'nincs adat' : ''
-  const showBar = mode === 'today' || mode === 'scored'
+  // An open (NYITVA / nincs adat) row is free space: no bar, no goal tick (prototype `.drow.open`).
+  const showBar = !dashed && (mode === 'today' || mode === 'scored')
   const word = mode === 'today' ? TODAY_WORD[status] : mode === 'scored' ? (open ? 'BEZÁR' : 'MEZO ›') : null
 
   const body = (

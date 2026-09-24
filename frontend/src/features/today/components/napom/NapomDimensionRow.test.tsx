@@ -41,8 +41,13 @@ describe('NapomDimensionRow', () => {
     expect(screen.queryByRole('button')).toBeNull()
     expect(container.querySelector('.napom-drow')).toHaveClass('glass')
 
-    rerender(<NapomDimensionRow dimension={{ ...nutrition, score: null, status: 'NO_DATA', facts: [] }} mode="today" i={0} />)
+    expect(container.querySelector('.napom-bar')).not.toBeNull()
+
+    rerender(<NapomDimensionRow dimension={{ ...nutrition, score: null, status: 'NO_DATA', facts: [] }} mode="today" goalTick i={0} />)
     expect(screen.getByText('NYITVA')).toBeInTheDocument()
+    // an open row is free space: no empty bar, no goal tick
+    expect(container.querySelector('.napom-bar')).toBeNull()
+    expect(container.querySelector('.napom-bar u')).toBeNull()
     expect(screen.getByText('–')).toBeInTheDocument()
     expect(container.querySelector('.napom-drow')).toHaveClass('is-open')
     expect(container.querySelector('.napom-drow')).not.toHaveClass('glass')

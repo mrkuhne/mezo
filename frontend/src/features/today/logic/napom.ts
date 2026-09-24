@@ -84,9 +84,14 @@ export function isMorningMode(
   }
 }
 
+/** Fired on `window` after `markSeen` writes — `useMorningMode` subscribes, so the A napom tab
+ *  dot clears the moment yesterday's review is on screen, not on some later re-render. */
+export const NAPOM_SEEN_EVENT = 'napom:seen'
+
 export function markSeen(dateIso: string, storage: Pick<Storage, 'setItem'> | null = safeStorage()): void {
   try {
     storage?.setItem(seenKey(dateIso), '1')
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event(NAPOM_SEEN_EVENT))
   } catch {
     /* private mode: morning mode simply repeats */
   }

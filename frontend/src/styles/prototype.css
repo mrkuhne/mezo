@@ -18647,8 +18647,14 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .napom-page .napom-flat b { color: var(--text-primary); font-weight: 600; }
 
-/* header row */
-.napom-page .napom-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 16px 0; }
+/* header row — the sticky app header's background runs an 18px tail past its 7px bottom
+   margin, so the first ~11px of the page sit under it. The back-pill row on the other Nap pages
+   is 38px tall and clears it; this row is a 12px eyebrow line, so it takes the same 38px box
+   and centres the text below the tail. */
+.napom-page .napom-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  min-height: 38px; padding: 12px 16px 0;
+}
 
 /* week strip */
 .napom-page .napom-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; padding: 12px 14px 2px; }

@@ -32,8 +32,11 @@ export function NapomSegRing({ segments, label, children }: {
             <g key={i} style={{ '--c': color } as CSSProperties}>
               <circle className="napom-seg-t" cx="50" cy="50" r={R} pathLength={100}
                 strokeDasharray={`${seg} ${100 - seg}`} strokeDashoffset={off} />
-              <circle className="napom-seg-p" cx="50" cy="50" r={R} pathLength={100}
-                strokeDasharray={`${Math.max(0.01, fill)} ${100 - fill}`} strokeDashoffset={off} />
+              {/* No progress → the track alone: a round cap on a ~0-length dash would draw a dot. */}
+              {fill > 0 && (
+                <circle className="napom-seg-p" cx="50" cy="50" r={R} pathLength={100}
+                  strokeDasharray={`${fill} ${100 - fill}`} strokeDashoffset={off} />
+              )}
             </g>
           )
         })}

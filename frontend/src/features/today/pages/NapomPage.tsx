@@ -89,9 +89,14 @@ export function NapomPage() {
   const { week } = useMeWeek(monday)
   usePrefetchDayEvaluations([addDays(date, -1), addDays(date, 1)].filter((d) => d <= today))
 
+  // Yesterday counts as SEEN only once its overnight review is actually on screen — a scored
+  // evaluation with a review behind it. Opening yesterday before the close (in_progress, or
+  // scored with no prose) must not swallow the morning dot the review will earn later.
+  const viewed = evalQuery.data
+  const reviewShown = viewed?.state === 'scored' && viewed.reviewId != null
   useEffect(() => {
-    if (!deciding && date === yesterday) markSeen(yesterday)
-  }, [deciding, date, yesterday])
+    if (!deciding && date === yesterday && reviewShown) markSeen(yesterday)
+  }, [deciding, date, yesterday, reviewShown])
 
   // Hooks first, THEN the bail-out: a malformed `:date` must not crash the page.
   if (!valid) return <Navigate to="/nap/napom" replace />
@@ -182,7 +187,7 @@ export function NapomPage() {
           <div className="napom-nodata rise" role="alert" style={{ '--i': 3 } as CSSProperties}>
             <Icon3D name="t-journal" size={56} />
             <strong>Nem sikerült betölteni a napot.</strong>
-            <button type="button" className="napom-flat napom-retry" onClick={evalQuery.refetch}>Próbáld újra</button>
+            <button type="button" className="napom-flat napom-retry" onClick={() => evalQuery.refetch()}>Próbáld újra</button>
           </div>
         )}
 
@@ -205,7 +210,7 @@ export function NapomPage() {
           <NapomReviewCard evaluation={evaluation} date={date} i={3} />
         )}
 
-        {isToday && open && <SectionTitle title="Ma eddig" eyebrow="6 TERÜLET" i={4} />}
+        {open && <SectionTitle title={isToday ? 'Ma eddig' : 'Eddig'} eyebrow="6 TERÜLET" i={4} />}
         {scored && <SectionTitle title="Miből jött össze" eyebrow="KOPPINTS A RÉSZLETEKÉRT" i={4} />}
 
         {(loading || (evaluation && state !== 'future')) && (

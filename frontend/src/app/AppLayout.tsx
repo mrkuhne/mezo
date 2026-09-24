@@ -16,7 +16,7 @@ import { ErrorBoundary } from '@/shared/ui/ErrorBoundary'
 import { ToastProvider } from '@/shared/ui/ToastProvider'
 import { useTodayScenario, useScheduleSnapshotWriter, useDayEvaluation, normalizeDayEvaluation } from '@/data/hooks'
 import { useScreenTracking } from '@/app/useScreenTracking'
-import { isMorningMode } from '@/features/today/logic/napom'
+import { useMorningMode } from '@/features/today/logic/useMorningMode'
 import { localDateString, addDays } from '@/shared/lib/dates'
 
 export function AppLayout() {
@@ -28,7 +28,7 @@ export function AppLayout() {
   // below), so this is one query for the whole app, not one per page.
   const yesterdayIso = addDays(localDateString(), -1)
   const yesterdayEval = useDayEvaluation(yesterdayIso)
-  const morning = isMorningMode(yesterdayEval.data ? normalizeDayEvaluation(yesterdayEval.data) : null)
+  const morning = useMorningMode(yesterdayEval.data ? normalizeDayEvaluation(yesterdayEval.data) : null)
   // App-open notification-schedule snapshot (N3, bd mezo-h4wp.6.3): AppLayout is the root
   // route element (children of `/`) and, unlike a page under the Outlet, mounts exactly once
   // for the whole app session — nested route changes only swap the Outlet's child, never
