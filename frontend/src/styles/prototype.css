@@ -21689,3 +21689,51 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* the day's editor keeps the same ground; MesoExercises owns its own rows */
 .tv-dayedit { --c: var(--dv-coral); }
 /* ── /uveg edzes2 nap ── */
+
+/* ── uveg edzes2 izmok (mezo-me75u.5) ── /…/week + /…/week/:muscle ── */
+/* Ranking (bible §3.4, prototype uveg-edzes2.html#het + #izom): both pages open on the
+   FRAMELESS halo hero the day page already uses (`.pl-dhero`, dressed in the nap block);
+   the muscle rows and THE GAUGE are the primary objects and wear glass; the stat cells,
+   the derivation steps and the versus rows inside stay flat. */
+.tv-week { --c: var(--dv-coral); }
+.tv-muscle { --c: var(--mus-color, var(--dv-coral)); }
+
+/* one verdict row per muscle — glass, tinted by the muscle's own hue (U1 rule 4: the hue
+   is published on the element that wears the glass, and `.pl-item` already carries it) */
+.tv-week .pl-item.glass,
+.tv-muscle .pl-scale-wrap.glass {
+  --c: var(--mus-color, var(--dv-coral));
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 20%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 26%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 50%, transparent);
+}
+/* the room bar and its landmark tick, lit by the muscle (bible §5) */
+.tv-week .pl-item-bar i { box-shadow: 0 0 7px -1px color-mix(in srgb, var(--c) 65%, transparent); }
+
+/* THE GAUGE is this page's one graphic: the fill glows, the marks and captions stay quiet */
+.tv-muscle .pl-scale-fill {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 55%, #fff), var(--c));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.tv-muscle .pl-scale-mark { background: rgba(245, 239, 230, 0.45); }
+/* U1 rule 3: `.glass` clips (overflow: hidden), and the gauge's „most" pin sits ABOVE the
+   track — it was cut in half. The card says so explicitly, and turns the sheen off, since a
+   light sweep with no clip would run off the card's edge. */
+.tv-muscle .pl-scale-wrap.glass { overflow: visible; padding-top: 22px; }
+.tv-muscle .pl-scale-wrap.glass::after { display: none; }
+.tv-muscle .pl-scale-legend { color: var(--text-muted); }
+
+/* flat cells inside the glass, everywhere (U1 rule 5) */
+.tv-muscle .pl-mstats > *,
+.tv-muscle .pl-deriv-step,
+.tv-muscle .pl-versus-row {
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+/* „Most" never turns red on a down move — the muscle keeps its own colour (page rule) */
+.tv-muscle .pl-versus-row.is-now .pl-versus-bar i { background: var(--c); opacity: 1; }
+/* ── /uveg edzes2 izmok ── */
