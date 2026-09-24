@@ -30,6 +30,7 @@ export function editionPost(e: TeamEdition, p: TeamEditionPost): FeedPost {
     sourceRoute: p.sourceRoute,
     waiting: p.genre === 'kerdes',
     ...(p.sourceKind === 'pattern' && p.genre === 'kerdes' ? { decision: { patternId: p.sourceId } } : {}),
+    ...(p.guests.length > 0 ? { guests: p.guests.map(g => ({ author: g.characterKey, body: g.body })) } : {}),
   }
 }
 

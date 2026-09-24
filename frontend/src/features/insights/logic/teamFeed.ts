@@ -38,6 +38,9 @@ export interface FeedPost {
   author: TeamCharacterId
   /** Két-területes ügynél a bevont fél (spec §4/1). */
   guest?: TeamCharacterId
+  /** Vendég-sorok a poszt alatt (H4, mezo-a9bo7.15): két karakter beszélget, max 2 sor — a
+   *  Szkeptikus is lehet vendég (ő sosem posztol, de itt megszólal). A szöveg a kiadásé (ADR 0049). */
+  guests?: FeedGuest[]
   /** ISO — a nap-csoportosítás kulcsa. */
   occurredAt: string
   title?: string
@@ -57,6 +60,12 @@ export interface FeedPost {
   thread?: CharacterReplySource
   /** A döntés látható nyoma a poszton (spec §2.8) — a rekordból vagy a munkamenetből. */
   afterlife?: string
+}
+
+/** Egy vendég-sor: ki szól hozzá és mit — a Szkeptikus is `TeamCharacterId` (pala boop). */
+export interface FeedGuest {
+  author: TeamCharacterId
+  body: string
 }
 
 export interface FeedDay {

@@ -1562,7 +1562,21 @@ export const MOCK_EDITIONS: TeamEdition[] = [
           'Ma a **4. napja** fut a meccs előtti feltöltés 🍽️. A **80 g szénhidrát** 2 órával korábban '
           + 'eddig tartja magát, a 7 napból még van hátra. Nem pontozlak, csak figyelem, mi marad meg belőle.',
         voiced: true,
-        guests: [],
+        // H4 (mezo-a9bo7.15): két karakter beszélget a poszt alatt — a résztvevő (Mocor, a meccs
+        // oldala) és a Szkeptikus az alternatív magyarázattal, emoji nélkül. Szám csak a rekordból
+        // (exp1 hipotézise: a 4. set) — a vendég-sor is a tény-őr alatt áll (ADR 0049).
+        guests: [
+          {
+            characterKey: 'mocor',
+            body: 'Én a **4. setre** figyelek: ha az ugrás ott is stabil marad, azt a pályán is érezni fogod. ⚡',
+            voiced: true,
+          },
+          {
+            characterKey: 'szkeptikus',
+            body: 'Ennyi nap még kevés: a stabilabb ugrás a kipihentebb napokból is jöhet, nem csak a korábbi szénhidrátból.',
+            voiced: true,
+          },
+        ],
       },
       {
         rank: 2,
