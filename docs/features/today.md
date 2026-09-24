@@ -209,7 +209,9 @@ look: rose/coral accents, a frameless halo hero, glass rows, no glass inside gla
   (`isNapzarasCardWindow`): moon art, "ESTE · NAPZÁRÁS", "Tegyük le a napot.", flat chips (kcal,
   edzés fact, check-in x/4, N/6 terület kész) and a "Napzárás indítása ›" CTA to `/ritual`. Once
   `ritual_day.closed_at` is set for today, the card shrinks to a flat "Letetted a napot" row
-  linking to `/nap/napom`. A day nobody closes simply loses the card at midnight (the napzárás
+  linking to `/nap/napom`. While today's ritual state is still loading (real mode) the card
+  renders nothing, so a closed day never flashes the full card (`mezo-yjzhw.7`); A napom's lead
+  card waits for the same answer. A day nobody closes simply loses the card at midnight (the napzárás
   itself stays calendar-based, so after midnight the card would already target the new day)
   — the review still gets written by the overnight warm-up job regardless.
 - **Overnight close (backend).** `DayReviewWarmupJob` pre-warms `day_review` for yesterday (and a
