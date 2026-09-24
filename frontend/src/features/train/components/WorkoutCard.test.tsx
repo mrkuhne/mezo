@@ -123,7 +123,8 @@ test('only the NEXT pending row has enabled inputs — later slots are inert', (
   expect(container.querySelectorAll('form.wo-row')).toHaveLength(1)
   // Three inline fields on that one row: kg, rep and RIR (mezo-i8ahy).
   expect(container.querySelectorAll('.wo-row input')).toHaveLength(3)
-  const inputs = screen.getAllByRole('spinbutton')
+  // kg is a text field (HU decimal comma, mezo-py1i6); reps + RIR stay spinbuttons.
+  const inputs = [...screen.getAllByRole('textbox'), ...screen.getAllByRole('spinbutton')]
   expect(inputs).toHaveLength(3)
   for (const input of inputs) expect(input).toBeEnabled()
 })
@@ -132,7 +133,7 @@ test('the editable row prefills kg/reps/RIR from the first WORKING slot\'s targe
   renderCard()
   // The warm-up rungs (52,5 × 8 and 80 × 3) are skipped — the cursor sits on slot 3 of
   // the prescription, the first working set.
-  expect(screen.getByLabelText(/súly$/)).toHaveValue(105)
+  expect(screen.getByLabelText(/súly$/)).toHaveValue('105')
   expect(screen.getByLabelText(/ismétlés$/)).toHaveValue(10)
   expect(screen.getByLabelText(/RIR$/)).toHaveValue(2)
 })
@@ -292,8 +293,31 @@ test('the next set prefills the carried weight with equivalent reps, and the ver
   let session = makeSession([{ id: 'ex1', warmupSets: 2, workingSets: 3, prescribedSets: PRESCRIBED }])
   session = completeSet(session, 'ex1', { weight: 100, reps: 11, rir: 2, id: 's0' })
   const { container } = renderCard({ exercise, session })
-  expect(screen.getByLabelText(/súly$/)).toHaveValue(100)
+  expect(screen.getByLabelText(/súly$/)).toHaveValue('100')
   expect(screen.getByLabelText(/ismétlés$/)).toHaveValue(12)
   // 11 reps at 100 kg sits inside the shifted 10–12 range, not "above" 8–10.
   expect(container.querySelector('.wo-row.is-done .wo-verdict')).toHaveClass('is-ok')
+})
+
+test('the kg field takes the HU decimal comma and a dot alike, unrounded (mezo-py1i6)', async () => {
+  const user = userEvent.setup()
+  const { props } = renderCard()
+  const kg = screen.getByLabelText(/súly$/)
+  await user.clear(kg)
+  await user.type(kg, '102,5')
+  expect(kg).toHaveValue('102,5')
+  expect(screen.getByLabelText(/ismétlés$/)).toHaveValue(11)
+  await user.click(screen.getByRole('button', { name: '1. szett mentése' }))
+  expect(props.onLogSet).toHaveBeenLastCalledWith({ weight: 102.5, reps: 11, rir: 2, side: null })
+})
+
+test('a dot works too, and a quarter-kilo stays exact', async () => {
+  const user = userEvent.setup()
+  const { props } = renderCard()
+  const kg = screen.getByLabelText(/súly$/)
+  await user.clear(kg)
+  await user.type(kg, '101.25')
+  expect(kg).toHaveValue('101.25')
+  await user.click(screen.getByRole('button', { name: '1. szett mentése' }))
+  expect(props.onLogSet).toHaveBeenLastCalledWith(expect.objectContaining({ weight: 101.25 }))
 })

@@ -47,6 +47,17 @@ test('typed HU decimal comma is accepted', async () => {
   expect(onChange).toHaveBeenCalledWith(92.5)
 })
 
+test('a microplate weight is kept exactly — no rounding to one decimal (mezo-py1i6)', async () => {
+  const onChange = vi.fn()
+  render(<SetStepper label="Súly" value={100} step={2.5} unit="kg" min={0} max={999} onChange={onChange} />)
+  await userEvent.click(screen.getByRole('button', { name: 'Súly pontos megadása' }))
+  const input = screen.getByLabelText('Súly')
+  await userEvent.clear(input)
+  await userEvent.type(input, '101,25')
+  await userEvent.tab()
+  expect(onChange).toHaveBeenCalledWith(101.25)
+})
+
 test('typed value clamps to max and Enter commits', async () => {
   const onChange = vi.fn()
   render(<SetStepper label="Súly" value={90} step={2.5} unit="kg" min={0} max={999} onChange={onChange} />)

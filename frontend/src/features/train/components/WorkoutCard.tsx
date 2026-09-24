@@ -42,6 +42,7 @@ import { muscleColor } from '@/features/train/logic/muscleColors'
 import { RIR_MAX } from '@/features/train/logic/rir'
 import { setStatus } from '@/features/train/logic/workoutCardMeta'
 import { adjustedRange, adjustedTarget, equivalentReps } from '@/features/train/logic/repEquivalence'
+import { formatDecimal, parseDecimal } from '@/features/train/logic/decimalInput'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { MedalChip } from '@/features/train/components/MedalChip'
 import { ProgressionBanner } from '@/features/train/components/ProgressionBanner'
@@ -138,6 +139,10 @@ export function WorkoutCard({
   // moves or the slot count changes — a removeSet splices the prescription, so the
   // target behind the same cursor can change without the cursor itself moving.
   const [weight, setWeight] = useState(0)
+  // The kg field's live text while typing — null mirrors `weight`. A text field, not a
+  // native number input: the HU decimal keypad types a comma, which a number input
+  // reports as '' mid-entry and wiped the draft (mezo-py1i6).
+  const [weightText, setWeightText] = useState<string | null>(null)
   const [reps, setReps] = useState(0)
   const [rir, setRir] = useState(0)
   const [side, setSide] = useState<SetSide | null>(null)
@@ -154,6 +159,7 @@ export function WorkoutCard({
     // reps (mezo-l95v4).
     const w = prev?.weight ?? t?.targetWeightKg ?? p.weight
     setWeight(w)
+    setWeightText(null)
     setReps(equivalentReps(t, w) ?? t?.targetReps ?? prev?.reps ?? p.reps)
     setRir(t?.targetRIR ?? prev?.rir ?? p.rir)
     setSide(null)
@@ -305,12 +311,15 @@ export function WorkoutCard({
                     {idxCell}
                     <label className="wo-field">
                       <input
-                        type="number" step="0.5" min={0} max={999} inputMode="decimal"
+                        type="text" inputMode="decimal"
                         aria-label={`${exercise.name}, ${setSlotLabel(i)}, súly`}
                         disabled={weightless}
-                        value={weightless ? 0 : weight}
+                        value={weightless ? '0' : (weightText ?? formatDecimal(weight))}
+                        onBlur={() => setWeightText(null)}
                         onChange={(e) => {
-                          const w = Number(e.target.value)
+                          setWeightText(e.target.value)
+                          const w = parseDecimal(e.target.value)
+                          if (w == null) return
                           setWeight(w)
                           // The reps follow the kg at equivalent effort (mezo-l95v4); typed
                           // reps stand until the kg moves again.
