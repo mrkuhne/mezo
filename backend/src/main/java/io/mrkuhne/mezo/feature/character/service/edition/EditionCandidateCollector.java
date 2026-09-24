@@ -199,13 +199,35 @@ public class EditionCandidateCollector {
         return out;
     }
 
-    /** A `metricKey` doménje a {@link MetricKey} enum wire-kulcsán át; ismeretlen kulcs → MEZO. */
+    /**
+     * Fix round 1 (mezo-a9bo7.12): a proaktív generátorok ({@code PredictionGenerator},
+     * {@code ExperimentProposalGenerator}) {@code metricKey}-je NEM a {@link MetricKey} enum
+     * wire-kulcsa — saját, szűk szótáruk van ({@code PredictionEntity.METRIC_*}), a wire-kulcs
+     * keresés ezekre sosem talál. {@code DiagnosisService} ezzel szemben validáltan valódi
+     * {@link MetricKey} wire-kulcsot ír (lásd {@code DiagnosisSuspectsEnvelope.Suspect} javadoc) —
+     * azt már az első lépés (wire-kulcs keresés) helyesen feloldja. Ez a táblázat a generátorok
+     * TELJES, kódban rögzített szótárát fedi le (grep-elve: {@code VALID_METRICS} mindkét
+     * generátorban ugyanaz a 3 érték) — nem egy általános prefix-heurisztika.
+     */
+    private static final Map<String, String> GENERATOR_METRIC_DOMAIN = Map.of(
+            PredictionEntity.METRIC_SLEEP_AVG, "sleep",
+            PredictionEntity.METRIC_TRAINING_VOLUME, "train",
+            PredictionEntity.METRIC_WEIGHT_TREND, "body");
+
+    /** A `metricKey` doménje: elsőként a {@link MetricKey} enum wire-kulcsán át (DiagnosisService
+     *  útja), másodikként a generátor-szótáron ({@link #GENERATOR_METRIC_DOMAIN}), végül MEZO. */
     private static TeamCharacter domainCharacterFor(String metricKey) {
-        return Arrays.stream(MetricKey.values())
+        Optional<MetricKey> known = Arrays.stream(MetricKey.values())
                 .filter(key -> key.wireKey().equals(metricKey))
-                .findFirst()
-                .map(key -> TeamCharacter.forMetricDomain(key.domain().wireKey()))
-                .orElse(TeamCharacter.MEZO);
+                .findFirst();
+        if (known.isPresent()) {
+            return TeamCharacter.forMetricDomain(known.get().domain().wireKey());
+        }
+        String domain = GENERATOR_METRIC_DOMAIN.get(metricKey);
+        if (domain != null) {
+            return TeamCharacter.forMetricDomain(domain);
+        }
+        return TeamCharacter.MEZO;
     }
 
     private static Instant atEditionHour(LocalDate date) {

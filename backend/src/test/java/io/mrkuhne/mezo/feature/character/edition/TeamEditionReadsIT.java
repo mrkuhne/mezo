@@ -60,10 +60,13 @@ class TeamEditionReadsIT extends ApiIntegrationTest {
 
     @Test
     void monitor_returnsResponse_withoutWriting() {
+        long patternsBefore = reads.patterns(owner).size();
+
         var response = reads.monitor(owner);
 
         assertThat(response).isNotNull();
         assertThat(response.getPairs()).isNotNull();
+        assertThat(reads.patterns(owner)).hasSize((int) patternsBefore); // no row appeared/changed
     }
 
     @Test

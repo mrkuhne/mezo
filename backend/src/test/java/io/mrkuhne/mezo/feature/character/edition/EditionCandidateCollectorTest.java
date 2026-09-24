@@ -262,6 +262,54 @@ class EditionCandidateCollectorTest {
         assertThat(out.get(0).character()).isEqualTo(TeamCharacter.MEZO); // unknown metric key
     }
 
+    // ---- Fix round 1: a proaktív generátorok metricKey-szótára (weight_trend/sleep_avg/
+    // training_volume) NEM MetricKey wire-kulcs -> explicit fallback-tábla, nem MEZO ------------
+
+    @Test void predictionWithGeneratorSleepAvgKeyRoutesToSzunya() {
+        PredictionEntity p = prediction(PredictionEntity.STATUS_VALIDATED, DAY.minusDays(1),
+                PredictionEntity.METRIC_SLEEP_AVG, "actual", "basis");
+        when(reads.resolvedPredictions(OWNER, DAY.minusDays(7), DAY)).thenReturn(List.of(p));
+
+        assertThat(collector.collect(OWNER, DAY, null).get(0).character()).isEqualTo(TeamCharacter.SZUNYA);
+    }
+
+    @Test void predictionWithGeneratorTrainingVolumeKeyRoutesToMocor() {
+        PredictionEntity p = prediction(PredictionEntity.STATUS_VALIDATED, DAY.minusDays(1),
+                PredictionEntity.METRIC_TRAINING_VOLUME, "actual", "basis");
+        when(reads.resolvedPredictions(OWNER, DAY.minusDays(7), DAY)).thenReturn(List.of(p));
+
+        assertThat(collector.collect(OWNER, DAY, null).get(0).character()).isEqualTo(TeamCharacter.MOCOR);
+    }
+
+    @Test void predictionWithGeneratorWeightTrendKeyRoutesToDeruViaBody() {
+        PredictionEntity p = prediction(PredictionEntity.STATUS_VALIDATED, DAY.minusDays(1),
+                PredictionEntity.METRIC_WEIGHT_TREND, "actual", "basis");
+        when(reads.resolvedPredictions(OWNER, DAY.minusDays(7), DAY)).thenReturn(List.of(p));
+
+        assertThat(collector.collect(OWNER, DAY, null).get(0).character()).isEqualTo(TeamCharacter.DERU);
+    }
+
+    @Test void experimentWithGeneratorSleepAvgKeyRoutesToSzunya() {
+        ExperimentEntity e = experiment(DAY, 9, PredictionEntity.METRIC_SLEEP_AVG);
+        when(reads.activeExperiments(OWNER)).thenReturn(List.of(e));
+
+        assertThat(collector.collect(OWNER, DAY, null).get(0).character()).isEqualTo(TeamCharacter.SZUNYA);
+    }
+
+    @Test void experimentWithGeneratorTrainingVolumeKeyRoutesToMocor() {
+        ExperimentEntity e = experiment(DAY, 9, PredictionEntity.METRIC_TRAINING_VOLUME);
+        when(reads.activeExperiments(OWNER)).thenReturn(List.of(e));
+
+        assertThat(collector.collect(OWNER, DAY, null).get(0).character()).isEqualTo(TeamCharacter.MOCOR);
+    }
+
+    @Test void experimentWithGeneratorWeightTrendKeyRoutesToDeruViaBody() {
+        ExperimentEntity e = experiment(DAY, 9, PredictionEntity.METRIC_WEIGHT_TREND);
+        when(reads.activeExperiments(OWNER)).thenReturn(List.of(e));
+
+        assertThat(collector.collect(OWNER, DAY, null).get(0).character()).isEqualTo(TeamCharacter.DERU);
+    }
+
     // ---- sor 5: ExperimentEntity active, day in {1, ceil(total/2), total} -> KISERLET ---------
 
     @Test void experimentOnFirstDayBecomesKiserlet() {
