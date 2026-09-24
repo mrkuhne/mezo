@@ -330,3 +330,29 @@ t-scroll`). Prototype: [`prototypes/uveg-nap.html`](prototypes/uveg-nap.html).
     the kit (a `className` / `variant` prop) instead of copying the markup a third time.
 22. **`build.sh` rebuilds every prototype.** Running it whole rewrites ~36 older files against the
     current sprite. Run only your slice's line.
+
+### A napom (`mezo-yjzhw`, 2026-09-24)
+
+The live day page (`features/today/pages/NapomPage.tsx`, `/nap/napom[/:date]`) replaced
+`WeekDayPage` and reworked §5's "Voice copy" row and the tab-dot chrome.
+
+23. **No italic serif for paragraph prose (owner, 2026-09-24).** §5's "Voice copy" row
+    (Fraunces italic for "Mezo's own sentences") **now applies to one-liners only** — a lead,
+    a score subline, a chip label. It is unreadable at paragraph length. The closed-day review
+    card's narrative, dimension notes and reading sentence are upright Geist instead: 15px/1.6
+    for the narrative, 14px/1.55 for notes (`NapomReviewCard.tsx:3`). Any future multi-sentence
+    Mezo prose follows the same rule; only the short lead lines keep the serif italic.
+24. **A live page's "friss" state comes from `dataUpdatedAt`, never from a clock.** Today's
+    "ÉLŐ · FRISSÜLT hh:mm" status line reads the query's own `dataUpdatedAt`
+    (`NapomPage.tsx:165`, `dayEvaluationHooks.ts:43,65`), not `Date.now()` or a tick timer — the
+    same value the 60 s poll and the mutation-cache invalidation both bump on a real change, so
+    the displayed timestamp always matches the data actually on screen, including right after an
+    optimistic write.
+25. **A tab dot sits outside the icon with a `0 0 0 2px var(--page)` ring, like the header
+    badges.** The morning-mode dot on the "A napom" tab (`tb-dot`, `prototype.css:18864`) is
+    absolutely positioned at the icon's top-right corner (outside its box, `top:-2px;
+    right:-5px`), lavender-filled with a lavender glow, and rung with `0 0 0 2px var(--canvas)`
+    (the app's `--canvas` alias for `--page`, `prototype.css:824`) — the same silhouette-cutting
+    trick §7.1's header badges use so the dot reads as sitting on top of the icon rather than
+    stuck to it. It is `aria-hidden`; its meaning is carried by an `sr-only` description on the
+    tab link, not by the dot itself (`TabBar.tsx:68-88`).
