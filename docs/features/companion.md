@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-24
+updated: 2026-09-25
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -1431,6 +1431,7 @@ feeding back into the nightly revision, and a one-line morning digest of what th
   return to the current inbox. A pending grounded event can consume an available daily slot
   on a later inbox read; publication is serialized per owner with the same advisory lock used
   by quick notices and nightly candidates. Original evidence dates are not rewritten.
+- **Evidence is served structured, not as a stored label (mezo-d6ivw.1).** `ObservationResponse.evidence` is `ObservationEvidenceItem[]` — `{type: record|tag, source?, date?, time?, fields?, quote?, ref?, text?}`. For a `grounded`-channel event's canonical refs, `ObservationFeedService.evidenceItems` re-reads each ref through `ObservationContextService.fetch` (§ above — a lossless structured re-read of the current source, bypassing the possibly-truncated label persisted at generation time) and emits a `record` item; a ref that no longer resolves (deleted/foreign source) falls back to a `tag` carrying the stored label that followed it in the event payload when one was persisted (event snapshots interleave `ref, label` pairs), or is dropped otherwise. A non-canonical entry (`observation-topic:` markers dropped; anything else) is a plain `tag`. Legacy (non-`grounded`) events' refs pass through verbatim as `tag`s (`legacyItems`) — the old quick-notice vocabulary was never canonical-ref shaped, so it was never eligible for re-read. FE consumption: `shared/ui/evidence/observationEvidence.ts`'s `mapEvidence` renders a `record` into an icon/title/value-pill/quote row and anything else into a plain tag; see [`today.md`](today.md) §2 and [`insights.md`](insights.md) §3 for the two renderers (`EvidenceList`, shared by the Today card and the team feed observation post).
 - **`ReflectionReplyService` — three chips, and code owns every consequence.** The reply is always
   appended as a `user_reply(channel="chip", choice, text≤500)` event; `watch` on a still-`proposed`
   row starts `monitoring`; the **second** `reject` refutes it (one is a doubt, not a verdict — the
@@ -5872,8 +5873,10 @@ an empty list that reads as "nothing happened today". Every non-2xx returns `Sys
 | `POST /api/companion/observation/recovery` | `ObservationRecoveryResponse` | 200 · 400 · 401 · 403 | OWNER-only `mode=preview` or `mode=apply, planId`. Preview has no pattern/event writes; apply consumes exactly the server-held candidates and never pushes. Expired/unknown plan: `OBSERVATION_RECOVERY_EXPIRED`. |
 
 **Schemas:** `ObservationResponse {id, patternId, kind?, hypothesisKey, card fresh|return|watching|confirmed,
-occurredAt, title, text, question?, evidence[], status, evidenceHits, evidenceMisses, minN, belief?,
-repliedChoice watch|reject|talk?, sourceIcon naplo|alvas|edzes|vacsora|hold|mezo}` — `id` is the
+occurredAt, title, text, question?, evidence: ObservationEvidenceItem[], status, evidenceHits, evidenceMisses, minN, belief?,
+repliedChoice watch|reject|talk?, sourceIcon naplo|alvas|edzes|vacsora|hold|mezo}` — `evidence` items are
+`{type: record|tag, source?, date?, time?, fields?, quote?, ref?, text?}` (structured, losslessly re-read;
+see the bullet above). `id` is the
 EVENT id on an event card (`fresh`/`return`) and the ROW id on a row card (`watching`/`confirmed`),
 while `patternId` is always the row the chip reply goes to; `text`/`question` are the observation
 payload split on its last newline (a row card carries `text: ""` and no question).
@@ -8983,7 +8986,7 @@ change is distinct from those smoothed rates. The underlying trend calculation i
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/FeedContextTools.java` — conversation-independent memory search for the feed.
 
 **Grounded observation inbox and recovery**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/ObservationContextService.java` — bounded original-source evidence and current provenance validation.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/ObservationContextService.java` — bounded original-source evidence and current provenance validation; `fetch` is the lossless structured re-read behind the `evidence[]` response (mezo-d6ivw.1, § above).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/GroundedHypothesisPublisher.java` — atomic grounded publication and topic deduplication.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/ObservationFeedService.java` — persistent inbox, queued release and historical day reads.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/ObservationRecoveryService.java` — exact dry-run/apply, owned audit input and expiring previews.
