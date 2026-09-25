@@ -132,3 +132,14 @@ test('PageHero `art` renders the frameless halo hero with a 3D icon in the accen
   expect(hero.querySelector('.mz-bignum')).toHaveTextContent('4/5')
   expect(hero.querySelector('.mz-hero-row')).toBeNull()
 })
+
+test('PageHero halo variant takes an eyebrow, and `glass` draws it without art (mezo-me75u.8)', () => {
+  const { container } = render(<PageHero glass eyebrow="Heti memoár" accent="var(--dv-lav)" name="Hét 19" sub="Máj 4 – 10" />)
+  const hero = container.querySelector('.mz-page-hero.uv-hero.uv-halo')
+  expect(hero).not.toBeNull()
+  expect(hero?.querySelector('.t-ico')).toBeNull()
+  expect(hero?.querySelector('.uv-hero-eb')?.textContent).toBe('Heti memoár')
+  const withArt = render(<PageHero art="t-album" eyebrow="Napi emlék" name="2026-08-12" />).container
+  expect(withArt.querySelector('.uv-hero .t-ico')).not.toBeNull()
+  expect(withArt.querySelector('.uv-hero-eb')?.textContent).toBe('Napi emlék')
+})

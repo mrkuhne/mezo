@@ -15145,6 +15145,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   margin: 0 auto;
   filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 18px color-mix(in srgb, var(--c) 42%, transparent));
 }
+.mz-page-hero.uv-hero .uv-hero-eb { margin-top: 4px; color: color-mix(in srgb, var(--c, var(--dv-lav)) 70%, var(--text-primary)); }
 .mz-page-hero.uv-hero .mz-hero-nm { margin-top: 4px; font-size: 24px; font-weight: 600; letter-spacing: -0.7px; color: var(--text-primary); }
 .mz-page-hero.uv-hero .mz-bignum {
   margin-top: 2px; font-family: var(--ff-display); font-size: 58px; font-weight: 300; letter-spacing: -3px; line-height: 1;
@@ -26774,3 +26775,30 @@ main.settings-page {
 }
 
 /* ── /uveg en2 beallitasok ── */
+/* ── uveg mezo1 chat (mezo-me75u.8) ── /mezo/chat: own header, thread, tool strip, refs, recalled memories, feedback, composer + picker / actions sheets ── */
+
+/* ── /uveg mezo1 chat ── */
+
+/* ── uveg mezo1 coaching (mezo-me75u.8) ── /mezo/coaching, /mezo/coaching/megfigyelo, /mezo/coaching/kartya ── */
+
+/* ── /uveg mezo1 coaching ── */
+
+/* ── uveg mezo1 diagnozis (mezo-me75u.8) ── /mezo/diagnozis, /mezo/diagnozis/:id ── */
+
+/* ── /uveg mezo1 diagnozis ── */
+
+/* ── uveg mezo1 kiserletek (mezo-me75u.8) ── /mezo/experiments (the detail page is U8a's `uveg mezo mibol`) ── */
+
+/* ── /uveg mezo1 kiserletek ── */
+
+/* ── uveg mezo1 emlekek (mezo-me75u.8) ── /mezo/emlekek, /mezo/emlekek/:date, the similar-day search panel ── */
+
+/* ── /uveg mezo1 emlekek ── */
+
+/* ── uveg mezo1 memoar (mezo-me75u.8) ── /mezo/memoir, /mezo/memoir/archivum, /mezo/memoir/:weekStart ── */
+
+/* ── /uveg mezo1 memoar ── */
+
+/* ── uveg mezo1 memoria (mezo-me75u.8) ── /mezo/memoria: layers, journal, search tab, audit ── */
+
+/* ── /uveg mezo1 memoria ── */
