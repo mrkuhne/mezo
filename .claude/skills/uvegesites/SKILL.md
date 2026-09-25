@@ -30,6 +30,9 @@ it. The owner set this flow on 2026-09-23.
   fine. A changed route, hook, API contract, mutation or state machine is not. If a slice seems
   to need one, stop and ask the owner.
 - **The owner looks once per slice**, at the clickable prototype, before any code.
+- **One owner-approved exception to the frozen behaviour (2026-09-25): the full „közös kép”
+  Rólad page** (slice **U9b**, `mezo-zpxv7`, see below). It is the only slice allowed to move
+  behaviour, and only within its own spec.
 
 ## Canon (read every session, in this order)
 
@@ -43,6 +46,11 @@ it. The owner set this flow on 2026-09-23.
    Appendices A–E (per-surface traps). Where the two conflict, the üveg bible wins.
 4. For *what a screen must do*, use the Titanium parity docs listed in
    `docs/design_2.0/README.md`, never the old look.
+5. **Mezo surfaces:** the Mezo world's canon is the csapatfal's approved
+   `docs/design_2.0/prototypes/uveg-uzenofal.html`, and the whole section in one file is
+   `docs/design_2.0/prototypes/uveg-mezo-teljes.html` (assembled by
+   `prototypes/src/splice-mezo-teljes.py`). Before prototyping ANY surface, grep every approved
+   prototype for its route (bible rule 66): another programme may already have designed it.
 
 ## Procedure
 
@@ -52,6 +60,9 @@ it. The owner set this flow on 2026-09-23.
    not `bd ready`. Take the lowest-numbered open `mezo-me75u.N` whose blockers are closed
    (`U1` blocks everything). If the owner named a slice, take that one. Run `bd show <id>`: the
    bead lists the routes.
+   **Next in line (owner, 2026-09-25): U9b · Rólad — a közös kép (`mezo-zpxv7`), before U10.**
+   It is labelled `epic:uvegesites` but is not an `mezo-me75u.N` number, so take it explicitly
+   while it is open. Follow the U9b section below, not only the standard procedure.
 3. **If everything is closed**, say so in two sentences and stop. Do not invent a slice.
 4. Run `bd update <id> --claim`, then work in an isolated worktree on `feat/uveg-<topic>`.
 
@@ -136,6 +147,55 @@ sheet for the owner's OK before it ships.**
   `git push`, and `git status` clean.
 - Report to the owner **in Hungarian**: what is now live in user-visible terms, what comes
   next, and how many slices are left. Say plainly what you did *not* do and why.
+
+## Slice U9b · Rólad — a közös kép (`mezo-zpxv7`, owner 2026-09-25)
+
+**What it is.** `/mezo/rolad` becomes the csapatfal's approved D3 „közös kép” page — the one
+place where the team's picture of the user lives and where the user decides about it. Today
+(after U9) the page only shows three links (Tudástár, Így beszélj velem, Kapcsolatok) and the
+embedded dimensions, in the csapatfal material.
+
+**The approved target (do not re-litigate the look):** `uveg-uzenofal.html#rolad`, also in
+`uveg-mezo-teljes.html#rolad-terv`. Top to bottom:
+1. **A quote about the user** („Így fogalmaz most rólad a csapat · javítható benyomás, nem
+   címke”) on glass, with **Talál** and **Pontosítom** (reply sheet).
+2. **Döntésre vár** — the fact and life-event candidates as glass decision cards (`TÉNYJELÖLT`,
+   `ÉLETESEMÉNY-JELÖLT`, which character brought it and when, the text and why it matters) with
+   **Igen, jegyezd meg** (primary) · **Pontosítom** · **Most ne**, and the visible afterlife
+   („Bekerült a rólad szóló képbe — a forrásával együtt”).
+3. **A tények rólad** — the active facts, each tagged with the character that owns it (SZUNYA,
+   FALAT, MOCOR…, or TŐLED) and its source/date, plus a door to the full list („Mind a N tény —
+   kereséssel, forrással és Elhallgattatom-kapcsolóval”).
+4. **Életesemények** — the accepted life events on a lit timeline.
+5. **„A te kezedben”** note: everything here lives with its source and can be silenced or
+   corrected; the team only uses what was approved here.
+
+**Why it is not a re-dress.** It moves behaviour: the Tudástár's approval inbox (fact candidates,
+life-event and season candidates) moves to Rólad, and „egy döntés egy helyen él” (csapatfal spec
+§4 rule 3) means the Tudástár then only points here. So this slice runs in this order, and every
+step ends with the owner's OK where marked:
+1. **Brainstorm first** (`superpowers:brainstorming`, recon via `brainstorm-recon`). Settle with the
+   owner, in Hungarian business language (CLAUDE.md §Communication):
+   - **The quote's source.** Honesty rule (ADR 0049): no invented sentence. Find a real one (e.g.
+     the profile / „Rólad tanultam” node, the portrait of the most mature dimension) or show an
+     honest empty state until one exists.
+   - **What stays on the Tudástár** (the full searchable fact list with the switches, Kategóriák,
+     Hogyan működik?) and what only moves (the inbox). No decision may live in two places.
+   - **Where the dimensions go** (today's Rólad content): keep them under the new sections, or behind
+     a door. Nothing that exists today may silently disappear.
+   - **„Most ne”** vs today's „Elvet”: same action (dismiss) or a new snooze? A new state machine
+     needs its own backend work in the spec; a relabel does not.
+2. **Spec + plan** (`superpowers:writing-plans`): short spec in `docs/superpowers/specs/`, plan in
+   `docs/superpowers/plans/`, routes, hooks and mutations named exactly, TDD tasks. Owner OK on the spec.
+3. **Prototype** — extend `uveg-mezo-teljes.html` (its source `prototypes/src/uveg-mezo-teljes-u9.js`
+   `rolad()`; the D3 view stays in `uveg-uzenofal.html`) so `#rolad` shows the spec'd page with
+   real-looking content of the real record types, and the Tudástár shows its new, inbox-less shape.
+   Owner OK.
+4. **Build** per the plan, then the standard gates (§3), merge and deploy (§4), close (§5). The
+   reverse parity checklist must show every moved control arriving on Rólad (accept, refine,
+   dismiss, the conflict checkbox, the life-event refine title/summary, the week-banner deep link
+   `?start=`) — none may be lost in the move. Update `docs/features/insights.md` (Tudástár/Rólad)
+   and the csapatfal spec's §8 note that listed Rólad content as out of scope.
 
 ## Traps carried over from the visszaöltöztetés (bible Appendices A–E hold the rest)
 - The sprite is hidden with `position:absolute;width:0;height:0`, never `display:none`.
