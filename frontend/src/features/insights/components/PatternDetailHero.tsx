@@ -60,13 +60,22 @@ function hypothesis(pair: PatternMonitorPair): string {
   return `Amit vizsgálunk: ${pair.questionHu}`
 }
 
-function Finding({ pair }: { pair: PatternMonitorPair }) {
+/** Befagyott (megítélt) párnál a `pair.n` a DÖNTÉS pillanatának közös napjai, a gyűrű és a
+ *  grafikon viszont a mostani ablakot mutatja — a kettő eltérhet. Ilyenkor kimondjuk, melyik
+ *  szám mit jelent, sosem hagyjuk őket csupaszon egymás mellett (mezo-bsb6h, bible 51). */
+export function frozenDaysDiffer(pair: PatternMonitorPair, dayCount: number): boolean {
+  return pair.verdict === 'frozen' && pair.n != null && pair.n !== dayCount
+}
+
+function Finding({ pair, dayCount }: { pair: PatternMonitorPair; dayCount: number }) {
   const finding = findingSentence(pair)
   if (!finding) return null
+  const differ = frozenDaysDiffer(pair, dayCount)
   return (
     <p className="pdt-finding">
       <b>{finding.prefix}</b>{' '}{finding.before}<strong>{finding.strength}</strong>{finding.after}.
-      {pair.n != null && pair.p != null && <small>{confidenceMeta(pair.n, pair.p).sentence}.</small>}
+      {pair.n != null && pair.p != null && <small>{differ ? 'A döntésedkor ' : ''}{confidenceMeta(pair.n, pair.p).sentence}.</small>}
+      {differ && <small>Azóta az ablak továbbcsúszott: a grafikon most {dayCount} napot mutat.</small>}
     </p>
   )
 }
@@ -109,7 +118,7 @@ export function PatternDetailHero({ pair, pattern, dayCount, onDecide }: {
               ariaLabel={`${dayCount} nap a grafikonon`} />}
         <div className="pdt-answer">
           <h1 id="pdt-answer">{state.answer}</h1>
-          {imbalanced ? <p className="pdt-answer-sub">{groupBalanceSentence(pair)}</p> : <Finding pair={pair} />}
+          {imbalanced ? <p className="pdt-answer-sub">{groupBalanceSentence(pair)}</p> : <Finding pair={pair} dayCount={dayCount} />}
         </div>
       </div>
       {showActions && pattern && (

@@ -155,7 +155,7 @@ function Diagnostics({ pair, monitor, windowDays, lastComputedAt }: {
       <div className="pdt-fold-body">
         <div className="pdt-diag-grid">
           <div><small>Adatablak</small><b>{windowDays ?? '—'} nap</b></div>
-          <div><small>Párosított nap</small><b>{pair.alignedDays}</b></div>
+          <div><small>{pair.verdict === 'frozen' ? 'Párosított nap a döntésedkor' : 'Párosított nap'}</small><b>{pair.alignedDays}</b></div>
           <div><small>Csoportarány</small><b>{pair.groupZeroDays != null ? `${pair.groupZeroDays} : ${pair.groupOneDays}` : 'nem csoportos'}</b></div>
           <div><small>Utolsó számítás</small><b>{lastRunLabel(lastComputedAt)}</b></div>
         </div>
@@ -168,7 +168,7 @@ function Diagnostics({ pair, monitor, windowDays, lastComputedAt }: {
           <summary>Technikai számok</summary>
           <div className="pdt-tech-grid">
             <span><b>{formatR(pair.r)}</b>korreláció</span>
-            <span><b>{pair.n ?? '—'}</b>közös nap</span>
+            <span><b>{pair.n ?? '—'}</b>{pair.verdict === 'frozen' ? 'közös nap a döntésedkor' : 'közös nap'}</span>
             <span><b>{formatP(pair.p)}</b>p-érték</span>
           </div>
           {pair.verdict === 'frozen' && <p>A számok a döntésed pillanatában befagytak.</p>}
