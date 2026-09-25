@@ -67,7 +67,7 @@ class ReflectionReplyServiceIT extends AbstractIntegrationTest {
                 .isEqualTo(PatternEntity.STATUS_MONITORING);
         assertThat(events(owner, row.getId())).extracting(PatternEventEntity::getKind)
                 .containsExactly(PatternEventEntity.KIND_USER_REPLY,
-                        PatternEventEntity.KIND_MONITORING);
+                        PatternEventEntity.KIND_MONITORING, PatternEventEntity.KIND_PROMOTED);
         PatternEventPayloadEnvelope payload = events(owner, row.getId()).getFirst().getPayload();
         assertThat(payload.channel()).isEqualTo("chip");
         assertThat(payload.choice()).isEqualTo("watch");
@@ -83,7 +83,45 @@ class ReflectionReplyServiceIT extends AbstractIntegrationTest {
         assertThat(patternRepository.findById(row.getId()).orElseThrow().getStatus())
                 .isEqualTo(PatternEntity.STATUS_MONITORING);
         assertThat(events(owner, row.getId())).extracting(PatternEventEntity::getKind)
-                .containsExactly(PatternEventEntity.KIND_USER_REPLY);
+                .containsExactly(PatternEventEntity.KIND_USER_REPLY, PatternEventEntity.KIND_PROMOTED);
+    }
+
+    @Test
+    void testReply_shouldPromoteToFactAndConfirm_whenWatchOnPlanlessGroundedRow() {
+        UUID owner = userPopulator.createUser().getId();
+        PatternEntity row = patternPopulator.reflectionNoPlan(owner, PatternEntity.STATUS_PROPOSED);
+
+        replyService.reply(owner, row.getId(), "watch", null);
+
+        PatternEntity saved = patternRepository.findById(row.getId()).orElseThrow();
+        assertThat(saved.getStatus()).isEqualTo(PatternEntity.STATUS_CONFIRMED);
+        assertThat(saved.getPromotedFactId()).isNotNull();
+        assertThat(events(owner, row.getId())).extracting(PatternEventEntity::getKind)
+                .contains(PatternEventEntity.KIND_PROMOTED, PatternEntity.STATUS_CONFIRMED);
+    }
+
+    @Test
+    void testReply_shouldPromoteButKeepMonitoring_whenWatchOnPlannedRow() {
+        UUID owner = userPopulator.createUser().getId();
+        PatternEntity row = row(owner, PatternEntity.STATUS_PROPOSED);
+
+        replyService.reply(owner, row.getId(), "watch", null);
+
+        PatternEntity saved = patternRepository.findById(row.getId()).orElseThrow();
+        assertThat(saved.getStatus()).isEqualTo(PatternEntity.STATUS_MONITORING);
+        assertThat(saved.getPromotedFactId()).isNotNull();
+        assertThat(events(owner, row.getId())).extracting(PatternEventEntity::getKind)
+                .doesNotContain(PatternEntity.STATUS_CONFIRMED);
+    }
+
+    @Test
+    void testReply_shouldNotPromote_whenWatchOnRefutedRow() {
+        UUID owner = userPopulator.createUser().getId();
+        PatternEntity row = row(owner, PatternEntity.STATUS_REFUTED);
+
+        replyService.reply(owner, row.getId(), "watch", null);
+
+        assertThat(patternRepository.findById(row.getId()).orElseThrow().getPromotedFactId()).isNull();
     }
 
     @Test

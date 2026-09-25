@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.ConversationService;
 import io.mrkuhne.mezo.feature.companion.service.PatternEventAppender;
+import io.mrkuhne.mezo.feature.companion.service.PatternService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -45,6 +46,10 @@ import org.springframework.transaction.annotation.Transactional;
  * turn's transaction and therefore needs {@code REQUIRES_NEW} so its own failure cannot mark the
  * caller's transaction rollback-only (the S3 review finding). Should this service ever gain a
  * transactional caller that swallows its failure, it needs that same treatment.
+ *
+ * <p>S2 (mezo-d6ivw.2): {@link PatternService} is injected directly rather than through a
+ * provider — its bean always exists here, since {@code COMPANION_SWITCH} is a prerequisite of
+ * {@code REFLECTION_SWITCH}'s own bean (this class would not exist without it either).
  */
 @Service
 @RequiredArgsConstructor
@@ -69,6 +74,8 @@ public class ReflectionReplyService {
     private final PatternEventRepository patternEventRepository;
     /** S4: one shared way to append a pattern event — see PatternEventAppender. */
     private final PatternEventAppender patternEventAppender;
+    /** S2 (mezo-d6ivw.2): the user watch reply's promote-to-knowledge call — see class javadoc. */
+    private final PatternService patternService;
     private final ConversationService conversationService;
     private final CompanionMapper mapper;
     private final PatternTestPlanMapper testPlanMapper;
@@ -96,6 +103,13 @@ public class ReflectionReplyService {
             row.setStatus(PatternEntity.STATUS_MONITORING);
             patternEventAppender.append(userId, row.getId(), PatternEventEntity.KIND_MONITORING,
                     PatternEventPayloadEnvelope.empty());
+        }
+
+        if (CHOICE_WATCH.equals(choice)
+                && (PatternEntity.STATUS_MONITORING.equals(row.getStatus())
+                    || PatternEntity.STATUS_PROPOSED.equals(row.getStatus()))) {
+            // S2 (mezo-d6ivw.2): "Igen, ez igaz rám" is a confirm — the fact is durable from now.
+            patternService.applyUserConfirm(userId, row);
         }
 
         // ONE pass over the row's event stream feeds both buckets — it used to be loaded twice
