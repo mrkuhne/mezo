@@ -23,6 +23,7 @@ import type { CSSProperties } from 'react'
 import { huInt } from '@/shared/lib/huNum'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
+import { VoiceBubble } from '@/shared/ui/voice/VoiceBubble'
 import type { UsualMeal } from '@/features/fuel/logic/usualMeals'
 import type { MealSlot } from '@/data/types'
 
@@ -94,7 +95,7 @@ function VoiceView({ onTranscript }: { onTranscript: (text: string) => void }) {
             : voice.state === 'transcribing' ? 'Leiratozom, amit mondtál…'
               : 'Koppints, és mondd el egy mondatban. A leírt mondatot lent még átírhatod.'}
       </p>
-      {voice.error && <p className="fmx-mode-error">{voice.error}</p>}
+      <VoiceBubble voice={voice} domain="fuel" />
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useGratitudeActions, useGratitudeEntries, useRitualActions, useRitualDay } from '@/data/hooks'
 import { GratitudeRows } from '@/features/me/components/GratitudeRows'
 import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
+import { VoiceBubble } from '@/shared/ui/voice/VoiceBubble'
 import { Icon } from '@/shared/ui/Icon'
 import { Icon3D } from '@/shared/ui/clay'
 import { cn } from '@/shared/lib/cn'
@@ -114,7 +115,7 @@ export function ReflectionStep({ onNext }: { onNext: () => void }) {
           {recording ? <Icon name="voice-wave" size={14} /> : <Icon3D name="t-mic" size={20} />}
         </button>
       </div>
-      {voice.error && <p className="rz-reflect-hint">{voice.error}</p>}
+      <VoiceBubble voice={voice} domain="nap" />
       {!savedPending && (
         <div className="rz-reflect-gratitude glass">
           <div className="rz-story-eyebrow">Amiért hálás vagy</div>
@@ -139,6 +140,7 @@ export function ReflectionStep({ onNext }: { onNext: () => void }) {
                     onLifeAreaChange={setLifeArea}
                     max={slots}
                     hint={`Legfeljebb ${slots} sor — teljesen opcionális.`}
+                    voiceDomain="nap"
                   />
                 </div>
               ) : (

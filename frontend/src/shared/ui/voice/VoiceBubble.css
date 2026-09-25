@@ -1,0 +1,126 @@
+/* ── Hallgató Boop (mezo-zyyox) ────────────────────────────────────────────
+   The voice-input bubble. Owner-approved look: docs/design_2.0/prototypes/hang-boop.html.
+   One accent per card via `--c` (üveg bible §2), taken from the caller's domain; the error
+   phase switches to coral. `--lvl` (0..1) is written by VoiceBubble's rAF from the live mic.
+   Every level-driven transform and every loop sits in the no-preference branch: with reduced
+   motion the phases and copy stay, the motion goes. */
+.vb-slot {
+  position: absolute; left: 14px; right: 14px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 104px);
+  z-index: 300; /* the toast tier: above sheets (200/211) and the level-up overlay (250) */
+  pointer-events: none;
+  display: flex; justify-content: center;
+}
+body > .vb-slot { position: fixed; }
+
+.vb {
+  --c: var(--dv-lav);
+  --lvl: 0;
+  pointer-events: auto;
+  width: 100%; max-width: 420px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px 10px 8px;
+  border-radius: 28px;
+  animation: vb-in .45s cubic-bezier(.2, .78, .24, 1) both;
+}
+.vb.is-leaving { animation: vb-out .35s ease-in both; }
+.vb[data-domain="nap"]   { --c: var(--dv-amber); }
+.vb[data-domain="train"] { --c: var(--dv-coral); }
+.vb[data-domain="fuel"]  { --c: var(--dv-sage); }
+.vb[data-domain="mezo"]  { --c: var(--dv-lav); }
+.vb[data-domain="me"]    { --c: var(--dv-rose); }
+.vb[data-phase="sad"]    { --c: #B8584A; }
+
+.vb-main {
+  flex: 1; min-width: 0;
+  display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: center; gap: 12px;
+  padding: 0; border: 0; background: none; color: var(--text-primary);
+  font: inherit; text-align: left; cursor: pointer;
+}
+.vb-main:disabled { cursor: default; opacity: 1; color: var(--text-primary); filter: none; }
+.vb-main:focus-visible, .vb-x:focus-visible { outline: 2px solid var(--c); outline-offset: 3px; border-radius: 20px; }
+
+.vb-stage { position: relative; width: 76px; height: 76px; display: grid; place-items: center; }
+.vb-halo {
+  position: absolute; inset: -4px; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--c) 42%, transparent) 0%, transparent 68%);
+  opacity: .45; transform: scale(.8);
+}
+.vb-ring { position: absolute; inset: 4px; width: calc(100% - 8px); height: calc(100% - 8px); overflow: visible; }
+.vb-track { fill: none; stroke: rgba(245, 239, 230, .07); stroke-width: 2; }
+.vb-arc {
+  fill: none; stroke: var(--c); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 46 144;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--c) 55%, transparent));
+  opacity: 0; transition: opacity .3s;
+  transform-box: fill-box; transform-origin: 50% 50%;
+}
+.vb[data-phase="listening"] .vb-track { stroke: color-mix(in srgb, var(--c) 55%, transparent); }
+.vb[data-phase="thinking"] .vb-arc { opacity: 1; }
+.vb[data-phase="done"] .vb-arc { opacity: 1; stroke-dasharray: 190 0; }
+
+.vb-boop { position: relative; overflow: visible; }
+.vb-boop .boop-brow, .vb-boop .boop-pupil { transition: transform .35s cubic-bezier(.2, .78, .24, 1); }
+/* The living Boop's own look/brow loops would win over a static pose (an animation beats a
+   declaration), so the posed phases stop them. The ears are left alone: their tilt is an SVG
+   `transform` attribute that any CSS transform would erase. */
+.vb[data-phase="thinking"] .vb-boop .boop-pupil, .vb[data-phase="thinking"] .vb-boop .boop-brow,
+.vb[data-phase="sad"] .vb-boop .boop-pupil, .vb[data-phase="sad"] .vb-boop .boop-brow { animation: none; }
+.vb[data-phase="thinking"] .boop-pupil { transform: translate(2.5px, -3px); }
+.vb[data-phase="thinking"] .boop-brow-l { transform: translateY(-2px) rotate(-6deg); }
+.vb[data-phase="thinking"] .boop-brow-r { transform: translateY(-2.6px) rotate(8deg); }
+.vb[data-phase="sad"] .boop-brow-l { transform: translateY(1px) rotate(14deg); }
+.vb[data-phase="sad"] .boop-brow-r { transform: translateY(1px) rotate(-14deg); }
+.vb[data-phase="sad"] .boop-pupil { transform: translateY(2.4px); }
+.vb[data-phase="sad"] .vb-halo { opacity: .25; }
+
+.vb-copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.vb-k {
+  font-size: 10px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 80%, var(--text-primary));
+}
+.vb-m { font-size: 15px; font-weight: 500; letter-spacing: -.2px; line-height: 1.3; }
+.vb-h { font-size: 12px; color: var(--text-secondary); }
+.vb-bars { display: flex; gap: 3px; align-items: center; height: 14px; margin-top: 2px; }
+.vb-bars i {
+  width: 3px; height: 3px; border-radius: 2px; background: var(--c);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--c) 60%, transparent);
+}
+
+.vb-x {
+  flex: none; width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center; cursor: pointer;
+  border: 1px solid var(--divider); background: rgba(245, 239, 230, .05);
+  color: var(--text-secondary); font: 400 17px/1 var(--ff-body, inherit);
+}
+.vb-x:hover { color: var(--text-primary); background: rgba(245, 239, 230, .1); }
+
+@keyframes vb-in { from { opacity: 0; transform: translateY(24px) scale(.96); } }
+@keyframes vb-out { to { opacity: 0; transform: translateY(18px) scale(.97); } }
+@media (prefers-reduced-motion: reduce) {
+  .vb, .vb.is-leaving { animation: none; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .vb[data-phase="listening"] .vb-halo {
+    transform: scale(calc(.72 + var(--lvl) * .5)); opacity: calc(.35 + var(--lvl) * .65);
+  }
+  .vb[data-phase="listening"] .vb-track { stroke-width: calc(1.5px + var(--lvl) * 3px); }
+  .vb[data-phase="listening"] .vb-boop .boop-body {
+    animation: none;
+    transform: translateY(calc(var(--lvl) * -2.5px)) scale(calc(1 + var(--lvl) * .05));
+  }
+  .vb[data-phase="thinking"] .vb-arc { animation: vb-spin 1.3s linear infinite; }
+  .vb[data-phase="thinking"] .vb-boop .boop-body { animation: vb-ponder 1.6s ease-in-out infinite; }
+  .vb[data-phase="done"] .vb-boop { animation: vb-hop .55s cubic-bezier(.3, .7, .3, 1.4) both; }
+  .vb[data-phase="sad"] .vb-boop .boop-body { animation: vb-droop .5s ease-out both; }
+}
+@keyframes vb-spin { to { transform: rotate(360deg); } }
+@keyframes vb-ponder { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+@keyframes vb-hop {
+  0% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-10px) scale(1.06, .96); }
+  70% { transform: translateY(0) scale(1.04, .95); }
+  100% { transform: translateY(0) scale(1); }
+}
+@keyframes vb-droop { to { transform: translateY(2px) scale(1, .97); } }
+/* ── /Hallgató Boop ── */

@@ -10,6 +10,7 @@ import { ConversationActionsSheet } from '@/features/insights/sheets/Conversatio
 import type { ConversationResponse } from '@/data/insights/chatApi'
 import { useStickToBottom } from '@/features/insights/logic/useStickToBottom'
 import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
+import { VoiceBubble } from '@/shared/ui/voice/VoiceBubble'
 import { cn } from '@/shared/lib/cn'
 import { QUICK_QUESTIONS } from '@/features/insights/logic/quickQuestions'
 
@@ -67,7 +68,7 @@ function ThinkingDots({ bare, phase }: { bare?: boolean; phase?: string } = {}) 
         ))}
       </div>
       {/* mezo-rj214.7: `.text-tertiary` is the file's own established muted-caption reuse
-          (see the voice-error line below) — no new CSS class or animation. */}
+          (e.g. the quick-question captions) — no new CSS class or animation. */}
       {phaseLabel && <span className="text-tertiary mzc-phase" style={{ fontSize: 12 }}>{phaseLabel}</span>}
     </div>
   )
@@ -366,9 +367,7 @@ export function ChatPage() {
         <div ref={endRef} aria-hidden style={{ height: 1 }} />
       </div>
 
-      {voice.error && (
-        <p className="text-tertiary" style={{ fontSize: 11, textAlign: 'center' }}>{voice.error}</p>
-      )}
+      <VoiceBubble voice={voice} domain="mezo" />
 
       {/* Prototype composer pill (mezo-d20.5.2): round mic disc · borderless field · lav
           gradient send disc. The sticky/`:has` plumbing keys off `.chat-composer`, so that

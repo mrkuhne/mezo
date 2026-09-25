@@ -2,6 +2,8 @@ import { useRef, useState } from 'react'
 import { Icon } from '@/shared/ui/Icon'
 import { cn } from '@/shared/lib/cn'
 import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
+import { VoiceBubble } from '@/shared/ui/voice/VoiceBubble'
+import type { BoopDomain } from '@/shared/ui/clay/boop/Boop'
 import { LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
 import { ClayIcon } from '@/shared/ui/clay'
 
@@ -16,6 +18,8 @@ interface GratitudeRowsProps {
   autoFocusFirst?: boolean
   /** Small tertiary line under the chips. Omitted → not rendered. */
   hint?: string
+  /** Whose Boop listens in the voice bubble: the journal is Én (`me`), the evening ritual Nap. */
+  voiceDomain?: BoopDomain
 }
 
 /**
@@ -43,6 +47,7 @@ export function GratitudeRows({
   max = 3,
   autoFocusFirst = false,
   hint,
+  voiceDomain = 'me',
 }: GratitudeRowsProps) {
   // Mirrors for the frozen voice callback (see the doc comment).
   const rowsRef = useRef(rows)
@@ -100,7 +105,7 @@ export function GratitudeRows({
         </div>
       ))}
 
-      {voice.error && <p className="text-tertiary" style={{ fontSize: 11 }}>{voice.error}</p>}
+      <VoiceBubble voice={voice} domain={voiceDomain} />
 
       {rows.length < max && (
         <button
