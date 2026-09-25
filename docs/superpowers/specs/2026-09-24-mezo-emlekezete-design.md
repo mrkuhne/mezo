@@ -312,6 +312,79 @@ mapper unit tests replace parser tests (`observationEvidence.test.ts`), card/fee
 component tests updated for new copy (6 test files sweep in one commit), team-feed
 post shows evidence block not raw text. Contract regen + CODEMAP.
 
+## S2 delta — user confirm → durable knowledge (2026-09-25, awaiting owner OK)
+
+**Session brainstorm findings (S2 recon):**
+
+- The confirm button ("Igen, ez igaz rám") already sends `choice=watch` on the
+  existing `/api/companion/pattern/{id}/reply` contract, and
+  `HypothesisLifecycle.POSITIVE_CHOICES` already reserves both `watch` and `confirm`.
+  **No contract change is needed**: S2 keeps `watch` on the wire and gives it its
+  S1-approved meaning ("Megjegyeztem, hogy ez igaz rád") server-side.
+- `knowledge_fact.include_in_prompt` **already exists** (default true) with a working
+  PATCH endpoint and a toggle in the Tudástár (`KnowledgeListPage.tsx`). The base
+  spec's "includeInPrompt-style toggle" needs **no new column and no new UI**:
+  promotion lands the confirmed observation in the Tudástár where the toggle already
+  works. S6 re-homes the view; S2 ships the linkage.
+- Exact-fingerprint re-proposal of a refuted row is **already blocked** by the partial
+  unique index on `hypothesis_key` (no status filter in `alreadyKnown`). The real gap:
+  `openHypotheses` feeds only `proposed|monitoring` rows to the PROPOSE/CRITIQUE
+  prompts, so a *reworded* duplicate of a refuted idea sails through.
+- Prior art (researcher): Zep/Graphiti soft-supersession (never delete, timestamp +
+  supersede), Letta/Claude discrete per-item prompt toggles, and the ChatGPT-memory
+  lesson that a refutation must be a durable stored veto checked semantically at
+  proposal time — exact-match absence is not enough. Proactive user-facing drift
+  ("this may no longer hold") has no consumer precedent; keep it conservative.
+
+### Design (S2)
+
+1. **Shared confirm body.** `PatternService.applyEngineConfirm` becomes
+   `applyConfirm(userId, pattern, source)` with source `ENGINE | USER` (existing
+   callers pass ENGINE). Both paths: status→`confirmed` where terminal, append
+   `confirmed` event (payload records the source), first-confirm promotion to
+   `knowledge_fact` (guarded by `promotedFactId`), publish `PatternConfirmedEvent`.
+   The promotion now **fills the fact's `provenance` envelope** with the pattern id
+   and the confirm source (today it is empty).
+2. **User confirm semantics** in `ReflectionReplyService` (`watch` choice):
+   - Row **with a test plan**: promote (fact + graph) immediately, but status stays
+     `monitoring` — the nightly engine loop continues and a later engine confirm
+     strengthens/freezes as today (re-confirm never re-promotes; `promotedFactId`
+     guard).
+   - **Plan-less grounded holding row**: promote AND set status `confirmed`
+     directly — the evaluator never touches plan-less rows, so leaving it
+     `monitoring` would show "GYŰLIK" forever with nothing gathering.
+3. **Refuted never resurfaces.** `openHypotheses` context for PROPOSE and CRITIQUE is
+   extended with `refuted` and `rejected` rows (title + topic key) under a "NE
+   javasold újra, átfogalmazva sem" instruction; the critique dedup check receives
+   them too. Code-side guard stays the source of truth (unique index).
+4. **Slow re-check + drift.** New quarterly job (own cron property + kill switch,
+   `QuarterlyReviewJob` idiom, free dawn slot) over rows that are
+   user-confirmed AND plan-less (planned rows are re-checked nightly by the
+   evaluator already). For each, an LLM re-check against fresh
+   `ObservationContextService` context (28d) returns holds/drifts/unknown + hedged
+   prose; **code decides**: only on a drift verdict does it append an `observation`
+   event via `PatternEventAppender` ("ez korábban igaz volt, az utóbbi hetekben
+   másképp alakul" tone), surfaced through the existing feed +
+   `AppNotificationKind.OBSERVATION_NEW` budget/dedup idiom (`QuickNoticeService`
+   precedent). The confirmed fact is never edited or deleted by the job; at most the
+   drift observation, once user-confirmed in a later cycle, supersedes it (S6 scope).
+5. **Switches & layers.** Reply-path promotion runs under
+   `COMPANION_SWITCH`+`REFLECTION_SWITCH` (reflection→companion.service import is
+   established); graph sync stays the existing after-commit listener
+   (`KNOWLEDGE_GRAPH_SWITCH` gated, fail-open). No new feature switch; the new job
+   gets its own `cron.*.enabled` kill switch per house convention.
+
+### Testing (S2)
+
+BE focused ITs: user confirm on a planned monitoring row (fact inserted once,
+provenance filled, status stays monitoring, graph event fires), user confirm on a
+plan-less grounded row (fact + status confirmed), re-confirm idempotency, refuted
+rows present in PROPOSE/CRITIQUE context, drift job appends exactly one hedged
+observation event on a drift verdict and nothing on holds/unknown (midnight-anchored
+fixtures). FE: both modes — no wire change expected; Tudástár shows the promoted
+fact with the existing toggle. CODEMAP regen; contract-drift gate untouched (no yml
+change).
+
 ## Slice lessons
 
 (numbered; only what a later slice would otherwise pay for again)
