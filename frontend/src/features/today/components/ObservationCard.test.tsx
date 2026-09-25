@@ -34,14 +34,14 @@ test('a fresh card renders the Mezo sentence, the question and three chips', () 
   expect(document.querySelector('.nap-obs-ask')?.textContent).toContain('Figyeljem tovább?')
   const chips = document.querySelectorAll('.nap-obs-chips button')
   expect(chips).toHaveLength(3)
-  expect([...chips].map((c) => c.textContent)).toEqual(['Igen, jellemző', 'Nem stimmel', 'Beszéljük meg'])
+  expect([...chips].map((c) => c.textContent)).toEqual(['Igen, ez igaz rám', 'Nem, ez nem stimmel', 'Beszéljük meg'])
   expect(document.querySelector('.nap-obs use[href="#t-journal"]')).not.toBeNull()
   expect(document.querySelector('.nap-obs.glass')).not.toBeNull()
 })
 
 // A dróton az időpont UTC-ben jön (`…T12:12:00Z`). A nyers karakterlánc-szeletelés az UTC
 // órát írta volna ki (12:12), a mock-seed csak azért nem buktatta le, mert az ő bélyegeiről
-// hiányzik a `Z`. Ezért a teszt a zónát is rögzíti — különben egy UTC-ben futó gépen
+// hiányzik a `Z`. Ezért a teszt a zónát is rögzíti - különben egy UTC-ben futó gépen
 // mindkét megvalósítás átmenne.
 describe('az eyebrow ideje HELYI idő, nem UTC', () => {
   const originalTz = process.env.TZ
@@ -58,20 +58,20 @@ describe('az eyebrow ideje HELYI idő, nem UTC', () => {
 test('a return card offers the same three replies as a fresh card', async () => {
   const onReply = renderCard(back)
   const chips = document.querySelectorAll('.nap-obs-chips button')
-  expect([...chips].map((c) => c.textContent)).toEqual(['Igen, jellemző', 'Nem stimmel', 'Beszéljük meg'])
+  expect([...chips].map((c) => c.textContent)).toEqual(['Igen, ez igaz rám', 'Nem, ez nem stimmel', 'Beszéljük meg'])
   expect(screen.getByText('FIGYELEM')).toBeInTheDocument()
 
-  await userEvent.click(screen.getByRole('button', { name: 'Igen, jellemző' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Igen, ez igaz rám' }))
   expect(onReply).toHaveBeenCalledWith(back.patternId, 'watch')
 })
 
-test('a return card’s "Nem stimmel" chip answers reject', async () => {
+test("a return card's 'Nem, ez nem stimmel' chip answers reject", async () => {
   const onReply = renderCard(back)
-  await userEvent.click(screen.getByRole('button', { name: 'Nem stimmel' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Nem, ez nem stimmel' }))
   expect(onReply).toHaveBeenCalledWith(back.patternId, 'reject')
 })
 
-test('watching and confirmed cards carry no chips at all — nothing to answer', () => {
+test('watching and confirmed cards carry no chips at all - nothing to answer', () => {
   const { unmount } = render(
     <MemoryRouter><ObservationCard item={watching} onReply={vi.fn()} /></MemoryRouter>,
   )
@@ -82,40 +82,40 @@ test('watching and confirmed cards carry no chips at all — nothing to answer',
   expect(screen.getByText('BEÉPÜLT')).toBeInTheDocument()
 })
 
-test('tapping „Igen, jellemző" replies watch and flips the card to its acknowledgement line', async () => {
+test('tapping „Igen, ez igaz rám" replies watch and flips the card to its acknowledgement line', async () => {
   const onReply = renderCard(fresh)
-  await userEvent.click(screen.getByRole('button', { name: 'Igen, jellemző' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Igen, ez igaz rám' }))
 
   expect(onReply).toHaveBeenCalledWith(fresh.patternId, 'watch')
   expect(document.querySelector('.nap-obs-chips')).toBeNull()
   expect(document.querySelector('.nap-obs-ack')?.textContent)
-    .toBe('Megjegyeztem, hogy ez jellemző rád. Az összefüggést tovább figyelem.')
+    .toBe('Megjegyeztem, hogy ez igaz rád. Az összefüggést tovább figyelem.')
 })
 
 test('a measurable-less fresh card acknowledges without promising a day count', async () => {
   const onReply = renderCard({ ...fresh, minN: undefined })
-  await userEvent.click(screen.getByRole('button', { name: 'Igen, jellemző' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Igen, ez igaz rám' }))
 
   expect(onReply).toHaveBeenCalledWith(fresh.patternId, 'watch')
   expect(document.querySelector('.nap-obs-ack')?.textContent)
-    .toBe('Megjegyeztem, hogy ez jellemző rád. Az összefüggést tovább figyelem.')
+    .toBe('Megjegyeztem, hogy ez igaz rád. Az összefüggést tovább figyelem.')
 })
 
 test('a card the server already knows the answer to opens acknowledged, without chips', () => {
   renderCard({ ...fresh, repliedChoice: 'reject' })
   expect(document.querySelector('.nap-obs-chips')).toBeNull()
   expect(document.querySelector('.nap-obs-ack')?.textContent)
-    .toBe('Értem, nem stimmel. Nem hozom fel újra ebben a formában.')
+    .toBe('Értem, ez nem stimmel. Nem hozom fel újra ebben a formában.')
 })
 
-test('the chip group is disabled while that card’s reply is in flight — no double reply', async () => {
+test("the chip group is disabled while that card's reply is in flight - no double reply", async () => {
   const onReply = vi.fn()
   render(
     <MemoryRouter>
       <ObservationCard item={fresh} onReply={onReply} pending />
     </MemoryRouter>,
   )
-  const chip = screen.getByRole('button', { name: 'Igen, jellemző' })
+  const chip = screen.getByRole('button', { name: 'Igen, ez igaz rám' })
   expect(chip).toBeDisabled()
   await userEvent.click(chip)
   expect(onReply).not.toHaveBeenCalled()
@@ -126,7 +126,7 @@ test('a watching card shows the 8-slot tally (hit / miss / empty marks), the 5 /
   expect(screen.getByText('GYŰLIK')).toBeInTheDocument()
   const slots = document.querySelectorAll('.nap-obs-tally i')
   expect(slots).toHaveLength(8)
-  // mezo-me75u.3: the ✓/✕/· text glyphs became 3D tick / skip marks + a flat dot — the
+  // mezo-me75u.3: the ✓/✕/· text glyphs became 3D tick / skip marks + a flat dot - the
   // meaning stays in the data hook AND in each slot's accessible text.
   expect([...slots].map((s) => s.getAttribute('data-slot')))
     .toEqual(['hit', 'hit', 'hit', 'hit', 'miss', 'none', 'none', 'none'])
@@ -141,7 +141,7 @@ test('a watching card shows the 8-slot tally (hit / miss / empty marks), the 5 /
   )
   expect(screen.getByText('5 / 8 nap')).toBeInTheDocument()
   expect(document.querySelector('.nap-obs-prog')).toHaveAttribute('aria-label', '5 a szükséges 8 napból')
-  // the watching card has no prose — the question line carries the numbers instead
+  // the watching card has no prose - the question line carries the numbers instead
   expect(document.querySelector('.nap-obs-say')).toBeNull()
   expect(screen.getByRole('link', { name: 'Laborfüzet ›' }))
     .toHaveAttribute('href', `/mezo/patterns/${watching.hypothesisKey}`)
@@ -182,16 +182,16 @@ test('„Beszéljük meg" without a conversation id stays put and only acknowled
   expect(screen.queryByText(/^chat:/)).toBeNull()
 })
 
-test('egy elbukott válasz NEM hazudik nyugtázást — a chipek visszajönnek hibasorral', async () => {
+test('egy elbukott válasz NEM hazudik nyugtázást - a chipek visszajönnek hibasorral', async () => {
   const onReply = vi.fn().mockRejectedValue(new Error('boom'))
   render(
     <MemoryRouter><ObservationCard item={fresh} onReply={onReply} /></MemoryRouter>,
   )
-  await userEvent.click(screen.getByRole('button', { name: 'Igen, jellemző' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Igen, ez igaz rám' }))
 
   expect(await screen.findByText('Nem sikerült elküldeni — próbáld újra.')).toBeInTheDocument()
   expect(document.querySelector('.nap-obs-ack')).toBeNull()
-  expect(screen.getByRole('button', { name: 'Igen, jellemző' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Igen, ez igaz rám' })).toBeInTheDocument()
 })
 
 
@@ -208,9 +208,9 @@ test('statistical watching exposes source evidence and detail link without inven
 
 test('return confirmation records experience without calling it measured proof', async () => {
   renderCard(back)
-  await userEvent.click(screen.getByRole('button', { name: 'Igen, jellemző' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Igen, ez igaz rám' }))
   expect(document.querySelector('.nap-obs-ack')?.textContent)
-    .toBe('Megjegyeztem, hogy ez jellemző rád. Az összefüggést tovább figyelem.')
+    .toBe('Megjegyeztem, hogy ez igaz rád. Az összefüggést tovább figyelem.')
 })
 
 test('older unanswered card retains its original observation date', () => {

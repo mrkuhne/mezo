@@ -43,7 +43,7 @@ export function useObservations(date?: string) {
 }
 
 /**
- * A chip-válasz (Igen, jellemző / Nem stimmel / Beszéljük meg).
+ * A chip-válasz (Igen, ez igaz rám / Nem, ez nem stimmel / Beszéljük meg).
  *
  * A szerver oldalon NEM idempotens — a hívó felület felel azért, hogy egy kártyán egyszer
  * fusson le (a chip-csoport tiltása a `pending` alatt + a válasz utáni elrejtés).

@@ -63,15 +63,15 @@ const STATE_PILL: Record<ObservationCardKind, string> = {
 /** A felhasználó tapasztalata külön marad a mért bizonyítéktól. */
 function ackLine(choice: ObservationChoice): string {
   if (choice === 'talk') return 'Megnyitom a chatet ezzel a szállal.'
-  if (choice === 'reject') return 'Értem, nem stimmel. Nem hozom fel újra ebben a formában.'
-  return 'Megjegyeztem, hogy ez jellemző rád. Az összefüggést tovább figyelem.'
+  if (choice === 'reject') return 'Értem, ez nem stimmel. Nem hozom fel újra ebben a formában.'
+  return 'Megjegyeztem, hogy ez igaz rád. Az összefüggést tovább figyelem.'
 }
 
 function chipsFor(card: ObservationCardKind): { label: string; choice: ObservationChoice; tone?: 'yes' | 'talk' }[] {
   if (card !== 'fresh' && card !== 'return') return []
   return [
-    { label: 'Igen, jellemző', choice: 'watch', tone: 'yes' },
-    { label: 'Nem stimmel', choice: 'reject' },
+    { label: 'Igen, ez igaz rám', choice: 'watch', tone: 'yes' },
+    { label: 'Nem, ez nem stimmel', choice: 'reject' },
     { label: 'Beszéljük meg', choice: 'talk', tone: 'talk' },
   ]
 }

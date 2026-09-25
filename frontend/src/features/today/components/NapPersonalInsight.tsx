@@ -57,8 +57,8 @@ function InsightContent({ item }: { item: Observation }) {
     {item.question && <p className="nap-personal-question"><SafeMarkdown text={item.question} /></p>}
     {item.evidence.length > 0 && <details className="nap-personal-evidence"><summary>Miből látom?</summary><EvidenceList evidence={item.evidence} today={localDateString()} /></details>}
     {asks ? <div className="nap-personal-actions" role="group" aria-label="Válaszod az észrevételre">
-      <button type="button" className="is-primary" disabled={pending} onClick={() => { void answer('watch') }}>Igen, jellemző</button>
-      <button type="button" disabled={pending} onClick={() => { void answer('reject') }}>Nem stimmel</button>
+      <button type="button" className="is-primary" disabled={pending} onClick={() => { void answer('watch') }}>Igen, ez igaz rám</button>
+      <button type="button" disabled={pending} onClick={() => { void answer('reject') }}>Nem, ez nem stimmel</button>
       <button type="button" disabled={pending} onClick={() => { void answer('talk') }}>Beszéljük meg</button>
     </div> : <>
       {answered && <p role="status" className="nap-personal-ack">Megjegyeztem a válaszod.</p>}
