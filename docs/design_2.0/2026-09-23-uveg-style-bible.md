@@ -530,3 +530,31 @@ experiment detail were already glass (csapatfal, U8a). Prototype: [`prototypes/u
     graphic is its own child (the Memória ring) or which is text only (a memoir chapter).
 65. **A refuted experiment is neutral.** „Nem igazolódott" keeps no failure colour (`docs/features/proactive.md`:
     muted, no red/no-penalty tone), whatever the prototype drew. Rule 53 again: grep the product rules first.
+
+### U9 · Mezo II (`mezo-me75u.9`, 2026-09-25)
+
+Karakter (napló, dimenziók, egy dimenzió), Rólad, Konzílium, Gépterem (+ futások, egy futás, adatforrások, kör,
+detektorok, Összes funkció), Tudástár (minden nézet + egy kapcsolat), Minták, Előrejelzések. Blocks:
+`── uveg mezo2 karakter|konzilium|gepterem|tudastar|mintak (`. Four new sprite icons (`t-council t-radar t-graph t-grid`).
+Prototype: the WHOLE Mezo section in one file, [`prototypes/uveg-mezo-teljes.html`](prototypes/uveg-mezo-teljes.html).
+
+66. **Another programme's approved world outranks this slice's first draft.** The first U9 prototype was built on the
+    live pages and drew the old nine experts; the csapatfal (`/csapatfal`, epic `mezo-a9bo7`) had already designed Rólad,
+    Konzílium and Gépterem (D3/D5) with five characters. Before prototyping a Mezo (or any) surface, grep every approved
+    prototype for its route — `uveg-uzenofal.html` is the Mezo world's canon, and a slice re-dresses the live page IN that
+    world's material (`tf-*`), never beside it.
+67. **One reference file for a whole area, assembled, not forked.** `uveg-mezo-teljes.html` is spliced from the
+    untouched csapatfal world + the U8 screens (their CSS scoped under `.u8` by `src/scope-css.py`, views in a module that
+    registers with the host router) + the U9 screens. Two copies of an approved world always drift; a splice keeps the
+    canon file canon.
+68. **A module that registers views must not shadow the host's globals it reads.** The U8 code declared its own `CH`
+    (memoir chapters) and silently hid the csapatfal's `CH` (the characters); every U9 view threw. Scan the names both
+    scripts declare before concatenating them.
+69. **Display mapping belongs in one helper, and it must accept every key shape it will meet.** Personas fold into the
+    five characters through `personaCharacter()`; the evening edition's rows already carry a TEAM id, which the first
+    version turned into Mezo. Map persona keys AND pass-through team ids, and test both.
+70. **A retired duplicate is redirected, not re-dressed.** The in-page Karakter tabs and the 9-expert roster duplicated
+    the dock and A csapat; the owner chose to drop them (redirect `/mezo/karakter/csapat` → `/mezo/csapat`, keep the old
+    feed as the wall's source page). Ask before styling a page the new world has already replaced.
+71. **Builders still save the whole stylesheet (rule 41 again).** One U9 builder used `sed -i` on `prototype.css`; all five
+    blocks survived because integration re-checked every builder's key selectors before the structure test pinned them.
