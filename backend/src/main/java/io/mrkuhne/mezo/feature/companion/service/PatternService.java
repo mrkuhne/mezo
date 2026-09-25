@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventPayloadEnvelope;
+import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
 import io.mrkuhne.mezo.feature.companion.mapper.PatternTestPlanMapper;
@@ -41,6 +42,10 @@ public class PatternService {
             "confirm", PatternEntity.STATUS_CONFIRMED,
             "monitor", PatternEntity.STATUS_MONITORING,
             "reject", PatternEntity.STATUS_REJECTED);
+
+    /** S2 (mezo-d6ivw.2): who confirmed — recorded on the event and the fact's provenance. */
+    public static final String CONFIRM_SOURCE_ENGINE = "engine";
+    public static final String CONFIRM_SOURCE_USER = "user";
 
     private final PatternRepository patternRepository;
     private final KnowledgeFactRepository knowledgeFactRepository;
@@ -96,7 +101,8 @@ public class PatternService {
                     SystemMessage.field("VALIDATION_INVALID_VALUE", "decision").build());
         }
         if (PatternEntity.STATUS_CONFIRMED.equals(status)) {
-            applyEngineConfirm(userId, pattern);
+            // the Minták L2 decision is the USER's — see CONFIRM_SOURCE_USER
+            applyConfirm(userId, pattern, CONFIRM_SOURCE_USER);
         } else {
             pattern.setStatus(status);
             // S1 (mezo-tk88.1): every transition is part of the pattern's durable story — the
@@ -121,28 +127,74 @@ public class PatternService {
      * knowledge fact (source=pattern, linked back); later un-confirms leave the fact alone (it is
      * Daniel's knowledge now — the Knowledge tab owns its lifecycle). The {@code promoted} event
      * fires AFTER the decision event — the promotion happens BECAUSE of the decision.
+     *
+     * <p>S2 (mezo-d6ivw.2): {@code source} ({@link #CONFIRM_SOURCE_ENGINE} or
+     * {@link #CONFIRM_SOURCE_USER}) rides the decision event's payload and the promoted fact's
+     * provenance — one confirm, one meaning, but the WHO stays attributable.
      */
     @Transactional
-    public void applyEngineConfirm(UUID userId, PatternEntity pattern) {
+    public void applyConfirm(UUID userId, PatternEntity pattern, String source) {
         pattern.setStatus(PatternEntity.STATUS_CONFIRMED);
-        recordEvent(pattern, PatternEntity.STATUS_CONFIRMED, PatternEventPayloadEnvelope.empty());
-        if (pattern.getPromotedFactId() == null) {
-            pattern.setPromotedFactId(promote(userId, pattern));
-            recordEvent(pattern, PatternEventEntity.KIND_PROMOTED,
-                    PatternEventPayloadEnvelope.promoted(pattern.getPromotedFactId()));
-        }
+        recordEvent(pattern, PatternEntity.STATUS_CONFIRMED, PatternEventPayloadEnvelope.confirmed(source));
+        promoteIfFirst(userId, pattern, source);
         // W2.2 (mezo-b3pp.7): every confirm re-syncs the graph node; the promotion itself is
         // an idempotent UPSERT, so a re-confirm costs nothing and never duplicates.
         eventPublisher.publishEvent(new PatternConfirmedEvent(userId, pattern.getId()));
     }
 
+    /**
+     * S2 (mezo-d6ivw.2): the user's "Igen, ez igaz rám". A plan-less row has nothing left to
+     * measure — the confirm is terminal. A planned row keeps monitoring: the fact exists from
+     * this moment (the user's word is enough), and the engine's own later confirm strengthens
+     * and freezes as before.
+     *
+     * <p>S2 delta (final-review adjudications 2026-09-25): a drift row ({@link
+     * PatternEntity#isDrift()}) is always plan-less, but its confirm must NOT mint a fact that
+     * contradicts the original claim — see {@link #applyDriftConfirm}.
+     */
+    @Transactional
+    public void applyUserConfirm(UUID userId, PatternEntity pattern) {
+        if (pattern.getTestPlan() == null) {
+            if (pattern.isDrift()) {
+                applyDriftConfirm(pattern);
+                return;
+            }
+            applyConfirm(userId, pattern, CONFIRM_SOURCE_USER);
+            return;
+        }
+        promoteIfFirst(userId, pattern, CONFIRM_SOURCE_USER);
+    }
+
+    /**
+     * S2 delta (final-review adjudications 2026-09-25, spec §S2 delta): confirming a drift card
+     * ("igen, ez most is így van") only freezes the row and records the confirm — it deliberately
+     * does NOT promote a new fact or fire {@code PatternConfirmedEvent}/{@code
+     * KnowledgeFactPromotedEvent}, because superseding the ORIGINAL confirmed fact with the
+     * drifted claim is S6's job (the drift hub), not this slice's.
+     */
+    private void applyDriftConfirm(PatternEntity pattern) {
+        pattern.setStatus(PatternEntity.STATUS_CONFIRMED);
+        recordEvent(pattern, PatternEntity.STATUS_CONFIRMED,
+                PatternEventPayloadEnvelope.confirmed(CONFIRM_SOURCE_USER));
+    }
+
+    private void promoteIfFirst(UUID userId, PatternEntity pattern, String source) {
+        if (pattern.getPromotedFactId() != null) return;
+        pattern.setPromotedFactId(promote(userId, pattern, source));
+        recordEvent(pattern, PatternEventEntity.KIND_PROMOTED,
+                PatternEventPayloadEnvelope.promoted(pattern.getPromotedFactId()));
+        // the fact's own graph node syncs now, not at the nightly reconcile
+        eventPublisher.publishEvent(new KnowledgeFactPromotedEvent(userId, pattern.getPromotedFactId()));
+    }
+
     /** v1 category heuristic: physiology/trigger → health, response → train (documented). */
-    private UUID promote(UUID userId, PatternEntity pattern) {
+    private UUID promote(UUID userId, PatternEntity pattern, String source) {
         KnowledgeFactEntity fact = new KnowledgeFactEntity();
         fact.setCreatedBy(userId);
         fact.setFactText(pattern.getTitle());
         fact.setCategory("response".equals(pattern.getCategory()) ? "train" : "health");
         fact.setSource(KnowledgeFactEntity.SOURCE_PATTERN);
+        fact.setProvenance(MemoryProvenanceEnvelope.patternPromotion(pattern.getId(), source));
         return knowledgeFactRepository.saveAndFlush(fact).getId();
     }
 

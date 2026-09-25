@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.companion.reflection.service.HypothesisEvaluation
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
+import io.mrkuhne.mezo.feature.companion.service.PatternService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CreatedAtBackdater;
 import io.mrkuhne.mezo.support.populator.PatternEventPopulator;
@@ -48,6 +49,7 @@ class HypothesisEvaluationServiceIT extends AbstractIntegrationTest {
     @Autowired private PatternRepository patternRepository;
     @Autowired private PatternEventRepository patternEventRepository;
     @Autowired private KnowledgeFactRepository knowledgeFactRepository;
+    @Autowired private PatternService patternService;
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private PatternEventPopulator patternEventPopulator;
     @Autowired private TextSignalPopulator textSignalPopulator;
@@ -102,6 +104,35 @@ class HypothesisEvaluationServiceIT extends AbstractIntegrationTest {
         KnowledgeFactEntity fact = knowledgeFactRepository.findById(after.getPromotedFactId()).orElseThrow();
         assertThat(fact.getSource()).isEqualTo(KnowledgeFactEntity.SOURCE_PATTERN);
         assertThat(fact.getFactText()).isEqualTo(after.getTitle());
+        // S2 delta (final-review adjudications 2026-09-25): the ENGINE's own confirm — through
+        // the same PatternService.applyConfirm body the user's confirm uses — must record itself
+        // as the source, not silently inherit the user's.
+        assertThat(fact.getProvenance().confirmSource()).isEqualTo(PatternService.CONFIRM_SOURCE_ENGINE);
+    }
+
+    /**
+     * S2 delta (final-review adjudications 2026-09-25): the engine's OWN refute path — a
+     * monitoring row the user already watched (so it carries a {@code promotedFactId}) that the
+     * nightly gate now contradicts three nights running — mutes its promoted fact exactly like
+     * the chip reply's two-strike refute does.
+     */
+    @Test
+    void testEvaluate_shouldMutePromotedFact_whenARefutedRowCarriesAPromotedFact() {
+        UUID owner = userPopulator.createUser().getId();
+        PatternEntity row = patternPopulator.reflection(owner, PLAN, PatternEntity.STATUS_MONITORING);
+        patternService.applyUserConfirm(owner, row);
+        patternRepository.saveAndFlush(row);
+        UUID factId = row.getPromotedFactId();
+        assertThat(factId).isNotNull();
+        seedUncorrelatedDays(owner);
+
+        for (int night = 0; night < 3; night++) {
+            evaluationService.evaluate(owner, TODAY.plusDays(night));
+        }
+
+        PatternEntity after = patternRepository.findById(row.getId()).orElseThrow();
+        assertThat(after.getStatus()).isEqualTo(PatternEntity.STATUS_REFUTED);
+        assertThat(knowledgeFactRepository.findById(factId).orElseThrow().isIncludeInPrompt()).isFalse();
     }
 
     @Test

@@ -80,6 +80,26 @@ public class PatternPopulator {
         return patternRepository.saveAndFlush(entity);
     }
 
+    /** S2 (mezo-d6ivw.2): a PLAN-LESS reflection-owned row — {@code kind=reflection} so
+     *  {@code ReflectionReplyService}'s {@code isReflectionOwned} filter accepts it, but no
+     *  {@link TestPlanEnvelope} to build a key from ({@link #reflection} would NPE on a null
+     *  plan trying to key it). The user's confirm on a row like this is terminal — nothing
+     *  left to measure. */
+    public PatternEntity reflectionNoPlan(UUID createdBy, String status) {
+        PatternEntity entity = new PatternEntity();
+        entity.setCreatedBy(createdBy);
+        entity.setKind(PatternEntity.KIND_REFLECTION);
+        entity.setPairKey("reflection-no-plan-" + UUID.randomUUID());
+        entity.setCategory("trigger");
+        entity.setCategoryLabel("Trigger");
+        entity.setTitle("Teszt: terv nélküli észrevétel");
+        entity.setMechanism("Reflexió S2 teszt, terv nélkül.");
+        entity.setEvidence(new PatternEvidenceEnvelope(List.of("teszt-terv-nelkul")));
+        entity.setOrigin(PatternEntity.ORIGIN_NIGHTLY_REFLECTION);
+        entity.setStatus(status);
+        return patternRepository.saveAndFlush(entity);
+    }
+
     /** Re-persists a caller-mutated pattern (W2.2: flip status/r/n after {@link #createPattern}). */
     public PatternEntity save(PatternEntity entity) {
         return patternRepository.saveAndFlush(entity);

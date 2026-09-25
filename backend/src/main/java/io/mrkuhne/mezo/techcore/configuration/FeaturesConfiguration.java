@@ -79,6 +79,12 @@ public class FeaturesConfiguration {
      *  cron zone; off ⇒ the ReflectionJob bean does not exist (the services stay callable). */
     public static final String REFLECTION_JOB_SWITCH = "mezo.techcore.cron.reflection-job.enabled";
 
+    /** Envelope S2 (mezo-d6ivw.2) Task 5: quarterly knowledge re-check (schedule:
+     *  mezo.companion.reflection.recheck-cron) — techcore cron zone; off ⇒ the KnowledgeRecheckJob
+     *  bean does not exist (KnowledgeRecheckService stays callable). */
+    public static final String KNOWLEDGE_RECHECK_JOB_SWITCH =
+            "mezo.techcore.cron.knowledge-recheck-job.enabled";
+
     /** Fuel P6 pantry import (OpenFoodFacts lookup + import endpoints). Gates OffClient + PantryImportController. */
     public static final String PANTRY_IMPORT_SWITCH = "mezo.feature.pantry-import.enabled";
 

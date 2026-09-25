@@ -548,6 +548,11 @@ mezo:
       # the FlagSweepJob-vs-FlagService idiom)
       reflection-job:
         enabled: true
+      # S2 (mezo-d6ivw.2) quarterly knowledge re-check (schedule:
+      # mezo.companion.reflection.recheck-cron); off = the KnowledgeRecheckJob bean does not exist
+      # (KnowledgeRecheckService stays callable, the FlagSweepJob-vs-FlagService idiom)
+      knowledge-recheck-job:
+        enabled: true
       # Companion-feed morning/midday/evening crons (schedules: mezo.proactive.feed.*-cron);
       # off = the CompanionMessageJob bean does not exist (the lazy GET still serves)
       feed-job:
@@ -955,10 +960,21 @@ mezo:
       # payload-retention purge (mezo.llm-log.retention.cron), which is a single bounded UPDATE on
       # an unrelated table, so there is no contention. Everything else is taken: 02:20 summary,
       # 02:30 day-review warm-up, 02:40 patterns, 02:50 character, 03:00 SUN hypotheses, 03:10 feedback-learning, 03:20 graph,
-      # 03:30 MON weekly rung, 03:45 MON profile, 03:50 monthly rung + audit retention, 04:00 quarterly.
+      # 03:30 MON weekly rung, 03:45 MON profile, 03:50 monthly rung + audit retention, 04:00
+      # quarterly. (Knowledge re-check is NOT in this dawn cluster — see recheck-cron below: it
+      # deliberately sits outside quiet hours instead.)
       cron: "0 40 3 * * *"
       # Missing/stale text signals are re-extracted for this many finished days each night.
       catch-up-days: 7
+      # S2 (mezo-d6ivw.2) Task 5: quarterly re-check of confirmed, plan-less facts — the 1st of
+      # Jan/Apr/Jul/Oct at 09:20. Deliberately OUTSIDE the 02:20-04:00 dawn cluster: a drift row is
+      # gated by ObservationBudget.allows, which refuses inside notice.quiet-from/quiet-to below
+      # (default 22:00-07:00) — a dawn-cluster time would run this job entirely inside that window,
+      # so it could never create a single row (KnowledgeRecheckService checks the budget BEFORE
+      # calling the LLM, so a quiet-hours run at least would not waste a smart-tier call per
+      # candidate — but the feature would still be permanently dead). 09:20 is comfortably clear
+      # of the default quiet window.
+      recheck-cron: "0 20 9 1 1,4,7,10 *"
       notice:
         # LIVE as of mezo-eq85.5. History: S4 (mezo-eq85.4) shipped this false — a silent launch —
         # ONLY because the "Mezo észrevett valamit" push deep-links to /nap/uzenetek?tab=eszrevetelek,

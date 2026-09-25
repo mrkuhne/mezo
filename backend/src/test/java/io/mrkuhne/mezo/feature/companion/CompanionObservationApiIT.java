@@ -130,6 +130,29 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
         assertThat(cards.get(2).getSourceIcon()).isEqualTo("vacsora");
     }
 
+    /** mezo-d6ivw.2 Task 6: pins that a {@code KnowledgeRecheckService} drift row is a genuinely
+     *  NEW fresh card, not something the frozen-row filter swallows — that is the whole reason
+     *  drift is modeled as a new proposed row instead of a rewrite of the confirmed one. */
+    @Test
+    void testListObservations_shouldSurfaceADriftRow_whenAConfirmedFactsRecheckProposesOne() {
+        UUID owner = ownerId();
+
+        PatternEntity drift = patternPopulator.reflectionNoPlan(owner, PatternEntity.STATUS_PROPOSED);
+        drift.setPairKey("drift-" + UUID.randomUUID());
+        drift = patternPopulator.save(drift);
+        PatternEventEntity driftEvent = patternEventPopulator.observation(owner, drift.getId(),
+                "Korábban megerősítetted, hogy sokat alszol Anna után.\nMég mindig így van?",
+                List.of(), true, dayAt(0));
+
+        List<ObservationResponse> cards = getForList(
+                "/api/companion/observation?date=" + TODAY, ownerAuthHeaders(),
+                HttpStatus.OK, ObservationResponse.class);
+
+        assertThat(cards).extracting(ObservationResponse::getCard).containsExactly("fresh");
+        assertThat(cards.get(0).getId()).isEqualTo(driftEvent.getId());
+        assertThat(cards.get(0).getPatternId()).isEqualTo(drift.getId());
+    }
+
     @Test
     void testListObservations_shouldMarkTheCardAsReturn_whenTheRowWasRepliedToBeforeTheObservation() {
         UUID owner = ownerId();
@@ -386,7 +409,7 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
                 false, dayAt(0).minusSeconds(86400));
         var old = event.getPayload();
         event.setPayload(new PatternEventPayloadEnvelope(null, null, null, null, null,
-                null, null, "grounded", null, old.text(), old.evidenceRefs(), false));
+                null, null, "grounded", null, old.text(), old.evidenceRefs(), false, null));
         eventRepository.saveAndFlush(event);
         assertThat(getForList("/api/companion/observation", ownerAuthHeaders(),
                 HttpStatus.OK, ObservationResponse.class)).singleElement().satisfies(card -> {
@@ -427,7 +450,7 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
                 dayAt(0).minusSeconds(86400));
         var p = pending.getPayload();
         pending.setPayload(new PatternEventPayloadEnvelope(null, null, null, null, null,
-                null, null, "grounded", null, p.text(), p.evidenceRefs(), false));
+                null, null, "grounded", null, p.text(), p.evidenceRefs(), false, null));
         eventRepository.saveAndFlush(pending);
         assertThat(getForList("/api/companion/observation", ownerAuthHeaders(), HttpStatus.OK,
                 ObservationResponse.class)).extracting(ObservationResponse::getId).doesNotContain(pending.getId());
@@ -441,7 +464,7 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
         PatternEventEntity event = patternEventPopulator.observation(owner, patternId, text, evidenceRefs, true, occurredAt);
         var p = event.getPayload();
         event.setPayload(new PatternEventPayloadEnvelope(p.r(), p.n(), p.p(), p.reinforcementCount(),
-                p.factId(), p.hit(), p.verdict(), "grounded", p.choice(), p.text(), p.evidenceRefs(), p.surfaced()));
+                p.factId(), p.hit(), p.verdict(), "grounded", p.choice(), p.text(), p.evidenceRefs(), p.surfaced(), p.confirmSource()));
         return eventRepository.saveAndFlush(event);
     }
 

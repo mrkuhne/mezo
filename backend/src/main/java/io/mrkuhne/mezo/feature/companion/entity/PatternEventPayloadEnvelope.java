@@ -10,6 +10,7 @@ import java.util.UUID;
  *
  * <p>Reflexió S2 (mezo-eq85.2) appends the trailing components: evidence → r/n/p + verdict + hit;
  * observation → text + evidenceRefs + surfaced; user_reply → channel/choice/text; revised → text.
+ * Envelope S2 (mezo-d6ivw.2) appends confirmSource (who confirmed: CONFIRM_SOURCE_ENGINE or _USER).
  * Jackson deserializes pre-S2 rows with every trailing component null (the {@code
  * CompanionMessageEnvelope} precedent) — the record grows at the END for exactly that reason.
  */
@@ -17,26 +18,26 @@ public record PatternEventPayloadEnvelope(Double r, Integer n, Double p,
                                           Integer reinforcementCount, UUID factId,
                                           Boolean hit, String verdict, String channel,
                                           String choice, String text,
-                                          List<String> evidenceRefs, Boolean surfaced) {
+                                          List<String> evidenceRefs, Boolean surfaced, String confirmSource) {
 
     public static PatternEventPayloadEnvelope empty() {
         return new PatternEventPayloadEnvelope(null, null, null, null, null,
-                null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null);
     }
 
     public static PatternEventPayloadEnvelope snapshot(double r, int n, double p) {
         return new PatternEventPayloadEnvelope(r, n, p, null, null,
-                null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null);
     }
 
     public static PatternEventPayloadEnvelope reinforced(int reinforcementCount) {
         return new PatternEventPayloadEnvelope(null, null, null, reinforcementCount, null,
-                null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null);
     }
 
     public static PatternEventPayloadEnvelope promoted(UUID factId) {
         return new PatternEventPayloadEnvelope(null, null, null, null, factId,
-                null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null);
     }
 
     /** S2: one nightly re-run of the test plan. {@code hit} is null when the gate was not LIVE —
@@ -44,25 +45,31 @@ public record PatternEventPayloadEnvelope(Double r, Integer n, Double p,
     public static PatternEventPayloadEnvelope evidence(Double r, Integer n, Double p,
                                                        String verdict, Boolean hit) {
         return new PatternEventPayloadEnvelope(r, n, p, null, null,
-                hit, verdict, null, null, null, null, null);
+                hit, verdict, null, null, null, null, null, null);
     }
 
     /** S2: what the companion said about the pattern, and whether it actually reached the user. */
     public static PatternEventPayloadEnvelope observation(String text, List<String> evidenceRefs,
                                                           boolean surfaced) {
         return new PatternEventPayloadEnvelope(null, null, null, null, null,
-                null, null, null, null, text, evidenceRefs, surfaced);
+                null, null, null, null, text, evidenceRefs, surfaced, null);
     }
 
     /** S2: the user's own answer — the only user-authored input to {@code belief}. */
     public static PatternEventPayloadEnvelope userReply(String channel, String choice, String text) {
         return new PatternEventPayloadEnvelope(null, null, null, null, null,
-                null, null, channel, choice, text, null, null);
+                null, null, channel, choice, text, null, null, null);
     }
 
     /** S2: a rewording — the test plan (and therefore the identity) is unchanged. */
     public static PatternEventPayloadEnvelope revised(String text) {
         return new PatternEventPayloadEnvelope(null, null, null, null, null,
-                null, null, null, null, text, null, null);
+                null, null, null, null, text, null, null, null);
+    }
+
+    /** S2 (mezo-d6ivw.2): who confirmed — PatternService.CONFIRM_SOURCE_ENGINE or _USER. */
+    public static PatternEventPayloadEnvelope confirmed(String confirmSource) {
+        return new PatternEventPayloadEnvelope(null, null, null, null, null,
+                null, null, null, null, null, null, null, confirmSource);
     }
 }

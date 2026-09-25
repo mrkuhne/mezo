@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.companion.entity.TestPlanEnvelope;
 import io.mrkuhne.mezo.feature.companion.reflection.config.ReflectionProperties;
 import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
+import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
 import io.mrkuhne.mezo.feature.companion.service.PatternEventAppender;
 import io.mrkuhne.mezo.feature.companion.service.PatternGate;
 import io.mrkuhne.mezo.feature.companion.service.PatternService;
@@ -68,6 +69,9 @@ public class HypothesisEvaluationService {
     private final PatternEventAppender patternEventAppender;
     private final DerivedSeriesService derivedSeriesService;
     private final PatternService patternService;
+    /** S2 delta (final-review adjudications 2026-09-25): mutes a refuted row's promoted fact —
+     *  see {@link #evaluateRow}'s refute branch. */
+    private final KnowledgeFactService knowledgeFactService;
     private final ReflectionProperties properties;
     private final PlatformTransactionManager transactionManager;
 
@@ -101,7 +105,7 @@ public class HypothesisEvaluationService {
 
     /**
      * One row, one transaction: every write below (the evidence event, the tallies, the belief, the
-     * status transition and — via {@link PatternService#applyEngineConfirm} — the promoted
+     * status transition and — via {@link PatternService#applyConfirm} — the promoted
      * {@code knowledge_fact} and its two events) commits together or not at all.
      * {@code REQUIRES_NEW} so a rollback here can never poison a caller's transaction.
      */
@@ -161,10 +165,17 @@ public class HypothesisEvaluationService {
             if (PatternEntity.STATUS_CONFIRMED.equals(decision.newStatus())) {
                 // the engine confirm goes through the SAME body as the user's own confirm, so the
                 // fact promotion and the graph event can never drift between the two paths
-                patternService.applyEngineConfirm(userId, row);
+                patternService.applyConfirm(userId, row, PatternService.CONFIRM_SOURCE_ENGINE);
             } else {
                 row.setStatus(decision.newStatus());
                 record(row, decision.eventKind(), PatternEventPayloadEnvelope.empty());
+                // S2 delta (final-review adjudications 2026-09-25): the engine's OWN refute path —
+                // a monitoring row the user watched (so it already carries a promotedFactId) that
+                // the nightly gate now contradicts mutes its fact too, the same rule the chip
+                // reply's two-strike refute applies.
+                if (PatternEntity.STATUS_REFUTED.equals(decision.newStatus()) && row.getPromotedFactId() != null) {
+                    knowledgeFactService.muteFromRefutedPattern(userId, row.getPromotedFactId());
+                }
             }
         }
         patternRepository.saveAndFlush(row);

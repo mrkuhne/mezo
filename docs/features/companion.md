@@ -1444,6 +1444,99 @@ feeding back into the nightly revision, and a one-line morning digest of what th
   `ReflectionReplyRecorder`'s `REQUIRES_NEW`): the only caller is the controller, so there is no
   caller transaction to poison, and the reply, the status move and the seeded conversation must
   commit or fail as ONE act — a refuted row with no reply behind it is worse than an error.
+- **S2 (`mezo-d6ivw.2`): `watch` now PROMOTES, not just monitors.** „Igen, ez igaz rám" on any
+  `proposed`/`monitoring` reflection-owned row calls `PatternService.applyUserConfirm` right after
+  the status move above. A **plan-less** row (nothing left to measure) runs the FULL confirm —
+  `status=confirmed`, the `confirmed` decision event, the promotion, `PatternConfirmedEvent` — the
+  same body the L2 Minták decision and the nightly engine both use, so a user chip confirm, an
+  engine confirm and an L2 decision are structurally the SAME act. A **planned** row (still carries
+  a `TestPlanEnvelope`) stays `monitoring` — the engine's own nightly re-measurement keeps running
+  — but promotes anyway: the user's word is enough to make the claim durable knowledge NOW, without
+  waiting for the plan to resolve. That promote-only branch calls `PatternService.promoteIfFirst`
+  directly, so it publishes `KnowledgeFactPromotedEvent` but deliberately **skips**
+  `PatternConfirmedEvent` — a conscious decision: the graph's pattern-node mirror still only
+  follows an ENGINE confirm (the pattern itself isn't confirmed yet), while the knowledge-fact
+  mirror follows the promotion event either way. `promoteIfFirst` is idempotent on
+  `promotedFactId`, so a later engine confirm of the same planned row is a no-op re-promotion (the
+  fact already exists) that still fires `PatternConfirmedEvent` for the graph, catching it up.
+  **Source rides the payload and the fact's own provenance**: `PatternService.CONFIRM_SOURCE_ENGINE`
+  (the nightly `HypothesisEvaluationService` confirm) vs. `CONFIRM_SOURCE_USER` (the Minták L2
+  decision AND this chip reply) — both land in `PatternEventPayloadEnvelope.confirmed(source)` /
+  `promoted(...)` and in `MemoryProvenanceEnvelope.patternPromotion(patternId, source)` on the
+  `knowledge_fact` row itself, so "who confirmed this" survives on the fact, not only in the
+  pattern's own event stream.
+
+**Tudás-újraellenőrzés — the quarterly second look at hand-confirmed knowledge (`mezo-d6ivw.2`
+Task 5, `KnowledgeRecheckService`/`KnowledgeRecheckJob`).** The nightly `HypothesisEvaluationService`
+already re-measures every row that still carries a `TestPlanEnvelope` — but a plan-less row Daniel
+confirmed by hand (a chip `watch`, or an L2 decision on a plan-less row) has nothing left to
+measure, and nothing ever asks again whether it still holds. This job is that missing question,
+run rarely and cheaply rather than nightly.
+
+- **Selection.** One user's confirmed, plan-less, reflection-owned, ALREADY-promoted rows
+  (`PatternEntity.REFLECTION_OWNED_KINDS`, `status=confirmed`, `testPlan == null`,
+  `promotedFactId != null`) — precisely the set the nightly evaluator skips. Each candidate's
+  promoted `knowledge_fact` must still exist and still be `include_in_prompt=true`; a fact the user
+  already muted from the prompt is the user's own "leave it alone" and is never even asked about —
+  no LLM call is spent on it.
+- **Cadence: quarterly, 09:20, deliberately NOT the dawn cluster.** Cron
+  `0 20 9 1 1,4,7,10 *` — Jan/Apr/Jul/Oct 1st at 09:20 local time. The plan text that shaped this
+  slice said 04:20 (inside the dawn cluster the nightly jobs share); the build moved it to 09:20
+  because `ObservationBudget`'s quiet hours run 22:00–07:00 and a job that opens by calling
+  `observationBudget.allows(...)` must not itself run inside the window it is gating — 04:20 would
+  have silently zero'd every quarterly pass (controller override, `mezo-d6ivw.2` Task 5). Switch:
+  `mezo.techcore.cron.knowledge-recheck-job.enabled`.
+- **Budget is checked BEFORE the LLM call, not after.** An exhausted `ObservationBudget` must cost
+  zero smart-tier calls, not just zero rows — the same review finding `QuickNoticeService` already
+  learned from. A quarterly retry is free precisely because an over-budget row spends nothing: no
+  call, no row, try again next quarter.
+- **The prompt (marker `TUDÁS-ÚJRAELLENŐRZÉS`, smart-tier; `companionLlm.completeSmart`)**
+  hands the model the confirmed claim and the last 28 days of context and asks ONE question: does
+  this still look true? It answers `{"verdict":"holds|drift|unknown","text":"..."}`, hedged and
+  causation-free by instruction. **Code decides, the model phrases** (the `QuickNoticeService`
+  precedent, repeated here): only `verdict=drift` with non-blank `text` does anything; `holds` and
+  `unknown` are silently dropped, and any parse failure is treated exactly like `unknown`.
+- **The drift row's shape — a NEW row, never a rewrite.** The confirmed row and its promoted fact
+  are NEVER edited or touched. A `drift` verdict creates a fresh `proposed`, plan-less,
+  `kind=reflection`, `origin=nightly_reflection` row with `pair_key = "drift-" + <source pattern
+  id>`, title = the observation's first sentence (≤200 chars), evidence = the source row's still-
+  `exists()` canonical refs capped to the newest 5 — plus a `KIND_OBSERVATION` event carrying the
+  model's hedged text (`surfaced=true`) and, when `notice.push-enabled`, an `OBSERVATION_NEW` push.
+  It reaches the Észrevételek feed exactly like a quick-notice holding row and answers with the
+  same three chips — a `watch` reply on it runs the SAME S2 promote logic above, on the drift row,
+  never on the original.
+- **Dedup is PERMANENT, not per-run.** The `"drift-" + patternId` pair key is checked in ANY
+  status before a recheck proceeds — a drift row the user already rejected must never be re-raised
+  next quarter, the same refuted-never-resurfaces posture the rest of the reflection surface
+  follows for hypotheses.
+- **One transaction per ROW, never one per run** — the `HypothesisEvaluationService` idiom, copied
+  exactly. `KnowledgeRecheckService.runFor` is deliberately NOT `@Transactional`; each row opens
+  its own `REQUIRES_NEW` `TransactionTemplate` in `recheckOne`, so one row's DB failure can never
+  mark a shared run-level transaction rollback-only and silently discard every other row's
+  already-committed drift row. The per-row body re-reads the row by id rather than trusting the
+  work-list copy, so it can never write back something stale.
+- **In practice, at most ONE drift card surfaces per quarterly run.** `ObservationBudget.allows`
+  (shared with quick notices) refuses a row whenever the newest `surfaced=true`
+  `KIND_OBSERVATION` event is younger than `notice.min-gap-hours` (4h) — and the first drift row a
+  run creates writes exactly such an event, so every LATER candidate in the SAME run reads a
+  zero-hour gap and gets skipped. A skipped candidate spends no LLM call (budget is checked before
+  `ask()`), so it costs nothing and is simply retried on the NEXT quarterly run — the "one row per
+  quarter, the rest wait their turn" pacing is a side effect of budget-sharing with notices, not a
+  dedicated cap.
+- **A drift row's own confirm never mints a fact (final-review adjudication, 2026-09-25,
+  `mezo-d6ivw.2`).** A `watch` reply on a drift row still runs `PatternService.applyUserConfirm`,
+  but a drift `pairKey` (`PatternEntity.PAIR_KEY_DRIFT_PREFIX`, `"drift-"`) short-circuits it to a
+  plain freeze: `status=confirmed` + the `confirmed` event, no `knowledge_fact`, no
+  `PatternConfirmedEvent`/`KnowledgeFactPromotedEvent`. Minting a SECOND fact that contradicts the
+  original confirmed claim — and deciding how the two coexist — is deferred to S6, the drift-
+  supersession hub; this slice only surfaces the question.
+- **A refuted row mutes its promoted fact, never deletes it (final-review adjudication,
+  2026-09-25, `mezo-d6ivw.2`).** When a row that carries a `promotedFactId` and was never
+  user-frozen transitions to `refuted` — the chip reply's two-strike "nem stimmel", or the
+  nightly engine's own miss-streak refute — `KnowledgeFactService.muteFromRefutedPattern` sets
+  `include_in_prompt=false` on that fact and fires `KnowledgeFactChangedEvent` so the graph
+  re-syncs. The fact stays visible and re-enableable in the Tudástár; only its prompt/graph seat
+  is withdrawn. Fail-open: a fact that is already gone is logged and skipped, never thrown.
 **Grounded questions before statistical proof (`mezo-hben1`, [ADR 0050](../decisions/0050-grounded-observations-before-statistical-proof.md)).**
 `HypothesisPipelineService` accepts the model's `observation`, `question`, canonical
 `evidenceRefs` and stable `topicKey` only after source membership validation and independent
@@ -8991,6 +9084,7 @@ change is distinct from those smoothed rates. The underlying trend calculation i
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/ObservationFeedService.java` — persistent inbox, queued release and historical day reads.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/ObservationRecoveryService.java` — exact dry-run/apply, owned audit input and expiring previews.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/ObservationRecoveryController.java` — owner-only recovery contract.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/KnowledgeRecheckService.java` and `KnowledgeRecheckJob.java` — the quarterly drift second-look over confirmed, plan-less, promoted knowledge (`mezo-d6ivw.2` Task 5, § above).
 
 
 **Editable personal context (`mezo-txunr.1`)**
