@@ -439,3 +439,31 @@ change).
 8. **(S1)** Follow-up beads worth filing when the area is touched again: batch the
    per-ref evidence lookups (`id IN (...)`, merge `exists` into `fetch`); move `SPORTS`
    out of `features/train` if shared/ui keeps importing it.
+9. **(S2)** `ObservationBudget` quiet hours (22:00–07:00) silently kill ANY
+   dawn-scheduled surfacing job — the card is "over budget", the LLM call is already
+   spent. Schedule surfacing jobs ≥ 07:00 (the recheck's 09:20 precedent) and check
+   the budget BEFORE the LLM call, never after.
+10. **(S2)** `patternPopulator.reflection(owner, null, status)` NPEs on a null plan
+    (`TestPlanEnvelope.key(null)`); plan-less reflection fixtures use
+    `patternPopulator.reflectionNoPlan(...)` (added in S2). `createPattern(...)` makes
+    a `statistical` row that fails `isReflectionOwned` — wrong for reply-path tests.
+11. **(S2)** Per-row try/catch inside one shared `@Transactional` is illusory: a DB
+    failure marks the whole transaction rollback-only while `REQUIRES_NEW` pushes for
+    earlier rows are already committed (push to a card that never lands). Per-row
+    `TransactionTemplate` + `REQUIRES_NEW`, like `KnowledgeRecheckService.recheckOne`.
+12. **(S2)** Drift rows are marked by `PatternEntity.PAIR_KEY_DRIFT_PREFIX`
+    (`isDrift()`): excluded from recheck candidates, and a user confirm on one freezes
+    the row WITHOUT minting a fact — S6 owns supersession of the original fact.
+    Shared constants live on entities: `companion.service` may never import
+    `companion.reflection`.
+13. **(S2)** A refute (user two-strike or engine) MUTES a promoted, never-frozen
+    fact (`includeInPrompt=false` via `KnowledgeFactService.muteFromRefutedPattern`),
+    never deletes it — the S6 hub should show "elnémítva cáfolat miatt" provenance.
+14. **(S2)** Every new `LlmCallContext` slug needs an FE admin label
+    (`labels.completeness.test.ts` gates it), and touching
+    `frontend/src/features/admin` stales `docs/features/admin-hub.md` (key_files) —
+    update both in the same change.
+15. **(S2)** Follow-up beads: cap `closedHypotheses` at the newest N rows (unbounded
+    nightly prompt growth); one-off backfill for pre-S2 plan-less rows the owner
+    already confirmed (stuck `monitoring`, never promoted); S6 drift supersession
+    semantics (confirmed drift row → supersede + mute the original fact).
