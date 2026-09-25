@@ -22,6 +22,12 @@ it('maps a sport session: sport name as title, source as subtitle, formatted val
   expect(r.values).toContainEqual({ label: 'RPE', value: '7', unit: '/10', hot: true })
 })
 
+it('drops the raw JSON breakdown field from a meal record', () => {
+  const r = mapEvidence(wire({ source: 'meal', fields: { breakdown: '{"protein":40}', kcal: '600' } })) as EvidenceRecord
+  expect(r.values.some((v) => JSON.stringify(v).includes('protein'))).toBe(false)
+  expect(r.values).toContainEqual({ value: '600', unit: 'kcal' })
+})
+
 it('maps unknown source to its raw name with the note icon', () => {
   const r = mapEvidence(wire({ source: 'future_thing', fields: {} }))
   expect(r).toMatchObject({ kind: 'record', source: 'future_thing', icon: 't-note' })
@@ -61,6 +67,12 @@ test('egyetlen check-in megtartja a saját négy mezőjét, nincs változás-blo
   const blocks = evidenceBlocks([CK_1, SPORT_1])
   expect(blocks.map((b) => b.kind)).toEqual(['record', 'record'])
   expect(blocks[0]).not.toHaveProperty('hideCheckin')
+})
+
+test('üres szövegű címke (a mapper text/quote fallback-je is hiányzott) nem kerül a blokkok közé', () => {
+  const blocks = evidenceBlocks([SPORT_1, { kind: 'tag', text: '' }, { kind: 'tag', text: 'valódi címke' }])
+  expect(blocks.map((b) => b.kind)).toEqual(['record', 'tag'])
+  expect(blocks).not.toContainEqual({ kind: 'tag', text: '' })
 })
 
 test('a nap-címke relatív a mai naphoz', () => {

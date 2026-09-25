@@ -72,7 +72,9 @@ const SOURCE_NAME: Record<string, string> = {
 /** Ami a sor fejlécében már ott van, vagy gépi mező. */
 const HIDDEN = new Set(['date', 'time', 'slot_time', 'saved_at', 'state', 'kcal_is_estimate', 'sport', 'source',
   'occurred_on', 'role', 'degraded', 'skipped', 'order_index', 'catalog_id', 'counts_toward_volume', 'hypnogram',
-  'status', 'origin', 'categorized_by', 'extracted', 'confidence', 'kind', 'side', 'week_number', 'session_key'])
+  'status', 'origin', 'categorized_by', 'extracted', 'confidence', 'kind', 'side', 'week_number', 'session_key',
+  // raw JSON text (the meal score's per-component breakdown) — not a display field
+  'breakdown'])
 
 type Fmt = (v: string) => EvidenceValue
 const num = (v: string) => {
@@ -137,18 +139,21 @@ export function mapEvidence(w: WireEvidence): EvidenceItem {
 /** Két vagy több EGYMÁST KÖVETŐ check-in: a sorok csak fejlécet + jegyzetet mutatnak, alattuk
  *  egy közös változás-blokk (az első → az utolsó), hogy az összefüggés egy pillantásra látsszon. */
 export function evidenceBlocks(items: EvidenceItem[]): EvidenceBlock[] {
+  // A tag with blank text (the mapper's `w.text ?? w.quote ?? ''` fallback found neither) would
+  // otherwise render as an empty pill — drop it before grouping.
+  const usable = items.filter((x) => x.kind !== 'tag' || x.text.trim() !== '')
   const out: EvidenceBlock[] = []
   const isCk = (x: EvidenceItem | undefined): x is EvidenceRecord => x?.kind === 'record' && !!x.checkin
-  for (let i = 0; i < items.length;) {
+  for (let i = 0; i < usable.length;) {
     let j = i
-    while (isCk(items[j])) j++
+    while (isCk(usable[j])) j++
     if (j - i >= 2) {
-      const run = items.slice(i, j) as EvidenceRecord[]
+      const run = usable.slice(i, j) as EvidenceRecord[]
       run.forEach((r) => out.push({ ...r, hideCheckin: true }))
       out.push({ kind: 'shift', from: run[0], to: run[run.length - 1] })
       i = j
     } else {
-      out.push(items[i])
+      out.push(usable[i])
       i++
     }
   }

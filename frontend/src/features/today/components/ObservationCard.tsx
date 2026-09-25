@@ -21,10 +21,7 @@ import { cn } from '@/shared/lib/cn'
 import { dayLabel, timeLabel } from '@/features/notification/logic/stamp'
 import { Boop } from '@/shared/ui/clay/boop/Boop'
 import { localDateString } from '@/shared/lib/dates'
-// Extension deliberately explicit: on a case-insensitive volume, extensionless resolution
-// matches the sibling `observationEvidence.ts` (module, tried first) before `.tsx` — dropping
-// the extension silently imports the wrong file (EvidenceList comes back undefined).
-import { EvidenceList } from '@/shared/ui/evidence/ObservationEvidence.tsx'
+import { EvidenceList } from '@/shared/ui/evidence/EvidenceList'
 import type { Observation, ObservationCardKind, ObservationChoice } from '@/data/types'
 
 /** A prototípus négy kártya-modifikátora — a wire kártyanevek NEM egyeznek vele 1:1. */

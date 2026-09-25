@@ -1,5 +1,5 @@
 // ============================================================
-// Mezo · ObservationEvidence — az észrevétel-kártya „Miből látom” sorai (mezo-d6ivw.1).
+// Mezo · EvidenceList — az észrevétel-kártya „Miből látom” sorai (mezo-d6ivw.1).
 // Lapos cellák a kártya üvegén belül (üveg az üvegben tilos, bible §3): forrás 3D-ikon +
 // cím + nap, címkézett érték-pillek, a saját jegyzet idézetként; két+ egymást követő
 // check-in alatt egy közös „Változás” grafikon (1–10 sáv, üres karika → teli pötty). A

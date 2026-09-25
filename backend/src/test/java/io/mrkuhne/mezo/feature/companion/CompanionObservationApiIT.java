@@ -19,12 +19,14 @@ import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
+import io.mrkuhne.mezo.support.populator.JournalPopulator;
 import io.mrkuhne.mezo.support.populator.PatternEventPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -71,6 +73,7 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private CheckInPopulator checkInPopulator;
     @Autowired private CheckInRepository checkInRepository;
+    @Autowired private JournalPopulator journalPopulator;
 
     private UUID ownerId() {
         return appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
@@ -111,7 +114,10 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
         assertThat(cards.get(0).getQuestion()).isEqualTo("Figyeljem tovább?");
         assertThat(cards.get(0).getSourceIcon()).isEqualTo("naplo");
         assertThat(cards.get(0).getRepliedChoice()).isNull();
-        assertThat(cards.get(0).getEvidence()).hasSize(1);
+        // A legacy card's canonical-shaped ref is re-read like a grounded one (mezo-d6ivw.1
+        // final-review finding 2); this fixture's ref is a random UUID that resolves to no real
+        // journal entry, so it is dropped rather than shown as raw machine text.
+        assertThat(cards.get(0).getEvidence()).isEmpty();
 
         assertThat(cards.get(1).getId()).isEqualTo(watching.getId());
         assertThat(cards.get(1).getText()).isEmpty();
@@ -512,6 +518,76 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
         assertThat(items).anySatisfy(i -> {
             assertThat(i.getType()).isEqualTo("record");
             assertThat(i.getRef()).isEqualTo(liveRef);
+        });
+    }
+
+    /**
+     * Final-review finding 1 (mezo-d6ivw.1): a {@code watching} row's evidence grows forever — the
+     * publisher keeps APPENDING refs on every merge — and the row card opens its evidence by
+     * default, so an unbounded read would render every accumulated record. Builds the REAL
+     * publisher shape (topic markers, then more than {@code ROW_EVIDENCE_LIMIT} canonical refs, new
+     * ones appended at the end) and asserts the markers are dropped, exactly 5 records come back,
+     * and they are the NEWEST 5 (the tail of the ref list).
+     */
+    @Test
+    void watchingCardEvidenceIsCappedToTheNewestRecords() {
+        UUID owner = ownerId();
+        PatternEntity row = patternPopulator.reflection(owner, plan("topic:sport"), PatternEntity.STATUS_MONITORING);
+        List<String> refs = new ArrayList<>();
+        refs.add("observation-topic:topic:sport");
+        refs.add("observation-topic-key:topic-sport");
+        List<String> checkInRefs = new ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            var checkIn = checkInPopulator.createCheckIn(owner, TODAY, String.format("%02d:00", i), 5, 3,
+                    "Bejegyzés " + i);
+            checkInRefs.add("check_in:" + checkIn.getId());
+        }
+        refs.addAll(checkInRefs);
+        row.setEvidence(new PatternEvidenceEnvelope(refs));
+        patternPopulator.save(row);
+
+        List<ObservationResponse> cards = getForList(
+                "/api/companion/observation?date=" + TODAY, ownerAuthHeaders(),
+                HttpStatus.OK, ObservationResponse.class);
+        ObservationResponse card = cards.stream().filter(c -> c.getPatternId().equals(row.getId()))
+                .findFirst().orElseThrow();
+        List<ObservationEvidenceItem> items = card.getEvidence();
+
+        assertThat(items).hasSize(5);
+        assertThat(items).allSatisfy(i -> assertThat(i.getType()).isEqualTo("record"));
+        assertThat(items).extracting(ObservationEvidenceItem::getRef)
+                .containsExactlyElementsOf(checkInRefs.subList(2, 7));
+    }
+
+    /**
+     * Final-review finding 2 (mezo-d6ivw.1): {@code QuickNoticeService} puts a canonical-shaped ref
+     * first ({@code journal_entry:<uuid>}), but not every legacy source is in the re-read
+     * catalogue — {@code gratitude} is not ({@code gratitude_entry} is the catalogue name), so it
+     * must be dropped silently rather than shown as raw machine text. Free (non-canonical) text
+     * still passes through as a plain tag.
+     */
+    @Test
+    void legacyCanonicalRefResolvesAndUnresolvableOneIsDropped() {
+        UUID owner = ownerId();
+        PatternEntity row = patternPopulator.reflection(owner, plan("topic:munka"), PatternEntity.STATUS_PROPOSED);
+        var entry = journalPopulator.createEntry(owner, TODAY, "Ma jó napom volt.", "quickinput");
+        String journalRef = "journal_entry:" + entry.getId();
+        patternEventPopulator.observation(owner, row.getId(), "Hálanapló.\nIgaz?",
+                List.of(journalRef, "gratitude:" + UUID.randomUUID(), "4 hála-bejegyzés"), true, dayAt(0));
+
+        List<ObservationResponse> cards = getForList(
+                "/api/companion/observation?date=" + TODAY, ownerAuthHeaders(),
+                HttpStatus.OK, ObservationResponse.class);
+
+        List<ObservationEvidenceItem> items = cards.getFirst().getEvidence();
+        assertThat(items).hasSize(2);
+        assertThat(items).anySatisfy(i -> {
+            assertThat(i.getType()).isEqualTo("record");
+            assertThat(i.getRef()).isEqualTo(journalRef);
+        });
+        assertThat(items).anySatisfy(i -> {
+            assertThat(i.getType()).isEqualTo("tag");
+            assertThat(i.getText()).isEqualTo("4 hála-bejegyzés");
         });
     }
 

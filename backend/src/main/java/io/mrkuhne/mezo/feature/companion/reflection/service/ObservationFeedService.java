@@ -44,6 +44,13 @@ public class ObservationFeedService {
     /** How many of a row's newest replies are read back — far more than any card ever needs. */
     private static final int REPLY_LOOKBACK = 10;
 
+    /** A row's evidence list grows without bound — the publisher keeps APPENDING refs to it on
+     *  every merge, for as long as the row stays alive — so a {@code watching}/{@code confirmed}
+     *  card (which opens its evidence by default) must not render every accumulated ref as an
+     *  expanded record. Event cards render ONE event's own refs and stay uncapped. New refs land
+     *  at the list's end, so keeping the newest N means keeping the tail. */
+    private static final int ROW_EVIDENCE_LIMIT = 5;
+
     private final ObservationOwnerLock ownerLock;
     private final ObservationBudget observationBudget;
     private final ObservationContextService observationContextService;
@@ -215,9 +222,17 @@ public class ObservationFeedService {
         return ObservationEvidenceItem.builder().type("tag").text(text).build();
     }
 
+    /** {@code null} means the stored date could not be parsed — the caller degrades to the
+     *  tag/fallback path instead of letting a malformed source date 500 the whole feed. */
     private ObservationEvidenceItem record(String ref, ObservationContextService.SourceRecord rec) {
+        LocalDate date;
+        try {
+            date = LocalDate.parse(rec.date());
+        } catch (java.time.format.DateTimeParseException e) {
+            return null;
+        }
         return ObservationEvidenceItem.builder().type("record").source(rec.source())
-                .date(LocalDate.parse(rec.date())).time(rec.time())
+                .date(date).time(rec.time())
                 .fields(rec.fields()).quote(rec.quote()).ref(ref).build();
     }
 
@@ -235,18 +250,32 @@ public class ObservationFeedService {
                     ? next : null;
             if (label != null) i++;
             var fetched = observationContextService.fetch(userId, ref).filter(r -> r.date() != null);
-            if (fetched.isPresent()) out.add(record(ref, fetched.get()));
+            ObservationEvidenceItem item = fetched.map(rec -> record(ref, rec)).orElse(null);
+            if (item != null) out.add(item);
             else if (label != null) out.add(tag(label));
         }
         return out;
     }
 
-    /** Legacy quick-notice vocabulary (gratitude/chat_day refs, free-text labels) passes through
-     *  verbatim as tags — mirrors the old unfiltered read semantics. */
-    private static List<ObservationEvidenceItem> legacyItems(List<String> refs) {
-        return refs == null ? List.of() : refs.stream().filter(Objects::nonNull)
-                .map(ObservationFeedService::tag)
-                .toList();
+    /** Legacy quick-notice vocabulary: {@code QuickNoticeService.evidenceRefs} puts a
+     *  canonical-shaped ref first ({@code journal_entry:<uuid>}), but not every legacy source is
+     *  in the catalogue ({@code gratitude}/{@code chat_day} are not — they use their own,
+     *  non-catalogue vocabulary). So each canonical-shaped entry is re-read the same way a
+     *  grounded ref is: it resolves to a {@code record}, or — if the catalogue does not carry that
+     *  source (or the record is gone) — it is DROPPED silently rather than shown as raw machine
+     *  text (e.g. {@code journal_entry:3f2a…}). Free (non-canonical) text stays a verbatim tag. */
+    private List<ObservationEvidenceItem> legacyItems(UUID userId, List<String> refs) {
+        if (refs == null) return List.of();
+        var out = new ArrayList<ObservationEvidenceItem>();
+        for (String ref : refs) {
+            if (ref == null) continue;
+            if (!canonicalReference(ref)) { out.add(tag(ref)); continue; }
+            var fetched = observationContextService.fetch(userId, ref).filter(r -> r.date() != null);
+            ObservationEvidenceItem item = fetched.map(rec -> record(ref, rec)).orElse(null);
+            if (item != null) out.add(item);
+            // unresolved canonical-shaped ref (non-catalogue source, or deleted record): dropped.
+        }
+        return out;
     }
 
     /** The row's newest replies, freshest first — owned, so a foreign row yields nothing. */
@@ -271,7 +300,7 @@ public class ObservationFeedService {
                 .text(ObservationLead.strip(split[0]))
                 .question(split[1])
                 .evidence("grounded".equals(payload.channel()) ? evidenceItems(userId, payload.evidenceRefs())
-                        : legacyItems(payload.evidenceRefs()))
+                        : legacyItems(userId, payload.evidenceRefs()))
                 .repliedChoice(choiceAfter(replies, event.getOccurredAt()))
                 .build();
     }
@@ -285,11 +314,29 @@ public class ObservationFeedService {
                 // no prose of its own: on these cards the tallies ARE the message
                 .text("")
                 .question(null)
-                .evidence(evidenceItems(userId, row.getEvidence() == null ? null : row.getEvidence().items()))
+                .evidence(capToNewestRecords(evidenceItems(userId,
+                        row.getEvidence() == null ? null : row.getEvidence().items())))
                 // the ROW's newest answer, NOT one anchored on `occurredAt`: `lastDetectedAt` is
                 // bumped by the nightly evaluation, which would re-arm the chips every night
                 .repliedChoice(newestChoice(replies))
                 .build();
+    }
+
+    /** Keeps only the newest {@link #ROW_EVIDENCE_LIMIT} {@code record} items (dropping the
+     *  oldest first, preserving relative order), leaving any {@code tag} items untouched. Row
+     *  cards open by default, so an unbounded, ever-growing evidence list would render every
+     *  accumulated record every time the card is shown. */
+    private static List<ObservationEvidenceItem> capToNewestRecords(List<ObservationEvidenceItem> items) {
+        long recordCount = items.stream().filter(i -> "record".equals(i.getType())).count();
+        if (recordCount <= ROW_EVIDENCE_LIMIT) return items;
+        long toDrop = recordCount - ROW_EVIDENCE_LIMIT;
+        var out = new ArrayList<ObservationEvidenceItem>();
+        long dropped = 0;
+        for (var item : items) {
+            if ("record".equals(item.getType()) && dropped < toDrop) { dropped++; continue; }
+            out.add(item);
+        }
+        return out;
     }
 
     private ObservationResponse.ObservationResponseBuilder base(PatternEntity row, String card) {

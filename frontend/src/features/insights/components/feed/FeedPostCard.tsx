@@ -5,10 +5,7 @@ import type { FeedPost } from '@/features/insights/logic/teamFeed'
 import { localDateString } from '@/shared/lib/dates'
 import { renderInline } from '@/shared/lib/markdown'
 import { Icon3D } from '@/shared/ui/clay'
-// Extension deliberately explicit: on a case-insensitive volume, extensionless resolution
-// matches the sibling `observationEvidence.ts` (module, tried first) before `.tsx` — dropping
-// the extension silently imports the wrong file (EvidenceList comes back undefined).
-import { EvidenceList } from '@/shared/ui/evidence/ObservationEvidence.tsx'
+import { EvidenceList } from '@/shared/ui/evidence/EvidenceList'
 import { FeedGuests } from './FeedGuests'
 import { FeedPostHead } from './FeedPostHead'
 import { FeedTrio, type FeedReplyMode } from './FeedTrio'
