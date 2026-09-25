@@ -61,6 +61,14 @@ public class PatternEntity extends OwnedEntity {
     /** S2: no data for long enough that testing it is meaningless — parked, revives on data. */
     public static final String STATUS_DORMANT = "dormant";
 
+    /** S2 delta (mezo-d6ivw.2, final-review adjudications 2026-09-25): the quarterly knowledge
+     *  re-check's drift row identity ({@code drift-<sourcePatternId>}) — shared between
+     *  {@code companion.service} ({@link io.mrkuhne.mezo.feature.companion.service.PatternService})
+     *  and {@code companion.reflection.service} ({@code KnowledgeRecheckService}), so it lives on
+     *  the entity rather than on either package (the ArchUnit direction: reflection may import
+     *  companion.service/entity, never the reverse). */
+    public static final String PAIR_KEY_DRIFT_PREFIX = "drift-";
+
     /** {@code origin} — where the row came from; display only, it never drives the lifecycle. */
     public static final String ORIGIN_PAIR_CATALOG = "pair_catalog";
     public static final String ORIGIN_WEEKLY_HYPOTHESIS = "weekly_hypothesis";
@@ -204,5 +212,11 @@ public class PatternEntity extends OwnedEntity {
     /** S4: does the Reflexió surface own this row? See {@link #REFLECTION_OWNED_KINDS}. */
     public boolean isReflectionOwned() {
         return REFLECTION_OWNED_KINDS.contains(kind);
+    }
+
+    /** S2 delta (mezo-d6ivw.2): is this a quarterly-recheck drift row? See
+     *  {@link #PAIR_KEY_DRIFT_PREFIX}. */
+    public boolean isDrift() {
+        return pairKey != null && pairKey.startsWith(PAIR_KEY_DRIFT_PREFIX);
     }
 }

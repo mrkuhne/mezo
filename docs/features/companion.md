@@ -1515,6 +1515,28 @@ run rarely and cheaply rather than nightly.
   mark a shared run-level transaction rollback-only and silently discard every other row's
   already-committed drift row. The per-row body re-reads the row by id rather than trusting the
   work-list copy, so it can never write back something stale.
+- **In practice, at most ONE drift card surfaces per quarterly run.** `ObservationBudget.allows`
+  (shared with quick notices) refuses a row whenever the newest `surfaced=true`
+  `KIND_OBSERVATION` event is younger than `notice.min-gap-hours` (4h) — and the first drift row a
+  run creates writes exactly such an event, so every LATER candidate in the SAME run reads a
+  zero-hour gap and gets skipped. A skipped candidate spends no LLM call (budget is checked before
+  `ask()`), so it costs nothing and is simply retried on the NEXT quarterly run — the "one row per
+  quarter, the rest wait their turn" pacing is a side effect of budget-sharing with notices, not a
+  dedicated cap.
+- **A drift row's own confirm never mints a fact (final-review adjudication, 2026-09-25,
+  `mezo-d6ivw.2`).** A `watch` reply on a drift row still runs `PatternService.applyUserConfirm`,
+  but a drift `pairKey` (`PatternEntity.PAIR_KEY_DRIFT_PREFIX`, `"drift-"`) short-circuits it to a
+  plain freeze: `status=confirmed` + the `confirmed` event, no `knowledge_fact`, no
+  `PatternConfirmedEvent`/`KnowledgeFactPromotedEvent`. Minting a SECOND fact that contradicts the
+  original confirmed claim — and deciding how the two coexist — is deferred to S6, the drift-
+  supersession hub; this slice only surfaces the question.
+- **A refuted row mutes its promoted fact, never deletes it (final-review adjudication,
+  2026-09-25, `mezo-d6ivw.2`).** When a row that carries a `promotedFactId` and was never
+  user-frozen transitions to `refuted` — the chip reply's two-strike "nem stimmel", or the
+  nightly engine's own miss-streak refute — `KnowledgeFactService.muteFromRefutedPattern` sets
+  `include_in_prompt=false` on that fact and fires `KnowledgeFactChangedEvent` so the graph
+  re-syncs. The fact stays visible and re-enableable in the Tudástár; only its prompt/graph seat
+  is withdrawn. Fail-open: a fact that is already gone is logged and skipped, never thrown.
 **Grounded questions before statistical proof (`mezo-hben1`, [ADR 0050](../decisions/0050-grounded-observations-before-statistical-proof.md)).**
 `HypothesisPipelineService` accepts the model's `observation`, `question`, canonical
 `evidenceRefs` and stable `topicKey` only after source membership validation and independent

@@ -4,8 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.entity.TestPlanEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
+import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
@@ -24,6 +26,7 @@ class PatternServiceConfirmIT extends AbstractIntegrationTest {
 
     @Autowired private PatternService patternService;
     @Autowired private PatternRepository patternRepository;
+    @Autowired private PatternEventRepository patternEventRepository;
     @Autowired private KnowledgeFactRepository knowledgeFactRepository;
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private UserPopulator userPopulator;
@@ -77,5 +80,32 @@ class PatternServiceConfirmIT extends AbstractIntegrationTest {
         assertThat(row.getPromotedFactId()).isEqualTo(firstFact);
         assertThat(knowledgeFactRepository.findByCreatedByAndSourceAndDeletedFalse(owner,
                 KnowledgeFactEntity.SOURCE_PATTERN)).hasSize(1);
+    }
+
+    /**
+     * S2 delta (final-review adjudications 2026-09-25): a drift card's confirm ("igen, ez most is
+     * így van") only freezes the row — it must NEVER mint a fact that would contradict the
+     * ORIGINAL confirmed fact the drift row is about. Superseding it is S6's job.
+     */
+    @Test
+    void testApplyUserConfirm_shouldFreezeWithoutPromoting_whenRowIsADriftCard() {
+        UUID owner = userPopulator.createUser().getId();
+        PatternEntity row = patternPopulator.reflectionNoPlan(owner, PatternEntity.STATUS_PROPOSED);
+        row.setPairKey(PatternEntity.PAIR_KEY_DRIFT_PREFIX + UUID.randomUUID());
+        row = patternPopulator.save(row);
+
+        patternService.applyUserConfirm(owner, row);
+        patternRepository.saveAndFlush(row);
+
+        PatternEntity saved = patternRepository.findById(row.getId()).orElseThrow();
+        assertThat(saved.getStatus()).isEqualTo(PatternEntity.STATUS_CONFIRMED);
+        assertThat(saved.getPromotedFactId()).isNull();
+        assertThat(knowledgeFactRepository.findByCreatedByAndSourceAndDeletedFalse(owner,
+                KnowledgeFactEntity.SOURCE_PATTERN)).isEmpty();
+        assertThat(patternEventRepository
+                .findByCreatedByAndPatternIdAndDeletedFalseOrderByOccurredAtAsc(owner, row.getId()))
+                .extracting(PatternEventEntity::getKind)
+                .containsExactly(PatternEventEntity.KIND_CONFIRMED)
+                .doesNotContain(PatternEventEntity.KIND_PROMOTED);
     }
 }

@@ -4,14 +4,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mrkuhne.mezo.api.dto.PatternReplyResponse;
+import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.TestPlanEnvelope;
 import io.mrkuhne.mezo.feature.companion.reflection.service.ReflectionReplyService;
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
+import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
+import io.mrkuhne.mezo.feature.companion.service.PatternService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.PatternEventPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
@@ -36,6 +39,8 @@ class ReflectionReplyServiceIT extends AbstractIntegrationTest {
     @Autowired private PatternRepository patternRepository;
     @Autowired private PatternEventRepository eventRepository;
     @Autowired private AiConversationRepository conversationRepository;
+    @Autowired private KnowledgeFactRepository knowledgeFactRepository;
+    @Autowired private PatternService patternService;
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private PatternEventPopulator patternEventPopulator;
     @Autowired private UserPopulator userPopulator;
@@ -74,7 +79,7 @@ class ReflectionReplyServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testReply_shouldOnlyAppendTheReply_whenWatchOnAnAlreadyMonitoringRow() {
+    void testReply_shouldPromoteWithoutStatusChange_whenWatchOnAnAlreadyMonitoringRow() {
         UUID owner = userPopulator.createUser().getId();
         PatternEntity row = row(owner, PatternEntity.STATUS_MONITORING);
 
@@ -98,6 +103,16 @@ class ReflectionReplyServiceIT extends AbstractIntegrationTest {
         assertThat(saved.getPromotedFactId()).isNotNull();
         assertThat(events(owner, row.getId())).extracting(PatternEventEntity::getKind)
                 .contains(PatternEventEntity.KIND_PROMOTED, PatternEntity.STATUS_CONFIRMED);
+        // S2 delta (final-review adjudications 2026-09-25): a plan-less proposed row's watch must
+        // never touch `monitoring` first — the event stream is user_reply → confirmed → promoted.
+        assertThat(events(owner, row.getId())).extracting(PatternEventEntity::getKind)
+                .containsExactly(PatternEventEntity.KIND_USER_REPLY, PatternEventEntity.KIND_CONFIRMED,
+                        PatternEventEntity.KIND_PROMOTED)
+                .doesNotContain(PatternEventEntity.KIND_MONITORING);
+        // the fact's provenance carries who confirmed it and from which row
+        KnowledgeFactEntity fact = knowledgeFactRepository.findById(saved.getPromotedFactId()).orElseThrow();
+        assertThat(fact.getProvenance().patternId()).isEqualTo(row.getId());
+        assertThat(fact.getProvenance().confirmSource()).isEqualTo(PatternService.CONFIRM_SOURCE_USER);
     }
 
     @Test
@@ -141,6 +156,28 @@ class ReflectionReplyServiceIT extends AbstractIntegrationTest {
         assertThat(events(owner, row.getId())).extracting(PatternEventEntity::getKind)
                 .containsExactly(PatternEventEntity.KIND_USER_REPLY,
                         PatternEventEntity.KIND_USER_REPLY, PatternEventEntity.KIND_REFUTED);
+    }
+
+    /**
+     * S2 delta (final-review adjudications 2026-09-25): a promoted, never-frozen row's fact loses
+     * its prompt seat the instant the user's second "nem stimmel" refutes it — muted, not
+     * deleted (the Tudástár keeps it visible and re-enableable).
+     */
+    @Test
+    void testReply_shouldMuteThePromotedFact_whenTheSecondRejectRefutesAPromotedRow() {
+        UUID owner = userPopulator.createUser().getId();
+        PatternEntity row = row(owner, PatternEntity.STATUS_MONITORING);
+        patternService.applyUserConfirm(owner, row);
+        patternRepository.saveAndFlush(row);
+        UUID factId = row.getPromotedFactId();
+        assertThat(factId).isNotNull();
+
+        replyService.reply(owner, row.getId(), "reject", "nem stimmel");
+        replyService.reply(owner, row.getId(), "reject", null);
+
+        assertThat(patternRepository.findById(row.getId()).orElseThrow().getStatus())
+                .isEqualTo(PatternEntity.STATUS_REFUTED);
+        assertThat(knowledgeFactRepository.findById(factId).orElseThrow().isIncludeInPrompt()).isFalse();
     }
 
     @Test

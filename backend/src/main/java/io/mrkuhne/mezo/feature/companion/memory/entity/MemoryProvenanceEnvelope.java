@@ -3,7 +3,11 @@ package io.mrkuhne.mezo.feature.companion.memory.entity;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Typed origin metadata for a canonical memory projection. */
+/** Typed origin metadata for a canonical memory projection. S2 (mezo-d6ivw.2) appends the
+ *  trailing {@code patternId}/{@code confirmSource} fields — they also double as {@code
+ *  io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity}'s pattern-promotion provenance
+ *  (see {@link #patternPromotion}), not only the memory projection this record was originally
+ *  named for. */
 public record MemoryProvenanceEnvelope(
         String sourceTable,
         Instant sourceUpdatedAt,

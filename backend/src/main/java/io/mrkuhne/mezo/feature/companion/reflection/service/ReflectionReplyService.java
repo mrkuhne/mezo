@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.companion.reflection.config.ReflectionProperties;
 import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.ConversationService;
+import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
 import io.mrkuhne.mezo.feature.companion.service.PatternEventAppender;
 import io.mrkuhne.mezo.feature.companion.service.PatternService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -76,6 +77,9 @@ public class ReflectionReplyService {
     private final PatternEventAppender patternEventAppender;
     /** S2 (mezo-d6ivw.2): the user watch reply's promote-to-knowledge call — see class javadoc. */
     private final PatternService patternService;
+    /** S2 delta (final-review adjudications 2026-09-25): a refuted row's promoted fact loses its
+     *  prompt seat — see the {@code reply} javadoc note at the refute branch. */
+    private final KnowledgeFactService knowledgeFactService;
     private final ConversationService conversationService;
     private final CompanionMapper mapper;
     private final PatternTestPlanMapper testPlanMapper;
@@ -99,7 +103,12 @@ public class ReflectionReplyService {
         patternEventAppender.append(userId, row.getId(), PatternEventEntity.KIND_USER_REPLY,
                 PatternEventPayloadEnvelope.userReply(CHANNEL_CHIP, choice, truncate(text)));
 
-        if (CHOICE_WATCH.equals(choice) && PatternEntity.STATUS_PROPOSED.equals(row.getStatus())) {
+        // S2 delta (final-review adjudications 2026-09-25): a PLAN-LESS proposed row has nothing
+        // left to monitor — it goes straight to the confirm branch below, so it must never write
+        // a spurious `monitoring` status move/event first (event stream: user_reply → confirmed →
+        // promoted, not user_reply → monitoring → confirmed → promoted).
+        if (CHOICE_WATCH.equals(choice) && PatternEntity.STATUS_PROPOSED.equals(row.getStatus())
+                && row.getTestPlan() != null) {
             row.setStatus(PatternEntity.STATUS_MONITORING);
             patternEventAppender.append(userId, row.getId(), PatternEventEntity.KIND_MONITORING,
                     PatternEventPayloadEnvelope.empty());
@@ -123,6 +132,12 @@ public class ReflectionReplyService {
             row.setStatus(PatternEntity.STATUS_REFUTED);
             patternEventAppender.append(userId, row.getId(), PatternEventEntity.KIND_REFUTED,
                     PatternEventPayloadEnvelope.empty());
+            // S2 delta (final-review adjudications 2026-09-25): a refuted row's promoted fact is
+            // muted, not deleted — the Tudástár keeps it visible and re-enableable, but it stops
+            // feeding the prompt/graph the instant the user's verdict flips.
+            if (row.getPromotedFactId() != null) {
+                knowledgeFactService.muteFromRefutedPattern(userId, row.getPromotedFactId());
+            }
         }
         row.setBelief(belief(userId, row, positive, negative));
 

@@ -147,14 +147,35 @@ public class PatternService {
      * measure — the confirm is terminal. A planned row keeps monitoring: the fact exists from
      * this moment (the user's word is enough), and the engine's own later confirm strengthens
      * and freezes as before.
+     *
+     * <p>S2 delta (final-review adjudications 2026-09-25): a drift row ({@link
+     * PatternEntity#isDrift()}) is always plan-less, but its confirm must NOT mint a fact that
+     * contradicts the original claim — see {@link #applyDriftConfirm}.
      */
     @Transactional
     public void applyUserConfirm(UUID userId, PatternEntity pattern) {
         if (pattern.getTestPlan() == null) {
+            if (pattern.isDrift()) {
+                applyDriftConfirm(pattern);
+                return;
+            }
             applyConfirm(userId, pattern, CONFIRM_SOURCE_USER);
             return;
         }
         promoteIfFirst(userId, pattern, CONFIRM_SOURCE_USER);
+    }
+
+    /**
+     * S2 delta (final-review adjudications 2026-09-25, spec §S2 delta): confirming a drift card
+     * ("igen, ez most is így van") only freezes the row and records the confirm — it deliberately
+     * does NOT promote a new fact or fire {@code PatternConfirmedEvent}/{@code
+     * KnowledgeFactPromotedEvent}, because superseding the ORIGINAL confirmed fact with the
+     * drifted claim is S6's job (the drift hub), not this slice's.
+     */
+    private void applyDriftConfirm(PatternEntity pattern) {
+        pattern.setStatus(PatternEntity.STATUS_CONFIRMED);
+        recordEvent(pattern, PatternEntity.STATUS_CONFIRMED,
+                PatternEventPayloadEnvelope.confirmed(CONFIRM_SOURCE_USER));
     }
 
     private void promoteIfFirst(UUID userId, PatternEntity pattern, String source) {

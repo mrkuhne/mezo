@@ -395,6 +395,19 @@ fixtures). FE: both modes — no wire change expected; Tudástár shows the prom
 fact with the existing toggle. CODEMAP regen; contract-drift gate untouched (no yml
 change).
 
+### Final-review adjudications (2026-09-25)
+
+- A drift row's own confirm (watch on a `pairKey` starting `PatternEntity.PAIR_KEY_DRIFT_PREFIX`)
+  freezes `status=confirmed` and records the `confirmed` event, but does NOT promote a fact or
+  publish `PatternConfirmedEvent`/`KnowledgeFactPromotedEvent` — superseding the ORIGINAL confirmed
+  fact with the drifted claim is S6's scope, not this delta's.
+- A refuted row (two-strike chip reject, or the engine's own miss-streak refute) that carries a
+  `promotedFactId` and was never user-frozen mutes that fact (`include_in_prompt=false` via
+  `KnowledgeFactService.muteFromRefutedPattern`, firing `KnowledgeFactChangedEvent`) rather than
+  leaving a refuted claim still live in the prompt/graph; the fact is never deleted, only muted.
+- A drift row itself is excluded from `KnowledgeRecheckService`'s own candidate set — it is the
+  quarterly pass's OUTPUT, not a plan-less confirmed claim to re-litigate a second time.
+
 ## Slice lessons
 
 (numbered; only what a later slice would otherwise pay for again)

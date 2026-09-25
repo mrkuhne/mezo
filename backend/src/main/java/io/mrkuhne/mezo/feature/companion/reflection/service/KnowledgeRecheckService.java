@@ -71,8 +71,10 @@ public class KnowledgeRecheckService {
     /** Prompt marker the fake LLM keys its deterministic answer on. */
     public static final String RECHECK_MARKER = "TUDÁS-ÚJRAELLENŐRZÉS";
 
-    /** The drift row's upsert-free identity — a rejected drift proposal is checked in ANY status. */
-    static final String PAIR_KEY_PREFIX = "drift-";
+    /** The drift row's upsert-free identity — a rejected drift proposal is checked in ANY status.
+     *  S2 delta (final-review adjudications 2026-09-25): moved onto {@link PatternEntity} so both
+     *  this service and {@code PatternService} share the exact same prefix. */
+    static final String PAIR_KEY_PREFIX = PatternEntity.PAIR_KEY_DRIFT_PREFIX;
 
     private static final int EVIDENCE_CAP = 5;
     private static final int MAX_TITLE_CHARS = 200;
@@ -129,7 +131,9 @@ public class KnowledgeRecheckService {
     }
 
     /** Confirmed, plan-less, reflection-owned, promoted rows — the nightly evaluator already
-     *  re-measures every row that still carries a test plan, so those are excluded here. */
+     *  re-measures every row that still carries a test plan, so those are excluded here.
+     *  S2 delta (final-review adjudications 2026-09-25): a drift row itself is NEVER a candidate
+     *  — it is the quarterly pass's own OUTPUT, not a claim to re-litigate a second time. */
     private List<PatternEntity> candidates(UUID userId) {
         return patternRepository
                 .findByCreatedByAndKindInAndStatusAndDeletedFalseOrderByLastDetectedAtDesc(
@@ -138,6 +142,7 @@ public class KnowledgeRecheckService {
                 .filter(row -> row.getTestPlan() == null)
                 .filter(PatternEntity::isReflectionOwned)
                 .filter(row -> row.getPromotedFactId() != null)
+                .filter(row -> !row.isDrift())
                 .toList();
     }
 
@@ -184,7 +189,7 @@ public class KnowledgeRecheckService {
                     row.getId(), userId);
             return false;
         }
-        RecheckAnswer answer = ask(userId, row);
+        RecheckAnswer answer = ask(userId, row, fact);
         if (answer == null || !"drift".equals(answer.verdict())
                 || answer.text() == null || answer.text().isBlank()) {
             return false;
@@ -204,11 +209,13 @@ public class KnowledgeRecheckService {
     }
 
     /** Any failure or unparseable answer means NO drift observation, never an exception (the
-     *  {@code QuickNoticeService.ask} precedent). */
-    private RecheckAnswer ask(UUID userId, PatternEntity row) {
+     *  {@code QuickNoticeService.ask} precedent). S2 delta (final-review adjudications
+     *  2026-09-25): judges the fact's LIVE {@code factText} — the user-editable text that also
+     *  feeds the prompt injection — not the row's frozen {@code mechanism} snapshot. */
+    private RecheckAnswer ask(UUID userId, PatternEntity row, KnowledgeFactEntity fact) {
         String raw;
         try {
-            String prompt = promptPersona.render(userId, RECHECK_PROMPT.formatted(row.getMechanism()));
+            String prompt = promptPersona.render(userId, RECHECK_PROMPT.formatted(fact.getFactText()));
             ObservationContextService.Context context = observationContextService.collect(userId, LocalDate.now());
             raw = llmCallContextHolder.runWith(
                     new LlmCallContext("companion_recheck", "drift", null, null),

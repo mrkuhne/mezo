@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
@@ -33,6 +34,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /** V1.1 knowledge facts — CRUD spine + the top-N prompt-injection block (roadmap §V1.1, spec §3 L3). */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
@@ -216,6 +218,28 @@ public class KnowledgeFactService {
             block.append("- ").append(fact.getFactText()).append('\n');
         }
         return block.toString();
+    }
+
+    /**
+     * S2 delta (mezo-d6ivw.2, final-review adjudications 2026-09-25): a refuted pattern's
+     * promoted fact loses its prompt seat — muted, never deleted, so the Tudástár keeps it
+     * visible and re-enableable. Fires the same {@link KnowledgeFactChangedEvent} the manual
+     * toggle does, so the graph re-syncs through the one consumer that already reacts to it.
+     *
+     * <p>Fail-open: called from {@code companion.reflection.service} (the ArchUnit direction lets
+     * reflection import companion.service, never the reverse), where a missing/already-gone fact
+     * must never abort the caller's refute transaction — it is logged and the call returns.
+     */
+    @Transactional
+    public void muteFromRefutedPattern(UUID userId, UUID factId) {
+        KnowledgeFactEntity fact = repository.findByIdAndCreatedByAndDeletedFalse(factId, userId).orElse(null);
+        if (fact == null) {
+            log.info("Refute-mutes-fact skipped — fact {} of user {} is already gone", factId, userId);
+            return;
+        }
+        fact.setIncludeInPrompt(false);
+        repository.save(fact);
+        eventPublisher.publishEvent(new KnowledgeFactChangedEvent(userId, factId));
     }
 
     private KnowledgeFactEntity getOwned(UUID userId, UUID factId) {

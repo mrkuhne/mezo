@@ -108,6 +108,38 @@ class KnowledgeRecheckServiceIT extends AbstractIntegrationTest {
         PatternEntity reread = patternRepository.findById(confirmed.getId()).orElseThrow();
         assertThat(reread.getStatus()).isEqualTo(PatternEntity.STATUS_CONFIRMED);
         assertThat(reread.getPromotedFactId()).isEqualTo(confirmed.getPromotedFactId());
+        KnowledgeFactEntity sourceFact = knowledgeFactRepository.findById(reread.getPromotedFactId()).orElseThrow();
+        assertThat(sourceFact.isIncludeInPrompt()).isTrue();
+        assertThat(sourceFact.getFactText()).isEqualTo(DEFAULT_CLAIM);
+    }
+
+    /**
+     * S2 delta (final-review adjudications 2026-09-25): a drift row is the quarterly pass's own
+     * OUTPUT — even confirmed and promotable in principle, it must never be re-asked about.
+     */
+    @Test
+    void testRunFor_shouldExcludeDriftRowsFromCandidates() {
+        UUID owner = userPopulator.createUser().getId();
+        PatternEntity drift = patternPopulator.reflectionNoPlan(owner, PatternEntity.STATUS_CONFIRMED);
+        drift.setPairKey(PatternEntity.PAIR_KEY_DRIFT_PREFIX + UUID.randomUUID());
+        drift.setMechanism(DEFAULT_CLAIM);
+        drift = patternPopulator.save(drift);
+        KnowledgeFactEntity fact = new KnowledgeFactEntity();
+        fact.setCreatedBy(owner);
+        fact.setFactText(DEFAULT_CLAIM);
+        fact.setCategory("life");
+        fact.setSource(KnowledgeFactEntity.SOURCE_PATTERN);
+        fact.setIncludeInPrompt(true);
+        fact.setProvenance(MemoryProvenanceEnvelope.patternPromotion(drift.getId(), PatternService.CONFIRM_SOURCE_USER));
+        fact = knowledgeFactRepository.saveAndFlush(fact);
+        drift.setPromotedFactId(fact.getId());
+        patternPopulator.save(drift);
+        int callsBefore = fakeCompanionLlm.completeCallCount();
+
+        int created = recheckService.runFor(owner);
+
+        assertThat(created).isEqualTo(0);
+        assertThat(fakeCompanionLlm.completeCallCount()).isEqualTo(callsBefore);
     }
 
     @Test
