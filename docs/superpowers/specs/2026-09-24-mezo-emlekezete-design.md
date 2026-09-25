@@ -312,7 +312,7 @@ mapper unit tests replace parser tests (`observationEvidence.test.ts`), card/fee
 component tests updated for new copy (6 test files sweep in one commit), team-feed
 post shows evidence block not raw text. Contract regen + CODEMAP.
 
-## S2 delta — user confirm → durable knowledge (2026-09-25, awaiting owner OK)
+## S2 delta — user confirm → durable knowledge (2026-09-25, owner-approved)
 
 **Session brainstorm findings (S2 recon):**
 
@@ -344,7 +344,14 @@ post shows evidence block not raw text. Contract regen + CODEMAP.
    `confirmed` event (payload records the source), first-confirm promotion to
    `knowledge_fact` (guarded by `promotedFactId`), publish `PatternConfirmedEvent`.
    The promotion now **fills the fact's `provenance` envelope** with the pattern id
-   and the confirm source (today it is empty).
+   and the confirm source (today it is empty). **Build deviation (conscious decision):**
+   a planned row's user confirm (point 2 below) calls the promotion body directly rather
+   than the shared `applyConfirm`, so it publishes `KnowledgeFactPromotedEvent` but
+   **not** `PatternConfirmedEvent` — the pattern itself is not confirmed yet (it stays
+   `monitoring`), so its graph pattern-node mirror still only follows an ENGINE confirm;
+   only the knowledge-fact mirror reacts to a planned row's user confirm. A later engine
+   confirm of the same row still fires `PatternConfirmedEvent` (promotion itself is a
+   no-op via the `promotedFactId` guard), catching the graph node up.
 2. **User confirm semantics** in `ReflectionReplyService` (`watch` choice):
    - Row **with a test plan**: promote (fact + graph) immediately, but status stays
      `monitoring` — the nightly engine loop continues and a later engine confirm
@@ -358,7 +365,10 @@ post shows evidence block not raw text. Contract regen + CODEMAP.
    javasold újra, átfogalmazva sem" instruction; the critique dedup check receives
    them too. Code-side guard stays the source of truth (unique index).
 4. **Slow re-check + drift.** New quarterly job (own cron property + kill switch,
-   `QuarterlyReviewJob` idiom, free dawn slot) over rows that are
+   `QuarterlyReviewJob` idiom, **09:20 — deliberately OUTSIDE the dawn cluster**: the job
+   opens by calling `ObservationBudget.allows`, and the dawn cluster's obvious "free slot"
+   sits inside the budget's own 22:00–07:00 quiet hours, which would have silently zero'd
+   every quarterly pass; build deviation from the plan text's 04:20) over rows that are
    user-confirmed AND plan-less (planned rows are re-checked nightly by the
    evaluator already). For each, an LLM re-check against fresh
    `ObservationContextService` context (28d) returns holds/drifts/unknown + hedged

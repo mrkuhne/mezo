@@ -130,6 +130,29 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
         assertThat(cards.get(2).getSourceIcon()).isEqualTo("vacsora");
     }
 
+    /** mezo-d6ivw.2 Task 6: pins that a {@code KnowledgeRecheckService} drift row is a genuinely
+     *  NEW fresh card, not something the frozen-row filter swallows — that is the whole reason
+     *  drift is modeled as a new proposed row instead of a rewrite of the confirmed one. */
+    @Test
+    void testListObservations_shouldSurfaceADriftRow_whenAConfirmedFactsRecheckProposesOne() {
+        UUID owner = ownerId();
+
+        PatternEntity drift = patternPopulator.reflectionNoPlan(owner, PatternEntity.STATUS_PROPOSED);
+        drift.setPairKey("drift-" + UUID.randomUUID());
+        drift = patternPopulator.save(drift);
+        PatternEventEntity driftEvent = patternEventPopulator.observation(owner, drift.getId(),
+                "Korábban megerősítetted, hogy sokat alszol Anna után.\nMég mindig így van?",
+                List.of(), true, dayAt(0));
+
+        List<ObservationResponse> cards = getForList(
+                "/api/companion/observation?date=" + TODAY, ownerAuthHeaders(),
+                HttpStatus.OK, ObservationResponse.class);
+
+        assertThat(cards).extracting(ObservationResponse::getCard).containsExactly("fresh");
+        assertThat(cards.get(0).getId()).isEqualTo(driftEvent.getId());
+        assertThat(cards.get(0).getPatternId()).isEqualTo(drift.getId());
+    }
+
     @Test
     void testListObservations_shouldMarkTheCardAsReturn_whenTheRowWasRepliedToBeforeTheObservation() {
         UUID owner = ownerId();

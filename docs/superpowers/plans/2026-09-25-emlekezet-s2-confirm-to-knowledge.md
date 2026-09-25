@@ -439,7 +439,7 @@ git commit -m "feat(companion): refuted/rejected hypotheses feed the propose+cri
 - Create: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/KnowledgeRecheckService.java`
 - Create: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/KnowledgeRecheckJob.java`
 - Modify: `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` (`KNOWLEDGE_RECHECK_JOB_SWITCH = "mezo.techcore.cron.knowledge-recheck-job.enabled"`)
-- Modify: `backend/src/main/resources/application.yml` (switch under the cron block near `quarterly-review-job`; cron property `mezo.companion.reflection.recheck-cron: "0 20 4 1 1,4,7,10 *"` — 04:20 on quarter firsts, after the 04:00 quarterly review; document the slot in the dawn-schedule comment)
+- Modify: `backend/src/main/resources/application.yml` (switch under the cron block near `quarterly-review-job`; cron property `mezo.companion.reflection.recheck-cron: "0 20 9 1 1,4,7,10 *"` — 09:20 on quarter firsts (controller override: 04:20 sat inside ObservationBudget quiet hours); document the slot in the dawn-schedule comment)
 - Test: `backend/src/test/java/io/mrkuhne/mezo/feature/companion/reflection/KnowledgeRecheckServiceIT.java`, `KnowledgeRecheckJobSwitchOffIT.java`
 
 **Interfaces:**
@@ -597,8 +597,9 @@ public class KnowledgeRecheckJob {
 
 `application.yml`: add `knowledge-recheck-job: enabled: true` beside `quarterly-review-job`
 (with a 2-line comment: what it does, what off means), and
-`recheck-cron: "0 20 4 1 1,4,7,10 *"` under `mezo.companion.reflection` (document 04:20 in
-the dawn-schedule comment at `:958`). Check whether the IT profile
+`recheck-cron: "0 20 9 1 1,4,7,10 *"` under `mezo.companion.reflection` — 09:20
+(controller override: 04:20 sat inside ObservationBudget quiet hours) — documented at `:958`.
+Check whether the IT profile
 (`backend/src/test/resources/application*.yml`) needs the switch/cron mirrored — grep how
 `quarterly` cron is provided to tests.
 
