@@ -101,7 +101,7 @@ public class HypothesisEvaluationService {
 
     /**
      * One row, one transaction: every write below (the evidence event, the tallies, the belief, the
-     * status transition and — via {@link PatternService#applyEngineConfirm} — the promoted
+     * status transition and — via {@link PatternService#applyConfirm} — the promoted
      * {@code knowledge_fact} and its two events) commits together or not at all.
      * {@code REQUIRES_NEW} so a rollback here can never poison a caller's transaction.
      */
@@ -161,7 +161,7 @@ public class HypothesisEvaluationService {
             if (PatternEntity.STATUS_CONFIRMED.equals(decision.newStatus())) {
                 // the engine confirm goes through the SAME body as the user's own confirm, so the
                 // fact promotion and the graph event can never drift between the two paths
-                patternService.applyEngineConfirm(userId, row);
+                patternService.applyConfirm(userId, row, PatternService.CONFIRM_SOURCE_ENGINE);
             } else {
                 row.setStatus(decision.newStatus());
                 record(row, decision.eventKind(), PatternEventPayloadEnvelope.empty());
