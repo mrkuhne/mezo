@@ -174,6 +174,24 @@ class ObservationContextServiceIT extends AbstractIntegrationTest {
         assertThat(context.fetch(owner, "nonsense")).isEmpty();
         assertThat(context.fetch(owner, "person:" + UUID.randomUUID())).isEmpty(); // not in SOURCES
         assertThat(context.fetch(other, "check_in:" + checkin.getId())).isEmpty(); // foreign
+        assertThat(context.fetch(owner, "check_in:not-a-uuid")).isEmpty(); // well-formed source, invalid UUID
+        var conversation = conversations.conversation(owner);
+        var assistant = messages.message(conversation, "assistant", "Nem saját bizonyíték");
+        assertThat(context.fetch(owner, "ai_message:" + assistant.getId())).isEmpty(); // non-original
+    }
+
+    @Test
+    void testFetch_shouldJoinAllProseFields_whenRecordHasMoreThanOne() {
+        var owner = users.createUser().getId();
+        var day = LocalDate.now();
+        var meso = train.createActiveMeso(owner);
+        var workout = train.createWorkoutSession(owner, meso.getId(), "A", "gym", 0, "completed");
+        workout.setDate(day);
+        workout.setNote("Terv: nehéz nap");
+        workout.setClosingNote("Munka után könnyebb lett");
+        train.save(workout);
+        var rec = context.fetch(owner, "workout_session:" + workout.getId()).orElseThrow();
+        assertThat(rec.quote()).isEqualTo("Terv: nehéz nap — Munka után könnyebb lett");
     }
 
 }

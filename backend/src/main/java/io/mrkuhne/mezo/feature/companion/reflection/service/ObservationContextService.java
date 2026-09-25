@@ -119,16 +119,19 @@ public class ObservationContextService {
 
     private SourceRecord structured(UUID userId, String name, PersonalRecordSource source, JsonNode data) {
         var fields = new LinkedHashMap<String, String>();
-        String quote = null;
+        var prose = new ArrayList<String>();
         for (var entry : data.properties()) {
             if (OMITTED_FIELDS.contains(entry.getKey()) || entry.getValue().isNull()) continue;
             String value = entry.getValue().isTextual() ? entry.getValue().asText() : entry.getValue().toString();
             if (PROSE_FIELDS.contains(entry.getKey())) {
-                if (quote == null && !value.isBlank()) quote = cap(value);
+                if (!value.isBlank()) prose.add(value);
             } else {
                 fields.put(entry.getKey(), value.replaceAll("[\\r\\n]+", " "));
             }
         }
+        // A record can carry more than one prose field (e.g. workout_session's plan note AND
+        // closing note) — join all of them so none are silently dropped, then cap the result.
+        String quote = prose.isEmpty() ? null : cap(String.join(" — ", prose));
         String time = fields.containsKey("time") ? fields.get("time") : fields.get("slot_time");
         return new SourceRecord(name, occurrenceDate(userId, source, data), time, fields, quote);
     }
