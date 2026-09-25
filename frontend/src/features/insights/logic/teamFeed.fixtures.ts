@@ -5,6 +5,7 @@
  */
 import type { CharacterFeedItem } from '@/data/character/characterApi'
 import type { Experiment, Observation, Pattern, PatternMonitorPair, Prediction } from '@/data/types'
+import { mapEvidence } from '@/shared/ui/evidence/observationEvidence'
 
 export const TODAY = '2026-09-23'
 export const YESTERDAY = '2026-09-22'
@@ -152,7 +153,7 @@ export const freshObservation: Observation = {
   title: 'Anna és az alvásod',
   text: 'Amikor **Anna** szerepel a hála-naplódban, másnap átlag **40 perccel többet** alszol.',
   question: 'Négy ilyen napot látok eddig — **Figyeljem tovább?**',
-  evidence: ['4 hála-bejegyzés'],
+  evidence: [mapEvidence({ type: 'tag', text: '4 hála-bejegyzés' })],
   status: 'proposed',
   evidenceHits: 4,
   evidenceMisses: 0,

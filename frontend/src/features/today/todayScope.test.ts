@@ -61,8 +61,6 @@ describe('a nyugdíjazott Today-felületek tényleg eltűntek', () => {
       // a szükséglet-színek haloja előtt, a Boop-avatar foglalt helyén.
       'MezoMessagesSheet.tsx', 'NapCompanion.tsx', 'NapFuelGraphic.tsx',
       'NapPersonalInsight.tsx', 'NapzarasCard.tsx', 'ObservationCard.tsx',
-      // mezo-me75u.12 — az észrevétel-kártya tagolt bizonyíték-sorai.
-      'ObservationEvidence.tsx',
     ])
   })
 })

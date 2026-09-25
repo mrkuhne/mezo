@@ -2,11 +2,12 @@ import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { NapPersonalInsight } from '@/features/today/components/NapPersonalInsight'
+import { mapEvidence } from '@/shared/ui/evidence/observationEvidence'
 import type { Observation } from '@/data/types'
 
 const mocks = vi.hoisted(() => ({ feed: vi.fn(), reply: vi.fn(), retry: vi.fn() }))
 vi.mock('@/data/hooks', () => ({ useObservations: mocks.feed, useObservationReply: () => ({ reply: mocks.reply }) }))
-const item: Observation = { id: 'event-1', patternId: 'pattern-1', card: 'fresh', occurredAt: '2026-09-17T10:00:00Z', title: 'A te ritmusod', text: 'A **sétás napokon** többet pihentél.', evidence: ['Két rögzített séta'], status: 'monitoring', evidenceHits: 2, evidenceMisses: 0, sourceIcon: 'i-mezo' }
+const item: Observation = { id: 'event-1', patternId: 'pattern-1', card: 'fresh', occurredAt: '2026-09-17T10:00:00Z', title: 'A te ritmusod', text: 'A **sétás napokon** többet pihentél.', evidence: [mapEvidence({ type: 'tag', text: 'Két rögzített séta' })], status: 'monitoring', evidenceHits: 2, evidenceMisses: 0, sourceIcon: 'i-mezo' }
 function feed(overrides = {}) { return { observations: [item], isPending: false, isError: false, degraded: false, refetch: mocks.retry, ...overrides } }
 function Probe() { const location = useLocation(); return <p>{location.search || location.state?.compose}</p> }
 function tree() { return <MemoryRouter><Routes><Route path="/" element={<NapPersonalInsight />} /><Route path="/mezo/chat" element={<Probe />} /></Routes></MemoryRouter> }

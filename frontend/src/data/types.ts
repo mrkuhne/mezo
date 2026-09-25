@@ -3,6 +3,7 @@ import type { Tool } from '@/shared/ui/ToolChip'
 import type { ClayIconName } from '@/shared/ui/clay'
 import type { NovaGroup } from '@/data/nova'
 import type { PantrySourceKey } from '@/data/pantrySources'
+import type { EvidenceItem } from '@/shared/ui/evidence/observationEvidence'
 
 export type DayState = 'good' | 'medium' | 'rough'
 export interface CheckinValues { energy: number; stress: number; body: number; mental: number }
@@ -1989,7 +1990,7 @@ export interface Observation {
   /** A `watching` kártyán ÜRES — ott a számok beszélnek. */
   text: string
   question?: string
-  evidence: string[]
+  evidence: EvidenceItem[]
   status: PatternRowStatus
   evidenceHits: number
   evidenceMisses: number

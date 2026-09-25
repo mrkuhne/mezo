@@ -197,7 +197,10 @@ function observationPost(o: Observation, patterns: Pattern[], pairs: PatternMoni
     ...owner,
     occurredAt: o.occurredAt,
     title: o.title,
-    body: [o.text, o.question, ...o.evidence].filter(Boolean).join('\n\n'),
+    // INTERIM (mezo-d6ivw.1 Task 3): evidence is now structured EvidenceItem[], not raw
+    // strings — this is a minimal adaptation (record title / tag text) pending Task 4's
+    // proper structured rendering of the feed post body.
+    body: [o.text, o.question, ...o.evidence.map((e) => e.kind === 'tag' ? e.text : e.title)].filter(Boolean).join('\n\n'),
     ...(o.minN != null ? { honesty: honestyFor(n, o.minN) } : {}),
     sourceRoute: o.hypothesisKey ? `/mezo/patterns/${o.hypothesisKey}` : pattern ? `/mezo/patterns/${pattern.pairKey}` : '/mezo/patterns',
     waiting: Boolean(o.question) && !o.repliedChoice,

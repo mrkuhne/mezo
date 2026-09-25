@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router-dom'
 import { ObservationCard } from '@/features/today/components/ObservationCard'
 import { observations as seed } from '@/data/insights/observations'
+import { mapEvidence, type WireEvidence } from '@/shared/ui/evidence/observationEvidence'
 import type { Observation } from '@/data/types'
 
 function ChatProbe() {
@@ -196,7 +197,7 @@ test('egy elbukott válasz NEM hazudik nyugtázást — a chipek visszajönnek h
 
 test('statistical watching exposes source evidence and detail link without invented reflection tally', () => {
   renderCard({ ...watching, kind: 'statistical', evidenceHits: 0, evidenceMisses: 0,
-    minN: undefined, evidence: ['2026-09-09 · Check-in: stressz'], hypothesisKey: 'stress_sleep' })
+    minN: undefined, evidence: [mapEvidence({ type: 'tag', text: '2026-09-09 · Check-in: stressz' })], hypothesisKey: 'stress_sleep' })
   expect(screen.getByText('2026-09-09 · Check-in: stressz')).toBeInTheDocument()
   expect(document.querySelector('.nap-obs-tally')).toBeNull()
   expect(document.querySelector('.nap-obs-prog')).toBeNull()
@@ -218,13 +219,17 @@ test('older unanswered card retains its original observation date', () => {
   expect(eb).toMatch(/^Feltűnt · máj\. 22\. \d\d:\d\d$/)
 })
 
-// mezo-me75u.12: a nyers rekord-bizonyíték tagolt sorokká bomlik, két check-in közös
+// mezo-d6ivw.1: a strukturált bizonyíték tagolt sorokká bomlik, két check-in közös
 // változás-grafikont kap, és a kérdés a válasz-pillek fölött ül.
-const RAW_EVIDENCE = [
-  'Sportnapló · 2026-09-17 · notes=Típus: Edzés; sport=volleyball; date=2026-09-17; time=20:46; duration_min=120; rpe=7.0; shoulder_strain=6; kcal=975; kcal_is_estimate=true',
-  'Check-in · 2026-09-22 · note=Jól vagyok; date=2026-09-22; slot_time=14:00; state=done; energy=7; stress=2; body=8; mental=8',
-  'Check-in · 2026-09-22 · note=Jó a randi; date=2026-09-22; slot_time=20:00; state=done; energy=4; stress=1; body=9; mental=10',
-]
+const RAW_EVIDENCE = ([
+  { type: 'record', source: 'sport_session', date: '2026-09-17', time: '20:46',
+    fields: { sport: 'volleyball', duration_min: '120', rpe: '7.0', shoulder_strain: '6', kcal: '975', kcal_is_estimate: 'true' },
+    quote: 'Típus: Edzés' },
+  { type: 'record', source: 'check_in', date: '2026-09-22', time: '14:00',
+    fields: { energy: '7', stress: '2', body: '8', mental: '8' }, quote: 'Jól vagyok' },
+  { type: 'record', source: 'check_in', date: '2026-09-22', time: '20:00',
+    fields: { energy: '4', stress: '1', body: '9', mental: '10' }, quote: 'Jó a randi' },
+] as WireEvidence[]).map(mapEvidence)
 
 test('a Mezo-mondat egyenes szöveg, a nyers bizonyíték tagolt sorokként jelenik meg', () => {
   renderCard({ ...fresh, evidence: RAW_EVIDENCE })

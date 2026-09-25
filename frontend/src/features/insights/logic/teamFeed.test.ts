@@ -3,6 +3,7 @@ import {
   TODAY, YESTERDAY, activeExperiment, characterItems, freshObservation, input, lateMealPattern, missedPrediction,
   monitoringPattern, pairs,
 } from './teamFeed.fixtures'
+import { mapEvidence } from '@/shared/ui/evidence/observationEvidence'
 
 const allPosts = () => buildTeamFeed(input).days.flatMap(d => [...(d.poster ? [d.poster] : []), ...d.posts])
 
@@ -178,7 +179,8 @@ test('ritmus: egy csendes nap magányos posztja nem lesz üveg-poszter', () => {
 
 test('persistent return questions keep their source date and replace duplicate pattern posts', () => {
   const observation = { ...freshObservation, card: 'return' as const, patternId: lateMealPattern.id,
-    occurredAt: '2026-08-30T08:00:00Z', evidence: ['2026-08-29 · Napló: munkahelyi feszültség'] }
+    occurredAt: '2026-08-30T08:00:00Z',
+    evidence: [mapEvidence({ type: 'tag', text: '2026-08-29 · Napló: munkahelyi feszültség' })] }
   const posts = buildTeamFeed({ ...input, observations: [observation] }).days
     .flatMap(d => [...(d.poster ? [d.poster] : []), ...d.posts])
   expect(posts.filter(p => p.id === `pattern:${lateMealPattern.id}`)).toHaveLength(0)
@@ -186,7 +188,7 @@ test('persistent return questions keep their source date and replace duplicate p
   expect(post.waiting).toBe(true)
   expect(post.occurredAt).toBe(observation.occurredAt)
   expect(post.body).toContain(observation.question)
-  expect(post.body).toContain(observation.evidence[0])
+  expect(post.body).toContain('2026-08-29 · Napló: munkahelyi feszültség')
 })
 
 test('answered observation snapshot does not duplicate its monitoring pattern after refresh', () => {

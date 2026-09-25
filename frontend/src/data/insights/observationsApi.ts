@@ -1,6 +1,7 @@
 import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
 import type { ClayIconName } from '@/shared/ui/clay'
+import { mapEvidence } from '@/shared/ui/evidence/observationEvidence'
 import type {
   Observation,
   ObservationCardKind,
@@ -43,7 +44,7 @@ export function toObservation(w: ObservationResponse): Observation {
     title: w.title,
     text: w.text,
     question: w.question ?? undefined,
-    evidence: w.evidence,
+    evidence: w.evidence.map(mapEvidence),
     status: w.status as PatternRowStatus,
     evidenceHits: w.evidenceHits,
     evidenceMisses: w.evidenceMisses,
