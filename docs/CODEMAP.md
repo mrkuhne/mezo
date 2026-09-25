@@ -235,7 +235,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### character
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-24, shipped)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-25, shipped)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
   - **sub-features:** `detector`
@@ -336,7 +336,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### companion
 
 *BE + API + FE-data* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-09-09, done) ·
-  [docs/features/character.md](features/character.md) (updated 2026-09-24, shipped) ·
+  [docs/features/character.md](features/character.md) (updated 2026-09-25, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-09-25, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-25, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-18, in-progress) ·
@@ -579,7 +579,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/pantry.md](features/pantry.md) (updated 2026-09-23, done) ·
   [docs/features/recipe.md](features/recipe.md) (updated 2026-09-24, done) ·
   [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-24, done) ·
-  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-24, done)
+  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-25, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/fuel`
   - **entities→tables:** `FuelSettingsEntity`→`fuel_settings`, `MealSlotTemplateEntity`→`meal_slot_template`,
@@ -649,7 +649,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### gamification
 
 *BE + API + FE-data* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-09-18, done) ·
-  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-24, done)
+  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-25, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/gamification`
   - **entities→tables:** `CoinEventEntity`→`coin_event`, `GamificationProfileEntity`→`gamification_profile`,
@@ -922,7 +922,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-18, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-25, mixed) ·
   [docs/features/today.md](features/today.md) (updated 2026-09-25, mixed) ·
-  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-24, done) ·
+  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-25, done) ·
   [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-25, mixed)
 
 - **FE data** `frontend/src/data/me`
@@ -1410,7 +1410,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-24, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-20, done) ·
   [docs/features/train.md](features/train.md) (updated 2026-09-24, done) ·
-  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-24, done)
+  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-25, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
   - **sub-features:** `signal`
