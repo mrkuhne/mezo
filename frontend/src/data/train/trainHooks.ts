@@ -438,6 +438,9 @@ type TrainData = {
   gymDoneDates: string[]
   /** True while the meso//today queries are still loading (real mode) — guards must not redirect yet. */
   workoutPending: boolean
+  /** True while the today/plan query is (re)fetching (real mode) — the active-workout route
+   *  waits on it ONCE at mount so a resumed session never seeds from a stale cached snapshot. */
+  workoutFetching: boolean
   /** True while the sport-sessions query is still loading (real mode) — drives the Sport skeleton. */
   sportPending: boolean
   /** True while the exercise catalog/records queries are still loading (real mode) — drives the Exercises skeleton. */
@@ -684,7 +687,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
   // Today's workout context — only meaningful in real mode (mock serves the static plan).
   // The day param joins the key so a pinned-day session and the plain today context
   // cache separately; invalidateToday's ['train','workoutToday'] prefix hits both.
-  const { data: todayData, isPending: todayPending } = useQuery({
+  const { data: todayData, isPending: todayPending, isFetching: todayFetching } = useQuery({
     queryKey: ['train', 'workoutToday', workoutDay],
     queryFn: mock ? async () => null : () => trainApi.workoutToday(workoutDay ?? undefined),
     initialData: mock ? null : undefined,
@@ -1064,6 +1067,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
       ? (trainGymSchedule.weeklyTimes.some((d) => d.today && d.active) ? [localDateString()] : [])
       : (todayData?.weekDoneDates ?? []),
     workoutPending: !mock && (mesoPending || todayPending),
+    workoutFetching: !mock && todayFetching,
     sportPending: !mock && sportQueryPending,
     exercisesPending: !mock && (catalogPending || recordsPending),
     // One-off events merge into the schedule in BOTH modes (mezo-e1sp); with no events

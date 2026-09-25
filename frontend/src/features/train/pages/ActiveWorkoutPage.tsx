@@ -114,7 +114,7 @@ export function ActiveWorkoutPage() {
   const qc = useQueryClient()
   const dayParam = searchParams.get('day')
   const [pinnedDay, setPinnedDay] = useState<string | null>(null)
-  const { workout, activeMeso, todaySession, completedTodayWorkout, workoutPending, startWorkout, logSet, updateSet, deleteSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises } = useTrain({ workoutDay: dayParam ?? pinnedDay })
+  const { workout, activeMeso, todaySession, completedTodayWorkout, workoutPending, workoutFetching, startWorkout, logSet, updateSet, deleteSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises } = useTrain({ workoutDay: dayParam ?? pinnedDay })
   const resolvedTemplate = todaySession?.templateSessionId ?? null
   useEffect(() => {
     if (dayParam || pinnedDay || !resolvedTemplate) return
@@ -133,12 +133,22 @@ export function ActiveWorkoutPage() {
   // jsdom-lefedettség vak volt rá — a regressziós teszt ezért valós módban fut
   // (`ActiveWorkoutPage.realFinish.test.tsx`).
   const entryRedirectRef = useRef<boolean | null>(null)
+  const mountSyncedRef = useRef(false)
   // A hard reload lands here with the queries still loading — redirecting now
   // would kill the resume flow (live-smoke catch). Show the generic skeleton
   // until loaded (was `return null` — mezo-f2z). `workoutPending` is already
   // `!mock`-gated (false in mock, synchronous seed), so no skeleton flashes in
   // mock mode.
   if (workoutPending) return <ScreenSkeleton />
+  // Resume on a FRESH read (the "Folytatás → an extra set" report): the session seeds ONCE
+  // from `openWorkout.sets`, so a cached today snapshot that predates the last logged set
+  // (the POST's invalidate-refetch had not landed when the user left, or the param-less key
+  // only held the snapshot copied in at the previous mount's pin) would seed the card one
+  // set behind the server — the user re-ticks it and the server stores a duplicate. Wait for
+  // the mount-time refetch ONCE; later in-session refetches must never unmount the session,
+  // so the latch closes on the first settled read and stays closed.
+  if (!mountSyncedRef.current && workoutFetching) return <ScreenSkeleton />
+  mountSyncedRef.current = true
   // T0 clean slate: never render the session without a workout (and at least one exercise).
   // Meso-independence (mezo-ws2x D4): getToday resolves custom (saját) templates with NO
   // active meso, so `activeMeso` is legitimately null here — it must NOT gate the redirect.
