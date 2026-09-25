@@ -46,7 +46,7 @@ public class GroundedHypothesisPublisher {
 
     private static PatternEventPayloadEnvelope groundedObservation(String text, List<String> evidenceRefs, boolean surfaced) {
         return new PatternEventPayloadEnvelope(null, null, null, null, null,
-                null, null, "grounded", null, text, evidenceRefs, surfaced);
+                null, null, "grounded", null, text, evidenceRefs, surfaced, null);
     }
 
     /** One identity normalization for both preview deduplication and persisted threads. */

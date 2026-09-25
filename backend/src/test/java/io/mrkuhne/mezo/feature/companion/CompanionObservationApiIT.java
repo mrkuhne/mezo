@@ -386,7 +386,7 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
                 false, dayAt(0).minusSeconds(86400));
         var old = event.getPayload();
         event.setPayload(new PatternEventPayloadEnvelope(null, null, null, null, null,
-                null, null, "grounded", null, old.text(), old.evidenceRefs(), false));
+                null, null, "grounded", null, old.text(), old.evidenceRefs(), false, null));
         eventRepository.saveAndFlush(event);
         assertThat(getForList("/api/companion/observation", ownerAuthHeaders(),
                 HttpStatus.OK, ObservationResponse.class)).singleElement().satisfies(card -> {
@@ -427,7 +427,7 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
                 dayAt(0).minusSeconds(86400));
         var p = pending.getPayload();
         pending.setPayload(new PatternEventPayloadEnvelope(null, null, null, null, null,
-                null, null, "grounded", null, p.text(), p.evidenceRefs(), false));
+                null, null, "grounded", null, p.text(), p.evidenceRefs(), false, null));
         eventRepository.saveAndFlush(pending);
         assertThat(getForList("/api/companion/observation", ownerAuthHeaders(), HttpStatus.OK,
                 ObservationResponse.class)).extracting(ObservationResponse::getId).doesNotContain(pending.getId());
@@ -441,7 +441,7 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
         PatternEventEntity event = patternEventPopulator.observation(owner, patternId, text, evidenceRefs, true, occurredAt);
         var p = event.getPayload();
         event.setPayload(new PatternEventPayloadEnvelope(p.r(), p.n(), p.p(), p.reinforcementCount(),
-                p.factId(), p.hit(), p.verdict(), "grounded", p.choice(), p.text(), p.evidenceRefs(), p.surfaced()));
+                p.factId(), p.hit(), p.verdict(), "grounded", p.choice(), p.text(), p.evidenceRefs(), p.surfaced(), p.confirmSource()));
         return eventRepository.saveAndFlush(event);
     }
 

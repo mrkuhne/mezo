@@ -186,7 +186,7 @@ public class ObservationFeedService {
             if (reply.isPresent() && !reply.get().getOccurredAt().isBefore(event.getOccurredAt())) continue;
             var p = event.getPayload();
             event.setPayload(new PatternEventPayloadEnvelope(p.r(), p.n(), p.p(), p.reinforcementCount(),
-                    p.factId(), p.hit(), p.verdict(), p.channel(), p.choice(), p.text(), p.evidenceRefs(), true));
+                    p.factId(), p.hit(), p.verdict(), p.channel(), p.choice(), p.text(), p.evidenceRefs(), true, p.confirmSource()));
             // Publication happens now; original source dates remain in the evidence, and the
             // row's created_at still records when the candidate was generated.
             event.setOccurredAt(Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS));

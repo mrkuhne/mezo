@@ -62,7 +62,7 @@ class MemoryPlatformPersistenceIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser().getId();
         UUID conversationId = UUID.randomUUID();
         MemoryProvenanceEnvelope provenance = new MemoryProvenanceEnvelope(
-                "journal_entry", Instant.parse("2026-08-29T19:05:00Z"), "projection-v1", conversationId);
+                "journal_entry", Instant.parse("2026-08-29T19:05:00Z"), "projection-v1", conversationId, null, null, null);
         MemoryItemEntity item = memoryItemPopulator.item(owner, "journal_entry", UUID.randomUUID(),
                 "Esti futás", "Futás után jobban aludtam", LocalDate.of(2026, 8, 29),
                 new String[]{"futás", "alvás"}, new String[]{"Anna"}, provenance);

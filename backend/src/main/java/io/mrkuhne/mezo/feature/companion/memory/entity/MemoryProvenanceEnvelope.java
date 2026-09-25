@@ -9,10 +9,16 @@ public record MemoryProvenanceEnvelope(
         Instant sourceUpdatedAt,
         String projectorVersion,
         UUID conversationId,
-        String suppressionReason) {
+        String suppressionReason,
+        UUID patternId,
+        String confirmSource) {
 
     public MemoryProvenanceEnvelope(String sourceTable, Instant sourceUpdatedAt, String projectorVersion, UUID conversationId) {
-        this(sourceTable, sourceUpdatedAt, projectorVersion, conversationId, null);
+        this(sourceTable, sourceUpdatedAt, projectorVersion, conversationId, null, null, null);
+    }
+
+    public MemoryProvenanceEnvelope(String sourceTable, Instant sourceUpdatedAt, String projectorVersion, UUID conversationId, String suppressionReason) {
+        this(sourceTable, sourceUpdatedAt, projectorVersion, conversationId, suppressionReason, null, null);
     }
 
     public boolean userSuppressed() {
@@ -20,10 +26,15 @@ public record MemoryProvenanceEnvelope(
     }
 
     public MemoryProvenanceEnvelope withUserSuppression() {
-        return new MemoryProvenanceEnvelope(sourceTable, sourceUpdatedAt, projectorVersion, conversationId, "user");
+        return new MemoryProvenanceEnvelope(sourceTable, sourceUpdatedAt, projectorVersion, conversationId, "user", patternId, confirmSource);
     }
 
     public static MemoryProvenanceEnvelope empty() {
-        return new MemoryProvenanceEnvelope(null, null, null, null);
+        return new MemoryProvenanceEnvelope(null, null, null, null, null, null, null);
+    }
+
+    /** S2 (mezo-d6ivw.2): a knowledge fact born from a pattern confirm — who and from what. */
+    public static MemoryProvenanceEnvelope patternPromotion(UUID patternId, String confirmSource) {
+        return new MemoryProvenanceEnvelope("pattern", null, null, null, null, patternId, confirmSource);
     }
 }
