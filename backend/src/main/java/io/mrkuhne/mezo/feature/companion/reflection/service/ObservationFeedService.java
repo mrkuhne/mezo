@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.reflection.service;
 
+import io.mrkuhne.mezo.api.dto.ObservationEvidenceItem;
 import io.mrkuhne.mezo.api.dto.ObservationResponse;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
@@ -42,6 +43,13 @@ public class ObservationFeedService {
 
     /** How many of a row's newest replies are read back — far more than any card ever needs. */
     private static final int REPLY_LOOKBACK = 10;
+
+    /** A row's evidence list grows without bound — the publisher keeps APPENDING refs to it on
+     *  every merge, for as long as the row stays alive — so a {@code watching}/{@code confirmed}
+     *  card (which opens its evidence by default) must not render every accumulated ref as an
+     *  expanded record. Event cards render ONE event's own refs and stay uncapped. New refs land
+     *  at the list's end, so keeping the newest N means keeping the tail. */
+    private static final int ROW_EVIDENCE_LIMIT = 5;
 
     private final ObservationOwnerLock ownerLock;
     private final ObservationBudget observationBudget;
@@ -97,7 +105,7 @@ public class ObservationFeedService {
             }
             boolean answeredBefore = replies.stream()
                     .anyMatch(reply -> reply.getOccurredAt().isBefore(event.getOccurredAt()));
-            (answeredBefore ? returning : fresh).add(eventCard(row, event,
+            (answeredBefore ? returning : fresh).add(eventCard(userId, row, event,
                     answeredBefore ? CARD_RETURN : CARD_FRESH, replies));
         }
 
@@ -110,7 +118,7 @@ public class ObservationFeedService {
                 .filter(row -> validEvidence(userId, row))
                 .filter(row -> java.util.stream.Stream.concat(fresh.stream(), returning.stream())
                         .noneMatch(card -> card.getPatternId().equals(row.getId())))
-                .map(row -> rowCard(row, CARD_WATCHING, row.getLastDetectedAt(),
+                .map(row -> rowCard(userId, row, CARD_WATCHING, row.getLastDetectedAt(),
                         replies(userId, repliesByRow, row.getId())))
                 .toList() : List.of();
 
@@ -126,7 +134,7 @@ public class ObservationFeedService {
             }
             // one card per row even if the day carries several confirmations — the newest wins
             if (confirmed.stream().noneMatch(c -> c.getId().equals(row.getId()))) {
-                confirmed.add(rowCard(row, CARD_CONFIRMED, event.getOccurredAt(),
+                confirmed.add(rowCard(userId, row, CARD_CONFIRMED, event.getOccurredAt(),
                         replies(userId, repliesByRow, row.getId())));
             }
         }
@@ -210,10 +218,64 @@ public class ObservationFeedService {
         return ref != null && ref.matches("[a-z_]+:[0-9a-fA-F-]{36}");
     }
 
-    private static List<String> displayEvidence(List<String> refs) {
-        return refs == null ? List.of() : refs.stream().filter(Objects::nonNull)
-                .filter(ref -> !canonicalReference(ref) && !ref.startsWith("observation-topic"))
-                .toList();
+    private static ObservationEvidenceItem tag(String text) {
+        return ObservationEvidenceItem.builder().type("tag").text(text).build();
+    }
+
+    /** {@code null} means the stored date could not be parsed — the caller degrades to the
+     *  tag/fallback path instead of letting a malformed source date 500 the whole feed. */
+    private ObservationEvidenceItem record(String ref, ObservationContextService.SourceRecord rec) {
+        LocalDate date;
+        try {
+            date = LocalDate.parse(rec.date());
+        } catch (java.time.format.DateTimeParseException e) {
+            return null;
+        }
+        return ObservationEvidenceItem.builder().type("record").source(rec.source())
+                .date(date).time(rec.time())
+                .fields(rec.fields()).quote(rec.quote()).ref(ref).build();
+    }
+
+    /** Grounded lists: canonical refs re-read losslessly; the stored label that may follow a ref
+     *  (event snapshots interleave pairs) is consumed as fallback-only. Topic markers are dropped. */
+    private List<ObservationEvidenceItem> evidenceItems(UUID userId, List<String> refs) {
+        if (refs == null) return List.of();
+        var out = new ArrayList<ObservationEvidenceItem>();
+        for (int i = 0; i < refs.size(); i++) {
+            String ref = refs.get(i);
+            if (ref == null || ref.startsWith("observation-topic")) continue;
+            if (!canonicalReference(ref)) { out.add(tag(ref)); continue; }
+            String next = i + 1 < refs.size() ? refs.get(i + 1) : null;
+            String label = next != null && !canonicalReference(next) && !next.startsWith("observation-topic")
+                    ? next : null;
+            if (label != null) i++;
+            var fetched = observationContextService.fetch(userId, ref).filter(r -> r.date() != null);
+            ObservationEvidenceItem item = fetched.map(rec -> record(ref, rec)).orElse(null);
+            if (item != null) out.add(item);
+            else if (label != null) out.add(tag(label));
+        }
+        return out;
+    }
+
+    /** Legacy quick-notice vocabulary: {@code QuickNoticeService.evidenceRefs} puts a
+     *  canonical-shaped ref first ({@code journal_entry:<uuid>}), but not every legacy source is
+     *  in the catalogue ({@code gratitude}/{@code chat_day} are not — they use their own,
+     *  non-catalogue vocabulary). So each canonical-shaped entry is re-read the same way a
+     *  grounded ref is: it resolves to a {@code record}, or — if the catalogue does not carry that
+     *  source (or the record is gone) — it is DROPPED silently rather than shown as raw machine
+     *  text (e.g. {@code journal_entry:3f2a…}). Free (non-canonical) text stays a verbatim tag. */
+    private List<ObservationEvidenceItem> legacyItems(UUID userId, List<String> refs) {
+        if (refs == null) return List.of();
+        var out = new ArrayList<ObservationEvidenceItem>();
+        for (String ref : refs) {
+            if (ref == null) continue;
+            if (!canonicalReference(ref)) { out.add(tag(ref)); continue; }
+            var fetched = observationContextService.fetch(userId, ref).filter(r -> r.date() != null);
+            ObservationEvidenceItem item = fetched.map(rec -> record(ref, rec)).orElse(null);
+            if (item != null) out.add(item);
+            // unresolved canonical-shaped ref (non-catalogue source, or deleted record): dropped.
+        }
+        return out;
     }
 
     /** The row's newest replies, freshest first — owned, so a foreign row yields nothing. */
@@ -228,7 +290,7 @@ public class ObservationFeedService {
     }
 
     /** A {@code fresh}/{@code return} card renders ONE observation event; its id is the event's. */
-    private ObservationResponse eventCard(PatternEntity row, PatternEventEntity event, String card,
+    private ObservationResponse eventCard(UUID userId, PatternEntity row, PatternEventEntity event, String card,
                                           List<PatternEventEntity> replies) {
         PatternEventPayloadEnvelope payload = event.getPayload();
         String[] split = splitTextAndQuestion(payload.text());
@@ -237,14 +299,14 @@ public class ObservationFeedService {
                 .occurredAt(toOffset(event.getOccurredAt()))
                 .text(ObservationLead.strip(split[0]))
                 .question(split[1])
-                .evidence("grounded".equals(payload.channel()) ? displayEvidence(payload.evidenceRefs())
-                        : payload.evidenceRefs() == null ? List.of() : payload.evidenceRefs())
+                .evidence("grounded".equals(payload.channel()) ? evidenceItems(userId, payload.evidenceRefs())
+                        : legacyItems(userId, payload.evidenceRefs()))
                 .repliedChoice(choiceAfter(replies, event.getOccurredAt()))
                 .build();
     }
 
     /** A {@code watching}/{@code confirmed} card renders the ROW's state; its id is the row's. */
-    private ObservationResponse rowCard(PatternEntity row, String card, Instant occurredAt,
+    private ObservationResponse rowCard(UUID userId, PatternEntity row, String card, Instant occurredAt,
                                         List<PatternEventEntity> replies) {
         return base(row, card)
                 .id(row.getId())
@@ -252,11 +314,29 @@ public class ObservationFeedService {
                 // no prose of its own: on these cards the tallies ARE the message
                 .text("")
                 .question(null)
-                .evidence(displayEvidence(row.getEvidence() == null ? null : row.getEvidence().items()))
+                .evidence(capToNewestRecords(evidenceItems(userId,
+                        row.getEvidence() == null ? null : row.getEvidence().items())))
                 // the ROW's newest answer, NOT one anchored on `occurredAt`: `lastDetectedAt` is
                 // bumped by the nightly evaluation, which would re-arm the chips every night
                 .repliedChoice(newestChoice(replies))
                 .build();
+    }
+
+    /** Keeps only the newest {@link #ROW_EVIDENCE_LIMIT} {@code record} items (dropping the
+     *  oldest first, preserving relative order), leaving any {@code tag} items untouched. Row
+     *  cards open by default, so an unbounded, ever-growing evidence list would render every
+     *  accumulated record every time the card is shown. */
+    private static List<ObservationEvidenceItem> capToNewestRecords(List<ObservationEvidenceItem> items) {
+        long recordCount = items.stream().filter(i -> "record".equals(i.getType())).count();
+        if (recordCount <= ROW_EVIDENCE_LIMIT) return items;
+        long toDrop = recordCount - ROW_EVIDENCE_LIMIT;
+        var out = new ArrayList<ObservationEvidenceItem>();
+        long dropped = 0;
+        for (var item : items) {
+            if ("record".equals(item.getType()) && dropped < toDrop) { dropped++; continue; }
+            out.add(item);
+        }
+        return out;
     }
 
     private ObservationResponse.ObservationResponseBuilder base(PatternEntity row, String card) {

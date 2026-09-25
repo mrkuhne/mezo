@@ -1,14 +1,16 @@
 // ============================================================
-// Mezo · ObservationEvidence — az észrevétel-kártya „Miből látom” sorai (mezo-me75u.12).
+// Mezo · EvidenceList — az észrevétel-kártya „Miből látom” sorai (mezo-d6ivw.1).
 // Lapos cellák a kártya üvegén belül (üveg az üvegben tilos, bible §3): forrás 3D-ikon +
 // cím + nap, címkézett érték-pillek, a saját jegyzet idézetként; két+ egymást követő
-// check-in alatt egy közös „Változás” grafikon (1–10 sáv, üres karika → teli pötty).
-// Vizuális igazság: docs/design_2.0/prototypes/uveg-eszrevetel.html.
+// check-in alatt egy közös „Változás” grafikon (1–10 sáv, üres karika → teli pötty). A
+// bemenet strukturált `EvidenceItem[]` (a szerver már veszteségmentesen küldi a rekordot,
+// a modul nem tud csonkolásról). Vizuális igazság: docs/design_2.0/prototypes/uveg-eszrevetel.html.
 // ============================================================
 import { Icon3D } from '@/shared/ui/clay'
 import {
-  CHECKIN_DIMS, evidenceBlocks, evidenceDayLabel, type CheckinShift, type EvidenceRecord,
-} from '@/features/today/logic/observationEvidence'
+  CHECKIN_DIMS, evidenceBlocks, evidenceDayLabel,
+  type CheckinShift, type EvidenceItem, type EvidenceRecord,
+} from './observationEvidence'
 
 const pos = (v: number) => `${((Math.min(10, Math.max(1, v)) - 1) / 9) * 100}%`
 const fmt = (v: number) => String(v).replace('.', ',')
@@ -40,7 +42,7 @@ function RecordRow({ r, hideCheckin, today }: { r: EvidenceRecord; hideCheckin?:
           ))}
         </div>
       )}
-      {r.quote && <p className={long ? 'nap-ev-quote clip' : 'nap-ev-quote'}>„{r.quote}{r.truncated ? '…' : ''}”</p>}
+      {r.quote && <p className={long ? 'nap-ev-quote clip' : 'nap-ev-quote'}>„{r.quote}”</p>}
     </div>
   )
 }
@@ -82,7 +84,7 @@ function ShiftBlock({ s, today }: { s: CheckinShift; today: string }) {
   )
 }
 
-export function EvidenceList({ evidence, today }: { evidence: string[]; today: string }) {
+export function EvidenceList({ evidence, today }: { evidence: EvidenceItem[]; today: string }) {
   const blocks = evidenceBlocks(evidence)
   const tags = blocks.filter((b) => b.kind === 'tag')
   return (

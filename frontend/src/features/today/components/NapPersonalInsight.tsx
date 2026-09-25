@@ -4,7 +4,9 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useObservations, useObservationReply } from '@/data/hooks'
 import type { Observation, ObservationChoice } from '@/data/types'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
+import { localDateString } from '@/shared/lib/dates'
 import { Icon3D } from '@/shared/ui/clay'
+import { EvidenceList } from '@/shared/ui/evidence/EvidenceList'
 import '@/features/today/components/NapPersonalInsight.css'
 
 /** A kártya jele (üvegesítés U3, mezo-me75u.3): a Titanium 3D pontszám-kristály (`t-score`,
@@ -50,10 +52,10 @@ function InsightContent({ item }: { item: Observation }) {
     <h2>{item.title}</h2>
     <p className="nap-personal-copy"><SafeMarkdown text={item.text} /></p>
     {item.question && <p className="nap-personal-question"><SafeMarkdown text={item.question} /></p>}
-    {item.evidence.length > 0 && <details className="nap-personal-evidence"><summary>Miből látom?</summary><ul>{item.evidence.map((evidence, index) => <li key={index}><SafeMarkdown text={evidence} /></li>)}</ul></details>}
+    {item.evidence.length > 0 && <details className="nap-personal-evidence"><summary>Miből látom?</summary><EvidenceList evidence={item.evidence} today={localDateString()} /></details>}
     {asks ? <div className="nap-personal-actions" role="group" aria-label="Válaszod az észrevételre">
-      <button type="button" className="is-primary" disabled={pending} onClick={() => { void answer('watch') }}>Igen, jellemző</button>
-      <button type="button" disabled={pending} onClick={() => { void answer('reject') }}>Nem stimmel</button>
+      <button type="button" className="is-primary" disabled={pending} onClick={() => { void answer('watch') }}>Igen, ez igaz rám</button>
+      <button type="button" disabled={pending} onClick={() => { void answer('reject') }}>Nem, ez nem stimmel</button>
       <button type="button" disabled={pending} onClick={() => { void answer('talk') }}>Beszéljük meg</button>
     </div> : <>
       {answered && <p role="status" className="nap-personal-ack">Megjegyeztem a válaszod.</p>}

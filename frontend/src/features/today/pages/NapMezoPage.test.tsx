@@ -743,7 +743,7 @@ test('kikapcsolt társ esetén őszinte sor jön, üres állapot helyett', async
 test('a chip-válasz a sor azonosítójával megy tovább a hookhoz', async () => {
   obsMock.observations = [obsSeed[0]]
   renderTab()
-  await userEvent.click(await screen.findByRole('button', { name: 'Igen, jellemző' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Igen, ez igaz rám' }))
   expect(obsMock.reply).toHaveBeenCalledWith(obsSeed[0].patternId, 'watch')
 })
 

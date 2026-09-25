@@ -1206,6 +1206,27 @@ components:
         evidence:
           type: array
           items: { type: string }
+    ObservationEvidenceItem:
+      type: object
+      description: >-
+        Egy bizonyíték-elem (mezo-d6ivw.1). `record` = az eredeti forrásrekord olvasáskor
+        újraolvasva (veszteségmentes — a tárolt, esetleg csonkolt címke nem a kijelző forrása);
+        `tag` = rövid szöveges címke (legacy/statisztikai csatorna). A megjelenítés (magyar név,
+        egység, ikon) a FE dolga; a szerver adatot ad.
+      required: [type]
+      properties:
+        type: { type: string, pattern: '^(record|tag)$' }
+        source: { type: string, nullable: true, description: 'A forráskatalógus neve (check_in, journal_entry, …) — csak record.' }
+        date: { type: string, format: date, nullable: true, description: 'A rekord napja — csak record.' }
+        time: { type: string, nullable: true, description: 'A rekord időpontja (HH:mm), ha hordozza — csak record.' }
+        fields:
+          type: object
+          additionalProperties: { type: string }
+          nullable: true
+          description: 'A rekord saját nem-próza mezői nyersen — csak record.'
+        quote: { type: string, nullable: true, description: 'A felhasználó saját szavai (jegyzet/napló), max 500 karakter — csak record.' }
+        ref: { type: string, nullable: true, description: 'Kanonikus forráshivatkozás (forrás:uuid) — provenance, csak record.' }
+        text: { type: string, nullable: true, description: 'A címke szövege — csak tag.' }
     ObservationResponse:
       type: object
       description: >-
@@ -1226,8 +1247,8 @@ components:
         question: { type: string, nullable: true, description: 'A kérdés, amire a chipek válaszolnak — az observation payload utolsó sora; null, ha nincs.' }
         evidence:
           type: array
-          items: { type: string }
-          description: 'Az észrevétel ellenőrzött forrásainak olvasható címkéi és eredeti dátumai — watching/confirmed kártyán a sor saját bizonyíték-chipjei.'
+          items: { $ref: '#/components/schemas/ObservationEvidenceItem' }
+          description: 'Az észrevétel ellenőrzött forrásai strukturáltan (mezo-d6ivw.1) — watching/confirmed kártyán a sor saját bizonyítékai.'
         status: { type: string, pattern: '^(proposed|monitoring|confirmed|rejected|refuted|dormant)$', description: 'A sor státusza a kártya kiadásának pillanatában.' }
         evidenceHits: { type: integer, description: 'Hány éjszaka igazolta a teszt-terv jóslatát.' }
         evidenceMisses: { type: integer, description: 'Hány ÉLŐ éjszaka mondott ellent neki.' }

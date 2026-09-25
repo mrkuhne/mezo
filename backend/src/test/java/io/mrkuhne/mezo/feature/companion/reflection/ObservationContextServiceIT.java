@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -137,6 +138,60 @@ class ObservationContextServiceIT extends AbstractIntegrationTest {
                 .contains(day.minusDays(2).toString(), "kitisztult", "rpe_actual=8");
         assertThat(result.evidence().get("sport_session:" + sport.getId()))
                 .contains(day.minusDays(1).toString(), "Jó társaságban", "duration_min");
+    }
+
+    @Test
+    void testFetch_shouldReturnStructuredRecord_whenReReadingCheckIn() {
+        var owner = users.createUser().getId();
+        var today = LocalDate.now();
+        var checkin = checkins.createCheckIn(owner, today, "08:00", 6, 3, "Meglepően jól indult a hét");
+        var rec = context.fetch(owner, "check_in:" + checkin.getId()).orElseThrow();
+        assertThat(rec.source()).isEqualTo("check_in");
+        assertThat(rec.date()).isEqualTo(today.toString());
+        assertThat(rec.time()).isEqualTo("08:00");
+        assertThat(rec.quote()).isEqualTo("Meglepően jól indult a hét");
+        assertThat(rec.fields()).containsEntry("energy", "6").containsEntry("stress", "3");
+        assertThat(rec.fields()).doesNotContainKey("note"); // prose lives in quote, not fields
+        assertThat(rec.fields()).doesNotContainKey("id");   // OMITTED_FIELDS filtered
+    }
+
+    @Test
+    void testFetch_shouldCapQuoteAt500Chars_whenSourceTextIsLonger() {
+        var owner = users.createUser().getId();
+        // plain ASCII: no surrogate pair can land on the cut boundary
+        var longText = "a".repeat(600);
+        var journal = journals.createEntry(owner, LocalDate.now(), longText, "quickinput");
+        var rec = context.fetch(owner, "journal_entry:" + journal.getId()).orElseThrow();
+        assertThat(rec.quote()).hasSize(500);
+    }
+
+    @Test
+    void testFetch_shouldRejectNullMalformedUnknownAndForeignRefs_whenReReadingSources() {
+        var owner = users.createUser().getId();
+        var other = users.createUser().getId();
+        var checkin = checkins.createCheckIn(owner, LocalDate.now(), "08:00", 6, 3, "Feszült reggel");
+        assertThat(context.fetch(owner, null)).isEmpty();
+        assertThat(context.fetch(owner, "nonsense")).isEmpty();
+        assertThat(context.fetch(owner, "person:" + UUID.randomUUID())).isEmpty(); // not in SOURCES
+        assertThat(context.fetch(other, "check_in:" + checkin.getId())).isEmpty(); // foreign
+        assertThat(context.fetch(owner, "check_in:not-a-uuid")).isEmpty(); // well-formed source, invalid UUID
+        var conversation = conversations.conversation(owner);
+        var assistant = messages.message(conversation, "assistant", "Nem saját bizonyíték");
+        assertThat(context.fetch(owner, "ai_message:" + assistant.getId())).isEmpty(); // non-original
+    }
+
+    @Test
+    void testFetch_shouldJoinAllProseFields_whenRecordHasMoreThanOne() {
+        var owner = users.createUser().getId();
+        var day = LocalDate.now();
+        var meso = train.createActiveMeso(owner);
+        var workout = train.createWorkoutSession(owner, meso.getId(), "A", "gym", 0, "completed");
+        workout.setDate(day);
+        workout.setNote("Terv: nehéz nap");
+        workout.setClosingNote("Munka után könnyebb lett");
+        train.save(workout);
+        var rec = context.fetch(owner, "workout_session:" + workout.getId()).orElseThrow();
+        assertThat(rec.quote()).isEqualTo("Terv: nehéz nap — Munka után könnyebb lett");
     }
 
 }

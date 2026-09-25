@@ -21,8 +21,7 @@ import { cn } from '@/shared/lib/cn'
 import { dayLabel, timeLabel } from '@/features/notification/logic/stamp'
 import { Boop } from '@/shared/ui/clay/boop/Boop'
 import { localDateString } from '@/shared/lib/dates'
-import { EvidenceList } from '@/features/today/components/ObservationEvidence'
-import { parseEvidence } from '@/features/today/logic/observationEvidence'
+import { EvidenceList } from '@/shared/ui/evidence/EvidenceList'
 import type { Observation, ObservationCardKind, ObservationChoice } from '@/data/types'
 
 /** A prototípus négy kártya-modifikátora — a wire kártyanevek NEM egyeznek vele 1:1. */
@@ -61,15 +60,15 @@ const STATE_PILL: Record<ObservationCardKind, string> = {
 /** A felhasználó tapasztalata külön marad a mért bizonyítéktól. */
 function ackLine(choice: ObservationChoice): string {
   if (choice === 'talk') return 'Megnyitom a chatet ezzel a szállal.'
-  if (choice === 'reject') return 'Értem, nem stimmel. Nem hozom fel újra ebben a formában.'
-  return 'Megjegyeztem, hogy ez jellemző rád. Az összefüggést tovább figyelem.'
+  if (choice === 'reject') return 'Értem, ez nem stimmel. Nem hozom fel újra ebben a formában.'
+  return 'Megjegyeztem, hogy ez igaz rád. Az összefüggést tovább figyelem.'
 }
 
 function chipsFor(card: ObservationCardKind): { label: string; choice: ObservationChoice; tone?: 'yes' | 'talk' }[] {
   if (card !== 'fresh' && card !== 'return') return []
   return [
-    { label: 'Igen, jellemző', choice: 'watch', tone: 'yes' },
-    { label: 'Nem stimmel', choice: 'reject' },
+    { label: 'Igen, ez igaz rám', choice: 'watch', tone: 'yes' },
+    { label: 'Nem, ez nem stimmel', choice: 'reject' },
     { label: 'Beszéljük meg', choice: 'talk', tone: 'talk' },
   ]
 }
@@ -107,7 +106,7 @@ export function ObservationCard({ item, onReply, pending = false }: {
   const [evOpen, setEvOpen] = useState<boolean | null>(null)
   const evidenceOpen = evOpen ?? !answered
   const today = localDateString()
-  const records = item.evidence.filter((e) => parseEvidence(e).kind === 'record').length
+  const records = item.evidence.filter((e) => e.kind === 'record').length
 
   // Optimista nyugtázás, VISSZAGÖRGETÉSSEL: a kártya azonnal átvált, de ha a hívás elbukik,
   // a chipek visszajönnek egy hibasorral. Nyugtázva hagyni egy el nem küldött választ hazugság

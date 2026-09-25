@@ -243,3 +243,71 @@ reproposed guard, extraction writers, effect calculators with threshold edge cas
 midnight-anchored fixtures per the known trap), FE tests in both modes, contract-drift
 gate for API changes, CODEMAP regeneration. S4 calculators get pure-unit coverage with
 synthetic series (small-N below threshold ⇒ hidden; direction/confidence tiers).
+
+## S1 delta — structured evidence on the wire (2026-09-25, owner-approved direction)
+
+**Session brainstorm finding (S1 recon):** the base spec's §S1 premise is stale. Since
+mezo-me75u.12 the observation card already renders human evidence FE-side:
+`observationEvidence.ts` regex-parses the raw persisted label
+(`Source · YYYY-MM-DD · key=value; …`) into structured rows, and
+`ObservationEvidence.tsx` renders icons, value pills, quotes and the check-in shift
+chart. Raw `key=value` text survives only in (a) the team-feed post body
+(`teamFeed.ts:200` joins `o.evidence` into prose) and (b) `tag`-fallback labels.
+Moving *prose* formatting BE-side as originally written would break this rich
+rendering and duplicate work.
+
+**Owner decision (2026-09-25): "igazi egységesítés" now.** The long-term unification
+is **structured evidence data from the backend + one shared FE display block**, not
+prose from the server and not the FE's fragile regex re-parse of a machine string.
+The backend owns the data and re-fetches sources losslessly; the frontend owns
+presentation (labels, units, icons, layout).
+
+### Design
+
+1. **Contract:** `ObservationResponse.evidence` changes from `array of string` to an
+   array of structured items (`companion.yml`):
+   - `record`: `{ type: "record", source: <catalogue kind, e.g. check_in>,
+     date: YYYY-MM-DD, time?: HH:mm, fields: map<string,string>, quote?: string,
+     ref?: canonical ref }` — `fields` are the source record's own fields (metric
+     values, no prose), `quote` the record's prose field, **untruncated at source**
+     (BE caps at a generous display bound, ~500 chars).
+   - `tag`: `{ type: "tag", text: string }` — legacy/statistical short labels pass
+     through verbatim.
+   FE and BE deploy together; no dual-format transition period. Contract-drift gate
+   applies (regenerate `api/generate` + FE `pnpm generate:api`; mock fixtures in
+   `frontend/src/data/insights/observations.ts` mirror the new wire shape).
+2. **BE (`ObservationFeedService`):** for grounded cards, resolve each canonical ref
+   in `evidenceRefs` through the same original-record catalogue
+   `ObservationContextService` already uses (`exists()` pattern → a new structured
+   `fetch()`): **re-read the source record and emit full, lossless fields** — this is
+   the "use the data platform" move; the persisted, possibly truncated label is no
+   longer the display source. Fail-open: an unresolvable ref (shouldn't occur —
+   `validEventEvidence` already hides such cards) degrades to a `tag` item carrying
+   the stored label. Legacy channel: stored free-text labels → `tag` items unchanged.
+   **`pattern_event.evidenceRefs` is never rewritten** (LLM grounding text stays).
+3. **FE:** `observationEvidence.ts` drops the regex parse + truncation-repair
+   (`parseEvidence` on raw strings) and becomes a thin mapper DTO → the existing
+   `EvidenceRecord`/`EvidenceTag` model; `FIELDS`/`SOURCE_ICON`/`SOURCE_NAME`
+   presentation tables, `evidenceBlocks` (shift chart) and `ObservationEvidence.tsx`
+   stay. `truncated` display state disappears (data is lossless now).
+4. **Team feed unification:** `teamFeed.ts` stops dumping evidence strings into the
+   post body; observation posts carry `evidence` structurally and the feed post
+   renders the same shared evidence block (compact variant) as the card — one
+   building block, every surface (card today; csapatfal S6 and hub inherit it).
+5. **Button copy (unchanged from base §S1):** "Igen, ez igaz rám" / "Nem, ez nem
+   stimmel" / "Beszéljük meg" in `ObservationCard.tsx` (+ `ackLine`),
+   `NapPersonalInsight.tsx`, `FeedTrio.tsx`; choice values `watch`/`reject`/`talk`
+   unchanged. Post-click ack copy names a concrete consequence (PAIR pattern), staying
+   honest about today's behavior (watch = figyelés; durable memory arrives in S2).
+6. **Out of S1 scope:** BE-side HU prose formatting (dropped — presentation stays FE);
+   any change to `ObservationContextService.excerpt` (LLM grounding untouched);
+   S2 promotion semantics.
+
+### Testing (S1)
+
+BE: focused ITs — structured evidence for grounded cards (re-fetched fields match the
+source record, quote capped, no truncation marker), legacy labels as tags, fail-open
+on missing ref; `CompanionObservationApiIT` round-trip updated. FE: both modes —
+mapper unit tests replace parser tests (`observationEvidence.test.ts`), card/feed
+component tests updated for new copy (6 test files sweep in one commit), team-feed
+post shows evidence block not raw text. Contract regen + CODEMAP.

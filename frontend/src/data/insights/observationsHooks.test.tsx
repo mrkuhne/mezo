@@ -59,7 +59,7 @@ describe('useObservations (real mode)', () => {
             id: 'e1', patternId: 'p1', hypothesisKey: 'ref-anna-alvas', card: 'fresh',
             occurredAt: '2026-09-07T14:12:00Z', title: 'Anna és az alvásod',
             text: 'Amikor Anna szerepel a naplódban, másnap többet alszol.',
-            question: 'Figyeljem tovább?', evidence: ['4 hála-bejegyzés'],
+            question: 'Figyeljem tovább?', evidence: [{ type: 'tag', text: '4 hála-bejegyzés' }],
             status: 'proposed', evidenceHits: 4, evidenceMisses: 0, minN: 8,
             belief: 0.4, repliedChoice: null, sourceIcon: 'naplo',
           },

@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.ObservationEvidenceItem;
 import io.mrkuhne.mezo.api.dto.ObservationResponse;
 import io.mrkuhne.mezo.api.dto.PatternReplyRequest;
 import io.mrkuhne.mezo.api.dto.PatternReplyResponse;
@@ -10,17 +11,22 @@ import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventPayloadEnvelope;
+import io.mrkuhne.mezo.feature.companion.entity.PatternEvidenceEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.entity.TestPlanEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
+import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.support.populator.CheckInPopulator;
+import io.mrkuhne.mezo.support.populator.JournalPopulator;
 import io.mrkuhne.mezo.support.populator.PatternEventPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -65,6 +71,9 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
     @Autowired private UserPopulator userPopulator;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerProperties ownerProperties;
+    @Autowired private CheckInPopulator checkInPopulator;
+    @Autowired private CheckInRepository checkInRepository;
+    @Autowired private JournalPopulator journalPopulator;
 
     private UUID ownerId() {
         return appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
@@ -105,7 +114,10 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
         assertThat(cards.get(0).getQuestion()).isEqualTo("Figyeljem tovább?");
         assertThat(cards.get(0).getSourceIcon()).isEqualTo("naplo");
         assertThat(cards.get(0).getRepliedChoice()).isNull();
-        assertThat(cards.get(0).getEvidence()).hasSize(1);
+        // A legacy card's canonical-shaped ref is re-read like a grounded one (mezo-d6ivw.1
+        // final-review finding 2); this fixture's ref is a random UUID that resolves to no real
+        // journal entry, so it is dropped rather than shown as raw machine text.
+        assertThat(cards.get(0).getEvidence()).isEmpty();
 
         assertThat(cards.get(1).getId()).isEqualTo(watching.getId());
         assertThat(cards.get(1).getText()).isEmpty();
@@ -379,7 +391,10 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
         assertThat(getForList("/api/companion/observation", ownerAuthHeaders(),
                 HttpStatus.OK, ObservationResponse.class)).singleElement().satisfies(card -> {
                     assertThat(card.getId()).isEqualTo(event.getId());
-                    assertThat(card.getEvidence()).containsExactly("Napló · " + TODAY.minusDays(1));
+                    assertThat(card.getEvidence()).singleElement().satisfies(item -> {
+                        assertThat(item.getType()).isEqualTo("tag");
+                        assertThat(item.getText()).isEqualTo("Napló · " + TODAY.minusDays(1));
+                    });
                 });
         assertThat(getForList("/api/companion/observation", ownerAuthHeaders(),
                 HttpStatus.OK, ObservationResponse.class)).hasSize(1);
@@ -417,6 +432,163 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
         assertThat(getForList("/api/companion/observation", ownerAuthHeaders(), HttpStatus.OK,
                 ObservationResponse.class)).extracting(ObservationResponse::getId).doesNotContain(pending.getId());
         assertThat(eventRepository.findById(pending.getId()).orElseThrow().getPayload().surfaced()).isFalse();
+    }
+
+    /** {@code patternEventPopulator.observation} has no channel parameter — grounded fixtures set
+     *  it after the fact, mirroring the other grounded fixtures in this class. */
+    private PatternEventEntity groundedObservation(UUID owner, UUID patternId, String text,
+                                                    List<String> evidenceRefs, Instant occurredAt) {
+        PatternEventEntity event = patternEventPopulator.observation(owner, patternId, text, evidenceRefs, true, occurredAt);
+        var p = event.getPayload();
+        event.setPayload(new PatternEventPayloadEnvelope(p.r(), p.n(), p.p(), p.reinforcementCount(),
+                p.factId(), p.hit(), p.verdict(), "grounded", p.choice(), p.text(), p.evidenceRefs(), p.surfaced()));
+        return eventRepository.saveAndFlush(event);
+    }
+
+    @Test
+    void groundedEvidenceIsServedStructured() {
+        UUID owner = ownerId();
+        PatternEntity row = patternPopulator.reflection(owner, plan("topic:munka"), PatternEntity.STATUS_PROPOSED);
+        var checkIn = checkInPopulator.createCheckIn(owner, TODAY, "08:00", 6, 3, "Meglepően jól indult a hét");
+        String checkInRef = "check_in:" + checkIn.getId();
+        groundedObservation(owner, row.getId(), "Feltűnt valami.\nIgaz?",
+                List.of(checkInRef, "Check-in · " + TODAY + " · note=Meglepően jól indult a hét; energy=6"),
+                dayAt(0));
+
+        List<ObservationResponse> cards = getForList(
+                "/api/companion/observation?date=" + TODAY, ownerAuthHeaders(),
+                HttpStatus.OK, ObservationResponse.class);
+
+        ObservationEvidenceItem item = cards.getFirst().getEvidence().getFirst();
+        assertThat(item.getType()).isEqualTo("record");
+        assertThat(item.getSource()).isEqualTo("check_in");
+        assertThat(item.getDate()).isEqualTo(TODAY);
+        assertThat(item.getQuote()).isEqualTo("Meglepően jól indult a hét");
+        assertThat(item.getFields()).containsEntry("energy", "6");
+        assertThat(item.getRef()).isEqualTo(checkInRef);
+    }
+
+    @Test
+    void legacyEvidenceLabelsBecomeTags() {
+        UUID owner = ownerId();
+        PatternEntity row = patternPopulator.reflection(owner, plan("topic:munka"), PatternEntity.STATUS_PROPOSED);
+        patternEventPopulator.observation(owner, row.getId(), "Hálanapló.\nIgaz?",
+                List.of("4 hála-bejegyzés"), true, dayAt(0));
+
+        List<ObservationResponse> cards = getForList(
+                "/api/companion/observation?date=" + TODAY, ownerAuthHeaders(),
+                HttpStatus.OK, ObservationResponse.class);
+
+        ObservationEvidenceItem item = cards.getFirst().getEvidence().getFirst();
+        assertThat(item.getType()).isEqualTo("tag");
+        assertThat(item.getText()).isEqualTo("4 hála-bejegyzés");
+    }
+
+    /**
+     * {@code validEventEvidence} hides an EVENT card outright when any of its canonical refs is
+     * dead, so a per-item fallback can only be observed on a ROW ({@code watching}) card, whose
+     * {@code validEvidence} gate skips strict re-validation for lists without an
+     * {@code observation-topic:} marker (the S1 delta's documented benign limitation: this is
+     * exactly the labelled-pair shape a real publisher-built row list never produces).
+     */
+    @Test
+    void unreadableRefFallsBackToStoredLabel() {
+        UUID owner = ownerId();
+        PatternEntity row = patternPopulator.reflection(owner, plan("topic:munka"), PatternEntity.STATUS_MONITORING);
+        var deletedCheckIn = checkInPopulator.createCheckIn(owner, TODAY, "08:00", 6, 3, "Törölt bejegyzés");
+        String deletedRef = "check_in:" + deletedCheckIn.getId();
+        var liveCheckIn = checkInPopulator.createCheckIn(owner, TODAY, "09:00", 5, 4, "Élő bejegyzés");
+        String liveRef = "check_in:" + liveCheckIn.getId();
+        checkInRepository.delete(deletedCheckIn);
+        checkInRepository.flush();
+        row.setEvidence(new PatternEvidenceEnvelope(List.of(
+                deletedRef, "Check-in · " + TODAY + " · note=Törölt bejegyzés; energy=6", liveRef)));
+        patternPopulator.save(row);
+
+        List<ObservationResponse> cards = getForList(
+                "/api/companion/observation?date=" + TODAY, ownerAuthHeaders(),
+                HttpStatus.OK, ObservationResponse.class);
+        ObservationResponse card = cards.stream().filter(c -> c.getPatternId().equals(row.getId())).findFirst().orElseThrow();
+        List<ObservationEvidenceItem> items = card.getEvidence();
+
+        assertThat(items).anySatisfy(i -> {
+            assertThat(i.getType()).isEqualTo("tag");
+            assertThat(i.getText()).startsWith("Check-in ·");
+        });
+        assertThat(items).anySatisfy(i -> {
+            assertThat(i.getType()).isEqualTo("record");
+            assertThat(i.getRef()).isEqualTo(liveRef);
+        });
+    }
+
+    /**
+     * Final-review finding 1 (mezo-d6ivw.1): a {@code watching} row's evidence grows forever — the
+     * publisher keeps APPENDING refs on every merge — and the row card opens its evidence by
+     * default, so an unbounded read would render every accumulated record. Builds the REAL
+     * publisher shape (topic markers, then more than {@code ROW_EVIDENCE_LIMIT} canonical refs, new
+     * ones appended at the end) and asserts the markers are dropped, exactly 5 records come back,
+     * and they are the NEWEST 5 (the tail of the ref list).
+     */
+    @Test
+    void watchingCardEvidenceIsCappedToTheNewestRecords() {
+        UUID owner = ownerId();
+        PatternEntity row = patternPopulator.reflection(owner, plan("topic:sport"), PatternEntity.STATUS_MONITORING);
+        List<String> refs = new ArrayList<>();
+        refs.add("observation-topic:topic:sport");
+        refs.add("observation-topic-key:topic-sport");
+        List<String> checkInRefs = new ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            var checkIn = checkInPopulator.createCheckIn(owner, TODAY, String.format("%02d:00", i), 5, 3,
+                    "Bejegyzés " + i);
+            checkInRefs.add("check_in:" + checkIn.getId());
+        }
+        refs.addAll(checkInRefs);
+        row.setEvidence(new PatternEvidenceEnvelope(refs));
+        patternPopulator.save(row);
+
+        List<ObservationResponse> cards = getForList(
+                "/api/companion/observation?date=" + TODAY, ownerAuthHeaders(),
+                HttpStatus.OK, ObservationResponse.class);
+        ObservationResponse card = cards.stream().filter(c -> c.getPatternId().equals(row.getId()))
+                .findFirst().orElseThrow();
+        List<ObservationEvidenceItem> items = card.getEvidence();
+
+        assertThat(items).hasSize(5);
+        assertThat(items).allSatisfy(i -> assertThat(i.getType()).isEqualTo("record"));
+        assertThat(items).extracting(ObservationEvidenceItem::getRef)
+                .containsExactlyElementsOf(checkInRefs.subList(2, 7));
+    }
+
+    /**
+     * Final-review finding 2 (mezo-d6ivw.1): {@code QuickNoticeService} puts a canonical-shaped ref
+     * first ({@code journal_entry:<uuid>}), but not every legacy source is in the re-read
+     * catalogue — {@code gratitude} is not ({@code gratitude_entry} is the catalogue name), so it
+     * must be dropped silently rather than shown as raw machine text. Free (non-canonical) text
+     * still passes through as a plain tag.
+     */
+    @Test
+    void legacyCanonicalRefResolvesAndUnresolvableOneIsDropped() {
+        UUID owner = ownerId();
+        PatternEntity row = patternPopulator.reflection(owner, plan("topic:munka"), PatternEntity.STATUS_PROPOSED);
+        var entry = journalPopulator.createEntry(owner, TODAY, "Ma jó napom volt.", "quickinput");
+        String journalRef = "journal_entry:" + entry.getId();
+        patternEventPopulator.observation(owner, row.getId(), "Hálanapló.\nIgaz?",
+                List.of(journalRef, "gratitude:" + UUID.randomUUID(), "4 hála-bejegyzés"), true, dayAt(0));
+
+        List<ObservationResponse> cards = getForList(
+                "/api/companion/observation?date=" + TODAY, ownerAuthHeaders(),
+                HttpStatus.OK, ObservationResponse.class);
+
+        List<ObservationEvidenceItem> items = cards.getFirst().getEvidence();
+        assertThat(items).hasSize(2);
+        assertThat(items).anySatisfy(i -> {
+            assertThat(i.getType()).isEqualTo("record");
+            assertThat(i.getRef()).isEqualTo(journalRef);
+        });
+        assertThat(items).anySatisfy(i -> {
+            assertThat(i.getType()).isEqualTo("tag");
+            assertThat(i.getText()).isEqualTo("4 hála-bejegyzés");
+        });
     }
 
 }

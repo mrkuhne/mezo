@@ -6,6 +6,7 @@
 // confirmed) so mock mode renders exactly what real mode does.
 // ============================================================
 import type { Observation } from '@/data/types'
+import { mapEvidence, type WireEvidence } from '@/shared/ui/evidence/observationEvidence'
 
 /**
  * A napi észrevétel-keret, ahogy a felhasználó látja a lábjegyzetben.
@@ -26,7 +27,11 @@ export const observations: Observation[] = [
     title: 'Anna és az alvásod',
     text: 'Amikor **Anna** szerepel a hála-naplódban, másnap átlag **40 perccel többet** alszol.',
     question: 'Négy ilyen napot látok eddig — ez még kevés ahhoz, hogy biztosat mondjak. **Figyeljem tovább?**',
-    evidence: ['4 hála-bejegyzés', '4 éjszaka', '+1 nap eltolás'],
+    evidence: ([
+      { type: 'tag', text: '4 hála-bejegyzés' },
+      { type: 'tag', text: '4 éjszaka' },
+      { type: 'tag', text: '+1 nap eltolás' },
+    ] satisfies WireEvidence[]).map(mapEvidence),
     status: 'proposed',
     evidenceHits: 4,
     evidenceMisses: 0,
@@ -43,12 +48,15 @@ export const observations: Observation[] = [
     title: 'A nehéz hétfők',
     text: 'Kedden azt írtad, a hétfők nehezek. Tegnap hétfő volt, és a hangulatod **4 / 5**-re jött ki.',
     question: 'Ez most **ellene szól**. Egy nap még nem dönt — kíváncsi vagyok, te hogy látod.',
-    // A drót nyers rekord-formája (ObservationContextService) — a kártya tagolt sorokra bontja.
-    evidence: [
-      'Napló · 2026-05-19 · text=A hétfők mindig nehezek, egész nap csak vonszoltam magam; occurred_on=2026-05-19',
-      'Check-in · 2026-05-21 · note=Meglepően jól indult a hét; date=2026-05-21; slot_time=08:00; state=done; energy=6; stress=3; body=7; mental=7',
-      'Check-in · 2026-05-21 · date=2026-05-21; slot_time=20:00; state=done; energy=5; stress=2; body=7; mental=8',
-    ],
+    // A drót strukturált bizonyíték-elemként küldi (ObservationEvidenceItem) — a kártya tagolt sorokra bontja.
+    evidence: Array.of<WireEvidence>(
+      { type: 'record', source: 'journal_entry', date: '2026-05-19',
+        fields: {}, quote: 'A hétfők mindig nehezek, egész nap csak vonszoltam magam', ref: 'journal_entry:mock-1' },
+      { type: 'record', source: 'check_in', date: '2026-05-21', time: '08:00',
+        fields: { energy: '6', stress: '3', body: '7', mental: '7' }, quote: 'Meglepően jól indult a hét', ref: 'check_in:mock-2' },
+      { type: 'record', source: 'check_in', date: '2026-05-21', time: '20:00',
+        fields: { energy: '5', stress: '2', body: '7', mental: '8' }, ref: 'check_in:mock-3' },
+    ).map(mapEvidence),
     status: 'monitoring',
     evidenceHits: 1,
     evidenceMisses: 2,
@@ -84,7 +92,11 @@ export const observations: Observation[] = [
     title: 'Edzés után hálásabb vagy',
     text: 'Edzés utáni napokon **kétszer annyi** hála-bejegyzést írsz. Három hete tartja magát.',
     question: 'Beépítettem a tudásba — a reggeli üzenetben és a chatben mostantól számolok vele.',
-    evidence: ['21 nap', 'erős kapcsolat', 'te is megerősítetted'],
+    evidence: ([
+      { type: 'tag', text: '21 nap' },
+      { type: 'tag', text: 'erős kapcsolat' },
+      { type: 'tag', text: 'te is megerősítetted' },
+    ] satisfies WireEvidence[]).map(mapEvidence),
     status: 'confirmed',
     evidenceHits: 17,
     evidenceMisses: 4,

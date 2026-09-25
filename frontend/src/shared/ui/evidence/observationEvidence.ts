@@ -1,11 +1,11 @@
 // ============================================================
-// Mezo · observationEvidence — az észrevétel-kártya bizonyíték-sorai (mezo-me75u.12).
-// A szerver a bizonyítékot NYERS szövegként küldi (ObservationContextService: forrás-címke ·
-// ÉÉÉÉ-HH-NN · `kulcs=érték; kulcs=érték…`, a végén esetleg `…` csonkolással). Ez a modul a
-// felületnek bontja emberi sorokra: forrás-ikon + cím + nap, címkézett értékek, a saját
-// jegyzet idézetként, és két+ egymást követő check-in egy közös „Változás” grafikonná.
-// A drót változatlan; ami nem ebben a formában jön (a statisztikai sorok rövid címkéi), az
-// sima címke marad. Vizuális igazság: docs/design_2.0/prototypes/uveg-eszrevetel.html.
+// Mezo · observationEvidence — az észrevétel-kártya bizonyíték-sorai (mezo-d6ivw.1).
+// A szerver a bizonyítékot STRUKTURÁLT elemként küldi (`ObservationEvidenceItem`, veszteségmentes
+// forrás-újraolvasás — a tárolt, esetleg csonkolt régi címke nem a kijelző forrása többé). Ez a
+// modul a drótot (`WireEvidence`) `mapEvidence`-szel bontja emberi sorokra: forrás-ikon + cím +
+// nap, címkézett értékek, a saját jegyzet idézetként, és két+ egymást követő check-in egy közös
+// „Változás” grafikonná. Ami nem `record` (a statisztikai/legacy sorok rövid címkéi), az sima
+// címke marad. Vizuális igazság: docs/design_2.0/prototypes/uveg-eszrevetel.html.
 // ============================================================
 import type { Icon3DName } from '@/shared/ui/clay'
 import { SPORTS } from '@/features/train/logic/sports'
@@ -44,8 +44,6 @@ export interface EvidenceRecord {
   checkin?: Partial<Record<CheckinKey, number>>
   /** A felhasználó saját szavai (jegyzet, napló-szöveg). */
   quote?: string
-  /** A szerver levágta a szöveg végét. */
-  truncated: boolean
 }
 export interface EvidenceTag { kind: 'tag'; text: string }
 export type EvidenceItem = EvidenceRecord | EvidenceTag
@@ -53,27 +51,30 @@ export type EvidenceItem = EvidenceRecord | EvidenceTag
 export interface CheckinShift { kind: 'shift'; from: EvidenceRecord; to: EvidenceRecord }
 export type EvidenceBlock = (EvidenceRecord & { hideCheckin?: boolean }) | EvidenceTag | CheckinShift
 
-const RECORD = /^(.+?) · (\d{4}-\d{2}-\d{2}) · (.*)$/s
-
 const SOURCE_ICON: Record<string, Icon3DName> = {
-  'Sportnapló': 't-volley', 'Check-in': 't-checkin', 'Napló': 't-journal', 'Hála': 't-sprout',
-  'Alvás': 't-sleep', 'Futás': 't-run', 'Edzés': 't-dumbbell', 'Gyakorlat': 't-dumbbell',
-  'Saját chatüzenet': 't-chat', 'Tervezett sportesemény': 't-calendar',
-  activity_log: 't-steps', ritual_day: 't-chain', habit_day: 't-chain', meal: 't-bowl', meal_item: 't-bowl',
-  water_log: 't-water', weight_log: 't-weight', daily_intention: 't-ring', intention_focus: 't-ring',
+  sport_session: 't-volley', check_in: 't-checkin', journal_entry: 't-journal', gratitude_entry: 't-sprout',
+  sleep_log: 't-sleep', run_session_log: 't-run', workout_session: 't-dumbbell',
+  exercise: 't-dumbbell', exercise_set: 't-dumbbell', exercise_feedback: 't-dumbbell',
+  ai_message: 't-chat', sport_event: 't-calendar', activity_log: 't-steps', ritual_day: 't-chain',
+  habit_day: 't-chain', meal: 't-bowl', meal_item: 't-bowl', water_log: 't-water',
+  weight_log: 't-weight', daily_intention: 't-ring', intention_focus: 't-ring',
 }
-/** A szerver a nem címkézett forrásoknál a nyers táblanevet küldi — itt kap magyar nevet. */
+/** A szerver a katalógus-nevet küldi — magyar nevet itt kap (a megjelenítés a FE dolga). */
 const SOURCE_NAME: Record<string, string> = {
-  activity_log: 'Tevékenység', ritual_day: 'Rituálé', habit_day: 'Szokás', meal: 'Étkezés',
-  meal_item: 'Étkezés', water_log: 'Víz', weight_log: 'Testsúly', daily_intention: 'Napi szándék',
-  intention_focus: 'Szándék',
+  journal_entry: 'Napló', gratitude_entry: 'Hála', check_in: 'Check-in', ai_message: 'Saját chatüzenet',
+  sleep_log: 'Alvás', run_session_log: 'Futás', workout_session: 'Edzés', exercise: 'Gyakorlat',
+  exercise_set: 'Gyakorlat', exercise_feedback: 'Gyakorlat', sport_session: 'Sportnapló',
+  sport_event: 'Tervezett sportesemény', activity_log: 'Tevékenység', ritual_day: 'Rituálé',
+  habit_day: 'Szokás', meal: 'Étkezés', meal_item: 'Étkezés', water_log: 'Víz',
+  weight_log: 'Testsúly', daily_intention: 'Napi szándék', intention_focus: 'Szándék',
 }
 
-const PROSE = ['note', 'notes', 'text', 'content', 'closing_note', 'reflection_text', 'reflection']
 /** Ami a sor fejlécében már ott van, vagy gépi mező. */
 const HIDDEN = new Set(['date', 'time', 'slot_time', 'saved_at', 'state', 'kcal_is_estimate', 'sport', 'source',
   'occurred_on', 'role', 'degraded', 'skipped', 'order_index', 'catalog_id', 'counts_toward_volume', 'hypnogram',
-  'status', 'origin', 'categorized_by', 'extracted', 'confidence', 'kind', 'side', 'week_number', 'session_key'])
+  'status', 'origin', 'categorized_by', 'extracted', 'confidence', 'kind', 'side', 'week_number', 'session_key',
+  // raw JSON text (the meal score's per-component breakdown) — not a display field
+  'breakdown'])
 
 type Fmt = (v: string) => EvidenceValue
 const num = (v: string) => {
@@ -103,79 +104,56 @@ function sportOf(id: string | undefined): { name: string; icon: Icon3DName } | n
   return s ? { name: s.name, icon: s.art3d } : { name: id, icon: 't-other' }
 }
 
-/** `kulcs=érték; kulcs=érték` — a pontosvessző csak akkor határ, ha utána új `kulcs=` jön,
- *  így a jegyzetben álló pontosvessző a jegyzet része marad. */
-function fields(body: string): Record<string, string> {
-  const out: Record<string, string> = {}
-  for (const part of body.split(/;\s(?=[a-z_]+=)/)) {
-    const i = part.indexOf('=')
-    if (i > 0) out[part.slice(0, i)] = part.slice(i + 1).replace(/;$/, '')
-  }
-  return out
+/** Az `ObservationEvidenceItem` strukturális ikertestvére — a modul szándékosan nem importálja
+ *  a generált API-típust, hogy a `shared/ui/evidence` réteg ne függjön az API-klienstől. */
+export interface WireEvidence {
+  type: string; source?: string | null; date?: string | null; time?: string | null
+  fields?: Record<string, string> | null; quote?: string | null; ref?: string | null; text?: string | null
 }
 
-export function parseEvidence(raw: string): EvidenceItem {
-  const m = RECORD.exec(raw)
-  if (!m || !/^[a-z_]+=/.test(m[3])) return { kind: 'tag', text: raw }
-  const [, source, date] = m
-  let body = m[3]
-  const truncated = body.endsWith('…')
-  if (truncated) body = body.slice(0, -1)
-  // A csonkolás vághat egy KULCS közepén („…; rpe=7.0; kc”) — azt a csonkot levágjuk; ha pedig
-  // egy ÉRTÉK közepén vágott, a félbemaradt utolsó értéket (hacsak nem próza) eldobjuk.
-  const cutKey = truncated && /;\s[a-z_]*$/.test(body)
-  if (cutKey) body = body.replace(/;\s[a-z_]*$/, '')
-  const f = fields(body)
-  if (truncated && !cutKey) {
-    const last = Object.keys(f).at(-1)
-    if (last && !PROSE.includes(last)) delete f[last]
-  }
-
+export function mapEvidence(w: WireEvidence): EvidenceItem {
+  if (w.type !== 'record' || !w.source || !w.date) return { kind: 'tag', text: w.text ?? w.quote ?? '' }
+  const f = w.fields ?? {}
   const sport = sportOf(f.sport)
   const values: EvidenceValue[] = []
   const checkin: Partial<Record<CheckinKey, number>> = {}
   for (const [k, v] of Object.entries(f)) {
-    if (PROSE.includes(k) || HIDDEN.has(k) || k.endsWith('_id') || k.endsWith('_at') || v === '') continue
+    if (HIDDEN.has(k) || k.endsWith('_id') || k.endsWith('_at') || v === '') continue
     const dim = CHECKIN_DIMS.find((d) => d.key === k)
     if (dim) { const n = Number(v); if (Number.isFinite(n)) checkin[dim.key] = n; continue }
     if (k === 'kcal') { values.push({ value: `${f.kcal_is_estimate === 'true' ? '~' : ''}${num(v)}`, unit: 'kcal' }); continue }
     const fmt = FIELDS[k]
     values.push(fmt ? fmt(v) : { label: k.replace(/_/g, ' '), value: v })
   }
-  const quote = PROSE.map((k) => f[k]).find((v) => v && v.trim() !== '')
-  const name = SOURCE_NAME[source] ?? source
-
+  const name = SOURCE_NAME[w.source] ?? w.source
   return {
-    kind: 'record',
-    source: name,
-    icon: sport?.icon ?? SOURCE_ICON[source] ?? 't-note',
-    title: sport?.name ?? name,
-    subtitle: sport ? name : undefined,
-    date,
-    time: f.time ?? f.slot_time,
-    values,
+    kind: 'record', source: name,
+    icon: sport?.icon ?? SOURCE_ICON[w.source] ?? 't-note',
+    title: sport?.name ?? name, subtitle: sport ? name : undefined,
+    date: w.date, time: w.time ?? undefined, values,
     checkin: Object.keys(checkin).length ? checkin : undefined,
-    quote,
-    truncated,
+    quote: w.quote ?? undefined,
   }
 }
 
 /** Két vagy több EGYMÁST KÖVETŐ check-in: a sorok csak fejlécet + jegyzetet mutatnak, alattuk
  *  egy közös változás-blokk (az első → az utolsó), hogy az összefüggés egy pillantásra látsszon. */
-export function evidenceBlocks(raws: string[]): EvidenceBlock[] {
-  const items = raws.map(parseEvidence)
+export function evidenceBlocks(items: EvidenceItem[]): EvidenceBlock[] {
+  // A tag with blank text (the mapper's `w.text ?? w.quote ?? ''` fallback found neither) would
+  // otherwise render as an empty pill — drop it before grouping.
+  const usable = items.filter((x) => x.kind !== 'tag' || x.text.trim() !== '')
   const out: EvidenceBlock[] = []
   const isCk = (x: EvidenceItem | undefined): x is EvidenceRecord => x?.kind === 'record' && !!x.checkin
-  for (let i = 0; i < items.length;) {
+  for (let i = 0; i < usable.length;) {
     let j = i
-    while (isCk(items[j])) j++
+    while (isCk(usable[j])) j++
     if (j - i >= 2) {
-      const run = items.slice(i, j) as EvidenceRecord[]
+      const run = usable.slice(i, j) as EvidenceRecord[]
       run.forEach((r) => out.push({ ...r, hideCheckin: true }))
       out.push({ kind: 'shift', from: run[0], to: run[run.length - 1] })
       i = j
     } else {
-      out.push(items[i])
+      out.push(usable[i])
       i++
     }
   }

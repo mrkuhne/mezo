@@ -7781,6 +7781,29 @@ export interface components {
             question: string;
             evidence: string[];
         };
+        /** @description Egy bizonyíték-elem (mezo-d6ivw.1). `record` = az eredeti forrásrekord olvasáskor újraolvasva (veszteségmentes — a tárolt, esetleg csonkolt címke nem a kijelző forrása); `tag` = rövid szöveges címke (legacy/statisztikai csatorna). A megjelenítés (magyar név, egység, ikon) a FE dolga; a szerver adatot ad. */
+        ObservationEvidenceItem: {
+            type: string;
+            /** @description A forráskatalógus neve (check_in, journal_entry, …) — csak record. */
+            source?: string | null;
+            /**
+             * Format: date
+             * @description A rekord napja — csak record.
+             */
+            date?: string | null;
+            /** @description A rekord időpontja (HH:mm), ha hordozza — csak record. */
+            time?: string | null;
+            /** @description A rekord saját nem-próza mezői nyersen — csak record. */
+            fields?: {
+                [key: string]: string;
+            } | null;
+            /** @description A felhasználó saját szavai (jegyzet/napló), max 500 karakter — csak record. */
+            quote?: string | null;
+            /** @description Kanonikus forráshivatkozás (forrás:uuid) — provenance, csak record. */
+            ref?: string | null;
+            /** @description A címke szövege — csak tag. */
+            text?: string | null;
+        };
         /** @description Egy kártya az Észrevételek fülön (Reflexió S4, mezo-eq85.4). A `fresh`/`return` kártyák egy `observation` ESEMÉNYT jelenítenek meg (az `id` az esemény azonosítója), a `watching`/`confirmed` kártyák magát a sort (az `id` a minta azonosítója) — a `patternId` mindig a soré, mert a chip-válasz arra megy. */
         ObservationResponse: {
             /**
@@ -7810,8 +7833,8 @@ export interface components {
             text: string;
             /** @description A kérdés, amire a chipek válaszolnak — az observation payload utolsó sora; null, ha nincs. */
             question?: string | null;
-            /** @description Az észrevétel ellenőrzött forrásainak olvasható címkéi és eredeti dátumai — watching/confirmed kártyán a sor saját bizonyíték-chipjei. */
-            evidence: string[];
+            /** @description Az észrevétel ellenőrzött forrásai strukturáltan (mezo-d6ivw.1) — watching/confirmed kártyán a sor saját bizonyítékai. */
+            evidence: components["schemas"]["ObservationEvidenceItem"][];
             /** @description A sor státusza a kártya kiadásának pillanatában. */
             status: string;
             /** @description Hány éjszaka igazolta a teszt-terv jóslatát. */

@@ -278,8 +278,12 @@ class GroundedHypothesisPipelineIT extends AbstractIntegrationTest {
         assertThat(pipeline.apply(owner, pipeline.preview(owner, "[fake-hypotheses:" + next + "]").getFirst())).isTrue();
         assertThat(feed.forDay(owner, yesterday)).isEmpty();
         assertThat(feed.forDay(owner, LocalDate.now())).singleElement().satisfies(card -> {
-            assertThat(card.getEvidence()).anyMatch(label -> label.contains("Munka után megint elfáradtam"));
-            assertThat(card.getEvidence()).noneMatch(label -> label.matches("[a-z_]+:[0-9a-fA-F-]{36}"));
+            assertThat(card.getEvidence()).anySatisfy(item -> {
+                assertThat(item.getType()).isEqualTo("record");
+                assertThat(item.getQuote()).contains("Munka után megint elfáradtam");
+            });
+            assertThat(card.getEvidence()).noneSatisfy(item ->
+                    assertThat(item.getText()).matches("[a-z_]+:[0-9a-fA-F-]{36}"));
         });
     }
 
