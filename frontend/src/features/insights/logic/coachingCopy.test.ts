@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import {
-  STATE_LABEL, WINNER_LABEL, dayLabel, hhmm, losersOf, splitOf, stateOf, visualOf, washOf,
+  STATE_ART, STATE_LABEL, WINNER_ART, WINNER_LABEL, dayLabel, hhmm, losersOf, splitOf, stateOf, visualOf, washOf,
   winnerRuleOf,
 } from '@/features/insights/logic/coachingCopy'
 import { huMonthDay } from '@/shared/lib/dates'
@@ -24,6 +24,11 @@ describe('the screen vocabulary', () => {
     expect(STATE_LABEL[stateOf(rule({ outcome: 'clear' }))]).toBe('Rendben')
     expect(STATE_LABEL[stateOf(rule({ outcome: 'unavailable' }))]).toBe('Nem mérhető')
     expect(WINNER_LABEL).toBe('Nyertes')
+  })
+
+  test('each state word wears the üveg status icon (bible rule 45)', () => {
+    expect(STATE_ART).toEqual({ raised: 't-bell', suppressed: 't-hold', clear: 't-tick', unavailable: 't-info' })
+    expect(WINNER_ART).toBe('t-star')
   })
 })
 

@@ -1,6 +1,8 @@
+import type { CSSProperties } from 'react'
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useMemorySummaries } from '@/data/hooks'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
+import { Icon3D } from '@/shared/ui/clay'
 import { GhostState } from '@/shared/ui/GhostState'
 
 export function MemoryDayPage() {
@@ -11,19 +13,35 @@ export function MemoryDayPage() {
   const { summaries, isPending, isError, degraded, refetch } = useMemorySummaries()
   const index = summaries.findIndex((day) => day.date === date)
   const day = summaries[index]
-  return <MozaikPage tone="gold">
-    <PageHead label="‹ Emlékek" onBack={() => navigate(back)} />
-    <PageHero icon="i-memoar" name="Napi emlék" sub={date} />
+  const earlier = index >= 0 ? summaries[index + 1] : undefined
+  const later = index > 0 ? summaries[index - 1] : undefined
+  return <MozaikPage tone="gold" className="eml-page eml-emlek">
+    <PageHead glass label="Emlékek" onBack={() => navigate(back)} />
+    <PageHero art="t-album" accent="var(--dv-amber)" name="Napi emlék" sub={date} />
     <PageBody>
-      {isPending ? <GhostState message="A napi emlék betöltése…" />
-        : isError ? <GhostState message="Nem sikerült betölteni a napi emléket." ctaLabel="Újra" onCta={refetch} />
-        : degraded ? <GhostState message="A napi emlékek most nem elérhetők." />
-        : !day ? <GhostState message="Ehhez a naphoz még nincs elkészült emlék." />
-        : <article className="mz-memoir rise"><time className="mz-eyebrow" dateTime={day.date}>{day.date}</time><p className="mz-memoir-bd" style={{ whiteSpace: 'pre-wrap' }}>{day.narrative}</p><p className="mz-fact-origin">Boop éjszakai összefoglalója a rögzített napodról.</p></article>}
-      <nav className="col gap-md" aria-label="Napi emlékek navigációja">
-        {index >= 0 && summaries[index + 1] && <Link to={`/mezo/emlekek/${summaries[index + 1].date}${search}`}>← Korábbi emlék · {summaries[index + 1].date}</Link>}
-        {index > 0 && <Link to={`/mezo/emlekek/${summaries[index - 1].date}${search}`}>Következő emlék · {summaries[index - 1].date} →</Link>}
-        <Link to={back}>Emlékek · összes nap →</Link>
+      {isPending ? <div className="eml-ghost"><GhostState message="A napi emlék betöltése…" /></div>
+        : isError ? <div className="eml-ghost"><GhostState message="Nem sikerült betölteni a napi emléket." ctaLabel="Újra" onCta={refetch} /></div>
+        : degraded ? <div className="eml-ghost"><GhostState message="A napi emlékek most nem elérhetők." /></div>
+        : !day ? <div className="eml-empty uv-empty"><GhostState message="Ehhez a naphoz még nincs elkészült emlék." /></div>
+        : <article className="eml-article glass rise" style={{ '--c': 'var(--dv-amber)' } as CSSProperties}>
+          <time className="uv-eyebrow eml-article-eb" dateTime={day.date}>{day.date}</time>
+          <p className="eml-article-prose">{day.narrative}</p>
+          <p className="eml-article-note">Boop éjszakai összefoglalója a rögzített napodról.</p>
+        </article>}
+      <nav className="eml-daynav" aria-label="Napi emlékek navigációja">
+        {(earlier || later) && <div className="eml-pager">
+          {earlier && <Link className="eml-pager-cell is-prev" to={`/mezo/emlekek/${earlier.date}${search}`}>
+            <small>‹ Korábbi emlék</small><strong>{earlier.date}</strong>
+          </Link>}
+          {later && <Link className="eml-pager-cell is-next" to={`/mezo/emlekek/${later.date}${search}`}>
+            <small>Következő emlék ›</small><strong>{later.date}</strong>
+          </Link>}
+        </div>}
+        <Link className="eml-door" to={back} style={{ '--c': 'var(--dv-amber)' } as CSSProperties}>
+          <span className="uv-well eml-door-well"><Icon3D name="t-album" size={28} /></span>
+          <span className="eml-door-grow"><strong>Emlékek</strong><small>összes nap</small></span>
+          <span className="eml-chev" aria-hidden="true">›</span>
+        </Link>
       </nav>
     </PageBody>
   </MozaikPage>

@@ -15,21 +15,25 @@ export function SimilarDayCard({ day, rank, onPick }: { day: SimilarDay; rank: n
   const place = day.rank
   return (
     <div
-      className="mem-daycard np-press rise" role="button" tabIndex={0}
+      className="eml-simrow np-press rise" role="button" tabIndex={0}
       style={{ '--d': `${rank * 60}ms`, cursor: 'pointer' } as React.CSSProperties}
       onClick={() => onPick(day.date)}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(day.date) } }}
     >
-      <div className="mem-layrow">
-        <span
-          className="mem-ring" role="img" aria-label={`${place}. legjobb találat`}
-          style={{ '--v': 100 } as React.CSSProperties} data-l={`${place}.`}
-        />
-        <div className="mem-laygrow">
-          <div className="mem-dl">{day.date} · {ageDays(day.date)} napja</div>
-          <p className="mem-bd">{day.excerpt}</p>
-        </div>
+      {/* Üveg (mezo-me75u.8): a kicsi, világító uv-ring a sorrendi helyet mutatja (teli gyűrű,
+          közepén a hely) — továbbra sem egyezés-százalék. */}
+      <span className="eml-simring" role="img" aria-label={`${place}. legjobb találat`}>
+        <svg viewBox="0 0 44 44" aria-hidden="true" className="uv-ring">
+          <circle className="uv-ring-track" cx="22" cy="22" r="18" />
+          <circle className="uv-ring-prog" cx="22" cy="22" r="18" />
+        </svg>
+        <b aria-hidden="true">{place}.</b>
+      </span>
+      <div className="eml-simrow-grow">
+        <strong className="eml-simrow-dl">{day.date} · {ageDays(day.date)} napja</strong>
+        <p className="eml-simrow-bd">{day.excerpt}</p>
       </div>
+      <span className="eml-chev" aria-hidden="true">›</span>
     </div>
   )
 }

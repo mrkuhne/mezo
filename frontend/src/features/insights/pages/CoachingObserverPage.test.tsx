@@ -43,9 +43,9 @@ describe('CoachingObserverPage (mock mode)', () => {
     // Matches the CORRECTED copy: the leading figure is the window TOTAL, and the per-night rate
     // is a separate, derived clause. A regex that would still pass against "1,4 óra/éjszaka" is
     // exactly what let the pre-fix mislabel sit in the fixture unnoticed (bd mezo-btmc).
-    expect(screen.getByText(/Alvásadósság: összesen 1,4 óra hiány/, { selector: '.mzp-evrow .vl' }))
+    expect(screen.getByText(/Alvásadósság: összesen 1,4 óra hiány/, { selector: '.coach-fact .vl' }))
       .toBeVisible()
-    expect(screen.getByText(/átlagosan 0,2 óra\/éjszaka/, { selector: '.mzp-evrow .vl' }))
+    expect(screen.getByText(/átlagosan 0,2 óra\/éjszaka/, { selector: '.coach-fact .vl' }))
       .toBeVisible()
   })
 

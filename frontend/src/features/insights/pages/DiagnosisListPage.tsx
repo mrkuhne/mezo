@@ -8,10 +8,13 @@
 // Honest states: generate is live-only (a real SMART call); 409 → „kevés
 // adat", 429 → „napi keret", both rendered as product copy, never as an
 // error toast. Empty list → an inviting first-run card, not a blank.
+// Üveg (mezo-me75u.8, prototype uveg-mezo-body.html `diagnozis`): halo hero with
+// t-diagnose; the three ask cards are THE glass objects (lavender); upcoming =
+// dashed tiles; past reports = flat rows. Style: prototype.css
+// `── uveg mezo1 diagnozis (` block, scoped to `.dgx-page`.
 // ============================================================
 import { useNavigate } from 'react-router-dom'
-import { ClayIcon } from '@/shared/ui/clay'
-import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { useDiagnoses, useDiagnosisActions } from '@/data/hooks'
@@ -44,70 +47,69 @@ export function DiagnosisListPage() {
   }
 
   return (
-    <MozaikPage tone="lav">
-      <PageHead onBack={() => navigate(ALL_FEATURES_ROUTE)} label="‹ Összes funkció" />
-      <PageHero icon="i-eletjel" name="Diagnózis" big={heroCount}
+    <MozaikPage tone="lav" className="dgx-page">
+      <PageHead glass onBack={() => navigate(ALL_FEATURES_ROUTE)} label="Összes funkció" />
+      <PageHero art="t-diagnose" accent="var(--dv-lav)" name="Diagnózis"
+        big={<>{heroCount}<small> riport</small></>}
         sub="kérdések a Mezónak → gyanúsítottak evidenciával → próba" />
       <PageBody>
-        <EntranceGroup className="col gap-md">
-          {LIVE_QUESTIONS.map((q, qi) => (
-            <div key={q.phenomenon} className="mzp-pred propcard rise" style={{ '--d': `${qi * 60}ms` } as React.CSSProperties}>
-              <span className="mz-eyebrow mz-ebic" style={{ color: 'var(--mz-qxp-ink)' }}><Icon name="sparkle" size={12} /> Kérdezd meg</span>
-              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 6 }}>{q.question}</div>
-              <p style={{ fontSize: 11, fontWeight: 300, lineHeight: 1.5, marginTop: 5, color: 'var(--mz-ink-soft)' }}>
-                {q.blurb}
-              </p>
-              <div className="mzp-decrow">
-                <button type="button" className="mzp-cta mz-ebic" disabled={!live || generating} onClick={() => onAsk(q.phenomenon)}>
-                  {generating ? '… a két hét adatait olvasom' : <><Icon name="sparkle" size={13} /> Kérdezd meg most</>}
+        <EntranceGroup className="dgx-body">
+          <div className="dgx-asks">
+            {LIVE_QUESTIONS.map((q, qi) => (
+              <div key={q.phenomenon} className={generating ? 'dgx-ask glass is-busy rise' : 'dgx-ask glass rise'}
+                style={{ '--d': `${qi * 60}ms`, '--i': qi } as React.CSSProperties}>
+                <span className="dgx-eb uv-eyebrow"><Icon3D name="t-spark" size={18} /> Kérdezd meg</span>
+                <h3 className="dgx-ask-q">{q.question}</h3>
+                <p className="dgx-ask-blurb">{q.blurb}</p>
+                <button type="button" className="dgx-cta" disabled={!live || generating} onClick={() => onAsk(q.phenomenon)}>
+                  {generating ? '… a két hét adatait olvasom' : <><Icon3D name="t-spark" size={18} /> Kérdezd meg most</>}
                 </button>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
           {error != null && (
-            <p style={{ fontSize: 10.5, color: 'var(--mz-ink-soft)' }}>{ERROR_COPY[error]}</p>
+            <p className="dgx-note is-error" role="status">{ERROR_COPY[error]}</p>
           )}
-          <p style={{ fontSize: 9, textAlign: 'center', color: 'var(--mz-ink-mut)' }}>
+          <p className="dgx-note">
             {live ? 'napi 3 kérdés · a megnyitás mindig ingyen' : 'demo — a kérdezés az élő appban fut'}
           </p>
 
-          <span className="mz-eyebrow" style={{ color: 'var(--mz-ink-soft)' }}>
-            További kérdések · a recept kész, sorban jönnek
-          </span>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <span className="dgx-sec uv-eyebrow">További kérdések · a recept kész, sorban jönnek</span>
+          <div className="dgx-soon">
             {UPCOMING_QUESTIONS.map((q) => (
-              <div key={q} className="mzp-dgq">
+              <div key={q} className="dgx-soon-tile uv-empty">
                 <div className="qq">{q}</div>
                 <div className="qs">HAMAROSAN</div>
               </div>
             ))}
           </div>
 
-          <span className="mz-eyebrow" style={{ color: 'var(--mz-ink-soft)' }}>Korábbi riportok</span>
+          <span className="dgx-sec uv-eyebrow">Korábbi riportok</span>
           {diagnoses.length === 0 && !isPending && (
-            <div className="card" style={{ padding: 18, textAlign: 'center' }}>
-              <p style={{ fontSize: 13, color: 'var(--mz-ink-soft)', lineHeight: 1.5 }}>
-                Még nem kérdezted meg. A Mezo az elmúlt két hét adataiból keres okokat.
-              </p>
+            <div className="dgx-empty uv-empty">
+              <Icon3D name="t-diagnose" size={44} />
+              <p>Még nem kérdezted meg. A Mezo az elmúlt két hét adataiból keres okokat.</p>
             </div>
           )}
-          {diagnoses.map((d, i) => (
-            <button key={d.id} type="button" className="mzp-pred lav rise" style={{ '--d': `${70 + i * 70}ms`, textAlign: 'left', width: '100%' } as React.CSSProperties}
-              onClick={() => navigate(`/mezo/diagnozis/${d.id}`)} aria-label={`Diagnózis · ${generatedLabel(d.generatedAt)}`}>
-              <div className="mz-mrow" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <ClayIcon name="i-eletjel" size={19} />
-                <span className="mzp-stch pend">{confidenceLine(d.confidence)}</span>
-                <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--mz-ink-mut)', fontVariantNumeric: 'tabular-nums' }}>
-                  {generatedLabel(d.generatedAt)}
-                </span>
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 700, marginTop: 7, lineHeight: 1.4 }}>{questionOf(d.phenomenon)}</div>
-              <div style={{ fontSize: 11, fontWeight: 300, marginTop: 3, lineHeight: 1.45, color: 'var(--mz-ink-soft)' }}>{d.verdict.split(' — ')[0]}</div>
-              <div style={{ fontSize: 10, fontWeight: 300, marginTop: 4, color: 'var(--mz-ink-soft)' }}>
-                {d.suspects.length} gyanúsított · a legerősebb: {d.suspects[0]?.title} ({strengthLabel(d.suspects[0]?.strength ?? 'weak')})
-              </div>
-            </button>
-          ))}
+          {diagnoses.length > 0 && (
+            <div className="dgx-reps">
+              {diagnoses.map((d, i) => (
+                <button key={d.id} type="button" className="dgx-rep rise" style={{ '--d': `${70 + i * 70}ms` } as React.CSSProperties}
+                  onClick={() => navigate(`/mezo/diagnozis/${d.id}`)} aria-label={`Diagnózis · ${generatedLabel(d.generatedAt)}`}>
+                  <span className="dgx-rep-top">
+                    <span className="dgx-chip"><Icon3D name="t-gem" size={16} />{confidenceLine(d.confidence)}</span>
+                    <span className="dgx-rep-date">{generatedLabel(d.generatedAt)}</span>
+                    <span className="dgx-chev" aria-hidden="true">›</span>
+                  </span>
+                  <strong className="dgx-rep-q">{questionOf(d.phenomenon)}</strong>
+                  <span className="dgx-rep-v">{d.verdict.split(' — ')[0]}</span>
+                  <small className="dgx-rep-s">
+                    {d.suspects.length} gyanúsított · a legerősebb: {d.suspects[0]?.title} ({strengthLabel(d.suspects[0]?.strength ?? 'weak')})
+                  </small>
+                </button>
+              ))}
+            </div>
+          )}
         </EntranceGroup>
       </PageBody>
     </MozaikPage>

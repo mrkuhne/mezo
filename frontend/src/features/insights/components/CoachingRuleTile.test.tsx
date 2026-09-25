@@ -53,4 +53,21 @@ describe('CoachingRuleTile', () => {
     expect(screen.getByText('Új szabály')).toBeInTheDocument()
     expect(screen.getByText('Rendben')).toBeInTheDocument()
   })
+
+  test('üveg ranking follows the STATE: only a flagged rule is glass', () => {
+    const { container, rerender } = render(<CoachingRuleTile rule={rule({ outcome: 'raised', disposition: 'logged' })} />)
+    expect(container.querySelector('.mzo-rule.glass.is-raised')).not.toBeNull()
+    rerender(<CoachingRuleTile rule={rule({ outcome: 'raised', disposition: 'suppressed_by_cooldown' })} />)
+    expect(container.querySelector('.mzo-rule.is-suppressed')).not.toBeNull()
+    expect(container.querySelector('.glass')).toBeNull()
+    rerender(<CoachingRuleTile rule={rule({ outcome: 'unavailable' })} />)
+    expect(container.querySelector('.mzo-rule.is-unavailable')).not.toBeNull()
+    expect(container.querySelector('.glass')).toBeNull()
+  })
+
+  test('icons are Titanium 3D — the domain art and the state chip icon, no clay', () => {
+    const { container } = render(<CoachingRuleTile rule={rule()} winner />)
+    const uses = Array.from(container.querySelectorAll('use')).map((u) => u.getAttribute('href'))
+    expect(uses).toEqual(['#t-sleep', '#t-star', '#t-tick'])
+  })
 })

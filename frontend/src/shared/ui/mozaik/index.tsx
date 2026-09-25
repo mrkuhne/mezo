@@ -166,6 +166,11 @@ interface PageHeroProps {
    *  name, the big numeral, the sub line — tinted by `accent` (a CSS color, e.g. var(--dv-rose)). */
   art?: Icon3DName
   accent?: string
+  /** Üveg halo hero WITHOUT art (mezo-me75u.8): a page whose graphic is its own child (a gauge,
+   *  a ring) or whose hero is text only (a memoir chapter). `art` implies it. */
+  glass?: boolean
+  /** A small eyebrow line above the name, tinted by `accent` — halo hero only (bible U7 rule 58). */
+  eyebrow?: string
   /** The prototypes size a hero spot per page (54 and 72 are both common, 48–92 across the
    *  set), so there is no single faithful default — a page that has been checked against its
    *  prototype passes the scaled value. 45 is what every page shipped with. */
@@ -182,12 +187,13 @@ interface PageHeroProps {
 
 /** Subpage hero recipe (session rounds): title, then icon + big number in ONE row, no subtitle theater.
  *  With `art` it is the üveg halo hero instead (art, name, numeral, sub — centred, no box). */
-export function PageHero({ icon, spot, art, accent, iconSize = 45, big, name, sub, children, kalauzAnchor }: PageHeroProps) {
-  if (art) {
+export function PageHero({ icon, spot, art, accent, glass, eyebrow, iconSize = 45, big, name, sub, children, kalauzAnchor }: PageHeroProps) {
+  if (art || glass) {
     return (
       <section className="mz-page-hero uv-hero uv-halo" data-kalauz-anchor={kalauzAnchor}
         style={accent ? ({ '--c': accent } as CSSProperties) : undefined}>
-        <Icon3D name={art} size={iconSize > 45 ? iconSize : 88} className="uv-hero-art uv-float" />
+        {art && <Icon3D name={art} size={iconSize > 45 ? iconSize : 88} className="uv-hero-art uv-float" />}
+        {eyebrow && <span className="uv-eyebrow uv-hero-eb">{eyebrow}</span>}
         <div className="mz-hero-nm">{name}</div>
         {big !== undefined && <span className="mz-bignum">{big}</span>}
         {sub && <div className="mz-hero-sb">{sub}</div>}

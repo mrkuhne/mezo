@@ -7,17 +7,11 @@
 // ============================================================
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 import { useConversationActions } from '@/data/hooks'
 import type { ConversationResponse } from '@/data/insights/chatApi'
 
 const TITLE_ID = 'conversation-actions-title'
-
-const ROW: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-  padding: '12px 12px', borderRadius: 'var(--r-lg)', textAlign: 'left',
-  background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
-}
 
 export function ConversationActionsSheet({
   conversation, onClose, onRenamed, onDeleted,
@@ -33,39 +27,39 @@ export function ConversationActionsSheet({
   const [busy, setBusy] = useState(false)
 
   return (
-    <Sheet onClose={onClose} labelledBy={TITLE_ID}>
+    // Üveg (mezo-me75u.8, bible U2 rule 15): ONE floating lavender glass sheet, flat action rows,
+    // lit flat pills for the answers (never glass in glass); the delete confirm stays coral.
+    <Sheet onClose={onClose} labelledBy={TITLE_ID} className="glass mzc-sheet">
       {(close) => (
-        <div className="col gap-md" style={{ padding: '4px 20px 24px' }}>
-          <div className="col">
-            <span id={TITLE_ID} className="eyebrow" style={{ color: 'var(--lav-deep)' }}>
-              Beszélgetés
-            </span>
-            <span
-              style={{
-                fontSize: 13, fontWeight: 600, color: 'var(--text-primary)',
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}
-            >
-              {conversation.title ?? 'Névtelen beszélgetés'}
-            </span>
+        <div className="mzc-shbody col gap-md">
+          <div className="mzc-shh">
+            <Icon3D name="t-chat" size={44} />
+            <div className="col" style={{ minWidth: 0 }}>
+              <span id={TITLE_ID} className="mzc-sheb">
+                Beszélgetés
+              </span>
+              <span className="mzc-shtitle">
+                {conversation.title ?? 'Névtelen beszélgetés'}
+              </span>
+            </div>
           </div>
 
           {phase === 'menu' && (
             <div className="col gap-sm">
-              <button type="button" style={ROW} onClick={() => setPhase('rename')}>
-                <Icon name="pencil" size={14} />
+              <button type="button" className="mzc-shrow" onClick={() => setPhase('rename')}>
+                <Icon3D name="t-pencil" size={30} />
                 <span className="col" style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Átnevezés</span>
-                  <span className="text-tertiary" style={{ fontSize: 10 }}>
+                  <span className="mzc-shnm">Átnevezés</span>
+                  <span className="mzc-shsub">
                     a lista címkéje változik — bármikor átírhatod újra
                   </span>
                 </span>
               </button>
-              <button type="button" style={ROW} onClick={() => setPhase('confirm')}>
-                <Icon name="trash" size={14} />
+              <button type="button" className="mzc-shrow is-warn" onClick={() => setPhase('confirm')}>
+                <Icon3D name="t-trash" size={30} />
                 <span className="col" style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--coral-deep)' }}>Törlés</span>
-                  <span className="text-tertiary" style={{ fontSize: 10 }}>
+                  <span className="mzc-shnm">Törlés</span>
+                  <span className="mzc-shsub">
                     a beszélgetés lekerül a listáról
                   </span>
                 </span>
@@ -93,19 +87,15 @@ export function ConversationActionsSheet({
                     close()
                   })()
                 }}
-                style={{
-                  width: '100%', padding: '10px 12px', fontSize: 13, borderRadius: 12,
-                  border: '1px solid var(--border-strong)', background: 'var(--surface-2)',
-                  color: 'var(--text-primary)',
-                }}
+                className="mzc-shinput"
               />
-              <div className="row gap-sm">
-                <button type="button" className="cta-ghost flex-1" onClick={() => setPhase('menu')}>
+              <div className="mzc-shpair">
+                <button type="button" className="mzc-shbtn is-ghost" onClick={() => setPhase('menu')}>
                   Mégse
                 </button>
                 <button
                   type="button"
-                  className="cta-primary flex-1"
+                  className="mzc-shbtn is-go"
                   disabled={!title.trim() || busy}
                   onClick={() => {
                     void (async () => {
@@ -116,6 +106,7 @@ export function ConversationActionsSheet({
                     })()
                   }}
                 >
+                  <Icon3D name="t-tick" size={20} />
                   Mentés
                 </button>
               </div>
@@ -123,21 +114,16 @@ export function ConversationActionsSheet({
           )}
 
           {phase === 'confirm' && (
-            <div
-              style={{
-                border: '1px dashed var(--border-strong)', borderRadius: 13,
-                padding: '10px 12px', fontSize: 12, color: 'var(--mz-ink-soft)', lineHeight: 1.5,
-              }}
-            >
+            <div className="mzc-shconfirm">
               Biztosan törlöd? A beszélgetés és az üzenetei lekerülnek a listáról — a belőlük
               tanult emlékeket ez nem érinti.
-              <div className="row gap-sm" style={{ marginTop: 10 }}>
-                <button type="button" className="cta-ghost flex-1" onClick={() => setPhase('menu')}>
+              <div className="mzc-shpair">
+                <button type="button" className="mzc-shbtn is-ghost" onClick={() => setPhase('menu')}>
                   Mégse
                 </button>
                 <button
                   type="button"
-                  className="cta-primary flex-1"
+                  className="mzc-shbtn is-warn"
                   disabled={busy}
                   onClick={() => {
                     void (async () => {
@@ -148,6 +134,7 @@ export function ConversationActionsSheet({
                     })()
                   }}
                 >
+                  <Icon3D name="t-trash" size={20} />
                   Törlöm
                 </button>
               </div>

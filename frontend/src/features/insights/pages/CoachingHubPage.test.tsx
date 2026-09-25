@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
@@ -15,16 +15,23 @@ describe('CoachingHubPage (mock mode)', () => {
   afterEach(() => vi.unstubAllEnvs())
 
   test('leads with the winner and its rank, then the split and the two doors', async () => {
-    renderPage()
+    const { container } = renderPage()
     expect(screen.getByText('Proaktív coaching')).toBeInTheDocument()
     // The winner is named from day.winner — the demo day's rank-2 rule.
     // The propcard above shows it as a bare label; the tile line restores specificity.
     expect(await screen.findByText('Terhelés–táplálás')).toBeInTheDocument()
     expect(screen.getByText('Terhelés–táplálás nyerte a napot')).toBeInTheDocument()
     expect(screen.getByText('2/14')).toBeInTheDocument()
+    // The winner card carries the Nyertes stamp AND the winner's current state (it is raised).
+    const win = container.querySelector('.coach-win') as HTMLElement
+    expect(within(win).getByText('Nyertes')).toBeInTheDocument()
+    expect(within(win).getByText('Jelzett')).toBeInTheDocument()
     // The split, as cells: 2 jelzett + 1 pihenőn + 8 rendben + 3 nem mérhető in the demo day.
-    expect(screen.getByText('Jelzett')).toBeInTheDocument()
-    expect(screen.getByText('Pihenőn')).toBeInTheDocument()
+    // Scoped to the cells — the winner's state chip also reads „Jelzett".
+    const split = container.querySelector('.coach-split') as HTMLElement
+    expect(within(split).getByText('Jelzett')).toBeInTheDocument()
+    expect(within(split).getByText('Pihenőn')).toBeInTheDocument()
+    expect(within(split).getByText('3')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Megfigyelő' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'A napi kártya' })).toBeInTheDocument()
   })

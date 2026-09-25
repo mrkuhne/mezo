@@ -6,9 +6,10 @@ export function strengthLabel(s: DiagnosisConfidence): string {
   return s === 'strong' ? 'erős' : s === 'moderate' ? 'mérsékelt' : 'gyenge'
 }
 
-/** The verdict card's confidence chip — '◆ mérsékelt bizonyosság'. */
+/** The confidence chip's words — 'mérsékelt bizonyosság'. The ◆ glyph became the t-gem 3D
+ *  icon beside it (üveg, mezo-me75u.8); the meaning stays in the text. */
 export function confidenceLine(c: DiagnosisConfidence): string {
-  return `◆ ${strengthLabel(c)} bizonyosság`
+  return `${strengthLabel(c)} bizonyosság`
 }
 
 /** ISO instant → 'ma 06:12' for today, else 'Aug 12'. */

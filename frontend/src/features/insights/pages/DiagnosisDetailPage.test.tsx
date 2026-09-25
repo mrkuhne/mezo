@@ -19,9 +19,11 @@ describe('DiagnosisDetailPage (mock mode)', () => {
   afterEach(() => vi.unstubAllEnvs())
 
   test('renders verdict, ranked suspects with index-resolved evidence, and the probe blocks', () => {
-    renderAt(mockDiagnoses[0].id)
+    const { container } = renderAt(mockDiagnoses[0].id)
     expect(screen.getByText('Miért vagyok fáradt?')).toBeInTheDocument()
-    expect(screen.getByText('◆ mérsékelt bizonyosság')).toBeInTheDocument()
+    // the ◆ glyph became the t-gem icon; the meaning stays in the words (mezo-me75u.8)
+    expect(screen.getByText('mérsékelt bizonyosság')).toBeInTheDocument()
+    expect(screen.queryByText(/◆/)).not.toBeInTheDocument()
     expect(screen.getByText(/az alvás megrövidülése/)).toBeInTheDocument()
     // rank badges + titles
     expect(screen.getByText('Alváshiány')).toBeInTheDocument()
@@ -33,10 +35,18 @@ describe('DiagnosisDetailPage (mock mode)', () => {
     // probe blocks carry their length + text
     expect(screen.getAllByText(/Próba · 7 nap/).length).toBe(2)
     expect(screen.getByText('Feküdj le hét estén át 23:00 előtt, és nézzük meg újra.')).toBeInTheDocument()
-    // the probe CTA is live-only
-    screen.getAllByRole('button', { name: '✓ Próbáljuk ki' }).forEach((b) => {
+    // üveg ranking (mezo-me75u.8): rank 1 is THE one glass card, ranks 2+ are flat
+    expect(container.querySelector('.dgx-susp[data-rank="1"]')).toHaveClass('glass')
+    expect(container.querySelector('.dgx-susp[data-rank="2"]')).not.toHaveClass('glass')
+    expect(container.querySelectorAll('.glass:not(.uv-back)')).toHaveLength(1)
+    // the probe CTA is live-only; the ✓ glyph became the t-tick icon (mezo-me75u.8)
+    const probes = screen.getAllByRole('button', { name: 'Próbáljuk ki' })
+    expect(probes).toHaveLength(2)
+    probes.forEach((b) => {
       expect(b).toBeDisabled()
-      expect(b).toHaveClass('mzp-cta')
+      expect(b).toHaveClass('dgx-cta')
+      expect(b.querySelector('use')?.getAttribute('href')).toBe('#t-tick')
+      expect(b.textContent).not.toMatch(/✓/)
     })
   })
 
@@ -63,13 +73,17 @@ describe('DiagnosisDetailPage — Számvetés (mock mode)', () => {
     expect(screen.getByText('erő-trend')).toBeInTheDocument()
     expect(screen.getAllByText(/heti átlag 82,4/).length).toBeGreaterThan(0)
 
-    // above the verdict card in DOM order
-    const cards = container.querySelectorAll('.mzp-pred')
-    const szamvetesCard = screen.getByText('SZÁMVETÉS').closest('.mzp-pred')
-    expect(cards[0]).toBe(szamvetesCard)
+    // the verdict lives in the hero (üveg, mezo-me75u.8); Számvetés is the first body card,
+    // above every suspect in DOM order
+    const szamvetesCard = screen.getByText('SZÁMVETÉS').closest('[data-dgx="szamvetes"]')!
+    expect(szamvetesCard).toBeTruthy()
+    const firstSuspect = container.querySelector('.dgx-susp')!
+    expect(szamvetesCard.compareDocumentPosition(firstSuspect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // one flat card, never glass
+    expect(szamvetesCard.querySelector('.glass')).toBeNull()
 
     // house classes only
-    expect(container.querySelectorAll('.mzp-evrow').length).toBeGreaterThanOrEqual(4)
+    expect(container.querySelectorAll('.dgx-szrow').length).toBeGreaterThanOrEqual(4)
   })
 
   test('a suspect citing a derived index does not re-render it inside its own evidence rows', () => {

@@ -64,6 +64,15 @@ test('the sprite carries the U7 Én II icons', () => {
   }
 })
 
+// U8 (mezo-me75u.8): the Mezo I icons the owner approved on prototypes/uveg-mezo.html#ikonok —
+// coaching, the observer, the daily card, diagnosis, memories, the memory layers, rename.
+test('the sprite carries the U8 Mezo I icons', () => {
+  const ids = symbolIds()
+  for (const id of ['t-whistle', 't-eye', 't-card', 't-diagnose', 't-album', 't-layers', 't-pencil'] satisfies Icon3DName[]) {
+    expect(ids, id).toContain(id)
+  }
+})
+
 test('every symbol is 64×64 art (Icon3D renders viewBox 0 0 64 64)', () => {
   const { container } = render(<ClaySprites />)
   const syms = container.querySelectorAll('symbol[id^="t-"]')

@@ -38,15 +38,32 @@ describe('MemoryPage (mock mode)', () => {
     expect(screen.getByText('hipotézis + tudás-promóció · vasárnap 03:00')).toBeInTheDocument()
   })
 
-  test('the layer cards wear the per-layer washes (sand→gold→coral→lav) with clay icons', () => {
+  test('the layer cards are glass, each with its own accent (amber→sky→coral→lav) and a 3D icon', () => {
     renderPage()
-    const tones = ['sand', 'gold', 'coral', 'lav']
+    const tones = ['amber', 'sky', 'coral', 'lav']
+    const icons = ['#t-signal', '#t-journal', '#t-pattern', '#t-brain']
     const eyebrows = ['L0 · Nyers adat', 'L1 · Epizodikus napló', 'L2 · Ítélet-inbox', 'L3 · Tartós tudás']
     eyebrows.forEach((eb, i) => {
-      const card = screen.getByText(eb).closest('.mem-laycard') as HTMLElement
-      expect(card).toHaveClass(`mem-t-${tones[i]}`)
-      expect(card.querySelector('.mem-lic svg use')).not.toBeNull() // clay ikon-korong
+      const card = screen.getByText(eb).closest('.mmr-layer') as HTMLElement
+      expect(card).toHaveClass('glass', `mmr-t-${tones[i]}`)
+      expect(card.style.getPropertyValue('--c')).toBe(`var(--dv-${tones[i]})`)
+      // 3D ikon a világító kútban
+      expect(card.querySelector('.mmr-well svg.t-ico use')).toHaveAttribute('href', icons[i])
     })
+  })
+
+  test('the hero puts the measured days inside the lavender ring, and the active tab is marked', async () => {
+    const { container } = renderPage()
+    const ring = container.querySelector('.mmr-ring') as HTMLElement
+    expect(ring).not.toBeNull()
+    expect(ring.querySelector('.uv-ring-prog')).toHaveAttribute('stroke-dasharray', `${(47 / 60) * 100} 100`)
+    expect(ring.querySelector('.mz-bignum')).toHaveTextContent('/60')
+    expect(screen.getByText('mért nap a minta-ablakban')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Rétegek' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: 'Rétegek' })).toHaveClass('on')
+    await userEvent.click(screen.getByRole('tab', { name: 'Audit' }))
+    expect(screen.getByRole('tab', { name: 'Audit' })).toHaveClass('on')
+    expect(screen.getByRole('tab', { name: 'Rétegek' })).not.toHaveClass('on')
   })
 
   test('switches to the journal with month separators and embed dots', async () => {
@@ -95,8 +112,10 @@ describe('MemoryPage (mock mode)', () => {
     // 1 · költség-hero
     expect(screen.getByText('$0.125')).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Napi LLM token-oszlopok' })).toBeInTheDocument()
-    expect(screen.getByText(/54 hívás · bemenet 248\.3k · kimenet 38\.7k/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Tudástár · tények és eredetük/ })).toHaveAttribute('href', '/mezo/knowledge?view=tenyek')
+    const audit = screen.getByText('$0.125').closest('.mmr-audit') as HTMLElement
+    expect(audit).toHaveClass('glass')
+    expect(audit.querySelector('.mmr-foot')).toHaveTextContent(/54 hívás\s*bemenet 248\.3k\s*kimenet 38\.7k token/)
+    expect(screen.getByRole('link', { name: /Tudástár.*tények és eredetük/ })).toHaveAttribute('href', '/mezo/knowledge?view=tenyek')
     expect(screen.queryByText('×23 megerősítve')).not.toBeInTheDocument()
   })
 })

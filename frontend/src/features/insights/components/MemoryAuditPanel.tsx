@@ -1,45 +1,52 @@
 import { Link } from 'react-router-dom'
 import { useLlmUsage } from '@/data/hooks'
 import { GhostState } from '@/shared/ui/GhostState'
+import { Icon3D } from '@/shared/ui/clay'
 import { TokenColumns } from '@/features/insights/components/TokenColumns'
 
 const fmtCost = (cost: number | null) =>
   cost == null ? '—' : cost > 0 && cost < 0.001 ? '<$0.001' : `$${cost.toFixed(3)}`
 const fmtTokens = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n))
 
+/** Audit (üveg, mezo-me75u.8): EGY égkék üvegkártya — költség nagy világos számmal, a napi
+ *  token-oszlopok, lábléc; a ki/elérhetetlen állapot szaggatott, a Tudástár lapos ajtó-sor. */
 export function MemoryAuditPanel() {
   const { usage, degraded: usageDegraded, isPending } = useLlmUsage()
 
   return (
-    <div className="col gap-md">
+    <div className="mmr-audit-wrap">
       {usageDegraded || (!usage && !isPending) ? (
-        <p className="text-tertiary" style={{ fontSize: 12, textAlign: 'center' }}>
-          Az LLM-napló most nem elérhető.
-        </p>
+        <div className="mmr-note uv-empty" style={{ '--c': 'var(--dv-sky)' } as React.CSSProperties}>
+          <p>Az LLM-napló most nem elérhető.</p>
+        </div>
       ) : !usage ? (
-        <GhostState message="Az LLM-napló betöltése…" lines={2} />
+        <div className="mmr-ghost">
+          <GhostState message="Az LLM-napló betöltése…" lines={2} />
+        </div>
       ) : !usage.enabled ? (
-        <div className="mem-card" style={{ textAlign: 'center' }}>
-          <p className="text-tertiary" style={{ fontSize: 12 }}>
-            Az LLM-hívás audit-napló ki van kapcsolva — nincs mit auditálni.
-          </p>
+        <div className="mmr-note uv-empty" style={{ '--c': 'var(--dv-sky)' } as React.CSSProperties}>
+          <p>Az LLM-hívás audit-napló ki van kapcsolva — nincs mit auditálni.</p>
         </div>
       ) : (
-        <div className="mem-card rise col gap-sm" style={{ '--d': '0ms' } as React.CSSProperties}>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span className="mz-eyebrow">LLM-használat · 30 nap</span>
-            <span className="mem-cost">{fmtCost(usage.totals.costUsd)}</span>
-          </div>
+        <div className="mmr-audit glass rise" style={{ '--c': 'var(--dv-sky)', '--d': '0ms' } as React.CSSProperties}>
+          <span className="uv-eyebrow mmr-eb">LLM-használat · 30 nap</span>
+          <div className="mmr-cost"><b>{fmtCost(usage.totals.costUsd)}</b></div>
           <TokenColumns days={usage.perDay} ariaLabel="Napi LLM token-oszlopok" />
-          <span className="mem-foot">
-            {usage.totals.calls} hívás · bemenet {fmtTokens(usage.totals.inputTokens)} · kimenet{' '}
-            {fmtTokens(usage.totals.outputTokens)} token
-          </span>
+          <div className="mmr-foot">
+            <span><b>{usage.totals.calls}</b> hívás</span>
+            <span>bemenet <b>{fmtTokens(usage.totals.inputTokens)}</b></span>
+            <span>kimenet <b>{fmtTokens(usage.totals.outputTokens)}</b> token</span>
+          </div>
         </div>
       )}
 
-      <Link className="mem-card" to="/mezo/knowledge?view=tenyek">
-        Tudástár · tények és eredetük →
+      <Link className="mmr-door uv-flat" to="/mezo/knowledge?view=tenyek" style={{ '--c': 'var(--dv-lav)' } as React.CSSProperties}>
+        <span className="uv-well mmr-well"><Icon3D name="t-brain" size={28} /></span>
+        <span className="mmr-doorgrow">
+          <strong>Tudástár</strong>
+          <small>tények és eredetük</small>
+        </span>
+        <span className="mmr-chev" aria-hidden="true">›</span>
       </Link>
     </div>
   )

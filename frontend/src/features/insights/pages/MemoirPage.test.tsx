@@ -28,8 +28,7 @@ describe('MemoirPage (mock mode)', () => {
     expect(screen.getByText('a közös történetünk, hétről hétre')).toBeInTheDocument()
     expect(screen.getByText('Heti memoár · Hét 20 · 2026 · Máj 11-17')).toBeInTheDocument()
     expect(screen.getByText('Egy hét amikor a tested megtanult várni')).toBeInTheDocument()
-    // RefTag renders "[PR] Chest Row 102.5 × 9"; RTL normalizes &nbsp; to a space, so this matches.
-    // If it ever doesn't, fall back to: screen.getByText(/Chest Row 102\.5 × 9/)
+    // The glass RefTag renders the label beside the kind's 3D icon (the kind itself is sr-only).
     expect(screen.getByText(/Chest Row 102\.5 × 9/)).toBeInTheDocument()
     // The anchors row speaks Hungarian now (prototype: "Horgonyok", not "Anchors").
     expect(screen.getByText('Horgonyok')).toBeInTheDocument()
@@ -40,12 +39,17 @@ describe('MemoirPage (mock mode)', () => {
     expect(screen.queryByText(/Memoir archive/)).toBeNull()
   })
 
-  test('the chapter card wears the mz-memoir face: Fraunces title + lavender glow + lav-washed anniversary', () => {
+  test('the chapter is THE one lavender glass card: serif title, 3D-icon anchors, flat anniversary (üveg, mezo-me75u.8)', () => {
     const { container } = renderPage()
-    const card = container.querySelector('.mz-memoir')
+    const card = container.querySelector('.mmo-article.glass')
     expect(card).not.toBeNull()
-    expect(card!.querySelector('.mz-memoir-ttl')?.textContent).toBe('Egy hét amikor a tested megtanult várni')
-    expect(container.querySelector('.mz-anniv')).not.toBeNull()
+    expect(container.querySelectorAll('.glass:not(.uv-back)')).toHaveLength(1)
+    expect(card!.querySelector('.mmo-ttl')?.textContent).toBe('Egy hét amikor a tested megtanult várni')
+    // Anchors are flat chips with a 3D kind icon — no raw "[PR]" machine text on screen.
+    const pr = card!.querySelector('.reftag-3d[data-kind="PR"]')
+    expect(pr?.querySelector('use')?.getAttribute('href')).toBe('#t-record')
+    expect(screen.queryByText(/\[PR\]/)).toBeNull()
+    expect(container.querySelector('.mmo-anniv:not(.glass)')).not.toBeNull()
   })
 
   test('renders the feedback chips instead of the retired mock reaction row (mezo-kr9v)', () => {
@@ -116,6 +120,6 @@ describe('MemoirPage archive CTA', () => {
 
   test('the Archívum card is a real navigation affordance, not a dead label', () => {
     renderPage()
-    expect(screen.getByRole('button', { name: /Archívum — a korábbi fejezetek/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Archívum.*a korábbi fejezetek/ })).toBeInTheDocument()
   })
 })

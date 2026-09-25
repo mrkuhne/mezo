@@ -5,7 +5,7 @@ describe('diagnosisCopy', () => {
   test('strength + confidence labels', () => {
     expect(strengthLabel('strong')).toBe('erős')
     expect(strengthLabel('weak')).toBe('gyenge')
-    expect(confidenceLine('moderate')).toBe('◆ mérsékelt bizonyosság')
+    expect(confidenceLine('moderate')).toBe('mérsékelt bizonyosság')
   })
 
   test('generatedLabel: today → ma HH:MM, otherwise Hungarian month-day', () => {

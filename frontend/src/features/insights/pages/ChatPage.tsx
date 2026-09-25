@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
-import { ClaySpot } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { NEW_CHAT, useChat, useChatActions, useConversations, useFeedback, useMemoryRetrievalFeedback } from '@/data/hooks'
 import { ChatMessage } from '@/features/insights/components/ChatMessage'
 import { ToolWorkStrip } from '@/features/insights/components/ToolWorkStrip'
@@ -12,6 +12,15 @@ import { useStickToBottom } from '@/features/insights/logic/useStickToBottom'
 import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
 import { cn } from '@/shared/lib/cn'
 import { QUICK_QUESTIONS } from '@/features/insights/logic/quickQuestions'
+
+// Üveg (mezo-me75u.8): each quick question wears a 3D icon for its domain. Keyed by the copy so a
+// reordered list keeps its icons; an unknown question falls back to the Mezo chat glyph.
+const QQ_ICON: Record<string, Icon3DName> = {
+  'Foglald össze a mai napom röviden': 't-sun',
+  'Alvás és súly alapján mire figyeljek ma?': 't-sleep',
+  'Hogy készüljek az esti edzésre?': 't-dumbbell',
+  'Mit egyek ma este a maradék makróimba?': 't-bowl',
+}
 
 const SUBTITLE = { mock: 'demo beszélgetés', live: 'élő · Gemini' } as const
 
@@ -37,9 +46,9 @@ function ThinkingDots({ bare, phase }: { bare?: boolean; phase?: string } = {}) 
   // reduced-motion-guarded pulse (prototype.css).
   const phaseLabel = phase ? PHASE_COPY[phase] : undefined
   return (
-    <div className={bare ? 'col gap-sm' : 'mzc-msg-a col gap-sm'} style={bare ? undefined : { maxWidth: '85%' }}>
+    <div className={bare ? 'col gap-sm mzc-think' : 'mzc-msg-a col gap-sm mzc-think'} style={bare ? undefined : { maxWidth: '85%' }}>
       <div className="mzc-meta">
-        <ClaySpot name="s-orb" size={18} />
+        <Icon3D name="t-chat" size={20} />
         <span className="mzc-eb">Mezo</span>
       </div>
       <div className="mzc-typing">
@@ -51,7 +60,7 @@ function ThinkingDots({ bare, phase }: { bare?: boolean; phase?: string } = {}) 
               width: 7,
               height: 7,
               borderRadius: '50%',
-              background: 'var(--lav-deep)',
+              background: 'var(--dv-lav)',
               animationDelay: `${i * 0.2}s`,
             }}
           />
@@ -59,7 +68,7 @@ function ThinkingDots({ bare, phase }: { bare?: boolean; phase?: string } = {}) 
       </div>
       {/* mezo-rj214.7: `.text-tertiary` is the file's own established muted-caption reuse
           (see the voice-error line below) — no new CSS class or animation. */}
-      {phaseLabel && <span className="text-tertiary" style={{ fontSize: 11 }}>{phaseLabel}</span>}
+      {phaseLabel && <span className="text-tertiary mzc-phase" style={{ fontSize: 12 }}>{phaseLabel}</span>}
     </div>
   )
 }
@@ -155,17 +164,17 @@ export function ChatPage() {
   }, [location, degraded, send, navigate])
 
   return (
-    <div className="col gap-md chat-page mzc">
+    <div className="col gap-md chat-page mzc-u8">
       {/* mezo-vdf4: orb-led single-row header (ADR 0032 still holds — this IS the page's own
           header; the shell AppHeader stays above). Status precedence is the audited contract
           unchanged (degraded → new → mode), with one addition: a streaming turn reads
           `dolgozom rajta…`. */}
       <div className="mzc-chathead">
-        <button type="button" className="mzc-hdisc" onClick={() => navigate('/mezo')} aria-label="Vissza">
+        <button type="button" className="mzc-hdisc glass is-round" onClick={() => navigate('/mezo')} aria-label="Vissza">
           ‹
         </button>
-        <span className={cn('mzc-horb', turn && 'busy')}>
-          <ClaySpot name="s-orb" size={34} />
+        <span className={cn('mzc-horb uv-well', turn && 'busy')}>
+          <Icon3D name="t-chat" size={30} />
         </span>
         <span className="col grow" style={{ gap: 1, minWidth: 0 }}>
           <span className="mzc-hnm">Mezo</span>
@@ -181,7 +190,7 @@ export function ChatPage() {
         </span>
         <button
           type="button"
-          className="mzc-hdisc"
+          className="mzc-hdisc glass is-round"
           onClick={() => setPickerOpen(true)}
           disabled={degraded}
           aria-label="Beszélgetések"
@@ -192,7 +201,7 @@ export function ChatPage() {
         </button>
         <button
           type="button"
-          className="mzc-hdisc"
+          className="mzc-hdisc is-new glass is-round"
           onClick={() => selectConversation(NEW_CHAT)}
           disabled={degraded || isNew}
           aria-label="Új beszélgetés"
@@ -206,7 +215,7 @@ export function ChatPage() {
             untouched: this disc only appends to the row. */}
         <button
           type="button"
-          className="mzc-hdisc"
+          className="mzc-hdisc glass is-round"
           onClick={() => {
             const currentId = isNew ? null : (selection ?? data.conversationId)
             const current = conversations.find((c) => c.id === currentId)
@@ -246,8 +255,8 @@ export function ChatPage() {
       )}
 
       {degraded && (
-        <div className="mzc-bub-a" style={{ alignSelf: 'stretch' }}>
-          <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.5 }}>
+        <div className="mzc-degr">
+          <p>
             A társ jelenleg nincs bekapcsolva — a beszélgetés nem elérhető. A napló, az edzés és a
             Fuel változatlanul működik.
           </p>
@@ -257,15 +266,16 @@ export function ChatPage() {
       <div className="col gap-md chat-thread">
         {isPending && !degraded && !isNew && messages.length === 0 && !turn && <ThinkingDots />}
         {!degraded && !isPending && messages.length === 0 && !turn && (
-          <div className="col gap-sm" style={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
-            <div className="mzc-bub-a">
-              <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                Új beszélgetés — kérdezz bármit, vagy koppints egy kérdésre.
-              </p>
+          <div className="mzc-empty col">
+            {/* Üveg: a frameless lavender halo hero (no card), then flat quick-question rows. */}
+            <div className="mzc-emptyhero">
+              <Icon3D name="t-chat" size={92} />
+              <h2>Új beszélgetés</h2>
+              <p>Kérdezz bármit, vagy koppints egy kérdésre.</p>
             </div>
             {/* mezo-dz3y: the quick-question chips — one tap sends. They live ONLY in the
                 empty state (they leave with it), so a running thread pays no screen tax. */}
-            <div className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
+            <div className="mzc-qqs">
               {QUICK_QUESTIONS.map((q) => (
                 <button
                   key={q}
@@ -274,7 +284,8 @@ export function ChatPage() {
                   onClick={() => send(q)}
                   disabled={degraded || !!turn}
                 >
-                  {q}
+                  <Icon3D name={QQ_ICON[q] ?? 't-chat'} size={26} />
+                  <span>{q}</span>
                 </button>
               ))}
             </div>
@@ -307,7 +318,7 @@ export function ChatPage() {
             streaming the second block below takes over and renders it non-live, inside the
             answer card. */}
         {turn && !turn.draft && (
-          <div className="mzc-msg-a col gap-sm">
+          <div className="mzc-msg-a mzc-pending col gap-sm">
             {turn.tools.length > 0 && <ToolWorkStrip tools={turn.tools} live />}
             <ThinkingDots bare phase={turn.phase} />
           </div>
@@ -326,13 +337,13 @@ export function ChatPage() {
           // F7.5: the error bubble grew hands — Újra re-sends the SAME failed turn (replace,
           // don't append), Szerkesztés hands the text back to the composer. Amber tone per the
           // prototype (a hiccup, not a scolding — ADR 0010).
-          <div className="mzc-bub-err" style={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
-            <p style={{ fontSize: 13, lineHeight: 1.5 }}>
+          <div className="mzc-bub-err">
+            <p>
               <b>{error}</b>
               {failedText ? ' Az üzeneted nem veszett el.' : ''}
             </p>
             {failedText && (
-              <div className="row gap-sm" style={{ marginTop: 8 }}>
+              <div className="mzc-errrow">
                 <button type="button" className="mzc-ebtn go" onClick={retry}>
                   Újra
                 </button>
@@ -362,7 +373,7 @@ export function ChatPage() {
       {/* Prototype composer pill (mezo-d20.5.2): round mic disc · borderless field · lav
           gradient send disc. The sticky/`:has` plumbing keys off `.chat-composer`, so that
           class stays; controls honor the 44pt touch-target guardrail (prototype ~35px ×1.18). */}
-      <div className="chat-composer mzc-composer">
+      <div className="chat-composer mzc-composer glass is-still">
         <button
           type="button"
           className={cn('mzc-cmic', recording && 'rec chat-mic-live')}
@@ -371,7 +382,8 @@ export function ChatPage() {
           aria-label={recording ? 'Felvétel leállítása' : 'Hangbevitel'}
           aria-pressed={recording}
         >
-          <Icon name={recording ? 'voice-wave' : 'mic'} size={15} />
+          {/* Recording keeps the line voice-wave: the 3D set has no "listening" glyph. */}
+          {recording ? <Icon name="voice-wave" size={18} /> : <Icon3D name="t-mic" size={28} />}
         </button>
         <textarea
           ref={draftRef}
@@ -395,7 +407,7 @@ export function ChatPage() {
             flex: 1,
             minWidth: 0,
             padding: '8px 4px',
-            fontSize: 13,
+            fontSize: 14,
             lineHeight: 1.45,
             resize: 'none',
             overflowY: 'auto',
@@ -409,7 +421,7 @@ export function ChatPage() {
           disabled={degraded}
           aria-label="Küldés"
         >
-          <Icon name="send" size={15} />
+          <Icon3D name="t-send" size={28} />
         </button>
       </div>
     </div>

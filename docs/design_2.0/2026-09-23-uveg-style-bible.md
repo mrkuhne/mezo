@@ -505,3 +505,28 @@ LIFE skills and `i-ertesites` joined `CLAY_TO_3D`. Prototype: [`prototypes/uveg-
     with `order`). The next slice that needs one adds an `eyebrow` prop to the kit.
 59. **The ground is black now.** `--surface-page` became `#000000` in dark (`mezo-x4r3c`, 2026-09-23),
     so §1's `#191614` is the card family, not the page. Keep writing `var(--canvas)`; never a literal.
+
+### U8 · Mezo I (`mezo-me75u.8`, 2026-09-25)
+
+Beszélgetés, coaching (áttekintő, Megfigyelő, napi kártya), diagnózis, Emlékek + napi emlék, N=1 kísérletek,
+memoár (+ archívum, fejezet) and Memória. Blocks: `── uveg mezo1 chat|coaching|diagnozis|kiserletek|emlekek|memoar|memoria (`.
+Seven new sprite icons (`t-whistle t-eye t-card t-diagnose t-album t-layers t-pencil`). The Üzenőfal (`/mezo`) and the
+experiment detail were already glass (csapatfal, U8a). Prototype: [`prototypes/uveg-mezo.html`](prototypes/uveg-mezo.html).
+
+60. **Own the prefix before you dress, on every page, not only the borrowed one.** Rule 55 generalised: every U8
+    builder moved its page off the shared `mzp-*` / `mem-*` / `mz-memoir*` / `mz-qcard` families onto its own
+    (`mzc-u8`, `coach-`, `dgx-`, `exl-`, `eml-`, `mmo-`, `mmr-`). Seven builders touched pages that shared class
+    names three ways, and no rule reached a neighbour. The old rules stay until a dead-CSS sweep removes them.
+61. **A shared component gets an opt-in prop and exactly ONE owner.** `FeedbackChips glyph3d`, `RefTag glass`,
+    `VerdictArc glow`, and `MemorySearchPanel` styled by its own root (it lives on both Emlékek and Memória). The trap
+    is the consumer that forgets the prop: it keeps the old look silently (the memoir pages did, caught at
+    integration). Grep every consumer of an opt-in prop before merging.
+62. **Never group what the engine sorts.** The prototype put Megfigyelő's rules under state headings; the live order is
+    the engine's severity order and mixes states, so headings would have reordered it. The ranking is carried by the
+    material instead (flagged = glass, resting = amber flat, ok = dim flat, unmeasurable = dashed).
+63. **The glass back pill writes its ‹ as its own element.** `PageHead glass` reads „‹Mezo" as text; a test that
+    expected „‹ Mezo" failed on spacing, not meaning. Compare labels without whitespace.
+64. **`PageHero` has `eyebrow` and `glass` now** (rule 58 done): `glass` is the halo hero without art, for a hero whose
+    graphic is its own child (the Memória ring) or which is text only (a memoir chapter).
+65. **A refuted experiment is neutral.** „Nem igazolódott" keeps no failure colour (`docs/features/proactive.md`:
+    muted, no red/no-penalty tone), whatever the prototype drew. Rule 53 again: grep the product rules first.

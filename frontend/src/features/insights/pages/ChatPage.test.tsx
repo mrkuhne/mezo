@@ -582,13 +582,15 @@ describe('ChatPage (real mode)', () => {
     renderPage()
     await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
     fireEvent.click(screen.getByLabelText('Új beszélgetés'))
-    expect(await screen.findByText(/Új beszélgetés — kérdezz bármit/)).toBeInTheDocument()
+    // Üveg (mezo-me75u.8): the empty state is a halo hero — its heading names the draft thread.
+    expect(await screen.findByRole('heading', { name: 'Új beszélgetés' })).toBeInTheDocument()
+    expect(screen.getByText('Kérdezz bármit, vagy koppints egy kérdésre.')).toBeInTheDocument()
     expect(screen.queryByText(/Jó reggelt\. Tegnap a Push Day/)).not.toBeInTheDocument()
   })
 
   test('the empty draft thread offers the quick-question chips, and a tap SENDS (mezo-dz3y)', async () => {
     renderPage('/mezo/chat?c=new')
-    await screen.findByText(/Új beszélgetés — kérdezz bármit/)
+    await screen.findByRole('heading', { name: 'Új beszélgetés' })
     // the three seeded quick questions render as tappable chips
     const chip = screen.getByRole('button', { name: 'Foglald össze a mai napom röviden' })
     expect(screen.getByRole('button', { name: 'Alvás és súly alapján mire figyeljek ma?' })).toBeInTheDocument()

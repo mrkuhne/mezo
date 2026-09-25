@@ -1,11 +1,12 @@
 // ============================================================
-// Mezo · MemoirChapterPage — one shelf chapter (F7.5, mezo-d20.8.5).
-// Source of truth: the mezo-uajy chapter language merged into
-// docs/design_2.0/prototypes/src/mezo-body.html #page-memoar-fej, restaged in
-// mezo-memoar.html: hero (Hét N + date), the drop-cap memoir card with
-// paragraph rhythm, the "Miből íródott" anchor chips (static — anchor
-// target-refs are mezo-uajy's deferred backend flag), FeedbackChips, and the
-// előző/következő pager walking the shelf order.
+// Mezo · MemoirChapterPage — one shelf chapter (F7.5, mezo-d20.8.5), in üveg
+// (mezo-me75u.8, block `uveg mezo1 memoar`). Source of truth:
+// docs/design_2.0/prototypes/src/uveg-mezo-body.html `fejezet()`: glass back pill,
+// a text-only lavender halo hero (Hét N + date), THE one lavender glass card with
+// the upright drop-cap paragraphs (bible rule 23), the "Miből íródott" flat anchor
+// chips (static — anchor target-refs are mezo-uajy's deferred backend flag),
+// FeedbackChips, and the előző/következő pager as two flat cells walking the shelf
+// order (a missing side is a dashed empty cell).
 // ============================================================
 import { useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -16,6 +17,8 @@ import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { useFeedback, useMemoirArchive } from '@/data/hooks'
 import { isoWeekNumber } from '@/data/insights/weeklyHooks'
 import { deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
+
+const LAV = { '--c': 'var(--dv-lav)' } as React.CSSProperties
 
 export function MemoirChapterPage() {
   const navigate = useNavigate()
@@ -31,8 +34,8 @@ export function MemoirChapterPage() {
   const feedback = useFeedback('memoir', feedbackIds)
 
   const frame = (children: React.ReactNode, hero?: React.ReactNode) => (
-    <MozaikPage tone="lav">
-      <PageHead onBack={() => navigate('/mezo/memoir/archivum')} label="‹ Archívum" />
+    <MozaikPage tone="lav" className="mmo-page mmo-fej">
+      <PageHead glass onBack={() => navigate('/mezo/memoir/archivum')} label="Archívum" />
       {hero}
       <PageBody>{children}</PageBody>
     </MozaikPage>
@@ -41,71 +44,71 @@ export function MemoirChapterPage() {
   // Honest missing state — a stale deep link, or a live shelf that no longer has this week.
   if (chapter == null) {
     return frame(
-      <div className="mz-qcard" style={{ textAlign: 'center', padding: 24 }}>
-        <span className="text-tertiary" style={{ fontSize: 13, lineHeight: 1.5 }}>
-          {isPending ? 'A fejezet töltődik…' : 'Ez a fejezet nincs meg az archívumban.'}
-        </span>
+      <div className={isPending ? 'mmo-state uv-flat' : 'mmo-empty uv-empty'} style={LAV}>
+        <p>{isPending ? 'A fejezet töltődik…' : 'Ez a fejezet nincs meg az archívumban.'}</p>
       </div>,
     )
   }
 
   return frame(
-    <EntranceGroup className="col gap-md">
-      <div className="mz-memoir rise" style={{ '--d': '60ms' } as React.CSSProperties}>
-        <div className="row" style={{ alignItems: 'center', gap: 8 }}>
-          <span className="mz-eyebrow grow" style={{ color: 'var(--mz-cell-lav-ink)' }}>
-            Heti memoár · Hét {isoWeekNumber(chapter.weekStart)}
-          </span>
-          <span className="text-tertiary" style={{ fontSize: 10, fontVariantNumeric: 'tabular-nums' }}>
-            {deriveWeekTitle(chapter.weekStart)}
-          </span>
+    <EntranceGroup className="col">
+      <article className="mmo-article glass rise" style={{ ...LAV, '--d': '60ms' } as React.CSSProperties}>
+        <div className="mmo-ebrow">
+          <span className="uv-eyebrow mmo-eb">Heti memoár · Hét {isoWeekNumber(chapter.weekStart)}</span>
+          <span className="mmo-date">{deriveWeekTitle(chapter.weekStart)}</span>
         </div>
-        <div className="mz-memoir-ttl">{chapter.title}</div>
+        <h2 className="mmo-ttl">{chapter.title}</h2>
         {/* prompt v2 (mezo-uajy) writes \n\n paragraph breaks; the first paragraph carries
-            the drop cap (mz-march-bd). A legacy single-block body renders as one paragraph. */}
-        <div className="mz-march-bd">
+            the drop cap. A legacy single-block body renders as one paragraph. */}
+        <div className="mmo-prose">
           {chapter.body.split('\n\n').map((p, i) => (
             <p key={i}>{p}</p>
           ))}
         </div>
 
-        <div className="mz-memoir-foot">
-          <span className="mz-eyebrow" style={{ marginRight: 4 }}>Miből íródott</span>
-          {chapter.anchors.map((a, i) => (
-            <RefTag key={i} kind={a.kind} label={a.label} />
-          ))}
+        <div className="mmo-anch">
+          <span className="uv-eyebrow">Miből íródott</span>
+          <div className="mmo-chips">
+            {chapter.anchors.map((a, i) => (
+              <RefTag key={i} glass kind={a.kind} label={a.label} />
+            ))}
+          </div>
         </div>
 
-        <div className="mt-lg">
+        <div className="mmo-fbk">
           <FeedbackChips
             key={chapter.id}
             value={feedback.get(chapter.id)}
             onVote={(verdict, reason) => feedback.vote(chapter.id, verdict, reason)}
             label="erről a fejezetről"
+            glyph3d
           />
         </div>
-      </div>
+      </article>
 
       {(older || newer) && (
-        <div className="mz-march-pager rise" style={{ '--d': '140ms' } as React.CSSProperties}>
+        <div className="mmo-pager rise" style={{ '--d': '140ms' } as React.CSSProperties}>
           {older ? (
-            <button type="button" className="tile" onClick={() => navigate(`/mezo/memoir/${older.weekStart}`)}>
-              <span className="dir">‹ előző</span>
-              <span className="wk">Hét {isoWeekNumber(older.weekStart)}</span>
-              <span className="ct">{older.title}</span>
+            <button type="button" className="mmo-pg" onClick={() => navigate(`/mezo/memoir/${older.weekStart}`)}>
+              <small>‹ előző</small>
+              <strong>Hét {isoWeekNumber(older.weekStart)}</strong>
+              <span>{older.title}</span>
             </button>
-          ) : <span className="tile ghost" aria-hidden />}
+          ) : <span className="mmo-pg is-empty uv-empty" style={LAV} aria-hidden />}
           {newer ? (
-            <button type="button" className="tile nx" onClick={() => navigate(`/mezo/memoir/${newer.weekStart}`)}>
-              <span className="dir">következő ›</span>
-              <span className="wk">Hét {isoWeekNumber(newer.weekStart)}</span>
-              <span className="ct">{newer.title}</span>
+            <button type="button" className="mmo-pg nx" onClick={() => navigate(`/mezo/memoir/${newer.weekStart}`)}>
+              <small>következő ›</small>
+              <strong>Hét {isoWeekNumber(newer.weekStart)}</strong>
+              <span>{newer.title}</span>
             </button>
-          ) : <span className="tile ghost" aria-hidden />}
+          ) : <span className="mmo-pg is-empty uv-empty" style={LAV} aria-hidden />}
         </div>
       )}
     </EntranceGroup>,
     <PageHero
+      glass
+      accent="var(--dv-lav)"
+      eyebrow="Heti memoár"
       name={`Hét ${isoWeekNumber(chapter.weekStart)}`}
       sub={`${deriveWeekTitle(chapter.weekStart)} · ${chapter.weekStart.slice(0, 4)}`}
     />,

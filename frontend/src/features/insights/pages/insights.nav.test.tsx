@@ -84,7 +84,9 @@ describe('mezo nav (real mode default)', () => {
   ])('%s owns a back chip that returns to the hub', async (path, label) => {
     const router = renderApp(path)
     const back = await screen.findByRole('button', { name: 'Vissza' })
-    expect(back).toHaveTextContent(label)
+    // the üveg back pill (PageHead glass) draws the ‹ as its own glyph element, so the text reads
+    // „‹Mezo” — match the label, not the exact spacing (mezo-me75u.8)
+    expect(back.textContent?.replace(/\s+/g, '')).toBe(label.replace(/\s+/g, ''))
     await userEvent.click(back)
     await waitFor(() => expect(router.state.location.pathname).toBe(label === '‹ Összes funkció' ? '/mezo/karakter/gepterem/osszes' : '/mezo'))
   })

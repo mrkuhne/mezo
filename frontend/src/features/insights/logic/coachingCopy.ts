@@ -7,7 +7,7 @@
 // round-2 rule appears without a frontend change (spec §5).
 // ============================================================
 import { huMonthDay } from '@/shared/lib/dates'
-import type { ClayIconName } from '@/shared/ui/clay'
+import type { Icon3DName } from '@/shared/ui/clay'
 import type { MozaikWash } from '@/shared/ui/mozaik'
 import type { CoachingRule, CoachingTraceDay } from '@/data/types'
 
@@ -31,30 +31,35 @@ export const STATE_LABEL: Record<CoachingState, string> = {
 
 export const WINNER_LABEL = 'Nyertes'
 
-/** `mzp-stch` modifiers — the Diagnózis chip recipe, reused rather than re-invented. */
-export const STATE_CHIP: Record<CoachingState, string> = {
-  raised: 'act',
-  suppressed: 'pend',
-  clear: 'ok',
-  unavailable: 'mut',
+/** A state chip's 3D icon — the üveg status table (bible rule 45): Jelzett → bell, Pihenőn →
+ *  hold, Rendben → tick, Nem mérhető → info. The winner stamp wears the star. */
+export const STATE_ART: Record<CoachingState, Icon3DName> = {
+  raised: 't-bell',
+  suppressed: 't-hold',
+  clear: 't-tick',
+  unavailable: 't-info',
 }
 
-/** domain → the tile's colour wash and clay icon. The server owns the DOMAIN; this owns how a
+export const WINNER_ART: Icon3DName = 't-star'
+
+/** domain → the tile's colour wash and 3D icon. The server owns the DOMAIN; this owns how a
  *  domain LOOKS. Fallback is not defensive dressing: it is the mechanism that lets a round-2 rule
- *  ship backend-only (`FlagCatalog.DOMAIN_FALLBACK` is literally `general`). */
-const DOMAIN_VISUAL: Record<string, { wash: MozaikWash; icon: ClayIconName }> = {
-  sleep: { wash: 'lav', icon: 'i-alvas' },
-  training: { wash: 'coral', icon: 'i-edzes' },
-  nutrition: { wash: 'sage', icon: 'i-fuel' },
-  recovery: { wash: 'sky', icon: 'i-hold' },
-  habits: { wash: 'gold', icon: 'i-lang' },
-  logging: { wash: 'white', icon: 'i-naplo' },
-  body: { wash: 'rose', icon: 'i-suly' },
+ *  ship backend-only (`FlagCatalog.DOMAIN_FALLBACK` is literally `general`).
+ *  The icons are Titanium 3D (üveg U8, mezo-me75u.8) and mapped HERE, not through `CLAY_TO_3D`:
+ *  `habits` wears the flame, which the shared map gives to energy (`i-lang` → t-bolt). */
+const DOMAIN_VISUAL: Record<string, { wash: MozaikWash; icon: Icon3DName }> = {
+  sleep: { wash: 'lav', icon: 't-sleep' },
+  training: { wash: 'coral', icon: 't-dumbbell' },
+  nutrition: { wash: 'sage', icon: 't-bowl' },
+  recovery: { wash: 'sky', icon: 't-moon' },
+  habits: { wash: 'gold', icon: 't-flame' },
+  logging: { wash: 'white', icon: 't-journal' },
+  body: { wash: 'rose', icon: 't-weight' },
 }
 
-const FALLBACK_VISUAL: { wash: MozaikWash; icon: ClayIconName } = { wash: 'white', icon: 'i-mezo' }
+const FALLBACK_VISUAL: { wash: MozaikWash; icon: Icon3DName } = { wash: 'white', icon: 't-chat' }
 
-export function visualOf(domain: string): { wash: MozaikWash; icon: ClayIconName } {
+export function visualOf(domain: string): { wash: MozaikWash; icon: Icon3DName } {
   return DOMAIN_VISUAL[domain] ?? FALLBACK_VISUAL
 }
 
