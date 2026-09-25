@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.entity.TestPlanEnvelope;
+import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.companion.reflection.service.KnowledgeRecheckService;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
@@ -20,14 +21,23 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * S2 (mezo-d6ivw.2) Task 5: the quarterly knowledge re-check — a confirmed, plan-less fact is
  * re-asked against the fresh 28-day context and, ONLY on a "drift" verdict, gets a hedged
  * observation row of its own. The confirmed row and its fact are never touched: code decides who
  * may write {@code status}, the LLM only phrases prose.
+ *
+ * <p>{@code quiet-from == quiet-to} disables {@code ObservationBudget}'s quiet-hours check
+ * entirely ({@code from.equals(to)} short-circuits it) — set here so these tests never go flaky
+ * depending on the wall-clock hour they happen to run at; the dedicated budget IT below covers
+ * the veto itself via {@code max-per-day=0} instead (the {@code QuickNoticeBudgetOffIT} idiom).
  */
 @ActiveProfiles("companion-fake")
+@TestPropertySource(properties = {
+        "mezo.companion.reflection.notice.quiet-from=00:00",
+        "mezo.companion.reflection.notice.quiet-to=00:00"})
 class KnowledgeRecheckServiceIT extends AbstractIntegrationTest {
 
     @Autowired private KnowledgeRecheckService recheckService;
@@ -36,6 +46,7 @@ class KnowledgeRecheckServiceIT extends AbstractIntegrationTest {
     @Autowired private KnowledgeFactRepository knowledgeFactRepository;
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private UserPopulator userPopulator;
+    @Autowired private FakeCompanionLlm fakeCompanionLlm;
 
     private static final String DEFAULT_CLAIM = "Reggelente fél liter vizet iszol.";
 
@@ -100,14 +111,32 @@ class KnowledgeRecheckServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testRunFor_shouldCreateNothing_whenLlmSaysHoldsOrUnknown() {
+    void testRunFor_shouldCreateNothing_whenLlmSaysHolds() {
         UUID owner = userPopulator.createUser().getId();
         confirmedPlanlessPromoted(owner,
                 "[[RECHECK:{\"verdict\":\"holds\",\"text\":\"\"}]]" + DEFAULT_CLAIM);
 
-        int created = recheckService.runFor(owner);
+        assertThat(recheckService.runFor(owner)).isEqualTo(0);
+    }
 
-        assertThat(created).isEqualTo(0);
+    @Test
+    void testRunFor_shouldCreateNothing_whenLlmSaysUnknown() {
+        UUID owner = userPopulator.createUser().getId();
+        confirmedPlanlessPromoted(owner,
+                "[[RECHECK:{\"verdict\":\"unknown\",\"text\":\"\"}]]" + DEFAULT_CLAIM);
+
+        assertThat(recheckService.runFor(owner)).isEqualTo(0);
+    }
+
+    /** Code decides on the VERDICT, but a blank {@code text} is refused too — an LLM answering
+     *  {@code drift} with nothing to say must never mint an empty-prose row. */
+    @Test
+    void testRunFor_shouldCreateNothing_whenLlmSaysDriftWithBlankText() {
+        UUID owner = userPopulator.createUser().getId();
+        confirmedPlanlessPromoted(owner,
+                "[[RECHECK:{\"verdict\":\"drift\",\"text\":\"   \"}]]" + DEFAULT_CLAIM);
+
+        assertThat(recheckService.runFor(owner)).isEqualTo(0);
     }
 
     @Test
@@ -136,10 +165,13 @@ class KnowledgeRecheckServiceIT extends AbstractIntegrationTest {
     void testRunFor_shouldSkip_whenFactIsMutedFromPrompt() {
         UUID owner = userPopulator.createUser().getId();
         confirmedPlanlessPromoted(owner, DEFAULT_CLAIM, false);
+        int callsBefore = fakeCompanionLlm.completeCallCount();
 
         int created = recheckService.runFor(owner);
 
         assertThat(created).isEqualTo(0);
+        // A muted fact is the user's own "leave it alone" — never even ASKED about.
+        assertThat(fakeCompanionLlm.completeCallCount()).isEqualTo(callsBefore);
     }
 
     @Test

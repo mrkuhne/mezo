@@ -10,12 +10,14 @@ import org.springframework.stereotype.Component;
 
 /**
  * Envelope S2 (mezo-d6ivw.2) Task 5's cron: the quarterly fan-out over every active user's
- * confirmed, plan-less facts (schedule: {@code mezo.companion.reflection.recheck-cron}, 04:20 on
- * the 1st of Jan/Apr/Jul/Oct — right after the 04:00 {@code QuarterlyReviewJob} dawn slot). Copies
- * the {@code QuarterlyReviewJob}/{@code UserFanOut} idiom: per-user isolation, one failing user
- * never aborts the sweep, {@code run()} deliberately NOT {@code @Transactional} so {@link
- * KnowledgeRecheckService#runFor}'s own {@code @Transactional} boundary (reached through the
- * self-injected proxy) stays the per-user isolation unit.
+ * confirmed, plan-less facts (schedule: {@code mezo.companion.reflection.recheck-cron}, 09:20 on
+ * the 1st of Jan/Apr/Jul/Oct — deliberately OUTSIDE the dawn cluster and its default 22:00–07:00
+ * quiet hours; see {@code application.yml}). Copies the {@code QuarterlyReviewJob}/{@code
+ * UserFanOut} idiom: per-user isolation, one failing user never aborts the sweep. {@code run()}
+ * is NOT {@code @Transactional} — nor is {@link KnowledgeRecheckService#runFor} any more; that
+ * service opens its OWN per-row {@code REQUIRES_NEW} transaction internally (see its class
+ * javadoc), so the per-user isolation this job provides and the per-row isolation the service
+ * provides are two independent, correctly nested boundaries.
  *
  * <p>Gated on {@code COMPANION_SWITCH} ∧ {@code REFLECTION_SWITCH} ∧ {@code
  * KNOWLEDGE_RECHECK_JOB_SWITCH} — {@link KnowledgeRecheckService} already requires the first two
