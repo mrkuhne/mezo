@@ -49,14 +49,14 @@ export const observations: Observation[] = [
     text: 'Kedden azt írtad, a hétfők nehezek. Tegnap hétfő volt, és a hangulatod **4 / 5**-re jött ki.',
     question: 'Ez most **ellene szól**. Egy nap még nem dönt — kíváncsi vagyok, te hogy látod.',
     // A drót strukturált bizonyíték-elemként küldi (ObservationEvidenceItem) — a kártya tagolt sorokra bontja.
-    evidence: ([
+    evidence: Array.of<WireEvidence>(
       { type: 'record', source: 'journal_entry', date: '2026-05-19',
         fields: {}, quote: 'A hétfők mindig nehezek, egész nap csak vonszoltam magam', ref: 'journal_entry:mock-1' },
       { type: 'record', source: 'check_in', date: '2026-05-21', time: '08:00',
         fields: { energy: '6', stress: '3', body: '7', mental: '7' }, quote: 'Meglepően jól indult a hét', ref: 'check_in:mock-2' },
       { type: 'record', source: 'check_in', date: '2026-05-21', time: '20:00',
         fields: { energy: '5', stress: '2', body: '7', mental: '8' }, ref: 'check_in:mock-3' },
-    ] as WireEvidence[]).map(mapEvidence),
+    ).map(mapEvidence),
     status: 'monitoring',
     evidenceHits: 1,
     evidenceMisses: 2,

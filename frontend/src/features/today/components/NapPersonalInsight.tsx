@@ -6,6 +6,9 @@ import type { Observation, ObservationChoice } from '@/data/types'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { localDateString } from '@/shared/lib/dates'
 import { Icon3D } from '@/shared/ui/clay'
+// Extension deliberately explicit: on a case-insensitive volume, extensionless resolution
+// matches the sibling `observationEvidence.ts` (module, tried first) before `.tsx` — dropping
+// the extension silently imports the wrong file (EvidenceList comes back undefined).
 import { EvidenceList } from '@/shared/ui/evidence/ObservationEvidence.tsx'
 import '@/features/today/components/NapPersonalInsight.css'
 

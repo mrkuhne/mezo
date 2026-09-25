@@ -221,7 +221,7 @@ test('older unanswered card retains its original observation date', () => {
 
 // mezo-d6ivw.1: a strukturált bizonyíték tagolt sorokká bomlik, két check-in közös
 // változás-grafikont kap, és a kérdés a válasz-pillek fölött ül.
-const RAW_EVIDENCE = ([
+const RAW_EVIDENCE = Array.of<WireEvidence>(
   { type: 'record', source: 'sport_session', date: '2026-09-17', time: '20:46',
     fields: { sport: 'volleyball', duration_min: '120', rpe: '7.0', shoulder_strain: '6', kcal: '975', kcal_is_estimate: 'true' },
     quote: 'Típus: Edzés' },
@@ -229,7 +229,7 @@ const RAW_EVIDENCE = ([
     fields: { energy: '7', stress: '2', body: '8', mental: '8' }, quote: 'Jól vagyok' },
   { type: 'record', source: 'check_in', date: '2026-09-22', time: '20:00',
     fields: { energy: '4', stress: '1', body: '9', mental: '10' }, quote: 'Jó a randi' },
-] as WireEvidence[]).map(mapEvidence)
+).map(mapEvidence)
 
 test('a Mezo-mondat egyenes szöveg, a nyers bizonyíték tagolt sorokként jelenik meg', () => {
   renderCard({ ...fresh, evidence: RAW_EVIDENCE })
