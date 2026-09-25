@@ -366,9 +366,10 @@ public class HypothesisPipelineService {
      * the caller handed no {@code extraContext}; every part is optional and a missing part is
      * simply left out.
      */
-    private String nightlyContext(UUID userId) {
+    String nightlyContext(UUID userId) {
         String digest = yesterdaySignalDigest(userId);
         String open = openHypotheses(userId);
+        String closed = closedHypotheses(userId);
         String memories = memoryBlock(userId, digest);
         StringBuilder out = new StringBuilder();
         if (!digest.isBlank()) {
@@ -377,6 +378,10 @@ public class HypothesisPipelineService {
         if (!open.isBlank()) {
             appendSection(out, "NYITOTT HIPOTÉZISEK (ezeket NE javasold újra — de revíziót "
                     + "javasolhatsz rájuk):\n" + open);
+        }
+        if (!closed.isBlank()) {
+            appendSection(out, "LEZÁRT SEJTÉSEK (a felhasználó vagy a mérés elvetette — ezeket "
+                    + "NE javasold újra, átfogalmazva, szinonimával vagy más teszttel sem):\n" + closed);
         }
         if (!memories.isBlank()) {
             appendSection(out, "EMLÉKEK (memória-platform):\n" + memories);
@@ -435,6 +440,20 @@ public class HypothesisPipelineService {
                         + " · " + p.getEvidenceHits() + " bejött / " + p.getEvidenceMisses() + " nem"
                         + (p.getHypothesisKey() == null ? "" : " · kulcs: " + p.getHypothesisKey())
                         + topicLabel(p) + newestReply(userId, p.getId()))
+                .collect(Collectors.joining("\n"));
+    }
+
+    /** S2 (mezo-d6ivw.2): the settled NOs. In the prompt so a reworded duplicate of a refuted
+     *  idea dies at PROPOSE/CRITIQUE — the unique index only catches the exact key. */
+    String closedHypotheses(UUID userId) {
+        return patternRepository
+                .findByCreatedByAndStatusInAndDeletedFalse(userId,
+                        Set.of(PatternEntity.STATUS_REFUTED, PatternEntity.STATUS_REJECTED))
+                .stream()
+                .filter(p -> !PatternEntity.KIND_STATISTICAL.equals(p.getKind()))
+                .map(p -> "- " + p.getTitle()
+                        + (p.getHypothesisKey() == null ? "" : " · kulcs: " + p.getHypothesisKey())
+                        + topicLabel(p))
                 .collect(Collectors.joining("\n"));
     }
 
