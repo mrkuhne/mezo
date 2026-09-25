@@ -5,6 +5,7 @@ import { Icon } from '@/shared/ui/Icon'
 import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
 import { useDecisionActions, useJournalActions, useGratitudeActions } from '@/data/hooks'
 import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
+import { VoiceBubble } from '@/shared/ui/voice/VoiceBubble'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
 import { GratitudeRows } from '@/features/me/components/GratitudeRows'
@@ -141,6 +142,7 @@ export function JournalSheet({ onClose, onBack, entry, initialMode }: JournalShe
                   >
                     <Icon name={recording ? 'voice-wave' : 'mic'} size={14} />
                   </button>
+                  <VoiceBubble voice={voice} domain="me" />
                 </div>
               )}
 

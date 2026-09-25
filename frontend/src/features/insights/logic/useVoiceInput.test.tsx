@@ -61,6 +61,38 @@ describe('useVoiceInput (mock mode)', () => {
     expect(result.current.state).toBe('idle')
   })
 
+  it('cancel discards the clip without transcribing', async () => {
+    installMediaStack()
+    const onTranscript = vi.fn()
+    const { result } = renderHook(() => useVoiceInput(onTranscript), { wrapper: makeHookWrapper() })
+
+    await act(async () => { result.current.toggle() })
+    expect(result.current.state).toBe('recording')
+    await act(async () => { result.current.cancel() })
+
+    expect(result.current.state).toBe('idle')
+    expect(result.current.error).toBeNull()
+    await new Promise((r) => setTimeout(r, 20))
+    expect(onTranscript).not.toHaveBeenCalled()
+  })
+
+  it('exposes a live level that stays at 0 without Web Audio', async () => {
+    installMediaStack()
+    const { result } = renderHook(() => useVoiceInput(vi.fn()), { wrapper: makeHookWrapper() })
+    await act(async () => { result.current.toggle() })
+    expect(result.current.levelRef.current).toBe(0)
+  })
+
+  it('drops a mis-tap with tap-to-toggle wording', async () => {
+    installMediaStack()
+    const { result } = renderHook(() => useVoiceInput(vi.fn()), { wrapper: makeHookWrapper() })
+    await act(async () => { result.current.toggle() })
+    const rec = FakeMediaRecorder.instances[0]
+    rec.stop = () => { rec.ondataavailable?.({ data: new Blob([new Uint8Array(10)]) }); rec.onstop?.() }
+    await act(async () => { rec.stop() })
+    await waitFor(() => expect(result.current.error).toMatch(/koppints/))
+  })
+
   it('is unsupported when the browser has no MediaRecorder', () => {
     vi.stubGlobal('MediaRecorder', undefined)
     Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined })

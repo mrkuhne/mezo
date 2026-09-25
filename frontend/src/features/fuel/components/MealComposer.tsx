@@ -58,6 +58,7 @@ import {
 } from '@/data/fuel/recipeMacros'
 import { RecipeOverrideRow } from '@/features/fuel/components/RecipeOverrideRow'
 import { useVoiceInput, type VoiceState } from '@/features/insights/logic/useVoiceInput'
+import { VoiceBubble } from '@/shared/ui/voice/VoiceBubble'
 
 /** A mikrofon állapot-feliratai (A6, mezo-33k6). A „nem támogatott" ág NEM hazudik működőt:
  *  a gomb tiltott, és a felirata megmondja, miért. */
@@ -702,7 +703,7 @@ export function MealComposer({
             </button>
           </div>
           {aiError && <p className="logflow-aierr">{aiError}</p>}
-          {voice.error && <p className="logflow-aierr">{voice.error}</p>}
+          <VoiceBubble voice={voice} domain="fuel" />
           <p className="logflow-aihint">
             Szöveg, hang vagy fotó — vagy mindhárom. A felismert sorok a tételek közé kerülnek, ott mindent átírhatsz.
           </p>
