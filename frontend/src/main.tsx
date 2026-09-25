@@ -7,9 +7,13 @@ import { QueryProvider } from '@/app/providers/QueryProvider'
 import { routes } from '@/app/router'
 import { ClaySprites } from '@/shared/ui/clay'
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary'
+import { installSwAutoReload } from '@/app/swAutoReload'
 import '@/index.css'
 
 const router = createBrowserRouter(routes)
+
+// Új verzió élesítése után a futó PWA ne maradjon a régi kódon (ld. swAutoReload.ts).
+installSwAutoReload()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
