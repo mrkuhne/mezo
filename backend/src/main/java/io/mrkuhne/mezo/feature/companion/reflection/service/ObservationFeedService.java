@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.reflection.service;
 
+import io.mrkuhne.mezo.api.dto.ObservationEvidenceItem;
 import io.mrkuhne.mezo.api.dto.ObservationResponse;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
@@ -97,7 +98,7 @@ public class ObservationFeedService {
             }
             boolean answeredBefore = replies.stream()
                     .anyMatch(reply -> reply.getOccurredAt().isBefore(event.getOccurredAt()));
-            (answeredBefore ? returning : fresh).add(eventCard(row, event,
+            (answeredBefore ? returning : fresh).add(eventCard(userId, row, event,
                     answeredBefore ? CARD_RETURN : CARD_FRESH, replies));
         }
 
@@ -110,7 +111,7 @@ public class ObservationFeedService {
                 .filter(row -> validEvidence(userId, row))
                 .filter(row -> java.util.stream.Stream.concat(fresh.stream(), returning.stream())
                         .noneMatch(card -> card.getPatternId().equals(row.getId())))
-                .map(row -> rowCard(row, CARD_WATCHING, row.getLastDetectedAt(),
+                .map(row -> rowCard(userId, row, CARD_WATCHING, row.getLastDetectedAt(),
                         replies(userId, repliesByRow, row.getId())))
                 .toList() : List.of();
 
@@ -126,7 +127,7 @@ public class ObservationFeedService {
             }
             // one card per row even if the day carries several confirmations — the newest wins
             if (confirmed.stream().noneMatch(c -> c.getId().equals(row.getId()))) {
-                confirmed.add(rowCard(row, CARD_CONFIRMED, event.getOccurredAt(),
+                confirmed.add(rowCard(userId, row, CARD_CONFIRMED, event.getOccurredAt(),
                         replies(userId, repliesByRow, row.getId())));
             }
         }
@@ -210,9 +211,41 @@ public class ObservationFeedService {
         return ref != null && ref.matches("[a-z_]+:[0-9a-fA-F-]{36}");
     }
 
-    private static List<String> displayEvidence(List<String> refs) {
+    private static ObservationEvidenceItem tag(String text) {
+        return ObservationEvidenceItem.builder().type("tag").text(text).build();
+    }
+
+    private ObservationEvidenceItem record(String ref, ObservationContextService.SourceRecord rec) {
+        return ObservationEvidenceItem.builder().type("record").source(rec.source())
+                .date(LocalDate.parse(rec.date())).time(rec.time())
+                .fields(rec.fields()).quote(rec.quote()).ref(ref).build();
+    }
+
+    /** Grounded lists: canonical refs re-read losslessly; the stored label that may follow a ref
+     *  (event snapshots interleave pairs) is consumed as fallback-only. Topic markers are dropped. */
+    private List<ObservationEvidenceItem> evidenceItems(UUID userId, List<String> refs) {
+        if (refs == null) return List.of();
+        var out = new ArrayList<ObservationEvidenceItem>();
+        for (int i = 0; i < refs.size(); i++) {
+            String ref = refs.get(i);
+            if (ref == null || ref.startsWith("observation-topic")) continue;
+            if (!canonicalReference(ref)) { out.add(tag(ref)); continue; }
+            String next = i + 1 < refs.size() ? refs.get(i + 1) : null;
+            String label = next != null && !canonicalReference(next) && !next.startsWith("observation-topic")
+                    ? next : null;
+            if (label != null) i++;
+            var fetched = observationContextService.fetch(userId, ref).filter(r -> r.date() != null);
+            if (fetched.isPresent()) out.add(record(ref, fetched.get()));
+            else if (label != null) out.add(tag(label));
+        }
+        return out;
+    }
+
+    /** Legacy quick-notice vocabulary (gratitude/chat_day refs, free-text labels) passes through
+     *  verbatim as tags — mirrors the old unfiltered read semantics. */
+    private static List<ObservationEvidenceItem> legacyItems(List<String> refs) {
         return refs == null ? List.of() : refs.stream().filter(Objects::nonNull)
-                .filter(ref -> !canonicalReference(ref) && !ref.startsWith("observation-topic"))
+                .map(ObservationFeedService::tag)
                 .toList();
     }
 
@@ -228,7 +261,7 @@ public class ObservationFeedService {
     }
 
     /** A {@code fresh}/{@code return} card renders ONE observation event; its id is the event's. */
-    private ObservationResponse eventCard(PatternEntity row, PatternEventEntity event, String card,
+    private ObservationResponse eventCard(UUID userId, PatternEntity row, PatternEventEntity event, String card,
                                           List<PatternEventEntity> replies) {
         PatternEventPayloadEnvelope payload = event.getPayload();
         String[] split = splitTextAndQuestion(payload.text());
@@ -237,14 +270,14 @@ public class ObservationFeedService {
                 .occurredAt(toOffset(event.getOccurredAt()))
                 .text(ObservationLead.strip(split[0]))
                 .question(split[1])
-                .evidence("grounded".equals(payload.channel()) ? displayEvidence(payload.evidenceRefs())
-                        : payload.evidenceRefs() == null ? List.of() : payload.evidenceRefs())
+                .evidence("grounded".equals(payload.channel()) ? evidenceItems(userId, payload.evidenceRefs())
+                        : legacyItems(payload.evidenceRefs()))
                 .repliedChoice(choiceAfter(replies, event.getOccurredAt()))
                 .build();
     }
 
     /** A {@code watching}/{@code confirmed} card renders the ROW's state; its id is the row's. */
-    private ObservationResponse rowCard(PatternEntity row, String card, Instant occurredAt,
+    private ObservationResponse rowCard(UUID userId, PatternEntity row, String card, Instant occurredAt,
                                         List<PatternEventEntity> replies) {
         return base(row, card)
                 .id(row.getId())
@@ -252,7 +285,7 @@ public class ObservationFeedService {
                 // no prose of its own: on these cards the tallies ARE the message
                 .text("")
                 .question(null)
-                .evidence(displayEvidence(row.getEvidence() == null ? null : row.getEvidence().items()))
+                .evidence(evidenceItems(userId, row.getEvidence() == null ? null : row.getEvidence().items()))
                 // the ROW's newest answer, NOT one anchored on `occurredAt`: `lastDetectedAt` is
                 // bumped by the nightly evaluation, which would re-arm the chips every night
                 .repliedChoice(newestChoice(replies))
