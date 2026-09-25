@@ -15165,6 +15165,10 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    Keep the parked light decoration; dark chrome has no colored wash or backdrop. */
 :root[data-theme="dark"] .app-head-bg {
   background: var(--canvas);
+  /* A világos mód 18px fade-tail-je (height: 100% + 18px) maszk nélkül és fedő canvasszal
+     tömör fekete sávként festett rá minden oldal tetejére (mezo-rqa9s) — sötétben nincs
+     áttűnés, a háttér ott ér véget, ahol a fejléc. */
+  height: 100%;
   -webkit-mask-image: none;
   mask-image: none;
 }
