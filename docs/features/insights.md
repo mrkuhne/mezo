@@ -473,6 +473,8 @@ lifecycle rows never render raw `r`/`p`/`n`, only the human
 `findingSentence`/`confidenceMeta`/`verdictSentence` translations that already existed
 (`logic/findings.ts`/`logic/verdicts.ts`, unchanged, still exercised by the dashboard).
 
+**Frozen day counts (`mezo-bsb6h`, 2026-09-25).** On a judged (`verdict: 'frozen'`) pair, `pair.n`/`alignedDays` are the aligned days AT THE DECISION, while the hero ring and the days card count the CURRENT window's plotted points (`days.length`). When they differ, `PatternDetailHero` names both — „A döntésedkor N közös nap …” + „Azóta az ablak továbbcsúszott: a grafikon most M napot mutat.” (`frozenDaysDiffer`) — and the „Hogyan számoltuk?” labels read „… a döntésedkor”. Never two bare, different day counts on one page (üveg bible rule 51).
+
 ### 2.9 Memória (`pages/MemoryPage.tsx`) — read-only memory-layer observatory since `mezo-al1i`
 At `/mezo/memoria`. **Its door is the hub's `Memória` tile** (§2.0 item 7 — a full-width L0→L3 band until `mezo-e3zg`), which mirrors on the hub exactly the four-layer stack this page unfolds. Its four page-local segments and every panel below are unchanged by Design 2.0; only the cross-links moved onto `/mezo`.
 The companion's own memory pipeline made legible: not another results tab, but a transparency page
