@@ -671,3 +671,40 @@ for (const [name, path] of NAPOM_ROUTES) {
     expect(spacing.rowBottom).toBeLessThanOrEqual(spacing.tabbarTop - 1)
   })
 }
+
+// ── Shell header tail (mezo-rqa9s): the dark chrome made `.app-head-bg` an OPAQUE canvas
+// slab and dropped the fade mask (mezo-x4r3c), but kept the light-mode 18px fade tail
+// (`height: calc(100% + 18px)`). Unmasked and opaque, the tail is a solid bar that
+// overpaints the first ~11px of every page's content at rest. Light mode keeps its tail —
+// there it fades to transparent by design — so the invariant is dark-only: the opaque
+// background ends where the header does, above where content begins.
+test('the dark shell header background does not overpaint the page top at rest', async ({ page }) => {
+  await page.setViewportSize({ width: 393, height: 852 })
+  await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
+  await page.addInitScript(() => localStorage.setItem('mezo-theme', 'dark'))
+  // Same seed as the A napom specs above: mark yesterday's review seen so the live page
+  // renders (not morning mode) — its week strip sits directly under the header, which is
+  // exactly where the tail bit (user report, 2026-09-25).
+  await page.addInitScript(() => { localStorage.setItem('napom.seen.2026-05-20', '1') })
+  await page.goto('/nap/napom')
+  await page.waitForLoadState('networkidle')
+  await page.evaluate(() => document.fonts.ready)
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+
+  const probe = await page.evaluate(() => {
+    const scroller = document.querySelector('.screen-content') as HTMLElement
+    const head = document.querySelector('.app-head') as HTMLElement
+    const bg = head.querySelector('.app-head-bg') as HTMLElement
+    const first = head.nextElementSibling as HTMLElement
+    return {
+      scrollTop: scroller.scrollTop,
+      bgBottom: bg.getBoundingClientRect().bottom,
+      contentTop: first.getBoundingClientRect().top,
+    }
+  })
+  expect(probe.scrollTop).toBe(0)
+  expect(
+    probe.bgBottom,
+    `the opaque header background ends at ${probe.bgBottom}px but content starts at ${probe.contentTop}px — the tail overpaints the page top`,
+  ).toBeLessThanOrEqual(probe.contentTop)
+})
