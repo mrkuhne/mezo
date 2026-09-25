@@ -28,10 +28,14 @@ test('tapping a populated tile reports its kind', () => {
   expect(onOpenKind).toHaveBeenCalledWith('GOAL')
 })
 
-test('populated tiles wear the kind wash, empty ones are dimmed', () => {
+test('populated tiles are glass in the kind accent, empty ones are dashed and inert (üveg U9)', () => {
   render(<KindTileGrid nodes={nodes} onOpenKind={() => {}} />)
-  expect(screen.getByRole('button', { name: 'Minták' })).toHaveClass('mz-w-sage')
-  const seasonTile = screen.getByText('Szezonok').closest('.tud-kind-empty')
+  const pattern = screen.getByRole('button', { name: 'Minták' })
+  expect(pattern).toHaveClass('glass')
+  expect(pattern.style.getPropertyValue('--c')).toBe('var(--dv-amber)')
+  expect(pattern.querySelector('.t-ico')).not.toBeNull()
+  const seasonTile = screen.getByText('Szezonok').closest('.tud9-kind-empty')
   expect(seasonTile).not.toBeNull()
-  expect(seasonTile).toHaveClass('mz-tile')
+  expect(seasonTile).not.toHaveClass('glass')
+  expect(seasonTile!.tagName).toBe('DIV')
 })

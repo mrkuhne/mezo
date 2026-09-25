@@ -130,7 +130,6 @@ import { KarakterHubPage } from '@/features/character/pages/KarakterHubPage'
 import { DimensionsPage } from '@/features/character/pages/DimensionsPage'
 import { DimensionPage } from '@/features/character/pages/DimensionPage'
 import { CharacterFeedPage } from '@/features/character/pages/CharacterFeedPage'
-import { CsapatPage } from '@/features/character/pages/CsapatPage'
 import { KonziliumPage } from '@/features/character/pages/KonziliumPage'
 import { GeptermPage } from '@/features/character/pages/GeptermPage'
 import { FutasokPage } from '@/features/character/pages/FutasokPage'
@@ -467,7 +466,9 @@ export const routes: RouteObject[] = [
       { path: 'mezo/karakter/dimenziok', element: <DimensionsPage /> },
       { path: 'mezo/karakter/dimenzio/:key', element: <DimensionPage /> },
       { path: 'mezo/karakter/feed', element: <CharacterFeedPage /> },
-      { path: 'mezo/karakter/csapat', element: <CsapatPage /> },
+      // The 9-expert roster retired (U9, mezo-me75u.9, owner 2026-09-25): the team is the csapatfal's
+      // five characters now — an old link lands on A csapat.
+      { path: 'mezo/karakter/csapat', element: <Navigate to="/mezo/csapat" replace /> },
       { path: 'mezo/karakter/konzilium', element: <KonziliumPage /> },
       // Gépterem (mezo-1gim.14, Task 4) — the geek-transparency hub + its Futások timeline +
       // the generic run-detail page every row (and, from Task 5, every Feed ⚙) opens into.

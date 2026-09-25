@@ -15,10 +15,16 @@
 // refCount is 0 rather than printed as a hollow zero. `refCount > 0` stays wired up for when a
 // future contract change actually starts populating refIds — this line isn't dead code, its
 // input just happens to always be zero today.
+//
+// Üveg re-dress (U9, mezo-me75u.9): uveg-mezo-teljes-u9.js `futas()` jellánc — a FLAT panel in
+// the observing character's accent (left accent edge): numbered badge + monospace detector-key
+// chip(s), the code line, ↓, then the character figure + name + the observation. `expertName`
+// is the csapatfal character's name (RunPage passes `personaName`).
 // ============================================================
 import type { CSSProperties } from 'react'
 import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import { expertColor } from '@/features/character/expertColors'
+import { personaCharacter } from '@/features/character/personaCharacter'
 import type { CharacterRunObservation } from '@/data/character/characterApi'
 
 export function SignalChainCard({ observation, index, expertName }: {
@@ -27,26 +33,27 @@ export function SignalChainCard({ observation, index, expertName }: {
   index: number
   expertName: string
 }) {
+  const accent = personaCharacter(observation.expertKey).accent
   return (
-    <div className="kr-chain rise" style={{ '--d': `${index * 60}ms` } as CSSProperties}>
-      <div className="kr-chain-num">{index + 1}</div>
-      <div className="kr-chain-body">
+    <div className={`gtm-chain tf-c-${accent} rise`} style={{ '--d': `${index * 60}ms` } as CSSProperties}>
+      <div className="gtm-chain-th">
+        <span className="gtm-chain-num">{index + 1}</span>
         {observation.signals.map((signal, i) => (
-          <div className="kr-chain-code" key={`${signal.detectorKey}-${i}`}>
-            <span className="kr-detchip">{signal.detectorKey}</span>
-            <span className="kr-chain-codetxt">{signal.summary}</span>
-            {signal.refCount > 0 && <span className="kr-refcount">{signal.refCount} forrás-hivatkozás</span>}
-          </div>
+          <span className="gtm-det" key={`${signal.detectorKey}-${i}`}>{signal.detectorKey}</span>
         ))}
-        <div className="kr-chain-arrow" aria-hidden="true">↓</div>
-        <div className="kr-chain-llm">
-          <PersonaOrb expertKey={observation.expertKey} size={26} />
-          <div className="kr-chain-llmtxt" style={{ '--tc': expertColor(observation.expertKey) } as CSSProperties}>
-            <b>{expertName}</b>
-            <p>{observation.text}</p>
-          </div>
-        </div>
       </div>
+      {observation.signals.map((signal, i) => (
+        <p className="gtm-chain-code" key={`${signal.detectorKey}-${i}`}>
+          {signal.summary}
+          {signal.refCount > 0 && <span className="gtm-refcount"> · {signal.refCount} forrás-hivatkozás</span>}
+        </p>
+      ))}
+      <span className="gtm-chain-arrow" aria-hidden="true">↓</span>
+      <div className="gtm-chain-who">
+        <PersonaOrb expertKey={observation.expertKey} size={30} />
+        <b style={{ color: expertColor(observation.expertKey) }}>{expertName}</b>
+      </div>
+      <p className="gtm-chain-obs">{observation.text}</p>
     </div>
   )
 }

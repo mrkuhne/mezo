@@ -12,18 +12,28 @@
 //    the timeline that never got a row at all. Uses `.kr-degraded` — the feature's ONE
 //    established 404/switch-off idiom (DimensionPage, DimensionsPage, KarakterHubPage,
 //    CharacterFeedPage all render the same bordered card; fix round 1 caught this page using
-//    a different, one-off class, `.kr-konz-empty`, borrowed from KonziliumPage).
+//    a different, one-off class, `.kr-konz-empty`, borrowed from KonziliumPage). Üveg re-dress
+//    (U9): the not-found face is the csapatfal's dashed `tf-dash` (bible §3 rank 4).
 //  · NIGHTLY + observationCount === 0 AND detectorKeys.length === 0 (isQuietNightly) -> the
 //    proud quiet-night face (QUIET_MSG) — never a fabricated signal chain for a night nothing
 //    fired on. A catch-up run (detectors fired but no observation resulted — isCatchUpNightly)
 //    is a DIFFERENT honest state (CATCHUP_MSG), never the quiet-night face (final review, I3).
 //  · conference-kind runs (WEEKLY/MONTHLY/BOOTSTRAP) never show a "0 hívás" flow-strip cell
 //    (binding ruling — see `flowSteps` below).
+//
+// Üveg re-dress (U9, mezo-me75u.9) — uveg-mezo-teljes-u9.js `futas()`: the slate dev-door head
+// (Futás · date / kind), a lede sentence, the flow strip as flat numeral cells, sage flat notes,
+// the signal chain as flat panels in the observing character's accent, flat op chips, and the
+// AI-napló row as the page's one glass object. Expert names are the csapatfal characters'
+// (`personaName`, owner 2026-09-25); keys and calls are unchanged.
 // ============================================================
 import { useNavigate, useParams } from 'react-router-dom'
 import '@/features/character/character.css'
-import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
-import { PageHead } from '@/shared/ui/mozaik'
+import '@/features/insights/boop-world.css'
+import { Icon3D } from '@/shared/ui/clay'
+import { Boop } from '@/shared/ui/clay/boop/Boop'
+import { GepteremHead } from '@/features/character/components/GepteremHead'
+import { personaCharacter, personaName } from '@/features/character/personaCharacter'
 import { useCharacterExperts, useCharacterRun } from '@/data/hooks'
 import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import { RunFlowStrip, type RunFlowStep } from '@/features/character/components/RunFlowStrip'
@@ -92,7 +102,9 @@ export function RunPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { run, isLoading } = useCharacterRun(id ?? null)
-  const { experts, isLoading: expertsLoading } = useCharacterExperts()
+  // The expert catalog still gates the first paint (unchanged); the NAMES shown are the
+  // csapatfal characters' (U9, owner 2026-09-25) — `personaName`, not the catalog displayName.
+  const { isLoading: expertsLoading } = useCharacterExperts()
 
   if (isLoading || expertsLoading) return null
 
@@ -100,128 +112,131 @@ export function RunPage() {
 
   if (run == null) {
     return (
-      <div className="kr-hub">
-        <PageHead onBack={goFutasok} label="‹ Futások" />
-        <div className="kr-degraded">Ez a futás nem található.</div>
+      <div className="tf-page tf-c-slate gtm-page gtm-run-page">
+        <GepteremHead small="Futás" title="Futás" onBack={goFutasok} />
+        <div className="tf-dash gtm-notfound" data-state="not-found">
+          <Icon3D name="t-info" size={26} /><span>Ez a futás nem található.</span>
+        </div>
       </div>
     )
   }
 
   const { summary } = run
-  const expertName = (key: string) => experts.find((e) => e.key === key)?.displayName ?? key
+  const expertName = (key: string) => personaName(key)
   const quietNight = isQuietNightly(summary)
   const catchUpNight = isCatchUpNightly(summary)
   const steps = flowSteps(summary)
+  const small = `Futás · ${huMonthDay(summary.day)}.${quietNight ? ' · csendes nap' : ''}`
 
   return (
-    <div className="kr-hub">
-      <PageHead onBack={goFutasok} label="‹ Futások" />
-      <div className="mz-page-hero">
-        <div className="kr-run-ic">
-          <ClaySpot name={summary.kind === 'NIGHTLY' ? 's-orb-ejszaka' : 's-orb'} size={54} />
-        </div>
-        <div className="mz-hero-nm">{KIND_LABEL[summary.kind]}</div>
-        <div className="mz-hero-sb">
-          {huMonthDay(summary.day)}.
-          {quietNight && <span className="kr-quietmark"> · csendes nap</span>}
-        </div>
-        <p className="kr-runlede">{runHeroLede(summary, expertName)}</p>
-      </div>
+    <div className="tf-page tf-c-slate gtm-page gtm-run-page">
+      <GepteremHead small={small} title={KIND_LABEL[summary.kind]} onBack={goFutasok} />
+      <p className="gtm-lede gtm-runlede">{runHeroLede(summary, expertName)}</p>
 
-      <div className="mz-page-body">
-        {steps != null && <RunFlowStrip steps={steps} />}
+      {steps != null && <RunFlowStrip steps={steps} />}
 
-        {quietNight && (
-          <>
-            <div className="kr-quietnote">{QUIET_MSG}</div>
-            <div className="kr-runsubttl">Hívott szakértők</div>
-            {summary.status === 'SUCCESS' && <p className="kr-sectnote">{NOT_CALLED_LINE}</p>}
-          </>
-        )}
+      {quietNight && (
+        <>
+          <div className="gtm-pnote tf-c-sage" data-state="quiet">{QUIET_MSG}</div>
+          <div className="tf-sec"><h2>Hívott szakértők</h2></div>
+          {summary.status === 'SUCCESS' && <p className="gtm-lede">{NOT_CALLED_LINE}</p>}
+        </>
+      )}
 
-        {/* I3 (final review): a catch-up run (detectors fired, but no observation came out of
-           it — e.g. the day's signals were already processed by an earlier run) is NOT a quiet
-           night and must not render the proud QUIET_MSG face; it gets its own honest note and
-           skips the signal-chain / "Hívott szakértők" sections entirely, since there is neither
-           a chain to show nor an expert that was actually called. */}
-        {catchUpNight && <div className="kr-quietnote">{CATCHUP_MSG}</div>}
+      {/* I3 (final review): a catch-up run (detectors fired, but no observation came out of
+         it — e.g. the day's signals were already processed by an earlier run) is NOT a quiet
+         night and must not render the proud QUIET_MSG face; it gets its own honest note and
+         skips the signal-chain / "Hívott szakértők" sections entirely, since there is neither
+         a chain to show nor an expert that was actually called. */}
+      {catchUpNight && <div className="gtm-pnote tf-c-sage" data-state="catch-up">{CATCHUP_MSG}</div>}
 
-        {summary.kind === 'NIGHTLY' && !quietNight && !catchUpNight && (
-          <>
-            {run.observations.map((obs, i) => (
-              <SignalChainCard key={obs.id} observation={obs} index={i} expertName={expertName(obs.expertKey)} />
-            ))}
-            <div className="kr-runsubttl">Hívott szakértők</div>
-            <div className="kr-opchips">
-              {summary.expertKeys.map((key) => (
-                <div className="kr-opchip" key={key}>
-                  <PersonaOrb expertKey={key} size={20} />
-                  <div className="kr-opchip-tx"><b>{expertName(key)}</b><small>{OP_LABEL.NIGHTLY}</small></div>
-                </div>
-              ))}
-            </div>
-            {summary.status === 'SUCCESS' && <p className="kr-sectnote">{NOT_CALLED_LINE}</p>}
-          </>
-        )}
+      {summary.kind === 'NIGHTLY' && !quietNight && !catchUpNight && (
+        <>
+          {run.observations.length > 0 && (
+            <div className="tf-sec"><h2>A jellánc</h2><span className="tf-hint">Egy sor = egy megfigyelés</span></div>
+          )}
+          {run.observations.map((obs, i) => (
+            <SignalChainCard key={obs.id} observation={obs} index={i} expertName={expertName(obs.expertKey)} />
+          ))}
+          <div className="tf-sec"><h2>Hívott szakértők</h2></div>
+          <OpChips keys={summary.expertKeys} name={expertName} op={OP_LABEL.NIGHTLY} />
+          {summary.status === 'SUCCESS' && <p className="gtm-lede gtm-notcalled">{NOT_CALLED_LINE}</p>}
+        </>
+      )}
 
-        {summary.kind !== 'NIGHTLY' && summary.kind !== 'EDITION' && (
-          <>
-            <div className="kr-runsubttl">Hívott szakértők</div>
-            <div className="kr-opchips">
-              {summary.expertKeys.map((key) => (
-                <div className="kr-opchip" key={key}>
-                  <PersonaOrb expertKey={key} size={20} />
-                  <div className="kr-opchip-tx"><b>{expertName(key)}</b><small>{OP_LABEL[summary.kind]}</small></div>
-                </div>
-              ))}
-            </div>
-            {/* Konzílium-futásnál a valódi transzkriptre visz — KonziliumPage's own `?id=`
-               idiom (frontend/src/features/character/pages/KonziliumPage.tsx). MONTHLY/
-               BOOTSTRAP link the same way when they carry a conferenceId (both do, per the
-               mock seed) since their outcome also lives on a konzílium record. */}
-            {summary.conferenceId != null && (
+      {summary.kind !== 'NIGHTLY' && summary.kind !== 'EDITION' && (
+        <>
+          <div className="tf-sec"><h2>Hívott szakértők</h2></div>
+          <OpChips keys={summary.expertKeys} name={expertName} op={OP_LABEL[summary.kind]} />
+          {/* Konzílium-futásnál a valódi transzkriptre visz — KonziliumPage's own `?id=`
+             idiom (frontend/src/features/character/pages/KonziliumPage.tsx). MONTHLY/
+             BOOTSTRAP link the same way when they carry a conferenceId (both do, per the
+             mock seed) since their outcome also lives on a konzílium record. */}
+          {summary.conferenceId != null && (
+            <div className="gtm-ctarow">
               <button
                 type="button"
-                className="cta kr-runlink"
+                className="tf-c-gold gtm-cta"
                 onClick={() => navigate(`/mezo/karakter/konzilium?id=${summary.conferenceId}`)}
               >
                 Teljes transzkript megnyitása ›
               </button>
-            )}
-          </>
-        )}
-
-        {/* Fix round (mezo-a9bo7.12): EDITION posts AS the team characters — "Hívott szakértők" +
-           a "consumed observations" flow strip / transcript link are all NIGHTLY/WEEKLY/MONTHLY/
-           BOOTSTRAP concepts that don't apply here (the run's own content IS the edition's posts,
-           surfaced on CharacterFeedPage — no separate transcript to open). Chips get their own
-           honest header and resolve names from the FE team registry, not the expert catalog. */}
-        {summary.kind === 'EDITION' && (
-          <>
-            <div className="kr-runsubttl">Posztoló karakterek</div>
-            <div className="kr-opchips">
-              {summary.expertKeys.map((key) => (
-                <div className="kr-opchip" key={key}>
-                  <PersonaOrb expertKey={key} size={20} />
-                  <div className="kr-opchip-tx"><b>{teamCharacterName(key)}</b><small>{OP_LABEL.EDITION}</small></div>
-                </div>
-              ))}
             </div>
-          </>
-        )}
+          )}
+        </>
+      )}
 
-        {/* AI-napló mélylink (task-4 brief): AiCallFilters' `filters` state is a plain
-           useState in AdminCostPage (frontend/src/features/admin/pages/AdminCostPage.tsx,
-           moved from features/me under /admin in mezo-d5iy.13), not URL-driven — there is
-           no `?feature=` param it reads. Navigating unfiltered rather than fabricating
-           query-param support the target page doesn't have; an honest gap, not a shortcut
-           (task-4 brief's explicit fallback for this case). */}
-        <button type="button" className="kr-ainaplolink" onClick={() => navigate('/admin/cost')}>
-          <ClayIcon name="i-tudas" size={22} />
-          <div className="kr-tx">Ehhez a futáshoz tartozó nyers hívások az AI-naplóban</div>
-          <span className="kr-chev" aria-hidden="true">›</span>
+      {/* Fix round (mezo-a9bo7.12): EDITION posts AS the team characters — "Hívott szakértők" +
+         a "consumed observations" flow strip / transcript link are all NIGHTLY/WEEKLY/MONTHLY/
+         BOOTSTRAP concepts that don't apply here (the run's own content IS the edition's posts,
+         surfaced on CharacterFeedPage — no separate transcript to open). Chips get their own
+         honest header and resolve names from the FE team registry, not the expert catalog. */}
+      {summary.kind === 'EDITION' && (
+        <>
+          <div className="tf-sec"><h2>Posztoló karakterek</h2></div>
+          <OpChips keys={summary.expertKeys} name={teamCharacterName} op={OP_LABEL.EDITION} teamChars />
+        </>
+      )}
+
+      {/* AI-napló mélylink (task-4 brief): AiCallFilters' `filters` state is a plain
+         useState in AdminCostPage (frontend/src/features/admin/pages/AdminCostPage.tsx,
+         moved from features/me under /admin in mezo-d5iy.13), not URL-driven — there is
+         no `?feature=` param it reads. Navigating unfiltered rather than fabricating
+         query-param support the target page doesn't have; an honest gap, not a shortcut
+         (task-4 brief's explicit fallback for this case). The page's ONE glass object. */}
+      <div className="tf-rows gtm-airow">
+        <button type="button" className="glass tf-rowg tf-c-slate gtm-ai" onClick={() => navigate('/admin/cost')}>
+          <Icon3D name="t-journal" size={30} />
+          <span className="tf-rowtxt">
+            <span className="tf-rowname">Ehhez a futáshoz tartozó nyers hívások az AI-naplóban</span>
+          </span>
+          <span className="tf-rowbadge" aria-hidden="true">›</span>
         </button>
       </div>
+    </div>
+  )
+}
+
+/** The called experts / posting characters as flat chips: the character figure, its name and
+ *  the op label, in the character's own accent. EDITION keys are already team-character ids
+ *  (`teamChar`), so they draw the team avatar directly instead of the persona → character fold. */
+function OpChips({ keys, name, op, teamChars = false }: {
+  keys: string[]; name: (key: string) => string; op: string; teamChars?: boolean
+}) {
+  return (
+    <div className="gtm-pills">
+      {keys.map((key) => {
+        const team = teamChars ? TEAM[key as TeamCharacterId] : undefined
+        const accent = (team ?? personaCharacter(key)).accent
+        return (
+          <div className={`gtm-pill tf-c-${accent}`} key={key}>
+            {team != null
+              ? <span className={`tf-av tf-c-${team.accent} kr-persona`} aria-hidden="true"><Boop domain={team.boop} size={18} alive /></span>
+              : <PersonaOrb expertKey={key} size={22} />}
+            <span className="gtm-pill-tx"><b>{name(key)}</b><small>{op}</small></span>
+          </div>
+        )
+      })}
     </div>
   )
 }

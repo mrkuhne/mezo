@@ -1,13 +1,12 @@
 import { useState } from 'react'
-import { Icon } from '@/shared/ui/Icon'
-import { ClaySpot } from '@/shared/ui/clay'
-import { factCategoryColor, factCategoryLabel } from '@/data/insights/knowledge'
+import { Icon3D } from '@/shared/ui/clay'
+import { factCategoryLabel } from '@/data/insights/knowledge'
 import type { FactCandidate, FactDecision, KnowledgeFact } from '@/data/types'
 
 /**
- * Egy jóváhagyásra váró jelölt (mezo-9ryh · re-face mezo-d20.5.5) — a prototype mezo-body
- * `.candc` arany-gyűrűs inbox-kártyája: figyelő orb + kategória-címke, a jelölt szövege,
- * a proveniencia-mondat, és a három 44pt-os döntésgomb. A „Pontosít" inline input
+ * Egy jóváhagyásra váró jelölt (mezo-9ryh · üveg U9 mezo-me75u.9) — a csapatfal-világ arany
+ * üveg-ügye (`glass tf-case`): „Tényjelölt" státusz + kategória, a jelölt szövege, a
+ * proveniencia-mondat, és a három döntésgomb (Elfogad világít). A „Pontosít" inline input
  * viselkedése változatlan (V1.2 L2 döntés, a confirm sosem néma).
  *
  * Konfliktus-jelzés (Task 12, mezo-ms9a): ha a base view a jelölthöz egy ütköző, létező
@@ -25,7 +24,6 @@ export function FactCandidateCard({ candidate, onDecide, conflictFact = null, on
   const [refining, setRefining] = useState(false)
   const [refinedText, setRefinedText] = useState(candidate.text)
   const [turnOffOld, setTurnOffOld] = useState(true)
-  const color = factCategoryColor(candidate.category)
 
   const decide = (decision: FactDecision, text?: string) => {
     if (text === undefined) onDecide(decision)
@@ -36,66 +34,67 @@ export function FactCandidateCard({ candidate, onDecide, conflictFact = null, on
   }
 
   return (
-    <div className="mz-candc">
-      <div className="row gap-sm" style={{ alignItems: 'center' }}>
-        <ClaySpot name="s-orb-figyel" size={26} />
-        <span className="label-mono" style={{ fontSize: 9, color }}>{factCategoryLabel(candidate.category)}</span>
-      </div>
-      <p style={{ fontSize: 15, lineHeight: 1.4, color: 'var(--text-primary)', margin: '6px 0 0' }}>{candidate.text}</p>
-      <p className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5, margin: '4px 0 0' }}>
-        Ezt a beszélgetésből szűrtem ki — csak akkor jegyzem meg, ha elfogadod.
-      </p>
+    <article className="glass tf-case tf-c-gold tf-s-gold tud9-case tud9-cand" data-fact-candidate>
+      <span className="tf-crow">
+        <span className="tf-st">Tényjelölt</span>
+        <em>{factCategoryLabel(candidate.category)}</em>
+      </span>
+      <span className="tf-cmain">
+        <Icon3D name="t-note" size={36} />
+        <span className="tf-ctxt">
+          <span className="tf-ctitle">{candidate.text}</span>
+          <span className="tf-csub">Ezt a beszélgetésből szűrtem ki — csak akkor jegyzem meg, ha elfogadod.</span>
+        </span>
+      </span>
 
       {conflictFact && (
-        <div className="col gap-xs" style={{ marginTop: 8 }}>
-          <p className="text-secondary mz-icin" style={{ fontSize: 12, lineHeight: 1.5, margin: 0, color: 'var(--mz-cell-amber-ink)' }}>
-            <Icon name="warning" size={12} /> Ellentmond ennek: »{conflictFact.text}«
+        <div className="tud9-conflictw">
+          <p className="tud9-conflict">
+            <Icon3D name="t-info" size={18} /> Ellentmond ennek: »{conflictFact.text}«
           </p>
-          <label className="row gap-sm" style={{ alignItems: 'center', fontSize: 12 }}>
+          <label className="tud9-chk">
             <input
               type="checkbox"
               aria-label="A régit kikapcsolom"
               checked={turnOffOld}
               onChange={(e) => setTurnOffOld(e.target.checked)}
             />
+            <i aria-hidden="true"><Icon3D name="t-tick" size={14} /></i>
             A régit kikapcsolom
           </label>
         </div>
       )}
 
       {refining ? (
-        <div className="row gap-sm" style={{ alignItems: 'center', marginTop: 10 }}>
+        <div className="tud9-refine">
           <input
+            className="tud9-input"
             aria-label="Pontosított tény"
             value={refinedText}
             onChange={(e) => setRefinedText(e.target.value)}
-            style={{
-              flex: 1, fontSize: 12, padding: '6px 8px', borderRadius: 6,
-              border: '1px solid var(--border-default)', background: 'var(--surface-0)', color: 'var(--text-primary)',
-            }}
           />
-          <button type="button" className="mz-decbtn primary" disabled={!refinedText.trim()} onClick={() => decide('refine', refinedText.trim())}>
+          <button type="button" className="tud9-btn is-main" disabled={!refinedText.trim()} onClick={() => decide('refine', refinedText.trim())}>
             Mentés
           </button>
         </div>
       ) : (
         <>
-          <div className="mz-decrow">
-            <button type="button" className="mz-decbtn primary" onClick={() => decide('accept')}>
-              Elfogad
+          <div className="tud9-acts">
+            <button type="button" className="tud9-btn is-main" onClick={() => decide('accept')}>
+              <Icon3D name="t-tick" size={20} />Elfogad
             </button>
-            <button type="button" className="mz-decbtn" onClick={() => setRefining(true)}>
-              Pontosít
+            <button type="button" className="tud9-btn" onClick={() => setRefining(true)}>
+              <Icon3D name="t-pencil" size={20} />Pontosít
             </button>
-            <button type="button" className="mz-decbtn" onClick={() => decide('reject')}>
-              Elvet
+            <button type="button" className="tud9-btn" onClick={() => decide('reject')}>
+              <Icon3D name="t-skip" size={20} />Elvet
             </button>
           </div>
-          <p className="text-tertiary" style={{ fontSize: 10.5, lineHeight: 1.5, margin: '8px 0 0' }}>
+          <p className="tud9-foot">
             Elfogad → bekerül a tudástárba · Pontosít → átírod a szövegét · Elvet → eldobom.
           </p>
         </>
       )}
-    </div>
+    </article>
   )
 }

@@ -105,10 +105,10 @@ describe('FutasokPage', () => {
   // Fix round 1 (a11y): the week-label button's `aria-label="Hét választása"` is gone — its
   // accessible name is now its own visible content (the browsed week range + status text),
   // so the open-menu trigger is queried by that text instead of the retired label. Scoped to
-  // `.kr-weeklbl-btn` specifically — once the jump menu is open, one of its chips can carry
+  // the week pill (`.gtm-wl`, formerly `.kr-weeklbl-btn`) specifically — once the jump menu is open, one of its chips can carry
   // the SAME "aug. 24. – aug. 30." text (whenever the real wall-clock "current week" puts
   // 2026-08-24 among the last-8-Mondays list), so a bare text match is ambiguous.
-  const weekLabelBtn = () => document.querySelector('.kr-weeklbl-btn')!
+  const weekLabelBtn = () => document.querySelector('.gtm-wl')!
 
   test('the week label opens a jump menu of recent weeks', async () => {
     renderPage()
@@ -139,6 +139,26 @@ describe('FutasokPage', () => {
     expect(screen.getByText('Ritkább futások')).toBeInTheDocument()
     expect(screen.getByText('Havi mélyolvasás')).toBeInTheDocument()
     expect(screen.getByText(/16 állítás újramérlegelve/)).toBeInTheDocument()
+  })
+
+  // Üveg re-dress (U9, mezo-me75u.9) — bible §3.4 ranking carries meaning: a run that produced
+  // something is a glass case, a quiet night is flat, an unfinished NIGHTLY is flat with an amber
+  // state; missing days are dashed.
+  test('ranks run rows: signal run = glass, quiet night = flat, unfinished night = flat + amber', () => {
+    hoisted.weekRuns = [
+      NIGHTLY_SIGNAL,
+      NIGHTLY_QUIET('25'),
+      { ...NIGHTLY_SIGNAL, id: 'ejsz-26', day: '2026-08-26', status: 'FAILED', observationCount: 1 },
+    ]
+    renderPage()
+    const row = (text: string | RegExp) => screen.getByText(text).closest('button')!
+    expect(row('2 megfigyelés · 2 szakértő hívva')).toHaveClass('glass')
+    expect(row('2 megfigyelés · 2 szakértő hívva')).toHaveAttribute('data-rank', 'glass')
+    expect(row('csendes nap · 0 hívás')).not.toHaveClass('glass')
+    expect(row('csendes nap · 0 hívás')).toHaveAttribute('data-rank', 'flat')
+    expect(row('hiányos feldolgozás · 1 megfigyelés')).not.toHaveClass('glass')
+    expect(row('hiányos feldolgozás · 1 megfigyelés')).toHaveAttribute('data-rank', 'incomplete')
+    expect(screen.getAllByText('nincs adat erről az éjszakáról')[0].closest('.tf-dash')).toBeInTheDocument()
   })
 
   describe('M8 (final review): future days inside the current week', () => {

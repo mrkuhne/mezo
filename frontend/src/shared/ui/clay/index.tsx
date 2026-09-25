@@ -90,6 +90,8 @@ export type Icon3DName =
   | 't-flag' | 't-brain'
   // U8 (mezo-me75u.8) — owner OK on prototypes/uveg-mezo.html#ikonok
   | 't-whistle' | 't-eye' | 't-card' | 't-diagnose' | 't-album' | 't-layers' | 't-pencil'
+  // U9 (mezo-me75u.9) — owner OK 2026-09-25 on prototypes/uveg-mezo-teljes.html#ikonok9
+  | 't-council' | 't-radar' | 't-graph' | 't-grid'
 
 /** Mounts the clay + Titanium <symbol>/<gradient> defs once (main.tsx). */
 export const ClaySprites = memo(function ClaySprites() {

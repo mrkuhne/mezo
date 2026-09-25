@@ -73,6 +73,14 @@ test('the sprite carries the U8 Mezo I icons', () => {
   }
 })
 
+// U9 (mezo-me75u.9): konzílium, detektor, kapcsolatok, összes funkció — owner OK 2026-09-25.
+test('the sprite carries the U9 Mezo II icons', () => {
+  const ids = symbolIds()
+  for (const id of ['t-council', 't-radar', 't-graph', 't-grid'] satisfies Icon3DName[]) {
+    expect(ids, id).toContain(id)
+  }
+})
+
 test('every symbol is 64×64 art (Icon3D renders viewBox 0 0 64 64)', () => {
   const { container } = render(<ClaySprites />)
   const syms = container.querySelectorAll('symbol[id^="t-"]')

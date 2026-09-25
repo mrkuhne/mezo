@@ -149,27 +149,25 @@ test('/mezo/karakter/dimenziok is the Dimenziók list — a stable full-page sib
   renderApp('/mezo/karakter/dimenziok')
   // Mock mode starts pre-bootstrap (MOCK_OVERVIEW_EMPTY — 7 CORE dims only, no CHAPTER yet),
   // so the derived count here is 7, not the fully-seeded dossier's 8.
-  expect(await screen.findByText('7 témakör · mindegyik pontosítható')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Fizikai' })).toBeInTheDocument()
+  expect(await screen.findByText(/7 témakör · mindegyik pontosítható/i)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Fizikai/ })).toBeInTheDocument()
 })
 
 test('/mezo/karakter/dimenzio/:key opens one dimension\'s claims (mezo-1gim.13, Task 4)', async () => {
   renderApp('/mezo/karakter/dimenzio/physical')
-  expect(await screen.findByText('Fizikai')).toBeInTheDocument()
+  expect((await screen.findAllByText('Fizikai')).length).toBeGreaterThan(0)
   expect(screen.getByText('Beszélgess erről Mezóval')).toBeInTheDocument()
 })
 
-test('/mezo/karakter/feed opens the social feed navigation and filters', async () => {
+test('/mezo/karakter/feed opens the feed with its filters — no in-page tab strip (mezo-me75u.9)', async () => {
   renderApp('/mezo/karakter/feed')
-  expect(await screen.findByRole('button', { name: 'Üzenőfal' })).toHaveAttribute('aria-current', 'page')
-  expect(screen.getByRole('button', { name: 'Beszélgetések' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Beszélgetések' })).toBeInTheDocument()
+  expect(screen.queryByRole('navigation', { name: /karakter/i })).not.toBeInTheDocument()
 })
 
-test('/mezo/karakter/csapat is the 9-persona team page (mezo-1gim.13, Task 5)', async () => {
+test('/mezo/karakter/csapat redirects to A csapat — the 9-expert roster retired (mezo-me75u.9)', async () => {
   renderApp('/mezo/karakter/csapat')
-  expect(await screen.findByText('Különböző nézőpontok, egy közös kép rólad.')).toBeInTheDocument()
-  expect(screen.getByText('Doki')).toBeInTheDocument()
-  expect(screen.getByText('Elnök · Integrátor')).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'A csapat' })).toBeInTheDocument()
 })
 
 test('/mezo/karakter/konzilium renders as a stable full-page sibling (mezo-sp9w, Task 9)', async () => {
@@ -183,7 +181,7 @@ test('/mezo/karakter/konzilium renders as a stable full-page sibling (mezo-sp9w,
 
 test('/mezo/karakter/gepterem is the geek-transparency hub — a stable full-page sibling (mezo-1gim.14, Task 4)', async () => {
   renderApp('/mezo/karakter/gepterem')
-  expect(await screen.findByText('Boop működése · források, memória és futások')).toBeInTheDocument()
+  expect(await screen.findByText(/Boop működése · források, memória és futások/)).toBeInTheDocument()
   // Fix round 1 (a11y): the Futások tile carries no `aria-label` any more — its accessible
   // name is its own text content (eyebrow + the live line), so the query matches on that.
   expect(screen.getByRole('button', { name: /Futások/ })).toBeInTheDocument()
@@ -191,7 +189,7 @@ test('/mezo/karakter/gepterem is the geek-transparency hub — a stable full-pag
 
 test('/mezo/karakter/gepterem/futasok is the week-stepped run timeline (mezo-1gim.14, Task 4)', async () => {
   renderApp('/mezo/karakter/gepterem/futasok')
-  expect(await screen.findByText('a pipeline futásai, hetekre bontva')).toBeInTheDocument()
+  expect(await screen.findByText(/a pipeline futásai, hetekre bontva/i)).toBeInTheDocument()
 })
 
 test('/mezo/karakter/gepterem/futas/:id opens one run\'s detail (mezo-1gim.14, Task 4)', async () => {
@@ -203,7 +201,7 @@ test('/mezo/karakter/gepterem/futas/:id opens one run\'s detail (mezo-1gim.14, T
 
 test('/mezo/karakter/gepterem/adatforrasok is the Bekötve|Tervezett data-source inventory (mezo-1gim.14, Task 5)', async () => {
   renderApp('/mezo/karakter/gepterem/adatforrasok')
-  expect(await screen.findByText('mit olvas a rendszer ma, és mit tervez')).toBeInTheDocument()
+  expect(await screen.findByText(/mit olvas a rendszer ma, és mit tervez/i)).toBeInTheDocument()
 })
 
 test('/mezo/karakter/gepterem/adatforrasok/kor/:n renders the honest not-found face now that every round has landed (mezo-1gim.15, Task 8)', async () => {
@@ -215,7 +213,7 @@ test('/mezo/karakter/gepterem/adatforrasok/kor/:n renders the honest not-found f
 
 test('/mezo/karakter/gepterem/detektorok lists the 40 real detectors (mezo-1gim.14/.15, Tasks 5-8)', async () => {
   renderApp('/mezo/karakter/gepterem/detektorok')
-  expect(await screen.findByText('a ma aktív katalógus, egy mondatban')).toBeInTheDocument()
+  expect(await screen.findByText(/a ma aktív katalógus, egy mondatban/i)).toBeInTheDocument()
 })
 
 test('Adatforrások\' Tervezett segment survives a kör round-trip (fix round 1, mezo-1gim.14)', async () => {

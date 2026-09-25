@@ -40,38 +40,38 @@ describe('PatternsPage (mock mode)', () => {
 
   test('the 3×2 lifecycle grid renders six colorful cells; döntésre vár is the hot gold-ringed one', () => {
     const { container } = renderPage()
-    const cells = container.querySelectorAll('.mnt-lcel')
+    const cells = container.querySelectorAll('.m9m-lcel')
     expect(cells).toHaveLength(6)
     // seeds: 2 decide → the hot skin (white + gold ring, pulse guarded in CSS) is armed
-    const hot = container.querySelector('.mnt-lcel.hot') as HTMLElement
+    const hot = container.querySelector('.m9m-lcel.hot') as HTMLElement
     expect(hot).not.toBeNull()
     expect(hot.textContent).toContain('döntésre vár')
     expect(hot.textContent).toContain('2')
-    // the other five keep their prototype skins
-    expect(container.querySelector('.mnt-lcel.c-sage')?.textContent).toContain('megerősítve')
-    expect(container.querySelector('.mnt-lcel.c-lav')?.textContent).toContain('megfigyelés')
-    expect(container.querySelector('.mnt-lcel.c-amber')?.textContent).toContain('még gyűlik')
+    // the other five keep their accent tones
+    expect(container.querySelector('.m9m-lcel.is-sage')?.textContent).toContain('megerősítve')
+    expect(container.querySelector('.m9m-lcel.is-lav')?.textContent).toContain('megfigyelés')
+    expect(container.querySelector('.m9m-lcel.is-gold')?.textContent).toContain('még gyűlik')
   })
 
   test('lifecycle mosaics show only the selected bucket and paginate gathering five at a time', () => {
     const { container } = renderPage()
     fireEvent.click(screen.getByRole('button', { name: /megerősítve/i }))
     // p1 (confirmed, no monitor pair): honest "tanulom" chip on a sage tile, no fabricated stats
-    const confirmedTile = container.querySelector('.mnt-ptile.sage') as HTMLElement
+    const confirmedTile = container.querySelector('.m9m-tile.is-sage') as HTMLElement
     expect(confirmedTile).not.toBeNull()
     expect(within(confirmedTile).getByText('tanulom')).toBeInTheDocument()
-    expect(container.querySelectorAll('.mnt-ptile.dashed')).toHaveLength(0)
+    expect(container.querySelectorAll('.m9m-tile.is-dashed')).toHaveLength(0)
     fireEvent.click(screen.getByRole('button', { name: /még gyűlik/i }))
-    expect(container.querySelectorAll('.mnt-ptile.sage')).toHaveLength(0)
+    expect(container.querySelectorAll('.m9m-tile.is-sage')).toHaveLength(0)
     // the 8 pattern-less monitor pairs are gathering, five per page
-    expect(container.querySelectorAll('.mnt-ptile.dashed')).toHaveLength(5)
+    expect(container.querySelectorAll('.m9m-tile.is-dashed')).toHaveLength(5)
     expect(screen.getByText('1–5 / 8')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Következő oldal' }))
-    expect(container.querySelectorAll('.mnt-ptile.dashed')).toHaveLength(3)
+    expect(container.querySelectorAll('.m9m-tile.is-dashed')).toHaveLength(3)
     expect(screen.getByText('6–8 / 8')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /megerősítve/i }))
     fireEvent.click(screen.getByRole('button', { name: /még gyűlik/i }))
-    expect(container.querySelectorAll('.mnt-ptile.dashed')).toHaveLength(5)
+    expect(container.querySelectorAll('.m9m-tile.is-dashed')).toHaveLength(5)
     expect(screen.getByText('1–5 / 8')).toBeInTheDocument()
     // raw statistics never reach a tile face
     expect(screen.queryByText(/r=/)).not.toBeInTheDocument()
@@ -92,8 +92,11 @@ describe('PatternsPage (mock mode)', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /megerősítve/i })).toHaveTextContent('2')
     })
-    // prototype decdone: the decision settles to a sage acknowledgement row
-    expect(screen.getByText('✓ Beépítettem a tudásba — mostantól számolok vele.')).toBeInTheDocument()
+    // the decision settles to a sage `tf-after` pill — the ✓ glyph is the 3D tick now (bible rule 45)
+    const ack = screen.getByText('Beépítettem a tudásba — mostantól számolok vele.')
+    expect(ack).toHaveClass('tf-after')
+    expect(ack.querySelector('svg.t-ico')).toBeTruthy()
+    expect(ack.textContent).not.toMatch(/✓/)
   })
 
   test('Adat-egészség expands to the coverage rings, thinnest-first', () => {
@@ -129,12 +132,12 @@ describe('PatternsPage (mock mode)', () => {
     renderPage()
     // p3 (hyp-3fa1c2d9) has no matching monitor pair — its pairKey is never a real catalog key,
     // so a "/insights/patterns/hyp-3fa1c2d9" link would guarantee "Nincs ilyen minta.".
-    const card = screen.getByText('Caffeine 14:00 utáni dózis → sleep onset +24 perc').closest('.card') as HTMLElement
+    const card = screen.getByText('Caffeine 14:00 utáni dózis → sleep onset +24 perc').closest('[data-decision-card]') as HTMLElement
     expect(within(card).getByRole('link', { name: /Részletek és előzmények/ })).toHaveAttribute(
       'href', '/mezo/patterns/hyp-3fa1c2d9?bucket=decide',
     )
     // a pair-backed decide card in the SAME bucket still gets its link.
-    const pairBackedCard = screen.getByText('Rosszabbul alszol, ha későn eszel?').closest('.card') as HTMLElement
+    const pairBackedCard = screen.getByText('Rosszabbul alszol, ha későn eszel?').closest('[data-decision-card]') as HTMLElement
     expect(within(pairBackedCard).getByRole('link', { name: /Részletek és előzmények/ })).toBeInTheDocument()
   })
 
@@ -167,7 +170,7 @@ describe('PatternsPage (mock mode)', () => {
       <Route path="/mezo/patterns/:pairKey" element={<PatternDetailPage />} />
     </Routes></MemoryRouter>, { wrapper: QueryWrapper })
     expect(screen.getByText('6–8 / 8')).toBeInTheDocument()
-    const tile = container.querySelector('.mnt-ptile') as HTMLAnchorElement
+    const tile = container.querySelector('.m9m-tile') as HTMLAnchorElement
     expect(tile.search).toContain('sort=domain')
     fireEvent.click(tile)
     await screen.findByText('Minta részletei')
@@ -177,13 +180,43 @@ describe('PatternsPage (mock mode)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Táplálkozás/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Alkalmazom' }))
     await waitFor(() => expect(screen.queryByRole('heading', { name: 'Szűrés' })).not.toBeInTheDocument())
-    const filtered = container.querySelector('.mnt-ptile') as HTMLAnchorElement
+    const filtered = container.querySelector('.m9m-tile') as HTMLAnchorElement
     expect(filtered.search).toContain('domain=fuel')
     fireEvent.click(filtered)
     await screen.findByText('Minta részletei')
     fireEvent.click(screen.getByRole('button', { name: 'Vissza' }))
     expect(screen.getByText('Táplálkozás')).toBeInTheDocument()
     expect(screen.queryByText('6–8 / 8')).not.toBeInTheDocument()
+  })
+
+  test('üveg ranking (mezo-me75u.9): the motor card and the decide cards are glass, the lifecycle cells flat', () => {
+    const { container } = renderPage()
+    const motor = screen.getByText('A motor állapota').closest('.tf-case') as HTMLElement
+    expect(motor).toHaveClass('glass', 'tf-c-gold')
+    // nothing glass inside the motor glass: the 3×2 cells and the filter button are flat
+    expect(motor.querySelectorAll('.glass')).toHaveLength(0)
+    const decideCards = container.querySelectorAll('[data-decision-card]')
+    expect(decideCards.length).toBeGreaterThan(0)
+    decideCards.forEach((card) => {
+      expect(card).toHaveClass('glass', 'tf-case')
+      expect(card.querySelectorAll('.glass')).toHaveLength(0)
+    })
+    // confirmed tiles are sage glass, gathering tiles dashed, never glass
+    fireEvent.click(screen.getByRole('button', { name: /megerősítve/i }))
+    container.querySelectorAll('.m9m-tile.is-sage').forEach((tile) => expect(tile).toHaveClass('glass'))
+    fireEvent.click(screen.getByRole('button', { name: /még gyűlik/i }))
+    const dashed = container.querySelectorAll('.m9m-tile.is-dashed')
+    expect(dashed.length).toBeGreaterThan(0)
+    dashed.forEach((tile) => {
+      expect(tile).toHaveClass('uv-empty')
+      expect(tile).not.toHaveClass('glass')
+    })
+  })
+
+  test('the lifecycle cells and the toolbar wear 3D sprite icons, never line icons', () => {
+    const { container } = renderPage()
+    container.querySelectorAll('.m9m-lcel').forEach((cell) => expect(cell.querySelector('svg.t-ico')).toBeTruthy())
+    expect(screen.getByRole('button', { name: /Szűrés/ }).querySelector('svg.t-ico')).toBeTruthy()
   })
 
   test('?pair= redirects to the detail page', () => {
@@ -355,13 +388,13 @@ describe('PatternsPage (real mode)', () => {
     const { container } = renderPage()
 
     expect(await screen.findByText(/Megfigyelés alatt/)).toBeInTheDocument()
-    const tile = container.querySelector('.mnt-ptile.lav') as HTMLElement
+    const tile = container.querySelector('.m9m-tile.is-lav') as HTMLElement
     expect(tile).not.toBeNull()
     // n=21, p=0.058 → the HUMAN confidence word (confidenceMeta), never raw r/p
     expect(within(tile).getByText('ígéretes jel')).toBeInTheDocument()
     expect(screen.queryByText(/r=/)).not.toBeInTheDocument()
     // the animated evidence bar (alignedDays / lookbackDays) is present
-    expect(tile.querySelector('.mnt-gbar')).not.toBeNull()
+    expect(tile.querySelector('.uv-bar')).not.toBeNull()
     // pair-backed tile links to the pattern detail page
     expect(tile.tagName).toBe('A')
   })
@@ -468,7 +501,7 @@ describe('PatternsPage — emoji→ikon (mezo-hq44)', () => {
     const { container } = renderPage()
     fireEvent.click(screen.getAllByRole('button', { name: 'Elvetem' })[0])
     const ack = await waitFor(() => {
-      const el = container.querySelector('.mnt-decdone') as HTMLElement
+      const el = container.querySelector('.m9m-ack') as HTMLElement
       expect(el).not.toBeNull()
       return el
     })

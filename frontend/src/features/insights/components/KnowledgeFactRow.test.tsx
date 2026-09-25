@@ -22,13 +22,13 @@ test('a minta-tény emberi mondatként, eredettel és megerősítéssel jelenik 
   expect(screen.queryByText(/^minta: /)).not.toBeInTheDocument()
 })
 
-test('a tény kategória-mosott csempe clay ikon-koronggal (iterációk §1 tile pass)', () => {
+test('a tény a kategória 3D ikonjával álló lapos sor (üveg U9)', () => {
   const { container } = render(<KnowledgeFactRow fact={patternFact} bucket="in-prompt" onToggle={() => {}} />)
-  const tile = container.querySelector('.mz-facttile')
-  expect(tile).not.toBeNull()
-  // egészség → borostyán wash (edzés korall · egészség borostyán · élet égkék · étkezés zsálya)
-  expect(tile).toHaveClass('mz-w-gold')
-  expect(tile!.querySelector('.mz-fic svg')).not.toBeNull()
+  const row = container.querySelector('[data-fact-row]')
+  expect(row).not.toBeNull()
+  expect(row).toHaveAttribute('data-cat', 'health')
+  expect(row).not.toHaveClass('glass')
+  expect(row!.querySelector('.t-ico')).not.toBeNull()
 })
 
 test('a kikapcsolt tény kimondja, hogy a társ nem látja, szaggatottra halkul, és a kapcsoló hívható', async () => {
@@ -38,7 +38,7 @@ test('a kikapcsolt tény kimondja, hogy a társ nem látja, szaggatottra halkul,
   )
   expect(screen.getByText('Kikapcsolva — a társ nem látja')).toBeInTheDocument()
   expect(screen.getByText('Még nem jött vissza megerősítés.')).toBeInTheDocument()
-  expect(container.querySelector('.mz-facttile')).toHaveClass('off')
+  expect(container.querySelector('[data-fact-row]')).toHaveClass('off')
   await userEvent.click(screen.getByRole('switch'))
   expect(onToggle).toHaveBeenCalledTimes(1)
 })

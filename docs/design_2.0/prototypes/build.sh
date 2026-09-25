@@ -58,3 +58,6 @@ echo "OK — 36 prototype files assembled."
 { cat src/uveg-en2-head.html; printf "</head>\n<body>\n"; cat src/uveg-sprite-fuel.svg.part ../../../frontend/src/shared/ui/clay/titanium-icons.svg src/uveg-en2-body.html; } > uveg-en2.html
 # Üvegesítés U8 (mezo-me75u.8): Mezo I — dark-only, chrome from fuel-uveg.html, the shared 3D sprite (+ U8 new icons inline until the owner's OK).
 { cat src/uveg-mezo-head.html; printf "</head>\n<body>\n"; cat src/uveg-sprite-fuel.svg.part ../../../frontend/src/shared/ui/clay/titanium-icons.svg src/uveg-mezo-body.html; } > uveg-mezo.html
+# Üvegesítés U9 (mezo-me75u.9): the WHOLE Mezo section in one world — the approved csapatfal world (uveg-uzenofal.html)
+# + U8 screens (scoped .u8) + U9 screens in the csapatfal material. See src/splice-mezo-teljes.py.
+python3 src/splice-mezo-teljes.py

@@ -1,6 +1,14 @@
 import { useState } from 'react'
 import type { LifeEventCandidate, LifeEventDecision } from '@/data/types'
 import { CANDIDATE_COPY, formatCandidateDate } from '@/data/insights/graph'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+
+/** Üveg (U9 · mezo-me75u.9): an életesemény speaks amber, a szezon sky — each a glass case
+ *  with its own status chip and 3D icon (prototype `uveg-mezo-teljes-u9.js` tudastar). */
+const CARD_SKIN: Record<LifeEventCandidate['kind'], { accent: 'gold' | 'sky'; status: string; icon: Icon3DName }> = {
+  LIFE_EVENT: { accent: 'gold', status: 'Életesemény-jelölt', icon: 't-journal' },
+  SEASON: { accent: 'sky', status: 'Szezon-jelölt', icon: 't-calendar' },
+}
 
 /**
  * Egy L2 gráf-jelölt kártyája — akár egy éjszakai életesemény (W2.3, mezo-b3pp.8), akár egy
@@ -31,76 +39,69 @@ export function LifeEventCandidateCard({ candidate, onDecide }: {
     onDecide('accept', { title: title.trim() || undefined, summary: summary.trim() || undefined })
   }
 
+  const skin = CARD_SKIN[candidate.kind]
   return (
-    <div className="card" style={{ padding: '12px 14px 12px 16px', position: 'relative', borderColor: 'var(--line)' }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'var(--amber-deep)' }} />
-
-      {candidate.occurredOn && (
-        <span className="label-mono" style={{ fontSize: 9, color: 'var(--amber-deep)' }}>
-          {formatCandidateDate(candidate.kind, candidate.occurredOn)}
-        </span>
-      )}
+    <article className={`glass tf-case tf-c-${skin.accent} tf-s-${skin.accent} tud9-case tud9-life`} data-graph-card>
+      <span className="tf-crow">
+        <span className="tf-st">{skin.status}</span>
+        {candidate.occurredOn && <em>{formatCandidateDate(candidate.kind, candidate.occurredOn)}</em>}
+      </span>
 
       {refining ? (
-        <div className="col gap-sm" style={{ marginTop: 6 }}>
+        <div className="tud9-refine is-col">
           <input
+            className="tud9-input"
             aria-label="Jelölt címe"
             value={title}
             maxLength={160}
             onChange={(e) => setTitle(e.target.value)}
-            style={{
-              fontSize: 15, padding: '6px 8px', borderRadius: 6,
-              border: '1px solid var(--border-default)', background: 'var(--surface-0)', color: 'var(--text-primary)',
-            }}
           />
           <textarea
+            className="tud9-input"
             aria-label="Jelölt összefoglalója"
             value={summary}
             maxLength={500}
             onChange={(e) => setSummary(e.target.value)}
             rows={2}
-            style={{
-              fontSize: 12, padding: '6px 8px', borderRadius: 6, resize: 'vertical',
-              border: '1px solid var(--border-default)', background: 'var(--surface-0)', color: 'var(--text-primary)',
-            }}
           />
-          <div className="row gap-sm">
-            <button type="button" className="chip" disabled={!title.trim()} onClick={acceptRefined} style={{ fontSize: 11, color: 'var(--lav-deep)' }}>
-              Elfogad így
+          <div className="tud9-acts is-pair">
+            <button type="button" className="tud9-btn is-main" disabled={!title.trim()} onClick={acceptRefined}>
+              <Icon3D name="t-tick" size={20} />Elfogad így
             </button>
-            <button type="button" className="chip" onClick={() => setRefining(false)} style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+            <button type="button" className="tud9-btn" onClick={() => setRefining(false)}>
               Mégse
             </button>
           </div>
         </div>
       ) : (
         <>
-          <p style={{ fontSize: 15, lineHeight: 1.4, color: 'var(--text-primary)', margin: '6px 0 0' }}>{candidate.title}</p>
-          {candidate.summary && (
-            <p className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5, margin: '6px 0 0' }}>{candidate.summary}</p>
-          )}
-          <p className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5, margin: '6px 0 0' }}>
-            {CANDIDATE_COPY[candidate.kind].provenance}
-          </p>
+          <span className="tf-cmain">
+            <Icon3D name={skin.icon} size={36} />
+            <span className="tf-ctxt">
+              <span className="tf-ctitle">{candidate.title}</span>
+              {candidate.summary && <span className="tf-csub">{candidate.summary}</span>}
+            </span>
+          </span>
+          <p className="tud9-prov">{CANDIDATE_COPY[candidate.kind].provenance}</p>
 
-          <div className="row gap-sm" style={{ marginTop: 10 }}>
-            <button className="chip" onClick={() => onDecide('accept')} style={{ fontSize: 11, color: 'var(--lav-deep)' }}>
-              Elfogad
+          <div className="tud9-acts">
+            <button type="button" className="tud9-btn is-main" onClick={() => onDecide('accept')}>
+              <Icon3D name="t-tick" size={20} />Elfogad
             </button>
-            <button className="chip" onClick={startRefine} style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
-              Pontosít
+            <button type="button" className="tud9-btn" onClick={startRefine}>
+              <Icon3D name="t-pencil" size={20} />Pontosít
             </button>
-            <button className="chip" onClick={() => onDecide('reject')} style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
-              Elvet
+            <button type="button" className="tud9-btn" onClick={() => onDecide('reject')}>
+              <Icon3D name="t-skip" size={20} />Elvet
             </button>
           </div>
-          <p className="text-tertiary" style={{ fontSize: 10.5, lineHeight: 1.5, margin: '6px 0 0' }}>
+          <p className="tud9-foot">
             {candidate.proposedEdgeCount > 0
               ? `Elfogad → bekerül a gráfba ${candidate.proposedEdgeCount} kapcsolattal · Pontosít → átírod cím/összefoglaló · Elvet → eldobom.`
               : 'Elfogad → bekerül a gráfba · Pontosít → átírod cím/összefoglaló · Elvet → eldobom.'}
           </p>
         </>
       )}
-    </div>
+    </article>
   )
 }

@@ -107,7 +107,7 @@ export const DOMAINS: NavDomain[] = [
         owns: ['/mezo/karakter/feed', '/mezo/patterns', '/mezo/predictions', '/mezo/experiments',
           '/mezo/diagnozis', '/mezo/coaching', '/mezo/chat'] },
       { label: 'A csapat', route: '/mezo/csapat', icon: 'i-emberek',
-        owns: ['/mezo/karakter/gepterem', '/mezo/karakter/konzilium', '/mezo/karakter/csapat',
+        owns: ['/mezo/karakter/gepterem', '/mezo/karakter/konzilium',
           '/mezo/memoria'] },
       { label: 'Rólad', route: '/mezo/rolad', icon: 'i-kristaly', owns: ['/mezo/knowledge', '/mezo/karakter'] },
       { label: 'Emlékek', route: '/mezo/emlekek', icon: 'i-memoar', owns: ['/mezo/memoir'] },

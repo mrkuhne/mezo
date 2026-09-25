@@ -1,4 +1,4 @@
-import type { ClayIconName } from '@/shared/ui/clay'
+import type { ClayIconName, Icon3DName } from '@/shared/ui/clay'
 import type { MozaikWash } from '@/shared/ui/mozaik'
 import type { GraphNodeKind } from '@/data/types'
 
@@ -36,4 +36,29 @@ export const KIND_INK: Record<GraphNodeKind, string> = {
   SEASON: 'var(--mz-cell-gold-ink)',
   INSIGHT: 'var(--mz-cell-lav-ink)',
   PERSON: 'var(--mz-cell-rose-ink)',
+}
+
+/**
+ * Üveg (U9 · mezo-me75u.9): the Tudástár's kind → 3D sprite icon + accent. Mapped here, at the
+ * kind level, not through `CLAY_TO_3D` — `i-nap` means both a life event (sun) and a season
+ * (calendar), and `i-injekcio` reads as a Belátás (bulb) only in this context (bible rule 20).
+ */
+export const KIND_3D: Record<GraphNodeKind, Icon3DName> = {
+  PATTERN: 't-pattern',
+  PREFERENCE: 't-checkin',
+  GOAL: 't-flag',
+  LIFE_EVENT: 't-sun',
+  SEASON: 't-calendar',
+  INSIGHT: 't-bulb',
+  PERSON: 't-people',
+}
+
+export const KIND_ACCENT: Record<GraphNodeKind, string> = {
+  PATTERN: 'var(--dv-amber)',
+  PREFERENCE: 'var(--dv-sage)',
+  GOAL: 'var(--dv-coral)',
+  LIFE_EVENT: 'var(--dv-sky)',
+  SEASON: 'var(--dv-sky)',
+  INSIGHT: 'var(--dv-lav)',
+  PERSON: 'var(--dv-rose)',
 }

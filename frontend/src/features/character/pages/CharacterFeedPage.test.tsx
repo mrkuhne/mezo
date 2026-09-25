@@ -30,11 +30,9 @@ const show = () =>
       <CharacterFeedPage />
     </QueryWrapper>,
   )
-test('the feed shows posts directly across days and has three clear destinations', () => {
+test('the feed shows posts directly across days — the dock owns navigation, no in-page tab strip (mezo-me75u.9)', () => {
   show()
-  expect(screen.getByRole('button', { name: 'Üzenőfal' })).toHaveAttribute('aria-current', 'page')
-  fireEvent.click(screen.getByRole('button', { name: 'Rólad' }))
-  expect(navigate).toHaveBeenCalledWith('/mezo/karakter/dimenziok')
+  expect(screen.queryByRole('button', { name: 'Rólad' })).not.toBeInTheDocument()
   expect(screen.getAllByRole('article')).toHaveLength(MOCK_FEED.length)
   expect(screen.queryByRole('button', { name: 'Új bejegyzés' })).not.toBeInTheDocument()
 })
@@ -80,4 +78,25 @@ test('embedding keeps the real posts and evidence but omits duplicate section na
   expect(screen.queryByRole('navigation', { name: 'Karakter nézetek' })).not.toBeInTheDocument()
   expect(screen.getAllByRole('article')).toHaveLength(MOCK_FEED.length)
   expect(screen.getAllByRole('button', { name: 'Miből látszik?' }).length).toBeGreaterThan(0)
+})
+
+test('ranking (U9): the morning story is the ONE glass poster, posts stay flat and name the csapatfal character', () => {
+  state.items = [{ kind: 'OBSERVATION', sourceType: 'OBSERVATION', sourceId: 'story', expertKey: 'edzo', at: '2026-09-20T08:00:00Z', text: 'A valós kiemelt megfigyelés.' }]
+  const { container } = show()
+  expect(screen.getByRole('region', { name: 'A csapat kiemelt története' })).toHaveClass('glass', 'tf-poster')
+  const post = screen.getByRole('article')
+  expect(post).toHaveClass('tf-post')
+  expect(post).not.toHaveClass('glass')
+  expect(within(post).getByText('Mocor')).toBeInTheDocument()
+  expect(container.querySelectorAll('.tf-poster.glass')).toHaveLength(1)
+})
+
+test('the standalone feed wears the Karakter back head; embedded it does not (U9)', () => {
+  const { unmount } = show()
+  expect(screen.getByText('Egyre jobban ismerünk')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Vissza' }))
+  expect(navigate).toHaveBeenCalledWith('/mezo')
+  unmount()
+  render(<QueryWrapper><CharacterFeedPage embedded /></QueryWrapper>)
+  expect(screen.queryByRole('button', { name: 'Vissza' })).not.toBeInTheDocument()
 })

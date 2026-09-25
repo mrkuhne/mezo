@@ -50,10 +50,15 @@
 // MentionContextShift,WeekendGap,ChatTopicShift,KnowledgeRejectionPattern,PredictionCalibration,
 // QuestCompletionCalibration,ExperimentOutcomeLedger}Detector.java`'s own
 // `DetectorSignal(key(), who, ...)` calls. The catalog is now 40 detectors.
+//
+// Üveg re-dress (U9, mezo-me75u.9) — uveg-mezo-teljes-u9.js `detektorok()`: slate dev-door head,
+// ONE flat `tf-tlist` (sentence, monospace key chip, the owner as the csapatfal character's name
+// in its accent — `who` itself stays the real persona key), principle footer.
 // ============================================================
 import { useNavigate } from 'react-router-dom'
-import '@/features/character/character.css'
-import { PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
+import '@/features/insights/boop-world.css'
+import { GepteremHead } from '@/features/character/components/GepteremHead'
+import { personaName } from '@/features/character/personaCharacter'
 import { useCharacterExperts } from '@/data/hooks'
 import { expertColor } from '@/features/character/expertColors'
 
@@ -113,29 +118,30 @@ const PRINCIPLE = 'A kód csak észlel — az értelmezés mindig az adott szak�
 
 export function DetektorokPage() {
   const navigate = useNavigate()
-  const { experts, isLoading } = useCharacterExperts()
+  // The expert catalog still gates the first paint (unchanged); the owner shown is the
+  // csapatfal character the persona folds into (U9, owner 2026-09-25) — `personaName(who)`.
+  const { isLoading } = useCharacterExperts()
 
   if (isLoading) return null
 
-  const expertName = (key: string) => experts.find((e) => e.key === key)?.displayName ?? key
-
   return (
-    <div className="kr-hub">
-      <PageHead onBack={() => navigate('/mezo/karakter/gepterem')} label="‹ Gépterem" />
-      <PageHero name="Detektorok" sub="a ma aktív katalógus, egy mondatban" />
-      <PageBody principle={PRINCIPLE}>
-        <div className="kr-leltarcard sage">
-          {DETECTORS.map((d) => (
-            <div className="kr-lrow" key={d.key}>
-              <div className="kr-lw">{d.line}</div>
-              <div className="kr-rmeta col">
-                <span className="kr-detchip ghost">{d.key}</span>
-                <small style={{ color: expertColor(d.who) }}>{expertName(d.who)}</small>
-              </div>
-            </div>
-          ))}
-        </div>
-      </PageBody>
+    <div className="tf-page tf-c-slate gtm-page gtm-detektorok">
+      <GepteremHead small="Gépterem · a ma aktív katalógus, egy mondatban" title="Detektorok"
+        onBack={() => navigate('/mezo/karakter/gepterem')} />
+      <div className="tf-tlist gtm-dets">
+        {DETECTORS.map((d) => (
+          <div className="tf-trow gtm-detrow" key={d.key}>
+            <span className="tf-ttx">
+              <span className="gtm-detline">{d.line}</span>
+              <span className="gtm-detmeta">
+                <span className="gtm-det">{d.key}</span>
+                <b style={{ color: expertColor(d.who) }}>{personaName(d.who)}</b>
+              </span>
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="gtm-principle">{PRINCIPLE}</p>
     </div>
   )
 }

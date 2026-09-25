@@ -1,29 +1,18 @@
-import { Boop, type BoopDomain } from '@/shared/ui/clay/boop/Boop'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { Boop } from '@/shared/ui/clay/boop/Boop'
 import { cn } from '@/shared/lib/cn'
+import { personaCharacter } from '@/features/character/personaCharacter'
 
-// The menu's five Boop families; a role mark identifies each of the nine experts.
-const PERSONAS: Record<string, { domain: BoopDomain; badge: ClayIconName }> = {
-  doki: { domain: 'nap', badge: 'i-eletjel' },
-  edzo: { domain: 'train', badge: 'i-edzes' },
-  drill: { domain: 'train', badge: 'i-cel' },
-  taplalkozo: { domain: 'fuel', badge: 'i-noveny' },
-  szomnologus: { domain: 'mezo', badge: 'i-hold' },
-  szkeptikus: { domain: 'mezo', badge: 'i-tudas' },
-  pszichologus: { domain: 'me', badge: 'i-life-tudatossag' },
-  antropologus: { domain: 'me', badge: 'i-emberek' },
-  mezo: { domain: 'mezo', badge: 'i-mezo' },
-}
-
+/**
+ * A szakértő arca. Üvegesítés U9 (mezo-me75u.9): a csapatfal öt szereplőjének (+ Szkeptikus)
+ * figurája a karakter akcentusú, megvilágított kútban (`tf-av`, boop-world.css) — ugyanaz az arc,
+ * amit a fal és A csapat mutat. A régi agyag-jelvény megszűnt; az API (`expertKey`) változatlan.
+ */
 export function PersonaOrb({ expertKey, size = 24, className }: { expertKey: string; size?: number; className?: string }) {
-  const persona = PERSONAS[expertKey] ?? PERSONAS.mezo
-  const badgeSize = Math.max(12, Math.round(size * .4))
+  const who = personaCharacter(expertKey)
   return (
-    <span className={cn('kr-persona', className)} style={{ width: size, height: size }} aria-hidden="true">
-      <Boop domain={persona.domain} size={size} alive />
-      <span className="kr-persona-badge" style={{ width: badgeSize, height: badgeSize }}>
-        <ClayIcon name={persona.badge} size={badgeSize - 2} />
-      </span>
+    <span className={cn('tf-av', `tf-c-${who.accent}`, 'kr-persona', className)} style={{ width: size, height: size }}
+      data-character={who.id} aria-hidden="true">
+      <Boop domain={who.boop} size={Math.round(size * 0.8)} alive />
     </span>
   )
 }

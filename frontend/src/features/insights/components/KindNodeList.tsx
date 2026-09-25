@@ -10,8 +10,8 @@
 // as a different destination than the head chip while doing the same thing.
 // ============================================================
 import { CategoryHeader } from './CategoryHeader'
-import { ClayIcon } from '@/shared/ui/clay'
-import { KIND_ICON, KIND_INK, KIND_WASH } from '@/features/me/logic/knowledgeNodeVisuals'
+import { Icon3D } from '@/shared/ui/clay'
+import { KIND_3D, KIND_ACCENT } from '@/features/me/logic/knowledgeNodeVisuals'
 import type { GraphNodeKind, KnowledgeGraphNode } from '@/data/types'
 
 export function KindNodeList({ kind, label, nodes, onOpenNode }: {
@@ -20,30 +20,27 @@ export function KindNodeList({ kind, label, nodes, onOpenNode }: {
   nodes: KnowledgeGraphNode[]
   onOpenNode: (node: KnowledgeGraphNode) => void
 }) {
+  // Üveg (U9 · mezo-me75u.9): the category header + ONE flat `tf-tlist` of compact rows.
   return (
-    <div className="col">
+    <div className="tud9-kindlist" style={{ '--c': KIND_ACCENT[kind] } as React.CSSProperties}>
       <div className="rise" style={{ '--d': '40ms' } as React.CSSProperties}>
-        <CategoryHeader label={label} color={KIND_INK[kind]} count={nodes.length} />
+        <CategoryHeader label={label} color={KIND_ACCENT[kind]} count={nodes.length} />
       </div>
-      <div className="col gap-xs">
-        {nodes.map((n, i) => (
+      <div className="tf-tlist rise" style={{ '--d': '60ms' } as React.CSSProperties}>
+        {nodes.map((n) => (
           <button
             key={n.id}
             type="button"
             data-kind-node-row
-            className={`mz-facttile mz-w-${KIND_WASH[kind]} rise`}
-            style={{ textAlign: 'left', cursor: 'pointer', '--d': `${60 + i * 30}ms` } as React.CSSProperties}
+            className="tf-trow tud9-noderow"
             onClick={() => onOpenNode(n)}
           >
-            <div className="mz-fic"><ClayIcon name={KIND_ICON[kind]} size={20} /></div>
-            <div className="mz-fact-grow">
-              <span className="mz-fact-tx">{n.title}</span>
-              {n.topEdges.length > 0 && (
-                <span className="mz-fact-sb" style={{ display: 'block', marginTop: 2 }}>
-                  {n.topEdges.length} kapcsolat
-                </span>
-              )}
-            </div>
+            <Icon3D name={KIND_3D[kind]} size={24} />
+            <span className="tf-ttx">
+              <span className="tf-ttitle">{n.title}</span>
+              {n.topEdges.length > 0 && <span className="tf-tsub">{n.topEdges.length} kapcsolat</span>}
+            </span>
+            <span className="tud9-chev" aria-hidden="true">›</span>
           </button>
         ))}
       </div>

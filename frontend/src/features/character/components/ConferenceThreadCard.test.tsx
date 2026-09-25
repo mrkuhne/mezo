@@ -431,7 +431,7 @@ describe('ConferenceThreadCard', () => {
     // M2 (mezo-sp9w branch-review): `.kr-thdot` no longer exists anywhere in the CSS or in any
     // component, so asserting its absence alone can never catch a regression — the only
     // assertion that actually exercises "the chain draws orbs" is this one.
-    expect(container.querySelectorAll('.kr-thstep .kr-thorb').length).toBeGreaterThan(0)
+    expect(container.querySelectorAll('.kz-cmt .kz-cmtorb').length).toBeGreaterThan(0)
   })
 
   test('a reakciók állásfoglalás-chipet kapnak', () => {
@@ -444,5 +444,23 @@ describe('ConferenceThreadCard', () => {
   test('Mezo döntése a javaslat fajtájához illő címkét kap, bizonyossággal', () => {
     render(<ConferenceThreadCard thread={THREAD_RETIRE} experts={MOCK_EXPERTS} crossTalkRan defaultOpen />)
     expect(screen.getByText('Nyugdíjazva · valószínű')).toBeInTheDocument()
+  })
+
+  // U9 (mezo-me75u.9): rangsor — a csukott szál lapos kártya, a lenyitott (amit olvasol) üveg;
+  // a lánc megszólalói a csapatfal szereplőinek nevén szólnak (szomnologus → Szunya, pszichologus → Derű).
+  test('csukva lapos, nyitva üveg; a lánc a szereplők nevét mutatja', async () => {
+    const { container } = render(<ConferenceThreadCard thread={THREAD} experts={MOCK_EXPERTS} crossTalkRan />)
+    const card = container.querySelector('.kz-thread') as HTMLElement
+    expect(card.classList.contains('tf-flatc')).toBe(true)
+    expect(card.classList.contains('glass')).toBe(false)
+
+    await userEvent.click(screen.getByRole('button', { name: /Regeneráció/ }))
+    expect(card.classList.contains('glass')).toBe(true)
+    expect(card.querySelector('.glass')).toBeNull() // nincs üveg az üvegben
+    expect(screen.getByText('Szunya')).toBeInTheDocument()
+    expect(screen.getAllByText('Derű').length).toBeGreaterThan(0)
+    const catalogName = MOCK_EXPERTS.find((e) => e.key === 'szomnologus')!.displayName
+    expect(catalogName).not.toBe('Szunya')
+    expect(screen.queryByText(catalogName)).not.toBeInTheDocument()
   })
 })

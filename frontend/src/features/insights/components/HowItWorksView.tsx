@@ -8,7 +8,11 @@
 // explaining the Kategóriák view.
 // ============================================================
 import type { CSSProperties } from 'react'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { PATTERN_ACK_DAYS, PROMPT_TOP_N } from '@/data/insights/knowledge'
+
+/** Üveg (U9 · mezo-me75u.9): one 3D icon per question, in order (prototype `hogyan`). */
+const ICONS: Icon3DName[] = ['t-book', 't-key', 't-repeat', 't-layers', 't-bulb', 't-graph']
 
 const PARAGRAPHS = [
   ['Mi az a tény?', 'Egy rólad szóló mondat, amit a társ megjegyzett. Vagy a beszélgetéseitekből szűrte ki, vagy egy megerősített mintából tanulta, vagy te vetted fel kézzel.'],
@@ -23,9 +27,12 @@ export function HowItWorksView() {
   return (
     <>
       {PARAGRAPHS.map(([title, body], i) => (
-        <div key={title} className="card rise" style={{ '--d': `${i * 30}ms`, padding: 14 } as CSSProperties}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>{title}</span>
-          <p className="text-secondary" style={{ fontSize: 12, lineHeight: 1.55, margin: '4px 0 0' }}>{body}</p>
+        <div key={title} className="tud9-qa rise" style={{ '--d': `${i * 30}ms` } as CSSProperties}>
+          <div className="tud9-qh">
+            <Icon3D name={ICONS[i]} size={30} />
+            <h2>{title}</h2>
+          </div>
+          <p>{body}</p>
         </div>
       ))}
     </>

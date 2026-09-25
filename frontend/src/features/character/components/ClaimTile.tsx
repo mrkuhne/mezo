@@ -5,11 +5,14 @@ import { useState, type CSSProperties } from 'react'
 import { useClaimFeedback } from '@/data/hooks'
 import { useToast } from '@/shared/ui/ToastProvider'
 import { confidenceWord, type CharacterClaimDto } from '@/data/character/characterApi'
+import { Icon3D } from '@/shared/ui/clay'
 
-const CONF_CLASS: Record<ReturnType<typeof confidenceWord>, string> = {
-  biztos: 'kr-conf-biztos',
-  valószínű: 'kr-conf-valoszinu',
-  figyeljük: 'kr-conf-figyeljuk',
+// Üvegesítés U9 (mezo-me75u.9): a claim is a glass case (`glass tf-case`) whose accent is its
+// confidence — biztos sage, valószínű sky, figyeljük lav — worn by the `tf-st` word chip too.
+const CONF_ACCENT: Record<ReturnType<typeof confidenceWord>, string> = {
+  biztos: 'sage',
+  valószínű: 'sky',
+  figyeljük: 'lav',
 }
 
 type LocalStatus = 'idle' | 'talal' | 'retired'
@@ -44,13 +47,22 @@ export function ClaimTile({ claim, delayMs, withdrawn = false }: { claim: Charac
       show({ kind: 'error', text: FEEDBACK_ERROR })
     }
   }
+  const accent = CONF_ACCENT[word]
+  const chip = (
+    <span className="tf-crow"><span className={`tf-st tf-s-${accent}`}>{word}</span></span>
+  )
+  const text = (
+    <span className="tf-cmain"><span className="tf-ctxt"><span className="tf-ctitle kr9-ctext">{claim.text}</span></span></span>
+  )
   if (status === 'retired' || withdrawn) {
     return (
-      <div className="kr-claim retired rise" style={style} data-claim={claim.id}>
-        <span className={`kr-confchip ${CONF_CLASS[word]}`}>{word}</span>
-        <div className="kr-claim-text">{claim.text}</div>
-        <div className="kr-retiredlbl">nyugdíjazva — a csapat nem viszi tovább</div>
-        <button type="button" className="kr-claim-evidence" onClick={() => setRevisionsOpen(true)}>Mi változott?</button>
+      <div className={`tf-case tf-flatc tf-c-${accent} kr9-claim kr9-retired rise`} style={style} data-claim={claim.id}>
+        {chip}
+        {text}
+        <span className="kr9-foot">nyugdíjazva — a csapat nem viszi tovább</span>
+        <div className="kr9-links">
+          <button type="button" onClick={() => setRevisionsOpen(true)}>Mi változott?</button>
+        </div>
         {revisionsOpen && <CharacterRevisionSheet claimId={claim.id} onClose={() => setRevisionsOpen(false)} />}
         {pontOpen && <CharacterReplyThread source={{ sourceType: 'CLAIM', sourceId: claim.id, sourceIndex: 0 }} initialOpen />}
       </div>
@@ -58,20 +70,22 @@ export function ClaimTile({ claim, delayMs, withdrawn = false }: { claim: Charac
   }
 
   return (
-    <div className={`kr-claim rise${claim.sensitive ? ' sensitive' : ''}`} style={style} data-claim={claim.id}>
-      <span className={`kr-confchip ${CONF_CLASS[word]}`}>{word}</span>
-      <div className="kr-claim-text">{claim.text}</div>
+    <div className={`glass tf-case tf-c-${accent} kr9-claim rise${claim.sensitive ? ' kr9-sensitive' : ''}`} style={style} data-claim={claim.id}>
+      {chip}
+      {text}
       {status === 'talal' ? (
-        <div className="kr-fbthanks">✓ Köszönöm — jegyzem.</div>
+        <span className="tf-after kr9-thanks"><Icon3D name="t-tick" size={15} />Köszönöm — jegyzem.</span>
       ) : (
-        <div className="kr-fbpills">
-          <button type="button" className="kr-fbp talal" onClick={handleTalal} disabled={pending}>Talál</button>
-          <button type="button" className="kr-fbp nemigaz" onClick={handleNemIgaz} disabled={pending}>Nem igaz</button>
-          <button type="button" className="kr-fbp pont" onClick={() => setPontOpen((o) => !o)} disabled={pending}>Pontosítom</button>
+        <div className="kr9-chips">
+          <button type="button" className="kr9-chip is-main tf-c-sage" onClick={handleTalal} disabled={pending}><Icon3D name="t-tick" size={17} />Talál</button>
+          <button type="button" className="kr9-chip tf-c-slate" onClick={handleNemIgaz} disabled={pending}><Icon3D name="t-skip" size={17} />Nem igaz</button>
+          <button type="button" className="kr9-chip tf-c-gold" onClick={() => setPontOpen((o) => !o)} disabled={pending}><Icon3D name="t-pencil" size={17} />Pontosítom</button>
         </div>
       )}
-      <button type="button" className="kr-claim-evidence" onClick={() => setEvidenceOpen(true)}>Miből látszik?</button>
-      <button type="button" className="kr-claim-evidence" onClick={() => setRevisionsOpen(true)}>Mi változott?</button>
+      <div className="kr9-links">
+        <button type="button" onClick={() => setEvidenceOpen(true)}>Miből látszik?</button>
+        <button type="button" onClick={() => setRevisionsOpen(true)}>Mi változott?</button>
+      </div>
       {revisionsOpen && <CharacterRevisionSheet claimId={claim.id} onClose={() => setRevisionsOpen(false)} />}
       {pontOpen && <CharacterReplyThread source={{ sourceType: 'CLAIM', sourceId: claim.id, sourceIndex: 0 }} initialOpen />}
       {evidenceOpen && <CharacterEvidenceSheet text={claim.text} expertKey={claim.proposedBy} evidence={claim.evidence.map(item => ({ sourceKind: item.kind, snippet: item.label }))} onClose={() => setEvidenceOpen(false)} onReply={() => { setEvidenceOpen(false); setPontOpen(true) }} />}

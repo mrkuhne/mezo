@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { GhostState } from '@/shared/ui/GhostState'
-import { MozaikPage, PageHead, PageHero, PageBody, type PageTone } from '@/shared/ui/mozaik'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import {
   useKnowledge, useKnowledgeActions, useLifeEventCandidates, useLifeEventActions,
@@ -15,6 +14,8 @@ import { KategoriakView } from '@/features/insights/components/KategoriakView'
 import { HowItWorksView } from '@/features/insights/components/HowItWorksView'
 import { bucketFacts } from '@/features/insights/logic/factCopy'
 import type { GraphNodeKind, LifeEventCandidate } from '@/data/types'
+import { Icon3D } from '@/shared/ui/clay'
+import '@/features/insights/boop-world.css'
 
 /** mezo-ms9a: the unified Tudástár's URL-driven view switch — `?view=` (+ `kind`/`fact`
  *  later, T10). An invalid/absent `view` always reads as the base (section-mosaic) view. */
@@ -27,25 +28,30 @@ function withWeek(next: Record<string, string>, current: URLSearchParams) {
   return start ? { ...next, start } : next
 }
 
-const VIEW_TONE: Record<KnowledgeView, PageTone> = {
-  base: 'sage', tenyek: 'sage', kategoriak: 'lav', profil: 'rose', hogyan: 'gold',
+/** Üveg (U9 · mezo-me75u.9): the csapatfal `tf-dhead` frame — eyebrow + title per view
+ *  (prototype `uveg-mezo-teljes-u9.js` tudastar/tenyek/kategoriak/hogyan). */
+const VIEW_EYEBROW: Record<KnowledgeView, string> = {
+  base: 'Rólad', tenyek: 'Tudástár', kategoriak: 'Tudástár · ugyanennek a tudásnak a térképe',
+  profil: 'Tudástár', hogyan: 'Tudástár',
 }
-const VIEW_HERO_NAME: Record<KnowledgeView, string> = {
-  base: 'Tudástár', tenyek: 'Tudástár', kategoriak: 'Kategóriák', profil: 'Így beszélj velem', hogyan: 'Hogyan működik?',
+const VIEW_TITLE: Record<KnowledgeView, string> = {
+  base: 'Tudástár', tenyek: 'Tények', kategoriak: 'Kategóriák', profil: 'Így beszélj velem', hogyan: 'Hogyan működik?',
 }
 
 /** The page frame every branch renders inside — the way back must exist on all of them
  *  (ADR 0032 / fidelity audit mezo-d20.11: the Tudástár mounted no PageHead at all).
- *  Nézet-függő lett (mezo-ms9a): tone/back-chip/hero-name a `view` szerint vált, de a
- *  betöltés/hiba/degraded ágak minden nézeten ugyanazt a keretet kapják — base tone-nal,
- *  „‹ Mezo" chippel, mert ezek az ágak a `view` felbontása ELŐTT térnek vissza. */
+ *  Nézet-függő lett (mezo-ms9a): cím/vissza-cél a `view` szerint vált, de a
+ *  betöltés/hiba/degraded ágak minden nézeten ugyanazt a keretet kapják — base címmel,
+ *  „Mezo" vissza-céllal, mert ezek az ágak a `view` felbontása ELŐTT térnek vissza.
+ *  Üveg (U9): a kerek üveg vissza-gomb a célt az akadálymentes nevében mondja ki
+ *  („Vissza: Mezo / Tudástár / Kategóriák"), a nagy szám + alcím a fejléc alatt áll. */
 function TudasFrame({
   view = 'base', kind = null, big, sub, help, children,
 }: {
   view?: KnowledgeView
-  /** Only meaningful for `view === 'kategoriak'` — a non-null kind means the page-head chip
-   *  reads `‹ Kategóriák` and clears just `kind` (mezo-ni86: one back-affordance per view, so
-   *  the kind-drill's return trip lives on the SAME chip as every other view's, not a second
+  /** Only meaningful for `view === 'kategoriak'` — a non-null kind means the back control
+   *  returns to `Kategóriák` and clears just `kind` (mezo-ni86: one back-affordance per view, so
+   *  the kind-drill's return trip lives on the SAME control as every other view's, not a second
    *  one in the body). */
   kind?: GraphNodeKind | null
   big?: ReactNode
@@ -62,24 +68,31 @@ function TudasFrame({
     : inKindDrill
       ? () => setParams(withWeek({ view: 'kategoriak' }, params), { replace: true })
       : () => setParams(withWeek({}, params), { replace: true })
-  const label = isBase ? '‹ Mezo' : inKindDrill ? '‹ Kategóriák' : '‹ Tudástár'
+  const backTo = isBase ? 'Mezo' : inKindDrill ? 'Kategóriák' : 'Tudástár'
   return (
-    <MozaikPage tone={VIEW_TONE[view]}>
-      <PageHead onBack={onBack} label={label} />
-      <PageHero icon="i-tudas" big={big} name={VIEW_HERO_NAME[view]} sub={sub}>
+    <div className="tud9 tf-page" data-view={view}>
+      <div className="tf-dhead">
+        <button type="button" className="glass tf-back" aria-label={`Vissza: ${backTo}`} onClick={onBack}>‹</button>
+        <span className="tf-dtitle"><small>{VIEW_EYEBROW[view]}</small><strong>{VIEW_TITLE[view]}</strong></span>
         {help && (
           <button
             type="button"
-            className="tud-help"
+            className="glass is-round tud9-help"
             aria-label="Hogyan működik?"
             onClick={() => setParams(withWeek({ view: 'hogyan' }, params))}
           >
             ?
           </button>
         )}
-      </PageHero>
-      <PageBody>{children}</PageBody>
-    </MozaikPage>
+      </div>
+      {big !== undefined && (
+        <div className="tud9-big">
+          <b className="tud9-bignum">{big}</b>
+          {sub && <small className="tud9-sub">{sub}</small>}
+        </div>
+      )}
+      <div className="tud9-body">{children}</div>
+    </div>
   )
 }
 
@@ -201,18 +214,16 @@ export function KnowledgeListPage() {
   if (view === 'tenyek') {
     return (
       <TudasFrame view="tenyek" big={heroBig} sub={heroSub}>
-        <EntranceGroup className="col gap-md" replayKey={`${view}:${kind ?? ''}`}>
+        <EntranceGroup className="tud9-flow" replayKey={`${view}:${kind ?? ''}`}>
           {degraded ? (
-            <div className="card rise" style={{ '--d': '0ms', padding: 14 } as React.CSSProperties}>
-              <span className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5 }}>
-                A társ jelenleg nincs bekapcsolva — a tudástár most nem elérhető.
-              </span>
+            <div className="tf-dash tud9-dash rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+              <Icon3D name="t-info" size={28} />
+              <span>A társ jelenleg nincs bekapcsolva — a tudástár most nem elérhető.</span>
             </div>
           ) : hasNoFacts ? (
-            <div className="card rise" style={{ '--d': '0ms', padding: 14 } as React.CSSProperties}>
-              <span className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5 }}>
-                Még egy tényt sem tanultam rólad — ahogy beszélgettek, itt fognak megjelenni.
-              </span>
+            <div className="tf-dash tud9-dash rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+              <Icon3D name="t-note" size={28} />
+              <span>Még egy tényt sem tanultam rólad — ahogy beszélgettek, itt fognak megjelenni.</span>
             </div>
           ) : (
             <FactsView facts={facts} buckets={buckets} onToggle={toggle} highlightFactId={highlightFactId} />
@@ -225,7 +236,7 @@ export function KnowledgeListPage() {
   if (view === 'kategoriak') {
     return (
         <TudasFrame view="kategoriak" kind={kind}>
-          <EntranceGroup className="col gap-md" replayKey={`${view}:${kind ?? ''}`}>
+          <EntranceGroup className="tud9-flow" replayKey={`${view}:${kind ?? ''}`}>
             <KategoriakView
               nodes={graphNodes}
               kind={kind}
@@ -241,23 +252,26 @@ export function KnowledgeListPage() {
   if (view === 'hogyan') {
     return (
       <TudasFrame view="hogyan">
-        <EntranceGroup className="col gap-md" replayKey={`${view}:${kind ?? ''}`}>
+        <EntranceGroup className="tud9-flow" replayKey={`${view}:${kind ?? ''}`}>
           <HowItWorksView />
         </EntranceGroup>
       </TudasFrame>
     )
   }
 
-  /* Mozaik re-face (mezo-d20.5.5): prototype #page-tudas hero — clay i-tudas + the big
-     fact count + "tény rólad · N megy a chatbe". Same honest numbers as the old header
-     (full-list buckets, never the filtered view). */
+  /* Üveg (U9 · mezo-me75u.9): the big light fact count + "tény rólad · N megy a chatbe" under
+     the tf-dhead frame. Same honest numbers as the old header (full-list buckets, never the
+     filtered view). */
   return (
     <TudasFrame view="base" big={heroBig} sub={heroSub} help>
-      <EntranceGroup className="col gap-md" replayKey={`${view}:${kind ?? ''}`}>
-        {params.get('start') && /^\d{4}-\d{2}-\d{2}$/.test(params.get('start')!) && <div className="mz-qcard">
-          <p>Heti áttekintés · {params.get('start')}. A postaláda minden nyitott javaslatot mutat.</p>
-          <Link to={`/me/week?start=${params.get('start')}`}>Vissza ehhez a héthez →</Link>
-        </div>}
+      <EntranceGroup className="tud9-flow" replayKey={`${view}:${kind ?? ''}`}>
+        {params.get('start') && /^\d{4}-\d{2}-\d{2}$/.test(params.get('start')!) && (
+          <div className="glass tf-strip tf-c-rose tud9-week rise" data-week-banner>
+            <Icon3D name="t-calendar" size={24} />
+            <span className="tf-strip-text">Heti áttekintés · {params.get('start')}. A postaláda minden nyitott javaslatot mutat.</span>
+            <Link to={`/me/week?start=${params.get('start')}`} className="tud9-weeklink">Vissza ehhez a héthez →</Link>
+          </div>
+        )}
         <KnowledgeBaseView
           degraded={degraded}
           candidates={candidates}

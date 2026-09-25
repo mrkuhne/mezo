@@ -5,7 +5,9 @@ import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import { CharacterReplyThread } from '@/features/character/components/CharacterReplyThread'
 import { CharacterEvidenceSheet } from '@/features/character/sheets/CharacterEvidenceSheet'
 import { feedDayLabel } from '@/features/character/feedDayLabel'
-import { SKEPTIC_LABEL, displayName } from '@/features/character/deliberationLabels'
+import { SKEPTIC_LABEL } from '@/features/character/deliberationLabels'
+import { personaCharacter } from '@/features/character/personaCharacter'
+import { Icon3D } from '@/shared/ui/clay'
 import { CharacterExpertComment } from '@/features/character/components/CharacterExpertComment'
 import { conferencePostItem } from '@/features/character/logic/conferencePostItem'
 import { CharacterRevisionSheet } from '@/features/character/sheets/CharacterRevisionSheet'
@@ -26,7 +28,10 @@ export function CharacterPostCard({
   const [evidence, setEvidence] = useState(false)
   const [openSignal, setOpenSignal] = useState(0)
   const user = item.expertKey === 'user'
-  const author = user ? 'Te' : displayName(experts, item.expertKey ?? 'mezo')
+  // U9 (mezo-me75u.9): the author is shown as the csapatfal character the persona folds into
+  // („Derű”, not „Doki”), wearing that character's accent; the persona key stays the data.
+  const who = personaCharacter(item.expertKey ?? 'mezo')
+  const author = user ? 'Te' : who.name
   const expert = experts.find((entry) => entry.key === item.expertKey)
   const source: CharacterReplySource | null =
     item.sourceId && item.sourceType
@@ -36,36 +41,37 @@ export function CharacterPostCard({
     setEvidence(false)
     setOpenSignal((value) => value + 1)
   }
+  const outcome = item.kind === 'CONFERENCE_CHANGE'
   return (
-    <article className={`kr-social-post ${item.kind === 'CONFERENCE_CHANGE' ? 'is-outcome' : ''}`}>
-      <header className="kr-post-author">
+    <article className={`tf-post kr9-post tf-c-${user ? 'lav' : who.accent}${outcome ? ' is-outcome' : ''}`}>
+      <header className="tf-ph">
         {user ? (
-          <span className="kr-self-avatar">Te</span>
+          <span className="tf-av tf-c-lav kr9-self" aria-hidden="true">Te</span>
         ) : (
-          <PersonaOrb expertKey={item.expertKey ?? 'mezo'} size={44} />
+          <PersonaOrb expertKey={item.expertKey ?? 'mezo'} size={42} />
         )}
-        <div>
-          <strong>{author}</strong>
-          <small>
-            {expert?.role ?? (user ? 'Saját közlés' : 'A csapat összegzése')} ·{' '}
+        <span className="tf-who">
+          <strong className="tf-name">{author}</strong>
+          <span className="tf-meta">
+            {user ? 'Saját közlés' : expert ? (who.area || expert.role) : 'A csapat összegzése'} ·{' '}
             {feedDayLabel(item.at).toLowerCase()}
-          </small>
-        </div>
-        <span className="kr-post-kind">
-          {item.kind === 'CONFERENCE_CHANGE' ? 'Összegzés' : item.kind === 'CONFERENCE_POST' ? 'Megbeszéljük' : 'Megfigyelés'}
+          </span>
+        </span>
+        <span className={`kr9-kind${outcome ? ' tf-c-gold' : ''}`}>
+          {outcome ? 'Összegzés' : item.kind === 'CONFERENCE_POST' ? 'Megbeszéljük' : 'Megfigyelés'}
         </span>
       </header>
-      <p className="kr-post-text">{item.text}</p>
+      <p className="tf-body kr9-ptext">{item.text}</p>
       {(source?.sourceType === 'CONFERENCE_CHANGE' || source?.sourceType === 'CONFERENCE_ITEM') && (
         <ConferencePostContext source={source} experts={experts} onReply={reply} />
       )}
-      <div className="kr-post-actions">
+      <div className="tf-acts">
         <button type="button" onClick={() => setEvidence(true)}>
-          Miből látszik?
+          <Icon3D name="t-lens" size={19} />Miből látszik?
         </button>
         {source && (
           <button type="button" onClick={reply}>
-            Válaszolok
+            <Icon3D name="t-chat" size={19} />Válaszolok
           </button>
         )}
         {(item.kind === 'CONFERENCE_CHANGE' || item.kind === 'CONFERENCE_POST') && (
@@ -73,7 +79,7 @@ export function CharacterPostCard({
             type="button"
             onClick={() => navigate(`/mezo/karakter/konzilium${source ? `?id=${source.sourceId}` : ''}`)}
           >
-            Beszélgetés ›
+            <Icon3D name="t-council" size={19} />Beszélgetés ›
           </button>
         )}
       </div>
@@ -105,24 +111,24 @@ function ConferencePostContext({
   const [history, setHistory] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const proposal = conferencePostItem(conference, source)
-  if (isLoading) return <p role="status" className="kr-peer-context">A beszélgetés betöltése…</p>
-  if (isError) return <p role="alert" className="kr-peer-context">A beszélgetés nem töltődött be. <button type="button" onClick={refetch}>Újratöltés</button></p>
+  if (isLoading) return <p role="status" className="kr9-ctx">A beszélgetés betöltése…</p>
+  if (isError) return <p role="alert" className="kr9-ctx">A beszélgetés nem töltődött be. <button type="button" className="kr9-inline" onClick={refetch}>Újratöltés</button></p>
   if (!proposal) return null
   const comments = proposal.reactions.length + Number(Boolean(proposal.skeptic)) + Number(Boolean(proposal.chair))
   const followups = conference?.followups?.filter(entry => entry.sourceIndex === proposal.index) ?? []
   if (!comments && followups.length === 0) return null
   return (
-    <div className="kr-peer-thread">
-      <div className="kr-reaction-summary">
-        <span className="kr-facepile">
+    <div className="kr9-thread">
+      <div className="tf-sum">
+        <span className="tf-minis">
           {proposal.reactions.map((reaction, i) => (
-            <PersonaOrb key={`${reaction.expertKey}-${i}`} expertKey={reaction.expertKey} size={24} />
+            <PersonaOrb key={`${reaction.expertKey}-${i}`} expertKey={reaction.expertKey} size={22} />
           ))}
         </span>
         <span>{comments} szakértői hozzászólás</span>
       </div>
       {proposal.reactions.slice(0, expanded ? undefined : 2).map((reaction, i) => <CharacterExpertComment key={i} reaction={reaction} experts={experts} />)}
-      {proposal.reactions.length > 2 && <button type="button" className="kr-claim-evidence" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
+      {proposal.reactions.length > 2 && <button type="button" className="kr9-link" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
         {expanded ? 'Kevesebb hozzászólás' : `További ${proposal.reactions.length - 2} szakértői hozzászólás`}
       </button>}
       {proposal.skeptic && <div className="kr-social-comment">
@@ -132,7 +138,7 @@ function ConferencePostContext({
       {proposal.chair && <div className="kr-social-comment is-mezo">
         <PersonaOrb expertKey="mezo" size={28} />
         <div><strong>Mezo <small>{proposal.chair.accepted ? 'Elfogadott javaslat' : 'Ezt a javaslatot nem fogadta el'}</small></strong><p>{proposal.chair.reason}</p>
-          {proposal.claimId && <button type="button" className="kr-claim-evidence" onClick={() => setHistory(true)}>Mi változott?</button>}
+          {proposal.claimId && <button type="button" className="kr9-link" onClick={() => setHistory(true)}>Mi változott?</button>}
         </div>
       </div>}
       {proposal.claimId && <ClaimPostFeedback claimId={proposal.claimId} />}
@@ -143,8 +149,8 @@ function ConferencePostContext({
           <p>{entry.question}</p>
           <small>{entry.requiredEvidence}</small>
           {entry.status === 'WAITING' && <p><time dateTime={entry.dueOn}>{new Date(`${entry.dueOn}T12:00:00`).toLocaleDateString('hu-HU', { month: 'long', day: 'numeric' })}</time></p>}
-          {entry.status === 'WAITING' && entry.kind === 'QUESTION' && <button type="button" className="kr-claim-evidence" onClick={onReply}>Válaszolok a kérdésre</button>}
-          {entry.resolvedByConferenceId && <a className="kr-claim-evidence" href={`/mezo/karakter/konzilium?id=${entry.resolvedByConferenceId}`}>Megnézem, mire jutottunk ›</a>}
+          {entry.status === 'WAITING' && entry.kind === 'QUESTION' && <button type="button" className="kr9-link" onClick={onReply}>Válaszolok a kérdésre</button>}
+          {entry.resolvedByConferenceId && <a className="kr9-link" href={`/mezo/karakter/konzilium?id=${entry.resolvedByConferenceId}`}>Megnézem, mire jutottunk ›</a>}
         </div>
       </div>)}
       {history && proposal.claimId && <CharacterRevisionSheet claimId={proposal.claimId} onClose={() => setHistory(false)} />}
@@ -165,11 +171,11 @@ function ClaimPostFeedback({ claimId }: { claimId: string }) {
     }
   }
   return <div>
-    <div className="kr-post-actions" aria-label="Visszajelzés a következtetésről">
-      <button type="button" disabled={pending} onClick={() => void send('TALAL')}>Hasznos</button>
-      <button type="button" disabled={pending} onClick={() => void send('NEM_IGAZ')}>Nem így érzem</button>
+    <div className="tf-acts kr9-fb" role="group" aria-label="Visszajelzés a következtetésről">
+      <button type="button" disabled={pending} onClick={() => void send('TALAL')}><Icon3D name="t-thumb-up" size={19} />Hasznos</button>
+      <button type="button" disabled={pending} onClick={() => void send('NEM_IGAZ')}><Icon3D name="t-thumb-down" size={19} />Nem így érzem</button>
     </div>
-    {result === 'success' && <p role="status" className="kr-peer-context">Köszönjük a visszajelzést.</p>}
-    {result === 'error' && <p role="alert" className="kr-peer-context">A visszajelzés mentését nem tudtuk megerősíteni. Próbáld újra.</p>}
+    {result === 'success' && <p role="status" className="tf-after"><Icon3D name="t-tick" size={15} />Köszönjük a visszajelzést.</p>}
+    {result === 'error' && <p role="alert" className="tf-error">A visszajelzés mentését nem tudtuk megerősíteni. Próbáld újra.</p>}
   </div>
 }

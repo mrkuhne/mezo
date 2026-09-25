@@ -77,7 +77,8 @@ describe('KarakterHubPage', () => {
     hoisted.overview = MOCK_OVERVIEW_EMPTY
     hoisted.bootstrapPending = true
     renderHub()
-    expect(screen.getByText('Doki a súlytrendet olvassa…')).toBeInTheDocument()
+    // U9 (mezo-me75u.9): the line is spoken by the csapatfal character Doki folds into (Derű).
+    expect(screen.getByText('Derű a súlytrendet olvassa…')).toBeInTheDocument()
     expect(screen.getByText('Mezo összegzi a portrékat…')).toBeInTheDocument()
   })
 
@@ -119,6 +120,21 @@ describe('KarakterHubPage', () => {
     hoisted.bootstrapResult = 'conflict'
     renderHub()
     expect(screen.getByText('Üzenőfal tartalma')).toBeInTheDocument()
+  })
+
+  test('every ceremony face wears the Karakter back head, which leads back to the Mezo home (U9)', async () => {
+    hoisted.overview = MOCK_OVERVIEW_EMPTY
+    renderHub()
+    expect(screen.getByText('Egyre jobban ismerünk')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo')
+  })
+
+  test('an embedding host owns the heading — no back head when embedded (U9)', () => {
+    hoisted.overview = MOCK_OVERVIEW_EMPTY
+    render(<QueryWrapper><KarakterHubPage embedded /></QueryWrapper>)
+    expect(screen.queryByRole('button', { name: 'Vissza' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Kezdjétek el' })).toBeInTheDocument()
   })
 
   test('overview null (character switch off) renders the degraded row, never a crash', () => {

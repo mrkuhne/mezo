@@ -1,23 +1,28 @@
 import { CharacterFeedPage } from '@/features/character/pages/CharacterFeedPage'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import '@/features/character/character.css'
-import { ClaySpot } from '@/shared/ui/clay'
+import '@/features/insights/boop-world.css'
+import { Boop, Icon3D } from '@/shared/ui/clay'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import {
   useCharacterBootstrap, useCharacterExperts, useCharacterOverview,
 } from '@/data/hooks'
 import { MaturityRing } from '@/features/character/components/MaturityRing'
 import { PersonaOrb } from '@/features/character/components/PersonaOrb'
+import { KarakterBackHead } from '@/features/character/components/KarakterBackHead'
+import { personaCharacter, personaName } from '@/features/character/personaCharacter'
 import { isDossierEmpty } from '@/features/character/dossierState'
 
-// The prototype's `#bootLines` copy, verbatim (karakter-body.html).
-const BOOT_LINES = [
-  'Doki a súlytrendet olvassa…',
-  'Drill a logolási mintákat nézi…',
-  'Antropológus az életeseményeket rendezi…',
-  'A Szkeptikus ellenőriz…',
-  'Mezo összegzi a portrékat…',
+// The prototype's `#bootLines` copy (karakter-body.html) — U9 (mezo-me75u.9): each line is spoken
+// by the csapatfal character the persona folds into (Doki → Derű, Drill → Mocor, Antropológus →
+// Mezo); the persona keys stay the source of truth.
+const BOOT_LINES: { key: string; text: string }[] = [
+  { key: 'doki', text: `${personaName('doki')} a súlytrendet olvassa…` },
+  { key: 'drill', text: `${personaName('drill')} a logolási mintákat nézi…` },
+  { key: 'antropologus', text: `${personaName('antropologus')} az életeseményeket rendezi…` },
+  { key: 'szkeptikus', text: 'A Szkeptikus ellenőriz…' },
+  { key: 'mezo', text: 'Mezo összegzi a portrékat…' },
 ]
 
 
@@ -41,15 +46,25 @@ export function KarakterHubPage({ embedded = false }: { embedded?: boolean }) {
   // loses the ruling face, "0 profilozó" flashes) instead of the honest loading no-render.
   if (isLoading || expertsLoading) return null
 
+  // U9 (mezo-me75u.9): every ceremony face wears the csapatfal back head (the feed renders its
+  // own); an embedding host owns the heading, so `embedded` suppresses it.
+  const face = (children: ReactNode) => (
+    <div className="kr9-page kr9-hub">
+      {!embedded && <KarakterBackHead small="Egyre jobban ismerünk" title="Karakter" onBack={() => navigate('/mezo')} />}
+      {children}
+    </div>
+  )
+
   // Switch-off/degraded (overview null) — the ChatPage idiom: a quiet card, never a crash.
   if (overview == null) {
-    return (
-      <div className="kr-hub">
-        <div className="kr-degraded">
+    return face(
+      <div className="tf-dash kr9-degraded">
+        <Icon3D name="t-info" size={30} />
+        <span>
           A karakter-dosszié jelenleg nem elérhető — ez nem hiba, csak a funkció ki van kapcsolva.
           A napló, az edzés és a Fuel változatlanul működik.
-        </div>
-      </div>
+        </span>
+      </div>,
     )
   }
 
@@ -58,89 +73,88 @@ export function KarakterHubPage({ embedded = false }: { embedded?: boolean }) {
   const preBootstrap = isDossierEmpty(overview)
 
   if (bootstrap.pending) {
-    return (
-      <div className="kr-hub">
-        <div className="kr-boot-progress">
-          <div className="kr-progarc">
-            <svg viewBox="0 0 100 100">
-              <defs>
-                <linearGradient id="kr-bootgrad" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#FF7A55" />
-                  <stop offset="100%" stopColor="#C9962E" />
-                </linearGradient>
-              </defs>
-              <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(43,33,24,0.08)" strokeWidth={7} />
-              <circle cx="50" cy="50" r="42" fill="none" stroke="url(#kr-bootgrad)" strokeWidth={7}
-                strokeLinecap="round" strokeDasharray="90 174" />
-            </svg>
-            <div className="pct">gyűjtjük…</div>
-          </div>
-          <EntranceGroup replayKey="boot-progress">
-            <div className="kr-bootlines">
-              {BOOT_LINES.map((line, i) => (
-                <div key={line} className="rise kr-bootline" style={{ '--d': `${i * 150}ms` } as React.CSSProperties}>
-                  <span className="dot" aria-hidden="true" />
-                  {line}
-                </div>
-              ))}
-            </div>
-          </EntranceGroup>
+    return face(
+      <div className="kr9-boot">
+        <div className="kr9-bootring tf-c-gold" aria-hidden="true">
+          <svg viewBox="0 0 120 120" className="uv-ring">
+            <circle className="uv-ring-track" cx="60" cy="60" r="52" pathLength={100} />
+            <circle className="uv-ring-prog" cx="60" cy="60" r="52" pathLength={100} strokeDasharray="34 100" />
+          </svg>
+          <span className="pct">gyűjtjük…</span>
         </div>
-      </div>
+        <EntranceGroup replayKey="boot-progress">
+          <div className="tf-rows kr9-bootlines">
+            {BOOT_LINES.map((line, i) => (
+              <div key={line.text} className={`rise tf-case tf-flatc tf-c-${personaCharacter(line.key).accent} kr9-bootline`}
+                style={{ '--d': `${i * 150}ms` } as CSSProperties}>
+                <span className="tf-cmain">
+                  <PersonaOrb expertKey={line.key} size={30} />
+                  <span className="tf-ctxt">{line.text}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </EntranceGroup>
+      </div>,
     )
   }
 
   if (ceremony === 'reveal') {
-    return (
-      <div className="kr-hub">
-        <div className="kr-boot-reveal">
-          <MaturityRing dimensions={overview.dimensions} size={132} />
-          <h3>A dossziéd elkészült</h3>
-          <p>7 dimenzió, kezdő állításokkal — mindegyik forrással. Ez csak a kezdet: minden héten
-            tovább finomodik.</p>
-          <button type="button" className="cta" onClick={() => navigate('/mezo/karakter/konzilium')}>
-            Nézd meg az első konzíliumot
-          </button>
-        </div>
-      </div>
+    return face(
+      <section className="tf-rhero tf-c-gold kr9-reveal">
+        <MaturityRing dimensions={overview.dimensions} size={132} />
+        <h3>A dossziéd elkészült</h3>
+        <p className="kr9-prose">7 dimenzió, kezdő állításokkal — mindegyik forrással. Ez csak a kezdet: minden héten
+          tovább finomodik.</p>
+        <button type="button" className="kr9-cta tf-c-gold" onClick={() => navigate('/mezo/karakter/konzilium')}>
+          <Icon3D name="t-council" size={18} />Nézd meg az első konzíliumot
+        </button>
+      </section>,
     )
   }
 
   if (ceremony === 'empty') {
-    return (
-      <div className="kr-hub">
-        <div className="kr-empty">
-          <ClaySpot name="s-hajtas" size={72} />
-          <h3>Még nincs elég történet</h3>
-          <p>A csapat pár nap logolás után kezd — addig nincs mit összegezni. Ez nem hiba, csak
-            még korai.</p>
-          {/* karakter-body.html's `#emptyBack` (fix round 1: this face was a dead end — no way
-             out of it). Resetting ceremony to 'idle' re-evaluates the SAME shared predicate
-             the rest of the page uses, so re-entry always lands somewhere sane: the intro face
-             again (the dossier is still untouched — a 204 changed nothing) or the plain hub if
-             it somehow isn't any more. Never re-traps on the empty face itself. */}
-          <button type="button" className="kr-emptyback" onClick={() => setCeremony('idle')}>‹ vissza</button>
-        </div>
-      </div>
+    return face(
+      <section className="tf-rhero tf-c-sage kr9-empty">
+        <Icon3D name="t-sprout" size={72} className="kr9-heroicon" />
+        <h3>Még nincs elég történet</h3>
+        <p className="kr9-prose">A csapat pár nap logolás után kezd — addig nincs mit összegezni. Ez nem hiba, csak
+          még korai.</p>
+        {/* karakter-body.html's `#emptyBack` (fix round 1: this face was a dead end — no way
+           out of it). Resetting ceremony to 'idle' re-evaluates the SAME shared predicate
+           the rest of the page uses, so re-entry always lands somewhere sane: the intro face
+           again (the dossier is still untouched — a 204 changed nothing) or the plain hub if
+           it somehow isn't any more. Never re-traps on the empty face itself. */}
+        <button type="button" className="kr9-cta is-ghost" onClick={() => setCeremony('idle')}>‹ vissza</button>
+      </section>,
     )
   }
 
   if (preBootstrap && bootstrap.result !== 'conflict') {
-    return (
-      <div className="kr-hub">
-        <div className="kr-boot-intro">
-          <ClaySpot name="s-orb" size={64} className="kr-orb" />
+    // U9: the catalogue's personas fold into the csapatfal's characters — one face per character.
+    const cast = [...new Map(experts.map((e) => [personaCharacter(e.key).id, e.key])).values()]
+    return face(
+      <>
+        <section className="tf-rhero tf-c-gold kr9-intro">
+          <Boop domain="gold" size={92} alive className="tf-rboop" />
           <h3>Kezdjük el a dossziét</h3>
-          <p>A csapat elolvassa a teljes eddigi történetedet — napi összegzőket, mintákat, tényeket,
+          <p className="kr9-prose">A csapat elolvassa a teljes eddigi történetedet — napi összegzőket, mintákat, tényeket,
             heti áttekintéseket, naplóbejegyzéseket — és felépíti az első portrékat.</p>
-          <div className="kr-boot-cluster">
-            {experts.map((e) => (
-              <div className="cd" key={e.key}><PersonaOrb expertKey={e.key} size={31} /></div>
-            ))}
-          </div>
-          <button type="button" className="cta" onClick={() => bootstrap.start()}>Kezdjétek el</button>
+        </section>
+        <div className="kr9-cast5">
+          {cast.map((key) => (
+            <span className="kr9-castb" key={key}>
+              <PersonaOrb expertKey={key} size={46} />
+              <b>{personaName(key)}</b>
+            </span>
+          ))}
         </div>
-      </div>
+        <div className="kr9-center">
+          <button type="button" className="kr9-cta tf-c-gold" onClick={() => bootstrap.start()}>
+            <Icon3D name="t-play" size={18} />Kezdjétek el
+          </button>
+        </div>
+      </>,
     )
   }
 

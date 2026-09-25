@@ -117,7 +117,6 @@ export const PAGE_INDEX: IndexedPage[] = [
   { route: '/mezo/karakter', label: 'Karakter', hint: 'Amit Boop rólad összerakott — a dosszié.' },
   { route: '/mezo/karakter/dimenziok', label: 'Dimenziók', hint: 'A karaktered tengelyei egyenként.' },
   { route: '/mezo/karakter/feed', label: 'Karakter-napló', hint: 'Mikor és mitől változott a képed.' },
-  { route: '/mezo/karakter/csapat', label: 'A csapat', hint: 'A belső hangok, akik tanácsot adnak.' },
   { route: '/mezo/karakter/konzilium', label: 'Konzílium', hint: 'A csapat együtt beszéli meg az ügyedet.' },
   { route: '/mezo/karakter/gepterem', label: 'Gépterem', hint: 'Ami a motorháztető alatt történik.' },
   { route: '/mezo/karakter/gepterem/osszes', label: 'Összes funkció', hint: 'A régi teljes menü — minden Boop-eszköz a saját nevén.' },

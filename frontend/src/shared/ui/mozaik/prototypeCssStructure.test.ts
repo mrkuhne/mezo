@@ -1759,3 +1759,46 @@ describe.each(U8_BLOCKS)('the uveg mezo1 %s section carries the glass ranking (m
     expect(section()).not.toContain('var(--page)')
   })
 })
+
+// U9 · Mezo II (mezo-me75u.9): Karakter + Rólad, Konzílium, Gépterem, Tudástár, Minták + Előrejelzések —
+// dressed in the csapatfal material (the tf-* kit in boop-world.css) with each page's own prefix. Five
+// parallel builders; every block's key selectors are pinned so a later whole-file save that drops one
+// fails CI (bible rule 41).
+const U9_BLOCKS: Array<[string, string[]]> = [
+  ['karakter', ['.kr9-page .kr9-dhead .tf-back', '.kr9-page .kr9-cta', '.kr9-page .kr9-filt button[aria-pressed="true"]',
+    '.kr9-page .kr9-bub', '.kr9-page .kr9-chip.is-main', '.kr9-page .kr9-links button', '.kr9-page .kr9-portrait',
+    '.kr9-page .kr9-bootring svg', '.kr9-rolad .kr9-rhead']],
+  ['konzilium', ['.kz-step .kz-date', '.kz-seg button.on', '.kz-outcells .kz-outcell', '.kz-page .kz-round.hot', '.kz-thhead',
+    '.kz-cmt', '.kz-chip.cha', '.kz-page .kz-ruling', '.kz-arcrow.on']],
+  ['gepterem', ['.gtm-page .gtm-lede', '.gtm-menu-page .gtm-menu', '.gtm-menu-page .gtm-tile', '.gtm-futasok .gtm-wmenu',
+    '.gtm-futasok .gtm-run.gtm-incomplete', '.gtm-run-page .gtm-flow-cell', '.gtm-run-page .gtm-chain-num', '.gtm-run-page .gtm-pill',
+    '.gtm-adat .gtm-seg button.on', '.gtm-page .gtm-det']],
+  ['tudastar', ['.tud9 .tud9-bignum', '.tud9 .tud9-sech', '.tud9 .tud9-conflict', '.tud9 .tud9-chk input:checked + i',
+    '.tud9 .tud9-btn.is-main', '.tud9 .tud9-fact.off .tf-ttx', '.tud9 .uv-tgl.is-on', '.tud9 .tud9-kind .tud9-kn',
+    '.tud9 .tud9-kind-empty', '.tud9 .tud9-qa', '.tud9-node .tud9-edges li']],
+  ['mintak', ['.m9m-root .m9m-big b', '.m9m-root .m9m-lcel.is-selected', '.m9m-root .m9m-lcel.hot b', '.m9m-root .m9m-act.is-no',
+    '.m9m-root .m9m-tile.is-mute', '.m9m-root .m9m-covtile', '.sheet.glass.m9m-sheet', '.m9e-root .m9e-acc',
+    '.m9e-root .m9e-filt button.on', '.m9e-root .m9e-st']],
+]
+
+describe.each(U9_BLOCKS)('the uveg mezo2 %s section carries the glass ranking (mezo-me75u.9)', (name, sels) => {
+  const section = () => stripComments(slice(`── uveg mezo2 ${name} (`, `── /uveg mezo2 ${name} `))
+
+  test('the block exists and dresses every surface of the group', () => {
+    const css = section()
+    for (const sel of sels) expect(css, `${sel} missing from the uveg mezo2 ${name} block`).toContain(sel)
+  })
+
+  test('never glass inside glass (U1 rule 5)', () => {
+    expect(section()).not.toMatch(/\.glass [^{,]*\.glass[\s,{]/)
+  })
+
+  test('the ground is written as a token that exists (--canvas, never the undefined --page)', () => {
+    expect(section()).not.toContain('var(--page)')
+  })
+
+  test('motion lives only in the no-preference branch (bible §6)', () => {
+    const css = section().replace(/@media\s*\(prefers-reduced-motion:\s*no-preference\)\s*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, '')
+    expect(css).not.toMatch(/animation\s*:\s*(?!none)[a-z]/)
+  })
+})

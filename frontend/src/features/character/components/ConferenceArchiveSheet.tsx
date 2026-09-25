@@ -70,21 +70,19 @@ export function ConferenceArchiveSheet({ conferences, currentId, onPick, onClose
   onPick: (id: string) => void
   onClose: () => void
 }) {
-  // M3 (mezo-sp9w branch-review): `kr-arcsheet` had no rule anywhere in the stylesheet — the
-  // sheet is already fully styled by the shared `.sheet` base (prototype.css) plus the specific
-  // `kr-arc*` classes on its own content (including the fixed-height scroll container,
-  // `.kr-arcscroll { max-height: 62vh }`, which is what gives it its fixed height regardless of
-  // how many years of history it lists). There is no sheet-level override this screen needs, so
-  // the dead class is dropped rather than given an empty rule to justify keeping it.
+  // M3 (mezo-sp9w branch-review): no sheet-level override — the plain shared `Sheet` primitive
+  // and its behaviour stay as they are. U9 (mezo-me75u.9) dresses only the content: the rows are
+  // flat cells (the open council's row lit), the kind badges flat chips, all scoped under
+  // `.kz-arc` (the sheet portals outside the page root). `.kz-arcscroll` keeps the fixed height.
   return (
-    <Sheet onClose={onClose} labelledBy="kr-arctitle">
+    <Sheet onClose={onClose} labelledBy="kz-arctitle">
       {(close) => (
-        <>
-          <div className="kr-archd" id="kr-arctitle">
+        <div className="kz-arc">
+          <div className="kz-archd" id="kz-arctitle">
             Korábbi tanácskozások
-            <span className="kr-arccnt">{conferences.length}</span>
+            <span className="kz-arccnt">{conferences.length}</span>
           </div>
-          <div className="kr-arcscroll">
+          <div className="kz-arcscroll">
             {conferences.map((conf, i) => {
               const prev = i > 0 ? conferences[i - 1] : null
               const newMonth = prev == null || monthKey(prev.generatedAt) !== monthKey(conf.generatedAt)
@@ -94,28 +92,28 @@ export function ConferenceArchiveSheet({ conferences, currentId, onPick, onClose
               const other = otherOutcomeLabel(conf.outcome)
               return (
                 <div key={conf.id}>
-                  {newYear && <div className="kr-arcyr">{yearOf(conf.generatedAt)}</div>}
-                  {newMonth && <div className="kr-arcmh">{monthLabel(conf.generatedAt)}</div>}
+                  {newYear && <div className="kz-arcyr">{yearOf(conf.generatedAt)}</div>}
+                  {newMonth && <div className="kz-arcmh">{monthLabel(conf.generatedAt)}</div>}
                   <button
                     type="button"
-                    className={`kr-arcrow${conf.id === currentId ? ' on' : ''}`}
+                    className={`kz-arcrow${conf.id === currentId ? ' on' : ''}`}
                     onClick={() => { close(); onPick(conf.id) }}
                   >
-                    <span className="kr-arcday">{dayLabel(conf.generatedAt)}</span>
+                    <span className="kz-arcday">{dayLabel(conf.generatedAt)}</span>
                     {outcome !== '' && (
-                      <span className="kr-arcout">
+                      <span className="kz-arcout">
                         {named}
                         {named !== '' && other !== '' && ' · '}
-                        {other !== '' && <span className="kr-arcout-other">{other}</span>}
+                        {other !== '' && <span className="kz-arcout-other">{other}</span>}
                       </span>
                     )}
-                    <span className={`kr-kbadge ${conf.kind.toLowerCase()}`}>{KIND_BADGE[conf.kind]}</span>
+                    <span className={`kz-kbadge ${conf.kind.toLowerCase()}`}>{KIND_BADGE[conf.kind]}</span>
                   </button>
                 </div>
               )
             })}
           </div>
-        </>
+        </div>
       )}
     </Sheet>
   )

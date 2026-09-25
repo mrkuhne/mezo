@@ -21,11 +21,17 @@
 // "Ritkább futások" (MONTHLY/BOOTSTRAP): GET /api/character/runs caps a query span at 62 days
 // (Task 2 contract, CHARACTER_RUN_RANGE_INVALID) — the rare-runs window is the 62 days ending
 // at the browsed week, the widest single query the endpoint allows, not an unbounded lookback.
+//
+// Üveg re-dress (U9, mezo-me75u.9) — uveg-mezo-teljes-u9.js `futasok()`: the csapatfal's slate
+// dev-door head, a glass week pill between flat steppers, day headers, and each run as a
+// `tf-case` ranked by `runRank` (glass = it produced something, flat = quiet / catch-up, flat +
+// amber = processing not verifiably finished); missing and future days are dashed.
 // ============================================================
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import '@/features/character/character.css'
-import { PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
+import '@/features/insights/boop-world.css'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import { GepteremHead } from '@/features/character/components/GepteremHead'
 import { useCharacterRuns } from '@/data/hooks'
 import { mondayIso } from '@/data/fuel/fuelWeekHooks'
 import { isCurrentWeek, nextMonday, prevMonday, resolveWeekStart } from '@/features/me/logic/weekNav'
@@ -100,120 +106,157 @@ export function FutasokPage() {
   if (isLoading || rareLoading) return null
 
   return (
-    <div className="kr-hub">
-      <PageHead onBack={() => navigate('/mezo/karakter/gepterem')} label="‹ Gépterem" />
-      <PageHero name="Futások" sub="a pipeline futásai, hetekre bontva" />
-      <PageBody>
-        <div className="kr-weeknav">
-          <button type="button" className="kr-wstep" aria-label="Előző hét" onClick={() => goWeek(prevMonday(start))}>‹</button>
-          {/* Fix round 1 (a11y): dropped the `aria-label="Hét választása"` that used to override
-             this button's accessible name down to a bare "week picker" label, hiding the
-             actual browsed week range + status ("legutóbbi futások" / "korábbi hét") — the
-             row's only live datum — from screen-reader users while sighted users still saw
-             it. The button's own text content is now the accessible name. */}
-          <div className="kr-weeklbl" ref={weeklblRef}>
-            <button
-              type="button"
-              className="kr-weeklbl-btn"
-              aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((o) => !o)}
-            >
-              <span>{weekLabel(start)}</span>
-              <small>{isCurrentWeek(start) ? 'legutóbbi futások' : 'korábbi hét'}</small>
-            </button>
-            {menuOpen && (
-              <div className="kr-weekmenu">
-                {recentMondays.map((iso) => (
-                  <button
-                    key={iso}
-                    type="button"
-                    className={iso === start ? 'kr-weekchip on' : 'kr-weekchip'}
-                    onClick={() => goWeek(iso)}
-                  >
-                    {weekLabel(iso)}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+    <div className="tf-page tf-c-slate gtm-page gtm-futasok">
+      <GepteremHead small="Gépterem · a pipeline futásai, hetekre bontva" title="Futások"
+        onBack={() => navigate('/mezo/karakter/gepterem')} />
+      <div className="gtm-week">
+        <button type="button" className="gtm-wstep" aria-label="Előző hét" onClick={() => goWeek(prevMonday(start))}>‹</button>
+        {/* Fix round 1 (a11y): no `aria-label` override on the week button — its own text (the
+           browsed range + "legutóbbi futások" / "korábbi hét") is the accessible name. */}
+        <div className="gtm-wlwrap" ref={weeklblRef}>
           <button
             type="button"
-            className="kr-wstep"
-            aria-label="Következő hét"
-            disabled={isCurrentWeek(start)}
-            onClick={() => goWeek(nextMonday(start))}
+            className="glass tf-c-slate gtm-wl"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((o) => !o)}
           >
-            ›
+            <strong>{weekLabel(start)}</strong>
+            <small>{isCurrentWeek(start) ? 'legutóbbi futások' : 'korábbi hét'} <span aria-hidden="true">⌄</span></small>
           </button>
+          {menuOpen && (
+            <div className="glass tf-c-slate gtm-wmenu">
+              {recentMondays.map((iso) => (
+                <button
+                  key={iso}
+                  type="button"
+                  className={iso === start ? 'gtm-wchip on' : 'gtm-wchip'}
+                  onClick={() => goWeek(iso)}
+                >
+                  {weekLabel(iso)}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+        <button
+          type="button"
+          className="gtm-wstep"
+          aria-label="Következő hét"
+          disabled={isCurrentWeek(start)}
+          onClick={() => goWeek(nextMonday(start))}
+        >
+          ›
+        </button>
+      </div>
 
-        <div className="kr-runlist">
-          {days.map((dayIso) => {
-            const dayRuns = runsByDay.get(dayIso) ?? []
-            const isToday = dayIso === todayIso
-            // M8 (final review): TODAY's own day, and every day after it, cannot have a NIGHTLY
-            // run row yet — the nightly job processes YESTERDAY (I1's write-lag), so a run whose
-            // `day` equals today is only written tomorrow ~02:50. Treating today as "future" too
-            // (not just strictly-after) keeps this honest: a missing row for today is the
-            // expected fact that tonight's processing hasn't happened, not a pipeline failure.
-            // Rendering MISSING_DAY_LINE there would read as "the pipeline failed to run last
-            // night" for a night that hasn't come. The stepper already disables navigating past
-            // the current week, so a future day can only appear inside the current week.
-            const isFuture = dayIso >= todayIso
-            return (
-              <div key={dayIso}>
-                <div className={isToday ? 'kr-daygrouphd today' : 'kr-daygrouphd'}>
-                  <span className="kr-dg-dow">{isToday ? 'MA' : huDow(dayIso).toUpperCase()}</span>
-                  <span className="kr-dg-date">{shortDate(dayIso)}</span>
-                </div>
+      <div className="gtm-runlist">
+        {days.map((dayIso, di) => {
+          const dayRuns = runsByDay.get(dayIso) ?? []
+          const isToday = dayIso === todayIso
+          // M8 (final review): TODAY's own day, and every day after it, cannot have a NIGHTLY
+          // run row yet — the nightly job processes YESTERDAY (I1's write-lag), so a run whose
+          // `day` equals today is only written tomorrow ~02:50. Treating today as "future" too
+          // (not just strictly-after) keeps this honest: a missing row for today is the
+          // expected fact that tonight's processing hasn't happened, not a pipeline failure.
+          // Rendering MISSING_DAY_LINE there would read as "the pipeline failed to run last
+          // night" for a night that hasn't come. The stepper already disables navigating past
+          // the current week, so a future day can only appear inside the current week.
+          const isFuture = dayIso >= todayIso
+          return (
+            <div key={dayIso} className="gtm-daygroup">
+              <div className={isToday ? 'gtm-day today' : 'gtm-day'}>
+                <b>{isToday ? 'MA' : huDow(dayIso).toUpperCase()}</b>
+                <span>{shortDate(dayIso)}</span>
+              </div>
+              <div className="tf-rows">
                 {dayRuns.length === 0 && !isFuture && (
-                  <div className="kr-runrow-missing">{MISSING_DAY_LINE}</div>
+                  <div className="tf-dash gtm-free" data-state="missing">
+                    <Icon3D name="t-info" size={22} /><span>{MISSING_DAY_LINE}</span>
+                  </div>
                 )}
                 {dayRuns.length === 0 && isFuture && (
-                  <div className="kr-runrow-future">{FUTURE_DAY_LINE}</div>
+                  <div className="tf-dash gtm-free gtm-future" data-state="future">
+                    <Icon3D name="t-clock" size={22} /><span>{FUTURE_DAY_LINE}</span>
+                  </div>
                 )}
                 {dayRuns.map((run) => (
-                  <button
-                    key={run.id}
-                    type="button"
-                    className={isQuietNightly(run) ? 'kr-runrow quiet' : 'kr-runrow'}
-                    onClick={() => navigate(`/mezo/karakter/gepterem/futas/${run.id}`)}
-                  >
-                    <div className="kr-runrow-tx">
-                      <div className="kr-runrow-title">
-                        {KIND_LABEL[run.kind]} <span className={`kr-run-badge ${run.kind.toLowerCase()}`}>{KIND_BADGE[run.kind]}</span>
-                      </div>
-                      <div className="kr-runrow-sub">{runRowSubline(run)}</div>
-                    </div>
-                    <span className="kr-rchev" aria-hidden="true">›</span>
-                  </button>
+                  <RunRow key={run.id} run={run} index={di}
+                    onOpen={() => navigate(`/mezo/karakter/gepterem/futas/${run.id}`)} />
                 ))}
               </div>
-            )
-          })}
-        </div>
+            </div>
+          )
+        })}
+      </div>
 
-        <div className="kr-secttl">Ritkább futások</div>
-        <div className="kr-rarelist">
-          {rareRuns.length === 0 && (
-            <p className="kr-sectnote">Ebben az ablakban nincs havi vagy bootstrap futás.</p>
-          )}
-          {rareRuns.map((run) => (
-            <button
-              key={run.id}
-              type="button"
-              className="kr-raretile"
-              onClick={() => navigate(`/mezo/karakter/gepterem/futas/${run.id}`)}
-            >
-              <div className="kr-runrow-tx">
-                <div className="kr-runrow-title">{KIND_LABEL[run.kind]}</div>
-                <div className="kr-runrow-sub">{shortDate(run.day)} · {runRowSubline(run)}</div>
-              </div>
-              <span className="kr-rchev" aria-hidden="true">›</span>
-            </button>
-          ))}
-        </div>
-      </PageBody>
+      <div className="tf-sec"><h2>Ritkább futások</h2></div>
+      <div className="tf-rows gtm-rare">
+        {rareRuns.length === 0 && (
+          <p className="gtm-lede gtm-rare-empty">Ebben az ablakban nincs havi vagy bootstrap futás.</p>
+        )}
+        {rareRuns.map((run) => (
+          <button
+            key={run.id}
+            type="button"
+            className={`tf-case tf-flatc tf-c-${KIND_ACCENT[run.kind]} gtm-run`}
+            onClick={() => navigate(`/mezo/karakter/gepterem/futas/${run.id}`)}
+          >
+            <span className="tf-cmain">
+              <Icon3D name={KIND_ICON[run.kind]} size={36} />
+              <span className="tf-ctxt">
+                <span className="tf-ctitle">{KIND_LABEL[run.kind]}</span>
+                <span className="tf-csub">{shortDate(run.day)} · {runRowSubline(run)}</span>
+              </span>
+              <span className="tf-chev" aria-hidden="true">›</span>
+            </span>
+          </button>
+        ))}
+      </div>
     </div>
+  )
+}
+
+/** Each run kind's csapatfal accent + 3D icon (uveg-mezo-teljes-u9.js `futasok()`): nightly
+ *  lavender moon, the weekly konzílium gold, the esti kiadás rose scroll. */
+const KIND_ACCENT: Record<CharacterRunSummary['kind'], 'lav' | 'gold' | 'rose' | 'sage'> = {
+  NIGHTLY: 'lav', WEEKLY: 'gold', MONTHLY: 'gold', BOOTSTRAP: 'sage', EDITION: 'rose',
+}
+const KIND_ICON: Record<CharacterRunSummary['kind'], Icon3DName> = {
+  NIGHTLY: 't-moon', WEEKLY: 't-calendar', MONTHLY: 't-calendar', BOOTSTRAP: 't-sprout', EDITION: 't-scroll',
+}
+
+/** The row's rank (bible §3.4): a run that produced something is a glass case; a quiet or
+ *  catch-up run is a flat one; a NIGHTLY run whose processing did not verifiably finish is flat
+ *  with an amber state — the same `status !== 'SUCCESS'` split `runRowSubline` words. */
+function runRank(run: CharacterRunSummary): 'glass' | 'flat' | 'incomplete' {
+  if (run.kind === 'NIGHTLY' && run.status !== 'SUCCESS') return 'incomplete'
+  return run.observationCount > 0 ? 'glass' : 'flat'
+}
+
+function RunRow({ run, index, onOpen }: { run: CharacterRunSummary; index: number; onOpen: () => void }) {
+  const rank = runRank(run)
+  const accent = KIND_ACCENT[run.kind]
+  const material = rank === 'glass' ? 'glass tf-case' : 'tf-case tf-flatc'
+  return (
+    <button
+      type="button"
+      className={`${material} tf-c-${accent} gtm-run${isQuietNightly(run) ? ' quiet' : ''}${rank === 'incomplete' ? ' gtm-incomplete' : ''} rise`}
+      data-rank={rank}
+      style={{ '--d': `${Math.min(index, 8) * 40}ms` } as CSSProperties}
+      onClick={onOpen}
+    >
+      <span className="tf-crow">
+        <span className={`tf-st tf-s-${rank === 'incomplete' ? 'gold' : accent}`}>{KIND_BADGE[run.kind]}</span>
+        {rank === 'incomplete' && <em><Icon3D name="t-info" size={18} /></em>}
+      </span>
+      <span className="tf-cmain">
+        <Icon3D name={KIND_ICON[run.kind]} size={36} />
+        <span className="tf-ctxt">
+          <span className="tf-ctitle">{KIND_LABEL[run.kind]}</span>
+          <span className="tf-csub">{runRowSubline(run)}</span>
+        </span>
+        <span className="tf-chev" aria-hidden="true">›</span>
+      </span>
+    </button>
   )
 }

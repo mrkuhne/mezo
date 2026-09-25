@@ -27,21 +27,26 @@ const WHAT_IS: Record<CharacterConferenceSummary['kind'], string> = {
     + 'dossziéba.',
 }
 
+/** Üvegesítés U9 (mezo-me75u.9): a „Mi ez” bekezdés sima bevezető szöveg — nem kártya (bible §3). */
 export function KonziliumWhatIs({ kind }: { kind: CharacterConferenceSummary['kind'] }) {
-  return (
-    <div className="kr-konzcard">
-      <div className="kr-konzcap">Mi ez</div>
-      <p className="kr-whatis">{WHAT_IS[kind]}</p>
-    </div>
-  )
+  return <p className="kz-lede">{WHAT_IS[kind]}</p>
 }
 
-function RoundCell({ n, label, value, hot }: { n: number; label: string; value: string; hot?: boolean }) {
+type RoundAccent = 'lav' | 'sky' | 'slate' | 'sage'
+
+/** Egy kör: lapos `tf-case` kártya, a kör sorszáma + neve `tf-st` chipben, az értéke nagy sorban.
+ *  A kiemelt (hot) kereszt-vita kör kap fényt — a többi csendes. */
+function RoundCell({ n, label, value, accent, hot }: {
+  n: number
+  label: string
+  value: string
+  accent: RoundAccent
+  hot?: boolean
+}) {
   return (
-    <div className={`kr-rst${hot === true ? ' hot' : ''}`}>
-      <span className="kr-rn">{n}</span>
-      <b>{label}</b>
-      <i>{value}</i>
+    <div className={`tf-case tf-flatc kz-round tf-s-${accent}${hot === true ? ' hot' : ''}`}>
+      <span className="tf-crow"><span className="tf-st">{`${n} · ${label}`}</span></span>
+      <span className="kz-rval">{value}</span>
     </div>
   )
 }
@@ -53,18 +58,18 @@ export function KonziliumRoundMap({ threads, crossTalkRan }: {
   const stats = deliberationStats(threads)
   const crossTalkValue = crossTalkRan ? `${stats.reactions} hozzászólás` : 'nem volt ilyen kör'
   return (
-    <div className="kr-konzcard">
-      <div className="kr-konzcap">Hogyan zajlott</div>
-      <div className="kr-rail">
-        <RoundCell n={1} label="Javaslat" value={`${stats.proposals} felvetés`} />
-        <RoundCell n={2} label="Kereszt-vita" value={crossTalkValue} hot={crossTalkRan && stats.reactions > 0} />
-        <RoundCell n={3} label="Szkeptikus" value={`${stats.skepticVerdicts} vizsgálat`} />
+    <div className="kz-rounds">
+      <div className="tf-sec"><h2>Hogyan zajlott</h2><span className="tf-hint">4 forduló</span></div>
+      <div className="tf-rows">
+        <RoundCell n={1} label="Javaslat" accent="lav" value={`${stats.proposals} felvetés`} />
+        <RoundCell n={2} label="Kereszt-vita" accent="sky" value={crossTalkValue} hot={crossTalkRan && stats.reactions > 0} />
+        <RoundCell n={3} label="Szkeptikus" accent="slate" value={`${stats.skepticVerdicts} vizsgálat`} />
         {/* I1 (mezo-sp9w branch-review): this cell describes the meeting's DECISIONS, not dossier
             effects — "be" read as "bekerült" (admitted), but the count includes accepted
             retirements, which contradicts the outcome card's own "nyugdíjazva" label for the
             very same item. "elfogadva/elvetve" is true regardless of what kind of change a
             decision was. */}
-        <RoundCell n={4} label="Mezo dönt" value={`${stats.accepted} elfogadva · ${stats.rejected} elvetve`} />
+        <RoundCell n={4} label="Mezo dönt" accent="sage" value={`${stats.accepted} elfogadva · ${stats.rejected} elvetve`} />
       </div>
     </div>
   )

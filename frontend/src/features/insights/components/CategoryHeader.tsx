@@ -1,9 +1,9 @@
-/** Mozaik re-face (mezo-d20.6.7) — prototype en-body .lsec: an unboxed eyebrow
- *  row, the closed-header-already-tells-the-story idiom (no card/shadow). */
+/** Üveg (U9 · mezo-me75u.9): the kind list's section head — an unboxed title row in the
+ *  kind's accent, the closed-header-already-tells-the-story idiom (no card/shadow). */
 export function CategoryHeader({ label, color, count }: { label: string; color: string; count: number }) {
   return (
-    <div className="tud-lsec">
-      <span className="mz-eyebrow" style={{ color }}>{label} · {count}</span>
+    <div className="tud9-lsec">
+      <h2 className="tud9-sech" style={{ color }}>{label} · {count}</h2>
     </div>
   )
 }

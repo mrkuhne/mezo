@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { RunPage } from './RunPage'
 import { MOCK_EXPERTS, MOCK_RUN_DETAIL } from '@/data/character/characterMock'
 import { TEAM } from '@/features/insights/logic/team'
+import { personaName } from '@/features/character/personaCharacter'
 import type { CharacterRunResponse, CharacterRunSummary } from '@/data/character/characterApi'
 
 const mockNavigate = vi.fn()
@@ -48,6 +49,23 @@ describe('RunPage', () => {
     expect(within(flow).getByText('hívás')).toBeInTheDocument()
     expect(within(flow).getByText('megfigyelés')).toBeInTheDocument()
     expect(screen.getByText('logging-gap')).toBeInTheDocument()
+  })
+
+  // U9 (owner 2026-09-25): the observing expert shows as its csapatfal character — the chain and
+  // the called-experts chips name `personaName(key)`, never the backend catalog's displayName.
+  test('expert names are the csapatfal characters, not the backend personas', () => {
+    renderRun()
+    const obsKey = MOCK_RUN_DETAIL['ejsz-27'].observations[0].expertKey
+    const catalogName = MOCK_EXPERTS.find((e) => e.key === obsKey)!.displayName
+    expect(screen.getAllByText(personaName(obsKey)).length).toBeGreaterThan(0)
+    if (catalogName !== personaName(obsKey)) expect(screen.queryByText(catalogName)).not.toBeInTheDocument()
+  })
+
+  test('the AI-napló row is the page\'s one glass object; the chain panels are flat', () => {
+    const { container } = renderRun()
+    expect(container.querySelectorAll('.glass:not(.tf-back)')).toHaveLength(1)
+    expect(screen.getByText('Ehhez a futáshoz tartozó nyers hívások az AI-naplóban').closest('button')).toHaveClass('glass')
+    container.querySelectorAll('.gtm-chain').forEach((c) => expect(c).not.toHaveClass('glass'))
   })
 
   test('M4 (final review): production refCount is always 0 — the ref line never renders a hollow zero', () => {
@@ -99,11 +117,10 @@ describe('RunPage', () => {
   test('an unknown/foreign run id (404 -> null) renders the honest not-found face, not a crash', () => {
     hoisted.run = null
     const { container } = renderRun()
-    // Fix round 1: the feature's ONE established 404/switch-off idiom (DimensionPage,
-    // DimensionsPage, KarakterHubPage, CharacterFeedPage) is `.kr-degraded`, not the
-    // KonziliumPage-borrowed `.kr-konz-empty` this page used to render.
+    // Fix round 1 ruled out the KonziliumPage-borrowed `.kr-konz-empty`; the üveg re-dress (U9)
+    // draws the not-found face as the csapatfal's dashed empty state (bible §3 rank 4).
     expect(screen.getByText('Ez a futás nem található.')).toBeInTheDocument()
-    expect(container.querySelector('.kr-degraded')).toBeInTheDocument()
+    expect(container.querySelector('.tf-dash[data-state="not-found"]')).toBeInTheDocument()
     expect(container.querySelector('.kr-konz-empty')).not.toBeInTheDocument()
   })
 

@@ -1,18 +1,9 @@
-import { ClayIcon, type ClayIconName, type Icon3DName } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { DOMAIN_META } from '@/features/insights/logic/domains'
 import type { MetricDomain } from '@/data/types'
 
-export const PATTERN_DOMAIN_ICONS: Record<MetricDomain, ClayIconName> = {
-  sleep: 'i-alvas',
-  train: 'i-edzes',
-  fuel: 'i-fuel',
-  mind: 'i-checkin',
-  body: 'i-suly',
-  other: 'i-minta',
-}
-
 /** A domén 3D jele a „Miből látszik?" mélyoldalakon (üveg, mezo-me75u.13 — a prototípus
- *  `DOMI` térképe: uveg-uzenofal.html). A lista és a szűrő-lap a clay jelet tartja (U8b). */
+ *  `DOMI` térképe: uveg-uzenofal.html). A TestPlanTiles és a PatternDetailHero ezt használja. */
 export const PATTERN_DOMAIN_ART: Record<MetricDomain, Icon3DName> = {
   sleep: 't-moon',
   train: 't-dumbbell',
@@ -20,6 +11,13 @@ export const PATTERN_DOMAIN_ART: Record<MetricDomain, Icon3DName> = {
   mind: 't-journal',
   body: 't-person',
   other: 't-heart',
+}
+
+/** A lista, a döntés-kártya és a szűrő-lap domén-jele (üveg, mezo-me75u.9 — a teljes-Mezo
+ *  prototípus minta-csempéi): ugyanaz a 3D készlet, csak az „egyéb" a minta-jelet viseli. */
+export const PATTERN_DOMAIN_MARK_ART: Record<MetricDomain, Icon3DName> = {
+  ...PATTERN_DOMAIN_ART,
+  other: 't-pattern',
 }
 
 export function PatternDomainMark({
@@ -33,7 +31,7 @@ export function PatternDomainMark({
 }) {
   return (
     <span className="mnt-domain-mark" data-pattern-domain={domain}>
-      <ClayIcon name={PATTERN_DOMAIN_ICONS[domain]} size={size} />
+      <Icon3D name={PATTERN_DOMAIN_MARK_ART[domain]} size={size} />
       {showLabel && <span>{DOMAIN_META[domain].label}</span>}
     </span>
   )

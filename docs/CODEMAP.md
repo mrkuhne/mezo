@@ -298,17 +298,16 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **modules:** characterApi.ts, characterCouncilHooks.ts, characterHooks.ts, characterMock.ts,
     characterReplyHooks.ts
 - **FE ui** `frontend/src/features/character`
-  - **pages:** AdatforrasokPage.tsx, CharacterFeedPage.tsx, CsapatPage.tsx, DetektorokPage.tsx, DimensionPage.tsx,
-    DimensionsPage.tsx, FutasokPage.tsx, GeptermPage.tsx, KarakterHubPage.tsx, KonziliumPage.tsx, KorPage.tsx,
-    RunPage.tsx
+  - **pages:** AdatforrasokPage.tsx, CharacterFeedPage.tsx, DetektorokPage.tsx, DimensionPage.tsx, DimensionsPage.tsx,
+    FutasokPage.tsx, GeptermPage.tsx, KarakterHubPage.tsx, KonziliumPage.tsx, KorPage.tsx, RunPage.tsx
   - **sheets:** CharacterEvidenceSheet.tsx, CharacterRevisionSheet.tsx
-  - **components:** CharacterCouncilStatus.tsx, CharacterExpertComment.tsx, CharacterHeader.tsx,
-    CharacterMorningStory.tsx, CharacterPostCard.tsx, CharacterReplyThread.tsx, ClaimTile.tsx,
-    ConferenceArchiveSheet.tsx, ConferenceThreadCard.tsx, KonziliumConversationView.tsx, KonziliumRoundMap.tsx,
-    MaturityRing.tsx, PersonaOrb.tsx, RunFlowStrip.tsx, SignalChainCard.tsx, TranscriptTurn.tsx
+  - **components:** CharacterCouncilStatus.tsx, CharacterExpertComment.tsx, CharacterMorningStory.tsx,
+    CharacterPostCard.tsx, CharacterReplyThread.tsx, ClaimTile.tsx, ConferenceArchiveSheet.tsx,
+    ConferenceThreadCard.tsx, GepteremHead.tsx, KarakterBackHead.tsx, KonziliumConversationView.tsx,
+    KonziliumRoundMap.tsx, MaturityRing.tsx, PersonaOrb.tsx, RunFlowStrip.tsx, SignalChainCard.tsx, TranscriptTurn.tsx
   - **logic:** conferencePostItem.ts
   - **root:** character.css, deliberationLabels.ts, deliberationStats.ts, dossierState.ts, expertColors.ts,
-    feedDayLabel.ts, inventory.ts, runLabels.ts
+    feedDayLabel.ts, inventory.ts, personaCharacter.ts, runLabels.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 51 IT + 13 unit
   - **ITs:** `CharacterApiCompanionOffIT`, `CharacterApiIT`, `CharacterApiSwitchOffIT`, `CharacterBootstrapIT`,
     `CharacterBootstrapMemoryDisabledIT`, `CharacterBootstrapMemoryIT`, `CharacterClaimRevisionIT`,

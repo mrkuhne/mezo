@@ -50,6 +50,7 @@ test('stored experts respond after the user and before Mezo, with the recorded r
   expect(user.compareDocumentPosition(expert) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   expect(expert.compareDocumentPosition(chair) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   expect(screen.getByText(/Válasz neked/)).toBeInTheDocument()
-  expect(screen.getByText(/Válasz: Szomnológus/)).toBeInTheDocument()
+  // U9: the replied-to expert is named as the csapatfal character (Szomnológus → Szunya)
+  expect(screen.getByText(/Válasz: Szunya/)).toBeInTheDocument()
   expect(screen.queryByText('Közösen pontosítva')).not.toBeInTheDocument()
 })

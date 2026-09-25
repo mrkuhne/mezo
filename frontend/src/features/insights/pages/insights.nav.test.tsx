@@ -75,10 +75,7 @@ describe('mezo nav (real mode default)', () => {
   // WITHOUT a PageHead, so a user who tapped a tile could only leave via the tab bar. Every
   // sibling now owns the prototype's `‹ Mezo` chip.
   test.each([
-    ['/mezo/patterns', '‹ Összes funkció'],
     ['/mezo/memoir', '‹ Mezo'],
-    ['/mezo/knowledge', '‹ Mezo'],
-    ['/mezo/predictions', '‹ Összes funkció'],
     ['/mezo/experiments', '‹ Összes funkció'],
     ['/mezo/memoria', '‹ Mezo'],
   ])('%s owns a back chip that returns to the hub', async (path, label) => {
@@ -89,6 +86,27 @@ describe('mezo nav (real mode default)', () => {
     expect(back.textContent?.replace(/\s+/g, '')).toBe(label.replace(/\s+/g, ''))
     await userEvent.click(back)
     await waitFor(() => expect(router.state.location.pathname).toBe(label === '‹ Összes funkció' ? '/mezo/karakter/gepterem/osszes' : '/mezo'))
+  })
+
+  // /mezo/knowledge wears the csapatfal tf-dhead (üveg U9, mezo-me75u.9): a round glass `‹` disc
+  // that names its destination in the accessible name.
+  test('/mezo/knowledge owns a back disc that returns to the hub', async () => {
+    const router = renderApp('/mezo/knowledge')
+    const back = await screen.findByRole('button', { name: 'Vissza: Mezo' })
+    expect(back).toHaveTextContent('‹')
+    await userEvent.click(back)
+    await waitFor(() => expect(router.state.location.pathname).toBe('/mezo'))
+  })
+
+  // mezo-me75u.9: Minták + Előrejelzések wear the csapatfal `tf-dhead` — a bare glass ‹ disc
+  // beside the page title; the target stays the Összes funkció grid.
+  test.each([['/mezo/patterns'], ['/mezo/predictions']])('%s owns a glass back disc that returns to Összes funkció', async (path) => {
+    const router = renderApp(path)
+    const back = await screen.findByRole('button', { name: 'Vissza' })
+    expect(back).toHaveTextContent('‹')
+    expect(back).toHaveClass('glass', 'tf-back')
+    await userEvent.click(back)
+    await waitFor(() => expect(router.state.location.pathname).toBe('/mezo/karakter/gepterem/osszes'))
   })
 
   // /mezo/chat dropped the shared PageHead for its own orb-led header (mezo-vdf4) — the back

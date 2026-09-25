@@ -277,3 +277,19 @@ describe('KonziliumPage — döntés-első nézet', () => {
     expect(screen.queryByText('Korábbi tanácskozások')).not.toBeInTheDocument()
   })
 })
+
+// U9 (mezo-me75u.9): a „Mi változott a dossziédban” három cellája a lap egyetlen hangos (üveg)
+// eleme; a kör-kártyák laposak, az őszinteségi mondat szaggatott.
+describe('KonziliumPage — üveg rangsor', () => {
+  test('a három kimenet-cella üveg, a körök laposak, az őszinteségi sor szaggatott', () => {
+    const { container } = renderAt('/mezo/karakter/konzilium?id=w2')
+    const cells = container.querySelectorAll('.kz-outcell')
+    expect(cells).toHaveLength(3)
+    cells.forEach((cell) => expect(cell.classList.contains('glass')).toBe(true))
+    container.querySelectorAll('.kz-round').forEach((round) => {
+      expect(round.classList.contains('glass')).toBe(false)
+      expect(round.classList.contains('tf-flatc')).toBe(true)
+    })
+    expect(screen.getByText(/A fenti a valódi beszélgetés/).closest('.tf-dash')).not.toBeNull()
+  })
+})

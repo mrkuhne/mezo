@@ -102,6 +102,15 @@ describe('GeptermPage', () => {
   })
 })
 
+// Üveg re-dress (U9, mezo-me75u.9): the D5 dev-door — the 7 destinations are slate glass cases.
+test('the 7 destinations are slate glass cases', () => {
+  const { container } = renderHub()
+  const doors = container.querySelectorAll('.gtm-door')
+  expect(doors).toHaveLength(7)
+  doors.forEach((d) => { expect(d).toHaveClass('glass'); expect(d).toHaveClass('tf-c-slate') })
+  expect(screen.getByRole('heading', { name: 'Gépterem' })).toBeInTheDocument()
+})
+
 test.each([['Memória', '/mezo/memoria'], ['Megfigyelők', '/mezo/coaching/megfigyelo']])('common engine door %s opens its existing page', async (label, path) => {
   renderHub()
   await userEvent.click(screen.getByRole('button', { name: new RegExp(label) }))
