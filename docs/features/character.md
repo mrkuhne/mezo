@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-09-24
+updated: 2026-09-25
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -340,12 +340,15 @@ The social surface follows the approved Clay/Mozaik v3 prototype: warm author-le
   "Beszélgess erről Mezóval" chip hands off to `/mezo/chat` (plain navigation — no anchored
   chat-context idiom exists yet for a claim/dimension).
 - **Üzenőfal** (`/mezo/karakter/feed`, `CharacterFeedPage`): chronological author-led cards, filters for observations/outcomes, progressive display of the loaded feed, GlassBox evidence and persisted contextual reply threads. Conference changes link to their exact conference and show matching stored peer reactions.
-- **Csapat** (`/me/karakter/csapat`, `CsapatPage`): the 9 persona cards straight off
-  `GET /api/character/experts` — 7 EXPERT cards (domain-color orb, voiceLine subtitle, "mit
-  figyel:" watch line, a role chip), the Szkeptikus (graphite gradient card), and Mezo (the
-  coral-gradient card with the real `s-orb`, no chip — `CharacterService.experts()` sets Mezo's
-  `role` to the same string as its `voiceLine`, so the page prints that one subtitle line ONCE,
-  never twice).
+- **Csapat** — retired (Üvegesítés U9, `mezo-me75u.9`, owner 2026-09-25). The 9-persona
+  roster (`CsapatPage`) and the in-page Karakter tab strip (`CharacterHeader`) are gone: the team
+  is the csapatfal's five characters now, and `/mezo/karakter/csapat` redirects to `/mezo/csapat`
+  (`TeamPage`). Every persona on the Karakter/Konzílium/Gépterem surfaces is DISPLAYED as the
+  character it folds into — `personaCharacter.ts` (`personaCharacter`/`personaName`, on top of
+  `features/insights/logic/team.ts` `characterForPersona`; a key that already is a TEAM id maps to
+  itself), `PersonaOrb` draws that character's figure in its `tf-av` accent well, and
+  `expertColor` returns its accent. Display only: the API, the persona keys and every call are
+  unchanged.
 - **Konzílium** (`/me/karakter/konzilium`, `KonziliumPage`, `mezo-sp9w`): one decision-first
   page, no separate list route. Without an explicit `?id=` the page opens the most recent
   conference (`conferences[0]` off the `generatedAt`-descending summary list); a header stepper
@@ -1463,7 +1466,6 @@ The API fragment remains `api/feature/character/character.yml`.
 - `pages/KarakterHubPage.tsx` — bootstrap ceremony or direct populated social feed
 - `pages/DimensionsPage.tsx` / `DimensionPage.tsx` — current topic rows and one topic's fresh claims; removed claims remain locally archived while their reply outcome is visible
 - `pages/CharacterFeedPage.tsx` — social post stream, filters and progressive display
-- `pages/CsapatPage.tsx` — the 9 persona cards
 - `pages/KonziliumPage.tsx` (`mezo-sp9w`) — the decision-first conference page: no separate
   list route, `?id=` optional (defaults to the most recent conference), header stepper +
   archive-sheet trigger, `Áttekintés`/`Beszélgetés` view toggle
@@ -1480,7 +1482,9 @@ The API fragment remains `api/feature/character/character.yml`.
 - `inventory.ts` (S9) — the Adatforrások/Tervezett static corpus module (`INVENTORY_ROUNDS` now
   `[]` — round 4 was the last round); ALSO the `mezo-1gim.15` working checklist, now closed (see
   its own header comment and §9)
-- `components/PersonaOrb.tsx` — the domain-color orb-variant sprite wrapper (`s-orb-*`)
+- `components/PersonaOrb.tsx` — the persona's csapatfal character figure in its accent well (`tf-av`, U9)
+- `personaCharacter.ts` (U9) — persona key → csapatfal character (`personaCharacter`, `personaName`)
+- `components/KarakterBackHead.tsx`, `components/GepteremHead.tsx` (U9) — the `tf-dhead` glass back heads
 - `components/KonziliumRoundMap.tsx` (`mezo-sp9w`) — houses both `KonziliumWhatIs` (the fixed
   "Mi ez" card, three hand-written variants keyed by `WEEKLY`/`MONTHLY`/`BOOTSTRAP`) and
   `KonziliumRoundMap` (the "Hogyan zajlott" round map, reading `deliberationStats.ts`; shows
@@ -1512,15 +1516,16 @@ The API fragment remains `api/feature/character/character.yml`.
 - `runLabels.ts` (S9) — pure copy helpers deriving every run sentence from real
   `CharacterRunSummary` counts only (`runHeroLede`, `runRowSubline`, `lastRunLine`, kind
   badges/labels)
-- `expertColors.ts` — the one shared `EXPERT_COLORS` map (ring arcs, orbs, tiles all key off it)
+- `expertColors.ts` — `expertColor(key)`: the persona's csapatfal character accent (ring arcs, name labels, orbs)
 - `dossierState.ts` — `isDossierEmpty()`, the one shared pre-bootstrap predicate (hub +
   `MezoHubPage`'s Karakter tile both call it, never re-derive it — the tile's own call moved with
   it from `EnHubPage.tsx` in the hub-tile-reorg, `mezo-o486`)
+- Üveg dress (U9): the pages wear the csapatfal `tf-*` kit (`features/insights/boop-world.css`) plus their own blocks at the end of `styles/prototype.css` (`uveg mezo2 karakter|konzilium|gepterem`); the old `.kr-*` rules below are pending a dead-CSS sweep
 - `character.css` — every `.kr-*` rule (source-cited per section against
   `docs/design_2.0/prototypes/src/karakter-head.html`/`karakter-body.html`)
 
 **Router**: `frontend/src/app/router.tsx` — `me/karakter`, `me/karakter/dimenziok`,
-`me/karakter/dimenzio/:key`, `me/karakter/feed`, `me/karakter/csapat`, `me/karakter/konzilium`
+`me/karakter/dimenzio/:key`, `me/karakter/feed`, `me/karakter/csapat` (→ `/mezo/csapat` since U9), `me/karakter/konzilium`
 (the last carries its own `?id=` transcript state, not a child route); S9 adds
 `me/karakter/gepterem`, `me/karakter/gepterem/futasok`, `me/karakter/gepterem/futas/:id`,
 `me/karakter/gepterem/adatforrasok`, `me/karakter/gepterem/adatforrasok/kor/:n`,
