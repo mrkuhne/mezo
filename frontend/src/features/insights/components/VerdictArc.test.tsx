@@ -22,4 +22,16 @@ describe('VerdictArc', () => {
     )
     expect(container.querySelector('svg')).toBeNull()
   })
+
+  test('the üveg gauge keeps one glowing segment per rule, coloured by state, on a faint track', () => {
+    const { container } = render(
+      <VerdictArc glow size={156} split={{ raised: 2, suppressed: 1, clear: 8, unavailable: 3, total: 14 }} />,
+    )
+    expect(container.querySelector('svg.uv-ring')).not.toBeNull()
+    expect(container.querySelectorAll('.mzo-arcseg.uv-ring-prog')).toHaveLength(14)
+    expect(container.querySelectorAll('.uv-ring-track')).toHaveLength(1)
+    expect(container.querySelectorAll('[data-state="raised"]')).toHaveLength(2)
+    expect(container.querySelectorAll('[data-state="unavailable"]')).toHaveLength(3)
+  })
 })
+

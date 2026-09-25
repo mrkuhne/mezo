@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Icon } from '@/shared/ui/Icon'
-import { ClayIcon } from '@/shared/ui/clay'
+import { ContentIcon, Icon3D } from '@/shared/ui/clay'
 import { memoryIcon } from '@/features/insights/logic/toolDomains'
 import type { ChatRecalledMemory } from '@/data/types'
 import type { MemoryRetrievalFeedbackHandle } from '@/data/hooks'
@@ -31,7 +31,7 @@ export function RecalledMemoriesRow({
         aria-expanded={open}
       >
         <span className="mzc-memeb">
-          <Icon name="sparkle" size={10} /> Emlékek · {items.length}
+          <Icon3D name="t-spark" size={20} /> Emlékek · {items.length}
         </span>
         <Icon name={open ? 'chevron-up' : 'chevron-down'} size={10} color="var(--text-tertiary)" />
       </button>
@@ -60,7 +60,7 @@ export function RecalledMemoriesRow({
                   onClick={() => setOpenCard(openCard === i ? null : i)}
                 >
                   <span className="mzc-memtop">
-                    <span className="mzc-memic"><ClayIcon name={memoryIcon(r.kind)} size={13} /></span>
+                    <span className="mzc-memic"><ContentIcon name={memoryIcon(r.kind)} size={22} /></span>
                     <span className="mzc-memkt">
                       <span className="mzc-memkind">{r.label}</span>
                       <span className="mzc-memd">{r.occurredOn || 'dátum nélkül'}</span>

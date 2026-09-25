@@ -93,8 +93,10 @@ export function FeedbackChips({
   }
 
   return (
-    <div className="col gap-xs">
-      <div className="row gap-sm" role="group" aria-label={`Visszajelzés ${label}`}>
+    // `fbk-chips` is the component's own root; `is-3d` opts a glass surface into the üveg pills
+    // (flat cells, the chosen one lit lavender) drawn in the `uveg mezo1 chat` block.
+    <div className={cn('fbk-chips col gap-xs', glyph3d && 'is-3d')}>
+      <div className="row gap-sm fbk-votes" role="group" aria-label={`Visszajelzés ${label}`}>
         <button
           type="button"
           onClick={handleUp}
@@ -115,7 +117,7 @@ export function FeedbackChips({
         </button>
       </div>
       {showReasons && (
-        <div className="row gap-xs flex-wrap">
+        <div className="row gap-xs flex-wrap fbk-reasons">
           {REASONS.map((r) => (
             <button
               key={r.value}

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ClayIcon } from '@/shared/ui/clay'
+import { ContentIcon, Icon3D } from '@/shared/ui/clay'
 import { Icon } from '@/shared/ui/Icon'
 import { parseToolName, toolDomain } from '@/features/insights/logic/toolDomains'
 import type { Tool } from '@/shared/ui/ToolChip'
@@ -48,7 +48,7 @@ export function ToolWorkStrip({ tools, live }: { tools: Tool[]; live?: boolean }
             const running = live && i === tools.length - 1
             return (
               <span key={i} className={running ? 'mzc-wic run' : 'mzc-wic'}>
-                <ClayIcon name={d.icon} size={13} />
+                <ContentIcon name={d.icon} size={22} />
               </span>
             )
           })}
@@ -70,7 +70,7 @@ export function ToolWorkStrip({ tools, live }: { tools: Tool[]; live?: boolean }
             return (
               <div key={i} className={running ? 'mzc-wrow run' : 'mzc-wrow'}>
                 <span className={`mzc-wric dm-${d.wash}`}>
-                  <ClayIcon name={d.icon} size={14} />
+                  <ContentIcon name={d.icon} size={26} />
                 </span>
                 <span className="col" style={{ minWidth: 0, flex: 1 }}>
                   <span className="mzc-wnm">{d.label}</span>
@@ -109,8 +109,8 @@ export function ToolWorkStrip({ tools, live }: { tools: Tool[]; live?: boolean }
                   {running
                     ? <><i /> fut</>
                     : t.failed
-                      ? <Icon name="warning" size={12} color="var(--amber-deep)" />
-                      : <Icon name="check" size={12} />}
+                      ? <><Icon3D name="t-info" size={20} /><span className="sr-only">nem sikerült</span></>
+                      : <><Icon3D name="t-tick" size={20} /><span className="sr-only">kész</span></>}
                 </span>
               </div>
             )

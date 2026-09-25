@@ -1,5 +1,5 @@
 import { Markdown } from '@/shared/lib/markdown'
-import { ClaySpot } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { RecalledMemoriesRow } from '@/features/insights/components/RecalledMemoriesRow'
 import { ToolWorkStrip } from '@/features/insights/components/ToolWorkStrip'
@@ -49,9 +49,11 @@ export function ChatMessage({
   const recalledDays = new Set((m.recalled ?? []).map((x) => x.occurredOn))
   const visibleRefs = (m.refs ?? []).filter((r) => r.kind !== 'Memory' || !recalledDays.has(r.id))
   return (
-    <div className="mzc-msg-a col gap-sm">
+    // Üveg (mezo-me75u.8): the answer is the page's loud thing, ONE lavender glass card; the tool
+    // strip, refs, recalled memories and feedback inside it are flat cells (never glass in glass).
+    <div className="mzc-msg-a col gap-sm glass" style={{ ['--c' as string]: 'var(--dv-lav)' }}>
       <div className="mzc-meta">
-        <ClaySpot name="s-orb" size={18} />
+        <Icon3D name="t-chat" size={20} />
         <span className="mzc-eb">Mezo</span>
         <time>{m.ts}</time>
         {m.degraded && (
@@ -59,6 +61,7 @@ export function ChatMessage({
             className="mzc-warn"
             title="Ez a válasz nem ment át az önellenőrzésen — kezeld fenntartással."
           >
+            <Icon3D name="t-info" size={16} />
             nem ellenőrzött
           </span>
         )}
@@ -86,7 +89,7 @@ export function ChatMessage({
           one FeedbackChips instance (whose reason-row state is session-local) across two
           different answers — advisory since the row derives from the verdict, not load-bearing. */}
       {feedback && (
-        <FeedbackChips value={feedback.value} onVote={feedback.onVote} label="a válaszról" />
+        <FeedbackChips glyph3d value={feedback.value} onVote={feedback.onVote} label="a válaszról" />
       )}
     </div>
   )

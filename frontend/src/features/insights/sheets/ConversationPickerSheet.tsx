@@ -1,14 +1,8 @@
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 import type { ConversationResponse } from '@/data/insights/chatApi'
 
 const TITLE_ID = 'conversation-picker-title'
-
-const ROW: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-  padding: '11px 12px', borderRadius: 'var(--r-lg)', textAlign: 'left',
-  background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
-}
 
 /** "ma 07:12" / "tegnap 21:40" / "júl 3." — enough to tell two threads apart at a glance. */
 function whenLabel(iso: string | null | undefined): string {
@@ -41,25 +35,30 @@ export function ConversationPickerSheet({
   onActions?: (conversation: ConversationResponse) => void
 }) {
   return (
-    <Sheet onClose={onClose} labelledBy={TITLE_ID}>
-      <div className="col gap-md" style={{ padding: '4px 20px 24px' }}>
-        <div className="col">
-          <span id={TITLE_ID} className="eyebrow" style={{ color: 'var(--lav-deep)' }}>
-            Beszélgetések
-          </span>
-          <span className="text-tertiary" style={{ fontSize: 11 }}>
-            {conversations.length} korábbi beszélgetés
-          </span>
+    // Üveg (mezo-me75u.8, bible U2 rule 15): ONE floating lavender glass sheet; the rows are flat
+    // cells, the active one lit, the "new" row dashed (free space).
+    <Sheet onClose={onClose} labelledBy={TITLE_ID} className="glass mzc-sheet">
+      <div className="mzc-shbody col gap-md">
+        <div className="mzc-shh">
+          <Icon3D name="t-chat" size={44} />
+          <div className="col" style={{ minWidth: 0 }}>
+            <span id={TITLE_ID} className="mzc-sheb">
+              Beszélgetések
+            </span>
+            <span className="mzc-shtitle">
+              {conversations.length} korábbi beszélgetés
+            </span>
+          </div>
         </div>
 
-        <button type="button" style={{ ...ROW, borderStyle: 'dashed' }} onClick={onNew}>
-          <Icon name="plus" size={14} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+        <button type="button" className="mzc-shrow is-new" onClick={onNew}>
+          <Icon3D name="t-chat" size={26} />
+          <span className="mzc-shnm">
             Új beszélgetés
           </span>
         </button>
 
-        <div className="col gap-sm" style={{ maxHeight: 320, overflowY: 'auto' }}>
+        <div className="mzc-shlist col gap-sm">
           {conversations.map((c) => {
             const active = c.id === activeId
             return (
@@ -67,28 +66,18 @@ export function ConversationPickerSheet({
                 key={c.id}
                 type="button"
                 aria-current={active || undefined}
-                style={{
-                  ...ROW,
-                  ...(active
-                    ? { borderColor: 'var(--lav-deep)', background: 'var(--wash-lav)' }
-                    : null),
-                }}
+                className={active ? 'mzc-shrow is-on' : 'mzc-shrow'}
                 onClick={() => onSelect(c.id)}
               >
                 <div className="col" style={{ flex: 1, minWidth: 0 }}>
-                  <span
-                    style={{
-                      fontSize: 13, color: 'var(--text-primary)',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    }}
-                  >
+                  <span className="mzc-shnm">
                     {c.title ?? 'Névtelen beszélgetés'}
                   </span>
-                  <span className="text-tertiary" style={{ fontSize: 10 }}>
+                  <span className="mzc-shsub">
                     {whenLabel(c.lastMessageAt ?? c.startedAt)}
                   </span>
                 </div>
-                {active && <Icon name="check" size={14} />}
+                {active && <><Icon3D name="t-tick" size={20} /><span className="sr-only">megnyitva</span></>}
                 {onActions && (
                   // F7.5: a span with button semantics — a real <button> may not nest in the row button.
                   <span
@@ -102,11 +91,7 @@ export function ConversationPickerSheet({
                       e.stopPropagation()
                       onActions(c)
                     }}
-                    style={{
-                      width: 28, height: 28, borderRadius: '50%', flex: 'none',
-                      display: 'grid', placeItems: 'center', fontWeight: 800,
-                      color: 'var(--text-tertiary)', background: 'var(--surface-3, transparent)',
-                    }}
+                    className="mzc-shmore"
                   >
                     ⋯
                   </span>

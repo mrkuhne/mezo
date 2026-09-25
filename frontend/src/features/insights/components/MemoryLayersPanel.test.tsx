@@ -45,8 +45,8 @@ test('falls back to the raw kind when a kind has no label yet', () => {
 
 test('renders no vector lines when embeddings is empty', () => {
   renderPanel(makeOverview([]))
-  const l1 = screen.getByText('L1 · Epizodikus napló').closest('.mem-laycard') as HTMLElement
-  expect(l1.querySelector('.mem-bignm')).toHaveTextContent('5 nap')
+  const l1 = screen.getByText('L1 · Epizodikus napló').closest('.mmr-layer') as HTMLElement
+  expect(l1.querySelector('.mmr-bignm')).toHaveTextContent('5 nap')
   expect(screen.getByText('2026-07-01 – 2026-08-12')).toBeInTheDocument()
   expect(screen.queryByText(/-vektor/)).not.toBeInTheDocument()
 })

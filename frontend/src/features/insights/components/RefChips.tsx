@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ClayIcon } from '@/shared/ui/clay'
+import { ContentIcon } from '@/shared/ui/clay'
 import { chatRefDisplay } from '@/features/insights/logic/chatRefs'
 import { refDomain } from '@/features/insights/logic/toolDomains'
 
@@ -29,7 +29,7 @@ export function RefChips({ refs, eyebrow }: { refs: RefChipItem[]; eyebrow?: str
       const dm = refDomain(r.kind)
       return (
         <span key={i} className={`mzc-refch dm-${dm.wash}`}>
-          <span className="mzc-refic"><ClayIcon name={dm.icon} size={11} /></span>
+          <span className="mzc-refic"><ContentIcon name={dm.icon} size={16} /></span>
           <b className="mzc-refk">{d.kind}</b>
           {d.label}
         </span>
@@ -53,7 +53,7 @@ export function RefChips({ refs, eyebrow }: { refs: RefChipItem[]; eyebrow?: str
                   aria-expanded={open}
                   onClick={() => setOpenKind(open ? null : kind)}
                 >
-                  <span className="mzc-refic"><ClayIcon name={dm.icon} size={11} /></span>
+                  <span className="mzc-refic"><ContentIcon name={dm.icon} size={16} /></span>
                   {chatRefDisplay({ kind, id: '' }).kind}
                   <span className="mzc-refn">×{count}</span>
                 </button>

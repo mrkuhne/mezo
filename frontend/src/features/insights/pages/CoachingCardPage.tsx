@@ -5,10 +5,12 @@
 // egyetlen hely az appban, ahol a legyőzött jelöltek is látszanak.
 // Az akciók a MEGLÉVŐ úton futnak (useAdviceActions + ACTION_INVALIDATES),
 // szerver-vezérelt applied állapottal — soha nem tiltott gomb hamisítja.
+// Üveg (mezo-me75u.8): halo hős, a kártya az EGYETLEN üveg (borostyán), a
+// „Miért ez nyert" lapos sorok.
 // ============================================================
+import type { CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Icon } from '@/shared/ui/Icon'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
@@ -31,67 +33,68 @@ export function CoachingCardPage() {
   const coherent = card != null && day.winner?.cardId === card.id
 
   return (
-    <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate('/mezo/coaching')} label="‹ Coaching" />
-      <PageHero name="A napi kártya" sub={coherent ? winner?.label : undefined} />
+    <MozaikPage tone="gold" className="coach-page coach-card">
+      <PageHead glass onBack={() => navigate('/mezo/coaching')} label="Coaching" />
+      <PageHero art="t-card" accent="var(--dv-amber)" eyebrow="Coaching" name="A napi kártya"
+        sub={coherent ? winner?.label : undefined} />
       <PageBody principle="Egy kártya naponta — itt az is látszik, mi ellen nyert.">
         <EntranceGroup className="col gap-md">
-          {isPending && <div className="card" style={{ padding: 18 }} aria-busy="true" />}
+          {isPending && <div className="coach-state uv-empty" aria-busy="true" />}
           {isError && (
-            <div className="card" style={{ padding: 18, textAlign: 'center' }}>
-              <p style={{ fontSize: 13, color: 'var(--mz-ink-soft)' }}>
-                A mai kártyát most nem tudom betölteni — próbáld újra kicsit később.
-              </p>
+            <div className="coach-state uv-empty">
+              <p>A mai kártyát most nem tudom betölteni — próbáld újra kicsit később.</p>
             </div>
           )}
           {!isPending && !isError && card == null && (
-            <div className="card" style={{ padding: 18, textAlign: 'center' }}>
-              <p style={{ fontSize: 13, color: 'var(--mz-ink-soft)', lineHeight: 1.5 }}>
-                Ma nem érkezett kártya.
-              </p>
+            <div className="coach-state uv-empty">
+              <p>Ma nem érkezett kártya.</p>
             </div>
           )}
 
           {card != null && (
-            <div className="mzp-pred propcard rise" style={{ '--d': '0ms' } as React.CSSProperties}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <ClayIcon name={visualOf(coherent ? winner?.domain ?? 'general' : 'general').icon} size={26} />
-                <span style={{ fontSize: 13, fontWeight: 700 }}>{card.eyebrow}</span>
+            <div className="coach-dcard propcard glass rise" style={{ '--d': '0ms', '--i': 1 } as CSSProperties}>
+              <div className="coach-dcard-top">
+                <span className="uv-well coach-well">
+                  <Icon3D name={visualOf(coherent ? winner?.domain ?? 'general' : 'general').icon} size={34} />
+                </span>
+                <span className="coach-dcard-eb">{card.eyebrow}</span>
               </div>
               {card.body.map((p, i) => (
-                <p key={i} style={{ fontSize: 12, fontWeight: 300, lineHeight: 1.6, marginTop: 7 }}>
+                <p key={i} className="coach-dcard-body">
                   <SafeMarkdown text={p.text} />
                 </p>
               ))}
               {card.facts != null && card.facts.length > 0 && (
-                <div style={{ marginTop: 8 }}>
+                <div className="coach-dcard-facts">
                   {card.facts.map((f, i) => (
-                    <div key={i} className="mzp-evrow"><span className="vl">{f}</span></div>
+                    <div key={i} className="coach-fact"><span className="vl">{f}</span></div>
                   ))}
                 </div>
               )}
               {card.suggestions != null && card.suggestions.length > 0 && (
-                <ul style={{ marginTop: 8, paddingLeft: 16, fontSize: 11.5, fontWeight: 300, lineHeight: 1.55 }}>
-                  {card.suggestions.map((s, i) => <li key={i}><SafeMarkdown text={s} /></li>)}
+                <ul className="coach-dcard-sugg">
+                  {card.suggestions.map((s, i) => (
+                    <li key={i}><Icon3D name="t-bulb" size={20} /><span><SafeMarkdown text={s} /></span></li>
+                  ))}
                 </ul>
               )}
               {/* Server-driven applied state — the NapMezoPage contract, reused verbatim. */}
               {card.actions != null && card.actions.length > 0 && (
                 card.applied != null ? (
-                  <div className="nap-mzmsg-applied">
-                    <Icon name="check" size={12} />
+                  <div className="coach-applied">
+                    <Icon3D name="t-tick" size={24} />
                     {card.actions.find((a) => a.key === card.applied!.actionKey)?.label ?? card.applied.actionKey}
                   </div>
                 ) : (
-                  <div className="mzp-decrow" role="group" aria-label="Javasolt lépés">
+                  <div className="coach-actions" role="group" aria-label="Javasolt lépés">
                     {card.actions.map((a) => (
-                      <button key={a.key} type="button" className="mzp-cta" disabled={advice.pending}
+                      <button key={a.key} type="button" className="coach-cta" disabled={advice.pending}
                         onClick={() => advice.apply(card.id, a.key)}>
                         {a.label}
                       </button>
                     ))}
                     {advice.failedId === card.id && (
-                      <span className="nap-mzmsg-actionerr" role="alert">Nem sikerült — próbáld újra.</span>
+                      <span className="coach-err" role="alert">Nem sikerült — próbáld újra.</span>
                     )}
                   </div>
                 )
@@ -100,18 +103,21 @@ export function CoachingCardPage() {
           )}
 
           {losers.length > 0 && coherent && (
-            <div className="mzp-pred lav rise" style={{ '--d': '70ms' } as React.CSSProperties}>
-              <span className="mz-eyebrow" style={{ color: 'var(--mz-ink-soft)' }}>Miért ez nyert</span>
-              <div style={{ marginTop: 6 }}>
+            <>
+              <span className="coach-h3 uv-eyebrow">Miért ez nyert</span>
+              <div className="coach-losers rise" style={{ '--d': '70ms' } as CSSProperties}>
                 {losers.map((r) => (
                   <div key={r.flagKey} className="mzo-loser">
-                    <span className="nm">{r.label}</span>
-                    <span>alacsonyabb súlyosság</span>
+                    <Icon3D name={visualOf(r.domain).icon} size={26} />
+                    <span className="coach-grow">
+                      <span className="nm">{r.label}</span>
+                      <span className="why">alacsonyabb súlyosság</span>
+                    </span>
                     <span className="rk">{`rang ${r.rank}`}</span>
                   </div>
                 ))}
               </div>
-            </div>
+            </>
           )}
         </EntranceGroup>
       </PageBody>

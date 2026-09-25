@@ -1722,3 +1722,40 @@ test('a missed habit day stays neutral, never failure-red (ADR 0010)', () => {
   const rule = css.slice(css.indexOf('.rt-szokas .rt-cal i.is-miss'))
   expect(rule.slice(0, rule.indexOf('}'))).not.toContain('coral')
 })
+
+// U8 · Mezo I (mezo-me75u.8, prototypes/uveg-mezo.html): seven parallel builders, one block each. The key
+// selectors below were verified present at integration (bible rule 41) and pin each block.
+const U8_BLOCKS: Array<[string, string[]]> = [
+  ['chat', ['.mzc-u8 .mzc-chathead', '.mzc-u8 .mzc-hdisc.glass', '.mzc-u8 .mzc-horb.uv-well', '.mzc-u8 .mzc-msg-a.glass',
+    '.mzc-u8 .mzc-bub-u', '.mzc-u8 .mzc-bub-err', '.mzc-u8 .chat-composer.glass', '.fbk-chips.is-3d .chip', '.sheet.glass.mzc-sheet']],
+  ['coaching', ['.coach-page.mz-page', '.coach-hub .coach-gauge', '.coach-hub .coach-win.glass', '.coach-hub .coach-door',
+    '.coach-obs .mzo-daysw', '.coach-obs .mzo-rule.glass', '.coach-page .coach-chip', '.coach-card .coach-dcard.glass',
+    '.coach-card .coach-applied']],
+  ['diagnozis', ['.dgx-page.mz-page', '.dgx-page .dgx-ask.glass', '.dgx-page .dgx-rep', '.dgx-cert', '.dgx-szam-card',
+    '.dgx-page .dgx-susp.is-lead.glass', '.dgx-probe', '.dgx-actual', '.dgx-empty.uv-empty']],
+  ['kiserletek', ['.exl-page .exl-filter.is-on', '.exl-page .exl-card.glass', '.exl-page .exl-card.is-flat[data-status="proposed"]',
+    '.exl-page .exl-chip', '.exl-page .exl-dots i.is-done', '.exl-page .exl-new']],
+  ['emlekek', ['.eml-page .eml-memo.glass', '.eml-page .eml-drow', '.eml-page .eml-dblk', '.eml-search .eml-srch',
+    '.eml-search .eml-simrow', '.eml-search .eml-simring', '.eml-emlek .eml-article.glass', '.eml-emlek .eml-pager']],
+  ['memoar', ['.mmo-page .mmo-article.glass', '.mmo-page .mmo-ttl', '.mmo-page .reftag-3d', '.mmo-page .mmo-anniv',
+    '.mmo-page .mmo-chap', '.mmo-page .mmo-wkb', '.mmo-page .mmo-pager', '.mmo-page .mmo-pg.is-empty.uv-empty']],
+  ['memoria', ['.mmr-page .mmr-layer.glass', '.mmr-page .mmr-audit.glass', '.mmr-page .mmr-segbar', '.mmr-page .mmr-seg button.on',
+    '.mmr-page .mmr-ring::before', '.mmr-page .mmr-day.focused', '.mmr-page .mmr-tcols i', '.mmr-page .mmr-note.uv-empty']],
+]
+
+describe.each(U8_BLOCKS)('the uveg mezo1 %s section carries the glass ranking (mezo-me75u.8)', (name, sels) => {
+  const section = () => stripComments(slice(`── uveg mezo1 ${name} (`, `── /uveg mezo1 ${name} `))
+
+  test('the block exists and dresses every surface of the group', () => {
+    const css = section()
+    for (const sel of sels) expect(css, `${sel} missing from the uveg mezo1 ${name} block`).toContain(sel)
+  })
+
+  test('never glass inside glass (U1 rule 5)', () => {
+    expect(section()).not.toMatch(/\.glass [^{,]*\.glass[\s,{]/)
+  })
+
+  test('the ground is written as a token that exists (--canvas, never the undefined --page)', () => {
+    expect(section()).not.toContain('var(--page)')
+  })
+})

@@ -26776,29 +26776,1372 @@ main.settings-page {
 
 /* ── /uveg en2 beallitasok ── */
 /* ── uveg mezo1 chat (mezo-me75u.8) ── /mezo/chat: own header, thread, tool strip, refs, recalled memories, feedback, composer + picker / actions sheets ── */
+/* Scope: the page root `.mzc-u8` (the old `mzc-*` classes are shared with Fuel's WorkshopChatDock,
+   rule 13); the two sheets portal out of the page, so they carry their own `.mzc-sheet`;
+   FeedbackChips opts in through `.fbk-chips.is-3d` (the chat AND the glass memoir/prediction pages).
+   Ranking: Mezo's answer = ONE lavender glass card; everything inside it is flat. */
+
+/* header row: round glass buttons, a lit well with the Mezo glyph, the status dot */
+.mzc-u8 .mzc-chathead {
+  gap: 8px; padding: 12px 14px 10px;
+  background: linear-gradient(180deg, var(--canvas) 80%, transparent);
+}
+.mzc-u8 .mzc-hdisc.glass {
+  --c: var(--text-muted);
+  width: 40px; height: 40px; border: 0; font-size: 19px; color: var(--text-secondary);
+}
+.mzc-u8 .mzc-hdisc.is-new.glass { --c: var(--dv-lav); }
+.mzc-u8 .mzc-hdisc.glass:disabled { opacity: 0.45; }
+.mzc-u8 .mzc-horb.uv-well { --c: var(--dv-lav); width: 44px; height: 44px; }
+.mzc-u8 .mzc-horb svg, .mzc-u8 .mzc-horb.busy svg { animation: none; }
+.mzc-u8 .mzc-horb.busy::before { border-color: color-mix(in srgb, var(--dv-lav) 55%, transparent); }
+.mzc-u8 .mzc-hnm { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+.mzc-u8 .mzc-hstat {
+  display: block; min-width: 0; font-size: 11.5px; color: var(--text-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mzc-u8 .mzc-hdot {
+  display: inline-block; margin-right: 6px; vertical-align: 1px;
+  background: var(--dv-sage); box-shadow: 0 0 6px var(--dv-sage);
+}
+.mzc-u8 .mzc-hstat[data-st] .mzc-hdot { animation: none; }
+.mzc-u8 .mzc-hstat[data-st="busy"] .mzc-hdot { background: var(--dv-amber); box-shadow: 0 0 6px var(--dv-amber); }
+.mzc-u8 .mzc-hstat[data-st="off"] .mzc-hdot,
+.mzc-u8 .mzc-hstat[data-st="demo"] .mzc-hdot { background: var(--text-muted); box-shadow: none; }
+
+/* thread */
+.mzc-u8 .chat-thread { padding: 4px 14px 12px; gap: 14px; }
+
+/* Mezo's answer: the loud thing — one lavender glass card */
+.mzc-u8 .mzc-msg-a.glass {
+  width: 100%; max-width: 100%; padding: 12px 14px 13px; gap: 9px;
+  border-radius: 20px 20px 20px 8px;
+}
+.mzc-u8 .mzc-meta { gap: 7px; font-size: 11px; color: var(--text-muted); flex-wrap: wrap; }
+.mzc-u8 .mzc-meta .mzc-eb {
+  font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--text-primary);
+}
+.mzc-u8 .mzc-meta time { font-size: 11px; color: var(--text-muted); }
+.mzc-u8 .mzc-warn {
+  display: inline-flex; align-items: center; gap: 5px; margin-left: auto; padding: 3px 9px 3px 5px;
+  border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0; text-transform: none;
+  color: color-mix(in srgb, var(--dv-amber) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-amber) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 30%, transparent);
+}
+.mzc-u8 .mzc-warn .t-ico, .mzc-u8 .mzc-meta .t-ico { filter: none; }
+.mzc-u8 .mzc-msg-a .mzc-bub-a {
+  padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none;
+  font-size: 14.5px; line-height: 1.58; color: var(--text-primary);
+}
+.mzc-u8 .mzc-bub-a .md-prose { font-size: 14.5px; line-height: 1.58; color: var(--text-primary); }
+.mzc-u8 .mzc-bub-a .md-prose strong, .mzc-u8 .mzc-bub-a .md-prose b { font-weight: 600; color: #E6DDFF; }
+.mzc-u8 .mzc-noanswer { font-size: 13px; font-style: normal; color: var(--text-muted); }
+
+/* tool work strip: a flat cell inside the card */
+.mzc-u8 .mzc-tools.mzc-wwrap {
+  align-items: stretch; margin-bottom: 0; padding: 8px 10px; border-radius: 14px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.mzc-u8 .mzc-wstrip {
+  width: 100%; gap: 9px; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none;
+  color: var(--text-secondary);
+}
+.mzc-u8 .mzc-wstk { padding-left: 6px; }
+.mzc-u8 .mzc-wic { width: auto; height: auto; background: none; box-shadow: none; border-radius: 50%; }
+.mzc-u8 .mzc-wic + .mzc-wic { margin-left: -6px; }
+.mzc-u8 .mzc-wic .t-ico, .mzc-u8 .mzc-wic svg { filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.55)); }
+.mzc-u8 .mzc-wmore { margin-left: 2px; font-size: 10px; font-weight: 700; color: var(--text-muted); }
+.mzc-u8 .mzc-wlbl {
+  margin-left: 0; font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--text-secondary);
+}
+.mzc-u8 .mzc-wsub { font-size: 12px; color: var(--text-muted); }
+.mzc-u8 .mzc-wchev { margin-left: auto; }
+.mzc-u8 .mzc-wpanel { margin-top: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.mzc-u8 .mzc-wrow, .mzc-u8 .mzc-wrow + .mzc-wrow {
+  align-items: flex-start; gap: 10px; margin-top: 8px; padding: 9px 0 3px; border-top: 1px solid var(--divider);
+}
+.mzc-u8 .mzc-wric { width: 28px; height: 28px; border-radius: 0; background: none; box-shadow: none; }
+.mzc-u8 .mzc-wnm { font-size: 12.5px; font-weight: 600; }
+.mzc-u8 .mzc-wprm, .mzc-u8 .mzc-wwhy { font-size: 11px; line-height: 1.4; color: var(--text-muted); }
+.mzc-u8 .mzc-wout {
+  margin-top: 5px; padding: 7px 9px; border-radius: 10px; font-size: 11.5px; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.mzc-u8 .mzc-wout:focus-visible { outline-color: var(--dv-lav); }
+.mzc-u8 .mzc-wocap { font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+.mzc-u8 .mzc-wst { color: var(--dv-sage); }
+.mzc-u8 .mzc-wst .t-ico { filter: none; }
+.mzc-u8 .mzc-wrow.run .mzc-wst { font-size: 11px; font-weight: 600; color: var(--dv-lav); }
+.mzc-u8 .mzc-wrow.run .mzc-wst i { background: var(--dv-lav); box-shadow: 0 0 6px var(--dv-lav); }
+
+/* "Amire épült" refs: flat domain-tinted chips */
+.mzc-u8 .dm-sky { --dmc: var(--dv-sky); }
+.mzc-u8 .dm-lav { --dmc: var(--dv-lav); }
+.mzc-u8 .dm-sage { --dmc: var(--dv-sage); }
+.mzc-u8 .dm-coral { --dmc: var(--dv-coral); }
+.mzc-u8 .dm-gold { --dmc: var(--dv-amber); }
+.mzc-u8 .dm-rose { --dmc: var(--dv-rose); }
+.mzc-u8 .dm-neutral { --dmc: var(--text-muted); }
+.mzc-u8 .mzc-reffoot { margin-top: 11px; padding-top: 10px; border-top: 1px solid var(--divider); }
+.mzc-u8 .mzc-refeb { display: block; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+.mzc-u8 .mzc-refrow { gap: 6px; margin-top: 7px; }
+.mzc-u8 .mzc-refch, .mzc-u8 .mzc-refg {
+  min-width: 0; max-width: 100%; gap: 5px; padding: 4px 10px 4px 5px; border: 0; border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+  color: color-mix(in srgb, var(--dmc, var(--dv-lav)) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--dmc, var(--dv-lav)) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dmc, var(--dv-lav)) 30%, transparent);
+}
+.mzc-u8 .mzc-refch .mzc-refk { color: var(--text-primary); font-weight: 700; }
+.mzc-u8 .mzc-refg.on {
+  color: #191614; background: var(--dmc, var(--dv-lav));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--dmc, var(--dv-lav)) 50%, transparent);
+}
+.mzc-u8 .mzc-refic { width: 16px; height: 16px; background: none; }
+.mzc-u8 .mzc-refic .t-ico { filter: none; }
+
+/* "Emlékek" recalled memories: a disclosure, then flat cells stacked */
+.mzc-u8 .mzc-memwrap { margin-top: 2px; }
+.mzc-u8 .mzc-membtn { padding: 0; gap: 7px; }
+.mzc-u8 .mzc-memeb {
+  gap: 7px; font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--text-secondary);
+}
+.mzc-u8 .mzc-memeb .t-ico { filter: none; }
+.mzc-u8 .mzc-memcards { display: grid; gap: 8px; margin: 0; padding: 6px 0 0; overflow: visible; }
+.mzc-u8 .mzc-memcard, .mzc-u8 .mzc-memcard.feedback, .mzc-u8 .mzc-memcard.open {
+  width: auto; min-width: 0; padding: 10px 11px; gap: 8px; border: 0; border-radius: 13px; transition: none;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.mzc-u8 .mzc-memtop { gap: 8px; }
+.mzc-u8 .mzc-memic { width: 24px; height: 24px; border-radius: 0; background: none; box-shadow: none; }
+.mzc-u8 .mzc-memic .t-ico { filter: none; }
+.mzc-u8 .mzc-memkt { flex: 1; }
+.mzc-u8 .mzc-memkind {
+  font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--text-primary);
+}
+.mzc-u8 .mzc-memd { font-size: 10.5px; color: var(--text-muted); }
+.mzc-u8 .mzc-simr {
+  width: auto; height: auto; padding: 2px 7px; border-radius: 8px; background: rgba(171, 159, 210, 0.14);
+}
+.mzc-u8 .mzc-simr-n {
+  display: inline-block; width: auto; height: auto; background: none; white-space: nowrap;
+  font-size: 11px; font-weight: 700; color: #E6DDFF;
+}
+.mzc-u8 .mzc-simr-n::after { content: '%'; }
+.mzc-u8 .mzc-memindicator {
+  padding: 2px 8px; font-size: 10.5px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.mzc-u8 .mzc-memgist { font-size: 12.5px; font-weight: 400; line-height: 1.5; color: var(--text-secondary); }
+.mzc-u8 .mzc-memactions { gap: 6px; }
+.mzc-u8 .mzc-memactions button {
+  min-height: 30px; padding: 5px 10px; border: 0; border-radius: 999px;
+  font: 600 11px/1.2 var(--ff-body); color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.mzc-u8 .mzc-memactions button[aria-pressed="true"] {
+  color: #191614; background: var(--dv-lav); box-shadow: 0 0 10px rgba(171, 159, 210, 0.5);
+}
+.mzc-u8 .mzc-memactions button.danger { color: #FFB39C; }
+.mzc-u8 .mzc-memactions button.confirm {
+  color: #FFB39C; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 55%, transparent);
+}
+.mzc-u8 .mzc-memstatus { font-size: 11px; font-weight: 600; color: var(--text-muted); }
+
+/* the user's own words: flat warm amber-tinted bubble */
+.mzc-u8 .mzc-msg-u { max-width: 84%; }
+.mzc-u8 .mzc-bub-u {
+  padding: 11px 14px 9px; border: 0; border-radius: 20px 20px 8px 20px;
+  background: linear-gradient(160deg, rgba(255, 190, 96, 0.15), rgba(255, 190, 96, 0.06));
+  box-shadow: inset 0 0 0 1px rgba(255, 190, 96, 0.24);
+}
+.mzc-u8 .mzc-bub-u p { font-size: 14.5px; line-height: 1.5; color: var(--text-primary); }
+.mzc-u8 .mzc-msg-u time { font-size: 10.5px; color: var(--text-muted); }
+
+/* Mezo is working: flat typing pill (and the pre-draft block with its live tool strip) */
+.mzc-u8 .mzc-msg-a.mzc-think, .mzc-u8 .mzc-msg-a.mzc-pending {
+  width: auto; max-width: 100%; padding: 10px 14px; gap: 7px; border-radius: 18px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.mzc-u8 .mzc-msg-a.mzc-pending { width: 100%; }
+.mzc-u8 .mzc-pending .mzc-tools.mzc-wwrap { padding: 0; background: none; box-shadow: none; }
+.mzc-u8 .mzc-typing { width: auto; padding: 2px 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.mzc-u8 .mzc-typing > div { box-shadow: 0 0 6px var(--dv-lav); }
+.mzc-u8 .mzc-phase { color: var(--text-secondary); }
+
+/* a failed turn: dashed coral free space, lit "Újra", flat "Szerkesztés" */
+.mzc-u8 .mzc-bub-err {
+  align-self: stretch; padding: 12px 14px; border: 1.5px dashed rgba(255, 126, 92, 0.45); border-radius: 18px;
+  background: none; box-shadow: none; font-size: 13px; line-height: 1.5; color: var(--text-secondary);
+}
+.mzc-u8 .mzc-bub-err b { color: #FFB39C; font-weight: 600; }
+.mzc-u8 .mzc-errrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.mzc-u8 .mzc-ebtn {
+  min-height: 36px; padding: 8px 14px; border: 0; border-radius: 999px; font: 700 12.5px/1 var(--ff-body);
+}
+.mzc-u8 .mzc-ebtn.go { color: #191614; background: var(--dv-lav); box-shadow: 0 0 14px color-mix(in srgb, var(--dv-lav) 55%, transparent); }
+.mzc-u8 .mzc-ebtn.ghost {
+  font-weight: 600; color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+
+/* companion switched off: dashed neutral banner */
+.mzc-u8 .mzc-degr {
+  margin: 0 14px; padding: 10px 12px; border-radius: 14px; border: 1.5px dashed rgba(138, 122, 106, 0.45);
+}
+.mzc-u8 .mzc-degr p { font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+
+/* empty draft thread: frameless lavender halo + flat quick-question rows */
+.mzc-u8 .mzc-empty { align-self: stretch; }
+.mzc-u8 .mzc-emptyhero {
+  position: relative; isolation: isolate; overflow-x: clip; text-align: center; padding: 26px 6px 6px;
+}
+.mzc-u8 .mzc-emptyhero::before {
+  content: ''; position: absolute; left: 50%; top: 40%; z-index: -1; pointer-events: none;
+  width: 320px; height: 240px; transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse at 50% 45%, rgba(171, 159, 210, 0.3), rgba(255, 190, 96, 0.1) 42%, transparent 68%);
+}
+.mzc-u8 .mzc-emptyhero .t-ico {
+  margin: 0 auto;
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 18px rgba(171, 159, 210, 0.45));
+}
+.mzc-u8 .mzc-emptyhero h2 { margin-top: 8px; font-size: 21px; font-weight: 600; letter-spacing: -0.5px; color: var(--text-primary); }
+.mzc-u8 .mzc-emptyhero p { margin-top: 4px; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.mzc-u8 .mzc-qqs { display: grid; gap: 8px; padding-top: 16px; }
+.mzc-u8 .mzc-qq {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; padding: 11px 13px;
+  border: 0; border-radius: 16px; text-align: left;
+  font-size: 13.5px; font-weight: 500; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.mzc-u8 .mzc-qq > span { min-width: 0; }
+
+/* composer: a floating lavender glass pill without sheen, above the tab bar */
+.mzc-u8 .chat-composer.glass {
+  --c: var(--dv-lav);
+  position: sticky; align-items: flex-end; gap: 8px; margin-left: 10px; margin-right: 10px;
+  padding: 6px; border: 0; border-radius: 26px;
+}
+.mzc-u8 .mzc-composer textarea { color: var(--text-primary); color-scheme: dark; }
+.mzc-u8 .mzc-composer textarea::placeholder { color: var(--text-muted); }
+.mzc-u8 .mzc-cmic {
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.mzc-u8 .mzc-cmic.rec {
+  color: #FFD2C4;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--dv-coral) 42%, #3A332D), color-mix(in srgb, var(--dv-coral) 16%, #1E1B18));
+  box-shadow: 0 0 14px -2px rgba(255, 126, 92, 0.7), inset 0 0 0 1px rgba(255, 126, 92, 0.5);
+}
+.mzc-u8 .mzc-csend {
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--dv-lav) 42%, #3A332D), color-mix(in srgb, var(--dv-lav) 16%, #1E1B18));
+  box-shadow: 0 0 14px -2px rgba(171, 159, 210, 0.7), inset 0 0 0 1px rgba(171, 159, 210, 0.5);
+}
+.mzc-u8 .mzc-cmic .t-ico, .mzc-u8 .mzc-csend .t-ico { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
+
+/* FeedbackChips, üveg variant (`glyph3d`): flat pills, the chosen verdict/reason lit lavender */
+.fbk-chips.is-3d { margin-top: 2px; }
+.fbk-chips.is-3d .fbk-votes { flex-wrap: wrap; gap: 6px; }
+.fbk-chips.is-3d .chip {
+  display: inline-flex; align-items: center; gap: 5px; min-height: 32px; border: 0; border-radius: 999px;
+  font: 600 11.5px/1.2 var(--ff-body); color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.fbk-chips.is-3d .chip .t-ico { filter: none; }
+.fbk-chips.is-3d .chip[aria-pressed="true"], .fbk-chips.is-3d .chip.brand {
+  color: #191614; background: var(--dv-lav); box-shadow: 0 0 10px rgba(171, 159, 210, 0.5);
+}
+.fbk-chips.is-3d .chip:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 2px; }
+
+/* the two conversation sheets: ONE floating lavender glass each (U2 rule 15), flat rows inside */
+.sheet.glass.mzc-sheet {
+  --c: var(--dv-lav);
+  position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
+  overflow-x: hidden; overflow-y: auto; border: 0; border-radius: 30px; padding: 4px 18px 18px;
+}
+.sheet.glass.mzc-sheet .sheet-handle-zone { margin: 0 -18px 4px; }
+.sheet.glass.mzc-sheet .sheet-handle { width: 40px; height: 5px; background: rgba(245, 239, 230, 0.22); }
+.mzc-sheet .mzc-shbody { gap: 12px; }
+.mzc-sheet .mzc-shh { display: flex; align-items: center; gap: 12px; margin-bottom: 2px; }
+.mzc-sheet .mzc-sheb {
+  font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--dv-lav) 80%, var(--text-primary));
+}
+.mzc-sheet .mzc-shtitle {
+  font-size: 21px; font-weight: 600; letter-spacing: -0.6px; line-height: 1.2; color: var(--text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mzc-sheet .mzc-shlist { max-height: 320px; overflow-y: auto; gap: 6px; }
+.mzc-sheet .mzc-shrow {
+  display: flex; align-items: center; gap: 11px; width: 100%; min-width: 0; padding: 10px 12px;
+  border: 0; border-radius: 14px; text-align: left; color: var(--text-primary); cursor: pointer;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.mzc-sheet .mzc-shrow.is-on {
+  box-shadow: inset 0 0 0 1px rgba(171, 159, 210, 0.45), 0 0 12px -4px rgba(171, 159, 210, 0.5);
+}
+.mzc-sheet .mzc-shrow.is-new {
+  background: none; box-shadow: none; border: 1.5px dashed rgba(171, 159, 210, 0.45);
+}
+.mzc-sheet .mzc-shnm {
+  display: block; min-width: 0; font-size: 14px; font-weight: 600; color: var(--text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mzc-sheet .mzc-shrow.is-warn .mzc-shnm { color: #FFB39C; }
+.mzc-sheet .mzc-shsub { font-size: 11px; line-height: 1.35; color: var(--text-muted); }
+.mzc-sheet .mzc-shrow .t-ico { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
+.mzc-sheet .mzc-shmore {
+  width: 30px; height: 30px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  font-weight: 800; color: var(--text-secondary); background: rgba(245, 239, 230, 0.05);
+}
+.mzc-sheet .mzc-shinput {
+  width: 100%; padding: 11px 13px; border: 0; border-radius: 14px; font-size: 14px;
+  color: var(--text-primary); color-scheme: dark;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.mzc-sheet .mzc-shinput:focus { outline: none; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--dv-lav) 60%, transparent); }
+.mzc-sheet .mzc-shpair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+.mzc-sheet .mzc-shconfirm .mzc-shpair { margin-top: 12px; }
+.mzc-sheet .mzc-shbtn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; min-height: 44px;
+  padding: 8px 14px; border: 0; border-radius: 999px; font: 700 13px/1.2 var(--ff-body); cursor: pointer;
+}
+.mzc-sheet .mzc-shbtn .t-ico { filter: none; }
+.mzc-sheet .mzc-shbtn.is-ghost {
+  font-weight: 600; color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.mzc-sheet .mzc-shbtn.is-go { color: #191614; background: var(--dv-lav); box-shadow: 0 0 14px color-mix(in srgb, var(--dv-lav) 55%, transparent); }
+.mzc-sheet .mzc-shbtn.is-warn { color: #191614; background: var(--dv-coral); box-shadow: 0 0 14px color-mix(in srgb, var(--dv-coral) 55%, transparent); }
+.mzc-sheet .mzc-shbtn:disabled { opacity: 0.45; cursor: default; }
+.mzc-sheet .mzc-shconfirm {
+  padding: 12px; border-radius: 14px; border: 1.5px dashed rgba(255, 126, 92, 0.45);
+  font-size: 13px; line-height: 1.5; color: var(--text-secondary);
+}
+
+/* 320–360px: the header row and its five controls shrink rather than overlap (rule 8) */
+@media (max-width: 360px) {
+  .mzc-u8 .mzc-chathead { gap: 6px; padding-inline: 10px; }
+  .mzc-u8 .mzc-hdisc.glass { width: 36px; height: 36px; }
+  .mzc-u8 .mzc-horb.uv-well { width: 38px; height: 38px; }
+  .mzc-u8 .mzc-horb .t-ico { width: 26px; height: 26px; }
+  .mzc-u8 .mzc-hnm { font-size: 15.5px; }
+}
 
 /* ── /uveg mezo1 chat ── */
 
 /* ── uveg mezo1 coaching (mezo-me75u.8) ── /mezo/coaching, /mezo/coaching/megfigyelo, /mezo/coaching/kartya ── */
 
+/* Reference: docs/design_2.0/prototypes/uveg-mezo.html #coaching, #megfigyelo, #kartya (owner OK,
+   U8). Roots: `.coach-page` + `.coach-hub` / `.coach-obs` / `.coach-card` (MozaikPage className);
+   every rule is scoped to them, because `mzp-*`, `mz-w-*` and `nap-mzmsg-*` are shared with
+   Diagnózis / Kísérletek / Előrejelzések / NapMezoPage (rule 13) — the coaching pages now wear
+   their own `coach-*` classes instead (rule 55). Ranking (bible §3.4): ONE `.glass` per screen —
+   the hub's winner (amber), the observer's flagged rules (coral, the state that speaks), the
+   card page's card (amber); everything else is flat, empty/loading/error is dashed. */
+.coach-page.mz-page { background: transparent; }
+.coach-page .mz-page-body { padding: 4px 16px 64px; }
+.coach-page .coach-h3 { display: block; padding: 10px 4px 0; margin-bottom: -4px; }
+.coach-page .mz-principle {
+  margin: 22px 6px 0; padding-top: 12px; border-top: 1px solid var(--divider);
+  font-size: 11.5px; font-weight: 400; line-height: 1.5; color: var(--text-muted); text-align: center;
+}
+.coach-page .coach-state { --c: var(--dv-amber); min-height: 54px; padding: 14px; border-radius: 20px; text-align: center; }
+.coach-obs .coach-state { --c: var(--dv-lav); }
+.coach-page .coach-state p { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+.coach-page .coach-grow { flex: 1; min-width: 0; }
+.coach-page .coach-well { flex: 0 0 auto; }
+.coach-page .coach-chev { flex: 0 0 auto; font-size: 18px; line-height: 1; color: var(--text-muted); }
+
+/* rank plaque (prototype `.rank`) — tinted by the surface's own --c */
+.coach-page .coach-rank {
+  flex: 0 0 auto; min-width: 34px; height: 26px; padding: 0 7px; border-radius: 9px;
+  display: grid; place-items: center; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--c, var(--dv-lav)) 85%, var(--text-primary));
+  background: color-mix(in srgb, var(--c, var(--dv-lav)) 12%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, var(--dv-lav)) 34%, transparent);
+}
+.coach-page .coach-rank.is-lg { min-width: 40px; height: 30px; font-size: 13.5px; }
+
+/* state chips (prototype `.flatchip`) — flat, their own tone, the 3D icon without a halo */
+.coach-page .coach-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+.coach-page .coach-chip {
+  --cc: var(--text-muted);
+  display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px 4px 6px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; line-height: 1.2; white-space: nowrap;
+  color: color-mix(in srgb, var(--cc) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--cc) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cc) 30%, transparent);
+}
+.coach-page .coach-chip.is-raised { --cc: var(--dv-coral); }
+.coach-page .coach-chip.is-suppressed, .coach-page .coach-chip.is-winner { --cc: var(--dv-amber); }
+.coach-page .coach-chip.is-clear { --cc: var(--dv-sage); }
+.coach-page .coach-chip .t-ico { filter: none; }
+
+/* flat evidence / fact cell (rule tile body + the card's facts) */
+.coach-page .coach-fact {
+  padding: 7px 10px; border-radius: 11px; background: rgba(245, 239, 230, 0.045);
+  font-size: 12px; line-height: 1.45; color: var(--text-secondary); overflow-wrap: anywhere;
+}
+.coach-page .coach-fact .vl { font-variant-numeric: tabular-nums; }
+
+/* ── hub: the gauge hero ── */
+.coach-hub .coach-gauge { position: relative; width: 156px; height: 156px; margin: 8px auto 0; display: grid; place-items: center; }
+.coach-hub .coach-gauge > svg.mzo-arc { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.coach-hub .coach-gauge-ctr { position: relative; display: grid; justify-items: center; text-align: center; }
+.coach-hub .coach-gauge-ctr .t-ico {
+  margin-bottom: -2px;
+  filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 10px color-mix(in srgb, var(--dv-amber) 40%, transparent));
+}
+.coach-hub .coach-gauge-ctr b {
+  display: block; font-family: var(--ff-display); font-size: 50px; font-weight: 300; letter-spacing: -3px; line-height: 1;
+  font-variant-numeric: tabular-nums; color: var(--text-primary);
+}
+.coach-hub .coach-gauge-ctr small { font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted); }
+.coach-hub .coach-legend {
+  display: flex; justify-content: center; flex-wrap: wrap; gap: 6px 12px; margin-top: 10px;
+  font-size: 11.5px; color: var(--text-secondary);
+}
+.coach-hub .coach-legend span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.coach-hub .coach-legend i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); box-shadow: 0 0 6px var(--c); }
+
+/* ── hub: THE one glass — the day's winner ── */
+.coach-hub .coach-win.glass { --c: var(--dv-amber); padding: 14px 15px 13px; border-radius: 22px; color: var(--text-primary); }
+.coach-hub .coach-win-top { display: flex; align-items: center; gap: 11px; }
+.coach-hub .coach-win .coach-well { width: 48px; height: 48px; }
+.coach-hub .coach-win-top strong { display: block; font-size: 17px; font-weight: 600; letter-spacing: -0.4px; line-height: 1.25; overflow-wrap: anywhere; }
+.coach-hub .coach-win-why { margin-top: 10px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+
+/* ── hub: the split as four flat cells, numerals in their state colour ── */
+.coach-hub .coach-split.mz-statstrip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.coach-hub .coach-split .mz-statcell {
+  min-width: 0; padding: 10px 4px; border: 0; border-radius: 14px; text-align: center;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.coach-hub .coach-split .mz-statcell b { font-size: 19px; font-weight: 600; letter-spacing: -0.6px; color: var(--text-primary); }
+.coach-hub .coach-split .mz-statcell:nth-child(1) b { color: color-mix(in srgb, var(--dv-coral) 80%, #fff); }
+.coach-hub .coach-split .mz-statcell:nth-child(2) b { color: color-mix(in srgb, var(--dv-amber) 80%, #fff); }
+.coach-hub .coach-split .mz-statcell:nth-child(3) b { color: color-mix(in srgb, var(--dv-sage) 80%, #fff); }
+.coach-hub .coach-split .mz-statcell small { display: block; margin-top: 2px; font-size: 10px; line-height: 1.3; color: var(--text-muted); overflow-wrap: anywhere; }
+
+/* ── hub: the two doors — flat rows with a lit well ── */
+.coach-hub .coach-doors { display: grid; gap: 8px; }
+.coach-hub .coach-door {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 14px 11px 11px;
+  border: 0; border-radius: 18px; background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+  font: inherit; text-align: left; color: var(--text-primary); cursor: pointer;
+}
+.coach-hub .coach-door:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.coach-hub .coach-door .coach-well { width: 42px; height: 42px; }
+.coach-hub .coach-door strong { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: -0.2px; }
+.coach-hub .coach-door small { display: block; margin-top: 1px; font-size: 11.5px; line-height: 1.35; color: var(--text-secondary); overflow-wrap: anywhere; }
+
+/* ── observer: the day switcher as a flat pill ── */
+.coach-obs .mzo-daysw {
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px; margin-top: 12px; padding: 4px;
+  border-radius: 999px; background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.coach-obs .mzo-daysw button {
+  width: 34px; height: 34px; border: 0; border-radius: 50%; display: grid; place-items: center;
+  background: none; box-shadow: none; font-size: 18px; color: var(--text-secondary); cursor: pointer;
+}
+.coach-obs .mzo-daysw button:disabled { opacity: 0.3; cursor: default; }
+.coach-obs .mzo-daysw button:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 1px; }
+.coach-obs .mzo-dlbl { min-width: 110px; }
+.coach-obs .mzo-dlbl b { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.coach-obs .mzo-dlbl small { font-size: 10.5px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text-muted); }
+.coach-obs .coach-quiet { font-size: 12px; line-height: 1.5; color: var(--text-secondary); text-align: center; }
+
+/* ── observer: rule tiles, ranked by STATE (the order stays the server's) ── */
+.coach-obs .coach-rules { display: grid; gap: 8px; }
+.coach-obs .mzo-rule { --c: var(--dv-coral); display: block; padding: 11px 12px; border: 0; border-radius: 18px; color: var(--text-primary); }
+.coach-obs .mzo-rule:not(.glass) { background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider); }
+/* flagged = the loud one; restate the glass shadow over the old `.mzo-rule.is-winner` ring (rule 11) */
+.coach-obs .mzo-rule.glass {
+  border: 0;
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.10),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.coach-obs .mzo-rule.is-suppressed { --c: var(--dv-amber); }
+.coach-obs .mzo-rule.is-suppressed:not(.glass) {
+  background: color-mix(in srgb, var(--dv-amber) 7%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 28%, transparent);
+}
+.coach-obs .mzo-rule.is-clear { --c: var(--dv-sage); }
+.coach-obs .mzo-rule.is-unavailable { --c: var(--text-muted); }
+.coach-obs .mzo-rule.is-unavailable:not(.glass) {
+  background: none; box-shadow: none;
+  border: 1.5px dashed color-mix(in srgb, var(--text-muted) 45%, transparent);
+}
+/* a winner that has since gone quiet keeps a faint gold edge beside its Nyertes chip */
+.coach-obs .mzo-rule.is-winner:not(.glass):not(.is-unavailable) {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 45%, transparent);
+}
+.coach-obs .mzo-rule-head {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 0; border: 0;
+  background: none; font: inherit; text-align: left; color: inherit;
+}
+.coach-obs button.mzo-rule-head { cursor: pointer; }
+.coach-obs button.mzo-rule-head:focus-visible { outline: 2px solid var(--c); outline-offset: 3px; border-radius: 12px; }
+.coach-obs .mzo-rule-nm { display: block; font-size: 14px; font-weight: 600; line-height: 1.3; color: var(--text-primary); overflow-wrap: anywhere; }
+.coach-obs .mzo-rule.is-clear .mzo-rule-nm, .coach-obs .mzo-rule.is-unavailable .mzo-rule-nm { font-weight: 500; color: var(--text-secondary); }
+.coach-obs .mzo-rule.is-clear .mzo-rule-ic, .coach-obs .mzo-rule.is-unavailable .mzo-rule-ic { filter: grayscale(0.4) brightness(0.8); }
+.coach-obs .mzo-rule .coach-chev { font-size: 13px; }
+.coach-obs .mzo-rule.open .coach-chev { transform: rotate(180deg); }
+.coach-obs .mzo-rule-why { margin-top: 9px; font-size: 12.5px; font-weight: 400; line-height: 1.45; color: var(--text-secondary); }
+.coach-obs .mzo-rule-body:not([hidden]) { display: grid; gap: 6px; margin: 9px 0 2px; }
+
+/* ── observer: the day's changes, flat ── */
+.coach-obs .mzo-tl { display: flex; flex-direction: column; gap: 0; padding: 0 4px; }
+.coach-obs .mzo-tlrow {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 9px 0;
+  border-top: 1px solid var(--divider); font-size: 12.5px; font-weight: 400; line-height: 1.45; color: var(--text-secondary);
+}
+.coach-obs .mzo-tlrow:first-child { border-top: 0; }
+.coach-obs .mzo-tlrow .tm { flex: 0 0 42px; font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
+.coach-obs .mzo-tlrow .nm { flex: 0 1 auto; min-width: 0; font-weight: 600; color: var(--text-primary); }
+.coach-obs .mzo-tlrow > span:last-child { flex: 1 1 140px; min-width: 0; }
+
+/* ── card: THE one glass — the day's card ── */
+.coach-card .coach-dcard.glass { --c: var(--dv-amber); padding: 16px 16px 15px; border-radius: 24px; color: var(--text-primary); }
+.coach-card .coach-dcard-top { display: flex; align-items: center; gap: 11px; }
+.coach-card .coach-dcard .coach-well { width: 50px; height: 50px; }
+.coach-card .coach-dcard-eb {
+  min-width: 0; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; line-height: 1.35;
+  color: color-mix(in srgb, var(--dv-amber) 70%, var(--text-primary)); overflow-wrap: anywhere;
+}
+.coach-card .coach-dcard-body { margin-top: 12px; font-size: 15.5px; font-weight: 400; font-style: normal; line-height: 1.55; color: var(--text-primary); }
+.coach-card .coach-dcard-body ~ .coach-dcard-body { margin-top: 8px; }
+.coach-card .coach-dcard-facts { display: grid; gap: 8px; margin-top: 12px; }
+.coach-card .coach-dcard-facts .coach-fact { padding: 9px 11px; border-radius: 13px; font-size: 13px; color: var(--text-primary); }
+.coach-card .coach-dcard-sugg { list-style: none; display: grid; gap: 6px; margin: 12px 0 0; padding: 0; }
+.coach-card .coach-dcard-sugg li { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.coach-card .coach-dcard-sugg .t-ico { flex: 0 0 auto; filter: none; }
+.coach-card .coach-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.coach-card .coach-cta {
+  flex: 1 1 auto; min-height: 46px; padding: 0 16px; border: 0; border-radius: 999px;
+  font: 700 14px/1.2 var(--ff-body); color: #191614; background: var(--dv-amber);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--dv-amber) 55%, transparent); cursor: pointer;
+}
+.coach-card .coach-cta:disabled { opacity: 0.45; cursor: default; }
+.coach-card .coach-cta:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
+.coach-card .coach-err { flex-basis: 100%; font-size: 12px; color: #FFB39C; }
+.coach-card .coach-applied {
+  display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 11px 13px; border-radius: 14px;
+  background: color-mix(in srgb, var(--dv-sage) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-sage) 40%, transparent);
+  font-size: 13.5px; font-weight: 600; color: color-mix(in srgb, var(--dv-sage) 60%, #fff);
+}
+.coach-card .coach-applied .t-ico { filter: none; }
+
+/* ── card: „Miért ez nyert" as flat rows ── */
+.coach-card .coach-losers {
+  padding: 4px 14px; border-radius: 18px;
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.coach-card .mzo-loser {
+  display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 0;
+  border-top: 1px solid var(--divider); font-size: 13px;
+}
+.coach-card .mzo-loser:first-child { border-top: 0; }
+.coach-card .mzo-loser .t-ico { filter: grayscale(0.3) brightness(0.85); }
+.coach-card .mzo-loser .nm { font-weight: 600; color: var(--text-primary); }
+.coach-card .mzo-loser .why { color: var(--text-secondary); }
+.coach-card .mzo-loser .why::before { content: ' · '; }
+.coach-card .mzo-loser .rk { flex: 0 0 auto; margin-left: auto; font-size: 11px; white-space: nowrap; color: var(--text-muted); }
+
+/* motion — the reduced branch shows the final state (no rule needed) */
+@keyframes coach-seg { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: no-preference) {
+  .coach-hub .mzo-arcseg.uv-ring-prog { animation: coach-seg 0.5s var(--uv-ease) both; animation-delay: calc(0.2s + var(--i, 0) * 40ms); }
+  .coach-obs .mzo-rule .coach-chev { transition: transform 0.18s ease; }
+}
 /* ── /uveg mezo1 coaching ── */
 
 /* ── uveg mezo1 diagnozis (mezo-me75u.8) ── /mezo/diagnozis, /mezo/diagnozis/:id ── */
+/* Reference: docs/design_2.0/prototypes/src/uveg-mezo-body.html `diagnozis` / `diag` (owner OK).
+   Pages: features/insights/pages/DiagnosisListPage.tsx + DiagnosisDetailPage.tsx, root `.dgx-page`.
+   The pages left the shared `.mzp-*` family (Coaching, Experiments, Predictions and Én still wear
+   it) for their own `dgx-*` classes (bible U7 rule 55). Ranking (§3.4): list — the three ask cards
+   are THE glass (lavender), upcoming = dashed, past reports = flat rows; detail — frameless halo
+   hero, Számvetés = one flat card, suspect rank 1 = THE one glass (amber), ranks 2+ flat. */
+.dgx-page.mz-page { background: transparent; }
+.dgx-page .mz-page-body { padding: 2px 16px 84px; overflow-x: hidden; }
+.dgx-body { display: flex; flex-direction: column; gap: 0; }
+.dgx-sec { display: block; padding: 20px 2px 9px; color: var(--text-muted); }
+
+/* the lit pill CTA (prototype `.pillx`) — a filled accent restates every colour (U5 rule 36) */
+.dgx-page .dgx-cta {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%; margin-top: 12px;
+  padding: 8px 14px 8px 10px; border: 0; border-radius: 999px; cursor: pointer;
+  font: 700 12.5px/1.25 var(--ff-body); text-align: left; white-space: normal;
+  color: #191614; background: var(--c);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.dgx-page .dgx-cta .t-ico { width: 18px; height: 18px; filter: none; }
+.dgx-page .dgx-cta:disabled { opacity: 0.45; cursor: default; }
+.dgx-page .dgx-cta:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+
+/* quiet centred notes: error copy, quota line, stale footer */
+.dgx-note { margin: 10px 0 0; padding: 0 12px; font-size: 11.5px; line-height: 1.5; text-align: center; color: var(--text-muted); }
+.dgx-note.is-error { color: var(--text-secondary); }
+
+/* ── list: the hero ── */
+.dgx-page .mz-page-hero.uv-hero { --c: var(--dv-lav); }
+
+/* ── list: the three ask cards — THE glass objects (prototype `.ask`) ── */
+.dgx-asks { display: flex; flex-direction: column; }
+.dgx-ask + .dgx-ask { margin-top: 10px; }
+.dgx-page .dgx-ask.glass { --c: var(--dv-lav); display: block; padding: 14px 15px; color: var(--text-primary); }
+.dgx-ask .dgx-eb { display: flex; align-items: center; gap: 6px; color: #CFC4F2; }
+.dgx-ask .dgx-eb .t-ico { width: 18px; height: 18px; filter: none; }
+.dgx-ask-q { margin-top: 5px; font-size: 19px; font-weight: 600; letter-spacing: -0.5px; line-height: 1.25; color: var(--text-primary); }
+.dgx-ask-blurb { margin-top: 4px; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+.dgx-ask.is-busy .dgx-cta {
+  opacity: 1; color: #E6DDFF; background: rgba(171, 159, 210, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(171, 159, 210, 0.45);
+}
+
+/* ── list: upcoming questions — dashed free tiles (prototype `.soon`) ── */
+.dgx-soon { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.dgx-soon-tile.uv-empty { --c: var(--dv-lav); min-width: 0; padding: 12px; border-radius: 18px; }
+.dgx-soon-tile .qq { font-size: 13px; font-weight: 600; line-height: 1.35; color: var(--text-secondary); overflow-wrap: anywhere; }
+.dgx-soon-tile .qs { margin-top: 6px; font-size: 9.5px; font-weight: 600; letter-spacing: 1.2px; color: var(--text-muted); }
+
+/* ── list: past reports — FLAT rows (prototype `.rep`) ── */
+.dgx-reps { display: flex; flex-direction: column; }
+.dgx-rep + .dgx-rep { margin-top: 8px; }
+.dgx-page .dgx-rep {
+  --c: var(--dv-lav); display: block; width: 100%; padding: 12px 14px; border: 0; border-radius: 18px;
+  text-align: left; cursor: pointer; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.dgx-page .dgx-rep:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.dgx-rep-top { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; font-size: 11px; color: var(--text-muted); }
+.dgx-rep-date { margin-left: auto; font-variant-numeric: tabular-nums; }
+.dgx-chev { font-size: 20px; line-height: 1; color: var(--text-muted); }
+.dgx-chip {
+  display: inline-flex; align-items: center; gap: 5px; min-width: 0; padding: 4px 9px 4px 6px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--c) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent);
+}
+.dgx-chip .t-ico { width: 16px; height: 16px; filter: none; }
+.dgx-rep-q { display: block; margin-top: 7px; font-size: 15px; font-weight: 600; letter-spacing: -0.2px; line-height: 1.3; }
+.dgx-rep-v { display: block; margin-top: 3px; font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); }
+.dgx-rep-s { display: block; margin-top: 6px; font-size: 11px; line-height: 1.45; color: var(--text-muted); }
+
+/* ── empty / not-found — dashed; loading — a quiet flat placeholder ── */
+.dgx-empty.uv-empty {
+  --c: var(--dv-lav); display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 22px 18px; border-radius: 20px; text-align: center;
+}
+.dgx-empty p { font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+.dgx-loading { height: 120px; margin-top: 8px; border-radius: 20px; background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider); }
+
+/* ── detail: the frameless hero (prototype `.vhero`) — lav → amber halo, verdict upright ── */
+.dgx-page .mz-page-hero.uv-hero .mz-hero-nm { font-size: 25px; line-height: 1.2; max-width: 340px; }
+.dgx-page .mz-page-hero.uv-hero .uv-hero-eb { color: #CFC4F2; }
+.dgx-verdict {
+  max-width: 330px; margin: 10px auto 0; font-family: var(--ff-body); font-style: normal;
+  font-size: 15.5px; font-weight: 400; line-height: 1.5; color: var(--text-primary);
+}
+.dgx-certrow { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 10px; margin-top: 12px; }
+.dgx-cert {
+  --c: var(--dv-lav); display: inline-flex; align-items: center; gap: 9px; padding: 6px 12px 6px 6px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.dgx-cert .t-ico { width: 22px; height: 22px; filter: none; }
+.dgx-cert .uv-bar { width: 60px; flex: 0 0 60px; }
+.dgx-cert-date { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+/* ── detail: Számvetés — ONE flat card of label/value rows (prototype `.szamv`) ── */
+.dgx-szam-card { padding: 4px 14px; border-radius: 18px; background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider); }
+/* the live values are sentence-length (the backend's computed decomposition), so the label sits
+   over its value, both left-aligned, instead of the prototype's short right-hand numbers */
+.dgx-szrow {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 9px 0; border-top: 1px solid var(--divider); font-size: 11.5px; color: var(--text-muted);
+}
+.dgx-szrow:first-child { border-top: 0; }
+.dgx-szrow .vl { min-width: 0; font-size: 13.5px; font-weight: 600; line-height: 1.45; color: var(--text-primary); overflow-wrap: anywhere; }
+
+/* ── detail: suspects (prototype `.susp`) — rank 1 = THE glass (amber), 2+ = flat ── */
+.dgx-susps { display: flex; flex-direction: column; }
+.dgx-susp + .dgx-susp { margin-top: 10px; }
+.dgx-page .dgx-susp {
+  --c: var(--dv-lav); display: block; padding: 14px 15px; border-radius: 20px; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.dgx-page .dgx-susp.is-lead.glass {
+  --c: var(--dv-amber); border-radius: 22px;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.dgx-susp-top { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; }
+.dgx-rank {
+  flex: 0 0 auto; min-width: 34px; height: 26px; padding: 0 7px; border-radius: 9px; display: grid; place-items: center;
+  font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--c) 85%, var(--text-primary));
+  background: color-mix(in srgb, var(--c) 12%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 34%, transparent);
+}
+.dgx-susp.is-lead .dgx-rank { min-width: 40px; height: 30px; font-size: 13.5px; }
+.dgx-susp-t { flex: 1 1 8em; min-width: 0; font-size: 15.5px; font-weight: 600; letter-spacing: -0.3px; line-height: 1.3; }
+.dgx-susp.is-lead .dgx-susp-t { font-size: 17px; letter-spacing: -0.4px; }
+/* strength chip: erős = sage, mérsékelt / gyenge = amber */
+.dgx-str {
+  --s: var(--dv-amber); flex: 0 0 auto; display: inline-flex; align-items: center; padding: 4px 9px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+  color: color-mix(in srgb, var(--s) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--s) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--s) 30%, transparent);
+}
+.dgx-str.is-strong { --s: var(--dv-sage); }
+.dgx-claim { margin-top: 8px; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); }
+/* evidence: flat cells — label, big value, delta, source line */
+.dgx-evs { display: grid; gap: 6px; margin-top: 11px; }
+.dgx-ev {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: baseline; gap: 4px 10px;
+  padding: 8px 11px; border-radius: 12px; background: rgba(245, 239, 230, 0.045);
+}
+.dgx-ev .lb { min-width: 0; font-size: 12.5px; color: var(--text-secondary); overflow-wrap: anywhere; }
+.dgx-ev .vl { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.dgx-ev .vl.is-text { grid-column: 1 / -1; font-size: 13px; font-weight: 500; line-height: 1.45; overflow-wrap: anywhere; }
+/* the delta keeps its existing meaning: the evidence row marks it as the bad direction */
+.dgx-ev .dl { font-style: normal; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.dgx-ev .dl.bad { color: #FFB39C; }
+.dgx-ev .dl.good { color: #BFE0A8; }
+.dgx-ev .src { grid-column: 1 / -1; font-size: 10.5px; color: var(--text-muted); }
+/* the probe: a lit flat cell with the flask */
+.dgx-probe {
+  display: flex; gap: 10px; align-items: flex-start; margin-top: 11px; padding: 11px 12px; border-radius: 14px;
+  background: color-mix(in srgb, var(--c) 8%, rgba(245, 239, 230, 0.02));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent);
+}
+.dgx-probe .t-ico { width: 32px; height: 32px; }
+.dgx-probe > div { min-width: 0; }
+.dgx-probe-eb {
+  display: block; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 80%, var(--text-primary));
+}
+.dgx-probe-x { margin-top: 3px; font-size: 13px; line-height: 1.5; color: var(--text-primary); }
+/* after starting: the amber lit chip with the clock */
+.dgx-actual {
+  display: inline-flex; align-items: center; gap: 7px; max-width: 100%; margin-top: 12px; padding: 7px 12px 7px 7px;
+  border-radius: 999px; font-size: 12.5px; font-weight: 600; line-height: 1.35; color: #FFD08A;
+  background: rgba(255, 190, 96, 0.1); box-shadow: inset 0 0 0 1px rgba(255, 190, 96, 0.35);
+}
+.dgx-actual .t-ico { width: 20px; height: 20px; filter: none; }
 
 /* ── /uveg mezo1 diagnozis ── */
 
 /* ── uveg mezo1 kiserletek (mezo-me75u.8) ── /mezo/experiments (the detail page is U8a's `uveg mezo mibol`) ── */
 
+/* Own `exl-*` prefix (rule 55): the old `mzp-*` / `chip` skin is shared with Előrejelzések, so the
+   list no longer wears it. Ranking (§3.4): halo hero → flat filter pills → the ACTIVE card is the one
+   `.glass` → proposed / closed are flat → empty & propose CTA dashed. Failed ≠ red (proactive P2, rule 53). */
+.exl-page .exl-list { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+/* filter pills: flat, the active one lit amber; the row wraps at 320px (rule 14) */
+.exl-page .exl-filters { display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 0 4px; min-width: 0; }
+.exl-page .exl-filter {
+  --c: var(--dv-amber);
+  display: inline-flex; align-items: center; min-width: 0; padding: 7px 13px; border: 0; border-radius: 999px;
+  font: 600 12px/1.2 var(--ff-body); color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); cursor: pointer;
+}
+.exl-page .exl-filter.is-on {
+  color: #191614; background: var(--c);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.exl-page .exl-filter:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.exl-page .exl-filter-empty,
+.exl-page .exl-quiet {
+  margin: 0; padding: 14px; border-radius: 18px; text-align: center;
+  font-size: 13px; line-height: 1.5; color: var(--text-muted);
+  border: 1.5px dashed color-mix(in srgb, var(--text-muted) 40%, transparent);
+}
+.exl-page .exl-quiet { border: 0; }
+/* the card: shared anatomy; the active one wears the glass, everything else is flat */
+.exl-page .exl-card { display: block; width: 100%; min-width: 0; padding: 12px 14px; border-radius: 20px; }
+.exl-page .exl-card.is-flat {
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.exl-page .exl-card.is-flat[data-status="proposed"] {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-lav) 42%, transparent);
+}
+.exl-page .exl-card.glass { position: relative; overflow: hidden; padding: 14px 15px 13px; border-radius: 22px; }
+.exl-page .exl-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.exl-page .exl-top > .t-ico { width: 30px; height: 30px; }
+.exl-page .exl-well { width: 44px; height: 44px; }
+.exl-page .exl-grow { flex: 1; min-width: 0; display: flex; }
+.exl-page .exl-chip {
+  display: inline-flex; align-items: center; gap: 5px; min-width: 0; max-width: 100%; padding: 4px 9px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--c) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent);
+}
+.exl-page .exl-chip .t-ico { width: 16px; height: 16px; filter: none; }
+.exl-page .exl-days { font-style: normal; font-size: 12px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+.exl-page .exl-chev { color: var(--text-muted); font-size: 20px; line-height: 1; flex: 0 0 auto; }
+.exl-page .exl-title {
+  display: block; margin-top: 7px; font-size: 14.5px; font-weight: 600; letter-spacing: -0.3px; line-height: 1.3;
+  color: var(--text-primary); text-decoration: none; overflow-wrap: anywhere;
+}
+.exl-page .exl-card.glass .exl-title { margin-top: 9px; font-size: 16px; }
+.exl-page .exl-title:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; border-radius: 6px; }
+.exl-page .exl-hyp { margin: 4px 0 0; font-size: 13px; line-height: 1.5; color: var(--text-secondary); overflow-wrap: anywhere; }
+/* day segments: done = lit accent, today = outlined; then the live progress bar (uv-bar) */
+.exl-page .exl-dots { display: flex; gap: 6px; margin-top: 12px; }
+.exl-page .exl-dots i { flex: 1; min-width: 0; height: 8px; border-radius: 4px; background: rgba(245, 239, 230, 0.08); }
+.exl-page .exl-dots i.is-done {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 55%, #fff), var(--c));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.exl-page .exl-dots i.is-now { box-shadow: inset 0 0 0 1.5px var(--c); }
+.exl-page .exl-bar { margin-top: 9px; }
+.exl-page .exl-outcome { margin-top: 8px; font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); }
+/* proposed: lit lavender accept, ghost dismiss */
+.exl-page .exl-decide { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 11px; }
+.exl-page .exl-pill {
+  --c: var(--dv-lav);
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 0; border-radius: 999px;
+  font: 700 12.5px/1.2 var(--ff-body); color: #191614; background: var(--c); white-space: nowrap; cursor: pointer;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.exl-page .exl-pill.is-ghost {
+  color: var(--text-secondary); font-weight: 600;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.exl-page .exl-pill .t-ico { width: 18px; height: 18px; filter: none; }
+.exl-page .exl-pill[disabled] { opacity: 0.45; cursor: default; }
+.exl-page .exl-pill:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+/* propose CTA: a dashed amber button, never glass (§3 rank 4) */
+.exl-page .exl-new {
+  --c: var(--dv-amber);
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 4px; padding: 13px;
+  border-radius: 18px; border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent);
+  font: 600 13.5px/1.3 var(--ff-body); color: color-mix(in srgb, var(--c) 80%, var(--text-primary));
+  background: rgba(245, 239, 230, 0.02); box-shadow: none; cursor: pointer; text-align: center;
+}
+.exl-page .exl-new .t-ico { width: 24px; height: 24px; }
+.exl-page .exl-new[disabled] { opacity: 0.45; cursor: default; }
+.exl-page .exl-new:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+/* empty (dashed amber) + error (quiet flat, never red) */
+.exl-page .exl-empty { --c: var(--dv-amber); padding: 14px; border-radius: 20px; text-align: center; }
+.exl-page .exl-empty p {
+  display: flex; align-items: center; justify-content: center; gap: 8px; margin: 8px 0 0;
+  font-size: 13.5px; line-height: 1.5; color: var(--text-secondary);
+}
+.exl-page .exl-empty p .t-ico { flex: 0 0 auto; }
+.exl-page .exl-error {
+  display: grid; justify-items: center; gap: 8px; padding: 16px 14px; border-radius: 20px; text-align: center;
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.exl-page .exl-error p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
 /* ── /uveg mezo1 kiserletek ── */
 
 /* ── uveg mezo1 emlekek (mezo-me75u.8) ── /mezo/emlekek, /mezo/emlekek/:date, the similar-day search panel ── */
 
+/* Reference: docs/design_2.0/prototypes/src/uveg-mezo-body.html `emlekek()`, `emlek()`, `search()`
+   (CSS `.memo .drow .dblk .srch .simrow .article .pager` + `.door`). The pages renamed their shared
+   `mz-memoir*` / `mem-*` / `mz-qcard` classes to their own `eml-*` (bible U7 rule 55), so nothing
+   here reaches the memoir pages, the Memória page or the Napló. Page roots: `.eml-emlekek`,
+   `.eml-emlek` (both `.eml-page`). The similar-day search dresses on its OWN root `.eml-search`, so
+   it reads the same on /mezo/emlekek and on the Memória „Kereső" tab.
+   Ranking (§3.4): Emlékek — frameless lavender t-album halo; the weekly-memoir teaser is THE one
+   lavender glass; archive / link cards = flat door rows; daily memories = flat rows with a lit
+   date block; search = flat field + lit lavender pill; results = flat rows with a small glowing
+   ring. Napi emlék — frameless amber t-album halo; the article is THE one amber glass; pager and
+   the „összes nap" door are flat. Loading / error / degraded = quiet flat; empty = dashed. */
+.eml-page.mz-page { background: transparent; }
+.eml-emlekek { --c: var(--dv-lav); }
+.eml-emlek { --c: var(--dv-amber); }
+.eml-page .mz-page-body { padding: 2px 16px 84px; overflow-x: hidden; }
+.eml-page .mz-page-hero.uv-hero { --c2: var(--dv-amber); }
+.eml-emlek .mz-page-hero.uv-hero { --c2: var(--dv-lav); }
+.eml-page .mz-page-hero.uv-hero .mz-hero-sb { font-variant-numeric: tabular-nums; }
+
+/* section eyebrows (prototype `h3('NAPI EMLÉKEK')`) */
+.eml-page .eml-h3 { display: block; margin: 12px 2px -4px; color: var(--text-muted); }
+
+/* ── the weekly-memoir teaser: THE one lavender glass (prototype `.memo`) ── */
+.eml-page .eml-memo.glass {
+  --c: var(--dv-lav); display: block; width: 100%; padding: 16px 16px 14px; border: 0; border-radius: 24px;
+  color: var(--text-primary); text-decoration: none;
+}
+.eml-page .eml-memo-top { display: flex; gap: 12px; align-items: center; min-width: 0; }
+.eml-page .eml-memo-top > .t-ico { width: 56px; height: 56px; }
+.eml-page .eml-memo-head { display: block; flex: 1; min-width: 0; }
+.eml-page .eml-memo-eb { display: block; color: #CFC4F2; overflow-wrap: anywhere; }
+.eml-page .eml-memo-ttl {
+  display: block; margin-top: 4px; font-family: var(--ff-serif); font-style: italic; font-weight: 500;
+  font-size: 21px; line-height: 1.25; letter-spacing: -0.2px; color: var(--text-primary); overflow-wrap: anywhere;
+}
+.eml-page .eml-memo-ex {
+  margin: 10px 0 0; font-family: var(--ff-body); font-style: normal; font-size: 13.5px; font-weight: 400;
+  line-height: 1.55; color: var(--text-secondary);
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.eml-page .eml-memo-go { display: block; margin-top: 10px; font-size: 12.5px; font-weight: 600; color: #CFC4F2; }
+.eml-page .eml-memo.glass:focus-visible { outline: 2px solid var(--c); outline-offset: 3px; }
+
+/* ── flat door rows (prototype `.door`): archive, Heti értékelés, Memória, „Emlékek · összes nap" ── */
+.eml-page .eml-door {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0;
+  padding: 11px 14px 11px 11px; border-radius: 18px; text-decoration: none; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.eml-page .eml-door-well { width: 42px; height: 42px; }
+.eml-page .eml-door-well .t-ico { width: 28px; height: 28px; }
+.eml-page .eml-door-grow { display: block; flex: 1; min-width: 0; }
+.eml-page .eml-door-grow strong { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: -0.2px; overflow-wrap: anywhere; }
+.eml-page .eml-door-grow small { display: block; margin-top: 1px; font-size: 11.5px; line-height: 1.35; color: var(--text-secondary); }
+.eml-page .eml-chev, .eml-search .eml-chev { flex: 0 0 auto; font-size: 20px; line-height: 1; color: var(--text-muted); }
+.eml-page .eml-doors { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.eml-page .eml-door:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+
+/* ── daily memories: flat rows with a lit date block (prototype `.drow` / `.dblk`) ── */
+.eml-page .eml-drows { display: flex; flex-direction: column; gap: 8px; }
+.eml-page .eml-drow {
+  --c: var(--dv-amber); display: flex; gap: 12px; align-items: flex-start; width: 100%; min-width: 0;
+  padding: 12px 14px 12px 12px; border-radius: 18px; text-decoration: none; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.eml-page .eml-drow:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.eml-page .eml-dblk {
+  position: relative; flex: 0 0 46px; height: 50px; border-radius: 14px;
+  display: grid; place-content: center; text-align: center;
+  background: radial-gradient(circle at 35% 28%, #3A332D, color-mix(in srgb, var(--c) 14%, #1E1B18));
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08), 0 0 12px -4px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.eml-page .eml-dblk b { font-size: 19px; font-weight: 600; line-height: 1; color: #FFD99A; font-variant-numeric: tabular-nums; }
+.eml-page .eml-dblk small { margin-top: 2px; font-size: 9.5px; font-weight: 600; letter-spacing: 0.8px; color: var(--text-muted); }
+.eml-page .eml-drow-grow { flex: 1; min-width: 0; }
+.eml-page .eml-drow-bd {
+  margin: 0; font-size: 13px; font-weight: 400; line-height: 1.5; color: var(--text-secondary);
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.eml-page .eml-drow-go { display: block; margin-top: 5px; font-size: 11.5px; font-weight: 600; color: #FFD08A; }
+
+/* ── the similar-day search (own root: /mezo/emlekek AND the Memória „Kereső" tab) ── */
+.eml-search { --c: var(--dv-lav); }
+.eml-search .eml-srch {
+  display: flex; align-items: center; gap: 10px; min-width: 0; margin: 0;
+  padding: 6px 6px 6px 12px; border-radius: 18px;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.eml-search .eml-srch:focus-within { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-lav) 55%, transparent); }
+.eml-search .eml-srch > .t-ico { width: 26px; height: 26px; }
+.eml-search .eml-srch input {
+  flex: 1; min-width: 0; min-height: 40px; border: 0; outline: none; background: none; padding: 0;
+  font: 400 13px/1.35 var(--ff-body); color: var(--text-primary);
+}
+.eml-search .eml-srch input::placeholder { color: var(--text-muted); }
+/* the lit lavender „Keresés" pill (prototype `.pillx`) — a filled CTA restates every colour (rule 36) */
+.eml-search .eml-srch-go {
+  flex: 0 0 auto; display: inline-flex; align-items: center; min-height: 36px; padding: 8px 14px;
+  border: 0; border-radius: 999px; cursor: pointer; white-space: nowrap;
+  font: 700 12.5px/1.2 var(--ff-body); color: #191614; background: var(--dv-lav);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--dv-lav) 55%, transparent);
+}
+.eml-search .eml-srch-go:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
+.eml-search .eml-srch-go:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 2px; }
+.eml-search .eml-srch-note { margin: 0; font-size: 12px; line-height: 1.4; text-align: center; color: var(--text-muted); }
+.eml-search .eml-simh { display: block; padding: 4px 4px 0; font-size: 12px; color: var(--text-secondary); }
+
+/* a result: a flat row with a small glowing ring holding the rank (prototype `.simrow`) */
+.eml-search .eml-simrow {
+  display: flex; gap: 12px; align-items: center; width: 100%; min-width: 0;
+  padding: 10px 12px; border-radius: 16px; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.eml-search .eml-simrow:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 2px; }
+.eml-search .eml-simring { --c: var(--dv-lav); position: relative; flex: 0 0 44px; width: 44px; height: 44px; display: grid; place-items: center; }
+.eml-search .eml-simring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.eml-search .eml-simring .uv-ring-track, .eml-search .eml-simring .uv-ring-prog { stroke-width: 4; }
+.eml-search .eml-simring b { position: relative; font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; color: #E6DDFF; }
+.eml-search .eml-simrow-grow { flex: 1; min-width: 0; }
+.eml-search .eml-simrow-dl { display: block; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.eml-search .eml-simrow-bd {
+  margin: 2px 0 0; font-size: 12px; font-weight: 400; line-height: 1.4; color: var(--text-secondary);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* ── the article: THE one amber glass (prototype `.article`) ── */
+.eml-emlek .eml-article.glass { --c: var(--dv-amber); padding: 18px 18px 16px; border: 0; border-radius: 24px; }
+.eml-emlek .eml-article-eb { display: block; color: #FFD08A; font-variant-numeric: tabular-nums; }
+.eml-emlek .eml-article-prose {
+  margin: 10px 0 0; white-space: pre-wrap; overflow-wrap: anywhere;
+  font-family: var(--ff-body); font-style: normal; font-size: 15px; font-weight: 400; line-height: 1.62; color: var(--text-primary);
+}
+.eml-emlek .eml-article-note {
+  margin: 14px 0 0; padding-top: 11px; border-top: 1px solid var(--divider);
+  font-size: 11.5px; line-height: 1.45; color: var(--text-muted);
+}
+
+/* prev / next: two flat pager cells + the „összes nap" door */
+.eml-emlek .eml-daynav { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.eml-emlek .eml-pager { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.eml-emlek .eml-pager-cell {
+  display: block; min-width: 0; min-height: 64px; padding: 11px 13px; border-radius: 16px;
+  text-decoration: none; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.eml-emlek .eml-pager-cell.is-prev { grid-column: 1; }
+.eml-emlek .eml-pager-cell.is-next { grid-column: 2; text-align: right; }
+.eml-emlek .eml-pager-cell small { display: block; font-size: 10.5px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-muted); }
+.eml-emlek .eml-pager-cell strong { display: block; margin-top: 3px; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.eml-emlek .eml-pager-cell:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+
+/* ── states: loading / error / degraded = quiet flat, empty = dashed (GhostState consumed as-is) ── */
+:is(.eml-page, .eml-search) .eml-ghost > .card,
+:is(.eml-page, .eml-search) .eml-empty > .card { border: 0; filter: none; background: none; box-shadow: none; }
+:is(.eml-page, .eml-search) .eml-ghost { border-radius: 18px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+:is(.eml-page, .eml-search) .eml-empty.uv-empty { border-radius: 20px; }
+:is(.eml-page, .eml-search) :is(.eml-ghost, .eml-empty) .cta-primary {
+  width: auto; padding: 8px 16px; border: 0; border-radius: 999px;
+  font: 700 12.5px/1.2 var(--ff-body); color: #191614; background: var(--c);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent);
+}
 /* ── /uveg mezo1 emlekek ── */
 
 /* ── uveg mezo1 memoar (mezo-me75u.8) ── /mezo/memoir, /mezo/memoir/archivum, /mezo/memoir/:weekStart ── */
 
+/* Memoár, Archívum, Fejezet — own `mmo-*` classes (the old `mz-memoir*` / `mz-anniv` / `mz-qcard`
+   are shared with Emlékek and Knowledge, bible rules 13 + 55), every rule under `.mmo-page`.
+   Ranking (§3.4): heroes are frameless lavender halos; the chapter article is THE one `.glass`
+   (lavender); anchor chips, the anniversary, the archive door, the shelf rows and the pager are
+   flat; the null state, the empty shelf, the missing chapter and a missing pager side are dashed. */
+.mmo-page.mz-page { background: transparent; overflow-x: clip; }
+.mmo-page .mz-page-body { padding: 2px 16px 22px; }
+.mmo-page .uv-hero { --c2: var(--dv-amber); }
+.mmo-page .col > .rise + .rise { margin-top: 12px; }
+
+/* the chapter: THE one glass (Memoár + Fejezet) */
+.mmo-page .mmo-article.glass { display: block; padding: 18px 18px 16px; border-radius: 24px; }
+.mmo-page .mmo-article .mmo-eb { display: block; color: color-mix(in srgb, var(--c) 78%, var(--text-primary)); }
+.mmo-page .mmo-ebrow { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
+.mmo-page .mmo-ebrow .mmo-eb { flex: 1 1 auto; min-width: 0; }
+.mmo-page .mmo-date { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.mmo-page .mmo-ttl {
+  margin: 5px 0 0; font-family: var(--ff-serif); font-style: italic; font-weight: 500;
+  font-size: 24px; line-height: 1.2; letter-spacing: -0.2px; color: var(--text-primary); overflow-wrap: anywhere;
+}
+/* prose: upright Geist, never italic (bible rule 23); the first paragraph opens on a glowing drop cap */
+.mmo-page .mmo-prose { margin-top: 10px; font-family: var(--ff-body); font-style: normal; font-size: 15px; font-weight: 400; line-height: 1.62; color: var(--text-primary); }
+.mmo-page .mmo-prose p { margin: 0; }
+.mmo-page .mmo-prose p + p { margin-top: 12px; }
+.mmo-page .mmo-prose p:first-child::first-letter {
+  float: left; margin: 4px 8px 0 0; font-size: 46px; font-weight: 300; line-height: 0.9;
+  color: color-mix(in srgb, var(--c) 40%, #fff); text-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.mmo-page .mmo-anch { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--divider); }
+.mmo-page .mmo-anch .uv-eyebrow { display: block; margin-bottom: 8px; }
+.mmo-page .mmo-chips { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+/* RefTag `glass`: a flat chip, the kind's 3D icon, the label (§3 rank 3 — never glass in glass) */
+.mmo-page .reftag-3d {
+  display: inline-flex; align-items: center; gap: 5px; max-width: 100%; min-width: 0; padding: 4px 10px 4px 6px;
+  border-radius: 999px; font-size: 11.5px; font-weight: 600; line-height: 1.3;
+  color: color-mix(in srgb, var(--c) 72%, var(--text-primary));
+  background: color-mix(in srgb, var(--c) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent);
+  overflow-wrap: anywhere;
+}
+.mmo-page .reftag-3d .t-ico { width: 16px; height: 16px; filter: none; }
+.mmo-page .mmo-fbk { margin-top: 12px; }
+
+/* the mock-only anniversary: a flat amber-tinted cell */
+.mmo-page .mmo-anniv {
+  --c: var(--dv-amber); display: flex; align-items: flex-start; gap: 11px; padding: 12px 14px; border-radius: 18px;
+  background: color-mix(in srgb, var(--c) 7%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 28%, transparent);
+}
+.mmo-page .mmo-anniv .t-ico { width: 34px; height: 34px; }
+.mmo-page .mmo-anniv .grow { flex: 1; min-width: 0; }
+.mmo-page .mmo-anniv .uv-eyebrow { display: block; color: color-mix(in srgb, var(--c) 78%, var(--text-primary)); }
+.mmo-page .mmo-anniv p { margin: 3px 0 0; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+
+/* the archive door: a flat row with a lit well */
+.mmo-page .mmo-door {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 14px 11px 11px; border: 0; border-radius: 18px;
+  text-align: left; font: inherit; color: var(--text-primary); cursor: pointer;
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.mmo-page .mmo-door .uv-well { width: 42px; height: 42px; }
+.mmo-page .mmo-door .grow { flex: 1; min-width: 0; }
+.mmo-page .mmo-door strong { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: -0.2px; }
+.mmo-page .mmo-door small { display: block; margin-top: 1px; font-size: 11.5px; line-height: 1.35; color: var(--text-secondary); }
+.mmo-page .mmo-door .chev { font-size: 18px; color: color-mix(in srgb, var(--c) 70%, var(--text-muted)); }
+.mmo-page .mmo-door:focus-visible, .mmo-page .mmo-chap:focus-visible, .mmo-page .mmo-pg:focus-visible {
+  outline: 2px solid var(--dv-lav); outline-offset: 2px;
+}
+
+/* dashed empty / flat loading states */
+.mmo-page .mmo-empty.uv-empty, .mmo-page .mmo-state.uv-flat { padding: 18px 16px; border-radius: 18px; text-align: center; }
+.mmo-page .mmo-empty .uv-eyebrow { display: block; color: color-mix(in srgb, var(--c) 70%, var(--text-muted)); }
+.mmo-page .mmo-empty p, .mmo-page .mmo-state p { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+.mmo-page .mmo-empty p:first-child, .mmo-page .mmo-state p:first-child { margin-top: 0; }
+
+/* Archívum: month heads + flat chapter rows */
+.mmo-page .mmo-mhead { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 18px 4px 8px; }
+.mmo-page .mmo-month:first-child .mmo-mhead { padding-top: 6px; }
+.mmo-page .mmo-mhead strong { font-size: 15px; font-weight: 600; text-transform: capitalize; color: var(--text-primary); }
+.mmo-page .mmo-mhead small { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.mmo-page .mmo-chap {
+  --c: var(--dv-lav); display: flex; align-items: flex-start; gap: 12px; width: 100%; padding: 12px 14px 12px 12px;
+  border: 0; border-radius: 18px; text-align: left; font: inherit; color: var(--text-primary); cursor: pointer;
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.mmo-page .mmo-chap + .mmo-chap { margin-top: 8px; }
+.mmo-page .mmo-wkb {
+  flex: 0 0 52px; height: 56px; border-radius: 14px; display: grid; place-content: center; text-align: center;
+  background: radial-gradient(circle at 35% 28%, #3A332D, color-mix(in srgb, var(--c) 14%, #1E1B18));
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08), 0 0 12px -4px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.mmo-page .mmo-wkb small { font-size: 9px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
+.mmo-page .mmo-wkb b { font-size: 21px; font-weight: 600; line-height: 1; color: color-mix(in srgb, var(--c) 40%, #fff); font-variant-numeric: tabular-nums; }
+.mmo-page .mmo-chap .grow { display: block; flex: 1; min-width: 0; }
+.mmo-page .mmo-chap .meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 2px 8px; font-size: 11px; color: var(--text-muted); }
+.mmo-page .mmo-chap .meta .d { font-variant-numeric: tabular-nums; }
+.mmo-page .mmo-chap .anc { display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
+.mmo-page .mmo-chap .anc .t-ico { width: 14px; height: 14px; }
+.mmo-page .mmo-chap .ttl {
+  display: block; margin-top: 3px; font-family: var(--ff-serif); font-style: italic; font-weight: 500;
+  font-size: 16.5px; line-height: 1.25; color: var(--text-primary); overflow-wrap: anywhere;
+}
+.mmo-page .mmo-chap .ex {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  margin-top: 4px; font-style: normal; font-size: 12.5px; line-height: 1.45; color: var(--text-secondary);
+}
+
+/* Fejezet: the pager — two flat cells; a missing side is a dashed empty cell */
+.mmo-page .mmo-pager { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.mmo-page .mmo-pg {
+  display: block; min-width: 0; min-height: 74px; padding: 11px 13px; border: 0; border-radius: 16px;
+  text-align: left; font: inherit; color: var(--text-primary); cursor: pointer;
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.mmo-page .mmo-pg.nx { text-align: right; }
+.mmo-page .mmo-pg.is-empty.uv-empty {
+  cursor: default; border: 1.5px dashed color-mix(in srgb, var(--c) 30%, transparent); background: none; box-shadow: none;
+}
+.mmo-page .mmo-pg small { display: block; font-size: 10.5px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-muted); }
+.mmo-page .mmo-pg strong { display: block; margin-top: 3px; font-size: 14px; font-weight: 600; color: color-mix(in srgb, var(--dv-lav) 40%, var(--text-primary)); }
+.mmo-page .mmo-pg span {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  margin-top: 2px; font-size: 11.5px; line-height: 1.35; color: var(--text-secondary); overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mmo-page .mmo-chap, .mmo-page .mmo-pg, .mmo-page .mmo-door { transition: transform 0.15s ease; }
+  .mmo-page .mmo-chap:active, .mmo-page .mmo-pg:active, .mmo-page .mmo-door:active { transform: scale(0.985); }
+}
 /* ── /uveg mezo1 memoar ── */
 
 /* ── uveg mezo1 memoria (mezo-me75u.8) ── /mezo/memoria: layers, journal, search tab, audit ── */
 
+/* The Memória page wears its own `mmr-*` classes (bible rule 55): the old `mem-daycard` /
+   `mem-layrow` / `mem-dl` / `mem-bd` are shared with SimilarDayCard (the Kereső tab, the emlékek
+   builder's), /mezo/emlekek and the Én Napló, so a scoped override would repaint them here.
+   Ranking (§3.4): the hero is a frameless lavender halo with THE ring; Rétegek = four `.glass`
+   layers, each its own accent (L0 amber, L1 sky, L2 coral, L3 lavender); Audit = ONE sky `.glass`;
+   the segment bar, day rows, doors and chips are flat; the degraded / off / error / loading
+   states are dashed. Motion only in the no-preference branch. */
+.mmr-page.mz-page { background: transparent; overflow-x: clip; }
+/* the body must not be its own scroller, or the sticky segment bar never sticks */
+.mmr-page .mz-page-body { overflow: visible; padding: 2px 16px 22px; }
+.mmr-page .mmr-body { display: flex; flex-direction: column; gap: 10px; }
+
+/* hero: the page name as the eyebrow, the figure inside the glowing lavender ring */
+.mmr-page .mz-page-hero.uv-hero .mz-hero-nm {
+  margin-top: 4px; font: 600 10px/1.2 var(--ff-body); letter-spacing: 1.4px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 70%, var(--text-primary));
+}
+.mmr-page .mmr-ring { position: relative; width: 150px; height: 150px; margin: 8px auto 0; display: grid; place-items: center; }
+.mmr-page .mmr-ring::before {
+  content: ''; position: absolute; inset: 16px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #3A332D, #1E1B18);
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08),
+    inset 0 -10px 20px -10px color-mix(in srgb, var(--dv-lav) 45%, transparent);
+}
+.mmr-page .mmr-ring > svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
+.mmr-page .mmr-ring .uv-ring-track,
+.mmr-page .mmr-ring .uv-ring-prog { stroke-width: 8; }
+.mmr-page .mz-page-hero.uv-hero .mmr-ring .mz-bignum {
+  position: relative; margin: 0; font-size: 42px; letter-spacing: -2.4px; line-height: 1;
+}
+.mmr-page .mz-page-hero.uv-hero .mmr-ring .mz-bignum small { font-size: 18px; letter-spacing: -0.5px; }
+.mmr-page .mz-page-hero.uv-hero .mz-hero-sb { margin-top: 8px; }
+
+/* segment tabs: sticky, a flat pill group on a solid ground; the active tab lit lavender */
+.mmr-page .mmr-segbar {
+  position: sticky; top: 0; z-index: 15; margin: 0 -16px; padding: 6px 16px 12px;
+  background: linear-gradient(180deg, var(--canvas) 74%, transparent);
+}
+/* the header's background runs an ~18px tail past its box: stick just below it, not under it */
+.screen-content:has(.app-head) .mmr-page .mmr-segbar { top: calc(var(--mzh-head-cond-h) + 12px); }
+.mmr-page .mmr-seg {
+  display: flex; gap: 2px; width: 100%; max-width: 420px; margin: 0 auto; padding: 3px;
+  border-radius: 999px; background: var(--surface-elevated); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.mmr-page .mmr-seg button {
+  flex: 1 1 0; min-width: 0; min-height: 38px; padding: 0 8px; border: 0; border-radius: 999px;
+  background: none; font: 600 12.5px/1 var(--ff-body); color: var(--text-secondary); cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mmr-page .mmr-seg button.on {
+  background: var(--dv-lav); color: var(--canvas);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--dv-lav) 45%, transparent);
+}
+.mmr-page .mmr-seg button:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 2px; }
+
+/* Rétegek: four glass layers joined by the dashed pulsing connector */
+.mmr-page .mmr-layers { display: flex; flex-direction: column; }
+.mmr-page .mmr-layer.glass { display: block; width: 100%; padding: 13px 14px 12px; border-radius: 22px; text-align: left; }
+.mmr-page .mmr-layer:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.mmr-page .mmr-layrow { display: flex; align-items: center; gap: 11px; }
+.mmr-page .mmr-well { width: 46px; height: 46px; }
+.mmr-page .mmr-laygrow { flex: 1; min-width: 0; }
+.mmr-page .mmr-eb { display: block; color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.mmr-page .mmr-laytitle {
+  display: block; margin-top: 1px; font-size: 15.5px; font-weight: 600; line-height: 1.25;
+  color: var(--text-primary); overflow-wrap: anywhere;
+}
+.mmr-page .mmr-bignm {
+  flex: 0 0 auto; font-size: 26px; font-weight: 500; letter-spacing: -1px; line-height: 1;
+  font-variant-numeric: tabular-nums; color: var(--text-primary); white-space: nowrap;
+}
+.mmr-page .mmr-unit { margin-left: 2px; font-size: 11px; font-weight: 500; letter-spacing: 0; color: var(--text-muted); }
+.mmr-page .mmr-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.mmr-page .mmr-chips span {
+  display: inline-block; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 4px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+  background: color-mix(in srgb, var(--c) 11%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent);
+}
+.mmr-page .mmr-flow {
+  display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 12px;
+  text-align: center; color: var(--text-muted);
+}
+.mmr-page .mmr-flow small { font-size: 10.5px; line-height: 1.35; }
+.mmr-page .mmr-dash { display: block; width: 0; height: 16px; border-left: 1.5px dashed color-mix(in srgb, var(--dv-lav) 50%, transparent); }
+
+/* doors: flat rows with a lit well (the motor link, the Tudástár link) */
+.mmr-page .mmr-door {
+  --c: var(--dv-lav); display: flex; align-items: center; gap: 12px; width: 100%; box-sizing: border-box;
+  margin-top: 12px; padding: 11px 14px 11px 11px; border-radius: 18px;
+  background: rgba(245, 239, 230, 0.035); color: var(--text-primary); text-decoration: none;
+}
+.mmr-page .mmr-door .mmr-well { width: 42px; height: 42px; }
+.mmr-page .mmr-door:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.mmr-page .mmr-doorgrow { flex: 1; min-width: 0; }
+.mmr-page .mmr-doorgrow strong { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: -0.2px; line-height: 1.3; }
+.mmr-page .mmr-doorgrow small { display: block; margin-top: 1px; font-size: 11.5px; line-height: 1.35; color: var(--text-secondary); }
+.mmr-page .mmr-chev { flex: 0 0 auto; font-size: 20px; line-height: 1; color: var(--text-muted); }
+
+/* Napló: month heads, flat day rows with a lit date block, the vector dot in the corner */
+.mmr-page .mmr-journal { display: flex; flex-direction: column; }
+.mmr-page .mmr-month { display: flex; justify-content: space-between; align-items: baseline; padding: 16px 4px 8px; }
+.mmr-page .mmr-dayslot:first-child .mmr-month { padding-top: 4px; }
+.mmr-page .mmr-month strong { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.mmr-page .mmr-day {
+  position: relative; display: flex; gap: 12px; align-items: flex-start; margin-bottom: 8px;
+  padding: 11px 14px 11px 12px; border-radius: 16px;
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.mmr-page .mmr-day.focused {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--dv-lav) 60%, transparent),
+    0 0 14px -4px color-mix(in srgb, var(--dv-lav) 60%, transparent);
+}
+.mmr-page .mmr-vd {
+  position: absolute; top: 10px; right: 10px; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--dv-sage); box-shadow: 0 0 6px var(--dv-sage);
+}
+.mmr-page .mmr-vd.off { background: none; box-shadow: inset 0 0 0 1.5px var(--text-muted); }
+.mmr-page .mmr-dblk {
+  --c: var(--dv-lav); flex: 0 0 46px; height: 50px; border-radius: 14px;
+  display: grid; place-content: center; text-align: center;
+  background: radial-gradient(circle at 35% 28%, #3A332D, color-mix(in srgb, var(--c) 14%, #1E1B18));
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08), 0 0 12px -4px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.mmr-page .mmr-dblk b { display: block; font-size: 19px; font-weight: 600; line-height: 1; color: color-mix(in srgb, var(--c) 40%, #fff); font-variant-numeric: tabular-nums; }
+.mmr-page .mmr-dblk small { display: block; margin-top: 2px; font-size: 9.5px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-muted); }
+.mmr-page .mmr-daygrow { flex: 1; min-width: 0; padding-right: 10px; }
+.mmr-page .mmr-dl { display: block; font-size: 13px; font-weight: 600; line-height: 1.3; color: var(--text-primary); }
+.mmr-page .mmr-bd {
+  margin-top: 3px; font-family: var(--ff-body); font-style: normal; font-size: 14.5px; font-weight: 400;
+  line-height: 1.55; color: var(--text-secondary); overflow-wrap: anywhere;
+}
+
+/* Kereső: only its placement — the panel is the emlékek builder's */
+.mmr-page .mmr-search { padding-top: 2px; }
+
+/* Audit: ONE sky glass — the cost numeral, the glowing paired token columns, legend, footer */
+.mmr-page .mmr-audit-wrap { display: flex; flex-direction: column; }
+.mmr-page .mmr-audit.glass { display: block; padding: 15px 16px 14px; border-radius: 22px; }
+.mmr-page .mmr-audit .mmr-eb { color: color-mix(in srgb, var(--c) 55%, #fff); }
+.mmr-page .mmr-cost b {
+  display: block; margin-top: 4px; font-size: 44px; font-weight: 300; letter-spacing: -2.4px; line-height: 1;
+  font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--dv-sky) 30%, #fff);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--dv-sky) 45%, transparent);
+}
+.mmr-page .mmr-tcols {
+  display: flex; align-items: flex-end; justify-content: center; gap: 3px; height: 90px;
+  margin-top: 14px; padding-bottom: 2px; border-bottom: 1px solid var(--divider);
+}
+.mmr-page .mmr-tcols > span { flex: 1 1 0; min-width: 0; max-width: 18px; height: 100%; display: flex; align-items: flex-end; gap: 1px; }
+.mmr-page .mmr-tcols i {
+  flex: 1 1 0; min-width: 0; height: var(--h); border-radius: 3px 3px 1px 1px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 70%, #fff), var(--c));
+  box-shadow: 0 0 6px color-mix(in srgb, var(--c) 50%, transparent);
+}
+.mmr-page .mmr-tokens .is-in { --c: var(--dv-lav); }
+.mmr-page .mmr-tokens .is-out { --c: var(--dv-sage); }
+.mmr-page .mmr-tleg { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 9px; font-size: 11.5px; color: var(--text-secondary); }
+.mmr-page .mmr-tleg span { display: inline-flex; align-items: center; gap: 6px; }
+.mmr-page .mmr-tleg i { width: 9px; height: 9px; border-radius: 3px; background: var(--c); box-shadow: 0 0 6px var(--c); }
+.mmr-page .mmr-foot {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px;
+  margin-top: 11px; padding-top: 10px; border-top: 1px solid var(--divider);
+  font-size: 11.5px; color: var(--text-muted); font-variant-numeric: tabular-nums;
+}
+.mmr-page .mmr-foot b { font-weight: 600; color: var(--text-primary); }
+
+/* degraded / off / unavailable / error: dashed and quiet; loading: a dashed ghost */
+.mmr-page .mmr-note.uv-empty {
+  display: grid; justify-items: center; gap: 8px; padding: 16px; border-radius: 18px; text-align: center;
+}
+.mmr-page .mmr-note p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+.mmr-page .mmr-notelink {
+  min-height: 32px; padding: 6px 10px; border: 0; background: none; cursor: pointer; text-decoration: none;
+  font: 600 12.5px/1.3 var(--ff-body); color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+}
+.mmr-page .mmr-ghost > .card {
+  border-radius: 18px; box-shadow: none; background: rgba(245, 239, 230, 0.025);
+  border: 1.5px dashed color-mix(in srgb, var(--dv-lav) 35%, transparent);
+}
+
+@media (max-width: 360px) {
+  .mmr-page .mmr-bignm { font-size: 22px; }
+  .mmr-page .mmr-well { width: 40px; height: 40px; }
+  .mmr-page .mmr-seg button { font-size: 12px; padding: 0 4px; }
+}
+@keyframes mmr-flowp { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+@keyframes mmr-ringin { from { stroke-dasharray: 0 100; } }
+@keyframes mmr-tgrow { from { height: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  .mmr-page .mmr-dash { animation: mmr-flowp 2.4s ease-in-out infinite; }
+  .mmr-page .mmr-ring .uv-ring-prog { animation: mmr-ringin 1.1s var(--uv-ease, ease-out) 0.15s both; }
+  .mmr-page .mmr-tcols i { animation: mmr-tgrow 1s var(--uv-ease, ease-out) both; animation-delay: calc(0.2s + var(--i, 0) * 25ms); }
+}
 /* ── /uveg mezo1 memoria ── */

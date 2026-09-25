@@ -51,6 +51,8 @@ test('search survives opening a result and returning to the memories list', asyn
   </Routes></MemoryRouter>)
   await userEvent.type(screen.getByLabelText('Hasonló nap keresése'), 'nyugodt este')
   await userEvent.click(screen.getByRole('button', { name: 'Keresés' }))
+  // the glass result row carries its rank in the ring's accessible name, not a glyph
+  expect(screen.getByRole('img', { name: '1. legjobb találat' })).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: /Egy keresési találat/ }))
   await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
   expect(screen.getByLabelText('Hasonló nap keresése')).toHaveValue('nyugodt este')

@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
+import { Icon3D } from '@/shared/ui/clay'
 import type { MemoryOverview } from '@/data/types'
 import { MemoryLayerCard } from '@/features/insights/components/MemoryLayerCard'
 import { humanizeCron } from '@/features/insights/logic/humanizeCron'
@@ -28,13 +29,14 @@ const EMBEDDING_KIND_LABEL: Record<string, string> = {
   checkin_note: 'check-in',
 }
 
-/** Lüktető szaggatott kötőelem a rétegek között (prototípus .flowc) — a cron EMBERI
+/** Lüktető szaggatott kötőelem a rétegek között (prototípus .flow) — a cron EMBERI
  *  időként (humanizeCron; ami nem fordítható, őszintén nyersen marad). */
 function FlowConnector({ label, cron }: { label: string; cron: string }) {
   return (
-    <div className="mem-flowc">
-      <i className="mem-dash" aria-hidden="true" />
+    <div className="mmr-flow">
+      <i className="mmr-dash" aria-hidden="true" />
       <small>{`${label} · ${humanizeCron(cron)}`}</small>
+      <i className="mmr-dash" aria-hidden="true" />
     </div>
   )
 }
@@ -48,17 +50,17 @@ export function MemoryLayersPanel({
   const factTotal = l3.facts.reduce((n, f) => n + f.count, 0)
 
   return (
-    <div className="col" style={{ gap: 0 }}>
+    <div className="mmr-layers">
       <MemoryLayerCard
-        tone="sand" icon="i-eletjel" delayMs={0}
-        eyebrow="L0 · Nyers adat"
+        tone="amber" icon="t-signal" delayMs={0}
+        eyebrow="L0 · Nyers adat" title="Minden, amit rögzítesz"
         big={`${l0.daysWithAnyData}`} unit={`/${l0.windowDays} nap`}
         chips={['mért napok a minta-ablakban']}
       />
       <FlowConnector label="napi összefoglaló" cron={jobs.summaryCron} />
       <MemoryLayerCard
-        tone="gold" icon="i-naplo" delayMs={60}
-        eyebrow="L1 · Epizodikus napló"
+        tone="sky" icon="t-journal" delayMs={60}
+        eyebrow="L1 · Epizodikus napló" title="Napi emlékek"
         big={`${l1.summaryCount}`} unit=" nap"
         chips={[
           ...l1.embeddings.map((e) => `${e.count} ${EMBEDDING_KIND_LABEL[e.kind] ?? e.kind}-vektor`),
@@ -68,8 +70,8 @@ export function MemoryLayersPanel({
       />
       <FlowConnector label="minta-felismerés" cron={jobs.patternCron} />
       <MemoryLayerCard
-        tone="coral" icon="i-minta" delayMs={120}
-        eyebrow="L2 · Ítélet-inbox"
+        tone="coral" icon="t-pattern" delayMs={120}
+        eyebrow="L2 · Ítélet-inbox" title="Minták, amikről te döntesz"
         big={`${patternTotal}`} unit=" minta"
         chips={[
           ...l2.patterns.map((p) => `${p.count} ${KIND_HU[p.kind] ?? p.kind} · ${STATUS_HU[p.status] ?? p.status}`),
@@ -80,8 +82,8 @@ export function MemoryLayersPanel({
       />
       <FlowConnector label="hipotézis + tudás-promóció" cron={jobs.hypothesisCron} />
       <MemoryLayerCard
-        tone="lav" icon="i-tudas" delayMs={180}
-        eyebrow="L3 · Tartós tudás"
+        tone="lav" icon="t-brain" delayMs={180}
+        eyebrow="L3 · Tartós tudás" title="Amit biztosan tudok rólad"
         big={`${factTotal}`} unit=" tény"
         chips={[
           ...l3.facts.map((f) => `${f.count} ${SOURCE_HU[f.source] ?? f.source}`),
@@ -90,8 +92,10 @@ export function MemoryLayersPanel({
         ]}
         onOpen={() => navigate('/mezo/knowledge')}
       />
-      <Link to="/mezo/motor" style={{ fontSize: 12, color: 'var(--lav-deep)', marginTop: 12 }}>
-        Miért nem lát még mintát a motor? →
+      <Link to="/mezo/motor" className="mmr-door uv-flat" style={{ '--c': 'var(--dv-lav)' } as React.CSSProperties}>
+        <span className="uv-well mmr-well"><Icon3D name="t-lens" size={28} /></span>
+        <span className="mmr-doorgrow"><strong>Miért nem lát még mintát a motor?</strong></span>
+        <span className="mmr-chev" aria-hidden="true">›</span>
       </Link>
     </div>
   )

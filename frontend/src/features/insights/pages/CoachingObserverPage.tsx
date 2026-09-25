@@ -53,9 +53,9 @@ export function CoachingObserverPage() {
   }
 
   return (
-    <MozaikPage tone="lav">
-      <PageHead onBack={() => navigate('/mezo/coaching')} label="‹ Coaching" />
-      <PageHero name="Megfigyelő"
+    <MozaikPage tone="lav" className="coach-page coach-obs">
+      <PageHead glass onBack={() => navigate('/mezo/coaching')} label="Coaching" />
+      <PageHero art="t-eye" iconSize={64} accent="var(--dv-lav)" eyebrow="Coaching" name="Megfigyelő"
         sub={split.total === 0 ? undefined : `${split.raised + split.suppressed} jelzett · ${split.total} szabály`}>
         <div className="mzo-daysw">
           <button type="button" aria-label="Előző nap" disabled={!canBack} onClick={() => step(-1)}>‹</button>
@@ -68,35 +68,37 @@ export function CoachingObserverPage() {
       </PageHero>
       <PageBody principle="A sorrend a döntés: felül a legsúlyosabb, és pontosan ebből választott a motor.">
         <EntranceGroup className="col gap-md">
-          {isPending && <div className="card" style={{ padding: 18 }} aria-busy="true" />}
+          {isPending && <div className="coach-state uv-empty" aria-busy="true" />}
           {isError && (
-            <div className="card" style={{ padding: 18, textAlign: 'center' }}>
-              <p style={{ fontSize: 13, color: 'var(--mz-ink-soft)' }}>
-                Ezt a napot most nem tudom beolvasni — próbáld újra kicsit később.
-              </p>
+            <div className="coach-state uv-empty">
+              <p>Ezt a napot most nem tudom beolvasni — próbáld újra kicsit később.</p>
             </div>
           )}
           {empty && (
-            <div className="card" style={{ padding: 18, textAlign: 'center' }}>
-              <p style={{ fontSize: 13, color: 'var(--mz-ink-soft)', lineHeight: 1.5 }}>
-                Ezen a napon még nem futott kiértékelés.
-              </p>
+            <div className="coach-state uv-empty">
+              <p>Ezen a napon még nem futott kiértékelés.</p>
             </div>
           )}
           {split.total > 0 && split.raised + split.suppressed === 0 && (
-            <p style={{ fontSize: 11, color: 'var(--mz-ink-soft)', textAlign: 'center' }}>
+            <p className="coach-quiet">
               Ezen a napon egy szabály sem jelzett — mind a {split.total} rendben.
             </p>
           )}
 
-          {day.rules.map((rule, i) => (
-            <CoachingRuleTile key={rule.flagKey} rule={rule}
-              winner={rule.flagKey === day.winner?.flagKey} delayMs={40 + i * 30} />
-          ))}
+          {/* The server's severity order, untouched — states interleave in it, so there are no
+              state group headings (grouping would reorder the decision). */}
+          {day.rules.length > 0 && (
+            <div className="coach-rules">
+              {day.rules.map((rule, i) => (
+                <CoachingRuleTile key={rule.flagKey} rule={rule}
+                  winner={rule.flagKey === day.winner?.flagKey} delayMs={40 + i * 30} />
+              ))}
+            </div>
+          )}
 
           {day.transitions.length > 0 && (
             <>
-              <span className="mz-eyebrow" style={{ color: 'var(--mz-ink-soft)' }}>A nap változásai</span>
+              <span className="coach-h3 uv-eyebrow">A nap változásai</span>
               <div className="mzo-tl">
                 {day.transitions.map((t, i) => (
                   <div key={`${t.at}-${t.flagKey}-${i}`} className="mzo-tlrow">

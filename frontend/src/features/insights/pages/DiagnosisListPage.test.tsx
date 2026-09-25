@@ -19,7 +19,7 @@ describe('DiagnosisListPage (mock mode)', () => {
   afterEach(() => vi.unstubAllEnvs())
 
   test('renders all THREE live ask cards, the upcoming catalog and the seeded reports', () => {
-    renderPage()
+    const { container } = renderPage()
     expect(screen.getByText('Diagnózis')).toBeInTheDocument()
     // three live questions since mezo-85x5r (weight joined fatigue+sleep) — the fatigue title
     // also heads a seeded past tile
@@ -30,8 +30,10 @@ describe('DiagnosisListPage (mock mode)', () => {
     // generate is inert in mock — it costs a real SMART call — on EVERY live card
     const asks = screen.getAllByRole('button', { name: 'Kérdezd meg most' })
     expect(asks).toHaveLength(3)
-    // the ask CTA is the house pill button, not an unstyled bare 'cta' (the live-app regression)
-    asks.forEach((b) => expect(b).toHaveClass('mzp-cta'))
+    // the ask CTA is the house pill button, not an unstyled bare 'cta' (the live-app regression);
+    // üveg (mezo-me75u.8): the lit lavender pill `.dgx-cta` inside the glass ask card
+    asks.forEach((b) => expect(b).toHaveClass('dgx-cta'))
+    asks.forEach((b) => expect(b.closest('.dgx-ask')).toHaveClass('glass'))
     asks.forEach((b) => expect(b).toBeDisabled())
     expect(screen.getByText('demo — a kérdezés az élő appban fut')).toBeInTheDocument()
     // the upcoming grid: sleep+weight LEFT it by going live; weight's old title is gone
@@ -41,6 +43,16 @@ describe('DiagnosisListPage (mock mode)', () => {
     // the seeded past reports with their strongest suspect
     expect(screen.getByText(/a legerősebb: Alváshiány \(erős\)/)).toBeInTheDocument()
     expect(screen.getByText(/a legerősebb: Vízvisszatartás — só és szénhidrát \(erős\)/)).toBeInTheDocument()
+
+    // üveg ranking (mezo-me75u.8): past reports are FLAT rows — never glass — and the
+    // certainty chip carries the t-gem icon, not the ◆ glyph
+    const reps = container.querySelectorAll('.dgx-rep')
+    expect(reps.length).toBeGreaterThanOrEqual(2)
+    reps.forEach((r) => {
+      expect(r).not.toHaveClass('glass')
+      expect(r.querySelector('.dgx-chip use')?.getAttribute('href')).toBe('#t-gem')
+      expect(r.textContent).not.toMatch(/◆/)
+    })
   })
 })
 
@@ -103,7 +115,7 @@ describe('DiagnosisListPage — emoji→ikon (mezo-hq44)', () => {
 
   test('a szemöldök és a CTA ikont rajzol, nem ✦ glifát', () => {
     const { container } = renderPage()
-    const eyebrows = container.querySelectorAll('.mzp-pred .mz-eyebrow')
+    const eyebrows = container.querySelectorAll('.dgx-ask .dgx-eb')
     const ask = Array.from(eyebrows).find((e) => /Kérdezd meg/.test(e.textContent ?? '')) as HTMLElement
     expect(ask).toBeTruthy()
     expect(ask.querySelector('svg')).toBeTruthy()

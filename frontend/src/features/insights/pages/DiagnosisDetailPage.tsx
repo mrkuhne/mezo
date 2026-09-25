@@ -7,14 +7,23 @@
 // evidenceIndexes with value/delta/source provenance, the probe block and
 // the ✓ Próbáljuk ki CTA that flips to the sage acknowledgement → the
 // stale footer with ↻ Frissítsd. Writes are live-only.
+// Üveg (mezo-me75u.8, prototype uveg-mezo-body.html `diag`): frameless halo hero
+// (t-diagnose, window line eyebrow, the question, the verdict, the certainty pill);
+// Számvetés = one flat card; rank 1 = THE one `.glass` (amber), ranks 2+ = flat cards
+// of the same anatomy. Style: prototype.css `── uveg mezo1 diagnozis (`, `.dgx-page`.
 // ============================================================
+import type { CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { Icon3D } from '@/shared/ui/clay'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useDiagnosis, useDiagnosisActions } from '@/data/hooks'
 import { anchoredWindowLine, confidenceLine, deltaLabel, generatedLabel, strengthLabel, windowLine } from '@/features/insights/logic/diagnosisCopy'
 import { questionOf } from '@/features/insights/logic/diagnosisCatalog'
-import type { Diagnosis, DiagnosisSuspect } from '@/data/types'
+import type { Diagnosis, DiagnosisConfidence, DiagnosisSuspect } from '@/data/types'
+
+/** The certainty meter's fill — a picture of the three-step confidence word, nothing more. */
+const CERT_FILL: Record<DiagnosisConfidence, string> = { weak: '33%', moderate: '66%', strong: '100%' }
 
 function SuspectCard({ d, s, live, started, onProbe, delayMs }: {
   d: Diagnosis; s: DiagnosisSuspect; live: boolean; started: boolean
@@ -23,70 +32,76 @@ function SuspectCard({ d, s, live, started, onProbe, delayMs }: {
   // Derived (Számvetés) rows are indexable for a suspect's citation but render only once, in
   // the Számvetés card above — never duplicated inside a suspect's own evidence rows.
   const rows = s.evidenceIndexes.map((i) => d.evidence[i]).filter((e) => e != null && e.kind !== 'derived')
+  const lead = s.rank === 1
   return (
-    <div className={s.rank === 1 ? 'mzp-pred propcard rise' : 'mzp-pred lav rise'}
-      style={{ '--d': `${delayMs}ms` } as React.CSSProperties}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span className={s.rank === 1 ? 'mzp-rankb' : 'mzp-rankb two'}>{s.rank}</span>
-        <span style={{ fontSize: 13, fontWeight: 700 }}>{s.title}</span>
-        <span className={s.strength === 'strong' ? 'mzp-stch ok' : 'mzp-stch pend'} style={{ marginLeft: 'auto' }}>
+    <div className={lead ? 'dgx-susp is-lead glass rise' : 'dgx-susp rise'} data-rank={s.rank}
+      style={{ '--d': `${delayMs}ms`, '--i': s.rank } as CSSProperties}>
+      <div className="dgx-susp-top">
+        <span className="dgx-rank">{s.rank}</span>
+        <strong className="dgx-susp-t">{s.title}</strong>
+        <span className={s.strength === 'strong' ? 'dgx-str is-strong' : 'dgx-str'}>
           {strengthLabel(s.strength)}
         </span>
       </div>
-      <p style={{ fontSize: 11, fontWeight: 300, lineHeight: 1.55, marginTop: 7 }}>{s.claim}</p>
-      <div style={{ marginTop: 8 }}>
-        {rows.map((e, i) => (
-          <div key={i} className="mzp-evrow">
-            <span className="lb">{e.label}</span>
-            {e.kind === 'metric' ? (
-              <>
-                {e.value !== undefined && <span className="vl">{String(e.value).replace('.', ',')}</span>}
-                {deltaLabel(e.delta) != null && <span className="dl bad">{deltaLabel(e.delta)}</span>}
-              </>
-            ) : (
-              e.detail != null && <span className="vl">{e.detail}</span>
-            )}
-            {e.sourceHu != null && (
-              <span className="src">
-                {e.sourceHu}
-                {e.coverageDays != null ? ` · ${e.coverageDays} nap` : ''}
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
-      <div className="mzp-probe">
-        <div className="pt">Próba · {s.totalDays} nap</div>
-        <div className="px">{s.probeText}</div>
+      <p className="dgx-claim">{s.claim}</p>
+      {rows.length > 0 && (
+        <div className="dgx-evs">
+          {rows.map((e, i) => (
+            <div key={i} className="dgx-ev">
+              <span className="lb">{e.label}</span>
+              {e.kind === 'metric' ? (
+                <>
+                  {e.value !== undefined && <b className="vl">{String(e.value).replace('.', ',')}</b>}
+                  {deltaLabel(e.delta) != null && <em className="dl bad">{deltaLabel(e.delta)}</em>}
+                </>
+              ) : (
+                e.detail != null && <b className="vl is-text">{e.detail}</b>
+              )}
+              {e.sourceHu != null && (
+                <small className="src">
+                  {e.sourceHu}
+                  {e.coverageDays != null ? ` · ${e.coverageDays} nap` : ''}
+                </small>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="dgx-probe">
+        <Icon3D name="t-flask" size={32} />
+        <div>
+          <span className="dgx-probe-eb">Próba · {s.totalDays} nap</span>
+          <p className="dgx-probe-x">{s.probeText}</p>
+        </div>
       </div>
       {started ? (
-        <div className="mzp-actual">◐ Aktív kísérlet lett — a Kísérletek oldalon követed.</div>
+        <div className="dgx-actual" role="status"><Icon3D name="t-clock" size={20} />Aktív kísérlet lett — a Kísérletek oldalon követed.</div>
       ) : (
-        <div className="mzp-decrow">
-          <button type="button" className="mzp-cta" disabled={!live} onClick={onProbe}>✓ Próbáljuk ki</button>
-        </div>
+        <button type="button" className="dgx-cta" disabled={!live} onClick={onProbe}>
+          <Icon3D name="t-tick" size={18} />Próbáljuk ki
+        </button>
       )}
     </div>
   )
 }
 
-/** The code-computed weight decomposition (mezo-85x5r) — rendered ABOVE the verdict card
- *  whenever any evidence item is `kind: 'derived'`. One `.mzp-evrow` per derived item, in
+/** The code-computed weight decomposition (mezo-85x5r) — rendered ABOVE the suspects
+ *  whenever any evidence item is `kind: 'derived'`. One `.dgx-szrow` per derived item, in
  *  evidence order; these items are the ONLY place they render (suspects cite them by index
- *  but exclude them from their own evidence rows — see `SuspectCard`). */
+ *  but exclude them from their own evidence rows — see `SuspectCard`). One flat card. */
 function SzamvetesCard({ derived }: { derived: Diagnosis['evidence'] }) {
   return (
-    <div className="mzp-pred lav rise" style={{ '--d': '0ms' } as React.CSSProperties}>
-      <span className="mz-eyebrow" style={{ color: 'var(--mz-ink-soft)' }}>SZÁMVETÉS</span>
-      <div style={{ marginTop: 8 }}>
+    <section className="dgx-szam rise" data-dgx="szamvetes" style={{ '--d': '0ms' } as CSSProperties}>
+      <span className="dgx-sec uv-eyebrow">SZÁMVETÉS</span>
+      <div className="dgx-szam-card">
         {derived.map((e, i) => (
-          <div key={i} className="mzp-evrow">
+          <div key={i} className="dgx-szrow">
             <span className="lb">{e.label}</span>
-            {e.detail != null && <span className="vl">{e.detail}</span>}
+            {e.detail != null && <b className="vl">{e.detail}</b>}
           </div>
         ))}
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -99,11 +114,12 @@ export function DiagnosisDetailPage() {
 
   if (notFound || (diagnosis == null && !isPending)) {
     return (
-      <MozaikPage tone="lav">
-        <PageHead onBack={() => navigate('/mezo/diagnozis')} label="‹ Diagnózis" />
+      <MozaikPage tone="lav" className="dgx-page">
+        <PageHead glass onBack={() => navigate('/mezo/diagnozis')} label="Diagnózis" />
         <PageBody>
-          <div className="card" style={{ padding: 18, textAlign: 'center' }}>
-            <p style={{ fontSize: 13, color: 'var(--mz-ink-soft)' }}>Ez a riport nincs meg — lehet, hogy törölted.</p>
+          <div className="dgx-empty uv-empty">
+            <Icon3D name="t-diagnose" size={44} />
+            <p>Ez a riport nincs meg — lehet, hogy törölted.</p>
           </div>
         </PageBody>
       </MozaikPage>
@@ -111,9 +127,9 @@ export function DiagnosisDetailPage() {
   }
   if (diagnosis == null) {
     return (
-      <MozaikPage tone="lav">
-        <PageHead onBack={() => navigate('/mezo/diagnozis')} label="‹ Diagnózis" />
-        <PageBody><div className="card" style={{ padding: 18 }} aria-busy="true" /></PageBody>
+      <MozaikPage tone="lav" className="dgx-page">
+        <PageHead glass onBack={() => navigate('/mezo/diagnozis')} label="Diagnózis" />
+        <PageBody><div className="dgx-loading" aria-busy="true" /></PageBody>
       </MozaikPage>
     )
   }
@@ -124,33 +140,36 @@ export function DiagnosisDetailPage() {
     : windowLine(diagnosis.generatedAt, diagnosis.windowDays)
 
   return (
-    <MozaikPage tone="lav">
-      <PageHead onBack={() => navigate('/mezo/diagnozis')} label="‹ Diagnózis" />
-      <PageHero name={questionOf(diagnosis.phenomenon)} sub={heroSub} />
+    <MozaikPage tone="lav" className="dgx-page">
+      <PageHead glass onBack={() => navigate('/mezo/diagnozis')} label="Diagnózis" />
+      <PageHero art="t-diagnose" accent="var(--dv-lav)" iconSize={78} eyebrow={heroSub}
+        name={questionOf(diagnosis.phenomenon)}>
+        <p className="dgx-verdict">{diagnosis.verdict}</p>
+        <div className="dgx-certrow">
+          <span className="dgx-cert">
+            <Icon3D name="t-gem" size={22} />
+            {confidenceLine(diagnosis.confidence)}
+            <i className="uv-bar" aria-hidden="true"><b style={{ '--w': CERT_FILL[diagnosis.confidence] } as CSSProperties} /></i>
+          </span>
+          <span className="dgx-cert-date">{generatedLabel(diagnosis.generatedAt)}</span>
+        </div>
+      </PageHero>
       <PageBody>
-        <EntranceGroup className="col gap-md">
+        <EntranceGroup className="dgx-body">
           {derived.length > 0 && <SzamvetesCard derived={derived} />}
-          <div className="mzp-pred lav rise" style={{ '--d': '0ms' } as React.CSSProperties}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span className="mzp-stch pend">{confidenceLine(diagnosis.confidence)}</span>
-              <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--mz-ink-mut)', fontVariantNumeric: 'tabular-nums' }}>
-                {generatedLabel(diagnosis.generatedAt)}
-              </span>
-            </div>
-            <p style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.55, marginTop: 8 }}>{diagnosis.verdict}</p>
+
+          <span className="dgx-sec uv-eyebrow">Gyanúsítottak · erősség szerint</span>
+          <div className="dgx-susps">
+            {diagnosis.suspects.map((s) => (
+              <SuspectCard key={s.rank} d={diagnosis} s={s} live={live && !pending}
+                started={startedRank === s.rank}
+                onProbe={() => startExperiment(diagnosis.id, s.rank)}
+                delayMs={70 * s.rank} />
+            ))}
           </div>
 
-          {diagnosis.suspects.map((s) => (
-            <SuspectCard key={s.rank} d={diagnosis} s={s} live={live && !pending}
-              started={startedRank === s.rank}
-              onProbe={() => startExperiment(diagnosis.id, s.rank)}
-              delayMs={70 * s.rank} />
-          ))}
-
           {diagnosis.stale && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center', padding: '2px 0 6px' }}>
-              <span style={{ fontSize: 10, color: 'var(--mz-ink-mut)' }}>azóta új adatod érkezett a riport ablakában</span>
-            </div>
+            <p className="dgx-note">azóta új adatod érkezett a riport ablakában</p>
           )}
         </EntranceGroup>
       </PageBody>
