@@ -311,3 +311,35 @@ on missing ref; `CompanionObservationApiIT` round-trip updated. FE: both modes �
 mapper unit tests replace parser tests (`observationEvidence.test.ts`), card/feed
 component tests updated for new copy (6 test files sweep in one commit), team-feed
 post shows evidence block not raw text. Contract regen + CODEMAP.
+
+## Slice lessons
+
+(numbered; only what a later slice would otherwise pay for again)
+
+1. **(S1)** A source record may carry MORE THAN ONE prose field (`workout_session`:
+   `note` + `closing_note`). Any "the prose field" logic must join all non-blank
+   prose values (S1 joins with " — ") or it silently drops user-authored text.
+2. **(S1)** `validEventEvidence` hides an event card when ANY canonical ref is dead
+   (`allMatch`), so per-item fallback paths are only reachable through ROW cards —
+   fixture accordingly; an event-based fixture for a dead-ref fallback cannot pass.
+3. **(S1)** Grounded ROW evidence grows without bound (the publisher keeps appending
+   still-live refs on every merge). Any surface that renders row evidence must cap it
+   (`ROW_EVIDENCE_LIMIT = 5`, newest last) — S6's hub inherits this.
+4. **(S1)** Quick-notice (legacy channel) `evidenceRefs` DO start with canonical-shaped
+   refs (`journal_entry:<uuid>`, plus non-catalogue `gratitude:`/`chat_day:` shapes) —
+   the "legacy is free text only" assumption is false. Resolve canonical ones, drop
+   unresolvable ones, keep free text as tags.
+5. **(S1)** On this case-insensitive macOS volume two files differing only by case
+   (`observationEvidence.ts` vs `ObservationEvidence.tsx`) break Vite's extensionless
+   resolution. Never colocate case-clashing names; the component is `EvidenceList.tsx`.
+6. **(S1)** The shared evidence building block for ALL surfaces is
+   `frontend/src/shared/ui/evidence/` (`mapEvidence` + `EvidenceList`); the wire is
+   `ObservationEvidenceItem` (record/tag). S6 hub and any csapatfal work reuse this —
+   do not re-parse or re-format server-side.
+7. **(S1)** The PWA is `registerType: 'autoUpdate'` with no update-reload: after a
+   deploy that changes a wire format, the FIRST open still runs the precached old
+   bundle (one error screen, reload fixes). Either accept knowingly (single-user app)
+   or bundle an update-reload with the wire change.
+8. **(S1)** Follow-up beads worth filing when the area is touched again: batch the
+   per-ref evidence lookups (`id IN (...)`, merge `exists` into `fetch`); move `SPORTS`
+   out of `features/train` if shared/ui keeps importing it.
