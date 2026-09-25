@@ -10,9 +10,10 @@
 import type { CSSProperties } from 'react'
 import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import { expertColor } from '@/features/character/expertColors'
+import { personaName } from '@/features/character/personaCharacter'
 import { confidenceWord } from '@/data/character/characterApi'
 import type { CharacterExpertDto, ConferenceThread } from '@/data/character/characterApi'
-import { ACCEPTED_LABEL, STANCE_LABEL, STANCE_TONE, displayName } from '@/features/character/deliberationLabels'
+import { ACCEPTED_LABEL, STANCE_LABEL, STANCE_TONE } from '@/features/character/deliberationLabels'
 import { partitionDeliberation } from '@/features/character/deliberationStats'
 
 const EMPTY_PROPOSALS = 'Ez a konzílium nem tartalmaz felvetést.'
@@ -24,6 +25,7 @@ const EMPTY_CROSSTALK_ABSENT = 'Ezen a tanácskozáson nem volt kereszt-vita kö
 const EMPTY_SKEPTIC = 'A Szkeptikus ebben a körben nem adott választ.'
 const EMPTY_CHAIR = 'Ebben a körben nem született döntés.'
 
+/** Egy megszólalás: lapos komment-panel a szereplő akcentusával (a csapatfal `tcmt` idiómája). */
 function Turn({ expertKey, name, chip, chipTone, children }: {
   expertKey: string
   name: string
@@ -32,19 +34,19 @@ function Turn({ expertKey, name, chip, chipTone, children }: {
   children: React.ReactNode
 }) {
   return (
-    <div className="kr-cvturn" style={{ '--c': expertColor(expertKey) } as CSSProperties}>
-      <span className="kr-cvorb"><PersonaOrb expertKey={expertKey} size={23} /></span>
-      <div>
-        <div className="kr-thwho">
-          {name}
-          {chip != null && <span className={`kr-thchip ${chipTone ?? 'non'}`}>{chip}</span>}
-        </div>
-        <div className="kr-thsaid">{children}</div>
+    <div className="kz-cmt" style={{ '--c': expertColor(expertKey) } as CSSProperties}>
+      <div className="kz-cmth">
+        <PersonaOrb expertKey={expertKey} size={30} className="kz-cmtorb" />
+        <b className="kz-who">{name}</b>
+        {chip != null && <span className={`kz-chip ${chipTone ?? 'non'}`}>{chip}</span>}
       </div>
+      <p className="kz-said">{children}</p>
     </div>
   )
 }
 
+/** Számozott kör-fejléc; egy kör, ami nem hozott semmit, a saját őszinte mondatát mutatja
+ *  szaggatott keretben (bible §3: az üres állapot szaggatott), sosem tűnik el. */
 function Section({ n, label, hot, empty, children }: {
   n: number
   label: string
@@ -54,28 +56,27 @@ function Section({ n, label, hot, empty, children }: {
 }) {
   return (
     <>
-      <div className={`kr-cvlbl${hot === true ? ' hot' : ''}`}>
-        <span className="kr-rn">{n}</span>{label}
+      <div className={`tf-sec kz-cvsec${hot === true ? ' hot' : ''}`}>
+        <h2><span className="kz-rn">{`${n} ·`}</span> <span className="kz-cvlbl">{label}</span></h2>
       </div>
-      {empty != null ? <div className="kr-cvempty">{empty}</div> : children}
+      {empty != null ? <div className="kz-cvempty">{empty}</div> : <div className="kz-cvlist">{children}</div>}
     </>
   )
 }
 
-export function KonziliumConversationView({ threads, experts, crossTalkRan }: {
+export function KonziliumConversationView({ threads, crossTalkRan }: {
   threads: ConferenceThread[]
+  /** Megtartva az API stabilitásáért; a kiírt nevek U9 óta a szereplő-leképezésből jönnek (personaName). */
   experts: CharacterExpertDto[]
   crossTalkRan: boolean
 }) {
   const { items, debated, audited, ruled } = partitionDeliberation(threads)
 
   return (
-    <div className="kr-cv">
+    <div className="kz-cv">
       <Section n={1} label="Javaslatok" empty={items.length === 0 ? EMPTY_PROPOSALS : undefined}>
         {items.map((item) => (
-          <div className="kr-konzcard kr-cvcard" key={`p-${item.index}`}>
-            <Turn expertKey={item.expertKey} name={displayName(experts, item.expertKey)}>{item.text}</Turn>
-          </div>
+          <Turn key={`p-${item.index}`} expertKey={item.expertKey} name={personaName(item.expertKey)}>{item.text}</Turn>
         ))}
       </Section>
 
@@ -86,13 +87,13 @@ export function KonziliumConversationView({ threads, experts, crossTalkRan }: {
         empty={debated.length > 0 ? undefined : crossTalkRan ? EMPTY_CROSSTALK_RAN : EMPTY_CROSSTALK_ABSENT}
       >
         {debated.map((item) => (
-          <div className="kr-konzcard kr-cvcard" key={`x-${item.index}`}>
-            <div className="kr-cvquote">{`„${item.text}" — ${displayName(experts, item.expertKey)}`}</div>
+          <div className="kz-cvcard" key={`x-${item.index}`}>
+            <div className="kz-cvquote">{`„${item.text}" — ${personaName(item.expertKey)}`}</div>
             {item.reactions.map((reaction, i) => (
               <Turn
                 key={i}
                 expertKey={reaction.expertKey}
-                name={displayName(experts, reaction.expertKey)}
+                name={personaName(reaction.expertKey)}
                 chip={STANCE_LABEL[reaction.stance] ?? 'hozzászólt'}
                 chipTone={STANCE_TONE[reaction.stance]}
               >
@@ -105,16 +106,15 @@ export function KonziliumConversationView({ threads, experts, crossTalkRan }: {
 
       <Section n={3} label="Szkeptikus" empty={audited.length === 0 ? EMPTY_SKEPTIC : undefined}>
         {audited.map((item) => (
-          <div className="kr-konzcard kr-cvcard" key={`s-${item.index}`}>
-            <Turn
-              expertKey="szkeptikus"
-              name="Szkeptikus"
-              chip={item.skeptic!.verdict === 'KILL' ? 'kukázta' : 'meghagyta'}
-              chipTone={item.skeptic!.verdict === 'KILL' ? 'cha' : 'sup'}
-            >
-              {item.skeptic!.argument}
-            </Turn>
-          </div>
+          <Turn
+            key={`s-${item.index}`}
+            expertKey="szkeptikus"
+            name={personaName('szkeptikus')}
+            chip={item.skeptic!.verdict === 'KILL' ? 'kukázta' : 'meghagyta'}
+            chipTone={item.skeptic!.verdict === 'KILL' ? 'cha' : 'sup'}
+          >
+            {item.skeptic!.argument}
+          </Turn>
         ))}
       </Section>
 
@@ -125,11 +125,16 @@ export function KonziliumConversationView({ threads, experts, crossTalkRan }: {
             ? `${(item.kind != null && ACCEPTED_LABEL[item.kind]) || 'Elfogadva'}${
                 chair.confidence != null ? ` · ${confidenceWord(chair.confidence)}` : ''}`
             : 'Elvetve'
+          // Mezo döntése az elsődleges tárgy ebben a nézetben: üveg-kártya (arany), benne a
+          // megszólalás lapos marad — nincs üveg az üvegben.
           return (
-            <div className="kr-konzcard kr-cvcard kr-cvmezo" key={`r-${item.index}`}>
-              <Turn expertKey="mezo" name="Mezo" chip={label} chipTone={chair.accepted ? 'acc' : 'rej'}>
-                {chair.reason}
-              </Turn>
+            <div className="glass tf-c-gold kz-ruling" key={`r-${item.index}`}>
+              <div className="kz-rulinghd">
+                <PersonaOrb expertKey="mezo" size={30} className="kz-cmtorb" />
+                <b className="kz-who">{personaName('mezo')}</b>
+                <span className={`kz-chip ${chair.accepted ? 'acc' : 'rej'}`}>{label}</span>
+              </div>
+              <p className="kz-said">{chair.reason}</p>
             </div>
           )
         })}

@@ -25,33 +25,45 @@ describe('PredictionsPage (mock mode)', () => {
   test('renders the header, pending + validated states, confidence and outcome — Hungarian chips (mezo-d20.5.6)', async () => {
     renderPage()
     expect(screen.getByText('Aktív predikciók')).toBeInTheDocument()
-    // Prototype #page-josla hero (mezo-d20.11): i-kristaly + „68%" + „2 bevált · 60 napos pontosság".
+    // Üveg hero (mezo-me75u.9): the gradient accuracy numeral „68%" + „2 bevált · 60 napos pontosság".
     expect(screen.getByText('Előrejelzések')).toBeInTheDocument()
-    await waitFor(() => expect(document.querySelector('.mz-bignum')?.textContent).toBe('68%'))
+    await waitFor(() => expect(screen.getByTestId('prediction-accuracy').textContent).toBe('68%'))
     // mock keeps the Phase-1 literal, localized view-side (the shipped English header was a designed fix)
     expect(screen.getByText('2 bevált · 60 napos pontosság')).toBeInTheDocument()
     expect(screen.getByText('Csütörtök Pull Day · Chest Row PR (107.5 × 8)')).toBeInTheDocument()
-    expect(screen.getAllByText('◐ Folyamatban').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('✓ Bevált').length).toBeGreaterThan(0)
-    // no English chip survives the localization pass
-    expect(screen.queryByText('◐ Pending')).not.toBeInTheDocument()
-    expect(screen.queryByText('✓ Validated')).not.toBeInTheDocument()
-    expect(screen.getByText('✓ Bejött: RPE 8.2 · vacsora 20:50')).toBeInTheDocument()
+    // status pills: 3D icon + Hungarian word — no text glyph (bible rule 45), no English chip
+    const pendingPills = Array.from(document.querySelectorAll('.m9e-st')).filter((el) => el.textContent === 'Folyamatban')
+    expect(pendingPills.length).toBeGreaterThan(0)
+    expect(pendingPills[0].querySelector('svg.t-ico')).toBeTruthy()
+    expect(Array.from(document.querySelectorAll('.m9e-st')).some((el) => el.textContent === 'Bevált')).toBe(true)
+    expect(screen.queryByText(/[◐◯✓]/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Pending')).not.toBeInTheDocument()
+    expect(screen.queryByText('Validated')).not.toBeInTheDocument()
+    const actual = screen.getByText('Bejött: RPE 8.2 · vacsora 20:50')
+    expect(actual).toHaveClass('tf-after')
+    expect(actual.querySelector('svg.t-ico')).toBeTruthy()
   })
 
-  test('status-washed tiles: pending → lavender + animated confidence bar, validated → sage (mezo-d20.5.6)', () => {
+  test('ranked cases: pending → sky glass + confidence bar, closed → flat, never red (mezo-me75u.9)', () => {
     const { container } = renderPage()
-    const tiles = container.querySelectorAll('.mzp-pred')
+    const tiles = container.querySelectorAll('.m9e-pred')
     expect(tiles).toHaveLength(mockPredictions.length)
-    const pending = container.querySelectorAll('.mzp-pred.lav')
-    const validated = container.querySelectorAll('.mzp-pred.sage')
+    const pending = container.querySelectorAll('.m9e-pred[data-status="pending"]')
+    const validated = container.querySelectorAll('.m9e-pred[data-status="validated"]')
     expect(pending).toHaveLength(2)
     expect(validated).toHaveLength(2)
-    // pending carries the animated confidence bar with the honest width; validated carries none
-    const fill = pending[0].querySelector('.mzp-gbar div') as HTMLElement
+    pending.forEach((card) => expect(card).toHaveClass('glass', 'tf-c-sky'))
+    validated.forEach((card) => {
+      expect(card).toHaveClass('tf-flatc', 'tf-s-sage')
+      expect(card).not.toHaveClass('glass')
+    })
+    // pending carries the confidence bar with the honest width; validated carries none
+    const fill = pending[0].querySelector('.uv-bar > b') as HTMLElement
     expect(fill).not.toBeNull()
-    expect(fill.style.width).toBe('72%')
-    expect(validated[0].querySelector('.mzp-gbar')).toBeNull()
+    expect(fill.style.getPropertyValue('--w')).toBe('72%')
+    expect(validated[0].querySelector('.uv-bar')).toBeNull()
+    // the feedback chips wear the 3D thumbs on the glass page
+    expect(container.querySelectorAll('.fbk-chips.is-3d')).toHaveLength(mockPredictions.length)
     // the entrance choreography is armed once
     expect(container.querySelector('.mz-play')).not.toBeNull()
   })
@@ -109,7 +121,7 @@ describe('PredictionsPage (real mode)', () => {
     expect(screen.getAllByText('tanulom').length).toBeGreaterThan(0)
     // one validated of one closed row → the derived hero, Hungarian (mezo-d20.11: the header
     // moved into the prototype's page-hero — big number + sub line)
-    await waitFor(() => expect(document.querySelector('.mz-bignum')?.textContent).toBe('100%'))
+    await waitFor(() => expect(screen.getByTestId('prediction-accuracy').textContent).toBe('100%'))
     expect(screen.getByText('1 bevált · pontosság')).toBeInTheDocument()
     expect(screen.queryByText('hamarosan')).not.toBeInTheDocument()
     expect(screen.queryByText('2 bevált · 60 napos pontosság')).not.toBeInTheDocument()

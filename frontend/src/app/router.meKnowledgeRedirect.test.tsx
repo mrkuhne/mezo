@@ -36,7 +36,7 @@ describe('/me/knowledge redirect (mock mode)', () => {
 
   test('(b) /me/knowledge?kind=PATTERN forwards the kind into the category drill on /mezo/knowledge', async () => {
     const router = renderApp('/me/knowledge?kind=PATTERN')
-    expect(await screen.findByText('‹ Kategóriák')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Vissza: Kategóriák' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^Késői evés rontja az alvást/ })).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/mezo/knowledge')
     expect(router.state.location.search).toBe('?view=kategoriak&kind=PATTERN')

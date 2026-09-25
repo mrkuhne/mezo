@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 import { cn } from '@/shared/lib/cn'
 import { FACT_CATEGORIES, PROMPT_TOP_N } from '@/data/insights/knowledge'
 import { LifecycleSection } from '@/features/insights/components/LifecycleSection'
@@ -54,20 +54,21 @@ export function FactsView(props: {
 
   return (
     <>
-      <div className="rise" style={{ '--d': '60ms' } as React.CSSProperties}>
-        <div className="searchfield" style={{ marginBottom: 8 }}>
-          <Icon name="search" size={16} color="var(--text-tertiary)" />
+      <div className="tud9-find rise" style={{ '--d': '60ms' } as React.CSSProperties}>
+        <label className="tud9-search">
+          <Icon3D name="t-lens" size={20} />
           <input
             aria-label="Keresés a tények között"
             placeholder="Keresés · pl. alvás, kávé, váll"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-        </div>
-        <div className="row gap-xs" style={{ overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4 }}>
+        </label>
+        <div className="tud9-filt">
           <button
             type="button"
-            className={cn('chip tapchip', category === 'all' && 'brand')}
+            className={cn(category === 'all' && 'is-on')}
+            aria-pressed={category === 'all'}
             onClick={() => setCategory('all')}
           >
             Mind
@@ -76,7 +77,8 @@ export function FactsView(props: {
             <button
               key={id}
               type="button"
-              className={cn('chip tapchip', category === id && 'brand')}
+              className={cn(category === id && 'is-on')}
+              aria-pressed={category === id}
               onClick={() => setCategory(id)}
             >
               {label}
@@ -86,25 +88,26 @@ export function FactsView(props: {
       </div>
 
       {nothingMatches ? (
-        <div className="card col gap-sm" style={{ padding: 14, alignItems: 'flex-start' }}>
-          <span className="text-secondary" style={{ fontSize: 12 }}>Nincs találat a keresésre.</span>
-          <button type="button" className="chip tapchip" onClick={clearFilters}>
-            Szűrők törlése
-          </button>
+        <div className="tf-dash tud9-dash tud9-nomatch">
+          <Icon3D name="t-lens" size={28} />
+          <span className="tud9-nomatch-tx">
+            <span>Nincs találat a keresésre.</span>
+            <button type="button" className="tud9-btn" onClick={clearFilters}>
+              Szűrők törlése
+            </button>
+          </span>
         </div>
       ) : (
-        <div className="col gap-sm">
+        <div className="tud9-buckets">
           {inPrompt.length > 0 && (
-            <div className="col gap-sm rise" style={{ '--d': '110ms' } as React.CSSProperties}>
-              <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-sage-ink)' }}>
-                Most ezeket kapja meg a társ · {inPrompt.length}
-              </span>
-              {rows(inPrompt, 'in-prompt')}
-              <p className="text-tertiary" style={{ fontSize: 11, lineHeight: 1.5, padding: '0 4px' }}>
+            <section className="tud9-group rise" style={{ '--d': '110ms' } as React.CSSProperties}>
+              <h2 className="tud9-sech">Most ezeket kapja meg a társ · {inPrompt.length}</h2>
+              <div className="tf-tlist tud9-facts">{rows(inPrompt, 'in-prompt')}</div>
+              <p className="tud9-fn">
                 Minden beszélgetés elején ezek a mondatok mennek elé: a {PROMPT_TOP_N} legerősebb
                 bekapcsolt tény, plusz a frissen megerősített minták.
               </p>
-            </div>
+            </section>
           )}
 
           <LifecycleSection

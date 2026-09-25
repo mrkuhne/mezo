@@ -59,7 +59,7 @@ describe('DimensionPage (real mode)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Talál' }))
 
     await waitFor(() => expect(postedBody).toEqual({ kind: 'TALAL' }))
-    expect(await screen.findByText('✓ Köszönöm — jegyzem.')).toBeInTheDocument()
+    expect(await screen.findByText('Köszönöm — jegyzem.')).toBeInTheDocument()
     // The proof invalidateQueries actually ran: a SECOND GET landed (not just a local-state
     // flip), and the page renders what THAT fetch served — not a locally-cached/fabricated value.
     await waitFor(() => expect(dimensionFetchCount).toBe(2))
@@ -75,7 +75,7 @@ describe('DimensionPage (real mode)', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Talál' }))
 
       await waitFor(() => expect(screen.getByRole('button', { name: 'Talál' })).not.toBeDisabled())
-      expect(screen.queryByText('✓ Köszönöm — jegyzem.')).not.toBeInTheDocument()
+      expect(screen.queryByText('Köszönöm — jegyzem.')).not.toBeInTheDocument()
       expect(dimensionFetchCount).toBe(1)
     })
 

@@ -136,3 +136,45 @@ test('mezo-hq44: az „Amit eddig látunk" szemöldök ikonos, glifa nélkül', 
   expect(eyebrow.querySelector('svg')).toBeTruthy()
   expect(eyebrow.textContent).not.toMatch(/📈/)
 })
+
+// mezo-me75u.9: a Minták lista opt-in üveg-bőre — ugyanaz a tartalom és ugyanazok a döntés-igék,
+// borostyán `glass tf-case`-ben; a döntés-pirulák laposak (üveg az üvegben tilos), az „Elvetem"
+// terrakotta, és az alap-kártya (glass nélkül) változatlan marad.
+describe('glass variant (mezo-me75u.9)', () => {
+  test('wraps the same content in the amber glass case with flat 3D-icon pills', () => {
+    const onDecide = vi.fn()
+    const { container } = render(
+      <MemoryRouter>
+        <PatternDecisionCard glass pattern={statistical} pair={pair} onDecide={onDecide} showExplainer detailSearch="bucket=decide" />
+      </MemoryRouter>,
+    )
+    const card = container.querySelector('[data-decision-card]') as HTMLElement
+    expect(card).toHaveClass('glass', 'tf-case', 'tf-c-gold')
+    expect(card.querySelectorAll('.glass')).toHaveLength(0)
+    expect(container.querySelector('.card')).toBeNull()
+    expect(screen.getByText(pair.questionHu)).toHaveClass('tf-ctitle')
+    expect(screen.getByText('Amit eddig látunk')).toBeInTheDocument()
+    expect(screen.getByText('Mi történik a döntéseddel')).toBeInTheDocument()
+    const reject = screen.getByRole('button', { name: 'Elvetem' })
+    expect(reject).toHaveClass('m9m-act', 'is-no')
+    expect(reject.querySelector('svg.t-ico')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Megerősítem/ })).toHaveClass('is-main')
+    screen.getByRole('button', { name: /Figyeljük/ }).click()
+    expect(onDecide).toHaveBeenCalledWith('monitor')
+    expect(screen.getByRole('link', { name: /Részletek és előzmények/ }))
+      .toHaveAttribute('href', `/mezo/patterns/${pair.key}?bucket=decide`)
+    expect(container.innerHTML).not.toMatch(/--error-/)
+    expect(screen.queryByText(/r=/)).not.toBeInTheDocument()
+  })
+
+  test('keeps the dead-link guard and the Hungarian hypothesis confidence', () => {
+    const planless = { ...statistical, kind: 'reflection' as const, pairKey: 'note-abc', testPlan: undefined }
+    render(
+      <MemoryRouter>
+        <PatternDecisionCard glass pattern={{ ...planless, confidence: 0.69 }} pair={null} onDecide={() => {}} />
+      </MemoryRouter>,
+    )
+    expect(screen.queryByRole('link', { name: /Részletek és előzmények/ })).not.toBeInTheDocument()
+    expect(screen.getByText('bizonyosság 69%')).toBeInTheDocument()
+  })
+})

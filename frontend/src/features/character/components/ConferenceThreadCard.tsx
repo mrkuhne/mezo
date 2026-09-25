@@ -13,6 +13,7 @@ import { useState, type CSSProperties } from 'react'
 import { CharacterReplyThread } from '@/features/character/components/CharacterReplyThread'
 import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import { expertColor } from '@/features/character/expertColors'
+import { personaName } from '@/features/character/personaCharacter'
 import { confidenceWord } from '@/data/character/characterApi'
 import type { CharacterExpertDto, ConferenceItem, ConferenceThread } from '@/data/character/characterApi'
 import {
@@ -21,7 +22,6 @@ import {
   SKEPTIC_LABEL,
   STANCE_LABEL,
   STANCE_TONE as SHARED_STANCE_TONE,
-  displayName,
   type StanceTone,
 } from '@/features/character/deliberationLabels'
 
@@ -80,6 +80,7 @@ function outcomeBadge(item: ConferenceItem): { label: string; tone: 'acc' | 'rej
 
 export interface ConferenceThreadCardProps {
   thread: ConferenceThread
+  /** Megtartva az API stabilitásáért; a kiírt nevek U9 óta a szereplő-leképezésből jönnek (personaName). */
   experts: CharacterExpertDto[]
   /** Lefutott-e egyáltalán a kereszt-vita kör ezen a konzíliumon (a szál TÁROLT, nem visszafejtett).
    *  Ha nem, a fejléc nem mondhat "nem vitatták"-at — az azt sugallná, hogy volt kör és senki nem szólt. */
@@ -120,6 +121,9 @@ function skepticTone(verdict: string): ChipTone {
   return 'sup'
 }
 
+/** Egy megszólalás a láncban: lapos komment-panel a szereplő akcentusával (a csapatfal
+ *  `tcmt` idiómája) — sosem üveg, mert a lenyitott szál kártyája már az (bible §3, nincs üveg az
+ *  üvegben). A chip az állásfoglalás/döntés tónusát viseli. */
 function ChainStep({ expertKey, who, chip, chipTone, children }: {
   expertKey: string
   who: string
@@ -128,20 +132,20 @@ function ChainStep({ expertKey, who, chip, chipTone, children }: {
   children: React.ReactNode
 }) {
   return (
-    <div className="kr-thstep" style={{ '--c': expertColor(expertKey) } as CSSProperties}>
-      <span className="kr-thorb" aria-hidden="true"><PersonaOrb expertKey={expertKey} size={22} /></span>
-      <div className="kr-thwho">
-        {who}
-        {chip != null && <span className={`kr-thchip ${chipTone ?? 'non'}`}>{chip}</span>}
+    <div className="kz-cmt" style={{ '--c': expertColor(expertKey) } as CSSProperties}>
+      <div className="kz-cmth">
+        <PersonaOrb expertKey={expertKey} size={30} className="kz-cmtorb" />
+        <b className="kz-who">{who}</b>
+        {chip != null && <span className={`kz-chip ${chipTone ?? 'non'}`}>{chip}</span>}
       </div>
-      <div className="kr-thsaid">{children}</div>
+      <p className="kz-said">{children}</p>
     </div>
   )
 }
 
 const STANCE_TONE: Record<string, ChipTone> = SHARED_STANCE_TONE
 
-function ItemChain({ item, experts }: { item: ConferenceItem; experts: CharacterExpertDto[] }) {
+function ItemChain({ item }: { item: ConferenceItem }) {
   const [replyOpen, setReplyOpen] = useState(false)
   const badge = outcomeBadge(item)
   const confidence = item.chair?.accepted === true && item.chair.confidence != null
@@ -155,15 +159,15 @@ function ItemChain({ item, experts }: { item: ConferenceItem; experts: Character
     ? ` · ${confidenceWord(item.skeptic.suggestedConfidence)}`
     : ''
   return (
-    <div className="kr-thitem">
-      <ChainStep expertKey={item.expertKey} who={displayName(experts, item.expertKey)} chip="felvetette">
+    <div className="kz-thitem">
+      <ChainStep expertKey={item.expertKey} who={personaName(item.expertKey)} chip="felvetette">
         {item.text}
       </ChainStep>
       {item.reactions.map((reaction, i) => (
         <ChainStep
           key={i}
           expertKey={reaction.expertKey}
-          who={displayName(experts, reaction.expertKey)}
+          who={personaName(reaction.expertKey)}
           chip={STANCE_LABEL[reaction.stance] ?? 'hozzászólt'}
           chipTone={STANCE_TONE[reaction.stance]}
         >
@@ -172,7 +176,7 @@ function ItemChain({ item, experts }: { item: ConferenceItem; experts: Character
       ))}
       <ChainStep
         expertKey="szkeptikus"
-        who="Szkeptikus"
+        who={personaName('szkeptikus')}
         chip={item.skeptic == null ? undefined : `${SKEPTIC_LABEL[item.skeptic.verdict] ?? 'Válaszolt'}${skepticConfidence}`}
         chipTone={item.skeptic == null ? undefined : skepticTone(item.skeptic.verdict)}
       >
@@ -180,7 +184,7 @@ function ItemChain({ item, experts }: { item: ConferenceItem; experts: Character
       </ChainStep>
       <ChainStep
         expertKey="mezo"
-        who="Mezo"
+        who={personaName('mezo')}
         chip={item.chair == null ? undefined : `${badge.label}${confidence}`}
         chipTone={badge.tone}
       >
@@ -190,59 +194,59 @@ function ItemChain({ item, experts }: { item: ConferenceItem; experts: Character
             ? NOTHING_TO_ADD
             : `${chairDetail(item.chair)}${item.chair.reason}`}
       </ChainStep>
-      {item.claimId && <button type="button" className="kr-quick-reply" onClick={() => setReplyOpen(value => !value)} aria-expanded={replyOpen}>Te hogy látod? Válasz erre az állításra</button>}
+      {item.claimId && <button type="button" className="kz-reply" onClick={() => setReplyOpen(value => !value)} aria-expanded={replyOpen}>Te hogy látod? Válasz erre az állításra</button>}
       {item.claimId && replyOpen && <CharacterReplyThread source={{ sourceType: 'CLAIM', sourceId: item.claimId, sourceIndex: 0 }} initialOpen />}
     </div>
   )
 }
 
-export function ConferenceThreadCard({ thread, experts, crossTalkRan, defaultOpen = false }: ConferenceThreadCardProps) {
+export function ConferenceThreadCard({ thread, crossTalkRan, defaultOpen = false }: ConferenceThreadCardProps) {
   const [open, setOpen] = useState(defaultOpen)
   const accepted = acceptedCount(thread)
   const reactions = reactionCount(thread)
 
+  // Rangsor (bible §3): a csukott szál lapos ügy-kártya; a lenyitott — amit épp olvasol — üveg.
   return (
-    <div className="kr-thread">
+    <div className={open ? 'glass tf-case tf-c-lav kz-thread is-open' : 'tf-case tf-flatc tf-c-lav kz-thread'}>
       <button
         type="button"
-        className="kr-thhead"
+        className="kz-thhead"
         aria-expanded={open}
         onClick={() => setOpen((was) => !was)}
       >
-        <span className="kr-thfaces">
+        <span className="kz-faces">
           {speakers(thread).map((key) => (
-            <span key={key} className="kr-thorb" style={{ '--c': expertColor(key) } as CSSProperties}>
-              <PersonaOrb expertKey={key} size={20} />
-            </span>
+            <PersonaOrb key={key} expertKey={key} size={24} className="kz-face" />
           ))}
         </span>
-        <span className="kr-thtitle">
-          <span className="kr-thtt">{thread.title}</span>
-          <span className="kr-thts">
+        <span className="tf-ctxt">
+          <span className="tf-ctitle">{thread.title}</span>
+          <span className="tf-csub">
             {`${thread.items.length} állítás`}
             {reactions > 0
-              ? <> · <span className="kr-thdeb">{`${reactions} hozzászólás`}</span></>
+              ? <> · <span className="kz-deb">{`${reactions} hozzászólás`}</span></>
               : crossTalkRan
                 ? ' · nem vitatták'
                 : ` · ${accepted} elfogadva`}
           </span>
         </span>
-        <span className="kr-thchev" aria-hidden="true">{open ? '⌄' : '›'}</span>
+        <span className="tf-chev" aria-hidden="true">{open ? '⌄' : '›'}</span>
       </button>
       {open
         ? (
-            <div className="kr-thbody">
-              {thread.items.map((item) => <ItemChain key={item.index} item={item} experts={experts} />)}
+            <div className="kz-thbody">
+              {thread.items.map((item) => <ItemChain key={item.index} item={item} />)}
             </div>
           )
         : (
-            <div className="kr-thcollapsed">
+            <div className="kz-throws">
               {thread.items.map((item) => {
                 const badge = outcomeBadge(item)
+                const retired = badge.tone === 'acc' && item.kind === 'RETIRE' ? ' ret' : ''
                 return (
-                  <div key={item.index} className="kr-throw">
-                    <span className={`kr-thb ${badge.tone}`}>{badge.label}</span>
-                    <span className={`kr-thtx${badge.tone === 'acc' ? '' : ' dim'}`}>{item.text}</span>
+                  <div key={item.index} className="kz-throw">
+                    <span className={`tf-st kz-oc ${badge.tone}${retired}`}>{badge.label}</span>
+                    <span className={`kz-thtx${badge.tone === 'acc' ? '' : ' dim'}`}>{item.text}</span>
                   </div>
                 )
               })}

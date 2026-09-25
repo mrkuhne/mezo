@@ -1,31 +1,26 @@
 // ============================================================
-// Mezo · PatternsPage — the Minták dashboard re-faced to Mozaik 2.0
-// (mezo-d20.5.3). Source of truth: mezo-body.html #page-mintak ×1.18
-// + the tile-pass recipe (mezo-en iterations §1): hero (i-minta +
-// confirmed big number), motor prose card with three bold numbers and
-// the colorful 3×2 lifecycle grid (döntésre vár = white + gold ring,
-// pulsing — reduced-motion-guarded), the decision card(s) settling to
-// a sage acknowledgement, then tile mosaics per lifecycle state:
-// confirmed = sage tiles with domain clay icon + HUMAN-word confidence
-// chip (never raw r/p), watching = lavender tiles with an animated
-// evidence bar, gathering = dashed amber tiles; Adat-egészség = a
-// coverage-ring tile strip. All behavioral contracts of the previous
-// face are preserved verbatim: bucketize + strong-signal display rule,
-// mezo-mqdj stale-pair demotion, honest cold-load/error/degraded/empty
-// states, dead-detail-link guards (mezo-tk88.5), domain filter with the
-// batch-clearing "Mind" chip, `?pair=` redirect.
+// Mezo · PatternsPage — the Minták dashboard in the Üveg world (mezo-me75u.9).
+// Source of truth: docs/design_2.0/prototypes/uveg-mezo-teljes.html #mintak
+// (src/uveg-mezo-teljes-u9.js `mintak`/`bucket`/`tile`), built on the csapatfal
+// `tf-*` kit (boop-world.css) + the U1 `.glass`/`uv-*` material. Ranking: the
+// motor card is the amber glass case (big light numeral hero above it), decide
+// cards are amber glass cases, confirmed tiles sage glass, monitoring tiles lav
+// glass with the evidence bar, gathering dashed, noRelationship/rejected flat;
+// Adat-egészség = a scrolling strip of small coverage rings. Line icons are the
+// Titanium 3D sprite (bible §4). Behavioural contracts of the previous face are
+// preserved verbatim: bucketize + strong-signal display rule, mezo-mqdj stale-pair
+// demotion, honest cold-load/error/degraded/empty states, dead-detail-link guards
+// (mezo-tk88.5), domain filter + sort + page in the URL, `?pair=` redirect.
 // ============================================================
-import { useState, type ReactNode } from 'react'
-import { Icon, type IconName } from '@/shared/ui/Icon'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
-import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
-import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { GhostState } from '@/shared/ui/GhostState'
 import { usePatterns, usePatternMonitor, usePatternActions } from '@/data/hooks'
 import { PatternDecisionCard } from '@/features/insights/components/PatternDecisionCard'
-import { PatternDomainMark } from '@/features/insights/components/PatternDomainMark'
+import { PatternDomainMark, PATTERN_DOMAIN_MARK_ART } from '@/features/insights/components/PatternDomainMark'
 import { PatternFilterSheet } from '@/features/insights/components/PatternFilterSheet'
 import { lastSeenLabel } from '@/features/insights/logic/metricFormat'
 import { DOMAIN_ORDER } from '@/features/insights/logic/domains'
@@ -42,6 +37,10 @@ import { confidenceMeta, findingSentence } from '@/features/insights/logic/findi
 import { verdictSentence } from '@/features/insights/logic/verdicts'
 import type { PatternMonitorPair, PatternStatus } from '@/data/types'
 import { ALL_FEATURES_ROUTE } from '@/features/insights/logic/boopNavigation'
+import '@/features/insights/boop-world.css'
+
+const RING_R = 26
+const RING_C = 2 * Math.PI * RING_R
 
 /** A mini-tile címe: a pár (élő) kérdés-mondata, vagy — pár híján — a minta saját címe. */
 function rowTitle(entry: LifecycleEntry): string {
@@ -63,22 +62,24 @@ function lastRunLabel(lastRunAt: string | null): string {
   return `ma ${time}`
 }
 
-/** A 3×2 életciklus-rács cellái — prototípus .lcel skinek (a hot ráépül a decide-ra). */
-const LCEL_META: Record<LifecycleBucket, { label: string; skin: string; icon: IconName }> = {
-  decide: { label: 'döntésre vár', skin: 'c-mute', icon: 'bell' },
-  monitoring: { label: 'megfigyelés', skin: 'c-lav', icon: 'eye' },
-  confirmed: { label: 'megerősítve', skin: 'c-sage', icon: 'check' },
-  gathering: { label: 'még gyűlik', skin: 'c-amber', icon: 'trend-up' },
-  noRelationship: { label: 'nincs kapcsolat', skin: 'c-mute', icon: 'minus' },
-  rejected: { label: 'elvetve', skin: 'c-mute', icon: 'x' },
+type Tone = 'coral' | 'lav' | 'sage' | 'gold' | 'slate'
+
+/** A 3×2 életciklus-rács cellái (prototípus `BK`): lapos cellák, a kiválasztott a saját
+ *  akcentusában világít; a „döntésre vár" korall, ha van mire várni (különben halk). */
+const LCEL_META: Record<LifecycleBucket, { label: string; tone: Tone; art: Icon3DName }> = {
+  decide: { label: 'döntésre vár', tone: 'slate', art: 't-bell' },
+  monitoring: { label: 'megfigyelés', tone: 'lav', art: 't-eye' },
+  confirmed: { label: 'megerősítve', tone: 'sage', art: 't-tick' },
+  gathering: { label: 'még gyűlik', tone: 'gold', art: 't-up' },
+  noRelationship: { label: 'nincs kapcsolat', tone: 'slate', art: 't-hold' },
+  rejected: { label: 'elvetve', tone: 'slate', art: 't-skip' },
 }
 
-/** A döntés zsálya-nyugtázása (prototípus decdone) — a mutáció maga a régi `decide`. */
-const ACK: Record<PatternStatus, ReactNode> = {
-  // Ld. MezoHubPage DECIDED_MSG — a ✓ a ház pipa-idiómája, ezért glifa marad (mezo-hq44).
-  confirm: '✓ Beépítettem a tudásba — mostantól számolok vele.',
-  monitor: <><Icon name="eye" size={14} /> Rendben, figyeljük tovább — szólok, ha erősödik.</>,
-  reject: <><Icon name="x" size={14} /> Elvetve — nem hozom fel újra.</>,
+/** A döntés nyugtázása (prototípus `after` pirula) — a mutáció maga a régi `decide`. */
+const ACK: Record<PatternStatus, { art: Icon3DName; text: string }> = {
+  confirm: { art: 't-tick', text: 'Beépítettem a tudásba — mostantól számolok vele.' },
+  monitor: { art: 't-eye', text: 'Rendben, figyeljük tovább — szólok, ha erősödik.' },
+  reject: { art: 't-skip', text: 'Elvetve — nem hozom fel újra.' },
 }
 
 /** HUMÁN bizonyosság-chip a csempén (confidenceMeta szavai) — nyers r/p soha. */
@@ -86,78 +87,78 @@ function tileChip(entry: LifecycleEntry, tone: 'sage' | 'lav'): ReactNode {
   const pair = entry.pair
   if (pair?.n != null && pair.p != null) {
     const meta = confidenceMeta(pair.n, pair.p)
-    const cls = tone === 'lav' ? 'lav' : meta.tone === 'success' ? 'sage' : 'amber'
-    return <span className={cn('mnt-chip', cls)}>{meta.chip}</span>
+    const cls = tone === 'lav' ? 'is-lav' : meta.tone === 'success' ? 'is-sage' : 'is-gold'
+    return <span className={cn('m9m-chip', cls)}>{meta.chip}</span>
   }
   // stat híján a megosztott honest-null szó (── sosem kitalált szám)
-  return tone === 'sage' ? <span className="mnt-chip mute">tanulom</span> : null
+  return tone === 'sage' ? <span className="m9m-chip is-mute">tanulom</span> : null
 }
 
-/** Egy életciklus-csempe — pár-backed csempe linkel a részletoldalra (mezo-tk88.5 guard). */
+const TILE_SKIN: Record<'sage' | 'lav' | 'dashed' | 'mute', string> = {
+  sage: 'glass tf-c-sage m9m-tile is-sage',
+  lav: 'glass tf-c-lav m9m-tile is-lav',
+  dashed: 'uv-empty tf-c-gold m9m-tile is-dashed',
+  mute: 'm9m-tile is-mute',
+}
+
+/** Egy életciklus-csempe (prototípus `tile` / `.qt`) — linkel a részletoldalra (mezo-tk88.5 guard). */
 function PatternTile({ entry, skin, chip, sb, barPct, delayMs, search }: {
   entry: LifecycleEntry
   skin: 'sage' | 'lav' | 'dashed' | 'mute'
   chip?: ReactNode
   sb: string
-  /** 0..1 — az animált bizonyíték-sáv szélessége; null/undefined = nincs sáv */
+  /** 0..1 — a bizonyíték-sáv szélessége; null/undefined = nincs sáv */
   barPct?: number | null
   delayMs: number
   search: string
 }) {
-  const inner = (
-    <>
-      <div className="mnt-ptile-top">
-        <PatternDomainMark domain={entryDomain(entry)} size={26} showLabel={false} />
-        {chip}
-      </div>
-      <div className="mnt-ttl">{rowTitle(entry)}</div>
-      {sb !== '' && <div className="mnt-sb">{sb}</div>}
-      {barPct != null && (
-        <div className="mnt-gbar" aria-hidden="true">
-          <div style={{ '--w': String(barPct), '--d': `${delayMs + 350}ms` } as React.CSSProperties} />
-        </div>
-      )}
-    </>
-  )
-  const cls = cn('mnt-ptile', skin !== 'mute' && skin, 'rise')
-  const style = { '--d': `${delayMs}ms` } as React.CSSProperties
   return (
-    <Link to={`/mezo/patterns/${entry.key}?${search}`} className={cls} style={style}>
-      {inner}
+    <Link to={`/mezo/patterns/${entry.key}?${search}`} className={cn(TILE_SKIN[skin], 'rise')}
+      style={{ '--d': `${delayMs}ms` } as CSSProperties}>
+      <span className="m9m-tile-top">
+        <Icon3D name={PATTERN_DOMAIN_MARK_ART[entryDomain(entry)]} size={30} />
+        {chip}
+      </span>
+      <span className="m9m-ttl">{rowTitle(entry)}</span>
+      {sb !== '' && <span className="m9m-sb">{sb}</span>}
+      {barPct != null && (
+        <span className="uv-bar" aria-hidden="true">
+          <b style={{ '--w': `${Math.round(barPct * 100)}%` } as CSSProperties} />
+        </span>
+      )}
     </Link>
   )
 }
 
-/** Szekció-fejléc (prototípus .lsec): eyebrow + jobbra igazított darabszám. */
-function Lsec({ title, ink, count, countTestId, delayMs }: {
-  title: ReactNode; ink: string; count?: ReactNode; countTestId?: string; delayMs: number
+/** Szekció-fejléc (prototípus `sec`): cím (3D jellel, glifa nélkül) + jobbra a halk tipp/darabszám. */
+function Lsec({ title, art, count, countTestId, delayMs }: {
+  title: ReactNode; art?: Icon3DName; count?: ReactNode; countTestId?: string; delayMs: number
 }) {
   return (
-    <div className="mnt-lsec rise" style={{ '--d': `${delayMs}ms` } as React.CSSProperties}>
-      <span className="mz-eyebrow mz-ebic" style={{ color: ink }}>{title}</span>
-      {count !== undefined && <span className="mnt-cnt" data-testid={countTestId}>{count}</span>}
+    <div className="tf-sec m9m-sec rise" style={{ '--d': `${delayMs}ms` } as CSSProperties}>
+      <h2>{art && <Icon3D name={art} size={22} />}{title}</h2>
+      {count !== undefined && <span className="tf-hint" data-testid={countTestId}>{count}</span>}
     </div>
   )
 }
 
-/** A Minták oldal kerete — a `‹ Mezo` fejléc MINDEN ágon (ADR 0032 / mezo-d20.11 hűség-audit:
- *  az oldal korábban semmilyen PageHead-et nem rendelt, így zsákutca volt). A hero a
- *  prototípus #page-mintak page-hero-ja: i-minta + a megerősített összefüggések nagy száma. */
+/** A Minták oldal kerete — a vissza-út MINDEN ágon (ADR 0032 / mezo-d20.11): a `tf-dhead`
+ *  (‹ → Összes funkció) + a hero: a megerősített összefüggések nagy, könnyű száma. */
 function MintakFrame({ big, children }: { big?: ReactNode; children: ReactNode }) {
   const navigate = useNavigate()
   return (
-    <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate(ALL_FEATURES_ROUTE)} label="‹ Összes funkció" />
-      <div className="mz-page-hero">
-        <div className="mz-hero-nm">Minták</div>
-        <div className="mz-hero-row">
-          <ClayIcon name="i-minta" size={64} />
-          {big !== undefined && <span className="mz-bignum">{big}</span>}
-        </div>
-        <div className="mz-hero-sb">megerősített összefüggés él a tudásban</div>
+    <div className="tf-page m9m-root">
+      <div className="tf-dhead">
+        <button type="button" className="glass tf-back" aria-label="Vissza"
+          onClick={() => navigate(ALL_FEATURES_ROUTE)}>‹</button>
+        <span className="tf-dtitle"><small>Mezo · a motor</small><strong>Minták</strong></span>
       </div>
-      <PageBody>{children}</PageBody>
-    </MozaikPage>
+      <div className="m9m-big">
+        {big !== undefined && <b>{big}</b>}
+        <small>megerősített összefüggés él a tudásban</small>
+      </div>
+      {children}
+    </div>
   )
 }
 
@@ -196,7 +197,7 @@ export function PatternsPage() {
   const [filterOpen, setFilterOpen] = useState(false)
   // Zsálya-nyugtázások (prototípus decdone) — a döntés a régi mutáción megy, a kártya helyén
   // a nyugtázó sor marad, miközben az adat a kosarak közt költözik.
-  const [acks, setAcks] = useState<{ key: string; msg: ReactNode }[]>([])
+  const [acks, setAcks] = useState<{ key: string; d: PatternStatus }[]>([])
 
   // A kosarak pure számolása a hook-szabály miatt ÁLL az early returnök előtt (useCountUp).
   const buckets = bucketize(patterns, monitor)
@@ -223,7 +224,7 @@ export function PatternsPage() {
   // hero would reach a live user during the unresolved window (the mezo-yew/mezo-0xl bug class).
   // Gate on EITHER query pending — the hero needs both to render its real numbers honestly.
   if (isPending) {
-    return <MintakFrame><GhostState message="A minták betöltése…" /></MintakFrame>
+    return <MintakFrame><div className="m9m-pad"><GhostState message="A minták betöltése…" /></div></MintakFrame>
   }
 
   // Genuinely failed fetch (500, network) — külön a 404-degraded ÉS a betöltés-alatti ablaktól
@@ -231,7 +232,9 @@ export function PatternsPage() {
   if (monitorIsError) {
     return (
       <MintakFrame>
-        <GhostState message="Nem sikerült betölteni a motor állapotát." ctaLabel="Újra" onCta={monitorRefetch} />
+        <div className="m9m-pad">
+          <GhostState message="Nem sikerült betölteni a motor állapotát." ctaLabel="Újra" onCta={monitorRefetch} />
+        </div>
       </MintakFrame>
     )
   }
@@ -239,10 +242,9 @@ export function PatternsPage() {
   if (patternsDegraded && monitorDegraded) {
     return (
       <MintakFrame>
-        <div className="card" style={{ padding: 16, textAlign: 'center' }}>
-          <p className="text-tertiary" style={{ fontSize: 12 }}>
-            A minta-motor most nem elérhető — a felismert minták itt jelennek majd meg.
-          </p>
+        <div className="tf-dash m9m-state">
+          <Icon3D name="t-info" size={30} />
+          <span>A minta-motor most nem elérhető — a felismert minták itt jelennek majd meg.</span>
         </div>
       </MintakFrame>
     )
@@ -251,10 +253,9 @@ export function PatternsPage() {
   if (patterns.length === 0 && (monitor?.pairs.length ?? 0) === 0) {
     return (
       <MintakFrame>
-        <div className="card" style={{ padding: 16, textAlign: 'center' }}>
-          <p className="text-tertiary" style={{ fontSize: 12 }}>
-            Még nincs felismert minta — az éjszakai elemzés magától tölti, ahogy gyűlnek a napok.
-          </p>
+        <div className="tf-dash m9m-state">
+          <Icon3D name="t-sprout" size={30} />
+          <span>Még nincs felismert minta — az éjszakai elemzés magától tölti, ahogy gyűlnek a napok.</span>
         </div>
       </MintakFrame>
     )
@@ -270,7 +271,7 @@ export function PatternsPage() {
   const coverageByKey = new Map((monitor?.metrics ?? []).map((m) => [m.key, m]))
   const bottleneckCoveredDays = (pair: PatternMonitorPair) =>
     pair.bottleneckMetricKey ? (coverageByKey.get(pair.bottleneckMetricKey)?.coveredDays ?? null) : null
-  // Adat-egészség: a metrika-lefedettség csempe-sávja — legvékonyabb elöl (régi sorrend-szabály).
+  // Adat-egészség: a metrika-lefedettség gyűrű-sávja — legvékonyabb elöl (régi sorrend-szabály).
   const sortedMetrics = monitor ? [...monitor.metrics].sort((a, b) => a.coveredDays - b.coveredDays) : []
 
   const questionCount = monitor?.pairs.length ?? 0
@@ -279,103 +280,111 @@ export function PatternsPage() {
 
   const onDecide = (entry: LifecycleEntry, d: PatternStatus) => {
     decide(entry.pattern!.id, d)
-    setAcks((prev) => [...prev, { key: `${entry.key}-${d}`, msg: ACK[d] }])
+    setAcks((prev) => [...prev, { key: `${entry.key}-${d}`, d }])
   }
 
   return (
     <MintakFrame big={heroCount}>
-    <EntranceGroup className="mnt-root">
-      {/* ── A motor állapota: próza három félkövér számmal + a 3×2 életciklus-rács ── */}
-      <div className="mnt-motor rise" style={{ '--d': '40ms' } as React.CSSProperties}>
-        <div className="row" style={{ alignItems: 'center' }}>
-          <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-lav-ink)' }}>A motor állapota</span>
-          <span className="mnt-motor-meta">
-            {lastRunLabel(monitor?.lastRunAt ?? null)} · {monitor?.lookbackDays ?? 0} nap
+    <EntranceGroup className="m9m-body">
+      {/* ── A motor állapota: az EGY hangos borostyán üveg — próza három félkövér számmal,
+             a 3×2 életciklus-rács lapos cellái és a katalógus-eszköztár ── */}
+      <div className="tf-rows">
+        <div className="glass tf-case tf-c-gold tf-s-lav m9m-motor rise" style={{ '--d': '40ms' } as CSSProperties}>
+          <span className="tf-crow">
+            <span className="tf-st">A motor állapota</span>
+            <em>{lastRunLabel(monitor?.lastRunAt ?? null)} · {monitor?.lookbackDays ?? 0} nap</em>
           </span>
-        </div>
-        <p className="mnt-prose">
-          <b>{questionCount} kérdést</b> figyelek a naplóidból. <b>{counts.confirmed} megerősített</b> összefüggés
-          dolgozik a társban, <b>{counts.decide} vár a döntésedre</b>.
-        </p>
-        <div className="mnt-lgrid">
-          {BUCKET_ORDER.map((bucket) => {
-            const meta = LCEL_META[bucket]
-            const hot = bucket === 'decide' && counts.decide > 0
-            return (
-              <button
-                key={bucket}
-                type="button"
-                aria-pressed={activeBucket === bucket}
-                className={cn('mnt-lcel', hot ? 'hot' : meta.skin, activeBucket === bucket && 'is-selected')}
-                onClick={() => {
-                  updateCatalog({ bucket, page: null })
-                }}
-              >
-                <b>{counts[bucket]}</b>
-                <small><Icon name={meta.icon} size={10} />{meta.label}</small>
-              </button>
-            )
-          })}
-        </div>
-        <div className="mnt-catalog-toolbar">
-          <span className="mnt-catalog-filter-value">
-            {activeDomain == null ? 'Minden téma' : <PatternDomainMark domain={activeDomain} size={18} />}
-          </span>
-          <button type="button" className="mnt-filter-trigger" onClick={() => setFilterOpen(true)}>
-            <Icon name="settings" size={16} /> Szűrés
-          </button>
+          <p className="m9m-prose">
+            <b>{questionCount} kérdést</b> figyelek a naplóidból. <b>{counts.confirmed} megerősített</b> összefüggés
+            dolgozik a társban, <b>{counts.decide} vár a döntésedre</b>.
+          </p>
+          <div className="m9m-lgrid">
+            {BUCKET_ORDER.map((bucket) => {
+              const meta = LCEL_META[bucket]
+              const hot = bucket === 'decide' && counts.decide > 0
+              const tone: Tone = hot ? 'coral' : meta.tone
+              return (
+                <button
+                  key={bucket}
+                  type="button"
+                  aria-pressed={activeBucket === bucket}
+                  className={cn('m9m-lcel', `is-${tone}`, hot && 'hot', activeBucket === bucket && 'is-selected')}
+                  onClick={() => {
+                    updateCatalog({ bucket, page: null })
+                  }}
+                >
+                  <b>{counts[bucket]}</b>
+                  <small><Icon3D name={meta.art} size={16} />{meta.label}</small>
+                </button>
+              )
+            })}
+          </div>
+          <div className="m9m-tool">
+            <span className="m9m-tool-value">
+              {activeDomain == null ? 'Minden téma' : <PatternDomainMark domain={activeDomain} size={18} />}
+            </span>
+            <button type="button" className="m9m-tool-btn" onClick={() => setFilterOpen(true)}>
+              <Icon3D name="t-gear" size={17} />Szűrés
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* ── Döntés: zsálya-nyugtázások + a hubbal közös döntés-kártya (gold ring) ── */}
-      {acks.map((a) => (
-        <div key={a.key} className="mnt-decdone rise">
-          <ClaySpot name="s-orb-unnepel" size={26} />
-          <span className="mz-icin">{a.msg}</span>
+      {/* ── Döntés-nyugtázások: `tf-after` pirulák (prototípus `after big`) ── */}
+      {acks.length > 0 && (
+        <div className="m9m-acks">
+          {acks.map((a) => (
+            <span key={a.key} className="tf-after m9m-ack rise" data-ack={a.d}>
+              <Icon3D name={ACK[a.d].art} size={16} />{ACK[a.d].text}
+            </span>
+          ))}
         </div>
-      ))}
+      )}
+
       {activeBucket === 'decide' && filteredEntries.length > 0 && (
         <>
-          <Lsec title={<><Icon name="bell" size={12} /> Döntésre vár · {filteredEntries.length}</>} ink="var(--mz-cell-amber-ink)"
-            count="csak erős jel" delayMs={80} />
-          {pagedEntries.items.map((entry, i) => (
-            <div key={entry.key} className="mnt-decwrap rise" style={{ '--d': `${110 + i * 40}ms` } as React.CSSProperties}>
-              <PatternDecisionCard
-                pattern={entry.pattern!}
-                pair={entry.pair}
-                onDecide={(d: PatternStatus) => onDecide(entry, d)}
-                showExplainer={i === 0}
-                showDetailLink
-                detailSearch={detailSearch}
-              />
-            </div>
-          ))}
+          <Lsec title={`Döntésre vár · ${filteredEntries.length}`} art="t-bell" count="csak erős jel" delayMs={80} />
+          <div className="tf-rows">
+            {pagedEntries.items.map((entry, i) => (
+              <div key={entry.key} className="m9m-decwrap rise" style={{ '--d': `${110 + i * 40}ms` } as CSSProperties}>
+                <PatternDecisionCard
+                  glass
+                  pattern={entry.pattern!}
+                  pair={entry.pair}
+                  onDecide={(d: PatternStatus) => onDecide(entry, d)}
+                  showExplainer={i === 0}
+                  showDetailLink
+                  detailSearch={detailSearch}
+                />
+              </div>
+            ))}
+          </div>
         </>
       )}
 
-      {/* ── Megerősítve: zsálya-csempék, domén clay ikon + HUMÁN bizonyosság-chip ── */}
+      {/* ── Megerősítve: zsálya üveg-csempék, domén 3D jel + HUMÁN bizonyosság-chip ── */}
       {activeBucket === 'confirmed' && filteredEntries.length > 0 && (
         <>
-          <Lsec title={<><Icon name="check" size={12} /> Megerősítve — él a tudásban</>} ink="var(--mz-cell-sage-ink)"
+          <Lsec title="Megerősítve — él a tudásban" art="t-tick"
             count={filteredEntries.length} countTestId="mnt-cnt-confirmed" delayMs={140} />
-          <div className="mnt-mosaic">
+          <div className="m9m-mosaic">
             {pagedEntries.items.map((entry, i) => (
               <PatternTile search={detailSearch} key={entry.key} entry={entry} skin="sage" chip={tileChip(entry, 'sage')}
                 sb={entry.pair?.n != null ? `${entry.pair.n} közös nap` : 'megerősítve'} delayMs={170 + i * 30} />
             ))}
           </div>
-          <p className="mnt-foot rise" style={{ '--d': '190ms' } as React.CSSProperties}>
+          <p className="m9m-fn rise" style={{ '--d': '190ms' } as CSSProperties}>
             Ez a {filteredEntries.length} összefüggés benne van a társ fejében minden beszélgetésnél, és ebből
             épülnek az előrejelzések.
           </p>
         </>
       )}
 
-      {/* ── Megfigyelés alatt: levendula-csempék animált bizonyíték-sávval ── */}
+      {/* ── Megfigyelés alatt: levendula üveg-csempék a bizonyíték-sávval ── */}
       {activeBucket === 'monitoring' && filteredEntries.length > 0 && (
         <>
-          <Lsec title={<><Icon name="eye" size={12} /> Megfigyelés alatt</>} ink="var(--mz-cell-lav-ink)" count={filteredEntries.length} delayMs={220} />
-          <div className="mnt-mosaic">
+          <Lsec title="Megfigyelés alatt" art="t-eye" count={filteredEntries.length} delayMs={220} />
+          <div className="m9m-mosaic">
             {pagedEntries.items.map((entry, i) => (
               <PatternTile search={detailSearch}
                 key={entry.key}
@@ -402,8 +411,8 @@ export function PatternsPage() {
       {/* ── Még gyűlik az adat: szaggatott borostyán-csempék ── */}
       {activeBucket === 'gathering' && filteredEntries.length > 0 && (
         <>
-          <Lsec title={<><Icon name="trend-up" size={12} /> Még gyűlik az adat</>} ink="var(--mz-cell-amber-ink)" count={filteredEntries.length} delayMs={280} />
-          <div className="mnt-mosaic">
+          <Lsec title="Még gyűlik az adat" art="t-up" count={filteredEntries.length} delayMs={280} />
+          <div className="m9m-mosaic">
             {pagedEntries.items.map((entry, i) => (
               <PatternTile search={detailSearch} key={entry.key} entry={entry} skin="dashed"
                 sb={engineStatusCopy(entry.pattern?.status)
@@ -411,25 +420,24 @@ export function PatternsPage() {
                 delayMs={310 + i * 30} />
             ))}
           </div>
-          <p className="mnt-foot rise" style={{ '--d': '330ms' } as React.CSSProperties}>
+          <p className="m9m-fn rise" style={{ '--d': '330ms' } as CSSProperties}>
             Ezek nem hibák — csak nincs elég közös nap. Amit logolsz, az hozza őket életre.
           </p>
         </>
       )}
 
-      {/* ── Megnéztük — nincs összefüggés: halk, mosott csempék ── */}
+      {/* ── Megnéztük — nincs összefüggés: halk, lapos csempék ── */}
       {activeBucket === 'noRelationship' && filteredEntries.length > 0 && (
         <>
-          <Lsec title={<><Icon name="minus" size={12} /> Megnéztük — nincs összefüggés</>} ink="var(--mz-ink-mut)"
-            count={filteredEntries.length} delayMs={360} />
-          <div className="mnt-mosaic">
+          <Lsec title="Megnéztük — nincs összefüggés" art="t-hold" count={filteredEntries.length} delayMs={360} />
+          <div className="m9m-mosaic">
             {pagedEntries.items.map((entry, i) => (
               <PatternTile search={detailSearch} key={entry.key} entry={entry} skin="mute"
                 sb={engineStatusCopy(entry.pattern?.status)
                   ?? findingOneLiner(entry.pair) ?? entry.pattern?.mechanism ?? ''} delayMs={390 + i * 30} />
             ))}
           </div>
-          <p className="mnt-foot rise" style={{ '--d': '410ms' } as React.CSSProperties}>
+          <p className="m9m-fn rise" style={{ '--d': '410ms' } as CSSProperties}>
             Ez is eredmény: megnéztük, és nincs kapcsolat. Nem kér döntést — ha később megerősödne, feljebb lép.
           </p>
         </>
@@ -438,8 +446,8 @@ export function PatternsPage() {
       {/* ── Elvetve ── */}
       {activeBucket === 'rejected' && filteredEntries.length > 0 && (
         <>
-          <Lsec title={<><Icon name="x" size={12} /> Elvetve</>} ink="var(--mz-ink-mut)" count={filteredEntries.length} delayMs={440} />
-          <div className="mnt-mosaic">
+          <Lsec title="Elvetve" art="t-skip" count={filteredEntries.length} delayMs={440} />
+          <div className="m9m-mosaic">
             {pagedEntries.items.map((entry, i) => (
               <PatternTile search={detailSearch} key={entry.key} entry={entry} skin="mute"
                 sb={entry.pair ? verdictSentence(entry.pair, bottleneckCoveredDays(entry.pair)) : 'elvetve'}
@@ -450,17 +458,17 @@ export function PatternsPage() {
       )}
 
       {filteredEntries.length === 0 && (
-        <div className="mnt-catalog-empty rise">
-          <ClayIcon name="i-minta" size={34} />
-          <p>Ebben az állapotban ezzel a szűréssel most nincs minta.</p>
+        <div className="tf-dash m9m-empty rise">
+          <Icon3D name="t-pattern" size={30} />
+          <span>Ebben az állapotban ezzel a szűréssel most nincs minta.</span>
         </div>
       )}
 
       {pagedEntries.pageCount > 1 && (
-        <nav className="mnt-pager rise" aria-label="Minták lapozása">
+        <nav className="m9m-pager rise" aria-label="Minták lapozása">
           <button type="button" aria-label="Előző oldal" disabled={pagedEntries.page === 0}
             onClick={() => updateCatalog({ page: String(pagedEntries.page - 1) })}>
-            <Icon name="chevron-left" size={16} />
+            <span aria-hidden="true">‹</span>
           </button>
           <span>
             {pagedEntries.page * PATTERN_PAGE_SIZE + 1}–{Math.min((pagedEntries.page + 1) * PATTERN_PAGE_SIZE, filteredEntries.length)} / {filteredEntries.length}
@@ -468,24 +476,33 @@ export function PatternsPage() {
           <button type="button" aria-label="Következő oldal"
             disabled={pagedEntries.page === pagedEntries.pageCount - 1}
             onClick={() => updateCatalog({ page: String(pagedEntries.page + 1) })}>
-            <Icon name="chevron-right" size={16} />
+            <span aria-hidden="true">›</span>
           </button>
         </nav>
       )}
 
-      {/* ── Adat-egészség: lefedettség-gyűrűs csempe-sáv, legvékonyabb elöl ── */}
+      {/* ── Adat-egészség: kis lefedettség-gyűrűk görgethető sávja, legvékonyabb elöl ── */}
       {monitor && sortedMetrics.length > 0 && (
         <>
-          <Lsec title="Adat-egészség" ink="var(--mz-ink-mut)" delayMs={500} />
-          <div className="mnt-covstrip rise" style={{ '--d': '520ms' } as React.CSSProperties}>
+          <Lsec title="Adat-egészség" delayMs={500} />
+          <div className="m9m-cov rise" style={{ '--d': '520ms' } as CSSProperties}>
             {sortedMetrics.map((metric) => {
               const ratio = metric.windowDays === 0 ? 0 : metric.coveredDays / metric.windowDays
-              const ringColor = ratio >= 0.5 ? 'var(--success-base)' : ratio > 0 ? 'var(--warning-base)' : 'var(--text-disabled)'
+              const pct = Math.round(ratio * 100)
+              const tone = ratio >= 0.5 ? 'is-sage' : ratio > 0 ? 'is-gold' : 'is-mute'
               const last = lastSeenLabel(metric.lastDayWithData)
               return (
-                <div key={metric.key} className="mnt-covtile">
-                  <span className="mnt-rr" aria-hidden="true"
-                    style={{ '--c': ringColor, '--v': Math.round(ratio * 100) } as React.CSSProperties} />
+                <div key={metric.key} className={cn('m9m-covtile', tone)}>
+                  <span className="tf-gauge">
+                    <svg viewBox="0 0 64 64" className="uv-ring" aria-hidden="true">
+                      <circle className="uv-ring-track" cx="32" cy="32" r={RING_R} />
+                      {pct > 0 && (
+                        <circle className="uv-ring-prog" cx="32" cy="32" r={RING_R}
+                          strokeDasharray={`${ratio * RING_C} ${RING_C}`} />
+                      )}
+                    </svg>
+                    <span className="tf-gauge-value">{pct}</span>
+                  </span>
                   <b data-testid="coverage-label">{metric.label}</b>
                   <small>{metric.coveredDays}/{metric.windowDays}{last ? ` · ${last}` : ''}</small>
                 </div>
@@ -495,14 +512,11 @@ export function PatternsPage() {
         </>
       )}
 
-      {/* ── Memória ↔ Minták: a visszairány (mezo-d20.11). A Memória degraded-ága eddig is
-             ide mutatott, innen viszont nem vezetett út oda — a motor bemenete (L0→L3) és a
+      {/* ── Memória ↔ Minták: a visszairány (mezo-d20.11) — a motor bemenete (L0→L3) és a
              kimenete (a minták) egymás szomszédjai. ── */}
-      <p className="mnt-foot rise" style={{ '--d': '540ms' } as React.CSSProperties}>
-        <Link to="/mezo/memoria" style={{ color: 'var(--lav-deep)', fontWeight: 600, textDecoration: 'none' }}>
-          A motor bemenete: memória-rétegek →
-        </Link>
-      </p>
+      <Link to="/mezo/memoria" className="m9m-flink rise" style={{ '--d': '540ms' } as CSSProperties}>
+        A motor bemenete: memória-rétegek →
+      </Link>
 
       {filterOpen && (
         <PatternFilterSheet

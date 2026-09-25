@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 import { Sheet } from '@/shared/ui/Sheet'
 import { PatternDomainMark } from '@/features/insights/components/PatternDomainMark'
 import type { PatternCatalogSort } from '@/features/insights/logic/patternCatalog'
@@ -22,13 +22,14 @@ export function PatternFilterSheet({
   const [draftSort, setDraftSort] = useState<PatternCatalogSort>(sort)
 
   return (
-    <Sheet onClose={onClose} labelledBy="pattern-filter-title" className="mnt-filter-sheet">
+    <Sheet onClose={onClose} labelledBy="pattern-filter-title" className="mnt-filter-sheet glass is-still m9m-sheet">
       {(close) => (
         <>
           <div className="mnt-filter-head">
-            <div><span className="eyebrow">Katalógus</span><h2 id="pattern-filter-title">Szűrés</h2></div>
-            <button type="button" className="icon-btn" aria-label="Szűrő bezárása" onClick={close}>
-              <Icon name="x" size={18} />
+            <Icon3D name="t-pattern" size={40} />
+            <div className="m9m-sheet-title"><span className="eyebrow">Katalógus</span><h2 id="pattern-filter-title">Szűrés</h2></div>
+            <button type="button" className="m9m-sheet-x" aria-label="Szűrő bezárása" onClick={close}>
+              <span aria-hidden="true">✕</span>
             </button>
           </div>
 
@@ -36,7 +37,7 @@ export function PatternFilterSheet({
           <div className="mnt-filter-grid" role="group" aria-label="Téma">
             <button type="button" className="mnt-filter-option" aria-pressed={draftDomain == null}
               onClick={() => setDraftDomain(null)}>
-              <Icon name="insights" size={20} /><span>Mind</span>
+              <Icon3D name="t-grid" size={22} /><span>Mind</span>
             </button>
             {availableDomains.map((item) => (
               <button type="button" className="mnt-filter-option" key={item}
@@ -57,7 +58,7 @@ export function PatternFilterSheet({
             onApply({ domain: draftDomain, sort: draftSort })
             close()
           }}>
-            Alkalmazom
+            <Icon3D name="t-tick" size={18} />Alkalmazom
           </button>
         </>
       )}

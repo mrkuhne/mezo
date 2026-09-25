@@ -37,7 +37,7 @@ describe('KonziliumRoundMap', () => {
 
   test('a kereszt-vita cella kiemelt, ha volt hozzászólás', () => {
     const { container } = render(<KonziliumRoundMap threads={THREADS} crossTalkRan />)
-    expect(container.querySelector('.kr-rst.hot')).not.toBeNull()
+    expect(container.querySelector('.kz-round.hot')).not.toBeNull()
   })
 
   test('visszafejtett szálnál a kereszt-vita kör nem létezőnek látszik, nem nullának', () => {

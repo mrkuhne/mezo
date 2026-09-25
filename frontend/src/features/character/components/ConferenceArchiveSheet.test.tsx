@@ -32,13 +32,13 @@ describe('ConferenceArchiveSheet', () => {
     // sibling of RTL's own `container` div — query the document, not `container` (repo
     // convention for portaled content, see src/app/AppHeader.test.tsx and friends).
     renderSheet()
-    const years = Array.from(document.querySelectorAll('.kr-arcyr')).map((el) => el.textContent)
+    const years = Array.from(document.querySelectorAll('.kz-arcyr')).map((el) => el.textContent)
     expect(years).toEqual(['2025'])
   })
 
   test('a nyitott konzílium sora kiemelt', () => {
     renderSheet()
-    const on = document.querySelectorAll('.kr-arcrow.on')
+    const on = document.querySelectorAll('.kz-arcrow.on')
     expect(on).toHaveLength(1)
     expect(on[0].textContent).toContain('augusztus 30.')
   })
@@ -63,7 +63,7 @@ describe('ConferenceArchiveSheet', () => {
     ]
     renderSheet({ conferences, currentId: null })
     const row = screen.getByRole('button', { name: /augusztus 30/ })
-    // The "egyéb" fragment renders in its own styled span (nested inside .kr-arcout), so it is
+    // The "egyéb" fragment renders in its own styled span (nested inside .kz-arcout), so it is
     // not part of the outer span's own text nodes — assert on the row's full text instead.
     expect(row.textContent).toContain('2 bekerült · 1 nyugdíjazva · 1 portré átírva')
     expect(within(row).getByText('3 egyéb változás')).toBeInTheDocument()

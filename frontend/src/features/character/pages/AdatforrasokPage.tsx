@@ -23,10 +23,15 @@
 // slots/Memória already use for their own in-view segmented controls. Switched to it; the
 // segment now survives the kör round-trip (and a reload within the session) via sessionStorage,
 // keyed `character.adatforrasok.view`.
+//
+// Üveg re-dress (U9, mezo-me75u.9) — uveg-mezo-teljes-u9.js `adatforrasok()`: slate dev-door
+// head, a flat segmented control (the selected half lit sage), Bekötve as ONE flat `tf-tlist`
+// (t-tick + value chips), Tervezett as the dashed all-landed line (or flat round-index rows).
 // ============================================================
 import { useNavigate } from 'react-router-dom'
-import '@/features/character/character.css'
-import { PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
+import '@/features/insights/boop-world.css'
+import { Icon3D } from '@/shared/ui/clay'
+import { GepteremHead } from '@/features/character/components/GepteremHead'
 import { useStickyTab } from '@/shared/hooks/useStickyTab'
 import { INVENTORY_LATER, INVENTORY_READS, INVENTORY_ROUNDS } from '@/features/character/inventory'
 
@@ -37,75 +42,79 @@ export function AdatforrasokPage() {
   const [seg, setSeg] = useStickyTab<Segment>('character.adatforrasok.view', 'bekotve')
 
   return (
-    <div className="kr-hub">
-      <PageHead onBack={() => navigate('/mezo/karakter/gepterem')} label="‹ Gépterem" />
-      <PageHero name="Adatforrások" sub="mit olvas a rendszer ma, és mit tervez" />
-      <PageBody>
-        <div className="kr-leltarsegs" role="tablist" aria-label="Adatforrások nézet">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={seg === 'bekotve'}
-            className={seg === 'bekotve' ? 'on' : ''}
-            onClick={() => setSeg('bekotve')}
-          >
-            Bekötve
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={seg === 'tervezett'}
-            className={seg === 'tervezett' ? 'on' : ''}
-            onClick={() => setSeg('tervezett')}
-          >
-            Tervezett
-          </button>
+    <div className="tf-page tf-c-slate gtm-page gtm-adat">
+      <GepteremHead small="Gépterem · mit olvas a rendszer ma, és mit tervez" title="Adatforrások"
+        onBack={() => navigate('/mezo/karakter/gepterem')} />
+      <div className="gtm-seg" role="tablist" aria-label="Adatforrások nézet">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={seg === 'bekotve'}
+          className={seg === 'bekotve' ? 'on' : ''}
+          onClick={() => setSeg('bekotve')}
+        >
+          Bekötve
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={seg === 'tervezett'}
+          className={seg === 'tervezett' ? 'on' : ''}
+          onClick={() => setSeg('tervezett')}
+        >
+          Tervezett
+        </button>
+      </div>
+
+      {seg === 'bekotve' && (
+        <div className="tf-tlist gtm-reads">
+          {INVENTORY_READS.map((r) => (
+            <div className="tf-trow" key={r.w}>
+              <Icon3D name="t-tick" size={22} />
+              <span className="tf-ttx">
+                <span className="tf-ttitle">{r.w}</span>
+                {r.chips.length > 0 && (
+                  <span className="gtm-vchips">
+                    {r.chips.map((c) => (
+                      <span className="gtm-vchip" key={c}>{c}</span>
+                    ))}
+                  </span>
+                )}
+              </span>
+            </div>
+          ))}
         </div>
+      )}
 
-        {seg === 'bekotve' && (
-          <div className="kr-leltarcard sage">
-            {INVENTORY_READS.map((r) => (
-              <div className="kr-lrow" key={r.w}>
-                <div className="kr-check" aria-hidden="true">✓</div>
-                <div className="kr-lrow-grow">
-                  <div className="kr-lw">{r.w}</div>
-                  {r.chips.length > 0 && (
-                    <div className="kr-valchips">
-                      {r.chips.map((c) => (
-                        <span className="kr-valchip" key={c}>{c}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {seg === 'tervezett' && (
-          <>
-            {INVENTORY_ROUNDS.length === 0 && (
-              <div className="kr-laterline">Mind a négy kör bekötve.</div>
-            )}
-            {INVENTORY_ROUNDS.map((rnd) => (
-              <button
-                type="button"
-                key={rnd.n}
-                className="kr-korindex"
-                onClick={() => navigate(`/mezo/karakter/gepterem/adatforrasok/kor/${rnd.n}`)}
-              >
-                <span className="kr-rnum">{rnd.n}. KÖR</span>
-                <div className="kr-lrow-grow">
-                  <div className="kr-kt">{rnd.title}</div>
-                  <div className="kr-kc">{rnd.items.length} tétel</div>
-                </div>
-                <span className="kr-chev" aria-hidden="true">›</span>
-              </button>
-            ))}
-            <div className="kr-laterline">+ még {INVENTORY_LATER.length} terület később</div>
-          </>
-        )}
-      </PageBody>
+      {seg === 'tervezett' && (
+        <>
+          {INVENTORY_ROUNDS.length === 0 && (
+            <div className="tf-dash gtm-landed">
+              <Icon3D name="t-tick" size={24} /><span>Mind a négy kör bekötve.</span>
+            </div>
+          )}
+          {INVENTORY_ROUNDS.length > 0 && (
+            <div className="tf-tlist gtm-rounds">
+              {INVENTORY_ROUNDS.map((rnd) => (
+                <button
+                  type="button"
+                  key={rnd.n}
+                  className="tf-trow gtm-korrow"
+                  onClick={() => navigate(`/mezo/karakter/gepterem/adatforrasok/kor/${rnd.n}`)}
+                >
+                  <span className="tf-st tf-s-slate">{rnd.n}. KÖR</span>
+                  <span className="tf-ttx">
+                    <span className="tf-ttitle">{rnd.title}</span>
+                    <span className="tf-tsub">{rnd.items.length} tétel</span>
+                  </span>
+                  <span className="gtm-chev" aria-hidden="true">›</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="gtm-lede gtm-later">+ még {INVENTORY_LATER.length} terület később</p>
+        </>
+      )}
     </div>
   )
 }

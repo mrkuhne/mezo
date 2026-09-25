@@ -1,10 +1,18 @@
 import { Link } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 import { patternCategoryColor } from '@/data/insights/insights'
-import { PatternDomainMark } from '@/features/insights/components/PatternDomainMark'
+import { PatternDomainMark, PATTERN_DOMAIN_MARK_ART } from '@/features/insights/components/PatternDomainMark'
 import { confidenceMeta, findingSentence, pairLine, type ConfidenceMeta } from '@/features/insights/logic/findings'
 import { verdictSentence } from '@/features/insights/logic/verdicts'
 import type { Pattern, PatternMonitorPair, PatternStatus } from '@/data/types'
+
+/** Üveg-változat (mezo-me75u.9): a bizonyosság-chip akcentusa a `tf-st` pirulán. */
+const TONE_ACCENT: Record<ConfidenceMeta['tone'], string> = {
+  success: 'sage',
+  accent: 'lav',
+  warning: 'gold',
+}
 
 const TONE_COLOR: Record<ConfidenceMeta['tone'], { bg: string; border: string; text: string }> = {
   success: { bg: 'var(--success-bg)', border: 'var(--success-soft)', text: 'var(--success-deep)' },
@@ -25,6 +33,7 @@ export function PatternDecisionCard({
   titleSize = 17,
   showDetailLink = true,
   detailSearch,
+  glass = false,
 }: {
   pattern: Pattern
   pair: PatternMonitorPair | null
@@ -37,12 +46,91 @@ export function PatternDecisionCard({
    *  önmagára mutatna, ha a kártya már a részlet-oldal fejléce */
   showDetailLink?: boolean
   detailSearch?: string
+  /** Üveg-bőr (mezo-me75u.9, opt-in): a Minták lista borostyán üveg-esete (`glass tf-case`).
+   *  Alapból a régi kártya marad — minden más fogyasztó változatlanul azt kapja. */
+  glass?: boolean
 }) {
   const railColor = patternCategoryColor(pattern.category)
   const status = pattern.status ?? 'proposed'
   const confidence = pair != null && pair.n != null && pair.p != null ? confidenceMeta(pair.n, pair.p) : null
   const finding = pair?.r != null ? findingSentence(pair) : null
   const questionTitle = pair?.questionHu ?? pattern.title
+  const showLink = showDetailLink && !(pattern.kind === 'reflection' && pattern.testPlan == null)
+  const detailHref = `/mezo/patterns/${pattern.pairKey}${detailSearch ? `?${detailSearch}` : ''}`
+
+  if (glass) {
+    return (
+      <div className="glass tf-case tf-c-gold m9m-dec" data-decision-card="">
+        <span className="tf-crow">
+          {confidence ? (
+            <span className={`tf-st tf-s-${TONE_ACCENT[confidence.tone]}`}>{confidence.chip}</span>
+          ) : (
+            <span className="tf-st tf-s-slate">
+              {pattern.confidence != null ? `bizonyosság ${(pattern.confidence * 100).toFixed(0)}%` : 'tanulom'}
+            </span>
+          )}
+          <em>{pair ? <PatternDomainMark domain={pair.metricBDomain} size={16} /> : pattern.categoryLabel}</em>
+        </span>
+        <span className="tf-cmain">
+          <Icon3D name={PATTERN_DOMAIN_MARK_ART[pair?.metricBDomain ?? 'other']} size={36} />
+          <span className="tf-ctxt">
+            <span className="tf-ctitle" style={{ fontSize: titleSize - 2 }}>{questionTitle}</span>
+            {pair && <span className="tf-csub m9m-pairline">{pairLine(pair)}</span>}
+          </span>
+        </span>
+
+        <div className="m9m-well">
+          <span className="m9m-cap">Amit eddig látunk</span>
+          {finding ? (
+            <>
+              <p className="m9m-finding">
+                {finding.prefix} {finding.before}
+                <b>{finding.strength}</b>
+                {finding.after}.
+              </p>
+              {confidence && <p className="m9m-conf">{confidence.sentence}.</p>}
+            </>
+          ) : (
+            <p className="m9m-finding">
+              {pair != null && pair.verdict !== 'live' ? verdictSentence(pair, null) : pattern.mechanism}
+            </p>
+          )}
+        </div>
+
+        {showExplainer && (
+          <div className="m9m-well is-explainer">
+            <span className="m9m-cap">Mi történik a döntéseddel</span>
+            <p><b className="is-sage">Megerősítem</b> — tartós tudás lesz: bekerül a Tudástárba és a
+              társ fejébe, előrejelzés és kísérlet épülhet rá.</p>
+            <p><b className="is-lav">Figyeljük még</b> — marad a listán, a motor tovább számolja,
+              de nem tanulok belőle.</p>
+            <p><b className="is-no">Elvetem</b> — befagy, többé nem hozom elő.</p>
+          </div>
+        )}
+
+        {/* Lapos pirulák az üvegen (üveg az üvegben tilos): a fő döntés világító zsálya, az
+            „Elvetem" terrakotta — soha nem piros (mezo-d20.11 guardrail). */}
+        <div className="m9m-acts">
+          <button type="button" onClick={() => onDecide('confirm')} className="m9m-act is-main"
+            aria-pressed={status === 'confirmed'}>
+            <Icon3D name="t-tick" size={18} />{status === 'confirmed' ? 'Megerősítve' : 'Megerősítem'}
+          </button>
+          <button type="button" onClick={() => onDecide('monitor')} className="m9m-act"
+            aria-pressed={status === 'monitoring'}>
+            <Icon3D name="t-lens" size={18} />Figyeljük
+          </button>
+          <button type="button" onClick={() => onDecide('reject')} className="m9m-act is-no"
+            aria-pressed={status === 'rejected'}>
+            <Icon3D name="t-skip" size={18} />Elvetem
+          </button>
+        </div>
+
+        {showLink && (
+          <Link to={detailHref} className="m9m-declink">Részletek és előzmények →</Link>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="card" style={{ padding: 16, position: 'relative', overflow: 'hidden' }}>
@@ -166,10 +254,10 @@ export function PatternDecisionCard({
           `testPlan` önmagában nem mond semmit arról, feloldható-e a kulcs. Terv nélküli
           `reflection` sor viszont csak a tartó sor lehet: minden más reflexiós sor érvényesített
           tervvel jön létre. */}
-      {showDetailLink && !(pattern.kind === 'reflection' && pattern.testPlan == null) && (
+      {showLink && (
         <div className="row" style={{ justifyContent: 'flex-end', marginTop: 9 }}>
           {/* Direct to the sibling leaf — `/insights/…` only reached it via LegacyPathRedirect. */}
-          <Link to={`/mezo/patterns/${pattern.pairKey}${detailSearch ? `?${detailSearch}` : ''}`} className="eyebrow" style={{ color: 'var(--lav-deep)' }}>
+          <Link to={detailHref} className="eyebrow" style={{ color: 'var(--lav-deep)' }}>
             Részletek és előzmények →
           </Link>
         </div>

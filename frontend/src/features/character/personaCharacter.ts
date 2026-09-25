@@ -8,7 +8,10 @@
 import { TEAM, characterForPersona, type TeamCharacter } from '@/features/insights/logic/team'
 
 export function personaCharacter(expertKey: string | null | undefined): TeamCharacter {
-  return TEAM[characterForPersona(expertKey ?? 'mezo')]
+  const key = expertKey ?? 'mezo'
+  // Some rows (the evening edition's posting characters) already carry a TEAM id, not a persona.
+  if (key in TEAM) return TEAM[key as keyof typeof TEAM]
+  return TEAM[characterForPersona(key)]
 }
 
 /** A kártyán kiírt név — „Derű”, nem „Doki”. */

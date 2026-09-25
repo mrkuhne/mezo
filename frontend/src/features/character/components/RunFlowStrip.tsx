@@ -10,6 +10,9 @@
 // this level" — the AI-napló row is the call-level truth for those kinds. This component stays
 // a dumb, honest renderer of whatever `steps` it's given; the kind-branching (and the ruling
 // itself) lives in the caller (RunPage's `flowSteps`), not here.
+//
+// Üveg re-dress (U9, mezo-me75u.9): uveg-mezo-teljes-u9.js `.m9-flow` — flat numeral cells
+// (light big numbers, tiny uppercase labels) joined by → arrows; secondary material, no glass.
 // ============================================================
 import { Fragment } from 'react'
 
@@ -20,11 +23,11 @@ export interface RunFlowStep {
 
 export function RunFlowStrip({ steps }: { steps: RunFlowStep[] }) {
   return (
-    <div className="kr-runflow" role="group" aria-label="Futás-lánc">
+    <div className="gtm-flow" role="group" aria-label="Futás-lánc">
       {steps.map((step, i) => (
         <Fragment key={step.label}>
-          {i > 0 && <div className="kr-runflow-arrow" aria-hidden="true">→</div>}
-          <div className="kr-runflow-step">
+          {i > 0 && <em className="gtm-flow-arrow" aria-hidden="true">→</em>}
+          <div className="gtm-flow-cell">
             <b>{step.value}</b>
             <small>{step.label}</small>
           </div>

@@ -39,7 +39,7 @@ beforeEach(() => {
 describe('DimensionPage', () => {
   test('renders the hero title and the count-up maturity', async () => {
     render(<DimensionPage />)
-    expect(screen.getByText('Fizikai')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Fizikai' })).toBeInTheDocument()
     await waitFor(() => expect(screen.getByText('58%')).toBeInTheDocument(), { timeout: 2000 })
   })
 
@@ -51,13 +51,13 @@ describe('DimensionPage', () => {
   test('a dimension with an empty portrait renders no portrait card', () => {
     hoisted.dimension = { ...MOCK_DIMENSIONS.physical, portrait: '' }
     const { container } = render(<DimensionPage />)
-    expect(container.querySelector('.kr-portrait')).not.toBeInTheDocument()
+    expect(container.querySelector('.kr9-portrait')).not.toBeInTheDocument()
   })
 
   test('renders one ClaimTile per claim, sensitive ones framed', () => {
     const { container } = render(<DimensionPage />)
-    expect(container.querySelectorAll('.kr-claim')).toHaveLength(MOCK_DIMENSIONS.physical.claims.length)
-    expect(container.querySelectorAll('.kr-claim.sensitive')).toHaveLength(
+    expect(container.querySelectorAll('.kr9-claim')).toHaveLength(MOCK_DIMENSIONS.physical.claims.length)
+    expect(container.querySelectorAll('.kr9-claim.kr9-sensitive')).toHaveLength(
       MOCK_DIMENSIONS.physical.claims.filter((c) => c.sensitive).length,
     )
   })
@@ -66,7 +66,14 @@ describe('DimensionPage', () => {
     hoisted.key = 'chapter-work'
     hoisted.dimension = MOCK_DIMENSIONS['chapter-work']
     const { container } = render(<DimensionPage />)
-    expect(container.querySelector('.kr-dim-avatar.chaptermark')).toBeInTheDocument()
+    expect(container.querySelector('.kr9-chaptermark use[href="#t-spark"]')).toBeInTheDocument()
+    expect(container.querySelector('.kr9-rhero .kr-persona')).not.toBeInTheDocument()
+  })
+
+  test('the owner line names the csapatfal character, not the old expert (U9)', () => {
+    render(<DimensionPage />)
+    expect(screen.getByText('Derű · érettség')).toBeInTheDocument()
+    expect(screen.queryByText(/Doki/)).not.toBeInTheDocument()
   })
 
   test('a META dimension shows the Szkeptikus sub-line', () => {

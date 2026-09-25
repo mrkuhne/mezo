@@ -1,6 +1,5 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { Icon } from '@/shared/ui/Icon'
 
 /**
  * Egy összecsukható életciklus-szekció a Minták dashboardon (spec 2026-08-14 · mezo-tk88.4):
@@ -39,24 +38,19 @@ export function LifecycleSection({
   const isOpen = forceOpen || open
   if (count === 0) return null
 
+  // Üveg (U9 · mezo-me75u.9): a flat fold button (prototype `m9-fold`) and, open, a flat
+  // `tf-tlist` of the rows + the foot note. Typographic chevrons stay (bible rule 19).
   return (
-    <div className="card">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="row"
-        style={{ justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '13px 16px' }}
-      >
-        <span style={{ fontSize: 13, fontWeight: 700, color: accent }}>{title}{count != null ? ` · ${count}` : ''}</span>
-        <Icon name={isOpen ? 'chevron-up' : 'chevron-down'} size={11} color="var(--text-tertiary)" />
+    <div className="tud9-fold">
+      <button type="button" className="tud9-foldbtn" aria-expanded={isOpen} onClick={() => setOpen((v) => !v)}>
+        <span style={{ color: accent }}>{title}{count != null ? ` · ${count}` : ''}</span>
+        <em aria-hidden="true">{isOpen ? '⌃' : '⌄'}</em>
       </button>
       {isOpen && (
-        <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {children}
-          {footNote && (
-            <p style={{ fontSize: 11.5, lineHeight: 1.5, color: 'var(--text-tertiary)', padding: '0 4px' }}>{footNote}</p>
-          )}
-        </div>
+        <>
+          <div className="tf-tlist tud9-facts">{children}</div>
+          {footNote && <p className="tud9-fn">{footNote}</p>}
+        </>
       )}
     </div>
   )

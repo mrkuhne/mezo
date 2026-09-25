@@ -7,14 +7,14 @@
  * szöveg önmagában elég megerősítés.
  */
 export function LifeEventAcceptedCard({ title, edgeCount }: { title: string; edgeCount: number }) {
+  // Üveg (U9 · mezo-me75u.9): a settled row is flat (ranking) — a sage dot, the title, the line.
   return (
-    <div className="card" style={{ padding: '12px 14px 12px 16px', position: 'relative', borderColor: 'var(--line)' }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'var(--sage)' }} />
-
-      <span className="label-mono" style={{ fontSize: 9, color: 'var(--sage)' }}>
-        {edgeCount > 0 ? `Bekerült a gráfba · ${edgeCount} kapcsolattal` : 'Bekerült a gráfba'}
+    <div className="tf-case tf-flatc tf-c-sage tud9-accepted" data-graph-card data-accepted>
+      <u aria-hidden="true" />
+      <span className="tud9-acctx">
+        <b>{title}</b>
+        <small>{edgeCount > 0 ? `Bekerült a gráfba · ${edgeCount} kapcsolattal` : 'Bekerült a gráfba'}</small>
       </span>
-      <p style={{ fontSize: 15, lineHeight: 1.4, color: 'var(--text-primary)', margin: '6px 0 0' }}>{title}</p>
     </div>
   )
 }

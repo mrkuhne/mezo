@@ -7,24 +7,29 @@
 //
 // Route: `/mezo/karakter/gepterem/adatforrasok/kor/:n` (path param — see AdatforrasokPage's
 // header comment for the sibling-idiom reasoning). An unknown/out-of-range `:n` renders the
-// same `.kr-degraded` 404 face RunPage/DimensionPage use — never a crash on a stray URL.
+// same honest not-found face RunPage uses — never a crash on a stray URL.
+//
+// Üveg re-dress (U9, mezo-me75u.9) — uveg-mezo-teljes-u9.js `kor()`: slate dev-door head, a
+// dashed not-found line; the populated face is the same flat `tf-tlist` idiom as Adatforrások
+// (the ÉRZÉKENY dot stays lavender — never a red flag).
 // ============================================================
 import { useNavigate, useParams } from 'react-router-dom'
-import '@/features/character/character.css'
-import { PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
+import '@/features/insights/boop-world.css'
+import { Icon3D } from '@/shared/ui/clay'
+import { GepteremHead } from '@/features/character/components/GepteremHead'
 import { INVENTORY_ROUNDS, type InventoryItem } from '@/features/character/inventory'
 
 function ItemRow({ item }: { item: InventoryItem }) {
   const detCount = item.det?.length ?? 0
   return (
-    <div className="kr-lrow">
-      <div className="kr-lw">{item.t}</div>
+    <div className="tf-trow gtm-item">
+      <span className="tf-ttx"><span className="tf-ttitle">{item.t}</span></span>
       {(detCount > 0 || item.sensitive === true) && (
-        <div className="kr-rmeta">
-          {item.sensitive === true && <span className="kr-sensdot" title="érzékeny" aria-label="érzékeny" />}
-          {detCount === 1 && <span className="kr-detchip ghost">{item.det![0]}</span>}
-          {detCount > 1 && <span className="kr-detcount">{detCount} detektor</span>}
-        </div>
+        <span className="gtm-rmeta">
+          {item.sensitive === true && <span className="gtm-sensdot" title="érzékeny" aria-label="érzékeny" />}
+          {detCount === 1 && <span className="gtm-det">{item.det![0]}</span>}
+          {detCount > 1 && <span className="gtm-detcount">{detCount} detektor</span>}
+        </span>
       )}
     </div>
   )
@@ -39,24 +44,24 @@ export function KorPage() {
 
   if (round == null) {
     return (
-      <div className="kr-hub">
-        <PageHead onBack={goBack} label="‹ Adatforrások" />
-        <div className="kr-degraded">Ez a kör nem található.</div>
+      <div className="tf-page tf-c-slate gtm-page gtm-kor">
+        <GepteremHead small="Adatforrások" title="Egy kör" onBack={goBack} />
+        <div className="tf-dash gtm-notfound" data-state="not-found">
+          <Icon3D name="t-info" size={26} /><span>Ez a kör nem található.</span>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="kr-hub">
-      <PageHead onBack={goBack} label="‹ Adatforrások" />
-      <PageHero name={`${round.n}. KÖR`} sub={`${round.title} · ${round.items.length} tétel`} />
-      <PageBody>
-        <div className="kr-leltarcard dashed">
-          {round.items.map((item) => (
-            <ItemRow item={item} key={item.t} />
-          ))}
-        </div>
-      </PageBody>
+    <div className="tf-page tf-c-slate gtm-page gtm-kor">
+      <GepteremHead small="Adatforrások" title={`${round.n}. KÖR`} onBack={goBack} />
+      <p className="gtm-lede">{`${round.title} · ${round.items.length} tétel`}</p>
+      <div className="tf-tlist gtm-items">
+        {round.items.map((item) => (
+          <ItemRow item={item} key={item.t} />
+        ))}
+      </div>
     </div>
   )
 }

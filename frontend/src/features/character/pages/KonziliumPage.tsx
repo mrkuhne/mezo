@@ -2,7 +2,7 @@
 // Mezo · Karakter — KonziliumPage (mezo-sp9w)
 // Döntés-első felület. A régi lista+részlet kettősség megszűnt: `?id=` nélkül a LEGUTÓBBI
 // tanácskozás nyílik, a korábbiakat a fejléc léptetője és az archívum lap éri el. Ezért van a
-// lapon pontosan EGY visszalépő vezérlő (`PageHead`) — a "vissza a listához" gomb megszűnt.
+// lapon pontosan EGY visszalépő vezérlő (`KonzHead`) — a "vissza a listához" gomb megszűnt.
 //
 // A lap három rétege, ebben a sorrendben: kontextus (Mi ez + Hogyan zajlott) → eredmény
 // (Mi változott a dossziédban) → a vita (szálak, vagy a Beszélgetés nézet köreiben).
@@ -11,10 +11,11 @@
 // - "Mi változott a dossziédban" a `changes[]`-ből számol — ez a TARTÓS hatás;
 // - a kör-térkép 4. cellája a `deliberation`-ből — ezek a tanácskozás DÖNTÉSEI.
 // ============================================================
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import '@/features/character/character.css'
-import { PageHead } from '@/shared/ui/mozaik'
+import '@/features/insights/boop-world.css'
+import { Icon3D } from '@/shared/ui/clay'
 import { useCharacterConference, useCharacterConferences, useCharacterExperts } from '@/data/hooks'
 import { TranscriptTurn } from '@/features/character/components/TranscriptTurn'
 import { ConferenceThreadCard } from '@/features/character/components/ConferenceThreadCard'
@@ -22,6 +23,7 @@ import { ConferenceArchiveSheet } from '@/features/character/components/Conferen
 import { KonziliumRoundMap, KonziliumWhatIs } from '@/features/character/components/KonziliumRoundMap'
 import { KonziliumConversationView } from '@/features/character/components/KonziliumConversationView'
 import { expertColor } from '@/features/character/expertColors'
+import { personaName } from '@/features/character/personaCharacter'
 import type { CharacterConferenceSummary, CharacterExpertDto, ConferenceTurn } from '@/data/character/characterApi'
 
 const KIND_WORD: Record<CharacterConferenceSummary['kind'], string> = {
@@ -40,6 +42,22 @@ const REWRITTEN = 'PORTRAIT_REWRITTEN'
 
 function headerDate(iso: string): string {
   return new Date(iso).toLocaleDateString('hu-HU', { month: 'long', day: 'numeric' })
+}
+
+const HEAD_TITLE = 'Az ülés jegyzőkönyve'
+
+/** Üvegesítés U9 (mezo-me75u.9): a csapatfal D5 „jegyzőkönyv” fejléce — üveg vissza-gomb, alatta
+ *  kis sor (Konzílium · dátum · fajta) és a cím. Ez a lap EGYETLEN visszalépő vezérlője. */
+function KonzHead({ when, onBack }: { when: string | null; onBack: () => void }) {
+  return (
+    <div className="tf-dhead">
+      <button type="button" className="glass tf-back" aria-label="Vissza" onClick={onBack}>‹</button>
+      <span className="tf-dtitle">
+        <small><span>Konzílium</span>{when != null && ` · ${when}`}</small>
+        <strong>{HEAD_TITLE}</strong>
+      </span>
+    </div>
+  )
 }
 
 type TurnKind = 'EXPERT' | 'SKEPTIC' | 'CHAIR'
@@ -138,11 +156,11 @@ export function KonziliumPage() {
 
   if (conferences.length === 0) {
     return (
-      <div className="kr-hub">
-        <PageHead onBack={() => navigate('/mezo/karakter')} label="‹ Karakter" />
-        <div className="mz-page-hero"><div className="mz-hero-nm">Konzílium</div></div>
-        <div className="mz-page-body">
-          <div className="kr-konz-empty">Egyelőre nincs konzílium — a csapat hetente tanácskozik, ez az első hét még nem zajlott le.</div>
+      <div className="kz-page tf-page">
+        <KonzHead when={null} onBack={() => navigate('/mezo/karakter')} />
+        <div className="tf-dash kz-empty">
+          <Icon3D name="t-council" size={30} />
+          <span>Egyelőre nincs konzílium — a csapat hetente tanácskozik, ez az első hét még nem zajlott le.</span>
         </div>
       </div>
     )
@@ -164,49 +182,52 @@ export function KonziliumPage() {
   const threads = rawThreads != null && rawThreads.length > 0 ? rawThreads : null
 
   return (
-    <div className="kr-hub">
-      <PageHead onBack={() => navigate('/mezo/karakter')} label="‹ Karakter" />
-      <div className="mz-page-hero">
-        <div className="mz-hero-nm">Konzílium</div>
-        {summary != null && (
-          <div className="kr-stepper">
-            <button
-              type="button"
-              className="kr-navbtn"
-              aria-label="Korábbi tanácskozás"
-              disabled={olderId == null}
-              onClick={() => go(olderId)}
-            >‹</button>
-            <button
-              type="button"
-              className="kr-datebtn"
-              aria-haspopup="dialog"
-              onClick={() => setArchiveOpen(true)}
-            >
-              {`${headerDate(summary.generatedAt)} · ${KIND_WORD[summary.kind]}`}
-              <span className="kr-datecv" aria-hidden="true">⌄</span>
-            </button>
-            <button
-              type="button"
-              className="kr-navbtn"
-              aria-label="Későbbi tanácskozás"
-              disabled={newerId == null}
-              onClick={() => go(newerId)}
-            >›</button>
-          </div>
-        )}
-      </div>
+    <div className="kz-page tf-page">
+      <KonzHead
+        when={summary != null ? `${headerDate(summary.generatedAt)} · ${KIND_WORD[summary.kind]}` : null}
+        onBack={() => navigate('/mezo/karakter')}
+      />
+      {summary != null && (
+        <div className="kz-step">
+          <button
+            type="button"
+            className="kz-navbtn"
+            aria-label="Korábbi tanácskozás"
+            disabled={olderId == null}
+            onClick={() => go(olderId)}
+          >‹</button>
+          <button
+            type="button"
+            className="glass tf-c-gold kz-date"
+            aria-haspopup="dialog"
+            onClick={() => setArchiveOpen(true)}
+          >
+            {`${headerDate(summary.generatedAt)} · ${KIND_WORD[summary.kind]}`}
+            <span className="kz-datecv" aria-hidden="true">⌄</span>
+          </button>
+          <button
+            type="button"
+            className="kz-navbtn"
+            aria-label="Későbbi tanácskozás"
+            disabled={newerId == null}
+            onClick={() => go(newerId)}
+          >›</button>
+        </div>
+      )}
 
       {conference == null && (
-        <div className="mz-page-body">
-          <div className="kr-konz-empty">Ez a konzílium nem található.</div>
+        <div className="kz-body">
+          <div className="tf-dash kz-empty">
+            <Icon3D name="t-info" size={30} />
+            <span>Ez a konzílium nem található.</span>
+          </div>
           {/* Fix round 1 (mezo-sp9w, review finding 7): without the stepper (no `summary` to
               anchor it) a bad deep link stranded the reader with no way into the archive except
               leaving the screen — reusing the date button's own affordance keeps this the only
-              non-PageHead exit, not a second back control. */}
+              non-KonzHead exit, not a second back control. */}
           <button
             type="button"
-            className="kr-datebtn"
+            className="kz-arcbtn"
             aria-haspopup="dialog"
             onClick={() => setArchiveOpen(true)}
           >Korábbi tanácskozások</button>
@@ -214,9 +235,9 @@ export function KonziliumPage() {
       )}
 
       {conference != null && (
-        <div className="mz-page-body">
+        <div className="kz-body">
           {threads != null && (
-            <div className="kr-viewseg" role="group" aria-label="Nézet">
+            <div className="kz-seg" role="group" aria-label="Nézet">
               <button
                 type="button"
                 className={view === 'overview' ? 'on' : ''}
@@ -242,56 +263,59 @@ export function KonziliumPage() {
                     const retired = conference.changes.filter((c) => c.kind === RETIRED).length
                     const rewritten = conference.changes.filter((c) => c.kind === REWRITTEN).length
                     const extras = conference.changes.filter((c) => ![ACCEPTED, RETIRED, REWRITTEN].includes(c.kind))
+                    // „Mi változott a dossziédban” — a lap EGYETLEN hangos eleme (bible §3): három
+                    // üveg-cella nagy, vékony számmal; minden más lapos.
                     return (
-                      <div className="kr-outcomehd">
-                        <div className="kr-oh-title">Mi változott a dossziédban</div>
-                        <div className="kr-outcells">
-                          <div className="kr-outcell" style={{ '--ow': 'rgba(143,175,126,0.2)', '--oc': '#4E6B42' } as CSSProperties}>
-                            <b>{accepted}</b><small>bekerült</small>
-                          </div>
-                          <div className="kr-outcell" style={{ '--ow': 'rgba(201,150,46,0.18)', '--oc': '#A8801F' } as CSSProperties}>
-                            <b>{retired}</b><small>nyugdíjazva</small>
-                          </div>
-                          <div className="kr-outcell" style={{ '--ow': 'rgba(138,118,204,0.16)', '--oc': '#5D4FA0' } as CSSProperties}>
-                            <b>{rewritten}</b><small>portré átírva</small>
-                          </div>
+                      <div className="kz-outcome">
+                        <div className="tf-sec"><h2>Mi változott a dossziédban</h2></div>
+                        <div className="kz-outcells">
+                          <div className="glass tf-c-sage kz-outcell"><b>{accepted}</b><small>bekerült</small></div>
+                          <div className="glass tf-c-gold kz-outcell"><b>{retired}</b><small>nyugdíjazva</small></div>
+                          <div className="glass tf-c-lav kz-outcell"><b>{rewritten}</b><small>portré átírva</small></div>
                         </div>
-                        {extras.map((c, i) => <div className="kr-outcome-extra" key={i}>{c.summary}</div>)}
+                        {extras.map((c, i) => <div className="kz-extra" key={i}>{c.summary}</div>)}
                       </div>
                     )
                   })()}
 
                   {threads != null
-                    ? threads.map((thread, i) => (
-                        <ConferenceThreadCard
-                          key={`${thread.title}-${i}`}
-                          thread={thread}
-                          experts={experts}
-                          crossTalkRan={crossTalkRan}
-                        />
-                      ))
+                    ? (
+                        <>
+                          <div className="tf-sec"><h2>A szálak</h2><span className="tf-hint">{threads.length}</span></div>
+                          <div className="tf-rows kz-threads">
+                            {threads.map((thread, i) => (
+                              <ConferenceThreadCard
+                                key={`${thread.title}-${i}`}
+                                thread={thread}
+                                experts={experts}
+                                crossTalkRan={crossTalkRan}
+                              />
+                            ))}
+                          </div>
+                        </>
+                      )
                     : buildBlocks(conference.transcript, experts).map((b, i) => {
-                        if (b.block === 'phase') return <div className="kr-phaselbl" key={i}>{b.label}</div>
+                        if (b.block === 'phase') return <div className="kz-phase" key={i}>{b.label}</div>
                         if (b.block === 'ruling') {
                           return (
                             <TranscriptTurn
                               key={i}
                               turn={b.turn}
                               kind="CHAIR"
-                              displayName={experts.find((e) => e.key === b.turn.persona)?.displayName ?? 'Mezo'}
+                              displayName={personaName(b.turn.persona)}
                               color={expertColor(b.turn.persona)}
                               delayMs={i * 90}
                             />
                           )
                         }
                         return (
-                          <div className="kr-turnsgroup" key={i}>
+                          <div className="kz-turns" key={i}>
                             {b.turns.map((turn, ti) => (
                               <TranscriptTurn
                                 key={ti}
                                 turn={turn}
                                 kind={b.kinds[ti]}
-                                displayName={experts.find((e) => e.key === turn.persona)?.displayName ?? turn.persona}
+                                displayName={personaName(turn.persona)}
                                 color={expertColor(turn.persona)}
                                 delayMs={(i + ti) * 90}
                               />
@@ -302,7 +326,10 @@ export function KonziliumPage() {
                 </>
               )}
 
-          <p className="kr-honestynote">{HONESTY_NOTE}</p>
+          <div className="tf-dash kz-honest">
+            <Icon3D name="t-shield" size={28} />
+            <span>{HONESTY_NOTE}</span>
+          </div>
         </div>
       )}
 

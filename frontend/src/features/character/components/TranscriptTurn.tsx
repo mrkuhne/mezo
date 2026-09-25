@@ -45,35 +45,36 @@ export interface TranscriptTurnProps {
   delayMs?: number
 }
 
+/** U9 (mezo-me75u.9): a próza-tartalék megszólalása lapos komment-panel a szereplő akcentusával
+ *  (a csapatfal `tcmt` idiómája); a Szkeptikus pala; Mezo döntése arany üveg-kártya, benne
+ *  semmi üveg. */
 export function TranscriptTurn({ turn, kind, displayName, color, delayMs }: TranscriptTurnProps) {
   const isSkeptic = kind === 'SKEPTIC'
   const isRuling = kind === 'CHAIR'
-  const variant = isSkeptic ? ' szkeptikus' : isRuling ? ' ruling' : ''
   const lines = splitTranscriptLines(turn.text)
-  const style = { '--tc': color, ...(delayMs != null ? { '--d': `${delayMs}ms` } : {}) } as CSSProperties
+  const style = { '--c': color, ...(delayMs != null ? { '--d': `${delayMs}ms` } : {}) } as CSSProperties
+  const cls = isRuling
+    ? 'glass tf-c-gold kz-turn ruling rise'
+    : `kz-cmt kz-turn${isSkeptic ? ' szkeptikus' : ''} rise`
 
   return (
-    <div className={`kr-turn${variant} rise`} style={style}>
-      {!isRuling && (
-        <div className="kr-tavatar" style={{ '--tc': color } as CSSProperties}>
-          <PersonaOrb expertKey={turn.persona} size={24} />
-        </div>
-      )}
-      <div className="kr-tbub">
-        <div className="kr-tname">{displayName}</div>
-        <div className="kr-ttxt">
-          {lines.map((line, i) => (
-            line.isUser
-              ? (
-                  <span key={i} className="kr-danielline">
-                    <span className="kr-ul">Válaszod</span>
-                    <span className="kr-ut">{line.text}</span>
-                  </span>
-                )
-              : <span key={i}>{i > 0 && <br />}{line.text}</span>
-          ))}
-        </div>
+    <div className={cls} style={isRuling ? (delayMs != null ? { '--d': `${delayMs}ms` } as CSSProperties : undefined) : style}>
+      <div className="kz-cmth">
+        <PersonaOrb expertKey={turn.persona} size={30} className="kz-cmtorb" />
+        <b className="kz-who">{displayName}</b>
       </div>
+      <p className="kz-said">
+        {lines.map((line, i) => (
+          line.isUser
+            ? (
+                <span key={i} className="kz-userline">
+                  <span className="kz-ul">Válaszod</span>
+                  <span className="kz-ut">{line.text}</span>
+                </span>
+              )
+            : <span key={i}>{i > 0 && <br />}{line.text}</span>
+        ))}
+      </p>
     </div>
   )
 }

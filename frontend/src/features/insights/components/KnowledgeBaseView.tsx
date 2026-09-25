@@ -1,4 +1,5 @@
-import { Mosaic, Tile } from '@/shared/ui/mozaik'
+import { useId } from 'react'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { FactCandidateCard } from '@/features/insights/components/FactCandidateCard'
 import { LifeEventCandidateCard } from '@/features/insights/components/LifeEventCandidateCard'
 import { LifeEventAcceptedCard } from '@/features/insights/components/LifeEventAcceptedCard'
@@ -14,8 +15,8 @@ interface AcceptedEvent {
 
 /**
  * mezo-ms9a shell: the approval inbox (candidates + LIFE_EVENT/SEASON groups, unchanged
- * behavior from the old KnowledgeListPage) + the base-view section mosaic (3 tiles →
- * ?view=tenyek|kategoriak|profil). `acceptedEvents`/`pendingLifeEvents` stay page-level state
+ * behavior from the old KnowledgeListPage) + the base-view doors (glass rows →
+ * ?view=tenyek|kategoriak). `acceptedEvents`/`pendingLifeEvents` stay page-level state
  * in the shell (KnowledgeListPage) so the confirmation survives a view switch — this component
  * only renders what it is handed.
  */
@@ -49,27 +50,26 @@ export function KnowledgeBaseView(props: {
   return (
     <>
       {degraded ? (
-        <div className="card rise" style={{ '--d': '0ms', padding: 14 } as React.CSSProperties}>
-          <span className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5 }}>
-            A társ jelenleg nincs bekapcsolva — a tudástár most nem elérhető.
-          </span>
+        <div className="tf-dash tud9-dash rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+          <Icon3D name="t-info" size={28} />
+          <span>A társ jelenleg nincs bekapcsolva — a tudástár most nem elérhető.</span>
         </div>
       ) : candidates.length > 0 && (
-        <div className="col gap-sm rise" style={{ '--d': '0ms' } as React.CSSProperties}>
-          {/* prototype .candc: the approval inbox speaks gold, not lavender */}
-          <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-amber-ink)' }}>
-            Jóváhagyásra vár · {candidates.length}
-          </span>
-          {candidates.map((c) => (
-            <FactCandidateCard
-              key={c.id}
-              candidate={c}
-              conflictFact={facts.find((f) => f.id === c.conflictsWithFactId) ?? null}
-              onToggleConflict={onToggleConflict}
-              onDecide={(decision, refinedText) => onDecideCandidate(c.id, decision, refinedText)}
-            />
-          ))}
-        </div>
+        /* Üveg (U9): the approval inbox is the ONE loud group of the page — glass amber cases. */
+        <section className="tud9-group tud9-inbox rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+          <h2 className="tud9-sech">Jóváhagyásra vár · {candidates.length}</h2>
+          <div className="tf-rows">
+            {candidates.map((c) => (
+              <FactCandidateCard
+                key={c.id}
+                candidate={c}
+                conflictFact={facts.find((f) => f.id === c.conflictsWithFactId) ?? null}
+                onToggleConflict={onToggleConflict}
+                onDecide={(decision, refinedText) => onDecideCandidate(c.id, decision, refinedText)}
+              />
+            ))}
+          </div>
+        </section>
       )}
 
       {(['LIFE_EVENT', 'SEASON'] as const).map((kind) => {
@@ -77,44 +77,73 @@ export function KnowledgeBaseView(props: {
         const settled = acceptedEvents.filter((a) => a.kind === kind)
         if (pending.length === 0 && settled.length === 0) return null
         return (
-          <div key={kind} className="col gap-sm">
-            <span className="eyebrow" style={{ color: 'var(--amber-deep)' }}>
+          <section key={kind} className="tud9-group rise">
+            <h2 className="tud9-sech">
               {/* A darabszám a MÉG DÖNTÉSRE VÁRÓ jelölteké. Enélkül a csoport utolsó elfogadása
                   után „…jelöltek · 0" állna a megerősítő kártya fölött. */}
               {pending.length > 0
                 ? `${CANDIDATE_COPY[kind].eyebrow} · ${pending.length}`
                 : CANDIDATE_COPY[kind].settled}
-            </span>
-            {settled.map((a) => (
-              <LifeEventAcceptedCard key={a.id} title={a.title} edgeCount={a.edgeCount} />
-            ))}
-            {pending.map((c) => (
-              <LifeEventCandidateCard
-                key={c.id}
-                candidate={c}
-                onDecide={(decision, refined) => {
-                  if (decision === 'accept') onAcceptLifeEvent(c, refined)
-                  onDecideLifeEvent(c.id, decision, refined)
-                }}
-              />
-            ))}
-          </div>
+            </h2>
+            <div className="tf-rows">
+              {settled.map((a) => (
+                <LifeEventAcceptedCard key={a.id} title={a.title} edgeCount={a.edgeCount} />
+              ))}
+              {pending.map((c) => (
+                <LifeEventCandidateCard
+                  key={c.id}
+                  candidate={c}
+                  onDecide={(decision, refined) => {
+                    if (decision === 'accept') onAcceptLifeEvent(c, refined)
+                    onDecideLifeEvent(c.id, decision, refined)
+                  }}
+                />
+              ))}
+            </div>
+          </section>
         )
       })}
 
-      <Mosaic>
-        {!degraded && (
-          <Tile
-            wash="sage" icon="i-polc" eyebrow="Tények" badge={facts.length}
-            line={`${buckets.inPrompt.length} a chatben · ${buckets.waiting.length} vár · ${buckets.off.length} kikapcsolva`}
-            onClick={() => onNavigate('tenyek')} delayMs={100}
+      <section className="tud9-group rise">
+        <h2 className="tud9-sech">A tudás</h2>
+        <div className="tf-rows">
+          {!degraded && (
+            <DoorRow
+              label="Tények" icon="t-note" accent="sage" badge={facts.length}
+              line={`${buckets.inPrompt.length} a chatben · ${buckets.waiting.length} vár · ${buckets.off.length} kikapcsolva`}
+              onClick={() => onNavigate('tenyek')}
+            />
+          )}
+          <DoorRow
+            label="Kategóriák" icon="t-graph" accent="lav" badge={kindCount}
+            line={kategLine} onClick={() => onNavigate('kategoriak')}
           />
-        )}
-        <Tile
-          wash="lav" icon="i-retegek" eyebrow="Kategóriák" badge={kindCount}
-          line={kategLine} onClick={() => onNavigate('kategoriak')} delayMs={130}
-        />
-      </Mosaic>
+        </div>
+      </section>
     </>
+  )
+}
+
+/** A base-view door (prototype `rowg`): glass row, 3D icon, name + line, count badge. The
+ *  accessible name stays the bare section name (as the old Mozaik tile's did); the line is
+ *  its description. */
+function DoorRow({ label, icon, accent, badge, line, onClick }: {
+  label: string
+  icon: Icon3DName
+  accent: 'sage' | 'lav'
+  badge: number
+  line: string
+  onClick: () => void
+}) {
+  const lineId = useId()
+  return (
+    <button type="button" className={`glass tf-rowg tf-c-${accent} tud9-door`} aria-label={label} aria-describedby={lineId} onClick={onClick}>
+      <Icon3D name={icon} size={40} />
+      <span className="tf-rowtxt">
+        <span className="tf-rowname">{label}</span>
+        <span className="tf-rowsub" id={lineId}>{line}</span>
+      </span>
+      <span className="tf-rowbadge">{badge}</span>
+    </button>
   )
 }

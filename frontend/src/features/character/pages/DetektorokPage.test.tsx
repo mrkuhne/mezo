@@ -8,6 +8,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { DetektorokPage, DETECTORS } from './DetektorokPage'
 import { MOCK_EXPERTS } from '@/data/character/characterMock'
+import { personaName } from '@/features/character/personaCharacter'
 
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', async () => {
@@ -32,23 +33,24 @@ describe('DetektorokPage', () => {
     const { container } = render(<DetektorokPage />)
     expect(screen.getByText('Detektorok')).toBeInTheDocument()
     // Derived from the page's own DETECTORS array (never a re-pinned literal) — counts the
-    // rendered `.kr-detchip` key chips, one per row, so a future round's addition (or an
+    // rendered `.gtm-det` key chips (formerly `.kr-detchip`), one per row, so a future round's addition (or an
     // accidental duplicate/missing row) is caught by comparing rendered output against the
     // array, not just the array against itself.
-    expect(container.querySelectorAll('.kr-detchip').length).toBe(DETECTORS.length)
+    expect(container.querySelectorAll('.gtm-det').length).toBe(DETECTORS.length)
     for (const d of DETECTORS) {
       expect(screen.getByText(d.key)).toBeInTheDocument()
     }
-    // Each owning expert's display name should appear once per detector it owns — derived from
+    // Each owner shows as its csapatfal character (U9, owner 2026-09-25: `personaName(who)`) —
+    // once per detector it owns, several personas folding into one character. Derived from
     // DETECTORS itself so a future round's addition can't silently drift this assertion.
-    const countsByWho = DETECTORS.reduce<Record<string, number>>((acc, d) => {
-      acc[d.who] = (acc[d.who] ?? 0) + 1
+    const countsByName = DETECTORS.reduce<Record<string, number>>((acc, d) => {
+      expect(MOCK_EXPERTS.some((e) => e.key === d.who), `no MOCK_EXPERTS entry for detector owner "${d.who}"`).toBe(true)
+      const name = personaName(d.who)
+      acc[name] = (acc[name] ?? 0) + 1
       return acc
     }, {})
-    for (const [who, count] of Object.entries(countsByWho)) {
-      const displayName = MOCK_EXPERTS.find((e) => e.key === who)?.displayName
-      expect(displayName, `no MOCK_EXPERTS entry for detector owner "${who}"`).toBeTruthy()
-      expect(screen.getAllByText(displayName as string).length).toBe(count)
+    for (const [name, count] of Object.entries(countsByName)) {
+      expect(screen.getAllByText(name).length).toBe(count)
     }
   })
 

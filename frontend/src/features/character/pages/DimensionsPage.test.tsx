@@ -33,19 +33,40 @@ describe('DimensionsPage', () => {
     })
   })
 
-  test('the CHAPTER dimension gets the dashed chapter styling', () => {
+  test('the CHAPTER dimension is marked as a chapter and wears the spark icon instead of a figure (U9)', () => {
     const { container } = render(<DimensionsPage />)
     const chapterTile = screen.getByRole('button', { name: 'Munka-stressz ciklus' })
-    expect(chapterTile).toHaveClass('chapter')
-    expect(container.querySelectorAll('.kr-dimtile.chapter')).toHaveLength(1)
+    expect(chapterTile).toHaveClass('kr9-chapter')
+    expect(chapterTile.querySelector('use[href="#t-spark"]')).toBeInTheDocument()
+    expect(chapterTile.querySelector('.kr-persona')).not.toBeInTheDocument()
+    expect(container.querySelectorAll('.kr9-dim.kr9-chapter')).toHaveLength(1)
   })
 
-  test('the META dimension gets the solid meta styling, not the dashed chapter one', () => {
+  test('every dimension is a glass row with the owning character figure and its maturity badge (U9)', () => {
+    render(<DimensionsPage />)
+    const physical = screen.getByRole('button', { name: 'Fizikai' })
+    expect(physical).toHaveClass('glass', 'tf-rowg')
+    expect(physical.querySelector('.kr-persona')).toHaveAttribute('data-character', 'deru')
+    const d = MOCK_OVERVIEW.dimensions.find((x) => x.title === 'Fizikai')!
+    expect(physical).toHaveTextContent(`${d.maturity}%`)
+  })
+
+  test('standalone wears the back head; embedded opens under a section heading instead (U9)', async () => {
+    const { unmount } = render(<DimensionsPage />)
+    await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/rolad')
+    unmount()
+    render(<DimensionsPage embedded />)
+    expect(screen.queryByRole('button', { name: 'Vissza' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Amit eddig tudunk rólad' })).toBeInTheDocument()
+  })
+
+  test('the META dimension is marked meta, not chapter', () => {
     const { container } = render(<DimensionsPage />)
     const metaTile = screen.getByRole('button', { name: 'A társ önvizsgálata' })
-    expect(metaTile).toHaveClass('meta')
-    expect(metaTile).not.toHaveClass('chapter')
-    expect(container.querySelectorAll('.kr-dimtile.chapter')).toHaveLength(1)
+    expect(metaTile).toHaveClass('kr9-meta')
+    expect(metaTile).not.toHaveClass('kr9-chapter')
+    expect(container.querySelectorAll('.kr9-dim.kr9-chapter')).toHaveLength(1)
   })
 
   test('clicking a tile navigates to its own dimension page', async () => {

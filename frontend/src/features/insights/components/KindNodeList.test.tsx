@@ -32,7 +32,7 @@ test('renders the category header and one compact row per node', () => {
 // a second in-body chip read as a different destination.
 test('renders no back chip of its own', () => {
   setup()
-  expect(screen.queryByRole('button', { name: '‹ Kategóriák' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Kategóriák/ })).not.toBeInTheDocument()
 })
 
 test('row taps report the node up', () => {

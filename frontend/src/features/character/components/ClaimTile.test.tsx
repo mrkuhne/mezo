@@ -45,15 +45,28 @@ describe('ClaimTile', () => {
 
   test('sensitive claims carry the sensitive frame class, no fabricated mirror line', () => {
     const { container } = render(<ClaimTile claim={{ ...claim, sensitive: true }} />)
-    expect(container.querySelector('.kr-claim.sensitive')).toBeInTheDocument()
+    expect(container.querySelector('.kr9-claim.kr9-sensitive')).toBeInTheDocument()
     expect(container.querySelector('.cmirror, .kr-cmirror')).not.toBeInTheDocument()
+  })
+
+  test('a live claim is a glass case with its confidence word as a chip; a retired one drops to flat (U9)', async () => {
+    const { container } = render(<ClaimTile claim={claim} />)
+    const tile = container.querySelector('.kr9-claim')!
+    expect(tile).toHaveClass('glass', 'tf-case')
+    expect(screen.getByText('biztos')).toHaveClass('tf-st')
+    await userEvent.click(screen.getByRole('button', { name: 'Nem igaz' }))
+    const retired = container.querySelector('.kr9-claim')!
+    expect(retired).toHaveClass('tf-flatc', 'kr9-retired')
+    expect(retired).not.toHaveClass('glass')
   })
 
   test('talál submits TALAL, shows thanks microcopy, and disables the pills', async () => {
     render(<ClaimTile claim={claim} />)
     await userEvent.click(screen.getByRole('button', { name: 'Talál' }))
     expect(hoisted.submitSpy).toHaveBeenCalledWith('physical-claim-0', 'TALAL')
-    expect(screen.getByText('✓ Köszönöm — jegyzem.')).toBeInTheDocument()
+    // U9: the ✓ glyph became the t-tick icon + words (bible rule 45)
+    const thanks = screen.getByText('Köszönöm — jegyzem.')
+    expect(thanks.querySelector('use[href="#t-tick"]')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Talál' })).not.toBeInTheDocument()
   })
 
@@ -85,7 +98,7 @@ describe('ClaimTile', () => {
       hoisted.submitSpy.mockRejectedValueOnce(new Error('network'))
       render(<ClaimTile claim={claim} />)
       await userEvent.click(screen.getByRole('button', { name: 'Talál' }))
-      expect(screen.queryByText('✓ Köszönöm — jegyzem.')).not.toBeInTheDocument()
+      expect(screen.queryByText('Köszönöm — jegyzem.')).not.toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Talál' })).toBeInTheDocument()
       expect(hoisted.showSpy).toHaveBeenCalledWith({ kind: 'error', text: 'Nem sikerült elküldeni a visszajelzést — próbáld újra' })
     })
