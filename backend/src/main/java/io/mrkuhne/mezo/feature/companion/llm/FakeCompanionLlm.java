@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.companion.graph.service.LifeEventExtractionServic
 import io.mrkuhne.mezo.feature.companion.memory.service.LlmMemoryQueryRewriter;
 import io.mrkuhne.mezo.feature.companion.memory.service.LlmMemoryReranker;
 import io.mrkuhne.mezo.feature.companion.quarterly.service.QuarterlyReviewService;
+import io.mrkuhne.mezo.feature.companion.reflection.service.KnowledgeRecheckService;
 import io.mrkuhne.mezo.feature.companion.reflection.service.QuickNoticeService;
 import io.mrkuhne.mezo.feature.companion.reflection.service.TextSignalExtractor;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
@@ -396,6 +397,13 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  Planted in the journal entry text, this lets an IT drive the quick-notice parser's null
      *  guard without a model. */
     public static final String NOTICE_NULL_ANSWER = "[fake-notice-null]";
+
+    /** Scripted quarterly re-check verdict (S2, mezo-d6ivw.2 Task 5): {@code [[RECHECK:{…}]]}
+     *  planted in the CONFIRMED row's own claim text (the marker's system prompt embeds it
+     *  verbatim via "AZ ÁLLÍTÁS: …" — there is no per-call user text to script against, since
+     *  {@code ObservationContextService.collect} may legitimately return ""). Without it the
+     *  default answer below is a scripted "drift" — the un-scripted happy path an IT exercises. */
+    public static final Pattern RECHECK_SENTINEL = Pattern.compile("\\[\\[RECHECK:(.*?)]]", Pattern.DOTALL);
 
     /** Reflexió S1: an entry carrying this string makes the extraction CALL blow up — the IT anchor
      *  for "a failing extraction never touches the journal entry it was triggered by". */
@@ -1033,6 +1041,14 @@ public class FakeCompanionLlm implements CompanionLlm {
                     : "{\"text\":\"Felt\u0171nt, hogy amikor Anna szerepel a napl\u00f3dban,"
                             + " m\u00e1snap t\u00f6bbet alszol.\",\"question\":\"Figyeljem tov\u00e1bb?\","
                             + "\"hypothesisKey\":null,\"newTestPlan\":null,\"evidenceRefs\":[]}";
+        }
+        if (systemPrompt.startsWith(KnowledgeRecheckService.RECHECK_MARKER)) {
+            Matcher recheck = RECHECK_SENTINEL.matcher(systemPrompt);
+            // default: the e2e happy path — a scripted "drift" verdict with hedged prose
+            return recheck.find() ? recheck.group(1)
+                    : "{\"verdict\":\"drift\",\"text\":\"Korábban megerősítetted, hogy"
+                            + " ez így van — az utóbbi hetekben mintha másképp"
+                            + " alakulna. Figyeljem tovább?\"}";
         }
         if (systemPrompt.startsWith(HypothesisPipelineService.HYPOTHESIS_MARKER)) {
             if (userMessage.contains("[fake-recovery-batch:")) {
