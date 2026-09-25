@@ -40,6 +40,10 @@ export const FEATURE_LABELS: Record<string, Entry> = {
   companion_profile: { label: 'Profil-frissítés', hint: 'a rólad alkotott kép frissítése' },
   companion_quarterly: { label: 'Negyedéves áttekintés' },
   companion_recall: { label: 'Emlék-felidézés', hint: 'régi emlékek előhívása chathez' },
+  // VERIFIED: KnowledgeRecheckService — negyedévente egyszer újraellenőrzi, hogy egy korábban
+  // kézzel megerősített, terv nélküli tudás-tétel még mindig igaznak tűnik-e a friss kontextus
+  // fényében ("drift" ellenőrzés).
+  companion_recheck: { label: 'Tudás-újraellenőrzés', hint: 'megerősített tudás negyedéves felülvizsgálata' },
   // VERIFIED: TextSignalExtractor/QuickNoticeService — nem a társ reflektál önmagára, hanem a
   // FELHASZNÁLÓ naplószövegéből olvas ki hangulat/energia/stressz jelzéseket, majd ebből ad
   // gyors visszajelzést.
