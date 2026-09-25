@@ -12,6 +12,7 @@
 import type { CharacterFeedItem, CharacterReplySource } from '@/data/character/characterApi'
 import type { Experiment, Observation, ObservationChoice, Pattern, PatternMonitorPair, Prediction } from '@/data/types'
 import { addDays, huMonthDayDow, localDateString } from '@/shared/lib/dates'
+import type { EvidenceItem } from '@/shared/ui/evidence/observationEvidence'
 import { TEAM, characterForMetricDomain, characterForPersona, type TeamCharacterId } from './team'
 
 export type FeedPostKind =
@@ -60,6 +61,8 @@ export interface FeedPost {
   thread?: CharacterReplySource
   /** A döntés látható nyoma a poszton (spec §2.8) — a rekordból vagy a munkamenetből. */
   afterlife?: string
+  /** Strukturált bizonyíték az észrevétel-poszton — a kártyával közös építőkocka rajzolja. */
+  evidence?: EvidenceItem[]
 }
 
 /** Egy vendég-sor: ki szól hozzá és mit — a Szkeptikus is `TeamCharacterId` (pala boop). */
@@ -197,10 +200,8 @@ function observationPost(o: Observation, patterns: Pattern[], pairs: PatternMoni
     ...owner,
     occurredAt: o.occurredAt,
     title: o.title,
-    // INTERIM (mezo-d6ivw.1 Task 3): evidence is now structured EvidenceItem[], not raw
-    // strings — this is a minimal adaptation (record title / tag text) pending Task 4's
-    // proper structured rendering of the feed post body.
-    body: [o.text, o.question, ...o.evidence.map((e) => e.kind === 'tag' ? e.text : e.title)].filter(Boolean).join('\n\n'),
+    body: [o.text, o.question].filter(Boolean).join('\n\n'),
+    evidence: o.evidence.length ? o.evidence : undefined,
     ...(o.minN != null ? { honesty: honestyFor(n, o.minN) } : {}),
     sourceRoute: o.hypothesisKey ? `/mezo/patterns/${o.hypothesisKey}` : pattern ? `/mezo/patterns/${pattern.pairKey}` : '/mezo/patterns',
     waiting: Boolean(o.question) && !o.repliedChoice,

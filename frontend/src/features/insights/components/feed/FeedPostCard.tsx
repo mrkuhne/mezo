@@ -2,8 +2,13 @@ import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { TEAM } from '@/features/insights/logic/team'
 import type { FeedPost } from '@/features/insights/logic/teamFeed'
+import { localDateString } from '@/shared/lib/dates'
 import { renderInline } from '@/shared/lib/markdown'
 import { Icon3D } from '@/shared/ui/clay'
+// Extension deliberately explicit: on a case-insensitive volume, extensionless resolution
+// matches the sibling `observationEvidence.ts` (module, tried first) before `.tsx` — dropping
+// the extension silently imports the wrong file (EvidenceList comes back undefined).
+import { EvidenceList } from '@/shared/ui/evidence/ObservationEvidence.tsx'
 import { FeedGuests } from './FeedGuests'
 import { FeedPostHead } from './FeedPostHead'
 import { FeedTrio, type FeedReplyMode } from './FeedTrio'
@@ -56,6 +61,8 @@ export function PostBody({ post }: { post: FeedPost }) {
     <>
       {post.title && <p className="tf-ptitle">{renderInline(post.title, { boldOnly: true })}</p>}
       <p className="tf-body">{renderInline(post.body, { boldOnly: true })}</p>
+      {post.evidence && post.evidence.length > 0 &&
+        <EvidenceList evidence={post.evidence} today={localDateString()} />}
     </>
   )
 }
