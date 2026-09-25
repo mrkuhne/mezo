@@ -64,3 +64,25 @@ test.each([
   if (action) expect(screen.getByRole('button', { name: 'Megerősítem' })).toBeInTheDocument()
   else expect(screen.queryByRole('button', { name: 'Megerősítem' })).not.toBeInTheDocument()
 })
+
+// mezo-bsb6h: a megítélt pár `n`-je a döntés pillanatáé, a gyűrű a mostani grafikoné — ha eltér,
+// a két számot megnevezve mondjuk ki, nem csupaszon egymás mellett.
+test('befagyott pár: eltérő napszámnál megnevezi, melyik a döntésé és melyik a grafikoné', () => {
+  render(<PatternDetailHero pair={{ ...pair, verdict: 'frozen', status: 'confirmed', n: 32, alignedDays: 32 }}
+    pattern={pattern('confirmed')} dayCount={24} onDecide={() => {}} />)
+  expect(screen.getByLabelText('24 nap a grafikonon')).toBeInTheDocument()
+  expect(screen.getByText(/A döntésedkor 32 közös nap/)).toBeInTheDocument()
+  expect(screen.getByText('Azóta az ablak továbbcsúszott: a grafikon most 24 napot mutat.')).toBeInTheDocument()
+})
+
+test('befagyott pár: egyező napszámnál nincs magyarázó sor', () => {
+  render(<PatternDetailHero pair={{ ...pair, verdict: 'frozen', status: 'confirmed' }}
+    pattern={pattern('confirmed')} dayCount={24} onDecide={() => {}} />)
+  expect(screen.queryByText(/A döntésedkor/)).toBeNull()
+  expect(screen.queryByText(/továbbcsúszott/)).toBeNull()
+})
+
+test('élő pár: a közös nap mondat változatlan', () => {
+  render(<PatternDetailHero pair={pair} pattern={pattern('proposed')} dayCount={24} onDecide={() => {}} />)
+  expect(screen.getByText(/^24 közös nap/)).toBeInTheDocument()
+})
