@@ -6,20 +6,18 @@
 // ring segment and the expert's own orb always agree on a color.
 // ============================================================
 
-export const EXPERT_COLORS: Record<string, string> = {
-  doki: '#3E7396',
-  edzo: '#A84A26',
-  taplalkozo: '#4E6B42',
-  szomnologus: '#5D4FA0',
-  pszichologus: '#8E3F6F',
-  drill: '#A8801F',
-  antropologus: '#2E7D6B',
-  szkeptikus: '#4A4038',
-  mezo: '#FF5B36',
+import { personaCharacter } from '@/features/character/personaCharacter'
+
+const ACCENT_VAR: Record<string, string> = {
+  lav: 'var(--dv-lav)', sky: 'var(--dv-sky)', sage: 'var(--dv-sage)', rose: 'var(--dv-rose)', gold: 'var(--dv-amber)', slate: '#8E86A3',
 }
 
-/** Falls back to a neutral ink when a key isn't in the catalog (never a crash on drift). */
+/**
+ * The expert's on-screen colour. Üvegesítés U9 (mezo-me75u.9): the colour of the csapatfal
+ * character the persona folds into (Doki → Derű rose, Edző → Mocor sky …), so a name label, a
+ * ring arc and the avatar well always agree. Falls back to a neutral ink when the key is missing.
+ */
 export function expertColor(expertKey: string | null | undefined): string {
   if (expertKey == null) return '#A2958A'
-  return EXPERT_COLORS[expertKey] ?? '#A2958A'
+  return ACCENT_VAR[personaCharacter(expertKey).accent]
 }

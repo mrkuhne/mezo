@@ -18,12 +18,12 @@ const SEVEN_CORE = [
 ]
 
 describe('MaturityRing', () => {
-  test('draws exactly 7 CORE arcs, one per expert domain color', () => {
+  test('draws exactly 7 CORE arcs, each in its csapatfal character colour (mezo-me75u.9)', () => {
     const { container } = render(<MaturityRing dimensions={SEVEN_CORE} />)
     const segs = container.querySelectorAll('.kr-seg')
     expect(segs).toHaveLength(7)
-    expect(segs[0]).toHaveAttribute('stroke', '#3E7396') // doki
-    expect(segs[1]).toHaveAttribute('stroke', '#A84A26') // edzo
+    expect(segs[0]).toHaveAttribute('stroke', 'var(--dv-rose)') // doki → Derű
+    expect(segs[1]).toHaveAttribute('stroke', 'var(--dv-sky)') // edzo → Mocor
   })
 
   test('a trailing CHAPTER dimension is ignored — the ring stays a 7-segment hero', () => {

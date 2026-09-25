@@ -8,7 +8,6 @@
 // ============================================================
 import { useNavigate } from 'react-router-dom'
 import '@/features/character/character.css'
-import { CharacterHeader } from '@/features/character/components/CharacterHeader'
 import { useCharacterOverview } from '@/data/hooks'
 import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import { expertColor } from '@/features/character/expertColors'
@@ -31,7 +30,6 @@ export function DimensionsPage({ embedded = false }: { embedded?: boolean }) {
 
   return (
     <div className="kr-hub kr-social">
-      {!embedded && <CharacterHeader active="profile" />}
       <div className="mz-page-hero">
         <div className="mz-hero-nm">Amit eddig tudunk rólad</div>
         {/* I3 (final review): CHAPTER dimensions open/retire dynamically — "mind a nyolc" was a

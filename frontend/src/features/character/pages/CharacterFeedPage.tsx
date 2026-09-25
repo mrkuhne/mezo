@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import '@/features/character/character.css'
 import { useCharacterExperts, useCharacterFeed } from '@/data/hooks'
-import { CharacterHeader } from '@/features/character/components/CharacterHeader'
 import { CharacterMorningStory } from '@/features/character/components/CharacterMorningStory'
 import { CharacterPostCard } from '@/features/character/components/CharacterPostCard'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
@@ -30,7 +29,6 @@ export function CharacterFeedPage({ embedded = false }: { embedded?: boolean }) 
   )
   return (
     <div className="kr-hub kr-social">
-      {!embedded && <CharacterHeader active="feed" />}
       <CharacterCouncilStatus />
       {!isLoading && !isError && featured && (
         <CharacterMorningStory item={featured} experts={experts} onOpen={() => {

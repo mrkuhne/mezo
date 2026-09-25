@@ -118,8 +118,7 @@ export const CHARACTER_EXPERTS: Record<string, ExpertColors> = {
   // Fix round (final review, I4): `role` must match CharacterService.experts()'s literal
   // "Elnök · Integrátor" (exact casing) — the mock had it lowercased. `watch` was empty here
   // though the backend serves one entry for Mezo too; `voiceLine` is left as this mock's own
-  // distinct copy (CsapatPage's CHAIR subtitle already renders off `role`, never `voiceLine`,
-  // so this text isn't a duplicate-on-screen concern — see CsapatPage.tsx's header comment).
+  // distinct copy (the retired CsapatPage rendered the CHAIR subtitle off `role`, never `voiceLine`).
   mezo: {
     name: 'Mezo',
     role: 'Elnök · Integrátor',

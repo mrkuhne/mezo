@@ -30,11 +30,9 @@ const show = () =>
       <CharacterFeedPage />
     </QueryWrapper>,
   )
-test('the feed shows posts directly across days and has three clear destinations', () => {
+test('the feed shows posts directly across days — the dock owns navigation, no in-page tab strip (mezo-me75u.9)', () => {
   show()
-  expect(screen.getByRole('button', { name: 'Üzenőfal' })).toHaveAttribute('aria-current', 'page')
-  fireEvent.click(screen.getByRole('button', { name: 'Rólad' }))
-  expect(navigate).toHaveBeenCalledWith('/mezo/karakter/dimenziok')
+  expect(screen.queryByRole('button', { name: 'Rólad' })).not.toBeInTheDocument()
   expect(screen.getAllByRole('article')).toHaveLength(MOCK_FEED.length)
   expect(screen.queryByRole('button', { name: 'Új bejegyzés' })).not.toBeInTheDocument()
 })

@@ -28152,3 +28152,23 @@ main.settings-page {
   .mmr-page .mmr-tcols i { animation: mmr-tgrow 1s var(--uv-ease, ease-out) both; animation-delay: calc(0.2s + var(--i, 0) * 25ms); }
 }
 /* ── /uveg mezo1 memoria ── */
+
+/* ── uveg mezo2 karakter (mezo-me75u.9) ── /mezo/karakter (+/feed), /mezo/karakter/dimenziok, /mezo/karakter/dimenzio/:key, /mezo/rolad ── */
+
+/* ── /uveg mezo2 karakter ── */
+
+/* ── uveg mezo2 konzilium (mezo-me75u.9) ── /mezo/karakter/konzilium (+?id=, overview + conversation view, archive sheet) ── */
+
+/* ── /uveg mezo2 konzilium ── */
+
+/* ── uveg mezo2 gepterem (mezo-me75u.9) ── /mezo/karakter/gepterem (+/osszes, /futasok, /futas/:id, /adatforrasok, /adatforrasok/kor/:n, /detektorok) ── */
+
+/* ── /uveg mezo2 gepterem ── */
+
+/* ── uveg mezo2 tudastar (mezo-me75u.9) ── /mezo/knowledge (base, tenyek, kategoriak, hogyan), /mezo/knowledge/node/:id ── */
+
+/* ── /uveg mezo2 tudastar ── */
+
+/* ── uveg mezo2 mintak (mezo-me75u.9) ── /mezo/patterns, /mezo/predictions ── */
+
+/* ── /uveg mezo2 mintak ── */

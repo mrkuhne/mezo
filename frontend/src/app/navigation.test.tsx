@@ -159,17 +159,15 @@ test('/mezo/karakter/dimenzio/:key opens one dimension\'s claims (mezo-1gim.13, 
   expect(screen.getByText('Beszélgess erről Mezóval')).toBeInTheDocument()
 })
 
-test('/mezo/karakter/feed opens the social feed navigation and filters', async () => {
+test('/mezo/karakter/feed opens the feed with its filters — no in-page tab strip (mezo-me75u.9)', async () => {
   renderApp('/mezo/karakter/feed')
-  expect(await screen.findByRole('button', { name: 'Üzenőfal' })).toHaveAttribute('aria-current', 'page')
-  expect(screen.getByRole('button', { name: 'Beszélgetések' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Beszélgetések' })).toBeInTheDocument()
+  expect(screen.queryByRole('navigation', { name: /karakter/i })).not.toBeInTheDocument()
 })
 
-test('/mezo/karakter/csapat is the 9-persona team page (mezo-1gim.13, Task 5)', async () => {
+test('/mezo/karakter/csapat redirects to A csapat — the 9-expert roster retired (mezo-me75u.9)', async () => {
   renderApp('/mezo/karakter/csapat')
-  expect(await screen.findByText('Különböző nézőpontok, egy közös kép rólad.')).toBeInTheDocument()
-  expect(screen.getByText('Doki')).toBeInTheDocument()
-  expect(screen.getByText('Elnök · Integrátor')).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'A csapat' })).toBeInTheDocument()
 })
 
 test('/mezo/karakter/konzilium renders as a stable full-page sibling (mezo-sp9w, Task 9)', async () => {
