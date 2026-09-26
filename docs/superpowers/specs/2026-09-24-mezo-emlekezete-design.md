@@ -951,3 +951,22 @@ through the full merge chain (lessons 21–22).
     S4's Hatás card extends it in `ember-hatas-uveg.html` (`.effrow`/`.effdots`
     CSS block). S6 hub work should grep the approved prototypes for its route first
     (bible rule 66) and reuse that block rather than redrawing the indicators.
+25. **(S5)** Spring Data `GreaterThanEqual` cooldown floors are off-by-one: an N-day
+    cooldown fired on d0 that must reopen at d0+N needs `minusDays(N - 1)` as the
+    query floor, never `minusDays(N)` — trace all N+1 days against the `>=` before
+    trusting the literal spec formula.
+26. **(S5)** `CompanionMessageGeneratorIT` runs with the reflection switch OFF, so a
+    positive test of any reflection-gated garnish (EffectLinkService consumers) can
+    never fire there — it needs a sibling IT class with reflection ON
+    (`ReflectionDigestMorningIT` / `CompanionMessageGeneratorApropoIT` precedent).
+27. **(S5)** Parallel Claude sessions running backend Maven against the shared fixed
+    dev DB produce spurious deadlocks/FK violations and even corrupted target/ dirs;
+    `-Dmezo.test.use-testcontainers=true` isolates and is the first retry, not the
+    last resort.
+28. **(S5)** A "fail-open" write helper whose `@Transactional` JOINS the caller's TX
+    only looks fail-open: the deferred INSERT can still fail the outer commit past
+    the try/catch. True fail-open needs `REQUIRES_NEW` + `saveAndFlush` inside the
+    try (follow-up: mezo-8eg96).
+29. **(S5)** The apropó matcher reads only the two mention projections — done-workout
+    days and text-signal topic days (the other halves of `EffectLinkService.subjects`)
+    do NOT fire same-day apropók; deliberate scope, documented in mezo-8eg96.
