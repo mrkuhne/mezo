@@ -22,6 +22,11 @@ describe('ProfileNodeCard', () => {
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
   })
 
+  it('wears the 3D chat icon (U11: no clay glyph in the content)', () => {
+    const { container } = render(<ProfileNodeCard node={node} onArchive={() => {}} />)
+    expect(container.querySelector('.mz-fic use')?.getAttribute('href')).toBe('#t-chat')
+  })
+
   it('archives on demand and says what archiving does', async () => {
     const onArchive = vi.fn()
     render(<ProfileNodeCard node={node} onArchive={onArchive} />)

@@ -25,7 +25,7 @@
 import type { CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain, useMesoTemplates } from '@/data/hooks'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
@@ -71,7 +71,7 @@ export function MesoTemplatesPage() {
             ‹ Edzéstervek
           </button>
           <span className="pl-lhero-art" aria-hidden="true">
-            <ClayIcon name="i-polc" size={60} className="icon" />
+            <Icon3D name="t-template" size={60} className="icon" />
             <i />
             <i />
           </span>
@@ -112,10 +112,10 @@ export function MesoTemplatesPage() {
                   <b aria-hidden="true">›</b>
                 </span>
                 <span className="pl-day-facts">
-                  <i><ClayIcon name="i-idozito" size={22} className="icon" /><b>{t.weeks}</b><small>hét</small></i>
-                  <i><ClayIcon name="i-edzes" size={22} className="icon" /><b>{days}</b><small>nap hetente</small></i>
+                  <i><Icon3D name="t-calendar" size={22} className="icon" /><b>{t.weeks}</b><small>hét</small></i>
+                  <i><Icon3D name="t-dumbbell" size={22} className="icon" /><b>{days}</b><small>nap hetente</small></i>
                   {minutes > 0 && (
-                    <i><ClayIcon name="i-heti" size={22} className="icon" /><b>~{minutes}</b><small>perc</small></i>
+                    <i><Icon3D name="t-clock" size={22} className="icon" /><b>~{minutes}</b><small>perc</small></i>
                   )}
                 </span>
                 {muscles.length > 0 && (
@@ -141,7 +141,7 @@ export function MesoTemplatesPage() {
             aria-label="Új terv összeállítása"
             onClick={() => navigate('/train/mesocycles/new')}
           >
-            <span className="pl-lib-new-art"><ClayIcon name="i-stack" size={30} className="icon" /></span>
+            <span className="pl-lib-new-art"><Icon3D name="t-flask" size={30} className="icon" /></span>
             <span>
               <strong>Új terv összeállítása</strong>
               <small>Sablonból indulsz, vagy nulláról építed</small>

@@ -30934,9 +30934,130 @@ main.settings-page {
 /* ────────────────────────────────────────────────────────────────────────────
    ── uveg lezaras edzes (mezo-me75u.11) ──
    ──────────────────────────────────────────────────────────────────────────── */
+/* The U11 audit's Edzés findings (/train/mesocycles(+/konyvtar,/futamok,/new,/compare),
+   /train/templates, /train/custom/new, /train/week/{mozgas,terkep,jelek},
+   /settings/train/sport). Three kinds of fix live here:
+   1. live copy on `--faint` (= `--text-disabled`, #5E5348, ≈2:1 on the dark ground) is
+      lifted to `--text-muted`: it is secondary copy, never a disabled state;
+   2. the lit coral controls of the wizard and the compare page carry dark ink (U5 rule 36),
+      scoped to those pages — `.cta-primary` is shared app-wide;
+   3. the wizard's split tiles and focus chips fit their boxes at 390 and 320. */
+
+/* 1 · legible secondary copy */
+.pl-poster .pl-week small,
+.pl-poster .pl-week i { color: var(--text-muted); }
+.ld-hero-pct em { color: var(--text-muted); }
+.tw-move .ld-move-box em,
+.tw-move .ld-events-note { color: var(--text-muted); }
+.ld-sport-note em { color: var(--text-muted); }
+.ld-map-sides span { color: var(--text-muted); }
+.mm-region-head span { color: var(--text-muted); }
+.tv-custom .eyebrow { color: var(--text-muted); }
+.uvs-sheet .label-mono { color: var(--text-muted); }
+
+/* 2 · lit coral controls: accent fill, dark ink, accent glow */
+.tv-wizard .mz-wfoot .cta-primary,
+.tv-cmp .cta-primary {
+  --c: var(--dv-coral);
+  color: #191614; background: var(--c); border: 0;
+  box-shadow:
+    0 12px 26px -14px color-mix(in srgb, var(--c) 90%, transparent),
+    0 0 18px -4px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.tv-wizard .mz-wfoot .cta-primary:disabled,
+.tv-cmp .cta-primary:disabled { opacity: 0.45; box-shadow: none; }
+/* the „Ma" stamp on a rest/sport-day row: the row sets no `--c`, so the lit stamp had NO
+   fill and its dark ink sat on the dark ground (1.04:1). It takes the Edzés coral. */
+.tv-dayrest .tv-day-stamp.is-today { --c: var(--dv-coral); }
+.tv-wizard .mz-daypick button[aria-pressed='true'] {
+  color: #191614; background: var(--dv-coral); border-color: var(--dv-coral);
+  box-shadow: 0 0 14px -4px color-mix(in srgb, var(--dv-coral) 70%, transparent);
+}
+
+/* 3 · the split tiles: the label („UPPER/LOWER", „U/L + PPL") wraps inside its tile instead
+   of running past it — the text stays complete */
+.tv-wizard .mz-dct { padding-inline: 3px; }
+.tv-wizard .mz-dct small {
+  display: block; letter-spacing: 0.02em; line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+/* the focus chips (Emphasize / Grow / Maintain): each chip keeps its whole word; when the
+   three do not fit beside the muscle label, the row wraps and the chips take the full width */
+.tv-wizard .mz-stepcard-rose .row:has(> [role='group']) { flex-wrap: wrap; row-gap: 6px; }
+.tv-wizard .mz-stepcard-rose [role='group'] .segtab { min-width: max-content; }
 /* ── /uveg lezaras edzes ── */
 
 /* ────────────────────────────────────────────────────────────────────────────
    ── uveg lezaras egyeb (mezo-me75u.11) ──
    ──────────────────────────────────────────────────────────────────────────── */
+/* U11 audit fixes on the non-Edzés routes. Live copy never wears --text-disabled; a "not yet"
+   element stays visibly dimmer through a muted ink (≥ 3:1), not through opacity on its text. */
+
+/* /me/sleep: the section eyebrows were --faint (= --text-disabled, 2.5:1) */
+.alv-page .alv-sec-head .eyebrow { color: var(--text-muted); }
+
+/* /me/growth: the Ma strip's done / activity marks are 3D (t-tick / t-pencil), no drawn disc */
+.gr-ma .gr-chip .gr-chip-mk.gr-mk3d { width: 17px; height: 17px; border: 0; background: none; }
+.gr-ma .gr-chip .gr-chip-mk.gr-mk3d .t-ico { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.45)); }
+
+/* /me/growth/naplo: a quietly expired quest is dimmer by ink, not by row opacity (.5 → 2.66:1) */
+.grn-page .gr-jrow.gone { opacity: 1; }
+.grn-page .gr-jrow.gone .tx { color: var(--text-muted); }
+.grn-page .gr-jrow.gone .gr-jmeta { color: var(--text-muted); opacity: 0.85; }
+.grn-page .gr-jrow.gone .gr-jk { opacity: 0.5; }
+
+/* /me/goals: an empty life-area chip is grey and hairlined, not the tinted chip at 42% */
+.enc-celok .lg-dimchip.empty {
+  opacity: 1; color: var(--text-muted);
+  background: rgba(245, 239, 230, 0.03);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 16%, var(--divider));
+}
+.enc-celok .lg-dimchip.empty .t-ico { opacity: 0.45; filter: grayscale(0.6); }
+
+/* /me/goals/signals: a sleeping signal row — dim art, muted ink, no row opacity */
+.enc-jelek .lg-sig.off { opacity: 1; background: transparent; }
+.enc-jelek .lg-sig.off b { color: var(--text-secondary); font-weight: 500; }
+.enc-jelek .lg-sig.off small { color: var(--text-muted); }
+.enc-jelek .lg-sig.off .t-ico { opacity: 0.5; filter: grayscale(0.6); }
+.enc-jelek .lg-sig.off .lg-sigchips span {
+  color: var(--text-muted); background: rgba(245, 239, 230, 0.03); box-shadow: inset 0 0 0 1px var(--divider);
+}
+
+/* /me/goals/weight: the lit suggestion-count badge carries dark ink (bible U5 rule 36) */
+.goal-hub-page .goal-hub-mosaic .goal-tile-badged .mz-badge { color: #191614; }
+
+/* /me/rutin/szokasok: a stage with no habit yet — muted numeral + dim dots, legible label */
+.rt-szokasok .rt-ftile.is-zero { opacity: 1; }
+.rt-szokasok .rt-ftile.is-zero:not(.on) { background: transparent; }
+.rt-szokasok .rt-ftile.is-zero:not(.on) b { color: var(--text-muted); }
+.rt-szokasok .rt-ftile.is-zero:not(.on) small { color: var(--text-muted); opacity: 0.85; }
+.rt-szokasok .rt-ftile.is-zero .rt-fdots { opacity: 0.5; }
+
+/* /me/week/elemzes: a future day's column — the bar fades, the labels stay legible */
+.wk-analysis-page .wka-col.is-future { opacity: 1; }
+.wk-analysis-page .wka-col.is-future .bar { opacity: 0.4; }
+.wk-analysis-page .wka-col.is-future .vl,
+.wk-analysis-page .wka-col.is-future .dw { color: color-mix(in srgb, var(--text-muted) 75%, transparent); }
+
+/* /nap/napom: a future weekday — dimmer ink (≈ 4:1), faded tick bar; the ✓ fact is a 3D tick */
+.napom-page .napom-wd.is-fut { opacity: 1; color: color-mix(in srgb, var(--text-muted) 70%, transparent); }
+.napom-page .napom-wd.is-fut b { color: color-mix(in srgb, var(--text-muted) 75%, transparent); }
+.napom-page .napom-wd.is-fut i { opacity: 0.5; }
+.napom-page .t-ico.napom-tick { width: 14px; height: 14px; margin-right: 0; filter: none; }
+.napom-page .napom-flat .t-ico.napom-tick { vertical-align: 0; }
+
+/* /mezo/diagnozis: an upcoming question — muted ink and a dim avatar instead of row opacity .5 */
+.kt-page .kt-qrow.is-soon { opacity: 1; }
+.kt-page .kt-qrow.is-soon .tf-av { opacity: 0.5; filter: grayscale(0.5); }
+.kt-page .kt-qrow.is-soon .kt-qtxt small { color: var(--text-muted); }
+.kt-page .kt-qrow.is-soon .kt-qtxt strong { color: var(--text-secondary); }
+.kt-page .kt-qrow.is-soon .kt-qtxt span { color: var(--text-muted); }
+.kt-page .kt-qrow.is-soon .kt-askpill { color: var(--text-muted); }
+
+/* /fuel/stack: a taken supplement — the lit well holds the 3D tick (it replaced the ✓ glyph) */
+.fsx-band.glass .fsx-row.is-done .fsx-check > span {
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--c) 40%, #3A332D), color-mix(in srgb, var(--c) 14%, #1E1B18));
+  box-shadow: 0 0 12px -2px color-mix(in srgb, var(--c) 70%, transparent), inset 0 0 0 1.5px color-mix(in srgb, var(--c) 70%, transparent);
+}
+.fsx-band.glass .fsx-check > span .t-ico { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
 /* ── /uveg lezaras egyeb ── */

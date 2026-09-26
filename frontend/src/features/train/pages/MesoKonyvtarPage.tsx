@@ -40,7 +40,7 @@
 import type { CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain, useMesoTemplates } from '@/data/hooks'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import MesocycleSkeleton from '@/features/train/pages/MesocycleSkeleton'
@@ -94,7 +94,7 @@ export function MesoKonyvtarPage() {
             ‹ A terved
           </button>
           <span className="pl-lhero-art" aria-hidden="true">
-            <ClayIcon name="i-polc" size={60} className="icon" />
+            <Icon3D name="t-stack" size={60} className="icon" />
             <i />
             <i />
           </span>
@@ -151,9 +151,9 @@ export function MesoKonyvtarPage() {
                   <b aria-hidden="true">›</b>
                 </span>
                 <span className="pl-day-facts">
-                  <i><ClayIcon name="i-idozito" size={22} className="icon" /><b>{m.weeks}</b><small>hét</small></i>
-                  {freq && <i><ClayIcon name="i-heti" size={22} className="icon" /><b className="is-word">{freq}</b></i>}
-                  <i><ClayIcon name="i-stack" size={22} className="icon" /><b className="is-word">{splitHead(m.split)}</b></i>
+                  <i><Icon3D name="t-calendar" size={22} className="icon" /><b>{m.weeks}</b><small>hét</small></i>
+                  {freq && <i><Icon3D name="t-dumbbell" size={22} className="icon" /><b className="is-word">{freq}</b></i>}
+                  <i><Icon3D name="t-layers" size={22} className="icon" /><b className="is-word">{splitHead(m.split)}</b></i>
                 </span>
                 {/* No one-tap activation here — that silently archives the running plan
                     with no close ceremony/report. The card body opens the plan's own page
@@ -173,7 +173,7 @@ export function MesoKonyvtarPage() {
             aria-label="Új terv összeállítása"
             onClick={() => navigate('/train/mesocycles/new')}
           >
-            <span className="pl-lib-new-art"><ClayIcon name="i-stack" size={30} className="icon" /></span>
+            <span className="pl-lib-new-art"><Icon3D name="t-flask" size={30} className="icon" /></span>
             <span>
               <strong>Új terv összeállítása</strong>
               <small>Sablonból indulsz, vagy nulláról építed</small>
@@ -192,7 +192,7 @@ export function MesoKonyvtarPage() {
             aria-label="Sablonjaid"
             onClick={() => navigate('/train/templates')}
           >
-            <span className="pl-dest-art"><ClayIcon name="i-polc" size={40} className="icon" /></span>
+            <span className="pl-dest-art"><Icon3D name="t-template" size={40} className="icon" /></span>
             <strong>Sablonjaid</strong>
             <small>{templates.length} sablon, amiből indíthatsz</small>
             <b aria-hidden="true">↗</b>
@@ -204,7 +204,7 @@ export function MesoKonyvtarPage() {
             aria-label="Lezárt futamaid"
             onClick={() => navigate('/train/mesocycles/futamok')}
           >
-            <span className="pl-dest-art"><ClayIcon name="i-erme" size={40} className="icon" /></span>
+            <span className="pl-dest-art"><Icon3D name="t-history" size={40} className="icon" /></span>
             <strong>Lezárt futamaid</strong>
             <small>{archived.length} lezárt terv története</small>
             <b aria-hidden="true">↗</b>

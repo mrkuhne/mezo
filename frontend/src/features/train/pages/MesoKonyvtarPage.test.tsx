@@ -56,6 +56,26 @@ test('the hero names the page and says what lives here, jargon-free', () => {
   expect(screen.getByText(/Itt élnek a terveid/)).toBeInTheDocument()
 })
 
+// U11 (mezo-me75u.11): every content icon is the Titanium 3D set, chosen by meaning.
+test('the doorways and the hero wear 3D icons by meaning, no clay glyph left', () => {
+  const { container } = render(
+    <QueryWrapper>
+      <MemoryRouter>
+        <MesoKonyvtarPage />
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+  const href = (sel: string) => container.querySelector(`${sel} use`)?.getAttribute('href')
+  expect(href('.pl-lhero-art')).toBe('#t-stack')
+  expect(href('.pl-dest.is-plans')).toBe('#t-template')
+  expect(href('.pl-dest.is-done')).toBe('#t-history')
+  expect(href('.pl-lib-new-art')).toBe('#t-flask')
+  const clay = Array.from(container.querySelectorAll('use'))
+    .map((u) => u.getAttribute('href') ?? '')
+    .filter((h) => /^#[is]-/.test(h))
+  expect(clay).toEqual([])
+})
+
 test('the facts row carries the four real counts', () => {
   setup()
   expect(screen.getByText('1 fut')).toBeInTheDocument()

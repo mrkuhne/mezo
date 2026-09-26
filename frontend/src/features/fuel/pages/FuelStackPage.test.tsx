@@ -71,6 +71,10 @@ describe('FuelStackPage — mock hub', () => {
     const tick = screen.getAllByRole('button', { name: /Origin PWO: bevettem/ })[0]
     await userEvent.click(tick)
     expect(await screen.findByRole('status')).toHaveTextContent('Origin PWO bevéve')
+    // the taken mark is the 3D tick in the lit well (U11: it replaced the ✓ glyph)
+    const taken = screen.getAllByRole('button', { name: /Origin PWO: visszavonom/ })[0]
+    expect(taken.querySelector('use[href="#t-tick"]')).not.toBeNull()
+    expect(taken.textContent).not.toMatch(/✓/)
     await userEvent.click(screen.getByRole('button', { name: 'Visszavonás' }))
     await waitFor(() => expect(
       screen.getAllByRole('button', { name: /Origin PWO: bevettem/ })[0],

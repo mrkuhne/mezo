@@ -37,7 +37,7 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
 import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { InfoButton } from '@/features/train/components/InfoButton'
 import { weekZoneRows } from '@/features/train/logic/weekZone'
 import { weekDateIso } from '@/features/train/logic/weekAgenda'
@@ -177,7 +177,7 @@ export function TrainWeekMozgasPage() {
         <PageBody className="tw-move">
           <div className="ld-move-split rise" style={{ '--d': '90ms' } as CSSProperties}>
             <div className="ld-move-box" style={{ '--mus-color': 'var(--tag-gym)' } as CSSProperties}>
-              <ClayIcon name="i-edzes" size={26} />
+              <Icon3D name="t-dumbbell" size={26} />
               <strong>{move.gymMin} perc</strong>
               <small>gym{move.gymKcal !== null ? ` · ~${move.gymKcal} kcal` : ''}</small>
               <em>
@@ -187,7 +187,7 @@ export function TrainWeekMozgasPage() {
               </em>
             </div>
             <div className="ld-move-box" style={{ '--mus-color': 'var(--tag-sport)' } as CSSProperties}>
-              <ClayIcon name="i-sport" size={26} />
+              <Icon3D name="t-volley" size={26} />
               <strong>{move.sportMin} perc</strong>
               <small>sport{move.sportKcal !== null ? ` · ${move.sportKcal} kcal` : ''}</small>
               <em>
@@ -215,7 +215,7 @@ export function TrainWeekMozgasPage() {
                 <span className="ld-group-head">
                   <strong>{g.label}</strong>
                   {sportyGroups.has(g.group) && (
-                    <span className="ld-sport-chip"><ClayIcon name="i-sport" size={12} />sport is</span>
+                    <span className="ld-sport-chip"><Icon3D name="t-volley" size={12} />sport is</span>
                   )}
                   <b>{g.doneSets} / {g.plannedSets} <small>szett</small></b>
                 </span>

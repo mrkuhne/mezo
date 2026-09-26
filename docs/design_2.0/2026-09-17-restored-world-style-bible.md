@@ -3,6 +3,13 @@
 **Date:** 2026-09-17 · **Status:** canon · **Bead:** `mezo-ju4j6.2` (epic `mezo-ju4j6`)
 **Supersedes for styling purposes:** every Titanium doc in this folder.
 
+> **⚠️ 2026-09-23 → 2026-09-26: no longer the primary styling reference.** The owner moved the app
+> to the **Üveg** material ([2026-09-23 üveg style bible](2026-09-23-uveg-style-bible.md), epic
+> `mezo-me75u`, completed 2026-09-26). This document stays canon ONLY for what the üveg bible does
+> not override: card anatomy (§3), the **§3.4 ranking**, data-as-graphics (§4) and Appendices A–E.
+> Its materials — light washed ground, washed tiles, clay icons, no glass/glow — are superseded.
+> The paragraph below is the 2026-09-17 wording, kept for history.
+
 > **This is the ONLY styling reference for the visszaöltöztetés.** Re-dress beads (`mezo-ju4j6.3`
 > … `.16`) read this document and nothing else for visual decisions. Do not restyle from memory,
 > do not open a Titanium doc for a look, and do not invent a new material.

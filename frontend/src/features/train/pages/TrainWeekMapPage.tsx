@@ -24,7 +24,7 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
 import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { BodyMap, type BodyHeat } from '@/features/train/components/BodyMap'
 import { InfoButton } from '@/features/train/components/InfoButton'
 import { weekZoneRows } from '@/features/train/logic/weekZone'
@@ -174,7 +174,7 @@ export function TrainWeekMapPage() {
 
           {reach.length > 0 && (
             <p className="ld-sport-note rise" style={{ '--d': '150ms' } as CSSProperties}>
-              <ClayIcon name="i-sport" size={20} />
+              <Icon3D name="t-volley" size={20} />
               <span>
                 A sport ezeket is dolgoztatta: {reach.join(', ')}.
                 <em>Becslés, nem mérés — a szettszámokba nem számít bele.</em>

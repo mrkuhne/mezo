@@ -11,6 +11,16 @@ import { initialWizardState } from '@/features/train/wizard/wizardState'
 // with fireEvent or otherwise (verified empirically). InterviewStep receives `generating`
 // as a prop, so it is independently and deterministically testable here.
 describe('InterviewStep', () => {
+  // U11 (mezo-me75u.11): the four step heads wear the 3D set by meaning (days, goal, focus,
+  // the automatic ramp), no clay glyph.
+  test('the step heads carry 3D icons by meaning', () => {
+    const { container } = render(
+      <InterviewStep state={initialWizardState('2026-09-07')} dispatch={vi.fn()} onGenerate={vi.fn()} generating={false} />,
+    )
+    const heads = Array.from(container.querySelectorAll('.mz-stephead > svg use')).map((u) => u.getAttribute('href'))
+    expect(heads).toEqual(['#t-calendar', '#t-target', '#t-muscle', '#t-peak'])
+  })
+
   test('the generate CTA switches label and disables while generating', () => {
     const state = initialWizardState('2026-09-07')
     const dispatch = vi.fn()

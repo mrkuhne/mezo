@@ -79,4 +79,20 @@ describe('NapomDimensionRow', () => {
     rerender(<NapomDimensionRow dimension={{ ...nutrition, score: null, status: 'IN_PROGRESS' }} mode="today" i={0} />)
     expect(screen.getByText('ÚTON')).toBeInTheDocument()
   })
+
+  test('a ✓ fact value (the engine\'s water yes) is the 3D tick with a spoken word, in the line and the chip (U11)', () => {
+    const logging: NormalizedDayDimension = {
+      id: 'logging', label: 'Naplózás', weight: 0.1, score: 90, status: 'DONE',
+      facts: [{ label: 'étkezés időben', value: '80%' }, { label: 'víz', value: '✓' }, { label: 'check-in', value: '4 / 4' }],
+      note: null,
+    }
+    const { container } = render(<NapomDimensionRow dimension={logging} mode="scored" i={0} />)
+    const row = screen.getByRole('button', { name: /^Logolás/ })
+    expect(row).toHaveAccessibleDescription('étkezés időben 80% · víz megvan · check-in 4 / 4')
+    expect(container.querySelector('.napom-mid small use')?.getAttribute('href')).toBe('#t-tick')
+    const chip = [...container.querySelectorAll('.napom-flat')].find((c) => c.textContent?.startsWith('víz'))
+    expect(chip?.querySelector('use')?.getAttribute('href')).toBe('#t-tick')
+    expect(chip?.textContent).toBe('víz · megvan')
+    expect(container.textContent).not.toMatch(/✓/)
+  })
 })

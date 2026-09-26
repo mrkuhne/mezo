@@ -43,7 +43,7 @@ import { useTrain } from '@/data/hooks'
 import type { Mesocycle, MesoPhase } from '@/data/types'
 import { cn } from '@/shared/lib/cn'
 import { GhostState } from '@/shared/ui/GhostState'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { MesoWeekDays, trainingDay } from '@/features/train/components/MesoWeekDays'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { nextRolloverChips, phaseChip, runBands, weekDots, type Phase } from '@/features/train/logic/mesoBands'
@@ -109,7 +109,7 @@ export function MesoTervPage() {
           aria-label="Melyik izmod hol tart"
           onClick={() => navigate(`/train/mesocycles/${meso.id}/week`)}
         >
-          <span className="pl-dest-art"><ClayIcon name="i-heti" size={40} className="icon" /></span>
+          <span className="pl-dest-art"><Icon3D name="t-muscle" size={40} className="icon" /></span>
           <strong>Melyik izmod hol tart</strong>
           <small>
             {(() => {
@@ -127,7 +127,7 @@ export function MesoTervPage() {
         aria-label="Edzéstervek"
         onClick={openKonyvtar}
       >
-        <span className="pl-dest-art"><ClayIcon name="i-polc" size={40} className="icon" /></span>
+        <span className="pl-dest-art"><Icon3D name="t-stack" size={40} className="icon" /></span>
         <strong>Edzéstervek</strong>
         <small>Amiből indíthatsz</small>
         <b aria-hidden="true">↗</b>
@@ -199,7 +199,7 @@ export function MesoTervPage() {
                   <circle className="t" cx="36" cy="36" r="31" pathLength={100} />
                   <circle className="f" cx="36" cy="36" r="31" pathLength={100} />
                 </svg>
-                <b><ClayIcon name="i-meso" size={30} className="icon" /></b>
+                <b><Icon3D name="t-peak" size={30} className="icon" /></b>
               </span>
             </span>
             <h2>{meso.title}</h2>
@@ -246,7 +246,7 @@ export function MesoTervPage() {
             aria-label="Edzésterv lezárása"
             onClick={() => setClosing(true)}
           >
-            <span className="pl-item-art"><ClayIcon name="i-erme" size={32} className="icon" /></span>
+            <span className="pl-item-art"><Icon3D name="t-coin" size={32} className="icon" /></span>
             <span className="pl-item-name">Edzésterv lezárása</span>
             <b aria-hidden="true">›</b>
             <span className="pl-item-say">Ha ezt a {meso.weeks} hetet végigcsináltad</span>

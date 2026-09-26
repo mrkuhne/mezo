@@ -67,7 +67,8 @@ function BandRowView({ row, onToggle, onOpen }: {
         aria-label={`${row.name}: ${taken ? 'visszavonom' : 'bevettem'}`}
         onClick={onToggle}
       >
-        <span aria-hidden="true">{taken ? '✓' : ''}</span>
+        {/* the lit well carries the 3D tick (U11: it replaced the ✓ glyph); the state is aria-pressed */}
+        <span aria-hidden="true">{taken && <Icon3D name="t-tick" size={24} />}</span>
       </button>
       <button type="button" className="fsx-row-main" aria-label={`${row.name} részletei`} onClick={onOpen}>
         <span className="fsx-row-art" aria-hidden="true"><Icon3D name="t-supps" size={28} /></span>

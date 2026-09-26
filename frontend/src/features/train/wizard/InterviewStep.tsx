@@ -13,7 +13,7 @@ import { MusclePriorityPicker } from '@/features/train/components/MusclePriority
 import { splitLine, weekTotals } from '@/features/train/logic/mesoPlan'
 import type { WizardAction, WizardState } from '@/features/train/wizard/wizardState'
 import { CtaPrimary } from '@/shared/ui/Cta'
-import { ClayIcon, ClaySpot, Icon3D } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { StatCell, StatStrip } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
@@ -63,7 +63,7 @@ export function InterviewStep({ state, dispatch, onGenerate, generating }: Inter
 
       <div className="mz-stepcard mz-stepcard-coral rise" style={delay(40)}>
         <div className="mz-stephead">
-          <ClayIcon name="i-edzes" size={28} />
+          <Icon3D name="t-calendar" size={28} />
           <span className="mz-eyebrow mz-eb-coral mz-grow">Edzésnapok</span>
           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--mz-ink-soft)' }}>
             {days.length} nap
@@ -80,7 +80,9 @@ export function InterviewStep({ state, dispatch, onGenerate, generating }: Inter
               onClick={() => dispatch({ type: 'setDayCount', n })}
             >
               <b>{n}</b>
-              <small>{sub}</small>
+              {/* A <wbr> after each slash: „upper/lower" wraps as „upper/ lower" in a narrow
+                  tile instead of mid-word (U11); the text itself is unchanged. */}
+              <small>{sub.split('/').flatMap((part, i) => (i ? ['/', <wbr key={i} />, part] : [part]))}</small>
             </button>
           ))}
         </div>
@@ -125,7 +127,7 @@ export function InterviewStep({ state, dispatch, onGenerate, generating }: Inter
 
       <div className="mz-stepcard mz-stepcard-lav rise" style={delay(110)}>
         <div className="mz-stephead">
-          <ClayIcon name="i-mezo" size={28} />
+          <Icon3D name="t-target" size={28} />
           <span className="mz-eyebrow mz-eb-lav mz-grow">A célod · opcionális</span>
         </div>
         <textarea
@@ -143,7 +145,7 @@ export function InterviewStep({ state, dispatch, onGenerate, generating }: Inter
 
       <div className="mz-stepcard mz-stepcard-rose rise" style={delay(180)}>
         <div className="mz-stephead">
-          <ClayIcon name="i-suly" size={28} />
+          <Icon3D name="t-muscle" size={28} />
           <span className="mz-eyebrow mz-eb-rose mz-grow">Fókusz · max 2 hangsúly</span>
         </div>
         <MusclePriorityPicker
@@ -160,7 +162,7 @@ export function InterviewStep({ state, dispatch, onGenerate, generating }: Inter
 
       <div className="mz-stepcard mz-stepcard-gold rise" style={delay(250)}>
         <div className="mz-stephead">
-          <ClaySpot name="s-hajtas" size={28} />
+          <Icon3D name="t-peak" size={28} />
           <span className="mz-eyebrow mz-eb-gold mz-grow">Ami magától megy</span>
         </div>
         <StatStrip>
