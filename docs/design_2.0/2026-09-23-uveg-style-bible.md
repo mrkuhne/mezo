@@ -592,8 +592,12 @@ Picked variant 3 of [`prototypes/uveg-olvashatosag.html`](prototypes/uveg-olvash
     background. A hero halo is a glow around the hero object, not a page wash: the shared rule at the end of
     `prototype.css` mutes every hero `::before` halo to 40%. A new page hero with its own halo joins that list.
 79. **Header, status bar and page are one color, no transition** (`mezo-5knnj`). Nothing may tint the page right
-    under the opaque header: `MozaikPage`'s `.mz-p-<tone>` top wash is transparent in dark, the aurora blobs start
-    below the header zone (top ≥ 230px), and the dark `--halo-*` tokens run at ~40% strength.
+    under the header: `MozaikPage`'s `.mz-p-<tone>` top wash is transparent in dark and the dark `--halo-*` tokens
+    run at ~40% strength.
+80. **The header is see-through, the background runs to the top of the phone** (`mezo-r3s4j`). In dark the status
+    bar and `.app-head-bg` have no fill: the header layer is a frosted veil (backdrop blur, reaching up behind the
+    status bar, 18px fade at its foot). At rest you see the aurora straight through it; only once the header
+    condenses on scroll does a 45% canvas tint join the blur. Never give the dark header an opaque background again.
 
 ### Emodzsi-söprés (`mezo-z5lov`, 2026-09-26)
 

@@ -200,14 +200,16 @@ main.tsx
 
 The shell uses one uniform near-black graphite canvas (`mezo-x4r3c`, then `mezo-nn7h0`, owner
 request): page background, opaque sticky header, desktop status bar and browser/PWA theme color
-all use `#141210`. Every page shares ONE background: that canvas plus the faint `.uv-aurora`
+all use `#141210`; in dark the header and the status bar are see-through (`mezo-r3s4j`: a
+frosted backdrop-blur veil, tinted only once condensed on scroll), so the background runs unbroken
+to the top of the phone. Every page shares ONE background: that canvas plus the faint `.uv-aurora`
 field (opacity .16) fixed behind the scroller. The daypart sky and header washes stay hidden, and
 the per-page hero halos (`.uv-halo`, `.fmx-hero`, `.trm-hero`, `.nap-center-orbit`, …) are muted
 to 40% so no page paints its own colored ground. For legibility the dark `--text-secondary` is
 `#D8CEC2` and `--text-muted` `#AFA294` (were `#B7A899` / `#8A7A6A`, unreadable on black).
 Decision prototype: `docs/design_2.0/prototypes/uveg-olvashatosag.html` (variant 3).
 The header and the page must read as one surface (`mezo-5knnj`): in dark the `.mz-p-<tone>` page
-washes are transparent, the aurora blobs sit below the header zone, and the `--halo-*` page-top
+washes are transparent and the `--halo-*` page-top
 tokens are dark-overridden at ~40% strength.
 
 The first üvegesítés slice. Every later slice reuses these pieces untouched; a slice that needs
@@ -258,7 +260,7 @@ something new extends the kit, never forks a second recipe.
   `── uveg nap mai|oldalak|rogzites|uzenetek|napzaras (`. `shared/ui/Island.tsx` (dead) is gone.
 - **Glass chrome — `── uveg chrome (` block (bible §7).** Same content and behavior, glass
   material: the header's round `.glass.is-round` buttons (badges outside), the gradient "boop"
-  wordmark, the opaque canvas-colored header background, `DayOrb` redrawn as a glass sphere holding a
+  wordmark, the see-through frosted header veil, `DayOrb` redrawn as a glass sphere holding a
   waving coral liquid (`data-level` = the liquid surface; tone still from `intensity`), the
   notification panel as a sky glass card; ONE floating `.tab-bar.glass.is-still` (10px off the
   sides, 12px off the bottom, `--c` = the domain accent from `[data-domain]`, living Boop in a lit
