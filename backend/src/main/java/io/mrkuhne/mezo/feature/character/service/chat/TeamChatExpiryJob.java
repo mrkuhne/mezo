@@ -12,6 +12,10 @@ import org.springframework.stereotype.Component;
  * Csapatfal Act III (mezo-a9bo7.21): once a day, every ügy still OPEN after
  * {@code mezo.character.team-chat.expire-after-days} becomes EXPIRED. One global query — no
  * per-user fan-out, the expiry is a plain age cut-off.
+ *
+ * <p>Task 11 (mezo-a9bo7.23) adds the hourly catch-up sweep to the same class, gated by the SAME
+ * {@code team-chat-expiry-job} switch — the {@code QuestJob} precedent (one switch per class, both
+ * {@code @Scheduled} methods share it) rather than a second property per method.
  */
 @Slf4j
 @Component
@@ -32,6 +36,18 @@ public class TeamChatExpiryJob {
             log.info("Team chat expiry: {} ügy expired", expired);
         } catch (Exception e) {
             log.warn("Team chat expiry failed", e);
+        }
+    }
+
+    /** Task 11 (mezo-a9bo7.23): the hourly safety net — a missed raise/clear still opens/resolves
+     *  its ügy. {@link TeamChatService#catchUp} isolates per-user failures itself (UserFanOut), so
+     *  this try/catch is only the outer belt-and-braces the other job methods use too. */
+    @Scheduled(cron = "${mezo.character.team-chat.catchup-cron}", zone = "Europe/Budapest")
+    public void runCatchUp() {
+        try {
+            teamChatService.catchUp(Instant.now());
+        } catch (Exception e) {
+            log.warn("Team chat catch-up failed", e);
         }
     }
 }

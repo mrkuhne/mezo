@@ -1,5 +1,8 @@
 package io.mrkuhne.mezo.feature.character.service.chat;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
+import io.mrkuhne.mezo.feature.auth.service.UserFanOut;
 import io.mrkuhne.mezo.feature.character.config.TeamChatProperties;
 import io.mrkuhne.mezo.feature.character.entity.EditionFactsEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.TeamChatActionsEnvelope;
@@ -8,6 +11,11 @@ import io.mrkuhne.mezo.feature.character.entity.TeamChatThreadEntity;
 import io.mrkuhne.mezo.feature.character.repository.TeamChatLineRepository;
 import io.mrkuhne.mezo.feature.character.repository.TeamChatThreadRepository;
 import io.mrkuhne.mezo.feature.character.service.edition.TeamCharacter;
+import io.mrkuhne.mezo.feature.companion.flags.entity.CompanionFlagLogEntity;
+import io.mrkuhne.mezo.feature.companion.flags.repository.CompanionFlagLogRepository;
+import io.mrkuhne.mezo.feature.companion.flags.repository.CompanionFlagTraceRepository;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagCatalog;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagTraceCopy;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict.ClearEvidence;
 import io.mrkuhne.mezo.feature.proactive.service.AdviceActionCatalog;
@@ -26,6 +34,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -69,6 +78,9 @@ public class TeamChatService {
 
     static final int REPLY_MAX_CHARS = 1000;
 
+    /** Task 10 (mezo-a9bo7.23): the push body's cap — an SMS-length excerpt of the OPEN line. */
+    static final int PUSH_BODY_MAX_CHARS = 140;
+
     private final TeamChatThreadRepository threads;
     private final TeamChatLineRepository lines;
     private final TeamChatProperties properties;
@@ -76,11 +88,29 @@ public class TeamChatService {
     private final AdviceActionCatalog actionCatalog;
     private final AdviceApplyService adviceApplyService;
     private final TeamChatVoiceWriter voiceWriter;
+    private final AppNotificationEmitter appNotifications;
+    private final CompanionFlagLogRepository flagLogs;
+    private final CompanionFlagTraceRepository flagTraces;
+    private final UserFanOut userFanOut;
+    private final ObjectProvider<TeamChatService> self;
+
+    /** Task 11 (mezo-a9bo7.23): the catch-up sweep's lookback — how far back a missed raise still
+     *  gets picked up. */
+    static final long CATCH_UP_LOOKBACK_HOURS = 24;
 
     /** A raise opens an ügy — a no-op when the rule has no owner (e.g. {@code all_healthy}), an ügy
-     *  for it is already open, the day's line cap is reached, or the library has no eligible entry. */
+     *  for it is already open, the day's line cap is reached, or the library has no eligible entry.
+     *  Pushes on open (Task 10) — see the {@code allowPush} overload for the catch-up path. */
     @Transactional
     public Optional<TeamChatThreadEntity> open(UUID userId, String flagKey, Instant at) {
+        return open(userId, flagKey, at, true);
+    }
+
+    /** Task 11 (mezo-a9bo7.23): {@code allowPush=false} lets the hourly catch-up sweep open an ügy
+     *  for a raise the async listener missed WITHOUT paging the user — the moment for a push has
+     *  already passed. */
+    @Transactional
+    public Optional<TeamChatThreadEntity> open(UUID userId, String flagKey, Instant at, boolean allowPush) {
         Optional<TeamCharacter> owner = TeamChatCast.ownerOf(flagKey);
         if (owner.isEmpty()) {
             return Optional.empty();
@@ -123,6 +153,9 @@ public class TeamChatService {
         writeGuestLine(thread, voiced, facts, at);
         voiced.skepticBody().ifPresent(body -> writeOptionalLine(thread, KIND_SKEPTIC,
                 TeamCharacter.SZKEPTIKUS.key(), body, voiced.voiced(), facts, at));
+        if (allowPush) {
+            maybePush(thread, owner.get(), voiced.ownerBody(), at);
+        }
         log.info("Team chat ügy {} opened for user {} flag {} by {}", thread.getId(), userId, flagKey,
                 thread.getOwnerCharacter());
         return Optional.of(thread);
@@ -168,6 +201,57 @@ public class TeamChatService {
         }
         threads.saveAllAndFlush(stale);
         return stale.size();
+    }
+
+    /** Task 11 (mezo-a9bo7.23): the hourly catch-up sweep — a safety net for a raise/clear the
+     *  {@link TeamChatEventListener} missed (e.g. an app restart mid-flight). Per active user
+     *  ({@link UserFanOut#forEachActiveUser}), each user runs in its OWN transaction via the
+     *  self-injection idiom ({@code TeamEditionService}), so one user's failure never rolls back
+     *  another's, and the fan-out's own try/catch keeps a failing user from aborting the sweep.
+     *  Idempotent: a second run changes nothing. Never {@code @Transactional} itself — the
+     *  self-call must go through the proxy. */
+    public void catchUp(Instant now) {
+        userFanOut.forEachActiveUser("Team chat catch-up", user -> self.getObject().catchUpUser(user.getId(), now));
+    }
+
+    @Transactional
+    void catchUpUser(UUID userId, Instant now) {
+        catchUpMissedOpens(userId, now);
+        catchUpMissedResolves(userId);
+    }
+
+    /** Every raise in the last {@link #CATCH_UP_LOOKBACK_HOURS} hours with no thread opened at/after
+     *  it for that flag opens one WITHOUT a push — the moment for paging the user already passed.
+     *  {@code all_healthy} is skipped: it never has an owner, so {@link #open} already no-ops for it. */
+    private void catchUpMissedOpens(UUID userId, Instant now) {
+        Instant since = now.minus(CATCH_UP_LOOKBACK_HOURS, ChronoUnit.HOURS);
+        List<CompanionFlagLogEntity> raises =
+                flagLogs.findByCreatedByAndDeletedFalseAndCreatedAtGreaterThanEqualOrderByCreatedAtAsc(userId, since);
+        for (CompanionFlagLogEntity raise : raises) {
+            String flagKey = raise.getFlagKey();
+            if (FlagKey.ALL_HEALTHY.equals(flagKey)) {
+                continue;
+            }
+            if (threads.existsByCreatedByAndFlagKeyAndOpenedAtGreaterThanEqualAndDeletedFalse(
+                    userId, flagKey, raise.getCreatedAt())) {
+                continue; // the listener (or an earlier sweep) already opened this raise's ügy
+            }
+            open(userId, flagKey, raise.getCreatedAt(), false);
+        }
+    }
+
+    /** Every OPEN ügy whose rule's latest trace row is a clear gets resolved with that row's
+     *  evidence — the clear-event counterpart the listener may have missed. Backdated to the
+     *  trace row's own {@code occurredAt} (the {@link #catchUpMissedOpens} precedent): the chip
+     *  reads "RENDEZŐDÖTT · hh:mm" and must say when the flag actually cleared, not when the
+     *  sweep happened to notice. */
+    private void catchUpMissedResolves(UUID userId) {
+        for (TeamChatThreadEntity thread : threads.findByCreatedByAndStatusAndDeletedFalseOrderByOpenedAtAsc(
+                userId, STATUS_OPEN)) {
+            flagTraces.findFirstByCreatedByAndFlagKeyOrderByOccurredAtDesc(userId, thread.getFlagKey())
+                    .filter(trace -> "clear".equals(trace.getOutcome()))
+                    .ifPresent(trace -> resolve(userId, thread.getFlagKey(), trace.getEvidence(), trace.getOccurredAt()));
+        }
     }
 
     /** The user's reply — a USER line on their own ügy; it never resolves the ügy. */
@@ -225,6 +309,43 @@ public class TeamChatService {
             voiced.guestBody().ifPresent(body -> writeOptionalLine(thread, KIND_GUEST,
                     thread.getGuestCharacter(), body, voiced.voiced(), facts, at));
         }
+    }
+
+    /** Task 10 (mezo-a9bo7.23): at most {@code maxPushesPerDay} phone pushes per user per local
+     *  day — the second only when this ügy's flag key outranks every ügy already pushed today
+     *  ({@link TeamChatPushPolicy}). Never called from {@link #resolve} — a resolution never
+     *  pushes. */
+    private void maybePush(TeamChatThreadEntity thread, TeamCharacter owner, String ownerBody, Instant at) {
+        List<String> pushedToday = pushedTodayFlagKeys(thread.getCreatedBy(), at);
+        if (!TeamChatPushPolicy.shouldPush(thread.getFlagKey(), pushedToday, properties.maxPushesPerDay())) {
+            return;
+        }
+        thread.setPushed(true);
+        threads.saveAndFlush(thread);
+        String title = owner.displayName() + " · " + FlagCatalog.labelOf(thread.getFlagKey());
+        appNotifications.emit(thread.getCreatedBy(), AppNotificationKind.TEAM_CHAT, title,
+                pushExcerpt(ownerBody), AppNotificationKind.TEAM_CHAT.deeplink(), thread.getId(),
+                "team_chat:" + thread.getId());
+    }
+
+    /** The flag keys of every ügy already pushed on {@code at}'s local day (the user's zone, the
+     *  {@link #capReached} idiom). */
+    private List<String> pushedTodayFlagKeys(UUID userId, Instant at) {
+        LocalDate day = at.atZone(properties.zone()).toLocalDate();
+        Instant from = day.atStartOfDay(properties.zone()).toInstant();
+        Instant to = day.plusDays(1).atStartOfDay(properties.zone()).toInstant().minusNanos(1000);
+        return threads.findByCreatedByAndPushedTrueAndOpenedAtBetweenAndDeletedFalse(userId, from, to).stream()
+                .map(TeamChatThreadEntity::getFlagKey)
+                .toList();
+    }
+
+    /** The OPEN line's body, cut to {@link #PUSH_BODY_MAX_CHARS} with an ellipsis when trimmed. */
+    private static String pushExcerpt(String body) {
+        String trimmed = body == null ? "" : body.trim();
+        if (trimmed.length() <= PUSH_BODY_MAX_CHARS) {
+            return trimmed;
+        }
+        return trimmed.substring(0, PUSH_BODY_MAX_CHARS - 1).stripTrailing() + "…";
     }
 
     private boolean capReached(UUID userId, Instant at) {

@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepGoalRepository;
 import io.mrkuhne.mezo.feature.character.config.TeamChatProperties;
 import io.mrkuhne.mezo.feature.character.entity.TeamChatLineEntity;
@@ -13,7 +15,9 @@ import io.mrkuhne.mezo.feature.character.repository.TeamChatLineRepository;
 import io.mrkuhne.mezo.feature.character.repository.TeamChatThreadRepository;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatService;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.companion.flags.entity.CompanionFlagTraceEntity;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
+import io.mrkuhne.mezo.feature.companion.flags.repository.CompanionFlagTraceRepository;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagClearedEvent;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaisedEvent;
@@ -51,6 +55,7 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
 
     @Autowired private TeamChatService service;
     @Autowired private TeamChatThreadRepository threads;
+    @Autowired private AppNotificationRepository appNotifications;
     @Autowired private TeamChatLineRepository lines;
     @Autowired private TeamChatProperties properties;
     @Autowired private CompanionProperties companionProperties;
@@ -58,6 +63,7 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
     @Autowired private FlagLogPopulator flagLogPopulator;
     @Autowired private SleepGoalPopulator sleepGoalPopulator;
     @Autowired private SleepGoalRepository sleepGoalRepository;
+    @Autowired private CompanionFlagTraceRepository flagTraces;
     @Autowired private ApplicationEventPublisher publisher;
     @Autowired private TransactionTemplate tx;
 
@@ -387,5 +393,200 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
         assertThatThrownBy(() -> service.apply(owner, thread.getId(), AdviceActionKey.LIGHTEN_TOMORROW))
                 .isInstanceOf(SystemRuntimeErrorException.class)
                 .hasMessageContaining("CHARACTER_TEAM_CHAT_ACTION_NOT_OFFERED");
+    }
+
+    // ---- Task 10 (mezo-a9bo7.23): the push budget — at most 2/day, the second only when its
+    // ügy outranks every ügy already pushed today (AdvicePriority: load_fuel_mismatch outranks
+    // sleep_debt). ----
+
+    // (j) the lower-severity ügy opens first, the more severe one second — both fit the budget.
+    @Test
+    void open_lowerSeverityFirstThenMoreSevere_pushesBoth() {
+        UUID owner = owner();
+        Instant now = Instant.now();
+        raiseSleepDebtLog(owner);
+        raiseLoadFuelLog(owner, 7);
+
+        TeamChatThreadEntity first = service.open(owner, FlagKey.SLEEP_DEBT, now).orElseThrow();
+        TeamChatThreadEntity second = service.open(owner, FlagKey.LOAD_FUEL_MISMATCH, now).orElseThrow();
+
+        assertThat(threads.findById(first.getId()).orElseThrow().getPushed()).isTrue();
+        assertThat(threads.findById(second.getId()).orElseThrow().getPushed()).isTrue();
+        assertThat(appNotifications.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+                .filteredOn(n -> AppNotificationKind.TEAM_CHAT.key().equals(n.getKind()))
+                .hasSize(2)
+                .allSatisfy(n -> assertThat(n.getDeeplink()).isEqualTo("/mezo/elo"));
+    }
+
+    // (k) reversed order: the more severe ügy opens first — the second, less severe one is silent.
+    @Test
+    void open_moreSevereFirstThenLowerSeverity_pushesOnlyTheFirst() {
+        UUID owner = owner();
+        Instant now = Instant.now();
+        raiseSleepDebtLog(owner);
+        raiseLoadFuelLog(owner, 7);
+
+        TeamChatThreadEntity first = service.open(owner, FlagKey.LOAD_FUEL_MISMATCH, now).orElseThrow();
+        TeamChatThreadEntity second = service.open(owner, FlagKey.SLEEP_DEBT, now).orElseThrow();
+
+        assertThat(threads.findById(first.getId()).orElseThrow().getPushed()).isTrue();
+        assertThat(threads.findById(second.getId()).orElseThrow().getPushed()).isFalse();
+        assertThat(appNotifications.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+                .filteredOn(n -> AppNotificationKind.TEAM_CHAT.key().equals(n.getKind()))
+                .singleElement()
+                .satisfies(n -> {
+                    assertThat(n.getRefId()).isEqualTo(first.getId());
+                    assertThat(n.getDedupKey()).isEqualTo("team_chat:" + first.getId());
+                    assertThat(n.getTitle()).isEqualTo("Mocor · Terhelés–táplálás");
+                    assertThat(n.getDeeplink()).isEqualTo("/mezo/elo");
+                });
+    }
+
+    // (l) a resolve never pushes, budget or not.
+    @Test
+    void resolve_neverPushes() {
+        UUID owner = owner();
+        raiseSleepDebtLog(owner);
+        service.open(owner, FlagKey.SLEEP_DEBT, Instant.now());
+
+        service.resolve(owner, FlagKey.SLEEP_DEBT,
+                new FlagVerdict.ClearEvidence("deficit_hours", 2.0, 5.0, null), Instant.now());
+
+        assertThat(appNotifications.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+                .filteredOn(n -> AppNotificationKind.TEAM_CHAT.key().equals(n.getKind()))
+                .hasSize(1); // only the OPEN's push — the RESOLVE wrote no second one.
+    }
+
+    // ---- Task 11 (mezo-a9bo7.23): the hourly catch-up sweep — a missed raise still opens its
+    // ügy WITHOUT a push (the moment passed), a missed clear still resolves it, and a second run
+    // changes nothing. ----
+
+    /** A trace row this user's rule left behind — the resolve gate's input. */
+    private CompanionFlagTraceEntity writeTrace(UUID owner, String flagKey, String outcome,
+            FlagVerdict.ClearEvidence evidence, Instant occurredAt) {
+        CompanionFlagTraceEntity trace = new CompanionFlagTraceEntity();
+        trace.setCreatedBy(owner);
+        trace.setFlagKey(flagKey);
+        trace.setOutcome(outcome);
+        trace.setEvidence(evidence);
+        trace.setOccurredAt(occurredAt);
+        return flagTraces.saveAndFlush(trace);
+    }
+
+    // (m) a raise with no thread at all → catch-up opens it, unpushed, no app notification.
+    @Test
+    void catchUp_opensAMissedRaise_withoutAPush() {
+        UUID owner = owner();
+        flagLogPopulator.raiseAt(owner, FlagKey.SLEEP_DEBT, FlagKey.SOURCE_WRITE,
+                FlagPayloadEnvelope.sleepDebt(new FlagPayloadEnvelope.SleepDebt(
+                        7.5, 7, 7, 5.0, 6.5, Map.of())),
+                Instant.now().minus(2, ChronoUnit.HOURS));
+
+        service.catchUp(Instant.now());
+
+        TeamChatThreadEntity thread = threads.findFirstByCreatedByAndFlagKeyAndStatusAndDeletedFalse(
+                owner, FlagKey.SLEEP_DEBT, "OPEN").orElseThrow();
+        assertThat(thread.getPushed()).isFalse();
+        assertThat(appNotifications.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+                .filteredOn(n -> AppNotificationKind.TEAM_CHAT.key().equals(n.getKind()))
+                .isEmpty();
+        assertThat(linesOf(owner)).hasSize(1);
+    }
+
+    // (n) a raise older than the 24h lookback is left alone.
+    @Test
+    void catchUp_ignoresARaiseOlderThanTheLookback() {
+        UUID owner = owner();
+        flagLogPopulator.raiseAt(owner, FlagKey.SLEEP_DEBT, FlagKey.SOURCE_WRITE,
+                FlagPayloadEnvelope.sleepDebt(new FlagPayloadEnvelope.SleepDebt(
+                        7.5, 7, 7, 5.0, 6.5, Map.of())),
+                Instant.now().minus(25, ChronoUnit.HOURS));
+
+        service.catchUp(Instant.now());
+
+        assertThat(threadsOf(owner)).isEmpty();
+    }
+
+    // (o) all_healthy never opens, even through the sweep.
+    @Test
+    void catchUp_skipsAllHealthyRaises() {
+        UUID owner = owner();
+        flagLogPopulator.raiseAt(owner, FlagKey.ALL_HEALTHY, FlagKey.SOURCE_WRITE, null,
+                Instant.now().minus(1, ChronoUnit.HOURS));
+
+        service.catchUp(Instant.now());
+
+        assertThat(threadsOf(owner)).isEmpty();
+    }
+
+    // (p) a raise the listener already handled (a thread already opened at/after it) is left alone.
+    @Test
+    void catchUp_leavesAnAlreadyOpenedRaiseAlone() {
+        UUID owner = owner();
+        raiseSleepDebtLog(owner);
+        TeamChatThreadEntity opened = service.open(owner, FlagKey.SLEEP_DEBT, Instant.now()).orElseThrow();
+
+        service.catchUp(Instant.now());
+
+        assertThat(threadsOf(owner)).singleElement()
+                .satisfies(t -> assertThat(t.getId()).isEqualTo(opened.getId()));
+    }
+
+    // (q) an OPEN ügy whose rule's latest trace is clear gets resolved by the sweep.
+    @Test
+    void catchUp_resolvesAnOpenThreadWhoseLatestTraceIsClear() {
+        UUID owner = owner();
+        raiseSleepDebtLog(owner);
+        TeamChatThreadEntity thread = service.open(owner, FlagKey.SLEEP_DEBT, Instant.now()).orElseThrow();
+        FlagVerdict.ClearEvidence evidence = new FlagVerdict.ClearEvidence("deficit_hours", 2.0, 5.0, null);
+        // Distinct from the catch-up run time below, so the assertion actually pins the backdate
+        // (the chip reads "RENDEZŐDÖTT · hh:mm" — it must say when the flag really cleared).
+        Instant clearedAt = Instant.now().minus(3, ChronoUnit.HOURS).truncatedTo(ChronoUnit.MICROS);
+        writeTrace(owner, FlagKey.SLEEP_DEBT, "clear", evidence, clearedAt);
+
+        service.catchUp(Instant.now());
+
+        TeamChatThreadEntity reread = threads.findById(thread.getId()).orElseThrow();
+        assertThat(reread.getStatus()).isEqualTo("RESOLVED");
+        assertThat(reread.getClosedAt()).isEqualTo(clearedAt);
+        assertThat(linesOf(thread)).extracting(TeamChatLineEntity::getKind).contains("RESOLVE");
+    }
+
+    // (r) an OPEN ügy whose latest trace is still raised is left OPEN.
+    @Test
+    void catchUp_leavesAnOpenThreadAloneWhenTheLatestTraceIsNotClear() {
+        UUID owner = owner();
+        raiseSleepDebtLog(owner);
+        TeamChatThreadEntity thread = service.open(owner, FlagKey.SLEEP_DEBT, Instant.now()).orElseThrow();
+        writeTrace(owner, FlagKey.SLEEP_DEBT, "raised", null, Instant.now());
+
+        service.catchUp(Instant.now());
+
+        assertThat(threads.findById(thread.getId()).orElseThrow().getStatus()).isEqualTo("OPEN");
+    }
+
+    // (s) idempotent: running the sweep twice changes nothing further.
+    @Test
+    void catchUp_runningTwiceChangesNothing() {
+        UUID owner = owner();
+        flagLogPopulator.raiseAt(owner, FlagKey.SLEEP_DEBT, FlagKey.SOURCE_WRITE,
+                FlagPayloadEnvelope.sleepDebt(new FlagPayloadEnvelope.SleepDebt(
+                        7.5, 7, 7, 5.0, 6.5, Map.of())),
+                Instant.now().minus(2, ChronoUnit.HOURS));
+
+        service.catchUp(Instant.now());
+        TeamChatThreadEntity thread = threads.findFirstByCreatedByAndFlagKeyAndStatusAndDeletedFalse(
+                owner, FlagKey.SLEEP_DEBT, "OPEN").orElseThrow();
+        writeTrace(owner, FlagKey.SLEEP_DEBT, "clear",
+                new FlagVerdict.ClearEvidence("deficit_hours", 2.0, 5.0, null), Instant.now());
+        service.catchUp(Instant.now());
+        int linesAfterFirstResolve = linesOf(owner).size();
+        int threadsAfterFirstResolve = threadsOf(owner).size();
+
+        service.catchUp(Instant.now());
+
+        assertThat(threads.findById(thread.getId()).orElseThrow().getStatus()).isEqualTo("RESOLVED");
+        assertThat(threadsOf(owner)).hasSize(threadsAfterFirstResolve);
+        assertThat(linesOf(owner)).hasSize(linesAfterFirstResolve);
     }
 }

@@ -1931,6 +1931,9 @@ export type AppNotificationKindKey =
   | 'konzilium_verdict'
   // mezo-a9bo7.13: megjött a nap esti kiadása a csapat üzenőfalára.
   | 'team_edition'
+  // mezo-a9bo7.23: egy csapat-üzenőfali ügy phone pusha (legfeljebb napi 2, a második csak
+  // súlyosabb ügyre).
+  | 'team_chat'
 
 export interface AppNotificationView {
   id: string
@@ -1972,6 +1975,7 @@ export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, {
   character_portrait: { tint: 'character', clay: 'i-eletjel' },
   konzilium_verdict: { tint: 'character', clay: 'i-muhely' },
   team_edition: { tint: 'character', clay: 'i-mezo' },
+  team_chat: { tint: 'character', clay: 'i-mezo' },
 }
 
 /** Semleges bejegyzés egy olyan fajtára, amit ez a build még nem ismer. */

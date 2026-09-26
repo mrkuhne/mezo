@@ -20,4 +20,6 @@ public record TeamChatProperties(
         /** Pushes per user per local day. */ @Min(0) @Max(10) int maxPushesPerDay,
         /** team_chat LLM spend cap per user over the last 30 days. */
         @NotNull @DecimalMin("0.00") BigDecimal monthlyUsdCap,
-        /** The expiry sweep's schedule. */ @NotBlank String expiryCron) {}
+        /** The expiry sweep's schedule. */ @NotBlank String expiryCron,
+        /** Task 11 (mezo-a9bo7.23): the hourly catch-up sweep's schedule. */
+        @NotBlank String catchupCron) {}

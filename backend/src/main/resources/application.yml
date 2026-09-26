@@ -2188,6 +2188,9 @@ mezo:
       monthly-usd-cap: 1.00
       # 04:10 daily expiry sweep (one global query, no per-user fan-out).
       expiry-cron: "0 10 4 * * *"
+      # Hourly catch-up sweep at :20 (mezo-a9bo7.23) — a safety net so a flag raise/clear the
+      # async listener missed still opens/resolves its ügy (a missed open never pushes).
+      catchup-cron: "0 20 * * * *"
   proactive:
     contextual-feed:
       history-days: 14 # Inclusive calendar-day window.
