@@ -99,6 +99,8 @@ class DiagnosisControllerIT extends ApiIntegrationTest {
         assertThat(body.getWindowDays()).isEqualTo(14);
         assertThat(body.getSuspects()).hasSize(1);
         assertThat(body.getSuspects().get(0).getMetricKey()).isEqualTo("SLEEP_DURATION_H");
+        // mezo-u3712: the suspect's owner character is derived from its metric's domain.
+        assertThat(body.getSuspects().get(0).getDomain()).isEqualTo("sleep");
         assertThat(body.getEvidence()).hasSize(1);
         assertThat(body.getEvidence().get(0).getSourceHu()).isEqualTo("Alvás-napló");
     }

@@ -155,6 +155,11 @@ components:
         metricKey: { type: string }
         expectedDirection: { type: string, pattern: '^(up|down|stable)$' }
         totalDays: { type: integer }
+        domain:
+          type: string
+          nullable: true
+          pattern: '^(sleep|train|fuel|mind|body|other)$'
+          description: The suspect metric's domain (MetricKey.domain) — the FE's owner character (mezo-u3712).
     DiagnosisResponse:
       type: object
       required: [id, phenomenon, windowDays, verdict, confidence, evidence, suspects, generatedAt, stale]

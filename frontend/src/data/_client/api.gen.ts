@@ -10245,6 +10245,8 @@ export interface components {
             metricKey: string;
             expectedDirection: string;
             totalDays: number;
+            /** @description The suspect metric's domain (MetricKey.domain) — the FE's owner character (mezo-u3712). */
+            domain?: string | null;
         };
         DiagnosisResponse: {
             /** Format: uuid */

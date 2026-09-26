@@ -19,6 +19,7 @@ import io.mrkuhne.mezo.api.dto.WeeklyReviewHighlight;
 import io.mrkuhne.mezo.api.dto.WeeklyReviewResponse;
 import io.mrkuhne.mezo.api.dto.WeeklySuggestionResponse;
 import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
+import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.proactive.entity.ChallengeEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.ChallengeRefsEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
@@ -40,6 +41,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 
 @Mapper(componentModel = "spring")
 public interface ProactiveMapper {
@@ -81,7 +83,22 @@ public interface ProactiveMapper {
 
     DiagnosisEvidenceItem toDiagnosisEvidenceItem(DiagnosisEvidenceEnvelope.EvidenceItem item);
 
+    @Mapping(target = "domain", source = "metricKey", qualifiedByName = "suspectDomain")
     DiagnosisSuspect toDiagnosisSuspect(DiagnosisSuspectsEnvelope.Suspect suspect);
+
+    /** The suspect's metric domain, lowercase (mezo-u3712) — the stored key is the {@link MetricKey}
+     *  enum name (DiagnosisGenerator validates it that way); anything unknown maps to null.
+     *  {@code @Named} on purpose: an unqualified String→String default method would be picked up
+     *  by MapStruct for EVERY String property of this mapper. */
+    @Named("suspectDomain")
+    default String suspectDomain(String metricKey) {
+        for (MetricKey key : MetricKey.values()) {
+            if (key.name().equals(metricKey)) {
+                return key.domain().name().toLowerCase(java.util.Locale.ROOT);
+            }
+        }
+        return null;
+    }
 
     @Mapping(target = "exercise", source = "exerciseName")
     @Mapping(target = "refs", source = "refs.refs")
