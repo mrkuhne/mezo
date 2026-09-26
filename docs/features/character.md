@@ -9,8 +9,7 @@ key_files:
   - api/feature/character/character.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/CharacterPromptSource.java
   - backend/src/main/resources/db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_tables.sql
-  - backend/src/main/resources/db/changelog/1.1.0/script/202609241200_mezo-a9bo7_team_edition.sql
-  - backend/src/main/resources/db/changelog/1.1.0/script/202609261500_mezo-a9bo7_team_chat.sql
+  - backend/src/main/resources/db/changelog/1.1.0/script
   - frontend/src/data/character
   - frontend/src/features/character
 related: [companion, proactive, insights, me, _platform-api-backend]

@@ -3198,7 +3198,8 @@ itself is now a thin orchestrator: it holds no rule logic, just sixteen injected
 (`SustainedStressRule`, `SleepDebtRule`, `MomentumAtRiskRule`, `RecoveryNeededRule`,
 `LoggingGapRule`, `MissedWorkoutsRule`, `AcuteBadDayRule`, `LoadFuelMismatchRule`,
 `RapidWeightLossRule`, `JointOveruseRule`, `IgnoredNudgeRule`, `LateEatingRule`, `ProtocolLapseRule`,
-`AllHealthyRule` — each `feature/companion/flags/service/rule/*.java`) called in that fixed order,
+`MealRhythmDriftRule`, `EnergyDipMealTimingRule`, `AllHealthyRule` — each
+`feature/companion/flags/service/rule/*.java`) called in that fixed order,
 `allHealthyRule` called EVERY evaluation. The `FlagRule` interface (`flags/service/FlagRule.java`)
 is one method, `evaluate(userId, today) → FlagVerdict`, cooldowns NOT applied; each implementation
 carries its own reads and thresholds (still 100% from `FlagProperties` — no rule holds a number of
