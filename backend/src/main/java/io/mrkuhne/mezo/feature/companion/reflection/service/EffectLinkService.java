@@ -148,11 +148,7 @@ public class EffectLinkService {
      */
     @Transactional(readOnly = true)
     public String promptBlock(UUID userId) {
-        List<EffectLinkEntity> gated = effectLinkRepository.findByCreatedByAndDeletedFalse(userId).stream()
-                .filter(r -> PROMPT_STRENGTHS.contains(r.getStrengthBand()))
-                .filter(r -> PROMPT_CONFIDENCES.contains(r.getConfidenceTier()))
-                .sorted(byStrength())
-                .toList();
+        List<EffectLinkEntity> gated = gatedRows(userId);
         if (gated.isEmpty()) {
             return "";
         }
@@ -163,6 +159,30 @@ public class EffectLinkService {
                 .limit(PROMPT_CAP)
                 .toList();
         return lines.isEmpty() ? "" : PROMPT_HEADER + "\n" + String.join("\n", lines);
+    }
+
+    /** One double-gated effect row with its labels resolved — the S5 apropó matcher's and the
+     *  edition source's shared read model. Same gate and order as {@link #promptBlock}. */
+    public record GatedEffect(String subjectKind, String subjectKey, String metric,
+            String subjectLabel, String metricLabel, boolean higher,
+            String strengthBand, int subjectDays, String topicKey) {}
+
+    /**
+     * The same double-gated rows {@link #promptBlock} renders, as structured data with labels
+     * resolved and NO cap — callers cap. A row whose subject label cannot be resolved (unknown,
+     * deleted or inactive person) is skipped, exactly like {@link #promptBlock}.
+     */
+    @Transactional(readOnly = true)
+    public List<GatedEffect> gatedEffects(UUID userId) {
+        List<EffectLinkEntity> gated = gatedRows(userId);
+        if (gated.isEmpty()) {
+            return List.of();
+        }
+        Map<String, String> names = activePersonNames(userId);
+        return gated.stream()
+                .map(r -> toGatedEffect(r, names))
+                .flatMap(Optional::stream)
+                .toList();
     }
 
     /**
@@ -318,6 +338,29 @@ public class EffectLinkService {
     }
 
     // ---------------------------------------------------------------- read internals
+
+    /** The shared double gate + order for {@link #promptBlock} and {@link #gatedEffects}: strength
+     *  AND confidence both at least {@code kozepes}, strongest first. NO cap — callers cap. */
+    private List<EffectLinkEntity> gatedRows(UUID userId) {
+        return effectLinkRepository.findByCreatedByAndDeletedFalse(userId).stream()
+                .filter(r -> PROMPT_STRENGTHS.contains(r.getStrengthBand()))
+                .filter(r -> PROMPT_CONFIDENCES.contains(r.getConfidenceTier()))
+                .sorted(byStrength())
+                .toList();
+    }
+
+    private static Optional<GatedEffect> toGatedEffect(EffectLinkEntity row, Map<String, String> personNames) {
+        String subjectLabel = EffectLinkEntity.SUBJECT_PERSON.equals(row.getSubjectKind())
+                ? personNames.get(row.getSubjectKey())
+                : EVENT_LABELS_HU.get(row.getSubjectKey());
+        if (subjectLabel == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new GatedEffect(row.getSubjectKind(), row.getSubjectKey(), row.getMetric(),
+                oneLine(subjectLabel), METRIC_LABELS_HU.getOrDefault(row.getMetric(), row.getMetric()),
+                row.getCliffsDelta().signum() > 0, row.getStrengthBand(), row.getSubjectDays(),
+                topicKey(row.getSubjectKind(), row.getSubjectKey(), row.getMetric())));
+    }
 
     private static Comparator<EffectLinkEntity> byStrength() {
         return Comparator.comparing((EffectLinkEntity r) -> r.getCliffsDelta().abs()).reversed();

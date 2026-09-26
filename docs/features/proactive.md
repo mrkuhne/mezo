@@ -2,14 +2,14 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-09-26
+updated: 2026-09-27
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
   - api/feature/proactive/proactive.yml
   - frontend/src/data/today
   - frontend/src/features/today/pages/NapMezoPage.tsx
-related: [companion, today, insights, train, me, _platform-api-backend, _platform-notifications]
+related: [companion, today, insights, train, me, character, _platform-api-backend, _platform-notifications]
 ---
 
 # Proactive layer (companion feed, weekly prose, predictions) — Feature Documentation
@@ -177,6 +177,18 @@ this redesign and remain as shipped.
     existing candidate indexes never shift. Fail-open like the digest: `MemoryContextBlock.render`
     itself never throws, so a memory-platform outage never costs the user their message. Details:
     [`companion.md`](companion.md) §1 "Memória mindenhol S7".
+  - **Since Emlékezet S5 (`mezo-d6ivw.5`) `generateMorning` and `generateWindow` (midday/evening —
+    NOT sleep/weight) also consult `ProactiveMemoryBlock.apropo(userId, date, kind)`** — a plain,
+    ungated bean (it guards its own kinds internally) that picks **at most ONE** "apropó": a named
+    effect ([`companion.md`](companion.md) `EffectLinkService.gatedEffects`, the double-gated
+    strength+confidence rows) whose subject a same-day/yesterday mention or a planned workout
+    surfaced. See §3 below ("The apropó matcher") for the full trigger/cooldown/rendering mechanism;
+    it is injected identically on both the legacy JSON/prose path (appended into `payload`, the ref
+    appended unconditionally to `resolvedRefs`/`refs`) and the contextual path (appended into the
+    `facts` string handed to `generateContextual`) — **all four call sites** (`generateMorning`
+    legacy + contextual, `generateWindow` legacy + contextual) fetch the apropó once, append its
+    `block()`, and call `proactiveMemoryBlock.recordUse(...)` only after the message row actually
+    persisted (never on a null/failed generation, so a dropped answer doesn't burn the cooldown).
 - **`CompanionMessageJob`** (`service/CompanionMessageJob.java`) — the old `BriefingJob` +
   `HeartbeatJob` merged into one `@Scheduled`-methods-one-switch bean: `runMorning` (05:45,
   `feed.morning-cron`) generates only the morning message (+ the people-observation branch); the
@@ -1542,6 +1554,80 @@ finders (`findByCreatedByAndMessageDateAndKind` / `findByCreatedByAndMessageDate
 soft-delete scoped. Standard auth spine ([`_platform-api-backend.md`](_platform-api-backend.md); the
 companion precedent).
 
+### The apropó matcher (`ProactiveMemoryBlock`, Emlékezet S5, `mezo-d6ivw.5`)
+
+Code — never the model — picks at most ONE "apropó" (topical callback) per `morning`/`midday`/
+`evening` generation and hands it to the LLM as a small, hedged, non-causal block to weave in IF it
+fits; the model never invents one. `sleep`/`weight` never get an apropó (not in the switch at the
+top of `apropo(userId, date, kind)`).
+
+**Trigger sources (`candidateTriggers`), by message kind:**
+
+| Kind | Signal source | Trigger | Priority (lower wins) |
+|---|---|---|---|
+| `midday`, `evening` | any mention (person or context-labelled event) on **today** | `SAME_DAY` | 0 |
+| `morning` | a planned workout template for **today** (`WorkoutService.findPlannedTemplateForDate`) → fixed subject `event:edzes` | `PLANNED_WORKOUT` | 1 |
+| `morning` | any mention on **yesterday** | `YESTERDAY` | 2 |
+
+A mention's context label maps to an event-taxonomy key exactly like `EffectLinkService.subjects`:
+`edzes`/`munka`/`csalad` to themselves, `kozos_program`/`baratok` both to `kozos_program`,
+`konfliktus` to itself; every OTHER labelled/unlabelled person mention maps to that person's id
+regardless of context. Candidates are keyed `subjectKind:subjectKey`; `putIfAbsent` means an
+already-recorded higher-priority trigger for the same subject is never downgraded. There is
+deliberately **no signal source for `pihenes` (rest)** — that event's topics are nightly-only, no
+same-day/yesterday mention exists to key off; its effect rows still reach the edition source (below)
+untouched. A candidate only becomes a firing apropó if `EffectLinkService.gatedEffects(userId)` (the
+same double-gated strength+confidence rows the edition source reads, [`companion.md`](companion.md))
+has a row for that exact `subjectKind:subjectKey`; when several candidates match, the lowest
+`priority(trigger)` wins (`SAME_DAY` > `PLANNED_WORKOUT` > `YESTERDAY`).
+
+**Cooldown (`proactive_memory_use`, per-topic, 3 days):** every fired apropó's `topicKey` (from
+`GatedEffect.topicKey()`) is recorded on the day it fired; a topic already used within the last
+`COOLDOWN_DAYS = 3` days is excluded from matching. The window is inclusive both ends — a use
+recorded on day `d0` blocks `d0..d0+2` and frees up again exactly on `d0+3` (the query floor is
+`date - (COOLDOWN_DAYS - 1)`, one day short of a naive `date - COOLDOWN_DAYS`, to avoid also
+re-catching `d0` itself). `recordUse` is called only AFTER the message row actually persisted (never
+on a null/failed generation) and is fail-open — a lost cooldown row risks the same apropó firing a
+bit sooner, never a crash.
+
+| Column | Meaning |
+|---|---|
+| `used_on` | the day the apropó fired |
+| `topic_key` | the cooldown key (`GatedEffect.topicKey()` — `effect-person-<id8>-<metric>` / `effect-event-<key>-<metric>`) |
+| `kind` | which feed slot fired it (`morning`\|`midday`\|`evening`) |
+
+**Rendering (`[AKTUÁLIS APROPÓ]` block):** a fixed Hungarian header
+(`"AKTUÁLIS APROPÓ (kód választotta; együttjárás, nem ok-okozat):"`), a temporal line naming the
+subject and the metric's usual direction (`Ma`/`Ma (terv szerint)`/`Tegnap` depending on trigger — a
+`YESTERDAY` trigger gets retrospective phrasing, the other two forward-looking), a soft
+"mention it in ONE caring sentence IF it fits naturally, else omit it entirely" instruction, and a
+hedge instruction (`"általában"`/`"hajlamos"` — never `"mert"`). **The message carries provenance
+regardless of the model's own citations**: `CompanionMessageGenerator` appends the apropó's
+`CompanionMessageEnvelope.Ref(kind="Effect", label=<subjectLabel> · <metricLabel>)` unconditionally
+on the legacy path, and folds its `block()` text into the contextual path's `facts` payload — see §1
+above for the four call sites.
+
+**Sensitivity — the S5 stance reversal:** when the matched subject is a person, the block appends
+that person's up-to-3-newest `person_fact` rows (`PersonFactService.promptFacts`) under a
+`SZEMÉLYES TÉNYEK` header, followed by a mandatory tact line ("bring up the sensitive topic
+tactfully, as a question, never as a statement"). This deliberately does **NOT** apply
+`PersonFactService.PROACTIVE_EXCLUDED_KINDS` — the owner reversed the original S3 stance (2026-09-26,
+spec §S5 delta: "a sensitive fact never enters an unsolicited/proactive message") specifically for
+this consumer: sensitive facts now DO reach a proactive message, gated only by the mandatory tact
+instruction, not by exclusion. The constant itself is untouched and still available to any consumer
+that wants the conservative filter — see [`me.md`](me.md) §5.4 for the person-fact model.
+
+**Fail-open, not switch-gated:** `ProactiveMemoryBlock` carries no `@ConditionalOnProperty` of its
+own — its gated collaborators (`EffectLinkService`, companion+reflection; `PersonFactService`,
+people) arrive via `ObjectProvider`, so an absent `EffectLinkService` silently means no apropó ever
+fires and an absent `PersonFactService` just means a person-subject apropó carries no fact extras.
+`apropo(...)` never throws — any failure is logged and treated as absence, which is also the normal,
+honest outcome on most days (no matching mention, no gated effect, or everything on cooldown).
+
+**Same data, two consumers:** the character layer's esti kiadás reuses the identical
+`EffectLinkService.gatedEffects` read (via `TeamEditionReads.gatedEffects`) for its own
+`effect`-sourced `MEGFIGYELES` candidate — see [`character.md`](character.md) §3/§9 for that side.
+
 ## 4. Data model & API
 
 ### Backend tables (companion feed `mezo-gst9` + W1 + W2 + P1 + P2 + HBWI, 🟢)
@@ -1627,6 +1713,16 @@ changeset, not an edit) + `202607071200_mezo-h4wp.3_create_weekly_suggestion.sql
   on `(created_by, template_session_id, workout_date) where is_deleted = false` — a PLAIN index, NOT
   unique** (several challenges per session/day; the generator's idempotence probe is "does this
   (user, session, date) already have any live row?").
+- **`proactive_memory_use`** (Emlékezet S5, `mezo-d6ivw.5`, migration
+  `202609261600_mezo-d6ivw.5_proactive_memory_use.sql`) — the apropó matcher's cooldown ledger, one
+  row per FIRED apropó: `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id) ON DELETE
+  CASCADE`, `is_deleted boolean not null default false`, `created_at timestamptz not null default
+  now()`, `used_on date not null` (the day it fired), `topic_key varchar(64) not null` (the
+  `GatedEffect.topicKey()` this cooldown tracks), `kind varchar(16) not null` (CHECK
+  `morning|midday|evening`). **Plain, non-unique** index `ix_proactive_memory_use_lookup` on
+  `(created_by, used_on)` — several topics can fire the same day, so there is no per-day uniqueness
+  to enforce; the cooldown read is `findByCreatedByAndUsedOnGreaterThanEqual(userId, from)` (§3 "The
+  apropó matcher" for the 3-day window math).
 
 ### Entities + envelope
 
@@ -2583,6 +2679,34 @@ card, no day gate, no migration, no new feed kind, no FE change.
   rendering a guess. Mock mode is untouched by design: `useCompanionFeed` returns `[]` there
   (Phase-1 byte parity), so no advice or question card exists on the mock surface at all.
 
+### 5.17 Proactive → Companion + People + Train, the apropó matcher (✅ Emlékezet S5, `mezo-d6ivw.5`)
+
+`ProactiveMemoryBlock` (§3 "The apropó matcher") reads across three features, strictly one-way like
+every other proactive read:
+
+- **Companion:** `EffectLinkService.gatedEffects(userId)` (`feature/companion/reflection`) — the
+  same double-gated (strength+confidence) effect rows the character layer's edition source also
+  reads (§9 below), via an `ObjectProvider` since `EffectLinkService` is
+  `COMPANION_SWITCH ∧ REFLECTION_SWITCH`-gated, narrower than this bean's own (none).
+  `KnowledgeFactService.renderPromptBlock(userId)` also gained a NEW call site this slice, but on
+  `FeedContextAssembler` (the contextual feed's own composer), not on `ProactiveMemoryBlock` — S5
+  appends the "V1.1 top-N confirmed facts" block into the contextual path right after the personal
+  context, through the same fail-open `ObjectProvider` + try/catch idiom `PeopleSnapshotBlock`
+  established (a missing bean or any runtime failure there degrades to `""`, never breaks the
+  assembly).
+- **People:** `MentionRepository.findContextSignals`/`findSignals` (`feature/people`) supply the
+  same-day/yesterday candidate subjects (§3); `PersonFactService.promptFacts` (also `ObjectProvider`,
+  `PEOPLE_SWITCH`-gated) supplies the up-to-3 newest facts a person-subject apropó appends, WITHOUT
+  `PROACTIVE_EXCLUDED_KINDS` (the S5 sensitivity-stance reversal, §3).
+- **Train:** `WorkoutService.findPlannedTemplateForDate(userId, date)` (a plain, non-`ObjectProvider`
+  dependency — train has no switch of its own here) supplies the morning `PLANNED_WORKOUT` trigger.
+
+**Contract crossing the seam:** `EffectLinkService.GatedEffect` (record: `subjectKind`, `subjectKey`,
+`metric`, `subjectLabel`, `metricLabel`, `higher`, `strengthBand`, `subjectDays`, `topicKey`) and
+`PersonFactEntity` rows (via `promptFacts`) — no new wire contract, everything stays server-side
+prompt text; the only FE-visible surface is the `Effect`-kind ref (§6 below, [`RefTag.tsx`](
+../../frontend/src/shared/ui/RefTag.tsx) `'effect' → t-chain/'hatás'`).
+
 ## 6. How to use it (consume)
 
 **Over HTTP** (bearer token from `POST /api/auth/login`; the backend must run with `demodata` so
@@ -3166,6 +3290,27 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
     genuinely succeeds when the gate lets it through — without it both calls would return empty on
     the unparseable answer and the assertion would hold vacuously. With the old default-zone gate
     restored it fails with `Expecting empty but was: [ChallengeEntity@…]`.
+
+**The apropó matcher (Emlékezet S5, `mezo-d6ivw.5`):**
+
+- **`ProactiveMemoryBlockIT` (6)** — `sameDayContextMatchFiresEveningApropo` (a same-day context
+  mention fires an evening apropó); `yesterdayPersonMatchWithFactFiresMorningApropo` (a yesterday
+  person mention with a person fact fires a morning apropó and includes the fact); `cooldownSuppressesForThreeDaysThenAllowsAgain`
+  (the 3-day inclusive-window cooldown math); `nothingMatchesReturnsEmpty`; `weakRowOnlyReturnsEmpty`
+  (a gated-effect row that doesn't clear the double gate never fires); `plannedWorkoutOutranksYesterdayMatch`
+  (the `SAME_DAY` > `PLANNED_WORKOUT` > `YESTERDAY` priority order).
+- **`ProactiveMemoryUsePersistenceIT` (2)** — `findByCreatedByAndUsedOnGreaterThanEqual` returns a
+  recent row within the window and excludes one outside it.
+- **`CompanionMessageGeneratorApropoIT` (2)** — the positive-match path at the generator seam:
+  `generateMorning` includes the apropó block + ref + records use on a yesterday person match;
+  `generateWindow` does the same on a same-day match. (The no-apropó path is already covered by the
+  pre-existing `CompanionMessageGeneratorIT`/`ContextualFeedKindsIT` suites.)
+- **`EffectLinkServiceIT.gatedEffectsSharesPromptBlockGateAndResolvesLabels`** — `gatedEffects` shares
+  `promptBlock`'s double gate and resolves subject/metric labels the same way.
+- The character-layer edition source's own coverage
+  (`EditionCandidateCollectorTest.effectCandidates`/`personSubjectEffectBecomesMegfigyeles`/
+  `eventSubjectEffectRoutesToNapMezo`/`twoQualifyingEffectRowsYieldOnlyTheStrongestCandidate`/
+  `noQualifyingEffectRowsYieldsNoCandidate`) lives in [`character.md`](character.md) §8.
 
 ## 9. Decisions, gotchas & deferred
 
@@ -3753,6 +3898,28 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
   "today") and is untouched; `CompanionMessageGenerator` and `ChatService` receive their date from
   callers further up (the crons/jobs and the chat turn), which still derive it in the default zone —
   a wider "one owner zone for every job-minted today" sweep is out of this slice's scope.
+- **(rr) The apropó matcher (Emlékezet S5, `mezo-d6ivw.5`) — priority order, cooldown math, and the
+  sensitivity reversal are consumer-scoped, not global.** Priority is `SAME_DAY` (0) >
+  `PLANNED_WORKOUT` (1) > `YESTERDAY` (2) so a fresh same-day signal always beats a stale one, and
+  the fixed morning `event:edzes` trigger sits strictly between them (a planned-but-not-yet-happened
+  workout is a weaker apropó than something that already happened today, but a stronger one than
+  yesterday's news). **Cooldown is per-`topicKey`, not per-subject or per-kind** — the SAME
+  effect/metric pair is suppressed for 3 days across ALL of `morning`/`midday`/`evening`, but a
+  DIFFERENT metric on the same subject (or the same metric on a different subject) is unaffected;
+  this is deliberately coarser than a per-message-kind cooldown would be, because the point is "don't
+  say the same thing again soon", not "don't say anything about this person soon". **The
+  `PROACTIVE_EXCLUDED_KINDS` reversal is scoped to `ProactiveMemoryBlock` alone** — `PeopleSnapshotBlock`
+  (the chat-only `[Emberek]` block) already ignored the constant before S5 for a different reason (it
+  is chat, not proactive); S5 is the first PROACTIVE consumer to deliberately skip it. Any FUTURE
+  proactive consumer of `person_fact` rows should re-examine whether it wants the conservative filter
+  or the S5 precedent — the constant makes both possible, it does not pick one for you. **EVENT_EDZES
+  is re-declared, not imported** — `EffectLinkService.EVENT_EDZES` is package-private, so
+  `ProactiveMemoryBlock` carries its own copy; if the taxonomy key ever changes, both must be edited
+  together (no compiler help, only convention — same risk class as the `FakeCompanionLlm` marker
+  mirrors, §9 gotcha a). **Why train (`WorkoutService`), not another `ObjectProvider`:** unlike
+  companion/people, this generator already has an unconditional compile-time dependency on training
+  data through other seams, so a plain `@Autowired`-style field is consistent with the existing
+  pattern rather than a new fail-open case to reason about.
 
 ## 10. Key files
 
@@ -3763,9 +3930,18 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 
 **Contextual feed foundation (enabled; switch-off rollback)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedEvidenceAssembler.java` — dated raw weight/sleep evidence and explicitly scoped trend rates.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedContextAssembler.java` — shared personal context, event evidence, prior feed and RAG composition.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedContextAssembler.java` — shared personal context, event evidence, prior feed and RAG composition; **Emlékezet S5** (`mezo-d6ivw.5`) added `knowledgeFactsBlock` — `KnowledgeFactService.renderPromptBlock` appended right after the personal context, fail-open `ObjectProvider` + try/catch.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/FeedContinuityService.java` — bounded owned history and dated source references.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/config/ContextualFeedProperties.java` — validated history, evidence and tool limits.
+
+**The apropó matcher (Emlékezet S5, `mezo-d6ivw.5`) — §3 "The apropó matcher" / §5.17**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveMemoryBlock.java` — the whole surface: `apropo(userId, date, kind)` (candidate gathering, cooldown filter, priority selection, rendering) + `recordUse(userId, date, kind, apropo)`; not switch-gated itself, `EffectLinkService`/`PersonFactService` arrive via `ObjectProvider`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/ProactiveMemoryUseEntity.java` — the cooldown ledger row (`usedOn`/`topicKey`/`kind`), `extends OwnedEntity`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/ProactiveMemoryUseRepository.java` — one finder, `findByCreatedByAndUsedOnGreaterThanEqual`.
+- `backend/src/main/resources/db/changelog/1.1.0/script/202609261600_mezo-d6ivw.5_proactive_memory_use.sql` — the `proactive_memory_use` table + its plain lookup index.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/EffectLinkService.java` — `gatedEffects(UUID)` + the `GatedEffect` record (companion-owned; the apropó matcher's and the character edition source's shared read model — [`companion.md`](companion.md)).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/people/service/PersonFactService.java` — `PROACTIVE_EXCLUDED_KINDS` (the S5 stance-reversal javadoc; people-owned — [`me.md`](me.md) §5.4).
+- `frontend/src/shared/ui/RefTag.tsx` — `REF_KIND['effect'] = ['t-chain', 'hatás']`, the FE surface of the `Effect` ref kind.
 
 
 **API contract**

@@ -695,6 +695,164 @@ FE both modes (`CI=true`): Hatás card render/hide, strength vs confidence shown
 separately, mock fixtures; `pnpm build`; affected layout specs; CODEMAP regen;
 runtime pass with the `verify` skill (dark, 320px, reduced motion).
 
+## S5 delta — proactive use of confirmed knowledge (2026-09-26, owner-approved direction)
+
+**Terminology correction:** the base spec's "JITAI-lite intervention/heartbeat pipeline
+(mezo-b3pp W5.2)" names retired machinery. The living proactive channel is the unified
+**companion feed** (`companion_message` kinds morning/midday/evening/sleep/weight/people)
+plus the one-advice-card-per-day channel (`docs/features/proactive.md:20-41`). S5 targets
+the feed kinds; the advice channel is untouched.
+
+**Owner decisions (2026-09-26):**
+
+1. **Apropó-only.** Proactive memory use fires only on a concrete, code-matched trigger
+   ("null intervention" is first-class); no trigger-less "did you know about yourself"
+   reminders — periodic recall is the S6 hub's job.
+2. **No calendar/plans feature.** Triggers come only from what the user already tells
+   the app: (a) same-day mentions of a person/event-type, (b) yesterday's events,
+   (c) today's planned workout (the only genuinely forward-looking signal).
+3. **Hybrid surface.** Timely inserts ride the EXISTING scheduled feed messages
+   (no new notification kinds); effect insights ALSO become a new csapatfal
+   evening-edition candidate source, narrated by a character.
+4. **At most one memory-grounded insert per message** (each of the three daily kinds
+   may carry one); code pre-selects the single best trigger, the LLM only phrases it.
+5. **Sensitivity person facts are INCLUDED in proactive context** — the owner wants
+   the "it really knows me" feeling; this consciously overrides S3's
+   `PROACTIVE_EXCLUDED_KINDS` stance for the S5 consumer. Guard: the prompt instructs
+   that sensitive facts are raised tactfully, in gentle question form, never
+   declaratively.
+6. **Hedged, non-causal phrasing always** ("általában", "hajlamos", never "mert"),
+   strength/confidence-aware, per the Exist.io contract already used by S4.
+
+### Prior art (S5 recon)
+
+- **JITAI decision framework** (m-path.io/learn/what-is-jitai/) — adopted: the exact
+  S5 shape is canonical JITAI: tailoring variables (confirmed facts/effect links),
+  decision points (scheduled feed generations), decision rules (deterministic code
+  matching, with *not intervening* as a first-class option), intervention options
+  (phrasing variants). Rejected: micro-randomized trials / learned decision rules
+  (single-user overkill).
+- **Notification-fatigue trials** (journals.plos.org/plosone 0169162; CHI 2024
+  3613904.3641993) — adopted: few well-timed context-anchored prompts beat volume;
+  context-matched delivery outperforms time-only schedules. Confirms riding existing
+  scheduled messages instead of new pushes, and the per-message cap.
+- **Exist.io** (kb.exist.io/article/37) — adopted: hedged non-causal language baked
+  into product copy; only confirmed/strong knowledge earns proactive rights.
+  Rejected: weekly retrospective cadence (S5 needs same-day timing).
+- **Google Now** (en.wikipedia.org/wiki/Google_Now) — adopted: the hybrid answer to
+  the surface question — browsable cards (csapatfal edition posts) for insights,
+  timely delivery reserved for the small budgeted set; per-insight "why"/mute
+  affordances (full controls land in S6). This resolved the unification question:
+  the engine is ONE (effect_link + knowledge_fact + person_fact read paths), the
+  surfaces are the feed and the csapatfal, each doing what it is for.
+- **Replika** (apps.apple.com replika) — adopted: persona-voiced proactive check-ins
+  grounded in visible, user-confirmed memory; every message must trace to a fact the
+  user can inspect (S6). Rejected: check-ins without a concrete trigger (the recorded
+  annoyance/creepiness path).
+
+### Codebase terrain (S5 recon)
+
+- **Composer:** `CompanionMessageGenerator.generateMorning`
+  (`proactive/service/CompanionMessageGenerator.java:282-356`) has TWO paths — legacy
+  inline payload (already carries `knowledgeFactService.renderPromptBlock` at `:312`,
+  midday/evening ~`:580`) and the contextual path (`generateContextual:828` →
+  `FeedGenerationService` with `FeedContextAssembler.java:23-42`). **A block added to
+  only one path is dead under the other** — S5 wires BOTH seams. Optional-collaborator
+  idiom: `ObjectProvider` + fail-open try/catch (`reflectionDigest:368-380`).
+- **Crons:** `CompanionMessageJob` 05:45/12:30/20:30, one switch
+  `mezo.techcore.cron.feed-job.enabled`; kinds idempotent by `(user, date, kind)`.
+- **S2 read path:** `KnowledgeFactService.renderPromptBlock`
+  (`companion/service/KnowledgeFactService.java:160-174`) — already in chat AND the
+  legacy composer path; NOT in the contextual path (`PersonalContextAssembler` carries
+  preferences/persona only).
+- **S3 read path:** `PersonFactService.promptFacts` (`people/service/
+  PersonFactService.java:145`); `PROACTIVE_EXCLUDED_KINDS={sensitivity}` at `:44` was
+  minted for S5 — per owner decision 5 it is NOT applied by the S5 consumer; its
+  javadoc and `PeopleSnapshotBlock.java:31-32` (the "no [Emberek] in proactive" stance)
+  are updated to record the reversal.
+- **S4 read path:** `EffectLinkService.promptBlock` (`companion/reflection/service/
+  EffectLinkService.java:150`, strong+confident rows, cap 6, hedged HU) — reusable
+  nearly as-is; `effectsForPerson:174`; taxonomy `:84-89`
+  (edzes, munka, csalad, kozos_program, konfliktus, pihenes). Topic-key matching must
+  use `normalizedTopicKey` semantics (lesson 20).
+- **Trigger signal sources:** same-day/yesterday person-days from the mention table
+  (`MentionEntity`: person_id, ts, context_label); day event-flags from the S4
+  retrospective taxonomy sources; planned workout via `WorkoutSessionEntity`
+  status=planned (snapshot's "Ma (terv):" line, `ContextSnapshotAssembler.java:310`).
+- **Csapatfal:** evening edition exists (`feature/character/service/edition/`,
+  `TeamEditionService`, `EditionCandidateCollector.java:49-56` — sources today:
+  pattern/pair/prediction/experiment/konzilium/fuel_day/checkin_coverage;
+  NO companion_message/effect source yet). `TEAM_EDITION_SWITCH`; slug
+  `character_edition` already on the budget throttled-features list.
+- **Layering:** proactive imports companion.service freely; character→companion.reflection
+  legality must be verified against `ArchitectureTest` — if forbidden, use the port
+  inversion idiom (`FeedMessageKindSource` precedent). `companion.service` never
+  imports `companion.reflection` (lesson 12).
+- **Budget:** global USD cap pre-flight in `LlmCallContextHolder.runWith`; S5 adds NO
+  new LLM call (rides `proactive_feed` and `character_edition` slugs) → no new admin
+  label, no FakeCompanionLlm branch (lesson 17); no throttled-list decision needed.
+
+### Design (S5)
+
+**Trigger engine (code decides, LLM phrases):**
+
+- New `ProactiveMemoryBlock` collaborator in `proactive` (exact package/layering per
+  plan + ArchUnit): given (userId, messageKind, today), it
+  1. collects candidate triggers: same-day person mentions + event-type day flags
+     (midday/evening kinds), yesterday's person/event-type days (morning kind),
+     today's planned workout (morning kind);
+  2. matches candidates against `effect_link` rows (person by id; event-type via
+     normalized topic key) — only strong+confident rows fire;
+  3. applies a **cooldown**: a fired (subject, metric-direction) pair does not fire
+     again for 3 days — the fired trigger key is persisted (smallest workable
+     mechanism chosen in the plan, e.g. a marker on the `companion_message` row);
+  4. deterministically selects **at most ONE** trigger (priority: same-day > planned
+     workout > yesterday), and renders an `[Aktuális apropó]` prompt block: the
+     matched fact/effect in hedged wording + an instruction to weave AT MOST one
+     caring, forward-looking (same-day/planned) or follow-up (yesterday) sentence
+     into the message — or nothing if it does not fit naturally.
+- The block is injected at BOTH composer seams: the legacy inline payload of
+  morning/midday/evening, and the contextual path's `facts` seam /
+  `FeedContextAssembler`.
+- **Person facts in the composer:** morning context additionally gets
+  `PersonFactService.promptFacts` for the people actually involved in the selected
+  trigger (not a dump of everyone) — ALL kinds including sensitivity, with the tact
+  instruction (owner decision 5). `PeopleSnapshotBlock`/`PersonFactService` javadocs
+  updated to record the stance reversal.
+- Knowledge facts (`renderPromptBlock`) are added to the CONTEXTUAL path so both
+  paths carry them (today only the legacy path does).
+
+**Csapatfal edition source (character):**
+
+- A new edition candidate source: effect insights — `effect_link` rows that are
+  strong+confident and NEW or materially CHANGED since the previous edition
+  (band change or sign flip), capped (e.g. 1 per edition), mapped to an
+  `EditionCandidate` and narrated by `EditionVoiceWriter` in the character's voice,
+  hedged non-causal. Gated by the existing `TEAM_EDITION_SWITCH`; degrades exactly
+  like other candidate sources. Layering via direct import if legal, else a
+  companion-owned port.
+
+**Non-goals (S5):** no new message kinds, no new notification/push channel, no new
+LLM slug, no new FE surface (feed + csapatfal render what already exists), no
+calendar/plans feature, no why-chip/mute UI (S6 owns transparency controls).
+No OpenAPI contract change is expected; if the plan finds one necessary it goes
+through the full merge chain (lessons 21–22).
+
+### Testing (S5)
+
+- Unit: trigger collection per kind (same-day/yesterday/planned), effect matching via
+  normalized topic keys (seed through the publisher's normalizer, lesson 20),
+  cooldown suppression, single-trigger selection priority, block rendering (hedged
+  wording, tact instruction present when a sensitivity fact is included, empty
+  output when nothing fires).
+- Fixtures anchored to the queried day, never now-minus-N-hours (midnight trap).
+- Composer ITs: BOTH paths carry the block (legacy payload contains
+  `[Aktuális apropó]`; contextual path context contains it too); no block → message
+  generates unchanged.
+- Edition ITs: effect candidate appears only when new/changed strong+confident rows
+  exist; switch off → source silent; existing candidate sources unaffected.
+- Budget/idempotency untouched: one message per (user, date, kind) still holds.
+
 ## Slice lessons
 
 (numbered; only what a later slice would otherwise pay for again)
@@ -793,3 +951,22 @@ runtime pass with the `verify` skill (dark, 320px, reduced motion).
     S4's Hatás card extends it in `ember-hatas-uveg.html` (`.effrow`/`.effdots`
     CSS block). S6 hub work should grep the approved prototypes for its route first
     (bible rule 66) and reuse that block rather than redrawing the indicators.
+25. **(S5)** Spring Data `GreaterThanEqual` cooldown floors are off-by-one: an N-day
+    cooldown fired on d0 that must reopen at d0+N needs `minusDays(N - 1)` as the
+    query floor, never `minusDays(N)` — trace all N+1 days against the `>=` before
+    trusting the literal spec formula.
+26. **(S5)** `CompanionMessageGeneratorIT` runs with the reflection switch OFF, so a
+    positive test of any reflection-gated garnish (EffectLinkService consumers) can
+    never fire there — it needs a sibling IT class with reflection ON
+    (`ReflectionDigestMorningIT` / `CompanionMessageGeneratorApropoIT` precedent).
+27. **(S5)** Parallel Claude sessions running backend Maven against the shared fixed
+    dev DB produce spurious deadlocks/FK violations and even corrupted target/ dirs;
+    `-Dmezo.test.use-testcontainers=true` isolates and is the first retry, not the
+    last resort.
+28. **(S5)** A "fail-open" write helper whose `@Transactional` JOINS the caller's TX
+    only looks fail-open: the deferred INSERT can still fail the outer commit past
+    the try/catch. True fail-open needs `REQUIRES_NEW` + `saveAndFlush` inside the
+    try (follow-up: mezo-8eg96).
+29. **(S5)** The apropó matcher reads only the two mention projections — done-workout
+    days and text-signal topic days (the other halves of `EffectLinkService.subjects`)
+    do NOT fire same-day apropók; deliberate scope, documented in mezo-8eg96.

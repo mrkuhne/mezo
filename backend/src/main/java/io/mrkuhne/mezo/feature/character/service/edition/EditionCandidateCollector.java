@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.character.service.chat.TeamChatReads;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagCatalog;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
+import io.mrkuhne.mezo.feature.companion.reflection.service.EffectLinkService;
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
@@ -61,6 +62,7 @@ public class EditionCandidateCollector {
     static final String SOURCE_FUEL_DAY = "fuel_day";
     static final String SOURCE_CHECKIN_COVERAGE = "checkin_coverage";
     static final String SOURCE_TEAM_CHAT_DAY = "team_chat_day";
+    static final String SOURCE_EFFECT = "effect";
 
     /** A Fuel fül mai napja (FE router: {@code /fuel} → FuelMaiPage). */
     static final String ROUTE_FUEL_DAY = "/fuel";
@@ -111,6 +113,7 @@ public class EditionCandidateCollector {
         falat(owner, day).ifPresent(out::add);
         deru(owner, day).ifPresent(out::add);
         teamChatDay(owner, day).ifPresent(out::add);
+        effectCandidate(owner).ifPresent(out::add);
         // Fix round (mezo-a9bo7.12): a poszt body NOT NULL — egy üres/hiányzó recordText-ű jelölt
         // (pl. mechanism nélküli proposed minta) minden tiken eldobná a publish-t. Egyetlen helyen
         // szűrünk: minden forrás ugyanide fut be, mielőtt a EditionSelector látná.
@@ -437,6 +440,28 @@ public class EditionCandidateCollector {
 
     private static boolean resolvedWithin(TeamChatThreadEntity t, TeamChatReads.DayThreads window) {
         return THREAD_RESOLVED.equals(t.getStatus()) && window.within(t.getClosedAt());
+    }
+
+    /**
+     * S5 (mezo-d6ivw.5): a legerősebb dupla-kapun átjutó hatás-meglátás (Task 2's
+     * {@code EffectLinkService.gatedEffects}, strongest-first) — az apropó-blokkal (S5.5) azonos
+     * adatforrás, itt esti kiadás jelöltté fésülve. Az {@link EditionSelector} 7 napos ismétlés-
+     * tiltása és a forrás-kulcsonkénti sapka a spam-őr — ide nem kell külön állapot.
+     */
+    private Optional<EditionCandidate> effectCandidate(UUID owner) {
+        List<EffectLinkService.GatedEffect> rows = reads.gatedEffects(owner);
+        if (rows.isEmpty()) {
+            return Optional.empty();
+        }
+        var e = rows.getFirst(); // strongest — gatedEffects is strongest-first
+        String body = e.subjectLabel() + " és a " + e.metricLabel() + ": az ilyen napokon általában "
+                + (e.higher() ? "magasabb" : "alacsonyabb") + " (" + e.strengthBand()
+                + " együttjárás, " + e.subjectDays() + " nap — együttjárás, nem ok-okozat).";
+        String route = "person".equals(e.subjectKind()) ? "/me/people/" + e.subjectKey() : "/nap/mezo";
+        return Optional.of(new EditionCandidate(SOURCE_EFFECT,
+                e.subjectKind() + ":" + e.subjectKey() + ":" + e.metric(),
+                TeamCharacter.DERU, EditionGenre.MEGFIGYELES,
+                "Együttjárás", body, List.of(), List.of(), false, false, null, route, List.of()));
     }
 
     /**

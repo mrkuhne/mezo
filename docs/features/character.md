@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-09-26
+updated: 2026-09-27
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -283,6 +283,24 @@ successful retry could never join it (one edition per day). From `mezo.character
     are never wrong. None counted → no candidate. Otherwise
     `"Ma %d ügyön dolgoztunk: <FlagCatalog labels, distinct>. %d rendeződött, %d nyitva maradt."`,
     `facts=[n, r, o]`; `changedAt` = the latest open/close instant inside the window.
+- **Hatás-meglátás — `megfigyeles`, source `effect`** (Emlékezet S5, `mezo-d6ivw.5`,
+  `EditionCandidateCollector.effectCandidate`): reads `TeamEditionReads.gatedEffects(owner)` — a
+  thin pass-through to companion's `EffectLinkService.gatedEffects` ([`companion.md`](companion.md)
+  §3, an `ObjectProvider` since `REFLECTION_SWITCH` is a narrower gate than this facade's own
+  CHARACTER+COMPANION pair, `List.of()` when absent) — and takes the **single strongest** row
+  (`gatedEffects` is already strongest-first; no per-subject enumeration). Body is code-authored, not
+  model-rewritten for this genre: `"<subjectLabel> és a <metricLabel>: az ilyen napokon általában
+  magasabb/alacsonyabb (<strengthBand> együttjárás, <subjectDays> nap — együttjárás, nem
+  ok-okozat)."` — the same hedge discipline `ProactiveMemoryBlock`'s apropó block enforces via a
+  model instruction ([`proactive.md`](proactive.md) §3 "The apropó matcher" — same underlying data,
+  the two consumers never import each other), baked directly into the candidate text here instead.
+  Character is hardcoded `TeamCharacter.DERU` (not derived from the subject/metric domain); title
+  `"Együttjárás"`; route `/me/people/<personId>` for a person subject, else `/nap/mezo`. No
+  `EditionCandidate.facts`/`refs` (empty lists) — the number-guard check therefore has nothing to
+  verify against for this source, which is fine because this candidate is never voice-rewritten by
+  an LLM (see Tény-őr below — the guard runs on every candidate regardless of source, but an
+  unmodified record body trivially passes it). Repeat suppression is `EditionSelector`'s existing
+  7-day-repeat-ban + per-source-key cap — no dedicated state of its own.
 - **Válogatás** (`EditionSelector`, pure function): scores waiting > claim-change > kísérlet >
   előrejelzés > értékelés > megfigyelés > konzílium > kérdés > sejtés > kérés, freshness bonus
   since the last edition; caps at **2 posts/character**, **1 post/source record**; a **7-day
@@ -1093,6 +1111,16 @@ Adatforrások+kör/Detektorok) were added to it.
   `prediction-calibration`'s `nincs-konfidencia` branch),
   `CharacterConferenceWeekDerivationTest`, `CharacterMonthlyScheduleTest` (`isDeepReadDay` date
   pinning), `CharacterExpertCatalogTest`, `service/PortraitWriterTest`.
+- **`EditionCandidateCollectorTest`** (unit, `service/edition/`) covers the esti kiadás's
+  jelöltgyűjtés sources against a Mockito `TeamEditionReads` double; **Emlékezet S5**
+  (`mezo-d6ivw.5`) added the `effect` source's coverage (`effectCandidates` helper filtering
+  `collect(...)` by `sourceKind == "effect"`): `personSubjectEffectBecomesMegfigyeles` (a
+  person-subject gated effect becomes a `MEGFIGYELES` candidate), `eventSubjectEffectRoutesToNapMezo`
+  (an event subject routes to `/nap/mezo`, a person subject to `/me/people/<id>`),
+  `twoQualifyingEffectRowsYieldOnlyTheStrongestCandidate` (only `gatedEffects().getFirst()` becomes a
+  candidate even with several qualifying rows), `noQualifyingEffectRowsYieldsNoCandidate` (an empty
+  `gatedEffects()` list yields no candidate). The shared gate itself is pinned once, companion-side —
+  see [`companion.md`](companion.md) §8.
 
 Run focused locally: `./mvnw test -Dtest='*Character*,DetectorTest,Konzilium*,ClaimLifecycleIT,ArchitectureTest' -Dmezo.test.use-testcontainers=true`
 (Testcontainers mode — the default fixed-DB mode races/fakes failures per house convention).
@@ -1472,6 +1500,17 @@ investigating.
   conference and `CharacterService` serves `deliberation` as null — the FE then falls back to
   the prose view. Null means "no thread view for this meeting"; an empty array would claim the
   meeting had no threads, so the field is never served empty.
+- **The `effect` source is code-authored text, not an LLM-rewritten one, and deliberately owns no
+  state of its own (Emlékezet S5, `mezo-d6ivw.5`).** Unlike Falat/Derű, which each read several
+  facts and assemble a sentence, `effectCandidate` takes the single strongest row off a shared
+  companion read model (`EffectLinkService.gatedEffects`, same data the proactive apropó matcher
+  reads — [`proactive.md`](proactive.md) §3) and bakes the hedge ("együttjárás, nem ok-okozat")
+  straight into the body string; there is no dedicated cooldown table the way the apropó matcher's
+  `proactive_memory_use` is one, because `EditionSelector`'s existing 7-day repeat-ban + per-source-
+  key cap already does that job for every source, and adding a second cooldown mechanism for just
+  this one would double-govern the same "don't repeat yourself" concern. `EditionCandidateCollector`
+  reads `TeamEditionReads.gatedEffects`, never `EffectLinkService` directly — the facade owns every
+  companion-read seam this collector uses, keeping the collector's own dependency list to one class.
 
 ## 10. Key files
 
@@ -1546,9 +1585,11 @@ Social additions: `service/CharacterReplyService.java` (owned save/list/retry), 
   (writes the BOOTSTRAP run row, S9)
 - `service/edition/` (csapatfal H1, `mezo-a9bo7.12`) — `TeamCharacter` (routing registry, the FE
   `logic/team.ts` mirror), `EditionGenre`, `EditionCandidate` + `PriorShowing`,
-  `EditionCandidateCollector` (source→candidate, read-only), `EditionSelector` (pure scoring/pick
-  function), `TeamEditionReads` (repository-only companion/proactive reads; H5: meals as
-  `EditionMeal`, fuel targets, workout windows, check-in days),
+  `EditionCandidateCollector` (source→candidate, read-only; **Emlékezet S5**, `mezo-d6ivw.5`, added
+  `effectCandidate`/`SOURCE_EFFECT`, the `effect`-sourced `MEGFIGYELES` candidate — §1), `EditionSelector`
+  (pure scoring/pick function), `TeamEditionReads` (repository-only companion/proactive reads; H5:
+  meals as `EditionMeal`, fuel targets, workout windows, check-in days; **Emlékezet S5** added
+  `gatedEffects`, a thin `ObjectProvider<EffectLinkService>` pass-through — §1),
   `TeamEditionService` (run/publish, writes the EDITION run row), `EditionVoiceWriter` +
   `EditionVoiceGuard` + `VoicedText` (H3 voice), `GuestSeed` + `VoicedGuest` (H4 guest lines);
   `entity/TeamEditionEntity.java`,

@@ -30,8 +30,11 @@ import org.springframework.transaction.annotation.Transactional;
  *       visszavont (inaktív) tény szövege soha nem íródik újra.</li>
  *   <li>Supersede-not-append: a {@link PersonFactEntity#VOLATILE_KINDS} fajtáknál az új tény a
  *       régi aktív azonos-fajta sorokat deaktiválja.</li>
- *   <li>Érzékeny fajta ({@code sensitivity}): chat-kontextusban használható, proaktív üzenetben
- *       SOHA — a szabályt a {@link #PROACTIVE_EXCLUDED_KINDS} konstans hordozza (S5 fogyasztja).</li>
+ *   <li>Érzékeny fajta ({@code sensitivity}): owner-döntés 2026-09-26 (spec §S5 delta) —
+ *       FELÜLBÍRÁLVA: az S5 {@code ProactiveMemoryBlock} a kényes tényeket is fogyasztja
+ *       proaktív üzenetben, kötelező tapintat-instrukcióval kísérve. A {@link
+ *       #PROACTIVE_EXCLUDED_KINDS} konstans megmarad azoknak a fogyasztóknak, akik a
+ *       konzervatív szűrést továbbra is szeretnék — de az S5 szándékosan NEM alkalmazza.</li>
  * </ul>
  */
 @Slf4j
@@ -40,7 +43,13 @@ import org.springframework.transaction.annotation.Transactional;
 @ConditionalOnProperty(name = FeaturesConfiguration.PEOPLE_SWITCH, havingValue = "true")
 public class PersonFactService {
 
-    /** Owner-döntés 2026-09-26: kényes tény kéretlen (proaktív) üzenetbe soha nem kerül. */
+    /**
+     * Owner-döntés 2026-09-26 (spec §S5 delta): eredetileg "kényes tény kéretlen (proaktív)
+     * üzenetbe soha nem kerül". Az S5 ezt az álláspontot MEGFORDÍTOTTA — a kényes tények
+     * kötelező tapintat-instrukcióval proaktívan is fogyaszthatók ({@code ProactiveMemoryBlock}
+     * hívja {@code PersonFactService.promptFacts}-ot ezen kizárás NÉLKÜL). A konstans megmarad a
+     * konzervatív szűrést kereső fogyasztóknak; az S5 tudatosan nem alkalmazza.
+     */
     public static final Set<String> PROACTIVE_EXCLUDED_KINDS = Set.of(PersonFactEntity.KIND_SENSITIVITY);
 
     static final int MAX_FACTS_PER_SOURCE = 3;

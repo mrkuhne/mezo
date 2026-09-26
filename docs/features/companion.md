@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-26
+updated: 2026-09-27
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -3962,6 +3962,22 @@ every mentioned person and a small fixed event taxonomy, never by the model.
   entity never sees, so nothing can accidentally flush it back to the database; the underlying
   `effect_link` row's `confidence_tier` column is untouched. This is the one place a user's own
   confirmation can move what the effect card SAYS without moving what it computed.
+- **`gatedEffects(UUID userId)` — Emlékezet S5's (`mezo-d6ivw.5`) structured twin of `promptBlock`.**
+  Same double gate, same strongest-first order (both live in the shared private `gatedRows` — one
+  gate, two renderings), but returns `List<GatedEffect>` — a labels-resolved record
+  (`subjectKind`, `subjectKey`, `metric`, `subjectLabel`, `metricLabel`, `higher`, `strengthBand`,
+  `subjectDays`, `topicKey`) — with **NO cap** (callers cap; `promptBlock` caps at 6 for itself).
+  A row whose subject label can't be resolved (unknown/deleted/inactive person) is skipped, exactly
+  like `promptBlock`. It exists because two DIFFERENT S5 consumers needed the same data as
+  structured objects, not as pre-rendered prose: the **proactive apropó matcher**
+  (`ProactiveMemoryBlock.apropo`, [`proactive.md`](proactive.md) §3 "The apropó matcher") matches a
+  day's mention/planned-workout signals against these rows to pick at most one topical callback, and
+  the **character layer's esti kiadás** (`EditionCandidateCollector.effectCandidate`, via
+  `TeamEditionReads.gatedEffects`, [`character.md`](character.md) §3/§9) takes the single strongest
+  row as an `effect`-sourced `MEGFIGYELES` candidate. Neither consumer imports the other; both import
+  only this one companion-owned method — `EffectLinkService.gatedEffects` is itself
+  `@Transactional(readOnly = true)`; the character-side `TeamEditionReads.gatedEffects` wrapper is
+  NOT (its delegate already opens its own read-only transaction).
 
 ## 4. Data model & API
 
@@ -8611,7 +8627,12 @@ whose strength AND confidence both clear `kozepes`, strongest first, capped at 6
 whose person is deleted or not active without ever inventing a name; and `effectsForPerson`'s
 serve-time confidence bump lifts exactly one tier when a CONFIRMED pattern carries the row's
 `observation-topic-key:<key>` evidence item, verified NOT to have touched the underlying persisted
-row afterward (a fresh re-read still shows the un-bumped tier). `CompanionEffectsControllerIT`
+row afterward (a fresh re-read still shows the un-bumped tier). **Emlékezet S5** (`mezo-d6ivw.5`)
+added `gatedEffectsSharesPromptBlockGateAndResolvesLabels` to `EffectLinkServiceIT`, pinning that
+`gatedEffects` shares `promptBlock`'s exact double gate and order and resolves the same
+subject/metric labels — the two S5 consumers ([`proactive.md`](proactive.md) §8, [`character.md`](character.md)
+§8) each test their own matching/selection logic against a stubbed/seeded `GatedEffect` list, not
+this gate itself. `CompanionEffectsControllerIT`
 (`extends ApiIntegrationTest`) proves the wire: field mapping, `direction` derived from the Cliff's-
 delta sign, an honest empty list for a person with no rows, and the 401 gate. **Regression
 coverage:** `ReflectionJobIT` still passes with the `"effects"` step inserted between `evaluate` and
@@ -9291,7 +9312,7 @@ change is distinct from those smoothed rates. The underlying trend calculation i
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/KnowledgeRecheckService.java` and `KnowledgeRecheckJob.java` — the quarterly drift second-look over confirmed, plan-less, promoted knowledge (`mezo-d6ivw.2` Task 5, § above).
 
 **Mezo emlékezete S4 — named-effect tracking (`mezo-d6ivw.4`)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/EffectLinkService.java` — the nightly recompute (`"effects"` step, §3), the double-gated hypothesis-prompt block, the per-person read + serve-time confidence bump, and the stable topic-key format.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/EffectLinkService.java` — the nightly recompute (`"effects"` step, §3), the double-gated hypothesis-prompt block, the per-person read + serve-time confidence bump, the stable topic-key format, and (**Emlékezet S5**, `mezo-d6ivw.5`) `gatedEffects`/`GatedEffect` — the structured read model shared by the proactive apropó matcher ([`proactive.md`](proactive.md) §3) and the character edition source ([`character.md`](character.md) §3).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/EffectLinkCalculator.java` — the pure Cliff's-delta calculator (strength band + confidence tier, both gates).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/entity/EffectLinkEntity.java` + `repository/EffectLinkRepository.java` — the `effect_link` cache row + its finders (§4 above).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionEffectsController.java` — `GET /api/companion/effects?personId=` (§4 above); consumer: [me.md](me.md) §2/§5.4 (`PersonDetailPage`'s "Hatás · együttjárás" card).

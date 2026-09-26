@@ -22,8 +22,11 @@ import org.springframework.stereotype.Service;
  * (a prompt-szabály a {@code ChatService.SYSTEM_PROMPT}-ban tiltja a kitalálást); S3
  * (mezo-d6ivw.3) óta a NORMALIZÁLT személy-tények (aktív + bekapcsolt {@code person_fact} sorok,
  * személyenként legfeljebb 3) egy behúzott „tudás:" folytatósorban igen. A kényes
- * ({@code sensitivity}) fajta itt megjelenhet — proaktív üzenetben soha
- * ({@code PersonFactService.PROACTIVE_EXCLUDED_KINDS}, S5 tartja be).
+ * ({@code sensitivity}) fajta itt megjelenhet; owner-döntés 2026-09-26 (spec §S5 delta) —
+ * az S5 {@code ProactiveMemoryBlock} szándékosan hozza be a kiváltó-célzott (trigger-scoped)
+ * személy-tényeket a proaktív üzenetekbe is (a kényeset is), tehát a fenti kizárás
+ * ({@code PersonFactService.PROACTIVE_EXCLUDED_KINDS}) ide NEM vonatkozik. Ami proaktívan
+ * VALÓBAN nem jelenik meg, az maga a teljes {@code [Emberek]} blokk — az marad chat-only.
  *
  * <p>A {@code companion → people} él már létezik ({@code ChatMentionListener}), ezért közvetlen
  * import; de a PEOPLE_SWITCH független a COMPANION_SWITCH-től, így a {@link PeopleService} bean

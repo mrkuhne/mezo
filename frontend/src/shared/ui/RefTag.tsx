@@ -17,6 +17,7 @@ const REF_KIND: Record<string, [Icon3DName, string]> = {
   checkin: ['t-checkin', 'check-in'],
   memory: ['t-album', 'emlék'],
   lifeevent: ['t-flag', 'életesemény'],
+  effect: ['t-chain', 'hatás'],
 }
 
 export function refKind3D(kind: string): [Icon3DName, string | null] {
