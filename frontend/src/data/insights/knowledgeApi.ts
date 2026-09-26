@@ -20,6 +20,7 @@ export function toKnowledgeFact(f: KnowledgeFactResponse): KnowledgeFact {
     reinforced: f.reinforcementCount,
     patternTitle: f.patternTitle ?? undefined,
     source: f.source as FactSource,
+    owner: f.owner,
     lastReinforcedAt: f.lastReinforcedAt ?? null,
     createdAt: f.createdAt,
   }
@@ -27,7 +28,17 @@ export function toKnowledgeFact(f: KnowledgeFactResponse): KnowledgeFact {
 
 /** The wire doesn't carry conflict detection yet (mezo-ms9a) — always an honest `null`. */
 export function toFactCandidate(c: FactCandidateResponse): FactCandidate {
-  return { id: c.id, text: c.candidateText, category: c.category as FactCategory, conflictsWithFactId: null }
+  return {
+    id: c.id,
+    text: c.candidateText,
+    category: c.category as FactCategory,
+    owner: c.owner,
+    source: c.source as FactCandidate['source'],
+    createdAt: c.createdAt,
+    evidence: c.evidence ?? null,
+    weekStart: c.weekStart ?? null,
+    conflictsWithFactId: null,
+  }
 }
 
 export const knowledgeApi = {

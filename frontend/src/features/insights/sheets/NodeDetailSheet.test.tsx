@@ -10,6 +10,7 @@ const node: KnowledgeGraphNode = {
   topEdges: ['Új munkahely első hete → kiváltja → Megnövekedett stressz · közepes'],
   sourceKind: null,
   updatedAt: '2026-08-22T08:00:00.000Z',
+  occurredOn: '2026-08-21',
 }
 
 test('renders title, summary, edge lines and the archive footnote', () => {

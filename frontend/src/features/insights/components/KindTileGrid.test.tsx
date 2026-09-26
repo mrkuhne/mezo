@@ -3,7 +3,7 @@ import { KindTileGrid } from './KindTileGrid'
 import type { KnowledgeGraphNode } from '@/data/types'
 
 const mk = (id: string, kind: KnowledgeGraphNode['kind'], title: string): KnowledgeGraphNode =>
-  ({ id, kind, title, summary: null, topEdges: [], sourceKind: null, updatedAt: '2026-08-20T10:00:00.000Z' })
+  ({ id, kind, title, summary: null, topEdges: [], sourceKind: null, updatedAt: '2026-08-20T10:00:00.000Z', occurredOn: null })
 
 const nodes = [
   mk('n1', 'PATTERN', 'Késői evés rontja az alvást'),

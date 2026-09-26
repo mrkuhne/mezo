@@ -10,6 +10,7 @@ const candidate: LifeEventCandidate = {
   summary: 'Kezdés a marketing csapatban.',
   occurredOn: '2026-08-24',
   proposedEdgeCount: 2,
+  createdAt: '2026-08-25T02:00:00Z',
 }
 
 describe('LifeEventCandidateCard — Pontosít (szerkeszt-aztán-elfogad, mezo-ms9a)', () => {

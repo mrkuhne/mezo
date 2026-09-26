@@ -76,6 +76,15 @@ describe('useKnowledgeActions (mock mode)', () => {
     expect(promoted).toMatchObject({ text: candidateSeed[0].text, category: 'fuel', active: true, reinforced: 0 })
   })
 
+  it('snooze („Most ne”) only removes the candidate — no fact is added (mezo-zpxv7)', async () => {
+    const wrapper = makeHookWrapper()
+    const { result } = renderHook(() => ({ read: useKnowledge(), actions: useKnowledgeActions() }), { wrapper })
+    act(() => result.current.actions.decide('c1', 'snooze'))
+    await waitFor(() => expect(result.current.read.candidates).toHaveLength(candidateSeed.length - 1))
+    expect(result.current.read.candidates.some((c) => c.id === 'c1')).toBe(false)
+    expect(result.current.read.facts.find((f) => f.id === 'kf-c1')).toBeUndefined()
+  })
+
   it('refine promotes with the corrected wording; reject only removes', async () => {
     const wrapper = makeHookWrapper()
     const { result } = renderHook(() => ({ read: useKnowledge(), actions: useKnowledgeActions() }), { wrapper })

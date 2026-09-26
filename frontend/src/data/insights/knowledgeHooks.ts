@@ -105,7 +105,7 @@ function mockDecide(qc: QueryClient, input: DecideInput) {
     const candidate = base.candidates.find((c) => c.id === input.id)
     if (!candidate) return base
     const remaining = base.candidates.filter((c) => c.id !== input.id)
-    if (input.decision === 'reject') return { ...base, candidates: remaining }
+    if (input.decision === 'reject' || input.decision === 'snooze') return { ...base, candidates: remaining }
     const promoted: KnowledgeFact = {
       id: `kf-${candidate.id}`,
       text: input.decision === 'refine' && input.refinedText ? input.refinedText : candidate.text,
@@ -113,6 +113,7 @@ function mockDecide(qc: QueryClient, input: DecideInput) {
       active: true,
       reinforced: 0,
       source: 'chat',
+      owner: candidate.owner,
       lastReinforcedAt: null,
       createdAt: new Date().toISOString(),
     }

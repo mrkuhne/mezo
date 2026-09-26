@@ -5,11 +5,13 @@ import type { FactCandidate, KnowledgeFact } from '@/data/types'
 
 const baseCandidate: FactCandidate = {
   id: 'c3', text: 'A röplabdát heti egy alkalomra ritkítod — csak szombaton jársz.',
-  category: 'train', conflictsWithFactId: 'f4',
+  category: 'train', owner: 'mocor', source: 'chat', createdAt: '2026-08-22T07:00:00Z',
+  evidence: null, weekStart: null, conflictsWithFactId: 'f4',
 }
 const conflictFact: KnowledgeFact = {
   id: 'f4', text: 'Volleyball: kedd + csütörtök + szombat', category: 'train', active: true,
-  reinforced: 18, source: 'chat', lastReinforcedAt: '2026-08-09T18:00:00Z', createdAt: '2026-02-28T17:40:00Z',
+  reinforced: 18, source: 'chat', owner: 'mocor',
+  lastReinforcedAt: '2026-08-09T18:00:00Z', createdAt: '2026-02-28T17:40:00Z',
 }
 
 describe('FactCandidateCard — konfliktus-jelzés (mezo-ms9a Task 12)', () => {

@@ -5,7 +5,7 @@ import type { KnowledgeFact } from '@/data/types'
 
 const patternFact: KnowledgeFact = {
   id: 'f1', text: 'Gyógyszer-ciklusnap ↔ napi kalória', category: 'health', active: true,
-  reinforced: 2, source: 'pattern', patternTitle: 'Gyógyszer-ciklusnap ↔ napi kalória',
+  reinforced: 2, source: 'pattern', owner: 'deru', patternTitle: 'Gyógyszer-ciklusnap ↔ napi kalória',
   lastReinforcedAt: '2026-08-05T19:20:00Z', createdAt: '2026-04-20T07:15:00Z',
 }
 

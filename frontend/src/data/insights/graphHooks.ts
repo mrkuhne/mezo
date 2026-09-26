@@ -53,7 +53,12 @@ export function useLifeEventActions() {
       }
       await graphApi.decideCandidate(input.id, input.decision, input.refined)
     },
-    onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: GRAPH_CANDIDATE_KEY }),
+    onSuccess: mock
+      ? undefined
+      : () => {
+          qc.invalidateQueries({ queryKey: GRAPH_CANDIDATE_KEY })
+          qc.invalidateQueries({ queryKey: GRAPH_NODE_KEY })
+        },
   })
 
   return {
@@ -88,6 +93,7 @@ function mockDecide(
     topEdges: [],
     sourceKind: null,
     updatedAt: new Date().toISOString(),
+    occurredOn: candidate.occurredOn,
   }
   qc.setQueryData<KnowledgeGraphNode[]>(GRAPH_NODE_KEY, (old) => [promoted, ...(old ?? graphNodeSeed)])
 }
