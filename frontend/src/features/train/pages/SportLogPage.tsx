@@ -416,7 +416,7 @@ export function SportLogPage() {
       <SportCeremony
         score={sportStars(ceremony.minutes, minutesTarget(ceremony.sport), ceremony.rpe)}
         sportName={ceremony.sport.id === 'other' && values.name ? String(values.name) : ceremony.sport.name}
-        art={ceremony.sport.art}
+        art={ceremony.sport.art3d}
         color={ceremony.sport.color}
         minutes={ceremony.minutes}
         rpe={ceremony.rpe}
@@ -448,21 +448,26 @@ export function SportLogPage() {
         />
       )}
 
-      <GlassBox open={kcalOpen} onClose={() => { setKcalDraftError(null); setKcalOpen(false) }} label="Saját kalóriaérték" tint={chosen?.color}>
-        <p style={{ fontSize: 12.5, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
+      <GlassBox open={kcalOpen} onClose={() => { setKcalDraftError(null); setKcalOpen(false) }} label="Saját kalóriaérték" tint="var(--dv-coral)"
+        className="uv-gb-kcal" art={<Icon3D name="t-plate" size={30} />}>
+        {/* üveg U10 (mezo-me75u.10): a coral glass (the Edzés area colour, one accent — the pill
+            matches it); copy, field, error and the lit pill inside are flat. */}
+        <p className="uv-gb-copy">
           A becslés a te súlyodból, korodból és a mozgás fajtájából jön. Ha tudod, hogy máshogy volt,
           írd felül — akkor ezt mentjük, nem a becslést.
         </p>
-        <label className="sp-field" style={{ display: 'block', marginTop: 12 }}>
-          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Kalória</span>
+        <label className="uv-gb-field">
+          <span>Kalória</span>
           <input
-            className="sp-text" type="number" min={KCAL_MIN} max={KCAL_MAX} step={10} aria-label="Kalória"
+            className="uv-gb-input" type="number" min={KCAL_MIN} max={KCAL_MAX} step={10} aria-label="Kalória"
             value={kcalDraft} onChange={(e) => { setKcalDraft(e.target.value); setKcalDraftError(null) }}
           />
         </label>
-        {kcalDraftError && <p className="sp-note is-error" role="alert">{kcalDraftError}</p>}
+        {kcalDraftError && (
+          <p className="uv-gb-err" role="alert"><Icon3D name="t-info" size={18} />{kcalDraftError}</p>
+        )}
         <button
-          type="button" className="wo-close-cta" style={{ marginTop: 14 }}
+          type="button" className="abl-pill is-wide"
           onClick={() => {
             // The wire's own bounds (`SportSessionCreateRequest.kcalOverride`, @Min(1)
             // @Max(5000)). Before this, a 0 sailed through to a silent 400 — and in mock,
@@ -480,7 +485,8 @@ export function SportLogPage() {
             setKcalOpen(false)
           }}
         >
-          <span><strong>Ezt mentem</strong></span>
+          <Icon3D name="t-tick" size={20} />
+          <span>Ezt mentem</span>
         </button>
       </GlassBox>
     </>

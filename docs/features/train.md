@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-09-24
+updated: 2026-09-26
 tags: [train, running, sport, frontend, backend, data-layer, progression, hypertrophy]
 key_files:
   - frontend/src/features/train
@@ -56,6 +56,8 @@ Train is the largest mezo domain: the area for planning and executing strength w
 ---
 
 ## 2. User-facing behavior
+
+> **2026-09-26 — Üveg U10 (`mezo-me75u.10`).** The sport-session ceremony is glass in the same family as the workout close (`.uv-cer.cer-sport`, the sport's `art3d` on the CTA); the kcal override dialog, InfoButton and the workout dialogs ride the glass GlassBox (`className` instead of the retired `:has()` hook); the Edzés sheets (gym schedule, exercise picker, video URL, meso start/close, custom workout) are `<Sheet glass>` (coral); the resume FAB/bar is coral glass.
 
 Recurring gym and sport schedules are edited at `/settings/train/gym` and `/settings/train/sport`. TrainWeek no longer carries the Időpontok chip; the sport empty-state setup CTA opens the canonical editor. Existing workout logging, plan and one-off event editing stay here. Schedule sheets await persistence, retain drafts on errors, and mock changes propagate through the shared cache. See [central settings](settings.md).
 

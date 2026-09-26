@@ -54,7 +54,7 @@ export function MapPointInspectorBody({
           </div>
         )}
       </InspectorSection>
-      <div className="ad-note9" style={{ fontSize: 9.5, color: '#A2958A', marginTop: 8 }}>
+      <div className="ad-note9" style={{ fontSize: 9.5, color: 'var(--text-muted)', marginTop: 8 }}>
         A térképen látott távolság a 2D-re hajtogatott vetület; ezek a szomszédok a teljes
         768 dimenzióban a legközelebbiek — a kettő szándékosan nem feltétlenül ugyanaz.
       </div>

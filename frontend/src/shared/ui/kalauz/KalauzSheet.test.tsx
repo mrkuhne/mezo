@@ -24,6 +24,23 @@ test('az első kártyával nyílik, a Vissza tiltva, a lépésszám 1 / 4', () =
   expect(screen.getByRole('button', { name: 'Előző kártya' })).toBeDisabled()
 })
 
+test('üveg-lap: arany glass sheet, a kártya képe NAGY 3D ikon (agyag orb nélkül)', async () => {
+  const { user } = setup()
+  const dialog = screen.getByRole('dialog', { name: 'Kalauz · Fuel' })
+  expect(dialog).toHaveClass('glass', 'uv-sheet', 'kalauz-sheet')
+  // i-fuel → t-bowl a CLAY_TO_3D-n át; nincs agyag orb / spot a kártyán
+  expect(dialog.querySelector('.kalauz-art use')?.getAttribute('href')).toBe('#t-bowl')
+  expect(dialog.querySelector('.kalauz-art svg')).toHaveAttribute('width', '92')
+  expect(dialog.querySelector('use[href^="#s-orb"]')).toBeNull()
+  // egy spot (s-energia) a kalauz saját jelentés-térképén át lesz 3D (t-bolt)
+  await user.click(screen.getByRole('button', { name: 'Tovább' }))
+  expect(dialog.querySelector('.kalauz-art use')?.getAttribute('href')).toBe('#t-bolt')
+  // a kapcsolat-kártya képe a lánc, a chipje 3D ikon
+  await user.click(screen.getByRole('button', { name: '4. kártya' }))
+  expect(dialog.querySelector('.kalauz-art use')?.getAttribute('href')).toBe('#t-link')
+  expect(dialog.querySelector('.kalauz-chip use')?.getAttribute('href')).toBe('#t-dumbbell')
+})
+
 test('Tovább / Vissza / pötty lapoz; az utolsón a CTA „Értem, kezdjük" és a Kihagyom eltűnik', async () => {
   const { user, onClose } = setup()
   await user.click(screen.getByRole('button', { name: 'Tovább' }))
@@ -57,12 +74,18 @@ test('„Mutasd meg" csak akkor renderel, ha az anchor a DOM-ban van; peek → b
   document.body.insertAdjacentHTML('beforeend', '<div class="phone-screen"><div data-kalauz-anchor="fuel-log">tile</div></div>')
   const { user } = setup()
   await user.click(screen.getByRole('button', { name: '3. kártya' }))
+  // a „◎" jel helyett a 3D szem (t-eye) — a jelentés a gomb szövegében
+  expect(screen.getByRole('button', { name: 'Mutasd meg a képernyőn' }).querySelector('use')?.getAttribute('href')).toBe('#t-eye')
+  expect(screen.getByRole('button', { name: 'Mutasd meg a képernyőn' }).textContent).not.toContain('◎')
   await user.click(screen.getByRole('button', { name: 'Mutasd meg a képernyőn' }))
   const dialog = screen.getByRole('dialog', { name: 'Kalauz · Fuel' })
   expect(dialog).toHaveClass('is-peek')
   expect(document.querySelector('.kalauz-spot')).not.toBeNull()
   // regresszió-pin: a spot a .phone-screen közvetlen gyereke (portál), nem a transzformált sheet leszármazottja
   expect(document.querySelector('.kalauz-spot')?.parentElement).toBe(document.querySelector('.phone-screen'))
+  // a peek-sáv: 3D szem a kútban, „Koppints bárhova.", Vissza
+  expect(dialog.querySelector('.kalauz-peekbar use')?.getAttribute('href')).toBe('#t-eye')
+  expect(screen.getByText('Koppints bárhova.')).toBeInTheDocument()
   // a hátlap koppintása NEM zár — visszahozza a sheetet
   await user.click(document.querySelector('.sheet-backdrop')!)
   expect(dialog).not.toHaveClass('is-peek')

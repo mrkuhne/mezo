@@ -42,9 +42,9 @@ test('tapping it opens a GlassBox whose label is the title, tinted the fixed exp
 
   const dialog = screen.getByRole('dialog', { name: TITLE })
   expect(dialog).toHaveClass('gl-card')
-  // The prototype's infoGlass hardcodes --ex-color:#bca6f1 for EVERY info glass —
-  // it is the explain layer's identity colour, never the section's own tint.
-  expect(INFO_TINT).toBe('#bca6f1')
+  // ONE fixed tint for EVERY info glass, never the section's own tint — since the üveg
+  // re-dress (U10) it is Edzés coral, the area every InfoButton lives in.
+  expect(INFO_TINT).toBe('var(--dv-coral)')
   expect(dialog.getAttribute('style')).toContain(INFO_TINT)
 })
 

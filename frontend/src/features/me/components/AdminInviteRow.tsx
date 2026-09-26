@@ -6,9 +6,7 @@ import type { InviteResponse } from '@/data/admin/adminApi'
 // that matters. Copy is best-effort: navigator.clipboard is absent under jsdom and on http
 // origins, so the button falls back to a toast that just shows the code.
 
-const ROW: React.CSSProperties = { justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', gap: 10 }
 const CODE: React.CSSProperties = { fontFamily: 'var(--ff-mono, monospace)', fontSize: 13, fontWeight: 700, letterSpacing: '.04em' }
-const BTN: React.CSSProperties = { minHeight: 36, borderRadius: 999, padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer', border: '1px solid var(--border-subtle)', background: 'var(--surface-1)' }
 
 export function AdminInviteRow({ invite, onDelete, pending = false }: { invite: InviteResponse; onDelete: (id: string) => void; pending?: boolean }) {
   const { show } = useToast()
@@ -27,7 +25,9 @@ export function AdminInviteRow({ invite, onDelete, pending = false }: { invite: 
   }
 
   return (
-    <div className="card row" style={ROW}>
+    // Üveg (mezo-me75u.10, /admin only consumer): a flat row cell (`.ad-acrow`), ghost pills;
+    // „Törlés” keeps its warning tone as a coral outline (bible U4 rule 29).
+    <div className="ad-acrow glass row">
       <div className="col" style={{ minWidth: 0 }}>
         <span style={CODE}>{invite.code}</span>
         <span className="text-secondary" style={{ fontSize: 11 }}>{invite.label ?? '—'}</span>
@@ -35,10 +35,10 @@ export function AdminInviteRow({ invite, onDelete, pending = false }: { invite: 
       </div>
       <div className="row" style={{ gap: 6, flexShrink: 0 }}>
         {!invite.usedAt && (
-          <button type="button" style={BTN} onClick={copy}>Másolás</button>
+          <button type="button" className="ad-chip" onClick={copy}>Másolás</button>
         )}
         {!invite.usedAt && (
-          <button type="button" style={{ ...BTN, color: 'var(--error-deep)' }} aria-label={`Törlés: ${invite.code}`} disabled={pending} onClick={() => onDelete(invite.id)}>
+          <button type="button" className="ad-chip is-danger" aria-label={`Törlés: ${invite.code}`} disabled={pending} onClick={() => onDelete(invite.id)}>
             Törlés
           </button>
         )}

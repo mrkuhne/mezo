@@ -627,3 +627,40 @@ Failure/Volume set style, the macro-panel note. Prototype: [`prototypes/uveg-emo
     frontend copy, so the next run would have silently dropped them. Append the symbol after the file's
     `<!-- symbols -->` marker with a one-line comment naming the approving slice, then regenerate and commit both outputs.
     `titaniumSpriteSource.test.ts` fails when a shipped symbol has no source, or a source symbol never reached the sprite.
+
+### U10 · Rétegek és ünnepek (`mezo-me75u.10`, 2026-09-26)
+
+Ceremonies (meal, sport), level-up, the shared GlassBox + DatePicker + resume FAB + error card, every old sheet + toasts,
+KalauzSheet + T0 welcome, auth + splash + Minden oldal, admin. Blocks: `── uveg reteg unnep|szint|ablak|lap|kalauz|belepes|admin (`,
+pinned as `U10_BLOCKS`. Six new sprite icons (`t-jump t-sprint t-core t-juggle t-stretch t-target`). Prototype:
+[`prototypes/uveg-reteg.html`](prototypes/uveg-reteg.html).
+
+85. **Every Boop is alive (owner, 2026-09-26).** `<Boop>` defaults to `alive`, and each instance gets its own phase
+    (`--boop-delay`, a negative animation delay from its id), so a screenful never blinks in unison. A test that seeks a
+    Boop keyframe must seek WITHIN the iteration (`progress = currentTime − delay`), not assume phase 0.
+86. **A layer's choreography waits for the layer.** The owner saw the meal stars ignite while the drawer was still rising.
+    Sequence it inside the ONE rAF pass (rise first, then ignition) rather than chaining a CSS transition + `transitionend`
+    — a throttled webview freezes a CSS transition (the ceremony pattern's own rule).
+87. **Make the glass the component's default when the slice migrates every consumer.** GlassBox went glass-by-default
+    (plus a `className`), so no caller could be forgotten (rule 61's trap); `<Sheet>` stayed opt-in (`glass`) because many
+    sheets were already dressed in their own scope — and a guard test (`sheetGlassGuard.test.ts`) now fails any new
+    `<Sheet>` that ships on the old skin.
+88. **A caller's tint must stay overridable.** Read it through a custom property the stylesheet can win
+    (`--c: var(--gl-tint)`), never set `--c` inline — an inline `--c` beats a slice rule that pins its dialogs to a hue.
+89. **Scrolling glass loses its frame below the fold.** `.glass::before` is absolutely placed, so in a scrolling sheet or
+    dialog the gradient hairline covers only the first screenful. Acceptable for tall pickers; know it.
+90. **The kit's field rule is heavy.** `.sheet.glass.uv-sheet :is(input…)` has specificity 0,6,1; a search wrapper that
+    draws its own field gets a second box unless it is bared at a higher specificity. A future kit pass should lower it
+    (`:where()`) or add a `.uv-bare` opt-out.
+91. **Pre-auth screens have no sprite.** AuthGate renders above main.tsx's `<ClaySprites/>`, so every `t-*` icon on login,
+    register, onboarding and the boot failure drew nothing until AuthShell mounted the sprite itself. Any surface rendered
+    outside the app tree must mount its own sprite.
+92. **A root scope beats renaming for a self-contained surface.** Admin carried ~256 legacy light-hex rules; one root class
+    (`.uv-admin`) outranked them all without renaming anything the tests read. Prefix ownership (rule 60) is for pages
+    that SHARE classes with neighbours.
+93. **Never quote a block marker in a comment.** The structure test's `slice()` finds the first `── <marker> (` string; a
+    comment that mentions it earlier in the file makes the test read the wrong section.
+94. **A sprite symbol is not done until `Icon3DName` lists it.** The six U10 icons were in the sprite but not in the type.
+    Add the symbol to `assets/titanium-custom.svg` and run the generator (rule 84).
+95. **A peek strip is sized for the longest voice, not the prototype's one-liner.** Kalauz voices run to four sentences;
+    the peek bar clamps to three lines in a 100px strip.

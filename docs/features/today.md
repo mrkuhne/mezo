@@ -2,7 +2,7 @@
 title: Today
 type: feature-domain
 status: mixed
-updated: 2026-09-25
+updated: 2026-09-26
 tags: [today, nap, mozaik, biometrics, frontend, data-layer, ritual, needs, napom]
 # 8 load-bearing paths. A napom's entry points are pages (NapomPage), components (napom/*),
 # logic (napom.ts), data/me/liveDay.ts, router.tsx and DayReviewWarmupJob. AppHeader.tsx is
@@ -70,6 +70,8 @@ Until `mezo-atry`, `NapHubPage`'s `.nap-head` was copy-pasted verbatim into the 
 The page scrolls. Rough-day mode quiets the decorative motion while preserving the same five entry points. Reduced-motion preferences stop CSS motion and select the existing static companion fallback. Shell header/navigation remain independently owned.
 
 ## 2. User-facing behavior
+
+> **2026-09-26 — Üveg U10 (`mezo-me75u.10`).** The activity-log reward toast passes `source: 'activity'` (it picks the toast's 3D icon); the toast stack itself is glass (see `_platform-design-system`).
 
 Shared-shell integration: the Mezo domain now starts at the csapat-üzenőfal (`TeamFeedPage`) with its own function navigation (the old `BoopNavigation` chip strip is gone app-wide, `mezo-twizx`). Today's routes, header DayOrb, Mezo message shortcut and logging flows are unchanged. See [Insights](insights.md) for the separate social entry.
 

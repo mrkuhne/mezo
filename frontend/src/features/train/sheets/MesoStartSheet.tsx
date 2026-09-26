@@ -8,14 +8,18 @@
 // active|planned, then fires the one shared POST .../start.
 // Active starts jump straight into the gym week; a planned start just closes
 // (the new run appears in the library's Tervezett section).
+// Üveg (U10, mezo-me75u.10): a coral glass sheet, the play 3D head (the template's name as the
+// sub-line), a flat date field, the status as two flat segment chips (the chosen one lit),
+// Mégse flat ghost + the lit coral „Indítás" pill.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMesoTemplates } from '@/data/hooks'
 import { localDateString } from '@/shared/lib/dates'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
-import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
+import { SheetHead } from '@/shared/ui/SheetHead'
+import { Icon3D } from '@/shared/ui/clay'
+import { cn } from '@/shared/lib/cn'
 
 const STATUSES = [
   { id: 'active', label: 'Aktív', hint: 'Most kezdem — a Gym hete ettől fut.' },
@@ -35,7 +39,7 @@ export function MesoStartSheet({ templateId, title, onClose }: {
   const [saving, setSaving] = useState(false)
 
   return (
-    <Sheet onClose={onClose} labelledBy="meso-start-title">
+    <Sheet glass onClose={onClose} labelledBy="meso-start-title" className="uvl-edzes">
       {(close) => {
         const start = () => {
           if (!startDate || saving) return
@@ -48,66 +52,48 @@ export function MesoStartSheet({ templateId, title, onClose }: {
             .catch(() => setSaving(false))
         }
         return (
-          <>
-            {/* Header */}
-            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-              <div className="col">
-                <span className="eyebrow brand">Mesociklus · indítás</span>
-                <h2 id="meso-start-title" style={{ fontSize: 18, marginTop: 4 }}>Mikor kezdjük?</h2>
-                {title ? (
-                  <span className="text-secondary" style={{ fontSize: 14, marginTop: 4 }}>{title}</span>
-                ) : null}
-              </div>
-              <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
-                <Icon name="x" size={12} />
-              </button>
-            </div>
+          <div className="uvl-body">
+            <SheetHead icon="t-play" eyebrow="Mesociklus · indítás" title="Mikor kezdjük?" titleId="meso-start-title"
+              sub={title ? title : undefined} onClose={close} />
 
-            <div className="col gap-md">
-              {/* Start date */}
-              <div className="col gap-sm">
-                <span className="label-mono">Kezdés</span>
-                <div className="card row" style={{ padding: '6px 12px', alignItems: 'center' }}>
-                  <input
-                    type="date"
-                    aria-label="Kezdés dátuma"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    style={{ width: '100%', fontSize: 16, color: 'var(--text-primary)', colorScheme: 'dark' }}
-                  />
-                </div>
-              </div>
+            {/* Start date */}
+            <label className="uvl-field">
+              <span className="uvl-flabel">Kezdés</span>
+              <input
+                type="date"
+                aria-label="Kezdés dátuma"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </label>
 
-              {/* active | planned */}
-              <div className="col gap-sm">
-                <span className="label-mono">Állapot</span>
-                <div className="row gap-xs" role="group" aria-label="Futam állapota">
-                  {STATUSES.map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      className="segtab flex-1"
-                      aria-pressed={status === s.id}
-                      onClick={() => setStatus(s.id)}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-                <span className="text-tertiary" style={{ fontSize: 14, lineHeight: 1.4 }}>
-                  {STATUSES.find((s) => s.id === status)?.hint}
-                </span>
+            {/* active | planned */}
+            <div className="uvl-field">
+              <span className="uvl-flabel">Állapot</span>
+              <div className="uvl-seg" role="group" aria-label="Futam állapota">
+                {STATUSES.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    className={cn('uvl-chip', status === s.id && 'on')}
+                    aria-pressed={status === s.id}
+                    onClick={() => setStatus(s.id)}
+                  >
+                    {s.label}
+                  </button>
+                ))}
               </div>
+              <span className="uvl-hint">{STATUSES.find((s) => s.id === status)?.hint}</span>
             </div>
 
             {/* Footer */}
-            <div className="row gap-sm mt-lg">
-              <CtaGhost className="flex-1" onClick={close}>Mégse</CtaGhost>
-              <CtaPrimary className="flex-1" onClick={start} disabled={saving}>
-                <Icon name="check" size={14} /> Indítás
-              </CtaPrimary>
+            <div className="uvl-foot">
+              <button type="button" className="uvl-ghost" onClick={close}>Mégse</button>
+              <button type="button" className="uvl-cta" onClick={start} disabled={saving}>
+                <Icon3D name="t-tick" size={20} />Indítás
+              </button>
             </div>
-          </>
+          </div>
         )
       }}
     </Sheet>

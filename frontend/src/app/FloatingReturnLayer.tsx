@@ -12,9 +12,14 @@
 //                                composer while a workout is open; else nothing
 //   everywhere else            → the coral resume FAB (done-set badge) stacked
 //                                above the quick-log FAB while a workout is open
+//
+// Üveg U10 (mezo-me75u.10, prototype `.rfab` / `.rbar`): the FAB is a round coral glass
+// (overflow visible, sheen off) carrying the 3D dumbbell — the meaning is "your workout", not
+// "play" — with the done-set badge OUTSIDE the circle; the chat bar is a coral glass bar with a
+// lit coral pill. Skin lives in the `uveg reteg ablak` block; positions stay in the old rules.
 // ============================================================
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 import { useOpenWorkout } from '@/data/hooks'
 
 /** Same exact-match list idea as AppLayout's `hideChrome` — these two screens are
@@ -33,13 +38,13 @@ export function FloatingReturnLayer() {
   if (pathname === '/mezo/chat') {
     const meta = [title, doneSets > 0 ? `${doneSets} szett kész` : null].filter(Boolean).join(' · ')
     return (
-      <button type="button" className="float-return np-press" onClick={() => navigate('/train/session')}>
-        <Icon name="play" size={18} />
+      <button type="button" className="float-return glass is-still np-press" onClick={() => navigate('/train/session')}>
+        <Icon3D name="t-dumbbell" size={30} />
         <span className="float-return-text">
           <span className="float-return-title">Vissza az edzéshez</span>
           {meta && <span className="float-return-meta">{meta}</span>}
         </span>
-        <span className="float-return-go"><Icon name="chevron-right" size={16} /></span>
+        <span className="float-return-go" aria-hidden="true">Vissza</span>
       </button>
     )
   }
@@ -49,11 +54,11 @@ export function FloatingReturnLayer() {
     <div className="float-stack">
       <button
         type="button"
-        className="float-fab float-fab-train np-press"
+        className="float-fab float-fab-train glass is-round np-press"
         onClick={() => navigate('/train/session')}
         aria-label="Vissza az edzéshez"
       >
-        <Icon name="play" size={22} />
+        <Icon3D name="t-dumbbell" size={34} />
         {doneSets > 0 && <span className="float-fab-badge" aria-hidden>{doneSets}</span>}
       </button>
     </div>

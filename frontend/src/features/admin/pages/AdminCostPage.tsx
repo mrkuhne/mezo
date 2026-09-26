@@ -13,7 +13,7 @@ import { TopListTile, type TopRow } from '@/features/admin/components/TopListTil
 import { featureLabel } from '@/features/admin/lib/labels'
 import { heatColor, monthRunRate, spikeDays, topNFromEntries, type AdminVizEntry } from '@/features/admin/lib/adminViz'
 import { GhostState } from '@/shared/ui/GhostState'
-import { ClaySpot } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { CollapsibleStrip, MosaicDesktop, MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { huInt, usd } from '@/shared/lib/huNum'
@@ -195,9 +195,9 @@ export function AdminCostPage() {
 
   return (
     <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate('/admin')} label="‹ Admin" />
+      <PageHead glass onBack={() => navigate('/admin')} label="Admin" />
       <EntranceGroup>
-        <PageHero icon="i-erme" name="Költés" sub="AI-hívások havi költése és mintázatai" />
+        <PageHero glass eyebrow="Admin" name="Költés" sub="AI-hívások havi költése és mintázatai" />
 
         <PageBody className="col gap-md">
           <MosaicDesktop>
@@ -207,7 +207,7 @@ export function AdminCostPage() {
                 calendar month" (never a confident zero), so it renders "—" with its own honest
                 sub-copy instead of running the Δ comparison against a number that doesn't exist. */}
             <AdminTile query={summaryQuery} wash="gold" eyebrow={`${monthName} · NAPTÁRI HÓNAP`} span={3}>
-              <Poster spot="s-medal" big={monthCost != null ? usd(monthCost) : '—'}
+              <Poster spot="t-coin" big={monthCost != null ? usd(monthCost) : '—'}
                 foot={monthCost == null
                   ? <span className="ad-mut">nincs árazott hívás</span>
                   : <span className={`ad-delta ${delta.tone === 'mut' ? 'flat' : delta.tone}`}>{delta.text}</span>} />
@@ -215,17 +215,17 @@ export function AdminCostPage() {
             </AdminTile>
 
             <AdminTile query={summaryQuery} wash="sky" eyebrow="Várható hó végén" span={3}>
-              <Poster spot="s-hegycel" big={runRate != null ? usd(runRate) : '—'}
+              <Poster spot="t-trend" big={runRate != null ? usd(runRate) : '—'}
                 foot={<span className="ad-mut">{runRate != null ? 'a mostani tempóval' : 'nincs árazott hívás'}</span>} />
             </AdminTile>
 
             <AdminTile query={perAccountQuery} wash="sage" eyebrow="Egy aktív fiókra jut" span={3}>
-              <Poster spot="s-energia" big={perAccount != null ? usd(perAccount) : '—'}
+              <Poster spot="t-person" big={perAccount != null ? usd(perAccount) : '—'}
                 foot={<span className="ad-mut">{nonOwnerActive > 0 ? 'aktív fiókonként' : 'nincs aktív fiók'}</span>} />
             </AdminTile>
 
             <AdminTile query={breakdownQuery} wash="coral" eyebrow="Ismeretlen költségű hívások" span={3}>
-              <Poster spot="s-hajtas" big={huInt(breakdown.data.totals.unpricedCount)} foot={<span className="ad-mut">árlista nélküli hívás</span>} />
+              <Poster spot="t-info" big={huInt(breakdown.data.totals.unpricedCount)} foot={<span className="ad-mut">árlista nélküli hívás</span>} />
             </AdminTile>
 
             <AdminTile query={breakdownQuery} wash="gold" eyebrow="Mire megy a pénz" span={6}>
@@ -275,7 +275,7 @@ export function AdminCostPage() {
                         <button
                           type="button"
                           onClick={() => setLimit((n) => Math.min(n + PAGE, MAX_WINDOW))}
-                          style={{ minHeight: 44, borderRadius: 999, padding: '9px 20px', fontSize: 12, fontWeight: 700, cursor: 'pointer', border: '1px solid var(--border-subtle)', background: 'var(--surface-1)' }}
+                          className="ad-ghost"
                         >
                           További hívások ({PAGE})
                         </button>
@@ -298,7 +298,7 @@ export function AdminCostPage() {
                 summary={<span className="ad-mut">felhasználók × funkciók</span>}
               >
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ borderCollapse: 'collapse', fontSize: 11, minWidth: '100%' }}>
+                  <table className="ad-matrix" style={{ borderCollapse: 'collapse', fontSize: 11, minWidth: '100%' }}>
                     <thead>
                       <tr>
                         <th style={{ textAlign: 'left', padding: '4px 8px' }}></th>
@@ -339,10 +339,10 @@ export function AdminCostPage() {
   )
 }
 
-function Poster({ spot, big, foot }: { spot: Parameters<typeof ClaySpot>[0]['name']; big: string; foot: ReactNode }) {
+function Poster({ spot, big, foot }: { spot: Icon3DName; big: string; foot: ReactNode }) {
   return (
     <div className="ad-poster">
-      <div className="ad-spot spot"><ClaySpot name={spot} size={44} /></div>
+      <div className="ad-spot spot"><Icon3D name={spot} size={44} /></div>
       <div className="ad-big">{big}</div>
       <div className="foot">{foot}</div>
     </div>
@@ -390,8 +390,8 @@ function CostTrendDots({ days, spikes, onPick }: {
             cx={x}
             cy={y}
             r={isSpike ? 5 : 3}
-            fill={isSpike ? '#D8481F' : 'transparent'}
-            stroke={isSpike ? '#fff' : 'none'}
+            fill={isSpike ? 'var(--dv-coral)' : 'transparent'}
+            stroke={isSpike ? 'var(--canvas)' : 'none'}
             strokeWidth={isSpike ? 1.5 : 0}
             style={{ cursor: 'pointer' }}
             role="button"

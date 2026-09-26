@@ -38,6 +38,7 @@ they inline come from `../assets/`.
 | `celok.html` | https://claude.ai/code/artifact/e404d1d4-55c3-4e81-a8b4-716c6ba45f87 |
 | `uveg-nap.html` | https://claude.ai/artifact/FXaXB8k3zHoFLPwEmYe3F3 (Üvegesítés U3 · Nap — dark glass, built by `build.sh` last line; new icons in `src/uveg-sprite-nap-uj.svg.part` until they move into the shared sprite — mezo-me75u.3) |
 | `uveg-napod.html` | https://claude.ai/artifact/P4JxxR4tZx5WtDaBYPChbZ (A napod — live day view + the Mai "A napod" card + overnight-closed yesterday; brainstorm prototype 2026-09-24, placement A/B/C and layout 1/2 variants) |
+| `uveg-reteg.html` | https://claude.ai/artifact/2CjbDv9Rjtf3GWCubqgsjA (Üvegesítés U10 · Rétegek és ünnepek — ceremóniák, szintlépés, GlassBox, Sheet, toast, kalauz, belépés, admin, Minden oldal; built by `build.sh` last line; 6 new icons inline until the owner OK — mezo-me75u.10) |
 | `hang-boop.html` | https://claude.ai/artifact/SENAq5WTU8bP6WGchrgAuX (Hallgató Boop — the voice-input bubble: listening / thinking / done / sad phases in Napló, Étkezés, Chat colours; owner OK 2026-09-25 — mezo-zyyox; standalone, not built by build.sh) |
 | `minta-reszlet.html` | — (emberi következtetés + bináris összevetés + rétegzett diagnosztika — mezo-0469) |
 | `rutin-szerkeszto-valasztas.html` | — (not yet published; hol lakjon a recept/stacking szerkesztése — három IA-lehetőség egymás mellett — mezo-08zl) |

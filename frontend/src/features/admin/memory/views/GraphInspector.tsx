@@ -166,7 +166,7 @@ export function GraphEdgeInspectorBody({
           </div>
         )}
       </InspectorSection>
-      <div className="ad-note9" style={{ fontSize: 9.5, color: '#A2958A', marginTop: 8 }}>
+      <div className="ad-note9" style={{ fontSize: 9.5, color: 'var(--text-muted)', marginTop: 8 }}>
         A mezo-élekben nincs érvényességi intervallum — ez egy bomlási sáv: az éjszakai job súlya{' '}
         <code style={{ fontFamily: 'ui-monospace,monospace' }}>×{graph.decayFactor}</code>,{' '}
         {graph.pruneBelow} alatt törlődik.

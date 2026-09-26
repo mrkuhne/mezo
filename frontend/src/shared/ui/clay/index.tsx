@@ -92,6 +92,8 @@ export type Icon3DName =
   | 't-whistle' | 't-eye' | 't-card' | 't-diagnose' | 't-album' | 't-layers' | 't-pencil'
   // U9 (mezo-me75u.9) — owner OK 2026-09-25 on prototypes/uveg-mezo-teljes.html#ikonok9
   | 't-council' | 't-radar' | 't-graph' | 't-grid'
+  // U10 (mezo-me75u.10) — owner OK on prototypes/uveg-reteg.html#ikonok: the six athletic skills
+  | 't-jump' | 't-sprint' | 't-core' | 't-juggle' | 't-stretch' | 't-target'
 
 /** Mounts the clay + Titanium <symbol>/<gradient> defs once (main.tsx). */
 export const ClaySprites = memo(function ClaySprites() {

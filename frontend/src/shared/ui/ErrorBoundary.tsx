@@ -1,10 +1,12 @@
 import { Component, type ReactNode } from 'react'
-import { CtaPrimary } from '@/shared/ui/Cta'
+import { Icon3D } from '@/shared/ui/clay'
 
 // The error leg of the loading/empty/error triad (GhostState + ScreenSkeleton are the other
 // two). A render-time throw below this boundary swaps in a GhostState-vocabulary fallback
 // instead of blanking the PWA. `resetKey` clears a caught error when it changes (AppLayout
 // passes the pathname, so navigating away from a crashed page recovers automatically).
+// Skin (üveg U10, mezo-me75u.10, prototype `.errcard`): a coral glass card, the 3D info icon, the
+// retry as a lit coral pill — `uveg reteg ablak` block of prototype.css.
 
 interface Props {
   children: ReactNode
@@ -41,16 +43,11 @@ export class ErrorBoundary extends Component<Props, State> {
     if (!this.state.hasError) return this.props.children
     if (this.props.fallback) return this.props.fallback(this.reset)
     return (
-      <div className="card" style={{ padding: 18, margin: 16 }} role="alert">
-        <div className="col gap-sm" style={{ alignItems: 'center', textAlign: 'center' }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
-            Valami elromlott ezen a nézeten.
-          </p>
-          <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
-            A hiba részletei a konzolban vannak. Próbáld újra, vagy válts másik fülre.
-          </p>
-          <CtaPrimary onClick={this.reset}>Újrapróbálom</CtaPrimary>
-        </div>
+      <div className="abl-err glass" role="alert">
+        <Icon3D name="t-info" size={62} className="abl-err-art" />
+        <strong>Valami elromlott ezen a nézeten.</strong>
+        <p>A hiba részletei a konzolban vannak. Próbáld újra, vagy válts másik fülre.</p>
+        <button type="button" className="abl-pill" onClick={this.reset}>Újrapróbálom</button>
       </div>
     )
   }

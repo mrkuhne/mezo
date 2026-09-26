@@ -16,13 +16,26 @@ createRoot(document.getElementById('root')!).render(
     {/* App-level boundary: catches provider/shell crashes the tab-level one cannot. */}
     <ErrorBoundary
       fallback={() => (
-        <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-primary, #ECECF1)' }} role="alert">
-          <p style={{ fontSize: 14, fontWeight: 600 }}>Valami elromlott.</p>
-          <p style={{ fontSize: 12, marginTop: 8 }}>
-            <button type="button" onClick={() => window.location.reload()} style={{ textDecoration: 'underline' }}>
+        // Inline on purpose (mezo-me75u.10): this renders when the stylesheet itself may be the
+        // casualty. The dark lock's black ground + ink, one faint glass-ish cell, a lit pill.
+        <div role="alert" style={{
+          minHeight: '100dvh', display: 'grid', placeItems: 'center', padding: 24,
+          background: '#000', color: '#F5EFE6', fontFamily: 'system-ui, sans-serif',
+        }}>
+          <div style={{
+            width: '100%', maxWidth: 320, textAlign: 'center', padding: '22px 18px', borderRadius: 22,
+            background: 'linear-gradient(160deg, rgba(52,46,41,.72), rgba(30,27,24,.60))',
+            boxShadow: 'inset 0 0 0 1px rgba(245,239,230,.10), 0 0 26px -6px rgba(171,159,210,.35)',
+          }}>
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Valami elromlott.</p>
+            <button type="button" onClick={() => window.location.reload()} style={{
+              marginTop: 16, padding: '11px 22px', border: 0, borderRadius: 999, cursor: 'pointer',
+              font: 'inherit', fontSize: 14, fontWeight: 700, color: '#191614', background: '#AB9FD2',
+              boxShadow: '0 0 14px rgba(171,159,210,.55)',
+            }}>
               Újratöltés
             </button>
-          </p>
+          </div>
         </div>
       )}
     >

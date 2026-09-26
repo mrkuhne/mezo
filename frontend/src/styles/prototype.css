@@ -9953,110 +9953,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .am-degraded { text-align: center; padding: 40px 20px; color: #A2958A; }
 .am-degraded .t { font-size: 13px; font-weight: 700; color: #6E6257; margin-bottom: 4px; }
 
-/* ── fuel-ceremony (mezo-bqwyo · jutalomoldalak mezo-p2777) ─────────────────
-   A naplózást lezáró ünneplés — a jutalom-család KIS pillanata (spec
-   docs/superpowers/specs/2026-09-22-jutalomoldalak-design.md, tulajdonos 2026-09-22):
-   az étkezést naponta 3–5-ször rögzíti, ezért ~1 mp, alulról felcsúszó lap a nap fölött —
-   nem a teljes képernyős edzés-ünneplés. A minta (docs/design_2.0/2026-09-15-ceremony-
-   pattern.md) marad: a ceremónia birtokolja a képernyőt (modális dialógus + fátyol), egy
-   koreográfia, világos kiút. Az ANYAG a visszaállított világé (stíluskönyv §5): arany
-   tónus-talaj, halo, és a pont-gyűrű a meleg radiális „Ritmus" kő (SVG-gradiensként a
-   komponensben) — se titán üveg, se backdrop-filter, se emoji.
-
-   A lap mozgását (`--rise`), a gyújtást (`--p`) és az ütemeket (`is-b1` verdikt +
-   makrók, `is-b2` gombok) a komponens rAF-menete írja. A lapon és a gyűrűn NINCS
-   transition: háttérbe tett webview-ban a frissen indított átmenet a kezdőértéken
-   fagy, és a lap a képernyőn KÍVÜL ragadna. Csökkentett mozgás: nincs menet, az első
-   render a végállapot. */
-.fcx-screen { position: absolute; inset: 0; z-index: 240; display: flex; flex-direction: column; justify-content: flex-end; }
-.fcx-scrim { position: absolute; inset: 0; background: rgba(43, 33, 24, 0.34); opacity: calc(1 - var(--rise, 0)); }
-:root[data-theme="dark"] .fcx-scrim { background: rgba(12, 10, 9, 0.6); }
-
-.fcx-sheet {
-  position: relative; overflow: hidden; padding: 10px 18px 22px; border-radius: 30px 30px 0 0;
-  background: linear-gradient(180deg, var(--mz-tone-gold) 0%, var(--canvas) 55%);
-  box-shadow: 0 -18px 40px -20px rgba(43, 33, 24, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  transform: translateY(calc(var(--rise, 0) * 105%));
-}
-/* A hős atmoszférája: halo-sáv (§2.2 C), keret és árnyék nélkül — a `--p` erősíti. */
-.fcx-sky { position: absolute; left: 50%; top: -120px; width: 520px; height: 420px; translate: -50% 0;
-  pointer-events: none; background: var(--halo-amber); opacity: calc(0.3 + var(--p, 0) * 0.7); }
-.fcx-grab { position: relative; display: block; width: 40px; height: 5px; margin: 0 auto 12px;
-  border-radius: 999px; background: var(--divider); }
-
-.fcx { position: relative; display: flex; align-items: center; gap: 16px; padding: 4px 4px 0; }
-.fcx-head { flex: 1; min-width: 0; }
-.fcx-eyebrow { display: block; font-size: 9.5px; font-weight: 800; letter-spacing: 0.16em;
-  text-transform: uppercase; color: var(--mz-cell-gold-ink); }
-.fcx-meal { margin: 4px 0 0; font-family: var(--ff-display); font-size: 20px; font-weight: 700;
-  letter-spacing: -0.02em; line-height: 1.2; color: var(--ink); }
-.fcx-when { display: block; margin-top: 1px; font-size: 11.5px; color: var(--sub); }
-
-/* Öt csillag — ugyanaz a gyújtás, mint az edzés ívén, csak kisebben. */
-.fcx-stars { display: flex; gap: 4px; margin-top: 10px; }
-.fcx-stars i { position: relative; display: grid; place-items: center; width: 30px; height: 30px; }
-.fcx-stars i svg { width: 30px; height: 30px; opacity: 0.22; }
-.fcx-stars i.is-lit svg { opacity: 1; animation: fcx-pop 0.5s cubic-bezier(.2, 1.7, .35, 1); }
-.fcx-aura { position: absolute; inset: -35%; border-radius: 50%; pointer-events: none; opacity: 0;
-  background: radial-gradient(circle, color-mix(in srgb, var(--dv-amber) 55%, transparent) 0%, transparent 62%); }
-.fcx-stars i.is-lit .fcx-aura { animation: fcx-aura 0.7s ease-out; }
-@keyframes fcx-pop { 0% { scale: .35; rotate: -22deg; } 58% { scale: 1.22; rotate: 5deg; } 100% { scale: 1; rotate: 0deg; } }
-@keyframes fcx-aura { 0% { opacity: 1; scale: .3; } 100% { opacity: 0; scale: 1.8; } }
-
-/* A Mezo pontja egy érmén: a kő a GYŰRŰ, a szám a korongon — szöveg sosem kerül a kőre. */
-.fcx-score { position: relative; flex: 0 0 auto; display: grid; justify-items: center; }
-.fcx-medal { position: relative; display: grid; place-items: center; width: 92px; height: 92px;
-  border-radius: 50%; background: var(--surface-1); box-shadow: var(--mz-shadow-dec); }
-.fcx-ring { position: absolute; inset: 0; width: 100%; height: 100%; }
-.fcx-ring-track { fill: none; stroke: var(--surface-recess); stroke-width: 8; }
-.fcx-ring-fill { fill: none; stroke-width: 8; stroke-linecap: round; stroke-dasharray: 100;
-  stroke-dashoffset: calc(100 - var(--p, 0) * var(--score, 0) * 100); }
-.fcx-medal strong { position: relative; font-family: var(--ff-display); font-size: 34px; font-weight: 200;
-  letter-spacing: -0.05em; font-variant-numeric: tabular-nums; color: var(--ink); }
-.fcx-score small { margin-top: 6px; font-size: 8.5px; font-weight: 800; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--sub); }
-
-.fcx-result { position: relative; margin: 12px 4px 0; }
-.fcx-verdict { margin: 0; font-family: var(--ff-display); font-size: 17px; font-weight: 600;
-  letter-spacing: -0.01em; color: var(--ink); }
-
-/* A négy makró EGY kártyában — a kalória zsálya tintát visel, mert az a Fuel száma. */
-.fcx-counters { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 14px;
-  padding: 12px 2px; border-radius: 20px; border: 0.5px solid rgba(43, 33, 24, 0.06);
-  background: var(--surface-1); box-shadow: var(--mz-shadow); }
-.fcx-counters span { display: grid; justify-items: center; gap: 2px; min-width: 0; }
-.fcx-counters span + span { box-shadow: inset 1px 0 0 var(--divider); }
-.fcx-counters svg { width: 24px; height: 24px; }
-.fcx-counters strong { font-family: var(--ff-display); font-size: 22px; font-weight: 200;
-  letter-spacing: -0.04em; font-variant-numeric: tabular-nums; color: var(--ink); }
-.fcx-counters span:first-child strong { color: var(--mz-cell-sage-ink); }
-.fcx-counters small { font-size: 8.5px; font-weight: 700; letter-spacing: 0.06em;
-  text-transform: uppercase; color: var(--sub); white-space: nowrap; }
-
-/* A két kiút: a halk vissza a naphoz, és a ház elsődleges gombja — ugyanaz, mint az edzésnél. */
-.fcx-foot { position: relative; display: grid; grid-template-columns: 1fr 1.25fr; gap: 8px; margin-top: 14px; }
-.fcx-foot.is-single { grid-template-columns: 1fr; }
-.fcx-close { min-height: 56px; padding: 0 12px; border: 0; border-radius: 18px; cursor: pointer;
-  font-size: 13px; font-weight: 600; color: var(--sub);
-  background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle); }
-.fcx-cta { display: flex; align-items: center; gap: 9px; min-height: 56px; padding: 11px 14px;
-  border: 0; border-radius: 20px; text-align: left; cursor: pointer; color: #fff;
-  background: var(--gradient-cta); box-shadow: var(--shadow-cta); }
-.fcx-cta strong { display: block; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
-.fcx-cta small { display: block; margin-top: 1px; font-size: 11px; opacity: 0.78; }
-
-/* Az ütemek — egyszer, a menet kapcsolja őket. */
-.fcx-result, .fcx-counters, .fcx-foot { opacity: 0; translate: 0 12px; }
-.fcx-screen.is-b1 .fcx-result, .fcx-screen.is-b1 .fcx-counters,
-.fcx-screen.is-b2 .fcx-foot {
-  opacity: 1; translate: 0 0; transition: opacity 0.4s ease, translate 0.45s cubic-bezier(.2, .8, .2, 1);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .fcx-stars i.is-lit svg, .fcx-stars i.is-lit .fcx-aura { animation: none; }
-  .fcx-result, .fcx-counters, .fcx-foot { opacity: 1; translate: none; transition: none; }
-}
-/* ── /fuel-ceremony ───────────────────────────────────────────────────────── */
+/* (fuel-ceremony, mezo-bqwyo: the meal ceremony moved onto glass in mezo-me75u.10 — its
+   whole `.fcx-*` family now lives in the U10 "unnep" block at the end of this file.) */
 
 /* ── boop (mezo-ju4j6.15) ────────────────────────────────────────────────
    A kabalafigura mozdulatai. A figura példányonként INLINE SVG (lásd
@@ -10071,10 +9969,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .boop .boop-body { transform-origin: 50% 96%; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .boop.is-alive .boop-eye { animation: boop-blink 6s infinite; }
-  .boop.is-alive .boop-pupil { animation: boop-look 9s infinite; }
-  .boop.is-alive .boop-brow { animation: boop-brow 9s infinite; }
-  .boop.is-alive .boop-body { animation: boop-breathe 4.2s ease-in-out infinite; }
+  /* `--boop-delay`: a példány saját fázisa (Boop.tsx), hogy egy képernyőnyi figura ne egyszerre pislogjon. */
+  .boop.is-alive .boop-eye { animation: boop-blink 6s var(--boop-delay, 0s) infinite; }
+  .boop.is-alive .boop-pupil { animation: boop-look 9s var(--boop-delay, 0s) infinite; }
+  .boop.is-alive .boop-brow { animation: boop-brow 9s var(--boop-delay, 0s) infinite; }
+  .boop.is-alive .boop-body { animation: boop-breathe 4.2s ease-in-out var(--boop-delay, 0s) infinite; }
 }
 @keyframes boop-blink {
   0%, 41%, 45%, 100% { transform: scaleY(1); }
@@ -15189,6 +15088,28 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    with the gap a glyph + space used to give (mezo-z5lov, the last live emoji → sprite). */
 .t-ico.uv-inline { display: inline-block; vertical-align: -0.22em; margin-right: 0.3em; }
 .t-ico.uv-inline.uv-after { margin-right: 0; margin-left: 0.3em; }
+/* the shared floating glass sheet (mezo-me75u.10): `<Sheet glass>` — U2 rule 15 made kit-level.
+   Hue via `--c` on the sheet (caller's className); fields and cells inside are FLAT (rule 5). */
+.sheet.glass.uv-sheet {
+  --c: var(--dv-lav);
+  position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
+  overflow-x: hidden; overflow-y: auto; border: 0; border-radius: 30px;
+  padding: 4px 18px 18px; color: var(--text-primary);
+}
+.sheet.glass.uv-sheet::after { display: none; }
+.sheet.glass.uv-sheet .sheet-handle-zone { margin: 0 -18px 2px; }
+.sheet.glass.uv-sheet .sheet-handle { width: 40px; height: 5px; background: rgba(245, 239, 230, 0.22); }
+.sheet.glass.uv-sheet .card {
+  background: rgba(245, 239, 230, 0.04); border: 0; border-radius: 14px; filter: none;
+  box-shadow: inset 0 0 0 1px var(--divider);
+}
+.sheet.glass.uv-sheet :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select) {
+  border: 0; border-radius: 13px; color: var(--text-primary); color-scheme: dark;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.sheet.glass.uv-sheet :is(input, textarea, select):focus-visible {
+  outline: none; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 70%, transparent), 0 0 14px -4px color-mix(in srgb, var(--c) 60%, transparent);
+}
 /* ── /uveg kit ─────────────────────────────────────────────────────────────── */
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -18817,9 +18738,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    the finish button and everything INSIDE a card are FLAT; each exercise card is ONE glass with
    `--c` = its muscle color (a skipped card is the dashed free state); the start-of-workout quest
    row is a coral glass row; the dock is ONE glass bar with no sheen (like the TabBar); every
-   GlassBox dialog body is ONE glass (`.wos-gb.glass.is-still`) — GlassBox takes no className, so
-   `.gl-card:has(> .wos-gb)` scopes the shared primitive to THIS page's dialogs only and turns
-   the card itself into a bare positioner; sheets are floating glass (U2 rule 15) with lit flat
+   GlassBox dialog is ONE glass — since U10 the GlassBox card itself (glass by default), scoped to
+   THIS page's dialogs by `className="wos-gbx"` (mezo-8vfr2), its `.wos-gb` body flat; sheets are floating glass (U2 rule 15) with lit flat
    pills. Page content is scoped to `.wos` (ActiveWorkoutPage root); the portalled dock, dialogs,
    sheets and the medal toast carry their own `wo-`/`wos-` roots. */
 
@@ -19102,48 +19022,53 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider);
 }
 
-/* ── GlassBox dialogs: the card is a bare centred positioner, the body is ONE glass ── */
-.gl-card:has(> .wos-gb) {
+/* ── GlassBox dialogs (U10 migration, mezo-8vfr2): GlassBox is glass by default now and takes a
+   className, so the fragile `.gl-card:has(> .wos-gb)` scoping is retired. The CARD is the ONE glass
+   (`className="wos-gbx"`), centred, coral (records amber); the `.wos-gb` bodies inside are flat.
+   One class more than the `uveg reteg ablak` block's `.gl-card.glass.uv-gb`, which floats every
+   other GlassBox at the bottom. The head is in flow; its min-height + margin reproduce the old
+   74/54/82px body offsets exactly. ── */
+.gl-card.glass.uv-gb.wos-gbx {
   --c: var(--dv-coral);
-  position: absolute; left: 0; right: 0; top: 50%; bottom: auto; transform: translateY(-50%);
-  width: 100%; max-width: 428px; max-height: 84%; margin: 0 auto; overflow-x: hidden; overflow-y: auto;
-  padding: 10px 12px; border: 0; border-radius: 0; background: none; box-shadow: none; text-align: left;
+  top: 50%; bottom: auto; left: 12px; right: 12px; transform: translateY(-50%);
+  width: auto; max-width: 404px; max-height: 84%; margin: 0 auto;
+  padding: 14px 16px 16px; border-radius: 26px; text-align: left;
 }
-.gl-card:has(> .wos-gb-recs) { --c: var(--dv-amber); }
-.gl-card > .wos-gb.glass { --c: inherit; padding: 74px 16px 16px; border-radius: 26px; }
-.gl-card > .wos-gb-recs.glass, .gl-card > .wos-gb-fin.glass { padding-top: 54px; }
-.gl-card > .wos-gb-chal.glass { padding-top: 82px; }
-.gl-card:has(> .wos-gb) > .gl-head {
-  position: absolute; top: 24px; left: 28px; right: 28px; z-index: 5; margin: 0; gap: 12px; align-items: center;
+.gl-card.glass.uv-gb.wos-gbx-recs { --c: var(--dv-amber); }
+.gl-card.wos-gbx > .gl-head { min-height: 44px; margin: 0 0 16px; gap: 12px; align-items: center; }
+.gl-card.wos-gbx-recs > .gl-head, .gl-card.wos-gbx-fin > .gl-head { min-height: 0; margin-bottom: 8px; }
+/* the session dialogs bring their own art well (MuscleChip) or a bare 3D icon: no kit well around it */
+.gl-card.glass.uv-gb.wos-gbx .gl-art.uv-well {
+  width: auto; height: auto; border-radius: 0; background: none; box-shadow: none;
 }
-.gl-card:has(> .wos-gb) .gl-head-title small {
+.gl-card.wos-gbx .gl-head-title small {
   font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase;
   color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
 }
-.gl-card:has(> .wos-gb) .gl-head-title strong {
+.gl-card.wos-gbx .gl-head-title strong {
   display: block; margin-top: 2px; font: 600 19px/1.2 var(--ff-body); letter-spacing: -0.5px; color: var(--text-primary);
 }
 /* the records + finish glasses lead with an eyebrow, their own body carries the title */
-.gl-card:has(> .wos-gb-recs) .gl-head-title strong, .gl-card:has(> .wos-gb-fin) .gl-head-title strong {
+.gl-card.wos-gbx-recs .gl-head-title strong, .gl-card.wos-gbx-fin .gl-head-title strong {
   margin: 0; font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase;
   color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.gl-card:has(> .wos-gb) .gl-x {
+.gl-card.wos-gbx .gl-x {
   flex: 0 0 auto; width: 32px; height: 32px; border: 0; border-radius: 50%; font-size: 14px; color: var(--text-secondary);
   background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider);
 }
-.gl-card:has(> .wos-gb) .wos-gb-art {
+.gl-card.wos-gbx .wos-gb-art {
   flex: 0 0 auto; width: 44px; height: 44px; border-radius: 50%; overflow: hidden; display: grid; place-items: center;
   --c: var(--dv-coral);
   background: radial-gradient(circle at 35% 28%, #3A332D, color-mix(in srgb, var(--c) 16%, #1E1B18));
   box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08), 0 0 12px -4px color-mix(in srgb, var(--c) 55%, transparent);
 }
-.gl-card:has(> .wos-gb) .wos-gb-art3d {
+.gl-card.wos-gbx .wos-gb-art3d {
   filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 10px color-mix(in srgb, var(--c) 40%, transparent));
 }
 @media (prefers-reduced-motion: no-preference) {
-  .gl-card.gl-anim:has(> .wos-gb) { animation: wos-gb-in 0.28s var(--uv-ease) both; }
+  .gl-card.uv-gb.gl-anim.wos-gbx { animation: wos-gb-in 0.28s var(--uv-ease) both; }
 }
 @keyframes wos-gb-in {
   from { opacity: 0; transform: translateY(-46%) scale(0.96); }
@@ -29080,3 +29005,1709 @@ main.settings-page {
    scroll, a light canvas tint joins the blur so the controls stay legible over busy cards. */
 :root[data-theme="dark"] .app-head-bg { transition: background-color 0.3s ease; }
 :root[data-theme="dark"] .app-head.is-cond .app-head-bg { background-color: color-mix(in srgb, var(--canvas) 45%, transparent); }
+/* ────────────────────────────────────────────────────────────────────────────
+   ── uveg reteg unnep (mezo-me75u.10) ──
+   ──────────────────────────────────────────────────────────────────────────── */
+/* The two ceremonies that were not on glass yet. Reference: docs/design_2.0/prototypes/src/
+   uveg-reteg-body.html `cerEtel()` (+ `.fcx*`, `.medal*`, `.fstars*`, owner OK v3) and `cerSport()`
+   (+ `.cer/.cstars/.fuse/.ctally/.verdict/.xpline/.kcalh/.cfoot/.ccta`).
+
+   1 · MEAL (FuelMealCeremony, `.fcx-*` — the whole family lives here; the old `── fuel-ceremony (`
+   section is gone). ONE floating gold glass sheet, 10px off the edges, radius 30, no sheen, over the
+   dark scrim; ONE centred column. The component's rAF pass writes `--rise` (the sheet, 0–500 ms) and
+   only THEN `--p` (ring, score, stars, counters, 500–1500 ms) + the beats `is-b1` (verdict) and
+   `is-b2` (the way out). The sheet has NO CSS transition on purpose: a backgrounded webview freezes a
+   fresh transition at its start value, which would strand the sheet off-screen. */
+.fcx-screen {
+  position: absolute; inset: 0; z-index: 240; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: flex-end;
+}
+.fcx-scrim { position: absolute; inset: 0; background: rgba(12, 10, 9, 0.6); opacity: calc(1 - var(--rise, 0)); }
+.fcx-sheet.glass {
+  --c: var(--dv-amber);
+  position: relative; overflow-x: hidden; overflow-y: auto; scrollbar-width: none;
+  max-height: calc(100% - 20px); margin: 0 10px 10px; padding: 12px 18px 18px; border-radius: 30px;
+  transform: translateY(calc(var(--rise, 0) * (100% + 10px)));
+}
+.fcx-sheet.glass::after { display: none; animation: none; }
+.fcx-grab { display: block; width: 40px; height: 5px; margin: 0 auto 10px; border-radius: 3px; background: rgba(245, 239, 230, 0.2); }
+.fcx-top { text-align: center; }
+.fcx-eyebrow {
+  display: block; font-size: 9.5px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--dv-amber) 60%, #fff);
+}
+.fcx-meal {
+  margin: 3px 0 0; font-family: var(--ff-body); font-size: 21px; font-weight: 600; letter-spacing: -0.5px;
+  line-height: 1.2; color: var(--text-primary); overflow-wrap: anywhere;
+}
+.fcx-when { display: block; font-size: 12px; color: var(--text-secondary); }
+/* the medal: the gold stone is the RING stroke (SVG gradient in the component), the numeral sits on
+   a dark lit core under the AI-score icon — text never sits on the stone */
+.fcx-score { position: relative; display: grid; justify-items: center; margin: 12px 0 4px; }
+.fcx-score::before {
+  content: ''; position: absolute; left: 50%; top: 62px; z-index: -1; width: 320px; max-width: 100%; height: 200px;
+  transform: translate(-50%, -50%); pointer-events: none;
+  background: radial-gradient(ellipse, rgba(255, 190, 96, calc(0.08 + var(--p, 0) * 0.24)),
+    rgba(171, 159, 210, calc(var(--p, 0) * 0.10)) 45%, transparent 68%);
+}
+.fcx-medal { position: relative; display: grid; place-items: center; width: 124px; height: 124px; }
+.fcx-ring { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; transform: rotate(-90deg); }
+.fcx-ring-track { fill: none; stroke: rgba(245, 239, 230, 0.07); stroke-width: 6; }
+.fcx-ring-fill {
+  fill: none; stroke-width: 6; stroke-linecap: round;
+  stroke-dasharray: calc(var(--p, 0) * var(--score, 0) * 100) 100;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--dv-amber) 60%, transparent));
+}
+.fcx-core {
+  position: absolute; inset: 14px; border-radius: 50%; display: grid; place-items: center; align-content: center;
+  background: radial-gradient(circle at 35% 30%, #3A332D, #1E1B18);
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08), inset 0 -10px 18px -10px color-mix(in srgb, var(--dv-lav) 50%, transparent);
+}
+.fcx-sheet.glass .fcx-core .t-ico { width: 26px; height: 26px; filter: drop-shadow(0 0 8px color-mix(in srgb, var(--dv-lav) 55%, transparent)); }
+.fcx-core strong {
+  margin-top: 1px; font-family: var(--ff-display); font-size: 36px; font-weight: 300; line-height: 1; letter-spacing: -1.6px;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(135deg, #C9BDF0, #E6DDFF 45%, #E9C48A);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.fcx-cap { margin-top: 8px; font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-muted); }
+/* the five stars, ONE row: the empty 3D star, the lit one glowing gold */
+.fcx-stars { display: flex; justify-content: center; gap: 6px; margin-top: 12px; }
+.fcx-stars i { position: relative; width: 30px; height: 30px; }
+.fcx-stars .t-ico { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fcx-sheet.glass .fcx-stars .fcx-star-off { opacity: 0.45; }
+.fcx-sheet.glass .fcx-stars .fcx-star-on { opacity: 0; transform: scale(0.5); }
+.fcx-sheet.glass .fcx-stars i.is-lit .fcx-star-off { opacity: 0; }
+.fcx-sheet.glass .fcx-stars i.is-lit .fcx-star-on {
+  opacity: 1; transform: none; filter: drop-shadow(0 0 10px color-mix(in srgb, var(--dv-amber) 70%, transparent));
+}
+.fcx-result { text-align: center; }
+.fcx-verdict {
+  margin: 12px 0 0; font-family: var(--ff-body); font-size: 22px; font-weight: 600; letter-spacing: -0.6px; line-height: 1.2;
+  background: linear-gradient(90deg, var(--text-primary), color-mix(in srgb, var(--dv-amber) 45%, #fff) 55%, var(--dv-amber));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+/* four FLAT counter cells (never glass in glass) */
+.fcx-counters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 12px; }
+.fcx-counters > span.uv-flat {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; padding: 8px 2px; border-radius: 14px;
+}
+.fcx-sheet.glass .fcx-counters .t-ico { width: 24px; height: 24px; filter: none; }
+.fcx-counters strong { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.fcx-counters small { font-size: 9.5px; line-height: 1.2; text-align: center; color: var(--text-muted); }
+/* the way out: a flat ghost pill + the lit lavender CTA (dark ink, every colour restated — rule 36) */
+.fcx-foot { display: grid; grid-template-columns: 1fr 1.5fr; gap: 8px; margin-top: 14px; }
+.fcx-foot.is-single { grid-template-columns: 1fr; }
+.fcx-close.uv-flat {
+  min-height: 48px; padding: 0 12px; border: 0; border-radius: 999px; cursor: pointer;
+  font: inherit; font-size: 13.5px; font-weight: 600; color: var(--text-secondary);
+}
+.fcx-cta {
+  --c: var(--dv-lav);
+  display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; min-height: 48px;
+  padding: 6px 16px 6px 12px; border: 0; border-radius: 24px; cursor: pointer; text-align: left;
+  font: inherit; color: #191614; background: var(--c);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.fcx-sheet.glass .fcx-cta .t-ico { width: 22px; height: 22px; filter: none; }
+.fcx-cta > span { display: grid; min-width: 0; line-height: 1.15; }
+.fcx-cta strong { font-size: 13.5px; font-weight: 700; color: #191614; }
+.fcx-cta small { font-size: 10px; font-weight: 600; color: rgba(25, 22, 20, 0.72); }
+.fcx-close:focus-visible, .fcx-cta:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.fcx-close:focus-visible { outline-color: var(--dv-amber); }
+@media (prefers-reduced-motion: no-preference) {
+  .fcx-sheet.glass .fcx-stars .t-ico { transition: opacity 0.35s var(--uv-ease), transform 0.35s var(--uv-ease); }
+  .fcx-result, .fcx-foot { opacity: 0; translate: 0 8px; }
+  .fcx-screen.is-b1 .fcx-result, .fcx-screen.is-b2 .fcx-foot {
+    opacity: 1; translate: 0 0; transition: opacity 0.45s ease, translate 0.5s var(--uv-ease);
+  }
+}
+@media (max-width: 360px) {
+  .fcx-sheet.glass { padding: 12px 14px 16px; }
+  .fcx-counters { gap: 4px; }
+  .fcx-counters small { font-size: 9px; }
+}
+@media (max-width: 340px) {
+  .fcx-foot { grid-template-columns: 1fr; }
+}
+
+/* 2 · SPORT (SportCeremony, `.cer-screen.cer-details-screen.uv-cer.cer-sport`). The U4 `.uv-cer`
+   rules in the U4 "edzes zaras" block already give it the 3D star arc, the gold fuse, the gradient
+   verdict, the frameless sage kcal halo and the sage glass CTA (`.cer-go.glass.is-done`); these
+   rules fill only the gaps a non-staged sport screen leaves: the page frame, the warm halo behind
+   the stars, the flat counter cells, the +XP gold chip, the foot spacing. Act two still waits for
+   `is-told` (the pass's end), exactly as before. */
+.cer-screen.uv-cer.cer-sport { padding: 0 0 16px; overflow-x: clip; }
+.cer-sport .cer { margin-top: 0; padding: 40px 16px 8px; gap: 0; overflow: visible; }
+.cer-sport .cer-sky {
+  top: 40%; width: 420px; height: 380px; translate: -50% -50%; border-radius: 0; opacity: 1;
+  background: radial-gradient(ellipse at 50% 45%, rgba(255, 190, 96, calc(0.12 + var(--p, 0) * 0.26)),
+    rgba(255, 126, 92, calc(var(--p, 0) * 0.14)) 42%, transparent 68%);
+}
+.cer-sport .cer-counters {
+  display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+  gap: 6px; width: 100%; max-width: none; margin-top: 16px;
+}
+.cer-sport .cer-counters > span.uv-flat {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; padding: 9px 4px; border-radius: 14px;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.cer-sport .cer-counters .t-ico { width: 26px; height: 26px; filter: none; }
+.cer-sport .cer-counters strong {
+  font-family: var(--ff-body); font-size: 21px; font-weight: 600; letter-spacing: 0;
+  font-variant-numeric: tabular-nums; color: var(--text-primary);
+}
+.cer-sport .cer-counters small { font-size: 10px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--text-muted); }
+.cer-sport .cer-result { padding: 4px 16px 0; }
+.cer-sport .cer-xpline { display: flex; justify-content: center; }
+.cer-sport .cer-xp.uv-flat {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px 7px 9px; border-radius: 999px; white-space: nowrap;
+  font-size: 13px; font-weight: 600; color: color-mix(in srgb, var(--dv-amber) 45%, #fff);
+}
+.cer-sport .cer-xp .t-ico { width: 22px; height: 22px; filter: none; }
+.cer-sport .cer-xp strong, .cer-sport .cer-xp small { font-size: inherit; font-weight: inherit; color: inherit; }
+.cer-screen.uv-cer.cer-sport .cer-foot { margin-top: 0; padding: 6px 16px 0; }
+.cer-sport .cer-cta { padding-top: 12px; }
+.cer-sport .cer-foot > .cer-recap-note { margin: 12px 6px 0; font-size: 11.5px; line-height: 1.45; text-align: center; color: var(--text-muted); }
+@media (max-width: 360px) {
+  .cer-details-screen.uv-cer.cer-sport .cer-kcal-line .cer-kcal-art { width: 54px; height: 54px; }
+  .cer-details-screen.uv-cer.cer-sport .cer-kcal-line b,
+  .cer-details-screen.uv-cer.cer-sport .cer-kcal-line strong { font-size: 48px; }
+  .cer-sport .cer-counters strong { font-size: 19px; }
+}
+/* ── /uveg reteg unnep ── */
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ── uveg reteg szint (mezo-me75u.10) ──
+   ──────────────────────────────────────────────────────────────────────────── */
+/* The level-up overlay (features/progression/LevelUpScreen.tsx), prototypes/uveg-reteg.html#szint.
+   Portal, z-index 250 and the scroll stay on the old `.levelup` rule; this block owns the look.
+   Hero = frameless gold→lavender halo (strength follows the count-up via `--p`), level-up rows =
+   glass (one accent per skill kind via `--c`), perks / grow cells / robustness = FLAT, CTA = a
+   gold glass row. The section stagger lives only in the no-preference branch. */
+.levelup.lvu { background: var(--canvas); overflow-x: clip; color: var(--text-primary); }
+.lvu-body {
+  position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column;
+  padding: 24px 16px calc(18px + env(safe-area-inset-bottom)); text-align: center;
+}
+.lvu-content { display: flex; flex-direction: column; margin-block: auto; }
+.lvu-hero { position: relative; isolation: isolate; overflow-x: clip; padding: 10px 0 4px; text-align: center; }
+.lvu-hero::before {
+  content: ''; position: absolute; left: 50%; top: 44%; z-index: -1; pointer-events: none;
+  width: 440px; height: 400px; transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse at 50% 45%,
+    rgba(255, 190, 96, calc(0.10 + var(--p, 0) * 0.24)),
+    rgba(171, 159, 210, calc(var(--p, 0) * 0.16)) 44%, transparent 68%);
+}
+.lvu-chip {
+  display: inline-flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px;
+  max-width: 100%; padding: 7px 12px 7px 9px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.4px; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.lvu-chip .t-ico { filter: none; }
+.lvu-headline { margin-top: 16px; font-size: 30px; font-weight: 600; letter-spacing: -1px; line-height: 1.1; color: var(--text-primary); }
+.lvu-xp {
+  display: block; margin-top: 6px; font-family: var(--ff-display); font-size: 92px; font-weight: 300;
+  letter-spacing: -5px; line-height: 1.02; font-variant-numeric: tabular-nums;
+  background: linear-gradient(135deg, #FFE9C2 0%, #FFBE60 45%, #C9BDF0 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 6px 22px rgba(255, 190, 96, 0.35));
+}
+.lvu-xplabel { display: block; letter-spacing: 1.8px; }
+.lvu-seclabel { padding: 18px 2px 8px; text-align: left; }
+.lvu-seclabel .lvu-cnt { color: inherit; }
+/* level-up rows: glass, one accent per skill kind */
+.levelup.lvu .lvu-row.glass {
+  position: relative; overflow: hidden; display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px 12px 10px; border-radius: 22px; text-align: left;
+}
+.lvu-row + .lvu-row { margin-top: 10px; }
+.lvu-ring { position: relative; width: 58px; height: 58px; flex: 0 0 auto; display: grid; place-items: center; }
+.lvu-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
+.lvu-ring .uv-ring-track, .lvu-ring .uv-ring-prog { stroke-width: 5; }
+.lvu-ring b {
+  position: relative; font-size: 21px; font-weight: 600; letter-spacing: -0.6px; font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--c) 70%, #fff);
+}
+.lvu-grow { flex: 1; min-width: 0; }
+.lvu-nm { display: flex; align-items: center; gap: 7px; font-size: 15.5px; font-weight: 600; letter-spacing: -0.3px; line-height: 1.2; }
+.lvu-badge {
+  display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; padding: 4px 10px 4px 6px;
+  border-radius: 999px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.6px; color: #191614;
+  background: linear-gradient(90deg, #FFE0AE, #FFBE60); box-shadow: 0 0 12px rgba(255, 190, 96, 0.55);
+}
+.levelup.lvu .lvu-badge .t-ico { filter: none; }
+/* perks: flat gold-tinted cells */
+.lvu-perk {
+  display: flex; gap: 9px; align-items: flex-start; margin-top: 10px; padding: 10px 12px; border-radius: 14px;
+  font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); text-align: left;
+  background: rgba(255, 190, 96, 0.06); box-shadow: inset 0 0 0 1px rgba(255, 190, 96, 0.18);
+}
+.lvu-perk .t-ico { filter: none; }
+.lvu-perk b { color: #FFE0AE; font-weight: 600; }
+/* „Még fejlődött": flat cells, 2 columns (1 at ≤360px) */
+.lvu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.lvu-cell {
+  display: grid; gap: 6px; min-width: 0; padding: 11px 12px; border-radius: 16px; text-align: left;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.lvu-ct { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 13px; font-weight: 600; line-height: 1.2; }
+.lvu-ct .t-ico { filter: drop-shadow(0 0 8px color-mix(in srgb, var(--c) 40%, transparent)); }
+.lvu-cname { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.lvu-ct em { flex: 0 0 auto; font-style: normal; font-size: 12px; color: #FFE0AE; font-variant-numeric: tabular-nums; }
+.lvu-bar.uv-bar { overflow: hidden; }
+.lvu-bar.uv-bar > b.lvu-from { z-index: 1; background: rgba(245, 239, 230, 0.22); box-shadow: none; }
+/* robustness: flat, sky-tinted */
+.lvu-robust {
+  display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 10px 12px; border-radius: 14px;
+  font-size: 12.5px; text-align: left; color: var(--text-secondary);
+  background: rgba(127, 178, 222, 0.06); box-shadow: inset 0 0 0 1px rgba(127, 178, 222, 0.2);
+}
+.lvu-robust .t-ico { filter: drop-shadow(0 0 8px rgba(127, 178, 222, 0.45)); }
+.lvu-rtx { flex: 1; min-width: 0; }
+.lvu-robust b { color: var(--text-primary); font-weight: 600; }
+.lvu-robust em { flex: 0 0 auto; font-style: normal; font-weight: 600; color: #FFE0AE; }
+/* the CTA: a gold glass row */
+.lvu-foot { padding-top: 18px; }
+.levelup.lvu .lvu-cta.glass {
+  --c: var(--dv-amber);
+  position: relative; overflow: hidden; display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 12px 14px 12px 12px; border: 0; border-radius: 22px; cursor: pointer;
+  font: inherit; text-align: left; color: var(--text-primary);
+}
+.lvu-cta strong { flex: 1; font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+.lvu-cta em {
+  width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto;
+  font-style: normal; font-size: 19px; color: #191614; background: var(--c);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.levelup.lvu .lvu-cta:focus-visible { outline: 2px solid var(--c); outline-offset: 3px; }
+@media (max-width: 360px) {
+  .lvu-xp { font-size: 76px; letter-spacing: -4px; }
+  .lvu-grid { grid-template-columns: 1fr; }
+}
+@keyframes lvu-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes lvu-ring { from { stroke-dasharray: 0 100; } }
+@keyframes lvu-bar { from { width: 0; } }
+@keyframes lvu-glow {
+  0%, 100% { filter: drop-shadow(0 6px 18px rgba(255, 190, 96, 0.28)); }
+  50% { filter: drop-shadow(0 6px 28px rgba(255, 190, 96, 0.5)); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .levelup.lvu:not(.levelup--reduced) .lvu-sec { animation: lvu-rise 0.55s var(--uv-ease) both; }
+  .levelup.lvu:not(.levelup--reduced) .lvu-s1 { animation-delay: 1.2s; }
+  .levelup.lvu:not(.levelup--reduced) .lvu-s2 { animation-delay: 1.6s; }
+  .levelup.lvu:not(.levelup--reduced) .lvu-s3 { animation-delay: 1.95s; }
+  .levelup.lvu:not(.levelup--reduced) .lvu-ring .uv-ring-prog { animation: lvu-ring 1.1s var(--uv-ease) 1.35s both; }
+  .levelup.lvu:not(.levelup--reduced) .lvu-bar > b:not(.lvu-from) { animation: lvu-bar 1s var(--uv-ease) 1.75s both; }
+  .levelup.lvu:not(.levelup--reduced) .lvu-xp { animation: lvu-glow 5s ease-in-out 1.2s infinite; }
+}
+/* ── /uveg reteg szint ── */
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ── uveg reteg ablak (mezo-me75u.10) ──
+   ──────────────────────────────────────────────────────────────────────────── */
+/* The shared dialog and the small overlays. Reference: prototypes/src/uveg-reteg-body.html —
+   `ablak()` + `GB` (`.gbx*`, `.srcrow`, `.orbp`), `hiba()` (`.errcard`, `.cal*`, `.rfab`, `.rbar`).
+   One rule throughout: the layer is glass, what sits on it is flat (lit pills, flat cells).
+   GlassBox is glass BY DEFAULT (U10, mezo-8vfr2): its card carries `.glass.is-still.uv-gb`, floats
+   10px off the edges, radius 30, `--c` = the caller's tint (`--gl-tint`, default coral). A caller
+   that needs its own geometry scopes it through GlassBox's `className` (the session dialogs'
+   `.wos-gbx`, in the uveg edzes session block, outrank these rules by one class). The old section's
+   z ladder (backdrop 220 / card 221) is untouched. */
+
+/* — GlassBox: veil + the floating glass card — */
+.gl-backdrop {
+  background: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(8px) saturate(1.1);
+  backdrop-filter: blur(8px) saturate(1.1);
+}
+.gl-card.glass.uv-gb {
+  --gl-tint: var(--dv-coral);
+  --c: var(--gl-tint);
+  position: absolute; top: auto; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
+  width: auto; max-width: 428px; max-height: 82%; margin: 0 auto;
+  overflow-x: hidden; overflow-y: auto; scrollbar-width: none;
+  padding: 14px 16px 18px; border: 0; border-radius: 30px;
+  color: var(--text-primary);
+}
+.gl-card.glass.uv-gb::-webkit-scrollbar { display: none; }
+.uv-gb > .gl-head { display: flex; align-items: center; gap: 11px; margin: 0 0 12px; }
+.uv-gb .gl-art.uv-well { width: 46px; height: 46px; }
+.uv-gb .gl-head-title small {
+  display: block; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 70%, var(--text-primary));
+}
+.uv-gb .gl-head-title strong {
+  display: block; margin-top: 1px; font: 600 18px/1.25 var(--ff-body); letter-spacing: -0.4px; color: var(--text-primary);
+}
+.uv-gb .gl-x {
+  flex: 0 0 auto; width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 50%;
+  cursor: pointer; font-size: 14px; line-height: 1; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-gb .gl-x:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+@media (prefers-reduced-motion: no-preference) {
+  .gl-card.uv-gb.gl-anim { animation: gl-slide-up 0.32s var(--uv-ease) both; }
+}
+
+/* — the lit pill every surface of this block uses (a CTA on glass is flat, never glass) — */
+.abl-pill {
+  --c: var(--dv-coral);
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 40px; padding: 10px 18px; border: 0; border-radius: 999px; cursor: pointer; white-space: nowrap;
+  font: 700 13.5px/1.2 var(--ff-body); color: #191614;
+  background: var(--c); box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.abl-pill.is-wide { display: flex; width: 100%; height: 46px; margin-top: 14px; }
+.abl-pill .t-ico, .glass .abl-pill .t-ico { filter: none; }
+.abl-pill:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
+
+/* — GlassBox consumers: everything inside the card is flat — */
+/* InfoButton (Edzés, coral): one explanatory paragraph */
+.uv-gb .pl-info-copy { margin: 0 2px 4px; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); }
+/* SportLogPage „Saját kalóriaérték": copy, a flat field, the error line, the lit coral pill */
+.uv-gb .uv-gb-copy { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); }
+.uv-gb .uv-gb-field { display: block; margin-top: 14px; }
+.uv-gb .uv-gb-field > span {
+  display: block; margin-bottom: 6px; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.uv-gb .uv-gb-input {
+  display: block; width: 100%; box-sizing: border-box; padding: 12px 13px; border: 0; border-radius: 13px;
+  font: 400 14px/1.3 var(--ff-body); color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-gb .uv-gb-input:focus-visible { outline: none; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 70%, transparent); }
+.uv-gb .uv-gb-err { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; font-size: 12px; line-height: 1.4; color: #FFB39C; }
+.uv-gb .uv-gb-err .t-ico { flex: 0 0 auto; filter: none; }
+/* Karakter „Miből látszik?" / „Mi változott?" (lavender): quote, source rows as flat cells, a lit pill */
+.uv-gb .kr-social-eyebrow { font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; color: var(--text-muted); }
+.uv-gb .kr-evidence-content { font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); }
+.uv-gb .kr-evidence-content blockquote {
+  margin: 10px 0; padding: 12px 13px; border-radius: 14px; font-size: 14px; line-height: 1.5; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 2px 0 0 color-mix(in srgb, var(--c) 70%, transparent), inset 0 0 0 1px var(--divider);
+}
+.uv-gb .kr-evidence-record {
+  margin-top: 8px; padding: 10px 12px; border: 0; border-radius: 14px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-gb .kr-evidence-record small, .uv-gb .kr-evidence-record b {
+  display: block; font-size: 11.5px; font-weight: 600; color: var(--text-muted);
+}
+.uv-gb .kr-evidence-record p { margin: 3px 0 0; font-size: 13px; line-height: 1.45; color: var(--text-primary); }
+.uv-gb .kr-evidence-note {
+  margin: 14px 0; padding: 11px 12px; border-radius: 14px; font-size: 12px; line-height: 1.5; color: var(--text-muted);
+  background: rgba(245, 239, 230, 0.03); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-gb .kr-revision { padding: 10px 0 16px; border-bottom: 1px solid var(--divider); }
+.uv-gb .kr-revision:last-child { border-bottom: 0; }
+.uv-gb .kr-revision > small { font-size: 11px; color: var(--text-muted); }
+.uv-gb .kr-evidence-content .cta {
+  display: flex; align-items: center; justify-content: center; width: 100%; min-height: 46px; margin-top: 14px;
+  padding: 10px 18px; border: 0; border-radius: 999px; cursor: pointer;
+  font: 700 13.5px/1.2 var(--ff-body); color: #191614;
+  background: var(--dv-lav); box-shadow: 0 0 14px color-mix(in srgb, var(--dv-lav) 55%, transparent);
+}
+.uv-gb .kr-evidence-content .cta:disabled { opacity: 0.5; cursor: default; box-shadow: none; }
+.uv-gb .kr-evidence-content .cta:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
+
+/* — DatePicker: a lavender glass popover (sheen off), flat round month arrows, a lit selected day — */
+.dp-wrap { position: relative; display: inline-block; }
+.dp-trigger {
+  padding: 2px 4px; border: 0; cursor: pointer; background: none;
+  font: inherit; font-size: 13px; font-weight: 700; color: color-mix(in srgb, var(--dv-lav) 80%, var(--text-primary));
+}
+.dp-veil { position: fixed; inset: 0; z-index: 40; padding: 0; border: 0; cursor: default; background: transparent; }
+.dp-cal.glass {
+  --c: var(--dv-lav);
+  position: absolute; top: calc(100% + 8px); left: 50%; z-index: 50; transform: translateX(-50%);
+  width: 280px; max-width: calc(100vw - 32px); padding: 14px; border-radius: 24px; text-align: left;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .dp-cal.glass { animation: dp-in 0.28s var(--uv-ease) both; }
+}
+@keyframes dp-in {
+  from { opacity: 0; transform: translate(-50%, -6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+.dp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.dp-head strong { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.dp-nav {
+  width: 30px; height: 30px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  font: inherit; font-size: 17px; line-height: 1; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.dp-nav:disabled { opacity: 0.35; cursor: not-allowed; }
+.dp-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; text-align: center; }
+.dp-dow { padding: 4px 0; font-size: 10px; font-weight: 600; color: var(--text-muted); }
+.dp-day {
+  height: 36px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 12px; cursor: pointer;
+  font: inherit; font-size: 13px; color: var(--text-secondary); background: transparent;
+}
+.dp-day.is-today { color: var(--text-primary); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-lav) 50%, transparent); }
+.dp-day.is-sel {
+  font-weight: 700; color: #191614; background: var(--dv-lav);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--dv-lav) 55%, transparent);
+}
+.dp-day:disabled { opacity: 0.35; cursor: not-allowed; }
+.dp-day:focus-visible, .dp-nav:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 1px; }
+
+/* — FloatingReturnLayer: the coral resume FAB (round glass, badge outside) + the chat return bar — */
+.float-fab.float-fab-train.glass.is-round {
+  --c: var(--dv-coral);
+  position: relative; width: 58px; height: 58px; display: grid; place-items: center; border: 0; color: var(--text-primary);
+}
+.float-fab-train.glass.is-round > .float-fab-badge {
+  position: absolute; top: -3px; right: -4px; z-index: 4;
+  min-width: 19px; height: 19px; padding: 0 5px; border-radius: 10px; box-sizing: border-box;
+  font: 700 10.5px/19px var(--ff-body); text-align: center; color: #191614;
+  background: linear-gradient(135deg, #FFB39C, #FF7E5C);
+  box-shadow: 0 0 10px rgba(255, 126, 92, 0.7), 0 0 0 2px var(--canvas);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .float-fab.float-fab-train.glass.is-round {
+    animation: float-pop var(--duration-normal) var(--np-ease-spring), abl-fab-breathe 3s ease-in-out 1s infinite;
+  }
+}
+@keyframes abl-fab-breathe {
+  50% {
+    box-shadow: 0 16px 30px -16px rgba(0, 0, 0, 0.75), 0 0 26px 2px rgba(255, 126, 92, 0.5),
+      inset 0 1px 0 rgba(255, 244, 230, 0.10), inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+  }
+}
+.float-return.glass.is-still {
+  --c: var(--dv-coral);
+  position: absolute; left: 12px; right: 12px; height: auto; min-height: 54px;
+  gap: 10px; padding: 9px 10px 9px 12px; border: 0; border-radius: 20px; color: var(--text-primary);
+}
+.float-return.glass .float-return-title { font-size: 13.5px; font-weight: 600; }
+.float-return.glass .float-return-meta { font-size: 11px; font-weight: 500; opacity: 1; color: var(--text-secondary); }
+.float-return.glass > .float-return-go {
+  flex: none; width: auto; height: auto; padding: 8px 12px; border-radius: 999px;
+  font: 700 12px/1.2 var(--ff-body); color: #191614;
+  background: var(--dv-coral); box-shadow: 0 0 14px color-mix(in srgb, var(--dv-coral) 55%, transparent);
+}
+
+/* — ErrorBoundary (tab level): a coral glass card, the 3D info icon, a lit retry pill — */
+.abl-err.glass {
+  --c: var(--dv-coral);
+  display: grid; justify-items: center; margin: 12px 16px 0; padding: 18px 16px; border-radius: 24px; text-align: center;
+}
+.abl-err .abl-err-art { margin: 0 auto 6px; }
+.abl-err strong { display: block; font-size: 17px; font-weight: 600; color: var(--text-primary); }
+.abl-err p { margin: 6px 0 14px; font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+/* ── /uveg reteg ablak ── */
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ── uveg reteg lap (mezo-me75u.10) ──
+   ──────────────────────────────────────────────────────────────────────────── */
+/* The still-old bottom sheets onto the kit's floating glass (`<Sheet glass>` = .sheet.glass.uv-sheet)
+   and the toast stack onto glass pill-cards. Prototype: uveg-reteg `lapok()` + `SH` (.sheet .shh
+   .stepper .band .exrow) and `uzenet()` (.tst). One accent per sheet via a domain class ON the sheet
+   (bible U1 rule 4); everything inside is flat (rule 5); buttons are lit flat pills. A sheet opened
+   from many areas keeps its rules on its own classes (rule 43). */
+
+/* ─ domain hue, on the element that wears the glass (outranks the kit's lavender default) ─ */
+.sheet.glass.uv-sheet.uvl-fuel { --c: var(--dv-sage); }
+.sheet.glass.uv-sheet.uvl-edzes { --c: var(--dv-coral); }
+.sheet.glass.uv-sheet.uvl-en { --c: var(--dv-rose); }
+.sheet.glass.uv-sheet.uvl-mezo,
+.sheet.glass.uv-sheet.uvl-alvas { --c: var(--dv-lav); }
+.sheet.glass.uv-sheet.uvl-fiok,
+.sheet.glass.uv-sheet.uvl-kamra,
+.sheet.glass.uv-sheet.uvl-konz { --c: var(--dv-amber); }
+
+/* ─ the head: 44px 3D icon · eyebrow + title (+ sub) · action · flat round × (prototype .shh) ─ */
+.uvl-shh { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.uvl-shh > .t-ico { width: 44px; height: 44px; }
+.uvl-shh-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.uvl-shh-eb { color: color-mix(in srgb, var(--c) 70%, var(--text-primary)); overflow-wrap: anywhere; }
+.uvl-shh-h { margin: 2px 0 0; font-family: var(--ff-body); font-size: 19px; font-weight: 600; letter-spacing: -0.5px;
+  line-height: 1.2; color: var(--text-primary); overflow-wrap: anywhere; }
+.uvl-shh-sub { margin-top: 2px; font-size: 12.5px; line-height: 1.4; color: var(--text-secondary); }
+.uvl-shh-count { font-weight: 600; color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.uvl-x { flex: 0 0 auto; width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border: 0;
+  border-radius: 50%; font-size: 12px; line-height: 1; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider); }
+.uvl-x:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.uvl-shh .kz-archd { display: inline-flex; padding: 0; font-size: inherit; letter-spacing: inherit; }
+
+/* ─ body rhythm, copy, fields ─ */
+.uvl-body, .uvl-form { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 0 2px 4px; }
+.uvl-form { padding: 0; }
+.uvl-lead { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+.uvl-hint { margin: 0; font-size: 12px; line-height: 1.45; color: var(--text-muted); }
+.uvl-note { margin: 0; padding: 10px 12px; border-radius: 14px; font-size: 12.5px; line-height: 1.45; color: #FFD08A;
+  background: rgba(255, 190, 96, 0.07); box-shadow: inset 0 0 0 1px rgba(255, 190, 96, 0.3); }
+.uvl-center { text-align: center; }
+.uvl-field { display: grid; gap: 6px; min-width: 0; }
+.uvl-flabel { font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted); }
+.uvl-flabel-opt { font-weight: 500; letter-spacing: 0; text-transform: none; color: color-mix(in srgb, var(--c) 70%, var(--text-primary)); }
+.sheet.glass.uv-sheet .uvl-field > :is(input, textarea, select) {
+  width: 100%; min-width: 0; padding: 12px 13px; font-family: inherit; font-size: 14px; line-height: 1.4; }
+.sheet.glass.uv-sheet .uvl-field > textarea { resize: vertical; line-height: 1.5; }
+.sheet.glass.uv-sheet :is(input, textarea)::placeholder { color: var(--text-muted); }
+.uvl-err { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 12.5px; line-height: 1.4; color: #FFB39C; }
+.sheet.glass.uv-sheet .uvl-err .t-ico { flex: 0 0 auto; width: 18px; height: 18px; filter: none; }
+
+/* ─ flat cells (secondary rank): value rows, day/time rows ─ */
+.uvl-rows { display: grid; gap: 8px; }
+.uvl-cell { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; padding: 10px 12px;
+  border-radius: 14px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.uvl-cell-v { font-size: 14px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.uvl-cell-day { width: 40px; font: 600 12px/1 var(--ff-body); letter-spacing: 1px; color: var(--text-muted); }
+.uvl-cell.is-set { box-shadow: inset 0 0 0 1px var(--divider), inset 3px 0 0 color-mix(in srgb, var(--c) 75%, transparent); }
+.uvl-cell.is-set .uvl-cell-day { color: color-mix(in srgb, var(--c) 85%, var(--text-primary)); }
+.sheet.glass.uv-sheet .uvl-cell > input { width: 130px; padding: 8px 10px; font-family: inherit; font-size: 15px;
+  font-variant-numeric: tabular-nums; }
+.uvl-quote { margin: 0; padding: 12px; border-radius: 14px; font-size: 14px; line-height: 1.55; font-style: normal;
+  color: var(--text-primary); background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.uvl-code { padding: 14px 12px; border-radius: 14px; text-align: center; font-family: ui-monospace, Menlo, monospace;
+  font-size: 22px; letter-spacing: 2px; color: #FFE0AE; overflow-wrap: anywhere; user-select: all;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+
+/* ─ stepper + band (prototype .stepper .band) ─ */
+.uvl-stepper { display: grid; grid-template-columns: 48px minmax(0, 1fr) 48px; align-items: center; gap: 10px; }
+.uvl-stepper button { height: 48px; display: grid; place-items: center; border: 0; border-radius: 16px; font-size: 22px;
+  color: var(--text-primary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.uvl-stepper b { text-align: center; font-size: 44px; font-weight: 300; letter-spacing: -2px; line-height: 1.05;
+  font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--c) 60%, #fff); }
+.uvl-stepper b small { margin-left: 3px; font-size: 15px; letter-spacing: 0; color: var(--text-muted); }
+.uvl-band { display: flex; align-items: center; justify-content: center; gap: 8px; margin: -4px 0 0; font-size: 12px; color: var(--text-secondary); }
+.uvl-band i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); box-shadow: 0 0 8px var(--c); }
+.uvl-derived { font-size: 12.5px; font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--c) 75%, var(--text-primary)); }
+
+/* ─ chips, segments, option rows (flat; the chosen one lit in the sheet's accent) ─ */
+.uvl-chips { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.uvl-chips.is-scroll { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.uvl-chips.is-scroll > .uvl-chip { flex: 0 0 auto; }
+.uvl-chips.is-sub .uvl-chip { min-height: 32px; font-size: 12px; }
+.uvl-seg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
+.uvl-chip { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; min-height: 36px;
+  padding: 7px 13px; border: 0; border-radius: 999px; font-size: 12.5px; font-weight: 600; white-space: nowrap;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.uvl-seg .uvl-chip { min-height: 42px; font-size: 13.5px; }
+.uvl-chip.on { color: #191614; background: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
+.sheet.glass.uv-sheet .uvl-chip .t-ico { width: 18px; height: 18px; filter: none; }
+.uvl-opts { display: grid; gap: 6px; }
+.uvl-opt { display: flex; align-items: baseline; gap: 8px; width: 100%; padding: 11px 12px; border: 0; border-radius: 14px;
+  text-align: left; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.sheet.glass.uv-sheet .uvl-opt .t-ico { align-self: center; width: 20px; height: 20px; filter: none; }
+.uvl-opt-nm { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.uvl-opt-hint { margin-left: auto; font-size: 11px; line-height: 1.35; text-align: right; color: var(--text-muted); }
+.uvl-opt.on { background: color-mix(in srgb, var(--c) 12%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 70%, transparent), 0 0 14px -6px var(--c); }
+.uvl-opt.on .uvl-opt-nm { color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+
+/* ─ buttons: the lit accent pill (dark ink), the flat ghost, the coral warning outline ─ */
+.uvl-foot { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 4px; }
+.uvl-cta, .uvl-ghost, .uvl-warn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 0;
+  min-height: 46px; padding: 10px 16px; border: 0; border-radius: 999px; font-family: inherit; font-size: 13.5px;
+  font-weight: 700; white-space: nowrap; }
+.uvl-cta { color: #191614; background: var(--c); box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent); }
+.uvl-cta.is-sm { min-height: 34px; padding: 6px 12px; font-size: 12px; }
+.uvl-ghost { font-weight: 600; color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.uvl-warn { font-weight: 600; color: #FFB39C; background: rgba(255, 126, 92, 0.07); box-shadow: inset 0 0 0 1px rgba(255, 126, 92, 0.45); }
+.uvl-warn.is-armed { font-weight: 700; color: #191614; background: var(--dv-coral); box-shadow: 0 0 14px rgba(255, 126, 92, 0.5); }
+:is(.uvl-cta, .uvl-ghost, .uvl-warn).is-wide { width: 100%; }
+.sheet.glass.uv-sheet :is(.uvl-cta, .uvl-ghost, .uvl-warn, .uvl-x) .t-ico { width: 20px; height: 20px; filter: none; }
+:is(.uvl-cta, .uvl-ghost, .uvl-warn, .uvl-chip, .uvl-opt):focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+
+/* ─ search field: the wrapper is the flat field, the input inside is bare (the kit's field skin
+   would draw a second box). Also the U2 Fuel picker search wrappers (fkx / flp). ─ */
+.uvl-search { display: flex; align-items: center; gap: 8px; padding: 0 12px; border-radius: 13px;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.sheet.glass.uv-sheet .uvl-search .t-ico { flex: 0 0 auto; width: 20px; height: 20px; filter: none; }
+.sheet.glass.uv-sheet :is(.uvl-search, .fkx-search-field, .flp-search) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]) {
+  flex: 1; min-width: 0; border-radius: 0; background: none; box-shadow: none; }
+.sheet.glass.uv-sheet .uvl-search input:not([type="checkbox"]):not([type="radio"]):not([type="range"]) { padding: 12px 0; font-size: 14px; }
+.sheet.glass.uv-sheet :is(.uvl-search, .fkx-search-field, .flp-search) input:focus-visible { box-shadow: none; }
+.sheet.glass.uv-sheet :is(.uvl-search, .fkx-search-field, .flp-search):focus-within {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 70%, transparent), 0 0 14px -4px color-mix(in srgb, var(--c) 60%, transparent); }
+
+/* ─ exercise picker rows (prototype .exrow): hairline-split flat rows, the + as an accent ring ─ */
+.uvl-exlist { display: grid; }
+.uvl-exitem { display: grid; gap: 6px; min-width: 0; padding: 4px 0; border-top: 1px solid var(--divider); }
+.uvl-exitem:first-child { border-top: 0; }
+.uvl-exrow { display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; padding: 8px 4px; border: 0;
+  border-radius: 14px; text-align: left; background: none; transition: background-color 0.3s ease; }
+.uvl-exrow.is-added { background: color-mix(in srgb, var(--c) 10%, transparent); }
+.uvl-exrow-t { flex: 1; min-width: 0; }
+.uvl-exrow-t strong { display: block; font-size: 14px; font-weight: 600; color: var(--text-primary); overflow-wrap: anywhere; }
+.uvl-exrow-t small { display: block; margin-top: 2px; font-size: 11px; color: var(--text-muted); }
+.uvl-stim { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.uvl-stim small { font-size: 8px; font-weight: 700; letter-spacing: 1px; color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.uvl-stim > span { display: flex; gap: 2px; }
+.uvl-stim i { width: 4px; height: 9px; border-radius: 2px; background: rgba(245, 239, 230, 0.1); }
+.uvl-stim i.on { background: var(--c); box-shadow: 0 0 5px color-mix(in srgb, var(--c) 60%, transparent); }
+.uvl-exrow-add { flex: 0 0 auto; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%;
+  font-size: 18px; font-style: normal; color: var(--c); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent); }
+.uvl-exrow-done { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700;
+  color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.sheet.glass.uv-sheet .uvl-exrow-done .t-ico { width: 20px; height: 20px; filter: none; }
+.uvl-none.uv-empty { margin: 0; padding: 18px 12px; border-radius: 16px; text-align: center; font-size: 12.5px; color: var(--text-secondary); }
+
+/* ─ saved custom workouts: flat rows, the edit door a flat round pencil, the new one a dashed free slot ─ */
+.uvl-cell.uvl-cw { padding: 6px 6px 6px 12px; }
+.uvl-cw-go { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; padding: 6px 0;
+  border: 0; text-align: left; background: none; }
+.uvl-cw-go strong { font-size: 14px; font-weight: 600; color: var(--text-primary); overflow-wrap: anywhere; }
+.uvl-cw-go small { margin-top: 2px; font-size: 11px; color: var(--text-muted); }
+.uvl-new.uv-empty { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 46px;
+  border-radius: 16px; font-size: 13px; font-weight: 600; color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+
+/* ─ the biometric split-TDEE readout: one flat cell (the old `.tdee` hairline + margin off) ─ */
+.sheet.glass.uv-sheet .uvl-tdee { display: block; width: 100%; margin: 0; padding: 10px 12px; border: 0; border-radius: 14px;
+  text-align: left; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.uvl-tdee .lab { font-weight: 600; color: var(--text-secondary); }
+.uvl-tdee .amt { font-family: var(--ff-body); font-weight: 600; color: var(--text-primary); }
+.uvl-tdee .amt small { font-size: 10.5px; font-weight: 500; color: var(--text-muted); }
+.uvl-tdee .total { border-top: 1px dashed var(--divider); }
+.uvl-tdee .infochev { display: inline-flex; vertical-align: -3px; margin-left: 4px; }
+.sheet.glass.uv-sheet .uvl-tdee .t-ico { width: 16px; height: 16px; filter: none; }
+
+/* ─ the U2 Fuel pickers + logs/thread sheets: already flat inside; the lit + on the Kamra pick
+   keeps its amber (the sheet's --c above). Nested pickers keep `sheet-nested` for their tier. ─ */
+.sheet.glass.uv-sheet.sheet-nested { z-index: 211; }
+
+/* ─ toasts (prototype .tst): one `.glass` pill-card per toast, no sheen, `--c` = its kind ─ */
+.toast-stack { left: 12px; right: 12px; width: auto; max-width: none; }
+.toast-stack .toast.glass.uvl-tst {
+  --c: var(--dv-sage);
+  position: relative; overflow: hidden; display: flex; align-items: center; gap: 10px;
+  padding: 10px 8px 10px 12px; border: 0; border-radius: 20px; color: var(--text-primary);
+  transform-origin: top center; animation: none;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.86), rgba(30, 27, 24, 0.80));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.10),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.toast-stack .toast.uvl-tst::after { display: none; animation: none; }
+.toast-stack .toast.uvl-tst.is-error { --c: var(--dv-coral); }
+.toast-stack .toast.uvl-tst.is-info { --c: var(--dv-sky); }
+.toast-stack .toast.uvl-tst.is-reward { --c: var(--dv-amber); align-items: flex-start; padding: 12px 8px 12px 12px; }
+.toast-stack .toast.uvl-tst.is-leaving { transform: translateY(-10px) scale(0.97); opacity: 0; }
+.toast-stack .uvl-tst .uvl-tst-ico { width: 28px; height: 28px; }
+.toast-stack .uvl-tst .t-pad { flex: 1; min-width: 0; padding: 0; }
+.toast-stack .uvl-tst .t-simple-text { display: inline; padding: 0; font-size: 13.5px; font-weight: 500; line-height: 1.35; color: var(--text-primary); }
+.toast-stack .uvl-tst:has(.t-action) .t-pad { display: flex; align-items: center; gap: 8px; }
+.toast-stack .uvl-tst:has(.t-action) .t-simple-text { flex: 1; min-width: 0; }
+.toast-stack .uvl-tst .t-action { flex: 0 0 auto; padding: 6px 10px; border: 0; border-radius: 999px; font-size: 12px; font-weight: 700;
+  white-space: nowrap; color: color-mix(in srgb, var(--c) 75%, #fff); background: rgba(245, 239, 230, 0.06);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 35%, transparent); }
+.toast-stack .uvl-tst .t-close { position: relative; top: auto; right: auto; flex: 0 0 auto; width: 26px; height: 26px;
+  display: grid; place-items: center; border-radius: 50%; color: var(--text-muted); background: none; }
+.toast-stack .uvl-tst :is(.t-action, .t-close):focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+/* the reward card: gold eyebrow · title + faint meta · the celebration UPRIGHT (bible rule 23) · meter · lit LEVEL UP pill */
+.toast-stack .uvl-tst .t-eyebrow { margin: 0; padding: 0; font: 600 9.5px/1.3 var(--ff-body); letter-spacing: 1.3px;
+  text-transform: uppercase; color: #FFD08A; }
+.toast-stack .uvl-tst .t-title { margin-top: 2px; font-family: var(--ff-body); font-size: 16px; font-weight: 600;
+  letter-spacing: -0.3px; line-height: 1.3; color: var(--text-primary); }
+.toast-stack .uvl-tst .t-meta { font-size: 13px; font-weight: 400; font-style: normal; color: var(--text-muted); }
+.toast-stack .uvl-tst .t-celebrate { margin-top: 2px; font-size: 12.5px; font-style: normal; line-height: 1.4; color: var(--text-secondary); }
+.toast-stack .uvl-tst .t-meter { display: flex; align-items: center; gap: 7px; margin-top: 8px; padding: 0; border-radius: 0;
+  font-size: 12px; color: var(--text-secondary); background: none; }
+.toast-stack .uvl-tst .t-mdot { width: 7px; height: 7px; background: var(--c); box-shadow: 0 0 6px var(--c); }
+.toast-stack .uvl-tst .t-mlabel { font-size: 12px; font-weight: 500; }
+.toast-stack .uvl-tst .t-mdelta { font-size: 13px; font-weight: 700; color: #FFE0AE; }
+.toast-stack .uvl-tst .t-lvup { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; padding: 4px 10px 4px 6px;
+  border: 0; border-radius: 999px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.5px; color: #191614;
+  background: linear-gradient(90deg, #FFE0AE, #FFBE60); box-shadow: 0 0 12px rgba(255, 190, 96, 0.5); }
+.toast-stack .uvl-tst .t-lvup .t-ico { width: 16px; height: 16px; filter: none; }
+@keyframes uvl-tin { from { opacity: 0; transform: translateY(-12px) scale(0.97); } }
+@media (prefers-reduced-motion: no-preference) {
+  .toast-stack .toast.uvl-tst:not(.is-reduced) { animation: uvl-tin 0.45s var(--uv-ease, cubic-bezier(.2, .78, .24, 1)) backwards; }
+}
+/* ── /uveg reteg lap ── */
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ── uveg reteg kalauz (mezo-me75u.10) ──
+   ──────────────────────────────────────────────────────────────────────────── */
+/* KalauzSheet (shared/ui/kalauz/KalauzSheet.tsx) + KalauzWelcome T0. Prototype:
+   docs/design_2.0/prototypes/src/uveg-reteg-body.html `openKz()` / `udv()`, `.kz*` / `.wel*`.
+   The sheet is the kit `<Sheet glass>` in gold; everything inside it is flat (rule 5). */
+.sheet.glass.uv-sheet.kalauz-sheet { --c: var(--dv-amber); padding: 4px 18px 16px; }
+/* rule 2: `.glass > *` would drop the sr-only title and the peek bar into the flow */
+.sheet.glass.kalauz-sheet > .sr-only { position: absolute; }
+.sheet.glass.uv-sheet.kalauz-sheet.is-peek {
+  animation: none; overflow: hidden;
+  transform: translateY(calc(100% - 90px + env(safe-area-inset-bottom)));
+  transition: transform 0.32s cubic-bezier(0.25, 0.8, 0.35, 1);
+}
+/* peek: the sheet's visible strip IS the gold glass bar; the spot is a gold ring on a dark veil */
+.kalauz-spot {
+  border-radius: 22px;
+  box-shadow: 0 0 0 2px var(--dv-amber), 0 0 26px 4px color-mix(in srgb, var(--dv-amber) 55%, transparent),
+    0 0 0 9999px rgba(0, 0, 0, 0.72);
+}
+@keyframes kalauz-spot-pulse {
+  50% {
+    box-shadow: 0 0 0 2px var(--dv-amber), 0 0 36px 8px color-mix(in srgb, var(--dv-amber) 70%, transparent),
+      0 0 0 9999px rgba(0, 0, 0, 0.72);
+  }
+}
+.sheet.glass.kalauz-sheet > .kalauz-peekbar {
+  position: absolute; z-index: 4; left: 14px; right: 12px; top: 10px; height: 80px;
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
+}
+.sheet.glass.kalauz-sheet.is-peek .sheet-handle { opacity: 0; }
+.kalauz-sheet .kalauz-peekwell.uv-well { width: 40px; height: 40px; }
+.kalauz-sheet .kalauz-peektxt { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 400; line-height: 1.35; color: var(--text-primary); }
+/* a card voice can run to four sentences; the bar keeps three lines of it + the hint */
+.kalauz-sheet .kalauz-peekvoice { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.kalauz-sheet .kalauz-peektxt strong, .kalauz-sheet .kalauz-peektxt b { font-weight: 600; }
+.kalauz-sheet .kalauz-peekhint { display: block; margin-top: 2px; font-size: 11px; color: var(--text-muted); }
+/* top line: eyebrow · i / n · flat round close */
+.kalauz-sheet .kalauz-top { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; }
+.kalauz-sheet .kalauz-eb { color: var(--text-muted); }
+.kalauz-sheet .kalauz-eb b { font-weight: 600; color: color-mix(in srgb, var(--dv-amber) 70%, #fff); }
+.kalauz-sheet .kalauz-step {
+  margin-left: auto; font-size: 11.5px; font-weight: 500; color: var(--text-muted); font-variant-numeric: tabular-nums;
+}
+.kalauz-sheet .kalauz-x {
+  width: 36px; height: 36px; flex: 0 0 auto; border: 0; border-radius: 50%; display: grid; place-items: center;
+  font-size: 13px; color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+/* the card: numbered question chip · BIG 3D art on a frameless gold halo · title · upright voice */
+.kalauz-sheet .kalauz-card { position: relative; isolation: isolate; text-align: center; padding: 4px 4px 0; min-height: 0; }
+.kalauz-sheet .kalauz-card::before {
+  content: ''; position: absolute; left: 50%; top: 82px; z-index: -1; pointer-events: none;
+  width: 280px; height: 200px; transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse, color-mix(in srgb, var(--dv-amber) 26%, transparent), transparent 66%);
+}
+.kalauz-sheet .kalauz-q {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.4px;
+  text-transform: none; color: color-mix(in srgb, var(--dv-amber) 70%, #fff);
+}
+.kalauz-sheet .kalauz-n {
+  width: 20px; height: 20px; margin: 0; border-radius: 50%; display: grid; place-items: center;
+  font-size: 11px; font-weight: 700; color: #191614; background: var(--dv-amber);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--dv-amber) 60%, transparent);
+}
+.kalauz-sheet .kalauz-art { display: flex; justify-content: center; align-items: center; height: auto; gap: 0; margin: 10px 0 4px; }
+.kalauz-sheet .kalauz-art .kalauz-art-ico {
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 18px color-mix(in srgb, var(--dv-amber) 45%, transparent));
+}
+.kalauz-sheet .kalauz-title { margin-top: 2px; font-size: 21px; font-weight: 600; letter-spacing: -0.6px; color: var(--text-primary); }
+.kalauz-sheet .kalauz-voice {
+  margin-top: 8px; text-align: left; font-family: var(--ff-body); font-style: normal;
+  font-size: 14px; font-weight: 400; line-height: 1.55; color: var(--text-secondary);
+}
+.kalauz-sheet .kalauz-voice :is(strong, b) { font-weight: 600; color: var(--text-primary); }
+/* fogalom: a flat gold-tinted cell */
+.kalauz-sheet .kalauz-fogalom {
+  margin-top: 12px; padding: 12px; border: 0; border-radius: 14px; text-align: left;
+  background: color-mix(in srgb, var(--dv-amber) 6%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 20%, transparent);
+}
+.kalauz-sheet .kalauz-term {
+  font-family: var(--ff-body); font-style: normal; font-size: 14px; font-weight: 600;
+  color: color-mix(in srgb, var(--dv-amber) 45%, #fff);
+}
+.kalauz-sheet .kalauz-def { margin-top: 3px; font-size: 12.5px; font-weight: 400; line-height: 1.45; color: var(--text-secondary); }
+.kalauz-sheet .kalauz-def :is(strong, b) { font-weight: 600; color: var(--text-primary); }
+/* kapcsolat: flat chips with 3D icons */
+.kalauz-sheet .kalauz-chips { display: grid; gap: 6px; margin-top: 12px; text-align: left; }
+.kalauz-sheet .kalauz-chip {
+  display: flex; align-items: center; justify-content: flex-start; gap: 8px; min-height: 40px; min-width: 0;
+  padding: 7px 12px 7px 9px; border: 0; border-radius: 18px; white-space: normal; text-align: left;
+  font-size: 12.5px; font-weight: 600; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.kalauz-sheet .kalauz-chip :is(.t-ico, .clay-icon, svg) { flex: 0 0 auto; filter: none; }
+.kalauz-sheet .kalauz-chip-to { color: var(--text-secondary); font-weight: 500; }
+/* „Mutasd meg a képernyőn": a flat ghost pill with t-eye */
+.kalauz-sheet .kalauz-show {
+  display: flex; align-items: center; justify-content: center; gap: 6px; margin: 12px auto 0; min-height: 40px;
+  padding: 9px 16px; border: 0; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.kalauz-sheet .kalauz-show .t-ico { filter: none; }
+/* dots: the active one a gold pill with glow */
+.kalauz-sheet .kalauz-dots { gap: 0; margin: 10px 0 8px; }
+.kalauz-sheet .kalauz-dot { width: 26px; height: 40px; }
+.kalauz-sheet .kalauz-dot::after { width: 6px; height: 6px; border-radius: 3px; background: rgba(245, 239, 230, 0.18); }
+.kalauz-sheet .kalauz-dot.seen::after { background: color-mix(in srgb, var(--dv-amber) 40%, transparent); }
+.kalauz-sheet .kalauz-dot.on::after { width: 18px; background: var(--dv-amber); box-shadow: 0 0 8px var(--dv-amber); }
+/* foot: Kihagyom (text) · ‹ Vissza (ghost) · Tovább / Értem, kezdjük (lit gold) */
+.kalauz-sheet .kalauz-foot { display: flex; align-items: center; gap: 8px; }
+.kalauz-sheet .kalauz-link {
+  flex: 0 0 auto; min-height: 44px; padding: 0 6px; border: 0; background: none; font-family: inherit;
+  font-size: 12.5px; font-weight: 500; color: var(--text-muted); cursor: pointer;
+}
+.kalauz-sheet .kalauz-ghost.kalauz-pill {
+  min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; font-size: 13.5px; font-weight: 600;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.kalauz-sheet .kalauz-peekbar .kalauz-pill { flex: 0 0 auto; min-height: 38px; }
+.kalauz-sheet .kalauz-foot .kalauz-back { flex: 1 1 0; margin-left: 0; }
+.kalauz-sheet .kalauz-ghost[disabled] { opacity: 0.4; cursor: default; }
+.kalauz-sheet .kalauz-cta {
+  flex: 1.3 1 0; min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px;
+  font-size: 13.5px; font-weight: 700; color: #191614; background: var(--dv-amber);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--dv-amber) 55%, transparent);
+}
+.kalauz-sheet :is(.kalauz-x, .kalauz-show, .kalauz-chip, .kalauz-link, .kalauz-pill, .kalauz-cta, .kalauz-dot):focus-visible {
+  outline: 2px solid var(--dv-amber); outline-offset: 2px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .kalauz-spot { animation: kalauz-spot-pulse 2.2s ease-in-out infinite; }
+  .kalauz-sheet .kalauz-art .kalauz-art-ico { animation: uv-float 5s ease-in-out 1s infinite; }
+}
+
+/* T0 KalauzWelcome — full screen, lavender/gold halo hero, flat and glass demos. */
+.welcome.uv-welcome {
+  --c: var(--dv-lav); display: flex; flex-direction: column; padding: 44px 18px 22px;
+  overflow-x: hidden; overflow-y: auto; background: var(--canvas); color: var(--text-primary);
+}
+.uv-welcome .wel-top { display: flex; align-items: center; justify-content: space-between; }
+.uv-welcome .wel-eyebrow { margin: 0; }
+.uv-welcome .wel-eyebrow b { font-weight: 600; color: color-mix(in srgb, var(--dv-amber) 70%, #fff); }
+.uv-welcome .wel-step { flex: 1 0 auto; display: flex; flex-direction: column; }
+.uv-welcome .wel-hero { position: relative; isolation: isolate; overflow-x: clip; text-align: center; padding: 26px 0 8px; }
+.uv-welcome .wel-hero.is-slim { padding-bottom: 0; }
+.uv-welcome .wel-hero::before {
+  content: ''; position: absolute; left: 50%; top: 50%; z-index: -1; pointer-events: none;
+  width: 380px; height: 300px; transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse, color-mix(in srgb, var(--dv-lav) 30%, transparent),
+    color-mix(in srgb, var(--dv-amber) 12%, transparent) 44%, transparent 68%);
+}
+.uv-welcome .wel-boop {
+  margin: 0 auto;
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 22px color-mix(in srgb, var(--dv-lav) 50%, transparent));
+}
+.uv-welcome .wel-title.wl-title {
+  margin: 10px 0 0; font-size: 28px; font-weight: 600; letter-spacing: -1px; line-height: 1.15; color: var(--text-primary);
+}
+.uv-welcome .wel-title.wl-title:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 4px; border-radius: 8px; }
+.uv-welcome .wel-voice {
+  max-width: 34ch; margin: 10px auto 0; font-size: 14.5px; font-weight: 400; line-height: 1.55; color: var(--text-secondary);
+}
+.uv-welcome .wel-voice :is(strong, b) { font-weight: 600; color: var(--text-primary); }
+/* step 1: three day-part glass tiles */
+.uv-welcome .wel-dparts { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 8px; align-items: end; margin-top: 22px; }
+.uv-welcome .wel-dpart.glass {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0;
+  padding: 14px 6px 12px; border-radius: 20px; text-align: center;
+}
+.uv-welcome .wel-dpart strong { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.uv-welcome .wel-dpart small { font-size: 10.5px; line-height: 1.35; color: var(--text-muted); }
+/* step 2: five living Boops, the chosen one lit in its domain accent; the voice card is glass */
+.uv-welcome .wel-demo { display: grid; gap: 12px; margin-top: 22px; }
+.uv-welcome .wel-dom5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.uv-welcome .wel-dom {
+  display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; padding: 10px 0 8px;
+  border: 0; border-radius: 18px; background: none; font-family: inherit; font-size: 11px; font-weight: 600;
+  color: var(--text-secondary); cursor: pointer;
+}
+.uv-welcome .wel-dom .boop {
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 10px color-mix(in srgb, var(--c) 45%, transparent));
+}
+.uv-welcome .wel-dom.on {
+  color: var(--text-primary);
+  background: radial-gradient(80% 90% at 50% 25%, color-mix(in srgb, var(--c) 26%, transparent), transparent 72%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent);
+}
+.uv-welcome .wel-dom:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.uv-welcome .wel-domvoice.glass { padding: 14px; border-radius: 20px; text-align: left; }
+.uv-welcome .wel-domname { display: block; font-size: 13px; font-weight: 600; color: color-mix(in srgb, var(--c) 70%, var(--text-primary)); }
+.uv-welcome .wel-domtxt { display: block; margin-top: 3px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+.uv-welcome .wel-hint { text-align: center; font-size: 11.5px; color: var(--text-muted); }
+/* step 3: the + (lavender glass rounded square), then flat tiles + a lavender glass Mezo row */
+.uv-welcome .wel-fab.glass {
+  width: 58px; height: 58px; margin: 0 auto; border: 0; border-radius: 20px; display: grid; place-items: center;
+  font-family: inherit; font-size: 30px; font-weight: 300; line-height: 1;
+  color: color-mix(in srgb, var(--dv-lav) 45%, #fff); cursor: pointer;
+}
+.uv-welcome .wel-fab.glass:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 3px; }
+.uv-welcome .wel-logbox { display: grid; gap: 8px; }
+.uv-welcome .wel-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.uv-welcome .wel-tile {
+  display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; padding: 12px 4px 10px;
+  border-radius: 14px; font-size: 11px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-welcome .wel-chatrow.glass { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 18px; }
+.uv-welcome .wel-chatrow strong { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+/* step 4: the pulsing gold glass „?" disc */
+.uv-welcome .wel-qpulse.glass {
+  width: 96px; height: 96px; margin: 30px auto 8px; display: grid; place-items: center;
+  font-size: 44px; font-weight: 600; line-height: 1; color: color-mix(in srgb, var(--dv-amber) 60%, #fff);
+}
+@keyframes wel-qpulse {
+  0%, 100% {
+    box-shadow: 0 16px 30px -16px rgba(0, 0, 0, 0.75), 0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+      inset 0 1px 0 rgba(255, 244, 230, 0.10), inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 10px color-mix(in srgb, var(--c) 10%, transparent), 0 0 40px color-mix(in srgb, var(--c) 50%, transparent),
+      inset 0 1px 0 rgba(255, 244, 230, 0.10), inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+  }
+}
+/* dots + foot: Kihagyom (text) · ‹ Vissza (ghost) · Tovább / Induljunk (lit lavender) */
+.uv-welcome .wel-dots { display: flex; justify-content: center; gap: 6px; margin-top: 22px; }
+.uv-welcome .wel-dot { width: 6px; height: 6px; border-radius: 3px; background: rgba(245, 239, 230, 0.18); }
+.uv-welcome .wel-dot.seen { background: color-mix(in srgb, var(--dv-lav) 45%, transparent); }
+.uv-welcome .wel-dot.on { width: 18px; background: var(--dv-lav); box-shadow: 0 0 8px var(--dv-lav); }
+.uv-welcome .wel-foot { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+.uv-welcome .wel-skip {
+  flex: 0 0 auto; min-height: 44px; padding: 0 6px; border: 0; background: none; font-family: inherit;
+  font-size: 12.5px; font-weight: 500; color: var(--text-muted); cursor: pointer;
+}
+.uv-welcome .wel-ghost {
+  flex: 1 1 0; min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; font-family: inherit;
+  font-size: 13.5px; font-weight: 600; color: var(--text-secondary); cursor: pointer;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-welcome .wel-ghost[disabled] { opacity: 0.4; cursor: default; }
+.uv-welcome .wel-cta {
+  flex: 1.3 1 0; min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; font-family: inherit;
+  font-size: 13.5px; font-weight: 700; color: #191614; background: var(--dv-lav); cursor: pointer;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--dv-lav) 55%, transparent);
+}
+.uv-welcome :is(.wel-skip, .wel-ghost, .wel-cta):focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 2px; }
+@media (max-width: 340px) {
+  .uv-welcome .wel-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .uv-welcome .wel-title.wl-title { font-size: 25px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .uv-welcome:not(.welcome--reduced) .wel-step { animation: wlfade 0.28s ease both; }
+  .uv-welcome:not(.welcome--reduced) .wel-fab.glass { animation: uv-breathe 3s ease-in-out infinite; }
+  .uv-welcome:not(.welcome--reduced) .wel-qpulse.glass { animation: wel-qpulse 2.4s ease-in-out infinite; }
+}
+/* ── /uveg reteg kalauz ── */
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ── uveg reteg belepes (mezo-me75u.10) ──
+   ──────────────────────────────────────────────────────────────────────────── */
+/* Auth (AuthShell: Login / Register / ChangePassword / Onboarding) + the boot-failure screen
+   (AuthGate). They render OUTSIDE PhoneFrame, only in real mode: a centred ≤380px column on the
+   black ground (mezo-x4r3c: no decorative aurora in dark — the halo hero carries the colour).
+   Hero = frameless lavender/gold halo + the „boop" gradient wordmark; the form = ONE lavender
+   `.auth-card.glass` (gold for the forced change); fields flat with a lit focus ring; buttons
+   inside are lit flat pills (never glass in glass). Prototype uveg-reteg belep/reg/jelszo/elso/szerver. */
+.auth-page {
+  min-height: 100dvh; display: flex; overflow-x: clip;
+  background: var(--canvas); color: var(--text-primary); font-family: var(--ff-body); color-scheme: dark;
+}
+.auth {
+  position: relative; width: 100%; max-width: 380px; min-height: 100dvh; margin: 0 auto;
+  display: flex; flex-direction: column; justify-content: center; padding: 40px 22px 30px;
+}
+.auth.is-onboarding { justify-content: flex-start; padding-top: 30px; }
+.auth-hero { position: relative; isolation: isolate; overflow-x: clip; text-align: center; padding: 10px 0 22px; }
+.auth-hero::before {
+  content: ''; position: absolute; left: 50%; top: 44%; z-index: -1; pointer-events: none;
+  width: 380px; height: 280px; transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse, rgba(171, 159, 210, 0.30), rgba(255, 190, 96, 0.12) 44%, transparent 68%);
+}
+.auth-mark {
+  display: block; font-family: var(--ff-display), var(--ff-body); font-size: 44px; font-weight: 700;
+  letter-spacing: -2px; line-height: 1.1;
+  background: linear-gradient(120deg, #F5EFE6 0%, #E6DDFF 55%, #E9C48A 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 18px rgba(171, 159, 210, 0.35));
+}
+.auth-hero h1 { margin: 6px 0 0; font-size: 21px; font-weight: 600; letter-spacing: -0.5px; color: var(--text-primary); }
+.auth-hero p { margin: 6px 0 0; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+
+.auth-card.glass {
+  --c: var(--dv-lav);
+  display: grid; gap: 12px; padding: 18px 16px; border-radius: 26px; border: 0;
+}
+.auth-card.glass.is-gold { --c: var(--dv-amber); }
+.auth-card.glass.is-summary { gap: 0; }
+.auth-form { display: grid; }
+.auth-field { display: grid; gap: 6px; min-width: 0; }
+.auth-field-lb {
+  font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--c, var(--dv-lav)) 55%, var(--text-muted));
+}
+.auth-inp {
+  display: block; width: 100%; min-width: 0; margin: 0; padding: 12px 13px; border: 0; border-radius: 13px;
+  font: 400 16px/1.3 var(--ff-body); color: var(--text-primary); color-scheme: dark;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+  transition: box-shadow 0.18s ease;
+}
+.auth-inp::placeholder { color: var(--text-muted); }
+.auth-inp.is-mono { font-family: ui-monospace, Menlo, monospace; letter-spacing: 1.5px; }
+.auth-inp:focus { outline: none; }
+.auth-inp:focus-visible, .auth-inp:focus {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c, var(--dv-lav)) 70%, transparent),
+    0 0 14px -4px color-mix(in srgb, var(--c, var(--dv-lav)) 60%, transparent);
+}
+/* errors: coral text with the 3D info mark (also reaches the non-glass ChangePasswordSheet) */
+.auth-err { margin: 0; display: flex; gap: 6px; align-items: center; font-size: 12.5px; line-height: 1.4; color: #FFB39C; }
+.auth-err .t-ico, .auth-notice .t-ico { flex: 0 0 auto; filter: none; }
+/* notices („lejárt", „letiltották"): a flat gold-tinted cell with a 3D icon */
+.auth-notice {
+  display: flex; gap: 10px; align-items: flex-start; margin: 0 0 12px; padding: 11px 12px; border-radius: 14px;
+  font-size: 12.5px; line-height: 1.45; color: var(--text-secondary);
+  background: color-mix(in srgb, var(--dv-amber) 8%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 28%, transparent);
+}
+.auth-notice > span { padding-top: 2px; }
+/* the lit primary pill (accent fill, dark ink, accent glow) + the flat ghost */
+.auth-cta {
+  display: inline-flex; align-items: center; justify-content: center; width: 100%; height: 46px; margin: 0;
+  padding: 0 16px; border: 0; border-radius: 999px; cursor: pointer;
+  font: 700 14px/1 var(--ff-body); color: #191614; white-space: nowrap;
+  background: var(--c, var(--dv-lav));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--c, var(--dv-lav)) 55%, transparent);
+}
+.auth-cta.is-coral { --c: var(--dv-coral); }
+.auth-cta:disabled { opacity: 0.45; box-shadow: none; cursor: default; }
+.auth-cta:focus-visible, .auth-ghost:focus-visible, .auth-link:focus-visible, .auth-seg2 button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--c, var(--dv-lav)) 80%, #fff); outline-offset: 2px;
+}
+.auth-ghost {
+  height: 46px; margin: 0; padding: 0 16px; border: 0; border-radius: 999px; cursor: pointer;
+  font: 600 14px/1 var(--ff-body); color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.auth-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+.auth-pair.is-single { grid-template-columns: 1fr; }
+.auth-foot { text-align: center; }
+.auth-link {
+  display: inline-block; margin: 14px auto 0; padding: 6px 10px; border: 0; background: none; cursor: pointer;
+  font: 600 13px/1.3 var(--ff-body); color: #C9BDF0;
+}
+/* onboarding: greeting, the Nem segmented control, steppers, summary rows */
+.auth-greet-hi { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.3px; color: var(--text-primary); }
+.auth-greet-sub { margin: 4px 0 0; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.auth-seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.auth-seg2 button {
+  height: 44px; margin: 0; border: 0; border-radius: 14px; cursor: pointer;
+  font: 600 14px/1 var(--ff-body); color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.auth-seg2 button.on {
+  color: #191614; background: var(--c, var(--dv-lav));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c, var(--dv-lav)) 50%, transparent);
+}
+.auth-stepfield { display: grid; gap: 6px; }
+.auth-stepfield-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.auth-stepfield-val { font: 500 13px/1 var(--ff-body); font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.auth-stepfield-val small { font-size: 11px; color: var(--text-muted); }
+.auth .stepper.auth-stepper {
+  display: grid; grid-template-columns: 48px 1fr 48px; gap: 10px; align-items: center;
+  padding: 0; background: none; border-radius: 0;
+}
+.auth .auth-stepper button {
+  width: 48px; height: 48px; margin: 0; padding: 0; border: 0; border-radius: 16px; cursor: pointer;
+  display: grid; place-items: center; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.auth .auth-stepper .stepper-display {
+  width: 100%; min-width: 0; margin: 0; padding: 0; border: 0; border-radius: 12px; background: transparent;
+  text-align: center; font: 300 44px/1.1 var(--ff-display); letter-spacing: -2px; font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--c, var(--dv-lav)) 60%, #fff);
+}
+.auth .auth-stepper .stepper-display:focus { outline: none; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c, var(--dv-lav)) 70%, transparent); }
+.auth-tiny { margin: 0; font-size: 11.5px; line-height: 1.4; color: var(--text-muted); }
+.auth-sum { margin: 0; padding: 0; list-style: none; }
+.auth-sumrow {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  padding: 11px 2px; border-top: 1px solid var(--divider); font-size: 14px;
+}
+.auth-sumrow:first-child { border-top: 0; }
+.auth-sumrow > span { color: var(--text-secondary); flex: 0 0 auto; }
+.auth-sumrow > b { font-weight: 600; color: var(--text-primary); text-align: right; min-width: 0; overflow-wrap: anywhere; }
+.auth-card.is-summary .auth-err { margin-top: 10px; }
+/* Stepper numbered mode (`steps`): numbered discs, current lit, done half-lit, hairline joins */
+.auth-steps { margin: 0 0 16px; }
+.stepper-numbered .stepper-head { display: flex; justify-content: center; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+.stepper-numbered .stepper-title { font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted); }
+.stepper-numbered .stepper-count { font: 600 10.5px/1.2 var(--ff-body); font-variant-numeric: tabular-nums; color: var(--text-muted); }
+.stepper-steps { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; }
+.stepper-step { display: flex; align-items: center; gap: 6px; font: 600 11.5px/1 var(--ff-body); color: var(--text-muted); white-space: nowrap; }
+.stepper-step > i {
+  width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto;
+  font-style: normal; font-size: 11px; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.stepper-step.active { color: var(--text-primary); }
+.stepper-step.active > i { color: #191614; background: var(--dv-lav); box-shadow: 0 0 12px rgba(171, 159, 210, 0.6); }
+.stepper-step.done > i { color: #191614; background: rgba(171, 159, 210, 0.55); box-shadow: none; }
+.stepper-join { width: 18px; height: 1px; flex: 0 0 auto; background: var(--divider); }
+@media (max-width: 360px) {
+  .stepper-step:not(.active) .stepper-step-lb { display: none; }
+  .auth { padding-left: 16px; padding-right: 16px; }
+}
+/* the boot-failure screen: frameless coral halo, the 3D signal, a lit coral „Újra" */
+.auth-down {
+  --c: var(--dv-coral);
+  position: relative; isolation: isolate; overflow-x: clip; width: 100%; max-width: 380px; min-height: 100dvh;
+  margin: 0 auto; display: flex; flex-direction: column; justify-content: center; text-align: center; padding: 30px 26px;
+}
+.auth-down::before {
+  content: ''; position: absolute; left: 50%; top: 42%; z-index: -1; pointer-events: none;
+  width: 380px; height: 300px; transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse, rgba(255, 126, 92, 0.24), rgba(171, 159, 210, 0.10) 44%, transparent 68%);
+}
+.auth-down .auth-down-art {
+  margin: 0 auto 8px;
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 18px rgba(255, 126, 92, 0.4));
+}
+.auth-down h1 { margin: 0; font-size: 24px; font-weight: 600; letter-spacing: -0.7px; color: var(--text-primary); }
+.auth-down p { margin: 10px 0 22px; font-size: 14px; line-height: 1.55; color: var(--text-secondary); }
+
+/* ── Minden oldal (/minden, MindenOldalPage) ──
+   PageHead glass back, the PageHero halo (t-grid, LELTÁR), one `.mno-domain.glass` per domain in
+   its accent with the LIVING Boop, accent group eyebrows, link rows as FLAT cells (label + hint +
+   chevron); the Beállítások card neutral with a t-gear well. Outranks the old `── oldal-leltár (`. */
+.mno-u10 { --c2: var(--dv-lav); }
+.mno-u10 .mno-domain.glass {
+  margin: 0 0 12px; padding: 14px 14px 8px; border: 0; border-radius: 24px; scroll-margin-top: 12px;
+}
+.mno-u10 .mno-domain.glass.is-neutral { --c: #B8AC9C; }
+.mno-u10 .mno-dh { display: flex; align-items: center; gap: 10px; padding-bottom: 6px; min-width: 0; }
+.mno-u10 .mno-dh .boop {
+  flex: 0 0 auto;
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 10px color-mix(in srgb, var(--c) 45%, transparent));
+}
+.mno-u10 .mno-dh strong { flex: 1; min-width: 0; font: 600 19px/1.2 var(--ff-body); letter-spacing: -0.5px; color: var(--text-primary); }
+.mno-u10 .mno-dh small { flex: 0 0 auto; font: 500 11px/1.2 var(--ff-body); color: var(--text-muted); }
+.mno-u10 .mno-well { width: 44px; height: 44px; --c: #B8AC9C; }
+.mno-u10 .mno-group { padding: 8px 0 0; }
+.mno-u10 .mno-group h2 {
+  margin: 4px 2px 6px; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 60%, var(--text-muted));
+}
+.mno-u10 .mno-group ul { list-style: none; margin: 0; padding: 0; }
+.mno-u10 .mno-group li + li { border-top: 0; }
+.mno-u10 .mno-group a.mno-l {
+  display: flex; flex-direction: row; align-items: center; gap: 10px; width: 100%;
+  margin-bottom: 5px; padding: 9px 10px; border-radius: 12px; text-decoration: none;
+  background: rgba(245, 239, 230, 0.035);
+}
+.mno-u10 .mno-group a.mno-l:hover { background: rgba(245, 239, 230, 0.06); }
+.mno-u10 .mno-group a.mno-l:focus-visible { outline: 2px solid var(--c); outline-offset: -2px; }
+.mno-u10 .mno-l-tx { flex: 1; min-width: 0; }
+.mno-u10 .mno-l b { display: block; font: 600 13.5px/1.3 var(--ff-body); color: var(--text-primary); }
+.mno-u10 .mno-l small { display: block; margin-top: 1px; font: 400 11px/1.4 var(--ff-body); color: var(--text-muted); }
+.mno-u10 .mno-chev { flex: 0 0 auto; font-size: 20px; line-height: 1; color: var(--text-muted); }
+/* ── /uveg reteg belepes ── */
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ── uveg reteg admin (mezo-me75u.10) ──
+   ──────────────────────────────────────────────────────────────────────────── */
+/* The owner-only /admin desktop shell (AdminLayout `.ad-shell.uv-admin`, AdminRail, every page
+   under features/admin, the AI-hívás + Meghívók és fiókok bodies from features/me). Visual only:
+   every legacy `.ad-*` / `.am-*` / `.aiu-*` rule above keeps its class name (the tests read them)
+   and is OUTRANKED here under the `.uv-admin` root, so no light hex survives on the dark ground.
+   Look: prototype `uveg-reteg-body.html` admin() — ONE lavender glass rail, light page heads,
+   every AdminTile a `.glass` tile whose `--c` follows its `wash`, flat cells/rows/chips inside,
+   semantic chips keep good/warn/critical, dashed empties, coral error cell, muted loading. */
+
+/* ── shell + ground ── */
+.uv-admin { background: var(--canvas); color: var(--text-primary); gap: 0; }
+.uv-admin .ad-main { padding: 22px 26px 30px 22px; }
+.uv-admin .ad-main::-webkit-scrollbar-thumb,
+.uv-admin .ad-rail::-webkit-scrollbar-thumb { background: rgba(245, 239, 230, 0.12); background-clip: content-box; }
+.uv-admin .ad-main:hover::-webkit-scrollbar-thumb,
+.uv-admin .ad-rail:hover::-webkit-scrollbar-thumb { background: rgba(245, 239, 230, 0.22); background-clip: content-box; }
+.uv-admin .mz-page { background: transparent; }
+.uv-admin .ad-loading {
+  padding: 40px 12px; text-align: center; font-size: 12.5px; font-weight: 400; color: var(--text-muted);
+}
+
+/* ── the rail: ONE lavender glass panel, no sheen (always visible, like the TabBar) ── */
+.uv-admin .ad-rail.glass {
+  --c: var(--dv-lav);
+  position: relative; flex: none; width: 220px; min-height: 0;
+  margin: 14px 0 14px 14px; padding: 18px 12px 14px; border: 0; border-radius: 26px;
+  display: flex; flex-direction: column; gap: 3px;
+  overflow-x: hidden; overflow-y: auto;
+}
+.uv-admin .ad-rail .brand { display: flex; align-items: baseline; gap: 7px; padding: 2px 8px 16px; }
+.uv-admin .ad-rail .brand strong {
+  font-family: var(--ff-display); font-size: 22px; font-weight: 700; letter-spacing: -1px; line-height: 1;
+  background: linear-gradient(120deg, #F5EFE6, #E6DDFF 55%, #E9C48A);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 10px rgba(171, 159, 210, 0.35));
+}
+.uv-admin .ad-rail .brand small {
+  font-size: 10px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-muted);
+}
+.uv-admin .ad-rail .ad-rail-link {
+  display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 14px;
+  font-size: 13.5px; font-weight: 500; color: var(--text-secondary); background: none; box-shadow: none;
+}
+.uv-admin .ad-rail .ad-rail-link .t-ico { filter: grayscale(0.45) brightness(0.8); }
+.uv-admin .ad-rail .ad-rail-link:hover { background: rgba(245, 239, 230, 0.05); color: var(--text-primary); }
+.uv-admin .ad-rail .ad-rail-link.on {
+  color: var(--text-primary); font-weight: 600;
+  background: radial-gradient(90% 100% at 20% 50%, rgba(171, 159, 210, 0.22), transparent 75%);
+  box-shadow: inset 0 0 0 1px rgba(171, 159, 210, 0.3), 0 0 16px -4px rgba(171, 159, 210, 0.5);
+}
+.uv-admin .ad-rail .ad-rail-link.on .t-ico {
+  filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 8px rgba(171, 159, 210, 0.6));
+}
+.uv-admin .ad-rail .ad-rail-link:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 2px; }
+.uv-admin .ad-rail .ad-rail-tools { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--divider); gap: 3px; }
+.uv-admin .ad-rail .ad-rail-tools .tools-cap {
+  padding: 0 10px 6px; font-size: 9.5px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-muted);
+}
+
+/* ── page heads: light, left, desktop — eyebrow + big title + meta (PageHero `glass`) ── */
+.uv-admin .mz-page-hero.uv-hero {
+  justify-items: start; text-align: left; padding: 4px 17px 18px; overflow-x: visible;
+}
+.uv-admin .mz-page-hero.uv-hero.uv-halo::before { content: none; }
+.uv-admin .mz-page-hero.uv-hero .uv-hero-eb { margin: 0; color: var(--text-muted); }
+.uv-admin .mz-page-hero.uv-hero .mz-hero-nm {
+  margin-top: 4px; font-family: var(--ff-display); font-size: 30px; font-weight: 600; letter-spacing: -1px; line-height: 1.1;
+}
+.uv-admin .mz-page-hero.uv-hero .mz-hero-sb { margin-top: 3px; font-size: 12px; color: var(--text-muted); }
+.uv-admin .mz-page-head.uv-head { padding: 0 17px 10px; }
+.uv-admin .ad-feature-head .mz-hero-nm {
+  font-family: var(--ff-display); font-size: 30px; font-weight: 600; letter-spacing: -1px; color: var(--text-primary);
+}
+
+/* ── the tile: every AdminTile is `.glass.ad-gt`; ONE accent via the wash it already carries ── */
+.uv-admin .mz-tile.ad-gt {
+  --c: var(--dv-sage);
+  border: 0; border-radius: 22px; padding: 16px; min-height: 0; min-width: 0; color: var(--text-primary);
+}
+.uv-admin .ad-gt.mz-w-sage { --c: var(--dv-sage); }
+.uv-admin .ad-gt.mz-w-gold { --c: var(--dv-amber); }
+.uv-admin .ad-gt.mz-w-coral,
+.uv-admin .ad-gt.mz-w-most { --c: var(--dv-coral); }
+.uv-admin .ad-gt.mz-w-lav { --c: var(--dv-lav); }
+.uv-admin .ad-gt.mz-w-sky { --c: var(--dv-sky); }
+.uv-admin .ad-gt.mz-w-rose { --c: var(--dv-rose); }
+.uv-admin .ad-gt.mz-w-white { --c: #8A7A6A; }
+.uv-admin .ad-gt .mz-tile-top { margin-bottom: 8px; }
+.uv-admin .ad-gt .mz-eyebrow {
+  font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px;
+  color: color-mix(in srgb, var(--c) 70%, var(--text-primary));
+}
+.uv-admin .mz-mosaic-desktop { gap: 14px; }
+
+/* numerals: big and light (Geist 300) */
+.uv-admin .ad-big {
+  font-family: var(--ff-display); font-size: 40px; font-weight: 300; letter-spacing: -2px; line-height: 1;
+  color: var(--text-primary);
+}
+.uv-admin .ad-big u { font-size: 14px; font-weight: 500; letter-spacing: 0; margin-left: 4px; color: var(--text-muted); }
+.uv-admin .ad-poster { min-height: 84px; }
+.uv-admin .ad-poster .spot { margin: -34px -4px 0 0; }
+.uv-admin .ad-poster .foot { margin-top: auto; padding-top: 8px; font-size: 11px; color: var(--text-secondary); }
+.uv-admin .ad-kpi .v, .uv-admin .ad-hero .stats .v {
+  font-family: var(--ff-display); font-weight: 300; letter-spacing: -1.2px; color: var(--text-primary);
+}
+.uv-admin .ad-count-ok { color: var(--dv-sage); }
+.uv-admin .ad-count-warn { color: var(--dv-amber); }
+.uv-admin .ad-count-bad { color: var(--dv-coral); }
+.uv-admin .ad-count-mut { color: var(--text-muted); }
+
+/* the summary-strip cell as a button — lit when its filter is on */
+.uv-admin .ad-poster-btn { border-radius: 14px; }
+.uv-admin .ad-poster-btn.on {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 60%, transparent), 0 0 16px -4px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.uv-admin .ad-poster-btn:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+
+/* ── states: loading quiet, empty dashed, error a flat coral cell with ⓘ ── */
+.uv-admin .ad-tile-pending {
+  min-height: 64px; padding: 0; justify-content: center; text-align: left; font-size: 12px; color: var(--text-muted);
+}
+.uv-admin .ad-tile-error {
+  flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 10px;
+  min-height: 0; padding: 12px 14px; border-radius: 14px; font-size: 12.5px; color: var(--text-secondary);
+  background: color-mix(in srgb, var(--dv-coral) 9%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 32%, transparent);
+}
+.uv-admin .ad-tile-error > span { flex: 1; min-width: 160px; }
+.uv-admin .ad-retry {
+  border: 0; border-radius: 999px; padding: 6px 14px; font-size: 11.5px; font-weight: 700; cursor: pointer;
+  color: #191614; background: var(--dv-coral); box-shadow: 0 0 14px -3px color-mix(in srgb, var(--dv-coral) 70%, transparent);
+}
+.uv-admin .ad-retry:focus-visible { outline: 2px solid var(--dv-coral); outline-offset: 2px; }
+.uv-admin .ad-top-empty,
+.uv-admin .am-empty,
+.uv-admin .am-degraded,
+.uv-admin .card {
+  border: 1.5px dashed color-mix(in srgb, var(--c, #8A7A6A) 45%, transparent);
+  background: rgba(245, 239, 230, 0.025); box-shadow: none; filter: none; border-radius: 16px;
+}
+.uv-admin .ad-top-empty { padding: 14px 12px; text-align: center; font-size: 12px; color: var(--text-muted); }
+.uv-admin .am-empty { color: var(--text-muted); }
+.uv-admin .am-degraded { grid-column: 1 / -1; padding: 36px 20px; color: var(--text-muted); }
+.uv-admin .am-degraded .t { color: var(--text-secondary); }
+
+/* ── ONE chip / tag / text vocabulary ── */
+.uv-admin .ad-mut { color: var(--text-muted); }
+.uv-admin .ad-eyebrow,
+.uv-admin .ad-pick .lbl,
+.uv-admin .am-graphctl .lbl,
+.uv-admin .am-inspector .sec,
+.uv-admin .am-prompt .p .rk,
+.uv-admin .aiu-fcard .eyebrow,
+.uv-admin .ad-card .eyebrow,
+.uv-admin .ad-card .mz-eyebrow,
+.uv-admin .rise > .mz-eyebrow {
+  font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted);
+  text-shadow: none; filter: none;
+}
+.uv-admin .ad-delta { border-radius: 12px; }
+.uv-admin .ad-note9, .uv-admin .ad-axis, .uv-admin .ad-heatax, .uv-admin .aiu-foot { color: var(--text-muted); }
+.uv-admin .ad-chip {
+  --chip-c: var(--c, var(--dv-lav));
+  border: 0; border-radius: 999px; padding: 6px 12px; font-size: 11px; font-weight: 600; font-family: inherit;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-admin .ad-chip:hover:not(:disabled) { color: var(--text-primary); background: rgba(245, 239, 230, 0.08); }
+.uv-admin .ad-chip.on {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--chip-c) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chip-c) 50%, transparent), 0 0 12px -3px color-mix(in srgb, var(--chip-c) 55%, transparent);
+}
+.uv-admin .ad-chip.is-danger { color: var(--dv-coral); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 45%, transparent); }
+.uv-admin .ad-chip:disabled { opacity: 0.4; cursor: default; }
+.uv-admin .ad-chip:focus-visible { outline: 2px solid var(--chip-c); outline-offset: 2px; }
+.uv-admin label.ad-chip { display: inline-flex; align-items: center; cursor: pointer; }
+.uv-admin label.ad-chip input { accent-color: var(--chip-c); }
+.uv-admin input.ad-chip { color: var(--text-primary); color-scheme: dark; }
+.uv-admin input.ad-chip::placeholder { color: var(--text-muted); }
+.uv-admin input.ad-chip:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--chip-c) 70%, transparent), 0 0 14px -4px color-mix(in srgb, var(--chip-c) 60%, transparent);
+}
+.uv-admin .ad-callfilters .ad-chip { flex-shrink: 0; }
+
+/* status chips: flat, lit, keeping their semantic colour (good / warn / critical / neutral) */
+.uv-admin .ad-tag, .uv-admin .ad-delta, .uv-admin .am-mode, .uv-admin .am-pill {
+  --t: #8A7A6A;
+  border-radius: 999px; padding: 3px 9px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--t) 78%, #fff);
+  background: color-mix(in srgb, var(--t) 15%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--t) 34%, transparent);
+}
+.uv-admin .ad-tag.ok, .uv-admin .ad-delta.up, .uv-admin .am-mode.new, .uv-admin .am-pill.in { --t: var(--dv-sage); }
+.uv-admin .ad-tag.warn, .uv-admin .am-mode.shadow { --t: var(--dv-amber); }
+.uv-admin .ad-tag.bad, .uv-admin .ad-delta.down { --t: var(--dv-coral); }
+.uv-admin .ad-tag.bg { --t: var(--dv-lav); }
+.uv-admin .ad-tag.mut, .uv-admin .ad-delta.flat, .uv-admin .am-mode.old, .uv-admin .am-pill.out { --t: #8A7A6A; }
+.uv-admin .ad-tag.mut, .uv-admin .ad-delta.flat, .uv-admin .am-mode.old, .uv-admin .am-pill.out { color: var(--text-secondary); }
+
+/* avatars: a lit orb in the inline accent, dark ink */
+.uv-admin .ad-avatar {
+  color: #191614;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -4px 8px -4px rgba(0, 0, 0, 0.35), 0 0 12px -3px rgba(245, 239, 230, 0.25);
+}
+
+/* links inside data */
+.uv-admin .ad-fk, .uv-admin .ad-more { color: color-mix(in srgb, var(--c, var(--dv-sky)) 80%, #fff); }
+.uv-admin .ad-json { color: var(--dv-amber); }
+.uv-admin .ad-json-open, .uv-admin .ad-pre {
+  background: rgba(0, 0, 0, 0.28); color: var(--text-secondary); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-admin .ad-pre {
+  margin: 0; border-radius: 11px; padding: 10px 11px; font-family: var(--ff-mono); font-size: 10.5px; line-height: 1.5;
+  white-space: pre-wrap; word-break: break-word; max-height: 320px; overflow: auto;
+}
+
+/* ── tables: flat rows, hairlines, tabular numerals ── */
+.uv-admin .ad-table { font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.uv-admin .ad-table th { color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--divider); }
+.uv-admin .ad-table td { border-bottom: 1px solid rgba(245, 239, 230, 0.05); }
+.uv-admin .ad-table tr:hover td { background: rgba(245, 239, 230, 0.04); }
+.uv-admin .ad-table tbody tr.norow:hover td { background: none; }
+.uv-admin .ad-table tbody tr.on td { background: color-mix(in srgb, var(--c) 12%, transparent); }
+.uv-admin .ad-table tbody tr.ad-row-hl td {
+  background: color-mix(in srgb, var(--dv-coral) 14%, transparent); box-shadow: inset 2px 0 0 var(--dv-coral);
+}
+.uv-admin .ad-table tbody tr.ad-row-hl:hover td { background: color-mix(in srgb, var(--dv-coral) 18%, transparent); }
+.uv-admin .ad-table code, .uv-admin .ad-errorlist code { color: var(--text-secondary); }
+.uv-admin .ad-table th[aria-sort="ascending"] .ad-sortbtn,
+.uv-admin .ad-table th[aria-sort="descending"] .ad-sortbtn { color: var(--text-primary); font-weight: 700; }
+.uv-admin .ad-matrix th { color: var(--text-muted); }
+.uv-admin .ad-matrix td { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+/* ── charts: bars with an accent gradient + glow, hairline grids, muted text ── */
+.uv-admin .ad-spark .ln { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--c, var(--dv-lav)) 55%, transparent)); }
+.uv-admin .ad-ring svg { overflow: visible; }
+.uv-admin .ad-ring .trk { stroke: rgba(245, 239, 230, 0.07); }
+.uv-admin .ad-ring .arc { filter: drop-shadow(0 0 5px color-mix(in srgb, currentColor 55%, transparent)); }
+.uv-admin .ad-ring .mid b { font-family: var(--ff-display); font-weight: 300; }
+.uv-admin .ad-ring .mid small { color: var(--text-muted); }
+.uv-admin .ad-bar, .uv-admin .ad-inv, .uv-admin .ad-domrow .tr,
+.uv-admin .ad-toprow .sharebar, .uv-admin .ad-modelbar, .uv-admin .am-validity .track {
+  background: rgba(245, 239, 230, 0.07);
+}
+.uv-admin .ad-bar i, .uv-admin .ad-domrow .tr i { box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.25); }
+.uv-admin .ad-toprow .sharebar, .uv-admin .ad-modelbar { overflow: visible; }
+.uv-admin .ad-toprow .sharebar i, .uv-admin .ad-modelbar div {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c, var(--dv-sky)) 55%, #fff), var(--c, var(--dv-sky)));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--c, var(--dv-sky)) 60%, transparent);
+}
+.uv-admin .am-histobar i {
+  background: linear-gradient(180deg, var(--c), color-mix(in srgb, var(--c) 40%, transparent));
+  box-shadow: 0 0 8px -2px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.uv-admin .am-validity .fill { background: linear-gradient(90deg, var(--dv-sage), var(--dv-amber)); }
+.uv-admin .ad-legend span, .uv-admin .am-legend2 span, .uv-admin .am-seglegend span,
+.uv-admin .am-srckey span, .uv-admin .am-mapkeynote, .uv-admin .am-edgelegend .row span { color: var(--text-secondary); }
+.uv-admin .am-edgelegend .row b { color: var(--text-primary); }
+.uv-admin .ad-domrow .lb, .uv-admin .ad-funnelrow .lb, .uv-admin .ad-heatrow .hd .lb { color: var(--text-secondary); }
+.uv-admin .ad-domrow .vv, .uv-admin .ad-funnelrow .vv { color: var(--text-muted); }
+.uv-admin .ad-quad-svg .split { stroke: rgba(245, 239, 230, 0.14); }
+.uv-admin .ad-quad-svg .cap { fill: var(--text-muted); }
+.uv-admin .ad-quad-svg .pt { stroke: var(--canvas); filter: drop-shadow(0 0 6px rgba(245, 239, 230, 0.18)); }
+.uv-admin .ad-quad-svg .pt-label { fill: var(--text-secondary); }
+
+/* ── lists inside tiles: flat rows ── */
+.uv-admin .ad-toprow + .ad-toprow,
+.uv-admin .ad-scorerow + .ad-scorerow { border-top: 1px solid var(--divider); }
+.uv-admin .ad-toprow { color: var(--text-primary); border-radius: 10px; }
+.uv-admin a.ad-toprow:hover { background: rgba(245, 239, 230, 0.04); }
+.uv-admin .ad-toprow .rank, .uv-admin .ad-toprow .sub { color: var(--text-muted); }
+.uv-admin .ad-toprow .val { color: var(--text-primary); }
+.uv-admin .ad-toprow .val.warn { color: var(--dv-amber); }
+.uv-admin .ad-toprow .val.mut { color: var(--text-muted); }
+.uv-admin .ad-scorerow:hover { background: rgba(245, 239, 230, 0.04); }
+.uv-admin .ad-scorerow:focus-visible, .uv-admin .ad-toprow:focus-visible,
+.uv-admin .ad-testercard:focus-visible, .uv-admin .ad-memtesterrow:focus-visible,
+.uv-admin .ad-alert:focus-visible { outline: 2px solid var(--c, var(--dv-lav)); outline-offset: 2px; }
+.uv-admin .ad-scorerow .habit .pct { color: var(--text-secondary); }
+.uv-admin .ad-score-divider { color: var(--text-muted); border-top: 1px solid var(--divider); font-weight: 600; letter-spacing: 1.3px; }
+.uv-admin .ad-reliability-dot.sage { background: var(--dv-sage); box-shadow: 0 0 8px -1px var(--dv-sage); }
+.uv-admin .ad-reliability-dot.gold { background: var(--dv-amber); box-shadow: 0 0 8px -1px var(--dv-amber); }
+.uv-admin .ad-reliability-dot.coral { background: var(--dv-coral); box-shadow: 0 0 8px -1px var(--dv-coral); }
+.uv-admin .ad-reliability-dot.grey { background: rgba(245, 239, 230, 0.22); box-shadow: none; }
+.uv-admin .ad-reasonlist li, .uv-admin .ad-errorlist li, .uv-admin .ad-surfacerow { border-bottom: 1px solid var(--divider); }
+.uv-admin .ad-surfacerow:last-child { border-bottom: none; }
+.uv-admin .ad-reasonlist .num, .uv-admin .ad-errorlist .num { color: var(--text-secondary); }
+.uv-admin .ad-updown .up, .uv-admin .ad-scorerow .helped .up,
+.uv-admin .ad-testercard .foot .helped .up, .uv-admin .ad-surfacerow .hd .cnt .up { color: var(--dv-sage); }
+.uv-admin .ad-updown .down, .uv-admin .ad-scorerow .helped .down,
+.uv-admin .ad-testercard .foot .helped .down, .uv-admin .ad-surfacerow .hd .cnt .down { color: var(--dv-coral); }
+.uv-admin .ad-testercard {
+  border-radius: 16px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); color: var(--text-primary);
+}
+.uv-admin .ad-testercard:hover {
+  background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 40%, transparent);
+}
+.uv-admin .ad-testercard .foot { color: var(--text-secondary); }
+.uv-admin .ad-memtesterrow { border-radius: 12px; }
+.uv-admin .ad-memtesterrow:hover { background: rgba(245, 239, 230, 0.05); }
+.uv-admin .ad-memtesterrow .nm .em, .uv-admin .ad-memtesterrow .chev { color: var(--text-muted); }
+.uv-admin .ad-tile {
+  padding: 12px 14px; border-radius: 14px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+
+/* ── the status band: glass when it has something to say, a neutral flat cell when it can't ── */
+.uv-admin .ad-status.glass {
+  --c: var(--dv-amber);
+  grid-column: span 12; border: 0; border-radius: 22px; padding: 14px 18px; color: var(--text-primary);
+}
+.uv-admin .ad-status.glass[data-worst="bad"] { --c: var(--dv-coral); }
+.uv-admin .ad-status.glass[data-worst="info"] { --c: var(--dv-sky); }
+.uv-admin .ad-status.allok.glass {
+  --c: var(--dv-sage);
+  /* `.ad-status.allok` (0,2,0) outranks the kit's `.glass` body — restate it (bible U2 rule 11) */
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.60));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.10),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.uv-admin .ad-status.allok h3 { font-size: 17px; font-weight: 600; }
+.uv-admin .ad-status .headline { font-size: 13.5px; font-weight: 600; }
+.uv-admin .ad-status.off {
+  flex-direction: row; align-items: center; gap: 10px; border: 0; border-radius: 18px; min-height: 52px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); color: var(--text-secondary);
+}
+.uv-admin .ad-status.off.is-pending .headline { font-weight: 400; font-size: 12px; color: var(--text-muted); }
+.uv-admin .ad-status-ic { flex: 0 0 auto; }
+.uv-admin .ad-alert {
+  border: 0; border-radius: 14px; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-admin .ad-alert:hover { background: rgba(245, 239, 230, 0.07); }
+.uv-admin .ad-alert.warn > i { background: var(--dv-amber); box-shadow: 0 0 8px var(--dv-amber); }
+.uv-admin .ad-alert.bad > i { background: var(--dv-coral); box-shadow: 0 0 8px var(--dv-coral); }
+.uv-admin .ad-alert.info > i { background: var(--dv-sky); box-shadow: 0 0 8px var(--dv-sky); }
+.uv-admin .ad-alert .go { color: color-mix(in srgb, var(--c) 80%, #fff); }
+
+/* ── user detail: frameless halo hero + lit tabs ── */
+.uv-admin .ad-hero { position: relative; isolation: isolate; padding: 6px 0 4px; }
+.uv-admin .ad-hero::before {
+  content: ''; position: absolute; z-index: -1; left: -110px; top: -70px; width: 420px; height: 220px; pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--dv-coral) 24%, transparent), color-mix(in srgb, var(--dv-amber) 8%, transparent) 55%, transparent);
+}
+.uv-admin .ad-hero .nm { font-family: var(--ff-display); font-size: 26px; font-weight: 600; letter-spacing: -0.8px; }
+.uv-admin .ad-hero .em { color: var(--text-muted); }
+.uv-admin .ad-tabs { border-bottom: 1px solid var(--divider); margin: 14px 0 12px; }
+.uv-admin .ad-tab { color: var(--text-muted); font-size: 12px; }
+.uv-admin .ad-tab:hover { color: var(--text-secondary); }
+.uv-admin .ad-tab.on {
+  color: var(--text-primary); border-bottom-color: var(--dv-coral);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--dv-coral) 55%, transparent);
+}
+.uv-admin .ad-tab:focus-visible { outline: 2px solid var(--dv-coral); outline-offset: 2px; }
+
+/* ── memory explorer (am-*) ── */
+.uv-admin .am-segbar { background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.uv-admin .am-seg { color: var(--text-secondary); }
+.uv-admin .am-seg.on {
+  color: var(--text-primary);
+  background: radial-gradient(90% 120% at 30% 50%, rgba(171, 159, 210, 0.26), rgba(171, 159, 210, 0.08) 80%);
+  box-shadow: inset 0 0 0 1px rgba(171, 159, 210, 0.35), 0 0 14px -4px rgba(171, 159, 210, 0.55);
+}
+.uv-admin .am-layout { padding: 0 0 4px; }
+.uv-admin .am-inspector.glass {
+  --c: var(--dv-lav);
+  position: relative; width: 300px; flex: none; border: 0; border-radius: 20px; padding: 14px 15px;
+  max-height: 668px; overflow-x: hidden; overflow-y: auto;
+}
+.uv-admin .am-inspector.glass.collapsed { width: 44px; padding: 14px 8px; overflow: hidden; max-height: 44px; }
+.uv-admin .am-inspector .hd b { color: var(--text-primary); }
+.uv-admin .am-inspector .hd button { color: var(--text-secondary); background: rgba(245, 239, 230, 0.07); box-shadow: inset 0 0 0 1px var(--divider); }
+.uv-admin .am-inspector .row { border-bottom: 1px solid var(--divider); }
+.uv-admin .am-inspector .row .k { color: var(--text-muted); }
+.uv-admin .am-inspector .row .v { color: var(--text-primary); }
+.uv-admin .am-inspector .empty {
+  color: var(--text-muted); border: 1.5px dashed color-mix(in srgb, var(--c) 40%, transparent); border-radius: 14px;
+}
+.uv-admin .am-inspector .txt { color: var(--text-secondary); }
+.uv-admin .am-verdict-lead { color: var(--text-primary); }
+.uv-admin .am-candhead .verdict, .uv-admin .am-toggle { color: var(--text-secondary); }
+.uv-admin .am-trace .chip, .uv-admin .am-prompt .p, .uv-admin .am-stat, .uv-admin .am-note-chip {
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); color: var(--text-primary);
+}
+.uv-admin .am-note-chip { color: var(--text-secondary); }
+.uv-admin .am-trace .chip .dot { background: var(--dv-sage); box-shadow: 0 0 6px var(--dv-sage); }
+.uv-admin .am-trace .chip.err .dot { background: var(--dv-coral); box-shadow: 0 0 6px var(--dv-coral); }
+.uv-admin .am-trace .chip .n { color: var(--text-muted); }
+.uv-admin .am-cand { border: 0; border-radius: 14px; background: rgba(245, 239, 230, 0.03); box-shadow: inset 0 0 0 1px var(--divider); }
+.uv-admin .am-cand > summary .rk { color: var(--text-muted); }
+.uv-admin .am-cand[open] > summary { border-bottom: 1px solid var(--divider); background: rgba(245, 239, 230, 0.03); }
+.uv-admin .am-stack { background: rgba(245, 239, 230, 0.06); }
+.uv-admin .am-stack .absent {
+  color: var(--text-muted);
+  background: repeating-linear-gradient(135deg, rgba(245, 239, 230, 0.08) 0 4px, rgba(245, 239, 230, 0.03) 4px 8px);
+}
+.uv-admin .am-delta.up { color: var(--dv-sage); }
+.uv-admin .am-delta.down { color: var(--dv-coral); }
+.uv-admin .am-replay input[type=text], .uv-admin .am-search, .uv-admin .ad-input {
+  border: 0; color: var(--text-primary); color-scheme: dark; font-family: inherit;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-admin .am-replay input[type=text]::placeholder, .uv-admin .am-search::placeholder, .uv-admin .ad-input::placeholder { color: var(--text-muted); }
+.uv-admin .am-replay input[type=text]:focus-visible, .uv-admin .am-search:focus-visible, .uv-admin .ad-input:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c, var(--dv-lav)) 70%, transparent), 0 0 14px -4px color-mix(in srgb, var(--c, var(--dv-lav)) 60%, transparent);
+}
+.uv-admin .am-switch { background: rgba(245, 239, 230, 0.12); box-shadow: inset 0 0 0 1px var(--divider); }
+.uv-admin .am-switch i { background: #B7A899; }
+.uv-admin .am-switch.on { background: color-mix(in srgb, var(--c) 70%, #1E1B18); box-shadow: 0 0 12px -2px var(--c); }
+.uv-admin .am-switch.on i { background: #FFF6EA; }
+.uv-admin .am-btn, .uv-admin .ad-primary {
+  --b: var(--c, var(--dv-lav));
+  border: 0; border-radius: 999px; font-family: inherit; font-weight: 700; cursor: pointer;
+  color: #191614; background: var(--b); box-shadow: 0 0 16px -3px color-mix(in srgb, var(--b) 70%, transparent);
+}
+.uv-admin .ad-primary { min-height: 40px; padding: 0 18px; font-size: 12.5px; flex: 0 0 auto; }
+.uv-admin .am-btn:disabled, .uv-admin .ad-primary:disabled { opacity: 0.5; cursor: default; box-shadow: none; }
+.uv-admin .am-btn:focus-visible, .uv-admin .ad-primary:focus-visible { outline: 2px solid var(--b); outline-offset: 2px; }
+.uv-admin .ad-ghost {
+  min-height: 44px; border: 0; border-radius: 999px; padding: 9px 20px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-admin .ad-ghost:hover { color: var(--text-primary); background: rgba(245, 239, 230, 0.08); }
+.uv-admin .am-dryrun {
+  color: var(--dv-coral);
+  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--dv-coral) 18%, transparent) 0 6px, color-mix(in srgb, var(--dv-coral) 6%, transparent) 6px 12px);
+}
+.uv-admin .am-caveat {
+  color: color-mix(in srgb, var(--dv-amber) 80%, #fff);
+  background: color-mix(in srgb, var(--dv-amber) 10%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 28%, transparent);
+}
+.uv-admin .am-samplebanner {
+  color: color-mix(in srgb, var(--dv-sky) 80%, #fff);
+  background: color-mix(in srgb, var(--dv-sky) 10%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-sky) 28%, transparent);
+}
+.uv-admin .am-graphwrap, .uv-admin .am-mapwrap {
+  background: rgba(0, 0, 0, 0.22); box-shadow: inset 0 0 0 1px var(--divider); border-radius: 14px;
+}
+.uv-admin .am-slider { background: rgba(245, 239, 230, 0.14); accent-color: var(--c); }
+.uv-admin .am-stat b { font-family: var(--ff-display); font-weight: 300; color: var(--text-primary); }
+.uv-admin .am-stat .lbl { color: var(--text-muted); }
+.uv-admin .am-stat.linkable:hover { background: rgba(245, 239, 230, 0.07); }
+.uv-admin .am-stat.linkable b { color: color-mix(in srgb, var(--c) 80%, #fff); }
+.uv-admin .am-joblist .row { color: var(--text-secondary); }
+.uv-admin .am-joblist .row b { color: var(--text-primary); }
+
+/* ── Költés + one call (the moved phone bodies) ── */
+.uv-admin .ad-gt .aiu-fcard { background: none; border: 0; box-shadow: none; padding: 0; }
+.uv-admin .aiu-callt {
+  border: 0; border-radius: 16px; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-admin .aiu-callt:hover { background: rgba(245, 239, 230, 0.07); }
+.uv-admin .aiu-callt::before { box-shadow: 0 0 8px var(--rc); }
+.uv-admin .ad-errstrip {
+  --t: var(--dv-coral);
+  margin-top: 8px; border-radius: 10px; padding: 6px 9px; font-size: 10.5px; font-weight: 600;
+  color: color-mix(in srgb, var(--t) 80%, #fff);
+  background: color-mix(in srgb, var(--t) 11%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--t) 30%, transparent);
+}
+.uv-admin .ad-errstrip.is-cancelled { --t: var(--dv-amber); }
+.uv-admin .ad-card.glass { --c: var(--dv-sky); border: 0; border-radius: 20px; }
+.uv-admin .ad-card-flat {
+  border-radius: 16px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); color: var(--text-secondary);
+}
+.uv-admin .ad-kvgrid {
+  display: grid; grid-template-columns: 1fr 1fr; margin-top: 11px; border-radius: 12px; overflow: hidden;
+  background: rgba(245, 239, 230, 0.03); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-admin .ad-kv { padding: 8px 10px; box-shadow: inset -1px -1px 0 var(--divider); }
+.uv-admin .mz-statcell {
+  border: 0; border-radius: 16px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-admin .mz-statcell b { font-family: var(--ff-display); font-size: 20px; font-weight: 300; letter-spacing: -0.6px; }
+.uv-admin .mz-statcell small { color: var(--text-muted); }
+.uv-admin .ad-gt .mz-colstrip {
+  border: 0; border-radius: 14px; background: rgba(245, 239, 230, 0.03); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-admin .ad-gt .mz-colstrip .mz-eyebrow { color: var(--text-muted); }
+.uv-admin .ad-gt .mz-colstrip .mz-csum, .uv-admin .ad-gt .mz-colstrip .mz-chev { color: var(--text-muted); }
+
+/* ── Meghívók és fiókok ── */
+.uv-admin .ad-input { flex: 1; min-height: 40px; border-radius: 13px; padding: 0 13px; font-size: 13px; }
+.uv-admin .ad-acrow.glass { --c: var(--dv-lav); border: 0; border-radius: 18px; padding: 10px 12px; }
+.uv-admin .ad-acrow.glass.row { justify-content: space-between; align-items: center; gap: 10px; }
+.uv-admin .uv-tgl {
+  position: relative; flex: 0 0 auto; width: 44px; height: 26px; padding: 0; border: 0; border-radius: 999px;
+  cursor: pointer; background: rgba(245, 239, 230, 0.1); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-admin .uv-tgl-knob {
+  position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: #B7A899;
+}
+.uv-admin .uv-tgl.is-on { background: color-mix(in srgb, var(--c, var(--dv-sky)) 70%, #1E1B18); box-shadow: 0 0 12px -2px var(--c, var(--dv-sky)); }
+.uv-admin .uv-tgl.is-on .uv-tgl-knob { left: 21px; background: #FFF6EA; }
+.uv-admin .uv-tgl:disabled { cursor: not-allowed; opacity: 0.45; }
+.uv-admin .uv-tgl:focus-visible { outline: 2px solid var(--c, var(--dv-sky)); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .uv-admin .ad-rail .ad-rail-link,
+  .uv-admin .ad-chip,
+  .uv-admin .ad-alert,
+  .uv-admin .ad-testercard,
+  .uv-admin .aiu-callt { transition: background 0.15s ease, box-shadow 0.15s ease, color 0.15s ease; }
+  .uv-admin .uv-tgl { transition: background 0.2s ease, box-shadow 0.2s ease; }
+  .uv-admin .uv-tgl-knob { transition: left 0.2s var(--uv-ease, ease), background 0.2s ease; }
+}
+/* ── /uveg reteg admin ── */

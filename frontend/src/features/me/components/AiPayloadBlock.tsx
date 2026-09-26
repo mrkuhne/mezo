@@ -13,11 +13,9 @@ export function AiPayloadBlock({ label, text }: { label: string; text: string | 
         <span className="eyebrow" style={{ flex: 1 }}>{label}</span>
         <span className="text-tertiary" style={{ fontSize: 10.5 }}>{text.length} kar.</span>
       </div>
-      <pre style={{
-        margin: 0, borderRadius: 11, padding: '10px 11px', background: 'var(--text-primary)',
-        color: 'var(--surface-1)', fontSize: 10.5, lineHeight: 1.5, whiteSpace: 'pre-wrap',
-        wordBreak: 'break-word', maxHeight: 320, overflow: 'auto',
-      }}>{text}</pre>
+      {/* Üveg (mezo-me75u.10, /admin only consumer): a recessed flat well (`.ad-pre`), not the
+          old inverted ink block. */}
+      <pre className="ad-pre">{text}</pre>
     </div>
   )
 }

@@ -192,7 +192,7 @@ function CandidateRow({
         <div className="am-seglegend">
           {segments.map((s) => {
             const absent = s.rank == null && s.kind === 'retriever'
-            const color = absent ? 'rgba(43,33,24,.15)' : (s.kind === 'boost' ? BOOST_COLOR : (RETRIEVER_COLORS[s.key] ?? FALLBACK_COLOR))
+            const color = absent ? 'rgba(245,239,230,.12)' : (s.kind === 'boost' ? BOOST_COLOR : (RETRIEVER_COLORS[s.key] ?? FALLBACK_COLOR))
             const label = s.kind === 'boost'
               ? `${s.key} · +${s.value.toFixed(2)}`
               : absent ? `${s.key} · hiányzik` : `${s.key} · rank ${s.rank} · ${s.value.toFixed(3)}`

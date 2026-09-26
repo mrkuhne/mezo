@@ -49,7 +49,7 @@ export function AiCallUsage({ detail }: { detail: LlmCallDetailResponse }) {
   if (detail.imageMime) media.push({ label: 'Típus', value: detail.imageMime })
 
   return (
-    <div className="card" style={{ padding: '11px 13px 12px' }}>
+    <div className="ad-card glass" style={{ padding: '11px 13px 12px' }}>
       <div className="row" style={{ alignItems: 'baseline' }}>
         <span className="eyebrow" style={{ flex: 1 }}>{embed.length > 0 ? 'Beágyazás' : 'Tokenek'}</span>
         <span style={{ fontSize: 12, fontWeight: 800, color: detail.costUsd == null ? 'var(--text-tertiary)' : 'var(--sage-deep)' }}>

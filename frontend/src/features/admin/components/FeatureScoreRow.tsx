@@ -58,7 +58,7 @@ export function FeatureScoreRow({ row }: { row: AdminFeatureRow }) {
       </span>
       <div className="habit">
         <div className="ad-bar" style={{ width: 56 }}>
-          <i style={{ width: `${habitPct}%`, background: '#5D4FA0' }} />
+          <i style={{ width: `${habitPct}%`, background: 'var(--dv-lav)' }} />
         </div>
         <span className="pct">{habitPct}%</span>
       </div>

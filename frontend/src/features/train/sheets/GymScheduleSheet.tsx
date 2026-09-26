@@ -5,12 +5,14 @@
 // across mesocycles — the editor only sets the WHEN; the WHAT comes
 // from the active meso's gym days (deriveGymSchedule joins them).
 // Mirrors SportScheduleSheet, minus the volleyball-only fields.
+// Üveg (U10, mezo-me75u.10, `uveg-reteg` `SH.gym`): a coral glass sheet, the calendar 3D head,
+// seven flat day cells with flat time fields, Mégse flat ghost + the lit coral „Mentés" pill.
 // ============================================================
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
-import { Display } from '@/shared/ui/Display'
-import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
+import { SheetError, SheetHead } from '@/shared/ui/SheetHead'
+import { Icon3D } from '@/shared/ui/clay'
+import { cn } from '@/shared/lib/cn'
 import { DAY_ORDER } from '@/data/train/train'
 import type { GymScheduleSlotInput } from '@/data/train/trainApi'
 import type { GymScheduleSlot } from '@/data/types'
@@ -39,63 +41,35 @@ export function GymScheduleSheet({ slots, onSave, onClose }: {
     } catch { setSaveError(true) } finally { setSaving(false) }
   }
 
-  const inputStyle = {
-    background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
-    color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', fontSize: 16,
-    padding: '8px 10px', width: 130,
-  } as const
-
   return (
-    <Sheet onClose={onClose} labelledBy="gym-schedule-title">
+    <Sheet glass onClose={onClose} labelledBy="gym-schedule-title" className="uvl-edzes">
       {(close) => (
-        <>
-          {/* Header */}
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-            <div className="col">
-              <span className="eyebrow brand">Gym · heti idő</span>
-              <div style={{ marginTop: 4 }}>
-                <Display size="md">
-                  <span role="heading" aria-level={2} id="gym-schedule-title">Heti gym-időpontok</span>
-                </Display>
-              </div>
-            </div>
-            <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
-              <Icon name="x" size={12} />
-            </button>
-          </div>
+        <div className="uvl-body">
+          <SheetHead icon="t-calendar" eyebrow="Gym · heti idő" title="Heti gym-időpontok" titleId="gym-schedule-title" onClose={close} />
 
-          {/* Day editors — one time per weekday */}
-          <div className="col gap-sm">
+          {/* Day editors — one time per weekday, each a flat cell (a set day lit coral) */}
+          <div className="uvl-rows">
             {DAY_ORDER.map((day, i) => (
-              <div key={day} className="card" style={{ padding: 10 }}>
-                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span
-                    className="label-mono"
-                    style={{ width: 36, color: times[i] ? 'var(--coral)' : 'var(--text-tertiary)' }}
-                  >
-                    {day}
-                  </span>
-                  <input
-                    type="time"
-                    aria-label={`${day} időpont`}
-                    value={times[i]}
-                    onChange={(e) => patch(i, e.target.value)}
-                    style={inputStyle}
-                  />
-                </div>
-              </div>
+              <label key={day} className={cn('uvl-cell', times[i] && 'is-set')}>
+                <span className="uvl-cell-day">{day}</span>
+                <input
+                  type="time"
+                  aria-label={`${day} időpont`}
+                  value={times[i]}
+                  onChange={(e) => patch(i, e.target.value)}
+                />
+              </label>
             ))}
           </div>
 
-          {saveError && <p role="alert">Nem sikerült menteni. A módosításaid megmaradtak; próbáld újra.</p>}
-          {/* Footer */}
-          <div className="row gap-sm mt-lg">
-            <CtaGhost className="flex-1" onClick={close}>Mégse</CtaGhost>
-            <CtaPrimary className="flex-1" disabled={saving} onClick={() => save(close)}>
-              <Icon name="check" size={14} /> {saving ? 'Mentés…' : 'Mentés'}
-            </CtaPrimary>
+          {saveError && <SheetError>Nem sikerült menteni. A módosításaid megmaradtak; próbáld újra.</SheetError>}
+          <div className="uvl-foot">
+            <button type="button" className="uvl-ghost" onClick={close}>Mégse</button>
+            <button type="button" className="uvl-cta" disabled={saving} onClick={() => save(close)}>
+              <Icon3D name="t-tick" size={20} />{saving ? 'Mentés…' : 'Mentés'}
+            </button>
           </div>
-        </>
+        </div>
       )}
     </Sheet>
   )

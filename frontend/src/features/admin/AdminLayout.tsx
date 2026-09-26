@@ -68,7 +68,10 @@ function AdminLayoutInner() {
   if (!me.data || !isOwner) return null
 
   return (
-    <div className="ad-shell">
+    // `uv-admin` scopes the üveg re-dress (mezo-me75u.10, `── uveg reteg admin` block in
+    // prototype.css): every `.ad-*` / `.am-*` rule is outranked under this root, so the class
+    // names the tests and pages rely on stay as they are.
+    <div className="ad-shell uv-admin">
       <AdminRail />
       <main className="ad-main">
         {/* Tab-level boundary, matching AppLayout's: a crashed admin page degrades to a

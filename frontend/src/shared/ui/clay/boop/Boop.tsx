@@ -15,6 +15,7 @@
 // `prefers-reduced-motion: no-preference` ág alatt.
 // ============================================================
 import { useId, useMemo } from 'react'
+import type React from 'react'
 import boopRaw from './boop.svg?raw'
 import { cn } from '@/shared/lib/cn'
 
@@ -52,10 +53,19 @@ function defsFor(symbolId: string): string {
     .join('')
 }
 
-export function Boop({ domain, size = 44, alive = false, className }: {
+/** Példányonként elcsúsztatott mozdulat-fázis (0 … −8,5 s), hogy egy képernyőnyi Boop ne
+ *  pislogjon egyszerre (owner, 2026-09-26: „mindenhol, ahol Mezo avatar van, legyen animált”). */
+function phaseOf(uid: string): string {
+  let h = 0
+  for (const ch of uid) h = (h * 31 + ch.charCodeAt(0)) >>> 0
+  return `${-((h % 18) * 0.5)}s`
+}
+
+export function Boop({ domain, size = 44, alive = true, className }: {
   domain: BoopVariant
   size?: number
-  /** Él-e a figura: pislogás + tekintet + szemöldök + lélegzet. */
+  /** Él-e a figura: pislogás + tekintet + szemöldök + lélegzet. Alapból IGEN (U10, owner
+   *  2026-09-26): minden Boop él; `alive={false}` csak egy tudatosan álló figurának jár. */
   alive?: boolean
   className?: string
 }) {
@@ -75,6 +85,7 @@ export function Boop({ domain, size = 44, alive = false, className }: {
       height={size}
       aria-hidden="true"
       className={cn('boop', alive && 'is-alive', className)}
+      style={alive ? ({ '--boop-delay': phaseOf(uid) } as React.CSSProperties) : undefined}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   )

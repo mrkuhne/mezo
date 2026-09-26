@@ -1,0 +1,981 @@
+<style>
+/* ══ U10 · Rétegek és ünnepek (mezo-me75u.10) — a fuel-uveg.html kitje fölé, csak sötét ══ */
+.eb{display:block;font-size:9.5px;font-weight:600;letter-spacing:1.3px;color:var(--faint)}
+.flat{--c:var(--sage);display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:600;color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair);white-space:nowrap}
+.flat .icon{width:18px;height:18px;filter:none}
+.flat.on{color:#191614;background:var(--c);box-shadow:0 0 12px color-mix(in srgb,var(--c) 50%,transparent)}
+.wrapchips{display:flex;flex-wrap:wrap;gap:6px}
+.cell{padding:10px 12px;border-radius:14px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.well{--c:var(--sage);width:52px;height:52px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;background:radial-gradient(circle at 35% 28%,#3A332D,color-mix(in srgb,var(--c) 14%,#1E1B18));box-shadow:inset 0 1px 0 rgba(255,244,230,.08),inset 0 -6px 12px -8px color-mix(in srgb,var(--c) 70%,transparent),0 0 16px -6px color-mix(in srgb,var(--c) 55%,transparent)}
+.well .icon{width:34px;height:34px}
+.pillx{--c:var(--gold);display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:999px;font-size:13.5px;font-weight:700;color:#191614;background:var(--c);box-shadow:0 0 14px color-mix(in srgb,var(--c) 55%,transparent);white-space:nowrap}
+.pillx .icon{width:20px;height:20px;filter:none}
+.pillx.ghost{color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair);font-weight:600}
+.pillx.wide{width:100%;height:46px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:grid;gap:6px}
+.field>span{font-size:9.5px;font-weight:600;letter-spacing:1.3px;color:var(--faint)}
+.inp{display:block;width:100%;padding:12px 13px;border-radius:13px;font-size:14px;color:var(--ink);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+.inp.ph{color:var(--faint)}
+.field>.inp{font-size:14px;font-weight:400;letter-spacing:0;color:var(--ink)}
+.field>.inp.ph{color:var(--faint)}
+.field>.inp.mono{letter-spacing:1.5px}
+.inp.focus{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c) 70%,transparent),0 0 14px -4px color-mix(in srgb,var(--c) 60%,transparent)}
+.inp.mono{font-family:ui-monospace,Menlo,monospace;letter-spacing:1px}
+.err{font-size:12px;color:#FFB39C;display:flex;gap:6px;align-items:center}
+.err .icon{width:18px;height:18px;filter:none}
+.lead{padding:0 18px 12px;font-size:13.5px;line-height:1.5;color:var(--sub)}
+.h3{padding:18px 18px 8px;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.h3 em{font-style:normal;font-size:11px;color:var(--faint)}
+.p16{padding:0 16px}
+.list{display:grid;gap:10px;padding:0 16px}
+.row{--c:var(--sage);display:flex;align-items:center;gap:12px;padding:12px 14px 12px 12px;border-radius:20px;width:100%}
+.row .grow{flex:1;min-width:0}
+.row strong{display:block;font-size:15px;font-weight:600;letter-spacing:-.3px}
+.row small{display:block;margin-top:2px;font-size:11.5px;color:var(--sub);line-height:1.35}
+.chev{color:var(--faint);font-size:20px;flex:0 0 auto}
+.backrow{display:flex;align-items:center;gap:10px;padding:4px 16px 0}
+.backbtn{--c:#8A7A6A;display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px 0 11px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--sub)}
+.backbtn b{font-size:19px;font-weight:400;line-height:1;margin-top:-2px}
+.nhero{position:relative;overflow-x:clip;text-align:center;padding:10px 20px 14px}
+.nhero::before{content:'';position:absolute;left:50%;top:48%;width:340px;height:270px;transform:translate(-50%,-50%);z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,color-mix(in srgb,var(--c) 32%,transparent),color-mix(in srgb,var(--c2,var(--lav)) 12%,transparent) 42%,transparent 68%)}
+.nhero .art{width:84px;height:84px;margin:0 auto 2px;filter:drop-shadow(0 12px 14px rgba(0,0,0,.5)) drop-shadow(0 0 18px color-mix(in srgb,var(--c) 42%,transparent))}
+.nhero .eb{color:color-mix(in srgb,var(--c) 70%,var(--ink))}
+.nhero h1{font-size:25px;font-weight:600;letter-spacing:-.8px;margin-top:3px}
+.nhero p{font-size:13px;color:var(--sub);margin-top:5px;line-height:1.45}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.foot{padding:18px 22px 0;font-size:11.5px;color:var(--faint);text-align:center;line-height:1.5}
+.phone.nochrome .topbar,.phone.nochrome #tabbar,.phone.nochrome #fab{display:none}
+.phone.nochrome .scroll{padding-bottom:30px}
+
+/* ── háttér-oldal (stub) a rétegek alá ── */
+.stubhead{padding:6px 18px 4px}
+.stubhead h2{font-size:22px;font-weight:600;letter-spacing:-.6px}
+.demo{display:grid;gap:10px;padding:6px 16px 0}
+.demo .row .well{width:44px;height:44px}
+.demo .row .well .icon{width:28px;height:28px}
+
+/* ══ 1. ÉTKEZÉS-ÜNNEP: kis pillanat, alsó lap a nap fölött ══ */
+.fcx{position:absolute;left:10px;right:10px;bottom:10px;z-index:48;padding:12px 18px 18px;border-radius:30px;--c:var(--gold);transform:translateY(110%);transition:transform .5s var(--ease)}
+.fcx.glass{position:absolute}
+.fcx.on{transform:none}
+body.still .fcx{transition:none}
+@media (prefers-reduced-motion:reduce){.fcx{transition:none}}
+.fcx.glass::after{display:none}
+.fcx .grab{width:40px;height:5px;border-radius:3px;background:rgba(245,239,230,.2);margin:0 auto 10px}
+.fcx-top{text-align:center}
+.fcx-top .eb{color:#FFD08A;letter-spacing:1.6px}
+.fcx-top h2{font-size:21px;font-weight:600;letter-spacing:-.5px;margin-top:3px}
+.fcx-top small{font-size:12px;color:var(--sub)}
+.fcx-mid{position:relative;display:grid;justify-items:center;margin:12px 0 4px}
+.fcx-mid::before{content:'';position:absolute;left:50%;top:62px;width:320px;height:200px;transform:translate(-50%,-50%);z-index:-1;pointer-events:none;background:radial-gradient(ellipse,rgba(255,190,96,calc(.08 + var(--p,0)*.24)),rgba(171,159,210,calc(var(--p,0)*.10)) 45%,transparent 68%)}
+.medal{position:relative;width:124px;height:124px;display:grid;place-items:center}
+.medal svg.mr{position:absolute;inset:0;transform:rotate(-90deg);overflow:visible}
+.medal .mt{fill:none;stroke:rgba(245,239,230,.07);stroke-width:6}
+.medal .mp{fill:none;stroke:url(#stone);stroke-width:6;stroke-linecap:round;stroke-dasharray:calc(var(--p,0)*var(--s,83)) 100;filter:drop-shadow(0 0 6px rgba(255,190,96,.6))}
+.medal .core{position:absolute;inset:14px;border-radius:50%;display:grid;place-items:center;align-content:center;gap:0;background:radial-gradient(circle at 35% 30%,#3A332D,#1E1B18);box-shadow:inset 0 1px 0 rgba(255,244,230,.08),inset 0 -10px 18px -10px rgba(171,159,210,.5)}
+.medal .core .icon{width:26px;height:26px;filter:drop-shadow(0 0 8px rgba(171,159,210,.55))}
+.medal b{font-size:36px;font-weight:300;letter-spacing:-1.6px;line-height:1;margin-top:1px;background:linear-gradient(135deg,#C9BDF0,#E6DDFF 45%,#E9C48A);-webkit-background-clip:text;background-clip:text;color:transparent;font-variant-numeric:tabular-nums}
+.medal-cap{font-size:10px;font-weight:600;letter-spacing:1.2px;color:var(--faint);margin-top:8px}
+.fstars{display:flex;gap:6px;margin-top:12px}
+.fstars i{position:relative;width:30px;height:30px}
+.fstars .icon{position:absolute;inset:0;width:100%;height:100%;transition:transform .35s var(--ease),opacity .35s}
+.fstars .on{opacity:0;transform:scale(.5)}
+.fstars i.is-lit .on{opacity:1;transform:none;filter:drop-shadow(0 0 10px rgba(255,190,96,.7))}
+.fstars i.is-lit .off{opacity:0}
+.fstars .off{opacity:.45}
+.fcx-verdict{margin-top:12px;text-align:center;font-size:22px;font-weight:600;letter-spacing:-.6px;background:linear-gradient(90deg,#F5EFE6,#FFE0AE 55%,#FFBE60);-webkit-background-clip:text;background-clip:text;color:transparent;opacity:0;transform:translateY(8px);transition:.5s var(--ease)}
+.fcx.is-told .fcx-verdict{opacity:1;transform:none}
+.fcx-count{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
+.fcx-count>span{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px}
+.fcx-count .icon{width:24px;height:24px;filter:none}
+.fcx-count b{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+.fcx-count small{font-size:9.5px;color:var(--faint);text-align:center}
+.fcx-foot{display:grid;grid-template-columns:1fr 1.5fr;gap:8px;margin-top:14px;opacity:0;transition:.5s var(--ease) .1s}
+.fcx.is-told .fcx-foot{opacity:1}
+.fcx-foot .pillx{height:48px}
+
+/* ══ 2. SPORT-ÜNNEP (a U4 edzés-lezáró családja) ══ */
+.cer{position:relative;overflow-x:clip;text-align:center;padding:40px 16px 8px}
+.cer::before{content:'';position:absolute;left:50%;top:40%;width:420px;height:380px;transform:translate(-50%,-50%);z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,rgba(255,190,96,calc(.12 + var(--p,0)*.26)),rgba(255,126,92,calc(var(--p,0)*.14)) 42%,transparent 68%)}
+.cer .eb{color:#FFD08A;letter-spacing:1.6px}
+.cstars{position:relative;height:118px;margin:14px auto 0;width:300px;max-width:100%}
+.cstars i{position:absolute;bottom:0;width:52px;height:52px;transform:translateX(-50%)}
+.cstars i:nth-child(1){left:14%;bottom:6px}.cstars i:nth-child(2){left:32%;bottom:34px;width:62px;height:62px}
+.cstars i:nth-child(3){left:50%;bottom:46px;width:78px;height:78px}.cstars i:nth-child(4){left:68%;bottom:34px;width:62px;height:62px}.cstars i:nth-child(5){left:86%;bottom:6px}
+.cstars .icon{position:absolute;inset:0;width:100%;height:100%;transition:transform .45s var(--ease),opacity .45s}
+.cstars .off{opacity:.55}.cstars .on,.cstars .half{opacity:0;transform:scale(.6)}
+.cstars i.is-lit .on{opacity:1;transform:none;filter:drop-shadow(0 8px 10px rgba(0,0,0,.5)) drop-shadow(0 0 16px rgba(255,190,96,.75))}
+.cstars i.is-half .half{opacity:1;transform:none;filter:drop-shadow(0 0 12px rgba(255,190,96,.55))}
+.cstars i.is-lit .off,.cstars i.is-half .off{opacity:0}
+.fuse{position:relative;height:12px;margin:22px 26px 0;border-radius:6px;background:rgba(245,239,230,.06);box-shadow:inset 0 2px 4px rgba(0,0,0,.55),inset 0 0 0 1px var(--hair)}
+.fuse b{position:absolute;inset:0 auto 0 0;width:calc(var(--p,0)*100%);border-radius:6px;background:linear-gradient(90deg,#8a5a20,#FFBE60 70%,#FFE9C2);box-shadow:0 0 12px rgba(255,190,96,.6)}
+.fuse em{position:absolute;top:50%;left:calc(var(--p,0)*100%);width:20px;height:20px;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle at 40% 35%,#fff,#FFD08A 45%,rgba(255,190,96,0) 72%);box-shadow:0 0 18px 4px rgba(255,190,96,.7)}
+.fuse u{position:absolute;top:2px;bottom:2px;width:1.5px;background:rgba(25,22,20,.7);left:var(--at)}
+.ctally{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:16px 16px 0}
+.ctally>span{display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 4px}
+.ctally .icon{width:26px;height:26px;filter:none}
+.ctally b{font-size:21px;font-weight:600;font-variant-numeric:tabular-nums}
+.ctally small{font-size:10px;color:var(--faint)}
+.verdict{text-align:center;font-size:34px;font-weight:600;letter-spacing:-1.2px;margin:20px 16px 12px;background:linear-gradient(90deg,#F5EFE6,#FFE0AE 55%,#FFBE60);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 14px rgba(255,190,96,.35));opacity:0;transform:translateY(10px);transition:.6s var(--ease)}
+.b1 .verdict{opacity:1;transform:none}
+.xpline{display:flex;justify-content:center;opacity:0;transition:.5s var(--ease)}
+.b2 .xpline{opacity:1}
+.xpline .flat{color:#FFE0AE;font-size:13px;padding:7px 14px 7px 9px}
+.xpline .flat .icon{width:22px;height:22px}
+.kcalh{--c:var(--sage);position:relative;overflow-x:clip;text-align:center;padding:22px 16px 6px;opacity:0;transition:.6s var(--ease)}
+.b2 .kcalh{opacity:1}
+.kcalh::before{content:'';position:absolute;left:50%;top:50%;width:340px;height:220px;transform:translate(-50%,-50%);z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,rgba(143,180,154,.3),rgba(255,190,96,.08) 42%,transparent 68%)}
+.kcalh .line{display:flex;align-items:center;justify-content:center;gap:8px}
+.kcalh .icon{width:62px;height:62px;filter:drop-shadow(0 10px 12px rgba(0,0,0,.5)) drop-shadow(0 0 16px rgba(143,180,154,.45))}
+.kcalh b{font-size:56px;font-weight:300;letter-spacing:-3px;color:#D6EDC7;text-shadow:0 0 20px rgba(143,180,154,.45)}
+.kcalh b small{font-size:18px;letter-spacing:0;color:var(--sub);margin-left:4px}
+.kcalh p{font-size:13.5px}
+.kcalh .tiny{font-size:11px;color:var(--faint);margin-top:3px}
+.cfoot{padding:18px 16px 0;opacity:0;transition:.6s var(--ease) .1s}
+.b3 .cfoot{opacity:1}
+.ccta{--c:var(--sage);display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px 12px 12px;border-radius:22px;text-align:left}
+.ccta .icon{width:44px;height:44px}
+.ccta span{flex:1}
+.ccta strong{display:block;font-size:17px;font-weight:600}
+.ccta small{display:block;font-size:11.5px;color:var(--sub);margin-top:1px}
+.ccta em{font-style:normal;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:19px;color:#191614;background:var(--c);box-shadow:0 0 16px color-mix(in srgb,var(--c) 60%,transparent)}
+.cnote{font-size:11.5px;color:var(--faint);text-align:center;margin:12px 22px 0;line-height:1.45}
+
+
+/* ══ 2b. EDZÉS-ÜNNEP (U4, élesben — csak összehasonlításra, változatlanul) ══ */
+.gym .verdict{margin:18px 0 14px}
+.gym .cres{padding:6px 16px 0;text-align:center}
+.gym .ccard{--c:var(--gold);padding:14px;border-radius:24px;text-align:left;opacity:0;transform:translateY(14px);transition:.6s var(--ease)}
+.gym.b2 .ccard{opacity:1;transform:none}
+.gym .crecs{transform:translateY(14px) scale(.97)}
+.gym.b2 .crecs{transform:none}
+.gym .cch{display:flex;align-items:center;gap:12px;padding-bottom:10px}
+.gym .cch .icon{width:48px;height:48px}
+.gym .cch .eb{color:#FFD08A}
+.gym .cch strong{display:block;font-size:19px;font-weight:600;letter-spacing:-.4px;color:#FFE0AE;margin-top:1px}
+.gym .rrow2{display:grid;gap:5px;padding:11px 0;border-top:1px solid var(--hair)}
+.gym .rrow2 strong{font-size:15px;font-weight:600}
+.gym .vals{display:flex;gap:5px;flex-wrap:wrap;align-items:center;justify-content:flex-start;margin-top:3px}
+.gym .vals b{padding:5px 11px;border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap;background:rgba(245,239,230,.06);box-shadow:inset 0 0 0 1px var(--hair);color:var(--ink)}
+.gym .vals b.lit{color:#191614;background:linear-gradient(135deg,#FFE0AE,#FFBE60);box-shadow:0 0 12px rgba(255,190,96,.5)}
+.gym .tchip{display:inline-flex;align-items:center;gap:6px;padding:3px 11px 3px 4px;border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap;color:#FFE0AE;background:radial-gradient(90% 120% at 20% 20%,rgba(255,190,96,.22),rgba(245,239,230,.04));box-shadow:inset 0 0 0 1px rgba(255,190,96,.45),0 0 12px -4px rgba(255,190,96,.55)}
+.gym .tchip .icon{width:24px;height:24px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+.gym .tchip.co{color:#FFC9B8;background:radial-gradient(90% 120% at 20% 20%,rgba(255,126,92,.22),rgba(245,239,230,.04));box-shadow:inset 0 0 0 1px rgba(255,126,92,.45),0 0 12px -4px rgba(255,126,92,.55)}
+.gym .cstats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gym .cstats>span{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:14px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.gym .cstats .icon{width:32px;height:32px}
+.gym .cstats strong{display:block;font-size:20px;font-weight:600;letter-spacing:-.5px}
+.gym .cstats strong i{font-style:normal;color:var(--faint)}
+.gym .cstats small{display:block;font-size:10.5px;color:var(--faint)}
+.gym .ccard .ctally{margin:10px 0 0}
+.gym .ccard .ctally>span{background:none;box-shadow:none;padding:8px 4px}
+.gym .cchal{margin-top:12px;padding-top:10px;border-top:1px solid var(--hair);transition:.5s var(--ease);opacity:.3}
+.gym.b3 .cchal{opacity:1}
+.gym .cchal .eb{display:block;margin-bottom:6px}
+.gym .chr{position:relative;display:flex;padding:8px 0}
+.gym .chr .cb{flex:1;min-width:0;display:grid;gap:5px}
+.gym .chr .cb strong{font-size:13.5px;font-weight:600;padding-right:46px;min-height:26px;display:flex;align-items:center}
+.gym .chr .res{position:absolute;right:0;top:6px;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.gym .chr .res .icon{width:30px;height:30px}
+.gym .chr.hit .res{background:radial-gradient(circle at 35% 30%,rgba(143,180,154,.35),rgba(30,27,24,.6));box-shadow:inset 0 0 0 1.5px rgba(143,180,154,.55),0 0 14px -2px rgba(143,180,154,.6)}
+.gym .chr.hit .vals b:first-child{color:#191614;background:linear-gradient(135deg,#D6EDC7,#8FB49A);box-shadow:0 0 10px rgba(143,180,154,.45)}
+.gym .chr.miss{opacity:.62}
+.gym .cfoot{opacity:0}
+.gym.b2 .cfoot{opacity:1}
+.gym .ccta{--c:var(--gold)}
+.gym .cmp{display:block;margin:14px 16px 0;padding:10px 12px;border-radius:14px;font-size:11.5px;line-height:1.45;color:var(--faint);text-align:center;background:rgba(245,239,230,.03);box-shadow:inset 0 0 0 1px var(--hair)}
+
+/* ══ 3. SZINTLÉPÉS ══ */
+.lu{position:relative;overflow-x:clip;text-align:center;padding:34px 16px 4px}
+.lu::before{content:'';position:absolute;left:50%;top:44%;width:440px;height:400px;transform:translate(-50%,-50%);z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,rgba(255,190,96,calc(.10 + var(--p,0)*.24)),rgba(171,159,210,calc(var(--p,0)*.16)) 44%,transparent 68%)}
+.lu .flat{color:var(--ink)}
+.lu .flat .icon{width:22px;height:22px}
+.lu h1{font-size:30px;font-weight:600;letter-spacing:-1px;margin-top:16px}
+.lu .xp{display:block;font-size:92px;font-weight:300;letter-spacing:-5px;line-height:1.02;margin-top:6px;background:linear-gradient(135deg,#FFE9C2 0%,#FFBE60 45%,#C9BDF0 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 6px 22px rgba(255,190,96,.35));font-variant-numeric:tabular-nums}
+.lu .eb{letter-spacing:1.8px}
+.lusec{opacity:0;transform:translateY(12px);transition:.55s var(--ease)}
+.lu-root.b1 .lusec.s1,.lu-root.b2 .lusec.s2,.lu-root.b3 .lusec.s3{opacity:1;transform:none}
+.lurow{--c:var(--gold);display:flex;align-items:center;gap:12px;padding:12px 14px 12px 10px;border-radius:22px;text-align:left}
+.lurow+.lurow{margin-top:10px}
+.lvring{position:relative;width:58px;height:58px;flex:0 0 auto;display:grid;place-items:center}
+.lvring svg{position:absolute;inset:0;transform:rotate(-90deg);overflow:visible}
+.lvring .ring-track,.lvring .ring-prog{stroke-width:5}
+.lvring b{font-size:21px;font-weight:600;letter-spacing:-.6px;color:color-mix(in srgb,var(--c) 70%,#fff)}
+.lurow .grow{flex:1;min-width:0}
+.lurow .nm{display:flex;align-items:center;gap:7px;font-size:15.5px;font-weight:600;letter-spacing:-.3px}
+.lurow .nm .icon{width:30px;height:30px}
+.lvbadge{display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:4px 10px 4px 6px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.6px;color:#191614;background:linear-gradient(90deg,#FFE0AE,#FFBE60);box-shadow:0 0 12px rgba(255,190,96,.55)}
+.lvbadge .icon{width:16px;height:16px;filter:none}
+.perk{display:flex;gap:9px;align-items:flex-start;margin-top:10px;padding:10px 12px;border-radius:14px;background:rgba(255,190,96,.06);box-shadow:inset 0 0 0 1px rgba(255,190,96,.18);font-size:12.5px;line-height:1.45;color:var(--sub);text-align:left}
+.perk .icon{width:20px;height:20px;filter:none;flex:0 0 auto}
+.perk b{color:#FFE0AE}
+.grow2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gcell{--c:var(--coral);display:grid;gap:6px;padding:11px 12px;border-radius:16px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair);text-align:left}
+.gcell .t{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600}
+.gcell .t .icon{width:26px;height:26px;filter:drop-shadow(0 0 8px color-mix(in srgb,var(--c) 40%,transparent))}
+.gcell .t em{margin-left:auto;font-style:normal;font-size:12px;color:#FFE0AE}
+.gcell small{font-size:10px;color:var(--faint)}
+.bar{position:relative;display:block;height:5px;border-radius:3px;background:rgba(245,239,230,.07)}
+.bar b{position:absolute;inset:0 auto 0 0;width:var(--w);border-radius:3px;background:linear-gradient(90deg,color-mix(in srgb,var(--c) 55%,#fff),var(--c));box-shadow:0 0 8px color-mix(in srgb,var(--c) 60%,transparent)}
+.bar b.from{background:rgba(245,239,230,.22);box-shadow:none;z-index:1}
+.robust{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;border-radius:14px;background:rgba(127,178,222,.06);box-shadow:inset 0 0 0 1px rgba(127,178,222,.2);font-size:12.5px;text-align:left;color:var(--sub)}
+.robust .icon{width:30px;height:30px;filter:drop-shadow(0 0 8px rgba(127,178,222,.45))}
+.robust b{color:var(--ink)}
+.robust em{margin-left:auto;font-style:normal;color:#FFE0AE;font-weight:600}
+.lufoot{padding:18px 16px 0}
+
+/* ══ 4. ÜVEGDOBOZ (GlassBox) — a közös dialógus ══ */
+.gbx{position:absolute;left:10px;right:10px;bottom:10px;z-index:47;max-height:82%;overflow-y:auto;padding:14px 16px 18px;border-radius:30px;transform:translateY(24px);opacity:0;visibility:hidden;transition:.35s var(--ease);scrollbar-width:none}
+.gbx.glass{position:absolute;overflow-y:auto}
+.gbx.glass::after{display:none}
+.gbx.on{transform:none;opacity:1;visibility:visible}
+.gbx-head{display:flex;align-items:center;gap:11px;margin-bottom:12px}
+.gbx-head .well{width:46px;height:46px}.gbx-head .well .icon{width:30px;height:30px}
+.gbx-head .grow{flex:1;min-width:0}
+.gbx-head .eb{color:color-mix(in srgb,var(--c) 70%,var(--ink))}
+.gbx-head strong{display:block;font-size:18px;font-weight:600;letter-spacing:-.4px;margin-top:1px}
+.xb{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:14px;color:var(--sub);background:rgba(245,239,230,.06);box-shadow:inset 0 0 0 1px var(--hair);flex:0 0 auto}
+.gbx p.copy{font-size:13.5px;line-height:1.55;color:var(--sub)}
+.gbx p.copy b{color:var(--ink);font-weight:600}
+.srcrow{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair);margin-top:8px}
+.srcrow .icon{width:26px;height:26px;filter:none}
+.srcrow strong{display:block;font-size:13px;font-weight:600}
+.srcrow small{display:block;font-size:11.5px;color:var(--sub);margin-top:2px;line-height:1.4}
+.orbp{width:46px;height:46px;border-radius:50%;flex:0 0 auto;background:radial-gradient(circle at 35% 30%,#fff5,color-mix(in srgb,var(--c) 75%,#1E1B18) 55%,color-mix(in srgb,var(--c) 30%,#0c0b0a));box-shadow:0 0 18px -2px color-mix(in srgb,var(--c) 60%,transparent)}
+
+/* ══ 5. LAP (Sheet) — a közös, lebegő üveglap ══ */
+.sheet{position:absolute;left:10px;right:10px;bottom:10px;z-index:46;max-height:86%;overflow-y:auto;padding:10px 18px 20px;border-radius:30px;transform:translateY(110%);visibility:hidden;transition:transform .45s var(--ease),visibility 0s linear .45s;scrollbar-width:none}
+.sheet.glass{position:absolute;overflow-y:auto}
+.sheet.glass::after{display:none}
+.sheet.on{transform:none;visibility:visible;transition:transform .45s var(--ease)}
+.sheet p{font-family:var(--ff);font-style:normal;font-size:inherit;line-height:1.45;margin:0}
+.sheet .kz-card p{font-size:14px;line-height:1.55;margin-top:8px}
+.sheet .band{margin-top:6px}
+.sheet .grab{width:40px;height:5px;border-radius:3px;background:rgba(245,239,230,.2);margin:0 auto 12px}
+.shh{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+.shh .grow{flex:1;min-width:0}
+.shh .eb{color:color-mix(in srgb,var(--c) 70%,var(--ink))}
+.shh h3{font-size:19px;font-weight:600;letter-spacing:-.5px;margin-top:1px}
+.shh>.icon{width:44px;height:44px}
+.stepper{display:grid;grid-template-columns:48px 1fr 48px;align-items:center;gap:10px;margin:6px 0}
+.stepper button{height:48px;border-radius:16px;font-size:22px;display:grid;place-items:center;color:var(--ink);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+.stepper b{text-align:center;font-size:44px;font-weight:300;letter-spacing:-2px;color:color-mix(in srgb,var(--c) 60%,#fff)}
+.stepper b small{font-size:15px;letter-spacing:0;color:var(--faint);margin-left:3px}
+.band{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub);justify-content:center}
+.band i{width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c)}
+.days7{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.days7 button{height:40px;border-radius:12px;font-size:12px;font-weight:600;text-align:center;color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+.days7 button.on{color:#191614;background:var(--c);box-shadow:0 0 12px color-mix(in srgb,var(--c) 50%,transparent)}
+.exrow{display:flex;align-items:center;gap:10px;padding:10px 4px;border-top:1px solid var(--hair)}
+.exrow .icon{width:30px;height:30px}
+.exrow .grow{flex:1}
+.exrow strong{display:block;font-size:14px;font-weight:600}
+.exrow small{font-size:11px;color:var(--faint)}
+.exrow em{font-style:normal;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:18px;color:var(--c);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 45%,transparent)}
+
+/* ══ 6. ÜZENETSÁV (toast) ══ */
+.toasts{position:absolute;left:12px;right:12px;top:74px;z-index:60;display:grid;gap:8px;pointer-events:none}
+.tst{--c:var(--sage);display:flex;align-items:center;gap:10px;padding:10px 10px 10px 12px;border-radius:20px;pointer-events:auto;animation:tin .45s var(--ease) both}
+.tst.glass::after{display:none}
+.tst>.icon{width:28px;height:28px}
+.tst .grow{flex:1;min-width:0;font-size:13.5px;font-weight:500;line-height:1.35}
+.tst .act{font-size:12px;font-weight:700;color:color-mix(in srgb,var(--c) 75%,#fff);padding:6px 10px;border-radius:999px;background:rgba(245,239,230,.06);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 35%,transparent);white-space:nowrap}
+.tst .tx{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:var(--faint);font-size:12px;flex:0 0 auto}
+.tst.rw{align-items:flex-start;padding:12px 10px 12px 12px}
+.tst.rw .eb{color:#FFD08A}
+.tst.rw strong{display:block;font-size:16px;font-weight:600;letter-spacing:-.3px;margin-top:2px}
+.tst.rw strong span{font-weight:400;color:var(--faint);font-size:13px}
+.tst.rw p{font-size:12.5px;color:var(--sub);margin-top:2px}
+.tst.rw .meter{display:flex;align-items:center;gap:7px;margin-top:8px;font-size:12px;color:var(--sub)}
+.tst.rw .meter i{width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 6px var(--c)}
+.tst.rw .meter b{margin-left:auto;color:#FFE0AE}
+.tst.rw .lvup{display:inline-flex;align-items:center;gap:5px;margin-top:8px;padding:4px 10px 4px 6px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.5px;color:#191614;background:linear-gradient(90deg,#FFE0AE,#FFBE60);box-shadow:0 0 12px rgba(255,190,96,.5)}
+.tst.rw .lvup .icon{width:16px;height:16px;filter:none}
+@keyframes tin{from{opacity:0;transform:translateY(-12px) scale(.97)}}
+
+/* ══ 7. KALAUZ ══ */
+.kz{--c:var(--gold)}
+.kz-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.kz-top .eb b{color:#FFD08A}
+.kz-top em{margin-left:auto;font-style:normal;font-size:11.5px;color:var(--faint);font-variant-numeric:tabular-nums}
+.kz-card{position:relative;text-align:center;padding:4px 4px 0}
+.kz-card::before{content:'';position:absolute;left:50%;top:60px;width:280px;height:200px;transform:translate(-50%,-50%);z-index:-1;background:radial-gradient(ellipse,color-mix(in srgb,var(--c) 26%,transparent),transparent 66%)}
+.kz-q{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.4px;color:#FFD08A}
+.kz-q i{font-style:normal;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px;color:#191614;background:var(--gold);box-shadow:0 0 10px rgba(255,190,96,.6)}
+.kz-card .art{width:92px;height:92px;margin:10px auto 4px;filter:drop-shadow(0 12px 14px rgba(0,0,0,.5)) drop-shadow(0 0 18px color-mix(in srgb,var(--c) 45%,transparent))}
+.kz-card h3{font-size:21px;font-weight:600;letter-spacing:-.6px}
+.kz-card p{font-size:14px;line-height:1.55;color:var(--sub);margin-top:8px;text-align:left}
+.kz-card p b{color:var(--ink)}
+.kz-term{margin-top:12px;padding:12px;border-radius:14px;text-align:left;background:rgba(255,190,96,.06);box-shadow:inset 0 0 0 1px rgba(255,190,96,.2)}
+.kz-term strong{display:block;font-size:14px;color:#FFE0AE}
+.kz-term small{display:block;font-size:12.5px;color:var(--sub);margin-top:3px;line-height:1.45}
+.kz-rel{display:grid;gap:6px;margin-top:12px;text-align:left}
+.kz-rel .flat{justify-content:flex-start;white-space:normal}
+.kz-peekbtn{display:flex;margin:12px auto 0}
+.kz-dots{display:flex;justify-content:center;gap:6px;margin:14px 0 12px}
+.kz-dots i{width:6px;height:6px;border-radius:3px;background:rgba(245,239,230,.18)}
+.kz-dots i.on{width:18px;background:var(--gold);box-shadow:0 0 8px var(--gold)}
+.kz-foot{display:grid;grid-template-columns:auto 1fr 1.3fr;gap:8px;align-items:center}
+.kz-foot .skip{font-size:12.5px;color:var(--faint);padding:0 6px}
+/* megmutatás (peek) */
+.veil{position:absolute;inset:0;z-index:44;background:rgba(0,0,0,.72);opacity:0;pointer-events:none;transition:opacity .3s}
+.veil.on{opacity:1;pointer-events:auto}
+.spot{position:absolute;z-index:45;border-radius:22px;box-shadow:0 0 0 2px var(--gold),0 0 26px 4px rgba(255,190,96,.55),0 0 0 9999px rgba(0,0,0,.0);pointer-events:none;opacity:0;transition:opacity .3s}
+.spot.on{opacity:1}
+@media (prefers-reduced-motion:no-preference){body:not(.still) .spot.on{animation:spotp 2.2s ease-in-out infinite}}
+@keyframes spotp{50%{box-shadow:0 0 0 2px var(--gold),0 0 36px 8px rgba(255,190,96,.7)}}
+.peekbar{position:absolute;left:10px;right:10px;bottom:10px;z-index:47;--c:var(--gold);display:flex;align-items:center;gap:10px;padding:12px 12px 12px 14px;border-radius:24px}
+.peekbar.glass{position:absolute}
+.peekbar .grow{flex:1;font-size:13px;line-height:1.4}
+.peekbar .grow small{display:block;color:var(--faint);font-size:11px;margin-top:2px}
+/* T0 üdvözlő */
+.wel{position:relative;min-height:100%;display:flex;flex-direction:column;padding:26px 18px 22px}
+.wel-top{display:flex;align-items:center;justify-content:space-between}
+.wel-top .eb b{color:#FFD08A}
+.wel-hero{position:relative;overflow-x:clip;text-align:center;padding:26px 0 8px}
+.wel-hero::before{content:'';position:absolute;left:50%;top:50%;width:380px;height:300px;transform:translate(-50%,-50%);z-index:-1;background:radial-gradient(ellipse,rgba(171,159,210,.3),rgba(255,190,96,.12) 44%,transparent 68%)}
+.wel-hero .boop{width:104px;height:104px;margin:0 auto;filter:drop-shadow(0 12px 14px rgba(0,0,0,.5)) drop-shadow(0 0 22px rgba(171,159,210,.5))}
+.wel h1{font-size:28px;font-weight:600;letter-spacing:-1px;margin-top:10px}
+.wel .voice{font-size:14.5px;line-height:1.55;color:var(--sub);margin-top:10px}
+.wel .voice b{color:var(--ink)}
+.dparts{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:8px;align-items:end;margin-top:22px}
+.dpart{--c:var(--gold);display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 6px 12px;border-radius:20px;text-align:center}
+.dpart .icon{width:48px;height:48px}
+.dpart.mid .icon{width:62px;height:62px}
+.dpart strong{font-size:14px;font-weight:600}
+.dpart small{font-size:10.5px;color:var(--faint);line-height:1.35}
+.dom5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:22px}
+.dom5 button{--c:var(--gold);display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 0 8px;border-radius:18px;font-size:11px;font-weight:600;color:var(--sub)}
+.dom5 .boop{width:46px;height:46px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.5)) drop-shadow(0 0 10px color-mix(in srgb,var(--c) 45%,transparent))}
+.dom5 button.on{color:var(--ink);background:radial-gradient(80% 90% at 50% 25%,color-mix(in srgb,var(--c) 26%,transparent),transparent 72%);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 45%,transparent)}
+.domvoice{--c:var(--gold);margin-top:12px;padding:14px;border-radius:20px;font-size:13.5px;line-height:1.5;color:var(--sub)}
+.tiles7{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:20px}
+.tiles7 span{display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 4px 10px;font-size:11px;font-weight:600;color:var(--sub)}
+.tiles7 .icon{width:34px;height:34px}
+.chatrow{display:flex;align-items:center;gap:10px;margin-top:8px;padding:12px 14px}
+.chatrow .icon{width:30px;height:30px}
+.qpulse{width:96px;height:96px;margin:30px auto 8px;border-radius:50%;display:grid;place-items:center;font-size:44px;font-weight:600;color:#FFD99A;--c:var(--gold)}
+.qpulse.glass{overflow:visible}
+.qpulse.glass::after{display:none}
+@media (prefers-reduced-motion:no-preference){body:not(.still) .qpulse{animation:qp 2.4s ease-in-out infinite}}
+@keyframes qp{50%{box-shadow:0 0 0 10px rgba(255,190,96,.10),0 0 40px rgba(255,190,96,.5)}}
+.wel-foot{margin-top:auto;padding-top:24px;display:grid;grid-template-columns:auto 1fr 1.3fr;gap:8px;align-items:center}
+.wel-foot .skip{font-size:12.5px;color:var(--faint);padding:0 6px}
+.hint{text-align:center;font-size:11.5px;color:var(--faint);margin-top:10px}
+
+/* ══ 8. BELÉPÉS ══ */
+.auth{position:relative;min-height:100%;display:flex;flex-direction:column;justify-content:center;padding:40px 22px 30px;max-width:380px;margin:0 auto}
+.auth-hero{position:relative;overflow-x:clip;text-align:center;padding:10px 0 22px}
+.auth-hero::before{content:'';position:absolute;left:50%;top:44%;width:380px;height:280px;transform:translate(-50%,-50%);z-index:-1;background:radial-gradient(ellipse,rgba(171,159,210,.3),rgba(255,190,96,.12) 44%,transparent 68%)}
+.auth-mark{display:block;font-weight:700;font-size:44px;letter-spacing:-2px;background:linear-gradient(120deg,#F5EFE6 0%,#E6DDFF 55%,#E9C48A 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 18px rgba(171,159,210,.35))}
+.auth-hero h1{font-size:21px;font-weight:600;letter-spacing:-.5px;margin-top:6px}
+.auth-hero p{font-size:13px;color:var(--sub);margin-top:6px;line-height:1.45}
+.auth-card{--c:var(--lav);display:grid;gap:12px;padding:18px 16px;border-radius:26px}
+.auth-card .field>span{color:color-mix(in srgb,var(--c) 55%,var(--faint))}
+.notice{--c:var(--gold);display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border-radius:14px;font-size:12.5px;line-height:1.45;color:var(--sub);background:color-mix(in srgb,var(--c) 8%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 28%,transparent);margin-bottom:12px}
+.notice .icon{width:22px;height:22px;filter:none;flex:0 0 auto}
+.auth-link{display:block;text-align:center;margin-top:16px;font-size:13px;font-weight:600;color:#C9BDF0}
+.steps3{display:flex;align-items:center;gap:6px;justify-content:center;margin:0 0 16px}
+.steps3 span{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--faint)}
+.steps3 span i{font-style:normal;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;background:rgba(245,239,230,.06);box-shadow:inset 0 0 0 1px var(--hair)}
+.steps3 span.on{color:var(--ink)}
+.steps3 span.on i{color:#191614;background:var(--lav);box-shadow:0 0 12px rgba(171,159,210,.6)}
+.steps3 span.done i{color:#191614;background:rgba(171,159,210,.55)}
+.steps3 u{width:18px;height:1px;background:var(--hair)}
+.seg2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.seg2 button{height:44px;border-radius:14px;font-size:14px;font-weight:600;text-align:center;color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+.seg2 button.on{color:#191614;background:var(--lav);box-shadow:0 0 12px rgba(171,159,210,.5)}
+.sumrow{display:flex;justify-content:space-between;padding:11px 2px;border-top:1px solid var(--hair);font-size:14px}
+.sumrow:first-child{border-top:0}
+.sumrow span{color:var(--sub)}
+.sumrow b{font-weight:600}
+.down{position:relative;min-height:100%;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:30px 26px}
+.down::before{content:'';position:absolute;left:50%;top:42%;width:380px;height:300px;transform:translate(-50%,-50%);z-index:-1;background:radial-gradient(ellipse,rgba(255,126,92,.24),rgba(171,159,210,.10) 44%,transparent 68%)}
+.down .art{width:88px;height:88px;margin:0 auto 8px;filter:drop-shadow(0 12px 14px rgba(0,0,0,.5)) drop-shadow(0 0 18px rgba(255,126,92,.4))}
+.down h1{font-size:24px;font-weight:600;letter-spacing:-.7px}
+.down p{font-size:14px;line-height:1.55;color:var(--sub);margin:10px 0 22px}
+
+/* ══ 9. ADMIN (asztali keret) ══ */
+.stage.desk{padding:16px}
+.stage.desk .phone{width:min(1120px,calc(100vw - 32px));height:760px;min-height:0;border-radius:22px}
+.stage.desk .notes{display:none}
+.admin{position:absolute;inset:0;z-index:1;display:grid;grid-template-columns:220px 1fr;gap:0}
+.rail{--c:var(--lav);margin:14px 0 14px 14px;padding:18px 12px;border-radius:26px;display:flex;flex-direction:column;gap:4px}
+.rail.glass::after{display:none}
+.rail .brand{display:flex;align-items:baseline;gap:6px;padding:0 8px 16px}
+.rail .brand strong{font-size:22px;font-weight:700;letter-spacing:-1px;background:linear-gradient(120deg,#F5EFE6,#E6DDFF 55%,#E9C48A);-webkit-background-clip:text;background-clip:text;color:transparent}
+.rail .brand small{font-size:10px;font-weight:600;letter-spacing:1.4px;color:var(--faint)}
+.rail a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;font-size:13.5px;font-weight:500;color:var(--sub);text-decoration:none}
+.rail a .icon{width:26px;height:26px;filter:grayscale(.4) brightness(.85)}
+.rail a.on{color:var(--ink);font-weight:600;background:radial-gradient(90% 100% at 20% 50%,rgba(171,159,210,.22),transparent 75%);box-shadow:inset 0 0 0 1px rgba(171,159,210,.3),0 0 16px -4px rgba(171,159,210,.5)}
+.rail a.on .icon{filter:drop-shadow(0 0 8px rgba(171,159,210,.6))}
+.rail .grp{margin-top:auto;padding:12px 10px 4px;border-top:1px solid var(--hair)}
+.adm{overflow-y:auto;padding:24px 26px 30px;scrollbar-width:none}
+.adm-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:16px}
+.adm-head h1{font-size:30px;font-weight:600;letter-spacing:-1px}
+.adm-head small{font-size:12px;color:var(--faint)}
+.agrid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+.atile{--c:var(--sage);padding:16px;border-radius:22px;min-width:0}
+.atile .eb{color:color-mix(in srgb,var(--c) 70%,var(--ink));margin-bottom:8px}
+.atile .big{font-size:40px;font-weight:300;letter-spacing:-2px;line-height:1}
+.atile .big small{font-size:14px;letter-spacing:0;color:var(--faint);margin-left:3px}
+.atile .sub{font-size:12px;color:var(--sub);margin-top:6px}
+.atile.s3{grid-column:span 3}.atile.s4{grid-column:span 4}.atile.s6{grid-column:span 6}
+.health{display:flex;align-items:center;gap:10px}
+.health .icon{width:40px;height:40px}
+.health strong{font-size:17px;font-weight:600}
+.bars30{display:flex;align-items:flex-end;gap:3px;height:92px;margin-top:6px}
+.bars30 i{flex:1;min-width:0;border-radius:3px 3px 1px 1px;background:linear-gradient(180deg,var(--c),color-mix(in srgb,var(--c) 40%,transparent));box-shadow:0 0 8px -2px color-mix(in srgb,var(--c) 60%,transparent);opacity:.9}
+.arow{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:rgba(245,239,230,.04);font-size:13px;margin-top:6px}
+.arow .grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.arow b{font-weight:600;font-variant-numeric:tabular-nums}
+.arow small{color:var(--faint);font-size:11px}
+
+/* ══ 10. MINDEN OLDAL ══ */
+.mno-dom{--c:var(--gold);margin:0 16px 12px;padding:14px 14px 8px;border-radius:24px}
+.mno-dh{display:flex;align-items:center;gap:10px;padding-bottom:6px}
+.mno-dh .boop{width:44px;height:44px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.5)) drop-shadow(0 0 10px color-mix(in srgb,var(--c) 45%,transparent))}
+.mno-dh strong{font-size:19px;font-weight:600;letter-spacing:-.5px}
+.mno-dh em{margin-left:auto;font-style:normal;font-size:11px;color:var(--faint)}
+.mno-g{padding-top:8px}
+.mno-g .eb{margin:4px 2px 6px;color:color-mix(in srgb,var(--c) 60%,var(--faint))}
+.mno-l{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:12px;background:rgba(245,239,230,.035);margin-bottom:5px;text-align:left}
+.mno-l .grow{flex:1;min-width:0}
+.mno-l strong{display:block;font-size:13.5px;font-weight:600}
+.mno-l small{display:block;font-size:11px;color:var(--faint);margin-top:1px}
+
+/* ══ 11. HIBA · INDULÁS · NAPTÁR · VISSZATÉRÉS ══ */
+.errcard{--c:var(--coral);margin:12px 16px 0;padding:18px 16px;border-radius:24px;text-align:center}
+.errcard .icon.big{width:62px;height:62px;margin:0 auto 6px}
+.errcard strong{display:block;font-size:17px;font-weight:600}
+.errcard p{font-size:13px;color:var(--sub);line-height:1.5;margin:6px 0 14px}
+.splash{position:absolute;inset:0;z-index:5;display:grid;place-items:center;align-content:center;gap:18px}
+.splash::before{content:'';position:absolute;left:50%;top:46%;width:460px;height:420px;transform:translate(-50%,-50%);background:radial-gradient(ellipse,rgba(171,159,210,.34),rgba(255,190,96,.14) 42%,transparent 68%)}
+.sorb{position:relative;width:150px;height:150px;border-radius:50%;--c:var(--lav)}
+.sorb.glass{overflow:hidden}
+.sorb svg{position:absolute;inset:0;width:100%;height:100%}
+.splash .auth-mark{position:relative;font-size:48px}
+@media (prefers-reduced-motion:no-preference){body:not(.still) .sorb .wave{animation:wave 3.2s ease-in-out infinite}body:not(.still) .sorb{animation:sfl 5s ease-in-out infinite}}
+@keyframes sfl{50%{transform:translateY(-6px)}}
+.daynav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 16px 10px}
+.daynav .xb{width:38px;height:38px}
+.daynav .mid{--c:var(--lav);display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 16px 0 10px;border-radius:999px;font-size:14px;font-weight:600}
+.daynav .mid .icon{width:24px;height:24px}
+.cal{--c:var(--lav);position:absolute;left:16px;right:16px;top:176px;z-index:45;padding:14px;border-radius:24px;opacity:0;transform:translateY(-6px);pointer-events:none;transition:.28s var(--ease)}
+.cal.on{opacity:1;transform:none;pointer-events:auto}
+.cal.glass::after{display:none}
+.cal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-h strong{font-size:15px;font-weight:600}
+.cal-g{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.cal-g small{font-size:10px;font-weight:600;color:var(--faint);padding:4px 0}
+.cal-g button{height:36px;border-radius:12px;font-size:13px;text-align:center;color:var(--sub)}
+.cal-g button.out{opacity:.3}
+.cal-g button.today{box-shadow:inset 0 0 0 1px rgba(171,159,210,.5);color:var(--ink)}
+.cal-g button.sel{color:#191614;background:var(--lav);font-weight:700;box-shadow:0 0 12px rgba(171,159,210,.55)}
+.cal-g button.fut{opacity:.35}
+.rfab{--c:var(--coral);position:absolute;right:18px;bottom:172px;z-index:31;width:58px;height:58px;border-radius:50%;display:grid;place-items:center}
+.rfab.glass{position:absolute;overflow:visible}
+.rfab.glass::after{display:none}
+.rfab .icon{width:34px;height:34px}
+.rfab .badge{position:absolute;top:-3px;right:-4px;min-width:19px;height:19px;padding:0 5px;border-radius:10px;display:grid;place-items:center;font-size:10.5px;font-weight:700;color:#191614;background:linear-gradient(135deg,#FFB39C,#FF7E5C);box-shadow:0 0 10px rgba(255,126,92,.7),0 0 0 2px #191614;z-index:4}
+@media (prefers-reduced-motion:no-preference){body:not(.still) .rfab{animation:rfb 3s ease-in-out infinite}}
+@keyframes rfb{50%{box-shadow:0 0 0 6px rgba(255,126,92,.08),0 0 26px rgba(255,126,92,.5)}}
+.rbar{--c:var(--coral);position:sticky;top:66px;z-index:15;margin:0 12px 8px;display:flex;align-items:center;gap:10px;padding:9px 10px 9px 12px;border-radius:20px}
+.rbar .icon{width:30px;height:30px}
+.rbar .grow{flex:1;font-size:13.5px;font-weight:600}
+.rbar .grow small{display:block;font-size:11px;font-weight:500;color:var(--sub)}
+.rbar .pillx{padding:8px 12px;font-size:12px}
+.bubble{max-width:78%;margin:8px 16px;padding:10px 13px;border-radius:18px;font-size:13.5px;line-height:1.45;background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+.bubble.me{margin-left:auto;background:rgba(171,159,210,.14);box-shadow:inset 0 0 0 1px rgba(171,159,210,.25)}
+
+/* Új ikonok */
+.icgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}
+.iccard{--c:var(--lav);display:flex;flex-direction:column;align-items:center;gap:7px;padding:16px 12px 13px;border-radius:20px;text-align:center}
+.iccard .icon{width:64px;height:64px;filter:drop-shadow(0 8px 10px rgba(0,0,0,.55)) drop-shadow(0 0 14px color-mix(in srgb,var(--c) 40%,transparent))}
+.iccard strong{font-size:13.5px;font-weight:600}
+.iccard small{font-size:10.5px;color:var(--faint);line-height:1.4}
+.maptbl{margin:0 16px;padding:12px 14px;border-radius:20px}
+.maptbl div{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--hair);font-size:13px}
+.maptbl div:first-child{border-top:0}
+.maptbl div span.old{width:28px;text-align:center;font-size:18px}
+.maptbl div .icon{width:28px;height:28px}
+.maptbl div em{margin-left:auto;font-style:normal;font-size:11px;color:var(--faint)}
+
+/* minden Boop él: pislog + nézelődik, egymáshoz képest elcsúsztatva */
+@media (prefers-reduced-motion:no-preference){body:not(.still) .boop.is-alive .boop-eye,body:not(.still) .boop.is-alive .boop-pupil,body:not(.still) .boop.is-alive .boop-brow,body:not(.still) .boop.is-alive .boop-body{animation-delay:var(--bd,0s)}}
+/* side notes */
+.notes nav a{font-size:13px}
+.notes .abnote{font-size:12px;color:var(--faint);line-height:1.5;margin-bottom:14px}
+.notes .abnote em{font-style:normal;color:var(--sub);font-weight:600}
+.ntf-foot{display:block;text-align:center;padding:8px 0 2px;font-size:12px;font-weight:600;color:var(--sky);width:100%}
+.ntf-head strong em{font-style:normal;font-size:11px;color:var(--faint);margin-left:6px;font-weight:500}
+.ntf-chips span b{font-weight:700;opacity:.6}
+.ntf-chips span{display:inline-flex;align-items:center;gap:4px}
+.ntf-chips span .icon{width:16px;height:16px}
+
+@media(max-width:360px){
+  .rbtn{width:34px;height:34px}.rbtn .icon{width:20px;height:20px}.orb{width:40px;height:40px}.orb svg{inset:3px;width:34px;height:34px}.wordmark{font-size:23px}
+  .fcx-count{gap:4px}.fcx-count small{font-size:9px}
+  .lu .xp{font-size:76px}.grow2{grid-template-columns:1fr}.tiles7{grid-template-columns:repeat(3,1fr)}.kz-foot,.wel-foot{grid-template-columns:auto 1fr 1fr}
+  .verdict{font-size:29px}
+}
+</style>
+
+<!-- U10 új ikonok: jóváhagyásig itt, utána a közös sprite-ba (titanium-custom.svg) -->
+<svg class="sprite" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+<defs>
+<linearGradient id="stone" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE9A8"/><stop offset=".55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></linearGradient>
+</defs>
+<symbol id="t-jump" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><rect x="10" y="50" width="44" height="8" rx="4" fill="url(#tg-titanium)" stroke="#d9d4ea" stroke-width=".8"/><path d="M32 4L49 23H38.5V43H25.5V23H15Z" fill="url(#tg-lime)" stroke="#dbf6aa" stroke-width="1" stroke-linejoin="round"/><path d="M31 9.5L21.5 20.5" stroke="#f2ffd8" stroke-width="1.8" stroke-linecap="round" opacity=".85"/><path d="M29 27V39" stroke="#f2ffd8" stroke-width="1.5" stroke-linecap="round" opacity=".6"/><path d="M15 46h7M42 46h7" stroke="#b8d777" stroke-width="2.4" stroke-linecap="round" opacity=".65"/></g></symbol>
+<symbol id="t-sprint" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M26 12L56 32 26 52 33 32Z" fill="url(#tg-blue)" stroke="#d1faff" stroke-width=".9" stroke-linejoin="round"/><path d="M30 18L49 31" stroke="#effcff" stroke-width="1.8" stroke-linecap="round" opacity=".8"/><path d="M4 22h17M2 32h24M4 42h17" stroke="#9fe0f2" stroke-width="3" stroke-linecap="round" opacity=".7"/><path d="M33 32L26 52" stroke="#1e4454" stroke-width="1.4" opacity=".45"/></g></symbol>
+<symbol id="t-core" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><rect x="13" y="8" width="38" height="13" rx="5.5" fill="url(#tg-titanium)" stroke="#d9d4ea" stroke-width=".8"/><rect x="7" y="25.5" width="50" height="13" rx="5.5" fill="url(#tg-red)" stroke="#ffd2c2" stroke-width=".8"/><rect x="13" y="43" width="38" height="13" rx="5.5" fill="url(#tg-titanium)" stroke="#d9d4ea" stroke-width=".8"/><path d="M18 11.5H40M12 29H44M18 46.5H40" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".6"/><circle cx="32" cy="32" r="3.2" fill="#fff4ea" opacity=".9"/></g></symbol>
+<symbol id="t-juggle" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M12 42C15 14 49 14 52 42" fill="none" stroke="#b3a0ed" stroke-width="1.8" stroke-dasharray="3 4" stroke-linecap="round" opacity=".75"/><circle cx="32" cy="17" r="9" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><circle cx="14" cy="44" r="9.5" fill="url(#tg-red)" stroke="#ffd2c2" stroke-width=".8"/><circle cx="50" cy="44" r="9.5" fill="url(#tg-blue)" stroke="#d1faff" stroke-width=".8"/><path d="M27 14.5A5.5 5.5 0 0 1 31 11M9 41.5A5.5 5.5 0 0 1 13 38M45 41.5A5.5 5.5 0 0 1 49 38" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".75"/></g></symbol>
+<symbol id="t-stretch" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M11 48A22 22 0 0 1 53 48" fill="none" stroke="url(#tg-purple)" stroke-width="10" stroke-linecap="round"/><path d="M14.5 41A18 18 0 0 1 32 26" fill="none" stroke="#f3eaff" stroke-width="1.8" stroke-linecap="round" opacity=".7"/><circle cx="11" cy="48" r="6" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><circle cx="53" cy="48" r="6" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><circle cx="32" cy="26" r="6" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><path d="M40 10l6 4-6 4M24 10l-6 4 6 4" fill="none" stroke="#b3a0ed" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity=".8"/></g></symbol>
+<symbol id="t-target" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><circle cx="29" cy="35" r="24" fill="url(#tg-titanium)" stroke="#d9d4ea" stroke-width=".8"/><circle cx="29" cy="35" r="17" fill="url(#tg-red)" stroke="#ffd2c2" stroke-width=".8"/><circle cx="29" cy="35" r="10" fill="#f1e9df"/><circle cx="29" cy="35" r="5" fill="url(#tg-red)"/><path d="M12 27A18 18 0 0 1 22 18" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/><path d="M30 34L53 11" stroke="url(#tg-gold)" stroke-width="3.4" stroke-linecap="round"/><path d="M50 6L58 6 58 14 53 11Z" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".6" stroke-linejoin="round"/></g></symbol>
+</svg>
+
+<div class="stage" id="stage">
+  <div class="phone" id="phone">
+    <div class="aurora"><i></i><i></i><i></i><i></i></div>
+    <div class="scroll" id="scroll"></div>
+    <button class="fab glass" id="fab" aria-label="Gyors logolás" data-toast="Gyors logolás (a Nap körében kapott üveget)">＋</button>
+    <nav class="tabbar glass" style="--c:var(--gold)" id="tabbar"></nav>
+    <div class="ntf glass" id="ntf" style="--c:var(--sky)"></div>
+    <div class="switcher glass" id="switcher" style="--c:var(--gold)"></div>
+    <div class="scrim" id="scrim"></div>
+    <div id="layer"></div>
+    <div class="veil" id="veil"></div>
+    <div class="spot" id="spot"></div>
+    <div class="gbx glass" id="gbx" role="dialog"></div>
+    <div class="sheet glass" id="sheet" role="dialog"></div>
+    <div class="toasts" id="toasts"></div>
+    <div class="toast" id="toast"></div>
+  </div>
+  <aside class="notes">
+    <span class="ov">RÉTEGEK · ÜVEG · 10. SZELET</span>
+    <h1>Ünnepek, ablakok, belépés</h1>
+    <p>Minden, ami egy oldal <em>fölött</em> jelenik meg (ünneplés, szintlépés, felugró ablak, alsó lap, üzenetsáv, kalauz), és ami az app előtt vagy mellett áll (belépés, első lépések, admin, Minden oldal, hiba, indulás).</p>
+    <p class="abnote">Egy szabály végig: <em>a réteg üveg, ami rajta van, lapos.</em> Ünneplésnél arany derengés és egy hangos szám; ablakban egy ikon és egy mondat; üzenetsávban egy színes szél.</p>
+    <nav id="jump">
+      <a href="#cer-etel" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-star"/></svg>Étkezés-ünnep</a>
+      <a href="#cer-sport" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-volley"/></svg>Sport-ünnep</a>
+      <a href="#cer-gym" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-dumbbell"/></svg>Edzés-ünnep (élő, összehasonlításhoz)</a>
+      <a href="#szint" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-up"/></svg>Szintlépés</a>
+      <a href="#ablak" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-info"/></svg>Felugró ablakok</a>
+      <a href="#lapok" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-gear"/></svg>Alsó lapok</a>
+      <a href="#uzenet" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-bell"/></svg>Üzenetsávok</a>
+      <a href="#kalauz" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-compass"/></svg>Kalauz</a>
+      <a href="#udv/1" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-dawn"/></svg>Első indítás</a>
+      <a href="#belep" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-key"/></svg>Belépés</a>
+      <a href="#elso/1" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-person"/></svg>Első lépések</a>
+      <a href="#admin" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-signal"/></svg>Admin</a>
+      <a href="#minden" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-grid"/></svg>Minden oldal</a>
+      <a href="#hiba" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-info"/></svg>Hiba · naptár · visszatérés</a>
+      <a href="#splash" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-orb"/></svg>Indulás</a>
+      <a href="#ikonok" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-spark"/></svg>Új ikonok (6)</a>
+    </nav>
+    <ul>
+      <li>Belépés: <a href="#belep">belépés</a> · <a href="#belep/lejart">lejárt munkamenet</a> · <a href="#belep/hiba">hibás jelszó</a> · <a href="#reg">regisztráció</a> · <a href="#jelszo">kötelező jelszócsere</a> · <a href="#szerver">nem éri el a szervert</a></li>
+      <li>Szintlépés: <a href="#szint">szintlépéssel</a> · <a href="#szint/csak">csak XP</a></li>
+      <li>Kalauz: <a href="#kalauz/1">kártyák 1–5</a> · <a href="#kalauz/peek">megmutatás a képernyőn</a></li>
+    </ul>
+    <label class="toggle"><input type="checkbox" id="still"> Mozgás kikapcsolása</label>
+  </aside>
+</div>
+
+<script type="module">
+const $=s=>document.querySelector(s);
+const C=n=>`<svg class="icon" aria-hidden="true"><use href="#c-i-${n}"/></svg>`;
+let bi=0;const B=d=>`<svg class="boop is-alive" style="--bd:-${(bi++*1.7)%9}s" viewBox="0 0 100 100" aria-hidden="true"><use href="#boop-${d}"/></svg>`;
+const I=(n,c='')=>`<svg class="icon ${c}" aria-hidden="true"><use href="#t-${n}"/></svg>`;
+const ring=(p,c,r=34,vb=80)=>`<svg viewBox="0 0 ${vb} ${vb}" aria-hidden="true"><circle class="ring-track" cx="${vb/2}" cy="${vb/2}" r="${r}" pathLength="100"/><circle class="ring-prog" cx="${vb/2}" cy="${vb/2}" r="${r}" pathLength="100" style="--p:${p};--c:${c}"/></svg>`;
+const bar=(w,c,from=null)=>`<span class="bar" style="--c:${c}">${from!=null?`<b class="from" style="--w:${from}%"></b>`:''}<b style="--w:${Math.max(2,Math.min(100,w))}%"></b></span>`;
+const hu=n=>String(n).replace('.',',');
+const ease=t=>1-(1-t)**3;
+const still=()=>document.body.classList.contains('still')||matchMedia('(prefers-reduced-motion: reduce)').matches;
+let ntfOpen=false, DOMAIN='nap', LAYER='';
+
+/* ── fejléc + keret (fuel-uveg.html, változatlan) ── */
+function topbar(){return `<header class="topbar"><span class="wordmark">boop</span>
+  <button class="rbtn q glass" data-go="#kalauz/1" aria-label="Kalauz">?<i class="dot"></i></button>
+  <button class="rbtn glass" data-go="#lapok" aria-label="Beállítások">${C('beallitas')}</button>
+  <button class="rbtn glass" style="--c:var(--lav)" data-toast="Mezo üzenetei" aria-label="Mezo üzenetei">${C('level')}<b class="badge">2</b></button>
+  <button class="rbtn glass ${ntfOpen?'is-open':''}" style="--c:var(--sky)" data-ntf aria-label="Értesítések">${C('ertesites')}<b class="badge">3</b></button>
+  <button class="orb glass" aria-label="A mai napod · 4 a 7 jelből megvan" data-toast="A mai nap oldala"><svg viewBox="0 0 40 40"><defs><clipPath id="orbc"><circle cx="20" cy="20" r="16"/></clipPath><linearGradient id="orbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC3A8"/><stop offset=".5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C8431F"/></linearGradient></defs><circle class="orb-glass" cx="20" cy="20" r="16"/><g clip-path="url(#orbc)"><g class="wave"><path class="orb-liquid" fill="url(#orbg)" d="M-4 17 Q2 14 8 17 T20 17 T32 17 T44 17 T56 17 V44 H-4Z"/></g></g><path class="orb-hi" d="M11 12 A11 11 0 0 1 17 8.5"/></svg></button>
+</header>`}
+const back=(to,l)=>`<div class="backrow"><button class="backbtn glass" data-go="${to}"><b>‹</b>${l}</button></div>`;
+const DOMS={nap:['Nap','var(--gold)',[['Mai','nap'],['Rutin','hajnal'],['Hét','heti'],['Napló','naplo']]],
+  train:['Edzés','var(--coral)',[['Mai','edzes'],['Terv','meso'],['Terhelés','trend'],['Gyakorlatok','futas']]],
+  fuel:['Fuel','var(--sage)',[['Mai','fuel'],['Konyha','kamra'],['Stack','stack'],['Trendek','trend']]],
+  mezo:['Mezo','var(--lav)',[['Üzenőfal','mezo'],['Beszélgetés','level'],['Rólad','tudas'],['Csapat','emberek']]],
+  en:['Én','var(--rose)',[['Áttekintés','emberek'],['Súly','suly'],['Alvás','alvas'],['Napló','naplo']]]};
+function tabbar(){const [n,c,tabs]=DOMS[DOMAIN];const tb=$('#tabbar');tb.style.setProperty('--c',c);
+  tb.innerHTML=`<button class="tb-boop" style="--c:${c}" data-switch aria-label="Területváltó: ${n}">${B(DOMAIN==='train'?'train':DOMAIN,true)}</button>`+
+  tabs.map(([l,ic],i)=>`<button class="tb ${i===0?'on':''}" style="--c:${c}" data-toast="${n} · ${l}">${C(ic)}<span>${l}</span></button>`).join('')}
+function chrome(){
+  const D=[['nap','Nap','var(--gold)'],['train','Edzés','var(--coral)'],['fuel','Fuel','var(--sage)'],['mezo','Mezo','var(--lav)'],['en','Én','var(--rose)']];
+  $('#switcher').style.setProperty('--c',DOMS[DOMAIN][1]);
+  $('#switcher').innerHTML=`<small>TERÜLETVÁLTÓ</small><div class="sw-grid">${D.map(([d,n,c])=>`<button class="sw ${d===DOMAIN?'on':''}" style="--c:${c}" data-toast="${n}">${B(d)}${n}</button>`).join('')}</div>
+  <button class="ntf-foot" data-go="#minden" style="color:var(--ink);margin-top:10px">Minden oldal →</button>`;
+}
+$('#ntf').innerHTML=`<div class="ntf-head"><strong>Értesítések<em>3 új</em></strong><button data-toast="Mind olvasott">Mind olvasott</button></div>
+  <div class="ntf-chips"><span class="on">Mind <b>5</b></span><span>Olvasatlan <b>3</b></span><span>${I('pattern')}Minták <b>2</b></span><span>${I('orb')}Jóslatok <b>1</b></span></div>
+  <div class="ntf-day">MA</div>
+  <div class="ntf-row unread">${I('pattern')}<span><strong>Új minta vár döntésre</strong><small>A késői vacsora és a felszínes alvás között erős jel rajzolódik ki…</small></span><em>09:12</em></div>
+  <div class="ntf-row unread">${I('orb')}<span><strong>Bejött egy előrejelzés</strong><small>A múlt heti jóslatod a pihenőnapról beigazolódott.</small></span><em>08:40</em></div>
+  <div class="ntf-day">TEGNAP</div>
+  <div class="ntf-row">${I('scroll')}<span><strong>Elkészült a heti memoár</strong><small>A hét története, hét fejezetben.</small></span><em>21:02</em></div>
+  <button class="ntf-foot" data-toast="Összes értesítés">Összes értesítés ›</button>`;
+
+/* ═════════ 1. ÉTKEZÉS-ÜNNEP ═════════ */
+const MEAL={label:'Ebéd',time:'12:40',score:8.3,kcal:640,p:42,c:58,f:21};
+const LADDER=['Rögzítve — minden adat segít.','Ez is számít.','Rendben van.','Erős tányér.','Hibátlan választás.'];
+function fuelStub(){DOMAIN='fuel';return topbar()+`<div class="stubhead"><span class="eb">FUEL · MA</span><h2>Mai étkezéseid</h2></div>
+  <div class="demo">${[['Reggeli','07:50','dawn','var(--gold)','420 kcal'],['Ebéd','12:40','bowl','var(--sage)','640 kcal'],['Uzsonna','16:10','snack','var(--sky)','—']].map(([n,t,ic,c,k])=>`<div class="row glass" style="--c:${c}"><span class="well" style="--c:${c}">${I(ic)}</span><span class="grow"><strong>${n}</strong><small>${t}</small></span><b>${k}</b></div>`).join('')}</div>`}
+function cerEtel(){
+  const stars=Math.max(1,Math.min(5,Math.ceil(MEAL.score/2)));
+  LAYER=`<div class="fcx glass" id="fcx" role="dialog" aria-label="Az étkezésed elkészült" style="--p:0">
+    <div class="grab"></div>
+    <div class="fcx-top"><span class="eb">A NAPOD RÉSZE LETT</span><h2>${MEAL.label}</h2><small>${MEAL.time}</small></div>
+    <h1 class="sr">${stars} csillag az ötből</h1>
+    <div class="fcx-mid"><div class="medal" style="--s:${MEAL.score*10}"><svg class="mr" viewBox="0 0 80 80"><circle class="mt" cx="40" cy="40" r="36" pathLength="100"/><circle class="mp" cx="40" cy="40" r="36" pathLength="100"/></svg>
+        <span class="core">${I('score')}<b data-sc>0</b></span></div>
+      <span class="medal-cap">MEZO ÉRTÉKELÉSE · 10-BŐL</span>
+      <div class="fstars" aria-hidden="true">${[0,1,2,3,4].map(i=>`<i data-fs="${i}">${I('star-empty','off')}${I('star','on')}</i>`).join('')}</div></div>
+    <p class="fcx-verdict">${LADDER[stars-1]}</p>
+    <div class="fcx-count">${[['plate','kcal','kcal',MEAL.kcal],['protein','g fehérje','p',MEAL.p],['carb','g szénhidrát','c',MEAL.c],['fat','g zsír','f',MEAL.f]].map(([ic,l,k])=>`<span class="cell">${I(ic)}<b data-mc="${k}">0</b><small>${l}</small></span>`).join('')}</div>
+    <div class="fcx-foot"><button class="pillx ghost" data-go="#cer-etel/nap">Vissza a naphoz</button><button class="pillx" style="--c:var(--lav)" data-toast="→ Az étkezés értékelése (Miből jött ez a pontszám)">${I('macro')}Részletek</button></div>
+  </div>`;return fuelStub()}
+function runEtel(){
+  const el=$('#fcx');if(!el)return;const stars=Math.ceil(MEAL.score/2);
+  requestAnimationFrame(()=>{el.classList.add('on');$('#scrim').classList.add('on')});
+  const D=1000,paint=ms=>{const t=ease(Math.min(1,ms/D));el.style.setProperty('--p',t);
+    el.querySelector('[data-sc]').textContent=hu((MEAL.score*t).toFixed(1));
+    el.querySelectorAll('[data-fs]').forEach(s=>s.classList.toggle('is-lit',+s.dataset.fs<Math.round(stars*t+.001)&&t>.2));
+    el.querySelectorAll('[data-mc]').forEach(b=>b.textContent=Math.round(MEAL[b.dataset.mc]*t));
+    el.classList.toggle('is-told',ms>=D*.85)};
+  if(still()){paint(D);return}
+  /* the ignition waits until the sheet has fully landed: first the drawer, then the stars */
+  let go=false;const start=()=>{if(go||!el.isConnected)return;go=true;const t0=performance.now();const f=n=>{const ms=Math.min(D,n-t0);paint(ms);if(ms<D&&el.isConnected)requestAnimationFrame(f)};requestAnimationFrame(f)};
+  el.addEventListener('transitionend',e=>{if(e.target===el&&e.propertyName==='transform')start()},{once:false});setTimeout(start,900)}
+
+/* ═════════ 2. SPORT-ÜNNEP ═════════ */
+const SP={sport:'RÖPLABDA',name:'Röplabda',min:94,rpe:7,kcal:520,xp:65,stars:4.5,ratio:.9};
+const SLADDER=['Ma nem jött össze.','Elindult.','Rendben volt.','Erős nap.','Hibátlan nap.'];
+function starCls(i,p){const v=p*5-i;return v>=1?'is-lit':v>=.5?'is-half':''}
+function cerSport(){return `<div id="cerroot"><section class="cer" id="cerstage" style="--p:0"><span class="eb">${SP.sport} · MA</span>
+  <div class="cstars" aria-hidden="true">${[0,1,2,3,4].map(i=>`<i data-star="${i}">${I('star-empty','off')}${I('star-half','half')}${I('star','on')}</i>`).join('')}</div>
+  <div class="fuse" aria-hidden="true"><b></b><em></em>${[1,2,3,4].map(i=>`<u style="--at:${i*20}%"></u>`).join('')}</div></section>
+  <div class="ctally">${[['clock','perc','min'],['flame','RPE','rpe'],['plate','kcal','kcal']].map(([ic,l,k])=>`<span class="cell">${I(ic)}<b data-c="${k}">0</b><small>${l}</small></span>`).join('')}</div>
+  <h1 class="sr">4,5 csillag az ötből</h1><p class="verdict">${SLADDER[4]}</p>
+  <div class="xpline"><span class="flat">${I('coin')}+${SP.xp} szerzett XP</span></div>
+  <div class="kcalh"><span class="line">${I('bowl')}<b>+${SP.kcal}<small>kcal</small></b></span><p>Ennyit nyertél a mai mozgással</p><p class="tiny">Becslés, nem mérés</p></div>
+  <div class="cfoot"><button class="ccta glass lift" data-toast="→ Vissza a mai napra">${I('volley')}<span><strong>Vissza a mai napra</strong><small>${SP.name} elmentve</small></span><em>›</em></button></div>
+  <p class="cnote">A csillagok az edzésidőből és az erőfeszítésből számolnak, nem AI-értékelés.</p></div>`}
+function runSport(){
+  const root=$('#cerroot'),stage=$('#cerstage');if(!root)return;
+  const D=2700,S=1700,Bt={b1:1750,b2:2050,b3:2350};
+  const paint=ms=>{const p=ease(Math.min(1,ms/S))*SP.ratio;stage.style.setProperty('--p',p);
+    stage.querySelectorAll('[data-star]').forEach(s=>{const c=starCls(+s.dataset.star,p);s.classList.toggle('is-lit',c==='is-lit');s.classList.toggle('is-half',c==='is-half')});
+    const t=ease(Math.min(1,ms/S));root.querySelectorAll('[data-c]').forEach(b=>b.textContent=Math.round(SP[b.dataset.c]*t));
+    for(const k in Bt)root.classList.toggle(k,ms>=Bt[k])};
+  if(still()){paint(D);return}const t0=performance.now();const f=n=>{const ms=Math.min(D,n-t0);paint(ms);if(ms<D&&stage.isConnected)requestAnimationFrame(f)};requestAnimationFrame(f)}
+
+
+/* ═════════ 2b. EDZÉS-ÜNNEP (U4 jóváhagyott, élesben) ═════════ */
+const GYM={stars:4.5,ratio:.9,sets:14,reps:142,vol:4180,min:71,xp:185,pending:2,rec:[['Chest Supported Row','Súly-rekord',['105 kg','10 ism.']],['Lat Pulldown · Pronated','Rep-rekord',['12 ism.','74,5 kg']]],chal:[[1,'Túlterhelés','Chest Supported Row',['107,5 kg','8 ism.']],[0,'Mélység','Lat Pulldown · Pronated',['utolsó szett','RIR 0']]]};
+const KIND_IC={'Súly-rekord':'weight','Rep-rekord':'repeat','Túlterhelés':'up','Mélység':'hold'};
+const huN=n=>Math.round(n).toLocaleString('hu-HU').replace(/[  ]/g,' ');
+function cerGym(){return `<div id="cerroot" class="gym"><section class="cer" id="cerstage" style="--p:0"><span class="eb">EDZÉS LEZÁRVA</span>
+  <div class="cstars" aria-hidden="true">${[0,1,2,3,4].map(i=>`<i data-star="${i}">${I('star-empty','off')}${I('star-half','half')}${I('star','on')}</i>`).join('')}</div>
+  <div class="fuse" aria-hidden="true"><b></b><em></em>${[1,2,3,4].map(i=>`<u style="--at:${i*20}%"></u>`).join('')}</div></section>
+  <section class="cres"><h1 class="sr">4,5 csillag az ötből</h1><p class="verdict">Erős nap.</p>
+  <article class="ccard crecs glass"><div class="cch">${I('record')}<span><span class="eb">EZ A TIÉD MOSTANTÓL</span><strong>${GYM.rec.length} új rekord</strong></span></div>
+    ${GYM.rec.map(([n,k,ch])=>`<div class="rrow2"><strong>${n}</strong><span class="vals"><span class="tchip">${I(KIND_IC[k])}${k}</span>${ch.map(c=>`<b class="lit">${c}</b>`).join('')}</span></div>`).join('')}</article>
+  <article class="ccard glass" style="margin-top:12px"><div class="cstats"><span>${I('clock')}<span><strong>${GYM.min}<i>′</i></strong><small>a pulton töltött idő</small></span></span><span>${I('coin')}<span><strong>+${GYM.xp}</strong><small>szerzett XP</small></span></span></div>
+    <div class="ctally"><span>${I('weight')}<b data-g="sets">0</b><small>szett</small></span><span>${I('dumbbell')}<b data-g="reps">0</b><small>ismétlés</small></span><span>${I('protocol')}<b data-g="vol">0</b><small>kg × rep</small></span></div>
+    <div class="cchal"><span class="eb">KÜLDETÉSEK · 1 / 2</span>${GYM.chal.map(([ok,t,ex,ch])=>`<div class="chr ${ok?'hit':'miss'}"><span class="cb"><strong>${ex}</strong><span class="vals"><span class="tchip co">${I(KIND_IC[t])}${t}</span>${ch.map(c=>`<b>${c}</b>`).join('')}</span></span><span class="res" aria-label="${ok?'teljesült':'nem teljesült'}">${I(ok?'tick':'skip')}</span></div>`).join('')}</div></article>
+  <p class="cnote">${GYM.pending} szett kihagyott státusszal zárult.</p></section>
+  <div class="cfoot"><button class="ccta glass lift" data-toast="→ 2. lépés: izomcsoportok és a nyert kalória (élesben)">${I('journal')}<span><strong>Részletek</strong><small>Izomcsoportok és a nyert kalória</small></span><em>›</em></button></div>
+  <p class="cmp">Ez a 4. körben jóváhagyott, már élő edzés-ünnep — változatlanul, csak hogy a sport-ünneppel egymás mellett lásd.</p></div>`}
+function runGym(){
+  const root=$('#cerroot'),stage=$('#cerstage');if(!root)return;const D=2700,S=1700,Bt={b1:1750,b2:2050,b3:2350};
+  const paint=ms=>{const p=ease(Math.min(1,ms/S))*GYM.ratio;stage.style.setProperty('--p',p);
+    stage.querySelectorAll('[data-star]').forEach(st=>{const c=starCls(+st.dataset.star,p);st.classList.toggle('is-lit',c==='is-lit');st.classList.toggle('is-half',c==='is-half')});
+    const t=ease(Math.max(0,Math.min(1,(ms-Bt.b2)/(D-Bt.b2))));root.querySelectorAll('[data-g]').forEach(el=>{const v=GYM[el.dataset.g]*t;el.textContent=el.dataset.g==='vol'?huN(v):Math.round(v)});
+    for(const k in Bt)root.classList.toggle(k,ms>=Bt[k])};
+  if(still()){paint(D);return}const t0=performance.now();const f=n=>{const ms=Math.min(D,n-t0);paint(ms);if(ms<D&&stage.isConnected)requestAnimationFrame(f)};requestAnimationFrame(f)}
+
+/* ═════════ 3. SZINTLÉPÉS ═════════ */
+const LU={src:'run',chip:'FUTÁS · 42′',head:'Lett benne tempó.',xp:185,
+  ups:[['aerob','Aerob kapacitás','breath','var(--sky)',3,4,64],['sprint','Sprint-sebesség','sprint','var(--sky)',2,3,22]],
+  perks:[['Tüdő-tartalék','a hosszú futásokon 5%-kal lassabban fáradsz']],
+  more:[['Anaerob kapacitás','flame','var(--coral)',18,40,62],['Mozgékonyság','stretch','var(--lav)',8,55,71],['Core-stabilitás','core','var(--coral)',6,30,36],['Vádli','muscle','var(--coral)',12,48,70]],
+  robust:{weeks:4,xp:15}};
+function szint(v){
+  const only=v==='csak';
+  return `<div id="luroot" class="lu-root"><section class="lu" id="lustage" style="--p:0">
+  <span class="flat">${I('run')}${LU.chip}</span>
+  <h1>${only?'Szépen gyűlik.':LU.head}</h1>
+  <b class="xp" aria-hidden="true">+<span data-xp>0</span></b><span class="eb">XP · ÖSSZESEN</span><span class="sr">Összesen ${LU.xp} XP</span></section>
+  ${only?'':`<div class="h3 lusec s1"><span class="eb">SZINTLÉPÉS · ${LU.ups.length}</span></div>
+  <div class="p16 lusec s1">${LU.ups.map(([k,n,ic,c,a,b,p])=>`<div class="lurow glass" style="--c:${c}"><span class="lvring">${ring(p,c,34,80)}<b>${b}</b></span><span class="grow"><span class="nm">${I(ic)}${n}</span><span class="lvbadge">${I('up')}LEVEL UP · Lv${a} → ${b}</span></span></div>`).join('')}
+    ${LU.perks.map(([n,e])=>`<div class="perk">${I('star')}<span><b>${n}</b> — ${e}</span></div>`).join('')}</div>`}
+  <div class="h3 lusec s2"><span class="eb">MÉG FEJLŐDÖTT · ${LU.more.length}</span></div>
+  <div class="p16 lusec s2"><div class="grow2">${LU.more.map(([n,ic,c,x,a,b])=>`<div class="gcell" style="--c:${c}"><span class="t">${I(ic)}${n}<em>+${x}</em></span>${bar(b,c,a)}<small>${a}% → ${b}% a következő szintig</small></div>`).join('')}</div>
+    <div class="robust">${I('shield')}<span><b>Robusztusság</b> · ${LU.robust.weeks}. egymást követő héten edzel</span><em>+${LU.robust.xp}</em></div></div>
+  <div class="lufoot lusec s3"><button class="ccta glass lift" style="--c:var(--gold)" data-go="#cer-sport">${I('tick')}<span><strong>Tovább</strong><small>Vissza, ahonnan jöttél</small></span><em>›</em></button></div></div>`}
+function runSzint(){
+  const root=$('#luroot'),st=$('#lustage');if(!root)return;const D=2200,S=1400,Bt={b1:1200,b2:1600,b3:1950};
+  const paint=ms=>{const t=ease(Math.min(1,ms/S));st.style.setProperty('--p',t);root.querySelector('[data-xp]').textContent=Math.round(LU.xp*t);for(const k in Bt)root.classList.toggle(k,ms>=Bt[k])};
+  if(still()){paint(D);return}const t0=performance.now();const f=n=>{const ms=Math.min(D,n-t0);paint(ms);if(ms<D&&st.isConnected)requestAnimationFrame(f)};requestAnimationFrame(f)}
+
+/* ═════════ 4. FELUGRÓ ABLAKOK (GlassBox) ═════════ */
+function ablak(){DOMAIN='train';return topbar()+`<div class="stubhead"><span class="eb">EDZÉS · HÉT</span><h2>Heti terhelés</h2></div>
+  <p class="lead">A közös felugró ablak minden területen ugyanaz: lebegő üveg, a terület színével, fent ikon + cím, jobbra a bezárás. Koppints egyre:</p>
+  <div class="demo">${[['info','Mi ez? (információs gomb)','Edzés · hét, gyakorlat, sablon','info','var(--coral)'],['plate','Saját kalóriaérték','Sport rögzítése','kcal','var(--coral)'],['chat','Mi nem stimmel?','Üzenőfal · válasz egy kérdésre','reply','var(--lav)'],['lens','Miből látszik?','Karakter · forrás és értelmezés','evid','var(--lav)'],['history','Mi változott?','Karakter · a rólad alkotott kép','rev','var(--lav)'],['muscle','Hát · ezen a héten','Heti terhelés · izomcsoport','week','var(--coral)']].map(([ic,n,s,k,c])=>`<button class="row glass lift" style="--c:${c}" data-gbx="${k}"><span class="well" style="--c:${c}">${I(ic)}</span><span class="grow"><strong>${n}</strong><small>${s}</small></span><span class="chev">›</span></button>`).join('')}</div>`}
+const x=`<button class="xb" data-close aria-label="Bezárás">✕</button>`;
+const gh=(ic,eb,t,c)=>`<div class="gbx-head"><span class="well" style="--c:${c}">${I(ic)}</span><span class="grow"><span class="eb">${eb}</span><strong>${t}</strong></span>${x}</div>`;
+const GB={
+  info:['var(--coral)',()=>gh('info','MEZO · RÉSZLET','Heti szett-volumen','var(--coral)')+`<p class="copy">Ennyi <b>kemény szettet</b> csináltál ezen a héten izomcsoportonként. A sáv a te <b>MAV</b>-od: ennyi hoz még fejlődést, e fölött már csak fáradsz.</p>`],
+  kcal:['var(--coral)',()=>gh('plate','SPORT','Saját kalóriaérték','var(--coral)')+`<p class="copy">A becslés a te súlyodból, korodból és a mozgás fajtájából jön. Ha tudod, hogy máshogy volt, írd felül — akkor ezt mentjük, nem a becslést.</p>
+    <label class="field" style="margin-top:14px;--c:var(--coral)"><span>KALÓRIA</span><span class="inp focus">640</span></label>
+    <p class="err" style="margin-top:8px">${I('info')}Adj meg egy értéket 1 és 5000 kcal között.</p>
+    <button class="pillx wide" style="--c:var(--coral);margin-top:14px" data-close data-toast="Mentve">${I('tick')}Ezt mentem</button>`],
+  reply:['var(--lav)',()=>gh('chat','SZUNYA KÉRDEZI','Mi nem stimmel?','var(--lav)')+`<div class="srcrow"><span class="orbp" style="--c:var(--sky);width:30px;height:30px"></span><span><strong>„Hétköznap 23:00 után fekszel, hétvégén éjfél után.”</strong><small>Szunya · tegnap 21:40</small></span></div>
+    <span class="inp ph" style="margin-top:12px;min-height:90px">Írd le a saját szavaiddal…</span>
+    <div class="pair" style="margin-top:14px"><button class="pillx ghost" data-close>Mégse</button><button class="pillx" style="--c:var(--lav)" data-close data-toast="Elküldve Szunyának">${I('send')}Elküldöm</button></div>`],
+  evid:['var(--lav)',()=>`<div class="gbx-head"><span class="orbp" style="--c:var(--sky)"></span><span class="grow"><span class="eb">FORRÁS ÉS ÉRTELMEZÉS</span><strong>Miből látszik?</strong></span>${x}</div>
+    <p class="copy">Szunya ezt a <b>28 napos alvásnaplódból</b> és a hétvégi késői lefekvésekből olvassa ki.</p>
+    ${[['sleep','Alvásnapló · 28 nap','átlag lefekvés 23:24 · hétvégén 00:41'],['journal','Napló · szept. 18.','„Pénteken megint későn értem haza.”']].map(([ic,t,s])=>`<div class="srcrow">${I(ic)}<span><strong>${t}</strong><small>${s}</small></span></div>`).join('')}
+    <button class="pillx wide" style="--c:var(--lav);margin-top:14px" data-gbx="reply">${I('pencil')}Hozzáteszem, amit tudok</button>`],
+  rev:['var(--lav)',()=>gh('history','A RÓLAD ALKOTOTT KÉP','Mi változott?','var(--lav)')+`${[['Előtte','„Este nehezen kapcsolsz ki.”'],['Most','„Az esti képernyő a gond, nem a kikapcsolás — a könyv mellett 20 perccel hamarabb alszol el.”']].map(([t,s],i)=>`<div class="srcrow" ${i?'style="box-shadow:inset 2px 0 0 var(--lav),inset 0 0 0 1px var(--hair)"':''}><span><strong>${t}</strong><small>${s}</small></span></div>`).join('')}
+    <p class="copy" style="margin-top:10px;font-size:12px;color:var(--faint)">Szunya · szept. 24. · 3 új jel alapján</p>`],
+  week:['var(--coral)',()=>gh('muscle','EZEN A HÉTEN','Hát · ezen a héten','var(--coral)')+`<div class="cell" style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12px;color:var(--sub)">Kemény szett</span><b style="font-size:26px;font-weight:300;letter-spacing:-1px">14 <small style="font-size:12px;color:var(--faint)">/ 16 MAV</small></b></div>
+    ${[['Chest Supported Row','4 szett · hétfő'],['Lat Pulldown','4 szett · hétfő'],['Face Pull','3 szett · csütörtök'],['Húzódzkodás','3 szett · csütörtök']].map(([n,s])=>`<div class="exrow" style="--c:var(--coral)">${I('dumbbell')}<span class="grow"><strong>${n}</strong><small>${s}</small></span></div>`).join('')}`]};
+function openGb(k){const [c,f]=GB[k];const g=$('#gbx');g.style.setProperty('--c',c);g.innerHTML=f();closeSheet();$('#scrim').classList.add('on');g.classList.add('on')}
+function closeGb(){$('#gbx').classList.remove('on')}
+
+/* ═════════ 5. ALSÓ LAPOK ═════════ */
+function lapok(){DOMAIN='en';return topbar()+back('#lapok','Beállítások')+`<div class="nhero" style="--c:var(--rose)">${I('gear','art')}<span class="eb">BEÁLLÍTÁSOK</span><h1>Az alsó lap</h1><p>Egy közös, lebegő üveglap — ma még ezek viselik a régi, aljhoz tapadó bőrt.</p></div>
+  <div class="demo">${[['key','Új jelszó','Fiók','pw','var(--gold)'],['sleep','Alvás-cél','Én · beállítások','sleep','var(--lav)'],['calendar','Heti gym-időpontok','Edzés · beállítások','gym','var(--coral)'],['dumbbell','Gyakorlat hozzáadása','Edzés · saját edzés, sablon','ex','var(--coral)'],['key','Ideiglenes jelszó','Admin · fiókok','tmp','var(--gold)']].map(([ic,n,s,k,c])=>`<button class="row glass lift" style="--c:${c}" data-sheet="${k}"><span class="well" style="--c:${c}">${I(ic)}</span><span class="grow"><strong>${n}</strong><small>${s}</small></span><span class="chev">›</span></button>`).join('')}</div>`}
+const sx=`<button class="xb" data-close aria-label="Bezárás">✕</button>`;
+const SH={
+  pw:['var(--gold)',()=>`<div class="shh">${I('key')}<div class="grow"><span class="eb">FIÓK</span><h3>Új jelszó</h3></div>${sx}</div>
+    <div style="display:grid;gap:12px">${['Jelenlegi jelszó','Új jelszó (min. 8 karakter)','Új jelszó még egyszer'].map((l,i)=>`<label class="field"><span>${l.toUpperCase()}</span><span class="inp ${i===1?'focus':''}" style="--c:var(--gold)">••••••••${i===1?'••':''}</span></label>`).join('')}</div>
+    <p class="err" style="margin-top:10px">${I('info')}A két új jelszó nem egyezik.</p>
+    <button class="pillx wide" style="--c:var(--gold);margin-top:14px" data-close data-toast="Jelszó mentve">${I('tick')}Jelszó mentése</button>`],
+  sleep:['var(--lav)',()=>`<div class="shh">${I('sleep')}<div class="grow"><span class="eb">ALVÁS</span><h3>Alvás-cél</h3></div>${sx}</div>
+    <span class="eb" style="text-align:center">CÉL IDŐTARTAM</span>
+    <div class="stepper" style="--c:var(--lav)"><button aria-label="Cél csökkentése">−</button><b>7,5<small>óra</small></b><button aria-label="Cél növelése">+</button></div>
+    <p class="band" style="--c:var(--lav)"><i></i>Ajánlott sáv: 7–9 óra alvás</p>
+    <span class="eb" style="margin-top:16px">RÖGZÍTETT IDŐPONT</span>
+    <div class="wrapchips" style="margin-top:8px"><span class="flat on" style="--c:var(--lav)">${I('moon')}Lefekvés rögzítése</span><span class="flat">${I('dawn')}Ébredés rögzítése</span></div>
+    <label class="field" style="margin-top:12px"><span>LEFEKVÉS</span><span class="inp">22 : 45</span></label>
+    <div class="pair" style="margin-top:16px"><button class="pillx ghost" data-close>Mégse</button><button class="pillx" style="--c:var(--lav)" data-close data-toast="Mentve">${I('tick')}Mentés</button></div>`],
+  gym:['var(--coral)',()=>`<div class="shh">${I('calendar')}<div class="grow"><span class="eb">GYM · HETI IDŐ</span><h3>Heti gym-időpontok</h3></div>${sx}</div>
+    <div class="days7" style="--c:var(--coral)">${['H','K','Sz','Cs','P','Szo','V'].map((d,i)=>`<button class="${[0,1,3,4].includes(i)?'on':''}">${d}</button>`).join('')}</div>
+    <div style="display:grid;gap:8px;margin-top:14px">${[['Hétfő','17:30'],['Kedd','17:30'],['Csütörtök','07:00'],['Péntek','17:30']].map(([d,t])=>`<div class="cell" style="display:flex;justify-content:space-between;font-size:14px"><span>${d}</span><b>${t}</b></div>`).join('')}</div>
+    <p class="err" style="margin-top:10px">${I('info')}Nem sikerült menteni. A módosításaid megmaradtak; próbáld újra.</p>
+    <div class="pair" style="margin-top:14px"><button class="pillx ghost" data-close>Mégse</button><button class="pillx" style="--c:var(--coral)" data-close data-toast="Mentve">${I('tick')}Mentés</button></div>`],
+  ex:['var(--coral)',()=>`<div class="shh">${I('dumbbell')}<div class="grow"><span class="eb">SAJÁT EDZÉS</span><h3>Gyakorlat hozzáadása</h3></div>${sx}</div>
+    <span class="inp ph" style="display:flex;gap:8px;align-items:center"><svg class="icon" style="width:20px;height:20px" aria-hidden="true"><use href="#t-lens"/></svg>Keresés · pl. row, curl, press</span>
+    <div class="wrapchips" style="margin:10px 0 6px">${['Mind','Hát','Mell','Láb','Váll','Kar'].map((c,i)=>`<span class="flat ${i===1?'on':''}" style="--c:var(--coral)">${c}</span>`).join('')}</div>
+    ${[['Chest Supported Row','Hát (közép) · gép'],['Lat Pulldown · Pronated','Széles hát · csiga'],['Seated Cable Row','Hát (közép) · csiga'],['Face Pull','Hátsó váll · csiga'],['Húzódzkodás','Széles hát · saját testsúly']].map(([n,s])=>`<div class="exrow" style="--c:var(--coral)">${I('dumbbell')}<span class="grow"><strong>${n}</strong><small>${s}</small></span><em>+</em></div>`).join('')}`],
+  tmp:['var(--gold)',()=>`<div class="shh">${I('key')}<div class="grow"><span class="eb">ADMIN · FIÓKOK</span><h3>Ideiglenes jelszó</h3></div>${sx}</div>
+    <p class="copy" style="font-size:13.5px;color:var(--sub);line-height:1.5">Kovács Anna következő belépéskor új jelszót választ. Ezt most add át neki:</p>
+    <div class="cell" style="margin-top:12px;text-align:center;font-family:ui-monospace,Menlo,monospace;font-size:22px;letter-spacing:2px;color:#FFE0AE">tavasz-7Q4M</div>
+    <button class="pillx wide" style="--c:var(--gold);margin-top:14px" data-close data-toast="Vágólapra másolva">Másolás</button>`]};
+function openSheet(k){const [c,f]=SH[k];const s=$('#sheet');s.style.setProperty('--c',c);s.innerHTML=`<div class="grab"></div>`+f();closeGb();$('#scrim').classList.add('on');s.classList.add('on');s.scrollTop=0}
+function closeSheet(){$('#sheet').classList.remove('on')}
+
+/* ═════════ 6. ÜZENETSÁVOK ═════════ */
+function uzenet(){DOMAIN='nap';return topbar()+`<div class="stubhead"><span class="eb">NAP · MA</span><h2>Üzenetsávok</h2></div>
+  <p class="lead">Fent jelennek meg, egymás alatt legfeljebb három. Üveg, a szélén a jelentése színével; a jutalom-sáv arany.</p>
+  <div class="demo">${[['tick','Sikerült','„Magnézium bevéve” + Visszavonás','ok','var(--sage)'],['info','Hiba','„Mentés sikertelen — próbáld újra”','err','var(--coral)'],['bell','Tájékoztatás','„A Kalauz bármikor elérhető a ? gombbal.”','info','var(--sky)'],['harvest','Jutalom · szokás','Lánc-lépés, XP, szintlépés-sor','rw','var(--gold)'],['record','Jutalom · küldetés','Napi küldetés kész','rq','var(--gold)']].map(([ic,n,s,k,c])=>`<button class="row glass lift" style="--c:${c}" data-tst="${k}"><span class="well" style="--c:${c}">${I(ic)}</span><span class="grow"><strong>${n}</strong><small>${s}</small></span><span class="chev">›</span></button>`).join('')}</div>`}
+const TST={
+  ok:()=>['var(--sage)',`${I('tick')}<span class="grow">Magnézium bevéve</span><button class="act" data-toast="Visszavonva">Visszavonás</button>`],
+  err:()=>['var(--coral)',`${I('info')}<span class="grow">Mentés sikertelen — próbáld újra</span>`],
+  info:()=>['var(--sky)',`${I('bell')}<span class="grow">A Kalauz bármikor elérhető a ? gombbal.</span>`],
+  rw:()=>['var(--gold)',`${I('harvest')}<span class="grow"><span class="eb">SZOKÁS · 2 / 3</span><strong>Reggeli napfény <span>· Tökéletes reggel</span></strong><p>Két lépés megvan, már csak a víz.</p><span class="meter" style="--c:var(--rose)"><i></i>Tudatosság<b>+12</b></span><span class="lvup">${I('up')}LEVEL UP · Tudatosság · Lv3 → 4</span></span>`,'rw'],
+  rq:()=>['var(--gold)',`${I('quest')}<span class="grow"><span class="eb">KÜLDETÉS</span><strong>10 perc séta ebéd után</strong><p>Megvan — a vércukrod is hálás.</p><span class="meter" style="--c:var(--gold)"><i></i>XP<b>+20</b></span></span>`,'rw']};
+function fireToast(k){const [c,h,cls]=TST[k]();const w=$('#toasts');const el=document.createElement('div');el.className=`tst glass ${cls||''}`;el.style.setProperty('--c',c);el.setAttribute('role',k==='err'?'alert':'status');
+  el.innerHTML=h+`<button class="tx" aria-label="Bezárás"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M1 1l8 8M9 1L1 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>`;
+  w.prepend(el);while(w.children.length>3)w.lastChild.remove();el.querySelector('.tx').onclick=()=>el.remove();setTimeout(()=>el.remove(),k.startsWith('r')?6000:4200)}
+
+/* ═════════ 7. KALAUZ ═════════ */
+const KZ=[{q:'Mi ez?',t:'Ez a Fuel.',ic:'bowl',v:'Itt követjük, hogy mit eszel. Nem diéta és nem számolgatás — inkább <b>térkép</b>: mennyi energia ment be ma, és mennyi fér még.'},
+  {q:'Mire jó?',t:'A napi keret',ic:'plate',v:'A gyűrű mutatja, hol tartasz a mai keretedben. A szám a <b>még belefér</b> — nem tiltás, hanem mozgástér.',term:['Napi keret','Az a kalória-mennyiség, amivel a célod felé haladsz: a mozgásod hozzáad, a pihenőnap nem vesz el.']},
+  {q:'Hogyan használjuk?',t:'Egy koppintás, egy étkezés',ic:'quick',v:'A <b>+</b> gombbal bárhonnan logolhatsz. Mondd el, fotózd le vagy válaszd a kamrából — a többit Mezo kiszámolja.',peek:1},
+  {q:'Mikor nézzük?',t:'Evés után, este egyszer',ic:'clock',v:'Nem kell egész nap figyelni. Egy pillantás evés után, és este a <b>Napzárásnál</b> összeáll a kép.'},
+  {q:'Mivel függ össze?',t:'Minden mindennel',ic:'link',v:'Amit eszel, az megjelenik az edzéseden és az alvásodban is.',rel:[['dumbbell','Edzés','a mozgás bővíti a keretet'],['sleep','Alvás','a késői vacsora rontja'],['pattern','Minták','Mezo összeköti őket']]}];
+function kalauz(v){DOMAIN='fuel';const s=fuelStub();setTimeout(()=>{if(v==='peek')peek();else openKz(+(v||1))},30);return s}
+function openKz(n){const k=KZ[n-1];const s=$('#sheet');s.style.setProperty('--c','var(--gold)');
+  s.innerHTML=`<div class="grab"></div><div class="kz"><div class="kz-top"><span class="eb">KALAUZ · <b>FUEL · MA</b></span><em>${n} / ${KZ.length}</em>${sx}</div>
+  <div class="kz-card"><span class="kz-q"><i>${n}</i>${k.q}</span>${I(k.ic,'art')}<h3>${k.t}</h3><p>${k.v}</p>
+  ${k.term?`<div class="kz-term"><strong>${k.term[0]}</strong><small>${k.term[1]}</small></div>`:''}
+  ${k.rel?`<div class="kz-rel">${k.rel.map(([ic,l,e])=>`<span class="flat">${I(ic)}${l} · ${e}</span>`).join('')}</div>`:''}
+  ${k.peek?`<button class="pillx ghost kz-peekbtn" data-peek>${I('eye')}Mutasd meg a képernyőn</button>`:''}</div>
+  <div class="kz-dots">${KZ.map((_,i)=>`<i class="${i===n-1?'on':''}"></i>`).join('')}</div>
+  <div class="kz-foot"><button class="skip" data-close>Kihagyom</button><button class="pillx ghost" ${n>1?`data-kz="${n-1}"`:'disabled style="opacity:.4"'}>‹ Vissza</button><button class="pillx" style="--c:var(--gold)" ${n<KZ.length?`data-kz="${n+1}"`:'data-close data-toast="Kalauz kész — a ? gombbal bármikor visszanézheted"'}>${n<KZ.length?'Tovább':'Értem, kezdjük'}</button></div></div>`;
+  closeGb();$('#scrim').classList.add('on');s.classList.add('on')}
+function peek(){closeSheet();$('#scrim').classList.remove('on');const f=$('#fab').getBoundingClientRect(),p=$('#phone').getBoundingClientRect();
+  const sp=$('#spot');Object.assign(sp.style,{left:(f.left-p.left-8)+'px',top:(f.top-p.top-8)+'px',width:(f.width+16)+'px',height:(f.height+16)+'px'});
+  $('#veil').classList.add('on');sp.classList.add('on');
+  let pb=$('#peekbar');if(!pb){pb=document.createElement('div');pb.id='peekbar';pb.className='peekbar glass';$('#phone').appendChild(pb)}
+  pb.style.bottom='auto';pb.style.top='80px';pb.innerHTML=`<span class="well" style="--c:var(--gold);width:40px;height:40px">${I('eye')}</span><span class="grow">Ez a <b>+</b> gomb — innen logolsz bárhonnan.<small>Koppints bárhova.</small></span><button class="pillx ghost" data-unpeek>Vissza</button>`}
+function unpeek(){$('#veil').classList.remove('on');$('#spot').classList.remove('on');$('#peekbar')?.remove();openKz(3)}
+
+/* T0 üdvözlő */
+let welDom='nap';
+function udv(n){n=+(n||1);const foot=`<div class="wel-foot"><button class="skip" data-toast="Kihagyva — a Kalauz a ? mögött marad">Kihagyom</button><button class="pillx ghost" ${n>1?`data-go="#udv/${n-1}"`:'disabled style="opacity:.4"'}>‹ Vissza</button><button class="pillx" style="--c:var(--lav)" ${n<4?`data-go="#udv/${n+1}"`:'data-toast="Induljunk → Nap"'}>${n<4?'Tovább':'Induljunk'}</button></div>`;
+  const top=`<div class="wel-top"><span class="eb">ELSŐ INDÍTÁS · <b>${n} / 4</b></span></div>`;
+  const D=[['nap','Nap','var(--gold)','A mai nap gerince: rutin, üzenetek, küldetések, Életjel — mindig az, ami most a dolgunk.'],['train','Edzés','var(--coral)','Edzés, sport, futás: a heti terv, az aktív edzés, a gyakorlatok és a medálok.'],['fuel','Fuel','var(--sage)','Étkezés és napi keret, kamra, receptek, a stack és a gyógyszer.'],['mezo','Mezo','var(--lav)','A társ: a chat, a minták, amiket rólad észrevesz, és amit rólad megtanult.'],['en','Én','var(--rose)','Te: cél, súly, alvás, emberek, karakter, beállítások.']];
+  let body='';
+  if(n===1)body=`<div class="wel-hero">${B('mezo',true)}<h1>Szia, Mezo vagyok.</h1><p class="voice">Egy nap nálunk három szakasz: reggel <b>indítunk</b>, napközben <b>logolunk és edzünk</b>, este <b>lezárjuk</b>. A Nap fül mindig azt mutatja, ami éppen soron van.</p></div>
+    <div class="dparts">${[['dawn','Reggel','rutin · mérleg · Mezo üzenete',''],['sun','Nap','logolás · edzés · check-in','mid'],['moon','Este','rutin · Napzárás','']].map(([ic,l,s,m],i)=>`<div class="dpart glass ${m}" style="--c:${['var(--gold)','var(--coral)','var(--lav)'][i]};--i:${i}">${I(ic)}<strong>${l}</strong><small>${s}</small></div>`).join('')}</div>`;
+  if(n===2){const cur=D.find(d=>d[0]===welDom);body=`<div class="wel-hero" style="padding-bottom:0"><h1>Öt hely, ahol minden megvan.</h1><p class="voice">Koppints a fülekre — mindegyik megmutatja, mi lakik nála.</p></div>
+    <div class="dom5">${D.map(([d,l,c])=>`<button class="${d===welDom?'on':''}" style="--c:${c}" data-wd="${d}">${B(d,d===welDom)}${l}</button>`).join('')}</div>
+    <div class="domvoice glass" style="--c:${cur[2]}">${cur[3]}</div><p class="hint">Koppints a fülekre.</p>`}
+  if(n===3)body=`<div class="wel-hero" style="padding-bottom:0"><h1>Logolni bárhonnan, tíz másodperc.</h1><p class="voice">A <b>+</b> gomb minden oldalon ott van. Koppints rá — megnézheted, mi fér el mögötte.</p></div>
+    <div class="tiles7">${[['bowl','Étkezés'],['dumbbell','Edzés'],['supps','Stack'],['weight','Súly'],['checkin','Check-in'],['sleep','Alvás'],['journal','Napló']].map(([ic,l])=>`<span class="cell">${I(ic)}${l}</span>`).join('')}</div>
+    <div class="chatrow glass" style="--c:var(--lav);border-radius:18px">${I('mic')}<strong style="font-size:14px">Mondd el Mezónak</strong></div><p class="hint">Koppints a + gombra.</p>`;
+  if(n===4)body=`<div class="wel-hero" style="padding-bottom:0"><h1>Ha bármikor elakadsz.</h1><p class="voice">A fejlécben a <b>?</b> megmutatja, mi mire jó azon az oldalon, ahol éppen vagy. Az arany pötty jelzi, ha van még, amit nem néztél meg.</p></div>
+    <div class="qpulse glass">?</div>`;
+  return `<div class="wel">${top}${body}${foot}</div>`}
+
+/* ═════════ 8. BELÉPÉS ═════════ */
+const ahero=(h,p='')=>`<div class="auth-hero"><span class="auth-mark">mezo</span><h1>${h}</h1>${p?`<p>${p}</p>`:''}</div>`;
+function belep(v){return `<div class="auth">${ahero('Bejelentkezés')}
+  ${v==='lejart'?`<div class="notice">${I('clock')}A munkameneted lejárt, jelentkezz be újra.</div>`:''}
+  <div class="auth-card glass"><label class="field"><span>E-MAIL</span><span class="inp ${v==='hiba'?'':'focus'}">anna@pelda.hu</span></label>
+  <label class="field"><span>JELSZÓ</span><span class="inp">••••••••••</span></label>
+  ${v==='hiba'?`<p class="err">${I('info')}Hibás e-mail vagy jelszó.</p>`:''}
+  <button class="pillx wide" style="--c:var(--lav)" data-go="#splash">Belépés</button></div>
+  <button class="auth-link" data-go="#reg">Van meghívó kódod?</button></div>`}
+function reg(){return `<div class="auth">${ahero('Regisztráció')}
+  <div class="auth-card glass"><label class="field"><span>MEGHÍVÓ KÓD</span><span class="inp mono focus">MEZO-7K2P-Q4XD</span></label>
+  <label class="field"><span>NÉV</span><span class="inp">Kovács Anna</span></label><label class="field"><span>E-MAIL</span><span class="inp">anna@pelda.hu</span></label>
+  <label class="field"><span>JELSZÓ (MIN. 8 KARAKTER)</span><span class="inp">••••••••</span></label>
+  <button class="pillx wide" style="--c:var(--lav)" data-go="#elso/1">Fiók létrehozása</button></div>
+  <button class="auth-link" data-go="#belep">Vissza a belépéshez</button></div>`}
+function jelszo(){return `<div class="auth">${ahero('Új jelszó','Ideiglenes jelszóval léptél be — válassz egy sajátot.')}
+  <div class="auth-card glass" style="--c:var(--gold)">${['Jelenlegi jelszó','Új jelszó (min. 8 karakter)','Új jelszó még egyszer'].map(l=>`<label class="field"><span>${l.toUpperCase()}</span><span class="inp">••••••••</span></label>`).join('')}
+  <button class="pillx wide" style="--c:var(--gold)" data-go="#elso/1">Jelszó mentése</button></div>
+  <button class="auth-link" data-go="#belep">Kijelentkezés</button></div>`}
+function szerver(){return `<div class="down">${I('signal','art')}<h1>Nem érem el a szervert</h1><p>Az app nem tud bejelentkezni — lehet, hogy a backend épp újraindul. Adatot most nem tudsz menteni.</p><button class="pillx wide" style="--c:var(--coral)" data-go="#belep">Újra</button></div>`}
+function elso(n){n=+(n||1);const st=['Rólad','Testméretek','Összefoglaló'];
+  const bar=`<div class="steps3">${st.map((s,i)=>`${i?'<u></u>':''}<span class="${i+1===n?'on':i+1<n?'done':''}"><i>${i+1}</i>${s}</span>`).join('')}</div>`;
+  let body='';
+  if(n===1)body=`<div class="auth-hero" style="padding-bottom:14px"><span class="eb">ELSŐ LÉPÉSEK</span><h1 style="font-size:26px">Szia, Anna!</h1><p>Ezekből számol a Mezo — később a Beállításokban módosíthatod.</p></div>${bar}
+    <div class="auth-card glass"><div class="field"><span>NEM</span><div class="seg2"><button>Férfi</button><button class="on">Nő</button></div></div><label class="field"><span>SZÜLETÉSI DÁTUM</span><span class="inp">1991. 04. 17.</span></label></div>`;
+  if(n===2)body=`<div class="auth-hero" style="padding-bottom:14px"><span class="eb">ELSŐ LÉPÉSEK</span><h1 style="font-size:26px">Testméretek</h1></div>${bar}
+    <div class="auth-card glass">${[['MAGASSÁG','168','cm'],['SÚLY','64,5','kg']].map(([l,v,u])=>`<div class="field"><span>${l}</span><div class="stepper" style="--c:var(--lav);margin:0"><button>−</button><b>${v}<small>${u}</small></b><button>+</button></div></div>`).join('')}
+    <p class="tiny" style="font-size:11.5px;color:var(--faint)">A súly mai bejegyzésként kerül a naplóba.</p></div>`;
+  if(n===3)body=`<div class="auth-hero" style="padding-bottom:14px"><span class="eb">ELSŐ LÉPÉSEK</span><h1 style="font-size:26px">Összefoglaló</h1></div>${bar}
+    <div class="auth-card glass" style="gap:0">${[['Nem','Nő'],['Születési dátum','1991. 04. 17.'],['Magasság','168 cm'],['Súly','64,5 kg']].map(([a,b])=>`<div class="sumrow"><span>${a}</span><b>${b}</b></div>`).join('')}</div>`;
+  return `<div class="auth" style="justify-content:flex-start;padding-top:30px">${body}<div class="pair" style="margin-top:16px"><button class="pillx ghost" ${n>1?`data-go="#elso/${n-1}"`:'disabled style="opacity:.4"'}>Vissza</button><button class="pillx" style="--c:var(--lav)" ${n<3?`data-go="#elso/${n+1}"`:'data-go="#udv/1"'}>${n<3?'Tovább':'Kezdjük'}</button></div></div>`}
+
+/* ═════════ 9. ADMIN ═════════ */
+function admin(){const cost=[.9,1.2,1.1,.8,1.6,2.1,1.4,1.3,1.9,1.7,1.2,.9,1.1,1.5,2.4,1.8,1.6,1.2,1.3,1.9,2.2,1.7,1.5,1.4,1.8,2,1.6,1.9,2.3,1.84],act=[3,4,4,2,5,5,3,4,4,5,3,2,3,4,5,5,4,3,4,5,5,4,3,4,5,5,4,4,5,3];
+  const mx=Math.max(...cost);
+  return `<div class="admin"><nav class="rail glass"><div class="brand"><strong>Mezo</strong><small>ADMIN</small></div>
+    ${[['signal','Pulzus',1],['people','Emberek'],['grid','Funkciók'],['coin','Költés'],['layers','Memória'],['key','Meghívók és fiókok']].map(([ic,l,on])=>`<a href="#admin" class="${on?'on':''}" data-toast="${l}">${I(ic)}${l}</a>`).join('')}
+    <div class="grp"><span class="eb">ESZKÖZÖK</span></div><a href="#admin" data-toast="Nyers adatok">${I('graph')}Nyers adatok</a>
+    <a href="#minden" style="margin-top:6px">${I('exit')}Vissza az appba</a></nav>
+  <main class="adm"><div class="adm-head"><div><span class="eb">ADMIN</span><h1>Pulzus</h1></div><small>frissítve 09:41</small></div>
+  <div class="agrid">
+    <section class="atile glass s3" style="--c:var(--sage)"><span class="eb">RENDSZER</span><div class="health">${I('shield')}<span><strong>Minden rendben</strong><div class="sub">0 riasztás · 24 óra</div></span></div></section>
+    <section class="atile glass s3" style="--c:var(--gold)"><span class="eb">KÖLTÉS MA</span><div class="big">$1,84<small>/ $3 keret</small></div><div class="sub">61% · 412 hívás</div></section>
+    <section class="atile glass s3" style="--c:var(--coral)"><span class="eb">AKTÍV MA</span><div class="big">3<small>/ 5 tesztelő</small></div><div class="sub">utolsó: Anna · 09:38</div></section>
+    <section class="atile glass s3" style="--c:var(--lav)"><span class="eb">MEMÓRIA</span><div class="big">1 240<small>tény</small></div><div class="sub">+18 ma · 6 döntésre vár</div></section>
+    <section class="atile glass s6" style="--c:var(--gold)"><span class="eb">KÖLTÉS 30 NAP</span><div class="bars30">${cost.map(v=>`<i style="height:${v/mx*100}%"></i>`).join('')}</div></section>
+    <section class="atile glass s6" style="--c:var(--sage)"><span class="eb">AKTIVITÁS 30 NAP</span><div class="bars30">${act.map(v=>`<i style="height:${v/5*100}%"></i>`).join('')}</div></section>
+    <section class="atile glass s4" style="--c:var(--coral)"><span class="eb">KIK VISZIK A KÖLTÉST · 7 NAP</span>${[['Anna','$4,12'],['Bence','$2,77'],['Dóri','$1,05']].map(([n,v])=>`<div class="arow"><span class="grow">${n}</span><b>${v}</b></div>`).join('')}</section>
+    <section class="atile glass s4" style="--c:var(--gold)"><span class="eb">MIRE MEGY A PÉNZ · 7 NAP</span>${[['Beszélgetés','$3,40'],['Esti szerkesztőség','$2,18'],['Étkezés-értékelés','$1,52']].map(([n,v])=>`<div class="arow"><span class="grow">${n}</span><b>${v}</b></div>`).join('')}</section>
+    <section class="atile glass s4" style="--c:var(--sky)"><span class="eb">CSENDES TESZTELŐK</span>${[['Gergő','6 napja csend'],['Lili','3 napja csend']].map(([n,v])=>`<div class="arow"><span class="grow">${n}</span><small>${v}</small></div>`).join('')}</section>
+  </div></main></div>`}
+
+/* ═════════ 10. MINDEN OLDAL ═════════ */
+function minden(){DOMAIN='nap';const M=[['nap','Nap','var(--gold)',22,[['Mai',[['A napom','ma, élő'],['Mezo üzenetei','reggeli és esti levél']]],['Rutin',[['Rutin','reggel · este'],['Küldetések','a mai kihívások']]],['Napzárás',[['Napzárás','este, a nap lezárása']]]]],
+  ['train','Edzés','var(--coral)',28,[['Mai',[['Mai edzés','a heti terv mai napja'],['Sport rögzítése','röplabda, futás, túra…']]],['Terv',[['Mezociklus','a blokk hetei']]]]],
+  ['fuel','Fuel','var(--sage)',24,[['Mai',[['Fuel · Mai','étkezések és napi keret']]],['Konyha',[['Kamra','alapanyagok'],['Receptek','a saját könyved']]]]],
+  ['mezo','Mezo','var(--lav)',25,[['Üzenőfal',[['Üzenőfal','a csapat írásai']]],['Rólad',[['Rólad','a közös kép']]]]],
+  ['en','Én','var(--rose)',16,[['Áttekintés',[['Én','célok, súly, alvás']]],['Máshonnan elérhető',[['Emberek','a köröd']]]]]];
+  return topbar()+`<div class="nhero" style="--c:var(--gold);--c2:var(--lav)">${I('grid','art')}<span class="eb">LELTÁR</span><h1>Minden oldal</h1><p>Az app 115 oldala, területenként, a menü szerinti bontásban.</p></div>`+
+  M.map(([d,n,c,k,gs])=>`<section class="mno-dom glass" style="--c:${c}"><div class="mno-dh">${B(d)}<strong>${n}</strong><em>${k} oldal</em></div>
+    ${gs.map(([g,ls])=>`<div class="mno-g"><span class="eb">${g.toUpperCase()}</span>${ls.map(([l,h])=>`<button class="mno-l" data-toast="→ ${l}"><span class="grow"><strong>${l}</strong><small>${h}</small></span><span class="chev">›</span></button>`).join('')}</div>`).join('')}</section>`).join('')+
+  `<section class="mno-dom glass" style="--c:#B8AC9C"><div class="mno-dh"><span class="well" style="--c:#B8AC9C;width:44px;height:44px">${I('gear')}</span><strong>Beállítások</strong><em>Közös beállítások</em></div><div class="mno-g">${[['Beállítások','fiók, értesítések, területek']].map(([l,h])=>`<button class="mno-l" data-go="#lapok"><span class="grow"><strong>${l}</strong><small>${h}</small></span><span class="chev">›</span></button>`).join('')}</div></section>`}
+
+/* ═════════ 11. HIBA · NAPTÁR · VISSZATÉRÉS · INDULÁS ═════════ */
+let calOpen=false;
+function hiba(){DOMAIN='fuel';const pg=topbar()+`<div class="stubhead"><span class="eb">FUEL · MA</span><h2>Egy oldal, ami elakadt</h2></div>
+  <div class="errcard glass">${I('info','big')}<strong>Valami elromlott ezen a nézeten.</strong><p>A hiba részletei a konzolban vannak. Próbáld újra, vagy válts másik fülre.</p><button class="pillx" style="--c:var(--coral)" data-toast="Újrapróbálom…">Újrapróbálom</button></div>
+  <div class="h3"><span class="eb">NAPVÁLTÓ + NAPTÁR</span><em>Fuel · Mai, Rutin</em></div>
+  <div class="daynav"><button class="xb" aria-label="Előző nap">‹</button><button class="mid glass" data-cal>${I('calendar')}Szept. 26., szombat</button><button class="xb" aria-label="Következő nap" style="opacity:.35">›</button></div>
+  <div class="h3"><span class="eb">VISSZATÉRÉS EGY FUTÓ EDZÉSHEZ</span></div>
+  <p class="lead">Ha edzés közben máshová lépsz, a jobb alsó sarokban egy lebegő gomb visz vissza (a pötty: kész szettek). A beszélgetésben felül egy sáv jelenik meg:</p>
+  <div class="rbar glass" style="position:relative;top:0">${I('dumbbell')}<span class="grow">Vissza az edzéshez<small>Felsőtest A · 7 szett kész</small></span><button class="pillx" style="--c:var(--coral)" data-toast="→ Aktív edzés">Vissza</button></div>
+  <div class="bubble me">Most jó ötlet a húzódzkodás a sor után?</div><div class="bubble">Igen — a hátad még friss. Vegyél 2 perc pihenőt előtte.</div>
+  `;LAYER=`<div class="cal glass" id="cal"><div class="cal-h"><button class="xb" style="width:30px;height:30px">‹</button><strong>2026. szeptember</strong><button class="xb" style="width:30px;height:30px">›</button></div>
+  <div class="cal-g">${['H','K','Sz','Cs','P','Sz','V'].map(d=>`<small>${d}</small>`).join('')}${[31,...Array.from({length:30},(_,i)=>i+1),1,2,3,4].map((d,i)=>`<button class="${i===0||i>30?'out':''} ${i===26?'today sel':''} ${i>26&&i<=30?'fut':''}" data-closecal>${d}</button>`).join('')}</div></div>
+  <button class="rfab glass" data-toast="→ Aktív edzés (7 szett kész)" aria-label="Vissza az edzéshez">${I('dumbbell')}<b class="badge">7</b></button>`;return pg}
+function splash(){return `<div class="splash" role="img" aria-label="Boop betöltése"><div class="sorb glass"><svg viewBox="0 0 150 150"><defs><clipPath id="sc"><circle cx="75" cy="75" r="68"/></clipPath><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E6DDFF"/><stop offset=".55" stop-color="#AB9FD2"/><stop offset="1" stop-color="#5E4F9A"/></linearGradient></defs><g clip-path="url(#sc)"><g class="wave"><path fill="url(#sg)" opacity=".85" d="M-20 88 Q0 78 20 88 T60 88 T100 88 T140 88 T180 88 V160 H-20Z" style="filter:drop-shadow(0 0 10px rgba(171,159,210,.7))"/></g></g><path d="M34 44 A48 48 0 0 1 62 26" stroke="rgba(255,255,255,.55)" stroke-width="5" fill="none" stroke-linecap="round"/></svg></div><span class="auth-mark">boop</span></div>`}
+
+/* ═════════ ÚJ IKONOK ═════════ */
+function ikonok(){DOMAIN='nap';const N=[['jump','Vertikális emelkedés','szintlépés · „Még fejlődött” sor; Kitüntetések','var(--sage)'],['sprint','Sprint-sebesség','szintlépés; Növekedés · képességek','var(--sky)'],['core','Core-stabilitás','szintlépés; Növekedés · képességek','var(--coral)'],['juggle','Koordináció','szintlépés; Növekedés · képességek','var(--gold)'],['stretch','Mozgékonyság','szintlépés; Növekedés · képességek','var(--lav)'],['target','Agility','szintlépés; Növekedés · képességek','var(--coral)']];
+  return topbar()+back('#szint','Szintlépés')+`<div class="nhero" style="--c:var(--sage)">${I('spark','art')}<span class="eb">A 10. SZELET</span><h1>Új ikonok</h1><p>A 12 atlétikai képességből hatnak még nem volt 3D ikonja (eddig emodzsi). Jóváhagyás után a közös készletbe kerülnek.</p></div>
+  <div class="icgrid">${N.map((n,i)=>`<div class="iccard glass" style="--c:${n[3]};--i:${i}">${I(n[0])}<strong>${n[1]}</strong><small>${n[2]}</small></div>`).join('')}</div>
+  <div class="h3"><span class="eb">A MEGLÉVŐ KÉSZLETBŐL · AZ EMODZSIK HELYÉRE</span></div>
+  <div class="maptbl glass" style="--c:var(--gold)">${[['⚡','bolt','Robbanékonyság'],['🫁','breath','Aerob kapacitás'],['🔥','flame','Anaerob kapacitás'],['🔁','repeat','Erő-állóképesség'],['🏋️','dumbbell','Maximális erő · Edzőterem forrás'],['🛡️','shield','Robusztusság'],['💪','muscle','Izomcsoport'],['✨','spark','Ismeretlen képesség'],['🏃','run','Futás forrás'],['🏐','volley','Sport forrás'],['📜','quest','Küldetés forrás'],['✍️','pencil','Tevékenység forrás'],['☀️','dawn','Szokás forrás'],['★','star','Képesség-jutalom (perk)'],['🎉 🔥 🧊 🪙','coin','Próba-mód jutalom-üzenetek']].map(([o,ic,l])=>`<div><span class="old">${o}</span>→${I(ic)}<span>${l}</span></div>`).join('')}</div>
+  <p class="foot">A 6 új ikon a Titanium-recept szerint: 64×64, fémes színátmenet, halvány körvonal, fénycsíkok, árnyék.</p>`}
+
+/* ── router ─────────────────────────────────────────────── */
+const VW={'cer-etel':cerEtel,'cer-sport':cerSport,'cer-gym':cerGym,szint,ablak,lapok,uzenet,kalauz,udv,belep,reg,jelszo,szerver,elso,admin,minden,hiba,splash,ikonok};
+const NOCHROME=['cer-sport','cer-gym','szint','udv','belep','reg','jelszo','szerver','elso','admin','splash'];
+function render(){
+  const h=location.hash||'#cer-etel';let [r,id]=h.slice(1).split('/');if(!VW[r])r='cer-etel';
+  closeSheet();closeGb();$('#scrim').classList.remove('on');$('#veil').classList.remove('on');$('#spot').classList.remove('on');$('#peekbar')?.remove();
+  ntfOpen=false;$('#ntf').classList.remove('on');$('#switcher').classList.remove('on');$('#toasts').innerHTML='';calOpen=false;
+  LAYER='';if(r==='cer-etel'&&id==='nap'){$('#scroll').innerHTML=fuelStub()}else{$('#scroll').innerHTML=VW[r](id)}
+  $('#layer').innerHTML=LAYER;
+  $('#scroll').scrollTop=0;
+  $('#phone').classList.toggle('nochrome',NOCHROME.includes(r));$('#stage').classList.toggle('desk',r==='admin');
+  tabbar();chrome();
+  if(r==='cer-etel'&&id!=='nap')runEtel(); if(r==='cer-sport')runSport(); if(r==='cer-gym')runGym(); if(r==='szint')runSzint();
+  if(r==='uzenet')setTimeout(()=>fireToast('ok'),250);
+  document.querySelectorAll('#jump a').forEach(a=>a.setAttribute('aria-current',String(a.getAttribute('href').split('/')[0]==='#'+r)));
+}
+let toastT;
+function toast(t){clearTimeout(toastT);$('#toast').textContent=t;$('#toast').classList.add('on');toastT=setTimeout(()=>$('#toast').classList.remove('on'),2400)}
+document.addEventListener('click',e=>{
+  const t=e.target;
+  if(t.closest('[data-close]')){const tt=t.closest('[data-toast]');closeSheet();closeGb();$('#scrim').classList.remove('on');if(tt)toast(tt.dataset.toast);return}
+  const g=t.closest('[data-gbx]');if(g){openGb(g.dataset.gbx);return}
+  const s=t.closest('[data-sheet]');if(s){e.preventDefault();openSheet(s.dataset.sheet);return}
+  const ts=t.closest('[data-tst]');if(ts){fireToast(ts.dataset.tst);return}
+  const kz=t.closest('[data-kz]');if(kz){openKz(+kz.dataset.kz);return}
+  if(t.closest('[data-peek]')){peek();return}
+  if(t.closest('[data-unpeek]')||t.id==='veil'){unpeek();return}
+  const wd=t.closest('[data-wd]');if(wd){welDom=wd.dataset.wd;$('#scroll').innerHTML=udv(2);return}
+  if(t.closest('[data-cal]')){calOpen=!calOpen;$('#cal').classList.toggle('on',calOpen);return}
+  if(t.closest('[data-closecal]')){calOpen=false;$('#cal').classList.remove('on');toast('Nap kiválasztva');return}
+  const go=t.closest('[data-go]');if(go){e.preventDefault();if(location.hash===go.dataset.go)render();else location.hash=go.dataset.go;return}
+  const tt=t.closest('[data-toast]');if(tt){e.preventDefault();toast(tt.dataset.toast);return}
+  if(t.id==='scrim'){if($('#fcx')){location.hash='#cer-etel/nap';return}closeSheet();closeGb();$('#scrim').classList.remove('on')}
+});
+addEventListener('hashchange',render);
+$('#still').addEventListener('change',e=>{document.body.classList.toggle('still',e.target.checked);render()});
+function toggleNtf(v){ntfOpen=v??!ntfOpen;$('#ntf').classList.toggle('on',ntfOpen);document.querySelector('[data-ntf]')?.classList.toggle('is-open',ntfOpen);$('#scrim').classList.toggle('on',ntfOpen||$('#switcher').classList.contains('on'))}
+function toggleSwitch(v){const on=v??!$('#switcher').classList.contains('on');$('#switcher').classList.toggle('on',on);$('#scrim').classList.toggle('on',on)}
+document.addEventListener('click',e=>{
+  if(e.target.closest('[data-ntf]')){e.stopPropagation();toggleNtf();return}
+  if(e.target.closest('[data-switch]')){e.stopPropagation();toggleSwitch();return}
+  if(e.target.id==='scrim'&&(ntfOpen||$('#switcher').classList.contains('on'))){e.stopPropagation();toggleNtf(false);toggleSwitch(false)}
+},true);
+if(/still/.test(location.search)){document.body.classList.add('still');$('#still').checked=true}
+render();
+</script>
+</body>
+</html>

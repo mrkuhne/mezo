@@ -64,6 +64,41 @@ describe('LevelUpScreen', () => {
     expect(screen.getByText(/5\./)).toBeInTheDocument()
   })
 
+  it('wears the üveg icons, never an emoji (mezo-me75u.10)', () => {
+    stubReduced()
+    const { baseElement } = render(<LevelUpScreen result={gymLevelUpMock} onContinue={() => {}} />)
+    const dialog = screen.getByRole('dialog', { name: 'Szintlépés' })
+    const uses = (sel: string) =>
+      Array.from(dialog.querySelectorAll(`${sel} use`)).map((u) => u.getAttribute('href'))
+    // source chip: GYM → dumbbell, with the workout label and the minutes
+    expect(uses('.lvu-chip')).toEqual(['#t-dumbbell'])
+    expect(dialog.querySelector('.lvu-chip')).toHaveTextContent('KLASSZIK KONDI · 58′')
+    // leveled rows: glass, the skill's 3D art + the lit „up” badge
+    const rows = dialog.querySelectorAll('.lvu-row.glass')
+    expect(rows).toHaveLength(2)
+    expect(uses('.lvu-row .lvu-nm')).toEqual(['#t-muscle', '#t-dumbbell'])
+    expect(uses('.lvu-badge')).toEqual(['#t-up', '#t-up'])
+    // perk star, grow cells, robustness shield
+    expect(uses('.lvu-perk')).toEqual(['#t-star'])
+    expect(uses('.lvu-cell')).toEqual(['#t-repeat', '#t-muscle', '#t-muscle'])
+    expect(uses('.lvu-robust')).toEqual(['#t-shield'])
+    // no emoji anywhere in the overlay
+    expect(baseElement.textContent ?? '').not.toMatch(/\p{Extended_Pictographic}/u)
+  })
+
+  it('draws a from→to bar per grow cell and the level ring', () => {
+    stubReduced()
+    render(<LevelUpScreen result={gymLevelUpMock} onContinue={() => {}} />)
+    const dialog = screen.getByRole('dialog')
+    const cell = dialog.querySelector<HTMLElement>('.lvu-cell')!
+    const [fill, from] = Array.from(cell.querySelectorAll<HTMLElement>('.lvu-bar > b'))
+    expect(fill.style.getPropertyValue('--w')).toBe('60%')
+    expect(from.classList.contains('lvu-from')).toBe(true)
+    expect(from.style.getPropertyValue('--w')).toBe('42%')
+    const prog = dialog.querySelector<SVGCircleElement>('.lvu-ring .uv-ring-prog')!
+    expect(prog.style.strokeDasharray).toMatch(/^22(px)?,? 100/)
+  })
+
   it('moves focus to the Tovább CTA on mount (modal focus management)', () => {
     stubReduced()
     render(<LevelUpScreen result={gymLevelUpMock} onContinue={() => {}} />)

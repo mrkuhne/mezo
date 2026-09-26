@@ -24,6 +24,15 @@
 // normal flow and shrank `.screen-content` by its own height on open,
 // measured 812→524px). jsdom can't verify the resulting geometry — see the
 // sibling-shape invariant test in GlassBox.test.tsx and verify visually live.
+//
+// Üvegesítés U10 (mezo-me75u.10, bead mezo-8vfr2): the glass material is the DEFAULT, not an
+// opt-in — every caller was migrated in the same slice (bible U8 rule 61: an opt-in leaves
+// stragglers). The card wears `.glass.is-still.uv-gb` (skin: the `uveg reteg ablak` block in
+// prototype.css): it floats 10px off the left/right/bottom edges, radius 30, `--c` = the caller's
+// `tint` (via `--gl-tint`, default coral), sheen off; the header's `art` sits in a lit well, the
+// eyebrow in the accent, a flat round ✕. `className` lets a caller scope its own dialog without
+// the old `.gl-card:has(> …)` workaround (the session dialogs use `.wos-gbx`). Everything INSIDE
+// the card is flat: never pass a `.glass` body (never glass in glass).
 // ============================================================
 import { useEffect, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
@@ -54,6 +63,9 @@ export interface GlassBoxProps {
    *  prototype's „MEZO · RÉSZLET" line. Omitted = the label renders alone, exactly
    *  today's render. */
   eyebrow?: ReactNode
+  /** Extra class(es) on the card (`.gl-card`), for a caller that scopes its own dialog
+   *  (mezo-8vfr2). The card is always glass; this only adds a hook. */
+  className?: string
   children: ReactNode
 }
 
@@ -62,7 +74,7 @@ function prefersReducedMotion(): boolean {
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-export function GlassBox({ open, onClose, label, tint, variant, art, eyebrow, children }: GlassBoxProps) {
+export function GlassBox({ open, onClose, label, tint, variant, art, eyebrow, className, children }: GlassBoxProps) {
   // Hooks must run on every render regardless of `open` (React's rule), but the
   // PORTAL TARGET itself is resolved below, in the open branch, on every open render —
   // never cached via useState at mount. GlassBox commonly stays mounted with open=false
@@ -87,15 +99,19 @@ export function GlassBox({ open, onClose, label, tint, variant, art, eyebrow, ch
   const target = document.querySelector('.phone-screen') ?? document.body
   const anim = !prefersReducedMotion()
   // Both names carry the SAME value on purpose — `--gl-tint` is this primitive's own
-  // token, `--ex-color` is what the ported prototype rules inside the glass read (I4).
+  // token (the glass reads its `--c` from it), `--ex-color` is what the ported prototype
+  // rules inside the glass read (I4).
   const style = tint ? ({ '--gl-tint': tint, '--ex-color': tint } as CSSProperties) : undefined
 
   return createPortal(
     <>
       <div className={cn('gl-backdrop', anim && 'gl-anim')} onClick={onClose} aria-hidden="true" />
-      <div className={cn('gl-card', variant && `is-${variant}`, anim && 'gl-anim')} style={style} role="dialog" aria-modal="true" aria-label={label}>
+      <div
+        className={cn('gl-card glass is-still uv-gb', variant && `is-${variant}`, anim && 'gl-anim', className)}
+        style={style} role="dialog" aria-modal="true" aria-label={label}
+      >
         <div className="gl-head">
-          {art}
+          {art && <span className="gl-art uv-well">{art}</span>}
           <div className="gl-head-title">
             {eyebrow && <small>{eyebrow}</small>}
             <strong>{label}</strong>

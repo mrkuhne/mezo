@@ -8,7 +8,8 @@ import { clamp } from '@/features/auth/logic/onboardingSteps'
  * onboarding wizard: decimal-capable (weight) and ALWAYS clamped to the contract bounds — both the
  * ± buttons and the tap-to-edit display (`useEditableNumber` clamps on blur) — so the payload can
  * never earn a 400. `useEditableNumber` is domain-free and lives in train/logic for historical
- * reasons; importing it beats a third copy.
+ * reasons; importing it beats a third copy. Üveg look (mezo-me75u.10): flat ± cells around a
+ * big light numeral (`.auth-stepper` in the belepes block).
  */
 export function StepField({ label, val, step, min, max, unit, integer = false, onChange }: {
   label: string
@@ -23,27 +24,24 @@ export function StepField({ label, val, step, min, max, unit, integer = false, o
   const editable = useEditableNumber({ value: val, onChange, min, max, integer })
   const shown = integer ? String(val) : hu1(val)
   return (
-    <div className="col gap-sm">
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <span className="label-mono">{label}</span>
-        <span style={{ fontFamily: 'var(--ff-display)', fontSize: 22, fontWeight: 600, lineHeight: 1 }}>
-          {shown} <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--text-tertiary)' }}>{unit}</span>
-        </span>
+    <div className="auth-stepfield">
+      <div className="auth-stepfield-head">
+        <span className="auth-field-lb">{label}</span>
+        <span className="auth-stepfield-val">{shown} <small>{unit}</small></span>
       </div>
-      <div className="stepper rad-12">
+      <div className="stepper auth-stepper">
         <button type="button" aria-label={`${label} csökkentése`}
           onClick={() => onChange(clamp(+(val - step).toFixed(1), min, max))}>
-          <Icon name="minus" size={14} />
+          <Icon name="minus" size={16} />
         </button>
         <input
           {...editable}
           aria-label={label}
           className="stepper-display"
-          style={{ border: 'none', background: 'transparent', width: '100%', minWidth: 0, padding: 0 }}
         />
         <button type="button" aria-label={`${label} növelése`}
           onClick={() => onChange(clamp(+(val + step).toFixed(1), min, max))}>
-          <Icon name="plus" size={14} />
+          <Icon name="plus" size={16} />
         </button>
       </div>
     </div>

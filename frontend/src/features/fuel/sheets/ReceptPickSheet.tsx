@@ -64,7 +64,7 @@ export function ReceptPickSheet({ onPick, onClose }: { onPick: (r: Recipe) => vo
     (!onlyStar || r.starred) && (!q || r.name.toLowerCase().includes(q)))
 
   return (
-    <Sheet onClose={onClose} className="sheet-nested fkx-rsheet-host" labelledBy="recept-pick-title">
+    <Sheet glass onClose={onClose} className="sheet-nested fkx-rsheet-host uvl-fuel" labelledBy="recept-pick-title">
       {(close) => (
         <>
           <div className="fkx-rsheet-head">

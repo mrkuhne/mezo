@@ -78,7 +78,7 @@ export function KamraPickSheet({
   return (
     // Üveg (mezo-me75u.2, uveg-fuel-tobbi `SH.kamrapick`): a sheet `flp-kpick` hatókörében a
     // sorok LAPOS cellák a kategória-színű belső gerinccel, a fejléc a Kamra 3D ikonját viseli.
-    <Sheet onClose={onClose} className="sheet-nested flp-kpick" labelledBy="kamra-pick-title">
+    <Sheet glass onClose={onClose} className="sheet-nested flp-kpick uvl-kamra" labelledBy="kamra-pick-title">
       {(close) => (
         <>
           <div className="row flp-kpick-head">

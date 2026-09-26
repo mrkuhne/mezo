@@ -35,3 +35,13 @@ test('renders the notice and the register link', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Van meghívó kódod?' }))
   expect(onRegister).toHaveBeenCalled()
 })
+
+// Üveg (mezo-me75u.10): the AuthShell wordmark is the app's name „boop" (owner-approved), and a
+// sign-out notice is a flat cell with a 3D icon — the clock for an expired session.
+test('the wordmark reads boop and the expired-session notice wears the clock icon', () => {
+  const { container } = render(<QueryWrapper><LoginPage notice="A munkameneted lejárt, jelentkezz be újra." noticeIcon="t-clock" onSuccess={() => {}} onRegister={() => {}} /></QueryWrapper>)
+  expect(container.querySelector('.auth-mark')!.textContent).toBe('boop')
+  expect(screen.queryByText('mezo')).toBeNull()
+  expect(container.querySelector('.auth-notice use')!.getAttribute('href')).toBe('#t-clock')
+  expect(container.querySelector('form.auth-card.glass')).not.toBeNull()
+})

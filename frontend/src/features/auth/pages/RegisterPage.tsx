@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useAuthActions } from '@/data/hooks'
-import { AuthShell, ErrorLine, fieldStyle } from '@/features/auth/components/AuthShell'
+import { AuthField, AuthShell, ErrorLine } from '@/features/auth/components/AuthShell'
 import { authErrorText } from '@/features/auth/logic/authErrorText'
 
 // Server rejects a password over 72 UTF-8 BYTES (bcrypt's limit), not 72 characters — an
@@ -35,22 +35,22 @@ export function RegisterPage({ onSuccess, onBack }: { onSuccess: () => void | Pr
   }
 
   return (
-    <AuthShell title="Regisztráció" footer={<button type="button" onClick={onBack} style={{ textDecoration: 'underline' }}>Vissza a belépéshez</button>}>
-      <form className="col gap-md" onSubmit={submit}>
-        <label className="col gap-xs">Meghívó kód
-          <input autoComplete="off" autoCapitalize="characters" required value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} placeholder="MEZO-XXXX-XXXX" style={{ ...fieldStyle, fontFamily: 'monospace', letterSpacing: 1 }} />
-        </label>
-        <label className="col gap-xs">Név
-          <input autoComplete="name" required value={name} onChange={(e) => setName(e.target.value)} style={fieldStyle} />
-        </label>
-        <label className="col gap-xs">E-mail
-          <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} style={fieldStyle} />
-        </label>
-        <label className="col gap-xs">Jelszó (min. 8 karakter)
-          <input type="password" autoComplete="new-password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} style={fieldStyle} />
-        </label>
+    <AuthShell title="Regisztráció" footer={<button type="button" className="auth-link" onClick={onBack}>Vissza a belépéshez</button>}>
+      <form className="auth-card glass" onSubmit={submit}>
+        <AuthField label="Meghívó kód">
+          <input className="auth-inp is-mono" autoComplete="off" autoCapitalize="characters" required value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} placeholder="MEZO-XXXX-XXXX" />
+        </AuthField>
+        <AuthField label="Név">
+          <input className="auth-inp" autoComplete="name" required value={name} onChange={(e) => setName(e.target.value)} />
+        </AuthField>
+        <AuthField label="E-mail">
+          <input className="auth-inp" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        </AuthField>
+        <AuthField label="Jelszó (min. 8 karakter)">
+          <input className="auth-inp" type="password" autoComplete="new-password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
+        </AuthField>
         <ErrorLine text={error} />
-        <button type="submit" className="cta-primary" disabled={busy} style={{ padding: '12px 0' }}>Fiók létrehozása</button>
+        <button type="submit" className="auth-cta" disabled={busy}>Fiók létrehozása</button>
       </form>
     </AuthShell>
   )

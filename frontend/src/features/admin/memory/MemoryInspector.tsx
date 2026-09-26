@@ -39,7 +39,7 @@ export function MemoryInspector({
   children: ReactNode
 }) {
   return (
-    <aside className={`am-inspector${collapsed ? ' collapsed' : ''}`}>
+    <aside className={`am-inspector glass is-still${collapsed ? ' collapsed' : ''}`}>
       <div className="hd">
         <b>{title}</b>
         <button

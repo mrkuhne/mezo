@@ -7,22 +7,22 @@ const STEPS: KalauzWelcomeStep[] = [
   {
     kind: 'napszak', title: 'Szia, Mezo vagyok.', voice: 'Három szakasz.',
     dayparts: [
-      { key: 'reggel', label: 'Reggel', spot: 's-reggel', size: 58, sub: 'rutin' },
-      { key: 'nap', label: 'Nap', spot: 's-energia', size: 70, sub: 'logolás' },
-      { key: 'este', label: 'Este', spot: 's-este', size: 58, sub: 'Napzárás' },
+      { key: 'reggel', label: 'Reggel', icon: 't-dawn', size: 48, sub: 'rutin' },
+      { key: 'nap', label: 'Nap', icon: 't-sun', size: 62, sub: 'logolás' },
+      { key: 'este', label: 'Este', icon: 't-moon', size: 48, sub: 'Napzárás' },
     ],
   },
   {
     kind: 'tabbar', title: 'Öt hely.', voice: 'Koppints a fülekre.',
     tabs: [
-      { key: 'nap', label: 'Nap', icon: 'i-nap', voice: 'A mai nap gerince.' },
-      { key: 'train', label: 'Edzés', icon: 'i-edzes', voice: 'A heti terv.' },
-      { key: 'fuel', label: 'Fuel', icon: 'i-fuel', voice: 'Étkezés és keret.' },
-      { key: 'mezo', label: 'Mezo', icon: 'i-mezo', voice: 'A társ.' },
-      { key: 'me', label: 'Én', icon: 'i-emberek', voice: 'Te.' },
+      { key: 'nap', label: 'Nap', voice: 'A mai nap gerince.' },
+      { key: 'train', label: 'Edzés', voice: 'A heti terv.' },
+      { key: 'fuel', label: 'Fuel', voice: 'Étkezés és keret.' },
+      { key: 'mezo', label: 'Mezo', voice: 'A társ.' },
+      { key: 'me', label: 'Én', voice: 'Te.' },
     ],
   },
-  { kind: 'log', title: 'Logolni bárhonnan.', voice: 'A + gomb.', tiles: [{ label: 'Étkezés', icon: 'i-fuel' }], chat: 'Mondd el Mezónak' },
+  { kind: 'log', title: 'Logolni bárhonnan.', voice: 'A + gomb.', tiles: [{ label: 'Étkezés', icon: 't-bowl' }], chat: 'Mondd el Mezónak' },
   { kind: 'sugo', title: 'Ha elakadsz.', voice: 'A ? alatt visszanézheted.' },
 ]
 
@@ -35,7 +35,17 @@ test('az első lépésen indul, a Vissza tiltva, a lépésszám látszik', () =>
   renderWelcome()
   expect(screen.getByRole('heading', { name: 'Szia, Mezo vagyok.' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Vissza' })).toBeDisabled()
-  expect(screen.getByText('Első indítás · 1 / 4')).toBeInTheDocument()
+  // A szemöldök-sor a lépésszámot külön <b>-ben hordozza (arany kiemelés) — a teljes szöveget nézzük.
+  expect(screen.getByText((_, el) => el?.tagName === 'P' && el.textContent === 'Első indítás · 1 / 4')).toBeInTheDocument()
+})
+
+test('az 1. lépésen az élő Mezo Boop és a napszakok 3D ikonjai (nem agyag spotok)', () => {
+  renderWelcome()
+  const dlg = screen.getByRole('dialog')
+  expect(dlg.querySelector('svg.boop.is-alive')).not.toBeNull()
+  const ids = [...dlg.querySelectorAll('.wel-dpart use')].map((u) => u.getAttribute('href'))
+  expect(ids).toEqual(['#t-dawn', '#t-sun', '#t-moon'])
+  expect(dlg.querySelector('.clay-spot, use[href^="#s-"]')).toBeNull()
 })
 
 test('a Tovább lépteti, az utolsón Induljunk lesz belőle és done-nal zár', async () => {
@@ -85,9 +95,13 @@ test('a tabbar-demó a koppintott fül mondatát mutatja, és NEM navigál', asy
   const user = userEvent.setup()
   await user.click(screen.getByRole('button', { name: 'Tovább' }))
   expect(screen.getByText('A mai nap gerince.')).toBeInTheDocument()
+  // U10: öt ÉLŐ Boop a fülek helyén, a kiválasztott kigyullad (aria-pressed + .on)
+  expect(screen.getAllByRole('button', { pressed: false }).length + 1).toBe(5)
+  expect(document.querySelectorAll('.wel-dom svg.boop.is-alive')).toHaveLength(5)
   await user.click(screen.getByRole('button', { name: 'Fuel' }))
   expect(screen.getByText('Étkezés és keret.')).toBeInTheDocument()
   expect(screen.queryByText('A mai nap gerince.')).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Fuel' })).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('a logolás-lépés csempéi és a Mezo-sor csak koppintás után nyílnak ki', async () => {
@@ -99,6 +113,9 @@ test('a logolás-lépés csempéi és a Mezo-sor csak koppintás után nyílnak 
   await user.click(screen.getByRole('button', { name: 'Gyors logolás megnyitása' }))
   expect(screen.getByText('Étkezés')).toBeInTheDocument()
   expect(screen.getByText('Mondd el Mezónak')).toBeInTheDocument()
+  // 3D csempe-ikon és mikrofon a Mezo-soron (a régi agyag orb helyett)
+  expect(document.querySelector('.wel-tile use')?.getAttribute('href')).toBe('#t-bowl')
+  expect(document.querySelector('.wel-chatrow use')?.getAttribute('href')).toBe('#t-mic')
 })
 
 test('a dialógus aria-modal, és a címe adja a nevét', () => {

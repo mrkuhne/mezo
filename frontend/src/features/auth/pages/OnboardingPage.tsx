@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useOnboardingActions } from '@/data/hooks'
 import { Stepper } from '@/shared/ui/Stepper'
 import { localDateString } from '@/shared/lib/dates'
-import { AuthShell, ErrorLine, fieldStyle } from '@/features/auth/components/AuthShell'
+import { AuthField, AuthShell, ErrorLine } from '@/features/auth/components/AuthShell'
 import { StepField } from '@/features/auth/components/StepField'
 import { authErrorText } from '@/features/auth/logic/authErrorText'
 import {
@@ -37,67 +37,79 @@ export function OnboardingPage({ name, onSuccess }: { name: string; onSuccess: (
     }
   }
 
+  // The step's nav sits BELOW the glass card (not inside it): a flat ghost „Vissza" and the lit
+  // lavender primary; on step 1 the primary alone spans the row.
   const nav = (back: (() => void) | null, next: { label: string; disabled?: boolean }) => (
-    <div className="row gap-sm" style={{ marginTop: 8 }}>
-      {back && <button type="button" className="cta-ghost flex-1" onClick={back}>Vissza</button>}
-      <button type="submit" className="cta-primary flex-1" disabled={next.disabled} style={{ padding: '12px 0' }}>
+    <div className={back ? 'auth-pair' : 'auth-pair is-single'}>
+      {back && <button type="button" className="auth-ghost" onClick={back}>Vissza</button>}
+      <button type="submit" className="auth-cta" disabled={next.disabled}>
         {next.label}
       </button>
     </div>
   )
 
   return (
-    <AuthShell title="Első lépések">
-      <Stepper title="Beállítás" step={step} total={3} stepLabel={STEP_LABEL[step - 1]} />
+    <AuthShell title="Első lépések" className="is-onboarding">
+      <Stepper title="Beállítás" step={step} total={3} steps={STEP_LABEL} className="auth-steps" />
 
       {step === 1 && (
-        <form className="col gap-md" onSubmit={(e) => { e.preventDefault(); setStep(2) }}>
-          <p style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Szia, {name}!</p>
-          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary, #6E6257)' }}>
-            Ezekből számol a Mezo — később a Beállításokban módosíthatod.
-          </p>
-          <div className="col gap-xs">
-            <span style={{ fontSize: 13 }}>Nem</span>
-            <div className="row gap-xs">
-              {(['M', 'F'] as const).map((s) => (
-                <button key={s} type="button" aria-pressed={draft.sex === s} className="flex-1 rad-12"
-                  onClick={() => setDraft((d) => ({ ...d, sex: s }))}
-                  style={{
-                    padding: '12px 0', fontSize: 14, fontWeight: 600,
-                    background: draft.sex === s ? 'color-mix(in srgb, var(--lav-deep) 12%, transparent)' : 'var(--surface-2, #FFFFFF)',
-                    border: `1px solid ${draft.sex === s ? 'var(--lav-deep)' : 'var(--border-subtle, #E5DED2)'}`,
-                    color: draft.sex === s ? 'var(--lav-deep)' : 'inherit',
-                  }}>
-                  {SEX_LABEL[s]}
-                </button>
-              ))}
+        <form className="auth-form" onSubmit={(e) => { e.preventDefault(); setStep(2) }}>
+          <div className="auth-card glass">
+            <div className="auth-greet">
+              <p className="auth-greet-hi">Szia, {name}!</p>
+              <p className="auth-greet-sub">Ezekből számol a Mezo — később a Beállításokban módosíthatod.</p>
             </div>
+            <div className="auth-field">
+              <span className="auth-field-lb">Nem</span>
+              <div className="auth-seg2">
+                {(['M', 'F'] as const).map((s) => (
+                  <button key={s} type="button" aria-pressed={draft.sex === s} className={draft.sex === s ? 'on' : undefined}
+                    onClick={() => setDraft((d) => ({ ...d, sex: s }))}>
+                    {SEX_LABEL[s]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <AuthField label="Születési dátum">
+              <input className="auth-inp" type="date" required min={BIRTH_DATE_MIN} max={today} value={draft.birthDate}
+                onChange={(e) => setDraft((d) => ({ ...d, birthDate: e.target.value }))} />
+            </AuthField>
           </div>
-          <label className="col gap-xs">Születési dátum
-            <input type="date" required min={BIRTH_DATE_MIN} max={today} value={draft.birthDate}
-              onChange={(e) => setDraft((d) => ({ ...d, birthDate: e.target.value }))} style={fieldStyle} />
-          </label>
           {nav(null, { label: 'Tovább', disabled: !birthDateValid(draft.birthDate, today) })}
         </form>
       )}
 
       {step === 2 && (
-        <form className="col gap-md" onSubmit={(e) => { e.preventDefault(); setStep(3) }}>
-          <StepField label="Magasság" unit="cm" val={draft.heightCm} step={HEIGHT_CM.step} min={HEIGHT_CM.min} max={HEIGHT_CM.max} integer
-            onChange={(n) => setDraft((d) => ({ ...d, heightCm: n }))} />
-          <StepField label="Súly" unit="kg" val={draft.weightKg} step={WEIGHT_KG.step} min={WEIGHT_KG.min} max={WEIGHT_KG.max}
-            onChange={(n) => setDraft((d) => ({ ...d, weightKg: n }))} />
-          <p style={{ margin: 0, fontSize: 12.5, color: 'var(--text-secondary, #6E6257)' }}>A súly mai bejegyzésként kerül a naplóba.</p>
+        <form className="auth-form" onSubmit={(e) => { e.preventDefault(); setStep(3) }}>
+          <div className="auth-card glass">
+            <StepField label="Magasság" unit="cm" val={draft.heightCm} step={HEIGHT_CM.step} min={HEIGHT_CM.min} max={HEIGHT_CM.max} integer
+              onChange={(n) => setDraft((d) => ({ ...d, heightCm: n }))} />
+            <StepField label="Súly" unit="kg" val={draft.weightKg} step={WEIGHT_KG.step} min={WEIGHT_KG.min} max={WEIGHT_KG.max}
+              onChange={(n) => setDraft((d) => ({ ...d, weightKg: n }))} />
+            <p className="auth-tiny">A súly mai bejegyzésként kerül a naplóba.</p>
+          </div>
           {nav(() => setStep(1), { label: 'Tovább' })}
         </form>
       )}
 
       {step === 3 && (
-        <form className="col gap-md" onSubmit={(e) => { e.preventDefault(); void commit() }}>
-          <ul className="col gap-xs" style={{ margin: 0, paddingLeft: 18, fontSize: 14 }}>
-            {summaryLines(name, draft).map((line) => <li key={line}>{line}</li>)}
-          </ul>
-          <ErrorLine text={error} />
+        <form className="auth-form" onSubmit={(e) => { e.preventDefault(); void commit() }}>
+          <div className="auth-card glass is-summary">
+            <ul className="auth-sum">
+              {summaryLines(name, draft).map((line) => {
+                // „Magasság: 181 cm" → a label/value row; the hidden „: " keeps the line's text whole.
+                const cut = line.indexOf(': ')
+                if (cut < 0) return <li key={line} className="auth-sumrow"><span>{line}</span></li>
+                return (
+                  <li key={line} className="auth-sumrow">
+                    <span>{line.slice(0, cut)}<span className="sr-only">: </span></span>
+                    <b>{line.slice(cut + 2)}</b>
+                  </li>
+                )
+              })}
+            </ul>
+            <ErrorLine text={error} />
+          </div>
           {nav(() => setStep(2), { label: 'Kezdjük', disabled: pending })}
         </form>
       )}

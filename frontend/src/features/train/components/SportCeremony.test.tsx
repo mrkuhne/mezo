@@ -11,7 +11,7 @@ function props(overrides: Partial<Parameters<typeof SportCeremony>[0]> = {}) {
   return {
     score: SCORE,
     sportName: 'Kerékpár',
-    art: 'i-sport',
+    art: 't-bike' as const,
     color: '#c8e895',
     minutes: 30,
     rpe: 5,
@@ -101,16 +101,17 @@ test('the pass drives --p, the counters and the star classes, then reveals act t
 
 // ---- act two: the +XP tile ----
 
-test('no xpGained means no stats tile at all — never a fabricated number', () => {
+test('no xpGained means no XP chip at all — never a fabricated number', () => {
   const { container } = render(<SportCeremony {...props()} />)
-  expect(container.querySelector('.cer-stats')).toBeNull()
+  expect(container.querySelector('.cer-xp')).toBeNull()
   expect(screen.queryByText('szerzett XP')).not.toBeInTheDocument()
 })
 
-test('the +XP tile shows only when the response carried XP', () => {
-  render(<SportCeremony {...props({ xpGained: 240 })} />)
+test('the +XP chip shows only when the response carried XP, as a flat gold chip with the coin', () => {
+  const { container } = render(<SportCeremony {...props({ xpGained: 240 })} />)
   expect(screen.getByText('+240')).toBeInTheDocument()
   expect(screen.getByText('szerzett XP')).toBeInTheDocument()
+  expect(container.querySelector('.cer-xp.uv-flat use')).toHaveAttribute('href', '#t-coin')
 })
 
 // ---- the kcal tile: three states ----
@@ -139,14 +140,28 @@ test('the kcal tile says it is the athlete\'s own value when the wire says the o
 
 // ---- the close CTA ----
 
-test('the close CTA carries the sport\'s own clay icon and goes back to Mai', async () => {
+test('the close CTA is a sage glass row carrying the sport\'s own 3D glyph and goes back to Mai', async () => {
   const user = userEvent.setup()
   const onClose = vi.fn()
-  const { container } = render(<SportCeremony {...props({ onClose, sportName: 'Foci' })} />)
+  const { container } = render(<SportCeremony {...props({ onClose, sportName: 'Foci', art: 't-football' })} />)
   expect(screen.getByText('Foci elmentve')).toBeInTheDocument()
-  expect(container.querySelector('.wo-close-art svg use')).toHaveAttribute('href', '#i-sport')
+  const cta = container.querySelector('.cer-go') as HTMLElement
+  expect(cta).toHaveClass('glass', 'is-done')
+  expect(cta.querySelector('use')).toHaveAttribute('href', '#t-football')
   await user.click(screen.getByRole('button', { name: /Vissza a mai napra/ }))
   expect(onClose).toHaveBeenCalledTimes(1)
+})
+
+// ---- üveg (mezo-me75u.10): the glass ceremony family ----
+
+test('it wears the U4 glass ceremony family: 3D stars, 3D counter icons, the kcal halo', () => {
+  const { container } = render(<SportCeremony {...props({ kcal: { value: 300, isEstimate: true } })} />)
+  expect(container.querySelector('.cer-screen')).toHaveClass('uv-cer', 'cer-sport')
+  expect(container.querySelectorAll('.cer-stars i')[0].querySelectorAll('use')).toHaveLength(3)
+  const icons = [...container.querySelectorAll('.cer-counters use')].map((u) => u.getAttribute('href'))
+  expect(icons).toEqual(['#t-clock', '#t-flame', '#t-plate'])
+  expect(container.querySelector('.cer-kcal')).toHaveClass('uv-halo')
+  expect(container.querySelector('.cer-kcal use')).toHaveAttribute('href', '#t-bowl')
 })
 
 // ---- the honesty line ----
@@ -160,7 +175,7 @@ test('the honesty line names time and effort, not AI', () => {
 
 // ---- copy discipline ----
 
-test('no emoji anywhere — the art is clay', () => {
+test('no emoji anywhere — the art is the 3D sprite', () => {
   const { container } = render(<SportCeremony {...props({ kcal: { value: 300, isEstimate: true }, xpGained: 50 })} />)
   const emoji = /\p{Extended_Pictographic}/u
   expect(container.textContent ?? '').not.toMatch(emoji)

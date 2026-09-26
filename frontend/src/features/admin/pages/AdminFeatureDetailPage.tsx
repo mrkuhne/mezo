@@ -62,7 +62,7 @@ export function AdminFeatureDetailPage() {
 
   return (
     <MozaikPage tone="lav">
-      <PageHead onBack={() => navigate('/admin/features')} label="Vissza a funkciókhoz" />
+      <PageHead glass onBack={() => navigate('/admin/features')} label="Vissza a funkciókhoz" />
       <PageBody>
         {notFound ? (
           <p className="ad-mut">Ismeretlen funkció.</p>
@@ -233,7 +233,7 @@ function FunnelBar({ label, value, max }: { label: string; value: number; max: n
     <div className="ad-funnelrow">
       <span className="lb">{label}</span>
       <div className="ad-bar" style={{ flex: 1 }}>
-        <i style={{ width: `${pct}%`, background: '#4E8FB8' }} />
+        <i style={{ width: `${pct}%`, background: 'var(--dv-sky)' }} />
       </div>
       <span className="vv">{huInt(value)}</span>
     </div>

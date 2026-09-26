@@ -55,7 +55,7 @@ export function AiCallRow({ call }: { call: LlmCallListItem }) {
           {call.feature}
           {call.operation && <span className="text-tertiary" style={{ fontWeight: 500, fontSize: 11 }}> · {call.operation}</span>}
         </span>
-        <span style={{ fontSize: 8.5, fontWeight: 800, borderRadius: 5, padding: '2px 5px', background: 'var(--surface-2)' }}>
+        <span className="ad-tag mut">
           <span>{callKindLabel(call.callKind)}</span>
           {/* Nullish, not truthy: a TOOL call with 0 rounds executed is a KNOWN zero (the model saw
               tools and chose none), distinct from null (no tool round ever tallied) — same
@@ -75,12 +75,12 @@ export function AiCallRow({ call }: { call: LlmCallListItem }) {
       </div>
 
       {tone === 'error' && (
-        <div style={{ marginTop: 6, borderRadius: 8, padding: '5px 8px', fontSize: 10.5, fontWeight: 600, background: 'var(--surface-2)' }}>
+        <div className="ad-errstrip is-error">
           HIBA · {call.errorClass ?? 'ismeretlen'}{call.errorCode ? ` · ${call.errorCode}` : ''}
         </div>
       )}
       {tone === 'cancelled' && (
-        <div style={{ marginTop: 6, borderRadius: 8, padding: '5px 8px', fontSize: 10.5, fontWeight: 600, background: 'var(--surface-2)' }}>
+        <div className="ad-errstrip is-cancelled">
           MEGSZAKADT · a kliens lecsatlakozott — a részleges válasz megvan
         </div>
       )}

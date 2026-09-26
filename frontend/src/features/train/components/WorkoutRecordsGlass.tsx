@@ -26,7 +26,7 @@
 // Üvegesítés U4 (mezo-me75u.4): an amber glass. The last session is three FLAT KG/REP/RIR cells,
 // the record bars are flat cells with 3D icons (t-ring 1RM, t-weight best set, t-protocol
 // volume) and the kit's bar recipe; a beaten record is the amber-lit "MA MEGDÖNTVE" cell.
-// Skin: `uveg edzes session` block (`.gl-card:has(> .wos-gb-recs)`).
+// Skin: `uveg edzes session` block (`.gl-card.wos-gbx-recs`, the GlassBox className since U10).
 // ============================================================
 import type { LoggedWorkoutExercise } from '@/data/types'
 import type { ExerciseRecordResponse } from '@/data/train/trainApi'
@@ -106,8 +106,8 @@ export function WorkoutRecordsGlass({ open, exercise, record, todaySets, tint, o
     : 0
 
   return (
-    <GlassBox open={open} onClose={onClose} label={`${exercise.name} előzményei és rekordjai`} tint={tint}>
-      <div className="wos-gb wos-gb-recs glass is-still">
+    <GlassBox open={open} onClose={onClose} label={`${exercise.name} előzményei és rekordjai`} tint={tint} className="wos-gbx wos-gbx-recs">
+      <div className="wos-gb wos-gb-recs">
       <header className="wo-glass-head">
         <span className="wo-card-art">
           <MuscleChip token={exercise.muscle} size={40} />

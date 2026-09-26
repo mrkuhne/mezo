@@ -35,6 +35,9 @@ export interface RewardToast {
   meter?: { label: string; delta: number }
   /** only when levelAfter > levelBefore */
   levelUp?: { label: string; from: number; to: number }
+  /** what earned it — picks the toast's leading 3D icon (habit → harvest, quest → quest,
+   *  activity → journal). Visual only; absent reads as a quest (mezo-me75u.10). */
+  source?: 'habit' | 'quest' | 'activity'
 }
 
 export type ToastMessage = SimpleToast | RewardToast

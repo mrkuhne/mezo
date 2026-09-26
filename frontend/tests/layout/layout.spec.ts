@@ -696,15 +696,28 @@ test('the dark shell header background does not overpaint the page top at rest',
     const head = document.querySelector('.app-head') as HTMLElement
     const bg = head.querySelector('.app-head-bg') as HTMLElement
     const first = head.nextElementSibling as HTMLElement
+    const cs = getComputedStyle(bg)
     return {
       scrollTop: scroller.scrollTop,
       bgBottom: bg.getBoundingClientRect().bottom,
       contentTop: first.getBoundingClientRect().top,
+      fill: cs.backgroundColor,
+      image: cs.backgroundImage,
+      mask: cs.maskImage || cs.getPropertyValue('-webkit-mask-image'),
     }
   })
   expect(probe.scrollTop).toBe(0)
-  expect(
-    probe.bgBottom,
-    `the opaque header background ends at ${probe.bgBottom}px but content starts at ${probe.contentTop}px — the tail overpaints the page top`,
-  ).toBeLessThanOrEqual(probe.contentTop)
+  // mezo-r3s4j (owner, 2026-09-26) made the dark header SEE-THROUGH: at rest `.app-head-bg` paints
+  // no fill at all (a clear frosted veil) and its foot fades out over 18px, so a tail reaching
+  // past the header no longer paints ON the content. The invariant is therefore: either the
+  // layer ends above the content, or at rest it is fully clear and masked out at its foot.
+  const clearAtRest = /rgba\(0, 0, 0, 0\)|transparent/.test(probe.fill) && probe.image === 'none'
+    && /gradient/.test(probe.mask)
+  if (!clearAtRest) {
+    expect(
+      probe.bgBottom,
+      `the opaque header background ends at ${probe.bgBottom}px but content starts at ${probe.contentTop}px — the tail overpaints the page top`,
+    ).toBeLessThanOrEqual(probe.contentTop)
+  }
+  expect(clearAtRest || probe.bgBottom <= probe.contentTop).toBe(true)
 })

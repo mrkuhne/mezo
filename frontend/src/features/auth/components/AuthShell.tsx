@@ -1,30 +1,69 @@
 import type { ReactNode } from 'react'
+import { ClaySprites, Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import { cn } from '@/shared/lib/cn'
 
 /**
- * Chrome-free frame for the auth pages: full-height, centered card, same surface tokens the
- * degraded boot screen uses. No PhoneFrame — these render outside the router/AppLayout.
+ * Chrome-free frame for the auth pages (üveg, mezo-me75u.10): the black ground, a frameless
+ * lavender/gold halo hero with the gradient „boop" wordmark (the header's), the title and an
+ * optional lead line, then the page's form — ONE `.auth-card.glass` — and the footer links.
+ * No PhoneFrame: these render outside the router/AppLayout, so the column centres itself
+ * (max ~380px) on any width. Styles: `── uveg reteg belepes (` in prototype.css.
+ *
+ * AuthGate renders these INSTEAD of the app tree, i.e. above main.tsx's root <ClaySprites/>
+ * (which lives inside QueryProvider → AuthGate), so the shell mounts the sprite defs itself —
+ * the 3D icons would draw nothing otherwise. Never both at once, so no duplicate ids.
  */
-export function AuthShell({ title, children, footer }: { title: string; children: ReactNode; footer?: ReactNode }) {
+export function AuthShell({ title, lead, children, footer, className }: {
+  title: string
+  /** The sub copy under the title (the forced password change's „Ideiglenes jelszóval…"). */
+  lead?: ReactNode
+  children: ReactNode
+  footer?: ReactNode
+  className?: string
+}) {
   return (
-    <div style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', padding: 24, background: 'var(--surface-base, #FDFAF4)', color: 'var(--text-primary, #2B2118)' }}>
-      <div className="col gap-lg" style={{ width: '100%', maxWidth: 360 }}>
-        <div className="col gap-xs" style={{ textAlign: 'center' }}>
-          <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>mezo</span>
-          <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{title}</h1>
+    <div className="auth-page">
+      <ClaySprites />
+      <div className={cn('auth', className)}>
+        <div className="auth-hero">
+          <span className="auth-mark">boop</span>
+          <h1>{title}</h1>
+          {lead && <p>{lead}</p>}
         </div>
         {children}
-        {footer && <div style={{ textAlign: 'center', fontSize: 13 }}>{footer}</div>}
+        {footer && <div className="auth-foot">{footer}</div>}
       </div>
     </div>
   )
 }
 
-export const fieldStyle: React.CSSProperties = {
-  width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid var(--border-subtle, #E5DED2)',
-  background: 'var(--surface-2, #FFFFFF)', color: 'inherit', fontSize: 15,
+/** A labelled auth input: the label is the field's small uppercase eyebrow (CSS), the input is
+ *  flat with a lit focus ring. The label text stays the accessible name. */
+export function AuthField({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="auth-field">
+      <span className="auth-field-lb">{label}</span>
+      {children}
+    </label>
+  )
+}
+
+/** A flat gold-tinted notice cell with a 3D icon (session expired → clock, otherwise info). */
+export function AuthNotice({ icon = 't-info', children }: { icon?: Icon3DName; children: ReactNode }) {
+  return (
+    <p className="auth-notice">
+      <Icon3D name={icon} size={22} />
+      <span>{children}</span>
+    </p>
+  )
 }
 
 export function ErrorLine({ text }: { text?: string }) {
   if (!text) return null
-  return <p role="alert" style={{ margin: 0, fontSize: 13, color: 'var(--coral-deep, #C2412D)' }}>{text}</p>
+  return (
+    <p role="alert" className="auth-err">
+      <Icon3D name="t-info" size={18} />
+      <span>{text}</span>
+    </p>
+  )
 }

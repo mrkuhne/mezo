@@ -15,6 +15,12 @@
 // minus the muscle rows and the "sportot saját mozgásként tartjuk meg" note —
 // out of scope for this task, no muscle data is wired here).
 //
+// Üveg (mezo-me75u.10, prototype docs/design_2.0/prototypes/src/uveg-reteg-body.html
+// `cerSport()`): the same family as the glass WorkoutCeremony — it wears `.uv-cer` (U4) plus
+// its own `.cer-sport` gap-fillers in the `── uveg reteg unnep (` block. 3D stars on the arc
+// over the gold fuse, flat counter cells, the +XP flat gold chip, the frameless sage kcal
+// halo and the sage glass CTA with the sport's own `art3d`.
+//
 // Every number is a prop: this component computes nothing. The kcal tile is
 // entirely ABSENT when `kcal` is null (never a fabricated 0); its estimate/own
 // wording follows `kcal.isEstimate` verbatim from the wire.
@@ -23,15 +29,15 @@ import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { verdictFor } from '@/features/train/logic/cerScore'
 import type { SportScore } from '@/features/train/logic/sportScore'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 
 export interface SportCeremonyProps {
   score: SportScore
   /** The eyebrow reads "<SPORTNAME> · MA" — same convention as the picker/form headers. */
   sportName: string
-  /** The chosen sport's clay icon — carried onto the close CTA (the art gap note in
-   *  sports.ts still applies: today this is `i-sport` for every wire sport but Futás). */
-  art: string
+  /** The chosen sport's own 3D glyph (`Sport.art3d`: t-volley, t-bike, t-run…) — carried
+   *  onto the close CTA. */
+  art: Icon3DName
   /** The sport's own accent — set as `--ex-color`, same custom property the gym twin's
    *  muscle rows read, kept here for the day this ceremony grows a domain-colored tile. */
   color: string
@@ -128,7 +134,7 @@ export function SportCeremony({
   const counterValue = (value: number) => (instant ? String(Math.round(value)) : '0')
 
   return (
-    <div className={`cer-screen cer-details-screen${told ? ' is-told' : ''}`}>
+    <div className={`cer-screen cer-details-screen uv-cer cer-sport${told ? ' is-told' : ''}`}>
       {/* — act one — */}
       <section
         ref={stageRef}
@@ -139,9 +145,10 @@ export function SportCeremony({
         <span className="cer-eyebrow">{sportName.toLocaleUpperCase('hu-HU')} · MA</span>
         <div className="cer-stars" aria-hidden="true">
           {STAR_SLOTS.map((i) => (
-            <i key={i} data-cer-star={i} className={instant ? starClass(i, progressed) : undefined}>
-              <b className="cer-aura" />
-              <ClayIcon name="i-termes" size={42} className="icon" />
+            <i key={i} data-cer-star={i} className={instant ? starClass(i, progressed) || undefined : undefined}>
+              <Icon3D name="t-star-empty" size={56} className="cer-star-off" />
+              <Icon3D name="t-star-half" size={56} className="cer-star-half" />
+              <Icon3D name="t-star" size={56} className="cer-star-on" />
             </i>
           ))}
         </div>
@@ -151,19 +158,19 @@ export function SportCeremony({
           {[1, 2, 3, 4].map((i) => <u key={i} style={{ '--at': `${i * 20}%` } as CSSProperties} />)}
         </div>
         <div className="cer-counters">
-          <span>
-            <i><ClayIcon name="i-idozito" size={22} className="icon" /></i>
+          <span className="uv-flat">
+            <Icon3D name="t-clock" size={26} />
             <strong data-cer-count="perc">{counterValue(minutes)}</strong>
             <small>perc</small>
           </span>
-          <span>
-            <i><ClayIcon name="i-lang" size={22} className="icon" /></i>
+          <span className="uv-flat">
+            <Icon3D name="t-flame" size={26} />
             <strong data-cer-count="rpe">{counterValue(rpe)}</strong>
             <small>RPE</small>
           </span>
           {kcal && (
-            <span>
-              <i><ClayIcon name="i-tanyer" size={22} className="icon" /></i>
+            <span className="uv-flat">
+              <Icon3D name="t-plate" size={26} />
               <strong data-cer-count="kcal">{counterValue(kcal.value)}</strong>
               <small>kcal</small>
             </span>
@@ -176,19 +183,22 @@ export function SportCeremony({
         <h1 className="sr-only" tabIndex={-1} ref={headingRef}>
           {huStars(score.stars)} csillag az ötből
         </h1>
-        <p>{verdictFor(score.stars)}</p>
+        <p className="cer-verdict">{verdictFor(score.stars)}</p>
         {xpGained != null && (
-          <div className="cer-stats">
-            <span><strong>+{huNumber(xpGained)}</strong><small>szerzett XP</small></span>
+          <div className="cer-xpline">
+            <span className="cer-xp uv-flat">
+              <Icon3D name="t-coin" size={22} />
+              <strong>+{huNumber(xpGained)}</strong><small>szerzett XP</small>
+            </span>
           </div>
         )}
       </section>
 
       <div className="cer-foot">
         {kcal && (
-          <div className="cer-kcal">
+          <div className="cer-kcal uv-halo">
             <span className="cer-kcal-line">
-              <ClayIcon name="i-fuel" size={62} className="icon" />
+              <Icon3D name="t-bowl" size={66} className="cer-kcal-art" />
               <b>+</b><strong>{huNumber(kcal.value)}</strong><small>kcal</small>
             </span>
             <span className="cer-kcal-copy">Ennyit nyertél a mai mozgással</span>
@@ -197,13 +207,13 @@ export function SportCeremony({
         )}
 
         <div className="cer-cta">
-          <button type="button" className="wo-close-cta is-done" onClick={onClose}>
-            <span className="wo-close-art"><ClayIcon name={art as ClayIconName} size={34} className="icon" /></span>
+          <button type="button" className="cer-go is-done glass" onClick={onClose}>
+            <Icon3D name={art} size={44} />
             <span>
               <strong>Vissza a mai napra</strong>
               <small>{sportName} elmentve</small>
             </span>
-            <u className="chip-sheen" />
+            <em aria-hidden="true">›</em>
           </button>
         </div>
 

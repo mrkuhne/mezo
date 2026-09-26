@@ -20,8 +20,9 @@
 // Üvegesítés U4 (mezo-me75u.4): the three glasses wear the dark glass (coral `--c`), their rows
 // are FLAT cells with Titanium 3D icons (Videó t-camera, Küldetések t-quest, Jegyzet t-note,
 // Szett ± t-weight, Előrébb t-up, Hátrébb t-down, kihagyás t-skip / visszavétel t-repeat). The
-// body roots carry `.wos-gb` so the `uveg edzes session` block can scope the shared GlassBox
-// (`.gl-card:has(> .wos-gb)`) without re-skinning every other GlassBox caller.
+// GlassBox cards carry `className="wos-gbx"` (U10, mezo-8vfr2) so the `uveg edzes session` block
+// scopes the shared glass dialog to this page (centred, coral) without re-skinning every other
+// caller; the card itself is the ONE glass, the `.wos-gb` bodies inside it are flat.
 // ============================================================
 import type { Challenge, LoggedWorkoutExercise } from '@/data/types'
 import { videoEmbed } from '@/features/train/components/VideoDemo'
@@ -117,11 +118,11 @@ export function WorkoutMenuGlass({
 
   return (
     <GlassBox
-      open={open} onClose={onClose} label={exercise.name} tint={tint} variant="menu"
+      open={open} onClose={onClose} label={exercise.name} tint={tint} variant="menu" className="wos-gbx"
       eyebrow="Gyakorlat"
       art={<span className="wos-gb-art"><MuscleChip token={exercise.muscle} size={40} /></span>}
     >
-      <div className="wo-menu wos-gb wos-gb-menu glass is-still">
+      <div className="wo-menu wos-gb wos-gb-menu">
         {exercise.videoUrl && (
           <MenuRow icon="t-camera" label="Videó" hint="A gyakorlathoz csatolt felvétel" onClick={onVideo} />
         )}
@@ -173,8 +174,8 @@ export interface WorkoutVideoGlassProps {
 export function WorkoutVideoGlass({ open, exercise, tint, onClose }: WorkoutVideoGlassProps) {
   const embed = videoEmbed(exercise?.videoUrl)
   return (
-    <GlassBox open={open} onClose={onClose} label={exercise ? `${exercise.name} · videó` : 'Videó'} tint={tint}>
-      <div className="wos-gb wos-gb-video glass is-still">
+    <GlassBox open={open} onClose={onClose} label={exercise ? `${exercise.name} · videó` : 'Videó'} tint={tint} className="wos-gbx">
+      <div className="wos-gb wos-gb-video">
       {embed ? (
         <div className="wo-video-frame" style={{ aspectRatio: embed.aspectRatio }}>
           <iframe
@@ -223,11 +224,11 @@ export function WorkoutChallengesGlass({
   const acceptedCount = challenges.filter((c) => accepted[c.id]).length
   return (
     <GlassBox
-      open={open} onClose={onClose} label="A mai küldetések" tint={tint}
+      open={open} onClose={onClose} label="A mai küldetések" tint={tint} className="wos-gbx wos-gbx-chal"
       eyebrow="Küldetések"
       art={<Icon3D name="t-quest" size={52} className="wos-gb-art3d" />}
     >
-      <div className="wos-gb wos-gb-chal glass is-still">
+      <div className="wos-gb wos-gb-chal">
         <p className="wos-gb-sub">{pending ? 'készül…' : `${acceptedCount} / ${challenges.length} elfogadva`}</p>
         {pending ? (
           <ChallengeGenerationLoader />

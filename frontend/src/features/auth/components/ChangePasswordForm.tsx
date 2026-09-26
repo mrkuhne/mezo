@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useAuthActions } from '@/data/hooks'
-import { ErrorLine, fieldStyle } from '@/features/auth/components/AuthShell'
+import { AuthField, ErrorLine } from '@/features/auth/components/AuthShell'
+import { cn } from '@/shared/lib/cn'
 import { authErrorText } from '@/features/auth/logic/authErrorText'
 
 // See RegisterPage.tsx for why this client-side byte check exists: the server's 72-byte
@@ -11,8 +12,16 @@ const passwordByteLength = (s: string) => new TextEncoder().encode(s).length
 
 /** The change-password fields + submit — shared by the forced ChangePasswordPage (AuthGate) and the
  *  voluntary ChangePasswordSheet (Beállítások → Fiók). Client-side checks: min 8, the 72-byte
- *  bcrypt ceiling, confirmation match. */
-export function ChangePasswordForm({ onSuccess }: { onSuccess: () => void | Promise<void> }) {
+ *  bcrypt ceiling, confirmation match.
+ *  `glass` (mezo-me75u.10): the auth page's üveg card — the form IS one `.auth-card.glass`
+ *  (`gold` tints it for the forced change). Without it (the ChangePasswordSheet, itself a
+ *  `<Sheet glass>`), the inputs carry NO inline skin so the kit's `.sheet.glass.uv-sheet`
+ *  field rules reach them — an inline style would outrank every sheet rule. */
+export function ChangePasswordForm({ onSuccess, glass = false, gold = false }: {
+  onSuccess: () => void | Promise<void>
+  glass?: boolean
+  gold?: boolean
+}) {
   const { changePassword } = useAuthActions()
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
@@ -34,19 +43,39 @@ export function ChangePasswordForm({ onSuccess }: { onSuccess: () => void | Prom
     finally { setBusy(false) }
   }
 
+  if (glass) {
+    return (
+      <form className={cn('auth-card glass', gold && 'is-gold')} onSubmit={submit}>
+        <AuthField label="Jelenlegi jelszó">
+          <input className="auth-inp" type="password" autoComplete="current-password" required value={current} onChange={(e) => setCurrent(e.target.value)} />
+        </AuthField>
+        <AuthField label="Új jelszó (min. 8 karakter)">
+          <input className="auth-inp" type="password" autoComplete="new-password" required minLength={8} value={next} onChange={(e) => setNext(e.target.value)} />
+        </AuthField>
+        <AuthField label="Új jelszó még egyszer">
+          <input className="auth-inp" type="password" autoComplete="new-password" required value={again} onChange={(e) => setAgain(e.target.value)} />
+        </AuthField>
+        <ErrorLine text={error} />
+        <button type="submit" className="auth-cta" disabled={busy}>Jelszó mentése</button>
+      </form>
+    )
+  }
+
+  // The sheet path (Beállítások → Fiók): it sits inside the gold glass `<Sheet glass>`, so the
+  // form itself stays flat — eyebrow labels, flat fields, the lit gold pill (`── uveg reteg lap (`).
   return (
-    <form className="col gap-md" onSubmit={submit}>
-      <label className="col gap-xs">Jelenlegi jelszó
-        <input type="password" autoComplete="current-password" required value={current} onChange={(e) => setCurrent(e.target.value)} style={fieldStyle} />
+    <form className="uvl-form" onSubmit={submit}>
+      <label className="uvl-field"><span className="uvl-flabel">Jelenlegi jelszó</span>
+        <input type="password" autoComplete="current-password" required value={current} onChange={(e) => setCurrent(e.target.value)} />
       </label>
-      <label className="col gap-xs">Új jelszó (min. 8 karakter)
-        <input type="password" autoComplete="new-password" required minLength={8} value={next} onChange={(e) => setNext(e.target.value)} style={fieldStyle} />
+      <label className="uvl-field"><span className="uvl-flabel">Új jelszó (min. 8 karakter)</span>
+        <input type="password" autoComplete="new-password" required minLength={8} value={next} onChange={(e) => setNext(e.target.value)} />
       </label>
-      <label className="col gap-xs">Új jelszó még egyszer
-        <input type="password" autoComplete="new-password" required value={again} onChange={(e) => setAgain(e.target.value)} style={fieldStyle} />
+      <label className="uvl-field"><span className="uvl-flabel">Új jelszó még egyszer</span>
+        <input type="password" autoComplete="new-password" required value={again} onChange={(e) => setAgain(e.target.value)} />
       </label>
       <ErrorLine text={error} />
-      <button type="submit" className="cta-primary" disabled={busy} style={{ padding: '12px 0' }}>Jelszó mentése</button>
+      <button type="submit" className="uvl-cta is-wide" disabled={busy}>Jelszó mentése</button>
     </form>
   )
 }

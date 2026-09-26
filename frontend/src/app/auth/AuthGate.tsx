@@ -13,6 +13,7 @@ import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { RegisterPage } from '@/features/auth/pages/RegisterPage'
 import { ChangePasswordPage } from '@/features/auth/pages/ChangePasswordPage'
 import { OnboardingPage } from '@/features/auth/pages/OnboardingPage'
+import { ClaySprites, Icon3D } from '@/shared/ui/clay'
 
 /** Backoff between boot attempts (mezo-l0k0 semantics kept from the old owner bootstrap). */
 const BOOT_RETRY_DELAYS_MS = [500, 1500, 4000]
@@ -167,7 +168,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (phase === 'pending') return null
   if (phase === 'signedOut') {
     return authView === 'login'
-      ? <LoginPage notice={notice} onSuccess={onAuthenticated} onRegister={() => setAuthView('register')} />
+      ? <LoginPage notice={notice} noticeIcon={notice === SIGN_OUT_NOTICE.expired ? 't-clock' : 't-info'} onSuccess={onAuthenticated} onRegister={() => setAuthView('register')} />
       : <RegisterPage onSuccess={onAuthenticated} onBack={() => setAuthView('login')} />
   }
   if (phase === 'mustChangePassword') return <ChangePasswordPage forced onSuccess={onAuthenticated} />
@@ -176,14 +177,16 @@ export function AuthGate({ children }: { children: ReactNode }) {
     return <OnboardingPage name={meName} onSuccess={onAuthenticated} />
   }
   if (phase === 'failed') {
+    // Üveg (mezo-me75u.10): frameless coral halo, the 3D signal, lit coral „Újra" — `.auth-down`.
+    // Rendered instead of the app tree (above its root sprite mount), so it mounts the defs itself.
     return (
-      <div style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', padding: 24, background: 'var(--surface-base, #FDFAF4)', color: 'var(--text-primary, #2B2118)' }}>
-        <div style={{ textAlign: 'center', maxWidth: 320 }}>
-          <p style={{ fontSize: 15, fontWeight: 700 }}>Nem érem el a szervert</p>
-          <p style={{ fontSize: 12.5, lineHeight: 1.5, marginTop: 8, color: 'var(--text-secondary, #6E6257)' }}>
-            Az app nem tud bejelentkezni — lehet, hogy a backend épp újraindul. Adatot most nem tudsz menteni.
-          </p>
-          <button type="button" className="cta-primary" style={{ marginTop: 16, padding: '10px 28px' }} onClick={() => setAttemptNonce((n) => n + 1)}>
+      <div className="auth-page">
+        <ClaySprites />
+        <div className="auth-down">
+          <Icon3D name="t-signal" size={88} className="auth-down-art" />
+          <h1>Nem érem el a szervert</h1>
+          <p>Az app nem tud bejelentkezni — lehet, hogy a backend épp újraindul. Adatot most nem tudsz menteni.</p>
+          <button type="button" className="auth-cta is-coral" onClick={() => setAttemptNonce((n) => n + 1)}>
             Újra
           </button>
         </div>

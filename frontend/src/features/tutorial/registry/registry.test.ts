@@ -45,8 +45,8 @@ test('hang-lint: nincs tiltott szó, kártyánként legfeljebb 2 mondat, fogalom
   }
 })
 
-// A KalauzSheet a `card.orb`-ot ÉS a `card.spot`-ot is feltétel nélkül kirakja egymás mellé
-// (KalauzSheet.tsx kalauz-art): ha a kettő ugyanaz, a kártyán két azonos folt ül.
+// A régi (agyag) KalauzSheet a `card.orb`-ot ÉS a `card.spot`-ot egymás mellé rakta. Az üveg lap
+// (U10) már csak a spot 3D képét rajzolja, de a szabály marad: egy kártya képe ne a hangulat-orb legyen.
 test('art-lint: a kártya spotja nem lehet azonos az orbjával', () => {
   for (const e of KALAUZ_REGISTRY) for (const c of e.cards) {
     if (c.kind === 'kapcsolat') continue // ennek nincs spotja

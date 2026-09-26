@@ -9,6 +9,7 @@ import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 // Üveg (mezo-me75u.2, uveg-fuel-tobbi `SH.energy`): a sheet-en belül nincs üveg — az egyenlet egy
 // lapos cella, a három szakasz a saját hue-jában árnyalt blokk (a kiemelt fényes kerettel), a
 // csempék lapos cellák a Titanium 3D ikonokkal. Emoji nincs.
+// U10 (mezo-me75u.10): maga a lap is a közös lebegő zsálya üveglap (`<Sheet glass>`).
 
 export type EnergySection = 'base' | 'movement' | 'deficit'
 export interface EnergyBlock {
@@ -73,7 +74,7 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
   const hl = (s: EnergySection) => s === initial
 
   return (
-    <Sheet onClose={onClose} labelledBy="energy-breakdown-title">
+    <Sheet glass onClose={onClose} labelledBy="energy-breakdown-title" className="uvl-fuel">
       {(close) => (
         <>
           <div className="flp-eh">

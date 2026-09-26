@@ -36,6 +36,7 @@ export function ActivityLogSheet({ onClose, onBack, quest, entry }: ActivityLogS
     if (payload) {
       emitToast(buildQuestRewardToast({
         eyebrow: 'Naplózva',
+        source: 'activity',
         title: payload.workoutLabel ?? 'Tevékenység',
         levelUp: payload,
       }))
