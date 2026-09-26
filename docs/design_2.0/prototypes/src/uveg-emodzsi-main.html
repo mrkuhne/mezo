@@ -1,0 +1,295 @@
+<style>
+/* ── mezo-z5lov · emodzsi-söprés: csak a slice saját apróságai ── */
+.gl{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+.gl .icon{width:18px;height:18px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+.gl.lg .icon{width:22px;height:22px}
+.gl.sm .icon{width:14px;height:14px}
+.gl.emo{font-size:15px;line-height:1}
+.gl.emo.sm{font-size:11px}
+.spot{position:relative}
+.spot::after{content:attr(data-spot);position:absolute;top:-9px;right:10px;z-index:4;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 7px;border-radius:999px;color:#1E1B18;background:#FFD08A;box-shadow:0 0 10px -2px #FFBE60}
+body.nospot .spot::after{display:none}
+.chipsw{display:flex;gap:8px;margin-top:12px}
+.chipsw button{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;height:40px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+.chipsw button.on{color:#E4DCFF;background:color-mix(in srgb,var(--lav) 18%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--lav) 55%,transparent),0 0 14px -4px var(--lav)}
+.stepr{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--hair)}
+.stepr .ctl{display:flex;align-items:center;gap:10px}
+.stepr .ctl button{width:34px;height:34px;border-radius:50%;background:rgba(245,239,230,.06);box-shadow:inset 0 0 0 1px var(--hair);font-size:17px;color:var(--ink)}
+.stepr .ctl b{min-width:48px;text-align:center;font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.derived{display:block;margin-top:8px;font-size:11.5px;color:#C9BFF0;font-variant-numeric:tabular-nums}
+.ctabig{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;height:52px;border-radius:18px;font-size:15.5px;font-weight:600;color:#fff;background:linear-gradient(135deg,#FF9A78,var(--coral));box-shadow:0 10px 24px -10px var(--coral),0 0 20px -6px var(--coral)}
+.ctabig .icon{width:24px;height:24px}
+.statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.statrow div{padding:12px 8px;border-radius:14px;text-align:center;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.statrow b{display:block;font-size:20px;font-weight:500;letter-spacing:-.6px}
+.statrow small{font-size:10.5px;color:var(--faint);line-height:1.3;display:block;margin-top:3px}
+.stepnote{font-size:12.5px;color:var(--sub);line-height:1.5;margin-top:12px}
+.lint{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;border-radius:14px;font-size:12.5px;line-height:1.45;color:#FFD9C9;background:rgba(255,126,92,.07);box-shadow:inset 0 0 0 1px rgba(255,126,92,.28)}
+.lint+.lint{margin-top:8px}
+.lint b{color:#FFE7DC}
+.fv{display:flex;gap:6px;margin-top:10px}
+.fv button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;height:36px;border-radius:11px;font-size:12.5px;font-weight:700;color:var(--sub);background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.fv button.on.fire{color:#fff;background:linear-gradient(135deg,#FF9A78,var(--coral));box-shadow:0 0 14px -4px var(--coral)}
+.fv button.on.leaf{color:#fff;background:linear-gradient(135deg,#A9CBB1,#5E8A67);box-shadow:0 0 14px -4px var(--sage)}
+.exhead{display:flex;align-items:center;gap:10px}
+.exhead strong{flex:1;font-size:15px;font-weight:600}
+.exhead small{display:block;font-size:11px;color:var(--faint);font-weight:500;margin-top:1px}
+.numf{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.numf div{padding:8px 10px;border-radius:12px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.numf small{display:block;font-size:9.5px;color:var(--faint);letter-spacing:.6px;font-weight:600}
+.numf b{font-size:15px;font-weight:600}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700}
+.status.warn{color:#FF9A7E}.status.ok{color:#BFE0A8}
+.accrow{display:flex;align-items:center;gap:10px;padding:12px 0}
+.accrow+.accrow{border-top:1px solid var(--hair)}
+.accrow strong{flex:1;font-size:14px;font-weight:600}
+.setchip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px 3px 6px;border-radius:999px;font-variant-numeric:tabular-nums}
+.setchip.fire{color:#FFC3B0;background:rgba(255,126,92,.12);box-shadow:inset 0 0 0 1px rgba(255,126,92,.3)}
+.setchip.leaf{color:#C6E2CD;background:rgba(143,180,154,.12);box-shadow:inset 0 0 0 1px rgba(143,180,154,.3)}
+.bdrow{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:13px}
+.bdrow+.bdrow{border-top:1px solid var(--hair)}
+.bdrow span{flex:1}
+.bdrow em{font-style:normal;display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums}
+.bdrow.over em{color:#FF9A7E;font-weight:700}
+.macro{display:grid;gap:6px;padding:12px 0}
+.macro+.macro{border-top:1px solid var(--hair)}
+.macro .hrow{display:flex;align-items:center;gap:8px}
+.macro .hrow strong{flex:1;font-size:14px;font-weight:600}
+.macro .note{display:flex;align-items:flex-start;gap:6px;font-size:11px;line-height:1.45;color:#FFD08A;letter-spacing:.02em}
+.quote{font-size:15px;line-height:1.5;color:var(--ink);text-align:center;padding:0 22px}
+.ask{font-size:13.5px;line-height:1.5;color:var(--sub)}
+.askq{margin-top:10px;padding:10px 12px;border-radius:14px;font-size:12px;line-height:1.5;color:#FFE3B8;background:rgba(255,190,96,.07);box-shadow:inset 0 0 0 1px rgba(255,190,96,.3)}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cmp>div{padding:14px 10px;border-radius:18px;text-align:center;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.cmp .icon{width:54px;height:54px}
+.cmp .emo{font-size:40px;line-height:54px}
+.cmp small{display:block;font-size:11px;color:var(--faint);margin-top:6px}
+</style>
+
+<div class="stage">
+  <div class="phone" id="phone">
+    <div class="aurora"><i></i><i></i><i></i><i></i></div>
+    <div class="scroll" id="scroll"></div>
+    <button class="fab glass" id="fab" aria-label="Gyors logolás" data-toast="Gyors logolás — nem része ennek a körnek">＋</button>
+    <nav class="tabbar glass" id="tabbar"></nav>
+    <div class="ntf glass" id="ntf" style="--c:var(--sky)"></div>
+    <div class="switcher glass" id="switcher"></div>
+    <div class="scrim" id="scrim"></div>
+    <div class="sheet glass" id="sheet"></div>
+    <div class="toast" id="toast"></div>
+  </div>
+  <aside class="notes">
+    <span class="ov">EMODZSI-SÖPRÉS · A MARADÉKOK</span>
+    <h1>Az utolsó emodzsik, 3D ikonra cserélve</h1>
+    <p>Végignéztük az egész appot. Élesben már csak <b>öt helyen</b> látszik emodzsi a karakterek beszédén kívül. Mindet a meglévő 3D ikonkészlet egy darabjára cseréljük. <b>Új ikont nem kell rajzolni.</b></p>
+    <p class="abnote">A sárga címke mutatja, hol változott valami. Az <em>„Előtte”</em> kapcsolóval visszanézheted a mostani, emodzsis állapotot.</p>
+    <nav id="jump">
+      <a href="#alvas" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-sleep"/></svg>Alvás cél · Ébredés / Lefekvés</a>
+      <a href="#varazslo" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-spark"/></svg>Edzésterv-varázsló · generálás</a>
+      <a href="#het" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-info"/></svg>Heti terv · figyelmeztetések</a>
+      <a href="#nap" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-flame"/></svg>Edzésnap szerkesztése</a>
+      <a href="#fuel" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-score"/></svg>Étkezés értékelése</a>
+      <a href="#csapat" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-people"/></svg>A csapat · marad, ahogy van</a>
+      <a href="#ikonok" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-compare"/></svg>Csere-táblázat</a>
+    </nav>
+    <span class="ov">ÁLLAPOTOK</span>
+    <ul>
+      <li>Alvás: <a href="#" data-st="anchor:WAKE">ébredéshez kötve</a> · <a href="#" data-st="anchor:BED">lefekvéshez kötve</a></li>
+      <li>Edzésnap: <a href="#" data-st="warn:1">van jelzés</a> · <a href="#" data-st="warn:0">kereten belül</a></li>
+      <li>Gyakorlat: <a href="#" data-st="fail:1">tönkremenésig</a> · <a href="#" data-st="fail:0">volumen</a></li>
+    </ul>
+    <label class="toggle"><input type="checkbox" id="old"> Előtte (a mostani, emodzsis állapot)</label>
+    <label class="toggle"><input type="checkbox" id="still"> Mozgás kikapcsolása</label>
+  </aside>
+</div>
+
+<script type="module">
+const $=s=>document.querySelector(s);
+const C=n=>`<svg class="icon" aria-hidden="true"><use href="#c-i-${n}"/></svg>`;
+const B=(d,alive=false)=>`<svg class="boop ${alive?'is-alive':''}" viewBox="0 0 100 100" aria-hidden="true"><use href="#boop-${d}"/></svg>`;
+const I=(n,c='')=>`<svg class="icon ${c}" aria-hidden="true"><use href="#t-${n}"/></svg>`;
+let ntfOpen=false, OLD=false;
+const ST={anchor:'WAKE',warn:'1',fail:'1'};
+/* a slice lényege: egy jel — 3D ikon, vagy az „Előtte” nézetben a mostani emodzsi */
+const G=(ic,emo,cls='')=>OLD?`<span class="gl emo ${cls}" aria-hidden="true">${emo}</span>`:`<span class="gl ${cls}">${I(ic)}</span>`;
+
+/* ── fejléc + keret (fuel-uveg.html, változatlan) ── */
+function topbar(){return `<header class="topbar"><span class="wordmark">boop</span>
+  <button class="rbtn q glass" data-toast="Kalauz ehhez az oldalhoz">?<i class="dot"></i></button>
+  <button class="rbtn glass" data-toast="Beállítások" aria-label="Beállítások">${C('beallitas')}</button>
+  <button class="rbtn glass" style="--c:var(--lav)" data-toast="Mezo üzenetei" aria-label="Mezo üzenetei">${C('level')}<b class="badge">2</b></button>
+  <button class="rbtn glass ${ntfOpen?'is-open':''}" style="--c:var(--sky)" data-ntf aria-label="Értesítések">${C('ertesites')}<b class="badge">3</b></button>
+  <button class="orb glass" aria-label="A mai napod · 4 a 7 jelből megvan" data-toast="A mai nap oldala"><svg viewBox="0 0 40 40"><defs><clipPath id="orbc"><circle cx="20" cy="20" r="16"/></clipPath><linearGradient id="orbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC3A8"/><stop offset=".5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C8431F"/></linearGradient></defs><circle class="orb-glass" cx="20" cy="20" r="16"/><g clip-path="url(#orbc)"><g class="wave"><path class="orb-liquid" fill="url(#orbg)" d="M-4 17 Q2 14 8 17 T20 17 T32 17 T44 17 T56 17 V44 H-4Z"/></g></g><path class="orb-hi" d="M11 12 A11 11 0 0 1 17 8.5"/></svg></button>
+</header>`}
+const back=(l,t)=>`<div class="phead rise"><button class="backbtn glass" data-toast="${t}"><b>‹</b>${l}</button></div>`;
+const hero=(c,ic,eb,h,p='')=>`<div class="pagehero rise" style="--c:${c}">${I(ic,'art')}${eb?`<span class="eb">${eb}</span>`:''}<h1>${h}</h1>${p?`<p>${p}</p>`:''}</div>`;
+const h3=(eb,em='')=>`<div class="h3"><span class="eb">${eb}</span>${em?`<em>${em}</em>`:''}</div>`;
+const principle=t=>`<p class="principle2">${t}</p>`;
+
+/* ═════════ 1 · ALVÁS CÉL (Én · Beállítások → alvás cél lap) ═════════ */
+function alvas(){
+  return topbar()+back('Én beállításai','Az Én beállításai (U7-ben kész)')+
+  hero('var(--rose)','sleep','ÉN · BEÁLLÍTÁSOK','Alvás cél','Az alvás-oldal ebből számolja a lefekvést.')+
+  `<div class="p16"><div class="card glass rise" style="--c:var(--lav);--i:1;padding:14px 16px">
+    <div class="hrow" style="gap:10px">${I('sleep')}<strong style="flex:1;font-size:15px">8 óra · 06:30-as ébredéshez</strong></div>
+    <button class="pillx" style="--c:var(--lav);margin-top:12px" data-sheet="sleep">Szerkesztés</button></div></div>`+
+  principle('A lap magától kinyílik ezen a képernyőn — a csere a lap két gombján van.');
+}
+const SH={
+  sleep:['var(--lav)',()=>{const w=ST.anchor==='WAKE';return `<div class="shh">${I('sleep')}<div class="grow"><span class="eb">ALVÁS</span><h3>Alvás cél</h3></div><button class="x" data-closesheet aria-label="Bezár">✕</button></div>
+    <div class="stepr"><span>Cél alvásidő</span><div class="ctl"><button data-toast="Cél csökkentése">−</button><b>8 ó</b><button data-toast="Cél növelése">＋</button></div></div>
+    <div class="chipsw spot" data-spot="ITT">
+      <button class="${w?'on':''}" data-st="anchor:WAKE" aria-label="Ébredés rögzítése">${G('sun','☀️','lg')}Ébredés</button>
+      <button class="${w?'':'on'}" data-st="anchor:BED" aria-label="Lefekvés rögzítése">${G('sleep','🛏️','lg')}Lefekvés</button></div>
+    <label class="field" style="margin-top:14px"><span>${w?'ÉBREDÉS':'LEFEKVÉS'}</span><span class="inp">${w?'06:30':'22:30'}</span></label>
+    <span class="derived">${w?'Lefekvés ebből: 22:30':'Ébredés ebből: 06:30'}</span>
+    <div class="pair" style="padding:16px 0 0"><button class="pillx ghost" data-closesheet style="justify-content:center">Mégse</button><button class="pillx" style="--c:var(--lav);justify-content:center" data-toast="Mentve">${I('tick')}Mentés</button></div>`}],
+};
+
+/* ═════════ 2 · EDZÉSTERV-VARÁZSLÓ (interjú vége) ═════════ */
+function varazslo(){
+  return topbar()+back('Terv','Az Edzés · Terv oldal (U5-ben kész)')+
+  hero('var(--coral)','template','ÚJ MEZOCIKLUS · 3 / 3','Ez lesz a blokkod','Heti 4 edzésnap · 5 hét')+
+  `<div class="p16"><div class="card glass rise" style="--c:var(--coral);--i:1;padding:14px 16px">
+    <div class="statrow"><div><b>4 + 1</b><small>rámpa + deload hét</small></div><div><b>+2</b><small>szett / hét / izom</small></div><div><b>~8</b><small>szett-plafon / edzés</small></div></div>
+    <p class="stepnote">A szerkesztőben bármit átírhatsz — de e nélkül is kész, működő blokkot kapsz.</p></div>
+  <div class="spot rise" data-spot="ITT" style="margin-top:18px;--i:2"><button class="ctabig" data-toast="Mezo dolgozik…">${G('spark','✨','lg')}Program generálása</button></div></div>`;
+}
+
+/* ═════════ 3 · HETI TERV SZERKESZTŐ (figyelmeztetések + gyakorlat-kártya) ═════════ */
+function exCard(){const f=ST.fail==='1';return `<div class="card glass rise" style="--c:var(--coral);--i:3;padding:14px 16px">
+    <div class="exhead">${I('dumbbell')}<strong>Fekvenyomás<small>Mell · tricepsz</small></strong></div>
+    <div class="numf"><div><small>SZETT</small><b>3</b></div><div><small>ISMÉTLÉS</small><b>6–8</b></div><div><small>CÉL RIR</small><b>${f?0:2}</b></div></div>
+    <div class="fv spot" data-spot="ITT"><button class="${f?'on fire':''}" data-st="fail:1" aria-pressed="${f}">${G('flame','🔥')}Failure</button><button class="${f?'':'on leaf'}" data-st="fail:0" aria-pressed="${!f}">${G('sprout','🌿')}Volume</button></div>
+  </div>`}
+function het(){
+  return topbar()+back('Terv','Az Edzés · Terv oldal (U5-ben kész)')+
+  hero('var(--coral)','calendar','SABLON · SZERKESZTÉS','A heted','Push · Pull · Láb · Felsőtest')+
+  `<div class="p16">${h3('HETI TERHELÉS','3 jelzés')}
+  <div class="spot rise" data-spot="ITT" style="--i:1">
+    <div class="lint">${G('info','⚠️')}<span><b>Mell + Tricepsz</b> egymást követő napokon (hétfő → kedd)</span></div>
+    <div class="lint">${G('info','⚠️')}<span>A csúcshéten a csütörtök nem fér bele: 11 szett a 8-as plafon helyett</span></div>
+    <div class="lint">${G('info','⚠️')}<span><b>Nincs húzó mozdulat</b> a pénteki napon</span></div></div>
+  <div style="margin-top:18px">${h3('HÉTFŐ · PUSH')}</div>${exCard()}</div>`+
+  principle('A figyelmeztetés színe marad (korall), csak a jel lesz 3D ikon.');
+}
+
+/* ═════════ 4 · EDZÉSNAP SZERKESZTÉSE ═════════ */
+function nap(){
+  const w=ST.warn==='1', f=ST.fail==='1';
+  const chip=(fire,t)=>`<span class="setchip ${fire?'fire':'leaf'}">${fire?G('flame','🔥','sm'):G('sprout','🌿','sm')}${t}</span>`;
+  return topbar()+back('Hétfő','A nap oldala (U5-ben kész)')+
+  hero('var(--coral)','dumbbell','HÉTFŐ · PUSH','Nap szerkesztése')+
+  `<div class="p16"><div class="card glass rise" style="--c:var(--coral);--i:1;padding:12px 16px;display:flex;align-items:center;gap:10px">
+    <strong style="flex:1;font-size:14px">16 munkaszett · 4 gyakorlat</strong>
+    <span class="spot" data-spot="ITT">${w?`<span class="status warn">${G('info','⚠','sm')}2 jelzés</span>`:`<span class="status ok">${G('tick','✓','sm')}kereten belül</span>`}</span></div>
+  <div style="margin-top:16px">${h3('IZMOK EZEN A NAPON','8 szett / izom a plafon')}</div>
+  <div class="card glass rise" style="--c:var(--coral);--i:2;padding:4px 16px">
+    <div class="bdrow ${w?'over':''}"><span>Mell</span><em class="${w?'spot':''}" ${w?'data-spot="ITT"':''}>${w?9:7} / 8${w?G('info','⚠','sm'):''}</em></div>
+    <div class="bdrow"><span>Váll</span><em>6 / 8</em></div><div class="bdrow"><span>Tricepsz</span><em>5 / 8</em></div>
+    ${w?`<div class="lint spot" data-spot="ITT" style="margin:6px 0 10px">${G('info','⚠')}<span><b>Mell: ma 9 szett</b> — 8 fölött nincs kimutatható plusz. Vigyél át szettet egy másik napra (pl. csütörtök)!</span></div>`:''}</div>
+  <div style="margin-top:16px">${h3('GYAKORLATOK')}</div>
+  <div class="card glass rise" style="--c:var(--coral);--i:3;padding:2px 16px">
+    <div class="accrow"><strong>Fekvenyomás</strong><span class="spot" data-spot="ITT">${chip(f,'3×6–8')}</span></div>
+    <div class="accrow"><strong>Ferde tárogatás</strong>${chip(false,'3×10–12')}</div>
+    <div class="accrow"><strong>Oldalemelés</strong>${chip(false,'4×12–15')}</div>
+    <div class="accrow"><strong>Letolás kötéllel</strong>${chip(true,'3×10–12')}</div></div></div>`+
+  principle('A „kereten belül” pipája is ikon lesz — ugyanaz a sor, ugyanaz a csere.');
+}
+
+/* ═════════ 5 · FUEL · ÉTKEZÉS ÉRTÉKELÉSE ═════════ */
+function fuel(){
+  const m=(n,v,note)=>`<div class="macro"><div class="hrow"><strong>${n}</strong><span style="font-size:13px;color:var(--sub)">${v}</span></div>${note?`<span class="note spot" data-spot="ITT">${G('info','⚠','sm')}${note}</span>`:''}</div>`;
+  return topbar()+back('Ebéd','Az étkezés oldala (U1-ben kész)')+
+  hero('var(--lav)','score','EBÉD · AI ÉRTÉKELÉS','Makrók')+
+  `<div class="p16"><div class="card glass rise" style="--c:var(--sage);--i:1;padding:2px 16px">
+    ${m('Fehérje','42 g · jó','')}${m('Szénhidrát','88 g · sok','A köret fele elég lett volna egy pihenőnapon.')}${m('Zsír','19 g · rendben','')}</div></div>`+
+  principle('A jegyzet csak akkor látszik, ha az értékelés ír hozzá valamit.');
+}
+
+/* ═════════ 6 · A CSAPAT (marad) ═════════ */
+function csapat(){
+  return topbar()+back('A csapat','A csapat oldala')+
+  `<div class="pagehero rise" style="--c:var(--lav)">${I('moon','art')}<span class="eb">SZUNYA · ALVÁS</span><h1>Szunya szobája</h1></div>
+  <p class="quote rise" style="--i:1">„Az éjszakáid a szakterületem. Amit itt látsz, azt mind a te naplódból tanultam.” 🌙</p>
+  <div class="p16" style="margin-top:16px"><div class="card glass rise" style="--c:var(--lav);--i:2;padding:14px 16px">
+    <span class="eb">KÉRÉSE HOZZÁD</span><p class="ask" style="margin-top:6px">Minden naplózott éjszaka közelebb visz ahhoz, hogy <b>biztosat</b> mondhassak — a kimaradt éjszakák csak kitolják.</p>
+    <div class="askq">Ezeket <b>nem cseréljük</b>: a csapat-üzenőfal jóváhagyott terve szerint a karakterek a saját mondataikban mértékkel használhatnak emodzsit — ez a hangjuk része.</div></div></div>`;
+}
+
+/* ═════════ CSERE-TÁBLÁZAT ═════════ */
+function ikonok(){
+  const R=[['sun','☀️','Ébredés','Alvás cél lap'],['sleep','🛏️','Lefekvés','Alvás cél lap'],['spark','✨','Program generálása','Edzésterv-varázsló'],
+    ['info','⚠️','Figyelmeztetés','Heti terv, edzésnap, étkezés-értékelés'],['flame','🔥','Failure (tönkremenésig)','Gyakorlat-kártya, edzésnap'],['sprout','🌿','Volume','Gyakorlat-kártya, edzésnap'],['tick','✓','Kereten belül','Edzésnap']];
+  return topbar()+hero('var(--gold)','compare','EMODZSI-SÖPRÉS','Mi mire cserélődik','Mind a hét ikon már a közös készletben van.')+
+  `<div class="p16" style="display:grid;gap:10px">${R.map(([ic,e,n,w],i)=>`<div class="card glass rise" style="--c:var(--gold);--i:${i};padding:12px 14px"><div class="cmp"><div><span class="emo">${e}</span><small>most</small></div><div>${I(ic)}<small>helyette</small></div></div>
+    <p style="margin-top:10px;font-size:13.5px;font-weight:600">${n}</p><small style="font-size:11.5px;color:var(--faint)">${w}</small></div>`).join('')}</div>`+
+  principle('Új ikont nem rajzolunk: mindegyik egy korábbi körben már jóváhagyott 3D ikon.');
+}
+
+/* ── router ─────────────────────────────────────────────── */
+const AREA={alvas:['en','var(--rose)'],varazslo:['train','var(--coral)'],het:['train','var(--coral)'],nap:['train','var(--coral)'],fuel:['fuel','var(--sage)'],csapat:['mezo','var(--lav)'],ikonok:['nap','var(--gold)']};
+const TABS={
+  en:[['Áttekintés','emberek'],['Súly','suly'],['Alvás','alvas'],['Napló','naplo']],
+  train:[['Mai','edzes'],['Terv','retegek'],['Terhelés','meso'],['Gyakorlatok','naplo']],
+  fuel:[['Mai','tanyer'],['Kiegészítők','kiegeszito'],['Trendek','trend'],['Konyha','fazek']],
+  mezo:[['Üzenőfal','mezo'],['A csapat','emberek'],['Rólad','kristaly'],['Emlékek','memoar']],
+  nap:[['Mai','nap'],['Beszélgetés','mezo'],['Rutin','rend'],['Napzárás','hold']],
+};
+const ACTIVE={alvas:'Áttekintés',varazslo:'Terv',het:'Terv',nap:'Terv',fuel:'Mai',csapat:'A csapat',ikonok:'Mai'};
+const VW={alvas,varazslo,het,nap,fuel,csapat,ikonok};
+function render(){
+  const r=(location.hash||'#alvas').slice(1).split('/')[0];
+  $('#scroll').innerHTML=(VW[r]||alvas)(); $('#scroll').scrollTop=0; closeSheet();
+  ntfOpen=false;$('#ntf').classList.remove('on');$('#switcher').classList.remove('on');
+  chrome(r); if(r==='alvas'||!VW[r])setTimeout(()=>openSheet('sleep'),350);
+  document.querySelectorAll('#jump a').forEach(a=>a.setAttribute('aria-current',String(a.getAttribute('href')==='#'+r)));
+}
+function openSheet(k){const [c,f]=SH[k];const s=$('#sheet');s.style.setProperty('--c',c);
+  s.innerHTML=`<div class="grab"></div>`+f();$('#scrim').classList.add('on');s.classList.add('on')}
+function closeSheet(){$('#sheet').classList.remove('on');$('#scrim').classList.remove('on')}
+let toastT;
+function toast(t){clearTimeout(toastT);$('#toast').textContent=t;$('#toast').classList.add('on');toastT=setTimeout(()=>$('#toast').classList.remove('on'),2400)}
+function soft(){const r=(location.hash||'#alvas').slice(1);const y=$('#scroll').scrollTop;$('#scroll').innerHTML=(VW[r]||alvas)();$('#scroll').scrollTop=y;
+  if($('#sheet').classList.contains('on')){$('#sheet').innerHTML=`<div class="grab"></div>`+SH.sleep[1]()}}
+document.addEventListener('click',e=>{
+  const t=e.target, go=t.closest('[data-go]'), tt=t.closest('[data-toast]'), s=t.closest('[data-sheet]');
+  if(t.closest('[data-closesheet]')){closeSheet();return}
+  const st=t.closest('[data-st]'); if(st){e.preventDefault();const [k,v]=st.dataset.st.split(':');ST[k]=v;
+    const home={anchor:'#alvas',warn:'#nap',fail:(location.hash==='#het'?'#het':'#nap')}[k];
+    if(location.hash!==home){location.hash=home}else{soft()}return}
+  if(s){e.preventDefault();openSheet(s.dataset.sheet);return}
+  if(go){e.preventDefault();location.hash=go.dataset.go;return}
+  if(tt){e.preventDefault();toast(tt.dataset.toast);return}
+  if(t.id==='scrim'){closeSheet()}
+});
+addEventListener('hashchange',render);
+$('#still').addEventListener('change',e=>document.body.classList.toggle('still',e.target.checked));
+$('#old').addEventListener('change',e=>{OLD=e.target.checked;soft()});
+
+const D=[['nap','Nap','var(--gold)'],['train','Edzés','var(--coral)'],['fuel','Fuel','var(--sage)'],['mezo','Mezo','var(--lav)'],['en','Én','var(--rose)']];
+function chrome(r){
+  const [d,c]=AREA[r]||AREA.alvas, name=D.find(x=>x[0]===d)[1];
+  $('#tabbar').style.setProperty('--c',c); $('#tabbar').dataset.d=d; $('#switcher').style.setProperty('--c',c);
+  $('#tabbar').innerHTML=`<button class="tb-boop" data-switch aria-label="Területváltó: ${name}">${B(d,true)}</button>`+
+    TABS[d].map(([l,ic])=>`<button class="tb ${l===ACTIVE[r]?'on':''}" data-toast="${l} — nem része ennek a körnek">${C(ic)}<span>${l}</span></button>`).join('');
+  $('#switcher').innerHTML=`<small>TERÜLETVÁLTÓ</small><div class="sw-grid">${D.map(([k,n,cc])=>`<button class="sw ${k===d?'on':''}" style="--c:${cc}" ${k===d?'data-switch':`data-toast="${n} — másik terület"`}>${B(k)}${n}</button>`).join('')}</div>`;
+}
+$('#ntf').innerHTML=`<div class="ntf-head"><strong>Értesítések<em>3 új</em></strong><button data-toast="Mind olvasott">Mind olvasott</button></div>
+  <div class="ntf-chips"><span class="on">Mind <b>6</b></span><span>Olvasatlan <b>3</b></span><span>${I('pattern')}Minták <b>2</b></span><span>${I('orb')}Jóslatok <b>1</b></span></div>
+  <div class="ntf-day">MA</div>
+  <div class="ntf-row unread">${I('pattern')}<span><strong>Új minta vár döntésre</strong><small>A késői vacsora és a felszínes alvás között erős jel rajzolódik ki…</small></span><em>09:12</em></div>
+  <div class="ntf-row unread">${I('orb')}<span><strong>Bejött egy előrejelzés</strong><small>A múlt heti jóslatod a pihenőnapról beigazolódott.</small></span><em>08:40</em></div>
+  <button class="ntf-foot" data-toast="Összes értesítés">Összes értesítés ›</button>`;
+function toggleNtf(v){ntfOpen=v??!ntfOpen;$('#ntf').classList.toggle('on',ntfOpen);document.querySelector('[data-ntf]')?.classList.toggle('is-open',ntfOpen);$('#scrim').classList.toggle('on',ntfOpen||$('#switcher').classList.contains('on'))}
+function toggleSwitch(v){const on=v??!$('#switcher').classList.contains('on');$('#switcher').classList.toggle('on',on);$('#scrim').classList.toggle('on',on)}
+document.addEventListener('click',e=>{
+  if(e.target.closest('[data-ntf]')){e.stopPropagation();toggleNtf();return}
+  if(e.target.closest('[data-switch]')){e.stopPropagation();toggleSwitch();return}
+  if(e.target.id==='scrim'){toggleNtf(false);toggleSwitch(false)}
+},true);
+if(/still/.test(location.search)){document.body.classList.add('still');$('#still').checked=true}
+render();
+</script>
+</body>
+</html>
