@@ -56,9 +56,11 @@
 .demo .row .well .icon{width:28px;height:28px}
 
 /* ══ 1. ÉTKEZÉS-ÜNNEP: kis pillanat, alsó lap a nap fölött ══ */
-.fcx{position:absolute;left:10px;right:10px;bottom:10px;z-index:48;padding:12px 18px 18px;border-radius:30px;--c:var(--gold);transform:translateY(110%);transition:transform .7s var(--ease)}
+.fcx{position:absolute;left:10px;right:10px;bottom:10px;z-index:48;padding:12px 18px 18px;border-radius:30px;--c:var(--gold);transform:translateY(110%);transition:transform .5s var(--ease)}
 .fcx.glass{position:absolute}
 .fcx.on{transform:none}
+body.still .fcx{transition:none}
+@media (prefers-reduced-motion:reduce){.fcx{transition:none}}
 .fcx.glass::after{display:none}
 .fcx .grab{width:40px;height:5px;border-radius:3px;background:rgba(245,239,230,.2);margin:0 auto 10px}
 .fcx-top{text-align:center}
@@ -139,6 +141,50 @@
 .ccta small{display:block;font-size:11.5px;color:var(--sub);margin-top:1px}
 .ccta em{font-style:normal;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:19px;color:#191614;background:var(--c);box-shadow:0 0 16px color-mix(in srgb,var(--c) 60%,transparent)}
 .cnote{font-size:11.5px;color:var(--faint);text-align:center;margin:12px 22px 0;line-height:1.45}
+
+
+/* ══ 2b. EDZÉS-ÜNNEP (U4, élesben — csak összehasonlításra, változatlanul) ══ */
+.gym .verdict{margin:18px 0 14px}
+.gym .cres{padding:6px 16px 0;text-align:center}
+.gym .ccard{--c:var(--gold);padding:14px;border-radius:24px;text-align:left;opacity:0;transform:translateY(14px);transition:.6s var(--ease)}
+.gym.b2 .ccard{opacity:1;transform:none}
+.gym .crecs{transform:translateY(14px) scale(.97)}
+.gym.b2 .crecs{transform:none}
+.gym .cch{display:flex;align-items:center;gap:12px;padding-bottom:10px}
+.gym .cch .icon{width:48px;height:48px}
+.gym .cch .eb{color:#FFD08A}
+.gym .cch strong{display:block;font-size:19px;font-weight:600;letter-spacing:-.4px;color:#FFE0AE;margin-top:1px}
+.gym .rrow2{display:grid;gap:5px;padding:11px 0;border-top:1px solid var(--hair)}
+.gym .rrow2 strong{font-size:15px;font-weight:600}
+.gym .vals{display:flex;gap:5px;flex-wrap:wrap;align-items:center;justify-content:flex-start;margin-top:3px}
+.gym .vals b{padding:5px 11px;border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap;background:rgba(245,239,230,.06);box-shadow:inset 0 0 0 1px var(--hair);color:var(--ink)}
+.gym .vals b.lit{color:#191614;background:linear-gradient(135deg,#FFE0AE,#FFBE60);box-shadow:0 0 12px rgba(255,190,96,.5)}
+.gym .tchip{display:inline-flex;align-items:center;gap:6px;padding:3px 11px 3px 4px;border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap;color:#FFE0AE;background:radial-gradient(90% 120% at 20% 20%,rgba(255,190,96,.22),rgba(245,239,230,.04));box-shadow:inset 0 0 0 1px rgba(255,190,96,.45),0 0 12px -4px rgba(255,190,96,.55)}
+.gym .tchip .icon{width:24px;height:24px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+.gym .tchip.co{color:#FFC9B8;background:radial-gradient(90% 120% at 20% 20%,rgba(255,126,92,.22),rgba(245,239,230,.04));box-shadow:inset 0 0 0 1px rgba(255,126,92,.45),0 0 12px -4px rgba(255,126,92,.55)}
+.gym .cstats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gym .cstats>span{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:14px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.gym .cstats .icon{width:32px;height:32px}
+.gym .cstats strong{display:block;font-size:20px;font-weight:600;letter-spacing:-.5px}
+.gym .cstats strong i{font-style:normal;color:var(--faint)}
+.gym .cstats small{display:block;font-size:10.5px;color:var(--faint)}
+.gym .ccard .ctally{margin:10px 0 0}
+.gym .ccard .ctally>span{background:none;box-shadow:none;padding:8px 4px}
+.gym .cchal{margin-top:12px;padding-top:10px;border-top:1px solid var(--hair);transition:.5s var(--ease);opacity:.3}
+.gym.b3 .cchal{opacity:1}
+.gym .cchal .eb{display:block;margin-bottom:6px}
+.gym .chr{position:relative;display:flex;padding:8px 0}
+.gym .chr .cb{flex:1;min-width:0;display:grid;gap:5px}
+.gym .chr .cb strong{font-size:13.5px;font-weight:600;padding-right:46px;min-height:26px;display:flex;align-items:center}
+.gym .chr .res{position:absolute;right:0;top:6px;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.gym .chr .res .icon{width:30px;height:30px}
+.gym .chr.hit .res{background:radial-gradient(circle at 35% 30%,rgba(143,180,154,.35),rgba(30,27,24,.6));box-shadow:inset 0 0 0 1.5px rgba(143,180,154,.55),0 0 14px -2px rgba(143,180,154,.6)}
+.gym .chr.hit .vals b:first-child{color:#191614;background:linear-gradient(135deg,#D6EDC7,#8FB49A);box-shadow:0 0 10px rgba(143,180,154,.45)}
+.gym .chr.miss{opacity:.62}
+.gym .cfoot{opacity:0}
+.gym.b2 .cfoot{opacity:1}
+.gym .ccta{--c:var(--gold)}
+.gym .cmp{display:block;margin:14px 16px 0;padding:10px 12px;border-radius:14px;font-size:11.5px;line-height:1.45;color:var(--faint);text-align:center;background:rgba(245,239,230,.03);box-shadow:inset 0 0 0 1px var(--hair)}
 
 /* ══ 3. SZINTLÉPÉS ══ */
 .lu{position:relative;overflow-x:clip;text-align:center;padding:34px 16px 4px}
@@ -514,6 +560,7 @@
     <nav id="jump">
       <a href="#cer-etel" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-star"/></svg>Étkezés-ünnep</a>
       <a href="#cer-sport" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-volley"/></svg>Sport-ünnep</a>
+      <a href="#cer-gym" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-dumbbell"/></svg>Edzés-ünnep (élő, összehasonlításhoz)</a>
       <a href="#szint" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-up"/></svg>Szintlépés</a>
       <a href="#ablak" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-info"/></svg>Felugró ablakok</a>
       <a href="#lapok" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-gear"/></svg>Alsó lapok</a>
@@ -608,7 +655,10 @@ function runEtel(){
     el.querySelectorAll('[data-fs]').forEach(s=>s.classList.toggle('is-lit',+s.dataset.fs<Math.round(stars*t+.001)&&t>.2));
     el.querySelectorAll('[data-mc]').forEach(b=>b.textContent=Math.round(MEAL[b.dataset.mc]*t));
     el.classList.toggle('is-told',ms>=D*.85)};
-  if(still()){paint(D);return}const t0=performance.now();const f=n=>{const ms=Math.min(D,n-t0);paint(ms);if(ms<D&&el.isConnected)requestAnimationFrame(f)};requestAnimationFrame(f)}
+  if(still()){paint(D);return}
+  /* the ignition waits until the sheet has fully landed: first the drawer, then the stars */
+  let go=false;const start=()=>{if(go||!el.isConnected)return;go=true;const t0=performance.now();const f=n=>{const ms=Math.min(D,n-t0);paint(ms);if(ms<D&&el.isConnected)requestAnimationFrame(f)};requestAnimationFrame(f)};
+  el.addEventListener('transitionend',e=>{if(e.target===el&&e.propertyName==='transform')start()},{once:false});setTimeout(start,900)}
 
 /* ═════════ 2. SPORT-ÜNNEP ═════════ */
 const SP={sport:'RÖPLABDA',name:'Röplabda',min:94,rpe:7,kcal:520,xp:65,stars:4.5,ratio:.9};
@@ -629,6 +679,31 @@ function runSport(){
   const paint=ms=>{const p=ease(Math.min(1,ms/S))*SP.ratio;stage.style.setProperty('--p',p);
     stage.querySelectorAll('[data-star]').forEach(s=>{const c=starCls(+s.dataset.star,p);s.classList.toggle('is-lit',c==='is-lit');s.classList.toggle('is-half',c==='is-half')});
     const t=ease(Math.min(1,ms/S));root.querySelectorAll('[data-c]').forEach(b=>b.textContent=Math.round(SP[b.dataset.c]*t));
+    for(const k in Bt)root.classList.toggle(k,ms>=Bt[k])};
+  if(still()){paint(D);return}const t0=performance.now();const f=n=>{const ms=Math.min(D,n-t0);paint(ms);if(ms<D&&stage.isConnected)requestAnimationFrame(f)};requestAnimationFrame(f)}
+
+
+/* ═════════ 2b. EDZÉS-ÜNNEP (U4 jóváhagyott, élesben) ═════════ */
+const GYM={stars:4.5,ratio:.9,sets:14,reps:142,vol:4180,min:71,xp:185,pending:2,rec:[['Chest Supported Row','Súly-rekord',['105 kg','10 ism.']],['Lat Pulldown · Pronated','Rep-rekord',['12 ism.','74,5 kg']]],chal:[[1,'Túlterhelés','Chest Supported Row',['107,5 kg','8 ism.']],[0,'Mélység','Lat Pulldown · Pronated',['utolsó szett','RIR 0']]]};
+const KIND_IC={'Súly-rekord':'weight','Rep-rekord':'repeat','Túlterhelés':'up','Mélység':'hold'};
+const huN=n=>Math.round(n).toLocaleString('hu-HU').replace(/[  ]/g,' ');
+function cerGym(){return `<div id="cerroot" class="gym"><section class="cer" id="cerstage" style="--p:0"><span class="eb">EDZÉS LEZÁRVA</span>
+  <div class="cstars" aria-hidden="true">${[0,1,2,3,4].map(i=>`<i data-star="${i}">${I('star-empty','off')}${I('star-half','half')}${I('star','on')}</i>`).join('')}</div>
+  <div class="fuse" aria-hidden="true"><b></b><em></em>${[1,2,3,4].map(i=>`<u style="--at:${i*20}%"></u>`).join('')}</div></section>
+  <section class="cres"><h1 class="sr">4,5 csillag az ötből</h1><p class="verdict">Erős nap.</p>
+  <article class="ccard crecs glass"><div class="cch">${I('record')}<span><span class="eb">EZ A TIÉD MOSTANTÓL</span><strong>${GYM.rec.length} új rekord</strong></span></div>
+    ${GYM.rec.map(([n,k,ch])=>`<div class="rrow2"><strong>${n}</strong><span class="vals"><span class="tchip">${I(KIND_IC[k])}${k}</span>${ch.map(c=>`<b class="lit">${c}</b>`).join('')}</span></div>`).join('')}</article>
+  <article class="ccard glass" style="margin-top:12px"><div class="cstats"><span>${I('clock')}<span><strong>${GYM.min}<i>′</i></strong><small>a pulton töltött idő</small></span></span><span>${I('coin')}<span><strong>+${GYM.xp}</strong><small>szerzett XP</small></span></span></div>
+    <div class="ctally"><span>${I('weight')}<b data-g="sets">0</b><small>szett</small></span><span>${I('dumbbell')}<b data-g="reps">0</b><small>ismétlés</small></span><span>${I('protocol')}<b data-g="vol">0</b><small>kg × rep</small></span></div>
+    <div class="cchal"><span class="eb">KÜLDETÉSEK · 1 / 2</span>${GYM.chal.map(([ok,t,ex,ch])=>`<div class="chr ${ok?'hit':'miss'}"><span class="cb"><strong>${ex}</strong><span class="vals"><span class="tchip co">${I(KIND_IC[t])}${t}</span>${ch.map(c=>`<b>${c}</b>`).join('')}</span></span><span class="res" aria-label="${ok?'teljesült':'nem teljesült'}">${I(ok?'tick':'skip')}</span></div>`).join('')}</div></article>
+  <p class="cnote">${GYM.pending} szett kihagyott státusszal zárult.</p></section>
+  <div class="cfoot"><button class="ccta glass lift" data-toast="→ 2. lépés: izomcsoportok és a nyert kalória (élesben)">${I('journal')}<span><strong>Részletek</strong><small>Izomcsoportok és a nyert kalória</small></span><em>›</em></button></div>
+  <p class="cmp">Ez a 4. körben jóváhagyott, már élő edzés-ünnep — változatlanul, csak hogy a sport-ünneppel egymás mellett lásd.</p></div>`}
+function runGym(){
+  const root=$('#cerroot'),stage=$('#cerstage');if(!root)return;const D=2700,S=1700,Bt={b1:1750,b2:2050,b3:2350};
+  const paint=ms=>{const p=ease(Math.min(1,ms/S))*GYM.ratio;stage.style.setProperty('--p',p);
+    stage.querySelectorAll('[data-star]').forEach(st=>{const c=starCls(+st.dataset.star,p);st.classList.toggle('is-lit',c==='is-lit');st.classList.toggle('is-half',c==='is-half')});
+    const t=ease(Math.max(0,Math.min(1,(ms-Bt.b2)/(D-Bt.b2))));root.querySelectorAll('[data-g]').forEach(el=>{const v=GYM[el.dataset.g]*t;el.textContent=el.dataset.g==='vol'?huN(v):Math.round(v)});
     for(const k in Bt)root.classList.toggle(k,ms>=Bt[k])};
   if(still()){paint(D);return}const t0=performance.now();const f=n=>{const ms=Math.min(D,n-t0);paint(ms);if(ms<D&&stage.isConnected)requestAnimationFrame(f)};requestAnimationFrame(f)}
 
@@ -857,8 +932,8 @@ function ikonok(){DOMAIN='nap';const N=[['jump','Vertikális emelkedés','szintl
   <p class="foot">A 6 új ikon a Titanium-recept szerint: 64×64, fémes színátmenet, halvány körvonal, fénycsíkok, árnyék.</p>`}
 
 /* ── router ─────────────────────────────────────────────── */
-const VW={'cer-etel':cerEtel,'cer-sport':cerSport,szint,ablak,lapok,uzenet,kalauz,udv,belep,reg,jelszo,szerver,elso,admin,minden,hiba,splash,ikonok};
-const NOCHROME=['cer-sport','szint','udv','belep','reg','jelszo','szerver','elso','admin','splash'];
+const VW={'cer-etel':cerEtel,'cer-sport':cerSport,'cer-gym':cerGym,szint,ablak,lapok,uzenet,kalauz,udv,belep,reg,jelszo,szerver,elso,admin,minden,hiba,splash,ikonok};
+const NOCHROME=['cer-sport','cer-gym','szint','udv','belep','reg','jelszo','szerver','elso','admin','splash'];
 function render(){
   const h=location.hash||'#cer-etel';let [r,id]=h.slice(1).split('/');if(!VW[r])r='cer-etel';
   closeSheet();closeGb();$('#scrim').classList.remove('on');$('#veil').classList.remove('on');$('#spot').classList.remove('on');$('#peekbar')?.remove();
@@ -868,7 +943,7 @@ function render(){
   $('#scroll').scrollTop=0;
   $('#phone').classList.toggle('nochrome',NOCHROME.includes(r));$('#stage').classList.toggle('desk',r==='admin');
   tabbar();chrome();
-  if(r==='cer-etel'&&id!=='nap')runEtel(); if(r==='cer-sport')runSport(); if(r==='szint')runSzint();
+  if(r==='cer-etel'&&id!=='nap')runEtel(); if(r==='cer-sport')runSport(); if(r==='cer-gym')runGym(); if(r==='szint')runSzint();
   if(r==='uzenet')setTimeout(()=>fireToast('ok'),250);
   document.querySelectorAll('#jump a').forEach(a=>a.setAttribute('aria-current',String(a.getAttribute('href').split('/')[0]==='#'+r)));
 }
