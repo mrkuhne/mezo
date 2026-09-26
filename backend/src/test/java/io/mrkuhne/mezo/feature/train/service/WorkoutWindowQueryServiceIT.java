@@ -15,6 +15,8 @@ import io.mrkuhne.mezo.support.populator.SportSlotSkipPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Map;
@@ -341,11 +343,14 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
     void testMovementOn_shouldReadPlannedDoneFalse_whenTheGymWorkoutIsStillInProgress() {
         UUID owner = owner();
         LocalDate wed = LocalDate.of(2026, 6, 24);
+        train.createGymSlot(owner, 2, "09:00");
         UUID mesoId = train.createActiveMeso(owner).getId();
         WorkoutSessionEntity template = train.createTemplateDay(owner, mesoId, "Sze");
         train.createWorkoutInstance(owner, template, wed, "active");
 
-        assertThat(service.movementOn(owner, wed).plannedDone()).isFalse();
+        // Not-done (only completed instances are ever read) — and an in-progress instance adds
+        // no extra kcal either, so the whole day reads as untouched.
+        assertThat(service.movementOn(owner, wed)).isEqualTo(WorkoutWindowQueryService.DayMovement.NONE);
     }
 
     @Test
@@ -457,7 +462,6 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
         @Autowired private BiometricProfilePopulator biometricProfilePopulator;
         @Autowired private WeightLogPopulator weightLogPopulator;
         @Autowired private TdeeBootstrapService tdeeBootstrapService;
-        @Autowired private ActivityEnergyModel activityEnergyModel;
 
         /** The prototype-default profile (M, born 1991-03-01, 15% body fat) plus one weigh-in
          *  (mirrors {@code SportServiceIT#seedBody}). */
@@ -528,9 +532,14 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
             WorkoutSessionEntity customTemplate = train.createCustomTemplateDay(owner, "Saját");
             train.createWorkoutInstance(owner, customTemplate, monday, "completed", 3600);
 
+            // Independent of ActivityEnergyModel#netKcal (the code under test): the brief's own
+            // formula, extraKcal = round(2.5 × bmr/24) — 2.5 = the gym MODERATE MET (3.5) − 1,
+            // moderate because a null RPE always bands moderate (global constraints §Bands).
             BigDecimal bmr = tdeeBootstrapService.bmr(profile, new BigDecimal("80.00"));
-            BigDecimal rest = ActivityEnergyModel.restKcalPerHour(bmr, new BigDecimal("80.00")).orElseThrow();
-            int expectedExtra = activityEnergyModel.netKcal("gym", null, 60, rest).orElseThrow();
+            int expectedExtra = bmr.multiply(new BigDecimal("2.5"))
+                .divide(BigDecimal.valueOf(24), MathContext.DECIMAL64)
+                .setScale(0, RoundingMode.HALF_UP)
+                .intValueExact();
 
             WorkoutWindowQueryService.DayMovement m = service.movementOn(owner, monday);
 

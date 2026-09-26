@@ -174,17 +174,8 @@ public class WorkoutWindowQueryService {
     private void addSportWindowsForDay(LocalDate date, int dow, List<SportScheduleSlotEntity> sportSlots,
             List<SportEventEntity> dayEvents, List<SportSessionEntity> daySessions,
             Set<SportSlotSkipService.SkipKey> skips, List<Window> windows) {
-        List<PlannedSport> unmatched = new ArrayList<>();
-        sportSlots.stream()
-            .filter(s -> s.getDayOfWeek() == dow)
-            .filter(s -> !skips.contains(new SportSlotSkipService.SkipKey(dow, s.getTime(), date)))
-            .forEach(s -> unmatched.add(new PlannedSport(s.getTime(), s.getDurationMin(), s.getSport())));
-        dayEvents.forEach(e -> unmatched.add(new PlannedSport(e.getTime(), e.getDurationMin(), e.getSport())));
-
-        List<SportSessionEntity> sessions = daySessions.stream()
-            .sorted(Comparator.comparing(SportSessionEntity::getTime,
-                Comparator.nullsLast(Comparator.naturalOrder())))
-            .toList();
+        List<PlannedSport> unmatched = plannedSportPool(date, dow, sportSlots, dayEvents, skips);
+        List<SportSessionEntity> sessions = byTimeNullsLast(daySessions);
         for (SportSessionEntity session : sessions) {
             PlannedSport plan = nearestPlan(unmatched, session.getTime());
             unmatched.remove(plan);
@@ -203,6 +194,33 @@ public class WorkoutWindowQueryService {
             windows.add(new Window(start, start.plusMinutes(s.durationMin()), "sport", false,
                 s.sport()));
         });
+    }
+
+    /**
+     * The date's planned-sport pool (mezo-jcpt.6 / mezo-32m82): the weekday-matched recurring
+     * slots NOT skipped on this date, plus the date's one-off events — the single builder both
+     * {@link #addSportWindowsForDay} and {@link #movementOn} consume, so the two can never drift
+     * apart the way the F2 nulls-order parity bug happened from a hand-duplicated per-day path.
+     */
+    private List<PlannedSport> plannedSportPool(LocalDate date, int dow, List<SportScheduleSlotEntity> slots,
+            List<SportEventEntity> events, Set<SportSlotSkipService.SkipKey> skips) {
+        List<PlannedSport> pool = new ArrayList<>();
+        slots.stream()
+            .filter(s -> s.getDayOfWeek() == dow)
+            .filter(s -> !skips.contains(new SportSlotSkipService.SkipKey(dow, s.getTime(), date)))
+            .forEach(s -> pool.add(new PlannedSport(s.getTime(), s.getDurationMin(), s.getSport())));
+        events.forEach(e -> pool.add(new PlannedSport(e.getTime(), e.getDurationMin(), e.getSport())));
+        return pool;
+    }
+
+    /** {@code sessions} sorted by clock time, a null time sorting LAST — matching Postgres's
+     *  default {@code ORDER BY time ASC} (mezo-jcpt.6 F2; see {@link #addSportWindowsForDay}'s
+     *  javadoc for why nulls-first would silently reorder which session wins a plan match). */
+    private static List<SportSessionEntity> byTimeNullsLast(List<SportSessionEntity> sessions) {
+        return sessions.stream()
+            .sorted(Comparator.comparing(SportSessionEntity::getTime,
+                Comparator.nullsLast(Comparator.naturalOrder())))
+            .toList();
     }
 
     /**
@@ -267,19 +285,13 @@ public class WorkoutWindowQueryService {
 
         // Sport — the same planned pool + nearest-match consumption as addSportWindowsForDay.
         Set<SportSlotSkipService.SkipKey> skips = sportSlotSkipService.skipsBetween(userId, date, date);
-        List<PlannedSport> unmatchedSport = new ArrayList<>();
-        sportRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
-            .filter(s -> s.getDayOfWeek() == dow)
-            .filter(s -> !skips.contains(new SportSlotSkipService.SkipKey(dow, s.getTime(), date)))
-            .forEach(s -> unmatchedSport.add(new PlannedSport(s.getTime(), s.getDurationMin(), s.getSport())));
-        sportEventRepo.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateAscTimeAsc(userId, date, date)
-            .forEach(e -> unmatchedSport.add(new PlannedSport(e.getTime(), e.getDurationMin(), e.getSport())));
+        List<PlannedSport> unmatchedSport = plannedSportPool(date, dow,
+            sportRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId),
+            sportEventRepo.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateAscTimeAsc(userId, date, date),
+            skips);
 
-        List<SportSessionEntity> sportSessions = sportSessionRepository
-            .findByCreatedByAndDeletedFalseAndDateOrderByTimeAsc(userId, date).stream()
-            .sorted(Comparator.comparing(SportSessionEntity::getTime,
-                Comparator.nullsLast(Comparator.naturalOrder())))
-            .toList();
+        List<SportSessionEntity> sportSessions = byTimeNullsLast(
+            sportSessionRepository.findByCreatedByAndDeletedFalseAndDateOrderByTimeAsc(userId, date));
         for (SportSessionEntity session : sportSessions) {
             PlannedSport plan = nearestPlan(unmatchedSport, session.getTime());
             if (plan != null) {
