@@ -2847,6 +2847,47 @@ body.still .skel{animation:none}
 .emptyq .icon{width:64px;height:64px;opacity:.7}
 .emptyq strong{display:block;font-size:16px;margin-top:8px}
 .emptyq p{font-size:12.5px;color:var(--sub);line-height:1.5;margin-top:6px}
+
+/* ── tagolás, 2. kör ── */
+.qtag{--c:var(--coral);display:inline-flex;align-items:center;gap:5px;padding:4px 10px 4px 5px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.2px;color:color-mix(in srgb,var(--c) 70%,var(--ink));background:color-mix(in srgb,var(--c) 13%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 38%,transparent);white-space:nowrap}
+.qtag .icon{width:18px;height:18px;filter:none}
+.qa2{padding:0;overflow:hidden}
+.qa2 .q-ex{display:flex;align-items:center;gap:10px;padding:12px 13px 10px}
+.qa2 .q-ex .mchp{width:36px;height:36px}
+.qa2 .q-ex span.n{flex:1;min-width:0}
+.qa2 .q-ex strong{display:block;font-size:14.5px;font-weight:600;letter-spacing:-.2px}
+.qa2 .q-ex small{display:block;font-size:10px;font-weight:600;letter-spacing:1.1px;color:var(--faint);margin-top:1px}
+.qa2 .q-goal{display:grid;grid-template-columns:1fr auto;align-items:end;gap:10px;margin:0 13px;padding:11px 13px;border-radius:14px;background:rgba(245,239,230,.045);box-shadow:inset 0 0 0 1px var(--hair)}
+.qa2 .q-goal .eb{margin-bottom:3px}
+.qa2 .q-goal b{font-size:30px;font-weight:300;letter-spacing:-1.4px;line-height:1}
+.qa2 .q-goal b small{font-size:13px;letter-spacing:0;font-weight:500;color:var(--sub);margin-left:3px}
+.qa2 .q-goal .sub{display:block;font-size:12px;color:var(--sub);margin-top:4px}
+.qa2 .q-goal .meta{text-align:right;display:grid;gap:6px;justify-items:end}
+.qa2 .q-goal .meta span{font-size:10px;font-weight:600;letter-spacing:.9px;color:var(--faint)}
+.qa2 .q-goal .meta em{font-style:normal;font-size:13px;font-weight:600;color:var(--ink);letter-spacing:0;margin-left:4px}
+.cring{width:34px;height:34px;display:inline-block;vertical-align:middle}
+.cring .ring-track{stroke:rgba(245,239,230,.08);stroke-width:8}.cring .ring-prog{stroke-width:8}
+.qa2 .q-why{margin:10px 13px 0;padding-left:11px;border-left:2px solid color-mix(in srgb,var(--c) 45%,transparent)}
+.qa2 .q-why p{font-size:12.5px;line-height:1.5;color:var(--sub);margin:3px 0 0}
+.qa2 .q-glory{display:flex;align-items:center;gap:8px;margin:10px 13px 0;font-size:12.5px;font-weight:600;color:color-mix(in srgb,var(--gold) 70%,var(--ink))}
+.qa2 .q-glory .icon{width:22px;height:22px}
+.qa2 details{margin:8px 13px 0}
+.qa2 .acts{margin:12px 0 0;padding:10px 13px 13px}
+/* B, tagolva */
+.qb2{grid-template-columns:40px 1fr 34px;align-items:center;padding:11px 12px}
+.qb2 .mchp{width:40px;height:40px}
+.qb2 .qtag{padding:2px 8px 2px 4px;font-size:10px}
+.qb2 .qtag .icon{width:15px;height:15px}
+.qb2 .tt{display:flex;align-items:baseline;gap:6px;margin-top:5px}
+.qb2 .tt b{font-size:19px;font-weight:600;letter-spacing:-.5px;line-height:1}
+.qb2 .tt i{font-style:normal;font-size:12px;color:var(--sub)}
+.qb2 .ex{display:block;font-size:11.5px;color:var(--faint);margin-top:3px}
+.qb2-why{margin:6px 4px 0 52px;padding:9px 11px;border-radius:12px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.qb2-why p{font-size:12px;line-height:1.5;color:var(--sub);margin-top:3px}
+.qb2-why .q-glory{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:12px;font-weight:600;color:color-mix(in srgb,var(--gold) 70%,var(--ink))}
+.qb2-why .q-glory .icon{width:18px;height:18px}
+.qb2-why .kv{display:flex;gap:14px;margin-top:7px;font-size:10px;font-weight:600;letter-spacing:.9px;color:var(--faint)}
+.qb2-why .kv em{font-style:normal;color:var(--ink);letter-spacing:0;font-size:12px;margin-left:4px}
 .notes .seg{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
 .notes .seg button{padding:7px 12px;border-radius:999px;font-size:12px;font-weight:600;color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
 .notes .seg button.on{color:#191614;background:var(--gold)}
@@ -2885,6 +2926,7 @@ body.still .skel{animation:none}
       <li><b>A · Kártyák</b> — a jóváhagyott kártya, letisztítva: magyar címkék, ikon a típushoz, a „miért” egy lenyitható sorban, a belső eszköz-hívások eltűnnek. Passz után a kártya egy vékony sorrá csukódik.</li>
       <li><b>B · Gyors választó</b> — egy képernyőnyi lista pipával, a magyarázat csak koppintásra nyílik, alul egy „Indulhat” gomb. Gyorsabb a kezdés előtt.</li>
       <li>Az elfogadott küldetés arany fényt kap — a küldetés a jutalom-szín.</li>
+      <li><b>2. kör · tagolás</b> — minden kártyán külön sáv: fent a <b>gyakorlat</b> (izom-jellel) és a <b>típus</b> (saját színű címke), középen a <b>cél</b> nagy számmal egy dobozban, mellette a biztosság és a kockázat; alatta a <b>„Miért most”</b> és külön sorban a <b>jutalom</b>.</li>
     </ul>
     <p><a href="#session/uj">Edzés indítása (0 szett)</a> · <a href="#" data-gbox="chal">választó megnyitása</a></p>
     <label class="toggle"><input type="checkbox" id="still"> Mozgás kikapcsolása</label>
@@ -2903,6 +2945,7 @@ const ring=(p,c,r=34,vb=80)=>`<svg viewBox="0 0 ${vb} ${vb}" aria-hidden="true">
 const bar=(w,c,i=0)=>`<span class="bar" style="--c:${c}"><b style="--w:${Math.max(2,Math.min(100,w))}%;--i:${i}"></b></span>`;
 let ntfOpen=false, dayState='run', resting=false;
 let chalState='kesz', chalVar='A', openWhy=-1;
+const QCOL={'Túlterhelés':'var(--coral)','PR-kísérlet':'var(--gold)','Mélység':'var(--rose)','Volumen':'var(--sky)'};
 const QIC={'Túlterhelés':'up','PR-kísérlet':'record','Mélység':'flame','Volumen':'stack'};
 const chalOf=e=>CHAL.find(c=>c.acc&&!c.pass&&e.n.startsWith(c.ex.split(' · ')[0]));
 function freshRow(){
@@ -3266,10 +3309,10 @@ function runCer(){
   const t0=performance.now();const f=now=>{const ms=Math.min(D,now-t0);paint(ms);if(ms<D&&stage.isConnected)requestAnimationFrame(f)};requestAnimationFrame(f);
 }
 const CHAL=[
-  {type:'Túlterhelés',ex:'Chest Supported Row',target:'107,5 kg × 8',conf:'tanulom',why:'A mai ajánlott terhelés: +2,5 kg a múlt heti 105-höz képest (RIR 2 stabil).',glory:'Teljesítsd a mai ajánlott terhelést.',refs:[],acc:false},
-  {type:'PR-kísérlet',ex:'Chest Supported Row',target:'107,5 kg × 8',conf:'72%',why:'Március 4 óta 102,5 a stabil ablak. Múlt heti RIR 2 + 7,2 óra alvás — ez a kombináció 4-ből 3-szor bírt el +5 kg-ot.',glory:'Új súly-rekord',refs:['Chest Row 105,8 · márc 4.','Alacsony étvágy + 7h+ alvás → PR-ablak'],acc:false},
-  {type:'Mélység',ex:'Lat Pulldown · Pronated',target:'Az utolsó szett RIR 0-ig',conf:'81%',why:'Múlt héten RIR 2-vel zártuk — a 3. héten (MAV) a 3. szett RIR 0 logikus lépés. A pronált fogás kíméli a vállat.',glory:'Mélyebb inger · a 4. hétre alap',refs:['Lat Pulldown · máj 15.','3. hét · MAV'],acc:false},
-  {type:'Volumen',ex:'Face Pull',target:'+1 szett · 4 × 15–20',conf:'68%',why:'A hátsó váll heti 12 szettet kér nálad, és ezen a héten 9-nél tartunk. A Face Pull kevéssé fáraszt — kockázat nélkül beékelhető.',glory:'Heti volumen-cél teljesítve',refs:['Hátsó váll MAV = 12 szett/hét'],acc:false}];
+  {type:'Túlterhelés',ex:'Chest Supported Row',k:'back-mid',target:'107,5 kg × 8',big:'107,5',unit:'kg',sub:'× 8 ismétlés',conf:'tanulom',risk:'alacsony',why:'A mai ajánlott terhelés: +2,5 kg a múlt heti 105-höz képest, RIR 2 stabil.',glory:'Teljesítsd a mai ajánlott terhelést',refs:[],acc:false},
+  {type:'PR-kísérlet',ex:'Chest Supported Row',k:'back-mid',target:'107,5 kg × 8',big:'107,5',unit:'kg',sub:'× 8 ismétlés',conf:'72%',risk:'közepes',why:'Március 4 óta 102,5 a stabil ablak. Múlt heti RIR 2 + 7,2 óra alvás — ez a kombináció 4-ből 3-szor bírt el +5 kg-ot.',glory:'Új súly-rekord',refs:['Chest Row 105,8 · márc 4.','Alacsony étvágy + 7h+ alvás → PR-ablak'],acc:false},
+  {type:'Mélység',ex:'Lat Pulldown · Pronated',k:'back-wide',target:'Utolsó szett RIR 0',big:'RIR 0',unit:'',sub:'az utolsó szetten',conf:'81%',risk:'alacsony',why:'Múlt héten RIR 2-vel zártuk — a 3. héten (MAV) a 3. szett RIR 0 logikus lépés. A pronált fogás kíméli a vállat.',glory:'Mélyebb inger · a 4. hétre alap',refs:['Lat Pulldown · máj 15.','3. hét · MAV'],acc:false},
+  {type:'Volumen',ex:'Face Pull',k:'shoulder-rear',target:'+1 szett',big:'+1',unit:'szett',sub:'4 × 15–20 ismétlés',conf:'68%',risk:'alacsony',why:'A hátsó váll heti 12 szettet kér nálad, és ezen a héten 9-nél tartunk. A Face Pull kevéssé fáraszt — kockázat nélkül beékelhető.',glory:'Heti volumen-cél teljesítve',refs:['Hátsó váll MAV = 12 szett/hét'],acc:false}];
 /* ── GlassBox dialógusok ─────────────────────────────────── */
 const GB={
   menu:['var(--coral)',()=>`<div class="gb-top"><span class="eb">GYAKORLAT</span><button data-closegb aria-label="Bezárás">×</button></div><div class="gb-title">${mchp('back-mid')}<span><h3>Chest Supported Row</h3><p>4 szett · Hát (közép)</p></span></div>
@@ -3293,21 +3336,25 @@ const GB={
   chal:['var(--coral)',()=>chalBox()],
   info:['var(--sky)',()=>`<div class="gb-top"><span class="eb">MIBŐL ÁLL ÖSSZE A SZÁM?</span><button data-closegb aria-label="Bezárás">×</button></div><p style="font-size:14px;line-height:1.55;color:var(--sub)">A heti terv minden izomcsoportra kiír valahány szettet. A szám azt mutatja, ezekből mennyi ment már le a héten. A sport és a futás külön látszik — becslés, a szettekbe nem számít bele.</p>`]
 };
+const qtag=c=>`<span class="qtag" style="--c:${QCOL[c.type]}">${I(QIC[c.type])}${c.type}</span>`;
+const cring=c=>c.conf==='tanulom'?'<em>még tanulom</em>':`<svg class="cring" viewBox="0 0 40 40" aria-hidden="true"><circle class="ring-track" cx="20" cy="20" r="15" pathLength="100"/><circle class="ring-prog" cx="20" cy="20" r="15" pathLength="100" style="--p:${parseInt(c.conf)};--c:var(--gold)"/></svg><em>${c.conf}</em>`;
 function chalBox(){
   const acc=CHAL.filter(c=>c.acc&&!c.pass).length;
   const head=`<div class="gb-top"><span class="eb">KÜLDETÉSEK</span><button data-closegb aria-label="Bezárás">×</button></div>
     <div class="gb-title">${I('quest')}<span><h3>A mai küldetések</h3><p>${chalState==='keszul'?'készül…':acc?`${acc} vállalva`:'Válassz, amennyit bírsz'}</p></span></div>`;
   if(chalState==='keszul') return head+`<div class="chlist"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div><p class="fnote">Pár másodperc — ha nem várnál, kezdd el az edzést, a küldetések a ⋮ menüből később is elérhetők.</p>`;
   if(chalVar==='B') return head+`<p class="qb-lead">Pipáld ki, amit vállalsz. A többi magától kimarad — passzolni ér.</p>
-    <div class="chlist">${CHAL.map((c,i)=>`<div><button class="qb ${c.acc?'acc':''}" data-chal="${i}" style="--c:var(--coral)"><span class="well" style="--c:${c.acc?'var(--gold)':'var(--coral)'}">${I(QIC[c.type])}</span><span><strong>${c.target}</strong><small>${c.type} · ${c.ex}</small></span><span class="ck">${I('tick')}</span></button>
-      ${openWhy===i?`<div class="qb-why">${c.why} <b>· ${c.glory}</b></div>`:''}<button class="qb-more" data-why="${i}">${openWhy===i?'Kevesebb':'Miért ezt?'}</button></div>`).join('')}</div>
+    <div class="chlist">${CHAL.map((c,i)=>`<div><button class="qb qb2 ${c.acc?'acc':''}" data-chal="${i}">${mchp(c.k)}<span>${qtag(c)}<span class="tt"><b>${c.big}${c.unit?' '+c.unit:''}</b><i>${c.sub}</i></span><span class="ex">${c.ex}</span></span><span class="ck">${I('tick')}</span></button>
+      ${openWhy===i?`<div class="qb2-why"><span class="eb">MIÉRT MOST</span><p>${c.why}</p><div class="q-glory">${I('star')}${c.glory}</div><div class="kv"><span>BIZTOSSÁG<em>${c.conf==='tanulom'?'még tanulom':c.conf}</em></span><span>KOCKÁZAT<em>${c.risk}</em></span></div></div>`:''}<button class="qb-more" data-why="${i}">${openWhy===i?'Kevesebb':'Miért ezt?'}</button></div>`).join('')}</div>
     <div class="qb-foot">${acc?`<button class="primary" data-closegb>${I('dumbbell')}Indulhat · ${acc} küldetéssel</button>`:`<button class="btn flatb" data-closegb>Ma küldetés nélkül</button>`}</div>`;
   return head+`<div class="chlist">${CHAL.map((c,i)=>c.pass
       ?`<div class="qa passed"><div class="pr">${I(QIC[c.type])}<span>${c.type} · ${c.ex} — ma kimarad</span><button data-unpass="${i}">visszavesz</button></div></div>`
-      :`<div class="qa ${c.acc?'acc':''}"><div class="qh">${I(QIC[c.type])}<span>${c.type}</span><em>ALACSONY KOCKÁZAT</em></div><div class="qx">${c.ex}</div>
-        <div class="tg">${c.target}</div>
-        <div class="conf">BIZTOSSÁG ${c.conf==='tanulom'?'· MÉG TANULOM':''}${c.conf!=='tanulom'?`${bar(parseInt(c.conf),'var(--gold)')}<span>${c.conf}</span>`:''}</div>
-        <p>${c.why} <b>· ${c.glory}</b></p>
+      :`<div class="qa qa2 ${c.acc?'acc':''}" style="--c:${QCOL[c.type]}">
+        <div class="q-ex">${mchp(c.k)}<span class="n"><small>GYAKORLAT</small><strong>${c.ex}</strong></span>${qtag(c)}</div>
+        <div class="q-goal"><span><span class="eb">MA A CÉL</span><b>${c.big}${c.unit?`<small>${c.unit}</small>`:''}</b><span class="sub">${c.sub}</span></span>
+          <span class="meta"><span>BIZTOSSÁG ${cring(c)}</span><span>KOCKÁZAT<em>${c.risk}</em></span></span></div>
+        <div class="q-why"><span class="eb">MIÉRT MOST</span><p>${c.why}</p></div>
+        <div class="q-glory">${I('star')}${c.glory}</div>
         ${c.refs.length?`<details><summary>Mire alapozza Mezo?</summary><div class="refs">${c.refs.map(r=>`<span class="flat">${r}</span>`).join('')}</div></details>`:''}
         <div class="acts">${c.acc?`<button class="pillx" data-chal="${i}">${I('tick')}Vállalva</button>`:`<button class="pillx" data-chal="${i}">${I('quest')}Vállalom</button><button class="pillx pp" data-pass="${i}">Passz</button>`}</div></div>`).join('')}</div>
     <p class="fnote">Passzolni ér — a küldetés ajánlat, nem elvárás. Az eredmény a záráskor derül ki, és sosem piros.</p>`;
