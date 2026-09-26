@@ -93,7 +93,7 @@ public class DietSettingsService {
         GoalPrescriptionJson.Segment seg =
             goalEngineService.previewActiveGoalSegment(userId, toPreferences(req), today);
         DailyTargets t = DayTargetProjector.project(
-            seg, () -> workoutWindowQueryService.hasLoggedTrainingOn(userId, today), nutritionTargets);
+            seg, () -> workoutWindowQueryService.movementOn(userId, today).plannedDone(), nutritionTargets);
         return DietSettingsPreviewResponse.builder()
             .kcal(t.kcal())
             .proteinG(t.p())

@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.feature.train.config.TrainProperties;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
+import io.mrkuhne.mezo.feature.train.entity.RunSessionLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockStructure;
 import io.mrkuhne.mezo.feature.train.entity.SportEventEntity;
@@ -15,6 +16,7 @@ import io.mrkuhne.mezo.feature.train.repository.SportEventRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -51,6 +53,8 @@ public class WorkoutWindowQueryService {
     private final WorkoutService workoutService;
     private final SportSlotSkipService sportSlotSkipService;
     private final TrainProperties props;
+    private final ActivityEnergyModel activityEnergyModel;
+    private final AthleteBodyPort athleteBodyPort;
 
     /**
      * One workout on a date: schedule start, derived end, kind, whether it was actually done, and
@@ -202,21 +206,119 @@ public class WorkoutWindowQueryService {
     }
 
     /**
-     * True when movement was actually LOGGED on {@code date} (mezo-u13jv, owner decision
-     * 2026-09-24): a COMPLETED gym workout instance (meso or custom — the real-load signal, not
-     * plan adherence), a logged sport session, or a logged run. This is the day-type probe behind
-     * {@link io.mrkuhne.mezo.feature.meal.service.FuelDayService}'s training/rest-day kcal pick:
-     * the plan alone never raises the day's calorie target — a planned session not yet done keeps
-     * the rest-day kcal until it is logged. An in-progress gym workout does not count yet.
-     * {@link #windowsFor} is untouched and keeps reading the plan — that is a different concern
-     * (pre/post-workout meal-role scoring looks forward at planned sessions).
+     * One date's movement (mezo-32m82, spec §5): was the day's PLANNED training done, and how many
+     * kcal of UNPLANNED ("extra") movement it held. {@code NONE} is the all-false/all-zero case.
+     * Replaces {@code hasLoggedTrainingOn} (mezo-u13jv) — see {@link #movementOn}'s javadoc for the
+     * owner decisions behind the split.
+     */
+    public record DayMovement(boolean plannedDone, int extraKcal) {
+        public static final DayMovement NONE = new DayMovement(false, 0);
+    }
+
+    /**
+     * Was the day's PLANNED training done, and how many kcal of UNPLANNED movement did it hold
+     * (mezo-32m82, spec §5, replacing {@code hasLoggedTrainingOn} from mezo-u13jv). Owner decisions
+     * D2–D4: a planned session's energy is already priced into the weekly base (the weekly
+     * schedule-derived EAT), so only PLANNED adherence is allowed to flip the day-type kcal pick —
+     * a logged session that fulfils no plan is credited separately as EXTRA kcal, and a planned
+     * session that was never done is not deducted (no negative credit for a miss).
+     *
+     * <p>Gym: a completed instance is PLANNED when it is meso-origin AND the weekday has a gym
+     * slot AND fewer meso instances than slots have already been counted planned that day; every
+     * other completed instance (custom origin, no slot that weekday, or beyond the slot count) is
+     * EXTRA, estimated via {@link ActivityEnergyModel#netKcal}. Sport: the planned pool is built
+     * exactly as {@link #addSportWindowsForDay} does (weekday slots minus skips, plus the date's
+     * one-off events); each session consumes the {@link #nearestPlan}, a match is planned, a miss
+     * is extra at its own persisted (never invented) kcal. Run: the active block's prescribed
+     * sessions on the date are filled by the date's logged runs first; any logged run beyond that
+     * count is extra at its persisted kcal. {@code plannedDone} is true when ANY of the three kinds
+     * matched a plan; {@code extraKcal} sums every kind's extras. The athlete's rest-kcal/hour is
+     * looked up at most once, lazily, only when an extra gym instance actually exists — an unknown
+     * body contributes 0, never a fabricated estimate.
      */
     @Transactional(readOnly = true)
-    public boolean hasLoggedTrainingOn(UUID userId, LocalDate date) {
-        return !workoutSessionRepository.findDoneInstanceDates(userId, date, date).isEmpty()
-            || !sportSessionRepository.findByCreatedByAndDeletedFalseAndDateOrderByTimeAsc(userId, date).isEmpty()
-            || !runSessionLogRepository.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(userId, date, date)
-                .isEmpty();
+    public DayMovement movementOn(UUID userId, LocalDate date) {
+        int dow = date.getDayOfWeek().getValue() - 1;
+        boolean plannedDone = false;
+        int extraKcal = 0;
+
+        // Gym.
+        long gymSlotCount = gymRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
+            .filter(s -> s.getDayOfWeek() == dow).count();
+        long plannedGymCount = 0;
+        BigDecimal restKcalPerHour = null;
+        boolean restLoaded = false;
+        for (WorkoutSessionEntity instance : workoutSessionRepository.findDoneInstancesBetween(userId, date, date)) {
+            boolean planned = "meso".equals(instance.getOrigin()) && plannedGymCount < gymSlotCount;
+            if (planned) {
+                plannedGymCount++;
+                plannedDone = true;
+                continue;
+            }
+            if (!restLoaded) {
+                restKcalPerHour = athleteBodyPort.bodyAt(userId, date)
+                    .flatMap(b -> ActivityEnergyModel.restKcalPerHour(b.bmrKcal(), b.weightKg()))
+                    .orElse(null);
+                restLoaded = true;
+            }
+            extraKcal += activityEnergyModel
+                .netKcal("gym", null, gymMinutes(instance), restKcalPerHour).orElse(0);
+        }
+
+        // Sport — the same planned pool + nearest-match consumption as addSportWindowsForDay.
+        Set<SportSlotSkipService.SkipKey> skips = sportSlotSkipService.skipsBetween(userId, date, date);
+        List<PlannedSport> unmatchedSport = new ArrayList<>();
+        sportRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
+            .filter(s -> s.getDayOfWeek() == dow)
+            .filter(s -> !skips.contains(new SportSlotSkipService.SkipKey(dow, s.getTime(), date)))
+            .forEach(s -> unmatchedSport.add(new PlannedSport(s.getTime(), s.getDurationMin(), s.getSport())));
+        sportEventRepo.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateAscTimeAsc(userId, date, date)
+            .forEach(e -> unmatchedSport.add(new PlannedSport(e.getTime(), e.getDurationMin(), e.getSport())));
+
+        List<SportSessionEntity> sportSessions = sportSessionRepository
+            .findByCreatedByAndDeletedFalseAndDateOrderByTimeAsc(userId, date).stream()
+            .sorted(Comparator.comparing(SportSessionEntity::getTime,
+                Comparator.nullsLast(Comparator.naturalOrder())))
+            .toList();
+        for (SportSessionEntity session : sportSessions) {
+            PlannedSport plan = nearestPlan(unmatchedSport, session.getTime());
+            if (plan != null) {
+                unmatchedSport.remove(plan);
+                plannedDone = true;
+            } else {
+                extraKcal += session.getKcal() != null ? session.getKcal() : 0;
+            }
+        }
+
+        // Run — the block's prescribed sessions on the date, filled by the date's logged runs first.
+        RunningBlockEntity activeBlock = runningBlockRepository
+            .findByCreatedByAndStatusAndDeletedFalse(userId, "active").stream().findFirst().orElse(null);
+        long prescribedRunCount = activeBlock == null ? 0 : prescribedRunSessionsOn(activeBlock, date).count();
+        long plannedRunCount = 0;
+        for (RunSessionLogEntity run : runSessionLogRepository
+                .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(userId, date, date)) {
+            if (plannedRunCount < prescribedRunCount) {
+                plannedRunCount++;
+                plannedDone = true;
+            } else {
+                extraKcal += run.getKcal() != null ? run.getKcal() : 0;
+            }
+        }
+
+        return new DayMovement(plannedDone, extraKcal); // a record: value-equal to NONE when both are false/0
+    }
+
+    /** Minutes for an EXTRA gym instance's net-kcal estimate: derived work time when known, else
+     *  the wall-clock span clamped to a sane [0, 150], else the configured default (spec §5.2). */
+    private int gymMinutes(WorkoutSessionEntity instance) {
+        if (instance.getActiveSeconds() != null) {
+            return instance.getActiveSeconds() / 60;
+        }
+        if (instance.getStartedAt() != null && instance.getFinishedAt() != null) {
+            long minutes = Duration.between(instance.getStartedAt(), instance.getFinishedAt()).toMinutes();
+            return (int) Math.max(0, Math.min(150, minutes));
+        }
+        return props.gymDefaultMinutes();
     }
 
     /** One planned sport occurrence on the date — a weekday-matched recurring slot OR a dated one-off event. */
