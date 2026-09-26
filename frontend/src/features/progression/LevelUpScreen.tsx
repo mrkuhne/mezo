@@ -1,17 +1,21 @@
-import { ClayIcon } from '@/shared/ui/clay'
-import { useEffect, useRef, useState } from 'react'
+import { ContentIcon, Icon3D } from '@/shared/ui/clay'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import type { LevelUpGain, LevelUpResult } from '@/data/train/trainApi'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 import {
-  CHIP_ICON_BY_SOURCE,
+  CHIP_3D_BY_SOURCE,
   HEADLINE_BY_SOURCE,
   HEADLINE_NO_LEVELUP,
   skillDisplay,
 } from '@/features/progression/logic/levelUpMeta'
 
-const RING_R = 26
-const RING_C = 2 * Math.PI * RING_R // ≈ 163.36 — matches the mockup's dasharray
+// One accent per skill kind (bible §2): body = Edzés coral, athletic = sky, life = Én rose.
+const ACCENT_BY_KIND: Record<LevelUpGain['kind'], string> = {
+  MUSCLE: 'var(--dv-coral)',
+  ATHLETIC: 'var(--dv-sky)',
+  LIFE: 'var(--dv-rose)',
+}
 
 // rAF count-up to `target`; jumps straight to the final value when reduced.
 function useCountUp(target: number, reduced: boolean, durationMs = 1100): number {
@@ -36,14 +40,13 @@ function useCountUp(target: number, reduced: boolean, durationMs = 1100): number
 }
 
 const clampPct = (n: number) => Math.max(0, Math.min(100, n))
-// within-level fill of the ring/bar → stroke-dashoffset (0% = empty = full offset)
-const ringOffset = (pct: number) => RING_C * (1 - clampPct(pct) / 100)
 
 /**
- * Full-bleed animated post-workout level-up overlay (levelup-v4 mockup ported to
- * app tokens). Self-portals into `.phone-screen` (the Sheet technique) so it
- * covers the TabBar. Hand-rolled CSS keyframes, rAF count-up; reduced
- * motion renders everything in its final/filled state with the stagger collapsed.
+ * Full-bleed animated post-workout level-up overlay, in the üveg look (mezo-me75u.10,
+ * prototypes/uveg-reteg.html#szint): a frameless gold→lavender halo on the dark ground, a
+ * gradient numeral, glass level-up rows, flat cells for the rest. Self-portals into
+ * `.phone-screen` (the Sheet technique) so it covers the TabBar. CSS keyframes (no-preference
+ * branch only) + rAF count-up; reduced motion renders everything in its final state.
  * Always shows something (XP + bars) — the no-level-up case omits the Szintlépés
  * section and adapts the headline; never a dead-end. Single `Tovább` CTA.
  */
@@ -60,10 +63,9 @@ export function LevelUpScreen({ result, onContinue }: { result: LevelUpResult; o
   const rest = result.gains.filter((g) => !leveledKeys.has(g.skillKey))
 
   const headline = leveled.length > 0 ? HEADLINE_BY_SOURCE[result.source] : HEADLINE_NO_LEVELUP
-  const chipIcon = CHIP_ICON_BY_SOURCE[result.source]
   const chipText = [
     (result.workoutLabel ?? '').toUpperCase(),
-    result.durationMin != null ? `${result.durationMin}'` : null,
+    result.durationMin != null ? `${result.durationMin}′` : null,
   ]
     .filter(Boolean)
     .join(' · ')
@@ -76,7 +78,7 @@ export function LevelUpScreen({ result, onContinue }: { result: LevelUpResult; o
   onContinueRef.current = onContinue
   useEffect(() => {
     const previouslyFocused = document.activeElement as HTMLElement | null
-    const cta = overlayRef.current?.querySelector<HTMLButtonElement>('.lu-cta')
+    const cta = overlayRef.current?.querySelector<HTMLButtonElement>('.lvu-cta')
     cta?.focus()
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -94,165 +96,147 @@ export function LevelUpScreen({ result, onContinue }: { result: LevelUpResult; o
     }
   }, [])
 
-  // top-to-bottom stagger: each animated element gets an increasing delay (s)
-  let delay = 0.1
-  const next = (step = 0.16) => {
-    const d = delay
-    delay += step
-    return d
-  }
+  // Üveg look (mezo-me75u.10, prototypes/uveg-reteg.html#szint): the header (chip, headline,
+  // numeral) is on screen at once; the three sections rise in turn, only in the no-preference
+  // motion branch (CSS). `--p` (0→1) follows the count-up and drives the halo's strength.
+  const haloP = result.totalXp > 0 ? Math.min(1, totalXp / result.totalXp) : 1
 
-  const animStyle = (d: number) => (reduced ? undefined : { animationDelay: `${d}s` })
-
-  const ringFor = (g: LevelUpGain) => {
-    const off = ringOffset(g.progressToPct)
-    return (
-      <div className="lu-miniring">
-        <svg width="58" height="58" viewBox="0 0 58 58" aria-hidden="true">
-          <circle className="lu-mr-track" cx="29" cy="29" r={RING_R} />
-          <circle
-            className="lu-mr-prog"
-            cx="29"
-            cy="29"
-            r={RING_R}
-            style={{
-              strokeDasharray: RING_C,
-              // base offset = empty; the keyframe fills to --lu-ring-offset.
-              ['--lu-ring-offset' as string]: String(off),
-              ...(reduced ? { strokeDashoffset: off } : {}),
-            }}
-          />
-        </svg>
-        <div className="lu-mr-num">{g.levelAfter}</div>
-      </div>
-    )
-  }
+  const ringFor = (g: LevelUpGain) => (
+    <span className="lvu-ring">
+      <svg className="uv-ring" viewBox="0 0 80 80" aria-hidden="true">
+        <circle className="uv-ring-track" cx="40" cy="40" r="34" pathLength={100} />
+        <circle
+          className="uv-ring-prog"
+          cx="40"
+          cy="40"
+          r="34"
+          pathLength={100}
+          style={{ strokeDasharray: `${clampPct(g.progressToPct)} 100` }}
+        />
+      </svg>
+      <b>{g.levelAfter}</b>
+    </span>
+  )
 
   const overlay = (
     <div
       ref={overlayRef}
-      className={`levelup${reduced ? ' levelup--reduced' : ''}`}
+      className={`levelup lvu${reduced ? ' levelup--reduced' : ''}`}
       role="dialog"
       aria-modal="true"
       aria-label="Szintlépés"
     >
-      <div className="lu-glow" aria-hidden="true" />
-
-      <div className="lu-body">
+      <div className="lvu-body">
         {/* mezo-tr5v: content block is vertically centered (margin-block:auto) while the CTA
             below stays pinned to the bottom — no more top-loaded empty space. */}
-        <div className="lu-content">
-        <div className="lu-chip lu-anim" style={animStyle(next(0.18))}>
-          <span aria-hidden="true">{chipIcon}</span> {chipText}
-        </div>
-        <div className="lu-headline lu-anim" style={animStyle(next(0.18))}>
-          {headline}
-        </div>
+        <div className="lvu-content">
+          <section className="lvu-hero" style={{ ['--p' as string]: String(haloP) } as CSSProperties}>
+            <span className="lvu-chip" data-source={result.source}>
+              <Icon3D name={CHIP_3D_BY_SOURCE[result.source]} size={22} />
+              {chipText}
+            </span>
+            <div className="lvu-headline">{headline}</div>
+            {/* The visible digits animate; an sr-only sentence carries the final total to AT. */}
+            <b className="lvu-xp" aria-hidden="true">
+              +<span>{totalXp}</span>
+            </b>
+            <span className="lvu-xplabel uv-eyebrow" aria-hidden="true">XP · ÖSSZESEN</span>
+            <span className="lu-sr-only">Összesen {result.totalXp} XP</span>
+          </section>
 
-        <div className="lu-xpwrap lu-anim" style={animStyle(next(0.9))}>
-          {/* The visible digits animate; an sr-only sentence carries the final total to AT. */}
-          <div className="lu-xpnum" aria-hidden="true">
-            <span className="lu-plus">+</span>
-            <span>{totalXp}</span>
-          </div>
-          <div className="lu-xplabel" aria-hidden="true">XP · ÖSSZESEN</div>
-          <span className="lu-sr-only">Összesen {result.totalXp} XP</span>
-        </div>
-
-        {leveled.length > 0 && (
-          <>
-            <div className="lu-seclabel lu-anim" style={animStyle(next())}>
-              Szintlépés <span className="lu-cnt">· {leveled.length}</span>
-            </div>
-            {leveled.map((g) => {
-              const meta = skillDisplay(g.skillKey, g.kind, g.name)
-              return (
-                <div
-                  key={g.skillKey}
-                  className={`lu-lvrow lu-pop${g.kind === 'MUSCLE' ? ' muscle' : ''}`}
-                  style={animStyle(next(0.14))}
-                >
-                  {ringFor(g)}
-                  <div className="lu-lvinfo">
-                    <div className="lu-lvname">
-                      <span aria-hidden="true" style={{ display: 'inline-flex', verticalAlign: '-2px' }}>{meta.clayIcon ? <ClayIcon name={meta.clayIcon} size={15} /> : meta.icon}</span>
-                      <span>{meta.name}</span>
-                    </div>
-                    <span className="lu-lvbadge">
-                      LEVEL UP · Lv{g.levelBefore} → {g.levelAfter}
-                    </span>
-                  </div>
-                </div>
-              )
-            })}
-            {result.perks.map((p) => (
-              <div key={p.perkKey} className="lu-perk lu-anim" style={animStyle(next(0.14))}>
-                <span className="lu-pk-ic" aria-hidden="true">
-                  ★
-                </span>
-                <span className="lu-pk-tx">
-                  <b>{p.name}</b> — <span className="lu-eff">{p.effectCopy}</span>
-                </span>
+          {leveled.length > 0 && (
+            <div className="lvu-sec lvu-s1">
+              <div className="lvu-seclabel uv-eyebrow">
+                Szintlépés <span className="lvu-cnt">· {leveled.length}</span>
               </div>
-            ))}
-          </>
-        )}
-
-        {rest.length > 0 && (
-          <>
-            <div className="lu-seclabel lu-anim" style={animStyle(next())}>
-              Még fejlődött <span className="lu-cnt">· {rest.length}</span>
-            </div>
-            <div className="lu-growgrid">
-              {rest.map((g) => {
+              {leveled.map((g) => {
                 const meta = skillDisplay(g.skillKey, g.kind, g.name)
                 return (
                   <div
                     key={g.skillKey}
-                    className={`lu-gcell lu-anim${g.kind === 'MUSCLE' ? ' mus' : ''}`}
-                    style={animStyle(next(0.1))}
+                    className="lvu-row glass"
+                    data-kind={g.kind}
+                    style={{ ['--c' as string]: ACCENT_BY_KIND[g.kind] } as CSSProperties}
                   >
-                    <div className="lu-gtop">
-                      <span className="lu-gic" aria-hidden="true">
-                        {meta.icon}
+                    {ringFor(g)}
+                    <span className="lvu-grow">
+                      <span className="lvu-nm">
+                        <ContentIcon name={meta.art3d} size={30} />
+                        <span>{meta.name}</span>
                       </span>
-                      <span className="lu-gname">{meta.name}</span>
-                      <span className="lu-gxp">+{g.xpGained}</span>
-                    </div>
-                    <div className="lu-gbar">
-                      <div
-                        className="lu-gfill"
-                        style={{
-                          ['--lu-from' as string]: `${clampPct(g.progressFromPct)}%`,
-                          ['--lu-to' as string]: `${clampPct(g.progressToPct)}%`,
-                          ...(reduced ? { width: `${clampPct(g.progressToPct)}%` } : {}),
-                        }}
-                      />
-                    </div>
+                      <span className="lvu-badge">
+                        <Icon3D name="t-up" size={16} />
+                        LEVEL UP · Lv{g.levelBefore} → {g.levelAfter}
+                      </span>
+                    </span>
                   </div>
                 )
               })}
+              {result.perks.map((p) => (
+                <div key={p.perkKey} className="lvu-perk">
+                  <Icon3D name="t-star" size={20} />
+                  <span>
+                    <b>{p.name}</b> — <span className="lvu-eff">{p.effectCopy}</span>
+                  </span>
+                </div>
+              ))}
             </div>
-          </>
-        )}
+          )}
 
-        {result.robustness.xpGained > 0 && (
-          <div className="lu-robust lu-anim" style={animStyle(next(0.12))}>
-            <span className="lu-r-ic" aria-hidden="true">
-              🛡️
-            </span>
-            <span className="lu-r-tx">
-              <b>Robusztusság</b> · {result.robustness.streakWeeks}. egymást követő héten edzel
-            </span>
-            <span className="lu-r-xp">+{result.robustness.xpGained}</span>
-          </div>
-        )}
+          {(rest.length > 0 || result.robustness.xpGained > 0) && (
+            <div className="lvu-sec lvu-s2">
+              {rest.length > 0 && (
+                <>
+                  <div className="lvu-seclabel uv-eyebrow">
+                    Még fejlődött <span className="lvu-cnt">· {rest.length}</span>
+                  </div>
+                  <div className="lvu-grid">
+                    {rest.map((g) => {
+                      const meta = skillDisplay(g.skillKey, g.kind, g.name)
+                      return (
+                        <div
+                          key={g.skillKey}
+                          className="lvu-cell"
+                          data-kind={g.kind}
+                          style={{ ['--c' as string]: ACCENT_BY_KIND[g.kind] } as CSSProperties}
+                        >
+                          <span className="lvu-ct">
+                            <ContentIcon name={meta.art3d} size={26} />
+                            <span className="lvu-cname">{meta.name}</span>
+                            <em>+{g.xpGained}</em>
+                          </span>
+                          <span className="lvu-bar uv-bar">
+                            <b style={{ ['--w' as string]: `${clampPct(g.progressToPct)}%` } as CSSProperties} />
+                            <b
+                              className="lvu-from"
+                              style={{ ['--w' as string]: `${clampPct(g.progressFromPct)}%` } as CSSProperties}
+                            />
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
 
+              {result.robustness.xpGained > 0 && (
+                <div className="lvu-robust">
+                  <Icon3D name="t-shield" size={30} />
+                  <span className="lvu-rtx">
+                    <b>Robusztusság</b> · {result.robustness.streakWeeks}. egymást követő héten edzel
+                  </span>
+                  <em>+{result.robustness.xpGained}</em>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        <div className="lu-ctas lu-anim" style={animStyle(next(0.16))}>
-          <button type="button" className="lu-cta" onClick={onContinue}>
-            Tovább ›
+        <div className="lvu-foot lvu-sec lvu-s3">
+          <button type="button" className="lvu-cta glass" onClick={onContinue}>
+            <Icon3D name="t-tick" size={40} />
+            <strong>Tovább</strong>
+            <em aria-hidden="true">›</em>
           </button>
         </div>
       </div>

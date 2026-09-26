@@ -6,7 +6,7 @@ import { useAdminRows } from '@/data/admin/adminDataHooks'
 import type { AdminRowSortDir } from '@/data/admin/adminDataApi'
 import { AdminTile } from '@/features/admin/components/AdminTile'
 import { DataTable } from '@/features/admin/components/DataTable'
-import { ClaySpot } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MosaicDesktop, MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
 import { huInt, usd } from '@/shared/lib/huNum'
@@ -88,7 +88,7 @@ export function AdminUserDetailPage() {
 
   return (
     <MozaikPage tone="coral">
-      <PageHead onBack={() => navigate('/admin/users')} />
+      <PageHead glass label="vissza" onBack={() => navigate('/admin/users')} />
       <PageBody>
         {notFound ? (
           <p className="ad-mut">Ez a user nem található.</p>
@@ -100,7 +100,7 @@ export function AdminUserDetailPage() {
                 (avatar, name, stats, ring) is admin-only and owns its own markup; don't "unify"
                 it with `PageHero` — that would be un-doing a deliberate fork, not a cleanup. */}
             <div className="ad-hero">
-              <span className="ad-avatar lg" style={{ background: '#A84A26' }}>{(user.name || '?').charAt(0).toUpperCase()}</span>
+              <span className="ad-avatar lg" style={{ background: 'var(--dv-coral)' }}>{(user.name || '?').charAt(0).toUpperCase()}</span>
               <div>
                 <div className="nm">{user.name || '—'}</div>
                 <div className="em">{user.email}{user.role === 'OWNER' ? ' · owner' : ' · user'}</div>
@@ -110,7 +110,7 @@ export function AdminUserDetailPage() {
                 <div><span className="v">{huInt(user.vectorCount)}</span><span className="ad-eyebrow">vektor</span></div>
                 <div><span className="v">{usd(user.cost30dUsd)}</span><span className="ad-eyebrow">30 nap</span></div>
               </div>
-              <Ring pct={Math.round((user.activeDays30d / 30) * 100)} color="#A84A26" size={88} />
+              <Ring pct={Math.round((user.activeDays30d / 30) * 100)} color="var(--dv-coral)" size={88} />
             </div>
 
             <div className="ad-tabs" role="tablist">
@@ -134,7 +134,7 @@ export function AdminUserDetailPage() {
                   <AdminTile query={detail} wash="coral" eyebrow="Aktivitás · 90 nap, domainenként" span={12}>
                     <div className="ad-cell" style={{ alignItems: 'flex-start', justifyContent: 'space-between' }}>
                       <div className="ad-big">{user.activeDays30d}<u>aktív nap a 30-ból</u></div>
-                      <ClaySpot name="s-hajtas" size={48} />
+                      <Icon3D name="t-calendar" size={48} />
                     </div>
                     {(() => {
                       const { firstDaysAgo, lastDaysAgo } = firstLastActivity(detail.data.activitySeries)
@@ -178,7 +178,7 @@ export function AdminUserDetailPage() {
                             <td className={`num${row.deletedCount ? '' : ' ad-mut'}`}>{row.deletedCount}</td>
                             <td>
                               <div className="ad-bar" style={{ width: 190 }}>
-                                <i style={{ background: '#7FA06C', width: `${footprintShare(row.rowCount, detail.data.inventory)}%` }} />
+                                <i style={{ background: 'var(--dv-sage)', width: `${footprintShare(row.rowCount, detail.data.inventory)}%` }} />
                               </div>
                             </td>
                           </tr>
@@ -374,7 +374,7 @@ function FeatureRow({ label, value, max }: { label: string; value: number; max: 
   return (
     <div className="ad-domrow">
       <span className="lb" style={{ width: 120 }}>{label}</span>
-      <span className="tr"><i style={{ background: '#A84A26', width: `${Math.round((value / (max || 1)) * 100)}%` }} /></span>
+      <span className="tr"><i style={{ background: 'var(--dv-coral)', width: `${Math.round((value / (max || 1)) * 100)}%` }} /></span>
       <span className="vv" style={{ width: 44 }}>{huInt(value)}</span>
     </div>
   )
@@ -409,7 +409,7 @@ function Ring({ pct, color, size }: { pct: number; color: string; size: number }
     <div className="ad-ring" style={{ '--c': c.toFixed(1), '--off': off.toFixed(1) } as CSSProperties}>
       <svg width={size} height={size}>
         <circle className="trk" cx={size / 2} cy={size / 2} r={r} strokeWidth={9} />
-        <circle className="arc" cx={size / 2} cy={size / 2} r={r} stroke={color} strokeWidth={9} />
+        <circle className="arc" cx={size / 2} cy={size / 2} r={r} stroke={color} strokeWidth={9} style={{ color }} />
       </svg>
       <div className="mid"><div><b>{pct}%</b><small>aktív nap</small></div></div>
     </div>

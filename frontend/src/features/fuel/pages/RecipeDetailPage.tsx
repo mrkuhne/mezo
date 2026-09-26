@@ -310,7 +310,7 @@ export function RecipeDetailPage() {
 
       {logOpen && <LogFlowPage prefill={{ source: 'recipe', recipeId: recipe.id }} onClose={() => setLogOpen(false)} />}
       {logsOpen && (
-        <Sheet onClose={() => setLogsOpen(false)} className="fkx-rsheet-host" labelledBy="recipe-logs-title">
+        <Sheet glass onClose={() => setLogsOpen(false)} className="fkx-rsheet-host uvl-fuel" labelledBy="recipe-logs-title">
           {(close) => (
             <>
               <div className="fkx-rsheet-head">

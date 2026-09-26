@@ -17,16 +17,33 @@
 // in „Máshonnan elérhető" — the honest answer, and itself a useful signal while
 // restructuring.
 // ============================================================
-import { useEffect } from 'react'
+import { useEffect, type CSSProperties } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
-import { ClayIcon } from '@/shared/ui/clay'
+import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
+import { Boop, Icon3D } from '@/shared/ui/clay'
 import { DOMAINS, activeTabRoute, type NavDomain } from '@/app/navModel'
 import { PAGE_INDEX, type IndexedPage } from '@/app/pageIndex'
 
 /** The §2.1 wash each domain's section wears — the same ramp the switcher cards use. */
 const DOMAIN_WASH: Record<string, string> = {
   nap: 'gold', train: 'coral', fuel: 'sage', mezo: 'lav', me: 'rose',
+}
+
+/** Üveg (mezo-me75u.10): each domain card's ONE accent (`--c`), the bible §2 dark dv values. */
+const DOMAIN_ACCENT: Record<string, string> = {
+  nap: 'var(--dv-amber)', train: 'var(--dv-coral)', fuel: 'var(--dv-sage)', mezo: 'var(--dv-lav)', me: 'var(--dv-rose)',
+}
+
+/** One page of the leltár: a flat cell (label + hint + chevron) inside the domain's glass card. */
+function PageLink({ page }: { page: IndexedPage }) {
+  return (
+    <li>
+      <Link to={page.route} className="mno-l">
+        <span className="mno-l-tx"><b>{page.label}</b><small>{page.hint}</small></span>
+        <span className="mno-chev" aria-hidden="true">›</span>
+      </Link>
+    </li>
+  )
 }
 
 /** Pages that belong to no tab still belong somewhere — and saying so is the point. */
@@ -89,47 +106,45 @@ export default function MindenOldalPage() {
     document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' })
   }, [hash])
 
+  const settingsPages = PAGE_INDEX.filter((p) => p.route.startsWith('/settings'))
+
   return (
-    <MozaikPage tone="lav" className="mno-page">
-      <PageHead onBack={() => navigate(-1)} />
+    <MozaikPage tone="lav" className="mno-page mno-u10">
+      <PageHead glass label="Vissza" onBack={() => navigate(-1)} />
       <PageBody>
-        <header className="mno-head">
-          <span className="mz-eyebrow">LELTÁR</span>
-          <h1>Minden oldal</h1>
-          <p>Az app {PAGE_INDEX.length} oldala, területenként, a menü szerinti bontásban.</p>
-        </header>
+        <PageHero art="t-grid" accent="var(--dv-amber)" eyebrow="LELTÁR" name="Minden oldal"
+          sub={`Az app ${PAGE_INDEX.length} oldala, területenként, a menü szerinti bontásban.`} />
 
         {DOMAINS.map((domain) => {
           const groups = groupsForDomain(domain, pagesOfDomain(domain.id))
           const count = groups.reduce((n, group) => n + group.pages.length, 0)
           return (
-            <section key={domain.id} id={domain.id} className="mno-domain" data-wash={DOMAIN_WASH[domain.id]}>
-              <div className="mno-domain-head">
-                <ClayIcon name={domain.tabs[0].icon} size={34} />
+            <section key={domain.id} id={domain.id} className="mno-domain glass" data-wash={DOMAIN_WASH[domain.id]}
+              style={{ '--c': DOMAIN_ACCENT[domain.id] } as CSSProperties}>
+              <div className="mno-dh">
+                <Boop domain={domain.id} size={44} />
                 <strong>{domain.name}</strong>
                 <small>{count} oldal</small>
               </div>
               {groups.map((group) => (
                 <div key={group.heading} className="mno-group">
                   <h2>{group.heading}</h2>
-                  <ul>
-                    {group.pages.map((page) => (
-                      <li key={page.route}>
-                        <Link to={page.route}>
-                          <b>{page.label}</b>
-                          <small>{page.hint}</small>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
+                  <ul>{group.pages.map((page) => <PageLink key={page.route} page={page} />)}</ul>
                 </div>
               ))}
             </section>
           )
         })}
-        <section id="settings" className="mno-domain" data-wash="lav">
-          <div className="mno-domain-head"><ClayIcon name="i-beallitas" size={34} /><strong>Beállítások</strong><small>{PAGE_INDEX.filter(p => p.route.startsWith('/settings')).length} oldal</small></div>
-          <div className="mno-group"><h2>Közös beállítások</h2><ul>{PAGE_INDEX.filter(p => p.route.startsWith('/settings')).map(page => <li key={page.route}><Link to={page.route}><b>{page.label}</b><small>{page.hint}</small></Link></li>)}</ul></div>
+        <section id="settings" className="mno-domain glass is-neutral" data-wash="lav">
+          <div className="mno-dh">
+            <span className="uv-well mno-well"><Icon3D name="t-gear" size={30} /></span>
+            <strong>Beállítások</strong>
+            <small>{settingsPages.length} oldal</small>
+          </div>
+          <div className="mno-group">
+            <h2>Közös beállítások</h2>
+            <ul>{settingsPages.map((page) => <PageLink key={page.route} page={page} />)}</ul>
+          </div>
         </section>
       </PageBody>
     </MozaikPage>

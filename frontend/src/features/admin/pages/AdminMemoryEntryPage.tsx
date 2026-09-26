@@ -3,7 +3,7 @@ import { useMe } from '@/data/hooks'
 import { useAdminUserInsights } from '@/data/admin/adminInsightsHooks'
 import { useAdminMemoryGlobalHealth } from '@/data/admin/adminMemoryHooks'
 import { AdminTile } from '@/features/admin/components/AdminTile'
-import { ClaySpot } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MosaicDesktop, MozaikPage, PageBody, PageHero } from '@/shared/ui/mozaik'
 import { huInt } from '@/shared/lib/huNum'
@@ -41,7 +41,7 @@ export function AdminMemoryEntryPage() {
 
   return (
     <MozaikPage tone="lav">
-      <PageHero name="Memória" sub="a telepítés emlék-egészsége" />
+      <PageHero glass eyebrow="Admin" name="Memória" sub="a telepítés emlék-egészsége" />
       <PageBody>
         <EntranceGroup>
           <MosaicDesktop>
@@ -52,16 +52,16 @@ export function AdminMemoryEntryPage() {
             ) : (
               <>
                 <AdminTile query={health} wash="sage" eyebrow="Kész vektorok" span={3}>
-                  <Poster spot="s-medal" big={huInt(h.vectorsReady)} unit="vektor" />
+                  <Poster spot="t-tick" big={huInt(h.vectorsReady)} unit="vektor" />
                 </AdminTile>
                 <AdminTile query={health} wash="coral" eyebrow="Elakadt vektorok" span={3}>
-                  <Poster spot="s-hajtas" big={huInt(h.vectorsFailed)} unit="vektor" />
+                  <Poster spot="t-hold" big={huInt(h.vectorsFailed)} unit="vektor" />
                 </AdminTile>
                 <AdminTile query={health} wash="gold" eyebrow="Elavult vektorok" span={3}>
-                  <Poster spot="s-napzaras" big={huInt(h.vectorsStale)} unit="vektor" />
+                  <Poster spot="t-clock" big={huInt(h.vectorsStale)} unit="vektor" />
                 </AdminTile>
                 <AdminTile query={health} wash="sky" eyebrow="Emlékek összesen" span={3}>
-                  <Poster spot="s-hegycel" big={huInt(h.itemsTotal)} unit="emlék" />
+                  <Poster spot="t-layers" big={huInt(h.itemsTotal)} unit="emlék" />
                 </AdminTile>
 
                 <AdminTile query={health} wash="white" eyebrow="Utolsó éjszakai feldolgozás" span={12}>
@@ -82,7 +82,7 @@ export function AdminMemoryEntryPage() {
                 <div className="ad-memtesterlist">
                   {testers.data.map((u) => (
                     <Link key={u.id} to={`/admin/users/${u.id}/memory`} className="ad-memtesterrow">
-                      <span className="ad-avatar" style={{ background: '#6C5FA3' }}>
+                      <span className="ad-avatar" style={{ background: 'var(--dv-lav)' }}>
                         {(u.name || '?').charAt(0).toUpperCase()}
                       </span>
                       <div className="nm">
@@ -103,10 +103,10 @@ export function AdminMemoryEntryPage() {
   )
 }
 
-function Poster({ spot, big, unit }: { spot: Parameters<typeof ClaySpot>[0]['name']; big: string; unit: string }) {
+function Poster({ spot, big, unit }: { spot: Icon3DName; big: string; unit: string }) {
   return (
     <div className="ad-poster">
-      <div className="ad-spot spot"><ClaySpot name={spot} size={44} /></div>
+      <div className="ad-spot spot"><Icon3D name={spot} size={44} /></div>
       <div className="ad-big">{big}<u>{unit}</u></div>
     </div>
   )

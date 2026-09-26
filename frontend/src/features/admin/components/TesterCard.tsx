@@ -71,7 +71,7 @@ export function TesterCard({
       style={delayMs !== undefined ? ({ '--d': `${delayMs}ms` } as CSSProperties) : undefined}
     >
       <div className="ad-cell">
-        <span className="ad-avatar" style={{ background: '#A84A26' }}>{(user.name || '?').charAt(0).toUpperCase()}</span>
+        <span className="ad-avatar" style={{ background: 'var(--dv-coral)' }}>{(user.name || '?').charAt(0).toUpperCase()}</span>
         <div style={{ minWidth: 0 }}>
           <div className="nm">{user.name}</div>
           <span className={`ad-tag ${STATUS_TONE[status]}`}>{STATUS_LABEL[status]}</span>

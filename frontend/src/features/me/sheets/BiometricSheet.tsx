@@ -1,10 +1,11 @@
 import { useState, type ReactNode } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
+import { SheetError, SheetHead } from '@/shared/ui/SheetHead'
+import { Icon3D } from '@/shared/ui/clay'
+import { cn } from '@/shared/lib/cn'
 import { useBiometricActions } from '@/data/hooks'
 import type { BiometricProfileResponse, BiometricProfileUpsertRequest } from '@/data/me/biometricProfileApi'
 import { ACTIVITY_LEVELS, type ActivityLevel } from '@/features/me/logic/biometricFields'
-import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
 
 // Biometric editor sheet (G6, mezo-06n). Opened from the Profile Biometria card
 // (both the populated card and the empty-state prompt). Edits the single
@@ -15,6 +16,9 @@ import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
 // mutation (which invalidates ['biometricProfile'] + ['goals'] so the active
 // goal recomputes server-side — Task 3) then closes on success — the EditGoalSheet
 // "mutation inside the sheet" pattern.
+// Üveg (U10, mezo-me75u.10): a rose glass sheet (Én), the person 3D head, eyebrow-labelled flat
+// fields, flat segment/option cells (the chosen one lit, with the tick icon instead of „✓"),
+// the split-TDEE readout as one flat cell, Mégse flat ghost + the lit „Mentés" pill.
 export function BiometricSheet({
   onClose,
   profile,
@@ -50,168 +54,88 @@ export function BiometricSheet({
   }
 
   const field = (label: ReactNode, input: ReactNode) => (
-    <div className="col gap-sm">
-      <span style={SECTION_LABEL}>{label}</span>
-      <div className="card" style={{ padding: 10 }}>
-        {input}
-      </div>
-    </div>
+    <label className="uvl-field">
+      <span className="uvl-flabel">{label}</span>
+      {input}
+    </label>
   )
-  const numStyle = { width: '100%', fontSize: 14, color: 'var(--text-primary)' } as const
 
   return (
-    <Sheet onClose={onClose} labelledBy="biometric-title">
+    <Sheet glass onClose={onClose} labelledBy="biometric-title" className="uvl-en">
       {(close) => (
-        <div className="col" style={{ padding: '4px 4px 8px' }}>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-            <div className="col">
-              <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Biometria</span>
-              <div id="biometric-title" className="h-display size-md" style={{ marginTop: 4 }}>
-                A motor ebből számol
-              </div>
+        <div className="uvl-body">
+          <SheetHead icon="t-person" eyebrow="Biometria" title="A motor ebből számol" titleId="biometric-title" onClose={close} />
+
+          {!profile && <p className="uvl-lead">Még nincs saját profilod. Az előre kitöltött értékek példák: ellenőrizd őket és add meg a születési dátumodat.</p>}
+          <div className="uvl-field">
+            <span className="uvl-flabel">Nem</span>
+            <div className="uvl-seg">
+              {(['M', 'F'] as const).map(s => (
+                <button key={s} type="button" aria-pressed={sex === s} onClick={() => setSex(s)}
+                  className={cn('uvl-chip', sex === s && 'on')}>
+                  {s === 'M' ? 'Férfi' : 'Nő'}
+                </button>
+              ))}
             </div>
-            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}>
-              <Icon name="x" size={12} />
-            </button>
           </div>
 
-          {!profile && <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Még nincs saját profilod. Az előre kitöltött értékek példák: ellenőrizd őket és add meg a születési dátumodat.</p>}
-          <div className="col gap-md">
-            <div className="col gap-sm">
-              <span style={SECTION_LABEL}>Nem</span>
-              <div className="row gap-xs">
-                {(['M', 'F'] as const).map(s => (
-                  <button
-                    key={s}
-                    type="button"
-                    aria-pressed={sex === s}
-                    onClick={() => setSex(s)}
-                    className="flex-1 rad-12"
-                    style={{
-                      padding: '12px 0',
-                      background:
-                        sex === s ? 'color-mix(in srgb, var(--lav-deep) 12%, transparent)' : 'var(--surface-1)',
-                      border: `1px solid ${sex === s ? 'var(--lav-deep)' : 'var(--border-subtle)'}`,
-                      color: sex === s ? 'var(--lav-deep)' : 'var(--text-secondary)',
-                      fontFamily: 'var(--ff-display)',
-                      fontSize: 14,
-                      fontWeight: 600,
-                    }}
-                  >
-                    {s === 'M' ? 'Férfi' : 'Nő'}
+          {field(
+            'Magasság (cm)',
+            <input type="number" value={heightCm} onChange={e => setHeightCm(Number(e.target.value))} aria-label="Magasság" />,
+          )}
+          {field(
+            'Születési dátum',
+            <input type="date" value={birthDateIso} onChange={e => setBirthDateIso(e.target.value)} aria-label="Születési dátum" />,
+          )}
+          {field(
+            <>Testzsír % <span className="uvl-flabel-opt">· opcionális → pontosabb TDEE</span></>,
+            <input type="number" step="0.1" value={bodyFat}
+              onChange={e => setBodyFat(e.target.value === '' ? '' : Number(e.target.value))}
+              aria-label="Testzsír" placeholder="pl. 15" />,
+          )}
+
+          {/* NEAT életmód-sáv (a betáblázott edzés külön adódik hozzá). Default MIXED. */}
+          <div className="uvl-field">
+            <span className="uvl-flabel">Aktivitási szint</span>
+            <div className="uvl-opts">
+              {ACTIVITY_LEVELS.map(a => {
+                const sel = activityLevel === a.id
+                return (
+                  <button key={a.id} type="button" aria-pressed={sel} onClick={() => setActivityLevel(a.id)}
+                    className={cn('uvl-opt', sel && 'on')}>
+                    {sel && <Icon3D name="t-tick" size={20} />}
+                    <span className="uvl-opt-nm">{a.label}</span>
+                    <span className="uvl-opt-hint">{a.hint}</span>
                   </button>
-                ))}
-              </div>
-            </div>
-
-            {field(
-              'Magasság (cm)',
-              <input
-                type="number"
-                value={heightCm}
-                onChange={e => setHeightCm(Number(e.target.value))}
-                aria-label="Magasság"
-                style={numStyle}
-              />,
-            )}
-            {field(
-              'Születési dátum',
-              <input
-                type="date"
-                value={birthDateIso}
-                onChange={e => setBirthDateIso(e.target.value)}
-                aria-label="Születési dátum"
-                style={{ ...numStyle, fontSize: 13, colorScheme: 'dark' }}
-              />,
-            )}
-            {field(
-              <>
-                Testzsír % <span style={{ color: 'var(--lav-deep)', opacity: 0.8 }}>· opcionális → pontosabb TDEE</span>
-              </>,
-              <input
-                type="number"
-                step="0.1"
-                value={bodyFat}
-                onChange={e => setBodyFat(e.target.value === '' ? '' : Number(e.target.value))}
-                aria-label="Testzsír"
-                placeholder="pl. 15"
-                style={numStyle}
-              />,
-            )}
-
-            {/* NEAT életmód-sáv (a betáblázott edzés külön adódik hozzá). Default MIXED. */}
-            <div className="col gap-sm">
-              <span style={SECTION_LABEL}>Aktivitási szint</span>
-              <div className="col gap-xs">
-                {ACTIVITY_LEVELS.map(a => {
-                  const sel = activityLevel === a.id
-                  return (
-                    <button
-                      key={a.id}
-                      type="button"
-                      aria-pressed={sel}
-                      onClick={() => setActivityLevel(a.id)}
-                      className="card"
-                      style={{
-                        padding: '10px 12px',
-                        textAlign: 'left',
-                        width: '100%',
-                        background: sel ? 'color-mix(in srgb, var(--lav-deep) 10%, transparent)' : 'var(--surface-1)',
-                        borderColor: sel ? 'var(--lav-deep)' : 'var(--border-subtle)',
-                      }}
-                    >
-                      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-                        <span
-                          style={{
-                            fontFamily: 'var(--ff-display)',
-                            fontSize: 14,
-                            fontWeight: 600,
-                            color: sel ? 'var(--lav-deep)' : 'var(--text-primary)',
-                          }}
-                        >
-                          {sel ? '✓ ' : ''}
-                          {a.label}
-                        </span>
-                        <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{a.hint}</span>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
+                )
+              })}
             </div>
           </div>
-
 
           {/* Split-TDEE readout — the persisted bootstrap, never a recomputation.
               No `tdeeBootstrap` (engine not run yet) → nothing renders; a number
               is never fabricated here. */}
           {profile?.tdeeBootstrap && (
-            <div className="col gap-sm" style={{ marginTop: 14 }}>
-              <span style={SECTION_LABEL}>Fenntartó energia</span>
+            <div className="uvl-field">
+              <span className="uvl-flabel">Fenntartó energia</span>
               {onExplainEnergy ? (
-                <button type="button" className="tdee tdee-split card" style={{ padding: '10px 12px', marginTop: 0 }}
+                <button type="button" className="tdee tdee-split uvl-tdee"
                   onClick={onExplainEnergy} aria-label="Energia-bontás magyarázata">
                   <TdeeRows tdee={profile.tdeeBootstrap} explainable />
                 </button>
               ) : (
-                <div className="tdee tdee-split card" style={{ padding: '10px 12px', marginTop: 0 }}>
+                <div className="tdee tdee-split uvl-tdee">
                   <TdeeRows tdee={profile.tdeeBootstrap} />
                 </div>
               )}
             </div>
           )}
 
-          {error && <p role="alert">A mentés nem sikerült. A módosításaid megmaradtak, próbáld újra.</p>}
-          <div className="row gap-sm mt-lg">
-            <button className="cta-ghost flex-1" onClick={close}>
-              Mégse
-            </button>
-            <button
-              className="cta-primary flex-1"
-              disabled={pending || !birthDateIso || heightCm <= 0}
-              onClick={() => save(close)}
-            >
-              <Icon name="check" size={14} /> Mentés
+          {error && <SheetError>A mentés nem sikerült. A módosításaid megmaradtak, próbáld újra.</SheetError>}
+          <div className="uvl-foot">
+            <button type="button" className="uvl-ghost" onClick={close}>Mégse</button>
+            <button type="button" className="uvl-cta" disabled={pending || !birthDateIso || heightCm <= 0} onClick={() => save(close)}>
+              <Icon3D name="t-tick" size={20} />Mentés
             </button>
           </div>
         </div>
@@ -239,7 +163,7 @@ function TdeeRows({ tdee, explainable }: {
       <div className="row total">
         <span className="lab">
           Fenntartó · {tdee.formula === 'KATCH' ? 'Katch' : 'MSJ'}
-          {explainable && <span className="infochev"> ⓘ</span>}
+          {explainable && <span className="infochev"><Icon3D name="t-info" size={16} /></span>}
         </span>
         <span className="amt">≈{Math.round(tdee.tdee)} <small>kcal/nap</small></span>
       </div>

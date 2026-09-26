@@ -90,6 +90,24 @@ describe('ToastProvider — simple toasts (a mai viselkedés megőrzése)', () =
   })
 })
 
+describe('ToastProvider — üveg (U10, mezo-me75u.10)', () => {
+  it('minden toast egy üveg pill-kártya, a jelentése 3D ikonjával', () => {
+    render(<ToastProvider>content</ToastProvider>)
+    act(() => emitToast({ kind: 'success', text: 'Mentve' }))
+    act(() => emitToast({ kind: 'error', text: 'Hiba' }))
+    act(() => emitToast({ kind: 'info', text: 'Hír' }))
+    const [info, error, success] = items()
+    for (const el of [info, error, success]) expect(el).toHaveClass('toast', 'glass', 'uvl-tst')
+    expect(success).toHaveClass('is-success')
+    expect(error).toHaveClass('is-error')
+    expect(info).toHaveClass('is-info')
+    const icon = (el: HTMLElement) => el.querySelector('.uvl-tst-ico use')?.getAttribute('href')
+    expect(icon(success)).toBe('#t-tick')
+    expect(icon(error)).toBe('#t-info')
+    expect(icon(info)).toBe('#t-bell')
+  })
+})
+
 describe('ToastProvider — stack', () => {
   it('a legújabb toast van elöl, és egyik sem cseréli le a másikat', () => {
     render(<ToastProvider>content</ToastProvider>)
@@ -187,6 +205,18 @@ describe('ToastProvider — reward variáns', () => {
     expect(item).toHaveTextContent('Mentális')
     expect(item).toHaveTextContent('+15')
     expect(item).toHaveTextContent('LEVEL UP · Mentális · Lv3 → 4')
+    // U10 (mezo-me75u.10): the level-up pill leads with the t-up 3D icon, not a „★" glyph
+    expect(item.textContent).not.toContain('★')
+    expect(item.querySelector('.t-lvup use')?.getAttribute('href')).toBe('#t-up')
+  })
+
+  it('a jutalom ikonja a forrásé: szokás → harvest, tevékenység → journal, alapból küldetés', () => {
+    render(<ToastProvider>content</ToastProvider>)
+    act(() => emitToast({ kind: 'reward', source: 'habit', eyebrow: 'Szokás', title: 'Pipa' }))
+    act(() => emitToast({ kind: 'reward', source: 'activity', eyebrow: 'Naplózva', title: 'Olvasás' }))
+    act(() => emitToast({ kind: 'reward', eyebrow: 'Küldetés', title: 'Séta' }))
+    const icons = items().map((el) => el.querySelector('.uvl-tst-ico use')?.getAttribute('href'))
+    expect(icons).toEqual(['#t-quest', '#t-journal', '#t-harvest'])
   })
 
   it('meter és level-up nélkül is teljes értékű: eyebrow + cím + meta', () => {

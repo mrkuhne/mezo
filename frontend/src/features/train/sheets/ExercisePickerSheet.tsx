@@ -8,6 +8,9 @@
 // Wraps the shared Sheet (render-fn child) so the X button dismisses with
 // the same slide-down as the backdrop.
 // Ported from prototype mesocycles.jsx ExercisePickerSheet.
+// Üveg (U10, mezo-me75u.10, `uveg-reteg` `SH.ex`): a coral glass sheet, the dumbbell 3D head with
+// the lit „Kész" pill, a flat search field, flat filter chips (the active one lit), exercise rows
+// as hairline-split flat rows with the coral + ring; a pick shows „Hozzáadva" with the tick icon.
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
 import { useTrain } from '@/data/hooks'
@@ -18,7 +21,8 @@ import {
 } from '@/features/train/logic/muscleFilters'
 import type { ExerciseLibraryItem } from '@/data/types'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
+import { SheetHead } from '@/shared/ui/SheetHead'
+import { Icon3D } from '@/shared/ui/clay'
 import { cn } from '@/shared/lib/cn'
 import { VideoDemo } from '@/features/train/components/VideoDemo'
 import { ExerciseImage } from '@/features/train/components/ExerciseImage'
@@ -52,67 +56,42 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
   )
 
   return (
-    <Sheet onClose={onClose} labelledBy="exercise-picker-title">
+    <Sheet glass onClose={onClose} labelledBy="exercise-picker-title" className="uvl-edzes">
       {(close) => (
-        <>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-            <div className="col">
-              <span className="eyebrow brand">Gyakorlat választás{dayLabel ? ` · ${dayLabel}` : ''}</span>
-              <div
-                id="exercise-picker-title"
-                style={{
-                  fontFamily: 'var(--ff-display)',
-                  fontSize: 22,
-                  fontWeight: 600,
-                  color: 'var(--text-primary)',
-                  marginTop: 4,
-                  lineHeight: 1.15,
-                }}
-              >
-                Mit pakolunk be?
-              </div>
-              {addedCount > 0 && (
-                <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)', marginTop: 4 }}>
-                  {addedCount} hozzáadva
-                </span>
-              )}
-            </div>
-            <div className="row gap-xs">
-              <button className="chip brand" onClick={close} style={{ fontSize: 9, padding: '6px 10px' }}>
+        <div className="uvl-body">
+          <SheetHead
+            icon="t-dumbbell"
+            eyebrow={`Gyakorlat választás${dayLabel ? ` · ${dayLabel}` : ''}`}
+            title="Mit pakolunk be?"
+            titleId="exercise-picker-title"
+            sub={addedCount > 0 ? <span className="uvl-shh-count">{addedCount} hozzáadva</span> : undefined}
+            action={(
+              <button type="button" className="uvl-cta is-sm" onClick={close}>
                 Kész{addedCount > 0 ? ` · ${addedCount}` : ''}
               </button>
-              <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
-                <Icon name="x" size={12} />
-              </button>
-            </div>
-          </div>
+            )}
+            onClose={close}
+          />
 
           {/* Search */}
-          <div
-            className="card"
-            style={{ padding: 8, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}
-          >
-            <Icon name="search" size={14} color="var(--text-tertiary)" />
+          <label className="uvl-search">
+            <Icon3D name="t-lens" size={20} />
             <input
               placeholder="Keresés · pl. row, curl, press"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{ flex: 1, fontSize: 13, padding: '6px 0' }}
             />
-          </div>
+          </label>
 
           {/* Muscle filter — level 1: régiók */}
-          <div
-            className="row gap-xs"
-            style={{ overflowX: 'auto', scrollbarWidth: 'none', marginBottom: subs.length ? 8 : 14, paddingBottom: 4 }}
-          >
+          <div className="uvl-chips is-scroll">
             {TOP_FILTERS.map((m) => (
               <button
                 key={m}
+                type="button"
                 onClick={() => { setTop(m); setSub(null) }}
                 aria-pressed={top === m}
-                className={cn('chip', top === m && 'brand')}
-                style={{ fontSize: 9, padding: '6px 10px', flexShrink: 0 }}
+                className={cn('uvl-chip', top === m && 'on')}
               >
                 {TOP_FILTER_LABELS[m] ?? m}
               </button>
@@ -121,17 +100,14 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
 
           {/* Muscle filter — level 2: fej-specifikus al-szűrők (csak régió kiválasztásakor) */}
           {subs.length > 0 && (
-            <div
-              className="row gap-xs"
-              style={{ overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 14, paddingBottom: 4 }}
-            >
+            <div className="uvl-chips is-scroll is-sub">
               {subs.map((m) => (
                 <button
                   key={m}
+                  type="button"
                   onClick={() => setSub(sub === m ? null : m)}
                   aria-pressed={sub === m}
-                  className={cn('chip', sub === m && 'brand')}
-                  style={{ fontSize: 9, padding: '6px 10px', flexShrink: 0 }}
+                  className={cn('uvl-chip', sub === m && 'on')}
                 >
                   {MUSCLE_LABELS[m] ?? m}
                 </button>
@@ -140,10 +116,11 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
           )}
 
           {/* List */}
-          <div className="col gap-sm">
+          <div className="uvl-exlist">
             {filtered.map((e) => (
-              <div key={e.id} className="col gap-sm">
+              <div key={e.id} className="uvl-exitem">
                 <button
+                  type="button"
                   onClick={() => {
                     onPick(e)
                     setAddedCount((c) => c + 1)
@@ -151,15 +128,7 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
                     if (flashTimer.current) clearTimeout(flashTimer.current)
                     flashTimer.current = setTimeout(() => setFlashId(null), 900)
                   }}
-                  className="card row"
-                  style={{
-                    padding: 12,
-                    alignItems: 'center',
-                    textAlign: 'left',
-                    width: '100%',
-                    borderColor: flashId === e.id ? 'var(--line)' : undefined,
-                    gap: 12,
-                  }}
+                  className={cn('uvl-exrow', flashId === e.id && 'is-added')}
                 >
                   <ExerciseImage
                     start={e.imageStartUrl}
@@ -168,40 +137,22 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
                     muscle={e.muscle}
                     variant="thumb"
                   />
-                  <div className="col flex-1">
-                    <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{e.name}</span>
-                    <div className="row gap-sm mt-xs">
-                      <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-                        {MUSCLE_LABELS[e.muscle] ?? e.muscle}
-                      </span>
-                      <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-                        · {e.type}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="col" style={{ alignItems: 'flex-end' }}>
-                    <span className="label-mono" style={{ fontSize: 8, color: 'var(--coral)' }}>
-                      STIM
-                    </span>
-                    <div className="row gap-xs mt-xs">
+                  <span className="uvl-exrow-t">
+                    <strong>{e.name}</strong>
+                    <small>{MUSCLE_LABELS[e.muscle] ?? e.muscle} · {e.type}</small>
+                  </span>
+                  <span className="uvl-stim">
+                    <small>STIM</small>
+                    <span aria-hidden="true">
                       {[1, 2, 3, 4, 5].map((n) => (
-                        <div
-                          key={n}
-                          style={{
-                            width: 4,
-                            height: 8,
-                            background: n / 5 <= e.stim ? 'var(--coral)' : 'var(--surface-2)',
-                          }}
-                        />
+                        <i key={n} className={cn(n / 5 <= e.stim && 'on')} />
                       ))}
-                    </div>
-                  </div>
-                  {flashId === e.id ? (
-                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)', flexShrink: 0 }}>
-                      Hozzáadva ✓
                     </span>
+                  </span>
+                  {flashId === e.id ? (
+                    <span className="uvl-exrow-done"><Icon3D name="t-tick" size={20} />Hozzáadva</span>
                   ) : (
-                    <Icon name="plus" size={16} color="var(--coral)" />
+                    <em className="uvl-exrow-add" aria-hidden="true">+</em>
                   )}
                 </button>
                 {/* Inline demo video — sibling of the row button so its toggle never triggers onPick */}
@@ -211,13 +162,9 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
           </div>
 
           {filtered.length === 0 && (
-            <p className="text-tertiary" style={{ fontSize: 12, textAlign: 'center', padding: 20 }}>
-              Nincs találat ezzel a szűrővel.
-            </p>
+            <p className="uvl-none uv-empty">Nincs találat ezzel a szűrővel.</p>
           )}
-
-          <div style={{ height: 24 }} />
-        </>
+        </div>
       )}
     </Sheet>
   )

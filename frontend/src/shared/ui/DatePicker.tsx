@@ -1,4 +1,5 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useState } from 'react'
+import { cn } from '@/shared/lib/cn'
 import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
 
 export interface DatePickerProps {
@@ -33,6 +34,11 @@ function monthCells(year: number, month0: number): (string | null)[] {
  * the popover pattern of SubNavDropdown (open state, window Escape listener, backdrop close).
  * ISO `YYYY-MM-DD` strings compare lexicographically == chronologically, so bound checks are string
  * comparisons. No `@/data/*` imports — this is a shared/ui primitive.
+ *
+ * Skin (üveg U10, mezo-me75u.10): a lavender glass popover, sheen off (`.dp-cal.glass.is-still`),
+ * flat round month arrows, the selected day a lit lavender fill with dark ink, today a hairline
+ * ring, out-of-range days dimmed — all in the `uveg reteg ablak` block of prototype.css; no
+ * inline colours. Pages that re-dress the trigger (Rutin) keep their own scoped rules.
  */
 export function DatePicker({ value, onChange, maxDate, minDate, formatLabel }: DatePickerProps) {
   const [open, setOpen] = useState(false)
@@ -70,55 +76,55 @@ export function DatePicker({ value, onChange, maxDate, minDate, formatLabel }: D
   const prevDisabled = minDate ? localDateString(new Date(vy, vm, 0)) < minDate : false
 
   return (
-    <div style={{ position: 'relative', display: 'inline-block' }}>
+    <div className="dp-wrap">
       <button
         type="button"
         aria-label="Dátum kiválasztása"
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => (open ? setOpen(false) : openPicker())}
-        style={triggerStyle}
+        className="dp-trigger"
       >
         {(formatLabel ?? huMonthDayDow)(value)}
       </button>
 
       {open && (
         <>
-          <button type="button" aria-label="Bezárás" onClick={() => setOpen(false)} style={backdropStyle} />
-          <div role="dialog" aria-label="Naptár" style={dialogStyle}>
-            <div style={headerStyle}>
+          <button type="button" aria-label="Bezárás" onClick={() => setOpen(false)} className="dp-veil" />
+          <div role="dialog" aria-label="Naptár" className="dp-cal glass is-still">
+            <div className="dp-head">
               <button
                 type="button"
                 aria-label="Előző hónap"
                 onClick={() => stepMonth(-1)}
                 disabled={prevDisabled}
-                style={navBtnStyle(prevDisabled)}
+                className="dp-nav"
               >
                 ‹
               </button>
-              <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--text-primary)' }}>
+              <strong>
                 {HU_MONTHS[vm]} {vy}
-              </span>
+              </strong>
               <button
                 type="button"
                 aria-label="Következő hónap"
                 onClick={() => stepMonth(1)}
                 disabled={nextDisabled}
-                style={navBtnStyle(nextDisabled)}
+                className="dp-nav"
               >
                 ›
               </button>
             </div>
 
-            <div style={gridStyle}>
+            <div className="dp-grid">
               {HU_DOW_SHORT.map((d) => (
-                <div key={d} style={dowHeadStyle}>
+                <div key={d} className="dp-dow">
                   {d}
                 </div>
               ))}
             </div>
 
-            <div style={gridStyle}>
+            <div className="dp-grid">
               {cells.map((iso, i) =>
                 iso === null ? (
                   <div key={`empty-${i}`} />
@@ -127,12 +133,13 @@ export function DatePicker({ value, onChange, maxDate, minDate, formatLabel }: D
                     key={iso}
                     type="button"
                     aria-label={iso}
+                    aria-current={iso === today ? 'date' : undefined}
                     disabled={iso > max || (minDate ? iso < minDate : false)}
                     onClick={() => {
                       onChange(iso)
                       setOpen(false)
                     }}
-                    style={dayStyle(iso === value, iso === today, iso > max || (minDate ? iso < minDate : false))}
+                    className={cn('dp-day', iso === value && 'is-sel', iso === today && 'is-today')}
                   >
                     {Number(iso.slice(8, 10))}
                   </button>
@@ -144,93 +151,4 @@ export function DatePicker({ value, onChange, maxDate, minDate, formatLabel }: D
       )}
     </div>
   )
-}
-
-const triggerStyle: CSSProperties = {
-  font: 'inherit',
-  fontSize: 13,
-  fontWeight: 800,
-  color: 'var(--lav-deep)',
-  background: 'none',
-  border: 0,
-  padding: '2px 4px',
-  cursor: 'pointer',
-}
-
-const backdropStyle: CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  zIndex: 40,
-  background: 'transparent',
-  border: 0,
-  padding: 0,
-  cursor: 'default',
-}
-
-const dialogStyle: CSSProperties = {
-  position: 'absolute',
-  top: 'calc(100% + 6px)',
-  left: 0,
-  zIndex: 50,
-  width: 260,
-  padding: 12,
-  background: 'var(--surface-1)',
-  border: '1px solid var(--line)',
-  borderRadius: 'var(--r-lg)',
-  boxShadow: '0 12px 32px rgba(43, 33, 24, 0.18)',
-}
-
-const headerStyle: CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  marginBottom: 8,
-}
-
-const gridStyle: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(7, 1fr)',
-  gap: 2,
-}
-
-const dowHeadStyle: CSSProperties = {
-  textAlign: 'center',
-  fontSize: 10,
-  fontWeight: 700,
-  color: 'var(--text-quaternary)',
-  paddingBottom: 4,
-}
-
-function navBtnStyle(disabled: boolean): CSSProperties {
-  return {
-    font: 'inherit',
-    fontSize: 18,
-    lineHeight: 1,
-    width: 28,
-    height: 28,
-    borderRadius: 'var(--r-full)',
-    border: 0,
-    background: 'none',
-    color: disabled ? 'var(--text-quaternary)' : 'var(--lav-deep)',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    opacity: disabled ? 0.5 : 1,
-  }
-}
-
-function dayStyle(selected: boolean, isToday: boolean, disabled: boolean): CSSProperties {
-  return {
-    aspectRatio: '1 / 1',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    font: 'inherit',
-    fontSize: 12,
-    fontWeight: selected ? 800 : 600,
-    borderRadius: 'var(--r-full)',
-    border: isToday && !selected ? '1.5px solid var(--sage-deep)' : '1.5px solid transparent',
-    background: selected ? 'var(--lav)' : 'transparent',
-    color: disabled ? 'var(--text-quaternary)' : selected ? 'var(--text-inverse)' : 'var(--text-primary)',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    opacity: disabled ? 0.45 : 1,
-  }
 }

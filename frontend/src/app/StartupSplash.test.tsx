@@ -44,10 +44,13 @@ test('StrictMode still reveals once and unmount clears the pending timer', () =>
   expect(vi.getTimerCount()).toBe(0)
 })
 
-// A jel az agyag-készlet gömbje (style bible §6) — se emoji, se a Titán 3D jelenet.
-test('the mark is the clay orb spot, and the wordmark stays "boop"', () => {
+// Üveg (mezo-me75u.10): a jel a levendula üveg-gömb, benne a hullámzó folyadék — se emoji, se
+// a Titán 3D jelenet, se a régi agyag `s-orb` folt.
+test('the mark is the lavender glass orb with its liquid, and the wordmark stays "boop"', () => {
   const { container } = render(<StartupSplash>Dashboard</StartupSplash>)
-  expect(container.querySelector('.startup-splash use')!.getAttribute('href')).toBe('#s-orb')
+  expect(container.querySelector('.startup-splash .startup-splash__orb.glass')).not.toBeNull()
+  expect(container.querySelector('.startup-splash .startup-splash__wave .startup-splash__liquid')).not.toBeNull()
+  expect(container.querySelector('.startup-splash use[href="#s-orb"]')).toBeNull()
   expect(container.querySelector('.startup-splash canvas')).toBeNull()
   expect(container.querySelector('.startup-splash .titan-svg')).toBeNull()
   expect(container.querySelector('.startup-splash__wordmark')!.textContent).toBe('boop')

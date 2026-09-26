@@ -36,9 +36,9 @@ import { huInt, usd } from '@/shared/lib/huNum'
 // glyphs past the anchor point; `CAP_INSET_RIGHT` below adds extra clearance beyond the plot's
 // own `PAD` specifically for the caption anchors (the plot lines/points still use `PAD`).
 const KIND_COLOR: Record<'ai' | 'domain' | 'both', string> = {
-  ai: '#5D4FA0',
-  domain: '#4E6B42',
-  both: '#C9962E',
+  ai: 'var(--dv-lav)',
+  domain: 'var(--dv-sage)',
+  both: 'var(--dv-amber)',
 }
 
 const W = 720

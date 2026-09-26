@@ -40,6 +40,10 @@ describe('AdminLayout (mock mode)', () => {
     expect(await screen.findByText('admin content')).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: /admin navigáció/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Pulzus/ })).toBeInTheDocument()
+    // Üveg (mezo-me75u.10): one glass rail, a Titanium 3D icon per link (no clay glyphs).
+    const rail = screen.getByRole('navigation', { name: /admin navigáció/i })
+    expect(rail).toHaveClass('glass', 'is-still')
+    expect(screen.getByRole('link', { name: /Pulzus/ }).querySelector('use')?.getAttribute('href')).toBe('#t-signal')
   })
 
   it('never renders the app tab bar', async () => {

@@ -43,7 +43,9 @@ describe('LevelUpProvider', () => {
       </LevelUpProvider>,
     )
     fireEvent.click(screen.getByText('fire'))
-    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    const dialog = screen.getByRole('dialog', { name: 'Szintlépés' })
+    // the üveg overlay (mezo-me75u.10): the source chip wears the 3D dumbbell for a GYM result
+    expect(dialog.querySelector('.lvu-chip use')?.getAttribute('href')).toBe('#t-dumbbell')
     fireEvent.click(screen.getByRole('button', { name: /Tovább/ }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })

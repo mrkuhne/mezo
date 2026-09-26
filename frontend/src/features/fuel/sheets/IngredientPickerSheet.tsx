@@ -79,7 +79,7 @@ export function IngredientPickerSheet({
   )
 
   return (
-    <Sheet onClose={onClose} className="sheet-nested fkx-rsheet-host" labelledBy="ingredient-pick-title">
+    <Sheet glass onClose={onClose} className="sheet-nested fkx-rsheet-host uvl-fuel" labelledBy="ingredient-pick-title">
       {(close) => (
         <>
           <div className="fkx-rsheet-head">

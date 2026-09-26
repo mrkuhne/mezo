@@ -56,7 +56,7 @@ function JobRow({ label, value, to }: { label: string; value: number; to?: strin
       {to ? (
         <Link
           to={to}
-          style={{ all: 'unset', cursor: 'pointer', color: '#A84A26', textDecoration: 'underline dotted' }}
+          style={{ all: 'unset', cursor: 'pointer', color: 'var(--dv-coral)', textDecoration: 'underline dotted' }}
         >
           {label}
         </Link>
@@ -206,7 +206,7 @@ export function LayersView({ userId, isOwner }: { userId: string; isOwner: boole
         </div>
       </AdminTile>
 
-      <div className="ad-note9" style={{ fontSize: 9.5, color: '#A2958A', marginTop: 10 }}>
+      <div className="ad-note9" style={{ fontSize: 9.5, color: 'var(--text-muted)', marginTop: 10 }}>
         Minden hibás/elavult szám ({huInt(staleCount)} elavult, {huInt(failedCount)} sikertelen,{' '}
         {huInt(candidateItems)} + {huInt(candidateNodes)} candidate, {huInt(deletedItems)} + {huInt(deletedNodes)}{' '}
         deleted) az adatböngészőbe mutat, a megfelelő táblára és userre előszűrve — a szám csak a nyom, nem szűrő.

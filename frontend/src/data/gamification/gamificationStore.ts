@@ -80,11 +80,11 @@ export function awardGamificationEvent(
   qc.setQueryData(GAMIFICATION_KEY, next)
 
   if (event.silent) { /* the caller's own surface carries the reward — no toast at all */ }
-  else if (leveledUp) emitToast({ kind: 'success', text: `🎉 Szint ${level} — +${LEVEL_UP_COINS} 🪙` })
+  else if (leveledUp) emitToast({ kind: 'success', text: `Szint ${level} — +${LEVEL_UP_COINS} érme` })
   else if (milestone > 0)
-    emitToast({ kind: 'success', text: `🔥 ${next.streakDays} napos sorozat — +${milestone} 🪙` })
+    emitToast({ kind: 'success', text: `${next.streakDays} napos sorozat — +${milestone} érme` })
   else if (saverUsed)
-    emitToast({ kind: 'info', text: '🧊 Streak-mentő elhasználva — a sorozat megmaradt' })
+    emitToast({ kind: 'info', text: 'Streak-mentő elhasználva — a sorozat megmaradt' })
   else if (!event.silentXp) emitToast({ kind: 'success', text: `+${xp} XP` })
 
   return { xpAwarded: xp, coinsAwarded, leveledUp, newLevel: level }

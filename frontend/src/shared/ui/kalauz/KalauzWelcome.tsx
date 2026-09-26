@@ -12,17 +12,30 @@
 // A11y (WAI-ARIA APG, Dialog Modal): tartalom-nehéz dialógusnál a fókusz egy tabindex=-1
 // statikus elemre megy (a lépés címére), nem az első interaktív elemre — és LÉPÉSVÁLTÁSKOR
 // ÚJRA, különben a „Tovább" képernyőolvasóval némán nem csinál semmit.
+//
+// Üveg (U10, mezo-me75u.10; prototípus uveg-reteg-body.html `udv()` + `.wel*`): felül a
+// szemöldök-sor, alatta a keret nélküli levendula/arany halo-hős (az 1. lépésen az élő Mezo
+// Boop), a demó (napszakok üveg csempéken 3D ikonnal · öt élő Boop · a „+" mögötti lapos
+// csempék + levendula üveg Mezo-sor · pulzáló arany „?"), lent a láb.
 // ============================================================
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/shared/lib/cn'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
-import { ClayIcon, ClaySpot, type ClayIconName, type ClaySpotName } from '@/shared/ui/clay'
+import { Boop, Icon3D, type BoopDomain, type Icon3DName } from '@/shared/ui/clay'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 
-export interface KalauzWelcomeDaypart { key: string; label: string; spot: ClaySpotName; size: number; sub: string }
-export interface KalauzWelcomeTab { key: string; label: string; icon: ClayIconName; voice: string }
-export interface KalauzWelcomeTile { label: string; icon: ClayIconName }
+export interface KalauzWelcomeDaypart { key: string; label: string; icon: Icon3DName; size: number; sub: string }
+/** `key` = a terület (navModel domain-id): a demó ennek az élő Boopját rajzolja. */
+export interface KalauzWelcomeTab { key: BoopDomain; label: string; voice: string }
+export interface KalauzWelcomeTile { label: string; icon: Icon3DName }
+
+/** A terület akcentusa (üveg bible §2): a kiválasztott Boop fénye és a hangkártya `--c`-je. */
+const DOMAIN_ACCENT: Record<BoopDomain, string> = {
+  nap: 'var(--dv-amber)', train: 'var(--dv-coral)', fuel: 'var(--dv-sage)', mezo: 'var(--dv-lav)', me: 'var(--dv-rose)',
+}
+const DAYPART_ACCENT = ['var(--dv-amber)', 'var(--dv-coral)', 'var(--dv-lav)']
+const hue = (c: string) => ({ '--c': c }) as CSSProperties
 
 interface StepBase { title: string; voice: string }
 export type KalauzWelcomeStep =
@@ -105,89 +118,93 @@ export function KalauzWelcome({ steps, onClose }: KalauzWelcomeProps) {
   const overlay = (
     <div
       ref={rootRef}
-      className={cn('welcome', reduced && 'welcome--reduced')}
+      className={cn('welcome', 'uv-welcome', reduced && 'welcome--reduced')}
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
     >
-      <div className="wl-art" key={step}>
+      <div className="wel-top">
+        <p className="uv-eyebrow wel-eyebrow">Első indítás · <b>{step + 1} / {steps.length}</b></p>
+      </div>
+
+      <div className="wel-step" key={step}>
+        <div className={cn('wel-hero', current.kind !== 'napszak' && 'is-slim')}>
+          {current.kind === 'napszak' && <Boop domain="mezo" size={104} className="wel-boop" />}
+          <h2 className="wl-title wel-title" id={titleId} ref={titleRef} tabIndex={-1}>{current.title}</h2>
+          <div className="wel-voice"><SafeMarkdown text={current.voice} /></div>
+        </div>
+
         {current.kind === 'napszak' && (
-          <div className="wl-arc">
-            {current.dayparts.map((d) => (
-              <div className="wl-st" key={d.key}>
-                <ClaySpot name={d.spot} size={d.size} />
-                {d.label}
-                <span className="wl-sub">{d.sub}</span>
+          <div className="wel-dparts">
+            {current.dayparts.map((d, k) => (
+              <div className={cn('wel-dpart glass', k === 1 && 'is-mid')} key={d.key}
+                style={{ ...hue(DAYPART_ACCENT[k] ?? 'var(--dv-amber)'), '--i': k } as CSSProperties}>
+                <Icon3D name={d.icon} size={d.size} />
+                <strong>{d.label}</strong>
+                <small>{d.sub}</small>
               </div>
             ))}
           </div>
         )}
 
         {current.kind === 'tabbar' && (
-          <div className="wl-demo">
-            <div className="wl-tabbar">
+          <div className="wel-demo">
+            <div className="wel-dom5">
               {current.tabs.map((t, k) => (
-                <button type="button" key={t.key} className={cn('wl-tab', k === tab && 'on')}
+                <button type="button" key={t.key} className={cn('wel-dom', k === tab && 'on')} style={hue(DOMAIN_ACCENT[t.key])}
                   aria-pressed={k === tab} onClick={() => setTab(k)}>
-                  <ClayIcon name={t.icon} size={22} />{t.label}
+                  <Boop domain={t.key} size={46} />{t.label}
                 </button>
               ))}
             </div>
-            <div className="wl-demobox">
-              <div className="wl-demoname">{current.tabs[tab].label}</div>
-              <div className="wl-demotxt">{current.tabs[tab].voice}</div>
+            <div className="wel-domvoice glass" style={hue(DOMAIN_ACCENT[current.tabs[tab].key])}>
+              <strong className="wel-domname">{current.tabs[tab].label}</strong>
+              <span className="wel-domtxt">{current.tabs[tab].voice}</span>
             </div>
-            <div className="wl-hint">Koppints a fülekre.</div>
+            <div className="wel-hint">Koppints a figurákra.</div>
           </div>
         )}
 
         {current.kind === 'log' && (
-          <div className="wl-demo">
-            <button type="button" className="wl-fab" aria-label="Gyors logolás megnyitása"
+          <div className="wel-demo">
+            <button type="button" className="wel-fab glass" style={hue('var(--dv-lav)')} aria-label="Gyors logolás megnyitása"
               aria-expanded={logOpen} onClick={() => setLogOpen(true)}>
               <span aria-hidden="true">+</span>
             </button>
             {logOpen ? (
-              <div className="wl-demobox">
-                <div className="wl-tiles">
+              <div className="wel-logbox">
+                <div className="wel-tiles">
                   {current.tiles.map((t) => (
-                    <span className="wl-tile" key={t.label}><ClayIcon name={t.icon} size={24} />{t.label}</span>
+                    <span className="wel-tile" key={t.label}><Icon3D name={t.icon} size={34} />{t.label}</span>
                   ))}
                 </div>
-                <div className="wl-chatrow"><ClaySpot name="s-orb" size={26} />{current.chat}</div>
+                <div className="wel-chatrow glass" style={hue('var(--dv-lav)')}><Icon3D name="t-mic" size={30} /><strong>{current.chat}</strong></div>
               </div>
             ) : (
-              <div className="wl-hint">Koppints a + gombra.</div>
+              <div className="wel-hint">Koppints a + gombra.</div>
             )}
           </div>
         )}
 
         {current.kind === 'sugo' && (
-          <div className="wl-demo">
-            <div className="wl-qrow">
-              <span className="wl-q wl-qpulse" aria-hidden="true">?</span>
-            </div>
-            <ClaySpot name="s-orb-figyel" size={64} />
+          <div className="wel-demo">
+            <span className="wel-qpulse glass is-round" style={hue('var(--dv-amber)')} aria-hidden="true">?</span>
           </div>
         )}
       </div>
 
-      <div className="wl-eyebrow">Első indítás · {step + 1} / {steps.length}</div>
-      <h2 className="wl-title" id={titleId} ref={titleRef} tabIndex={-1}>{current.title}</h2>
-      <div className="wl-voice"><SafeMarkdown text={current.voice} /></div>
-
-      <div className="wl-dots" aria-hidden="true">
-        {steps.map((s, k) => <span key={s.kind} className={cn('wl-dot', k === step && 'on', k < step && 'seen')} />)}
+      <div className="wel-dots" aria-hidden="true">
+        {steps.map((s, k) => <span key={s.kind} className={cn('wel-dot', k === step && 'on', k < step && 'seen')} />)}
       </div>
-      <div className="wl-foot">
+      <div className={cn('wel-foot', last && 'is-last')}>
         {!last && (
-          <button type="button" className="wl-ghost" onClick={() => onClose('skip', step)}>Kihagyom</button>
+          <button type="button" className="wel-skip" onClick={() => onClose('skip', step)}>Kihagyom</button>
         )}
-        <button type="button" className="wl-ghost wl-back"
+        <button type="button" className="wel-ghost"
           disabled={step === 0} onClick={() => go(step - 1)}><span aria-hidden="true">‹</span> Vissza</button>
         {last
-          ? <button type="button" className="wl-cta" onClick={() => onClose('done', step)}>Induljunk</button>
-          : <button type="button" className="wl-cta" onClick={() => go(step + 1)}>Tovább</button>}
+          ? <button type="button" className="wel-cta" onClick={() => onClose('done', step)}>Induljunk</button>
+          : <button type="button" className="wel-cta" onClick={() => go(step + 1)}>Tovább</button>}
       </div>
     </div>
   )

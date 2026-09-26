@@ -10,21 +10,14 @@
 // pattern accepts a YouTube watch/short URL or an Instagram reel/post
 // permalink; anything else comes back 400.
 // Mirrors the CatalogExerciseSheet visual idiom.
+// Üveg (U10, mezo-me75u.10): a coral glass sheet, the play 3D head, one flat URL field, the
+// coral-outline „Eltávolítás" (destructive, rule 29) or flat Mégse + the lit „Mentés" pill.
 // ============================================================
 import { useState } from 'react'
 import { useTrain } from '@/data/hooks'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
-import { Display } from '@/shared/ui/Display'
-import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
-
-const fieldStyle = {
-  width: '100%',
-  padding: '10px 12px',
-  fontSize: 14,
-  background: 'var(--surface-1)',
-  border: '1px solid var(--border-subtle)',
-} as const
+import { SheetHead } from '@/shared/ui/SheetHead'
+import { Icon3D } from '@/shared/ui/clay'
 
 interface VideoUrlSheetProps {
   // The catalog row to target: its id (catalog uuid), display name, current video.
@@ -47,52 +40,36 @@ export function VideoUrlSheet({ exercise, onClose }: VideoUrlSheetProps) {
   }
 
   return (
-    <Sheet onClose={onClose} labelledBy="video-url-title">
+    <Sheet glass onClose={onClose} labelledBy="video-url-title" className="uvl-edzes">
       {(close) => (
-        <>
-          {/* Header */}
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-            <div className="col">
-              <span className="eyebrow brand">Videó · {exercise.name}</span>
-              <div id="video-url-title" style={{ marginTop: 4 }}>
-                <Display size="md">Demo videó</Display>
-              </div>
-            </div>
-            <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
-              <Icon name="x" size={12} />
-            </button>
-          </div>
+        <div className="uvl-body">
+          <SheetHead icon="t-play" eyebrow={`Videó · ${exercise.name}`} title="Demo videó" titleId="video-url-title" onClose={close} />
 
           {/* Video URL */}
-          <div className="col gap-sm" style={{ marginBottom: 4 }}>
-            <span className="label-mono">Videó URL</span>
+          <label className="uvl-field">
+            <span className="uvl-flabel">Videó URL</span>
             <input
               aria-label="Videó URL"
-              className="rad-12"
               placeholder="https://youtu.be/… vagy https://instagram.com/reel/…"
               value={videoUrl}
               onChange={(e) => setVideoUrl(e.target.value)}
-              style={fieldStyle}
             />
-          </div>
+          </label>
 
           {/* Footer — Eltávolítás clears an existing video; Mégse just closes when there is none */}
-          <div className="row gap-sm mt-lg">
+          <div className="uvl-foot">
             {hadVideo ? (
-              <CtaGhost className="flex-1" disabled={saving} onClick={() => persist(null, close)}>
-                <Icon name="trash" size={14} color="var(--warning)" /> Eltávolítás
-              </CtaGhost>
+              <button type="button" className="uvl-warn" disabled={saving} onClick={() => persist(null, close)}>
+                <Icon3D name="t-trash" size={20} />Eltávolítás
+              </button>
             ) : (
-              <CtaGhost className="flex-1" onClick={close}>
-                Mégse
-              </CtaGhost>
+              <button type="button" className="uvl-ghost" onClick={close}>Mégse</button>
             )}
-            <CtaPrimary className="flex-1" disabled={saving} onClick={() => persist(videoUrl.trim() || null, close)}>
-              <Icon name="check" size={14} /> Mentés
-            </CtaPrimary>
+            <button type="button" className="uvl-cta" disabled={saving} onClick={() => persist(videoUrl.trim() || null, close)}>
+              <Icon3D name="t-tick" size={20} />Mentés
+            </button>
           </div>
-          <div style={{ height: 8 }} />
-        </>
+        </div>
       )}
     </Sheet>
   )

@@ -95,10 +95,17 @@ test('menu Boops blink and look around, with orange Nap and blue Train', async (
     const gaze = pupil.getAnimations()[0]
     if (!blink || !gaze) return null
     blink.pause(); gaze.pause()
-    blink.currentTime = 0; gaze.currentTime = 0
+    // Every Boop carries its own phase (U10: a negative `--boop-delay`, so a screenful never blinks in
+    // unison). Seek to a keyframe time WITHIN the iteration: progress = currentTime - delay.
+    const at = (a: Animation, t: number) => {
+      const { delay = 0, duration } = a.effect!.getTiming()
+      const d = Number(duration)
+      a.currentTime = (((t + delay) % d) + d) % d
+    }
+    at(blink, 0); at(gaze, 0)
     const open = new DOMMatrix(getComputedStyle(eye).transform).d
     const center = new DOMMatrix(getComputedStyle(pupil).transform).e
-    blink.currentTime = 2580; gaze.currentTime = 2800
+    at(blink, 2580); at(gaze, 2800)
     return { open, closed: new DOMMatrix(getComputedStyle(eye).transform).d,
       center, side: new DOMMatrix(getComputedStyle(pupil).transform).e }
   })

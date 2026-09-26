@@ -228,7 +228,7 @@ export function GraphView({
                     r={isSelected ? n.radius + 3 : n.radius}
                     fill={KIND_COLOR[n.kind] ?? FALLBACK_KIND_COLOR}
                     opacity={isCandidate ? 0.45 : 1}
-                    stroke={n.node.deleted ? '#A2958A' : (isSelected ? '#2B2118' : undefined)}
+                    stroke={n.node.deleted ? 'var(--text-muted)' : (isSelected ? 'var(--text-primary)' : undefined)}
                     strokeWidth={n.node.deleted || isSelected ? 2.5 : 0}
                     strokeDasharray={n.node.deleted ? '3 3' : undefined}
                   />
@@ -244,7 +244,7 @@ export function GraphView({
             <span key={k} title={memoryTermLabel(k).hint}><i style={{ background: KIND_COLOR[k] }} />{memoryTermLabel(k).label}</span>
           ))}
           <span style={{ opacity: 0.6 }}><i style={{ background: EDGE_STROKE, opacity: 0.45 }} />candidate (fakó)</span>
-          <span><i style={{ background: 'transparent', border: '2px dashed #A2958A', borderRadius: '50%' }} />törölt (szaggatott perem)</span>
+          <span><i style={{ background: 'transparent', border: '2px dashed var(--text-muted)', borderRadius: '50%' }} />törölt (szaggatott perem)</span>
           <span>— él: <span style={{ borderBottom: `2px solid ${CONFLICTS_STROKE}`, paddingBottom: 1 }}>┅</span> {memoryTermLabel('CONFLICTS').label} (szaggatott)</span>
         </div>
 
@@ -261,7 +261,7 @@ export function GraphView({
           })}
         </div>
 
-        <div className="ad-note9" style={{ fontSize: 9.5, color: '#A2958A', marginTop: 8 }}>
+        <div className="ad-note9" style={{ fontSize: 9.5, color: 'var(--text-muted)', marginTop: 8 }}>
           A layout egyszer fut le és utána befagy — húzáskor csak a fogott csomópont mozdul, nincs újraszimuláció.
         </div>
       </AdminTile>

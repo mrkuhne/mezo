@@ -56,7 +56,7 @@ export function CharacterEvidenceSheet({
       onClose={onClose}
       label="Miből látszik?"
       eyebrow="FORRÁS ÉS ÉRTELMEZÉS"
-      tint="#C9962E"
+      tint="var(--dv-lav)"
       art={<PersonaOrb expertKey={expertKey ?? 'mezo'} size={40} />}
     >
       <div ref={content} className="kr-evidence-content">

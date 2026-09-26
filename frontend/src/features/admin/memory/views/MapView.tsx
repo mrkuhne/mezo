@@ -30,9 +30,9 @@ export const SOURCE_KIND_COLOR: Record<string, string> = {
   memory_item: '#4E8FB8',
 }
 const FALLBACK_SOURCE_COLOR = '#8B7E6E'
-const SELECTED_STROKE = '#2B2118'
-const NEIGHBOR_STROKE = '#345E78'
-const QUERY_STROKE = '#A84A26'
+const SELECTED_STROKE = 'var(--text-primary)'
+const NEIGHBOR_STROKE = 'var(--dv-sky)'
+const QUERY_STROKE = 'var(--dv-coral)'
 const VIEWBOX = { width: 760, height: 340 }
 
 type MapState =
@@ -392,7 +392,7 @@ export function MapView({
         </div>
 
         {star && (
-          <div className="ad-note9" style={{ fontSize: 9.5, color: '#A2958A', marginTop: 4 }}>
+          <div className="ad-note9" style={{ fontSize: 9.5, color: 'var(--text-muted)', marginTop: 4 }}>
             {star.estimated
               ? 'A lekérdezés helye becsült — a jelöltek térkép-pontjainak súlypontja, nem valódi vetület.'
               : 'A lekérdezés helye a UMAP transform()-jával lett kiszámolva ugyanabból a modellből.'}
@@ -408,7 +408,7 @@ export function MapView({
           <span><i style={{ background: '#C9962E' }} />habit_day / habit_tick</span>
           <span><i style={{ background: '#C46FA0' }} />chat_message</span>
           <span style={{ opacity: 0.7 }}>
-            <i style={{ background: 'transparent', border: '2px solid #6E6257', borderRadius: '50%' }} />
+            <i style={{ background: 'transparent', border: '2px solid var(--text-secondary)', borderRadius: '50%' }} />
             suppressed / superseded (üres)
           </span>
           <span>
@@ -417,7 +417,7 @@ export function MapView({
           </span>
         </div>
 
-        <div className="ad-note9" style={{ fontSize: 9.5, color: '#A2958A', marginTop: 8 }}>
+        <div className="ad-note9" style={{ fontSize: 9.5, color: 'var(--text-muted)', marginTop: 8 }}>
           A térképen látott távolság a 2D-re hajtogatott vetület, nem a valódi vektor-távolság — a
           jobb oldali panel a pgvector valódi szomszédait mutatja.
         </div>

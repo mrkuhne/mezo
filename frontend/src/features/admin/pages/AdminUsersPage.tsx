@@ -165,7 +165,7 @@ export function AdminUsersPage() {
 
   return (
     <MozaikPage tone="coral">
-      <PageHero name="Emberek" sub={`${users.data.length} fiók`} />
+      <PageHero glass eyebrow="Admin" name="Emberek" sub={`${users.data.length} fiók`} />
       <PageBody>
         <EntranceGroup>
           {view === 'cards' && (
@@ -273,7 +273,7 @@ export function AdminUsersPage() {
                         <tr key={u.id} onClick={() => navigate(`/admin/users/${u.id}`)}>
                           <td>
                             <div className="ad-cell">
-                              <span className="ad-avatar" style={{ background: '#A84A26' }}>{u.name.charAt(0).toUpperCase()}</span>
+                              <span className="ad-avatar" style={{ background: 'var(--dv-coral)' }}>{u.name.charAt(0).toUpperCase()}</span>
                               <div>
                                 <div style={{ fontWeight: 600 }}>{u.name}</div>
                                 <div className="ad-mut" style={{ fontSize: 10 }}>{u.email}</div>

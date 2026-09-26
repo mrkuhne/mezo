@@ -23,13 +23,10 @@ const CALL_KINDS = [
   'CHAT', 'CHAT_STREAM', 'VISION', 'SMART', 'TOOL', 'TRANSCRIBE', 'EMBED_DOC', 'EMBED_QUERY',
 ] as const
 
-function chipStyle(active: boolean): React.CSSProperties {
-  return {
-    flexShrink: 0, fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '6px 11px',
-    cursor: 'pointer', border: '1px solid var(--border-subtle)',
-    background: active ? 'var(--text-primary)' : 'var(--surface-1)',
-    color: active ? 'var(--surface-1)' : 'var(--text-secondary)',
-  }
+// Üveg (mezo-me75u.10): the filter chips wear the admin chip vocabulary (`.ad-chip`, `.on` lit)
+// from the `uveg reteg admin` block instead of an inline light/dark-ink skin.
+function chipClass(active: boolean): string {
+  return active ? 'ad-chip on' : 'ad-chip'
 }
 
 export function AiCallFilters({ totals, filters, onChange }: {
@@ -60,10 +57,10 @@ export function AiCallFilters({ totals, filters, onChange }: {
   const chipLabel = (text: string, n: number | undefined) => (n == null ? text : `${text} ${n}`)
 
   return (
-    <div className="col" style={{ gap: 6, padding: '12px 0 2px' }}>
+    <div className="col ad-callfilters" style={{ gap: 6, padding: '12px 0 2px' }}>
       <div className="row" style={{ gap: 6, overflowX: 'auto' }}>
         {filters.day && (
-          <button type="button" style={chipStyle(true)} onClick={() => {
+          <button type="button" className={chipClass(true)} onClick={() => {
             const { day, ...rest } = filters
             onChange(rest)
           }}>
@@ -71,37 +68,37 @@ export function AiCallFilters({ totals, filters, onChange }: {
           </button>
         )}
         {filters.feature && (
-          <button type="button" style={chipStyle(true)} onClick={() => {
+          <button type="button" className={chipClass(true)} onClick={() => {
             const { feature, ...rest } = filters
             onChange(rest)
           }}>
             {filters.feature} ✕
           </button>
         )}
-        <button type="button" style={chipStyle(!filters.status)} onClick={() => {
+        <button type="button" className={chipClass(!filters.status)} onClick={() => {
           const { status, ...rest } = filters
           onChange(rest)
         }}>
           Mind
         </button>
-        <button type="button" style={chipStyle(filters.status === 'SUCCESS')} onClick={() => toggleStatus('SUCCESS')}>
+        <button type="button" className={chipClass(filters.status === 'SUCCESS')} onClick={() => toggleStatus('SUCCESS')}>
           {chipLabel('Siker', totals?.successCount)}
         </button>
-        <button type="button" style={chipStyle(filters.status === 'ERROR')} onClick={() => toggleStatus('ERROR')}>
+        <button type="button" className={chipClass(filters.status === 'ERROR')} onClick={() => toggleStatus('ERROR')}>
           {chipLabel('Hiba', totals?.errorCount)}
         </button>
-        <button type="button" style={chipStyle(filters.status === 'CANCELLED')} onClick={() => toggleStatus('CANCELLED')}>
+        <button type="button" className={chipClass(filters.status === 'CANCELLED')} onClick={() => toggleStatus('CANCELLED')}>
           {chipLabel('Megszakadt', totals?.cancelledCount)}
         </button>
 
         {filters.callKind ? (
-          <button type="button" style={chipStyle(true)} onClick={clearKind}>
+          <button type="button" className={chipClass(true)} onClick={clearKind}>
             {callKindLabel(filters.callKind)} ✕
           </button>
         ) : (
           <button
             type="button"
-            style={chipStyle(false)}
+            className={chipClass(false)}
             aria-expanded={kindsOpen}
             onClick={() => setKindsOpen((open) => !open)}
           >
@@ -113,7 +110,7 @@ export function AiCallFilters({ totals, filters, onChange }: {
       {kindsOpen && !filters.callKind && (
         <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
           {CALL_KINDS.map((kind) => (
-            <button key={kind} type="button" style={chipStyle(false)} onClick={() => pickKind(kind)}>
+            <button key={kind} type="button" className={chipClass(false)} onClick={() => pickKind(kind)}>
               {callKindLabel(kind)}
             </button>
           ))}

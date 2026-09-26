@@ -3,6 +3,7 @@ import { useMe } from '@/data/hooks'
 import { useAdminAlerts } from '@/data/admin/adminInsightsHooks'
 import { featureLabel } from '@/features/admin/lib/labels'
 import { cn } from '@/shared/lib/cn'
+import { Icon3D } from '@/shared/ui/clay'
 
 // Small Hungarian ordinals for the headline count — beyond 5 the raw numeral reads fine.
 const HUN_COUNT: Record<number, string> = { 1: 'Egy', 2: 'Két', 3: 'Három', 4: 'Négy', 5: 'Öt' }
@@ -25,23 +26,29 @@ export function AdminStatusBand() {
 
   if (alerts.isError) {
     return (
+      // Üveg (mezo-me75u.10): unavailable stays a NEUTRAL flat cell (never green, never glass) —
+      // a failed check is "unknown", not an alarm; the ⓘ icon carries it.
       <div className="ad-status off">
-        <span className="ico off" aria-hidden />
+        <Icon3D name="t-info" size={24} className="ad-status-ic" />
         <span className="headline">Az ellenőrzés most nem fut</span>
       </div>
     )
   }
 
   if (alerts.isPending) {
-    return <div className="ad-status off" aria-busy="true" aria-label="Betöltés…" />
+    return (
+      <div className="ad-status off is-pending" aria-busy="true" aria-label="Betöltés…">
+        <span className="headline" aria-hidden="true">Betöltés…</span>
+      </div>
+    )
   }
 
   const items = alerts.data.alerts
 
   if (items.length === 0) {
     return (
-      <div className="ad-status allok">
-        <span className="ico ok" aria-hidden />
+      <div className="ad-status allok glass">
+        <Icon3D name="t-shield" size={34} className="ad-status-ic" />
         <h3>Minden rendben</h3>
       </div>
     )
@@ -52,7 +59,11 @@ export function AdminStatusBand() {
     : `${HUN_COUNT[items.length] ?? items.length} dolog figyelmet kér`
 
   return (
-    <div className="ad-status">
+    // Primary object of the page: a glass band whose ONE accent is the worst severity present.
+    <div
+      className="ad-status glass"
+      data-worst={items.some((a) => a.severity === 'bad') ? 'bad' : items.some((a) => a.severity === 'warn') ? 'warn' : 'info'}
+    >
       <div className="headline">{headline}</div>
       <div className="ad-alertrow">
         {items.map((a) => (

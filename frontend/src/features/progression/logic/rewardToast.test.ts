@@ -120,3 +120,9 @@ test('lánc-kontextus nélkül nincs mérföldkő (chainTotal 0)', () => {
   })
   expect('meta' in t).toBe(false)
 })
+
+test('a forrás (ikon-választó) a builderből jön: szokás, küldetés, tevékenység (mezo-me75u.10)', () => {
+  expect(buildHabitRewardToast({ title: 'Pipa', chainDone: 0, chainTotal: 0, xp: 5 }).source).toBe('habit')
+  expect(buildQuestRewardToast({ title: 'Séta' }).source).toBe('quest')
+  expect(buildQuestRewardToast({ title: 'Favágás', eyebrow: 'Naplózva', source: 'activity' }).source).toBe('activity')
+})

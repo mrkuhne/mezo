@@ -5,7 +5,7 @@ import { AdminStatusBand } from '@/features/admin/components/AdminStatusBand'
 import { AdminTile, type AdminTileQuery } from '@/features/admin/components/AdminTile'
 import { Sparkline } from '@/features/admin/components/Sparkline'
 import { TopListTile } from '@/features/admin/components/TopListTile'
-import { ClaySpot } from '@/shared/ui/clay'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MosaicDesktop, MozaikPage, PageBody, PageHero } from '@/shared/ui/mozaik'
 import { huInt, usd } from '@/shared/lib/huNum'
@@ -87,7 +87,7 @@ export function AdminOverviewPage() {
 
   return (
     <MozaikPage tone="sky">
-      <PageHero name="Pulzus" sub="a telepítés életjelei" />
+      <PageHero glass eyebrow="Admin" name="Pulzus" sub="a telepítés életjelei" />
       <PageBody>
         <EntranceGroup>
           <MosaicDesktop>
@@ -110,17 +110,17 @@ export function AdminOverviewPage() {
             </AdminTile>
 
             <AdminTile query={ov} wash="gold" eyebrow="Költés ma" span={3}>
-              <Poster spot="s-medal" big={usd(ov.data.costTodayUsd)} unit=""
+              <Poster spot="t-coin" big={usd(ov.data.costTodayUsd)} unit=""
                 foot={<span className={`ad-delta ${costDelta.direction}`}>{costDeltaCopy(costDelta)}</span>} />
             </AdminTile>
 
             <AdminTile query={ov} wash="coral" eyebrow="Aktív ma" span={3}>
-              <Poster spot="s-energia" big={huInt(ov.data.activeToday)} unit={`/ ${ov.data.userCount}`}
+              <Poster spot="t-people" big={huInt(ov.data.activeToday)} unit={`/ ${ov.data.userCount}`}
                 foot={<span className="ad-mut">7 nap: {ov.data.active7d} · 30 nap: {ov.data.active30d}</span>} />
             </AdminTile>
 
             <AdminTile query={memQuery} wash="lav" eyebrow="Memória" span={3}>
-              <Poster spot="s-hajtas" big={huInt(ov.data.memoryItemCount)} unit="emlék"
+              <Poster spot="t-layers" big={huInt(ov.data.memoryItemCount)} unit="emlék"
                 foot={<>
                   <span className="ad-mut">{huInt(ov.data.vectorCount)} vektor</span>
                   {memoryStuck && <span className="ad-tag bad">elakadva</span>}
@@ -130,7 +130,7 @@ export function AdminOverviewPage() {
             <AdminTile query={costTrendQuery} wash="gold" eyebrow="Költés 30 nap" span={6}>
               <div className="ad-cell" style={{ alignItems: 'flex-start', justifyContent: 'space-between' }}>
                 <div className="ad-big">{usd(cm30.data.totalUsd)}<u>összesen</u></div>
-                <ClaySpot name="s-hegycel" size={48} />
+                <Icon3D name="t-trend" size={48} />
               </div>
               <Sparkline points={ov.data.costSeries.map((d) => d.amountUsd)} tone="gold" ariaLabel="Költés 30 nap" />
               <div className="ad-legend">
@@ -146,7 +146,7 @@ export function AdminOverviewPage() {
             <AdminTile query={ov} wash="sage" eyebrow="Aktivitás 30 nap" span={6}>
               <div className="ad-cell" style={{ alignItems: 'flex-start', justifyContent: 'space-between' }}>
                 <div className="ad-big">{huInt(domainDailyTotals.reduce((a, b) => a + b, 0))}<u>sor</u></div>
-                <ClaySpot name="s-edzes" size={48} />
+                <Icon3D name="t-steps" size={48} />
               </div>
               <Sparkline points={domainDailyTotals} tone="sage" ariaLabel="Aktivitás 30 nap" />
               <div className="ad-legend">
@@ -193,13 +193,15 @@ export function AdminOverviewPage() {
   )
 }
 
-const LEGEND_COLORS_GOLD = ['#C9962E', '#D9A64B', '#E8C27A', '#A2958A']
-const LEGEND_COLORS_SAGE = ['#6E8B5E', '#8CA97C', '#AFC79E', '#A2958A']
+// Üveg (mezo-me75u.10): the legend ramps are the dark accent and two lighter tints of it, the
+// last slot muted — the same „one accent per tile” the glass tile wears.
+const LEGEND_COLORS_GOLD = ['var(--dv-amber)', 'color-mix(in srgb, var(--dv-amber) 62%, #fff)', 'color-mix(in srgb, var(--dv-amber) 45%, #6b5a45)', 'var(--text-muted)']
+const LEGEND_COLORS_SAGE = ['var(--dv-sage)', 'color-mix(in srgb, var(--dv-sage) 62%, #fff)', 'color-mix(in srgb, var(--dv-sage) 45%, #3f4a40)', 'var(--text-muted)']
 
-function Poster({ spot, big, unit, foot }: { spot: Parameters<typeof ClaySpot>[0]['name']; big: string; unit: string; foot: ReactNode }) {
+function Poster({ spot, big, unit, foot }: { spot: Icon3DName; big: string; unit: string; foot: ReactNode }) {
   return (
     <div className="ad-poster">
-      <div className="ad-spot spot"><ClaySpot name={spot} size={44} /></div>
+      <div className="ad-spot spot"><Icon3D name={spot} size={44} /></div>
       <div className="ad-big">{big}{unit && <u>{unit}</u>}</div>
       <div className="foot">{foot}</div>
     </div>
@@ -216,9 +218,9 @@ function SystemOkRing({ size = 56 }: { size?: number }) {
     <div className="ad-ring" style={{ '--c': c.toFixed(1), '--off': '0' } as React.CSSProperties}>
       <svg width={size} height={size}>
         <circle className="trk" cx={size / 2} cy={size / 2} r={r} strokeWidth={7} />
-        <circle className="arc" cx={size / 2} cy={size / 2} r={r} stroke="#4E6B42" strokeWidth={7} />
+        <circle className="arc" cx={size / 2} cy={size / 2} r={r} stroke="var(--dv-sage)" strokeWidth={7} style={{ color: 'var(--dv-sage)' }} />
       </svg>
-      <div className="mid"><ClaySpot name="s-medal" size={22} /></div>
+      <div className="mid"><Icon3D name="t-shield" size={24} /></div>
     </div>
   )
 }

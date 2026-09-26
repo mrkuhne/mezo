@@ -2,7 +2,7 @@
 title: Mezo-kalauz (in-app page guides)
 type: feature
 status: mixed
-updated: 2026-09-24
+updated: 2026-09-26
 tags: [tutorial, onboarding, frontend, backend]
 key_files:
   - frontend/src/features/tutorial
@@ -77,7 +77,7 @@ The registry points persistent preferences to the central `/settings` menu. Trai
   navigates away before it fires).
 - **The header "?"** (`.nap-roundbtn.nap-q`, `AppHeader.tsx`) — renders **only** when the current
   route has a registry entry (honest state: no dead button on guide-less pages), always first in
-  the button row so the daypart switch's presence never shifts it. Opens the current route's guide
+  the button row. The header has **no daypart switch** any more (üveg bible §7.1). Opens the current route's guide
   on tap; carries `.is-open` while its sheet is open and `.nap-offnow` when it is a `T3` guide not
   yet seen.
 - **The sheet** (`KalauzSheet`) — up to five cards, one question type each (`Mi ez?` / `Mire jó?` /
@@ -87,6 +87,14 @@ The registry points persistent preferences to the central `/settings` menu. Trai
   actually exists on the page) that **peeks** the sheet — collapses it to a thin bottom bar,
   clears the backdrop, and darkens everything except the anchored element via a portaled
   `.kalauz-spot` box. Any tap (bar, backdrop, anchor) un-peeks.
+- **The look (üvegesítés U10, `mezo-me75u.10`)** — the sheet is the kit's gold `<Sheet glass>`:
+  eyebrow „KALAUZ · {label}”, the numbered question chip, the card's art as a big Titanium 3D icon
+  on a frameless gold halo (clay names map through `CLAY_TO_3D` or the sheet's own `KALAUZ_3D`
+  table; an unmapped clay name falls back to clay), upright voice copy, a flat gold `fogalom` cell,
+  flat `kapcsolat` chips, and lit gold / ghost pills in the foot. In peek mode the sheet's visible
+  strip is the gold glass bar (`t-eye` well, the card's voice, „Koppints bárhova.”, Vissza) and the
+  spot is a gold ring on a `rgba(0,0,0,.72)` veil that pulses only without reduced motion. The
+  registry's `orb` field is no longer drawn.
 - **Kihagyom / ✕ / Escape vs "Értem, kezdjük"**: both close the sheet, but only the CTA marks the
   guide **completed** (`completedAt`); the others record **`dismissedAtStep`** (the card index at
   close). Neither changes whether the guide counts as *seen* — see §3.
@@ -98,9 +106,15 @@ The registry points persistent preferences to the central `/settings` menu. Trai
 ### T0 — the first-launch welcome
 
 - **`WELCOME`** (`frontend/src/features/tutorial/registry/welcome.ts`) — `WELCOME_ID = 'welcome'`,
-  `WELCOME_VERSION = 1`, four steps: `napszak` (the three daypart faces), `tabbar` (all five tabs),
-  `log` (the real `QuickInputSheet` tile grid + "Mondd el Mezónak" row), `sugo` (a pointer to the
-  header "?"). It is deliberately **outside `KALAUZ_REGISTRY`** — a `/nap`-routed entry there would
+  `WELCOME_VERSION = 1`, four steps: `napszak` (the day's three stages — reggel indítunk, napközben
+  logolunk és edzünk, este lezárjuk — shown as three glass tiles with 3D icons under the living
+  Mezo Boop), `tabbar` (today's bottom menu: the living Boop bottom-left opens the domain switcher,
+  beside it the domain's four tabs; the demo shows the five domains as living Boops and each one's
+  sentence lists its four `navModel` tabs), `log` (the real quick-log tile grid + "Mondd el
+  Mezónak" row behind the `+`), `sugo` (a pointer to the header "?"). The U10 copy rewrite kept
+  `WELCOME_VERSION` at 1 on purpose, so the welcome does not re-open for anyone who has seen it.
+  The Mai page does **not** re-arrange itself by daypart (only the evening Napzárás card appears in
+  its window), so step 1 no longer promises that. It is deliberately **outside `KALAUZ_REGISTRY`** — a `/nap`-routed entry there would
   collide with the `nap` guide (identical pattern, which the registry route-lint rejects), and the four steps
   are tappable demos `KalauzCard`'s five kinds can't express. Its seen-key still lands in the same
   `tutorial_progress` map (the backend is key-agnostic), so this needs **no backend/contract

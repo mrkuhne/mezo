@@ -11,7 +11,7 @@ import { seedKalauzSeen } from './kalauzSeed'
 
 test.beforeEach(async ({ page }) => { await seedKalauzSeen(page) })
 
-test('a startup betölti a telefon-képernyőt, egyszer lélegzik, majd átadja a Mai-t', async ({ page }) => {
+test('a startup betölti a telefon-képernyőt, az üveggömb lebeg, majd átadja a Mai-t', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.clock.install({ time: new Date('2026-09-15T12:00:00+02:00') })
@@ -21,8 +21,9 @@ test('a startup betölti a telefon-képernyőt, egyszer lélegzik, majd átadja 
   await expect(splash).toBeVisible()
   await page.waitForLoadState('networkidle')
 
-  // A jel az agyag-gömb, nem a Titán jelenet — se canvas, se a 3D SVG változata.
-  await expect(splash.locator('.startup-splash__mark use')).toHaveAttribute('href', '#s-orb')
+  // A jel az üveggömb (U10, mezo-me75u.10): levendula folyadékkal, nem a Titán jelenet — se canvas, se 3D SVG.
+  await expect(splash.locator('.startup-splash__orb.glass')).toHaveCount(1)
+  await expect(splash.locator('.startup-splash__liquid')).toHaveCount(1)
   await expect(splash.locator('canvas')).toHaveCount(0)
   await expect(splash.locator('.titan-svg')).toHaveCount(0)
   await expect(splash.locator('.startup-splash__wordmark')).toHaveText('boop')
@@ -30,11 +31,11 @@ test('a startup betölti a telefon-képernyőt, egyszer lélegzik, majd átadja 
   expect(await splash.boundingBox()).toEqual({ x: 0, y: 0, width: 390, height: 844 })
   await expect(page.locator('.startup-content')).toHaveAttribute('inert', '')
 
-  // Egyetlen lassú lélegzet, és a kivezetés pontosan a három másodperc VÉGÉN kezdődik.
-  expect(await page.locator('.startup-splash__mark').evaluate((element) => {
-    const style = getComputedStyle(element)
-    return [style.animationName, style.animationDuration, style.animationIterationCount]
-  })).toEqual(['startup-breath', '3s', '1'])
+  // A gömb lassan lebeg, a folyadék hullámzik, és a kivezetés pontosan a három másodperc VÉGÉN kezdődik.
+  expect(await page.locator('.startup-splash__orb').evaluate((element) => getComputedStyle(element).animationName))
+    .toContain('startup-float')
+  expect(await page.locator('.startup-splash__wave').evaluate((element) => getComputedStyle(element).animationName))
+    .toBe('uv-wave')
   expect(await page.locator('.startup-stage').evaluate((element) => {
     const style = getComputedStyle(element)
     return [style.animationDuration, style.animationDelay]
@@ -63,7 +64,7 @@ test('asztali szélességen a telefon-képernyőn belül marad, csökkentett moz
   expect(await splash.boundingBox()).toEqual(await phoneScreen.boundingBox())
   expect((await splash.boundingBox())!.width).toBe(416)
   // Csökkentett mozgás: a jel ott van, de EGYETLEN animáció sem fut — a kivezetés sem.
-  await expect(splash.locator('.startup-splash__mark use')).toHaveCount(1)
+  await expect(splash.locator('.startup-splash__orb.glass')).toHaveCount(1)
   expect(await splash.evaluate((element) => element.getAnimations({ subtree: true }).length)).toBe(0)
   await page.clock.fastForward(3000)
   await expect(splash).toHaveCount(0)
