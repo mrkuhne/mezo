@@ -14,6 +14,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -68,6 +69,13 @@ public class MealEntity extends OwnedEntity {
     @NotNull
     @Column(nullable = false)
     private String slot; // breakfast|lunch|dinner|snack (DB CHECK)
+
+    /** A tervező ajánlott ablaka (mezo-6g52f) — mindkettő null vagy mindkettő kitöltött (DB CHECK). */
+    @Column(name = "window_from")
+    private LocalTime windowFrom;
+
+    @Column(name = "window_to")
+    private LocalTime windowTo;
 
     @Column
     private String title;
