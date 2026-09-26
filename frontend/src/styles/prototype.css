@@ -26061,6 +26061,42 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .ppl-detail .ppl-evt b { display: block; font-size: 13.5px; font-weight: 600; }
 .ppl-detail .ppl-evtmt { font-size: 11px; color: var(--text-muted); }
 .ppl-detail .ppl-chev { flex: 0 0 auto; font-size: 20px; line-height: 1; color: var(--text-muted); }
+/* S3 (mezo-d6ivw.3) — normalizált tények: soronként toggle + törlés, EGY lavender glass kártyában */
+.ppl-detail .ppl-pfcard.glass { --c: var(--dv-lav); display: block; padding: 4px 14px; border-radius: 22px; margin-bottom: 11px; }
+.ppl-detail .ppl-pfrow { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; }
+.ppl-detail .ppl-pfrow + .ppl-pfrow { border-top: 1px solid var(--divider); }
+.ppl-detail .ppl-pfbody { flex: 1; min-width: 0; }
+.ppl-detail .ppl-pfmeta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ppl-detail .ppl-pfkind {
+  font-size: 8.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--dv-lav) 80%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-lav) 13%, transparent);
+  border-radius: 7px; padding: 2px 7px;
+}
+.ppl-detail .ppl-pfkind-sensitivity {
+  color: color-mix(in srgb, var(--dv-rose) 82%, var(--text-primary));
+  background: color-mix(in srgb, var(--dv-rose) 13%, transparent);
+}
+.ppl-detail .ppl-pfnew {
+  font-size: 8.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--dv-mint, #7fd0b0); background: color-mix(in srgb, var(--dv-mint, #7fd0b0) 14%, transparent);
+  border-radius: 7px; padding: 2px 7px;
+}
+.ppl-detail .ppl-pfsrc { font-size: 10px; color: var(--text-muted); }
+.ppl-detail .ppl-pftx { margin: 4px 0 0; font-size: 13px; line-height: 1.4; color: var(--text-primary); }
+.ppl-detail .ppl-pfacts { display: flex; align-items: center; gap: 8px; flex: none; padding-top: 2px; }
+.ppl-detail .ppl-pftoggle {
+  width: 34px; height: 20px; border-radius: 999px; border: none; cursor: pointer; padding: 2px;
+  background: color-mix(in srgb, var(--text-muted) 30%, transparent); display: flex; align-items: center;
+  transition: background 0.2s ease;
+}
+.ppl-detail .ppl-pftoggle.on { background: color-mix(in srgb, var(--dv-lav) 65%, transparent); justify-content: flex-end; }
+.ppl-detail .ppl-pfknob { width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); }
+.ppl-detail .ppl-pfdel {
+  border: none; background: none; cursor: pointer; font-family: inherit;
+  font-size: 13px; line-height: 1; color: var(--text-muted); padding: 3px 5px;
+}
+
 /* known facts: flat lavender chips, no card */
 .ppl-detail .ppl-factcard { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; }
 .ppl-detail .ppl-fact {

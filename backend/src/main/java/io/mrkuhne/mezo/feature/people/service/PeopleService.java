@@ -334,7 +334,8 @@ public class PeopleService {
         return response;
     }
 
-    /** Az AI-kurálta mezők (knownFacts/ties/affectTrend) szándékosan érintetlenek. */
+    /** A legacy/seed narratív mezők (knownFacts/ties/affectTrend) read-only-k — nincs írójuk,
+     *  szándékosan érintetlenek; az élő tények az S3-as person_fact táblában élnek. */
     private void applyEditableFields(PersonEntity p, String name, List<String> aliases,
         String relationship, String relationshipHu, String affectBaseline,
         String contactCadenceLabel, String notes) {

@@ -24,7 +24,7 @@
 // glass card with its eyebrow above it: the mood arc in the person's tone, the contexts rose,
 // the graph edges lavender (flat rows inside), the known facts as flat lavender chips (no card),
 // the timeline rose (flat rows inside); „Log most" is the lit rose pill with the t-mic.
-import { useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { useNavigate, useParams, Navigate } from 'react-router-dom'
 import { MozaikPage, PageHead, PageBody, StatStrip, StatCell } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -34,7 +34,22 @@ import { contextBreakdown, trendAxisLabels, trendHeights } from '@/features/me/l
 import { TONE_META, CTX_META, SRC_META, GRAPH_KIND_META, GRAPH_KIND_FALLBACK, toneColor } from '@/features/me/logic/peopleVisuals'
 import { PersonLogSheet } from '@/features/me/sheets/PersonLogSheet'
 import { PersonEditSheet } from '@/features/me/sheets/PersonEditSheet'
-import type { Mention } from '@/data/types'
+import type { Mention, PersonFact, PersonFactKind } from '@/data/types'
+
+// S3 (mezo-d6ivw.3): a normalizált tények fajta-címkéi a kártyán.
+const FACT_KIND_LABEL: Record<PersonFactKind, string> = {
+  preference: 'kedveli / nem szereti',
+  relationship_state: 'kapcsolat most',
+  shared_activity: 'közös',
+  important_date: 'fontos dátum',
+  sensitivity: 'érzékeny',
+}
+
+function factProvenance(f: PersonFact): string {
+  const src = f.sourceKind === 'chat_turn' ? 'chatből' : 'éjszakai jegyzetből'
+  const date = new Date(f.createdAt).toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' })
+  return `${src} · ${date}`
+}
 
 // 44px prototype bar-area height × 1.18 frame scale ≈ 52; the trend bars themselves
 // read `trendHeights(trend, TREND_MAX_PX)` for their scaleY(1) target height.
@@ -68,11 +83,23 @@ function DetTimelineRow({ mention, delayMs }: { mention: Mention; delayMs?: numb
 export function PersonDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { people, mentions, logMention, isPending } = usePeople()
+  const { people, mentions, logMention, isPending, undoFact, toggleFact, markFactsSeen } = usePeople()
   const [logOpen, setLogOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
 
   const person = people.find((p) => p.id === id)
+
+  // S3: az „új" jelölésű (jellemzően éjszakai) tények első megtekintéskor látottá válnak. A
+  // badge-hez az ELSŐ betöltéskori állapotot pillanatképezzük, így a jelölés ezen az oldalon
+  // még látszik akkor is, amikor a bélyegzés (markFactsSeen) már megtörtént.
+  const [unseenIds, setUnseenIds] = useState<ReadonlySet<string> | null>(null)
+  useEffect(() => {
+    if (person && unseenIds === null) {
+      const fresh = new Set(person.facts.filter((f) => !f.seen).map((f) => f.id))
+      setUnseenIds(fresh)
+      if (fresh.size > 0) markFactsSeen(person.id)
+    }
+  }, [person, unseenIds, markFactsSeen])
 
   if (!person) {
     // Pending ≠ missing — never bounce away while the bootstrap is still in flight.
@@ -202,16 +229,55 @@ export function PersonDetailPage() {
             </>
           )}
 
-          {person.knownFacts.length > 0 && (
+          {(person.facts.length > 0 || person.knownFacts.length > 0) && (
             <>
               <div className="ppl-lsec rise">
                 <span className="mz-eyebrow">Amit Mezo tud</span>
+                {person.facts.length > 0 && <span className="ppl-lcnt">{person.facts.length}</span>}
               </div>
-              <div className="ppl-factcard rise">
-                {person.knownFacts.map((fact, i) => (
-                  <span key={i} className="ppl-fact">{fact}</span>
-                ))}
-              </div>
+              {person.facts.length > 0 && (
+                <div className="ppl-pfcard glass rise" style={{ '--i': 5 } as CSSProperties}>
+                  {person.facts.map((f) => (
+                    <div key={f.id} className="ppl-pfrow">
+                      <div className="ppl-pfbody">
+                        <div className="ppl-pfmeta">
+                          <span className={`ppl-pfkind ppl-pfkind-${f.kind}`}>{FACT_KIND_LABEL[f.kind]}</span>
+                          {unseenIds?.has(f.id) && <span className="ppl-pfnew">új</span>}
+                          <span className="ppl-pfsrc">{factProvenance(f)}</span>
+                        </div>
+                        <p className="ppl-pftx">{f.text}</p>
+                      </div>
+                      <div className="ppl-pfacts">
+                        <button
+                          type="button"
+                          className={`ppl-pftoggle${f.includeInPrompt ? ' on' : ''}`}
+                          role="switch"
+                          aria-checked={f.includeInPrompt}
+                          aria-label={`Használja a beszélgetésekben: ${f.text}`}
+                          onClick={() => toggleFact(person.id, f.id, !f.includeInPrompt)}
+                        >
+                          <span className="ppl-pfknob" aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className="ppl-pfdel"
+                          aria-label={`Tény törlése: ${f.text}`}
+                          onClick={() => undoFact(person.id, f.id)}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {person.knownFacts.length > 0 && (
+                <div className="ppl-factcard rise">
+                  {person.knownFacts.map((fact, i) => (
+                    <span key={i} className="ppl-fact">{fact}</span>
+                  ))}
+                </div>
+              )}
             </>
           )}
 

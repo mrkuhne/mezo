@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-25
+updated: 2026-09-26
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -258,6 +258,18 @@ The sections below describe its current behavior and the supporting components.
   LLM call over the turn transcript (strict-JSON answer, defensively parsed), normalized
   string-dedupe against confirmed facts + pending candidates, per-turn cap → undecided
   `learned_fact` rows. A broken answer means zero candidates, never a broken turn.
+  **S3 (`mezo-d6ivw.3`) added the person-directed sibling on the same event:**
+  `PersonFactExtractionListener` → `PersonFactExtractionService` (slug
+  `companion_person_fact_extract`, marker `SZEMÉLYTÉNY`) extracts durable facts about
+  MENTIONED, already-known active persons (5 kinds; exactly-one hu-fold name/alias match or the
+  fact is dropped — never a guess) and writes through the people-owned `PersonFactService` port
+  (`ObjectProvider`, PEOPLE_SWITCH). The nightly `PersonExtractionService` emits the same
+  fact shape as a third task of its single LLM call (`facts` array), persisted after
+  `persistNight` in its own TX so a fact failure never sinks the night. Auto-save, no queue:
+  the chat reply grows a post-hoc "Megjegyeztem" chip with undo (FE polls
+  `GET /api/people/facts?sourceRefKind=chat_turn&sourceRefId={userMessageId}` on a short
+  backoff). Details + consumption ([Emberek] `tudás:` line, sensitivity kind's proactive
+  exclusion) in [me.md](me.md) §5.4.
 - **Decision endpoint + inbox** — `GET /api/companion/fact/candidate` (pending, newest first) +
   `POST .../candidate/{id}/decision` (`accept|reject|refine` + `refinedText`); accept/refine
   promote into `knowledge_fact` — with the source **INHERITED from the candidate**

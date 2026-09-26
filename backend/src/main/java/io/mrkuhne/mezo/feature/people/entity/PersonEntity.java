@@ -18,9 +18,11 @@ import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.type.SqlTypes;
 
 /**
- * An inner-circle person (Emberek). Identity + owner-curated narrative fields
- * ({@code knownFacts}/{@code ties}/{@code affectTrend}) are stored; mention-derived stats
- * (count / this-week / last-mentioned) are computed in {@code PeopleService}, never persisted.
+ * An inner-circle person (Emberek). Identity + legacy/seed narrative fields
+ * ({@code knownFacts}/{@code ties}/{@code affectTrend}) are stored read-only — nothing writes
+ * them after seeding; live, per-fact person knowledge is the S3 {@code person_fact} table
+ * ({@link PersonFactEntity}). Mention-derived stats (count / this-week / last-mentioned) are
+ * computed in {@code PeopleService}, never persisted.
  *
  * <p>{@code createdBy}, {@code is_deleted}, {@code created_at} come from {@link OwnedEntity}.
  */
