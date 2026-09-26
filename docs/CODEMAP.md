@@ -244,12 +244,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CharacterCouncilEditionEntity`→`character_council_edition`, `CharacterDimensionEntity`→`character_dimension`,
     `CharacterObservationEntity`→`character_observation`,
     `CharacterPortraitRevisionEntity`→`character_portrait_revision`, `CharacterReplyEntity`→`character_reply`,
-    `CharacterRunEntity`→`character_run`, `TeamEditionEntity`→`team_edition`,
+    `CharacterRunEntity`→`character_run`, `TeamChatLineEntity`→`team_chat_line`,
+    `TeamChatThreadEntity`→`team_chat_thread`, `TeamEditionEntity`→`team_edition`,
     `TeamEditionPostEntity`→`team_edition_post`
   - **repositories:** `CharacterClaimRepository`, `CharacterClaimRevisionRepository`, `CharacterConferenceRepository`,
     `CharacterCouncilEditionRepository`, `CharacterDimensionRepository`, `CharacterObservationRepository`,
     `CharacterPortraitRevisionRepository`, `CharacterReplyRepository`, `CharacterRunRepository`,
-    `TeamEditionPostRepository`, `TeamEditionRepository`
+    `TeamChatLineRepository`, `TeamChatThreadRepository`, `TeamEditionPostRepository`, `TeamEditionRepository`
   - **services:** `CharacterBootstrapService`, `CharacterClaimRevisionService`, `CharacterConferenceJob`,
     `CharacterConferenceService`, `CharacterConfidenceWords`, `CharacterCoreCatalog`, `CharacterCouncilBudget`,
     `CharacterCouncilEvidenceTools`, `CharacterCouncilJob`, `CharacterCouncilPeriodTools`,
@@ -264,7 +265,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `KonziliumProposalRound`, `KonziliumVerdictRound`, `LegacyTranscriptParser`, `ObservationText`, `PortraitWriter`
   - **controllers→contract:** `CharacterController`→`CharacterApi`
   - **config:** `CharacterCouncilBudgetProperties`, `CharacterCouncilDebateProperties`, `CharacterCouncilProperties`,
-    `CharacterFollowupProperties`, `CharacterProperties`, `CharacterReplyProperties`
+    `CharacterFollowupProperties`, `CharacterProperties`, `CharacterReplyProperties`, `TeamChatProperties`
+  - **events/listeners:** `TeamChatEventListener`
   - **other:** `AvoidancePatternDetector`, `CharacterDetector`, `CharacterFollowupsEnvelope`,
     `CharacterReplyDiscussionEnvelope`, `ChatToolDomains`, `ChatTopicShiftDetector`, `CheckinGapDetector`,
     `CheckinLatencyDetector`, `CheckinSlotDriftDetector`, `ClaimConfidenceHistoryEnvelope`, `ClaimEvidenceEnvelope`,
@@ -283,15 +285,18 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `QuestCompletionCalibrationDetector`, `RestartPatternDetector`, `RetroLoggingRatioDetector`,
     `RirCalibrationDetector`, `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`, `SelfCalibrationDetector`,
     `SleepPerformanceChainDetector`, `SportInterferenceDetector`, `StackSkipPatternDetector`,
-    `StreakBreakResponseDetector`, `TeamCharacter`, `TeamEditionReads`, `TeamEditionService`, `TrailingWindow`,
-    `UnderLoggingDetector`, `VoicedGuest`, `VoicedText`, `WeekendGapDetector`
-- **Contract** `api/feature/character/character.yml` — 17 operations
+    `StreakBreakResponseDetector`, `TeamCharacter`, `TeamChatActionsEnvelope`, `TeamChatCast`, `TeamChatExpiryJob`,
+    `TeamChatInterventionKeyAdapter`, `TeamChatReads`, `TeamChatService`, `TeamEditionReads`, `TeamEditionService`,
+    `TrailingWindow`, `UnderLoggingDetector`, `VoicedGuest`, `VoicedText`, `WeekendGapDetector`
+- **Contract** `api/feature/character/character.yml` — 20 operations
   - **endpoints:** GET /api/character · GET /api/character/dimension/{key} · GET /api/character/experts ·
     GET /api/character/feed · POST /api/character/bootstrap · GET /api/character/conference ·
     POST /api/character/conference · GET /api/character/runs · GET /api/character/edition ·
     GET /api/character/run/{runId} · GET /api/character/conference/{conferenceId} · GET /api/character/replies ·
     POST /api/character/replies · POST /api/character/replies/{replyId}/retry · GET /api/character/council ·
-    GET /api/character/claims/{claimId}/revisions · POST /api/character/revisions/{revisionId}/undo
+    GET /api/character/claims/{claimId}/revisions · POST /api/character/revisions/{revisionId}/undo ·
+    GET /api/character/team-chat · POST /api/character/team-chat/threads/{threadId}/reply ·
+    POST /api/character/team-chat/threads/{threadId}/apply/{actionKey}
 - **FE data** `frontend/src/data/character`
   - **hooks (via `@/data/hooks`):** `useCharacterClaimRevisions`, `useCharacterCouncilStatus`, `useCharacterReplies`,
     `useCharacterReplyDraft`
@@ -308,7 +313,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **logic:** conferencePostItem.ts
   - **root:** character.css, deliberationLabels.ts, deliberationStats.ts, dossierState.ts, expertColors.ts,
     feedDayLabel.ts, inventory.ts, personaCharacter.ts, runLabels.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 51 IT + 13 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 56 IT + 14 unit
   - **ITs:** `CharacterApiCompanionOffIT`, `CharacterApiIT`, `CharacterApiSwitchOffIT`, `CharacterBootstrapIT`,
     `CharacterBootstrapMemoryDisabledIT`, `CharacterBootstrapMemoryIT`, `CharacterClaimRevisionIT`,
     `CharacterClaimTemporalIT`, `CharacterConferenceJobIT`, `CharacterConferenceListIT`,
@@ -322,16 +327,18 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CharacterReplyCompanionOffIT`, `CharacterReplyDiscussionIT`, `CharacterReplyRecoveryIT`, `CharacterRunLogIT`,
     `CharacterSignalReadsIT`, `CharacterWeeklySynthesisIT`, `ClaimLifecycleIT`, `ConferenceDeliberationEnvelopeIT`,
     `EditionVoiceWriterIT`, `KonziliumCrossTalkRoundIT`, `KonziliumProposalRoundIT`, `KonziliumUserFeedbackIT`,
-    `KonziliumVerdictRoundIT`, `PortraitWriterNameIT`, `TeamEditionReadsIT`, `TeamEditionSchemaIT`,
+    `KonziliumVerdictRoundIT`, `PortraitWriterNameIT`, `TeamChatApiSwitchOffIT`, `TeamChatControllerIT`,
+    `TeamChatRepositoryIT`, `TeamChatServiceIT`, `TeamChatSwitchOffIT`, `TeamEditionReadsIT`, `TeamEditionSchemaIT`,
     `TeamEditionServiceIT`, `TeamEditionServiceSwitchOffIT`
   - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `ChallengePopulator`,
     `CharacterClaimRevisionPopulator`, `CharacterCouncilPopulator`, `CharacterReplyPopulator`, `CheckInPopulator`,
-    `DailySummaryPopulator`, `DatabasePopulator`, `ExperimentPopulator`, `GraphPopulator`, `JournalPopulator`,
-    `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LlmLogPopulator`, `MealPopulator`, `MedicationDosePopulator`,
-    `MedicationPopulator`, `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`,
-    `PantryItemPopulator`, `PatternEventPopulator`, `PatternPopulator`, `PersonPopulator`, `PredictionPopulator`,
-    `ProtocolPopulator`, `QuestPopulator`, `RunningPopulator`, `SleepLogPopulator`, `SupplementIntakePopulator`,
-    `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`, `WeeklyReviewPopulator`
+    `DailySummaryPopulator`, `DatabasePopulator`, `ExperimentPopulator`, `FeedbackPopulator`, `FlagLogPopulator`,
+    `GraphPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LlmLogPopulator`,
+    `MealPopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `MemoryEmbeddingPopulator`,
+    `MemoryItemPopulator`, `MentionPopulator`, `PantryItemPopulator`, `PatternEventPopulator`, `PatternPopulator`,
+    `PersonPopulator`, `PredictionPopulator`, `ProtocolPopulator`, `QuestPopulator`, `RunningPopulator`,
+    `SleepGoalPopulator`, `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`,
+    `WaterLogPopulator`, `WeeklyReviewPopulator`
 
 ### companion
 
@@ -376,35 +383,36 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `DayReviewLlm`, `DayReviewService`, `DayReviewWarmupJob`, `DayScoreService`, `DecisionContextAssemblerAdapter`,
     `DenseMemoryRetriever`, `DerivedSeriesService`, `EffectLinkCalculator`, `EffectLinkService`,
     `FactCandidateService`, `FactExtractionListener`, `FactExtractionService`, `FactMemoryRetriever`,
-    `FeedMessageKindSource`, `FeedbackLearningJob`, `FeedbackLearningService`, `FlagCatalog`, `FlagEvaluationListener`,
-    `FlagEvaluator`, `FlagFactRenderer`, `FlagKey`, `FlagOutcome`, `FlagRaisedEvent`, `FlagRule`, `FlagService`,
-    `FlagSweepJob`, `FlagTraceCopy`, `FlagTraceReadService`, `FlagTraceWriter`, `FlagVerdict`, `GearClassifier`,
-    `GraphEdgeLineRenderer`, `GraphEdgeStructurer`, `GraphEdgeSuggestion`, `GraphMaintenanceJob`,
-    `GraphMaintenanceResult`, `GraphMaintenanceService`, `GraphMemoryRetriever`, `GraphPromotionListener`,
-    `GraphPromotionService`, `GraphPromptAssembler`, `GraphReconcileResult`, `GraphService`, `GraphTraversalService`,
-    `GroundedHypothesisPublisher`, `HypothesisEvaluationService`, `HypothesisLifecycle`, `HypothesisPipelineService`,
-    `KnowledgeFactChangedEvent`, `KnowledgeFactPromotedEvent`, `KnowledgeFactService`, `KnowledgeRecheckJob`,
-    `KnowledgeRecheckService`, `LexicalMemoryRetriever`, `LifeEventCandidateService`, `LifeEventExtractionService`,
-    `LifeEventSuggestion`, `LifeGoalSnapshotBlock`, `LlmMemoryQueryRewriter`, `LlmMemoryReranker`, `MeWeekService`,
-    `MemoryCandidateFusion`, `MemoryChunkText`, `MemoryContextBlock`, `MemoryContextRenderer`, `MemoryContextSelector`,
-    `MemoryContextService`, `MemoryItemFeedbackService`, `MemoryObservatoryService`, `MemoryProjectionEvent`,
-    `MemoryProjectionListener`, `MemoryProjectionService`, `MemoryProjectionWriter`, `MemoryQueryAnalyzer`,
-    `MemoryQueryEmbedder`, `MemoryQueryPreparer`, `MemoryQueryRewriter`, `MemoryRecallService`, `MemoryReembeddingJob`,
-    `MemoryReembeddingService`, `MemoryReranker`, `MemoryRetrievalAuditWriter`, `MemoryRetrievalRetentionJob`,
-    `MemoryRetriever`, `MemoryShadowRunner`, `MemorySourceRepairService`, `MesoContextAssembler`,
-    `MesoReviewGenerator`, `MesoReviewListener`, `MessageFeedbackRecordedEvent`, `MessageFeedbackService`,
-    `MetricDomain`, `MetricKey`, `MetricSeriesService`, `MetricValueKind`, `NudgeSendPort`, `ObservationBudget`,
-    `ObservationContextService`, `ObservationFeedService`, `ObservationLead`, `ObservationOwnerLock`,
-    `ObservationRecoveryService`, `ObservationSourceIcon`, `PatternConfirmedEvent`, `PatternDetectionJob`,
-    `PatternDetectionService`, `PatternEventAppender`, `PatternGate`, `PatternImpactSource`, `PatternMonitorService`,
-    `PatternPairDetailService`, `PatternRetractedEvent`, `PatternService`, `PearsonCorrelation`, `PeopleSnapshotBlock`,
-    `PeriodSummaryService`, `PersonExtractionResult`, `PersonExtractionService`, `PersonFactExtractionListener`,
-    `PersonFactExtractionService`, `PersonGraphEdgeAdapter`, `PersonalBaselineContext`, `PersonalContextAssembler`,
-    `PersonalMemorySearchService`, `PersonalRecordService`, `PlanExecutor`, `PlanValidator`, `ProfileAssembler`,
-    `ProfileAssemblerJob`, `ProfilePromptAssembler`, `PromptMemoryAssembler`, `ProvenanceRetentionJob`,
-    `QuarterlyReviewJob`, `QuarterlyReviewService`, `Quarters`, `QuickNoticePreScreen`, `QuickNoticeService`,
-    `ReflectionDigestService`, `ReflectionJob`, `ReflectionMemoryGateway`, `ReflectionPromptBlock`,
-    `ReflectionReplyRecorder`, `ReflectionReplyService`, `SeasonSuggestion`, `SimilarDaysRecall`, `TestPlanValidator`,
+    `FeedMessageKindSource`, `FeedbackLearningJob`, `FeedbackLearningService`, `FlagCatalog`, `FlagClearedEvent`,
+    `FlagEvaluationListener`, `FlagEvaluator`, `FlagFactRenderer`, `FlagKey`, `FlagOutcome`, `FlagRaisedEvent`,
+    `FlagRule`, `FlagService`, `FlagSweepJob`, `FlagTraceCopy`, `FlagTraceReadService`, `FlagTraceWriter`,
+    `FlagVerdict`, `GearClassifier`, `GraphEdgeLineRenderer`, `GraphEdgeStructurer`, `GraphEdgeSuggestion`,
+    `GraphMaintenanceJob`, `GraphMaintenanceResult`, `GraphMaintenanceService`, `GraphMemoryRetriever`,
+    `GraphPromotionListener`, `GraphPromotionService`, `GraphPromptAssembler`, `GraphReconcileResult`, `GraphService`,
+    `GraphTraversalService`, `GroundedHypothesisPublisher`, `HypothesisEvaluationService`, `HypothesisLifecycle`,
+    `HypothesisPipelineService`, `KnowledgeFactChangedEvent`, `KnowledgeFactPromotedEvent`, `KnowledgeFactService`,
+    `KnowledgeRecheckJob`, `KnowledgeRecheckService`, `LexicalMemoryRetriever`, `LifeEventCandidateService`,
+    `LifeEventExtractionService`, `LifeEventSuggestion`, `LifeGoalSnapshotBlock`, `LlmMemoryQueryRewriter`,
+    `LlmMemoryReranker`, `MeWeekService`, `MemoryCandidateFusion`, `MemoryChunkText`, `MemoryContextBlock`,
+    `MemoryContextRenderer`, `MemoryContextSelector`, `MemoryContextService`, `MemoryItemFeedbackService`,
+    `MemoryObservatoryService`, `MemoryProjectionEvent`, `MemoryProjectionListener`, `MemoryProjectionService`,
+    `MemoryProjectionWriter`, `MemoryQueryAnalyzer`, `MemoryQueryEmbedder`, `MemoryQueryPreparer`,
+    `MemoryQueryRewriter`, `MemoryRecallService`, `MemoryReembeddingJob`, `MemoryReembeddingService`, `MemoryReranker`,
+    `MemoryRetrievalAuditWriter`, `MemoryRetrievalRetentionJob`, `MemoryRetriever`, `MemoryShadowRunner`,
+    `MemorySourceRepairService`, `MesoContextAssembler`, `MesoReviewGenerator`, `MesoReviewListener`,
+    `MessageFeedbackRecordedEvent`, `MessageFeedbackService`, `MetricDomain`, `MetricKey`, `MetricSeriesService`,
+    `MetricValueKind`, `NudgeSendPort`, `ObservationBudget`, `ObservationContextService`, `ObservationFeedService`,
+    `ObservationLead`, `ObservationOwnerLock`, `ObservationRecoveryService`, `ObservationSourceIcon`,
+    `PatternConfirmedEvent`, `PatternDetectionJob`, `PatternDetectionService`, `PatternEventAppender`, `PatternGate`,
+    `PatternImpactSource`, `PatternMonitorService`, `PatternPairDetailService`, `PatternRetractedEvent`,
+    `PatternService`, `PearsonCorrelation`, `PeopleSnapshotBlock`, `PeriodSummaryService`, `PersonExtractionResult`,
+    `PersonExtractionService`, `PersonFactExtractionListener`, `PersonFactExtractionService`, `PersonGraphEdgeAdapter`,
+    `PersonalBaselineContext`, `PersonalContextAssembler`, `PersonalMemorySearchService`, `PersonalRecordService`,
+    `PlanExecutor`, `PlanValidator`, `ProfileAssembler`, `ProfileAssemblerJob`, `ProfilePromptAssembler`,
+    `PromptMemoryAssembler`, `ProvenanceRetentionJob`, `QuarterlyReviewJob`, `QuarterlyReviewService`, `Quarters`,
+    `QuickNoticePreScreen`, `QuickNoticeService`, `ReflectionDigestService`, `ReflectionJob`,
+    `ReflectionMemoryGateway`, `ReflectionPromptBlock`, `ReflectionReplyRecorder`, `ReflectionReplyService`,
+    `SeasonSuggestion`, `SimilarDaysRecall`, `TeamChatInterventionKeySource`, `TestPlanValidator`,
     `TextSignalCatchUpService`, `TextSignalExtractor`, `TextSignalListener`, `TextSignalSeriesService`,
     `TextSignalService`, `ToolCatalogue`, `ToolOutcomeDigest`, `TraceDisposition`, `TranscriptionService`,
     `TurnAnswerer`, `TurnGear`, `TurnGearAnalyzer`, `TurnGearRouter`, `TurnPhase`, `TurnPlan`, `TurnPlanParser`,
@@ -479,7 +487,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/companion`
   - **hooks (via `@/data/hooks`):** `useAccountSettings`, `useCompanionPreferences`, `usePersonalContext`
   - **modules:** preferencesApi.ts, preferencesHooks.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 269 IT + 90 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 269 IT + 91 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,
@@ -1171,7 +1179,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ExperimentRepository`, `MemoirRepository`, `PredictionRepository`, `WeeklyReviewRepository`,
     `WeeklySuggestionRepository`
   - **services:** `AdviceActionCatalog`, `AdviceApplyService`, `AdviceCandidate`, `AdviceCardService`,
-    `AdviceMutationPort`, `AdvicePriority`, `AdviceProseGenerator`, `AdviceRankAdapter`, `AnchoredWeek`,
+    `AdviceMutationPort`, `AdvicePick`, `AdvicePriority`, `AdviceProseGenerator`, `AdviceRankAdapter`, `AnchoredWeek`,
     `ChallengeGenerator`, `ChallengeJob`, `ChallengeOutcomeEvaluator`, `CompanionMessageEventListener`,
     `CompanionMessageGenerator`, `CompanionMessageJob`, `DailyCardAdapter`, `DiagnosisGenerator`, `DiagnosisRecipe`,
     `DiagnosisService`, `ExperimentJob`, `ExperimentOutcomeService`, `ExperimentProposalGenerator`,
@@ -1207,7 +1215,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/proactive/challenge/{id}/decision · GET /api/proactive/weekly-review/{start} ·
     POST /api/proactive/weekly-review/{start}/regenerate · GET /api/proactive/weekly-review/{start}/lessons ·
     GET /api/proactive/weekly-review/{start}/digest
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 107 IT + 8 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 107 IT + 10 unit
   - **ITs:** `AdviceApplyServiceIT`, `AdviceCardServiceIT`, `AdviceObserverPortsIT`, `AdviceProseGeneratorIT`,
     `ChallengeGeneratorIT`, `ChallengeGeneratorMemoryDisabledIT`, `ChallengeGeneratorMemoryIT`, `ChallengeJobIT`,
     `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`, `ChallengePersistenceIT`, `ChallengePregenerateJobIT`,

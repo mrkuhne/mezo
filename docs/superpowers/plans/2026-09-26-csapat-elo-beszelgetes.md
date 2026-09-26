@@ -34,8 +34,8 @@
 ## File Structure
 
 ```
-backend/src/main/resources/db/changelog/1.1.0/script/202609261400_mezo-a9bo7_team_chat.sql      ← NEW E1
-backend/src/main/resources/db/changelog/1.1.0/script/202609261410_mezo-a9bo7_feedback_team_chat_kind.sql ← NEW E1
+backend/src/main/resources/db/changelog/1.1.0/script/202609261500_mezo-a9bo7_team_chat.sql      ← NEW E1
+backend/src/main/resources/db/changelog/1.1.0/script/202609261510_mezo-a9bo7_feedback_team_chat_kind.sql ← NEW E1
 backend/src/main/resources/db/changelog/1.1.0/1.1.0_master.yml                                   ← +2 changeSets E1
 backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagClearedEvent.java      ← NEW E1
 backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagTraceWriter.java       ← publishes FlagClearedEvent E1
@@ -161,14 +161,14 @@ class TeamChatCastTest {
 ### Task 3: Schema — `team_chat_thread`, `team_chat_line`, feedback kind
 
 **Files:**
-- Create: `backend/src/main/resources/db/changelog/1.1.0/script/202609261400_mezo-a9bo7_team_chat.sql`, `.../202609261410_mezo-a9bo7_feedback_team_chat_kind.sql`
+- Create: `backend/src/main/resources/db/changelog/1.1.0/script/202609261500_mezo-a9bo7_team_chat.sql`, `.../202609261510_mezo-a9bo7_feedback_team_chat_kind.sql`
 - Modify: `.../1.1.0/1.1.0_master.yml` (two changeSets, same shape as the neighbours)
 - Create: `feature/character/entity/TeamChatThreadEntity.java`, `TeamChatLineEntity.java`, `TeamChatActionsEnvelope.java`; `feature/character/repository/TeamChatThreadRepository.java`, `TeamChatLineRepository.java`
 - Modify: `feature/companion/feedback/entity/MessageFeedbackEntity.java` (`KIND_TEAM_CHAT_LINE = "team_chat_line"`)
 - Test: `backend/src/test/java/io/mrkuhne/mezo/feature/character/chat/TeamChatRepositoryIT.java`
 
 ```sql
--- 202609261400_mezo-a9bo7_team_chat.sql — Csapatfal Act III (spec 2026-09-26 §5.1)
+-- 202609261500_mezo-a9bo7_team_chat.sql — Csapatfal Act III (spec 2026-09-26 §5.1)
 create table team_chat_thread (
     id uuid primary key,
     created_by uuid not null,
