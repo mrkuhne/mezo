@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.EditionRef;
 import io.mrkuhne.mezo.feature.character.entity.TeamChatThreadEntity;
+import io.mrkuhne.mezo.feature.character.service.chat.TeamChatReads;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagCatalog;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
@@ -30,7 +31,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -41,6 +44,7 @@ import org.springframework.stereotype.Service;
  * karakter-gazda) követik SZÓ SZERINT, ahogy a brief táblázata rögzíti. A rangsorolás/válogatás
  * NEM ez a felelőssége — az {@link EditionSelector} dolga.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(
@@ -363,30 +367,41 @@ public class EditionCandidateCollector {
 
     /**
      * Task 15 (mezo-a9bo7.25, Csapatfal Act III): Mezo esti összefoglalója a nap csapat-chat
-     * ügyeiről — csak ha a napon legalább egy ügy nyílt vagy zárult. {@code n} = ezek száma,
-     * {@code r} = a napon rendeződöttek, {@code o} = amelyek a kiadás futásakor még nyitottak. A
-     * szabály-címkék a {@code FlagCatalog} magyar nevei (ahogy a chat maga mutatja), ismétlés
-     * nélkül. Kikapcsolt chatnél a reads üres listát ad → nincs jelölt.
+     * ügyeiről. Egy ügy akkor számít ({@code n}), ha a napon NYÍLT, vagy a napon RENDEZŐDÖTT — a
+     * puszta lejárat (EXPIRED) nem munka és nem rendeződés, így az nem számít. {@code r} = a napon
+     * rendeződöttek, {@code o} = a kiadás futásakor még nyitottak. Az osztályozás ugyanazt a
+     * {@code [from, to)} ablakot használja, amivel a chat a sorokat lekérte (fix round 1). Az
+     * {@code n == r + o} invariánst ellenőrizzük: ha sérül (pl. egy napon nyílt és már lejárt ügy),
+     * a jelölt kimarad egy figyelmeztetéssel — a poszt számai sosem lehetnek hamisak (ADR 0049).
+     * A szabály-címkék a {@code FlagCatalog} magyar nevei, ismétlés nélkül. Kikapcsolt chatnél
+     * nincs jelölt.
      */
     private Optional<EditionCandidate> teamChatDay(UUID owner, LocalDate day) {
-        List<TeamChatThreadEntity> threads = reads.teamChatThreads(owner, day);
-        if (threads.isEmpty()) {
+        Optional<TeamChatReads.DayThreads> slice = reads.teamChatThreads(owner, day);
+        if (slice.isEmpty()) {
             return Optional.empty();
         }
-        Instant from = day.atStartOfDay(EDITION_ZONE).toInstant();
-        Instant to = day.plusDays(1).atStartOfDay(EDITION_ZONE).toInstant();
-        int n = threads.size();
-        int r = (int) threads.stream()
-                .filter(t -> THREAD_RESOLVED.equals(t.getStatus()) && within(t.getClosedAt(), from, to))
-                .count();
-        int o = (int) threads.stream().filter(t -> THREAD_OPEN.equals(t.getStatus())).count();
-        String labels = threads.stream().map(t -> FlagCatalog.labelOf(t.getFlagKey()))
+        TeamChatReads.DayThreads window = slice.get();
+        List<TeamChatThreadEntity> counted = window.threads().stream()
+                .filter(t -> window.within(t.getOpenedAt()) || resolvedWithin(t, window))
+                .toList();
+        if (counted.isEmpty()) {
+            return Optional.empty();
+        }
+        int n = counted.size();
+        int r = (int) counted.stream().filter(t -> resolvedWithin(t, window)).count();
+        int o = (int) counted.stream().filter(t -> THREAD_OPEN.equals(t.getStatus())).count();
+        if (n != r + o) {
+            log.warn("team_chat_day recap skipped for {} on {}: n={} != r={} + o={}", owner, day, n, r, o);
+            return Optional.empty();
+        }
+        String labels = counted.stream().map(t -> FlagCatalog.labelOf(t.getFlagKey()))
                 .distinct().collect(Collectors.joining(", "));
         String recordText = String.format("Ma %d ügyön dolgoztunk: %s. %d rendeződött, %d nyitva maradt.",
                 n, labels, r, o);
-        Instant changedAt = threads.stream()
-                .flatMap(t -> java.util.stream.Stream.of(t.getOpenedAt(), t.getClosedAt()))
-                .filter(at -> within(at, from, to))
+        Instant changedAt = counted.stream()
+                .flatMap(t -> Stream.of(t.getOpenedAt(), t.getClosedAt()))
+                .filter(window::within)
                 .max(Comparator.naturalOrder()).orElse(null);
         String id = day.toString();
         return Optional.of(new EditionCandidate(SOURCE_TEAM_CHAT_DAY, id, TeamCharacter.MEZO,
@@ -396,8 +411,8 @@ public class EditionCandidateCollector {
                 ROUTE_TEAM_CHAT + id, List.of()));
     }
 
-    private static boolean within(Instant at, Instant from, Instant to) {
-        return at != null && !at.isBefore(from) && at.isBefore(to);
+    private static boolean resolvedWithin(TeamChatThreadEntity t, TeamChatReads.DayThreads window) {
+        return THREAD_RESOLVED.equals(t.getStatus()) && window.within(t.getClosedAt());
     }
 
     /**

@@ -82,12 +82,24 @@ public class TeamChatReads {
     }
 
     /** Task 15 (mezo-a9bo7.25): the ügyek opened or closed on {@code date} (the user's local day),
-     *  oldest first — the evening edition's {@code team_chat_day} recap reads these. */
+     *  oldest first, together with the {@code [from, to)} window they were fetched with — the
+     *  evening edition's {@code team_chat_day} recap classifies them against the SAME window. */
     @Transactional(readOnly = true)
-    public List<TeamChatThreadEntity> threadsTouchedOn(UUID userId, LocalDate date) {
+    public DayThreads threadsTouchedOn(UUID userId, LocalDate date) {
         Instant from = date.atStartOfDay(properties.zone()).toInstant();
         Instant to = date.plusDays(1).atStartOfDay(properties.zone()).toInstant();
-        return threads.touchedBetween(userId, from, to);
+        return new DayThreads(from, to, threads.touchedBetween(userId, from, to));
+    }
+
+    /** One local day's touched ügyek plus the half-open window that defined "touched". */
+    public record DayThreads(Instant from, Instant to, List<TeamChatThreadEntity> threads) {
+        public DayThreads {
+            threads = threads == null ? List.of() : List.copyOf(threads);
+        }
+
+        public boolean within(Instant at) {
+            return at != null && !at.isBefore(from) && at.isBefore(to);
+        }
     }
 
     /** A line as the API shows it; {@code thread} is embedded only when given (OPEN / RESOLVE). */

@@ -100,6 +100,35 @@ class EditionCandidateCollectorIT extends ApiIntegrationTest {
     }
 
     @Test
+    void threadWhoseOnlyTouchIsExpiry_doesNotCount() {
+        threads.saveAndFlush(thread(owner, FlagKey.SLEEP_DEBT, "RESOLVED", at(DAY, 8), at(DAY, 15)));
+        threads.saveAndFlush(thread(owner, FlagKey.JOINT_OVERUSE, "EXPIRED", at(DAY.minusDays(7), 9), at(DAY, 4)));
+
+        List<EditionCandidate> out = teamChatCandidates(DAY);
+
+        assertThat(out).singleElement().satisfies(c -> {
+            assertThat(c.facts()).containsExactly("1", "1", "0");
+            assertThat(c.recordText()).doesNotContain(FlagCatalog.labelOf(FlagKey.JOINT_OVERUSE));
+        });
+    }
+
+    @Test
+    void expiryAloneOnTheDay_yieldsNothing() {
+        threads.saveAndFlush(thread(owner, FlagKey.JOINT_OVERUSE, "EXPIRED", at(DAY.minusDays(7), 9), at(DAY, 4)));
+
+        assertThat(teamChatCandidates(DAY)).isEmpty();
+    }
+
+    @Test
+    void invariantBroken_nNotEqualROPlusO_skipsTheCandidate() {
+        // opened on DAY but already EXPIRED: counted in n, yet neither resolved nor open → n != r + o
+        threads.saveAndFlush(thread(owner, FlagKey.SLEEP_DEBT, "RESOLVED", at(DAY, 8), at(DAY, 15)));
+        threads.saveAndFlush(thread(owner, FlagKey.ACUTE_BAD_DAY, "EXPIRED", at(DAY, 9), at(DAY, 20)));
+
+        assertThat(teamChatCandidates(DAY)).isEmpty();
+    }
+
+    @Test
     void dayWithoutThreads_yieldsNothing() {
         threads.saveAndFlush(thread(owner, FlagKey.SLEEP_DEBT, "OPEN", at(DAY.minusDays(1), 9), null));
 

@@ -122,6 +122,10 @@ describe('TeamChatPage (mock mode)', () => {
   test('egy korábbi napon nincs esti-kiadás lábjegyzet', async () => {
     renderChat('/mezo/elo?d=2026-09-20')
     await screen.findByText('A csapat beszél')
+    // nem üres a nap: a mock ugyanazokat a sorokat építi erre a dátumra is — a lábjegyzet
+    // hiánya tehát a „nem ma” miatt van, nem a csend miatt
+    expect(screen.getByText('Rizses csirkét ettem, dupla adag rizzsel.')).toBeInTheDocument()
+    expect(screen.queryByText(/Ma · élőben/)).not.toBeInTheDocument()
     expect(screen.queryByText(/21:00-kor az esti kiadás/)).not.toBeInTheDocument()
   })
 

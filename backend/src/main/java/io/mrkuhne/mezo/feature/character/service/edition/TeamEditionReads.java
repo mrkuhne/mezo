@@ -2,7 +2,6 @@ package io.mrkuhne.mezo.feature.character.service.edition;
 
 import io.mrkuhne.mezo.api.dto.PatternMonitorResponse;
 import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
-import io.mrkuhne.mezo.feature.character.entity.TeamChatThreadEntity;
 import io.mrkuhne.mezo.feature.character.repository.CharacterConferenceRepository;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatReads;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
@@ -141,10 +140,11 @@ public class TeamEditionReads {
                 .count();
     }
 
-    /** Task 15 (mezo-a9bo7.25): the ügyek the team chat opened or closed on {@code day}; empty when
-     *  the team chat is switched off ({@link TeamChatReads} does not exist then). */
-    public List<TeamChatThreadEntity> teamChatThreads(UUID owner, LocalDate day) {
+    /** Task 15 (mezo-a9bo7.25): the ügyek the team chat opened or closed on {@code day}, with the
+     *  window they were fetched with; empty when the team chat is switched off
+     *  ({@link TeamChatReads} does not exist then). */
+    public Optional<TeamChatReads.DayThreads> teamChatThreads(UUID owner, LocalDate day) {
         TeamChatReads chat = teamChatReads.getIfAvailable();
-        return chat == null ? List.of() : chat.threadsTouchedOn(owner, day);
+        return chat == null ? Optional.empty() : Optional.of(chat.threadsTouchedOn(owner, day));
     }
 }

@@ -262,12 +262,17 @@ an error, and the next `*/15` tick retries any real failure until 23:45.
     selection when any edition of the previous 6 days (day-6..day-1) carried a `deru`/`keres` post.
   - **Mezo — `ertekeles`** (`sourceKind=team_chat_day`, `sourceId=<day>`, route
     `/mezo/elo?d=<day>`; Act III Task 15, mezo-a9bo7.25): the day's team-chat recap. Reads
-    `TeamEditionReads.teamChatThreads` → `TeamChatReads.threadsTouchedOn` (ügyek whose `opened_at`
-    OR `closed_at` falls in the local day, via `ObjectProvider` — empty when
-    `mezo.feature.team-chat.enabled=false`). None → no candidate. Otherwise
+    `TeamEditionReads.teamChatThreads` → `TeamChatReads.threadsTouchedOn`, which returns
+    `DayThreads(from, to, threads)` — the ügyek whose `opened_at` OR `closed_at` falls in the local
+    day (`TeamChatProperties.zone`) AND that `[from, to)` window, so the collector classifies with
+    the very window the rows were fetched with (via `ObjectProvider` — empty when
+    `mezo.feature.team-chat.enabled=false`). Counted (n) = opened that day OR RESOLVED that day; an
+    ügy whose only touch is its EXPIRED closure does not count. r = RESOLVED with `closed_at` that
+    day, o = still OPEN at run time. Invariant `n == r + o` is enforced: on violation (e.g. opened
+    and already EXPIRED the same day) the candidate is skipped with a `log.warn` — the post's numbers
+    are never wrong. None counted → no candidate. Otherwise
     `"Ma %d ügyön dolgoztunk: <FlagCatalog labels, distinct>. %d rendeződött, %d nyitva maradt."`,
-    `facts=[n, r, o]` (n = touched ügyek, r = RESOLVED with `closed_at` that day, o = still OPEN at
-    run time); `changedAt` = the latest open/close instant inside the day.
+    `facts=[n, r, o]`; `changedAt` = the latest open/close instant inside the window.
 - **Válogatás** (`EditionSelector`, pure function): scores waiting > claim-change > kísérlet >
   előrejelzés > értékelés > megfigyelés > konzílium > kérdés > sejtés > kérés, freshness bonus
   since the last edition; caps at **2 posts/character**, **1 post/source record**; a **7-day

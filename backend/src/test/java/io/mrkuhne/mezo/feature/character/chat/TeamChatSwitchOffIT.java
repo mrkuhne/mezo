@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.feature.character.service.chat.TeamChatReads;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatService;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatVoiceWriter;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.character.entity.TeamChatThreadEntity;
 import io.mrkuhne.mezo.feature.character.repository.TeamChatThreadRepository;
 import io.mrkuhne.mezo.feature.character.service.edition.EditionCandidateCollector;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
@@ -66,7 +67,7 @@ class TeamChatSwitchOffIT {
             UUID owner = databasePopulator.populateUser(ownerProperties.ownerEmail());
             LocalDate day = LocalDate.of(2026, 9, 20);
             var openedAt = day.atTime(9, 0).atZone(ZoneId.of("Europe/Budapest")).toInstant();
-            var thread = new io.mrkuhne.mezo.feature.character.entity.TeamChatThreadEntity();
+            var thread = new TeamChatThreadEntity();
             thread.setCreatedBy(owner);
             thread.setFlagKey(FlagKey.SLEEP_DEBT);
             thread.setOwnerCharacter("szunya");
