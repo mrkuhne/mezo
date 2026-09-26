@@ -260,6 +260,14 @@ an error, and the next `*/15` tick retries any real failure until 23:45.
     source change, so it gets no freshness bonus and, as a filler, ranks behind the `sejtes`
     "gyűlik" candidates. **Weekly once:** `TeamEditionService.run` drops the Derű request before
     selection when any edition of the previous 6 days (day-6..day-1) carried a `deru`/`keres` post.
+  - **Mezo — `ertekeles`** (`sourceKind=team_chat_day`, `sourceId=<day>`, route
+    `/mezo/elo?d=<day>`; Act III Task 15, mezo-a9bo7.25): the day's team-chat recap. Reads
+    `TeamEditionReads.teamChatThreads` → `TeamChatReads.threadsTouchedOn` (ügyek whose `opened_at`
+    OR `closed_at` falls in the local day, via `ObjectProvider` — empty when
+    `mezo.feature.team-chat.enabled=false`). None → no candidate. Otherwise
+    `"Ma %d ügyön dolgoztunk: <FlagCatalog labels, distinct>. %d rendeződött, %d nyitva maradt."`,
+    `facts=[n, r, o]` (n = touched ügyek, r = RESOLVED with `closed_at` that day, o = still OPEN at
+    run time); `changedAt` = the latest open/close instant inside the day.
 - **Válogatás** (`EditionSelector`, pure function): scores waiting > claim-change > kísérlet >
   előrejelzés > értékelés > megfigyelés > konzílium > kérdés > sejtés > kérés, freshness bonus
   since the last edition; caps at **2 posts/character**, **1 post/source record**; a **7-day

@@ -54,4 +54,13 @@ public interface TeamChatThreadRepository extends JpaRepository<TeamChatThreadEn
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select t from TeamChatThreadEntity t where t.id = :id and t.createdBy = :owner and t.deleted = false")
     Optional<TeamChatThreadEntity> lockOwned(UUID id, UUID owner);
+
+    /** Task 15 (mezo-a9bo7.25): every ügy the day touched — opened OR closed in {@code [from, to)} —
+     *  for the evening edition's {@code team_chat_day} recap; oldest first. */
+    @Query("""
+            select t from TeamChatThreadEntity t
+            where t.createdBy = :owner and t.deleted = false
+              and ((t.openedAt >= :from and t.openedAt < :to) or (t.closedAt >= :from and t.closedAt < :to))
+            order by t.openedAt asc""")
+    List<TeamChatThreadEntity> touchedBetween(UUID owner, Instant from, Instant to);
 }

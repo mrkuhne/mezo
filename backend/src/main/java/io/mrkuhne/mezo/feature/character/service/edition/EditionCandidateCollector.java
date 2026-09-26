@@ -6,6 +6,8 @@ import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.EditionRef;
+import io.mrkuhne.mezo.feature.character.entity.TeamChatThreadEntity;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagCatalog;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
@@ -53,11 +55,17 @@ public class EditionCandidateCollector {
     static final String SOURCE_KONZILIUM = "konzilium";
     static final String SOURCE_FUEL_DAY = "fuel_day";
     static final String SOURCE_CHECKIN_COVERAGE = "checkin_coverage";
+    static final String SOURCE_TEAM_CHAT_DAY = "team_chat_day";
 
     /** A Fuel fül mai napja (FE router: {@code /fuel} → FuelMaiPage). */
     static final String ROUTE_FUEL_DAY = "/fuel";
     /** A Nap fül „Hogy vagy ma?" bejelentkezése (FE router: {@code /nap/checkin} → NapCheckinPage). */
     static final String ROUTE_CHECKIN = "/nap/checkin";
+    /** A csapat-chat szobája egy adott napra (FE router: {@code /mezo/elo?d=} → TeamChatPage). */
+    static final String ROUTE_TEAM_CHAT = "/mezo/elo?d=";
+
+    private static final String THREAD_OPEN = "OPEN";
+    private static final String THREAD_RESOLVED = "RESOLVED";
 
     /** Derű ablaka és küszöbe (spec §3.6): 14 napból 8-nál kevesebb bejelentkezett nap → kérés. */
     private static final int CHECKIN_WINDOW_DAYS = 14;
@@ -97,6 +105,7 @@ public class EditionCandidateCollector {
         reads.dailyConference(owner, day).ifPresent(conference -> out.addAll(konziliumCandidates(conference)));
         falat(owner, day).ifPresent(out::add);
         deru(owner, day).ifPresent(out::add);
+        teamChatDay(owner, day).ifPresent(out::add);
         // Fix round (mezo-a9bo7.12): a poszt body NOT NULL — egy üres/hiányzó recordText-ű jelölt
         // (pl. mechanism nélküli proposed minta) minden tiken eldobná a publish-t. Egyetlen helyen
         // szűrünk: minden forrás ugyanide fut be, mielőtt a EditionSelector látná.
@@ -350,6 +359,45 @@ public class EditionCandidateCollector {
         return Optional.of(new EditionCandidate(SOURCE_CHECKIN_COVERAGE, id, TeamCharacter.DERU, EditionGenre.KERES,
                 null, recordText, List.of(String.valueOf(CHECKIN_WINDOW_DAYS), String.valueOf(days)),
                 List.of(new EditionRef(SOURCE_CHECKIN_COVERAGE, id)), false, false, null, ROUTE_CHECKIN, List.of()));
+    }
+
+    /**
+     * Task 15 (mezo-a9bo7.25, Csapatfal Act III): Mezo esti összefoglalója a nap csapat-chat
+     * ügyeiről — csak ha a napon legalább egy ügy nyílt vagy zárult. {@code n} = ezek száma,
+     * {@code r} = a napon rendeződöttek, {@code o} = amelyek a kiadás futásakor még nyitottak. A
+     * szabály-címkék a {@code FlagCatalog} magyar nevei (ahogy a chat maga mutatja), ismétlés
+     * nélkül. Kikapcsolt chatnél a reads üres listát ad → nincs jelölt.
+     */
+    private Optional<EditionCandidate> teamChatDay(UUID owner, LocalDate day) {
+        List<TeamChatThreadEntity> threads = reads.teamChatThreads(owner, day);
+        if (threads.isEmpty()) {
+            return Optional.empty();
+        }
+        Instant from = day.atStartOfDay(EDITION_ZONE).toInstant();
+        Instant to = day.plusDays(1).atStartOfDay(EDITION_ZONE).toInstant();
+        int n = threads.size();
+        int r = (int) threads.stream()
+                .filter(t -> THREAD_RESOLVED.equals(t.getStatus()) && within(t.getClosedAt(), from, to))
+                .count();
+        int o = (int) threads.stream().filter(t -> THREAD_OPEN.equals(t.getStatus())).count();
+        String labels = threads.stream().map(t -> FlagCatalog.labelOf(t.getFlagKey()))
+                .distinct().collect(Collectors.joining(", "));
+        String recordText = String.format("Ma %d ügyön dolgoztunk: %s. %d rendeződött, %d nyitva maradt.",
+                n, labels, r, o);
+        Instant changedAt = threads.stream()
+                .flatMap(t -> java.util.stream.Stream.of(t.getOpenedAt(), t.getClosedAt()))
+                .filter(at -> within(at, from, to))
+                .max(Comparator.naturalOrder()).orElse(null);
+        String id = day.toString();
+        return Optional.of(new EditionCandidate(SOURCE_TEAM_CHAT_DAY, id, TeamCharacter.MEZO,
+                EditionGenre.ERTEKELES, null, recordText,
+                List.of(String.valueOf(n), String.valueOf(r), String.valueOf(o)),
+                List.of(new EditionRef(SOURCE_TEAM_CHAT_DAY, id)), false, false, changedAt,
+                ROUTE_TEAM_CHAT + id, List.of()));
+    }
+
+    private static boolean within(Instant at, Instant from, Instant to) {
+        return at != null && !at.isBefore(from) && at.isBefore(to);
     }
 
     /**

@@ -25882,6 +25882,7 @@ components:
             - konzilium
             - fuel_day
             - checkin_coverage
+            - team_chat_day
         sourceId:
           type: string
         sourceRoute:

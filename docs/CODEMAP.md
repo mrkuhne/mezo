@@ -315,7 +315,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **logic:** conferencePostItem.ts
   - **root:** character.css, deliberationLabels.ts, deliberationStats.ts, dossierState.ts, expertColors.ts,
     feedDayLabel.ts, inventory.ts, personaCharacter.ts, runLabels.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 58 IT + 16 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 59 IT + 16 unit
   - **ITs:** `CharacterApiCompanionOffIT`, `CharacterApiIT`, `CharacterApiSwitchOffIT`, `CharacterBootstrapIT`,
     `CharacterBootstrapMemoryDisabledIT`, `CharacterBootstrapMemoryIT`, `CharacterClaimRevisionIT`,
     `CharacterClaimTemporalIT`, `CharacterConferenceJobIT`, `CharacterConferenceListIT`,
@@ -328,10 +328,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CharacterPromptAssemblerOversizedDimensionIT`, `CharacterPromptWiringIT`, `CharacterReplyApiIT`,
     `CharacterReplyCompanionOffIT`, `CharacterReplyDiscussionIT`, `CharacterReplyRecoveryIT`, `CharacterRunLogIT`,
     `CharacterSignalReadsIT`, `CharacterWeeklySynthesisIT`, `ClaimLifecycleIT`, `ConferenceDeliberationEnvelopeIT`,
-    `EditionVoiceWriterIT`, `KonziliumCrossTalkRoundIT`, `KonziliumProposalRoundIT`, `KonziliumUserFeedbackIT`,
-    `KonziliumVerdictRoundIT`, `PortraitWriterNameIT`, `TeamChatApiSwitchOffIT`, `TeamChatBudgetIT`,
-    `TeamChatContextIT`, `TeamChatControllerIT`, `TeamChatRepositoryIT`, `TeamChatServiceIT`, `TeamChatSwitchOffIT`,
-    `TeamEditionReadsIT`, `TeamEditionSchemaIT`, `TeamEditionServiceIT`, `TeamEditionServiceSwitchOffIT`
+    `EditionCandidateCollectorIT`, `EditionVoiceWriterIT`, `KonziliumCrossTalkRoundIT`, `KonziliumProposalRoundIT`,
+    `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`, `PortraitWriterNameIT`, `TeamChatApiSwitchOffIT`,
+    `TeamChatBudgetIT`, `TeamChatContextIT`, `TeamChatControllerIT`, `TeamChatRepositoryIT`, `TeamChatServiceIT`,
+    `TeamChatSwitchOffIT`, `TeamEditionReadsIT`, `TeamEditionSchemaIT`, `TeamEditionServiceIT`,
+    `TeamEditionServiceSwitchOffIT`
   - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `ChallengePopulator`,
     `CharacterClaimRevisionPopulator`, `CharacterCouncilPopulator`, `CharacterReplyPopulator`, `CheckInPopulator`,
     `DailySummaryPopulator`, `DatabasePopulator`, `ExperimentPopulator`, `FeedbackPopulator`, `FlagLogPopulator`,

@@ -803,6 +803,13 @@ day. The `.glass.tf-c-*` accent pairs in `boop-world.css` exist because `.glass`
 `--c` later in the bundle at equal specificity — without them every poster and glass chip on the
 wall was sage regardless of its character.
 
+**Mezo csapat-chat összefoglalója (Act III Task 15, `mezo-a9bo7.25`).** The evening edition may
+carry one Mezo `ertekeles` post with `sourceKind: 'team_chat_day'` („Ma n ügyön dolgoztunk: …”).
+`editionPost` maps it like any post; its `sourceRoute` is `/mezo/elo?d=<day>`, so „Miből
+látszik?” opens that day's team chat (`TeamChatPage` reads `?d=`). The chat itself (today's view,
+when it has lines) ends with a flat `tf-note` footnote: „21:00-kor az esti kiadás összefoglalja a
+nap szálait a falon.”
+
 The mock edition sits on the REAL today (`characterMock.ts`), not on the frozen August mock world's
 last night, otherwise the wall's 14-day window could never contain it; its rank-1 post is the
 `voiced: true` example (Falat's voice over exp1's own numbers). Since H5 the mock holds TWO editions

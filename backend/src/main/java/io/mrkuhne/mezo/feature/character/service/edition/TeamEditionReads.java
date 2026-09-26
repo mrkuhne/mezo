@@ -2,7 +2,9 @@ package io.mrkuhne.mezo.feature.character.service.edition;
 
 import io.mrkuhne.mezo.api.dto.PatternMonitorResponse;
 import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
+import io.mrkuhne.mezo.feature.character.entity.TeamChatThreadEntity;
 import io.mrkuhne.mezo.feature.character.repository.CharacterConferenceRepository;
+import io.mrkuhne.mezo.feature.character.service.chat.TeamChatReads;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
@@ -26,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,6 +65,8 @@ public class TeamEditionReads {
     private final FuelDayService fuelDayService;
     private final WorkoutWindowQueryService workoutWindowQueryService;
     private final CheckInRepository checkInRepository;
+    /** Task 15 (mezo-a9bo7.25): absent when the team chat switch is off — then no recap. */
+    private final ObjectProvider<TeamChatReads> teamChatReads;
 
     @Transactional(readOnly = true)
     public List<PatternEntity> patterns(UUID owner) {
@@ -134,5 +139,12 @@ public class TeamEditionReads {
                 .map(CheckInEntity::getDate)
                 .distinct()
                 .count();
+    }
+
+    /** Task 15 (mezo-a9bo7.25): the ügyek the team chat opened or closed on {@code day}; empty when
+     *  the team chat is switched off ({@link TeamChatReads} does not exist then). */
+    public List<TeamChatThreadEntity> teamChatThreads(UUID owner, LocalDate day) {
+        TeamChatReads chat = teamChatReads.getIfAvailable();
+        return chat == null ? List.of() : chat.threadsTouchedOn(owner, day);
     }
 }

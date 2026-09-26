@@ -81,6 +81,15 @@ public class TeamChatReads {
                 .pushesToday((int) pushes).pushBudget(properties.maxPushesPerDay()).build();
     }
 
+    /** Task 15 (mezo-a9bo7.25): the ügyek opened or closed on {@code date} (the user's local day),
+     *  oldest first — the evening edition's {@code team_chat_day} recap reads these. */
+    @Transactional(readOnly = true)
+    public List<TeamChatThreadEntity> threadsTouchedOn(UUID userId, LocalDate date) {
+        Instant from = date.atStartOfDay(properties.zone()).toInstant();
+        Instant to = date.plusDays(1).atStartOfDay(properties.zone()).toInstant();
+        return threads.touchedBetween(userId, from, to);
+    }
+
     /** A line as the API shows it; {@code thread} is embedded only when given (OPEN / RESOLVE). */
     public static TeamChatLine toLine(TeamChatLineEntity line, TeamChatThreadEntity thread) {
         return TeamChatLine.builder()
