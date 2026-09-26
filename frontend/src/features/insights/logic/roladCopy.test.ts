@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { candidateByline, factOwnerTag, pickQuoteClaim, topRoladFacts, ROLAD_COPY } from './roladCopy'
+import type { LifeEventCandidate } from '@/data/types'
+import { candidateByline, factOwnerTag, graphCandidateByline, pickQuoteClaim, topRoladFacts, ROLAD_COPY } from './roladCopy'
 
 const claim = (id: string, confidence: number, proposedBy: string, sensitive = false) =>
   ({ id, text: `t-${id}`, confidence, sensitive, proposedBy, evidence: [] })
@@ -31,6 +32,27 @@ describe('candidateByline', () => {
   it('names who brought it and when', () => {
     expect(candidateByline('falat', new Date().toISOString())).toBe('Falat hozta · ma')
     expect(candidateByline('mezo', '2026-03-02T09:00:00Z')).toMatch(/^Mezo hozta · /)
+  })
+})
+
+describe('graphCandidateByline (final-review fix, mezo-zpxv7)', () => {
+  const base: LifeEventCandidate = {
+    id: 'ev-1', kind: 'LIFE_EVENT', title: 't', summary: null,
+    occurredOn: null, proposedEdgeCount: 0, createdAt: '2026-03-02T09:00:00Z',
+  }
+
+  it('LIFE_EVENT + occurredOn: a nap, amiről szól, nyers ISO alakban', () => {
+    expect(graphCandidateByline({ ...base, occurredOn: '2026-08-24' })).toBe('Mezo hozta · 2026-08-24')
+  })
+
+  it('SEASON + occurredOn: a negyedév, magyarul', () => {
+    expect(graphCandidateByline({ ...base, kind: 'SEASON', occurredOn: '2026-07-01' }))
+      .toBe('Mezo hozta · 2026. III. negyedév')
+  })
+
+  it('occurredOn hiányában a felfedezés napjára esik vissza (createdAt)', () => {
+    expect(graphCandidateByline(base)).toMatch(/^Mezo hozta · /)
+    expect(graphCandidateByline(base)).not.toContain('null')
   })
 })
 

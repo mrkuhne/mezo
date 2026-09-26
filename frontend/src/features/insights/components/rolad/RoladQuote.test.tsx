@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { MOCK_OVERVIEW } from '@/data/character/characterMock'
 import type { CharacterOverviewResponse } from '@/data/character/characterApi'
+import { onToast, type ToastMessage } from '@/shared/lib/toastBus'
 import { pickQuoteClaim, ROLAD_COPY } from '@/features/insights/logic/roladCopy'
 import { TEAM } from '@/features/insights/logic/team'
 import { RoladQuote } from './RoladQuote'
@@ -45,6 +46,16 @@ describe('RoladQuote', () => {
     expect(hoisted.submit).toHaveBeenCalledWith(pick.id, 'TALAL')
     expect(await screen.findByText('Megerősítetted — a benyomás erősödik')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Talál' })).not.toBeInTheDocument()
+  })
+
+  test('Talál also fires a success toast (final-review fix, mezo-zpxv7)', async () => {
+    const seen: ToastMessage[] = []
+    const off = onToast((t) => seen.push(t))
+    render(<RoladQuote />, { wrapper: QueryWrapper })
+    await userEvent.click(screen.getByRole('button', { name: 'Talál' }))
+    off()
+    expect(seen).toContainEqual(
+      expect.objectContaining({ kind: 'success', text: 'Talál — megerősítetted, a benyomás erősödik' }))
   })
 
   test('Pontosítom opens the reply thread on the claim', async () => {

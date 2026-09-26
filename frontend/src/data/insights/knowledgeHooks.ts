@@ -86,8 +86,10 @@ export function useKnowledgeActions() {
 
   return {
     toggle: (id: string, active: boolean) => toggleM.mutate({ id, active }),
+    /** Returns the mutation promise (rejects on failure) so a caller like `useRoladInbox` can
+     *  roll back its own optimistic state — the MutationCache still toasts the error either way. */
     decide: (id: string, decision: FactDecision, refinedText?: string) =>
-      decideM.mutate({ id, decision, refinedText }),
+      decideM.mutateAsync({ id, decision, refinedText }),
     pending: toggleM.isPending || decideM.isPending,
   }
 }

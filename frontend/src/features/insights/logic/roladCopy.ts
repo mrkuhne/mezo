@@ -4,7 +4,8 @@
  * real character claim or nothing.
  */
 import type { components } from '@/data/_client/api.gen'
-import type { FactOwner, KnowledgeFact } from '@/data/types'
+import type { FactOwner, KnowledgeFact, LifeEventCandidate } from '@/data/types'
+import { formatCandidateDate } from '@/data/insights/graph'
 import { characterForPersona, TEAM, type TeamCharacter, type TeamCharacterId } from '@/features/insights/logic/team'
 import { lastSeenLabel } from '@/features/insights/logic/metricFormat'
 import { localDateString } from '@/shared/lib/dates'
@@ -43,9 +44,28 @@ export function factOwnerTag(fact: Pick<KnowledgeFact, 'owner' | 'source'>): Own
   return { label: ch.name.toLocaleUpperCase('hu-HU'), accent: ch.accent }
 }
 
+/** The day half of a candidate's byline — the createdAt read through `lastSeenLabel`'s "ma /
+ *  tegnap / N napja" phrasing. Shared by `candidateByline` and `graphCandidateByline` so the two
+ *  never drift into different wordings for the same "when". */
+function candidateDay(createdAtIso: string): string {
+  return lastSeenLabel(localDateString(new Date(createdAtIso))) ?? ''
+}
+
 export function candidateByline(owner: FactOwner | 'mezo', createdAtIso: string): string {
-  const day = lastSeenLabel(localDateString(new Date(createdAtIso))) ?? ''
-  return `${TEAM[owner].name} hozta · ${day}`
+  return `${TEAM[owner].name} hozta · ${candidateDay(createdAtIso)}`
+}
+
+/**
+ * U9b final-review fix (mezo-zpxv7): the L2 graph-candidate card's status-row byline. An
+ * életesemény/szezon jelölt mindig Mezótól jön (a gráf-kapcsoló forrása), a „mikor" viszont a
+ * jelölt SAJÁT ideje, ha van: `occurredOn` (SEASON → a negyedév, LIFE_EVENT → a nap, amiről szól),
+ * és csak ennek hiányában esik vissza a jelölt felfedezésének napjára (`createdAt`).
+ */
+export function graphCandidateByline(candidate: LifeEventCandidate): string {
+  const when = candidate.occurredOn
+    ? formatCandidateDate(candidate.kind, candidate.occurredOn)
+    : candidateDay(candidate.createdAt)
+  return `Mezo hozta · ${when}`
 }
 
 export function topRoladFacts(facts: KnowledgeFact[], n = 4): KnowledgeFact[] {

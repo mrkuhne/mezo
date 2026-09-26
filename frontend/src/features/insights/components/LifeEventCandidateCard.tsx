@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { LifeEventCandidate, LifeEventDecision } from '@/data/types'
 import { CANDIDATE_COPY } from '@/data/insights/graph'
-import { candidateByline } from '@/features/insights/logic/roladCopy'
+import { graphCandidateByline } from '@/features/insights/logic/roladCopy'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 
 /** Üveg (U9 · mezo-me75u.9): an életesemény speaks amber, a szezon sky — each a glass case
@@ -48,7 +48,7 @@ export function LifeEventCandidateCard({ candidate, onDecide }: {
     <article className={`glass tf-case tf-c-${skin.accent} tf-s-${skin.accent} tud9-case tud9-life`} data-graph-card>
       <span className="tf-crow">
         <span className="tf-st">{skin.status}</span>
-        <em>{candidateByline('mezo', candidate.createdAt)}</em>
+        <em>{graphCandidateByline(candidate)}</em>
       </span>
 
       {refining ? (
@@ -102,6 +102,9 @@ export function LifeEventCandidateCard({ candidate, onDecide }: {
           <button type="button" className="tud9-no" onClick={() => onDecide('reject')}>
             Nem igaz
           </button>
+          {candidate.proposedEdgeCount > 0 && (
+            <p className="tud9-foot">Elfogadás után {candidate.proposedEdgeCount} kapcsolat is bekerül.</p>
+          )}
         </>
       )}
     </article>

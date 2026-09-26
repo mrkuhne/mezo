@@ -62,8 +62,10 @@ export function useLifeEventActions() {
   })
 
   return {
+    /** Returns the mutation promise (rejects on failure) so a caller like `useRoladInbox` can
+     *  roll back its own optimistic state — the MutationCache still toasts the error either way. */
     decide: (id: string, decision: LifeEventDecision, refined?: RefinedCandidate) =>
-      decideM.mutate({ id, decision, refined }),
+      decideM.mutateAsync({ id, decision, refined }),
     pending: decideM.isPending,
   }
 }

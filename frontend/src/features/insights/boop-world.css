@@ -262,6 +262,7 @@ a.tf-hint { color: color-mix(in srgb, var(--c) 80%, #fff); }
 .tf-s-sky { --s: var(--dv-sky); }
 .tf-s-lav { --s: var(--dv-lav); }
 .tf-s-sage { --s: var(--dv-sage); }
+.tf-s-rose { --s: var(--dv-rose); }
 .tf-s-slate { --s: #8E86A3; }
 
 @media (max-width: 360px) {

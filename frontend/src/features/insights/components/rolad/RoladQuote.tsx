@@ -38,6 +38,7 @@ export function RoladQuote({ delay = 0 }: { delay?: number }) {
     try {
       await submit(claim!.id, 'TALAL')
       setConfirmed(true)
+      show({ kind: 'success', text: 'Talál — megerősítetted, a benyomás erősödik' })
     } catch {
       show({ kind: 'error', text: 'Nem sikerült elküldeni a visszajelzést — próbáld újra' })
     }

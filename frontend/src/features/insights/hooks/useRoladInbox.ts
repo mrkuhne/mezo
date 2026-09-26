@@ -37,10 +37,15 @@ export function useRoladInbox() {
   const pendingCandidates = candidates.filter((c) => !settledIds.has(c.id))
   const pendingLifeEvents = lifeEvents.filter((c) => !settledIds.has(c.id))
 
+  // A settled id rolls back on a failed mutation (final-review fix, mezo-zpxv7): the candidate
+  // comes back to the open list, and the global MutationCache still toasts the error — this hook
+  // only owns the afterlife-line bookkeeping, not the error message.
+  const rollback = (id: string) => setSettled((prev) => prev.filter((s) => s.id !== id))
+
   const decideFact = (c: FactCandidate, decision: FactDecision, refinedText?: string) => {
     const title = decision === 'refine' && refinedText ? refinedText : c.text
     setSettled((prev) => [...prev, { id: c.id, kind: 'FACT', title, outcome: OUTCOME[decision], edgeCount: 0 }])
-    decideFactM(c.id, decision, refinedText)
+    decideFactM(c.id, decision, refinedText).catch(() => rollback(c.id))
   }
 
   const decideLifeEvent = (c: LifeEventCandidate, decision: LifeEventDecision, refined?: RefinedCandidate) => {
@@ -49,7 +54,7 @@ export function useRoladInbox() {
       ...prev,
       { id: c.id, kind: c.kind, title, outcome: OUTCOME[decision], edgeCount: c.proposedEdgeCount },
     ])
-    decideLifeEventM(c.id, decision, refined)
+    decideLifeEventM(c.id, decision, refined).catch(() => rollback(c.id))
   }
 
   return {
