@@ -24,9 +24,11 @@
 // scopes the shared glass dialog to this page (centred, coral) without re-skinning every other
 // caller; the card itself is the ONE glass, the `.wos-gb` bodies inside it are flat.
 // ============================================================
+import { useState } from 'react'
 import type { Challenge, LoggedWorkoutExercise } from '@/data/types'
 import { videoEmbed } from '@/features/train/components/VideoDemo'
-import { ChallengeCard } from '@/features/train/components/ChallengeCard'
+import { challengeConfidenceLine, challengeTypeIcon, challengeTypeLabel, targetChips } from '@/features/train/logic/challengeDisplay'
+import { RefTag } from '@/shared/ui/RefTag'
 import { ChallengeGenerationLoader } from '@/features/train/components/ChallengeGenerationLoader'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
@@ -100,7 +102,7 @@ export function noteHint(hasNote: boolean): string {
 /** The Küldetések row's hint (mezo-e1ii9) — the day's quest state in one line. */
 export function challengeHint(pending: boolean, accepted: number, total: number): string {
   if (pending) return 'A mai ajánlatok készülnek…'
-  if (total === 0) return 'Ma nincs kihívás'
+  if (total === 0) return 'Ma nincs küldetés'
   return `${accepted}/${total} elfogadva`
 }
 
@@ -201,27 +203,40 @@ export interface WorkoutChallengesGlassProps {
   open: boolean
   /** The day's challenges (mock seed or the live server list — `useChallenges`). */
   challenges: Challenge[]
-  /** id -> accepted, the same map the retired prep tile fed to `ChallengeCard`. */
+  /** id -> accepted (mock: the local toggle; live: status-derived). */
   accepted: Record<string, boolean>
-  /** Accept/dismiss — the mock local toggle or real mode's persisted `decide`. */
+  /** Tick / untick — the mock local toggle or real mode's persisted `decide` (accept / undo). */
   onToggle: (id: string) => void
   /** The lazy backend generation is in flight (real mode only). */
   pending: boolean
+  /** The list could not be read (real mode only) — say so and offer a retry. */
+  failed?: boolean
+  onRetry?: () => void
   tint: string
   onClose: () => void
 }
 
+/** A resolved challenge (the workout is decided): its check slot shows the outcome instead. */
+const OUTCOME: Partial<Record<string, { icon: Icon3DName; label: string }>> = {
+  hit: { icon: 't-tick', label: 'teljesült' },
+  miss: { icon: 't-skip', label: 'nem teljesült' },
+  inconclusive: { icon: 't-skip', label: 'nem értékelhető' },
+}
+
 /**
- * The Küldetések glass (mezo-e1ii9) — accept/dismiss's home now that the pre-Titanium
- * prep mosaic is gone. Opened from the workout header's ⋯ menu; the body is the SAME
- * three states, the SAME `ChallengeCard`s and the SAME copy the old `PrepKuldetesekPage`
- * carried (pending loader → honest empty line → the vertical card stack + the
- * "passzolni ér" principle), just docked in a glass instead of a full page.
+ * The Küldetések glass — the start-of-workout picker (mezo-oy91i, owner-picked variant B of
+ * `prototypes/uveg-kuldetes.html`). One row per challenge in the closing ceremony's shape (bible
+ * U4 rule 28): the exercise name, then ONE chip line (the type chip with its 3D icon, then the
+ * target values), the check circle at the top-right. „Miért ezt?" folds the reasoning open under
+ * a hairline. Ticking accepts, unticking undoes; untouched rows simply stay offers. The foot
+ * button closes the glass: „Indulhat · N küldetéssel" once something is ticked.
  */
 export function WorkoutChallengesGlass({
-  open, challenges, accepted, onToggle, pending, tint, onClose,
+  open, challenges, accepted, onToggle, pending, failed = false, onRetry, tint, onClose,
 }: WorkoutChallengesGlassProps) {
+  const [openWhy, setOpenWhy] = useState<string | null>(null)
   const acceptedCount = challenges.filter((c) => accepted[c.id]).length
+  const sub = pending ? 'készül…' : acceptedCount > 0 ? `${acceptedCount} vállalva` : 'Válassz, amennyit bírsz'
   return (
     <GlassBox
       open={open} onClose={onClose} label="A mai küldetések" tint={tint} className="wos-gbx wos-gbx-chal"
@@ -229,21 +244,80 @@ export function WorkoutChallengesGlass({
       art={<Icon3D name="t-quest" size={52} className="wos-gb-art3d" />}
     >
       <div className="wos-gb wos-gb-chal">
-        <p className="wos-gb-sub">{pending ? 'készül…' : `${acceptedCount} / ${challenges.length} elfogadva`}</p>
+        <p className="wos-gb-sub">{sub}</p>
         {pending ? (
           <ChallengeGenerationLoader />
+        ) : failed ? (
+          <div className="wos-gb-empty uv-empty">
+            <p>A küldetések nem jöttek le. Az edzés ettől még indulhat.</p>
+            {onRetry && <button type="button" className="wos-pill is-lit" onClick={onRetry}>Újra</button>}
+          </div>
         ) : challenges.length === 0 ? (
-          <p className="wos-gb-empty uv-empty">Ma nincs kihívás</p>
+          <p className="wos-gb-empty uv-empty">Ma nincs küldetés — ehhez az edzéshez még kevés az előzmény.</p>
         ) : (
-          <EntranceGroup className="wos-chlist">
-            {challenges.map((c) => (
-              <ChallengeCard key={c.id} challenge={c} accepted={!!accepted[c.id]} onToggle={() => onToggle(c.id)} />
-            ))}
-          </EntranceGroup>
+          <>
+            <p className="wos-qlead">Pipáld ki, amit vállalsz. A többi magától kimarad — passzolni ér.</p>
+            <EntranceGroup className="wos-chlist">
+              {challenges.map((c) => {
+                const on = !!accepted[c.id]
+                const outcome = c.status ? OUTCOME[c.status] : undefined
+                const why = openWhy === c.id
+                return (
+                  <div key={c.id} className={`wos-qc${on ? ' is-accepted' : ''}${outcome ? ` is-${c.status}` : ''}`}>
+                    <div className="wos-qc-body">
+                      {c.exercise && <strong>{c.exercise}</strong>}
+                      <span className="wos-qc-vals">
+                        <span className="wos-qc-type">
+                          <Icon3D name={challengeTypeIcon(c.type)} size={24} />
+                          {challengeTypeLabel(c.typeLabel)}
+                        </span>
+                        {targetChips(c.target).map((v, j) => <b key={`${v}-${j}`}>{v}</b>)}
+                      </span>
+                    </div>
+                    {outcome ? (
+                      <span className="wos-qc-ck is-outcome" role="img" aria-label={outcome.label}>
+                        <Icon3D name={outcome.icon} size={28} />
+                      </span>
+                    ) : (
+                      <button
+                        type="button" className="wos-qc-ck" aria-pressed={on}
+                        aria-label={`${c.exercise ?? challengeTypeLabel(c.typeLabel)}: ${on ? 'vállalva' : 'vállalom'}`}
+                        onClick={() => onToggle(c.id)}
+                      >
+                        <Icon3D name="t-tick" size={28} />
+                      </button>
+                    )}
+                    {why && (
+                      <div className="wos-qc-why">
+                        <p>{outcome && c.outcome ? c.outcome : c.why}</p>
+                        {!outcome && (
+                          <span className="wos-qc-glory"><Icon3D name="t-star" size={20} />{c.glory}</span>
+                        )}
+                        <span className="wos-qc-conf">{challengeConfidenceLine(c.confidence, c.risk)}</span>
+                        {c.refs.length > 0 && (
+                          <span className="wos-qc-refs">
+                            {c.refs.map((r, i) => <RefTag key={i} kind={r.kind} label={r.label} glass />)}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <button type="button" className="wos-qc-more" aria-expanded={why} onClick={() => setOpenWhy(why ? null : c.id)}>
+                      {why ? 'Kevesebb' : 'Miért ezt? ›'}
+                    </button>
+                  </div>
+                )
+              })}
+            </EntranceGroup>
+          </>
         )}
-        <p className="wos-gb-note">
-          Passzolni ér — a kihívás ajánlat, nem elvárás. Az eredmény a záráskor derül ki, és sosem piros.
-        </p>
+        <button
+          type="button"
+          className={acceptedCount > 0 ? 'wos-qfoot is-lit' : 'wos-qfoot'}
+          onClick={onClose}
+        >
+          {acceptedCount > 0 && <Icon3D name="t-dumbbell" size={24} />}
+          {acceptedCount > 0 ? `Indulhat · ${acceptedCount} küldetéssel` : 'Ma küldetés nélkül'}
+        </button>
       </div>
     </GlassBox>
   )

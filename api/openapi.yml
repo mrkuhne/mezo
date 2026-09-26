@@ -21558,7 +21558,7 @@ components:
       properties:
         decision:
           type: string
-          pattern: ^(accept|dismiss)$
+          pattern: ^(accept|dismiss|undo)$
     ChallengeRef:
       type: object
       required:

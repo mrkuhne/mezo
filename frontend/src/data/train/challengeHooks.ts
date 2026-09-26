@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
-import { challengeApi } from '@/data/train/challengeApi'
+import { challengeApi, type ChallengeDecision } from '@/data/train/challengeApi'
 import { workout as mockWorkout } from '@/data/train/train'
 import type { Challenge } from '@/data/types'
 
@@ -11,6 +11,10 @@ export interface ChallengesView {
   mode: 'mock' | 'live'
   /** Real mode: the list query is in flight (the lazy LLM generation) — render the skeleton. */
   pending: boolean
+  /** Real mode: the list could not be read (mezo-oy91i) — the start row says so and offers a retry
+   *  instead of vanishing. */
+  failed: boolean
+  retry: () => void
 }
 
 /**
@@ -32,9 +36,17 @@ export function useChallenges(templateSessionId: string | null, date: string): C
     retry: false,
   })
   if (mock) {
-    return { challenges: mockWorkout.challenges, mode: 'mock', pending: false }
+    return { challenges: mockWorkout.challenges, mode: 'mock', pending: false, failed: false, retry: () => {} }
   }
-  return { challenges: q.data ?? [], mode: 'live', pending: q.isPending }
+  // No template (a custom workout) disables the query: TanStack keeps it 'pending' forever, which
+  // read as an eternal "készül…". Only a query that actually runs is pending.
+  return {
+    challenges: q.data ?? [],
+    mode: 'live',
+    pending: q.isPending && q.fetchStatus !== 'idle',
+    failed: q.isError,
+    retry: () => { void q.refetch() },
+  }
 }
 
 /**
@@ -47,7 +59,7 @@ export function useChallengeActions(templateSessionId: string | null, date: stri
   const invalidate = () => qc.invalidateQueries({ queryKey: key(templateSessionId, date) })
 
   const decision = useMutation({
-    mutationFn: async ({ id, decision }: { id: string; decision: 'accept' | 'dismiss' }) => {
+    mutationFn: async ({ id, decision }: { id: string; decision: ChallengeDecision }) => {
       if (mock) return
       await challengeApi.decide(id, decision)
     },
@@ -55,7 +67,7 @@ export function useChallengeActions(templateSessionId: string | null, date: stri
   })
 
   return {
-    decide: (id: string, d: 'accept' | 'dismiss') => decision.mutate({ id, decision: d }),
+    decide: (id: string, d: ChallengeDecision) => decision.mutate({ id, decision: d }),
     pending: decision.isPending,
   }
 }

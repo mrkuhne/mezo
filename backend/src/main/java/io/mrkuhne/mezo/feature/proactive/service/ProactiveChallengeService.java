@@ -94,6 +94,16 @@ public class ProactiveChallengeService {
         ChallengeEntity c = challengeRepository.findByIdAndCreatedBy(id, userId)
                 .orElseThrow(() -> new SystemRuntimeErrorException(
                         SystemMessage.error("PROACTIVE_CHALLENGE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
+        // mezo-oy91i: the picker's check circle toggles, so an accepted (not yet resolved)
+        // challenge can be undone back to proposed; every other decision needs a proposed row.
+        if ("undo".equals(request.getDecision())) {
+            if (!ChallengeEntity.STATUS_ACCEPTED.equals(c.getStatus())) {
+                throw new SystemRuntimeErrorException(
+                        SystemMessage.error("PROACTIVE_CHALLENGE_NOT_ACCEPTED").build(), HttpStatus.CONFLICT);
+            }
+            c.setStatus(ChallengeEntity.STATUS_PROPOSED);
+            return mapper.toChallengeResponse(challengeRepository.saveAndFlush(c));
+        }
         if (!ChallengeEntity.STATUS_PROPOSED.equals(c.getStatus())) {
             throw new SystemRuntimeErrorException(
                     SystemMessage.error("PROACTIVE_CHALLENGE_NOT_PROPOSED").build(), HttpStatus.CONFLICT);

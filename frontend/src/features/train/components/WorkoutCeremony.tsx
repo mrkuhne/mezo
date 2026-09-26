@@ -45,6 +45,7 @@ import { verdictFor, type CerScore, type MuscleStarRow } from '@/features/train/
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { MEDAL_TYPE_LABEL, formatMedalNumber } from '@/features/train/logic/medalLabels'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
+import { challengeTypeIcon, challengeTypeLabel, targetChips } from '@/features/train/logic/challengeDisplay'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 
 /** One record row of the step-one records card: the exercise, the medal type label
@@ -195,26 +196,10 @@ const RECORD_KIND_ICON: Record<string, Icon3DName> = {
   'Súly-rekord': 't-weight', 'Rep-rekord': 't-repeat', '1RM-rekord': 't-ring', 'Volumen-rekord': 't-protocol',
 }
 /** Challenge type → its 3D icon. */
-const CHALLENGE_TYPE_ICON: Record<string, Icon3DName> = {
-  overload: 't-up', PR: 't-record', Depth: 't-hold', Volume: 't-protocol', Tempo: 't-clock',
-}
 const CHALLENGE_OUTCOME: Record<CeremonyChallenge['status'], { icon: Icon3DName; label: string }> = {
   hit: { icon: 't-tick', label: 'teljesült' },
   miss: { icon: 't-skip', label: 'nem teljesült' },
   inconclusive: { icon: 't-skip', label: 'nem értékelhető' },
-}
-
-/** The wire label may carry an emoji ('⚡ Túlterhelés'); the chip's icon is the 3D one. */
-const cleanLabel = (label: string) => label.replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '').trim()
-
-/** '107.5 kg × 8' → ['107,5 kg', '8 ism.']; free-text pieces pass through as they are. */
-export function targetChips(target: string): string[] {
-  return target.split(/ × | · /).map((p) => p.trim()).filter(Boolean).map((p) => {
-    const kg = /^(\d+(?:[.,]\d+)?)\s*kg$/i.exec(p)
-    if (kg) return `${kg[1].replace('.', ',')} kg`
-    if (/^\d+$/.test(p)) return `${p} ism.`
-    return p
-  })
 }
 
 export function WorkoutCeremony({
@@ -530,8 +515,8 @@ export function WorkoutCeremony({
                       {c.exercise && <strong>{c.exercise}</strong>}
                       <span className="cer-vals">
                         <span className="cer-tchip is-coral">
-                          <Icon3D name={CHALLENGE_TYPE_ICON[c.type] ?? 't-quest'} size={24} />
-                          {cleanLabel(c.typeLabel)}
+                          <Icon3D name={challengeTypeIcon(c.type)} size={24} />
+                          {challengeTypeLabel(c.typeLabel)}
                         </span>
                         {targetChips(c.target).map((v, j) => <b key={`${v}-${j}`}>{v}</b>)}
                       </span>
