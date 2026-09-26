@@ -37,15 +37,20 @@ class WeeklyScheduledActivityServiceIT extends AbstractIntegrationTest {
         trainPopulator.createGymSlot(user, 4, "18:00"); // Fri  → 3 gym × 60min
         trainPopulator.createScheduleSlot(user, 1, "18:00", 120, "training"); // Tue volleyball
         trainPopulator.createScheduleSlot(user, 3, "18:00", 120, "training"); // Thu volleyball → 2 × 120min
-        // gym:  6.0 × 80 × (60/60) × 3 = 1440 ; sport: 4.5 × 80 × (120/60) × 2 = 1440 ; total 2880 ÷ 7
-        double expected = (6.0 * 80 * 1.0 * 3 + 4.5 * 80 * 2.0 * 2) / 7.0;
+        // gym/sport MET read off the live config (rewritten in the net-model task, mezo-32m82 Task 3):
+        // blockKcal's temporary bridge reads the moderate band, and "sport" has no dedicated key so
+        // it falls back to "other" — same as the production bridge in WeeklyScheduledActivityService.
+        double gymMet = props.energy().met().get("gym").moderate();
+        double sportMet = props.energy().met().get("other").moderate();
+        double expected = (gymMet * 80 * 1.0 * 3 + sportMet * 80 * 2.0 * 2) / 7.0;
         assertThat(service.scheduledWeeklyEatKcalPerDay(user, W).doubleValue()).isCloseTo(expected, within(0.5));
     }
 
     @Test
     void testRunWeeklyEat_shouldScaleWithSessions() {
-        // 9.5 × 80 × (45/60) × 3 ÷ 7
-        double expected = props.met().run() * 80 * (props.runDefaultMinutes() / 60.0) * 3 / 7.0;
+        // run MET (moderate band) read off the live config (rewritten in the net-model task, mezo-32m82 Task 3)
+        double runMet = props.energy().met().get("run").moderate();
+        double expected = runMet * 80 * (props.runDefaultMinutes() / 60.0) * 3 / 7.0;
         assertThat(service.runWeeklyEatKcalPerDay(3, W).doubleValue()).isCloseTo(expected, within(0.5));
         assertThat(service.runWeeklyEatKcalPerDay(0, W).doubleValue()).isZero();
     }

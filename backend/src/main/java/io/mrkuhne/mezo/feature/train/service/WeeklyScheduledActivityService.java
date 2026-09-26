@@ -88,14 +88,19 @@ public class WeeklyScheduledActivityService {
             .divide(BigDecimal.valueOf(DAYS_PER_WEEK), SCALE, RoundingMode.HALF_UP);
     }
 
-    /** MET × kg × (durationMin / 60). The shared MET×kg×óra primitive. */
+    /**
+     * MET × kg × (durationMin / 60). The shared MET×kg×óra primitive.
+     *
+     * <p>TEMPORARY bridge onto the moderate band of the new net activity-energy model's MET table
+     * (mezo-32m82) so this class keeps compiling; Task 3 rewrites this method onto
+     * {@link ActivityEnergyModel} properly (net-of-rest, RPE-aware).
+     */
     public BigDecimal blockKcal(String kind, int durationMin, BigDecimal weightKg) {
-        double met = switch (kind) {
-            case KIND_GYM -> props.met().gym();
-            case KIND_SPORT -> props.met().sport();
-            case KIND_RUN -> props.met().run();
-            default -> props.met().defaultKind();
-        };
+        TrainProperties.MetBand row = kind == null ? null : props.energy().met().get(kind);
+        if (row == null) {
+            row = props.energy().met().get("other");
+        }
+        double met = row.moderate();
         return BigDecimal.valueOf(met)
             .multiply(weightKg)
             .multiply(BigDecimal.valueOf(durationMin))

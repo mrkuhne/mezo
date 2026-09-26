@@ -1,0 +1,30 @@
+{
+  "comment": "Shared FE↔BE golden vectors for the activity-energy model (mezo-32m82). netKcal = round((MET-1) × restKcalPerHour × min/60). Both ActivityEnergyVectorsTest (BE) and activityEnergy.test.ts (FE) assert every row. Change the model → change this file → both sides must follow.",
+  "restKcalPerHour": [
+    { "bmr": 1920, "weightKg": 80, "expected": 80.0 },
+    { "bmr": null, "weightKg": 80, "expected": 80.0 },
+    { "bmr": null, "weightKg": null, "expected": null }
+  ],
+  "netKcal": [
+    { "kind": "gym",        "rpe": null, "min": 60,  "rest": 80, "expected": 200 },
+    { "kind": "gym",        "rpe": 9,    "min": 60,  "rest": 80, "expected": 320 },
+    { "kind": "volleyball", "rpe": 7,    "min": 120, "rest": 80, "expected": 480 },
+    { "kind": "volleyball", "rpe": 3,    "min": 90,  "rest": 80, "expected": 240 },
+    { "kind": "volleyball", "rpe": 9,    "min": 90,  "rest": 80, "expected": 600 },
+    { "kind": "volleyball", "rpe": null, "min": 60,  "rest": 80, "expected": 240 },
+    { "kind": "football",   "rpe": null, "min": 60,  "rest": 80, "expected": 480 },
+    { "kind": "basketball", "rpe": null, "min": 60,  "rest": 80, "expected": 440 },
+    { "kind": "tennis",     "rpe": null, "min": 60,  "rest": 80, "expected": 480 },
+    { "kind": "trx",        "rpe": null, "min": 60,  "rest": 80, "expected": 280 },
+    { "kind": "cross",      "rpe": null, "min": 60,  "rest": 80, "expected": 384 },
+    { "kind": "swim",       "rpe": 8,    "min": 30,  "rest": 80, "expected": 352 },
+    { "kind": "bike",       "rpe": null, "min": 60,  "rest": 80, "expected": 464 },
+    { "kind": "hike",       "rpe": null, "min": 60,  "rest": 80, "expected": 400 },
+    { "kind": "run",        "rpe": null, "min": 45,  "rest": 80, "expected": 498 },
+    { "kind": "other",      "rpe": null, "min": 60,  "rest": 80, "expected": 240 },
+    { "kind": "kajak",      "rpe": null, "min": 60,  "rest": 80, "expected": 240 },
+    { "kind": "volleyball", "rpe": 7,    "min": 140, "rest": 81.8, "expected": 573 },
+    { "kind": "volleyball", "rpe": 7,    "min": 0,   "rest": 80, "expected": null },
+    { "kind": "volleyball", "rpe": 7,    "min": 60,  "rest": null, "expected": null }
+  ]
+}

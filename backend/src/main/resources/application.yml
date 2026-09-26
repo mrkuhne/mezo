@@ -2644,11 +2644,20 @@ mezo:
     gym-default-minutes: 60        # gym schedule slots carry no duration
     run-default-minutes: 45        # interval runs have no single continuous duration
     sport-session-max-span-days: 400   # widest inclusive from..to window the sport-session log accepts
-    met:                           # MET by kind — MIRROR of FE fuelConfig.MET_BY_KIND (drift-guard test)
-      gym: 6.0
-      sport: 4.5
-      run: 9.5
-      default-kind: 5.0
+    energy:                        # net activity-energy model (mezo-32m82): kcal = (MET−1) × BMR/24 × h
+      met:                         # 2024 Adult Compendium (pacompendium.com); light / moderate / hard = RPE 1–4 / 5–7 / 8–10
+        gym:        { light: 3.5, moderate: 3.5, hard: 5.0 }   # 02054 multiple exercises 8–15 reps; 02052 squats/deadlifts
+        volleyball: { light: 3.0, moderate: 4.0, hard: 6.0 }   # 15720 non-competitive; 15710 general; 15711 competitive
+        football:   { light: 5.0, moderate: 7.0, hard: 9.5 }   # no light-band Compendium code (soccer); 15610 casual general; 15605 competitive
+        basketball: { light: 4.5, moderate: 6.5, hard: 8.0 }   # 15070 shooting baskets; 15050 non-game general; 15040 game
+        tennis:     { light: 5.0, moderate: 7.0, hard: 8.0 }   # 15680 doubles (4.5, closest); 15675 general moderate effort; 15676/15690 competitive/singles
+        trx:        { light: 3.0, moderate: 4.5, hard: 6.5 }   # no TRX-specific Compendium code; approximated on 02055 circuit/peripheral-heart-action bodyweight training
+        cross:      { light: 4.0, moderate: 5.8, hard: 8.0 }   # 02022 calisthenics moderate; 02055 resistance circuit reciprocal supersets; 02040 circuit w/ kettlebells vigorous
+        swim:       { light: 5.8, moderate: 8.3, hard: 9.8 }   # 18240 freestyle slow; 18310 freestyle fast vigorous; 18340 treading water fast vigorous
+        bike:       { light: 5.8, moderate: 6.8, hard: 8.0 }   # 01019 leisure 9.4 mph; 01016 self-selected moderate pace; 01030 12–13.9 mph moderate effort
+        hike:       { light: 5.3, moderate: 6.0, hard: 7.8 }   # 17082 fields/hillsides no load; 17080 cross country; 17012 backpacking with daypack
+        run:        { light: 7.5, moderate: 9.3, hard: 10.5 }  # 12020 jogging self-selected pace; 12050 6–6.3 mph; 12060 6.7 mph / 9 min-mile
+        other:      { light: 3.0, moderate: 4.0, hard: 6.0 }   # fallback for unmapped kinds (e.g. kajak); mirrors volleyball's generic band
     # Workout-timing tuning (mezo-1jm8) — measurement clips + profile-learner seeds.
     # Binds onto TimingProperties.
     timing:
