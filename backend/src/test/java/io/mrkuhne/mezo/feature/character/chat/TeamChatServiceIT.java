@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepGoalRepository;
 import io.mrkuhne.mezo.feature.character.config.TeamChatProperties;
 import io.mrkuhne.mezo.feature.character.entity.TeamChatLineEntity;
@@ -51,6 +53,7 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
 
     @Autowired private TeamChatService service;
     @Autowired private TeamChatThreadRepository threads;
+    @Autowired private AppNotificationRepository appNotifications;
     @Autowired private TeamChatLineRepository lines;
     @Autowired private TeamChatProperties properties;
     @Autowired private CompanionProperties companionProperties;
@@ -387,5 +390,67 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
         assertThatThrownBy(() -> service.apply(owner, thread.getId(), AdviceActionKey.LIGHTEN_TOMORROW))
                 .isInstanceOf(SystemRuntimeErrorException.class)
                 .hasMessageContaining("CHARACTER_TEAM_CHAT_ACTION_NOT_OFFERED");
+    }
+
+    // ---- Task 10 (mezo-a9bo7.23): the push budget — at most 2/day, the second only when its
+    // ügy outranks every ügy already pushed today (AdvicePriority: load_fuel_mismatch outranks
+    // sleep_debt). ----
+
+    // (j) the lower-severity ügy opens first, the more severe one second — both fit the budget.
+    @Test
+    void open_lowerSeverityFirstThenMoreSevere_pushesBoth() {
+        UUID owner = owner();
+        Instant now = Instant.now();
+        raiseSleepDebtLog(owner);
+        raiseLoadFuelLog(owner, 7);
+
+        TeamChatThreadEntity first = service.open(owner, FlagKey.SLEEP_DEBT, now).orElseThrow();
+        TeamChatThreadEntity second = service.open(owner, FlagKey.LOAD_FUEL_MISMATCH, now).orElseThrow();
+
+        assertThat(threads.findById(first.getId()).orElseThrow().getPushed()).isTrue();
+        assertThat(threads.findById(second.getId()).orElseThrow().getPushed()).isTrue();
+        assertThat(appNotifications.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+                .filteredOn(n -> AppNotificationKind.TEAM_CHAT.key().equals(n.getKind()))
+                .hasSize(2)
+                .allSatisfy(n -> assertThat(n.getDeeplink()).isEqualTo("/mezo/elo"));
+    }
+
+    // (k) reversed order: the more severe ügy opens first — the second, less severe one is silent.
+    @Test
+    void open_moreSevereFirstThenLowerSeverity_pushesOnlyTheFirst() {
+        UUID owner = owner();
+        Instant now = Instant.now();
+        raiseSleepDebtLog(owner);
+        raiseLoadFuelLog(owner, 7);
+
+        TeamChatThreadEntity first = service.open(owner, FlagKey.LOAD_FUEL_MISMATCH, now).orElseThrow();
+        TeamChatThreadEntity second = service.open(owner, FlagKey.SLEEP_DEBT, now).orElseThrow();
+
+        assertThat(threads.findById(first.getId()).orElseThrow().getPushed()).isTrue();
+        assertThat(threads.findById(second.getId()).orElseThrow().getPushed()).isFalse();
+        assertThat(appNotifications.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+                .filteredOn(n -> AppNotificationKind.TEAM_CHAT.key().equals(n.getKind()))
+                .singleElement()
+                .satisfies(n -> {
+                    assertThat(n.getRefId()).isEqualTo(first.getId());
+                    assertThat(n.getDedupKey()).isEqualTo("team_chat:" + first.getId());
+                    assertThat(n.getTitle()).isEqualTo("Mocor · Terhelés–táplálás");
+                    assertThat(n.getDeeplink()).isEqualTo("/mezo/elo");
+                });
+    }
+
+    // (l) a resolve never pushes, budget or not.
+    @Test
+    void resolve_neverPushes() {
+        UUID owner = owner();
+        raiseSleepDebtLog(owner);
+        service.open(owner, FlagKey.SLEEP_DEBT, Instant.now());
+
+        service.resolve(owner, FlagKey.SLEEP_DEBT,
+                new FlagVerdict.ClearEvidence("deficit_hours", 2.0, 5.0, null), Instant.now());
+
+        assertThat(appNotifications.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+                .filteredOn(n -> AppNotificationKind.TEAM_CHAT.key().equals(n.getKind()))
+                .hasSize(1); // only the OPEN's push — the RESOLVE wrote no second one.
     }
 }

@@ -31,6 +31,11 @@ public interface TeamChatThreadRepository extends JpaRepository<TeamChatThreadEn
     /** The day's push count for {@code TeamChatReads} ({@code pushesToday}). */
     long countByCreatedByAndPushedTrueAndOpenedAtBetweenAndDeletedFalse(UUID createdBy, Instant from, Instant to);
 
+    /** The flag keys of every ügy already pushed today — {@code TeamChatService.open}'s input to
+     *  {@link io.mrkuhne.mezo.feature.character.service.chat.TeamChatPushPolicy#shouldPush}. */
+    List<TeamChatThreadEntity> findByCreatedByAndPushedTrueAndOpenedAtBetweenAndDeletedFalse(
+            UUID createdBy, Instant from, Instant to);
+
     Optional<TeamChatThreadEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 
     /** The chat's own "already used" notion for {@code InterventionService.pick}: a library entry

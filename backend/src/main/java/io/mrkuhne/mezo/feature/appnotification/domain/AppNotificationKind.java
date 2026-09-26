@@ -60,7 +60,15 @@ public enum AppNotificationKind {
      *  {@code pattern} családon utazik — az {@link #OBSERVATION_NEW} precedense: ugyanazokról a
      *  napi észlelésekről szól, csak a felülete más (az üzenőfal, nem az Észrevételek fül). Csak
      *  publikált, legalább egy posztot hozó kiadás emitál; a csendes nap néma marad. */
-    TEAM_EDITION("team_edition", "pattern", "/mezo");
+    TEAM_EDITION("team_edition", "pattern", "/mezo"),
+    /** Csapatfal Act III Task 10 (mezo-a9bo7.23): a team chat ügy phone push — at most
+     *  {@code TeamChatProperties.maxPushesPerDay} per user per local day, the second only when its
+     *  flag key outranks every ügy already pushed that day ({@code TeamChatPushPolicy}), never on a
+     *  resolution. familyKey {@code intervention}: the generic feed-anchored path
+     *  ({@code AnchorResolver.feedAnchors}) wake-defers it like every other feed family, riding the
+     *  existing {@code intervention} push category rather than a new one. Deeplinks into the ügy's
+     *  own chat surface, not the {@link #TEAM_EDITION} wall. */
+    TEAM_CHAT("team_chat", "intervention", "/mezo/elo");
 
     private final String key;
     private final String familyKey;

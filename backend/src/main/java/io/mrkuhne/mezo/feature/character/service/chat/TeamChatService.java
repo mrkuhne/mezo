@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.character.service.chat;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.character.config.TeamChatProperties;
 import io.mrkuhne.mezo.feature.character.entity.EditionFactsEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.TeamChatActionsEnvelope;
@@ -8,6 +10,7 @@ import io.mrkuhne.mezo.feature.character.entity.TeamChatThreadEntity;
 import io.mrkuhne.mezo.feature.character.repository.TeamChatLineRepository;
 import io.mrkuhne.mezo.feature.character.repository.TeamChatThreadRepository;
 import io.mrkuhne.mezo.feature.character.service.edition.TeamCharacter;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagCatalog;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagTraceCopy;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict.ClearEvidence;
 import io.mrkuhne.mezo.feature.proactive.service.AdviceActionCatalog;
@@ -69,6 +72,9 @@ public class TeamChatService {
 
     static final int REPLY_MAX_CHARS = 1000;
 
+    /** Task 10 (mezo-a9bo7.23): the push body's cap — an SMS-length excerpt of the OPEN line. */
+    static final int PUSH_BODY_MAX_CHARS = 140;
+
     private final TeamChatThreadRepository threads;
     private final TeamChatLineRepository lines;
     private final TeamChatProperties properties;
@@ -76,6 +82,7 @@ public class TeamChatService {
     private final AdviceActionCatalog actionCatalog;
     private final AdviceApplyService adviceApplyService;
     private final TeamChatVoiceWriter voiceWriter;
+    private final AppNotificationEmitter appNotifications;
 
     /** A raise opens an ügy — a no-op when the rule has no owner (e.g. {@code all_healthy}), an ügy
      *  for it is already open, the day's line cap is reached, or the library has no eligible entry. */
@@ -123,6 +130,7 @@ public class TeamChatService {
         writeGuestLine(thread, voiced, facts, at);
         voiced.skepticBody().ifPresent(body -> writeOptionalLine(thread, KIND_SKEPTIC,
                 TeamCharacter.SZKEPTIKUS.key(), body, voiced.voiced(), facts, at));
+        maybePush(thread, owner.get(), voiced.ownerBody(), at);
         log.info("Team chat ügy {} opened for user {} flag {} by {}", thread.getId(), userId, flagKey,
                 thread.getOwnerCharacter());
         return Optional.of(thread);
@@ -225,6 +233,43 @@ public class TeamChatService {
             voiced.guestBody().ifPresent(body -> writeOptionalLine(thread, KIND_GUEST,
                     thread.getGuestCharacter(), body, voiced.voiced(), facts, at));
         }
+    }
+
+    /** Task 10 (mezo-a9bo7.23): at most {@code maxPushesPerDay} phone pushes per user per local
+     *  day — the second only when this ügy's flag key outranks every ügy already pushed today
+     *  ({@link TeamChatPushPolicy}). Never called from {@link #resolve} — a resolution never
+     *  pushes. */
+    private void maybePush(TeamChatThreadEntity thread, TeamCharacter owner, String ownerBody, Instant at) {
+        List<String> pushedToday = pushedTodayFlagKeys(thread.getCreatedBy(), at);
+        if (!TeamChatPushPolicy.shouldPush(thread.getFlagKey(), pushedToday, properties.maxPushesPerDay())) {
+            return;
+        }
+        thread.setPushed(true);
+        threads.saveAndFlush(thread);
+        String title = owner.displayName() + " · " + FlagCatalog.labelOf(thread.getFlagKey());
+        appNotifications.emit(thread.getCreatedBy(), AppNotificationKind.TEAM_CHAT, title,
+                pushExcerpt(ownerBody), AppNotificationKind.TEAM_CHAT.deeplink(), thread.getId(),
+                "team_chat:" + thread.getId());
+    }
+
+    /** The flag keys of every ügy already pushed on {@code at}'s local day (the user's zone, the
+     *  {@link #capReached} idiom). */
+    private List<String> pushedTodayFlagKeys(UUID userId, Instant at) {
+        LocalDate day = at.atZone(properties.zone()).toLocalDate();
+        Instant from = day.atStartOfDay(properties.zone()).toInstant();
+        Instant to = day.plusDays(1).atStartOfDay(properties.zone()).toInstant().minusNanos(1000);
+        return threads.findByCreatedByAndPushedTrueAndOpenedAtBetweenAndDeletedFalse(userId, from, to).stream()
+                .map(TeamChatThreadEntity::getFlagKey)
+                .toList();
+    }
+
+    /** The OPEN line's body, cut to {@link #PUSH_BODY_MAX_CHARS} with an ellipsis when trimmed. */
+    private static String pushExcerpt(String body) {
+        String trimmed = body == null ? "" : body.trim();
+        if (trimmed.length() <= PUSH_BODY_MAX_CHARS) {
+            return trimmed;
+        }
+        return trimmed.substring(0, PUSH_BODY_MAX_CHARS - 1).stripTrailing() + "…";
     }
 
     private boolean capReached(UUID userId, Instant at) {
