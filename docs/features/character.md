@@ -384,8 +384,24 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   no more push that day; a push between those two only when the candidate ügy's flag key
   `AdvicePriority.outranks` **every** flag key already pushed today (the user's local day,
   `TeamChatProperties.zone`) — one weak candidate cannot sneak a second push in behind a strong
-  first one. `TeamChatService.maybePush` is the only caller, invoked from `open` alone —
-  `resolve` never pushes (a resolution is good news, not urgent).
+  first one. `TeamChatService.decidePush` is the only caller, invoked from `open` alone —
+  `resolve` never pushes (a resolution is good news, not urgent). **Final review
+  (`mezo-a9bo7.25`):** `open` is deliberately NOT transactional — `openThread` commits the ügy
+  and its lines in its own transaction, then `decidePush` runs in a second, short
+  `REQUIRES_NEW` one under a per-user advisory lock
+  (`TeamChatThreadRepository.lockPushBudget`, `pg_advisory_xact_lock(hashtext('team_chat_push:'||userId))`),
+  re-reads today's pushed ügyek and only then applies the policy — parallel raises from one
+  evaluation can never both read "nothing pushed yet" (pinned by
+  `TeamChatServiceIT.parallelOpens_neverExceedThePushPolicy`, which fails without the lock), and
+  a push can never outlive a rolled-back ügy. Before the budget it applies two gates: a library
+  entry with `channel: feed` never pushes (`AdvicePick.pushAllowed()`), and an open in the
+  EVENING part of `mezo.notification.quiet-hours` (22:00→midnight of the default 22:00–07:00
+  window, spec D3) stays silent without consuming the day's budget — unless the entry is
+  `quietHoursExempt`, whose push carries the `:quiet-exempt` dedup-key suffix
+  (`AppNotificationKind.QUIET_HOURS_EXEMPT_SUFFIX`) so the feed-anchored push path lets it ring.
+  An after-midnight open inside the window still pushes (counts against that local day); its ring
+  is deferred to max(wake, quiet end) by `AnchorResolver.feedFireMinute`
+  ([_platform-notifications.md](_platform-notifications.md) §3b).
 - **Budget & safety caps (`TeamChatProperties`, `mezo.character.team-chat.*`):**
   `zone: Europe/Budapest` (the day boundary for the line cap and the push budget);
   `expire-after-days: 7`; `daily-line-cap: 12` (character lines of any kind per user per local
@@ -411,12 +427,15 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   `mezo-a9bo7.23`):** a safety net for a raise/clear the async listener missed (e.g. an app
   restart mid-flight). Per active user (`UserFanOut.forEachActiveUser`, each in its own
   transaction via the `self`-injected-proxy idiom, so one user's failure never rolls back
-  another's): `catchUpMissedOpens` re-walks every `CompanionFlagLogEntity` raise in the last 24h
-  (`CATCH_UP_LOOKBACK_HOURS`) with no thread opened at/after it, and opens one with
+  another's): `catchUpMissedOpens` re-walks every `CompanionFlagLogEntity` raise in the last 2 h
+  (`CATCH_UP_LOOKBACK_HOURS` — the sweep is hourly, so 2 h covers one missed run; the original
+  24 h would have re-opened, on the first run after the deploy, every pre-deploy raise that
+  already got the retired advice card) with no thread opened at/after it, and opens one with
   `allowPush=false` (the moment for paging the user already passed); `catchUpMissedResolves`
   resolves every still-`OPEN` thread whose flag's latest trace row is a `clear`, backdated to that
   row's own `occurredAt` (so the chip reads when the flag actually cleared, not when the sweep
-  happened to notice). Idempotent — a second run changes nothing.
+  happened to notice) — but never before the ügy's own `openedAt` (a stale clear older than the
+  raise that opened it). Idempotent — a second run changes nothing.
 - **Knowledge seam (`TeamChatKnowledgePort.forArea(owner, area)`):** background sentences for the
   voice's context block — Character owns *when/where* a line speaks, Emlékezet (`mezo-d6ivw.5`)
   will own *what it knows*; until then `NoopTeamChatKnowledge` answers with nothing.
@@ -442,6 +461,13 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   character + companion + proactive + intervention switches; the expiry/catch-up job additionally
   needs `mezo.techcore.cron.team-chat-expiry-job.enabled`. It is switched on together with
   `mezo.proactive.advice-card.enabled=false` — the chat is now the teendő's only home.
+  **Rollback lever:** both keys live in `application.yml`, so the rollback is two env overrides on
+  the Deployment (Spring relaxed binding drops the dashes): `MEZO_FEATURE_TEAMCHAT_ENABLED=false`
+  + `MEZO_PROACTIVE_ADVICECARD_ENABLED=true` — **they must flip together** (chat off alone = a raise
+  says nothing; card on alone = every raise speaks twice). `TeamChatProductionSwitchIT` pins the
+  production combination (exactly one raise listener bean). The async listener runs both bodies
+  as the event's user (`LlmActorContext.runAs`), so the voice call's `llm_log.created_by` is the
+  owner and `TeamChatBudget`'s monthly cap actually sees the spend (`TeamChatListenerActorIT`).
 
 ## 2. User-facing behavior
 

@@ -58,6 +58,20 @@ csomagban él, a companion/proactive csak eseményeken és portokon (`TeamChatKn
 marad, de él vele senki sem tesztelt hosszabb távon — ha a csapat-chat éles hibát mutat, a
 visszaállás `mezo.feature.team-chat.enabled=false` + `mezo.proactive.advice-card.enabled=true`.
 
+**Rollback-kar (final review M8, `mezo-a9bo7.25`).** Mindkét kulcs az `application.yml`-ben él
+(nincs k8s env-felülírás), ezért a visszaállás két környezeti változó a Deploymenten — Spring
+relaxed binding, a kötőjel kiesik: `MEZO_FEATURE_TEAMCHAT_ENABLED=false` és
+`MEZO_PROACTIVE_ADVICECARD_ENABLED=true`. **A kettő csak együtt billenhet:** csak a chat
+kikapcsolása = semmi nem szól egy csapódásra (se ügy, se kártya); csak a kártya visszakapcsolása =
+minden csapódás kétszer szól (ügy + kártya). Visszaút a két env törlése. A beépítő teszt
+(`TeamChatProductionSwitchIT`) az éles kombinációt (chat be, kártya ki) tartja: pontosan egy
+csapódás-figyelő bean létezik.
+
+**Csendes órák és push-kapu (final review C1/I3).** A chat pushja a spec D3 szerint tiszteli a
+22:00–07:00 ablakot: az ablak esti részében nyílt ügy nem pushol (és nem fogyaszt a napi keretből),
+az éjfél utáni ügy pushol, de a csengetés a csend végéig (legkorábban ébredésig) vár. A `feed`
+csatornás könyvtár-bejegyzés soha nem pushol; a `quietHoursExempt` bejegyzés este is szólhat.
+
 ## Alternatives considered
 
 **A kártya megtartása, csak a szöveg gazdagítása.** Elvetve az owner D1 döntése szerint: a napi

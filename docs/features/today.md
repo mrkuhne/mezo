@@ -94,9 +94,14 @@ The global header uses a Beállítások cog instead of the daypart picker. Day-f
   ` · `) or, with no ügy open, the day's most recent chat line (`stripText(teamChat)`: speaker +
   text), alongside up to 3 distinct character avatars and a note line underneath („A napi
   tanácskártya innen átköltözött a csapat-chatbe — ott születik, ott reagálsz rá, és ott zárul
-  le.”); tapping it navigates to the room (`/mezo/elo`). While the chat is loading or talking
-  (`holdLegacy = teamChatLoading || teamTalks`), any surviving `advice`/`intervention` message is
-  filtered out of the Üzenetek pane — **except** the exact card a same-day intervention-push
+  le.”); tapping it navigates to the room (`/mezo/elo`). While the chat is loading, every
+  `advice`/`intervention` card is held back (no flash); once it has loaded, only a card whose
+  `flagKey` is one the chat talks about (`talkedFlagKeys(teamChat)`: every open ügy plus the ügy of
+  every line today) is filtered out of the Üzenetek pane — a setup-check card („Mezo · beállítás”,
+  `missing_sleep_goal`/`plan_feasibility`, written by `SetupCheckService`) is not an ügy and stays
+  visible (final review I4, `mezo-a9bo7.25`); a legacy pre-S4 `intervention` row carries no
+  `flagKey` on the wire, so it stays hidden whenever the chat talks. The question card is never
+  hidden. **Except** always: the exact card a same-day intervention-push
   deeplink (`?n=`, below) targets, so a notification still lands on its own card mid-transition. On
   a chat-silent day (no line today, no open ügy) any `advice`/`intervention` message that persisted
   from before the retirement still renders as before — the two mechanisms' honest overlap day, not
