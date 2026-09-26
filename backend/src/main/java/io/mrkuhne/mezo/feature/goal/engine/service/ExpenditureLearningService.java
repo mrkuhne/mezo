@@ -1,6 +1,5 @@
 package io.mrkuhne.mezo.feature.goal.engine.service;
 
-import io.mrkuhne.mezo.api.dto.GoalSuggestionResponse;
 import io.mrkuhne.mezo.feature.goal.engine.GoalEngineProperties;
 import io.mrkuhne.mezo.feature.goal.engine.port.DailyIntakePort;
 import io.mrkuhne.mezo.feature.goal.entity.ExcludedIntakeDayJson;
@@ -32,7 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
  * intake days, runs {@link ExpenditureFilter}, decides the step ({@link ExpenditureStepPolicy}),
  * upserts the week's {@code expenditure_estimate} row and recomputes the active goal so the new
  * base is served. Empty = the user is not (yet) a learning user — the caller falls back to the
- * weight-only weekly_correction suggestion (owner decision L4: never both).
+ * weight-only weekly_correction suggestion (owner decision L4: never both). Once a row exists the
+ * user stays a learner: a week the filter cannot anchor (no weigh-in) is written as HOLDING (§7).
  */
 @Service
 @RequiredArgsConstructor
@@ -59,12 +59,13 @@ public class ExpenditureLearningService {
         GoalEntity goal = goalRepository.findByCreatedByAndStatusAndDeletedFalse(userId, STATUS_ACTIVE)
             .stream().findFirst().orElse(null);
         TdeeBootstrapJson boot = goal == null ? null : goal.getTdeeBootstrap();
-        if (boot == null || boot.bmr() == null) {
+        if (boot == null || boot.bmr() == null || boot.neatBaselineKcal() == null) {
             return Optional.empty();
         }
         int formulaBase = round(boot.formulaNeatBaselineKcal() != null
             ? boot.formulaNeatBaselineKcal() : boot.neatBaselineKcal());
         int planEat = round(boot.weeklyEatKcalPerDay() == null ? BigDecimal.ZERO : boot.weeklyEatKcalPerDay());
+        int adjustment = goal.getBalanceAdjustmentKcal() == null ? 0 : goal.getBalanceAdjustmentKcal();
         LocalDate weekEnd = weekStart.plusDays(6);
         LocalDate windowStart = weekEnd.minusDays(e.windowDays() - 1L);
 
@@ -74,8 +75,10 @@ public class ExpenditureLearningService {
             kcal.put(d.date(), d.kcal());
             carbs.put(d.date(), d.carbsG());
         }
+        // Too little own history → a day is judged against its SERVED target (spec §5.3), not maintenance.
         Map<LocalDate, IntakeDayClassifier.Status> status = IntakeDayClassifier.classify(windowStart, weekEnd, kcal,
-            Map.of(), formulaBase + planEat, e.suspiciousRatio(), e.referenceDays(), e.minReferenceDays());
+            Map.of(), d -> formulaBase + adjustment + planEat + balanceOn(goal, d),
+            e.suspiciousRatio(), e.referenceDays(), e.minReferenceDays());
 
         Optional<ExpenditureEstimateEntity> prev =
             estimates.findFirstByCreatedByAndWeekStartBeforeAndDeletedFalseOrderByWeekStartDesc(userId, weekStart);
@@ -98,27 +101,39 @@ public class ExpenditureLearningService {
             days.add(new ExpenditureFilter.Day(d, usable ? kcal.get(d) : null, usable ? carbs.get(d) : null,
                 planEat + m.extraKcal(), balanceOn(goal, d), weights.containsKey(d) ? weights.get(d).doubleValue() : null));
         }
-        Optional<ExpenditureFilter.Estimate> est = ExpenditureFilter.run(days, formulaBase, ExpenditureFilter.Params.of(props));
-        if (est.isEmpty()) {
+        Optional<ExpenditureFilter.Estimate> filtered =
+            ExpenditureFilter.run(days, formulaBase, ExpenditureFilter.Params.of(props));
+        if (filtered.isEmpty() && !existing) {
             return Optional.empty();
         }
 
-        int adjustment = goal.getBalanceAdjustmentKcal() == null ? 0 : goal.getBalanceAdjustmentKcal();
         int prevApplied = prev.map(ExpenditureEstimateEntity::getAppliedBaseKcal).orElse(formulaBase + adjustment);
         int prevDirection = prev.map(ExpenditureEstimateEntity::getDirection).orElse(0);
         int usableWeek = count(status, weekStart, weekEnd, IntakeDayClassifier.Status.USABLE);
         int weighInWeek = (int) weights.keySet().stream().filter(d -> !d.isBefore(weekStart)).count();
-        ExpenditureStepPolicy.Result r = ExpenditureStepPolicy.decide(new ExpenditureStepPolicy.Input(
-            prevApplied, prevDirection, est.get().baseKcal(), est.get().sdKcal(), formulaBase,
-            boot.bmr().doubleValue(), usableWeek, weighInWeek), e);
+        ExpenditureFilter.Estimate est;
+        ExpenditureStepPolicy.Result r;
+        if (filtered.isPresent()) {
+            est = filtered.get();
+            r = ExpenditureStepPolicy.decide(new ExpenditureStepPolicy.Input(
+                prevApplied, prevDirection, est.baseKcal(), est.sdKcal(), formulaBase,
+                boot.bmr().doubleValue(), usableWeek, weighInWeek), e);
+        } else {
+            // Spec §7: an existing learner is never handed back to the weight-only fallback — nothing to
+            // anchor on (no weigh-in in the window) means HOLDING: the previous belief and base carried over.
+            est = prev.map(p -> new ExpenditureFilter.Estimate(p.getPosteriorBaseKcal(), p.getPosteriorSdKcal()))
+                .orElse(new ExpenditureFilter.Estimate(formulaBase, props.bootstrapUncertaintyKcal()));
+            r = new ExpenditureStepPolicy.Result(prevApplied, 0, prevDirection, ExpenditureStepPolicy.Status.HOLDING,
+                ExpenditureStepPolicy.confidence(est.sdKcal(), e));
+        }
 
         ExpenditureEstimateEntity row = thisWeek.orElseGet(ExpenditureEstimateEntity::new);
         row.setCreatedBy(userId);
         row.setWeekStart(weekStart);
         row.setStatus(r.status().name());
         row.setFormulaBaseKcal(formulaBase);
-        row.setPosteriorBaseKcal((int) Math.round(est.get().baseKcal()));
-        row.setPosteriorSdKcal((int) Math.round(est.get().sdKcal()));
+        row.setPosteriorBaseKcal((int) Math.round(est.baseKcal()));
+        row.setPosteriorSdKcal((int) Math.round(est.sdKcal()));
         row.setAppliedBaseKcal(r.appliedBase());
         row.setStepKcal(r.step());
         row.setDirection(r.direction());
@@ -129,10 +144,7 @@ public class ExpenditureLearningService {
         ExpenditureEstimateEntity saved = estimates.save(row);
 
         // Owner decision L4: a learning user never also gets the weight-only correction.
-        suggestionService.listOpen(userId, goal.getId()).stream()
-            .filter(s -> s.getKind() != null && WEEKLY_CORRECTION.equals(s.getKind().getValue()))
-            .map(GoalSuggestionResponse::getId)
-            .forEach(id -> suggestionService.dismiss(userId, goal.getId(), id));
+        suggestionService.supersedeOpen(goal.getId(), WEEKLY_CORRECTION);
         goalEngineService.recomputeActiveGoal(userId);
         return Optional.of(saved);
     }

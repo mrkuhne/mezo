@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.goal.engine.service;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.ToIntFunction;
 
 /**
  * Which logged days may teach the learned-expenditure filter (mezo-zz91i, spec §5.3, owner
@@ -17,8 +18,13 @@ public final class IntakeDayClassifier {
     private IntakeDayClassifier() {
     }
 
+    /**
+     * @param fallbackRefKcal the day's reference when the user has fewer than {@code minRef} logged days
+     *                        in the prior {@code refDays}: the day's SERVED target (spec §5.3), per day —
+     *                        so a compliant cut day is never judged against maintenance
+     */
     public static Map<LocalDate, Status> classify(LocalDate from, LocalDate to, Map<LocalDate, Integer> loggedKcal,
-            Map<LocalDate, Boolean> marks, int fallbackRefKcal, double ratio, int refDays, int minRef) {
+            Map<LocalDate, Boolean> marks, ToIntFunction<LocalDate> fallbackRefKcal, double ratio, int refDays, int minRef) {
         Map<LocalDate, Status> out = new LinkedHashMap<>();
         for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
             Integer kcal = loggedKcal.get(d);
@@ -37,14 +43,15 @@ public final class IntakeDayClassifier {
         return out;
     }
 
-    /** Median logged kcal over the {@code refDays} before {@code d}; the fallback with fewer than {@code minRef}. */
-    private static double reference(LocalDate d, Map<LocalDate, Integer> loggedKcal, int fallback, int refDays, int minRef) {
+    /** Median logged kcal over the {@code refDays} before {@code d}; the day's fallback with fewer than {@code minRef}. */
+    private static double reference(LocalDate d, Map<LocalDate, Integer> loggedKcal, ToIntFunction<LocalDate> fallback,
+                                    int refDays, int minRef) {
         int[] vals = java.util.stream.IntStream.rangeClosed(1, refDays)
             .mapToObj(i -> loggedKcal.get(d.minusDays(i)))
             .filter(v -> v != null && v > 0)
             .mapToInt(Integer::intValue).sorted().toArray();
         if (vals.length < minRef) {
-            return fallback;
+            return fallback.applyAsInt(d);
         }
         int n = vals.length;
         return n % 2 == 1 ? vals[n / 2] : (vals[n / 2 - 1] + vals[n / 2]) / 2.0;

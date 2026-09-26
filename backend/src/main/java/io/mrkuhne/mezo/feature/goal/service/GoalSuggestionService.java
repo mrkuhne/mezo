@@ -138,6 +138,22 @@ public class GoalSuggestionService {
         return saved;
     }
 
+    /**
+     * System retirement of the goal's open proposal of {@code kind}, if any — {@code superseded},
+     * never {@code dismissed}: no owner decision is recorded (dedup only blocks re-proposing
+     * DECIDED weeks). The learned-expenditure run retires the weight-only weekly_correction this
+     * way (mezo-zz91i, owner decision L4: never both).
+     */
+    @Transactional
+    public void supersedeOpen(UUID goalId, String kind) {
+        suggestionRepository.findByGoalIdAndKindAndStatusAndDeletedFalse(goalId, kind, STATUS_PROPOSED)
+            .ifPresent(open -> {
+                open.setStatus(STATUS_SUPERSEDED);
+                open.setDecidedAt(Instant.now());
+                suggestionRepository.save(open);
+            });
+    }
+
     /** The goal's open proposals (newest first), ownership-gated through the goal. */
     public List<GoalSuggestionResponse> listOpen(UUID userId, UUID goalId) {
         requireGoal(userId, goalId);
