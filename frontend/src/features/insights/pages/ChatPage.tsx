@@ -4,6 +4,7 @@ import { Icon } from '@/shared/ui/Icon'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { NEW_CHAT, useChat, useChatActions, useConversations, useFeedback, useMemoryRetrievalFeedback } from '@/data/hooks'
 import { ChatMessage } from '@/features/insights/components/ChatMessage'
+import { RememberedChips } from '@/features/insights/components/RememberedChips'
 import { ToolWorkStrip } from '@/features/insights/components/ToolWorkStrip'
 import { ConversationPickerSheet } from '@/features/insights/sheets/ConversationPickerSheet'
 import { ConversationActionsSheet } from '@/features/insights/sheets/ConversationActionsSheet'
@@ -111,6 +112,18 @@ export function ChatPage() {
     [messages],
   )
   const feedback = useFeedback('chat_message', assistantIds)
+
+  // S3 (mezo-d6ivw.3): a „Megjegyeztem" chip csak az EBBEN a munkamenetben küldött körök után
+  // fut — régi beszélgetés megnyitása nem indít utólagos tény-lekérdezést. A turn lezárultával
+  // (refetch után) az utolsó user-üzenet perzisztált id-ja a forrás-hivatkozás.
+  const armedRef = useRef(false)
+  if (turn) armedRef.current = true
+  const lastUserMsgId = useMemo(() => {
+    if (turn || !armedRef.current) return null
+    const last = [...messages].reverse().find((m) => m.role === 'user' && m.id)
+    return last?.id ?? null
+  }, [messages, turn])
+
   const recalledResultIds = useMemo(
     () => messages.flatMap((m) => (m.recalled ?? []).flatMap((r) => r.retrievalResultId ? [r.retrievalResultId] : [])),
     [messages],
@@ -311,6 +324,7 @@ export function ChatPage() {
             }
           />
         ))}
+        {!turn && <RememberedChips userMessageId={lastUserMsgId} />}
         {turn && <ChatMessage m={{ role: 'user', ts: 'most', text: turn.userText }} />}
         {/* mezo-280 (Finding 3): thinking flips false the moment a 'tool' event lands, well before
             the first 'delta' — gating on turn.draft instead keeps the dots visible next to the
