@@ -32,6 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -95,10 +96,9 @@ public class FuelDayService {
      * the Terv weekly stats (kcal avg / protein-hit days), the week-centric Fuel Napló page and the
      * Insights Weekly review (Phase-2 roadmap D′).
      *
-     * <p>Each of the 7 days does its own {@link WorkoutWindowQueryService#movementOn} lookup
-     * (planned-done pick + unplanned extra kcal) via {@link #project} — 7 lookups per call.
-     * Acceptable single-owner cost; revisit with a week-bulk query only if it ever shows up in
-     * traces.
+     * <p>The week's movement (planned-done pick + unplanned extra kcal per day) is read ONCE via
+     * {@link WorkoutWindowQueryService#movementBetween} — the same per-day rules as
+     * {@link WorkoutWindowQueryService#movementOn}, one batched query set instead of seven.
      *
      * <p>The two week-level scalars (mezo-d20.7.2) are DERIVED AT READ, not stored: Fuel has no
      * per-week row to hang them on, and both are pure functions of already-persisted data
@@ -114,9 +114,14 @@ public class FuelDayService {
         // Resolve preferences ONCE for the whole week, not per day (7 identical queries otherwise).
         int waterMl = dietPreferences.resolve(userId).waterMl();
         LocalDate end = start.plusDays(6);
+        // ONE batched movement read for the whole week, fetched lazily — only if some day's segment
+        // actually needs it (the config path pays nothing).
+        Supplier<Map<LocalDate, WorkoutWindowQueryService.DayMovement>> weekMovement =
+            memoize(() -> workoutWindowQueryService.movementBetween(userId, start, end));
         List<FuelDayRollup> days = start.datesUntil(start.plusDays(7))
             .map(d -> {
-                DailyTargets t = project(goal, userId, d);
+                DailyTargets t = project(goal, d, () -> weekMovement.get()
+                    .getOrDefault(d, WorkoutWindowQueryService.DayMovement.NONE));
                 return FuelDayRollup.builder()
                     .date(d)
                     .targets(targetSet(t, waterMl))
@@ -239,11 +244,33 @@ public class FuelDayService {
      * the config path (no covering segment) must not pay.
      */
     private DailyTargets project(GoalEntity goal, UUID userId, LocalDate date) {
+        return project(goal, date, () -> workoutWindowQueryService.movementOn(userId, date));
+    }
+
+    private DailyTargets project(GoalEntity goal, LocalDate date,
+        Supplier<WorkoutWindowQueryService.DayMovement> movement) {
         return DayTargetProjector.project(
             segmentFor(goal, date),
             EnergyBase.of(goal == null ? null : goal.getTdeeBootstrap()),
-            () -> workoutWindowQueryService.movementOn(userId, date),
+            movement,
             targets);
+    }
+
+    /** A supplier that runs {@code source} at most once, on first use. */
+    private static <T> Supplier<T> memoize(Supplier<T> source) {
+        return new Supplier<>() {
+            private T value;
+            private boolean done;
+
+            @Override
+            public T get() {
+                if (!done) {
+                    value = source.get();
+                    done = true;
+                }
+                return value;
+            }
+        };
     }
 
     /**

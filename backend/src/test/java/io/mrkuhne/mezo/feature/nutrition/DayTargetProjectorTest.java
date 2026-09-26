@@ -128,6 +128,19 @@ class DayTargetProjectorTest {
     }
 
     @Test
+    void plannedDoneOnSplitSegmentStacksTheExtraOnTheTrainingDayKcal() {
+        int trainingKcal = 2800;
+        int extra = 300;
+        DailyTargets t = DayTargetProjector.project(segment(2600, 180, 250, 90, trainingKcal, 2400, -327), BASE,
+            () -> new WorkoutWindowQueryService.DayMovement(true, extra), FALLBACK);
+        assertThat(t.kcal()).isEqualTo(trainingKcal + extra);
+        assertThat(t.c()).isEqualTo(250 + Math.round((trainingKcal + extra - 2600) / 4f));
+        assertThat(t.energy().extraMovementKcal()).isEqualTo(extra);
+        assertThat(t.energy().plannedMovementKcal()).isEqualTo(trainingKcal - 2356 - (-327));
+        assertThat(t.energy().balanceKcal()).isEqualTo(-327);
+    }
+
+    @Test
     void equationAlwaysCloses() {
         DailyTargets t = DayTargetProjector.project(segment(2599, 170, 300, 86, 2800, 2400, -327), BASE,
             () -> new WorkoutWindowQueryService.DayMovement(true, 0), FALLBACK);

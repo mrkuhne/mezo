@@ -571,6 +571,41 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
             assertThat(service.movementOn(owner, wed)).isEqualTo(WorkoutWindowQueryService.DayMovement.NONE);
         }
 
+        // (h) movementBetween (the batched path movementOn now delegates to) over a 7-day range must
+        // equal per-day movementOn for a mixed fixture: a planned sport day, an unplanned Saturday
+        // session, a custom gym day, and empty days.
+        @Test
+        void testMovementBetween_shouldMatchPerDayMovementOn_forAMixedWeek() {
+            UUID owner = owner();
+            LocalDate monday = LocalDate.of(2026, 6, 22);
+            LocalDate wed = monday.plusDays(2);
+            LocalDate sat = monday.plusDays(5);
+            LocalDate sunday = monday.plusDays(6);
+            seedBody(owner, "80.00");
+            // Monday: a custom gym day (no gym slot) → extra via the net model.
+            train.createWorkoutInstance(owner, train.createCustomTemplateDay(owner, "Saját"), monday,
+                "completed", 3600);
+            // Wednesday: a volleyball slot the logged session fulfils → planned.
+            train.createScheduleSlot(owner, 2, "18:00", 90, "training");
+            train.withKcal(train.createSportSession(owner, wed), 480);
+            // Saturday: an unplanned session → extra at its persisted kcal.
+            int satKcal = 573;
+            train.withKcal(train.createSportSession(owner, sat), satKcal);
+
+            Map<LocalDate, WorkoutWindowQueryService.DayMovement> ranged =
+                service.movementBetween(owner, monday, sunday);
+
+            assertThat(ranged.keySet()).hasSize(7);
+            for (LocalDate day = monday; !day.isAfter(sunday); day = day.plusDays(1)) {
+                assertThat(ranged.get(day)).as("movement on %s", day).isEqualTo(service.movementOn(owner, day));
+            }
+            assertThat(ranged.get(monday).plannedDone()).isFalse();
+            assertThat(ranged.get(monday).extraKcal()).isPositive();
+            assertThat(ranged.get(wed)).isEqualTo(new WorkoutWindowQueryService.DayMovement(true, 0));
+            assertThat(ranged.get(sat)).isEqualTo(new WorkoutWindowQueryService.DayMovement(false, satKcal));
+            assertThat(ranged.get(monday.plusDays(1))).isEqualTo(WorkoutWindowQueryService.DayMovement.NONE);
+        }
+
         // (g) A logged session with null kcal on a slotless day → plannedDone=false, extraKcal=0.
         @Test
         void testMovementOn_shouldNeverInventKcal_whenTheExtraSessionCarriesNoKcal() {

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -256,43 +257,99 @@ public class WorkoutWindowQueryService {
      */
     @Transactional(readOnly = true)
     public DayMovement movementOn(UUID userId, LocalDate date) {
+        return movementBetween(userId, date, date).get(date);
+    }
+
+    /**
+     * Batched form of {@link #movementOn} — the ONLY resolution path (the mezo-jcpt.6 F1 lesson
+     * applied to movement): every source is fetched ONCE for {@code [from, to]} (gym slots, done
+     * gym instances, sport slots, sport events, sport sessions, slot skips, the active running
+     * block, run logs), grouped per date in memory, and each date is resolved by
+     * {@link #movementForDay} with exactly the per-day rules {@link #movementOn}'s javadoc states.
+     * The athlete body (rest-kcal/hour) is looked up at most once for the whole range — as of
+     * {@code to}, lazily, only when an extra gym instance exists; over a multi-week range that is a
+     * deliberate approximation (one body for the range, a few kcal on an extra gym day at most). Every date in the range is present in the result
+     * ({@link DayMovement#NONE} when nothing moved). Callers: the Fuel week rollup and the
+     * character meal-day reads (mezo-32m82 — 8 trend weeks would otherwise be ~56 single-date
+     * query sets).
+     */
+    @Transactional(readOnly = true)
+    public Map<LocalDate, DayMovement> movementBetween(UUID userId, LocalDate from, LocalDate to) {
+        List<GymScheduleSlotEntity> gymSlots =
+            gymRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId);
+        Map<LocalDate, List<WorkoutSessionEntity>> doneByDate = workoutSessionRepository
+            .findDoneInstancesBetween(userId, from, to).stream()
+            .collect(Collectors.groupingBy(WorkoutSessionEntity::getDate));
+        List<SportScheduleSlotEntity> sportSlots =
+            sportRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId);
+        Map<LocalDate, List<SportEventEntity>> eventsByDate = sportEventRepo
+            .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateAscTimeAsc(userId, from, to).stream()
+            .collect(Collectors.groupingBy(SportEventEntity::getDate));
+        Map<LocalDate, List<SportSessionEntity>> sportSessionsByDate = sportSessionRepository
+            .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(userId, from, to).stream()
+            .collect(Collectors.groupingBy(SportSessionEntity::getDate));
+        Set<SportSlotSkipService.SkipKey> skips = sportSlotSkipService.skipsBetween(userId, from, to);
+        RunningBlockEntity activeBlock = runningBlockRepository
+            .findByCreatedByAndStatusAndDeletedFalse(userId, "active").stream().findFirst().orElse(null);
+        Map<LocalDate, List<RunSessionLogEntity>> runsByDate = runSessionLogRepository
+            .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(userId, from, to).stream()
+            .collect(Collectors.groupingBy(RunSessionLogEntity::getDate));
+
+        // Looked up at most once for the whole range, and only if an extra gym instance needs it.
+        Supplier<BigDecimal> restKcalPerHour = new Supplier<>() {
+            private boolean loaded;
+            private BigDecimal value;
+
+            @Override
+            public BigDecimal get() {
+                if (!loaded) {
+                    value = athleteBodyPort.bodyAt(userId, to)
+                        .flatMap(b -> ActivityEnergyModel.restKcalPerHour(b.bmrKcal(), b.weightKg()))
+                        .orElse(null);
+                    loaded = true;
+                }
+                return value;
+            }
+        };
+
+        Map<LocalDate, DayMovement> result = new LinkedHashMap<>();
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            result.put(day, movementForDay(day, gymSlots, doneByDate.getOrDefault(day, List.of()),
+                sportSlots, eventsByDate.getOrDefault(day, List.of()),
+                sportSessionsByDate.getOrDefault(day, List.of()), skips, activeBlock,
+                runsByDate.getOrDefault(day, List.of()), restKcalPerHour));
+        }
+        return result;
+    }
+
+    /** One date's movement from pre-fetched, range-batched data — no query in here except the lazy,
+     *  range-memoized body lookup; the per-day rules are documented on {@link #movementOn}. */
+    private DayMovement movementForDay(LocalDate date, List<GymScheduleSlotEntity> gymSlots,
+            List<WorkoutSessionEntity> doneInstances, List<SportScheduleSlotEntity> sportSlots,
+            List<SportEventEntity> dayEvents, List<SportSessionEntity> daySessions,
+            Set<SportSlotSkipService.SkipKey> skips, RunningBlockEntity activeBlock,
+            List<RunSessionLogEntity> dayRuns, Supplier<BigDecimal> restKcalPerHour) {
         int dow = date.getDayOfWeek().getValue() - 1;
         boolean plannedDone = false;
         int extraKcal = 0;
 
         // Gym.
-        long gymSlotCount = gymRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
-            .filter(s -> s.getDayOfWeek() == dow).count();
+        long gymSlotCount = gymSlots.stream().filter(s -> s.getDayOfWeek() == dow).count();
         long plannedGymCount = 0;
-        BigDecimal restKcalPerHour = null;
-        boolean restLoaded = false;
-        for (WorkoutSessionEntity instance : workoutSessionRepository.findDoneInstancesBetween(userId, date, date)) {
+        for (WorkoutSessionEntity instance : doneInstances) {
             boolean planned = "meso".equals(instance.getOrigin()) && plannedGymCount < gymSlotCount;
             if (planned) {
                 plannedGymCount++;
                 plannedDone = true;
                 continue;
             }
-            if (!restLoaded) {
-                restKcalPerHour = athleteBodyPort.bodyAt(userId, date)
-                    .flatMap(b -> ActivityEnergyModel.restKcalPerHour(b.bmrKcal(), b.weightKg()))
-                    .orElse(null);
-                restLoaded = true;
-            }
             extraKcal += activityEnergyModel
-                .netKcal("gym", null, gymMinutes(instance), restKcalPerHour).orElse(0);
+                .netKcal("gym", null, gymMinutes(instance), restKcalPerHour.get()).orElse(0);
         }
 
         // Sport — the same planned pool + nearest-match consumption as addSportWindowsForDay.
-        Set<SportSlotSkipService.SkipKey> skips = sportSlotSkipService.skipsBetween(userId, date, date);
-        List<PlannedSport> unmatchedSport = plannedSportPool(date, dow,
-            sportRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId),
-            sportEventRepo.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateAscTimeAsc(userId, date, date),
-            skips);
-
-        List<SportSessionEntity> sportSessions = byTimeNullsLast(
-            sportSessionRepository.findByCreatedByAndDeletedFalseAndDateOrderByTimeAsc(userId, date));
-        for (SportSessionEntity session : sportSessions) {
+        List<PlannedSport> unmatchedSport = plannedSportPool(date, dow, sportSlots, dayEvents, skips);
+        for (SportSessionEntity session : byTimeNullsLast(daySessions)) {
             PlannedSport plan = nearestPlan(unmatchedSport, session.getTime());
             if (plan != null) {
                 unmatchedSport.remove(plan);
@@ -303,12 +360,9 @@ public class WorkoutWindowQueryService {
         }
 
         // Run — the block's prescribed sessions on the date, filled by the date's logged runs first.
-        RunningBlockEntity activeBlock = runningBlockRepository
-            .findByCreatedByAndStatusAndDeletedFalse(userId, "active").stream().findFirst().orElse(null);
         long prescribedRunCount = activeBlock == null ? 0 : prescribedRunSessionsOn(activeBlock, date).count();
         long plannedRunCount = 0;
-        for (RunSessionLogEntity run : runSessionLogRepository
-                .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(userId, date, date)) {
+        for (RunSessionLogEntity run : dayRuns) {
             if (plannedRunCount < prescribedRunCount) {
                 plannedRunCount++;
                 plannedDone = true;
