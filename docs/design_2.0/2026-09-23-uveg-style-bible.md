@@ -664,3 +664,18 @@ pinned as `U10_BLOCKS`. Six new sprite icons (`t-jump t-sprint t-core t-juggle t
     Add the symbol to `assets/titanium-custom.svg` and run the generator (rule 84).
 95. **A peek strip is sized for the longest voice, not the prototype's one-liner.** Kalauz voices run to four sentences;
     the peek bar clamps to three lines in a 100px strip.
+
+### Küldetés-választás (`mezo-oy91i`, 2026-09-26)
+
+The start-of-workout challenge picker, three prototype rounds. Prototype:
+[`prototypes/uveg-kuldetes.html`](prototypes/uveg-kuldetes.html) (owner picked variant B).
+
+96. **An entry point never hides itself.** The quest row rendered only when there was something to show, so an
+    empty or failed list made the whole choice disappear and the owner read it as a lost feature. An entry keeps
+    its place and says its state (being made / none today / could not load + retry).
+97. **"Better structure" is not more labels.** Round 2 put a caption over every datum, a box inside the card and
+    three loud things side by side; the owner found it worse. Round 3 reused the ceremony's challenge row
+    (rule 28) — name, one chip line, round status top-right, the reason under a hairline — and it landed.
+    When asked to tidy a card, first look for a row shape the owner already approved.
+98. **A scrolling glass box scrolls its inside, not its frame.** With `overflow:auto` on the `.glass` itself,
+    the `::before` gradient frame travels with the content and draws a stray line across the cards.

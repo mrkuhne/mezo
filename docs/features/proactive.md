@@ -1475,7 +1475,7 @@ GET /api/proactive/challenge?templateSessionId={uuid}&date={date}
       for each accepted row: ChallengeOutcomeEvaluator.evaluate(row, today)      (lazy resolve when instance done)
       → rows filter(status != dismissed).map(toChallengeResponse)   (`[]` = honest, never 404)
 
-POST /api/proactive/challenge/{id}/decision  {decision: accept|dismiss}
+POST /api/proactive/challenge/{id}/decision  {decision: accept|dismiss|undo}   # undo: accepted → proposed (mezo-oy91i)
   → decideChallenge(id, request) → ProactiveChallengeService.decide(userId, id, request)
       findByIdAndCreatedBy → orElseThrow(404 PROACTIVE_CHALLENGE_NOT_FOUND)
       status != proposed ⇒ throw 409 PROACTIVE_CHALLENGE_NOT_PROPOSED

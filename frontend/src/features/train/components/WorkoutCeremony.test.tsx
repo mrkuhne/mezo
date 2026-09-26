@@ -2,7 +2,7 @@ import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test, vi, afterEach } from 'vitest'
 import {
-  WorkoutCeremony, ceremonyChallenges, ceremonyRecord, targetChips, type CeremonyChallenge,
+  WorkoutCeremony, ceremonyChallenges, ceremonyRecord, type CeremonyChallenge,
 } from '@/features/train/components/WorkoutCeremony'
 import type { CerScore, MuscleStarRow } from '@/features/train/logic/cerScore'
 import type { Challenge } from '@/data/types'
@@ -290,12 +290,6 @@ test('ceremonyChallenges keeps only the accepted ones and resolves every non-hit
   ] as Challenge[]
   const rows = ceremonyChallenges(list, { a: true, b: true })
   expect(rows.map((r) => [r.id, r.status])).toEqual([['a', 'hit'], ['b', 'inconclusive'], ['d', 'inconclusive']])
-})
-
-test('targetChips splits on × and ·, and unit-labels the load and the reps', () => {
-  expect(targetChips('107.5 kg × 8')).toEqual(['107,5 kg', '8 ism.'])
-  expect(targetChips('+1 szet · 4×15-20')).toEqual(['+1 szet', '4×15-20'])
-  expect(targetChips('Az utolsó szet RIR 0-ig')).toEqual(['Az utolsó szet RIR 0-ig'])
 })
 
 test('the muscle rows carry the label, done/plan and a fill width from the ratio', async () => {

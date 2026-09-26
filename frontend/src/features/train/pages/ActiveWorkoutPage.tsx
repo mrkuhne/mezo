@@ -66,7 +66,7 @@ import {
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon3D } from '@/shared/ui/clay'
-import { cleanTypeLabel } from '@/features/train/components/ChallengeCard'
+import { challengeTypeIcon, challengeTypeLabel, targetChips } from '@/features/train/logic/challengeDisplay'
 import { MedalToast } from '@/features/train/components/MedalToast'
 import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
 import { WorkoutCeremony, ceremonyChallenges, ceremonyRecord } from '@/features/train/components/WorkoutCeremony'
@@ -372,7 +372,9 @@ function ActiveWorkoutSession({
   // in live (status-derived accepted map + decide()).
   const localToday = localDateString()
   const templateSessionId = todaySession?.templateSessionId ?? null
-  const { challenges, mode: challengeMode, pending: challengesPending } = useChallenges(templateSessionId, localToday)
+  const {
+    challenges, mode: challengeMode, pending: challengesPending, failed: challengesFailed, retry: retryChallenges,
+  } = useChallenges(templateSessionId, localToday)
   const { decide } = useChallengeActions(templateSessionId, localToday)
   const isMock = challengeMode === 'mock'
 
@@ -393,7 +395,9 @@ function ActiveWorkoutSession({
         prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
       )
     } else {
-      decide(id, acceptedMap[id] ? 'dismiss' : 'accept')
+      // An accepted challenge unticks back to an offer ('undo', mezo-oy91i) — 'dismiss' would
+      // 409 on a non-proposed row and hide the challenge for good.
+      decide(id, acceptedMap[id] ? 'undo' : 'accept')
     }
   }
 
@@ -1009,6 +1013,8 @@ function ActiveWorkoutSession({
               accepted={acceptedMap}
               onToggle={toggleChallenge}
               pending={challengesPending}
+              failed={challengesFailed}
+              onRetry={retryChallenges}
               tint={tint}
               onClose={() => setGlass(null)}
             />
@@ -1192,28 +1198,82 @@ function ActiveWorkoutSession({
           )}
           {/* The day-level overload tally (mezo-88iwa.4) — its only surface since the prep
               mosaic retired. Honest-empty: nothing to say, nothing rendered. */}
-          {/* Owner-approved U4 addition (mezo-me75u.4): at the START of the workout (no set logged
-              yet) the day's quests sit on top as one glass row that opens the SAME Küldetések
-              glass the ⋯ menu reaches. Only when there is something to show — a list, or one
-              still being generated. The ⋯ menu entry stays. */}
-          {doneSets === 0 && (challengesPending || challenges.length > 0) && (
-            <button
-              type="button"
-              className="wos-fresh glass"
-              onClick={() => setGlass({ kind: 'challenges', id: current.id })}
-            >
-              <Icon3D name="t-quest" size={42} />
-              <span className="wos-fresh-copy">
-                <strong>A mai küldetések</strong>
-                <small>
-                  {challengesPending
-                    ? 'készül…'
-                    : `${challenges.filter((c) => acceptedMap[c.id]).length} / ${challenges.length} elfogadva`}
-                </small>
-              </span>
-              <b className="wos-chev" aria-hidden="true">›</b>
-            </button>
-          )}
+          {/* The start-of-workout quest row (U4, mezo-me75u.4; mezo-oy91i): at 0 logged sets it
+              ALWAYS tops the list — it used to vanish on an empty or failed list, which read as
+              "the challenge choice is gone". Five states: offers waiting, accepted (gold, the
+              accepted targets as chips), being generated, none today, could not load (+ retry). */}
+          {doneSets === 0 && (() => {
+            const acc = challenges.filter((c) => acceptedMap[c.id])
+            const open = () => setGlass({ kind: 'challenges', id: current.id })
+            if (challengesPending) {
+              return (
+                <button type="button" className="wos-fresh glass" onClick={open}>
+                  <Icon3D name="t-quest" size={42} />
+                  <span className="wos-fresh-copy">
+                    <strong>A mai küldetések</strong>
+                    <small>Mezo most rakja össze őket…</small>
+                    <i className="wos-fresh-shim" aria-hidden="true" />
+                  </span>
+                  <b className="wos-chev" aria-hidden="true">›</b>
+                </button>
+              )
+            }
+            if (challengesFailed) {
+              return (
+                <div className="wos-fresh glass is-failed">
+                  <Icon3D name="t-quest" size={42} />
+                  <span className="wos-fresh-copy">
+                    <strong>A küldetések nem jöttek le</strong>
+                    <small>Az edzés ettől még indulhat.</small>
+                  </span>
+                  <button type="button" className="wos-pill is-lit" onClick={retryChallenges}>Újra</button>
+                </div>
+              )
+            }
+            if (challenges.length === 0) {
+              return (
+                <div className="wos-fresh glass is-off">
+                  <Icon3D name="t-quest" size={42} />
+                  <span className="wos-fresh-copy">
+                    <strong>Ma nincs küldetés</strong>
+                    <small>Ehhez az edzéshez még kevés az előzmény — tiszta edzés.</small>
+                  </span>
+                </div>
+              )
+            }
+            if (acc.length > 0) {
+              return (
+                <button type="button" className="wos-fresh glass is-accepted" onClick={open}>
+                  <Icon3D name="t-quest" size={42} />
+                  <span className="wos-fresh-copy">
+                    <strong>{acc.length} küldetés vállalva</strong>
+                    <span className="wos-fresh-accs">
+                      {acc.map((c) => (
+                        <span key={c.id} className="uv-flat">
+                          <Icon3D name={challengeTypeIcon(c.type)} size={16} />
+                          {targetChips(c.target).join(' · ')}
+                        </span>
+                      ))}
+                    </span>
+                  </span>
+                  <b className="wos-chev" aria-hidden="true">›</b>
+                </button>
+              )
+            }
+            return (
+              <button type="button" className="wos-fresh glass" onClick={open}>
+                <Icon3D name="t-quest" size={42} />
+                <span className="wos-fresh-copy">
+                  <strong>A mai küldetések</strong>
+                  <small>{challenges.length} ajánlat vár · válassz, mielőtt nekiállsz</small>
+                </span>
+                <span className="wos-fresh-stack" aria-hidden="true">
+                  {challenges.map((c) => <Icon3D key={c.id} name={challengeTypeIcon(c.type)} size={26} />)}
+                </span>
+                <b className="wos-chev" aria-hidden="true">›</b>
+              </button>
+            )
+          })()}
           <WorkoutOverloadLine overload={W.overloadSummary} />
           {session.order.map((id) => {
             const e = W.exercises.find((x) => x.id === id)
@@ -1230,7 +1290,7 @@ function ActiveWorkoutSession({
                 logBlocked={logBlocked}
                 challenge={(() => {
                   const c = challenges.find((x) => x.exerciseId === id && acceptedMap[x.id])
-                  return c ? { label: cleanTypeLabel(c.typeLabel), target: c.target } : null
+                  return c ? { label: challengeTypeLabel(c.typeLabel), target: c.target } : null
                 })()}
                 onLogSet={(input) => handleLogSet(e, input)}
                 onTapDoneRow={(idx) => setEditingSet({ exerciseId: id, idx })}
