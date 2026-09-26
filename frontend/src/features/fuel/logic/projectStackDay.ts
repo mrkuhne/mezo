@@ -56,6 +56,9 @@ export interface StackDayInput {
   /** Bodyweight (kg) — forwarded to `placeWindows`' peri-workout-snack kcal threshold; omitted/0
    *  means duration-only significance (mezo-vx9v Task 8 review follow-up). */
   weightKg?: number
+  /** Rest energy (kcal/h, BMR/24) for the same threshold (mezo-32m82) — the Fuel timeline passes the
+   *  value it feeds `buildDayPlan`, so both place the same windows; undefined → the weight fallback. */
+  restPerHour?: number | null
 }
 
 /** Name needles marking a deliberately stimulant-free product (lowercase substrings, HU + EN).
@@ -103,7 +106,8 @@ export function projectStackDay(input: StackDayInput): StackDaySlot[] {
   // ≥2 distinct-time blocks → "which edzés?" is ambiguous: pre_workout may split into two slots
   // (stim-free → last block) and every pre_workout anchorNote names its block (mezo-j6c9).
   const multiBlock = hasTraining && sorted.length > 1 && toMin(last.time) !== toMin(first.time)
-  const windows = placeWindows(wake, bed, mealsPerDay, blocks, restKcalPerHour(null, input.weightKg ?? 0))
+  const restPerHour = input.restPerHour !== undefined ? input.restPerHour : restKcalPerHour(null, input.weightKg ?? 0)
+  const windows = placeWindows(wake, bed, mealsPerDay, blocks, restPerHour)
   const windowTime = (slot: 'breakfast' | 'lunch' | 'dinner') => {
     const w = windows.find(x => x.slotKey === slot && x.kind === 'meal')
     return w ? toHHmm(Math.round(w.time)) : null

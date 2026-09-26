@@ -5,7 +5,7 @@ import { http, HttpResponse } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useFuelTimeline, deriveBlocks } from '@/data/fuel/timelineHooks'
 import { useFuelPreview } from '@/data/today/todayHooks'
-import { deriveDailyBudget } from '@/features/fuel/logic/buildDayPlan'
+import { fuelDayEnergy } from '@/data/fuel/fuel'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import type { FuelSlot, SlotTemplate, SportSchedule, VolleyballSession } from '@/data/types'
@@ -130,20 +130,17 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK === 'false')('useFuelTimeline / us
     }
   })
 
-  it('mock timeline carries a DYNAMIC energy breakdown (base + activity + balance → target)', () => {
+  it('mock timeline carries the SERVED energy breakdown verbatim, closing on the target (mezo-32m82)', () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })
     const e = result.current.plan.energy
-    expect(e.base).toBeGreaterThan(0) // BMR×NEAT maintenance flows through
-    expect(Number.isFinite(e.activity)).toBe(true)
-    expect(Number.isFinite(e.balance)).toBe(true)
-    expect(e.target).toBeGreaterThan(0) // undefined/NaN energy (unplumbed) would fail here
-    // The mock day always carries a gym block (hardcoded today:true) → the DYNAMIC path
-    // (weightKg + blocks plumbed) burns real MET activity. The unwired static path leaves
-    // activity at 0, so this is the assertion that flips red→green when the inputs are wired.
-    expect(e.activity).toBeGreaterThan(0)
-    // Dynamic base is BMR×NEAT (1720×1.2 = 2064), NOT the segment kcal the static path echoed.
-    expect(e.base).toBe(2064)
+    expect(e).toEqual({
+      base: fuelDayEnergy.baseKcal, planned: fuelDayEnergy.plannedMovementKcal, extra: fuelDayEnergy.extraMovementKcal,
+      balance: fuelDayEnergy.balanceKcal, target: fuelDayEnergy.targetKcal,
+    })
+    expect(e.base + e.planned + e.extra + e.balance).toBe(e.target)
+    expect(result.current.budget.kcal).toBe(e.target) // targets.kcal IS the served target
+    expect(result.current.staticEnergy).toBe(false)
   })
 
   it('getScoredMeal resolves a done meal slot by id against the mock day (title-join is dead)', () => {
@@ -230,7 +227,7 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('useFuelTimeline (rea
     }
   })
 
-  it('daily budget derives from the current-week prescription segment (2150), not the seed (3100)', async () => {
+  it('daily budget is the SERVED day target, never re-derived from the prescription segment (mezo-32m82)', async () => {
     server.use(
       http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([goalWithSettings])),
       http.get(`${API_BASE}/api/goals/:id/timeline`, () => HttpResponse.json(timelineFixture)),
@@ -244,15 +241,13 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('useFuelTimeline (rea
         }),
       ),
     )
-    const expected = deriveDailyBudget({ kcal: 2150, proteinG: 163 }, { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 })
-    expect(expected.kcal).toBe(2150)
-
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })
     await waitFor(() => expect(sumKcal(result.current.plan.slots)).toBeGreaterThan(0))
-    // splitBudget guarantees Σ per-slot budget === the daily budget, per macro.
-    expect(sumKcal(result.current.plan.slots)).toBe(2150)
-    expect(sumP(result.current.plan.slots)).toBe(163)
+    // splitBudget guarantees Σ per-slot budget === the daily budget, per macro — and the daily
+    // budget is the served targets (3100/220), not the segment's 2150/163.
+    expect(sumKcal(result.current.plan.slots)).toBe(3100)
+    expect(sumP(result.current.plan.slots)).toBe(220)
   })
 
   it('cold-load: meal windows from the fuel-settings cadence + the sleep-goal anchor + the day-targets fallback budget', async () => {
@@ -289,88 +284,60 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('useFuelTimeline (rea
     expect(result.current.plan.slots.some(s => s.time === '05:50' && s.label === 'Ébresztő')).toBe(false)
   })
 
-  // mezo-rilew — the owner logged an unplanned volleyball session and the Fuel calorie target did
-  // not move. mezo-u13jv (owner decision 2026-09-24) went further: only LOGGED movement raises the
-  // target at all — a planned session not yet done adds nothing, a logged one adds its energy.
-  describe('an ad-hoc logged sport session raises the day\'s calorie target (mezo-rilew)', () => {
+  // mezo-32m82: the backend serves ONE target rule (DayTargetProjector) — the weekly plan's share,
+  // unplanned movement credited as `extra`, the goal balance — and Fuel Mai shows exactly that.
+  describe('the served energy breakdown (mezo-32m82)', () => {
     const goalWithTdee = {
       ...goalWithSettings,
       currentWeight: 80,
-      tdeeBootstrap: { bmr: 1800, neat: 1.2, formula: 'MSJ' },
+      tdeeBootstrap: { bmr: 1800, neat: 1.2, neatBaselineKcal: 2160, weeklyEatKcalPerDay: 400, tdee: 2560, formula: 'MSJ', computedAt: '2026-05-22T06:00:00Z' },
     }
-    const scheduleFree = () => [
-      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([goalWithTdee])),
-      http.get(`${API_BASE}/api/goals/:id/timeline`, () => HttpResponse.json(timelineFixture)),
-      http.get(`${API_BASE}/api/recipe`, () => HttpResponse.json({ recipes: [] })),
-      http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
-      http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([])),
-      http.get(`${API_BASE}/api/train/sport-events`, () => HttpResponse.json([])),
-    ]
+    const energy = { baseKcal: 2160, plannedMovementKcal: 400, extraMovementKcal: 323, balanceKcal: -400, targetKcal: 2483 }
+    const dayWith = (e: typeof energy | null) =>
+      http.get(`${API_BASE}/api/fuel/day/:date`, ({ params }) =>
+        HttpResponse.json({
+          date: String(params.date),
+          targets: { kcal: e?.targetKcal ?? 2150, p: 163, c: 230, f: 66, water: 4000 },
+          consumed: { kcal: 0, p: 0, c: 0, f: 0, water: 0 },
+          meals: [],
+          energy: e,
+        }),
+      )
 
-    async function energyFor(sessions: unknown[]) {
+    it('flows the served equation through verbatim; the breakdown sheet bills planned + extra', async () => {
       server.use(
-        ...scheduleFree(),
-        http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json(sessions)),
+        http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([goalWithTdee])),
+        http.get(`${API_BASE}/api/goals/:id/timeline`, () => HttpResponse.json(timelineFixture)),
+        dayWith(energy),
       )
       const { Wrapper } = sharedWrapper()
       const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })
-      await waitFor(() => expect(result.current.plan.energy?.base).toBe(2160)) // 1800 × 1.2
-      return result.current.plan.energy!
-    }
-
-    const today = '2026-07-02'
-    const session = {
-      id: 'd1f3a0e2-0000-4000-8000-000000000009', sport: 'volleyball', date: today,
-      time: '18:00', duration: 90, rpe: 7,
-    }
-
-    it('adds the session\'s movement energy — a schedule-free day is no longer a zero-burn day', async () => {
-      vi.useFakeTimers({ toFake: ['Date'] })
-      vi.setSystemTime(new Date(`${today}T20:00:00`))
-      try {
-        const withoutSession = await energyFor([])
-        expect(withoutSession.activity).toBe(0)
-
-        const withSession = await energyFor([session])
-        // 90 minutes of sport at 80 kg, the same MET the planner already bills a PLANNED sport
-        // block at — the point is that it is billed at all.
-        expect(withSession.activity).toBeGreaterThan(0)
-        expect(withSession.target).toBe(withoutSession.target + withSession.activity)
-      } finally {
-        vi.useRealTimers()
-      }
+      await waitFor(() => expect(result.current.plan.energy.base).toBe(energy.baseKcal))
+      expect(result.current.plan.energy).toEqual({
+        base: energy.baseKcal, planned: energy.plannedMovementKcal, extra: energy.extraMovementKcal,
+        balance: energy.balanceKcal, target: energy.targetKcal,
+      })
+      expect(result.current.budget.kcal).toBe(energy.targetKcal)
+      expect(result.current.staticEnergy).toBe(false)
+      await waitFor(() => expect(result.current.energyBreakdown).not.toBeNull())
+      expect(result.current.energyBreakdown!.movement.kcal).toBe(energy.plannedMovementKcal + energy.extraMovementKcal)
+      expect(result.current.energyBreakdown!.target).toBe(energy.targetKcal)
+      // One rest energy (BMR/24) for every window placement.
+      expect(result.current.restPerHour).toBe(goalWithTdee.tdeeBootstrap.bmr / 24)
     })
 
-    it('a PLANNED sport slot that was not played yet adds no movement energy (mezo-u13jv)', async () => {
-      vi.useFakeTimers({ toFake: ['Date'] })
-      vi.setSystemTime(new Date(`${today}T20:00:00`)) // 2026-07-02 is a Thursday → dayOfWeek 3
-      try {
-        server.use(
-          // MSW picks the FIRST matching handler — the planned slot must precede scheduleFree()'s empty one.
-          http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([
-            { id: 'a0000000-0000-4000-8000-000000000001', dayOfWeek: 3, time: '18:00', durationMin: 90, kind: 'training', sport: 'volleyball' },
-          ])),
-          ...scheduleFree(),
-          http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
-        )
-        const { Wrapper } = sharedWrapper()
-        const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })
-        await waitFor(() => expect(result.current.blocks.some(b => b.kind === 'sport')).toBe(true))
-        expect(result.current.plan.energy?.activity).toBe(0)
-      } finally {
-        vi.useRealTimers()
-      }
-    })
-
-    it('a session logged on ANOTHER day never inflates today', async () => {
-      vi.useFakeTimers({ toFake: ['Date'] })
-      vi.setSystemTime(new Date(`${today}T20:00:00`))
-      try {
-        const energy = await energyFor([{ ...session, date: '2026-06-28' }])
-        expect(energy.activity).toBe(0)
-      } finally {
-        vi.useRealTimers()
-      }
+    it('no served energy → the static path: no chips, no breakdown, the targets as the budget', async () => {
+      server.use(
+        http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([goalWithTdee])),
+        http.get(`${API_BASE}/api/goals/:id/timeline`, () => HttpResponse.json(timelineFixture)),
+        dayWith(null),
+      )
+      const { Wrapper } = sharedWrapper()
+      const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })
+      await waitFor(() => expect(result.current.budget.kcal).toBe(2150))
+      expect(result.current.staticEnergy).toBe(true)
+      expect(result.current.energyBreakdown).toBeNull()
+      expect(result.current.plan.energy).toEqual({ base: 2150, planned: 0, extra: 0, balance: 0, target: 2150 })
     })
   })
 

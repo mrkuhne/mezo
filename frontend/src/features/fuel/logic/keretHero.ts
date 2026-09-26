@@ -26,7 +26,9 @@ export interface KeretHeroVM {
   totalCount: number
   segments: DaySegVM[]
   nowFrac: number | null
-  chips: { base: number; activity: number; balance: number } | null
+  /** The served energy equation (mezo-32m82): `activity` = planned + extra (the Mozgás row), `extra`
+   *  rides along only for the row's sub copy, `balance` is the goal's signed deficit/surplus (Célod). */
+  chips: { base: number; activity: number; extra: number; balance: number } | null
   rings: RingVM[]
 }
 
@@ -115,10 +117,15 @@ export function buildKeretHero(input: {
     totalCount: windows.length,
     segments,
     nowFrac,
-    // Static-energy days (no biometric profile — plan.energy.activity/balance both 0) hide the chip
-    // row entirely (the retired DayBudgetCard's `staticEnergy` rule); balance passes through RAW —
-    // the deficit/surplus sign glyph is the component's formatting job, not this module's.
-    chips: staticEnergy ? null : { base: budget.energy.base, activity: budget.energy.activity, balance: budget.energy.balance },
+    // Static-energy days (no served `energy` — no goal / no biometric snapshot) hide the chip row
+    // entirely (the retired DayBudgetCard's `staticEnergy` rule); balance passes through RAW — the
+    // deficit/surplus sign glyph is the component's formatting job, not this module's.
+    chips: staticEnergy ? null : {
+      base: budget.energy.base,
+      activity: budget.energy.planned + budget.energy.extra,
+      extra: budget.energy.extra,
+      balance: budget.energy.balance,
+    },
     rings,
   }
 }
@@ -214,21 +221,28 @@ export function asPastDayHero(vm: KeretHeroVM): KeretHeroVM {
 
 /** Egy sor a hero üvegdobozának egyenletében (A15). */
 export interface EquationLine {
-  key: 'base' | 'activity' | 'eaten' | 'remaining'
+  key: 'base' | 'activity' | 'goal' | 'eaten' | 'remaining'
   label: string
   value: number | null
-  sign: '+' | '−' | '=' | null
+  /** `±` = the row carries its own sign (Célod: − for a cut, + for a bulk), like `=`. */
+  sign: '+' | '−' | '=' | '±' | null
 }
 
 /**
- * A `keret − étel + mozgás` egyenlet sorai — KIZÁRÓLAG a hero saját számaiból.
- * Statikus keretnél (a felhasználó fix kalóriacélt kért) nincs mozgás-komponens: a sor
- * `null` marad, és a felület gondolatjelet ír, nem nullát (őszinte-null szabály).
+ * Az `Alap + Mozgás ± Célod − Étel = Marad` egyenlet sorai — KIZÁRÓLAG a hero saját számaiból
+ * (a szerver által adott energia-bontásból, mezo-32m82), így az egyenlet mindig kijön.
+ * Statikus keretnél (nincs cél / biometria) nincs bontás: a sorok `null`-ok maradnak, és a
+ * felület gondolatjelet ír, nem nullát (őszinte-null szabály).
  */
-export function heroEquationLines(vm: KeretHeroVM): EquationLine[] {
+export function heroEquationLines(vm: KeretHeroVM, trajectory: 'cut' | 'bulk' | 'maintain' | null = null): EquationLine[] {
+  const balance = vm.chips?.balance ?? null
+  // A zero balance on a non-cut/bulk goal is "tartás" with nothing to add — the row would only be noise.
+  // A past day (chips null) keeps the row so it honestly reads „—" like its neighbours.
+  const showGoal = !(balance === 0 && trajectory !== 'cut' && trajectory !== 'bulk')
   return [
     { key: 'base', label: 'Alap', value: vm.chips?.base ?? null, sign: null },
     { key: 'activity', label: 'Mozgás', value: vm.chips?.activity ?? null, sign: '+' },
+    ...(showGoal ? [{ key: 'goal' as const, label: 'Célod', value: balance, sign: '±' as const }] : []),
     { key: 'eaten', label: 'Étel', value: vm.consumedKcal, sign: '−' },
     { key: 'remaining', label: 'Marad', value: vm.remainingKcal, sign: '=' },
   ]

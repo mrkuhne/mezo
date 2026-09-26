@@ -8,9 +8,9 @@ const blocks: PlannerBlock[] = [
 ]
 
 describe('buildEnergyBreakdown', () => {
-  it('maps plan.energy + blocks + segment into a full three-section breakdown', () => {
+  it('maps the served energy + blocks + segment into a full three-section breakdown', () => {
     const bd = buildEnergyBreakdown({
-      energy: { base: 2272, activity: 1290, balance: -869, target: 2693 },
+      energy: { base: 2272, planned: 1290, extra: 0, balance: -869, target: 2693 },
       blocks,
       weightKg: 86,
       tdeeBootstrap: { bmr: 1893, neat: 1.2, formula: 'KATCH' },
@@ -20,7 +20,7 @@ describe('buildEnergyBreakdown', () => {
     })!
     expect(bd.base).toMatchObject({ kcal: 2272, bmr: 1893, neat: 1.2, neatLabel: 'Ülő', formula: 'KATCH' })
     expect(bd.movement.kcal).toBe(1290)
-    expect(bd.movement.isWeeklyAvg).toBe(false)
+    expect(bd.movement.isWeeklyAvg).toBe(true) // the planned share is the weekly plan's part of the day
     expect(bd.movement.blocks?.map(b => b.label)).toEqual(['Gym', 'Röplabda'])
     expect(bd.movement.blocks?.[0].kcal).toBeGreaterThan(0)
     expect(bd.deficit).toMatchObject({ kcal: -869, goalLabel: 'Nyári cut' })
@@ -31,7 +31,7 @@ describe('buildEnergyBreakdown', () => {
   it('returns null when there is no tdeeBootstrap (static energy path)', () => {
     expect(
       buildEnergyBreakdown({
-        energy: { base: 2066, activity: 0, balance: 0, target: 2066 },
+        energy: { base: 2066, planned: 0, extra: 0, balance: 0, target: 2066 },
         blocks: [],
         weightKg: 0,
         tdeeBootstrap: null,
@@ -44,7 +44,7 @@ describe('buildEnergyBreakdown', () => {
 
   it('omits the deficit section when balance is zero', () => {
     const bd = buildEnergyBreakdown({
-      energy: { base: 2272, activity: 1290, balance: 0, target: 3562 },
+      energy: { base: 2272, planned: 1290, extra: 0, balance: 0, target: 3562 },
       blocks,
       weightKg: 86,
       tdeeBootstrap: { bmr: 1893, neat: 1.2, formula: 'KATCH' },
@@ -58,7 +58,7 @@ describe('buildEnergyBreakdown', () => {
   it('per-block kcal is the net model at rest BMR/24; a null-duration run defaults to 45′ (mezo-32m82)', () => {
     const rest = 1920 / 24 // 80 kcal/h
     const bd = buildEnergyBreakdown({
-      energy: { base: 2304, activity: 0, balance: 0, target: 2304 },
+      energy: { base: 2304, planned: 0, extra: 0, balance: 0, target: 2304 },
       blocks: [
         { kind: 'gym', time: '18:00', durationMin: 60, label: 'Gym' },
         { kind: 'sport', sport: 'volleyball', time: '20:00', durationMin: 120, label: 'Röplabda' },
@@ -75,5 +75,36 @@ describe('buildEnergyBreakdown', () => {
       [120, (4 - 1) * rest * 2],
       [45, Math.round((9.3 - 1) * rest * (45 / 60))],
     ])
+  })
+
+  it('movement = planned + extra, and a non-zero extra adds the „Terven kívüli mozgás" line (mezo-32m82)', () => {
+    const energy = { base: 2356, planned: 570, extra: 572, balance: -327, target: 3171 }
+    const bd = buildEnergyBreakdown({
+      energy,
+      blocks,
+      weightKg: 86,
+      tdeeBootstrap: { bmr: 1963, neat: 1.2, formula: 'KATCH' },
+      segment: null,
+      activityLabel: 'Ülő',
+      goalLabel: 'Cut',
+    })!
+    expect(bd.movement.kcal).toBe(energy.planned + energy.extra)
+    expect(bd.movement.blocks?.map(b => b.label)).toEqual(['Gym', 'Röplabda', 'Terven kívüli mozgás'])
+    expect(bd.movement.blocks?.at(-1)).toEqual({ label: 'Terven kívüli mozgás', kind: 'extra', min: null, kcal: energy.extra })
+    expect(bd.deficit?.kcal).toBe(energy.balance)
+    expect(bd.target).toBe(energy.target)
+  })
+
+  it('no extra → no extra line', () => {
+    const bd = buildEnergyBreakdown({
+      energy: { base: 2356, planned: 570, extra: 0, balance: -327, target: 2599 },
+      blocks,
+      weightKg: 86,
+      tdeeBootstrap: { bmr: 1963, neat: 1.2, formula: 'KATCH' },
+      segment: null,
+      activityLabel: 'Ülő',
+      goalLabel: 'Cut',
+    })!
+    expect(bd.movement.blocks?.some(b => b.kind === 'extra')).toBe(false)
   })
 })

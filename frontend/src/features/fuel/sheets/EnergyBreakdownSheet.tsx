@@ -13,8 +13,9 @@ import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 export type EnergySection = 'base' | 'movement' | 'deficit'
 export interface EnergyBlock {
   label: string
-  kind: 'gym' | 'sport' | 'run'
-  min: number
+  /** `extra` = the served unplanned-movement credit (mezo-32m82): one line, no duration of its own. */
+  kind: 'gym' | 'sport' | 'run' | 'extra'
+  min: number | null
   kcal: number
 }
 export interface EnergyBreakdown {
@@ -24,7 +25,7 @@ export interface EnergyBreakdown {
   target: number
 }
 
-const BLOCK_ICON: Record<EnergyBlock['kind'], Icon3DName> = { gym: 't-dumbbell', sport: 't-volley', run: 't-run' }
+const BLOCK_ICON: Record<EnergyBlock['kind'], Icon3DName> = { gym: 't-dumbbell', sport: 't-volley', run: 't-run', extra: 't-steps' }
 const SEG_COLOR = { sage: 'var(--dv-sage)', amber: 'var(--dv-amber)', coral: 'var(--dv-coral)' } as const
 const FORMULA_LABEL = { KATCH: 'Katch-McArdle', MSJ: 'Mifflin-St Jeor' } as const
 
@@ -137,7 +138,7 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
                   {movement.blocks.map((b, i) => (
                     <div key={i} style={{ display: 'contents' }}>
                       {i > 0 && <div className="op">+</div>}
-                      <Tile icon={BLOCK_ICON[b.kind]} name={b.label} sub={`${b.min} perc`} value={nf(b.kcal)} unit="kcal" />
+                      <Tile icon={BLOCK_ICON[b.kind]} name={b.label} sub={b.min != null ? `${b.min} perc` : 'rögzítve, terven kívül'} value={nf(b.kcal)} unit="kcal" />
                     </div>
                   ))}
                   <div className="op">=</div>

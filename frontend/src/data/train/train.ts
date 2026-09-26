@@ -6,6 +6,7 @@ import type {
 import type { IconName } from '@/shared/ui/Icon'
 import { E1RM_SERIES_MAX_POINTS, type E1rmPoint, type ExerciseRecordResponse } from '@/data/train/trainApi'
 import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
+import { netKcal, restKcalPerHour } from '@/data/train/activityEnergy'
 
 // --- label / colour maps (mesocycles.jsx module constants) ---
 // The 21 live per-exercise tokens (mezo-wu1s head/zone-specific taxonomy) PLUS the coarse
@@ -1165,16 +1166,24 @@ export const customWorkoutsMock: CustomWorkout[] = [
   },
 ]
 
-// kcal/kcalIsEstimate (T8 Task 6): plausible BE-estimate stand-ins so the Mozgás page's
-// movementWeek sum and Mai's per-event kcal suffix both have real wire data to exercise —
-// every fixed session carries one (kcalIsEstimate: true, no override in this static data),
-// consistent with `mockSportKcal`'s own MET-ish curve for NEW logs.
+/** The mock athlete's body weight — the train-side mock kcal estimates (`mockSportKcal`,
+ *  `mockRunKcal`, the fixed session rows) all rest on it (1 kcal/kg/h, no BMR on this side). */
+export const MOCK_FIXTURE_WEIGHT_KG = 78
+
+/** A volleyball row's backend estimate under the published net model (mezo-32m82) at the fixture
+ *  body — the same number `mockSportKcal` gives a NEW log with that duration and RPE. */
+const vbKcal = (duration: number, rpe: number) =>
+  netKcal('volleyball', rpe, duration, restKcalPerHour(null, MOCK_FIXTURE_WEIGHT_KG))
+
+// kcal/kcalIsEstimate (T8 Task 6): BE-estimate stand-ins so the Mozgás page's movementWeek sum
+// and Mai's per-event kcal suffix both have real wire data to exercise — every fixed session
+// carries one (kcalIsEstimate: true, no override in this static data), derived with `vbKcal`.
 const sportSessionsFixed: Sport['sessions'] = [
-  { id: 'vb-2026-05-20', sport: 'volleyball', date: 'Máj 20 · Kedd', isoDate: '2026-05-20', time: '18:00', duration: 90, setsPlayed: 5, rounds: null, intensity: 7, rpe: 6.8, shoulderStrain: 6, jumpCount: 38, notes: 'Smashek tisztábbak, jobb váll után érzem délután', kcal: 620, kcalIsEstimate: true },
-  { id: 'vb-2026-05-18', sport: 'volleyball', date: 'Máj 18 · Szo', isoDate: '2026-05-18', time: '10:00', duration: 120, setsPlayed: 6, rounds: null, intensity: 8, rpe: 7.2, shoulderStrain: 7, jumpCount: 52, notes: 'Hosszú meccs · maradt erő utána', kcal: 870, kcalIsEstimate: true },
-  { id: 'vb-2026-05-15', sport: 'volleyball', date: 'Máj 15 · Csü', isoDate: '2026-05-15', time: '19:30', duration: 90, setsPlayed: 4, rounds: null, intensity: 7, rpe: 6.5, shoulderStrain: 5, jumpCount: 31, notes: null, kcal: 590, kcalIsEstimate: true },
-  { id: 'vb-2026-05-13', sport: 'volleyball', date: 'Máj 13 · Kedd', isoDate: '2026-05-13', time: '18:00', duration: 90, setsPlayed: 5, rounds: null, intensity: 7, rpe: 6.9, shoulderStrain: 6, jumpCount: 35, notes: null, kcal: 630, kcalIsEstimate: true },
-  { id: 'vb-2026-05-11', sport: 'volleyball', date: 'Máj 11 · Szo', isoDate: '2026-05-11', time: '10:00', duration: 120, setsPlayed: 6, rounds: null, intensity: 8, rpe: 7.5, shoulderStrain: 8, jumpCount: 48, notes: 'Sok smash · vasárnap pihentem', kcal: 910, kcalIsEstimate: true },
+  { id: 'vb-2026-05-20', sport: 'volleyball', date: 'Máj 20 · Kedd', isoDate: '2026-05-20', time: '18:00', duration: 90, setsPlayed: 5, rounds: null, intensity: 7, rpe: 6.8, shoulderStrain: 6, jumpCount: 38, notes: 'Smashek tisztábbak, jobb váll után érzem délután', kcal: vbKcal(90, 6.8), kcalIsEstimate: true },
+  { id: 'vb-2026-05-18', sport: 'volleyball', date: 'Máj 18 · Szo', isoDate: '2026-05-18', time: '10:00', duration: 120, setsPlayed: 6, rounds: null, intensity: 8, rpe: 7.2, shoulderStrain: 7, jumpCount: 52, notes: 'Hosszú meccs · maradt erő utána', kcal: vbKcal(120, 7.2), kcalIsEstimate: true },
+  { id: 'vb-2026-05-15', sport: 'volleyball', date: 'Máj 15 · Csü', isoDate: '2026-05-15', time: '19:30', duration: 90, setsPlayed: 4, rounds: null, intensity: 7, rpe: 6.5, shoulderStrain: 5, jumpCount: 31, notes: null, kcal: vbKcal(90, 6.5), kcalIsEstimate: true },
+  { id: 'vb-2026-05-13', sport: 'volleyball', date: 'Máj 13 · Kedd', isoDate: '2026-05-13', time: '18:00', duration: 90, setsPlayed: 5, rounds: null, intensity: 7, rpe: 6.9, shoulderStrain: 6, jumpCount: 35, notes: null, kcal: vbKcal(90, 6.9), kcalIsEstimate: true },
+  { id: 'vb-2026-05-11', sport: 'volleyball', date: 'Máj 11 · Szo', isoDate: '2026-05-11', time: '10:00', duration: 120, setsPlayed: 6, rounds: null, intensity: 8, rpe: 7.5, shoulderStrain: 8, jumpCount: 48, notes: 'Sok smash · vasárnap pihentem', kcal: vbKcal(120, 7.5), kcalIsEstimate: true },
 ]
 
 // mezo-idz2: dátum-relatív mai session — a DayOrb sport-jele mock módban is jelen van.
@@ -1188,7 +1197,7 @@ const todayIsoSport = localDateString()
 const sportSessions: Sport['sessions'] = (
   sportSessionsFixed.some((s) => s.isoDate === todayIsoSport)
     ? [...sportSessionsFixed]
-    : [...sportSessionsFixed, { id: 'vb-today', sport: 'volleyball', date: huMonthDayDow(todayIsoSport), isoDate: todayIsoSport, time: '18:00', duration: 90, setsPlayed: 4, rounds: null, intensity: 7, rpe: 6.6, shoulderStrain: 5, jumpCount: 33, notes: null, kcal: 600, kcalIsEstimate: true }]
+    : [...sportSessionsFixed, { id: 'vb-today', sport: 'volleyball', date: huMonthDayDow(todayIsoSport), isoDate: todayIsoSport, time: '18:00', duration: 90, setsPlayed: 4, rounds: null, intensity: 7, rpe: 6.6, shoulderStrain: 5, jumpCount: 33, notes: null, kcal: vbKcal(90, 6.6), kcalIsEstimate: true }]
 ).sort((a, b) => b.isoDate.localeCompare(a.isoDate))
 
 // --- sport (data.js:250-322) — ADD jumpCount to each session (port fix) ---

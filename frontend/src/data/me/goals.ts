@@ -166,8 +166,10 @@ export const goalResponse: GoalResponse = {
   // status the recept card renders. Mirrors the GoalPrescription contract so the
   // card renders offline in mock mode without a backend evaluate. (mezo-g1u)
   // NEAT model (mezo-eujg): maintenance = bmr×neat = 2064 (neatBaselineKcal); tdee = neatBaselineKcal +
-  // weeklyEatKcalPerDay (scheduled training ÷ 7). Fuel's dynamic day-plan reads bmr+neat off this envelope.
-  tdeeBootstrap: { bmr: 1720, neat: 1.2, neatBaselineKcal: 2064, weeklyEatKcalPerDay: 602, tdee: 2666, formula: 'MSJ', computedAt: '2026-05-22T06:00:00Z' },
+  // weeklyEatKcalPerDay (scheduled training ÷ 7). Net activity model (mezo-32m82) over the mock week
+  // at rest 1720/24, közepes band: 4 × 90′ volleyball (323) + 1 × 120′ (430) + 2 × 60′ gym (179) +
+  // 2 × 45′ run (446) = 2972/week → 425/day.
+  tdeeBootstrap: { bmr: 1720, neat: 1.2, neatBaselineKcal: 2064, weeklyEatKcalPerDay: 425, tdee: 2489, formula: 'MSJ', computedAt: '2026-05-22T06:00:00Z' },
   prescription: {
     generatedAt: '2026-05-22T06:05:00Z',
     basis: 'formula',
@@ -427,8 +429,10 @@ export const biometricProfile: BiometricProfileResponse = {
   bodyFatPct: 15,
   activityLevel: 'MIXED',
   // NEAT model (mezo-eujg): neatBaselineKcal = bmr × neat (1910 × 1.35 ≈ 2579);
-  // tdee = neatBaselineKcal + weeklyEatKcalPerDay (scheduled training ÷ 7).
-  tdeeBootstrap: { bmr: 1910, neat: 1.35, neatBaselineKcal: 2579, weeklyEatKcalPerDay: 421, tdee: 3000, formula: 'KATCH', computedAt: '2026-05-22T06:00:00Z' },
+  // tdee = neatBaselineKcal + weeklyEatKcalPerDay (scheduled training ÷ 7). Net activity model
+  // (mezo-32m82) over the mock week at rest 1910/24, közepes band: 4 × 90′ volleyball (358) +
+  // 1 × 120′ (478) + 2 × 60′ gym (199) + 2 × 45′ run (495) = 3298/week → 471/day.
+  tdeeBootstrap: { bmr: 1910, neat: 1.35, neatBaselineKcal: 2579, weeklyEatKcalPerDay: 471, tdee: 3050, formula: 'KATCH', computedAt: '2026-05-22T06:00:00Z' },
 }
 
 // Static realism preview for mock mode (G6, mezo-06n) — a feasible draft so the

@@ -71,7 +71,7 @@ export interface FuelPlanToday {
   workout: { type: string; start: string; end: string; duration: number }
   volleyball: { start: string; end: string; noneToday: boolean }
   bedtime: string; kitchenClose: string; caffeineCutoff: string
-  energy: { base: number; activity: number; balance: number; target: number } // dynamic-energy breakdown (mezo-1oy5)
+  energy: { base: number; planned: number; extra: number; balance: number; target: number } // the served energy breakdown (mezo-32m82)
   slots: FuelSlot[]
 }
 /** Fuel-owned planner settings (mezo-53su) — eating cadence + caffeine cutoff, per-user singleton. */
@@ -257,8 +257,19 @@ export interface MealAiDraft {
 }
 export interface Micronutrient { name: string; pct: number; target: string }
 export interface FuelSummary { name: string; when: string; state: 'done' | 'pending'; dose: string }
+/** The served target's equation (mezo-32m82): base + planned + extra + balance = target (= targets.kcal).
+ *  Mirrors the generated `FuelDayEnergy` wire schema; null on the static path (no goal / no biometrics). */
+export interface FuelDayEnergy {
+  baseKcal: number
+  plannedMovementKcal: number
+  extraMovementKcal: number
+  balanceKcal: number
+  targetKcal: number
+}
 export interface FuelDay {
   targets: MacroSet; consumed: MacroSet
+  /** The served energy breakdown (mezo-32m82); absent/null → static target, no equation chips. */
+  energy?: FuelDayEnergy | null
   meals: FuelMeal[]
   pacing: { msg: string }
   micronutrients: Micronutrient[]

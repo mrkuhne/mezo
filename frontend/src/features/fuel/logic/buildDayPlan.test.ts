@@ -1,9 +1,9 @@
 import {
   buildDayPlan,
-  deriveDailyBudget,
   mealSlotKey,
   pickRecipe,
   placeWindows,
+  servedBudget,
   splitBudget,
   splitBudgetPct,
   ZONE_FUEL_KIND,
@@ -78,8 +78,7 @@ function stackSlot(over: Partial<StackDaySlot> & { zone: StackDaySlot['zone']; t
     ...over,
   }
 }
-const NO_BUDGET: DayBudget = { kcal: 2400, p: 180, c: 240, f: 73, energy: { base: 2400, activity: 0, balance: 0, target: 2400 } }
-const FB = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
+const NO_BUDGET: DayBudget = { kcal: 2400, p: 180, c: 240, f: 73, energy: { base: 2400, planned: 0, extra: 0, balance: 0, target: 2400 } }
 function baseInput(over: Partial<DayPlanInput> = {}): DayPlanInput {
   return {
     wake: '06:00',
@@ -258,117 +257,27 @@ test('splitBudgetPct: a pre_workout slot gets more carbs and less protein/fat th
   }
 })
 
-// ── deriveDailyBudget ────────────────────────────────────────────────────────
-test('deriveDailyBudget (no energy) keeps the static base kcal + derived carbs/fat', () => {
-  const fallback = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
-  expect(deriveDailyBudget({ kcal: 2150, proteinG: 163 }, fallback)).toMatchObject({ kcal: 2150, p: 163, c: 226, f: 66 })
-})
-test('deriveDailyBudget (no energy, no segment) passes the fallback MacroSet through', () => {
-  const fallback = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
-  expect(deriveDailyBudget(null, fallback)).toMatchObject({ kcal: 3100, p: 220, c: 380, f: 95 })
-})
+// ── servedBudget (mezo-32m82) ────────────────────────────────────────────────
+describe('servedBudget', () => {
+  const targets = { kcal: 3171, p: 180, c: 390, f: 80, water: 4000 }
 
-const ENERGY = (blocks: PlannerBlock[]) => ({ bmr: 1720, neat: 1.2, weightKg: 78.6, blocks })
-// Net activity model (mezo-32m82): (MET − 1) × BMR/24 × hours per block, rounded half-up per block.
-const REST_1720 = 1720 / 24
-test('dynamic budget — rest day floors at BMR (raw 2064−516=1548 < 1720)', () => {
-  const b = deriveDailyBudget({ kcal: 2150, proteinG: 163, dailyEnergyBalanceKcal: -516 }, FB, ENERGY([]))
-  expect(b.energy).toMatchObject({ base: 2064, activity: 0, balance: -516, target: 1720 })
-  expect(b.kcal).toBe(1720)
-  expect(b.p).toBe(163) // protein fixed
-  expect(b.f).toBe(66) // fat from the BASE segment, not the floored target
-  expect(b.c).toBe(Math.round((1720 - 163 * 4 - 66 * 9) / 4)) // 119 — carbs absorb
-})
-test('dynamic budget — big training day adds activity, carbs absorb the bonus', () => {
-  const blocks: PlannerBlock[] = [
-    { kind: 'gym', time: '18:00', durationMin: 60, label: 'Plyo Leg' },
-    { kind: 'sport', time: '18:00', durationMin: 240, label: 'Volleyball' },
-  ]
-  const b = deriveDailyBudget({ kcal: 2150, proteinG: 163, dailyEnergyBalanceKcal: -516 }, FB, ENERGY(blocks))
-  // gym (3.5−1) × rest × 1h + a sport block with no sport id (other, 4.0−1) × rest × 4h
-  const activity = Math.round((3.5 - 1) * REST_1720) + Math.round((4 - 1) * REST_1720 * 4)
-  expect(b.energy.activity).toBe(activity)
-  expect(b.energy.target).toBe(2064 + activity - 516)
-  expect(b.kcal).toBe(b.energy.target)
-  expect(b.f).toBe(66) // fat stable (base-tied)
-  expect(b.c).toBe(Math.round((b.kcal - 163 * 4 - 66 * 9) / 4)) // carbs absorb the activity bonus
-  expect(b.c).toBeGreaterThan(deriveDailyBudget({ kcal: 2150, proteinG: 163, dailyEnergyBalanceKcal: -516 }, FB, ENERGY([])).c)
-})
-
-test('deriveDailyBudget prefers the segment fatG over FAT_KCAL_SHARE', () => {
-  const segment = { kcal: 2150, proteinG: 163, carbsG: 226, fatG: 90, dailyEnergyBalanceKcal: -516 }
-  const fallback = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
-  // static path (no energy inputs): f from segment, c from segment
-  const staticBudget = deriveDailyBudget(segment, fallback)
-  expect(staticBudget.f).toBe(90)
-  expect(staticBudget.c).toBe(226)
-  // dynamic path: fat stays the segment's, carbs absorb the activity bonus
-  const dyn = deriveDailyBudget(segment, fallback, { bmr: 1720, neat: 1.2, weightKg: 84, blocks: [] })
-  expect(dyn.f).toBe(90)
-  expect(dyn.c).toBe(Math.max(0, Math.round((dyn.kcal - 163 * 4 - 90 * 9) / 4)))
-})
-
-test('deriveDailyBudget keeps the FAT_KCAL_SHARE fallback for pre-slice-1 segments', () => {
-  const segment = { kcal: 2150, proteinG: 163, dailyEnergyBalanceKcal: -516 } // no carbsG/fatG
-  const fallback = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
-  const budget = deriveDailyBudget(segment, fallback)
-  expect(budget.f).toBe(Math.round((2150 * 0.275) / 9)) // 66 — unchanged legacy behavior
-})
-
-describe('deriveDailyBudget day-type shift (slice 3)', () => {
-  const fallback = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
-  const segment = { kcal: 2150, proteinG: 163, dailyEnergyBalanceKcal: -516, trainingDayKcal: 2300, restDayKcal: 1950 }
-  const gym60 = [{ kind: 'gym' as const, time: '17:30', durationMin: 60, label: 'Gym' }]
-  const energyTraining = { bmr: 1720, neat: 1.2, weightKg: 78.6, blocks: gym60 }
-  const energyRest = { bmr: 1720, neat: 1.2, weightKg: 78.6, blocks: [] }
-
-  it('training day adds the segment delta on top of actual EAT (no double counting)', () => {
-    const b = deriveDailyBudget(segment, fallback, energyTraining, true)
-    // maintenance 2064 + net gym eat (3.5−1)×1720/24 ≈ 179 + balance −516 + delta +150
-    expect(b.kcal).toBe(2064 + Math.round((3.5 - 1) * REST_1720) - 516 + 150)
-    expect(b.p).toBe(163) // protein untouched by day type
+  test('reshapes the served targets + energy; the equation closes on the served target', () => {
+    const energy = { baseKcal: 2356, plannedMovementKcal: 570, extraMovementKcal: 572, balanceKcal: -327, targetKcal: 3171 }
+    const b = servedBudget(targets, energy)
+    expect(b).toMatchObject({ kcal: targets.kcal, p: targets.p, c: targets.c, f: targets.f })
+    expect(b.energy).toEqual({
+      base: energy.baseKcal, planned: energy.plannedMovementKcal, extra: energy.extraMovementKcal,
+      balance: energy.balanceKcal, target: energy.targetKcal,
+    })
+    expect(b.energy.base + b.energy.planned + b.energy.extra + b.energy.balance).toBe(b.energy.target)
   })
 
-  it('rest day subtracts the delta and the BMR floor still holds', () => {
-    const b = deriveDailyBudget(segment, fallback, energyRest, false)
-    // maintenance 2064 + 0 − 516 − 200 = 1348 → floored at BMR 1720
-    expect(b.kcal).toBe(1720)
-  })
-
-  it('undefined isTrainingDay keeps the uniform behavior byte-identical', () => {
-    const a = deriveDailyBudget(segment, fallback, energyTraining)
-    const legacy = deriveDailyBudget({ kcal: 2150, proteinG: 163, dailyEnergyBalanceKcal: -516 }, fallback, energyTraining)
-    expect(a).toEqual(legacy)
-  })
-
-  it('static path (no profile) uses the day-type kcal as the base', () => {
-    const b = deriveDailyBudget(segment, fallback, undefined, true)
-    expect(b.kcal).toBe(2300)
-    const r = deriveDailyBudget(segment, fallback, undefined, false)
-    expect(r.kcal).toBe(1950)
-  })
-
-  it('null day-type fields mean uniform on both paths', () => {
-    const uniform = { kcal: 2150, proteinG: 163, dailyEnergyBalanceKcal: -516 }
-    expect(deriveDailyBudget(uniform, fallback, undefined, true).kcal).toBe(2150)
-  })
-
-  it('static path carb delta applies when the segment carries carbsG/fatG (mirrors the BE serve-time delta)', () => {
-    const seg = { kcal: 2150, proteinG: 163, carbsG: 226, fatG: 66, trainingDayKcal: 2300 }
-    const b = deriveDailyBudget(seg, fallback, undefined, true)
-    expect(b.c).toBe(264) // 226 + round((2300−2150)/4) = 226+38
-    expect(b.f).toBe(66) // fat is day-independent
-  })
-
-  // Finding 3 (mezo-sxlj final fix wave): a partial split (only ONE of the two day-type fields set)
-  // is a shape DayTypeShiftCalculator never itself emits, but this DEFENSIVE consumer must still
-  // degrade safely — the missing field resolves `dayKcal` to null, so the uniform `kcal` is served,
-  // not a `restDayKcal: undefined` glitch.
-  it('partial split (trainingDayKcal set, restDayKcal absent) on a rest day serves the uniform kcal', () => {
-    const partial = { kcal: 2150, proteinG: 163, carbsG: 226, fatG: 66, trainingDayKcal: 2300 } // no restDayKcal
-    const b = deriveDailyBudget(partial, fallback, undefined, false)
-    expect(b.kcal).toBe(2150) // uniform kcal, NOT a crash and NOT trainingDayKcal
-    expect(b.c).toBe(226) // no day-type delta — carbsG passes through unchanged
+  test('no served energy (static path) → the targets pass through with a flat equation', () => {
+    for (const energy of [null, undefined]) {
+      const b = servedBudget(targets, energy)
+      expect(b).toMatchObject({ kcal: targets.kcal, p: targets.p, c: targets.c, f: targets.f })
+      expect(b.energy).toEqual({ base: targets.kcal, planned: 0, extra: 0, balance: 0, target: targets.kcal })
+    }
   })
 })
 
@@ -395,7 +304,7 @@ test('pickRecipe tie-breaks equal |Δkcal| by starred then |Δprotein|', () => {
 // ── slot filling through buildDayPlan ────────────────────────────────────────
 test('a fitting recipe fills an un-logged window with the recipe per-serving macros + suggestedRecipeId', () => {
   const rec = recipe({ id: 'r1', name: 'Túrós zab', category: 'breakfast', macros: { kcal: 1160, p: 84, c: 140, f: 24 }, servings: 2 })
-  const plan = buildDayPlan(baseInput({ budget: { kcal: 2100, p: 168, c: 260, f: 64, energy: { base: 2100, activity: 0, balance: 0, target: 2100 } }, recipes: [rec], nowHHmm: '05:00' }))
+  const plan = buildDayPlan(baseInput({ budget: { kcal: 2100, p: 168, c: 260, f: 64, energy: { base: 2100, planned: 0, extra: 0, balance: 0, target: 2100 } }, recipes: [rec], nowHHmm: '05:00' }))
   const breakfast = plan.slots.find(s => s.label === 'Reggeli')!
   // At 05:00 nothing is logged and `now` precedes every meal → the earliest window is the current
   // "now" one (fixed-plan state, mezo-1oy5). The recipe-fill itself (suggestion + macros below) is
@@ -751,7 +660,7 @@ test('no two meal slots share the same minute (collision-free) even with two blo
 })
 test('plan carries the energy breakdown from the budget', () => {
   const plan = buildDayPlan(baseInput({ nowHHmm: '13:00', meals: [] }))
-  expect(plan.energy).toEqual(expect.objectContaining({ base: expect.any(Number), activity: expect.any(Number), balance: expect.any(Number), target: expect.any(Number) }))
+  expect(plan.energy).toEqual(NO_BUDGET.energy)
 })
 
 // ── peri-workout snack windows (mezo-1oy5) ───────────────────────────────────
@@ -778,17 +687,6 @@ test('the peri-snack is deduped when a meal/snack window already covers the pre-
 })
 
 // ── Net activity energy (mezo-1oy5 → mezo-32m82) ─────────────────────────────
-test('the dynamic budget bills every block on the net model; sport by its own row, null run → DEFAULT_RUN_MIN', () => {
-  const rest = 1920 / 24 // 80 kcal/h
-  const blocks: PlannerBlock[] = [
-    { kind: 'gym', time: '18:00', durationMin: 60, label: 'Plyo Leg' },
-    { kind: 'sport', sport: 'volleyball', time: '18:00', durationMin: 240, label: 'Volleyball' },
-    { kind: 'run', time: '07:00', durationMin: null, label: 'Futás' },
-  ]
-  const b = deriveDailyBudget({ kcal: 2150, proteinG: 163 }, FB, { bmr: 1920, neat: 1.2, weightKg: 80, blocks })
-  expect(b.energy.activity).toBe((3.5 - 1) * rest + (4 - 1) * rest * 4 + Math.round((9.3 - 1) * rest * (45 / 60)))
-})
-
 test('peri-snack kcal rule is net: ≥200 net kcal under 90′ earns the window, less does not', () => {
   const rest = 1920 / 24
   const at = (b: PlannerBlock) => placeWindows('06:00', '23:00', 3, [b], rest).filter(w => w.label === 'Pre-workout snack').length
