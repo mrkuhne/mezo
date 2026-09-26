@@ -87,4 +87,36 @@ class AnchorResolverFeedIT extends AbstractIntegrationTest {
                 .noneMatch(a -> a.url().contains("?n="));
         // (The prose `memoir` anchor may or may not exist — that path is untouched.)
     }
+
+    // ---- final review C1 (mezo-a9bo7.25): the team chat's pushes (the only feed kind on the
+    // intervention family) honour the quiet window 22:00–07:00; an exempt row only rides the wake. ----
+
+    private java.util.List<AnchorSet.AnchoredEvent> teamChatAnchors(UUID owner, LocalDate day) {
+        return anchorResolver.resolve(owner, day).backendAnchors().stream()
+                .filter(a -> a.category() == NotificationCategory.INTERVENTION && a.url().contains("?n="))
+                .toList();
+    }
+
+    @Test
+    void testResolve_shouldDeferAnEarlyMorningTeamChatPushToTheQuietEnd() {
+        LocalDate today = LocalDate.now();
+        UUID owner = ownerId();
+        populator.notification(owner, "team_chat", "team_chat:" + UUID.randomUUID(), onDay(today, "03:00"));
+
+        // Default wake 06:00 < quiet end 07:00 — the ring waits for 07:00.
+        assertThat(teamChatAnchors(owner, today)).singleElement()
+                .satisfies(a -> assertThat(a.minuteOfDay()).isEqualTo(7 * 60));
+    }
+
+    @Test
+    void testResolve_shouldDropAnEveningTeamChatPush_unlessTheRowIsQuietHoursExempt() {
+        LocalDate today = LocalDate.now();
+        UUID owner = ownerId();
+        populator.notification(owner, "team_chat", "team_chat:" + UUID.randomUUID(), onDay(today, "22:30"));
+        populator.notification(owner, "team_chat", "team_chat:" + UUID.randomUUID() + ":quiet-exempt",
+                onDay(today, "22:40"));
+
+        assertThat(teamChatAnchors(owner, today)).singleElement()
+                .satisfies(a -> assertThat(a.minuteOfDay()).isEqualTo(22 * 60 + 40));
+    }
 }

@@ -9,8 +9,18 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface TeamChatThreadRepository extends JpaRepository<TeamChatThreadEntity, UUID> {
+
+    /** Final review I2 (mezo-a9bo7.25): the per-user push-budget lock — a transaction-scoped
+     *  advisory lock ({@code CompanionMessageRepository.lockForDelivery} idiom) that serializes one
+     *  user's {@code TeamChatService.decidePush} calls, so parallel raises from one evaluation can
+     *  never both read "nothing pushed today". Released on commit/rollback; a hash collision with
+     *  another user only costs a brief wait. */
+    @Query(value = "select pg_advisory_xact_lock(hashtext('team_chat_push:' || cast(:userId as text)))",
+            nativeQuery = true)
+    void lockPushBudget(@Param("userId") UUID userId);
 
     Optional<TeamChatThreadEntity> findFirstByCreatedByAndFlagKeyAndStatusAndDeletedFalse(
             UUID createdBy, String flagKey, String status);

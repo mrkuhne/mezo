@@ -1,0 +1,138 @@
+package io.mrkuhne.mezo.feature.character.service.chat;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
+import io.mrkuhne.mezo.feature.character.config.TeamChatProperties;
+import io.mrkuhne.mezo.feature.character.entity.TeamChatThreadEntity;
+import io.mrkuhne.mezo.feature.character.repository.TeamChatThreadRepository;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
+import io.mrkuhne.mezo.feature.notification.config.NotificationProperties;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+/**
+ * Final review C1 + I3 (mezo-a9bo7.25): {@link TeamChatService#decidePush}'s gates, without a
+ * database — a {@code feed}-channel library entry never pushes; an open in the EVENING part of the
+ * quiet window (22:00–24:00) stays silent unless the entry is {@code quietHoursExempt}, and an
+ * exempt push carries the marker the feed-anchored push path reads back; an after-midnight open
+ * inside the window still pushes (the anchor defers its ring). The budget race itself is pinned
+ * against Postgres in {@code TeamChatServiceIT}.
+ */
+class TeamChatPushDecisionTest {
+
+    private static final ZoneId ZONE = ZoneId.of("Europe/Budapest");
+
+    private final TeamChatThreadRepository threads = mock(TeamChatThreadRepository.class);
+    private final AppNotificationEmitter emitter = mock(AppNotificationEmitter.class);
+    private TeamChatService service;
+
+    @BeforeEach
+    void setUp() {
+        TeamChatProperties properties = new TeamChatProperties(ZONE, 7, 12, 2, new BigDecimal("1.00"),
+                "0 10 4 * * *", "0 20 * * * *");
+        NotificationProperties notification = new NotificationProperties(160, "09:00", "20:00", 240,
+                "0 * * * * *", 5, 5, new NotificationProperties.QuietHours("22:00", "07:00"));
+        service = new TeamChatService(threads, null, properties, null, null, null, null, emitter, null, null,
+                null, notification, null);
+        when(threads.findByCreatedByAndPushedTrueAndOpenedAtBetweenAndDeletedFalse(any(), any(), any()))
+                .thenReturn(List.of());
+        when(threads.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
+    }
+
+    private TeamChatThreadEntity thread(int hour, int minute) {
+        TeamChatThreadEntity t = new TeamChatThreadEntity();
+        t.setId(UUID.randomUUID());
+        t.setCreatedBy(UUID.randomUUID());
+        t.setFlagKey(FlagKey.SLEEP_DEBT);
+        t.setOwnerCharacter("szunya");
+        t.setStatus("OPEN");
+        t.setOpenedAt(LocalDate.of(2026, 9, 26).atTime(hour, minute).atZone(ZONE).toInstant());
+        when(threads.findById(t.getId())).thenReturn(Optional.of(t));
+        return t;
+    }
+
+    @Test
+    void feedChannelEntry_neverPushes() {
+        TeamChatThreadEntity t = thread(10, 0);
+
+        service.decidePush(t.getId(), "sor", false, false);
+
+        assertThat(t.getPushed()).isFalse();
+        verify(emitter, never()).emit(any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void daytimeOpen_pushesWithThePlainDedupKey() {
+        TeamChatThreadEntity t = thread(10, 0);
+
+        service.decidePush(t.getId(), "sor", true, false);
+
+        assertThat(t.getPushed()).isTrue();
+        verify(threads).lockPushBudget(t.getCreatedBy());
+        verify(emitter).emit(eq(t.getCreatedBy()), eq(AppNotificationKind.TEAM_CHAT), anyString(), eq("sor"),
+                eq("/mezo/elo"), eq(t.getId()), eq("team_chat:" + t.getId()));
+    }
+
+    @Test
+    void eveningQuietOpen_staysSilent_andNeverTakesTheBudgetLock() {
+        TeamChatThreadEntity t = thread(22, 30);
+
+        service.decidePush(t.getId(), "sor", true, false);
+
+        assertThat(t.getPushed()).isFalse();
+        verify(threads, never()).lockPushBudget(any());
+        verify(emitter, never()).emit(any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void eveningQuietOpen_ofAnExemptEntry_pushesWithTheExemptMarker() {
+        TeamChatThreadEntity t = thread(22, 30);
+
+        service.decidePush(t.getId(), "sor", true, true);
+
+        assertThat(t.getPushed()).isTrue();
+        verify(emitter).emit(eq(t.getCreatedBy()), eq(AppNotificationKind.TEAM_CHAT), anyString(), eq("sor"),
+                eq("/mezo/elo"), eq(t.getId()), eq("team_chat:" + t.getId() + AppNotificationKind.QUIET_HOURS_EXEMPT_SUFFIX));
+        assertThat(AppNotificationKind.quietHoursExempt("team_chat:" + t.getId()
+                + AppNotificationKind.QUIET_HOURS_EXEMPT_SUFFIX)).isTrue();
+    }
+
+    @Test
+    void afterMidnightOpenInsideTheWindow_stillPushes() {
+        TeamChatThreadEntity t = thread(3, 0);
+
+        service.decidePush(t.getId(), "sor", true, false);
+
+        assertThat(t.getPushed()).isTrue();
+        verify(emitter).emit(any(), any(), any(), any(), any(), any(), eq("team_chat:" + t.getId()));
+    }
+
+    @Test
+    void inEveningQuiet_isWrapAware() {
+        assertThat(service.inEveningQuiet(at(21, 59))).isFalse();
+        assertThat(service.inEveningQuiet(at(22, 0))).isTrue();
+        assertThat(service.inEveningQuiet(at(23, 59))).isTrue();
+        assertThat(service.inEveningQuiet(at(0, 0))).isFalse();
+        assertThat(service.inEveningQuiet(at(6, 59))).isFalse();
+    }
+
+    private static Instant at(int hour, int minute) {
+        return LocalDate.of(2026, 9, 26).atTime(hour, minute).atZone(ZONE).toInstant();
+    }
+}

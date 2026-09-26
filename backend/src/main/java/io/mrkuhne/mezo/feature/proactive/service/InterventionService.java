@@ -130,7 +130,7 @@ public class InterventionService {
             .map(CompanionFlagLogEntity::getPayload)
             .orElse(null);
         return Optional.of(new AdvicePick(flagKey, picked.key(), picked.textHu(),
-            FlagFactRenderer.render(flagKey, payload), payload));
+            FlagFactRenderer.render(flagKey, payload), payload, picked.channel(), picked.quietHoursExempt()));
     }
 
     /** The same library ENTRY must not repeat inside its own cooldown window — envelope

@@ -22,11 +22,13 @@ import io.mrkuhne.mezo.feature.proactive.service.AdviceActionCatalog;
 import io.mrkuhne.mezo.feature.proactive.service.AdviceApplyService;
 import io.mrkuhne.mezo.feature.proactive.service.AdvicePick;
 import io.mrkuhne.mezo.feature.proactive.service.InterventionService;
+import io.mrkuhne.mezo.feature.notification.config.NotificationProperties;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
@@ -38,6 +40,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -92,25 +95,58 @@ public class TeamChatService {
     private final CompanionFlagLogRepository flagLogs;
     private final CompanionFlagTraceRepository flagTraces;
     private final UserFanOut userFanOut;
+    private final NotificationProperties notificationProperties;
     private final ObjectProvider<TeamChatService> self;
 
     /** Task 11 (mezo-a9bo7.23): the catch-up sweep's lookback — how far back a missed raise still
-     *  gets picked up. */
-    static final long CATCH_UP_LOOKBACK_HOURS = 24;
+     *  gets picked up. Final review M6 (mezo-a9bo7.25): 2 h, not 24 — the sweep runs hourly, so two
+     *  hours covers a missed run with margin, while a day-long window would re-open, on the first
+     *  run after the deploy, every pre-deploy raise that already got the retired advice card. */
+    static final long CATCH_UP_LOOKBACK_HOURS = 2;
+
+    /** What {@link #openThread} hands the push step: the committed ügy, its OPEN line's body (the
+     *  push excerpt) and the picked library entry's push gates (final review I3). */
+    record Opened(TeamChatThreadEntity thread, String ownerBody, boolean pushAllowed, boolean quietHoursExempt) {
+    }
 
     /** A raise opens an ügy — a no-op when the rule has no owner (e.g. {@code all_healthy}), an ügy
      *  for it is already open, the day's line cap is reached, or the library has no eligible entry.
-     *  Pushes on open (Task 10) — see the {@code allowPush} overload for the catch-up path. */
-    @Transactional
+     *  Pushes on open (Task 10) — see the {@code allowPush} overload for the catch-up path.
+     *
+     *  <p>Final review I2 (mezo-a9bo7.25): deliberately NOT {@code @Transactional} — the ügy and its
+     *  lines commit in {@link #openThread}'s own transaction first, and only then does
+     *  {@link #decidePush} run in a second, short one (under the per-user budget lock). So a push
+     *  can never outlive a rolled-back ügy, parallel raises serialize on the lock and always see each
+     *  other's committed pushes, and no thread ever holds two pooled connections while it waits for
+     *  the lock (the afterCommit variant did, and exhausted the pool). Callers must not wrap this in
+     *  a transaction of their own: the push step would not see the uncommitted ügy (the async
+     *  {@link TeamChatEventListener} never does). */
     public Optional<TeamChatThreadEntity> open(UUID userId, String flagKey, Instant at) {
-        return open(userId, flagKey, at, true);
+        Optional<Opened> opened = self.getObject().openThread(userId, flagKey, at);
+        opened.ifPresent(o -> {
+            try {
+                self.getObject().decidePush(o.thread().getId(), o.ownerBody(), o.pushAllowed(),
+                        o.quietHoursExempt());
+            } catch (Exception e) {
+                log.warn("Team chat push decision failed for ügy {}", o.thread().getId(), e);
+            }
+        });
+        return opened.map(Opened::thread);
     }
 
     /** Task 11 (mezo-a9bo7.23): {@code allowPush=false} lets the hourly catch-up sweep open an ügy
      *  for a raise the async listener missed WITHOUT paging the user — the moment for a push has
-     *  already passed. */
-    @Transactional
+     *  already passed. Joins the caller's transaction when there is one (the sweep's per-user one). */
     public Optional<TeamChatThreadEntity> open(UUID userId, String flagKey, Instant at, boolean allowPush) {
+        if (allowPush) {
+            return open(userId, flagKey, at);
+        }
+        return self.getObject().openThread(userId, flagKey, at).map(Opened::thread);
+    }
+
+    /** The ügy + its lines, without any push decision — see {@link #open}. */
+    @Transactional
+    Optional<Opened> openThread(UUID userId, String flagKey, Instant at) {
         Optional<TeamCharacter> owner = TeamChatCast.ownerOf(flagKey);
         if (owner.isEmpty()) {
             return Optional.empty();
@@ -153,12 +189,9 @@ public class TeamChatService {
         writeGuestLine(thread, voiced, facts, at);
         voiced.skepticBody().ifPresent(body -> writeOptionalLine(thread, KIND_SKEPTIC,
                 TeamCharacter.SZKEPTIKUS.key(), body, voiced.voiced(), facts, at));
-        if (allowPush) {
-            maybePush(thread, owner.get(), voiced.ownerBody(), at);
-        }
         log.info("Team chat ügy {} opened for user {} flag {} by {}", thread.getId(), userId, flagKey,
                 thread.getOwnerCharacter());
-        return Optional.of(thread);
+        return Optional.of(new Opened(thread, voiced.ownerBody(), picked.pushAllowed(), picked.quietHoursExempt()));
     }
 
     /** A clear resolves the open ügy with the owner's RESOLVE line — nothing when none is open. */
@@ -250,7 +283,10 @@ public class TeamChatService {
                 userId, STATUS_OPEN)) {
             flagTraces.findFirstByCreatedByAndFlagKeyOrderByOccurredAtDesc(userId, thread.getFlagKey())
                     .filter(trace -> "clear".equals(trace.getOutcome()))
-                    .ifPresent(trace -> resolve(userId, thread.getFlagKey(), trace.getEvidence(), trace.getOccurredAt()));
+                    // Never before the ügy's own open (final review M1): the latest trace can be an
+                    // older clear the raise that opened this ügy has not yet overwritten.
+                    .ifPresent(trace -> resolve(userId, thread.getFlagKey(), trace.getEvidence(),
+                            latest(trace.getOccurredAt(), thread.getOpenedAt())));
         }
     }
 
@@ -311,21 +347,72 @@ public class TeamChatService {
         }
     }
 
-    /** Task 10 (mezo-a9bo7.23): at most {@code maxPushesPerDay} phone pushes per user per local
-     *  day — the second only when this ügy's flag key outranks every ügy already pushed today
-     *  ({@link TeamChatPushPolicy}). Never called from {@link #resolve} — a resolution never
+    /** Task 10 (mezo-a9bo7.23) + final review C1/I2/I3 (mezo-a9bo7.25): whether a freshly opened
+     *  ügy pages the user, decided in its OWN short transaction after the open committed
+     *  ({@link #open}). Skips a
+     *  {@code feed}-channel library entry (it never pushes, on any surface), an open inside the
+     *  EVENING part of the quiet window (spec D3 — the line stays silent, the day's budget is not
+     *  consumed; a {@code quietHoursExempt} entry is let through), then — under the per-user
+     *  advisory lock that serializes parallel raises — applies the budget: at most
+     *  {@code maxPushesPerDay} per local day, the second only when this ügy's flag key outranks
+     *  every ügy already pushed today ({@link TeamChatPushPolicy}). An after-midnight open inside
+     *  the window still pushes (it counts against that local day); the feed-anchored push path
+     *  defers its ring to the quiet end. Never called from {@link #resolve} — a resolution never
      *  pushes. */
-    private void maybePush(TeamChatThreadEntity thread, TeamCharacter owner, String ownerBody, Instant at) {
-        List<String> pushedToday = pushedTodayFlagKeys(thread.getCreatedBy(), at);
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void decidePush(UUID threadId, String ownerBody, boolean pushAllowed, boolean quietHoursExempt) {
+        if (!pushAllowed) {
+            log.info("Team chat ügy {} not pushed — a feed-only library entry", threadId);
+            return;
+        }
+        Optional<TeamChatThreadEntity> found = threads.findById(threadId);
+        if (found.isEmpty()) {
+            return; // soft-deleted meanwhile (the entity's @SQLRestriction hides it)
+        }
+        UUID userId = found.get().getCreatedBy();
+        if (!quietHoursExempt && inEveningQuiet(found.get().getOpenedAt())) {
+            log.info("Team chat ügy {} not pushed — opened in the evening quiet window", threadId);
+            return;
+        }
+        threads.lockPushBudget(userId);
+        // Re-read under the lock: a racing decision for the same ügy may already have pushed it.
+        TeamChatThreadEntity thread = threads.findById(threadId).orElseThrow();
+        if (Boolean.TRUE.equals(thread.getPushed())) {
+            return;
+        }
+        List<String> pushedToday = pushedTodayFlagKeys(userId, thread.getOpenedAt());
         if (!TeamChatPushPolicy.shouldPush(thread.getFlagKey(), pushedToday, properties.maxPushesPerDay())) {
+            return;
+        }
+        Optional<TeamCharacter> owner = TeamChatCast.ownerOf(thread.getFlagKey());
+        if (owner.isEmpty()) {
             return;
         }
         thread.setPushed(true);
         threads.saveAndFlush(thread);
-        String title = owner.displayName() + " · " + FlagCatalog.labelOf(thread.getFlagKey());
-        appNotifications.emit(thread.getCreatedBy(), AppNotificationKind.TEAM_CHAT, title,
-                pushExcerpt(ownerBody), AppNotificationKind.TEAM_CHAT.deeplink(), thread.getId(),
-                "team_chat:" + thread.getId());
+        String title = owner.get().displayName() + " · " + FlagCatalog.labelOf(thread.getFlagKey());
+        String dedupKey = "team_chat:" + thread.getId()
+                + (quietHoursExempt ? AppNotificationKind.QUIET_HOURS_EXEMPT_SUFFIX : "");
+        appNotifications.emit(userId, AppNotificationKind.TEAM_CHAT, title,
+                pushExcerpt(ownerBody), AppNotificationKind.TEAM_CHAT.deeplink(), thread.getId(), dedupKey);
+    }
+
+    /** Spec D3 / final review C1: {@code at} falls in the part of the quiet window BEFORE local
+     *  midnight ({@code mezo.notification.quiet-hours}, wrap-aware — the
+     *  {@code AnchorResolver.interventionFireMinute} reading). Only a window that wraps midnight has
+     *  such a part; a same-day window (or start == end, "no quiet hours") never blocks here — the
+     *  feed-anchored push path defers those rings to the window's end instead. */
+    boolean inEveningQuiet(Instant at) {
+        LocalTime quietStart = LocalTime.parse(notificationProperties.quietHours().start());
+        LocalTime quietEnd = LocalTime.parse(notificationProperties.quietHours().end());
+        if (!quietStart.isAfter(quietEnd)) {
+            return false;
+        }
+        return !at.atZone(properties.zone()).toLocalTime().isBefore(quietStart);
+    }
+
+    private static Instant latest(Instant a, Instant b) {
+        return a.isAfter(b) ? a : b;
     }
 
     /** The flag keys of every ügy already pushed on {@code at}'s local day (the user's zone, the
