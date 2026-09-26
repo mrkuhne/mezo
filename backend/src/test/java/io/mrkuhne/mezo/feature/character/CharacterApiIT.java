@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.api.dto.CharacterDimensionSummary;
 import io.mrkuhne.mezo.api.dto.CharacterExpertDto;
 import io.mrkuhne.mezo.api.dto.CharacterExpertsResponse;
 import io.mrkuhne.mezo.api.dto.CharacterFeedItem;
+import io.mrkuhne.mezo.api.dto.CharacterMaturityHistory;
 import io.mrkuhne.mezo.api.dto.CharacterOverviewResponse;
 import io.mrkuhne.mezo.api.dto.CharacterRunResponse;
 import io.mrkuhne.mezo.api.dto.CharacterRunSummary;
@@ -16,7 +17,11 @@ import io.mrkuhne.mezo.api.dto.ConferenceSkepticVerdict;
 import io.mrkuhne.mezo.api.dto.TeamEdition;
 import io.mrkuhne.mezo.api.dto.TeamEditionPost;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
+import io.mrkuhne.mezo.feature.character.entity.ClaimConfidenceHistoryEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.ClaimEvidenceEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.ClaimFeedbackEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.CharacterObservationEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterRunEntity;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope;
@@ -31,7 +36,9 @@ import io.mrkuhne.mezo.feature.character.entity.RunDetectorKeysEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.RunExpertKeysEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.TeamEditionEntity;
 import io.mrkuhne.mezo.feature.character.entity.TeamEditionPostEntity;
+import io.mrkuhne.mezo.feature.character.repository.CharacterClaimRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterConferenceRepository;
+import io.mrkuhne.mezo.feature.character.repository.CharacterDimensionRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterObservationRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterRunRepository;
 import io.mrkuhne.mezo.feature.character.repository.TeamEditionPostRepository;
@@ -66,6 +73,12 @@ class CharacterApiIT extends ApiIntegrationTest {
 
     @Autowired
     private DatabasePopulator databasePopulator;
+
+    @Autowired
+    private CharacterDimensionRepository dimensionRepository;
+
+    @Autowired
+    private CharacterClaimRepository claimRepository;
 
     @Autowired
     private OwnerProperties ownerProperties;
@@ -540,5 +553,54 @@ class CharacterApiIT extends ApiIntegrationTest {
 
         assertThat(res.getDeliberation()).isNull();
         assertThat(res.getTranscript()).hasSize(1);
+    }
+
+    // mezo-a9bo7.11: the read computes maturity from the ACTIVE claims — the stored column is
+    // zeroed by the council/undo/new chapter until the next portrait rewrite and must not leak.
+    @Test
+    void overview_maturityComesFromActiveClaims_evenWhenStoredColumnWasZeroed() {
+        UUID owner = ownerId();
+        getForBody("/api/character", ownerAuthHeaders(), HttpStatus.OK, CharacterOverviewResponse.class);
+        var dim = dimensionRepository.findByCreatedByAndKey(owner, "recovery").orElseThrow();
+        dim.setMaturity((short) 0);
+        dimensionRepository.saveAndFlush(dim);
+        saveActiveClaim(owner, dim.getId(), "0.50");
+        saveActiveClaim(owner, dim.getId(), "0.80");
+
+        CharacterOverviewResponse res = getForBody("/api/character", ownerAuthHeaders(),
+                HttpStatus.OK, CharacterOverviewResponse.class);
+        assertThat(res.getDimensions()).filteredOn(d -> d.getKey().equals("recovery"))
+                .singleElement().extracting(CharacterDimensionSummary::getMaturity).isEqualTo(66);
+        CharacterDimensionResponse one = getForBody("/api/character/dimension/recovery", ownerAuthHeaders(),
+                HttpStatus.OK, CharacterDimensionResponse.class);
+        assertThat(one.getMaturity()).isEqualTo(66);
+    }
+
+    @Test
+    void maturityHistory_freshOwner_isExactlyTheLiveWeek_andTheWindowIsBounded() {
+        CharacterMaturityHistory h = getForBody("/api/character/maturity-history", ownerAuthHeaders(),
+                HttpStatus.OK, CharacterMaturityHistory.class);
+        assertThat(h.getWeeks()).hasSize(1);
+        assertThat(h.getWeeks().get(0).getLive()).isTrue();
+        assertThat(h.getWeeks().get(0).getDimensions()).hasSize(8);
+        assertHasRequestError(getForBody("/api/character/maturity-history?weeks=0", ownerAuthHeaders(),
+                HttpStatus.BAD_REQUEST, String.class), "CHARACTER_RUN_RANGE_INVALID");
+        assertHasRequestError(getForBody("/api/character/maturity-history?weeks=27", ownerAuthHeaders(),
+                HttpStatus.BAD_REQUEST, String.class), "CHARACTER_RUN_RANGE_INVALID");
+    }
+
+    private void saveActiveClaim(UUID owner, UUID dimensionId, String confidence) {
+        var c = new CharacterClaimEntity();
+        c.setCreatedBy(owner);
+        c.setDimensionId(dimensionId);
+        c.setText("Hétköznap 23 előtt fekszik le.");
+        c.setConfidence(new BigDecimal(confidence));
+        c.setStatus("ACTIVE");
+        c.setProposedBy("szomnologus");
+        c.setSensitive(false);
+        c.setEvidence(new ClaimEvidenceEnvelope(List.of()));
+        c.setUserFeedback(new ClaimFeedbackEnvelope(List.of()));
+        c.setConfidenceHistory(new ClaimConfidenceHistoryEnvelope(List.of()));
+        claimRepository.saveAndFlush(c);
     }
 }

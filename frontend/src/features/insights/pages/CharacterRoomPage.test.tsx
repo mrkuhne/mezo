@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { CharacterRoomPage } from '@/features/insights/pages/CharacterRoomPage'
+import { CharacterRoomPage, MaturityWell } from '@/features/insights/pages/CharacterRoomPage'
 
 const renderRoom = (id: string) =>
   render(
@@ -19,7 +19,7 @@ describe('CharacterRoomPage (mock mode)', () => {
     renderRoom('falat')
     expect(await screen.findByRole('heading', { level: 1, name: 'Falat · étkezés' })).toBeInTheDocument()
     const headings = screen.getAllByRole('heading', { level: 2 }).map(h => h.textContent)
-    expect(headings).toEqual(['Most ezen dolgozik', 'Így gyűlik a tudása rólad', 'Amit rólad tud', 'Falat jegyzete'])
+    expect(headings).toEqual(['Most ezen dolgozik', 'Így érik a képe rólad', 'Amit rólad tud', 'Falat jegyzete'])
     expect(screen.getByText('Kérése hozzád')).toBeInTheDocument()
   })
 
@@ -48,10 +48,12 @@ describe('CharacterRoomPage (mock mode)', () => {
     expect(ids.every(id => /^(pattern|observation|experiment|prediction|character):/.test(id))).toBe(true)
   })
 
-  test('a tudás-görbe a valódi bejegyzésekből rajzolódik, kevés adatnál őszinte szöveg', async () => {
+  // mezo-a9bo7.11: a mock érettség-történet üres (a mock overview is üresen indul) → csak szöveg.
+  test('az érési görbe nélküli szoba őszinte szöveget mutat, kitalált görbét nem', async () => {
     renderRoom('mocor')
     await screen.findByRole('heading', { level: 1, name: 'Mocor · mozgás' })
-    expect(screen.getByTestId('room-growth').querySelector('svg path.tf-l1')).not.toBeNull()
+    expect(screen.getByText(/jövő héttől itt látod/)).toBeInTheDocument()
+    expect(screen.queryByTestId('room-growth')).toBeNull()
   })
 
   test('ami rád vár, az a szoba első ügye', async () => {
@@ -72,5 +74,31 @@ describe('CharacterRoomPage (mock mode)', () => {
   test('a Szkeptikusnak és ismeretlen karakternek nincs szobája', () => {
     renderRoom('szkeptikus')
     expect(screen.getByText('Nincs ilyen szoba')).toBeInTheDocument()
+  })
+})
+
+describe('MaturityWell — szöveg + pöttyök, majd vonal (mezo-a9bo7.11)', () => {
+  test('4 pont alatt pöttyök vonal nélkül, a szöveggel és az élő értékkel', () => {
+    render(<MaturityWell series={[null, null, null, null, null, 40, null, 55]} note={null} />)
+    const well = screen.getByTestId('room-growth')
+    expect(well.dataset.state).toBe('dots')
+    expect(well.querySelector('path.tf-l1')).toBeNull()
+    expect(well.querySelectorAll('circle.tf-dot')).toHaveLength(1)
+    expect(well.querySelector('circle.tf-pt')).not.toBeNull()
+    expect(screen.getByText('55%')).toBeInTheDocument()
+    expect(screen.getByText(/a 4\. héttől vonal köti össze/)).toBeInTheDocument()
+  })
+
+  test('4 ponttól vonal, a hiányzó hétnél megszakad', () => {
+    render(<MaturityWell series={[10, 20, 30, null, 40, 50, 60, 70]} note={null} />)
+    const well = screen.getByTestId('room-growth')
+    expect(well.dataset.state).toBe('line')
+    expect(well.querySelectorAll('path.tf-l1')).toHaveLength(2)
+    expect(screen.queryByText(/a 4\. héttől/)).toBeNull()
+  })
+
+  test('esésnél a csendes felirat látszik', () => {
+    render(<MaturityWell series={[null, null, null, null, 50, 60, 70, 60]} note="Sport: a meglévő állítások bizonyossága csökkent." />)
+    expect(screen.getByTestId('room-growth-note')).toHaveTextContent('Sport: a meglévő állítások bizonyossága csökkent.')
   })
 })

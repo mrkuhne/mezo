@@ -19,7 +19,10 @@ import io.mrkuhne.mezo.api.dto.TeamChatLine;
 import io.mrkuhne.mezo.api.dto.TeamChatReplyRequest;
 import io.mrkuhne.mezo.api.dto.TeamChatThread;
 import io.mrkuhne.mezo.api.dto.TeamEdition;
+import io.mrkuhne.mezo.api.dto.CharacterMaturityHistory;
+import io.mrkuhne.mezo.feature.character.config.CharacterMaturityProperties;
 import io.mrkuhne.mezo.feature.character.config.TeamChatProperties;
+import io.mrkuhne.mezo.feature.character.service.CharacterMaturityService;
 import io.mrkuhne.mezo.feature.character.entity.TeamChatLineEntity;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatReads;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatService;
@@ -33,6 +36,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -75,6 +79,8 @@ public class CharacterController implements CharacterApi {
     private final ObjectProvider<TeamChatReads> teamChatReads;
     private final ObjectProvider<TeamChatService> teamChatService;
     private final TeamChatProperties teamChatProperties;
+    private final CharacterMaturityService maturityService;
+    private final CharacterMaturityProperties maturityProperties;
 
     @Override
     public io.mrkuhne.mezo.api.dto.CharacterCouncilStatusResponse getCharacterCouncilStatus() {
@@ -183,6 +189,16 @@ public class CharacterController implements CharacterApi {
     @Override
     public List<TeamEdition> getTeamEditions(LocalDate from, LocalDate to) {
         return characterService.editions(currentUserId.get(), from, to);
+    }
+
+    /** Csapatfal érettség-görbe (mezo-a9bo7.11): stored weeks + the live current week. Seeds the
+     *  core dimensions first, like the overview read, so a first-ever call still has a live week. */
+    @Override
+    public CharacterMaturityHistory getMaturityHistory(Integer weeks) {
+        UUID owner = currentUserId.get();
+        characterService.ensureCoreDimensions(owner);
+        return maturityService.history(owner, LocalDate.now(ZoneId.of(maturityProperties.zone())),
+                weeks == null ? 8 : weeks);
     }
 
     @Override

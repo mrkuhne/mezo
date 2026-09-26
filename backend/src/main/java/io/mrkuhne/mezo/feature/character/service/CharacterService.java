@@ -181,15 +181,17 @@ public class CharacterService {
 
         List<CharacterDimensionSummary> summaries = new ArrayList<>();
         for (CharacterDimensionEntity dim : dims) {
-            List<CharacterClaimEntity> topClaims = claimRepository
-                    .findByCreatedByAndDimensionIdAndStatusOrderByConfidenceDesc(owner, dim.getId(), ACTIVE)
-                    .stream().limit(TOP_CLAIMS_CAP).toList();
+            List<CharacterClaimEntity> active = claimRepository
+                    .findByCreatedByAndDimensionIdAndStatusOrderByConfidenceDesc(owner, dim.getId(), ACTIVE);
+            List<CharacterClaimEntity> topClaims = active.stream().limit(TOP_CLAIMS_CAP).toList();
             summaries.add(CharacterDimensionSummary.builder()
                     .key(dim.getKey())
                     .title(dim.getTitle())
                     .kind(CharacterDimensionSummary.KindEnum.fromValue(dim.getKind()))
                     .expertKey(dim.getExpertKey())
-                    .maturity(dim.getMaturity().intValue())
+                    // Live from the ACTIVE claims, not the stored column: the council/undo/new
+                    // chapter zero that column until the next portrait rewrite (mezo-a9bo7.11).
+                    .maturity((int) MaturityFormula.compute(active))
                     .portrait(dim.getPortrait())
                     .topClaims(topClaims.stream().map(this::toClaimDto).toList())
                     .build());
@@ -229,7 +231,7 @@ public class CharacterService {
                 .title(dim.getTitle())
                 .kind(CharacterDimensionResponse.KindEnum.fromValue(dim.getKind()))
                 .expertKey(dim.getExpertKey())
-                .maturity(dim.getMaturity().intValue())
+                .maturity((int) MaturityFormula.compute(claims))
                 .portrait(dim.getPortrait())
                 .claims(claims.stream().map(this::toClaimDto).toList())
                 .revisions(revisions.stream().map(this::toRevisionDto).toList())

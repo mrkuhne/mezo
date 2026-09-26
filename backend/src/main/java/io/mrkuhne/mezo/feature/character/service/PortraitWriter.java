@@ -16,8 +16,6 @@ import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -47,9 +45,6 @@ public class PortraitWriter {
     public static final String PORTRAIT_MARKER = "KARAKTER-PORTRE-FELADAT";
 
     private static final String NONE = "nincs";
-    private static final BigDecimal MATURITY_COVERAGE_WEIGHT = new BigDecimal("20");
-    private static final BigDecimal MATURITY_CONFIDENCE_WEIGHT = new BigDecimal("40");
-    private static final short MAX_MATURITY = 100;
 
     private static final String MEZO_INTEGRATOR_PERSONA = """
             Te vagy Mezo, {{NÉV}} személyes egészség- és teljesítmény-társa, most integrátor \
@@ -69,9 +64,7 @@ public class PortraitWriter {
      * Rewrites {@code dimension}'s portrait from {@code activeClaims}. Returns {@code false} (and
      * leaves the dimension entirely untouched — no version bump, no revision row) on a blank or
      * failed LLM answer. On success: bumps {@code version}, sets {@code portrait}/
-     * {@code updatedAt}, recomputes {@code maturity} as
-     * {@code min(100, round(20 * activeClaims.size() + 40 * meanConfidence))} — a coverage
-     * (claim count) × confidence (mean ACTIVE confidence, 0..1) roll-up, capped at 100 — and
+     * {@code updatedAt}, recomputes {@code maturity} via {@link MaturityFormula} and
      * appends an immutable {@link CharacterPortraitRevisionEntity} snapshot.
      */
     @Transactional
@@ -129,7 +122,7 @@ public class PortraitWriter {
         dimension.setVersion(newVersion);
         dimension.setPortrait(portrait);
         dimension.setUpdatedAt(Instant.now());
-        dimension.setMaturity(computeMaturity(activeClaims));
+        dimension.setMaturity(MaturityFormula.compute(activeClaims));
         dimensionRepository.save(dimension);
 
         CharacterPortraitRevisionEntity revision = new CharacterPortraitRevisionEntity();
@@ -147,21 +140,6 @@ public class PortraitWriter {
         suppliedDimension.setUpdatedAt(dimension.getUpdatedAt());
         suppliedDimension.setMaturity(dimension.getMaturity());
         return true;
-    }
-
-    private static Short computeMaturity(List<CharacterClaimEntity> activeClaims) {
-        if (activeClaims.isEmpty()) {
-            return 0;
-        }
-        BigDecimal sum = BigDecimal.ZERO;
-        for (CharacterClaimEntity claim : activeClaims) {
-            sum = sum.add(claim.getConfidence());
-        }
-        BigDecimal meanConfidence = sum.divide(BigDecimal.valueOf(activeClaims.size()), 10, RoundingMode.HALF_UP);
-        BigDecimal raw = MATURITY_COVERAGE_WEIGHT.multiply(BigDecimal.valueOf(activeClaims.size()))
-                .add(MATURITY_CONFIDENCE_WEIGHT.multiply(meanConfidence));
-        int rounded = raw.setScale(0, RoundingMode.HALF_UP).intValue();
-        return (short) Math.min(MAX_MATURITY, rounded);
     }
 
     private static String persona(CharacterDimensionEntity dimension) {

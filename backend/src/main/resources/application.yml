@@ -517,6 +517,10 @@ mezo:
       # mezo.character.team-chat.expiry-cron); off = the TeamChatExpiryJob bean does not exist
       team-chat-expiry-job:
         enabled: true
+      # Csapatfal érettség-görbe nightly snapshot (mezo-a9bo7.11, schedule:
+      # mezo.character.maturity.cron); off = the CharacterMaturityJob bean does not exist
+      character-maturity-job:
+        enabled: true
       # Karakter monthly deep-read konzílium pass (Karakter S4, mezo-1gim.6, schedule:
       # mezo.character.monthly.cron); off = the CharacterMonthlyJob bean does not exist
       character-monthly-job:
@@ -2162,6 +2166,11 @@ mezo:
       catch-up-weeks: 2
       # ACTIVE claims the chair's dossier block may carry before it is capped freshest-first.
       max-dossier-claims: 80
+    maturity:
+      # 23:55 Budapest — after the 21:00–23:30 council/edition window and before the 02:20 dawn
+      # slots; the Sunday run finalises the ISO week (csapatfal érettség-görbe, mezo-a9bo7.11).
+      cron: "0 55 23 * * *"
+      zone: Europe/Budapest
     monthly:
       # Sunday 20:00 — a plain Sunday cron; CharacterMonthlyJob#isDeepReadDay narrows it in code to
       # the month's FIRST Sunday only (Spring cron cannot AND day-of-month with day-of-week).

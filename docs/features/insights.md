@@ -886,9 +886,16 @@ the first `glass tf-case`, the rest flat `tf-flatc`, waiting-first, each linking
 `sourceRoute`) → growth curve → claims list → „Kérése hozzád” note. Logic lives in `logic/teamRooms.ts`:
 the room's dimensions are the dossier dimensions whose `expertKey` folds into the character
 (`characterForPersona`), maturity = their mean, claims = their `topClaims`; cases = `buildTeamFeed` posts
-the character authored OR guests on. **Honesty:** no maturity-history record exists, so the curve is the
-character's cumulative post count per week over 8 weeks (the prototype's normalised formula), with a
-text instead of a chart under 2 posts. Both pages share the wall's data load via
+the character authored OR guests on. **„Így érik a képe rólad” (`mezo-a9bo7.11`):** the growth curve is
+the room's real weekly maturity from `useMaturityHistory()` (`GET /api/character/maturity-history`,
+stored ISO weeks + the live current week). `roomMaturitySeries` aligns it to 8 calendar weeks as the
+mean of the room's dimensions (the ring's rule, so the last point equals the ring); a week without a
+snapshot is `null` — never filled, never zero (ADR 0049). `MaturityWell` draws a ladder: no point →
+text only; 1–3 points → discrete dots + an honest line of text; ≥4 → the line, broken at every missing
+week. `+N% · 3 hét` shows only when both ends exist. `maturityDropNote` adds one quiet `tf-note` when the
+latest room value fell — naming the dimension that dropped most and whether claims left the picture or
+confidence fell; no push, no wall post. Mock mode ships an empty history (the mock overview starts
+empty too), so the mock room shows the text. The earlier cumulative-post-count curve is gone. Both pages share the wall's data load via
 `components/feed/useTeamFeed.ts`. Mezo wears the gold and the Szkeptikus the slate Boop (`BoopVariant`).
 
 The Insights data flow is a **degenerate (truncated) version** of mezo's standard `view → hook → mock/real → api → backend → db` pipeline — it stops at the hook:

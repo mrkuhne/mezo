@@ -23,6 +23,8 @@ export type CharacterRunObservation = components['schemas']['CharacterRunObserva
 export type CharacterRunResponse = components['schemas']['CharacterRunResponse']
 export type TeamEdition = components['schemas']['TeamEdition']
 export type TeamEditionPost = components['schemas']['TeamEditionPost']
+export type CharacterMaturityHistory = components['schemas']['CharacterMaturityHistory']
+export type CharacterMaturityWeek = components['schemas']['CharacterMaturityWeek']
 export type CharacterCouncilStatusResponse = components['schemas']['CharacterCouncilStatusResponse']
 export type CharacterClaimRevisionDto = components['schemas']['CharacterClaimRevisionDto']
 
@@ -78,4 +80,7 @@ export const characterApi = {
   // Esti kiadás timeline (csapatfal H1, mezo-a9bo7.12) — mirrors `runs`, both `from`/`to` required.
   editions: (fromIso: string, toIso: string): Promise<TeamEdition[]> =>
     apiFetch<TeamEdition[]>(`${BASE}/edition?from=${fromIso}&to=${toIso}`),
+  // Heti érettség-történet (csapatfal érettség-görbe, mezo-a9bo7.11) — stored weeks + live week.
+  maturityHistory: (weeks = 8): Promise<CharacterMaturityHistory> =>
+    apiFetch<CharacterMaturityHistory>(`${BASE}/maturity-history?weeks=${weeks}`),
 }

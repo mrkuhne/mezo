@@ -243,30 +243,33 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **entities→tables:** `CharacterClaimEntity`→`character_claim`,
     `CharacterClaimRevisionEntity`→`character_claim_revision`, `CharacterConferenceEntity`→`character_conference`,
     `CharacterCouncilEditionEntity`→`character_council_edition`, `CharacterDimensionEntity`→`character_dimension`,
-    `CharacterObservationEntity`→`character_observation`,
+    `CharacterMaturityWeekEntity`→`character_maturity_week`, `CharacterObservationEntity`→`character_observation`,
     `CharacterPortraitRevisionEntity`→`character_portrait_revision`, `CharacterReplyEntity`→`character_reply`,
     `CharacterRunEntity`→`character_run`, `TeamChatLineEntity`→`team_chat_line`,
     `TeamChatThreadEntity`→`team_chat_thread`, `TeamEditionEntity`→`team_edition`,
     `TeamEditionPostEntity`→`team_edition_post`
   - **repositories:** `CharacterClaimRepository`, `CharacterClaimRevisionRepository`, `CharacterConferenceRepository`,
-    `CharacterCouncilEditionRepository`, `CharacterDimensionRepository`, `CharacterObservationRepository`,
-    `CharacterPortraitRevisionRepository`, `CharacterReplyRepository`, `CharacterRunRepository`,
-    `TeamChatLineRepository`, `TeamChatThreadRepository`, `TeamEditionPostRepository`, `TeamEditionRepository`
+    `CharacterCouncilEditionRepository`, `CharacterDimensionRepository`, `CharacterMaturityWeekRepository`,
+    `CharacterObservationRepository`, `CharacterPortraitRevisionRepository`, `CharacterReplyRepository`,
+    `CharacterRunRepository`, `TeamChatLineRepository`, `TeamChatThreadRepository`, `TeamEditionPostRepository`,
+    `TeamEditionRepository`
   - **services:** `CharacterBootstrapService`, `CharacterClaimRevisionService`, `CharacterConferenceJob`,
     `CharacterConferenceService`, `CharacterConfidenceWords`, `CharacterCoreCatalog`, `CharacterCouncilBudget`,
     `CharacterCouncilEvidenceTools`, `CharacterCouncilJob`, `CharacterCouncilPeriodTools`,
     `CharacterCouncilProcessing`, `CharacterCouncilQuotaLedger`, `CharacterCouncilService`, `CharacterExpertCatalog`,
-    `CharacterFeedbackService`, `CharacterFollowupService`, `CharacterHistoryReads`, `CharacterMetaReads`,
-    `CharacterMonthlyJob`, `CharacterMonthlyService`, `CharacterMutationLock`, `CharacterObservationJob`,
-    `CharacterObservationService`, `CharacterPromptAssembler`, `CharacterReplyEvaluation`,
-    `CharacterReplyMemorySource`, `CharacterReplyProcessing`, `CharacterReplyRecoveryJob`, `CharacterReplyService`,
-    `CharacterReplySourceResolver`, `CharacterReplyWorker`, `CharacterRunLog`, `CharacterService`,
-    `CharacterSignalReads`, `ClaimLifecycle`, `ClaimProposal`, `ClaimRuling`, `DeliberationAssembler`,
-    `ExpertEvidence`, `KonziliumChapterResolver`, `KonziliumChapters`, `KonziliumCrossTalkRound`,
-    `KonziliumProposalRound`, `KonziliumVerdictRound`, `LegacyTranscriptParser`, `ObservationText`, `PortraitWriter`
+    `CharacterFeedbackService`, `CharacterFollowupService`, `CharacterHistoryReads`, `CharacterMaturityJob`,
+    `CharacterMaturityService`, `CharacterMetaReads`, `CharacterMonthlyJob`, `CharacterMonthlyService`,
+    `CharacterMutationLock`, `CharacterObservationJob`, `CharacterObservationService`, `CharacterPromptAssembler`,
+    `CharacterReplyEvaluation`, `CharacterReplyMemorySource`, `CharacterReplyProcessing`, `CharacterReplyRecoveryJob`,
+    `CharacterReplyService`, `CharacterReplySourceResolver`, `CharacterReplyWorker`, `CharacterRunLog`,
+    `CharacterService`, `CharacterSignalReads`, `ClaimLifecycle`, `ClaimProposal`, `ClaimRuling`,
+    `DeliberationAssembler`, `ExpertEvidence`, `KonziliumChapterResolver`, `KonziliumChapters`,
+    `KonziliumCrossTalkRound`, `KonziliumProposalRound`, `KonziliumVerdictRound`, `LegacyTranscriptParser`,
+    `MaturityFormula`, `ObservationText`, `PortraitWriter`
   - **controllers→contract:** `CharacterController`→`CharacterApi`
   - **config:** `CharacterCouncilBudgetProperties`, `CharacterCouncilDebateProperties`, `CharacterCouncilProperties`,
-    `CharacterFollowupProperties`, `CharacterProperties`, `CharacterReplyProperties`, `TeamChatProperties`
+    `CharacterFollowupProperties`, `CharacterMaturityProperties`, `CharacterProperties`, `CharacterReplyProperties`,
+    `TeamChatProperties`
   - **events/listeners:** `TeamChatEventListener`
   - **other:** `AvoidancePatternDetector`, `CharacterDetector`, `CharacterFollowupsEnvelope`,
     `CharacterReplyDiscussionEnvelope`, `ChatToolDomains`, `ChatTopicShiftDetector`, `CheckinGapDetector`,
@@ -291,12 +294,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `TeamChatInterventionKeyAdapter`, `TeamChatKnowledgePort`, `TeamChatLines`, `TeamChatPushPolicy`, `TeamChatReads`,
     `TeamChatService`, `TeamChatVoiceWriter`, `TeamEditionReads`, `TeamEditionService`, `TrailingWindow`,
     `UnderLoggingDetector`, `VoicedGuest`, `VoicedText`, `WeekendGapDetector`
-- **Contract** `api/feature/character/character.yml` — 20 operations
+- **Contract** `api/feature/character/character.yml` — 21 operations
   - **endpoints:** GET /api/character · GET /api/character/dimension/{key} · GET /api/character/experts ·
     GET /api/character/feed · POST /api/character/bootstrap · GET /api/character/conference ·
     POST /api/character/conference · GET /api/character/runs · GET /api/character/edition ·
-    GET /api/character/run/{runId} · GET /api/character/conference/{conferenceId} · GET /api/character/replies ·
-    POST /api/character/replies · POST /api/character/replies/{replyId}/retry · GET /api/character/council ·
+    GET /api/character/maturity-history · GET /api/character/run/{runId} ·
+    GET /api/character/conference/{conferenceId} · GET /api/character/replies · POST /api/character/replies ·
+    POST /api/character/replies/{replyId}/retry · GET /api/character/council ·
     GET /api/character/claims/{claimId}/revisions · POST /api/character/revisions/{revisionId}/undo ·
     GET /api/character/team-chat · POST /api/character/team-chat/threads/{threadId}/reply ·
     POST /api/character/team-chat/threads/{threadId}/apply/{actionKey}
@@ -316,15 +320,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **logic:** conferencePostItem.ts
   - **root:** character.css, deliberationLabels.ts, deliberationStats.ts, dossierState.ts, expertColors.ts,
     feedDayLabel.ts, inventory.ts, personaCharacter.ts, runLabels.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 62 IT + 18 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 63 IT + 19 unit
   - **ITs:** `CharacterApiCompanionOffIT`, `CharacterApiIT`, `CharacterApiSwitchOffIT`, `CharacterBootstrapIT`,
     `CharacterBootstrapMemoryDisabledIT`, `CharacterBootstrapMemoryIT`, `CharacterClaimRevisionIT`,
     `CharacterClaimTemporalIT`, `CharacterConferenceJobIT`, `CharacterConferenceListIT`,
     `CharacterConferenceServiceIT`, `CharacterCouncilApiIT`, `CharacterCouncilBudgetIT`,
     `CharacterCouncilEvidenceToolsIT`, `CharacterCouncilPeriodToolsIT`, `CharacterCouncilProcessingIT`,
     `CharacterCouncilServiceIT`, `CharacterCouncilVerdictEvidenceIT`, `CharacterFeedbackIT`, `CharacterFollowupIT`,
-    `CharacterHistoryReadsIT`, `CharacterMetaReadsIT`, `CharacterMonthlyMemoryDisabledIT`, `CharacterMonthlyMemoryIT`,
-    `CharacterMonthlyServiceIT`, `CharacterMutationLockIT`, `CharacterObservationJobIT`,
+    `CharacterHistoryReadsIT`, `CharacterMaturityIT`, `CharacterMetaReadsIT`, `CharacterMonthlyMemoryDisabledIT`,
+    `CharacterMonthlyMemoryIT`, `CharacterMonthlyServiceIT`, `CharacterMutationLockIT`, `CharacterObservationJobIT`,
     `CharacterObservationServiceIT`, `CharacterPersistenceIT`, `CharacterPromptAssemblerIT`,
     `CharacterPromptAssemblerOversizedDimensionIT`, `CharacterPromptWiringIT`, `CharacterReplyApiIT`,
     `CharacterReplyCompanionOffIT`, `CharacterReplyDiscussionIT`, `CharacterReplyRecoveryIT`, `CharacterRunLogIT`,

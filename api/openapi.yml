@@ -9939,6 +9939,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/character/maturity-history:
+    get:
+      tags:
+        - Character
+      operationId: getMaturityHistory
+      summary: >-
+        Weekly per-dimension maturity (csapatfal érettség-görbe, mezo-a9bo7.11):
+        the stored ISO weeks in the window, oldest first, plus the CURRENT week
+        computed live (live=true). A week without stored rows is absent — never
+        back-filled (ADR 0049).
+      parameters:
+        - name: weeks
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 8
+      responses:
+        '200':
+          description: The history (the live current week is always the last element)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterMaturityHistory'
+        '400':
+          description: weeks outside 1..26
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/character/run/{runId}':
     get:
       tags:
@@ -25817,6 +25853,53 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CharacterRunObservation'
+    CharacterMaturityHistory:
+      type: object
+      required:
+        - weeks
+      properties:
+        weeks:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterMaturityWeek'
+    CharacterMaturityWeek:
+      type: object
+      required:
+        - weekStart
+        - live
+        - dimensions
+      properties:
+        weekStart:
+          type: string
+          format: date
+        live:
+          type: boolean
+        dimensions:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterMaturityPoint'
+    CharacterMaturityPoint:
+      type: object
+      required:
+        - key
+        - title
+        - maturity
+        - claimCount
+      properties:
+        key:
+          type: string
+        title:
+          type: string
+        expertKey:
+          type: string
+          nullable: true
+        maturity:
+          type: integer
+          minimum: 0
+          maximum: 100
+        claimCount:
+          type: integer
+          minimum: 0
     TeamEdition:
       type: object
       required:
