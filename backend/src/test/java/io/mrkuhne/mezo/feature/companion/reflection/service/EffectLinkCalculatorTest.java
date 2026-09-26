@@ -90,8 +90,9 @@ class EffectLinkCalculatorTest {
     }
 
     @Test
-    void smallOverlapLandsInMediumBand() {
+    void clearSeparationLandsInStrongBand() {
         // subject: 5,6,6,7,7,8 (6 days) vs complement: 4,5,5,6,6,6,7,4,5,6 (10 days)
+        // hand-computed: 40 wins, 7 losses of 60 pairs → delta = 33/60 = 0.55 → "eros"
         Set<LocalDate> subject = new HashSet<>();
         Map<LocalDate, Double> series = new HashMap<>();
         double[] subjectVals = {5, 6, 6, 7, 7, 8};
@@ -104,8 +105,71 @@ class EffectLinkCalculatorTest {
             series.put(D0.plusDays(50 + i), complementVals[i]);
         }
         var effect = EffectLinkCalculator.compute(subject, series).orElseThrow();
-        // hand-computed: wins 40, losses 7 of 60 pairs → delta = 33/60 = 0.55 → "eros"
         assertThat(effect.cliffsDelta()).isEqualTo(0.55);
         assertThat(effect.strengthBand()).isEqualTo("eros");
+    }
+
+    @Test
+    void bandBoundaryEnyhe() {
+        // subject: 5,6,6,6,7 (5 days) vs complement: 4,5,5,5,6,6,6,6,7,8 (10 days)
+        // hand-computed: 21 wins, 13 losses of 50 pairs → delta = 8/50 = 0.16 ∈ [0.147, 0.33)
+        Set<LocalDate> subject = new HashSet<>();
+        Map<LocalDate, Double> series = new HashMap<>();
+        double[] subjectVals = {5, 6, 6, 6, 7};
+        double[] complementVals = {4, 5, 5, 5, 6, 6, 6, 6, 7, 8};
+        for (int i = 0; i < subjectVals.length; i++) {
+            subject.add(D0.plusDays(i));
+            series.put(D0.plusDays(i), subjectVals[i]);
+        }
+        for (int i = 0; i < complementVals.length; i++) {
+            series.put(D0.plusDays(50 + i), complementVals[i]);
+        }
+        var effect = EffectLinkCalculator.compute(subject, series).orElseThrow();
+        assertThat(effect.cliffsDelta()).isEqualTo(0.16);
+        assertThat(effect.strengthBand()).isEqualTo("enyhe");
+    }
+
+    @Test
+    void bandBoundaryKozepes() {
+        // subject: 6,6,6,7,7 (5 days) vs complement: 5,5,5,6,6,6,6,6,7,8 (10 days)
+        // hand-computed: 25 wins, 8 losses of 50 pairs → delta = 17/50 = 0.34 ∈ [0.33, 0.474)
+        Set<LocalDate> subject = new HashSet<>();
+        Map<LocalDate, Double> series = new HashMap<>();
+        double[] subjectVals = {6, 6, 6, 7, 7};
+        double[] complementVals = {5, 5, 5, 6, 6, 6, 6, 6, 7, 8};
+        for (int i = 0; i < subjectVals.length; i++) {
+            subject.add(D0.plusDays(i));
+            series.put(D0.plusDays(i), subjectVals[i]);
+        }
+        for (int i = 0; i < complementVals.length; i++) {
+            series.put(D0.plusDays(50 + i), complementVals[i]);
+        }
+        var effect = EffectLinkCalculator.compute(subject, series).orElseThrow();
+        assertThat(effect.cliffsDelta()).isEqualTo(0.34);
+        assertThat(effect.strengthBand()).isEqualTo("kozepes");
+    }
+
+    @Test
+    void tierBoundaryMedium() {
+        // 8 subject days at 8.0 vs 10 complement days at 5.0
+        // delta = 1.0 → "eros" band; subjectDays == 8 → "kozepes" tier (MIN_TIER_MEDIUM)
+        Object[] f = fixture(8, 8.0, 10, 5.0);
+        @SuppressWarnings("unchecked") var subject = (Set<LocalDate>) f[0];
+        @SuppressWarnings("unchecked") var series = (Map<LocalDate, Double>) f[1];
+        var effect = EffectLinkCalculator.compute(subject, series).orElseThrow();
+        assertThat(effect.subjectDays()).isEqualTo(8);
+        assertThat(effect.confidenceTier()).isEqualTo("kozepes");
+    }
+
+    @Test
+    void tierBoundaryStrong() {
+        // 16 subject days at 8.0 vs 10 complement days at 5.0
+        // delta = 1.0 → "eros" band; subjectDays == 16 → "eros" tier (MIN_TIER_STRONG)
+        Object[] f = fixture(16, 8.0, 10, 5.0);
+        @SuppressWarnings("unchecked") var subject = (Set<LocalDate>) f[0];
+        @SuppressWarnings("unchecked") var series = (Map<LocalDate, Double>) f[1];
+        var effect = EffectLinkCalculator.compute(subject, series).orElseThrow();
+        assertThat(effect.subjectDays()).isEqualTo(16);
+        assertThat(effect.confidenceTier()).isEqualTo("eros");
     }
 }
