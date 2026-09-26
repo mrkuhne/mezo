@@ -7,7 +7,11 @@ import io.mrkuhne.mezo.api.dto.FuelWeekResponse;
 import io.mrkuhne.mezo.api.dto.MealItemRequest;
 import io.mrkuhne.mezo.api.dto.MealRequest;
 import io.mrkuhne.mezo.api.dto.MealResponse;
+import io.mrkuhne.mezo.api.dto.FuelDayEnergy;
+import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
+import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
+import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.meal.service.MealService;
 import io.mrkuhne.mezo.feature.nutrition.entity.DietSettingsEntity;
@@ -15,6 +19,8 @@ import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
 import io.mrkuhne.mezo.feature.nutrition.service.DayContext;
 import io.mrkuhne.mezo.feature.nutrition.repository.DietSettingsRepository;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
@@ -41,6 +47,8 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
     @Autowired private GoalPopulator goalPopulator;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private DietSettingsRepository dietSettingsRepository;
+    @Autowired private GoalRepository goalRepository;
+    @Autowired private SportSessionRepository sportSessionRepository;
 
     private UUID owner;
 
@@ -96,6 +104,60 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
         return response.getId();
     }
 
+    /**
+     * mezo-32m82 D3: an UNPLANNED logged session (no sport slot / event that weekday) is credited
+     * at its persisted net kcal on top of the (uniform) segment kcal, the delta lands in carbs, and
+     * the served equation rides along on both the day and the week rollup.
+     */
+    @Test
+    void testGetDay_shouldCreditUnplannedSessionKcalAndCarryEnergy_whenSaturdayVolleyballWasNotPlanned() {
+        int segKcal = 2599;
+        int segCarbsG = 300;
+        int balanceKcal = -327;
+        int sessionKcal = 573;
+        BigDecimal bmr = new BigDecimal("1963");
+        BigDecimal neatBaseline = new BigDecimal("2356");
+        GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, "formula",
+            List.of(new GoalPrescriptionJson.Segment(1, 6, "vágás", segKcal, 170, segCarbsG, 86,
+                null, null, null, balanceKcal, null, null, null)),
+            null, null);
+        LocalDate start = LocalDate.of(2026, 6, 8); // Monday
+        GoalEntity goal = goalPopulator.createGoalFull(owner, start, start.plusWeeks(6), prescription,
+            4, "06:30", "22:30");
+        goal.setTdeeBootstrap(new TdeeBootstrapJson(bmr, new BigDecimal("1.2"), neatBaseline,
+            new BigDecimal("570"), neatBaseline.add(new BigDecimal("570")), "MSJ",
+            OffsetDateTime.of(2026, 6, 8, 8, 0, 0, 0, ZoneOffset.UTC), 2));
+        goalRepository.saveAndFlush(goal);
+        LocalDate saturday = start.plusDays(5);
+        SportSessionEntity volleyball = new SportSessionEntity();
+        volleyball.setCreatedBy(owner);
+        volleyball.setDate(saturday);
+        volleyball.setTime("10:00");
+        volleyball.setSport("volleyball");
+        volleyball.setKcal(sessionKcal);
+        volleyball.setKcalIsEstimate(true);
+        sportSessionRepository.saveAndFlush(volleyball);
+
+        FuelDayResponse day = fuelDayService.getDay(owner, saturday);
+
+        int expectedKcal = segKcal + sessionKcal;
+        assertThat(day.getTargets().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(expectedKcal));
+        assertThat(day.getTargets().getC())
+            .isEqualByComparingTo(BigDecimal.valueOf(segCarbsG + Math.round(sessionKcal / 4f)));
+        FuelDayEnergy e = day.getEnergy();
+        assertThat(e).isNotNull();
+        assertThat(e.getExtraMovementKcal()).isEqualTo(sessionKcal);
+        assertThat(e.getBaseKcal()).isEqualTo(neatBaseline.intValueExact());
+        assertThat(e.getBalanceKcal()).isEqualTo(balanceKcal);
+        assertThat(e.getBaseKcal() + e.getPlannedMovementKcal() + e.getExtraMovementKcal() + e.getBalanceKcal())
+            .isEqualTo(e.getTargetKcal()).isEqualTo(expectedKcal);
+
+        FuelWeekResponse week = fuelDayService.getWeek(owner, start);
+        assertThat(week.getDays().get(5).getDate()).isEqualTo(saturday);
+        assertThat(week.getDays().get(5).getEnergy()).isEqualTo(e);
+        assertThat(week.getDays().get(4).getEnergy().getExtraMovementKcal()).isZero();
+    }
+
     @Test
     void testGetDay_shouldReturnConfigTargetsAndZeroConsumed_whenNoMeals() {
         FuelDayResponse day = service.getDay(owner, LocalDate.of(2026, 6, 24));
@@ -108,6 +170,7 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
         assertThat(day.getTargets().getWater()).isEqualByComparingTo(BigDecimal.valueOf(4000));
         assertThat(day.getConsumed().getKcal()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(day.getMeals()).isEmpty();
+        assertThat(day.getEnergy()).isNull(); // the static path carries no equation
     }
 
     /** Two-segment recept: weeks 1..2 → 2300 kcal / 170 g, weeks 3..6 → 2100 kcal / 180 g. */

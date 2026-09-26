@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
+import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -24,9 +25,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Slice 3 (mezo-sxlj): {@code targetSet} picks the date's {@code trainingDayKcal} once movement
- * was actually LOGGED on it (mezo-u13jv — a planned session alone never raises the target), else
- * {@code restDayKcal}, deriving the serve-time carb delta
+ * Slice 3 (mezo-sxlj): the Fuel day picks the date's {@code trainingDayKcal} once a PLANNED session
+ * was actually logged on it (mezo-u13jv — the plan alone never raises the target; mezo-32m82 D3 —
+ * an unplanned session no longer flips the pick, it is credited as extra kcal on top of the
+ * rest-day kcal), else {@code restDayKcal}, deriving the serve-time carb delta
  * (protein/fat constant) — never stored. {@code dailyTargets} (the meal scorer's base, mezo-3g5w)
  * applies the SAME pick, so a meal logged on a training day is judged against the training-day
  * budget the Fuel-day hero shows (score↔hero coherence).
@@ -40,6 +42,7 @@ class FuelDayDayTypeIT extends AbstractIntegrationTest {
     @Autowired private SportEventRepository sportEventRepository;
     @Autowired private GoalPopulator goalPopulator;
     @Autowired private DatabasePopulator databasePopulator;
+    @Autowired private TrainPopulator trainPopulator;
 
     private static final int SEGMENT_KCAL = 2150;
     private static final int SEGMENT_PROTEIN_G = 163;
@@ -97,13 +100,24 @@ class FuelDayDayTypeIT extends AbstractIntegrationTest {
         gymRepo.save(g);
     }
 
+    /** A recurring sport slot on {@code dayOfWeek} at 18:00 — the plan a logged session fulfils. */
+    private void seedSportSlot(UUID owner, int dayOfWeek) {
+        trainPopulator.createScheduleSlot(owner, dayOfWeek, "18:00", 90, "training");
+    }
+
     /** A LOGGED sport session played on {@code date} — with or without a matching plan. */
     private void seedLoggedSportSession(UUID owner, LocalDate date) {
+        seedLoggedSportSession(owner, date, null);
+    }
+
+    private void seedLoggedSportSession(UUID owner, LocalDate date, Integer kcal) {
         SportSessionEntity s = new SportSessionEntity();
         s.setCreatedBy(owner);
         s.setDate(date);
         s.setTime("18:00");
         s.setSport("volleyball");
+        s.setKcal(kcal);
+        s.setKcalIsEstimate(kcal == null ? null : Boolean.TRUE);
         sportSessionRepository.save(s);
     }
 
@@ -123,8 +137,8 @@ class FuelDayDayTypeIT extends AbstractIntegrationTest {
     void trainingDayServesTrainingKcalAndCarbDelta() {
         UUID owner = seedGoalWithDayTypeSegment();
         LocalDate monday = LocalDate.of(2026, 6, 1); // dayOfWeek 0
-        seedGymSlot(owner, 0);
-        seedLoggedSportSession(owner, monday);
+        seedSportSlot(owner, 0);
+        seedLoggedSportSession(owner, monday); // fulfils the planned slot → planned done
 
         FuelDayResponse day = fuelDayService.getDay(owner, monday);
 
@@ -159,8 +173,9 @@ class FuelDayDayTypeIT extends AbstractIntegrationTest {
     }
 
     // -- mezo-u13jv (owner decision 2026-09-24): classification is LOGGED-movement based — the plan
-    // alone (a gym slot, a dated sport event) never raises the day's target; a logged session does,
-    // planned or not.
+    // alone (a gym slot, a dated sport event) never raises the day's target. mezo-32m82 D3: only a
+    // logged session that fulfils a PLAN flips the day-type pick; an unplanned one adds its net kcal
+    // on top of the rest-day kcal.
 
     @Test
     void plannedGymSlotAloneKeepsItARestDay() {
@@ -176,16 +191,18 @@ class FuelDayDayTypeIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void adHocLoggedSportSessionMakesItATrainingDay() {
+    void adHocLoggedSportSessionIsRestDayKcalPlusItsExtraKcal() {
         UUID owner = seedGoalWithDayTypeSegment();
         LocalDate tuesday = LocalDate.of(2026, 6, 2); // dayOfWeek 1 — no schedule seeded
-        seedLoggedSportSession(owner, tuesday);
+        int sessionKcal = 400;
+        seedLoggedSportSession(owner, tuesday, sessionKcal);
 
         FuelDayResponse day = fuelDayService.getDay(owner, tuesday);
 
-        assertThat(day.getTargets().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(TRAINING_DAY_KCAL));
+        int expectedKcal = REST_DAY_KCAL + sessionKcal;
+        assertThat(day.getTargets().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(expectedKcal));
         assertThat(day.getTargets().getC())
-            .isEqualByComparingTo(BigDecimal.valueOf(segmentCarbsG() + 38));
+            .isEqualByComparingTo(BigDecimal.valueOf(segmentCarbsG() + Math.round((expectedKcal - SEGMENT_KCAL) / 4f)));
     }
 
     @Test
@@ -224,6 +241,7 @@ class FuelDayDayTypeIT extends AbstractIntegrationTest {
     void dailyTargetsOnTrainingDayReturnsTrainingKcalAndDeltaAdjustedCarbs() {
         UUID owner = seedGoalWithDayTypeSegment();
         LocalDate monday = LocalDate.of(2026, 6, 1);
+        seedSportSlot(owner, 0);
         seedLoggedSportSession(owner, monday);
 
         DailyTargets t = fuelDayService.dailyTargets(owner, monday);

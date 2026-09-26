@@ -7162,13 +7162,23 @@ export interface components {
             targets: components["schemas"]["MacroSet"];
             consumed: components["schemas"]["MacroSet"];
             meals: components["schemas"]["MealResponse"][];
+            energy?: components["schemas"]["FuelDayEnergy"];
         };
         FuelDayRollup: {
             /** Format: date */
             date: string;
             targets: components["schemas"]["MacroSet"];
             consumed: components["schemas"]["MacroSet"];
+            energy?: components["schemas"]["FuelDayEnergy"];
         };
+        /** @description The served target's equation (mezo-32m82): baseKcal (BMR × NEAT) + plannedMovementKcal (the weekly plan's share for the day, incl. the day-type shift) + extraMovementKcal (unplanned logged movement, net) + balanceKcal (goal deficit/surplus; also absorbs the BMR floor) = targetKcal. Null on the static path (no goal or no biometric snapshot). */
+        FuelDayEnergy: {
+            baseKcal: number;
+            plannedMovementKcal: number;
+            extraMovementKcal: number;
+            balanceKcal: number;
+            targetKcal: number;
+        } | null;
         FuelWeekResponse: {
             /** Format: date */
             start: string;

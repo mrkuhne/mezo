@@ -92,8 +92,10 @@ public class DietSettingsService {
         LocalDate today = LocalDate.now();
         GoalPrescriptionJson.Segment seg =
             goalEngineService.previewActiveGoalSegment(userId, toPreferences(req), today);
+        // No goal handle here (the engine owns the draft recompute): no EnergyBase, so no BMR floor
+        // and no breakdown — the preview only reads kcal and macros (mezo-32m82).
         DailyTargets t = DayTargetProjector.project(
-            seg, () -> workoutWindowQueryService.movementOn(userId, today).plannedDone(), nutritionTargets);
+            seg, null, () -> workoutWindowQueryService.movementOn(userId, today), nutritionTargets);
         return DietSettingsPreviewResponse.builder()
             .kcal(t.kcal())
             .proteinG(t.p())
