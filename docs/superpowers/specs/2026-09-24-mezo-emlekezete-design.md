@@ -408,6 +408,150 @@ change).
 - A drift row itself is excluded from `KnowledgeRecheckService`'s own candidate set — it is the
   quarterly pass's OUTPUT, not a plan-less confirmed claim to re-litigate a second time.
 
+## S3 delta — person fact memory (2026-09-26, owner-approved direction)
+
+**Owner decisions (2026-09-26):**
+
+1. **Known persons only.** Facts are captured only for persons already present (active)
+   in the people list. An unknown name never auto-creates a person or a fact; it flows
+   into the existing candidate-suggestion path ("vegyük fel?") and nothing is stored
+   about them until the owner accepts. Low-confidence person resolution suppresses
+   capture — never guess between two similar names.
+2. **Sensitivity policy.** `sensitivity`-kind facts ARE captured and used in the chat
+   context (where the owner initiates), but are **never eligible for the proactive
+   message/intervention pipeline** — S5 must enforce this kind-level exclusion.
+3. **Post-hoc chip with a minimal pending indicator.** Extraction stays async
+   after-commit (reply latency unchanged). After each user turn the chat shows a
+   minimal "still listening" indicator while the capture window is open; if a fact
+   was captured, the "Megjegyeztem: …" chip with undo slides in beneath the reply;
+   if not, the indicator disappears silently.
+
+### Prior art (S3 recon)
+
+- **ChatGPT memory** (openai.com/index/memory-and-new-controls-for-chatgpt): inline
+  "Memory updated" chip at capture + a settings list with per-item delete + a
+  no-capture mode. Adopted (chip upgraded to undo-first for a single-user app).
+- **Claude memory** (claude.com/blog/claudes-memory-works-everywhere...): recall-time
+  transparency (provenance makes a used fact inspectable) and default-quiet handling
+  of sensitive categories. Adopted — matches owner decision 2.
+- **Monica CRM schema** (drawsql.app/templates/monica): validates the ≤5-kind
+  taxonomy almost 1:1; its important_date→yearly-reminder pairing is noted for S5.
+  Its many-satellite table design is rejected in favor of one flat per-fact row.
+- **Clay CRM**: external enrichment about third parties — **rejected outright**.
+  First-party-only provenance ("csak azt tudom, amit te mondtál el") is the app's
+  anti-creepiness firewall and part of the feature's voice.
+- **Stale-fact analysis** (daily.dev "your AI's most dangerous memory"): the worst
+  failure is a fact that *was* true. Adopted: timestamp + active flag,
+  **supersede-not-append** for volatile kinds (`relationship_state`: a new active
+  fact of the same kind for the same person deactivates the previous one), undo is
+  a durable veto (no resurrection).
+
+### Codebase terrain (S3 recon)
+
+- Chat writer pattern: `FactExtractionListener.java:22-38` (`@Async` AFTER_COMMIT on
+  `ChatTurnCompleted`, swallow-and-log) + `FactExtractionService.java:73` (one
+  cheap-tier call, normalized dedupe `:93-123`, per-turn cap). The person variant is a
+  sibling listener/service in companion on the same event.
+- Nightly: `PersonExtractionService.java:207` `extractFor` (pre-spend gate `:215-223`,
+  single LLM call, `persistNight` one TX via self-proxy `:190,250`); reached from
+  `GraphMaintenanceJob.java:76-79` phase 4 via `ObjectProvider`. Person facts join the
+  same LLM call; their persistence must not be able to sink `persistNight`
+  (spec lesson 11: per-row `TransactionTemplate`+`REQUIRES_NEW`).
+- Storage home: `feature/people`; changelog `db/changelog/1.1.0/script/` with
+  `202609241200_mezo-a9bo7_team_edition.sql` as the create-table example;
+  `OwnedEntity` + `@SQLDelete/@SQLRestriction` like `PersonEntity`. No-resurrection
+  needs a soft-delete-blind existence check (`existsSourceRefIncludingDeleted` idiom).
+- Consumption: `PersonChatContext.java:5-8` holds the deliberate exclusion;
+  `PeopleSnapshotBlock.java:55-79` renders `[Emberek]`; snapshot rides only the full
+  `render` path (`ContextSnapshotAssembler.java:139-169`) — CHAT-gear turns
+  (`ChatService.chatGearContext:786`) carry no snapshot, deliberately unchanged.
+  Fact reads in the turn must use projections (MentionSignal idiom) and add no new
+  DB failure modes (PeopleSnapshotBlock javadoc :30-38 TX-poison trap).
+- Chip wire: `MessageResponse` (`companion.yml:946-980`) has no annotation array;
+  streamed chips would have to ride the `done` row — but extraction finishes AFTER
+  `done`, hence the post-hoc fetch design below. Undo precedent:
+  `DELETE /api/people/{personId}/mentions/{mentionId}` + `usePeople().undoMention`.
+- Toggle/list FE pattern: `knowledgeApi.ts:12-40` + `knowledgeHooks.ts:67-98` +
+  `KnowledgeFactRow.tsx`; person page card: `PersonDetailPage.tsx:205-215`
+  ("Amit Mezo tud", renders legacy `knownFacts`); mock seeds `data/me/people.ts`,
+  `data/insights/chat.ts`.
+- Switches: no new switch (S2 precedent). Chat writer gates
+  `COMPANION ∧ COMPANION_EXTRACTION ∧ PEOPLE` (people beans via `ObjectProvider`);
+  nightly inherits `COMPANION ∧ PEOPLE` from `PersonExtractionService`. New
+  `LlmCallContext` slug needs an FE admin label (lesson 14).
+- Staleness to fix in this slice: `docs/features/me.md:431` (mentions "don't feed the
+  snapshot yet" — they do), `PeopleService.java:301` + `people.yml:56` ("AI-curated"
+  knownFacts — no AI writer exists) vs `PersonEntity.java:20-23` ("owner-curated") —
+  align all on "legacy/seed, read-only".
+
+### Design (S3)
+
+1. **Storage (feature/people).** New `person_fact` table + `PersonFactEntity`
+   (`OwnedEntity`, soft delete): `person_id` FK, `kind` enum
+   (`preference | relationship_state | shared_activity | important_date | sensitivity`),
+   `text`, `confidence`, `source_ref_kind` + `source_ref_id` (chat turn / nightly day),
+   `extracted_at`, `active` (undo/supersede target), `include_in_prompt`
+   (default true), `seen_at` (nullable — nightly captures show "új" until first seen).
+   Writes go through a people-owned **`PersonFactService`**: capture (with normalized
+   dedupe + soft-delete-blind no-resurrection check on source ref + supersede logic
+   for volatile kinds), undo/deactivate, toggle, list. `person.known_facts` stays
+   read-only legacy/seed.
+2. **Chat writer (companion).** `PersonFactExtractionListener` — sibling of
+   `FactExtractionListener` on `ChatTurnCompleted`, gated
+   `COMPANION ∧ COMPANION_EXTRACTION ∧ PEOPLE`, people beans via `ObjectProvider`,
+   swallow-and-log. One cheap-tier call (new slug `companion_person_fact_extract` +
+   admin label) extracting facts *about mentioned persons*; grounding: only persons
+   resolvable with high confidence to an existing active person; unresolved names →
+   existing candidate path, no fact. Per-turn cap; kind whitelist enforced in code.
+3. **Nightly writer.** `PersonExtractionService`'s single LLM call additionally emits
+   person facts for known persons from the night's narrative. Persistence runs after
+   `persistNight` in its own per-fact TX (`TransactionTemplate` + `REQUIRES_NEW`,
+   lesson 11) so a fact failure never sinks mentions. No toast; `seen_at=null`.
+4. **Chip (post-hoc fetch).** No change to reply generation. New people-owned
+   endpoint `GET /api/people/facts?sourceRefKind=chat_turn&sourceRefId={messageId}`
+   (returns captured facts for that turn) and
+   `DELETE /api/people/{personId}/facts/{factId}` (undo = deactivate). FE: after a
+   user turn, ChatPage shows a minimal pending indicator and polls the fetch endpoint
+   on a short backoff (~2s/5s/10s, then gives up silently); on hits it renders the
+   "Megjegyeztem: …" chip(s) with undo beneath the reply (RefChips/RecalledMemoriesRow
+   idiom). "Ezt ne jegyezd meg" in-conversation works because undo deactivates and
+   the no-resurrection key blocks re-capture. **No `MessageResponse` change** — the
+   chip is FE state fed by the fetch endpoint; only `people.yml` changes
+   (contract-drift gate + `pnpm generate:api` still apply).
+5. **Consumption.** `PersonChatContext` gains a facts list (active AND
+   `include_in_prompt`, projection query); `PeopleSnapshotBlock` renders them under
+   `[Emberek]` with hedged phrasing and updates its "SOSEM" javadoc. Full-context
+   turns only (chatGearContext untouched). `sensitivity` facts are included here but
+   the block/service marks the kind's proactive exclusion for S5 (constant on the
+   people side, documented).
+6. **Person page FE.** The "Amit Mezo tud" card lists `person_fact` rows: text, kind
+   tag, provenance (honnan/mikor), "új" badge (`seen_at` null → mark seen on view),
+   per-fact include-toggle (knowledge toggle idiom) and delete/undo. Legacy
+   `knownFacts` strings remain as static legacy entries. Üveg canon; **clickable
+   prototype (chip + person card) before implementation, owner OK required** per
+   /uvegesites §1.
+7. **Docs.** Fix the three stale claims (me.md, PeopleService javadoc, people.yml
+   summary, PersonEntity comment); update `docs/features/me.md` + `companion.md`
+   (knowledge-base skill); CODEMAP regen.
+8. **Unification note.** No new screen: capture lives in chat, management on the
+   person page; the hub view is S6 (csapatfal world). Person facts enter the same
+   prompt-block system as knowledge facts and observations, feeding S4 (named series
+   grounding) and S5 (proactive inputs) — one engine, one experience.
+
+### Testing (S3)
+
+BE focused ITs: chat capture for a known person; unknown name → candidate only, no
+fact; low-confidence resolution → no capture; supersede on `relationship_state`;
+dedupe + per-turn cap; undo → deactivated fact and no resurrection on re-sweep of the
+same source ref; nightly emit persists per-fact (one poisoned fact doesn't sink the
+night); snapshot block includes active+toggled facts and excludes inactive/toggled-off;
+midnight-anchored fixtures. Contract tests for the two new people endpoints. FE both
+modes (`CI=true`): chip + pending indicator + undo flow, person card list/toggle/
+delete/"új" badge, mock fixtures (`data/me/people.ts`, chat fixture) updated;
+`pnpm build`; affected layout specs; labels completeness (new LLM slug); contract-drift
+gate on `people.yml`; CODEMAP regen; runtime pass with the `verify` skill (dark, 320px,
+reduced motion).
+
 ## Slice lessons
 
 (numbered; only what a later slice would otherwise pay for again)
