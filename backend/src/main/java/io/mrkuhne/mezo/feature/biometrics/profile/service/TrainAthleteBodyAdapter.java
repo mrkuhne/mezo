@@ -4,7 +4,9 @@ import io.mrkuhne.mezo.feature.biometrics.profile.entity.BiometricProfileEntity;
 import io.mrkuhne.mezo.feature.biometrics.profile.repository.BiometricProfileRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
+import io.mrkuhne.mezo.feature.goal.engine.service.TdeeBootstrapService;
 import io.mrkuhne.mezo.feature.train.service.AthleteBodyPort;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.Optional;
@@ -23,6 +25,7 @@ public class TrainAthleteBodyAdapter implements AthleteBodyPort {
 
     private final BiometricProfileRepository profileRepository;
     private final WeightLogRepository weightLogRepository;
+    private final TdeeBootstrapService tdeeBootstrapService;
 
     @Override
     public Optional<AthleteBody> bodyAt(UUID userId, LocalDate date) {
@@ -38,7 +41,8 @@ public class TrainAthleteBodyAdapter implements AthleteBodyPort {
         }
         LocalDate on = date != null ? date : LocalDate.now();
         int age = Period.between(profile.getBirthDate(), on).getYears();
+        BigDecimal bmr = tdeeBootstrapService.bmr(profile, weight.getWeightKg());
         return Optional.of(new AthleteBody(
-            weight.getWeightKg(), profile.getSex(), age, profile.getBodyFatPct()));
+            weight.getWeightKg(), profile.getSex(), age, profile.getBodyFatPct(), bmr));
     }
 }

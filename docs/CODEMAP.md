@@ -1436,15 +1436,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `RunningBlockRepository`, `SportEventRepository`, `SportScheduleSlotRepository`, `SportSessionRepository`,
     `SportSlotSkipRepository`, `WorkoutDayAdjustmentRepository`, `WorkoutSessionRepository`,
     `WorkoutTimingProfileRepository`
-  - **services:** `AthleteBodyPort`, `CatalogMediaResolver`, `ClosingBlockService`, `E1rmSeries`, `EwmaEstimator`,
-    `ExerciseCatalogService`, `ExerciseHistoryResolver`, `ExerciseRecordService`, `GoalRecomputePort`,
-    `GymScheduleService`, `MedalEvaluator`, `MedalService`, `MesoPlanFiller`, `MesoPlanGeneratorService`,
-    `MesoPlanLlm`, `MesoPlanMerger`, `MesoPlanSkeleton`, `MesoTemplateDays`, `MesoTemplateService`, `MesoWeeks`,
-    `MesocycleReportService`, `MuscleGroup`, `OneRepMax`, `Prescription`, `PriorityTier`, `ProgressionDecider`,
-    `RunningService`, `SessionTimingCalculator`, `SetRecommendationService`, `SportEnergyCalculator`, `SportService`,
-    `SportSessionLoggedEvent`, `SportSlotSkipService`, `TimingObservation`, `TimingObservationExtractor`,
-    `TimingProfileListener`, `TimingProfileService`, `TrainService`, `VolumeArcService`, `VolumeDecider`,
-    `VolumeProgressionService`, `WeeklyScheduledActivityService`, `WeightGapService`, `WeightSnapper`,
+  - **services:** `ActivityEnergyModel`, `AthleteBodyPort`, `CatalogMediaResolver`, `ClosingBlockService`,
+    `E1rmSeries`, `EwmaEstimator`, `ExerciseCatalogService`, `ExerciseHistoryResolver`, `ExerciseRecordService`,
+    `GoalRecomputePort`, `GymScheduleService`, `MedalEvaluator`, `MedalService`, `MesoPlanFiller`,
+    `MesoPlanGeneratorService`, `MesoPlanLlm`, `MesoPlanMerger`, `MesoPlanSkeleton`, `MesoTemplateDays`,
+    `MesoTemplateService`, `MesoWeeks`, `MesocycleReportService`, `MuscleGroup`, `OneRepMax`, `Prescription`,
+    `PriorityTier`, `ProgressionDecider`, `RunningService`, `SessionTimingCalculator`, `SetRecommendationService`,
+    `SportService`, `SportSessionLoggedEvent`, `SportSlotSkipService`, `TimingObservation`,
+    `TimingObservationExtractor`, `TimingProfileListener`, `TimingProfileService`, `TrainService`, `VolumeArcService`,
+    `VolumeDecider`, `VolumeProgressionService`, `WeeklyScheduledActivityService`, `WeightGapService`, `WeightSnapper`,
     `WorkoutAutoCloseService`, `WorkoutFinishedEvent`, `WorkoutService`, `WorkoutWindowQueryService`
   - **controllers→contract:** `TrainController`→`TrainApi`
   - **mappers:** `MesoReportMapper`, `RunningMapper`, `TrainMapper`
@@ -1523,7 +1523,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts, weekZone.ts, weeklyBands.ts, weeklyLoad.ts, workoutCardMeta.ts,
     workoutComparison.ts, workoutState.ts
   - **root:** DayTile.tsx, InterviewStep.tsx, dayTiles.ts, wizardState.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 78 IT + 17 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 78 IT + 18 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
     `ClosingBlockVolumeFlagIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`, `ExerciseCatalogContractIT`,
     `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,

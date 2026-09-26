@@ -15,6 +15,8 @@ import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -77,6 +79,24 @@ class RunningContractIT extends ApiIntegrationTest {
             .durationMin(35)
             .notes("Jól ment")
             .build();
+    }
+
+    /** BMR (Katch-McArdle) for the fixture profile (M, 15% body fat) at {@code weightKg} —
+     *  mirrors {@code TdeeBootstrapService#bmr}. */
+    private static BigDecimal bmrFor(String weightKg) {
+        BigDecimal leanFraction = BigDecimal.ONE.subtract(
+            new BigDecimal("15.0").divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+        return new BigDecimal("370")
+            .add(new BigDecimal("21.6").multiply(new BigDecimal(weightKg).multiply(leanFraction)));
+    }
+
+    /** The net activity-energy model's own arithmetic (mezo-32m82): mirrors
+     *  {@code ActivityEnergyModel#netKcal} — {@code (met − 1) × bmr/24 × minutes/60}, HALF_UP. */
+    private static int netKcal(BigDecimal bmrKcal, double met, int minutes) {
+        BigDecimal rest = bmrKcal.divide(BigDecimal.valueOf(24), MathContext.DECIMAL64);
+        BigDecimal kcal = BigDecimal.valueOf(met - 1).multiply(rest)
+            .multiply(BigDecimal.valueOf(minutes)).divide(BigDecimal.valueOf(60), MathContext.DECIMAL64);
+        return kcal.setScale(0, RoundingMode.HALF_UP).intValueExact();
     }
 
     private RunningBlockResponse createBlock(String title, HttpHeaders auth) {
@@ -266,8 +286,8 @@ class RunningContractIT extends ApiIntegrationTest {
         RunSessionLogResponse logged = postForBody(SESSIONS, sampleLog(block.getId()),
             runner.headers(), HttpStatus.CREATED, RunSessionLogResponse.class);
 
-        // 9.48 MET (a 9 km/h jog) * 3.5 * 80 kg / 200 * 35 min * (0.99 age * 1.04 lean)
-        assertThat(logged.getKcal()).isEqualTo(478);
+        // rpeActual 9 -> hard band -> run MET 10.5; net = (10.5 − 1) × bmr/24 × 35/60
+        assertThat(logged.getKcal()).isEqualTo(netKcal(bmrFor("80.00"), 10.5, 35));
         assertThat(logged.getKcalIsEstimate()).isTrue();
     }
 

@@ -73,16 +73,8 @@ public class TdeeBootstrapService {
      */
     public TdeeBootstrapJson compute(
         BiometricProfileEntity profile, BigDecimal currentWeightKg, BigDecimal weeklyEatKcalPerDay) {
-        BigDecimal bmr;
-        String formula;
-        if (profile.getBodyFatPct() != null) {
-            bmr = katchMcArdle(currentWeightKg, profile.getBodyFatPct());
-            formula = FORMULA_KATCH;
-        } else {
-            int age = ageYears(profile.getBirthDate());
-            bmr = mifflinStJeor(currentWeightKg, profile.getHeightCm(), age, profile.getSex());
-            formula = FORMULA_MSJ;
-        }
+        BigDecimal bmr = bmr(profile, currentWeightKg);
+        String formula = profile.getBodyFatPct() != null ? FORMULA_KATCH : FORMULA_MSJ;
 
         BigDecimal neat = BigDecimal.valueOf(props.neat().forLevel(profile.getActivityLevel()));
         BigDecimal neatBaseline = bmr.multiply(neat);
@@ -92,6 +84,14 @@ public class TdeeBootstrapService {
         // neat stays unrounded (a multiplier); the kcal outputs are rounded to whole-ish kcal precision.
         return new TdeeBootstrapJson(
             scaled(bmr), neat, scaled(neatBaseline), scaled(weeklyEat), scaled(tdee), formula, OffsetDateTime.now());
+    }
+
+    /** BMR (kcal/day): Katch-McArdle when body-fat % is known, else Mifflin-St Jeor. Unscaled. */
+    public BigDecimal bmr(BiometricProfileEntity profile, BigDecimal weightKg) {
+        if (profile.getBodyFatPct() != null) {
+            return katchMcArdle(weightKg, profile.getBodyFatPct());
+        }
+        return mifflinStJeor(weightKg, profile.getHeightCm(), ageYears(profile.getBirthDate()), profile.getSex());
     }
 
     /** Katch-McArdle: LBM = weight·(1 − bodyFatPct/100); BMR = 370 + 21.6·LBM. */

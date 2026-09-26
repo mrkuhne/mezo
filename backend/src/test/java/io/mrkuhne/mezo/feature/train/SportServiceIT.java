@@ -21,6 +21,8 @@ import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -174,6 +176,24 @@ class SportServiceIT extends AbstractIntegrationTest {
         weightLogPopulator.createWeightLog(owner, LocalDate.parse("2026-05-30"), new BigDecimal(weightKg));
     }
 
+    /** BMR (Katch-McArdle) for the fixture profile (M, 15% body fat) at {@code weightKg} —
+     *  mirrors {@code TdeeBootstrapService#bmr}. */
+    private static BigDecimal bmrFor(String weightKg) {
+        BigDecimal leanFraction = BigDecimal.ONE.subtract(
+            new BigDecimal("15.0").divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP));
+        return new BigDecimal("370")
+            .add(new BigDecimal("21.6").multiply(new BigDecimal(weightKg).multiply(leanFraction)));
+    }
+
+    /** The net activity-energy model's own arithmetic (mezo-32m82): mirrors
+     *  {@code ActivityEnergyModel#netKcal} — {@code (met − 1) × bmr/24 × minutes/60}, HALF_UP. */
+    private static int netKcal(BigDecimal bmrKcal, double met, int minutes) {
+        BigDecimal rest = bmrKcal.divide(BigDecimal.valueOf(24), MathContext.DECIMAL64);
+        BigDecimal kcal = BigDecimal.valueOf(met - 1).multiply(rest)
+            .multiply(BigDecimal.valueOf(minutes)).divide(BigDecimal.valueOf(60), MathContext.DECIMAL64);
+        return kcal.setScale(0, RoundingMode.HALF_UP).intValueExact();
+    }
+
     @Test
     void testLogSportSession_shouldPersistTheEstimateFlagged_whenBodyKnown() {
         UUID owner = databasePopulator.populateUser("sportkcal@test.local");
@@ -185,12 +205,12 @@ class SportServiceIT extends AbstractIntegrationTest {
         entityManager.flush();
         entityManager.clear();
 
-        // 5.3 MET (volleyball at the default intensity 7) * 3.5 * 80 kg / 200 * 90 min
-        // * (1 male * 0.99 for 35 years * 1.04 for 15% body fat)
-        assertThat(res.getKcal()).isEqualTo(688);
+        // rpe 7 -> moderate band -> volleyball MET 4.0; net = (4.0 − 1) × bmr/24 × 90/60
+        int expected = netKcal(bmrFor("80.00"), 4.0, 90);
+        assertThat(res.getKcal()).isEqualTo(expected);
         assertThat(res.getKcalIsEstimate()).isTrue();
         SportSessionEntity saved = sportSessionRepository.findById(res.getId()).orElseThrow();
-        assertThat(saved.getKcal()).isEqualTo(688);
+        assertThat(saved.getKcal()).isEqualTo(expected);
         assertThat(saved.getKcalIsEstimate()).isTrue();
     }
 
@@ -253,18 +273,17 @@ class SportServiceIT extends AbstractIntegrationTest {
         SportSessionEntity saved = sportSessionRepository.findById(res.getId()).orElseThrow();
         assertThat(saved.getSport()).isEqualTo("bike");
         assertThat(res.getSport()).isEqualTo("bike");
-        assertThat(res.getKcal()).isEqualTo(960); // 11.1 MET (25 km/h flat) for an hour
+        // rpe 6 -> moderate band -> bike MET 6.8; net = (6.8 − 1) × bmr/24 × 60/60
+        assertThat(res.getKcal()).isEqualTo(netKcal(bmrFor("80.00"), 6.8, 60));
         assertThat(res.getKcalIsEstimate()).isTrue();
     }
 
     @Test
-    void testLogSportSession_shouldFoldRpeIntoTheMet_whenIntensityDiffers() {
+    void testLogSportSession_shouldFoldRpeIntoTheBand_whenIntensityDiffers() {
         // Regression for a masked bug: applyKcal used to read the never-populated entity
-        // `intensity` column instead of the wire's `rpe`, so every session collapsed to the
-        // sport's default-intensity MET regardless of how hard the user said it was. Two
-        // otherwise-identical volleyball logs at opposite ends of the rpe scale must fold to
-        // different METs (volleyball: 4.5 MET at i5 -> 6.5 MET at i10, slope 0.4/point, and below
-        // i5 the fold extrapolates down but floors at light-1 = 3.5) and so persist different kcal.
+        // `intensity` column instead of the wire's `rpe`. Two otherwise-identical volleyball logs
+        // at opposite ends of the rpe scale must fold to different bands (mezo-32m82: rpe 1-4
+        // light, 8-10 hard) and so persist different kcal.
         UUID owner = databasePopulator.populateUser("sportrpe@test.local");
         seedBody(owner, "80.00");
 
@@ -277,17 +296,19 @@ class SportServiceIT extends AbstractIntegrationTest {
         entityManager.flush();
         entityManager.clear();
 
-        // rpe 3 -> met = 4.5 + (3-5)*0.4 = 3.7 (above the 3.5 floor); * 3.5 * 80kg / 200 * 90min
-        // * personalFactor(M, 35y, 15% bf) = 1.0296 -> round(466.2 * 1.0296) = 480
-        assertThat(low.getKcal()).isEqualTo(480);
-        // rpe 10 -> met = 4.5 + (10-5)*0.4 = 6.5 (clamped at hard); round(819.0 * 1.0296) = 843
-        assertThat(high.getKcal()).isEqualTo(843);
+        BigDecimal bmr = bmrFor("80.00");
+        // rpe 3 -> light band -> volleyball MET 3.0; net = (3.0 − 1) × bmr/24 × 90/60
+        int expectedLow = netKcal(bmr, 3.0, 90);
+        // rpe 10 -> hard band -> volleyball MET 6.0; net = (6.0 − 1) × bmr/24 × 90/60
+        int expectedHigh = netKcal(bmr, 6.0, 90);
+        assertThat(low.getKcal()).isEqualTo(expectedLow);
+        assertThat(high.getKcal()).isEqualTo(expectedHigh);
         assertThat(low.getKcal()).isNotEqualTo(high.getKcal());
 
         SportSessionEntity savedLow = sportSessionRepository.findById(low.getId()).orElseThrow();
         SportSessionEntity savedHigh = sportSessionRepository.findById(high.getId()).orElseThrow();
-        assertThat(savedLow.getKcal()).isEqualTo(480);
-        assertThat(savedHigh.getKcal()).isEqualTo(843);
+        assertThat(savedLow.getKcal()).isEqualTo(expectedLow);
+        assertThat(savedHigh.getKcal()).isEqualTo(expectedHigh);
     }
 
     @Test

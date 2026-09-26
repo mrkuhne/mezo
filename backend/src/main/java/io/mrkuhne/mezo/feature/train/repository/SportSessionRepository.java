@@ -35,4 +35,7 @@ public interface SportSessionRepository extends JpaRepository<SportSessionEntity
     /** That day's logged sport sessions, earliest first — the meal scorer's sport windows. */
     List<SportSessionEntity> findByCreatedByAndDeletedFalseAndDateOrderByTimeAsc(
         UUID createdBy, LocalDate date);
+
+    /** Live rows still missing kcal with a real duration — the net-model migration catch-up (mezo-32m82). */
+    List<SportSessionEntity> findByDeletedFalseAndKcalIsNullAndDurationMinGreaterThan(int minutes);
 }
