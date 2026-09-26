@@ -7,6 +7,8 @@ import io.mrkuhne.mezo.feature.character.service.chat.TeamChatReads;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
+import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.PatternMonitorService;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
@@ -22,6 +24,7 @@ import io.mrkuhne.mezo.feature.proactive.repository.PredictionRepository;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -56,6 +59,7 @@ public class TeamEditionReads {
 
     private final PatternRepository patternRepository;
     private final PatternMonitorService patternMonitorService;
+    private final PatternEventRepository patternEventRepository;
     private final PredictionRepository predictionRepository;
     private final ExperimentRepository experimentRepository;
     private final CharacterConferenceRepository characterConferenceRepository;
@@ -70,6 +74,15 @@ public class TeamEditionReads {
     @Transactional(readOnly = true)
     public List<PatternEntity> patterns(UUID owner) {
         return patternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(owner);
+    }
+
+    /** mezo-a9bo7.18: the newest lifecycle event of one kind on a pattern (e.g. {@code confirmed}),
+     *  when it happened — the true "this changed" moment the frozen {@code lastDetectedAt} is not. */
+    @Transactional(readOnly = true)
+    public Optional<Instant> lastPatternEvent(UUID owner, UUID patternId, String kind) {
+        return patternEventRepository
+                .findFirstByCreatedByAndPatternIdAndKindAndDeletedFalseOrderByOccurredAtDesc(owner, patternId, kind)
+                .map(PatternEventEntity::getOccurredAt);
     }
 
     /** Live gate diagnostics (no write) — see the class javadoc. */

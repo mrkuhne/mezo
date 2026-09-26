@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.character.entity.TeamChatThreadEntity;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatReads;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagCatalog;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
@@ -95,7 +96,7 @@ public class EditionCandidateCollector {
                 .collect(Collectors.toMap(PatternMonitorPair::getKey, p -> p, (a, b) -> a));
 
         for (PatternEntity pattern : reads.patterns(owner)) {
-            patternCandidate(pattern, pairsByKey, lastEditionAt).ifPresent(out::add);
+            patternCandidate(owner, pattern, pairsByKey, lastEditionAt).ifPresent(out::add);
         }
         for (PatternMonitorPair pair : monitor.getPairs()) {
             pairCandidate(pair, monitor.getMinN()).ifPresent(out::add);
@@ -116,22 +117,34 @@ public class EditionCandidateCollector {
         return out.stream().filter(c -> !isBlank(c.recordText())).toList();
     }
 
-    /** Sor 1 (`proposed` → KERDES) és sor 2 (`confirmed` és friss → MEGFIGYELES). */
-    private Optional<EditionCandidate> patternCandidate(PatternEntity pattern,
+    /** Sor 1 (`proposed` → KERDES) és sor 2 (`confirmed` és friss → MEGFIGYELES).
+     *
+     *  <p>mezo-a9bo7.18: a „mikor változott" nem a {@code lastDetectedAt} — azt az éjszakai
+     *  futás egy javasolt mintán minden éjjel frissíti (így az a 7 napos ismétlés-tilalmat
+     *  kijátszva minden este első posztként visszatért), egy megerősítetten pedig befagyasztja (így
+     *  egy friss megerősítés nem számított frissnek). Javasolt mintánál a születése vagy a legutóbbi
+     *  átfogalmazása, megerősítettnél a megerősítés pillanata számít; a {@code lastDetectedAt}
+     *  csak esemény/létrehozási idő nélküli régi sornál tartalék. */
+    private Optional<EditionCandidate> patternCandidate(UUID owner, PatternEntity pattern,
             Map<String, PatternMonitorPair> pairsByKey, Instant lastEditionAt) {
         if (PatternEntity.STATUS_PROPOSED.equals(pattern.getStatus())) {
-            return Optional.of(patternCandidate(pattern, pairsByKey, EditionGenre.KERDES, true));
+            Instant born = pattern.getCreatedAt() != null ? pattern.getCreatedAt() : pattern.getLastDetectedAt();
+            Instant changedAt = reads.lastPatternEvent(owner, pattern.getId(), PatternEventEntity.KIND_REVISED)
+                    .filter(revised -> born == null || revised.isAfter(born)).orElse(born);
+            return Optional.of(patternCandidate(pattern, pairsByKey, EditionGenre.KERDES, true, changedAt));
         }
-        if (PatternEntity.STATUS_CONFIRMED.equals(pattern.getStatus())
-                && pattern.getLastDetectedAt() != null
-                && (lastEditionAt == null || pattern.getLastDetectedAt().isAfter(lastEditionAt))) {
-            return Optional.of(patternCandidate(pattern, pairsByKey, EditionGenre.MEGFIGYELES, false));
+        if (PatternEntity.STATUS_CONFIRMED.equals(pattern.getStatus())) {
+            Instant confirmedAt = reads.lastPatternEvent(owner, pattern.getId(), PatternEventEntity.KIND_CONFIRMED)
+                    .orElse(pattern.getLastDetectedAt());
+            if (confirmedAt != null && (lastEditionAt == null || confirmedAt.isAfter(lastEditionAt))) {
+                return Optional.of(patternCandidate(pattern, pairsByKey, EditionGenre.MEGFIGYELES, false, confirmedAt));
+            }
         }
         return Optional.empty();
     }
 
     private EditionCandidate patternCandidate(PatternEntity pattern, Map<String, PatternMonitorPair> pairsByKey,
-            EditionGenre genre, boolean waiting) {
+            EditionGenre genre, boolean waiting, Instant changedAt) {
         PatternMonitorPair pair = pairsByKey.get(pattern.getPairKey());
         TeamCharacter character = pair != null
                 ? TeamCharacter.forMetricDomain(pair.getMetricADomain())
@@ -154,7 +167,7 @@ public class EditionCandidateCollector {
         }
         return new EditionCandidate(SOURCE_PATTERN, id, character, genre, title,
                 recordText, facts, List.of(new EditionRef(SOURCE_PATTERN, id)),
-                waiting, false, pattern.getLastDetectedAt(), "/mezo/patterns/" + pattern.getPairKey(),
+                waiting, false, changedAt, "/mezo/patterns/" + pattern.getPairKey(),
                 pair != null ? crossDomainGuest(pair, character) : List.of());
     }
 

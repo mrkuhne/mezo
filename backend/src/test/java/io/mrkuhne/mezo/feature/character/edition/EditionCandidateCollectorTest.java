@@ -22,6 +22,7 @@ import io.mrkuhne.mezo.feature.character.service.edition.GuestSeed;
 import io.mrkuhne.mezo.feature.character.service.edition.TeamCharacter;
 import io.mrkuhne.mezo.feature.character.service.edition.TeamEditionReads;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
 import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
@@ -236,6 +237,54 @@ class EditionCandidateCollectorTest {
         List<EditionCandidate> out = collector.collect(OWNER, DAY, lastEditionAt);
 
         assertThat(out).isEmpty();
+    }
+
+    // ---- mezo-a9bo7.18: the "changed at" moment is the lifecycle event, not lastDetectedAt -----
+
+    @Test void proposedPatternChangedAtIsItsBirth_notTheNightlyRedetection() {
+        Instant born = Instant.parse("2026-09-10T02:00:00Z");
+        PatternEntity p = pattern(PatternEntity.STATUS_PROPOSED, "pair-1", 12, Instant.parse("2026-09-24T02:00:00Z"));
+        p.setCreatedAt(born);
+        when(reads.patterns(OWNER)).thenReturn(List.of(p));
+
+        List<EditionCandidate> out = collector.collect(OWNER, DAY, Instant.parse("2026-09-23T21:00:00Z"));
+
+        assertThat(out).hasSize(1);
+        assertThat(out.get(0).changedAt()).isEqualTo(born);
+    }
+
+    @Test void proposedPatternRevisedAfterBirthChangedAtIsTheRevision() {
+        Instant revised = Instant.parse("2026-09-22T02:00:00Z");
+        PatternEntity p = pattern(PatternEntity.STATUS_PROPOSED, "pair-1", 12, Instant.parse("2026-09-24T02:00:00Z"));
+        p.setCreatedAt(Instant.parse("2026-09-10T02:00:00Z"));
+        when(reads.patterns(OWNER)).thenReturn(List.of(p));
+        when(reads.lastPatternEvent(OWNER, p.getId(), PatternEventEntity.KIND_REVISED)).thenReturn(Optional.of(revised));
+
+        assertThat(collector.collect(OWNER, DAY, null).get(0).changedAt()).isEqualTo(revised);
+    }
+
+    @Test void freshlyConfirmedPatternIsFreshByItsConfirmationTime_evenWithAFrozenLastDetectedAt() {
+        Instant frozen = Instant.parse("2026-09-01T02:00:00Z");
+        Instant confirmedAt = Instant.parse("2026-09-24T09:30:00Z");
+        PatternEntity p = pattern(PatternEntity.STATUS_CONFIRMED, "pair-1", 20, frozen);
+        when(reads.patterns(OWNER)).thenReturn(List.of(p));
+        when(reads.lastPatternEvent(OWNER, p.getId(), PatternEventEntity.KIND_CONFIRMED))
+                .thenReturn(Optional.of(confirmedAt));
+
+        List<EditionCandidate> out = collector.collect(OWNER, DAY, Instant.parse("2026-09-23T21:00:00Z"));
+
+        assertThat(out).hasSize(1);
+        assertThat(out.get(0).genre()).isEqualTo(EditionGenre.MEGFIGYELES);
+        assertThat(out.get(0).changedAt()).isEqualTo(confirmedAt);
+    }
+
+    @Test void confirmedBeforeTheLastEditionYieldsNoCandidate() {
+        PatternEntity p = pattern(PatternEntity.STATUS_CONFIRMED, "pair-1", 20, Instant.parse("2026-09-24T02:00:00Z"));
+        when(reads.patterns(OWNER)).thenReturn(List.of(p));
+        when(reads.lastPatternEvent(OWNER, p.getId(), PatternEventEntity.KIND_CONFIRMED))
+                .thenReturn(Optional.of(Instant.parse("2026-09-20T09:30:00Z")));
+
+        assertThat(collector.collect(OWNER, DAY, Instant.parse("2026-09-23T21:00:00Z"))).isEmpty();
     }
 
     @Test void otherPatternStatusesYieldNoCandidate() {
