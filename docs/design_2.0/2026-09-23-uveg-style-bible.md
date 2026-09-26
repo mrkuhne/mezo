@@ -618,3 +618,12 @@ Failure/Volume set style, the macro-panel note. Prototype: [`prototypes/uveg-emo
 83. **A prototype's change marker must not sit on the content.** Corner „ITT” badges covered the numbers they pointed at;
     the owner read it as a broken layout. Mark a change with a dashed outline (`outline-offset`) and offer a switch to
     hide the markers and one to show the before state.
+
+### Sprite forrás (`mezo-wnfdv`, 2026-09-26)
+
+84. **A new icon goes into `assets/titanium-custom.svg`, then the generator is run.** `titanium-icons.svg` (both the
+    `assets/` and the `frontend/src/shared/ui/clay/` copy) is the output of `node scripts/gen-titanium-sprite.mjs`,
+    built from the `nap.html` sprite plus `titanium-custom.svg`. U5–U10 pasted 29 approved symbols straight into the
+    frontend copy, so the next run would have silently dropped them. Append the symbol after the file's
+    `<!-- symbols -->` marker with a one-line comment naming the approving slice, then regenerate and commit both outputs.
+    `titaniumSpriteSource.test.ts` fails when a shipped symbol has no source, or a source symbol never reached the sprite.
