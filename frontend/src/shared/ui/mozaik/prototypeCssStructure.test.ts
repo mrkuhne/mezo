@@ -190,11 +190,10 @@ describe('prototype.css stays structurally intact (mezo-d20.9.1)', () => {
  * mode this whole test file exists to catch) fails HERE with a one-line pointer, not as a
  * silent missing style downstream.
  */
-describe('the train mai section is registered and re-dressed (mezo-ju4j6.11)', () => {
+describe('the train mai section keeps only the shared eyebrow (mezo-ju4j6.11 → U11 mezo-dr0h8)', () => {
   const START_MARKER = '── train mai ('
   const END_MARKER = '── /train mai '
   const section = () => slice(START_MARKER, END_MARKER)
-  const rules = () => stripComments(section())
 
   test('both the opening and the closing comment markers are present, in order', () => {
     const start = rawCss.indexOf(START_MARKER)
@@ -208,34 +207,15 @@ describe('the train mai section is registered and re-dressed (mezo-ju4j6.11)', (
     expect(rawCss).not.toContain('train mai titanium')
   })
 
-  test('the section actually carries the tr- class family, not just the markers', () => {
-    for (const cls of ['.tr-day', '.tr-start', '.tr-alt', '.tr-energy', '.tr-mus', '.tr-mus-track']) {
-      expect(section(), `${cls} missing from the train mai section`).toContain(cls)
+  test('the section still carries .tr-eyebrow, which the plan, template and report pages wear', () => {
+    expect(stripComments(section())).toMatch(/\.tr-eyebrow \{/)
+  })
+
+  test('the pre-üveg Mai poster families are gone from the whole stylesheet (U4 renders .trm-*)', () => {
+    const css = stripComments(rawCss)
+    for (const cls of ['.tr-day', '.tr-start', '.tr-alt', '.tr-energy', '.tr-mus', '.daychip', '.daystrip', '.mesorow', '.todaycard', '.typetag', '.metapill']) {
+      expect(css, `${cls} is dead since U4 and must not come back`).not.toMatch(new RegExp(`\\${cls}(?![\\w-])`))
     }
-  })
-
-  test('no Titanium material the style bible forbids', () => {
-    const css = rules()
-    // A prototípus áttetsző fehérjei (#ffffffXX) SÖTÉT alapra készültek — világos lapon
-    // láthatatlanok. A blokkban ezért nem maradhat nyers fehér-alfa vagy fekete árnyék.
-    expect(css).not.toMatch(/#ffffff[0-9a-f]{2}/i)
-    expect(css).not.toContain('var(--surface-glass)')
-    expect(css).not.toContain('backdrop-filter')
-    expect(css).not.toContain('drop-shadow')
-  })
-
-  test('the day poster is a wash tile and the CTA is the house primary (§2.2 A, §3.1)', () => {
-    const css = rules()
-    expect(css).toContain('box-shadow: var(--mz-shadow-coral)')
-    expect(css).toContain('border: 0.5px solid rgba(43, 33, 24, 0.06)')
-    expect(css).toContain('background: var(--gradient-cta)')
-    expect(css).toContain('box-shadow: var(--shadow-cta)')
-  })
-
-  test('the kcal figure is ONE display-200 tabular numeral (§3.2)', () => {
-    const css = rules()
-    expect(css).toMatch(/\.tr-energy-main strong \{[^}]*font-weight: 200;/)
-    expect(css).toMatch(/\.tr-energy-main strong \{[^}]*font-variant-numeric: tabular-nums;/)
   })
 })
 

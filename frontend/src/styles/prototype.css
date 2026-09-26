@@ -2298,23 +2298,10 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
    the dark-canvas `.rz-arc-*` rules below. */
 
 /* ===== Napív Today hero =====
-   `.np-hero*` retired with `WorkoutTeaser` (mezo-j7u4): the day face's hero is the
-   shared `.todaycard` now. The type tags + CTA rules below stay — they are the shared
-   card language's, worn across Today, Train and Fuel. */
-.h2row { display: flex; align-items: center; gap: 10px; margin-top: 7px; flex-wrap: wrap; }
-.h2row h2 { font-family: var(--ff-display); font-size: 29px; font-weight: 800; letter-spacing: -.4px; color: var(--ink); }
-.typetag { display: inline-block; border-radius: var(--r-sm); padding: 3px 8px; font-size: 10px; font-weight: 800; letter-spacing: .10em; text-transform: uppercase; }
-.typetag-gym { background: var(--wash-gym); color: var(--tag-gym); }
-.typetag-sport { background: var(--wash-sport); color: var(--tag-sport); }
-.typetag-run { background: var(--wash-run); color: var(--tag-run); }
-.typetag-cross { background: var(--wash-cross); color: var(--tag-cross); }
-.typetag-trx { background: var(--wash-trx); color: var(--tag-trx); }
-.typetag-body { background: var(--wash-sage); color: var(--sage-deep); }
-.typetag-mind { background: var(--wash-lav); color: var(--lav-deep); }
-.typetag-fuel { background: var(--wash-amber); color: var(--amber-deep); }
+   `.np-hero*` retired with `WorkoutTeaser` (mezo-j7u4), the `.todaycard` card language and
+   its `.typetag`s with ItemCard (U11, mezo-dr0h8). The rules below are still worn. */
 /* the niggle strip — the DS warning Alert idiom, token-only (both themes flip via the ramp) */
 .warmstrip { display: flex; align-items: center; gap: 10px; background: var(--warning-bg); border: 1px solid var(--warning-soft); border-radius: var(--r-lg); padding: 10px 12px; font: 500 13px/1.45 var(--ff-body); color: var(--warning-deep); margin-top: 12px; }
-.np-ctarow { display: flex; gap: 10px; margin-top: 14px; position: relative; z-index: 1; }
 .np-cta { flex: 1; border: 0; cursor: pointer; font: inherit; background: linear-gradient(135deg, var(--cta-g1), var(--cta-g2)); color: #fff; border-radius: 999px; padding: 15px 0; text-align: center; font-weight: 800; font-size: 15.5px; box-shadow: 0 10px 24px color-mix(in srgb, var(--cta-g2) 35%, transparent), inset 0 1px 0 rgba(255,255,255,.25); }
 
 /* `.np-eventrow*` retired with `VolleyballCard`, `.alt-btn` with `WorkoutTeaser`'s
@@ -2384,127 +2371,12 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .stag-cross { background: var(--wash-cross); color: var(--tag-cross); }
 .stag-trx { background: var(--wash-trx); color: var(--tag-trx); }
 
-/* ===== Napív weekly load tiles (Mai, spec §4.3) ===== */
-/* Scrolls rather than clips (mezo-setx.6.3): the tiles hold free-form values
-   ("2× · sprint"), and at DS type sizes three of them can exceed a phone width
-   by a few px — a nowrap value in a shrinking flex child is then silently cut
-   off. Same escape hatch as `.pgactrow`. */
-.loadrow { display: flex; gap: 9px; margin: 14px 24px 0; overflow-x: auto; scrollbar-width: none; }
-.loadrow::-webkit-scrollbar { display: none; }
-/* DS-migrated (mezo-setx.6.3): DS card chrome + the StatStrip label/value voice. */
-.loadtile { flex: 1 0 auto; border-radius: var(--r-lg); padding: 10px 12px; display: flex; align-items: center; gap: var(--sp-3); background: var(--surface-1); border: 1px solid var(--card-border); box-shadow: var(--shadow-sm); min-width: 0; }
-.loadtile .lic { width: 32px; height: 32px; border-radius: var(--r-md); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
-.loadtile .lic-gym { background: var(--wash-gym); }
-.loadtile .lic-sport { background: var(--wash-sport); }
-.loadtile .lic-run { background: var(--wash-run); }
-.loadtile .lk { font-size: 9px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--text-muted); }
-/* Caption size (14), not the 16 body floor: these are compact metric values in a
-   three-across row, and at 16 the row could not hold "2× · sprint" on one line —
-   it overflowed the page, and letting it wrap broke "5× · 73p" after the dot. */
-.loadtile .lva { font-size: 14px; font-weight: 700; letter-spacing: -0.02em; font-family: var(--ff-display); margin-top: 2px; color: var(--text-primary); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.loadtile > div:last-child { min-width: 0; }
-
-/* ===== Napív meta pill — one fact of a session (time, duration, role, RPE…).
-   Shared by the weekly day cards and Mai's today session cards (mezo-lruy). ===== */
-.metapill { display: inline-flex; align-items: center; border-radius: var(--r-full); padding: 4px 10px; font-size: 11px; font-weight: 700; color: var(--text-secondary); background: var(--surface-recess); white-space: nowrap; font-variant-numeric: tabular-nums; }
-
-/* ===== Napív day strip — Mai's week navigator (mezo-9bbc) ===== */
-.daystrip { display: flex; gap: 9px; overflow-x: auto; scroll-snap-type: x proximity; padding: 2px 24px 6px; }
-.daystrip::-webkit-scrollbar { height: 0; }
-.daychip { flex: none; width: 62px; scroll-snap-align: center; border-radius: 20px; background: var(--surface); box-shadow: var(--np-shadow-row); padding: 9px 0 8px; text-align: center; border: 1.5px solid transparent; font-family: inherit; cursor: pointer; }
-.daychip .dl { display: block; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
-.daychip .dn { display: block; font-family: var(--ff-display); font-size: 17px; font-weight: 800; color: var(--ink); margin-top: 1px; }
-.daychip .dots { display: flex; gap: 3px; justify-content: center; margin-top: 6px; min-height: 6px; }
-.daychip .dot { width: 6px; height: 6px; border-radius: 50%; }
+/* ===== Napív modality dots — the Mai day strip's session dots (`.trm-day-dots`) ===== */
 .dot-gym { background: var(--tag-gym); }
 .dot-sport { background: var(--tag-sport); }
 .dot-cross { background: var(--tag-cross); }
 .dot-trx { background: var(--tag-trx); }
 .dot-run { background: var(--tag-run); }
-.daychip .ck { display: block; font-size: 9px; font-weight: 800; color: var(--sage-deep); margin-top: 5px; letter-spacing: .04em; }
-.daychip.rest { background: transparent; box-shadow: none; border-style: dashed; border-color: var(--line); }
-.daychip.rest .ck { color: var(--faint); }
-.daychip.today { border-color: var(--coral); }
-.daychip.today .dl { color: var(--coral-deep); }
-.daychip.sel { background: var(--ink); border-color: var(--ink); }
-.daychip.sel .dl { color: color-mix(in srgb, var(--surface) 70%, transparent); }
-.daychip.sel .dn { color: var(--surface); }
-.daychip.sel.today { box-shadow: 0 0 0 2px var(--coral); }
-/* On the ink-filled selected chip the marker's sage/faint colours drop below a
-   readable contrast, and a `rest` chip's dashed --ink border disappears into the
-   fill entirely — both need a surface-tinted override (mezo-9bbc final review). */
-.daychip.sel .ck, .daychip.sel.rest .ck { color: color-mix(in srgb, var(--surface) 82%, transparent); }
-.daychip.sel.rest { border-color: color-mix(in srgb, var(--surface) 45%, transparent); }
-
-/* ===== Napív weekly plan day cards (Mai, spec §4.3) =====
-   Stacked layout (mezo-lruy): a day header row (label + MA marker + chevron)
-   over one padded block per session — type tag + title + state chip on the top
-   line, the session's facts as meta pills below. The pre-mezo-lruy single-line
-   variant (tag · title · joined meta · chip) collided on long titles. */
-/* DS-migrated (mezo-setx.6.3): DS card chrome (r-2xl, sp-4, shadow-sm, token
-   border), the eyebrow voice on the day label, ListItem-sized session titles and
-   the 48dp tap floor on every tappable session block. */
-.dayrow { background: var(--surface-1); border: 1px solid var(--card-border); border-radius: var(--r-2xl); padding: var(--sp-4); box-shadow: var(--shadow-sm); margin-bottom: 10px; }
-.dayrow-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: var(--sp-3); }
-.dayrow .d { display: inline-flex; align-items: center; gap: 7px; font: 700 12px/1.4 var(--ff-body); color: var(--text-secondary); text-transform: uppercase; letter-spacing: .18em; }
-.dayrow .d small { border-radius: var(--r-full); padding: 2px 8px; font-size: 9.5px; font-weight: 800; color: var(--primary-deep); background: var(--primary-bg); letter-spacing: .10em; }
-.dayrow .sess { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.dayrow .sess .s { display: flex; flex-direction: column; justify-content: center; gap: 8px; width: 100%; min-height: 48px; padding: 10px 12px; border-radius: var(--r-lg); background: var(--surface-recess); border: 0; text-align: left; font-family: inherit; cursor: inherit; }
-.dayrow .sess .s-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.dayrow .sess .s-title { font-size: 16px; font-weight: 600; color: var(--text-primary); line-height: 1.3; min-width: 0; }
-.dayrow .sess .s-meta { display: flex; flex-wrap: wrap; gap: 6px; }
-/* On the wash-tinted session block the pills invert to the card surface. */
-.dayrow .sess .s .metapill { background: var(--surface-1); color: var(--text-secondary); }
-.dayrow .sess .s .meta { color: var(--text-tertiary); font-weight: 600; font-size: 14px; }
-.dayrow .chev { color: var(--text-tertiary); font-size: 17px; line-height: 1; }
-.dayrow.today { border-color: var(--primary-base); box-shadow: var(--shadow-md); cursor: pointer; }
-.dayrow.today .chev { color: var(--primary-deep); }
-/* Rest day: nothing to lay out — the dashed card stays a single compact line. */
-.dayrow.rest { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: transparent; box-shadow: none; border: 1px dashed var(--divider); }
-.dayrow.rest .dayrow-head { margin-bottom: 0; }
-.dayrow.rest .sess { flex: 1; }
-.dayrow.rest .sess .s { padding: 0; background: transparent; }
-/* Status stamps on a session block — the DS Tag spec (9.5/800/0.10em, r-sm). */
-.dayrow .done-chip { border-radius: var(--r-sm); padding: 2px 7px; font-size: 9.5px; font-weight: 800; letter-spacing: .10em; text-transform: uppercase; margin-left: auto; flex-shrink: 0; background: var(--wash-sage); color: var(--sage-deep); }
-.dayrow .log-chip { border-radius: var(--r-sm); padding: 2px 7px; font-size: 9.5px; font-weight: 800; letter-spacing: .10em; text-transform: uppercase; margin-left: auto; flex-shrink: 0; }
-
-/* ===== Napív today session card (Mai — sport/run, mezo-lruy; K3 language mezo-9bbc) =====
-   The gym hero's lighter sibling: icon shield + eyebrow → title → fact pills →
-   full-width CTA, tinted per modality via --tc-accent/--tc-wash. */
-.todaycard { --tc-accent: var(--tag-sport); --tc-wash: var(--wash-sport); background: linear-gradient(165deg, var(--tc-wash), var(--surface-card) 72%); border: 1px solid color-mix(in srgb, var(--tc-accent) 16%, transparent); border-radius: var(--r-2xl); padding: var(--sp-4); margin: 0 24px 16px; box-shadow: var(--shadow-sm); }
-.todaycard-gym { --tc-accent: var(--tag-gym); --tc-wash: var(--wash-gym); }
-.todaycard-sport { --tc-accent: var(--tag-sport); --tc-wash: var(--wash-sport); }
-.todaycard-cross { --tc-accent: var(--tag-cross); --tc-wash: var(--wash-cross); }
-.todaycard-trx { --tc-accent: var(--tag-trx); --tc-wash: var(--wash-trx); }
-.todaycard-run { --tc-accent: var(--tag-run); --tc-wash: var(--wash-run); }
-.todaycard-body { --tc-accent: var(--sage-deep); --tc-wash: var(--wash-sage); }
-.todaycard-mind { --tc-accent: var(--lav-deep);  --tc-wash: var(--wash-lav); }
-.todaycard-fuel { --tc-accent: var(--amber-deep); --tc-wash: var(--wash-amber); }
-.todaycard.logged { --tc-accent: var(--sage-deep); --tc-wash: var(--wash-sage); }
-.todaycard-top { display: flex; align-items: flex-start; gap: var(--sp-3); }
-.todaycard-icon { flex: none; width: 44px; height: 44px; border-radius: var(--r-lg); background: var(--surface-card); box-shadow: var(--shadow-xs); display: inline-flex; align-items: center; justify-content: center; font-size: 21px; }
-.todaycard.logged .todaycard-icon { background: var(--success-base); color: var(--text-inverse); }
-.todaycard-head { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.todaycard-time { font-size: 14px; font-weight: 600; color: var(--tc-accent); font-variant-numeric: tabular-nums; }
-.todaycard-title { flex-basis: 100%; font-family: var(--ff-display); font-size: 18px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; color: var(--text-primary); }
-.todaycard-state { flex: none; display: inline-flex; align-items: center; border-radius: var(--r-full); padding: 4px 10px; font-size: 10px; font-weight: 700; letter-spacing: .10em; text-transform: uppercase; color: var(--tc-accent); background: var(--surface-card); border: 1px solid color-mix(in srgb, var(--tc-accent) 20%, transparent); }
-.todaycard-pills { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-3); }
-.todaycard-cta { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin-top: 14px; padding: 12px 16px; min-height: 48px; border-radius: var(--r-full); font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; color: var(--tc-accent); background: var(--surface-card); border: 1px solid color-mix(in srgb, var(--tc-accent) 28%, transparent); }
-/* --- Emitted by ItemCard *children*, not by ItemCard itself (mezo-j7u4) --------------------
-   The card language's prose slots: `-note` is the sentence that carries the WHY / provenance
-   (RitualCard's window framing, WindDownBanner's Walker citation), `-tip*` the explanatory
-   advice lines, `-rows` nests shared `ItemRow`s inside the card (the `.tdc .itemrow` idiom).
-   No existing rule covers standalone card prose — `.itemrow-t2`, `.donebar-detail` and
-   `.fhc-next-tx s` are all structural children of other primitives. */
-.todaycard-note { margin-top: 12px; font: 500 13px/1.55 var(--ff-body); color: var(--text-secondary); }
-.todaycard-note b { color: var(--success-hover); font-weight: 700; }
-.todaycard-tips { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
-.todaycard-tip { display: flex; align-items: center; gap: 10px; font: 500 13px/1.5 var(--ff-body); color: var(--text-secondary); }
-.todaycard-tip b { color: var(--text-primary); font-weight: 700; }
-.todaycard-tip-ic { flex: none; width: 30px; height: 30px; border-radius: var(--r-md); background: var(--surface-card);
-  display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
-.todaycard-rows { margin-top: 10px; }
-.todaycard-rows .itemrow { width: 100%; margin: 0; padding: 8px 4px; background: transparent; box-shadow: none; border-color: transparent; }
 
 /* ===== Napív done bar — shared logged-state bar (mezo-9bbc) ===== */
 .donebar { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 12px; padding: 11px 13px; border-radius: var(--r-lg); background: var(--success-bg); border: 1px solid var(--success-soft); font-family: inherit; text-align: left; cursor: inherit; }
@@ -2514,47 +2386,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 /* The tappable variant is a <button> (the whole bar opens the review / re-opens the
    log sheet) — the inherited cursor left it without a pointer (mezo-9bbc review). */
 button.donebar { cursor: pointer; }
-
-/* ===== ItemRow — the canonical DS ListItem (mezo-jyua; DS spec mezo-setx.5.1) =====
-   Leading 40×40 tone-tinted icon shield (domain tint on an icon = legal data-viz band)
-   → 16/600 title + 14/400 subtitle → trailing time / action pill / `↗` link.
-   56 px minimum row height; the tone accent rides the --ir-a custom property. */
-.itemrow { --ir-a: var(--primary-deep); display: flex; align-items: center; gap: var(--sp-3);
-  width: calc(100% - 48px); min-height: 56px; padding: 10px 14px; border-radius: var(--r-lg);
-  background: var(--surface-card); border: 1px solid var(--divider); box-shadow: var(--shadow-xs);
-  margin: 0 24px 8px; font-family: inherit; text-align: left; }
-.itemrow-gym   { --ir-a: var(--tag-gym); }
-.itemrow-sport { --ir-a: var(--tag-sport); }
-.itemrow-cross { --ir-a: var(--tag-cross); }
-.itemrow-trx   { --ir-a: var(--tag-trx); }
-.itemrow-run   { --ir-a: var(--tag-run); }
-.itemrow-body  { --ir-a: var(--success-hover); }
-.itemrow-mind  { --ir-a: var(--lav-deep); }
-.itemrow-fuel  { --ir-a: var(--accent-deep); }
-.itemrow-ic { flex: none; width: 40px; height: 40px; border-radius: var(--r-md); display: inline-flex;
-  align-items: center; justify-content: center; font-size: 17px;
-  background: color-mix(in srgb, var(--ir-a) 12%, var(--surface-card)); }
-.itemrow-tx { flex: 1; min-width: 0; display: block; }
-.itemrow-t1 { display: block; font-size: 16px; font-weight: 600; color: var(--text-primary); line-height: 1.3; }
-.itemrow-t2 { display: block; font-size: 14px; font-weight: 400; color: var(--text-secondary); line-height: 1.35; margin-top: 2px; }
-.itemrow-tm { flex: none; font-size: 14px; font-weight: 600; color: var(--ir-a); font-variant-numeric: tabular-nums; }
-.itemrow-act { flex: none; border-radius: var(--r-full); padding: 9px 14px; font-size: 13px; font-weight: 700;
-  font-family: inherit; cursor: pointer; color: var(--text-primary); border: 1px solid var(--divider);
-  background: var(--surface-recess); white-space: nowrap; }
-.itemrow-act.is-inert { cursor: default; color: var(--text-disabled); background: var(--surface-recess); border-color: transparent; }
-/* Whole-row-button shape with a link: the hit area is an INNER button so the <a> is its
-   sibling, never its descendant. */
-.itemrow-hit { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--sp-3);
-  background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit;
-  text-align: left; cursor: pointer; }
-/* The item's own external content — sits NEXT TO the action pill, never instead of it. */
-.itemrow-link { flex: none; width: 40px; height: 40px; border-radius: var(--r-md); display: inline-flex;
-  align-items: center; justify-content: center; text-decoration: none; font-size: 14px;
-  font-weight: 700; color: var(--ir-a); background: var(--surface-recess); }
-.itemrow.is-done { background: transparent; box-shadow: none; border-color: transparent; }
-.itemrow.is-done .itemrow-t1 { color: var(--text-secondary); }
-.itemrow.is-done .itemrow-ic { background: var(--success-base); color: var(--text-inverse); }
-button.itemrow { cursor: pointer; }
 
 /* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
    and keep scroll clearance (replaces the old docked-bar safe-area padding). */
@@ -2594,11 +2425,6 @@ button.itemrow { cursor: pointer; }
 .wk-top .tt { min-width: 0; padding: 0; text-align: left; }
 .wk-top .tt .t1 { font-family: var(--ff-display); font-size: 18px; font-weight: 800; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wk-top .tt .t2 { font-size: 10.5px; color: var(--faint); font-weight: 800; letter-spacing: .6px; text-transform: uppercase; }
-.exdots { margin-left: auto; display: flex; gap: 5px; flex-shrink: 0; }
-.exdots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
-.exdots i.don { background: var(--sage); }
-.exdots i.cur { background: var(--coral); box-shadow: 0 0 0 3px rgba(255,107,74,.22); }
-.exdots i.skp { background: transparent; border: 1.5px dashed var(--line); box-sizing: border-box; }
 
 /* ===== Napív execution card (spec §4.5) ===== */
 .donebtn { margin-top: 16px; width: 100%; background: linear-gradient(135deg, var(--cta-g1), var(--cta-g2)); color: #fff; border-radius: 999px; padding: 16px 0; text-align: center; font-weight: 800; font-size: 16px; border: 0; cursor: pointer; font-family: inherit; box-shadow: 0 10px 24px color-mix(in srgb, var(--cta-g2) 35%, transparent), inset 0 1px 0 rgba(255,255,255,.25); }
@@ -3131,7 +2957,6 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .isl-openhead { font-size: 10.5px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase;
                 color: var(--sub); text-align: left; flex: none; }
 .isl-anchor-rows { margin-top: 18px; text-align: left; }
-.isl-anchor-rows .itemrow { margin-bottom: 6px; }
 /* night: light-on-dark text pairs (theme-invariant dark surface) */
 .isl-night .isl-hero-v { color: #F5EFE6; }
 .isl-night .isl-hero-u, .isl-night .isl-hero-sub { color: #9c92b8; }
@@ -3144,26 +2969,14 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
               margin: 14px 2px 6px; }
 .isl-grouph-go { font-size: 10px; letter-spacing: 0; text-transform: none; font-weight: 700;
                  color: var(--sub); text-decoration: none; }
-.isl-l1 .itemrow { margin-bottom: 6px; }
 .isl-dayxp { text-align: center; font-size: 12px; font-weight: 700; color: var(--success-hover);
              padding: 8px 0; }
 .isl-l1-close { display: block; width: 100%; text-align: center; font-size: 12px; font-weight: 700;
                 color: var(--sub); background: none; border: none; font-family: inherit;
                 cursor: pointer; padding: 10px 0 2px; }
-/* row entrance stagger — 70ms ladder, open-ended tail so long lists stay bounded */
-:where(.isl-l1) .itemrow { animation: isl-rowin .35s ease both; }
-:where(.isl-l1) .itemrow:where(:nth-child(2)) { animation-delay: 70ms; }
-:where(.isl-l1) .itemrow:where(:nth-child(3)) { animation-delay: 140ms; }
-:where(.isl-l1) .itemrow:where(:nth-child(4)) { animation-delay: 210ms; }
-:where(.isl-l1) .itemrow:where(:nth-child(5)) { animation-delay: 280ms; }
-:where(.isl-l1) .itemrow:where(:nth-child(6)) { animation-delay: 350ms; }
-:where(.isl-l1) .itemrow:where(:nth-child(7)) { animation-delay: 420ms; }
-:where(.isl-l1) .itemrow:where(:nth-child(n+8)) { animation-delay: 490ms; }
-@keyframes isl-rowin { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
   :where(.isl.isl-big) .isl-blob { animation: none; }
   :where(.isl:not(.isl-big)) { animation: none; }
-  :where(.isl-l1) .itemrow { animation: none; }
   .isl, .isl-cap, .isl-bigview, .sky-islands { transition: none; }
 }
 
@@ -3412,23 +3225,6 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
    / .anchor / .mm (macro dots) — plus the standalone .misstag (further up this file) and
    .coachline/.cskel below. The base .zcard/.zh/.zn/.zk/.zrow/.zt/.a/.b rules above survive. */
 
-/* AI score chip */
-.aiscore { display: inline-flex; align-items: center; gap: 5px; border: 0; cursor: pointer; font: inherit;
-  border-radius: 999px; padding: 4px 9px 4px 5px; font-size: 10px; font-weight: 800; flex-shrink: 0; }
-.aiscore .rg { width: 16px; height: 16px; flex-shrink: 0; }
-.aiscore.s-hi { background: var(--wash-sage); color: var(--sage-deep); }
-.aiscore.s-md { background: var(--wash-amber); color: var(--amber-deep); }
-.aiscore.s-lo { background: var(--wash-gym); color: var(--tag-gym); }
-
-@media (prefers-reduced-motion: no-preference) {
-  .aiscore { animation: np-chip-pop .5s var(--np-ease-spring); }
-}
-@keyframes np-chip-pop {
-  0% { transform: scale(.75); opacity: .4; }
-  70% { transform: scale(1.12); }
-  100% { transform: scale(1); opacity: 1; }
-}
-
 /* ===== DS P2 primitives (mezo-setx.3) — Spinner · CoachBubble · AdherenceBar · Stepper · NumberInput ===== */
 
 /* Spinner — fallback loader (Skeleton is canonical for >2s waits) */
@@ -3620,19 +3416,6 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   transition: transform var(--duration-fast) var(--ease-out);
 }
 .pgact:active { transform: scale(0.97); }
-
-/* Mai's mezociklus entry — the DS canonical nav row (mezo-setx.6.2): 56px min,
-   body-size label, trailing chevron. Replaces a 13px text row with a bare "→". */
-.mesorow {
-  display: flex; align-items: center; gap: var(--sp-3);
-  width: 100%; min-height: 56px;
-  padding: 12px 16px;
-  text-align: left;
-  font: inherit;
-  transition: background var(--duration-fast) var(--ease-out);
-}
-.mesorow:active { background: var(--surface-recess); }
-.mesorow-tx { flex: 1; min-width: 0; font-size: 16px; color: var(--text-primary); }
 
 /* StatStrip sub-caption (mezo-setx.6.4) — the optional third line under a cell's
    label, for cells that need to say what the value is measured against
@@ -6363,13 +6146,9 @@ button.mz-tile:active { transform: scale(0.96); }
    -pochip reference strips) is gone with its last consumer. Only the header
    centering below survives — the new WorkoutCard/wo-* family owns the rest. ── */
 
-/* header: the title button centers, the exercise dots got their own row */
+/* header: the title button centers */
 .wkx-tt { flex: 1; text-align: center; }
 .wk-top .wkx-tt .t1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.exdots { margin-left: 0; justify-content: center; padding: 8px 24px 0; }
-.exdots button { border: 0; background: none; padding: 4px; line-height: 0; cursor: pointer; }
-/* the dot itself is an inline <i> — it needs a box to take its 8px square */
-.exdots i { display: block; }
 
 /* nested in a strip body the banner/table drop their own frame + gutters */
 .mz-colbody .pobanner { margin: 0; padding: 0; border: 0; background: none; }
@@ -12177,37 +11956,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .body-map-shape { transition: opacity 0.3s ease; }
 @media (prefers-reduced-motion: reduce) { .body-map-shape { transition: none; } }
 
-/* ── train mai (mezo-88iwa.6 · visszaöltöztetve mezo-ju4j6.11) ─────────────
-   A Mai (TrainTodayPage) Titán arca: a nap posztere a belső indító-gombbal, a „Vagy
-   inkább" páros, a napi mozgás kcal-hozzájárulása és az izomhatás-kártya. Jóváhagyott
-   vizuális referencia a prototípus:
-   docs/design_2.0/prototypes/companion-titanium/train-pages.css `.tr-day` (:79),
-   `.tr-start` (:9), `.tr-energy` (:112) és `.tr-mus*` (:125) családjai.
-
-   AMIT ÁTVESZÜNK 1:1: a poszter-geometria (rádiusz, belső ritmus, státusz-pilula
-   pozíciója, a kártyák anatómiája), a kétrétegű terv/megszolgált sáv `--w`
-   custom-property mechanikája.
-   AMIT NEM: a prototípus beégetett sötét (#ffffffXX) hexeit és a runtime
-   `var(--domain-color)`-t — a ház a MEGLÉVŐ edzés-tónus tokeneket használja
-   (`--tag-gym`/`--wash-gym`, ugyanaz, amit a `.todaycard-gym` ma is visel, lásd :2539),
-   a sikeres/figyelmeztető állapotokhoz pedig a ház `--sage`/`--sage-deep` és
-   `--amber`/`--amber-deep` szemantikus tokenjeit — így a lap a világos ÉS a sötét
-   témában is olvasható marad, `.titan-dark` hatókör-felülírás nélkül. KIVÉTEL a hajszálvékony
-   kereteknél: lásd THE HAIRLINE RULING-ot lejjebb (:14281) — a `.tr-pills span` és rokonai
-   ott a prototípus saját literáljára mennek vissza.
-
-   A `.tr-start` a prototípus EGY stílusát HÁROM állapotra bontja (owner-döntés,
-   task-3 brief): `.is-go` (zöld, friss indítás), `.is-resume` (borostyán,
-   folytatás), `.is-review` (csendes, már kész — az eredmény megtekintése).
-
-   Full-bleed (`.tr-day`): a `.mz-page`/`.night` mintát követi — negatív
-   `margin-inline: calc(-1 * var(--screen-gutter))`, a tartalom a saját belső
-   paddingjával (`var(--screen-gutter)` + kiegészítés) tartja a rést a telefon
-   szélétől. Nem új negatív margó-recept, a meglévő egyet visszük tovább.
-
-   Csökkentett mozgás: a család a `.rise`/`EntranceGroup` meglévő belépő-idiómáját
-   használja (nincs saját keyframe); a `.tr-mus-track` sávjai a `mz-play`/`rise`
-   ugyanazon egyszeri-lépés mintáját öröklik, mint a többi sáv a fájlban. */
+/* ── train mai (mezo-88iwa.6 · visszaöltöztetve mezo-ju4j6.11 · takarítva U11, mezo-dr0h8) ──
+   A Mai (TrainTodayPage) az üveg U4 óta (mezo-me75u.4) CSAK a `.trm-*` családot rendereli; a régi
+   poszter (`.tr-day`), az indító (`.tr-start`), a „Vagy inkább" páros (`.tr-alt`), az energia-
+   (`.tr-energy`) és az izomhatás-kártya (`.tr-mus`) szabályai a U11 holt-CSS söprésben mentek ki.
+   Ami marad: a `.tr-eyebrow`, amit a terv-, sablon-, gyakorlat- és riport-oldalak ma is viselnek. */
 
 /* Az eyebrow-sor: `.overline` ütközne a Tailwind v4 text-decoration:overline
    utility-jével (a Mai eyebrow-k szó szerinti áthúzott vonalként, 14px testszövegként
@@ -12215,209 +11968,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    mintáját követve (:12570). */
 .tr-eyebrow { display: block; font-size: 9.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--mz-cell-coral-ink); }
 
-/* — a nap posztere: van-e ma edzés, és mi az —
-   Surfaces parity (mezo-fsz2r Task 3, audit §20.1 + §20.2): the prototype's poster is a
-   FLOATING ROUNDED CARD (train-pages.css:79) — `border: 1px solid #ffffff14`,
-   `border-radius: 26px`, no shadow, a translucent `#ffffff0f → #ffffff05` body over the
-   dark ground. The port turned it into a full-bleed header band (radius 0, a
-   `border-bottom` rule, `var(--shadow-sm)`, an opaque `--surface-card` body). Restored.
-   The inset: the poster is no longer full-bleed, so it needs a real side margin. The
-   prototype's own `margin: 4px 20px 14px` is measured against a container that ALSO pays
-   20px (`.demo-pages`), which the house has no counterpart for; what matters here is that
-   the poster lands on the SAME rail as every other Mai section, and that rail is
-   `--screen-gutter + 6px` (the `0 6px` wrappers `.tr-energy`/`.tr-mus`/`.tr-alt` sit in).
-   Hence the 6px — measured, not guessed: the poster and the sections below it now share
-   one edge. See the Task 3 report for the prototype's own 40px reading. */
-.tr-day {
-  position: relative;
-  display: block;
-  overflow: hidden;
-  margin: 4px 0 14px;
-  margin-inline: 6px;
-  padding: 20px 20px 18px;
-  --tr-accent: var(--dv-coral);
-  border: 0.5px solid rgba(43, 33, 24, 0.06);
-  border-radius: 22px;
-  box-shadow: var(--mz-shadow-coral);
-  background: linear-gradient(150deg, color-mix(in srgb, var(--tr-accent) 16%, var(--surface-card)),
-    color-mix(in srgb, var(--tr-accent) 5%, var(--surface-page)));
-}
-/* The live state is a BORDER RING in the prototype, not an inset shadow on a band. */
-.tr-day.is-live {
-  border-color: var(--dv-coral);
-}
-.tr-day.is-done {
-  background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage);
-}
-.tr-day .tr-eyebrow { color: var(--mz-cell-coral-ink); letter-spacing: .16em; }
-.tr-day h2 {
-  font-family: var(--ff-display); font-size: 27px; line-height: 1.06; font-weight: 700;
-  letter-spacing: -.02em; margin: 8px 0 6px; max-width: 70%; color: var(--text-primary);
-}
-.tr-day p { margin: 0; font-size: 13px; color: var(--text-secondary); max-width: 70%; }
-.tr-day-status {
-  position: absolute; top: 16px; right: 16px;
-  font-size: 9px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase;
-  padding: 4px 9px; border-radius: 999px; color: var(--mz-cell-coral-ink);
-  background: var(--mz-cell-coral-bg);
-}
-/* A csillagkép: egy kis MuscleChip a nap mai terhelésének minden érintett régiójából —
-   nem egy nagy ikon, hanem egy sor apró, mert a poszter a NAPOT mutatja, nem egy gyakorlatot. */
-.tr-day-constellation { position: relative; display: flex; gap: 6px; margin-top: 14px; flex-wrap: wrap; }
-.tr-day .tr-pills { position: relative; margin-top: 16px; }
-/* Inside the poster the first pill is QUIET again — the prototype cancels the domain fill
-   there (train-pages.css:99) because the poster already carries the domain wash; a filled
-   chip on top of it would read as a second, louder badge. The port kept only the loud
-   `:first-child` rule, so production's poster pill stayed domain-filled
-   (mezo-fsz2r Task 3 finding, adjudicated and ported in the Task 4 sweep). */
-.tr-day .tr-pills span:first-child { color: var(--sub); border: 0; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle); }
-
-/* A chip-sor: a poszter és a lap más pontjai is megoszthatják (pl. a kcal-idő chip).
-   Translucent in the prototype (`#ffffff08` fill, `#ffffff17` border, train-pages.css:72):
-   the chips are quiet washes ON the poster, not opaque cards floating over it
-   (mezo-fsz2r Task 3, audit §20.1). */
-.tr-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.tr-pills span {
-  font-size: 11px; font-weight: 600; letter-spacing: .04em; padding: 4px 11px; border-radius: 999px;
-  color: var(--sub); border: 0; background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
-}
-.tr-pills span:first-child {
-  color: var(--mz-cell-coral-ink); border: 0; box-shadow: none;
-  background: var(--mz-cell-coral-bg);
-}
-
-/* — az egy nagy mozdulat: indítás / folytatás / eredmény, a poszter belsejében —
-   Surfaces parity (mezo-fsz2r Task 3, audit §20.2): the prototype's CTA is `border-radius:
-   22px` and carries its own domain-gradient body plus a TWO-layer shadow — the domain-tinted
-   lift AND `0 2px 0 #ffffff40 inset`, the top inner highlight that makes the chip read as a
-   pressed metal key (train-pages.css:10). The port dropped the highlight and rounded to 20px.
-   The base background is the prototype's own declaration back (every rendered instance
-   carries `.is-go`/`.is-resume`/`.is-review`, so it is the default, not the painted layer). */
-.tr-start {
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  width: 100%; margin-top: 16px; padding: 15px 18px; border: 0; border-radius: 22px;
-  font: inherit; text-align: center; cursor: pointer;
-  color: #fff;
-  background: var(--gradient-cta);
-  box-shadow: var(--shadow-cta);
-  transition: transform var(--duration-fast, .15s) var(--ease-out, ease);
-}
-.tr-start:active { transform: scale(0.98); }
-.tr-start-art { width: 26px; height: 26px; display: grid; place-items: center; flex: 0 0 auto; }
-.tr-start-art .icon, .tr-start-art svg { width: 26px; height: 26px; }
-.tr-start strong { display: block; font-size: 16px; font-weight: 700; }
-.tr-start small { display: block; margin-top: 2px; font-size: 12px; opacity: .72; }
-
-/* The three tokenised states keep their own hues, but each regains the prototype's inner
-   top highlight as its second shadow layer (mezo-fsz2r Task 3). */
-.tr-start.is-go {
-  color: #fff;
-  background: var(--gradient-cta);
-  box-shadow: var(--shadow-cta);
-}
-/* A folytatás borostyán marad — ott a hue ÁLLAPOT (félbehagyott edzés), nem bőr. */
-.tr-start.is-resume {
-  color: var(--ink);
-  background: linear-gradient(150deg, color-mix(in srgb, var(--dv-amber) 30%, var(--surface-card)),
-    color-mix(in srgb, var(--dv-amber) 10%, var(--surface-page)));
-  box-shadow: var(--mz-shadow-gold);
-}
-/* The reviewed state is the prototype's `.tr-start.is-done` (train-pages.css:16): a quiet
-   graphite key with a BLACK lift and a fainter inner top highlight — `0 12px 26px -18px #000,
-   0 1px 0 #ffffff14 inset`. The port left it on `var(--shadow-sm)`, which made it the one
-   state without the highlight once `.is-go`/`.is-resume` got theirs back (mezo-fsz2r Task 3
-   finding, adjudicated in the Task 4 sweep). The house border stays: production's own quiet
-   key needs an edge where the prototype's darker `#1a1b26` body supplied one. */
-.tr-start.is-review {
-  color: var(--ink);
-  background: var(--surface-1);
-  border: 0;
-  box-shadow: inset 0 0 0 1px var(--border-subtle);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tr-start { transition: none; }
-}
-
-/* — „Vagy inkább": a két másik ajtó a poszter alatt — */
-.tr-alt { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 16px; }
-.tr-alt button {
-  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px;
-  padding: 11px 12px; border-radius: 18px; border: 0;
-  background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
-  cursor: pointer; font: inherit; text-align: left;
-  color: var(--text-primary);
-}
-.tr-alt button small {
-  display: block; font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
-  color: var(--text-tertiary);
-}
-.tr-alt button strong { display: block; margin-top: 2px; font-size: 13px; font-weight: 600; }
-
-/* — a mai kerethez: a nap mozgásának kcal-hozzájárulása, becslésként kimondva —
-   Surfaces parity (mezo-fsz2r Task 3, audit §20.2): `.tr-energy` has NO box in the
-   prototype (train-pages.css:112 is layout only) — the box belonged to `.tr-card`, the
-   wrapper this port never rendered, and the port moved its fill/border/radius/shadow onto
-   the section itself, turning two transparent stretches of the page into two filled cards.
-   They go back to transparent; giving the sections a real `.tr-card` parent is CONTENT
-   work (mezo-edg42), not a surface fix. */
-.tr-energy {
-  margin: 0 0 14px; padding: 16px 16px 14px;
-  border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 22px;
-  background: var(--mz-wash-white); box-shadow: var(--mz-shadow);
-}
-.tr-energy .tr-eyebrow { color: var(--mz-cell-coral-ink); letter-spacing: .16em; }
-.tr-energy h3 { margin: 6px 0 12px; font-family: var(--ff-display); font-size: 24px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); }
-.tr-energy-main { display: flex; align-items: baseline; gap: 2px; color: var(--ink); }
-.tr-energy-main b { font-family: var(--ff-display); font-size: 24px; font-weight: 200; color: var(--faint); }
-.tr-energy-main strong {
-  font-family: var(--ff-display); font-size: 40px; font-weight: 200; letter-spacing: -.04em;
-  font-variant-numeric: tabular-nums;
-}
-.tr-energy-main small { font-size: 18px; font-weight: 300; color: var(--faint); margin-left: 6px; }
-.tr-energy-split { display: grid; gap: 4px; margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
-.tr-energy-split span { display: flex; align-items: center; gap: 7px; }
-.tr-energy-split i { width: 9px; height: 9px; border-radius: 3px; }
-.tr-energy-split i.done { background: var(--dv-coral); }
-.tr-energy-split i.plan { background: color-mix(in srgb, var(--dv-coral) 26%, transparent); }
-/* Őszinte üresség: nincs testsúly-adat → egy mondat, sosem hamis 0 kcal. */
-.tr-energy-empty { margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-secondary); }
-.tr-energy-note { margin: 12px 0 0; font-size: 11px; color: var(--text-tertiary); }
-
-/* — hatás az izomzatra: a nap terhelése régiónként, szavakban —
-   Same as `.tr-energy` above: no box in the prototype (train-pages.css:125). */
-.tr-mus {
-  margin: 0 0 14px; padding: 16px 16px 14px;
-  border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 22px;
-  background: var(--mz-wash-white); box-shadow: var(--mz-shadow);
-}
-.tr-mus .tr-eyebrow { color: var(--mz-cell-coral-ink); letter-spacing: .16em; }
-.tr-mus h3 { margin: 6px 0 14px; font-family: var(--ff-display); font-size: 24px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); }
-.tr-mus-row {
-  display: grid; grid-template-columns: 30px 68px 1fr auto; align-items: center; gap: 10px;
-  margin-top: 10px;
-}
-.tr-mus-row:first-of-type { margin-top: 0; }
-.tr-mus-art { width: 30px; height: 30px; display: grid; place-items: center; }
-.tr-mus-name { font-family: var(--ff-display); font-size: 13px; font-weight: 600; color: var(--ink); }
-/* Kétrétegű sáv: a halvány a TERVEZETT, a világos/fényes a MÁR MEGSZOLGÁLT terhelés —
-   ugyanaz a `--w` szélesség-mechanika, mint a prototípusban (`.tr-mus-track i { width: var(--w) }`),
-   `--mus-color` pedig soronként a `muscleColors.ts` régió-tokenje (inline style, mint a `--w`). */
-.tr-mus-track {
-  position: relative; height: 8px; border-radius: 999px; background: var(--surface-recess);
-  overflow: hidden;
-}
-.tr-mus-track i { position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 999px; }
-.tr-mus-track i.plan {
-  background: color-mix(in srgb, var(--mus-color, var(--tag-gym)) 28%, transparent);
-}
-.tr-mus-track i.done {
-  background: var(--mus-color, var(--dv-coral));
-}
-.tr-mus-word {
-  font-size: 11px; color: var(--text-tertiary); justify-self: end; min-width: 74px; text-align: right;
-}
-.tr-mus-note { margin: 12px 0 0; font-size: 11px; color: var(--text-tertiary); }
 /* ── /train mai ────────────────────────────────────────────────────────────── */
 
 /* ── glassbox (mezo-88iwa.13, T12 Task 2 · re-dressed mezo-ju4j6.5) ──────────

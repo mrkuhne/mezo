@@ -1814,7 +1814,6 @@ export type NotificationSection = 'prose' | 'reminder' | 'brain'
 
 export interface NotificationCategoryMeta {
   label: string
-  emoji: string
   section: NotificationSection
   /** A static, honest description of WHEN the category fires — never a live clock time (the
    *  row is presentational and takes no @/data/* hook, so it cannot read anchors itself). */
@@ -1831,94 +1830,94 @@ export interface NotificationCategoryMeta {
  *  section 1 for per-category copy) — the UI must never hardcode this inline. */
 export const NOTIFICATION_CATEGORY_META: Record<NotificationCategoryKey, NotificationCategoryMeta> = {
   briefing: {
-    label: 'Reggeli briefing', emoji: '☀️', section: 'prose',
+    label: 'Reggeli briefing', section: 'prose',
     description: 'Ébredéskor, a napi tervvel', showLeadChip: false, iconBg: '--wash-sport',
   },
   midday: {
-    label: 'Déli jegyzet', emoji: '✨', section: 'prose',
+    label: 'Déli jegyzet', section: 'prose',
     description: 'Dél körül, egy rövid állapotfrissítés', showLeadChip: false, iconBg: '--wash-sport',
   },
   weekly_review: {
-    label: 'Heti elemzés', emoji: '📖', section: 'prose',
+    label: 'Heti elemzés', section: 'prose',
     description: 'Hétfő reggel 10:00', showLeadChip: false, iconBg: '--wash-sport',
   },
   memoir: {
-    label: 'Heti összefoglaló', emoji: '📔', section: 'prose',
+    label: 'Heti összefoglaló', section: 'prose',
     description: 'Vasárnap este 19:00', showLeadChip: false, iconBg: '--wash-sport',
   },
   gym: {
-    label: 'Edzés előtt', emoji: '🏋️', section: 'reminder',
+    label: 'Edzés előtt', section: 'reminder',
     description: 'A mai edzés kezdete előtt', showLeadChip: true, iconBg: '--wash-gym',
   },
   medication: {
-    label: 'Gyógyszer beadás', emoji: '💉', section: 'reminder',
+    label: 'Gyógyszer beadás', section: 'reminder',
     description: 'Injekciós napon, reggel', showLeadChip: false, iconBg: '--wash-amber',
   },
   ritual: {
-    label: 'Napzárás', emoji: '✨', section: 'reminder',
+    label: 'Napzárás', section: 'reminder',
     description: 'A napzárás-ablak nyílásakor', showLeadChip: false, iconBg: '--wash-lav',
   },
   lights_out: {
-    label: 'Villanyoltás', emoji: '🌙', section: 'reminder',
+    label: 'Villanyoltás', section: 'reminder',
     description: 'Az esti alvás-horgonynál', showLeadChip: false, iconBg: '--wash-lav',
   },
   wind_down: {
-    label: 'Lecsendesítés', emoji: '🫖', section: 'reminder',
+    label: 'Lecsendesítés', section: 'reminder',
     description: 'A napzárás-ablak előtti csendes szakasz kezdetén', showLeadChip: false, iconBg: '--wash-lav',
   },
   checkin: {
-    label: 'Check-in', emoji: '🫀', section: 'reminder',
+    label: 'Check-in', section: 'reminder',
     description: '06:30 · 10:00 · 14:00 · 20:00', showLeadChip: false, iconBg: '--wash-run',
   },
   fuel_slot: {
-    label: 'Fuel & stack', emoji: '💊', section: 'reminder',
+    label: 'Fuel & stack', section: 'reminder',
     description: 'Minden fuel/stack slotnál', showLeadChip: false, iconBg: '--wash-sage',
   },
   evening: {
-    label: 'Napzárás', emoji: '🌇', section: 'prose',
+    label: 'Napzárás', section: 'prose',
     description: 'Esti záró üzenet a naptól.', showLeadChip: false, iconBg: '--wash-sport',
   },
   sleep_reaction: {
-    label: 'Alvás-reakció', emoji: '💤', section: 'prose',
+    label: 'Alvás-reakció', section: 'prose',
     description: 'Üzenet az alvás rögzítése után.', showLeadChip: false, iconBg: '--wash-sport',
   },
   weight_reaction: {
-    label: 'Súly-reakció', emoji: '⚖️', section: 'prose',
+    label: 'Súly-reakció', section: 'prose',
     description: 'Üzenet a reggeli mérés után.', showLeadChip: false, iconBg: '--wash-sport',
   },
   pattern: {
-    label: 'Minták', emoji: '🧩', section: 'brain',
+    label: 'Minták', section: 'brain',
     description: 'Új minta döntésre, jel-erősödés — reggel, ébredés után', showLeadChip: false, iconBg: '--wash-lav',
   },
   knowledge: {
-    label: 'Tudástár', emoji: '📚', section: 'brain',
+    label: 'Tudástár', section: 'brain',
     description: 'Új tény jóváhagyásra, tudás-megerősödés', showLeadChip: false, iconBg: '--wash-sage',
   },
   prediction: {
-    label: 'Előrejelzések', emoji: '🔮', section: 'brain',
+    label: 'Előrejelzések', section: 'brain',
     description: 'Új predikció, bevált / nem vált be', showLeadChip: false, iconBg: '--wash-sport',
   },
   experiment: {
-    label: 'Kísérletek', emoji: '🧪', section: 'brain',
+    label: 'Kísérletek', section: 'brain',
     description: 'Új javaslat, kísérlet lezárult', showLeadChip: false, iconBg: '--wash-amber',
   },
   challenge: {
-    label: 'Kihívások', emoji: '🏆', section: 'brain',
+    label: 'Kihívások', section: 'brain',
     description: 'Edzés-kihívás javaslat és eredmény', showLeadChip: false, iconBg: '--wash-gym',
   },
   memory: {
-    label: 'Memória', emoji: '🗂', section: 'brain',
+    label: 'Memória', section: 'brain',
     description: 'Napi összefoglaló elkészült — ébredés után', showLeadChip: false, iconBg: '--wash-run',
   },
   decision_review: {
-    label: 'Döntés visszanézés', emoji: '⚖️', section: 'brain',
+    label: 'Döntés visszanézés', section: 'brain',
     description: 'Amikor egy döntésed esedékes visszanézni', showLeadChip: false, iconBg: '--wash-lav',
   },
   // W5.2 (mezo-b3pp.19): event-driven — a flag raise választja ki, a kártya SAJÁT generálási
   // perce a horgony, csendes órák esetén eltolva (sosem eldobva). Ezért nincs lead-chip, és a
   // leírás sem ígér konkrét időt (lásd notificationForecast.ts `case 'intervention'`).
   intervention: {
-    label: 'Közbelépések', emoji: '🎯', section: 'brain',
+    label: 'Közbelépések', section: 'brain',
     description: 'Amikor egy jelzés közbelépést indokol', showLeadChip: false, iconBg: '--wash-amber',
   },
 }
