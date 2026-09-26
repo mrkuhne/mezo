@@ -1,7 +1,8 @@
 // A napom · one dimension as a banded row (prototype uveg-napod-body.html layout 2,
 // `dimsToday()` / `dimsClosed()`, owner OK 2026-09-24). A lit well with the dimension's 3D
 // icon, the label, the facts on one ellipsised line, a glowing bar and the end value.
-//   today   — a status word (KÉSZ / ÚTON / NYITVA), no weight; not interactive.
+//   today   — a status word (KÉSZ / ÚTON / NYITVA), no weight; not interactive, its fact chips
+//             (and a note, if the Mezo left one) always shown (owner 2026-09-26, mezo-7izrx).
 //   scored  — a `<button aria-expanded>`, OPEN by default (owner 2026-09-26, mezo-7izrx): the
 //             fact chips and the Mezo's note show up front; a tap folds them away.
 //   plain   — a thin/empty closed day: value only, no status word, no bar.
@@ -61,6 +62,9 @@ export function NapomDimensionRow({ dimension, mode, goalTick = false, fresh = f
   const factLine = factLineOf(dimension, mode)
   // An open (NYITVA / nincs adat) row is free space: no bar, no goal tick (prototype `.drow.open`).
   const showBar = !dashed && (mode === 'today' || mode === 'scored')
+  // The detail block: always on a live day, the tap-to-fold state on a scored one — and only
+  // when there is something to show (a no-data row must not grow an empty bordered box).
+  const detailed = (mode === 'today' || (mode === 'scored' && open)) && (facts.length > 0 || note != null)
   const word = mode === 'today' ? TODAY_WORD[status] : mode === 'scored' ? (open ? 'BEZÁR' : 'MEZO ›') : null
 
   const body = (
@@ -86,7 +90,7 @@ export function NapomDimensionRow({ dimension, mode, goalTick = false, fresh = f
         <b>{mode === 'loading' ? '' : (score ?? '–')}</b>
         {word && <span className={cn('napom-st', mode === 'today' && status === 'DONE' && 'is-ok')}>{word}</span>}
       </span>
-      {open && (
+      {detailed && (
         <span className="napom-dmore">
           {facts.length > 0 && (
             <span className="napom-dchips">
@@ -99,7 +103,7 @@ export function NapomDimensionRow({ dimension, mode, goalTick = false, fresh = f
     </>
   )
 
-  const className = cn('napom-drow rise', dashed ? 'is-open' : 'glass', open && 'is-expanded', fresh && 'is-fresh')
+  const className = cn('napom-drow rise', dashed ? 'is-open' : 'glass', detailed && 'is-expanded', fresh && 'is-fresh')
   const style = { '--c': meta.color, '--i': i } as CSSProperties
   if (mode !== 'scored') return <div className={className} style={style}>{body}</div>
   return (
