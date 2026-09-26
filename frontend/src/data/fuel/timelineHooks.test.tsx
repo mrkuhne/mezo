@@ -77,7 +77,7 @@ describe('deriveBlocks — sport block label reflects the session sport (mezo-rh
 
 // A stacked day — a recurring slot + a dated one-off event (mezo-e1sp) — must yield one
 // sport block per today-session; the old single `.find` silently dropped every session
-// after the first from the calorie budget (activityKcal) and the meal windows.
+// after the first from the calorie budget (the planned activity estimate) and the meal windows.
 describe('deriveBlocks — every today-session becomes a block (mezo-e1sp)', () => {
   it('emits one sport block per today-session on a stacked day', () => {
     const schedule: SportSchedule = {

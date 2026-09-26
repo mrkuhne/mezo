@@ -14,8 +14,10 @@ const supplement = (time: string, done = false): FuelSlot => ({
 })
 const workout = (time: string): FuelSlot => ({ time, kind: 'workout', label: 'Pull Day', state: 'pending', duration: 90 })
 
-const zones = (slots: FuelSlot[], blocks: PlannerBlock[] = [], weightKg = 82) =>
-  buildDayZones({ slots, wake: WAKE, bed: BED, blocks, weightKg })
+// Net model (mezo-32m82): rest 80 kcal/h = BMR 1920 / 24.
+const REST = 1920 / 24
+const zones = (slots: FuelSlot[], blocks: PlannerBlock[] = [], restPerHour: number | null = REST) =>
+  buildDayZones({ slots, wake: WAKE, bed: BED, blocks, restPerHour })
 
 test('slotRole classifies by item-presence first, then kind', () => {
   // A protocol slot can carry kind 'snack' (PROTOCOL_KIND['pre-fuel']) — items must win,
@@ -60,11 +62,21 @@ test('zone state: ahead otherwise', () => {
   expect(zones([meal('19:30')])[0].state).toBe('ahead')
 })
 
-test('burnKcal reuses blockKcal, matched to its block by exact time', () => {
-  // MET gym 6.0 × 82 kg × 1.5 h = 738
+test('burnKcal is the net activity-energy estimate, matched to its block by exact time', () => {
+  // net gym (3.5 − 1) × 80 kcal/h × 1.5 h = 300
   const result = zones([workout('17:00')], [{ kind: 'gym', time: '17:00', durationMin: 90, label: 'Pull Day' }])
-  expect(result[0].burnKcal).toBe(738)
+  expect(result[0].burnKcal).toBe((3.5 - 1) * REST * 1.5)
   expect(result[0].hasMeals).toBe(false)
+})
+
+test('a sport block burns on its own sport row (volleyball moderate)', () => {
+  const result = zones([workout('17:00')], [{ kind: 'sport', sport: 'volleyball', time: '17:00', durationMin: 120, label: 'Röplabda' }])
+  expect(result[0].burnKcal).toBe((4 - 1) * REST * 2)
+})
+
+test('unknown rest energy burns nothing rather than a guess', () => {
+  const result = zones([workout('17:00')], [{ kind: 'gym', time: '17:00', durationMin: 90, label: 'Pull Day' }], null)
+  expect(result[0].burnKcal).toBe(0)
 })
 
 test('an activity slot with no matching block contributes no burn', () => {
@@ -84,7 +96,7 @@ test('a pre-wake slot clamps into the first zone instead of being dropped', () =
 
 test('with a past-midnight bedtime a 00:30 slot lands in the evening zone', () => {
   const result = buildDayZones({
-    slots: [meal('09:00'), meal('00:30')], wake: '06:45', bed: '01:00', blocks: [], weightKg: 80,
+    slots: [meal('09:00'), meal('00:30')], wake: '06:45', bed: '01:00', blocks: [], restPerHour: REST,
   })
   expect(result.map(z => z.key)).toEqual(['morning', 'evening'])
 })
@@ -96,7 +108,7 @@ test('with a past-midnight bedtime a 00:30 slot lands in the evening zone', () =
 // `toMin(bed) <= toMin(wake)` (daySpan/unwrapDayMinute) instead of re-deriving from bedMin.
 test('a midnight-EXACT bedtime (00:00) still unwraps a 00:15 slot into the evening zone', () => {
   const result = buildDayZones({
-    slots: [meal('09:00'), meal('00:15')], wake: '06:45', bed: '00:00', blocks: [], weightKg: 80,
+    slots: [meal('09:00'), meal('00:15')], wake: '06:45', bed: '00:00', blocks: [], restPerHour: REST,
   })
   expect(result.map(z => z.key)).toEqual(['morning', 'evening'])
 })

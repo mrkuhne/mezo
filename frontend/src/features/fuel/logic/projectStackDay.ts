@@ -20,6 +20,7 @@ import { STACK_ZONE_LABEL, STACK_ZONE_ORDER } from '@/data/fuel/stackZones'
 import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
 import type { Intake } from '@/data/fuel/fuelApi'
 import type { ProtocolOccurrence, StackPlacementSource, StackZoneKey, SupplementStashItem } from '@/data/types'
+import { restKcalPerHour } from '@/data/train/activityEnergy'
 
 export interface StackDayEntry {
   occurrenceId: string
@@ -102,7 +103,7 @@ export function projectStackDay(input: StackDayInput): StackDaySlot[] {
   // ≥2 distinct-time blocks → "which edzés?" is ambiguous: pre_workout may split into two slots
   // (stim-free → last block) and every pre_workout anchorNote names its block (mezo-j6c9).
   const multiBlock = hasTraining && sorted.length > 1 && toMin(last.time) !== toMin(first.time)
-  const windows = placeWindows(wake, bed, mealsPerDay, blocks, input.weightKg ?? 0)
+  const windows = placeWindows(wake, bed, mealsPerDay, blocks, restKcalPerHour(null, input.weightKg ?? 0))
   const windowTime = (slot: 'breakfast' | 'lunch' | 'dinner') => {
     const w = windows.find(x => x.slotKey === slot && x.kind === 'meal')
     return w ? toHHmm(Math.round(w.time)) : null

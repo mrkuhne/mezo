@@ -59,11 +59,12 @@ export function deriveBlocks(
   const plannedSport: PlannerBlock[] = (sport.schedule?.volleyball.sessions.filter(
     s => s.today && s.time && !isSportSlotSkipped(skips, todayIdx(), s.time, todayIso),
   ) ?? []).map(vb => (
-    { kind: 'sport', time: vb.time, durationMin: vb.duration ?? null, label: SPORT_TITLES[sportOf(vb)] }
+    { kind: 'sport', sport: sportOf(vb), time: vb.time, durationMin: vb.duration ?? null, label: SPORT_TITLES[sportOf(vb)] }
   ))
   blocks.push(...resolveSportBlocks(plannedSport, sessions, todayIso))
   // Run: today's prescribed session in the active block's current week (needs a plan time).
-  // Interval sessions have no single continuous duration → null (DEFAULT_BLOCK_MIN drives snapping).
+  // Interval sessions have no single continuous duration → null (DEFAULT_BLOCK_MIN drives snapping,
+  // DEFAULT_RUN_MIN the net burn estimate).
   const run = runSessionsForDay(activeRunningBlock, todayIdx())[0]
   if (run?.timeOfDay) blocks.push({ kind: 'run', time: run.timeOfDay, durationMin: null, label: run.label })
   return blocks
@@ -109,6 +110,7 @@ export function deriveLoggedBlocks(input: {
     if (s.isoDate !== todayIso || !s.time) continue
     blocks.push({
       kind: 'sport',
+      sport: sportOf({ sport: s.sport as SportKind }),
       time: s.time,
       durationMin: s.duration ?? null,
       label: SPORT_TITLES[sportOf({ sport: s.sport as SportKind })],
@@ -149,6 +151,7 @@ function resolveSportBlocks(planned: PlannerBlock[], sessions: SportSession[], t
     if (plan) unmatched.splice(unmatched.indexOf(plan), 1)
     blocks.push({
       kind: 'sport',
+      sport: sportOf({ sport: s.sport as SportKind }),
       time: s.time,
       durationMin: s.duration ?? plan?.durationMin ?? null,
       label: SPORT_TITLES[sportOf({ sport: s.sport as SportKind })],

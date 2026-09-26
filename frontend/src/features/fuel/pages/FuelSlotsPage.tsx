@@ -41,6 +41,7 @@ import { ROLE_OPTIONS } from '@/features/fuel/logic/recipeRole'
 import { toHHmm } from '@/data/fuel/fuelConfig'
 import type { SlotPlanVerdict } from '@/data/fuel/slotTemplateApi'
 import type { MealSlot, SlotAnchor, SlotTemplateDayType, SlotTemplateRow } from '@/data/types'
+import { restKcalPerHour } from '@/data/train/activityEnergy'
 
 const DAY_TYPES: { id: SlotTemplateDayType; label: string }[] = [
   { id: 'rest', label: 'Pihenőnap' },
@@ -249,7 +250,7 @@ export function FuelSlotsPage() {
     setEvalDegraded(false)
   }
 
-  const recommendedWindows = placeWindows(wake, bed, settings.mealsPerDay, refBlocks, weightKg)
+  const recommendedWindows = placeWindows(wake, bed, settings.mealsPerDay, refBlocks, restKcalPerHour(null, weightKg))
   const recommendedBudgets = splitBudget(budget, recommendedWindows)
 
   const editing = forked || existing != null

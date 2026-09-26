@@ -1,6 +1,4 @@
 import {
-  activityKcal,
-  blockKcal,
   buildDayPlan,
   deriveDailyBudget,
   mealSlotKey,
@@ -271,6 +269,8 @@ test('deriveDailyBudget (no energy, no segment) passes the fallback MacroSet thr
 })
 
 const ENERGY = (blocks: PlannerBlock[]) => ({ bmr: 1720, neat: 1.2, weightKg: 78.6, blocks })
+// Net activity model (mezo-32m82): (MET − 1) × BMR/24 × hours per block, rounded half-up per block.
+const REST_1720 = 1720 / 24
 test('dynamic budget — rest day floors at BMR (raw 2064−516=1548 < 1720)', () => {
   const b = deriveDailyBudget({ kcal: 2150, proteinG: 163, dailyEnergyBalanceKcal: -516 }, FB, ENERGY([]))
   expect(b.energy).toMatchObject({ base: 2064, activity: 0, balance: -516, target: 1720 })
@@ -285,11 +285,14 @@ test('dynamic budget — big training day adds activity, carbs absorb the bonus'
     { kind: 'sport', time: '18:00', durationMin: 240, label: 'Volleyball' },
   ]
   const b = deriveDailyBudget({ kcal: 2150, proteinG: 163, dailyEnergyBalanceKcal: -516 }, FB, ENERGY(blocks))
-  expect(b.energy.activity).toBeGreaterThan(1800)
-  expect(b.energy.target).toBeGreaterThan(3300)
+  // gym (3.5−1) × rest × 1h + a sport block with no sport id (other, 4.0−1) × rest × 4h
+  const activity = Math.round((3.5 - 1) * REST_1720) + Math.round((4 - 1) * REST_1720 * 4)
+  expect(b.energy.activity).toBe(activity)
+  expect(b.energy.target).toBe(2064 + activity - 516)
   expect(b.kcal).toBe(b.energy.target)
   expect(b.f).toBe(66) // fat stable (base-tied)
-  expect(b.c).toBeGreaterThan(500) // big carb day
+  expect(b.c).toBe(Math.round((b.kcal - 163 * 4 - 66 * 9) / 4)) // carbs absorb the activity bonus
+  expect(b.c).toBeGreaterThan(deriveDailyBudget({ kcal: 2150, proteinG: 163, dailyEnergyBalanceKcal: -516 }, FB, ENERGY([])).c)
 })
 
 test('deriveDailyBudget prefers the segment fatG over FAT_KCAL_SHARE', () => {
@@ -321,8 +324,8 @@ describe('deriveDailyBudget day-type shift (slice 3)', () => {
 
   it('training day adds the segment delta on top of actual EAT (no double counting)', () => {
     const b = deriveDailyBudget(segment, fallback, energyTraining, true)
-    // maintenance 2064 + eat 471.6 + balance −516 + delta +150 = 2169.6 → 2170
-    expect(b.kcal).toBe(2170)
+    // maintenance 2064 + net gym eat (3.5−1)×1720/24 ≈ 179 + balance −516 + delta +150
+    expect(b.kcal).toBe(2064 + Math.round((3.5 - 1) * REST_1720) - 516 + 150)
     expect(b.p).toBe(163) // protein untouched by day type
   })
 
@@ -753,7 +756,7 @@ test('plan carries the energy breakdown from the budget', () => {
 
 // ── peri-workout snack windows (mezo-1oy5) ───────────────────────────────────
 const snacks = (p: FuelPlanToday) => p.slots.filter(s => s.kind === 'snack').length
-test('a significant block (≥90min or ≥300kcal) adds a peri-workout snack window', () => {
+test('a significant block (≥90min or ≥200 net kcal) adds a peri-workout snack window', () => {
   // A 3-meal day carries no baseline snack near the pre-workout hour, so the peri-snack is
   // unambiguously additive (the 4-meal day's 17:49 Uzsonna would otherwise dedupe it — asserted below).
   const noBlock = buildDayPlan(baseInput({ mealsPerDay: 3, nowHHmm: '05:00', meals: [], blocks: [] }))
@@ -774,19 +777,28 @@ test('the peri-snack is deduped when a meal/snack window already covers the pre-
   expect(snacks(bigBlock)).toBe(snacks(noBlock)) // deduped: the existing snack already covers pre-workout
 })
 
-// ── MET-based activity energy (mezo-1oy5) ────────────────────────────────────
-test('blockKcal = MET × kg × hours; null duration falls back per kind', () => {
-  expect(blockKcal('gym', 60, 78.6)).toBeCloseTo(6.0 * 78.6 * 1, 1) // ≈472
-  expect(blockKcal('sport', 240, 78.6)).toBeCloseTo(4.5 * 78.6 * 4, 1) // ≈1415
-  expect(blockKcal('run', null, 78.6)).toBeCloseTo(9.5 * 78.6 * (45 / 60), 1) // DEFAULT_RUN_MIN
-})
-test('activityKcal sums every scheduled block (gym + sport + run all count)', () => {
-  const blocks = [
-    { kind: 'gym' as const, time: '18:00', durationMin: 60, label: 'Plyo Leg' },
-    { kind: 'sport' as const, time: '18:00', durationMin: 240, label: 'Volleyball' },
-    { kind: 'run' as const, time: '07:00', durationMin: 40, label: 'Futás · 6km' },
+// ── Net activity energy (mezo-1oy5 → mezo-32m82) ─────────────────────────────
+test('the dynamic budget bills every block on the net model; sport by its own row, null run → DEFAULT_RUN_MIN', () => {
+  const rest = 1920 / 24 // 80 kcal/h
+  const blocks: PlannerBlock[] = [
+    { kind: 'gym', time: '18:00', durationMin: 60, label: 'Plyo Leg' },
+    { kind: 'sport', sport: 'volleyball', time: '18:00', durationMin: 240, label: 'Volleyball' },
+    { kind: 'run', time: '07:00', durationMin: null, label: 'Futás' },
   ]
-  expect(activityKcal(blocks, 78.6)).toBeCloseTo(6.0 * 78.6 + 4.5 * 78.6 * 4 + blockKcal('run', 40, 78.6), 0) // ≈2384
+  const b = deriveDailyBudget({ kcal: 2150, proteinG: 163 }, FB, { bmr: 1920, neat: 1.2, weightKg: 80, blocks })
+  expect(b.energy.activity).toBe((3.5 - 1) * rest + (4 - 1) * rest * 4 + Math.round((9.3 - 1) * rest * (45 / 60)))
+})
+
+test('peri-snack kcal rule is net: ≥200 net kcal under 90′ earns the window, less does not', () => {
+  const rest = 1920 / 24
+  const at = (b: PlannerBlock) => placeWindows('06:00', '23:00', 3, [b], rest).filter(w => w.label === 'Pre-workout snack').length
+  // football 60′: (7−1)×80 = 480 ≥ 200 → significant
+  expect(at({ kind: 'sport', sport: 'football', time: '18:00', durationMin: 60, label: 'Foci' })).toBe(1)
+  // gym 30′: (3.5−1)×80×0.5 = 100 < 200 and < 90′ → not significant
+  expect(at({ kind: 'gym', time: '18:00', durationMin: 30, label: 'Gym' })).toBe(0)
+  // unknown rest energy → the duration rule alone decides
+  expect(placeWindows('06:00', '23:00', 3, [{ kind: 'sport', sport: 'football', time: '18:00', durationMin: 60, label: 'Foci' }], null)
+    .filter(w => w.label === 'Pre-workout snack')).toHaveLength(0)
 })
 
 // ── plannedTime on done slots (mezo-l2gp0) ──────────────────────────────────

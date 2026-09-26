@@ -106,7 +106,7 @@ describe('deriveBlocks — ad-hoc logged sport session', () => {
   test('the logged session\'s OWN time and duration win over the plan it consumed', () => {
     const blocks = withSessions([planned()], [session({ time: '19:30', duration: 120 })])
     expect(blocks.filter((b) => b.kind === 'sport')).toEqual([
-      { kind: 'sport', time: '19:30', durationMin: 120, label: 'Volleyball' },
+      { kind: 'sport', sport: 'volleyball', time: '19:30', durationMin: 120, label: 'Volleyball' },
     ])
   })
 

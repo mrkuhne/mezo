@@ -1485,11 +1485,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `useMesoTemplates`, `useMesocycleVolumeArc`, `useOpenWorkout`, `useQuickLogSport`, `useRunning`,
     `useTemplateDayChain`, `useTimingProfile`, `useTrain`, `useWeekMuscleLog`, `useWeekWorkouts`, `useWorkoutDetail`,
     `useWorkoutNote`
-  - **modules:** challengeApi.ts, challengeHooks.ts, customWorkoutHooks.ts, medalApi.ts, medalEvaluator.ts,
-    medalHooks.ts, medalMock.ts, medalTypes.ts, mesoArcHooks.ts, mesoPlanHooks.ts, mesoPlanMock.ts, mesoReportHooks.ts,
-    mesoTemplateHooks.ts, running.ts, runningAgenda.ts, runningApi.ts, runningDraft.ts, runningHooks.ts,
-    timingProfileApi.ts, timingProfileHooks.ts, train.ts, trainApi.ts, trainHooks.ts, weekMuscleLogHooks.ts,
-    workoutDetailHooks.ts, workoutNoteHooks.ts
+  - **modules:** activityEnergy.ts, challengeApi.ts, challengeHooks.ts, customWorkoutHooks.ts, medalApi.ts,
+    medalEvaluator.ts, medalHooks.ts, medalMock.ts, medalTypes.ts, mesoArcHooks.ts, mesoPlanHooks.ts, mesoPlanMock.ts,
+    mesoReportHooks.ts, mesoTemplateHooks.ts, running.ts, runningAgenda.ts, runningApi.ts, runningDraft.ts,
+    runningHooks.ts, timingProfileApi.ts, timingProfileHooks.ts, train.ts, trainApi.ts, trainHooks.ts,
+    weekMuscleLogHooks.ts, workoutDetailHooks.ts, workoutNoteHooks.ts
 - **FE ui** `frontend/src/features/train`
   - **pages:** ActiveWorkoutPage.tsx, CustomWorkoutBuilderPage.tsx, ExerciseStoryPage.tsx, ExercisesPage.tsx,
     ExercisesSkeleton.tsx, GymPage.tsx, MedalsPage.tsx, MesoComparePage.tsx, MesoDayEditPage.tsx, MesoDayPage.tsx,

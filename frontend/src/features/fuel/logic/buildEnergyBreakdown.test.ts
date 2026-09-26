@@ -54,4 +54,26 @@ describe('buildEnergyBreakdown', () => {
     })!
     expect(bd.deficit).toBeUndefined()
   })
+
+  it('per-block kcal is the net model at rest BMR/24; a null-duration run defaults to 45′ (mezo-32m82)', () => {
+    const rest = 1920 / 24 // 80 kcal/h
+    const bd = buildEnergyBreakdown({
+      energy: { base: 2304, activity: 0, balance: 0, target: 2304 },
+      blocks: [
+        { kind: 'gym', time: '18:00', durationMin: 60, label: 'Gym' },
+        { kind: 'sport', sport: 'volleyball', time: '20:00', durationMin: 120, label: 'Röplabda' },
+        { kind: 'run', time: '07:00', durationMin: null, label: 'Futás' },
+      ],
+      weightKg: 95,
+      tdeeBootstrap: { bmr: 1920, neat: 1.2, formula: 'MSJ' },
+      segment: null,
+      activityLabel: 'Ülő',
+      goalLabel: '',
+    })!
+    expect(bd.movement.blocks?.map(b => [b.min, b.kcal])).toEqual([
+      [60, (3.5 - 1) * rest],
+      [120, (4 - 1) * rest * 2],
+      [45, Math.round((9.3 - 1) * rest * (45 / 60))],
+    ])
+  })
 })

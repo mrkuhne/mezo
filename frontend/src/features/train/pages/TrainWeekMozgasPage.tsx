@@ -7,7 +7,8 @@
 // What has moved SO FAR this week, gym and sport drawn side by side but NEVER
 // mixed into one number (`movementWeek`, loadWeek.ts): the gym side is an
 // ESTIMATE (minutes from `estimateSessionMinutes`, kcal from trainDayEnergy's
-// MET math — both need a weight on file) over DONE days only, the sport side
+// net-of-rest math — the activityEnergy mirror, mezo-32m82 — which needs a BMR or a
+// weight on file for the rest energy) over DONE days only, the sport side
 // is what was actually LOGGED this week (volleyball sessions + run logs, real
 // minutes). The sport side's kcal now comes off the wire (T8 Task 6):
 // SportSessionResponse/RunSessionLogResponse both carry a BE-owned estimate
@@ -47,6 +48,7 @@ import { budgetGroup } from '@/features/train/logic/setBudget'
 import { muscleColor, regionColor } from '@/features/train/logic/muscleColors'
 import { DAY_LABELS } from '@/data/train/train'
 import type { Block } from '@/features/train/logic/trainDayEnergy'
+import { restKcalPerHour } from '@/data/train/activityEnergy'
 import type { RunPrescribedSession } from '@/data/train/runningApi'
 
 const tri = (n: number) => '▲'.repeat(n)
@@ -152,7 +154,8 @@ export function TrainWeekMozgasPage() {
   ]
 
   const weightKg = goal?.currentWeight ?? goalResponse?.startWeightKg ?? 0
-  const move = movementWeek(gymBlocks, sportEntries, weightKg || null)
+  const restPerHour = restKcalPerHour(goalResponse?.tdeeBootstrap?.bmr, weightKg || null)
+  const move = movementWeek(gymBlocks, sportEntries, restPerHour)
 
   return (
     <MozaikPage tone="gold">

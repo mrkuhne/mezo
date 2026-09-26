@@ -33,14 +33,13 @@ export const PROTEIN_TIER_G_PER_KG_BW: Record<'low' | 'moderate' | 'high', numbe
 // `fiberG` (missing per-meal field counts as 0, keretHero.ts).
 export const FIBER_TARGET_G = 30
 
-// Dynamic energy model (mezo-1oy5). Daily target = BMR×NEAT + Σ MET-based activity + goal balance,
-// where NEAT is read off `tdeeBootstrap.neat` from the wire (deriveDailyBudget) — not a static const here.
-// MET by training-block kind — kcal = MET × weightKg × hours. Conservative (indoor volleyball has lots of standing).
-export const MET_BY_KIND: Record<'gym' | 'sport' | 'run' | 'default', number> = { gym: 6.0, sport: 4.5, run: 9.5, default: 5.0 }
-// Null-duration blocks (interval runs) use this for the burn estimate.
-export const DEFAULT_RUN_MIN = 45
+// Dynamic energy model (mezo-1oy5). Daily target = BMR×NEAT + Σ activity + goal balance, where NEAT
+// is read off `tdeeBootstrap.neat` from the wire (deriveDailyBudget) — not a static const here. The
+// per-block activity kcal is the NET activity-energy mirror (`data/train/activityEnergy`, mezo-32m82),
+// which also owns the default block durations (DEFAULT_RUN_MIN / DEFAULT_GYM_MIN).
 // A training block ≥ either threshold earns a peri-workout snack window.
-export const PERI_SNACK_MIN_KCAL = 300
+// net model (mezo-32m82): 300 gross ≈ 200 net
+export const PERI_SNACK_MIN_KCAL = 200
 export const PERI_SNACK_MIN_DURATION = 90
 
 // Meal-slot templates (mezo-7102). Role multipliers skew a slot's P/C/F share before per-macro

@@ -73,6 +73,7 @@ import { WorkoutCeremony, ceremonyChallenges, ceremonyRecord } from '@/features/
 import { cerScore, muscleStarRows } from '@/features/train/logic/cerScore'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { trainDayEnergy } from '@/features/train/logic/trainDayEnergy'
+import { restKcalPerHour } from '@/data/train/activityEnergy'
 import { actualMinutes, type SessionTiming } from '@/features/train/logic/actualDuration'
 import { SetEditSheet, type SetEditValues } from '@/features/train/sheets/SetEditSheet'
 import { adjustedTarget } from '@/features/train/logic/repEquivalence'
@@ -801,7 +802,7 @@ function ActiveWorkoutSession({
     const weightKg = goal?.currentWeight ?? goalResponse?.startWeightKg ?? 0
     const energy = trainDayEnergy(
       gymMinutes > 0 ? [{ kind: 'gym' as const, minutes: gymMinutes, done: true }] : [],
-      weightKg || null,
+      restKcalPerHour(goalResponse?.tdeeBootstrap?.bmr, weightKg || null),
     )
     const kcal = energy.known && energy.earnedKcal > 0 && score.done.sets > 0
       ? ({ value: energy.earnedKcal, known: true } as const)
