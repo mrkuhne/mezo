@@ -9722,6 +9722,7 @@ export interface components {
             topEdges?: string[];
         };
         GraphCandidateDecisionRequest: {
+            /** @description snooze = „Most ne”: hidden for 14 days, then re-offered; stays a candidate */
             decision: string;
             /** @description User-edited title applied on accept (edit-then-approve). */
             refinedTitle?: string | null;

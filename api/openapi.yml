@@ -24145,6 +24145,9 @@ components:
         decision:
           type: string
           pattern: ^(accept|reject|snooze)$
+          description: >-
+            snooze = „Most ne”: hidden for 14 days, then re-offered; stays a
+            candidate
         refinedTitle:
           type: string
           minLength: 1
