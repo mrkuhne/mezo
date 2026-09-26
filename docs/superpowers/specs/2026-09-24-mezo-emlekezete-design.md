@@ -611,3 +611,20 @@ reduced motion).
     nightly prompt growth); one-off backfill for pre-S2 plan-less rows the owner
     already confirmed (stuck `monitoring`, never promoted); S6 drift supersession
     semantics (confirmed drift row → supersede + mute the original fact).
+16. **(S3)** Mock chat user bubbles carry NO persisted id (ChatPage's key comment says
+    so) — any post-turn FE feature anchored on "the last user message id" silently
+    never renders in mock mode unless it falls back to a synthetic anchor
+    (`mock-turn-<n>`); runtime verify caught what 8k unit tests did not, because the
+    component tests passed the id in directly.
+17. **(S3)** Extending the NIGHTLY extractor's answer needs no FakeCompanionLlm work —
+    `[fake-people:{json}]` scripts the whole object, new keys ride along. A NEW
+    marker-keyed LLM call does need its own fake branch + sentinel
+    (`PERSON_FACTS_SENTINEL` idiom) AND an FE admin label for the slug.
+18. **(S3)** `PersonResponse` is hand-assembled on FOUR paths (getBootstrap,
+    createPerson, updatePerson, decidePerson×2) — a new required contract field must
+    be set on every one (`setGraphEdges` is the grep marker), and the MapStruct
+    mapper needs `@Mapping(target=..., ignore=true)` plus enum `fromValue` defaults.
+19. **(S3)** `PeopleService` itself is UNGATED; only listeners/companion beans sit on
+    `PEOPLE_SWITCH`. A new people service gated on the switch must therefore be
+    reached via `ObjectProvider` even from people-internal callers (PeopleService,
+    PeopleController), or a switched-off environment fails context startup.
