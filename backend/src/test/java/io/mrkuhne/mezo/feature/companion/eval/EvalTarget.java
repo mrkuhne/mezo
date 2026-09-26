@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.eval;
 import io.mrkuhne.mezo.feature.companion.config.LlmProvider;
 import java.util.Locale;
 import java.util.Map;
+import org.springframework.test.context.DynamicPropertyRegistry;
 
 /**
  * Which chat model this eval run measures, and everything derivable from that name (mezo-ozri.3).
@@ -53,5 +54,24 @@ public record EvalTarget(String model, LlmProvider provider, String apiKeyEnvVar
     public boolean keyPresentIn(Map<String, String> env) {
         String value = env.get(apiKeyEnvVar);
         return value != null && !value.isBlank();
+    }
+
+    /**
+     * Re-admits the REAL provider keys from the environment. The test profile deliberately pins
+     * both keys to a dummy ({@code src/test/resources/application.properties}) so an ordinary IT
+     * never reaches a provider, even on a machine that exports {@code GEMINI_API_KEY} (mezo-a9bo7.25
+     * drain-debug: a single real call ran 33 s inside an AFTER_COMMIT listener and failed the 30 s
+     * pre-reset drain). An eval measures a real model, so every eval IT calls this from its
+     * {@code @DynamicPropertySource}; a missing variable keeps the dummy (the
+     * {@link EvalApiKeyCondition} gate has already skipped or failed the run by then).
+     */
+    public static void registerRealApiKeys(DynamicPropertyRegistry registry) {
+        registry.add("spring.ai.google.genai.api-key", () -> envOr("GEMINI_API_KEY", "dummy-key-set-GEMINI_API_KEY"));
+        registry.add("spring.ai.openai.api-key", () -> envOr("OPENAI_API_KEY", "dummy-key-set-OPENAI_API_KEY"));
+    }
+
+    private static String envOr(String name, String fallback) {
+        String value = System.getenv(name);
+        return value == null || value.isBlank() ? fallback : value;
     }
 }
