@@ -70,6 +70,18 @@ function DayDial({ tile, day, window, loggedAt, hitIn }: {
         {window && arc(window.from, window.to, 'this')}
         {day.training && arc(day.training.start, day.training.end, 'train', R + 13)}
         {[0, 6, 12, 18].map(h => { const [x, y] = pt(h * 60, R - 20); return <text key={h} className="hr" x={x} y={y}>{h}</text> })}
+        {/* mezo-6g52f minor c: a jóváhagyott prototípus (fuel-ora-ablak.html `dial()`) két
+            tájoló-glyphje a számlapon — a hold éjfél után 2 órával, a súlyzó az edzés-ív
+            közepén; ugyanaz a `<use>`-mintázat, amit a Titanium sprite `ContentIcon`/`Icon3D`
+            is használ (`#t-…` id-k a titanium-icons.svg-ből), csak itt közvetlenül a
+            napóra-koordinátákra pozicionálva x/y/width/height-tel. */}
+        {(() => { const [x, y] = pt(toMin('02:00'), R - 22)
+          return <use href="#t-moon" x={x - 8} y={y - 8} width={16} height={16} aria-hidden="true" /> })()}
+        {day.training && (() => {
+          const s = toMin(day.training.start), len = ((toMin(day.training.end) - s) + L) % L
+          const [x, y] = pt(s + len / 2, R + 25)
+          return <use href="#t-dumbbell" x={x - 9} y={y - 9} width={18} height={18} aria-hidden="true" />
+        })()}
         {nowPt && <line className="nowhand" x1={nowPt[0][0]} y1={nowPt[0][1]} x2={nowPt[1][0]} y2={nowPt[1][1]} />}
         {loggedAt && (() => { const [x, y] = pt(toMin(loggedAt), R); return <circle className="logdot" cx={x} cy={y} r={8} style={{ fill: hitIn ? 'var(--block-color)' : 'var(--amber)' }} /> })()}
         <text className="c1" x={C} y={C - 18}>{c1}</text>

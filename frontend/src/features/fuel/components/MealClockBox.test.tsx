@@ -42,6 +42,10 @@ describe('judgedWindow', () => {
 })
 
 describe('MealClockBox', () => {
+  it('pre-log with a nowHHmm: renders the now-hand (positive control for the R4 null test)', () => {
+    render(<MealClockBox tile={tile()} row={null} day={day} next={null} blockColor="var(--lav)" onClose={vi.fn()} />)
+    expect(document.body.querySelector('.nowhand')).not.toBeNull()
+  })
   it('pre-log: recommended window, why, and how it fits the day', () => {
     render(<MealClockBox tile={tile()} row={null} day={day} next={null} blockColor="var(--lav)" onClose={vi.fn()} />)
     expect(screen.getByText('Ajánlott ablak')).toBeInTheDocument()
@@ -65,12 +69,27 @@ describe('MealClockBox', () => {
   })
   // mezo-6g52f R4: múltbéli napon (nowHHmm null) nincs „most" jel — a pre-log doboz „AJÁNLOTT"-ot
   // mutat (nem „MOST"-ot), a fejléc-státusz „még pótolható" (nem találgatott „most nyitva"/„nyílik").
+  // mezo-6g52f minor c: a jóváhagyott prototípus két tájoló-glyphje a számlapon — a hold és az
+  // edzés súlyzója, aria-hidden dekoráció.
+  it('the dial carries the moon glyph and, on a training day, the dumbbell glyph', () => {
+    render(<MealClockBox tile={tile()} row={null} day={day} next={null} blockColor="var(--lav)" onClose={vi.fn()} />)
+    // GlassBox portals to document.body — query there, not `container` (mezo-6g52f).
+    expect(document.body.querySelector('use[href="#t-moon"]')).not.toBeNull()
+    expect(document.body.querySelector('use[href="#t-dumbbell"]')).not.toBeNull()
+  })
+  it('no training today → no dumbbell glyph, moon glyph still renders', () => {
+    const noTrainDay: ClockDay = { ...day, training: null }
+    render(<MealClockBox tile={tile()} row={null} day={noTrainDay} next={null} blockColor="var(--lav)" onClose={vi.fn()} />)
+    expect(document.body.querySelector('use[href="#t-moon"]')).not.toBeNull()
+    expect(document.body.querySelector('use[href="#t-dumbbell"]')).toBeNull()
+  })
   it('pre-log, nowHHmm null (past day): AJÁNLOTT centre, "még pótolható" status, no now-hand', () => {
     const pastDay: ClockDay = { ...day, nowHHmm: null }
-    const { container } = render(<MealClockBox tile={tile()} row={null} day={pastDay} next={null} blockColor="var(--lav)" onClose={vi.fn()} />)
+    render(<MealClockBox tile={tile()} row={null} day={pastDay} next={null} blockColor="var(--lav)" onClose={vi.fn()} />)
     expect(screen.getByText('AJÁNLOTT')).toBeInTheDocument()
     expect(screen.getByText('még pótolható')).toBeInTheDocument()
-    expect(container.querySelector('.nowhand')).toBeNull()
+    // GlassBox portals to document.body — query there, not `container` (mezo-6g52f).
+    expect(document.body.querySelector('.nowhand')).toBeNull()
     expect(document.body.textContent).not.toMatch(/most nyitva|nyílik \d/)
   })
 })
