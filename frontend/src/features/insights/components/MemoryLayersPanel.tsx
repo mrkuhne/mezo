@@ -92,7 +92,7 @@ export function MemoryLayersPanel({
         ]}
         onOpen={() => navigate('/mezo/knowledge')}
       />
-      <Link to="/mezo/motor" className="mmr-door uv-flat" style={{ '--c': 'var(--dv-lav)' } as React.CSSProperties}>
+      <Link to="/mezo/patterns" className="mmr-door uv-flat" style={{ '--c': 'var(--dv-lav)' } as React.CSSProperties}>
         <span className="uv-well mmr-well"><Icon3D name="t-lens" size={28} /></span>
         <span className="mmr-doorgrow"><strong>Miért nem lát még mintát a motor?</strong></span>
         <span className="mmr-chev" aria-hidden="true">›</span>

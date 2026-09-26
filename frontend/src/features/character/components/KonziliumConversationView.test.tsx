@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import { KonziliumConversationView } from './KonziliumConversationView'
-import { MOCK_CONFERENCE_DETAIL, MOCK_EXPERTS } from '@/data/character/characterMock'
+import { MOCK_CONFERENCE_DETAIL } from '@/data/character/characterMock'
 import { personaName } from '@/features/character/personaCharacter'
 
 // U9 (mezo-me75u.9): a kiírt név a csapatfal szereplője (Doki → Derű, Drill → Mocor), nem a katalógusé.
@@ -13,7 +13,7 @@ const THREADS = MOCK_CONFERENCE_DETAIL.w2.deliberation!
 
 describe('KonziliumConversationView', () => {
   test('mind a négy kör szekciója látszik', () => {
-    render(<KonziliumConversationView threads={THREADS} experts={MOCK_EXPERTS} crossTalkRan />)
+    render(<KonziliumConversationView threads={THREADS} crossTalkRan />)
     for (const label of ['Javaslatok', 'Kereszt-vita', 'Szkeptikus', 'Mezo dönt']) {
       // Fix round 1 (mezo-sp9w, task-8 impl): a plain getByText(label) is ambiguous against the
       // full fixture — "Szkeptikus" is both a section label AND a turn speaker name (three items
@@ -23,7 +23,7 @@ describe('KonziliumConversationView', () => {
   })
 
   test('a kereszt-vita blokk idézi, mire reagáltak', () => {
-    render(<KonziliumConversationView threads={THREADS} experts={MOCK_EXPERTS} crossTalkRan />)
+    render(<KonziliumConversationView threads={THREADS} crossTalkRan />)
     // Fix round 1 (mezo-sp9w, task-8 impl): the claim's own text also appears verbatim in the
     // Javaslatok section, so scope the match to the Kereszt-vita quote block specifically.
     const quote = screen.getByText(/A hétvégi lefekvés két órával kitolódik/, { selector: '.kz-cvquote' })
@@ -46,18 +46,18 @@ describe('KonziliumConversationView', () => {
   })
 
   test('üres kereszt-vita kör megmarad szekcióként és megmondja, hogy nem volt hozzászólás', () => {
-    render(<KonziliumConversationView threads={[THREADS[2]]} experts={MOCK_EXPERTS} crossTalkRan />)
+    render(<KonziliumConversationView threads={[THREADS[2]]} crossTalkRan />)
     expect(screen.getByText('Kereszt-vita')).toBeInTheDocument()
     expect(screen.getByText('Ebben a körben senki nem szólt hozzá más felvetéséhez.')).toBeInTheDocument()
   })
 
   test('a kereszt-vita kör előtti konzíliumnál a szekció ezt mondja, nem azt hogy senki nem szólt', () => {
-    render(<KonziliumConversationView threads={[THREADS[2]]} experts={MOCK_EXPERTS} crossTalkRan={false} />)
+    render(<KonziliumConversationView threads={[THREADS[2]]} crossTalkRan={false} />)
     expect(screen.getByText('Ezen a tanácskozáson nem volt kereszt-vita kör.')).toBeInTheDocument()
   })
 
   test('a válasz nélküli körök is megmaradnak, saját magyarázattal', () => {
-    render(<KonziliumConversationView threads={[THREADS[3]]} experts={MOCK_EXPERTS} crossTalkRan />)
+    render(<KonziliumConversationView threads={[THREADS[3]]} crossTalkRan />)
     expect(screen.getByText('A Szkeptikus ebben a körben nem adott választ.')).toBeInTheDocument()
     expect(screen.getByText('Ebben a körben nem született döntés.')).toBeInTheDocument()
   })
