@@ -38,6 +38,12 @@ public interface TeamChatThreadRepository extends JpaRepository<TeamChatThreadEn
 
     Optional<TeamChatThreadEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 
+    /** Task 11 catch-up (mezo-a9bo7.23): is there ALREADY a thread for this flag opened at/after
+     *  {@code since} (any status)? — the "no thread opened at/after the raise" gate, so the sweep
+     *  never double-opens a raise the listener actually handled. */
+    boolean existsByCreatedByAndFlagKeyAndOpenedAtGreaterThanEqualAndDeletedFalse(
+            UUID createdBy, String flagKey, Instant since);
+
     /** The chat's own "already used" notion for {@code InterventionService.pick}: a library entry
      *  counts as used if any ügy of this user carrying it was opened at/after {@code since}. */
     boolean existsByCreatedByAndAdviceKeyAndOpenedAtGreaterThanEqualAndDeletedFalse(

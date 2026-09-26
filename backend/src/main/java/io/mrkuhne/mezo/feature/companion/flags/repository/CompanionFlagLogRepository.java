@@ -80,4 +80,9 @@ public interface CompanionFlagLogRepository extends JpaRepository<CompanionFlagL
      *  which FlagService's per-KEY gate cannot express. */
     List<CompanionFlagLogEntity> findByCreatedByAndFlagKeyAndDeletedFalseAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(
         UUID createdBy, String flagKey, Instant since);
+
+    /** Task 11 (mezo-a9bo7.23): every raise (any flag) in the catch-up window — the team chat
+     *  hourly sweep's input for the "no thread opened at/after it" check. */
+    List<CompanionFlagLogEntity> findByCreatedByAndDeletedFalseAndCreatedAtGreaterThanEqualOrderByCreatedAtAsc(
+        UUID createdBy, Instant since);
 }
