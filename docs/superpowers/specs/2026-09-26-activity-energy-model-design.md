@@ -48,7 +48,7 @@ Consequences:
   - Fuel week, Napló, meal scorer, MealCoach and adherence: BE `DayTargetProjector`, the weekly average plus a day-type pick.
   - Character detectors: the uniform `seg.kcal`, which skips the split (`CharacterSignalReads.java:724`).
 
-Owner, week-averaged: the plan credits 828 kcal/day of movement. The new model credits about 430.
+Owner, week-averaged: the plan credits 828 kcal/day of movement. The new model credits about 570 (§8).
 
 ## 4. The model
 
@@ -115,7 +115,7 @@ carbs     = segment carbs + day-type delta/4 + extraKcal/4   (carbs absorb, as t
 **Matching planned and logged** is a pure `PlannedSessionMatcher` in train. It is the backend twin of the FE `resolveSportBlocks` reconciliation, and it replaces `hasLoggedTrainingOn` for this purpose. For each date:
 - Take the weekday's scheduled slots: gym slots, sport slots, and the active run block's sessions on that weekday.
 - **Gym:** a completed `meso`-origin workout on a weekday with a gym slot is planned. A `custom`-origin workout, or any workout on a weekday with no gym slot, is extra.
-- **Sport:** logged sessions, earliest first, consume the weekday's sport slots, preferring the same sport. Leftovers are extra.
+- **Sport:** logged sessions, earliest first, each consume the planned occurrence nearest in time (weekday slots minus skips, plus dated one-off events). This is the same rule `WorkoutWindowQueryService.addSportWindowsForDay` already applies. Leftovers are extra.
 - **Run:** a logged run consumes a scheduled run session on that weekday. Leftovers are extra.
 
 **Energy breakdown on the wire.** The contract-first change goes in `api/feature/meal/meal.yml`. The Fuel day response gains:
@@ -156,7 +156,7 @@ All five fields are null on the static path (no biometric profile).
 
 The model change triggers no recompute on its own: `GoalReevaluateRunner` runs in demofixtures only. So a prod-enabled, idempotent `ActivityModelMigrationRunner` does the following, **once**:
 
-1. Recomputes `sport_session.kcal` and `run_session_log.kcal` for rows where `kcal_is_estimate = true`. User overrides are untouched.
+1. A Liquibase changeset nulls `kcal`/`kcal_is_estimate` on rows where `kcal_is_estimate = true`, so it runs exactly once and user overrides are untouched. Every boot, the runner then re-estimates rows with `kcal IS NULL AND duration_min > 0`. This is cheap and idempotent: only rows with an unknown body stay null.
 2. Calls `GoalEngineService.recomputeActiveGoal` for every non-deleted goal whose `tdee_bootstrap` lacks the marker `activityModel: 2`, and writes the marker.
 
 It logs counts. Pending adaptive suggestions go stale through the existing fingerprint, which is acceptable because the next weekly review re-suggests.
