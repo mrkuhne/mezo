@@ -2916,6 +2916,11 @@ body.still .skel{animation:none}
 .qc.passed .z1{min-height:0;padding-right:80px}
 .qc.passed .un{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:11.5px;font-weight:600;color:var(--faint);text-decoration:underline}
 .chlist.pad{padding-bottom:6px}
+/* a keret ne görögjön a tartalommal: a doboz áll, csak a belseje görget */
+.gbox,.gbox.glass{overflow:hidden!important;padding:0;display:flex;flex-direction:column}
+.gb-in{flex:1 1 auto;min-height:0;overflow-y:auto;padding:14px 16px 16px;scrollbar-width:none}
+.gb-in::-webkit-scrollbar{display:none}
+.qb-foot{bottom:-16px}
 .notes .seg{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
 .notes .seg button{padding:7px 12px;border-radius:999px;font-size:12px;font-weight:600;color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
 .notes .seg button.on{color:#191614;background:var(--gold)}
@@ -3384,7 +3389,7 @@ function chalBox(){
         <div class="acts">${c.acc?`<button class="pillx" data-chal="${i}">${I('tick')}Vállalva</button>`:`<button class="pillx" data-chal="${i}">${I('quest')}Vállalom</button><button class="pillx pp" data-pass="${i}">Passz</button>`}</div></div>`).join('')}</div>
     <p class="fnote">Passzolni ér — a küldetés ajánlat, nem elvárás. Az eredmény a záráskor derül ki, és sosem piros.</p>`;
 }
-function openGb(k,a){const [c,f]=GB[k];const g=$('#gbox');g.style.setProperty('--c',c);g.innerHTML=f(a);$('#scrim').classList.add('on');g.classList.add('on');g.scrollTop=0}
+function openGb(k,a){const [c,f]=GB[k];const g=$('#gbox');g.style.setProperty('--c',c);g.innerHTML=`<div class="gb-in">${f(a)}</div>`;$('#scrim').classList.add('on');g.classList.add('on');g.firstChild.scrollTop=0}
 function closeGb(){$('#gbox').classList.remove('on');if(!$('#sheet').classList.contains('on'))$('#scrim').classList.remove('on')}
 
 /* ── lapok (alulról) ─────────────────────────────────────── */
@@ -3481,7 +3486,7 @@ function tabbar(active){
   <div class="ntf-row">${I('scroll')}<span><strong>Elkészült a heti memoár</strong><small>A hét története, hét fejezetben.</small></span><em>21:02</em></div>
   <button class="ntf-foot" data-toast="Összes értesítés (Én · a 7. szeletben kap üveget)">Összes értesítés ›</button>`;
 })();
-function refreshChal(){const g=$('#gbox');const y=g.scrollTop;if(g.classList.contains('on')){g.innerHTML=chalBox();g.scrollTop=y}if(location.hash==='#session/uj'){const sy=$('#scroll').scrollTop;$('#scroll').innerHTML=session('uj');$('#scroll').scrollTop=sy}}
+function refreshChal(){const g=$('#gbox');const inr=g.querySelector('.gb-in');const y=inr?inr.scrollTop:0;if(g.classList.contains('on')&&inr){inr.innerHTML=chalBox();inr.scrollTop=y}if(location.hash==='#session/uj'){const sy=$('#scroll').scrollTop;$('#scroll').innerHTML=session('uj');$('#scroll').scrollTop=sy}}
 function paintSeg(st){if(st)window.__seg=st;const cur=window.__seg||'kesz';document.querySelectorAll('[data-cstate]').forEach(b=>b.classList.toggle('on',b.dataset.cstate===cur));document.querySelectorAll('[data-cvar]').forEach(b=>b.classList.toggle('on',b.dataset.cvar===chalVar))}
 function toggleNtf(v){ntfOpen=v??!ntfOpen;$('#ntf').classList.toggle('on',ntfOpen);document.querySelector('[data-ntf]')?.classList.toggle('is-open',ntfOpen);$('#scrim').classList.toggle('on',ntfOpen||$('#switcher').classList.contains('on'))}
 function toggleSwitch(v){const on=v??!$('#switcher').classList.contains('on');$('#switcher').classList.toggle('on',on);$('#scrim').classList.toggle('on',on)}
