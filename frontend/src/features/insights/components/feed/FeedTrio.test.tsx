@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { usePatternActions, useObservationReply } from '@/data/hooks'
 import type { FeedPost } from '@/features/insights/logic/teamFeed'
-import { FeedTrio } from './FeedTrio'
+import { ArtifactTrio, FeedTrio } from './FeedTrio'
 
 vi.mock('@/data/hooks', async importOriginal => ({
   ...(await importOriginal<typeof import('@/data/hooks')>()),
@@ -101,4 +101,20 @@ test('observation trio offers the approved replies and talk handoff', async () =
     expect(screen.getByRole('button', { name })).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Beszéljük meg' }))
   expect(onReply).toHaveBeenCalledWith(obsPost, 'tell')
+})
+
+// Csapat-chat (mezo-a9bo7.24): ugyanaz a hármas egy szerver-oldali műterméken — a 👍/👎 a közös
+// visszajelzés-kezelőbe megy a sor azonosítójával, a „Nem így érzem” a válasz-lapot is kéri.
+test('ArtifactTrio: a szavazat a műtermék azonosítójával megy, a le-szavazat a lapot is nyitja', async () => {
+  const vote = vi.fn()
+  const onReply = vi.fn()
+  const handle = { get: () => undefined, vote, pending: false }
+  render(<ArtifactTrio feedback={handle} artifactId="line-1" onReply={onReply} />)
+  await userEvent.click(screen.getByRole('button', { name: /ez talál/i }))
+  expect(vote).toHaveBeenCalledWith('line-1', 'up')
+  await userEvent.click(screen.getByRole('button', { name: /nem így érzem/i }))
+  expect(vote).toHaveBeenCalledWith('line-1', 'down')
+  expect(onReply).toHaveBeenCalledWith('down')
+  await userEvent.click(screen.getByRole('button', { name: /elmesélem/i }))
+  expect(onReply).toHaveBeenCalledWith('tell')
 })

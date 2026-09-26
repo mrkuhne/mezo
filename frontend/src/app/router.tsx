@@ -68,6 +68,7 @@ import { RecipeWorkshopPage } from '@/features/fuel/pages/RecipeWorkshopPage'
 import { TeamFeedPage } from '@/features/insights/pages/TeamFeedPage'
 import { TeamPage } from '@/features/insights/pages/TeamPage'
 import { CharacterRoomPage } from '@/features/insights/pages/CharacterRoomPage'
+import { TeamChatPage } from '@/features/insights/pages/TeamChatPage'
 import { BoopMenuPage } from '@/features/insights/pages/BoopMenuPage'
 import { ALL_FEATURES_ROUTE } from '@/features/insights/logic/boopNavigation'
 import { BoopAboutPage } from '@/features/insights/pages/BoopAboutPage'
@@ -415,6 +416,8 @@ export const routes: RouteObject[] = [
       // Csapat-üzenőfal (mezo-a9bo7.10): the wall IS the Mezo home.
       { path: 'mezo', element: <TeamFeedPage /> },
       { path: 'mezo/csapat', element: <TeamPage /> },
+      // Csapatfal Act III (mezo-a9bo7.24): a csapat élő beszélgetése (`?d=YYYY-MM-DD` = másik nap).
+      { path: 'mezo/elo', element: <TeamChatPage /> },
       { path: 'mezo/csapat/:id', element: <CharacterRoomPage /> },
       { path: 'mezo/emlekek', element: <BoopMemoriesPage /> },
       { path: 'mezo/emlekek/:date', element: <MemoryDayPage /> },

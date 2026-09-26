@@ -111,6 +111,7 @@ export const PAGE_INDEX: IndexedPage[] = [
   { route: '/mezo/rolad', label: 'Rólad', hint: 'a közös kép rólad — itt döntesz a javaslatokról.' },
   { route: '/mezo', label: 'Üzenőfal', hint: 'Az öt karakter posztjai: mit vettek észre, és mit kérdeznek tőled.' },
   { route: '/mezo/csapat', label: 'A csapat', hint: 'Az öt karakter szobája: mit figyelnek most, és mennyit tudnak rólad.' },
+  { route: '/mezo/elo', label: 'A csapat beszél', hint: 'A csapat élő beszélgetése: ma ki szólt, mi vár rád, és mi rendeződött.' },
   { route: '/mezo/emlekek', label: 'Emlékek', hint: 'Napi emlékek, heti memoár és hasonló napok keresése.' },
   { route: '/mezo/patterns', label: 'Minták', hint: 'Az ismétlődő összefüggések a napjaidban.' },
   { route: '/mezo/predictions', label: 'Előrejelzések', hint: 'Mire számíthatsz a jelenlegi irány mellett.' },
