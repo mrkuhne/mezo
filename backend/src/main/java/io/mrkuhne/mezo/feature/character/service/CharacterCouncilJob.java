@@ -25,11 +25,17 @@ public class CharacterCouncilJob {
     private final CharacterRunLog runLog;
     private final io.mrkuhne.mezo.feature.character.repository.CharacterRunRepository runs;
     private final ObjectProvider<TeamEditionService> editions;
+    private final io.mrkuhne.mezo.feature.character.repository.CharacterCouncilEditionRepository councilEditions;
 
     @Scheduled(cron = "${mezo.character.council.cron}", zone = "${mezo.character.council.zone}")
     public void run() {
-        var now = ZonedDateTime.now(ZoneId.of(properties.zone()));
+        run(ZonedDateTime.now(ZoneId.of(properties.zone())));
+    }
+
+    /** The tick body at an explicit local time — package-visible so tests can pin the clock. */
+    void run(ZonedDateTime now) {
         if (now.toLocalTime().isBefore(LocalTime.parse(properties.readyAt()))) return;
+        boolean deadlinePassed = !now.toLocalTime().isBefore(LocalTime.parse(properties.editionDeadline()));
         var today = now.toLocalDate();
         users.forEachActiveUser("Daily character council", user -> {
             for (int offset = properties.catchUpDays() - 1; offset >= 0; offset--) {
@@ -57,11 +63,30 @@ public class CharacterCouncilJob {
                 // SELECT-je), ezért veszélytelen minden 15 perces tiken újra meghívni a mai napra:
                 // egy sikertelen/hiányzó kiadás magától újrapróbálkozik a következő tiken
                 // 23:45-ig, egy már kész kiadás pedig azonnal no-op.
-                if (offset == 0) {
+                // mezo-a9bo7.17: a kiadás megvárja, hogy a mai konzílium LEZÁRULJON (kész, csendes,
+                // vagy elfogyott az újrapróbálása) — különben egy csendben elbukott első futás után a
+                // 21:00-s kiadás konzílium-szálak nélkül jelenne meg, és a késői sikeres újrapróbálás
+                // már sosem kerülhetne bele (a kiadás naponta egyszeri). A határidő (edition-deadline,
+                // 23:30) után a kiadás mindenképp megjelenik: a nap sosem marad kiadás nélkül azért,
+                // mert a konzílium beragadt.
+                if (offset == 0 && (deadlinePassed || councilSettled(user.getId(), day))) {
                     try { editions.ifAvailable(svc -> svc.run(user.getId(), day)); }
                     catch (RuntimeException e) { log.warn("Esti kiadás failed for owner {} day {}", user.getId(), day, e); }
                 }
             }
         });
+    }
+
+    /** Lezárult-e a nap konzíliuma: kész/csendes, elfogyott az újrapróbálása, vagy a bemenete
+     *  (az előző éjszakai megfigyelés) véglegesen elbukott, így már sosem indulhat el. */
+    private boolean councilSettled(java.util.UUID owner, LocalDate day) {
+        var edition = councilEditions.findByCreatedByAndDay(owner, day).orElse(null);
+        if (edition != null) {
+            if ("COMPLETED".equals(edition.getStatus()) || "QUIET".equals(edition.getStatus())) return true;
+            if (!"PROCESSING".equals(edition.getStatus()) && edition.getAttempts() >= properties.maxAttempts()) return true;
+        }
+        return runs.findByCreatedByAndKindAndDay(owner, "NIGHTLY", day.minusDays(1))
+                .filter(run -> !"SUCCESS".equals(run.getStatus()) && run.getFailureCount() >= properties.maxAttempts())
+                .isPresent();
     }
 }

@@ -52,3 +52,12 @@ szerint egy válogató marad. LLM nélküli, tisztán szabály-alapú szűrés a
 konzílium meglévő szakértői vitáját, holott az pontosan a dosszié-döntés helye marad — elvetve;
 a kiadás csak a már meglévő konzílium-kimenetet és a companion/proactive rekordokat rangsorolja,
 nem generál új tartalmat LLM-mel (H1-ben egyáltalán nem hív modellt).
+
+## Módosítás (2026-09-26, `mezo-a9bo7.17`)
+
+A kiadás mostantól **megvárja a mai konzílium lezárulását** (kész, csendes, elfogyott az
+újrapróbálása, vagy a bemenete — az éjszakai megfigyelés — véglegesen elbukott). Egy csendben
+elbukott első konzílium-futás után a 21:00-s kiadás különben konzílium-szálak nélkül jelent volna
+meg, és a későbbi sikeres újrapróbálás már sosem kerülhetett volna bele. **23:30-tól**
+(`mezo.character.council.edition-deadline`) a kiadás mindenképp megjelenik — a konzílium kimenetétől
+továbbra is független marad, csak a várakozás lett hozzá rövid és korlátos.

@@ -2121,6 +2121,9 @@ mezo:
       max-topics: 6
       lease-minutes: 60
       max-attempts: 3
+      # Esti kiadás (mezo-a9bo7.17): a kiadás megvárja a mai konzílium lezárulását (kész,
+      # csendes vagy elfogyott újrapróbálás); ettől az időponttól mindenképp megjelenik.
+      edition-deadline: "23:30"
     followup:
       max-due: 3
       recheck-days: 3
