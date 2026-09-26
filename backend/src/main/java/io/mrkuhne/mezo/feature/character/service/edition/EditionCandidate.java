@@ -25,6 +25,8 @@ public record EditionCandidate(
     public static final int MAX_GUESTS = 2;
 
     public EditionCandidate {
+        facts = facts == null ? List.of() : List.copyOf(facts);
+        refs = refs == null ? List.of() : List.copyOf(refs);
         guests = guests == null ? List.of() : List.copyOf(guests.subList(0, Math.min(guests.size(), MAX_GUESTS)));
     }
 

@@ -1,6 +1,6 @@
 # Contextual Mezo messages — personal continuity and shared tools
 
-Date: 2026-09-23 · Status: **direction approved; implementation not started**
+Date: 2026-09-23 · Status: **implemented** — all six slices shipped, epic `mezo-7nron` closed 2026-09-23
 Driver: `mezo-7nron` · [ADR 0050](../../decisions/0050-contextual-mezo-feed.md)
 
 ## 1. Problem and approved intent

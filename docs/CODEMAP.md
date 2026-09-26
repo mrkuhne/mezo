@@ -316,7 +316,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **logic:** conferencePostItem.ts
   - **root:** character.css, deliberationLabels.ts, deliberationStats.ts, dossierState.ts, expertColors.ts,
     feedDayLabel.ts, inventory.ts, personaCharacter.ts, runLabels.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 62 IT + 17 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 62 IT + 18 unit
   - **ITs:** `CharacterApiCompanionOffIT`, `CharacterApiIT`, `CharacterApiSwitchOffIT`, `CharacterBootstrapIT`,
     `CharacterBootstrapMemoryDisabledIT`, `CharacterBootstrapMemoryIT`, `CharacterClaimRevisionIT`,
     `CharacterClaimTemporalIT`, `CharacterConferenceJobIT`, `CharacterConferenceListIT`,

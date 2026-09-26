@@ -42,6 +42,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * The all-day team chat engine (Csapatfal Act III, mezo-a9bo7.21, spec 2026-09-26 §5): a raised
@@ -122,6 +123,12 @@ public class TeamChatService {
      *  of their own: the push step would not see the uncommitted ügy (the async
      *  {@link TeamChatEventListener} never does). */
     public Optional<TeamChatThreadEntity> open(UUID userId, String flagKey, Instant at) {
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            // mezo-a9bo7.27: the push step runs in its own transaction and cannot see this caller's
+            // uncommitted ügy — it would silently skip the push. Say so instead of staying quiet.
+            log.warn("Team chat open for user {} flag {} called inside a transaction — the push is skipped",
+                    userId, flagKey);
+        }
         Optional<Opened> opened = openThread(userId, flagKey, at);
         opened.ifPresent(o -> {
             try {
@@ -426,12 +433,24 @@ public class TeamChatService {
      *  {@code getConnection} with their lock-holding connections idle. Enough parallel raises (pool
      *  size of them) deadlock the pool outright until the connection timeout. So the budget slot is
      *  reserved and committed first, and the notification is emitted after, on one connection at a
-     *  time. An emit failure after the reservation behaves as before: the emitter logs it and the
-     *  slot stays spent. */
+     *  time. An emit failure after the reservation gives the slot back (mezo-a9bo7.27,
+     *  {@link #releasePush}): a push that never rang must not eat the day's budget. */
     public void decidePush(UUID threadId, String ownerBody, boolean pushAllowed, boolean quietHoursExempt) {
-        self.getObject().reservePush(threadId, ownerBody, pushAllowed, quietHoursExempt)
-                .ifPresent(p -> appNotifications.emit(p.userId(), AppNotificationKind.TEAM_CHAT, p.title(),
-                        p.body(), AppNotificationKind.TEAM_CHAT.deeplink(), p.threadId(), p.dedupKey()));
+        self.getObject().reservePush(threadId, ownerBody, pushAllowed, quietHoursExempt).ifPresent(p -> {
+            boolean emitted = appNotifications.tryEmit(p.userId(), AppNotificationKind.TEAM_CHAT, p.title(),
+                    p.body(), AppNotificationKind.TEAM_CHAT.deeplink(), p.threadId(), p.dedupKey());
+            if (!emitted) {
+                self.getObject().releasePush(p.threadId());
+            }
+        });
+    }
+
+    /** mezo-a9bo7.27: undo a {@link #reservePush} whose emit failed — the ügy counts as not pushed
+     *  again, so its budget slot is free. A retry of the same ügy is still deduped by its key. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    void releasePush(UUID threadId) {
+        threads.setPushed(threadId, false);
+        log.info("Team chat ügy {} push released — the emit failed", threadId);
     }
 
     /** A push the budget granted and {@link #reservePush} committed — emitted by {@link #decidePush}. */
@@ -460,10 +479,11 @@ public class TeamChatService {
         // Re-read under the lock: a racing decision for the same ügy may already have pushed it, and
         // a clear may have resolved it while open's model call ran (the decision now follows the
         // committed lines, drain-debug mezo-a9bo7.25) — a resolved ügy never pages the user.
-        TeamChatThreadEntity thread = threads.findById(threadId).orElseThrow();
-        if (Boolean.TRUE.equals(thread.getPushed()) || !STATUS_OPEN.equals(thread.getStatus())) {
+        // mezo-a9bo7.27: a scalar read, not findById — that would return the copy cached above.
+        if (!threads.unpushedStatus(threadId).filter(STATUS_OPEN::equals).isPresent()) {
             return Optional.empty();
         }
+        TeamChatThreadEntity thread = found.get();
         List<String> pushedToday = pushedTodayFlagKeys(userId, thread.getOpenedAt());
         if (!TeamChatPushPolicy.shouldPush(thread.getFlagKey(), pushedToday, properties.maxPushesPerDay())) {
             return Optional.empty();
@@ -472,8 +492,7 @@ public class TeamChatService {
         if (owner.isEmpty()) {
             return Optional.empty();
         }
-        thread.setPushed(true);
-        threads.saveAndFlush(thread);
+        threads.setPushed(threadId, true);
         String title = owner.get().displayName() + " · " + FlagCatalog.labelOf(thread.getFlagKey());
         String dedupKey = "team_chat:" + thread.getId()
                 + (quietHoursExempt ? AppNotificationKind.QUIET_HOURS_EXEMPT_SUFFIX : "");

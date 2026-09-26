@@ -62,7 +62,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -468,7 +470,7 @@ public class CharacterService {
         List<UUID> editionIds = editions.stream().map(TeamEditionEntity::getId).toList();
         List<TeamEditionPostEntity> posts =
                 editionPostRepository.findByEditionIdInOrderByEditionIdAscRankAsc(editionIds);
-        java.util.Map<UUID, List<TeamEditionPostEntity>> postsByEdition = new java.util.LinkedHashMap<>();
+        Map<UUID, List<TeamEditionPostEntity>> postsByEdition = new LinkedHashMap<>();
         for (TeamEditionPostEntity post : posts) {
             postsByEdition.computeIfAbsent(post.getEditionId(), id -> new ArrayList<>()).add(post);
         }

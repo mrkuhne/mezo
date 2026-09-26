@@ -934,7 +934,7 @@ unified so `challenges` drives both modes). See [train.md §Active workout](trai
 
 ## 3. Architecture & data flow
 
-### Contextual event evidence (mezo-7nron.3; disabled foundation)
+### Contextual event evidence (mezo-7nron.3)
 
 `FeedEvidenceAssembler.render(userId, date, kind)` provides a mandatory 28-day raw weight
 window, per-day averages, latest raw measurement and difference from the previous measured
@@ -947,7 +947,8 @@ the requested date, that non-historical trend is omitted rather than passed off 
 Sleep evidence spans seven calendar days, keeps recorded durations/quality/notes, counts
 missing nights without interpreting them as sleeplessness, and includes the snapshot's current
 sleep target and planned-versus-completed training block. Other kinds return no event-specific
-block. These services are still disconnected from the live generators until the integration slice.
+block. `FeedGenerationService` consumes it for the live contextual generation (the `mezo-7nron`
+integration slices shipped; switch and rollback: [ADR 0050](../decisions/0050-contextual-mezo-feed.md)).
 
 
 **The unified feed read (`mezo-gst9` — persisted rows · lazy cron-kind miss-recovery · no 404):**
