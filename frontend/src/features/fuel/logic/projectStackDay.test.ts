@@ -368,9 +368,10 @@ describe('isStimFreeName', () => {
 // ── 3b. weightKg → peri-workout snack cascade (mezo-vx9v Task 8 review follow-up) ────────────────
 describe('weightKg forwards to placeWindows and can cascade into a meal-zone time shift', () => {
   // sport block short enough (60min < PERI_SNACK_MIN_DURATION=90) that ONLY the weightKg-driven
-  // kcal threshold (blockKcal = MET_BY_KIND.sport(4.5) * weightKg * 1h) can make it "significant"
-  // enough to earn a peri-workout snack window. weightKg=0 → 0kcal, no snack; weightKg=90 →
-  // 405kcal ≥ PERI_SNACK_MIN_KCAL(300) → snack inserted, and — because placeWindows' "pre-fuel"
+  // kcal threshold (net model, mezo-32m82: a sport block with no sport id reads as `other`,
+  // (4.0 − 1) × rest × 1h, rest = 1 kcal/kg/h without a BMR) can make it "significant" enough to
+  // earn a peri-workout snack window. weightKg=0 → unknown rest, no snack; weightKg=90 →
+  // (4 − 1) × 90 = 270 net kcal ≥ PERI_SNACK_MIN_KCAL(200) → snack inserted, and — because placeWindows' "pre-fuel"
   // training snap then prefers the closer-to-the-block snack window over breakfast — the
   // breakfast zone's OWN anchored time shifts as a side effect (it stops being re-snapped).
   const stash = [stashLite('kreatin', 'Kreatin')]

@@ -41,6 +41,8 @@ import io.mrkuhne.mezo.feature.needs.config.NeedsProperties;
 import io.mrkuhne.mezo.feature.needs.entity.NeedsDayEntity;
 import io.mrkuhne.mezo.feature.needs.repository.NeedsDayRepository;
 import io.mrkuhne.mezo.feature.nutrition.config.NutritionTargetsProperties;
+import io.mrkuhne.mezo.feature.nutrition.service.DayTargetProjector;
+import io.mrkuhne.mezo.feature.nutrition.service.EnergyBase;
 import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
@@ -60,6 +62,7 @@ import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -127,6 +130,7 @@ public class CharacterSignalReads {
     private final WaterLogRepository waterLogRepository;
     private final GoalRepository goalRepository;
     private final NutritionTargetsProperties nutritionTargets;
+    private final WorkoutWindowQueryService workoutWindowQueryService;
     private final ProtocolRepository protocolRepository;
     private final ProtocolItemRepository protocolItemRepository;
     private final SupplementIntakeRepository supplementIntakeRepository;
@@ -658,8 +662,8 @@ public class CharacterSignalReads {
      * ({@code MealItemEntity.snapshotNova}) rather than the meal-level {@code breakdown.nova}
      * envelope, because {@code breakdown} can be NULL on legacy/manual meals while the line
      * snapshots are written for every line (round-2 spec §4.1). Targets mirror
-     * {@code FuelDayService}'s precedence exactly: the active goal's week segment prescribes kcal
-     * and protein, everything else comes from the config.
+     * {@code FuelDayService} exactly: kcal is the SERVED target ({@link #kcalTarget}, via
+     * {@link DayTargetProjector}), protein the active goal's week segment, else the config.
      */
     private List<DetectorInput.MealDayPoint> gatherMealDays(UUID owner, LocalDate from, LocalDate to) {
         List<MealEntity> meals = mealRepository.findWithItemsBetween(owner, from, to);
@@ -668,6 +672,10 @@ public class CharacterSignalReads {
         }
         GoalEntity goal = goalRepository.findByCreatedByAndStatusAndDeletedFalse(owner, "active")
                 .stream().findFirst().orElse(null);
+        // ONE batched movement read for the whole window (mezo-32m82), only when a goal can use it —
+        // per-date movementOn over 8 trend weeks would be ~56 query sets.
+        Map<LocalDate, WorkoutWindowQueryService.DayMovement> movement = goal == null ? Map.of()
+                : workoutWindowQueryService.movementBetween(owner, from, to);
 
         Map<LocalDate, List<MealEntity>> byDate = new LinkedHashMap<>();
         for (MealEntity m : meals) {
@@ -715,16 +723,29 @@ public class CharacterSignalReads {
             BigDecimal nova4Share = classifiedKcal.signum() == 0 ? null
                     : nova4Kcal.divide(classifiedKcal, 4, RoundingMode.HALF_UP);
             out.add(new DetectorInput.MealDayPoint(date, kcal, protein, carbs, fat,
-                    nova4Share, coverage, kcalTarget(goal, date), proteinTarget(goal, date),
+                    nova4Share, coverage, kcalTarget(goal, date, movement), proteinTarget(goal, date),
                     List.copyOf(mealPoints)));
         }
         return List.copyOf(out);
     }
 
-    /** {@code FuelDayService#targetSet} precedence: goal-week segment kcal, else config. */
-    private BigDecimal kcalTarget(GoalEntity goal, LocalDate date) {
-        GoalPrescriptionJson.Segment seg = segmentFor(goal, date);
-        return BigDecimal.valueOf(seg != null && seg.kcal() != null ? seg.kcal() : nutritionTargets.kcal());
+    /**
+     * The date's SERVED kcal target, projected through the same {@link DayTargetProjector}
+     * {@code FuelDayService} uses (mezo-32m82) — goal-week segment, day-type pick on planned
+     * training done, unplanned extra movement, BMR floor — so the adherence detectors judge a day
+     * against exactly the number the Fuel hero showed. No goal → the config kcal. {@code movement}
+     * is the window's batched {@link WorkoutWindowQueryService#movementBetween} read.
+     */
+    private BigDecimal kcalTarget(GoalEntity goal, LocalDate date,
+            Map<LocalDate, WorkoutWindowQueryService.DayMovement> movement) {
+        if (goal == null) {
+            return BigDecimal.valueOf(nutritionTargets.kcal());
+        }
+        return BigDecimal.valueOf(DayTargetProjector.project(
+            segmentFor(goal, date),
+            EnergyBase.of(goal.getTdeeBootstrap()),
+            () -> movement.getOrDefault(date, WorkoutWindowQueryService.DayMovement.NONE),
+            nutritionTargets).kcal());
     }
 
     /** {@code FuelDayService#targetSet} precedence: goal-week segment protein, else config. */

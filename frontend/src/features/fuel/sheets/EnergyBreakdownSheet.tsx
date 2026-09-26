@@ -18,14 +18,28 @@ export interface EnergyBlock {
   min: number
   kcal: number
 }
+/** One summand of the served movement (mezo-32m82): the weekly plan's share of the day, and the
+ *  unplanned credit. The parts ARE the total — the `+ … =` row closes on `movement.kcal`. */
+export interface EnergyPart {
+  key: 'planned' | 'extra'
+  label: string
+  kcal: number
+}
 export interface EnergyBreakdown {
   base: { kcal: number; bmr: number; neat: number; neatLabel: string; formula: 'KATCH' | 'MSJ' }
-  movement: { kcal: number; isWeeklyAvg: boolean; blocks?: EnergyBlock[] }
+  /** `parts` (Fuel, the served day): the summands that close on `kcal`; `blocks` are then only
+   *  informational per-session previews, shown without operators. No `parts` (the Én hub's TDEE):
+   *  one weekly-average tile. */
+  movement: { kcal: number; isWeeklyAvg: boolean; parts?: EnergyPart[]; blocks?: EnergyBlock[] }
   deficit?: { kcal: number; rateKgPerWk: number; goalLabel: string; rationale?: string }
   target: number
 }
 
 const BLOCK_ICON: Record<EnergyBlock['kind'], Icon3DName> = { gym: 't-dumbbell', sport: 't-volley', run: 't-run' }
+const PART_TILE: Record<EnergyPart['key'], { icon: Icon3DName; sub: string }> = {
+  planned: { icon: 't-calendar', sub: 'edzésterv' },
+  extra: { icon: 't-steps', sub: 'rögzítve, terven kívül' },
+}
 const SEG_COLOR = { sage: 'var(--dv-sage)', amber: 'var(--dv-amber)', coral: 'var(--dv-coral)' } as const
 const FORMULA_LABEL = { KATCH: 'Katch-McArdle', MSJ: 'Mifflin-St Jeor' } as const
 
@@ -90,7 +104,7 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
             </button>
           </div>
           <p className="flp-elead">
-            A napi cél nem statikus — az alapanyagcserédből, {movement.isWeeklyAvg ? 'a heti betáblázott mozgásból' : 'a ma rögzített mozgásodból'}{deficit ? ' és a célod deficitjéből' : ''} áll össze.
+            A napi cél nem statikus — az alapanyagcserédből, {movement.parts ? 'a heti edzésterved mai részéből' : movement.isWeeklyAvg ? 'a heti betáblázott mozgásból' : 'a ma rögzített mozgásodból'}{deficit ? ' és a célod deficitjéből' : ''} áll össze.
           </p>
 
           {/* Equation bar — at-a-glance summary */}
@@ -129,16 +143,16 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
           {/* MOVEMENT */}
           <Seg tone="amber" on={hl('movement')}>
             <div className="flp-esh">
-              <span className="flp-estit">Betáblázott mozgás</span>
+              <span className="flp-estit">{movement.parts ? 'Mozgás' : 'Betáblázott mozgás'}</span>
               <span className="flp-esamt">{signed(movement.kcal)}</span>
             </div>
             <div className="flp-etiles">
-              {movement.blocks && movement.blocks.length > 0 ? (
+              {movement.parts ? (
                 <>
-                  {movement.blocks.map((b, i) => (
-                    <div key={i} style={{ display: 'contents' }}>
+                  {movement.parts.map((p, i) => (
+                    <div key={p.key} style={{ display: 'contents' }}>
                       {i > 0 && <div className="op">+</div>}
-                      <Tile icon={BLOCK_ICON[b.kind]} name={b.label} sub={`${b.min} perc`} value={nf(b.kcal)} unit="kcal" />
+                      <Tile icon={PART_TILE[p.key].icon} name={p.label} sub={PART_TILE[p.key].sub} value={nf(p.kcal)} unit="kcal" />
                     </div>
                   ))}
                   <div className="op">=</div>
@@ -148,10 +162,23 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
                 <Tile icon="t-calendar" name="Heti átlag" sub="betáblázott ÷ 7" value={signed(movement.kcal)} unit="kcal" />
               )}
             </div>
+            {movement.parts && movement.blocks && movement.blocks.length > 0 && (
+              <>
+                {/* Informational only — the day's sessions are NOT summands of the served total. */}
+                <span className="flp-einfo">A mai edzéseid becsült többlete, tájékoztatásul</span>
+                <div className="flp-etiles is-info">
+                  {movement.blocks.map((b, i) => (
+                    <Tile key={i} icon={BLOCK_ICON[b.kind]} name={b.label} sub={`${b.min} perc`} value={nf(b.kcal)} unit="kcal" />
+                  ))}
+                </div>
+              </>
+            )}
             <p className="flp-ewhy">
-              {movement.isWeeklyAvg
-                ? <>A <b>heti</b> betáblázott edzéseid becsült energiája (MET-alapú, a testsúlyoddal skálázva). Mozgós napon több, pihenőnapon 0 — <b>ezért nem fix</b> a napi cél.</>
-                : <>A <b>ma</b> rögzített edzéseid becsült energiája (MET-alapú, a testsúlyoddal skálázva). A tervezett, de még el nem végzett edzés nem számít bele — <b>a keret akkor nő, amikor rögzíted</b>.</>}
+              {movement.parts
+                ? <>A heti edzésterved <b>egyenletesen oszlik el</b> a hét napjain (edzésnapon kicsit több jut). A terven kívüli mozgásod aznap hozzáadódik. A becslés a nyugalmi energiád feletti többletet számolja.</>
+                : movement.isWeeklyAvg
+                  ? <>A <b>heti</b> edzésterved napi átlaga — a nyugalmi energiád feletti többlet, a saját alapanyagcseréd alapján.</>
+                  : <>A <b>ma</b> rögzített edzéseid becsült energiája (a nyugalmi energiád feletti többlet). A tervezett, de még el nem végzett edzés nem számít bele — <b>a keret akkor nő, amikor rögzíted</b>.</>}
             </p>
           </Seg>
 

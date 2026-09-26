@@ -74,8 +74,8 @@ public class SportSessionEntity extends OwnedEntity {
     @Column
     private String notes;
 
-    /** Burnt energy: the user's own number when they gave one, else the personalised MET estimate
-     *  ({@code SportEnergyCalculator}). NULL when the athlete's weight is unknown — never 0. */
+    /** Burnt energy: net activity-energy estimate ({@code ActivityEnergyModel}, mezo-32m82); a
+     *  user-typed value is active (net) kcal. NULL when the athlete's body is unknown — never 0. */
     @Column
     private Integer kcal;
 

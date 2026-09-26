@@ -191,10 +191,10 @@ describe('movementWeek', () => {
 
   it('reuses trainDayEnergy\'s math for the gym share and sums logged sport kcal', () => {
     const week = movementWeek([gymBlock(60), gymBlock(30, true)], [{ minutes: 90, kcal: 400 }], 80)
-    // gym: 6.0*80*(60/60) + 6.0*80*(30/60) = 480 + 240 = 720
-    expect(week).toEqual({ gymMin: 90, sportMin: 90, totalMin: 180, gymKcal: 720, sportKcal: 400, known: true })
+    // net gym at rest 80: (3.5−1)*80*(60/60) + (3.5−1)*80*(30/60) = 200 + 100 = 300
+    expect(week).toEqual({ gymMin: 90, sportMin: 90, totalMin: 180, gymKcal: (3.5 - 1) * 80 * 1.5, sportKcal: 400, known: true })
   })
-  it('is unknown with a null gym kcal on a null weight — same rule as trainDayEnergy — but sport stays known', () => {
+  it('is unknown with a null gym kcal on a null rest energy — same rule as trainDayEnergy — but sport stays known', () => {
     const week = movementWeek([gymBlock(60)], [{ minutes: 30, kcal: 150 }], null)
     expect(week).toEqual({ gymMin: 60, sportMin: 30, totalMin: 90, gymKcal: null, sportKcal: 150, known: false })
   })
@@ -213,7 +213,7 @@ describe('movementWeek', () => {
   })
   it('an empty sport side is trivially known but renders no kcal number, never a fabricated zero', () => {
     const week = movementWeek([gymBlock(60)], [], 80)
-    expect(week).toEqual({ gymMin: 60, sportMin: 0, totalMin: 60, gymKcal: 480, sportKcal: null, known: true })
+    expect(week).toEqual({ gymMin: 60, sportMin: 0, totalMin: 60, gymKcal: (3.5 - 1) * 80, sportKcal: null, known: true })
   })
 })
 

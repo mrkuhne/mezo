@@ -3,7 +3,8 @@
 // wake/bed anchor is injected exactly like buildDayPlan's nowHHmm.
 
 import { ZONE_FRACTIONS, ZONE_KEYS, ZONE_LABELS, daySpan, unwrapDayMinute, type ZoneKeyName } from '@/data/fuel/fuelConfig'
-import { blockKcal, type PlannerBlock } from '@/features/fuel/logic/buildDayPlan'
+import type { PlannerBlock } from '@/features/fuel/logic/buildDayPlan'
+import { blockEnergyKind, DEFAULT_GYM_MIN, DEFAULT_RUN_MIN, netKcal } from '@/data/train/activityEnergy'
 import type { FuelSlot } from '@/data/types'
 
 export type ZoneKey = ZoneKeyName
@@ -18,7 +19,7 @@ export interface DayZone {
   kcal: number
   hasMeals: boolean
   state: ZoneState
-  /** Σ MET burn of the zone's training blocks. */
+  /** Σ net burn (activityEnergy mirror, mezo-32m82) of the zone's training blocks; 0 when rest energy is unknown. */
   burnKcal: number
   /** One entry per supplement item in the zone; true = already taken. */
   stackPips: boolean[]
@@ -45,9 +46,10 @@ export function buildDayZones(input: {
   wake: string
   bed: string
   blocks: PlannerBlock[]
-  weightKg: number
+  /** Rest energy (kcal/h, `restKcalPerHour`) for the net burn; null → burn 0 (never a guess). */
+  restPerHour: number | null
 }): DayZone[] {
-  const { slots, wake, bed, blocks, weightKg } = input
+  const { slots, wake, bed, blocks, restPerHour } = input
   const { wakeMin, span, crossesMidnight } = daySpan(wake, bed)
 
   const zoneOf = (slot: FuelSlot): ZoneKey => {
@@ -71,7 +73,9 @@ export function buildDayZones(input: {
       .filter(s => slotRole(s) === 'activity')
       .reduce((sum, s) => {
         const block = blocks.find(b => b.time === s.time)
-        return sum + (block ? Math.round(blockKcal(block.kind, block.durationMin, weightKg)) : 0)
+        if (!block) return sum
+        const min = block.durationMin ?? (block.kind === 'run' ? DEFAULT_RUN_MIN : DEFAULT_GYM_MIN)
+        return sum + (netKcal(blockEnergyKind(block), null, min, restPerHour) ?? 0)
       }, 0)
     const stackPips = zoneSlots
       .filter(s => slotRole(s) === 'supplement')

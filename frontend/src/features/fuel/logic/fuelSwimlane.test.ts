@@ -13,7 +13,7 @@ import { FIBER_TARGET_G } from '@/data/fuel/fuelConfig'
 
 const budget: DayBudget = {
   kcal: 2400, p: 180, c: 240, f: 72,
-  energy: { base: 2000, activity: 400, balance: 0, target: 2400 },
+  energy: { base: 2000, planned: 400, extra: 0, balance: 0, target: 2400 },
 }
 
 const meal = (over: Partial<FuelMeal> = {}): FuelMeal => ({

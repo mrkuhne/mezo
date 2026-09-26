@@ -582,7 +582,7 @@ class EditionCandidateCollectorTest {
     }
 
     @Test void falat_noMeals_noCandidate() {
-        when(reads.targets(OWNER, DAY)).thenReturn(new DailyTargets(2400, 160, 250, 80, "goal"));
+        when(reads.targets(OWNER, DAY)).thenReturn(new DailyTargets(2400, 160, 250, 80, "goal", null));
         when(reads.windows(OWNER, DAY)).thenReturn(List.of(
                 new Window(LocalTime.of(18, 0), LocalTime.of(19, 0), "gym", true, "Pull")));
 
@@ -612,7 +612,7 @@ class EditionCandidateCollectorTest {
     @Test void falat_allThreeVoices_doneTrainingNamed() {
         when(reads.meals(OWNER, DAY)).thenReturn(List.of(
                 meal(DINNER, "0.80", "700"), meal(BREAKFAST, "0.70", "450.5")));
-        when(reads.targets(OWNER, DAY)).thenReturn(new DailyTargets(2400, 160, 250, 80, "goal"));
+        when(reads.targets(OWNER, DAY)).thenReturn(new DailyTargets(2400, 160, 250, 80, "goal", null));
         when(reads.windows(OWNER, DAY)).thenReturn(List.of(
                 new Window(LocalTime.of(7, 0), LocalTime.of(8, 0), "run", false, "Könnyű futás"),
                 new Window(LocalTime.of(18, 0), LocalTime.of(19, 0), "gym", true, "Pull")));
@@ -637,7 +637,7 @@ class EditionCandidateCollectorTest {
 
     @Test void falat_noScoreDay_skipsThePlateButKeepsTheGoal() {
         when(reads.meals(OWNER, DAY)).thenReturn(List.of(meal(BREAKFAST, null, "400"), meal(DINNER, null, "600")));
-        when(reads.targets(OWNER, DAY)).thenReturn(new DailyTargets(2400, 160, 250, 80, "config"));
+        when(reads.targets(OWNER, DAY)).thenReturn(new DailyTargets(2400, 160, 250, 80, "config", null));
 
         EditionCandidate c = falat().get(0);
 

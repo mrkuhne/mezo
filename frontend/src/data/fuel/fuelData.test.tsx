@@ -3,6 +3,7 @@ import { afterEach, beforeEach, vi } from 'vitest'
 import { useFuelDay, useFuelTimeline, useStack, useProtocol } from '@/data/hooks'
 import type { FuelSlot } from '@/data/types'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { fuelDayEnergy } from '@/data/fuel/fuel'
 
 // useFuelDay became a composed dual-mode TanStack query (mezo-arb). Pin mock mode so it returns
 // the static Phase-1 seed synchronously (initialData) and wrap in QueryWrapper for the client.
@@ -17,7 +18,7 @@ test('useFuelDay returns macros, 3 logged meals, micronutrients', () => {
   // `now` remain now/pending in the computed plan; a logged meal fills its own window purely off
   // its presence (buildDayPlan.ts step 3), never off the clock.
   const { result } = renderHook(() => useFuelDay(), { wrapper: QueryWrapper })
-  expect(result.current.fuel.targets.kcal).toBe(3100)
+  expect(result.current.fuel.targets.kcal).toBe(fuelDayEnergy.targetKcal)
   expect(result.current.fuel.meals).toHaveLength(3)
   expect(result.current.fuel.meals[0].breakdown?.dimensions).toHaveLength(8)
   // Both seed meals now carry a real score — Σ(weight × dimension.score) off their OWN breakdown

@@ -18179,6 +18179,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MealResponse'
+        energy:
+          $ref: '#/components/schemas/FuelDayEnergy'
     FuelDayRollup:
       type: object
       required:
@@ -18193,6 +18195,34 @@ components:
           $ref: '#/components/schemas/MacroSet'
         consumed:
           $ref: '#/components/schemas/MacroSet'
+        energy:
+          $ref: '#/components/schemas/FuelDayEnergy'
+    FuelDayEnergy:
+      type: object
+      nullable: true
+      description: >-
+        The served target's equation (mezo-32m82): baseKcal (BMR × NEAT) +
+        plannedMovementKcal (the weekly plan's share for the day, incl. the
+        day-type shift) + extraMovementKcal (unplanned logged movement, net) +
+        balanceKcal (goal deficit/surplus; also absorbs the BMR floor) =
+        targetKcal. Null on the static path (no goal or no biometric snapshot).
+      required:
+        - baseKcal
+        - plannedMovementKcal
+        - extraMovementKcal
+        - balanceKcal
+        - targetKcal
+      properties:
+        baseKcal:
+          type: integer
+        plannedMovementKcal:
+          type: integer
+        extraMovementKcal:
+          type: integer
+        balanceKcal:
+          type: integer
+        targetKcal:
+          type: integer
     FuelWeekResponse:
       type: object
       required:

@@ -1,9 +1,9 @@
-import { aiAverage, asPastDayHero, buildKeretHero, deriveMealRole, doneMealRows, heroEquationLines } from '@/features/fuel/logic/keretHero'
+import { aiAverage, asPastDayHero, buildKeretHero, deriveMealRole, doneMealRows, heroEquationLines, type KeretHeroVM } from '@/features/fuel/logic/keretHero'
 import { FIBER_TARGET_G } from '@/data/fuel/fuelConfig'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
 import type { FuelMeal, FuelSlot } from '@/data/types'
 
-const BUDGET: DayBudget = { kcal: 2400, p: 160, c: 260, f: 80, energy: { base: 2000, activity: 400, balance: 0, target: 2400 } }
+const BUDGET: DayBudget = { kcal: 2400, p: 160, c: 260, f: 80, energy: { base: 2000, planned: 400, extra: 0, balance: 0, target: 2400 } }
 
 const meal = (over: Partial<FuelMeal> = {}): FuelMeal => ({
   id: 'm1', slot: 'breakfast', title: 'Zabkása', score: null,
@@ -87,15 +87,21 @@ test('static-energy days render no chip row (chips is null)', () => {
 })
 
 test('a dynamic-energy day carries the raw base/activity/balance — a negative balance passes through unformatted', () => {
-  const budget: DayBudget = { ...BUDGET, energy: { base: 2000, activity: 400, balance: -400, target: 2000 } }
+  const budget: DayBudget = { ...BUDGET, energy: { base: 2000, planned: 400, extra: 0, balance: -400, target: 2000 } }
   const vm = build({ budget, staticEnergy: false })
-  expect(vm.chips).toEqual({ base: 2000, activity: 400, balance: -400 })
+  expect(vm.chips).toEqual({ base: 2000, activity: 400, extra: 0, balance: -400 })
+})
+
+test('Mozgás is planned + extra; the extra share rides along for the sub copy (mezo-32m82)', () => {
+  const energy = { base: 2356, planned: 570, extra: 572, balance: -327, target: 3171 }
+  const vm = build({ budget: { ...BUDGET, kcal: energy.target, energy }, staticEnergy: false })
+  expect(vm.chips).toEqual({ base: energy.base, activity: energy.planned + energy.extra, extra: energy.extra, balance: energy.balance })
 })
 
 test('a surplus day carries a positive raw balance — formatting (the sign glyph) is the components job', () => {
-  const budget: DayBudget = { ...BUDGET, energy: { base: 2000, activity: 400, balance: 300, target: 2700 } }
+  const budget: DayBudget = { ...BUDGET, energy: { base: 2000, planned: 400, extra: 0, balance: 300, target: 2700 } }
   const vm = build({ budget, staticEnergy: false })
-  expect(vm.chips).toEqual({ base: 2000, activity: 400, balance: 300 })
+  expect(vm.chips).toEqual({ base: 2000, activity: 400, extra: 0, balance: 300 })
 })
 
 // ── nap-sáv szegmensek ─────────────────────────────────────────────────────────
@@ -311,6 +317,48 @@ describe('heroEquationLines', () => {
   test('statikus keretnél a mozgás sora őszintén üres, nem nulla', () => {
     const lines = heroEquationLines(build({ staticEnergy: true }))
     expect(lines.find(l => l.key === 'activity')!.value).toBeNull()
+  })
+})
+
+const baseVm = build()
+
+describe('heroEquationLines — Célod row (mezo-32m82)', () => {
+  const vm = (chips: KeretHeroVM['chips'], remaining = 2951, consumed = 0) =>
+    ({ ...baseVm, chips, remainingKcal: remaining, consumedKcal: consumed, targetKcal: remaining + consumed }) as KeretHeroVM
+
+  test('cut day: Alap + Mozgás − Célod − Étel = Marad, and it closes', () => {
+    const lines = heroEquationLines(vm({ base: 2356, activity: 922, extra: 0, balance: -327 }), 'cut')
+    expect(lines.map(l => l.key)).toEqual(['base', 'activity', 'goal', 'eaten', 'remaining'])
+    const goal = lines.find(l => l.key === 'goal')!
+    expect(goal.value).toBe(-327)
+    expect(goal.sign).toBe('±')
+  })
+
+  test('bulk day keeps the row with a positive balance', () => {
+    const lines = heroEquationLines(vm({ base: 2356, activity: 570, extra: 0, balance: 250 }, 3176), 'bulk')
+    expect(lines.find(l => l.key === 'goal')!.value).toBe(250)
+  })
+
+  test('maintain with zero balance hides the row', () => {
+    const lines = heroEquationLines(vm({ base: 2356, activity: 500, extra: 0, balance: 0 }, 2856), 'maintain')
+    expect(lines.some(l => l.key === 'goal')).toBe(false)
+  })
+
+  test('no goal (trajectory null) → no Célod row, even with chips', () => {
+    const lines = heroEquationLines(vm({ base: 2356, activity: 500, extra: 0, balance: -327 }), null)
+    expect(lines.some(l => l.key === 'goal')).toBe(false)
+  })
+
+  test('past day (chips null) shows the dash in the Célod row too', () => {
+    const lines = heroEquationLines(vm(null), 'cut')
+    expect(lines.find(l => l.key === 'goal')!.value).toBeNull()
+  })
+
+  test('the lines close: base + activity + goal − eaten = remaining', () => {
+    const energy = { base: 2356, planned: 570, extra: 572, balance: -327, target: 3171 }
+    const hero = build({ budget: { ...BUDGET, kcal: energy.target, energy }, consumed: { kcal: 800, p: 40, c: 90, f: 20 } })
+    const by = (k: string) => heroEquationLines(hero, 'cut').find(l => l.key === k)!.value!
+    expect(by('base') + by('activity') + by('goal') - by('eaten')).toBe(by('remaining'))
   })
 })
 

@@ -90,9 +90,10 @@ test('the split-TDEE row renders the persisted bootstrap and opens the breakdown
     </QueryWrapper>,
   )
   const row = screen.getByRole('button', { name: 'Energia-bontás magyarázata' })
-  expect(row).toHaveTextContent('2579')
-  expect(row).toHaveTextContent('+421')
-  expect(row).toHaveTextContent('≈3000')
+  const tb = mockProfile.tdeeBootstrap!
+  expect(row).toHaveTextContent(String(tb.neatBaselineKcal))
+  expect(row).toHaveTextContent(`+${tb.weeklyEatKcalPerDay}`)
+  expect(row).toHaveTextContent(`≈${tb.tdee}`)
   await userEvent.click(row)
   expect(onExplain).toHaveBeenCalledTimes(1)
 })

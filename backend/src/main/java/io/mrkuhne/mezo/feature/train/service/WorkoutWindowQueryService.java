@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.feature.train.config.TrainProperties;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
+import io.mrkuhne.mezo.feature.train.entity.RunSessionLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockStructure;
 import io.mrkuhne.mezo.feature.train.entity.SportEventEntity;
@@ -15,6 +16,7 @@ import io.mrkuhne.mezo.feature.train.repository.SportEventRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -25,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -51,6 +54,8 @@ public class WorkoutWindowQueryService {
     private final WorkoutService workoutService;
     private final SportSlotSkipService sportSlotSkipService;
     private final TrainProperties props;
+    private final ActivityEnergyModel activityEnergyModel;
+    private final AthleteBodyPort athleteBodyPort;
 
     /**
      * One workout on a date: schedule start, derived end, kind, whether it was actually done, and
@@ -170,17 +175,8 @@ public class WorkoutWindowQueryService {
     private void addSportWindowsForDay(LocalDate date, int dow, List<SportScheduleSlotEntity> sportSlots,
             List<SportEventEntity> dayEvents, List<SportSessionEntity> daySessions,
             Set<SportSlotSkipService.SkipKey> skips, List<Window> windows) {
-        List<PlannedSport> unmatched = new ArrayList<>();
-        sportSlots.stream()
-            .filter(s -> s.getDayOfWeek() == dow)
-            .filter(s -> !skips.contains(new SportSlotSkipService.SkipKey(dow, s.getTime(), date)))
-            .forEach(s -> unmatched.add(new PlannedSport(s.getTime(), s.getDurationMin(), s.getSport())));
-        dayEvents.forEach(e -> unmatched.add(new PlannedSport(e.getTime(), e.getDurationMin(), e.getSport())));
-
-        List<SportSessionEntity> sessions = daySessions.stream()
-            .sorted(Comparator.comparing(SportSessionEntity::getTime,
-                Comparator.nullsLast(Comparator.naturalOrder())))
-            .toList();
+        List<PlannedSport> unmatched = plannedSportPool(date, dow, sportSlots, dayEvents, skips);
+        List<SportSessionEntity> sessions = byTimeNullsLast(daySessions);
         for (SportSessionEntity session : sessions) {
             PlannedSport plan = nearestPlan(unmatched, session.getTime());
             unmatched.remove(plan);
@@ -202,25 +198,205 @@ public class WorkoutWindowQueryService {
     }
 
     /**
-     * True when movement was actually LOGGED on {@code date} (mezo-u13jv, owner decision
-     * 2026-09-24): a COMPLETED gym workout instance (meso or custom — the real-load signal, not
-     * plan adherence), a logged sport session, or a logged run. This is the day-type probe behind
-     * {@link io.mrkuhne.mezo.feature.meal.service.FuelDayService}'s training/rest-day kcal pick:
-     * the plan alone never raises the day's calorie target — a planned session not yet done keeps
-     * the rest-day kcal until it is logged. An in-progress gym workout does not count yet.
-     * {@link #windowsFor} is untouched and keeps reading the plan — that is a different concern
-     * (pre/post-workout meal-role scoring looks forward at planned sessions).
+     * The date's planned-sport pool (mezo-jcpt.6 / mezo-32m82): the weekday-matched recurring
+     * slots NOT skipped on this date, plus the date's one-off events — the single builder both
+     * {@link #addSportWindowsForDay} and {@link #movementOn} consume, so the two can never drift
+     * apart the way the F2 nulls-order parity bug happened from a hand-duplicated per-day path.
      */
-    @Transactional(readOnly = true)
-    public boolean hasLoggedTrainingOn(UUID userId, LocalDate date) {
-        return !workoutSessionRepository.findDoneInstanceDates(userId, date, date).isEmpty()
-            || !sportSessionRepository.findByCreatedByAndDeletedFalseAndDateOrderByTimeAsc(userId, date).isEmpty()
-            || !runSessionLogRepository.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(userId, date, date)
-                .isEmpty();
+    private List<PlannedSport> plannedSportPool(LocalDate date, int dow, List<SportScheduleSlotEntity> slots,
+            List<SportEventEntity> events, Set<SportSlotSkipService.SkipKey> skips) {
+        List<PlannedSport> pool = new ArrayList<>();
+        slots.stream()
+            .filter(s -> s.getDayOfWeek() == dow)
+            .filter(s -> !skips.contains(new SportSlotSkipService.SkipKey(dow, s.getTime(), date)))
+            .forEach(s -> pool.add(new PlannedSport(s.getTime(), s.getDurationMin(), s.getSport(), false)));
+        events.forEach(e -> pool.add(new PlannedSport(e.getTime(), e.getDurationMin(), e.getSport(), true)));
+        return pool;
     }
 
-    /** One planned sport occurrence on the date — a weekday-matched recurring slot OR a dated one-off event. */
-    private record PlannedSport(String time, Integer durationMin, String sport) {
+    /** {@code sessions} sorted by clock time, a null time sorting LAST — matching Postgres's
+     *  default {@code ORDER BY time ASC} (mezo-jcpt.6 F2; see {@link #addSportWindowsForDay}'s
+     *  javadoc for why nulls-first would silently reorder which session wins a plan match). */
+    private static List<SportSessionEntity> byTimeNullsLast(List<SportSessionEntity> sessions) {
+        return sessions.stream()
+            .sorted(Comparator.comparing(SportSessionEntity::getTime,
+                Comparator.nullsLast(Comparator.naturalOrder())))
+            .toList();
+    }
+
+    /**
+     * One date's movement (mezo-32m82, spec §5): was the day's PLANNED training done, and how many
+     * kcal of UNPLANNED ("extra") movement it held. {@code NONE} is the all-false/all-zero case.
+     * Replaces {@code hasLoggedTrainingOn} (mezo-u13jv) — see {@link #movementOn}'s javadoc for the
+     * owner decisions behind the split.
+     */
+    public record DayMovement(boolean plannedDone, int extraKcal) {
+        public static final DayMovement NONE = new DayMovement(false, 0);
+    }
+
+    /**
+     * Was the day's PLANNED training done, and how many kcal of UNPLANNED movement did it hold
+     * (mezo-32m82, spec §5, replacing {@code hasLoggedTrainingOn} from mezo-u13jv). Owner decisions
+     * D2–D4: a planned session's energy is already priced into the weekly base (the weekly
+     * schedule-derived EAT), so only PLANNED adherence is allowed to flip the day-type kcal pick —
+     * a logged session that fulfils no plan is credited separately as EXTRA kcal, and a planned
+     * session that was never done is not deducted (no negative credit for a miss).
+     *
+     * <p>Gym: a completed instance is PLANNED when it is meso-origin AND the weekday has a gym
+     * slot AND fewer meso instances than slots have already been counted planned that day; every
+     * other completed instance (custom origin, no slot that weekday, or beyond the slot count) is
+     * EXTRA, estimated via {@link ActivityEnergyModel#netKcal}. Sport: the planned pool is built
+     * exactly as {@link #addSportWindowsForDay} does (weekday slots minus skips, plus the date's
+     * one-off events); each session consumes the {@link #nearestPlan}; a match to a RECURRING slot is
+     * planned, while a miss OR a match to a one-off event is extra at its own persisted (never
+     * invented) kcal — the weekly base only sums recurring slots, so an event's energy was never
+     * priced in (D2/D3). Events still consume their nearest match so they can't steal a slot. Run: the active block's prescribed
+     * sessions on the date are filled by the date's logged runs first; any logged run beyond that
+     * count is extra at its persisted kcal. {@code plannedDone} is true when ANY of the three kinds
+     * matched a plan; {@code extraKcal} sums every kind's extras. The athlete's rest-kcal/hour is
+     * looked up at most once, lazily, only when an extra gym instance actually exists — an unknown
+     * body contributes 0, never a fabricated estimate.
+     */
+    @Transactional(readOnly = true)
+    public DayMovement movementOn(UUID userId, LocalDate date) {
+        return movementBetween(userId, date, date).get(date);
+    }
+
+    /**
+     * Batched form of {@link #movementOn} — the ONLY resolution path (the mezo-jcpt.6 F1 lesson
+     * applied to movement): every source is fetched ONCE for {@code [from, to]} (gym slots, done
+     * gym instances, sport slots, sport events, sport sessions, slot skips, the active running
+     * block, run logs), grouped per date in memory, and each date is resolved by
+     * {@link #movementForDay} with exactly the per-day rules {@link #movementOn}'s javadoc states.
+     * The athlete body (rest-kcal/hour) is looked up at most once for the whole range — as of
+     * {@code to}, lazily, only when an extra gym instance exists; over a multi-week range that is a
+     * deliberate approximation (one body for the range, a few kcal on an extra gym day at most). Every date in the range is present in the result
+     * ({@link DayMovement#NONE} when nothing moved). Callers: the Fuel week rollup and the
+     * character meal-day reads (mezo-32m82 — 8 trend weeks would otherwise be ~56 single-date
+     * query sets).
+     */
+    @Transactional(readOnly = true)
+    public Map<LocalDate, DayMovement> movementBetween(UUID userId, LocalDate from, LocalDate to) {
+        List<GymScheduleSlotEntity> gymSlots =
+            gymRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId);
+        Map<LocalDate, List<WorkoutSessionEntity>> doneByDate = workoutSessionRepository
+            .findDoneInstancesBetween(userId, from, to).stream()
+            .collect(Collectors.groupingBy(WorkoutSessionEntity::getDate));
+        List<SportScheduleSlotEntity> sportSlots =
+            sportRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId);
+        Map<LocalDate, List<SportEventEntity>> eventsByDate = sportEventRepo
+            .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateAscTimeAsc(userId, from, to).stream()
+            .collect(Collectors.groupingBy(SportEventEntity::getDate));
+        Map<LocalDate, List<SportSessionEntity>> sportSessionsByDate = sportSessionRepository
+            .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(userId, from, to).stream()
+            .collect(Collectors.groupingBy(SportSessionEntity::getDate));
+        Set<SportSlotSkipService.SkipKey> skips = sportSlotSkipService.skipsBetween(userId, from, to);
+        RunningBlockEntity activeBlock = runningBlockRepository
+            .findByCreatedByAndStatusAndDeletedFalse(userId, "active").stream().findFirst().orElse(null);
+        Map<LocalDate, List<RunSessionLogEntity>> runsByDate = runSessionLogRepository
+            .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(userId, from, to).stream()
+            .collect(Collectors.groupingBy(RunSessionLogEntity::getDate));
+
+        // Looked up at most once for the whole range, and only if an extra gym instance needs it.
+        Supplier<BigDecimal> restKcalPerHour = new Supplier<>() {
+            private boolean loaded;
+            private BigDecimal value;
+
+            @Override
+            public BigDecimal get() {
+                if (!loaded) {
+                    value = athleteBodyPort.bodyAt(userId, to)
+                        .flatMap(b -> ActivityEnergyModel.restKcalPerHour(b.bmrKcal(), b.weightKg()))
+                        .orElse(null);
+                    loaded = true;
+                }
+                return value;
+            }
+        };
+
+        Map<LocalDate, DayMovement> result = new LinkedHashMap<>();
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            result.put(day, movementForDay(day, gymSlots, doneByDate.getOrDefault(day, List.of()),
+                sportSlots, eventsByDate.getOrDefault(day, List.of()),
+                sportSessionsByDate.getOrDefault(day, List.of()), skips, activeBlock,
+                runsByDate.getOrDefault(day, List.of()), restKcalPerHour));
+        }
+        return result;
+    }
+
+    /** One date's movement from pre-fetched, range-batched data — no query in here except the lazy,
+     *  range-memoized body lookup; the per-day rules are documented on {@link #movementOn}. */
+    private DayMovement movementForDay(LocalDate date, List<GymScheduleSlotEntity> gymSlots,
+            List<WorkoutSessionEntity> doneInstances, List<SportScheduleSlotEntity> sportSlots,
+            List<SportEventEntity> dayEvents, List<SportSessionEntity> daySessions,
+            Set<SportSlotSkipService.SkipKey> skips, RunningBlockEntity activeBlock,
+            List<RunSessionLogEntity> dayRuns, Supplier<BigDecimal> restKcalPerHour) {
+        int dow = date.getDayOfWeek().getValue() - 1;
+        boolean plannedDone = false;
+        int extraKcal = 0;
+
+        // Gym.
+        long gymSlotCount = gymSlots.stream().filter(s -> s.getDayOfWeek() == dow).count();
+        long plannedGymCount = 0;
+        for (WorkoutSessionEntity instance : doneInstances) {
+            boolean planned = "meso".equals(instance.getOrigin()) && plannedGymCount < gymSlotCount;
+            if (planned) {
+                plannedGymCount++;
+                plannedDone = true;
+                continue;
+            }
+            extraKcal += activityEnergyModel
+                .netKcal("gym", null, gymMinutes(instance), restKcalPerHour.get()).orElse(0);
+        }
+
+        // Sport — the same planned pool + nearest-match consumption as addSportWindowsForDay.
+        List<PlannedSport> unmatchedSport = plannedSportPool(date, dow, sportSlots, dayEvents, skips);
+        for (SportSessionEntity session : byTimeNullsLast(daySessions)) {
+            PlannedSport plan = nearestPlan(unmatchedSport, session.getTime());
+            if (plan != null) {
+                unmatchedSport.remove(plan);
+            }
+            if (plan != null && !plan.oneOffEvent()) {
+                plannedDone = true;
+            } else {
+                // No plan, OR a one-off event: the weekly base only sums RECURRING slots, so an
+                // event's energy was never priced in — credit the session as extra (spec D2/D3).
+                // The event still consumes its match above so it can't steal a recurring slot.
+                extraKcal += session.getKcal() != null ? session.getKcal() : 0;
+            }
+        }
+
+        // Run — the block's prescribed sessions on the date, filled by the date's logged runs first.
+        long prescribedRunCount = activeBlock == null ? 0 : prescribedRunSessionsOn(activeBlock, date).count();
+        long plannedRunCount = 0;
+        for (RunSessionLogEntity run : dayRuns) {
+            if (plannedRunCount < prescribedRunCount) {
+                plannedRunCount++;
+                plannedDone = true;
+            } else {
+                extraKcal += run.getKcal() != null ? run.getKcal() : 0;
+            }
+        }
+
+        return new DayMovement(plannedDone, extraKcal); // a record: value-equal to NONE when both are false/0
+    }
+
+    /** Minutes for an EXTRA gym instance's net-kcal estimate: derived work time when known, else
+     *  the wall-clock span clamped to a sane [0, 150], else the configured default (spec §5.2). */
+    private int gymMinutes(WorkoutSessionEntity instance) {
+        if (instance.getActiveSeconds() != null) {
+            return instance.getActiveSeconds() / 60;
+        }
+        if (instance.getStartedAt() != null && instance.getFinishedAt() != null) {
+            long minutes = Duration.between(instance.getStartedAt(), instance.getFinishedAt()).toMinutes();
+            return (int) Math.max(0, Math.min(150, minutes));
+        }
+        return props.gymDefaultMinutes();
+    }
+
+    /** One planned sport occurrence on the date — a weekday-matched recurring slot OR a dated one-off
+     *  event ({@code oneOffEvent}); only the former is in the weekly plan base (mezo-32m82, spec §5). */
+    private record PlannedSport(String time, Integer durationMin, String sport, boolean oneOffEvent) {
     }
 
     /** The planned occurrence closest in time to {@code time} (the first when the session carries no time). */

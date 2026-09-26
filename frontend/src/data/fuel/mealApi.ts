@@ -4,7 +4,7 @@ import { toNutrients } from '@/data/fuel/recipeMacros'
 import type {
   MealInput, FuelMeal, MealItemLine, MacroSet, MealSlot, MealItemSource,
   MealAiDraft, MealAiDraftLine,
-  MealBreakdown, MealDimension, MicroStatus, ToolType,
+  MealBreakdown, MealDimension, MicroStatus, ToolType, FuelDayEnergy,
 } from '@/data/types'
 import type { NovaGroup } from '@/data/nova'
 
@@ -126,6 +126,8 @@ export interface FuelDayData {
   targets: MacroSet
   consumed: MacroSet
   meals: FuelMeal[]
+  /** The served energy breakdown (mezo-32m82); null on the static path. */
+  energy?: FuelDayEnergy | null
 }
 
 /** One day of the 7-day rollup (`GET /api/fuel/week/{start}`) — no meal bodies. */
@@ -218,6 +220,7 @@ function fromDayResponse(d: FuelDayResponse): FuelDayData {
     targets: d.targets,
     consumed: d.consumed,
     meals: d.meals.map(fromResponse),
+    energy: d.energy ?? null,
   }
 }
 

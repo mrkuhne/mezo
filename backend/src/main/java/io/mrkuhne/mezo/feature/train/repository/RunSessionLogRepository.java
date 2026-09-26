@@ -27,4 +27,7 @@ public interface RunSessionLogRepository extends JpaRepository<RunSessionLogEnti
     /** Logs in the inclusive {@code [from, to]} window — {@code CharacterSignalReads}' 8-week trend read. */
     List<RunSessionLogEntity> findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(
         UUID createdBy, LocalDate from, LocalDate to);
+
+    /** Live rows still missing kcal with a real duration — the net-model migration catch-up (mezo-32m82). */
+    List<RunSessionLogEntity> findByDeletedFalseAndKcalIsNullAndDurationMinGreaterThan(int minutes);
 }

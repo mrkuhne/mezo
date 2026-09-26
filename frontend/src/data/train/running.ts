@@ -5,6 +5,8 @@ import type {
   RunPrescribedSession,
   RunSegment,
 } from '@/data/train/runningApi'
+import { netKcal, restKcalPerHour } from '@/data/train/activityEnergy'
+import { MOCK_FIXTURE_WEIGHT_KG } from '@/data/train/train'
 
 // dayOfWeek: 0=Hét..6=Vas. Tue=1, Fri=4.
 function sprintSession(rounds: number, restSec: number): RunPrescribedSession {
@@ -75,28 +77,20 @@ export const runningBlocksMock: RunningBlockResponse[] = [
 export const runSessionsMock: RunSessionLogResponse[] = [
   { id: 'rs-01', blockId: 'rb-active-01', weekNumber: 3, sessionKey: 'tue-sprint', date: '2026-06-30',
     completedRounds: 6, rpeActual: 9, hrRecoverySec: 42, sprintLandmark: 'túl a 2. lámpaoszlopon', durationMin: 22, notes: null,
-    kcal: 275, kcalIsEstimate: true },
+    kcal: mockRunKcal(22, 9), kcalIsEstimate: true },
   { id: 'rs-02', blockId: 'rb-active-01', weekNumber: 2, sessionKey: 'fri-pyramid', date: '2026-06-26',
     completedRounds: null, rpeActual: 8, hrRecoverySec: 50, sprintLandmark: null, durationMin: 26, notes: 'jó tempó',
-    kcal: 312, kcalIsEstimate: true },
+    kcal: mockRunKcal(26, 8), kcalIsEstimate: true },
 ]
 
 /**
- * Mock-mode stand-in for the backend's run-kcal decision (T8 Task 6 final review) — the
- * exact sibling of `mockSportKcal` (`trainHooks.ts`), deliberately the same fixture shape
- * so the two mock surfaces never quote wildly different burns for the same effort.
- *
- * The REAL number is the server's: a MET table folded with the athlete's own body, which
- * the frontend has no access to and must never reproduce. This is a FIXTURE (a MET-ish
- * curve over the captured RPE at a fixture 78 kg body), NOT the published model. Returns
- * null when the log carries no duration — mock's own "never a fabricated 0" guard, matching
- * the wire's null-when-unknown promise.
+ * Mock-mode stand-in for the backend's run-kcal decision (T8 Task 6 final review) — the exact
+ * sibling of `mockSportKcal` (`trainHooks.ts`). Since mezo-32m82 it IS the published model: the
+ * net activity energy (`activityEnergy.netKcal`, the backend ActivityEnergyModel's mirror) for a
+ * run at the logged RPE's band, at the fixture 78 kg body's rest energy (1 kcal/kg/h). Returns
+ * null when the log carries no duration — the wire's null-when-unknown promise, never a 0.
  */
 export function mockRunKcal(durationMin: number | null | undefined, rpeActual: number | null | undefined): number | null {
   if (durationMin == null || durationMin <= 0) return null
-  const fixtureWeightKg = 78
-  // Running sits higher on the MET table than the sport estimator's floor — the run wire's
-  // own doc assumes ~9 km/h (≈8 MET) when the log carries no pace.
-  const met = 6 + (rpeActual ?? 7) * 0.35
-  return Math.round((durationMin * met * 3.5 * fixtureWeightKg) / 200)
+  return netKcal('run', rpeActual, durationMin, restKcalPerHour(null, MOCK_FIXTURE_WEIGHT_KG))
 }

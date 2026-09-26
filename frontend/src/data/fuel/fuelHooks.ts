@@ -22,12 +22,13 @@ const seedDayData: FuelDayData = {
   targets: fuelDay.targets,
   consumed: fuelDay.consumed,
   meals: fuelDay.meals,
+  energy: fuelDay.energy,
 }
 // Real-mode unresolved fallback — a ZERO day, NEVER the seed's fabricated macros + meals
 // (the "no static fallback in real mode" invariant). `date` is never read by consumers
 // (FuelDay drops it); targets/consumed zeroed, meals empty.
 const ZERO_MACROS: MacroSet = { kcal: 0, p: 0, c: 0, f: 0, water: 0 }
-const FUELDAY_EMPTY: FuelDayData = { date: '', targets: ZERO_MACROS, consumed: ZERO_MACROS, meals: [] }
+const FUELDAY_EMPTY: FuelDayData = { date: '', targets: ZERO_MACROS, consumed: ZERO_MACROS, meals: [], energy: null }
 
 /**
  * Composed dual-mode. Only targets/consumed/meals are query-driven (real: mealApi.getDay,
@@ -47,6 +48,7 @@ export function useFuelDay(date: string = localDateString()): { fuel: FuelDay; i
     targets: data.targets,
     consumed: data.consumed,
     meals: data.meals,
+    energy: data.energy ?? null,
     pacing: fuelDay.pacing,
     micronutrients: fuelDay.micronutrients,
     supplements: fuelDay.supplements,

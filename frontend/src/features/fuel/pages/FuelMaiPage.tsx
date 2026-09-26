@@ -96,7 +96,7 @@ export function FuelMaiPage() {
   const goDay = (next: string) => navigate(next === today ? '/fuel' : `/fuel?d=${next}`)
 
   const { fuel } = useFuelDay(date)
-  const { plan, budget, nowHHmm, energyBreakdown, wake, bed, blocks } = useFuelTimeline(date)
+  const { plan, budget, staticEnergy, nowHHmm, energyBreakdown, trajectory, wake, bed, blocks } = useFuelTimeline(date)
   // Diet Plan slice 1 (mezo-xwgb): the fiber ring's target now comes from the user's own diet
   // settings instead of the static FIBER_TARGET_G default.
   const { settings: dietSettings } = useDietSettings()
@@ -106,10 +106,9 @@ export function FuelMaiPage() {
   const [energyOpen, setEnergyOpen] = useState<EnergySection | null>(null)
 
   // ── keret-hero VM (unchanged data spine, Titanium face — mezo-33k6) ───
-  // Static-fallback energy (real mode, no BMR): base equals the FULL segment kcal and
-  // activity/balance are 0, so the breakdown chips would be meaningless — the whole chip
-  // row vanishes (the retired DayBudgetCard's `staticEnergy` rule, kept verbatim).
-  const staticEnergy = plan.energy.activity === 0 && plan.energy.balance === 0
+  // Static energy (no served breakdown — no goal / no biometric snapshot, mezo-32m82): the
+  // breakdown chips would be meaningless, so the whole chip row vanishes (the retired
+  // DayBudgetCard's `staticEnergy` rule).
   const keretHeroVmRaw = buildKeretHero({
     budget, staticEnergy, consumed: fuel.consumed, meals: fuel.meals,
     water: { currentMl: fuel.consumed.water, targetMl: fuel.targets.water },
@@ -164,6 +163,7 @@ export function FuelMaiPage() {
             <FuelEnergyHero
               vm={keretHeroVm}
               past={past}
+              trajectory={trajectory}
               // A15: the shared sheet, opened at its first section — not the hero's local box.
               onOpenEnergy={() => setEnergyOpen('base')}
               onWater={() => setWaterOpen(true)}

@@ -26,4 +26,10 @@ public interface GoalRepository extends JpaRepository<GoalEntity, UUID> {
      * {@code "archived"} to reconcile every live (planned/active) goal's prescription in one query.
      */
     List<GoalEntity> findByCreatedByAndStatusNotAndDeletedFalse(UUID createdBy, String status);
+
+    /**
+     * Every non-archived, non-deleted goal across ALL owners — the activity-model rollout runner's
+     * global sweep (mezo-32m82), unlike the owner-scoped {@code findByCreatedByAndStatusNot...} above.
+     */
+    List<GoalEntity> findByStatusNotAndDeletedFalse(String status);
 }

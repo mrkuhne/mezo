@@ -3,18 +3,26 @@ package io.mrkuhne.mezo.feature.train.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.biometrics.profile.entity.BiometricProfileEntity;
+import io.mrkuhne.mezo.feature.goal.engine.service.TdeeBootstrapService;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockStructure;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
+import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SportSlotSkipPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
+import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Map;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -302,57 +310,69 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
         assertThat(windows.getFirst().start()).isEqualTo(LocalTime.of(17, 0));
     }
 
+    // hasLoggedTrainingOn is deleted (mezo-32m82) — movementOn(...).plannedDone() replaces it. A
+    // logged session on a slotless day now reads plannedDone=false (spec D2/D3): a planned
+    // session is already priced into the weekly base, so only PLANNED adherence — not any logged
+    // movement — is allowed to flip the day-type kcal pick; an unplanned (extra) session's energy
+    // is credited separately via extraKcal, never by pretending the day was "planned".
+
     @Test
-    void testHasLoggedTrainingOn_shouldReturnFalse_whenTheDayIsOnlyPlanned() {
+    void testMovementOn_shouldReadPlannedDoneFalse_whenTheDayIsOnlyPlanned() {
         UUID owner = owner();
         LocalDate wed = LocalDate.of(2026, 6, 24);          // Wednesday → dayOfWeek index 2
         train.createGymSlot(owner, 2, "09:00");
         train.createScheduleSlot(owner, 2, "17:00", 60, "training");
         train.createSportEvent(owner, wed, "19:30", 120);
 
-        assertThat(service.hasLoggedTrainingOn(owner, wed)).isFalse();
+        assertThat(service.movementOn(owner, wed).plannedDone()).isFalse();
     }
 
     @Test
-    void testHasLoggedTrainingOn_shouldReturnTrue_whenAGymWorkoutWasCompletedThatDay() {
+    void testMovementOn_shouldReadPlannedDoneTrue_whenAGymWorkoutWasCompletedThatDay() {
         UUID owner = owner();
         LocalDate wed = LocalDate.of(2026, 6, 24);
+        train.createGymSlot(owner, 2, "09:00");
         UUID mesoId = train.createActiveMeso(owner).getId();
         WorkoutSessionEntity template = train.createTemplateDay(owner, mesoId, "Sze");
         train.createWorkoutInstance(owner, template, wed, "completed");
 
-        assertThat(service.hasLoggedTrainingOn(owner, wed)).isTrue();
+        assertThat(service.movementOn(owner, wed).plannedDone()).isTrue();
     }
 
     @Test
-    void testHasLoggedTrainingOn_shouldReturnFalse_whenTheGymWorkoutIsStillInProgress() {
+    void testMovementOn_shouldReadPlannedDoneFalse_whenTheGymWorkoutIsStillInProgress() {
         UUID owner = owner();
         LocalDate wed = LocalDate.of(2026, 6, 24);
+        train.createGymSlot(owner, 2, "09:00");
         UUID mesoId = train.createActiveMeso(owner).getId();
         WorkoutSessionEntity template = train.createTemplateDay(owner, mesoId, "Sze");
         train.createWorkoutInstance(owner, template, wed, "active");
 
-        assertThat(service.hasLoggedTrainingOn(owner, wed)).isFalse();
+        // Not-done (only completed instances are ever read) — and an in-progress instance adds
+        // no extra kcal either, so the whole day reads as untouched.
+        assertThat(service.movementOn(owner, wed)).isEqualTo(WorkoutWindowQueryService.DayMovement.NONE);
     }
 
     @Test
-    void testHasLoggedTrainingOn_shouldReturnTrue_whenASportSessionWasLoggedThatDay() {
+    void testMovementOn_shouldReadPlannedDoneFalse_whenASportSessionWasLoggedOnASlotlessDay() {
+        // spec D2/D3: a slotless day has no plan to fulfil — the session is EXTRA, not planned.
         UUID owner = owner();
         LocalDate wed = LocalDate.of(2026, 6, 24);
         train.createSportSession(owner, wed, 90);
 
-        assertThat(service.hasLoggedTrainingOn(owner, wed)).isTrue();
-        assertThat(service.hasLoggedTrainingOn(owner, wed.plusDays(1))).isFalse();
+        assertThat(service.movementOn(owner, wed).plannedDone()).isFalse();
+        assertThat(service.movementOn(owner, wed.plusDays(1))).isEqualTo(WorkoutWindowQueryService.DayMovement.NONE);
     }
 
     @Test
-    void testHasLoggedTrainingOn_shouldReturnTrue_whenARunWasLoggedThatDay() {
+    void testMovementOn_shouldReadPlannedDoneTrue_whenARunWasLoggedAgainstAPrescribedSessionThatDay() {
         UUID owner = owner();
-        LocalDate wed = LocalDate.of(2026, 6, 24);
-        UUID blockId = running.createBlock(owner, "Sprint", "active").getId();
-        running.createRunLog(owner, blockId, 1, "tue-sprint", wed, 6, 8, null, null, 30);
+        LocalDate start = LocalDate.of(2026, 6, 16);
+        LocalDate wedOfWeek2 = LocalDate.of(2026, 6, 24);
+        UUID blockId = running.createBlockAnchored(owner, start, 8, 3, 2, 2, "18:00").getId();
+        running.createRunLog(owner, blockId, 2, "w2-sprint", wedOfWeek2, 6, 8, null, null, 30);
 
-        assertThat(service.hasLoggedTrainingOn(owner, wed)).isTrue();
+        assertThat(service.movementOn(owner, wedOfWeek2).plannedDone()).isTrue();
     }
 
     /**
@@ -412,6 +432,8 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
         train.createScheduleSlot(owner, 2, "09:00", 60, "training");
         train.createSportEvent(owner, wed, "18:00", 90);
         train.createSportSession(owner, wed);               // played 18:15/90 min, consumes the event
+        // (The event match only shapes WINDOWS here; for movement the same session is credited as
+        // extra because events are not in the weekly base — spec D2/D3, mezo-32m82 final fix.)
 
         // Skip: only this week's Thursday occurrence — the recurring slot still applies on other
         // Thursdays (a range read must not smear one date's skip across the whole week).
@@ -429,6 +451,192 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
             assertThat(ranged.getOrDefault(day, List.of()))
                 .as("windows on %s", day)
                 .containsExactlyInAnyOrderElementsOf(service.windowsFor(owner, day));
+        }
+    }
+
+    /**
+     * {@code movementOn} (mezo-32m82, spec §5): was the day's PLANNED training done, and how many
+     * kcal of UNPLANNED movement did it hold. Replaces {@code hasLoggedTrainingOn}.
+     */
+    @Nested
+    class MovementOn {
+
+        @Autowired private BiometricProfilePopulator biometricProfilePopulator;
+        @Autowired private WeightLogPopulator weightLogPopulator;
+        @Autowired private TdeeBootstrapService tdeeBootstrapService;
+
+        /** The prototype-default profile (M, born 1991-03-01, 15% body fat) plus one weigh-in
+         *  (mirrors {@code SportServiceIT#seedBody}). */
+        private BiometricProfileEntity seedBody(UUID owner, String weightKg) {
+            BiometricProfileEntity profile = biometricProfilePopulator.create(owner);
+            weightLogPopulator.createWeightLog(owner, LocalDate.parse("2026-05-30"), new BigDecimal(weightKg));
+            return profile;
+        }
+
+        // (a) A Wednesday with a volleyball slot and one logged volleyball session with kcal 480
+        // → plannedDone=true, extraKcal=0.
+        @Test
+        void testMovementOn_shouldReadPlannedDoneTrueAndNoExtra_whenTheOnlyLoggedSessionMatchesTheSlot() {
+            UUID owner = owner();
+            LocalDate wed = LocalDate.of(2026, 6, 24);          // Wednesday → dayOfWeek index 2
+            train.createScheduleSlot(owner, 2, "18:00", 90, "training");
+            train.withKcal(train.createSportSession(owner, wed), 480);   // 18:15/90 min, volleyball
+
+            WorkoutWindowQueryService.DayMovement m = service.movementOn(owner, wed);
+
+            assertThat(m.plannedDone()).isTrue();
+            assertThat(m.extraKcal()).isZero();
+        }
+
+        // (b) A Saturday with no slots and a logged volleyball session with kcal 573 →
+        // plannedDone=false, extraKcal=573.
+        @Test
+        void testMovementOn_shouldReadPlannedDoneFalseAndFullExtra_whenNoSlotExistsThatWeekday() {
+            UUID owner = owner();
+            LocalDate sat = LocalDate.of(2026, 6, 27);          // Saturday → dayOfWeek index 5
+            train.withKcal(train.createSportSession(owner, sat), 573);
+
+            WorkoutWindowQueryService.DayMovement m = service.movementOn(owner, sat);
+
+            assertThat(m.plannedDone()).isFalse();
+            assertThat(m.extraKcal()).isEqualTo(573);
+        }
+
+        // (c) A Wednesday with one volleyball slot and two logged sessions (kcal 480, 300) →
+        // plannedDone=true, extraKcal=300. The later one is extra because the first consumes the plan.
+        @Test
+        void testMovementOn_shouldChargeOnlyTheUnmatchedSession_whenTwoSessionsCompeteForOneSlot() {
+            UUID owner = owner();
+            LocalDate wed = LocalDate.of(2026, 6, 24);
+            train.createScheduleSlot(owner, 2, "18:00", 90, "training");
+            train.withKcal(train.createSportSessionAt(owner, wed, "18:00", 90), 480);  // consumes the plan
+            train.withKcal(train.createSportSessionAt(owner, wed, "20:00", 60), 300);  // extra
+
+            WorkoutWindowQueryService.DayMovement m = service.movementOn(owner, wed);
+
+            assertThat(m.plannedDone()).isTrue();
+            assertThat(m.extraKcal()).isEqualTo(300);
+        }
+
+        // (d) A Monday with a gym slot, a completed meso instance and a completed custom instance
+        // with activeSeconds=3600 → plannedDone=true. extraKcal = round(2.5 × bmr/24).
+        @Test
+        void testMovementOn_shouldChargeOnlyTheCustomInstance_whenAMesoAndACustomInstanceBothCompletedThatDay() {
+            UUID owner = owner();
+            LocalDate monday = LocalDate.of(2026, 6, 22);       // Monday → dayOfWeek index 0
+            BiometricProfileEntity profile = seedBody(owner, "80.00");
+            train.createGymSlot(owner, 0, "09:00");
+
+            UUID mesoId = train.createActiveMeso(owner).getId();
+            WorkoutSessionEntity mesoTemplate = train.createTemplateDay(owner, mesoId, "Hét");
+            train.createWorkoutInstance(owner, mesoTemplate, monday, "completed");
+
+            WorkoutSessionEntity customTemplate = train.createCustomTemplateDay(owner, "Saját");
+            train.createWorkoutInstance(owner, customTemplate, monday, "completed", 3600);
+
+            // Independent of ActivityEnergyModel#netKcal (the code under test): the brief's own
+            // formula, extraKcal = round(2.5 × bmr/24) — 2.5 = the gym MODERATE MET (3.5) − 1,
+            // moderate because a null RPE always bands moderate (global constraints §Bands).
+            BigDecimal bmr = tdeeBootstrapService.bmr(profile, new BigDecimal("80.00"));
+            int expectedExtra = bmr.multiply(new BigDecimal("2.5"))
+                .divide(BigDecimal.valueOf(24), MathContext.DECIMAL64)
+                .setScale(0, RoundingMode.HALF_UP)
+                .intValueExact();
+
+            WorkoutWindowQueryService.DayMovement m = service.movementOn(owner, monday);
+
+            assertThat(m.plannedDone()).isTrue();
+            assertThat(m.extraKcal()).isEqualTo(expectedExtra);
+        }
+
+        // (e) A skipped slot (sport-slot skip on that date) plus a logged session → extra.
+        @Test
+        void testMovementOn_shouldTreatTheSessionAsExtra_whenItsSlotIsSkippedOnThatDate() {
+            UUID owner = owner();
+            LocalDate wed = LocalDate.of(2026, 6, 24);
+            train.createScheduleSlot(owner, 2, "17:00", 60, "training");
+            skips.createSkip(owner, 2, "17:00", wed);
+            train.withKcal(train.createSportSession(owner, wed), 400);
+
+            WorkoutWindowQueryService.DayMovement m = service.movementOn(owner, wed);
+
+            assertThat(m.plannedDone()).isFalse();
+            assertThat(m.extraKcal()).isEqualTo(400);
+        }
+
+        // (f) Nothing logged → DayMovement.NONE-equal.
+        @Test
+        void testMovementOn_shouldEqualNone_whenNothingWasLoggedOrPlanned() {
+            UUID owner = owner();
+            LocalDate wed = LocalDate.of(2026, 6, 24);
+
+            assertThat(service.movementOn(owner, wed)).isEqualTo(WorkoutWindowQueryService.DayMovement.NONE);
+        }
+
+        // (h) movementBetween (the batched path movementOn now delegates to) over a 7-day range must
+        // equal per-day movementOn for a mixed fixture: a planned sport day, an unplanned Saturday
+        // session, a custom gym day, and empty days.
+        @Test
+        void testMovementBetween_shouldMatchPerDayMovementOn_forAMixedWeek() {
+            UUID owner = owner();
+            LocalDate monday = LocalDate.of(2026, 6, 22);
+            LocalDate wed = monday.plusDays(2);
+            LocalDate sat = monday.plusDays(5);
+            LocalDate sunday = monday.plusDays(6);
+            seedBody(owner, "80.00");
+            // Monday: a custom gym day (no gym slot) → extra via the net model.
+            train.createWorkoutInstance(owner, train.createCustomTemplateDay(owner, "Saját"), monday,
+                "completed", 3600);
+            // Wednesday: a volleyball slot the logged session fulfils → planned.
+            train.createScheduleSlot(owner, 2, "18:00", 90, "training");
+            train.withKcal(train.createSportSession(owner, wed), 480);
+            // Saturday: an unplanned session → extra at its persisted kcal.
+            int satKcal = 573;
+            train.withKcal(train.createSportSession(owner, sat), satKcal);
+
+            Map<LocalDate, WorkoutWindowQueryService.DayMovement> ranged =
+                service.movementBetween(owner, monday, sunday);
+
+            assertThat(ranged.keySet()).hasSize(7);
+            for (LocalDate day = monday; !day.isAfter(sunday); day = day.plusDays(1)) {
+                assertThat(ranged.get(day)).as("movement on %s", day).isEqualTo(service.movementOn(owner, day));
+            }
+            assertThat(ranged.get(monday).plannedDone()).isFalse();
+            assertThat(ranged.get(monday).extraKcal()).isPositive();
+            assertThat(ranged.get(wed)).isEqualTo(new WorkoutWindowQueryService.DayMovement(true, 0));
+            assertThat(ranged.get(sat)).isEqualTo(new WorkoutWindowQueryService.DayMovement(false, satKcal));
+            assertThat(ranged.get(monday.plusDays(1))).isEqualTo(WorkoutWindowQueryService.DayMovement.NONE);
+        }
+
+        // (i) mezo-32m82 final-review fix (spec D2/D3): a one-off EVENT is matched (so it can't steal
+        // a recurring slot) but its energy is NOT in the weekly plan base — which sums only recurring
+        // slots — so the session that consumes it is credited its persisted kcal as EXTRA and does
+        // not by itself flip plannedDone. Saturday event + a logged 140′ session with kcal K.
+        @Test
+        void testMovementOn_shouldCreditTheSessionAsExtra_whenItConsumesAOneOffEvent() {
+            UUID owner = owner();
+            LocalDate sat = LocalDate.of(2026, 6, 27);          // Saturday → no recurring slots
+            train.createSportEvent(owner, sat, "10:00", 140);
+            int k = 612;
+            train.withKcal(train.createSportSessionAt(owner, sat, "10:00", 140), k);
+
+            WorkoutWindowQueryService.DayMovement m = service.movementOn(owner, sat);
+
+            assertThat(m.plannedDone()).isFalse();
+            assertThat(m.extraKcal()).isEqualTo(k);
+        }
+
+        // (g) A logged session with null kcal on a slotless day → plannedDone=false, extraKcal=0.
+        @Test
+        void testMovementOn_shouldNeverInventKcal_whenTheExtraSessionCarriesNoKcal() {
+            UUID owner = owner();
+            LocalDate wed = LocalDate.of(2026, 6, 24);
+            train.createSportSession(owner, wed);   // no kcal set — null, honest-null
+
+            WorkoutWindowQueryService.DayMovement m = service.movementOn(owner, wed);
+
+            assertThat(m.plannedDone()).isFalse();
+            assertThat(m.extraKcal()).isZero();
         }
     }
 }

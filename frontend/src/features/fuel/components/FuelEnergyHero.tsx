@@ -25,23 +25,49 @@
 import { useId, useState } from 'react'
 import { pct } from '@/shared/lib/pct'
 import { huInt } from '@/shared/lib/huNum'
-import { ContentIcon, type ClayIconName } from '@/shared/ui/clay'
+import { ContentIcon, type ClayIconName, type Icon3DName } from '@/shared/ui/clay'
 import { heroEquationLines, type EquationLine, type KeretHeroVM } from '@/features/fuel/logic/keretHero'
 import { FuelMacroRings, useFuelCountUp } from '@/features/fuel/components/FuelMacroRings'
 import { GlassBox } from '@/features/fuel/components/GlassBox'
 
-// One hue + one clay symbol per equation row — the prototype's `glass-node` palette, expressed
-// in house tokens so the box reads in both themes.
-const NODE: Record<EquationLine['key'], { color: string; icon: ClayIconName; sub: string }> = {
-  base: { color: 'var(--amber)', icon: 'i-cel', sub: 'az alapanyagcseréd és az életmódod' },
-  activity: { color: 'var(--sage)', icon: 'i-edzes', sub: 'a ma rögzített mozgásodból' },
+type Trajectory = 'cut' | 'bulk' | 'maintain' | null
+
+// One hue + one Titanium symbol per equation row — the prototype's `glass-node` palette, expressed
+// in house tokens. Alap wears the flame (the BMR tile's own sprite on the shared energy sheet);
+// the target ring (`i-cel` → t-ring) moved to Célod (mezo-32m82). No violet exists in the Üveg
+// palette, so Célod takes the rose accent.
+const NODE: Record<EquationLine['key'], { color: string; icon: ClayIconName | Icon3DName; sub: string }> = {
+  base: { color: 'var(--amber)', icon: 't-flame', sub: 'az alapanyagcseréd és az életmódod' },
+  activity: { color: 'var(--sage)', icon: 'i-edzes', sub: 'a heti edzésterved mai része' },
+  goal: { color: 'var(--rose)', icon: 'i-cel', sub: '' },
   eaten: { color: 'var(--coral)', icon: 'i-fuel', sub: 'amit ma eddig logoltál' },
   remaining: { color: 'var(--sky)', icon: 'i-lang', sub: 'a mai kereted maradéka' },
+}
+
+const GOAL_SUB: Record<'cut' | 'bulk' | 'maintain', string> = {
+  cut: 'a fogyási célod napi része',
+  bulk: 'a tömegelési célod napi része',
+  maintain: 'tartás',
+}
+
+/** The row's sub copy — Mozgás names an unplanned credit, Célod names the goal's direction. */
+function nodeSub(line: EquationLine, vm: KeretHeroVM, trajectory: Trajectory): string {
+  if (line.key === 'activity' && vm.chips?.extra) return `${NODE.activity.sub} + terven kívüli mozgás`
+  // „tartás" only for a truly zero balance; a maintain goal's non-zero residual (the BMR floor)
+  // gets no sub rather than a word that contradicts its signed number.
+  if (line.key === 'goal') return trajectory === 'maintain' ? (line.value === 0 ? GOAL_SUB.maintain : '') : trajectory ? GOAL_SUB[trajectory] : ''
+  return NODE[line.key].sub
 }
 
 /** Sign + value, honest-null aware: a missing component is „—", and the sign stays so the row
  *  still reads as part of the equation (the prototype prints `− 1 240` the same way). */
 function nodeValue(line: EquationLine): string {
+  if (line.sign === '±') {
+    // Célod carries its OWN sign: − (U+2212) for a deficit, + for a surplus.
+    if (line.value == null) return '—'
+    if (line.value === 0) return huInt(0)
+    return `${line.value < 0 ? '−' : '+'} ${huInt(Math.abs(line.value))}`
+  }
   if (line.value == null) return line.sign == null || line.sign === '=' ? '—' : `${line.sign} —`
   // The `=` row carries its OWN sign (an overshoot day is honestly negative); the +/− rows
   // have the operator in front, so their magnitude is what follows it.
@@ -49,13 +75,13 @@ function nodeValue(line: EquationLine): string {
   return `${line.sign} ${huInt(Math.abs(line.value))}`
 }
 
-function EquationBox({ vm, past, onClose, onFull }: {
-  vm: KeretHeroVM; past: boolean; onClose: () => void
+function EquationBox({ vm, past, trajectory, onClose, onFull }: {
+  vm: KeretHeroVM; past: boolean; trajectory: Trajectory; onClose: () => void
   /** A15: a MEGLÉVŐ, Énnel közös energia-magyarázat — a doboz csendes ajtaja. */
   onFull?: () => void
 }) {
   const titleId = useId()
-  const lines = heroEquationLines(vm)
+  const lines = heroEquationLines(vm, trajectory)
   const over = vm.remainingKcal < 0
 
 
@@ -84,7 +110,7 @@ function EquationBox({ vm, past, onClose, onFull }: {
             <span className="fmx-node-art"><ContentIcon name={NODE[line.key].icon} size={24} /></span>
             <span className="fmx-node-copy">
               <strong>{line.label}</strong>
-              <small>{NODE[line.key].sub}</small>
+              <small>{nodeSub(line, vm, trajectory)}</small>
             </span>
             <b>{nodeValue(line)}{line.key === 'remaining' && <i>kcal</i>}</b>
           </div>
@@ -106,10 +132,12 @@ function EquationBox({ vm, past, onClose, onFull }: {
   )
 }
 
-export function FuelEnergyHero({ vm, past = false, onOpenEnergy, onWater }: {
+export function FuelEnergyHero({ vm, past = false, trajectory = null, onOpenEnergy, onWater }: {
   vm: KeretHeroVM
   /** A13: egy MÚLTBELI napot nézünk — a „ma” szó ilyenkor hazugság lenne. */
   past?: boolean
+  /** Az aktív cél iránya — a Célod sor szövegét választja (mezo-32m82); nincs cél → null. */
+  trajectory?: Trajectory
   /** A15: a doboz csendes ajtaja a szülő MEGLÉVŐ, Énnel közös energia-magyarázatához.
    *  A chip maga MINDIG a jóváhagyott üvegdobozt nyitja (mezo-jb84: élesben a régi lap jött). */
   onOpenEnergy?: () => void
@@ -162,7 +190,7 @@ export function FuelEnergyHero({ vm, past = false, onOpenEnergy, onWater }: {
       </button>
       <FuelMacroRings rings={vm.rings} onWater={onWater} />
       {boxOpen && (
-        <EquationBox vm={vm} past={past} onClose={() => setBoxOpen(false)}
+        <EquationBox vm={vm} past={past} trajectory={trajectory} onClose={() => setBoxOpen(false)}
           onFull={onOpenEnergy ? () => { setBoxOpen(false); onOpenEnergy() } : undefined} />
       )}
     </div>

@@ -365,13 +365,15 @@ public class TrainPopulator {
     /** Instance row: copies the template's day fields, links back via templateSessionId. */
     public WorkoutSessionEntity createWorkoutInstance(UUID createdBy, WorkoutSessionEntity template,
         LocalDate date, String status) {
-        return createWorkoutInstance(createdBy, template, date, status, null);
+        return createWorkoutInstance(createdBy, template, date, status, (String) null);
     }
 
     /**
      * Instance row carrying a workout-level CLOSING note (mezo-d20.13) — deliberately
      * {@code closingNote}, not {@code note}: the latter is the template day's plan note, on a
-     * different row of the same table.
+     * different row of the same table. Copies {@code origin} from the template, matching
+     * {@code WorkoutService#startInstance}'s real write (mezo-32m82 movementOn needs a
+     * custom-origin instance to read as EXTRA, not planned).
      */
     public WorkoutSessionEntity createWorkoutInstance(UUID createdBy, WorkoutSessionEntity template,
         LocalDate date, String status, String closingNote) {
@@ -379,6 +381,7 @@ public class TrainPopulator {
         s.setClosingNote(closingNote);
         s.setCreatedBy(createdBy);
         s.setMesocycleId(template.getMesocycleId());
+        s.setOrigin(template.getOrigin());
         s.setTemplateSessionId(template.getId());
         s.setDayLabel(template.getDayLabel());
         s.setType(template.getType());
@@ -388,6 +391,38 @@ public class TrainPopulator {
         s.setDate(date);
         s.setStatus(status);
         return workoutSessionRepository.saveAndFlush(s);
+    }
+
+    /** Instance row carrying an explicit {@code activeSeconds} — the movementOn extra-gym-kcal
+     *  fixture (mezo-32m82): the net kcal estimate is driven by the derived work time. */
+    public WorkoutSessionEntity createWorkoutInstance(UUID createdBy, WorkoutSessionEntity template,
+        LocalDate date, String status, Integer activeSeconds) {
+        WorkoutSessionEntity s = createWorkoutInstance(createdBy, template, date, status);
+        s.setActiveSeconds(activeSeconds);
+        return workoutSessionRepository.saveAndFlush(s);
+    }
+
+    /** A CUSTOM (saját) template day (origin='custom') — {@link #createWorkoutInstance} copies
+     *  this onto its instances, so a completed instance of it reads as movementOn EXTRA, never
+     *  planned (mezo-32m82). */
+    public WorkoutSessionEntity createCustomTemplateDay(UUID createdBy, String dayLabel) {
+        WorkoutSessionEntity s = new WorkoutSessionEntity();
+        s.setCreatedBy(createdBy);
+        s.setDayLabel(dayLabel);
+        s.setType("gym");
+        s.setMuscle("teljes test");
+        s.setStatus("active");
+        s.setOrigin("custom");
+        return workoutSessionRepository.saveAndFlush(s);
+    }
+
+    /** Overwrites a persisted sport session's {@code kcal} (net activity-energy value) — the
+     *  movementOn planned/extra-kcal fixtures (mezo-32m82) that need a specific number regardless
+     *  of the athlete's body inputs. */
+    public SportSessionEntity withKcal(SportSessionEntity session, Integer kcal) {
+        session.setKcal(kcal);
+        session.setKcalIsEstimate(kcal != null ? Boolean.FALSE : null);
+        return sportSessionRepository.saveAndFlush(session);
     }
 
     /** A COMPLETED instance carrying a real {@code startedAt} — day-type resolution

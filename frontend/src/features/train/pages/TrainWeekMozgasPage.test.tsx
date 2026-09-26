@@ -5,6 +5,14 @@ import { TrainWeekMozgasPage } from '@/features/train/pages/TrainWeekMozgasPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import type { SportLoadResult } from '@/features/train/logic/sportMuscleLoad'
 import type { WorkoutDetailResponse } from '@/data/train/trainApi'
+import { sport as sportFixture } from '@/data/train/train'
+import { runSessionsMock } from '@/data/train/running'
+
+// The test week's two logged volleyball rows and the two run fixtures — their kcal are the
+// published net model's (mezo-32m82), so the expected sums come off the fixtures, not literals.
+const kcalOf = (id: string) => sportFixture.sessions.find((s) => s.id === id)!.kcal!
+const WEEK_SPORT_KCAL = kcalOf('vb-2026-05-20') + kcalOf('vb-2026-05-18')
+const RUN_KCAL = runSessionsMock.reduce((a, r) => a + r.kcal!, 0)
 
 // The mock/week fixtures always carry at least one sport/run event — the honest-absence
 // test needs to force sportLoadForWeek's result to empty rather than fighting the fixtures.
@@ -162,21 +170,21 @@ test('the sport box shows the summed kcal once every logged session this week ca
   const { container } = renderPage()
   await waitFor(() => expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull())
   const sportBox = container.querySelectorAll('.ld-move-box')[1] as HTMLElement
-  expect(within(sportBox).getByText(/1490 kcal/)).toBeInTheDocument()
+  expect(within(sportBox).getByText(new RegExp(`${WEEK_SPORT_KCAL} kcal`))).toBeInTheDocument()
   expect(within(sportBox).getByText('naplóztad')).toBeInTheDocument()
 })
 
 // T8 Task 6 final review: a mock-mode RUN in the week must NOT blank the sum. Before the
 // fix the run fixtures (and the mock log response) carried no kcal, so `movementWeek`'s
 // all-or-null gate hid the whole number the moment a run landed in the week — a mock-only
-// darkening real mode would never show. 1490 (the two volleyball sessions) + 275 + 312
-// (the two run fixtures' own estimates) = 2077.
+// darkening real mode would never show. The two volleyball sessions + the two run fixtures'
+// own estimates.
 test('a logged run in the week keeps the sum visible — the mock run carries kcal too', async () => {
   runsInTestWeek = true
   const { container } = renderPage()
   await waitFor(() => expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull())
   const sportBox = container.querySelectorAll('.ld-move-box')[1] as HTMLElement
-  expect(within(sportBox).getByText(/2077 kcal/)).toBeInTheDocument()
+  expect(within(sportBox).getByText(new RegExp(`${WEEK_SPORT_KCAL + RUN_KCAL} kcal`))).toBeInTheDocument()
 })
 
 // movementWeek's all-or-null gate (loadWeek.ts): ONE session in the week missing kcal

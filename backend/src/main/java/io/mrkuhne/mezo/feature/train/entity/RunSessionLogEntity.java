@@ -68,8 +68,9 @@ public class RunSessionLogEntity extends OwnedEntity {
     @Column
     private String notes;
 
-    /** Burnt energy from the personalised MET estimate ({@code SportEnergyCalculator}); NULL when
-     *  the athlete's weight or the session's duration is unknown — never 0. */
+    /** Burnt energy: net activity-energy estimate ({@code ActivityEnergyModel}, mezo-32m82); a
+     *  user-typed value is active (net) kcal. NULL when the athlete's body or the session's
+     *  duration is unknown — never 0. */
     @Column
     private Integer kcal;
 

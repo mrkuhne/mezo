@@ -190,7 +190,7 @@ export function FuelSlotsPage() {
   const [saved, setSaved] = useState(false)
   const [writeError, setWriteError] = useState(false)
   const [dayType, setDayType] = useStickyTab<SlotTemplateDayType>('fuel.slots.dayType', 'rest')
-  const { blocks, budget, wake, bed, dayType: todayType, weightKg } = useFuelTimeline()
+  const { blocks, budget, wake, bed, dayType: todayType, restPerHour } = useFuelTimeline()
   const { settings, isPending: settingsPending, isError: settingsError, refetch: retrySettings } = useFuelSettings()
   const { templates, isPending: templatesPending, isError: templatesError, refetch: retryTemplates } = useSlotTemplates()
   const { putTemplate, deleteTemplate, pending } = useSlotTemplateActions()
@@ -249,7 +249,7 @@ export function FuelSlotsPage() {
     setEvalDegraded(false)
   }
 
-  const recommendedWindows = placeWindows(wake, bed, settings.mealsPerDay, refBlocks, weightKg)
+  const recommendedWindows = placeWindows(wake, bed, settings.mealsPerDay, refBlocks, restPerHour)
   const recommendedBudgets = splitBudget(budget, recommendedWindows)
 
   const editing = forked || existing != null

@@ -45,6 +45,8 @@ import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
+import io.mrkuhne.mezo.support.populator.GoalPopulator;
+import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.support.populator.WaterLogPopulator;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -98,6 +100,7 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
     @Autowired private MentionPopulator mentionPopulator;
     @Autowired private MentionRepository mentionRepository;
     @Autowired private AiMessageRepository aiMessageRepository;
+    @Autowired private GoalPopulator goalPopulator;
 
     /** Owner shared by the round-3 read-layer tests below, which reference {@code owner} bare
      *  (no local shadow) — the other tests in this file keep their own {@code UUID owner = owner();}
@@ -352,6 +355,32 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
         });
         // the 14-day mealDates presence set is still derived correctly from the same read
         assertThat(input.mealDates()).contains(DAY);
+    }
+
+    /**
+     * mezo-32m82: the meal-day kcal target is the SERVED target — an unplanned logged session on the
+     * meal day (no sport slot that weekday) raises it by its persisted net kcal, exactly as the
+     * Fuel day does.
+     */
+    @Test
+    void gather_mealDayKcalTargetCreditsUnplannedMovement_likeTheFuelDay() {
+        UUID owner = owner();
+        int segKcal = 2600;
+        int sessionKcal = 450;
+        goalPopulator.createGoalFull(owner, DAY.minusDays(2), DAY.plusWeeks(8),
+                new GoalPrescriptionJson(null, "formula",
+                        List.of(new GoalPrescriptionJson.Segment(1, 12, "vágás", segKcal, 180, 250, 80,
+                                null, null, null, null, null, null, null)),
+                        null, null),
+                4, "06:30", "22:30");
+        trainPopulator.withKcal(trainPopulator.createSportSession(owner, DAY), sessionKcal);
+        mealPopulator.createMealWithItems(owner, DAY, "dinner",
+                List.of(new MealPopulator.Line("Csirke", "600", "50", "10", "20", (short) 1)));
+
+        DetectorInput input = signalReads.gather(owner, DAY);
+
+        assertThat(input.trend().mealDays()).singleElement().satisfies(m ->
+                assertThat(m.kcalTarget()).isEqualByComparingTo(BigDecimal.valueOf(segKcal + sessionKcal)));
     }
 
     @Test

@@ -21,12 +21,13 @@ class WeeklyScheduledActivityServiceIT extends AbstractIntegrationTest {
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private TrainPopulator trainPopulator;
 
-    private static final BigDecimal W = new BigDecimal("80.0");
+    /** Rest energy (kcal/hour) fixture for the net model — mezo-32m82 Task 3. */
+    private static final BigDecimal REST = new BigDecimal("80");
 
     @Test
     void testScheduledWeeklyEat_shouldBeZero_whenNoSchedule() {
         UUID user = databasePopulator.populateUser("wsa-empty@test.local");
-        assertThat(service.scheduledWeeklyEatKcalPerDay(user, W).doubleValue()).isZero();
+        assertThat(service.scheduledWeeklyEatKcalPerDay(user, REST).doubleValue()).isZero();
     }
 
     @Test
@@ -37,16 +38,18 @@ class WeeklyScheduledActivityServiceIT extends AbstractIntegrationTest {
         trainPopulator.createGymSlot(user, 4, "18:00"); // Fri  → 3 gym × 60min
         trainPopulator.createScheduleSlot(user, 1, "18:00", 120, "training"); // Tue volleyball
         trainPopulator.createScheduleSlot(user, 3, "18:00", 120, "training"); // Thu volleyball → 2 × 120min
-        // gym:  6.0 × 80 × (60/60) × 3 = 1440 ; sport: 4.5 × 80 × (120/60) × 2 = 1440 ; total 2880 ÷ 7
-        double expected = (6.0 * 80 * 1.0 * 3 + 4.5 * 80 * 2.0 * 2) / 7.0;
-        assertThat(service.scheduledWeeklyEatKcalPerDay(user, W).doubleValue()).isCloseTo(expected, within(0.5));
+        // Net model, moderate band, rest=80: gym MET 3.5, volleyball MET 4.0 (global-constraints MET table).
+        double gymExpected = (3.5 - 1) * 80 * (60 / 60.0) * 3;
+        double volleyballExpected = (4.0 - 1) * 80 * 2 * 2;
+        double expected = (gymExpected + volleyballExpected) / 7.0;
+        assertThat(service.scheduledWeeklyEatKcalPerDay(user, REST).doubleValue()).isCloseTo(expected, within(0.5));
     }
 
     @Test
     void testRunWeeklyEat_shouldScaleWithSessions() {
-        // 9.5 × 80 × (45/60) × 3 ÷ 7
-        double expected = props.met().run() * 80 * (props.runDefaultMinutes() / 60.0) * 3 / 7.0;
-        assertThat(service.runWeeklyEatKcalPerDay(3, W).doubleValue()).isCloseTo(expected, within(0.5));
-        assertThat(service.runWeeklyEatKcalPerDay(0, W).doubleValue()).isZero();
+        // Net model, moderate band, rest=80: run MET 9.3 (global-constraints MET table).
+        double expected = (9.3 - 1) * 80 * (props.runDefaultMinutes() / 60.0) * 3 / 7.0;
+        assertThat(service.runWeeklyEatKcalPerDay(3, REST).doubleValue()).isCloseTo(expected, within(0.5));
+        assertThat(service.runWeeklyEatKcalPerDay(0, REST).doubleValue()).isZero();
     }
 }

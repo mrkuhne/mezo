@@ -56,6 +56,7 @@ import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { daySessions } from '@/features/train/logic/agenda'
 import { dayImpact, regionRepresentativeToken, type DayImpactRow } from '@/features/train/logic/dayImpact'
 import { trainDayEnergy, type Block } from '@/features/train/logic/trainDayEnergy'
+import { DEFAULT_RUN_MIN, restKcalPerHour } from '@/data/train/activityEnergy'
 import { sportLoadForWeek } from '@/features/train/logic/sportMuscleLoad'
 import type { RegionKey } from '@/features/train/logic/muscleColors'
 import { dayStripItems } from '@/features/train/logic/dayStripItems'
@@ -89,9 +90,8 @@ export function TrainTodayPage() {
   // Calibrated pacing (Task 12, mezo-dzbm): only the today chip's workoutMinutes reads this —
   // structureLint/peakWeekFit/programFit deliberately stay on the static estimate.
   const { data: timingProfile, isPending: timingProfilePending } = useTimingProfile()
-  // Same weight source `deriveDailyBudget` reads for Fuel's calorie budget
-  // (`frontend/src/data/fuel/timelineHooks.ts:92-110`) — Mai's energy card must never
-  // drift from the number Fuel already shows for the day (Task 5, mezo-88iwa.6).
+  // Same weight source the Fuel timeline (`useFuelTimeline`) reads for its rest energy — Mai's
+  // energy card must never drift from the number Fuel already shows for the day (Task 5, mezo-88iwa.6).
   const { goal, goalResponse } = useGoal()
   const qc = useQueryClient()
   // Morning-training reschedule (mezo-67rb): wake-anchored window over the raw gym slots.
@@ -300,15 +300,16 @@ export function TrainTodayPage() {
     ) ?? null
 
   // ── Task 5 (mezo-88iwa.6): the energy + muscle-impact cards, today-only ──
-  // Weight source: the SAME hook `deriveDailyBudget` reads for the Fuel calorie budget
-  // (`frontend/src/data/fuel/timelineHooks.ts:92-110`) — `useGoal()`, read above. Falling
+  // Weight source: the SAME hook the Fuel timeline (`useFuelTimeline`) reads — `useGoal()`,
+  // read above. Falling
   // back to 0 (not a static default) keeps the "no weight on file" honest state identical
   // to Fuel's own fallback chain.
   const weightKg = goal?.currentWeight ?? goalResponse?.startWeightKg ?? 0
   // A run block carries no plan-level duration (`RunPrescribedSession` has none) — the
-  // same 40-minute stand-in `buildEnergyBreakdown` (Fuel's own energy-explain sheet) uses
-  // for a duration-less block, so the two surfaces never quote different run burns.
-  const DEFAULT_RUN_MIN = 40
+  // shared activity-energy default (`DEFAULT_RUN_MIN`, activityEnergy mirror, mezo-32m82),
+  // the same stand-in Fuel's planned previews use, so the two surfaces never quote different run burns.
+  // Rest energy for the net model: BMR/24 when the TDEE engine has run, else 1 kcal/kg/h.
+  const restPerHour = restKcalPerHour(goalResponse?.tdeeBootstrap?.bmr, weightKg || null)
   // Held at 0 while the timing profile is still pending — same "never a numeric
   // flash-then-swap" rule the poster's own `workoutMinutes` follows above.
   const gymMinutesToday = gymPosterShown && workout && !timingProfilePending
@@ -322,14 +323,18 @@ export function TrainTodayPage() {
         if (item.kind === 'gym') {
           if (gymPosterShown) acc.push({ kind: 'gym', minutes: gymMinutesToday, done: Boolean(completedTodayWorkout) })
         } else if (item.kind === 'sport') {
-          acc.push({ kind: 'sport', minutes: item.sport.duration, done: sportDoneOn(shownIso, sportOf(item.sport)) })
+          // A done slot shows the LOGGED session's persisted kcal, never the estimate (mezo-32m82).
+          const k = sportOf(item.sport)
+          const logged = shownIso ? loggedSportOn(shownIso, k) : null
+          acc.push({ kind: 'sport', sport: k, minutes: item.sport.duration, done: sportDoneOn(shownIso, k), loggedKcal: logged?.kcal ?? null })
         } else if (item.kind === 'running') {
-          acc.push({ kind: 'run', minutes: DEFAULT_RUN_MIN, done: Boolean(runLoggedFor(item.running.key)) })
+          const log = runLoggedFor(item.running.key)
+          acc.push({ kind: 'run', minutes: DEFAULT_RUN_MIN, done: Boolean(log), loggedKcal: log?.kcal ?? null })
         }
         return acc
       }, [])
     : []
-  const dayEnergy = trainDayEnergy(energyBlocks, weightKg || null)
+  const dayEnergy = trainDayEnergy(energyBlocks, restPerHour)
   // Fix round 1 (finding 1, ship-blocking): a day whose blocks include gym must hold the
   // WHOLE card while the timing profile is pending — not just the gym block's own minutes.
   // `gymMinutesToday` above is already held at 0 while pending, but the card doesn't gate

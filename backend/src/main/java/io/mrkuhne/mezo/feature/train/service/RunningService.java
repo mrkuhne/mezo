@@ -35,8 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class RunningService {
 
-    /** The pace a logged run is assumed to have held — see {@code applyKcal}. */
-    private static final double ASSUMED_RUN_KMH = 9.0;
+    private static final String KIND_RUN = "run";
 
     private final RunningBlockRepository blockRepository;
     private final RunSessionLogRepository logRepository;
@@ -51,6 +50,7 @@ public class RunningService {
     private final GoalRecomputePort goalRecomputePort;
     // Body inputs for the kcal estimate, through train's own port (ADR 0012 — no new slice cycle).
     private final AthleteBodyPort athleteBodyPort;
+    private final ActivityEnergyModel activityEnergyModel;
 
     public List<RunningBlockResponse> listBlocks(UUID userId) {
         return blockRepository.findByCreatedByAndDeletedFalseOrderByStartDateAsc(userId)
@@ -135,7 +135,7 @@ public class RunningService {
         e.setSprintLandmark(req.getSprintLandmark());
         e.setDurationMin(req.getDurationMin());
         e.setNotes(req.getNotes());
-        applyKcal(userId, e);
+        estimate(userId, e);
         RunSessionLogResponse base = mapper.toResponse(logRepository.save(e));
         // Progression runs ONLY when the feature switch is on (gate bean present) and only here in
         // logSession — never via the GET list path. Atomic with the save (same @Transactional);
@@ -148,25 +148,28 @@ public class RunningService {
     }
 
     /**
-     * The run's burnt energy — the personalised MET estimate ({@link SportEnergyCalculator}),
-     * flagged as an estimate. A run log carries no distance, so the MET comes from
-     * {@link SportEnergyCalculator#runMet} at {@value #ASSUMED_RUN_KMH} km/h, the steady jog the
-     * blocks are written around; when the contract later carries the distance, the real pace
-     * replaces the assumption here and nothing else changes. NULL (never 0) when the duration or
-     * the athlete's body is unknown.
+     * The run's burnt energy from the net activity-energy model ({@link ActivityEnergyModel},
+     * kind {@code "run"}), flagged as an estimate. NULL (never 0) when the duration or the
+     * athlete's body is unknown.
      */
-    private void applyKcal(UUID userId, RunSessionLogEntity e) {
-        if (e.getDurationMin() == null || e.getDurationMin() <= 0) {
-            return;
-        }
+    private void estimate(UUID userId, RunSessionLogEntity e) {
+        int minutes = e.getDurationMin() != null ? e.getDurationMin() : 0;
         athleteBodyPort.bodyAt(userId, e.getDate())
-            .flatMap(body -> SportEnergyCalculator.estimateWithMet(
-                SportEnergyCalculator.runMet(ASSUMED_RUN_KMH), e.getDurationMin(),
-                body.weightKg(), body.sex(), body.age(), body.bodyFatPct()))
+            .flatMap(body -> ActivityEnergyModel.restKcalPerHour(body.bmrKcal(), body.weightKg()))
+            .flatMap(rest -> activityEnergyModel.netKcal(KIND_RUN, e.getRpeActual(), minutes, rest))
             .ifPresent(kcal -> {
                 e.setKcal(kcal);
                 e.setKcalIsEstimate(true);
             });
+    }
+
+    /** One-shot catch-up (mezo-32m82 migration): estimate every live row still missing kcal. */
+    @Transactional
+    public int reestimateMissing() {
+        List<RunSessionLogEntity> rows =
+            logRepository.findByDeletedFalseAndKcalIsNullAndDurationMinGreaterThan(0);
+        rows.forEach(e -> estimate(e.getCreatedBy(), e));
+        return (int) rows.stream().filter(e -> e.getKcal() != null).count();
     }
 
     private void applyUpsert(RunningBlockEntity e, RunningBlockUpsertRequest req) {

@@ -58,7 +58,8 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         BigDecimal neat = new BigDecimal("1.35");
         BigDecimal baseline = bmr.multiply(neat).setScale(2, java.math.RoundingMode.HALF_UP); // 2423.25
         return new TdeeBootstrapJson(
-            bmr, neat, baseline, BigDecimal.ZERO, baseline, "MSJ", OffsetDateTime.now());
+            bmr, neat, baseline, BigDecimal.ZERO, baseline, "MSJ", OffsetDateTime.now(),
+            io.mrkuhne.mezo.feature.train.service.ActivityEnergyModel.VERSION);
     }
 
     /** A trend with the given sufficiency + observed trailing-4w rate; series/percent irrelevant here.

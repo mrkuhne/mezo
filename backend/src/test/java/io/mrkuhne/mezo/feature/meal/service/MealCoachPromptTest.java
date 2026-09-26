@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 class MealCoachPromptTest {
 
     private static final LocalDate DATE = LocalDate.of(2026, 6, 24);
-    private static final DailyTargets TARGETS = new DailyTargets(1500, 150, 150, 50, "goal");
+    private static final DailyTargets TARGETS = new DailyTargets(1500, 150, 150, 50, "goal", null);
 
     private static MealBreakdownJson breakdown() {
         return new MealBreakdownJson(new BigDecimal("0.62"), new BigDecimal("0.80"), null, null,

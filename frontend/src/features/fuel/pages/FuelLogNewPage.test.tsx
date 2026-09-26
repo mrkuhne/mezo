@@ -52,7 +52,7 @@ const baseCtx = {
   workout: { type: '', start: '—', end: '—', duration: 0 },
   volleyball: { start: '—', end: '—', noneToday: true },
   bedtime: '23:00', kitchenClose: '21:30', caffeineCutoff: '14:00',
-  energy: { base: 2400, activity: 0, balance: 0, target: 2400 },
+  energy: { base: 2400, planned: 0, extra: 0, balance: 0, target: 2400 },
 }
 
 // KÉT ablak, és a deep linkek a MÁSODIKRA mutatnak: egyeslemes tervnél a `tiles.find(key)` és a

@@ -448,13 +448,12 @@ export function SportLogPage() {
         />
       )}
 
-      <GlassBox open={kcalOpen} onClose={() => { setKcalDraftError(null); setKcalOpen(false) }} label="Saját kalóriaérték" tint="var(--dv-coral)"
+      <GlassBox open={kcalOpen} onClose={() => { setKcalDraftError(null); setKcalOpen(false) }} label="Aktív kalória (ha az órád mérte)" tint="var(--dv-coral)"
         className="uv-gb-kcal" art={<Icon3D name="t-plate" size={30} />}>
         {/* üveg U10 (mezo-me75u.10): a coral glass (the Edzés area colour, one accent — the pill
             matches it); copy, field, error and the lit pill inside are flat. */}
         <p className="uv-gb-copy">
-          A becslés a te súlyodból, korodból és a mozgás fajtájából jön. Ha tudod, hogy máshogy volt,
-          írd felül — akkor ezt mentjük, nem a becslést.
+          Csak a mozgás többletét írd be — az órád »aktív« kalóriáját, ne az összeset.
         </p>
         <label className="uv-gb-field">
           <span>Kalória</span>

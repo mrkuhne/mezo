@@ -11,11 +11,8 @@
 
 import {
   DEFAULT_BLOCK_MIN,
-  DEFAULT_RUN_MIN,
   EATING_START_OFFSET_MIN,
-  FAT_KCAL_SHARE,
   KITCHEN_CLOSE_OFFSET_MIN,
-  MET_BY_KIND,
   MIN_SLOT_GAP_MIN,
   PERI_SNACK_MIN_DURATION,
   PERI_SNACK_MIN_KCAL,
@@ -29,6 +26,8 @@ import {
   toMin,
   unwrapDayMinute,
 } from '@/data/fuel/fuelConfig'
+import { blockEnergyKind, DEFAULT_GYM_MIN, DEFAULT_RUN_MIN, netKcal, restKcalPerHour } from '@/data/train/activityEnergy'
+import type { FuelDayEnergy } from '@/data/types'
 import { compileTemplate } from '@/features/fuel/logic/compileTemplate'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import { widenWindows, type WindowRule } from '@/features/fuel/logic/mealWindow'
@@ -52,14 +51,20 @@ export interface PlannerBlock {
   time: string
   durationMin: number | null
   label: string
+  /** Sport id of a `sport` block (e.g. 'volleyball') — picks its row in the net activity-energy model (mezo-32m82). */
+  sport?: string
 }
 export interface DayPlanInput {
   wake: string
   bed: string
   mealsPerDay: number
   blocks: PlannerBlock[]
-  /** Bodyweight (kg) — only feeds the peri-snack kcal threshold; 0 → duration rule only. */
+  /** Bodyweight (kg) — the rest-energy fallback (1 kcal/kg/h) for the peri-snack kcal threshold when
+   *  `restPerHour` is not given; 0 → duration rule only. */
   weightKg?: number
+  /** Rest energy (kcal/h, BMR/24) for the net peri-snack kcal threshold (mezo-32m82); undefined →
+   *  `restKcalPerHour(null, weightKg)`; null → duration rule only. */
+  restPerHour?: number | null
   budget: DayBudget
   meals: FuelMeal[]
   recipes: Recipe[]
@@ -113,85 +118,29 @@ export function mealSlotKey(m: FuelMeal): SlotKey | null {
   return null
 }
 
-// ── MET-based activity energy ────────────────────────────────────────────────
-/** MET-based kcal for one training block. Null duration → DEFAULT_RUN_MIN for runs, DEFAULT_BLOCK_MIN otherwise. */
-export function blockKcal(kind: PlannerBlock['kind'], durationMin: number | null, weightKg: number): number {
-  const met = MET_BY_KIND[kind] ?? MET_BY_KIND.default
-  const min = durationMin ?? (kind === 'run' ? DEFAULT_RUN_MIN : DEFAULT_BLOCK_MIN)
-  return met * weightKg * (min / 60)
-}
-/** Total scheduled activity energy (kcal) for the day — every gym/sport/run block. */
-export function activityKcal(blocks: PlannerBlock[], weightKg: number): number {
-  return blocks.reduce((s, b) => s + blockKcal(b.kind, b.durationMin, weightKg), 0)
+// ── Planned activity energy ──────────────────────────────────────────────────
+/** Net kcal of one planned block (activityEnergy mirror, mezo-32m82). Null duration → DEFAULT_RUN_MIN for
+ *  runs, DEFAULT_GYM_MIN otherwise; null when rest energy is unknown. */
+function plannedBlockKcal(b: PlannerBlock, restPerHour: number | null): number | null {
+  return netKcal(blockEnergyKind(b), null, b.durationMin ?? (b.kind === 'run' ? DEFAULT_RUN_MIN : DEFAULT_GYM_MIN), restPerHour)
 }
 
-// ── deriveDailyBudget ────────────────────────────────────────────────────────
-export interface EnergyInputs { bmr: number | null; neat: number | null; weightKg: number; blocks: PlannerBlock[] }
-export interface DayBudget extends Macro4 { energy: { base: number; activity: number; balance: number; target: number } }
+// ── servedBudget ─────────────────────────────────────────────────────────────
+/** The day's budget: the served macros + the served energy equation
+ *  (base + planned + extra + balance = target, mezo-32m82). */
+export interface DayBudget extends Macro4 { energy: { base: number; planned: number; extra: number; balance: number; target: number } }
 
 /**
- * Daily budget. Static path (no BMR/NEAT → no biometric profile) keeps today's behavior. Dynamic path
- * (mezo-1oy5 / mezo-eujg): target = BMR×neat + Σ MET activity + goal balance, floored at BMR. Protein is
- * fixed (bodyweight-based); fat prefers the segment's prescribed `fatG` (Diet Plan slice 1 — mezo-xwgb),
- * falling back to the BASE-segment-kcal FAT_KCAL_SHARE share for pre-slice-1 segments (no jump for
- * data that predates the split). Carbs absorb the activity bonus in the dynamic path; in the static
- * path they prefer the segment's prescribed `carbsG`, falling back to the same remainder formula.
- * balance = segment.dailyEnergyBalanceKcal (explicit goal deficit/surplus from the wire).
- * maintenance = BMR×neat (NEAT lifestyle multiplier from the bootstrap).
- *
- * Day-type shift (Diet Plan slice 3 — mezo-sxlj): `isTrainingDay` picks the segment's
- * `trainingDayKcal`/`restDayKcal` as the day's kcal base instead of its uniform `kcal`; `undefined`
- * (untouched callers/tests) keeps the pre-slice-3 uniform behavior byte-identical. Fat stays
- * DAY-INDEPENDENT — its FAT_KCAL_SHARE fallback always uses the uniform segment kcal, never the
- * day-type kcal, so a day-type shift never redistributes fat. Static path carbs absorb the day-type
- * delta against the segment's own prescribed `carbsG` (mirrors the BE's serve-time carb-delta rule);
- * dynamic path folds the delta into the target kcal and carbs absorb it same as the activity bonus.
+ * The day's budget as the backend SERVES it (mezo-32m82): one rule for every surface — the weekly
+ * plan's base + day-type shift + unplanned movement credited the same day, floored at BMR
+ * (DayTargetProjector). The frontend no longer derives a target; it only reshapes the served one.
+ * No `energy` (static path: no goal / no biometric snapshot) → the equation box hides its chips.
  */
-export function deriveDailyBudget(
-  segment: {
-    kcal: number; proteinG: number; carbsG?: number | null; fatG?: number | null; dailyEnergyBalanceKcal?: number
-    trainingDayKcal?: number | null; restDayKcal?: number | null
-  } | null,
-  fallback: MacroSet,
-  energy?: EnergyInputs,
-  /** Day-type pick (slice 3): true/false applies the segment's training/rest kcal; undefined = uniform. */
-  isTrainingDay?: boolean,
-): DayBudget {
-  const dayKcal = segment == null || isTrainingDay === undefined
-    ? null
-    : (isTrainingDay ? segment.trainingDayKcal : segment.restDayKcal) ?? null
-  const uniformKcal = segment?.kcal ?? fallback.kcal
-  const baseKcal = dayKcal ?? uniformKcal
-  const proteinG = segment?.proteinG ?? fallback.p
-  // Prescribed fat wins (Diet Plan slice 1); FAT_KCAL_SHARE remains the pre-slice-1 fallback. The
-  // fallback share is tied to the UNIFORM segment kcal (not the day-type kcal) — fat never varies
-  // by day type.
-  const fat = segment?.fatG ?? Math.round((uniformKcal * FAT_KCAL_SHARE) / 9)
-  const carbs = (kcal: number) => Math.max(0, Math.round((kcal - proteinG * 4 - fat * 9) / 4))
-
-  if (!energy || energy.bmr == null || energy.neat == null) {
-    // Static path (no biometric profile) keeps today's behavior: no segment → the fallback MacroSet
-    // passes through verbatim (only water dropped); a segment carries kcal+proteinG, so derive c/f
-    // (preferring the segment's own prescribed carbsG when present, offset by the day-type delta —
-    // mirrors the BE's serve-time carb-delta rule; without a day type this reduces to `carbsG` as-is).
-    if (!segment) {
-      return { kcal: fallback.kcal, p: fallback.p, c: fallback.c, f: fallback.f, energy: { base: fallback.kcal, activity: 0, balance: 0, target: fallback.kcal } }
-    }
-    const c = segment.carbsG != null ? segment.carbsG + Math.round((baseKcal - segment.kcal) / 4) : carbs(baseKcal)
-    return { kcal: baseKcal, p: proteinG, c, f: fat, energy: { base: baseKcal, activity: 0, balance: 0, target: baseKcal } }
-  }
-  const balance = segment?.dailyEnergyBalanceKcal ?? 0
-  const dayTypeDelta = dayKcal != null && segment != null ? dayKcal - segment.kcal : 0
-  const maintenance = energy.bmr * energy.neat
-  const eat = activityKcal(energy.blocks, energy.weightKg)
-  const target = Math.max(energy.bmr, maintenance + eat + balance + dayTypeDelta) // KCAL_FLOOR = BMR
-  return {
-    kcal: Math.round(target),
-    p: proteinG,
-    c: carbs(target), // carbs stay the absorber of the day's activity bonus + day-type delta, off the prescribed fat
-    f: fat,
-    energy: { base: Math.round(maintenance), activity: Math.round(eat), balance: Math.round(balance), target: Math.round(target) },
-  }
+export function servedBudget(targets: MacroSet, energy: FuelDayEnergy | null | undefined): DayBudget {
+  const e = energy
+    ? { base: energy.baseKcal, planned: energy.plannedMovementKcal, extra: energy.extraMovementKcal, balance: energy.balanceKcal, target: energy.targetKcal }
+    : { base: targets.kcal, planned: 0, extra: 0, balance: 0, target: targets.kcal }
+  return { kcal: targets.kcal, p: targets.p, c: targets.c, f: targets.f, energy: e }
 }
 
 // ── placeWindows ─────────────────────────────────────────────────────────────
@@ -205,7 +154,8 @@ export function placeWindows(
   bed: string,
   mealsPerDay: number,
   blocks: PlannerBlock[],
-  weightKg = 0,
+  /** Rest energy (kcal/h) for the net peri-snack kcal rule; null → duration rule only. */
+  restPerHour: number | null = null,
 ): PlannedWindow[] {
   const eatingStart = toMin(wake) + EATING_START_OFFSET_MIN
   const kitchenClose = toMin(bed) - KITCHEN_CLOSE_OFFSET_MIN
@@ -228,7 +178,8 @@ export function placeWindows(
   // (the post side is covered by the post-workout main snap). Deduped against existing windows by min-gap.
   for (const b of blocks) {
     const dur = b.durationMin ?? DEFAULT_BLOCK_MIN
-    const significant = dur >= PERI_SNACK_MIN_DURATION || blockKcal(b.kind, b.durationMin, weightKg) >= PERI_SNACK_MIN_KCAL
+    const significant = dur >= PERI_SNACK_MIN_DURATION
+      || (plannedBlockKcal(b, restPerHour) ?? 0) >= PERI_SNACK_MIN_KCAL
     if (!significant) continue
     const t = clamp(toMin(b.time) - 60)
     if (windows.some(w => Math.abs(w.time - t) < MIN_SLOT_GAP_MIN)) continue
@@ -383,7 +334,8 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
   //    with a replayed anchor plan + its explicit pct split; absent/null keeps today's behavior.
   const windows = input.template
     ? compileTemplate(input.template, { wake, bed, blocks })
-    : placeWindows(wake, bed, mealsPerDay, blocks, input.weightKg ?? 0)
+    : placeWindows(wake, bed, mealsPerDay, blocks,
+        input.restPerHour !== undefined ? input.restPerHour : restKcalPerHour(null, input.weightKg ?? 0))
   const budgets = input.template ? splitBudgetPct(budget, windows) : splitBudget(budget, windows)
 
   // Étkezési óra (mezo-6g52f): az időpontokból ablak + okok — egy forrás a kártyának, az óra-

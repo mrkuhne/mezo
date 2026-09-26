@@ -170,8 +170,9 @@ export type MovementWeek = {
 }
 
 /**
- * Every movement of the week in one place: gym kcal reuses trainDayEnergy's MET math and
- * its honesty rule (unknown weight → unknown kcal, never a fabricated number); sport kcal
+ * Every movement of the week in one place: gym kcal reuses trainDayEnergy's net-of-rest math
+ * (activityEnergy mirror, mezo-32m82) and its honesty rule (unknown rest energy → unknown kcal,
+ * never a fabricated number); sport kcal
  * is whatever was logged (unknown when any session came back without one). An empty side
  * contributes 0 known MINUTES (there is genuinely nothing to sum) but a NULL kcal — 0 kcal
  * would read as "we measured zero calories", which is a fabrication for a side with no
@@ -183,12 +184,12 @@ export type MovementWeek = {
 export function movementWeek(
   gymBlocks: Block[],
   sport: { minutes: number; kcal: number | null }[],
-  weightKg: number | null,
+  restPerHour: number | null,
 ): MovementWeek {
   const gymMin = gymBlocks.reduce((t, b) => t + b.minutes, 0)
   const sportMin = sport.reduce((t, s) => t + s.minutes, 0)
 
-  const gymEnergy = trainDayEnergy(gymBlocks, weightKg)
+  const gymEnergy = trainDayEnergy(gymBlocks, restPerHour)
   const gymKnown = gymBlocks.length === 0 || gymEnergy.known
   const gymKcal = gymBlocks.length === 0 ? null : gymEnergy.known ? gymEnergy.plannedKcal : null
 

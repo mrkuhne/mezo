@@ -59,6 +59,7 @@ public class SportService {
     // The kcal estimate's body inputs come through train's own port — biometrics provides the
     // adapter, so the train slice never imports biometrics (ADR 0012, no new slice cycle).
     private final AthleteBodyPort athleteBodyPort;
+    private final ActivityEnergyModel activityEnergyModel;
 
     @Transactional
     public SportSessionResponse logSportSession(UUID createdBy, SportSessionCreateRequest req) {
@@ -90,28 +91,42 @@ public class SportService {
     }
 
     /**
-     * The session's burnt energy: the user's own number wins verbatim ({@code kcalIsEstimate=false}),
-     * otherwise the personalised MET estimate ({@link SportEnergyCalculator}) marked as an estimate.
-     * Both stay NULL when the athlete's body is unknown — a missing estimate is never stored as 0,
-     * so no surface can present it as a measurement.
+     * The session's burnt energy: the user's own number is ACTIVE (net) kcal — a watch's "active
+     * calories" — stored verbatim ({@code kcalIsEstimate=false}); otherwise the net activity-energy
+     * model's estimate ({@link ActivityEnergyModel}) marked as an estimate. Both stay NULL when the
+     * athlete's body is unknown — a missing estimate is never stored as 0, so no surface can present
+     * it as a measurement.
      */
     private void applyKcal(UUID createdBy, SportSessionEntity s, Integer kcalOverride) {
         if (kcalOverride != null) {
+            // A user-typed number is ACTIVE (net) kcal — a watch's "active calories" — stored verbatim.
             s.setKcal(kcalOverride);
             s.setKcalIsEstimate(false);
             return;
         }
-        // The wire's felt-effort input is rpe (required, 1..10) — s.getIntensity() is a separate,
-        // never-populated column and would silently collapse every mode fold to its default MET.
-        Integer intensity = s.getRpe() != null ? s.getRpe().intValue() : null;
+        estimate(createdBy, s);
+    }
+
+    /** The net model estimate (mezo-32m82); NULL (never 0) when the body or the duration is unknown. */
+    private void estimate(UUID createdBy, SportSessionEntity s) {
+        Integer rpe = s.getRpe() != null ? s.getRpe().intValue() : null;
+        int minutes = s.getDurationMin() != null ? s.getDurationMin() : 0;
         athleteBodyPort.bodyAt(createdBy, s.getDate())
-            .flatMap(body -> SportEnergyCalculator.estimate(
-                s.getSport(), s.getDurationMin() != null ? s.getDurationMin() : 0, intensity,
-                body.weightKg(), body.sex(), body.age(), body.bodyFatPct()))
+            .flatMap(body -> ActivityEnergyModel.restKcalPerHour(body.bmrKcal(), body.weightKg()))
+            .flatMap(rest -> activityEnergyModel.netKcal(s.getSport(), rpe, minutes, rest))
             .ifPresent(kcal -> {
                 s.setKcal(kcal);
                 s.setKcalIsEstimate(true);
             });
+    }
+
+    /** One-shot catch-up (mezo-32m82 migration): estimate every live row still missing kcal. */
+    @Transactional
+    public int reestimateMissing() {
+        List<SportSessionEntity> rows =
+            sportSessionRepository.findByDeletedFalseAndKcalIsNullAndDurationMinGreaterThan(0);
+        rows.forEach(s -> estimate(s.getCreatedBy(), s));
+        return (int) rows.stream().filter(s -> s.getKcal() != null).count();
     }
 
     public List<SportScheduleSlotResponse> getSchedule(UUID createdBy) {

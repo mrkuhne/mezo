@@ -7,12 +7,13 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test } from 'vitest'
-import { buildKeretHero } from '@/features/fuel/logic/keretHero'
+import { asPastDayHero, buildKeretHero } from '@/features/fuel/logic/keretHero'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
 import { FuelEnergyHero } from '@/features/fuel/components/FuelEnergyHero'
+import { huInt } from '@/shared/lib/huNum'
 
 // The keretHero.test.ts fixture style, with a consumed figure that leaves a round 2 060.
-const BUDGET: DayBudget = { kcal: 2400, p: 160, c: 260, f: 80, energy: { base: 2000, activity: 400, balance: 0, target: 2400 } }
+const BUDGET: DayBudget = { kcal: 2400, p: 160, c: 260, f: 80, energy: { base: 2000, planned: 400, extra: 0, balance: 0, target: 2400 } }
 
 const vm = (over: Partial<Parameters<typeof buildKeretHero>[0]> = {}) =>
   buildKeretHero({
@@ -64,7 +65,66 @@ test('az üvegdoboz bezárható', async () => {
 test('statikus keretnél a mozgás sora gondolatjel', async () => {
   render(<FuelEnergyHero vm={vm({ staticEnergy: true })} />)
   await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
-  expect(within(screen.getByRole('dialog')).getByText('—')).toBeInTheDocument()
+  // Alap reads a bare „—", Mozgás keeps its operator („+ —"); no goal → no Célod row at all.
+  expect(within(screen.getByRole('dialog')).getAllByText('—')).toHaveLength(1)
+  expect(within(screen.getByRole('dialog')).queryByText('Célod')).not.toBeInTheDocument()
+  expect(within(screen.getByRole('dialog')).getByText('+ —')).toBeInTheDocument()
+})
+
+// mezo-32m82: a Célod sor zárja az egyenletet — Alap + Mozgás ± Célod − Étel = Marad.
+const CUT: DayBudget = { kcal: 3171, p: 160, c: 260, f: 80, energy: { base: 2356, planned: 570, extra: 572, balance: -327, target: 3171 } }
+
+test('fogyásnál a Célod sor saját előjellel (−) és a fogyási szöveggel áll, és az egyenlet kijön', async () => {
+  const hero = vm({ budget: CUT, consumed: { kcal: 800, p: 0, c: 0, f: 0 } })
+  render(<FuelEnergyHero vm={hero} trajectory="cut" />)
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  const box = screen.getByRole('dialog')
+  const nodes = [...box.querySelectorAll('.fmx-node')]
+  expect(nodes.map(n => n.querySelector('strong')!.textContent)).toEqual(['Alap', 'Mozgás', 'Célod', 'Étel', 'Marad'])
+  const goal = nodes[2]
+  expect(goal.querySelector('b')!.textContent).toBe(`− ${huInt(-CUT.energy.balance)}`)
+  expect(within(goal as HTMLElement).getByText('a fogyási célod napi része')).toBeInTheDocument()
+  // Mozgás = planned + extra, and the extra credit is named in its sub copy.
+  expect(nodes[1].querySelector('b')!.textContent).toBe(`+ ${huInt(CUT.energy.planned + CUT.energy.extra)}`)
+  expect(within(nodes[1] as HTMLElement).getByText('a heti edzésterved mai része + terven kívüli mozgás')).toBeInTheDocument()
+  // Closure off the rendered VM: base + activity + balance − eaten = remaining.
+  expect(hero.chips!.base + hero.chips!.activity + hero.chips!.balance - hero.consumedKcal).toBe(hero.remainingKcal)
+  // Üveg: Alap wears the flame (the BMR sprite), Célod the target ring — Titanium sprites, no emoji.
+  expect(nodes[0].querySelector('use')!.getAttribute('href')).toBe('#t-flame')
+  expect(goal.querySelector('use')!.getAttribute('href')).toBe('#t-ring')
+})
+
+test('tömegelésnél a Célod sor + előjelű', async () => {
+  const bulk: DayBudget = { ...CUT, kcal: 3176, energy: { base: 2356, planned: 570, extra: 0, balance: 250, target: 3176 } }
+  render(<FuelEnergyHero vm={vm({ budget: bulk })} trajectory="bulk" />)
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  const goal = [...screen.getByRole('dialog').querySelectorAll('.fmx-node')][2]
+  expect(goal.querySelector('b')!.textContent).toBe('+ 250')
+  expect(within(goal as HTMLElement).getByText('a tömegelési célod napi része')).toBeInTheDocument()
+})
+
+test('egy célos felhasználó múltbeli napján a Célod sor őszintén „—"', async () => {
+  render(<FuelEnergyHero vm={asPastDayHero(vm({ budget: CUT }))} past trajectory="cut" />)
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  const goal = [...screen.getByRole('dialog').querySelectorAll('.fmx-node')][2]
+  expect(goal.querySelector('strong')!.textContent).toBe('Célod')
+  expect(goal.querySelector('b')!.textContent).toBe('—')
+})
+
+test('tartásnál a nem nulla maradék (BMR-padló) mellett nincs „tartás" felirat', async () => {
+  const floored: DayBudget = { ...CUT, kcal: 2956, energy: { base: 2356, planned: 570, extra: 0, balance: 30, target: 2956 } }
+  render(<FuelEnergyHero vm={vm({ budget: floored })} trajectory="maintain" />)
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  const goal = [...screen.getByRole('dialog').querySelectorAll('.fmx-node')][2]
+  expect(goal.querySelector('b')!.textContent).toBe('+ 30')
+  expect(goal.querySelector('small')!.textContent).toBe('')
+})
+
+test('tartásnál nulla egyenleggel nincs Célod sor', async () => {
+  const keep: DayBudget = { ...CUT, kcal: 2926, energy: { base: 2356, planned: 570, extra: 0, balance: 0, target: 2926 } }
+  render(<FuelEnergyHero vm={vm({ budget: keep })} trajectory="maintain" />)
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  expect(within(screen.getByRole('dialog')).queryByText('Célod')).not.toBeInTheDocument()
 })
 
 // A túlevett nap nem szégyenít. A jóváhagyott hero-ban az ELŐJEL a feliratban van

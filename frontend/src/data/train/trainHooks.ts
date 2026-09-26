@@ -1,6 +1,8 @@
 import { useCallback } from 'react'
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { invalidateFuelTargets } from '@/data/fuel/queryKeys'
 import { isMockMode } from '@/data/_client/mode'
+import { netKcal, restKcalPerHour } from '@/data/train/activityEnergy'
 import { addDays, huMonthDay, huMonthDayDow, localDateString } from '@/shared/lib/dates'
 import { evaluateMockSetMedals, type MockMedalContext } from '@/data/train/medalEvaluator'
 import {
@@ -37,6 +39,7 @@ import {
   sport,
   exerciseLibrary,
   exerciseRecordsMock,
+  MOCK_FIXTURE_WEIGHT_KG,
 } from '@/data/train/train'
 import { mesoReportQueryKey } from '@/data/train/mesoReportHooks'
 import { gymLevelUpMock, sportLevelUpMock } from '@/data/progression/progressionMock'
@@ -503,19 +506,17 @@ type SportLogOpts = {
 /**
  * Mock-mode stand-in for the backend's kcal decision (mezo-88iwa.9, T8 Task 4).
  *
- * The REAL number comes from the server: a MET table folded with the athlete's own body
- * (weight/age/sex/body-fat), which the frontend has no access to and must never reproduce —
- * a second formula here would drift from the wire's and quietly lie. So this is a FIXTURE
- * shaped like a plausible session burn (a MET-ish curve over the captured RPE at a fixture
- * 78 kg body), NOT the published model: mock mode only has to make the ceremony show a
- * believable number and, above all, honour `kcalOverride` the way the wire promises
- * (stored verbatim, `kcalIsEstimate: false`).
+ * Since mezo-32m82 this IS the published model: the net activity energy (`activityEnergy.netKcal`,
+ * the frontend mirror of the backend's ActivityEnergyModel, bound to it by the shared golden
+ * vectors) at the fixture 78 kg body's rest energy (1 kcal/kg/h — mock has no BMR on the train
+ * side). Mock mode shows the same number real mode would for that body, and still honours
+ * `kcalOverride` the way the wire promises (stored verbatim, `kcalIsEstimate: false`).
  */
-function mockSportKcal(req: SportSessionCreateRequest): { kcal: number; kcalIsEstimate: boolean } {
+function mockSportKcal(req: SportSessionCreateRequest): { kcal: number | null; kcalIsEstimate: boolean | null } {
   if (req.kcalOverride != null) return { kcal: req.kcalOverride, kcalIsEstimate: false }
-  const fixtureWeightKg = 78
-  const met = 3 + req.rpe * 0.6
-  return { kcal: Math.round((req.duration * met * 3.5 * fixtureWeightKg) / 200), kcalIsEstimate: true }
+  const kcal = netKcal(req.sport ?? 'volleyball', req.rpe, req.duration, restKcalPerHour(null, MOCK_FIXTURE_WEIGHT_KG))
+  // Honest-null: an unknown estimate is null, never a fabricated 0.
+  return kcal == null ? { kcal: null, kcalIsEstimate: null } : { kcal, kcalIsEstimate: true }
 }
 
 /**
@@ -574,7 +575,13 @@ function useLogSportSession(
           } as SportSessionResponse
         }
       : (req: SportSessionCreateRequest) => trainApi.logSportSession(req),
-    onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['train', 'sportSessions'] }); invalidateProgression() },
+    onSuccess: () => {
+      if (!mock) {
+        qc.invalidateQueries({ queryKey: ['train', 'sportSessions'] })
+        invalidateFuelTargets(qc)
+      }
+      invalidateProgression()
+    },
   })
   return useCallback(
     (req: SportSessionCreateRequest, opts?: SportLogOpts) =>
@@ -849,6 +856,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
       if (!mock) {
         qc.invalidateQueries({ queryKey: ['train', 'weekWorkouts'] })
         qc.invalidateQueries({ queryKey: ['train', 'dayWorkouts'] })
+        invalidateFuelTargets(qc)
       }
     },
   })

@@ -819,7 +819,7 @@ class MealScoringServiceTest {
     void testScoreMeal_shouldUseProvidedDailyTargets_whenBaseGiven() {
         // A cutting-goal day: 2400 kcal, 180/240/70 g. The same lunch must be judged
         // against THESE shares, not the static 3100/220/380/95 config.
-        DailyTargets base = new DailyTargets(2400, 180, 240, 70, "goal");
+        DailyTargets base = new DailyTargets(2400, 180, 240, 70, "goal", null);
 
         MealBreakdownJson withGoal =
             service.scoreMeal("lunch", lunchLines(), LocalTime.of(13, 0), MealRole.STANDARD, base);
@@ -849,7 +849,7 @@ class MealScoringServiceTest {
     void testScoreMeal_shouldKeepRoleRubric_whenPrePostWithGoalBase() {
         // PRE/POST rubrics are role-absolute config bundles — a goal base must NOT change the
         // macro targets they judge against, only the day-share denominators (kcalShare, slot kcal).
-        DailyTargets base = new DailyTargets(2400, 180, 240, 70, "goal");
+        DailyTargets base = new DailyTargets(2400, 180, 240, 70, "goal", null);
         List<WorkoutWindow> windows = List.of(
             new WorkoutWindow(LocalTime.of(15, 0), LocalTime.of(16, 0), false));
         MealRole role = MealScoringService.classifyRole(LocalTime.of(14, 0), windows, 120, 90);
@@ -883,7 +883,7 @@ class MealScoringServiceTest {
     // ── Nap-tudatos context dimenzió (mezo-jcpt.19) ────────────────────────────────
 
     /** 1500 kcal-os cut-cél, a spec §4.4 példáinak alapja. */
-    private static final DailyTargets CUT = new DailyTargets(1500, 150, 150, 50, "goal");
+    private static final DailyTargets CUT = new DailyTargets(1500, 150, 150, 50, "goal", null);
 
     /** Egyetlen, tény nélküli sor a megadott kcal/fehérje értékkel — csak a context dim érdekel. */
     private static List<ScoredLine> line(int kcal, int protein) {

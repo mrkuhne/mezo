@@ -138,7 +138,8 @@ class GoalServiceIT extends AbstractIntegrationTest {
         TdeeBootstrapJson tdee = new TdeeBootstrapJson(
             new BigDecimal("1820.0"), new BigDecimal("1.35"), new BigDecimal("2457.0"),
             BigDecimal.ZERO, new BigDecimal("2457.0"),
-            "MSJ", OffsetDateTime.of(2026, 6, 19, 10, 0, 0, 0, ZoneOffset.UTC));
+            "MSJ", OffsetDateTime.of(2026, 6, 19, 10, 0, 0, 0, ZoneOffset.UTC),
+            io.mrkuhne.mezo.feature.train.service.ActivityEnergyModel.VERSION);
 
         GoalPrescriptionJson prescription = new GoalPrescriptionJson(
             OffsetDateTime.of(2026, 6, 19, 10, 0, 0, 0, ZoneOffset.UTC),

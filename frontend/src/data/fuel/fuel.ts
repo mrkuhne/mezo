@@ -1,8 +1,10 @@
 import type {
   FuelDay, SupplementStashItem, Protocol, FuelMeal, FuelSlot, MealItemLine, MealDimension,
-  ProtocolOccurrence, StackZoneKey, StackPlacementSource,
+  ProtocolOccurrence, StackZoneKey, StackPlacementSource, FuelDayEnergy,
 } from '@/data/types'
-import { localDateString } from '@/shared/lib/dates'
+import { currentWeekOf, localDateString } from '@/shared/lib/dates'
+import { goalResponse, goalTimeline } from '@/data/me/goals'
+import { netKcal, restKcalPerHour } from '@/data/train/activityEnergy'
 
 const TODAY = localDateString()
 
@@ -419,8 +421,38 @@ const m4Dimensions: MealDimension[] = [
   },
 ]
 
+// The served day (mezo-32m82) for the mock, derived from the mock goal (data/me/goals.ts) the way
+// the backend's DayTargetProjector serves it: the current goal-week's segment; today's planned gym
+// session is done (the mock schedule's `today: true` gym day) → dayKcal = trainingDayKcal; today's
+// 90′ RPE 6.6 volleyball is credited as off-plan `extra` (net model at rest BMR/24);
+// target = max(BMR, dayKcal + extra); carbs = segment carbs + (target − segment kcal)/4.
+// The equation: base = BMR × NEAT, planned = dayKcal − base − balance, balance absorbs the floor.
+const MOCK_SEGMENTS = goalResponse.prescription!.segments
+const MOCK_WEEK = currentWeekOf(goalResponse.startDate!, goalTimeline.weeks)
+const MOCK_SEGMENT = MOCK_SEGMENTS.find(s => MOCK_WEEK >= s.fromWeek && MOCK_WEEK <= s.toWeek) ?? MOCK_SEGMENTS[0]
+const MOCK_BMR = goalResponse.tdeeBootstrap!.bmr
+const MOCK_BASE_KCAL = goalResponse.tdeeBootstrap!.neatBaselineKcal
+const MOCK_DAY_KCAL = MOCK_SEGMENT.trainingDayKcal ?? MOCK_SEGMENT.kcal
+const MOCK_EXTRA_KCAL = netKcal('volleyball', 6.6, 90, restKcalPerHour(MOCK_BMR)) ?? 0
+const MOCK_TARGET_KCAL = Math.max(MOCK_BMR, MOCK_DAY_KCAL + MOCK_EXTRA_KCAL)
+const MOCK_PLANNED_KCAL = MOCK_DAY_KCAL - MOCK_BASE_KCAL - (MOCK_SEGMENT.dailyEnergyBalanceKcal ?? 0)
+export const fuelDayEnergy: FuelDayEnergy = {
+  baseKcal: MOCK_BASE_KCAL,
+  plannedMovementKcal: MOCK_PLANNED_KCAL,
+  extraMovementKcal: MOCK_EXTRA_KCAL,
+  balanceKcal: MOCK_TARGET_KCAL - MOCK_BASE_KCAL - MOCK_PLANNED_KCAL - MOCK_EXTRA_KCAL,
+  targetKcal: MOCK_TARGET_KCAL,
+}
+
 export const fuelDay: FuelDay = {
-  targets: { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 },
+  targets: {
+    kcal: fuelDayEnergy.targetKcal,
+    p: MOCK_SEGMENT.proteinG,
+    c: (MOCK_SEGMENT.carbsG ?? 0) + Math.round((fuelDayEnergy.targetKcal - MOCK_SEGMENT.kcal) / 4),
+    f: MOCK_SEGMENT.fatG ?? 0,
+    water: 4000,
+  },
+  energy: fuelDayEnergy,
   // MOCK_NOW_HHMM is 13:30 (mezo-1oy5), so "partial day" describes the CLOCK, not the meal list:
   // breakfast 09:15 + lunch 13:00 are logged before `now`, and — since fix-round-1 F1
   // (mezo-jcpt.3) added the coherent late-miss dinner fixture `m4` (logged 23:35, after `now`) —

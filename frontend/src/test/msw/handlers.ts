@@ -77,6 +77,9 @@ const fuelDayFixture = {
   targets: { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 },
   consumed: { kcal: 580, p: 42, c: 78, f: 12, water: 4000 },
   meals: [mealFixture],
+  // The served equation (mezo-32m82), closing on targets.kcal: base = the profile's 1910 × 1.35;
+  // planned = its 471/day weekly share + a 50 kcal training-day shift; a maintain day (balance 0).
+  energy: { baseKcal: 2579, plannedMovementKcal: 521, extraMovementKcal: 0, balanceKcal: 0, targetKcal: 3100 },
 }
 const recipeLogFixture = {
   recentLogs: [
@@ -354,7 +357,9 @@ export const handlers = [
       birthDate: '1991-03-01',
       bodyFatPct: 15,
       activityLevel: 'MIXED',
-      tdeeBootstrap: { bmr: 1910, neat: 1.35, neatBaselineKcal: 2579, weeklyEatKcalPerDay: 421, tdee: 3000, formula: 'KATCH', computedAt: '2026-05-22T06:00:00Z' },
+      // Net activity model (mezo-32m82): the mock week (4 × 90′ + 1 × 120′ volleyball, 2 × 60′ gym,
+      // 2 × 45′ run, közepes) at rest 1910/24 = 3298/week → 471/day; tdee = 2579 + 471.
+      tdeeBootstrap: { bmr: 1910, neat: 1.35, neatBaselineKcal: 2579, weeklyEatKcalPerDay: 471, tdee: 3050, formula: 'KATCH', computedAt: '2026-05-22T06:00:00Z', activityModel: 2 },
     }),
   ),
   // Progression profile (P6). Tests can override to ghost with a 404 (switch off).

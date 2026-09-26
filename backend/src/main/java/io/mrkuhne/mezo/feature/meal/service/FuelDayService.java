@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.meal.service;
 
+import io.mrkuhne.mezo.api.dto.FuelDayEnergy;
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.FuelDayRollup;
 import io.mrkuhne.mezo.api.dto.FuelWeekResponse;
@@ -16,6 +17,7 @@ import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
 import io.mrkuhne.mezo.feature.nutrition.service.DayContext;
 import io.mrkuhne.mezo.feature.nutrition.service.DayTargetProjector;
 import io.mrkuhne.mezo.feature.nutrition.service.DietPreferencesResolver;
+import io.mrkuhne.mezo.feature.nutrition.service.EnergyBase;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
 import io.mrkuhne.mezo.feature.meal.mapper.MealMapper;
@@ -30,6 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,13 +49,14 @@ import org.springframework.transaction.annotation.Transactional;
  * = Σ the day's meal macros; {@code water} consumed is the real Σ of the day's water-log entries
  * (via {@link WaterLogService}); no meal carries water in v1.
  *
- * <p>Slice 3 (mezo-sxlj): when a segment carries a day-type split ({@code trainingDayKcal} /
- * {@code restDayKcal}), the served kcal is picked at serve time by {@link DayTargetProjector} —
- * a date is a training day only once movement was actually LOGGED on it
- * ({@link WorkoutWindowQueryService#hasLoggedTrainingOn}: a completed gym workout, a logged sport
- * session or run — mezo-u13jv). A planned session not yet done keeps the rest-day kcal; the plan
- * alone never raises the day's calorie target. The whole kcal delta lands in carbs (ISSN), derived
- * at serve time and never stored.
+ * <p>The served target (mezo-32m82) is projected by {@link DayTargetProjector} from
+ * {@link WorkoutWindowQueryService#movementOn}: a split segment ({@code trainingDayKcal} /
+ * {@code restDayKcal}, slice 3 mezo-sxlj) serves the training-day kcal only once a PLANNED session
+ * was actually logged on the date ({@code plannedDone}) — the plan alone never raises it — and any
+ * UNPLANNED logged movement adds its net kcal ({@code extraKcal}) on top; the result is floored at
+ * the goal snapshot's BMR. Every kcal delta lands in carbs (ISSN), derived at serve time and never
+ * stored. The equation (Alap + Mozgás + Célod = target) rides along as the nullable
+ * {@link FuelDayEnergy} on both the day and the week rollup.
  */
 @Service
 @RequiredArgsConstructor
@@ -76,9 +80,11 @@ public class FuelDayService {
             .toList();
         int water = waterLogService.sumForDay(userId, date);
         int waterMl = dietPreferences.resolve(userId).waterMl();
+        DailyTargets t = project(activeGoal(userId), userId, date);
         return FuelDayResponse.builder()
             .date(date)
-            .targets(targetSet(activeGoal(userId), date, waterMl, userId))
+            .targets(targetSet(t, waterMl))
+            .energy(energy(t))
             .consumed(consumed(meals, water))
             .meals(meals)
             .build();
@@ -90,9 +96,9 @@ public class FuelDayService {
      * the Terv weekly stats (kcal avg / protein-hit days), the week-centric Fuel Napló page and the
      * Insights Weekly review (Phase-2 roadmap D′).
      *
-     * <p>Slice 3: each of the 7 days does its own {@link WorkoutWindowQueryService#hasLoggedTrainingOn}
-     * lookup via {@link #targetSet} — 7 lookups per call. Acceptable single-owner cost;
-     * revisit with a week-bulk query only if it ever shows up in traces.
+     * <p>The week's movement (planned-done pick + unplanned extra kcal per day) is read ONCE via
+     * {@link WorkoutWindowQueryService#movementBetween} — the same per-day rules as
+     * {@link WorkoutWindowQueryService#movementOn}, one batched query set instead of seven.
      *
      * <p>The two week-level scalars (mezo-d20.7.2) are DERIVED AT READ, not stored: Fuel has no
      * per-week row to hang them on, and both are pure functions of already-persisted data
@@ -108,12 +114,21 @@ public class FuelDayService {
         // Resolve preferences ONCE for the whole week, not per day (7 identical queries otherwise).
         int waterMl = dietPreferences.resolve(userId).waterMl();
         LocalDate end = start.plusDays(6);
+        // ONE batched movement read for the whole week, fetched lazily — only if some day's segment
+        // actually needs it (the config path pays nothing).
+        Supplier<Map<LocalDate, WorkoutWindowQueryService.DayMovement>> weekMovement =
+            memoize(() -> workoutWindowQueryService.movementBetween(userId, start, end));
         List<FuelDayRollup> days = start.datesUntil(start.plusDays(7))
-            .map(d -> FuelDayRollup.builder()
-                .date(d)
-                .targets(targetSet(goal, d, waterMl, userId))
-                .consumed(consumedFor(userId, d))
-                .build())
+            .map(d -> {
+                DailyTargets t = project(goal, d, () -> weekMovement.get()
+                    .getOrDefault(d, WorkoutWindowQueryService.DayMovement.NONE));
+                return FuelDayRollup.builder()
+                    .date(d)
+                    .targets(targetSet(t, waterMl))
+                    .energy(energy(t))
+                    .consumed(consumedFor(userId, d))
+                    .build();
+            })
             .toList();
         return FuelWeekResponse.builder()
             .start(start)
@@ -176,9 +191,10 @@ public class FuelDayService {
      * The active goal's recept segment covering {@code date}'s goal-week (week derived from
      * startDate — the ContextSnapshotAssembler#goalBlock idiom); {@code null} when there is no
      * goal, no evaluated prescription, or no covering segment (e.g. a date before the goal
-     * started). SHARED by {@link #targetSet} (the FuelDay MacroHero) and {@link #dailyTargets}
-     * (the meal scorer, mezo-3g5w) — one resolution, two projections, so the two surfaces can
-     * never judge a day against different numbers.
+     * started). Resolved only inside {@link #project}, which feeds both the FuelDay MacroHero
+     * ({@link #getDay} / {@link #getWeek}) and {@link #dailyTargets} (the meal scorer, mezo-3g5w)
+     * — one resolution, one projection, so the surfaces can never judge a day against different
+     * numbers.
      */
     private GoalPrescriptionJson.Segment segmentFor(GoalEntity goal, LocalDate date) {
         if (goal == null || goal.getStartDate() == null) {
@@ -189,15 +205,12 @@ public class FuelDayService {
     }
 
     /**
-     * kcal + protein + carbs + fat from {@link #segmentFor}; config fallback per field when there
-     * is no covering segment, or the segment predates the carbs/fat split (pre-slice-1
-     * prescriptions carry null carbsG/fatG). The day-type pick ({@link #project}) overrides
-     * kcal and shifts carbs when the segment carries a day-type split. {@code waterMl} is
-     * caller-resolved (once per request, via {@link DietPreferencesResolver}) since water is never
-     * goal-prescribed.
+     * The wire macro set of a projected day ({@link #project}): kcal + protein + carbs + fat from
+     * {@link #segmentFor} with per-field config fallback, the day-type pick, the unplanned extra
+     * and the BMR floor already applied. {@code waterMl} is caller-resolved (once per request, via
+     * {@link DietPreferencesResolver}) since water is never goal-prescribed.
      */
-    private MacroSet targetSet(GoalEntity goal, LocalDate date, int waterMl, UUID userId) {
-        DailyTargets t = project(segmentFor(goal, date), userId, date);
+    private static MacroSet targetSet(DailyTargets t, int waterMl) {
         return MacroSet.builder()
             .kcal(BigDecimal.valueOf(t.kcal()))
             .p(BigDecimal.valueOf(t.p()))
@@ -207,28 +220,69 @@ public class FuelDayService {
             .build();
     }
 
+    /** The served equation on the wire; {@code null} on the static path (no goal snapshot). */
+    private static FuelDayEnergy energy(DailyTargets t) {
+        DailyTargets.Energy e = t.energy();
+        if (e == null) {
+            return null;
+        }
+        return FuelDayEnergy.builder()
+            .baseKcal(e.baseKcal())
+            .plannedMovementKcal(e.plannedMovementKcal())
+            .extraMovementKcal(e.extraMovementKcal())
+            .balanceKcal(e.balanceKcal())
+            .targetKcal(e.targetKcal())
+            .build();
+    }
+
     /**
      * The shared segment → served-targets projection ({@link DayTargetProjector}, mezo-u2pd) with
-     * this service's config fallback and the LOGGED-movement day-type probe bound in (mezo-u13jv).
-     * The probe is passed lazily because {@link WorkoutWindowQueryService#hasLoggedTrainingOn} is a
-     * DB round-trip a uniform (pre-slice-3) segment must not pay — and it is deliberately NOT
-     * {@code windowsFor}, which reads the plan: a planned session not yet done must not flip the
-     * day-type kcal pick.
+     * this service's config fallback, the goal snapshot's {@link EnergyBase} (BMR floor + Alap) and
+     * the {@link WorkoutWindowQueryService#movementOn} probe bound in: {@code plannedDone} picks the
+     * day-type kcal (a planned session not yet done keeps the rest-day kcal), {@code extraKcal}
+     * credits unplanned logged movement on top (mezo-32m82). The probe is lazy — a DB round-trip
+     * the config path (no covering segment) must not pay.
      */
-    private DailyTargets project(GoalPrescriptionJson.Segment seg, UUID userId, LocalDate date) {
+    private DailyTargets project(GoalEntity goal, UUID userId, LocalDate date) {
+        return project(goal, date, () -> workoutWindowQueryService.movementOn(userId, date));
+    }
+
+    private DailyTargets project(GoalEntity goal, LocalDate date,
+        Supplier<WorkoutWindowQueryService.DayMovement> movement) {
         return DayTargetProjector.project(
-            seg, () -> workoutWindowQueryService.hasLoggedTrainingOn(userId, date), targets);
+            segmentFor(goal, date),
+            EnergyBase.of(goal == null ? null : goal.getTdeeBootstrap()),
+            movement,
+            targets);
+    }
+
+    /** A supplier that runs {@code source} at most once, on first use. */
+    private static <T> Supplier<T> memoize(Supplier<T> source) {
+        return new Supplier<>() {
+            private T value;
+            private boolean done;
+
+            @Override
+            public T get() {
+                if (!done) {
+                    value = source.get();
+                    done = true;
+                }
+                return value;
+            }
+        };
     }
 
     /**
      * The day's resolved macro targets for the meal scorer (mezo-3g5w): the active goal's covering
      * segment via {@link #segmentFor}, per-field config fallback, with the SAME day-type pick
-     * ({@link #project}) {@link #targetSet} applies — so the score and the hero can never
-     * judge against different numbers.
+     * ({@link #project}) the hero applies — so the score and the hero can never judge against
+     * different numbers. An unplanned-movement day therefore raises the scorer's (and MealCoach's)
+     * target too (mezo-32m82).
      */
     @Transactional(readOnly = true)
     public DailyTargets dailyTargets(UUID userId, LocalDate date) {
-        return project(segmentFor(activeGoal(userId), date), userId, date);
+        return project(activeGoal(userId), userId, date);
     }
 
     /**

@@ -17,13 +17,13 @@
 
 import {
   DEFAULT_BLOCK_MIN,
-  DEFAULT_RUN_MIN,
   EATING_START_OFFSET_MIN,
   KITCHEN_CLOSE_OFFSET_MIN,
   MIN_SLOT_GAP_MIN,
   daySpan,
   unwrapDayMinute,
 } from '@/data/fuel/fuelConfig'
+import { DEFAULT_RUN_MIN } from '@/data/train/activityEnergy'
 import type { PlannedWindow, PlannerBlock } from '@/features/fuel/logic/buildDayPlan'
 import type { WindowRule } from '@/features/fuel/logic/mealWindow'
 import type { SlotTemplate, SlotTemplateRow } from '@/data/types'

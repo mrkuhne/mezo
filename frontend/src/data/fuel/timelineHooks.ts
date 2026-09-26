@@ -25,11 +25,12 @@ import { useBiometricProfile } from '@/data/me/biometricHooks'
 import { useSleepGoal } from '@/data/me/sleepHooks'
 import { useTrain } from '@/data/train/trainHooks'
 import { useRunning } from '@/data/train/runningHooks'
-import { buildDayPlan, deriveDailyBudget } from '@/features/fuel/logic/buildDayPlan'
+import { buildDayPlan, servedBudget } from '@/features/fuel/logic/buildDayPlan'
 import { buildEnergyBreakdown } from '@/features/fuel/logic/buildEnergyBreakdown'
-import { deriveBlocks, deriveLoggedBlocks } from '@/features/fuel/logic/buildProtocol'
+import { deriveBlocks } from '@/features/fuel/logic/buildProtocol'
 import { projectStackDay } from '@/features/fuel/logic/projectStackDay'
 import { resolveDayType } from '@/features/fuel/logic/resolveDayType'
+import { restKcalPerHour } from '@/data/train/activityEnergy'
 import { ACTIVITY_SHORT, type ActivityLevel } from '@/features/me/logic/biometricFields'
 import type { GoalResponse } from '@/data/me/goalApi'
 import type { GoalTimelineResponse } from '@/data/me/goalLinkApi'
@@ -49,7 +50,8 @@ export { deriveBlocks }
  *  goal window (`startDate` + the timeline's total weeks; when the timeline hasn't resolved yet,
  *  the last segment's `toWeek` bounds it). The segment whose `[fromWeek..toWeek]` covers that week
  *  wins; a week outside every segment falls back to the FIRST segment (pinned by test). Returns
- *  null when there is no prescription → `deriveDailyBudget` then passes the day-targets fallback. */
+ *  null when there is no prescription. Since mezo-32m82 it only feeds the energy sheet's deficit
+ *  section (goal label, rate, rationale) — the day's budget itself is the served one. */
 function currentSegment(
   goalResponse: GoalResponse | null,
   timeline: GoalTimelineResponse | null,
@@ -76,8 +78,8 @@ export function useFuelTimeline(date: string = localDateString()) {
   const { occurrences } = useProtocol()
   const { stash } = useStack()
   const intakes = useIntakes(date)
-  const { gymSchedule, sport, sportSlotSkips, gymDoneDates, completedTodayWorkout } = useTrain()
-  const { activeRunningBlock, runSessions } = useRunning()
+  const { gymSchedule, sport, sportSlotSkips } = useTrain()
+  const { activeRunningBlock } = useRunning()
   const { settings } = useFuelSettings() // Fuel-owned meal cadence + caffeine cutoff (mezo-53su)
   const { profile } = useBiometricProfile() // NEAT band label for the energy-breakdown sheet (mezo-hobb)
   const { templates } = useSlotTemplates() // Per-day-type meal-slot templates (mezo-7102)
@@ -89,27 +91,16 @@ export function useFuelTimeline(date: string = localDateString()) {
   const bed = sleepGoal.bedTime
   const mealsPerDay = settings.mealsPerDay
 
-  // Three block lists, deliberately:
+  // Two block lists, deliberately:
   //   `blocks` is what the day holds — the schedule reconciled with the logged sport sessions
   //     (mezo-rilew) — and it drives the meal windows, so a planned session still gets its
   //     pre/post-workout fuel before it happens.
-  //   `plannedBlocks` is the SCHEDULE-only list; it picks the meal-slot template (meal timing).
-  //   `loggedBlocks` is the movement that actually HAPPENED (mezo-u13jv, owner decision
-  //     2026-09-24) and is the only thing that raises the calorie target: it feeds the day's
-  //     activity energy (`eat`) AND the training/rest-day kcal pick, the same rule the backend
-  //     serves (`WorkoutWindowQueryService.hasLoggedTrainingOn`). A planned session not yet done
-  //     raises nothing until it is logged.
+  //   `plannedBlocks` is the SCHEDULE-only list; it picks the meal-slot template (meal timing)
+  //     and is the per-block preview list of the energy sheet.
+  //   The movement that actually HAPPENED no longer feeds any FE number: the served target
+  //     already credits it (planned share in the weekly base, unplanned as `extra` — mezo-32m82).
   const plannedBlocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, sportSlotSkips)
   const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, sportSlotSkips, sport.sessions ?? [])
-  const todayIso = localDateString()
-  const loggedBlocks = deriveLoggedBlocks({
-    planned: plannedBlocks,
-    gymDone: gymDoneDates.includes(todayIso) || completedTodayWorkout != null,
-    completedGym: completedTodayWorkout,
-    sportSessions: sport.sessions ?? [],
-    runLogs: runSessions,
-    todayIso,
-  })
 
   // Day-type template (mezo-7102): today's REAL blocks resolve one of the three canonical day
   // types, which picks the matching cached template (absent → null, buildDayPlan's today-unchanged
@@ -117,24 +108,22 @@ export function useFuelTimeline(date: string = localDateString()) {
   const dayType = resolveDayType(plannedBlocks)
   const template = templates.find(t => t.dayType === dayType) ?? null
 
-  // Dynamic energy inputs (mezo-1oy5 / mezo-eujg): current weigh-in drives the MET activity burn +
-  // the BMR floor; BMR×neat is the lifestyle maintenance and the segment's explicit
-  // dailyEnergyBalanceKcal is the goal deficit/surplus — both straight from the wire. When the
-  // biometric profile hasn't resolved (no BMR/neat), deriveDailyBudget falls back to the static path.
+  // The day's budget is the one the backend SERVES (mezo-32m82, DayTargetProjector): targets +
+  // the base/planned/extra/balance equation. The frontend derives no target of its own; no served
+  // `energy` (no goal / no biometric snapshot) is the static path.
   const weightKg = goal?.currentWeight ?? goalResponse?.startWeightKg ?? 0
   const segment = currentSegment(goalResponse, timeline)
-  const budget = deriveDailyBudget(segment, fuel.targets, {
-    bmr: goalResponse?.tdeeBootstrap?.bmr ?? null,
-    neat: goalResponse?.tdeeBootstrap?.neat ?? null,
-    weightKg,
-    blocks: loggedBlocks,
-  }, loggedBlocks.length > 0)
+  const budget = servedBudget(fuel.targets, fuel.energy)
+  const staticEnergy = fuel.energy == null
+  // Rest energy (BMR/24, else 1 kcal/kg/h) for the net peri-snack threshold — ONE value for
+  // buildDayPlan, projectStackDay and the slot-template page, so the windows agree everywhere.
+  const restPerHour = restKcalPerHour(goalResponse?.tdeeBootstrap?.bmr, weightKg)
 
   // Protocol slots (mezo-vx9v Task 9): the living protocol's occurrences (Task 5), projected
   // into zoned/timed slots by the same pure `projectStackDay` the Stack page uses (Task 6/8) —
   // occurrences replace the old selection-based `buildProtocol`, so there is no more selection
   // default to fall back to.
-  const protocolSlots = projectStackDay({ occurrences, stash, intakes, wake, bed, mealsPerDay, blocks, weightKg })
+  const protocolSlots = projectStackDay({ occurrences, stash, intakes, wake, bed, mealsPerDay, blocks, weightKg, restPerHour })
 
   // `nowHHmm` is injected (buildDayPlan stays clock-free/deterministic). Mock pins a fixed now
   // (spec D6) for a deterministic demo + tests; real reads the wall clock.
@@ -144,17 +133,18 @@ export function useFuelTimeline(date: string = localDateString()) {
     : `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 
   const plan = buildDayPlan({
-    wake, bed, mealsPerDay, blocks, budget, weightKg,
+    wake, bed, mealsPerDay, blocks, budget, weightKg, restPerHour,
     meals: fuel.meals, recipes, protocolSlots,
     caffeineCutoff: settings.caffeineCutoff, nowHHmm, template,
   })
 
   // Dynamic-energy explanation (mezo-hobb): the shared EnergyBreakdownSheet's prop, built from the
-  // day's plan.energy + today's LOGGED blocks (the ones the activity energy bills) + the current segment + the NEAT band. Null on the static path.
+  // served energy + today's planned blocks (per-block previews) + the current segment + the NEAT
+  // band. Null on the static path.
   const tb = goalResponse?.tdeeBootstrap
-  const energyBreakdown = buildEnergyBreakdown({
-    energy: plan.energy,
-    blocks: loggedBlocks,
+  const energyBreakdown = staticEnergy ? null : buildEnergyBreakdown({
+    energy: budget.energy,
+    blocks: plannedBlocks,
     weightKg,
     tdeeBootstrap: tb ? { bmr: tb.bmr, neat: tb.neat, formula: tb.formula } : null,
     segment,
@@ -166,7 +156,9 @@ export function useFuelTimeline(date: string = localDateString()) {
   // reads the wall clock itself (mock mode must stay deterministic — MOCK_NOW_HHMM). dayType/template
   // (mezo-7102) are returned too, additively, so a settings preview can show which template drove today.
   return {
-    plan, budget, blocks, weightKg, energyBreakdown, wake, bed, nowHHmm, dayType, template,
+    plan, budget, staticEnergy, blocks, weightKg, restPerHour, energyBreakdown, wake, bed, nowHHmm, dayType, template,
+    /** The active goal's direction — picks the equation box's Célod copy (mezo-32m82). */
+    trajectory: goalResponse?.trajectory ?? null,
     getScoredMeal: (s: FuelSlot) => getScoredMeal(s, fuel.meals),
   }
 }

@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson.GuardStatus;
 import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalPlanLinkRepository;
+import io.mrkuhne.mezo.feature.train.service.ActivityEnergyModel;
 import io.mrkuhne.mezo.feature.train.service.WeeklyScheduledActivityService;
 import java.math.BigDecimal;
 import java.util.LinkedHashSet;
@@ -69,7 +70,9 @@ public class GoalPrescriptionCalculator {
         }
 
         BigDecimal currentWeightKg = currentWeightKg(userId, goal);
-        BigDecimal weeklyEat = weeklyActivity.totalWeeklyEatKcalPerDay(userId, currentWeightKg);
+        BigDecimal rest = ActivityEnergyModel.restKcalPerHour(bootstrapService.bmr(profile, currentWeightKg), currentWeightKg)
+            .orElse(null);
+        BigDecimal weeklyEat = weeklyActivity.totalWeeklyEatKcalPerDay(userId, rest);
         TdeeBootstrapJson bootstrap = bootstrapService.compute(profile, currentWeightKg, weeklyEat);
         DietPreferences preferences =
             draftPreferences != null ? draftPreferences : dietPreferences.resolve(userId);

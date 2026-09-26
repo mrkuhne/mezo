@@ -27,6 +27,8 @@ public interface AthleteBodyPort {
      * @param sex {@code M|F} as stored on the profile
      * @param age full years at the session's date
      * @param bodyFatPct null when never captured — the lean correction is then neutral
+     * @param bmrKcal the BMR at the latest weigh-in (Katch/Mifflin, {@code TdeeBootstrapService#bmr}) —
+     *                the activity model's rest-energy basis
      */
-    record AthleteBody(BigDecimal weightKg, String sex, int age, BigDecimal bodyFatPct) {}
+    record AthleteBody(BigDecimal weightKg, String sex, int age, BigDecimal bodyFatPct, BigDecimal bmrKcal) {}
 }

@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useFuelDay, useMealActions, useWaterActions } from '@/data/fuel/fuelHooks'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
+import { fuelDayEnergy } from '@/data/fuel/fuel'
 import type { MealInput } from '@/data/types'
 
 function sharedWrapper() {
@@ -26,13 +27,13 @@ afterEach(() => { vi.useRealTimers(); vi.unstubAllEnvs() })
 describe('useFuelDay (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 
-  it('returns the preserved FuelDay shape (targets/consumed/meals + pacing/micronutrients/supplements)', () => {
+  it('returns the preserved FuelDay shape (targets/consumed/meals/energy + pacing/micronutrients/supplements)', () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useFuelDay(), { wrapper: Wrapper })
     expect(Object.keys(result.current.fuel).sort()).toEqual(
-      ['consumed', 'meals', 'micronutrients', 'pacing', 'supplements', 'targets'],
+      ['consumed', 'energy', 'meals', 'micronutrients', 'pacing', 'supplements', 'targets'],
     )
-    expect(result.current.fuel.targets.kcal).toBe(3100)
+    expect(result.current.fuel.targets.kcal).toBe(fuelDayEnergy.targetKcal)
     expect(result.current.fuel.meals.length).toBeGreaterThan(0)
     expect(result.current.fuel.micronutrients.length).toBeGreaterThan(0)
   })
@@ -128,7 +129,7 @@ describe('useFuelDay (real mode)', () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useFuelDay(), { wrapper: Wrapper })
     await waitFor(() => expect(result.current.fuel.meals.length).toBe(1))
-    expect(result.current.fuel.targets.kcal).toBe(3100)
+    expect(result.current.fuel.targets.kcal).toBe(3100) // the MSW fuel-day fixture
     expect(result.current.fuel.consumed.kcal).toBe(580)
     expect(result.current.fuel.meals[0].mealItems[0].refId).toBe('p-zab')
     // composed static legs still present
