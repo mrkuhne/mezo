@@ -217,7 +217,7 @@ public class TeamChatService {
     @Transactional
     void catchUpUser(UUID userId, Instant now) {
         catchUpMissedOpens(userId, now);
-        catchUpMissedResolves(userId, now);
+        catchUpMissedResolves(userId);
     }
 
     /** Every raise in the last {@link #CATCH_UP_LOOKBACK_HOURS} hours with no thread opened at/after
@@ -241,13 +241,16 @@ public class TeamChatService {
     }
 
     /** Every OPEN ügy whose rule's latest trace row is a clear gets resolved with that row's
-     *  evidence — the clear-event counterpart the listener may have missed. */
-    private void catchUpMissedResolves(UUID userId, Instant now) {
+     *  evidence — the clear-event counterpart the listener may have missed. Backdated to the
+     *  trace row's own {@code occurredAt} (the {@link #catchUpMissedOpens} precedent): the chip
+     *  reads "RENDEZŐDÖTT · hh:mm" and must say when the flag actually cleared, not when the
+     *  sweep happened to notice. */
+    private void catchUpMissedResolves(UUID userId) {
         for (TeamChatThreadEntity thread : threads.findByCreatedByAndStatusAndDeletedFalseOrderByOpenedAtAsc(
                 userId, STATUS_OPEN)) {
             flagTraces.findFirstByCreatedByAndFlagKeyOrderByOccurredAtDesc(userId, thread.getFlagKey())
                     .filter(trace -> "clear".equals(trace.getOutcome()))
-                    .ifPresent(trace -> resolve(userId, thread.getFlagKey(), trace.getEvidence(), now));
+                    .ifPresent(trace -> resolve(userId, thread.getFlagKey(), trace.getEvidence(), trace.getOccurredAt()));
         }
     }
 

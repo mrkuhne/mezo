@@ -539,13 +539,16 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
         raiseSleepDebtLog(owner);
         TeamChatThreadEntity thread = service.open(owner, FlagKey.SLEEP_DEBT, Instant.now()).orElseThrow();
         FlagVerdict.ClearEvidence evidence = new FlagVerdict.ClearEvidence("deficit_hours", 2.0, 5.0, null);
-        writeTrace(owner, FlagKey.SLEEP_DEBT, "clear", evidence, Instant.now());
+        // Distinct from the catch-up run time below, so the assertion actually pins the backdate
+        // (the chip reads "RENDEZŐDÖTT · hh:mm" — it must say when the flag really cleared).
+        Instant clearedAt = Instant.now().minus(3, ChronoUnit.HOURS).truncatedTo(ChronoUnit.MICROS);
+        writeTrace(owner, FlagKey.SLEEP_DEBT, "clear", evidence, clearedAt);
 
         service.catchUp(Instant.now());
 
         TeamChatThreadEntity reread = threads.findById(thread.getId()).orElseThrow();
         assertThat(reread.getStatus()).isEqualTo("RESOLVED");
-        assertThat(reread.getClosedAt()).isNotNull();
+        assertThat(reread.getClosedAt()).isEqualTo(clearedAt);
         assertThat(linesOf(thread)).extracting(TeamChatLineEntity::getKind).contains("RESOLVE");
     }
 
