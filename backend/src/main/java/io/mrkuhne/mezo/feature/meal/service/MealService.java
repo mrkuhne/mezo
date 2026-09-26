@@ -34,6 +34,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -206,6 +207,12 @@ public class MealService {
         meal.setLoggedAt(loggedAt.toInstant());
         meal.setMealDate(loggedAt.toLocalDate());
         meal.setSlot(req.getSlot());
+        // mezo-6g52f: a tervező-ablak csak akkor íródik, ha a kérés hozza — frissítéskor a hiánya
+        // megtartja a tárolt ablakot (a szerkesztő nem ismeri az eredeti ablakot).
+        if (req.getWindow() != null) {
+            meal.setWindowFrom(LocalTime.parse(req.getWindow().getFrom()));
+            meal.setWindowTo(LocalTime.parse(req.getWindow().getTo()));
+        }
         meal.setTitle(req.getTitle());
         return loggedAt;
     }

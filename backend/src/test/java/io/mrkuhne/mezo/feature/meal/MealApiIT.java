@@ -11,6 +11,8 @@ import io.mrkuhne.mezo.api.dto.MealProvenance;
 import io.mrkuhne.mezo.api.dto.MealRequest;
 import io.mrkuhne.mezo.api.dto.MealResponse;
 import io.mrkuhne.mezo.api.dto.MealScoreDimension;
+import io.mrkuhne.mezo.api.dto.MealTimingDetail;
+import io.mrkuhne.mezo.api.dto.MealWindow;
 import io.mrkuhne.mezo.api.dto.PantryItemRequest;
 import io.mrkuhne.mezo.api.dto.PantryItemResponse;
 import io.mrkuhne.mezo.api.dto.RecipeIngredientRequest;
@@ -684,5 +686,62 @@ class MealApiIT extends ApiIntegrationTest {
         assertThat(day.getConsumed().getKcal()).isEqualByComparingTo("0");
         // re-delete the now soft-deleted meal -> 404
         deleteAndExpect("/api/meal/" + created.getId(), auth, HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void testCreate_shouldStoreThePlannedWindowAndScoreTimingAgainstIt_whenWindowSent() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFood(auth, "Zabpehely", "370", "13", "59", "7");
+        MealRequest req = mealReq(pantryItem(food, "100"));   // breakfast @ 13:20 local
+        MealWindow w = new MealWindow();
+        w.setFrom("12:30");
+        w.setTo("14:00");
+        req.setWindow(w);
+
+        MealResponse res = postForBody("/api/meal", req, auth, HttpStatus.CREATED, MealResponse.class);
+
+        MealTimingDetail timing = res.getScore().getBreakdown().getDimensions().stream()
+            .filter(d -> "context".equals(d.getId())).findFirst().orElseThrow().getTiming();
+        assertThat(timing.getWindowFrom()).isEqualTo("12:30");
+        assertThat(timing.getWindowTo()).isEqualTo("14:00");
+        assertThat(timing.getWindowSource()).isEqualTo(MealTimingDetail.WindowSourceEnum.PLAN);
+    }
+
+    @Test
+    void testCreate_shouldFallBackToConfigWindow_whenNoWindowSent() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFood(auth, "Zabpehely", "370", "13", "59", "7");
+
+        MealResponse res = postForBody("/api/meal", mealReq(pantryItem(food, "100")), auth,
+            HttpStatus.CREATED, MealResponse.class);
+
+        MealTimingDetail timing = res.getScore().getBreakdown().getDimensions().stream()
+            .filter(d -> "context".equals(d.getId())).findFirst().orElseThrow().getTiming();
+        assertThat(timing.getWindowFrom()).isEqualTo("05:00");
+        assertThat(timing.getWindowSource()).isEqualTo(MealTimingDetail.WindowSourceEnum.CONFIG);
+    }
+
+    @Test
+    void testUpdate_shouldKeepTheStoredWindow_whenUpdateOmitsIt() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFood(auth, "Zabpehely", "370", "13", "59", "7");
+        MealRequest req = mealReq(pantryItem(food, "100"));
+        MealWindow w = new MealWindow();
+        w.setFrom("12:30");
+        w.setTo("14:00");
+        req.setWindow(w);
+        MealResponse created = postForBody("/api/meal", req, auth, HttpStatus.CREATED, MealResponse.class);
+
+        MealRequest upd = mealReq(pantryItem(food, "120"));   // window omitted
+        putForBody("/api/meal/" + created.getId(), upd, auth, HttpStatus.NO_CONTENT, Void.class);
+
+        FuelDayResponse day = getForBody("/api/fuel/day/" + MEAL_DATE, auth, HttpStatus.OK, FuelDayResponse.class);
+        MealResponse updated = day.getMeals().stream()
+            .filter(m -> created.getId().equals(m.getId())).findFirst().orElseThrow();
+
+        MealTimingDetail timing = updated.getScore().getBreakdown().getDimensions().stream()
+            .filter(d -> "context".equals(d.getId())).findFirst().orElseThrow().getTiming();
+        assertThat(timing.getWindowFrom()).isEqualTo("12:30");
+        assertThat(timing.getWindowSource()).isEqualTo(MealTimingDetail.WindowSourceEnum.PLAN);
     }
 }

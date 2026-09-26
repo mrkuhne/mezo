@@ -41,3 +41,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609261100_mezo-zpxv7_rolad_owner_snooze.sql
+  - changeSet:
+      id: "1.1.0:202609261200_mezo-6g52f_meal_window"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609261200_mezo-6g52f_meal_window.sql

@@ -7006,7 +7006,13 @@ export interface components {
             label: string;
             value: string;
         };
-        /** @description A `context` dimenzió időzítés-tényei rajzolható alakban (mezo-jcpt.3). UGYANABBÓL a szerver-oldali slot-ablak configból származik, ami a timing-részpontszámot adta, ezért a rajzolt sáv és a pontszám nem tud eltérni. Csak logolt étkezésen van jelen; a recept-sablon breakdownjában nincs `context` dimenzió, tehát ott soha. */
+        MealWindow: {
+            /** @description Helyi idő "HH:mm" */
+            from: string;
+            /** @description Helyi idő "HH:mm" */
+            to: string;
+        };
+        /** @description A `context` dimenzió időzítés-tényei rajzolható alakban (mezo-jcpt.3). UGYANABBÓL az ablakból származik (tárolt tervező-ablak, ha van, különben a slot-ablak config), ami a timing-részpontszámot adta, ezért a rajzolt sáv és a pontszám nem tud eltérni. Csak logolt étkezésen van jelen; a recept-sablon breakdownjában nincs `context` dimenzió, tehát ott soha. */
         MealTimingDetail: {
             /** @description Helyi idő "HH:mm" alakban */
             eatenAt: string;
@@ -7014,6 +7020,11 @@ export interface components {
             windowFrom?: string | null;
             /** @description Az ablak vége "HH:mm"; null = nasi, bármikor jó */
             windowTo?: string | null;
+            /**
+             * @description plan = az étkezéssel tárolt tervező-ablak (mezo-6g52f); config = a statikus slot-ablak; null = régi envelope
+             * @enum {string|null}
+             */
+            windowSource?: "plan" | "config" | null;
             /** @description Magyar slot-név, pl. "vacsora" */
             slotLabel: string;
         };
@@ -7098,6 +7109,8 @@ export interface components {
             slot: string;
             /** Format: date-time */
             loggedAt?: string | null;
+            /** @description A tervező ajánlott ablaka, amibe az étkezést logolták (mezo-6g52f). Megadva ehhez mér a timing-pontszám; hiányzik → a statikus slot-ablak config. Frissítéskor a null NEM törli a tárolt ablakot. */
+            window?: components["schemas"]["MealWindow"] | null;
             title?: string | null;
             items: components["schemas"]["MealItemRequest"][];
             provenance?: components["schemas"]["MealProvenance"] | null;
