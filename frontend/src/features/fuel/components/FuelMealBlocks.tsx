@@ -189,19 +189,39 @@ function GlycemicChip({ row, onOpen }: { row: DoneMealRow; onOpen: () => void })
   )
 }
 
-/** Az „Ajánlott …" sor chipje (owner 2026-09-26: marad). Szégyenmentes: a lezárt ablak nem hiba. */
-function whenChip(from: string, to: string, now: string): string {
+/** Az „Ajánlott …" sor chipje (owner 2026-09-26: marad). Szégyenmentes: a lezárt ablak nem hiba.
+ *  Null `now` (mezo-6g52f R4, múltbéli nap): nincs „most" jel — mindig „még pótolható". */
+function whenChip(from: string, to: string, now: string | null): string {
+  if (now == null) return 'még pótolható'
   const n = toMin(now), lo = toMin(from), hi = toMin(to)
   if (n < lo) return lo - n <= 90 ? `nyílik ${durHu(lo - n)} múlva` : `nyílik ${from}`
   if (n <= hi) return `most nyitva · még ${durHu(hi - n)}`
   return 'még pótolható'
 }
 
+/** A „Logolás ide" gomb ALSÓ sora (mezo-6g52f R1). Az ablakhoz kötött, semleges hangú
+ *  helyzet-mondat: a tile.state (`most nyitva`) a NAP ELSŐ lognélküli ablakára igaz, nem
+ *  arra, hogy EZ az ablak most van-e nyitva — ezért ablak esetén a saját window-ból és a
+ *  `nowHHmm`-ból számoljuk, nem a tile.state-ből. Null `now` (múltbéli nap) → mindig
+ *  „még pótolható" (nincs „most"). Ablak nélkül a régi tile.state-alapú szöveg marad. */
+function logButtonLabel(tile: WindowTileVM, nowHHmm: string | null): string {
+  if (tile.windowFrom && tile.windowTo) {
+    if (tile.state === 'missed') return 'még pótolható'
+    if (nowHHmm == null) return 'még pótolható'
+    const n = toMin(nowHHmm), lo = toMin(tile.windowFrom), hi = toMin(tile.windowTo)
+    if (n < lo) return 'még ráér'
+    if (n <= hi) return 'most van itt az ideje'
+    return 'még pótolható'
+  }
+  return tile.state === 'missed' ? 'még pótolható' : tile.state === 'now' ? 'most nyitva' : `${tile.time} körül`
+}
+
 function BlockCard({ tile, rows, nowHHmm, fiberTargetG, index, onLogInto, onOpenMeal, onOpenScore, onOpenClock, onOpenGlycemic }: {
   tile: WindowTileVM
   rows: DoneMealRow[]
-  /** A jelen idő — az „Ajánlott" sor chipjéhez és az óra „most nyitva" jelöléséhez. */
-  nowHHmm: string
+  /** A jelen idő — az „Ajánlott" sor chipjéhez és az óra „most nyitva" jelöléséhez. Null a
+   *  múltbéli napokon (mezo-6g52f R4) — nincs „most" jel. */
+  nowHHmm: string | null
   /** A rost-gyűrű nevezője (mezo-l2gp0) — `dietSettings.fiberG`, threaded down to `MacroRings`. */
   fiberTargetG: number
   /** A blokk sorszáma a listában — a pont-chip lüktetés-staggerének (`--i`) nevezője. */
@@ -236,7 +256,7 @@ function BlockCard({ tile, rows, nowHHmm, fiberTargetG, index, onLogInto, onOpen
       </div>
       {rows.length === 0 && tile.windowFrom && tile.windowTo && (
         <div className="fmx-when">Ajánlott <b>{tile.windowFrom}–{tile.windowTo}</b>
-          <span className={`fmx-when-chip${toMin(nowHHmm) >= toMin(tile.windowFrom) && toMin(nowHHmm) <= toMin(tile.windowTo) ? ' is-now' : ''}`}>
+          <span className={`fmx-when-chip${nowHHmm != null && toMin(nowHHmm) >= toMin(tile.windowFrom) && toMin(nowHHmm) <= toMin(tile.windowTo) ? ' is-now' : ''}`}>
             {whenChip(tile.windowFrom, tile.windowTo, nowHHmm)}
           </span></div>
       )}
@@ -269,8 +289,10 @@ function BlockCard({ tile, rows, nowHHmm, fiberTargetG, index, onLogInto, onOpen
           <span aria-hidden="true">＋</span>
           <span>
             <strong>Logolás ide</strong>
-            {/* Szégyenmentes: a kimaradt ablak „még pótolható", nem hiba. */}
-            <small>{tile.state === 'missed' ? 'még pótolható' : tile.state === 'now' ? 'most nyitva' : `${tile.time} körül`}</small>
+            {/* Szégyenmentes: a kimaradt ablak „még pótolható", nem hiba (mezo-6g52f R1: a saját
+                ablakból számolva, nem a tile.state „most" jelöléséből, ami a nap ELSŐ lognélküli
+                ablakára igaz akkor is, ha az később nyílik). */}
+            <small>{logButtonLabel(tile, nowHHmm)}</small>
           </span>
         </button>
       )}
@@ -281,8 +303,9 @@ function BlockCard({ tile, rows, nowHHmm, fiberTargetG, index, onLogInto, onOpen
 export function FuelMealBlocks({ lane, meals, day, fiberTargetG, onLogInto, onOpenMeal, onOpenScore }: {
   lane: WindowLaneVM
   meals: DoneMealRow[]
-  /** A napóra napi kerete (mezo-6g52f) — az ablakok és az étkezésszám a lane-ből származik. */
-  day: { wake: string; bed: string; nowHHmm: string; training: { start: string; end: string; label: string } | null }
+  /** A napóra napi kerete (mezo-6g52f) — az ablakok és az étkezésszám a lane-ből származik.
+   *  `nowHHmm` null a múltbéli napokon (R4) — nincs „most" jel sehol az órán. */
+  day: { wake: string; bed: string; nowHHmm: string | null; training: { start: string; end: string; label: string } | null }
   /** A rost-gyűrű nevezője (mezo-l2gp0) — `dietSettings.fiberG`, threaded down to `MacroRings`. */
   fiberTargetG: number
   onLogInto: (tile: WindowTileVM) => void
@@ -294,10 +317,14 @@ export function FuelMealBlocks({ lane, meals, day, fiberTargetG, onLogInto, onOp
   const glucoseRow = meals.find(m => m.mealId === glucoseFor) ?? null
   const glucoseBand = glucoseRow ? bandOf(glucoseRow) : null
   const clockTile = lane.tiles.find(t => t.key === clockFor) ?? null
+  // mezo-6g52f minor a: mealCount csak a VALÓDI ablakos tileokat számolja (ugyanaz a halmaz, mint
+  // a `windows` lent) — a felesleges extra logok (`lane.tiles.length` régen ezeket is számolta)
+  // nem torzíthatják a „hányadik étkezés az M-ből" számot.
+  const windowedTiles = lane.tiles.filter(t => t.windowFrom && t.windowTo)
   const clockDay: ClockDay = {
     ...day,
-    windows: lane.tiles.filter(t => t.windowFrom && t.windowTo).map(t => ({ key: t.key, from: t.windowFrom!, to: t.windowTo! })),
-    mealCount: lane.tiles.length,
+    windows: windowedTiles.map(t => ({ key: t.key, from: t.windowFrom!, to: t.windowTo! })),
+    mealCount: windowedTiles.length,
   }
   if (lane.tiles.length === 0) {
     return (

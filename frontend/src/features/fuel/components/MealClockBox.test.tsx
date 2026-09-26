@@ -63,4 +63,14 @@ describe('MealClockBox', () => {
     render(<MealClockBox tile={tile({ state: 'done' })} row={row({ carbsG: null })} day={day} next={null} blockColor="var(--lav)" onClose={vi.fn()} />)
     expect(screen.queryByText('Vércukor-válasz')).toBeNull()
   })
+  // mezo-6g52f R4: múltbéli napon (nowHHmm null) nincs „most" jel — a pre-log doboz „AJÁNLOTT"-ot
+  // mutat (nem „MOST"-ot), a fejléc-státusz „még pótolható" (nem találgatott „most nyitva"/„nyílik").
+  it('pre-log, nowHHmm null (past day): AJÁNLOTT centre, "még pótolható" status, no now-hand', () => {
+    const pastDay: ClockDay = { ...day, nowHHmm: null }
+    const { container } = render(<MealClockBox tile={tile()} row={null} day={pastDay} next={null} blockColor="var(--lav)" onClose={vi.fn()} />)
+    expect(screen.getByText('AJÁNLOTT')).toBeInTheDocument()
+    expect(screen.getByText('még pótolható')).toBeInTheDocument()
+    expect(container.querySelector('.nowhand')).toBeNull()
+    expect(document.body.textContent).not.toMatch(/most nyitva|nyílik \d/)
+  })
 })

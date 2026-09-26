@@ -246,3 +246,27 @@ test('a blokk fejlécében az óra és a kcal-gyűrű egy jobbszéli csoportban 
   // A név a csoporton KÍVÜL marad, hogy szabadon terjeszkedhessen.
   expect(end.querySelector('.fmx-block-name')).toBeNull()
 })
+
+// ── mezo-6g52f R1: a „Logolás ide" alsó sora a SAJÁT ablakából számol, nem a tile.state-ből ──
+// A tile.state 'now' a nap ELSŐ lognélküli ablakára igaz — akkor is, ha AZ az ablak csak
+// később nyílik. A gomb szövege nem hazudhat „most nyitva"-t egy 17:45–18:45-ös ablakra 13:30-kor.
+test('a „Logolás ide" gomb a saját ablakából számol, nem a tile.state "now"-jából', () => {
+  const slots: FuelSlot[] = [
+    slot({ time: '17:45', label: 'Vacsora', slotKey: 'dinner', state: 'now', windowFrom: '17:45', windowTo: '18:45', budgetKcal: 650 }),
+  ]
+  const meals: FuelMeal[] = []
+  const { container } = render(<FuelMealBlocks
+    lane={buildWindowLane({ slots, budget: BUDGET, meals })}
+    meals={doneMealRows(meals, slots)} day={{ ...day, nowHHmm: '13:30' }} fiberTargetG={30}
+    onLogInto={vi.fn()} onOpenMeal={vi.fn()} onOpenScore={vi.fn()} />)
+  const block = container.querySelector('.fmx-block')!
+  expect(block.textContent).not.toMatch(/most nyitva|most van itt/i)
+  expect(block.querySelector('.fmx-block-log small')!.textContent).toBe('még ráér')
+})
+
+// ── mezo-6g52f R4: múltbéli napon nincs „most" jel sehol az órán ─────────────────────────────
+test('nowHHmm null (múltbéli nap) esetén nincs nyitott óra és nincs "most nyitva" szöveg', () => {
+  const { container } = render(<FuelMealBlocks {...props({ day: { ...day, nowHHmm: null } })} />)
+  expect(container.querySelector('.fmx-mclock.is-open')).toBeNull()
+  expect(container.textContent).not.toMatch(/most nyitva/i)
+})
