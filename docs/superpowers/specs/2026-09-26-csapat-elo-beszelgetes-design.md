@@ -128,17 +128,19 @@ idempotency by unique index; contract-first API (`api/feature/*.yml`, generated 
 
 ### 5.1 The unit: an ügy (thread)
 
-An **ügy** is one rule's episode on one day for one user: it opens when the rule transitions to
-`raised` with disposition `logged`, and ends in one of three ways:
+An **ügy** is one rule's episode for one user. It opens on a **fresh raise** — the existing
+`FlagRaisedEvent` (a raise past its cooldown, disposition `logged`, with a frozen payload) — and
+stays open across days until it ends (a still-raised rule is cooldown-suppressed on the following
+days and never re-raises, so the ügy must outlive its day):
 
 | End | Trigger | What the user sees |
 |---|---|---|
-| `RESOLVED` | trace transition raised → clear (with `ClearEvidence`) | the owner's resolution line, chip „RENDEZŐDÖTT · hh:mm", no push |
-| `CARRIED` | the day ends while still open | no line; the evening edition recap counts it as „holnapra maradt"; next day a fresh raise opens a new ügy (the owner may reference yesterday through its context) |
-| `SUPERSEDED` | never — ügyek do not replace each other | several ügyek can be open at once (unlike the old one-card-a-day) |
+| `RESOLVED` | the rule's trace transitions to `clear` (from any state) while the ügy is open | the owner's resolution line, chip „RENDEZŐDÖTT · hh:mm", no push |
+| `EXPIRED` | 7 days open without a clear (the longest cooldown is 168 h) | no line; it stops counting as open |
 
-raised → unavailable (data stopped) leaves the ügy open and silent. A second raise of the same rule
-while its ügy is open writes nothing.
+While open, the „Rád vár" strip and the evening recap count it (a day's recap says „nyitva maradt"
+for ügyek still open at 21:00). raised → unavailable (data stopped) leaves it open and silent. A
+fresh raise of a rule whose ügy is still open writes nothing (at most one open ügy per rule).
 
 ### 5.2 Who speaks — the owner map (explicit, tested)
 
@@ -175,8 +177,9 @@ call per event:
   (feedback rollup), and the confirmed-knowledge / person-fact block through a
   `TeamChatKnowledgePort` that Emlékezet `mezo-d6ivw.5` implements (a no-op adapter until it ships).
   Context is *background*; only whitelisted facts may appear as numbers.
-- **Upgrade 2, *többet gondolkodik*:** the cheap tier with a raised reasoning effort (the existing
-  per-slug quality lever), never the smart tier (≈ 3–4 US cents a line would blow the cap).
+- **Upgrade 2, *többet gondolkodik*:** the cheap tier at reasoning effort `high` — already the
+  configured default for the chat tier (`reasoning-effort.chat: high`), so it costs nothing extra;
+  never the smart tier (≈ 3–4 US cents a line would blow the cap).
 - **Guard:** `EditionVoiceGuard` rules reused — numbers only from facts, 2–4 sentences (1–2 for a
   guest), the character's own emoji only, no jargon, informal address. The Szkeptikus: no emoji.
 - **Fallback:** guard rejects, LLM fails, or the budget is spent → the template line (library
@@ -201,11 +204,11 @@ month (≈ 5 events/day, cross-talk in the same call) ≈ 0,5–0,8 USD.
 
 ### 5.5 Timing and pushes (D2, D3)
 
-- A **FlagTransitionEvent** is published by `FlagTraceWriter` (companion) after commit, for
-  `* → raised(logged)` and `raised → clear`. The character-side listener is `@Async` AFTER_COMMIT and
-  idempotent (unique `(user, flag_key, day, kind)`).
-- **Night:** an open that lands between 22:00 and 07:00 is held and written at 07:00 if still raised
-  (a resolve in that window is dropped — the morning state speaks for itself).
+- Opens ride the existing `FlagRaisedEvent`; a new **FlagClearedEvent** is published by
+  `FlagTraceWriter` (companion) when a rule's trace row changes to `clear`. The character-side listener is `@Async` AFTER_COMMIT and
+  idempotent (at most one open ügy per `(user, flag_key)`, one resolution line per ügy).
+- **Night:** a line that lands between 22:00 and 07:00 is written at once but an open there is
+  pushed only through the wake-deferred feed anchor (`AnchorResolver.feedAnchors`), never at night.
 - **Push:** only an *open*. The first open of the day pushes; a later open pushes only if it
   outranks every ügy already pushed today (`AdvicePriority.outranks`) and fewer than 2 were pushed.
   Otherwise the line is silent and the live strip shows the unread count. The push goes through
@@ -227,10 +230,10 @@ month (≈ 5 events/day, cross-talk in the same call) ≈ 0,5–0,8 USD.
 
 - **Üzenőfal — the live strip** (`#fal`): flat panel with a sage frame (not glass — the day's
   poster stays the only glass), pulsing live dot (static in reduced motion), last speaker's face,
-  latest sentence (one line, ellipsis), coral unread count. Hidden when the day has no ügy yet.
-- **A csapat beszél** (`#elo`), new route under Mezo (e.g. `/mezo/csapat/elo`): header, the
+  latest sentence (one line, ellipsis), coral unread count. Hidden when there is no line today and no open ügy.
+- **A csapat beszél** (`#elo`), new route `/mezo/elo` (`/mezo/csapat/:id` is the room route): header, the
   „Mind az öten figyelnek" line, chips (nyitott / rendeződött / értesítés ma n/2), ONE glass strip
-  „Rád vár: …" jumping to the oldest open ügy, then the day's lines grouped under REGGEL / DÉLBEN /
+  „Rád vár: …" jumping to the oldest open ügy (possibly from an earlier day), then the day's lines grouped under REGGEL / DÉLBEN /
   DÉLUTÁN / ESTE dividers; each open line tagged with its ügy chip and push marker („értesítettünk ·
   07:40" / „csendben · …"). A reply row at the bottom. The page refetches every 60 s while open
   (no websockets).
@@ -251,8 +254,8 @@ that offsets part of the 1 USD).
 ## 6. Error handling
 
 - LLM failure, guard rejection, budget cap → template line, `voiced=false`; logged, never thrown.
-- Listener failure → the transition is not lost: a catch-up in the hourly sweep compares today's
-  trace transitions with written lines and fills gaps (idempotent key).
+- Listener failure → the transition is not lost: a catch-up job (hourly, :20) compares the last 24 h
+  of flag-log raises and clear transitions with the ügy table and fills gaps (idempotent).
 - Push failure → the line stays; no retry storm (the anchor path's own semantics).
 - Chat feature off → the old daily card path runs as today.
 
