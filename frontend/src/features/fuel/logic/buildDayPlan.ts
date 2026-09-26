@@ -369,49 +369,63 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
   // 2b. Assign each key's logged meals to a SPECIFIC window index (mezo-7i6ah), not just the k-th
   //     free one by loggedAt-cursor position — with 5+ meals/day (Tízórai + Uzsonna, maybe peri-
   //     workout snacks) the k-th logged snack by time is not necessarily the k-th snack window by
-  //     time. Three passes, in priority order, each only considering windows still free:
+  //     time. PER MEAL, in loggedAt order (not pass-then-pass across the whole key — a single-window
+  //     key must let the EARLIEST-logged meal claim its one window before any LATER meal's
+  //     stored-window/label match is even considered, or a later meal could steal the window out
+  //     from under an earlier one that has no such match; the pre-existing "earliest logged meal
+  //     wins a 1-window key" invariant depends on this per-meal ordering). For each meal, in order,
+  //     try three passes against windows STILL FREE for its key:
   //       1. stored-window match — the meal's context timing carries windowSource 'plan' and its
   //          windowFrom/windowTo equal this window's widened range (mezo-6g52f: the server already
   //          told us which block this meal was logged into).
   //       2. label match — the meal's `slot` string contains the window's label, lowercased (mock
-  //          mode stores Hungarian display slots like 'Uzsonna · 16:20').
-  //       3. nearest time — remaining meals, in loggedAt order, each take the free window whose
-  //          placed time is nearest to the meal's local loggedAt minute; ties go to the earlier
-  //          window (a plain `<` comparison over ascending-time-ordered free indices already does
-  //          this — no explicit tie-break needed).
-  //     A single-window key (breakfast/lunch/dinner) degenerates to today's behavior: nothing can
-  //     match by stored-window/label there in practice, so the earliest-logged meal always wins the
-  //     one window via pass 3, and the rest fall through to surplus below — unchanged.
+  //          mode stores Hungarian display slots like 'Uzsonna · 16:20'). Prefer the LONGEST
+  //          matching label among the free candidates so a short label that is a substring of a
+  //          more specific one ('Snack' inside 'Esti snack') can never steal the more specific
+  //          window out from under it.
+  //       3. nearest time on the UNWRAPPED wake→bed axis (mezo-9rtw) — comparing raw HH:mm minutes
+  //          across a midnight-crossing day misjudges which window is chronologically nearest (a
+  //          small wall-clock number just after midnight is not necessarily near another small
+  //          wall-clock number scheduled hours later, and can look impossibly far from a large
+  //          wall-clock number scheduled minutes earlier, before midnight); `unwrap` puts both the
+  //          window's placed time and the meal's local loggedAt minute on the same continuous axis
+  //          `unwrap`/`unwrappedNow` already use above. Ties go to the earlier window (a plain `<`
+  //          comparison over ascending-time-ordered free indices already does this).
+  //     No match at any pass (every same-key window already claimed by an earlier-logged meal) →
+  //     surplus, in loggedAt order.
   const assignedMeal: (FuelMeal | undefined)[] = new Array(windows.length).fill(undefined)
   const surplusByKey: Record<SlotKey, FuelMeal[]> = { breakfast: [], lunch: [], dinner: [], snack: [] }
   for (const k of Object.keys(loggedByKey) as SlotKey[]) {
     const idxs: number[] = []
     windows.forEach((w, i) => { if (w.slotKey === k) idxs.push(i) })
     const free = new Set(idxs)
-    const claimed = new Set<FuelMeal>()
 
     for (const m of loggedByKey[k]) {
+      let match: number | undefined
+
       const timing = contextTiming(m)
-      if (timing?.windowSource !== 'plan') continue
-      const match = idxs.find(i => free.has(i) && toHHmm(ranges[i].from) === timing.windowFrom && toHHmm(ranges[i].to) === timing.windowTo)
-      if (match !== undefined) { assignedMeal[match] = m; free.delete(match); claimed.add(m) }
-    }
-    for (const m of loggedByKey[k]) {
-      if (claimed.has(m)) continue
-      const slotLower = (m.slot ?? '').toLowerCase()
-      const match = idxs.find(i => free.has(i) && slotLower.includes(windows[i].label.toLowerCase()))
-      if (match !== undefined) { assignedMeal[match] = m; free.delete(match); claimed.add(m) }
-    }
-    for (const m of loggedByKey[k]) {
-      if (claimed.has(m)) continue
-      const mMin = toMin(hhmmFromLoggedAt(m.loggedAt, toHHmm(windows[idxs[0] ?? 0]?.time ?? 0)))
-      let best = -1
-      let bestDist = Infinity
-      for (const i of free) {
-        const dist = Math.abs(toMin(toHHmm(windows[i].time)) - mMin)
-        if (dist < bestDist) { bestDist = dist; best = i }
+      if (timing?.windowSource === 'plan') {
+        match = idxs.find(i => free.has(i) && toHHmm(ranges[i].from) === timing.windowFrom && toHHmm(ranges[i].to) === timing.windowTo)
       }
-      if (best >= 0) { assignedMeal[best] = m; free.delete(best); claimed.add(m) }
+
+      if (match === undefined) {
+        const slotLower = (m.slot ?? '').toLowerCase()
+        const labelHits = idxs.filter(i => free.has(i) && slotLower.includes(windows[i].label.toLowerCase()))
+        if (labelHits.length) match = labelHits.reduce((best, i) => (windows[i].label.length > windows[best].label.length ? i : best))
+      }
+
+      if (match === undefined && free.size > 0) {
+        const mMin = unwrap(hhmmFromLoggedAt(m.loggedAt, toHHmm(windows[idxs[0]]?.time ?? 0)))
+        let best = -1
+        let bestDist = Infinity
+        for (const i of free) {
+          const dist = Math.abs(unwrap(toHHmm(windows[i].time)) - mMin)
+          if (dist < bestDist) { bestDist = dist; best = i }
+        }
+        match = best
+      }
+
+      if (match !== undefined) { assignedMeal[match] = m; free.delete(match) }
       else surplusByKey[k].push(m)
     }
   }
