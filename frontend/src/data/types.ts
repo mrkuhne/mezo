@@ -48,6 +48,12 @@ export interface NiggleWarning { muscle: string; muscleLabel: string; detail: st
 export interface VolleyballSession { day: string; time: string; duration: number; court: string; intensity: string; role: string; sport?: 'volleyball' | 'cross' | 'trx'; today?: boolean; flex?: boolean; date?: string; oneOff?: boolean }
 export type FuelKind = 'wake' | 'meal' | 'midday' | 'snack' | 'preworkout' | 'workout' | 'sport' | 'evening'
 export interface SlotItem { type: 'supplement'; refId: string; label: string; done: boolean; primary?: boolean; note?: string }
+/** Miért ott van egy étkezési ablak (mezo-6g52f) — a tervező szabályából; a szöveget a
+ *  `windowReasonCopy` adja. */
+export type WindowReason =
+  | 'after-wake' | 'protein-start' | 'protein-spacing' | 'bridge'
+  | 'pre-training-main' | 'pre-training-snack' | 'post-training' | 'before-bed' | 'template-fixed'
+
 export interface FuelSlot {
   time: string
   kind: FuelKind
