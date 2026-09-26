@@ -48,7 +48,7 @@ Consequences:
   - Fuel week, Napló, meal scorer, MealCoach and adherence: BE `DayTargetProjector`, the weekly average plus a day-type pick.
   - Character detectors: the uniform `seg.kcal`, which skips the split (`CharacterSignalReads.java:724`).
 
-Owner, week-averaged: the plan credits 828 kcal/day of movement. The new model credits about 570 (§8).
+Owner, week-averaged: the plan credits 828 kcal/day of movement. The new model credits about 427 (§8).
 
 ## 4. The model
 
@@ -169,10 +169,11 @@ It logs counts. Pending adaptive suggestions go stale through the existing finge
 - **Weekly plan:** 5 × gym at 60′ and 4 × volleyball at 120′ (közepes).
   - Gym: (3.5−1) × 81.8 × 1 = 205 per session.
   - Volleyball: (4.0−1) × 81.8 × 2 = 491 per session.
-  - Σ = 3 989/week, which is **570/day**.
+  - Σ = 2 989/week, which is **427/day** (live after rollout: 426).
   - Previously 828.
-- **Resulting numbers:** TDEE 2 926, target **2 599** (previously 2 856 → served 2 830). The segment has no day-type split for him (6 training days).
-- **Today's 140′ RPE 7 volleyball** falls on a Saturday, which has no sport slot, so it is **extra**: (4.0−1) × 81.8 × 2.33 = **572**, compared with 1 172 on the sport page and 922 in Fuel today. That gives target 2 599 + 572 = 3 171.
+- **Resulting numbers:** TDEE ≈ 2 783, target ≈ 2 456 at the original −327 (previously 2 856 → served 2 830). Live after rollout (2026-09-26): TDEE 2 782, balance −447 (formula −0.35 %/wk at today's weight ≈ −330, plus an earlier accepted adaptive correction of −120), served target **2 335**. The segment has no day-type split for him (6 training days).
+- *Erratum:* an earlier draft of this section summed the week as 3 989 (570/day); the correct sum is 2 989.
+- **Today's 140′ RPE 7 volleyball** falls on a Saturday, which has no sport slot, so it is **extra**: (4.0−1) × 81.8 × 2.33 = **572**, compared with 1 172 on the sport page and 922 in Fuel today. Live that gives 2 335 + 573 = 2 908 for the day.
 
 The spec's earlier chat estimate (≈430/day) assumed volleyball at 3.0. The közepes 4.0 is the honest default for a 2-hour training session, and the adaptive weekly correction is the safety net if it is still high.
 
