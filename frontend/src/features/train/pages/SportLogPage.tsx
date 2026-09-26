@@ -448,10 +448,9 @@ export function SportLogPage() {
         />
       )}
 
-      <GlassBox open={kcalOpen} onClose={() => { setKcalDraftError(null); setKcalOpen(false) }} label="Saját kalóriaérték" tint={chosen?.color}>
+      <GlassBox open={kcalOpen} onClose={() => { setKcalDraftError(null); setKcalOpen(false) }} label="Aktív kalória (ha az órád mérte)" tint={chosen?.color}>
         <p style={{ fontSize: 12.5, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
-          A becslés a te súlyodból, korodból és a mozgás fajtájából jön. Ha tudod, hogy máshogy volt,
-          írd felül — akkor ezt mentjük, nem a becslést.
+          Csak a mozgás többletét írd be — az órád »aktív« kalóriáját, ne az összeset.
         </p>
         <label className="sp-field" style={{ display: 'block', marginTop: 12 }}>
           <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Kalória</span>
