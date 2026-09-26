@@ -70,6 +70,17 @@ public enum AppNotificationKind {
      *  own chat surface, not the {@link #TEAM_EDITION} wall. */
     TEAM_CHAT("team_chat", "intervention", "/mezo/elo");
 
+    /** Final review I3 (mezo-a9bo7.25): the dedup-key suffix a producer appends when its row may
+     *  ring inside the quiet window (a library entry's {@code quietHoursExempt}). The feed-anchored
+     *  push path ({@code AnchorResolver.feedAnchors}) reads it back, so the quiet-window rule of
+     *  the {@code intervention} / {@code challenge} families lets exactly those rows through. */
+    public static final String QUIET_HOURS_EXEMPT_SUFFIX = ":quiet-exempt";
+
+    /** Whether a row's dedup key marks it quiet-hours exempt ({@link #QUIET_HOURS_EXEMPT_SUFFIX}). */
+    public static boolean quietHoursExempt(String dedupKey) {
+        return dedupKey != null && dedupKey.endsWith(QUIET_HOURS_EXEMPT_SUFFIX);
+    }
+
     private final String key;
     private final String familyKey;
     private final String deeplink;

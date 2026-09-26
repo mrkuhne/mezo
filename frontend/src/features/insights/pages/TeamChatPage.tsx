@@ -193,6 +193,12 @@ export function TeamChatPage() {
         ))
       )}
 
+      {/* Task 15 (mezo-a9bo7.25): a mai nap szálait 21:00-kor az esti kiadás összefoglalja —
+          lapos, halvány lábjegyzet, nem üveg. */}
+      {isToday && groups.length > 0 && (
+        <p className="tf-note">21:00-kor az esti kiadás összefoglalja a nap szálait a falon.</p>
+      )}
+
       {waiting && (
         <div className="tf-chat-reply">
           <button type="button" className="tf-rrow" onClick={() => setReplyTo({ thread: waiting, mode: 'tell' })}>

@@ -111,6 +111,24 @@ describe('TeamChatPage (mock mode)', () => {
     expect(await screen.findByLabelText('A válaszod')).toHaveValue('')
   })
 
+  test('a mai nap alján lapos lábjegyzet: 21:00-kor az esti kiadás összefoglalja a napot', async () => {
+    renderChat()
+    await screen.findByText('A csapat beszél')
+    const note = screen.getByText('21:00-kor az esti kiadás összefoglalja a nap szálait a falon.')
+    expect(note).toHaveClass('tf-note')
+    expect(note.closest('.glass')).toBeNull()
+  })
+
+  test('egy korábbi napon nincs esti-kiadás lábjegyzet', async () => {
+    renderChat('/mezo/elo?d=2026-09-20')
+    await screen.findByText('A csapat beszél')
+    // nem üres a nap: a mock ugyanazokat a sorokat építi erre a dátumra is — a lábjegyzet
+    // hiánya tehát a „nem ma” miatt van, nem a csend miatt
+    expect(screen.getByText('Rizses csirkét ettem, dupla adag rizzsel.')).toBeInTheDocument()
+    expect(screen.queryByText(/Ma · élőben/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/21:00-kor az esti kiadás/)).not.toBeInTheDocument()
+  })
+
   test('megnyitáskor elmenti, mikor láttad utoljára', async () => {
     renderChat()
     await screen.findByText('A csapat beszél')
@@ -138,6 +156,19 @@ describe('TeamChatPage (real mode, failing saves)', () => {
     expect(await screen.findByText(/Ma még csend van/)).toBeInTheDocument()
     expect(screen.getByText('0 nyitott ügy')).not.toHaveClass('is-warn')
     expect(document.querySelectorAll('.glass')).toHaveLength(0)
+  })
+
+  test('a mai nap alján a lábjegyzet valós módban is ott van', async () => {
+    renderChat()
+    expect(await screen.findByText('21:00-kor az esti kiadás összefoglalja a nap szálait a falon.')).toBeInTheDocument()
+  })
+
+  test('csendes napon nincs lábjegyzet — nincs mit összefoglalni', async () => {
+    server.use(http.get(`${API_BASE}/api/character/team-chat`, () =>
+      HttpResponse.json({ date: localDateString(), lines: [], openThreads: [], pushesToday: 0, pushBudget: 2 })))
+    renderChat()
+    await screen.findByText(/Ma még csend van/)
+    expect(screen.queryByText(/21:00-kor az esti kiadás/)).not.toBeInTheDocument()
   })
 
   test('egy elbukott beállítás nem mutat „Beállítva”-t, hanem kimondja a hibát', async () => {

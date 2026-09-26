@@ -45,6 +45,7 @@ class ComplexPersonalQueryEvalIT extends AbstractIntegrationTest {
     private static final String QUESTION = "A tegnapi kajám meg a legutóbbi edzésem alapján jó úton vagyok a súlycélom felé? Min változtassak ma?";
     @DynamicPropertySource
     static void model(DynamicPropertyRegistry registry) {
+        EvalTarget.registerRealApiKeys(registry);
         registry.add("mezo.companion.llm.provider", TARGET::providerKey);
         registry.add("mezo.companion.llm." + TARGET.providerKey() + ".smart-model", TARGET::model);
         registry.add("mezo.companion.llm." + TARGET.providerKey() + ".chat-model", TARGET::model);

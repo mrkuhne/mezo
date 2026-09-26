@@ -433,7 +433,7 @@ public class AnchorResolver {
                 continue;
             }
             OptionalInt fire = feedFireMinute(category.get(), LocalTime.ofInstant(row.getOccurredAt(), zone),
-                    wakeMinute, quietStart, quietEnd);
+                    wakeMinute, quietStart, quietEnd, AppNotificationKind.quietHoursExempt(row.getDedupKey()));
             if (fire.isEmpty()) {
                 continue;
             }
@@ -447,18 +447,27 @@ public class AnchorResolver {
         return events;
     }
 
-    /**
-     * A feed event's push minute on its own day, or empty when it must not push at all. Every
-     * family rides max(own minute, wake). {@link NotificationCategory#CHALLENGE} additionally
-     * honours the quiet window (bd mezo-co3r9, owner 2026-09-26: "új kihívás" never rings at
-     * night): a night/early-morning challenge is deferred to the quiet end, and one generated in
-     * the evening part of the window is dropped — it is for a workout that is already over, and a
-     * next-morning push would advertise yesterday's challenge.
-     */
     static OptionalInt feedFireMinute(NotificationCategory category, LocalTime eventTime, int wakeMinute,
             LocalTime quietStart, LocalTime quietEnd) {
+        return feedFireMinute(category, eventTime, wakeMinute, quietStart, quietEnd, false);
+    }
+
+    /**
+     * A feed event's push minute on its own day, or empty when it must not push at all. Every
+     * family rides max(own minute, wake). {@link NotificationCategory#CHALLENGE} and
+     * {@link NotificationCategory#INTERVENTION} additionally honour the quiet window (bd
+     * mezo-co3r9, owner 2026-09-26: "új kihívás" never rings at night; spec 2026-09-26 D3 / final
+     * review C1, mezo-a9bo7.25: the team chat's pushes — the only feed kind riding the
+     * {@code intervention} family — neither): a night/early-morning event is deferred to the
+     * quiet end, and one written in the evening part of the window is dropped — a next-morning
+     * push would advertise yesterday's moment. A {@code quietHoursExempt} row (the library flag,
+     * carried on the row's dedup key) skips the quiet rule and only rides the wake anchor.
+     */
+    static OptionalInt feedFireMinute(NotificationCategory category, LocalTime eventTime, int wakeMinute,
+            LocalTime quietStart, LocalTime quietEnd, boolean quietHoursExempt) {
         int minute = Math.max(eventTime.getHour() * 60 + eventTime.getMinute(), wakeMinute);
-        if (category != NotificationCategory.CHALLENGE) {
+        if (quietHoursExempt
+                || (category != NotificationCategory.CHALLENGE && category != NotificationCategory.INTERVENTION)) {
             return OptionalInt.of(minute);
         }
         LocalDate day = LocalDate.EPOCH;

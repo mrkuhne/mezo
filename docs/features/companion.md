@@ -12,7 +12,7 @@ key_files:
   - frontend/src/data/insights/chatHooks.ts
   - frontend/src/data/insights/memoryFeedbackHooks.ts
   - docs/decisions/0008-companion-llm-spring-ai-2-gemini.md
-related: [insights, proactive, today, me, _platform-api-backend, _platform-auth-security, _platform-notifications, journal, ritual]
+related: [insights, proactive, today, me, character, _platform-api-backend, _platform-auth-security, _platform-notifications, journal, ritual]
 ---
 
 # Companion (AI chat brain) — Feature Documentation
@@ -3194,11 +3194,12 @@ order (`repository/AiConversationRepository.java:14`); `AiMessageRepository` is 
 arithmetic over `MetricSeriesService` series the owning features already compose READ-ONLY — there
 is **no `LlmCallContextHolder` call anywhere in this slice**, because there is no LLM/embed call to
 tag. **Rule spine (S1, bd `mezo-d58h.1`, spec 2026-09-03 §3.1) — one class per rule.** `FlagEvaluator`
-itself is now a thin orchestrator: it holds no rule logic, just fourteen injected `FlagRule` beans
+itself is now a thin orchestrator: it holds no rule logic, just sixteen injected `FlagRule` beans
 (`SustainedStressRule`, `SleepDebtRule`, `MomentumAtRiskRule`, `RecoveryNeededRule`,
 `LoggingGapRule`, `MissedWorkoutsRule`, `AcuteBadDayRule`, `LoadFuelMismatchRule`,
 `RapidWeightLossRule`, `JointOveruseRule`, `IgnoredNudgeRule`, `LateEatingRule`, `ProtocolLapseRule`,
-`AllHealthyRule` — each `feature/companion/flags/service/rule/*.java`) called in that fixed order,
+`MealRhythmDriftRule`, `EnergyDipMealTimingRule`, `AllHealthyRule` — each
+`feature/companion/flags/service/rule/*.java`) called in that fixed order,
 `allHealthyRule` called EVERY evaluation. The `FlagRule` interface (`flags/service/FlagRule.java`)
 is one method, `evaluate(userId, today) → FlagVerdict`, cooldowns NOT applied; each implementation
 carries its own reads and thresholds (still 100% from `FlagProperties` — no rule holds a number of
@@ -3448,6 +3449,17 @@ the same transaction), and `feature.proactive.service.InterventionEventListener`
 committed raise into a `companion_message` feed card. See the W5.2 subsection below and
 [`proactive.md`](proactive.md) §3/§4 for the card mechanics.
 
+**`FlagClearedEvent` (Csapatfal Act III, bd `mezo-a9bo7.20`, ADR
+[0053](../decisions/0053-csapat-elo-beszelgetes.md)) is the resolution-side sibling, published from
+the opposite end of the pipeline.** Unlike `FlagRaisedEvent` (published by `FlagService` at the
+write of a `companion_flag_log` row), `FlagClearedEvent(userId, flagKey, clearEvidence, at)` is
+published by `FlagTraceWriter.record` — the moment a rule's `companion_flag_trace` row actually
+CHANGES to `clear` (any prior outcome, including `raised`), the same "only on a real change" gate
+that decides whether a trace row is written at all (§4 above). The character-side team chat listens
+for both events: a raise opens an "ügy" it owns (§5.2 of the design spec), a clear resolves it — the
+trace writer publishing this event, rather than `FlagService`, is what lets a resolution fire even
+when the clearing pass came from the hourly sweep, not a fresh write.
+
 **Proactive coaching observer S1 — the verdict model and the evaluation trace (bd `mezo-6269.1`,
 spec 2026-09-05 §4).** Every `FlagRule.evaluate` returns a `FlagVerdict`
 (`flags/service/FlagVerdict.java`), not an `Optional<FlagRaise>` — the old empty case collapsed two
@@ -3458,7 +3470,7 @@ both. A verdict carries exactly one of three `FlagOutcome`s (`flags/service/Flag
 observed value and threshold when it ran and found them below the line; `observed`/`threshold` are
 null and `detail` carries the value for a non-numeric clear such as a goal trajectory or muscle
 group), or `UNAVAILABLE` (`reason`, an `UnavailableReason` — one member per honesty gate that
-already existed across the 13 rules, derived by reading every gate site in `service/rule/`, e.g.
+already existed across the 16 rules, derived by reading every gate site in `service/rule/`, e.g.
 `NOT_ENOUGH_LOGGED_NIGHTS` for `sleep_debt`, `NO_ACTIVE_GOAL` for `rapid_weight_loss`,
 `NOTIFICATIONS_OFF` for `ignored_nudge`). `UnavailableReason` is the exhaustive list of ways a rule
 can decline to judge, as opposed to judging and finding nothing wrong — new gates without a member
@@ -3479,10 +3491,10 @@ entity `flags/entity/CompanionFlagTraceEntity.java`, writer `flags/service/FlagT
 is the observer's read of "what did the engine actually decide, and why" — a record of every
 rule's verdict, RAISED, CLEAR or UNAVAILABLE alike, which `companion_flag_log` (raises only) never
 gave a way to see. `FlagService.evaluateAndLog` calls `FlagTraceWriter.record` once per verdict,
-every evaluation, for all 13 rules — but the writer only INSERTs when the verdict actually CHANGED
+every evaluation, for all 16 rules — but the writer only INSERTs when the verdict actually CHANGED
 since that rule's last row: same `outcome` + `reasonCode` + `disposition` as the newest existing
 row for that `(createdBy, flagKey)` (`findFirstByCreatedByAndFlagKeyOrderByOccurredAtDesc`) is a
-no-op, which is what keeps an hourly sweep from writing 13 identical rows a day forever. The
+no-op, which is what keeps an hourly sweep from writing 16 identical rows a day forever. The
 comparison deliberately includes `disposition`
 (`flags/service/TraceDisposition.java`: `LOGGED` or `SUPPRESSED_BY_COOLDOWN`, null unless the
 verdict is RAISED) — a rule that stays RAISED while flipping from `LOGGED` to
@@ -3613,7 +3625,7 @@ when `InterventionService` ranks every raise still standing and delivers exactly
 if the design wanted to. So the read side compares each RAISED-and-`logged` rule's key against the
 day's `DailyCardPort.forDay` winner every time the endpoint is called: `won`, `lost`, or null when
 the rule did not raise-and-log, or when the day's card was not flag-sourced at all (a setup check
-won that day, which is none of the 14 keys).
+won that day, which is none of the 16 keys).
 
 **The `DailyCardPort.deliveredAt` seam (`mezo-y43v`) is what makes "at the delivery instant"
 checkable.** `DailyCardPort.DeliveredCard` gained a third field, `deliveredAt` — the instant the
@@ -3628,7 +3640,7 @@ stamped `lost` for a competition it was never part of. The fix reports `cardOutc
 cases: for the winner itself once it has changed since delivery (`winner` above still names it
 correctly), and for a rule whose first raise postdates `deliveredAt`. Consequently, even a
 raised-and-logged rule whose closing row predates delivery reads `cardOutcome: null` when the day's
-delivered card came from a setup check — no winner exists among the 14 flag rules that day. A
+delivered card came from a setup check — no winner exists among the 16 flag rules that day. A
 `suppressed_by_cooldown` raise can never be `won`/`lost` for the same reason it has no evidence of
 its own below — it was never a competitor for that day's card.
 
@@ -4453,7 +4465,11 @@ nightly, rollup-only aggregation layer over `message_feedback` (spec §4.4/§8.2
   `style` row (a per-surface down-reason histogram, `FeedbackRollupStatsEnvelope.bySurface`); and,
   since W5.2, one `intervention:<key>` row per `mezo.companion.interventions[].key` — the same
   `feed_message`-verdict lookup, filtered to the cards carrying that key
-  (`FeedMessageKindSource.interventionKeysByIds`). An intervention verdict counts in BOTH
+  (`FeedMessageKindSource.interventionKeysByIds`), **plus, since Csapatfal Act III
+  (`mezo-a9bo7.21`), every `team_chat_line`-kind verdict whose ügy carries that same key**
+  (`TeamChatInterventionKeySource.interventionKeysByIds`, port lives here in
+  `feature.companion.feedback`, implemented in `feature.character`) — a 👍/👎 on a team chat line
+  feeds the identical rollup a card verdict did. An intervention verdict counts in BOTH
   `surface:feed_message` (it IS a `feed_message` artifact) and its own `intervention:<key>` row —
   deliberate, not double-counted: `FEED_KINDS` deliberately stays the five prose kinds, so the
   per-key scope is the only place the selection signal lives. Every scope is written even at zero
@@ -5592,10 +5608,10 @@ Migration `202609051200_mezo-6269.1_companion_flag_trace.sql` (in `1.0.0_master.
   `idx_companion_flag_trace_owner_flag_time (created_by, flag_key, occurred_at desc)` — the
   transition-comparison read — and `idx_companion_flag_trace_owner_time (created_by, occurred_at)`
   — the observer's day-timeline read.
-- **One row per CHANGE of verdict, not per evaluation.** `FlagEvaluator` produces 13 verdicts every
+- **One row per CHANGE of verdict, not per evaluation.** `FlagEvaluator` produces 16 verdicts every
   time it runs (on-write or hourly sweep), but `FlagTraceWriter` only inserts when a rule's
   `outcome`/`reason_code`/`disposition` differ from that rule's own most recent row — an unchanged
-  hourly sweep across all 13 rules writes nothing, which is what keeps this table small enough to
+  hourly sweep across all 16 rules writes nothing, which is what keeps this table small enough to
   keep forever despite running far more often than `companion_flag_log` ever does.
 - **`evidence` is the typed jsonb `FlagVerdict.ClearEvidence`**, populated only when `outcome =
   clear`; null for `raised` (the payload lives in `companion_flag_log` instead, written by the same
@@ -5612,6 +5628,16 @@ CHECK widening migration, the envelope's `interventionKey`, and why it is exclud
 cron miss-recovery). This subsection covers what companion owns: the raise→event trigger, the
 selection algorithm, the two shipped decisions, and the config shape.
 
+**No longer the only place a raise reaches the user (Csapatfal Act III, ADR
+[0053](../decisions/0053-csapat-elo-beszelgetes.md), bd `mezo-a9bo7.24`/`.25`).** This whole chain
+is gated behind `mezo.proactive.advice-card.enabled`
+(`FeaturesConfiguration.ADVICE_CARD_SWITCH`) — off ⇒ `InterventionEventListener` does not exist and
+a `FlagRaisedEvent` never reaches `InterventionService`. It ships **off by default in the deployed
+app** (`application.yml`, on together with `mezo.feature.team-chat.enabled`): with the switch off, a
+raise instead opens an "ügy" in the character-side team chat — see
+[`character.md`](character.md) §Csapat-chat. The chain below still describes the switch's ON
+behavior, and is what runs again if the team chat is ever rolled back.
+
 **Delivery chain (raise → event → selection → card → anchored push):**
 
 1. `FlagService.evaluateAndLog` writes a `companion_flag_log` row (W5.1, above) and, in the SAME
@@ -5620,9 +5646,13 @@ selection algorithm, the two shipped decisions, and the config shape.
 2. `feature.proactive.service.InterventionEventListener` (`@Async
    @TransactionalEventListener(phase = AFTER_COMMIT)` — the `CompanionMessageEventListener`
    template) reacts only once the raise durably committed; a rolled-back raise delivers nothing.
-3. `InterventionService.deliverForFlag(userId, flagKey)` — pure code, no LLM call anywhere in this
-   path (the text is config, `textHu`) — runs the selection below and, if it picks an entry,
-   `saveAndFlush`s the `companion_message` card.
+3. `InterventionService.deliverForFlag(userId, flagKey)` runs the (pure-code, no-LLM) selection
+   below, then hands the pick to `AdviceCardService.deliver` (`feature.proactive`), which
+   `saveAndFlush`s the `companion_message` card. **The card is not LLM-free**: `deliver` spends one
+   guarded `AdviceProseGenerator.write` call per delivery to turn the library's `textHu` +
+   the raise's own facts into the card's prose, with `textHu` itself surviving only as the model's
+   grounding and its fallback text on a guard rejection/timeout — never skipped except for a
+   `verbatim` candidate (a once-ever question card), which IS its own body and spends no LLM call.
 4. `AnchorResolver.interventionAnchors` (not this feature — [`_platform-notifications.md`](_platform-notifications.md)
    §3d) anchors a push on the card's own generation minute, quiet-hours-deferred, gated on the
    picked entry's `channel`.
@@ -5660,8 +5690,10 @@ selection algorithm, the two shipped decisions, and the config shape.
 **Config** (`mezo.companion.interventions` — `CompanionProperties.Intervention`, §4 config keys
 below) — a validated list, one record per library entry:
 `{key (^[a-z0-9_]{1,27}$, unique — pinned by InterventionConfigIT), flag (one of the five W5.1
-flag keys), channel (feed|push|both), textHu (≤500 chars, the card's ONLY content — never an LLM
-call), cooldownHours (1–8760), quietHoursExempt (boolean)}`. Ships with **6 entries** covering all
+flag keys), channel (feed|push|both), textHu (≤500 chars — `AdviceCardService`'s grounding for
+the generated body and its fallback prose when the LLM call is skipped/rejected/times out; **not
+guaranteed to be the card's only content any more**, see the delivery-chain note above),
+cooldownHours (1–8760), quietHoursExempt (boolean)}`. Ships with **6 entries** covering all
 five flags (two for `sustained_stress`: `stress_reset`/both/48h and `stress_talk`/feed/72h; one
 each for `sleep_debt` (`sleep_recover_tonight`), `momentum_at_risk` (`momentum_small_win`),
 `recovery_needed` (`recovery_rest_day`), all `channel: both`; and `all_healthy`
@@ -6608,7 +6640,7 @@ Job switch `mezo.techcore.cron.flag-sweep-job.enabled`
 (`FeaturesConfiguration.FLAG_SWEEP_JOB_SWITCH`) — off ⇒ the `FlagSweepJob` bean does not exist;
 the on-write listener keeps running unaffected (it answers to `COMPANION_SWITCH` only).
 
-**The fourteen flags** (source of truth: the W5.1 plan's "The rules" table plus the S2 spec's §4
+**The sixteen flags** (source of truth: the W5.1 plan's "The rules" table plus the S2 spec's §4
 rows 1/3, the round-1 coaching spec 2026-09-03 §4's severity order for the S6 six, and the round-2
 S1 spec 2026-09-05 §(11) for `protocol_lapse` — all windows
 are whole days computed from `LocalDate.now()`; missing days stay absent, never invented — the
@@ -6633,7 +6665,7 @@ are whole days computed from `LocalDate.now()`; missing days stay absent, never 
 | `protocol_lapse` | one active protocol item missed on ≥ `consecutive-missed-days` consecutive DUE days, **and** ≥ `min-history-due-days` due days of adherence-≥`min-history-adherence` history immediately before the miss run; "due" is DERIVED, never stored — a `pre_workout`/`post_workout` item is due only on a day with a completed gym instance (a rest day is not a miss), every other item is due every day; the scan is bounded BELOW by the item's own `created_at` (a freshly added item cannot have "missed" a habit that never had room to exist), and the window ends YESTERDAY, never today (today is still in progress); the per-item 7-day re-announce cooldown lives inside the rule itself, separate from the 24h key-level cooldown below | `protocol_item`, `supplement_intake`, `WorkoutSessionRepository.findDoneInstanceDates` |
 | `meal_rhythm_drift` | over a `window-days` rolling window ending YESTERDAY, with at least `min-days-with-meals` days carrying a logged meal: **slot drift** — a planned slot's actual logged time (earliest row of that `slotKind` that day) deviates from its planned time by a median of more than `drift-minutes`, with at least `min-same-direction-share` of the observed days drifting the same way — OR **dead slot** — a slot planned on ≥ `min-slot-planned-days` days carries a meal on ≤ `dead-slot-max-presence` of them while the other tracked slots average ≥ `other-slots-min-presence`. Only `fixed`-anchor slots can drift (relative anchors are resolved in the FRONTEND only); `snack` and any duplicated `slotKind` are excluded as ambiguous; the day's template is chosen by a DERIVED day type (`resolveDayType.ts` ported: no completed instance ⇒ rest, earliest start before noon ⇒ training_am, else training_pm), and a training day with no `started_at` is skipped entirely; deviations use a SIGNED CIRCULAR minute difference in `(-720, 720]`, never `LateEatingRule`'s +24 shift | `meal_slot_template`, `meal`, `WorkoutSessionRepository.findDoneInstancesBetween` |
 | `energy_dip_meal_timing` | over a `window-days` rolling window ending YESTERDAY: a day QUALIFIES when it carries a check-in with an energy value inside the INCLUSIVE `[afternoon-from-hour, afternoon-to-hour]` band (matched on the `slot_time` wall clock; the day's value is the MEDIAN of its in-band check-ins) AND at least one logged meal of any kind — fewer than `min-qualifying-days` such days ⇒ silence. Those days are split in two: **lunch time** (primary) — the days with a lunch row, halved at their own median lunch minute, usable only when both halves reach `min-group-days` AND their own median lunch times are `min-lunch-split-separation-minutes` apart — or, ONLY when that split is unusable, **breakfast presence** (fallback) — days with a logged `breakfast` row vs days without. Raises when the two groups' median afternoon energies differ by ≥ `min-energy-delta` AND the Mann–Whitney probability of superiority (oriented to the higher group) reaches `min-superiority`. Reports a CORRELATION, never a cause; a usable split that does not separate is a CLEAR, not an unavailable | `check_in` (`findByCreatedByAndDeletedFalseAndDateBetween`), `meal` |
-| `all_healthy` | none of the other thirteen fire now, **and** no problem row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
+| `all_healthy` | none of the other fifteen fire now, **and** no problem row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
 
 `all_healthy`'s "no problem row" check (`existsProblemRaiseSince`) excludes `all_healthy` itself,
 `logging_gap`, `ignored_nudge`, and (whole-branch review fix, bd `mezo-d58h.6`) `joint_overuse`:
@@ -7328,10 +7360,13 @@ of `message_feedback` (by **`updated_at`**, so an edited or re-cast verdict re-e
 and overwrites 11 + N `feedback_rollup` rows in place (N = configured intervention keys, W5.2,
 currently 6): per-surface effectiveness, per-feed-kind effectiveness (resolved through the
 `FeedMessageKindSource` port to `companion_message.kind`), one `style` row with a per-surface
-down-reason histogram, and one `intervention:<key>` row per library entry (§4 above). No prompt,
-no UI — this is a rollup-only table. Its readers: W4.3's `ProfileAssembler` (`mezo-b3pp.17`, folds
-all scopes into the weekly profile synthesis) and, since W5.2, `InterventionService`'s selection
-math reads back the `intervention:<key>` rows to pick the best-weighted card (§4 above). **Known,
+down-reason histogram, and one `intervention:<key>` row per library entry (§4 above) — since
+Csapatfal Act III also fed by `team_chat_line` verdicts through `TeamChatInterventionKeySource`
+(§4 above), so the team chat's feedback trains the same effectiveness weighting the advice card
+used. No prompt, no UI — this is a rollup-only table. Its readers: W4.3's `ProfileAssembler`
+(`mezo-b3pp.17`, folds all scopes into the weekly profile synthesis) and, since W5.2,
+`InterventionService`'s selection math reads back the `intervention:<key>` rows to pick the
+best-weighted card (§4 above). **Known,
 harmless gap:** a key removed from `mezo.companion.interventions` leaves its `intervention:<key>`
 row behind in `feedback_rollup` forever — nothing prunes or zero-fills a retired key's row, because
 nothing reads it either (`InterventionService` only ever looks up keys still present in the live
@@ -8078,9 +8113,12 @@ the evaluation trace:**
   that genuinely changes (e.g. a flag's disposition flipping from `logged` to
   `suppressed_by_cooldown` on the next cooldown-window evaluation) writes a new row.
 
-**W5.2 intervention delivery test additions (`mezo-b3pp.19`, spec §9.2) — no LLM anywhere in this
-path either (the `flags/` suite above already pins `FlagService`'s event publish; these are the
-consumer side, in `feature.proactive`, and the push-anchor side, in `feature.notification`):**
+**W5.2 intervention delivery test additions (`mezo-b3pp.19`, spec §9.2) — the selection algorithm
+itself is LLM-free; delivery is not, since `deliverForFlag` now hands its pick to
+`AdviceCardService.deliver`, which spends one `AdviceProseGenerator` call per card (see the
+delivery-chain note above) — these tests run against `FakeCompanionLlm`, never a real call (the
+`flags/` suite above already pins `FlagService`'s event publish; these are the consumer side, in
+`feature.proactive`, and the push-anchor side, in `feature.notification`):**
 
 - **`proactive/InterventionServiceIT`** — a raised flag writes the card
   (`raisedFlagWritesTheCard`); the higher-effectiveness entry wins between two eligible candidates
@@ -9377,19 +9415,19 @@ change is distinct from those smoothed rates. The underlying trend calculation i
 `missed_workouts` added S2, bd `mezo-d58h.2`; `acute_bad_day`/`load_fuel_mismatch`/
 `rapid_weight_loss`/`joint_overuse`/`ignored_nudge`/`late_eating` added S6 batch B, bd
 `mezo-d58h.6`, spec 2026-09-03 §4)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/config/FlagProperties.java` — the `mezo.companion.flags.*` knobs (`sweepCron` + fourteen per-flag threshold records + `cooldownHours`), a feature-scoped `@Validated` record — the `FeedbackLearningProperties`/`ProfileProperties` precedent (§9).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/FlagPayloadEnvelope.java` — the typed jsonb payload, one nested record per rule + a static factory each (the `FeedbackRollupStatsEnvelope` precedent); fourteen variants since Round 2 S1.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/config/FlagProperties.java` — the `mezo.companion.flags.*` knobs (`sweepCron` + sixteen per-flag threshold records + `cooldownHours`), a feature-scoped `@Validated` record — the `FeedbackLearningProperties`/`ProfileProperties` precedent (§9).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/FlagPayloadEnvelope.java` — the typed jsonb payload, one nested record per rule + a static factory each (the `FeedbackRollupStatsEnvelope` precedent); sixteen variants since Round 2 S6.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/CompanionFlagLogEntity.java` — `extends OwnedEntity`, append-only, soft-deletable, `flagKey`/`source` `@Pattern`-mirrored CHECKs — `flagKey`'s regex is the FOURTH mirror of the flag-key list (§3 above; `CompanionProperties.Intervention.flag` is the FIFTH), widened by S2, again by S6, and again by Round 2 S1 (`protocol_lapse`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/repository/CompanionFlagLogRepository.java` — `existsRaiseSince` (the cooldown gate), `existsProblemRaiseSince` (the `all_healthy` quiet-window gate; its `NOT IN` exclusion list is a degrade-site the five formal mirrors do not cover — §3 above), and `findByCreatedByAndFlagKeyAndDeletedFalseAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc` (Round 2 S1: the seam `ProtocolLapseRule` reads its own past raises through, to enforce its per-item cooldown — §3 above).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagKey.java` — the fourteen flag-key constants + `SOURCE_WRITE`/`SOURCE_SWEEP`, string constants mirroring the DB CHECKs (the `MessageFeedbackEntity` verdict/reason precedent).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagKey.java` — the sixteen flag-key constants + `SOURCE_WRITE`/`SOURCE_SWEEP`, string constants mirroring the DB CHECKs (the `MessageFeedbackEntity` verdict/reason precedent).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaise.java` — one flag the evaluator says is TRUE right now, with its payload; `FlagVerdict.toRaise()` (below) is the only way one gets built since `mezo-6269.1`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluator.java` — since S1 (`mezo-d58h.1`) a thin orchestrator calling fourteen `FlagRule` beans in a fixed order, LLM-free (§3); since `mezo-6269.1` also always calls `AllHealthyRule` and overrides it to CLEAR when another rule raised.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluator.java` — since S1 (`mezo-d58h.1`) a thin orchestrator calling sixteen `FlagRule` beans in a fixed order, LLM-free (§3); since `mezo-6269.1` also always calls `AllHealthyRule` and overrides it to CLEAR when another rule raised.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRule.java` — S1 (`mezo-d58h.1`): the one-method rule contract, `evaluate(userId, today) → FlagVerdict` (was `Optional<FlagRaise>` before `mezo-6269.1`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagVerdict.java` — `mezo-6269.1`, spec 2026-09-05 §4.1: the record replacing `Optional<FlagRaise>` — `RAISED`/`CLEAR`/`UNAVAILABLE`, one non-null payload field per outcome, factories only.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagOutcome.java` — `mezo-6269.1`: the three-value enum a verdict carries.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/UnavailableReason.java` — `mezo-6269.1`: one member per honesty gate across the 13 original rules, derived by reading every gate site in `service/rule/`; widened again by Round 2 S1 for `ProtocolLapseRule`'s own honesty gates.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/TraceDisposition.java` — `mezo-6269.1`: `LOGGED`/`SUPPRESSED_BY_COOLDOWN`, what `FlagService` did with a RAISED verdict; null when the rule did not fire.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagTraceWriter.java` — `mezo-6269.1`: appends to `companion_flag_trace` only when a rule's verdict changed since its own last row (the comparison includes `disposition`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagTraceWriter.java` — `mezo-6269.1`: appends to `companion_flag_trace` only when a rule's verdict changed since its own last row (the comparison includes `disposition`); since Csapatfal Act III (`mezo-a9bo7.20`) also publishes `FlagClearedEvent` when that change is TO `clear`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/CompanionFlagTraceEntity.java` — `mezo-6269.1`: `extends OwnedEntity`, soft-deletable, `@Pattern`-mirrored CHECKs on `flagKey`/`outcome`/`disposition`, jsonb `evidence`; `flagKey`'s regex widened again post-merge (bd `mezo-d58h.7.1`) for `protocol_lapse`, since the trace slice and the protocol_lapse slice were developed in parallel and neither knew about the other's flag key.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/repository/CompanionFlagTraceRepository.java` — `mezo-6269.1`: `findFirstByCreatedByAndFlagKeyOrderByOccurredAtDesc` (the transition comparison) and `findByCreatedByAndOccurredAtBetweenOrderByOccurredAtAsc` (the day-timeline read).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609051200_mezo-6269.1_companion_flag_trace.sql` — the table (in `1.0.0_master.yml`); `202609051700_mezo-d58h.7.1_flag_key_trace_protocol_lapse.sql` (immediately after, same file) widens `ck_companion_flag_trace_flag_key` for `protocol_lapse` rather than editing the already-shipped changeset above.
@@ -9415,10 +9453,12 @@ change is distinct from those smoothed rates. The underlying trend calculation i
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609062000_mezo-d58h.7.7_flag_key_energy_dip.sql` + `202609062100_mezo-d58h.7.7_flag_key_trace_energy_dip.sql` — Round 2 S6: widen both CHECKs again, to the sixteen keys (`energy_dip_meal_timing`).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagLogPersistenceIT,FlagPropertiesIT,FlagEvaluatorStressSleepIT,FlagEvaluatorMomentumRecoveryIT,FlagServiceIT,FlagEvaluationListenerIT,FlagSweepJobSwitchOffIT,FlagEvaluatorLoggingGapIT,FlagEvaluatorMissedWorkoutsIT,FlagEvaluatorAcuteBadDayIT,FlagEvaluatorLoadFuelMismatchIT,FlagEvaluatorRapidWeightLossIT,FlagEvaluatorJointOveruseIT,FlagEvaluatorIgnoredNudgeIT,FlagEvaluatorLateEatingIT,FlagEvaluatorProtocolLapseIT}.java` + `support/populator/FlagLogPopulator.java` (+ `companion_flag_log` in `ResetDatabase`) — §8. **Since W5.2 (`mezo-b3pp.19`), `FlagRaisedEvent` (below) is the consumer** — see the next block.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaisedEvent.java` — W5.2 (bd `mezo-b3pp.19`): the `{userId, flagKey, source}` event `FlagService.evaluateAndLog` publishes for every WRITTEN raise, inside the logging transaction (§3/§4 above).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagClearedEvent.java` — Csapatfal Act III (bd `mezo-a9bo7.20`, ADR 0053): the `{userId, flagKey, clearEvidence, at}` event `FlagTraceWriter.record` publishes when a rule's trace row changes TO `clear` (§3/§4 above); the character-side team chat's resolution trigger.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/service/TeamChatInterventionKeySource.java` — Csapatfal Act III (bd `mezo-a9bo7.21`): a companion-owned port resolving a `team_chat_line` feedback artifact to its ügy's `advice_key`, so `FeedbackLearningService` can fold a 👍/👎 on a team chat line into the same `intervention:<key>` effectiveness rollup a verdict on the (now-retirable) advice card used — inverted the normal direction on purpose (the implementation, `TeamChatInterventionKeyAdapter`, lives in `feature.character`, which already imports `feature.companion`; companion may never import it back) and reached only through an `ObjectProvider`, since it exists only while the team chat is switched on.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagTracePersistenceIT,FlagServiceTraceIT}.java` + `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagVerdictTest.java` — `mezo-6269.1`, §8.
 
 **Backend — intervention delivery (W5.2, `mezo-b3pp.19` — §4/§5.8/§9, spec §9.2; consumer side, lives in `feature.proactive` not `feature.companion`)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/InterventionEventListener.java` — `@Async @TransactionalEventListener(AFTER_COMMIT)` on `FlagRaisedEvent`, the `CompanionMessageEventListener` template; catches and warns rather than propagating.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/InterventionEventListener.java` — `@Async @TransactionalEventListener(AFTER_COMMIT)` on `FlagRaisedEvent`, the `CompanionMessageEventListener` template; catches and warns rather than propagating. Also gated on `FeaturesConfiguration.ADVICE_CARD_SWITCH` since Csapatfal Act III (ADR 0053) — off (the deployed default) ⇒ the bean does not exist and the team chat carries the teendő instead.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/InterventionService.java` — `deliverForFlag(userId, flagKey)`: the one-card-per-day gate, per-key cooldown (recent `intervention`-kind card envelope keys), `OPTIMISTIC_PRIOR = 1.5`, max-effectiveness selection, `saveAndFlush` into `companion_message`. PURE CODE — no `LlmCallContextHolder` call anywhere in this class.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — the nested `Intervention` record (`interventions()` field) — §4 config keys above.
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `INTERVENTION_SWITCH` (`mezo.feature.intervention.enabled`).

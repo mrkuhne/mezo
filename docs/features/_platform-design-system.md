@@ -20,6 +20,19 @@ related: [_platform-data-layer, _platform-notifications, today, train, me, fuel,
 
 > **2026-09-26 — Emodzsi-söprés (`mezo-z5lov`).** The last live UI emoji (sleep-goal anchor chips, the meso wizard CTA, the week/day editor lints, the Failure/Volume set style, the macro-panel note) are `Icon3D` symbols now — no new sprite symbols. The kit gained `.t-ico.uv-inline` (+ `uv-after`) at the end of the `── uveg kit` block: `.t-ico` is `display: block`, so an icon inside a run of text needs the inline-block variant with a baseline nudge. Character voice copy in the csapatfal keeps its sparing emoji by design (bible rule 81).
 
+> **2026-09-26 — Csapatfal Act III: the team chat (`mezo-a9bo7.21`–`.24`).** The all-day team chat
+> room (`TeamChatPage.tsx`) and its wall live strip grew their own scoped prefix in the existing
+> csapatfal `tf-*` kit (`features/insights/boop-world.css`, the U9 precedent, §"Üveg U9" above): a
+> `tf-chat-*` family for the room itself (back rail, live-status line, avatar minis, the message
+> bubbles incl. the guest/me variants and their tag row) and a standalone `tf-live`/`tf-live-dot`
+> row for the wall's live strip (a pulsing sage dot, `@media (prefers-reduced-motion)` freezes it).
+> Both ride the shared `--c` accent-per-card convention, no new sprite icons. **The Nap hand-off
+> row wears sage glass** (`fix(insights)`, mezo-a9bo7.24): `NapMezoPage.tsx`'s `TeamChatRow` uses
+> its own `.nap-mzteam.glass` class (NOT `.nap-mzrow` — it is not a thread message) with
+> `--c: var(--dv-sage)`, replacing the flatter pre-glass `.nap-mzteam.uv-flat` inset-hairline
+> treatment; a `.nap-mzteam-note` flat caption line sits under it. No new `prototype.css` block —
+> the rules extend the existing `nap-mzteam` selectors in place.
+
 > **2026-09-24 — Üveg U5 (`mezo-me75u.5`).** The kit gained three owner-approved sprite symbols — `t-template` (a reusable week plan), `t-compare` (two closed runs side by side) and `t-trash` (delete) — drawn in the bible §4 recipe and registered in `Icon3DName`. They stay OUT of `CLAY_TO_3D`: each is mapped at its call site, since the clay names they replace (`i-retegek`, `i-polc`) already mean other things elsewhere (U1 rule 7). `prototype.css` gained six slice blocks (`── uveg edzes2 terv|run|nap|izmok|konyvtar|sablonok|het`), each scoped to its page root because the `mz-`/`pl-`/`ld-` families are shared (U2 rule 13). U1 rule 3 was paid for again: `.glass` clips, so the volume gauge's „most" pin — which sits ABOVE the track — had to declare `overflow: visible` and drop its sheen.
 
 > **2026-09-25 — Üveg U8 (`mezo-me75u.8`).** Seven owner-approved sprite symbols — `t-whistle` (coaching), `t-eye` (Megfigyelő), `t-card` (the daily card), `t-diagnose` (diagnosis), `t-album` (memories), `t-layers` (memory layers), `t-pencil` (rename) — are registered in `Icon3DName`. `PageHero` gained `eyebrow` (a tinted eyebrow above the name) and `glass` (the halo hero without art, for gauge- or text-led heroes). Shared components gained opt-in üveg props instead of global restyles: `RefTag glass` (3D kind icon + screen-reader kind word), `FeedbackChips glyph3d`, `VerdictArc glow` (the segmented glowing ring). `prototype.css` gained seven blocks (`── uveg mezo1 chat|coaching|diagnozis|kiserletek|emlekek|memoar|memoria`), guarded by `U8_BLOCKS` in `prototypeCssStructure.test.ts`.

@@ -794,8 +794,9 @@ describe('a csapat-chat átadás az Üzenetek fülön', () => {
     refs: [],
     generatedAt: '2026-05-22T15:00:00',
   }
-  const openThread = (id: string, ruleLabel: string, owner: 'szunya' | 'deru', openedAt: string) => ({
-    id, flagKey: id, ruleLabel, owner, guest: null, status: 'OPEN' as const, openedAt, closedAt: null,
+  const openThread = (id: string, ruleLabel: string, owner: 'szunya' | 'deru', openedAt: string,
+    flagKey = 'sleep_debt') => ({
+    id, flagKey, ruleLabel, owner, guest: null, status: 'OPEN' as const, openedAt, closedAt: null,
     pushed: false, actions: [], applied: null,
   })
 
@@ -804,7 +805,7 @@ describe('a csapat-chat átadás az Üzenetek fülön', () => {
       ...teamChatMock.day,
       openThreads: [
         openThread('t1', 'Alvásadósság', 'szunya', '2026-05-22T07:40:00'),
-        openThread('t2', 'Tartós stressz', 'deru', '2026-05-22T16:20:00'),
+        openThread('t2', 'Tartós stressz', 'deru', '2026-05-22T16:20:00', 'sustained_stress'),
       ],
     }
     feedMock.useCompanionFeed.mockReturnValue([morningMsg, adviceMsg])
@@ -825,8 +826,9 @@ describe('a csapat-chat átadás az Üzenetek fülön', () => {
     teamChatMock.day = {
       ...teamChatMock.day,
       lines: [{
-        id: 'l1', threadId: null, kind: 'RESOLVE', character: 'falat', body: 'Megvan, rendeződött ✅',
+        id: 'l1', threadId: 't9', kind: 'RESOLVE', character: 'falat', body: 'Megvan, rendeződött ✅',
         voiced: true, facts: [], occurredAt: '2026-05-22T12:40:00',
+        thread: { ...openThread('t9', 'Alvásadósság', 'szunya', '2026-05-22T07:40:00'), status: 'RESOLVED' as const },
       }],
     }
     feedMock.useCompanionFeed.mockReturnValue([adviceMsg])
@@ -864,6 +866,33 @@ describe('a csapat-chat átadás az Üzenetek fülön', () => {
     renderPage()
     await screen.findByRole('button', { name: /A csapat most erről beszél/ })
     expect(screen.queryByText('Régi közbelépés szövege.')).not.toBeInTheDocument()
+  })
+
+  // Final review I4 (mezo-a9bo7.25): only the card whose RULE the chat talks about moves over — a
+  // setup-check card („Mezo · beállítás”) is not an ügy and stays, even while the chat talks.
+  test('a beállítás-kártya marad, ha a csapat beszél; csak az azonos szabályú tanácskártya rejtőzik', async () => {
+    withOpenThread()
+    feedMock.useCompanionFeed.mockReturnValue([adviceMsg, {
+      id: 'fm-s1', kind: 'advice', eyebrow: 'Mezo · beállítás', flagKey: 'missing_sleep_goal',
+      body: [{ type: 'p', text: 'Még nincs alváscélod — állítsd be.' }],
+      refs: [],
+      generatedAt: '2026-05-22T09:00:00',
+    }])
+    renderPage()
+    await screen.findByRole('button', { name: /A csapat most erről beszél/ })
+    expect(screen.getByText('Még nincs alváscélod — állítsd be.')).toBeInTheDocument()
+    expect(screen.queryByText('Ma este feküdj le korábban.')).not.toBeInTheDocument()
+  })
+
+  test('más szabály ügye mellett a tanácskártya marad (csak az egyező rejtőzik)', async () => {
+    teamChatMock.day = {
+      ...teamChatMock.day,
+      openThreads: [openThread('t2', 'Tartós stressz', 'deru', '2026-05-22T16:20:00', 'sustained_stress')],
+    }
+    feedMock.useCompanionFeed.mockReturnValue([adviceMsg])
+    renderPage()
+    await screen.findByRole('button', { name: /A csapat most erről beszél/ })
+    expect(screen.getByText('Ma este feküdj le korábban.')).toBeInTheDocument()
   })
 
   test('mai értesítés célkártyája (?n=) akkor is látszik, ha a csapat beszél', async () => {

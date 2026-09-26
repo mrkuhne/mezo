@@ -254,7 +254,8 @@ that offsets part of the 1 USD).
 ## 6. Error handling
 
 - LLM failure, guard rejection, budget cap → template line, `voiced=false`; logged, never thrown.
-- Listener failure → the transition is not lost: a catch-up job (hourly, :20) compares the last 24 h
+- Listener failure → the transition is not lost: a catch-up job (hourly, :20) compares the last 2 h
+  (final review M6: was 24 h, which re-opened pre-deploy raises that already got the old card)
   of flag-log raises and clear transitions with the ügy table and fills gaps (idempotent).
 - Push failure → the line stays; no retry storm (the anchor path's own semantics).
 - Chat feature off → the old daily card path runs as today.

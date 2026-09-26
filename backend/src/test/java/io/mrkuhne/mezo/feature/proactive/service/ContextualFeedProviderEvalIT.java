@@ -44,6 +44,7 @@ class ContextualFeedProviderEvalIT extends AbstractIntegrationTest {
     private static final EvalTarget TARGET = EvalTarget.fromSystemProperties();
     @DynamicPropertySource
     static void model(DynamicPropertyRegistry registry) {
+        EvalTarget.registerRealApiKeys(registry);
         registry.add("mezo.companion.llm.provider", TARGET::providerKey);
         registry.add("mezo.companion.llm." + TARGET.providerKey() + ".chat-model", TARGET::model);
         registry.add("mezo.companion.llm." + TARGET.providerKey() + ".smart-model", TARGET::model);

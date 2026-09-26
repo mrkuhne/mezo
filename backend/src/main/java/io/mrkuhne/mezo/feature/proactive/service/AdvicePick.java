@@ -20,7 +20,15 @@ import java.util.List;
  *                 payload ({@link io.mrkuhne.mezo.feature.companion.flags.service.FlagFactRenderer});
  *                 may be empty (honest absence, never a placeholder).
  * @param payload  the raise's own frozen payload envelope, or null when the raise carried none.
+ * @param channel  the entry's delivery channel ({@code feed | push | both}) — a {@code feed} entry
+ *                 never pushes, on any surface (final review I3, mezo-a9bo7.25).
+ * @param quietHoursExempt whether the entry may ring inside the quiet window (none does today).
  */
 public record AdvicePick(String flagKey, String entryKey, String textHu, List<String> facts,
-                          FlagPayloadEnvelope payload) {
+                          FlagPayloadEnvelope payload, String channel, boolean quietHoursExempt) {
+
+    /** The library's push channel gate: only {@code push} / {@code both} entries may page the user. */
+    public boolean pushAllowed() {
+        return !"feed".equals(channel);
+    }
 }
