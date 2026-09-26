@@ -94,6 +94,38 @@ class GraphMaintenanceServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testRunMaintenance_shouldNotPruneASnoozedCandidate_whileTheSnoozeIsStillInTheFuture() {
+        // „Most ne” fix round 1 (mezo-zpxv7): a candidate that was already old when snoozed must
+        // not be pruned while still asleep — its age for pruning counts from snoozedUntil.
+        UUID owner = ownerId();
+        Instant old = Instant.now().minus(40, ChronoUnit.DAYS);
+        GraphNodeEntity snoozed = graphPopulator.createCandidateNodeAt(
+            owner, GraphNodeEntity.KIND_LIFE_EVENT, "Elaltatott jelölt", null, Map.of(), old);
+        snoozed.setSnoozedUntil(Instant.now().plus(5, ChronoUnit.DAYS));
+        nodeRepository.saveAndFlush(snoozed);
+
+        GraphMaintenanceResult result = maintenanceService.runMaintenance(owner);
+
+        assertThat(result.candidatesPruned()).isZero();
+        assertThat(nodeRepository.findByIdAndCreatedByAndDeletedFalse(snoozed.getId(), owner)).isPresent();
+    }
+
+    @Test
+    void testRunMaintenance_shouldPruneASnoozedCandidate_whenTheSnoozeItselfIsStale() {
+        UUID owner = ownerId();
+        Instant old = Instant.now().minus(60, ChronoUnit.DAYS);
+        GraphNodeEntity snoozed = graphPopulator.createCandidateNodeAt(
+            owner, GraphNodeEntity.KIND_LIFE_EVENT, "Régen elaltatott jelölt", null, Map.of(), old);
+        snoozed.setSnoozedUntil(Instant.now().minus(35, ChronoUnit.DAYS));
+        nodeRepository.saveAndFlush(snoozed);
+
+        GraphMaintenanceResult result = maintenanceService.runMaintenance(owner);
+
+        assertThat(result.candidatesPruned()).isEqualTo(1);
+        assertThat(nodeRepository.findByIdAndCreatedByAndDeletedFalse(snoozed.getId(), owner)).isEmpty();
+    }
+
+    @Test
     void testRunMaintenance_shouldReinforceEdges_ofAPromotedPatternWithAFreshSnapshot() {
         UUID owner = ownerId();
         PatternEntity pattern = patternPopulator.createPattern(owner, "sleep_vs_mood", "Alvás -> hangulat");

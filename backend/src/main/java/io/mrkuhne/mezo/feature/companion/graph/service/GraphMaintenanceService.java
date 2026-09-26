@@ -85,7 +85,7 @@ public class GraphMaintenanceService {
 
     private int pruneStaleCandidates(UUID userId, int maxAgeDays) {
         Instant cutoff = Instant.now().minus(maxAgeDays, ChronoUnit.DAYS);
-        List<GraphNodeEntity> stale = nodeRepository.findByCreatedByAndStatusAndCreatedAtBeforeAndDeletedFalse(
+        List<GraphNodeEntity> stale = nodeRepository.findStaleCandidates(
             userId, GraphNodeEntity.STATUS_CANDIDATE, cutoff);
         stale.forEach(nodeRepository::delete);   // @SQLDelete -> soft delete
         return stale.size();
