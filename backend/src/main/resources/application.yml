@@ -372,11 +372,12 @@ mezo:
     # character + companion switches too (the collector reads companion/proactive sources).
     team-edition:
       enabled: true
-    # Csapatfal Act III (mezo-a9bo7.21) — the all-day team chat: a raised coaching rule opens an
-    # ügy owned by one character, its clear resolves it. Off by default; needs the character,
-    # companion, proactive and intervention switches too.
+    # Csapatfal Act III (mezo-a9bo7.21..25) — the all-day team chat: a raised coaching rule opens
+    # an ügy owned by one character, its clear resolves it. Switched on together with
+    # mezo.proactive.advice-card.enabled=false below (mezo-a9bo7.25) — the chat is now the
+    # teendő's only home; needs the character, companion, proactive and intervention switches too.
     team-chat:
-      enabled: false
+      enabled: true
     # Gamified growth E1 (ADR 0010) — daily quests (catalog-driven, derived completion).
     # Off => the /api/quest surface 404s and no quest beans exist.
     quest:
@@ -2195,12 +2196,12 @@ mezo:
       # async listener missed still opens/resolves its ügy (a missed open never pushes).
       catchup-cron: "0 20 * * * *"
   proactive:
-    # Advice-card retirement (Csapatfal Act III, mezo-a9bo7.24): the old daily advice card that a
-    # raised flag delivers (InterventionEventListener). Off ⇒ no listener bean, no new card; the
-    # team chat carries the teendő instead. Prod flips it TOGETHER with the team chat:
-    # MEZO_PROACTIVE_ADVICE_CARD_ENABLED=false + MEZO_FEATURE_TEAM_CHAT_ENABLED=true.
+    # Advice-card retirement (Csapatfal Act III, mezo-a9bo7.24..25): the old daily advice card that
+    # a raised flag delivers (InterventionEventListener). Off ⇒ no listener bean, no new card; the
+    # team chat (mezo.feature.team-chat.enabled above) carries the teendő instead. The two switches
+    # live together here, like the team-edition switch-on — no k8s env override needed.
     advice-card:
-      enabled: true
+      enabled: false
     contextual-feed:
       history-days: 14 # Inclusive calendar-day window.
       history-max-messages: 12 # Total selected prior messages.
