@@ -128,7 +128,16 @@ function plannedBlockKcal(b: PlannerBlock, restPerHour: number | null): number |
 // ── servedBudget ─────────────────────────────────────────────────────────────
 /** The day's budget: the served macros + the served energy equation
  *  (base + planned + extra + balance = target, mezo-32m82). */
-export interface DayBudget extends Macro4 { energy: { base: number; planned: number; extra: number; balance: number; target: number } }
+export interface DayBudget extends Macro4 {
+  energy: {
+    base: number; planned: number; extra: number; balance: number; target: number
+    /** Learned-base provenance passthrough (mezo-zz91i, `FuelDayEnergy.baseSource` et al.). */
+    source?: 'formula' | 'learned'
+    formulaBase?: number | null
+    sd?: number | null
+    confidence?: 'low' | 'medium' | 'high' | null
+  }
+}
 
 /**
  * The day's budget as the backend SERVES it (mezo-32m82): one rule for every surface — the weekly
@@ -138,7 +147,10 @@ export interface DayBudget extends Macro4 { energy: { base: number; planned: num
  */
 export function servedBudget(targets: MacroSet, energy: FuelDayEnergy | null | undefined): DayBudget {
   const e = energy
-    ? { base: energy.baseKcal, planned: energy.plannedMovementKcal, extra: energy.extraMovementKcal, balance: energy.balanceKcal, target: energy.targetKcal }
+    ? {
+        base: energy.baseKcal, planned: energy.plannedMovementKcal, extra: energy.extraMovementKcal, balance: energy.balanceKcal, target: energy.targetKcal,
+        source: energy.baseSource, formulaBase: energy.formulaBaseKcal, sd: energy.baseSdKcal, confidence: energy.baseConfidence,
+      }
     : { base: targets.kcal, planned: 0, extra: 0, balance: 0, target: targets.kcal }
   return { kcal: targets.kcal, p: targets.p, c: targets.c, f: targets.f, energy: e }
 }

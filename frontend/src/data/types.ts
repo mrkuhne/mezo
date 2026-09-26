@@ -276,6 +276,13 @@ export interface FuelDayEnergy {
   extraMovementKcal: number
   balanceKcal: number
   targetKcal: number
+  /** Where baseKcal comes from (mezo-zz91i): the BMR × NEAT formula or the base learned from intake + weight trend. */
+  baseSource?: 'formula' | 'learned'
+  /** BMR × NEAT, shown next to a learned base. */
+  formulaBaseKcal?: number | null
+  /** Learned base uncertainty (±1 SD kcal); null for formula. */
+  baseSdKcal?: number | null
+  baseConfidence?: 'low' | 'medium' | 'high' | null
 }
 export interface FuelDay {
   targets: MacroSet; consumed: MacroSet

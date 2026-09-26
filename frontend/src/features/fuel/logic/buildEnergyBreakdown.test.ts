@@ -99,6 +99,36 @@ describe('buildEnergyBreakdown', () => {
     expect(bd.base.kcal + bd.movement.kcal + bd.deficit!.kcal).toBe(bd.target)
   })
 
+  it('passes learned-base provenance through (mezo-zz91i): source, formulaKcal, sdKcal, confidence', () => {
+    const bd = buildEnergyBreakdown({
+      energy: {
+        base: 2272, planned: 1290, extra: 0, balance: -869, target: 2693,
+        source: 'learned', formulaBase: 2880, sd: 140, confidence: 'medium',
+      },
+      blocks,
+      weightKg: 86,
+      tdeeBootstrap: { bmr: 1893, neat: 1.2, formula: 'KATCH' },
+      segment: { dailyEnergyBalanceKcal: -869, projectedRateKgPerWk: -0.79, label: 'Nyári cut' },
+      activityLabel: 'Ülő',
+      goalLabel: 'Nyári cut',
+    })!
+    expect(bd.base).toMatchObject({ source: 'learned', formulaKcal: 2880, sdKcal: 140, confidence: 'medium' })
+  })
+
+  it('defaults base.source to formula when the served energy carries no provenance', () => {
+    const bd = buildEnergyBreakdown({
+      energy: { base: 2272, planned: 1290, extra: 0, balance: 0, target: 3562 },
+      blocks,
+      weightKg: 86,
+      tdeeBootstrap: { bmr: 1893, neat: 1.2, formula: 'KATCH' },
+      segment: null,
+      activityLabel: 'Ülő',
+      goalLabel: 'Nyári cut',
+    })!
+    expect(bd.base.source).toBe('formula')
+    expect(bd.base.formulaKcal).toBeUndefined()
+  })
+
   it('no extra → only the planned part, still closing', () => {
     const bd = buildEnergyBreakdown({
       energy: { base: 2356, planned: 570, extra: 0, balance: -327, target: 2599 },
