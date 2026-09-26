@@ -92,4 +92,15 @@ describe('MealClockBox', () => {
     expect(document.body.querySelector('.nowhand')).toBeNull()
     expect(document.body.textContent).not.toMatch(/most nyitva|nyílik \d/)
   })
+  // mezo-tegkf: a késő esti szaggatott „szellem" görbe a vércukor-válasz dobozban.
+  it('late high meal (bed 23:00, logged 22:15): ghost curve and the dashed-line sentence', () => {
+    const lateRow = row({ time: '22:15', carbsG: 80, sugarG: 80, fiberG: 0, proteinG: 0, fatG: 0 })
+    render(<MealClockBox tile={tile({ state: 'done' })} row={lateRow} day={day} next={null} blockColor="var(--lav)" onClose={vi.fn()} />)
+    expect(document.body.querySelector('.fmx-glu-ghost')).not.toBeNull()
+    expect(document.body.textContent).toMatch(/Késő este ugyanez általában magasabbra és tovább emelkedik \(szaggatott vonal\)\./)
+  })
+  it('non-late meal: no ghost curve', () => {
+    render(<MealClockBox tile={tile({ label: 'Reggeli', state: 'done', windowFrom: '07:20', windowTo: '09:20' })} row={row()} day={day} next={null} blockColor="var(--lav)" onClose={vi.fn()} />)
+    expect(document.body.querySelector('.fmx-glu-ghost')).toBeNull()
+  })
 })

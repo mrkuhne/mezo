@@ -10926,6 +10926,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-glu-tick { stroke: var(--border-subtle); }
 .fmx-glu-axis { fill: var(--faint); font-size: 8px; }
 .fmx-glu-fill { fill: currentColor; opacity: 0.15; stroke: none; }
+/* Késő esti „szellem" görbe (mezo-tegkf): a rendes vonal mögé rajzolt szaggatott domb —
+   prototípus fuel-ora-ablak.html `curve(band, late)` `.ghost`-jának 1:1 színe. */
+.fmx-glu-ghost { fill: none; stroke: rgba(245, 239, 230, 0.25); stroke-width: 1.4; stroke-dasharray: 4 4; }
 .fmx-glu-line { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
 .fmx-glu-dot { fill: currentColor; }
 .fmx-glu-note { fill: currentColor; font-size: 10px; font-style: italic; }
