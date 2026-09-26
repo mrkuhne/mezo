@@ -5478,6 +5478,37 @@ paths:
           description: Authentication required
         '403':
           description: Owner role required
+  /api/companion/effects:
+    get:
+      tags:
+        - CompanionEffects
+      operationId: listPersonEffects
+      summary: 'Egy személyhez tartozó nevesített hatások (Emlékezet S4, mezo-d6ivw.4)'
+      description: >-
+        A megadott személyre élő, nem törölt hatás-sorok, erősség szerint
+        csökkenő sorrendben — a kódban számolt Cliff's delta, sáv és
+        bizonyossági szint (a szolgáltatás megerősített észrevétel esetén egy
+        fokkal feljebb tolja a bizonyosságot, sosem perzisztálva).
+      parameters:
+        - name: personId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: A személy hatás-sorai
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonEffectsResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/companion/observation:
     get:
       tags:
@@ -19679,6 +19710,70 @@ components:
           type: string
           nullable: true
           description: A címke szövege — csak tag.
+    PersonEffectsResponse:
+      type: object
+      description: >-
+        Egy személyhez tartozó nevesített hatás-sorok (Emlékezet S4,
+        mezo-d6ivw.4), erősség szerint csökkenő sorrendben.
+      required:
+        - effects
+      properties:
+        effects:
+          type: array
+          items:
+            $ref: '#/components/schemas/EffectResponse'
+    EffectResponse:
+      type: object
+      description: >-
+        Egy kódban számolt (subject, metrika) hatás-sor — sosem ok-okozat, csak
+        együttjárás. A `direction` a tárolt előjelből származik: pozitív Cliff's
+        delta = higher.
+      required:
+        - metric
+        - direction
+        - strengthBand
+        - confidenceTier
+        - meanDiff
+        - subjectDays
+        - complementDays
+        - computedAt
+      properties:
+        metric:
+          type: string
+          pattern: ^(mental|energy|stress)$
+          description: Melyik metrikát érinti a hatás.
+        direction:
+          type: string
+          pattern: ^(higher|lower)$
+          description: >-
+            A subject napjain a metrika magasabb vagy alacsonyabb volt-e a többi
+            naphoz képest.
+        strengthBand:
+          type: string
+          pattern: ^(enyhe|kozepes|eros)$
+          description: A Cliff-delta abszolút értékéből származó sáv.
+        confidenceTier:
+          type: string
+          pattern: ^(gyenge|kozepes|eros)$
+          description: >-
+            A mintaszámból (és megerősített észrevétel esetén a serve-time
+            bumpból) származó bizonyosság.
+        meanDiff:
+          type: number
+          format: double
+          description: >-
+            A subject és a komplementer napok átlagának különbsége nyers
+            metrika-egységben.
+        subjectDays:
+          type: integer
+          description: Hány napon fordult elő a subject az ablakban.
+        complementDays:
+          type: integer
+          description: Az ablak többi (komplementer) napjainak száma.
+        computedAt:
+          type: string
+          format: date-time
+          description: A legutóbbi éjszakai újraszámítás időpontja.
     ObservationResponse:
       type: object
       description: >-
