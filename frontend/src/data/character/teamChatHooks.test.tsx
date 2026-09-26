@@ -83,6 +83,20 @@ describe('mock mode', () => {
     })
     await waitFor(() => expect(result.current.pending).toBe(false))
   })
+
+  test('useTeamChat never polls in mock mode, even after minutes (mezo-a9bo7.24 fix round 1)', async () => {
+    vi.useFakeTimers()
+    try {
+      const { wrapper, client } = makeHookWrapperWithClient()
+      renderHook(() => useTeamChat(), { wrapper })
+      const before = client.getQueryState(['teamChat', null])?.dataUpdatedAt
+      await vi.advanceTimersByTimeAsync(5 * 60_000)
+      const after = client.getQueryState(['teamChat', null])?.dataUpdatedAt
+      expect(after).toBe(before)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -114,6 +128,28 @@ describe('real mode', () => {
     const { result } = renderHook(() => useTeamChat('2026-02-10'), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(result.current.day).toEqual(seeded))
     expect(requestedDate).toBe('2026-02-10')
+  })
+
+  test('useTeamChat polls every 60s in real mode (mezo-a9bo7.24 fix round 1 — the chat is genuinely live)', async () => {
+    vi.useFakeTimers()
+    try {
+      let calls = 0
+      server.use(
+        http.get(`${API_BASE}/api/character/team-chat`, () => {
+          calls += 1
+          return HttpResponse.json({ date: localDateString(), lines: [], openThreads: [], pushesToday: 0, pushBudget: 2 })
+        }),
+      )
+      renderHook(() => useTeamChat(), { wrapper: makeHookWrapper() })
+      await vi.advanceTimersByTimeAsync(0)
+      expect(calls).toBe(1)
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(calls).toBe(2)
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(calls).toBe(3)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   test('reply invalidates every cached teamChat query key', async () => {

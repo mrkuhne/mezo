@@ -25,6 +25,7 @@ export function useTeamChat(date?: string): { day: TeamChatDay; loading: boolean
     realFetch: () => teamChatApi.day(date),
     realEmpty: { date: date ?? localDateString(), lines: [], openThreads: [], pushesToday: 0, pushBudget: 2 },
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
+    refetchInterval: 60_000,
   })
   return { day: data, loading: isPending }
 }
