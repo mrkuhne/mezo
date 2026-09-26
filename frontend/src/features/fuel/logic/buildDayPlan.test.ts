@@ -167,6 +167,35 @@ test('evening volleyball (18:15+90) snaps a pre slot to 17:00 and dinner to 20:1
   expect(dinner.weight).toBe(2.5)
 })
 
+test('a snack sitting INSIDE the training envelope is snapped out as pre-fuel, not the main before it (mezo-6g52f R3)', () => {
+  // Mock day: wake 06:45, bed 23:15, 4 meals, one sport block 18:00/90 (ends 19:30).
+  // Uzsonna lands at 18:11 (inside the envelope) — it must be the one pulled out to 16:45,
+  // leaving Ebéd untouched at 14:38 (877.5 min, Math.round rounds .5 up).
+  const sport: PlannerBlock = { kind: 'sport', time: '18:00', durationMin: 90, label: 'Röpi · edzés' }
+  const ws = placeWindows('06:45', '23:15', 4, [sport])
+  const byLabel = Object.fromEntries(ws.map(w => [w.label, w]))
+  expect(toHHmm(byLabel['Ebéd'].time)).toBe('14:38')
+  expect(byLabel['Ebéd'].rule).toBe('main')
+  expect(toHHmm(byLabel['Uzsonna'].time)).toBe('16:45')
+  expect(byLabel['Uzsonna'].rule).toBe('pre-training-snack')
+  expect(toHHmm(byLabel['Vacsora'].time)).toBe('20:15')
+  expect(byLabel['Vacsora'].rule).toBe('post-training')
+})
+
+test('buildDayPlan: no meal slot window intersects the training block 18:00–19:30 (mezo-6g52f R3)', () => {
+  const sport: PlannerBlock = { kind: 'sport', time: '18:00', durationMin: 90, label: 'Röpi · edzés' }
+  const plan = buildDayPlan(baseInput({ wake: '06:45', bed: '23:15', blocks: [sport] }))
+  const trainingStart = toMin('18:00')
+  const trainingEnd = toMin('19:30')
+  for (const s of plan.slots) {
+    if (s.slotKey == null || s.windowFrom == null || s.windowTo == null) continue
+    const from = toMin(s.windowFrom)
+    const to = toMin(s.windowTo)
+    const intersects = from < trainingEnd && to > trainingStart
+    expect(intersects).toBe(false)
+  }
+})
+
 // ── kitchen close on the unwrapped axis (mezo-t1vh) ─────────────────────────────
 test('kitchen close on a crossing day (wake 07:00 / bed 03:00) renders on the unwrapped axis', () => {
   const plan = buildDayPlan(baseInput({ wake: '07:00', bed: '03:00' }))

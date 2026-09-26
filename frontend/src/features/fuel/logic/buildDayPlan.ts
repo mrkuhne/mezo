@@ -251,8 +251,9 @@ export function placeWindows(
       post.weight = SLOT_WEIGHT.postWorkoutMain
       post.rule = 'post-training'
     }
-    // Pre-fuel = nearest window strictly before the EARLIEST block start (excluding post), snapped to −75.
-    const pre = windows.filter(w => w !== post && w.time < earliestStart).sort((a, z) => z.time - a.time)[0]
+    // Pre-fuel = nearest non-post window before the training END (a window sitting inside the
+    // envelope is moved out as pre-fuel), snapped to −75 off the EARLIEST block start.
+    const pre = windows.filter(w => w !== post && w.time < latestEnd).sort((a, z) => z.time - a.time)[0]
     if (pre) {
       pre.time = clamp(earliestStart - PRE_WORKOUT_SNAP_MIN)
       pre.rule = pre.kind === 'meal' ? 'pre-training-main' : 'pre-training-snack'
