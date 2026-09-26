@@ -4085,6 +4085,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/character/maturity-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Weekly per-dimension maturity (csapatfal érettség-görbe, mezo-a9bo7.11): the stored ISO weeks in the window, oldest first, plus the CURRENT week computed live (live=true). A week without stored rows is absent — never back-filled (ADR 0049). */
+        get: operations["getMaturityHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/character/run/{runId}": {
         parameters: {
             query?: never;
@@ -10381,6 +10398,22 @@ export interface components {
         CharacterRunResponse: {
             summary: components["schemas"]["CharacterRunSummary"];
             observations: components["schemas"]["CharacterRunObservation"][];
+        };
+        CharacterMaturityHistory: {
+            weeks: components["schemas"]["CharacterMaturityWeek"][];
+        };
+        CharacterMaturityWeek: {
+            /** Format: date */
+            weekStart: string;
+            live: boolean;
+            dimensions: components["schemas"]["CharacterMaturityPoint"][];
+        };
+        CharacterMaturityPoint: {
+            key: string;
+            title: string;
+            expertKey?: string | null;
+            maturity: number;
+            claimCount: number;
         };
         TeamEdition: {
             /** Format: date */
@@ -23179,6 +23212,46 @@ export interface operations {
                 };
             };
             /** @description to before from, or the span exceeds 62 days */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMaturityHistory: {
+        parameters: {
+            query?: {
+                weeks?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The history (the live current week is always the last element) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterMaturityHistory"];
+                };
+            };
+            /** @description weeks outside 1..26 */
             400: {
                 headers: {
                     [name: string]: unknown;

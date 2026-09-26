@@ -2,6 +2,9 @@ package io.mrkuhne.mezo.feature.character;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.CharacterMaturityHistory;
+import io.mrkuhne.mezo.api.dto.CharacterMaturityPoint;
+import io.mrkuhne.mezo.api.dto.CharacterMaturityWeek;
 import io.mrkuhne.mezo.feature.auth.service.UserFanOut;
 import io.mrkuhne.mezo.feature.character.config.CharacterMaturityProperties;
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
@@ -93,6 +96,43 @@ class CharacterMaturityIT extends AbstractIntegrationTest {
         UUID owner = seededOwner();
         new CharacterMaturityJob(userFanOut, service, new CharacterMaturityProperties("-", "Europe/Budapest")).run(WED);
         assertThat(weeks.findByCreatedByAndWeekStartBetweenOrderByWeekStartAsc(owner, MON, MON)).hasSize(8);
+    }
+
+    @Test
+    void history_storedWeeksThenTheLiveCurrentWeek_gapsStayGaps() {
+        UUID owner = seededOwner();
+        UUID recovery = dimensions.findByCreatedByAndKey(owner, "recovery").orElseThrow().getId();
+        claim(owner, recovery, "0.50");
+        service.snapshot(owner, WED.minusWeeks(3)); // W-3 stored
+        service.snapshot(owner, WED.minusWeeks(1)); // W-1 stored; W-2 never ran → absent
+        claim(owner, recovery, "0.80");             // only the live week sees this one
+
+        CharacterMaturityHistory h = service.history(owner, WED, 8);
+
+        assertThat(h.getWeeks()).extracting(CharacterMaturityWeek::getWeekStart)
+                .containsExactly(MON.minusWeeks(3), MON.minusWeeks(1), MON);
+        assertThat(h.getWeeks()).extracting(CharacterMaturityWeek::getLive).containsExactly(false, false, true);
+        assertThat(recoveryPoint(h.getWeeks().get(1)).getMaturity()).isEqualTo(40);
+        CharacterMaturityPoint live = recoveryPoint(h.getWeeks().get(2));
+        assertThat(live.getMaturity()).isEqualTo(66);
+        assertThat(live.getClaimCount()).isEqualTo(2);
+        assertThat(live.getExpertKey()).isEqualTo("szomnologus");
+        assertThat(h.getWeeks().get(2).getDimensions()).hasSize(8);
+    }
+
+    @Test
+    void history_windowExcludesOlderWeeks_andNeverShowsAnotherOwnersRows() {
+        UUID owner = seededOwner();
+        UUID other = seededOwner();
+        service.snapshot(owner, WED.minusWeeks(8)); // outside an 8-week window
+        service.snapshot(other, WED.minusWeeks(1));
+
+        CharacterMaturityHistory h = service.history(owner, WED, 8);
+        assertThat(h.getWeeks()).extracting(CharacterMaturityWeek::getWeekStart).containsExactly(MON);
+    }
+
+    private static CharacterMaturityPoint recoveryPoint(CharacterMaturityWeek week) {
+        return week.getDimensions().stream().filter(p -> p.getKey().equals("recovery")).findFirst().orElseThrow();
     }
 
     private UUID seededOwner() {

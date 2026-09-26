@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.api.dto.CharacterDimensionSummary;
 import io.mrkuhne.mezo.api.dto.CharacterExpertDto;
 import io.mrkuhne.mezo.api.dto.CharacterExpertsResponse;
 import io.mrkuhne.mezo.api.dto.CharacterFeedItem;
+import io.mrkuhne.mezo.api.dto.CharacterMaturityHistory;
 import io.mrkuhne.mezo.api.dto.CharacterOverviewResponse;
 import io.mrkuhne.mezo.api.dto.CharacterRunResponse;
 import io.mrkuhne.mezo.api.dto.CharacterRunSummary;
@@ -573,6 +574,19 @@ class CharacterApiIT extends ApiIntegrationTest {
         CharacterDimensionResponse one = getForBody("/api/character/dimension/recovery", ownerAuthHeaders(),
                 HttpStatus.OK, CharacterDimensionResponse.class);
         assertThat(one.getMaturity()).isEqualTo(66);
+    }
+
+    @Test
+    void maturityHistory_freshOwner_isExactlyTheLiveWeek_andTheWindowIsBounded() {
+        CharacterMaturityHistory h = getForBody("/api/character/maturity-history", ownerAuthHeaders(),
+                HttpStatus.OK, CharacterMaturityHistory.class);
+        assertThat(h.getWeeks()).hasSize(1);
+        assertThat(h.getWeeks().get(0).getLive()).isTrue();
+        assertThat(h.getWeeks().get(0).getDimensions()).hasSize(8);
+        assertHasRequestError(getForBody("/api/character/maturity-history?weeks=0", ownerAuthHeaders(),
+                HttpStatus.BAD_REQUEST, String.class), "CHARACTER_RUN_RANGE_INVALID");
+        assertHasRequestError(getForBody("/api/character/maturity-history?weeks=27", ownerAuthHeaders(),
+                HttpStatus.BAD_REQUEST, String.class), "CHARACTER_RUN_RANGE_INVALID");
     }
 
     private void saveActiveClaim(UUID owner, UUID dimensionId, String confidence) {
