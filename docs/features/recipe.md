@@ -105,6 +105,6 @@ Backend: `RecipeApiIT`, `RecipeServiceIT`, `RecipeRepositoryIT`, `RecipeMapperTe
 - **Backend:** `backend/src/main/java/io/mrkuhne/mezo/feature/recipe/{entity/RecipeEntity,entity/RecipeIngredientEntity,repository/RecipeRepository,repository/RecipeIngredientRepository,mapper/RecipeMapper,service/RecipeService,service/RecipeBreakdownService,service/RecipeBreakdownProseService,service/RecipeWorkshopService,service/RecipeWorkshopValidator,controller/RecipeController,controller/RecipeWorkshopController}.java`
 - **Contract:** `api/feature/recipe/recipe.yml`
 - **FE data:** `frontend/src/data/fuel/{recipeApi,recipeHooks,recipeMacros,pantryImpact,queryKeys}.ts`
-- **FE views/sheets/components:** `frontend/src/features/fuel/pages/{FuelRecipesPage,RecipeDetailPage,RecipeEditorPage,RecipeWorkshopPage}.tsx`, `RecipeCard`, `RecipeFitBadge`, `RecipeIngredientList`/`Row`, `RecipeLogsList`, `RecipeOverrideRow`, `RecipeScoreSheet`, `IngredientPickerSheet`
+- **FE views/sheets/components:** `frontend/src/features/fuel/pages/{FuelRecipesPage,RecipeDetailPage,RecipeEditorPage,RecipeWorkshopPage}.tsx`, `RecipeCard`, `RecipeFitBadge`, `RecipeIngredientList`/`Row`, `RecipeLogsList`, `RecipeOverrideRow`, `IngredientPickerSheet` (the score opens on `FuelRecipeScorePage` → `FuelScoreSurface`; `RecipeScoreSheet` was deleted in `mezo-8slef`)
 - **Tests:** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe/*.java`
 - **Docs/specs:** [`pantry.md`](pantry.md), [`fuel.md`](fuel.md), the six driving specs listed in §1, [ADR 0012](../decisions/0012-consumer-owned-llm-ports.md)
