@@ -39,6 +39,9 @@ const GRANDFATHERED = {
   // mezo-ah18.14(d): the only two unnamed PKs in the schema (app_user.id,
   // user_profiles.created_by) — shipped in v1.0.0, left as-is by decision.
   '202606101200_mezo-v67_create_auth.sql': new Set(['inline-primary-key']),
+  // mezo-a9bo7.21: released the same day with an inline thread_id FK and two ix_ indexes;
+  // 202609262000_mezo-a9bo7_team_chat_naming.sql renames all three in the live schema.
+  '202609261500_mezo-a9bo7_team_chat.sql': new Set(['inline-foreign-key', 'index-prefix']),
 };
 
 // `(?:\.\d+)*` (zero or more), not `?` (at most one): CLAUDE.md mandates the
@@ -156,7 +159,7 @@ function lintSql(file, absPath) {
   while ((m = idxRe.exec(sql)) !== null) {
     const [, unique, name] = m;
     const ok = unique ? /^(uq_|idx_)/.test(name.toLowerCase()) : /^idx_/.test(name.toLowerCase());
-    if (!ok) report(file, `index \`${name}\` should carry the \`${unique ? 'uq_/idx_' : 'idx_'}\` prefix`);
+    if (!ok && !allow.has('index-prefix')) report(file, `index \`${name}\` should carry the \`${unique ? 'uq_/idx_' : 'idx_'}\` prefix`);
     if (name.length > 63) report(file, `index name \`${name}\` exceeds the 63-char Postgres limit`);
   }
 }

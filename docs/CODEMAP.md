@@ -804,9 +804,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     ToolWorkStrip.tsx, VerdictArc.tsx, experimentStatus.tsx, riseStyle.ts, useFeedSession.ts, useTeamFeed.ts
   - **logic:** boopNavigation.ts, chatRefs.ts, coachingCopy.ts, diagnosisCatalog.ts, diagnosisCopy.ts,
     diagnosisTeam.ts, domains.ts, factCopy.ts, findings.ts, humanizeCron.ts, lifecycle.ts, memoirArchive.ts,
-    metricFormat.ts, patternCatalog.ts, patternEvidence.ts, patternHistory.ts, predictionStatus.ts, quickQuestions.ts,
-    roladCopy.ts, team.ts, teamChat.ts, teamEdition.ts, teamFeed.fixtures.ts, teamFeed.ts, teamRooms.ts,
-    toolDomains.ts, useStickToBottom.ts, useVoiceInput.ts, verdicts.ts
+    metricFormat.ts, patternCatalog.ts, patternCopy.ts, patternEvidence.ts, patternHistory.ts, predictionStatus.ts,
+    quickQuestions.ts, roladCopy.ts, team.ts, teamChat.ts, teamEdition.ts, teamFeed.fixtures.ts, teamFeed.ts,
+    teamRooms.ts, toolDomains.ts, useStickToBottom.ts, useVoiceInput.ts, verdicts.ts
   - **root:** boop-world.css, kerdezd.css, useRoladInbox.ts
 
 ### intention
