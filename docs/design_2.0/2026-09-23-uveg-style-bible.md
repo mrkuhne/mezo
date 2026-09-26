@@ -558,3 +558,23 @@ Prototype: the WHOLE Mezo section in one file, [`prototypes/uveg-mezo-teljes.htm
     feed as the wall's source page). Ask before styling a page the new world has already replaced.
 71. **Builders still save the whole stylesheet (rule 41 again).** One U9 builder used `sed -i` on `prototype.css`; all five
     blocks survived because integration re-checked every builder's key selectors before the structure test pinned them.
+
+### U9b · Rólad — a közös kép (`mezo-zpxv7`, 2026-09-26)
+
+The one slice allowed to move behaviour: `/mezo/rolad` became the csapatfal D3 „közös kép” page (quote · decision inbox ·
+facts with owner · life-event timeline · „A te kezedben” · doors) and the Tudástár inbox moved there (the Tudástár keeps
+the archive and a pointer). New backend: fact `owner` and a 14-day „Most ne” snooze. No new sprite icons. Spec
+`docs/superpowers/specs/2026-09-26-rolad-kozos-kep-design.md`; prototype `uveg-mezo-teljes.html#rolad`.
+
+72. **A button's promise is a backend contract.** The approved card said „Most ne — később újra megkérdezzük”, but
+    reject was terminal. Before relabelling an action, read what the endpoint does; a promise the backend cannot keep
+    is either a new state (this slice: snooze) or different words. Then check every job that can delete the thing you
+    just promised to bring back (the nightly graph prune aged snoozed candidates out before they returned).
+73. **Moving a surface moves its styles, not only its component.** The inbox cards and the week banner carried
+    `.tud9`-scoped rules; on Rólad they rendered unstyled (the banner squeezed into a 70px column at 320px, caught only
+    by the runtime pass). When a component changes page root, grep every class it renders and re-own the rules under
+    the new prefix in the same change; drop the old half only when its last consumer is gone.
+74. **A decision UI confirms only what the server recorded.** The afterlife line („Bekerült…”) is shown optimistically;
+    it must roll back when the mutation fails, or the page claims a decision that never happened.
+75. **Two sessions, one timestamp.** A parallel slice's migration landed with the same `yyyyMMddHHmm` prefix; the rebase
+    kept both and moved ours an hour later. Re-run the full backend suite after any rebase that brings in a migration.
