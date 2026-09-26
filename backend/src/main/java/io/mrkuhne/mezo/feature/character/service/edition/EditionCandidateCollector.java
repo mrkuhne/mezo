@@ -131,7 +131,15 @@ public class EditionCandidateCollector {
         // nélkül a poszt body-ja NOT NULL, ezért title-re esünk vissza (a collect()-végi szűrő dobja
         // el, ha még az is üres).
         String recordText = isBlank(pattern.getMechanism()) ? pattern.getTitle() : pattern.getMechanism();
-        return new EditionCandidate(SOURCE_PATTERN, id, character, genre, pattern.getTitle(),
+        // mezo-0469: a statisztikai sor tárolt címe a belső „A ↔ B" párcím, a mechanizmusa a gépi
+        // Pearson-leírás — a falra a pár kérdése és kézzel írt miértje megy (a reflexiós sor saját,
+        // emberi szövege marad).
+        String title = pattern.getTitle();
+        if (pair != null && PatternEntity.KIND_STATISTICAL.equals(pattern.getKind())) {
+            if (!isBlank(pair.getQuestionHu())) title = pair.getQuestionHu();
+            if (!isBlank(pair.getMechanismHu())) recordText = pair.getMechanismHu();
+        }
+        return new EditionCandidate(SOURCE_PATTERN, id, character, genre, title,
                 recordText, facts, List.of(new EditionRef(SOURCE_PATTERN, id)),
                 waiting, false, pattern.getLastDetectedAt(), "/mezo/patterns/" + pattern.getPairKey(),
                 pair != null ? crossDomainGuest(pair, character) : List.of());
@@ -147,8 +155,11 @@ public class EditionCandidateCollector {
         List<String> facts = List.of(
                 String.format("%d közös nap", n),
                 String.format("%d kell", minN));
+        // mezo-0469: kérdés-cím és miért-mondat, nem a belső „A ↔ B" párcím.
+        String title = isBlank(pair.getQuestionHu()) ? pair.getTitle() : pair.getQuestionHu();
+        String recordText = isBlank(pair.getMechanismHu()) ? title : pair.getMechanismHu();
         return Optional.of(new EditionCandidate(SOURCE_PAIR, pair.getKey(), character, EditionGenre.SEJTES,
-                pair.getTitle(), pair.getTitle(), facts, List.of(new EditionRef(SOURCE_PAIR, pair.getKey())),
+                title, recordText, facts, List.of(new EditionRef(SOURCE_PAIR, pair.getKey())),
                 false, false, null, "/mezo/patterns/" + pair.getKey(), crossDomainGuest(pair, character)));
     }
 

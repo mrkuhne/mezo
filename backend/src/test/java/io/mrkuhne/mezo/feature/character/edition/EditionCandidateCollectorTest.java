@@ -155,7 +155,9 @@ class EditionCandidateCollectorTest {
         assertThat(c.sourceKind()).isEqualTo("pattern");
         assertThat(c.genre()).isEqualTo(EditionGenre.KERDES);
         assertThat(c.character()).isEqualTo(TeamCharacter.SZUNYA);
-        assertThat(c.recordText()).isEqualTo("mechanism text");
+        // mezo-0469: a statisztikai sor a pár kérdését és miértjét viszi, nem a nyers címet/Pearson-leírást
+        assertThat(c.title()).isEqualTo("q");
+        assertThat(c.recordText()).isEqualTo("mech");
         assertThat(c.facts()).containsExactly("12 nap");
         assertThat(c.sourceRoute()).isEqualTo("/mezo/patterns/pair-1");
         assertThat(c.waiting()).isTrue();
@@ -257,7 +259,9 @@ class EditionCandidateCollectorTest {
         assertThat(c.sourceKind()).isEqualTo("pair");
         assertThat(c.genre()).isEqualTo(EditionGenre.SEJTES);
         assertThat(c.character()).isEqualTo(TeamCharacter.FALAT);
-        assertThat(c.recordText()).isEqualTo("Gyűlik cím");
+        // mezo-0469: a gyűlő pár is kérdéssel és miért-mondattal megy, nem a párcímmel
+        assertThat(c.title()).isEqualTo("q");
+        assertThat(c.recordText()).isEqualTo("mech");
         assertThat(c.facts()).containsExactly("7 közös nap", "10 kell");
         assertThat(c.sourceRoute()).isEqualTo("/mezo/patterns/pair-x");
         assertThat(c.waiting()).isFalse();

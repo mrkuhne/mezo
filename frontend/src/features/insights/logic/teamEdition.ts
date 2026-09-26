@@ -13,6 +13,7 @@
  * A modul SOSEM fogalmaz (ADR 0049): a poszt szövege a kiadás saját szövege.
  */
 import type { TeamEdition, TeamEditionPost } from '@/data/character/characterApi'
+import { patternHeadline } from './patternCopy'
 import { TEAM, type TeamCharacterId } from './team'
 import { byDayDesc, dayLabel, type FeedDay, type FeedPost, type TeamFeed } from './teamFeed'
 
@@ -25,7 +26,8 @@ export function editionPost(e: TeamEdition, p: TeamEditionPost): FeedPost {
     kind: p.genre,
     author: p.characterKey,
     occurredAt: e.day,
-    ...(p.title ? { title: p.title } : {}),
+    // A korábbi kiadások nyilas párcímmel születtek — a falon ezek is mondatként látszanak.
+    ...(p.title ? { title: p.title.includes('↔') ? patternHeadline(p.title) : p.title } : {}),
     body: p.body,
     sourceRoute: p.sourceRoute,
     waiting: p.genre === 'kerdes',

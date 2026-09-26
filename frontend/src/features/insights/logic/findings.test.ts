@@ -71,6 +71,6 @@ test('confidenceMeta translates p honestly into Hungarian', () => {
 })
 
 test('pairLine marks the next-day side only on lagged pairs', () => {
-  expect(pairLine(base)).toBe('esti lezárás ↔ másnapi alvásminőség')
-  expect(pairLine({ ...base, lagDays: 0 })).toBe('esti lezárás ↔ alvásminőség')
+  expect(pairLine(base)).toBe('Figyelem: esti lezárás és másnapi alvásminőség')
+  expect(pairLine({ ...base, lagDays: 0 })).toBe('Figyelem: esti lezárás és alvásminőség')
 })

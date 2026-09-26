@@ -13,6 +13,7 @@ import type { CharacterFeedItem, CharacterReplySource } from '@/data/character/c
 import type { Experiment, Observation, ObservationChoice, Pattern, PatternMonitorPair, Prediction } from '@/data/types'
 import { addDays, huMonthDayDow, localDateString } from '@/shared/lib/dates'
 import type { EvidenceItem } from '@/shared/ui/evidence/observationEvidence'
+import { isStatisticalMechanism, patternHeadline, patternPlainLine } from './patternCopy'
 import { TEAM, characterForMetricDomain, characterForPersona, type TeamCharacterId } from './team'
 
 export type FeedPostKind =
@@ -161,11 +162,13 @@ export function dayLabel(key: string, today: string): string {
 
 function patternPost(p: Pattern, pairs: PatternMonitorPair[], today: string): FeedPost | null {
   const owner = ownerForPattern(p, pairs)
+  const pair = pairs.find(x => x.key === p.pairKey)
   const base = {
     id: `pattern:${p.id}`,
     ...owner,
-    title: p.title,
-    body: p.mechanism,
+    // A kérdés és egy emberi mondat — a belső párcím és a gépi statisztika sosem (mezo-0469).
+    title: patternHeadline(p.title, pair),
+    body: patternPlainLine(p.mechanism, pair),
     sourceRoute: `/mezo/patterns/${p.pairKey}`,
   }
   const n = p.evidenceHits + p.evidenceMisses
@@ -193,14 +196,16 @@ function observationPost(o: Observation, patterns: Pattern[], pairs: PatternMoni
   if (o.card !== 'fresh' && o.card !== 'return') return null
   const pattern = patterns.find(p => p.id === o.patternId)
   const owner = pattern ? ownerForPattern(pattern, pairs) : { author: 'mezo' as const }
+  const pair = pattern ? pairs.find(x => x.key === pattern.pairKey) : undefined
+  const text = isStatisticalMechanism(o.text) ? patternPlainLine(o.text, pair) : o.text
   const n = o.evidenceHits + o.evidenceMisses
   return {
     id: `observation:${o.id}`,
     kind: o.question ? 'kerdes' : 'megfigyeles',
     ...owner,
     occurredAt: o.occurredAt,
-    title: o.title,
-    body: [o.text, o.question].filter(Boolean).join('\n\n'),
+    title: o.title.includes('↔') ? patternHeadline(o.title, pair) : o.title,
+    body: [text, o.question].filter(Boolean).join('\n\n'),
     evidence: o.evidence.length ? o.evidence : undefined,
     ...(o.minN != null ? { honesty: honestyFor(n, o.minN) } : {}),
     sourceRoute: o.hypothesisKey ? `/mezo/patterns/${o.hypothesisKey}` : pattern ? `/mezo/patterns/${pattern.pairKey}` : '/mezo/patterns',

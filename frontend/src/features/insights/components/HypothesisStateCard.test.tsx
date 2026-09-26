@@ -65,11 +65,23 @@ function pattern(patch: Partial<Pattern> = {}): Pattern {
   }
 }
 
+test('a catalog pair shows its question, never the arrow title (mezo-0469)', () => {
+  const catalog = { ...pair, title: 'Esti lezárás ↔ rákövetkező alvásminőség',
+    questionHu: 'Jobban alszol, ha este lezárod a napot?',
+    mechanismHu: 'Az esti lezárás lecsendesítheti az elalvást — jobb alvásminőség.' }
+  const { container } = render(<HypothesisStateCard pattern={pattern()} pair={catalog} dayCount={16} plan={plan} onDecide={vi.fn()} />)
+  expect(screen.getByText('Jobban alszol, ha este lezárod a napot?')).toBeInTheDocument()
+  expect(screen.getByText('Az esti lezárás lecsendesítheti az elalvást — jobb alvásminőség.')).toBeInTheDocument()
+  expect(container.textContent).not.toContain('↔')
+})
+
 test('the card carries the eyebrow, the hypothesis question and the human answer', () => {
   render(<HypothesisStateCard pattern={pattern()} pair={pair} dayCount={16} plan={plan} onDecide={vi.fn()} />)
   expect(screen.getByText('Kapcsolatok · alvás')).toBeInTheDocument()
-  expect(screen.getByText('Anna és az alvásod')).toBeInTheDocument()
-  expect(screen.getByText('Hipotézis: Ha Anna szerepel a naplódban, másnap többet alszol?')).toBeInTheDocument()
+  // a cím a hipotézis kérdése, alatta a miértje — belső párcím / „Hipotézis:" előtag nincs (mezo-0469)
+  expect(screen.getByText('Ha Anna szerepel a naplódban, másnap többet alszol?')).toBeInTheDocument()
+  expect(screen.getByText('Anna említése mellett hosszabb alvás jött ki.')).toBeInTheDocument()
+  expect(screen.queryByText(/Hipotézis:/)).not.toBeInTheDocument()
   // a grafikon 16 napja ≥ a terv 8-as minimuma — a döntéshez már elég
   expect(screen.getByText('Ígéretes — elég nap van a döntéshez.')).toBeInTheDocument()
 })

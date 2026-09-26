@@ -11,6 +11,7 @@ import {
   DayRing, DecisionNote, DecisionRow, DetailHero, StatePill, patternDecisionButtons, type DetailTone,
 } from '@/features/insights/components/DetailHero'
 import { DOMAIN_META } from '@/features/insights/logic/domains'
+import { patternHeadline } from '@/features/insights/logic/patternCopy'
 import { isStrongSignal } from '@/features/insights/logic/lifecycle'
 import { groupBalanceSentence, verdictSentence } from '@/features/insights/logic/verdicts'
 import type { Pattern, PatternMonitorPair, PatternStatus } from '@/data/types'
@@ -57,7 +58,8 @@ function hypothesis(pair: PatternMonitorPair): string {
   if (pair.key === 'weekend~late-meal-hour') {
     return 'Azt vizsgáljuk, hogy hétvégén későbbre csúszik-e az utolsó étkezésed.'
   }
-  return `Amit vizsgálunk: ${pair.questionHu}`
+  // A cím már a kérdés — ide a miértje kerül (mezo-0469: a nyilas párcím sosem látszik).
+  return pair.mechanismHu
 }
 
 /** Befagyott (megítélt) párnál a `pair.n` a DÖNTÉS pillanatának közös napjai, a gyűrű és a
@@ -107,7 +109,7 @@ export function PatternDetailHero({ pair, pattern, dayCount, onDecide }: {
       well={<span className="pdt-domain" data-pattern-domain={pair.metricBDomain}>
         <Icon3D name={PATTERN_DOMAIN_ART[pair.metricBDomain]} size={32} />
       </span>}
-      eyebrow={domain.label} title={pair.title}
+      eyebrow={domain.label} title={patternHeadline(pair.title, pair)}
       pill={<StatePill label={state.pill} tone={look.tone} art={look.art} />}>
       <p className="pdt-hypothesis">{hypothesis(pair)}</p>
       <div className="pdt-core">

@@ -35,10 +35,10 @@ test('the strip carries the four pre-registered numbers of the plan', () => {
   const { container } = render(<TestPlanTiles plan={plan} pair={pair} />)
   const strip = container.querySelector('.pdt-plan-strip') as HTMLElement
   expect([...strip.children].map((cell) => cell.textContent)).toEqual([
-    '+1 napeltolás',
-    '8 napkell minimum',
-    'többvárt irány',
-    '60 napablak',
+    'másnapnézem a hatást',
+    '8 napkell a döntéshez',
+    'többamit várok',
+    '60 napennyit nézek vissza',
   ])
 })
 
@@ -48,11 +48,16 @@ test('a negative expected direction reads as the opposite word', () => {
   )
   const strip = container.querySelector('.pdt-plan-strip') as HTMLElement
   expect(strip.textContent).toContain('kevesebb')
-  expect(strip.textContent).toContain('+0 nap')
+  expect(strip.textContent).toContain('aznap')
 })
 
 test('the binary series says it is a daily yes/no, the numeric one a daily value', () => {
   render(<TestPlanTiles plan={plan} pair={pair} />)
-  expect(screen.getByText('napi jel · 0 / 1')).toBeInTheDocument()
-  expect(screen.getByText('napi érték')).toBeInTheDocument()
+  expect(screen.getByText('megtörtént-e aznap')).toBeInTheDocument()
+  expect(screen.getByText('mennyi volt aznap')).toBeInTheDocument()
+})
+
+test('no arrow glyph sits between the two halves (mezo-0469)', () => {
+  const { container } = render(<TestPlanTiles plan={plan} pair={pair} />)
+  expect(container.textContent).not.toMatch(/[→↔]/)
 })
