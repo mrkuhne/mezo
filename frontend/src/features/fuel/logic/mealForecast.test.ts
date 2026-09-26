@@ -27,7 +27,8 @@ describe('mealForecast', () => {
   it('late high-load dinner → sleep row and the no-judgement tip', () => {
     const f = mealForecast({ ...base, level: 'high', energyText: E.high, kcal: 1120, eatenAt: '22:15', window: { from: '19:00', to: '20:30' }, next: null })
     expect(f.late).toBe(true)
-    expect(f.rows[1].body).toContain('utolsó étkezése')
+    // Szégyenmentes: nem tiltás ("nem kell több"), hanem semleges elég-e állítás (owner 2026-09-26).
+    expect(f.rows[1].body).toBe('Ez volt a nap utolsó étkezése, reggelig ennyi elég.')
     expect(f.rows[2].title).toBe('Alvás')
     expect(f.rows[2].body).toContain('nyugtalanabb')
     expect(f.tip).toContain('ne az éjszaka mérésein')

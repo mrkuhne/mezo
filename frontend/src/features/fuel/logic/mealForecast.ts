@@ -51,7 +51,7 @@ export function mealForecast(i: ForecastInput): { rows: ForecastRow[]; tip: stri
     else body += `. ${Az(i.next.label)} ablaka ezért kicsit később lehet, vagy kisebb adag is elég.`
     rows.push({ icon: 't-clock', title: 'Mikor leszel éhes', body })
   } else {
-    rows.push({ icon: 't-clock', title: 'Mikor leszel éhes', body: 'Ez volt a nap utolsó étkezése, reggelig nem kell több.' })
+    rows.push({ icon: 't-clock', title: 'Mikor leszel éhes', body: 'Ez volt a nap utolsó étkezése, reggelig ennyi elég.' })
   }
 
   if (late) {
