@@ -95,7 +95,9 @@ export function SportCeremony({
     ranRef.current = true
     const stage = stageRef.current
     if (!stage) return
-    const started = performance.now()
+    // mezo-7tj3j: a start az ELSŐ rAF-időbélyeg — a rAF-óra és a performance.now() origója
+    // eltérhet, a clamp pedig ilyenkor 0-n ragadó menetet ad.
+    let started: number | null = null
     const paint = (progress: number) => {
       const progressed = progress * score.ratio
       stage.style.setProperty('--p', String(progressed))
@@ -111,8 +113,7 @@ export function SportCeremony({
       })
     }
     const frame = (now: number) => {
-      // Clamp both ends (WorkoutCeremony fix round 1): a rAF timestamp can land before
-      // `started`.
+      if (started === null) started = now
       const t = Math.max(0, Math.min(1, (now - started) / DURATION_MS))
       paint(1 - (1 - t) ** 3)
       if (t < 1 && stage.isConnected) requestAnimationFrame(frame)

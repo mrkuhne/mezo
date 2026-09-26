@@ -113,6 +113,8 @@ test('the pass drives --p, the counters and the star classes, then reveals the r
   const { container } = render(<WorkoutCeremony {...props({ reducedMotion: false })} />)
   const stage = container.querySelector('.cer') as HTMLElement
   expect(stage.style.getPropertyValue('--p')).toBe('0')
+  // mezo-7tj3j: az első frame horgonyoz (started = az első rAF-időbélyeg), utána mér.
+  frames.shift()?.(0)
   // Halfway through the 1700 ms star phase: cubic ease-out 1-(1-.5)^3 = .875 of the ratio.
   frames.shift()?.(850)
   expect(Number(stage.style.getPropertyValue('--p'))).toBeCloseTo(0.7, 5)

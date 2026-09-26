@@ -98,7 +98,10 @@ export function FuelMealCeremony({
     const root = rootRef.current
     const sheet = sheetRef.current
     if (!root || !sheet) return
-    const started = performance.now()
+    // mezo-7tj3j: a start az ELSŐ rAF-időbélyeg, nem performance.now() — a két óra origója
+    // eltérhet (jsdom alatt másodpercekkel is), és a "mindkét végén vágás" akkor 0-n ragadó
+    // count-upot ad, amíg a rAF-óra be nem éri a másikat.
+    let started: number | null = null
     const counts: Record<string, number> = { kcal, p: proteinG, c: carbsG, f: fatG }
     const paint = (ms: number) => {
       root.style.setProperty('--rise', String(1 - ease(Math.min(1, ms / RISE_MS))))
@@ -116,8 +119,7 @@ export function FuelMealCeremony({
       root.classList.toggle('is-b2', ms >= BEATS.b2)
     }
     const frame = (now: number) => {
-      // A rAF időbélyeg a `started` ELÉ is eshet (az edzés-ceremónia tanulsága), ezért
-      // mindkét végén vágunk.
+      if (started === null) started = now
       const ms = Math.max(0, Math.min(DURATION_MS, now - started))
       paint(ms)
       if (ms < DURATION_MS && root.isConnected) requestAnimationFrame(frame)
