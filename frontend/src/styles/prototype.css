@@ -29027,13 +29027,8 @@ main.settings-page {
 /* mezo-5knnj · the header, the status bar and the page are ONE color, no transition.
    (1) MozaikPage's per-tone top wash (.mz-p-lav on A napom, …) painted each page its own
    colored band under the header — dark pages sit straight on the shared ground instead.
-   (2) The aurora's upper blobs bled into the header zone, so the opaque header read as a
-   darker strip; they now start below it (blur 60px ≈ 120px reach), leaving the top plain. */
+   (2) See mezo-h8k6g below: the header is see-through, so the aurora runs to the top. */
 :root[data-theme="dark"] .mz-page { background: transparent; }
-:root[data-theme="dark"] .uv-aurora i:nth-child(1) { top: 300px; }
-:root[data-theme="dark"] .uv-aurora i:nth-child(2) { top: 230px; }
-:root[data-theme="dark"] .uv-aurora i:nth-child(3) { top: 600px; }
-:root[data-theme="dark"] .uv-aurora i:nth-child(4) { top: 820px; }
 
 /* (3) The page-top ambient halos (--halo-*) painted full-width colored bands on the heroes
    that wear them (Terv poszter, sablonok, heti térkép, …). Dark keeps the same hues at ~40%
@@ -29046,3 +29041,25 @@ main.settings-page {
   --halo-violet: radial-gradient(ellipse at 50% 30%, rgba(154,95,196,0.10) 0%, transparent 60%);
   --halo-coral:  radial-gradient(ellipse at 50% 24%, rgba(255,107,74,0.14) 0%, rgba(212,168,83,0.05) 32%, transparent 64%);
 }
+
+/* mezo-h8k6g · the background runs unbroken to the top of the phone. The opaque canvas
+   header + status bar cut the tinted ground off in a hard band (owner). In dark both are
+   see-through now: the header layer is a frosted veil (transparent, backdrop blur) that also
+   reaches up behind the status bar, so at rest you see the same aurora straight through it,
+   and content scrolling underneath melts into a blur instead of colliding with the controls.
+   Its bottom edge fades out over 18px so no line marks where the header ends. */
+:root[data-theme="dark"] .status-bar { background: transparent; }
+:root[data-theme="dark"] .app-head-bg {
+  top: -60px;
+  height: calc(100% + 60px + 18px);
+  background: transparent;
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+  backdrop-filter: blur(22px) saturate(1.3);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 18px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 18px), transparent 100%);
+}
+
+/* At rest the veil is fully clear (seamless with the page); once the header condenses on
+   scroll, a light canvas tint joins the blur so the controls stay legible over busy cards. */
+:root[data-theme="dark"] .app-head-bg { transition: background-color 0.3s ease; }
+:root[data-theme="dark"] .app-head.is-cond .app-head-bg { background-color: color-mix(in srgb, var(--canvas) 45%, transparent); }
