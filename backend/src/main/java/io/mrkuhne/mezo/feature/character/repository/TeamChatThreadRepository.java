@@ -23,6 +23,11 @@ public interface TeamChatThreadRepository extends JpaRepository<TeamChatThreadEn
     List<TeamChatThreadEntity> findByCreatedByAndOpenedAtBetweenAndDeletedFalse(
             UUID createdBy, Instant from, Instant to);
 
+    /** This rule's episodes for {@code TeamChatContext.pastEpisodes} — oldest first, the current
+     *  ügy filtered out by the caller (it is context for the line being written, not its own past). */
+    List<TeamChatThreadEntity> findByCreatedByAndFlagKeyAndOpenedAtGreaterThanEqualAndDeletedFalseOrderByOpenedAtAsc(
+            UUID createdBy, String flagKey, Instant since);
+
     /** The day's push count for {@code TeamChatReads} ({@code pushesToday}). */
     long countByCreatedByAndPushedTrueAndOpenedAtBetweenAndDeletedFalse(UUID createdBy, Instant from, Instant to);
 

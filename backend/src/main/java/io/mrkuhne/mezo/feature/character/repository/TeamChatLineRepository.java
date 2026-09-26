@@ -18,4 +18,8 @@ public interface TeamChatLineRepository extends JpaRepository<TeamChatLineEntity
     List<TeamChatLineEntity> findByIdInAndCreatedBy(Collection<UUID> ids, UUID createdBy);
 
     boolean existsByThreadIdAndKind(UUID threadId, String kind);
+
+    /** A past episode's lines for {@code TeamChatContext} reactions — the feedback lookup keys off
+     *  their ids ({@code message_feedback.artifact_id}). */
+    List<TeamChatLineEntity> findByThreadIdAndDeletedFalse(UUID threadId);
 }
