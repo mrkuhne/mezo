@@ -28704,6 +28704,11 @@ main.settings-page {
 .tud9 .tud9-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .tud9 .tud9-btn:focus-visible { outline: 2px solid var(--c, var(--dv-sage)); outline-offset: 2px; }
 .tud9 .tud9-btn .t-ico { width: 20px; height: 20px; }
+.tud9 .tud9-no { display: block; width: 100%; margin-top: 8px; padding: 6px 0; border: 0; background: none;
+  font-size: 12px; font-weight: 600; text-align: center; text-decoration: underline; text-underline-offset: 2px;
+  color: var(--text-muted); cursor: pointer; }
+.tud9 .tud9-no:hover, .tud9 .tud9-no:focus-visible { color: var(--text-secondary); }
+.tud9 .tud9-no:focus-visible { outline: 2px solid var(--c, var(--dv-sage)); outline-offset: 2px; }
 .tud9 .tud9-foot { display: block; margin: 9px 0 0; font-size: 10.5px; line-height: 1.45; color: var(--text-muted); }
 .tud9 .tud9-prov { margin: 9px 0 0; font-size: 11.5px; line-height: 1.5; color: var(--text-secondary); }
 .tud9 .tud9-refine { display: flex; align-items: center; gap: 8px; margin-top: 11px; }
