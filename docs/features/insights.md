@@ -6,13 +6,11 @@ updated: 2026-09-26
 tags: [insights, mezo-tab, frontend, data-layer]
 key_files:
   - frontend/src/features/insights
-  - frontend/src/data/insights/insights.ts
-  - frontend/src/data/insights/knowledge.ts
-  - frontend/src/data/insights/chatHooks.ts
+  - frontend/src/data/insights
+  - frontend/src/data/character
   - frontend/src/data/feedback
   - frontend/src/shared/lib/markdown.tsx
   - frontend/src/features/insights/logic/coachingCopy.ts
-  - frontend/src/data/insights/coachingTraceHooks.ts
 related: [_platform-data-layer, _platform-design-system, today, me, character, companion, proactive]
 ---
 
@@ -803,6 +801,65 @@ day. The `.glass.tf-c-*` accent pairs in `boop-world.css` exist because `.glass`
 `--c` later in the bundle at equal specificity — without them every poster and glass chip on the
 wall was sage regardless of its character.
 
+**A csapat élő sávja és a csapat-chat szoba (Act III Task 12, `mezo-a9bo7.24`, `/mezo/elo`).**
+Below `StoryStrip` on the wall (`TeamFeedPage.tsx:50-51`) sits `components/feed/LiveStrip.tsx`, a
+FLAT `tf-live` panel (never glass — the day's poster stays the wall's one glass surface) that opens
+the chat room on tap. It shows the day's most recent character line (`logic/teamChat.ts`'s
+`stripText`: the newest non-`USER` line's speaker + `renderInline` body, bold-only) behind a
+pulsing `tf-live-dot` and the speaker's `FeedAvatar`, with a coral `tf-live-cnt` unread badge
+(`unreadCount`, counted since the room was last opened today, `localStorage['boop.teamChat.lastSeen']`
+— private/blocked storage just means the count never zeroes, never crashes). If no line has landed
+yet today but an ügy is already open, the strip falls back to the oldest `openThreads` entry's
+`ruleLabel` + „<owner> figyeli”; with neither a line nor an open ügy the strip renders nothing
+(`LiveStrip.tsx:31`) — no manufactured "all quiet" copy (ADR 0049). The eyebrow reads „ÉLŐBEN · A
+CSAPAT BESZÉL”.
+
+`pages/TeamChatPage.tsx` (route `mezo/elo` in `router.tsx:420`) is the room itself: an optional
+`?d=YYYY-MM-DD` (validated by a regex, garbage falls back to today) picks the day, defaulting to
+today's live view. It gates on `ScreenSkeleton` before the empty state (the `TeamFeedPage`
+precedent, avoids a "csend van" flash on half-loaded data), then renders a header
+(„Ma · élőben · <weekday>” or „<month day> · <weekday>”), a five-avatar „Mind az öten figyelnek —
+akkor szólnak, ha teendő van” banner (today only), three chips (nyitott ügy count, rendeződött
+count, „értesítés ma/aznap: n / pushBudget”), a glass **„Rád vár”** strip (`tf-strip tf-c-lav`,
+the oldest open ügy) that either scrolls to that ügy's opening line or — if the line belongs to a
+different day — navigates to `/mezo/elo?d=<that day>`, then the day's lines grouped by time-of-day
+(Reggel/Délben/Délután/Este/Éjjel, `logic/teamChat.ts`'s `groupByDayPart`, 05-11/11-14/14-18/18-22/
+else, split into consecutive same-part runs so an early-morning and a late-night block never merge),
+and finally, on today's room with any lines, a reply row: „Te hogy látod? Válaszolj…” opening a
+compose sheet against the oldest open ügy. Each character bubble carries a timestamp, and an
+`OPEN`/`RESOLVE` line adds a status tag (`nyitott`/`rendeződött HH:mm`/`lejárt`), a push indicator
+(`értesítettünk · HH:mm` or `csendben`), and „Miből látszik?” opening `EvidenceSheet` — the line's
+own `facts[]` list plus, for a `voiced` line, an honest note that only those numbers could have
+fed the sentence (a failed check falls back to the raw rule text). A still-`OPEN` line also carries
+the unified `ArtifactTrio` (feedback + „Elmesélem”/„Nem így érzem” reply) and, when the ügy offers
+actions (e.g. „Horgony −30 perc”), apply buttons that only show a confirmed „Beállítva: …” after the
+server accepts the write (never optimistically) and a Hungarian retry note on failure. `GUEST`/
+`SKEPTIC` lines (a second character or the Szkeptikus answering under the same ügy) render smaller
+and unlabelled by area, matching the wall's `FeedGuests` convention.
+
+`logic/teamChat.ts` is the pure layer behind both surfaces: `dayPartOf`/`groupByDayPart` (the
+time-of-day bucketing above), `stripText`/`unreadCount` (the live strip's copy + badge),
+`chips(day)` (open/resolved/pushes-today counts for the chip row) and `clockOf` (HH:mm formatting).
+It composes no text of its own — every sentence rendered comes from a `TeamChatLine.body` the
+backend wrote (ADR 0049).
+
+**Data layer.** `data/character/teamChatApi.ts` wraps three calls under
+`/api/character/team-chat` (`day(date?)`, `reply(threadId, text)`, `apply(threadId, actionKey)`) on
+the generated `TeamChatDay`/`TeamChatLine`/`TeamChatThread`/`TeamChatAction` contract types.
+`data/character/teamChatHooks.ts` follows the repo's `useDualQuery` idiom: `useTeamChat(date?)`
+keys on `['teamChat', date ?? null]`, serves `buildTeamChatDay(date)`/`MOCK_TEAM_CHAT_DAY` in mock
+mode (`staleTime: Infinity`, no refetch), and in real mode polls every 60s (`refetchInterval:
+60_000` — the chat is genuinely live) with an honest empty-day fallback (`realEmpty`, never the
+mock seed) on the unresolved window. `useTeamChatActions()` mirrors the `useAdviceActions`
+precedent — mock `reply`/`apply` no-op, real mode mutates and invalidates every cached `teamChat`
+day, and `apply` additionally invalidates whatever else that action key touches via the advice
+card's shared `ACTION_INVALIDATES` map (no separate copy for the chat room, `mezo-a9bo7.24`).
+`data/character/teamChatMock.ts` builds the mock seed from two small tables (`THREADS`/`LINES`,
+mirrored verbatim from the approved prototype `uveg-uzenofal.html`'s `elo()`) through ONE builder,
+`buildTeamChatDay`, so the seeded lines and their `openThreads` projection can never hand-drift
+apart — three ügyek (alvásadósság/Szunya, terhelés–táplálás mismatch/Mocor+Falat with a guest
+resolution, tartós stressz/Derű) across the fixed local date.
+
 **Mezo csapat-chat összefoglalója (Act III Task 15, `mezo-a9bo7.25`).** The evening edition may
 carry one Mezo `ertekeles` post with `sourceKind: 'team_chat_day'` („Ma n ügyön dolgoztunk: …”).
 `editionPost` maps it like any post; its `sourceRoute` is `/mezo/elo?d=<day>`, so „Miből
@@ -1081,6 +1138,7 @@ The boundary is **engineered for this swap**: rewrite `useInsights`/`useKnowledg
 
 All tests are **frontend Vitest** (no backend tests exist). They assert **verbatim Hungarian copy + mock counts + local interactivity** — i.e. they pin the mock as a contract.
 
+- **Csapat-chat (Act III Task 12/15, `mezo-a9bo7.24`/`.25`) — both modes:** `data/character/teamChatHooks.test.tsx` (`describe('mock mode')`/`describe('real mode')` — the dual-mode day read incl. the honest `realEmpty` fallback, `reply`/`apply` no-op vs mutate+invalidate); `features/insights/logic/teamChat.test.ts` (`groupByDayPart`'s time-of-day bucketing and same-part run-merging, `stripText`, `unreadCount`, `chips`); `features/insights/components/feed/LiveStrip.test.tsx` (latest-line copy, the open-ügy fallback when no line has landed yet, the hidden state with neither, the unread badge); `features/insights/pages/TeamChatPage.test.tsx` (`describe('TeamChatPage (mock mode)')` — day-part sections, the „Rád vár” strip's scroll-vs-cross-day-navigate branch, evidence sheet, apply/reply flows; `describe('TeamChatPage (real mode, failing saves)')` — a failed reply/apply keeps the composed text and renders the Hungarian retry note instead of a false success).
 - **Data-layer:** `frontend/src/data/insights/insightsData.test.tsx` (3 patterns all ≥ floor; `p1` critique; weekly score / 4 items; memoir title + 3 anchors; `recentlyConfirmed`×3; 4 predictions w/ validated `actual`; active experiment; `patternCategoryColor('response')`). `frontend/src/data/insights/chatData.test.tsx` (3 msgs assistant→user→assistant; tool/ref shapes). *(Knowledge has no dedicated `data/` test.)*
 - **Views:** `pages/{PatternsPage,MemoirPage,KnowledgeListPage,ChatPage,PredictionsPage,ExperimentsPage}.test.tsx`, plus `components/PatternDecisionCard.test.tsx` (the decision-inbox card, `mezo-tk88.4`). `MemoirPage.test.tsx` gained a **`(real mode)` describe** (since **W2**): with an MSW memoir fixture it renders the real title/body/anchors and does NOT render anniversary/archive; on the default 404 it renders the honest „készül" placeholder, not the demo fiction. **Since W4.1** the same file asserts the Phase-1 reaction row is gone in BOTH modes and the feedback chips are present in both (including real mode — that asymmetry was the `mezo-kr9v` bug), and that the 404 placeholder carries no chips (no artifact ⇒ nothing to vote on). **`WeeklyPage.test.tsx` was deleted with the tab (`mezo-p2tr`)** — its coverage (score hero, „tanulom" null-state, live suggestion prose w/o the inert buttons) moved to the `Heti` hub's own test files under `features/me/pages/` ([`me.md`](me.md) §2/§9 has the current per-page test map); `frontend/src/app/router.weeklyRedirect.test.tsx` (mock mode) pins the weekly path landing on `/me/week`'s `Heti` hub instead of a 404 or the retired tab — since `mezo-d20.1.1` that is a **two-hop** resolution for the legacy URL (`/insights/weekly` → `/mezo/weekly` → `/me/week`), which is exactly what makes the test worth keeping.
 - **Rólad (§2.0b, U9b `mezo-zpxv7`):** `pages/BoopAboutPage.test.tsx` replaces the old 3-door-pin assertions with the §2.0b ranking (quote → inbox → facts → timeline → note → doors) in both modes; `hooks/useRoladInbox.test.tsx` (every decision — accept/refine/snooze/reject — drops the id from the open `candidates`/`lifeEvents` lists and lands it in `settled` with the right `outcome`/title); `components/rolad/{RoladQuote,RoladInbox,RoladFacts,RoladTimeline}.test.tsx` and `logic/roladCopy.test.ts` (pure-helper unit tests: `pickQuoteClaim` skips `sensitive` claims and picks highest confidence, `factOwnerTag`, `candidateByline`, `topRoladFacts`). The inbox/conflict/life-event/season/`?start=`/real-mode-POST/degraded cases that used to live in `pages/KnowledgeListPage.test.tsx` moved here; `KnowledgeListPage.test.tsx` now asserts the `KnowledgeBaseView` pointer card (pending count → link to `/mezo/rolad`, zero → the quiet line) instead.
@@ -1216,6 +1274,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `logic/teamEdition.ts` — **`mezo-a9bo7.13`** the esti kiadás → wall merge (`editionPost`, `mergeWall`, §3; guest lines since `mezo-a9bo7.15`); pure, unit-tested
 - `pages/TeamFeedPage.tsx` + `components/feed/{FeedTrio,FeedPostCard,FeedPosterCard,FeedPostHead,FeedGuests,FeedReplySheet,StoryStrip}.tsx` + `useFeedSession.ts` + `useTeamFeed.ts` — **`mezo-a9bo7.8`** the csapat-üzenőfal wall, the unified trio and the reply sheet (§3); `/mezo` since A4 (`mezo-a9bo7.10`), with `IntroPosts.tsx` as the cold start (§2.0); `FeedPostCard`'s `RequestCta` (the „Bejelentkezem” CTA on a `keres` post) since `mezo-a9bo7.16`
 - `pages/{TeamPage,CharacterRoomPage}.tsx` + `components/feed/RoomCaseCard.tsx` + `logic/teamRooms.ts` — **`mezo-a9bo7.9`** A csapat and the five character rooms (§3); routed at `/mezo/csapat[/:id]`, the „A csapat” dock tab since A4
+- `pages/TeamChatPage.tsx` + `components/feed/LiveStrip.tsx` + `logic/teamChat.ts` — **`mezo-a9bo7.24`** the csapat-chat room (`/mezo/elo`, `router.tsx:420`) and the wall's live strip below `StoryStrip` (§3); data half in `data/character/{teamChatApi,teamChatHooks,teamChatMock}.ts`
 - `logic/boopNavigation.ts`, `boop-world.css` — shared function catalog (`BOOP_DESTINATIONS`, `ALL_FEATURES_ROUTE`) and app-token visuals. (`components/BoopNavigation.tsx`, the old chip strip, was deleted in `mezo-twizx`.)
 - `pages/MezoHubPage.tsx` — unmounted previous hub, retained source/tests.
 - **`InsightsSection.tsx` and `pages/tabs.ts` are DELETED (`mezo-d20.5.1`)** — the shell, `INSIGHTS_TABS`, `visibleInsightsTabs()` and the (already-empty) `PHASE3_TAB_IDS` are gone, along with the app-wide `features/progression/components/AppHero.tsx` and `shared/ui/SubNavDropdown.tsx` they depended on. `InsightsSubNav.tsx` had already been superseded by the dropdown in `mezo-ugqb`; `components/PhaseTeaserCard.tsx` by the empty gate set in `mezo-mifi`

@@ -30,7 +30,9 @@ related: [proactive, today, ritual, me, fuel, insights, journal, companion, _pla
 > shape, see §3c; +1 backend-anchored category — `intervention` — once the JITAI-lite composite-flag
 > intervention slice shipped, mezo-b3pp.19, §3d/§4 — likewise not feed-anchored, and the first
 > category to consult a do-not-disturb window: `mezo.notification.quiet-hours` defers, never drops,
-> a non-exempt fire to the window's end, §3d). A real Web Push
+> a non-exempt fire to the window's end, §3d; **since Csapatfal Act III (mezo-a9bo7.23) `intervention`
+> also has a second, genuinely feed-anchored source** — `AppNotificationKind.TEAM_CHAT`, wake-deferred
+> only, §3b/§3d/§4). A real Web Push
 > reached Daniel's iPhone from the k3s backend on 2026-07-29 (N1's exit criterion, confirmed by
 > Daniel — bd `mezo-h4wp.6.1`) — real-world delivery is proven, not just unit-tested. This is the
 > slice that completes the `mezo-h4wp` proactive epic's long-deferred **H2** item — see
@@ -567,6 +569,16 @@ at a currently-unreachable page.
 
 ### 3d. `intervention` + quiet hours — a backend-native anchor over `companion_message` (bd `mezo-b3pp.19`)
 
+**Update, Csapatfal Act III (`mezo-a9bo7.23`): `intervention` is no longer single-path.** Everything
+below this line describes the ORIGINAL, still-current `interventionAnchors(...)` route (the
+companion advice card). A second, independent route now also feeds the SAME `intervention`
+category: `AppNotificationKind.TEAM_CHAT`'s `app_notification` rows, resolved through §3b's generic
+`feedAnchors(...)` pipeline like `pattern`/`knowledge`/etc — plain wake-defer, no quiet-hours
+handling at all (the quiet-hours defer below is `interventionFireMinute`-only and `feedAnchors`
+never calls it). The two routes cannot collide — a `push_log` dedup key is scoped to the anchored
+event's own id, not the category — but a reader of this section should not assume every
+`intervention` push went through the quiet-hours logic that follows; a team-chat one never does.
+
 **Also not part of §3b's `feedAnchors(...)` pipeline** — like `decision_review` (§3c), `intervention`
 folds into `backendAnchors` via its own resolver method, `AnchorResolver.interventionAnchors(owner,
 date)`, reading `CompanionMessageRepository` directly (kind = `intervention`, [`proactive.md`](proactive.md)
@@ -799,7 +811,7 @@ with each other — §3d):
 | 19 | `challenge` | ON | 0 | no | a feed-sor saját perce, wake-halasztással — `AppNotificationKind.CHALLENGE_EVENT`'s `app_notification` rows (mezo-gzhp.3) |
 | 20 | `memory` | ON | 0 | no | a feed-sor saját perce, wake-halasztással — `AppNotificationKind.MEMORY_NOTE`'s `app_notification` rows (mezo-gzhp.3) |
 | 21 | `decision_review` | ON | 0 | no | `mezo.notification.decision-review-time` (09:00) on an unreviewed decision's own `review_due` day — never `<=` (mezo-b3pp.4, §3c) |
-| 22 | `intervention` | ON | 0 | no | the `companion_message` kind=`intervention` row's OWN `generatedAt` minute — no cron/grace, it fires off a flag raise; non-exempt fires inside `mezo.notification.quiet-hours` DEFER to the window's end (never dropped); `channel: feed` (or a retired key) yields no anchor at all (mezo-b3pp.19, §3d) |
+| 22 | `intervention` | ON | 0 | no | **two independent sources as of Csapatfal Act III (§3b/§3d):** the `companion_message` kind=`intervention` row's OWN `generatedAt` minute — no cron/grace, it fires off a flag raise; non-exempt fires inside `mezo.notification.quiet-hours` DEFER to the window's end (never dropped); `channel: feed` (or a retired key) yields no anchor at all (mezo-b3pp.19, §3d) — **and, since `mezo-a9bo7.23`, `AppNotificationKind.TEAM_CHAT`'s `app_notification` rows via the generic `feedAnchors(...)` path (§3b)**, wake-deferred only, with NO quiet-hours defer (that logic lives solely in `interventionFireMinute`, which the team-chat path never calls) |
 
 **`memoir_ready` deliberately has no row here** — its `familyKey()` is `null`, so it never reaches
 `feedAnchors(...)`; the existing `memoir` category (row 7) already covers that event as a push, and
@@ -859,15 +871,18 @@ across the cron-vs-lazy-GET double-generation race a future producer may have (F
 today — the index is there because a later F2 producer will). `idx_app_notification_created_by_occurred_at`
 serves the feed read (`created_by, occurred_at desc`).
 
-### `AppNotificationKind` — the 22-kind catalog (`feature/appnotification/domain/AppNotificationKind.java`)
+### `AppNotificationKind` — the 23-kind catalog (`feature/appnotification/domain/AppNotificationKind.java`)
 
 The single source of truth for the in-app feed's kind key, its push `familyKey`, and its
-deeplink base — pinned by `AppNotificationKindTest`. **All 22 rows are wired to producers**
-(the original 12 by F2, plus three later domain slices, Reflexió S4's `observation_new` and the
-csapatfal's `team_edition`), and **every non-null `familyKey` now maps onto a live push category as of F3**
+deeplink base — pinned by `AppNotificationKindTest`. **All 23 rows are wired to producers**
+(the original 12 by F2, plus four later domain slices — Reflexió S4's `observation_new`, the
+csapatfal's `team_edition` and, Csapatfal Act III (`mezo-a9bo7.23`), `team_chat`), and **every
+non-null `familyKey` now maps onto a live push category as of F3**
 (bd `mezo-gzhp.3`, §3b/§4) — the catalog is complete end to end. **The five kinds added by
 `mezo-0cbh` are all deliberately `familyKey = null`**: they carry things you find when you next
 open the app, not things worth a phone buzz — see §9's "what deliberately stays silent".
+`team_chat` is the first kind since F3 to reuse an EXISTING family (`intervention`) rather than
+either adding a new one or going `null` — see the table row below and §3b.
 
 | Key | familyKey (→ push category, F3) | Deeplink base | Producer |
 |---|---|---|---|
@@ -893,6 +908,7 @@ open the app, not things worth a phone buzz — see §9's "what deliberately sta
 | `konzilium_verdict` | **null** | `/me/karakter/konzilium` | `mezo-0cbh` — `CharacterConferenceService` (weekly), **only when `changes` is non-empty** |
 | `team_edition` | `pattern` | `/mezo` | Csapatfal H2 (`mezo-a9bo7.13`) — `TeamEditionService.run`, right after the 21:00 edition is published. **Only a PUBLISHED edition with at least one post notifies**; a `QUIET` (nothing to show) evening stays silent, and the dedup key `team_edition:<day>` keeps the idempotent 15-minute retries down to one row per day. Rides the `pattern` push family (the `observation_new` precedent — same nightly findings, different surface: the wall, not the Észrevételek tab). |
 | `observation_new` | `pattern` | `/nap/uzenetek?tab=eszrevetelek` | Reflexió S4 (`mezo-eq85.4`) — `QuickNoticeService`. **HELD BACK by default (silent launch):** the emit is gated on `mezo.companion.reflection.notice.push-enabled`, shipped `false` until the Észrevételek tab this deeplink points at ships in S5 (`mezo-eq85.5`); observations are still collected and still marked `surfaced` meanwhile, so no row of this kind exists yet in production. With the flag on: **only when the observation was actually surfaced** (`ObservationBudget` allows it: within the daily cap, past the minimum gap, outside quiet hours). Dedup key `observation_new:<pattern_event id>`, so one notice = one row = one push. An over-budget notice is still stored as a `pattern_event` with `payload.surfaced=false` and notifies nothing. |
+| `team_chat` | `intervention` | `/mezo/elo` | Csapatfal Act III Task 10 (`mezo-a9bo7.23`) — `TeamChatService.maybePush`, called at ügy-open time (never on a resolution — `TeamChatService.resolve` has no push step at all). **Its own budget on top of the shared family plumbing:** `TeamChatPushPolicy.shouldPush` caps it at `TeamChatProperties.maxPushesPerDay` (2) pushes per user per local day, and the second (or any later) push only fires when its ügy's flag key `AdvicePriority.outranks` every ügy already pushed that day — a resolution never pushes. Rides the pre-existing `intervention` push category (§4 row 22) via `AnchorResolver.feedAnchors(...)` — the **generic F3 feed-anchored path** (§3b), NOT `interventionAnchors(...)`'s dedicated `companion_message` read (§3d): `intervention` is therefore now fed by **two independent mechanisms**, the companion advice-card's own quiet-hours-deferred anchor and this kind's plain wake-deferred one (the `challenge_event`/`fact_reinforced` two-producer shape, re-derived one category up). Deeplinks into the ügy's own chat surface (`/mezo/elo`), not the `team_edition` wall. The FE groups it under the header panel's existing **„Karakter”** filter chip (`features/notification/logic/category.ts`), alongside `habit_formation`/`character_portrait`/`konzilium_verdict`/`team_edition`. |
 
 ### API contract (`api/feature/notification/notification.yml`)
 

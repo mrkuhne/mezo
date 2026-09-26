@@ -22,7 +22,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [appnotification](#appnotification) | ✓ | 1 | · | · | [_platform-notifications](features/_platform-notifications.md) |
 | [auth](#auth) | ✓ | 2 | ✓ | ✓ | [admin-hub](features/admin-hub.md), [_platform-auth-security](features/_platform-auth-security.md) |
 | [biometrics](#biometrics) | ✓ | 6 | · | · | [me](features/me.md) |
-| [character](#character) | ✓ | 1 | ✓ | ✓ | [character](features/character.md) |
+| [character](#character) | ✓ | 1 | ✓ | ✓ | [character](features/character.md), [insights](features/insights.md) |
 | [companion](#companion) | ✓ | 5 | ✓ | · | [admin-memory-explorer](features/admin-memory-explorer.md), [character](features/character.md), [companion](features/companion.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [settings](features/settings.md), [today](features/today.md) |
 | [feedback](#feedback) | · | · | ✓ | · | [insights](features/insights.md) |
 | [fuel](#fuel) | ✓ | 2 | ✓ | ✓ | [fuel](features/fuel.md), [pantry](features/pantry.md), [recipe](features/recipe.md), [_platform-api-backend](features/_platform-api-backend.md), [_platform-data-layer](features/_platform-data-layer.md) |
@@ -235,7 +235,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### character
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-26, shipped)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-26, shipped) ·
+  [docs/features/insights.md](features/insights.md) (updated 2026-09-26, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
   - **sub-features:** `detector`
@@ -593,7 +594,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-26, done) ·
   [docs/features/pantry.md](features/pantry.md) (updated 2026-09-23, done) ·
   [docs/features/recipe.md](features/recipe.md) (updated 2026-09-26, done) ·
-  [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-25, done) ·
+  [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-26, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-26, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/fuel`
