@@ -32,7 +32,7 @@ const COMPANION_FEED_KEY = ['companionFeed']
  * notification schedule writer) once those hooks' own queries key off it. An action with nothing
  * else to invalidate simply has no entry (the companion-feed invalidation alone already covers it).
  */
-const ACTION_INVALIDATES: Partial<Record<AdviceActionKey, readonly QueryKey[]>> = {
+export const ACTION_INVALIDATES: Partial<Record<AdviceActionKey, readonly QueryKey[]>> = {
   skip_sport_slot: [SPORT_SLOT_SKIPS_QUERY_KEY],
   lighten_tomorrow: [WORKOUT_TODAY_QUERY_KEY],
   shift_sleep_anchor: [['sleepGoal'], ['habitDay'], ['fuelDay']],
