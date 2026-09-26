@@ -86,7 +86,7 @@ class TeamChatVoiceOutsideTransactionIT extends AbstractIntegrationTest {
                 txActiveAtTeamChatEmit.add(TransactionSynchronizationManager.isActualTransactionActive());
             }
             return invocation.callRealMethod();
-        }).when(emitter).emit(any(), any(), any(), any(), any(), any(), any());
+        }).when(emitter).tryEmit(any(), any(), any(), any(), any(), any(), any());
     }
 
     /** Daytime, so the evening quiet window never swallows the push. */

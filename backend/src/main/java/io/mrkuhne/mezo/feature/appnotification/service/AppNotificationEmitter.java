@@ -23,17 +23,27 @@ public class AppNotificationEmitter {
 
     public void emit(UUID owner, AppNotificationKind kind, String title, String body,
                      String deeplink, UUID refId, String dedupKey) {
+        tryEmit(owner, kind, title, body, deeplink, refId, dedupKey);
+    }
+
+    /** {@link #emit}, telling the producer whether the emit went through — {@code false} only when
+     *  it failed (logged, never thrown); a switched-off feed is not a failure. For producers that
+     *  spent something on the push (a daily budget slot) and must give it back on failure. */
+    public boolean tryEmit(UUID owner, AppNotificationKind kind, String title, String body,
+                           String deeplink, UUID refId, String dedupKey) {
         AppNotificationService service = serviceProvider.getIfAvailable();
         if (service == null) {
-            return;
+            return true;
         }
         try {
             service.emit(owner, kind, title, body, deeplink, refId, dedupKey);
+            return true;
         } catch (Exception e) {
             // A duplicate-key race inside emit's REQUIRES_NEW surfaces here as
             // UnexpectedRollbackException on commit — and no notification failure of ANY
             // shape may break the producing domain write. Log and move on.
             log.warn("Notification emit failed for {} ({}) — producer unaffected", dedupKey, kind.key(), e);
+            return false;
         }
     }
 }

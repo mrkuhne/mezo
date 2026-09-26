@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -21,6 +22,18 @@ public interface TeamChatThreadRepository extends JpaRepository<TeamChatThreadEn
     @Query(value = "select pg_advisory_xact_lock(hashtext('team_chat_push:' || cast(:userId as text)))",
             nativeQuery = true)
     void lockPushBudget(@Param("userId") UUID userId);
+
+    /** mezo-a9bo7.27: the ügy's status straight from the database, or empty when it is already
+     *  pushed (or gone). A scalar query on purpose — {@code findById} would hand back the
+     *  persistence context's copy loaded BEFORE the push-budget lock, blind to a racing decision. */
+    @Query("select t.status from TeamChatThreadEntity t where t.id = :id and (t.pushed is null or t.pushed = false)")
+    Optional<String> unpushedStatus(@Param("id") UUID id);
+
+    /** mezo-a9bo7.27: flip {@code pushed} in the database without writing back the whole
+     *  (pre-lock) entity copy; 1 when this call claimed the push. */
+    @Modifying
+    @Query("update TeamChatThreadEntity t set t.pushed = :pushed where t.id = :id")
+    int setPushed(@Param("id") UUID id, @Param("pushed") boolean pushed);
 
     Optional<TeamChatThreadEntity> findFirstByCreatedByAndFlagKeyAndStatusAndDeletedFalse(
             UUID createdBy, String flagKey, String status);

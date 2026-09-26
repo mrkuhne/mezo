@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.character.service.chat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -58,7 +59,7 @@ class TeamChatPushDecisionTest {
         when(self.getObject()).thenReturn(service);
         when(threads.findByCreatedByAndPushedTrueAndOpenedAtBetweenAndDeletedFalse(any(), any(), any()))
                 .thenReturn(List.of());
-        when(threads.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(emitter.tryEmit(any(), any(), any(), any(), any(), any(), any())).thenReturn(true);
     }
 
     private TeamChatThreadEntity thread(int hour, int minute) {
@@ -70,6 +71,13 @@ class TeamChatPushDecisionTest {
         t.setStatus("OPEN");
         t.setOpenedAt(LocalDate.of(2026, 9, 26).atTime(hour, minute).atZone(ZONE).toInstant());
         when(threads.findById(t.getId())).thenReturn(Optional.of(t));
+        // the fresh, post-lock read (mezo-a9bo7.27) follows the entity's own state
+        when(threads.unpushedStatus(t.getId())).thenAnswer(inv ->
+                Boolean.TRUE.equals(t.getPushed()) ? Optional.empty() : Optional.of(t.getStatus()));
+        when(threads.setPushed(eq(t.getId()), anyBoolean())).thenAnswer(inv -> {
+            t.setPushed(inv.getArgument(1));
+            return 1;
+        });
         return t;
     }
 
@@ -80,7 +88,7 @@ class TeamChatPushDecisionTest {
         service.decidePush(t.getId(), "sor", false, false);
 
         assertThat(t.getPushed()).isFalse();
-        verify(emitter, never()).emit(any(), any(), any(), any(), any(), any(), any());
+        verify(emitter, never()).tryEmit(any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -91,7 +99,7 @@ class TeamChatPushDecisionTest {
 
         assertThat(t.getPushed()).isTrue();
         verify(threads).lockPushBudget(t.getCreatedBy());
-        verify(emitter).emit(eq(t.getCreatedBy()), eq(AppNotificationKind.TEAM_CHAT), anyString(), eq("sor"),
+        verify(emitter).tryEmit(eq(t.getCreatedBy()), eq(AppNotificationKind.TEAM_CHAT), anyString(), eq("sor"),
                 eq("/mezo/elo"), eq(t.getId()), eq("team_chat:" + t.getId()));
     }
 
@@ -103,7 +111,7 @@ class TeamChatPushDecisionTest {
 
         assertThat(t.getPushed()).isFalse();
         verify(threads, never()).lockPushBudget(any());
-        verify(emitter, never()).emit(any(), any(), any(), any(), any(), any(), any());
+        verify(emitter, never()).tryEmit(any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -113,7 +121,7 @@ class TeamChatPushDecisionTest {
         service.decidePush(t.getId(), "sor", true, true);
 
         assertThat(t.getPushed()).isTrue();
-        verify(emitter).emit(eq(t.getCreatedBy()), eq(AppNotificationKind.TEAM_CHAT), anyString(), eq("sor"),
+        verify(emitter).tryEmit(eq(t.getCreatedBy()), eq(AppNotificationKind.TEAM_CHAT), anyString(), eq("sor"),
                 eq("/mezo/elo"), eq(t.getId()), eq("team_chat:" + t.getId() + AppNotificationKind.QUIET_HOURS_EXEMPT_SUFFIX));
         assertThat(AppNotificationKind.quietHoursExempt("team_chat:" + t.getId()
                 + AppNotificationKind.QUIET_HOURS_EXEMPT_SUFFIX)).isTrue();
@@ -126,7 +134,41 @@ class TeamChatPushDecisionTest {
         service.decidePush(t.getId(), "sor", true, false);
 
         assertThat(t.getPushed()).isTrue();
-        verify(emitter).emit(any(), any(), any(), any(), any(), any(), eq("team_chat:" + t.getId()));
+        verify(emitter).tryEmit(any(), any(), any(), any(), any(), any(), eq("team_chat:" + t.getId()));
+    }
+
+    @Test
+    void aFailedEmit_givesTheBudgetSlotBack() {
+        TeamChatThreadEntity t = thread(10, 0);
+        when(emitter.tryEmit(any(), any(), any(), any(), any(), any(), any())).thenReturn(false);
+
+        service.decidePush(t.getId(), "sor", true, false);
+
+        verify(threads).setPushed(t.getId(), true);
+        verify(threads).setPushed(t.getId(), false);
+        assertThat(t.getPushed()).isFalse();
+    }
+
+    @Test
+    void anUgyAlreadyPushedByARacingDecision_isNotPushedAgain() {
+        TeamChatThreadEntity t = thread(10, 0);
+        // the copy loaded before the lock still says "not pushed"; the database already says pushed
+        when(threads.unpushedStatus(t.getId())).thenReturn(Optional.empty());
+
+        service.decidePush(t.getId(), "sor", true, false);
+
+        verify(threads, never()).setPushed(any(), anyBoolean());
+        verify(emitter, never()).tryEmit(any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void anUgyResolvedWhileTheLineWasVoiced_isNotPushed() {
+        TeamChatThreadEntity t = thread(10, 0);
+        when(threads.unpushedStatus(t.getId())).thenReturn(Optional.of("RESOLVED"));
+
+        service.decidePush(t.getId(), "sor", true, false);
+
+        verify(emitter, never()).tryEmit(any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
