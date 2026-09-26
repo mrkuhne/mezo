@@ -83,3 +83,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609262200_mezo-a9bo7.11_character_maturity_week.sql
+  - changeSet:
+      id: "1.1.0:202609261600_mezo-d6ivw.5_proactive_memory_use"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609261600_mezo-d6ivw.5_proactive_memory_use.sql
