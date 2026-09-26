@@ -33,6 +33,7 @@ export const FEATURE_LABELS: Record<string, Entry> = {
   companion_consolidation: { label: 'Emlék-feldolgozás', hint: 'éjszakai emlék-összegzés' },
   companion_daily_summary: { label: 'Napi összefoglaló', hint: 'a nap AI-összegzése' },
   companion_fact_extract: { label: 'Tény-kinyerés', hint: 'tanult tények kigyűjtése' },
+  companion_person_fact_extract: { label: 'Személy-tény kinyerés', hint: 'tények a beszélgetésben említett emberekről' },
   companion_graph: { label: 'Tudásgráf-építés', hint: 'kapcsolatok felismerése' },
   // VERIFIED: HypothesisPipelineService — mintázat-figyelésből (PatternMonitorResponse)
   // származó feltevések javaslata, kritikája és felülvizsgálata; a guess helyes volt.

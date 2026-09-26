@@ -13,6 +13,7 @@ import io.mrkuhne.mezo.feature.companion.reflection.service.KnowledgeRecheckServ
 import io.mrkuhne.mezo.feature.companion.reflection.service.QuickNoticeService;
 import io.mrkuhne.mezo.feature.companion.reflection.service.TextSignalExtractor;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
+import io.mrkuhne.mezo.feature.companion.service.PersonFactExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
 import io.mrkuhne.mezo.feature.companion.service.GearClassifier;
 import io.mrkuhne.mezo.feature.companion.service.PeriodSummaryService;
@@ -189,6 +190,10 @@ public class FakeCompanionLlm implements CompanionLlm {
     /** Scripted extraction (V1.2): {@code [fake-facts:<json-array>]} is returned verbatim to extraction calls. */
     public static final Pattern FACTS_SENTINEL =
             Pattern.compile("\\[fake-facts:(\\[.*?]|[^\\]]*)]", Pattern.DOTALL);
+
+    /** Scripted person-fact extraction (S3, mezo-d6ivw.3): {@code [fake-person-facts:<json-array>]}. */
+    public static final Pattern PERSON_FACTS_SENTINEL =
+            Pattern.compile("\\[fake-person-facts:(\\[.*?]|[^\\]]*)]", Pattern.DOTALL);
 
     /** Mirror of CharacterObservationService.OBSERVATION_MARKER (feature/character) — a LITERAL,
      *  not an import: character already depends on companion via the CompanionLlm port, so a
@@ -806,6 +811,10 @@ public class FakeCompanionLlm implements CompanionLlm {
         }
         if (systemPrompt.startsWith(FactExtractionService.EXTRACTION_MARKER)) {
             return factsAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith(PersonFactExtractionService.PERSON_FACT_MARKER)) {
+            Matcher pf = PERSON_FACTS_SENTINEL.matcher(userMessage);
+            return pf.find() ? pf.group(1) : "[]";
         }
         if (systemPrompt.startsWith(OBSERVATION_MARKER_MIRROR)) {
             Matcher obs = CHAR_OBS_SENTINEL.matcher(userMessage);
