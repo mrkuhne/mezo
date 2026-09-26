@@ -93,7 +93,8 @@ public enum NotificationCategory {
     /** Same feed-anchored family — experiments (proposed + closed). */
     EXPERIMENT("experiment", true, 0, false),
 
-    /** Same feed-anchored family — workout challenges. */
+    /** Same feed-anchored family — workout challenges; also quiet-hours-gated (mezo-co3r9, see
+     *  {@code AnchorResolver.feedFireMinute}). */
     CHALLENGE("challenge", true, 0, false),
 
     /** Same feed-anchored family — the nightly L1 memory note. */

@@ -32,8 +32,8 @@ import org.springframework.validation.annotation.Validated;
  *     {@code AnchorResolver.anchorAfterGeneration}. Both jobs queue on the SAME size-1 scheduler
  *     thread and every generator makes an LLM call, so an anchor landing on the generator's minute
  *     provably finds no row and the category never fires at all.
- * @param quietHours the do-not-disturb window (W5.2, bd mezo-b3pp.19) — today only the
- *     {@code intervention} category consults it (see {@link QuietHours}); widening it to every
+ * @param quietHours the do-not-disturb window (W5.2, bd mezo-b3pp.19) — the
+ *     {@code intervention} and {@code challenge} (mezo-co3r9) categories consult it (see {@link QuietHours}); widening it to every
  *     category is a later, deliberate decision, not a drive-by.
  */
 @Validated

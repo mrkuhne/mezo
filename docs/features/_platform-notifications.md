@@ -620,8 +620,13 @@ Every other push category already has an implicit "quiet enough" property (a `gy
 generation minute during the day) — `intervention` is the first category whose trigger (a flag
 raise) can land at ANY hour, so it is the first to need an explicit window. **Widening quiet hours
 to every category is a later, deliberate decision, not a drive-by** (`NotificationProperties`'s own
-class javadoc says so) — today `DueEvaluator` and every other `AnchorResolver` method are entirely
-unaware quiet hours exist. **Defer, never drop** is the load-bearing design choice: a suppressed
+class javadoc says so) — `DueEvaluator` and every other `AnchorResolver` method are unaware quiet
+hours exist, with ONE deliberate exception since bd `mezo-co3r9` (owner, 2026-09-26: "no push at
+night about a generated challenge"): the feed-anchored **`challenge`** family goes through
+`AnchorResolver.feedFireMinute`, which on top of the family-wide max(own minute, wake) rule defers a
+night/early-morning challenge to `quietEnd` and **drops** one generated in the evening part of the
+window (a lazily generated challenge for a workout already over — a next-morning push would
+advertise yesterday's challenge). Pinned by `FeedFireMinuteTest`. **Defer, never drop** is the load-bearing design choice: a suppressed
 push is a silently lost intervention (the whole point of a JITAI-lite nudge is timeliness, but a
 LATE nudge that arrives at 07:00 is still worth more than one that never arrives at all) — contrast
 this with `decision_review`'s "arrived at its day or didn't, no urgency window" (§3c) and `gym`'s

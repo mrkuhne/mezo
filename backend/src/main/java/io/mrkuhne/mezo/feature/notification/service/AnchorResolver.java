@@ -418,6 +418,8 @@ public class AnchorResolver {
         Instant from = date.atStartOfDay(zone).toInstant();
         Instant to = date.plusDays(1).atStartOfDay(zone).toInstant();
         int wakeMinute = minuteOfDay(sleepAnchorPort.resolve(owner).wake());
+        LocalTime quietStart = LocalTime.parse(notificationProperties.quietHours().start());
+        LocalTime quietEnd = LocalTime.parse(notificationProperties.quietHours().end());
 
         List<AnchoredEvent> events = new ArrayList<>();
         for (AppNotificationEntity row : appNotificationRepository
@@ -430,8 +432,12 @@ public class AnchorResolver {
             if (category.isEmpty()) {
                 continue;
             }
-            LocalTime eventTime = LocalTime.ofInstant(row.getOccurredAt(), zone);
-            int minute = Math.max(eventTime.getHour() * 60 + eventTime.getMinute(), wakeMinute);
+            OptionalInt fire = feedFireMinute(category.get(), LocalTime.ofInstant(row.getOccurredAt(), zone),
+                    wakeMinute, quietStart, quietEnd);
+            if (fire.isEmpty()) {
+                continue;
+            }
+            int minute = fire.getAsInt();
             String idFragment = row.getId().toString().substring(0, 8);
             String hhmm = "%02d:%02d".formatted(minute / 60, minute % 60);
             String url = row.getDeeplink() + (row.getDeeplink().contains("?") ? "&" : "?") + "n=" + idFragment;
@@ -439,6 +445,25 @@ public class AnchorResolver {
                     row.getTitle(), row.getBody(), url));
         }
         return events;
+    }
+
+    /**
+     * A feed event's push minute on its own day, or empty when it must not push at all. Every
+     * family rides max(own minute, wake). {@link NotificationCategory#CHALLENGE} additionally
+     * honours the quiet window (bd mezo-co3r9, owner 2026-09-26: "új kihívás" never rings at
+     * night): a night/early-morning challenge is deferred to the quiet end, and one generated in
+     * the evening part of the window is dropped — it is for a workout that is already over, and a
+     * next-morning push would advertise yesterday's challenge.
+     */
+    static OptionalInt feedFireMinute(NotificationCategory category, LocalTime eventTime, int wakeMinute,
+            LocalTime quietStart, LocalTime quietEnd) {
+        int minute = Math.max(eventTime.getHour() * 60 + eventTime.getMinute(), wakeMinute);
+        if (category != NotificationCategory.CHALLENGE) {
+            return OptionalInt.of(minute);
+        }
+        LocalDate day = LocalDate.EPOCH;
+        OptionalInt quietFire = interventionFireMinute(day.atTime(eventTime), day, false, quietStart, quietEnd);
+        return quietFire.isEmpty() ? quietFire : OptionalInt.of(Math.max(minute, quietFire.getAsInt()));
     }
 
     // ---- prose anchors: morning / midday / evening / sleep_reaction / weight_reaction / weekly_review / memoir ----
