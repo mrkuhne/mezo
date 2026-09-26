@@ -18,6 +18,10 @@ const MOCK_VERDICTS: VerdictsByMeal = {
     summary: 'Gyors szénhidrát közvetlenül az edzés előtt — pont ezt kívánja a mai Pull nap. '
       + 'A fehérje alacsony, de erre most nem is volt szükség.',
     improve: [{ text: 'Tegyél mellé 20g fehérjét', impact: '+fehérje' }],
+    glucoseTips: [
+      { title: 'A mézből elég a fele', body: 'A méz a tányér leggyorsabb része — a fele is édes, de a csúcs kisebb lesz.' },
+      { title: 'Egy marék dió a banán mellé', body: 'A dió zsírja és rostja lassítja, ahogy a banán cukra felszívódik.' },
+    ],
   },
 }
 

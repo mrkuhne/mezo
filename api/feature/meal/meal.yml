@@ -310,6 +310,20 @@ components:
           nullable: true
           additionalProperties: { type: string }
           description: dim-id → 1-2 mondat; a breakdown dimension.note tükre a frissen generált verdictben
+        glucoseTips:
+          type: array
+          nullable: true
+          items: { $ref: '#/components/schemas/MealGlucoseTip' }
+          description: >-
+            „Legközelebb így lesz laposabb" — 0-2 AI-written, plate-specific swaps for a flatter
+            blood-glucose response next time. null = not generated (the client falls back to its own
+            computed swaps); empty = the plate already smooths. Never a glucose number.
+    MealGlucoseTip:
+      type: object
+      required: [title, body]
+      properties:
+        title: { type: string }
+        body: { type: string }
     MealImproveRow:
       type: object
       required: [text, impact]

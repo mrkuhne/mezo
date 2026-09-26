@@ -153,4 +153,22 @@ describe('GlycemicGlass · a keretben él, és csökkentett mozgás mellett áll
     render(<GlycemicGlass band={LOW} onClose={() => {}} />)
     expect(within(boxOf()).queryByRole('region', { name: 'Legközelebb így lesz laposabb' })).toBeNull()
   })
+
+  test('az AI-tippek (a tányér saját tételei) elsőbbséget kapnak a kiszámolt cserék előtt', () => {
+    const tips = [
+      { title: 'A mézből elég a fele', body: 'A méz a leggyorsabb rész.' },
+      { title: 'Dió a banán mellé', body: 'A zsír lassít.' },
+    ]
+    render(<GlycemicGlass band={HIGH} onClose={() => {}} aiTips={tips} />)
+    const section = within(boxOf()).getByRole('region', { name: 'Legközelebb így lesz laposabb' })
+    expect(section.textContent).toContain('A mézből elég a fele')
+    expect(section.textContent).toContain('A coach javaslata')
+    // a számolt eredménysor csak a számolt cseréké — az AI-hoz nem ígérünk sávot
+    expect(section.querySelector('.fmx-glu-improve-result')).toBeNull()
+  })
+
+  test('üres AI-lista: a coach szerint nincs mit simítani — a rész elmarad', () => {
+    render(<GlycemicGlass band={HIGH} onClose={() => {}} aiTips={[]} />)
+    expect(within(boxOf()).queryByRole('region', { name: 'Legközelebb így lesz laposabb' })).toBeNull()
+  })
 })

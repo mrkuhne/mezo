@@ -32,7 +32,7 @@ import { huInt, hu1 } from '@/shared/lib/huNum'
 import { toMin, toHHmm } from '@/data/fuel/fuelConfig'
 import { ContentIcon } from '@/shared/ui/clay'
 import { glycemicBand } from '@/features/fuel/logic/glycemicBand'
-import { GlycemicGlass, GlycemicMiniCurve } from '@/features/fuel/components/GlycemicGlass'
+import { GlycemicGlassFor, GlycemicMiniCurve } from '@/features/fuel/components/GlycemicGlass'
 import { macroEnergyShares, fiberSharePct } from '@/features/fuel/logic/mealShare'
 import { GlassBox } from '@/features/fuel/components/GlassBox'
 import type { MealSlot } from '@/data/types'
@@ -350,7 +350,9 @@ export function FuelMealBlocks({ lane, meals, dayKcal, fiberTargetG, onLogInto, 
       )}
       {/* Ugyanaz a doboz, amit a részletek oldal negyedik kártyája nyit — egy komponens,
           egy deriváció, két ajtó. */}
-      {glucoseBand && <GlycemicGlass band={glucoseBand} onClose={() => setGlucoseFor(null)} />}
+      {glucoseBand && glucoseRow && (
+        <GlycemicGlassFor mealId={glucoseRow.mealId} band={glucoseBand} onClose={() => setGlucoseFor(null)} />
+      )}
     </div>
   )
 }

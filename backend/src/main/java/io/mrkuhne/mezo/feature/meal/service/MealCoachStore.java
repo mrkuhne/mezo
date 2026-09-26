@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.meal.service;
 
 import io.mrkuhne.mezo.api.dto.Macros;
+import io.mrkuhne.mezo.api.dto.Nutrients;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
 import io.mrkuhne.mezo.feature.meal.mapper.MealMapper;
@@ -37,7 +38,17 @@ class MealCoachStore {
     /** One day-meal, fully materialized: its envelope plus its own macro totals. */
     record LoadedMeal(UUID id, String title, String slot, Instant loggedAt,
                       MealBreakdownJson breakdown,
-                      BigDecimal kcal, BigDecimal p, BigDecimal c, BigDecimal f) {
+                      BigDecimal kcal, BigDecimal p, BigDecimal c, BigDecimal f,
+                      List<ItemLine> items) {
+    }
+
+    /**
+     * One logged line as the coach reads it — the glucose tips (owner, 2026-09-26) must name the
+     * plate's OWN items („a mézből feleannyi"), so the prompt needs them. {@code sugarG} and
+     * {@code fiberG} are null when the source had no data — "no data" is not "0 g".
+     */
+    record ItemLine(String name, BigDecimal amount, String unit, BigDecimal c, BigDecimal sugarG,
+                    BigDecimal fiberG, BigDecimal p) {
     }
 
     private final MealRepository mealRepository;
@@ -68,14 +79,15 @@ class MealCoachStore {
      */
     @Transactional
     Optional<LoadedMeal> writeProse(UUID userId, UUID mealId, String summary, String tagline,
-        List<MealBreakdownJson.ImproveRow> improve, Map<String, String> dimensionNotes) {
+        List<MealBreakdownJson.ImproveRow> improve, Map<String, String> dimensionNotes,
+        List<MealBreakdownJson.GlucoseTip> glucose) {
         return mealRepository.findByIdAndCreatedByAndDeletedFalse(mealId, userId)
             .filter(meal -> meal.getBreakdown() != null)
             .map(meal -> {
                 MealBreakdownJson det = meal.getBreakdown();
                 meal.setBreakdown(new MealBreakdownJson(det.value(), det.confidence(), summary,
                     tagline, mergeDimensionNotes(det.dimensions(), dimensionNotes), improve,
-                    det.tools(), det.formulaVersion()));
+                    det.tools(), det.formulaVersion(), glucose));
                 return this.toLoaded(mealRepository.saveAndFlush(meal));
             });
     }
@@ -119,14 +131,18 @@ class MealCoachStore {
         BigDecimal p = BigDecimal.ZERO;
         BigDecimal c = BigDecimal.ZERO;
         BigDecimal f = BigDecimal.ZERO;
+        List<ItemLine> items = new java.util.ArrayList<>();
         for (MealItemEntity item : meal.getItems()) {
             Macros x = mapper.contribution(item);
             kcal = kcal.add(x.getKcal());
             p = p.add(x.getP());
             c = c.add(x.getC());
             f = f.add(x.getF());
+            Nutrients n = mapper.nutrients(item);
+            items.add(new ItemLine(item.getSnapshotName(), item.getAmount(), item.getUnit(), x.getC(),
+                n.getSugarG(), n.getFiberG(), x.getP()));
         }
         return new LoadedMeal(meal.getId(), meal.getTitle(), meal.getSlot(), meal.getLoggedAt(),
-            meal.getBreakdown(), kcal, p, c, f);
+            meal.getBreakdown(), kcal, p, c, f, List.copyOf(items));
     }
 }

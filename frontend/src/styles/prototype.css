@@ -10871,6 +10871,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   color: var(--ink); background: rgba(245, 239, 230, 0.05); }
 .fmx-glu-improve-result.lvl-low { color: var(--dv-sage); }
 .fmx-glu-improve-result.lvl-mid { color: var(--dv-amber); }
+.fmx-glu-improve-src { margin: 8px 0 0; font-size: 10.5px; color: var(--faint); }
 
 @media (prefers-reduced-motion: no-preference) {
   .fmx-ring-progress, .fmx-gauge-progress { animation: fmx-ring-rise 1.05s cubic-bezier(0.2, 0.78, 0.24, 1) both; }

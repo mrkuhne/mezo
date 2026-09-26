@@ -53,7 +53,7 @@ import {
 import { mealQualityTruth } from '@/features/fuel/logic/mealQualityTruth'
 import { glycemicBand } from '@/features/fuel/logic/glycemicBand'
 import { mealNutrients } from '@/features/fuel/logic/mealNutrients'
-import { GlycemicGlass } from '@/features/fuel/components/GlycemicGlass'
+import { GlycemicGlassFor } from '@/features/fuel/components/GlycemicGlass'
 
 /** Blokk-arc: hue + clay ikon + magyar név. A hue a ház tokenjeiből (lásd a prototype.css
  *  `fuel-mai` blokk fejlécét: a beégetett prototípus-hexeket nem vesszük át). */
@@ -205,7 +205,7 @@ export function FuelMealDetailPage() {
       <FuelQualitySection lines={lines.map(qualityLineOf)}
         truth={mealQualityTruth(meal.breakdown)}
         glycemic={band} onOpenGlycemic={band ? () => setGlucoseOpen(true) : undefined} />
-      {glucoseOpen && band && <GlycemicGlass band={band} onClose={() => setGlucoseOpen(false)} />}
+      {glucoseOpen && band && <GlycemicGlassFor mealId={meal.id} band={band} onClose={() => setGlucoseOpen(false)} />}
 
       <FuelMicroSection nutrients={mealNutrients(meal)} frame="az étkezés" />
       {/* Ismert hiány, nem figyelmetlenség: vitamin/ásványi anyag = mezo-vj61, manifeszt F1.

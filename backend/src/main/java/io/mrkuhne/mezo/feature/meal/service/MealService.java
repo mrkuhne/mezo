@@ -81,6 +81,8 @@ public class MealService {
     private final MealScoringService scoringService;
     private final io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService workoutWindowQueryService;
     private final io.mrkuhne.mezo.feature.nutrition.config.MealScoringProperties scoringProperties;
+    /** Fires {@link MealSavedEvent} so the coach can narrate the meal right away (owner, 2026-09-26). */
+    private final org.springframework.context.ApplicationEventPublisher events;
 
     @Transactional
     public MealResponse create(UUID userId, MealRequest req) {
@@ -90,7 +92,9 @@ public class MealService {
         meal.setProvenance(toProvenance(req.getProvenance())); // AI confirm path; NULL for manual rows
         rebuildItems(userId, meal, req.getItems());
         applyScore(userId, meal, loggedAt);
-        return mapper.toResponse(repository.save(meal)); // cascade=ALL persists the items
+        MealResponse saved = mapper.toResponse(repository.save(meal)); // cascade=ALL persists the items
+        events.publishEvent(new MealSavedEvent(userId, saved.getId()));
+        return saved;
     }
 
     @Transactional
@@ -100,6 +104,7 @@ public class MealService {
         meal.setProvenance(toProvenance(req.getProvenance())); // re-captured like the snapshots
         rebuildItems(userId, meal, req.getItems()); // dirty-checked; flush on tx commit
         applyScore(userId, meal, loggedAt); // re-scored like the snapshots are re-captured
+        events.publishEvent(new MealSavedEvent(userId, meal.getId()));
     }
 
     @Transactional

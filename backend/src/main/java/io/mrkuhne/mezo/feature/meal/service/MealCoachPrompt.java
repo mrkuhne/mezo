@@ -36,7 +36,15 @@ final class MealCoachPrompt {
     record MealBlock(UUID mealId, String name, String slot, LocalTime loggedAt, int indexInDay,
                      MealBreakdownJson breakdown, MealRole role,
                      BigDecimal kcalBefore, BigDecimal pBefore, BigDecimal cBefore,
-                     BigDecimal fBefore) {
+                     BigDecimal fBefore, List<MealCoachStore.ItemLine> items) {
+
+        /** The pre-glucose shape (no item lines) — the prompt then simply omits the TÉTELEK block. */
+        MealBlock(UUID mealId, String name, String slot, LocalTime loggedAt, int indexInDay,
+                  MealBreakdownJson breakdown, MealRole role,
+                  BigDecimal kcalBefore, BigDecimal pBefore, BigDecimal cBefore, BigDecimal fBefore) {
+            this(mealId, name, slot, loggedAt, indexInDay, breakdown, role, kcalBefore, pBefore,
+                cBefore, fBefore, List.of());
+        }
     }
 
     static String userMessage(LocalDate date, DailyTargets targets,
@@ -80,6 +88,8 @@ final class MealCoachPrompt {
           .append(remaining(targets.kcal(), m.kcalBefore())).append(" kcal · P ")
           .append(remaining(targets.p(), m.pBefore())).append("g)\n");
 
+        appendItems(sb, m.items());
+
         MealBreakdownJson b = m.breakdown();
         sb.append("DETERMINISZTIKUS BONTÁS (0-1, súlyozott) — érték ").append(b.value())
           .append(", megbízhatóság ").append(b.confidence()).append(":\n");
@@ -88,6 +98,28 @@ final class MealCoachPrompt {
               .append(d.score()).append(", súly ").append(d.weight())
               .append(" — ").append(d.detail()).append('\n');
         }
+    }
+
+    /**
+     * The plate's own lines — what the glucose tips (owner, 2026-09-26) build on. Unknown sugar /
+     * fiber print as "?" rather than 0, so the model never reads a data gap as "sugar-free".
+     */
+    private static void appendItems(StringBuilder sb, List<MealCoachStore.ItemLine> items) {
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+        sb.append("TÉTELEK (a vércukor-tippekhez):\n");
+        for (MealCoachStore.ItemLine i : items) {
+            sb.append("- ").append(i.name()).append(' ').append(plain(i.amount()))
+              .append(i.unit() == null ? "" : " " + i.unit())
+              .append(" · C ").append(plain(i.c())).append("g · ebből cukor ").append(gramOrUnknown(i.sugarG()))
+              .append(" · rost ").append(gramOrUnknown(i.fiberG()))
+              .append(" · P ").append(plain(i.p())).append("g\n");
+        }
+    }
+
+    private static String gramOrUnknown(BigDecimal v) {
+        return v == null ? "?" : v.setScale(0, java.math.RoundingMode.HALF_UP).toPlainString() + "g";
     }
 
     /** The role as the prompt names it — the same tokens the scoring rubric uses. */

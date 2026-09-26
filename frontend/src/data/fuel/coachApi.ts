@@ -9,6 +9,12 @@ export interface MealCoachVerdict {
   tagline: string | null
   summary: string | null
   improve: { text: string; impact: string }[]
+  /**
+   * „Legközelebb így lesz laposabb" (owner, 2026-09-26): 0-2 AI-written swaps naming the plate's
+   * own items, from the SAME coach call. `null` = not generated (the glucose box shows its own
+   * computed swaps); `[]` = the model judged the plate already smooth.
+   */
+  glucoseTips: { title: string; body: string }[] | null
 }
 
 /** Verdicts keyed by mealId — the timeline looks up one card's line in O(1). */
@@ -22,6 +28,7 @@ function fromResponse(res: MealCoachResponse): VerdictsByMeal {
       tagline: v.tagline ?? null,
       summary: v.summary ?? null,
       improve: v.improve.map(i => ({ text: i.text, impact: i.impact })),
+      glucoseTips: v.glucoseTips ? v.glucoseTips.map(g => ({ title: g.title, body: g.body })) : null,
     }
   }
   return out

@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.meal.service;
 
 import io.mrkuhne.mezo.api.dto.MealCoachVerdict;
+import io.mrkuhne.mezo.api.dto.MealGlucoseTip;
 import io.mrkuhne.mezo.api.dto.MealImproveRow;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -56,6 +57,8 @@ public class MealCoachService {
     private static final int TAGLINE_MAX = 60;
     private static final int IMPROVE_MAX = 3;
     private static final int NOTE_MAX = 240;
+    private static final int GLUCOSE_MAX = 2;
+    private static final int GLUCOSE_TITLE_MAX = 48;
 
     private static final String SYSTEM_PROMPT = """
         Egy fitness-alkalmazás étkezés-coach rétege vagy: a felhasználó MÁR LOGOLT étkezéseiről
@@ -66,7 +69,8 @@ public class MealCoachService {
         Válaszolj EGY JSON objektummal és semmi mással:
         {"meals":[{"mealId":string,"tagline":string,"summary":string,
                    "improve":[{"text":string,"impact":string}],
-                   "dimensionNotes":{"<dim-id>":string}}]}
+                   "dimensionNotes":{"<dim-id>":string},
+                   "glucose":[{"title":string,"body":string}]}]}
         Szabályok:
         - Magyarul, tegeződve, tömören.
         - tagline: LEGFELJEBB 60 karakter, kártyára való vágat (pl. "Remek pre-workout üzemanyag").
@@ -81,6 +85,13 @@ public class MealCoachService {
           későbbi étkezésre ne utalj egy korábbi értékelésében.
         - Pre-workout szerepnél a gyors szénhidrát ÜZEMANYAG, nem hiba; post-workoutnál a fehérje
           és a szénhidrát-pótlás a fő szempont.
+        - glucose: 0-2 javaslat arra, hogy LEGKÖZELEBB laposabb legyen ennek a tányérnak a
+          vércukor-válasza. A TÉTELEK-ből indulj ki, és NEVEZD MEG a tételt (pl. "A mézből elég a
+          fele", "A banán mellé egy marék dió"): mit hagyjon el, mit cseréljen, mit tegyen mellé.
+          title legfeljebb 40 karakter, body egy mondat, miért segít. Ha a tányér kevés vagy
+          lassan felszívódó szénhidrátot tartalmaz, adj üres listát. SOHA ne írj vércukor-számot,
+          ne használd a "glikémiás index" kifejezést, és ne ítélkezz — a magas csúcs nem kudarc.
+          Pre-workout szerepnél a gyors szénhidrát szándékos: ott üres lista.
         - Minden kapott mealId-hoz pontosan egy objektum tartozzon.
         """;
 
@@ -88,8 +99,12 @@ public class MealCoachService {
     record ExtractedImprove(String text, String impact) {
     }
 
+    record ExtractedGlucose(String title, String body) {
+    }
+
     record ExtractedVerdict(String mealId, String tagline, String summary,
-                            List<ExtractedImprove> improve, Map<String, String> dimensionNotes) {
+                            List<ExtractedImprove> improve, Map<String, String> dimensionNotes,
+                            List<ExtractedGlucose> glucose) {
     }
 
     record ExtractedAnswer(List<ExtractedVerdict> meals) {
@@ -193,7 +208,7 @@ public class MealCoachService {
                 LocalTime loggedAt = LocalTime.ofInstant(meal.loggedAt(), ZoneId.systemDefault());
                 blocks.put(meal.id(), new MealCoachPrompt.MealBlock(meal.id(), meal.title(),
                     meal.slot(), loggedAt, index, meal.breakdown(), roleOf(loggedAt, windows),
-                    kcal, p, c, f));
+                    kcal, p, c, f, meal.items()));
             }
             kcal = kcal.add(meal.kcal());
             p = p.add(meal.p());
@@ -225,7 +240,8 @@ public class MealCoachService {
                     v.mealId());
                 continue;
             }
-            store.writeProse(userId, mealId, v.summary(), tagline(v.tagline()), improve(v), notes(v))
+            store.writeProse(userId, mealId, v.summary(), tagline(v.tagline()), improve(v), notes(v),
+                    glucose(v))
                 .map(MealCoachService::toVerdict)
                 .ifPresent(out::add);
         }
@@ -255,6 +271,28 @@ public class MealCoachService {
             .map(i -> new MealBreakdownJson.ImproveRow(i.text(),
                 i.impact() == null ? "" : i.impact()))
             .toList();
+    }
+
+    /**
+     * The glucose tips, cleaned: at most two, blank ones dropped, lengths capped. A MISSING field
+     * stays {@code null} (the FE then shows its computed swaps); an explicit empty list stays empty
+     * (the model judged the plate already smooth).
+     */
+    static List<MealBreakdownJson.GlucoseTip> glucose(ExtractedVerdict v) {
+        if (v.glucose() == null) {
+            return null;
+        }
+        return v.glucose().stream()
+            .filter(g -> g != null && g.title() != null && !g.title().isBlank()
+                && g.body() != null && !g.body().isBlank())
+            .limit(GLUCOSE_MAX)
+            .map(g -> new MealBreakdownJson.GlucoseTip(cap(g.title(), GLUCOSE_TITLE_MAX), cap(g.body(), NOTE_MAX)))
+            .toList();
+    }
+
+    private static String cap(String raw, int max) {
+        String trimmed = raw.trim();
+        return trimmed.length() <= max ? trimmed : trimmed.substring(0, max).trim();
     }
 
     /**
@@ -295,6 +333,9 @@ public class MealCoachService {
                 .map(i -> MealImproveRow.builder().text(i.text()).impact(i.impact()).build())
                 .toList())
             .dimensionNotes(dimensionNotes(b))
+            .glucoseTips(b.glucose() == null ? null : b.glucose().stream()
+                .map(g -> MealGlucoseTip.builder().title(g.title()).body(g.body()).build())
+                .toList())
             .build();
     }
 

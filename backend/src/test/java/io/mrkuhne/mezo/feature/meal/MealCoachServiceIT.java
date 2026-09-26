@@ -87,6 +87,28 @@ class MealCoachServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testGenerateForMeal_shouldPersistTheGlucoseTips_inTheSameCall() {
+        UUID owner = owner();
+        LocalDate today = LocalDate.now();
+        PantryItemEntity item = pantryItemPopulator.createFood(owner, "Méz", LocalDate.now().plusMonths(6));
+        MealEntity meal = mealPopulator.createScoredMeal(owner, item, today, "Tízórai",
+            today.atTime(10, 45).toInstant(ZoneOffset.UTC));
+        meal.setTitle("Tízórai [fake-meal-coach:" + """
+            {"meals":[{"mealId":"%s","tagline":"Édes löket","summary":"Gyors cukor egy nyugodt délelőttön.",\
+            "improve":[],"glucose":[{"title":"A mézből elég a fele","body":"A méz a leggyorsabb rész."}]}]}"""
+            .formatted(meal.getId()) + "]");
+        mealRepository.saveAndFlush(meal);
+
+        List<MealCoachVerdict> verdicts = service.generateForMeal(owner, meal.getId());
+
+        assertThat(verdicts).hasSize(1);
+        assertThat(verdicts.getFirst().getGlucoseTips()).extracting("title")
+            .containsExactly("A mézből elég a fele");
+        assertThat(mealRepository.findById(meal.getId()).orElseThrow().getBreakdown().glucose())
+            .extracting(MealBreakdownJson.GlucoseTip::title).containsExactly("A mézből elég a fele");
+    }
+
+    @Test
     void testGenerateForDay_shouldServeTheCachedVerdict_withoutCallingTheLlmAgain() {
         UUID owner = owner();
         LocalDate today = LocalDate.now();

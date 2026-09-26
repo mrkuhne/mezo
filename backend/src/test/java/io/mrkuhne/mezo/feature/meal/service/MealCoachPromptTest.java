@@ -104,4 +104,29 @@ class MealCoachPromptTest {
             List.of(block("Vacsora", 2, new BigDecimal("400"))));
         assertThat(prompt).contains("marad: 1100 kcal");
     }
+
+    @Test
+    void testUserMessage_shouldListThePlatesOwnItems_withUnknownSugarAsQuestionMark() {
+        MealCoachPrompt.MealBlock withItems = new MealCoachPrompt.MealBlock(UUID.randomUUID(), "Tízórai",
+            "snack", LocalTime.of(10, 45), 1, breakdown(), MealRole.STANDARD, BigDecimal.ZERO,
+            BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, List.of(
+                new MealCoachStore.ItemLine("Méz", new BigDecimal("20"), "g", new BigDecimal("16"),
+                    new BigDecimal("16.4"), BigDecimal.ZERO, BigDecimal.ZERO),
+                new MealCoachStore.ItemLine("Rozskenyér", new BigDecimal("80"), "g", new BigDecimal("38"),
+                    null, null, new BigDecimal("6"))));
+
+        String msg = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(), List.of(withItems));
+
+        assertThat(msg).contains("TÉTELEK")
+            .contains("- Méz 20 g · C 16g · ebből cukor 16g · rost 0g")
+            .contains("- Rozskenyér 80 g · C 38g · ebből cukor ? · rost ?");
+    }
+
+    @Test
+    void testUserMessage_shouldOmitTheItemsBlock_whenNoLinesAreKnown() {
+        String msg = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(),
+            List.of(block("Zabkása", 1, BigDecimal.ZERO)));
+
+        assertThat(msg).doesNotContain("TÉTELEK");
+    }
 }

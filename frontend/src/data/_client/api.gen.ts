@@ -7052,6 +7052,12 @@ export interface components {
             dimensionNotes?: {
                 [key: string]: string;
             } | null;
+            /** @description „Legközelebb így lesz laposabb" — 0-2 AI-written, plate-specific swaps for a flatter blood-glucose response next time. null = not generated (the client falls back to its own computed swaps); empty = the plate already smooths. Never a glucose number. */
+            glucoseTips?: components["schemas"]["MealGlucoseTip"][] | null;
+        };
+        MealGlucoseTip: {
+            title: string;
+            body: string;
         };
         MealImproveRow: {
             text: string;
