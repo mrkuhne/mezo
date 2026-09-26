@@ -56,6 +56,9 @@ const HEADLINE: Record<GlycemicLevel, string> = {
   low: 'Szépen simít.',
 }
 
+/** Az eredménysor sávszava, a `glycemicBand` LABELS-ével azonos. */
+const LEVEL_WORD: Record<GlycemicLevel, string> = { low: 'alacsony', mid: 'közepes', high: 'magas' }
+
 const AXIS: [number, string][] = [[8, 'evés'], [82, '+1 ó'], [157, '+2 ó'], [218, '+3 ó']]
 
 /**
@@ -152,6 +155,25 @@ export function GlycemicGlass({ band, onClose }: { band: GlycemicBand; onClose: 
         <span aria-hidden="true"><ContentIcon name="i-noveny" size={30} /></span>
         <span><strong>{band.tip.title}</strong><p>{band.tip.body}</p></span>
       </div>
+
+      {/* „Legközelebb így lesz laposabb" (owner, 2026-09-26): a tipp a MOST-ra szól, ez a
+          következő ilyen tányérra. Két csere, és őszintén: melyik sávba vinnék együtt — ha a
+          sáv nem vált, azt is kimondjuk, nem ígérünk többet. */}
+      {band.improve && (
+        <section className="fmx-glu-improve" aria-label="Legközelebb így lesz laposabb">
+          <small>Legközelebb így lesz laposabb</small>
+          <ol>
+            {band.improve.steps.map(step => (
+              <li key={step.title}><b>{step.title}</b><p>{step.body}</p></li>
+            ))}
+          </ol>
+          <p className={`fmx-glu-improve-result lvl-${band.improve.result}`}>
+            {band.improve.result === band.level
+              ? `A kettővel együtt laposabb lesz a domb, de még a ${band.label} sávban marad.`
+              : `A kettővel együtt: ${LEVEL_WORD[band.improve.result]} vércukor-válasz.`}
+          </p>
+        </section>
+      )}
 
       <p className="fmx-glass-note">
         Becslés az étkezés összetételéből, nem mérés és nem orvosi előrejelzés. Sávot mutatunk,

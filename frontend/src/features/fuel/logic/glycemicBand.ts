@@ -37,6 +37,18 @@ export interface GlycemicBand {
   facts: { label: string; value: string }[]
   tip: { title: string; body: string }
   expect: { energy: string; back: string; hunger: string }
+  /**
+   * „Legközelebb így lesz laposabb" (owner, 2026-09-26): a KÖVETKEZŐ ilyen tányérra szóló két
+   * legerősebb csere, és hogy a kettő együtt melyik sávba vinné. `null` az alacsony sávon —
+   * ott nincs mit simítani. A `tip` a MOST-ra szól (séta, sorrend), ez a legközelebbire.
+   */
+  improve: GlycemicImprove | null
+}
+
+export interface GlycemicImprove {
+  steps: { title: string; body: string }[]
+  /** A lépések EGYÜTT alkalmazva ebbe a sávba vinnék a tányért. */
+  result: GlycemicLevel
 }
 
 export interface GlycemicInput {
@@ -74,6 +86,71 @@ const EXPECT: Record<GlycemicLevel, GlycemicBand['expect']> = {
   },
 }
 
+/** A sáv belső mértéke — SOHA nem kerül a felületre (lásd fent, 1. pont). */
+function indexOf(carbs: number, sugar: number, fiber: number, protein: number, fat: number): number {
+  const load = carbs * (0.6 + 0.4 * Math.min(1, sugar / Math.max(1, carbs)))
+  const brake = fiber * 2 + protein * 0.25 + fat * 0.2
+  return load - brake
+}
+
+const levelOf = (index: number): GlycemicLevel => (index < 12 ? 'low' : index < 24 ? 'mid' : 'high')
+
+interface Plate { carbs: number; sugar: number; fiber: number; protein: number; fat: number }
+
+/**
+ * A „legközelebb" cserék jelöltjei. Mindegyik egy hétköznapi, egy mondatban leírható
+ * változtatás, a tányér makróin kifejezve. Az édes ág CSAK ismert cukorral él: a becsült
+ * 30%-ra nem mondhatjuk, hogy „feleannyi édes rész", ha nem tudjuk, van-e benne egyáltalán.
+ */
+function candidates(plate: Plate, sugarEstimated: boolean) {
+  const starch = plate.carbs - plate.sugar
+  const list: { title: string; body: string; apply: (p: Plate) => Plate }[] = []
+  if (!sugarEstimated && plate.sugar >= 10) {
+    list.push({
+      title: 'Feleannyi édes rész',
+      body: 'Az édes összetevőből (méz, lekvár, gyümölcslé, cukros öntet) elég a fele — ez a leggyorsabban felszívódó rész.',
+      apply: p => ({ ...p, carbs: p.carbs - p.sugar / 2, sugar: p.sugar / 2 }),
+    })
+  }
+  if (starch >= 40) {
+    list.push({
+      title: 'Negyeddel kisebb köret',
+      body: 'A kenyérből, tésztából, rizsből vagy krumpliból negyeddel kevesebb — a helyére jöhet zöldség.',
+      apply: p => ({ ...p, carbs: p.carbs - (p.carbs - p.sugar) * 0.25 }),
+    })
+  }
+  list.push({
+    title: 'Rost mellé',
+    body: 'Egy marék zöldség, saláta vagy egy evőkanál chiamag a tányér mellé — a rost fékezi a felszívódást.',
+    apply: p => ({ ...p, fiber: p.fiber + 5 }),
+  })
+  if (plate.protein < 30) {
+    list.push({
+      title: 'Fehérje mellé',
+      body: '150 g túró, görög joghurt vagy két tojás mellé — a fehérje lassítja a csúcsot.',
+      apply: p => ({ ...p, protein: p.protein + 18 }),
+    })
+  }
+  return list
+}
+
+const plateIndex = (p: Plate) => indexOf(p.carbs, p.sugar, p.fiber, p.protein, p.fat)
+
+/** A két legtöbbet simító csere, és hogy együtt hová vinnék. */
+function improveFor(plate: Plate, sugarEstimated: boolean): GlycemicImprove | null {
+  const base = plateIndex(plate)
+  if (levelOf(base) === 'low') return null
+  const ranked = candidates(plate, sugarEstimated)
+    .map(c => ({ ...c, gain: base - plateIndex(c.apply(plate)) }))
+    .sort((a, b) => b.gain - a.gain)
+    .slice(0, 2)
+  const combined = ranked.reduce((p, c) => c.apply(p), plate)
+  return {
+    steps: ranked.map(({ title, body }) => ({ title, body })),
+    result: levelOf(plateIndex(combined)),
+  }
+}
+
 const num = (v: number | null | undefined): number => (Number.isFinite(v) ? (v as number) : 0)
 
 /**
@@ -90,11 +167,7 @@ export function glycemicBand({ c, sugarG, fiberG, p, f }: GlycemicInput): Glycem
   const protein = num(p)
   const fat = num(f)
 
-  const load = carbs * (0.6 + 0.4 * Math.min(1, sugar / Math.max(1, carbs)))
-  const brake = fiber * 2 + protein * 0.25 + fat * 0.2
-  const index = load - brake
-
-  const level: GlycemicLevel = index < 12 ? 'low' : index < 24 ? 'mid' : 'high'
+  const level = levelOf(indexOf(carbs, sugar, fiber, protein, fat))
   // Az édes ág: a cukor a szénhidrát nagyobb részét adja, ÉS önmagában is sok.
   const sugary = sugar >= carbs * 0.45 && sugar >= 12
   // A „csupasz" ág: nincs mellette se rost, se érdemi fehérje, ami lassítson.
@@ -135,6 +208,7 @@ export function glycemicBand({ c, sugarG, fiberG, p, f }: GlycemicInput): Glycem
     sugarEstimated,
     tip,
     expect: EXPECT[level],
+    improve: improveFor({ carbs, sugar, fiber, protein, fat }, sugarEstimated),
     facts: [
       { label: 'szénhidrát', value: `${Math.round(carbs)} g` },
       { label: 'ebből cukor', value: sugarEstimated ? 'becsült' : `${Math.round(sugar)} g` },

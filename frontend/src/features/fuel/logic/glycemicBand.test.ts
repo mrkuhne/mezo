@@ -167,3 +167,27 @@ describe('glycemicBand · az owner két nem-tárgyalható döntése', () => {
     }
   })
 })
+
+describe('glycemicBand · „Legközelebb így lesz laposabb" (owner, 2026-09-26)', () => {
+  test('alacsony sávon nincs mit simítani — nincs javaslat', () => {
+    expect(withFiber(24.05)!.improve).toBeNull()
+  })
+
+  test('az owner tízóraija (banán, méz, rozskenyér): édes rész + rost, együtt közepes', () => {
+    const band = glycemicBand({ c: 110, sugarG: 48, fiberG: 12, p: 21, f: 6 })!
+    expect(band.level).toBe('high')
+    expect(band.improve!.steps.map(s => s.title)).toEqual(['Feleannyi édes rész', 'Rost mellé'])
+    expect(band.improve!.result).toBe('mid')
+  })
+
+  test('becsült cukorra NEM javasolunk kevesebb édeset — nem tudjuk, van-e benne', () => {
+    const band = glycemicBand({ c: 78, sugarG: null, fiberG: 8, p: 42, f: 10 })!
+    expect(band.improve!.steps.map(s => s.title)).not.toContain('Feleannyi édes rész')
+  })
+
+  test('mindig legfeljebb két lépés, és a sáv nem lehet rosszabb a mostaninál', () => {
+    const band = glycemicBand({ c: 200, sugarG: 90, fiberG: 2, p: 10, f: 5 })!
+    expect(band.improve!.steps.length).toBe(2)
+    expect(band.improve!.result).toBe('high')
+  })
+})

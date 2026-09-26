@@ -143,4 +143,14 @@ describe('GlycemicGlass · a keretben él, és csökkentett mozgás mellett áll
     render(<GlycemicGlass band={HIGH} onClose={() => {}} />)
     expect(boxOf().querySelector('.fmx-glu-curve')!.classList.contains('is-draw')).toBe(true)
   })
+
+  test('„Legközelebb így lesz laposabb": két lépés és az őszinte eredménysor; alacsonyon nincs', () => {
+    const { unmount } = render(<GlycemicGlass band={HIGH} onClose={() => {}} />)
+    const section = within(boxOf()).getByRole('region', { name: 'Legközelebb így lesz laposabb' })
+    expect(section.querySelectorAll('li')).toHaveLength(2)
+    expect(section.querySelector('.fmx-glu-improve-result')!.textContent).toMatch(/A kettővel együtt/)
+    unmount()
+    render(<GlycemicGlass band={LOW} onClose={() => {}} />)
+    expect(within(boxOf()).queryByRole('region', { name: 'Legközelebb így lesz laposabb' })).toBeNull()
+  })
 })
