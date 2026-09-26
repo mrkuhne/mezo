@@ -151,11 +151,44 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
         assertThat(e.getBalanceKcal()).isEqualTo(balanceKcal);
         assertThat(e.getBaseKcal() + e.getPlannedMovementKcal() + e.getExtraMovementKcal() + e.getBalanceKcal())
             .isEqualTo(e.getTargetKcal()).isEqualTo(expectedKcal);
+        assertThat(e.getBaseSource()).isEqualTo(FuelDayEnergy.BaseSourceEnum.FORMULA);
+        assertThat(e.getFormulaBaseKcal()).isEqualTo(neatBaseline.intValueExact());
+        assertThat(e.getBaseSdKcal()).isNull();
+        assertThat(e.getBaseConfidence()).isNull();
 
         FuelWeekResponse week = fuelDayService.getWeek(owner, start);
         assertThat(week.getDays().get(5).getDate()).isEqualTo(saturday);
         assertThat(week.getDays().get(5).getEnergy()).isEqualTo(e);
         assertThat(week.getDays().get(4).getEnergy().getExtraMovementKcal()).isZero();
+    }
+
+    /** mezo-zz91i: a learned Alap rides to the Fuel equation with its provenance; the arithmetic is unchanged. */
+    @Test
+    void testGetDay_shouldCarryLearnedBaseProvenance_whenTheBootstrapIsLearned() {
+        int segKcal = 2599;
+        int balanceKcal = -327;
+        GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, "formula",
+            List.of(new GoalPrescriptionJson.Segment(1, 6, "vágás", segKcal, 170, 300, 86,
+                null, null, null, balanceKcal, null, null, null)),
+            null, null);
+        LocalDate start = LocalDate.of(2026, 6, 8); // Monday
+        GoalEntity goal = goalPopulator.createGoalFull(owner, start, start.plusWeeks(6), prescription,
+            4, "06:30", "22:30");
+        goal.setTdeeBootstrap(new TdeeBootstrapJson(new BigDecimal("1963"), new BigDecimal("1.26"),
+            new BigDecimal("2356.00"), new BigDecimal("570"), new BigDecimal("2926.00"), "MSJ",
+            OffsetDateTime.of(2026, 6, 8, 8, 0, 0, 0, ZoneOffset.UTC), 2,
+            "learned", new BigDecimal("2473.38"), 140, "MEDIUM"));
+        goalRepository.saveAndFlush(goal);
+
+        FuelDayEnergy e = fuelDayService.getDay(owner, start.plusDays(1)).getEnergy();
+
+        assertThat(e.getBaseKcal()).isEqualTo(2356);
+        assertThat(e.getBaseSource()).isEqualTo(FuelDayEnergy.BaseSourceEnum.LEARNED);
+        assertThat(e.getFormulaBaseKcal()).isEqualTo(2473);
+        assertThat(e.getBaseSdKcal()).isEqualTo(140);
+        assertThat(e.getBaseConfidence()).isEqualTo(FuelDayEnergy.BaseConfidenceEnum.MEDIUM);
+        assertThat(e.getBaseKcal() + e.getPlannedMovementKcal() + e.getExtraMovementKcal() + e.getBalanceKcal())
+            .isEqualTo(e.getTargetKcal()).isEqualTo(segKcal);
     }
 
     @Test

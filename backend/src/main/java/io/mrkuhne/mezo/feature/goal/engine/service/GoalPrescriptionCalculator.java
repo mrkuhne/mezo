@@ -46,6 +46,7 @@ public class GoalPrescriptionCalculator {
     private final WeeklyScheduledActivityService weeklyActivity;
     private final DietPreferencesPort dietPreferences;
     private final SleepTargetPort sleepTargetPort;
+    private final LearnedBaseResolver learnedBase;
 
     public Calculation calculate(UUID userId, GoalEntity goal) {
         return calculate(userId, goal, null);
@@ -73,7 +74,8 @@ public class GoalPrescriptionCalculator {
         BigDecimal rest = ActivityEnergyModel.restKcalPerHour(bootstrapService.bmr(profile, currentWeightKg), currentWeightKg)
             .orElse(null);
         BigDecimal weeklyEat = weeklyActivity.totalWeeklyEatKcalPerDay(userId, rest);
-        TdeeBootstrapJson bootstrap = bootstrapService.compute(profile, currentWeightKg, weeklyEat);
+        TdeeBootstrapJson bootstrap = learnedBase.apply(userId,
+            bootstrapService.compute(profile, currentWeightKg, weeklyEat));
         DietPreferences preferences =
             draftPreferences != null ? draftPreferences : dietPreferences.resolve(userId);
         List<ProjectionSegment> segments = projectionService.project(

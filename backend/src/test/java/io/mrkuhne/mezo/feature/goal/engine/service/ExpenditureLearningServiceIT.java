@@ -29,7 +29,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -89,7 +88,6 @@ class ExpenditureLearningServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("enabled by Task 7 — serving")
     void learnsAndServesTheBase_goalServesTheLearnedBase() {
         seedUserAndGoal(null);
         seedMealsAndWeighIns(null);

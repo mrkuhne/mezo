@@ -6338,7 +6338,7 @@ export interface components {
             tdeeBootstrap?: components["schemas"]["TdeeBootstrap"] | null;
             prescription?: components["schemas"]["GoalPrescription"] | null;
         };
-        /** @description Formula-TDEE bootstrap snapshot computed at first evaluation. tdee = neatBaselineKcal + weeklyEatKcalPerDay. */
+        /** @description Formula-TDEE bootstrap snapshot computed at first evaluation. tdee = neatBaselineKcal + weeklyEatKcalPerDay; neatBaselineKcal is the learned base when baseSource = learned (mezo-zz91i). */
         TdeeBootstrap: {
             /** @description Basal metabolic rate (kcal/day) */
             bmr: number;
@@ -6357,6 +6357,20 @@ export interface components {
             formula: "MSJ" | "KATCH";
             /** Format: date-time */
             computedAt: string;
+            /**
+             * @description Where neatBaselineKcal comes from (mezo-zz91i): the bmr × neat formula or the base learned from intake + weight trend; null = formula (older snapshots)
+             * @enum {string|null}
+             */
+            baseSource?: "formula" | "learned" | null;
+            /** @description bmr × neat, kept next to a learned neatBaselineKcal (kcal/day); null on a formula snapshot */
+            formulaNeatBaselineKcal?: number | null;
+            /** @description Learned base uncertainty (±1 SD kcal/day); null for formula */
+            learnedSdKcal?: number | null;
+            /**
+             * @description Learned base confidence; null for formula
+             * @enum {string|null}
+             */
+            learnedConfidence?: "LOW" | "MEDIUM" | "HIGH" | null;
         };
         /** @description Segmented recept produced by the engine — kcal/protein/sleep/rest per timeline segment, plus guard + feasibility status. */
         GoalPrescription: {
@@ -7268,6 +7282,17 @@ export interface components {
             extraMovementKcal: number;
             balanceKcal: number;
             targetKcal: number;
+            /**
+             * @description Where baseKcal comes from (mezo-zz91i) — the BMR × NEAT formula or the base learned from intake + weight trend.
+             * @enum {string}
+             */
+            baseSource?: "formula" | "learned";
+            /** @description BMR × NEAT, shown next to a learned base. */
+            formulaBaseKcal?: number | null;
+            /** @description Learned base uncertainty (±1 SD kcal); null for formula. */
+            baseSdKcal?: number | null;
+            /** @enum {string|null} */
+            baseConfidence?: "low" | "medium" | "high" | null;
         } | null;
         FuelWeekResponse: {
             /** Format: date */

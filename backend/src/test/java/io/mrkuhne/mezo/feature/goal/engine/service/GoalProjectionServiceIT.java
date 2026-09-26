@@ -258,6 +258,27 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void aLearnedBaseAlreadyHoldsTheAdjustmentSoItIsNotAddedAgain() {
+        UUID user = databasePopulator.populateUser("proj-adjust-learned@test.local");
+        GoalEntity goal = goalPopulator.createGoal(user, "cut", "active");
+        TdeeBootstrapJson f = bootstrap();
+        TdeeBootstrapJson learned = new TdeeBootstrapJson(f.bmr(), f.neat(), new BigDecimal("2300.00"),
+            f.weeklyEatKcalPerDay(), new BigDecimal("2300.00"), f.formula(), f.computedAt(), f.activityModel(),
+            "learned", f.neatBaselineKcal(), 140, "MEDIUM");
+        goal.setBalanceAdjustmentKcal(-120); // folded into the learned base by the first learning run (mezo-zz91i)
+
+        List<ProjectionSegment> withAdjustment =
+            service.project(goal, user, learned, trend(DataSufficiencyEnum.NONE, null), 0);
+        goal.setBalanceAdjustmentKcal(0);
+        List<ProjectionSegment> withoutAdjustment =
+            service.project(goal, user, learned, trend(DataSufficiencyEnum.NONE, null), 0);
+
+        assertThat(withAdjustment.get(0).dailyEnergyBalanceKcal())
+            .isEqualTo(withoutAdjustment.get(0).dailyEnergyBalanceKcal());
+        assertThat(withAdjustment.get(0).targetKcal()).isEqualByComparingTo(withoutAdjustment.get(0).targetKcal());
+    }
+
+    @Test
     void balanceAdjustmentAppliesToMaintainToo() {
         UUID user = databasePopulator.populateUser("proj-adjust-maintain@test.local");
         GoalEntity goal = goalPopulator.createGoal(user, "maintain", "active");

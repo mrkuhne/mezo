@@ -71,7 +71,8 @@ public final class DayTargetProjector {
         int segBalance = seg.dailyEnergyBalanceKcal() != null ? seg.dailyEnergyBalanceKcal() : 0;
         int planned = Math.max(0, dayKcal - baseKcal - segBalance);
         int balance = target - baseKcal - planned - extra;
-        return new DailyTargets.Energy(baseKcal, planned, extra, balance, target);
+        return new DailyTargets.Energy(baseKcal, planned, extra, balance, target,
+            base.baseSource(), base.formulaBaseKcal(), base.sdKcal(), base.confidence());
     }
 
     /** A segment without kcal (malformed/legacy): per-field config fallback, no breakdown. */
