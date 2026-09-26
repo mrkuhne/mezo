@@ -273,6 +273,37 @@ test('the section is OMITTED entirely when the person has no graph edges', async
   expect(screen.queryByText(/Kapcsolt események/)).toBeNull()
 })
 
+// --- S4 (mezo-d6ivw.4): "Hatás · együttjárás" kártya ---
+
+test('S4: renders one row per person effect (pp-petra has 3, mock mode)', () => {
+  renderAt(`/me/people/${petra.id}`)
+  expect(screen.getByText('Hatás · együttjárás')).toBeInTheDocument()
+  expect(document.querySelectorAll('.ppl-effrow')).toHaveLength(3)
+  expect(screen.getByText('Együttjárás, nem ok-okozat.')).toBeInTheDocument()
+})
+
+test('S4: the section is OMITTED entirely for a person with no effect rows', () => {
+  renderAt(`/me/people/${adam.id}`)
+  expect(screen.queryByText('Hatás · együttjárás')).toBeNull()
+  expect(document.querySelector('.ppl-effcard')).toBeNull()
+})
+
+test('S4: stress + lower renders the "nyugodtabb" copy (polarity flip)', () => {
+  renderAt(`/me/people/${petra.id}`)
+  expect(screen.getByText(`Úgy tűnik, azokon a napokon, amikor ${petra.name} szóba kerül, nyugodtabb vagy.`)).toBeInTheDocument()
+})
+
+test('S4: strength and confidence render as two separate indicators with distinct aria-labels', () => {
+  renderAt(`/me/people/${petra.id}`)
+  // pp-petra's mental row: strength 'eros' → 'erős', confidence 'eros' → 'erős'; both present
+  // but distinctly labeled (erősség vs. bizonyosság), never conflated into one indicator.
+  expect(screen.getAllByRole('img', { name: 'erősség: erős' }).length).toBeGreaterThan(0)
+  expect(screen.getAllByRole('img', { name: 'bizonyosság: erős' }).length).toBeGreaterThan(0)
+  // pp-petra's stress row: strength 'enyhe', confidence 'gyenge' — the accented/plain split.
+  expect(screen.getByRole('img', { name: 'erősség: enyhe' })).toBeInTheDocument()
+  expect(screen.getByRole('img', { name: 'bizonyosság: gyenge' })).toBeInTheDocument()
+})
+
 test('"Log most" opens PersonLogSheet preselecting this person', () => {
   const onLog = vi.fn()
   hoisted.logMention = onLog
