@@ -45,7 +45,10 @@ function SettledRow({ s, style }: { s: Settled; style: React.CSSProperties }) {
  * companion switch is off) only hides the fact half — graph candidates keep rendering.
  */
 export function RoladInbox({ inbox, delay = 0 }: { inbox: RoladInboxState; delay?: number }) {
-  const { facts, candidates, lifeEvents, settled, degraded, isPending, isError, refetch } = inbox
+  const {
+    facts, candidates, lifeEvents, settled, degraded, isPending, isError, refetch,
+    isLifeEventsError, refetchLifeEvents,
+  } = inbox
 
   // First-seen order, so a decided card turns into its afterlife line IN PLACE instead of jumping
   // to the end (the hook drops decided ids from the open lists). Derived state, set during render.
@@ -106,6 +109,17 @@ export function RoladInbox({ inbox, delay = 0 }: { inbox: RoladInboxState; delay
         )}
         {cards.length > 0 && <div className="tf-rows">{cards}</div>}
         {cards.length === 0 && !degraded && <p className="kr9-quiet">Nincs döntésre váró javaslat.</p>}
+        {/* mezo-plbev item 2: the life-event/season candidates are a SEPARATE honest layer (own
+            404 semantics) — their failure never wipes the section, just adds a quiet retry line
+            under whatever fact cards are already working. `kr9-retry` (not the shared
+            `kr9-link`, whose only rule is `.kr9-page .kr9-link` — this section renders under
+            `.kr9-rolad`, with no `.kr9-page` ancestor, so that rule never matches — fix round 1). */}
+        {isLifeEventsError && (
+          <p className="kr9-quiet">
+            {ROLAD_COPY.lifeEventCandidatesError}{' '}
+            <button type="button" className="kr9-retry" onClick={refetchLifeEvents}>{ROLAD_COPY.retry}</button>
+          </p>
+        )}
       </>
     )
   }

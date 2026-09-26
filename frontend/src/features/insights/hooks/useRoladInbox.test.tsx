@@ -1,5 +1,5 @@
 import { renderHook, waitFor } from '@testing-library/react'
-import { delay, http, HttpResponse } from 'msw'
+import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/data/_client/api'
 import { makeHookWrapper } from '@/test/queryWrapper'
@@ -90,19 +90,37 @@ describe('useRoladInbox (mock mode)', () => {
     expect(result.current.isError).toBe(false)
     expect(typeof result.current.refetch).toBe('function')
   })
+
+  // Rólad polish (mezo-plbev, item 2): the life-event query's own error/refetch, kept SEPARATE
+  // from the fact-side isError — RoladInbox needs both independently to show a quiet retry line
+  // without hiding otherwise-working fact cards.
+  it('exposes isLifeEventsError/refetchLifeEvents separately from the fact-side isError', async () => {
+    const { result } = renderHook(() => useRoladInbox(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+    expect(result.current.isLifeEventsError).toBe(false)
+    expect(typeof result.current.refetchLifeEvents).toBe('function')
+  })
 })
 
 describe('useRoladInbox afterlife rollback on a failed decision (final-review fix, mezo-zpxv7)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
 
+  /** A promise the test itself resolves — the msw handler awaits it, so the request is held
+   *  open for exactly as long as the assertions need, never a fixed wall-clock delay
+   *  (mezo-plbev item 8: the old `delay(200)` guessed at a window instead of controlling it). */
+  function deferred(): { promise: Promise<void>; resolve: () => void } {
+    let resolve!: () => void
+    const promise = new Promise<void>((r) => { resolve = r })
+    return { promise, resolve }
+  }
+
   it('a sikertelen fact-decision után a jelölt visszakerül a candidates listába, nem marad settled', async () => {
     const target = candidateSeed[0]
+    const gate = deferred()
     server.use(
-      // Delayed so the optimistic "settled" moment is actually observable before the rollback —
-      // a fast 500 can reject before the first waitFor poll ever sees the candidate settled.
       http.post(`${API_BASE}/api/companion/fact/candidate/${target.id}/decision`, async () => {
-        await delay(200)
+        await gate.promise
         return new HttpResponse(null, { status: 500 })
       }),
     )
@@ -111,16 +129,20 @@ describe('useRoladInbox afterlife rollback on a failed decision (final-review fi
 
     result.current.decideFact(target, 'accept')
 
-    // Optimistically settled first (the afterlife line shows immediately)...
+    // Optimistically settled first (the afterlife line shows immediately), while the request is
+    // still held open by the gate...
     await waitFor(() => expect(result.current.settled.map((s) => s.id)).toContain(target.id))
     expect(result.current.candidates.map((c) => c.id)).not.toContain(target.id)
-    // ...then rolls back once the mutation rejects: back in candidates, out of settled.
+    // ...then rolls back once the gate is released and the mutation rejects: back in
+    // candidates, out of settled.
+    gate.resolve()
     await waitFor(() => expect(result.current.settled.map((s) => s.id)).not.toContain(target.id))
     expect(result.current.candidates.map((c) => c.id)).toContain(target.id)
   })
 
   it('a sikertelen életesemény-decision után a jelölt visszakerül a lifeEvents listába, nem marad settled', async () => {
     const target = lifeEventCandidateSeed[0]
+    const gate = deferred()
     server.use(
       http.get(`${API_BASE}/api/companion/graph/node/candidate`, () =>
         HttpResponse.json([{
@@ -129,7 +151,7 @@ describe('useRoladInbox afterlife rollback on a failed decision (final-review fi
           createdAt: target.createdAt, updatedAt: target.createdAt,
         }])),
       http.post(`${API_BASE}/api/companion/graph/node/${target.id}/decision`, async () => {
-        await delay(200)
+        await gate.promise
         return new HttpResponse(null, { status: 500 })
       }),
     )
@@ -140,6 +162,7 @@ describe('useRoladInbox afterlife rollback on a failed decision (final-review fi
 
     await waitFor(() => expect(result.current.settled.map((s) => s.id)).toContain(target.id))
     expect(result.current.lifeEvents.map((c) => c.id)).not.toContain(target.id)
+    gate.resolve()
     await waitFor(() => expect(result.current.settled.map((s) => s.id)).not.toContain(target.id))
     expect(result.current.lifeEvents.map((c) => c.id)).toContain(target.id)
   })

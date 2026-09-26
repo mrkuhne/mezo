@@ -4,6 +4,7 @@ import { useCharacterOverview, useClaimFeedback } from '@/data/hooks'
 import { CharacterReplyThread } from '@/features/character/components/CharacterReplyThread'
 import { pickQuoteClaim, ROLAD_COPY } from '@/features/insights/logic/roladCopy'
 import { TEAM } from '@/features/insights/logic/team'
+import { GhostState } from '@/shared/ui/GhostState'
 import { Icon3D } from '@/shared/ui/clay'
 import { useToast } from '@/shared/ui/ToastProvider'
 import { riseStyle } from './riseStyle'
@@ -15,12 +16,14 @@ import { riseStyle } from './riseStyle'
  * the character switch is off → the section is simply absent; no claim yet → the honest note.
  */
 export function RoladQuote({ delay = 0 }: { delay?: number }) {
-  const { overview } = useCharacterOverview()
+  const { overview, isLoading, isError, refetch } = useCharacterOverview()
   const { submit, pending } = useClaimFeedback()
   const { show } = useToast()
-  const [confirmed, setConfirmed] = useState(false)
+  const [confirmedClaimId, setConfirmedClaimId] = useState<string | null>(null)
   const [replyOpen, setReplyOpen] = useState(false)
 
+  if (isLoading) return <GhostState message={ROLAD_COPY.quoteLoading} />
+  if (isError) return <GhostState message={ROLAD_COPY.quoteError} ctaLabel={ROLAD_COPY.retry} onCta={refetch} />
   if (overview == null) return null
   const claim = pickQuoteClaim(overview)
 
@@ -34,10 +37,11 @@ export function RoladQuote({ delay = 0 }: { delay?: number }) {
   }
 
   const who = TEAM[claim.character]
+  const confirmed = confirmedClaimId === claim.id
   async function talal() {
     try {
       await submit(claim!.id, 'TALAL')
-      setConfirmed(true)
+      setConfirmedClaimId(claim!.id)
       show({ kind: 'success', text: 'Talál — megerősítetted, a benyomás erősödik' })
     } catch {
       show({ kind: 'error', text: 'Nem sikerült elküldeni a visszajelzést — próbáld újra' })
@@ -63,9 +67,11 @@ export function RoladQuote({ delay = 0 }: { delay?: number }) {
         </button>
       </div>
       {/* the reply thread's dark re-dress lives under `.kr9-page` (the nested root the karakter
-          block already zeroes the padding of inside `.kr9-rolad`) */}
+          block already zeroes the padding of inside `.kr9-rolad`); `.kr9-quote-thread` is this
+          page's OWN margin rule, since `.kr9-page .kr9-thread` is a descendant selector and this
+          div carries both classes on the SAME element — it can never match (mezo-plbev, item 5). */}
       {replyOpen && (
-        <div className="kr9-page kr9-thread">
+        <div className="kr9-page kr9-quote-thread">
           <CharacterReplyThread source={{ sourceType: 'CLAIM', sourceId: claim.id, sourceIndex: 0 }} initialOpen />
         </div>
       )}

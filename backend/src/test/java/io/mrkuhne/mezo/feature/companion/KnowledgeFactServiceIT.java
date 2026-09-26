@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.api.dto.KnowledgeFactResponse;
 import io.mrkuhne.mezo.api.dto.UpdateFactRequest;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
+import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
@@ -27,6 +28,7 @@ class KnowledgeFactServiceIT extends AbstractIntegrationTest {
     @Autowired private KnowledgeFactService knowledgeFactService;
     @Autowired private KnowledgeFactPopulator factPopulator;
     @Autowired private DatabasePopulator databasePopulator;
+    @Autowired private KnowledgeFactRepository knowledgeFactRepository;
 
     private CreateFactRequest createRequest(String factText, String category) {
         return CreateFactRequest.builder().factText(factText).category(category).build();
@@ -95,6 +97,52 @@ class KnowledgeFactServiceIT extends AbstractIntegrationTest {
         assertThat(updated.getFactText()).isEqualTo("Pontosított tény");
         assertThat(updated.getCategory()).isEqualTo("health");
         assertThat(updated.getIncludeInPrompt()).isTrue();
+    }
+
+    // Rólad polish (mezo-plbev, item 3): a category change re-derives the owner ONLY when the
+    // fact still carries the OLD category's default owner — an owner the team named explicitly
+    // (e.g. szunya on a health fact) must never be silently overwritten by a category edit.
+    @Test
+    void testUpdate_shouldRederiveOwner_whenCategoryChangesAndOwnerWasTheOldCategoryDefault() {
+        UUID userId = databasePopulator.populateUser("fact-owner-rederive@test.local");
+        KnowledgeFactEntity fact = factPopulator.fact(userId, "Reggel edz", "train", 0);
+        assertThat(fact.getOwner()).isEqualTo("mocor"); // the "train" category default
+
+        knowledgeFactService.update(userId, fact.getId(),
+                UpdateFactRequest.builder().category("health").build());
+
+        KnowledgeFactEntity updated = knowledgeFactRepository.findById(fact.getId()).orElseThrow();
+        assertThat(updated.getOwner()).isEqualTo("deru"); // the "health" category default
+        assertThat(updated.getCategory()).isEqualTo("health");
+    }
+
+    @Test
+    void testUpdate_shouldKeepExplicitOwner_whenCategoryChangesButOwnerWasNotTheOldCategoryDefault() {
+        UUID userId = databasePopulator.populateUser("fact-owner-keep@test.local");
+        KnowledgeFactEntity fact = factPopulator.fact(userId, "Nehezen alszol el hétvégén", "health", 0);
+        fact.setOwner("szunya"); // an explicitly-named owner, NOT the "health" default (deru)
+        knowledgeFactRepository.saveAndFlush(fact);
+
+        knowledgeFactService.update(userId, fact.getId(),
+                UpdateFactRequest.builder().category("train").build());
+
+        KnowledgeFactEntity updated = knowledgeFactRepository.findById(fact.getId()).orElseThrow();
+        assertThat(updated.getOwner()).isEqualTo("szunya");
+        assertThat(updated.getCategory()).isEqualTo("train");
+    }
+
+    @Test
+    void testUpdate_shouldLeaveOwnerAlone_whenCategoryIsUnchanged() {
+        UUID userId = databasePopulator.populateUser("fact-owner-nochange@test.local");
+        KnowledgeFactEntity fact = factPopulator.fact(userId, "Pontatlan tény", "life", 0);
+        fact.setOwner("falat"); // an explicitly-named owner unrelated to the category default
+        knowledgeFactRepository.saveAndFlush(fact);
+
+        knowledgeFactService.update(userId, fact.getId(),
+                UpdateFactRequest.builder().factText("Pontosított tény").build());
+
+        KnowledgeFactEntity updated = knowledgeFactRepository.findById(fact.getId()).orElseThrow();
+        assertThat(updated.getOwner()).isEqualTo("falat");
     }
 
     @Test

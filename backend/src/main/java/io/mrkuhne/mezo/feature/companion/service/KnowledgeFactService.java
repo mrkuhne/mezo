@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.UpdateFactRequest;
 import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.HighlightCitationSource;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.companion.entity.FactOwner;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
@@ -118,6 +119,13 @@ public class KnowledgeFactService {
             fact.setFactText(request.getFactText());
         }
         if (request.getCategory() != null) {
+            // mezo-plbev item 3: re-derive the owner ONLY when it still carries the OLD
+            // category's default (nobody named it explicitly) — an owner the team gave by name
+            // (e.g. szunya on a health fact, via the sleep-lexicon backfill or a live producer)
+            // must survive a category edit untouched.
+            if (fact.getOwner().equals(FactOwner.forCategory(fact.getCategory()))) {
+                fact.setOwner(FactOwner.forCategory(request.getCategory()));
+            }
             fact.setCategory(request.getCategory());
         }
         if (request.getIncludeInPrompt() != null) {

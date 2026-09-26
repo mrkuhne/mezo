@@ -42,8 +42,13 @@ const FEED_KEY = ['characterFeed']
 /** The dossier overview — 404 (character switch off) is the honest degraded state, never a
  *  crash (the useBiometricProfile idiom). Mock mode starts EMPTY (pre-bootstrap, spec §2); the
  *  bootstrap ceremony (useCharacterBootstrap) flips this cache entry to the seeded dossier. */
-export function useCharacterOverview(): { overview: CharacterOverviewResponse | null; isLoading: boolean } {
-  const { data, isPending } = useDualQuery<CharacterOverviewResponse | null>({
+export function useCharacterOverview(): {
+  overview: CharacterOverviewResponse | null
+  isLoading: boolean
+  isError: boolean
+  refetch: () => void
+} {
+  const { data, isPending, isError, refetch } = useDualQuery<CharacterOverviewResponse | null>({
     queryKey: OVERVIEW_KEY,
     mockData: MOCK_OVERVIEW_EMPTY,
     realFetch: async () => {
@@ -57,7 +62,7 @@ export function useCharacterOverview(): { overview: CharacterOverviewResponse | 
     realEmpty: null,
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
-  return { overview: data, isLoading: isPending }
+  return { overview: data, isLoading: isPending, isError, refetch }
 }
 
 /** One dimension in full. 404 (no such key, or the switch is off) -> null. */

@@ -28,7 +28,7 @@ export function BoopAboutPage() {
   const [params] = useSearchParams()
   const start = params.get('start')
   const inbox = useRoladInbox()
-  const { nodes } = useKnowledgeGraphNodes()
+  const { nodes, isError: nodesError, refetch: refetchNodes } = useKnowledgeGraphNodes()
 
   return (
     <div className="kr9-rolad">
@@ -49,7 +49,7 @@ export function BoopAboutPage() {
         <RoladQuote delay={60} />
         <RoladInbox inbox={inbox} delay={120} />
         <RoladFacts facts={inbox.facts} degraded={inbox.degraded} delay={260} />
-        <RoladTimeline nodes={nodes} delay={440} />
+        <RoladTimeline nodes={nodes} isError={nodesError} onRetry={refetchNodes} delay={440} />
 
         <div className="glass tf-pnote tf-c-rose kr9-note rise" style={riseStyle(500)}>
           <Icon3D name="t-shield" size={36} />

@@ -17,6 +17,11 @@ export const ROLAD_COPY = {
   snooze: 'Most nem került be — kb. két hét múlva újra megkérdezzük',
   reject: 'Nem került be — nem kérdezzük újra',
   quoteEmpty: 'Még gyűjtjük, amit rólad tudni érdemes — az első kimondott benyomás ide kerül.',
+  quoteLoading: 'A csapat benyomásának betöltése…',
+  quoteError: 'Nem sikerült betölteni a csapat benyomását.',
+  lifeEventsError: 'Nem sikerült betölteni az életeseményeket.',
+  lifeEventCandidatesError: 'Nem sikerült betölteni az életesemény-javaslatokat.',
+  retry: 'Újra',
   note: 'Minden, ami itt áll, forrással együtt él — és bármit elhallgattathatsz vagy pontosíthatsz. A csapat csak azt használja, amit itt jóváhagytál.',
 } as const
 

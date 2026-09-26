@@ -28,7 +28,9 @@ const OUTCOME: Record<FactDecision | LifeEventDecision, Settled['outcome']> = {
 export function useRoladInbox() {
   const { facts, candidates, degraded, isPending, isError, refetch } = useKnowledge()
   const { decide: decideFactM, toggle: toggleFactM } = useKnowledgeActions()
-  const { candidates: lifeEvents } = useLifeEventCandidates()
+  const {
+    candidates: lifeEvents, isError: isLifeEventsError, refetch: refetchLifeEvents,
+  } = useLifeEventCandidates()
   const { decide: decideLifeEventM } = useLifeEventActions()
 
   const [settled, setSettled] = useState<Settled[]>([])
@@ -66,6 +68,12 @@ export function useRoladInbox() {
     isPending,
     isError,
     refetch,
+    // mezo-plbev item 2: the life-event/season candidate query is a SEPARATE honest layer from
+    // the fact candidates above (its own 404 semantics, its own failure) — a working fact half
+    // must keep rendering even when this one errors, so it gets its own isError/refetch pair
+    // rather than being folded into the fact-side `isError`.
+    isLifeEventsError,
+    refetchLifeEvents,
     decideFact,
     decideLifeEvent,
     toggleFact: toggleFactM,
