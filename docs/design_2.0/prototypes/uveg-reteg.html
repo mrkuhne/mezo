@@ -1566,25 +1566,24 @@ svg{overflow:visible}
 .fcx-top .eb{color:#FFD08A;letter-spacing:1.6px}
 .fcx-top h2{font-size:21px;font-weight:600;letter-spacing:-.5px;margin-top:3px}
 .fcx-top small{font-size:12px;color:var(--sub)}
-.fcx-mid{display:flex;align-items:center;justify-content:center;gap:16px;margin:14px 0 8px;position:relative}
-.fcx-mid::before{content:'';position:absolute;left:50%;top:50%;width:300px;height:170px;transform:translate(-50%,-50%);z-index:-1;pointer-events:none;background:radial-gradient(ellipse,rgba(255,190,96,calc(.08 + var(--p,0)*.22)),transparent 68%)}
-.fstars{display:flex;gap:2px}
+.fcx-mid{position:relative;display:grid;justify-items:center;margin:12px 0 4px}
+.fcx-mid::before{content:'';position:absolute;left:50%;top:62px;width:320px;height:200px;transform:translate(-50%,-50%);z-index:-1;pointer-events:none;background:radial-gradient(ellipse,rgba(255,190,96,calc(.08 + var(--p,0)*.24)),rgba(171,159,210,calc(var(--p,0)*.10)) 45%,transparent 68%)}
+.medal{position:relative;width:124px;height:124px;display:grid;place-items:center}
+.medal svg.mr{position:absolute;inset:0;transform:rotate(-90deg);overflow:visible}
+.medal .mt{fill:none;stroke:rgba(245,239,230,.07);stroke-width:6}
+.medal .mp{fill:none;stroke:url(#stone);stroke-width:6;stroke-linecap:round;stroke-dasharray:calc(var(--p,0)*var(--s,83)) 100;filter:drop-shadow(0 0 6px rgba(255,190,96,.6))}
+.medal .core{position:absolute;inset:14px;border-radius:50%;display:grid;place-items:center;align-content:center;gap:0;background:radial-gradient(circle at 35% 30%,#3A332D,#1E1B18);box-shadow:inset 0 1px 0 rgba(255,244,230,.08),inset 0 -10px 18px -10px rgba(171,159,210,.5)}
+.medal .core .icon{width:26px;height:26px;filter:drop-shadow(0 0 8px rgba(171,159,210,.55))}
+.medal b{font-size:36px;font-weight:300;letter-spacing:-1.6px;line-height:1;margin-top:1px;background:linear-gradient(135deg,#C9BDF0,#E6DDFF 45%,#E9C48A);-webkit-background-clip:text;background-clip:text;color:transparent;font-variant-numeric:tabular-nums}
+.medal-cap{font-size:10px;font-weight:600;letter-spacing:1.2px;color:var(--faint);margin-top:8px}
+.fstars{display:flex;gap:6px;margin-top:12px}
 .fstars i{position:relative;width:30px;height:30px}
 .fstars .icon{position:absolute;inset:0;width:100%;height:100%;transition:transform .35s var(--ease),opacity .35s}
 .fstars .on{opacity:0;transform:scale(.5)}
 .fstars i.is-lit .on{opacity:1;transform:none;filter:drop-shadow(0 0 10px rgba(255,190,96,.7))}
 .fstars i.is-lit .off{opacity:0}
-.fstars .off{opacity:.5}
-.medal{position:relative;width:104px;height:104px;display:grid;place-items:center;flex:0 0 auto}
-.medal svg.mr{position:absolute;inset:0;transform:rotate(-90deg);overflow:visible}
-.medal .mt{fill:none;stroke:rgba(245,239,230,.07);stroke-width:7}
-.medal .mp{fill:none;stroke:url(#stone);stroke-width:7;stroke-linecap:round;stroke-dasharray:calc(var(--p,0)*var(--s,83)) 100;filter:drop-shadow(0 0 6px rgba(255,190,96,.6))}
-.medal .core{position:absolute;inset:13px;border-radius:50%;display:grid;place-items:center;align-content:center;background:radial-gradient(circle at 35% 30%,#3A332D,#1E1B18);box-shadow:inset 0 1px 0 rgba(255,244,230,.08),inset 0 -10px 18px -10px rgba(171,159,210,.5)}
-.medal .core>span{display:grid;justify-items:center;gap:1px}
-.medal .core .icon{width:24px;height:24px;margin:0 auto -2px}
-.medal b{font-size:27px;font-weight:300;letter-spacing:-1.2px;line-height:1;background:linear-gradient(135deg,#C9BDF0,#E6DDFF 45%,#E9C48A);-webkit-background-clip:text;background-clip:text;color:transparent}
-.medal small{font-size:8.5px;color:var(--faint);letter-spacing:.6px}
-.fcx-verdict{text-align:center;font-size:22px;font-weight:600;letter-spacing:-.6px;background:linear-gradient(90deg,#F5EFE6,#FFE0AE 55%,#FFBE60);-webkit-background-clip:text;background-clip:text;color:transparent;opacity:0;transform:translateY(8px);transition:.5s var(--ease)}
+.fstars .off{opacity:.45}
+.fcx-verdict{margin-top:12px;text-align:center;font-size:22px;font-weight:600;letter-spacing:-.6px;background:linear-gradient(90deg,#F5EFE6,#FFE0AE 55%,#FFBE60);-webkit-background-clip:text;background-clip:text;color:transparent;opacity:0;transform:translateY(8px);transition:.5s var(--ease)}
 .fcx.is-told .fcx-verdict{opacity:1;transform:none}
 .fcx-count{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
 .fcx-count>span{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px}
@@ -1958,6 +1957,8 @@ svg{overflow:visible}
 .maptbl div .icon{width:28px;height:28px}
 .maptbl div em{margin-left:auto;font-style:normal;font-size:11px;color:var(--faint)}
 
+/* minden Boop él: pislog + nézelődik, egymáshoz képest elcsúsztatva */
+@media (prefers-reduced-motion:no-preference){body:not(.still) .boop.is-alive .boop-eye,body:not(.still) .boop.is-alive .boop-pupil,body:not(.still) .boop.is-alive .boop-brow,body:not(.still) .boop.is-alive .boop-body{animation-delay:var(--bd,0s)}}
 /* side notes */
 .notes nav a{font-size:13px}
 .notes .abnote{font-size:12px;color:var(--faint);line-height:1.5;margin-bottom:14px}
@@ -1970,7 +1971,7 @@ svg{overflow:visible}
 
 @media(max-width:360px){
   .rbtn{width:34px;height:34px}.rbtn .icon{width:20px;height:20px}.orb{width:40px;height:40px}.orb svg{inset:3px;width:34px;height:34px}.wordmark{font-size:23px}
-  .fcx-count{grid-template-columns:repeat(2,1fr)}.medal{width:92px;height:92px}.fcx-mid{gap:10px}.fstars i{width:24px;height:24px}
+  .fcx-count{gap:4px}.fcx-count small{font-size:9px}
   .lu .xp{font-size:76px}.grow2{grid-template-columns:1fr}.tiles7{grid-template-columns:repeat(3,1fr)}.kz-foot,.wel-foot{grid-template-columns:auto 1fr 1fr}
   .verdict{font-size:29px}
 }
@@ -2040,7 +2041,7 @@ svg{overflow:visible}
 <script type="module">
 const $=s=>document.querySelector(s);
 const C=n=>`<svg class="icon" aria-hidden="true"><use href="#c-i-${n}"/></svg>`;
-const B=(d,alive=false)=>`<svg class="boop ${alive?'is-alive':''}" viewBox="0 0 100 100" aria-hidden="true"><use href="#boop-${d}"/></svg>`;
+let bi=0;const B=d=>`<svg class="boop is-alive" style="--bd:-${(bi++*1.7)%9}s" viewBox="0 0 100 100" aria-hidden="true"><use href="#boop-${d}"/></svg>`;
 const I=(n,c='')=>`<svg class="icon ${c}" aria-hidden="true"><use href="#t-${n}"/></svg>`;
 const ring=(p,c,r=34,vb=80)=>`<svg viewBox="0 0 ${vb} ${vb}" aria-hidden="true"><circle class="ring-track" cx="${vb/2}" cy="${vb/2}" r="${r}" pathLength="100"/><circle class="ring-prog" cx="${vb/2}" cy="${vb/2}" r="${r}" pathLength="100" style="--p:${p};--c:${c}"/></svg>`;
 const bar=(w,c,from=null)=>`<span class="bar" style="--c:${c}">${from!=null?`<b class="from" style="--w:${from}%"></b>`:''}<b style="--w:${Math.max(2,Math.min(100,w))}%"></b></span>`;
@@ -2092,10 +2093,10 @@ function cerEtel(){
     <div class="grab"></div>
     <div class="fcx-top"><span class="eb">A NAPOD RÉSZE LETT</span><h2>${MEAL.label}</h2><small>${MEAL.time}</small></div>
     <h1 class="sr">${stars} csillag az ötből</h1>
-    <div class="fcx-mid"><div class="fstars" aria-hidden="true">${[0,1,2].map(i=>`<i data-fs="${i}">${I('star-empty','off')}${I('star','on')}</i>`).join('')}</div>
-      <div class="medal" style="--s:${MEAL.score*10}"><svg class="mr" viewBox="0 0 80 80"><circle class="mt" cx="40" cy="40" r="35" pathLength="100"/><circle class="mp" cx="40" cy="40" r="35" pathLength="100"/></svg>
-        <span class="core"><span>${I('score')}<b data-sc>0</b><small>Mezo értékelése</small></span></span></div>
-      <div class="fstars" aria-hidden="true">${[3,4].map(i=>`<i data-fs="${i}">${I('star-empty','off')}${I('star','on')}</i>`).join('')}</div></div>
+    <div class="fcx-mid"><div class="medal" style="--s:${MEAL.score*10}"><svg class="mr" viewBox="0 0 80 80"><circle class="mt" cx="40" cy="40" r="36" pathLength="100"/><circle class="mp" cx="40" cy="40" r="36" pathLength="100"/></svg>
+        <span class="core">${I('score')}<b data-sc>0</b></span></div>
+      <span class="medal-cap">MEZO ÉRTÉKELÉSE · 10-BŐL</span>
+      <div class="fstars" aria-hidden="true">${[0,1,2,3,4].map(i=>`<i data-fs="${i}">${I('star-empty','off')}${I('star','on')}</i>`).join('')}</div></div>
     <p class="fcx-verdict">${LADDER[stars-1]}</p>
     <div class="fcx-count">${[['plate','kcal','kcal',MEAL.kcal],['protein','g fehérje','p',MEAL.p],['carb','g szénhidrát','c',MEAL.c],['fat','g zsír','f',MEAL.f]].map(([ic,l,k])=>`<span class="cell">${I(ic)}<b data-mc="${k}">0</b><small>${l}</small></span>`).join('')}</div>
     <div class="fcx-foot"><button class="pillx ghost" data-go="#cer-etel/nap">Vissza a naphoz</button><button class="pillx" style="--c:var(--lav)" data-toast="→ Az étkezés értékelése (Miből jött ez a pontszám)">${I('macro')}Részletek</button></div>
