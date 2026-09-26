@@ -228,6 +228,32 @@ mezo:
       # A provisional/full observed rate is on track inside max(target×20%, 0.10 kg/week).
       rate-tolerance-percent: 20
       rate-tolerance-floor-kg-per-week: 0.10
+    # Learned expenditure (mezo-zz91i, spec 2026-09-26-learned-expenditure-design §5).
+    expenditure:
+      enabled: true
+      window-days: 120
+      sigma-scale-kg: 0.35
+      sigma-tissue-kg: 0.02
+      intake-error-pct: 0.10
+      sigma-unknown-kcal: 800
+      water-phi: 0.90
+      sigma-water-kg: 0.20
+      sigma-base-kcal: 12
+      glycogen-kg-per-g: 0.007
+      glycogen-max-kg: 2.0
+      glycogen-alpha: 0.4
+      suspicious-ratio: 0.60
+      reference-days: 28
+      min-reference-days: 5
+      min-usable-days: 10
+      min-usable-days-per-week: 4
+      min-weigh-in-days-per-week: 2
+      max-step-kcal: 150
+      dead-band-kcal: 30
+      max-deviation: 0.35
+      min-base-bmr-ratio: 1.10
+      high-confidence-sd-kcal: 100
+      medium-confidence-sd-kcal: 200
   nutrition:
     # Owner-wide daily macro targets feeding the Fuel-day MacroHero (targets vs consumed).
     # Binds onto NutritionTargetsProperties. Since mezo-najo kcal+p are only the FALLBACK —

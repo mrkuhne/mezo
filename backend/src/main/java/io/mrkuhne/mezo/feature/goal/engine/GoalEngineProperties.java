@@ -64,7 +64,10 @@ public record GoalEngineProperties(
     @NotNull @Valid Adaptive adaptive,
 
     /** State-led overview tolerance around the signed target rate. */
-    @NotNull @Valid Overview overview
+    @NotNull @Valid Overview overview,
+
+    /** Learned-expenditure tunables (mezo-zz91i, spec 2026-09-26-learned-expenditure-design §5). */
+    @NotNull @Valid Expenditure expenditure
 ) {
 
     /**
@@ -184,6 +187,39 @@ public record GoalEngineProperties(
     public record Overview(
         @NotNull @DecimalMin("0") BigDecimal rateTolerancePercent,
         @NotNull @DecimalMin("0") BigDecimal rateToleranceFloorKgPerWeek
+    ) {
+    }
+
+    /**
+     * Learned expenditure (mezo-zz91i): the Kalman filter's noise model (§5.2), the usable-day
+     * classifier (§5.3) and the weekly step policy (§5.4). The prior SD is
+     * {@link GoalEngineProperties#bootstrapUncertaintyKcal()}.
+     */
+    public record Expenditure(
+        @NotNull Boolean enabled,                                   // true — global switch (Part 2 adds a per-user one)
+        @NotNull @Min(28) @Max(365) Integer windowDays,             // 120 — history replayed each run
+        @NotNull @Positive Double sigmaScaleKg,                     // 0.35 — scale noise
+        @NotNull @Positive Double sigmaTissueKg,                    // 0.02 — daily tissue process noise
+        @NotNull @DecimalMin("0") Double intakeErrorPct,            // 0.10 — logged-intake error
+        @NotNull @Positive Integer sigmaUnknownKcal,                // 800 — an unknown-intake day
+        @NotNull @DecimalMin("0") @jakarta.validation.constraints.DecimalMax("0.99") Double waterPhi, // 0.90
+        @NotNull @Positive Double sigmaWaterKg,                     // 0.20
+        @NotNull @Positive Double sigmaBaseKcal,                    // 12 — base drift per day
+        @NotNull @DecimalMin("0") Double glycogenKgPerG,            // 0.007 — +200 g/day carbs → +1.4 kg
+        @NotNull @Positive Double glycogenMaxKg,                    // 2.0
+        @NotNull @Positive Double glycogenAlpha,                    // 0.4 — carb EWMA per usable day
+        @NotNull @Positive Double suspiciousRatio,                  // 0.60 — of the user's 28-day median
+        @NotNull @Min(7) @Max(60) Integer referenceDays,            // 28
+        @NotNull @Min(1) @Max(28) Integer minReferenceDays,         // 5
+        @NotNull @Min(1) @Max(28) Integer minUsableDays,            // 10 — eligibility: usable days in the last 28
+        @NotNull @Min(1) @Max(7) Integer minUsableDaysPerWeek,      // 4 — below: HOLDING
+        @NotNull @Min(1) @Max(7) Integer minWeighInDaysPerWeek,     // 2 — below: HOLDING
+        @NotNull @Min(10) @Max(400) Integer maxStepKcal,            // 150
+        @NotNull @Min(0) @Max(200) Integer deadBandKcal,            // 30
+        @NotNull @Positive Double maxDeviation,                     // 0.35 — rails around the formula base
+        @NotNull @Positive Double minBaseBmrRatio,                  // 1.10 — rail: base ≥ BMR × this
+        @NotNull @Positive Integer highConfidenceSdKcal,            // 100
+        @NotNull @Positive Integer mediumConfidenceSdKcal           // 200
     ) {
     }
 }

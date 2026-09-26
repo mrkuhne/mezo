@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.api.dto.WeightTrendResponse;
 import io.mrkuhne.mezo.api.dto.WeightTrendResponse.DataSufficiencyEnum;
 import io.mrkuhne.mezo.feature.goal.engine.GoalEngineProperties;
+import io.mrkuhne.mezo.feature.goal.engine.service.ExpenditureFilterTest;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.service.GoalInvariantValidator;
 import io.mrkuhne.mezo.feature.goal.service.GoalOverviewCourseService;
@@ -121,6 +122,7 @@ class GoalOverviewCourseServiceTest {
             new GoalEngineProperties.Diet(0.275, 0.20, 0.40, 0.22, 0.5),
             0, 300, new GoalEngineProperties.Suggestion(Map.of()),
             new GoalEngineProperties.Adaptive(120, 50, 7, 4, 5.0),
-            new GoalEngineProperties.Overview(new BigDecimal("20"), new BigDecimal("0.10")));
+            new GoalEngineProperties.Overview(new BigDecimal("20"), new BigDecimal("0.10")),
+            ExpenditureFilterTest.defaults());
     }
 }
