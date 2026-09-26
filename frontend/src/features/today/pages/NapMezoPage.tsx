@@ -40,7 +40,7 @@ import { EletjelStrip, needHueForIcon } from '@/features/today/components/Eletje
 import { useAdviceActions, useCompanionFeed, useFeedback, useObservations, useObservationReply, useTeamChat } from '@/data/hooks'
 import { FeedAvatar } from '@/features/insights/components/feed/FeedPostHead'
 import { TEAM, type TeamCharacterId } from '@/features/insights/logic/team'
-import { stripText } from '@/features/insights/logic/teamChat'
+import { stripText, talkedFlagKeys } from '@/features/insights/logic/teamChat'
 import { renderInline } from '@/shared/lib/markdown'
 import '@/features/insights/boop-world.css'
 import { ObservationCard } from '@/features/today/components/ObservationCard'
@@ -193,22 +193,31 @@ export function NapMezoPage() {
   const teamTalks = teamLatest != null || teamOpen.length > 0
   // Töltés közben sem a sor, sem a régi kártya: különben valós módban a tanácskártya felvillanna,
   // majd eltűnne, amint a chat megérkezik.
-  const holdLegacy = teamChatLoading || teamTalks
+  const teamKeys = useMemo(() => (teamChatLoading ? null : talkedFlagKeys(teamChat)),
+    [teamChatLoading, teamChat])
   // Prepended, not merged into the shared thread: it is what the user just tapped, and the
   // shared thread stays the shell header's unread source of truth (mezo-atry) — untouched by a
   // deeplink that only this page consumes. Deep-linked cards are always companion messages,
   // never nudges, so they only ever join the Üzenetek pane.
   // A tanácskártya (advice, a kérdés-kártya kivételével) és elődje (intervention) a csapat-chatbe
-  // költözött: amíg a chat beszél, itt nem jelenik meg — kivéve, ha épp egy értesítés céloz rá.
+  // költözött: az a kártya rejtőzik el, amelynek szabályáról (flagKey) a chat épp beszél — egy
+  // nyitott ügy vagy egy mai sor ügye. A beállítás-ellenőrző kártya („Mezo · beállítás”,
+  // pl. `missing_sleep_goal`) nem ügy, ezért marad (final review I4, mezo-a9bo7.25). A régi,
+  // S4 előtti intervention-sornak nincs flagKey-e: azt a chat beszéde alatt továbbra is rejtjük.
+  // Kivétel mindig: amire épp egy értesítés céloz.
   const sameDayDeepLink = crossDay == null ? deepLinkId : null
   const displayUzenetek = useMemo(() => {
-    const own = holdLegacy
-      ? uzenetek.filter((m) =>
-          !((m.kind === 'intervention' || (m.kind === 'advice' && !isQuestionCard(m)))
-            && m.artifactId !== sameDayDeepLink))
-      : uzenetek
+    const movedToChat = (m: MezoMessageItem): boolean => {
+      if (m.artifactId === sameDayDeepLink) return false
+      if (m.kind !== 'intervention' && m.kind !== 'advice') return false
+      if (m.kind === 'advice' && isQuestionCard(m)) return false
+      if (teamKeys == null) return true
+      if (m.flagKey) return teamKeys.has(m.flagKey)
+      return m.kind === 'intervention' && teamTalks
+    }
+    const own = uzenetek.filter((m) => !movedToChat(m))
     return linkedItem ? [linkedItem, ...own] : own
-  }, [linkedItem, uzenetek, holdLegacy, sameDayDeepLink])
+  }, [linkedItem, uzenetek, teamKeys, teamTalks, sameDayDeepLink])
   const feedIds = useMemo(() => {
     const ids = feed.map((m) => m.id)
     // The deep-linked card's own feedback state must be fetched too, or its chips would render

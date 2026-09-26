@@ -1,7 +1,7 @@
 import { offsetIso } from '@/shared/lib/dates'
 import type { TeamChatDay, TeamChatLine } from '@/data/character/teamChatApi'
 import { buildTeamChatDay } from '@/data/character/teamChatMock'
-import { chips, clockOf, groupByDayPart, stripText, unreadCount } from './teamChat'
+import { chips, clockOf, groupByDayPart, stripText, talkedFlagKeys, unreadCount } from './teamChat'
 
 const DATE = '2026-09-28'
 
@@ -78,4 +78,24 @@ describe('chips', () => {
 
 test('clockOf: a sor helyi óra:perce', () => {
   expect(clockOf(offsetIso(DATE, '07:05'))).toBe('07:05')
+})
+
+describe('talkedFlagKeys', () => {
+  const thread = (id: string, flagKey: string) => ({
+    id, flagKey, ruleLabel: flagKey, owner: 'szunya' as const, guest: null, status: 'OPEN' as const,
+    openedAt: offsetIso(DATE, '07:00'), closedAt: null, pushed: false, actions: [], applied: null,
+  })
+
+  test('a nyitott ügyek és a mai sorok ügyeinek szabálykulcsai; ügy nélküli sor nem ad kulcsot', () => {
+    const keys = talkedFlagKeys(day(
+      [line('a', '12:00', { thread: { ...thread('t2', 'late_eating'), status: 'RESOLVED' } }),
+        line('b', '12:10', { threadId: null })],
+      { openThreads: [thread('t1', 'sleep_debt')] },
+    ))
+    expect([...keys].sort()).toEqual(['late_eating', 'sleep_debt'])
+  })
+
+  test('üres napra üres halmaz', () => {
+    expect(talkedFlagKeys(day([])).size).toBe(0)
+  })
 })

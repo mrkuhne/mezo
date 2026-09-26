@@ -46,6 +46,17 @@ export function stripText(day: TeamChatDay): { speaker: TeamCharacterId; text: s
   return latest ? { speaker: latest.character, text: latest.body } : null
 }
 
+/**
+ * A szabálykulcsok (flagKey), amelyekről a csapat most beszél: minden nyitott ügy és minden mai
+ * sor ügye. A Nap Üzenetek fülén csak az ezekkel egyező tanácskártya rejtőzik el — a
+ * beállítás-ellenőrző kártya (pl. `missing_sleep_goal`) nem ügy, az marad (mezo-a9bo7.25).
+ */
+export function talkedFlagKeys(day: TeamChatDay): Set<string> {
+  const keys = new Set(day.openThreads.map(t => t.flagKey))
+  for (const l of day.lines) if (l.thread) keys.add(l.thread.flagKey)
+  return keys
+}
+
 /** A `lastSeenIso` óta érkezett karakter-sorok száma (lastSeen nélkül: mind). */
 export function unreadCount(day: TeamChatDay, lastSeenIso: string | null): number {
   const seen = lastSeenIso ? Date.parse(lastSeenIso) : Number.NEGATIVE_INFINITY
