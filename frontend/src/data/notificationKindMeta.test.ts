@@ -21,6 +21,8 @@ const BACKEND_KINDS = [
   'konzilium_verdict',
   // mezo-a9bo7.13 — az esti kiadás megérkezése a csapat falára
   'team_edition',
+  // mezo-a9bo7.23 — egy csapat-üzenőfali ügy phone pusha
+  'team_chat',
 ] as const
 
 describe('APP_NOTIFICATION_KIND_META', () => {
@@ -46,6 +48,10 @@ describe('APP_NOTIFICATION_KIND_META', () => {
 
   it('az esti kiadás a Mezo-világ ikonját viszi', () => {
     expect(APP_NOTIFICATION_KIND_META.team_edition.clay).toBe('i-mezo')
+  })
+
+  it('a csapat-üzenőfali ügy pusha is a Mezo-világ ikonját viszi', () => {
+    expect(APP_NOTIFICATION_KIND_META.team_chat).toMatchObject({ clay: 'i-mezo', tint: 'character' })
   })
 
   it('az életcél-terv a cél clay ikonját viszi', () => {

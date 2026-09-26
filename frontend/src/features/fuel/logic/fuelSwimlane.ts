@@ -22,7 +22,7 @@ import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import { mealContextOf, type MealContext } from '@/features/fuel/logic/mealContext'
 import { macroSplit } from '@/features/fuel/logic/macroSplit'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
-import type { FuelMeal, FuelSlot, MealSlot } from '@/data/types'
+import type { FuelMeal, FuelSlot, MealSlot, WindowReason } from '@/data/types'
 
 export type WindowTileState = 'done' | 'now' | 'missed' | 'future'
 
@@ -88,6 +88,14 @@ export interface WindowTileVM {
   /** The role the meal was SCORED under (Standard / Pre / Post) — done tiles only, null when
    *  unscored or planned (mezo-zeeq; the derivation lives in logic/mealContext.ts). */
   context: MealContext | null
+  /** Az ajánlott ablak (mezo-6g52f); null egy ablak nélküli sloton. */
+  windowFrom: string | null
+  windowTo: string | null
+  windowReasons: WindowReason[]
+  /** Az ablak saját kcal-kerete — a blokkgyűrű nevezője (nem a napi keret). */
+  budgetKcal: number | null
+  /** A tervezett időpont (done tile-on a `time` a logolás ideje). */
+  plannedTime: string
 }
 
 export interface WindowLaneVM {
@@ -192,6 +200,11 @@ export function buildWindowLane(input: {
       scorePct: done && meal?.score != null ? Math.round(meal.score * 100) : null,
       scorable: done && meal?.breakdown != null,
       context: done && meal ? mealContextOf(meal) : null,
+      windowFrom: slot.windowFrom ?? null,
+      windowTo: slot.windowTo ?? null,
+      windowReasons: slot.windowReasons ?? [],
+      budgetKcal: slot.budgetKcal ?? null,
+      plannedTime: slot.plannedTime ?? slot.time,
     }
   })
 

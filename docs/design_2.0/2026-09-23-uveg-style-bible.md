@@ -37,8 +37,8 @@
 | `--surface-card` | `#221E1B` | solid fallback under glass |
 | `--surface-elevated` | `#2A2521` | sheets, the device-frame ring |
 | `--text-primary` | `#F5EFE6` | ink |
-| `--text-secondary` | `#B7A899` | sub copy |
-| `--text-muted` | `#8A7A6A` | eyebrows, units, hints |
+| `--text-secondary` | `#D8CEC2` | sub copy (lifted 2026-09-26, `mezo-nn7h0`) |
+| `--text-muted` | `#AFA294` | eyebrows, units, hints (lifted 2026-09-26) |
 | `--divider` | `rgba(245,239,230,.08)` | hairlines |
 
 These are the existing dark "Pulse" values in `prototype.css`. **Write the token, never the
@@ -578,3 +578,124 @@ the archive and a pointer). New backend: fact `owner` and a 14-day „Most ne”
     it must roll back when the mutation fails, or the page claims a decision that never happened.
 75. **Two sessions, one timestamp.** A parallel slice's migration landed with the same `yyyyMMddHHmm` prefix; the rebase
     kept both and moved ours an hour later. Re-run the full backend suite after any rebase that brings in a migration.
+
+### Olvashatóság + egy háttér (`mezo-nn7h0`, 2026-09-26)
+
+Owner: the gray copy was unreadable on the black ground, and every page had a different background.
+Picked variant 3 of [`prototypes/uveg-olvashatosag.html`](prototypes/uveg-olvashatosag.html).
+
+76. **The ground is near-black graphite `#141210`, not `#000`** (supersedes rule 59's value). Black made the
+    warm-gray copy sink; a slightly lifted ground keeps the glass glowing and the copy legible.
+77. **The gray ladder is `#D8CEC2` (secondary) / `#AFA294` (muted).** White title → light warm gray → mid warm gray:
+    three steps you can still tell apart. Never write the old `#B7A899` / `#8A7A6A` literals for copy.
+78. **One background for every page.** The `.uv-aurora` field (opacity .16) is back on in dark and is THE page
+    background. A hero halo is a glow around the hero object, not a page wash: the shared rule at the end of
+    `prototype.css` mutes every hero `::before` halo to 40%. A new page hero with its own halo joins that list.
+79. **Header, status bar and page are one color, no transition** (`mezo-5knnj`). Nothing may tint the page right
+    under the header: `MozaikPage`'s `.mz-p-<tone>` top wash is transparent in dark and the dark `--halo-*` tokens
+    run at ~40% strength.
+80. **The header is see-through, the background runs to the top of the phone** (`mezo-r3s4j`). In dark the status
+    bar and `.app-head-bg` have no fill: the header layer is a frosted veil (backdrop blur, reaching up behind the
+    status bar, 18px fade at its foot). At rest you see the aurora straight through it; only once the header
+    condenses on scroll does a 45% canvas tint join the blur. Never give the dark header an opaque background again.
+
+### Emodzsi-söprés (`mezo-z5lov`, 2026-09-26)
+
+The last live emoji outside the character voices went to existing sprite symbols (`t-sun t-sleep t-spark t-info t-flame
+t-sprout t-tick`); no new icons. Surfaces: the sleep-goal sheet, the meso wizard CTA, the week/day editor lints, the
+Failure/Volume set style, the macro-panel note. Prototype: [`prototypes/uveg-emodzsi.html`](prototypes/uveg-emodzsi.html).
+
+80. **A grep hit is not a screen.** The source held ~90 distinct emoji; five spots rendered. The rest were dead modules,
+    data fields nobody reads, maps already converted to sprites (`badgeArt`, `cleanTypeLabel`) or comments. Trace every
+    hit to a routed render site before counting it (rule 18 for glyphs); the dead ones go to a cleanup bead
+    (`mezo-8slef`), because deleting them also means fixing the feature docs that still call them live.
+81. **A character's own sentence may carry emoji; the UI may not.** The csapatfal voice rule (spec §2.6/§2.7, owner
+    reconfirmed 2026-09-26) allows sparing emoji inside Szunya/Falat/Mocor/Derű/Mezo lines (`IntroPosts`, `teamRooms`,
+    edition posts). "Still no emoji" (§4) governs glyphs the app draws — buttons, chips, warnings — never voice copy.
+82. **`.t-ico` is `display: block`.** An icon inside a run of text (a warning line, a chip label, a CTA label) takes the
+    kit's `uv-inline` class (inline-block, baseline nudge, the old glyph's trailing gap; `uv-after` when it trails).
+    An `aria-hidden` sprite that replaced a meaningful glyph gets an `sr-only` word for what it meant.
+83. **A prototype's change marker must not sit on the content.** Corner „ITT” badges covered the numbers they pointed at;
+    the owner read it as a broken layout. Mark a change with a dashed outline (`outline-offset`) and offer a switch to
+    hide the markers and one to show the before state.
+
+### Sprite forrás (`mezo-wnfdv`, 2026-09-26)
+
+84. **A new icon goes into `assets/titanium-custom.svg`, then the generator is run.** `titanium-icons.svg` (both the
+    `assets/` and the `frontend/src/shared/ui/clay/` copy) is the output of `node scripts/gen-titanium-sprite.mjs`,
+    built from the `nap.html` sprite plus `titanium-custom.svg`. U5–U10 pasted 29 approved symbols straight into the
+    frontend copy, so the next run would have silently dropped them. Append the symbol after the file's
+    `<!-- symbols -->` marker with a one-line comment naming the approving slice, then regenerate and commit both outputs.
+    `titaniumSpriteSource.test.ts` fails when a shipped symbol has no source, or a source symbol never reached the sprite.
+
+### U10 · Rétegek és ünnepek (`mezo-me75u.10`, 2026-09-26)
+
+Ceremonies (meal, sport), level-up, the shared GlassBox + DatePicker + resume FAB + error card, every old sheet + toasts,
+KalauzSheet + T0 welcome, auth + splash + Minden oldal, admin. Blocks: `── uveg reteg unnep|szint|ablak|lap|kalauz|belepes|admin (`,
+pinned as `U10_BLOCKS`. Six new sprite icons (`t-jump t-sprint t-core t-juggle t-stretch t-target`). Prototype:
+[`prototypes/uveg-reteg.html`](prototypes/uveg-reteg.html).
+
+85. **Every Boop is alive (owner, 2026-09-26).** `<Boop>` defaults to `alive`, and each instance gets its own phase
+    (`--boop-delay`, a negative animation delay from its id), so a screenful never blinks in unison. A test that seeks a
+    Boop keyframe must seek WITHIN the iteration (`progress = currentTime − delay`), not assume phase 0.
+86. **A layer's choreography waits for the layer.** The owner saw the meal stars ignite while the drawer was still rising.
+    Sequence it inside the ONE rAF pass (rise first, then ignition) rather than chaining a CSS transition + `transitionend`
+    — a throttled webview freezes a CSS transition (the ceremony pattern's own rule).
+87. **Make the glass the component's default when the slice migrates every consumer.** GlassBox went glass-by-default
+    (plus a `className`), so no caller could be forgotten (rule 61's trap); `<Sheet>` stayed opt-in (`glass`) because many
+    sheets were already dressed in their own scope — and a guard test (`sheetGlassGuard.test.ts`) now fails any new
+    `<Sheet>` that ships on the old skin.
+88. **A caller's tint must stay overridable.** Read it through a custom property the stylesheet can win
+    (`--c: var(--gl-tint)`), never set `--c` inline — an inline `--c` beats a slice rule that pins its dialogs to a hue.
+89. **Scrolling glass loses its frame below the fold.** `.glass::before` is absolutely placed, so in a scrolling sheet or
+    dialog the gradient hairline covers only the first screenful. Acceptable for tall pickers; know it.
+90. **The kit's field rule is heavy.** `.sheet.glass.uv-sheet :is(input…)` has specificity 0,6,1; a search wrapper that
+    draws its own field gets a second box unless it is bared at a higher specificity. A future kit pass should lower it
+    (`:where()`) or add a `.uv-bare` opt-out.
+91. **Pre-auth screens have no sprite.** AuthGate renders above main.tsx's `<ClaySprites/>`, so every `t-*` icon on login,
+    register, onboarding and the boot failure drew nothing until AuthShell mounted the sprite itself. Any surface rendered
+    outside the app tree must mount its own sprite.
+92. **A root scope beats renaming for a self-contained surface.** Admin carried ~256 legacy light-hex rules; one root class
+    (`.uv-admin`) outranked them all without renaming anything the tests read. Prefix ownership (rule 60) is for pages
+    that SHARE classes with neighbours.
+93. **Never quote a block marker in a comment.** The structure test's `slice()` finds the first `── <marker> (` string; a
+    comment that mentions it earlier in the file makes the test read the wrong section.
+94. **A sprite symbol is not done until `Icon3DName` lists it.** The six U10 icons were in the sprite but not in the type.
+    Add the symbol to `assets/titanium-custom.svg` and run the generator (rule 84).
+95. **A peek strip is sized for the longest voice, not the prototype's one-liner.** Kalauz voices run to four sentences;
+    the peek bar clamps to three lines in a 100px strip.
+
+### Küldetés-választás (`mezo-oy91i`, 2026-09-26)
+
+The start-of-workout challenge picker, three prototype rounds. Prototype:
+[`prototypes/uveg-kuldetes.html`](prototypes/uveg-kuldetes.html) (owner picked variant B).
+
+96. **An entry point never hides itself.** The quest row rendered only when there was something to show, so an
+    empty or failed list made the whole choice disappear and the owner read it as a lost feature. An entry keeps
+    its place and says its state (being made / none today / could not load + retry).
+97. **"Better structure" is not more labels.** Round 2 put a caption over every datum, a box inside the card and
+    three loud things side by side; the owner found it worse. Round 3 reused the ceremony's challenge row
+    (rule 28) — name, one chip line, round status top-right, the reason under a hairline — and it landed.
+    When asked to tidy a card, first look for a row shape the owner already approved.
+98. **A scrolling glass box scrolls its inside, not its frame.** With `overflow:auto` on the `.glass` itself,
+    the `::before` gradient frame travels with the content and draws a stray line across the cards.
+
+### Étkezési óra (`mezo-6g52f`, 2026-09-26)
+
+The Fuel meal card's flat `WindowBar` strip (a fixed ±150 min box, unrelated to the scoring window) and the
+logged-only `.fmx-clock` → `TimeBox` are both retired for one **`MealClock`** button: a 12-hour dial that always
+renders, drawing the recommended window as an arc and — pre-log — a "now" dot, or — post-log — a dot at the logged
+time, the block accent inside the window and amber outside (never red). Tapping it opens **`MealClockBox`** (its frame stays put and only the inside scrolls, rule 98), a
+24-hour day dial (sleep, other windows, training, "now") plus "Miért ekkor?" reasons pre-log or the hit chip,
+blood-sugar band and "Mire számíts" forecast rows post-log. Spec
+[`2026-09-26-etkezesi-ora-design.md`](../superpowers/specs/2026-09-26-etkezesi-ora-design.md); prototype
+[`prototypes/fuel-ora-ablak.html`](prototypes/fuel-ora-ablak.html) (*A · beszédes óra* + *Csak sáv*).
+
+99. **A "talking" icon is a sprite icon plus a data ring around it, not a bigger icon.** The clock button reads as
+    alive because the Titanium `t-clock` sprite sits inside a real 12-hour dial (a recessed track + the window arc +
+    the now/logged dot) — the icon itself never changes. The same pairing (fixed glyph, live ring) is the reusable
+    recipe for any other "this button also shows a number" control.
+100. **"Tap me" is a periodic joint shake, not a float or a breathe.** The unboxed AI score's icon and numeral wobble
+    together (±5°, slight scale, ~0.6 s) once every ~6 s, staggered per card by 0.8 s — not a continuous float/breathe
+    loop. A continuous idle animation reads as "this is alive", a rare joint shake reads as "this is tappable";
+    reduced motion drops it to nothing, never a static substitute.

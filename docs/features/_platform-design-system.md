@@ -14,7 +14,11 @@ key_files:
   - frontend/src/shared/lib/theme.ts
 related: [_platform-data-layer, _platform-notifications, today, train, me, fuel, growth, ritual]
 ---
+> **2026-09-26 — Üveg U10 (`mezo-me75u.10`) — the layers.** Every surface that sits OVER a page is glass now, from the kit: `<Sheet glass>` (`.sheet.glass.uv-sheet`, floating 10px off the edges, flat fields; a guard test `shared/ui/sheetGlassGuard.test.ts` fails a new `<Sheet>` that ships on the old skin), `SheetHead`/`SheetError` (`shared/ui/SheetHead.tsx`), the shared `GlassBox` (glass by DEFAULT plus a `className` prop — the `.gl-card:has()` workaround is retired, mezo-8vfr2), the toast stack (one glass card per toast, `--c` by kind, 3D icon), the DatePicker popover, the FloatingReturnLayer FAB/bar, the ErrorBoundary card, the meal + sport ceremonies (the meal sheet rises first, the score ignites only after it lands), the level-up overlay (3D icons via `skillDisplay().art3d`), KalauzSheet + the T0 welcome (copy rewritten to today's chrome), auth + boot failure (wordmark „boop”), the StartupSplash glass orb, Minden oldal and the admin shell (`.uv-admin` scope). **Every `<Boop>` is alive by default** (blink/look/brow/breathe) with a per-instance phase (`--boop-delay`), so a screenful never blinks in unison. Six new sprite icons for the athletic skills: `t-jump t-sprint t-core t-juggle t-stretch t-target`. Blocks: `── uveg reteg unnep|szint|ablak|lap|kalauz|belepes|admin (`, pinned in `prototypeCssStructure.test.ts` (`U10_BLOCKS`).
+
 > **2026-09-25 — Üveg U8a (`mezo-me75u.13`).** The „Miből látszik?" deep pages (pattern, prediction, experiment detail) share `features/insights/components/DetailHero.tsx` (page frame, the ONE glass hero, state pill, day ring, decision row, dashed empty/error/loading boxes). The old `.pdt-*` blocks are gone; the new block is `── uveg mezo mibol (` at the end of `prototype.css`, guarded by `prototypeCssStructure.test.ts` (hero is the only glass, no italic). The back control uses `useBackTo` (`shared/hooks/useBackNav.ts`): in-app history → one step back („‹ Vissza"), direct open → the list.
+
+> **2026-09-26 — Emodzsi-söprés (`mezo-z5lov`).** The last live UI emoji (sleep-goal anchor chips, the meso wizard CTA, the week/day editor lints, the Failure/Volume set style, the macro-panel note) are `Icon3D` symbols now — no new sprite symbols. The kit gained `.t-ico.uv-inline` (+ `uv-after`) at the end of the `── uveg kit` block: `.t-ico` is `display: block`, so an icon inside a run of text needs the inline-block variant with a baseline nudge. Character voice copy in the csapatfal keeps its sparing emoji by design (bible rule 81).
 
 > **2026-09-24 — Üveg U5 (`mezo-me75u.5`).** The kit gained three owner-approved sprite symbols — `t-template` (a reusable week plan), `t-compare` (two closed runs side by side) and `t-trash` (delete) — drawn in the bible §4 recipe and registered in `Icon3DName`. They stay OUT of `CLAY_TO_3D`: each is mapped at its call site, since the clay names they replace (`i-retegek`, `i-polc`) already mean other things elsewhere (U1 rule 7). `prototype.css` gained six slice blocks (`── uveg edzes2 terv|run|nap|izmok|konyvtar|sablonok|het`), each scoped to its page root because the `mz-`/`pl-`/`ld-` families are shared (U2 rule 13). U1 rule 3 was paid for again: `.glass` clips, so the volume gauge's „most" pin — which sits ABOVE the track — had to declare `overflow: visible` and drop its sheen.
 
@@ -196,10 +200,19 @@ main.tsx
 
 ### Üveg foundation (`mezo-me75u.1`, 2026-09-23)
 
-The shell uses a uniform black canvas (`mezo-x4r3c`, owner request): page background,
-opaque sticky header, desktop status bar and browser/PWA theme color all use `#000000`.
-Dark-mode sky, aurora, header washes and decorative shapes are hidden so no colored band
-separates the header from the page. Content cards retain their accents.
+The shell uses one uniform near-black graphite canvas (`mezo-x4r3c`, then `mezo-nn7h0`, owner
+request): page background, opaque sticky header, desktop status bar and browser/PWA theme color
+all use `#141210`; in dark the header and the status bar are see-through (`mezo-r3s4j`: a
+frosted backdrop-blur veil, tinted only once condensed on scroll), so the background runs unbroken
+to the top of the phone. Every page shares ONE background: that canvas plus the faint `.uv-aurora`
+field (opacity .16) fixed behind the scroller. The daypart sky and header washes stay hidden, and
+the per-page hero halos (`.uv-halo`, `.fmx-hero`, `.trm-hero`, `.nap-center-orbit`, …) are muted
+to 40% so no page paints its own colored ground. For legibility the dark `--text-secondary` is
+`#D8CEC2` and `--text-muted` `#AFA294` (were `#B7A899` / `#8A7A6A`, unreadable on black).
+Decision prototype: `docs/design_2.0/prototypes/uveg-olvashatosag.html` (variant 3).
+The header and the page must read as one surface (`mezo-5knnj`): in dark the `.mz-p-<tone>` page
+washes are transparent and the `--halo-*` page-top
+tokens are dark-overridden at ~40% strength.
 
 The first üvegesítés slice. Every later slice reuses these pieces untouched; a slice that needs
 something new extends the kit, never forks a second recipe.
@@ -210,14 +223,14 @@ something new extends the kit, never forks a second recipe.
   stored mode is still read and written, so lifting the lock (`null`) restores each user's own
   choice. `ThemeProvider` takes `lock` as a prop (default `THEME_LOCK`) so the parked machinery
   keeps its own tests with `lock={null}`. `index.html` boots `data-theme="dark"` unconditionally,
-  and its `theme-color` meta plus the PWA manifest (`vite.config.ts`) agree on `#000000`. The
+  and its `theme-color` meta plus the PWA manifest (`vite.config.ts`) agree on `#141210`. The
   settings page hides its Téma picker while the lock holds (`BeallitasokPage`, code kept).
 - **The glass kit — `── uveg kit (` block, end of `prototype.css`.** One `.glass` recipe (bible §3:
   tinted body + blur, `::before` gradient hairline frame, `::after` 7 s sheen, lift + `--c` glow +
   top edge + inner floor), with `.is-still` (no sheen) and `.is-round` (overflow visible for
   badges, no sheen). Plus the rank-3 flat cell `.uv-flat`, the rank-4 dashed `.uv-empty`, the
   52px lit `.uv-well`, the `.uv-halo`, the `.uv-ring-*` / `.uv-bar` recipes, `.uv-eyebrow` /
-  `.uv-voice` / `.uv-tint`, the dark `--macro-*` values, the parked `.uv-aurora` field,
+  `.uv-voice` / `.uv-tint`, the dark `--macro-*` values, the `.uv-aurora` field (the one shared background),
   and the `uv-*` keyframes behind the reduced-motion gate. Every glass surface takes ONE accent through `--c`, set on the same
   element (inline or from a hue variable on that element — never hoisted onto an ancestor).
   `prototypeCssStructure.test.ts` guards the four layers, that exactly one `.glass {` rule exists,
@@ -249,7 +262,7 @@ something new extends the kit, never forks a second recipe.
   `── uveg nap mai|oldalak|rogzites|uzenetek|napzaras (`. `shared/ui/Island.tsx` (dead) is gone.
 - **Glass chrome — `── uveg chrome (` block (bible §7).** Same content and behavior, glass
   material: the header's round `.glass.is-round` buttons (badges outside), the gradient "boop"
-  wordmark, the opaque black header background, `DayOrb` redrawn as a glass sphere holding a
+  wordmark, the see-through frosted header veil, `DayOrb` redrawn as a glass sphere holding a
   waving coral liquid (`data-level` = the liquid surface; tone still from `intensity`), the
   notification panel as a sky glass card; ONE floating `.tab-bar.glass.is-still` (10px off the
   sides, 12px off the bottom, `--c` = the domain accent from `[data-domain]`, living Boop in a lit

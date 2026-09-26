@@ -40,7 +40,7 @@ test('level-up grants +50 coins and toasts the new level', () => {
   expect(res.leveledUp).toBe(true)
   expect(res.newLevel).toBe(13)
   expect(profile(qc).coins).toBe(240 + 50)
-  expect(toasts.at(-1)).toEqual({ kind: 'success', text: '🎉 Szint 13 — +50 🪙' })
+  expect(toasts.at(-1)).toEqual({ kind: 'success', text: 'Szint 13 — +50 érme' })
 })
 
 test('streak: continues from yesterday and pays the 7-day milestone once', () => {

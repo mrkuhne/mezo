@@ -12,7 +12,7 @@
 // Üvegesítés U4 (mezo-me75u.4): a coral glass — the pending list as FLAT rows (MuscleChip ·
 // name · "N szett") and ONE lit coral primary whose sub-count sits on its own line under the
 // label (3D t-tick instead of the old check glyph); "Mégse" is a flat pill. Skin: the
-// `uveg edzes session` block (`.gl-card:has(> .wos-gb-fin)`).
+// `uveg edzes session` block (`.gl-card.wos-gbx-fin`, the GlassBox className since U10).
 // ============================================================
 import { GlassBox } from '@/shared/ui/mozaik/GlassBox'
 import { Icon3D } from '@/shared/ui/clay'
@@ -46,8 +46,8 @@ export function FinishConfirmGlass({
 }: FinishConfirmGlassProps) {
   const zero = loggedCount === 0
   return (
-    <GlassBox open={open} onClose={onClose} label="Lezárás megerősítése" tint="#d9c395" variant="confirm">
-      <div className="wos-gb wos-gb-fin glass is-still">
+    <GlassBox open={open} onClose={onClose} label="Lezárás megerősítése" tint="#d9c395" variant="confirm" className="wos-gbx wos-gbx-fin">
+      <div className="wos-gb wos-gb-fin">
       <h2>{zero ? 'Egy szettet sem rögzítettél ma.' : `Van még ${pendingTotal} bepipálatlan szetted.`}</h2>
       <p>
         Ha most befejezed az edzést, {zero ? (

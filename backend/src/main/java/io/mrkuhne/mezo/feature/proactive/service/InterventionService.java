@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -78,9 +79,35 @@ public class InterventionService {
      */
     @Transactional
     public Optional<CompanionMessageEntity> deliverForFlag(UUID userId, String flagKey) {
+        // The library text is passed TWICE on purpose, and the two uses are not the same thing
+        // (mezo-wtl0): as the suggestion it is the model's GROUNDING — the only place the prose
+        // can learn what the actual recommendation is — and as the fallbackProse it is the exact
+        // text that ships whenever the model's answer is unusable. Neither reaches the card's
+        // suggestion LIST any more; AdviceCardService drops that for a generated body, which is
+        // what stopped the card printing the same instruction twice.
+        return pick(userId, flagKey, (entryKey, since) -> usedByCard(userId, entryKey, since))
+            .flatMap(p -> adviceCardService.deliver(userId, AdviceCandidate.fromFlag(
+                p.flagKey(), p.entryKey(), EYEBROW, p.facts(), List.of(p.textHu()), p.textHu())));
+    }
+
+    /**
+     * The proactive seam (Task 4, bd mezo-a9bo7.21): the library filter, the per-entry cooldown
+     * and the effectiveness weighting, WITHOUT delivering anything — {@code deliverForFlag} turns
+     * the result into a {@code companion_message} advice card; the csapatfal team-chat line
+     * generator (Act III) will turn the same result into a character line instead, without
+     * re-implementing selection. {@code usedSince} lets each caller define its own "already used"
+     * notion (the advice card's own recent-cards check for {@code deliverForFlag}, a different
+     * recency source for team chat) while the selection itself stays identical.
+     *
+     * @param usedSince tested per candidate entry as {@code usedSince.test(entryKey, since)} where
+     *                  {@code since} is {@code now - entry.cooldownHours()}; {@code true} excludes
+     *                  the entry from this pick.
+     */
+    public Optional<AdvicePick> pick(UUID userId, String flagKey, BiPredicate<String, Instant> usedSince) {
         List<CompanionProperties.Intervention> candidates = companionProperties.interventions().stream()
             .filter(entry -> entry.flag().equals(flagKey))
-            .filter(entry -> !inCooldown(userId, entry))
+            .filter(entry -> !usedSince.test(entry.key(),
+                Instant.now().minus(entry.cooldownHours(), ChronoUnit.HOURS)))
             .toList();
         if (candidates.isEmpty()) {
             log.info("Intervention for {} skipped for user {}: no eligible library entry", flagKey, userId);
@@ -102,29 +129,24 @@ public class InterventionService {
             .findFirstByCreatedByAndFlagKeyAndDeletedFalseOrderByCreatedAtDesc(userId, flagKey)
             .map(CompanionFlagLogEntity::getPayload)
             .orElse(null);
-        // The library text is passed TWICE on purpose, and the two uses are not the same thing
-        // (mezo-wtl0): as the suggestion it is the model's GROUNDING — the only place the prose
-        // can learn what the actual recommendation is — and as the fallbackProse it is the exact
-        // text that ships whenever the model's answer is unusable. Neither reaches the card's
-        // suggestion LIST any more; AdviceCardService drops that for a generated body, which is
-        // what stopped the card printing the same instruction twice.
-        return adviceCardService.deliver(userId, AdviceCandidate.fromFlag(
-            flagKey, picked.key(), EYEBROW,
-            FlagFactRenderer.render(flagKey, payload),
-            List.of(picked.textHu()), picked.textHu()));
+        return Optional.of(new AdvicePick(flagKey, picked.key(), picked.textHu(),
+            FlagFactRenderer.render(flagKey, payload), payload));
     }
 
     /** The same library ENTRY must not repeat inside its own cooldown window — envelope
      *  {@code interventionKey}s of recent cards, filtered in memory (single-user volumes, spec
      *  §12). Reads BOTH kinds: {@code advice} is what S4 writes, {@code intervention} is what rows
      *  written before S4 carry, and a cooldown that stopped seeing the older rows would let a
-     *  just-delivered entry repeat the day after the deploy. */
-    private boolean inCooldown(UUID userId, CompanionProperties.Intervention entry) {
-        Instant since = Instant.now().minus(entry.cooldownHours(), ChronoUnit.HOURS);
+     *  just-delivered entry repeat the day after the deploy. Bound as {@code deliverForFlag}'s
+     *  {@code usedSince} predicate ({@link #pick}) — {@code since} arrives already computed as
+     *  {@code now - entry.cooldownHours()}. Package-private (not {@code private}) so a unit test
+     *  can drive {@link #pick} without a Spring context; the class itself stays effectively
+     *  unusable outside one (its collaborators are all repositories/properties beans). */
+    boolean usedByCard(UUID userId, String entryKey, Instant since) {
         return Stream.of(CompanionMessageEntity.KIND_ADVICE, CompanionMessageEntity.KIND_INTERVENTION)
             .flatMap(kind -> companionMessageRepository
                 .findByCreatedByAndKindAndGeneratedAtAfter(userId, kind, since).stream())
-            .anyMatch(row -> entry.key().equals(row.getContent().interventionKey()));
+            .anyMatch(row -> entryKey.equals(row.getContent().interventionKey()));
     }
 
     private double effectiveness(UUID userId, String key) {

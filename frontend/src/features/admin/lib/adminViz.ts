@@ -45,11 +45,12 @@ export function maxOf(rec: Record<string, number>): number {
 }
 
 /** Fixed-hue (admin coral) heat color for the 90-day activity heat strip: alpha alone carries the
- *  value, scaled 0.22–1.0 against the strip's own max, a flat neutral tint at zero. */
+ *  value, scaled 0.22–1.0 against the strip's own max, a flat neutral tint at zero. Dark-ground
+ *  values (üveg, mezo-me75u.10): the `--dv-coral` hue on the empty `rgba(245,239,230,.07)` track. */
 export function heatColor(v: number, max: number): string {
-  if (!v) return 'rgba(43,33,24,.07)'
+  if (!v) return 'rgba(245,239,230,.07)'
   const t = 0.22 + 0.78 * (v / max)
-  return `rgba(216,72,31,${t.toFixed(2)})`
+  return `rgba(255,126,92,${t.toFixed(2)})`
 }
 
 /** Per-axis totals from the user×feature cost matrix (mezo-m079 Task 2) — the sole aggregation

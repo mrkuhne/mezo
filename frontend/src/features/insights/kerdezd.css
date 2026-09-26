@@ -1,0 +1,132 @@
+/* ══ Kérdezd a csapatot (mezo-u3712) ═══════════════════════════════════════════════════════
+   Parity: docs/design_2.0/prototypes/uveg-diagnozis.html (owner OK 2026-09-26). Tokens only
+   (üveg bible §1–2); the glass is the shared `.glass` kit, the avatars are `tf-av` (boop-world.css).
+   Ranking (restored bible §3.4): on the list page the LATEST ANSWER is the one glass; question
+   rows, past rows and chips are flat. The entry row (`tf-askteam`) is glass where it lives. */
+
+/* back pill + eyebrow */
+.kt-nav { display: flex; align-items: center; gap: 10px; padding: 4px 16px 4px; }
+.kt-bpill { --c: #8A7A6A; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 15px 0 13px; border-radius: 999px;
+  font: inherit; font-size: 13px; font-weight: 600; color: var(--text-primary); border: 0; cursor: pointer; }
+.kt-bpill.glass::after { display: none; }
+.kt-nav small { margin-left: auto; font-size: 9.5px; font-weight: 600; letter-spacing: 1.4px; color: var(--text-muted); text-transform: uppercase; }
+
+/* today's quota */
+.kt-quota { display: flex; align-items: center; gap: 8px; margin: 2px 18px 4px; font-size: 11.5px; color: var(--text-secondary); }
+.kt-quota strong { color: var(--text-primary); }
+.kt-quota em { margin-left: auto; font-style: normal; font-size: 10.5px; color: var(--text-muted); }
+.kt-dots { display: inline-flex; gap: 4px; }
+.kt-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--dv-lav); box-shadow: 0 0 8px color-mix(in srgb, var(--dv-lav) 70%, transparent); }
+.kt-dots i.is-used { background: rgba(245, 239, 230, 0.14); box-shadow: none; }
+
+/* the latest answer — the page's one glass */
+.kt-latest { display: block; margin: 12px 16px 4px; padding: 14px 14px 12px; border-radius: 22px; color: var(--text-primary); text-decoration: none; }
+.kt-lt-top { display: flex; align-items: center; gap: 10px; }
+.kt-lt-top small { display: block; font-size: 9.5px; font-weight: 700; letter-spacing: 1.3px; color: var(--text-muted); text-transform: uppercase; }
+.kt-lt-top strong { display: block; margin-top: 1px; font-size: 13px; font-weight: 600; }
+.kt-lt-q { display: block; margin: 12px 0 5px; font-size: 19px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.25; }
+.kt-lt-v { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.kt-lt-foot { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.kt-lt-foot em { margin-left: auto; font-style: normal; font-size: 12.5px; font-weight: 650; color: color-mix(in srgb, var(--c) 85%, #fff); }
+.kt-cert { display: inline-flex; align-items: center; gap: 7px; padding: 5px 10px 5px 6px; border-radius: 999px; background: rgba(245, 239, 230, 0.06);
+  box-shadow: inset 0 0 0 1px var(--divider); font-size: 11px; font-weight: 600; color: var(--text-secondary); }
+.kt-cert > i { width: 34px; height: 4px; border-radius: 2px; background: rgba(245, 239, 230, 0.1); overflow: hidden; }
+.kt-cert > i > b { display: block; height: 100%; border-radius: 2px; background: var(--dv-lav); box-shadow: 0 0 6px var(--dv-lav); }
+
+/* „Mit kérdezel?" — one flat list, a row per question with its host */
+.kt-qlist { margin: 0 16px; border-radius: 20px; overflow: hidden; background: rgba(245, 239, 230, 0.03); box-shadow: inset 0 0 0 1px rgba(245, 239, 230, 0.08); }
+.kt-qrow { display: flex; align-items: center; gap: 11px; width: 100%; padding: 12px; border: 0; background: none; font: inherit; color: var(--text-primary); text-align: left; cursor: pointer; }
+.kt-qrow + .kt-qrow { border-top: 1px solid rgba(245, 239, 230, 0.06); }
+.kt-qrow .tf-av, .kt-past .tf-av { width: 38px; height: 38px; }
+.kt-qtxt { flex: 1; min-width: 0; }
+.kt-qtxt small { display: block; margin-bottom: 2px; font-size: 9px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: color-mix(in srgb, var(--c) 75%, #fff); }
+.kt-qtxt strong { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: -0.2px; }
+.kt-qtxt span { display: block; margin-top: 2px; font-size: 11px; line-height: 1.35; color: var(--text-secondary); }
+.kt-askpill { flex: 0 0 auto; padding: 7px 12px; border-radius: 999px; font-size: 11.5px; font-weight: 650; color: color-mix(in srgb, var(--c) 85%, #fff);
+  background: color-mix(in srgb, var(--c) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 38%, transparent); }
+.kt-qrow.is-soon { opacity: 0.5; cursor: default; }
+.kt-qrow.is-soon .kt-askpill { color: var(--text-muted); background: none; box-shadow: inset 0 0 0 1px var(--divider); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
+.kt-qrow:focus-visible, .kt-past:focus-visible, .kt-latest:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 2px; }
+
+/* „Korábbi válaszok" — filter chips + flat rows */
+.kt-chips { display: flex; gap: 7px; padding: 0 16px 10px; overflow-x: auto; scrollbar-width: none; }
+.kt-chips button { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px 6px 7px; border-radius: 999px; border: 0; background: none;
+  font: inherit; font-size: 11.5px; font-weight: 600; color: var(--text-secondary); box-shadow: inset 0 0 0 1px var(--divider); cursor: pointer; }
+.kt-chips button .tf-av { width: 20px; height: 20px; box-shadow: none; }
+.kt-chips button[aria-pressed="true"] { color: var(--text-primary); background: rgba(245, 239, 230, 0.08); box-shadow: inset 0 0 0 1px rgba(245, 239, 230, 0.22); }
+.kt-past { display: flex; align-items: center; gap: 11px; min-width: 0; padding: 11px 12px; border-radius: 17px; color: var(--text-primary); text-decoration: none;
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px rgba(245, 239, 230, 0.09); }
+.kt-ptxt { flex: 1; min-width: 0; }
+.kt-ptxt strong { display: block; font-size: 14px; font-weight: 600; }
+.kt-ptxt span { display: block; margin-top: 2px; font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kt-pmeta { flex: 0 0 auto; text-align: right; font-size: 10.5px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.kt-pmeta i { display: block; margin-top: 3px; font-style: normal; font-size: 9.5px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; }
+.kt-pmeta i.is-old { color: var(--dv-amber); }
+
+/* the ask sheet */
+.kt-ask { display: grid; gap: 10px; }
+.kt-weeks { display: flex; gap: 8px; }
+.kt-weeks button { flex: 1; padding: 10px; border-radius: 14px; border: 0; background: none; font: inherit; font-size: 12.5px; font-weight: 600; text-align: center;
+  color: var(--text-secondary); box-shadow: inset 0 0 0 1px var(--divider); cursor: pointer; }
+.kt-weeks button small { display: block; margin-top: 2px; font-size: 10.5px; font-weight: 500; color: var(--text-muted); }
+.kt-weeks button[aria-pressed="true"] { color: var(--text-primary); background: color-mix(in srgb, var(--gl-tint, var(--dv-lav)) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gl-tint, var(--dv-lav)) 45%, transparent); }
+.kt-ask-note { margin: 0; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.kt-ask-note strong { color: var(--text-primary); }
+.kt-ask-note.is-error { color: var(--dv-coral); }
+.kt-looks { display: flex; flex-wrap: wrap; gap: 6px; }
+.kt-looks span { padding: 5px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.kt-go { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; border-radius: 16px; border: 0; font: inherit; font-size: 13.5px; font-weight: 650; cursor: pointer;
+  color: var(--text-primary); background: color-mix(in srgb, var(--gl-tint, var(--dv-lav)) 22%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gl-tint, var(--dv-lav)) 50%, transparent), 0 0 18px -6px var(--gl-tint, var(--dv-lav)); }
+.kt-cost { margin: 0; font-size: 11px; color: var(--text-muted); text-align: center; }
+.kt-work { display: grid; justify-items: center; gap: 12px; padding: 8px 0 4px; }
+.kt-work > strong { font-size: 18px; font-weight: 700; letter-spacing: -0.4px; }
+.kt-work .tf-av { width: 68px; height: 68px; }
+.kt-steps { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 8px; }
+.kt-steps li { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-muted); transition: color 0.3s; }
+.kt-steps li i { width: 20px; height: 20px; border-radius: 50%; flex: 0 0 auto; display: grid; place-items: center; font-style: normal; font-size: 11px;
+  box-shadow: inset 0 0 0 1.5px rgba(245, 239, 230, 0.2); }
+.kt-steps li.is-on { color: var(--text-primary); }
+.kt-steps li.is-on i { box-shadow: inset 0 0 0 1.5px var(--dv-lav), 0 0 10px var(--dv-lav); }
+.kt-steps li.is-done { color: var(--text-secondary); }
+.kt-steps li.is-done i { background: var(--dv-sage); box-shadow: none; color: #16130f; }
+@media (prefers-reduced-motion: no-preference) {
+  .kt-steps li.is-on i { animation: kt-pulse 1s ease-in-out infinite; }
+}
+@keyframes kt-pulse { 50% { box-shadow: inset 0 0 0 1.5px var(--dv-lav), 0 0 3px var(--dv-lav); } }
+
+/* the report: host + guests, voice, stale, owner chip, the Szkeptikus */
+.kt-hosts { display: flex; justify-content: center; align-items: center; margin-bottom: 8px; }
+.kt-hosts > .tf-av { width: 58px; height: 58px; }
+.kt-guest { margin-left: -8px; }
+.kt-guest .tf-av { width: 38px; height: 38px; box-shadow: 0 0 0 2px var(--surface-page); }
+.kt-voice { display: flex; align-items: center; gap: 9px; margin: 4px 16px 0; padding: 9px 12px; border-radius: 16px; font-size: 12.5px; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px rgba(245, 239, 230, 0.08); }
+.kt-voice .tf-av { width: 30px; height: 30px; }
+.kt-stale { display: flex; align-items: center; gap: 10px; margin: 8px 16px 0; padding: 11px 13px; border-radius: 17px; font-size: 12px; color: var(--text-secondary);
+  background: color-mix(in srgb, var(--dv-amber) 7%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 30%, transparent); }
+.kt-stale button { margin-left: auto; flex: 0 0 auto; border: 0; background: none; font: inherit; font-size: 12px; font-weight: 650; color: var(--dv-amber); cursor: pointer; }
+.kt-stale button:disabled { opacity: 0.6; cursor: default; }
+.kt-owner { display: inline-flex; align-items: center; gap: 5px; margin: 6px 0 0; font-size: 10.5px; font-weight: 600; color: color-mix(in srgb, var(--c) 75%, var(--text-secondary)); }
+.kt-owner .tf-av { width: 20px; height: 20px; box-shadow: none; }
+.kt-skeptic { margin: 14px 0 0; }
+
+/* the entry row (A csapat, Nap hub) */
+.tf-askteam { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px; border-radius: 20px; color: var(--text-primary); text-decoration: none; }
+.tf-askstack { display: flex; flex: 0 0 auto; margin-right: 9px; }
+.tf-askstack .tf-av { width: 30px; height: 30px; margin-right: -9px; box-shadow: 0 0 0 2px var(--surface-card); }
+.tf-askteam .tf-rowtxt { flex: 1; min-width: 0; }
+.tf-askteam .tf-rowname { display: block; font-size: 14.5px; font-weight: 650; }
+.tf-askteam .tf-rowsub { display: block; margin-top: 2px; font-size: 11px; color: var(--text-secondary); }
+.tf-askteam .tf-rowbadge { font-style: normal; color: var(--text-muted); }
+/* ══ /Kérdezd a csapatot ═══════════════════════════════════════════════════════════════════ */
+.tf-askrow { margin-top: 12px; }
+/* `.tf-av > *` pins the boop at 34px (boop-world.css) — the smaller avatars here size it down */
+.kt-chips button .tf-av > * { width: 16px; height: 16px; }
+.kt-owner .tf-av > * { width: 16px; height: 16px; }
+.tf-askstack .tf-av > *, .kt-voice .tf-av > * { width: 23px; height: 23px; }
+.kt-qrow .tf-av > *, .kt-past .tf-av > * { width: 29px; height: 29px; }
+.kt-guest .tf-av > * { width: 29px; height: 29px; }
+.kt-hosts > .tf-av > * { width: 44px; height: 44px; }
+.kt-work .tf-av > * { width: 54px; height: 54px; }

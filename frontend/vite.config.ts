@@ -49,9 +49,9 @@ export default defineConfig({
         name: 'Mezo',
         short_name: 'Mezo',
         description: 'Holistic AI performance & health companion',
-        // Dark-only lock (üveg bible §8, mezo-me75u.1): the black canvas.
-        theme_color: '#000000',
-        background_color: '#000000',
+        // Dark-only lock (üveg bible §8, mezo-me75u.1): the near-black graphite canvas (mezo-nn7h0).
+        theme_color: '#141210',
+        background_color: '#141210',
         display: 'standalone',
         orientation: 'portrait',
         icons: [

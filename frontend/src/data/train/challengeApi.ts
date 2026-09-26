@@ -32,12 +32,15 @@ export function toChallenge(w: ChallengeWire): Challenge {
   }
 }
 
+/** 'undo' (mezo-oy91i): an accepted, not yet resolved challenge goes back to proposed. */
+export type ChallengeDecision = 'accept' | 'dismiss' | 'undo'
+
 export const challengeApi = {
   list: (templateSessionId: string, date: string) =>
     apiFetch<ChallengeWire[]>(
       `/api/proactive/challenge?templateSessionId=${templateSessionId}&date=${date}`,
     ).then((rows) => rows.map(toChallenge)),
-  decide: (id: string, decision: 'accept' | 'dismiss') =>
+  decide: (id: string, decision: ChallengeDecision) =>
     apiFetch<ChallengeWire>(`/api/proactive/challenge/${id}/decision`, {
       method: 'POST',
       body: JSON.stringify({ decision } satisfies DecisionRequest),

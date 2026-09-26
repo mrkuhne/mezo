@@ -132,7 +132,7 @@ export function FeedReplySheet({ target, onClose }: { target: FeedReplyTarget | 
       label={target?.mode === 'down' ? 'Mi nem stimmel?' : 'Elmesélem'}
       eyebrow={post ? `${TEAM[post.author].name} kérdezi` : undefined}
       tint="var(--dv-lav)"
-      art={<Icon3D name="t-chat" size={44} />}
+      art={<Icon3D name="t-chat" size={30} />}
     >
       {target && post && (
         <div className="tf-reply" key={`${post.id}:${target.mode}`}>

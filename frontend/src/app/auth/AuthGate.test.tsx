@@ -53,6 +53,9 @@ test('backend unreachable → degraded screen with retry', async () => {
   // the default findBy timeout (1000ms) is too tight for that backoff.
   expect(await screen.findByText('Nem érem el a szervert', undefined, { timeout: 8000 })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Újra' })).toBeInTheDocument()
+  // Üveg (mezo-me75u.10): the screen's title is its heading, and the mark is the 3D signal icon.
+  expect(screen.getByRole('heading', { name: 'Nem érem el a szervert' })).toBeInTheDocument()
+  expect(document.querySelector('.auth-down use')!.getAttribute('href')).toBe('#t-signal')
 }, 10000)
 
 test('a signedOut event while ready drops back to the login page', async () => {

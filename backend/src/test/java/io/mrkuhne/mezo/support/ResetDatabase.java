@@ -53,8 +53,8 @@ public class ResetDatabase {
                 + "skill_progress, level_up_event, perk_unlock, "
                 + "life_goal_pillar_day, life_goal_pillar, life_goal, "
                 + "goal_suggestion, goal_plan_link, goal, biometric_profile, "
-                + "team_edition_post, team_edition, character_council_edition, character_claim_revision, character_run, character_portrait_revision, character_conference, character_observation, character_reply, character_claim, character_dimension, "
-                + "person_fact, mention, person CASCADE").executeUpdate();
+                + "team_chat_line, team_chat_thread, team_edition_post, team_edition, character_council_edition, character_claim_revision, character_run, character_portrait_revision, character_conference, character_observation, character_reply, character_claim, character_dimension, "
+                + "effect_link, person_fact, mention, person CASCADE").executeUpdate();
         // Hybrid catalog (S4, mezo-qw37.4): user-authored definitions go, loader master rows
         // (created_by IS NULL) survive. MUST run before the app_user delete — the FK is ON DELETE
         // SET NULL, so a deleted test user's rows would otherwise be promoted to master and leak.

@@ -136,7 +136,7 @@ export function WorkshopChatDock({
       </div>
 
       {threadOpen && (
-        <Sheet onClose={() => setThreadOpen(false)} className="fkx-rsheet-host" labelledBy="workshop-thread-title">
+        <Sheet glass onClose={() => setThreadOpen(false)} className="fkx-rsheet-host uvl-fuel" labelledBy="workshop-thread-title">
           {close => (
             <>
               <div className="fkx-rsheet-head">

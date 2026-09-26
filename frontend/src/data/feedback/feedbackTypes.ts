@@ -17,6 +17,8 @@ export type FeedbackArtifactKind =
   | 'day_review'
   | 'meal_coach'
   | 'recipe_breakdown'
+  /** Csapatfal Act III (mezo-a9bo7.21): one line of the all-day team chat — targets the line id. */
+  | 'team_chat_line'
 
 export type FeedbackVerdict = 'up' | 'down'
 

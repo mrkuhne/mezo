@@ -16,6 +16,7 @@
 // ============================================================
 import type { MacroDimension } from '@/data/types'
 import { hu1 } from '@/shared/lib/huNum'
+import { Icon3D } from '@/shared/ui/clay'
 
 const ROWS = [
   { key: 'p', nm: 'fehérje', color: 'var(--coral)' },
@@ -50,7 +51,7 @@ export function MacroPanel({ dim }: { dim: MacroDimension }) {
         </span>
         {dim.notes && (
           <span style={{ fontSize: 10, lineHeight: 1.4, color: 'var(--warning)', letterSpacing: '0.04em' }}>
-            ⚠ {dim.notes}
+            <Icon3D name="t-info" size={14} className="uv-inline" />{dim.notes}
           </span>
         )}
       </div>

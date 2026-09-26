@@ -374,3 +374,9 @@ describe('toRequest ingredientOverrides', () => {
       [{ lineOrder: 1, pantryItemId: 'p-9', amount: 0.5 }])
   })
 })
+
+it('toRequest carries the block window when present and null otherwise (mezo-6g52f)', () => {
+  const base = { slot: 'breakfast' as const, items: [{ source: 'pantry' as const, refId: 'p1', amount: 100, unit: 'g' }] }
+  expect(toRequest({ ...base, window: { from: '07:20', to: '09:20' } }).window).toEqual({ from: '07:20', to: '09:20' })
+  expect(toRequest(base).window).toBeNull()
+})

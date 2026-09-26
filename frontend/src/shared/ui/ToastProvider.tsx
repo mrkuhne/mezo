@@ -2,9 +2,10 @@ import {
   createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode,
 } from 'react'
 import {
-  emitToast, isRewardToast, onToast, type RewardToast, type ToastMessage,
+  emitToast, isRewardToast, onToast, type RewardToast, type ToastKind, type ToastMessage,
 } from '@/shared/lib/toastBus'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 
 // Single global toast host (mounted once in AppLayout) + the useToast() imperative API.
 // Components call useToast().show(...); non-React code (mutation cache, the mock award
@@ -16,6 +17,10 @@ import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 // itself caps at 20, oldest dropped on overflow.
 // Purpose-built confirmations (FuelStackPage protocol card, MedalToast) stay feature-local
 // by design; this host is for generic error/success/info feedback plus reward toasts.
+//
+// Üveg (U10, mezo-me75u.10, `uveg-reteg` `uzenet()`): every toast is a `.glass` pill-card (no
+// sheen) whose `--c` is its kind (success sage, error coral, info sky, reward gold), led by a 3D
+// icon, the action a flat accent-tinted pill, the × last. CSS: `── uveg reteg lap (`.
 
 const AUTO_HIDE_MS: Record<ToastMessage['kind'], number> = {
   reward: 4000,
@@ -97,19 +102,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               data-testid="toast-item"
               data-kind={e.toast.kind}
               data-idx={idx < MAX_VISIBLE ? String(idx) : 'hidden'}
-              className={`toast${e.leaving ? ' is-leaving' : ''}${reduced ? ' is-reduced' : ''}`}
+              className={`toast glass uvl-tst is-${e.toast.kind}${e.leaving ? ' is-leaving' : ''}${reduced ? ' is-reduced' : ''}`}
             >
-              <button
-                type="button"
-                className="t-close"
-                aria-label="Bezárás"
-                onClick={() => dismiss(e.id)}
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M6 6l12 12M18 6L6 18" />
-                </svg>
-              </button>
+              <Icon3D name={toastIcon(e.toast)} size={28} className="uvl-tst-ico" />
               {isRewardToast(e.toast) ? <RewardBody toast={e.toast} /> : (
                 <div className="t-pad">
                   <span className="t-simple-text">{e.toast.text}</span>
@@ -124,6 +119,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   )}
                 </div>
               )}
+              <button
+                type="button"
+                className="t-close"
+                aria-label="Bezárás"
+                onClick={() => dismiss(e.id)}
+              >
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor"
+                  strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+                  <path d="M1 1l8 8M9 1L1 9" />
+                </svg>
+              </button>
             </div>
           ))}
         </div>
@@ -132,8 +138,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   )
 }
 
-/** The DS §Notification reward card: eyebrow · Fraunces title (+ italic meta) · meter row
- *  (+N in gold) · an optional LEVEL UP badge. Every part below the title is optional — a
+/** The leading 3D icon: the meaning of a simple toast (success tick, error info, info bell), or
+ *  the reward's source (habit harvest, quest, activity journal). */
+const SIMPLE_ICON: Record<ToastKind, Icon3DName> = { success: 't-tick', error: 't-info', info: 't-bell' }
+const REWARD_ICON: Record<NonNullable<RewardToast['source']>, Icon3DName> = {
+  habit: 't-harvest', quest: 't-quest', activity: 't-journal',
+}
+function toastIcon(t: ToastMessage): Icon3DName {
+  return isRewardToast(t) ? REWARD_ICON[t.source ?? 'quest'] : SIMPLE_ICON[t.kind]
+}
+
+/** The DS §Notification reward card, in üveg (U10, mezo-me75u.10): gold eyebrow · title (+ faint
+ *  meta) · the user's own celebration line (upright, bible rule 23) · meter row (+N in gold) ·
+ *  an optional LEVEL UP pill with the t-up icon. Every part below the title is optional — a
  *  payload with no meter renders as eyebrow + title, never as an empty pill or `+undefined`. */
 function RewardBody({ toast }: { toast: RewardToast }) {
   return (
@@ -153,8 +170,8 @@ function RewardBody({ toast }: { toast: RewardToast }) {
       )}
       {toast.levelUp && (
         <span className="t-lvup">
-          <span aria-hidden="true">★</span>
-          {` LEVEL UP · ${toast.levelUp.label} · Lv${toast.levelUp.from} → ${toast.levelUp.to}`}
+          <Icon3D name="t-up" size={16} />
+          {`LEVEL UP · ${toast.levelUp.label} · Lv${toast.levelUp.from} → ${toast.levelUp.to}`}
         </span>
       )}
     </div>

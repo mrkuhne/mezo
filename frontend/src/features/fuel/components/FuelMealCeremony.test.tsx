@@ -89,7 +89,7 @@ describe('FuelMealCeremony', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  test('a menet ~1 mp: a lap felcsúszik, a számok és a csillagok a végértéken landolnak', () => {
+  test('a menet rövid: a lap felcsúszik, a számok és a csillagok a végértéken landolnak', () => {
     const frames: FrameRequestCallback[] = []
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => { frames.push(cb); return frames.length })
     vi.spyOn(performance, 'now').mockReturnValue(0)
@@ -97,16 +97,70 @@ describe('FuelMealCeremony', () => {
     const root = container.querySelector('.fcx-screen') as HTMLElement
     expect(root.style.getPropertyValue('--rise')).toBe('1')
     expect(root).not.toHaveClass('is-told')
-    frames.shift()?.(600)
+    // mezo-7tj3j: az első frame horgonyoz (started = az első rAF-időbélyeg), utána mér.
+    frames.shift()?.(0)
+    frames.shift()?.(1200)
     expect(root).toHaveClass('is-b1')
     expect(root).not.toHaveClass('is-b2')
-    act(() => { frames.shift()?.(1000) })
+    act(() => { frames.shift()?.(1500) })
     expect(root).toHaveClass('is-told')
     expect(container.querySelector('[data-fcx-count="kcal"]')).toHaveTextContent('689')
     expect(container.querySelector('[data-fcx-count="f"]')).toHaveTextContent('21')
     expect(container.querySelector('[data-fcx-score]')).toHaveTextContent('8,3')
     expect(container.querySelectorAll('[data-fcx-star].is-lit')).toHaveLength(5)
     vi.restoreAllMocks()
+  })
+
+  // U10 (tulajdonos, 2026-09-26): a csillagok akkor indultak, amikor a fiók még emelkedett.
+  // Előbb a lap landol, csak utána gyullad a gyűrű, a pont, a csillagok és a számlálók.
+  test('ELŐBB a lap, AZTÁN a gyújtás: amíg a lap emelkedik, egy csillag sem ég, minden szám nulla', () => {
+    const frames: FrameRequestCallback[] = []
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => { frames.push(cb); return frames.length })
+    vi.spyOn(performance, 'now').mockReturnValue(0)
+    const { container } = setup({ reducedMotion: false })
+    const root = container.querySelector('.fcx-screen') as HTMLElement
+    const sheet = container.querySelector('.fcx-sheet') as HTMLElement
+    const lit = () => container.querySelectorAll('[data-fcx-star].is-lit').length
+
+    // mezo-7tj3j: az első frame horgonyoz (0 ms), a többi ahhoz mér.
+    frames.shift()?.(0)
+    // a lap félúton, majd majdnem fent: még emelkedik, és semmi sem gyulladt
+    for (const ms of [100, 300, 490]) {
+      frames.shift()?.(ms)
+      expect(Number(root.style.getPropertyValue('--rise'))).toBeGreaterThan(0)
+      expect(sheet.style.getPropertyValue('--p')).toBe('0')
+      expect(lit()).toBe(0)
+      expect(container.querySelector('[data-fcx-score]')).toHaveTextContent('0,0')
+      expect(container.querySelector('[data-fcx-count="kcal"]')).toHaveTextContent('0')
+    }
+    // a lap landolt: a gyújtás CSAK most indul
+    frames.shift()?.(500)
+    expect(root.style.getPropertyValue('--rise')).toBe('0')
+    expect(lit()).toBe(0)
+    // a gyújtás közepén már égnek csillagok, a lap a helyén marad
+    frames.shift()?.(900)
+    expect(root.style.getPropertyValue('--rise')).toBe('0')
+    expect(Number(sheet.style.getPropertyValue('--p'))).toBeGreaterThan(0)
+    expect(lit()).toBeGreaterThan(0)
+    vi.restoreAllMocks()
+  })
+
+  test('csökkentett mozgás: nincs csúszás — a lap az első rendertől a helyén áll', () => {
+    const raf = vi.spyOn(window, 'requestAnimationFrame')
+    const { container } = setup()
+    expect((container.querySelector('.fcx-screen') as HTMLElement).style.getPropertyValue('--rise')).toBe('0')
+    expect(raf).not.toHaveBeenCalled()
+    vi.restoreAllMocks()
+  })
+
+  test('üvegben: a lap egy arany üveglap, a számlálók 3D ikonokat viselnek', () => {
+    const { container } = setup()
+    expect(container.querySelector('.fcx-sheet')).toHaveClass('glass')
+    const icons = [...container.querySelectorAll('.fcx-counters use')].map((u) => u.getAttribute('href'))
+    expect(icons).toEqual(['#t-plate', '#t-protein', '#t-carb', '#t-fat'])
+    expect(container.querySelector('.fcx-medal use')).toHaveAttribute('href', '#t-score')
+    expect(container.querySelectorAll('.fcx-stars .fcx-star-on use')).toHaveLength(5)
+    expect(screen.getByText('Mezo értékelése')).toBeInTheDocument()
   })
 
   test('a ceremónia BIRTOKOLJA a képernyőt: modális, saját címkével', () => {

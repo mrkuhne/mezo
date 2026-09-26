@@ -6,13 +6,15 @@
 // The note is optional; confirming posts `{ selfEval }` (or no body at all) to
 // .../close and lands on the freshly written report.
 // Chrome mirrors MesoStartSheet (mezo-meyc.1), the other run-lifecycle sheet.
+// Üveg (U10, mezo-me75u.10): a coral glass sheet, the flag 3D head, a flat note field; the
+// „Lezárás" stays the coral OUTLINE, not a lit pill — closing ends the block (bible rule 29).
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
-import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
+import { SheetHead } from '@/shared/ui/SheetHead'
+import { Icon3D } from '@/shared/ui/clay'
 
 export function MesoCloseSheet({ mesoId, title, onClose }: {
   mesoId: string
@@ -26,7 +28,7 @@ export function MesoCloseSheet({ mesoId, title, onClose }: {
   const [saving, setSaving] = useState(false)
 
   return (
-    <Sheet onClose={onClose} labelledBy="meso-close-title">
+    <Sheet glass onClose={onClose} labelledBy="meso-close-title" className="uvl-edzes">
       {(close) => {
         const confirm = () => {
           if (saving) return
@@ -39,45 +41,33 @@ export function MesoCloseSheet({ mesoId, title, onClose }: {
           })
         }
         return (
-          <>
-            {/* Header */}
-            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-              <div className="col">
-                <span className="eyebrow brand">Mesociklus · zárás</span>
-                <h2 id="meso-close-title" style={{ fontSize: 18, marginTop: 4 }}>Futam lezárása</h2>
-              </div>
-              <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
-                <Icon name="x" size={12} />
+          <div className="uvl-body">
+            <SheetHead icon="t-flag" eyebrow="Mesociklus · zárás" title="Futam lezárása" titleId="meso-close-title" onClose={close} />
+
+            <p className="uvl-lead">
+              {`A(z) ${title} futam lezárul — a riport a zárás pillanatának állapotát rögzíti.`}
+            </p>
+
+            {/* Optional self-eval — the one input the report cannot compute for you */}
+            <div className="uvl-field">
+              <label className="uvl-flabel" htmlFor="meso-close-selfeval">Saját értékelés</label>
+              <textarea
+                id="meso-close-selfeval"
+                rows={4}
+                value={selfEval}
+                onChange={(e) => setSelfEval(e.target.value)}
+                placeholder="Hogy sikerült a blokk? (opcionális)"
+              />
+            </div>
+
+            {/* Footer — closing ENDS the block: the confirm keeps the coral warning outline (rule 29) */}
+            <div className="uvl-foot">
+              <button type="button" className="uvl-ghost" onClick={close}>Mégse</button>
+              <button type="button" className="uvl-warn" onClick={confirm} disabled={saving}>
+                <Icon3D name="t-tick" size={20} />Lezárás
               </button>
             </div>
-
-            <div className="col gap-md">
-              <span className="text-secondary" style={{ fontSize: 14, lineHeight: 1.5 }}>
-                {`A(z) ${title} futam lezárul — a riport a zárás pillanatának állapotát rögzíti.`}
-              </span>
-
-              {/* Optional self-eval — the one input the report cannot compute for you */}
-              <div className="col gap-sm">
-                <label className="shlabel" htmlFor="meso-close-selfeval">Saját értékelés</label>
-                <textarea
-                  id="meso-close-selfeval"
-                  className="shta"
-                  rows={4}
-                  value={selfEval}
-                  onChange={(e) => setSelfEval(e.target.value)}
-                  placeholder="Hogy sikerült a blokk? (opcionális)"
-                />
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="row gap-sm mt-lg">
-              <CtaGhost className="flex-1" onClick={close}>Mégse</CtaGhost>
-              <CtaPrimary className="flex-1" onClick={confirm} disabled={saving}>
-                <Icon name="check" size={14} /> Lezárás
-              </CtaPrimary>
-            </div>
-          </>
+          </div>
         )
       }}
     </Sheet>

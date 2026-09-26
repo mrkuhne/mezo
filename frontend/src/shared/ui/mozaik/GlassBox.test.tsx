@@ -159,3 +159,28 @@ test('backdrop and card are siblings directly under the portal host (Sheet.tsx s
   expect(card.contains(backdrop)).toBe(false)
   document.querySelector('.phone-screen')!.remove()
 })
+
+// Üvegesítés U10 (mezo-me75u.10): the glass material is the default of the primitive, not an
+// opt-in — every caller wears it (bible U8 rule 61). Sheen off (`is-still`), kit hook `uv-gb`.
+test('the card wears the glass by default, with no sheen', () => {
+  render(<GlassBox open onClose={() => {}} label="Kar">tartalom</GlassBox>)
+  expect(screen.getByRole('dialog', { name: 'Kar' })).toHaveClass('gl-card', 'glass', 'is-still', 'uv-gb')
+})
+
+// mezo-8vfr2: a caller scopes its own dialog through a class, not a `:has()` on its body.
+test('className lands on the card, next to the glass classes', () => {
+  render(<GlassBox open onClose={() => {}} label="Kar" className="wos-gbx wos-gbx-recs">tartalom</GlassBox>)
+  expect(screen.getByRole('dialog', { name: 'Kar' })).toHaveClass('gl-card', 'glass', 'wos-gbx', 'wos-gbx-recs')
+})
+
+test('art sits in a lit well in the header; no art, no well', () => {
+  const { unmount } = render(
+    <GlassBox open onClose={() => {}} label="Kar" art={<svg data-testid="art" />}>tartalom</GlassBox>,
+  )
+  const well = document.querySelector('.gl-head > .gl-art.uv-well')
+  expect(well).toBeTruthy()
+  expect(well!.querySelector('[data-testid="art"]')).toBeTruthy()
+  unmount()
+  render(<GlassBox open onClose={() => {}} label="Kar">tartalom</GlassBox>)
+  expect(document.querySelector('.gl-art')).toBeNull()
+})

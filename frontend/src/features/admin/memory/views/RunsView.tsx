@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAdminMemoryRun, useAdminMemoryRuns } from '@/data/admin/adminMemoryHooks'
-import { AdminTile } from '@/features/admin/components/AdminTile'
+import { ADMIN_TILE_CLASS, AdminTile } from '@/features/admin/components/AdminTile'
 import { MosaicDesktop, Tile } from '@/shared/ui/mozaik'
 import { huInt } from '@/shared/lib/huNum'
 import { formatLatency, formatTime } from '@/features/me/logic/llmCallFormat'
@@ -100,7 +100,7 @@ export function RunsView({
         </AdminTile>
       )}
 
-      <Tile wash="sky" eyebrow="Próbafutás" span={12}>
+      <Tile wash="sky" eyebrow="Próbafutás" span={12} className={ADMIN_TILE_CLASS}>
         <ReplayBox userId={userId} onGo={onGo} onInspect={onInspect} />
       </Tile>
     </MosaicDesktop>

@@ -1,4 +1,7 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
+import { API_BASE } from '@/test/msw/handlers'
+import { server } from '@/test/msw/server'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { mockDiagnoses } from '@/data/insights/diagnosisMock'
@@ -105,5 +108,49 @@ describe('DiagnosisDetailPage — Számvetés (mock mode)', () => {
   test('the mérés count renders on the valódi delta Számvetés row', () => {
     renderAt(weightDiag.id)
     expect(screen.getAllByText(/heti átlag 82,4.*5 mérés/).length).toBeGreaterThan(0)
+  })
+})
+
+describe('DiagnosisDetailPage — Kérdezd a csapatot (mezo-u3712)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('the host brings in the suspect owners; every suspect names its owner; the Szkeptikus closes', () => {
+    const { container } = renderAt('diag-demo-1')
+    // fatigue is Mezo's; its suspects are sleep (Szunya) and load (Mocor)
+    expect(screen.getByText('Mezo nézte meg · Szunya és Mocor segített')).toBeInTheDocument()
+    expect(container.querySelectorAll('.kt-guest')).toHaveLength(2)
+    expect(screen.getByText('Szunya gyanúja')).toBeInTheDocument()
+    expect(screen.getByText('Mocor gyanúja')).toBeInTheDocument()
+    expect(screen.getByText(/A Szkeptikus:/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('Kérdezd a csapatot')
+  })
+
+  test('a stale report says so; the refresh is live-only', () => {
+    renderAt('diag-demo-sleep')
+    expect(screen.getByText('Az adataid azóta változtak — ez a válasz már nem a legfrissebb.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Frissítés ›' })).not.toBeInTheDocument()
+  })
+})
+
+describe('DiagnosisDetailPage — Frissítés (real mode, mezo-u3712)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('a stale report regenerates the same question and opens the fresh one', async () => {
+    const stale = { ...mockDiagnoses.find((d) => d.id === 'diag-demo-sleep')!, id: 'old-1', anchorStart: null }
+    let asked: unknown = null
+    server.use(
+      http.get(`${API_BASE}/api/proactive/diagnosis/old-1`, () => HttpResponse.json(stale)),
+      http.get(`${API_BASE}/api/proactive/diagnosis/new-1`, () => HttpResponse.json({ ...stale, id: 'new-1', stale: false, verdict: 'Friss válasz.' })),
+      http.post(`${API_BASE}/api/proactive/diagnosis`, async ({ request }) => {
+        asked = await request.json()
+        return HttpResponse.json({ ...stale, id: 'new-1', stale: false }, { status: 201 })
+      }),
+    )
+    renderAt('old-1')
+    fireEvent.click(await screen.findByRole('button', { name: 'Frissítés ›' }))
+    expect(await screen.findByText('Friss válasz.')).toBeInTheDocument()
+    expect(asked).toMatchObject({ phenomenon: 'sleep' })
   })
 })

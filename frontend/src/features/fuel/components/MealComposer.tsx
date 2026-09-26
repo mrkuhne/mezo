@@ -254,6 +254,8 @@ export interface MealComposerProps {
    *  és megjelenik a két lépéses törlés. A javításról SOSEM megy AI-piszkozat-visszajelzés: az a
    *  jelzés a piszkozat minőségéről beszél, nem a korrekcióról. */
   editMealId?: string
+  /** A blokk ajánlott ablaka (mezo-6g52f) — a szerver ehhez pontozza az időzítést. */
+  window?: { from: string; to: string }
   onSaved: () => void
   onCancel: () => void
 }
@@ -262,7 +264,7 @@ export function MealComposer({
   fixedSlot, initialSlot, prefill, aiPanelOpenOnMount, aiPanelOpen,
   incomingPhoto, incomingAiText, onAiFailed,
   shellOwnsEntry = false, manualSources = true,
-  logDate, logTime, saveLabel, editMealId, onSaved, onCancel,
+  logDate, logTime, saveLabel, editMealId, window, onSaved, onCancel,
 }: MealComposerProps) {
   const { recipes } = useRecipes()
   const { ingredients } = usePantry()
@@ -553,6 +555,7 @@ export function MealComposer({
           : nowOffsetIso(),
       title: effectiveName.trim() || null,
       items,
+      ...(window ? { window } : {}),
       ...(aiContribution
         ? { provenance: { origin: aiContribution.photo ? 'ai-photo' : 'ai-text', rawText: aiContribution.rawText } }
         : {}),

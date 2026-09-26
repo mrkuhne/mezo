@@ -27,15 +27,16 @@ describe('MealCeremonyProvider', () => {
 
     await user.click(screen.getByRole('button', { name: 'Mentés' }))
     expect(screen.getByRole('dialog', { name: 'Az étkezésed elkészült' })).toBeInTheDocument()
-    // a 0..1-es drót-pontszám a /10 skálán jelenik meg — a ~1 mp-es menet végén landol
-    await waitFor(() => expect(document.querySelector('.fcx-score')).toHaveTextContent('8,3'), { timeout: 2500 })
+    // a 0..1-es drót-pontszám a /10 skálán jelenik meg — a menet végén landol: U10 óta előbb a lap ér fel
+    // (~0,5 mp), csak utána gyúl a pontszám (~1 mp). A teljes suite terhelése alatt a rAF lassabb, ezért bő a várakozás.
+    await waitFor(() => expect(document.querySelector('.fcx-score')).toHaveTextContent('8,3'), { timeout: 6000 })
     expect(screen.getByText('Túrós zabkása')).toBeInTheDocument()
     expect(screen.getByText('07:15')).toBeInTheDocument()
     expect(document.querySelector('[data-fcx-count="f"]')).toHaveTextContent('21')
 
     await user.click(screen.getByRole('button', { name: 'Vissza a naphoz' }))
     expect(screen.queryByRole('dialog', { name: 'Az étkezésed elkészült' })).toBeNull()
-  })
+  }, 10000)
 
   test('PONTSZÁM NÉLKÜL nincs ceremónia — a csillag nem születhet a semmiből', async () => {
     const user = userEvent.setup()

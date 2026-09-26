@@ -2,7 +2,7 @@
 title: Admin hub — owner console
 type: feature-domain
 status: done
-updated: 2026-09-25
+updated: 2026-09-26
 tags: [me, auth, admin, llmlog, backend, frontend, data-layer, design]
 key_files:
   - api/feature/admin/admin.yml
@@ -56,6 +56,8 @@ six-question value dashboard below, kept the moved pages' contracts (`AdminApi`,
 reads for `acceptedShare`).
 
 ## 2. User-facing behavior
+
+> **2026-09-26 — Üveg U10 (`mezo-me75u.10`).** The whole admin area wears the dark glass material: the rail is one lavender glass panel with 3D icons (Pulzus `t-signal`, Emberek `t-people`, Funkciók `t-grid`, Költés `t-coin`, Memória `t-layers`, Meghívók és fiókok `t-key`, Nyers adatok `t-graph`), every `AdminTile` is a glass tile whose accent follows its `wash`, inner rows/tables are flat, and loading/empty/error states share `AdminLoading`/`AdminErrorCell`. The legacy light-hex `.ad-*` rules are outranked under the `.uv-admin` root scope (block `── uveg reteg admin (`), not deleted. Behaviour unchanged.
 
 Left rail (`AdminRail`, clay icons, one item per section), full-width content, no bottom TabBar.
 A non-OWNER hitting any `/admin/*` path gets a Hungarian toast (`Ehhez a felülethez nincs

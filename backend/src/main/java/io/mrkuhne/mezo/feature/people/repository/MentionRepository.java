@@ -34,6 +34,17 @@ public interface MentionRepository extends JpaRepository<MentionEntity, UUID> {
         """)
     List<MentionSignal> findSignals(@Param("userId") UUID userId);
 
+    /** S4 (mezo-d6ivw.4): the nightly effect recompute reads only (personId, day, context) —
+     *  a projection for the same dirty-check reason {@link #findSignals} exists. */
+    @Query("""
+        select new io.mrkuhne.mezo.feature.people.repository.MentionContextSignal(
+            m.personId, m.ts, m.contextLabel)
+        from MentionEntity m
+        where m.createdBy = :userId and m.deleted = false
+        order by m.ts desc
+        """)
+    List<MentionContextSignal> findContextSignals(@Param("userId") UUID userId);
+
     /**
      * EGY személy jelei (bd mezo-9x3g) — a {@link #findSignals} személyre szűkített párja. A
      * {@code PeopleService.updatePerson} eddig a felhasználó TELJES említés-történetét húzta be

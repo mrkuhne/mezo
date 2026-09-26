@@ -2128,6 +2128,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/effects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Egy személyhez tartozó nevesített hatások (Emlékezet S4, mezo-d6ivw.4)
+         * @description A megadott személyre élő, nem törölt hatás-sorok, erősség szerint csökkenő sorrendben — a kódban számolt Cliff's delta, sáv és bizonyossági szint (a szolgáltatás megerősített észrevétel esetén egy fokkal feljebb tolja a bizonyosságot, sosem perzisztálva).
+         */
+        get: operations["listPersonEffects"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/observation": {
         parameters: {
             query?: never;
@@ -4179,6 +4199,57 @@ export interface paths {
         put?: never;
         /** Compensate an owned change if the claim has not changed since; repeated undo is idempotent */
         post: operations["undoCharacterClaimRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character/team-chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The all-day team chat for one local day (Csapatfal Act III, mezo-a9bo7.21): the day's lines in time order (OPEN and RESOLVE lines embed their ügy), every still-open ügy of any day, and the day's push count against its budget. With the team chat switched off the day is honestly empty — never a 404 */
+        get: operations["getTeamChatDay"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character/team-chat/threads/{threadId}/reply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The user's reply on their own ügy — a USER line; it never resolves the ügy */
+        post: operations["replyTeamChatThread"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character/team-chat/threads/{threadId}/apply/{actionKey}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Applies one offered action of an ügy exactly once — the same action again is an idempotent no-op, a different one after an apply is a 409 */
+        post: operations["applyTeamChatAction"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7006,7 +7077,13 @@ export interface components {
             label: string;
             value: string;
         };
-        /** @description A `context` dimenzió időzítés-tényei rajzolható alakban (mezo-jcpt.3). UGYANABBÓL a szerver-oldali slot-ablak configból származik, ami a timing-részpontszámot adta, ezért a rajzolt sáv és a pontszám nem tud eltérni. Csak logolt étkezésen van jelen; a recept-sablon breakdownjában nincs `context` dimenzió, tehát ott soha. */
+        MealWindow: {
+            /** @description Helyi idő "HH:mm" */
+            from: string;
+            /** @description Helyi idő "HH:mm" */
+            to: string;
+        };
+        /** @description A `context` dimenzió időzítés-tényei rajzolható alakban (mezo-jcpt.3). UGYANABBÓL az ablakból származik (tárolt tervező-ablak, ha van, különben a slot-ablak config), ami a timing-részpontszámot adta, ezért a rajzolt sáv és a pontszám nem tud eltérni. Csak logolt étkezésen van jelen; a recept-sablon breakdownjában nincs `context` dimenzió, tehát ott soha. */
         MealTimingDetail: {
             /** @description Helyi idő "HH:mm" alakban */
             eatenAt: string;
@@ -7014,6 +7091,11 @@ export interface components {
             windowFrom?: string | null;
             /** @description Az ablak vége "HH:mm"; null = nasi, bármikor jó */
             windowTo?: string | null;
+            /**
+             * @description plan = az étkezéssel tárolt tervező-ablak (mezo-6g52f); config = a statikus slot-ablak; null = régi envelope
+             * @enum {string|null}
+             */
+            windowSource?: "plan" | "config" | null;
             /** @description Magyar slot-név, pl. "vacsora" */
             slotLabel: string;
         };
@@ -7098,6 +7180,8 @@ export interface components {
             slot: string;
             /** Format: date-time */
             loggedAt?: string | null;
+            /** @description A tervező ajánlott ablaka, amibe az étkezést logolták (mezo-6g52f). Megadva ehhez mér a timing-pontszám; hiányzik → a statikus slot-ablak config. Frissítéskor a null NEM törli a tárolt ablakot. */
+            window?: components["schemas"]["MealWindow"] | null;
             title?: string | null;
             items: components["schemas"]["MealItemRequest"][];
             provenance?: components["schemas"]["MealProvenance"] | null;
@@ -7876,6 +7960,47 @@ export interface components {
             ref?: string | null;
             /** @description A címke szövege — csak tag. */
             text?: string | null;
+        };
+        /** @description Egy személyhez tartozó nevesített hatás-sorok (Emlékezet S4, mezo-d6ivw.4), erősség szerint csökkenő sorrendben. */
+        PersonEffectsResponse: {
+            effects: components["schemas"]["EffectResponse"][];
+        };
+        /** @description Egy kódban számolt (subject, metrika) hatás-sor — sosem ok-okozat, csak együttjárás. A `direction` a tárolt előjelből származik: pozitív Cliff's delta = higher. */
+        EffectResponse: {
+            /**
+             * @description Melyik metrikát érinti a hatás.
+             * @enum {string}
+             */
+            metric: "mental" | "energy" | "stress";
+            /**
+             * @description A subject napjain a metrika magasabb vagy alacsonyabb volt-e a többi naphoz képest.
+             * @enum {string}
+             */
+            direction: "higher" | "lower";
+            /**
+             * @description A Cliff-delta abszolút értékéből származó sáv.
+             * @enum {string}
+             */
+            strengthBand: "enyhe" | "kozepes" | "eros";
+            /**
+             * @description A mintaszámból (és megerősített észrevétel esetén a serve-time bumpból) származó bizonyosság.
+             * @enum {string}
+             */
+            confidenceTier: "gyenge" | "kozepes" | "eros";
+            /**
+             * Format: double
+             * @description A subject és a komplementer napok átlagának különbsége nyers metrika-egységben.
+             */
+            meanDiff: number;
+            /** @description Hány napon fordult elő a subject az ablakban. */
+            subjectDays: number;
+            /** @description Az ablak többi (komplementer) napjainak száma. */
+            complementDays: number;
+            /**
+             * Format: date-time
+             * @description A legutóbbi éjszakai újraszámítás időpontja.
+             */
+            computedAt: string;
         };
         /** @description Egy kártya az Észrevételek fülön (Reflexió S4, mezo-eq85.4). A `fresh`/`return` kártyák egy `observation` ESEMÉNYT jelenítenek meg (az `id` az esemény azonosítója), a `watching`/`confirmed` kártyák magát a sort (az `id` a minta azonosítója) — a `patternId` mindig a soré, mert a chip-válasz arra megy. */
         ObservationResponse: {
@@ -9680,7 +9805,7 @@ export interface components {
             reason?: string | null;
         };
         MessageFeedbackResponse: {
-            /** @description 'chat_message' | 'feed_message' | 'weekly_suggestion' | 'weekly_review' | 'memoir' | 'prediction' | 'day_review' | 'meal_coach' | 'recipe_breakdown' */
+            /** @description 'chat_message' | 'feed_message' | 'weekly_suggestion' | 'weekly_review' | 'memoir' | 'prediction' | 'day_review' | 'meal_coach' | 'recipe_breakdown' | 'team_chat_line' */
             artifactKind: string;
             /** Format: uuid */
             artifactId: string;
@@ -9871,6 +9996,59 @@ export interface components {
                 value: string;
             }[];
             dimensions: components["schemas"]["DayDimension"][];
+        };
+        TeamChatDay: {
+            /** Format: date */
+            date: string;
+            lines: components["schemas"]["TeamChatLine"][];
+            /** @description Every OPEN ügy of any day, oldest first */
+            openThreads: components["schemas"]["TeamChatThread"][];
+            pushesToday: number;
+            /** @description mezo.character.team-chat.max-pushes-per-day */
+            pushBudget: number;
+        };
+        TeamChatLine: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            threadId: string | null;
+            /** @enum {string} */
+            kind: "OPEN" | "GUEST" | "RESOLVE" | "SKEPTIC" | "USER";
+            /** @enum {string|null} */
+            character?: "szunya" | "mocor" | "falat" | "deru" | "mezo" | "szkeptikus" | null;
+            body: string;
+            voiced: boolean;
+            facts: string[];
+            /** Format: date-time */
+            occurredAt: string;
+            thread?: components["schemas"]["TeamChatThread"];
+        };
+        TeamChatThread: {
+            /** Format: uuid */
+            id: string;
+            flagKey: string;
+            /** @description FlagCatalog's Hungarian label, e.g. Alvásadósság */
+            ruleLabel: string;
+            /** @enum {string} */
+            owner: "szunya" | "mocor" | "falat" | "deru" | "mezo";
+            guest?: string | null;
+            /** @enum {string} */
+            status: "OPEN" | "RESOLVED" | "EXPIRED";
+            /** Format: date-time */
+            openedAt: string;
+            /** Format: date-time */
+            closedAt?: string | null;
+            pushed: boolean;
+            actions: components["schemas"]["TeamChatAction"][];
+            /** @description The applied actionKey */
+            applied?: string | null;
+        };
+        TeamChatAction: {
+            key: string;
+            label: string;
+        };
+        TeamChatReplyRequest: {
+            text: string;
         };
         CharacterCouncilStatusResponse: {
             /** Format: date */
@@ -10255,6 +10433,8 @@ export interface components {
             metricKey: string;
             expectedDirection: string;
             totalDays: number;
+            /** @description The suspect metric's domain (MetricKey.domain) — the FE's owner character (mezo-u3712). */
+            domain?: string | null;
         };
         DiagnosisResponse: {
             /** Format: uuid */
@@ -17894,6 +18074,37 @@ export interface operations {
             };
         };
     };
+    listPersonEffects: {
+        parameters: {
+            query: {
+                personId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A személy hatás-sorai */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonEffectsResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     listObservations: {
         parameters: {
             query?: {
@@ -23311,6 +23522,141 @@ export interface operations {
                 };
             };
             /** @description Later claim change prevents safe compensation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getTeamChatDay: {
+        parameters: {
+            query?: {
+                /** @description The local day (mezo.character.team-chat.zone); defaults to today */
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The day (possibly empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamChatDay"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    replyTeamChatThread: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                threadId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeamChatReplyRequest"];
+            };
+        };
+        responses: {
+            /** @description The written USER line */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamChatLine"];
+                };
+            };
+            /** @description Empty or oversized text */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such ügy for this user, or the team chat is switched off */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    applyTeamChatAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                threadId: string;
+                actionKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The ügy with its applied action */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamChatThread"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such ügy for this user, or the team chat is switched off */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The action is not offered, or a different one was already applied */
             409: {
                 headers: {
                     [name: string]: unknown;

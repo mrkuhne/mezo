@@ -13,7 +13,7 @@ import { MusclePriorityPicker } from '@/features/train/components/MusclePriority
 import { splitLine, weekTotals } from '@/features/train/logic/mesoPlan'
 import type { WizardAction, WizardState } from '@/features/train/wizard/wizardState'
 import { CtaPrimary } from '@/shared/ui/Cta'
-import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
+import { ClayIcon, ClaySpot, Icon3D } from '@/shared/ui/clay'
 import { StatCell, StatStrip } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
@@ -176,7 +176,7 @@ export function InterviewStep({ state, dispatch, onGenerate, generating }: Inter
       {!gateOpen && <p className="mz-stepnote">Válassz 2–6 edzésnapot a folytatáshoz.</p>}
       <div className="mz-wfoot">
         <CtaPrimary disabled={!gateOpen || generating} onClick={onGenerate}>
-          {generating ? 'Mezo dolgozik…' : '✨ Program generálása'}
+          {generating ? 'Mezo dolgozik…' : <><Icon3D name="t-spark" size={20} className="uv-inline" />Program generálása</>}
         </CtaPrimary>
       </div>
     </EntranceGroup>

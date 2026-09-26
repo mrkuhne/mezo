@@ -40,7 +40,7 @@ export function CharacterRevisionSheet({ claimId, onClose }: { claimId: string; 
     }
   }
   return (
-    <GlassBox open onClose={onClose} label="Mi változott?" eyebrow="A RÓLAD ALKOTOTT KÉP" tint="var(--mz-cell-sage-ink)" art={<PersonaOrb expertKey="mezo" size={40} />}>
+    <GlassBox open onClose={onClose} label="Mi változott?" eyebrow="A RÓLAD ALKOTOTT KÉP" tint="var(--dv-lav)" art={<PersonaOrb expertKey="mezo" size={40} />}>
       <div ref={content} className="kr-evidence-content kr-revisions">
         {isLoading && <p role="status">A változások betöltése…</p>}
         {isError && <p role="alert">A változások nem töltődtek be. <button type="button" onClick={refetch}>Újratöltés</button></p>}

@@ -1232,54 +1232,57 @@ describe('the fuel-konyha section is registered and re-dressed (mezo-ju4j6.9)', 
 })
 
 /**
- * A kaja-ünneplés blokkja (mezo-bqwyo). A ceremónia MINTÁJA canon (ceremony-pattern doc), az
- * ANYAGA viszont a visszaállított világé — ezért ugyanaz az őr, mint a re-dress szeleteknél:
- * a szekció regisztrálva van, tényleg viseli az `fcx-` családot, és a Titán-anyagok nem
- * tudnak visszaszivárogni rá.
+ * A kaja-ünneplés (mezo-bqwyo) üvegben (mezo-me75u.10). A ceremónia MINTÁJA canon (ceremony-
+ * pattern doc); az ANYAGA most az üveg: EGY lebegő arany üveglap, sheen nélkül. A teljes `fcx-`
+ * család az `── uveg reteg unnep (` blokkban él — a régi `── fuel-ceremony (` szekció megszűnt.
  */
-describe('the fuel-ceremony section is registered and wears the restored materials (mezo-bqwyo)', () => {
-  const START_MARKER = '── fuel-ceremony ('
-  const END_MARKER = '── /fuel-ceremony '
+describe('the meal ceremony wears glass in the uveg reteg unnep block (mezo-bqwyo → mezo-me75u.10)', () => {
+  const START_MARKER = '── uveg reteg unnep ('
+  const END_MARKER = '── /uveg reteg unnep ──'
   const section = () => slice(START_MARKER, END_MARKER)
   const rules = () => stripComments(section())
 
-  test('both the opening and the closing comment markers are present, in order', () => {
-    const start = rawCss.indexOf(START_MARKER)
-    const end = rawCss.indexOf(END_MARKER)
-    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
-    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
-    expect(end).toBeGreaterThan(start)
+  test('the old fuel-ceremony section is gone — one home for the fcx- family', () => {
+    expect(rawCss).not.toContain('── /fuel-ceremony ')
+    expect(rawCss.indexOf(START_MARKER)).toBeGreaterThan(-1)
+    expect(rawCss.indexOf(END_MARKER)).toBeGreaterThan(rawCss.indexOf(START_MARKER))
   })
 
-  test('the section carries the fcx- family, not just the markers', () => {
-    for (const cls of ['.fcx-screen', '.fcx-scrim', '.fcx-sheet', '.fcx-sky', '.fcx-stars',
-      '.fcx-ring', '.fcx-counters', '.fcx-result', '.fcx-score', '.fcx-cta', '.fcx-close']) {
-      expect(section(), `${cls} missing from the fuel-ceremony section`).toContain(cls)
+  test('the block carries the fcx- family, not just the markers', () => {
+    for (const cls of ['.fcx-screen', '.fcx-scrim', '.fcx-sheet.glass', '.fcx-medal', '.fcx-core', '.fcx-stars',
+      '.fcx-ring-fill', '.fcx-counters', '.fcx-result', '.fcx-score', '.fcx-cta', '.fcx-close.uv-flat']) {
+      expect(section(), `${cls} missing from the uveg reteg unnep block`).toContain(cls)
     }
   })
 
-  test('no Titanium material the style bible forbids', () => {
+  test('ONE floating gold glass sheet: 10px off the edges, radius 30, no sheen', () => {
     const css = rules()
-    expect(css).not.toContain('var(--surface-glass)')
-    expect(css).not.toContain('backdrop-filter')
-    expect(css).not.toContain('drop-shadow')
-    expect(css).not.toContain('rgba(0, 0, 0,')
-    expect(css).not.toMatch(/var\(--(lav|sage|amber|coral|sky|rose)\)/)
+    expect(css).toMatch(/\.fcx-sheet\.glass \{[^}]*--c: var\(--dv-amber\)/)
+    expect(css).toMatch(/\.fcx-sheet\.glass \{[^}]*margin: 0 10px 10px;[^}]*border-radius: 30px/)
+    expect(css).toMatch(/\.fcx-sheet\.glass::after \{[^}]*display: none/)
+    expect(css).not.toContain('var(--page)')
   })
 
-  // mezo-p2777: a kő a §5 meleg radiális receptje — a pont-gyűrű SVG-gradienseként a
-  // komponensben él (FuelMealCeremony.test őrzi a stopokat), a lap felcsúszását pedig a rAF-menet írja a `--rise`-on
-  // át — CSS-átmenet nélkül, mert a háttérbe tett webview azt a képernyőn KÍVÜL fagyasztaná.
-  test('no Titanium stone band, and the sheet rises by the frame-driven --rise', () => {
+  // A lap felcsúszását a rAF-menet írja a `--rise`-on át — CSS-átmenet nélkül, mert a háttérbe
+  // tett webview azt a képernyőn KÍVÜL fagyasztaná. A gyújtás a lap landolása UTÁN jön
+  // (FuelMealCeremony.test őrzi a sorrendet).
+  test('the sheet rises by the frame-driven --rise, never by a CSS transition', () => {
     const css = rules()
-    expect(css).not.toContain('#322A29')
-    expect(css).toMatch(/\.fcx-sheet \{[^}]*transform: translateY\(calc\(var\(--rise, 0\) \* 105%\)\)/)
-    expect(css).not.toMatch(/\.fcx-sheet \{[^}]*transition/)
+    expect(css).toMatch(/\.fcx-sheet\.glass \{[^}]*transform: translateY\(calc\(var\(--rise, 0\) \* \(100% \+ 10px\)\)\)/)
+    expect(css).not.toMatch(/\.fcx-sheet\.glass \{[^}]*transition/)
   })
 
-  test('the ignition honours reduced motion', () => {
+  test('the counters and the way out are flat inside the glass, never glass in glass', () => {
     const css = rules()
-    expect(css).toContain('@media (prefers-reduced-motion: reduce)')
+    expect(css).not.toMatch(/\.glass [^{,]*\.glass/)
+    expect(css).toMatch(/\.fcx-counters > span\.uv-flat \{/)
+  })
+
+  test('every transition sits in the no-preference branch', () => {
+    const css = rules()
+    expect(css).toContain('@media (prefers-reduced-motion: no-preference)')
+    const outside = css.replace(/@media \(prefers-reduced-motion: no-preference\) \{[\s\S]*?\n\}/g, '')
+    expect(outside).not.toMatch(/transition:/)
   })
 })
 
@@ -1568,7 +1571,7 @@ const U4_BLOCKS: Array<[string, string[]]> = [
   ['mai', ['.trm .trm-hero', '.trm .trm-start.glass', '.trm .trm-sess.glass', '.trm .trm-energy.glass',
     '.trm .trm-mus.glass', '.trm .trm-alt-tile.glass', '.trm .trm-add.uv-empty', '.trm .trm-day']],
   ['session', ['.wos .wo-card.glass', '.wos .wos-fresh.glass', '.wo-dock.glass', '.wo-dock.glass.is-resting',
-    '.wos .warmstrip.wos-warn', '.wos form.wo-row.is-current', '.gl-card > .wos-gb.glass', '.sheet.glass.wos-sheet']],
+    '.wos .warmstrip.wos-warn', '.wos form.wo-row.is-current', '.gl-card.glass.uv-gb.wos-gbx', '.sheet.glass.wos-sheet']],
   ['zaras', ['.cer-card.cer-records', '.cer-card.cer-sum', '.cer-quest-res', '.cer-tchip', '.cer-kcal.uv-halo',
     '.cer-mstars.glass', '.wsum-hero.uv-halo', '.wr-cmp.glass', '.wr-extile.glass', '.wsum-note-add.uv-empty']],
   ['terheles', ['.tw-load .ld-hero', '.tw-load .ld-map-card.glass', '.tw-load .ld-group.glass', '.tw-load .ld-sport.glass',
@@ -1731,7 +1734,7 @@ const U8_BLOCKS: Array<[string, string[]]> = [
   ['coaching', ['.coach-page.mz-page', '.coach-hub .coach-gauge', '.coach-hub .coach-win.glass', '.coach-hub .coach-door',
     '.coach-obs .mzo-daysw', '.coach-obs .mzo-rule.glass', '.coach-page .coach-chip', '.coach-card .coach-dcard.glass',
     '.coach-card .coach-applied']],
-  ['diagnozis', ['.dgx-page.mz-page', '.dgx-page .dgx-ask.glass', '.dgx-page .dgx-rep', '.dgx-cert', '.dgx-szam-card',
+  ['diagnozis', ['.dgx-page.mz-page', '.dgx-cert', '.dgx-szam-card',
     '.dgx-page .dgx-susp.is-lead.glass', '.dgx-probe', '.dgx-actual', '.dgx-empty.uv-empty']],
   ['kiserletek', ['.exl-page .exl-filter.is-on', '.exl-page .exl-card.glass', '.exl-page .exl-card.is-flat[data-status="proposed"]',
     '.exl-page .exl-chip', '.exl-page .exl-dots i.is-done', '.exl-page .exl-new']],
@@ -1791,6 +1794,58 @@ describe.each(U9_BLOCKS)('the uveg mezo2 %s section carries the glass ranking (m
   test('the block exists and dresses every surface of the group', () => {
     const css = section()
     for (const sel of sels) expect(css, `${sel} missing from the uveg mezo2 ${name} block`).toContain(sel)
+  })
+
+  test('never glass inside glass (U1 rule 5)', () => {
+    expect(section()).not.toMatch(/\.glass [^{,]*\.glass[\s,{]/)
+  })
+
+  test('the ground is written as a token that exists (--canvas, never the undefined --page)', () => {
+    expect(section()).not.toContain('var(--page)')
+  })
+
+  test('motion lives only in the no-preference branch (bible §6)', () => {
+    const css = section().replace(/@media\s*\(prefers-reduced-motion:\s*no-preference\)\s*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, '')
+    expect(css).not.toMatch(/animation\s*:\s*(?!none)[a-z]/)
+  })
+})
+
+// U10 · Rétegek és ünnepek (mezo-me75u.10): ceremonies, level-up, GlassBox + small overlays, sheets + toasts,
+// kalauz + T0 welcome, auth + Minden oldal, admin. Seven parallel builders, one block each; every block's key
+// selectors are pinned so a later whole-file save that drops one fails CI (bible rule 41). The kit's
+// `<Sheet glass>` recipe is pinned in the uveg kit block.
+test('the uveg kit carries the shared floating glass sheet (mezo-me75u.10)', () => {
+  const kit = stripComments(slice('── uveg kit (', '── /uveg kit '))
+  expect(kit).toContain('.sheet.glass.uv-sheet {')
+  expect(kit).toContain('.sheet.glass.uv-sheet::after { display: none; }')
+})
+
+const U10_BLOCKS: Array<[string, string[]]> = [
+  ['unnep', ['.fcx-screen {', '.fcx-sheet.glass {', '.fcx-ring-fill {', '.fcx-core {', '.fcx-verdict {',
+    '.fcx-counters > span.uv-flat {', '.fcx-close.uv-flat {', '.fcx-cta {', '.cer-screen.uv-cer.cer-sport {',
+    '.cer-sport .cer-xp.uv-flat {']],
+  ['szint', ['.levelup.lvu {', '.lvu-chip {', '.lvu-xp {', '.levelup.lvu .lvu-row.glass {', '.lvu-badge {', '.lvu-perk {',
+    '.lvu-cell {', '.lvu-robust {', '.levelup.lvu .lvu-cta.glass {']],
+  ['ablak', ['.gl-card.glass.uv-gb {', '.uv-gb .gl-x {', '.abl-pill {', '.dp-cal.glass {', '.dp-day.is-sel',
+    '.float-fab.float-fab-train.glass.is-round {', '.float-return.glass.is-still {', '.abl-err.glass {']],
+  ['lap', ['.sheet.glass.uv-sheet.uvl-fuel', '.sheet.glass.uv-sheet.uvl-edzes', '.sheet.glass.uv-sheet.uvl-en',
+    '.sheet.glass.uv-sheet.uvl-fiok', '.uvl-cta', '.uvl-err', '.toast-stack .toast.glass.uvl-tst', '.toast-stack .uvl-tst .t-lvup']],
+  ['kalauz', ['.sheet.glass.uv-sheet.kalauz-sheet', '.kalauz-sheet .kalauz-art .kalauz-art-ico', '.kalauz-sheet .kalauz-fogalom',
+    '.kalauz-sheet .kalauz-cta', '.welcome.uv-welcome', '.uv-welcome .wel-dpart.glass', '.uv-welcome .wel-domvoice.glass',
+    '.uv-welcome .wel-qpulse.glass']],
+  ['belepes', ['.auth-page', '.auth-mark', '.auth-card.glass', '.auth-card.glass.is-gold', '.auth-err', '.auth-notice',
+    '.auth-cta', '.auth-down::before', '.mno-u10 .mno-domain.glass', '.mno-u10 .mno-group a.mno-l']],
+  ['admin', ['.uv-admin .ad-rail.glass {', '.uv-admin .ad-rail .ad-rail-link.on {', '.uv-admin .mz-tile.ad-gt {',
+    '.uv-admin .ad-chip.on {', '.uv-admin .ad-table th {', '.uv-admin .ad-status.allok.glass {',
+    '.uv-admin .am-inspector.glass {', '.uv-admin .ad-acrow.glass {']],
+]
+
+describe.each(U10_BLOCKS)('the uveg reteg %s section carries the glass ranking (mezo-me75u.10)', (name, sels) => {
+  const section = () => stripComments(slice(`── uveg reteg ${name} (`, `── /uveg reteg ${name} `))
+
+  test('the block exists and dresses every surface of the group', () => {
+    const css = section()
+    for (const sel of sels) expect(css, `${sel} missing from the uveg reteg ${name} block`).toContain(sel)
   })
 
   test('never glass inside glass (U1 rule 5)', () => {

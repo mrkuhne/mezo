@@ -92,6 +92,7 @@ function fromDimension(d: MealScoreDimensionResponse): MealDimension | null {
       ...(d.timing ? { timing: {
         eatenAt: d.timing.eatenAt, windowFrom: d.timing.windowFrom ?? null,
         windowTo: d.timing.windowTo ?? null, slotLabel: d.timing.slotLabel,
+        windowSource: d.timing.windowSource ?? null,
       } } : {}),
     }
   }
@@ -154,6 +155,7 @@ export function toRequest(input: MealInput): MealRequest {
   return {
     slot: input.slot,
     loggedAt: input.loggedAt ?? null,
+    window: input.window ?? null,
     title: input.title ?? null,
     items: input.items.map(it =>
       it.source === 'estimate'

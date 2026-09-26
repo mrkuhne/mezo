@@ -68,10 +68,10 @@ export function AdminMemoryPage() {
 
   return (
     <MozaikPage tone="coral">
-      <PageHead onBack={() => navigate(`/admin/users/${userId}`)} />
+      <PageHead glass label="vissza" onBack={() => navigate(`/admin/users/${userId}`)} />
       <PageBody>
         <div className="ad-hero">
-          <span className="ad-avatar lg" style={{ background: '#6C5FA3' }}>
+          <span className="ad-avatar lg" style={{ background: 'var(--dv-lav)' }}>
             {(user.name || '?').charAt(0).toUpperCase()}
           </span>
           <div>

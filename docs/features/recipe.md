@@ -2,7 +2,7 @@
 title: Recipes (Receptek)
 type: feature-domain
 status: done
-updated: 2026-09-24
+updated: 2026-09-26
 tags: [fuel, recipe, frontend, data-layer, backend, llm]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/recipe
@@ -31,6 +31,8 @@ related: [fuel, pantry, _platform-data-layer, companion]
 Driving specs: [`2026-06-23-fuel-recipes-design.md`](../superpowers/specs/2026-06-23-fuel-recipes-design.md), [`2026-07-19-recipe-ai-breakdown-design.md`](../superpowers/specs/2026-07-19-recipe-ai-breakdown-design.md), [`2026-07-25-recipe-scoring-dimensions-design.md`](../superpowers/specs/2026-07-25-recipe-scoring-dimensions-design.md), [`2026-07-27-recipe-role-scoring-design.md`](../superpowers/specs/2026-07-27-recipe-role-scoring-design.md), [`2026-07-30-recipe-ingredient-overrides-design.md`](../superpowers/specs/2026-07-30-recipe-ingredient-overrides-design.md), [`2026-08-11-recipe-meal-nutrient-freeze-design.md`](../superpowers/specs/2026-08-11-recipe-meal-nutrient-freeze-design.md) ([ADR 0026](../decisions/0026-freeze-nutrient-facts-per-line.md) — note there is a second, unrelated ADR 0026 in this repo, `0026-today-ios-list-language.md`; a known number collision tracked in `mezo-gkic`), [`2026-09-01-receptmuhely-design.md`](../superpowers/specs/2026-09-01-receptmuhely-design.md) (`mezo-92pb`).
 
 ## 2. User-facing behavior
+
+> **2026-09-26 — Üveg U10 (`mezo-me75u.10`).** The recipe-detail log/thread sheets (`fkx-rsheet-host`) are `<Sheet glass>` (sage).
 
 - **`FuelRecipesPage`** (`/fuel/recipes`) — the library, each card carrying the recipe's mezo-fit badge.
 - **`RecipeDetailPage`** (`/fuel/recipes/:id`) — tabs, the AI breakdown prose, a **„Logolás"** action into meal-logging.

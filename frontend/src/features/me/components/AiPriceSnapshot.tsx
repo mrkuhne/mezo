@@ -23,7 +23,7 @@ export function AiPriceSnapshot({ snapshot }: { snapshot: Snapshot }) {
     .filter((r) => r.value != null)
 
   return (
-    <div className="card" style={{ padding: '9px 11px', fontSize: 10.5 }}>
+    <div className="ad-card ad-card-flat" style={{ padding: '9px 11px', fontSize: 10.5 }}>
       {/* pricedOn nested in its own span, like AiCallRow's badge values (see its top comment) — the
           call's own createdAt (rendered elsewhere) starts with the same date, so an isolated text
           node is what lets a test target this exact value rather than colliding with that one. */}

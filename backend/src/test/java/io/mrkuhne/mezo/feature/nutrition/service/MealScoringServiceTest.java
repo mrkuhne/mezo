@@ -984,4 +984,48 @@ class MealScoringServiceTest {
         assertThat(dimension(b, "context").context())
             .anySatisfy(row -> assertThat(row.label()).isEqualTo("Szerep"));
     }
+
+    private MealBreakdownJson scoreWith(String slot, LocalTime at, MealWindow window) {
+        return service.scoreMeal(slot, lunchLines(), at, MealRole.STANDARD,
+            DailyTargets.fromConfig(targets), DayContext.unknown(), window);
+    }
+
+    @Test
+    void storedWindow_is_what_timing_is_scored_and_drawn_against() {
+        MealWindow w = new MealWindow(LocalTime.of(12, 30), LocalTime.of(14, 0));
+        MealBreakdownJson.Dimension ctx = dimension(scoreWith("breakfast", LocalTime.of(13, 20), w), "context");
+
+        assertThat(ctx.timing().windowFrom()).isEqualTo("12:30");
+        assertThat(ctx.timing().windowTo()).isEqualTo("14:00");
+        assertThat(ctx.timing().windowSource()).isEqualTo("plan");
+        assertThat(ctx.context()).anySatisfy(r -> assertThat(r.value()).contains("ablakban"));
+    }
+
+    @Test
+    void storedWindow_penalizes_linearly_by_minutes_outside() {
+        MealWindow w = new MealWindow(LocalTime.of(12, 30), LocalTime.of(14, 0));
+        double in = dimension(scoreWith("breakfast", LocalTime.of(13, 0), w), "context").score().doubleValue();
+        double late90 = dimension(scoreWith("breakfast", LocalTime.of(15, 30), w), "context").score().doubleValue();
+        assertThat(late90).isLessThan(in);
+    }
+
+    @Test
+    void storedWindow_scores_a_snack_that_used_to_fit_any_hour() {
+        MealWindow w = new MealWindow(LocalTime.of(10, 30), LocalTime.of(11, 30));
+        double in = dimension(scoreWith("snack", LocalTime.of(11, 0), w), "context").score().doubleValue();
+        double far = dimension(scoreWith("snack", LocalTime.of(15, 0), w), "context").score().doubleValue();
+        assertThat(far).isLessThan(in);
+        assertThat(dimension(scoreWith("snack", LocalTime.of(11, 0), w), "context").timing().windowFrom())
+            .isEqualTo("10:30");
+    }
+
+    @Test
+    void no_storedWindow_keeps_the_config_path_and_says_so() {
+        MealBreakdownJson.Dimension ctx = dimension(scoreWith("dinner", LocalTime.of(19, 0), null), "context");
+        assertThat(ctx.timing().windowFrom()).isEqualTo("17:00");
+        assertThat(ctx.timing().windowSource()).isEqualTo("config");
+        MealBreakdownJson.Dimension snack = dimension(scoreWith("snack", LocalTime.of(15, 30), null), "context");
+        assertThat(snack.timing().windowFrom()).isNull();
+        assertThat(snack.timing().windowSource()).isNull();
+    }
 }

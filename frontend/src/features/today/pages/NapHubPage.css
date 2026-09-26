@@ -54,3 +54,6 @@
 .nap-center-node:disabled { opacity: .5; cursor: wait; }
 .nap-center-read-error { font-size: 12px; padding: 0 8px; }
 .nap-center-read-error button { padding: 8px; font-weight: 600; }
+
+/* Kérdezd a csapatot belépő (mezo-u3712) — a Nap alján */
+.nap-askteam { padding: 22px 6px 4px; }

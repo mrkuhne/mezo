@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,6 +57,8 @@ public class FeedbackLearningService {
     private final FeedbackRollupRepository feedbackRollupRepository;
     private final FeedbackLearningProperties properties;
     private final CompanionProperties companionProperties;
+    /** Csapatfal Act III (mezo-a9bo7.21): absent while the team chat is switched off. */
+    private final ObjectProvider<TeamChatInterventionKeySource> teamChatInterventionKeySource;
 
     /** Recomputes and overwrites (in place) all rollup scopes for one user; returns the count
      *  upserted (always 11 + one per configured intervention key — every known surface/feed-kind/
@@ -120,17 +123,33 @@ public class FeedbackLearningService {
         Map<UUID, String> interventionKeyById = feedMessageKindSource.interventionKeysByIds(userId,
             window.stream().filter(byArtifactKind(MessageFeedbackEntity.KIND_FEED_MESSAGE))
                 .map(MessageFeedbackEntity::getArtifactId).toList());
+        // Csapatfal Act III (mezo-a9bo7.21): the team chat succeeds the advice card, so a verdict
+        // on a team chat line counts under its ügy's library entry too.
+        Map<UUID, String> teamChatKeyById = teamChatKeysById(userId, window);
         for (CompanionProperties.Intervention entry : companionProperties.interventions()) {
-            List<MessageFeedbackEntity> verdicts = window.stream()
+            List<MessageFeedbackEntity> verdicts = new java.util.ArrayList<>(window.stream()
                 .filter(byArtifactKind(MessageFeedbackEntity.KIND_FEED_MESSAGE))
                 .filter(f -> entry.key().equals(interventionKeyById.get(f.getArtifactId())))
-                .toList();
+                .toList());
+            window.stream()
+                .filter(byArtifactKind(MessageFeedbackEntity.KIND_TEAM_CHAT_LINE))
+                .filter(f -> entry.key().equals(teamChatKeyById.get(f.getArtifactId())))
+                .forEach(verdicts::add);
             upserted += upsertEffectiveness(userId,
                 FeedbackRollupEntity.SCOPE_INTERVENTION_PREFIX + entry.key(), windowDays, verdicts);
         }
 
         upserted += upsertStyle(userId, windowDays, window);
         return upserted;
+    }
+
+    private Map<UUID, String> teamChatKeysById(UUID userId, List<MessageFeedbackEntity> window) {
+        TeamChatInterventionKeySource source = teamChatInterventionKeySource.getIfAvailable();
+        List<UUID> lineIds = window.stream()
+            .filter(byArtifactKind(MessageFeedbackEntity.KIND_TEAM_CHAT_LINE))
+            .map(MessageFeedbackEntity::getArtifactId)
+            .toList();
+        return source == null || lineIds.isEmpty() ? Map.of() : source.interventionKeysByIds(userId, lineIds);
     }
 
     private List<MessageFeedbackEntity> filterByKind(List<MessageFeedbackEntity> window, String kind) {

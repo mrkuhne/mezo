@@ -14,6 +14,7 @@
 // kimenet nélküli sorként jelenik meg — üresen, nem "0 bekerült"-tel.
 // ============================================================
 import { Sheet } from '@/shared/ui/Sheet'
+import { SheetHead } from '@/shared/ui/SheetHead'
 import type { CharacterConferenceSummary } from '@/data/character/characterApi'
 
 const KIND_BADGE: Record<CharacterConferenceSummary['kind'], string> = {
@@ -70,18 +71,23 @@ export function ConferenceArchiveSheet({ conferences, currentId, onPick, onClose
   onPick: (id: string) => void
   onClose: () => void
 }) {
-  // M3 (mezo-sp9w branch-review): no sheet-level override — the plain shared `Sheet` primitive
-  // and its behaviour stay as they are. U9 (mezo-me75u.9) dresses only the content: the rows are
-  // flat cells (the open council's row lit), the kind badges flat chips, all scoped under
-  // `.kz-arc` (the sheet portals outside the page root). `.kz-arcscroll` keeps the fixed height.
+  // M3 (mezo-sp9w branch-review): no sheet-level override — the shared `Sheet` primitive and its
+  // behaviour stay as they are. U9 (mezo-me75u.9) dresses only the content: the rows are flat
+  // cells (the open council's row lit), the kind badges flat chips, all scoped under `.kz-arc`
+  // (the sheet portals outside the page root). `.kz-arcscroll` keeps the fixed height.
+  // U10 (mezo-me75u.10): the sheet wears the shared floating glass (`<Sheet glass>`, amber like
+  // its rows) with the council 3D head; the title keeps its count chip.
   return (
-    <Sheet onClose={onClose} labelledBy="kz-arctitle">
+    <Sheet glass onClose={onClose} labelledBy="kz-arctitle" className="uvl-konz">
       {(close) => (
         <div className="kz-arc">
-          <div className="kz-archd" id="kz-arctitle">
-            Korábbi tanácskozások
-            <span className="kz-arccnt">{conferences.length}</span>
-          </div>
+          <SheetHead
+            icon="t-council"
+            eyebrow="Konzílium"
+            title={<span className="kz-archd">Korábbi tanácskozások<span className="kz-arccnt">{conferences.length}</span></span>}
+            titleId="kz-arctitle"
+            onClose={close}
+          />
           <div className="kz-arcscroll">
             {conferences.map((conf, i) => {
               const prev = i > 0 ? conferences[i - 1] : null

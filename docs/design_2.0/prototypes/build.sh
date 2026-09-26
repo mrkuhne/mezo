@@ -61,3 +61,7 @@ echo "OK — 36 prototype files assembled."
 # Üvegesítés U9 (mezo-me75u.9): the WHOLE Mezo section in one world — the approved csapatfal world (uveg-uzenofal.html)
 # + U8 screens (scoped .u8) + U9 screens in the csapatfal material. See src/splice-mezo-teljes.py.
 python3 src/splice-mezo-teljes.py
+# Emodzsi-söprés (mezo-z5lov, üvegesítés): the last live emoji → shared 3D sprite. Chrome + CSS from uveg-en2.
+{ sed 's#<title>.*</title>#<title>Emodzsi-söprés · Üveg</title>#' src/uveg-en2-head.html; printf "</head>\n<body>\n"; cat src/uveg-sprite-fuel.svg.part ../../../frontend/src/shared/ui/clay/titanium-icons.svg; sed -n '1,1604p' src/uveg-en2-body.html; cat src/uveg-emodzsi-main.html; } > uveg-emodzsi.html
+# Üvegesítés U10 (mezo-me75u.10): Rétegek és ünnepek — ceremóniák, szintlépés, ablakok, lapok, üzenetsávok, kalauz, belépés, admin, Minden oldal. Dark-only; U10 new icons inline in the body until the owner OK.
+{ cat src/uveg-reteg-head.html; printf "</head>\n<body>\n"; cat src/uveg-sprite-fuel.svg.part ../../../frontend/src/shared/ui/clay/titanium-icons.svg src/uveg-reteg-body.html; } > uveg-reteg.html

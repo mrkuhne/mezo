@@ -11,6 +11,18 @@ export const POST_WORKOUT_SNAP_MIN = 45
 export const DEFAULT_BLOCK_MIN = 60
 export const MIN_SLOT_GAP_MIN = 90
 export const SLOT_WEIGHT = { main: 2, snack: 1, postWorkoutMain: 2.5 } as const
+// Étkezési óra (mezo-6g52f): a tervezett IDŐPONTOT ablakká szélesítő percek [előtte, utána]
+// szabályonként — a jóváhagyott prototípus (fuel-ora-ablak.html) érzete.
+export const WINDOW_OFFSETS = {
+  breakfast: [40, 80], main: [45, 45], snack: [30, 30],
+  'pre-training-main': [30, 30], 'pre-training-snack': [30, 15], 'post-training': [30, 60],
+  templateMeal: [45, 45], templateSnack: [30, 30],
+} as const
+export const WINDOW_MIN_WIDTH_MIN = 30
+/** Ennyi percen belül a lefekvéshez: az ablak „before-bed" okot is kap, a forecast „Alvás" sort. */
+export const BEFORE_BED_MIN = 150
+/** Ennyi percen belül az ablakon kívül: „near" (a szín és a szó ugyanaz — nincs fokozat). */
+export const HIT_NEAR_MIN = 45
 export const RECIPE_FIT_TOLERANCE = 0.2
 export const FAT_KCAL_SHARE = 0.275
 

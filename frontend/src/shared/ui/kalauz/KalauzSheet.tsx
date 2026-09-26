@@ -6,12 +6,17 @@
 // átlátszó, egy `.kalauz-spot` doboz árnyéka sötétít a horgony-elem KÖRÜL (a horgony maga
 // tiszta marad) — így a spotlight nem nyúl az oldal z-indexéhez. Bármilyen koppintás
 // (hátlap, horgony, sáv) visszahozza a sheetet; a kalauz peek alatt sosem záródik.
+//
+// Üveg (U10, mezo-me75u.10; prototípus uveg-reteg-body.html `openKz()` + `.kz*`): arany
+// `<Sheet glass>`; a kártya képe NAGY 3D ikon keret nélküli arany halón (a régi agyag orb +
+// agyag ikon helyett), a hang egyenes (bible 23. szabály), minden belső elem lapos (5. szabály).
+// Peek alatt a lap látható csíkja maga az arany üveg sáv, a spot arany gyűrű.
 // ============================================================
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/shared/lib/cn'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
-import { ClayIcon, ClaySpot, type ClayIconName, type ClaySpotName } from '@/shared/ui/clay'
+import { ContentIcon, Icon3D, type ClayIconName, type ClaySpotName, type Icon3DName } from '@/shared/ui/clay'
 import { Sheet } from '@/shared/ui/Sheet'
 
 type Art = ClayIconName | ClaySpotName
@@ -37,11 +42,24 @@ const QUESTION: Record<KalauzSheetCard['kind'], string> = {
   intro: 'Mi ez?', fogalom: 'Mire jó?', hogyan: 'Hogyan használjuk?', mikor: 'Mikor nézzük?', kapcsolat: 'Mivel függ össze?',
 }
 
-const isSpotName = (n: Art): n is ClaySpotName => n.startsWith('s-')
+/** A kalauz képeinek 3D neve ott, ahol a `CLAY_TO_3D` nem tud (vagy nem akar) dönteni: a spotok
+ *  (`s-*`) és a kontextusfüggő agyag jelek a kalauz-kártyák JELENTÉSE szerint (bible U1 7. szabály).
+ *  Ami itt sincs és a `CLAY_TO_3D`-ben sincs, agyag ikonként marad (a ContentIcon visszaesése). */
+const KALAUZ_3D: Partial<Record<Art, Icon3DName>> = {
+  's-reggel': 't-dawn', 's-este': 't-moon', 's-energia': 't-bolt', 's-edzes': 't-dumbbell',
+  's-medal': 't-record', 's-hegycel': 't-peak', 's-hajtas': 't-quest', 's-viz': 't-water',
+  's-piheno': 't-sleep', 's-napzaras': 't-moon', 's-fuel': 't-bowl', 's-en': 't-person',
+  'i-level': 't-chat', 'i-mezo': 't-chat', 'i-retegek': 't-layers', 'i-lombik': 't-flask',
+  'i-sport': 't-volley', 'i-growth': 't-up',
+}
 
-function Art({ name, size }: { name: Art; size: number }) {
-  return isSpotName(name) ? <ClaySpot name={name} size={size} className="kalauz-spotart" />
-    : <ClayIcon name={name} size={size} className="kalauz-spotart" />
+/** A kártya képe (kapcsolat-kártyán a lánc), vagy egy chip ikonja — 3D, ha van rá név. */
+function Art({ name, size, className }: { name: Art; size: number; className?: string }) {
+  const t = KALAUZ_3D[name]
+  if (t) return <Icon3D name={t} size={size} className={className} />
+  // Egy le nem képzett spot (s-*) nem ContentIcon-név; a lánc-ikon a biztonságos visszaesés.
+  if (name.startsWith('s-')) return <Icon3D name="t-link" size={size} className={className} />
+  return <ContentIcon name={name as ClayIconName} size={size} className={className} />
 }
 
 interface SpotRect { top: number; left: number; width: number; height: number }
@@ -96,6 +114,7 @@ export function KalauzSheet({ label, cards, onClose, onNavigate }: KalauzSheetPr
       )}
       <Sheet
         onClose={() => onClose(reasonRef.current, stepRef.current)}
+        glass
         className={cn('kalauz-sheet', peek && 'is-peek')}
         labelledBy="kalauz-title"
         onBackdropClick={peek ? unpeek : undefined}
@@ -107,26 +126,27 @@ export function KalauzSheet({ label, cards, onClose, onNavigate }: KalauzSheetPr
           {peek && card.kind === 'hogyan' && (
             <>
               <div className="kalauz-peekbar" onClick={unpeek}>
-                <ClaySpot name="s-orb-figyel" size={34} />
-                <span className="kalauz-peektxt"><SafeMarkdown text={card.voice} /> <span className="kalauz-peekhint">Koppints bárhova.</span></span>
-                <button type="button" className="kalauz-ghost" onClick={unpeek}>Vissza</button>
+                <span className="uv-well kalauz-peekwell" aria-hidden="true"><Icon3D name="t-eye" size={26} /></span>
+                <span className="kalauz-peektxt"><span className="kalauz-peekvoice"><SafeMarkdown text={card.voice} /></span> <span className="kalauz-peekhint">Koppints bárhova.</span></span>
+                <button type="button" className="kalauz-ghost kalauz-pill" onClick={unpeek}>Vissza</button>
               </div>
             </>
           )}
           <div className={cn('kalauz-body', peek && 'is-hidden')} aria-hidden={peek ? true : undefined}>
             <div className="kalauz-top">
-              <span className="mz-eyebrow">Kalauz · <b>{label}</b></span>
-              <span className="mz-eyebrow kalauz-step">{step + 1} / {cards.length}</span>
+              <span className="uv-eyebrow kalauz-eb">Kalauz · <b>{label}</b></span>
+              <span className="kalauz-step">{step + 1} / {cards.length}</span>
               <button type="button" className="kalauz-x" aria-label="Bezárás" onClick={() => { reasonRef.current = 'skip'; close() }}>✕</button>
             </div>
 
             <div className="kalauz-card" key={step}>
               <div className="kalauz-q"><span className="kalauz-n">{step + 1}</span>{QUESTION[card.kind]}</div>
-              <div className="kalauz-title">{card.title}</div>
-              <div className="kalauz-art">
-                <ClaySpot name={card.orb ?? 's-orb'} size={card.kind === 'intro' ? 92 : 70} className="kalauz-orb" />
-                {card.kind !== 'kapcsolat' && <Art name={card.spot} size={card.kind === 'intro' ? 76 : 80} />}
+              <div className="kalauz-art" aria-hidden="true">
+                {card.kind === 'kapcsolat'
+                  ? <Icon3D name="t-link" size={88} className="kalauz-art-ico" />
+                  : <Art name={card.spot} size={card.kind === 'intro' ? 92 : 88} className="kalauz-art-ico" />}
               </div>
+              <div className="kalauz-title">{card.title}</div>
               <div className="kalauz-voice"><SafeMarkdown text={card.voice} /></div>
               {card.kind === 'fogalom' && (
                 <div className="kalauz-fogalom">
@@ -136,7 +156,7 @@ export function KalauzSheet({ label, cards, onClose, onNavigate }: KalauzSheetPr
               )}
               {card.kind === 'hogyan' && anchorPresent && (
                 <button type="button" className="kalauz-show" onClick={() => setPeek(measureAnchor(card.anchor!))}>
-                  <span aria-hidden="true">◎</span> Mutasd meg a képernyőn
+                  <Icon3D name="t-eye" size={20} />Mutasd meg a képernyőn
                 </button>
               )}
               {card.kind === 'kapcsolat' && (
@@ -144,7 +164,7 @@ export function KalauzSheet({ label, cards, onClose, onNavigate }: KalauzSheetPr
                   {card.links.map((l) => (
                     <button key={l.to} type="button" className="kalauz-chip"
                       onClick={() => { onNavigate(l.to); reasonRef.current = 'done'; close() }}>
-                      <ClayIcon name={l.icon} size={19} />{l.label}
+                      <Art name={l.icon} size={22} />{l.label}
                       {l.effect && <span className="kalauz-chip-to"> · {l.effect}</span>}
                     </button>
                   ))}
@@ -159,8 +179,8 @@ export function KalauzSheet({ label, cards, onClose, onNavigate }: KalauzSheetPr
               ))}
             </div>
             <div className="kalauz-foot">
-              {!last && <button type="button" className="kalauz-ghost kalauz-link" onClick={() => { reasonRef.current = 'skip'; close() }}>Kihagyom</button>}
-              <button type="button" className="kalauz-ghost kalauz-back" aria-label="Előző kártya" disabled={step === 0} onClick={() => go(step - 1)}>‹ Vissza</button>
+              {!last && <button type="button" className="kalauz-link" onClick={() => { reasonRef.current = 'skip'; close() }}>Kihagyom</button>}
+              <button type="button" className="kalauz-ghost kalauz-pill kalauz-back" aria-label="Előző kártya" disabled={step === 0} onClick={() => go(step - 1)}>‹ Vissza</button>
               {last
                 ? <button type="button" className="kalauz-cta" onClick={() => { reasonRef.current = 'done'; close() }}>Értem, kezdjük</button>
                 : <button type="button" className="kalauz-cta" onClick={() => go(step + 1)}>Tovább</button>}

@@ -51,8 +51,14 @@ The load-bearing ones:
 
 ## The rounds
 
-`bd list --label epic:boop-team-feed` is the authority. Take the lowest open `mezo-a9bo7.N`
-unless the owner names one. `bd show <id>` carries the scope.
+`bd list --label epic:boop-team-feed` is the authority. `bd show <id>` carries the scope.
+**Order of the open work (owner, 2026-09-26):** unless the owner names another,
+1. **`mezo-a9bo7.20` — Act III „A csapat élő beszélgetése"** (see below; the owner's next pick),
+2. the small evening-edition fixes **`.17`** (wait for the konzílium retries, 23:30 publish-anyway)
+   and **`.18`** (fresh confirmation time; daily re-post of proposed patterns) — independent, any
+   session may take them between Act III rounds,
+3. **`.19`** stale-docs cleanup after Act II,
+4. **`.11`** the real maturity curve — LAST, see the end of this section.
 
 **Design rounds D1–D6 (`mezo-a9bo7.1`–`.6`): DONE, 2026-09-24.** The complete clickable
 world is the approved `uveg-uzenofal.html`; the owner iterated it live (comment threads,
@@ -76,7 +82,26 @@ ships it. Name trap: `character_council_edition` is the council lease row; ours 
 Coordinate with `mezo-me75u` U8/U9: those slices re-dress the EXISTING deep pages using this
 prototype as parity — never build the same screen twice.
 
-**Last, after EVERYTHING above is done (Act I A4 and all of Act II): the real maturity curve
+**Act III — „A csapat élő beszélgetése" (`mezo-a9bo7.20`, owner idea 2026-09-26): NOT designed
+yet — it opens with a brainstorm.** The proactive coaching engine (hourly rule sweep, one advice
+card a day in Nap → Beszélgetés) becomes an all-day conversation of the five characters about
+their own areas, peeked into from the wall (a chat bubble), with more cross-talk between them.
+Everything established so far — how we got here, what is decided (the Megfigyelő stays in the
+Gépterem; timing = speak when a rule flips, say it when it resolves, no fixed hour), the verified
+terrain (engine, delivery, wall sources, H4 guest lines, Észrevételek) and the 7 open questions
+(shape, timing, noise budget, voice & cost vs ADR 0049, real cross-talk, scope growth, the
+observer page) — is in the hand-off brief
+**`docs/superpowers/specs/2026-09-26-csapat-elo-beszelgetes-brief.md`**. Read it first.
+Procedure: superpowers:brainstorming with `brainstorm-recon` (researcher: ambient/group AI
+companions, JITAI timing, notification budgets; investigator: the brief's terrain) → questions one
+at a time (Hungarian, business language) → 2–3 approaches → a clickable prototype that EXTENDS
+`uveg-uzenofal.html` (new hash routes, the design-round Procedure below) → owner OK → spec → plan
+→ slices, one per fresh session. Main risks to keep in front of the owner: noise (round-1 lesson:
+20–30 pushes a day drowned the two that mattered) and running cost. Related shipped work to reuse,
+not rebuild: Kérdezd a csapatot (`mezo-u3712`, the character-hosted Diagnózis; a character could
+offer „kérdezzük meg").
+
+**Last, after EVERYTHING above is done (Act I A4, all of Act II, Act III and `.17`–`.19`): the real maturity curve
 (`mezo-a9bo7.11`, owner decision 2026-09-24).** Until then the room curve stays what A3 shipped —
 „Így gyűlik a tudása rólad”, the character's cumulative weekly post count (honest: no maturity
 history exists, ADR 0049). Do NOT pull this forward. When its turn comes it needs its own short

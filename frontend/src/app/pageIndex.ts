@@ -129,7 +129,7 @@ export const PAGE_INDEX: IndexedPage[] = [
   { route: '/mezo/memoir/archivum', label: 'Memoár-archívum', hint: 'A korábbi fejezetek polca.' },
   { route: '/mezo/chat', label: 'Chat', hint: 'Szabad beszélgetés Booppal.' },
   { route: '/mezo/experiments', label: 'N=1 kísérletek', hint: 'Saját kísérletek magadon, mérhető végponttal.' },
-  { route: '/mezo/diagnozis', label: 'Diagnózis', hint: 'Kérésre készülő mélyebb jelentések.' },
+  { route: '/mezo/diagnozis', label: 'Kérdezd a csapatot', hint: 'Diagnózis: a csapat utánanéz, miért vagy fáradt, miért alszol rosszul, miért mozog a súlyod.' },
   { route: '/mezo/coaching', label: 'Proaktív coaching', hint: 'Mit javasol magától, és miért.' },
   { route: '/mezo/coaching/megfigyelo', label: 'Megfigyelő', hint: 'Minden szabály döntése egy napra lebontva.' },
   { route: '/mezo/coaching/kartya', label: 'A napi kártya', hint: 'A mai javaslat — és amit legyőzött.' },

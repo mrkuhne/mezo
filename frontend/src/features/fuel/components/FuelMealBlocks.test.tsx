@@ -1,8 +1,9 @@
 // ============================================================
 // Mezo · FuelMealBlocks tests (Fuel Titanium S1b, mezo-33k6 — fagyasztott manifeszt
-// A10 · A11 · A14). A lane-t a VALÓDI builder adja (`buildWindowLane`), a
-// fuelSwimlane.test.ts `slot()`/`meal()` fixture-stílusában: ha a VM szerződése
-// elmozdul, ezek a tesztek törnek, nem egy kézzel írt literál hazudik zöldet.
+// A10 · A11 · A14; mezo-6g52f Task 7: az étkezési óra veszi át az ablak-csík helyét).
+// A lane-t a VALÓDI builder adja (`buildWindowLane`), a fuelSwimlane.test.ts
+// `slot()`/`meal()` fixture-stílusában: ha a VM szerződése elmozdul, ezek a tesztek
+// törnek, nem egy kézzel írt literál hazudik zöldet.
 // ============================================================
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -18,6 +19,8 @@ const BUDGET: DayBudget = {
   energy: { base: 2000, planned: 400, extra: 0, balance: 0, target: 2400 },
 }
 
+const day = { wake: '06:40', bed: '23:00', nowHHmm: '10:52', training: null }
+
 const meal = (over: Partial<FuelMeal> = {}): FuelMeal => ({
   id: 'meal-1', slot: 'breakfast', title: 'Skyr-bowl zabbal', score: 0.88,
   kcal: 420, p: 36, c: 48, f: 9, fiberG: 8,
@@ -30,22 +33,23 @@ const meal = (over: Partial<FuelMeal> = {}): FuelMeal => ({
 const slot = (over: Partial<FuelSlot> = {}): FuelSlot => ({
   time: '07:30', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'pending',
   kcal: 400, p: 30, c: 40, f: 10,
+  windowFrom: '07:00', windowTo: '09:20', windowReasons: [], budgetKcal: 400, plannedTime: '07:30',
   ...over,
 })
 
 /** A nap négy tervezett blokkja: a reggeli be van logolva, a többi nyitott/jövő. */
 function fixture({ missed = false }: { missed?: boolean } = {}) {
   const slots: FuelSlot[] = [
-    slot({ time: '07:40', label: 'Reggeli', slotKey: 'breakfast', state: 'done', mealId: 'meal-1', mealName: 'Skyr-bowl zabbal', kcal: 420, plannedTime: '07:30' }),
-    slot({ time: '12:30', label: 'Ebéd', slotKey: 'lunch', state: missed ? 'missed' : 'now' }),
-    slot({ time: '16:30', label: 'Uzsonna', slotKey: 'snack', state: 'pending' }),
-    slot({ time: '19:30', label: 'Vacsora', slotKey: 'dinner', state: 'pending' }),
+    slot({ time: '07:40', label: 'Reggeli', slotKey: 'breakfast', state: 'done', mealId: 'meal-1', mealName: 'Skyr-bowl zabbal', kcal: 420, plannedTime: '07:30', windowFrom: '07:00', windowTo: '09:20', budgetKcal: 400 }),
+    slot({ time: '12:30', label: 'Ebéd', slotKey: 'lunch', state: missed ? 'missed' : 'now', windowFrom: '11:45', windowTo: '13:15', budgetKcal: 700 }),
+    slot({ time: '16:30', label: 'Uzsonna', slotKey: 'snack', state: 'pending', windowFrom: '16:00', windowTo: '17:00', budgetKcal: 250 }),
+    slot({ time: '19:30', label: 'Vacsora', slotKey: 'dinner', state: 'pending', windowFrom: '18:45', windowTo: '20:15', budgetKcal: 650 }),
   ]
   const meals = [meal()]
   return {
     lane: buildWindowLane({ slots, budget: BUDGET, meals }),
     meals: doneMealRows(meals, slots),
-    dayKcal: BUDGET.kcal,
+    day,
   }
 }
 
@@ -58,15 +62,28 @@ const props = (over: Record<string, unknown> = {}) => ({
   ...over,
 })
 
-// A10/A14 (mezo-33k6): a nap TERVEZETT blokkjai a lista, és minden blokk a saját
-// étkezési ablakát viseli — nem külön idővonal-sáv, hanem a blokk címe alatti csík.
-test('minden tervezett blokk megjelenik a saját ablak-csíkjával', () => {
+// A10/A14/mezo-6g52f: a nap TERVEZETT blokkjai a lista, és minden blokk a saját
+// étkezési óráját viseli — nem külön idővonal-sáv/ablak-csík.
+test('every block carries the meal clock, logged or not, and no window strip', () => {
   const { container } = render(<FuelMealBlocks {...props()} />)
   const blocks = container.querySelectorAll('.fmx-block')
-  expect(blocks).toHaveLength(4)
-  expect(Array.from(blocks).map(b => b.querySelector('.fmx-block-name')!.textContent))
-    .toEqual(['Reggeli', 'Ebéd', 'Uzsonna', 'Vacsora'])
-  for (const b of blocks) expect(b.querySelector('.fmx-window')).not.toBeNull()
+  expect(blocks.length).toBeGreaterThan(0)
+  blocks.forEach(b => expect(b.querySelector('.fmx-mclock')).not.toBeNull())
+  expect(container.querySelector('.fmx-window')).toBeNull()
+})
+
+test('a pre-log block shows the recommended line; a logged block shows no time line', () => {
+  const { container } = render(<FuelMealBlocks {...props()} />)
+  const open = container.querySelector('.fmx-block.is-open')!
+  expect(open.querySelector('.fmx-when')?.textContent).toMatch(/Ajánlott \d\d:\d\d–\d\d:\d\d/)
+  const logged = container.querySelector('.fmx-block.glass')!
+  expect(logged.querySelector('.fmx-when')).toBeNull()
+})
+
+test('the clock opens the clock box', async () => {
+  render(<FuelMealBlocks {...props()} />)
+  await userEvent.click(screen.getAllByRole('button', { name: /ajánlott ablak|logolva/ })[0])
+  expect(screen.getByRole('dialog')).toBeInTheDocument()
 })
 
 // Az owner döntése: a SORBAN nincs kcal — a keret a blokk gyűrűjén ül.
@@ -77,18 +94,49 @@ test('a blokk gyűrűje viszi a keretet, az étkezés-sor nem ismétli meg', () 
   expect(done.querySelector('.fmx-meal-row')!.textContent).not.toMatch(/kcal/)
 })
 
+test('the kcal ring measures the meal budget, with an overflow lap past 100%', () => {
+  const slots: FuelSlot[] = [
+    slot({ time: '07:40', label: 'Reggeli', slotKey: 'breakfast', state: 'done', mealId: 'meal-1', mealName: 'Nagy reggeli', kcal: 1120, plannedTime: '07:30', windowFrom: '07:00', windowTo: '09:20', budgetKcal: 780 }),
+  ]
+  const meals = [meal({ kcal: 1120 })]
+  const { container } = render(<FuelMealBlocks lane={buildWindowLane({ slots, budget: BUDGET, meals })}
+    meals={doneMealRows(meals, slots)} day={day} fiberTargetG={30}
+    onLogInto={vi.fn()} onOpenMeal={vi.fn()} onOpenScore={vi.fn()} />)
+  const ring = container.querySelector('.fmx-block.glass .fmx-budget-ring')!
+  // huInt groups thousands with a space (huNum.ts) — 1120 kcal reads "1 120".
+  expect(ring.getAttribute('aria-label')).toBe('Logolva: 1 120 / 780 kcal (144%)')
+  expect(ring.querySelector('.fmx-br-over')).not.toBeNull()
+})
+
+// mezo-6g52f minor d: az overflow-ív csak a >3%-os túllépésnél jelenik meg (BudgetRing `over > 3`)
+// — a kerekítés okozta pár %-os zajt nem jelezzük túllépésnek.
+test('the overflow lap only appears past the >3% threshold, not right at 100%', () => {
+  const ringFor = (kcal: number, budgetKcal: number) => {
+    const slots: FuelSlot[] = [
+      slot({ time: '07:40', label: 'Reggeli', slotKey: 'breakfast', state: 'done', mealId: 'meal-1', mealName: 'Reggeli', kcal, plannedTime: '07:30', windowFrom: '07:00', windowTo: '09:20', budgetKcal }),
+    ]
+    const meals = [meal({ kcal })]
+    const { container } = render(<FuelMealBlocks lane={buildWindowLane({ slots, budget: BUDGET, meals })}
+      meals={doneMealRows(meals, slots)} day={day} fiberTargetG={30}
+      onLogInto={vi.fn()} onOpenMeal={vi.fn()} onOpenScore={vi.fn()} />)
+    return container.querySelector('.fmx-block.glass .fmx-budget-ring')!
+  }
+  // 102% — within the 3%-tolerance, no overflow lap.
+  expect(ringFor(102, 100).querySelector('.fmx-br-over')).toBeNull()
+  // 110% — past the tolerance, overflow lap present.
+  expect(ringFor(110, 100).querySelector('.fmx-br-over')).not.toBeNull()
+})
+
 // A logolás a blokkba történik — ez a fő útvonal.
 test('az üres blokk koppintása a saját ablakával indítja a naplózást', async () => {
   const onLogInto = vi.fn()
   render(<FuelMealBlocks {...props({ onLogInto })} />)
-  await userEvent.click(screen.getByRole('button', { name: /Uzsonna/ }))
+  await userEvent.click(screen.getByRole('button', { name: /Uzsonna.*logolás ide/ }))
   expect(onLogInto).toHaveBeenCalledTimes(1)
   expect(onLogInto.mock.calls[0][0].slotKey).toBe('snack')
 })
 
-// A11 (mezo-jb84): a pontszám-chipnek SAJÁT célja van — az AI értékelés. Ez a teszt korábban
-// a részletekre kötötte, azaz magát a hibát rögzítette: a chip azért mozog, hogy az értékelésre
-// hívjon, és élesben mégis ugyanoda vitt, mint a sor többi része.
+// A11 (mezo-jb84): a pontszám-chipnek SAJÁT célja van — az AI értékelés.
 test('a pont-chip az AI értékelésre visz, a sor pedig a részletekre', async () => {
   const onOpenMeal = vi.fn()
   const onOpenScore = vi.fn()
@@ -96,6 +144,13 @@ test('a pont-chip az AI értékelésre visz, a sor pedig a részletekre', async 
   await userEvent.click(screen.getByRole('button', { name: /AI értékelés/ }))
   expect(onOpenScore).toHaveBeenCalledWith('meal-1')
   expect(onOpenMeal).not.toHaveBeenCalled()
+})
+
+test('the score is an unboxed button with the crystal icon', () => {
+  const { container } = render(<FuelMealBlocks {...props()} />)
+  const score = container.querySelector('.fmx-meal-chips .fmx-score')!
+  expect(score.tagName).toBe('BUTTON')
+  expect(score.classList.contains('is-unboxed')).toBe(true)
 })
 
 // mezo-l2gp0: a grammsor helyén négy mini gyűrű — P/Ch/Zs az étkezés energia-arányát teli
@@ -123,7 +178,8 @@ test('a makró-gyűrűk az étkezés energia-arányát telítik, a rost a napi a
 test('a hiányzó makró gondolatjel a gyűrűben, és ilyenkor egyik íve sincs aránynak', () => {
   const rows = [{
     mealId: 'meal-1', name: 'Skyr-bowl zabbal', time: '07:40', kcal: 420,
-    proteinG: 36, carbsG: null, fatG: null, fiberG: null, plannedTime: '07:30', scorePct: 88,
+    proteinG: 36, carbsG: null, fatG: null, fiberG: null, sugarG: null,
+    plannedTime: '07:30', scorePct: 88, timing: null,
   }]
   const { container } = render(<FuelMealBlocks {...props({ meals: rows })} />)
   const rings = container.querySelector('.fmx-block.is-done .fmx-mrings')!
@@ -153,54 +209,14 @@ test('a kihagyott ablak semlegesen jelenik meg, pontszám nélkül', () => {
   expect(missed.textContent).not.toMatch(/elrontott|kihagytad|hiba/i)
 })
 
-// Az ablak-csík a blokk ANKER idejét rajzolja ki, és a logolt étkezés jelölője rajta ül —
-// a sáv szélei a tervezett időből származnak, nem találgatott „optimális" sávból.
-test('az ablak-csík a blokk saját idejét viszi, a logolt étkezés jelölőjével', () => {
+// ── A vércukor-chip a Mai soron (mezo-ya2wp), sáv-szóval (mezo-6g52f) ──────────────────────
+test('the blood-sugar chip carries the band word, never a number', () => {
   const { container } = render(<FuelMealBlocks {...props()} />)
-  const done = container.querySelector('.fmx-block.is-done')!
-  const bar = done.querySelector('.fmx-window')!
-  expect(bar.getAttribute('aria-label')).toContain('07:40')
-  expect(bar.querySelectorAll('.fmx-window-at')).toHaveLength(1)
+  const chip = container.querySelector('.fmx-glu-chip')
+  if (chip) expect(chip.textContent).toMatch(/^(Alacsony|Közepes|Magas)$/)
 })
 
-// mezo-l2gp0: az óra gomb — az idő nem szöveg a kártyán, hanem koppintásra nyíló üvegdoboz.
-test('az óra gomb csak logolt blokkon él, és a doboz a logolás idejét mutatja', async () => {
-  render(<FuelMealBlocks {...props()} />)
-  const clocks = screen.getAllByRole('button', { name: /logolás ideje/i })
-  expect(clocks).toHaveLength(1) // 4 blokkból 1 logolt
-  await userEvent.click(clocks[0])
-  const dialog = screen.getByRole('dialog')
-  expect(dialog.querySelector('.fmx-timebox-time')!.textContent).toBe('07:40')
-  expect(dialog.querySelector('.fmx-timebox-sub')!.textContent).toBe('Reggeli · Skyr-bowl zabbal')
-  expect(dialog.textContent).toContain('Terv szerint')
-  expect(dialog.textContent).toContain('~07:30')
-})
-
-test('az óra-doboz zárható Rendbennel és Escape-pel is', async () => {
-  render(<FuelMealBlocks {...props()} />)
-  await userEvent.click(screen.getByRole('button', { name: /logolás ideje/i }))
-  await userEvent.click(screen.getByRole('button', { name: 'Rendben' }))
-  expect(screen.queryByRole('dialog')).toBeNull()
-  await userEvent.click(screen.getByRole('button', { name: /logolás ideje/i }))
-  await userEvent.keyboard('{Escape}')
-  expect(screen.queryByRole('dialog')).toBeNull()
-})
-
-// Őszinte-null: ablak nélküli extra logon nincs terv-idő → a sor elmarad, nem becslünk.
-test('terv-idő nélkül a "Terv szerint" sor elmarad', async () => {
-  const rows = [{
-    mealId: 'meal-1', name: 'Skyr-bowl zabbal', time: '07:40', kcal: 420,
-    proteinG: 36, carbsG: 48, fatG: 9, fiberG: 8, plannedTime: null, scorePct: 88,
-  }]
-  render(<FuelMealBlocks {...props({ meals: rows })} />)
-  await userEvent.click(screen.getByRole('button', { name: /logolás ideje/i }))
-  expect(screen.getByRole('dialog').textContent).not.toContain('Terv szerint')
-})
-
-// ── A vércukor-chip a Mai soron (mezo-ya2wp) ────────────────────────────────────────────────
-// A jóváhagyott prototípus rendje: a mini görbe a pontszám-chiptől BALRA áll, és ugyanazt a
-// dobozt nyitja, amit a részletek oldal negyedik kártyája.
-test('a vércukor-chip a pont-chip bal oldalán áll, és a sáv színét viseli', () => {
+test('a vércukor-chip a pont-chip bal oldalán áll, a sáv színét és szavát viseli', () => {
   const { container } = render(<FuelMealBlocks {...props()} />)
   const bottom = container.querySelector('.fmx-block.is-done .fmx-meal-bottom')!
   const chip = bottom.querySelector('.fmx-glu-chip')!
@@ -209,13 +225,12 @@ test('a vércukor-chip a pont-chip bal oldalán áll, és a sáv színét viseli
   expect(chip.className).toContain('lvl-low')
   expect(chip.getAttribute('aria-label')).toBe('Vércukor-válasz: alacsony')
   // A sorrend a lényeg: gyűrűk → vércukor → pontszám.
-  // (Üveg, mezo-me75u.1: the two chips ride in one `.fmx-meal-chips` group so they wrap together.)
   const order = Array.from(bottom.querySelectorAll('.fmx-mrings, .fmx-glu-chip, .fmx-score'))
     .map(el => el.className.split(' ')[0])
   expect(order).toEqual(['fmx-mrings', 'fmx-glu-chip', 'fmx-score'])
-  // A chip a görbét hordja, nem számot — glikémiás index sehol.
+  // A chip a görbét ÉS a sáv szavát hordja, számot soha — glikémiás index sehol.
   expect(chip.querySelector('.fmx-glu-mini')).not.toBeNull()
-  expect(chip.textContent).toBe('')
+  expect(chip.textContent).toBe('Alacsony')
 })
 
 test('a vércukor-chip ugyanazt az üvegdobozt nyitja, amit a részletek oldal', async () => {
@@ -232,7 +247,7 @@ test('szénhidrát-adat nélkül a vércukor-chip elmarad', () => {
   const rows = [{
     mealId: 'meal-1', name: 'Skyr-bowl zabbal', time: '07:40', kcal: 420,
     proteinG: 36, carbsG: null, fatG: null, fiberG: null, sugarG: null,
-    plannedTime: '07:30', scorePct: 88,
+    plannedTime: '07:30', scorePct: 88, timing: null,
   }]
   const { container } = render(<FuelMealBlocks {...props({ meals: rows })} />)
   expect(container.querySelector('.fmx-glu-chip')).toBeNull()
@@ -245,8 +260,32 @@ test('a blokk fejlécében az óra és a kcal-gyűrű egy jobbszéli csoportban 
   const { container } = render(<FuelMealBlocks {...props()} />)
   const head = container.querySelector('.fmx-block.is-done .fmx-block-head')!
   const end = head.querySelector('.fmx-block-end')!
-  expect(end.querySelector('.fmx-clock')).not.toBeNull()
+  expect(end.querySelector('.fmx-mclock')).not.toBeNull()
   expect(end.querySelector('.fmx-budget-ring')).not.toBeNull()
   // A név a csoporton KÍVÜL marad, hogy szabadon terjeszkedhessen.
   expect(end.querySelector('.fmx-block-name')).toBeNull()
+})
+
+// ── mezo-6g52f R1: a „Logolás ide" alsó sora a SAJÁT ablakából számol, nem a tile.state-ből ──
+// A tile.state 'now' a nap ELSŐ lognélküli ablakára igaz — akkor is, ha AZ az ablak csak
+// később nyílik. A gomb szövege nem hazudhat „most nyitva"-t egy 17:45–18:45-ös ablakra 13:30-kor.
+test('a „Logolás ide" gomb a saját ablakából számol, nem a tile.state "now"-jából', () => {
+  const slots: FuelSlot[] = [
+    slot({ time: '17:45', label: 'Vacsora', slotKey: 'dinner', state: 'now', windowFrom: '17:45', windowTo: '18:45', budgetKcal: 650 }),
+  ]
+  const meals: FuelMeal[] = []
+  const { container } = render(<FuelMealBlocks
+    lane={buildWindowLane({ slots, budget: BUDGET, meals })}
+    meals={doneMealRows(meals, slots)} day={{ ...day, nowHHmm: '13:30' }} fiberTargetG={30}
+    onLogInto={vi.fn()} onOpenMeal={vi.fn()} onOpenScore={vi.fn()} />)
+  const block = container.querySelector('.fmx-block')!
+  expect(block.textContent).not.toMatch(/most nyitva|most van itt/i)
+  expect(block.querySelector('.fmx-block-log small')!.textContent).toBe('még ráér')
+})
+
+// ── mezo-6g52f R4: múltbéli napon nincs „most" jel sehol az órán ─────────────────────────────
+test('nowHHmm null (múltbéli nap) esetén nincs nyitott óra és nincs "most nyitva" szöveg', () => {
+  const { container } = render(<FuelMealBlocks {...props({ day: { ...day, nowHHmm: null } })} />)
+  expect(container.querySelector('.fmx-mclock.is-open')).toBeNull()
+  expect(container.textContent).not.toMatch(/most nyitva/i)
 })

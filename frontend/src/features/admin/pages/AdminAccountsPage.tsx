@@ -4,6 +4,7 @@ import { useAdminActions, useAdminInvites, useAdminUsers, useMe } from '@/data/h
 import { AdminInviteRow } from '@/features/me/components/AdminInviteRow'
 import { AdminUserRow } from '@/features/me/components/AdminUserRow'
 import { TempPasswordSheet } from '@/features/me/sheets/TempPasswordSheet'
+import { AdminErrorCell } from '@/features/admin/components/AdminTile'
 import { GhostState } from '@/shared/ui/GhostState'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -17,8 +18,8 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'invites', label: 'Meghívók' },
   { key: 'users', label: 'Felhasználók' },
 ]
-const INPUT: React.CSSProperties = { flex: 1, minHeight: 40, borderRadius: 10, border: '1px solid var(--border-subtle)', background: 'var(--surface-1)', padding: '0 12px', fontSize: 13, color: 'var(--text-primary)' }
-const PRIMARY: React.CSSProperties = { minHeight: 40, borderRadius: 999, padding: '0 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', background: 'var(--text-primary)', color: 'var(--surface-1)' }
+// Üveg (mezo-me75u.10): the field is a flat cell with a lit focus (`.ad-input`), „Új kód” is the
+// page's one lit primary pill (`.ad-primary`), the tabs are the admin chip vocabulary.
 
 export function AdminAccountsPage() {
   const navigate = useNavigate()
@@ -44,14 +45,13 @@ export function AdminAccountsPage() {
 
   return (
     <MozaikPage tone="lav">
-      <PageHead onBack={() => navigate('/admin')} label="‹ Admin" />
-      <PageHero icon="i-emberek" name="Beta admin" sub="meghívók · felhasználók" />
+      <PageHead glass onBack={() => navigate('/admin')} label="Admin" />
+      <PageHero glass eyebrow="Admin" name="Beta admin" sub="meghívók · felhasználók" />
       <PageBody>
         <EntranceGroup className="col gap-md">
           <div className="row rise" style={{ gap: 6, '--d': '0ms' } as React.CSSProperties}>
             {TABS.map((t) => (
-              <button key={t.key} type="button" className="chip" aria-pressed={tab === t.key} onClick={() => setTab(t.key)}
-                style={tab === t.key ? { background: 'var(--text-primary)', color: 'var(--surface-1)', borderColor: 'transparent' } : undefined}>
+              <button key={t.key} type="button" className={tab === t.key ? 'ad-chip on' : 'ad-chip'} aria-pressed={tab === t.key} onClick={() => setTab(t.key)}>
                 {t.label}
               </button>
             ))}
@@ -60,12 +60,12 @@ export function AdminAccountsPage() {
           {tab === 'invites' && (
             <div className="col gap-sm rise" style={{ '--d': '60ms' } as React.CSSProperties}>
               <div className="row" style={{ gap: 8 }}>
-                <input aria-label="Címke" placeholder="Kinek szól? (opcionális)" value={label} style={INPUT}
+                <input aria-label="Címke" placeholder="Kinek szól? (opcionális)" value={label} className="ad-input"
                   onChange={(e) => setLabel(e.target.value)} />
-                <button type="button" style={PRIMARY} disabled={actions.pending} onClick={mint}>Új kód</button>
+                <button type="button" className="ad-primary" disabled={actions.pending} onClick={mint}>Új kód</button>
               </div>
               {invites.isError ? (
-                <GhostState message="Nem sikerült betölteni a meghívókat." ctaLabel="Újra" onCta={invites.refetch} />
+                <AdminErrorCell message="Nem sikerült betölteni a meghívókat." onRetry={invites.refetch} />
               ) : invites.data.length === 0 ? (
                 <GhostState message="Nincs nyitott meghívó." />
               ) : (
@@ -79,7 +79,7 @@ export function AdminAccountsPage() {
           {tab === 'users' && (
             <div className="col gap-sm rise" style={{ '--d': '60ms' } as React.CSSProperties}>
               {users.isError ? (
-                <GhostState message="Nem sikerült betölteni a felhasználókat." ctaLabel="Újra" onCta={users.refetch} />
+                <AdminErrorCell message="Nem sikerült betölteni a felhasználókat." onRetry={users.refetch} />
               ) : users.data.length === 0 ? (
                 <GhostState message="Még nincs regisztrált felhasználó." />
               ) : (

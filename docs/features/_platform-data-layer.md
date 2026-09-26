@@ -2,7 +2,7 @@
 title: Platform · Data Layer & Dual-Mode
 type: feature-platform
 status: done
-updated: 2026-09-25
+updated: 2026-09-26
 tags: [platform, data-layer, frontend]
 key_files:
   - frontend/src/data/hooks.ts
@@ -36,6 +36,8 @@ The **key invariant**: the public return shape of every hook is the contract. Sw
 Driving design: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (§1 "Key invariant", §3 frontend integration, §5 slice map; decision `mezo-gqi`). There is **no dedicated numbered ADR** for the dual-mode pattern — this doc is its durable home.
 
 ## 2. Status per domain (mock-vs-real — be precise)
+
+> **2026-09-26 — Üveg U10 (`mezo-me75u.10`).** `RewardToast` gained an optional `source` (`habit | quest | activity`) that only picks the toast's 3D icon; the mock gamification toasts lost their emoji („Szint {n} — +50 érme”).
 
 Several API clients exist (biometrics · train · running · goal · goal-link · biometric-profile · **pantry**); only those domains are wired to a real backend. Everything else is **mock-only on the FE** (no API client, no backend table yet).
 

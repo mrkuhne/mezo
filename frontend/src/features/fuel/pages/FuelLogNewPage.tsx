@@ -149,6 +149,7 @@ export function FuelLogNewPage() {
           shellOwnsEntry={!editing}
           manualSources={mode === 'text'}
           editMealId={editMealId}
+          window={slot?.windowFrom && slot.windowTo && !editing ? { from: slot.windowFrom, to: slot.windowTo } : undefined}
           logDate={past ? date : undefined}
           logTime={past ? tile?.time : undefined}
           saveLabel={past ? `✓ Pótlás · ${dayLabel}` : undefined}

@@ -9,7 +9,7 @@ class AppNotificationKindTest {
 
     @Test
     void testCatalog_shouldPinFifteenKindsWithFamiliesAndDeeplinks_perSpec() {
-        assertThat(AppNotificationKind.values()).hasSize(22);
+        assertThat(AppNotificationKind.values()).hasSize(23);
         assertThat(AppNotificationKind.PATTERN_INBOX.key()).isEqualTo("pattern_inbox");
         assertThat(AppNotificationKind.PATTERN_INBOX.familyKey()).isEqualTo("pattern");
         assertThat(AppNotificationKind.PATTERN_SIGNAL.familyKey()).isEqualTo("pattern");
@@ -61,6 +61,11 @@ class AppNotificationKindTest {
         assertThat(AppNotificationKind.TEAM_EDITION.key()).isEqualTo("team_edition");
         assertThat(AppNotificationKind.TEAM_EDITION.familyKey()).isEqualTo("pattern");
         assertThat(AppNotificationKind.TEAM_EDITION.deeplink()).isEqualTo("/mezo");
+        // Task 10 (mezo-a9bo7.23) — the team chat ügy push rides the existing `intervention`
+        // push category rather than a new one; it deeplinks into the ügy's own chat surface.
+        assertThat(AppNotificationKind.TEAM_CHAT.key()).isEqualTo("team_chat");
+        assertThat(AppNotificationKind.TEAM_CHAT.familyKey()).isEqualTo("intervention");
+        assertThat(AppNotificationKind.TEAM_CHAT.deeplink()).isEqualTo("/mezo/elo");
         assertThat(AppNotificationKind.fromKey("pattern_inbox")).contains(AppNotificationKind.PATTERN_INBOX);
         assertThat(AppNotificationKind.fromKey("nope")).isEmpty();
     }

@@ -15,6 +15,7 @@ import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { JournalSheet } from '@/features/me/sheets/JournalSheet'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
+import { AskTeamRow } from '@/features/insights/components/AskTeamRow'
 import '@/features/today/pages/NapHubPage.css'
 
 /** A Mai pillanatok sorának 3D ikonja a sor FAJTÁJÁBÓL (az id előtagja, `napTimeline.ts`):
@@ -79,6 +80,10 @@ export function NapHubPage() {
           <span><strong>{m.label}</strong><span className="nap-moment-text">{m.text}</span></span><span aria-hidden="true">↗</span>
         </button></li>)}</ol>
       </section>
+      {/* Kérdezd a csapatot (mezo-u3712, owner-döntés 2026-09-26): a Nap alján, ha valami nem stimmel. */}
+      <div className="nap-askteam rise" style={{ '--i': 5 } as CSSProperties}>
+        <AskTeamRow origin={{ from: '/nap', label: 'Mai' }} sub="Valami nem stimmel ma? A csapat utánanéz." />
+      </div>
       {typeof sheet === 'number' && <CheckInSheet slot={checkins[sheet]} slotIdx={sheet} onClose={() => setSheet(null)} onSave={data => saveCheckIn(sheet, { ...data, savedAt: new Date().toISOString() })} />}
       {sheet === 'journal' && <JournalSheet onClose={() => setSheet(null)} />}
       {sheet === 'activity' && <ActivityLogSheet onClose={() => setSheet(null)} />}

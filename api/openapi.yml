@@ -101,6 +101,12 @@ tags:
       KATALÓGUS-kártyák külön, felhasználói ítélete marad).
   - name: CompanionObservationRecovery
     description: Owner-only preview and exact-plan recovery of grounded observations.
+  - name: CompanionEffects
+    description: >-
+      Emlékezet S4 (mezo-d6ivw.4): a nevesített hatás-motor egy személyre szűrt
+      olvasata — a kódban számolt Cliff-delta, sáv és bizonyossági szint. Saját
+      tag, hogy a generált interfész elkülönüljön a beszélgetés-CRUD és az
+      Észrevételek felülettől.
   - name: People
     description: Inner-circle persons + mention logging (Emberek)
   - name: Proactive
@@ -5478,6 +5484,37 @@ paths:
           description: Authentication required
         '403':
           description: Owner role required
+  /api/companion/effects:
+    get:
+      tags:
+        - CompanionEffects
+      operationId: listPersonEffects
+      summary: 'Egy személyhez tartozó nevesített hatások (Emlékezet S4, mezo-d6ivw.4)'
+      description: >-
+        A megadott személyre élő, nem törölt hatás-sorok, erősség szerint
+        csökkenő sorrendben — a kódban számolt Cliff's delta, sáv és
+        bizonyossági szint (a szolgáltatás megerősített észrevétel esetén egy
+        fokkal feljebb tolja a bizonyosságot, sosem perzisztálva).
+      parameters:
+        - name: personId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: A személy hatás-sorai
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonEffectsResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/companion/observation:
     get:
       tags:
@@ -9058,7 +9095,7 @@ paths:
           schema:
             type: string
             pattern: >-
-              ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review|meal_coach|recipe_breakdown)$
+              ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review|meal_coach|recipe_breakdown|team_chat_line)$
         - name: ids
           in: query
           required: true
@@ -9143,7 +9180,7 @@ paths:
           schema:
             type: string
             pattern: >-
-              ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review|meal_coach|recipe_breakdown)$
+              ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review|meal_coach|recipe_breakdown|team_chat_line)$
         - name: artifactId
           in: path
           required: true
@@ -10187,6 +10224,129 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '409':
           description: Later claim change prevents safe compensation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/character/team-chat:
+    get:
+      tags:
+        - Character
+      operationId: getTeamChatDay
+      summary: >-
+        The all-day team chat for one local day (Csapatfal Act III,
+        mezo-a9bo7.21): the day's lines in time order (OPEN and RESOLVE lines
+        embed their ügy), every still-open ügy of any day, and the day's push
+        count against its budget. With the team chat switched off the day is
+        honestly empty — never a 404
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: The local day (mezo.character.team-chat.zone); defaults to today
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The day (possibly empty)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamChatDay'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/character/team-chat/threads/{threadId}/reply':
+    post:
+      tags:
+        - Character
+      operationId: replyTeamChatThread
+      summary: >-
+        The user's reply on their own ügy — a USER line; it never resolves the
+        ügy
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamChatReplyRequest'
+      responses:
+        '200':
+          description: The written USER line
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamChatLine'
+        '400':
+          description: Empty or oversized text
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: 'No such ügy for this user, or the team chat is switched off'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/character/team-chat/threads/{threadId}/apply/{actionKey}':
+    post:
+      tags:
+        - Character
+      operationId: applyTeamChatAction
+      summary: >-
+        Applies one offered action of an ügy exactly once — the same action
+        again is an idempotent no-op, a different one after an apply is a 409
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: actionKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The ügy with its applied action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamChatThread'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: 'No such ügy for this user, or the team chat is switched off'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: 'The action is not offered, or a different one was already applied'
           content:
             application/json:
               schema:
@@ -17557,14 +17717,28 @@ components:
           type: string
         value:
           type: string
+    MealWindow:
+      type: object
+      required:
+        - from
+        - to
+      properties:
+        from:
+          type: string
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+          description: 'Helyi idő "HH:mm"'
+        to:
+          type: string
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+          description: 'Helyi idő "HH:mm"'
     MealTimingDetail:
       type: object
       description: >-
         A `context` dimenzió időzítés-tényei rajzolható alakban (mezo-jcpt.3).
-        UGYANABBÓL a szerver-oldali slot-ablak configból származik, ami a
-        timing-részpontszámot adta, ezért a rajzolt sáv és a pontszám nem tud
-        eltérni. Csak logolt étkezésen van jelen; a recept-sablon breakdownjában
-        nincs `context` dimenzió, tehát ott soha.
+        UGYANABBÓL az ablakból származik (tárolt tervező-ablak, ha van, különben
+        a slot-ablak config), ami a timing-részpontszámot adta, ezért a rajzolt
+        sáv és a pontszám nem tud eltérni. Csak logolt étkezésen van jelen; a
+        recept-sablon breakdownjában nincs `context` dimenzió, tehát ott soha.
       required:
         - eatenAt
         - slotLabel
@@ -17580,6 +17754,15 @@ components:
           type: string
           nullable: true
           description: 'Az ablak vége "HH:mm"; null = nasi, bármikor jó'
+        windowSource:
+          type: string
+          nullable: true
+          enum:
+            - plan
+            - config
+          description: >-
+            plan = az étkezéssel tárolt tervező-ablak (mezo-6g52f); config = a
+            statikus slot-ablak; null = régi envelope
         slotLabel:
           type: string
           description: 'Magyar slot-név, pl. "vacsora"'
@@ -17811,6 +17994,14 @@ components:
           type: string
           format: date-time
           nullable: true
+        window:
+          nullable: true
+          description: >-
+            A tervező ajánlott ablaka, amibe az étkezést logolták (mezo-6g52f).
+            Megadva ehhez mér a timing-pontszám; hiányzik → a statikus
+            slot-ablak config. Frissítéskor a null NEM törli a tárolt ablakot.
+          allOf:
+            - $ref: '#/components/schemas/MealWindow'
         title:
           type: string
           nullable: true
@@ -19709,6 +19900,81 @@ components:
           type: string
           nullable: true
           description: A címke szövege — csak tag.
+    PersonEffectsResponse:
+      type: object
+      description: >-
+        Egy személyhez tartozó nevesített hatás-sorok (Emlékezet S4,
+        mezo-d6ivw.4), erősség szerint csökkenő sorrendben.
+      required:
+        - effects
+      properties:
+        effects:
+          type: array
+          items:
+            $ref: '#/components/schemas/EffectResponse'
+    EffectResponse:
+      type: object
+      description: >-
+        Egy kódban számolt (subject, metrika) hatás-sor — sosem ok-okozat, csak
+        együttjárás. A `direction` a tárolt előjelből származik: pozitív Cliff's
+        delta = higher.
+      required:
+        - metric
+        - direction
+        - strengthBand
+        - confidenceTier
+        - meanDiff
+        - subjectDays
+        - complementDays
+        - computedAt
+      properties:
+        metric:
+          type: string
+          enum:
+            - mental
+            - energy
+            - stress
+          description: Melyik metrikát érinti a hatás.
+        direction:
+          type: string
+          enum:
+            - higher
+            - lower
+          description: >-
+            A subject napjain a metrika magasabb vagy alacsonyabb volt-e a többi
+            naphoz képest.
+        strengthBand:
+          type: string
+          enum:
+            - enyhe
+            - kozepes
+            - eros
+          description: A Cliff-delta abszolút értékéből származó sáv.
+        confidenceTier:
+          type: string
+          enum:
+            - gyenge
+            - kozepes
+            - eros
+          description: >-
+            A mintaszámból (és megerősített észrevétel esetén a serve-time
+            bumpból) származó bizonyosság.
+        meanDiff:
+          type: number
+          format: double
+          description: >-
+            A subject és a komplementer napok átlagának különbsége nyers
+            metrika-egységben.
+        subjectDays:
+          type: integer
+          description: Hány napon fordult elő a subject az ablakban.
+        complementDays:
+          type: integer
+          description: Az ablak többi (komplementer) napjainak száma.
+        computedAt:
+          type: string
+          format: date-time
+          description: A legutóbbi éjszakai újraszámítás időpontja.
     ObservationResponse:
       type: object
       description: >-
@@ -21476,7 +21742,7 @@ components:
       properties:
         decision:
           type: string
-          pattern: ^(accept|dismiss)$
+          pattern: ^(accept|dismiss|undo)$
     ChallengeRef:
       type: object
       required:
@@ -24025,7 +24291,7 @@ components:
         artifactKind:
           type: string
           pattern: >-
-            ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review|meal_coach|recipe_breakdown)$
+            ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review|meal_coach|recipe_breakdown|team_chat_line)$
         artifactId:
           type: string
           format: uuid
@@ -24052,7 +24318,7 @@ components:
           description: >-
             'chat_message' | 'feed_message' | 'weekly_suggestion' |
             'weekly_review' | 'memoir' | 'prediction' | 'day_review' |
-            'meal_coach' | 'recipe_breakdown'
+            'meal_coach' | 'recipe_breakdown' | 'team_chat_line'
         artifactId:
           type: string
           format: uuid
@@ -24500,6 +24766,154 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DayDimension'
+    TeamChatDay:
+      type: object
+      required:
+        - date
+        - lines
+        - openThreads
+        - pushesToday
+        - pushBudget
+      properties:
+        date:
+          type: string
+          format: date
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamChatLine'
+        openThreads:
+          description: 'Every OPEN ügy of any day, oldest first'
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamChatThread'
+        pushesToday:
+          type: integer
+        pushBudget:
+          type: integer
+          description: mezo.character.team-chat.max-pushes-per-day
+    TeamChatLine:
+      type: object
+      required:
+        - id
+        - threadId
+        - kind
+        - body
+        - voiced
+        - occurredAt
+        - facts
+      properties:
+        id:
+          type: string
+          format: uuid
+        threadId:
+          type: string
+          format: uuid
+          nullable: true
+        kind:
+          type: string
+          enum:
+            - OPEN
+            - GUEST
+            - RESOLVE
+            - SKEPTIC
+            - USER
+        character:
+          type: string
+          nullable: true
+          enum:
+            - szunya
+            - mocor
+            - falat
+            - deru
+            - mezo
+            - szkeptikus
+        body:
+          type: string
+        voiced:
+          type: boolean
+        facts:
+          type: array
+          items:
+            type: string
+        occurredAt:
+          type: string
+          format: date-time
+        thread:
+          $ref: '#/components/schemas/TeamChatThread'
+    TeamChatThread:
+      type: object
+      required:
+        - id
+        - flagKey
+        - ruleLabel
+        - owner
+        - status
+        - openedAt
+        - pushed
+        - actions
+      properties:
+        id:
+          type: string
+          format: uuid
+        flagKey:
+          type: string
+        ruleLabel:
+          type: string
+          description: 'FlagCatalog''s Hungarian label, e.g. Alvásadósság'
+        owner:
+          type: string
+          enum:
+            - szunya
+            - mocor
+            - falat
+            - deru
+            - mezo
+        guest:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+            - OPEN
+            - RESOLVED
+            - EXPIRED
+        openedAt:
+          type: string
+          format: date-time
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+        pushed:
+          type: boolean
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamChatAction'
+        applied:
+          type: string
+          nullable: true
+          description: The applied actionKey
+    TeamChatAction:
+      type: object
+      required:
+        - key
+        - label
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+    TeamChatReplyRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 1000
     CharacterCouncilStatusResponse:
       type: object
       required:
@@ -25564,6 +25978,13 @@ components:
           pattern: ^(up|down|stable)$
         totalDays:
           type: integer
+        domain:
+          type: string
+          nullable: true
+          pattern: ^(sleep|train|fuel|mind|body|other)$
+          description: >-
+            The suspect metric's domain (MetricKey.domain) — the FE's owner
+            character (mezo-u3712).
     DiagnosisResponse:
       type: object
       required:

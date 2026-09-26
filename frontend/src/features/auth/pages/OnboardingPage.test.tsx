@@ -55,8 +55,10 @@ test('real mode: the three steps commit profile → weight → onboarding-comple
   expect(screen.getByRole('heading', { name: 'Első lépések' })).toBeInTheDocument()
   expect(screen.getByText('Szia, Béla!')).toBeInTheDocument()
   await walkToSummary()
-  expect(screen.getByText('Magasság: 181 cm')).toBeInTheDocument()
-  expect(screen.getByText('Súly: 84,5 kg')).toBeInTheDocument()
+  // Üveg (mezo-me75u.10): each summary line is a label/value row; its text still reads whole.
+  const summary = screen.getAllByRole('listitem').map((li) => li.textContent)
+  expect(summary).toContain('Magasság: 181 cm')
+  expect(summary).toContain('Súly: 84,5 kg')
   await userEvent.click(screen.getByRole('button', { name: 'Kezdjük' }))
   await waitFor(() => expect(onSuccess).toHaveBeenCalled())
   expect(calls.map((c) => c.url)).toEqual(['profile', 'weight', 'complete'])

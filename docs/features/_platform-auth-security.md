@@ -2,7 +2,7 @@
 title: Auth & Security
 type: feature-platform
 status: done
-updated: 2026-09-20
+updated: 2026-09-26
 tags: [platform, auth, backend, frontend]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/auth
@@ -35,6 +35,8 @@ Driving design: [`docs/superpowers/specs/2026-09-02-multi-user-accounts-design.m
 ---
 
 ## 2. User-facing behavior
+
+> **2026-09-26 — Üveg U10 (`mezo-me75u.10`).** Login, register, the forced password change, onboarding and the boot-failure screen wear the dark glass (one glass form card, flat fields, coral error line with `t-info`); the AuthShell wordmark reads „boop” (owner OK). AuthShell and the boot-failure branch mount `<ClaySprites/>` themselves — they render above main.tsx's sprite, so `t-*` icons drew nothing before. Behaviour unchanged.
 
 The central account editor corrects the canonical account name and email through PUT
 `/api/auth/me`. The changed name is also the source for companion persona and personal-context

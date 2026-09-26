@@ -175,7 +175,7 @@ test('at 0 logged sets a glass "A mai küldetések" row tops the list with the a
   const row = questRow()
   expect(row).not.toBeNull()
   expect(row).toHaveClass('glass')
-  expect(row).toHaveTextContent('0 / 4 elfogadva')
+  expect(row).toHaveTextContent('4 ajánlat vár')
   // It sits at the top of the list, above every exercise card.
   const list = document.querySelector('.wo-list')!
   expect(list.firstElementChild).toBe(row)
@@ -186,8 +186,19 @@ test('the quest row opens the SAME Küldetések glass the ⋯ menu reaches', asy
   setup()
   await user.click(questRow()!)
   expect(screen.getByRole('dialog', { name: 'A mai küldetések' })).toBeInTheDocument()
-  expect(screen.getByText(/Passzolni ér/)).toBeInTheDocument()
-  expect(screen.getByText('conf 72%')).toBeInTheDocument()
+  expect(screen.getByText(/passzolni ér/)).toBeInTheDocument()
+  expect(screen.getByText('PR-kísérlet')).toBeInTheDocument()
+})
+
+// mezo-oy91i: ticking a challenge in the picker turns the start row gold with the target chips.
+test('mock mode: ticking a challenge turns the start row into "1 küldetés vállalva"', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(questRow()!)
+  await user.click(screen.getAllByRole('button', { name: /: vállalom$/ })[0])
+  await user.click(screen.getByRole('button', { name: 'Indulhat · 1 küldetéssel' }))
+  const row = screen.getByRole('button', { name: /küldetés vállalva/ })
+  expect(row).toHaveClass('is-accepted')
 })
 
 test('the quest row leaves once the first set is logged — the ⋯ menu entry stays', async () => {
@@ -200,23 +211,21 @@ test('the quest row leaves once the first set is logged — the ⋯ menu entry s
   expect(screen.getByText('Küldetések')).toBeInTheDocument()
 })
 
-// Byte-parity guard: the Phase-1 mock seed still renders its fabricated confidence
-// (0.72 → "conf 72%") + the tool-transparency chips exactly as before the live wiring —
-// now inside the ⋯ menu's Küldetések glass.
-test('mock mode: the seed challenge renders conf 72% and its tool chips (byte parity)', async () => {
+// mezo-oy91i: the picker drops the old card's machine text — no "conf", no tool-call chips.
+test('mock mode: the seed challenge reads as chips, with no conf code and no tool chips', async () => {
   const user = userEvent.setup()
   setup()
   await openChallenges(user)
-  expect(screen.getByText('conf 72%')).toBeInTheDocument()
-  expect(screen.getByText('get_pr_history(ex=chest_row)')).toBeInTheDocument()
-  expect(screen.queryByText('tanulom')).not.toBeInTheDocument()
+  expect(screen.getByText('PR-kísérlet')).toBeInTheDocument()
+  expect(screen.queryByText(/conf/i)).not.toBeInTheDocument()
+  expect(screen.queryByText('get_pr_history(ex=chest_row)')).not.toBeInTheDocument()
 })
 
 test('mock mode: the challenges glass carries the honest "passzolni ér" principle', async () => {
   const user = userEvent.setup()
   setup()
   await openChallenges(user)
-  expect(screen.getByText(/Passzolni ér/)).toBeInTheDocument()
+  expect(screen.getByText(/passzolni ér/)).toBeInTheDocument()
 })
 
 test('a card names its exercise and carries one row per WORKING slot', async () => {
@@ -1972,23 +1981,21 @@ function useChallengeHandlers(rows: Record<string, unknown>[], calls: string[]) 
   )
 }
 
-test('real mode: a proposed challenge with null confidence renders "tanulom" and NO tool chips', async () => {
+test('real mode: a proposed challenge with null confidence says "még tanulom" and shows NO tool chips', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useChallengeHandlers([challengeWire()], calls)
   const user = userEvent.setup()
   setup()
-  // The card list's ⋯ menu -> the Küldetések glass (mezo-e1ii9).
   await enterList()
   await openChallenges(user)
-  expect(await screen.findByText('conf tanulom')).toBeInTheDocument()
+  await user.click(await screen.findByRole('button', { name: 'Miért ezt? ›' }))
+  expect(screen.getByText(/Még tanulom, mennyire biztos/)).toBeInTheDocument()
   expect(screen.queryByText(/get_pr_history/)).not.toBeInTheDocument() // live sends no tools
-  // U4 (mezo-me75u.4): the ⚔️ emoji became the 3D quest icon — the label is plain text now.
-  expect(screen.getByText('Elfogadom')).toBeInTheDocument()
   expect(screen.queryByText(/⚔/)).not.toBeInTheDocument()
 })
 
-test('real mode: clicking "Elfogadom" POSTs an accept decision for the challenge', async () => {
+test('real mode: ticking a challenge POSTs an accept decision', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useChallengeHandlers([challengeWire()], calls)
@@ -1996,13 +2003,13 @@ test('real mode: clicking "Elfogadom" POSTs an accept decision for the challenge
   setup()
   await enterList()
   await openChallenges(user)
-  await user.click(await screen.findByText('Elfogadom'))
+  await user.click(await screen.findByRole('button', { name: /Chest Supported Row: vállalom/ }))
   await waitFor(() => expect(calls).toContain('decide:chal-1:accept'))
 })
 
-// The dismiss half of `decide` (mezo-e1ii9): the prep tile was its ONLY reachable home —
-// it must stay reachable from the glass that inherited it.
-test('real mode: clicking "Passz" POSTs a dismiss decision for the challenge', async () => {
+// mezo-oy91i: unticking an ACCEPTED challenge is an 'undo' (back to an offer) — the old
+// 'dismiss' answered 409 on a non-proposed row.
+test('real mode: unticking an accepted challenge POSTs an undo decision', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useChallengeHandlers([challengeWire({ status: 'accepted' })], calls)
@@ -2010,13 +2017,11 @@ test('real mode: clicking "Passz" POSTs a dismiss decision for the challenge', a
   setup()
   await enterList()
   await openChallenges(user)
-  // An ACCEPTED challenge's chip toggles back off — that is the dismiss decision
-  // (`ChallengeCard`'s separate "Passz" button only shows while undecided and is inert).
-  await user.click(await screen.findByText('Elfogadva'))
-  await waitFor(() => expect(calls).toContain('decide:chal-1:dismiss'))
+  await user.click(await screen.findByRole('button', { name: /Chest Supported Row: vállalva/ }))
+  await waitFor(() => expect(calls).toContain('decide:chal-1:undo'))
 })
 
-test('real mode: a resolved (hit) challenge shows the Megerősítve chip (3D tick, no ✓ glyph) + outcome, no action row', async () => {
+test('real mode: a resolved (hit) challenge shows its outcome icon and outcome line, no check button', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useChallengeHandlers(
@@ -2027,21 +2032,32 @@ test('real mode: a resolved (hit) challenge shows the Megerősítve chip (3D tic
   setup()
   await enterList()
   await openChallenges(user)
-  expect(await screen.findByText('Megerősítve')).toBeInTheDocument()
+  expect(await screen.findByRole('img', { name: 'teljesült' })).toBeInTheDocument()
+  const dialog = screen.getByRole('dialog', { name: 'A mai küldetések' })
+  expect(within(dialog).queryByRole('button', { name: /: vállal/ })).not.toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Miért ezt? ›' }))
   expect(screen.getByText('110 kg × 8 — cél igazolva (+2.5 kg)')).toBeInTheDocument()
-  // the workout is decided → the accept/skip row is hidden
-  expect(screen.queryByText('Elfogadom')).not.toBeInTheDocument()
-  expect(screen.queryByText('Elfogadva')).not.toBeInTheDocument()
 })
 
-// The owner-approved quest row (U4) is shown only when there is something to open.
-test('real mode: a day with NO challenges (resolved empty) shows no quest row', async () => {
+// mezo-oy91i: the start row never vanishes — an empty day says so instead.
+test('real mode: a day with NO challenges keeps the start row, saying there is none today', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useChallengeHandlers([], calls)
   setup()
   await enterList()
-  await waitFor(() => expect(screen.queryByRole('button', { name: /^A mai küldetések/ })).toBeNull())
+  expect(await screen.findByText('Ma nincs küldetés')).toBeInTheDocument()
+})
+
+test('real mode: a failed challenge read keeps the start row with a retry', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useChallengeHandlers([], calls)
+  server.use(http.get(`${API_BASE}/api/proactive/challenge`, () => new HttpResponse(null, { status: 500 })))
+  setup()
+  await enterList()
+  expect(await screen.findByText('A küldetések nem jöttek le')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Újra' })).toBeInTheDocument()
 })
 
 test('real mode: a proposed challenge surfaces the quest row with its real count', async () => {
@@ -2050,7 +2066,7 @@ test('real mode: a proposed challenge surfaces the quest row with its real count
   useChallengeHandlers([challengeWire()], calls)
   setup()
   await enterList()
-  expect(await screen.findByRole('button', { name: /^A mai küldetések/ })).toHaveTextContent('0 / 1 elfogadva')
+  expect(await screen.findByRole('button', { name: /^A mai küldetések/ })).toHaveTextContent('1 ajánlat vár')
 })
 
 test('a logged working set shows its RIR in the row\'s own RIR cell', async () => {

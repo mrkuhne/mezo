@@ -59,6 +59,7 @@ export function buildHabitRewardToast(input: {
   const completesChain = chainTotal > 0 && chainDone + 1 >= chainTotal
   return {
     kind: 'reward',
+    source: 'habit',
     eyebrow: chainTotal > 0 ? `Szokás · ${chainDone + 1} / ${chainTotal}` : 'Szokás',
     title,
     ...(completesChain && chainLabel ? { meta: chainLabel } : {}),
@@ -78,11 +79,14 @@ export function buildQuestRewardToast(input: {
   meta?: string
   eyebrow?: string
   levelUp?: LevelUpResult | null
+  /** the toast's icon source: a quest (default) or the activity log („Naplózva") */
+  source?: 'quest' | 'activity'
 }): RewardToast {
-  const { title, meta, eyebrow = 'Küldetés', levelUp } = input
+  const { title, meta, eyebrow = 'Küldetés', levelUp, source = 'quest' } = input
   const fromServer = fromLevelUp(levelUp)
   return {
     kind: 'reward',
+    source,
     eyebrow,
     title,
     ...(meta ? { meta } : {}),

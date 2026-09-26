@@ -164,6 +164,35 @@ test('evening volleyball (18:15+90) snaps a pre slot to 17:00 and dinner to 20:1
   expect(dinner.weight).toBe(2.5)
 })
 
+test('a snack sitting INSIDE the training envelope is snapped out as pre-fuel, not the main before it (mezo-6g52f R3)', () => {
+  // Mock day: wake 06:45, bed 23:15, 4 meals, one sport block 18:00/90 (ends 19:30).
+  // Uzsonna lands at 18:11 (inside the envelope) — it must be the one pulled out to 16:45,
+  // leaving Ebéd untouched at 14:38 (877.5 min, Math.round rounds .5 up).
+  const sport: PlannerBlock = { kind: 'sport', time: '18:00', durationMin: 90, label: 'Röpi · edzés' }
+  const ws = placeWindows('06:45', '23:15', 4, [sport])
+  const byLabel = Object.fromEntries(ws.map(w => [w.label, w]))
+  expect(toHHmm(byLabel['Ebéd'].time)).toBe('14:38')
+  expect(byLabel['Ebéd'].rule).toBe('main')
+  expect(toHHmm(byLabel['Uzsonna'].time)).toBe('16:45')
+  expect(byLabel['Uzsonna'].rule).toBe('pre-training-snack')
+  expect(toHHmm(byLabel['Vacsora'].time)).toBe('20:15')
+  expect(byLabel['Vacsora'].rule).toBe('post-training')
+})
+
+test('buildDayPlan: no meal slot window intersects the training block 18:00–19:30 (mezo-6g52f R3)', () => {
+  const sport: PlannerBlock = { kind: 'sport', time: '18:00', durationMin: 90, label: 'Röpi · edzés' }
+  const plan = buildDayPlan(baseInput({ wake: '06:45', bed: '23:15', blocks: [sport] }))
+  const trainingStart = toMin('18:00')
+  const trainingEnd = toMin('19:30')
+  for (const s of plan.slots) {
+    if (s.slotKey == null || s.windowFrom == null || s.windowTo == null) continue
+    const from = toMin(s.windowFrom)
+    const to = toMin(s.windowTo)
+    const intersects = from < trainingEnd && to > trainingStart
+    expect(intersects).toBe(false)
+  }
+})
+
 // ── kitchen close on the unwrapped axis (mezo-t1vh) ─────────────────────────────
 test('kitchen close on a crossing day (wake 07:00 / bed 03:00) renders on the unwrapped axis', () => {
   const plan = buildDayPlan(baseInput({ wake: '07:00', bed: '03:00' }))
@@ -181,10 +210,10 @@ test('kitchen close on a non-crossing day (wake 06:00 / bed 23:00) is byte-ident
 // ── budget split — sums EXACTLY to the daily budget, drift on dinner ──────────
 test('splitBudget rounds per macro and lands the drift on the dinner window', () => {
   const windows: PlannedWindow[] = [
-    { slotKey: 'breakfast', kind: 'meal', label: 'R', time: 0, weight: 2 },
-    { slotKey: 'lunch', kind: 'meal', label: 'E', time: 1, weight: 2 },
-    { slotKey: 'snack', kind: 'snack', label: 'S', time: 2, weight: 1 },
-    { slotKey: 'dinner', kind: 'meal', label: 'V', time: 3, weight: 2 },
+    { slotKey: 'breakfast', kind: 'meal', label: 'R', time: 0, weight: 2, rule: 'breakfast' },
+    { slotKey: 'lunch', kind: 'meal', label: 'E', time: 1, weight: 2, rule: 'main' },
+    { slotKey: 'snack', kind: 'snack', label: 'S', time: 2, weight: 1, rule: 'snack' },
+    { slotKey: 'dinner', kind: 'meal', label: 'V', time: 3, weight: 2, rule: 'main' },
   ]
   const daily: Macro4 = { kcal: 2150, p: 163, c: 226, f: 66 } // Σweights = 7
   const out = splitBudget(daily, windows)
@@ -199,7 +228,7 @@ test('splitBudget rounds per macro and lands the drift on the dinner window', ()
 
 // ── splitBudgetPct (mezo-7102, template windows) ─────────────────────────────
 const pctWindow = (over: Partial<PlannedWindow> & { budgetPct: number }): PlannedWindow => ({
-  slotKey: 'lunch', kind: 'meal', label: 'W', time: 0, weight: over.budgetPct, ...over,
+  slotKey: 'lunch', kind: 'meal', label: 'W', time: 0, weight: over.budgetPct, rule: 'main', ...over,
 })
 test('splitBudgetPct: an empty windows array returns [] instead of throwing (no largest-pct index to absorb drift into)', () => {
   const daily: Macro4 = { kcal: 2000, p: 150, c: 200, f: 60 }
@@ -719,4 +748,34 @@ test('ablak nélküli extra logon nincs plannedTime — őszinte-null', () => {
   // a második reggeli nem kapott tervezett ablakot → nincs terv-idő
   expect(dones.some(s => s.plannedTime == null)).toBe(true)
   expect(dones.some(s => s.plannedTime != null)).toBe(true)
+})
+
+describe('meal windows (mezo-6g52f)', () => {
+  it('placeWindows records the placing rule', () => {
+    const ws = placeWindows('06:40', '23:00', 5, [{ kind: 'gym', time: '17:30', durationMin: 75, label: 'Edzés' }])
+    const byLabel = Object.fromEntries(ws.map(w => [w.label, w.rule]))
+    expect(byLabel['Reggeli']).toBe('breakfast')
+    expect(byLabel['Tízórai']).toBe('snack')
+    expect(Object.values(byLabel)).toContain('post-training')
+  })
+
+  it('every meal slot carries a from–to window, reasons and its kcal budget', () => {
+    const plan = buildDayPlan(baseInput())
+    const meals = plan.slots.filter(s => s.slotKey != null)
+    expect(meals.length).toBeGreaterThan(0)
+    for (const s of meals) {
+      expect(s.windowFrom).toMatch(/^\d\d:\d\d$/)
+      expect(s.windowTo).toMatch(/^\d\d:\d\d$/)
+      expect(s.windowFrom! < s.windowTo!).toBe(true)
+      expect(s.windowReasons!.length).toBeGreaterThan(0)
+      expect(s.budgetKcal).toBeGreaterThan(0)
+    }
+  })
+
+  it('a done slot keeps the planned window, not the logged time', () => {
+    const input = baseInput()
+    const plan = buildDayPlan(input)
+    const done = plan.slots.find(s => s.state === 'done' && s.slotKey != null)
+    if (done) expect(done.windowFrom).not.toBe(done.time)
+  })
 })

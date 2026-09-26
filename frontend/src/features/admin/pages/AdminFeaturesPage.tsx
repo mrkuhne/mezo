@@ -88,7 +88,7 @@ export function AdminFeaturesPage() {
 
   return (
     <MozaikPage tone="lav">
-      <PageHero name="Funkciók" sub={`${periodLabel(period)} · ${rows.length} funkció · ${usd(totalCostUsd)}`} />
+      <PageHero glass eyebrow="Admin" name="Funkciók" sub={`${periodLabel(period)} · ${rows.length} funkció · ${usd(totalCostUsd)}`} />
       <PageBody>
         <EntranceGroup>
           <MosaicDesktop>

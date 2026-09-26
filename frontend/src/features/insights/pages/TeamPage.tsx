@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useCharacterOverview } from '@/data/hooks'
+import { AskTeamRow } from '@/features/insights/components/AskTeamRow'
 import { FeedAvatar } from '@/features/insights/components/feed/FeedPostHead'
 import { useTeamFeed } from '@/features/insights/components/feed/useTeamFeed'
 import { TEAM } from '@/features/insights/logic/team'
@@ -18,7 +19,8 @@ function clip(text: string): string {
 /**
  * A csapat (spec 2026-09-23 §2.5, mezo-a9bo7.9) — az öt karakter egy-egy üveg-sorban a saját
  * akcentusával: mit figyel most (a szobája első ügye), és mennyire érett a képe rólad. Alatta a
- * Szkeptikus magyarázata (nem posztol, nincs szobája) és a Gépterem-ajtó.
+ * Szkeptikus magyarázata (nem posztol, nincs szobája) és a Gépterem-ajtó. A karakterek és a
+ * Gépterem között a „Kérdezd a csapatot” belépő (mezo-u3712, owner-döntés 2026-09-26).
  */
 export function TeamPage() {
   // A sorok a szobák ügyeit tükrözik, ezért a TELJES rekordkészletből (`rooms`) élnek, nem a
@@ -54,6 +56,9 @@ export function TeamPage() {
             </Link>
           )
         })}
+      </div>
+      <div className="tf-rows tf-askrow">
+        <AskTeamRow origin={{ from: '/mezo/csapat', label: 'A csapat' }} sub="Fáradt vagy? Rosszul alszol? Utánanéznek." />
       </div>
       <div className="tf-dash">
         <FeedAvatar id="szkeptikus" size={30} />

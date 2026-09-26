@@ -68,6 +68,7 @@ export const mockDiagnoses: Diagnosis[] = [
         metricKey: 'SLEEP_DURATION_H',
         expectedDirection: 'up',
         totalDays: 7,
+        domain: 'sleep',
       },
       {
         rank: 2,
@@ -80,6 +81,7 @@ export const mockDiagnoses: Diagnosis[] = [
         metricKey: 'ACWR',
         expectedDirection: 'down',
         totalDays: 7,
+        domain: 'train',
       },
     ],
   },
@@ -153,6 +155,7 @@ export const mockDiagnoses: Diagnosis[] = [
         metricKey: 'DAILY_SALT_G',
         expectedDirection: 'down',
         totalDays: 7,
+        domain: 'fuel',
       },
       {
         rank: 2,
@@ -165,7 +168,47 @@ export const mockDiagnoses: Diagnosis[] = [
         metricKey: 'WEIGHT_TREND_PCT_WK',
         expectedDirection: 'down',
         totalDays: 14,
+        domain: 'body',
       },
     ],
+  },
+  {
+    // A régebbi, FRISSÍTHETŐ alvás-válasz (mezo-u3712): a Kérdezd a csapatot oldal harmadik
+    // gazdáját (Szunya) és az elavult-állapotot mutatja a demóban.
+    id: 'diag-demo-sleep',
+    phenomenon: 'sleep',
+    windowDays: 14,
+    verdict:
+      'A késői vacsora és a lefekvés csúszása együtt rontja az éjszakát — a 21 óra utáni vacsorák után átlag másfél ponttal rosszabbul alszol.',
+    confidence: 'moderate',
+    evidence: [
+      {
+        kind: 'metric',
+        label: 'alvásminőség',
+        detail: 'átlag 6.0 (bázis 7.5, eltérés -1.5) · 14 mért nap',
+        sourceHu: 'Alvás-napló',
+        metricKey: 'SLEEP_QUALITY',
+        value: 6.0,
+        baselineValue: 7.5,
+        delta: -1.5,
+        coverageDays: 14,
+      },
+    ],
+    suspects: [
+      {
+        rank: 1,
+        title: 'Késői vacsora',
+        claim: 'A 21 óra utáni vacsorák éjszakáján az alvásminőséged átlag 6,0 — a korábbiak után 7,5.',
+        evidenceIndexes: [0],
+        strength: 'moderate',
+        probeText: 'Egy hétig vacsorázz 20:30 előtt, és nézzük meg újra.',
+        metricKey: 'LATE_MEAL_HOUR',
+        expectedDirection: 'down',
+        totalDays: 7,
+        domain: 'fuel',
+      },
+    ],
+    generatedAt: '2026-08-12T07:40:00Z',
+    stale: true,
   },
 ]

@@ -6,7 +6,7 @@ import { AiPriceSnapshot } from '@/features/me/components/AiPriceSnapshot'
 import {
   callKindLabel, formatDateTime, formatLatency, statusLabel, statusTone,
 } from '@/features/me/logic/llmCallFormat'
-import { GhostState } from '@/shared/ui/GhostState'
+import { AdminErrorCell, AdminLoading } from '@/features/admin/components/AdminTile'
 import { MozaikPage, PageHead, PageBody, StatStrip, StatCell } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
@@ -23,7 +23,7 @@ function Cell({ label, value, wide }: { label: string; value: string; wide?: boo
   return (
     // `wide` spans both columns — an ODD cell count would otherwise leave the grid's own
     // background showing as a phantom half-cell at the end.
-    <div style={{ background: 'var(--surface-1)', padding: '8px 10px', ...(wide ? { gridColumn: '1 / -1' } : null) }}>
+    <div className="ad-kv" style={wide ? { gridColumn: '1 / -1' } : undefined}>
       <div className="text-tertiary" style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '.07em', fontWeight: 800 }}>{label}</div>
       <div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
     </div>
@@ -36,12 +36,12 @@ export function AdminCostDetailPage() {
   const { data, isPending, isError, refetch } = useLlmCall(id)
 
   if (isError) {
-    return <GhostState message="Ez a hívás nem elérhető." ctaLabel="Újra" onCta={refetch} />
+    return <AdminErrorCell message="Ez a hívás nem elérhető." onRetry={refetch} />
   }
   // LLM_CALL_DETAIL_EMPTY.id is '' — while a real-mode fetch is unresolved, useDualQuery returns
   // that honest empty (never the mock seed), so an empty id is the load-in-progress signal.
   if (isPending && !data.id) {
-    return <GhostState message="A hívás betöltése…" />
+    return <AdminLoading text="A hívás betöltése…" />
   }
 
   const snapshot = data.pricingSnapshot
@@ -52,7 +52,7 @@ export function AdminCostDetailPage() {
     // F7.4 Mozaik re-face (mezo-d20.8.4.1, en-mely.html): sky shell, hero = feature·operation,
     // stat strip with the three headline numbers, then the existing cards on mz-qcard.
     <MozaikPage tone="sky">
-      <PageHead onBack={() => navigate('/admin/cost')} label="‹ AI-használat" />
+      <PageHead glass onBack={() => navigate('/admin/cost')} label="AI-használat" />
       <EntranceGroup>
       <PageBody className="col gap-md">
       <div className="rise" style={{ padding: '2px 2px 0' }}>
@@ -70,9 +70,9 @@ export function AdminCostDetailPage() {
           </StatStrip>
         </div>
       )}
-      <div className="mz-qcard rise" style={{ padding: '13px 14px', marginBottom: 0, '--d': '0ms' } as React.CSSProperties}>
+      <div className="ad-card glass rise" style={{ padding: '13px 14px', marginBottom: 0, '--d': '0ms' } as React.CSSProperties}>
         <div className="row" style={{ gap: 6, alignItems: 'center' }}>
-          <span style={{ fontSize: 9, fontWeight: 800, borderRadius: 5, padding: '2px 6px', background: 'var(--surface-2)' }}>
+          <span className="ad-tag mut">
             {/* Nullish, not truthy: toolRounds: 0 is a KNOWN value (tools were available, the model
                 invoked none) — distinct from null (no tool round ever tallied). Same distinction the
                 grid's own "Tool-körök" cell below and AiCallRow.tsx already make (mezo-58ig). */}
@@ -86,7 +86,7 @@ export function AdminCostDetailPage() {
           {formatDateTime(data.createdAt)}{data.entityKind ? ` · ${data.entityKind}` : ''}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: 'var(--surface-2)', borderRadius: 12, overflow: 'hidden', marginTop: 11 }}>
+        <div className="ad-kvgrid">
           <Cell label="Kért modell" value={data.requestedModel} />
           <Cell label="Kiszolgált" value={data.servedModel ?? '—'} />
           <Cell label="Válaszidő" value={formatLatency(data.latencyMs)} />
@@ -103,12 +103,12 @@ export function AdminCostDetailPage() {
         {/* WHY it failed — the same strip the list row that led here shows. An ERROR row has no
             tokens and no payload, so without this the whole page said "HIBA" and nothing else. */}
         {tone === 'error' && (
-          <div style={{ marginTop: 8, borderRadius: 8, padding: '6px 9px', fontSize: 10.5, fontWeight: 600, background: 'var(--surface-2)' }}>
+          <div className="ad-errstrip is-error">
             HIBA · {data.errorClass ?? 'ismeretlen'}{data.errorCode ? ` · ${data.errorCode}` : ''}
           </div>
         )}
         {tone === 'cancelled' && (
-          <div style={{ marginTop: 8, borderRadius: 8, padding: '6px 9px', fontSize: 10.5, fontWeight: 600, background: 'var(--surface-2)' }}>
+          <div className="ad-errstrip is-cancelled">
             MEGSZAKADT · a kliens lecsatlakozott — a részleges válasz megvan
           </div>
         )}
@@ -124,7 +124,7 @@ export function AdminCostDetailPage() {
         </div>
       )}
 
-      <div className="mz-qcard rise" style={{ padding: '4px 13px 14px', marginBottom: 0, '--d': '130ms' } as React.CSSProperties}>
+      <div className="ad-card glass rise" style={{ padding: '4px 13px 14px', marginBottom: 0, '--d': '130ms' } as React.CSSProperties}>
         <AiPayloadBlock label="Rendszerprompt" text={data.systemPrompt} />
         <AiPayloadBlock label="User üzenet" text={data.userMessage} />
         <AiPayloadBlock label="Válasz" text={data.responseText} />

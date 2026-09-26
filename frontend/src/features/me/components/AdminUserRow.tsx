@@ -8,7 +8,6 @@ import type { AdminUserResponse } from '@/data/admin/adminApi'
 // (mockMe.id) does not equal MOCK_OWNER_ID, so role is the reliable signal that this account
 // can never be disabled through this UI ("saját magára 409" per spec).
 
-const BTN: React.CSSProperties = { minHeight: 36, borderRadius: 999, padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer', border: '1px solid var(--border-subtle)', background: 'var(--surface-1)' }
 
 export function AdminUserRow({ user, self, onReset, onToggleStatus, pending = false }: {
   user: AdminUserResponse
@@ -21,7 +20,8 @@ export function AdminUserRow({ user, self, onReset, onToggleStatus, pending = fa
   const seen = user.lastSeenAt ? `utoljára: ${formatDateTime(user.lastSeenAt)}` : 'még nem járt itt'
   const onboarding = user.onboardedAt ? '' : ' · onboarding nyitva'
   return (
-    <div className="card col" style={{ padding: '10px 12px', gap: 6, opacity: disabled ? 0.7 : 1 }}>
+    // Üveg (mezo-me75u.10, /admin only consumer): a flat row cell, the sky-lit glass switch.
+    <div className="ad-acrow glass col" style={{ gap: 6, opacity: disabled ? 0.7 : 1 }}>
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
         <div className="col" style={{ minWidth: 0 }}>
           <span style={{ fontWeight: 700 }}>{user.name}</span>
@@ -31,12 +31,12 @@ export function AdminUserRow({ user, self, onReset, onToggleStatus, pending = fa
           </span>
         </div>
         {!self && user.role !== 'OWNER' && (
-          <Toggle on={disabled} ariaLabel={`Letiltás: ${user.name}`} disabled={pending}
+          <Toggle glass on={disabled} ariaLabel={`Letiltás: ${user.name}`} disabled={pending}
             onToggle={() => onToggleStatus(user.id, disabled ? 'ACTIVE' : 'DISABLED')} />
         )}
       </div>
       <div className="row" style={{ gap: 6 }}>
-        <button type="button" style={BTN} aria-label={`Jelszó-reset: ${user.name}`} disabled={pending} onClick={() => onReset(user.id)}>
+        <button type="button" className="ad-chip" aria-label={`Jelszó-reset: ${user.name}`} disabled={pending} onClick={() => onReset(user.id)}>
           Jelszó-reset
         </button>
       </div>

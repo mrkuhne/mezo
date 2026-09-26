@@ -14,7 +14,7 @@ import { isMealSlot } from '@/features/fuel/logic/dayZones'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import { mealNutrients } from '@/features/fuel/logic/mealNutrients'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
-import type { FuelMeal, FuelSlot } from '@/data/types'
+import type { ContextDimension, FuelMeal, FuelSlot, MealTiming } from '@/data/types'
 
 export interface RingVM { key: 'p' | 'c' | 'f' | 'fiber' | 'water'; label: string; pct: number; value: string; target: string; color: string }
 export interface DaySegVM { widthPct: number; toneAlt: boolean }
@@ -168,6 +168,8 @@ export interface DoneMealRow {
   /** A tervezett ablak-idő (mezo-l2gp0) — az óra-doboz "Terv szerint" sora; ablak nélküli
    *  extra logon null. */
   plannedTime: string | null
+  /** A szerver timing-tényei (mezo-6g52f): `windowSource === 'plan'` → a tárolt ablak az igazság. */
+  timing: MealTiming | null
 }
 
 /** The day's done meal windows, chronologically, each row's meal joined off `slot.mealId` (the join
@@ -195,6 +197,7 @@ export function doneMealRows(meals: FuelMeal[], slots: FuelSlot[]): DoneMealRow[
         fiberG: facts?.fiberG ?? null,
         sugarG: facts?.sugarG ?? null,
         plannedTime: s.plannedTime ?? null,
+        timing: (meal?.breakdown?.dimensions.find(d => d.id === 'context') as ContextDimension | undefined)?.timing ?? null,
       }
     })
 }

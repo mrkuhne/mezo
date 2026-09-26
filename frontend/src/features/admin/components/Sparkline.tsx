@@ -12,12 +12,13 @@ import type { PageTone } from '@/shared/ui/mozaik'
 // entrance, e.g. because the query resolved after mount, or a print view) still shows the full
 // line — never an empty tile. See Sparkline.test.tsx / the page tests for the assertion.
 const TONE_STROKE: Record<PageTone, string> = {
-  coral: 'var(--mz-cell-coral-ink, #A84A26)',
-  gold: 'var(--mz-qxp-ink, #A8801F)',
-  lav: 'var(--mz-cell-lav-ink, #5D4FA0)',
-  rose: 'var(--mz-cell-rose-ink, #8E3F6F)',
-  sage: 'var(--mz-cell-sage-ink, #4E6B42)',
-  sky: 'var(--mz-cell-sky-ink, #2E6E96)',
+  // Üveg (mezo-me75u.10): the dark Mozaik accents — the line glows in the tile's own hue.
+  coral: 'var(--dv-coral)',
+  gold: 'var(--dv-amber)',
+  lav: 'var(--dv-lav)',
+  rose: 'var(--dv-rose)',
+  sage: 'var(--dv-sage)',
+  sky: 'var(--dv-sky)',
 }
 
 const W = 480
@@ -65,7 +66,7 @@ export function Sparkline({ points, tone, ariaLabel }: { points: number[]; tone:
         stroke={color}
         style={{ '--len': 2000 } as CSSProperties}
       />
-      <circle className="dot" cx={lastX} cy={lastY} r={4} fill={color} stroke="#fff" strokeWidth={2} />
+      <circle className="dot" cx={lastX} cy={lastY} r={4} fill={color} stroke="var(--canvas)" strokeWidth={2} />
     </svg>
   )
 }

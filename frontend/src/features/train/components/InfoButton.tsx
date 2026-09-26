@@ -23,9 +23,11 @@
 // `.pl-info-head` block InfoButton stacked next to GlassBox's header. GlassBox's
 // `.gl-head` is the prototype's ONE glass header every glass shares.
 //
-// The tint is FIXED at the prototype's `#bca6f1` for every info glass — it is the
-// explain layer's identity colour, deliberately NOT the section's own accent
-// (the prototype hardcodes it in infoGlass regardless of what opened it).
+// The tint is FIXED for every info glass. It was the Titanium prototype's `#bca6f1`; the
+// üveg re-dress (U10, mezo-me75u.10, prototypes/src/uveg-reteg-body.html `GB.info`) gives
+// the shared dialog its AREA's colour, and every InfoButton lives in Edzés: coral. Inside
+// the glass the art is the Titanium 3D set (the default clay `i-info` trigger maps to
+// `t-info` at this call site; bible U1 rule 7).
 //
 // The copy is owner-iterated and ships word for word from the prototype; call sites
 // pass it verbatim (one placement interpolates a real MEV value — never a literal).
@@ -35,8 +37,8 @@ import { useLocation } from 'react-router-dom'
 import { GlassBox } from '@/shared/ui/mozaik/GlassBox'
 import { ContentIcon, type ClayIconName, type Icon3DName } from '@/shared/ui/clay'
 
-/** The prototype's fixed explain-layer accent (navigation.js:91, `--ex-color:#bca6f1`). */
-export const INFO_TINT = '#bca6f1'
+/** The explain layer's fixed accent: Edzés coral (üveg U10; was the Titanium `#bca6f1`). */
+export const INFO_TINT = 'var(--dv-coral)'
 
 /** The prototype's own `#i-info` glyph — a titanium circle with a blue lowercase i,
  *  defined in the prototype's live sprite (companion-titanium/nap.html:40; an earlier
@@ -81,7 +83,7 @@ export function InfoButton({ title, copy, icon = DEFAULT_INFO_ICON }: InfoButton
         onClose={() => setOpen(false)}
         label={title}
         tint={INFO_TINT}
-        art={<ContentIcon name={icon} size={34} />}
+        art={<ContentIcon name={icon === DEFAULT_INFO_ICON ? 't-info' : icon} size={30} />}
         eyebrow="MEZO · RÉSZLET"
       >
         <p className="pl-info-copy">{copy}</p>

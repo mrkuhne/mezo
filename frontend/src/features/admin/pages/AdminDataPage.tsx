@@ -84,7 +84,7 @@ export function AdminDataPage() {
 
   return (
     <MozaikPage tone="lav">
-      <PageHero name="Adatböngésző" sub="nyers sorok · csak olvasás · nincs export" />
+      <PageHero glass eyebrow="Admin" name="Adatböngésző" sub="nyers sorok · csak olvasás · nincs export" />
       <PageBody>
         <EntranceGroup>
           <div className="ad-pick">

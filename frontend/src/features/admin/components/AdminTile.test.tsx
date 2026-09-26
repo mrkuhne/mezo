@@ -38,4 +38,23 @@ describe('AdminTile', () => {
     expect(screen.getByText('1 234 fiók')).toBeInTheDocument()
     expect(screen.queryByLabelText('Betöltés…')).not.toBeInTheDocument()
   })
+
+  // Üveg (mezo-me75u.10): every admin tile is a glass tile whose accent follows `wash`, and the
+  // error state carries the ⓘ 3D icon (never a text glyph).
+  it('wears the glass material with its wash as the accent hook, and an ⓘ icon on error', () => {
+    const { container, rerender } = render(
+      <AdminTile query={{ isError: false, isPending: false, refetch: vi.fn() }} wash="gold" eyebrow="Költés">
+        <div>$1,84</div>
+      </AdminTile>,
+    )
+    const tile = container.querySelector('.mz-tile')
+    expect(tile).toHaveClass('glass', 'ad-gt', 'mz-w-gold')
+    rerender(
+      <AdminTile query={{ isError: true, isPending: false, refetch: vi.fn() }} wash="gold" eyebrow="Költés">
+        <div>$1,84</div>
+      </AdminTile>,
+    )
+    expect(container.querySelector('.ad-tile-error use')?.getAttribute('href')).toBe('#t-info')
+    expect(screen.getByRole('button', { name: 'Újra' })).toBeInTheDocument()
+  })
 })
