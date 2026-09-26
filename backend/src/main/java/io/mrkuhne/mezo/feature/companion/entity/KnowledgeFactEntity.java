@@ -6,6 +6,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
@@ -100,8 +101,22 @@ public class KnowledgeFactEntity extends OwnedEntity {
     @Column(nullable = false, columnDefinition = "jsonb")
     private MemoryProvenanceEnvelope provenance = MemoryProvenanceEnvelope.empty();
 
+    /** U9b (mezo-zpxv7): the team character that owns this fact — mirrors ck_knowledge_fact_owner.
+     *  A producer that names none gets the category default at persist time (never null in the DB). */
+    @Size(max = 16)
+    @Pattern(regexp = "szunya|mocor|falat|deru|mezo")
+    @Column(nullable = false, length = 16)
+    private String owner;
+
     @AssertTrue(message = "valid_to must not precede valid_from")
     public boolean isValidityRangeValid() {
         return validFrom == null || validTo == null || !validTo.isBefore(validFrom);
+    }
+
+    @PrePersist
+    void defaultOwner() {
+        if (owner == null) {
+            owner = FactOwner.forCategory(category);
+        }
     }
 }
