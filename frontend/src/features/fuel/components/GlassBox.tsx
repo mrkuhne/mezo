@@ -56,7 +56,11 @@ export function GlassBox({ children, onClose, labelledBy, className, style }: Gl
         style={style}
         className={className ? `fmx-glass glass ${className}` : 'fmx-glass glass'}
       >
-        {children}
+        {/* A görgetés a BELSŐ rétegé, nem a dobozé: a `.glass::before` keret
+            `inset: 0`-val a doboz padding-dobozát rajzolja körbe — ha maga a doboz görget, a keret
+            a tartalommal együtt felcsúszik, és a hosszú doboz közepén „szétesik". Így a keret áll,
+            csak a tartalom mozog alatta. */}
+        <div className="fmx-glass-scroll">{children}</div>
       </div>
     </div>,
     target,

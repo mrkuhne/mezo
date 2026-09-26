@@ -104,4 +104,76 @@ class MealCoachPromptTest {
             List.of(block("Vacsora", 2, new BigDecimal("400"))));
         assertThat(prompt).contains("marad: 1100 kcal");
     }
+
+    @Test
+    void testUserMessage_shouldListThePlatesOwnItems_withUnknownSugarAsQuestionMark() {
+        MealCoachPrompt.MealBlock withItems = new MealCoachPrompt.MealBlock(UUID.randomUUID(), "Tízórai",
+            "snack", LocalTime.of(10, 45), 1, breakdown(), MealRole.STANDARD, BigDecimal.ZERO,
+            BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, List.of(
+                new MealCoachStore.ItemLine("Méz", new BigDecimal("20"), "g", new BigDecimal("16"),
+                    new BigDecimal("16.4"), BigDecimal.ZERO, BigDecimal.ZERO),
+                new MealCoachStore.ItemLine("Rozskenyér", new BigDecimal("80"), "g", new BigDecimal("38"),
+                    null, null, new BigDecimal("6"))));
+
+        String msg = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(), List.of(withItems));
+
+        assertThat(msg).contains("TÉTELEK")
+            .contains("- Méz 20 g · C 16g · ebből cukor 16g · rost 0g")
+            .contains("- Rozskenyér 80 g · C 38g · ebből cukor ? · rost ?");
+    }
+
+    @Test
+    void testUserMessage_shouldOmitTheItemsBlock_whenNoLinesAreKnown() {
+        String msg = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(),
+            List.of(block("Zabkása", 1, BigDecimal.ZERO)));
+
+        assertThat(msg).doesNotContain("TÉTELEK");
+    }
+
+    private static MealCoachStore.ItemLine line(String c, String sugar, String fiber, String p, String f) {
+        return new MealCoachStore.ItemLine("x", BigDecimal.ONE, "g", new BigDecimal(c),
+            sugar == null ? null : new BigDecimal(sugar), new BigDecimal(fiber), new BigDecimal(p),
+            new BigDecimal(f), null, null, null, null);
+    }
+
+    /** The FE `glycemicBand.test.ts` boundary cases — the twin must agree with the box. */
+    @Test
+    void testGlucoseBand_shouldMatchTheFrontendDerivation() {
+        // 100 g sugar-free carbs: load 60; fiber 24.05 → 11.9 low, 24 → 12 mid, 18 → 24 high
+        assertThat(MealCoachPrompt.glucoseBand(List.of(line("100", "0", "24.05", "0", "0")))).isEqualTo("alacsony");
+        assertThat(MealCoachPrompt.glucoseBand(List.of(line("100", "0", "24", "0", "0")))).isEqualTo("közepes");
+        assertThat(MealCoachPrompt.glucoseBand(List.of(line("100", "0", "18", "0", "0")))).isEqualTo("magas");
+        // the owner's tízórai (110 C / 48 sugar / 12 fiber / 21 P / 6 F) is high
+        assertThat(MealCoachPrompt.glucoseBand(List.of(line("110", "48", "12", "21", "6")))).isEqualTo("magas");
+        // unknown sugar → the 30% assumption, and the prompt says it was estimated
+        assertThat(MealCoachPrompt.glucoseBand(List.of(line("100", null, "18", "0", "0"))))
+            .isEqualTo("magas (a cukor becsült)");
+    }
+
+    @Test
+    void testUserMessage_shouldCarryThePerson_andOnlyTheCheckInsUpToTheMeal() {
+        var person = new MealCoachContextReader.PersonContext("M", 34, new BigDecimal("182"),
+            new BigDecimal("84.5"), new BigDecimal("18"), "DESK", "cut", List.of("muscle"),
+            new MealCoachContextReader.Sleep(DATE, new BigDecimal("5.5"), 4, 3), "Metformin (metformin)",
+            List.of(new MealCoachContextReader.CheckIn("05:30", 3, 8, 5, 4),
+                    new MealCoachContextReader.CheckIn("20:00", 9, 1, 9, 9)));
+
+        String msg = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(),
+            List.of(block("Zabkása", 1, BigDecimal.ZERO)), person);
+
+        assertThat(msg).contains("A FELHASZNÁLÓ").contains("férfi").contains("34 év").contains("84.5 kg")
+            .contains("ülőmunka").contains("fogyás").contains("muscle")
+            .contains("5.5 óra").contains("minőség 4/10").contains("Metformin")
+            // the 06:15 meal sees the 05:30 check-in, never the evening one
+            .contains("05:30 · energia 3/10 · stressz 8/10").doesNotContain("20:00");
+    }
+
+    @Test
+    void testUserMessage_shouldSayNincsAdat_forAnUnknownPerson() {
+        String msg = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(),
+            List.of(block("Zabkása", 1, BigDecimal.ZERO)), MealCoachContextReader.PersonContext.empty());
+
+        assertThat(msg).contains("nem nincs adat").contains("legutóbbi alvás: nincs adat")
+            .contains("aktív gyógyszer: nincs rögzítve").contains("nincs check-in");
+    }
 }

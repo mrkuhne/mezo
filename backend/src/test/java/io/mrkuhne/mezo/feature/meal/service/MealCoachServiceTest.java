@@ -22,7 +22,12 @@ class MealCoachServiceTest {
 
     private static ExtractedVerdict verdict(Map<String, String> dimensionNotes) {
         return new ExtractedVerdict("11111111-1111-1111-1111-111111111111", "Tagline", "Summary",
-            List.of(), dimensionNotes);
+            List.of(), dimensionNotes, null);
+    }
+
+    private static ExtractedVerdict glucoseVerdict(List<MealCoachService.ExtractedGlucose> glucose) {
+        return new ExtractedVerdict("11111111-1111-1111-1111-111111111111", "Tagline", "Summary",
+            List.of(), Map.of(), glucose);
     }
 
     private static Dimension dim(String id, String note) {
@@ -112,5 +117,28 @@ class MealCoachServiceTest {
         assertThat(updated.weight()).isEqualByComparingTo(original.weight());
         assertThat(updated.score()).isEqualByComparingTo(original.score());
         assertThat(updated.detail()).isEqualTo(original.detail());
+    }
+
+    @Test
+    void glucose_shouldStayNull_whenTheAnswerOmitsTheField() {
+        assertThat(MealCoachService.glucose(glucoseVerdict(null))).isNull();
+    }
+
+    @Test
+    void glucose_shouldStayEmpty_whenTheModelJudgesThePlateSmooth() {
+        assertThat(MealCoachService.glucose(glucoseVerdict(List.of()))).isEmpty();
+    }
+
+    @Test
+    void glucose_shouldDropBlankTips_capAtTwo_andTrimTheTitle() {
+        var out = MealCoachService.glucose(glucoseVerdict(java.util.Arrays.asList(
+            new MealCoachService.ExtractedGlucose(" ", "Üres cím"),
+            null,
+            new MealCoachService.ExtractedGlucose("A mézből elég a fele " + "x".repeat(60), "Mert gyors."),
+            new MealCoachService.ExtractedGlucose("Dió a banán mellé", "A zsír lassít."),
+            new MealCoachService.ExtractedGlucose("Harmadik", "Nem fér bele."))));
+        assertThat(out).hasSize(2);
+        assertThat(out.get(0).title()).hasSizeLessThanOrEqualTo(48).startsWith("A mézből elég a fele");
+        assertThat(out.get(1).title()).isEqualTo("Dió a banán mellé");
     }
 }

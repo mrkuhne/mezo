@@ -34,8 +34,27 @@ public record MealBreakdownJson(
     List<Dimension> dimensions,
     List<ImproveRow> improve,
     List<ToolRow> tools,
-    Integer formulaVersion
+    Integer formulaVersion,
+    /**
+     * „Legközelebb így lesz laposabb" (owner, 2026-09-26): 0-2 AI-written, plate-specific swaps
+     * that would flatten this meal's blood-glucose response next time. A prose socket like
+     * {@code improve}: the deterministic scorer writes {@code null}, the meal coach fills it in
+     * the SAME call as the verdict. {@code null} (not generated / pre-feature envelope) and empty
+     * (the plate already smooths) are distinct — the FE falls back to its computed swaps on null.
+     */
+    List<GlucoseTip> glucose
 ) {
+
+    /** The pre-glucose shape — every deterministic writer and copy site; {@code glucose} stays null. */
+    public MealBreakdownJson(BigDecimal value, BigDecimal confidence, String summary, String tagline,
+                             List<Dimension> dimensions, List<ImproveRow> improve, List<ToolRow> tools,
+                             Integer formulaVersion) {
+        this(value, confidence, summary, tagline, dimensions, improve, tools, formulaVersion, null);
+    }
+
+    /** One next-time swap for a flatter glucose response: a short title + one sentence. */
+    public record GlucoseTip(String title, String body) {
+    }
 
     /**
      * One weighted dimension; exactly one of {@code macro}/{@code micros}/{@code nova}/

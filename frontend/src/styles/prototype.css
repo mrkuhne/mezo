@@ -10271,7 +10271,13 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-glass { --c: var(--dv-sky); position: relative; margin: 0;
   width: min(86%, 338px); max-height: 74dvh; padding: 14px 21px 24px; overflow-y: auto;
   border-radius: 24px; color: var(--ink); }
-.fmx-glass.glass { overflow-y: auto; }
+.fmx-glass.glass { overflow: hidden; overflow: clip; display: flex; flex-direction: column; }
+/* The frame (`.glass::before`, inset 0) must not scroll with the content: the box clips, the
+   inner layer scrolls (GlassBox renders it). `clip`, not just `hidden`: a hidden box is still a
+   scroll container that scrollIntoView / focus can shift, sliding the frame again. A focused box drew iOS's blue ring around the
+   frame — the box takes focus programmatically only, so the ring is dropped. */
+.fmx-glass-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.fmx-glass:focus { outline: none; }
 .fmx-glass-hero { display: flex; align-items: center; gap: 14px; padding: 8px 0 14px;
   border-bottom: 1px solid var(--divider); text-align: left; }
 .fmx-glass-hero strong { font-family: var(--ff-display); font-size: 40px; font-weight: 300;
@@ -10333,6 +10339,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   max-height: 88vh; width: min(92%, 380px); padding: 0; text-align: left; }
 .fmx-mclockbox-in { overflow-y: auto; padding: 22px 18px 16px; min-height: 0; scrollbar-width: none; }
 .fmx-mclockbox-in::-webkit-scrollbar { display: none; }
+/* GlassBox's own scroll layer hands the scrolling on to `.fmx-mclockbox-in` (its own design). */
+.fmx-glass.fmx-mclockbox > .fmx-glass-scroll { display: flex; flex-direction: column; overflow: hidden; }
 @media (prefers-reduced-motion: no-preference) {
   .fmx-glass.fmx-mclockbox { animation: fmx-timebox-in 0.34s cubic-bezier(0.2, 0.9, 0.25, 1.18) both; }
 }
@@ -10949,6 +10957,21 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-glu-tip svg { flex: 0 0 auto; }
 .fmx-glu-tip strong { display: block; font-size: 12.5px; font-weight: 700; color: var(--glu-color); }
 .fmx-glu-tip p { margin: 4px 0 0; font-size: 11.5px; line-height: 1.55; color: var(--sub); }
+.fmx-glu-improve { margin: 14px 0 0; text-align: left; }
+.fmx-glu-improve > small { display: block; font-size: 9px; font-weight: 800; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--faint); }
+.fmx-glu-improve ol { display: grid; gap: 9px; margin: 8px 0 0; padding: 0; list-style: none; counter-reset: glu; }
+.fmx-glu-improve li { position: relative; padding-left: 30px; counter-increment: glu; }
+.fmx-glu-improve li::before { content: counter(glu); position: absolute; left: 0; top: 0; width: 20px; height: 20px;
+  display: grid; place-items: center; border-radius: 50%; font-size: 11px; font-weight: 700; color: var(--glu-color);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glu-color) 55%, transparent); }
+.fmx-glu-improve li b { display: block; font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.fmx-glu-improve li p { margin: 3px 0 0; font-size: 11.5px; line-height: 1.55; color: var(--sub); }
+.fmx-glu-improve-result { margin: 10px 0 0; padding: 9px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;
+  color: var(--ink); background: rgba(245, 239, 230, 0.05); }
+.fmx-glu-improve-result.lvl-low { color: var(--dv-sage); }
+.fmx-glu-improve-result.lvl-mid { color: var(--dv-amber); }
+.fmx-glu-improve-src { margin: 8px 0 0; font-size: 10.5px; color: var(--faint); }
 
 @media (prefers-reduced-motion: no-preference) {
   .fmx-ring-progress, .fmx-gauge-progress { animation: fmx-ring-rise 1.05s cubic-bezier(0.2, 0.78, 0.24, 1) both; }
@@ -15342,7 +15365,10 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .phone-screen:has(.tab-bar.glass[data-domain]) > .home-indicator { background: var(--text-primary); }
 @media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
-  .tab-bar.glass[data-domain] { height: auto; bottom: 0; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+  /* The full 34px home-indicator inset under the items left a dead band on Face-ID iPhones
+     (owner, iPhone 17 Pro Max). The labels may sit over the upper half of that zone; only the
+     indicator's own ~16px strip stays clear. Non-notched devices (inset 0) keep 8px. */
+  .tab-bar.glass[data-domain] { height: auto; bottom: 0; padding-bottom: max(8px, calc(env(safe-area-inset-bottom) - 16px)); }
 }
 @media (max-width: 360px) {
   /* 320px: the wordmark + five round controls must share one row without overlapping. */

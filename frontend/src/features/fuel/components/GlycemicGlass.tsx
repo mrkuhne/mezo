@@ -28,6 +28,7 @@ import { useId } from 'react'
 import { ContentIcon } from '@/shared/ui/clay'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 import { GlassBox } from '@/features/fuel/components/GlassBox'
+import { useMealCoachFor } from '@/data/hooks'
 import type { GlycemicBand, GlycemicLevel } from '@/features/fuel/logic/glycemicBand'
 
 /** A prototípus három görbéje, 1:1 (food.js `glucoseCurve`, :62). */
@@ -56,6 +57,9 @@ const HEADLINE: Record<GlycemicLevel, string> = {
   low: 'Szépen simít.',
 }
 
+/** Az eredménysor sávszava, a `glycemicBand` LABELS-ével azonos. */
+const LEVEL_WORD: Record<GlycemicLevel, string> = { low: 'alacsony', mid: 'közepes', high: 'magas' }
+
 const AXIS: [number, string][] = [[8, 'evés'], [82, '+1 ó'], [157, '+2 ó'], [218, '+3 ó']]
 
 /**
@@ -75,7 +79,28 @@ export function GlycemicMiniCurve({ level }: { level: GlycemicLevel }) {
   )
 }
 
-export function GlycemicGlass({ band, onClose }: { band: GlycemicBand; onClose: () => void }) {
+/** Egy AI-javaslat a „Legközelebb" részhez — a tányér SAJÁT tételeit nevezi meg. */
+export interface GlucoseTip { title: string; body: string }
+
+/**
+ * A doboz egy LOGOLT étkezéshez: az AI-coach ugyanabban a hívásban írja a vércukor-tippeket, amiben
+ * az értékelést (owner, 2026-09-26) — mentéskor magától lefut, és ha mégsem, ez a lekérés pótolja.
+ */
+export function GlycemicGlassFor({ mealId, band, onClose }: {
+  mealId: string
+  band: GlycemicBand
+  onClose: () => void
+}) {
+  const { verdict } = useMealCoachFor(mealId)
+  return <GlycemicGlass band={band} onClose={onClose} aiTips={verdict?.glucoseTips ?? null} />
+}
+
+export function GlycemicGlass({ band, onClose, aiTips = null }: {
+  band: GlycemicBand
+  onClose: () => void
+  /** Az AI-coach tippjei; `null` → a kiszámolt cserék, `[]` → az AI szerint nincs mit simítani. */
+  aiTips?: GlucoseTip[] | null
+}) {
   const titleId = useId()
   const reduced = useReducedMotion()
   const curve = CURVE[band.level]
@@ -152,6 +177,38 @@ export function GlycemicGlass({ band, onClose }: { band: GlycemicBand; onClose: 
         <span aria-hidden="true"><ContentIcon name="i-noveny" size={30} /></span>
         <span><strong>{band.tip.title}</strong><p>{band.tip.body}</p></span>
       </div>
+
+      {/* „Legközelebb így lesz laposabb" (owner, 2026-09-26): a tipp a MOST-ra szól, ez a
+          következő ilyen tányérra. Két csere, és őszintén: melyik sávba vinnék együtt — ha a
+          sáv nem vált, azt is kimondjuk, nem ígérünk többet. */}
+      {/* Az AI-tippek elsőbbséget kapnak: ők a tányér SAJÁT tételeit nevezik meg („a mézből elég
+          a fele"). Üres AI-lista = a coach szerint nincs mit simítani → a rész elmarad. */}
+      {band.level !== 'low' && aiTips && aiTips.length > 0 && (
+        <section className="fmx-glu-improve" aria-label="Legközelebb így lesz laposabb">
+          <small>Legközelebb így lesz laposabb</small>
+          <ol>
+            {aiTips.map(tip => (
+              <li key={tip.title}><b>{tip.title}</b><p>{tip.body}</p></li>
+            ))}
+          </ol>
+          <p className="fmx-glu-improve-src">A coach javaslata a tányérod tételeiből.</p>
+        </section>
+      )}
+      {aiTips == null && band.improve && (
+        <section className="fmx-glu-improve" aria-label="Legközelebb így lesz laposabb">
+          <small>Legközelebb így lesz laposabb</small>
+          <ol>
+            {band.improve.steps.map(step => (
+              <li key={step.title}><b>{step.title}</b><p>{step.body}</p></li>
+            ))}
+          </ol>
+          <p className={`fmx-glu-improve-result lvl-${band.improve.result}`}>
+            {band.improve.result === band.level
+              ? `A kettővel együtt laposabb lesz a domb, de még a ${band.label} sávban marad.`
+              : `A kettővel együtt: ${LEVEL_WORD[band.improve.result]} vércukor-válasz.`}
+          </p>
+        </section>
+      )}
 
       <p className="fmx-glass-note">
         Becslés az étkezés összetételéből, nem mérés és nem orvosi előrejelzés. Sávot mutatunk,

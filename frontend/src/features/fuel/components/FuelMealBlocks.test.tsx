@@ -13,6 +13,7 @@ import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
 import { buildWindowLane } from '@/features/fuel/logic/fuelSwimlane'
 import { doneMealRows } from '@/features/fuel/logic/keretHero'
 import { FuelMealBlocks } from '@/features/fuel/components/FuelMealBlocks'
+import { QueryWrapper } from '@/test/queryWrapper'
 
 const BUDGET: DayBudget = {
   kcal: 2400, p: 180, c: 240, f: 72,
@@ -234,7 +235,8 @@ test('a vércukor-chip a pont-chip bal oldalán áll, a sáv színét és szavá
 })
 
 test('a vércukor-chip ugyanazt az üvegdobozt nyitja, amit a részletek oldal', async () => {
-  render(<FuelMealBlocks {...props()} />)
+  // A doboz lekéri az étkezés coach-verdiktjét (AI vércukor-tippek) — ehhez kell a query-kliens.
+  render(<FuelMealBlocks {...props()} />, { wrapper: QueryWrapper })
   await userEvent.click(screen.getByLabelText('Vércukor-válasz: alacsony'))
   expect(await screen.findByText('Vércukor-válasz · várható hatás')).toBeInTheDocument()
   // A doboz a sáv SZAVÁT mutatja nagyban — szám nincs, és „glikémiás index" sincs.

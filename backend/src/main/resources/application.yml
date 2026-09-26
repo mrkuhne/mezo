@@ -347,6 +347,9 @@ mezo:
     # endpoints answer 200 with an empty verdict list, the score itself is unaffected.
     meal-coach:
       enabled: true
+      # Eager (owner, 2026-09-26): narrate every meal right after it is saved — verdict + glucose
+      # tips in one cheap-tier call — instead of on the first score-sheet open. Off: lazy as before.
+      eager: true
     # Day-review prose (mezo-jcpt.4) — the lazily-cached LLM narrative over a closed day's
     # deterministic 6-dimension evaluation; needs the companion switch too (the DayReviewLlm
     # adapter bean). Off: GET /api/me/day/{date}/evaluation still answers 200 with every
