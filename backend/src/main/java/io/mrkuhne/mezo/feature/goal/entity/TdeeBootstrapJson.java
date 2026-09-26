@@ -19,6 +19,7 @@ public record TdeeBootstrapJson(
     BigDecimal weeklyEatKcalPerDay,// scheduled training energy ÷ 7
     BigDecimal tdee,               // neatBaselineKcal + weeklyEatKcalPerDay
     String formula, // MSJ | KATCH
-    OffsetDateTime computedAt
+    OffsetDateTime computedAt,
+    Integer activityModel // ActivityEnergyModel.VERSION the weekly EAT was computed with; null = pre-mezo-32m82 (gross MET)
 ) {
 }

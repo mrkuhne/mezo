@@ -13,6 +13,7 @@ import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockStructure.RunWeek;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunningBlockRepository;
+import io.mrkuhne.mezo.feature.train.service.ActivityEnergyModel;
 import io.mrkuhne.mezo.feature.train.service.WeeklyScheduledActivityService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -39,12 +40,13 @@ import org.springframework.stereotype.Service;
  * <h2>Segment maintenance policy (spec §6.3)</h2>
  * A segment's maintenance TDEE is the athlete's NEAT baseline plus the weekly scheduled training
  * energy (gym + sport, segment-independent) plus this segment's running EAT — every training term is
- * MET×kg×óra based, sourced from {@link WeeklyScheduledActivityService}:
+ * sourced from {@link WeeklyScheduledActivityService}, which runs the net activity-energy model
+ * ({@link ActivityEnergyModel}: {@code (MET − 1) × restKcalPerHour × hours}, moderate band):
  * <ul>
  *   <li><b>Running — the per-segment EAT.</b> When a {@code running_block} link is active in a
  *       segment, the segment's TDEE gains
- *       {@code runWeeklyEatKcalPerDay(sessionsPerWeek, weightKg)} (MET_run × weight × runDefaultMin/60
- *       × sessions ÷ 7). Turning the block off removes the step — the kcal "step down" the user sees at
+ *       {@code runWeeklyEatKcalPerDay(sessionsPerWeek, restKcalPerHour)} (net run kcal × sessions ÷ 7).
+ *       Turning the block off removes the step — the kcal "step down" the user sees at
  *       the block boundary. Running is the clearest, highest-confidence boundary.</li>
  *   <li><b>Meso phase — a segment boundary, but a <em>zero</em> energy delta.</b> A change of
  *       mesocycle phase class (MEV→MAV→MRV→deload, read from {@code phaseCurve[weekInMeso]}) splits a
@@ -283,9 +285,10 @@ public class GoalProjectionService {
 
         // Segment maintenance = neat baseline + scheduled gym+sport EAT + this segment's running EAT.
         // (Gym+sport are weekly-recurring, segment-independent; running is goal-linked, per-segment.)
-        BigDecimal scheduled = weeklyActivity.scheduledWeeklyEatKcalPerDay(userId, weightKg);
+        BigDecimal restKcalPerHour = ActivityEnergyModel.restKcalPerHour(bootstrap.bmr(), weightKg).orElse(null);
+        BigDecimal scheduled = weeklyActivity.scheduledWeeklyEatKcalPerDay(userId, restKcalPerHour);
         BigDecimal runEat = ld.runActive()
-            ? weeklyActivity.runWeeklyEatKcalPerDay(ld.runSessionsPerWeek(), weightKg)
+            ? weeklyActivity.runWeeklyEatKcalPerDay(ld.runSessionsPerWeek(), restKcalPerHour)
             : BigDecimal.ZERO;
         BigDecimal tdee = bootstrap.neatBaselineKcal().add(scheduled).add(runEat);
         // An accepted deload/segment override substitutes the formula balance for THIS segment's

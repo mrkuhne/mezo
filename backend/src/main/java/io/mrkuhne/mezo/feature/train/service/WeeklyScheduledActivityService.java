@@ -16,17 +16,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Weekly SCHEDULED training energy (kcal/day) from the owner's recurring gym + sport slots, MET×kg×óra
- * based. The train domain owns the schedule + the MET model (a drift-guard test binds the MET table to
- * the FE fuelConfig). Running is goal-linked + segment-dependent, so it is exposed as a per-session
- * primitive for the projection to weight per segment. Weight is a parameter (biometrics owns it).
+ * Weekly SCHEDULED training energy (kcal/day) from the owner's recurring gym + sport slots, via the
+ * net activity-energy model ({@link ActivityEnergyModel}), moderate band; the weekly plan is a base
+ * the served target spreads evenly (spec D2). Running is goal-linked + segment-dependent, so it is
+ * exposed as a per-session primitive for the projection to weight per segment. Rest energy
+ * (kcal/hour) is a parameter (biometrics/the activity model owns its derivation).
  */
 @Service
 @RequiredArgsConstructor
 public class WeeklyScheduledActivityService {
 
     private static final String KIND_GYM = "gym";
-    private static final String KIND_SPORT = "sport";
     private static final String KIND_RUN = "run";
     private static final int DAYS_PER_WEEK = 7;
     private static final int SCALE = 2;
@@ -35,12 +35,13 @@ public class WeeklyScheduledActivityService {
     private final SportScheduleSlotRepository sportRepo;
     private final RunningBlockRepository runningBlockRepository;
     private final TrainProperties props;
+    private final ActivityEnergyModel activityEnergyModel;
 
     /** Total current scheduled EAT (kcal/day): gym+sport + the owner's currently-active running block. The bootstrap snapshot. */
     @Transactional(readOnly = true)
-    public BigDecimal totalWeeklyEatKcalPerDay(UUID userId, BigDecimal weightKg) {
-        return scheduledWeeklyEatKcalPerDay(userId, weightKg)
-            .add(runWeeklyEatKcalPerDay(currentActiveRunningSessions(userId), weightKg));
+    public BigDecimal totalWeeklyEatKcalPerDay(UUID userId, BigDecimal restKcalPerHour) {
+        return scheduledWeeklyEatKcalPerDay(userId, restKcalPerHour)
+            .add(runWeeklyEatKcalPerDay(currentActiveRunningSessions(userId), restKcalPerHour));
     }
 
     /** Sessions/week of the owner's currently active running block (0 when none / no structure). */
@@ -55,13 +56,13 @@ public class WeeklyScheduledActivityService {
 
     /** Gym + sport recurring weekly schedule energy ÷ 7 (kcal/day). Segment-independent. */
     @Transactional(readOnly = true)
-    public BigDecimal scheduledWeeklyEatKcalPerDay(UUID userId, BigDecimal weightKg) {
+    public BigDecimal scheduledWeeklyEatKcalPerDay(UUID userId, BigDecimal restKcalPerHour) {
         BigDecimal weekly = BigDecimal.ZERO;
         for (GymScheduleSlotEntity g : gymRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId)) {
-            weekly = weekly.add(blockKcal(KIND_GYM, props.gymDefaultMinutes(), weightKg));
+            weekly = weekly.add(blockKcal(KIND_GYM, props.gymDefaultMinutes(), restKcalPerHour));
         }
         for (SportScheduleSlotEntity s : sportRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId)) {
-            weekly = weekly.add(blockKcal(KIND_SPORT, s.getDurationMin(), weightKg));
+            weekly = weekly.add(blockKcal(s.getSport(), s.getDurationMin(), restKcalPerHour));
         }
         return weekly.divide(BigDecimal.valueOf(DAYS_PER_WEEK), SCALE, RoundingMode.HALF_UP);
     }
@@ -79,31 +80,17 @@ public class WeeklyScheduledActivityService {
     }
 
     /** One running kind × sessionsPerWeek ÷ 7 (kcal/day). The projection weights this per segment. */
-    public BigDecimal runWeeklyEatKcalPerDay(int sessionsPerWeek, BigDecimal weightKg) {
+    public BigDecimal runWeeklyEatKcalPerDay(int sessionsPerWeek, BigDecimal restKcalPerHour) {
         if (sessionsPerWeek <= 0) {
             return BigDecimal.ZERO;
         }
-        return blockKcal(KIND_RUN, props.runDefaultMinutes(), weightKg)
+        return blockKcal(KIND_RUN, props.runDefaultMinutes(), restKcalPerHour)
             .multiply(BigDecimal.valueOf(sessionsPerWeek))
             .divide(BigDecimal.valueOf(DAYS_PER_WEEK), SCALE, RoundingMode.HALF_UP);
     }
 
-    /**
-     * MET × kg × (durationMin / 60). The shared MET×kg×óra primitive.
-     *
-     * <p>TEMPORARY bridge onto the moderate band of the new net activity-energy model's MET table
-     * (mezo-32m82) so this class keeps compiling; Task 3 rewrites this method onto
-     * {@link ActivityEnergyModel} properly (net-of-rest, RPE-aware).
-     */
-    public BigDecimal blockKcal(String kind, int durationMin, BigDecimal weightKg) {
-        TrainProperties.MetBand row = kind == null ? null : props.energy().met().get(kind);
-        if (row == null) {
-            row = props.energy().met().get("other");
-        }
-        double met = row.moderate();
-        return BigDecimal.valueOf(met)
-            .multiply(weightKg)
-            .multiply(BigDecimal.valueOf(durationMin))
-            .divide(BigDecimal.valueOf(60), SCALE, RoundingMode.HALF_UP);
+    /** Net kcal of one planned block at the moderate band (a plan carries no felt effort). 0 when rest energy is unknown. */
+    public BigDecimal blockKcal(String kind, int durationMin, BigDecimal restKcalPerHour) {
+        return BigDecimal.valueOf(activityEnergyModel.netKcal(kind, null, durationMin, restKcalPerHour).orElse(0));
     }
 }

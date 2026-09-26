@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
 import io.mrkuhne.mezo.feature.goal.mapper.GoalMapper;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
+import io.mrkuhne.mezo.feature.train.service.ActivityEnergyModel;
 import io.mrkuhne.mezo.feature.train.service.WeeklyScheduledActivityService;
 import java.math.BigDecimal;
 import java.util.List;
@@ -107,7 +108,9 @@ public class BiometricProfileService {
         if (latestWeightKg == null) {
             return null;
         }
-        BigDecimal weeklyEat = weeklyActivity.totalWeeklyEatKcalPerDay(userId, latestWeightKg);
+        BigDecimal rest = ActivityEnergyModel.restKcalPerHour(
+            tdeeBootstrapService.bmr(profile, latestWeightKg), latestWeightKg).orElse(null);
+        BigDecimal weeklyEat = weeklyActivity.totalWeeklyEatKcalPerDay(userId, rest);
         TdeeBootstrapJson bootstrap = tdeeBootstrapService.compute(profile, latestWeightKg, weeklyEat);
         return goalMapper.toTdeeBootstrap(bootstrap);
     }

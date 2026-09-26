@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.goal.engine.service;
 import io.mrkuhne.mezo.feature.biometrics.profile.entity.BiometricProfileEntity;
 import io.mrkuhne.mezo.feature.goal.engine.GoalEngineProperties;
 import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
+import io.mrkuhne.mezo.feature.train.service.ActivityEnergyModel;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -83,7 +84,8 @@ public class TdeeBootstrapService {
 
         // neat stays unrounded (a multiplier); the kcal outputs are rounded to whole-ish kcal precision.
         return new TdeeBootstrapJson(
-            scaled(bmr), neat, scaled(neatBaseline), scaled(weeklyEat), scaled(tdee), formula, OffsetDateTime.now());
+            scaled(bmr), neat, scaled(neatBaseline), scaled(weeklyEat), scaled(tdee), formula,
+            OffsetDateTime.now(), ActivityEnergyModel.VERSION);
     }
 
     /** BMR (kcal/day): Katch-McArdle when body-fat % is known, else Mifflin-St Jeor. Unscaled. */
