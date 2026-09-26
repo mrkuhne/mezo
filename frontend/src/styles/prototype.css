@@ -15272,11 +15272,24 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .tab-bar[data-domain="fuel"],  .domain-row[data-domain="fuel"]  { --c: var(--dv-sage); }
 .tab-bar[data-domain="mezo"],  .domain-row[data-domain="mezo"]  { --c: var(--dv-lav); }
 .tab-bar[data-domain="me"],    .domain-row[data-domain="me"]    { --c: var(--dv-rose); }
+/* Docked, not floating (owner 2026-09-26, mezo-jubix): the capsule let the page show below and
+   through it. The bar sits flush on the bottom edge, full width, with an OPAQUE warm-graphite
+   ground (the domain tint rides on top), and the gradient glass frame only on its top edge.
+   The items keep their glass dress unchanged. */
 .tab-bar.glass[data-domain] {
-  position: absolute; left: 10px; right: 10px; bottom: 12px; height: auto; z-index: 40;
-  display: flex; align-items: stretch; gap: 2px; padding: 6px;
-  border: 0; border-radius: 28px;
+  position: absolute; left: 0; right: 0; bottom: 0; height: auto; z-index: 40;
+  display: flex; align-items: stretch; gap: 2px; padding: 6px 8px 8px;
+  border: 0; border-radius: 22px 22px 0 0;
+  background:
+    radial-gradient(120% 140% at 50% 0%, color-mix(in srgb, var(--c) 14%, transparent), transparent 70%),
+    linear-gradient(180deg, #2A2420, #1C1916);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow:
+    0 -14px 28px -18px rgba(0, 0, 0, 0.8),
+    0 -6px 22px -10px color-mix(in srgb, var(--c) 28%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.10);
 }
+.tab-bar.glass[data-domain]::before { padding: 1.3px 0 0; }
 .tab-bar.glass[data-domain] .tab-boop {
   position: relative; flex: 0 0 62px; width: 62px; height: 58px; margin-right: 4px; padding: 0;
   display: grid; place-items: center; border: 0; border-radius: 22px;
@@ -15304,7 +15317,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .phone-screen:has(.tab-bar.glass[data-domain]) > .home-indicator { background: var(--text-primary); }
 @media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
-  .tab-bar.glass[data-domain] { height: auto; bottom: calc(12px + env(safe-area-inset-bottom)); padding-bottom: 6px; }
+  .tab-bar.glass[data-domain] { height: auto; bottom: 0; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
 }
 @media (max-width: 360px) {
   /* 320px: the wordmark + five round controls must share one row without overlapping. */

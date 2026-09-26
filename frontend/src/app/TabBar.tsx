@@ -49,7 +49,7 @@ export function TabBar({ dots }: TabBarProps = {}) {
           mezo-88iwa.5): the négy fül itself has no page-level DOM of its own — this bar
           IS the négy fül, on every /train/* route. Scoped to the train domain only, so
           the other domains' bars don't spuriously satisfy the anchor lookup. */}
-      {/* Üveg (bible §7.2, mezo-me75u.1): ONE floating `.glass` bar tinted by the active
+      {/* Üveg (bible §7.2, mezo-me75u.1; docked since mezo-jubix): ONE `.glass` bar tinted by the active
           domain (`--c` from `[data-domain]`), and no sheen — a sweep through the always-visible
           menu reads as flicker (owner 2026-09-23). */}
       <nav className="tab-bar glass is-still" data-domain={domain.id} aria-label={`${domain.name} menü`} data-kalauz-anchor={domainId === 'train' ? 'train-tabs' : undefined}>
