@@ -2,7 +2,7 @@
 title: Fuel (Nutrition)
 type: feature-domain
 status: done
-updated: 2026-09-24
+updated: 2026-09-26
 tags: [fuel, frontend, data-layer]
 key_files:
   - frontend/src/features/fuel
@@ -54,6 +54,8 @@ Fuel is mezo's nutrition domain: five sub-views under the bottom-nav route `/fue
 Driving design: **[`docs/superpowers/specs/2026-06-10-phase2-backend-design.md`](../superpowers/specs/2026-06-10-phase2-backend-design.md)** (Slice C · Fuel: `food_item`/`meal`/`meal_item`/`recipe`/`supplement_intake`/`medication(_dose)`/`nutrition_targets` + a fuel-timeline **view**, wiring these same nine hooks). Fuel is sequenced **after** Train deliberately because Train de-risks the typed-jsonb provenance-envelope pattern (`@JdbcTypeCode(SqlTypes.JSON)`) that Fuel's meal `score` will reuse. Roadmap: **[`docs/milestones/roadmap.md`](../milestones/roadmap.md)**.
 
 ## 2. User-facing behavior
+
+> **2026-09-26 — Üveg U10 (`mezo-me75u.10`).** The meal-log ceremony is one floating amber glass sheet: the sheet rises first, and only then does the score medal ignite (stars, counters count up); the Fuel pickers and the energy-breakdown sheet are `<Sheet glass>` (sage).
 
 Persistent preferences live at `/settings/fuel` and `/settings/fuel/slots`; the header cog is the only general settings entry. The former Fuel day-navigation cog is removed, old URLs redirect. Existing calorie/macro previews and all nutrition/slot controls remain; water and fiber are compact rows. Full-page drafts guard navigation, and returning through nested settings preserves the originating domain. Failed or pending settings/template reads disable writes and offer retry; pending or failed nutrition previews do not present an older target as the current draft result. See [central settings](settings.md).
 

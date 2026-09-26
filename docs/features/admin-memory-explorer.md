@@ -2,7 +2,7 @@
 title: RAG memory explorer — owner console part 2
 type: feature-domain
 status: done
-updated: 2026-09-09
+updated: 2026-09-26
 tags: [admin, companion, memory, rag, pgvector, knowledge-graph, backend, frontend, data-layer, design]
 key_files:
   - api/feature/admin-memory/admin-memory.yml
@@ -50,6 +50,8 @@ added the entry page, the global-health endpoint, the Áttekintés view and the 
 top of that shipped base.
 
 ## 2. User-facing behavior
+
+> **2026-09-26 — Üveg U10 (`mezo-me75u.10`).** The explorer wears the admin's dark glass (`.uv-admin` scope): the inspector aside is glass, the graph/map/layer views' dark-invisible inline colours became tokens; the categorical data palettes are unchanged.
 
 **`/admin/memory` — Memória entry (installation-wide, `AdminMemoryEntryPage`).** Four KPI
 posters from `GET /api/admin/memory/health` (kész/elakadt/elavult vektor, emlékek összesen), a

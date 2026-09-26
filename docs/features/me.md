@@ -68,6 +68,8 @@ Specs of record: **[`docs/superpowers/specs/2026-06-08-me-domain-sheets-design.m
 
 ## 2. User-facing behavior
 
+> **2026-09-26 — Üveg U10 (`mezo-me75u.10`).** The Én settings sheets (sleep goal, biometrics, goal edit, temp password) are `<Sheet glass>` with a `SheetHead`; the sleep goal's anchor chips carry `t-dawn`/`t-moon` and `aria-pressed`.
+
 Mock goal edits refresh the saved target in the summary immediately and after remount; unsupported engine forecasts and nutrition results are cleared rather than carried forward from the old goal. The saved guard configuration remains visible independently of evaluation results.
 
 ### Central personal settings

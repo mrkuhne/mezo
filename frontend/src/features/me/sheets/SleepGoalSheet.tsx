@@ -6,7 +6,6 @@ import { Icon3D } from '@/shared/ui/clay'
 import { cn } from '@/shared/lib/cn'
 import { useSleepGoal, useSleepGoalActions } from '@/data/hooks'
 import { deriveSleepTimes } from '@/data/me/sleepGoal'
-import { Icon3D } from '@/shared/ui/clay'
 
 const STEP_MIN = 15
 const MIN_TARGET = 240
