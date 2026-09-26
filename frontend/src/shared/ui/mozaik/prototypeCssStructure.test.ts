@@ -1774,11 +1774,12 @@ const U9_BLOCKS: Array<[string, string[]]> = [
   ['gepterem', ['.gtm-page .gtm-lede', '.gtm-menu-page .gtm-menu', '.gtm-menu-page .gtm-tile', '.gtm-futasok .gtm-wmenu',
     '.gtm-futasok .gtm-run.gtm-incomplete', '.gtm-run-page .gtm-flow-cell', '.gtm-run-page .gtm-chain-num', '.gtm-run-page .gtm-pill',
     '.gtm-adat .gtm-seg button.on', '.gtm-page .gtm-det']],
-  ['tudastar', ['.tud9 .tud9-bignum', '.tud9 .tud9-sech', '.tud9 .tud9-conflict', '.tud9 .tud9-chk input:checked + i',
-    '.tud9 .tud9-btn.is-main', '.tud9 .tud9-fact.off .tf-ttx', '.tud9 .uv-tgl.is-on', '.tud9 .tud9-kind .tud9-kn',
-    '.tud9 .tud9-kind-empty', '.tud9 .tud9-qa', '.tud9-node .tud9-edges li',
-    // U9b (mezo-zpxv7): the inbox cards render on Rólad too — their rules are twinned under `.kr9-rolad`
-    '.kr9-rolad .tud9-btn.is-main', '.kr9-rolad .tud9-no', '.kr9-rolad .tud9-chk input:checked + i', '.kr9-rolad .tud9-accepted']],
+  ['tudastar', ['.tud9 .tud9-bignum', '.tud9 .tud9-sech', '.tud9 .tud9-fact.off .tf-ttx', '.tud9 .uv-tgl.is-on',
+    '.tud9 .tud9-kind .tud9-kn', '.tud9 .tud9-kind-empty', '.tud9 .tud9-qa', '.tud9-node .tud9-edges li',
+    // U9b Task 11 (mezo-zpxv7): the inbox cards render on Rólad ONLY now — the Tudástár shows the
+    // pointer instead, so their rules (conflict/checkbox/refine/accepted/etc.) are `.kr9-rolad`-only.
+    '.kr9-rolad .tud9-conflict', '.kr9-rolad .tud9-chk input:checked + i',
+    '.kr9-rolad .tud9-btn.is-main', '.kr9-rolad .tud9-no', '.kr9-rolad .tud9-accepted']],
   ['mintak', ['.m9m-root .m9m-big b', '.m9m-root .m9m-lcel.is-selected', '.m9m-root .m9m-lcel.hot b', '.m9m-root .m9m-act.is-no',
     '.m9m-root .m9m-tile.is-mute', '.m9m-root .m9m-covtile', '.sheet.glass.m9m-sheet', '.m9e-root .m9e-acc',
     '.m9e-root .m9e-filt button.on', '.m9e-root .m9e-st']],

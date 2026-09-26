@@ -14,9 +14,9 @@ export function WeekLessonsPage() {
     <PageHead glass label="Heti" onBack={() => navigate(weekHubPath(start))} />
     <PageHero art="t-gem" accent="var(--dv-amber)" name="A hét tanulságai" sub={deriveWeekTitle(start)} />
     <PageBody><div className="mz-qcard wkt-card glass col gap-md">
-      <p>A heti felismerésekről a Tudástár közös postaládájában dönthetsz. Ott pontosíthatod, elfogadhatod vagy elvetheted a javaslatokat.</p>
+      <p>A heti felismerésekről a Rólad oldal közös postaládájában dönthetsz. Ott pontosíthatod, elfogadhatod vagy elvetheted a javaslatokat.</p>
       <div className="wkt-links">
-        <Link className="mz-decbtn wkt-link is-lit" to={`/mezo/knowledge?start=${start}`}>Tudástár postaládája →</Link>
+        <Link className="mz-decbtn wkt-link is-lit" to={`/mezo/rolad?start=${start}`}>Rólad postaládája →</Link>
         <Link className="wkt-link" to={weekHubPath(start)}>Vissza a heti értékeléshez →</Link>
       </div>
     </div></PageBody>

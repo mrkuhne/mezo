@@ -1,51 +1,28 @@
 import { useId } from 'react'
+import { Link } from 'react-router-dom'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { FactCandidateCard } from '@/features/insights/components/FactCandidateCard'
-import { LifeEventCandidateCard } from '@/features/insights/components/LifeEventCandidateCard'
-import { LifeEventAcceptedCard } from '@/features/insights/components/LifeEventAcceptedCard'
-import { CANDIDATE_COPY } from '@/data/insights/graph'
-import type { KnowledgeFact, FactCandidate, FactDecision, LifeEventCandidate, LifeEventDecision } from '@/data/types'
-
-interface AcceptedEvent {
-  id: string
-  kind: LifeEventCandidate['kind']
-  title: string
-  edgeCount: number
-}
 
 /**
- * mezo-ms9a shell: the approval inbox (candidates + LIFE_EVENT/SEASON groups, unchanged
- * behavior from the old KnowledgeListPage) + the base-view doors (glass rows →
- * ?view=tenyek|kategoriak). `acceptedEvents`/`pendingLifeEvents` stay page-level state
- * in the shell (KnowledgeListPage) so the confirmation survives a view switch — this component
- * only renders what it is handed.
+ * mezo-ms9a shell, repointed in Task 11 (mezo-zpxv7): the base-view doors (glass rows →
+ * ?view=tenyek|kategoriak) + a gold glass pointer to the Rólad decision inbox, which is now
+ * the ONE place a candidate is decided ("egy döntés egy helyen él"). The inbox cards
+ * (FactCandidateCard/LifeEventCandidateCard) moved to BoopAboutPage/RoladInbox in Task 10 —
+ * this component no longer renders or wires them.
  */
 export function KnowledgeBaseView(props: {
-  /** A társ-kapcsoló 404-je (mezo-ms9a): CSAK a tény-felületet fedi — a candidate-inbox blokk
-   *  és a Tények csempe helyett a degraded kártya áll, de a LIFE_EVENT/SEASON csoportok és a
-   *  Kategóriák/Így beszélj velem csempék a gráf-hookok saját (független) adatával rendereinek. */
+  /** A társ-kapcsoló 404-je (mezo-ms9a): CSAK a tény-felületet fedi — a Tények csempe helyett a
+   *  degraded kártya áll, a Kategóriák csempe a gráf-hookok saját (független) adatával renderel. */
   degraded: boolean
-  candidates: FactCandidate[]
-  onDecideCandidate: (id: string, decision: FactDecision, refinedText?: string) => void
-  /** Task 12 (mezo-ms9a): a konfliktus-jelzés „A régit kikapcsolom" checkboxa ezt hívja az
-   *  ütköző tény id-jával — a shell ide a meglévő `useKnowledgeActions().toggle`-t adja. */
-  onToggleConflict: (factId: string, active: boolean) => void
-  pendingLifeEvents: LifeEventCandidate[]
-  acceptedEvents: AcceptedEvent[]
-  onAcceptLifeEvent: (candidate: LifeEventCandidate, refined?: { title?: string; summary?: string }) => void
-  onDecideLifeEvent: (id: string, decision: LifeEventDecision, refined?: { title?: string; summary?: string }) => void
-  facts: KnowledgeFact[]
-  buckets: { inPrompt: KnowledgeFact[]; waiting: KnowledgeFact[]; off: KnowledgeFact[] }
+  /** Task 11 (mezo-zpxv7): a Rólad oldalon döntésre váró jelöltek száma — fact candidates
+   *  (degraded alatt 0) + life/season candidates. A shell (KnowledgeListPage) számolja. */
+  pendingCount: number
+  facts: { length: number }
+  buckets: { inPrompt: unknown[]; waiting: unknown[]; off: unknown[] }
   kindCount: number
   kategLine: string
-  profileNode: { summary: string | null } | null
-  profileLine: string
   onNavigate: (view: 'tenyek' | 'kategoriak' | 'profil') => void
 }) {
-  const {
-    degraded, candidates, onDecideCandidate, onToggleConflict, pendingLifeEvents, acceptedEvents, onAcceptLifeEvent,
-    onDecideLifeEvent, facts, buckets, kindCount, kategLine, onNavigate,
-  } = props
+  const { degraded, pendingCount, facts, buckets, kindCount, kategLine, onNavigate } = props
 
   return (
     <>
@@ -54,55 +31,26 @@ export function KnowledgeBaseView(props: {
           <Icon3D name="t-info" size={28} />
           <span>A társ jelenleg nincs bekapcsolva — a tudástár most nem elérhető.</span>
         </div>
-      ) : candidates.length > 0 && (
-        /* Üveg (U9): the approval inbox is the ONE loud group of the page — glass amber cases. */
-        <section className="tud9-group tud9-inbox rise" style={{ '--d': '0ms' } as React.CSSProperties}>
-          <h2 className="tud9-sech">Jóváhagyásra vár · {candidates.length}</h2>
-          <div className="tf-rows">
-            {candidates.map((c) => (
-              <FactCandidateCard
-                key={c.id}
-                candidate={c}
-                conflictFact={facts.find((f) => f.id === c.conflictsWithFactId) ?? null}
-                onToggleConflict={onToggleConflict}
-                onDecide={(decision, refinedText) => onDecideCandidate(c.id, decision, refinedText)}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+      ) : null}
 
-      {(['LIFE_EVENT', 'SEASON'] as const).map((kind) => {
-        const pending = pendingLifeEvents.filter((c) => c.kind === kind)
-        const settled = acceptedEvents.filter((a) => a.kind === kind)
-        if (pending.length === 0 && settled.length === 0) return null
-        return (
-          <section key={kind} className="tud9-group rise">
-            <h2 className="tud9-sech">
-              {/* A darabszám a MÉG DÖNTÉSRE VÁRÓ jelölteké. Enélkül a csoport utolsó elfogadása
-                  után „…jelöltek · 0" állna a megerősítő kártya fölött. */}
-              {pending.length > 0
-                ? `${CANDIDATE_COPY[kind].eyebrow} · ${pending.length}`
-                : CANDIDATE_COPY[kind].settled}
-            </h2>
-            <div className="tf-rows">
-              {settled.map((a) => (
-                <LifeEventAcceptedCard key={a.id} title={a.title} edgeCount={a.edgeCount} />
-              ))}
-              {pending.map((c) => (
-                <LifeEventCandidateCard
-                  key={c.id}
-                  candidate={c}
-                  onDecide={(decision, refined) => {
-                    if (decision === 'accept') onAcceptLifeEvent(c, refined)
-                    onDecideLifeEvent(c.id, decision, refined)
-                  }}
-                />
-              ))}
-            </div>
-          </section>
-        )
-      })}
+      <div className="tf-rows">
+        {pendingCount > 0 ? (
+          <Link to="/mezo/rolad" className="glass tf-case tf-c-gold tf-s-gold rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+            <span className="tf-cmain">
+              <Icon3D name="t-bell" size={36} />
+              <span className="tf-ctxt">
+                <span className="tf-ctitle">{pendingCount} javaslat vár rád a Rólad oldalon</span>
+                <span className="tf-csub">Ott döntesz róluk: Igen, jegyezd meg · Pontosítom · Most ne · Nem igaz</span>
+              </span>
+              <span className="tf-chev" aria-hidden="true">›</span>
+            </span>
+          </Link>
+        ) : (
+          <p className="tud9-fn rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+            Nincs döntésre váró javaslat. Ha a csapat újat hoz, a Rólad oldalon kérdez meg.
+          </p>
+        )}
+      </div>
 
       <section className="tud9-group rise">
         <h2 className="tud9-sech">A tudás</h2>

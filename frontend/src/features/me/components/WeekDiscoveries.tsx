@@ -100,8 +100,11 @@ function DiscoveryTile({ to, tone, wide, icon, eyebrow, title, delayMs, chip, me
 }
 
 /** The mosaic. Renders nothing at all for an empty digest — the page owns the
- *  "Csendes hét volt" copy, so this never becomes an empty shell. */
-export function WeekDiscoveries({ digest }: { digest: WeeklyReviewDigest | null }) {
+ *  "Csendes hét volt" copy, so this never becomes an empty shell.
+ *  `weekStart` (Task 11, mezo-zpxv7): a life-event tile is a "decide" link — the decision inbox
+ *  now lives ONLY on Rólad, so it carries the week's `?start=` there instead of the retired
+ *  Tudástár deep link. */
+export function WeekDiscoveries({ digest, weekStart }: { digest: WeeklyReviewDigest | null; weekStart: string }) {
   if (digest == null || countDiscoveries(digest) === 0) return null
   let d = 40
   const next = () => (d += 30)
@@ -124,7 +127,7 @@ export function WeekDiscoveries({ digest }: { digest: WeeklyReviewDigest | null 
       ))}
       {digest.lifeEvents.map((e) => (
         <DiscoveryTile
-          key={`l-${e.id}`} to="/mezo/knowledge" tone="sky"
+          key={`l-${e.id}`} to={`/mezo/rolad?start=${weekStart}`} tone="sky"
           icon="t-pin" eyebrow="Életesemény" title={e.title} delayMs={next()}
           meta={huDayDot(e.occurredOn)}
         />
