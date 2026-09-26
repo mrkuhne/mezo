@@ -591,4 +591,7 @@ Picked variant 3 of [`prototypes/uveg-olvashatosag.html`](prototypes/uveg-olvash
 78. **One background for every page.** The `.uv-aurora` field (opacity .16) is back on in dark and is THE page
     background. A hero halo is a glow around the hero object, not a page wash: the shared rule at the end of
     `prototype.css` mutes every hero `::before` halo to 40%. A new page hero with its own halo joins that list.
+79. **Header, status bar and page are one color, no transition** (`mezo-5knnj`). Nothing may tint the page right
+    under the opaque header: `MozaikPage`'s `.mz-p-<tone>` top wash is transparent in dark, the aurora blobs start
+    below the header zone (top ≥ 230px), and the dark `--halo-*` tokens run at ~40% strength.
 

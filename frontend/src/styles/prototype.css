@@ -29019,3 +29019,26 @@ main.settings-page {
   .trm .trm-hero, .tw-load .ld-hero, .pl-dhero, .tw-map .ld-map-page,
   .gra-page .gr-streak.gr-band, .settings-page .settings-hero, .mzc-u8 .mzc-emptyhero
 )::before { opacity: 0.4; }
+
+/* mezo-5knnj · the header, the status bar and the page are ONE color, no transition.
+   (1) MozaikPage's per-tone top wash (.mz-p-lav on A napom, …) painted each page its own
+   colored band under the header — dark pages sit straight on the shared ground instead.
+   (2) The aurora's upper blobs bled into the header zone, so the opaque header read as a
+   darker strip; they now start below it (blur 60px ≈ 120px reach), leaving the top plain. */
+:root[data-theme="dark"] .mz-page { background: transparent; }
+:root[data-theme="dark"] .uv-aurora i:nth-child(1) { top: 300px; }
+:root[data-theme="dark"] .uv-aurora i:nth-child(2) { top: 230px; }
+:root[data-theme="dark"] .uv-aurora i:nth-child(3) { top: 600px; }
+:root[data-theme="dark"] .uv-aurora i:nth-child(4) { top: 820px; }
+
+/* (3) The page-top ambient halos (--halo-*) painted full-width colored bands on the heroes
+   that wear them (Terv poszter, sablonok, heti térkép, …). Dark keeps the same hues at ~40%
+   strength, like the ::before halos above, so they glow around the hero, not across the page. */
+:root[data-theme="dark"] {
+  --halo-amber:  radial-gradient(ellipse at 50% 30%, rgba(212,168,83,0.13) 0%, transparent 55%);
+  --halo-sage:   radial-gradient(ellipse at 50% 30%, rgba(154,184,143,0.12) 0%, rgba(244,208,111,0.04) 30%, transparent 60%);
+  --halo-rose:   radial-gradient(ellipse at 50% 30%, rgba(231,134,110,0.08) 0%, transparent 55%);
+  --halo-blue:   radial-gradient(ellipse at 50% 30%, rgba(107,176,209,0.12) 0%, transparent 60%);
+  --halo-violet: radial-gradient(ellipse at 50% 30%, rgba(154,95,196,0.10) 0%, transparent 60%);
+  --halo-coral:  radial-gradient(ellipse at 50% 24%, rgba(255,107,74,0.14) 0%, rgba(212,168,83,0.05) 32%, transparent 64%);
+}

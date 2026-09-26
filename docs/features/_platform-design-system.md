@@ -204,6 +204,9 @@ the per-page hero halos (`.uv-halo`, `.fmx-hero`, `.trm-hero`, `.nap-center-orbi
 to 40% so no page paints its own colored ground. For legibility the dark `--text-secondary` is
 `#D8CEC2` and `--text-muted` `#AFA294` (were `#B7A899` / `#8A7A6A`, unreadable on black).
 Decision prototype: `docs/design_2.0/prototypes/uveg-olvashatosag.html` (variant 3).
+The header and the page must read as one surface (`mezo-5knnj`): in dark the `.mz-p-<tone>` page
+washes are transparent, the aurora blobs sit below the header zone, and the `--halo-*` page-top
+tokens are dark-overridden at ~40% strength.
 
 The first üvegesítés slice. Every later slice reuses these pieces untouched; a slice that needs
 something new extends the kit, never forks a second recipe.
