@@ -1,5 +1,6 @@
 import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
 import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
+import { DAY_ORDER } from '@/data/train/train'
 import { sportOf, SPORT_TITLES, type SportKind } from '@/features/train/logic/sportKinds'
 import { isSportSlotSkipped, type SportSlotSkip } from '@/features/train/logic/weekAgenda'
 import { localDateString } from '@/shared/lib/dates'
@@ -28,6 +29,14 @@ export const PRE_WORKOUT_STACK_LEAD_MIN = 40
  *  called from anywhere that needs "today's blocks" without pulling in the whole fuel-timeline
  *  hook composition — notably `deriveProtocolAnchors` below and the notification writer/preview,
  *  which only need the block TIMES, not the full day plan. */
+/** DAY_ORDER index (0=Hét..6=Vas) of an ISO date — same Monday-first convention as `todayIdx`,
+ *  computed by handing that day's midnight `Date` to `todayIdx` rather than re-deriving the
+ *  `(getDay()+6)%7` formula a second time. */
+function weekdayIdxOf(dateIso: string): number {
+  const [y, m, d] = dateIso.split('-').map(Number)
+  return todayIdx(new Date(y, m - 1, d))
+}
+
 export function deriveBlocks(
   gymSchedule: GymSchedule | null,
   sport: { schedule: SportSchedule | null },
@@ -44,28 +53,52 @@ export function deriveBlocks(
   // then logged still yields exactly ONE block; only the leftovers are added. Empty default keeps
   // the forward-looking callers (the notification schedule writer / its preview) schedule-only.
   sessions: SportSession[] = [],
+  // The day being planned (mezo-zj6vo). Omitted (every pre-existing caller — the notification
+  // schedule writer, stack day hooks, useDayOrbFill, compileTemplate, NotificationsPage) keeps
+  // reading the `today`/`s.today` flags exactly as before, so this default is byte-identical.
+  // Given, it derives that day's OWN weekday/date instead of trusting the `today` flags, which
+  // are only ever set for the real calendar today — the bug this fixes: viewing a past Fuel day
+  // otherwise planned its meal windows around TODAY's training, not that day's.
+  date?: string,
 ): PlannerBlock[] {
   const blocks: PlannerBlock[] = []
-  // Gym: the meso's today gym day joined with its standalone weekly slot (needs a time).
-  const gym = gymSchedule?.weeklyTimes.find(d => d.today && d.active && d.time)
+  const usesDate = date != null
+  const weekdayIdx = usesDate ? weekdayIdxOf(date) : todayIdx()
+  const dayIso = date ?? localDateString(new Date())
+  // Gym: the meso's gym day for the viewed date, joined with its standalone weekly slot (needs a
+  // time). Default path (no date) keeps matching the `today` flag; the date path matches the row
+  // whose `day` name is that weekday's DAY_ORDER token, never the `today` flag (which is only
+  // ever true for the real calendar today).
+  const gym = usesDate
+    ? gymSchedule?.weeklyTimes.find(d => d.day === DAY_ORDER[weekdayIdx] && d.active && d.time)
+    : gymSchedule?.weeklyTimes.find(d => d.today && d.active && d.time)
   if (gym?.time) blocks.push({ kind: 'gym', time: gym.time, durationMin: gym.duration ?? null, label: gym.type ?? 'Gym' })
-  // Sport: EVERY today-session — recurring slots and dated one-off events alike (mezo-e1sp);
-  // a single .find silently dropped the second block of a stacked day (e.g. a recurring
-  // training + a one-off match) from the calorie budget and the meal windows. The label
-  // carries the session's sport identity so cross/TRX don't render as 'Volleyball' (mezo-rhe5).
-  // A skipped occurrence (mezo-cq06) is matched on today's weekday index + the slot's own
-  // unnormalised time + today's ISO date — the same identity `buildWeekAgenda` uses.
-  const todayIso = localDateString(new Date())
+  // Sport: EVERY session for the viewed day — recurring slots whose `day` matches that weekday,
+  // and dated one-off events whose `date` matches the viewed date exactly (mezo-e1sp's "every
+  // today-session" rule, generalised off the `today` flag to the weekday/date pair the date path
+  // uses). A single .find silently dropped the second block of a stacked day (e.g. a recurring
+  // training + a one-off match) from the calorie budget and the meal windows. The label carries
+  // the session's sport identity so cross/TRX don't render as 'Volleyball' (mezo-rhe5).
+  // A skipped occurrence (mezo-cq06) is matched on the viewed day's weekday index + the slot's own
+  // unnormalised time + the viewed ISO date — the same identity `buildWeekAgenda` uses.
   const plannedSport: PlannerBlock[] = (sport.schedule?.volleyball.sessions.filter(
-    s => s.today && s.time && !isSportSlotSkipped(skips, todayIdx(), s.time, todayIso),
+    s => s.time
+      && (usesDate ? (s.oneOff ? s.date === dayIso : s.day === DAY_ORDER[weekdayIdx]) : s.today)
+      && !isSportSlotSkipped(skips, weekdayIdx, s.time, dayIso),
   ) ?? []).map(vb => (
     { kind: 'sport', sport: sportOf(vb), time: vb.time, durationMin: vb.duration ?? null, label: SPORT_TITLES[sportOf(vb)] }
   ))
-  blocks.push(...resolveSportBlocks(plannedSport, sessions, todayIso))
-  // Run: today's prescribed session in the active block's current week (needs a plan time).
+  blocks.push(...resolveSportBlocks(plannedSport, sessions, dayIso))
+  // Run: the viewed day's prescribed session in the active block's CURRENT week (needs a plan
+  // time). NOTE (mezo-zj6vo): the running block's "current week" is still derived from real
+  // today, not from `date` — `RunningBlockResponse.currentWeek` is a server-computed field with no
+  // per-date variant, so a date in a different week than today's reads that OTHER week's session
+  // for the given weekday. This is an approximation, acceptable only within the Fuel backfill
+  // range (`MAX_BACKFILL_DAYS` = 7 days, `backfillWindow.ts`), which never crosses a week
+  // boundary by more than one — a wider caller would need the backend to expose a per-date week.
   // Interval sessions have no single continuous duration → null (DEFAULT_BLOCK_MIN drives snapping,
   // DEFAULT_RUN_MIN the net burn estimate).
-  const run = runSessionsForDay(activeRunningBlock, todayIdx())[0]
+  const run = runSessionsForDay(activeRunningBlock, weekdayIdx)[0]
   if (run?.timeOfDay) blocks.push({ kind: 'run', time: run.timeOfDay, durationMin: null, label: run.label })
   return blocks
 }

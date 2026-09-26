@@ -1,6 +1,7 @@
 import { deriveBlocks, deriveProtocolAnchors } from '@/features/fuel/logic/buildProtocol'
 import { todayIdx } from '@/data/train/runningAgenda'
 import { localDateString } from '@/shared/lib/dates'
+import { runningBlocksMock } from '@/data/train/running'
 import type { GymSchedule, SportSession, VolleyballSession } from '@/data/types'
 
 // --- deriveProtocolAnchors — the CANONICAL preWorkout derivation (fix round 1, mezo-h4wp.6.3) ---
@@ -128,5 +129,116 @@ describe('deriveBlocks — ad-hoc logged sport session', () => {
   test('no sessions passed keeps every caller byte-identical (default param)', () => {
     const blocks = deriveBlocks(null, { schedule: { volleyball: { team: '', sessions: [planned()], season: '', weeklyHours: 0 } } }, null)
     expect(blocks.filter((b) => b.kind === 'sport')).toHaveLength(1)
+  })
+})
+
+// --- deriveBlocks — a past day plans around ITS OWN training, not today's (mezo-zj6vo) ---
+// Owner report: viewing a past day (/fuel?d=2026-09-22) planned that day's meal windows around
+// TODAY's training (a past Tuesday showed Friday's gym session). Fixed calendar: 2026-09-21 is a
+// Monday ('Hét'), 2026-09-22 a Tuesday ('Kedd'), 2026-09-24 a Thursday ('Csü'), 2026-09-25 a
+// Friday ('Pén') — verified against the real calendar, never the test-run clock.
+describe('deriveBlocks — date param drives which day\'s training is used', () => {
+  const gymSchedule: GymSchedule = {
+    weeklyTimes: [
+      { day: 'Hét', active: true, today: false, time: '07:00', duration: 60, type: 'Push' },
+      { day: 'Kedd', active: true, today: false, time: '18:00', duration: 75, type: 'Legs' },
+      { day: 'Csü', active: true, today: true, time: '19:00', duration: 60, type: 'Pull' },
+    ],
+  }
+
+  test('a gym session on a non-today weekday is returned for that weekday\'s date', () => {
+    const blocks = deriveBlocks(gymSchedule, { schedule: null }, null, [], [], '2026-09-22')
+    expect(blocks.find((b) => b.kind === 'gym')).toMatchObject({ time: '18:00', label: 'Legs' })
+  })
+
+  test('the `today`-flagged row is ignored once a date is given', () => {
+    // 2026-09-22 is Tuesday, not the `today: true` Thursday row — the Thursday block must NOT appear.
+    const blocks = deriveBlocks(gymSchedule, { schedule: null }, null, [], [], '2026-09-22')
+    expect(blocks.find((b) => b.kind === 'gym')?.label).not.toBe('Pull')
+  })
+
+  test('omitting date keeps the `today`-flag behaviour (default = today, byte-identical)', () => {
+    const blocks = deriveBlocks(gymSchedule, { schedule: null }, null)
+    expect(blocks.find((b) => b.kind === 'gym')).toMatchObject({ time: '19:00', label: 'Pull' })
+  })
+
+  test('a recurring sport slot on a non-today weekday is returned for that weekday\'s date', () => {
+    const session: VolleyballSession = {
+      day: 'Csü', time: '20:00', duration: 90, court: 'BVSC', intensity: 'közepes', role: 'edzés',
+      today: false,
+    }
+    const blocks = deriveBlocks(
+      null, { schedule: { volleyball: { team: '', sessions: [session], season: '', weeklyHours: 0 } } },
+      null, [], [], '2026-09-24',
+    )
+    expect(blocks.find((b) => b.kind === 'sport')).toMatchObject({ time: '20:00' })
+  })
+
+  test('a recurring sport slot does NOT leak onto a different weekday\'s date', () => {
+    const session: VolleyballSession = {
+      day: 'Csü', time: '20:00', duration: 90, court: 'BVSC', intensity: 'közepes', role: 'edzés',
+      today: false,
+    }
+    const blocks = deriveBlocks(
+      null, { schedule: { volleyball: { team: '', sessions: [session], season: '', weeklyHours: 0 } } },
+      null, [], [], '2026-09-22', // Tuesday, not the session's Thursday
+    )
+    expect(blocks.find((b) => b.kind === 'sport')).toBeUndefined()
+  })
+
+  test('a one-off event dated on the given date is returned for that date', () => {
+    const oneOff: VolleyballSession = {
+      day: 'Kedd', time: '09:00', duration: 60, court: 'Court', intensity: 'alacsony', role: 'edzés',
+      oneOff: true, date: '2026-09-22', today: false,
+    }
+    const blocks = deriveBlocks(
+      null, { schedule: { volleyball: { team: '', sessions: [oneOff], season: '', weeklyHours: 0 } } },
+      null, [], [], '2026-09-22',
+    )
+    expect(blocks.find((b) => b.kind === 'sport')).toMatchObject({ time: '09:00' })
+  })
+
+  test('a one-off event does not appear on a different date, even if the weekday matches', () => {
+    const oneOff: VolleyballSession = {
+      day: 'Kedd', time: '09:00', duration: 60, court: 'Court', intensity: 'alacsony', role: 'edzés',
+      oneOff: true, date: '2026-09-22', today: false,
+    }
+    // 2026-09-29 is also a Tuesday, but a different date than the one-off's own `date`.
+    const blocks = deriveBlocks(
+      null, { schedule: { volleyball: { team: '', sessions: [oneOff], season: '', weeklyHours: 0 } } },
+      null, [], [], '2026-09-29',
+    )
+    expect(blocks.find((b) => b.kind === 'sport')).toBeUndefined()
+  })
+
+  test('a skip matching the GIVEN date\'s weekday + time + date removes that day\'s sport block', () => {
+    const session: VolleyballSession = {
+      day: 'Csü', time: '20:00', duration: 90, court: 'BVSC', intensity: 'közepes', role: 'edzés', today: false,
+    }
+    // 2026-09-24 is a Thursday -> weekday index 3.
+    const skips = [{ dayOfWeek: 3, time: '20:00', date: '2026-09-24' }]
+    const blocks = deriveBlocks(
+      null, { schedule: { volleyball: { team: '', sessions: [session], season: '', weeklyHours: 0 } } },
+      null, skips, [], '2026-09-24',
+    )
+    expect(blocks.find((b) => b.kind === 'sport')).toBeUndefined()
+  })
+
+  test('run: the active block\'s Tuesday sprint is returned for a Tuesday date, not today\'s weekday', () => {
+    const active = runningBlocksMock.find((b) => b.status === 'active')!
+    const blocks = deriveBlocks(null, { schedule: null }, active, [], [], '2026-09-22') // Tuesday
+    expect(blocks.find((b) => b.kind === 'run')).toMatchObject({ time: '18:00' })
+  })
+
+  test('run: the active block\'s Friday pyramid is returned for a Friday date', () => {
+    const active = runningBlocksMock.find((b) => b.status === 'active')!
+    const blocks = deriveBlocks(null, { schedule: null }, active, [], [], '2026-09-25') // Friday
+    expect(blocks.find((b) => b.kind === 'run')).toMatchObject({ time: '17:30' })
+  })
+
+  test('run: a Monday date (no prescribed session) returns no run block', () => {
+    const active = runningBlocksMock.find((b) => b.status === 'active')!
+    const blocks = deriveBlocks(null, { schedule: null }, active, [], [], '2026-09-21') // Monday
+    expect(blocks.find((b) => b.kind === 'run')).toBeUndefined()
   })
 })
