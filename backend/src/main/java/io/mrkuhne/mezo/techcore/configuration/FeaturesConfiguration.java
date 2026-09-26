@@ -47,6 +47,11 @@ public class FeaturesConfiguration {
     public static final String CHARACTER_OBSERVATION_JOB_SWITCH =
             "mezo.techcore.cron.character-observation-job.enabled";
 
+    /** Csapatfal Act III team chat expiry sweep (mezo-a9bo7.21) — techcore cron zone
+     *  (schedule: mezo.character.team-chat.expiry-cron). Off ⇒ the TeamChatExpiryJob bean does
+     *  not exist. */
+    public static final String TEAM_CHAT_EXPIRY_JOB_SWITCH = "mezo.techcore.cron.team-chat-expiry-job.enabled";
+
     /** Karakter weekly konzílium pass (mezo-1gim.5) — the Sunday-evening cron (spec §6). */
     public static final String CHARACTER_CONFERENCE_JOB_SWITCH =
             "mezo.techcore.cron.character-conference-job.enabled";
@@ -135,6 +140,12 @@ public class FeaturesConfiguration {
      *  {@link #CHARACTER_SWITCH} and {@link #COMPANION_SWITCH} (the collector reads companion/
      *  proactive sources). */
     public static final String TEAM_EDITION_SWITCH = "mezo.feature.team-edition.enabled";
+
+    /** Csapatfal Act III (mezo-a9bo7.21) — the all-day team chat engine (TeamChatService, its
+     *  flag raise/clear listener and the expiry job). Off ⇒ none of those beans exist. Array-AND'ed
+     *  with {@link #CHARACTER_SWITCH}, {@link #COMPANION_SWITCH}, {@link #PROACTIVE_SWITCH} and
+     *  {@link #INTERVENTION_SWITCH} (it consumes InterventionService.pick). */
+    public static final String TEAM_CHAT_SWITCH = "mezo.feature.team-chat.enabled";
 
     /** Companion-feed morning/midday/evening crons (mezo-gst9) — techcore cron zone
      *  (schedules: mezo.proactive.feed.*-cron). */

@@ -369,6 +369,11 @@ mezo:
     # character + companion switches too (the collector reads companion/proactive sources).
     team-edition:
       enabled: true
+    # Csapatfal Act III (mezo-a9bo7.21) — the all-day team chat: a raised coaching rule opens an
+    # ügy owned by one character, its clear resolves it. Off by default; needs the character,
+    # companion, proactive and intervention switches too.
+    team-chat:
+      enabled: false
     # Gamified growth E1 (ADR 0010) — daily quests (catalog-driven, derived completion).
     # Off => the /api/quest surface 404s and no quest beans exist.
     quest:
@@ -503,6 +508,10 @@ mezo:
       character-council-job:
         enabled: true
       character-conference-job:
+        enabled: true
+      # Csapatfal Act III team chat expiry sweep (mezo-a9bo7.21, schedule:
+      # mezo.character.team-chat.expiry-cron); off = the TeamChatExpiryJob bean does not exist
+      team-chat-expiry-job:
         enabled: true
       # Karakter monthly deep-read konzílium pass (Karakter S4, mezo-1gim.6, schedule:
       # mezo.character.monthly.cron); off = the CharacterMonthlyJob bean does not exist
@@ -2163,6 +2172,19 @@ mezo:
       portrait-min-maturity: 30
     # Per-detector kill switches (spec §5) — empty = every detector enabled; keyed by detector key.
     detector: {}
+    # Csapatfal Act III team chat (mezo-a9bo7.21) — TeamChatProperties.
+    team-chat:
+      # The user's local day for the daily line cap and the push budget.
+      zone: Europe/Budapest
+      # An ügy still OPEN after this many days is closed as EXPIRED.
+      expire-after-days: 7
+      # Safety cap: character lines per user per local day (all kinds); beyond it lines drop.
+      daily-line-cap: 12
+      max-pushes-per-day: 2
+      # team_chat LLM spend per user over the last 30 days; at/over it every line is the template.
+      monthly-usd-cap: 1.00
+      # 04:10 daily expiry sweep (one global query, no per-user fan-out).
+      expiry-cron: "0 10 4 * * *"
   proactive:
     contextual-feed:
       history-days: 14 # Inclusive calendar-day window.
