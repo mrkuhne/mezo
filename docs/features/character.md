@@ -229,6 +229,12 @@ and now feeds a second, wider publication step: `TeamEditionService.run`, invoke
 was quiet or failed. Idempotent per `(created_by, day)` — a second call for a day with an existing
 `team_edition` row returns immediately; `uq_team_edition_day` makes a concurrent race a no-op, not
 an error, and the next `*/15` tick retries any real failure until 23:45.
+The edition **waits for today's council to settle** (`mezo-a9bo7.17`): it is only attempted once the
+`character_council_edition` row is `COMPLETED`/`QUIET`, or a non-`PROCESSING` row has used up
+`max-attempts`, or the nightly observation input for the day failed for good. Otherwise a quietly
+failed first council run would let the 21:00 edition publish without the konzílium threads, and the
+successful retry could never join it (one edition per day). From `mezo.character.council.edition-deadline`
+(**23:30**) the edition publishes regardless, so a stuck council never costs the day its edition.
 
 - **Jelöltgyűjtés** (`EditionCandidateCollector`, read-only, no LLM call): one `EditionCandidate`
   per source — a proposed pattern (`kerdes`, waiting), a freshly confirmed pattern
