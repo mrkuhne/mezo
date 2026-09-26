@@ -11,36 +11,36 @@ const nutrition: NormalizedDayDimension = {
 }
 
 describe('NapomDimensionRow', () => {
-  test('scored: a collapsed button with weight, fact line, score and MEZO ›; tapping expands chips + note', async () => {
+  test('scored: an expanded button with weight, fact line, score, chips + note; tapping folds it', async () => {
     const user = userEvent.setup()
     const { container } = render(<NapomDimensionRow dimension={nutrition} mode="scored" goalTick i={0} />)
     const row = screen.getByRole('button', { name: /^Tápanyag/ })
-    expect(row).toHaveAttribute('aria-expanded', 'false')
+    expect(row).toHaveAttribute('aria-expanded', 'true')
     // a11y (mezo-yjzhw.7): a short name, the fact line as the description — not the whole body
     expect(row).toHaveAccessibleName('Tápanyag, 82 pont')
     expect(row).toHaveAccessibleDescription('kcal 2980 / 3100 · fehérje 205 / 220 g')
     expect(screen.getByText('súly 30%')).toBeInTheDocument()
     expect(screen.getByText('kcal 2980 / 3100 · fehérje 205 / 220 g')).toBeInTheDocument()
     expect(screen.getByText('82')).toBeInTheDocument()
-    expect(screen.getByText('MEZO ›')).toBeInTheDocument()
     expect(container.querySelector('.napom-bar u')).not.toBeNull()
-    expect(screen.queryByText('A fehérjecélt majdnem hoztad.')).toBeNull()
-
-    await user.click(row)
-    expect(row).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByText('BEZÁR')).toBeInTheDocument()
     expect(screen.getByText('kcal · 2980 / 3100')).toBeInTheDocument()
     expect(screen.getByText('A fehérjecélt majdnem hoztad.')).toBeInTheDocument()
 
     await user.click(row)
     expect(row).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByText('MEZO ›')).toBeInTheDocument()
     expect(screen.queryByText('A fehérjecélt majdnem hoztad.')).toBeNull()
+
+    await user.click(row)
+    expect(row).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText('A fehérjecélt majdnem hoztad.')).toBeInTheDocument()
   })
 
   test('scored with no score: the name says "nincs adat"', () => {
     render(<NapomDimensionRow dimension={{ ...nutrition, score: null, status: 'NO_DATA', facts: [] }} mode="scored" i={0} />)
     const row = screen.getByRole('button', { name: 'Tápanyag, nincs adat' })
-    expect(row).toHaveAttribute('aria-expanded', 'false')
+    expect(row).toHaveAttribute('aria-expanded', 'true')
     // the name already says it — the fact line must not announce it a second time
     expect(row).not.toHaveAttribute('aria-describedby')
     expect(row).toHaveAccessibleDescription('')

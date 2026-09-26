@@ -92,11 +92,11 @@ describe('NapomPage (mock mode)', () => {
     expect(screen.getByText('LEZÁRVA')).toBeInTheDocument()
 
     const pill = screen.getByRole('button', { name: /alap 75/ })
-    expect(pill).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByText(/Következetes napi ritmus/)).toBeNull()
-    await user.click(pill)
     expect(pill).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByText(/Következetes napi ritmus/)).toBeInTheDocument()
+    await user.click(pill)
+    expect(pill).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByText(/Következetes napi ritmus/)).toBeNull()
 
     expect(screen.getAllByRole('button', { name: DIM_ROW })).toHaveLength(6)
     expect(screen.getByText('Miből jött össze')).toBeInTheDocument()
@@ -173,16 +173,17 @@ describe('NapomPage (mock mode)', () => {
     expect(screen.queryAllByRole('button', { name: DIM_ROW })).toHaveLength(0)
   })
 
-  test('expanding a scored row reveals its note', async () => {
+  test('scored rows open expanded with their note; a tap folds one away', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     renderAt(`/nap/napom/${mockDayEvaluationDates.scored}`)
     const note = 'A fehérjecélt majdnem hoztad, a kalória is célban volt.'
-    expect(screen.queryByText(note)).toBeNull()
     const row = screen.getByRole('button', { name: /^Tápanyag/ })
-    await user.click(row)
     expect(row).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByText(note)).toBeInTheDocument()
     expect(screen.getByText('fehérje · 205 / 220 g')).toBeInTheDocument()
+    await user.click(row)
+    expect(row).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByText(note)).toBeNull()
   })
 
   test('the review card carries the feedback chips and the chat handoff', async () => {
