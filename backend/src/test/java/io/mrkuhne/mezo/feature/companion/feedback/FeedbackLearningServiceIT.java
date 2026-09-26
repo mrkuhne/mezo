@@ -2,6 +2,10 @@ package io.mrkuhne.mezo.feature.companion.feedback;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.character.entity.TeamChatLineEntity;
+import io.mrkuhne.mezo.feature.character.entity.TeamChatThreadEntity;
+import io.mrkuhne.mezo.feature.character.repository.TeamChatLineRepository;
+import io.mrkuhne.mezo.feature.character.repository.TeamChatThreadRepository;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupEntity;
 import io.mrkuhne.mezo.feature.companion.feedback.entity.MessageFeedbackEntity;
@@ -33,6 +37,8 @@ class FeedbackLearningServiceIT extends AbstractIntegrationTest {
     @Autowired private FeedbackPopulator feedbackPopulator;
     @Autowired private CompanionMessagePopulator companionMessagePopulator;
     @Autowired private CompanionProperties companionProperties;
+    @Autowired private TeamChatThreadRepository teamChatThreadRepository;
+    @Autowired private TeamChatLineRepository teamChatLineRepository;
 
     @Test
     void testComputeRollups_shouldUpsertElevenScopes_always() {
@@ -220,6 +226,51 @@ class FeedbackLearningServiceIT extends AbstractIntegrationTest {
         assertThat(feedbackRollupRepository
             .findByCreatedByAndScopeAndWindowDaysAndDeletedFalse(owner, "surface:feed_message", 30)
             .orElseThrow().getStats().up()).isEqualTo(1);
+    }
+
+    /** Csapatfal Act III Task 6 (mezo-a9bo7.21): a 👍 on a team chat line counts under its ügy's
+     *  library entry — the chat is the advice card's successor, so its verdicts feed the same
+     *  selection signal. A foreign user's line with the same key never leaks in. */
+    @Test
+    void testComputeRollups_shouldCountATeamChatLineVerdict_underItsThreadsAdviceKey() {
+        UUID owner = userPopulator.createUser().getId();
+        UUID other = userPopulator.createUser().getId();
+        TeamChatLineEntity line = teamChatLine(owner, "stress_reset");
+        TeamChatLineEntity foreign = teamChatLine(other, "stress_reset");
+        feedbackPopulator.createVerdict(owner, MessageFeedbackEntity.KIND_TEAM_CHAT_LINE, line.getId(),
+            MessageFeedbackEntity.VERDICT_UP, null);
+        feedbackPopulator.createVerdict(owner, MessageFeedbackEntity.KIND_TEAM_CHAT_LINE, foreign.getId(),
+            MessageFeedbackEntity.VERDICT_UP, null);
+
+        feedbackLearningService.computeRollups(owner);
+
+        FeedbackRollupEntity rollup = feedbackRollupRepository
+            .findByCreatedByAndScopeAndWindowDaysAndDeletedFalse(owner, "intervention:stress_reset", 30)
+            .orElseThrow();
+        assertThat(rollup.getStats().up()).isEqualTo(1);
+        assertThat(rollup.getStats().total()).isEqualTo(1);
+        assertThat(feedbackRollupRepository
+            .findByCreatedByAndScopeAndWindowDaysAndDeletedFalse(owner, "intervention:stress_talk", 30)
+            .orElseThrow().getStats().total()).isZero();
+    }
+
+    private TeamChatLineEntity teamChatLine(UUID owner, String adviceKey) {
+        TeamChatThreadEntity thread = new TeamChatThreadEntity();
+        thread.setCreatedBy(owner);
+        thread.setFlagKey("sustained_stress");
+        thread.setOwnerCharacter("deru");
+        thread.setAdviceKey(adviceKey);
+        thread.setStatus("OPEN");
+        thread.setOpenedAt(Instant.now());
+        thread = teamChatThreadRepository.saveAndFlush(thread);
+        TeamChatLineEntity line = new TeamChatLineEntity();
+        line.setCreatedBy(owner);
+        line.setThreadId(thread.getId());
+        line.setKind("OPEN");
+        line.setCharacter("deru");
+        line.setBody("Tarts egy tudatos lezárást ma este.");
+        line.setOccurredAt(Instant.now());
+        return teamChatLineRepository.saveAndFlush(line);
     }
 
     /** S4 (mezo-d58h.4): after Tasks 8-9 flip the flag-sourced card writer to {@code kind=advice},

@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatEventListener;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatExpiryJob;
+import io.mrkuhne.mezo.feature.character.service.chat.TeamChatInterventionKeyAdapter;
+import io.mrkuhne.mezo.feature.character.service.chat.TeamChatReads;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import org.junit.jupiter.api.Nested;
@@ -33,6 +35,8 @@ class TeamChatSwitchOffIT {
             assertThat(context.getBeanNamesForType(TeamChatService.class)).isEmpty();
             assertThat(context.getBeanNamesForType(TeamChatEventListener.class)).isEmpty();
             assertThat(context.getBeanNamesForType(TeamChatExpiryJob.class)).isEmpty();
+            assertThat(context.getBeanNamesForType(TeamChatReads.class)).isEmpty();
+            assertThat(context.getBeanNamesForType(TeamChatInterventionKeyAdapter.class)).isEmpty();
         }
     }
 }

@@ -9095,7 +9095,7 @@ paths:
           schema:
             type: string
             pattern: >-
-              ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review|meal_coach|recipe_breakdown)$
+              ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review|meal_coach|recipe_breakdown|team_chat_line)$
         - name: ids
           in: query
           required: true
@@ -9180,7 +9180,7 @@ paths:
           schema:
             type: string
             pattern: >-
-              ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review|meal_coach|recipe_breakdown)$
+              ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review|meal_coach|recipe_breakdown|team_chat_line)$
         - name: artifactId
           in: path
           required: true
@@ -10224,6 +10224,129 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '409':
           description: Later claim change prevents safe compensation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/character/team-chat:
+    get:
+      tags:
+        - Character
+      operationId: getTeamChatDay
+      summary: >-
+        The all-day team chat for one local day (Csapatfal Act III,
+        mezo-a9bo7.21): the day's lines in time order (OPEN and RESOLVE lines
+        embed their ügy), every still-open ügy of any day, and the day's push
+        count against its budget. With the team chat switched off the day is
+        honestly empty — never a 404
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: The local day (mezo.character.team-chat.zone); defaults to today
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The day (possibly empty)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamChatDay'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/character/team-chat/threads/{threadId}/reply':
+    post:
+      tags:
+        - Character
+      operationId: replyTeamChatThread
+      summary: >-
+        The user's reply on their own ügy — a USER line; it never resolves the
+        ügy
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamChatReplyRequest'
+      responses:
+        '200':
+          description: The written USER line
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamChatLine'
+        '400':
+          description: Empty or oversized text
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: 'No such ügy for this user, or the team chat is switched off'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/character/team-chat/threads/{threadId}/apply/{actionKey}':
+    post:
+      tags:
+        - Character
+      operationId: applyTeamChatAction
+      summary: >-
+        Applies one offered action of an ügy exactly once — the same action
+        again is an idempotent no-op, a different one after an apply is a 409
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: actionKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The ügy with its applied action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamChatThread'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: 'No such ügy for this user, or the team chat is switched off'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: 'The action is not offered, or a different one was already applied'
           content:
             application/json:
               schema:
@@ -24107,7 +24230,7 @@ components:
         artifactKind:
           type: string
           pattern: >-
-            ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review|meal_coach|recipe_breakdown)$
+            ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review|meal_coach|recipe_breakdown|team_chat_line)$
         artifactId:
           type: string
           format: uuid
@@ -24134,7 +24257,7 @@ components:
           description: >-
             'chat_message' | 'feed_message' | 'weekly_suggestion' |
             'weekly_review' | 'memoir' | 'prediction' | 'day_review' |
-            'meal_coach' | 'recipe_breakdown'
+            'meal_coach' | 'recipe_breakdown' | 'team_chat_line'
         artifactId:
           type: string
           format: uuid
@@ -24582,6 +24705,154 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DayDimension'
+    TeamChatDay:
+      type: object
+      required:
+        - date
+        - lines
+        - openThreads
+        - pushesToday
+        - pushBudget
+      properties:
+        date:
+          type: string
+          format: date
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamChatLine'
+        openThreads:
+          description: 'Every OPEN ügy of any day, oldest first'
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamChatThread'
+        pushesToday:
+          type: integer
+        pushBudget:
+          type: integer
+          description: mezo.character.team-chat.max-pushes-per-day
+    TeamChatLine:
+      type: object
+      required:
+        - id
+        - threadId
+        - kind
+        - body
+        - voiced
+        - occurredAt
+        - facts
+      properties:
+        id:
+          type: string
+          format: uuid
+        threadId:
+          type: string
+          format: uuid
+          nullable: true
+        kind:
+          type: string
+          enum:
+            - OPEN
+            - GUEST
+            - RESOLVE
+            - SKEPTIC
+            - USER
+        character:
+          type: string
+          nullable: true
+          enum:
+            - szunya
+            - mocor
+            - falat
+            - deru
+            - mezo
+            - szkeptikus
+        body:
+          type: string
+        voiced:
+          type: boolean
+        facts:
+          type: array
+          items:
+            type: string
+        occurredAt:
+          type: string
+          format: date-time
+        thread:
+          $ref: '#/components/schemas/TeamChatThread'
+    TeamChatThread:
+      type: object
+      required:
+        - id
+        - flagKey
+        - ruleLabel
+        - owner
+        - status
+        - openedAt
+        - pushed
+        - actions
+      properties:
+        id:
+          type: string
+          format: uuid
+        flagKey:
+          type: string
+        ruleLabel:
+          type: string
+          description: 'FlagCatalog''s Hungarian label, e.g. Alvásadósság'
+        owner:
+          type: string
+          enum:
+            - szunya
+            - mocor
+            - falat
+            - deru
+            - mezo
+        guest:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+            - OPEN
+            - RESOLVED
+            - EXPIRED
+        openedAt:
+          type: string
+          format: date-time
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+        pushed:
+          type: boolean
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamChatAction'
+        applied:
+          type: string
+          nullable: true
+          description: The applied actionKey
+    TeamChatAction:
+      type: object
+      required:
+        - key
+        - label
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+    TeamChatReplyRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 1000
     CharacterCouncilStatusResponse:
       type: object
       required:

@@ -14,7 +14,15 @@ import io.mrkuhne.mezo.api.dto.CharacterFeedItem;
 import io.mrkuhne.mezo.api.dto.CharacterOverviewResponse;
 import io.mrkuhne.mezo.api.dto.CharacterRunResponse;
 import io.mrkuhne.mezo.api.dto.CharacterRunSummary;
+import io.mrkuhne.mezo.api.dto.TeamChatDay;
+import io.mrkuhne.mezo.api.dto.TeamChatLine;
+import io.mrkuhne.mezo.api.dto.TeamChatReplyRequest;
+import io.mrkuhne.mezo.api.dto.TeamChatThread;
 import io.mrkuhne.mezo.api.dto.TeamEdition;
+import io.mrkuhne.mezo.feature.character.config.TeamChatProperties;
+import io.mrkuhne.mezo.feature.character.entity.TeamChatLineEntity;
+import io.mrkuhne.mezo.feature.character.service.chat.TeamChatReads;
+import io.mrkuhne.mezo.feature.character.service.chat.TeamChatService;
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
 import io.mrkuhne.mezo.feature.character.service.CharacterBootstrapService;
@@ -59,6 +67,14 @@ public class CharacterController implements CharacterApi {
     private final io.mrkuhne.mezo.feature.character.service.CharacterCouncilProcessing council;
     private final io.mrkuhne.mezo.feature.character.config.CharacterCouncilProperties councilProperties;
     private final io.mrkuhne.mezo.feature.character.service.CharacterClaimRevisionService revisions;
+    /**
+     * The team chat (Csapatfal Act III, mezo-a9bo7.21) is gated on five switches, this controller
+     * on one — the {@link #characterBootstrapService} idiom: with any of them off the beans are
+     * absent, the day read answers an honestly empty day and reply / apply a 404.
+     */
+    private final ObjectProvider<TeamChatReads> teamChatReads;
+    private final ObjectProvider<TeamChatService> teamChatService;
+    private final TeamChatProperties teamChatProperties;
 
     @Override
     public io.mrkuhne.mezo.api.dto.CharacterCouncilStatusResponse getCharacterCouncilStatus() {
@@ -167,6 +183,37 @@ public class CharacterController implements CharacterApi {
     @Override
     public List<TeamEdition> getTeamEditions(LocalDate from, LocalDate to) {
         return characterService.editions(currentUserId.get(), from, to);
+    }
+
+    @Override
+    public TeamChatDay getTeamChatDay(LocalDate date) {
+        LocalDate day = date != null ? date : LocalDate.now(teamChatProperties.zone());
+        TeamChatReads reads = teamChatReads.getIfAvailable();
+        if (reads == null) {
+            return TeamChatDay.builder().date(day).lines(List.of()).openThreads(List.of())
+                    .pushesToday(0).pushBudget(teamChatProperties.maxPushesPerDay()).build();
+        }
+        return reads.day(currentUserId.get(), day);
+    }
+
+    @Override
+    public TeamChatLine replyTeamChatThread(UUID threadId, TeamChatReplyRequest request) {
+        TeamChatLineEntity line = teamChat().reply(currentUserId.get(), threadId, request.getText());
+        return TeamChatReads.toLine(line, null);
+    }
+
+    @Override
+    public TeamChatThread applyTeamChatAction(UUID threadId, String actionKey) {
+        return TeamChatReads.toThread(teamChat().apply(currentUserId.get(), threadId, actionKey));
+    }
+
+    private TeamChatService teamChat() {
+        TeamChatService service = teamChatService.getIfAvailable();
+        if (service == null) {
+            throw new SystemRuntimeErrorException(
+                    SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND);
+        }
+        return service;
     }
 
     /**

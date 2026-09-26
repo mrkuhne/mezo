@@ -23,6 +23,9 @@ public interface TeamChatThreadRepository extends JpaRepository<TeamChatThreadEn
     List<TeamChatThreadEntity> findByCreatedByAndOpenedAtBetweenAndDeletedFalse(
             UUID createdBy, Instant from, Instant to);
 
+    /** The day's push count for {@code TeamChatReads} ({@code pushesToday}). */
+    long countByCreatedByAndPushedTrueAndOpenedAtBetweenAndDeletedFalse(UUID createdBy, Instant from, Instant to);
+
     Optional<TeamChatThreadEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 
     /** The chat's own "already used" notion for {@code InterventionService.pick}: a library entry
