@@ -40,12 +40,13 @@ const obsMock = vi.hoisted(() => ({
 // seeded day and hide every advice card below. Empty by default (the rollout-overlap day).
 const teamChatMock = vi.hoisted(() => ({
   day: { date: '2026-05-22', lines: [], openThreads: [], pushesToday: 0, pushBudget: 2 } as import('@/data/character/teamChatApi').TeamChatDay,
+  loading: false,
 }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
     ...actual,
-    useTeamChat: () => ({ day: teamChatMock.day, loading: false }),
+    useTeamChat: () => ({ day: teamChatMock.day, loading: teamChatMock.loading }),
     useCompanionFeed: () => feedMock.useCompanionFeed(),
     useFeedback: () => ({ get: () => undefined, vote: voteMock.vote, pending: false }),
     useAdviceActions: () => ({
@@ -128,13 +129,14 @@ beforeEach(() => {
   obsMock.reply.mockResolvedValue({})
   obsMock.pendingPatternId = undefined
   teamChatMock.day = { date: '2026-05-22', lines: [], openThreads: [], pushesToday: 0, pushBudget: 2 }
+  teamChatMock.loading = false
   localStorage.clear()
 })
 
-function renderPage() {
+function renderPage(url = '/nap/uzenetek') {
   return render(
     <QueryWrapper>
-      <MemoryRouter initialEntries={['/nap', '/nap/uzenetek']} initialIndex={1}>
+      <MemoryRouter initialEntries={['/nap', url]} initialIndex={1}>
         {/* A szál a shell providereé (mezo-atry) — az oldal fogyasztó, nem építő. */}
         <MezoThreadProvider>
         <Routes>
@@ -809,7 +811,10 @@ describe('a csapat-chat átadás az Üzenetek fülön', () => {
     renderPage()
     const row = await screen.findByRole('button', { name: /A csapat most erről beszél/ })
     expect(row).toHaveTextContent('Alvásadósság · Tartós stressz')
-    expect(row).not.toHaveClass('glass')
+    // Prototípus #nap-uzenetek: `rowg glass`, zsálya — üveg sor, nem üveg az üvegben.
+    expect(row).toHaveClass('glass')
+    expect(row.parentElement?.closest('.glass')).toBeNull()
+    expect(screen.getByText(/A napi tanácskártya innen átköltözött a csapat-chatbe/)).not.toHaveClass('glass')
     expect(screen.queryByText('Ma este feküdj le korábban.')).not.toBeInTheDocument()
     expect(screen.getByText(/Két nap múlva W3-csúcs/)).toBeInTheDocument()
     await userEvent.click(row)
@@ -842,6 +847,54 @@ describe('a csapat-chat átadás az Üzenetek fülön', () => {
     renderPage()
     expect(await screen.findByText('Iszol kávét délután?')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /A csapat most erről beszél/ })).toBeInTheDocument()
+  })
+
+  const withOpenThread = () => {
+    teamChatMock.day = { ...teamChatMock.day, openThreads: [openThread('t1', 'Alvásadósság', 'szunya', '2026-05-22T07:40:00')] }
+  }
+
+  test('a régi intervention-kártya is a chatbe költözött: rejtve, amíg a csapat beszél', async () => {
+    withOpenThread()
+    feedMock.useCompanionFeed.mockReturnValue([morningMsg, {
+      id: 'fm-i1', kind: 'intervention', eyebrow: 'Mezo · észrevétel',
+      body: [{ type: 'p', text: 'Régi közbelépés szövege.' }],
+      refs: [],
+      generatedAt: '2026-05-22T15:00:00',
+    }])
+    renderPage()
+    await screen.findByRole('button', { name: /A csapat most erről beszél/ })
+    expect(screen.queryByText('Régi közbelépés szövege.')).not.toBeInTheDocument()
+  })
+
+  test('mai értesítés célkártyája (?n=) akkor is látszik, ha a csapat beszél', async () => {
+    withOpenThread()
+    feedMock.useCompanionFeed.mockReturnValue([adviceMsg, morningMsg])
+    renderPage('/nap/uzenetek?n=fm-a1')
+    await screen.findByRole('button', { name: /A csapat most erről beszél/ })
+    expect(screen.getByText('Ma este feküdj le korábban.')).toBeInTheDocument()
+  })
+
+  test('a csapat-chat töltése alatt sem a sor, sem a régi tanácskártya (nem villan fel)', async () => {
+    teamChatMock.loading = true
+    feedMock.useCompanionFeed.mockReturnValue([morningMsg, adviceMsg])
+    renderPage()
+    expect(await screen.findByText(/Két nap múlva W3-csúcs/)).toBeInTheDocument()
+    expect(screen.queryByText('Ma este feküdj le korábban.')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /A csapat most erről beszél/ })).not.toBeInTheDocument()
+  })
+
+  test('csak mai sor esetén a mondat félkövér-jelölése formázva jelenik meg, nem nyers csillagokkal', async () => {
+    teamChatMock.day = {
+      ...teamChatMock.day,
+      lines: [{
+        id: 'l2', threadId: null, kind: 'OPEN', character: 'szunya', body: 'Ma **6 óra** alvás.',
+        voiced: true, facts: [], occurredAt: '2026-05-22T07:40:00',
+      }],
+    }
+    renderPage()
+    const row = await screen.findByRole('button', { name: /A csapat most erről beszél/ })
+    expect(row).toHaveTextContent('Szunya: Ma 6 óra alvás.')
+    expect(row.querySelector('.pv strong')).not.toBeNull()
   })
 
   test('üres csapat-chat → nincs átadó sor, a régi tanácskártya megmarad', async () => {

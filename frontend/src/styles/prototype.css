@@ -18134,17 +18134,19 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .nap-mzrow .mt { flex: none; font-size: 10.5px; color: var(--text-muted); white-space: nowrap; }
 .nap-mzrow .pv { display: block; font-size: 13px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nap-mzrow .chev { flex: none; color: var(--text-muted); }
-/* the team-chat hand-off row (Csapatfal Act III, mezo-a9bo7.24): the same flat rank as an older
-   message (its own class, NOT .nap-mzrow — it is not a thread message), with the open ügyek's owners as overlapping minis and a sage live hairline */
-.nap-mzteam.uv-flat {
+/* the team-chat hand-off row (Csapatfal Act III, mezo-a9bo7.24; prototype #nap-uzenetek `rowg glass`,
+   sage): a glass row (its own class, NOT .nap-mzrow — it is not a thread message) with the open
+   ügyek's owners as overlapping minis; the one-line note under it is flat faint text */
+.nap-mzteam.glass {
   width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 10px;
-  min-height: 44px; margin-bottom: 8px; padding: 11px 12px; border: 0; border-radius: 14px;
+  min-height: 48px; margin-bottom: 6px; padding: 12px 14px; border: 0; border-radius: 20px;
   text-align: left; font-family: inherit; color: var(--text-primary); cursor: pointer;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-sage) 28%, transparent);
 }
 .nap-mzteam .grow { flex: 1; min-width: 0; }
 .nap-mzteam .pv { display: block; font-size: 12.5px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nap-mzteam .pv b { color: var(--text-primary); font-weight: 600; }
 .nap-mzteam .chev { flex: none; color: var(--text-muted); }
+.nap-mzteam-note { margin: 0 4px 12px; font-size: 11.5px; line-height: 1.45; color: var(--text-muted); }
 .nap-mzteam-minis { flex: none; display: flex; }
 .nap-mzteam-minis .tf-av { width: 26px; height: 26px; margin-left: -8px; border: 1.5px solid var(--surface-page); }
 .nap-mzteam-minis .tf-av:first-child { margin-left: 0; }
