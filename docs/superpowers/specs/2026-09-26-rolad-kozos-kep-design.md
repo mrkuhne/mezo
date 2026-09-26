@@ -17,7 +17,7 @@ decision lives in one place); the Tudástár keeps the archive.
 
 | # | Question | Decision |
 |---|---|---|
-| D1 | Source of the quote | **The highest-confidence character claim** (from `useCharacterOverview` `topClaims` across dimensions), attributed to its proposing character. Talál → `useClaimFeedback().submit(id,'TALAL')`; Pontosítom → the existing `CharacterReplyThread` (source `CLAIM`). No claim → honest empty state. No invented sentence (ADR 0049). |
+| D1 | Source of the quote | **The highest-confidence non-sensitive character claim** (from `useCharacterOverview` `topClaims` across dimensions; `sensitive` claims are never quoted), attributed to its proposing character. Talál → `useClaimFeedback().submit(id,'TALAL')`; Pontosítom → the existing `CharacterReplyThread` (source `CLAIM`). No claim → honest empty state. No invented sentence (ADR 0049). |
 | D2 | „Most ne” | **Two actions:** **Most ne** = real snooze (candidate hidden, re-offered after **14 days**) and a quieter **Nem igaz** = today's reject (terminal). Owner's example: „randizom valakivel — most még nem tudjuk, milyen hatással lesz rám”. |
 | D3 | Dimensions (today's Rólad content) | **Behind a door** at the bottom: „A csapat képe rólad, dimenziónként →” to the existing `DimensionsPage` (`/mezo/karakter/dimenziok`). Nothing disappears. |
 | D4 | What stays on the Tudástár | Full fact list (search, source, Elhallgattatom switch), Kategóriák, Hogyan működik?. The inbox is replaced by one pointer card „N javaslat vár rád a Rólad oldalon →”. Every producer link that lands on the inbox is repointed to Rólad. |
@@ -53,8 +53,8 @@ decision lives in one place); the Tudástár keeps the archive.
    Kapcsolatok (today's Rólad links — nothing disappears).
 
 Week context: `?start=YYYY-MM-DD` on `/mezo/rolad` shows the week banner (moved from the Tudástár,
-same validation and back link to `/me/week?start=`) and filters fact candidates to that week's
-`weekStart`, exactly as today.
+same validation and back link to `/me/week?start=`). Like today, it does not filter: the inbox
+shows every open proposal.
 
 ## 4. Backend changes
 
@@ -63,13 +63,12 @@ same validation and back link to `/me/week?start=`) and filters fact candidates 
   timestamptz null`; `knowledge_node.snoozed_until timestamptz null`.
 - **Contract:** `FactDecisionRequest.decision` pattern `accept|reject|refine|snooze`;
   `GraphCandidateDecisionRequest.decision` `accept|reject|snooze`. Responses unchanged.
-- **FactCandidateService.decide:** `snooze` → `snoozedUntil = now + companion.candidate-snooze
-  (default P14D)`, `userDecision` stays null (non-terminal); may be snoozed again.
+- **FactCandidateService.decide:** `snooze` → `snoozedUntil = now + CandidateSnooze.DURATION`
+  (14 days, a constant), `userDecision` stays null (non-terminal); may be snoozed again.
   `listPending` excludes rows with `snoozed_until > now()`.
 - **LifeEventCandidateService.decide:** `snooze` → same on the node, status stays `candidate`.
   `GraphService.listCandidates` excludes `snoozed_until > now()`.
-- Accept/refine/reject clear nothing extra (terminal paths unchanged). Clock via the injected
-  `Clock` pattern used elsewhere in companion.
+- Accept/refine/reject clear nothing extra (terminal paths unchanged). Time via `Instant.now()` (the companion idiom).
 
 ### 4.2 Fact owner (D5)
 - **Migration** (same file): `learned_fact.owner varchar(16)` and `knowledge_fact.owner
