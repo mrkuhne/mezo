@@ -9,6 +9,7 @@ import { RoladInbox } from './RoladInbox'
 const inbox = (over: Partial<RoladInboxState> = {}): RoladInboxState => ({
   facts: knowledgeSeed, candidates: candidateSeed, lifeEvents: lifeEventCandidateSeed, settled: [],
   degraded: false, isPending: false, isError: false, refetch: vi.fn(),
+  isLifeEventsError: false, refetchLifeEvents: vi.fn(),
   decideFact: vi.fn(), decideLifeEvent: vi.fn(), toggleFact: vi.fn(),
   ...over,
 })
@@ -72,5 +73,17 @@ describe('RoladInbox', () => {
     rerender(<RoladInbox inbox={i} />)
     await userEvent.click(screen.getByRole('button', { name: 'Újra' }))
     expect(i.refetch).toHaveBeenCalled()
+  })
+
+  // Rólad polish (mezo-plbev, item 2): the life-event candidates are a SEPARATE honest layer —
+  // their own failure must not hide the fact cards that ARE working, and must offer its own retry.
+  test('a life-event query error is a quiet retry line under the fact cards, not a full-section wipe', async () => {
+    const i = inbox({ isLifeEventsError: true })
+    render(<RoladInbox inbox={i} />)
+    // fact candidates still render
+    expect(screen.getByText(candidateSeed[0].text)).toBeInTheDocument()
+    const quiet = screen.getByText(/Nem sikerült betölteni az életesemény-javaslatokat\./)
+    await userEvent.click(within(quiet.closest('p') as HTMLElement).getByRole('button', { name: 'Újra' }))
+    expect(i.refetchLifeEvents).toHaveBeenCalled()
   })
 })
