@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { Chip } from '@/shared/ui/Chip'
 import { ToolChip } from '@/shared/ui/ToolChip'
 import { ToolChipRow } from '@/shared/ui/ToolChipRow'
-import { RefTag } from '@/shared/ui/RefTag'
+import { RefTag, refKind3D } from '@/shared/ui/RefTag'
 
 test('Chip applies variant', () => {
   render(<Chip variant="warning">NIGGLE</Chip>)
@@ -39,4 +39,10 @@ test('RefTag glass: the kind becomes a 3D icon + sr-only word, no bracket text (
   const { container: c2 } = render(<RefTag glass kind="Whatever" label="x" />)
   expect(c2.querySelector('.reftag-3d use')?.getAttribute('href')).toBe('#t-anchor')
   expect(c2.querySelector('.reftag-3d .sr-only')).toBeNull()
+})
+
+test('refKind3D: Effect ref kind resolves to the chain icon + "hatás" (mezo-d6ivw.5)', () => {
+  expect(refKind3D('Effect')).toEqual(['t-chain', 'hatás'])
+  // unknown kind fallback is unaffected
+  expect(refKind3D('Whatever')).toEqual(['t-anchor', null])
 })
