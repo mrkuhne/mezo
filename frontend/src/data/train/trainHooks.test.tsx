@@ -386,9 +386,14 @@ test('useTrain (real mode) finishWorkout + logSportSession invalidate the progre
   const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
   result.current.finishWorkout('w-1')
   await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: ['progressionProfile'] }))
+  // A logged session moves the served Fuel target (mezo-32m82) → Fuel day + week refetch.
+  expect(spy).toHaveBeenCalledWith({ queryKey: ['fuelDay'] })
+  expect(spy).toHaveBeenCalledWith({ queryKey: ['fuelWeek'] })
   spy.mockClear()
   result.current.logSportSession({ sport: 'volleyball', duration: 90, setsPlayed: 5, rpe: 7, shoulderStrain: 6 })
   await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: ['progressionProfile'] }))
+  expect(spy).toHaveBeenCalledWith({ queryKey: ['fuelDay'] })
+  expect(spy).toHaveBeenCalledWith({ queryKey: ['fuelWeek'] })
   spy.mockRestore()
 })
 

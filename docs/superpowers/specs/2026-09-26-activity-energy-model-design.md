@@ -115,7 +115,7 @@ carbs     = segment carbs + day-type delta/4 + extraKcal/4   (carbs absorb, as t
 **Matching planned and logged** is a pure `PlannedSessionMatcher` in train. It is the backend twin of the FE `resolveSportBlocks` reconciliation, and it replaces `hasLoggedTrainingOn` for this purpose. For each date:
 - Take the weekday's scheduled slots: gym slots, sport slots, and the active run block's sessions on that weekday.
 - **Gym:** a completed `meso`-origin workout on a weekday with a gym slot is planned. A `custom`-origin workout, or any workout on a weekday with no gym slot, is extra.
-- **Sport:** logged sessions, earliest first, each consume the planned occurrence nearest in time (weekday slots minus skips, plus dated one-off events). This is the same rule `WorkoutWindowQueryService.addSportWindowsForDay` already applies. Leftovers are extra.
+- **Sport:** logged sessions, earliest first, each consume the planned occurrence nearest in time (weekday slots minus skips, plus dated one-off events). This is the same rule `WorkoutWindowQueryService.addSportWindowsForDay` already applies. Leftovers are extra. A session that consumes a **one-off event** is also extra (credited its persisted kcal): events are matched so they cannot steal a recurring slot, but the weekly base (`scheduledWeeklyEatKcalPerDay`) sums only recurring slots, so an event's energy was never priced in (D2/D3; final-review fix).
 - **Run:** a logged run consumes a scheduled run session on that weekday. Leftovers are extra.
 
 **Energy breakdown on the wire.** The contract-first change goes in `api/feature/meal/meal.yml`. The Fuel day response gains:

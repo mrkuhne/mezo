@@ -218,6 +218,22 @@ class FuelDayDayTypeIT extends AbstractIntegrationTest {
             .isEqualByComparingTo(BigDecimal.valueOf(segmentCarbsG() - 50));
     }
 
+    // mezo-32m82 final-review fix (spec D2/D3): a PLAYED one-off event is not "planned done" — the
+    // weekly base only sums recurring slots, so its energy was never priced in. The day keeps the
+    // rest-day kcal and adds the session's persisted kcal as extra.
+    @Test
+    void playedOneOffEventIsRestDayKcalPlusTheSessionKcal() {
+        UUID owner = seedGoalWithDayTypeSegment();
+        LocalDate saturday = LocalDate.of(2026, 6, 6); // dayOfWeek 5 — no schedule seeded
+        seedSportEvent(owner, saturday);               // 18:00 match
+        int sessionKcal = 612;
+        seedLoggedSportSession(owner, saturday, sessionKcal); // 18:00 — consumes the event
+
+        FuelDayResponse day = fuelDayService.getDay(owner, saturday);
+
+        assertThat(day.getTargets().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(REST_DAY_KCAL + sessionKcal));
+    }
+
     // -- Finding 3 (mezo-sxlj final fix wave): a partial split (only one of the two day-type fields
     // set) is a shape the engine's DayTypeShiftCalculator never itself emits, but dayTypeAdjusted
     // must still degrade safely — served kcal falls back to the uniform target, not a null-fueled NPE.

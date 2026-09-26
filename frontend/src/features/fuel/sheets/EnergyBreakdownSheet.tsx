@@ -176,8 +176,8 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
               {movement.parts
                 ? <>A heti edzésterved <b>egyenletesen oszlik el</b> a hét napjain (edzésnapon kicsit több jut). A terven kívüli mozgásod aznap hozzáadódik. A becslés a nyugalmi energiád feletti többletet számolja.</>
                 : movement.isWeeklyAvg
-                  ? <>A <b>heti</b> betáblázott edzéseid becsült energiája (MET-alapú, a testsúlyoddal skálázva). Mozgós napon több, pihenőnapon 0 — <b>ezért nem fix</b> a napi cél.</>
-                  : <>A <b>ma</b> rögzített edzéseid becsült energiája (MET-alapú, a testsúlyoddal skálázva). A tervezett, de még el nem végzett edzés nem számít bele — <b>a keret akkor nő, amikor rögzíted</b>.</>}
+                  ? <>A <b>heti</b> edzésterved napi átlaga — a nyugalmi energiád feletti többlet, a saját alapanyagcseréd alapján.</>
+                  : <>A <b>ma</b> rögzített edzéseid becsült energiája (a nyugalmi energiád feletti többlet). A tervezett, de még el nem végzett edzés nem számít bele — <b>a keret akkor nő, amikor rögzíted</b>.</>}
             </p>
           </Seg>
 

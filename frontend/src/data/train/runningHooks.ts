@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { invalidateFuelTargets } from '@/data/fuel/queryKeys'
 import { isMockMode } from '@/data/_client/mode'
 import { currentWeekOf } from '@/shared/lib/dates'
 import { runningApi, type RunningBlockResponse, type RunningBlockUpsertRequest, type RunSessionLogRequest, type RunSessionLogResponse } from '@/data/train/runningApi'
@@ -112,6 +113,8 @@ export function useRunning(): RunningData {
         // A run before the wake-anchored cutoff satisfies the training_done_today habit,
         // DERIVED server-side — nudge the habit read so the "Reggeli edzés" ✓ appears.
         qc.invalidateQueries({ queryKey: ['habitDay'] })
+        // The run moves the served Fuel target (planned-done or extra kcal, mezo-32m82).
+        invalidateFuelTargets(qc)
       }
     },
   })

@@ -87,6 +87,9 @@ test('real-mode logRunSession invalidates ["habitDay"] (training_done_today re-d
   await waitFor(() => expect(result.current.runningPending).toBe(false))
   result.current.logRunSession({ blockId: 'b1', weekNumber: 1, sessionKey: 'k', date: '2026-06-29', completedRounds: 6, rpeActual: 9, hrRecoverySec: 45, sprintLandmark: null, durationMin: null, notes: null })
   await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: ['habitDay'] }))
+  // The run moves the served Fuel target (mezo-32m82) → Fuel day + week refetch.
+  expect(spy).toHaveBeenCalledWith({ queryKey: ['fuelDay'] })
+  expect(spy).toHaveBeenCalledWith({ queryKey: ['fuelWeek'] })
 })
 
 test('real-mode logRunSession calls onSettled even when the log POST fails (no stuck CTA)', async () => {

@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { invalidateFuelTargets } from '@/data/fuel/queryKeys'
 import { isMockMode } from '@/data/_client/mode'
 import { netKcal, restKcalPerHour } from '@/data/train/activityEnergy'
 import { addDays, huMonthDay, huMonthDayDow, localDateString } from '@/shared/lib/dates'
@@ -574,7 +575,13 @@ function useLogSportSession(
           } as SportSessionResponse
         }
       : (req: SportSessionCreateRequest) => trainApi.logSportSession(req),
-    onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['train', 'sportSessions'] }); invalidateProgression() },
+    onSuccess: () => {
+      if (!mock) {
+        qc.invalidateQueries({ queryKey: ['train', 'sportSessions'] })
+        invalidateFuelTargets(qc)
+      }
+      invalidateProgression()
+    },
   })
   return useCallback(
     (req: SportSessionCreateRequest, opts?: SportLogOpts) =>
@@ -849,6 +856,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
       if (!mock) {
         qc.invalidateQueries({ queryKey: ['train', 'weekWorkouts'] })
         qc.invalidateQueries({ queryKey: ['train', 'dayWorkouts'] })
+        invalidateFuelTargets(qc)
       }
     },
   })

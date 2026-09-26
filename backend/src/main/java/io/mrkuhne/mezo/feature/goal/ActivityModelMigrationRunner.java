@@ -19,12 +19,14 @@ import org.springframework.stereotype.Component;
  * (1) estimates every sport/run row whose kcal is NULL (the Liquibase changeset nulled the old
  * gross estimates once; rows without a known body simply stay NULL); (2) re-evaluates every
  * non-archived goal whose tdee_bootstrap predates {@link ActivityEnergyModel#VERSION} — a fresh
- * evaluate writes the marker, so the next boot skips it. {@code @Order(210)}: after the seed runners
- * and {@link GoalReevaluateRunner} (200) where that one is active.
+ * evaluate writes the marker, so the next boot skips it. {@code @Order(207)}: after the seed runners
+ * and {@link GoalReevaluateRunner} (200) where that one is active, and BEFORE
+ * {@code MealRescoreRunner} (210) so any rescore reads the recomputed goal targets (207, not 205,
+ * to avoid tying with {@code MealSaturatedFatBackfillRunner}).
  */
 @Slf4j
 @Component
-@Order(210)
+@Order(207) // before MealRescoreRunner (210): rescoring must see the recomputed targets
 @RequiredArgsConstructor
 public class ActivityModelMigrationRunner implements CommandLineRunner {
 

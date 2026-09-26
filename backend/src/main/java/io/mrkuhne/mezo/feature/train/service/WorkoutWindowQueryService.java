@@ -209,8 +209,8 @@ public class WorkoutWindowQueryService {
         slots.stream()
             .filter(s -> s.getDayOfWeek() == dow)
             .filter(s -> !skips.contains(new SportSlotSkipService.SkipKey(dow, s.getTime(), date)))
-            .forEach(s -> pool.add(new PlannedSport(s.getTime(), s.getDurationMin(), s.getSport())));
-        events.forEach(e -> pool.add(new PlannedSport(e.getTime(), e.getDurationMin(), e.getSport())));
+            .forEach(s -> pool.add(new PlannedSport(s.getTime(), s.getDurationMin(), s.getSport(), false)));
+        events.forEach(e -> pool.add(new PlannedSport(e.getTime(), e.getDurationMin(), e.getSport(), true)));
         return pool;
     }
 
@@ -247,8 +247,10 @@ public class WorkoutWindowQueryService {
      * other completed instance (custom origin, no slot that weekday, or beyond the slot count) is
      * EXTRA, estimated via {@link ActivityEnergyModel#netKcal}. Sport: the planned pool is built
      * exactly as {@link #addSportWindowsForDay} does (weekday slots minus skips, plus the date's
-     * one-off events); each session consumes the {@link #nearestPlan}, a match is planned, a miss
-     * is extra at its own persisted (never invented) kcal. Run: the active block's prescribed
+     * one-off events); each session consumes the {@link #nearestPlan}; a match to a RECURRING slot is
+     * planned, while a miss OR a match to a one-off event is extra at its own persisted (never
+     * invented) kcal — the weekly base only sums recurring slots, so an event's energy was never
+     * priced in (D2/D3). Events still consume their nearest match so they can't steal a slot. Run: the active block's prescribed
      * sessions on the date are filled by the date's logged runs first; any logged run beyond that
      * count is extra at its persisted kcal. {@code plannedDone} is true when ANY of the three kinds
      * matched a plan; {@code extraKcal} sums every kind's extras. The athlete's rest-kcal/hour is
@@ -353,8 +355,13 @@ public class WorkoutWindowQueryService {
             PlannedSport plan = nearestPlan(unmatchedSport, session.getTime());
             if (plan != null) {
                 unmatchedSport.remove(plan);
+            }
+            if (plan != null && !plan.oneOffEvent()) {
                 plannedDone = true;
             } else {
+                // No plan, OR a one-off event: the weekly base only sums RECURRING slots, so an
+                // event's energy was never priced in — credit the session as extra (spec D2/D3).
+                // The event still consumes its match above so it can't steal a recurring slot.
                 extraKcal += session.getKcal() != null ? session.getKcal() : 0;
             }
         }
@@ -387,8 +394,9 @@ public class WorkoutWindowQueryService {
         return props.gymDefaultMinutes();
     }
 
-    /** One planned sport occurrence on the date — a weekday-matched recurring slot OR a dated one-off event. */
-    private record PlannedSport(String time, Integer durationMin, String sport) {
+    /** One planned sport occurrence on the date — a weekday-matched recurring slot OR a dated one-off
+     *  event ({@code oneOffEvent}); only the former is in the weekly plan base (mezo-32m82, spec §5). */
+    private record PlannedSport(String time, Integer durationMin, String sport, boolean oneOffEvent) {
     }
 
     /** The planned occurrence closest in time to {@code time} (the first when the session carries no time). */

@@ -59,6 +59,9 @@ describe('EnergyBreakdownSheet', () => {
     expect(screen.queryByText(/Deficit/)).not.toBeInTheDocument()
     expect(screen.queryByText('Gym')).not.toBeInTheDocument()
     expect(screen.getByText(/heti átlag/i)).toBeInTheDocument()
+    // Net-model copy (mezo-32m82): no stale gross-MET / "pihenőnapon 0" wording.
+    expect(screen.getByText(/nyugalmi energiád feletti többlet/)).toBeInTheDocument()
+    expect(screen.queryByText(/MET-alapú/)).not.toBeInTheDocument()
   })
 
   it('highlights the initial section', () => {

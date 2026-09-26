@@ -432,6 +432,8 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
         train.createScheduleSlot(owner, 2, "09:00", 60, "training");
         train.createSportEvent(owner, wed, "18:00", 90);
         train.createSportSession(owner, wed);               // played 18:15/90 min, consumes the event
+        // (The event match only shapes WINDOWS here; for movement the same session is credited as
+        // extra because events are not in the weekly base — spec D2/D3, mezo-32m82 final fix.)
 
         // Skip: only this week's Thursday occurrence — the recurring slot still applies on other
         // Thursdays (a range read must not smear one date's skip across the whole week).
@@ -604,6 +606,24 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
             assertThat(ranged.get(wed)).isEqualTo(new WorkoutWindowQueryService.DayMovement(true, 0));
             assertThat(ranged.get(sat)).isEqualTo(new WorkoutWindowQueryService.DayMovement(false, satKcal));
             assertThat(ranged.get(monday.plusDays(1))).isEqualTo(WorkoutWindowQueryService.DayMovement.NONE);
+        }
+
+        // (i) mezo-32m82 final-review fix (spec D2/D3): a one-off EVENT is matched (so it can't steal
+        // a recurring slot) but its energy is NOT in the weekly plan base — which sums only recurring
+        // slots — so the session that consumes it is credited its persisted kcal as EXTRA and does
+        // not by itself flip plannedDone. Saturday event + a logged 140′ session with kcal K.
+        @Test
+        void testMovementOn_shouldCreditTheSessionAsExtra_whenItConsumesAOneOffEvent() {
+            UUID owner = owner();
+            LocalDate sat = LocalDate.of(2026, 6, 27);          // Saturday → no recurring slots
+            train.createSportEvent(owner, sat, "10:00", 140);
+            int k = 612;
+            train.withKcal(train.createSportSessionAt(owner, sat, "10:00", 140), k);
+
+            WorkoutWindowQueryService.DayMovement m = service.movementOn(owner, sat);
+
+            assertThat(m.plannedDone()).isFalse();
+            assertThat(m.extraKcal()).isEqualTo(k);
         }
 
         // (g) A logged session with null kcal on a slotless day → plannedDone=false, extraKcal=0.
