@@ -110,8 +110,12 @@ public record MealBreakdownJson(
     }
 
     /** A `context` dimenzió időzítés-tényei rajzolható alakban (mezo-jcpt.3). Új, opcionális mező:
-     *  a már cache-elt envelope-okban null, és a FE ilyenkor egyszerűen nem rajzol sávot. */
-    public record TimingDetail(String eatenAt, String windowFrom, String windowTo, String slotLabel) {
+     *  a már cache-elt envelope-okban null, és a FE ilyenkor egyszerűen nem rajzol sávot.
+     *
+     * <p>{@code windowSource}: "plan" (tárolt tervező-ablak), "config" (statikus slot-ablak) vagy
+     *  null (nincs ablak / régi envelope). */
+    public record TimingDetail(String eatenAt, String windowFrom, String windowTo, String slotLabel,
+                               String windowSource) {
     }
 
     /** P8 prose — always empty in v0. */

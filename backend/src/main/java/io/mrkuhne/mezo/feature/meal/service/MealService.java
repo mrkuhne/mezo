@@ -22,6 +22,7 @@ import io.mrkuhne.mezo.feature.nutrition.service.DayContext;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService.ScoredLine;
+import io.mrkuhne.mezo.feature.nutrition.service.MealWindow;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
@@ -34,6 +35,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -206,6 +208,12 @@ public class MealService {
         meal.setLoggedAt(loggedAt.toInstant());
         meal.setMealDate(loggedAt.toLocalDate());
         meal.setSlot(req.getSlot());
+        // mezo-6g52f: a tervező-ablak csak akkor íródik, ha a kérés hozza — frissítéskor a hiánya
+        // megtartja a tárolt ablakot (a szerkesztő nem ismeri az eredeti ablakot).
+        if (req.getWindow() != null) {
+            meal.setWindowFrom(LocalTime.parse(req.getWindow().getFrom()));
+            meal.setWindowTo(LocalTime.parse(req.getWindow().getTo()));
+        }
         meal.setTitle(req.getTitle());
         return loggedAt;
     }
@@ -242,8 +250,10 @@ public class MealService {
         DailyTargets base = fuelDayService.dailyTargets(userId, meal.getMealDate());
         DayContext day = fuelDayService.dayContext(userId, meal.getMealDate(),
             loggedAt.toInstant(), meal.getId());
+        MealWindow window = meal.getWindowFrom() == null ? null
+            : new MealWindow(meal.getWindowFrom(), meal.getWindowTo());
         MealBreakdownJson breakdown =
-            scoringService.scoreMeal(meal.getSlot(), lines, loggedAt.toLocalTime(), role, base, day);
+            scoringService.scoreMeal(meal.getSlot(), lines, loggedAt.toLocalTime(), role, base, day, window);
         meal.setBreakdown(breakdown);
         meal.setScore(breakdown.value());
     }

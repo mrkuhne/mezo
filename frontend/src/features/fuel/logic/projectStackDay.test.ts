@@ -73,8 +73,11 @@ describe('training day zone times', () => {
       breakfast: '06:35', // placeWindows(wake, bed, 4, blocks) breakfast window, rounded
       pre_workout: toHHmm(toMin('17:30') - PRE_WORKOUT_STACK_LEAD_MIN), // block − 40min = '16:50'
       post_workout: toHHmm(toMin('17:30') + 60 + 30), // block end (durationMin 60) + 30min = '19:00'
-      lunch: '16:15', // placeWindows' lunch window snapped by the training envelope, rounded
-      dinner: '19:16', // placeWindows' dinner window pushed by the min-gap rule, rounded
+      // mezo-6g52f R3: the pre-fuel snap now picks the nearest non-post window before the training
+      // END (not just before its START), so the snack sitting INSIDE the envelope (Uzsonna, 17:46)
+      // is the one pulled to block−75 (16:15) instead of dragging Ebéd/lunch off its own slot.
+      lunch: '14:03', // placeWindows' own lunch window (842.5 min), untouched by the training snap
+      dinner: '19:15', // placeWindows' dinner window (post-training snap, latestEnd+45), no min-gap push needed now
       evening: toHHmm(toMin('23:00') - 120), // bed − 2h = '21:00'
       bedtime: toHHmm(toMin('23:00') - 30), // bed − 30min = '22:30'
     })

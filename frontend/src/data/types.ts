@@ -48,6 +48,12 @@ export interface NiggleWarning { muscle: string; muscleLabel: string; detail: st
 export interface VolleyballSession { day: string; time: string; duration: number; court: string; intensity: string; role: string; sport?: 'volleyball' | 'cross' | 'trx'; today?: boolean; flex?: boolean; date?: string; oneOff?: boolean }
 export type FuelKind = 'wake' | 'meal' | 'midday' | 'snack' | 'preworkout' | 'workout' | 'sport' | 'evening'
 export interface SlotItem { type: 'supplement'; refId: string; label: string; done: boolean; primary?: boolean; note?: string }
+/** Miért ott van egy étkezési ablak (mezo-6g52f) — a tervező szabályából; a szöveget a
+ *  `windowReasonCopy` adja. */
+export type WindowReason =
+  | 'after-wake' | 'protein-start' | 'protein-spacing' | 'bridge'
+  | 'pre-training-main' | 'pre-training-snack' | 'post-training' | 'before-bed' | 'template-fixed'
+
 export interface FuelSlot {
   time: string
   kind: FuelKind
@@ -59,6 +65,8 @@ export interface FuelSlot {
    *  logolás ideje, a terv ideje pedig elveszne — az óra-doboz "Terv szerint" sora innen olvas.
    *  Ablak nélküli extra logon nincs (őszinte-null). */
   plannedTime?: string
+  /** Étkezési óra (mezo-6g52f): az ajánlott ablak "HH:mm"-ben, az okai, és az ablak kcal-kerete. */
+  windowFrom?: string; windowTo?: string; windowReasons?: WindowReason[]; budgetKcal?: number
   mezoNote?: string
   windowTip?: string
   kcal?: number; p?: number; c?: number; f?: number
@@ -125,7 +133,7 @@ export interface MicroDimension extends MealDimensionBase { id: 'micro'; micros:
 export interface NovaDimension extends MealDimensionBase { id: 'nova'; nova: { dominant: NovaGroup; stack: { nova: NovaGroup; pct: number; label: string }[]; items: { name: string; nova: NovaGroup; warning?: boolean }[] } }
 /** A `context` dimenzió időzítés-tényei rajzolható alakban (mezo-jcpt.3). Opcionális: a
  *  cache-elt régi envelope-okban nincs, és a sáv ilyenkor egyszerűen nem rajzolódik. */
-export interface MealTiming { eatenAt: string; windowFrom: string | null; windowTo: string | null; slotLabel: string }
+export interface MealTiming { eatenAt: string; windowFrom: string | null; windowTo: string | null; slotLabel: string; windowSource?: 'plan' | 'config' | null }
 export interface ContextDimension extends MealDimensionBase { id: 'context'; context: { label: string; value: string }[]; timing?: MealTiming | null }
 /** Generic label/value-row dimensions (mezo-7797): WHO, zsírminőség, növényi diverzitás, energia-sűrűség, adag-arány. Same payload shape as ContextDimension. */
 export interface RowsDimension extends MealDimensionBase { id: 'who' | 'fat_quality' | 'plant_diversity' | 'energy_density' | 'portion'; context: { label: string; value: string }[] }
@@ -218,6 +226,9 @@ export interface MealInput {
   title?: string | null
   items: MealItemInput[]
   provenance?: MealProvenanceInput
+  /** Étkezési óra (mezo-6g52f): a blokk ajánlott ablaka, amihez a szerver az időzítést pontozza.
+   *  Absent/null a szerkesztő úton (a szerver megtartja a tárolt ablakot). */
+  window?: { from: string; to: string } | null
 }
 /** One line of an AI meal draft (POST /api/meal/ai-draft) — a resolved pantry/recipe match or a
  *  free-form estimate, each carrying a per-basis macro snapshot + confidence/needsReview. Mirrors

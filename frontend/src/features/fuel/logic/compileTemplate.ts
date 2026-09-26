@@ -25,7 +25,13 @@ import {
   unwrapDayMinute,
 } from '@/data/fuel/fuelConfig'
 import type { PlannedWindow, PlannerBlock } from '@/features/fuel/logic/buildDayPlan'
+import type { WindowRule } from '@/features/fuel/logic/mealWindow'
 import type { SlotTemplate, SlotTemplateRow } from '@/data/types'
+
+const RULE_BY_ANCHOR = {
+  wake: 'template-wake', bed: 'template-bed', fixed: 'template-fixed',
+  training_start: 'template-training-start', training_end: 'template-training-end',
+} as const satisfies Record<SlotTemplateRow['anchor']['type'], WindowRule>
 
 /**
  * Resolves every row's anchor to a minute on the UNWRAPPED day axis (`daySpan`), WITHOUT clamping
@@ -69,7 +75,11 @@ export function compileTemplate(template: SlotTemplate, ctx: { wake: string; bed
   template.slots.forEach((row, i) => {
     const t = rawTimes[i]
     if (t == null) return // training anchor on a blockless day — defensive drop
-    windows.push({ slotKey: row.slotKind, kind: row.slotKind === 'snack' ? 'snack' : 'meal', label: row.label, time: clamp(t), weight: row.budgetPct, budgetPct: row.budgetPct, role: row.role })
+    windows.push({
+      slotKey: row.slotKind, kind: row.slotKind === 'snack' ? 'snack' : 'meal', label: row.label,
+      time: clamp(t), weight: row.budgetPct, budgetPct: row.budgetPct, role: row.role,
+      rule: RULE_BY_ANCHOR[row.anchor.type],
+    })
   })
   windows.sort((a, z) => a.time - z.time)
   for (let i = 1; i < windows.length; i++) {

@@ -679,3 +679,23 @@ The start-of-workout challenge picker, three prototype rounds. Prototype:
     When asked to tidy a card, first look for a row shape the owner already approved.
 98. **A scrolling glass box scrolls its inside, not its frame.** With `overflow:auto` on the `.glass` itself,
     the `::before` gradient frame travels with the content and draws a stray line across the cards.
+
+### Étkezési óra (`mezo-6g52f`, 2026-09-26)
+
+The Fuel meal card's flat `WindowBar` strip (a fixed ±150 min box, unrelated to the scoring window) and the
+logged-only `.fmx-clock` → `TimeBox` are both retired for one **`MealClock`** button: a 12-hour dial that always
+renders, drawing the recommended window as an arc and — pre-log — a "now" dot, or — post-log — a dot at the logged
+time, the block accent inside the window and amber outside (never red). Tapping it opens **`MealClockBox`** (its frame stays put and only the inside scrolls, rule 98), a
+24-hour day dial (sleep, other windows, training, "now") plus "Miért ekkor?" reasons pre-log or the hit chip,
+blood-sugar band and "Mire számíts" forecast rows post-log. Spec
+[`2026-09-26-etkezesi-ora-design.md`](../superpowers/specs/2026-09-26-etkezesi-ora-design.md); prototype
+[`prototypes/fuel-ora-ablak.html`](prototypes/fuel-ora-ablak.html) (*A · beszédes óra* + *Csak sáv*).
+
+99. **A "talking" icon is a sprite icon plus a data ring around it, not a bigger icon.** The clock button reads as
+    alive because the Titanium `t-clock` sprite sits inside a real 12-hour dial (a recessed track + the window arc +
+    the now/logged dot) — the icon itself never changes. The same pairing (fixed glyph, live ring) is the reusable
+    recipe for any other "this button also shows a number" control.
+100. **"Tap me" is a periodic joint shake, not a float or a breathe.** The unboxed AI score's icon and numeral wobble
+    together (±5°, slight scale, ~0.6 s) once every ~6 s, staggered per card by 0.8 s — not a continuous float/breathe
+    loop. A continuous idle animation reads as "this is alive", a rare joint shake reads as "this is tappable";
+    reduced motion drops it to nothing, never a static substitute.

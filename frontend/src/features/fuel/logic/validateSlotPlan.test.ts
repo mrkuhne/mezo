@@ -13,7 +13,7 @@ const row = (over: Partial<SlotTemplateRow> & { anchor: SlotAnchor; budgetPct: n
   label: 'Reggeli', slotKind: 'breakfast', role: 'standard', ...over,
 })
 const win = (time: number, over: Partial<PlannedWindow> & { budgetPct: number }): PlannedWindow => ({
-  slotKey: 'breakfast', kind: 'meal', label: 'Reggeli', time, weight: over.budgetPct, ...over,
+  slotKey: 'breakfast', kind: 'meal', label: 'Reggeli', time, weight: over.budgetPct, rule: 'template-fixed', ...over,
 })
 const fixed = (hhmm: string): SlotAnchor => ({ type: 'fixed', time: hhmm })
 

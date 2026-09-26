@@ -69,6 +69,7 @@ import {
 } from '@/data/hooks'
 import { buildKeretHero, asPastDayHero, doneMealRows } from '@/features/fuel/logic/keretHero'
 import { buildWindowLane, asPastDayLane, tileKey } from '@/features/fuel/logic/fuelSwimlane'
+import { trainingSpan } from '@/features/fuel/logic/mealWindow'
 import { backfillDate, earliestBackfillDate } from '@/features/fuel/logic/backfillWindow'
 import { addDays, localDateString, huMonthDay } from '@/shared/lib/dates'
 import { ContentIcon } from '@/shared/ui/clay'
@@ -95,7 +96,7 @@ export function FuelMaiPage() {
   const goDay = (next: string) => navigate(next === today ? '/fuel' : `/fuel?d=${next}`)
 
   const { fuel } = useFuelDay(date)
-  const { plan, budget, nowHHmm, energyBreakdown } = useFuelTimeline(date)
+  const { plan, budget, nowHHmm, energyBreakdown, wake, bed, blocks } = useFuelTimeline(date)
   // Diet Plan slice 1 (mezo-xwgb): the fiber ring's target now comes from the user's own diet
   // settings instead of the static FIBER_TARGET_G default.
   const { settings: dietSettings } = useDietSettings()
@@ -183,7 +184,7 @@ export function FuelMaiPage() {
           <FuelMealBlocks
             lane={lane}
             meals={doneRows}
-            dayKcal={budget.kcal}
+            day={{ wake, bed, nowHHmm: past ? null : nowHHmm, training: trainingSpan(blocks) }}
             fiberTargetG={dietSettings.fiberG}
             onLogInto={(tile) => {
               const slot = plan.slots.find(s => s.slotKey != null && tileKey(s) === tile.key)
