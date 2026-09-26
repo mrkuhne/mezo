@@ -67,11 +67,20 @@ const AXIS: [number, string][] = [[8, 'evés'], [82, '+1 ó'], [157, '+2 ó'], [
  * UGYANAZOK a path-ok, mint a dobozé: a chip a doboz kicsinyített előképe, nem külön rajz.
  * Feliratok és tengely nélkül — ekkora méretben a FORMA a jel, a szöveget a doboz hozza.
  */
-export function GlycemicMiniCurve({ level }: { level: GlycemicLevel }) {
+export function GlycemicMiniCurve({ level, lateGhost = false }: { level: GlycemicLevel; lateGhost?: boolean }) {
   const curve = CURVE[level]
   return (
     <svg className="fmx-glu-mini" viewBox="0 0 240 108" aria-hidden="true">
       <line x1="8" y1="78" x2="232" y2="78" strokeDasharray="3 5" className="fmx-glu-base" />
+      {/* Késő esti „szellem" görbe (mezo-tegkf): magasabb és tovább emelkedő domb, a
+          rendes vonal MÖGÖTT — prototípus fuel-ora-ablak.html `curve(band, late)` `.ghost`-ja. */}
+      {lateGhost && (
+        <path
+          d={curve.path}
+          className="fmx-glu-ghost"
+          transform="translate(8 78) scale(1.12 1.13) translate(-8 -78)"
+        />
+      )}
       <path d={`${curve.path} L232 108 8 108Z`} className="fmx-glu-fill" />
       <path d={curve.path} className="fmx-glu-line" />
       <circle cx={curve.peak[0]} cy={curve.peak[1]} r="5" className="fmx-glu-dot" />

@@ -1005,8 +1005,11 @@ class MealScoringServiceTest {
     void storedWindow_penalizes_linearly_by_minutes_outside() {
         MealWindow w = new MealWindow(LocalTime.of(12, 30), LocalTime.of(14, 0));
         double in = dimension(scoreWith("breakfast", LocalTime.of(13, 0), w), "context").score().doubleValue();
-        double late90 = dimension(scoreWith("breakfast", LocalTime.of(15, 30), w), "context").score().doubleValue();
+        MealBreakdownJson.Dimension late = dimension(scoreWith("breakfast", LocalTime.of(15, 30), w), "context");
+        double late90 = late.score().doubleValue();
         assertThat(late90).isLessThan(in);
+        // 90 min past the window's end (14:00): timingSub = max(0, 1 - 1.5h/3h) = 0.5 → "Időzítés 50%".
+        assertThat(late.detail()).contains("Időzítés 50%");
     }
 
     @Test

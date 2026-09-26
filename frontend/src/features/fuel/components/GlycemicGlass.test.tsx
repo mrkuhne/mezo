@@ -11,7 +11,7 @@
 // ============================================================
 import { render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { GlycemicGlass } from '@/features/fuel/components/GlycemicGlass'
+import { GlycemicGlass, GlycemicMiniCurve } from '@/features/fuel/components/GlycemicGlass'
 import { glycemicBand } from '@/features/fuel/logic/glycemicBand'
 
 function stubReduced(matches = true) {
@@ -170,5 +170,17 @@ describe('GlycemicGlass · a keretben él, és csökkentett mozgás mellett áll
   test('üres AI-lista: a coach szerint nincs mit simítani — a rész elmarad', () => {
     render(<GlycemicGlass band={HIGH} onClose={() => {}} aiTips={[]} />)
     expect(within(boxOf()).queryByRole('region', { name: 'Legközelebb így lesz laposabb' })).toBeNull()
+  })
+})
+
+describe('GlycemicMiniCurve · a késő esti szellem görbe (mezo-tegkf)', () => {
+  test('alapértelmezésben (lateGhost nélkül) nincs szellem görbe', () => {
+    const { container } = render(<GlycemicMiniCurve level="high" />)
+    expect(container.querySelector('.fmx-glu-ghost')).toBeNull()
+  })
+
+  test('lateGhost=true esetén megjelenik a szaggatott szellem görbe', () => {
+    const { container } = render(<GlycemicMiniCurve level="high" lateGhost />)
+    expect(container.querySelector('.fmx-glu-ghost')).not.toBeNull()
   })
 })

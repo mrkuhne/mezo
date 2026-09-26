@@ -182,8 +182,8 @@ export function MealClockBox({ tile, row, day, next, blockColor, onClose }: {
                     <div className="fmx-mclockbox-bandlbl">
                       {(['low', 'mid', 'high'] as const).map(k => <span key={k} className={k === band.level ? 'on' : ''}>{BAND_WORD[k]}</span>)}
                     </div>
-                    <GlycemicMiniCurve level={band.level} />
-                    <p><b>{band.tip.title}.</b> {band.tip.body}{late ? ' Késő este ugyanez általában magasabbra és tovább emelkedik.' : ''}</p>
+                    <GlycemicMiniCurve level={band.level} lateGhost={late} />
+                    <p><b>{band.tip.title}.</b> {band.tip.body}{late ? ' Késő este ugyanez általában magasabbra és tovább emelkedik (szaggatott vonal).' : ''}</p>
                   </div>
                 </section>
               )}
