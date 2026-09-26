@@ -28414,6 +28414,12 @@ main.settings-page {
 .kr9-rolad .kr9-gone b { display: block; font-size: 12.5px; font-weight: 600; line-height: 1.35; color: var(--text-secondary); overflow-wrap: anywhere; }
 .kr9-rolad .kr9-gone small { display: block; margin-top: 2px; font-size: 11px; color: var(--text-muted); }
 .kr9-rolad .kr9-quiet { margin: 0; padding: 2px 18px 0; font-size: 11.5px; line-height: 1.45; color: var(--text-muted); }
+/* mezo-plbev fix round 1: `.kr9-page .kr9-link` never matches inside `.kr9-rolad` (no `.kr9-page`
+   ancestor here) — this page-owned rule mirrors its declaration for the inbox's quiet retry. */
+.kr9-rolad .kr9-retry {
+  display: inline-flex; align-items: center; min-height: 32px; padding: 4px 0; border: 0; background: none; cursor: pointer;
+  text-decoration: none; font: 600 11.5px/1.2 var(--ff-body); color: color-mix(in srgb, var(--c, var(--dv-lav)) 78%, var(--text-primary));
+}
 .kr9-rolad .kr9-factdoor .tf-cmain { align-items: center; }
 .kr9-rolad .kr9-life { margin: 0; padding-top: 6px; padding-bottom: 6px; list-style: none; }
 .kr9-rolad .kr9-lifer { display: flex; gap: 12px; align-items: flex-start; padding: 11px 2px; border-bottom: 1px solid var(--divider); }
