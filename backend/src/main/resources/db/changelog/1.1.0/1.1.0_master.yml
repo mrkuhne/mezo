@@ -69,3 +69,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609261600_mezo-6g52f_meal_window.sql
+  - changeSet:
+      id: "1.1.0:202609262000_mezo-a9bo7_team_chat_naming"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609262000_mezo-a9bo7_team_chat_naming.sql
