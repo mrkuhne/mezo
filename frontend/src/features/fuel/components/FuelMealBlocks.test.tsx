@@ -108,6 +108,25 @@ test('the kcal ring measures the meal budget, with an overflow lap past 100%', (
   expect(ring.querySelector('.fmx-br-over')).not.toBeNull()
 })
 
+// mezo-6g52f minor d: az overflow-ív csak a >3%-os túllépésnél jelenik meg (BudgetRing `over > 3`)
+// — a kerekítés okozta pár %-os zajt nem jelezzük túllépésnek.
+test('the overflow lap only appears past the >3% threshold, not right at 100%', () => {
+  const ringFor = (kcal: number, budgetKcal: number) => {
+    const slots: FuelSlot[] = [
+      slot({ time: '07:40', label: 'Reggeli', slotKey: 'breakfast', state: 'done', mealId: 'meal-1', mealName: 'Reggeli', kcal, plannedTime: '07:30', windowFrom: '07:00', windowTo: '09:20', budgetKcal }),
+    ]
+    const meals = [meal({ kcal })]
+    const { container } = render(<FuelMealBlocks lane={buildWindowLane({ slots, budget: BUDGET, meals })}
+      meals={doneMealRows(meals, slots)} day={day} fiberTargetG={30}
+      onLogInto={vi.fn()} onOpenMeal={vi.fn()} onOpenScore={vi.fn()} />)
+    return container.querySelector('.fmx-block.glass .fmx-budget-ring')!
+  }
+  // 102% — within the 3%-tolerance, no overflow lap.
+  expect(ringFor(102, 100).querySelector('.fmx-br-over')).toBeNull()
+  // 110% — past the tolerance, overflow lap present.
+  expect(ringFor(110, 100).querySelector('.fmx-br-over')).not.toBeNull()
+})
+
 // A logolás a blokkba történik — ez a fő útvonal.
 test('az üres blokk koppintása a saját ablakával indítja a naplózást', async () => {
   const onLogInto = vi.fn()

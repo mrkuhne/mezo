@@ -251,6 +251,10 @@ function BlockCard({ tile, rows, nowHHmm, fiberTargetG, index, onLogInto, onOpen
             állt, így rövid néven — „Tízórai" — gazdátlanul lebegett a sor közepén. */}
         <span className="fmx-block-end">
           <MealClock tile={tile} row={rows[0] ?? null} nowHHmm={nowHHmm} onOpen={() => onOpenClock(tile.key)} />
+          {/* mezo-6g52f minor d: `?? tile.kcal` is NOT dead — buildDayPlan sets windowFrom/windowTo
+              and budgetKcal together (same `windowOf(i)` spread), so budgetKcal is always non-null
+              on a windowed tile, but a tile with NO window (windowFrom/windowTo null) still renders
+              this ring and has budgetKcal null; tile.kcal is its only kcal source then. */}
           <BudgetRing kcal={rows.length ? loggedKcal : tile.budgetKcal ?? tile.kcal} budgetKcal={tile.budgetKcal} logged={rows.length > 0} />
         </span>
       </div>
