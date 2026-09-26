@@ -11,15 +11,23 @@
 // (t-diagnose, window line eyebrow, the question, the verdict, the certainty pill);
 // Számvetés = one flat card; rank 1 = THE one `.glass` (amber), ranks 2+ = flat cards
 // of the same anatomy. Style: prototype.css `── uveg mezo1 diagnozis (`, `.dgx-page`.
+// Kérdezd a csapatot (mezo-u3712, prototype uveg-diagnozis.html `valasz`): the hero wears the
+// question's host + the characters it brought in (suspect domains), every suspect names its
+// owner, a stale report offers Frissítés, and the Szkeptikus closes with the honesty note.
 // ============================================================
 import type { CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { FeedAvatar } from '@/features/insights/components/feed/FeedPostHead'
+import { guestsOf, helpersLine, suspectOwner } from '@/features/insights/logic/diagnosisTeam'
+import { TEAM } from '@/features/insights/logic/team'
+import '@/features/insights/boop-world.css'
+import '@/features/insights/kerdezd.css'
 import { Icon3D } from '@/shared/ui/clay'
-import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
+import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useDiagnosis, useDiagnosisActions } from '@/data/hooks'
 import { anchoredWindowLine, confidenceLine, deltaLabel, generatedLabel, strengthLabel, windowLine } from '@/features/insights/logic/diagnosisCopy'
-import { questionOf } from '@/features/insights/logic/diagnosisCatalog'
+import { hostOf, questionOf } from '@/features/insights/logic/diagnosisCatalog'
 import type { Diagnosis, DiagnosisConfidence, DiagnosisSuspect } from '@/data/types'
 
 /** The certainty meter's fill — a picture of the three-step confidence word, nothing more. */
@@ -33,6 +41,7 @@ function SuspectCard({ d, s, live, started, onProbe, delayMs }: {
   // the Számvetés card above — never duplicated inside a suspect's own evidence rows.
   const rows = s.evidenceIndexes.map((i) => d.evidence[i]).filter((e) => e != null && e.kind !== 'derived')
   const lead = s.rank === 1
+  const owner = TEAM[suspectOwner(s)]
   return (
     <div className={lead ? 'dgx-susp is-lead glass rise' : 'dgx-susp rise'} data-rank={s.rank}
       style={{ '--d': `${delayMs}ms`, '--i': s.rank } as CSSProperties}>
@@ -43,6 +52,7 @@ function SuspectCard({ d, s, live, started, onProbe, delayMs }: {
           {strengthLabel(s.strength)}
         </span>
       </div>
+      <span className={`kt-owner tf-c-${owner.accent}`}><FeedAvatar id={owner.id} size={16} />{owner.name} gyanúja</span>
       <p className="dgx-claim">{s.claim}</p>
       {rows.length > 0 && (
         <div className="dgx-evs">
@@ -109,13 +119,13 @@ export function DiagnosisDetailPage() {
   const navigate = useNavigate()
   const { id = '' } = useParams()
   const { diagnosis, mode, isPending, notFound } = useDiagnosis(id)
-  const { startExperiment, startedRank, pending } = useDiagnosisActions()
+  const { startExperiment, startedRank, pending, generateAsync, generating } = useDiagnosisActions()
   const live = mode === 'live'
 
   if (notFound || (diagnosis == null && !isPending)) {
     return (
       <MozaikPage tone="lav" className="dgx-page">
-        <PageHead glass onBack={() => navigate('/mezo/diagnozis')} label="Diagnózis" />
+        <PageHead glass onBack={() => navigate('/mezo/diagnozis')} label="Kérdezd a csapatot" />
         <PageBody>
           <div className="dgx-empty uv-empty">
             <Icon3D name="t-diagnose" size={44} />
@@ -128,22 +138,34 @@ export function DiagnosisDetailPage() {
   if (diagnosis == null) {
     return (
       <MozaikPage tone="lav" className="dgx-page">
-        <PageHead glass onBack={() => navigate('/mezo/diagnozis')} label="Diagnózis" />
+        <PageHead glass onBack={() => navigate('/mezo/diagnozis')} label="Kérdezd a csapatot" />
         <PageBody><div className="dgx-loading" aria-busy="true" /></PageBody>
       </MozaikPage>
     )
   }
 
   const derived = diagnosis.evidence.filter((e) => e.kind === 'derived')
+  const host = TEAM[hostOf(diagnosis.phenomenon)]
+  const guests = guestsOf(diagnosis)
+  // Frissítés = a same-question regenerate (same anchor week for weight); it spends a question.
+  const refresh = async () => {
+    const fresh = await generateAsync(diagnosis.phenomenon, diagnosis.anchorStart).catch(() => null)
+    if (fresh) navigate(`/mezo/diagnozis/${fresh.id}`)
+  }
   const heroSub = diagnosis.anchorStart != null
     ? anchoredWindowLine(diagnosis.anchorStart)
     : windowLine(diagnosis.generatedAt, diagnosis.windowDays)
 
   return (
     <MozaikPage tone="lav" className="dgx-page">
-      <PageHead glass onBack={() => navigate('/mezo/diagnozis')} label="Diagnózis" />
-      <PageHero art="t-diagnose" accent="var(--dv-lav)" iconSize={78} eyebrow={heroSub}
-        name={questionOf(diagnosis.phenomenon)}>
+      <PageHead glass onBack={() => navigate('/mezo/diagnozis')} label="Kérdezd a csapatot" />
+      <section className="mz-page-hero uv-hero uv-halo kt-hero" style={{ '--c': `var(--dv-${host.accent === 'gold' ? 'amber' : host.accent})` } as CSSProperties}>
+        <div className="kt-hosts" aria-label={helpersLine(host.id, guests)}>
+          <FeedAvatar id={host.id} size={44} />
+          {guests.map((g) => <span key={g} className="kt-guest"><FeedAvatar id={g} size={29} /></span>)}
+        </div>
+        <span className="uv-eyebrow uv-hero-eb">{heroSub}</span>
+        <div className="mz-hero-nm">{questionOf(diagnosis.phenomenon)}</div>
         <p className="dgx-verdict">{diagnosis.verdict}</p>
         <div className="dgx-certrow">
           <span className="dgx-cert">
@@ -153,7 +175,21 @@ export function DiagnosisDetailPage() {
           </span>
           <span className="dgx-cert-date">{generatedLabel(diagnosis.generatedAt)}</span>
         </div>
-      </PageHero>
+      </section>
+      {guests.length > 0 && (
+        <p className="kt-voice"><FeedAvatar id={host.id} size={22} /><span>{helpersLine(host.id, guests)}</span></p>
+      )}
+      {diagnosis.stale && (
+        <div className="kt-stale" role="status">
+          <Icon3D name="t-history" size={24} />
+          <span>Az adataid azóta változtak — ez a válasz már nem a legfrissebb.</span>
+          {live && (
+            <button type="button" disabled={generating} onClick={() => void refresh()}>
+              {generating ? 'Frissül…' : 'Frissítés ›'}
+            </button>
+          )}
+        </div>
+      )}
       <PageBody>
         <EntranceGroup className="dgx-body">
           {derived.length > 0 && <SzamvetesCard derived={derived} />}
@@ -168,9 +204,10 @@ export function DiagnosisDetailPage() {
             ))}
           </div>
 
-          {diagnosis.stale && (
-            <p className="dgx-note">azóta új adatod érkezett a riport ablakában</p>
-          )}
+          <div className="tf-dash kt-skeptic">
+            <FeedAvatar id="szkeptikus" size={30} />
+            <span><strong>A Szkeptikus:</strong> ez együttjárás két hét adatából, nem bizonyított ok. A próba mondja meg, igaz-e — ezért érdemes kipróbálni.</span>
+          </div>
         </EntranceGroup>
       </PageBody>
     </MozaikPage>

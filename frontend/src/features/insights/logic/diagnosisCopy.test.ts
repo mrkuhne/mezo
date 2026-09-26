@@ -16,6 +16,8 @@ describe('diagnosisCopy', () => {
 
   test('windowLine derives the from-date from the window length', () => {
     expect(windowLine('2026-08-30T06:12:00', 14)).toBe('Aug 17 – 30 · az utolsó 14 nap adatából')
+    // a window across a month boundary names the end month too (mezo-u3712 verify: „Júl 30 – 12")
+    expect(windowLine('2026-08-12T07:40:00', 14)).toBe('Júl 30 – Aug 12 · az utolsó 14 nap adatából')
   })
 
   test('deltaLabel: signed arrow + Hungarian comma, null on absent/zero', () => {

@@ -1937,7 +1937,7 @@ The pipeline is the `WeeklyReviewGenerator` recipe on a rolling window:
 
 | Method + path | Returns | Status | Notes |
 |---|---|---|---|
-| `GET /api/proactive/diagnosis?phenomenon=` | `DiagnosisResponse[]` | 200 · 401 | Newest first. **`200 []` = honest empty, never 404.** `phenomenon` pattern widened to `fatigue\|sleep\|weight`. |
+| `GET /api/proactive/diagnosis?phenomenon=` | `DiagnosisResponse[]` | 200 · 401 | Newest first. **`200 []` = honest empty, never 404.** `phenomenon` pattern widened to `fatigue\|sleep\|weight`. **Optional filter with NO default since `mezo-tpmr2`** — omitted = every phenomenon (the contract used to default to `fatigue`, which hid every sleep/weight report from the FE list and made the weekly weight card's lookup always miss). |
 | `GET /api/proactive/diagnosis/{id}` | `DiagnosisResponse` | 200 · 401 · 404 | Includes the live `stale` flag (for `weight`, computed over the row's own `anchorStart`..min(+6,today) window, not `windowDays`). `anchorStart` on the response is `null` for `fatigue`/`sleep`. 404 = not-found/foreign. |
 | `POST /api/proactive/diagnosis` | `DiagnosisResponse` | 201 · 400 · 401 · **409** · **429** | Body `{phenomenon, anchorStart?}` — `anchorStart` (ISO Monday) is **required** for `phenomenon=weight` and **rejected** for the rolling phenomena: 400 `DIAGNOSIS_ANCHOR_NOT_MONDAY` / `DIAGNOSIS_ANCHOR_NOT_SUPPORTED`. 409 `DIAGNOSIS_INSUFFICIENT_DATA` (too few domains, or no suspect survived) or, `weight` only, `DIAGNOSIS_INSUFFICIENT_WEIGHINS` (<3 distinct weigh-in days in the anchor window — checked AFTER the reuse-first read, never on a still-valid existing report); 429 `DIAGNOSIS_QUOTA_EXCEEDED`. |
 | `POST /api/proactive/diagnosis/{id}/suspect/{rank}/experiment` | `ExperimentResponse` | 201 · 401 · 404 | **The tap IS the acceptance** — creates `status=active`, `startDate=today`, probe fields copied verbatim; NOT routed through `proposed`. Idempotent per metric: an open experiment on the same `metricKey` is returned as-is. |
@@ -1950,6 +1950,19 @@ acknowledgement), on `/mezo/diagnozis[/:id]` (Hungarian slug per the spec). Data
 `data/insights/diagnosisApi.ts` + `diagnosisHooks.ts` (dual-mode; 409/429 map to
 `insufficient`/`quota` error kinds rendered as product copy) + `diagnosisMock.ts`. The Mezo hub
 carries a full-width question tile. Visual goldens `mezo-diagnozis` + `mezo-diagnozis-riport`.
+
+**Kérdezd a csapatot (`mezo-u3712`, 2026-09-26)** — the list page became the team-world
+„Kérdezd a csapatot" page ([spec](../superpowers/specs/2026-09-26-kerdezd-a-csapatot-design.md),
+[prototype](../design_2.0/prototypes/uveg-diagnozis.html)): every catalog question has a **host
+character** (`diagnosisCatalog.ts` — fatigue = Mezo, sleep = Szunya, weight = Derű), asking happens
+in `AskTeamSheet` (week picker + reuse for weight, the four „utánanéz" steps while generating), and
+the report names the host, the characters it brought in and each suspect's owner via the new
+optional wire field **`DiagnosisSuspect.domain`** (`ProactiveMapper.suspectDomain`, the stored
+`metricKey` is the `MetricKey` enum name → `domain().name().toLowerCase()`; `@Named` on purpose — an
+unqualified String→String default method is picked up by MapStruct for EVERY String property of the
+mapper and nulled the whole response in the first attempt). Entry rows (`AskTeamRow`) on A csapat
+and at the bottom of the Nap hub pass `{ from, label }` router state for the back pill. Details:
+[`insights.md`](insights.md) §2.11.
 
 **WEIGHT frontend (`mezo-85x5r`)** — `diagnosisCatalog.ts` moves 'Miért mozog a súlyom?' into
 `LIVE_QUESTIONS`. Its own launch surface is the weekly weigh-in card,

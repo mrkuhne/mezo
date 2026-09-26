@@ -48,7 +48,7 @@ Driving specs: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (Sli
 
 The communication profile now belongs to `/settings/mezo/communication`, alongside explicit user instructions and the learned-profile inclusion switch. The Tudástár no longer has a communication tile; `?view=profil` redirects to the canonical editor. `/settings/mezo/context` shows the exact backend-assembled personal blocks, source links and inclusion status. See [central settings](settings.md) and [companion](companion.md).
 
-**Route: `/mezo`** renders `TeamFeedPage`, the csapat-üzenőfal (§3). The persistent Mezo dock is **Üzenőfal / A csapat / Rólad / Emlékek** (`navModel.ts`, spec §2.5, `mezo-a9bo7.10`). Ownership keeps the highlight from jumping: a post's deep pages (patterns, predictions, experiments, diagnózis, coaching, chat, karakter-feed) light **Üzenőfal**; the rooms and the machinery behind them (`/mezo/csapat/*`, konzílium, Gépterem incl. „Összes funkció”, memória) light **A csapat**. Each content page retains its original route and name. There is **no chip strip** on any page any more: the old `BoopNavigation` („Összes funkció” + Minták · Előrejelzések · Diagnózis · Kísérletek · Heti chips above every `/mezo/*` and `/me/week` page) was removed in `mezo-twizx` — the new dock and the approved üzenőfal prototype have none. Those five destinations are reached through the Gépterem's „Összes funkció” grid (`/mezo/karakter/gepterem/osszes`, `BOOP_DESTINATIONS`), and each list page's own `‹ Összes funkció` back chip returns there; the weekly review stays canonical at `/me/week`.
+**Route: `/mezo`** renders `TeamFeedPage`, the csapat-üzenőfal (§3). The persistent Mezo dock is **Üzenőfal / A csapat / Rólad / Emlékek** (`navModel.ts`, spec §2.5, `mezo-a9bo7.10`). Ownership keeps the highlight from jumping: a post's deep pages (patterns, predictions, experiments, coaching, chat, karakter-feed) light **Üzenőfal**; the rooms and the machinery behind them (`/mezo/csapat/*`, konzílium, Gépterem incl. „Összes funkció”, memória) and **Kérdezd a csapatot** (`/mezo/diagnozis[/:id]`, since `mezo-u3712`, §2.11) light **A csapat**. Each content page retains its original route and name. There is **no chip strip** on any page any more: the old `BoopNavigation` („Összes funkció” + Minták · Előrejelzések · Diagnózis · Kísérletek · Heti chips above every `/mezo/*` and `/me/week` page) was removed in `mezo-twizx` — the new dock and the approved üzenőfal prototype have none. Those five destinations are reached through the Gépterem's „Összes funkció” grid (`/mezo/karakter/gepterem/osszes`, `BOOP_DESTINATIONS`), and each list page's own `‹ Összes funkció` back chip returns there; the weekly review stays canonical at `/me/week`.
 
 | Surface | Route | Component |
 |---|---|---|
@@ -661,6 +661,40 @@ where the winning rule cleared up before the observer was opened. See
 (`mezo-y43v`) this badge rule rests on.
 
 ---
+
+### 2.11 Kérdezd a csapatot (`pages/DiagnosisListPage.tsx` + `DiagnosisDetailPage.tsx`) — the Diagnózis page in the team world, `mezo-u3712`, 2026-09-26
+
+**Why.** The csapatfal's nav switch (`mezo-a9bo7.10`) left Diagnózis behind A csapat → Gépterem →
+Összes funkció; the owner could not find it, and the list itself hid sleep/weight reports (the
+contract default bug, `mezo-tpmr2`, fixed separately). Owner decisions: entry rows on **A csapat**
+(between the characters and the Gépterem) and at the **bottom of the Nap hub**, both opening the
+page (not a quick sheet — the catalog will grow); every question has a host; fatigue's host is Mezo.
+Spec: [`2026-09-26-kerdezd-a-csapatot-design.md`](../superpowers/specs/2026-09-26-kerdezd-a-csapatot-design.md);
+parity reference: [`uveg-diagnozis.html`](../design_2.0/prototypes/uveg-diagnozis.html).
+
+- **List (`/mezo/diagnozis`).** A `‹ <origin>` back pill reads the router state `{ from, label }`
+  that `AskTeamRow` passes (fallback: A csapat) → head „Kérdezd a csapatot" → the live-only quota
+  line (`quotaLeft` = 3 − today's rows in the list; the backend 429 stays the authority) → the
+  **latest answer** as the page's one glass (host avatar, verdict, certainty) → „Mit kérdezel?" (one
+  flat list, a row per `LIVE_QUESTIONS` entry with its host, `UPCOMING_QUESTIONS` dimmed as
+  HAMAROSAN) → „Korábbi válaszok" (flat rows, host filter chips, `Frissíthető` on stale rows).
+  Styles: `features/insights/kerdezd.css` (`kt-*`); the old list rules were deleted from the
+  `uveg mezo1 diagnozis` block of `prototype.css`.
+- **Ask sheet (`components/AskTeamSheet.tsx`, a `GlassBox`).** Host + „X nézi meg", the window
+  sentence and „looks at" chips from the catalog; weight gets this week / last week and reopens a
+  non-stale report for the chosen Monday instead of spending a question (the `mezo-85x5r` lookup);
+  otherwise **Kérdezem** (live only; mock shows the demo line). While generating, four steps advance
+  on a timer and the last stays lit until the real response lands; the fresh report opens. The
+  409/429 kinds render `ASK_ERROR_COPY` in the sheet.
+- **Report (`/mezo/diagnozis/:id`).** The hero wears the host avatar + guests (`guestsOf` = distinct
+  suspect owners ≠ host, from `DiagnosisSuspect.domain` → `characterForMetricDomain`), a derived
+  `helpersLine` („Mezo nézte meg · Szunya és Mocor segített"), a stale banner with **Frissítés** (a
+  same-question regenerate; live only), each suspect's „<X> gyanúja" owner chip, and the
+  Szkeptikus's closing honesty note. Számvetés, suspect cards, probe and „Próbáljuk ki" unchanged.
+- **Logic.** `logic/diagnosisCatalog.ts` (hosts, blurbs, looks, `weekAnchored`, `hostOf`),
+  `logic/diagnosisTeam.ts` (`suspectOwner`, `guestsOf`, `helpersLine`, `quotaLeft`, `newestFirst`) —
+  derived labels only, nothing composed (ADR 0049). The Összes funkció dev menu keeps the original
+  name „Diagnózis".
 
 ## 3. Architecture & data flow
 

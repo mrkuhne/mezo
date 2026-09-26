@@ -105,10 +105,11 @@ export const DOMAINS: NavDomain[] = [
       // them (konzílium, Gépterem + its „Összes funkció” grid, memória) stay under A csapat.
       { label: 'Üzenőfal', route: '/mezo', icon: 'i-mezo',
         owns: ['/mezo/karakter/feed', '/mezo/patterns', '/mezo/predictions', '/mezo/experiments',
-          '/mezo/diagnozis', '/mezo/coaching', '/mezo/chat'] },
+          '/mezo/coaching', '/mezo/chat'] },
       { label: 'A csapat', route: '/mezo/csapat', icon: 'i-emberek',
+        // Kérdezd a csapatot (mezo-u3712): the Diagnózis page is entered from A csapat.
         owns: ['/mezo/karakter/gepterem', '/mezo/karakter/konzilium',
-          '/mezo/memoria'] },
+          '/mezo/memoria', '/mezo/diagnozis'] },
       { label: 'Rólad', route: '/mezo/rolad', icon: 'i-kristaly', owns: ['/mezo/knowledge', '/mezo/karakter'] },
       { label: 'Emlékek', route: '/mezo/emlekek', icon: 'i-memoar', owns: ['/mezo/memoir'] },
     ],

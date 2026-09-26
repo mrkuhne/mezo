@@ -115,3 +115,12 @@ it('at 20:30 the evening napzárás card renders on the page with the day\'s chi
     store.tick = new Date('2026-09-17T14:00:00')
   }
 })
+
+describe('NapHubPage — Kérdezd a csapatot (mezo-u3712)', () => {
+  test('a Nap alján a belépő a Diagnózis oldalra visz', () => {
+    setup()
+    const link = screen.getByRole('link', { name: /Kérdezd a csapatot/ })
+    expect(link).toHaveAttribute('href', '/mezo/diagnozis')
+    expect(link).toHaveClass('glass')
+  })
+})

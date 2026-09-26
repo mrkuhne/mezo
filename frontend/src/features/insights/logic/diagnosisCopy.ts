@@ -30,7 +30,8 @@ export function windowLine(generatedAt: string, windowDays: number): string {
   from.setDate(to.getDate() - (windowDays - 1))
   const isoOf = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-  return `${huMonthDay(isoOf(from))} – ${to.getDate()} · az utolsó ${windowDays} nap adatából`
+  const end = from.getMonth() === to.getMonth() ? String(to.getDate()) : huMonthDay(isoOf(to))
+  return `${huMonthDay(isoOf(from))} – ${end} · az utolsó ${windowDays} nap adatából`
 }
 
 /**

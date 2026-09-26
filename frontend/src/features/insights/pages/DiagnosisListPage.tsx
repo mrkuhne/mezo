@@ -1,117 +1,165 @@
 // ============================================================
-// Mezo · Diagnózis — the on-demand report catalog (mezo-hqfi.4).
-// Source of truth: mezo-body.html #page-diagnozis (design round 2, ×1.18).
-// Anatomy: hero (i-eletjel + count) → the gold-ringed ask card (the live
-// question + generate CTA + the quota line — the seam where the paywall
-// will later live) → the upcoming-question grid (config-driven, dashed,
-// HAMAROSAN) → past reports as predtiles, newest first.
-// Honest states: generate is live-only (a real SMART call); 409 → „kevés
-// adat", 429 → „napi keret", both rendered as product copy, never as an
-// error toast. Empty list → an inviting first-run card, not a blank.
-// Üveg (mezo-me75u.8, prototype uveg-mezo-body.html `diagnozis`): halo hero with
-// t-diagnose; the three ask cards are THE glass objects (lavender); upcoming =
-// dashed tiles; past reports = flat rows. Style: prototype.css
-// `── uveg mezo1 diagnozis (` block, scoped to `.dgx-page`.
+// Mezo · Kérdezd a csapatot — the Diagnózis page in the team world (mezo-u3712).
+// Parity reference: docs/design_2.0/prototypes/uveg-diagnozis.html `kerdezd` (owner OK
+// 2026-09-26). Spec: docs/superpowers/specs/2026-09-26-kerdezd-a-csapatot-design.md.
+// Rhythm: back pill (to where you came from) → head → today's quota → the latest answer (the
+// page's ONE glass, bible §3.4) → „Mit kérdezel?" (one flat list, every question with its host)
+// → „Korábbi válaszok" (flat rows, filterable by host). Asking happens in the AskTeamSheet.
+// Honest states: generate is live-only (a real SMART call); the quota line is derived from the
+// list and the backend's 429 stays the authority; the empty list invites, never blanks.
 // ============================================================
-import { useNavigate } from 'react-router-dom'
-import { Icon3D } from '@/shared/ui/clay'
-import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
-import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
-import { useDiagnoses, useDiagnosisActions } from '@/data/hooks'
+import { useState, type CSSProperties } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useDiagnoses } from '@/data/hooks'
+import type { AskTeamOrigin } from '@/features/insights/components/AskTeamRow'
+import { AskTeamSheet } from '@/features/insights/components/AskTeamSheet'
+import { FeedAvatar } from '@/features/insights/components/feed/FeedPostHead'
+import { LIVE_QUESTIONS, UPCOMING_QUESTIONS, hostOf, questionOf, type DiagnosisQuestion } from '@/features/insights/logic/diagnosisCatalog'
 import { confidenceLine, generatedLabel, strengthLabel } from '@/features/insights/logic/diagnosisCopy'
-import { LIVE_QUESTIONS, UPCOMING_QUESTIONS, questionOf } from '@/features/insights/logic/diagnosisCatalog'
-import { mondayIso } from '@/data/fuel/fuelWeekHooks'
-import { ALL_FEATURES_ROUTE } from '@/features/insights/logic/boopNavigation'
+import { DAILY_QUOTA, newestFirst, quotaLeft } from '@/features/insights/logic/diagnosisTeam'
+import { TEAM, type TeamCharacterId } from '@/features/insights/logic/team'
+import { Icon3D } from '@/shared/ui/clay'
+import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
+import '@/features/insights/boop-world.css'
+import '@/features/insights/kerdezd.css'
 
+const DEFAULT_ORIGIN: AskTeamOrigin = { from: '/mezo/csapat', label: 'A csapat' }
 
-const ERROR_COPY: Record<string, string> = {
-  insufficientData: 'Kettőnél kevesebb területről van adat az elmúlt két hétben — a Mezo nem tippel.',
-  insufficientWeighins: 'Ehhez a héthez kevés a mérés — legalább 3 reggeli mérés kell.',
-  quota: 'Ma már elfogyott a napi kereted — holnap újra kérdezhetsz.',
-  failed: 'Most nem sikerült — próbáld újra kicsit később.',
+/** The certainty meter's fill — a picture of the three-step confidence word, nothing more. */
+export const CERT_FILL = { weak: '33%', moderate: '66%', strong: '100%' } as const
+
+function isOrigin(v: unknown): v is AskTeamOrigin {
+  return typeof v === 'object' && v != null && typeof (v as AskTeamOrigin).from === 'string'
+    && typeof (v as AskTeamOrigin).label === 'string'
 }
 
 export function DiagnosisListPage() {
   const navigate = useNavigate()
+  const { state } = useLocation()
+  const origin = isOrigin(state) ? state : DEFAULT_ORIGIN
   const { diagnoses, mode, isPending } = useDiagnoses()
-  const { generateAsync, generating, error } = useDiagnosisActions()
   const live = mode === 'live'
-  const heroCount = useCountUp(diagnoses.length)
+  const [filter, setFilter] = useState<TeamCharacterId | 'mind'>('mind')
+  const [asking, setAsking] = useState<DiagnosisQuestion | null>(null)
 
-  const onAsk = async (phenomenon: string) => {
-    if (!live || generating) return
-    // weight is week-anchored (mezo-85x5r) — the catalog card always diagnoses the current week.
-    const anchorStart = phenomenon === 'weight' ? mondayIso() : undefined
-    const fresh = await generateAsync(phenomenon, anchorStart).catch(() => null)
-    if (fresh) navigate(`/mezo/diagnozis/${fresh.id}`)
-  }
+  if (isPending) return <ScreenSkeleton />
+
+  const list = newestFirst(diagnoses)
+  const latest = list[0]
+  const left = quotaLeft(diagnoses)
+  const hosts = [...new Set(list.map((d) => hostOf(d.phenomenon)))]
+  const shown = list.filter((d) => filter === 'mind' || hostOf(d.phenomenon) === filter)
+  const lastAsked = (phenomenon: string) => list.find((d) => d.phenomenon === phenomenon)
 
   return (
-    <MozaikPage tone="lav" className="dgx-page">
-      <PageHead glass onBack={() => navigate(ALL_FEATURES_ROUTE)} label="Összes funkció" />
-      <PageHero art="t-diagnose" accent="var(--dv-lav)" name="Diagnózis"
-        big={<>{heroCount}<small> riport</small></>}
-        sub="kérdések a Mezónak → gyanúsítottak evidenciával → próba" />
-      <PageBody>
-        <EntranceGroup className="dgx-body">
-          <div className="dgx-asks">
-            {LIVE_QUESTIONS.map((q, qi) => (
-              <div key={q.phenomenon} className={generating ? 'dgx-ask glass is-busy rise' : 'dgx-ask glass rise'}
-                style={{ '--d': `${qi * 60}ms`, '--i': qi } as React.CSSProperties}>
-                <span className="dgx-eb uv-eyebrow"><Icon3D name="t-spark" size={18} /> Kérdezd meg</span>
-                <h3 className="dgx-ask-q">{q.question}</h3>
-                <p className="dgx-ask-blurb">{q.blurb}</p>
-                <button type="button" className="dgx-cta" disabled={!live || generating} onClick={() => onAsk(q.phenomenon)}>
-                  {generating ? '… a két hét adatait olvasom' : <><Icon3D name="t-spark" size={18} /> Kérdezd meg most</>}
-                </button>
-              </div>
+    <div className="tf-page kt-page">
+      <div className="kt-nav">
+        <button type="button" className="glass kt-bpill" onClick={() => navigate(origin.from)}>‹ {origin.label}</button>
+        <small>Diagnózis</small>
+      </div>
+      <header className="tf-head">
+        <small>A csapat utánanéz</small>
+        <h1>Kérdezd a csapatot</h1>
+      </header>
+      {live && (
+        <p className="kt-quota">
+          <span className="kt-dots" aria-hidden="true">
+            {Array.from({ length: DAILY_QUOTA }, (_, i) => <i key={i} className={i < DAILY_QUOTA - left ? 'is-used' : undefined} />)}
+          </span>
+          <span>Ma még <strong>{left} kérdés</strong></span>
+          <em>a régi válaszok ingyen nyílnak</em>
+        </p>
+      )}
+
+      {latest ? (
+        <Link to={`/mezo/diagnozis/${latest.id}`} className={`glass kt-latest tf-c-${TEAM[hostOf(latest.phenomenon)].accent}`}>
+          <span className="kt-lt-top">
+            <FeedAvatar id={hostOf(latest.phenomenon)} />
+            <span>
+              <small>Legutóbbi válasz · {generatedLabel(latest.generatedAt)}</small>
+              <strong>{TEAM[hostOf(latest.phenomenon)].name} válaszolt</strong>
+            </span>
+          </span>
+          <span className="kt-lt-q">{questionOf(latest.phenomenon)}</span>
+          <span className="kt-lt-v">{latest.verdict}</span>
+          <span className="kt-lt-foot">
+            <span className="kt-cert"><Icon3D name="t-gem" size={18} />{confidenceLine(latest.confidence)}
+              <i aria-hidden="true"><b style={{ width: CERT_FILL[latest.confidence] }} /></i></span>
+            <em>Megnyitom ›</em>
+          </span>
+        </Link>
+      ) : (
+        <div className="tf-dash">
+          <FeedAvatar id="mezo" size={30} />
+          <span><strong>Még nem kérdeztél.</strong> Ha valami nem stimmel — fáradt vagy, rosszul alszol, mozog a súlyod —, válassz egy kérdést, és az illetékes csapattag két hét adatából rangsorolt gyanúsítottakat hoz, mindet mért bizonyítékkal.</span>
+        </div>
+      )}
+
+      <div className="tf-sec"><h2>Mit kérdezel?</h2><span className="tf-hint">Ki nézi meg</span></div>
+      <div className="kt-qlist">
+        {LIVE_QUESTIONS.map((q) => {
+          const who = TEAM[q.host]
+          const had = lastAsked(q.phenomenon)
+          return (
+            <button key={q.phenomenon} type="button" className={`kt-qrow tf-c-${who.accent}`} onClick={() => setAsking(q)}
+              aria-label={`${q.question} — ${who.name} nézi meg`}>
+              <FeedAvatar id={q.host} size={29} />
+              <span className="kt-qtxt">
+                <small>{who.name} · {who.area}</small>
+                <strong>{q.question}</strong>
+                <span>{q.blurb}{had ? ` · utoljára ${generatedLabel(had.generatedAt)}` : ''}</span>
+              </span>
+              <span className="kt-askpill" aria-hidden="true">Kérdezem</span>
+            </button>
+          )
+        })}
+        {UPCOMING_QUESTIONS.map((q) => (
+          <div key={q.question} className={`kt-qrow is-soon tf-c-${TEAM[q.host].accent}`}>
+            <FeedAvatar id={q.host} size={29} />
+            <span className="kt-qtxt">
+              <small>{TEAM[q.host].name} · {TEAM[q.host].area}</small>
+              <strong>{q.question}</strong>
+              <span>a recept kész, sorban jön</span>
+            </span>
+            <span className="kt-askpill">Hamarosan</span>
+          </div>
+        ))}
+      </div>
+      {!live && <p className="tf-note">demo — a kérdezés az élő appban fut</p>}
+
+      {list.length > 0 && (
+        <>
+          <div className="tf-sec"><h2>Korábbi válaszok</h2><span className="tf-hint">{list.length} válasz</span></div>
+          <div className="kt-chips" role="group" aria-label="Szűrés csapattagra">
+            <button type="button" aria-pressed={filter === 'mind'} onClick={() => setFilter('mind')}>Mind</button>
+            {hosts.map((h) => (
+              <button key={h} type="button" aria-pressed={filter === h} onClick={() => setFilter(h)}>
+                <FeedAvatar id={h} size={16} />{TEAM[h].name}
+              </button>
             ))}
           </div>
-          {error != null && (
-            <p className="dgx-note is-error" role="status">{ERROR_COPY[error]}</p>
-          )}
-          <p className="dgx-note">
-            {live ? 'napi 3 kérdés · a megnyitás mindig ingyen' : 'demo — a kérdezés az élő appban fut'}
-          </p>
-
-          <span className="dgx-sec uv-eyebrow">További kérdések · a recept kész, sorban jönnek</span>
-          <div className="dgx-soon">
-            {UPCOMING_QUESTIONS.map((q) => (
-              <div key={q} className="dgx-soon-tile uv-empty">
-                <div className="qq">{q}</div>
-                <div className="qs">HAMAROSAN</div>
-              </div>
-            ))}
-          </div>
-
-          <span className="dgx-sec uv-eyebrow">Korábbi riportok</span>
-          {diagnoses.length === 0 && !isPending && (
-            <div className="dgx-empty uv-empty">
-              <Icon3D name="t-diagnose" size={44} />
-              <p>Még nem kérdezted meg. A Mezo az elmúlt két hét adataiból keres okokat.</p>
-            </div>
-          )}
-          {diagnoses.length > 0 && (
-            <div className="dgx-reps">
-              {diagnoses.map((d, i) => (
-                <button key={d.id} type="button" className="dgx-rep rise" style={{ '--d': `${70 + i * 70}ms` } as React.CSSProperties}
-                  onClick={() => navigate(`/mezo/diagnozis/${d.id}`)} aria-label={`Diagnózis · ${generatedLabel(d.generatedAt)}`}>
-                  <span className="dgx-rep-top">
-                    <span className="dgx-chip"><Icon3D name="t-gem" size={16} />{confidenceLine(d.confidence)}</span>
-                    <span className="dgx-rep-date">{generatedLabel(d.generatedAt)}</span>
-                    <span className="dgx-chev" aria-hidden="true">›</span>
+          <div className="tf-rows">
+            {shown.map((d, i) => {
+              const h = hostOf(d.phenomenon)
+              return (
+                <Link key={d.id} to={`/mezo/diagnozis/${d.id}`} className="kt-past rise"
+                  style={{ '--i': i } as CSSProperties} aria-label={`${questionOf(d.phenomenon)} · ${generatedLabel(d.generatedAt)}`}>
+                  <FeedAvatar id={h} size={29} />
+                  <span className="kt-ptxt">
+                    <strong>{questionOf(d.phenomenon)}</strong>
+                    <span>{d.verdict}</span>
                   </span>
-                  <strong className="dgx-rep-q">{questionOf(d.phenomenon)}</strong>
-                  <span className="dgx-rep-v">{d.verdict.split(' — ')[0]}</span>
-                  <small className="dgx-rep-s">
-                    {d.suspects.length} gyanúsított · a legerősebb: {d.suspects[0]?.title} ({strengthLabel(d.suspects[0]?.strength ?? 'weak')})
-                  </small>
-                </button>
-              ))}
-            </div>
-          )}
-        </EntranceGroup>
-      </PageBody>
-    </MozaikPage>
+                  <span className="kt-pmeta">
+                    {generatedLabel(d.generatedAt)}
+                    {d.stale ? <i className="is-old">Frissíthető</i> : <i>{strengthLabel(d.confidence)}</i>}
+                  </span>
+                </Link>
+              )
+            })}
+          </div>
+        </>
+      )}
+      <AskTeamSheet question={asking} diagnoses={diagnoses} live={live} left={left} onClose={() => setAsking(null)} />
+    </div>
   )
 }

@@ -41,6 +41,7 @@ export function toDiagnosis(wire: DiagnosisWire): Diagnosis {
         metricKey: s.metricKey,
         expectedDirection: s.expectedDirection as DiagnosisSuspect['expectedDirection'],
         totalDays: s.totalDays,
+        domain: (s.domain ?? undefined) as DiagnosisSuspect['domain'],
       }),
     ),
     generatedAt: wire.generatedAt,
