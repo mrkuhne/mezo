@@ -2,7 +2,8 @@
 // `dimsToday()` / `dimsClosed()`, owner OK 2026-09-24). A lit well with the dimension's 3D
 // icon, the label, the facts on one ellipsised line, a glowing bar and the end value.
 //   today   — a status word (KÉSZ / ÚTON / NYITVA), no weight; not interactive.
-//   scored  — a `<button aria-expanded>`: tap opens the fact chips and the Mezo's note.
+//   scored  — a `<button aria-expanded>`, OPEN by default (owner 2026-09-26, mezo-7izrx): the
+//             fact chips and the Mezo's note show up front; a tap folds them away.
 //   plain   — a thin/empty closed day: value only, no status word, no bar.
 //   loading — a dashed placeholder, nothing claimed.
 // A row with no score (NO_DATA, or still open) is dashed free space, not glass (bible U1 rule 6).
@@ -52,7 +53,7 @@ export function NapomDimensionRow({ dimension, mode, goalTick = false, fresh = f
   /** Entrance stagger index. */
   i: number
 }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   const factId = useId()
   const meta = NAPOM_DIMENSIONS.find((d) => d.key === dimension.id) ?? NAPOM_DIMENSIONS[0]
   const { score, status, facts, note } = dimension

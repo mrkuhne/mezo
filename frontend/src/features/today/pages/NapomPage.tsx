@@ -9,7 +9,7 @@
 //     reading and the one next step, both from pure rules (`logic/napom.ts`, no LLM). No
 //     overall number during the day.
 //   · a CLOSED, scored day leads with the Mezo's overnight note, the gradient score with its
-//     base + the Mezo's ±5 correction behind a toggle, six expandable rows and the day's
+//     base + the Mezo's ±5 correction (reason shown, foldable), six rows open by default and the day's
 //     context (which does not score).
 // Thin/empty days say so on a dashed card; a future day is a dashed promise; an unresolved
 // evaluation is an honest pending ring with no number (mezo-ahf5b), a failed one a retry.
@@ -236,7 +236,7 @@ export function NapomPage() {
         )}
 
         {open && <SectionTitle title={isToday ? 'Ma eddig' : 'Eddig'} eyebrow="6 TERÜLET" i={4} />}
-        {scored && <SectionTitle title="Miből jött össze" eyebrow="KOPPINTS A RÉSZLETEKÉRT" i={4} />}
+        {scored && <SectionTitle title="Miből jött össze" eyebrow="A MEZO RÉSZLETEIVEL" i={4} />}
 
         {(loading || (evaluation && state !== 'future')) && (
           <div className="napom-rows">
@@ -287,10 +287,11 @@ export function NapomPage() {
   )
 }
 
-/** `alap 75 · a Mezo szerint +3 ▾` — the deterministic base and the Mezo's contextual
- *  correction stay two claims; the reason is one tap away, never hidden for good. */
+/** `alap 75 · a Mezo szerint +3 ▴` — the deterministic base and the Mezo's contextual
+ *  correction stay two claims; the reason shows by default (owner 2026-09-26, mezo-7izrx) and
+ *  a tap folds it away. */
 function AdjustmentPill({ base, adjustment }: { base: number; adjustment: { delta: number; reason: string } }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   return (
     <>
       <button type="button" className="napom-corr" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
