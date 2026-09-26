@@ -771,3 +771,25 @@ runtime pass with the `verify` skill (dark, 320px, reduced motion).
     `PEOPLE_SWITCH`. A new people service gated on the switch must therefore be
     reached via `ObjectProvider` even from people-internal callers (PeopleService,
     PeopleController), or a switched-off environment fails context startup.
+20. **(S4)** `GroundedHypothesisPublisher` stores `observation-topic-key:` evidence
+    NORMALIZED (`normalizedTopicKey`: lowercase, split on non-alphanumerics, deduped,
+    SORTED — `effect-person-1a2b-mental` becomes `1a2b-effect-mental-person`). Any
+    engine matching its own topic keys against pattern evidence must compare
+    `normalizedTopicKey(rawKey)`, never the raw key. The raw comparison passed a
+    hand-seeded IT and would have been silently dead in production — seed such
+    fixtures through the publisher's own normalizer.
+21. **(S4)** OpenAPI enum-like fields take `enum:` lists, never `pattern:` regexes —
+    `pattern` generates plain `string` FE types (no literal unions) and skips the
+    generator's nested-enum controller mapping (`XxxEnum.fromValue`), silently
+    diverging from the house convention (`owner` enums in companion.yml).
+22. **(S4)** A companion.yml edit reaches the backend only after the api MERGE step
+    (`api/generate`'s `npm run generate:api` → api/openapi.yml), then maven
+    generate-sources, then FE `pnpm generate:api`. A literal apostrophe inside a
+    single-quoted YAML flow scalar breaks the merge parser; block scalars keep it.
+23. **(S4)** `effect_link` is a cache of the current window: the nightly recompute
+    must also visit subjects that exist only as live rows (not just subjects present
+    in today's window), or rows for fallen-silent subjects are never deleted.
+24. **(S4)** The üveg person-page prototype canon is `uveg-en2.html`'s `ember()`;
+    S4's Hatás card extends it in `ember-hatas-uveg.html` (`.effrow`/`.effdots`
+    CSS block). S6 hub work should grep the approved prototypes for its route first
+    (bible rule 66) and reuse that block rather than redrawing the indicators.
