@@ -10397,10 +10397,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 
 /* Vércukor-válasz: három sáv + várható görbe (relatív, tengely-szám nélkül) — sosem szám. */
 .fmx-mclockbox-gly { padding: 12px; border-radius: 16px; background: rgba(245, 239, 230, 0.05); border: 1px solid var(--divider);
-  --g: var(--sage); }
-.fmx-mclockbox-gly.lvl-low { --g: var(--sage); }
-.fmx-mclockbox-gly.lvl-mid { --g: var(--amber); }
-.fmx-mclockbox-gly.lvl-high { --g: var(--coral); }
+  --g: var(--dv-sage); --glu-color: var(--dv-sage); }
+.fmx-mclockbox-gly.lvl-low { --g: var(--dv-sage); --glu-color: var(--dv-sage); }
+.fmx-mclockbox-gly.lvl-mid { --g: var(--dv-amber); --glu-color: var(--dv-amber); }
+.fmx-mclockbox-gly.lvl-high { --g: var(--dv-lav); --glu-color: var(--dv-lav); }
+.fmx-mclockbox-gly .fmx-glu-mini { color: var(--glu-color); }
 .fmx-mclockbox-gly-top { display: flex; align-items: center; gap: 10px; }
 .fmx-mclockbox-gly-top svg { width: 30px; height: 30px; filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.5)); }
 .fmx-mclockbox-gly-top b { font-size: 14px; font-weight: 600; color: var(--text-primary); }
