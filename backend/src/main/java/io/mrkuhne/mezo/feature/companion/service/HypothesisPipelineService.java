@@ -872,7 +872,7 @@ public class HypothesisPipelineService {
         return switch (category) {
             case "physiology" -> "Fiziológia";
             case "trigger" -> "Kiváltó ok";
-            default -> "Response";
+            default -> "Reakció";
         };
     }
 }
