@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.CompanionMessagePopulator;
 import io.mrkuhne.mezo.support.populator.CompanionPreferencesPopulator;
+import io.mrkuhne.mezo.support.populator.KnowledgeFactPopulator;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -21,6 +22,7 @@ class FeedContextAssemblerIT extends AbstractIntegrationTest {
     @Autowired private DatabasePopulator users;
     @Autowired private CompanionMessagePopulator messages;
     @Autowired private CompanionPreferencesPopulator preferences;
+    @Autowired private KnowledgeFactPopulator knowledgeFacts;
 
     @Test
     void testAssemble_shouldPrioritizeFreshEvidenceAndIncludePersonalContext_whenHistoryExists() {
@@ -35,5 +37,16 @@ class FeedContextAssemblerIT extends AbstractIntegrationTest {
                 .contains("Szeretek röplabdázni", "Legyél konkrét", "Megnézzük a következő mérést");
         assertThat(result.priorMessageIds()).contains(prior.getId());
         assertThat(result.text()).doesNotContain("MEGERŐSÍTETT TÉNYEK");
+    }
+
+    @Test
+    void testAssemble_shouldIncludeKnowledgeFactBlock_whenPromptIncludedFactExists() {
+        var user = users.populateUser("context-assemble-facts@test.local");
+        var today = LocalDate.of(2026, 9, 23);
+        var now = Instant.parse("2026-09-23T10:00:00Z");
+        preferences.preferences(user, "Szeretek röplabdázni.", "Legyél konkrét.", false);
+        knowledgeFacts.fact(user, "Balesetveszélyes a bal térde.", "health", 3);
+        var result = assembler.assemble(user, today, now, "weight", "FRISS MÉRÉS: 80,2 kg");
+        assertThat(result.text()).contains("MEGERŐSÍTETT TÉNYEK", "Balesetveszélyes a bal térde");
     }
 }
