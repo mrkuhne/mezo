@@ -195,7 +195,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### biometrics
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-26, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-27, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
   - **sub-features:** `checkin`, `profile`, `sleep`, `weight`
@@ -235,7 +235,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### character
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-26, shipped) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-27, shipped) ·
   [docs/features/insights.md](features/insights.md) (updated 2026-09-26, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
@@ -352,11 +352,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### companion
 
 *BE + API + FE-data* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-09-26, done) ·
-  [docs/features/character.md](features/character.md) (updated 2026-09-26, shipped) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-09-26, mixed) ·
+  [docs/features/character.md](features/character.md) (updated 2026-09-27, shipped) ·
+  [docs/features/companion.md](features/companion.md) (updated 2026-09-27, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-25, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-18, in-progress) ·
-  [docs/features/me.md](features/me.md) (updated 2026-09-26, mixed) ·
+  [docs/features/me.md](features/me.md) (updated 2026-09-27, mixed) ·
   [docs/features/settings.md](features/settings.md) (updated 2026-09-25, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-09-26, mixed)
 
@@ -697,7 +697,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### goal
 
 *BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-26, done) ·
-  [docs/features/me.md](features/me.md) (updated 2026-09-26, mixed)
+  [docs/features/me.md](features/me.md) (updated 2026-09-27, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/goal`
   - **sub-features:** `engine`
@@ -767,7 +767,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### insights
 
-*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-26, mixed) ·
+*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-27, mixed) ·
   [docs/features/insights.md](features/insights.md) (updated 2026-09-26, mixed)
 
 - **FE data** `frontend/src/data/insights`
@@ -906,7 +906,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### llmlog
 
 *BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-26, done) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-09-26, mixed)
+  [docs/features/companion.md](features/companion.md) (updated 2026-09-27, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`
@@ -943,7 +943,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/habit.md](features/habit.md) (updated 2026-09-25, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-25, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-18, in-progress) ·
-  [docs/features/me.md](features/me.md) (updated 2026-09-26, mixed) ·
+  [docs/features/me.md](features/me.md) (updated 2026-09-27, mixed) ·
   [docs/features/today.md](features/today.md) (updated 2026-09-26, mixed) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-26, done) ·
   [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-26, mixed)
@@ -1150,7 +1150,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### people
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-26, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-27, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/people`
   - **entities→tables:** `MentionEntity`→`mention`, `PersonEntity`→`person`, `PersonFactEntity`→`person_fact`
@@ -1177,16 +1177,16 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### proactive
 
 *BE + API* · read next: [docs/features/contextual-feed-evaluation.md](features/contextual-feed-evaluation.md) (updated 2026-09-24, complete) ·
-  [docs/features/proactive.md](features/proactive.md) (updated 2026-09-26, complete)
+  [docs/features/proactive.md](features/proactive.md) (updated 2026-09-27, complete)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/proactive`
   - **entities→tables:** `ChallengeEntity`→`challenge`, `CompanionMessageEntity`→`companion_message`,
     `DiagnosisEntity`→`diagnosis`, `ExperimentEntity`→`experiment`, `MemoirEntity`→`memoir`,
-    `PredictionEntity`→`prediction`, `WeeklyReviewEntity`→`weekly_review`,
-    `WeeklySuggestionEntity`→`weekly_suggestion`
+    `PredictionEntity`→`prediction`, `ProactiveMemoryUseEntity`→`proactive_memory_use`,
+    `WeeklyReviewEntity`→`weekly_review`, `WeeklySuggestionEntity`→`weekly_suggestion`
   - **repositories:** `ChallengeRepository`, `CompanionMessageRepository`, `DiagnosisRepository`,
-    `ExperimentRepository`, `MemoirRepository`, `PredictionRepository`, `WeeklyReviewRepository`,
-    `WeeklySuggestionRepository`
+    `ExperimentRepository`, `MemoirRepository`, `PredictionRepository`, `ProactiveMemoryUseRepository`,
+    `WeeklyReviewRepository`, `WeeklySuggestionRepository`
   - **services:** `AdviceActionCatalog`, `AdviceApplyService`, `AdviceCandidate`, `AdviceCardService`,
     `AdviceMutationPort`, `AdvicePick`, `AdvicePriority`, `AdviceProseGenerator`, `AdviceRankAdapter`, `AnchoredWeek`,
     `ChallengeGenerator`, `ChallengeJob`, `ChallengeOutcomeEvaluator`, `CompanionMessageEventListener`,
@@ -1200,12 +1200,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `OneTimeQuestionService`, `OverloadChallengeGenerator`, `PatternImpactService`, `PeopleMezoNoteAdapter`,
     `PlanFeasibilityCalculator`, `PredictionGenerator`, `PredictionJob`, `PredictionValidationService`,
     `ProactiveChallengeService`, `ProactiveExperimentService`, `ProactiveFeedService`, `ProactiveMemoirService`,
-    `ProactivePredictionService`, `ProactiveWeeklySuggestionService`, `ProseNumberGuard`, `QuestionAnswerListener`,
-    `QuestionAnswerService`, `RetroLoggingProbe`, `SetupCheckJob`, `SetupCheckService`, `SleepAnchorShiftAdapter`,
-    `SportSlotSkipAdapter`, `WeekReviewSourceAdapter`, `WeeklyLessonService`, `WeeklyReviewContextSources`,
-    `WeeklyReviewDigestService`, `WeeklyReviewGenerator`, `WeeklyReviewJob`, `WeeklyReviewService`,
-    `WeeklyReviewWeekWindow`, `WeeklySuggestionGenerator`, `WeeklySuggestionJob`, `WeightDecomposition`,
-    `WeightDecompositionInputsAssembler`
+    `ProactiveMemoryBlock`, `ProactivePredictionService`, `ProactiveWeeklySuggestionService`, `ProseNumberGuard`,
+    `QuestionAnswerListener`, `QuestionAnswerService`, `RetroLoggingProbe`, `SetupCheckJob`, `SetupCheckService`,
+    `SleepAnchorShiftAdapter`, `SportSlotSkipAdapter`, `WeekReviewSourceAdapter`, `WeeklyLessonService`,
+    `WeeklyReviewContextSources`, `WeeklyReviewDigestService`, `WeeklyReviewGenerator`, `WeeklyReviewJob`,
+    `WeeklyReviewService`, `WeeklyReviewWeekWindow`, `WeeklySuggestionGenerator`, `WeeklySuggestionJob`,
+    `WeightDecomposition`, `WeightDecompositionInputsAssembler`
   - **controllers→contract:** `DiagnosisController`→`DiagnosisApi`, `ProactiveController`→`ProactiveApi`
   - **mappers:** `ChallengeDisplay`, `ProactiveMapper`
   - **config:** `ContextualFeedProperties`, `DiagnosisProperties`, `ProactiveProperties`, `QuestionProperties`,
@@ -1224,36 +1224,38 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/proactive/challenge/{id}/decision · GET /api/proactive/weekly-review/{start} ·
     POST /api/proactive/weekly-review/{start}/regenerate · GET /api/proactive/weekly-review/{start}/lessons ·
     GET /api/proactive/weekly-review/{start}/digest
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 107 IT + 11 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 110 IT + 11 unit
   - **ITs:** `AdviceApplyServiceIT`, `AdviceCardServiceIT`, `AdviceObserverPortsIT`, `AdviceProseGeneratorIT`,
     `ChallengeGeneratorIT`, `ChallengeGeneratorMemoryDisabledIT`, `ChallengeGeneratorMemoryIT`, `ChallengeJobIT`,
     `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`, `ChallengePersistenceIT`, `ChallengePregenerateJobIT`,
-    `CompanionMessageAdvicePersistenceIT`, `CompanionMessageEventIT`, `CompanionMessageGeneratorIT`,
-    `CompanionMessageGeneratorMemoryIT`, `CompanionMessageHydrationIT`, `CompanionMessageInterventionPersistenceIT`,
-    `CompanionMessageJobIT`, `CompanionMessageJobSwitchOffIT`, `CompanionMessageMissedWorkoutsIT`,
-    `CompanionMessagePersistenceIT`, `CompanionMessageRetroLoggingIT`, `CompanionMessageSetupPersistenceIT`,
-    `ContextSnapshotOwnerZoneIT`, `ContextualFeedEvaluationIT`, `ContextualFeedKindsIT`, `ContextualFeedPropertiesIT`,
-    `ContextualFeedProviderEvalIT`, `DiagnosisControllerIT`, `DiagnosisExperimentIT`, `DiagnosisGeneratorIT`,
-    `DiagnosisGeneratorMemoryDisabledIT`, `DiagnosisGeneratorMemoryIT`, `ExperimentJobIT`, `ExperimentJobSwitchOffIT`,
-    `ExperimentOutcomeIT`, `ExperimentPersistenceIT`, `ExperimentProposalGeneratorIT`,
-    `ExperimentProposalGeneratorMemoryDisabledIT`, `ExperimentProposalGeneratorMemoryIT`, `FatigueEvidenceCollectorIT`,
-    `FeatureAbandonmentDetectorIT`, `FeedContextAssemblerIT`, `FeedContinuityIT`, `FeedEvidenceAssemblerIT`,
-    `FeedGenerationServiceIT`, `FlatFeedbackDetectorIT`, `GrowthDigestBlockIT`, `HighlightCitationIT`,
-    `HydrationPropertiesIT`, `HydrationShortfallProbeIT`, `InterventionConfigIT`, `InterventionServiceIT`,
-    `InterventionSwitchOffIT`, `LogFreshnessProbeIT`, `MemoirGeneratorIT`, `MemoirGeneratorMemoryDisabledIT`,
-    `MemoirGeneratorMemoryIT`, `MemoirJobIT`, `MemoirJobSwitchOffIT`, `MemoirPersistenceIT`,
-    `OneTimeQuestionServiceIT`, `OneTimeQuestionSwitchOffIT`, `OverloadChallengeGeneratorIT`, `PlanFeasibilityIT`,
-    `PredictionGeneratorIT`, `PredictionGeneratorMemoryDisabledIT`, `PredictionGeneratorMemoryIT`, `PredictionJobIT`,
+    `CompanionMessageAdvicePersistenceIT`, `CompanionMessageEventIT`, `CompanionMessageGeneratorApropoIT`,
+    `CompanionMessageGeneratorIT`, `CompanionMessageGeneratorMemoryIT`, `CompanionMessageHydrationIT`,
+    `CompanionMessageInterventionPersistenceIT`, `CompanionMessageJobIT`, `CompanionMessageJobSwitchOffIT`,
+    `CompanionMessageMissedWorkoutsIT`, `CompanionMessagePersistenceIT`, `CompanionMessageRetroLoggingIT`,
+    `CompanionMessageSetupPersistenceIT`, `ContextSnapshotOwnerZoneIT`, `ContextualFeedEvaluationIT`,
+    `ContextualFeedKindsIT`, `ContextualFeedPropertiesIT`, `ContextualFeedProviderEvalIT`, `DiagnosisControllerIT`,
+    `DiagnosisExperimentIT`, `DiagnosisGeneratorIT`, `DiagnosisGeneratorMemoryDisabledIT`,
+    `DiagnosisGeneratorMemoryIT`, `ExperimentJobIT`, `ExperimentJobSwitchOffIT`, `ExperimentOutcomeIT`,
+    `ExperimentPersistenceIT`, `ExperimentProposalGeneratorIT`, `ExperimentProposalGeneratorMemoryDisabledIT`,
+    `ExperimentProposalGeneratorMemoryIT`, `FatigueEvidenceCollectorIT`, `FeatureAbandonmentDetectorIT`,
+    `FeedContextAssemblerIT`, `FeedContinuityIT`, `FeedEvidenceAssemblerIT`, `FeedGenerationServiceIT`,
+    `FlatFeedbackDetectorIT`, `GrowthDigestBlockIT`, `HighlightCitationIT`, `HydrationPropertiesIT`,
+    `HydrationShortfallProbeIT`, `InterventionConfigIT`, `InterventionServiceIT`, `InterventionSwitchOffIT`,
+    `LogFreshnessProbeIT`, `MemoirGeneratorIT`, `MemoirGeneratorMemoryDisabledIT`, `MemoirGeneratorMemoryIT`,
+    `MemoirJobIT`, `MemoirJobSwitchOffIT`, `MemoirPersistenceIT`, `OneTimeQuestionServiceIT`,
+    `OneTimeQuestionSwitchOffIT`, `OverloadChallengeGeneratorIT`, `PlanFeasibilityIT`, `PredictionGeneratorIT`,
+    `PredictionGeneratorMemoryDisabledIT`, `PredictionGeneratorMemoryIT`, `PredictionJobIT`,
     `PredictionJobSwitchOffIT`, `PredictionPersistenceIT`, `PredictionValidationIT`, `ProactiveApiAdviceApplyIT`,
     `ProactiveApiChallengeIT`, `ProactiveApiCompanionOffIT`, `ProactiveApiExperimentIT`, `ProactiveApiFeedIT`,
     `ProactiveApiIT`, `ProactiveApiSwitchOffIT`, `ProactiveMemoirArchiveIT`, `ProactiveMemoirArchiveSwitchOffIT`,
-    `QuestionAnswerIT`, `QuestionPropertiesIT`, `ReflectionDigestMorningIT`, `RetroLoggingProbeIT`,
-    `RetroLoggingPropertiesIT`, `SetupCheckJobSwitchOffIT`, `SetupCheckPropertiesIT`, `SetupCheckServiceIT`,
-    `SleepAnchorShiftAdapterIT`, `SleepDiagnosisIT`, `SportSlotSkipAdapterIT`, `WeeklyLessonServiceIT`,
-    `WeeklyReviewContextSourcesIT`, `WeeklyReviewControllerIT`, `WeeklyReviewGeneratorIT`,
-    `WeeklyReviewGeneratorMemoryDisabledIT`, `WeeklyReviewGeneratorMemoryIT`, `WeeklySuggestionGeneratorIT`,
-    `WeeklySuggestionGeneratorMemoryDisabledIT`, `WeeklySuggestionGeneratorMemoryIT`, `WeeklySuggestionJobIT`,
-    `WeeklySuggestionJobSwitchOffIT`, `WeeklySuggestionNameIT`, `WeeklySuggestionPersistenceIT`, `WeightDiagnosisIT`
+    `ProactiveMemoryBlockIT`, `ProactiveMemoryUsePersistenceIT`, `QuestionAnswerIT`, `QuestionPropertiesIT`,
+    `ReflectionDigestMorningIT`, `RetroLoggingProbeIT`, `RetroLoggingPropertiesIT`, `SetupCheckJobSwitchOffIT`,
+    `SetupCheckPropertiesIT`, `SetupCheckServiceIT`, `SleepAnchorShiftAdapterIT`, `SleepDiagnosisIT`,
+    `SportSlotSkipAdapterIT`, `WeeklyLessonServiceIT`, `WeeklyReviewContextSourcesIT`, `WeeklyReviewControllerIT`,
+    `WeeklyReviewGeneratorIT`, `WeeklyReviewGeneratorMemoryDisabledIT`, `WeeklyReviewGeneratorMemoryIT`,
+    `WeeklySuggestionGeneratorIT`, `WeeklySuggestionGeneratorMemoryDisabledIT`, `WeeklySuggestionGeneratorMemoryIT`,
+    `WeeklySuggestionJobIT`, `WeeklySuggestionJobSwitchOffIT`, `WeeklySuggestionNameIT`,
+    `WeeklySuggestionPersistenceIT`, `WeightDiagnosisIT`
   - **populators:** `ActivityPopulator`, `AiConversationPopulator`, `AiMessagePopulator`, `ChallengePopulator`,
     `CheckInPopulator`, `CompanionMessagePopulator`, `CompanionPreferencesPopulator`, `DailySummaryPopulator`,
     `DatabasePopulator`, `DiagnosisPopulator`, `ExperimentPopulator`, `FlagLogPopulator`, `GoalPopulator`,
@@ -1409,7 +1411,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *FE-data + FE-ui* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-25, done) ·
   [docs/features/intention.md](features/intention.md) (updated 2026-09-23, done) ·
   [docs/features/needs.md](features/needs.md) (updated 2026-09-23, done) ·
-  [docs/features/proactive.md](features/proactive.md) (updated 2026-09-26, complete) ·
+  [docs/features/proactive.md](features/proactive.md) (updated 2026-09-27, complete) ·
   [docs/features/ritual.md](features/ritual.md) (updated 2026-09-23, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-09-26, mixed)
 
