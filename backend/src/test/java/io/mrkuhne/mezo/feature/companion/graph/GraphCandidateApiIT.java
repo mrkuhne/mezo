@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.graph;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 import io.mrkuhne.mezo.api.dto.GraphNodeResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
@@ -8,10 +9,13 @@ import io.mrkuhne.mezo.feature.companion.graph.entity.GraphEdgeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphEdgeRepository;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
+import io.mrkuhne.mezo.feature.companion.service.CandidateSnooze;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.GraphPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -248,5 +252,42 @@ class GraphCandidateApiIT extends ApiIntegrationTest {
             Map.of("decision", "accept"), ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
 
         assertHasRequestError(body, "GRAPH_NODE_NOT_FOUND");
+    }
+
+    @Test
+    void testDecideGraphCandidate_shouldHideAndKeepCandidate_whenSnoozed() {
+        UUID owner = ownerId();
+        GraphNodeEntity active = graphPopulator.createNode(owner, GraphNodeEntity.KIND_PATTERN, "Aktív minta");
+        GraphNodeEntity candidate = candidateWithEdgeTo(owner, active, 0.8);
+
+        GraphNodeResponse decided = postForBody("/api/companion/graph/node/" + candidate.getId() + "/decision",
+            Map.of("decision", "snooze"), ownerAuthHeaders(), HttpStatus.OK, GraphNodeResponse.class);
+
+        assertThat(decided.getStatus()).isEqualTo(GraphNodeResponse.StatusEnum.CANDIDATE);
+
+        List<GraphNodeResponse> candidates = getForList(CANDIDATE, ownerAuthHeaders(),
+            HttpStatus.OK, GraphNodeResponse.class);
+        assertThat(candidates).extracting(GraphNodeResponse::getId).doesNotContain(candidate.getId());
+
+        GraphNodeEntity reloaded = nodeRepository.findById(candidate.getId()).orElseThrow();
+        assertThat(reloaded.getStatus()).isEqualTo(GraphNodeEntity.STATUS_CANDIDATE);
+        assertThat(reloaded.isDeleted()).isFalse();
+        assertThat(reloaded.getSnoozedUntil())
+            .isCloseTo(Instant.now().plus(CandidateSnooze.DURATION), within(5, ChronoUnit.SECONDS));
+        assertThat(edgeRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void testListGraphCandidates_shouldReofferNode_whenSnoozeExpired() {
+        UUID owner = ownerId();
+        GraphNodeEntity active = graphPopulator.createNode(owner, GraphNodeEntity.KIND_PATTERN, "Aktív minta");
+        GraphNodeEntity candidate = candidateWithEdgeTo(owner, active, 0.8);
+        candidate.setSnoozedUntil(Instant.now().minus(1, ChronoUnit.MINUTES));
+        nodeRepository.saveAndFlush(candidate);
+
+        List<GraphNodeResponse> candidates = getForList(CANDIDATE, ownerAuthHeaders(),
+            HttpStatus.OK, GraphNodeResponse.class);
+
+        assertThat(candidates).extracting(GraphNodeResponse::getId).contains(candidate.getId());
     }
 }

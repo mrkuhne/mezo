@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -235,8 +236,7 @@ public class GraphService {
 
     @Transactional(readOnly = true)
     public List<GraphNodeEntity> listCandidates(UUID userId) {
-        return nodeRepository.findByCreatedByAndStatusAndDeletedFalseOrderByCreatedAtDesc(
-            userId, GraphNodeEntity.STATUS_CANDIDATE);
+        return nodeRepository.findVisibleByStatus(userId, GraphNodeEntity.STATUS_CANDIDATE, Instant.now());
     }
 
     /** A felhasználó kézi archiválása (mezo-06o0.5): a státusz mellé a SZÁNDÉK is rögzül, és

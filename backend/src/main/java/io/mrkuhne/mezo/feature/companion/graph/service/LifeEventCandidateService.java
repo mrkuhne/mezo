@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphProposedEdge;
 import io.mrkuhne.mezo.feature.companion.graph.mapper.GraphMapper;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
+import io.mrkuhne.mezo.feature.companion.service.CandidateSnooze;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -74,6 +75,11 @@ public class LifeEventCandidateService {
             GraphNodeResponse response = graphMapper.toResponse(node);
             nodeRepository.delete(node);   // @SQLDelete soft delete — no edges were ever written
             return response;
+        }
+        if ("snooze".equals(request.getDecision())) {
+            // „Most ne” (U9b): not a decision — the candidate stays open and returns in 14 days.
+            node.setSnoozedUntil(Instant.now().plus(CandidateSnooze.DURATION));
+            return graphMapper.toResponse(nodeRepository.saveAndFlush(node));
         }
         if (request.getRefinedTitle() != null) {
             node.setTitle(request.getRefinedTitle());

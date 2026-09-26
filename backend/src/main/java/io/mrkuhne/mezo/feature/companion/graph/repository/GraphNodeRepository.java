@@ -19,8 +19,19 @@ public interface GraphNodeRepository extends JpaRepository<GraphNodeEntity, UUID
     Optional<GraphNodeEntity> findByCreatedByAndSourceKindAndSourceIdAndDeletedFalse(
         UUID createdBy, String sourceKind, UUID sourceId);
 
+    /** Kept for {@code LifeEventExtractionService}/{@code QuarterlyReviewService}'s own
+     *  period-scoped dedupe probes — a snoozed candidate must still be seen there so the nightly
+     *  extractor never re-proposes the same day/quarter while the candidate is sleeping. */
     List<GraphNodeEntity> findByCreatedByAndStatusAndDeletedFalseOrderByCreatedAtDesc(
         UUID createdBy, String status);
+
+    /** „Most ne” (U9b, mezo-zpxv7): the candidate inbox's actual visible set — {@code status}
+     *  AND not currently snoozed. The derived query above stays untouched for the dedupe base. */
+    @Query("select n from GraphNodeEntity n where n.createdBy = :userId and n.status = :status"
+            + " and n.deleted = false and (n.snoozedUntil is null or n.snoozedUntil <= :now)"
+            + " order by n.createdAt desc")
+    List<GraphNodeEntity> findVisibleByStatus(@Param("userId") UUID userId, @Param("status") String status,
+        @Param("now") Instant now);
 
     /** W2.2 edge structurer's candidate list — every OTHER active node the new node could link to,
      *  newest first, capped by the caller's {@link Limit} (the prompt idiom: {@code
