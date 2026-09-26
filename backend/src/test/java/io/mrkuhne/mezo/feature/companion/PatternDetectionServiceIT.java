@@ -389,4 +389,108 @@ class PatternDetectionServiceIT extends AbstractIntegrationTest {
         assertThat(after.getLastDetectedAt()).isEqualTo(frozenDetectedAt);
         assertThat(after.getStatus()).isEqualTo(PatternEntity.STATUS_CONFIRMED);
     }
+
+    // ── mezo-a80d0: the catalog pair's own evidence tally ─────────────────────────────────────
+
+    /** Stress 1..5 ↔ quality 3,1,5,1,3 — symmetric around the mean, so r is exactly 0 (LIVE, no link). */
+    private void seedUncorrelatedDays(UUID owner, int days) {
+        int[] quality = {3, 1, 5, 1, 3};
+        for (int i = 0; i < days; i++) {
+            LocalDate day = LocalDate.now().minusDays(1L + i);
+            checkInPopulator.createCheckIn(owner, day, "08:00", 3, (i % 5) + 1, null);
+            sleepLogPopulator.createSleepLog(owner, day, new BigDecimal("7.0"), quality[i % 5]);
+        }
+    }
+
+    /** Stress ↔ quality in lockstep — strong, but the OPPOSITE of the pair's expected negative. */
+    private void seedPositivelyCorrelatedDays(UUID owner, int days) {
+        for (int i = 0; i < days; i++) {
+            LocalDate day = LocalDate.now().minusDays(1L + i);
+            int stress = (i % 5) + 1;
+            checkInPopulator.createCheckIn(owner, day, "08:00", 3, stress, null);
+            sleepLogPopulator.createSleepLog(owner, day, new BigDecimal("7.0"), stress);
+        }
+    }
+
+    private PatternEntity row(UUID owner) {
+        return patternRepository
+                .findByCreatedByAndKindAndPairKeyAndDeletedFalse(owner, PatternEntity.KIND_STATISTICAL, PAIR_KEY)
+                .orElseThrow();
+    }
+
+    @Test
+    void testDetect_shouldTallyAHit_whenLiveReadingIsStrongInTheExpectedDirection() {
+        UUID owner = userPopulator.createUser().getId();
+        seedAntiCorrelatedDays(owner, 10);
+
+        patternDetectionService.detect(owner);
+        patternDetectionService.detect(owner);
+
+        PatternEntity row = row(owner);
+        assertThat(row.getEvidenceHits()).isEqualTo(2); // one tally per LIVE night
+        assertThat(row.getEvidenceMisses()).isZero();
+    }
+
+    @Test
+    void testDetect_shouldTallyAMiss_whenLiveReadingShowsNoRelationship() {
+        UUID owner = userPopulator.createUser().getId();
+        seedUncorrelatedDays(owner, 10);
+
+        patternDetectionService.detect(owner);
+
+        PatternEntity row = row(owner);
+        assertThat(row.getR().doubleValue()).isCloseTo(0.0, org.assertj.core.data.Offset.offset(0.01));
+        assertThat(row.getEvidenceHits()).isZero();
+        assertThat(row.getEvidenceMisses()).isEqualTo(1);
+    }
+
+    @Test
+    void testDetect_shouldTallyAMiss_whenStrongReadingPointsTheWrongWay() {
+        UUID owner = userPopulator.createUser().getId();
+        seedPositivelyCorrelatedDays(owner, 10);
+
+        patternDetectionService.detect(owner);
+
+        PatternEntity row = row(owner);
+        assertThat(row.getR().doubleValue()).isGreaterThan(0.9);
+        assertThat(row.getEvidenceHits()).isZero();
+        assertThat(row.getEvidenceMisses()).isEqualTo(1);
+    }
+
+    @Test
+    void testDetect_shouldKeepTallyingAMonitoredRow() {
+        UUID owner = userPopulator.createUser().getId();
+        seedAntiCorrelatedDays(owner, 10);
+        patternPopulator.statistical(owner, PAIR_KEY, PatternEntity.STATUS_MONITORING);
+
+        patternDetectionService.detect(owner);
+
+        assertThat(row(owner).getEvidenceHits()).isEqualTo(1);
+    }
+
+    @Test
+    void testDetect_shouldNotTally_whenRowConfirmed() {
+        UUID owner = userPopulator.createUser().getId();
+        seedAntiCorrelatedDays(owner, 10);
+        patternPopulator.statistical(owner, PAIR_KEY, PatternEntity.STATUS_CONFIRMED);
+
+        patternDetectionService.detect(owner);
+
+        PatternEntity row = row(owner);
+        assertThat(row.getEvidenceHits()).isZero(); // the user judged it — the tally is frozen too
+        assertThat(row.getEvidenceMisses()).isZero();
+    }
+
+    @Test
+    void testDetect_shouldNotTally_whenGateIsNotLive() {
+        UUID owner = userPopulator.createUser().getId();
+        seedAntiCorrelatedDays(owner, 3); // below min-n: "we could not tell" is not a miss
+        PatternEntity existing = patternPopulator.statistical(owner, PAIR_KEY, PatternEntity.STATUS_PROPOSED);
+
+        patternDetectionService.detect(owner);
+
+        PatternEntity row = patternRepository.findById(existing.getId()).orElseThrow();
+        assertThat(row.getEvidenceHits()).isZero();
+        assertThat(row.getEvidenceMisses()).isZero();
+    }
 }
