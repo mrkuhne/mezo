@@ -19,11 +19,11 @@ for (const viewport of [{ width: 320, height: 700 }, { width: 390, height: 852 }
       await expect(nav).toBeVisible()
       const phone = await page.locator('.phone-screen').boundingBox()
       const before = await nav.boundingBox()
-      // Üveg (bible §7.2, mezo-me75u.1): ONE floating glass bar, 10px off the sides and 12px
-      // off the bottom — fixed, whatever the page scrolls.
-      expect(before!.x).toBeCloseTo(phone!.x + 10, 0)
-      expect(before!.width).toBeCloseTo(phone!.width - 20, 0)
-      expect(before!.y + before!.height).toBeCloseTo(phone!.y + phone!.height - 12, 0)
+      // Docked, not floating (owner 2026-09-26, mezo-jubix — supersedes the mezo-me75u.1 capsule):
+      // ONE glass bar flush on the bottom edge, full width — fixed, whatever the page scrolls.
+      expect(before!.x).toBeCloseTo(phone!.x, 0)
+      expect(before!.width).toBeCloseTo(phone!.width, 0)
+      expect(before!.y + before!.height).toBeCloseTo(phone!.y + phone!.height, 0)
       await expect(nav).toHaveClass(/\bglass\b/)
       const links = nav.getByRole('link')
       await expect(links).toHaveCount(4)
