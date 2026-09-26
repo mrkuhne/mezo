@@ -39,6 +39,7 @@ public class LearnedFactEntity extends OwnedEntity {
     public static final String DECISION_ACCEPT = "accept";
     public static final String DECISION_REJECT = "reject";
     public static final String DECISION_REFINE = "refine";
+    public static final String DECISION_SNOOZE = "snooze";
 
     @Id
     @GeneratedValue

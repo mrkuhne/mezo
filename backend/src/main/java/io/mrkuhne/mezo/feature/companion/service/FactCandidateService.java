@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,7 +39,7 @@ public class FactCandidateService {
 
     public List<FactCandidateResponse> listPending(UUID userId) {
         return learnedFactRepository
-                .findByCreatedByAndUserDecisionIsNullAndDeletedFalseOrderByCreatedAtDesc(userId)
+                .findPendingVisible(userId, Instant.now())
                 .stream()
                 .map(mapper::toFactCandidateResponse)
                 .toList();
@@ -50,6 +51,11 @@ public class FactCandidateService {
         if (candidate.getUserDecision() != null) {
             throw new SystemRuntimeErrorException(
                     SystemMessage.error("COMPANION_CANDIDATE_ALREADY_DECIDED").build());
+        }
+        if (LearnedFactEntity.DECISION_SNOOZE.equals(request.getDecision())) {
+            // „Most ne” (U9b): not a decision — the candidate stays open and returns in 14 days.
+            candidate.setSnoozedUntil(Instant.now().plus(CandidateSnooze.DURATION));
+            return mapper.toFactCandidateResponse(learnedFactRepository.saveAndFlush(candidate));
         }
         switch (request.getDecision()) {
             case LearnedFactEntity.DECISION_ACCEPT ->
@@ -82,6 +88,7 @@ public class FactCandidateService {
         fact.setFactText(factText);
         fact.setCategory(candidate.getCategory());
         fact.setSource(sourceOf(candidate));
+        fact.setOwner(candidate.getOwner());
         return knowledgeFactRepository.saveAndFlush(fact).getId();
     }
 

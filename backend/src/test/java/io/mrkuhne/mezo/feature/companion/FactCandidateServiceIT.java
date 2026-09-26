@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -66,6 +67,41 @@ class FactCandidateServiceIT extends AbstractIntegrationTest {
         assertThat(promoted.isIncludeInPrompt()).isTrue();
         assertThat(promoted.getReinforcementCount()).isZero();
         assertThat(promoted.getCreatedBy()).isEqualTo(userId);
+        assertThat(promoted.getOwner()).isEqualTo(candidate.getOwner());
+    }
+
+    @Test
+    void testDecide_shouldHideCandidateButKeepItUndecided_whenSnoozed() {
+        UUID userId = databasePopulator.populateUser("candidate-snooze@test.local");
+        LearnedFactEntity candidate = learnedFactPopulator.candidate(userId, "Randizom valakivel", "life", null);
+
+        FactCandidateResponse decided = factCandidateService.decide(userId, candidate.getId(), decision("snooze", null));
+
+        assertThat(decided.getUserDecision()).isNull();
+        assertThat(factCandidateService.listPending(userId)).isEmpty();
+        assertThat(knowledgeFactRepository.findAll()).noneMatch(f -> "Randizom valakivel".equals(f.getFactText()));
+    }
+
+    @Test
+    void testListPending_shouldReofferCandidate_whenSnoozeHasExpired() {
+        UUID userId = databasePopulator.populateUser("candidate-snooze-due@test.local");
+        LearnedFactEntity candidate = learnedFactPopulator.candidate(userId, "Hétvégén később eszem", "fuel", null);
+        candidate.setSnoozedUntil(Instant.now().minusSeconds(60));
+
+        assertThat(factCandidateService.listPending(userId)).extracting(FactCandidateResponse::getCandidateText)
+                .containsExactly("Hétvégén később eszem");
+    }
+
+    @Test
+    void testDecide_shouldStillAccept_whenCandidateWasSnoozed() {
+        UUID userId = databasePopulator.populateUser("candidate-snooze-accept@test.local");
+        LearnedFactEntity candidate = learnedFactPopulator.candidate(userId, "Reggel edzek", "train", null);
+        factCandidateService.decide(userId, candidate.getId(), decision("snooze", null));
+
+        FactCandidateResponse accepted = factCandidateService.decide(userId, candidate.getId(), decision("accept", null));
+
+        assertThat(accepted.getUserDecision()).isEqualTo("accept");
+        assertThat(accepted.getPromotedFactId()).isNotNull();
     }
 
     @Test
