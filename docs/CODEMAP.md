@@ -775,24 +775,24 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     PatternDetailPage.tsx, PatternsPage.tsx, PredictionDetailPage.tsx, PredictionsPage.tsx, TeamFeedPage.tsx,
     TeamPage.tsx
   - **sheets:** ConversationActionsSheet.tsx, ConversationPickerSheet.tsx, NodeDetailSheet.tsx
-  - **components:** CategoryHeader.tsx, ChatMessage.tsx, CoachingRuleTile.tsx, DetailHero.tsx, EvidenceLog.tsx,
-    FactCandidateCard.tsx, FactsView.tsx, FeedGuests.tsx, FeedPostCard.tsx, FeedPostHead.tsx, FeedPosterCard.tsx,
-    FeedReplySheet.tsx, FeedTrio.tsx, FeedbackChips.tsx, HowItWorksView.tsx, HypothesisStateCard.tsx, IntroPosts.tsx,
-    KategoriakView.tsx, KindNodeList.tsx, KindTileGrid.tsx, KnowledgeBaseView.tsx, KnowledgeFactRow.tsx,
-    LifeEventAcceptedCard.tsx, LifeEventCandidateCard.tsx, LifecycleSection.tsx, MemoryAuditPanel.tsx,
-    MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx,
-    PatternArtifactDetail.tsx, PatternDecisionCard.tsx, PatternDetailHero.tsx, PatternDomainMark.tsx,
-    PatternEvidenceChart.tsx, PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx,
+  - **components:** AskTeamRow.tsx, AskTeamSheet.tsx, CategoryHeader.tsx, ChatMessage.tsx, CoachingRuleTile.tsx,
+    DetailHero.tsx, EvidenceLog.tsx, FactCandidateCard.tsx, FactsView.tsx, FeedGuests.tsx, FeedPostCard.tsx,
+    FeedPostHead.tsx, FeedPosterCard.tsx, FeedReplySheet.tsx, FeedTrio.tsx, FeedbackChips.tsx, HowItWorksView.tsx,
+    HypothesisStateCard.tsx, IntroPosts.tsx, KategoriakView.tsx, KindNodeList.tsx, KindTileGrid.tsx,
+    KnowledgeBaseView.tsx, KnowledgeFactRow.tsx, LifeEventAcceptedCard.tsx, LifeEventCandidateCard.tsx,
+    LifecycleSection.tsx, MemoryAuditPanel.tsx, MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx,
+    MemorySearchPanel.tsx, PatternArtifactDetail.tsx, PatternDecisionCard.tsx, PatternDetailHero.tsx,
+    PatternDomainMark.tsx, PatternEvidenceChart.tsx, PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx,
     PatternStrengthChart.tsx, ProfileNodeCard.tsx, ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx,
     RememberedChips.tsx, RoladFacts.tsx, RoladInbox.tsx, RoladQuote.tsx, RoladTimeline.tsx, RoomCaseCard.tsx,
     SimilarDayCard.tsx, StoryStrip.tsx, TestPlanTiles.tsx, TokenColumns.tsx, ToolWorkStrip.tsx, VerdictArc.tsx,
     experimentStatus.tsx, riseStyle.ts, useFeedSession.ts, useTeamFeed.ts
-  - **logic:** boopNavigation.ts, chatRefs.ts, coachingCopy.ts, diagnosisCatalog.ts, diagnosisCopy.ts, domains.ts,
-    factCopy.ts, findings.ts, humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternCatalog.ts,
-    patternEvidence.ts, patternHistory.ts, predictionStatus.ts, quickQuestions.ts, roladCopy.ts, team.ts,
-    teamEdition.ts, teamFeed.fixtures.ts, teamFeed.ts, teamRooms.ts, toolDomains.ts, useStickToBottom.ts,
-    useVoiceInput.ts, verdicts.ts
-  - **root:** boop-world.css, useRoladInbox.ts
+  - **logic:** boopNavigation.ts, chatRefs.ts, coachingCopy.ts, diagnosisCatalog.ts, diagnosisCopy.ts,
+    diagnosisTeam.ts, domains.ts, factCopy.ts, findings.ts, humanizeCron.ts, lifecycle.ts, memoirArchive.ts,
+    metricFormat.ts, patternCatalog.ts, patternEvidence.ts, patternHistory.ts, predictionStatus.ts, quickQuestions.ts,
+    roladCopy.ts, team.ts, teamEdition.ts, teamFeed.fixtures.ts, teamFeed.ts, teamRooms.ts, toolDomains.ts,
+    useStickToBottom.ts, useVoiceInput.ts, verdicts.ts
+  - **root:** boop-world.css, kerdezd.css, useRoladInbox.ts
 
 ### intention
 

@@ -21,6 +21,17 @@ describe('TeamPage (mock mode)', () => {
     expect(screen.getByRole('link', { name: /Gépterem/ })).toHaveAttribute('href', '/mezo/karakter/gepterem')
   })
 
+  test('a karakterek és a Gépterem között a „Kérdezd a csapatot” belépő (mezo-u3712)', async () => {
+    renderPage()
+    await screen.findByRole('heading', { name: 'A csapat' })
+    const ask = screen.getByRole('link', { name: /Kérdezd a csapatot/ })
+    expect(ask).toHaveAttribute('href', '/mezo/diagnozis')
+    const links = screen.getAllByRole('link')
+    const at = (el: HTMLElement) => links.indexOf(el)
+    expect(at(ask)).toBeGreaterThan(at(screen.getByRole('link', { name: /Mezo · a csapat/ })))
+    expect(at(ask)).toBeLessThan(at(screen.getByRole('link', { name: /Gépterem/ })))
+  })
+
   test('üres dossziénál a jelvény őszintén „ismerkedik”', async () => {
     renderPage()
     await screen.findByRole('heading', { name: 'A csapat' })

@@ -11,12 +11,14 @@ describe('approved Boop navigation', () => {
   it.each([
     // a post's deep pages stay under the wall — „a kijelölés nem ugrál”
     ['/mezo/patterns/sleep', '/mezo'], ['/mezo/predictions/id', '/mezo'],
-    ['/mezo/diagnozis/id', '/mezo'], ['/mezo/experiments/id', '/mezo'],
+    ['/mezo/experiments/id', '/mezo'],
     ['/mezo/coaching/kartya', '/mezo'], ['/mezo/chat', '/mezo'], ['/mezo/karakter/feed', '/mezo'],
     // the rooms and the machinery behind them stay under the team
     ['/mezo/csapat/szunya', '/mezo/csapat'], ['/mezo/karakter/konzilium', '/mezo/csapat'],
     ['/mezo/karakter/gepterem/futasok', '/mezo/csapat'], ['/mezo/karakter/gepterem/osszes', '/mezo/csapat'],
     ['/mezo/memoria', '/mezo/csapat'],
+    // Kérdezd a csapatot (mezo-u3712): the Diagnózis page is entered from A csapat
+    ['/mezo/diagnozis', '/mezo/csapat'], ['/mezo/diagnozis/id', '/mezo/csapat'],
     ['/mezo/knowledge/node/id', '/mezo/rolad'], ['/mezo/karakter/dimenzio/sleep', '/mezo/rolad'],
     ['/mezo/memoir/2026-09-14', '/mezo/emlekek'], ['/mezo/emlekek/2026-09-14', '/mezo/emlekek'],
   ])('owns %s without losing the active dock tab', (path, expected) => {

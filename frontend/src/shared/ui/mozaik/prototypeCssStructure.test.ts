@@ -1731,7 +1731,7 @@ const U8_BLOCKS: Array<[string, string[]]> = [
   ['coaching', ['.coach-page.mz-page', '.coach-hub .coach-gauge', '.coach-hub .coach-win.glass', '.coach-hub .coach-door',
     '.coach-obs .mzo-daysw', '.coach-obs .mzo-rule.glass', '.coach-page .coach-chip', '.coach-card .coach-dcard.glass',
     '.coach-card .coach-applied']],
-  ['diagnozis', ['.dgx-page.mz-page', '.dgx-page .dgx-ask.glass', '.dgx-page .dgx-rep', '.dgx-cert', '.dgx-szam-card',
+  ['diagnozis', ['.dgx-page.mz-page', '.dgx-cert', '.dgx-szam-card',
     '.dgx-page .dgx-susp.is-lead.glass', '.dgx-probe', '.dgx-actual', '.dgx-empty.uv-empty']],
   ['kiserletek', ['.exl-page .exl-filter.is-on', '.exl-page .exl-card.glass', '.exl-page .exl-card.is-flat[data-status="proposed"]',
     '.exl-page .exl-chip', '.exl-page .exl-dots i.is-done', '.exl-page .exl-new']],

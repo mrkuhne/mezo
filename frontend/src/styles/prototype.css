@@ -27449,11 +27449,11 @@ main.settings-page {
 
 /* ── uveg mezo1 diagnozis (mezo-me75u.8) ── /mezo/diagnozis, /mezo/diagnozis/:id ── */
 /* Reference: docs/design_2.0/prototypes/src/uveg-mezo-body.html `diagnozis` / `diag` (owner OK).
-   Pages: features/insights/pages/DiagnosisListPage.tsx + DiagnosisDetailPage.tsx, root `.dgx-page`.
-   The pages left the shared `.mzp-*` family (Coaching, Experiments, Predictions and Én still wear
-   it) for their own `dgx-*` classes (bible U7 rule 55). Ranking (§3.4): list — the three ask cards
-   are THE glass (lavender), upcoming = dashed, past reports = flat rows; detail — frameless halo
-   hero, Számvetés = one flat card, suspect rank 1 = THE one glass (amber), ranks 2+ flat. */
+   Page: features/insights/pages/DiagnosisDetailPage.tsx, root `.dgx-page`. The list page became
+   „Kérdezd a csapatot" (mezo-u3712) and moved to features/insights/kerdezd.css (`kt-*`); its old
+   ask-card / upcoming / past-row rules were deleted. The page left the shared `.mzp-*` family for
+   its own `dgx-*` classes (bible U7 rule 55). Ranking (§3.4): frameless halo hero, Számvetés = one
+   flat card, suspect rank 1 = THE one glass (amber), ranks 2+ flat. */
 .dgx-page.mz-page { background: transparent; }
 .dgx-page .mz-page-body { padding: 2px 16px 84px; overflow-x: hidden; }
 .dgx-body { display: flex; flex-direction: column; gap: 0; }
@@ -27472,53 +27472,15 @@ main.settings-page {
 .dgx-page .dgx-cta:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
 
 /* quiet centred notes: error copy, quota line, stale footer */
-.dgx-note { margin: 10px 0 0; padding: 0 12px; font-size: 11.5px; line-height: 1.5; text-align: center; color: var(--text-muted); }
-.dgx-note.is-error { color: var(--text-secondary); }
 
 /* ── list: the hero ── */
 .dgx-page .mz-page-hero.uv-hero { --c: var(--dv-lav); }
 
 /* ── list: the three ask cards — THE glass objects (prototype `.ask`) ── */
-.dgx-asks { display: flex; flex-direction: column; }
-.dgx-ask + .dgx-ask { margin-top: 10px; }
-.dgx-page .dgx-ask.glass { --c: var(--dv-lav); display: block; padding: 14px 15px; color: var(--text-primary); }
-.dgx-ask .dgx-eb { display: flex; align-items: center; gap: 6px; color: #CFC4F2; }
-.dgx-ask .dgx-eb .t-ico { width: 18px; height: 18px; filter: none; }
-.dgx-ask-q { margin-top: 5px; font-size: 19px; font-weight: 600; letter-spacing: -0.5px; line-height: 1.25; color: var(--text-primary); }
-.dgx-ask-blurb { margin-top: 4px; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
-.dgx-ask.is-busy .dgx-cta {
-  opacity: 1; color: #E6DDFF; background: rgba(171, 159, 210, 0.18);
-  box-shadow: inset 0 0 0 1px rgba(171, 159, 210, 0.45);
-}
 
 /* ── list: upcoming questions — dashed free tiles (prototype `.soon`) ── */
-.dgx-soon { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.dgx-soon-tile.uv-empty { --c: var(--dv-lav); min-width: 0; padding: 12px; border-radius: 18px; }
-.dgx-soon-tile .qq { font-size: 13px; font-weight: 600; line-height: 1.35; color: var(--text-secondary); overflow-wrap: anywhere; }
-.dgx-soon-tile .qs { margin-top: 6px; font-size: 9.5px; font-weight: 600; letter-spacing: 1.2px; color: var(--text-muted); }
 
 /* ── list: past reports — FLAT rows (prototype `.rep`) ── */
-.dgx-reps { display: flex; flex-direction: column; }
-.dgx-rep + .dgx-rep { margin-top: 8px; }
-.dgx-page .dgx-rep {
-  --c: var(--dv-lav); display: block; width: 100%; padding: 12px 14px; border: 0; border-radius: 18px;
-  text-align: left; cursor: pointer; color: var(--text-primary);
-  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
-}
-.dgx-page .dgx-rep:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
-.dgx-rep-top { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; font-size: 11px; color: var(--text-muted); }
-.dgx-rep-date { margin-left: auto; font-variant-numeric: tabular-nums; }
-.dgx-chev { font-size: 20px; line-height: 1; color: var(--text-muted); }
-.dgx-chip {
-  display: inline-flex; align-items: center; gap: 5px; min-width: 0; padding: 4px 9px 4px 6px; border-radius: 999px;
-  font-size: 11px; font-weight: 600; color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
-  background: color-mix(in srgb, var(--c) 11%, rgba(245, 239, 230, 0.03));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent);
-}
-.dgx-chip .t-ico { width: 16px; height: 16px; filter: none; }
-.dgx-rep-q { display: block; margin-top: 7px; font-size: 15px; font-weight: 600; letter-spacing: -0.2px; line-height: 1.3; }
-.dgx-rep-v { display: block; margin-top: 3px; font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); }
-.dgx-rep-s { display: block; margin-top: 6px; font-size: 11px; line-height: 1.45; color: var(--text-muted); }
 
 /* ── empty / not-found — dashed; loading — a quiet flat placeholder ── */
 .dgx-empty.uv-empty {

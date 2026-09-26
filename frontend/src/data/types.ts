@@ -1185,6 +1185,8 @@ export interface DiagnosisSuspect {
   metricKey: string
   expectedDirection: 'up' | 'down' | 'stable'
   totalDays: number
+  /** The suspect metric's domain (mezo-u3712) — its owner character on the team page. */
+  domain?: MetricDomain
 }
 
 export interface Diagnosis {
