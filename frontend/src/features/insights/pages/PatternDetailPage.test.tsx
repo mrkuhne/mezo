@@ -404,8 +404,8 @@ describe('PatternDetailPage (real mode)', () => {
     expect(screen.getByText('Ígéretes — elég nap van a döntéshez.')).toBeInTheDocument()
     expect(screen.getByText(/Igen, figyeld — de nem Anna miatt/)).toBeInTheDocument()
     // nyers r/p sosem a kártya arcán — csak a becsukott Háttér fold alatt
-    expect(document.querySelector('.pdt-hero')?.textContent).not.toContain('0.31')
-    expect(screen.getByText('0.31').closest('details.pdt-fold')).not.toBeNull()
+    expect(document.querySelector('.pdt-hero')?.textContent).not.toContain('0.52')
+    expect(screen.getByText('0.52').closest('details.pdt-fold')).not.toBeNull()
   })
 
   test('a 404 renders the honest not-found state', async () => {

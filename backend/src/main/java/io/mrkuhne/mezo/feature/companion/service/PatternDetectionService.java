@@ -141,6 +141,7 @@ public class PatternDetectionService {
         pattern.setP(BigDecimal.valueOf(result.p()).setScale(6, RoundingMode.HALF_UP));
         pattern.setConfidence(null); // honest small-n — V3.2's critique fills it for hypotheses
         stampTestPlan(pattern, pair);
+        tallyEvidence(pattern, result);
         pattern.setLastDetectedAt(Instant.now().truncatedTo(ChronoUnit.MICROS)); // timestamptz stores micros — truncate so the persisted row equals the in-memory one (mezo-mfmb)
         patternRepository.saveAndFlush(pattern);
         recordSnapshot(pattern, result);
@@ -170,6 +171,24 @@ public class PatternDetectionService {
                 config.lookbackDays()));
         pattern.setHypothesisKey("pair:" + pair.key());
         pattern.setOrigin(PatternEntity.ORIGIN_PAIR_CATALOG);
+    }
+
+    /**
+     * mezo-a80d0: one hit-or-miss per LIVE night on a still-undecided row — the catalog pair's
+     * own evidence tally, the same bookkeeping {@code HypothesisEvaluationService} keeps for the
+     * reflection rows (which skips {@code statistical} because THIS job owns them). Without it
+     * every catalog row sat at 0/0 forever and the detail hero could never say "nem igazolódik".
+     * A hit is a reading strong enough for the decision inbox (the FE {@code STRONG_SIGNAL} twin,
+     * so the list and the tally never disagree) pointing the plan's expected way. Only reached
+     * past the LIVE gate: "we could not tell" is not a miss.
+     */
+    private void tallyEvidence(PatternEntity pattern, PearsonCorrelation.Result result) {
+        boolean hit = passesInboxGate(result) && pattern.getTestPlan().directionMatches(result.r());
+        if (hit) {
+            pattern.setEvidenceHits(pattern.getEvidenceHits() + 1);
+        } else {
+            pattern.setEvidenceMisses(pattern.getEvidenceMisses() + 1);
+        }
     }
 
     /** S1 (mezo-tk88.1): one history snapshot per LIVE evaluation — the detail chart's raw data.

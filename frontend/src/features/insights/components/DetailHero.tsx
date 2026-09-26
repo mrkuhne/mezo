@@ -145,8 +145,18 @@ export function patternDecisionButtons(onDecide: (verb: 'confirm' | 'monitor' | 
   ]
 }
 
-/** A döntések egysoros magyarázata a gombsor alatt (prototípus `.decnote`). */
-export function DecisionNote() {
+/** A döntések egysoros magyarázata a gombsor alatt (prototípus `.decnote`). `confirmable`
+ *  hamis, ha az adat nem támasztja alá a mintát — ott nincs „Megerősítem", és ezt ki is mondjuk
+ *  (mezo-a80d0). */
+export function DecisionNote({ confirmable = true }: { confirmable?: boolean }) {
+  if (!confirmable) {
+    return (
+      <p className="pdt-decnote">
+        Az adat most nem mutat összefüggést, így nincs mit megerősíteni. <b>Figyeljük</b> — tovább
+        számolom · <b>Elvetem</b> — befagy, többé nem hozom elő.
+      </p>
+    )
+  }
   return (
     <p className="pdt-decnote">
       <b>Megerősítem</b> — beépül a rólad szóló képbe · <b>Figyeljük</b> — tovább számolom, de nem

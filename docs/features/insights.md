@@ -319,6 +319,17 @@ notebook. Rows without a plan are untouched by this branch.
    and a sub-line that compares the two groups (`groupOneDays` vs `groupZeroDays`) or else says
    `{N} napot tudok összevetni`, then either `{minN} napnál mondok többet.` or, once N ≥ minN,
    `— elég ahhoz, hogy dönts.` (a `proposed` pill then reads `DÖNTHETSZ` instead of `GYŰLIK`).
+   **The answer also reads TODAY's result (`mezo-a80d0`).** `currentSupport(pair, plan)` is true
+   only for a live reading that passes the strong-signal bar (`STRONG_SIGNAL`, |r| ≥ 0.3, p ≤ 0.15 —
+   the list's „döntésre vár" bar) **in the plan's expected direction**; `null` when there is no
+   live r/p. While the tally is still short, a `false` support answers `Egyelőre nincs
+   összefüggés.` instead of `Ígéretes — …`. `hypothesisReading` also returns `confirmable`
+   (false on `Nem igazolódik.`, on `Egyelőre nincs összefüggés.`, and on `Vegyes kép` without
+   support): then the pill reads `NINCS JEL` (mute) instead of `DÖNTHETSZ`, the `Megerősítem`
+   button is **not rendered** (only `Figyeljük`/`Elvetem`), and `DecisionNote confirmable={false}`
+   says „nincs mit megerősíteni". Before this, the owner's `late-meal~next-sleep-quality`
+   (r = −0.02, p = 0.955, 14 days) was offered as „Ígéretes — DÖNTHETSZ" with a confirm button,
+   while the list correctly filed it under „nincs kapcsolat".
    **Every day number on the card is `dayCount` = `PatternPairDetail.days.length`** — the very
    points „Az eddigi napok" plots — never the post-proposal monitoring tally, which is 0 on a fresh
    proposal while the chart already shows its days (`mezo-twizx`: „0 nap bizonyíték" above an

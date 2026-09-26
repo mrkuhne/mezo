@@ -543,7 +543,7 @@ const reflectionDetail: PatternPairDetail = {
     metricADomain: 'mind', metricBDomain: 'sleep',
     verdict: 'live', alignedDays: 16, missingDays: null, bottleneckMetricKey: null,
     groupZeroDays: 12, groupOneDays: 4, requiredPerGroup: 3,
-    r: 0.31, n: 16, p: 0.24, status: null,
+    r: 0.52, n: 16, p: 0.04, status: null,
   },
   pattern: patterns.find((p) => p.pairKey === REFLECTION_KEY)!,
   events: [

@@ -10,6 +10,7 @@
 import type { Icon3DName } from '@/shared/ui/clay'
 import { DOMAIN_META } from '@/features/insights/logic/domains'
 import { isStatisticalMechanism, patternHeadline } from '@/features/insights/logic/patternCopy'
+import { isStrongSignal } from '@/features/insights/logic/lifecycle'
 import {
   DayRing, DecisionNote, DecisionRow, DetailHero, StatePill, patternDecisionButtons, type DetailTone,
 } from '@/features/insights/components/DetailHero'
@@ -35,26 +36,59 @@ export function hypothesisContext(pair: PatternMonitorPair, headline: string): s
 }
 
 /**
- * Az EGY mondat, ami kimondja, hol tart a hipotézis. A sorrend számít: a felhasználó döntése
- * (`confirmed`) mindent felülír, utána a terv minimuma (addig egyetlen irány sem állítható),
- * és csak azután beszélhet a találat/nem-találat arány. A `minN` mindig az ELŐRE rögzített
+ * A MAI élő olvasat alátámasztja-e a tervet (mezo-a80d0): az erős-jel küszöbe (ugyanaz, mint a
+ * lista „döntésre vár" kosaráé és a backend találat-szabályáé) a terv ELŐRE rögzített irányában.
+ * `null` = ma nincs olvasat (nem élő pár / nincs r-p) — ilyenkor a kártya nem állít semmit róla.
+ */
+export function currentSupport(pair: PatternMonitorPair, plan: PatternTestPlan): boolean | null {
+  if (pair.verdict !== 'live' || pair.r == null || pair.p == null) return null
+  const pointsTheRightWay = plan.expectedDirection === 'negative' ? pair.r < 0 : pair.r > 0
+  return isStrongSignal(pair.r, pair.p) && pointsTheRightWay
+}
+
+export interface HypothesisReading {
+  /** Az EGY mondat, ami kimondja, hol tart a hipotézis. */
+  answer: string
+  /** Van-e mit megerősíteni. Ha nincs, a „Megerősítem" gomb el sem jelenik: egy nullás
+   *  eredményt tartós tudássá tenni hazugság volna (mezo-a80d0). */
+  confirmable: boolean
+}
+
+/**
+ * Hol tart a hipotézis. A sorrend számít: a felhasználó döntése (`confirmed`) mindent felülír,
+ * utána a terv minimuma (addig egyetlen irány sem állítható), majd a figyelő-mérleg (elég éjszaka
+ * után ez ítél), és ha a mérleg még rövid, a MAI olvasat. A `minN` mindig az ELŐRE rögzített
  * tervből jön — alapértelmezett szám itt hazugság lenne (a terv a falszifikálhatóság horgonya).
  *
  * `dayCount` = a lent kirajzolt „Az eddigi napok" pontjainak száma (a pár összevethető napjai).
  * A terv minimuma ERRE vonatkozik, nem az éjszakai figyelő-mérlegre (`evidenceHits +
- * evidenceMisses`): az egy javasolt sornál még 0, miközben a grafikon már 8 napot mutat
+ * evidenceMisses`): az egy javasolt sornál még 0 lehet, miközben a grafikon már 8 napot mutat
  * (mezo-twizx) — „gyűlik" a 8 kirajzolt nap mellett ellentmondás volna.
+ *
+ * `support` = {@link currentSupport}. Nélküle (mezo-a80d0) egy r≈0 eredmény is „Ígéretes —
+ * elég nap van a döntéshez" volt, mert a kártya csak a napokat és a (katalógus-sornál sosem
+ * vezetett) mérleget nézte, magát az eredményt nem.
  */
-export function hypothesisAnswer(pattern: Pattern, minN: number, dayCount: number): string {
-  if (pattern.status === 'confirmed') return 'Beépült.'
-  if (dayCount < minN) return 'Ígéretes, de még gyűlik.'
+export function hypothesisReading(pattern: Pattern, minN: number, dayCount: number,
+  support: boolean | null = null): HypothesisReading {
+  if (pattern.status === 'confirmed') return { answer: 'Beépült.', confirmable: false }
+  if (dayCount < minN) return { answer: 'Ígéretes, de még gyűlik.', confirmable: support !== false }
   const hits = pattern.evidenceHits
   const misses = pattern.evidenceMisses
-  // Elég nap van, de a figyelő-mérleg még nem ítélhet — a döntés a tiéd.
-  if (hits + misses < minN) return 'Ígéretes — elég nap van a döntéshez.'
-  if (misses > hits) return 'Nem igazolódik.'
-  if (hits >= 3 * misses) return 'Tartja magát.'
-  return 'Vegyes kép — még figyelem.'
+  if (hits + misses >= minN) {
+    if (misses > hits) return { answer: 'Nem igazolódik.', confirmable: false }
+    if (hits >= 3 * misses) return { answer: 'Tartja magát.', confirmable: true }
+    return { answer: 'Vegyes kép — még figyelem.', confirmable: support !== false }
+  }
+  // Elég nap van, de a figyelő-mérleg még nem ítélhet — a mai olvasat beszél.
+  if (support === false) return { answer: 'Egyelőre nincs összefüggés.', confirmable: false }
+  return { answer: 'Ígéretes — elég nap van a döntéshez.', confirmable: true }
+}
+
+/** Visszafelé kompatibilis egymondatos olvasat (a mérleg-tesztek ezt hívják). */
+export function hypothesisAnswer(pattern: Pattern, minN: number, dayCount: number,
+  support: boolean | null = null): string {
+  return hypothesisReading(pattern, minN, dayCount, support).answer
 }
 
 export function HypothesisStateCard({ pattern, pair, dayCount, plan, onDecide }: {
@@ -78,9 +112,14 @@ export function HypothesisStateCard({ pattern, pair, dayCount, plan, onDecide }:
   const decidable = status !== 'confirmed' && status !== 'rejected'
   const headline = patternHeadline(pair.title, pair)
   const context = hypothesisContext(pair, headline)
+  const reading = hypothesisReading(pattern, minN, dayCount, currentSupport(pair, plan))
   const pill = status === 'proposed' && enoughDays
-    ? { label: 'DÖNTHETSZ', tone: 'gold' as const, art: 't-sprout' as const }
+    ? reading.confirmable
+      ? { label: 'DÖNTHETSZ', tone: 'gold' as const, art: 't-sprout' as const }
+      : { label: 'NINCS JEL', tone: 'mute' as const, art: 't-skip' as const }
     : STATE_PILL[status]
+  const buttons = patternDecisionButtons((verb) => onDecide(verb))
+    .filter((button) => reading.confirmable || button.key !== 'confirm')
 
   return (
     <DetailHero tone="lav" art="t-flask" labelledBy="pdt-answer"
@@ -94,7 +133,7 @@ export function HypothesisStateCard({ pattern, pair, dayCount, plan, onDecide }:
           pct={minN > 0 ? dayCount / minN * 100 : 100} unit="NAP" tone={enoughDays ? 'gold' : 'lav'}
           ariaLabel={`${dayCount} nap a terv ${minN} napos minimumából`} />
         <div className="pdt-answer">
-          <h1 id="pdt-answer">{hypothesisAnswer(pattern, minN, dayCount)}</h1>
+          <h1 id="pdt-answer">{reading.answer}</h1>
           <p className="pdt-answer-sub">
             {pair.groupOneDays != null && pair.groupZeroDays != null
               ? <><b>{pair.groupOneDays}</b> ilyen napot tudok összevetni <b>{pair.groupZeroDays}</b> másikkal</>
@@ -116,9 +155,8 @@ export function HypothesisStateCard({ pattern, pair, dayCount, plan, onDecide }:
 
       {decidable && (
         <>
-          <DecisionRow label="Döntés a mintáról"
-            buttons={patternDecisionButtons((verb) => onDecide(verb))} />
-          <DecisionNote />
+          <DecisionRow label="Döntés a mintáról" buttons={buttons} />
+          <DecisionNote confirmable={reading.confirmable} />
         </>
       )}
     </DetailHero>

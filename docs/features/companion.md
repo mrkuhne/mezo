@@ -4201,6 +4201,17 @@ inboxes, two lifecycles and two truths.
 - **`evidence_hits`/`evidence_misses` are `not null default 0`**, so existing rows migrate to an
   honest "no evidence nights yet" rather than to null; `belief`, `test_plan`, `hypothesis_key` and
   `origin` are nullable because a pre-S2 row genuinely has none of them.
+- **Statistical (pair-catalog) rows are tallied by `PatternDetectionService`, not by the
+  reflection evaluator (`mezo-a80d0`).** `HypothesisEvaluationService` still skips
+  `kind = statistical`; the nightly Pearson job's `tallyEvidence` adds one hit or miss per LIVE
+  night on a `proposed`/`monitoring` row — hit = the inbox gate (`mezo.companion.feed.inbox-*`,
+  |r| ≥ 0.3, p ≤ 0.15, the FE `STRONG_SIGNAL` twin) AND `testPlan.directionMatches(r)`. A non-LIVE
+  night is silence, not a miss; `confirmed`/`rejected` rows are never tallied. No `belief`, no
+  status transition — a catalog pair is still judged only by the user. Until this landed every
+  catalog row sat at 0/0 forever, so the laborfüzet hero could never say „Nem igazolódik". The
+  one-shot changeset `202609262300_mezo-a80d0_backfill_statistical_evidence_tally.sql` rebuilt the
+  undecided rows' tallies from their own `snapshot` history (a snapshot exists only for a LIVE
+  night) with the same rule.
 
 ### Backend tables (Reflexió S3 memory policy + seeded conversations, ✅ `mezo-eq85.3`)
 

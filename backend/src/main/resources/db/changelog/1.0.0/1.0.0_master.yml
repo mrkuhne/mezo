@@ -1344,3 +1344,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609261400_mezo-32m82_reset_estimated_kcal.sql
+  - changeSet:
+      id: "1.0.0:202609262300_mezo-a80d0_backfill_statistical_evidence_tally"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609262300_mezo-a80d0_backfill_statistical_evidence_tally.sql

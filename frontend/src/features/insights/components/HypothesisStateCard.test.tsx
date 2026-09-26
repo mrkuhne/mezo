@@ -39,9 +39,10 @@ const pair: PatternMonitorPair = {
   groupZeroDays: 12,
   groupOneDays: 4,
   requiredPerGroup: 3,
-  r: 0.31,
+  // erős, a terv irányába mutató mai olvasat — a „van mit megerősíteni" alapeset (mezo-a80d0)
+  r: 0.52,
   n: 16,
-  p: 0.24,
+  p: 0.04,
   status: null,
 }
 
@@ -164,7 +165,7 @@ test('the belief strip shows the percentage as a flat cell inside the glass hero
   expect(screen.getByText('38%')).toBeInTheDocument()
   expect(screen.getByText('bizonyosság')).toBeInTheDocument()
   expect(screen.getByText(/Te bármikor felülírhatod/)).toBeInTheDocument()
-  expect(container.textContent).not.toContain('0.31')
+  expect(container.textContent).not.toContain('0.52')
 })
 
 test('no belief on the row means no ring at all — never an invented number', () => {
@@ -213,4 +214,51 @@ test.each(['confirmed', 'rejected'] as PatternRowStatus[])('a %s row is a read-o
   render(<HypothesisStateCard pattern={pattern({ status })} pair={pair} dayCount={16} plan={plan} onDecide={vi.fn()} />)
   expect(screen.queryByRole('button', { name: 'Megerősítem' })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Elvetem' })).not.toBeInTheDocument()
+})
+
+// mezo-a80d0 — a tulajdonos esete: késői étkezés ↔ alvás, r=-0.02, p=0.955, 14 nap, javasolt.
+// A kártya régen „Ígéretes — DÖNTHETSZ"-et mondott rá, mert csak a napokat nézte, az eredményt nem.
+describe('a live reading with no relationship (mezo-a80d0)', () => {
+  const nullPair = { ...pair, metricAValueKind: 'number' as const, groupZeroDays: null, groupOneDays: null,
+    r: -0.02, p: 0.955 }
+  const proposed = pattern({ status: 'proposed', evidenceHits: 0, evidenceMisses: 0, belief: undefined })
+
+  test('says there is no relationship, never "promising", and drops the decide pill', () => {
+    render(<HypothesisStateCard pattern={proposed} pair={nullPair} dayCount={14} plan={plan} onDecide={vi.fn()} />)
+    expect(screen.getByText('Egyelőre nincs összefüggés.')).toBeInTheDocument()
+    expect(screen.queryByText(/Ígéretes/)).not.toBeInTheDocument()
+    expect(screen.getByText('NINCS JEL')).toBeInTheDocument()
+    expect(screen.queryByText('DÖNTHETSZ')).not.toBeInTheDocument()
+  })
+
+  test('offers only watch and reject — there is nothing to confirm', () => {
+    const { container } = render(
+      <HypothesisStateCard pattern={proposed} pair={nullPair} dayCount={14} plan={plan} onDecide={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: 'Megerősítem' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Figyeljük' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Elvetem' })).toBeInTheDocument()
+    expect(container.querySelector('.pdt-decnote')?.textContent).toContain('nincs mit megerősíteni')
+  })
+
+  test('a strong reading pointing AGAINST the plan is no support either', () => {
+    render(<HypothesisStateCard pattern={proposed} pair={{ ...nullPair, r: -0.6, p: 0.01 }}
+      dayCount={14} plan={plan} onDecide={vi.fn()} />)
+    expect(screen.getByText('Egyelőre nincs összefüggés.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Megerősítem' })).not.toBeInTheDocument()
+  })
+
+  test('once the nightly tally is long enough, it rules: mostly misses reads "Nem igazolódik"', () => {
+    render(<HypothesisStateCard pattern={pattern({ status: 'proposed', evidenceHits: 0, evidenceMisses: 18 })}
+      pair={nullPair} dayCount={14} plan={plan} onDecide={vi.fn()} />)
+    expect(screen.getByText('Nem igazolódik.')).toBeInTheDocument()
+    expect(screen.getByText('NINCS JEL')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Megerősítem' })).not.toBeInTheDocument()
+  })
+
+  test('without a live reading the card claims nothing about today', () => {
+    render(<HypothesisStateCard pattern={proposed} pair={{ ...nullPair, r: null, p: null }}
+      dayCount={14} plan={plan} onDecide={vi.fn()} />)
+    expect(screen.getByText('Ígéretes — elég nap van a döntéshez.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Megerősítem' })).toBeInTheDocument()
+  })
 })
