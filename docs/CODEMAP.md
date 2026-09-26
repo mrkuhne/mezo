@@ -410,7 +410,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `TurnAnswerer`, `TurnGear`, `TurnGearAnalyzer`, `TurnGearRouter`, `TurnPhase`, `TurnPlan`, `TurnPlanParser`,
     `TurnPlanner`, `TurnProvenance`, `UnavailableReason`, `ValidatedPlan`, `WeekContextRenderer`, `WeeklyScoreService`,
     `WeightByDateSupport`
-  - **controllers→contract:** `CompanionController`→`CompanionApi`,
+  - **controllers→contract:** `CompanionController`→`CompanionApi`, `CompanionEffectsController`→`CompanionEffectsApi`,
     `CompanionFeedbackController`→`CompanionFeedbackApi`, `CompanionFlagTraceController`→`CompanionFlagsApi`,
     `CompanionObservationController`→`CompanionObservationApi`,
     `CompanionPreferencesController`→`CompanionPreferencesApi`, `CompanionStreamController`,
@@ -452,7 +452,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/companion-feedback/companion-feedback.yml` — 3 operations
   - **endpoints:** GET /api/companion/feedback · PUT /api/companion/feedback ·
     DELETE /api/companion/feedback/{artifactKind}/{artifactId}
-- **Contract** `api/feature/companion/companion.yml` — 28 operations
+- **Contract** `api/feature/companion/companion.yml` — 29 operations
   - **endpoints:** GET /api/companion/preferences · PUT /api/companion/preferences ·
     GET /api/companion/personal-context · GET /api/companion/flags/trace · GET /api/companion/conversation ·
     POST /api/companion/conversation · PATCH /api/companion/conversation/{conversationId} ·
@@ -461,7 +461,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     PATCH /api/companion/fact/{factId} · GET /api/companion/fact/candidate ·
     POST /api/companion/fact/candidate/{candidateId}/decision · GET /api/companion/pattern ·
     POST /api/companion/pattern/{patternId}/decision · GET /api/companion/pattern/monitor ·
-    GET /api/companion/pattern/pair/{pairKey} · POST /api/companion/observation/recovery ·
+    GET /api/companion/pattern/pair/{pairKey} · POST /api/companion/observation/recovery · GET /api/companion/effects ·
     GET /api/companion/observation · POST /api/companion/pattern/{patternId}/reply ·
     POST /api/companion/conversation/{conversationId}/message/stream · POST /api/companion/transcribe ·
     GET /api/companion/memory/overview · GET /api/companion/memory/summary · GET /api/companion/memory/similar-days ·
@@ -479,7 +479,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/companion`
   - **hooks (via `@/data/hooks`):** `useAccountSettings`, `useCompanionPreferences`, `usePersonalContext`
   - **modules:** preferencesApi.ts, preferencesHooks.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 268 IT + 90 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 269 IT + 90 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,
@@ -487,8 +487,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ChatServiceGraphBlockIT`, `ChatServiceGraphBlockSwitchOffIT`, `ChatServiceIT`, `ChatServicePipelineIT`,
     `ChatServicePipelineSwitchOffIT`, `ChatStreamAdvisorIT`, `ChatStreamBudgetIT`, `ChatStreamPipelineIT`,
     `ChatStreamPipelineSwitchOffIT`, `ChatStreamServiceGearIT`, `ChatStreamServiceIT`, `CompanionAdvisorChainIT`,
-    `CompanionAdvisorsSwitchOffIT`, `CompanionApiIT`, `CompanionApiSwitchOffIT`, `CompanionFactApiIT`,
-    `CompanionFactCandidateApiIT`, `CompanionFeedbackApiIT`, `CompanionFeedbackSwitchOffIT`,
+    `CompanionAdvisorsSwitchOffIT`, `CompanionApiIT`, `CompanionApiSwitchOffIT`, `CompanionEffectsControllerIT`,
+    `CompanionFactApiIT`, `CompanionFactCandidateApiIT`, `CompanionFeedbackApiIT`, `CompanionFeedbackSwitchOffIT`,
     `CompanionFlagLogPersistenceIT`, `CompanionFlagTraceApiIT`, `CompanionFlagTracePersistenceIT`,
     `CompanionFlagTraceReadQueriesIT`, `CompanionLlmFakeIT`, `CompanionMemoryLlmUsageApiIT`,
     `CompanionMemoryLlmUsageDisabledIT`, `CompanionMemoryOverviewApiIT`, `CompanionMemorySimilarDaysApiIT`,
@@ -940,8 +940,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **modules:** biometricHooks.ts, biometricProfileApi.ts, biometricsApi.ts, dayEvaluation.ts, dayEvaluationApi.ts,
     dayEvaluationHooks.ts, goalApi.ts, goalHooks.ts, goalLinkApi.ts, goalOverviewHooks.ts, goalSettingsHooks.ts,
     goals.ts, liveDay.ts, llmUsageApi.ts, llmUsageHooks.ts, meHooks.ts, meWeek.ts, meWeekApi.ts, meWeekHooks.ts,
-    people.ts, peopleApi.ts, peopleHooks.ts, sleep.ts, sleepGoal.ts, sleepHooks.ts, sleepShot.ts, weekLessons.ts,
-    weekLessonsHooks.ts, weeklyReviewApi.ts, weeklyReviewHooks.ts, weeklyReviewMock.ts, weightHooks.ts
+    people.ts, peopleApi.ts, peopleHooks.ts, personEffectsApi.ts, personEffectsHooks.ts, sleep.ts, sleepGoal.ts,
+    sleepHooks.ts, sleepShot.ts, weekLessons.ts, weekLessonsHooks.ts, weeklyReviewApi.ts, weeklyReviewHooks.ts,
+    weeklyReviewMock.ts, weightHooks.ts
 - **FE ui** `frontend/src/features/me`
   - **pages:** BeallitasokPage.tsx, CelPage.tsx, CelWizardPage.tsx, CelokPage.tsx, ChainPage.tsx, EnHubPage.tsx,
     GoalDietPage.tsx, GoalGuardsPage.tsx, GoalPlannerPage.tsx, GoalPlansPage.tsx, GoalSegmentPage.tsx,
