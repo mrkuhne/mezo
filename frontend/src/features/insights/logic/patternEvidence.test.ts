@@ -1,4 +1,4 @@
-import { groupedEvidence } from '@/features/insights/logic/patternEvidence'
+import { clipLine, evidenceAxis, groupedEvidence } from '@/features/insights/logic/patternEvidence'
 import { formatMetricValue } from '@/features/insights/logic/metricFormat'
 import type { AlignedDay } from '@/data/types'
 
@@ -36,4 +36,17 @@ test('computes both medians once each group has three days', () => {
   ], 3)
   expect(balanced.zero.median).toBe(12)
   expect(balanced.one.median).toBe(20)
+})
+
+test('evidence axes snap to readable steps that contain every value', () => {
+  expect(evidenceAxis([6.25, 6.8, 7.2], 'clock_hour', 5)).toEqual({ min: 6, max: 7.5, ticks: [6, 6.5, 7, 7.5] })
+  expect(evidenceAxis([12, 18, 23.7167], 'clock_hour', 4).ticks).toEqual([12, 18, 24])
+  expect(evidenceAxis([4.3, 5.1, 7], 'number', 5)).toEqual({ min: 4, max: 7, ticks: [4, 5, 6, 7] })
+  expect(evidenceAxis([5, 5], 'number', 5).ticks).toEqual([5, 6])
+})
+
+test('the trend line is clipped to the plot box', () => {
+  const clipped = clipLine({ slope: -1, intercept: 12 }, { min: 6, max: 8 }, { min: 4.5, max: 7 })
+  expect(clipped).toEqual({ x1: 6, y1: 6, x2: 7.5, y2: 4.5 })
+  expect(clipLine({ slope: 0, intercept: 10 }, { min: 0, max: 1 }, { min: 0, max: 5 })).toBeNull()
 })

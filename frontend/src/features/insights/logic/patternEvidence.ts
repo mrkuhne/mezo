@@ -43,24 +43,51 @@ export function groupedEvidence(days: AlignedDay[], requiredPerGroup: number) {
   return { zero: summarize(zero, requiredPerGroup), one: summarize(one, requiredPerGroup), latest }
 }
 
-/** Readable min/mid/max ticks; clock data expands to whole-hour bounds and useful six-hour guides. */
+const CLOCK_STEPS = [0.5, 1, 2, 3, 6]
+
+function niceSteps(span: number): number[] {
+  const magnitude = span > 0 ? 10 ** Math.floor(Math.log10(span)) : 1
+  return [0.1, 0.2, 0.25, 0.5, 1, 2, 2.5, 5, 10].map((factor) => factor * magnitude)
+}
+
+/** Round axis: bounds snap outward to a readable step (whole/half hours for clock data, 1-2-2.5-5
+ *  multiples otherwise) with at most `tickCount` ticks, so points and the trend line never fall
+ *  outside the labelled range and the plot uses the width it has. */
 export function evidenceAxis(values: number[], kind: PatternMetricValueKind, tickCount = 3): EvidenceAxis {
   if (values.length === 0) return { min: 0, max: 1, ticks: [0, 0.5, 1] }
   const observedMin = Math.min(...values)
   const observedMax = Math.max(...values)
-  if (kind === 'clock_hour') {
-    const min = Math.floor(observedMin)
-    const max = Math.ceil(observedMax)
-    const ticks = [max]
-    for (let value = max - 6; value > min && ticks.length < tickCount; value -= 6) ticks.push(value)
-    if (!ticks.includes(min)) ticks.push(min)
-    return { min, max: max === min ? min + 1 : max, ticks }
+  const span = observedMax - observedMin
+  // A single repeated value gets a whole-unit band instead of a hair-thin 0.1 one.
+  const steps = kind === 'clock_hour' ? CLOCK_STEPS : niceSteps(span).filter((step) => span > 0 || step >= 1)
+  const intervals = Math.max(1, tickCount - 1)
+  const fits = (step: number) =>
+    Math.ceil(observedMax / step - 1e-9) - Math.floor(observedMin / step + 1e-9) <= intervals
+  const step = steps.find(fits) ?? steps[steps.length - 1]
+  const min = Math.floor(observedMin / step + 1e-9) * step
+  let max = Math.ceil(observedMax / step - 1e-9) * step
+  if (max === min) max = min + step
+  const ticks: number[] = []
+  for (let value = min; value <= max + 1e-9; value += step) ticks.push(Math.round(value * 1e6) / 1e6)
+  return { min, max, ticks }
+}
+
+/** The part of the line y = slope·x + intercept that stays inside the plot box, or null. */
+export function clipLine(
+  fit: { slope: number; intercept: number },
+  x: { min: number; max: number },
+  y: { min: number; max: number },
+): { x1: number; y1: number; x2: number; y2: number } | null {
+  let lo = x.min
+  let hi = x.max
+  if (fit.slope !== 0) {
+    const atMin = (y.min - fit.intercept) / fit.slope
+    const atMax = (y.max - fit.intercept) / fit.slope
+    lo = Math.max(lo, Math.min(atMin, atMax))
+    hi = Math.min(hi, Math.max(atMin, atMax))
+  } else if (fit.intercept < y.min || fit.intercept > y.max) {
+    return null
   }
-  const min = observedMin
-  const max = observedMax === observedMin ? observedMin + 1 : observedMax
-  return {
-    min,
-    max,
-    ticks: Array.from({ length: tickCount }, (_, index) => min + ((max - min) * index) / (tickCount - 1)),
-  }
+  if (hi <= lo) return null
+  return { x1: lo, y1: fit.slope * lo + fit.intercept, x2: hi, y2: fit.slope * hi + fit.intercept }
 }

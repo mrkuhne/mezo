@@ -24406,6 +24406,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pdt-chart-title strong i { font-style: normal; font-size: 12px; letter-spacing: 0; margin-left: 3px; color: var(--text-secondary); }
 .pdt-chart { display: block; width: 100%; height: auto; margin-top: 4px; overflow: visible; }
 .pdt-chart-grid { stroke: rgba(245, 239, 230, 0.09); stroke-width: 1; stroke-dasharray: 3 4; }
+.pdt-chart-axis { fill: none; stroke: rgba(245, 239, 230, 0.22); stroke-width: 1; }
 .pdt-chart-tick, .pdt-chart-caption { fill: var(--text-muted); font: 9.5px var(--ff-body); }
 .pdt-axis-label { fill: var(--text-secondary); font: 600 10.5px var(--ff-body); }
 .pdt-chart-col { fill: rgba(245, 239, 230, 0.035); stroke: rgba(245, 239, 230, 0.09); stroke-width: 1; }

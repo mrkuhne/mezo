@@ -1,5 +1,5 @@
 import { binaryGroupLabels, formatMetricValue } from '@/features/insights/logic/metricFormat'
-import { evidenceAxis, groupedEvidence } from '@/features/insights/logic/patternEvidence'
+import { clipLine, evidenceAxis, groupedEvidence } from '@/features/insights/logic/patternEvidence'
 import { fitLine } from '@/features/insights/logic/patternHistory'
 import type { AlignedDay, PatternMonitorPair } from '@/data/types'
 
@@ -72,17 +72,24 @@ function BinaryChart({ days, pair }: { days: AlignedDay[]; pair: PatternMonitorP
   )
 }
 
+// A szórásdiagram felül helyet hagy a függőleges tengely feliratának.
+const PLOT_TOP = 34
+
 function NumericChart({ days, pair }: { days: AlignedDay[]; pair: PatternMonitorPair }) {
-  const xAxis = evidenceAxis(days.map((day) => day.a), pair.metricAValueKind)
-  const yAxis = evidenceAxis(days.map((day) => day.b), pair.metricBValueKind)
+  const xAxis = evidenceAxis(days.map((day) => day.a), pair.metricAValueKind, 5)
+  const yAxis = evidenceAxis(days.map((day) => day.b), pair.metricBValueKind, 5)
   const x = (value: number) => scale(value, xAxis.min, xAxis.max, LEFT, RIGHT)
-  const y = (value: number) => scale(value, yAxis.min, yAxis.max, BOTTOM, TOP)
+  const y = (value: number) => scale(value, yAxis.min, yAxis.max, BOTTOM, PLOT_TOP)
   const latest = days.reduce((current, day) => day.date > current.date ? day : current, days[0])
-  const fit = pair.verdict === 'live' ? fitLine(days) : null
+  const fitted = pair.verdict === 'live' ? fitLine(days) : null
+  const fit = fitted && clipLine(fitted, xAxis, yAxis)
 
   return (
     <svg className="pdt-chart" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img"
       aria-label={`${pair.metricALabel} és ${pair.metricBLabel} kapcsolata ${days.length} napon`}>
+      <text className="pdt-axis-label" x={LEFT - 40} y={PLOT_TOP - 16}>
+        ↑ {pair.metricBLabel}
+      </text>
       {yAxis.ticks.map((tick) => (
         <g key={`y-${tick}`}>
           <line className="pdt-chart-grid" x1={LEFT} x2={RIGHT} y1={y(tick)} y2={y(tick)} />
@@ -90,17 +97,22 @@ function NumericChart({ days, pair }: { days: AlignedDay[]; pair: PatternMonitor
         </g>
       ))}
       {xAxis.ticks.map((tick) => (
-        <text key={`x-${tick}`} className="pdt-chart-tick" x={x(tick)} y={BOTTOM + 19} textAnchor="middle">
-          {formatAxisTick(pair.metricAKey, tick)}
-        </text>
+        <g key={`x-${tick}`}>
+          <line className="pdt-chart-grid" x1={x(tick)} x2={x(tick)} y1={PLOT_TOP} y2={BOTTOM} />
+          <text className="pdt-chart-tick" x={x(tick)} y={BOTTOM + 16} textAnchor="middle">
+            {formatAxisTick(pair.metricAKey, tick)}
+          </text>
+        </g>
       ))}
-      {fit && <line aria-label="trendvonal" className="pdt-trend" x1={x(xAxis.min)}
-        y1={y(fit.slope * xAxis.min + fit.intercept)} x2={x(xAxis.max)}
-        y2={y(fit.slope * xAxis.max + fit.intercept)} />}
+      <path className="pdt-chart-axis" d={`M${LEFT} ${PLOT_TOP}V${BOTTOM}H${RIGHT}`} />
+      {fit && <line aria-label="trendvonal" className="pdt-trend"
+        x1={x(fit.x1)} y1={y(fit.y1)} x2={x(fit.x2)} y2={y(fit.y2)} />}
       {days.map((day) => <circle key={day.date} className="pdt-dot-number" cx={x(day.a)} cy={y(day.b)} r="5" />)}
       <circle aria-label={`legutóbbi nap: ${latest.date}`} cx={x(latest.a)} cy={y(latest.b)} r="10"
         fill="none" className="pdt-latest-ring" />
-      <text className="pdt-axis-label" x={(LEFT + RIGHT) / 2} y="226" textAnchor="middle">{pair.metricALabel}</text>
+      <text className="pdt-axis-label" x={(LEFT + RIGHT) / 2} y={BOTTOM + 38} textAnchor="middle">
+        {pair.metricALabel} →
+      </text>
     </svg>
   )
 }
