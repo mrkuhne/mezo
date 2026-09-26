@@ -53,7 +53,7 @@ export function StoryStrip({ today, fresh, waiting }: {
             }}
           >
             <span className={`tf-ring${isNew ? ' is-new' : ''}`}>
-              <i><Boop domain={who.boop} size={48} alive={isNew} /></i>
+              <i><Boop domain={who.boop} size={48} /></i>
             </span>
             {waiting[id] && <span className="tf-dot" aria-hidden="true" />}
             <span className="tf-castname">{who.name}</span>

@@ -13,6 +13,9 @@ interface SheetProps {
   onBackdropClick?: () => void
   /** Extra osztály a hátlapra (pl. a kalauz átlátszóvá teszi spotlight alatt). */
   backdropClassName?: string
+  /** Üveg-lap (U10, mezo-me75u.10): a közös, lebegő üveg-recept (`.sheet.glass.uv-sheet`, prototype.css
+   *  uveg kit). A hívó `--c`-t a saját className-jén vagy stílusán adja; a belső mezők laposak. */
+  glass?: boolean
 }
 
 // How far (px) or how fast (px/ms) a downward drag must reach to dismiss.
@@ -20,7 +23,7 @@ const CLOSE_DISTANCE = 120
 const CLOSE_VELOCITY = 0.5
 const EXIT_MS = 300
 
-export function Sheet({ children, onClose, className, labelledBy, onBackdropClick, backdropClassName }: SheetProps) {
+export function Sheet({ children, onClose, className, labelledBy, onBackdropClick, backdropClassName, glass }: SheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null)
   const backdropRef = useRef<HTMLDivElement>(null)
   const drag = useRef({ active: false, startY: 0, startT: 0, dy: 0, height: 0 })
@@ -137,7 +140,7 @@ export function Sheet({ children, onClose, className, labelledBy, onBackdropClic
     <>
       <div ref={backdropRef} className={cn('sheet-backdrop', backdropClassName)}
         onClick={onBackdropClick ?? requestClose} aria-hidden="true" />
-      <div ref={sheetRef} className={cn('sheet', className)} role="dialog" aria-modal="true" aria-labelledby={labelledBy}>
+      <div ref={sheetRef} className={cn('sheet', glass && 'glass uv-sheet', className)} role="dialog" aria-modal="true" aria-labelledby={labelledBy}>
         <div
           className="sheet-handle-zone"
           onPointerDown={onPointerDown}

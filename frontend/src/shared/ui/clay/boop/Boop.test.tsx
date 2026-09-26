@@ -23,11 +23,16 @@ describe('Boop', () => {
     }
   })
 
-  test('csak az `alive` példány visel mozgás-osztályt', () => {
-    const { container } = render(<><Boop domain="nap" /><Boop domain="mezo" alive /></>)
-    const [quiet, alive] = Array.from(container.querySelectorAll('svg.boop'))
+  // U10 (owner, 2026-09-26): minden Boop él — az alapértelmezés az élő figura, és a
+  // példányok fázisa elcsúszik, hogy egy képernyőnyi Boop ne pislogjon egyszerre.
+  test('alapból minden példány él, és csak a kifejezett `alive={false}` áll', () => {
+    const { container } = render(<><Boop domain="nap" /><Boop domain="mezo" /><Boop domain="fuel" alive={false} /></>)
+    const [a, b, quiet] = Array.from(container.querySelectorAll('svg.boop')) as SVGElement[]
+    expect(a.classList.contains('is-alive')).toBe(true)
+    expect(b.classList.contains('is-alive')).toBe(true)
     expect(quiet.classList.contains('is-alive')).toBe(false)
-    expect(alive.classList.contains('is-alive')).toBe(true)
+    expect(a.style.getPropertyValue('--boop-delay')).toMatch(/^-?[\d.]+s$/)
+    expect(quiet.style.getPropertyValue('--boop-delay')).toBe('')
   })
 
   test('két példány gradiens-azonosítói NEM ütköznek', () => {

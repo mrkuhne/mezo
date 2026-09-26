@@ -10071,10 +10071,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .boop .boop-body { transform-origin: 50% 96%; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .boop.is-alive .boop-eye { animation: boop-blink 6s infinite; }
-  .boop.is-alive .boop-pupil { animation: boop-look 9s infinite; }
-  .boop.is-alive .boop-brow { animation: boop-brow 9s infinite; }
-  .boop.is-alive .boop-body { animation: boop-breathe 4.2s ease-in-out infinite; }
+  /* `--boop-delay`: a példány saját fázisa (Boop.tsx), hogy egy képernyőnyi figura ne egyszerre pislogjon. */
+  .boop.is-alive .boop-eye { animation: boop-blink 6s var(--boop-delay, 0s) infinite; }
+  .boop.is-alive .boop-pupil { animation: boop-look 9s var(--boop-delay, 0s) infinite; }
+  .boop.is-alive .boop-brow { animation: boop-brow 9s var(--boop-delay, 0s) infinite; }
+  .boop.is-alive .boop-body { animation: boop-breathe 4.2s ease-in-out var(--boop-delay, 0s) infinite; }
 }
 @keyframes boop-blink {
   0%, 41%, 45%, 100% { transform: scaleY(1); }
@@ -15189,6 +15190,28 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    with the gap a glyph + space used to give (mezo-z5lov, the last live emoji → sprite). */
 .t-ico.uv-inline { display: inline-block; vertical-align: -0.22em; margin-right: 0.3em; }
 .t-ico.uv-inline.uv-after { margin-right: 0; margin-left: 0.3em; }
+/* the shared floating glass sheet (mezo-me75u.10): `<Sheet glass>` — U2 rule 15 made kit-level.
+   Hue via `--c` on the sheet (caller's className); fields and cells inside are FLAT (rule 5). */
+.sheet.glass.uv-sheet {
+  --c: var(--dv-lav);
+  position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
+  overflow-x: hidden; overflow-y: auto; border: 0; border-radius: 30px;
+  padding: 4px 18px 18px; color: var(--text-primary);
+}
+.sheet.glass.uv-sheet::after { display: none; }
+.sheet.glass.uv-sheet .sheet-handle-zone { margin: 0 -18px 2px; }
+.sheet.glass.uv-sheet .sheet-handle { width: 40px; height: 5px; background: rgba(245, 239, 230, 0.22); }
+.sheet.glass.uv-sheet .card {
+  background: rgba(245, 239, 230, 0.04); border: 0; border-radius: 14px; filter: none;
+  box-shadow: inset 0 0 0 1px var(--divider);
+}
+.sheet.glass.uv-sheet :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select) {
+  border: 0; border-radius: 13px; color: var(--text-primary); color-scheme: dark;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.sheet.glass.uv-sheet :is(input, textarea, select):focus-visible {
+  outline: none; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 70%, transparent), 0 0 14px -4px color-mix(in srgb, var(--c) 60%, transparent);
+}
 /* ── /uveg kit ─────────────────────────────────────────────────────────────── */
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -29080,3 +29103,37 @@ main.settings-page {
    scroll, a light canvas tint joins the blur so the controls stay legible over busy cards. */
 :root[data-theme="dark"] .app-head-bg { transition: background-color 0.3s ease; }
 :root[data-theme="dark"] .app-head.is-cond .app-head-bg { background-color: color-mix(in srgb, var(--canvas) 45%, transparent); }
+/* ────────────────────────────────────────────────────────────────────────────
+   ── uveg reteg unnep (mezo-me75u.10) ──
+   ──────────────────────────────────────────────────────────────────────────── */
+/* ── /uveg reteg unnep ── */
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ── uveg reteg szint (mezo-me75u.10) ──
+   ──────────────────────────────────────────────────────────────────────────── */
+/* ── /uveg reteg szint ── */
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ── uveg reteg ablak (mezo-me75u.10) ──
+   ──────────────────────────────────────────────────────────────────────────── */
+/* ── /uveg reteg ablak ── */
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ── uveg reteg lap (mezo-me75u.10) ──
+   ──────────────────────────────────────────────────────────────────────────── */
+/* ── /uveg reteg lap ── */
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ── uveg reteg kalauz (mezo-me75u.10) ──
+   ──────────────────────────────────────────────────────────────────────────── */
+/* ── /uveg reteg kalauz ── */
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ── uveg reteg belepes (mezo-me75u.10) ──
+   ──────────────────────────────────────────────────────────────────────────── */
+/* ── /uveg reteg belepes ── */
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ── uveg reteg admin (mezo-me75u.10) ──
+   ──────────────────────────────────────────────────────────────────────────── */
+/* ── /uveg reteg admin ── */

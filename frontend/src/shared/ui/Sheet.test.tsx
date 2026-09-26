@@ -47,3 +47,13 @@ test('unmount clears the pending exit timer — no onClose after unmount', () =>
     vi.useRealTimers()
   }
 })
+
+// U10 (mezo-me75u.10): `glass` opts the sheet into the kit's floating glass recipe; without it
+// the caller's own className is untouched (the slices that dressed their sheets keep their scope).
+test('glass opts into the kit glass sheet, and only then', () => {
+  const { unmount } = render(<Sheet glass className="x-own" onClose={() => {}}>a</Sheet>)
+  expect(screen.getByRole('dialog')).toHaveClass('sheet', 'glass', 'uv-sheet', 'x-own')
+  unmount()
+  render(<Sheet className="x-own" onClose={() => {}}>b</Sheet>)
+  expect(screen.getByRole('dialog')).not.toHaveClass('uv-sheet')
+})
