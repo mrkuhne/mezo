@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-09-25
+updated: 2026-09-26
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -328,7 +328,7 @@ The **Mezo hub** (`MezoHubPage`) carries a wide **Karakter** tile — full-width
 The social surface follows the approved Clay/Mozaik v3 prototype: warm author-led feed cards, compact topic rows and a shared glass evidence popup.
 
 - **Karakter** (`/mezo/karakter`, `KarakterHubPage`): populated dossiers open the feed. An empty dossier (`isDossierEmpty`) retains bootstrap intro/progress/reveal; its CTA opens the first council. Feature-off remains a quiet degraded card.
-- **Rólad** (`/mezo/karakter/dimenziok`, `DimensionsPage`): all current CORE/META/CHAPTER dimensions as compact topic rows;
+- **Dimenziók** (`/mezo/karakter/dimenziok`, `DimensionsPage`) — **label clash note (U9b `mezo-zpxv7`, 2026-09-26):** this page's own on-screen label is „Dimenziók”, not „Rólad” — the real `/mezo/rolad` (`BoopAboutPage`, [`insights.md`](insights.md) §2.0b) is the dock's Rólad page, the team's common picture + decision inbox; `DimensionsPage` sits one door behind it („A csapat képe rólad, dimenziónként →”), no longer embedded directly. All current CORE/META/CHAPTER dimensions as compact topic rows;
   each opens its own dimension page
   (`/me/karakter/dimenzio/:key`, `DimensionPage`) — a tinted hero (persona orb + maturity
   count-up, the `self-audit` dimension's subtitle reading "a társ önvizsgálata · Szkeptikus"), the
