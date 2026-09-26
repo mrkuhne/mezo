@@ -99,10 +99,14 @@ export function useFuelTimeline(date: string = localDateString()) {
   //     and is the per-block preview list of the energy sheet.
   //   The movement that actually HAPPENED no longer feeds any FE number: the served target
   //     already credits it (planned share in the weekly base, unplanned as `extra` — mezo-32m82).
-  // `date` (mezo-zj6vo): a past/pinned Fuel day plans its meal windows around ITS OWN training,
-  // not always-today's — the owner-visible bug where a past Tuesday showed Friday's gym session.
-  const plannedBlocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, sportSlotSkips, [], date)
-  const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, sportSlotSkips, sport.sessions ?? [], date)
+  // `blockDate` (mezo-zj6vo): a past/pinned Fuel day plans its meal windows around ITS OWN
+  // training, not always-today's — the owner-visible bug where a past Tuesday showed Friday's
+  // gym session. Only a NON-today date switches `deriveBlocks` onto the date-matched path;
+  // today keeps the `today`/`s.today` flag path (`undefined`) so mock mode's pinned demo "today"
+  // and its deterministic tests stay exactly as they were.
+  const blockDate = date === localDateString() ? undefined : date
+  const plannedBlocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, sportSlotSkips, [], blockDate)
+  const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, sportSlotSkips, sport.sessions ?? [], blockDate)
 
   // Day-type template (mezo-7102): today's REAL blocks resolve one of the three canonical day
   // types, which picks the matching cached template (absent → null, buildDayPlan's today-unchanged
