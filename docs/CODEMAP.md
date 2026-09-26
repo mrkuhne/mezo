@@ -713,8 +713,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `TrainGoalRecomputeAdapter`
   - **controllers→contract:** `GoalController`→`GoalApi`
   - **mappers:** `GoalMapper`, `GoalPlanLinkMapper`, `GoalSuggestionMapper`
-  - **other:** `ActivityModelMigrationRunner`, `DailyIntakePort`, `ExcludedIntakeDayJson`, `GoalEngineProperties`,
-    `GoalPrescriptionJson`, `GoalReevaluateRunner`, `GoalSeedData`, `GoalSegmentOverrideJson`,
+  - **other:** `ActivityModelMigrationRunner`, `DailyIntakePort`, `ExcludedIntakeDayJson`, `ExpenditureRolloutRunner`,
+    `GoalEngineProperties`, `GoalPrescriptionJson`, `GoalReevaluateRunner`, `GoalSeedData`, `GoalSegmentOverrideJson`,
     `GoalSuggestionPayloadJson`, `IntakeAdherencePort`, `SleepAdequacyPort`, `TdeeBootstrapJson`
 - **Contract** `api/feature/goal/goal.yml` — 17 operations
   - **endpoints:** GET /api/goals · POST /api/goals · POST /api/goals/feasibility-preview · GET /api/goals/{id} ·
@@ -723,13 +723,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/goals/{id}/plans · DELETE /api/goals/{id}/plans/{linkId} · GET /api/goals/{id}/suggestions ·
     GET /api/goals/{id}/suggestions/{suggestionId}/preview · POST /api/goals/{id}/suggestions/{suggestionId}/accept ·
     POST /api/goals/{id}/suggestions/{suggestionId}/dismiss
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 21 IT + 12 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 22 IT + 12 unit
   - **ITs:** `ActivityModelMigrationRunnerIT`, `AdaptiveReviewServiceIT`, `ExpenditureEstimateRepositoryIT`,
-    `ExpenditureLearningServiceIT`, `GoalContractIT`, `GoalEnginePropertiesIT`, `GoalEngineRecomputeIT`,
-    `GoalEvaluationServiceIT`, `GoalFeasibilityServiceIT`, `GoalOverviewApiIT`, `GoalPlanLinkServiceIT`,
-    `GoalProjectionServiceIT`, `GoalReevaluateRunnerIT`, `GoalServiceIT`, `GoalSuggestionNotificationIT`,
-    `GoalSuggestionPreviewApiIT`, `GoalSuggestionServiceIT`, `GoalSuggestionTriggerIT`, `GoalTimelineContractIT`,
-    `GoalTimelineServiceIT`, `GuardEvaluationServiceIT`
+    `ExpenditureLearningServiceIT`, `ExpenditureRolloutRunnerIT`, `GoalContractIT`, `GoalEnginePropertiesIT`,
+    `GoalEngineRecomputeIT`, `GoalEvaluationServiceIT`, `GoalFeasibilityServiceIT`, `GoalOverviewApiIT`,
+    `GoalPlanLinkServiceIT`, `GoalProjectionServiceIT`, `GoalReevaluateRunnerIT`, `GoalServiceIT`,
+    `GoalSuggestionNotificationIT`, `GoalSuggestionPreviewApiIT`, `GoalSuggestionServiceIT`, `GoalSuggestionTriggerIT`,
+    `GoalTimelineContractIT`, `GoalTimelineServiceIT`, `GuardEvaluationServiceIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`,
     `GoalSuggestionPopulator`, `MealPopulator`, `RunningPopulator`, `TrainPopulator`, `UserPopulator`,
     `WeightLogPopulator`
