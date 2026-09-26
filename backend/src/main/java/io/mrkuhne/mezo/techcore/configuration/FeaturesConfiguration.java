@@ -52,6 +52,12 @@ public class FeaturesConfiguration {
      *  not exist. */
     public static final String TEAM_CHAT_EXPIRY_JOB_SWITCH = "mezo.techcore.cron.team-chat-expiry-job.enabled";
 
+    /** Csapatfal érettség-görbe (mezo-a9bo7.11) — nightly per-dimension maturity snapshot
+     *  (schedule: mezo.character.maturity.cron). Off ⇒ the CharacterMaturityJob bean does not exist;
+     *  the history read keeps working (it needs only CHARACTER_SWITCH). */
+    public static final String CHARACTER_MATURITY_JOB_SWITCH =
+            "mezo.techcore.cron.character-maturity-job.enabled";
+
     /** Karakter weekly konzílium pass (mezo-1gim.5) — the Sunday-evening cron (spec §6). */
     public static final String CHARACTER_CONFERENCE_JOB_SWITCH =
             "mezo.techcore.cron.character-conference-job.enabled";
