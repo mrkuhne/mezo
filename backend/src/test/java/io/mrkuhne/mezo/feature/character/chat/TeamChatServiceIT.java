@@ -19,6 +19,7 @@ import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaisedEvent;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagTraceCopy;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
+import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.proactive.entity.AdviceActionKey;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.FlagLogPopulator;
@@ -38,7 +39,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * Csapatfal Act III Task 5 (mezo-a9bo7.21): the team chat engine with the E1 template voice —
+ * Csapatfal Act III Task 5 (mezo-a9bo7.21) + Task 9 (mezo-a9bo7.22): the team chat engine, voiced
+ * through the fake LLM (owner, cross-talk guest, Szkeptikus on a payload gap) —
  * a raise opens an ügy owned by the rule's character, a clear resolves it, 7 days open expires
  * it, a reply never resolves, and an offered action is applied exactly once. No class-level
  * {@code @Transactional}: case (a) needs the raise to really commit so the AFTER_COMMIT listener
@@ -105,10 +107,12 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
         TeamChatLineEntity line = linesOf(owner).getFirst();
         assertThat(line.getKind()).isEqualTo("OPEN");
         assertThat(line.getCharacter()).isEqualTo("szunya");
-        assertThat(line.getBody()).isEqualTo(sleepDebtLibraryText());
-        assertThat(line.getVoiced()).isFalse();
-        assertThat(line.getThreadId()).isEqualTo(opened.getFirst().getId());
+        // E2: the fake voices the line from the first fact — guard-passing, so voiced=true.
         assertThat(line.getFacts().facts()).isNotEmpty();
+        assertThat(line.getBody()).isEqualTo(FakeCompanionLlm.teamChatOwnerBody(line.getFacts().facts().getFirst()))
+                .isNotEqualTo(sleepDebtLibraryText());
+        assertThat(line.getVoiced()).isTrue();
+        assertThat(line.getThreadId()).isEqualTo(opened.getFirst().getId());
     }
 
     // (b) a second raise while the ügy is open changes nothing.
@@ -138,13 +142,72 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
         assertThat(resolved).hasValueSatisfying(l -> {
             assertThat(l.getKind()).isEqualTo("RESOLVE");
             assertThat(l.getCharacter()).isEqualTo("szunya");
-            assertThat(l.getBody()).isEqualTo(FlagTraceCopy.clearText(evidence));
+            assertThat(l.getBody()).isEqualTo(
+                    FakeCompanionLlm.teamChatOwnerBody(FlagTraceCopy.clearFacts(evidence).getFirst()));
+            assertThat(l.getVoiced()).isTrue();
             assertThat(l.getFacts().facts()).isEqualTo(FlagTraceCopy.clearFacts(evidence));
             assertThat(l.getThreadId()).isEqualTo(thread.getId());
         });
         TeamChatThreadEntity reread = threads.findById(thread.getId()).orElseThrow();
         assertThat(reread.getStatus()).isEqualTo("RESOLVED");
         assertThat(reread.getClosedAt()).isNotNull();
+    }
+
+    private void raiseLoadFuelLog(UUID owner, int kcalLoggedDays) {
+        flagLogPopulator.raise(owner, FlagKey.LOAD_FUEL_MISMATCH, FlagKey.SOURCE_WRITE,
+                FlagPayloadEnvelope.loadFuelMismatch(new FlagPayloadEnvelope.LoadFuelMismatch(
+                        7, 610.0, 500.0, 1800.0, 2600.0, 0.69, 0.8, kcalLoggedDays, 6.8, 6.5, 7, 4, "kcal", null)));
+    }
+
+    private List<TeamChatLineEntity> linesOf(TeamChatThreadEntity thread) {
+        return lines.findByThreadIdAndDeletedFalse(thread.getId()).stream()
+                .sorted(java.util.Comparator.comparing(TeamChatLineEntity::getKind))
+                .toList();
+    }
+
+    // (c'') E2 cross-talk: a guest rule opens with the owner's voiced line AND the guest's line.
+    @Test
+    void open_guestRule_writesAVoicedOpenLineAndAGuestLine() {
+        UUID owner = owner();
+        raiseLoadFuelLog(owner, 7);
+
+        TeamChatThreadEntity thread = service.open(owner, FlagKey.LOAD_FUEL_MISMATCH, Instant.now()).orElseThrow();
+
+        assertThat(thread.getOwnerCharacter()).isEqualTo("mocor");
+        assertThat(thread.getGuestCharacter()).isEqualTo("falat");
+        List<TeamChatLineEntity> written = linesOf(thread);
+        assertThat(written).extracting(TeamChatLineEntity::getKind).containsExactly("GUEST", "OPEN");
+        TeamChatLineEntity guest = written.get(0);
+        TeamChatLineEntity open = written.get(1);
+        assertThat(open.getCharacter()).isEqualTo("mocor");
+        assertThat(open.getVoiced()).isTrue();
+        assertThat(open.getBody()).isEqualTo(FakeCompanionLlm.teamChatOwnerBody(open.getFacts().facts().getFirst()));
+        assertThat(guest.getCharacter()).isEqualTo("falat");
+        assertThat(guest.getBody()).isEqualTo(FakeCompanionLlm.TEAM_CHAT_GUEST_BODY);
+        assertThat(guest.getVoiced()).isTrue();
+    }
+
+    // (c''') a coverage gap in the frozen payload brings the Szkeptikus — on the open only.
+    @Test
+    void open_withAPayloadGap_addsASkepticLine_andTheResolveCarriesOnlyTheGuest() {
+        UUID owner = owner();
+        raiseLoadFuelLog(owner, 5);
+
+        TeamChatThreadEntity thread = service.open(owner, FlagKey.LOAD_FUEL_MISMATCH, Instant.now()).orElseThrow();
+
+        List<TeamChatLineEntity> opened = linesOf(thread);
+        assertThat(opened).extracting(TeamChatLineEntity::getKind).containsExactly("GUEST", "OPEN", "SKEPTIC");
+        TeamChatLineEntity skeptic = opened.get(2);
+        assertThat(skeptic.getCharacter()).isEqualTo("szkeptikus");
+        assertThat(skeptic.getBody()).isEqualTo(FakeCompanionLlm.TEAM_CHAT_SKEPTIC_BODY);
+        assertThat(skeptic.getFacts().facts())
+                .contains("Hiányzó adat: az utolsó 7 napból 2 napon nincs rögzített kalória");
+
+        service.resolve(owner, FlagKey.LOAD_FUEL_MISMATCH,
+                new FlagVerdict.ClearEvidence("load_avg", 420.0, 500.0, null), Instant.now());
+
+        assertThat(linesOf(thread)).extracting(TeamChatLineEntity::getKind)
+                .containsExactly("GUEST", "GUEST", "OPEN", "RESOLVE", "SKEPTIC");
     }
 
     // (c') the clear path through the event too, to cover the listener's second method.

@@ -154,6 +154,24 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
             @Param("excluded") CallStatus excluded);
 
     /**
+     * ONE user's priced spend on ONE {@code feature} since {@code since} (mezo-a9bo7.22) — the
+     * team chat monthly USD cap's primitive: unlike {@link #sumCostSince}, which totals every
+     * feature toward the account-wide ceiling, this scopes to a single call-site slug (here
+     * {@code team_chat}) so one feature's spend cannot borrow another's headroom. Coalesced to
+     * zero for the same reason as {@link #sumCostSince}: a cap has to decide on every call, and an
+     * unpriced or empty window must read as "nothing spent", not "unknown". ERROR rows are NOT
+     * excluded here (unlike {@code sumCostSince}) because they carry no cost to begin with
+     * ({@code costUsd} is null on every ERROR row) — the coalesce already zeroes them out.
+     */
+    @Query("""
+        select coalesce(sum(l.costUsd), 0)
+        from LlmLogEntity l
+        where l.createdBy = :owner and l.feature = :feature and l.createdAt >= :since
+        """)
+    BigDecimal costForOwnerFeatureSince(@Param("owner") UUID owner, @Param("feature") String feature,
+            @Param("since") Instant since);
+
+    /**
      * User x feature cost since {@code since}, excluding failed calls (admin cost matrix,
      * mezo-d5iy.6). A null {@code createdBy} is real cost (cron/stream traffic) and becomes its
      * own row — the "Háttér" bucket the service renders as a synthetic user with a null id.

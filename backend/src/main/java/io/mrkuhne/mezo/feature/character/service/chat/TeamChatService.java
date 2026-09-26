@@ -23,6 +23,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -36,9 +37,11 @@ import org.springframework.transaction.annotation.Transactional;
  * resolves it, seven days open expires it. The chat speaks ONLY on a teendő and its resolution —
  * nothing else in this class writes a character line.
  *
- * <p><b>E1 voice = template.</b> {@link #voice} returns the honest template text (the library
- * {@code textHu} on open, the {@link FlagTraceCopy} sentence on resolve) with {@code voiced=false};
- * E2 replaces that one seam with the guarded LLM writer.
+ * <p><b>Voice:</b> {@link #voice} delegates to the guarded {@link TeamChatVoiceWriter} (E2, mezo-a9bo7.22):
+ * one LLM call writes the owner's line, the cross-talk guest's line and — only on an open whose
+ * frozen payload shows a coverage gap — a Szkeptikus line. Any failure falls back to the honest
+ * template text (the library {@code textHu} on open, the {@link FlagTraceCopy} sentence on resolve)
+ * with {@code voiced=false} and no company.
  *
  * <p><b>Safety cap:</b> at most {@code daily-line-cap} character lines per user per local day
  * (all kinds). At the cap {@link #open} writes nothing and warns; {@link #resolve} still closes
@@ -72,12 +75,7 @@ public class TeamChatService {
     private final InterventionService interventionService;
     private final AdviceActionCatalog actionCatalog;
     private final AdviceApplyService adviceApplyService;
-
-    /** What {@link #voice} hands back: the owner's line, whether an LLM wrote it, and the optional
-     *  guest / skeptic lines (always empty in E1). */
-    record TeamChatLines(String ownerBody, boolean voiced, Optional<String> guestBody,
-            Optional<String> skepticBody) {
-    }
+    private final TeamChatVoiceWriter voiceWriter;
 
     /** A raise opens an ügy — a no-op when the rule has no owner (e.g. {@code all_healthy}), an ügy
      *  for it is already open, the day's line cap is reached, or the library has no eligible entry. */
@@ -115,15 +113,16 @@ public class TeamChatService {
                 .toList()));
         TeamChatThreadEntity thread = threads.saveAndFlush(draft);
 
-        TeamChatLines voiced = voice(thread, KIND_OPEN, picked.facts(), picked.textHu());
-        writeLine(thread, KIND_OPEN, thread.getOwnerCharacter(), voiced.ownerBody(), voiced.voiced(),
-                picked.facts(), at);
-        if (thread.getGuestCharacter() != null) {
-            voiced.guestBody().ifPresent(body -> writeOptionalLine(thread, KIND_GUEST,
-                    thread.getGuestCharacter(), body, voiced.voiced(), picked.facts(), at));
-        }
+        // The Szkeptikus speaks only on an honest coverage gap in the raise's own frozen payload;
+        // the gap sentence joins the facts so the guard lets its numbers through.
+        Optional<String> gap = TeamChatVoiceWriter.skepticGap(flagKey, picked.payload());
+        List<String> facts = gap.map(g -> Stream.concat(picked.facts().stream(), Stream.of(g)).toList())
+                .orElse(picked.facts());
+        TeamChatLines voiced = voice(thread, KIND_OPEN, facts, picked.textHu(), gap.isPresent());
+        writeLine(thread, KIND_OPEN, thread.getOwnerCharacter(), voiced.ownerBody(), voiced.voiced(), facts, at);
+        writeGuestLine(thread, voiced, facts, at);
         voiced.skepticBody().ifPresent(body -> writeOptionalLine(thread, KIND_SKEPTIC,
-                TeamCharacter.SZKEPTIKUS.key(), body, voiced.voiced(), picked.facts(), at));
+                TeamCharacter.SZKEPTIKUS.key(), body, voiced.voiced(), facts, at));
         log.info("Team chat ügy {} opened for user {} flag {} by {}", thread.getId(), userId, flagKey,
                 thread.getOwnerCharacter());
         return Optional.of(thread);
@@ -149,9 +148,11 @@ public class TeamChatService {
         }
 
         List<String> facts = FlagTraceCopy.clearFacts(evidence);
-        TeamChatLines voiced = voice(thread, KIND_RESOLVE, facts, FlagTraceCopy.clearText(evidence));
+        // Never a Szkeptikus on a resolution (spec §5.4); a guest only when the ügy had one.
+        TeamChatLines voiced = voice(thread, KIND_RESOLVE, facts, FlagTraceCopy.clearText(evidence), false);
         TeamChatLineEntity line = writeLine(thread, KIND_RESOLVE, thread.getOwnerCharacter(),
                 voiced.ownerBody(), voiced.voiced(), facts, at);
+        writeGuestLine(thread, voiced, facts, at);
         log.info("Team chat ügy {} resolved for user {} flag {}", thread.getId(), userId, flagKey);
         return Optional.of(line);
     }
@@ -212,10 +213,18 @@ public class TeamChatService {
         return saved;
     }
 
-    /** The voice seam: E1 returns the template unchanged ({@code voiced=false}, no guest, no
-     *  skeptic); E2 swaps the body for the guarded LLM writer, falling back to this. */
-    TeamChatLines voice(TeamChatThreadEntity thread, String kind, List<String> facts, String templateText) {
-        return new TeamChatLines(templateText, false, Optional.empty(), Optional.empty());
+    /** The voice seam — the guarded LLM writer, which falls back to the template itself. */
+    TeamChatLines voice(TeamChatThreadEntity thread, String kind, List<String> facts, String templateText,
+            boolean skepticEligible) {
+        return voiceWriter.write(thread.getCreatedBy(), thread, kind, facts, templateText, skepticEligible);
+    }
+
+    /** The cross-talk guest's line — only on an ügy that has a guest, only when one was voiced. */
+    private void writeGuestLine(TeamChatThreadEntity thread, TeamChatLines voiced, List<String> facts, Instant at) {
+        if (thread.getGuestCharacter() != null) {
+            voiced.guestBody().ifPresent(body -> writeOptionalLine(thread, KIND_GUEST,
+                    thread.getGuestCharacter(), body, voiced.voiced(), facts, at));
+        }
     }
 
     private boolean capReached(UUID userId, Instant at) {

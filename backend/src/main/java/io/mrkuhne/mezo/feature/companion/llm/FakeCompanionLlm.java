@@ -330,6 +330,34 @@ public class FakeCompanionLlm implements CompanionLlm {
         return recordText.replaceAll("[.!?…]+$", "") + ". Ez egy második mondat.";
     }
 
+    /** Mirror of TeamChatVoiceWriter.MARKER (feature/character) — LITERAL, cycle rule (see
+     *  {@link #OBSERVATION_MARKER_MIRROR}). Drift is caught by TeamChatVoiceWriterTest's equality
+     *  assertion against the real constant. */
+    public static final String TEAM_CHAT_MARKER_MIRROR = "CSAPATFAL-ELO-BESZELGETES";
+
+    /** The unscripted team chat guest line: one sentence, no number, no emoji — it passes
+     *  {@code EditionVoiceGuard.checkGuest} for every character. */
+    public static final String TEAM_CHAT_GUEST_BODY = "Én is figyelek erre a saját területemen.";
+
+    /** The unscripted Szkeptikus line: one dry sentence, no number, no emoji. */
+    public static final String TEAM_CHAT_SKEPTIC_BODY = "Ebben az adatban hiány van, óvatosan kezelném.";
+
+    /** Makes the team chat answer unparseable JSON — plant it in a fact or the teendő text. */
+    public static final String TEAM_CHAT_MALFORMED = "[fake-team-chat-malformed]";
+
+    /**
+     * The unscripted team chat owner line: the event's FIRST fact (its trailing punctuation dropped)
+     * plus a fixed second sentence — two sentences whose every number comes from the facts, so it
+     * passes {@code EditionVoiceGuard.check}. No fact → two fixed number-free sentences. Public so
+     * an IT can state the expected body without re-deriving the rule.
+     */
+    public static String teamChatOwnerBody(String firstFact) {
+        if (firstFact == null || firstFact.isBlank()) {
+            return "Ezt most együtt rendezzük. Nézzük meg, mi segít a legjobban.";
+        }
+        return firstFact.strip().replaceAll("[.!?…]+$", "") + ". Nézzük meg, mi segít a legjobban.";
+    }
+
     /** Scripted scrape (mezo-8vum): {@code [fake-scrape:{json}]} payload is returned verbatim. */
     public static final Pattern SCRAPE_SENTINEL =
             Pattern.compile("\\[fake-scrape:(\\{.*?})]", Pattern.DOTALL);
@@ -787,6 +815,9 @@ public class FakeCompanionLlm implements CompanionLlm {
         }
         if (systemPrompt.startsWith(EDITION_MARKER_MIRROR)) {
             return editionAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith(TEAM_CHAT_MARKER_MIRROR)) {
+            return teamChatAnswer(userMessage);
         }
         if (systemPrompt.startsWith(LlmMemoryQueryRewriter.REWRITE_MARKER)) {
             lastMemoryRewriteHistory = List.copyOf(history);
@@ -1325,6 +1356,40 @@ public class FakeCompanionLlm implements CompanionLlm {
             sb.append('}');
         }
         return sb.append(']').toString();
+    }
+
+    /**
+     * The team chat's deterministic voice (csapatfal Act III, mezo-a9bo7.22): reads the prompt's
+     * {@code tények:} block back ({@code - } lines) for the owner line, answers a guest line only
+     * when a {@code vendég:} line asks for one and a Szkeptikus line only when a {@code szkeptikus:}
+     * line does.
+     */
+    private static String teamChatAnswer(String userMessage) {
+        if (userMessage.contains(TEAM_CHAT_MALFORMED)) {
+            return "not-json";
+        }
+        String firstFact = null;
+        boolean inFacts = false;
+        boolean guest = false;
+        boolean skeptic = false;
+        for (String line : userMessage.split("\n", -1)) {
+            if (line.equals("tények:")) {
+                inFacts = true;
+                continue;
+            }
+            if (inFacts && line.startsWith("- ")) {
+                if (firstFact == null) {
+                    firstFact = line.substring(2);
+                }
+                continue;
+            }
+            inFacts = false;
+            guest |= line.startsWith("vendég: ");
+            skeptic |= line.startsWith("szkeptikus: ");
+        }
+        return "{\"owner\":\"" + jsonEscape(teamChatOwnerBody(firstFact)) + "\","
+                + "\"guest\":" + (guest ? "\"" + jsonEscape(TEAM_CHAT_GUEST_BODY) + "\"" : "null") + ","
+                + "\"skeptic\":" + (skeptic ? "\"" + jsonEscape(TEAM_CHAT_SKEPTIC_BODY) + "\"" : "null") + "}";
     }
 
     /** rank -> guest keys, read back from the edition prompt's {@code vendégek: A; B} lines (H4). */

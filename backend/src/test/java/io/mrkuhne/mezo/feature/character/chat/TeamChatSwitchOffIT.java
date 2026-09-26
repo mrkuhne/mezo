@@ -2,11 +2,15 @@ package io.mrkuhne.mezo.feature.character.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.character.service.chat.NoopTeamChatKnowledge;
+import io.mrkuhne.mezo.feature.character.service.chat.TeamChatBudget;
+import io.mrkuhne.mezo.feature.character.service.chat.TeamChatContext;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatEventListener;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatExpiryJob;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatInterventionKeyAdapter;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatReads;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatService;
+import io.mrkuhne.mezo.feature.character.service.chat.TeamChatVoiceWriter;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,6 +41,10 @@ class TeamChatSwitchOffIT {
             assertThat(context.getBeanNamesForType(TeamChatExpiryJob.class)).isEmpty();
             assertThat(context.getBeanNamesForType(TeamChatReads.class)).isEmpty();
             assertThat(context.getBeanNamesForType(TeamChatInterventionKeyAdapter.class)).isEmpty();
+            assertThat(context.getBeanNamesForType(TeamChatBudget.class)).isEmpty();
+            assertThat(context.getBeanNamesForType(TeamChatContext.class)).isEmpty();
+            assertThat(context.getBeanNamesForType(NoopTeamChatKnowledge.class)).isEmpty();
+            assertThat(context.getBeanNamesForType(TeamChatVoiceWriter.class)).isEmpty();
         }
     }
 }
