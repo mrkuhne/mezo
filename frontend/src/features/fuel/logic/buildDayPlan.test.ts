@@ -438,6 +438,56 @@ test('done meal/snack slots carry the FULL logged-meal totals — nothing logged
   expect({ kcal: sum('kcal'), p: sum('p'), c: sum('c'), f: sum('f') }).toEqual(expected)
 })
 
+// ── snack window assignment (mezo-7i6ah): a logged snack lands on its OWN window, not the ──────
+// first free one by cursor position. 5 meals/day → Tízórai (~10:xx) + Uzsonna (~16-18:xx).
+test('a snack carrying a stored plan-window match lands on that window even though it is NOT the nearest by time', () => {
+  const bare = buildDayPlan(baseInput({ mealsPerDay: 5, meals: [] }))
+  const uzsonnaWindow = bare.slots.find(s => s.label === 'Uzsonna')!
+  // Logged near the Tízórai anchor (10:20) but carrying a stored server-side window pointing at
+  // Uzsonna (mezo-6g52f: windowSource 'plan') — the stored match must win over nearest-time.
+  const logged = meal({
+    id: 'snack-u', slot: 'snack', loggedAt: '2026-07-02T10:20:00',
+    breakdown: {
+      confidence: 1, summary: null, tagline: null, improve: [], tools: [],
+      dimensions: [{
+        id: 'context', label: 'Kontextus', weight: 0, score: 0, color: '#fff', detail: '', context: [],
+        timing: { eatenAt: '10:20', windowFrom: uzsonnaWindow.windowFrom!, windowTo: uzsonnaWindow.windowTo!, slotLabel: 'Uzsonna', windowSource: 'plan' },
+      }],
+    },
+  })
+  const plan = buildDayPlan(baseInput({ mealsPerDay: 5, meals: [logged] }))
+  const uzsonna = plan.slots.find(s => s.label === 'Uzsonna')!
+  const tizorai = plan.slots.find(s => s.label === 'Tízórai')!
+  expect(uzsonna).toMatchObject({ state: 'done', mealId: 'snack-u' })
+  expect(tizorai.state).not.toBe('done')
+})
+test('a snack with no stored timing lands on the nearest-by-time window (real-mode enum slot)', () => {
+  const logged = meal({ id: 'snack-1', slot: 'snack', loggedAt: '2026-07-02T16:20:00' })
+  const plan = buildDayPlan(baseInput({ mealsPerDay: 5, meals: [logged] }))
+  const uzsonna = plan.slots.find(s => s.label === 'Uzsonna')!
+  const tizorai = plan.slots.find(s => s.label === 'Tízórai')!
+  expect(uzsonna).toMatchObject({ state: 'done', mealId: 'snack-1' })
+  expect(tizorai.state).not.toBe('done')
+})
+test('a mock-style slot label wins over nearest-time (label logged AT the other window\'s time)', () => {
+  // Logged at 10:05 — essentially ON TOP of the Tízórai anchor — but the mock label says Uzsonna.
+  const logged = meal({ id: 'snack-label', slot: 'Uzsonna · 10:05', loggedAt: '2026-07-02T10:05:00' })
+  const plan = buildDayPlan(baseInput({ mealsPerDay: 5, meals: [logged] }))
+  const uzsonna = plan.slots.find(s => s.label === 'Uzsonna')!
+  const tizorai = plan.slots.find(s => s.label === 'Tízórai')!
+  expect(uzsonna).toMatchObject({ state: 'done', mealId: 'snack-label' })
+  expect(tizorai.state).not.toBe('done')
+})
+test('two snacks each land on their own window (Tízórai + Uzsonna), regardless of input order', () => {
+  const tiz = meal({ id: 'tiz', slot: 'snack', loggedAt: '2026-07-02T10:30:00' })
+  const uzs = meal({ id: 'uzs', slot: 'snack', loggedAt: '2026-07-02T16:20:00' })
+  const plan = buildDayPlan(baseInput({ mealsPerDay: 5, meals: [uzs, tiz] })) // deliberately out of order
+  const tizoraiSlot = plan.slots.find(s => s.label === 'Tízórai')!
+  const uzsonnaSlot = plan.slots.find(s => s.label === 'Uzsonna')!
+  expect(tizoraiSlot).toMatchObject({ state: 'done', mealId: 'tiz' })
+  expect(uzsonnaSlot).toMatchObject({ state: 'done', mealId: 'uzs' })
+})
+
 // ── buildDayPlan template branch (mezo-7102) ─────────────────────────────────
 const templateRow = (over: Partial<SlotTemplateRow> & { label: string; anchor: SlotTemplateRow['anchor'] }): SlotTemplateRow => ({
   slotKind: 'lunch', role: 'standard', budgetPct: 50, ...over,
