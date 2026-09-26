@@ -1927,9 +1927,12 @@ export const handlers = [
   // (the `useTeamEditions` precedent above); per-test server.use() overrides opt into a seeded one.
   http.get(`${API_BASE}/api/character/team-chat`, ({ request }) => {
     const url = new URL(request.url)
-    const date = url.searchParams.get('date') ?? new Date().toISOString().slice(0, 10)
+    // The LOCAL day, like the hook's realEmpty — a UTC slice disagrees 00:00–02:00 Budapest.
+    const date = url.searchParams.get('date') ?? localDateString()
     return HttpResponse.json({ date, lines: [], openThreads: [], pushesToday: 0, pushBudget: 2 })
   }),
+  // Heti érettség-történet (mezo-a9bo7.11) — real mode's default is the honest empty history.
+  http.get(`${API_BASE}/api/character/maturity-history`, () => HttpResponse.json({ weeks: [] })),
 
   // Life goals (mezo-iizd.1) — default fixtures mirroring the mock seed so real-mode component
   // tests that render these hooks without a per-test server.use() get the same four goals.

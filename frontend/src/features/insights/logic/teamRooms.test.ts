@@ -1,8 +1,8 @@
-import type { CharacterDimensionSummary } from '@/data/character/characterApi'
+import type { CharacterDimensionSummary, CharacterMaturityHistory } from '@/data/character/characterApi'
 import type { FeedDay, FeedPost } from './teamFeed'
 import {
   archivedPatternCount, caseStatus, dimensionsFor, growthPoints, isRoomId, roomCases, roomClaims,
-  roomMaturity, weeklyGrowth,
+  maturityDropNote, roomMaturity, roomMaturitySeries,
 } from './teamRooms'
 import { lateMealPattern, pairs } from './teamFeed.fixtures'
 
@@ -58,19 +58,46 @@ test('lezárt ügyek: az elengedett minták a gazdájuknál számolódnak', () =
   expect(archivedPatternCount('szunya', [rejected], pairs)).toBe(0) // vendég nem gazda
 })
 
-test('a tudás-görbe halmozott heti bejegyzés-szám, 8 hét, a régebbi az alapszint', () => {
-  const days: FeedDay[] = [
-    { key: TODAY, label: 'Ma', posts: [post('a'), post('b')] },
-    { key: '2026-09-10', label: '', posts: [post('c')] },
-    { key: '2026-06-01', label: '', posts: [post('old')] }, // 8 hétnél régebbi
-    { key: 'Máj 22', label: 'Máj 22', posts: [post('mock')] }, // kijelző-szöveg: kimarad
-  ]
-  const s = weeklyGrowth(days, 'szunya', TODAY)
-  expect(s).toHaveLength(8)
-  expect(s[0]).toBe(1)
-  expect(s[6]).toBe(2)
-  expect(s[7]).toBe(4)
-  const pts = growthPoints(s)
-  expect(pts[0]).toEqual([14, 46]) // minimum = a sáv alja
-  expect(pts[7][1]).toBeCloseTo(16) // maximum = a sáv teteje
+type Dim = [key: string, expertKey: string | null, maturity: number, claimCount: number]
+const TITLES: Record<string, string> = { athletic: 'Sport', discipline: 'Fegyelem', recovery: 'Pihenés' }
+const wk = (weekStart: string, dims: Dim[], live = false) => ({
+  weekStart, live,
+  dimensions: dims.map(([key, expertKey, maturity, claimCount]) => ({ key, title: TITLES[key] ?? key, expertKey, maturity, claimCount })),
+})
+
+test('roomMaturitySeries: 8 naptári hét, hiányzó hét null, a szoba a dimenziói átlaga', () => {
+  const h: CharacterMaturityHistory = { weeks: [
+    wk('2026-08-31', [['athletic', 'edzo', 40, 2], ['discipline', 'drill', 20, 1]]),
+    wk('2026-09-14', [['athletic', 'edzo', 60, 3], ['discipline', 'drill', 40, 2], ['recovery', 'szomnologus', 90, 4]]),
+    wk('2026-09-21', [['athletic', 'edzo', 70, 3], ['discipline', 'drill', 40, 2]], true),
+  ] }
+  expect(roomMaturitySeries(h, 'mocor')).toEqual([null, null, null, null, 30, null, 50, 55])
+  expect(roomMaturitySeries(h, 'szunya')).toEqual([null, null, null, null, null, null, 90, null])
+  expect(roomMaturitySeries(h, 'falat')).toEqual(new Array(8).fill(null))
+  expect(roomMaturitySeries({ weeks: [] }, 'mocor')).toEqual(new Array(8).fill(null))
+})
+
+test('roomMaturitySeries: a fejezet-dimenzió (nincs szakértője) Mezóhoz tartozik', () => {
+  const h: CharacterMaturityHistory = { weeks: [wk('2026-09-21', [['life', 'antropologus', 20, 1], ['uj-fejezet', null, 60, 2]], true)] }
+  expect(roomMaturitySeries(h, 'mezo')[7]).toBe(40)
+})
+
+test('maturityDropNote: állítás-szám esés → "kikerült", egyébként bizonyosság; emelkedésnél null', () => {
+  const drop: CharacterMaturityHistory = { weeks: [
+    wk('2026-09-14', [['athletic', 'edzo', 60, 3], ['discipline', 'drill', 40, 2]]),
+    wk('2026-09-21', [['athletic', 'edzo', 40, 2], ['discipline', 'drill', 40, 2]], true),
+  ] }
+  expect(maturityDropNote(drop, 'mocor')).toBe('Sport: 1 állítás kikerült a képből, ezért halványult.')
+  const conf: CharacterMaturityHistory = { weeks: [wk('2026-09-14', [['athletic', 'edzo', 60, 3]]), wk('2026-09-21', [['athletic', 'edzo', 52, 3]], true)] }
+  expect(maturityDropNote(conf, 'mocor')).toBe('Sport: a meglévő állítások bizonyossága csökkent.')
+  const up: CharacterMaturityHistory = { weeks: [wk('2026-09-14', [['athletic', 'edzo', 40, 2]]), wk('2026-09-21', [['athletic', 'edzo', 60, 3]], true)] }
+  expect(maturityDropNote(up, 'mocor')).toBeNull()
+  expect(maturityDropNote({ weeks: [wk('2026-09-21', [['athletic', 'edzo', 60, 3]], true)] }, 'mocor')).toBeNull()
+})
+
+test('growthPoints: a null pont null marad, a skála a meglévő értékekből jön', () => {
+  const pts = growthPoints([null, 10, 30])
+  expect(pts[0]).toBeNull()
+  expect(pts[1]).toEqual([14 + 38.6, 46]) // minimum = a sáv alja
+  expect(pts[2]![1]).toBeCloseTo(16) // maximum = a sáv teteje
 })

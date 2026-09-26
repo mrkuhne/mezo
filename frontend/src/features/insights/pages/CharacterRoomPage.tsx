@@ -1,12 +1,12 @@
 import { Link, useParams } from 'react-router-dom'
 import { confidenceWord } from '@/data/character/characterApi'
-import { useCharacterOverview } from '@/data/hooks'
+import { useCharacterOverview, useMaturityHistory } from '@/data/hooks'
 import { RoomCaseCard } from '@/features/insights/components/feed/RoomCaseCard'
 import { useTeamFeed } from '@/features/insights/components/feed/useTeamFeed'
 import { TEAM } from '@/features/insights/logic/team'
 import {
-  ROOM_COPY, archivedPatternCount, dimensionsFor, growthPoints, isRoomId, roomCases, roomClaims,
-  roomMaturity, weeklyGrowth, type RoomId,
+  ROOM_COPY, archivedPatternCount, dimensionsFor, growthPoints, isRoomId, maturityDropNote, roomCases, roomClaims,
+  roomMaturity, roomMaturitySeries, type RoomId,
 } from '@/features/insights/logic/teamRooms'
 import { renderInline } from '@/shared/lib/markdown'
 import { Boop, Icon3D } from '@/shared/ui/clay'
@@ -27,27 +27,67 @@ function BackHead({ small, title }: { small: string; title: string }) {
   )
 }
 
-/** Így gyűlik a tudása: halmozott bejegyzés-szám 8 hétre, a prototípus normált görbéjével. */
-function GrowthWell({ series }: { series: number[] }) {
-  const total = series[series.length - 1] ?? 0
-  if (total < 2) {
-    return <p className="tf-note">Még kevés bejegyzése van — a görbe az első hetek után rajzolódik ki.</p>
+const LINE_MIN_POINTS = 4
+const EARLY_TEXT = 'Most kezdtem el hétről hétre feljegyezni, mennyire ismerlek'
+
+type Pt = [number, number]
+const pathOf = (seg: Pt[]) => seg.map(([x, y], j) => `${j ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
+
+/**
+ * Így érik a képe rólad (mezo-a9bo7.11): a szoba heti érettsége a prototípus normált görbéjével.
+ * 4 pont alatt különálló pöttyök + őszinte szöveg; onnan vonal, ami a hiányzó hétnél megszakad
+ * (sosem hidal át). Az utolsó pont az élő hét — ugyanaz a szám, mint a gyűrűn.
+ */
+export function MaturityWell({ series, note }: { series: (number | null)[]; note: string | null }) {
+  const count = series.filter(v => v !== null).length
+  if (count === 0) {
+    return <p className="tf-note">{EARLY_TEXT} — jövő héttől itt látod.</p>
   }
   const pts = growthPoints(series)
-  const line = pts.map(([x, y], j) => `${j ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
-  const [lx, ly] = pts[pts.length - 1]
+  const segments: Pt[][] = []
+  let run: Pt[] = []
+  for (const p of pts) {
+    if (p) run.push(p)
+    else if (run.length) { segments.push(run); run = [] }
+  }
+  if (run.length) segments.push(run)
+  let lastIdx = pts.length - 1
+  while (!pts[lastIdx]) lastIdx--
+  const [lx, ly] = pts[lastIdx]!
+  const drawLine = count >= LINE_MIN_POINTS
+  // Pötty ott, ahol nincs vonal: 4 pont alatt mind, onnan csak a magányos (két hiány közé eső) hét.
+  const dots = drawLine ? segments.filter(seg => seg.length === 1).map(seg => seg[0]) : pts.filter((p): p is Pt => p !== null)
   return (
-    <div className="tf-matwell" data-testid="room-growth">
-      <svg viewBox="0 0 330 60" className="tf-chart" aria-hidden="true">
-        <path className="tf-grid" d="M14 50 H316" />
-        <path className="tf-marea" d={`${line} L${lx.toFixed(1)},50 L14,50 Z`} />
-        <path className="tf-l1 tf-draw" pathLength={100} d={line} />
-        <circle className="tf-pt" cx={lx.toFixed(1)} cy={ly.toFixed(1)} r="4.5" />
-      </svg>
-      <span className="tf-matnow">{total}</span>
-      <span className="tf-matcap"><em>8 hete</em><em>ma</em></span>
-    </div>
+    <>
+      <div className="tf-matwell" data-testid="room-growth" data-state={drawLine ? 'line' : 'dots'}>
+        <svg viewBox="0 0 330 60" className="tf-chart" aria-hidden="true">
+          <path className="tf-grid" d="M14 50 H316" />
+          {drawLine && segments.filter(seg => seg.length > 1).map(seg => (
+            <g key={seg[0][0]}>
+              <path className="tf-marea" d={`${pathOf(seg)} L${seg[seg.length - 1][0].toFixed(1)},50 L${seg[0][0].toFixed(1)},50 Z`} />
+              <path className="tf-l1 tf-draw" pathLength={100} d={pathOf(seg)} />
+            </g>
+          ))}
+          {dots.filter(p => p !== pts[lastIdx]).map(p => (
+            <circle key={p[0]} className="tf-dot" cx={p[0].toFixed(1)} cy={p[1].toFixed(1)} r="3" />
+          ))}
+          <circle className="tf-pt" cx={lx.toFixed(1)} cy={ly.toFixed(1)} r="4.5" />
+        </svg>
+        <span className="tf-matnow">{series[lastIdx]}%</span>
+        <span className="tf-matcap"><em>8 hete</em><em>e hét</em></span>
+      </div>
+      {!drawLine && <p className="tf-note">{EARLY_TEXT} — a 4. héttől vonal köti össze a pontokat.</p>}
+      {note && <p className="tf-note tf-end" data-testid="room-growth-note">{note}</p>}
+    </>
   )
+}
+
+/** A „+N% · 3 hét” címke: csak ha az e heti és a 3 héttel korábbi pont is megvan. */
+function threeWeekHint(series: (number | null)[]): string | null {
+  const now = series[series.length - 1], then = series[series.length - 4]
+  if (now == null || then == null) return null
+  const d = now - then
+  return `${d >= 0 ? '+' : ''}${d}% · 3 hét`
 }
 
 function Room({ id }: { id: RoomId }) {
@@ -55,7 +95,8 @@ function Room({ id }: { id: RoomId }) {
   // be, az itt marad (spec 2026-09-24 §2, mezo-a9bo7.13).
   const { rooms, today, loading, patterns, pairs } = useTeamFeed()
   const { overview, isLoading } = useCharacterOverview()
-  if (loading || isLoading) return <ScreenSkeleton />
+  const { history, isLoading: historyLoading } = useMaturityHistory()
+  if (loading || isLoading || historyLoading) return <ScreenSkeleton />
 
   const who = TEAM[id]
   const copy = ROOM_COPY[id]
@@ -64,7 +105,8 @@ function Room({ id }: { id: RoomId }) {
   const claims = roomClaims(dims)
   const cases = roomCases(rooms.days, id)
   const archived = archivedPatternCount(id, patterns, pairs)
-  const series = weeklyGrowth(rooms.days, id, today)
+  const series = roomMaturitySeries(history, id)
+  const hint = threeWeekHint(series)
   // Egy dimenzió → egyenesen oda; több (pl. Derű: test + lélek) → a dimenziók listája.
   const claimsRoute = dims.length === 1 ? `/mezo/karakter/dimenzio/${dims[0].key}` : '/mezo/karakter/dimenziok'
 
@@ -103,8 +145,8 @@ function Room({ id }: { id: RoomId }) {
         </div>
       )}
 
-      <div className="tf-sec"><h2>Így gyűlik a tudása rólad</h2><span className="tf-hint">Bejegyzések · 8 hét</span></div>
-      <GrowthWell series={series} />
+      <div className="tf-sec"><h2>Így érik a képe rólad</h2>{hint && <span className="tf-hint">{hint}</span>}</div>
+      <MaturityWell series={series} note={maturityDropNote(history, id)} />
 
       <div className="tf-sec">
         <h2>Amit rólad tud</h2>

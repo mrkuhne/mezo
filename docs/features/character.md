@@ -741,7 +741,7 @@ re-dramatized after the fact.
 
 Owned tables (`feature/character/entity/`) — the original five below, plus the ones later slices
 added (`character_run`, `character_reply`, `character_claim_revision`, `character_council_edition`,
-`team_edition`/`team_edition_post`, `team_chat_thread`/`team_chat_line`) — all house idioms (UUID PK, `@SQLDelete`/
+`team_edition`/`team_edition_post`, `team_chat_thread`/`team_chat_line`, `character_maturity_week`) — all house idioms (UUID PK, `@SQLDelete`/
 `@SQLRestriction` soft delete, `created_by`, typed jsonb via `@JdbcTypeCode(SqlTypes.JSON)`).
 Migration: `db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_tables.sql`
 (the 5 tables + the CORE-7 seed) plus two later unique-index fixes,
@@ -752,8 +752,23 @@ Migration: `db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_
   (`CORE`/`CHAPTER`/`META` — the third value added by round 4's migration below,
   [ADR 0034](../decisions/0034-meta-dimension-companion-self-audit.md)), `expert_key` (nullable
   for chapters), `portrait text` (default `""`),
-  `maturity smallint` (default 0, computed roll-up — see §3's `PortraitWriter` formula below),
+  `maturity smallint` (default 0; written by `PortraitWriter`, and **zeroed** by the daily council,
+  undo/revise and a new CHAPTER until the next portrait rewrite — so it only gates the prompt's
+  portrait digest now. Every READ (overview, dimension, maturity history) computes maturity live
+  via `MaturityFormula.compute(activeClaims)` = `min(100, round(20 × activeCount + 40 ×
+  meanActiveConfidence))`, the single definition, mezo-a9bo7.11),
   `version int`, `updated_at`.
+- **`character_maturity_week`** (csapatfal érettség-görbe, `mezo-a9bo7.11`,
+  `1.1.0/script/202609262200_mezo-a9bo7.11_character_maturity_week.sql`) — a periodic snapshot,
+  grain (owner, `dimension_id`, ISO `week_start` Monday): `maturity`, `claim_count`,
+  `mean_confidence` (null with no active claim), `updated_at`; unique
+  `uq_character_maturity_week` (live rows). Written by `CharacterMaturityJob` (cron
+  `mezo.character.maturity.cron` = 23:55 Europe/Budapest, switch
+  `mezo.techcore.cron.character-maturity-job.enabled`, CHARACTER only — no LLM) through
+  `CharacterMaturityService.snapshot`, an upsert: every night refreshes the current week, the Sunday
+  run finalises it. No filler rows, no backfill. Read by `GET /api/character/maturity-history?weeks=8`
+  (1..26, else 400 `CHARACTER_RUN_RANGE_INVALID`): the stored weeks oldest first plus the current
+  week computed live (`live: true`).
 - **`character_claim`** — `dimension_id` FK, `text`, `confidence numeric(3,2)`, `status`
   (`ACTIVE`/`RETIRED`), `origin_conference_id` FK, `proposed_by` (expert key), `sensitive
   boolean`, and three typed-jsonb envelopes: `evidence` (`ClaimEvidenceEnvelope` — a list of

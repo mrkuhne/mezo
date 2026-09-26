@@ -16,6 +16,7 @@ import type {
   CharacterDimensionResponse,
   CharacterExpertDto,
   CharacterFeedItem,
+  CharacterMaturityHistory,
   CharacterOverviewResponse,
   CharacterRunResponse,
   CharacterRunSummary,
@@ -31,6 +32,7 @@ import {
   MOCK_OVERVIEW,
   MOCK_OVERVIEW_EMPTY,
   MOCK_EDITIONS,
+  MOCK_MATURITY_HISTORY,
   MOCK_RUNS,
   MOCK_RUN_DETAIL,
 } from '@/data/character/characterMock'
@@ -286,6 +288,19 @@ export function useTeamEditions(fromIso: string, toIso: string): { editions: Tea
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
   return { editions: data, isLoading: isPending }
+}
+
+/** Heti érettség-történet (csapatfal érettség-görbe, mezo-a9bo7.11): a tárolt hetek + az élő
+ *  aktuális hét, legrégebbi elöl. Mock: üres (ld. MOCK_MATURITY_HISTORY). */
+export function useMaturityHistory(): { history: CharacterMaturityHistory; isLoading: boolean } {
+  const { data, isPending } = useDualQuery<CharacterMaturityHistory>({
+    queryKey: ['characterMaturityHistory'],
+    mockData: MOCK_MATURITY_HISTORY,
+    realFetch: () => characterApi.maturityHistory(8),
+    realEmpty: { weeks: [] },
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
+  })
+  return { history: data, isLoading: isPending }
 }
 
 /** One run's full detail (summary + observations). `id === null` (nothing selected yet) never

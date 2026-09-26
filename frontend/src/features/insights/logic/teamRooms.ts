@@ -5,7 +5,9 @@
  * szoba ügyeit, a karakter-dosszié dimenziói az érettséget és a tudás-listát. Semmit nem
  * fogalmaz (ADR 0049) — a karakter-hang csak a statikus szoba-szövegekben él (`ROOM_COPY`).
  */
-import type { CharacterClaimDto, CharacterDimensionSummary } from '@/data/character/characterApi'
+import type {
+  CharacterClaimDto, CharacterDimensionSummary, CharacterMaturityHistory, CharacterMaturityWeek,
+} from '@/data/character/characterApi'
 import type { Pattern, PatternMonitorPair } from '@/data/types'
 import { characterForPersona, type TeamCharacterId } from './team'
 import { ownerForPattern, type FeedDay, type FeedPost } from './teamFeed'
@@ -91,40 +93,62 @@ export function archivedPatternCount(id: TeamCharacterId, patterns: Pattern[], p
     && ownerForPattern(p, pairs).author === id).length
 }
 
-const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/
 const WEEKS = 8
+const WEEK_MS = 7 * 86_400_000
 
-function daysBetween(from: string, to: string): number {
-  return Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86_400_000)
+function roomValue(week: CharacterMaturityWeek, id: TeamCharacterId): number | null {
+  const own = week.dimensions.filter(d => characterForPersona(d.expertKey ?? '') === id)
+  return own.length ? Math.round(own.reduce((s, d) => s + d.maturity, 0) / own.length) : null
 }
 
 /**
- * Így gyűlik a tudása: a karakter bejegyzéseinek HALMOZOTT száma heti bontásban, 8 hét
- * (legrégebbi → ma). Nincs érettség-történet rekord — ezért a görbe azt mutatja, ami valóban
- * megtörtént (ADR 0049). A 8 hétnél régebbi bejegyzések az alapszintet adják.
+ * Így érik a képe rólad: a szoba heti érettsége 8 naptári hétre (legrégebbi → e hét), a
+ * dimenziói átlagaként — ugyanaz a szabály, mint a gyűrűé (`roomMaturity`). Hiányzó hét = null:
+ * sosem kitöltve, sosem nulla (ADR 0049, mezo-a9bo7.11).
  */
-export function weeklyGrowth(days: FeedDay[], id: TeamCharacterId, today: string): number[] {
-  const perWeek = new Array<number>(WEEKS).fill(0)
-  let base = 0
-  for (const day of days) {
-    if (!ISO_DAY.test(day.key)) continue
-    const n = [...(day.poster ? [day.poster] : []), ...day.posts].filter(p => p.author === id).length
-    if (n === 0) continue
-    const ago = daysBetween(day.key, today)
-    if (ago < 0) continue
-    const w = Math.floor(ago / 7)
-    if (w >= WEEKS) base += n
-    else perWeek[WEEKS - 1 - w] += n
+export function roomMaturitySeries(history: CharacterMaturityHistory, id: TeamCharacterId): (number | null)[] {
+  const out = new Array<number | null>(WEEKS).fill(null)
+  const last = history.weeks[history.weeks.length - 1]
+  if (!last) return out
+  const end = Date.parse(`${last.weekStart}T12:00:00Z`)
+  for (const w of history.weeks) {
+    const idx = WEEKS - 1 - Math.round((end - Date.parse(`${w.weekStart}T12:00:00Z`)) / WEEK_MS)
+    if (idx >= 0 && idx < WEEKS) out[idx] = roomValue(w, id)
   }
-  const out: number[] = []
-  let acc = base
-  for (const n of perWeek) out.push((acc += n))
   return out
 }
 
-/** A prototípus normált görbe-képlete (viewBox 330×60): min–max a sáv aljára–tetejére. */
-export function growthPoints(series: number[]): [number, number][] {
-  const mn = Math.min(...series), mx = Math.max(...series), sp = (mx - mn) || 1
-  return series.map((v, j) => [14 + j * 38.6, 46 - ((v - mn) / sp) * 30])
+/**
+ * A csendes felirat (mezo-a9bo7.11): ha a szoba legutóbbi heti értéke az előzőnél lejjebb van, a
+ * legtöbbet eső témát nevezi meg — kevesebb állítás, vagy a meglévők bizonyossága csökkent. Nem
+ * értesít, nem posztol; csak a szobában olvasható.
+ */
+export function maturityDropNote(history: CharacterMaturityHistory, id: TeamCharacterId): string | null {
+  const own = history.weeks
+    .map(w => ({ w, v: roomValue(w, id) }))
+    .filter((x): x is { w: CharacterMaturityWeek; v: number } => x.v !== null)
+  if (own.length < 2) return null
+  const [prev, cur] = own.slice(-2)
+  if (cur.v >= prev.v) return null
+  let worst: { title: string; delta: number; lost: number } | null = null
+  for (const d of cur.w.dimensions) {
+    if (characterForPersona(d.expertKey ?? '') !== id) continue
+    const before = prev.w.dimensions.find(p => p.key === d.key)
+    if (!before) continue
+    const delta = before.maturity - d.maturity
+    if (delta > 0 && (!worst || delta > worst.delta)) worst = { title: d.title, delta, lost: before.claimCount - d.claimCount }
+  }
+  if (!worst) return null
+  return worst.lost > 0
+    ? `${worst.title}: ${worst.lost} állítás kikerült a képből, ezért halványult.`
+    : `${worst.title}: a meglévő állítások bizonyossága csökkent.`
+}
+
+/** A prototípus normált görbe-képlete (viewBox 330×60): min–max a sáv aljára–tetejére; a hiányzó
+ *  hét pontja null (a vonal ott megszakad). */
+export function growthPoints(series: (number | null)[]): ([number, number] | null)[] {
+  const vals = series.filter((v): v is number => v !== null)
+  const mn = Math.min(...vals), mx = Math.max(...vals), sp = (mx - mn) || 1
+  return series.map((v, j) => (v === null ? null : [14 + j * 38.6, 46 - ((v - mn) / sp) * 30]))
 }
 

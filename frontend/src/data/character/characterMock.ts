@@ -12,6 +12,7 @@ import type {
   CharacterDimensionSummary,
   CharacterExpertDto,
   CharacterFeedItem,
+  CharacterMaturityHistory,
   CharacterOverviewResponse,
   CharacterRunObservation,
   CharacterRunResponse,
@@ -1670,3 +1671,7 @@ export const MOCK_EDITIONS: TeamEdition[] = [
     ],
   },
 ]
+
+/** Heti érettség-történet mock (mezo-a9bo7.11): üres — a mock overview is üresen indul
+ *  (MOCK_OVERVIEW_EMPTY), így a szoba őszinte szövege és a gyűrű nem mond ellent egymásnak. */
+export const MOCK_MATURITY_HISTORY: CharacterMaturityHistory = { weeks: [] }

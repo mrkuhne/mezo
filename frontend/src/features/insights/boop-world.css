@@ -270,6 +270,7 @@ a.tf-hint { color: color-mix(in srgb, var(--c) 80%, #fff); }
 .tf-matwell .tf-l1 { stroke: var(--c); filter: drop-shadow(0 0 5px color-mix(in srgb, var(--c) 55%, transparent)); }
 .tf-matwell .tf-marea { fill: color-mix(in srgb, var(--c) 14%, transparent); }
 .tf-matwell .tf-pt { fill: var(--c); }
+.tf-matwell .tf-dot { fill: color-mix(in srgb, var(--c) 55%, transparent); }
 .tf-matwell .tf-matnow { color: color-mix(in srgb, var(--c) 82%, #fff); }
 @media (prefers-reduced-motion: no-preference) {
   .tf-matwell .tf-draw { stroke-dasharray: 100; stroke-dashoffset: 100; animation: tf-draw 1.1s cubic-bezier(.3, .7, .2, 1) 0.2s forwards; }
