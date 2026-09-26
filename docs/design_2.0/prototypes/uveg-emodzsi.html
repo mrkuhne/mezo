@@ -3112,8 +3112,9 @@ svg{overflow:visible}
 .gl.emo{font-size:15px;line-height:1}
 .gl.emo.sm{font-size:11px}
 .spot{position:relative}
-.spot::after{content:attr(data-spot);position:absolute;top:-9px;right:10px;z-index:4;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 7px;border-radius:999px;color:#1E1B18;background:#FFD08A;box-shadow:0 0 10px -2px #FFBE60}
-body.nospot .spot::after{display:none}
+/* a változás jelölése: szaggatott arany keret a változott elem körül — nem takar ki semmit */
+.spot{outline:1.5px dashed rgba(255,208,138,.75);outline-offset:4px;border-radius:12px}
+body.nospot .spot{outline:none}
 .chipsw{display:flex;gap:8px;margin-top:12px}
 .chipsw button{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;height:40px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
 .chipsw button.on{color:#E4DCFF;background:color-mix(in srgb,var(--lav) 18%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--lav) 55%,transparent),0 0 14px -4px var(--lav)}
@@ -3187,7 +3188,7 @@ body.nospot .spot::after{display:none}
     <span class="ov">EMODZSI-SÖPRÉS · A MARADÉKOK</span>
     <h1>Az utolsó emodzsik, 3D ikonra cserélve</h1>
     <p>Végignéztük az egész appot. Élesben már csak <b>öt helyen</b> látszik emodzsi a karakterek beszédén kívül. Mindet a meglévő 3D ikonkészlet egy darabjára cseréljük. <b>Új ikont nem kell rajzolni.</b></p>
-    <p class="abnote">A sárga címke mutatja, hol változott valami. Az <em>„Előtte”</em> kapcsolóval visszanézheted a mostani, emodzsis állapotot.</p>
+    <p class="abnote">A szaggatott arany keret mutatja, hol változott valami. Az <em>„Előtte”</em> kapcsolóval visszanézheted a mostani, emodzsis állapotot.</p>
     <nav id="jump">
       <a href="#alvas" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-sleep"/></svg>Alvás cél · Ébredés / Lefekvés</a>
       <a href="#varazslo" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-spark"/></svg>Edzésterv-varázsló · generálás</a>
@@ -3203,6 +3204,7 @@ body.nospot .spot::after{display:none}
       <li>Edzésnap: <a href="#" data-st="warn:1">van jelzés</a> · <a href="#" data-st="warn:0">kereten belül</a></li>
       <li>Gyakorlat: <a href="#" data-st="fail:1">tönkremenésig</a> · <a href="#" data-st="fail:0">volumen</a></li>
     </ul>
+    <label class="toggle"><input type="checkbox" id="nospot"> Jelölő keretek elrejtése</label>
     <label class="toggle"><input type="checkbox" id="old"> Előtte (a mostani, emodzsis állapot)</label>
     <label class="toggle"><input type="checkbox" id="still"> Mozgás kikapcsolása</label>
   </aside>
@@ -3370,6 +3372,7 @@ document.addEventListener('click',e=>{
 });
 addEventListener('hashchange',render);
 $('#still').addEventListener('change',e=>document.body.classList.toggle('still',e.target.checked));
+$('#nospot').addEventListener('change',e=>document.body.classList.toggle('nospot',e.target.checked));
 $('#old').addEventListener('change',e=>{OLD=e.target.checked;soft()});
 
 const D=[['nap','Nap','var(--gold)'],['train','Edzés','var(--coral)'],['fuel','Fuel','var(--sage)'],['mezo','Mezo','var(--lav)'],['en','Én','var(--rose)']];
