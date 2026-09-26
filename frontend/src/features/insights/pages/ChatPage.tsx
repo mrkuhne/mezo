@@ -9,6 +9,7 @@ import { ToolWorkStrip } from '@/features/insights/components/ToolWorkStrip'
 import { ConversationPickerSheet } from '@/features/insights/sheets/ConversationPickerSheet'
 import { ConversationActionsSheet } from '@/features/insights/sheets/ConversationActionsSheet'
 import type { ConversationResponse } from '@/data/insights/chatApi'
+import { isMockMode } from '@/data/_client/mode'
 import { useStickToBottom } from '@/features/insights/logic/useStickToBottom'
 import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
 import { VoiceBubble } from '@/shared/ui/voice/VoiceBubble'
@@ -121,7 +122,9 @@ export function ChatPage() {
   const lastUserMsgId = useMemo(() => {
     if (turn || !armedRef.current) return null
     const last = [...messages].reverse().find((m) => m.role === 'user' && m.id)
-    return last?.id ?? null
+    // Mock módban a user-buborék nem kap perzisztált id-t — szintetikus horgony kell, hogy a
+    // demó-chip (useTurnFacts mock ága) megjelenhessen; valós módban id nélkül nincs chip.
+    return last?.id ?? (isMockMode() ? `mock-turn-${messages.length}` : null)
   }, [messages, turn])
 
   const recalledResultIds = useMemo(
