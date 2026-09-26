@@ -301,9 +301,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/character/team-chat/threads/{threadId}/apply/{actionKey}
 - **FE data** `frontend/src/data/character`
   - **hooks (via `@/data/hooks`):** `useCharacterClaimRevisions`, `useCharacterCouncilStatus`, `useCharacterReplies`,
-    `useCharacterReplyDraft`
+    `useCharacterReplyDraft`, `useTeamChat`, `useTeamChatActions`
   - **modules:** characterApi.ts, characterCouncilHooks.ts, characterHooks.ts, characterMock.ts,
-    characterReplyHooks.ts
+    characterReplyHooks.ts, teamChatApi.ts, teamChatHooks.ts, teamChatMock.ts
 - **FE ui** `frontend/src/features/character`
   - **pages:** AdatforrasokPage.tsx, CharacterFeedPage.tsx, DetektorokPage.tsx, DimensionPage.tsx, DimensionsPage.tsx,
     FutasokPage.tsx, GeptermPage.tsx, KarakterHubPage.tsx, KonziliumPage.tsx, KorPage.tsx, RunPage.tsx
@@ -784,26 +784,26 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     CoachingCardPage.tsx, CoachingHubPage.tsx, CoachingObserverPage.tsx, DiagnosisDetailPage.tsx,
     DiagnosisListPage.tsx, ExperimentDetailPage.tsx, ExperimentsPage.tsx, KnowledgeListPage.tsx, KnowledgeNodePage.tsx,
     MemoirArchivePage.tsx, MemoirChapterPage.tsx, MemoirPage.tsx, MemoryDayPage.tsx, MemoryPage.tsx, MezoHubPage.tsx,
-    PatternDetailPage.tsx, PatternsPage.tsx, PredictionDetailPage.tsx, PredictionsPage.tsx, TeamFeedPage.tsx,
-    TeamPage.tsx
+    PatternDetailPage.tsx, PatternsPage.tsx, PredictionDetailPage.tsx, PredictionsPage.tsx, TeamChatPage.tsx,
+    TeamFeedPage.tsx, TeamPage.tsx
   - **sheets:** ConversationActionsSheet.tsx, ConversationPickerSheet.tsx, NodeDetailSheet.tsx
   - **components:** AskTeamRow.tsx, AskTeamSheet.tsx, CategoryHeader.tsx, ChatMessage.tsx, CoachingRuleTile.tsx,
     DetailHero.tsx, EvidenceLog.tsx, FactCandidateCard.tsx, FactsView.tsx, FeedGuests.tsx, FeedPostCard.tsx,
     FeedPostHead.tsx, FeedPosterCard.tsx, FeedReplySheet.tsx, FeedTrio.tsx, FeedbackChips.tsx, HowItWorksView.tsx,
     HypothesisStateCard.tsx, IntroPosts.tsx, KategoriakView.tsx, KindNodeList.tsx, KindTileGrid.tsx,
     KnowledgeBaseView.tsx, KnowledgeFactRow.tsx, LifeEventAcceptedCard.tsx, LifeEventCandidateCard.tsx,
-    LifecycleSection.tsx, MemoryAuditPanel.tsx, MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx,
-    MemorySearchPanel.tsx, PatternArtifactDetail.tsx, PatternDecisionCard.tsx, PatternDetailHero.tsx,
-    PatternDomainMark.tsx, PatternEvidenceChart.tsx, PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx,
-    PatternStrengthChart.tsx, ProfileNodeCard.tsx, ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx,
-    RememberedChips.tsx, RoladFacts.tsx, RoladInbox.tsx, RoladQuote.tsx, RoladTimeline.tsx, RoomCaseCard.tsx,
-    SimilarDayCard.tsx, StoryStrip.tsx, TestPlanTiles.tsx, TokenColumns.tsx, ToolWorkStrip.tsx, VerdictArc.tsx,
-    experimentStatus.tsx, riseStyle.ts, useFeedSession.ts, useTeamFeed.ts
+    LifecycleSection.tsx, LiveStrip.tsx, MemoryAuditPanel.tsx, MemoryJournalPanel.tsx, MemoryLayerCard.tsx,
+    MemoryLayersPanel.tsx, MemorySearchPanel.tsx, PatternArtifactDetail.tsx, PatternDecisionCard.tsx,
+    PatternDetailHero.tsx, PatternDomainMark.tsx, PatternEvidenceChart.tsx, PatternFilterSheet.tsx,
+    PatternImpactCard.tsx, PatternJournal.tsx, PatternStrengthChart.tsx, ProfileNodeCard.tsx, ProfileView.tsx,
+    RecalledMemoriesRow.tsx, RefChips.tsx, RememberedChips.tsx, RoladFacts.tsx, RoladInbox.tsx, RoladQuote.tsx,
+    RoladTimeline.tsx, RoomCaseCard.tsx, SimilarDayCard.tsx, StoryStrip.tsx, TestPlanTiles.tsx, TokenColumns.tsx,
+    ToolWorkStrip.tsx, VerdictArc.tsx, experimentStatus.tsx, riseStyle.ts, useFeedSession.ts, useTeamFeed.ts
   - **logic:** boopNavigation.ts, chatRefs.ts, coachingCopy.ts, diagnosisCatalog.ts, diagnosisCopy.ts,
     diagnosisTeam.ts, domains.ts, factCopy.ts, findings.ts, humanizeCron.ts, lifecycle.ts, memoirArchive.ts,
     metricFormat.ts, patternCatalog.ts, patternEvidence.ts, patternHistory.ts, predictionStatus.ts, quickQuestions.ts,
-    roladCopy.ts, team.ts, teamEdition.ts, teamFeed.fixtures.ts, teamFeed.ts, teamRooms.ts, toolDomains.ts,
-    useStickToBottom.ts, useVoiceInput.ts, verdicts.ts
+    roladCopy.ts, team.ts, teamChat.ts, teamEdition.ts, teamFeed.fixtures.ts, teamFeed.ts, teamRooms.ts,
+    toolDomains.ts, useStickToBottom.ts, useVoiceInput.ts, verdicts.ts
   - **root:** boop-world.css, kerdezd.css, useRoladInbox.ts
 
 ### intention
@@ -1217,7 +1217,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/proactive/challenge/{id}/decision · GET /api/proactive/weekly-review/{start} ·
     POST /api/proactive/weekly-review/{start}/regenerate · GET /api/proactive/weekly-review/{start}/lessons ·
     GET /api/proactive/weekly-review/{start}/digest
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 107 IT + 10 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 107 IT + 11 unit
   - **ITs:** `AdviceApplyServiceIT`, `AdviceCardServiceIT`, `AdviceObserverPortsIT`, `AdviceProseGeneratorIT`,
     `ChallengeGeneratorIT`, `ChallengeGeneratorMemoryDisabledIT`, `ChallengeGeneratorMemoryIT`, `ChallengeJobIT`,
     `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`, `ChallengePersistenceIT`, `ChallengePregenerateJobIT`,
