@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.companion.reflection.repository.EffectLinkReposit
 import io.mrkuhne.mezo.feature.companion.reflection.service.EffectLinkService;
 import io.mrkuhne.mezo.feature.companion.reflection.service.GroundedHypothesisPublisher;
 import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
+import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -53,6 +54,7 @@ class EffectLinkServiceIT extends AbstractIntegrationTest {
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private UserPopulator userPopulator;
     @Autowired private JdbcTemplate jdbcTemplate;
+    @Autowired private PersonRepository personRepository;
 
     private final LocalDate today = LocalDate.now();
 
@@ -220,6 +222,40 @@ class EffectLinkServiceIT extends AbstractIntegrationTest {
                 .extracting(EffectLinkEntity::getConfidenceTier).isEqualTo("eros");
         assertThat(effectLinkRepository.findById(stored.getId()).orElseThrow().getConfidenceTier())
                 .isEqualTo("kozepes");
+    }
+
+    @Test
+    void gatedEffectsSharesPromptBlockGateAndResolvesLabels() {
+        UUID owner = userPopulator.createUser().getId();
+        PersonEntity anna = personPopulator.createPerson(owner, "Anna");
+        PersonEntity bela = personPopulator.createPerson(owner, "Béla");
+        PersonEntity inactivePerson = personPopulator.createPerson(owner, "Dóra");
+        inactivePerson.setStatus("archived");
+        personRepository.saveAndFlush(inactivePerson);
+
+        row(owner, EffectLinkEntity.SUBJECT_PERSON, anna.getId().toString(),
+                EffectLinkEntity.METRIC_STRESS, 0.7, 8, "eros", "kozepes");
+        // weak on strength: does not clear the gate
+        row(owner, EffectLinkEntity.SUBJECT_PERSON, bela.getId().toString(),
+                EffectLinkEntity.METRIC_ENERGY, 0.2, 5, "enyhe", "gyenge");
+        // strong+confident, but the person is not active: label unresolvable, row skipped
+        row(owner, EffectLinkEntity.SUBJECT_PERSON, inactivePerson.getId().toString(),
+                EffectLinkEntity.METRIC_MENTAL, 0.8, 8, "eros", "kozepes");
+
+        List<EffectLinkService.GatedEffect> gated = effectLinkService.gatedEffects(owner);
+
+        assertThat(gated).hasSize(1);
+        EffectLinkService.GatedEffect only = gated.getFirst();
+        assertThat(only.subjectKind()).isEqualTo(EffectLinkEntity.SUBJECT_PERSON);
+        assertThat(only.subjectKey()).isEqualTo(anna.getId().toString());
+        assertThat(only.metric()).isEqualTo(EffectLinkEntity.METRIC_STRESS);
+        assertThat(only.subjectLabel()).isEqualTo("Anna");
+        assertThat(only.metricLabel()).isEqualTo("stresszszint");
+        assertThat(only.higher()).isTrue();
+        assertThat(only.strengthBand()).isEqualTo("eros");
+        assertThat(only.subjectDays()).isEqualTo(8);
+        assertThat(only.topicKey()).isEqualTo(EffectLinkService.topicKey(
+                EffectLinkEntity.SUBJECT_PERSON, anna.getId().toString(), EffectLinkEntity.METRIC_STRESS));
     }
 
     @Test
