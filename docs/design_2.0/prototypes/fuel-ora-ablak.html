@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Étkezési óra</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@200;300;400;500;600;700&family=Fraunces:ital,opsz,wght@1,9..144,500&display=swap">
+<style>
+/* ─────────────────────────────────────────────────────────────
+   Fuel · Étkezési óra (az idősáv-csík utódja) — Üveg, sötét
+   Két állapot: logolás előtt = AJÁNLOTT ABLAK + miért;
+   logolás után = MIKOR, MENNYIRE TALÁLTA EL, MIRE SZÁMÍTS.
+   ───────────────────────────────────────────────────────────── */
+:root{
+  --page:#191614; --surface-card:#221E1B; --surface-elevated:#2A2521;
+  --ink:#F5EFE6; --sub:#B7A899; --muted:#8A7A6A; --divider:rgba(245,239,230,.08);
+  --recess:rgba(245,239,230,.07); --flat:rgba(245,239,230,.05);
+  --sage:#8FB49A; --coral:#FF7E5C; --amber:#FFBE60; --lav:#AB9FD2; --rose:#E98D9D; --sky:#7FB2DE;
+  --protein:#F07E78; --carb:#E3A45A; --fat:#D8B640; --fiber:#86BC63;
+  --ff:'Geist',system-ui,-apple-system,sans-serif; --serif:'Fraunces',Georgia,serif;
+  --ease:cubic-bezier(.2,.78,.24,1);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#100D0B}
+body{font-family:var(--ff);color:var(--ink);-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.45}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:left}
+button:focus-visible{outline:2px solid var(--sky);outline-offset:2px;border-radius:12px}
+.sprite{position:absolute;width:0;height:0;overflow:hidden}
+svg{overflow:visible}
+
+/* ── Oldal: telefon + jegyzetek ── */
+.stage{display:flex;gap:44px;align-items:flex-start;justify-content:center;flex-wrap:wrap;padding:32px 16px 64px}
+aside{max-width:420px;display:grid;gap:22px;padding-top:8px}
+.eyebrow{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+aside h1{font-size:30px;font-weight:600;letter-spacing:-.8px;margin-top:6px}
+aside p,aside li{color:var(--sub);font-size:14px}
+aside ul{padding-left:18px;display:grid;gap:6px}
+aside strong{color:var(--ink);font-weight:600}
+.ctl{display:grid;gap:8px}
+.seg{display:flex;gap:4px;padding:4px;border-radius:14px;background:var(--flat);border:1px solid var(--divider);width:max-content;max-width:100%;flex-wrap:wrap}
+.seg button{padding:7px 12px;border-radius:10px;font-size:13px;color:var(--sub)}
+.seg button[aria-pressed="true"]{background:rgba(245,239,230,.1);color:var(--ink);box-shadow:inset 0 1px 0 rgba(255,244,230,.1)}
+.note{font-family:var(--serif);font-style:italic;color:var(--sub);border-left:2px solid var(--lav);padding-left:12px}
+
+.phone{position:relative;width:390px;max-width:100%;height:844px;border-radius:44px;overflow:hidden;background:var(--page);isolation:isolate;flex:none;
+  box-shadow:0 0 0 10px #0A0908,0 0 0 11px #2E2A26,0 30px 70px rgba(0,0,0,.5)}
+@media(max-width:440px){.stage{padding:0 0 40px}.phone{width:100vw;height:100vh;border-radius:0;box-shadow:none}aside{padding:0 16px}}
+.aurora{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.aurora i{position:absolute;border-radius:50%;filter:blur(60px);opacity:.22}
+.aurora i:nth-child(1){width:300px;height:300px;left:-90px;top:80px;background:#5E8A67}
+.aurora i:nth-child(2){width:260px;height:260px;right:-100px;top:-40px;background:#C98A3A}
+.aurora i:nth-child(3){width:280px;height:280px;left:40px;top:520px;background:#6D5FA8}
+.aurora i:nth-child(4){width:220px;height:220px;right:-80px;top:760px;background:#B8584A}
+.scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;z-index:1;padding:18px 14px 60px;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.sb{display:flex;justify-content:space-between;padding:0 8px 14px;font-size:10.5px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted)}
+
+/* ── Üveg (bible §3) ── */
+.glass{--c:var(--sage);position:relative;isolation:isolate;overflow:hidden;border-radius:22px;
+  background:radial-gradient(120% 90% at 0% 0%,color-mix(in srgb,var(--c) 22%,transparent),transparent 62%),
+    linear-gradient(160deg,rgba(52,46,41,.72),rgba(30,27,24,.60));
+  backdrop-filter:blur(16px) saturate(1.5);-webkit-backdrop-filter:blur(16px) saturate(1.5);
+  box-shadow:0 16px 30px -16px rgba(0,0,0,.75),0 0 26px -6px color-mix(in srgb,var(--c) 30%,transparent),
+    inset 0 1px 0 rgba(255,244,230,.10),inset 0 -14px 26px -18px color-mix(in srgb,var(--c) 55%,transparent)}
+.glass::before{content:'';position:absolute;inset:0;border-radius:inherit;padding:1.3px;pointer-events:none;z-index:2;
+  background:linear-gradient(145deg,color-mix(in srgb,var(--c) 80%,transparent) 0%,rgba(255,244,230,.16) 30%,
+    color-mix(in srgb,var(--c) 18%,transparent) 62%,color-mix(in srgb,var(--c) 60%,transparent) 100%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.glass::after{content:'';position:absolute;top:-20%;bottom:-20%;left:-40%;width:28%;pointer-events:none;z-index:3;opacity:0;
+  transform:skewX(-20deg) translateX(-120%);background:linear-gradient(90deg,transparent,rgba(255,244,230,.16),transparent)}
+@media (prefers-reduced-motion:no-preference){
+  .glass::after{animation:sheen 7s var(--ease) infinite;animation-delay:calc(var(--i,0) * .45s)}
+  @keyframes sheen{0%,70%{opacity:0;transform:skewX(-20deg) translateX(-120%)}75%{opacity:1}100%{opacity:0;transform:skewX(-20deg) translateX(620%)}}
+}
+.glass>*{position:relative;z-index:1}
+.glass .art{filter:drop-shadow(0 6px 7px rgba(0,0,0,.55)) drop-shadow(0 0 10px color-mix(in srgb,var(--c) 40%,transparent))}
+/* üres / nyitott blokk: szaggatott keret, nincs üveg */
+.dash{--c:var(--sage);position:relative;border-radius:22px;border:1.5px dashed color-mix(in srgb,var(--c) 45%,transparent);background:rgba(20,17,15,.55)}
+.dash.now{box-shadow:0 0 22px -4px color-mix(in srgb,var(--c) 45%,transparent);border-style:dashed}
+
+/* ── Nap-blokk ── */
+.blocks{display:grid;gap:16px}
+.block{padding:14px 14px 6px}
+.head{display:flex;align-items:center;gap:10px;padding-bottom:10px}
+.head .art{width:40px;height:40px;flex:none}
+.head .name{flex:1;min-width:0;font-size:18px;font-weight:600;letter-spacing:.1px}
+.head .name small{display:block;font-size:11.5px;font-weight:400;color:var(--sub);letter-spacing:0;margin-top:1px}
+.kring{position:relative;width:44px;height:44px;flex:none;display:grid;place-items:center}
+.kring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.kring circle{fill:none;stroke-width:4}
+.kring .tr{stroke:var(--recess)}
+.kring .fl{stroke:var(--c);stroke-linecap:round;filter:drop-shadow(0 0 5px color-mix(in srgb,var(--c) 55%,transparent))}
+.kring b{position:relative;font-size:10.5px;font-weight:600}
+
+/* ══ AZ ÓRA GOMB — mindig kint. A 3D óra ikon köré egy 12 órás számlap-gyűrű:
+   logolás előtt az AJÁNLOTT ÍV (+ most-mutató, ha nyitva), utána az ív + a LOG PÖTTYE. ══ */
+.clk{position:relative;width:46px;height:46px;flex:none;display:grid;place-items:center;border-radius:50%;
+  background:var(--flat);border:1px solid var(--divider);transition:transform .12s}
+.clk:active{transform:scale(.92)}
+.clk .ring{position:absolute;inset:0;width:100%;height:100%}
+.clk .ring .tr{fill:none;stroke:var(--recess);stroke-width:3}
+.clk .ring .win{fill:none;stroke:var(--c);stroke-width:3;stroke-linecap:round;filter:drop-shadow(0 0 4px color-mix(in srgb,var(--c) 70%,transparent))}
+.clk .ring .dot{stroke:var(--page);stroke-width:1.6}
+.clk .ico{width:25px;height:25px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.45))}
+.clk .live{position:absolute;inset:-4px;border-radius:50%;border:1.5px solid color-mix(in srgb,var(--c) 60%,transparent);opacity:0}
+@media (prefers-reduced-motion:no-preference){ .clk .live{animation:ping 2.6s var(--ease) infinite} @keyframes ping{0%{opacity:.7;transform:scale(.9)}100%{opacity:0;transform:scale(1.18)}} }
+/* B változat: sima ikon */
+.plain .clk .ring{display:none}
+.plain .clk{border-color:color-mix(in srgb,var(--c) 30%,transparent)}
+.plain .clk .tick{position:absolute;right:-2px;bottom:-2px;width:14px;height:14px;border-radius:50%;background:var(--c);border:2px solid var(--page)}
+.clk .tick{display:none}
+.plain .clk .tick.on{display:block}
+/* a kártyán egy halk szöveges sor is — csak "A" változatban */
+.whenline{display:flex;align-items:center;gap:8px;padding:0 2px 10px;font-size:12.5px;color:var(--sub)}
+.whenline b{color:color-mix(in srgb,var(--c) 70%,var(--ink));font-weight:600;font-variant-numeric:tabular-nums}
+.whenline .chip{margin-left:auto}
+.plain .whenline{display:none}
+
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:500;white-space:nowrap;
+  background:color-mix(in srgb,var(--k,var(--sage)) 14%,transparent);border:1px solid color-mix(in srgb,var(--k,var(--sage)) 40%,transparent);color:color-mix(in srgb,var(--k,var(--sage)) 75%,var(--ink))}
+
+.logrow{display:flex;align-items:center;gap:12px;width:100%;padding:12px 2px 14px;border-top:1px solid var(--divider)}
+.logrow>span{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:20px;flex:none;
+  border:1.5px dashed color-mix(in srgb,var(--c) 48%,transparent);color:color-mix(in srgb,var(--c) 70%,var(--ink))}
+.logrow strong{display:block;font-size:15px;font-weight:600}
+.logrow small{display:block;font-size:12px;color:var(--sub)}
+
+.meal{padding:12px 2px 12px;border-top:1px solid var(--divider)}
+.meal strong{display:block;font-size:16px;font-weight:500;line-height:1.3}
+.mbottom{display:flex;align-items:center;gap:12px;margin-top:10px}
+.mrings{display:flex;gap:10px}
+.mring{position:relative;width:38px;height:38px;display:grid;place-items:center}
+.mring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.mring circle{fill:none;stroke-width:3.6}
+.mring .tr{stroke:var(--recess)}
+.mring .fl{stroke:var(--m);stroke-linecap:round;filter:drop-shadow(0 0 4px color-mix(in srgb,var(--m) 40%,transparent))}
+.mring b{position:relative;font-size:12px;font-weight:600;color:var(--m)}
+.glychip{margin-left:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:62px;height:44px;border-radius:14px;
+  border:1px solid color-mix(in srgb,var(--g) 40%,transparent);background:color-mix(in srgb,var(--g) 10%,transparent)}
+.glychip svg{width:44px;height:16px}
+.glychip svg path{fill:none;stroke:var(--g);stroke-width:2;stroke-linecap:round;filter:drop-shadow(0 0 3px color-mix(in srgb,var(--g) 60%,transparent))}
+.glychip b{font-size:10.5px;font-weight:600;color:color-mix(in srgb,var(--g) 75%,var(--ink));line-height:1}
+.score{display:flex;align-items:center;gap:4px;flex:none;padding:0 2px}
+.score svg{width:40px;height:40px;filter:drop-shadow(0 6px 7px rgba(0,0,0,.55)) drop-shadow(0 0 12px color-mix(in srgb,var(--lav) 55%,transparent))}
+.score b{font-size:22px;font-weight:400;letter-spacing:-.6px;font-variant-numeric:tabular-nums;
+  background:linear-gradient(120deg,#AB9FD2,#E4DCFA 45%,#FFD38A);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 6px rgba(171,159,210,.45))}
+/* "koppints rám": az ikon és a szám EGYÜTT rázkódik meg röviden ~6 mp-enként, kártyánként eltolva */
+@media (prefers-reduced-motion:no-preference){
+  .score{animation:nudge 6s ease-in-out infinite;animation-delay:calc(1.2s + var(--i,0) * .8s);transform-origin:50% 60%}
+  @keyframes nudge{0%,84%,100%{transform:none}86%{transform:rotate(-5deg) scale(1.04)}88%{transform:rotate(5deg) scale(1.06)}90%{transform:rotate(-4deg) scale(1.05)}92%{transform:rotate(3deg) scale(1.03)}94%{transform:rotate(-1.5deg)}96%{transform:none}}
+}
+.score:active{transform:scale(.94)}
+.kring .ov{stroke:var(--amber);stroke-linecap:round;stroke-width:4;filter:drop-shadow(0 0 5px color-mix(in srgb,var(--amber) 60%,transparent))}
+.kring.pre .tr{stroke-dasharray:2 3}
+
+/* ══ Az óra-doboz (Fuel-középre nyíló üveg; hosszabb tartalom → görgethető) ══ */
+.layer{position:absolute;inset:0;z-index:60;display:grid;place-items:center;padding:28px 12px}
+.layer[hidden]{display:none}
+.backdrop{position:absolute;inset:0;background:rgba(5,7,12,.62);backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);opacity:0;transition:opacity .28s}
+.box{position:relative;width:100%;max-height:100%;display:flex;flex-direction:column;
+  
+  opacity:0;transform:perspective(700px) rotateX(10deg) scale(.9) translateY(16px);transition:opacity .3s,transform .34s cubic-bezier(.2,.9,.25,1.18)}
+.box-in{overflow-y:auto;scrollbar-width:none;padding:22px 18px 16px;min-height:0}
+.box-in::-webkit-scrollbar{display:none}
+.layer.open .backdrop{opacity:1}
+.layer.open .box{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.backdrop,.box{transition:none}.box{transform:none}}
+.bx-head{display:flex;align-items:center;gap:10px}
+.bx-head .art{width:34px;height:34px}
+.bx-head .t{flex:1}
+.bx-head .t b{display:block;font-size:15px;font-weight:600}
+.bx-head .t small{font-size:12px;color:var(--sub)}
+.bx-x{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--flat);border:1px solid var(--divider);color:var(--sub);font-size:16px}
+.bx-big{text-align:center;margin:14px 0 2px}
+.bx-big .eyebrow{display:block}
+.bx-big .time{font-size:46px;font-weight:200;letter-spacing:-2.4px;line-height:1.1;font-variant-numeric:tabular-nums;
+  text-shadow:0 0 26px color-mix(in srgb,var(--c) 35%,transparent)}
+.bx-big .time i{font-style:normal;color:var(--muted);font-weight:200;margin:0 2px}
+.bx-big .sub{font-size:13px;color:var(--sub);margin-top:2px}
+.bx-big .chip{margin-top:8px}
+
+/* 24 órás napóra (Oura-szerű): alvás, edzés, a többi étkezés halkan, EZ az ablak fényesen */
+.dial{display:block;width:230px;height:230px;margin:6px auto 4px}
+.dial .face{fill:rgba(20,17,15,.5);stroke:var(--divider)}
+.dial .awake{fill:none;stroke:var(--recess);stroke-width:12}
+.dial .night{fill:none;stroke:rgba(109,95,168,.28);stroke-width:12}
+.dial .other{fill:none;stroke:rgba(245,239,230,.22);stroke-width:12}
+.dial .train{fill:none;stroke:var(--coral);stroke-width:5;stroke-linecap:round;filter:drop-shadow(0 0 5px color-mix(in srgb,var(--coral) 60%,transparent))}
+.dial .this{fill:none;stroke:var(--c);stroke-width:12;stroke-linecap:round;filter:drop-shadow(0 0 7px color-mix(in srgb,var(--c) 70%,transparent))}
+.dial .hr{font-size:9px;fill:var(--muted);font-family:var(--ff);text-anchor:middle;dominant-baseline:middle}
+.dial .nowhand{stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;opacity:.7}
+.dial .logdot{stroke:var(--page);stroke-width:2.5}
+.dial .ctr1{font-size:10px;fill:var(--muted);letter-spacing:1.2px;text-anchor:middle;font-family:var(--ff);font-weight:600}
+.dial .ctr2{font-size:19px;fill:var(--ink);text-anchor:middle;font-family:var(--ff);font-weight:300;letter-spacing:-.6px}
+.dial .ctr3{font-size:10.5px;fill:var(--sub);text-anchor:middle;font-family:var(--ff)}
+.legend{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 14px;font-size:11px;color:var(--sub);margin-bottom:6px}
+.legend i{display:inline-block;width:10px;height:4px;border-radius:2px;margin-right:5px;vertical-align:middle}
+
+.sec{margin-top:14px}
+.sec>.eyebrow{display:block;margin:0 2px 8px}
+.rows{display:grid;gap:8px}
+.row{display:flex;gap:11px;align-items:flex-start;padding:10px 12px;border-radius:16px;background:var(--flat);border:1px solid var(--divider)}
+.row .ri{width:30px;height:30px;flex:none;filter:drop-shadow(0 4px 5px rgba(0,0,0,.5))}
+.row b{display:block;font-size:13.5px;font-weight:600}
+.row span{display:block;font-size:12.5px;color:var(--sub);margin-top:1px}
+.row .val{margin-left:auto;align-self:center;font-size:13px;font-weight:600;color:color-mix(in srgb,var(--c) 70%,var(--ink));white-space:nowrap}
+.mnote{margin-top:14px;font-family:var(--serif);font-style:italic;font-size:14px;color:var(--sub);border-left:2px solid var(--lav);padding:2px 0 2px 12px}
+
+/* vércukor-válasz: három sáv + várható görbe (relatív, tengely-szám nélkül) */
+.gly{padding:12px;border-radius:16px;background:var(--flat);border:1px solid var(--divider)}
+.gly-top{display:flex;align-items:center;gap:10px}
+.gly-top .ri{width:30px;height:30px;filter:drop-shadow(0 4px 5px rgba(0,0,0,.5))}
+.gly-top b{font-size:14px;font-weight:600}
+.gly-top .num{margin-left:auto;text-align:right}
+.gly-top .num strong{display:block;font-size:22px;font-weight:300;letter-spacing:-.6px;line-height:1}
+.gly-top .num small{font-size:10.5px;color:var(--muted)}
+.bands{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:10px 0 4px}
+.bands i{height:6px;border-radius:3px;background:var(--recess)}
+.bands i.on{background:var(--g);box-shadow:0 0 8px color-mix(in srgb,var(--g) 60%,transparent)}
+.bandlbl{display:grid;grid-template-columns:repeat(3,1fr);font-size:10.5px;color:var(--muted);text-align:center}
+.bandlbl .on{color:var(--ink);font-weight:600}
+.curve{display:block;width:100%;height:78px;margin-top:8px}
+.curve .base{stroke:var(--divider);stroke-dasharray:3 4}
+.curve .ln{fill:none;stroke:var(--g);stroke-width:2.2;stroke-linecap:round;filter:drop-shadow(0 0 5px color-mix(in srgb,var(--g) 60%,transparent))}
+.curve .ar{fill:color-mix(in srgb,var(--g) 16%,transparent)}
+.curve .ghost{fill:none;stroke:rgba(245,239,230,.25);stroke-width:1.4;stroke-dasharray:4 4}
+.curve text{font-size:9px;fill:var(--muted);font-family:var(--ff)}
+.gly p{font-size:12.5px;color:var(--sub);margin-top:6px}
+
+.close{display:block;width:100%;margin-top:16px;padding:11px 0;text-align:center;border-radius:14px;background:var(--flat);border:1px solid var(--divider);font-size:13.5px;font-weight:600}
+</style>
+</head>
+<body>
+<svg class="sprite" aria-hidden="true"><defs>
+<linearGradient id="titanium" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#e9e4f6"/><stop offset=".18" stop-color="#8e8a9e"/><stop offset=".43" stop-color="#282b39"/><stop offset=".66" stop-color="#62697d"/><stop offset=".85" stop-color="#c9c7d8"/><stop offset="1" stop-color="#393647"/></linearGradient>
+<linearGradient id="blue" x2=".5" y2="1"><stop stop-color="#d1faff"/><stop offset=".4" stop-color="#78cfe7"/><stop offset="1" stop-color="#38617a"/></linearGradient>
+<linearGradient id="gold" x2=".8" y2="1"><stop stop-color="#ffebbe"/><stop offset=".45" stop-color="#b89757"/><stop offset="1" stop-color="#604831"/></linearGradient>
+<linearGradient id="purple" x2=".7" y2="1"><stop stop-color="#eee0ff"/><stop offset=".4" stop-color="#b3a0ed"/><stop offset="1" stop-color="#504373"/></linearGradient>
+<linearGradient id="lime" x2=".8" y2="1"><stop stop-color="#eeffb9"/><stop offset=".5" stop-color="#b8d777"/><stop offset="1" stop-color="#52663e"/></linearGradient>
+<linearGradient id="red" x2=".7" y2="1"><stop stop-color="#ffd2c2"/><stop offset=".45" stop-color="#e07a63"/><stop offset="1" stop-color="#83291d"/></linearGradient>
+<linearGradient id="avo" x2=".6" y2="1"><stop stop-color="#f2eeb0"/><stop offset=".5" stop-color="#c9d06a"/><stop offset="1" stop-color="#4f6a2c"/></linearGradient>
+<filter id="shadow" x="-60%" y="-60%" width="220%" height="240%"><feDropShadow dx="0" dy="3" stdDeviation="2" flood-opacity=".5"/></filter>
+<symbol id="i-sun" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M32 5V12M32 52V59M5 32H12M52 32H59M12 12L17 17M47 47L52 52M12 52L17 47M47 17L52 12" stroke="url(#gold)" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="32" r="15" fill="url(#gold)"/><path d="M22 30A11 11 0 0 1 35 21" stroke="#fff4d2" stroke-width="2" fill="none" opacity=".8"/></g></symbol>
+<symbol id="i-water" viewBox="0 0 64 64"><path d="M32 7C25 18 13 30 13 41A19 19 0 0 0 51 41C51 30 40 18 32 7Z" fill="url(#blue)" stroke="#aeedff" stroke-width=".8" filter="url(#shadow)"/><path d="M26 25C21 32 19 36 20 41" fill="none" stroke="#dcfaff" stroke-width="3" stroke-linecap="round" opacity=".7"/><path d="M24 50C31 54 42 50 44 44" fill="none" stroke="#286887" stroke-width="2" opacity=".5"/></symbol>
+<symbol id="i-moon" viewBox="0 0 64 64"><path d="M42 9C18 2 3 28 17 47C29 64 54 53 57 37C36 45 23 24 42 9Z" fill="url(#purple)" stroke="#e7d7ff" stroke-width=".8" filter="url(#shadow)"/><path d="M46 9L48 16 55 18 48 20 46 27 44 20 37 18 44 16Z" fill="url(#gold)"/></symbol>
+<symbol id="i-bolt" viewBox="0 0 64 64"><path d="M36 4L13 36 28 37 25 60 53 26 36 26Z" fill="url(#lime)" stroke="#dbf6aa" stroke-width="1" filter="url(#shadow)"/><path d="M34 11L19 33 29 34" fill="none" stroke="#f2ffd8" stroke-width="1.6"/></symbol>
+<symbol id="i-book" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M13 12L44 7 53 15 53 54 22 59 13 51Z" fill="url(#titanium)" stroke="#aca7c4"/><path d="M21 19L53 15 53 54 22 59Z" fill="url(#purple)"/><path d="M13 12L21 19V59M29 29L45 27M29 36L42 34" fill="none" stroke="#e9dcff" stroke-width="1.5"/><path d="M43 42L45 47 50 49 45 50 43 55 42 50 37 49 42 47Z" fill="url(#gold)"/></g></symbol>
+<symbol id="i-ring" viewBox="0 0 64 64"><g filter="url(#shadow)"><circle cx="32" cy="32" r="21" fill="none" stroke="url(#titanium)" stroke-width="11"/><path d="M32 11A21 21 0 1 1 12 38" fill="none" stroke="url(#purple)" stroke-width="8" stroke-linecap="round"/><circle cx="32" cy="32" r="5" fill="url(#gold)"/></g></symbol>
+<symbol id="i-gem" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M32 5L54 19 50 46 32 59 10 44 11 18Z" fill="url(#purple)" stroke="#ddd1ff"/><path d="M32 5L26 27 11 18M26 27L10 44M26 27L32 59M26 27L54 19M26 27L50 46" fill="none" stroke="#f0e7ff" stroke-opacity=".55"/><path d="M37 22L32 32 39 32 29 44 31 35 25 35Z" fill="#f3e9ff"/></g></symbol>
+<symbol id="i-heart" viewBox="0 0 64 64"><path d="M32 54C20 44 7 35 9 22C11 8 27 8 32 20C40 5 56 12 56 25C56 37 42 48 32 54Z" fill="url(#purple)" stroke="#d8c0ee" filter="url(#shadow)"/><path d="M13 32H23L28 24 35 41 40 31H53" fill="none" stroke="#f7e6ff" stroke-width="2.4" stroke-linejoin="round"/></symbol>
+<symbol id="i-dumbbell" viewBox="0 0 64 64"><g transform="rotate(-30 32 32)" filter="url(#shadow)"><rect x="19" y="28" width="28" height="8" rx="3" fill="url(#titanium)"/><rect x="10" y="15" width="12" height="34" rx="5" fill="url(#titanium)"/><rect x="42" y="15" width="12" height="34" rx="5" fill="url(#titanium)"/><rect x="6" y="22" width="7" height="20" rx="3" fill="url(#lime)"/><rect x="51" y="22" width="7" height="20" rx="3" fill="url(#lime)"/><path d="M16 19V44M48 19V44" stroke="#d0e8aa" stroke-width="1.5"/></g></symbol>
+
+
+
+
+<symbol id="i-volley" viewBox="0 0 64 64"><g filter="url(#shadow)"><circle cx="32" cy="32" r="25" fill="#e7e3f4" stroke="#ffffff" stroke-width=".8"/><path d="M32 7C24 18 22 34 27 56" fill="none" stroke="#6f7fa8" stroke-width="2.8" stroke-linecap="round"/><path d="M57 32C44 29 30 33 19 47" fill="none" stroke="#6f7fa8" stroke-width="2.8" stroke-linecap="round"/><path d="M13 17C22 28 32 34 46 36" fill="none" stroke="#6f7fa8" stroke-width="2.8" stroke-linecap="round"/><circle cx="32" cy="32" r="25" fill="none" stroke="#9d97b5" stroke-width="1"/><path d="M17 20a20 20 0 0 1 13-8" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity=".9"/></g></symbol>
+<symbol id="i-kettle" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M23 25c-2-11 3-17 9-17s11 6 9 17" fill="none" stroke="url(#titanium)" stroke-width="6" stroke-linecap="round"/><path d="M32 22c12 0 19 9 19 20 0 9-8 14-19 14s-19-5-19-14c0-11 7-20 19-20Z" fill="url(#titanium)" stroke="#b9b3cb" stroke-width=".8"/><ellipse cx="32" cy="49" rx="10" ry="4.5" fill="url(#lime)"/><path d="M21 34c2-4 6-6 10-6" fill="none" stroke="#f2eeff" stroke-width="2" stroke-linecap="round" opacity=".8"/></g></symbol>
+<symbol id="i-run" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M13 25c5-2 10 0 13 4l7 8 14 4c6 2 9 5 9 10v3H13Z" fill="url(#titanium)" stroke="#c3bdd6" stroke-width=".8"/><path d="M14 48h41" stroke="url(#blue)" stroke-width="5" stroke-linecap="round"/><path d="M23 32l6 7M29 30l6 7" stroke="#eae6f8" stroke-width="2" stroke-linecap="round" opacity=".8"/><path d="M3 21h11M1 30h8M5 39h7" stroke="#9fe0f2" stroke-width="2.6" stroke-linecap="round" opacity=".65"/></g></symbol>
+<symbol id="i-history" viewBox="0 0 64 64"><g filter="url(#shadow)"><circle cx="34" cy="33" r="22" fill="url(#titanium)" stroke="#cdc7de" stroke-width=".8"/><circle cx="34" cy="33" r="15" fill="#0d1016" opacity=".55"/><path d="M34 23v11l8 5" fill="none" stroke="url(#blue)" stroke-width="3.4" stroke-linecap="round"/><path d="M13 20a22 22 0 0 1 8-8" fill="none" stroke="url(#blue)" stroke-width="3.4" stroke-linecap="round"/><path d="M10 9v11h11" fill="none" stroke="url(#blue)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></g></symbol>
+<symbol id="i-play" viewBox="0 0 64 64"><g filter="url(#shadow)"><circle cx="32" cy="32" r="24" fill="url(#titanium)" stroke="#cdc7de" stroke-width=".8"/><circle cx="32" cy="32" r="17" fill="#0e1218" opacity=".5"/><path d="M26 22.5 44 32 26 41.5Z" fill="url(#lime)" stroke="#eaffc4" stroke-width="1" stroke-linejoin="round"/></g></symbol>
+<symbol id="i-note" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M14 10h26l10 10v34H14Z" fill="url(#titanium)" stroke="#c4bed7" stroke-width=".8"/><path d="M40 10v10h10" fill="none" stroke="#e6e1f4" stroke-width="2"/><path d="M21 30h20M21 38h16M21 46h10" stroke="#a9a3bd" stroke-width="2.6" stroke-linecap="round"/><path d="M45 33 55 43l-4 5-10-10Z" fill="url(#gold)" stroke="#ffeec4" stroke-width=".8"/></g></symbol>
+<symbol id="i-up" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M10 46 26 30l10 9 18-20" fill="none" stroke="url(#lime)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M42 17h13v13" fill="none" stroke="url(#lime)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 56h44" stroke="#ffffff1f" stroke-width="3" stroke-linecap="round"/></g></symbol>
+<symbol id="i-down" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M10 20 26 36l10-9 18 20" fill="none" stroke="url(#gold)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M42 47h13V34" fill="none" stroke="url(#gold)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 8h44" stroke="#ffffff1f" stroke-width="3" stroke-linecap="round"/></g></symbol>
+<symbol id="i-hold" viewBox="0 0 64 64"><g filter="url(#shadow)"><circle cx="32" cy="32" r="23" fill="none" stroke="url(#blue)" stroke-width="5"/><circle cx="32" cy="32" r="13" fill="none" stroke="url(#blue)" stroke-width="4" opacity=".7"/><circle cx="32" cy="32" r="5" fill="url(#blue)"/></g></symbol>
+<symbol id="i-record" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M20 6h24l-4 20H24Z" fill="url(#titanium)" stroke="#cdc7de" stroke-width=".8"/><circle cx="32" cy="39" r="17" fill="url(#gold)" stroke="#ffeec4" stroke-width="1"/><path d="M32 28l4 8 9 1-6.5 6 1.5 9-8-4.5-8 4.5 1.5-9L19 37l9-1Z" fill="#fff6de"/></g></symbol>
+<symbol id="i-journal" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M32 16C24 9 14 8 8 11v40c6-3 16-2 24 5Z" fill="url(#titanium)" stroke="#c9c3dc" stroke-width=".8"/><path d="M32 16c8-7 18-8 24-5v40c-6-3-16-2-24 5Z" fill="url(#titanium)" stroke="#c9c3dc" stroke-width=".8"/><path d="M32 16v40" stroke="#8f89a5" stroke-width="2"/><path d="M14 21c5-1 10 0 13 3M14 30c5-1 10 0 13 3M14 39c5-1 10 0 13 3" fill="none" stroke="#a6a0bb" stroke-width="2" stroke-linecap="round"/><path d="M37 24c5-2 9-3 13-2M37 33c5-2 9-3 13-2" fill="none" stroke="#a6a0bb" stroke-width="2" stroke-linecap="round"/><path d="M45 8v18l4-4 4 4V8Z" fill="url(#gold)" stroke="#ffeec4" stroke-width=".7"/></g></symbol>
+<symbol id="i-tick" viewBox="0 0 64 64"><g filter="url(#shadow)"><circle cx="32" cy="32" r="24" fill="url(#titanium)" stroke="#cdc7de" stroke-width=".8"/><circle cx="32" cy="32" r="17" fill="#0e1218" opacity=".45"/><path d="M21 33l8 8 15-17" fill="none" stroke="url(#lime)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></g></symbol>
+<symbol id="i-skip" viewBox="0 0 64 64"><g filter="url(#shadow)"><circle cx="32" cy="32" r="23" fill="none" stroke="url(#titanium)" stroke-width="6"/><path d="M16 16 48 48" stroke="url(#gold)" stroke-width="6" stroke-linecap="round"/></g></symbol>
+<linearGradient id="mg-body" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#8b8799"/><stop offset="0.55" stop-color="#3b3d4e"/><stop offset="1" stop-color="#23252f"/></linearGradient><linearGradient id="mg-chest" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#ffd9cf"/><stop offset="0.5" stop-color="#e08a7c"/><stop offset="1" stop-color="#9a5147"/></linearGradient><linearGradient id="mg-back" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#d6f4ff"/><stop offset="0.5" stop-color="#78cfe7"/><stop offset="1" stop-color="#376b80"/></linearGradient><linearGradient id="mg-shoulder" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#eee0ff"/><stop offset="0.5" stop-color="#bca6f1"/><stop offset="1" stop-color="#5c5187"/></linearGradient><linearGradient id="mg-arm" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#ffdce8"/><stop offset="0.5" stop-color="#e79ab8"/><stop offset="1" stop-color="#8a4a60"/></linearGradient><linearGradient id="mg-leg" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#eaffc4"/><stop offset="0.5" stop-color="#b3d97e"/><stop offset="1" stop-color="#5c743f"/></linearGradient><linearGradient id="mg-core" x1="0" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#ffeec4"/><stop offset="0.5" stop-color="#e0bd8a"/><stop offset="1" stop-color="#856640"/></linearGradient>
+<symbol id="i-star" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M32 5.5 40 22l18 2.6-13 12.7 3.1 17.9L32 46.8 15.9 55.2 19 37.3 6 24.6 24 22Z" fill="url(#gold)" stroke="#fff3d2" stroke-width="1.1" stroke-linejoin="round"/><path d="M32 12.5 37 23l11.5 1.7-8.3 8.1" fill="none" stroke="#fffaf0" stroke-width="1.8" stroke-linecap="round" opacity=".75"/></g></symbol><symbol id="i-star-half" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M32 5.5 40 22l18 2.6-13 12.7 3.1 17.9L32 46.8 15.9 55.2 19 37.3 6 24.6 24 22Z" fill="#ffffff10" stroke="#ffffff30" stroke-width="1.1" stroke-linejoin="round"/><path d="M32 5.5 32 46.8 15.9 55.2 19 37.3 6 24.6 24 22Z" fill="url(#gold)" stroke="#fff3d2" stroke-width="1.1" stroke-linejoin="round"/></g></symbol><symbol id="i-star-empty" viewBox="0 0 64 64"><path d="M32 5.5 40 22l18 2.6-13 12.7 3.1 17.9L32 46.8 15.9 55.2 19 37.3 6 24.6 24 22Z" fill="#ffffff0c" stroke="#ffffff2b" stroke-width="1.4" stroke-linejoin="round"/></symbol><symbol id="i-repeat" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M12 26a20 20 0 0 1 33-9" fill="none" stroke="url(#gold)" stroke-width="6" stroke-linecap="round"/><path d="M46 6v12H34" fill="none" stroke="url(#gold)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M52 38a20 20 0 0 1-33 9" fill="none" stroke="url(#gold)" stroke-width="6" stroke-linecap="round"/><path d="M18 58V46h12" fill="none" stroke="url(#gold)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></g></symbol><symbol id="i-peak" viewBox="0 0 64 64"><g filter="url(#shadow)"><rect x="8" y="38" width="13" height="18" rx="4" fill="url(#titanium)" stroke="#c4bed7" stroke-width=".7"/><rect x="25.5" y="27" width="13" height="29" rx="4" fill="url(#titanium)" stroke="#c4bed7" stroke-width=".7"/><rect x="43" y="14" width="13" height="42" rx="4" fill="url(#gold)" stroke="#ffeec4" stroke-width=".8"/><path d="M49.5 5 51.8 10.2 57 12.5 51.8 14.8 49.5 20 47.2 14.8 42 12.5 47.2 10.2Z" fill="#fff6de"/><path d="M11 42h7M28.5 31h7" stroke="#ffffff40" stroke-width="2" stroke-linecap="round"/></g></symbol><symbol id="i-bike" viewBox="0 0 64 64"><g filter="url(#shadow)"><circle cx="15" cy="43" r="12" fill="none" stroke="url(#titanium)" stroke-width="4"/><circle cx="49" cy="43" r="12" fill="none" stroke="url(#titanium)" stroke-width="4"/><path d="M15 43 27 22h10l12 21M27 22h-6M37 22l6 8" fill="none" stroke="url(#lime)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="32" cy="43" r="4" fill="url(#gold)"/></g></symbol><symbol id="i-swim" viewBox="0 0 64 64"><g filter="url(#shadow)"><circle cx="22" cy="20" r="6.5" fill="url(#titanium)"/><path d="M28 26c7-6 14-6 20 1" fill="none" stroke="url(#titanium)" stroke-width="6" stroke-linecap="round"/><path d="M6 42c5-5 10-5 14 0s10 5 14 0 10-5 14 0 6 4 10 1" fill="none" stroke="url(#blue)" stroke-width="4.4" stroke-linecap="round"/><path d="M6 53c5-5 10-5 14 0s10 5 14 0 10-5 14 0" fill="none" stroke="url(#blue)" stroke-width="3.4" stroke-linecap="round" opacity=".6"/></g></symbol><symbol id="i-football" viewBox="0 0 64 64"><g filter="url(#shadow)"><circle cx="32" cy="32" r="25" fill="#eceaf4" stroke="#ffffff" stroke-width=".8"/><path d="M32 17 45 26.5 40 42H24l-5-15.5Z" fill="#2f3342"/><path d="M32 7v10M7.5 26.5 19 26.5M56.5 26.5 45 26.5M17 54l7-12M47 54l-7-12" stroke="#2f3342" stroke-width="2.6"/><circle cx="32" cy="32" r="25" fill="none" stroke="#9d97b5" stroke-width="1"/></g></symbol><symbol id="i-basket" viewBox="0 0 64 64"><g filter="url(#shadow)"><circle cx="32" cy="32" r="25" fill="url(#gold)" stroke="#ffe6b8" stroke-width=".8"/><path d="M32 7v50M7 32h50" stroke="#6b4a22" stroke-width="2.6"/><path d="M13 14c8 9 8 27 0 36M51 14c-8 9-8 27 0 36" fill="none" stroke="#6b4a22" stroke-width="2.6"/></g></symbol><symbol id="i-tennis" viewBox="0 0 64 64"><g filter="url(#shadow)"><ellipse cx="25" cy="23" rx="15" ry="18" transform="rotate(-28 25 23)" fill="none" stroke="url(#titanium)" stroke-width="5"/><path d="M14 16 33 32M20 10 38 26M11 24l16 13" stroke="#c8c2d8" stroke-width="1.6" opacity=".8"/><path d="M33 39 48 56" stroke="url(#titanium)" stroke-width="6" stroke-linecap="round"/><circle cx="50" cy="20" r="8" fill="url(#lime)" stroke="#eaffc4" stroke-width="1"/><path d="M44 15c4 3 5 8 3 12" fill="none" stroke="#f4ffe0" stroke-width="1.6"/></g></symbol><symbol id="i-hike" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M4 52 24 20l11 17 6-8 19 23Z" fill="url(#titanium)" stroke="#c4bed7" stroke-width=".8"/><path d="M24 20 31 31l-7 7-5-6Z" fill="#eee9fb"/><path d="M14 52c4-6 9-7 13-4s8 1 10-4" fill="none" stroke="url(#gold)" stroke-width="3" stroke-linecap="round" stroke-dasharray="4 4"/></g></symbol><symbol id="i-trx" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M32 6v10" stroke="url(#titanium)" stroke-width="5" stroke-linecap="round"/><path d="M32 16 18 42M32 16l14 26" fill="none" stroke="url(#lime)" stroke-width="5" stroke-linecap="round"/><rect x="9" y="42" width="18" height="8" rx="4" fill="url(#titanium)" stroke="#c4bed7" stroke-width=".7"/><rect x="37" y="42" width="18" height="8" rx="4" fill="url(#titanium)" stroke="#c4bed7" stroke-width=".7"/><circle cx="32" cy="9" r="5" fill="url(#gold)"/></g></symbol><symbol id="i-crossfit" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M20 6v16M44 6v16" stroke="url(#titanium)" stroke-width="4" stroke-linecap="round"/><circle cx="20" cy="38" r="15" fill="none" stroke="url(#gold)" stroke-width="6"/><circle cx="44" cy="38" r="15" fill="none" stroke="url(#gold)" stroke-width="6"/><path d="M12 28a15 15 0 0 1 8-5" fill="none" stroke="#fff3d2" stroke-width="2.4" stroke-linecap="round"/></g></symbol><symbol id="i-other" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M32 4 38 24l20 6-20 6-6 20-6-20-20-6 20-6Z" fill="url(#purple)" stroke="#e7dbff" stroke-width="1" stroke-linejoin="round"/><path d="M52 8l2.4 5.6L60 16l-5.6 2.4L52 24l-2.4-5.6L44 16l5.6-2.4Z" fill="url(#gold)"/></g></symbol><symbol id="i-info" viewBox="0 0 64 64"><g filter="url(#shadow)"><circle cx="32" cy="32" r="24" fill="url(#titanium)" stroke="#cdc7de" stroke-width=".8"/><circle cx="32" cy="32" r="17.5" fill="#0e1218" opacity=".5"/><circle cx="32" cy="21.5" r="3.4" fill="url(#blue)"/><rect x="28.6" y="28" width="6.8" height="16" rx="3.4" fill="url(#blue)"/></g></symbol><symbol id="i-bowl" viewBox="0 0 64 64"><g filter="url(#shadow)"><ellipse cx="32" cy="28" rx="25" ry="10" fill="url(#titanium)"/><path d="M8 29C9 49 18 53 32 53S56 46 57 29Z" fill="url(#titanium)"/><ellipse cx="32" cy="28" rx="22" ry="7" fill="url(#lime)"/><path d="M19 26C25 14 32 15 34 23C41 13 48 20 47 27" fill="#bfd79a" stroke="#eaf2bf" stroke-width="1.5"/><path d="M17 36C18 43 23 47 29 48" fill="none" stroke="#c4c7d6" stroke-width="2"/></g></symbol>
+<symbol id="i-stack" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M10 39L32 28 54 39 32 53Z" fill="url(#titanium)"/><path d="M10 29L32 18 54 29 32 43Z" fill="url(#blue)"/><path d="M10 19L32 8 54 19 32 33Z" fill="url(#titanium)"/><path d="M32 8L54 19 32 33" fill="none" stroke="#c3e5f0" stroke-width="1.6"/></g></symbol>
+<symbol id="i-chat" viewBox="0 0 64 64"><path d="M12 12Q32 3 52 14L54 43Q36 52 23 47L10 56 13 42Q6 27 12 12Z" fill="url(#titanium)" stroke="#b8abc9" filter="url(#shadow)"/><circle cx="23" cy="28" r="3" fill="#c8b4f8"/><circle cx="33" cy="27" r="3" fill="#9de1ec"/><circle cx="43" cy="26" r="3" fill="#e9ce9c"/></symbol>
+<symbol id="i-person" viewBox="0 0 64 64"><circle cx="32" cy="19" r="11" fill="url(#titanium)"/><path d="M12 53C12 30 52 30 52 53Z" fill="url(#titanium)" stroke="#b6b0c5"/></symbol>
+<symbol id="i-meat" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M12 30C10 16 24 7 38 10C52 13 58 26 54 38C50 51 36 58 24 53C13 49 13 40 12 30Z" fill="url(#red)" stroke="#ffb9a6" stroke-width=".9"/><path d="M22 22C30 16 42 18 47 26" fill="none" stroke="#ffd9cd" stroke-width="2.6" stroke-linecap="round" opacity=".85"/><path d="M20 36C26 32 30 34 33 40C36 46 41 46 45 42" fill="none" stroke="#ffe6de" stroke-width="2.2" stroke-linecap="round" opacity=".7"/><circle cx="22" cy="45" r="5" fill="#f6ede4"/><circle cx="22" cy="45" r="2.2" fill="#d8bfae"/></g></symbol>
+<symbol id="i-avocado" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M32 6C26 16 12 24 12 40A20 19 0 0 0 52 40C52 24 38 16 32 6Z" fill="#3c5d2c" stroke="#587f3c" stroke-width="1"/><path d="M32 12C27 20 17 27 17 40A15 14 0 0 0 47 40C47 27 37 20 32 12Z" fill="url(#avo)"/><circle cx="32" cy="40" r="8" fill="#8b5a34" stroke="#a9724a"/><path d="M28 37A5 5 0 0 1 34 34" fill="none" stroke="#c99668" stroke-width="1.8" stroke-linecap="round"/></g></symbol>
+<symbol id="i-protein" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M14 44C6 52 12 60 20 55C22 61 30 60 31 53C38 57 46 52 43 44C55 40 58 24 46 15C36 7 20 10 15 22C12 31 12 38 14 44Z" fill="url(#purple)" stroke="#dcCbfa" stroke-width=".8"/><path d="M22 22C26 16 36 15 42 21" fill="none" stroke="#f0e5ff" stroke-width="2.4" stroke-linecap="round" opacity=".8"/><circle cx="20" cy="53" r="3.4" fill="#efe6fb"/><circle cx="28" cy="56" r="3" fill="#efe6fb"/></g></symbol>
+<symbol id="i-carb" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M32 58V20" stroke="url(#gold)" stroke-width="4" stroke-linecap="round"/><path d="M32 14C36 8 42 7 46 10C45 16 39 19 32 18C25 19 19 16 18 10C22 7 28 8 32 14Z" fill="url(#gold)"/><path d="M32 30C38 24 46 24 49 28C46 34 38 36 32 32C26 36 18 34 15 28C18 24 26 24 32 30Z" fill="url(#gold)" stroke="#ffe9b8" stroke-width=".6"/><path d="M32 44C38 38 46 38 49 42C46 48 38 50 32 46C26 50 18 48 15 42C18 38 26 38 32 44Z" fill="url(#gold)" stroke="#ffe9b8" stroke-width=".6"/></g></symbol>
+<symbol id="i-fat" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M32 6C22 20 12 30 12 41A20 20 0 0 0 52 41C52 30 42 20 32 6Z" fill="url(#blue)" stroke="#c8f0fb" stroke-width=".8"/><path d="M24 30C20 36 19 40 20 44" fill="none" stroke="#e8fbff" stroke-width="3.2" stroke-linecap="round" opacity=".85"/><ellipse cx="38" cy="46" rx="8" ry="6" fill="#2c5a70" opacity=".55"/></g></symbol>
+<symbol id="i-fiber" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M50 10C28 10 12 24 12 44C12 50 14 54 16 56C18 40 28 28 42 22C30 32 22 42 20 55C24 57 30 57 35 55C50 49 56 32 50 10Z" fill="url(#lime)" stroke="#e4f6c2" stroke-width=".8"/><path d="M20 55C22 42 30 32 42 22" fill="none" stroke="#f0fadb" stroke-width="2.2" stroke-linecap="round" opacity=".85"/></g></symbol>
+<symbol id="i-macro" viewBox="0 0 64 64"><g filter="url(#shadow)"><ellipse cx="32" cy="36" rx="27" ry="21" fill="url(#titanium)" stroke="#b6b0c5" stroke-width=".7"/><ellipse cx="32" cy="33" rx="22" ry="16" fill="#1d2029"/><path d="M32 33L32 17A22 16 0 0 1 53.2 37.4Z" fill="url(#red)"/><path d="M32 33L53.2 37.4A22 16 0 0 1 12.6 40.2Z" fill="url(#gold)"/><path d="M32 33L12.6 40.2A22 16 0 0 1 32 17Z" fill="url(#avo)"/><path d="M32 17V33L53.2 37.4M32 33L12.6 40.2" fill="none" stroke="#1d2029" stroke-width="1.6"/><path d="M18 24A20 14 0 0 1 36 17.4" fill="none" stroke="#ffffff" stroke-opacity=".35" stroke-width="1.6" stroke-linecap="round"/></g></symbol>
+<symbol id="i-micro" viewBox="0 0 64 64"><g filter="url(#shadow)"><g transform="rotate(-38 32 32)"><rect x="21" y="9" width="22" height="46" rx="11" fill="url(#titanium)" stroke="#c9c2dc" stroke-width=".8"/><path d="M21 32V20A11 11 0 0 1 43 20V32Z" fill="url(#purple)"/><path d="M25 19A7 7 0 0 1 31 13" fill="none" stroke="#f3ebff" stroke-width="2" stroke-linecap="round" opacity=".8"/><path d="M21 32H43" stroke="#2a2533" stroke-width="1.2"/></g><circle cx="50" cy="15" r="4.2" fill="url(#gold)"/><circle cx="13" cy="50" r="3.6" fill="url(#blue)"/><circle cx="53" cy="44" r="2.6" fill="url(#lime)"/><path d="M10 18L11.2 21.6 14.8 22.8 11.2 24 10 27.6 8.8 24 5.2 22.8 8.8 21.6Z" fill="#efe6ff" opacity=".85"/></g></symbol>
+<symbol id="i-processing" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M28.4 5H35.6L37 12.4 42.4 14.6 48.6 10.4 53.6 15.4 49.4 21.6 51.6 27 59 28.4V35.6L51.6 37 49.4 42.4 53.6 48.6 48.6 53.6 42.4 49.4 37 51.6 35.6 59H28.4L27 51.6 21.6 49.4 15.4 53.6 10.4 48.6 14.6 42.4 12.4 37 5 35.6V28.4L12.4 27 14.6 21.6 10.4 15.4 15.4 10.4 21.6 14.6 27 12.4Z" fill="url(#gold)" stroke="#ffe7b3" stroke-width=".8"/><circle cx="32" cy="32" r="15.5" fill="#241f18"/><path d="M41 22C30 21 22 28 23 40C24 42 25 43 26 43C27 35 31 30 37 27C32 31 29 36 28 43C31 44 34 43 36 41C42 36 43 28 41 22Z" fill="url(#lime)" stroke="#e7f6c6" stroke-width=".6"/><path d="M28 43C29 36 32 31 37 27" fill="none" stroke="#f3fbde" stroke-width="1.4" stroke-linecap="round" opacity=".85"/></g></symbol>
+<symbol id="i-clock" viewBox="0 0 64 64"><g filter="url(#shadow)"><circle cx="32" cy="34" r="25" fill="url(#titanium)" stroke="#c3bdd6" stroke-width=".8"/><circle cx="32" cy="34" r="19.5" fill="#1b1e28"/><path d="M32 17.5V20.5M32 47.5V50.5M15.5 34H18.5M45.5 34H48.5M20.3 22.3L22.4 24.4M41.6 43.6L43.7 45.7M20.3 45.7L22.4 43.6M41.6 24.4L43.7 22.3" stroke="#8a93b3" stroke-width="1.6" stroke-linecap="round"/><path d="M32 34V23.5" stroke="url(#blue)" stroke-width="3.2" stroke-linecap="round"/><path d="M32 34L40.5 38.5" stroke="url(#purple)" stroke-width="3.2" stroke-linecap="round"/><circle cx="32" cy="34" r="2.8" fill="url(#gold)"/><rect x="27" y="4.5" width="10" height="5.5" rx="2.2" fill="url(#titanium)" stroke="#c3bdd6" stroke-width=".6"/><path d="M19 17A19 19 0 0 1 30 12.4" fill="none" stroke="#ffffff" stroke-opacity=".38" stroke-width="1.8" stroke-linecap="round"/></g></symbol>
+<symbol id="i-shield" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M32 5L53 13V30C53 44 44 54 32 59C20 54 11 44 11 30V13Z" fill="url(#blue)" stroke="#d3f6ff" stroke-width=".9"/><path d="M32 11L47 17V30C47 40.5 40.6 48.4 32 52.4C23.4 48.4 17 40.5 17 30V17Z" fill="#1e4454" opacity=".55"/><path d="M22.5 31.5L29 38L42 24.5" fill="none" stroke="#effcff" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 15.5L30 10.4" stroke="#ffffff" stroke-opacity=".45" stroke-width="1.8" stroke-linecap="round"/></g></symbol>
+<symbol id="i-sugar" viewBox="0 0 64 64"><defs><linearGradient id="pink" x2=".7" y2="1"><stop stop-color="#fff2f8"/><stop offset=".5" stop-color="#eeaecb"/><stop offset="1" stop-color="#8a4d6a"/></linearGradient></defs><g filter="url(#shadow)"><path d="M28 14L43 7 58 14 43 21Z" fill="#fff5f9"/><path d="M28 14V29L43 36V21Z" fill="url(#pink)"/><path d="M58 14V29L43 36V21Z" fill="#b8708f"/><path d="M7 33L23 25 39 33 23 41Z" fill="#fff5f9"/><path d="M7 33V50L23 58V41Z" fill="url(#pink)"/><path d="M39 33V50L23 58V41Z" fill="#b8708f"/><path d="M12 38L16 40M28 40L32 38M47 15L51 13" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" opacity=".7"/></g></symbol>
+<symbol id="i-salt" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M19 27H45L48 55Q32 61 16 55Z" fill="url(#titanium)" stroke="#c9c2dc" stroke-width=".8"/><path d="M19 27Q19 10 32 10Q45 10 45 27Z" fill="#dbe1ea" stroke="#aab3c2" stroke-width=".8"/><circle cx="27" cy="19" r="1.7" fill="#5b6578"/><circle cx="33" cy="16" r="1.7" fill="#5b6578"/><circle cx="38" cy="21" r="1.7" fill="#5b6578"/><path d="M24 34V49" stroke="#fff" stroke-opacity=".38" stroke-width="2.6" stroke-linecap="round"/><circle cx="52" cy="13" r="1.8" fill="#f4f7fb"/><circle cx="57" cy="20" r="1.3" fill="#f4f7fb"/><circle cx="49" cy="6" r="1.2" fill="#f4f7fb"/></g></symbol>
+<symbol id="i-sprout" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M32 43V27" stroke="#9ccc6a" stroke-width="3" stroke-linecap="round"/><path d="M32 31C31 19 22 12 10 13C10 25 19 32 32 31Z" fill="url(#lime)" stroke="#e7f6c6" stroke-width=".7"/><path d="M32 27C33 16 42 9 54 10C54 22 45 29 32 27Z" fill="url(#lime)" stroke="#e7f6c6" stroke-width=".7"/><path d="M14 17C20 21 26 25 31 30M50 14C44 18 38 22 33 26" stroke="#f3fbde" stroke-width="1.3" opacity=".8" fill="none" stroke-linecap="round"/><path d="M18 44H46L42 58H22Z" fill="url(#gold)" stroke="#ffe7b3" stroke-width=".7"/><rect x="16" y="40" width="32" height="6" rx="2.5" fill="#c9a86b"/></g></symbol>
+<symbol id="i-camera" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M22 14H42L46 21H52A6 6 0 0 1 58 27V48A6 6 0 0 1 52 54H12A6 6 0 0 1 6 48V27A6 6 0 0 1 12 21H18Z" fill="url(#titanium)" stroke="#c9c2dc" stroke-width=".8"/><circle cx="32" cy="37" r="12.5" fill="#1b1e28" stroke="#9aa3bb" stroke-width="1"/><circle cx="32" cy="37" r="8.5" fill="url(#blue)"/><circle cx="29" cy="34" r="2.6" fill="#effcff" opacity=".9"/><rect x="47" y="25" width="6" height="3.5" rx="1.5" fill="url(#gold)"/><path d="M11 27H18" stroke="#ffffff" stroke-opacity=".35" stroke-width="1.6" stroke-linecap="round"/></g></symbol>
+<symbol id="i-link" viewBox="0 0 64 64"><g filter="url(#shadow)"><g transform="rotate(-40 32 32)"><rect x="4" y="22" width="30" height="20" rx="10" fill="none" stroke="url(#titanium)" stroke-width="7"/><rect x="30" y="22" width="30" height="20" rx="10" fill="none" stroke="url(#blue)" stroke-width="7"/><path d="M12 26H24" stroke="#ffffff" stroke-opacity=".45" stroke-width="1.6" stroke-linecap="round"/><path d="M38 26H50" stroke="#e8fbff" stroke-opacity=".6" stroke-width="1.6" stroke-linecap="round"/></g></g></symbol>
+
+<symbol id="i-plate" viewBox="0 0 64 64"><g filter="url(#shadow)"><ellipse cx="32" cy="34" rx="26" ry="24" fill="url(#titanium)" stroke="#c3bdd6" stroke-width=".8"/><ellipse cx="32" cy="33" rx="18.5" ry="17" fill="#1b1e28"/><ellipse cx="32" cy="32" rx="14" ry="12.5" fill="url(#lime)" opacity=".92"/><path d="M24 25C27 20 33 20 36 24" fill="none" stroke="#f1ffd0" stroke-width="1.8" stroke-linecap="round" opacity=".85"/><path d="M12 14V26M9 14V21M15 14V21M12 26V44" stroke="url(#blue)" stroke-width="2.6" stroke-linecap="round"/><path d="M52 14C55 17 55 23 52 26V44" stroke="url(#gold)" stroke-width="2.6" stroke-linecap="round" fill="none"/><path d="M18 20A22 20 0 0 1 30 12" fill="none" stroke="#ffffff" stroke-opacity=".3" stroke-width="1.6" stroke-linecap="round"/></g></symbol>
+<symbol id="i-supps" viewBox="0 0 64 64"><g filter="url(#shadow)"><rect x="17" y="6" width="30" height="10" rx="3.5" fill="#d7dde6" stroke="#aab3c2" stroke-width=".8"/><rect x="13" y="16" width="38" height="42" rx="9" fill="url(#titanium)" stroke="#c9c2dc" stroke-width=".8"/><rect x="19" y="25" width="26" height="24" rx="6" fill="#151822"/><g transform="rotate(-35 32 37)"><rect x="21" y="32" width="22" height="11" rx="5.5" fill="url(#purple)" stroke="#e4d8ff" stroke-width=".7"/><path d="M32 32v11" stroke="#2a2533" stroke-width="1.2"/></g><circle cx="46" cy="12" r="3" fill="url(#gold)"/><path d="M17 22H24" stroke="#ffffff" stroke-opacity=".35" stroke-width="1.6" stroke-linecap="round"/></g></symbol>
+<symbol id="i-trend" viewBox="0 0 64 64"><g filter="url(#shadow)"><rect x="6" y="9" width="52" height="46" rx="12" fill="url(#titanium)" stroke="#c3bdd6" stroke-width=".8"/><rect x="11" y="14" width="42" height="36" rx="8" fill="#161a23"/><path d="M15 42L26 32L34 37L49 20" fill="none" stroke="url(#blue)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 46L26 41L34 44L49 34" fill="none" stroke="url(#purple)" stroke-width="2" stroke-linecap="round" stroke-dasharray="1 5"/><circle cx="49" cy="20" r="4" fill="url(#gold)"/><path d="M13 18A9 9 0 0 1 20 14" fill="none" stroke="#ffffff" stroke-opacity=".3" stroke-width="1.6" stroke-linecap="round"/></g></symbol>
+<symbol id="i-pot" viewBox="0 0 64 64"><g filter="url(#shadow)"><path d="M26 6C24 10 28 12 27 16M34 4C32 9 37 11 35 16" fill="none" stroke="#b8c7d2" stroke-width="2.2" stroke-linecap="round" opacity=".75"/><path d="M9 24H55L51 51A6 6 0 0 1 45 56H19A6 6 0 0 1 13 51Z" fill="url(#titanium)" stroke="#c3bdd6" stroke-width=".8"/><path d="M13 31Q32 38 51 31L48.5 49A5 5 0 0 1 44 53H20A5 5 0 0 1 15.5 49Z" fill="url(#gold)" opacity=".55"/><rect x="6" y="19" width="52" height="7" rx="3.5" fill="#d7dde6" stroke="#aab3c2" stroke-width=".7"/><circle cx="32" cy="16" r="3.4" fill="url(#red)"/><path d="M18 30Q22 44 26 49" fill="none" stroke="#ffffff" stroke-opacity=".28" stroke-width="2.2" stroke-linecap="round"/></g></symbol>
+<symbol id="i-score" viewBox="0 0 64 64"><g filter="url(#shadow)"><rect x="11" y="11" width="42" height="42" rx="13" transform="rotate(8 32 32)" fill="url(#titanium)" stroke="#b6b0c5" stroke-width=".7"/><path d="M32 17L36.4 27.2 47 28.6 39 36 41.2 47 32 41.6 22.8 47 25 36 17 28.6 27.6 27.2Z" fill="url(#purple)" stroke="#e9dcff" stroke-width=".8"/><path d="M32 17L32 41.6M25 36L39 36" stroke="#f0e7ff" stroke-opacity=".45" stroke-width="1"/><path d="M50 9L51.4 14 56.5 15.4 51.4 16.8 50 22 48.6 16.8 43.5 15.4 48.6 14Z" fill="url(#gold)"/></g></symbol>
+
+
+</defs></svg>
+<div class="stage">
+  <div class="phone" id="phone">
+    <div class="aurora"><i></i><i></i><i></i><i></i></div>
+    <div class="scroll">
+      <div class="sb"><span id="sbNow">10:52</span><span>Szombat · Mai</span></div>
+      <div class="blocks" id="blocks"></div>
+    </div>
+    <div class="layer" id="layer" hidden>
+      <button class="backdrop" aria-label="Bezárás" id="bd"></button>
+      <div class="glass box" role="dialog" aria-modal="true"><div class="box-in" id="box"></div></div>
+    </div>
+  </div>
+
+  <aside>
+    <div>
+      <span class="eyebrow">Fuel · prototípus · jóváhagyva 2026-09-26 (A + csak sáv)</span>
+      <h1>Az étkezési óra</h1>
+      <p style="margin-top:8px">Az idősáv-csík eltűnt. Minden étkezésen <strong>mindig kint van az óra</strong>. Koppints rá bármelyik kártyán.</p>
+    </div>
+    <div class="ctl">
+      <span class="eyebrow">A nap melyik pontján nézed?</span>
+      <div class="seg" id="segDay">
+        <button data-v="am" aria-pressed="true">Délelőtt 10:52</button>
+        <button data-v="pm" aria-pressed="false">Este 22:50</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <span class="eyebrow">Az óra a kártyán</span>
+      <div class="seg" id="segClock">
+        <button data-v="a" aria-pressed="true">A · beszédes óra</button>
+        <button data-v="b" aria-pressed="false">B · sima ikon</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <span class="eyebrow">Vércukor-válasz a kártyán és a lapon</span>
+      <div class="seg" id="segNum">
+        <button data-v="band" aria-pressed="true">Csak sáv</button>
+        <button data-v="num" aria-pressed="false">Sáv + szám</button>
+      </div>
+    </div>
+    <div>
+      <span class="eyebrow">Mit nézz</span>
+      <ul style="margin-top:8px">
+        <li><strong>Evés előtt</strong> (Tízórai, Ebéd…): az óra körül ívként látszik az ajánlott ablak. Ha éppen nyitva van, lüktet.</li>
+        <li><strong>Evés után</strong> (Reggeli): az íven egy pötty mutatja, mikor ettél. A részletek (mikor, mennyire találtad el, mire számíts) az órára koppintva jönnek.</li>
+        <li><strong>Este</strong>: a Tízórai egy kicsit, a Vacsora bőven késett. Ezt nem pirossal jelezzük, hanem elmondjuk, mire számíts.</li>
+      </ul>
+    </div>
+    <p class="note">A „Sáv + szám” változat csak összehasonlításhoz van itt. Vegyes ételnél a szám akár 20–50%-ot is tévedhet, ezért most „becslés”-ként írjuk ki.</p>
+  </aside>
+</div>
+
+<script>
+(() => {
+  // ── idő-segédek ──
+  const m = s => { const [h, mi] = s.split(':').map(Number); return h * 60 + mi }
+  const f = x => { x = ((x % 1440) + 1440) % 1440; return String(Math.floor(x / 60)).padStart(2, '0') + ':' + String(x % 60).padStart(2, '0') }
+  const az = n => (/^[AÁEÉIÍOÓÖŐUÚÜŰ]/.test(n) ? 'az ' : 'a ') + n
+  const Az = n => { const t = az(n); return t[0].toUpperCase() + t.slice(1) }
+  const dur = x => { x = Math.abs(x); const h = Math.floor(x / 60), mi = x % 60; return (h ? h + ' ó ' : '') + (mi ? mi + ' p' : (h ? '' : '0 p')) }
+
+  const DAY = { wake: '06:40', bed: '23:00', kitchen: '21:30', train: { from: '17:30', to: '18:45', name: 'Felsőtest edzés' } }
+  const STEPS = { am: '~4 200 lépés eddig', pm: '9 800 lépés ma' }
+
+  // Az ajánlott ablak + a MIÉRT (a tervező már most is ezekből dolgozik: ébredés, lefekvés, edzés,
+  // étkezés-szám — csak eddig eldobta az okot).
+  const MEALS = [
+    { id: 'reggeli', name: 'Reggeli', icon: 'i-sun', c: 'var(--amber)', from: '07:20', to: '09:20', kcal: 800, idx: 1,
+      why: [
+        { i: 'i-sun', t: 'Ébredés (06:40) után 40 perc – 2,5 óra', d: 'Az éjszakai böjt után itt töltöd fel a raktárakat.' },
+        { i: 'i-protein', t: 'A nap első fehérjeadagja', d: 'Ma 5 részre osztod a fehérjét, ez indítja a sort 3–4 órás lépésközzel.' } ] },
+    { id: 'tizorai', name: 'Tízórai', icon: 'i-bowl', c: 'var(--rose)', from: '10:30', to: '11:30', kcal: 311, idx: 2,
+      why: [
+        { i: 'i-clock', t: '2–3 órával a reggeli után', d: 'A reggeli és az ebéd közti hosszú szünetet hidalja át, így nem esel be éhesen az ebédbe.' },
+        { i: 'i-protein', t: 'Fehérje-híd', d: 'Egy kisebb adag (~20 g) tartja a 3–4 órás ritmust.' } ] },
+    { id: 'ebed', name: 'Ebéd', icon: 'i-plate', c: 'var(--sage)', from: '13:00', to: '14:00', kcal: 720, idx: 3,
+      why: [
+        { i: 'i-dumbbell', t: '3,5–4,5 órával az edzés előtt', d: 'A nap fő szénhidrátos étkezése: tele raktárral indulsz 17:30-kor, de addigra meg is emészted.' },
+        { i: 'i-protein', t: 'Második nagy fehérjeadag', d: '~40 g, a tízórai után nagyjából 3 órával.' } ] },
+    { id: 'uzsonna', name: 'Uzsonna', icon: 'i-bolt', c: 'var(--sky)', from: '16:00', to: '16:45', kcal: 250, idx: 4,
+      why: [
+        { i: 'i-dumbbell', t: '45–90 perccel edzés előtt', d: 'Könnyű, gyorsan hasznosuló szénhidrát: ne üres gyomorral, de ne is tele hassal edz.' } ] },
+    { id: 'vacsora', name: 'Vacsora', icon: 'i-pot', c: 'var(--lav)', from: '19:00', to: '20:30', kcal: 780, idx: 5,
+      why: [
+        { i: 'i-dumbbell', t: 'Edzés után 15 perc – 1 óra 45 percen belül', d: 'Fehérje + szénhidrát a regenerációhoz és a raktárak visszatöltéséhez.' },
+        { i: 'i-moon', t: 'Lefekvés (23:00) előtt legalább 2,5 órával', d: 'Késő este ugyanaz az étel általában nagyobb vércukor-emelkedést okoz, és ronthatja az alvást.' } ] },
+  ]
+
+  // Logok napszakonként. band = vércukor-válasz sáv (a meglévő 3 sávos számítás), gl = belső becslés.
+  const LOGS = {
+    am: { now: '10:52', logs: {
+      reggeli: { at: '08:46', food: 'Kókuszos csirke, krumpli, bulgur', kcal: 784, p: 63, c: 92, f: 14, fi: 10, score: '8,7', band: 'mid', gl: 17,
+        why: 'A bulgur rostja és a csirke fehérjéje lefékezi a krumpli szénhidrátját.' } } },
+    pm: { now: '22:50', logs: {
+      reggeli: { at: '08:46', food: 'Kókuszos csirke, krumpli, bulgur', kcal: 784, p: 63, c: 92, f: 14, fi: 10, score: '8,7', band: 'mid', gl: 17,
+        why: 'A bulgur rostja és a csirke fehérjéje lefékezi a krumpli szénhidrátját.' },
+      tizorai: { at: '11:55', food: 'Görög joghurt, áfonya', kcal: 290, p: 22, c: 28, f: 6, fi: 3, score: '8,1', band: 'low', gl: 8,
+        why: 'Kevés, természetes cukor sok fehérjével – lassan szívódik fel.' },
+      ebed: { at: '13:20', food: 'Csirkés rizstál, brokkoli', kcal: 705, p: 45, c: 88, f: 16, fi: 7, score: '8,9', band: 'mid', gl: 21,
+        why: 'Fehér rizs, de a brokkoli rostja és a fehérje tompítja.' },
+      uzsonna: { at: '16:20', food: 'Banán, rizskeksz', kcal: 240, p: 3, c: 54, f: 1, fi: 3, score: '7,8', band: 'high', gl: 31,
+        why: 'Gyors szénhidrát, szinte fék nélkül – edzés előtt épp ez a cél.' },
+      vacsora: { at: '22:15', food: 'Carbonara, tiramisu', kcal: 1120, p: 38, c: 118, f: 52, fi: 4, score: '6,2', band: 'high', gl: 44,
+        why: 'Fehér tészta és cukros desszert; a zsír lassítja, de nem fékezi meg.' } } },
+  }
+
+  const BAND = { low: { w: 'Alacsony', g: 'var(--sage)' }, mid: { w: 'Közepes', g: 'var(--amber)' }, high: { w: 'Magas', g: 'var(--coral)' } }
+  let S = { day: 'am', clock: 'a', num: 'band' }
+
+  // ── eltalálás: szó + szín, nincs piros, nincs pontszám ──
+  function hit(meal, at) {
+    const a = m(at), lo = m(meal.from), hi = m(meal.to)
+    if (a >= lo && a <= hi) return { k: 'in', w: 'Az ablakban', col: 'var(--sage)', off: 0 }
+    const off = a < lo ? a - lo : a - hi
+    const near = Math.abs(off) <= 45
+    return { k: near ? 'near' : 'far', w: (off > 0 ? '+' : '−') + dur(off) + (off > 0 ? ' később' : ' korábban'), col: 'var(--amber)', off }
+  }
+  function status(meal, now) {
+    const n = m(now), lo = m(meal.from), hi = m(meal.to)
+    if (n < lo) return { k: 'future', t: lo - n <= 90 ? 'nyílik ' + dur(lo - n) + ' múlva' : 'nyílik ' + meal.from }
+    if (n <= hi) return { k: 'open', t: 'most nyitva · még ' + dur(hi - n) }
+    return { k: 'past', t: 'az ablak ' + meal.to + '-kor zárult' }
+  }
+
+  // ── rajz-segédek ──
+  const icon = (id, cls = '') => `<svg class="${cls}"><use href="#${id}"/></svg>`
+  function ring12(meal, log, now) {
+    // 12 órás számlap: a percet 720-ra vetítjük
+    const L = 720, start = m(meal.from) % L, len = m(meal.to) - m(meal.from)
+    const pt = (min, r) => { const a = (min % L) / L * 2 * Math.PI - Math.PI / 2; return [22 + r * Math.cos(a), 22 + r * Math.sin(a)] }
+    let extra = ''
+    if (log) { const h = hit(meal, log.at); const [x, y] = pt(m(log.at), 20.5); extra = `<circle class="dot" cx="${x}" cy="${y}" r="4" fill="${h.k === 'in' ? meal.c : 'var(--amber)'}"/>` }
+    else if (status(meal, now).k === 'open') { const [x, y] = pt(m(now), 20.5); extra = `<circle class="dot" cx="${x}" cy="${y}" r="2.6" fill="var(--ink)"/>` }
+    return `<svg class="ring" viewBox="0 0 44 44"><circle class="tr" cx="22" cy="22" r="20.5"/>
+      <circle class="win" cx="22" cy="22" r="20.5" pathLength="${L}" stroke-dasharray="${len} ${L - len}" stroke-dashoffset="${-start}" transform="rotate(-90 22 22)"/>${extra}</svg>`
+  }
+  function dial(meal, log, now) {
+    const C = 115, R = 88, L = 1440
+    const arc = (a, b, cls, extra = '') => { const s = m(a), len = ((m(b) - s) + L) % L
+      return `<circle class="${cls}" cx="${C}" cy="${C}" r="${R}" pathLength="${L}" stroke-dasharray="${len} ${L - len}" stroke-dashoffset="${-s}" transform="rotate(-90 ${C} ${C})" ${extra}/>` }
+    const pt = (min, r) => { const a = (min / L) * 2 * Math.PI - Math.PI / 2; return [C + r * Math.cos(a), C + r * Math.sin(a)] }
+    let s = `<svg class="dial" viewBox="0 0 230 230"><circle class="face" cx="${C}" cy="${C}" r="104"/>`
+    s += arc(DAY.wake, DAY.bed, 'awake') + arc(DAY.bed, DAY.wake, 'night')
+    MEALS.filter(x => x.id !== meal.id).forEach(x => s += arc(x.from, x.to, 'other'))
+    s += arc(meal.from, meal.to, 'this')
+    // edzés: külső vékony ív
+    { const a = m(DAY.train.from), len = m(DAY.train.to) - a
+      s += `<circle class="train" cx="${C}" cy="${C}" r="${R + 13}" pathLength="${L}" stroke-dasharray="${len} ${L - len}" stroke-dashoffset="${-a}" transform="rotate(-90 ${C} ${C})"/>`
+      const [x, y] = pt(a + len / 2, R + 25); s += `<use href="#i-dumbbell" x="${x - 9}" y="${y - 9}" width="18" height="18"/>` }
+    { const [x, y] = pt(m('02:00'), R - 22); s += `<use href="#i-moon" x="${x - 8}" y="${y - 8}" width="16" height="16" opacity=".8"/>` }
+    ;[0, 6, 12, 18].forEach(h => { const [x, y] = pt(h * 60, R - 20); s += `<text class="hr" x="${x}" y="${y}">${h}</text>` })
+    { const [x, y] = pt(m(now), R + 6); const [x0, y0] = pt(m(now), R - 8); s += `<line class="nowhand" x1="${x0}" y1="${y0}" x2="${x}" y2="${y}"/>` }
+    if (log) { const h = hit(meal, log.at); const [x, y] = pt(m(log.at), R); s += `<circle class="logdot" cx="${x}" cy="${y}" r="8" fill="${h.k === 'in' ? meal.c : 'var(--amber)'}"/>` }
+    // a közép NEM ismétli a nagy számot: evés előtt a "most", utána az ajánlott ablak
+    const c1 = log ? 'AJÁNLOTT VOLT' : 'MOST', c2 = log ? meal.from + '–' + meal.to : now, c3 = log ? dur(m(meal.to) - m(meal.from)) + ' hosszú ablak' : status(meal, now).t.replace(/^most nyitva · /, '')
+    s += `<text class="ctr1" x="${C}" y="${C - 18}">${c1}</text><text class="ctr2" x="${C}" y="${C + 6}">${c2}</text><text class="ctr3" x="${C}" y="${C + 24}">${c3}</text></svg>`
+    s += `<div class="legend"><span><i style="background:var(--c)"></i>${meal.name}</span><span><i style="background:rgba(245,239,230,.3)"></i>többi étkezés</span><span><i style="background:var(--coral)"></i>edzés</span><span><i style="background:rgba(109,95,168,.5)"></i>alvás</span></div>`
+    return s
+  }
+  function curve(band, late) {
+    // relatív várható görbe: nincs szám a tengelyen, csak "most → +3 óra"
+    const P = { low: 'M0 56 C40 52 70 44 110 44 S190 50 280 55', mid: 'M0 56 C30 50 55 26 95 24 S170 46 280 55', high: 'M0 56 C22 44 38 8 70 8 S120 62 160 64 S230 56 280 56' }[band]
+    const L2 = { low: 'M0 56 C40 46 70 34 120 34 S200 46 280 54', mid: 'M0 56 C30 44 55 14 100 12 S180 40 280 54', high: 'M0 56 C22 36 40 -4 76 -4 S140 52 180 60 S240 56 280 56' }[band]
+    return `<svg class="curve" viewBox="0 -8 280 78" preserveAspectRatio="none"><line class="base" x1="0" y1="56" x2="280" y2="56"/>
+      <path class="ar" d="${P} L280 70 L0 70Z"/>${late ? `<path class="ghost" d="${L2}"/>` : ''}<path class="ln" d="${P}"/>
+      <text x="0" y="69">evés</text><text x="238" y="69">+3 óra</text></svg>`
+  }
+
+  // ── "Mire számíts": időzítés × vércukor-válasz × a nap ritmusa ──
+  function expect(meal, log) {
+    const at = m(log.at), tr = m(DAY.train.from), trEnd = m(DAY.train.to), bed = m(DAY.bed)
+    const h = hit(meal, log.at), next = MEALS[meal.idx] // idx 1-alapú → a következő
+    const toTrain = tr - at, afterTrain = at - trEnd, toBed = bed - at
+    const out = []
+    // energia
+    const E = { low: 'Egyenletes, hosszan kitartó energia, nincs utána visszaesés.', mid: 'Mérsékelt emelkedés, 2–3 órán át stabil energia.', high: 'Gyors energia, 1–2 óra múlva jöhet egy kisebb visszaesés.' }[log.band]
+    let ctx = ''
+    if (toTrain > 0 && toTrain <= 120) ctx = log.band === 'high' ? ' Edzés előtt ez most előny: gyorsan elérhető üzemanyag.' : ' Az edzésre ez tartós alapot ad.'
+    else if (toTrain > 120 && toTrain <= 300) ctx = ' Az edzésig (' + DAY.train.from + ') ebből nagyjából kitart az alap.'
+    else if (afterTrain >= 0 && afterTrain <= 180) ctx = ' Edzés után ez a raktárak visszatöltését segíti.'
+    out.push({ i: 'i-bolt', t: 'Energia', d: E + ctx })
+    // éhség / következő ablak
+    if (next) {
+      const hungry = at + (log.kcal < 400 ? 150 : 210) + (log.band === 'high' ? -45 : log.band === 'low' ? 20 : 0)
+      const nlo = m(next.from), nhi = m(next.to)
+      let d = 'Nagyjából ' + f(hungry) + ' körül jelez újra az éhség'
+      d += hungry >= nlo - 30 && hungry <= nhi + 15 ? ' – pont ' + az(next.name) + ' ablakában.' : hungry < nlo ? ', ' + az(next.name) + ' előtt: egy pohár víz vagy kávé áthidalja.' : '. ' + Az(next.name) + ' ablaka ezért kicsit később lehet, vagy kisebb adag is elég.'
+      out.push({ i: 'i-clock', t: 'Mikor leszel éhes', d })
+    } else {
+      out.push({ i: 'i-clock', t: 'Mikor leszel éhes', d: 'Ez volt a nap utolsó étkezése, reggelig nem kell több.' })
+    }
+    // ritmus / alvás
+    if (toBed <= 150) out.push({ i: 'i-moon', t: 'Alvás', d: 'Lefekvés előtt ' + dur(toBed) + '-cel ettél' + (log.band === 'high' ? ', ráadásul magas vércukor-válaszú ételt. Ma éjjel valószínűleg nyugtalanabb lesz az alvás és magasabb a pulzus.' : '. Az emésztés még dolgozik, amikor elalszol.') })
+    else if (h.k === 'in') out.push({ i: 'i-heart', t: 'A nap ritmusa', d: 'Tartja a 3–4 órás fehérje-ritmust, és a nap többi ablaka a helyén marad.' })
+    else out.push({ i: 'i-heart', t: 'A nap ritmusa', d: dur(h.off) + (h.off > 0 ? '-cel később' : '-cel korábban') + ' ettél. Ez nem gond, a nap elbírja' + (next ? ', csak ' + az(next.name) + ' ablaka tolódik vele.' : '.') })
+    return out
+  }
+  function tip(meal, log) {
+    const late = m(DAY.bed) - m(log.at) <= 150
+    if (log.band === 'high' && late) return 'Holnap reggel ne az éjszaka mérésein ítéld meg magad: ez egy késői, nehéz vacsora hatása, nem a formádé.'
+    if (log.band === 'high') return 'Ha teheted, sétálj utána 10–15 percet: ez általában tompítja az emelkedést.'
+    if (log.band === 'mid') return 'Jó egyensúly. Egy rövid séta utána még simábbá teszi.'
+    const toTrain = m(DAY.train.from) - m(log.at)
+    if (toTrain > 0 && toTrain <= 120) return 'Ez az étel lassan ad energiát. Mivel hamarosan edzel, érdemes mellé egy gyorsabb szénhidrát.'
+    return 'Jó választás két étkezés közé: nem hoz éhség-hullámot.'
+  }
+
+  function glyChip(log) {
+    const B = BAND[log.band]
+    const d = { low: 'M0 13 C12 12 20 9 30 9 S40 11 44 12', mid: 'M0 13 C8 11 14 4 22 4 S38 11 44 12', high: 'M0 13 C6 9 10 0 16 0 S26 15 32 15 S40 13 44 13' }[log.band]
+    return `<div class="glychip" style="--g:${B.g}" title="Vércukor-válasz"><svg viewBox="0 -1 44 17"><path d="${d}"/></svg><b>${S.num === 'num' ? '≈ ' + log.gl : B.w}</b></div>`
+  }
+  let openId = null
+
+  // ── kártyák ──
+  function mring(v, max, col) {
+    const p = Math.min(100, v / max * 100)
+    return `<div class="mring" style="--m:${col}"><svg viewBox="0 0 38 38"><circle class="tr" cx="19" cy="19" r="16"/><circle class="fl" cx="19" cy="19" r="16" pathLength="100" stroke-dasharray="${p} 100"/></svg><b>${v}</b></div>`
+  }
+  function render() {
+    const D = LOGS[S.day]
+    document.getElementById('sbNow').textContent = D.now
+    document.getElementById('phone').classList.toggle('plain', S.clock === 'b')
+    const html = MEALS.map((meal, i) => {
+      const log = D.logs[meal.id], st = status(meal, D.now)
+      // a gyűrű = mennyit használtál el EBBŐL az étkezés keretéből; ami túlfut, borostyán második kör
+      const ratio = log ? log.kcal / meal.kcal * 100 : 0, kp = Math.min(100, ratio), over = Math.min(100, Math.max(0, ratio - 100))
+      const kring = `<div class="kring${log ? '' : ' pre'}" title="${log ? log.kcal + ' / ' + meal.kcal + ' kcal (' + Math.round(ratio) + '%)' : 'Keret: ' + meal.kcal + ' kcal'}"><svg viewBox="0 0 44 44"><circle class="tr" cx="22" cy="22" r="19"/><circle class="fl" cx="22" cy="22" r="19" pathLength="100" stroke-dasharray="${kp} 100"/>${over > 3 ? `<circle class="ov" cx="22" cy="22" r="19" pathLength="100" stroke-dasharray="${over} 100"/>` : ''}</svg><b>${log ? log.kcal : meal.kcal}</b></div>`
+      const clk = `<button class="clk" data-meal="${meal.id}" aria-label="${meal.name} – étkezési idő">${ring12(meal, log, D.now)}${icon('i-clock', 'ico')}${!log && st.k === 'open' ? '<i class="live"></i>' : ''}<i class="tick ${log ? 'on' : ''}"></i></button>`
+      let when
+      if (log) when = ''
+      else when = `<div class="whenline">Ajánlott <b>${meal.from}–${meal.to}</b><span class="chip" style="--k:${st.k === 'open' ? meal.c : 'var(--muted)'}">${st.t}</span></div>`
+      const head = `<div class="head">${icon(meal.icon, 'art')}<div class="name">${meal.name}</div>${clk}${kring}</div>`
+      if (!log) {
+        const cls = st.k === 'open' ? 'dash now' : 'dash'
+        return `<section class="${cls} block" style="--c:${meal.c};--i:${i}">${head}${when}
+          <button class="logrow"><span>+</span><div><strong>Logolás ide</strong><small>${st.k === 'open' ? 'most van itt az ideje' : st.k === 'past' ? 'utólag is felírhatod' : 'még ráér'}</small></div></button></section>`
+      }
+      return `<section class="glass block" style="--c:${meal.c};--i:${i}">${head}${when}
+        <div class="meal"><strong>${log.food}</strong><div class="mbottom"><div class="mrings">
+          ${mring(log.p, 70, 'var(--protein)')}${mring(log.c, 120, 'var(--carb)')}${mring(log.f, 40, 'var(--fat)')}${mring(log.fi, 12, 'var(--fiber)')}</div>
+          ${glyChip(log)}<button class="score" aria-label="AI pontszám: ${log.score} – részletek">${icon('i-score')}<b>${log.score}</b></button></div></div></section>`
+    }).join('')
+    document.getElementById('blocks').innerHTML = html
+  }
+
+  // ── a doboz ──
+  const layer = document.getElementById('layer'), box = document.getElementById('box')
+  function open(id, keep) {
+    openId = id
+    const meal = MEALS.find(x => x.id === id), D = LOGS[S.day], log = D.logs[id], st = status(meal, D.now)
+    box.parentNode.style.setProperty('--c', meal.c)
+    let h = `<div class="bx-head">${icon(meal.icon, 'art')}<div class="t"><b>${meal.name}</b><small>${meal.idx}. étkezés az 5-ből · ${log ? 'logolva' : st.t}</small></div><button class="bx-x" data-close aria-label="Bezárás">✕</button></div>`
+    if (!log) {
+      h += `<div class="bx-big"><span class="eyebrow">Ajánlott ablak</span><div class="time">${meal.from}<i>–</i>${meal.to}</div><div class="sub">${st.t}</div></div>`
+      h += dial(meal, null, D.now)
+      h += `<div class="sec"><span class="eyebrow">Miért ekkor?</span><div class="rows">${meal.why.map(w => `<div class="row">${icon(w.i, 'ri')}<div><b>${w.t}</b><span>${w.d}</span></div></div>`).join('')}</div></div>`
+      h += `<div class="sec"><span class="eyebrow">Hogyan illik a napodba</span><div class="rows">
+        <div class="row">${icon('i-dumbbell', 'ri')}<div><b>Mozgás ma</b><span>${DAY.train.name} ${DAY.train.from}–${DAY.train.to} · ${STEPS[S.day]}</span></div></div>
+        <div class="row">${icon('i-plate', 'ri')}<div><b>Étkezési terv</b><span>${meal.idx}. étkezés az 5-ből. Erre ~${meal.kcal} kcal jut a napi keretből.</span></div><span class="val">${meal.kcal} kcal</span></div></div></div>`
+      h += `<p class="mnote">Az ablak iránymutatás. A napi összes fehérje és kalória többet számít, mint az, hogy percre pontosan mikor eszel.</p>`
+    } else {
+      const ht = hit(meal, log.at), late = m(DAY.bed) - m(log.at) <= 150, B = BAND[log.band]
+      h += `<div class="bx-big"><span class="eyebrow">Logolva</span><div class="time">${log.at}</div><div class="sub">ajánlott ablak: ${meal.from}–${meal.to}</div><span class="chip" style="--k:${ht.col}">${ht.w}</span></div>`
+      h += dial(meal, log, D.now)
+      h += `<div class="sec"><span class="eyebrow">Vércukor-válasz</span><div class="gly" style="--g:${B.g}">
+        <div class="gly-top">${icon('i-sugar', 'ri')}<b>${B.w}${late ? ' · késő este' : ''}</b>${S.num === 'num' ? `<div class="num"><strong>≈ ${log.gl}</strong><small>glikémiás teher · becslés</small></div>` : ''}</div>
+        <div class="bands">${['low', 'mid', 'high'].map(k => `<i class="${k === log.band ? 'on' : ''}"></i>`).join('')}</div>
+        <div class="bandlbl">${['low', 'mid', 'high'].map(k => `<span class="${k === log.band ? 'on' : ''}">${BAND[k].w}</span>`).join('')}</div>
+        ${curve(log.band, late)}
+        <p>${log.why}${late ? ' Késő este ugyanez általában magasabbra és tovább emelkedik (szaggatott vonal).' : ''}</p></div></div>`
+      h += `<div class="sec"><span class="eyebrow">Mire számíts</span><div class="rows">${expect(meal, log).map(w => `<div class="row">${icon(w.i, 'ri')}<div><b>${w.t}</b><span>${w.d}</span></div></div>`).join('')}</div></div>`
+      h += `<p class="mnote">${tip(meal, log)}</p>`
+    }
+    h += `<button class="close" data-close>Rendben</button>`
+    box.innerHTML = h
+    layer.hidden = false
+    requestAnimationFrame(() => requestAnimationFrame(() => layer.classList.add('open')))
+    if (!keep) box.scrollTop = 0
+  }
+  function close() { layer.classList.remove('open'); setTimeout(() => layer.hidden = true, 280) }
+  document.getElementById('blocks').addEventListener('click', e => { const b = e.target.closest('.clk'); if (b) open(b.dataset.meal) })
+  layer.addEventListener('click', e => { if (e.target.closest('[data-close]') || e.target.id === 'bd') close() })
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !layer.hidden) close() })
+  const seg = (id, key) => document.getElementById(id).addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return
+    S[key] = b.dataset.v; [...b.parentNode.children].forEach(x => x.setAttribute('aria-pressed', x === b)); render()
+    if (openId && !layer.hidden) open(openId, true)
+  })
+  seg('segDay', 'day'); seg('segClock', 'clock'); seg('segNum', 'num')
+  render()
+})()
+</script>
+</body>
+</html>
