@@ -188,6 +188,13 @@ public class MealScoringService {
      */
     public MealBreakdownJson scoreMeal(String slot, List<ScoredLine> lines, LocalTime localTime,
                                        MealRole role, DailyTargets base, DayContext day) {
+        return scoreMeal(slot, lines, localTime, role, base, day, null);
+    }
+
+    /** Ablak-tudatos pontozás (mezo-6g52f): a tárolt tervező-ablak, ha van, a statikus slot-ablak
+     *  config helyett — ugyanaz az ablak, amit a felület az óra-dobozban rajzol. */
+    public MealBreakdownJson scoreMeal(String slot, List<ScoredLine> lines, LocalTime localTime,
+                                       MealRole role, DailyTargets base, DayContext day, MealWindow window) {
         double kcal = sum(lines, ScoredLine::kcal);
 
         Rubric rubric = rubricFor(role, base);
@@ -200,7 +207,7 @@ public class MealScoringService {
         List<Dim> dims = Stream.of(
             macroDim(lines, kcal, tp, tc, tf, base, role), microDim(lines, kcal, base), whoDim(lines, kcal, who, base),
             fatQualityDim(lines, kcal), novaDim(lines, kcal, nova), plantDiversityDim(lines, kcal),
-            energyDensityDim(lines, kcal), contextDim(slot, lines, kcal, localTime, role, base, day))
+            energyDensityDim(lines, kcal), contextDim(slot, lines, kcal, localTime, role, base, day, window))
             .map(Dim::coverageWeighted).toList();
 
         double weightSum = dims.stream().mapToDouble(d -> d.effectiveWeight).sum();
@@ -651,9 +658,9 @@ public class MealScoringService {
     // --- Context (.12): deterministic slot/timing fit -------------------------------------------
 
     private Dim contextDim(String slot, List<ScoredLine> lines, double kcal, LocalTime localTime,
-                           MealRole role, DailyTargets base, DayContext day) {
+                           MealRole role, DailyTargets base, DayContext day, MealWindow window) {
         double slotShare = props.slotShares().of(slot);
-        double timingSub = timingSub(slot, localTime);
+        double timingSub = timingSub(slot, localTime, window);
         double kcalRef = expectedRef(base.kcal(), day.known() ? day.kcalBefore().doubleValue() : 0,
             slot, slotShare, localTime, day.known());
         double proteinRef = expectedRef(base.p(), day.known() ? day.pBefore().doubleValue() : 0,
@@ -679,13 +686,16 @@ public class MealScoringService {
             Math.round(protein), Math.round(proteinRef))));
         String text = String.format("Időzítés %.0f%% · kcal-keret %.0f%% · fehérje %.0f%%.",
             timingSub * 100, shareSub * 100, proteinSub * 100);
-        MealScoringProperties.SlotWindows w = props.slotWindows();
-        int[] window = windowOf(w, slot);
-        TimingDetail timing = new TimingDetail(
-            localTime.format(HHMM),
-            hourOrNull(window == null ? null : window[0]),
-            hourOrNull(window == null ? null : window[1]),
-            slotLabel(slot));
+        TimingDetail timing;
+        if (window != null) {
+            timing = new TimingDetail(localTime.format(HHMM), window.from().format(HHMM),
+                window.to().format(HHMM), slotLabel(slot), "plan");
+        } else {
+            int[] cfg = windowOf(props.slotWindows(), slot);
+            timing = new TimingDetail(localTime.format(HHMM),
+                hourOrNull(cfg == null ? null : cfg[0]), hourOrNull(cfg == null ? null : cfg[1]),
+                slotLabel(slot), cfg == null ? null : "config");
+        }
         return new Dim("context", "Időzítés & kontextus", props.weights().context(), score, 1.0, text,
             null, null, null, rows, timing);
     }
@@ -734,7 +744,9 @@ public class MealScoringService {
         return sum;
     }
 
-    /** Egy slot ablaka lejárt, ha az óra a záró órája UTÁN jár; a snacknek nincs ablaka. */
+    /** Egy slot ablaka lejárt, ha az óra a záró órája UTÁN jár; a snacknek nincs ablaka.
+     *  A tárolt tervező-ablak (mezo-6g52f) szándékosan nem számít itt: ez a MÁSIK slotok
+     *  keretéről dönt. */
     private boolean windowPassed(String slot, LocalTime t) {
         int[] window = windowOf(props.slotWindows(), slot);
         return window != null && t.getHour() + t.getMinute() / 60.0 > window[1];
@@ -742,15 +754,25 @@ public class MealScoringService {
 
     private static final DateTimeFormatter HHMM = DateTimeFormatter.ofPattern("HH:mm").withLocale(Locale.ROOT);
 
-    /** In-window 1.0; outside: linear to 0 at 3h distance. A snack fits at any hour. */
-    private double timingSub(String slot, LocalTime t) {
-        MealScoringProperties.SlotWindows w = props.slotWindows();
-        int[] window = windowOf(w, slot);
-        if (window == null) {
-            return 1.0;
-        }
+    /** In-window 1.0; outside: linear to 0 at 3h distance. With a stored plan window (mezo-6g52f)
+     *  the distance is minute-precise and a snack is scored too; without one, the config hours
+     *  apply and a snack fits at any hour. */
+    private double timingSub(String slot, LocalTime t, MealWindow stored) {
         double hour = t.getHour() + t.getMinute() / 60.0;
-        double distance = hour < window[0] ? window[0] - hour : hour > window[1] ? hour - window[1] : 0;
+        double from;
+        double to;
+        if (stored != null) {
+            from = stored.from().getHour() + stored.from().getMinute() / 60.0;
+            to = stored.to().getHour() + stored.to().getMinute() / 60.0;
+        } else {
+            int[] window = windowOf(props.slotWindows(), slot);
+            if (window == null) {
+                return 1.0;
+            }
+            from = window[0];
+            to = window[1];
+        }
+        double distance = hour < from ? from - hour : hour > to ? hour - to : 0;
         return Math.max(0, 1 - distance / 3);
     }
 
