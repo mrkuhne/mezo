@@ -220,7 +220,8 @@ részlet „GYŰLIK”).
 **Éles számok (2026-09-22):** 12 minta (6 proposed döntésre vár), 10 előrejelzés
 (3 függő), 5 kísérlet, 2 diagnózis; naplózás-lefedettség 60 napból: kaja 28, súly 24,
 alvás 15, közérzet 8 nap. A hipotézis-kritikus 08-30 óta minden javaslatot eldobott
-(„2 proposal(s), 0 persisted, keep floor 0.55”).
+(„2 proposal(s), 0 persisted, keep floor 0.55”). *(2026-09-24 óta nem igaz: a `mezo-hben1` megalapozott
+ága szállítja a kritikus-újrahangolást — lásd fent.)*
 
 ## 7. Megvalósítás — felvonások és szeletek
 

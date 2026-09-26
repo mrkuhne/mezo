@@ -1566,7 +1566,7 @@ run rarely and cheaply rather than nightly.
   `include_in_prompt=false` on that fact and fires `KnowledgeFactChangedEvent` so the graph
   re-syncs. The fact stays visible and re-enableable in the Tudástár; only its prompt/graph seat
   is withdrawn. Fail-open: a fact that is already gone is logged and skipped, never thrown.
-**Grounded questions before statistical proof (`mezo-hben1`, [ADR 0050](../decisions/0050-grounded-observations-before-statistical-proof.md)).**
+**Grounded questions before statistical proof (`mezo-hben1`, [ADR 0054](../decisions/0054-grounded-observations-before-statistical-proof.md)).**
 `HypothesisPipelineService` accepts the model's `observation`, `question`, canonical
 `evidenceRefs` and stable `topicKey` only after source membership validation and independent
 critique (`grounded=true`, `contradicted=false`, `actionable=true`). Low statistical scores

@@ -245,6 +245,11 @@ successful retry could never join it (one edition per day). From `mezo.character
   through `TeamCharacter.forMetricDomain`; the proactive generators' own `sleep_avg` /
   `training_volume` / `weight_trend` metric keys are mapped explicitly
   (`EditionCandidateCollector.GENERATOR_METRIC_DOMAIN`) since they are not `MetricKey` wire keys.
+  A pattern's `changedAt` (freshness + the 7-day repeat ban's "changed since shown") is its
+  lifecycle moment, never `lastDetectedAt` (`mezo-a9bo7.18`): the newest `confirmed` pattern event
+  for a confirmed row (its `lastDetectedAt` freezes at confirmation), the birth or newest `revised`
+  event for a proposed one (its `lastDetectedAt` moves nightly, which reposted it daily as the
+  rank-1 poster). `lastDetectedAt` is only the fallback for event-less legacy rows.
 - **Falat és Derű napi műsora (H5, `mezo-a9bo7.16`):** two more sources, both read through
   `TeamEditionReads` (character → meal/nutrition/train/biometrics repositories and read-only
   services; `MealCoachService` is NOT used — it calls an LLM).
@@ -734,7 +739,9 @@ re-dramatized after the fact.
 
 ## 4. Data model & API
 
-Five owned tables (`feature/character/entity/`), all house idioms (UUID PK, `@SQLDelete`/
+Owned tables (`feature/character/entity/`) — the original five below, plus the ones later slices
+added (`character_run`, `character_reply`, `character_claim_revision`, `character_council_edition`,
+`team_edition`/`team_edition_post`, `team_chat_thread`/`team_chat_line`) — all house idioms (UUID PK, `@SQLDelete`/
 `@SQLRestriction` soft delete, `created_by`, typed jsonb via `@JdbcTypeCode(SqlTypes.JSON)`).
 Migration: `db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_tables.sql`
 (the 5 tables + the CORE-7 seed) plus two later unique-index fixes,
@@ -822,8 +829,9 @@ are re-evaluated-claims / kezdő-állítás counts, not observation counts — l
 
 ### API (`api/feature/character/character.yml`)
 
-All ten endpoints (the original seven + the three Gépterem endpoints: the two run-timeline
-endpoints + the esti kiadás endpoint, all below) gated on
+Every `character.yml` operation (20 as of 2026-09-26: the original seven, the Gépterem
+run-timeline and esti kiadás reads, replies, council status, claim revisions and the csapat-chat —
+the later ones document any extra switch in their own sections) is gated on
 `CHARACTER_SWITCH` (`mezo.feature.character.enabled`); reads still
 work with the companion switch off (S1 deliberately kept dossier reads companion-free —
 `CharacterController` class javadoc), only `POST /api/character/bootstrap` needs
@@ -1457,8 +1465,8 @@ Social additions: `service/CharacterReplyService.java` (owned save/list/retry), 
 
 **Backend — feature package** (`backend/src/main/java/io/mrkuhne/mezo/feature/character/`):
 - `config/CharacterProperties.java` — every `mezo.character.*` tunable (§ below)
-- `controller/CharacterController.java` — the 10 endpoints (the original 7 + the 3 Gépterem
-  endpoints: 2 run-timeline + esti kiadás), `CHARACTER_SWITCH`-gated only (`GET /edition` needs no
+- `controller/CharacterController.java` — every `character.yml` operation (20 as of 2026-09-26;
+  see §4 API), `CHARACTER_SWITCH`-gated at minimum (`GET /edition` needs no
   extra switch — `TEAM_EDITION_SWITCH` gates the writer, not this read)
 - `entity/` — `CharacterDimensionEntity`, `CharacterClaimEntity`, `CharacterObservationEntity`,
   `CharacterConferenceEntity`, `CharacterPortraitRevisionEntity`, `CharacterRunEntity` (S9) +

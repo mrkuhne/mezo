@@ -5,7 +5,7 @@
   ez a dokumentum a II. felvonás finomítása; ahol eltér, ez nyer.
 - **Érintett ADR-ek:** 0048 (napi konzílium — a reggeli jelenet esti kiadássá válik, új ADR kíséri),
   0049 (közös social AI-világ — a fal nem ír szöveget; a hangot a backend állítja elő és tárolja),
-  0050 (kontextusos Mezo-feed), 0050-grounded (megalapozott észrevételek statisztikai bizonyíték előtt).
+  0050 (kontextusos Mezo-feed), 0054 (megalapozott észrevételek statisztikai bizonyíték előtt; eredetileg duplikált `0050`).
 
 ## 1. Owner-döntések (2026-09-24, ne nyisd újra)
 

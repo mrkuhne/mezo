@@ -1,4 +1,6 @@
-# 0050 — Grounded observations precede statistical proof
+# 0054 — Grounded observations precede statistical proof
+
+> Renumbered from a duplicate `0050` on 2026-09-26 (`mezo-a9bo7.19`); decided 2026-09-23.
 
 - **Status:** Accepted
 - **Date:** 2026-09-23

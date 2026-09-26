@@ -35,6 +35,8 @@ public class TeamEditionEntity extends OwnedEntity {
     @Column(nullable = false)
     private LocalDate day;
 
+    /** Mirrors {@code ck_team_edition_status} — a new status needs BOTH this regexp and a
+     *  migration changing the check constraint, or the save fails before/after reaching Postgres. */
     @NotNull @Size(max = 16) @Pattern(regexp = "PUBLISHED|QUIET")
     @Column(nullable = false, length = 16)
     private String status;

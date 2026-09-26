@@ -194,4 +194,11 @@ class CharacterCouncilJobTest {
 
         verify(teamEditionService).run(owner.getId(), TODAY);
     }
+
+    @Test
+    void run_beforeReadyAt_touchesNothing() {
+        job(1).run(EVENING.withHour(20).withMinute(45));
+
+        verify(users, never()).forEachActiveUser(anyString(), any());
+    }
 }
