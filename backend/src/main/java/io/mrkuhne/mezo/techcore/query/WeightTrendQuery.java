@@ -1,7 +1,9 @@
 package io.mrkuhne.mezo.techcore.query;
 
 import io.mrkuhne.mezo.api.dto.WeightTrendResponse;
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.UUID;
 
 /** Read-only cross-feature query seam for the owner's derived weight trend. */
@@ -17,4 +19,12 @@ public interface WeightTrendQuery {
      * unit-tesztje — érintetlen maradjon.
      */
     boolean hasEntryOn(UUID userId, LocalDate date);
+
+    /**
+     * The owner's weigh-ins inside {@code [from, to]}, same-day entries averaged (the trend's own
+     * daily collapse), date-ascending; a day without a weigh-in is absent. The learned-expenditure
+     * filter's scale observations (mezo-zz91i) — read through this seam so the goal slice gains no
+     * new edge into biometrics (the frozen biometrics↔goal cycle, mezo-ah18.15).
+     */
+    Map<LocalDate, BigDecimal> dailyMeanWeightKg(UUID userId, LocalDate from, LocalDate to);
 }

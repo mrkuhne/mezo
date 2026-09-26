@@ -188,6 +188,13 @@ public class WeightTrendService implements WeightTrendQuery {
         return BigDecimal.valueOf(value).setScale(SCALE, RoundingMode.HALF_UP);
     }
 
+    /** Same-day weigh-ins averaged over a closed window — the learned-expenditure scale input (mezo-zz91i). */
+    @Override
+    public Map<LocalDate, BigDecimal> dailyMeanWeightKg(UUID userId, LocalDate from, LocalDate to) {
+        return collapseToDailyMean(
+            repository.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateAscCreatedAtAsc(userId, from, to));
+    }
+
     /**
      * Rögzített-e mérlegelés erre a napra (mezo-jcpt.8)? A napi értékelés state-döntése kérdezi a
      * {@link io.mrkuhne.mezo.techcore.query.WeightTrendQuery} seamen keresztül. A repository már
