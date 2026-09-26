@@ -53,7 +53,7 @@ paths:
     put:
       tags: [People]
       operationId: updatePerson
-      summary: Full update of the editable person fields (knownFacts/ties/affectTrend are AI-curated, untouched)
+      summary: Full update of the editable person fields (knownFacts/ties/affectTrend are legacy/seed data, read-only, untouched)
       parameters:
         - name: personId
           in: path
@@ -175,6 +175,89 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/people/facts:
+    get:
+      tags: [People]
+      operationId: getFactsBySource
+      summary: Active person facts captured from one source (the chat chip's post-hoc fetch)
+      parameters:
+        - { name: sourceRefKind, in: query, required: true, schema: { type: string, enum: [chat_turn, nightly_day] } }
+        - { name: sourceRefId, in: query, required: true, schema: { type: string, maxLength: 64 } }
+      responses:
+        '200':
+          description: Facts captured from that source (empty array while extraction is still running)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PersonFactResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/people/{personId}/facts/{factId}:
+    delete:
+      tags: [People]
+      operationId: undoPersonFact
+      summary: Undo/retire a person fact (active=false; its text becomes a durable no-recapture veto)
+      parameters:
+        - { name: personId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: factId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Deactivated }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Fact missing, foreign, or belongs to a different person (indistinguishable)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+    patch:
+      tags: [People]
+      operationId: updatePersonFact
+      summary: Per-fact prompt toggle
+      parameters:
+        - { name: personId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: factId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdatePersonFactRequest' }
+      responses:
+        '200':
+          description: The updated fact
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PersonFactResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Fact missing or foreign
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/people/{personId}/facts/seen:
+    post:
+      tags: [People]
+      operationId: markPersonFactsSeen
+      summary: Mark the person's unseen (nightly-captured) facts as seen
+      parameters:
+        - { name: personId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Stamped }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/people/{personId}/decision:
     post:
       tags: [People]
@@ -248,6 +331,32 @@ components:
             Az Emberek hub Mezo-észrevétel sávjának mondata. A mai 'people' companion-üzenet,
             ha van; egyébként a heti aggregátumokból számított, determinisztikus tartalék.
             Sosem üres — a sáv mindig igaz mondatot mutat.
+    UpdatePersonFactRequest:
+      type: object
+      required: [includeInPrompt]
+      properties:
+        includeInPrompt: { type: boolean }
+    PersonFactResponse:
+      type: object
+      description: >-
+        S3 (mezo-d6ivw.3) — egy normalizált tény egy ismert személyről, forrás-hivatkozással.
+        A legacy person.knownFacts tömbtől független; visszavonás után a szöveg tartós vétó.
+      required: [id, personId, kind, factText, confidence, sourceRefKind, active, includeInPrompt, seen, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        personId: { type: string, format: uuid }
+        kind:
+          type: string
+          enum: [preference, relationship_state, shared_activity, important_date, sensitivity]
+        factText: { type: string, maxLength: 300 }
+        confidence: { type: string, enum: [low, medium, high] }
+        sourceRefKind: { type: string, enum: [chat_turn, nightly_day] }
+        active: { type: boolean }
+        includeInPrompt: { type: boolean }
+        seen:
+          type: boolean
+          description: false, amíg a (jellemzően éjszakai) tényt a személy oldalán először meg nem nézik.
+        createdAt: { type: string, format: date-time }
     PersonResponse:
       type: object
       required:
@@ -267,6 +376,7 @@ components:
         - status
         - sourceKind
         - graphEdges
+        - facts
       properties:
         id:
           type: string
@@ -298,8 +408,13 @@ components:
           type: string
         knownFacts:
           type: array
+          description: Legacy/seed narratív sorok — read-only, nincs írójuk; az élő tények a facts mezőben.
           items:
             type: string
+        facts:
+          type: array
+          description: S3 — a személy AKTÍV normalizált tényei, legfrissebb elöl.
+          items: { $ref: '#/components/schemas/PersonFactResponse' }
         ties:
           type: array
           items:

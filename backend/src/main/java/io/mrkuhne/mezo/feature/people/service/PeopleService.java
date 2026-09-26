@@ -54,6 +54,9 @@ public class PeopleService {
     // ObjectProvider: kikapcsolt companion/proaktív mellett nincs implementáció — a determinisztikus
     // tartalék akkor is igaz mondatot mutat.
     private final ObjectProvider<PeopleMezoNoteSource> mezoNoteSource;
+    // ObjectProvider: a PersonFactService a PEOPLE_SWITCH-en ül; kikapcsolva a bootstrap üres
+    // facts-listákkal megy tovább (S3).
+    private final ObjectProvider<PersonFactService> personFactService;
 
     /**
      * One-call bootstrap (the knowledge pattern): persons with mention-derived stats computed
@@ -78,6 +81,7 @@ public class PeopleService {
         Map<UUID, List<PersonGraphEdgeSource.Edge>> edgesByPerson = graphEdgeSource
             .getIfAvailable(() -> u -> Map.of())
             .edgesByPerson(userId);
+        PersonFactService factService = personFactService.getIfAvailable();
 
         List<PersonResponse> personResponses = persons.stream()
             .map(p -> {
@@ -89,6 +93,8 @@ public class PeopleService {
                 response.setGraphEdges(edgesByPerson.getOrDefault(p.getId(), List.of()).stream()
                     .map(e -> new PersonGraphEdge(e.nodeKind(), e.title(), e.relationHu(), e.strength()))
                     .toList());
+                response.setFacts(factService == null ? List.of()
+                    : factService.byPerson(userId, p.getId()).stream().map(mapper::toFactResponse).toList());
                 response.setAffectTrend(stats.trend().readings());
                 response.setAffectTrendStart(stats.trend().startWeek());
                 response.setDirection(PersonResponse.DirectionEnum.fromValue(stats.trend().direction()));
@@ -227,6 +233,7 @@ public class PeopleService {
         eventPublisher.publishEvent(new PersonSavedEvent(userId, saved.getId()));
         PersonResponse response = mapper.toPersonResponse(saved, 0, 0, null);
         response.setGraphEdges(List.of());
+        response.setFacts(List.of());
         response.setAffectTrend(List.of());
         response.setDirection(PersonResponse.DirectionEnum.FLAT);
         return response;
@@ -250,6 +257,7 @@ public class PeopleService {
         PersonResponse response = mapper.toPersonResponse(saved, own.size(), thisWeek,
             own.isEmpty() ? null : own.getFirst().ts());
         response.setGraphEdges(List.of());
+        response.setFacts(List.of());
         response.setAffectTrend(List.of());
         response.setDirection(PersonResponse.DirectionEnum.FLAT);
         return response;
@@ -283,6 +291,7 @@ public class PeopleService {
         if ("reject".equals(req.getDecision())) {
             PersonResponse snapshot = mapper.toPersonResponse(p, 0, 0, null);
             snapshot.setGraphEdges(List.of());
+            snapshot.setFacts(List.of());
             snapshot.setAffectTrend(List.of());
             snapshot.setDirection(PersonResponse.DirectionEnum.FLAT);
             personRepository.delete(p);   // @SQLDelete → soft; a sor marad reject-listának
@@ -292,6 +301,7 @@ public class PeopleService {
         p.setStatus(STATUS_ACTIVE);
         PersonResponse response = mapper.toPersonResponse(personRepository.save(p), 0, 0, null);
         response.setGraphEdges(List.of());
+        response.setFacts(List.of());
         response.setAffectTrend(List.of());
         response.setDirection(PersonResponse.DirectionEnum.FLAT);
         eventPublisher.publishEvent(new PersonSavedEvent(userId, personId));
