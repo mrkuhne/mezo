@@ -184,7 +184,7 @@ export function FuelMaiPage() {
           <FuelMealBlocks
             lane={lane}
             meals={doneRows}
-            day={{ wake, bed, nowHHmm, training: trainingSpan(blocks) }}
+            day={{ wake, bed, nowHHmm: past ? null : nowHHmm, training: trainingSpan(blocks) }}
             fiberTargetG={dietSettings.fiberG}
             onLogInto={(tile) => {
               const slot = plan.slots.find(s => s.slotKey != null && tileKey(s) === tile.key)

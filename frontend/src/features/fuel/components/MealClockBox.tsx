@@ -23,7 +23,10 @@ export { MealClock } from '@/features/fuel/components/MealClock'
 export { judgedWindow }
 
 export interface ClockDay {
-  wake: string; bed: string; nowHHmm: string
+  wake: string; bed: string
+  /** Null a múltbéli napokon (mezo-6g52f R4) — nincs „most" jel: nincs most-kéz a számlapon,
+   *  a logolás előtti állapot „AJÁNLOTT"-ot mutat, nem „MOST"-ot. */
+  nowHHmm: string | null
   training: { start: string; end: string; label: string } | null
   /** All meal windows of the day for the 24h dial (faint arcs). */
   windows: { key: string; from: string; to: string }[]
@@ -46,13 +49,16 @@ function DayDial({ tile, day, window, loggedAt, hitIn }: {
     const a = (min / L) * 2 * Math.PI - Math.PI / 2
     return [C + r * Math.cos(a), C + r * Math.sin(a)]
   }
-  const [nx1, ny1] = pt(toMin(day.nowHHmm), R - 8), [nx2, ny2] = pt(toMin(day.nowHHmm), R + 6)
-  const c1 = loggedAt ? 'AJÁNLOTT VOLT' : 'MOST'
-  const c2 = loggedAt ? (window ? `${window.from}–${window.to}` : '—') : day.nowHHmm
+  const now = day.nowHHmm != null ? toMin(day.nowHHmm) : null
+  const nowPt = now != null ? [pt(now, R - 8), pt(now, R + 6)] as const : null
+  const c1 = loggedAt ? 'AJÁNLOTT VOLT' : now != null ? 'MOST' : 'AJÁNLOTT'
+  const c2 = loggedAt ? (window ? `${window.from}–${window.to}` : '—')
+    : now != null ? day.nowHHmm! : (window ? `${window.from}–${window.to}` : '—')
   const c3 = loggedAt
     ? (window ? `${durHu(toMin(window.to) - toMin(window.from))} hosszú ablak` : 'nem tartozott ablakhoz')
-    : (window && toMin(day.nowHHmm) <= toMin(window.to) && toMin(day.nowHHmm) >= toMin(window.from)
-      ? `még ${durHu(toMin(window.to) - toMin(day.nowHHmm))}` : '')
+    : now != null
+      ? (window && now <= toMin(window.to) && now >= toMin(window.from) ? `még ${durHu(toMin(window.to) - now)}` : '')
+      : ''
   return (
     <>
       <svg className="fmx-mclockbox-dial" viewBox="0 0 230 230" role="img"
@@ -64,7 +70,7 @@ function DayDial({ tile, day, window, loggedAt, hitIn }: {
         {window && arc(window.from, window.to, 'this')}
         {day.training && arc(day.training.start, day.training.end, 'train', R + 13)}
         {[0, 6, 12, 18].map(h => { const [x, y] = pt(h * 60, R - 20); return <text key={h} className="hr" x={x} y={y}>{h}</text> })}
-        <line className="nowhand" x1={nx1} y1={ny1} x2={nx2} y2={ny2} />
+        {nowPt && <line className="nowhand" x1={nowPt[0][0]} y1={nowPt[0][1]} x2={nowPt[1][0]} y2={nowPt[1][1]} />}
         {loggedAt && (() => { const [x, y] = pt(toMin(loggedAt), R); return <circle className="logdot" cx={x} cy={y} r={8} style={{ fill: hitIn ? 'var(--block-color)' : 'var(--amber)' }} /> })()}
         <text className="c1" x={C} y={C - 18}>{c1}</text>
         <text className="c2" x={C} y={C + 6}>{c2}</text>
@@ -100,8 +106,11 @@ export function MealClockBox({ tile, row, day, next, blockColor, onClose }: {
   const hit = row && window ? hitOf(window.from, window.to, row.time) : null
   const band = row ? glycemicBand({ c: row.carbsG, sugarG: row.sugarG, fiberG: row.fiberG, p: row.proteinG, f: row.fatG }) : null
   const late = row ? (() => { const d = toMin(day.bed) - toMin(row.time); return d >= 0 && d <= BEFORE_BED_MIN })() : false
-  const status = row ? 'logolva' : window ? (toMin(day.nowHHmm) < toMin(window.from)
-    ? `nyílik ${window.from}` : toMin(day.nowHHmm) <= toMin(window.to) ? 'most nyitva' : `az ablak ${window.to}-kor zárult`) : ''
+  // Nincs „most" múltbéli napon (mezo-6g52f R4) — szégyenmentesen „még pótolható", nem
+  // találgatott „most nyitva"/„nyílik ekkor".
+  const status = row ? 'logolva' : window && day.nowHHmm != null ? (toMin(day.nowHHmm) < toMin(window.from)
+    ? `nyílik ${window.from}` : toMin(day.nowHHmm) <= toMin(window.to) ? 'most nyitva' : `az ablak ${window.to}-kor zárult`)
+    : window ? 'még pótolható' : ''
 
   return (
     <GlassBox onClose={onClose} labelledBy="fmx-mclockbox-title" className="fmx-mclockbox"

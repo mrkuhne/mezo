@@ -20,10 +20,13 @@ const pt = (min: number): [number, number] => {
 }
 
 export function MealClock({ tile, row, nowHHmm, onOpen }: {
-  tile: WindowTileVM; row: DoneMealRow | null; nowHHmm: string; onOpen: () => void
+  tile: WindowTileVM; row: DoneMealRow | null
+  /** Null a múltbéli napokon (mezo-6g52f R4) — nincs „most", nincs most-pötty. */
+  nowHHmm: string | null
+  onOpen: () => void
 }) {
   const w = judgedWindow(tile, row)
-  const open = !row && w != null && toMin(nowHHmm) >= toMin(w.from) && toMin(nowHHmm) <= toMin(w.to)
+  const open = !row && w != null && nowHHmm != null && toMin(nowHHmm) >= toMin(w.from) && toMin(nowHHmm) <= toMin(w.to)
   const hit = row && w ? hitOf(w.from, w.to, row.time) : null
   const aria = row
     ? `${tile.label} · logolva ${row.time}${hit ? ` · ${hitLabel(hit)}` : ''}`
