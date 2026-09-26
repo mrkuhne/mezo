@@ -275,7 +275,7 @@ a.tf-hint { color: color-mix(in srgb, var(--c) 80%, #fff); }
 }
 /* ══ team-chat (mezo-a9bo7.24) · A csapat beszél — a csapat élő beszélgetése ══════════════════
    Paritás-forrás: uveg-uzenofal.html „ACT III · A csapat élő beszélgetése” (.livebar, .cm, .bub,
-   .ctag, .typing), `tf-chat-` prefixszel, tokenekre írva. Rangsor (bible §3.4): a szobában EGY
+   .ctag), `tf-chat-` prefixszel, tokenekre írva. Rangsor (bible §3.4): a szobában EGY
    üveg — a „Rád vár” sáv (`glass tf-strip`); minden üzenet lapos buborék, a vissza-gomb is lapos. */
 .tf-chat-back { box-shadow: inset 0 0 0 1px var(--divider); background: rgba(245, 239, 230, 0.04); }
 .tf-chat-live { display: flex; align-items: center; gap: 8px; padding: 0 18px 6px; font-size: 11px; color: var(--text-secondary); }
@@ -322,8 +322,6 @@ a.tf-hint { color: color-mix(in srgb, var(--c) 80%, #fff); }
   color: var(--text-primary); background: color-mix(in srgb, var(--c) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 35%, transparent); }
 .tf-chat-apply .t-ico { width: 18px; height: 18px; }
 .tf-chat-apply button:disabled { opacity: 0.55; }
-.tf-chat-typing { display: inline-flex; gap: 4px; padding: 11px 13px; border-radius: 17px 5px 17px 17px; background: rgba(245, 239, 230, 0.045); box-shadow: inset 0 0 0 1px rgba(245, 239, 230, 0.10); }
-.tf-chat-typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); }
 .tf-chat-reply { padding: 14px 16px 0; }
 /* „Miből látszik?” lap (GlassBox-ban): a sor tényei */
 .tf-chat-facts { margin: 0; padding: 2px 12px; list-style: none; border-radius: 16px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
@@ -332,13 +330,9 @@ a.tf-hint { color: color-mix(in srgb, var(--c) 80%, #fff); }
 .tf-chat-facts li::before { content: ''; flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--dv-lav); box-shadow: 0 0 6px color-mix(in srgb, var(--dv-lav) 60%, transparent); transform: translateY(-1px); }
 @media (prefers-reduced-motion: no-preference) {
   .tf-chat-ldot { animation: tf-chat-pulse 2s ease-in-out infinite; }
-  .tf-chat-typing i { animation: tf-chat-dot 1.1s ease-in-out infinite; }
-  .tf-chat-typing i:nth-child(2) { animation-delay: 0.15s; }
-  .tf-chat-typing i:nth-child(3) { animation-delay: 0.3s; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .tf-chat-ldot, .tf-chat-typing i { animation: none; }
+  .tf-chat-ldot { animation: none; }
 }
 @keyframes tf-chat-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
-@keyframes tf-chat-dot { 0%, 60%, 100% { transform: translateY(0); opacity: 0.5; } 30% { transform: translateY(-4px); opacity: 1; } }
 /* ══ /team-feed ════════════════════════════════════════════════════════════════════════════ */

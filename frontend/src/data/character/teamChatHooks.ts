@@ -36,8 +36,10 @@ export function useTeamChat(date?: string): { day: TeamChatDay; loading: boolean
  *  touches elsewhere in the app (`ACTION_INVALIDATES`, shared with the advice-card actions — no
  *  copy, mezo-a9bo7.24). */
 export function useTeamChatActions(): {
-  reply: (threadId: string, text: string) => void
-  apply: (threadId: string, actionKey: string) => void
+  /** Resolves once the line is saved; rejects on failure (the caller keeps the text + says so). */
+  reply: (threadId: string, text: string) => Promise<void>
+  /** Resolves once the action is applied; rejects on failure (the caller shows no false success). */
+  apply: (threadId: string, actionKey: string) => Promise<void>
   pending: boolean
 } {
   const qc = useQueryClient()
@@ -67,8 +69,12 @@ export function useTeamChatActions(): {
   })
 
   return {
-    reply: (threadId: string, text: string) => replyMutation.mutate({ threadId, text }),
-    apply: (threadId: string, actionKey: string) => applyMutation.mutate({ threadId, actionKey }),
+    reply: async (threadId: string, text: string) => {
+      await replyMutation.mutateAsync({ threadId, text })
+    },
+    apply: async (threadId: string, actionKey: string) => {
+      await applyMutation.mutateAsync({ threadId, actionKey })
+    },
     pending: replyMutation.isPending || applyMutation.isPending,
   }
 }

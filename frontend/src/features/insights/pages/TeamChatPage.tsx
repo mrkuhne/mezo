@@ -78,7 +78,10 @@ export function TeamChatPage() {
   const feedback = useFeedback('team_chat_line', openLineIds)
   const [evidence, setEvidence] = useState<TeamChatLine | null>(null)
   const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null)
+  // Only a CONFIRMED apply lands here (never before the server said yes — honesty); the
+  // server's own `thread.applied` wins once the refetch brings it.
   const [applied, setApplied] = useState<Record<string, string>>({})
+  const [applyError, setApplyError] = useState<Record<string, boolean>>({})
 
   const today = localDateString()
   const isToday = requested == null || requested === today
@@ -110,9 +113,14 @@ export function TeamChatPage() {
       navigate(`/mezo/elo?d=${localDateString(new Date(waiting.openedAt))}`)
     }
   }
-  const onApply = (thread: TeamChatThread, key: string) => {
-    apply(thread.id, key)
-    setApplied(a => ({ ...a, [thread.id]: key }))
+  const onApply = async (thread: TeamChatThread, key: string) => {
+    setApplyError(e => ({ ...e, [thread.id]: false }))
+    try {
+      await apply(thread.id, key)
+      setApplied(a => ({ ...a, [thread.id]: key }))
+    } catch {
+      setApplyError(e => ({ ...e, [thread.id]: true }))
+    }
   }
 
   const small = isToday
@@ -138,7 +146,7 @@ export function TeamChatPage() {
 
       <div className="tf-chat-chips">
         <div className="tf-chips">
-          <span className="is-warn">{c.open} nyitott ügy</span>
+          <span className={c.open > 0 ? 'is-warn' : undefined}>{c.open} nyitott ügy</span>
           <span className="is-good">{c.resolved} rendeződött</span>
           <span>{isToday ? 'értesítés ma' : 'értesítés aznap'}: {c.pushes}</span>
         </div>
@@ -174,6 +182,7 @@ export function TeamChatPage() {
                 thread={l.threadId ? threads.get(l.threadId) : undefined}
                 feedback={feedback}
                 applied={l.threadId ? applied[l.threadId] : undefined}
+                applyFailed={l.threadId ? applyError[l.threadId] === true : false}
                 busy={pending}
                 onEvidence={() => setEvidence(l)}
                 onReply={(thread, mode) => setReplyTo({ thread, mode })}
@@ -200,15 +209,16 @@ export function TeamChatPage() {
   )
 }
 
-function ChatLine({ line, thread, feedback, applied, busy, onEvidence, onReply, onApply }: {
+function ChatLine({ line, thread, feedback, applied, applyFailed, busy, onEvidence, onReply, onApply }: {
   line: TeamChatLine
   thread: TeamChatThread | undefined
   feedback: FeedbackHandle
   applied: string | undefined
+  applyFailed: boolean
   busy: boolean
   onEvidence: () => void
   onReply: (thread: TeamChatThread, mode: FeedReplyMode) => void
-  onApply: (thread: TeamChatThread, key: string) => void
+  onApply: (thread: TeamChatThread, key: string) => Promise<void>
 }) {
   const time = clockOf(line.occurredAt)
   if (line.kind === 'USER' || line.character == null) {
@@ -226,7 +236,7 @@ function ChatLine({ line, thread, feedback, applied, busy, onEvidence, onReply, 
   const guest = line.kind === 'GUEST' || line.kind === 'SKEPTIC'
   const opens = line.kind === 'OPEN' && thread != null
   const live = opens && thread.status === 'OPEN'
-  const appliedKey = applied ?? thread?.applied ?? null
+  const appliedKey = thread?.applied ?? applied ?? null
   const appliedAction = appliedKey ? thread?.actions.find(a => a.key === appliedKey) : undefined
 
   return (
@@ -272,13 +282,16 @@ function ChatLine({ line, thread, feedback, applied, busy, onEvidence, onReply, 
               thread.actions.length > 0 && (
                 <div className="tf-chat-apply">
                   {thread.actions.map(a => (
-                    <button key={a.key} type="button" disabled={busy} onClick={() => onApply(thread, a.key)}>
+                    <button key={a.key} type="button" disabled={busy} onClick={() => void onApply(thread, a.key)}>
                       <Icon3D name="t-tick" size={18} />
                       {a.label}
                     </button>
                   ))}
                 </div>
               )
+            )}
+            {applyFailed && !appliedAction && (
+              <p className="tf-error" role="alert">Nem sikerült beállítani — próbáld újra egy kicsit később.</p>
             )}
           </>
         )}
@@ -332,21 +345,14 @@ const REPLY_INTRO: Record<FeedReplyMode, string> = {
   down: 'Mi nem stimmel? Ebből tanulunk a legtöbbet — írd meg a saját szavaiddal, az ügyhöz kerül.',
 }
 
-/** Az „Elmesélem” / „Nem így érzem” lapja a csapat-chatben — a válasz az ügybe íródik. */
+/** Az „Elmesélem” / „Nem így érzem” lapja a csapat-chatben — a válasz az ügybe íródik. Csak a
+ *  SIKERES mentés után zár be; hibánál a szöveg megmarad, és kimondjuk, hogy nem ment el. */
 function ChatReplySheet({ target, onSend, onClose }: {
   target: ReplyTarget | null
-  onSend: (thread: TeamChatThread, text: string) => void
+  onSend: (thread: TeamChatThread, text: string) => Promise<void>
   onClose: () => void
 }) {
-  const [text, setText] = useState('')
   const thread = target?.thread
-  const send = () => {
-    const t = text.trim()
-    if (!thread || !t) return
-    onSend(thread, t)
-    setText('')
-    onClose()
-  }
   return (
     <GlassBox
       open={target != null}
@@ -357,21 +363,51 @@ function ChatReplySheet({ target, onSend, onClose }: {
       art={<Icon3D name="t-chat" size={30} />}
     >
       {target && (
-        <div className="tf-reply">
-          <p className="tf-reply-intro">{REPLY_INTRO[target.mode]}</p>
-          <textarea
-            className="tf-reply-text"
-            aria-label="A válaszod"
-            placeholder="Például: tegnap későn értem haza, azért csúszott a lefekvés…"
-            value={text}
-            onChange={e => setText(e.target.value)}
-          />
-          <button type="button" className="glass tf-send tf-c-lav" disabled={!text.trim()} onClick={send}>
-            <Icon3D name="t-send" size={22} />
-            Válasz küldése
-          </button>
-        </div>
+        // A kulcs az ügy: másik ügyre váltva a félig írt szöveg nem vándorol át.
+        <ReplyComposer key={target.thread.id} target={target} onSend={onSend} onClose={onClose} />
       )}
     </GlassBox>
+  )
+}
+
+function ReplyComposer({ target, onSend, onClose }: {
+  target: ReplyTarget
+  onSend: (thread: TeamChatThread, text: string) => Promise<void>
+  onClose: () => void
+}) {
+  const [text, setText] = useState('')
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
+  const send = async () => {
+    const t = text.trim()
+    if (!t || sending) return
+    setError('')
+    setSending(true)
+    try {
+      await onSend(target.thread, t)
+      setText('')
+      onClose()
+    } catch {
+      setError('Nem sikerült elküldeni — a szöveged megmaradt, próbáld újra egy kicsit később.')
+    } finally {
+      setSending(false)
+    }
+  }
+  return (
+    <div className="tf-reply">
+      <p className="tf-reply-intro">{REPLY_INTRO[target.mode]}</p>
+      <textarea
+        className="tf-reply-text"
+        aria-label="A válaszod"
+        placeholder="Például: tegnap későn értem haza, azért csúszott a lefekvés…"
+        value={text}
+        onChange={e => setText(e.target.value)}
+      />
+      {error && <p className="tf-error" role="alert">{error}</p>}
+      <button type="button" className="glass tf-send tf-c-lav" disabled={sending || !text.trim()} onClick={() => void send()}>
+        <Icon3D name="t-send" size={22} />
+        Válasz küldése
+      </button>
+    </div>
   )
 }
