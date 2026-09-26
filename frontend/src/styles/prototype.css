@@ -10271,7 +10271,12 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-glass { --c: var(--dv-sky); position: relative; margin: 0;
   width: min(86%, 338px); max-height: 74dvh; padding: 14px 21px 24px; overflow-y: auto;
   border-radius: 24px; color: var(--ink); }
-.fmx-glass.glass { overflow-y: auto; }
+.fmx-glass.glass { overflow: hidden; display: flex; flex-direction: column; }
+/* The frame (`.glass::before`, inset 0) must not scroll with the content: the box clips, the
+   inner layer scrolls (GlassBox renders it). A focused box drew iOS's blue ring around the
+   frame — the box takes focus programmatically only, so the ring is dropped. */
+.fmx-glass-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.fmx-glass:focus { outline: none; }
 .fmx-glass-hero { display: flex; align-items: center; gap: 14px; padding: 8px 0 14px;
   border-bottom: 1px solid var(--divider); text-align: left; }
 .fmx-glass-hero strong { font-family: var(--ff-display); font-size: 40px; font-weight: 300;
@@ -10311,7 +10316,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    A belépő 3D-billenés csak no-preference alatt fut; reduced alatt a doboz azonnal áll. */
 .fmx-glass.fmx-timebox { --c: var(--block-color); width: min(78%, 280px); padding: 22px 22px 18px; overflow: visible;
   text-align: center; }
-.fmx-glass.glass.fmx-timebox { overflow: visible; }
+.fmx-glass.glass.fmx-timebox, .fmx-glass.fmx-timebox .fmx-glass-scroll { overflow: visible; }
 .fmx-glass.glass.fmx-timebox::after { display: none; }
 @media (prefers-reduced-motion: no-preference) {
   .fmx-glass.fmx-timebox { animation: fmx-timebox-in 0.34s cubic-bezier(0.2, 0.9, 0.25, 1.18) both; }
@@ -15244,7 +15249,10 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .phone-screen:has(.tab-bar.glass[data-domain]) > .home-indicator { background: var(--text-primary); }
 @media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
-  .tab-bar.glass[data-domain] { height: auto; bottom: 0; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+  /* The full 34px home-indicator inset under the items left a dead band on Face-ID iPhones
+     (owner, iPhone 17 Pro Max). The labels may sit over the upper half of that zone; only the
+     indicator's own ~16px strip stays clear. Non-notched devices (inset 0) keep 8px. */
+  .tab-bar.glass[data-domain] { height: auto; bottom: 0; padding-bottom: max(8px, calc(env(safe-area-inset-bottom) - 16px)); }
 }
 @media (max-width: 360px) {
   /* 320px: the wordmark + five round controls must share one row without overlapping. */
