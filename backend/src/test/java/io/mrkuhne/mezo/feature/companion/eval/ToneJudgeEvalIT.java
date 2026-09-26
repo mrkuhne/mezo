@@ -25,6 +25,8 @@ import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
@@ -55,6 +57,11 @@ class ToneJudgeEvalIT extends AbstractIntegrationTest {
 
     private static final EvalTarget JUDGE = EvalTarget.fromSystemProperties();
     private static final long SEED = 20260907L;
+
+    @DynamicPropertySource
+    static void realKeys(DynamicPropertyRegistry registry) {
+        EvalTarget.registerRealApiKeys(registry);
+    }
 
     private static final String RUBRIC = """
         Két magyar nyelvű edzés- és táplálkozás-asszisztens válaszát hasonlítod össze ugyanarra a

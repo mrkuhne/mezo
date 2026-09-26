@@ -9,7 +9,7 @@ import java.util.List;
  * any later push, once the budget is spent) only when its ügy's flag key is strictly more severe
  * ({@link AdvicePriority#outranks}, keyed by flag key) than EVERY ügy already pushed that day.
  *
- * <p>Pure static lookup, deliberately not a Spring bean — {@link TeamChatService#open} supplies
+ * <p>Pure static lookup, deliberately not a Spring bean — {@link TeamChatService#decidePush} supplies
  * the day's already-pushed flag keys (from {@code TeamChatThreadRepository}, scoped to the user's
  * local day via {@code TeamChatProperties.zone()}) and the budget ({@code maxPushesPerDay}), and
  * decides what to do with the verdict (flip {@code thread.pushed}, call

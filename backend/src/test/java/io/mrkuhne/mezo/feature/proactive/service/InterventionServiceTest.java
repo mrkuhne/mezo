@@ -76,6 +76,23 @@ class InterventionServiceTest {
         assertThat(result.get().entryKey()).isEqualTo("stress_talk");
         assertThat(result.get().flagKey()).isEqualTo(FLAG_KEY);
         assertThat(result.get().textHu()).isEqualTo("Szöveg");
+        // Final review I3: the entry's push channel gate travels with the pick.
+        assertThat(result.get().channel()).isEqualTo("feed");
+        assertThat(result.get().pushAllowed()).isFalse();
+        assertThat(result.get().quietHoursExempt()).isFalse();
+    }
+
+    @Test
+    void testPick_shouldCarryAPushChannelAndTheQuietHoursExemption() {
+        UUID owner = UUID.randomUUID();
+        when(companionProperties.interventions()).thenReturn(List.of(
+            new CompanionProperties.Intervention("stress_reset", FLAG_KEY, "both", "Szöveg", 48, true)));
+
+        AdvicePick pick = interventionService.pick(owner, FLAG_KEY, (key, since) -> false).orElseThrow();
+
+        assertThat(pick.channel()).isEqualTo("both");
+        assertThat(pick.pushAllowed()).isTrue();
+        assertThat(pick.quietHoursExempt()).isTrue();
     }
 
     @Test

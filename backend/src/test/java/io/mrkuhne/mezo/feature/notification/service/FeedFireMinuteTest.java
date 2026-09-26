@@ -55,4 +55,27 @@ class FeedFireMinuteTest {
         assertThat(fire(NotificationCategory.PATTERN, LocalTime.of(2, 40), WAKE_0600)).hasValue(WAKE_0600);
         assertThat(fire(NotificationCategory.PATTERN, LocalTime.of(22, 40), WAKE_0600)).hasValue(22 * 60 + 40);
     }
+
+    // ---- final review C1 (mezo-a9bo7.25): the intervention family (the team chat's pushes)
+    // honours the quiet window exactly like a challenge; an exempt row only rides the wake. ----
+
+    @Test
+    void testFeedFireMinute_shouldDeferAnEarlyMorningTeamChatPushToMaxOfWakeAndQuietEnd() {
+        assertThat(fire(NotificationCategory.INTERVENTION, LocalTime.of(3, 0), WAKE_0600)).hasValue(7 * 60);
+        assertThat(fire(NotificationCategory.INTERVENTION, LocalTime.of(3, 0), WAKE_0730)).hasValue(WAKE_0730);
+    }
+
+    @Test
+    void testFeedFireMinute_shouldDropAnEveningTeamChatPush() {
+        assertThat(fire(NotificationCategory.INTERVENTION, LocalTime.of(22, 30), WAKE_0600)).isEmpty();
+        assertThat(fire(NotificationCategory.INTERVENTION, LocalTime.of(21, 59), WAKE_0600)).hasValue(21 * 60 + 59);
+    }
+
+    @Test
+    void testFeedFireMinute_shouldLetAQuietHoursExemptRowThrough_onTheWakeRuleOnly() {
+        assertThat(AnchorResolver.feedFireMinute(NotificationCategory.INTERVENTION, LocalTime.of(22, 30), WAKE_0600,
+                QUIET_START, QUIET_END, true)).hasValue(22 * 60 + 30);
+        assertThat(AnchorResolver.feedFireMinute(NotificationCategory.INTERVENTION, LocalTime.of(3, 0), WAKE_0600,
+                QUIET_START, QUIET_END, true)).hasValue(WAKE_0600);
+    }
 }

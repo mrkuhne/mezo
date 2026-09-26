@@ -9,8 +9,7 @@ key_files:
   - api/feature/character/character.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/CharacterPromptSource.java
   - backend/src/main/resources/db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_tables.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202608311600_mezo-1gim.14_create_character_run.sql
-  - backend/src/main/resources/db/changelog/1.1.0/script/202609241200_mezo-a9bo7_team_edition.sql
+  - backend/src/main/resources/db/changelog/1.1.0/script
   - frontend/src/data/character
   - frontend/src/features/character
 related: [companion, proactive, insights, me, _platform-api-backend]
@@ -260,6 +259,19 @@ an error, and the next `*/15` tick retries any real failure until 23:45.
     source change, so it gets no freshness bonus and, as a filler, ranks behind the `sejtes`
     "gyűlik" candidates. **Weekly once:** `TeamEditionService.run` drops the Derű request before
     selection when any edition of the previous 6 days (day-6..day-1) carried a `deru`/`keres` post.
+  - **Mezo — `ertekeles`** (`sourceKind=team_chat_day`, `sourceId=<day>`, route
+    `/mezo/elo?d=<day>`; Act III Task 15, mezo-a9bo7.25): the day's team-chat recap. Reads
+    `TeamEditionReads.teamChatThreads` → `TeamChatReads.threadsTouchedOn`, which returns
+    `DayThreads(from, to, threads)` — the ügyek whose `opened_at` OR `closed_at` falls in the local
+    day (`TeamChatProperties.zone`) AND that `[from, to)` window, so the collector classifies with
+    the very window the rows were fetched with (via `ObjectProvider` — empty when
+    `mezo.feature.team-chat.enabled=false`). Counted (n) = opened that day OR RESOLVED that day; an
+    ügy whose only touch is its EXPIRED closure does not count. r = RESOLVED with `closed_at` that
+    day, o = still OPEN at run time. Invariant `n == r + o` is enforced: on violation (e.g. opened
+    and already EXPIRED the same day) the candidate is skipped with a `log.warn` — the post's numbers
+    are never wrong. None counted → no candidate. Otherwise
+    `"Ma %d ügyön dolgoztunk: <FlagCatalog labels, distinct>. %d rendeződött, %d nyitva maradt."`,
+    `facts=[n, r, o]`; `changedAt` = the latest open/close instant inside the window.
 - **Válogatás** (`EditionSelector`, pure function): scores waiting > claim-change > kísérlet >
   előrejelzés > értékelés > megfigyelés > konzílium > kérdés > sejtés > kérés, freshness bonus
   since the last edition; caps at **2 posts/character**, **1 post/source record**; a **7-day
@@ -319,6 +331,143 @@ an error, and the next `*/15` tick retries any real failure until 23:45.
   dedup key `team_edition:<day>`, refId = the edition). A `QUIET` evening notifies nothing, and the
   idempotent re-runs cannot produce a second row. It rides the `pattern` push family — the
   `observation_new` precedent ([_platform-notifications.md](_platform-notifications.md)).
+
+### Csapat-chat (all-day team chat, Csapatfal Act III `mezo-a9bo7.21`–`.23`, spec `docs/superpowers/specs/2026-09-26-csapat-elo-beszelgetes-design.md` §5)
+
+The engine behind the day's "ügy" (case/thread) model — package
+`service/chat/` — retires the old single daily advice card
+(`mezo.proactive.advice-card.enabled=false`, see [proactive.md](proactive.md)): a raised
+`companion.flags` rule now opens a live, all-day thread owned by one of the five characters
+instead of writing one advice message, and its clear resolves that same thread. The **evening
+recap** of the day's ügyek (`team_chat_day` esti kiadás candidate) is already documented above,
+in Mezo's own bullet — this subsection is the chat engine itself.
+
+- **Ügy lifecycle (`TeamChatService`, `TeamChatThreadEntity`):** `OPEN` → `RESOLVED` (a clear) or
+  `EXPIRED` (still `OPEN` after `expireAfterDays`, a nightly sweep — never a manual close).
+  `open(userId, flagKey, at)` no-ops when the flag has no owner (`all_healthy`), an ügy for that
+  flag is already `OPEN`, the day's line cap is reached (below — the thread itself is never
+  created in that case, not just its line), or `InterventionService.pick` finds no eligible
+  library entry; otherwise it persists the thread (`ownerCharacter`, `guestCharacter`,
+  `adviceKey`, the offered `actions[]` from `AdviceActionCatalog`) and writes the `OPEN` line (+
+  optional `GUEST`/`SKEPTIC` lines, below). `resolve(userId, flagKey, evidence, at)` flips the one
+  `OPEN` thread for that flag to `RESOLVED` and writes a `RESOLVE` line — unless the line cap is
+  reached, in which case the status flip still happens (a cleared rule must never linger open)
+  but the line itself is dropped. `expire(now)` (`TeamChatExpiryJob`, daily `expiry-cron`) closes
+  every thread still `OPEN` past `expireAfterDays` as `EXPIRED` — one global age-cutoff query, no
+  per-user fan-out.
+- **Owner map (`TeamChatCast`, spec §5.2):** an explicit `Map<FlagKey, TeamCharacter>` — NOT
+  `TeamCharacter.forMetricDomain`, since `FlagCatalog` domains (`training` etc.) are not the same
+  keys — covering all 15 flags that have an owner (Szunya: `sleep_debt`, `ignored_nudge`; Falat:
+  `late_eating`, `energy_dip_meal_timing`, `protocol_lapse`, `meal_rhythm_drift`; Mocor:
+  `load_fuel_mismatch`, `joint_overuse`, `missed_workouts`; Derű: `rapid_weight_loss`,
+  `acute_bad_day`, `sustained_stress`, `recovery_needed`; Mezo: `momentum_at_risk`,
+  `logging_gap`); `all_healthy` (the 16th `FlagKey`) is deliberately unmapped — it never opens an
+  ügy. A separate `GUEST` map seeds cross-talk on 6 of those flags (e.g. `late_eating` →
+  guest Szunya, `momentum_at_risk` → guest Mocor) — the same "a second character reacts" idea as
+  the esti kiadás's own guest lines, but keyed by flag rather than by candidate shape.
+- **Events:** the existing `FlagRaisedEvent` opens an ügy; the new `FlagClearedEvent`
+  (`userId, flagKey, ClearEvidence, at` — published by `FlagTraceWriter` inside the same
+  transaction as the trace row, whenever a rule's trace transitions TO `clear`, from any previous
+  state) resolves one. `TeamChatEventListener` wires both — `AFTER_COMMIT` + `@Async`, the
+  `InterventionEventListener` template: a chat failure is only ever a `log.warn`, never something
+  that can delay or break the check-in save that triggered the flag evaluation.
+- **API (`TeamChatService`):** `open(userId, flagKey, at)` (pushes) / the `allowPush=false`
+  overload (silent, catch-up only); `resolve(userId, flagKey, evidence, at)`; `expire(now)`
+  (returns the count expired); `catchUp(now)` / `catchUpUser` / `catchUpMissedOpens` /
+  `catchUpMissedResolves` (below); `reply(userId, threadId, text)` — a `USER` line on the caller's
+  own ügy, 1–1000 chars, never resolves anything; `apply(userId, threadId, actionKey)` — applies
+  one offered action exactly once via `AdviceApplyService.applyPort` (409 if not offered, 409 if a
+  *different* action was already applied, idempotent no-op on the same one again, row-locked via
+  `TeamChatThreadRepository.lockOwned` to serialize a concurrent double-tap).
+- **Push policy (`TeamChatPushPolicy.shouldPush`, spec §5.5), pure static, not a bean:** the
+  first push of the day always fires; at `maxPushesPerDay` (`TeamChatProperties`, default **2**)
+  no more push that day; a push between those two only when the candidate ügy's flag key
+  `AdvicePriority.outranks` **every** flag key already pushed today (the user's local day,
+  `TeamChatProperties.zone`) — one weak candidate cannot sneak a second push in behind a strong
+  first one. `TeamChatService.decidePush` is the only caller, invoked from `open` alone —
+  `resolve` never pushes (a resolution is good news, not urgent). **Final review
+  (`mezo-a9bo7.25`):** `open` is deliberately NOT transactional — `openThread` commits the ügy
+  and its lines in its own transaction, then `decidePush` runs in a second, short
+  `REQUIRES_NEW` one under a per-user advisory lock
+  (`TeamChatThreadRepository.lockPushBudget`, `pg_advisory_xact_lock(hashtext('team_chat_push:'||userId))`),
+  re-reads today's pushed ügyek and only then applies the policy — parallel raises from one
+  evaluation can never both read "nothing pushed yet" (pinned by
+  `TeamChatServiceIT.parallelOpens_neverExceedThePushPolicy`, which fails without the lock), and
+  a push can never outlive a rolled-back ügy. Before the budget it applies two gates: a library
+  entry with `channel: feed` never pushes (`AdvicePick.pushAllowed()`), and an open in the
+  EVENING part of `mezo.notification.quiet-hours` (22:00→midnight of the default 22:00–07:00
+  window, spec D3) stays silent without consuming the day's budget — unless the entry is
+  `quietHoursExempt`, whose push carries the `:quiet-exempt` dedup-key suffix
+  (`AppNotificationKind.QUIET_HOURS_EXEMPT_SUFFIX`) so the feed-anchored push path lets it ring.
+  An after-midnight open inside the window still pushes (counts against that local day); its ring
+  is deferred to max(wake, quiet end) by `AnchorResolver.feedFireMinute`
+  ([_platform-notifications.md](_platform-notifications.md) §3b).
+- **Budget & safety caps (`TeamChatProperties`, `mezo.character.team-chat.*`):**
+  `zone: Europe/Budapest` (the day boundary for the line cap and the push budget);
+  `expire-after-days: 7`; `daily-line-cap: 12` (character lines of any kind per user per local
+  day — the hard safety backstop, separate from the LLM spend cap: hitting it drops lines/whole
+  opens rather than ever exceeding it); `max-pushes-per-day: 2`; `monthly-usd-cap: 1.00` — the
+  `team_chat` LLM feature's own 30-day spend ceiling (`TeamChatBudget.hasRoom`, checked **before**
+  every `TeamChatVoiceWriter` call, independent of `CharacterCouncilBudget`; `team_chat` sits on
+  the `throttled-features` list, [application.yml](../../backend/src/main/resources/application.yml)) —
+  over the cap every line falls back to the honest template text (`voiced=false`); `expiry-cron`
+  (`"0 10 4 * * *"`, 04:10 daily) and `catchup-cron` (`"0 20 * * * *"`, hourly at :20).
+- **Voice (`TeamChatVoiceWriter`, spec §5.3–5.4):** ONE guarded LLM call per `OPEN`/`RESOLVE`
+  event writes the owner's line, the guest's line and — only on an `OPEN` whose raise's own frozen
+  payload shows a genuine coverage gap (`skepticGap`: under-logged nights for `sleep_debt`,
+  under-logged kcal/sleep days for `load_fuel_mismatch`, under-counted weigh-ins for
+  `rapid_weight_loss` — never `recovery_needed`, whose rule only fires when everything it needs
+  was observed) — one dry Szkeptikus line. Owner-first: an owner line the fact/emoji/jargon guard
+  (`EditionVoiceGuard.check`) rejects sends the **whole** event back to the template, with no guest
+  or Szkeptikus line beside it; a rejected guest/Szkeptikus line alone is just dropped. Never
+  throws — no budget room, an LLM error, or an unparseable answer all fall back to the raw
+  template text (the library's `textHu` on open, `FlagTraceCopy.clearText` on resolve) with
+  `voiced=false` (ADR 0049: dry beats invented).
+- **Catch-up sweep (`TeamChatExpiryJob.runCatchUp` → `TeamChatService.catchUp`, hourly, Task 11
+  `mezo-a9bo7.23`):** a safety net for a raise/clear the async listener missed (e.g. an app
+  restart mid-flight). Per active user (`UserFanOut.forEachActiveUser`, each in its own
+  transaction via the `self`-injected-proxy idiom, so one user's failure never rolls back
+  another's): `catchUpMissedOpens` re-walks every `CompanionFlagLogEntity` raise in the last 2 h
+  (`CATCH_UP_LOOKBACK_HOURS` — the sweep is hourly, so 2 h covers one missed run; the original
+  24 h would have re-opened, on the first run after the deploy, every pre-deploy raise that
+  already got the retired advice card) with no thread opened at/after it, and opens one with
+  `allowPush=false` (the moment for paging the user already passed); `catchUpMissedResolves`
+  resolves every still-`OPEN` thread whose flag's latest trace row is a `clear`, backdated to that
+  row's own `occurredAt` (so the chip reads when the flag actually cleared, not when the sweep
+  happened to notice) — but never before the ügy's own `openedAt` (a stale clear older than the
+  raise that opened it). Idempotent — a second run changes nothing.
+- **Knowledge seam (`TeamChatKnowledgePort.forArea(owner, area)`):** background sentences for the
+  voice's context block — Character owns *when/where* a line speaks, Emlékezet (`mezo-d6ivw.5`)
+  will own *what it knows*; until then `NoopTeamChatKnowledge` answers with nothing.
+- **Intervention-key adapter (`TeamChatInterventionKeyAdapter`):** the team-chat side of
+  `TeamChatInterventionKeySource` — resolves a line id to its ügy's `advice_key`, owner-scoped on
+  both the line and the thread, for whatever downstream feedback/reward wiring keys off the
+  original intervention entry rather than the chat line itself.
+- **Surface:** `GET /api/character/team-chat?date=` (`TeamChatDay{date, lines[], openThreads[],
+  pushesToday, pushBudget}` — the day's lines in time order, every still-open ügy of *any* day, and
+  the push count against `maxPushesPerDay`; honestly empty, never 404, with the switch off);
+  `POST /api/character/team-chat/threads/{threadId}/reply` (`TeamChatReplyRequest{text}` →
+  `TeamChatLine`, 400 empty/oversized, 404 foreign/unknown); `POST
+  /api/character/team-chat/threads/{threadId}/apply/{actionKey}` (→ `TeamChatThread`, 404
+  foreign/unknown, 409 not-offered/conflicting). All three are `CHARACTER_SWITCH`-gated at the
+  controller (`CharacterController`), with the write two additionally 404ing when
+  `TEAM_CHAT_SWITCH` leaves `TeamChatService`'s `ObjectProvider` empty. Consumed by
+  `frontend/src/data/character/teamChatApi.ts` + `teamChatHooks.ts` (`useTeamChat` — dual-mode,
+  60s real-mode refetch; `useTeamChatActions` — reply/apply mutations, mock no-ops) from the room
+  page (`features/insights/pages/TeamChatPage.tsx`, `/mezo/elo`) and the wall's live strip
+  (`features/insights/components/feed/LiveStrip.tsx`); the Nap → Beszélgetés hand-off row that
+  replaced the retired advice card is documented in [today.md](today.md) §2.
+- **Switch:** `mezo.feature.team-chat.enabled` gates every bean in `service/chat/` on top of the
+  character + companion + proactive + intervention switches; the expiry/catch-up job additionally
+  needs `mezo.techcore.cron.team-chat-expiry-job.enabled`. It is switched on together with
+  `mezo.proactive.advice-card.enabled=false` — the chat is now the teendő's only home.
+  **Rollback lever:** both keys live in `application.yml`, so the rollback is two env overrides on
+  the Deployment (Spring relaxed binding drops the dashes): `MEZO_FEATURE_TEAMCHAT_ENABLED=false`
+  + `MEZO_PROACTIVE_ADVICECARD_ENABLED=true` — **they must flip together** (chat off alone = a raise
+  says nothing; card on alone = every raise speaks twice). `TeamChatProductionSwitchIT` pins the
+  production combination (exactly one raise listener bean). The async listener runs both bodies
+  as the event's user (`LlmActorContext.runAs`), so the voice call's `llm_log.created_by` is the
+  owner and `TeamChatBudget`'s monthly cap actually sees the spend (`TeamChatListenerActorIT`).
 
 ## 2. User-facing behavior
 

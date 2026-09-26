@@ -1049,6 +1049,20 @@ firing right after the goal card resolves) is unaffected. A `checkKey` surviving
 is only a CANDIDATE at this point — whether it actually becomes today's card is `AdviceCardService`'s
 call, next.
 
+**Csapatfal Act III (2026-09-26, ADR [`0053`](../decisions/0053-csapat-elo-beszelgetes.md), bd
+`mezo-a9bo7.24/.25`) put the FLAG-RAISE half of this mechanism behind a switch — the mechanism
+itself, described below, is unchanged code.** `InterventionEventListener` (the flag-raise listener
+that turns a raised rule into an `AdviceCandidate`) is now additionally conditioned on
+`FeaturesConfiguration.ADVICE_CARD_SWITCH` (`mezo.proactive.advice-card.enabled`, default `true` in
+code); the deployed `application.yml` currently sets it `false` alongside turning on the new
+`mezo.feature.team-chat.enabled` — so today, a raised coaching rule opens a per-rule "ügy" (thread)
+in the team chat instead of reaching this path at all (see [`character.md`](character.md) for the
+team-chat side). **`AdviceCardService` itself carries no such condition** — its own
+`@ConditionalOnProperty` names only `COMPANION_SWITCH`/`PROACTIVE_SWITCH` — so `SetupCheckService`'s
+cron-driven checks (neither `SetupCheckJob` nor `SetupCheckService` gate on `ADVICE_CARD_SWITCH`
+either) still call `deliver` and still land cards unconditionally; `AdviceCardServiceIT`-style tests
+and other direct callers (e.g. `SetupCheckService`) are unaffected by the new switch.
+
 **One card per day (S4, bd `mezo-d58h.4`, spec §4/§5) — `AdviceCardService` is the ONE writer of
 the `advice` kind.** It replaces two independent first-wins gates S1–S3 shipped
 (`InterventionService` gating on `kind=intervention`, `SetupCheckService` gating on `kind=setup`)

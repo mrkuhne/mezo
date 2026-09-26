@@ -44,6 +44,23 @@ test('editionPost: stabil id, a kiadás napja, a poszt műfaja és gazdája', ()
   expect(p.decision).toBeUndefined()
 })
 
+test('editionPost: Mezo csapat-chat összefoglalója a nap chatjére visz (?d=), nem vár rád', () => {
+  const e = edition(YESTERDAY, [post(1, {
+    characterKey: 'mezo',
+    genre: 'ertekeles',
+    sourceKind: 'team_chat_day',
+    sourceId: YESTERDAY,
+    sourceRoute: `/mezo/elo?d=${YESTERDAY}`,
+    body: 'Ma 2 ügyön dolgoztunk: Alvásadósság, Rossz nap. 1 rendeződött, 1 nyitva maradt.',
+  })])
+  const p = editionPost(e, e.posts[0])
+  expect(p.author).toBe('mezo')
+  expect(p.kind).toBe('ertekeles')
+  expect(p.sourceRoute).toBe(`/mezo/elo?d=${YESTERDAY}`)
+  expect(p.waiting).toBe(false)
+  expect(p.decision).toBeUndefined()
+})
+
 test('editionPost: minta-kérdés → döntés-horgony a hármashoz', () => {
   const e = edition(TODAY, [post(1, { genre: 'kerdes', sourceKind: 'pattern', sourceId: 'p2' })])
   expect(editionPost(e, e.posts[0]).decision).toEqual({ patternId: 'p2' })

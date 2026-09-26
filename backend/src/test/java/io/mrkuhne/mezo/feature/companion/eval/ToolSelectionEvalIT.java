@@ -104,6 +104,7 @@ class ToolSelectionEvalIT extends AbstractIntegrationTest {
      */
     @DynamicPropertySource
     static void evalModel(DynamicPropertyRegistry registry) {
+        EvalTarget.registerRealApiKeys(registry);
         registry.add("mezo.companion.llm.provider", TARGET::providerKey);
         registry.add("mezo.companion.llm." + TARGET.providerKey() + ".chat-model", TARGET::model);
     }
