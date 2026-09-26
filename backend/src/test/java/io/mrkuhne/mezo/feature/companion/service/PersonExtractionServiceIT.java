@@ -15,7 +15,9 @@ import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
 import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
 import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
+import io.mrkuhne.mezo.feature.people.entity.PersonFactEntity;
 import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
+import io.mrkuhne.mezo.feature.people.repository.PersonFactRepository;
 import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
@@ -50,6 +52,7 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
     @Autowired private PersonRepository personRepository;
     @Autowired private AppNotificationRepository appNotificationRepository;
     @Autowired private MentionRepository mentionRepository;
+    @Autowired private PersonFactRepository personFactRepository;
     @Autowired private PersonPopulator personPopulator;
     @Autowired private MentionPopulator mentionPopulator;
     @Autowired private JournalPopulator journalPopulator;
@@ -447,5 +450,59 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
 
         assertThat(second.edgeLinked()).isZero();   // a marker miatt nem próbálja meg újra
         assertThat(graphService.edgesFrom(owner, personNode.getId())).isEmpty();
+    }
+
+    // ---- S3 (mezo-d6ivw.3): éjszakai person-fact emisszió ----
+
+    @Test
+    void testExtractFor_shouldPersistPersonFact_forKnownActivePerson() {
+        UUID owner = ownerId();
+        PersonEntity anna = personPopulator.createPerson(owner, "Anna");
+        plantEntry(owner, DAY, "Ma beszéltünk Annával. [fake-people:{\"mentions\":[],\"candidates\":[],"
+            + "\"facts\":[{\"person\":\"Anna\",\"kind\":\"preference\","
+            + "\"fact\":\"Nem szereti a meglepetéseket\",\"confidence\":\"high\"}]}]");
+
+        extractionService.extractFor(owner, DAY);
+
+        List<PersonFactEntity> facts = personFactRepository
+            .findByCreatedByAndPersonIdAndDeletedFalseOrderByCreatedAtDesc(owner, anna.getId());
+        assertThat(facts).hasSize(1);
+        assertThat(facts.getFirst().getFactText()).isEqualTo("Nem szereti a meglepetéseket");
+        assertThat(facts.getFirst().getSourceRefKind()).isEqualTo("nightly_day");
+        assertThat(facts.getFirst().getSourceRefId()).isEqualTo(DAY.toString());
+        assertThat(facts.getFirst().getSeenAt()).isNull();
+    }
+
+    @Test
+    void testExtractFor_shouldDropFact_forUnknownOrCandidatePerson() {
+        UUID owner = ownerId();
+        PersonEntity candidate = personPopulator.createCandidate(owner, "Jelölt Juli", "jegyzet");
+        plantEntry(owner, DAY, "Nap. [fake-people:{\"mentions\":[],\"candidates\":[],"
+            + "\"facts\":[{\"person\":\"Sosemhallott\",\"kind\":\"preference\",\"fact\":\"X\",\"confidence\":\"low\"},"
+            + "{\"person\":\"Jelölt Juli\",\"kind\":\"preference\",\"fact\":\"Y\",\"confidence\":\"low\"}]}]");
+
+        extractionService.extractFor(owner, DAY);
+
+        assertThat(personFactRepository
+            .findByCreatedByAndPersonIdAndDeletedFalseOrderByCreatedAtDesc(owner, candidate.getId()))
+            .isEmpty();
+    }
+
+    @Test
+    void testExtractFor_shouldPersistFacts_evenWhenNoEnrichmentOrCandidate() {
+        // A tény-persist az üres-gazdagítás korai ágon is lefut (saját, izolált út).
+        UUID owner = ownerId();
+        PersonEntity anna = personPopulator.createPerson(owner, "Anna");
+        plantEntry(owner, DAY, "Csendes nap Annával. [fake-people:{\"mentions\":[],\"candidates\":[],"
+            + "\"facts\":[{\"person\":\"Anna\",\"kind\":\"shared_activity\","
+            + "\"fact\":\"Esti séták a parton\",\"confidence\":\"medium\"}]}]");
+
+        PersonExtractionResult result = extractionService.extractFor(owner, DAY);
+
+        assertThat(result.enriched()).isZero();
+        assertThat(result.candidates()).isZero();
+        assertThat(personFactRepository
+            .findByCreatedByAndPersonIdAndDeletedFalseOrderByCreatedAtDesc(owner, anna.getId()))
+            .hasSize(1);
     }
 }

@@ -25,8 +25,10 @@ import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
 import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
+import io.mrkuhne.mezo.feature.people.entity.PersonFactEntity;
 import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
 import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
+import io.mrkuhne.mezo.feature.people.service.PersonFactService;
 import io.mrkuhne.mezo.feature.ritual.repository.RitualDayRepository;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
@@ -156,15 +158,22 @@ public class PersonExtractionService {
            az intenzitást és a kontextust.
         2. ÚJ ARCOK: ha a nap szövegeiben olyan személynév bukkan fel, ami az ismert
            listán NEM szerepel, javasold jelöltnek, szó szerinti idézetekkel.
+        3. TÉNYEK: ha a nap szövege TARTÓS tényt mond ki egy ISMERT személyről, vedd fel a
+           "facts" listába. Fajták: preference (mit szeret/nem szeret), relationship_state
+           (a kapcsolat mostani állapota), shared_activity (közös, ismétlődő tevékenység),
+           important_date (fontos dátum), sensitivity (mire érzékeny). Csak ismert névhez,
+           bizonytalan egyezésnél hagyd ki; egyszeri esemény nem tény.
 
         Válasz KIZÁRÓLAG JSON objektum, magyarázat nélkül:
         {"mentions": [{"index": 0, "tone": "positive", "intensity": 2, "context": "munka"}],
-         "candidates": [{"name": "Név", "quotes": ["szó szerinti mondat a szövegből"]}]}
+         "candidates": [{"name": "Név", "quotes": ["szó szerinti mondat a szövegből"]}],
+         "facts": [{"person": "Név", "kind": "preference", "fact": "…", "confidence": "medium"}]}
 
         - tone ∈ positive | neutral | mixed | negative; intensity ∈ 1 | 2 | 3
         - context ∈ munka | csalad | baratok | edzes | konfliktus | kozos_program | segitseg | egyeb
+        - confidence ∈ low | medium | high
         - Meg nem nevezett utalást ("a főnököm", "egy barátom", "a szomszéd") HAGYJ KI
-          mindkét listából. Ha nincs mit írni, a mező üres tömb.
+          minden listából. Ha nincs mit írni, a mező üres tömb.
         - Jelöltnek MINDEN megnevezett, az ismert listán nem szereplő személy számít, akkor is,
           ha csak egyszer kerül szóba — nem kell, hogy a név visszatérjen. Legfeljebb 5-öt.
         """;
@@ -203,6 +212,9 @@ public class PersonExtractionService {
     // Az emit-fasád MINDIG létezik (AppNotificationEmitter): kikapcsolt feed mellett néma no-op,
     // tehát nem kell ObjectProvider, és a jelölt-írás sosem bukhat el egy értesítés miatt.
     private final AppNotificationEmitter notificationEmitter;
+    // S3 (mezo-d6ivw.3): a person_fact írókapu — ObjectProvider, mert a PersonFactService a
+    // PEOPLE_SWITCH-en ül (a pár COMPANION∧PEOPLE, de a defenzív alak a ház szokása).
+    private final ObjectProvider<PersonFactService> personFactService;
 
     public PersonExtractionResult extractFor(UUID userId, LocalDate day) {
         Instant from = day.atStartOfDay(ZoneOffset.UTC).toInstant();
@@ -236,11 +248,14 @@ public class PersonExtractionService {
         }
         List<Enrichment> enrichments = validEnrichments(answer, toneless);
         List<CandidateProposal> candidates = validCandidates(answer, userId, narrative);
+        List<PersonFactService.PersonFactCapture> factCaptures = validFacts(answer, persons);
         if (enrichments.isEmpty() && candidates.isEmpty()) {
             // Nincs mit gazdagítani/jelölni ebből a válaszból — de az él-passz ettől független: ha
             // van aznapi említés, akkor is lefut (S5, mezo-06o0.4). Ez a gate akkor is igaz tud
             // lenni, amikor a fenti pre-spend kapu nem zárta ki a napot (pl. van tone-nélküli
             // mention, de a modell válasza üres) — pontosan ilyenkor is kell az él-passz.
+            // S3: a tények viszont ettől függetlenül járnak — saját, izolált persist.
+            persistFactsSafely(userId, day, factCaptures);
             int edgeLinked = linkPersonEdgesSafely(userId, day, dayMentions);
             return edgeLinked == 0 ? PersonExtractionResult.ZERO
                 : new PersonExtractionResult(0, 0, edgeLinked);
@@ -258,12 +273,33 @@ public class PersonExtractionService {
                 + " night stays reprocessable", userId, day, e);
             return PersonExtractionResult.ZERO;
         }
+        // S3: a tény-persist a persistNight commitja UTÁN, saját try/catch-ben — egy tény-hiba
+        // sosem viheti el az éjszaka már commitolt gazdagítás/jelölt eredményét (IDENT-3; a
+        // capture maga @Transactional a people oldalon, spec-lecke 11 alak).
+        persistFactsSafely(userId, day, factCaptures);
         // Külön tranzakció, a gazdagítás/jelölt commitja UTÁN — külön try/catch a persistNight-étól
         // is: egy gráf-hiba itt SOHA nem viheti el a fenti persistNight már commitolt eredményét
         // (IDENT-3), sem a saját tranzakcióját (linkPersonEdges), sem a visszaadott enriched/
         // candidates számokat.
         int edgeLinked = linkPersonEdgesSafely(userId, day, dayMentions);
         return new PersonExtractionResult(night.enriched(), night.candidates(), edgeLinked);
+    }
+
+    /** S3: tény-persist izoláltan — a hiba warn + nyelés, az éjszaka többi terméke érintetlen. */
+    private void persistFactsSafely(UUID userId, LocalDate day,
+            List<PersonFactService.PersonFactCapture> factCaptures) {
+        if (factCaptures.isEmpty()) {
+            return;
+        }
+        try {
+            PersonFactService facts = personFactService.getIfAvailable();
+            if (facts != null) {
+                facts.capture(userId, PersonFactEntity.SOURCE_NIGHTLY_DAY, day.toString(), factCaptures);
+            }
+        } catch (Exception e) {
+            log.warn("Nightly person-fact persistence failed for {} on {} — mentions/candidates"
+                + " already committed", userId, day, e);
+        }
     }
 
     private int linkPersonEdgesSafely(UUID userId, LocalDate day, List<MentionEntity> dayMentions) {
@@ -615,17 +651,57 @@ public class PersonExtractionService {
         int start = raw.indexOf('{');
         int end = raw.lastIndexOf('}');
         if (start < 0 || end <= start) {
-            return new NightAnswer(List.of(), List.of());
+            return new NightAnswer(List.of(), List.of(), List.of());
         }
         return objectMapper.readValue(raw.substring(start, end + 1), NightAnswer.class);
     }
 
-    /** A modellválasz alakja — ismeretlen mezőkre toleráns rekordok. */
-    public record NightAnswer(List<Enrichment> mentions, List<CandidateProposal> candidates) { }
+    /** A modellválasz alakja — ismeretlen mezőkre toleráns rekordok; hiányzó kulcs = null. */
+    public record NightAnswer(List<Enrichment> mentions, List<CandidateProposal> candidates,
+            List<FactProposal> facts) { }
 
     public record Enrichment(Integer index, String tone, Integer intensity, String context) { }
 
     public record CandidateProposal(String name, List<String> quotes) { }
+
+    /** S3 (mezo-d6ivw.3): egy ismert személyről javasolt tartós tény az éjszakai válaszban. */
+    public record FactProposal(String person, String kind, String fact, String confidence) { }
+
+    /**
+     * S3 tény-kapu: fajta-whitelist, nem üres és plafon alatti szöveg, és a név PONTOSAN EGY
+     * aktív személyre illeszkedik (fold-egyenlőség név/alias ellen) — nulla vagy több találat =
+     * eldobás, sosem találgatunk. A szöveg-dedupe/vétó/supersede a {@code PersonFactService}
+     * dolga, nem itt.
+     */
+    private List<PersonFactService.PersonFactCapture> validFacts(NightAnswer answer,
+            List<PersonEntity> persons) {
+        List<FactProposal> raw = answer.facts() == null ? List.of() : answer.facts();
+        if (raw.isEmpty()) {
+            return List.of();
+        }
+        List<PersonEntity> active = persons.stream()
+            .filter(p -> "active".equals(p.getStatus()))
+            .toList();
+        List<PersonFactService.PersonFactCapture> valid = new ArrayList<>();
+        for (FactProposal f : raw) {
+            if (f == null || f.person() == null || f.fact() == null || f.fact().isBlank()
+                || f.fact().strip().length() > PersonFactEntity.FACT_TEXT_MAX_CHARS
+                || !PersonFactEntity.KINDS.contains(f.kind())) {
+                continue;
+            }
+            String fold = TextFold.fold(f.person().strip());
+            List<PersonEntity> matches = active.stream()
+                .filter(p -> TextFold.fold(p.getName()).equals(fold)
+                    || p.getAliases().stream().anyMatch(a -> TextFold.fold(a).equals(fold)))
+                .toList();
+            if (matches.size() != 1) {
+                continue;
+            }
+            valid.add(new PersonFactService.PersonFactCapture(
+                matches.getFirst().getId(), f.kind(), f.fact(), f.confidence()));
+        }
+        return valid;
+    }
 
     /**
      * mezo-0cbh — EGY sor az éjszakai passz egész termésére, nem jelöltenként egy: a Jelöltek
