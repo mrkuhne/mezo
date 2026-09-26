@@ -19177,6 +19177,7 @@ components:
         - factText
         - category
         - source
+        - owner
         - reinforcementCount
         - includeInPrompt
         - createdAt
@@ -19194,6 +19195,18 @@ components:
           description: >-
             'chat' | 'pattern' | 'manual' — V1.1 creates only 'manual'; 'chat'
             arrives with V1.2 extraction, 'pattern' with V3.3 promotion
+        owner:
+          type: string
+          enum:
+            - szunya
+            - mocor
+            - falat
+            - deru
+            - mezo
+          description: >-
+            U9b (mezo-zpxv7): the team character that owns the fact — the Rólad
+            tag. User-authored facts are shown as TŐLED by the FE from `source`,
+            not from this field.
         reinforcementCount:
           type: integer
           description: >-
@@ -19263,6 +19276,7 @@ components:
         - candidateText
         - category
         - source
+        - owner
         - createdAt
       properties:
         id:
@@ -19281,6 +19295,15 @@ components:
             'chat' (post-turn extraction, V1.2) | 'weekly_review' (the Monday
             weekly round's proposal, mezo-d20.7.6) — the promoted knowledge fact
             inherits it
+        owner:
+          type: string
+          enum:
+            - szunya
+            - mocor
+            - falat
+            - deru
+            - mezo
+          description: the character that brought the candidate — „<Név> hozta”
         evidence:
           type: string
           nullable: true
@@ -19317,7 +19340,10 @@ components:
       properties:
         decision:
           type: string
-          pattern: ^(accept|reject|refine)$
+          pattern: ^(accept|reject|refine|snooze)$
+          description: >-
+            snooze = „Most ne”: hidden for 14 days, then re-offered; stays
+            undecided
         refinedText:
           type: string
           minLength: 1
@@ -24118,7 +24144,7 @@ components:
       properties:
         decision:
           type: string
-          pattern: ^(accept|reject)$
+          pattern: ^(accept|reject|snooze)$
         refinedTitle:
           type: string
           minLength: 1

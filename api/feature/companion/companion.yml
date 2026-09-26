@@ -1046,12 +1046,13 @@ components:
         content: { type: string, minLength: 1, maxLength: 4000 }
     KnowledgeFactResponse:
       type: object
-      required: [id, factText, category, source, reinforcementCount, includeInPrompt, createdAt]
+      required: [id, factText, category, source, owner, reinforcementCount, includeInPrompt, createdAt]
       properties:
         id: { type: string, format: uuid }
         factText: { type: string }
         category: { type: string, description: "'train' | 'fuel' | 'health' | 'life'" }
         source: { type: string, description: "'chat' | 'pattern' | 'manual' — V1.1 creates only 'manual'; 'chat' arrives with V1.2 extraction, 'pattern' with V3.3 promotion" }
+        owner: { type: string, enum: [szunya, mocor, falat, deru, mezo], description: "U9b (mezo-zpxv7): the team character that owns the fact — the Rólad tag. User-authored facts are shown as TŐLED by the FE from `source`, not from this field." }
         reinforcementCount: { type: integer, description: 'How many times the fact was re-confirmed/re-detected (V1.3+/V3.3 increment it).' }
         includeInPrompt: { type: boolean, description: 'Whether the fact competes for the top-N system-prompt injection slots.' }
         lastReinforcedAt: { type: string, format: date-time, nullable: true }
@@ -1073,12 +1074,13 @@ components:
         includeInPrompt: { type: boolean, nullable: true }
     FactCandidateResponse:
       type: object
-      required: [id, candidateText, category, source, createdAt]
+      required: [id, candidateText, category, source, owner, createdAt]
       properties:
         id: { type: string, format: uuid }
         candidateText: { type: string }
         category: { type: string, description: "'train' | 'fuel' | 'health' | 'life' — classified by the extractor at capture time" }
         source: { type: string, description: "'chat' (post-turn extraction, V1.2) | 'weekly_review' (the Monday weekly round's proposal, mezo-d20.7.6) — the promoted knowledge fact inherits it" }
+        owner: { type: string, enum: [szunya, mocor, falat, deru, mezo], description: "the character that brought the candidate — „<Név> hozta”" }
         evidence: { type: string, nullable: true, description: 'What the candidate rests on, in the proposer''s own words (weekly candidates only — chat extraction does not produce one).' }
         weekStart: { type: string, format: date, nullable: true, description: 'The ISO Monday of the weekly review that proposed this candidate (null for chat-extracted ones).' }
         userDecision: { type: string, nullable: true, description: "'accept' | 'reject' | 'refine' — null while pending" }
@@ -1089,7 +1091,7 @@ components:
       type: object
       required: [decision]
       properties:
-        decision: { type: string, pattern: '^(accept|reject|refine)$' }
+        decision: { type: string, pattern: '^(accept|reject|refine|snooze)$', description: 'snooze = „Most ne”: hidden for 14 days, then re-offered; stays undecided' }
         refinedText: { type: string, minLength: 1, maxLength: 500, nullable: true, description: 'Required when decision is refine — the corrected fact wording.' }
     StreamDelta:
       type: object

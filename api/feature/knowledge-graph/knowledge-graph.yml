@@ -193,7 +193,7 @@ components:
       type: object
       required: [decision]
       properties:
-        decision: { type: string, pattern: '^(accept|reject)$' }
+        decision: { type: string, pattern: '^(accept|reject|snooze)$' }
         refinedTitle: { type: string, minLength: 1, maxLength: 160, nullable: true, description: 'User-edited title applied on accept (edit-then-approve).' }
         refinedSummary: { type: string, minLength: 1, maxLength: 500, nullable: true, description: 'User-edited summary applied on accept.' }
     GraphEdgeCountResponse:

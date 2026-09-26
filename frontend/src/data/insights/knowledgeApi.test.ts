@@ -11,6 +11,7 @@ describe('knowledgeApi wire mapping', () => {
       factText: 'Laktózérzékeny',
       category: 'health',
       source: 'chat',
+      owner: 'deru',
       reinforcementCount: 4,
       includeInPrompt: false,
       lastReinforcedAt: null,
@@ -30,6 +31,7 @@ describe('knowledgeApi wire mapping', () => {
       // required since mezo-d20.7.6 — a candidate now says whether chat or the weekly
       // review proposed it (the promoted knowledge fact inherits it)
       source: 'chat',
+      owner: 'mocor',
       userDecision: null,
       refinedText: null,
       promotedFactId: null,
