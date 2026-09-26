@@ -337,6 +337,13 @@ public class FeaturesConfiguration {
      *  PROACTIVE_SWITCH too (the card is a companion_message row). */
     public static final String INTERVENTION_SWITCH = "mezo.feature.intervention.enabled";
 
+    /** Advice-card retirement (Csapatfal Act III, mezo-a9bo7.24) — the W5.2/S4 daily advice card
+     *  delivered on a flag raise. Off ⇒ no InterventionEventListener bean, so a raise never becomes
+     *  a card; the team chat ({@link #TEAM_CHAT_SWITCH}) owns the teendő instead. The
+     *  InterventionService itself stays (the team chat consumes its {@code pick}). Default
+     *  {@code true}; prod flips it to {@code false} together with team-chat on. */
+    public static final String ADVICE_CARD_SWITCH = "mezo.proactive.advice-card.enabled";
+
     /** S3 (bd mezo-d58h.3) daily setup-check pass — techcore cron zone (schedule:
      *  mezo.proactive.setup-checks.cron). Off ⇒ the SetupCheckJob bean does not exist (the
      *  FLAG_SWEEP_JOB_SWITCH precedent — SetupCheckService itself is unaffected, so a direct
