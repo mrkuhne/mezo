@@ -139,6 +139,15 @@ public class PeopleService {
      * {@link #getBootstrap} képlete ({@link #weekStats}), tehát a chat és az Emberek hub sosem
      * mond mást ugyanarról a személyről. Csak olvas.
      */
+    /** S3: a chat-kontextusba kerülő tények fajta-címkéi és a személyenkénti sapka. */
+    private static final Map<String, String> FACT_KIND_LABELS_HU = Map.of(
+        "preference", "kedveli/nem szereti",
+        "relationship_state", "kapcsolat most",
+        "shared_activity", "közös",
+        "important_date", "fontos dátum",
+        "sensitivity", "érzékeny");
+    private static final int FACTS_PER_PERSON_CAP = 3;
+
     @Transactional(readOnly = true)
     public List<PersonChatContext> chatContext(UUID userId, LocalDate today) {
         List<PersonEntity> persons = personRepository.findAllByCreatedByAndDeletedFalseOrderByNameAsc(userId);
@@ -147,13 +156,30 @@ public class PeopleService {
         }
         Map<UUID, List<MentionSignal>> byPerson = mentionRepository.findSignals(userId).stream()
             .collect(Collectors.groupingBy(MentionSignal::personId));
+        List<UUID> activeIds = persons.stream()
+            .filter(p -> STATUS_ACTIVE.equals(p.getStatus()))
+            .map(PersonEntity::getId)
+            .toList();
+        // S3: aktív + bekapcsolt tények egy körben, személyre csoportosítva (fajta-címkével,
+        // sapkázva) — kikapcsolt PEOPLE_SWITCH mellett a bean hiányzik, a lista üres marad.
+        PersonFactService factService = personFactService.getIfAvailable();
+        Map<UUID, List<String>> factsByPerson = factService == null ? Map.of()
+            : factService.promptFacts(userId, activeIds).stream()
+                .collect(Collectors.groupingBy(
+                    f -> f.getPersonId(),
+                    Collectors.mapping(
+                        f -> FACT_KIND_LABELS_HU.getOrDefault(f.getKind(), f.getKind())
+                            + ": " + f.getFactText(),
+                        Collectors.toList())));
         Instant weekAgo = Instant.now().minus(WEEK);
         return persons.stream()
             .filter(p -> STATUS_ACTIVE.equals(p.getStatus()))
             .map(p -> {
                 WeekStats stats = weekStats(byPerson.getOrDefault(p.getId(), List.of()), weekAgo, today);
+                List<String> facts = factsByPerson.getOrDefault(p.getId(), List.of());
                 return new PersonChatContext(p.getName(), p.getRelationshipHu(), stats.mentionsThisWeek(),
-                    stats.lastMentionAt(), stats.trend().direction(), stats.trend().reason());
+                    stats.lastMentionAt(), stats.trend().direction(), stats.trend().reason(),
+                    facts.size() > FACTS_PER_PERSON_CAP ? facts.subList(0, FACTS_PER_PERSON_CAP) : facts);
             })
             .sorted(Comparator.comparing(PersonChatContext::lastMentionAt,
                     Comparator.nullsLast(Comparator.reverseOrder()))

@@ -18,8 +18,12 @@ import org.springframework.stereotype.Service;
 /**
  * mezo-x6oa: az {@code [Emberek]} blokk a chat kontextus-pillanatképében — az aktív emberi kör,
  * soronként név · kapcsolat · e heti említésszám · hangulat-irány (indok), hogy a companion egy
- * említett nevet felismerjen és óvatosan utaljon rá. Nyers idézet, ismert tény, jegyzet SOSEM
- * kerül ide (a prompt-szabály a {@code ChatService.SYSTEM_PROMPT}-ban tiltja a kitalálást).
+ * említett nevet felismerjen és óvatosan utaljon rá. Nyers idézet és jegyzet SOSEM kerül ide
+ * (a prompt-szabály a {@code ChatService.SYSTEM_PROMPT}-ban tiltja a kitalálást); S3
+ * (mezo-d6ivw.3) óta a NORMALIZÁLT személy-tények (aktív + bekapcsolt {@code person_fact} sorok,
+ * személyenként legfeljebb 3) egy behúzott „tudás:" folytatósorban igen. A kényes
+ * ({@code sensitivity}) fajta itt megjelenhet — proaktív üzenetben soha
+ * ({@code PersonFactService.PROACTIVE_EXCLUDED_KINDS}, S5 tartja be).
  *
  * <p>A {@code companion → people} él már létezik ({@code ChatMentionListener}), ezért közvetlen
  * import; de a PEOPLE_SWITCH független a COMPANION_SWITCH-től, így a {@link PeopleService} bean
@@ -87,7 +91,18 @@ public class PeopleSnapshotBlock {
         String week = p.mentionsThisWeek() > 0
             ? p.mentionsThisWeek() + "× e héten"
             : "e héten nem került szóba";
-        return sanitize(p.name()) + " — " + sanitize(p.relationshipHu()) + " · " + week + " · " + direction(p);
+        return sanitize(p.name()) + " — " + sanitize(p.relationshipHu()) + " · " + week + " · " + direction(p)
+            + factsLine(p);
+    }
+
+    /** S3: behúzott folytatósor a személy tényeivel — üres string, ha nincs tény. */
+    static String factsLine(PersonChatContext p) {
+        if (p.facts() == null || p.facts().isEmpty()) {
+            return "";
+        }
+        return "\n  tudás: " + p.facts().stream()
+            .map(PeopleSnapshotBlock::sanitize)
+            .collect(java.util.stream.Collectors.joining(" · "));
     }
 
     /**
