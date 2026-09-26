@@ -48,3 +48,17 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609261400_mezo-d6ivw.4_effect_link.sql
+  - changeSet:
+      id: "1.1.0:202609261500_mezo-a9bo7_team_chat"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609261500_mezo-a9bo7_team_chat.sql
+  - changeSet:
+      id: "1.1.0:202609261510_mezo-a9bo7_feedback_team_chat_kind"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609261510_mezo-a9bo7_feedback_team_chat_kind.sql

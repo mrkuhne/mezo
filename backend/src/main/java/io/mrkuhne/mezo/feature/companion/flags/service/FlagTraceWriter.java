@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 /**
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 public class FlagTraceWriter {
 
     private final CompanionFlagTraceRepository repository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public void record(UUID userId, FlagVerdict verdict, TraceDisposition disposition, Instant at) {
         String outcome = verdict.outcome().name().toLowerCase();
@@ -47,5 +49,9 @@ public class FlagTraceWriter {
         row.setEvidence(verdict.clear());
         row.setOccurredAt(at);
         repository.save(row);
+
+        if ("clear".equals(outcome)) {
+            eventPublisher.publishEvent(new FlagClearedEvent(userId, verdict.flagKey(), verdict.clear(), at));
+        }
     }
 }

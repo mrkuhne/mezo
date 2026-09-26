@@ -110,14 +110,7 @@ public class AdviceApplyService {
                     SystemMessage.error("PROACTIVE_ADVICE_ACTION_CONFLICT").build(), HttpStatus.CONFLICT);
         }
 
-        AdviceMutationPort port = mutationPorts.stream()
-                .filter(p -> p.actionKey().equals(actionKey))
-                .findFirst()
-                .orElseThrow(() -> new SystemRuntimeErrorException(
-                        SystemMessage.error("PROACTIVE_ADVICE_ACTION_PORT_MISSING")
-                                .params(List.of(actionKey)).build(),
-                        HttpStatus.INTERNAL_SERVER_ERROR));
-        port.apply(userId, offered.params());
+        applyPort(userId, actionKey, offered.params());
 
         CompanionMessageEnvelope.Applied stamp =
                 new CompanionMessageEnvelope.Applied(actionKey, Instant.now().truncatedTo(ChronoUnit.MICROS));
@@ -128,6 +121,25 @@ public class AdviceApplyService {
         CompanionMessageEntity saved = companionMessageRepository.saveAndFlush(card);
         log.info("Advice action {} applied to card {} for user {}", actionKey, cardId, userId);
         return saved;
+    }
+
+    /**
+     * The port-dispatch seam (Task 4, bd mezo-a9bo7.21): finds the registered {@link
+     * AdviceMutationPort} for {@code actionKey} (the same {@code PROACTIVE_ADVICE_ACTION_PORT_MISSING}
+     * error {@link #apply} always threw) and runs its effect. Pulled out of {@link #apply} so the
+     * csapatfal team-chat action buttons (Act III) can dispatch the identical set of ports without
+     * going through a {@code companion_message} card's own lookup/idempotence/lock machinery — the
+     * dispatch itself was never specific to a card.
+     */
+    public void applyPort(UUID userId, String actionKey, Map<String, Object> params) {
+        AdviceMutationPort port = mutationPorts.stream()
+                .filter(p -> p.actionKey().equals(actionKey))
+                .findFirst()
+                .orElseThrow(() -> new SystemRuntimeErrorException(
+                        SystemMessage.error("PROACTIVE_ADVICE_ACTION_PORT_MISSING")
+                                .params(List.of(actionKey)).build(),
+                        HttpStatus.INTERNAL_SERVER_ERROR));
+        port.apply(userId, params);
     }
 
     private Optional<CompanionMessageEnvelope.Action> findOffered(CompanionMessageEnvelope content, String actionKey) {
