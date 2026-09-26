@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { LifeEventCandidateCard } from './LifeEventCandidateCard'
 import type { LifeEventCandidate } from '@/data/types'
+import { lastSeenLabel } from '@/features/insights/logic/metricFormat'
 
 const candidate: LifeEventCandidate = {
   id: 'ev-1',
@@ -140,9 +141,10 @@ describe('LifeEventCandidateCard — byline + státusz (U9b Task 8, mezo-zpxv7)'
 })
 
 describe('LifeEventCandidateCard — byline dátuma + elfogadás-előtti kapcsolat-hint (final-review fix, mezo-zpxv7)', () => {
-  it('LIFE_EVENT + occurredOn esetén a byline a jelölt saját napját mutatja, nem a felfedezés napját', () => {
+  it('LIFE_EVENT + occurredOn esetén a byline a jelölt saját napját mutatja, emberi alakban (lastSeenLabel), nem a nyers ISO-t', () => {
     render(<LifeEventCandidateCard candidate={candidate} onDecide={vi.fn()} />)
-    expect(screen.getByText(`Mezo hozta · ${candidate.occurredOn}`)).toBeInTheDocument()
+    expect(screen.getByText(`Mezo hozta · ${lastSeenLabel(candidate.occurredOn!)}`)).toBeInTheDocument()
+    expect(screen.queryByText(`Mezo hozta · ${candidate.occurredOn}`)).not.toBeInTheDocument()
   })
 
   it('SEASON + occurredOn esetén a byline a negyedévet írja ki, nem a nyers dátumot', () => {

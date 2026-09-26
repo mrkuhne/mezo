@@ -11,6 +11,7 @@ import { MOCK_OVERVIEW } from '@/data/character/characterMock'
 import { mockClaimFeedbackLog } from '@/data/character/characterHooks'
 import type { CharacterOverviewResponse } from '@/data/character/characterApi'
 import { pickQuoteClaim, ROLAD_COPY } from '@/features/insights/logic/roladCopy'
+import { lastSeenLabel } from '@/features/insights/logic/metricFormat'
 import { TEAM } from '@/features/insights/logic/team'
 import { BoopAboutPage } from '@/features/insights/pages/BoopAboutPage'
 
@@ -119,10 +120,11 @@ describe('BoopAboutPage — Rólad, a közös kép (mock mode)', () => {
     expect(within(inbox()).getByText(candidateSeed[0].text).closest('[data-fact-candidate]')).not.toBeNull()
   })
 
-  test('the week banner: only for a valid ?start=, with the way back to that week', () => {
+  test('the week banner: only for a valid ?start=, with the way back to that week, human date', () => {
     renderPage('?start=2026-09-14')
     const banner = document.querySelector('[data-week-banner]') as HTMLElement
-    expect(banner).toHaveTextContent('Heti áttekintés · 2026-09-14. A héten felmerült javaslatok is itt vannak.')
+    expect(banner).toHaveTextContent(`Heti áttekintés · ${lastSeenLabel('2026-09-14')}. A héten felmerült javaslatok is itt vannak.`)
+    expect(banner).not.toHaveTextContent('2026-09-14')
     expect(screen.getByRole('link', { name: /Vissza ehhez a héthez/ })).toHaveAttribute('href', '/me/week?start=2026-09-14')
   })
 

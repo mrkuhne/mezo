@@ -9,6 +9,7 @@ import { RoladInbox } from '@/features/insights/components/rolad/RoladInbox'
 import { RoladFacts } from '@/features/insights/components/rolad/RoladFacts'
 import { RoladTimeline } from '@/features/insights/components/rolad/RoladTimeline'
 import { riseStyle } from '@/features/insights/components/rolad/riseStyle'
+import { lastSeenLabel } from '@/features/insights/logic/metricFormat'
 import '@/features/insights/boop-world.css'
 
 // U9b „Rólad — a közös kép” (mezo-zpxv7, owner OK 2026-09-26, prototype `uveg-mezo-teljes-u9.js`
@@ -40,7 +41,7 @@ export function BoopAboutPage() {
         {start && WEEK_START.test(start) && (
           <div className="glass tf-strip tf-c-rose kr9-week rise" style={riseStyle(30)} data-week-banner>
             <Icon3D name="t-calendar" size={24} />
-            <span className="tf-strip-text">Heti áttekintés · {start}. A héten felmerült javaslatok is itt vannak.</span>
+            <span className="tf-strip-text">Heti áttekintés · {lastSeenLabel(start)}. A héten felmerült javaslatok is itt vannak.</span>
             <Link to={`/me/week?start=${start}`} className="kr9-weeklink">Vissza ehhez a héthez →</Link>
           </div>
         )}

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { LifeEventCandidate } from '@/data/types'
 import { candidateByline, factOwnerTag, graphCandidateByline, pickQuoteClaim, topRoladFacts, ROLAD_COPY } from './roladCopy'
+import { lastSeenLabel } from '@/features/insights/logic/metricFormat'
 
 const claim = (id: string, confidence: number, proposedBy: string, sensitive = false) =>
   ({ id, text: `t-${id}`, confidence, sensitive, proposedBy, evidence: [] })
@@ -41,8 +42,10 @@ describe('graphCandidateByline (final-review fix, mezo-zpxv7)', () => {
     occurredOn: null, proposedEdgeCount: 0, createdAt: '2026-03-02T09:00:00Z',
   }
 
-  it('LIFE_EVENT + occurredOn: a nap, amiről szól, nyers ISO alakban', () => {
-    expect(graphCandidateByline({ ...base, occurredOn: '2026-08-24' })).toBe('Mezo hozta · 2026-08-24')
+  it('LIFE_EVENT + occurredOn: a nap, amiről szól, emberi alakban (lastSeenLabel), nem nyers ISO', () => {
+    expect(graphCandidateByline({ ...base, occurredOn: '2026-08-24' }))
+      .toBe(`Mezo hozta · ${lastSeenLabel('2026-08-24')}`)
+    expect(graphCandidateByline({ ...base, occurredOn: '2026-08-24' })).not.toContain('2026-08-24')
   })
 
   it('SEASON + occurredOn: a negyedév, magyarul', () => {

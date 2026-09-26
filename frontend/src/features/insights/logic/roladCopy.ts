@@ -60,10 +60,16 @@ export function candidateByline(owner: FactOwner | 'mezo', createdAtIso: string)
  * életesemény/szezon jelölt mindig Mezótól jön (a gráf-kapcsoló forrása), a „mikor" viszont a
  * jelölt SAJÁT ideje, ha van: `occurredOn` (SEASON → a negyedév, LIFE_EVENT → a nap, amiről szól),
  * és csak ennek hiányában esik vissza a jelölt felfedezésének napjára (`createdAt`).
+ *
+ * U9b runtime-verification fix (mezo-zpxv7): a LIFE_EVENT `occurredOn` a `lastSeenLabel`
+ * emberi alakjában jelenik meg (pl. „Aug 21” / „ma” / „tegnap”), ugyanúgy, mint a tények és a
+ * timeline — nem a nyers ISO dátum. A SEASON megtartja a negyedév-alakot.
  */
 export function graphCandidateByline(candidate: LifeEventCandidate): string {
   const when = candidate.occurredOn
-    ? formatCandidateDate(candidate.kind, candidate.occurredOn)
+    ? candidate.kind === 'LIFE_EVENT'
+      ? lastSeenLabel(candidate.occurredOn) ?? candidate.occurredOn
+      : formatCandidateDate(candidate.kind, candidate.occurredOn)
     : candidateDay(candidate.createdAt)
   return `Mezo hozta · ${when}`
 }
