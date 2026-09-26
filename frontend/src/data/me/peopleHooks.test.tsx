@@ -3,7 +3,7 @@ import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/data/_client/api'
 import { makeHookWrapper } from '@/test/queryWrapper'
-import { usePeople } from '@/data/me/peopleHooks'
+import { usePeople, useTurnFacts } from '@/data/me/peopleHooks'
 import { mentionDayLabel } from '@/data/me/peopleApi'
 import { people as personSeed, mentions as mentionSeed } from '@/data/me/people'
 import type { MentionResponse, PeopleResponse, PersonResponse } from '@/data/me/peopleApi'
@@ -12,6 +12,7 @@ const WIRE_PERSON: PersonResponse = {
   id: '11111111-1111-1111-1111-111111111111',
   name: 'Petra',
   initial: 'P',
+  facts: [],
   relationship: 'partner',
   relationshipHu: 'Élettárs',
   aliases: [],
@@ -108,6 +109,49 @@ describe('usePeople (mock mode)', () => {
       expect(result.current.people.map(p => p.id)).not.toContain(candidate.id)
     })
   })
+
+  // --- S3 person facts (mock) ---
+
+  it('seeds facts on persons; undoFact removes the fact from the cache', async () => {
+    const { result } = renderHook(() => usePeople(), { wrapper: makeHookWrapper() })
+    const petra = result.current.people.find(p => p.id === 'pp-petra')!
+    expect(petra.facts.length).toBeGreaterThan(0)
+    const victim = petra.facts[0]
+    act(() => result.current.undoFact('pp-petra', victim.id))
+    await waitFor(() => {
+      const after = result.current.people.find(p => p.id === 'pp-petra')!
+      expect(after.facts.map(f => f.id)).not.toContain(victim.id)
+    })
+  })
+
+  it('toggleFact flips includeInPrompt in place', async () => {
+    const { result } = renderHook(() => usePeople(), { wrapper: makeHookWrapper() })
+    const fact = result.current.people.find(p => p.id === 'pp-petra')!.facts[0]
+    expect(fact.includeInPrompt).toBe(true)
+    act(() => result.current.toggleFact('pp-petra', fact.id, false))
+    await waitFor(() => {
+      const after = result.current.people.find(p => p.id === 'pp-petra')!
+      expect(after.facts.find(f => f.id === fact.id)?.includeInPrompt).toBe(false)
+    })
+  })
+
+  it('markFactsSeen sets seen=true on that person\'s facts', async () => {
+    const { result } = renderHook(() => usePeople(), { wrapper: makeHookWrapper() })
+    expect(result.current.people.find(p => p.id === 'pp-petra')!.facts.some(f => !f.seen)).toBe(true)
+    act(() => result.current.markFactsSeen('pp-petra'))
+    await waitFor(() => {
+      const after = result.current.people.find(p => p.id === 'pp-petra')!
+      expect(after.facts.every(f => f.seen)).toBe(true)
+    })
+  })
+
+  it('useTurnFacts returns the demo fact immediately in mock mode', () => {
+    const { result } = renderHook(() => useTurnFacts('msg-1'), { wrapper: makeHookWrapper() })
+    expect(result.current.pending).toBe(false)
+    expect(result.current.facts.length).toBeGreaterThan(0)
+    const empty = renderHook(() => useTurnFacts(null), { wrapper: makeHookWrapper() })
+    expect(empty.result.current.facts).toEqual([])
+  })
 })
 
 describe('usePeople (real mode)', () => {
@@ -198,6 +242,44 @@ describe('usePeople (real mode)', () => {
     act(() => result.current.decidePerson(WIRE_PERSON.id, 'accept'))
     await waitFor(() => expect(posted).toEqual({ decision: 'accept' }))
     await waitFor(() => expect(gets).toBeGreaterThan(getsBefore)) // invalidation → server-truth refetch
+  })
+
+  it('undoFact DELETEs the fact endpoint and refetches (real mode)', async () => {
+    let deleted: { personId?: string; factId?: string } = {}
+    let gets = 0
+    server.use(
+      http.get(`${API_BASE}/api/people`, () => { gets++; return HttpResponse.json(BOOTSTRAP) }),
+      http.delete(`${API_BASE}/api/people/:personId/facts/:factId`, ({ params }) => {
+        deleted = { personId: params.personId as string, factId: params.factId as string }
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    const { result } = renderHook(() => usePeople(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.people).toHaveLength(1))
+    const getsBefore = gets
+    act(() => result.current.undoFact(WIRE_PERSON.id, 'fact-1'))
+    await waitFor(() => expect(deleted).toEqual({ personId: WIRE_PERSON.id, factId: 'fact-1' }))
+    await waitFor(() => expect(gets).toBeGreaterThan(getsBefore))
+  })
+
+  it('useTurnFacts polls the source-fetch endpoint until facts arrive (real mode)', async () => {
+    let calls = 0
+    server.use(http.get(`${API_BASE}/api/people/facts`, ({ request }) => {
+      const url = new URL(request.url)
+      expect(url.searchParams.get('sourceRefKind')).toBe('chat_turn')
+      expect(url.searchParams.get('sourceRefId')).toBe('msg-9')
+      calls++
+      return HttpResponse.json([{
+        id: 'pf-1', personId: WIRE_PERSON.id, kind: 'preference', factText: 'Szereti a teát',
+        confidence: 'high', sourceRefKind: 'chat_turn', active: true, includeInPrompt: true,
+        seen: false, createdAt: '2026-07-03T20:20:00Z',
+      }])
+    }))
+    const { result } = renderHook(() => useTurnFacts('msg-9'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.facts).toHaveLength(1))
+    expect(result.current.facts[0]).toMatchObject({ text: 'Szereti a teát', sourceKind: 'chat_turn' })
+    expect(result.current.pending).toBe(false)
+    expect(calls).toBe(1) // találat után nincs további poll
   })
 
   it('savePerson creates then refetches (real mode)', async () => {

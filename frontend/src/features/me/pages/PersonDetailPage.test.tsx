@@ -197,6 +197,35 @@ test('facts card shows knownFacts pills', () => {
   }
 })
 
+// --- S3 (mezo-d6ivw.3): normalizált person_fact sorok a kártyán ---
+
+test('S3: fact rows render with kind tag, provenance and the "új" badge on unseen facts', async () => {
+  renderAt(`/me/people/${petra.id}`)
+  expect(await screen.findByText(/Nem szereti a meglepetés-programokat/)).toBeInTheDocument()
+  expect(screen.getByText('fontos dátum')).toBeInTheDocument()
+  expect(screen.getByText('érzékeny')).toBeInTheDocument()
+  // pf-petra-2 seed: nightly + seen:false → új badge; provenance mondja a forrást
+  expect(screen.getByText('új')).toBeInTheDocument()
+  expect(screen.getAllByText(/chatből ·/).length).toBeGreaterThan(0)
+  expect(screen.getAllByText(/éjszakai jegyzetből ·/).length).toBeGreaterThan(0)
+})
+
+test('S3: the include-toggle flips aria-checked in place (mock cache surgery)', async () => {
+  renderAt(`/me/people/${petra.id}`)
+  const toggles = await screen.findAllByRole('switch')
+  expect(toggles[0]).toHaveAttribute('aria-checked', 'true')
+  fireEvent.click(toggles[0])
+  await screen.findByRole('switch', { checked: false })
+})
+
+test('S3: delete removes the fact row (undo semantics)', async () => {
+  renderAt(`/me/people/${petra.id}`)
+  const del = await screen.findByRole('button', { name: /Tény törlése: Petra nem szereti|Tény törlése: Nem szereti a meglepetés/ })
+  fireEvent.click(del)
+  await new Promise((r) => setTimeout(r, 0))
+  expect(screen.queryByText(/Nem szereti a meglepetés-programokat/)).toBeNull()
+})
+
 test('facts card is OMITTED when knownFacts is empty', () => {
   hoisted.factsOverrideFor = mark.id
   renderAt(`/me/people/${mark.id}`)

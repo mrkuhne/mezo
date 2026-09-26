@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
 import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
 import io.mrkuhne.mezo.feature.people.service.PeopleService;
 import io.mrkuhne.mezo.feature.people.service.PersonChatContext;
+import io.mrkuhne.mezo.feature.people.service.PersonFactService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.MentionPopulator;
 import io.mrkuhne.mezo.support.populator.PersonPopulator;
@@ -39,6 +40,7 @@ class PeopleChatContextIT extends AbstractIntegrationTest {
     @Autowired private PersonRepository personRepository;
     @Autowired private MentionRepository mentionRepository;
     @Autowired private UserPopulator userPopulator;
+    @Autowired private PersonFactService personFactService;
 
     @Test
     void testChatContext_shouldReturnOnlyActivePersons_whenCandidateAndArchivedExist() {
@@ -124,5 +126,30 @@ class PeopleChatContextIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser("owner-chatctx-empty@test.hu").getId();
 
         assertThat(peopleService.chatContext(owner, LocalDate.now())).isEmpty();
+    }
+
+    /** S3 (mezo-d6ivw.3): a kontextus a személy aktív+bekapcsolt tényeit hordozza, címkézve. */
+    @Test
+    void testChatContext_shouldCarryActiveIncludedFacts_andExcludeUndoneAndToggledOff() {
+        UUID owner = userPopulator.createUser("owner-chatctx-facts@test.hu").getId();
+        PersonEntity anna = personPopulator.createPerson(owner, "Anna");
+        var keep = personFactService.capture(owner, "chat_turn", "m1", List.of(
+            new PersonFactService.PersonFactCapture(anna.getId(), "preference",
+                "Nem szereti a meglepetéseket", "high"))).getFirst();
+        var undone = personFactService.capture(owner, "chat_turn", "m2", List.of(
+            new PersonFactService.PersonFactCapture(anna.getId(), "shared_activity",
+                "Esti séták", "medium"))).getFirst();
+        var toggled = personFactService.capture(owner, "chat_turn", "m3", List.of(
+            new PersonFactService.PersonFactCapture(anna.getId(), "sensitivity",
+                "Gyász a családban", "medium"))).getFirst();
+        personFactService.undo(owner, anna.getId(), undone.getId());
+        personFactService.setIncludeInPrompt(owner, anna.getId(), toggled.getId(), false);
+
+        List<PersonChatContext> ctx = peopleService.chatContext(owner, LocalDate.now());
+
+        assertThat(ctx).hasSize(1);
+        assertThat(ctx.getFirst().facts())
+            .containsExactly("kedveli/nem szereti: Nem szereti a meglepetéseket");
+        assertThat(keep.isActive()).isTrue();
     }
 }

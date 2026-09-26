@@ -1,9 +1,11 @@
 package io.mrkuhne.mezo.feature.people.mapper;
 
 import io.mrkuhne.mezo.api.dto.MentionResponse;
+import io.mrkuhne.mezo.api.dto.PersonFactResponse;
 import io.mrkuhne.mezo.api.dto.PersonResponse;
 import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
 import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
+import io.mrkuhne.mezo.feature.people.entity.PersonFactEntity;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -21,6 +23,7 @@ public interface PeopleMapper {
     @Mapping(target = "mentionsThisWeek", source = "mentionsThisWeek")
     @Mapping(target = "lastMentionedAt", source = "lastMentionedAt")
     @Mapping(target = "graphEdges", ignore = true)   // a service tölti a gráf-portból
+    @Mapping(target = "facts", ignore = true)        // a service tölti a PersonFactService-ből
     // A kontraktus szerint affectTrend sosem olvassa a person.affect_trend oszlopot — a service
     // számítja élő mention-sorokból (getBootstrap) vagy üres listát állít explicit (a többi út).
     @Mapping(target = "affectTrend", ignore = true)
@@ -29,6 +32,10 @@ public interface PeopleMapper {
     @Mapping(target = "directionReason", ignore = true)
     PersonResponse toPersonResponse(PersonEntity entity, int mentionCount, int mentionsThisWeek,
         Instant lastMentionedAt);
+
+    /** S3: {@code seen} a {@code seen_at} bélyegből számítódik — a wire nem hordoz timestampet. */
+    @Mapping(target = "seen", expression = "java(entity.getSeenAt() != null)")
+    PersonFactResponse toFactResponse(PersonFactEntity entity);
 
     /** {@code personName} is joined in the service (mention rows only carry the FK). */
     @Mapping(target = "personName", source = "personName")
@@ -68,5 +75,17 @@ public interface PeopleMapper {
 
     default MentionResponse.ContextLabelEnum mapContextLabel(String value) {
         return value == null ? null : MentionResponse.ContextLabelEnum.fromValue(value);
+    }
+
+    default PersonFactResponse.KindEnum mapFactKind(String value) {
+        return value == null ? null : PersonFactResponse.KindEnum.fromValue(value);
+    }
+
+    default PersonFactResponse.ConfidenceEnum mapFactConfidence(String value) {
+        return value == null ? null : PersonFactResponse.ConfidenceEnum.fromValue(value);
+    }
+
+    default PersonFactResponse.SourceRefKindEnum mapFactSourceRefKind(String value) {
+        return value == null ? null : PersonFactResponse.SourceRefKindEnum.fromValue(value);
     }
 }

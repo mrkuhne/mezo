@@ -24,6 +24,7 @@ const PERSON: PersonEntry = {
   name: 'Ádám',
   initial: 'Á',
   relationship: 'friend',
+  facts: [],
   relationshipHu: 'Barát',
   aliases: [],
   status: 'active',

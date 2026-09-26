@@ -697,6 +697,21 @@ export interface PersonGraphEdge {
   relationHu: string
   strength: string
 }
+// S3 (mezo-d6ivw.3): normalizált személy-tény — a legacy knownFacts-től független élő sorok.
+export type PersonFactKind =
+  | 'preference' | 'relationship_state' | 'shared_activity' | 'important_date' | 'sensitivity'
+export interface PersonFact {
+  id: string
+  personId: string
+  kind: PersonFactKind
+  text: string
+  confidence: 'low' | 'medium' | 'high'
+  sourceKind: 'chat_turn' | 'nightly_day'
+  includeInPrompt: boolean
+  /** false, amíg a (jellemzően éjszakai) tényt a személy oldalán először meg nem nézik. */
+  seen: boolean
+  createdAt: string
+}
 export interface PersonEntry {
   id: string
   name: string
@@ -718,9 +733,11 @@ export interface PersonEntry {
   affectTrendStart: string | null
   direction: 'up' | 'down' | 'flat'
   directionReason: string | null
+  /** Legacy/seed narratív sorok — read-only; az élő tények a facts mezőben. */
   knownFacts: string[]
   ties: string[]
   graphEdges: PersonGraphEdge[]
+  facts: PersonFact[]
 }
 export interface Mention {
   id: string

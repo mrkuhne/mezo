@@ -1,4 +1,4 @@
-import type { PersonEntry, Mention, Affect } from '@/data/types'
+import type { PersonEntry, Mention, Affect, PersonFact } from '@/data/types'
 
 export const people: PersonEntry[] = [
   {
@@ -31,6 +31,26 @@ export const people: PersonEntry[] = [
       { nodeKind: 'LIFE_EVENT', title: 'Nyári szabadság · júl 14–21', relationHu: 'kapcsolódik', strength: 'erős' },
       { nodeKind: 'GOAL', title: 'Esti rutin', relationHu: 'támogatja', strength: 'közepes' },
     ],
+    facts: [
+      {
+        id: 'pf-petra-1', personId: 'pp-petra', kind: 'preference',
+        text: 'Nem szereti a meglepetés-programokat — előre egyeztetett tervekben érzi jól magát',
+        confidence: 'high', sourceKind: 'chat_turn', includeInPrompt: true, seen: true,
+        createdAt: '2026-05-20T20:15:00Z',
+      },
+      {
+        id: 'pf-petra-2', personId: 'pp-petra', kind: 'important_date',
+        text: 'Születésnap: október 12.',
+        confidence: 'high', sourceKind: 'nightly_day', includeInPrompt: true, seen: false,
+        createdAt: '2026-05-23T03:10:00Z',
+      },
+      {
+        id: 'pf-petra-3', personId: 'pp-petra', kind: 'sensitivity',
+        text: 'A doktori védés témája most feszült pont — óvatosan érdemes hozni',
+        confidence: 'medium', sourceKind: 'chat_turn', includeInPrompt: true, seen: true,
+        createdAt: '2026-05-18T21:40:00Z',
+      },
+    ],
   },
   {
     id: 'pp-bence',
@@ -59,6 +79,14 @@ export const people: PersonEntry[] = [
     ties: ['Bence játéknapja után stabilan magasabb HRV'],
     graphEdges: [
       { nodeKind: 'PATTERN', title: 'Lemondott programok × hangulat', relationHu: 'kapcsolódik', strength: 'közepes' },
+    ],
+    facts: [
+      {
+        id: 'pf-bence-1', personId: 'pp-bence', kind: 'shared_activity',
+        text: 'Csütörtök esti röpi a közös horgony — utána szokott a legjobban kinyílni',
+        confidence: 'medium', sourceKind: 'nightly_day', includeInPrompt: true, seen: true,
+        createdAt: '2026-05-19T03:05:00Z',
+      },
     ],
   },
   {
@@ -89,6 +117,7 @@ export const people: PersonEntry[] = [
     graphEdges: [
       { nodeKind: 'GOAL', title: 'Futóblokk · 8 hét', relationHu: 'támogatja', strength: 'erős' },
     ],
+    facts: [],
   },
   {
     id: 'pp-reka',
@@ -116,6 +145,7 @@ export const people: PersonEntry[] = [
     ],
     ties: ['Réka-említés után 2× 22:00 utáni snack a múlt héten'],
     graphEdges: [],
+    facts: [],
   },
   {
     id: 'pp-mark',
@@ -143,6 +173,7 @@ export const people: PersonEntry[] = [
     ],
     ties: [],
     graphEdges: [],
+    facts: [],
   },
   {
     id: 'pp-marci',
@@ -167,6 +198,7 @@ export const people: PersonEntry[] = [
     knownFacts: [],
     ties: [],
     graphEdges: [],
+    facts: [],
   },
 ]
 
@@ -331,3 +363,18 @@ export function affectColor(a: Affect): string {
 export function affectLabel(a: Affect): string {
   return { positive: 'Pozitív', neutral: 'Semleges', mixed: 'Vegyes', negative: 'Nehéz' }[a]
 }
+
+/** S3 mock: a „Megjegyeztem" chip demó-ténye — mock módban minden elküldött kör után ez jön. */
+export const MOCK_TURN_FACTS: PersonFact[] = [
+  {
+    id: 'pf-turn-demo',
+    personId: 'pp-petra',
+    kind: 'preference',
+    text: 'Petra nem szereti a meglepetés-programokat',
+    confidence: 'high',
+    sourceKind: 'chat_turn',
+    includeInPrompt: true,
+    seen: true,
+    createdAt: '2026-05-24T10:00:00Z',
+  },
+]

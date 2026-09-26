@@ -27,3 +27,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609241500_mezo-bk7l2_exercise_weight_gap.sql
+  - changeSet:
+      id: "1.1.0:202609261000_mezo-d6ivw.3_person_fact"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609261000_mezo-d6ivw.3_person_fact.sql
