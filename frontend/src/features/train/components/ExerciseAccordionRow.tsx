@@ -14,6 +14,7 @@ import type { GymExercise } from '@/data/types'
 import { countsForVolume, setStyle } from '@/features/train/logic/setBudget'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { Icon } from '@/shared/ui/Icon'
+import { Icon3D } from '@/shared/ui/clay'
 
 export function ExerciseAccordionRow({ ex, expanded, onToggle, onRemove, onChange, highlight, suggestedWarmup }: {
   ex: GymExercise
@@ -101,7 +102,7 @@ export function ExerciseAccordionRow({ ex, expanded, onToggle, onRemove, onChang
                 color: isFailure ? 'var(--text-inverse)' : 'var(--text-secondary)',
               }}
             >
-              🔥 Failure
+              <Icon3D name="t-flame" size={16} />Failure
             </button>
             <button
               type="button"
@@ -115,7 +116,7 @@ export function ExerciseAccordionRow({ ex, expanded, onToggle, onRemove, onChang
                 color: !isFailure ? 'var(--text-inverse)' : 'var(--text-secondary)',
               }}
             >
-              🌿 Volume
+              <Icon3D name="t-sprout" size={16} />Volume
             </button>
           </div>
 
@@ -239,7 +240,7 @@ function StyleChip({ isFailure, workingSets, repMin, repMax }: {
       background: isFailure ? 'color-mix(in srgb, var(--coral) 10%, transparent)' : 'var(--wash-sage)',
       color: isFailure ? 'var(--coral-deep)' : 'var(--sage-deep)',
     }}>
-      {isFailure ? '🔥' : '🌿'} {workingSets}×{repMin}–{repMax}
+      <Icon3D name={isFailure ? 't-flame' : 't-sprout'} size={12} className="uv-inline" />{workingSets}×{repMin}–{repMax}
     </span>
   )
 }

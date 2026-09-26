@@ -4,6 +4,7 @@ import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { useSleepGoal, useSleepGoalActions } from '@/data/hooks'
 import { deriveSleepTimes } from '@/data/me/sleepGoal'
+import { Icon3D } from '@/shared/ui/clay'
 
 const ROW: React.CSSProperties = { justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: 'var(--surface-2)' }
 const LABEL: React.CSSProperties = { fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }
@@ -72,13 +73,13 @@ function SleepGoalForm({ goal, onClose }: { goal: SleepGoal; onClose: () => void
               style={anchor === 'WAKE'
                 ? { background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' }
                 : undefined}>
-              ☀️ Ébredés
+              <Icon3D name="t-sun" size={18} className="uv-inline" />Ébredés
             </button>
             <button type="button" className="chip" aria-label="Lefekvés rögzítése" onClick={() => setAnchor('BED')}
               style={anchor === 'BED'
                 ? { background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' }
                 : undefined}>
-              🛏️ Lefekvés
+              <Icon3D name="t-sleep" size={18} className="uv-inline" />Lefekvés
             </button>
           </div>
 

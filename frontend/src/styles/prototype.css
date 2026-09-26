@@ -15185,6 +15185,10 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .mz-page-hero.uv-hero .mz-bignum small { font-size: 20px; letter-spacing: -1px; margin-left: 2px; color: var(--text-muted); }
 .mz-page-hero.uv-hero .mz-hero-sb { margin-top: 4px; font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); }
+/* An Icon3D sitting inside a run of text (a warning line, a chip label): inline, baseline-nudged,
+   with the gap a glyph + space used to give (mezo-z5lov, the last live emoji → sprite). */
+.t-ico.uv-inline { display: inline-block; vertical-align: -0.22em; margin-right: 0.3em; }
+.t-ico.uv-inline.uv-after { margin-right: 0; margin-left: 0.3em; }
 /* ── /uveg kit ─────────────────────────────────────────────────────────────── */
 
 /* ═══════════════════════════════════════════════════════════════════════════

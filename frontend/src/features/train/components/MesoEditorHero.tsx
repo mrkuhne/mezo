@@ -6,6 +6,7 @@
 // day carries set-budget warnings (warningCount > 0).
 // ============================================================
 import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { Icon3D } from '@/shared/ui/clay'
 
 interface MesoEditorHeroProps {
   dayType: string
@@ -67,9 +68,9 @@ export function MesoEditorHero({ dayType, daySets, dayExerciseCount, dayMinutes,
             Heti terhelés: <strong>{weekSets} szett</strong> · {trainingDays} edzésnap
           </span>
           {hasWarnings ? (
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--error)' }}>⚠ {warningCount} jelzés</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--error)' }}><Icon3D name="t-info" size={16} className="uv-inline" />{warningCount} jelzés</span>
           ) : (
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--sage-deep)' }}>✓ kereten belül</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--sage-deep)' }}><Icon3D name="t-tick" size={16} className="uv-inline" />kereten belül</span>
           )}
         </div>
       </div>

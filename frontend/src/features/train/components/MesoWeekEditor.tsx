@@ -21,6 +21,7 @@ import { muscleColor } from '@/features/train/logic/muscleColors'
 import { estimateSessionMinutes, type SessionTimingProfile } from '@/features/train/logic/sessionLength'
 import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { Icon3D } from '@/shared/ui/clay'
 
 interface MesoWeekEditorProps {
   mode: 'draft' | 'template'
@@ -185,7 +186,7 @@ export function MesoWeekEditor({
 
           {conflicts.map((c) => (
             <div className="mz-lint rise" key={`${c.fromDay}-${c.toDay}`}>
-              <span aria-hidden="true">⚠️</span>
+              <Icon3D name="t-info" size={18} />
               <span>
                 <b>{c.groups.map((g) => g.label).join(' + ')}</b> egymást követő napokon
                 ({c.fromDay} {c.fromType} → {c.toDay} {c.toType}) — pihenőnap ajánlott közéjük.

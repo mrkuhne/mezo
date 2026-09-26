@@ -595,3 +595,22 @@ Picked variant 3 of [`prototypes/uveg-olvashatosag.html`](prototypes/uveg-olvash
     under the opaque header: `MozaikPage`'s `.mz-p-<tone>` top wash is transparent in dark, the aurora blobs start
     below the header zone (top ≥ 230px), and the dark `--halo-*` tokens run at ~40% strength.
 
+### Emodzsi-söprés (`mezo-z5lov`, 2026-09-26)
+
+The last live emoji outside the character voices went to existing sprite symbols (`t-sun t-sleep t-spark t-info t-flame
+t-sprout t-tick`); no new icons. Surfaces: the sleep-goal sheet, the meso wizard CTA, the week/day editor lints, the
+Failure/Volume set style, the macro-panel note. Prototype: [`prototypes/uveg-emodzsi.html`](prototypes/uveg-emodzsi.html).
+
+80. **A grep hit is not a screen.** The source held ~90 distinct emoji; five spots rendered. The rest were dead modules,
+    data fields nobody reads, maps already converted to sprites (`badgeArt`, `cleanTypeLabel`) or comments. Trace every
+    hit to a routed render site before counting it (rule 18 for glyphs); the dead ones go to a cleanup bead
+    (`mezo-8slef`), because deleting them also means fixing the feature docs that still call them live.
+81. **A character's own sentence may carry emoji; the UI may not.** The csapatfal voice rule (spec §2.6/§2.7, owner
+    reconfirmed 2026-09-26) allows sparing emoji inside Szunya/Falat/Mocor/Derű/Mezo lines (`IntroPosts`, `teamRooms`,
+    edition posts). "Still no emoji" (§4) governs glyphs the app draws — buttons, chips, warnings — never voice copy.
+82. **`.t-ico` is `display: block`.** An icon inside a run of text (a warning line, a chip label, a CTA label) takes the
+    kit's `uv-inline` class (inline-block, baseline nudge, the old glyph's trailing gap; `uv-after` when it trails).
+    An `aria-hidden` sprite that replaced a meaningful glyph gets an `sr-only` word for what it meant.
+83. **A prototype's change marker must not sit on the content.** Corner „ITT” badges covered the numbers they pointed at;
+    the owner read it as a broken layout. Mark a change with a dashed outline (`outline-offset`) and offer a switch to
+    hide the markers and one to show the before state.

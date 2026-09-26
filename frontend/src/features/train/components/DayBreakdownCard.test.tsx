@@ -8,10 +8,13 @@ const ok: DayGroupRow = { group: 'back', label: 'Hát', colorMuscle: 'back-wide'
 const plyoOnly: DayGroupRow = { group: 'quad', label: 'Comb', colorMuscle: 'quad', sets: 0, exemptSets: 4, over: false }
 
 describe('DayBreakdownCard', () => {
-  it('renders an over-cap row with the ⚠ mark', () => {
-    render(<DayBreakdownCard rows={[over]} warnings={[]} />)
+  // mezo-z5lov: the ⚠ glyph became the 3D t-info sprite; the meaning moved to an sr-only name.
+  it('renders an over-cap row with the warning sprite and its spoken meaning, never the ⚠ glyph', () => {
+    const { container } = render(<DayBreakdownCard rows={[over]} warnings={[]} />)
     expect(screen.getByText(/12 \/ 8/)).toBeInTheDocument()
-    expect(screen.getByText(/⚠/)).toBeInTheDocument()
+    expect(screen.getByText(/plafon fölött/)).toBeInTheDocument()
+    expect(container.querySelector('use[href="#t-info"]')).not.toBeNull()
+    expect(container.textContent).not.toMatch(/⚠/)
   })
 
   it('renders an exempt-only row as "n kiegészítő" instead of the set count', () => {
