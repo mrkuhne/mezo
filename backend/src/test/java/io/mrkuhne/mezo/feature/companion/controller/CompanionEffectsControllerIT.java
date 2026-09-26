@@ -65,10 +65,10 @@ class CompanionEffectsControllerIT extends ApiIntegrationTest {
                 ownerAuthHeaders(), HttpStatus.OK, PersonEffectsResponse.class);
 
         assertThat(response.getEffects()).singleElement().satisfies(effect -> {
-            assertThat(effect.getMetric()).isEqualTo("mental");
-            assertThat(effect.getDirection()).isEqualTo("higher");
-            assertThat(effect.getStrengthBand()).isEqualTo("eros");
-            assertThat(effect.getConfidenceTier()).isEqualTo("kozepes");
+            assertThat(effect.getMetric()).isEqualTo(EffectResponse.MetricEnum.MENTAL);
+            assertThat(effect.getDirection()).isEqualTo(EffectResponse.DirectionEnum.HIGHER);
+            assertThat(effect.getStrengthBand()).isEqualTo(EffectResponse.StrengthBandEnum.EROS);
+            assertThat(effect.getConfidenceTier()).isEqualTo(EffectResponse.ConfidenceTierEnum.KOZEPES);
             assertThat(effect.getMeanDiff()).isEqualTo(1.50);
             assertThat(effect.getSubjectDays()).isEqualTo(6);
             assertThat(effect.getComplementDays()).isEqualTo(20);
@@ -89,7 +89,7 @@ class CompanionEffectsControllerIT extends ApiIntegrationTest {
                 ownerAuthHeaders(), HttpStatus.OK, PersonEffectsResponse.class);
 
         assertThat(response.getEffects()).singleElement()
-                .extracting(EffectResponse::getDirection).isEqualTo("lower");
+                .extracting(EffectResponse::getDirection).isEqualTo(EffectResponse.DirectionEnum.LOWER);
     }
 
     @Test

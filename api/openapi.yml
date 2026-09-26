@@ -101,6 +101,12 @@ tags:
       KATALÓGUS-kártyák külön, felhasználói ítélete marad).
   - name: CompanionObservationRecovery
     description: Owner-only preview and exact-plan recovery of grounded observations.
+  - name: CompanionEffects
+    description: >-
+      Emlékezet S4 (mezo-d6ivw.4): a nevesített hatás-motor egy személyre szűrt
+      olvasata — a kódban számolt Cliff-delta, sáv és bizonyossági szint. Saját
+      tag, hogy a generált interfész elkülönüljön a beszélgetés-CRUD és az
+      Észrevételek felülettől.
   - name: People
     description: Inner-circle persons + mention logging (Emberek)
   - name: Proactive
@@ -19740,21 +19746,32 @@ components:
       properties:
         metric:
           type: string
-          pattern: ^(mental|energy|stress)$
+          enum:
+            - mental
+            - energy
+            - stress
           description: Melyik metrikát érinti a hatás.
         direction:
           type: string
-          pattern: ^(higher|lower)$
+          enum:
+            - higher
+            - lower
           description: >-
             A subject napjain a metrika magasabb vagy alacsonyabb volt-e a többi
             naphoz képest.
         strengthBand:
           type: string
-          pattern: ^(enyhe|kozepes|eros)$
+          enum:
+            - enyhe
+            - kozepes
+            - eros
           description: A Cliff-delta abszolút értékéből származó sáv.
         confidenceTier:
           type: string
-          pattern: ^(gyenge|kozepes|eros)$
+          enum:
+            - gyenge
+            - kozepes
+            - eros
           description: >-
             A mintaszámból (és megerősített észrevétel esetén a serve-time
             bumpból) származó bizonyosság.

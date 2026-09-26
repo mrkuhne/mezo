@@ -7893,14 +7893,26 @@ export interface components {
         };
         /** @description Egy kódban számolt (subject, metrika) hatás-sor — sosem ok-okozat, csak együttjárás. A `direction` a tárolt előjelből származik: pozitív Cliff's delta = higher. */
         EffectResponse: {
-            /** @description Melyik metrikát érinti a hatás. */
-            metric: string;
-            /** @description A subject napjain a metrika magasabb vagy alacsonyabb volt-e a többi naphoz képest. */
-            direction: string;
-            /** @description A Cliff-delta abszolút értékéből származó sáv. */
-            strengthBand: string;
-            /** @description A mintaszámból (és megerősített észrevétel esetén a serve-time bumpból) származó bizonyosság. */
-            confidenceTier: string;
+            /**
+             * @description Melyik metrikát érinti a hatás.
+             * @enum {string}
+             */
+            metric: "mental" | "energy" | "stress";
+            /**
+             * @description A subject napjain a metrika magasabb vagy alacsonyabb volt-e a többi naphoz képest.
+             * @enum {string}
+             */
+            direction: "higher" | "lower";
+            /**
+             * @description A Cliff-delta abszolút értékéből származó sáv.
+             * @enum {string}
+             */
+            strengthBand: "enyhe" | "kozepes" | "eros";
+            /**
+             * @description A mintaszámból (és megerősített észrevétel esetén a serve-time bumpból) származó bizonyosság.
+             * @enum {string}
+             */
+            confidenceTier: "gyenge" | "kozepes" | "eros";
             /**
              * Format: double
              * @description A subject és a komplementer napok átlagának különbsége nyers metrika-egységben.

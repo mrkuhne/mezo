@@ -42,10 +42,11 @@ public class CompanionEffectsController implements CompanionEffectsApi {
 
     private static EffectResponse toResponse(EffectLinkEntity row) {
         return new EffectResponse()
-                .metric(row.getMetric())
-                .direction(row.getCliffsDelta().signum() > 0 ? "higher" : "lower")
-                .strengthBand(row.getStrengthBand())
-                .confidenceTier(row.getConfidenceTier())
+                .metric(EffectResponse.MetricEnum.fromValue(row.getMetric()))
+                .direction(row.getCliffsDelta().signum() > 0
+                        ? EffectResponse.DirectionEnum.HIGHER : EffectResponse.DirectionEnum.LOWER)
+                .strengthBand(EffectResponse.StrengthBandEnum.fromValue(row.getStrengthBand()))
+                .confidenceTier(EffectResponse.ConfidenceTierEnum.fromValue(row.getConfidenceTier()))
                 .meanDiff(row.getMeanDiff().doubleValue())
                 .subjectDays(row.getSubjectDays())
                 .complementDays(row.getComplementDays())
