@@ -46,6 +46,13 @@ describe('NapomDimensionRow', () => {
     expect(row).toHaveAccessibleDescription('')
   })
 
+  test('scored with neither facts nor note: no empty detail box', () => {
+    const { container } = render(
+      <NapomDimensionRow dimension={{ ...nutrition, score: null, status: 'NO_DATA', facts: [], note: null }} mode="scored" i={0} />,
+    )
+    expect(container.querySelector('.napom-dmore')).toBeNull()
+  })
+
   test('today: status word by status, no weight, NO_DATA is a dashed row with a dash for the value', () => {
     const { container, rerender } = render(<NapomDimensionRow dimension={nutrition} mode="today" i={0} />)
     expect(screen.getByText('KÉSZ')).toBeInTheDocument()
@@ -54,8 +61,11 @@ describe('NapomDimensionRow', () => {
     expect(container.querySelector('.napom-drow')).toHaveClass('glass')
 
     expect(container.querySelector('.napom-bar')).not.toBeNull()
+    // a live day shows its details up front too (owner 2026-09-26): chips + the note if any
+    expect(screen.getByText('kcal · 2980 / 3100')).toBeInTheDocument()
+    expect(screen.getByText('A fehérjecélt majdnem hoztad.')).toBeInTheDocument()
 
-    rerender(<NapomDimensionRow dimension={{ ...nutrition, score: null, status: 'NO_DATA', facts: [] }} mode="today" goalTick i={0} />)
+    rerender(<NapomDimensionRow dimension={{ ...nutrition, score: null, status: 'NO_DATA', facts: [], note: null }} mode="today" goalTick i={0} />)
     expect(screen.getByText('NYITVA')).toBeInTheDocument()
     // an open row is free space: no empty bar, no goal tick
     expect(container.querySelector('.napom-bar')).toBeNull()
@@ -63,6 +73,8 @@ describe('NapomDimensionRow', () => {
     expect(screen.getByText('–')).toBeInTheDocument()
     expect(container.querySelector('.napom-drow')).toHaveClass('is-open')
     expect(container.querySelector('.napom-drow')).not.toHaveClass('glass')
+    // nothing to show → no empty detail box
+    expect(container.querySelector('.napom-dmore')).toBeNull()
 
     rerender(<NapomDimensionRow dimension={{ ...nutrition, score: null, status: 'IN_PROGRESS' }} mode="today" i={0} />)
     expect(screen.getByText('ÚTON')).toBeInTheDocument()
