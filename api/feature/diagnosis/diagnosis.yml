@@ -16,7 +16,8 @@ paths:
         - name: phenomenon
           in: query
           required: false
-          schema: { type: string, pattern: '^(fatigue|sleep|weight)$', default: fatigue }
+          description: Optional filter; omitted = every phenomenon (mezo-tpmr2).
+          schema: { type: string, pattern: '^(fatigue|sleep|weight)$' }
       responses:
         '200':
           description: The user's diagnoses

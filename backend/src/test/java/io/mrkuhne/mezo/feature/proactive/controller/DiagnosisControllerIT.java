@@ -73,6 +73,21 @@ class DiagnosisControllerIT extends ApiIntegrationTest {
         assertThat(body.get(0).getVerdict()).isEqualTo("Teszt diagnózis.");
     }
 
+    /** mezo-tpmr2: the Diagnózis page lists without a filter — every phenomenon must come back,
+     *  newest first, or sleep and weight reports can never be reopened. */
+    @Test
+    void listWithoutPhenomenonReturnsEveryPhenomenonNewestFirst() {
+        Instant now = Instant.now();
+        diagnosisPopulator.diagnosis(ownerId(), now.minusSeconds(3600));
+        diagnosisPopulator.weightDiagnosis(ownerId(), someMonday(), now);
+
+        List<DiagnosisResponse> body = getForList("/api/proactive/diagnosis",
+                ownerAuthHeaders(), HttpStatus.OK, DiagnosisResponse.class);
+
+        assertThat(body).extracting(DiagnosisResponse::getPhenomenon)
+                .containsExactly("weight", "fatigue");
+    }
+
     @Test
     void detailReturnsTheRowWithAStaleFlag() {
         DiagnosisEntity seeded = diagnosisPopulator.diagnosis(ownerId());

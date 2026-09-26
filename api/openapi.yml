@@ -10201,10 +10201,10 @@ paths:
         - name: phenomenon
           in: query
           required: false
+          description: Optional filter; omitted = every phenomenon (mezo-tpmr2).
           schema:
             type: string
             pattern: ^(fatigue|sleep|weight)$
-            default: fatigue
       responses:
         '200':
           description: The user's diagnoses

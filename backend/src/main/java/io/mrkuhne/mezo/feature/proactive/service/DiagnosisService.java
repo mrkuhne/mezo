@@ -54,9 +54,12 @@ public class DiagnosisService {
 
     @Transactional(readOnly = true)
     public List<DiagnosisResponse> list(UUID userId, String phenomenon) {
-        return diagnosisRepository
-                .findByCreatedByAndPhenomenonOrderByGeneratedAtDesc(userId, phenomenon)
-                .stream().map(entity -> withStale(userId, entity)).toList();
+        // No filter = every phenomenon (mezo-tpmr2): a null here once meant "fatigue only" via
+        // the contract default, which hid every sleep and weight report from the list.
+        List<DiagnosisEntity> rows = phenomenon == null
+                ? diagnosisRepository.findByCreatedByOrderByGeneratedAtDesc(userId)
+                : diagnosisRepository.findByCreatedByAndPhenomenonOrderByGeneratedAtDesc(userId, phenomenon);
+        return rows.stream().map(entity -> withStale(userId, entity)).toList();
     }
 
     @Transactional(readOnly = true)
