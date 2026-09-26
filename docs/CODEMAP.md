@@ -316,7 +316,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **logic:** conferencePostItem.ts
   - **root:** character.css, deliberationLabels.ts, deliberationStats.ts, dossierState.ts, expertColors.ts,
     feedDayLabel.ts, inventory.ts, personaCharacter.ts, runLabels.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 61 IT + 17 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 62 IT + 17 unit
   - **ITs:** `CharacterApiCompanionOffIT`, `CharacterApiIT`, `CharacterApiSwitchOffIT`, `CharacterBootstrapIT`,
     `CharacterBootstrapMemoryDisabledIT`, `CharacterBootstrapMemoryIT`, `CharacterClaimRevisionIT`,
     `CharacterClaimTemporalIT`, `CharacterConferenceJobIT`, `CharacterConferenceListIT`,
@@ -333,7 +333,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`, `PortraitWriterNameIT`, `TeamChatApiSwitchOffIT`,
     `TeamChatBudgetIT`, `TeamChatContextIT`, `TeamChatControllerIT`, `TeamChatListenerActorIT`,
     `TeamChatProductionSwitchIT`, `TeamChatRepositoryIT`, `TeamChatServiceIT`, `TeamChatSwitchOffIT`,
-    `TeamEditionReadsIT`, `TeamEditionSchemaIT`, `TeamEditionServiceIT`, `TeamEditionServiceSwitchOffIT`
+    `TeamChatVoiceOutsideTransactionIT`, `TeamEditionReadsIT`, `TeamEditionSchemaIT`, `TeamEditionServiceIT`,
+    `TeamEditionServiceSwitchOffIT`
   - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `ChallengePopulator`,
     `CharacterClaimRevisionPopulator`, `CharacterCouncilPopulator`, `CharacterReplyPopulator`, `CheckInPopulator`,
     `DailySummaryPopulator`, `DatabasePopulator`, `ExperimentPopulator`, `FeedbackPopulator`, `FlagLogPopulator`,
@@ -998,8 +999,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **entities→tables:** `MealEntity`→`meal`, `MealItemEntity`→`meal_item`, `WaterLogEntity`→`water_log`
   - **repositories:** `MealItemRepository`, `MealRepository`, `WaterLogRepository`
   - **services:** `FuelDayService`, `GoalIntakeAdherenceAdapter`, `MealAiDraftService`, `MealAiDraftValidator`,
-    `MealCoachLlm`, `MealCoachPrompt`, `MealCoachService`, `MealCoachStore`, `MealCompositeLines`, `MealDraftLlm`,
-    `MealService`, `WaterLogService`
+    `MealCoachContextReader`, `MealCoachEagerListener`, `MealCoachLlm`, `MealCoachPrompt`, `MealCoachService`,
+    `MealCoachStore`, `MealCompositeLines`, `MealDraftLlm`, `MealSavedEvent`, `MealService`, `WaterLogService`
   - **controllers→contract:** `MealAiDraftController`→`MealAiLogApi`, `MealController`→`MealApi`
   - **mappers:** `MealMapper`
   - **config:** `MealAiLogProperties`
@@ -1009,7 +1010,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/fuel/day/{date} · GET /api/fuel/week/{start} · POST /api/meal · PUT /api/meal/{id} ·
     DELETE /api/meal/{id} · POST /api/meal/ai-draft · GET /api/recipe/{id}/logs · GET /api/meal/coach ·
     GET /api/meal/{id}/coach · POST /api/water-log · DELETE /api/water-log/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 25 IT + 7 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 25 IT + 8 unit
   - **ITs:** `FuelDayDayTypeIT`, `FuelDayServiceIT`, `GoalIntakeAdherenceAdapterIT`, `MealAiDraftApiIT`,
     `MealAiDraftServiceIT`, `MealAiDraftSwitchOffApiIT`, `MealAiLlmUnavailableApiIT`, `MealAiUploadLimitApiIT`,
     `MealApiIT`, `MealCoachApiIT`, `MealCoachServiceIT`, `MealCoachStoreIT`, `MealCoachSwitchOffApiIT`,

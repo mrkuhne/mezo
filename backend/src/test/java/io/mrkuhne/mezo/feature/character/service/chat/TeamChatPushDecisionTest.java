@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 
 /**
  * Final review C1 + I3 (mezo-a9bo7.25): {@link TeamChatService#decidePush}'s gates, without a
@@ -48,8 +49,13 @@ class TeamChatPushDecisionTest {
                 "0 10 4 * * *", "0 20 * * * *");
         NotificationProperties notification = new NotificationProperties(160, "09:00", "20:00", 240,
                 "0 * * * * *", 5, 5, new NotificationProperties.QuietHours("22:00", "07:00"));
+        // decidePush reaches reservePush through the self proxy (its own REQUIRES_NEW transaction);
+        // without Spring the "proxy" is the service itself.
+        @SuppressWarnings("unchecked")
+        ObjectProvider<TeamChatService> self = mock(ObjectProvider.class);
         service = new TeamChatService(threads, null, properties, null, null, null, null, emitter, null, null,
-                null, notification, null);
+                null, notification, self);
+        when(self.getObject()).thenReturn(service);
         when(threads.findByCreatedByAndPushedTrueAndOpenedAtBetweenAndDeletedFalse(any(), any(), any()))
                 .thenReturn(List.of());
         when(threads.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
