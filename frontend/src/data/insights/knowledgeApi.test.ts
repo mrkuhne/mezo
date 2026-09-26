@@ -11,6 +11,7 @@ describe('knowledgeApi wire mapping', () => {
       factText: 'Laktózérzékeny',
       category: 'health',
       source: 'chat',
+      owner: 'deru',
       reinforcementCount: 4,
       includeInPrompt: false,
       lastReinforcedAt: null,
@@ -18,7 +19,7 @@ describe('knowledgeApi wire mapping', () => {
     })
     expect(fact).toEqual({
       id: 'kf-1', text: 'Laktózérzékeny', category: 'health', active: false, reinforced: 4,
-      source: 'chat', lastReinforcedAt: null, createdAt: '2026-07-03T06:00:00Z',
+      source: 'chat', owner: 'deru', lastReinforcedAt: null, createdAt: '2026-07-03T06:00:00Z',
     })
   })
 
@@ -30,12 +31,37 @@ describe('knowledgeApi wire mapping', () => {
       // required since mezo-d20.7.6 — a candidate now says whether chat or the weekly
       // review proposed it (the promoted knowledge fact inherits it)
       source: 'chat',
+      owner: 'mocor',
       userDecision: null,
       refinedText: null,
       promotedFactId: null,
       createdAt: '2026-07-03T06:00:00Z',
     })
-    expect(candidate).toEqual({ id: 'c-9', text: 'Reggel edz szívesen', category: 'train', conflictsWithFactId: null })
+    expect(candidate).toEqual({
+      id: 'c-9', text: 'Reggel edz szívesen', category: 'train', owner: 'mocor', source: 'chat',
+      createdAt: '2026-07-03T06:00:00Z', evidence: null, weekStart: null, conflictsWithFactId: null,
+    })
+  })
+
+  it('a heti jelölt evidence-t és weekStart-ot is átviszi', () => {
+    const candidate = toFactCandidate({
+      id: 'c-10',
+      candidateText: 'Heti javaslat',
+      category: 'health',
+      source: 'weekly_review',
+      owner: 'szunya',
+      evidence: 'A hét minden napján 22:00 előtt lefeküdtél.',
+      weekStart: '2026-08-24',
+      userDecision: null,
+      refinedText: null,
+      promotedFactId: null,
+      createdAt: '2026-08-31T06:00:00Z',
+    })
+    expect(candidate).toEqual({
+      id: 'c-10', text: 'Heti javaslat', category: 'health', owner: 'szunya', source: 'weekly_review',
+      createdAt: '2026-08-31T06:00:00Z', evidence: 'A hét minden napján 22:00 előtt lefeküdtél.',
+      weekStart: '2026-08-24', conflictsWithFactId: null,
+    })
   })
 
   it('lists facts and candidates from the default MSW fixtures (seed mirror)', async () => {

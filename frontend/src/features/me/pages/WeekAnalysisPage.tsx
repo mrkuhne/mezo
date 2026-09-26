@@ -57,7 +57,7 @@ export function WeekAnalysisPage() {
   const score = week?.weekly.score ?? null
   // „N / 7 nap logolva" — the prototype's `logged`: days the Mezo could score.
   const loggedDays = days.filter((d) => d.score != null).length
-  const chips = highlightChips(review?.highlights, digest)
+  const chips = highlightChips(review?.highlights, digest, start)
   const stamp = humanGeneratedAt(review?.generatedAt)
 
   // A napom (mezo-yjzhw.4): a single day now lives at `/nap/napom/:date`.

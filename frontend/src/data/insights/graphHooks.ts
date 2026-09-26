@@ -53,12 +53,19 @@ export function useLifeEventActions() {
       }
       await graphApi.decideCandidate(input.id, input.decision, input.refined)
     },
-    onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: GRAPH_CANDIDATE_KEY }),
+    onSuccess: mock
+      ? undefined
+      : () => {
+          qc.invalidateQueries({ queryKey: GRAPH_CANDIDATE_KEY })
+          qc.invalidateQueries({ queryKey: GRAPH_NODE_KEY })
+        },
   })
 
   return {
+    /** Returns the mutation promise (rejects on failure) so a caller like `useRoladInbox` can
+     *  roll back its own optimistic state — the MutationCache still toasts the error either way. */
     decide: (id: string, decision: LifeEventDecision, refined?: RefinedCandidate) =>
-      decideM.mutate({ id, decision, refined }),
+      decideM.mutateAsync({ id, decision, refined }),
     pending: decideM.isPending,
   }
 }
@@ -88,6 +95,7 @@ function mockDecide(
     topEdges: [],
     sourceKind: null,
     updatedAt: new Date().toISOString(),
+    occurredOn: candidate.occurredOn,
   }
   qc.setQueryData<KnowledgeGraphNode[]>(GRAPH_NODE_KEY, (old) => [promoted, ...(old ?? graphNodeSeed)])
 }

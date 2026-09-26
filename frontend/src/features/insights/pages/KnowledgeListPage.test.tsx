@@ -1,14 +1,16 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { delay, http, HttpResponse } from 'msw'
 import { MemoryRouter, useLocation, Routes, Route } from 'react-router-dom'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/data/_client/api'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { GRAPH_KIND_GROUPS } from '@/data/insights/graph'
+import { GRAPH_KIND_GROUPS, lifeEventCandidateSeed } from '@/data/insights/graph'
 import { KnowledgeListPage } from '@/features/insights/pages/KnowledgeListPage'
 import { KnowledgeNodePage } from '@/features/insights/pages/KnowledgeNodePage'
 import { candidateSeed } from '@/data/insights/knowledge'
+
+const MOCK_PENDING_COUNT = candidateSeed.length + lifeEventCandidateSeed.length
 
 const renderPage = (path = '/') =>
   render(
@@ -85,9 +87,26 @@ describe('KnowledgeListPage (mock mode)', () => {
     expect(screen.queryByRole('button', { name: 'Tudásgráf' })).not.toBeInTheDocument()
   })
 
-  test('(g) az inbox (jóváhagyás-jelöltek) az alapnézeten renderel', () => {
+  // ---- Task 11 (mezo-zpxv7): the inbox moved to Rólad — the Tudástár shows only the pointer ---
+
+  test('(g) az alapnézet a Rólad-pointert mutatja, nem az inbox-kártyákat', () => {
     renderPage()
-    expect(screen.getByText(candidateSeed[0].text).closest('[data-fact-candidate]')).not.toBeNull()
+    expect(screen.queryByText(candidateSeed[0].text)).not.toBeInTheDocument()
+    expect(document.querySelector('[data-fact-candidate]')).toBeNull()
+    const pointer = screen.getByText(`${MOCK_PENDING_COUNT} javaslat vár rád a Rólad oldalon`)
+    expect(pointer.closest('a')).toHaveAttribute('href', '/mezo/rolad')
+    expect(pointer.closest('a')).toHaveClass('glass', 'tf-case', 'tf-c-gold', 'tf-s-gold')
+    expect(screen.getByText('Ott döntesz róluk: Igen, jegyezd meg · Pontosítom · Most ne · Nem igaz')).toBeInTheDocument()
+  })
+
+  test('a pointer száma a tény- és az életesemény/szezon-jelölteket együtt számolja', () => {
+    renderPage()
+    expect(screen.getByText(`${candidateSeed.length + lifeEventCandidateSeed.length} javaslat vár rád a Rólad oldalon`)).toBeInTheDocument()
+  })
+
+  test('nincs data-week-banner az alapnézeten (a heti postaláda a Rólad oldalra került)', () => {
+    renderPage('/?start=2026-09-14')
+    expect(document.querySelector('[data-week-banner]')).toBeNull()
   })
 
   // ---- Task 10: `?fact=` deep link + kiemelés (mezo-ms9a) --------------------------------
@@ -216,12 +235,13 @@ describe('KnowledgeListPage (mock mode)', () => {
     expect(screen.queryByRole('button', { name: /^Késői evés rontja az alvást/ })).not.toBeInTheDocument()
   })
 
-  test('week context survives entry into facts and back to the canonical inbox', async () => {
+  test('week context survives entry into facts and back (start= sticks, no banner on the Tudástár)', async () => {
     renderPageWithProbe('/?start=2026-09-14')
     await userEvent.click(screen.getByRole('button', { name: 'Tények' }))
     expect(screen.getByTestId('loc-probe')).toHaveTextContent('start=2026-09-14')
     await userEvent.click(screen.getByRole('button', { name: 'Vissza: Tudástár' }))
-    expect(screen.getByRole('link', { name: /Vissza ehhez a héthez/ })).toHaveAttribute('href', '/me/week?start=2026-09-14')
+    expect(screen.getByTestId('loc-probe')).toHaveTextContent('start=2026-09-14')
+    expect(document.querySelector('[data-week-banner]')).toBeNull()
   })
 
   test('legacy communication profile redirects to central settings', async () => {
@@ -235,7 +255,7 @@ describe('KnowledgeListPage (mock mode)', () => {
     expect(screen.getByText('Mit csinál a kapcsoló?')).toBeInTheDocument()
     expect(screen.getByText('Mit jelent a visszaigazolás?')).toBeInTheDocument()
     expect(screen.getByText('Miért marad ki néhány?')).toBeInTheDocument()
-    expect(screen.getByText('Mi vár jóváhagyásra?')).toBeInTheDocument()
+    expect(screen.getByText('Hol döntök a javaslatokról?')).toBeInTheDocument()
     expect(screen.getByText('Mik a kategóriák?')).toBeInTheDocument()
     expect(screen.getByText(/Ugyanennek a tudásnak a térképe/)).toBeInTheDocument()
   })
@@ -262,10 +282,9 @@ describe('KnowledgeListPage (mock mode)', () => {
     expect(offTile).toHaveClass('off')
   })
 
-  test('a jóváhagyás-inbox az oldal egyetlen hangos csoportja: arany üveg-ügy jelöltenként (üveg U9)', () => {
+  test('a pointer az oldal egyetlen hangos üveg-ügye (üveg U9); a Tények-sorok sosem üvegek', () => {
     renderPage()
-    const card = screen.getByText(candidateSeed[0].text).closest('[data-fact-candidate]')
-    expect(card).not.toBeNull()
+    const card = screen.getByText(`${MOCK_PENDING_COUNT} javaslat vár rád a Rólad oldalon`).closest('a')
     expect(card).toHaveClass('glass', 'tf-case', 'tf-c-gold')
     // a Tények-lista sorai sosem üvegek (rangsor, bible §3)
     expect(document.querySelector('[data-fact-row].glass')).toBeNull()
@@ -342,149 +361,6 @@ describe('KnowledgeListPage (mock mode)', () => {
     expect(screen.getByText(/Most ezeket kapja meg a társ · 1$/)).toBeInTheDocument()
   })
 
-  test('renders the pending candidates with the L2 actions', () => {
-    renderPage()
-    const heading = screen.getByText(`Jóváhagyásra vár · ${candidateSeed.length}`)
-    expect(heading).toBeInTheDocument()
-    expect(screen.getByText(candidateSeed[0].text)).toBeInTheDocument()
-    // az „Elfogad" gomb a jelöltek csoportjára van skálázva, mert az életesemény-jelöltek
-    // csoportja is ad egy „Elfogad" gombot (W2.3, mezo-b3pp.8) — a globális lekérdezés
-    // hamisan bukna emiatt.
-    expect(within(heading.parentElement as HTMLElement).getAllByRole('button', { name: 'Elfogad' })).toHaveLength(
-      candidateSeed.length,
-    )
-  })
-
-  test('accepting a candidate promotes it into the fact list', async () => {
-    renderPage()
-    await userEvent.click(screen.getAllByRole('button', { name: 'Elfogad' })[0])
-    // az elfogadás minden számlálót léptet: a hero nagy száma 15 → 16
-    await waitFor(() => expect(document.querySelector('.tud9-bignum')?.textContent).toBe('16'))
-    expect(screen.getByText(`Jóváhagyásra vár · ${candidateSeed.length - 1}`)).toBeInTheDocument()
-  })
-
-  test('refining reveals the inline input and promotes the corrected wording', async () => {
-    renderPage()
-    await userEvent.click(screen.getAllByRole('button', { name: 'Pontosít' })[0])
-    const input = screen.getByLabelText('Pontosított tény')
-    await userEvent.clear(input)
-    await userEvent.type(input, 'Pontosított tudás')
-    await userEvent.click(screen.getByRole('button', { name: 'Mentés' }))
-    await waitFor(() => expect(document.querySelector('.tud9-bignum')?.textContent).toBe('16'))
-    // a promotált tény maga a ?view=tenyek nézet listájában olvasható, nem az alapnézeten
-    await userEvent.click(screen.getByRole('button', { name: 'Tények' }))
-    expect(await screen.findByText('Pontosított tudás')).not.toBeNull()
-  })
-
-  test('rejecting a candidate removes it without promoting', async () => {
-    renderPage()
-    await userEvent.click(screen.getAllByRole('button', { name: 'Elvet' })[0])
-    expect(await screen.findByText(`Jóváhagyásra vár · ${candidateSeed.length - 1}`)).toBeInTheDocument()
-    await waitFor(() => expect(document.querySelector('.tud9-bignum')?.textContent).toBe('15'))
-  })
-
-  // Task 12 (mezo-ms9a): a seed c3 jelölt f4-gyel ütközik ("Volleyball: kedd + csütörtök +
-  // szombat") — elfogadáskor a bejelölt "A régit kikapcsolom" checkbox miatt f4-nek is ki
-  // kell kapcsolódnia (toggle(f4, false)), a Tények nézetben pedig "off" csempeként landol.
-  test('a konfliktusos c3 jelölt elfogadása a bejelölt checkboxszal kikapcsolja az ütköző f4 tényt', async () => {
-    renderPage()
-    const card = screen.getByText(candidateSeed[2].text).closest('[data-fact-candidate]') as HTMLElement
-    expect(within(card).getByLabelText('A régit kikapcsolom')).toBeChecked()
-    await userEvent.click(within(card).getByRole('button', { name: 'Elfogad' }))
-
-    await userEvent.click(screen.getByRole('button', { name: 'Tények' }))
-    // a „Kikapcsolva" szekció alapból csukott (LifecycleSection defaultOpen=false) — ki kell nyitni
-    await userEvent.click(screen.getByText(/Kikapcsolva/))
-    const f4Tile = await screen.findByText('Volleyball: kedd + csütörtök + szombat')
-    expect(f4Tile.closest('[data-fact-row]')).toHaveClass('off')
-  })
-
-  it('kirajzolja az életesemény-jelöltek csoportot és a döntés gombjait', async () => {
-    renderPage()
-    expect(await screen.findByText(/Életesemény-jelöltek/)).toBeInTheDocument()
-    expect(screen.getByText('Új munkahely első hete')).toBeInTheDocument()
-    const accept = screen.getAllByRole('button', { name: 'Elfogad' })
-    expect(accept.length).toBeGreaterThan(0)
-  })
-
-  it('a szezon-jelölteket külön csoportban, saját (nem életesemény) provenienciával jeleníti meg (W5.3, mezo-b3pp.20)', async () => {
-    renderPage()
-    // Ha a kártya visszaesne az egyetlen hard-coded életesemény-szövegre, ez a csoport és ez a
-    // mondat is eltűnne — a teszt pontosan azt bukja meg, amit ez a slice orvosolt.
-    expect(await screen.findByText(/Szezon-jelöltek/)).toBeInTheDocument()
-    expect(screen.getByText('Nyári alapozás')).toBeInTheDocument()
-    expect(screen.getByText(
-      'Ezt a negyedév és az előző negyedév összefoglalóiból olvastam ki — csak akkor kerül a gráfba, ha elfogadod.',
-    )).toBeInTheDocument()
-
-    // Az életesemény-kártya a SAJÁT (más) provenienciáját tartja meg — a két copy nem eshet
-    // egybe, különben egy szezon fölött életesemény-szöveg állna.
-    expect(screen.getByText(
-      'Ezt a napod szövegeiből szűrtem ki — csak akkor kerül a gráfba, ha elfogadod.',
-    )).toBeInTheDocument()
-  })
-
-  it('elvetés után eltűnik a jelölt a listáról', async () => {
-    renderPage()
-    const card = (await screen.findByText('Új munkahely első hete')).closest('[data-graph-card]') as HTMLElement
-    await userEvent.click(within(card).getByRole('button', { name: 'Elvet' }))
-    await waitFor(() =>
-      expect(screen.queryByText('Új munkahely első hete')).not.toBeInTheDocument())
-  })
-
-  it('egy élt nem javasló SEASON elfogadása a rövid megerősítést adja, saját csoportjában', async () => {
-    renderPage()
-    const card = (await screen.findByText('Nyári alapozás')).closest('[data-graph-card]') as HTMLElement
-    await userEvent.click(within(card).getByRole('button', { name: 'Elfogad' }))
-
-    const confirmed = (await screen.findByText('Nyári alapozás')).closest('[data-graph-card]') as HTMLElement
-    expect(within(confirmed).getByText('Bekerült a gráfba')).toBeInTheDocument()
-    // proposedEdgeCount === 0 → nincs „· N kapcsolattal" toldalék
-    expect(within(confirmed).queryByText(/kapcsolattal/)).not.toBeInTheDocument()
-    // a SEASON csoport fejléce vált, az életesemény-csoporté érintetlen marad
-    expect(screen.getByText('Szezonok')).toBeInTheDocument()
-    expect(screen.getByText(/Életesemény-jelöltek · 1/)).toBeInTheDocument()
-  })
-
-  it('az utolsó elfogadás után a fejléc „Életesemények", nem „…jelöltek · 0"', async () => {
-    renderPage()
-    const card = (await screen.findByText('Új munkahely első hete')).closest('[data-graph-card]') as HTMLElement
-    await userEvent.click(within(card).getByRole('button', { name: 'Elfogad' }))
-
-    expect(await screen.findByText(/Bekerült a gráfba/)).toBeInTheDocument()
-    expect(screen.getByText('Életesemények')).toBeInTheDocument()
-    expect(screen.queryByText(/Életesemény-jelöltek/)).not.toBeInTheDocument()
-  })
-
-  it('elfogadás után megerősítő kártya marad a helyén, link nélkül (a gráf innen már nem külön oldal)', async () => {
-    renderPage()
-    const card = (await screen.findByText('Új munkahely első hete')).closest('[data-graph-card]') as HTMLElement
-    await userEvent.click(within(card).getByRole('button', { name: 'Elfogad' }))
-
-    expect(await screen.findByText(/Bekerült a gráfba/)).toBeInTheDocument()
-    // a cím továbbra is olvasható, hogy tudd, MI került be
-    expect(screen.getByText('Új munkahely első hete')).toBeInTheDocument()
-    // a döntés gombjai eltűntek — a kártya már nem jelölt
-    expect(within(screen.getByText(/Bekerült a gráfba/).closest('[data-graph-card]') as HTMLElement)
-      .queryByRole('button', { name: 'Elfogad' })).not.toBeInTheDocument()
-    const acceptedCard = screen.getByText(/Bekerült a gráfba/).closest('[data-graph-card]') as HTMLElement
-    expect(within(acceptedCard).queryByRole('link')).not.toBeInTheDocument()
-  })
-
-  it('Pontosít + Elfogad így után a megerősítő kártya a szerkesztett címet mutatja (mezo-ms9a)', async () => {
-    renderPage()
-    const card = (await screen.findByText('Új munkahely első hete')).closest('[data-graph-card]') as HTMLElement
-    await userEvent.click(within(card).getByRole('button', { name: 'Pontosít' }))
-
-    const titleInput = within(card).getByLabelText('Jelölt címe')
-    await userEvent.clear(titleInput)
-    await userEvent.type(titleInput, 'Első hét az új csapatban')
-    await userEvent.click(within(card).getByRole('button', { name: 'Elfogad így' }))
-
-    expect(await screen.findByText(/Bekerült a gráfba/)).toBeInTheDocument()
-    expect(screen.getByText('Első hét az új csapatban')).toBeInTheDocument()
-    expect(screen.queryByText('Új munkahely első hete')).not.toBeInTheDocument()
-  })
 })
 
 describe('KnowledgeListPage (V3.3 evidence link, real mode)', () => {
@@ -521,12 +397,13 @@ describe('KnowledgeListPage (real mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('renders the fetched facts + pending candidates from the API', async () => {
+  test('renders the fetched facts + the Rólad pointer, not the candidate cards', async () => {
     renderPage()
     expect(await screen.findByText(/tény rólad · 10 megy a chatbe/)).toBeInTheDocument()
     await waitFor(() => expect(document.querySelector('.tud9-bignum')?.textContent).toBe('15'))
-    expect(screen.getByText(`Jóváhagyásra vár · ${candidateSeed.length}`)).toBeInTheDocument()
-    expect(screen.getByText(candidateSeed[1].text)).toBeInTheDocument()
+    expect(await screen.findByText(/\d+ javaslat vár rád a Rólad oldalon/)).toBeInTheDocument()
+    expect(screen.queryByText(candidateSeed[1].text)).not.toBeInTheDocument()
+    expect(document.querySelector('[data-fact-candidate]')).toBeNull()
   })
 
   test('(e) real-mode edgeCount 404 → nincs „kapcsolat" szöveg a hero-ban', async () => {
@@ -541,30 +418,14 @@ describe('KnowledgeListPage (real mode)', () => {
 
 
 
-  test('accepting a candidate POSTs the decision and refetches without it', async () => {
-    // stateful override: the pending list empties once the decision lands
-    let posted = 0
-    let pending = candidateSeed.map((c, i) => ({
-      id: c.id, candidateText: c.text, category: c.category,
-      userDecision: null, refinedText: null, promotedFactId: null,
-      createdAt: `2026-07-03T06:0${i}:00Z`,
-    }))
+  test('the pointer count reacts to how many candidates the API reports pending', async () => {
     server.use(
-      http.get(`${API_BASE}/api/companion/fact/candidate`, () => HttpResponse.json(pending)),
-      http.post(`${API_BASE}/api/companion/fact/candidate/c1/decision`, () => {
-        posted++
-        pending = []
-        return HttpResponse.json({
-          id: 'c1', candidateText: candidateSeed[0].text, category: 'fuel',
-          userDecision: 'accept', refinedText: null, promotedFactId: 'kf-c1',
-          createdAt: '2026-07-03T06:00:00Z',
-        })
-      }),
+      http.get(`${API_BASE}/api/companion/fact/candidate`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/companion/graph/node/candidate`, () => HttpResponse.json([])),
     )
     renderPage()
-    await userEvent.click((await screen.findAllByRole('button', { name: 'Elfogad' }))[0])
-    await waitFor(() => expect(posted).toBe(1))
-    await waitFor(() => expect(screen.queryByText(/Jóváhagyásra vár/)).not.toBeInTheDocument())
+    expect(await screen.findByText('Nincs döntésre váró javaslat. Ha a csapat újat hoz, a Rólad oldalon kérdez meg.')).toBeInTheDocument()
+    expect(screen.queryByText(/javaslat vár rád/)).not.toBeInTheDocument()
   })
 
   test('renders the honest degraded state when the companion switch is off', async () => {
@@ -579,12 +440,13 @@ describe('KnowledgeListPage (real mode)', () => {
     expect(screen.queryByRole('switch')).not.toBeInTheDocument()
   })
 
-  test('(h) degraded a base nézeten: degraded kártya + Kategóriák csempe + életesemény-jelölt, Tények csempe nélkül', async () => {
+  test('(h) degraded a base nézeten: degraded kártya + Kategóriák csempe + a pointer csak a gráf-jelöltet számolja, Tények csempe nélkül', async () => {
     // A társ-kapcsoló 404-je (fact + fact/candidate) NEM a gráf-hookok 404-je (graph/node,
     // graph/node/candidate, graph/edge/count függetlenek) — ezért ezeket seed-szerű adattal
-    // mockoljuk, hogy a teszt ténylegesen bizonyítsa: a gráf-eredetű tartalom degraded alatt is
-    // renderel, nem csak azért „megy át", mert az unhandled-request realEmpty ([]/null) történetesen
-    // ugyanazt a UI-t adná vissza.
+    // mockoljuk, hogy a teszt ténylegesen bizonyítsa: a gráf-eredetű jelölt degraded alatt is
+    // beleszámít a pointer darabszámába (a fact-candidate fele viszont nem), nem csak azért
+    // „megy át", mert az unhandled-request realEmpty ([]/null) történetesen ugyanazt a UI-t adná
+    // vissza.
     server.use(
       http.get(`${API_BASE}/api/companion/fact`, () =>
         HttpResponse.json([{ code: 'RESOURCE_NOT_FOUND' }], { status: 404 })),
@@ -612,7 +474,10 @@ describe('KnowledgeListPage (real mode)', () => {
     expect(await screen.findByText(/A társ jelenleg nincs bekapcsolva/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Kategóriák' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Tények' })).not.toBeInTheDocument()
-    expect(await screen.findByText('Új munkahely első hete')).toBeInTheDocument()
+    // degraded → csak a gráf-jelölt (1) számít, a fact-candidate fele nem — de a kártya maga a
+    // Rólad-pointer, nem a jelölt-kártya (az most csak ott jelenik meg).
+    expect(await screen.findByText('1 javaslat vár rád a Rólad oldalon')).toBeInTheDocument()
+    expect(screen.queryByText('Új munkahely első hete')).not.toBeInTheDocument()
   })
 
   test('(T7-g) profil-node nélkül ?view=profil → alapnézet', async () => {

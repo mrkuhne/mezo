@@ -278,6 +278,8 @@ owner OK → commit.
 - Nincs végtelen-görgetés-optimalizált, kimerítő napi folyam; a csendes nap őszinte állapot.
 - Étrend/edzésterv a falról közvetlenül nem módosul — csak előnézet+jóváhagyás úton.
 - A Rólad és Emlékek felületek tartalmi újratervezése (csak átcímkézés/behuzalozás).
+- A Rólad tartalmi újratervezése: U9b (`mezo-zpxv7`, 2026-09-26) — spec
+  `2026-09-26-rolad-kozos-kep-design.md`.
 
 ## 9. Nyitott kérdések
 

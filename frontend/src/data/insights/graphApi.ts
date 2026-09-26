@@ -24,6 +24,7 @@ export function toLifeEventCandidate(n: GraphNodeResponse): LifeEventCandidate {
     summary: n.summary ?? null,
     occurredOn: n.occurredOn ?? null,
     proposedEdgeCount: n.proposedEdgeCount ?? 0,
+    createdAt: n.createdAt,
   }
 }
 
@@ -37,6 +38,7 @@ export function toKnowledgeGraphNode(n: GraphNodeResponse): KnowledgeGraphNode {
     topEdges: n.topEdges ?? [],
     sourceKind: n.sourceKind ?? null,
     updatedAt: n.updatedAt,
+    occurredOn: n.occurredOn ?? null,
   }
 }
 

@@ -46,10 +46,17 @@ const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ')
  * the report's gap list). The digest's `patterns[]` for the SAME week does carry
  * `pairKey` + `title`, so a title match resolves the deep link; without a match the chip
  * falls back to the Minták index rather than inventing a key.
+ *
+ * `LifeEvent` is a "decide" link (Task 11, mezo-zpxv7): a life-event candidate is decided on
+ * the Rólad page now, not the Tudástár, so the chip carries the week's `?start=` there. `Fact`
+ * stays on the Tudástár — the highlight only names the fact's TEXT (no id), so there is no
+ * specific fact to deep-link, and a fact highlight names an already-known fact, not a pending
+ * candidate.
  */
 export function highlightChip(
   highlight: { kind: string; label: string },
   digest: WeeklyReviewDigest | null,
+  weekStart?: string,
 ): HighlightChip | null {
   const meta = KIND[highlight.kind]
   if (!meta) return null
@@ -59,6 +66,8 @@ export function highlightChip(
     to = match ? `/mezo/patterns/${encodeURIComponent(match.pairKey)}` : '/mezo/patterns'
   } else if (highlight.kind === 'Memory') {
     to = '/mezo/memoir'
+  } else if (highlight.kind === 'LifeEvent') {
+    to = weekStart ? `/mezo/rolad?start=${weekStart}` : '/mezo/rolad'
   } else {
     to = '/mezo/knowledge'
   }
@@ -68,8 +77,9 @@ export function highlightChip(
 export function highlightChips(
   highlights: readonly { kind: string; label: string }[] | undefined,
   digest: WeeklyReviewDigest | null,
+  weekStart?: string,
 ): HighlightChip[] {
   return (highlights ?? [])
-    .map((h) => highlightChip(h, digest))
+    .map((h) => highlightChip(h, digest, weekStart))
     .filter((c): c is HighlightChip => c !== null)
 }

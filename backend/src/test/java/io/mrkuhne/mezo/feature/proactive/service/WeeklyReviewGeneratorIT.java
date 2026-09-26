@@ -275,6 +275,29 @@ class WeeklyReviewGeneratorIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void proposedOwnerPersistsWhenValidAndDefaultsWhenAbsent() {
+        UUID user = userPopulator.createUser("wr-lesson-owner@test.local").getId();
+        seedDay(user, WEEK_START.plusDays(1));
+        seedMemoirWithSentinel(user, WEEK_START, reviewWith(
+                "[{\"text\":\"Későn fekszel.\",\"category\":\"health\","
+                        + "\"owner\":\"szunya\"},"
+                        + "{\"text\":\"Jobb hangulat.\",\"category\":\"train\"}]"));
+
+        assertThat(generator.generate(user, WEEK_START)).isNotNull();
+
+        List<LearnedFactEntity> candidates = learnedFactRepository.findByCreatedByAndDeletedFalse(user);
+        assertThat(candidates).hasSize(2);
+        assertThat(candidates).anySatisfy(c -> {
+            assertThat(c.getCandidateText()).isEqualTo("Későn fekszel.");
+            assertThat(c.getOwner()).isEqualTo("szunya");
+        });
+        assertThat(candidates).anySatisfy(c -> {
+            assertThat(c.getCandidateText()).isEqualTo("Jobb hangulat.");
+            assertThat(c.getOwner()).isEqualTo("mocor"); // no owner in the answer — category default
+        });
+    }
+
+    @Test
     void noCandidateFactsWritesNoCandidateRow() {
         UUID user = userPopulator.createUser("wr-lesson-none@test.local").getId();
         seedDay(user, WEEK_START.plusDays(1));

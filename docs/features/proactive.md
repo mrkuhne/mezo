@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-09-24
+updated: 2026-09-26
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -692,7 +692,11 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   weekly pipeline **never wrote to knowledge** (the generator only read; its single write was the
   review row + the notification). Now the strict-JSON contract gains a fourth field
   **`candidateFacts: [{text, category, evidence}]`** (prompt rule: a candidate may be inferred ONLY
-  from the supplied day data / pattern events, and `evidence` must name what it rests on), and
+  from the supplied day data / pattern events, and `evidence` must name what it rests on) — **since
+  U9b (`mezo-zpxv7`, 2026-09-26) a fifth field, `owner: "szunya|mocor|falat|deru|mezo"`** (the
+  prompt gains a one-line team-role gloss for it), carried through `WeeklyLessonService.
+  LessonProposal(text, category, evidence, owner)` and resolved via `FactOwner.resolve` at persist
+  time — an invalid/missing owner falls back to the category default, never rejects the lesson.
   `WeeklyLessonService` writes the survivors onto the **existing companion candidate flow**
   (`learned_fact` → user decision → `knowledge_fact`) rather than a new write path — deliberately,
   because `FactCandidateService.decide` is the only promoter that publishes

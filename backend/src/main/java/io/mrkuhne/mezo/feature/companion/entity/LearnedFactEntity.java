@@ -5,6 +5,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -14,6 +15,7 @@ import lombok.Setter;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -37,6 +39,7 @@ public class LearnedFactEntity extends OwnedEntity {
     public static final String DECISION_ACCEPT = "accept";
     public static final String DECISION_REJECT = "reject";
     public static final String DECISION_REFINE = "refine";
+    public static final String DECISION_SNOOZE = "snooze";
 
     @Id
     @GeneratedValue
@@ -91,4 +94,22 @@ public class LearnedFactEntity extends OwnedEntity {
     /** The knowledge_fact this candidate was promoted into (loose ref — ON DELETE SET NULL). */
     @Column(name = "promoted_fact_id", columnDefinition = "uuid")
     private UUID promotedFactId;
+
+    /** U9b (mezo-zpxv7): the team character that owns this fact — mirrors ck_learned_fact_owner.
+     *  A producer that names none gets the category default at persist time (never null in the DB). */
+    @Size(max = 16)
+    @Pattern(regexp = "szunya|mocor|falat|deru|mezo")
+    @Column(nullable = false, length = 16)
+    private String owner;
+
+    /** „Most ne” (U9b): hidden from the pending inbox until this instant; null = not snoozed. */
+    @Column(name = "snoozed_until")
+    private Instant snoozedUntil;
+
+    @PrePersist
+    void defaultOwner() {
+        if (owner == null) {
+            owner = FactOwner.forCategory(category);
+        }
+    }
 }

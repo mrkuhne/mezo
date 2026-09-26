@@ -46,6 +46,10 @@ class CompanionFactCandidateApiIT extends ApiIntegrationTest {
         List<FactCandidateResponse> pending =
                 getForList(CANDIDATES, ownerAuthHeaders(), HttpStatus.OK, FactCandidateResponse.class);
         assertThat(pending).extracting(FactCandidateResponse::getId).contains(candidate.getId());
+        assertThat(pending).filteredOn(c -> c.getId().equals(candidate.getId()))
+                .singleElement()
+                .extracting(FactCandidateResponse::getOwner)
+                .isEqualTo(FactCandidateResponse.OwnerEnum.DERU);
 
         FactCandidateResponse decided = postForBody(CANDIDATES + "/" + candidate.getId() + "/decision",
                 decision("accept", null), ownerAuthHeaders(), HttpStatus.OK, FactCandidateResponse.class);
@@ -60,7 +64,21 @@ class CompanionFactCandidateApiIT extends ApiIntegrationTest {
                 .satisfies(f -> {
                     assertThat(f.getFactText()).isEqualTo("Laktózérzékeny");
                     assertThat(f.getSource()).isEqualTo("chat");
+                    assertThat(f.getOwner()).isEqualTo(KnowledgeFactResponse.OwnerEnum.DERU);
                 });
+    }
+
+    @Test
+    void testListFactCandidates_shouldMapOwner_fromCategoryDefault_whenCandidateIsFuel() {
+        LearnedFactEntity candidate = learnedFactPopulator.candidate(ownerId(), "Sok tojást eszik", "fuel", null);
+
+        List<FactCandidateResponse> pending =
+                getForList(CANDIDATES, ownerAuthHeaders(), HttpStatus.OK, FactCandidateResponse.class);
+
+        assertThat(pending).filteredOn(c -> c.getId().equals(candidate.getId()))
+                .singleElement()
+                .extracting(FactCandidateResponse::getOwner)
+                .isEqualTo(FactCandidateResponse.OwnerEnum.FALAT);
     }
 
     @Test

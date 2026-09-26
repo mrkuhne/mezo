@@ -107,6 +107,10 @@ public class GraphNodeEntity extends OwnedEntity {
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> meta;
 
+    /** „Most ne” (U9b): hidden from the pending inbox until this instant; null = not snoozed. */
+    @Column(name = "snoozed_until")
+    private Instant snoozedUntil;
+
     /** A felhasználó rejtette el ezt a node-ot — a promoterek nem emelhetik vissza aktívra. */
     public boolean isUserArchived() {
         return userArchivedAt != null;

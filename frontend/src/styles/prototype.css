@@ -28365,15 +28365,16 @@ main.settings-page {
 .kr9-page .kr9-claim.kr9-sensitive { outline: 1px dashed color-mix(in srgb, var(--dv-lav) 55%, transparent); outline-offset: 3px; }
 .kr9-page .kr9-retired { opacity: 0.6; }
 .kr9-page .kr9-foot { display: block; margin-top: 9px; font-size: 10.5px; line-height: 1.45; color: var(--text-muted); }
-.kr9-page .kr9-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px; }
-.kr9-page .kr9-chip {
+.kr9-page .kr9-chips, .kr9-rolad .kr9-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px; }
+.kr9-page .kr9-chip, .kr9-rolad .kr9-chip {
   display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 12px 6px 8px; border: 0; border-radius: 999px; cursor: pointer;
   font: 600 12px/1.2 var(--ff-body); color: color-mix(in srgb, var(--c) 78%, #fff);
   background: color-mix(in srgb, var(--c) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 38%, transparent);
 }
-.kr9-page .kr9-chip.is-main { color: var(--text-inverse); background: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
-.kr9-page .kr9-chip:disabled { opacity: 0.55; cursor: default; }
-.kr9-page .kr9-chip .t-ico { width: 17px; height: 17px; }
+.kr9-page .kr9-chip.is-main, .kr9-rolad .kr9-chip.is-main { color: var(--text-inverse); background: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
+.kr9-page .kr9-chip:disabled, .kr9-rolad .kr9-chip:disabled { opacity: 0.55; cursor: default; }
+.kr9-page .kr9-chip .t-ico, .kr9-rolad .kr9-chip .t-ico { width: 17px; height: 17px; }
+.kr9-rolad .kr9-chip:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
 .kr9-page .kr9-thanks { margin-top: 11px; }
 .kr9-page .kr9-links { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 11px; padding-top: 8px; border-top: 1px solid var(--divider); }
 .kr9-page .kr9-links button {
@@ -28387,6 +28388,40 @@ main.settings-page {
 .kr9-rolad .kr9-rhead { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .kr9-rolad .kr9-rhead > svg, .kr9-rolad .kr9-rhead > span { flex: 0 0 auto; filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 14px color-mix(in srgb, var(--dv-rose) 45%, transparent)); }
 .kr9-rolad .kr9-rlinks { padding-top: 4px; }
+
+/* Rólad — a közös kép (U9b, mezo-zpxv7; prototype `uveg-mezo-teljes-u9.js` rolad()). Ranking (bible §3):
+   the quote, the open candidates, the fact cases, the timeline card, the note and the doors are glass; the
+   timeline's rows, a kept graph node and the quote's chips are flat; a snoozed / rejected decision is dashed. */
+.kr9-rolad .kr9-week { flex-wrap: wrap; }
+.kr9-rolad .kr9-week .tf-strip-text { font-weight: 500; line-height: 1.45; }
+/* The text stays alongside the icon at its natural width; the link is forced onto its own row
+   below via a 100% flex-basis — plain `flex-wrap: wrap` alone lets the wrappable flex-shrink
+   text absorb the squeeze instead of the link ever moving down (mezo-zpxv7 runtime fix). */
+.kr9-rolad .kr9-weeklink { flex: 1 0 100%; margin: 2px 0 0 34px; font-size: 11.5px; font-weight: 600; color: color-mix(in srgb, var(--dv-rose) 80%, #fff); text-decoration: none; white-space: nowrap; }
+.kr9-rolad .kr9-quote { margin: 9px 16px 0; padding: 15px 16px; border-radius: 20px; }
+.kr9-rolad .kr9-quote > p { margin: 0; font-family: var(--ff-serif); font-style: italic; font-size: 16.5px; line-height: 1.45; color: var(--text-primary); overflow-wrap: anywhere; }
+.kr9-rolad .kr9-quote figcaption { display: block; margin-top: 7px; font-size: 10.5px; line-height: 1.45; color: var(--text-muted); }
+.kr9-rolad .kr9-quote figcaption b { font-weight: 700; color: color-mix(in srgb, var(--c) 80%, #fff); }
+.kr9-rolad .kr9-quote .kr9-qthanks { margin: 0; align-self: center; }
+.kr9-rolad .kr9-qempty, .kr9-rolad .kr9-note { margin-top: 10px; }
+.kr9-rolad .kr9-note { margin-top: 18px; }
+.kr9-rolad .kr9-kept .tf-after { margin-bottom: 0; }
+.kr9-rolad .kr9-gone { display: flex; gap: 11px; align-items: center; padding: 11px 14px; border-radius: 18px; border: 1.5px dashed rgba(142, 134, 163, 0.45); color: var(--text-secondary); }
+.kr9-rolad .kr9-gone .t-ico { flex: 0 0 auto; width: 22px; height: 22px; opacity: 0.75; }
+.kr9-rolad .kr9-gone b { display: block; font-size: 12.5px; font-weight: 600; line-height: 1.35; color: var(--text-secondary); overflow-wrap: anywhere; }
+.kr9-rolad .kr9-gone small { display: block; margin-top: 2px; font-size: 11px; color: var(--text-muted); }
+.kr9-rolad .kr9-quiet { margin: 0; padding: 2px 18px 0; font-size: 11.5px; line-height: 1.45; color: var(--text-muted); }
+.kr9-rolad .kr9-factdoor .tf-cmain { align-items: center; }
+.kr9-rolad .kr9-life { margin: 0; padding-top: 6px; padding-bottom: 6px; list-style: none; }
+.kr9-rolad .kr9-lifer { display: flex; gap: 12px; align-items: flex-start; padding: 11px 2px; border-bottom: 1px solid var(--divider); }
+.kr9-rolad .kr9-lifer:last-child { border-bottom: 0; }
+.kr9-rolad .kr9-lifer u { flex: 0 0 auto; width: 10px; height: 10px; margin-top: 4px; border-radius: 50%; text-decoration: none;
+  background: var(--dv-amber); box-shadow: 0 0 8px color-mix(in srgb, var(--dv-amber) 60%, transparent); }
+.kr9-rolad .kr9-lifer.is-season u { background: var(--dv-sky); box-shadow: 0 0 8px color-mix(in srgb, var(--dv-sky) 60%, transparent); }
+.kr9-rolad .kr9-lifetx { flex: 1; min-width: 0; }
+.kr9-rolad .kr9-lifer b { display: block; font-size: 13.5px; font-weight: 600; line-height: 1.35; color: var(--text-primary); overflow-wrap: anywhere; }
+.kr9-rolad .kr9-lifer small { display: block; margin-top: 2px; font-size: 11px; line-height: 1.4; color: var(--text-secondary); }
+.kr9-rolad .kr9-lifer em { flex: 0 0 auto; margin-left: auto; font-style: normal; font-size: 10.5px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 
 @keyframes kr9-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes kr9-spin { to { transform: rotate(270deg); } }
@@ -28674,50 +28709,57 @@ main.settings-page {
 .tud9 .tud9-sub { display: block; margin-top: 5px; font-size: 11.5px; color: var(--text-secondary); }
 .tud9 .tud9-sech { margin: 0; padding: 22px 18px 10px; font-size: 17px; font-weight: 600; letter-spacing: -0.4px; line-height: 1.25; color: var(--text-primary); }
 .tud9 .tud9-dash .t-ico { flex: 0 0 auto; }
-.tud9 .tud9-week { --c: var(--dv-rose); flex-wrap: wrap; }
-.tud9 .tud9-week .tf-strip-text { font-weight: 500; line-height: 1.45; }
-.tud9 .tud9-weeklink { flex: 0 0 auto; font-size: 11.5px; font-weight: 600; color: color-mix(in srgb, var(--dv-rose) 80%, #fff); text-decoration: none; white-space: nowrap; }
 
-/* cases: the inbox (amber), life events (amber) / seasons (sky), the node page */
-.tud9 .tud9-case .tf-cmain { align-items: flex-start; }
-.tud9 .tud9-case .tf-csub { display: block; -webkit-line-clamp: unset; overflow: visible; font-size: 12px; }
-.tud9 .tud9-case .tf-ctitle { overflow-wrap: anywhere; }
-.tud9 .tud9-conflictw { margin-top: 10px; }
-.tud9 .tud9-conflict { display: flex; align-items: flex-start; gap: 7px; margin: 0; padding: 10px 11px; border-radius: 14px; font-size: 12px; line-height: 1.45;
+/* cases: the inbox (amber, Rólad-only since Task 11), life events (amber) / seasons (sky), the node page */
+/* U9b (mezo-zpxv7 Task 11): the inbox cards (FactCandidateCard/LifeEventCandidateCard/
+   LifeEventAcceptedCard) render on Rólad ONLY now — the Tudástár shows the pointer instead —
+   so their rules are `.kr9-rolad`-only. `.tud9-acts`/`.tud9-btn` stay doubled: the Tudástár's
+   own node-detail page (KnowledgeNodePage, `.tud9-node`) still uses the base/`.is-left`/`:disabled`/
+   `:focus-visible`/icon-size forms (never `.is-main`, which only the Rólad cards use). */
+.kr9-rolad .tud9-case .tf-cmain { align-items: flex-start; }
+.kr9-rolad .tud9-case .tf-csub { display: block; -webkit-line-clamp: unset; overflow: visible; font-size: 12px; }
+.kr9-rolad .tud9-case .tf-ctitle { overflow-wrap: anywhere; }
+.kr9-rolad .tud9-conflictw { margin-top: 10px; }
+.kr9-rolad .tud9-conflict { display: flex; align-items: flex-start; gap: 7px; margin: 0; padding: 10px 11px; border-radius: 14px; font-size: 12px; line-height: 1.45;
   color: var(--text-secondary); background: color-mix(in srgb, var(--dv-amber) 8%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 30%, transparent); overflow-wrap: anywhere; }
-.tud9 .tud9-conflict .t-ico { flex: 0 0 auto; margin-top: -1px; }
-.tud9 .tud9-chk { position: relative; display: flex; align-items: center; gap: 8px; min-height: 36px; margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--text-primary); cursor: pointer; }
-.tud9 .tud9-chk input { position: absolute; left: 0; top: 50%; width: 19px; height: 19px; margin: -9.5px 0 0; opacity: 0; cursor: pointer; }
-.tud9 .tud9-chk i { width: 19px; height: 19px; flex: 0 0 auto; border-radius: 6px; display: grid; place-items: center;
+.kr9-rolad .tud9-conflict .t-ico { flex: 0 0 auto; margin-top: -1px; }
+.kr9-rolad .tud9-chk { position: relative; display: flex; align-items: center; gap: 8px; min-height: 36px; margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--text-primary); cursor: pointer; }
+.kr9-rolad .tud9-chk input { position: absolute; left: 0; top: 50%; width: 19px; height: 19px; margin: -9.5px 0 0; opacity: 0; cursor: pointer; }
+.kr9-rolad .tud9-chk i { width: 19px; height: 19px; flex: 0 0 auto; border-radius: 6px; display: grid; place-items: center;
   background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider); transition: background 0.2s ease, box-shadow 0.2s ease; }
-.tud9 .tud9-chk i .t-ico { visibility: hidden; }
-.tud9 .tud9-chk input:checked + i { background: var(--dv-amber); box-shadow: 0 0 10px color-mix(in srgb, var(--dv-amber) 50%, transparent); }
-.tud9 .tud9-chk input:checked + i .t-ico { visibility: visible; }
-.tud9 .tud9-chk input:focus-visible + i { outline: 2px solid var(--dv-amber); outline-offset: 2px; }
-.tud9 .tud9-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 11px; }
-.tud9 .tud9-acts > .is-main { grid-column: 1 / -1; }
-.tud9 .tud9-acts.is-pair > .is-main { grid-column: auto; }
-.tud9 .tud9-acts.is-left { display: flex; }
-.tud9 .tud9-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 8px 12px; border-radius: 999px;
+.kr9-rolad .tud9-chk i .t-ico { visibility: hidden; }
+.kr9-rolad .tud9-chk input:checked + i { background: var(--dv-amber); box-shadow: 0 0 10px color-mix(in srgb, var(--dv-amber) 50%, transparent); }
+.kr9-rolad .tud9-chk input:checked + i .t-ico { visibility: visible; }
+.kr9-rolad .tud9-chk input:focus-visible + i { outline: 2px solid var(--dv-amber); outline-offset: 2px; }
+.tud9 .tud9-acts, .kr9-rolad .tud9-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 11px; }
+.kr9-rolad .tud9-acts > .is-main { grid-column: 1 / -1; }
+.kr9-rolad .tud9-acts.is-pair > .is-main { grid-column: auto; }
+.tud9 .tud9-acts.is-left, .kr9-rolad .tud9-acts.is-left { display: flex; }
+.tud9 .tud9-btn, .kr9-rolad .tud9-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 8px 12px; border-radius: 999px;
   font-size: 12px; font-weight: 600; white-space: nowrap; color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
-.tud9 .tud9-btn.is-main { color: var(--text-inverse, #191614); font-weight: 650; background: var(--dv-sage); box-shadow: 0 0 14px color-mix(in srgb, var(--dv-sage) 45%, transparent); }
-.tud9 .tud9-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.tud9 .tud9-btn:focus-visible { outline: 2px solid var(--c, var(--dv-sage)); outline-offset: 2px; }
-.tud9 .tud9-btn .t-ico { width: 20px; height: 20px; }
-.tud9 .tud9-foot { display: block; margin: 9px 0 0; font-size: 10.5px; line-height: 1.45; color: var(--text-muted); }
-.tud9 .tud9-prov { margin: 9px 0 0; font-size: 11.5px; line-height: 1.5; color: var(--text-secondary); }
-.tud9 .tud9-refine { display: flex; align-items: center; gap: 8px; margin-top: 11px; }
-.tud9 .tud9-refine.is-col { flex-direction: column; align-items: stretch; margin-top: 2px; }
-.tud9 .tud9-refine.is-col .tud9-acts { margin-top: 2px; }
-.tud9 .tud9-input { flex: 1; min-width: 0; padding: 10px 12px; border: 0; border-radius: 14px; font: inherit; font-size: 13px; line-height: 1.4; resize: vertical;
+.kr9-rolad .tud9-btn.is-main { color: var(--text-inverse, #191614); font-weight: 650; background: var(--dv-sage); box-shadow: 0 0 14px color-mix(in srgb, var(--dv-sage) 45%, transparent); }
+.tud9 .tud9-btn:disabled, .kr9-rolad .tud9-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.tud9 .tud9-btn:focus-visible, .kr9-rolad .tud9-btn:focus-visible { outline: 2px solid var(--c, var(--dv-sage)); outline-offset: 2px; }
+.tud9 .tud9-btn .t-ico, .kr9-rolad .tud9-btn .t-ico { width: 20px; height: 20px; }
+.kr9-rolad .tud9-no { display: block; width: 100%; margin-top: 8px; padding: 6px 0; border: 0; background: none;
+  font-size: 12px; font-weight: 600; text-align: center; text-decoration: underline; text-underline-offset: 2px;
+  color: var(--text-muted); cursor: pointer; }
+.kr9-rolad .tud9-no:hover, .kr9-rolad .tud9-no:focus-visible { color: var(--text-secondary); }
+.kr9-rolad .tud9-no:focus-visible { outline: 2px solid var(--c, var(--dv-sage)); outline-offset: 2px; }
+.tud9 .tud9-foot, .kr9-rolad .tud9-foot { display: block; margin: 9px 0 0; font-size: 10.5px; line-height: 1.45; color: var(--text-muted); }
+.kr9-rolad .tud9-prov { margin: 9px 0 0; font-size: 11.5px; line-height: 1.5; color: var(--text-secondary); }
+.kr9-rolad .tud9-refine { display: flex; align-items: center; gap: 8px; margin-top: 11px; }
+.kr9-rolad .tud9-refine.is-col { flex-direction: column; align-items: stretch; margin-top: 2px; }
+.kr9-rolad .tud9-refine.is-col .tud9-acts { margin-top: 2px; }
+.kr9-rolad .tud9-input { flex: 1; min-width: 0; padding: 10px 12px; border: 0; border-radius: 14px; font: inherit; font-size: 13px; line-height: 1.4; resize: vertical;
   color: var(--text-primary); background: rgba(25, 22, 20, 0.45); box-shadow: inset 0 0 0 1px var(--divider); }
-.tud9 .tud9-input:focus-visible { outline: none; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c, var(--dv-amber)) 70%, transparent); }
-.tud9 .tud9-accepted { display: flex; align-items: flex-start; gap: 12px; }
-.tud9 .tud9-accepted u { flex: 0 0 auto; width: 10px; height: 10px; margin-top: 5px; border-radius: 50%; background: var(--dv-sage);
+.kr9-rolad .tud9-input:focus-visible { outline: none; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c, var(--dv-amber)) 70%, transparent); }
+.kr9-rolad .tud9-accepted { display: flex; align-items: flex-start; gap: 12px; }
+.kr9-rolad .tud9-accepted u { flex: 0 0 auto; width: 10px; height: 10px; margin-top: 5px; border-radius: 50%; background: var(--dv-sage);
   box-shadow: 0 0 8px color-mix(in srgb, var(--dv-sage) 60%, transparent); }
-.tud9 .tud9-acctx { flex: 1; min-width: 0; }
-.tud9 .tud9-acctx b { display: block; font-size: 14px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
-.tud9 .tud9-acctx small { display: block; margin-top: 3px; font-size: 11px; font-weight: 600; color: color-mix(in srgb, var(--dv-sage) 80%, #fff); }
+.kr9-rolad .tud9-acctx { flex: 1; min-width: 0; }
+.kr9-rolad .tud9-acctx b { display: block; font-size: 14px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+.kr9-rolad .tud9-acctx small { display: block; margin-top: 3px; font-size: 11px; font-weight: 600; color: color-mix(in srgb, var(--dv-sage) 80%, #fff); }
 
 /* base doors (glass rows) */
 .tud9 .tud9-door { text-align: left; }

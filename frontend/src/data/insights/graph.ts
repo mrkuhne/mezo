@@ -13,6 +13,7 @@ export const lifeEventCandidateSeed: LifeEventCandidate[] = [
     summary: 'A naplód szerint hétfőn kezdtél az új helyen, és a hét végére kimerültél.',
     occurredOn: '2026-08-21',
     proposedEdgeCount: 1,
+    createdAt: '2026-08-22T02:00:00Z',
   },
   {
     id: 'se-1',
@@ -21,6 +22,7 @@ export const lifeEventCandidateSeed: LifeEventCandidate[] = [
     summary: 'A nyár a volumenről szólt: több gym nap, kevesebb futás, stabil alvás.',
     occurredOn: '2026-07-01',
     proposedEdgeCount: 0,
+    createdAt: '2026-10-01T04:00:00Z',
   },
 ]
 
@@ -91,6 +93,7 @@ export const graphNodeSeed: KnowledgeGraphNode[] = [
     ],
     sourceKind: null,
     updatedAt: '2026-08-20T10:00:00.000Z',
+    occurredOn: null,
   },
   {
     id: 'gn-2',
@@ -100,6 +103,7 @@ export const graphNodeSeed: KnowledgeGraphNode[] = [
     topEdges: [],
     sourceKind: null,
     updatedAt: '2026-08-25T09:00:00.000Z',
+    occurredOn: null,
   },
   {
     id: 'gn-3',
@@ -111,6 +115,7 @@ export const graphNodeSeed: KnowledgeGraphNode[] = [
     ],
     sourceKind: null,
     updatedAt: '2026-08-18T12:00:00.000Z',
+    occurredOn: null,
   },
   {
     id: 'gn-4',
@@ -120,6 +125,7 @@ export const graphNodeSeed: KnowledgeGraphNode[] = [
     topEdges: ['Új munkahely első hete → kiváltja → Megnövekedett stressz · közepes'],
     sourceKind: null,
     updatedAt: '2026-08-22T08:00:00.000Z',
+    occurredOn: '2026-08-21',
   },
   {
     id: 'gn-profile',
@@ -131,6 +137,7 @@ export const graphNodeSeed: KnowledgeGraphNode[] = [
     sourceKind: PROFILE_SOURCE_KIND,
     topEdges: [],
     updatedAt: '2026-08-15T07:00:00.000Z',
+    occurredOn: null,
   },
 ]
 

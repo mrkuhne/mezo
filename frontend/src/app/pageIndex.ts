@@ -108,7 +108,7 @@ export const PAGE_INDEX: IndexedPage[] = [
   { route: '/fuel/gyogyszer', label: 'Gyógyszer', hint: 'A gyógyszereid külön nyilvántartva.' },
 
   // ── Mezo ─────────────────────────────────────────────────────────────────
-  { route: '/mezo/rolad', label: 'Rólad', hint: 'Karakter, tudástár és saját kommunikációs kérések.' },
+  { route: '/mezo/rolad', label: 'Rólad', hint: 'a közös kép rólad — itt döntesz a javaslatokról.' },
   { route: '/mezo', label: 'Üzenőfal', hint: 'Az öt karakter posztjai: mit vettek észre, és mit kérdeznek tőled.' },
   { route: '/mezo/csapat', label: 'A csapat', hint: 'Az öt karakter szobája: mit figyelnek most, és mennyit tudnak rólad.' },
   { route: '/mezo/emlekek', label: 'Emlékek', hint: 'Napi emlékek, heti memoár és hasonló napok keresése.' },
@@ -123,7 +123,7 @@ export const PAGE_INDEX: IndexedPage[] = [
   { route: '/mezo/karakter/gepterem/futasok', label: 'Futások', hint: 'Az elemzési körök naplója.' },
   { route: '/mezo/karakter/gepterem/adatforrasok', label: 'Adatforrások', hint: 'Miből dolgozik az elemzés.' },
   { route: '/mezo/karakter/gepterem/detektorok', label: 'Detektorok', hint: 'A szabályok, amik a jeleket keresik.' },
-  { route: '/mezo/knowledge', label: 'Tudástár', hint: 'Amit Boop tud — és honnan.' },
+  { route: '/mezo/knowledge', label: 'Tudástár', hint: 'a teljes tény-lista, kategóriák.' },
   { route: '/mezo/memoria', label: 'Memória', hint: 'Mire emlékszik rólad, rétegenként.' },
   { route: '/mezo/memoir', label: 'Memoár', hint: 'A heted története, megírva.' },
   { route: '/mezo/memoir/archivum', label: 'Memoár-archívum', hint: 'A korábbi fejezetek polca.' },

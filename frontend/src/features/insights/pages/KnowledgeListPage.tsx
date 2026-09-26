@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { GhostState } from '@/shared/ui/GhostState'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import {
-  useKnowledge, useKnowledgeActions, useLifeEventCandidates, useLifeEventActions,
+  useKnowledge, useKnowledgeActions, useLifeEventCandidates,
   useKnowledgeGraphNodes, useGraphEdgeCount,
 } from '@/data/hooks'
 import { PROMPT_TOP_N } from '@/data/insights/knowledge'
@@ -13,7 +13,7 @@ import { KnowledgeBaseView } from '@/features/insights/components/KnowledgeBaseV
 import { KategoriakView } from '@/features/insights/components/KategoriakView'
 import { HowItWorksView } from '@/features/insights/components/HowItWorksView'
 import { bucketFacts } from '@/features/insights/logic/factCopy'
-import type { GraphNodeKind, LifeEventCandidate } from '@/data/types'
+import type { GraphNodeKind } from '@/data/types'
 import { Icon3D } from '@/shared/ui/clay'
 import '@/features/insights/boop-world.css'
 
@@ -115,22 +115,15 @@ export function KnowledgeListPage() {
   const [highlightFactId] = useState<string | null>(() => params.get('fact'))
 
   const { facts, candidates, degraded, isPending, isError, refetch } = useKnowledge()
-  const { toggle, decide } = useKnowledgeActions()
+  const { toggle } = useKnowledgeActions()
   const { candidates: lifeEvents } = useLifeEventCandidates()
-  const { decide: decideLifeEvent } = useLifeEventActions()
   const { nodes } = useKnowledgeGraphNodes()
   const { count: edgeCount } = useGraphEdgeCount()
 
-  // Az elfogadott életesemény a szerver-listáról azonnal lekerül (query-invalidálás), ezért a
-  // megerősítést page-szintű state tartja életben az oldal elhagyásáig (mezo-0ap9), MOST MÁR
-  // a view-váltásokon át is — ezért ez a shell-ben, nem a KnowledgeBaseView-ban lakik.
-  const [acceptedEvents, setAcceptedEvents] = useState<
-    { id: string; kind: LifeEventCandidate['kind']; title: string; edgeCount: number }[]
-  >([])
-
-  // A már elfogadott jelölt real módban a refetch megérkezéséig még a szerver-listában van —
-  // enélkül egy pillanatra a jelölt-kártya ÉS a megerősítés is látszana.
-  const pendingLifeEvents = lifeEvents.filter((c) => !acceptedEvents.some((a) => a.id === c.id))
+  // Task 11 (mezo-zpxv7): a döntés a Rólad oldalon él — a Tudástár csak a darabszámot mutatja
+  // (a pointer kártyán). Degraded alatt a fact-candidate felét fedi (a lifeEvents/SEASON
+  // jelöltek gráf-eredetűek, függetlenek a társ-kapcsolótól).
+  const pendingCount = (degraded ? 0 : candidates.length) + lifeEvents.length
 
   // A vödrözés a TELJES listán fut (a „10 megy a chatbe" a valóságot mondja), a szűrés csak
   // a megjelenítést szűkíti — különben egy aktív szűrő átírná a prompt-státuszokat.
@@ -172,10 +165,6 @@ export function KnowledgeListPage() {
   const kategLine = latestGraphNode
     ? `${latestGraphNode.title}${edgeCount !== null ? ` · ${edgeCount} él` : ''}`
     : 'Még nincs kategorizált kapcsolat'
-  const profileLine = profileNode?.summary
-    ? `${profileNode.summary.slice(0, 40)}${profileNode.summary.length > 40 ? '…' : ''} · heti frissítés`
-    : 'Még nincs profil-összegzés · heti frissítés'
-
   // Real-mode-only cold-load window (mock mode's isPending is always false): facts=[]/degraded=false
   // read as "genuinely empty" below WITHOUT this guard — a fabricated „0 tény / 0 megy a chatbe"
   // header would reach a live user during the unresolved window (the mezo-yew/mezo-0xl bug class,
@@ -265,33 +254,13 @@ export function KnowledgeListPage() {
   return (
     <TudasFrame view="base" big={heroBig} sub={heroSub} help>
       <EntranceGroup className="tud9-flow" replayKey={`${view}:${kind ?? ''}`}>
-        {params.get('start') && /^\d{4}-\d{2}-\d{2}$/.test(params.get('start')!) && (
-          <div className="glass tf-strip tf-c-rose tud9-week rise" data-week-banner>
-            <Icon3D name="t-calendar" size={24} />
-            <span className="tf-strip-text">Heti áttekintés · {params.get('start')}. A postaláda minden nyitott javaslatot mutat.</span>
-            <Link to={`/me/week?start=${params.get('start')}`} className="tud9-weeklink">Vissza ehhez a héthez →</Link>
-          </div>
-        )}
         <KnowledgeBaseView
           degraded={degraded}
-          candidates={candidates}
-          onDecideCandidate={(id, decision, refinedText) => decide(id, decision, refinedText)}
-          onToggleConflict={toggle}
-          pendingLifeEvents={pendingLifeEvents}
-          acceptedEvents={acceptedEvents}
-          onAcceptLifeEvent={(c, refined) =>
-            setAcceptedEvents((prev) => [
-              ...prev,
-              { id: c.id, kind: c.kind, title: refined?.title ?? c.title, edgeCount: c.proposedEdgeCount },
-            ])
-          }
-          onDecideLifeEvent={(id, decision, refined) => decideLifeEvent(id, decision, refined)}
+          pendingCount={pendingCount}
           facts={facts}
           buckets={buckets}
           kindCount={GRAPH_KIND_GROUPS.length}
           kategLine={kategLine}
-          profileNode={profileNode}
-          profileLine={profileLine}
           onNavigate={(v) => setParams(withWeek({ view: v }, params))}
         />
       </EntranceGroup>

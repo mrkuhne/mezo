@@ -2,7 +2,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/data/_client/api'
-import { makeHookWrapper } from '@/test/queryWrapper'
+import { makeHookWrapper, makeHookWrapperWithClient } from '@/test/queryWrapper'
 import {
   useLifeEventCandidates, useKnowledgeGraphNodes, useKnowledgeGraphActions, useLifeEventActions,
   useGraphEdgeCount,
@@ -240,6 +240,44 @@ describe('useLifeEventActions decide (refined accept, mezo-ms9a)', () => {
     await waitFor(() => expect(sentBody).toEqual({
       decision: 'accept', refinedTitle: 'Pontosított cím', refinedSummary: 'Pontosított összefoglaló',
     }))
+    vi.unstubAllEnvs()
+  })
+
+  it('mock módban „Most ne” csak lekerül a jelölt-listáról, a csomópont-cache változatlan (mezo-zpxv7)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'true')
+    const wrapper = makeHookWrapper()
+    const candidates = renderHook(() => useLifeEventCandidates(), { wrapper })
+    const nodes = renderHook(() => useKnowledgeGraphNodes(), { wrapper })
+    await waitFor(() => expect(candidates.result.current.candidates.length).toBeGreaterThan(0))
+    await waitFor(() => expect(nodes.result.current.nodes.length).toBeGreaterThan(0))
+    const nodeIdsBefore = nodes.result.current.nodes.map((n) => n.id)
+
+    const actions = renderHook(() => useLifeEventActions(), { wrapper })
+    const target = lifeEventCandidateSeed[0]
+    actions.result.current.decide(target.id, 'snooze')
+
+    await waitFor(() =>
+      expect(candidates.result.current.candidates.map((c) => c.id)).not.toContain(target.id))
+    expect(nodes.result.current.nodes.map((n) => n.id)).toEqual(nodeIdsBefore)
+    vi.unstubAllEnvs()
+  })
+
+  it('real módban elfogadáskor a candidates ÉS a nodes cache is invalidálódik (mezo-zpxv7)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    server.use(
+      http.post(`${API_BASE}/api/companion/graph/node/n1/decision`, () =>
+        HttpResponse.json({
+          id: 'n1', kind: 'LIFE_EVENT', title: 'x', status: 'active',
+          createdAt: '2026-08-22T02:00:00Z', updatedAt: '2026-08-22T02:00:00Z', proposedEdgeCount: 0,
+        })),
+    )
+    const { wrapper, client } = makeHookWrapperWithClient()
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries')
+    const { result } = renderHook(() => useLifeEventActions(), { wrapper })
+    result.current.decide('n1', 'accept')
+    await waitFor(() =>
+      expect(invalidateSpy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['graph', 'candidates'] })))
+    expect(invalidateSpy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: ['graph', 'nodes'] }))
     vi.unstubAllEnvs()
   })
 

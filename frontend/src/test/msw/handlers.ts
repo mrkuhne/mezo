@@ -1513,6 +1513,7 @@ export const handlers = [
         factText: f.text,
         category: f.category,
         source: f.source,
+        owner: f.owner,
         reinforcementCount: f.reinforced,
         includeInPrompt: f.active,
         lastReinforcedAt: f.lastReinforcedAt,
@@ -1523,14 +1524,18 @@ export const handlers = [
   ),
   http.get(`${API_BASE}/api/companion/fact/candidate`, () =>
     HttpResponse.json(
-      candidateSeed.map((c, i) => ({
+      candidateSeed.map((c) => ({
         id: c.id,
         candidateText: c.text,
         category: c.category,
+        source: c.source,
+        owner: c.owner,
+        evidence: c.evidence,
+        weekStart: c.weekStart,
         userDecision: null,
         refinedText: null,
         promotedFactId: null,
-        createdAt: `2026-07-03T06:0${i}:00Z`,
+        createdAt: c.createdAt,
       })),
     ),
   ),

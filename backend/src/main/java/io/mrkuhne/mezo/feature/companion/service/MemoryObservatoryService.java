@@ -154,7 +154,7 @@ public class MemoryObservatoryService {
                 .l2(MemoryOverviewL2.builder()
                         .patterns(patternCounts)
                         .pendingFactCandidates((int) learnedFactRepository
-                                .countByCreatedByAndUserDecisionIsNullAndDeletedFalse(userId))
+                                .countPendingVisible(userId, Instant.now()))
                         .build())
                 .l3(MemoryOverviewL3.builder()
                         .facts(bySource.entrySet().stream()

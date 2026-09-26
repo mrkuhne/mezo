@@ -7,7 +7,7 @@ import type { KnowledgeFact } from '@/data/types'
 
 const fact = (over: Partial<KnowledgeFact>): KnowledgeFact => ({
   id: 'x', text: 'Alapszöveg', category: 'health', active: true, reinforced: 0,
-  source: 'chat', lastReinforcedAt: null, createdAt: '2026-01-01T00:00:00Z', ...over,
+  source: 'chat', owner: 'deru', lastReinforcedAt: null, createdAt: '2026-01-01T00:00:00Z', ...over,
 })
 
 describe('humanizeFactText', () => {
@@ -67,6 +67,13 @@ describe('originSentence', () => {
     expect(originSentence(fact({ source: 'chat' }))).toBe('A beszélgetéseitekből szűrtem ki.')
     expect(originSentence(fact({ source: 'manual' }))).toBe('Te vetted fel kézzel.')
     expect(originChipLabel('pattern')).toBe('mintából')
+  })
+
+  it('heti áttekintés és kérdés eredetet is megnevez (mezo-zpxv7)', () => {
+    expect(originSentence(fact({ source: 'weekly_review' }))).toBe('A heti áttekintésből derült ki.')
+    expect(originSentence(fact({ source: 'question' }))).toBe('Egy kérdésre válaszoltál rá.')
+    expect(originChipLabel('weekly_review')).toBe('heti áttekintésből')
+    expect(originChipLabel('question')).toBe('kérdésre válaszoltál')
   })
 })
 

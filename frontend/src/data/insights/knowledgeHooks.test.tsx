@@ -70,18 +70,30 @@ describe('useKnowledgeActions (mock mode)', () => {
   it('accept promotes the candidate into the fact list', async () => {
     const wrapper = makeHookWrapper()
     const { result } = renderHook(() => ({ read: useKnowledge(), actions: useKnowledgeActions() }), { wrapper })
-    act(() => result.current.actions.decide('c1', 'accept'))
+    // `decide` returns the mutation promise (final-review fix, mezo-zpxv7: `useRoladInbox`'s
+    // afterlife rollback needs it) — a bare `act(() => decide(...))` leaves it unawaited and
+    // trips React's act() into an async mode that leaks into the next test, so it's awaited here.
+    await act(async () => { await result.current.actions.decide('c1', 'accept') })
     await waitFor(() => expect(result.current.read.candidates).toHaveLength(candidateSeed.length - 1))
     const promoted = result.current.read.facts.find((f) => f.id === 'kf-c1')
     expect(promoted).toMatchObject({ text: candidateSeed[0].text, category: 'fuel', active: true, reinforced: 0 })
   })
 
+  it('snooze („Most ne”) only removes the candidate — no fact is added (mezo-zpxv7)', async () => {
+    const wrapper = makeHookWrapper()
+    const { result } = renderHook(() => ({ read: useKnowledge(), actions: useKnowledgeActions() }), { wrapper })
+    await act(async () => { await result.current.actions.decide('c1', 'snooze') })
+    await waitFor(() => expect(result.current.read.candidates).toHaveLength(candidateSeed.length - 1))
+    expect(result.current.read.candidates.some((c) => c.id === 'c1')).toBe(false)
+    expect(result.current.read.facts.find((f) => f.id === 'kf-c1')).toBeUndefined()
+  })
+
   it('refine promotes with the corrected wording; reject only removes', async () => {
     const wrapper = makeHookWrapper()
     const { result } = renderHook(() => ({ read: useKnowledge(), actions: useKnowledgeActions() }), { wrapper })
-    act(() => result.current.actions.decide('c1', 'refine', 'Pontosított tudás'))
+    await act(async () => { await result.current.actions.decide('c1', 'refine', 'Pontosított tudás') })
     await waitFor(() => expect(result.current.read.facts.find((f) => f.id === 'kf-c1')?.text).toBe('Pontosított tudás'))
-    act(() => result.current.actions.decide('c2', 'reject'))
+    await act(async () => { await result.current.actions.decide('c2', 'reject') })
     await waitFor(() => expect(result.current.read.candidates).toHaveLength(candidateSeed.length - 2))
     expect(result.current.read.facts.find((f) => f.id === 'kf-c2')).toBeUndefined()
   })
@@ -127,7 +139,7 @@ describe('useKnowledgeActions (real mode)', () => {
     const wrapper = makeHookWrapper()
     const { result } = renderHook(() => ({ read: useKnowledge(), actions: useKnowledgeActions() }), { wrapper })
     await waitFor(() => expect(result.current.read.facts).toHaveLength(15))
-    act(() => result.current.actions.decide('c1', 'accept'))
+    await act(async () => { await result.current.actions.decide('c1', 'accept') })
     await waitFor(() => expect(posted).toBe(1))
     await waitFor(() => expect(result.current.read.candidates).toHaveLength(0))
   })

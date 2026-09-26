@@ -11,7 +11,9 @@ import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
+import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
 import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryItemEntity;
 import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryVectorEntity;
@@ -29,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -52,6 +55,7 @@ class CompanionMemoryOverviewApiIT extends ApiIntegrationTest {
     @Autowired private io.mrkuhne.mezo.feature.companion.memory.repository.MemoryItemRepository memoryItemRepository;
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private LearnedFactPopulator learnedFactPopulator;
+    @Autowired private LearnedFactRepository learnedFactRepository;
     @Autowired private KnowledgeFactPopulator knowledgeFactPopulator;
     @Autowired private UserPopulator userPopulator;
     @Autowired private AppUserRepository appUserRepository;
@@ -144,6 +148,22 @@ class CompanionMemoryOverviewApiIT extends ApiIntegrationTest {
         assertThat(response.getL3().getFactsInPrompt()).isEqualTo(1);
         assertThat(response.getJobs().getLastSummaryDate()).isEqualTo(yesterday);
         assertThat(response.getJobs().getLastDetectedAt()).isNotNull();
+    }
+
+    /** U9b final-review fix (mezo-zpxv7): „Most ne” (snooze) hides a candidate from the Rólad
+     *  inbox until it wakes up — the L2 „N függő tényjelölt” count must agree with that inbox,
+     *  not with the raw undecided total. */
+    @Test
+    void testGetMemoryOverview_shouldExcludeSnoozedCandidates_fromPendingFactCandidates() {
+        UUID owner = ownerId();
+        learnedFactPopulator.candidate(owner, "ébren lévő jelölt", null);
+        LearnedFactEntity snoozed = learnedFactPopulator.candidate(owner, "elszunyókált jelölt", null);
+        snoozed.setSnoozedUntil(Instant.now().plusSeconds(3600));
+        learnedFactRepository.saveAndFlush(snoozed);
+
+        MemoryOverviewResponse response = overview();
+
+        assertThat(response.getL2().getPendingFactCandidates()).isEqualTo(1);
     }
 
     @Test

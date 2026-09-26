@@ -1,19 +1,21 @@
 import { useState } from 'react'
 import { Icon3D } from '@/shared/ui/clay'
-import { factCategoryLabel } from '@/data/insights/knowledge'
+import { candidateByline } from '@/features/insights/logic/roladCopy'
 import type { FactCandidate, FactDecision, KnowledgeFact } from '@/data/types'
 
 /**
- * Egy jóváhagyásra váró jelölt (mezo-9ryh · üveg U9 mezo-me75u.9) — a csapatfal-világ arany
- * üveg-ügye (`glass tf-case`): „Tényjelölt" státusz + kategória, a jelölt szövege, a
- * proveniencia-mondat, és a három döntésgomb (Elfogad világít). A „Pontosít" inline input
- * viselkedése változatlan (V1.2 L2 döntés, a confirm sosem néma).
+ * Egy jóváhagyásra váró jelölt (mezo-9ryh · üveg U9 mezo-me75u.9, byline+négy gomb U9b
+ * mezo-zpxv7 Task 8) — a csapatfal-világ arany üveg-ügye (`glass tf-case`): „Tényjelölt"
+ * státusz + byline (ki hozta · mikor), a jelölt szövege, a proveniencia-mondat, és a négy
+ * döntésgomb (Igen, jegyezd meg világít). A „Pontosítom" inline input viselkedése változatlan
+ * (V1.2 L2 döntés, a confirm sosem néma).
  *
  * Konfliktus-jelzés (Task 12, mezo-ms9a): ha a base view a jelölthöz egy ütköző, létező
  * tényt talált (`conflictsWithFactId` → `conflictFact`), egy figyelmeztető sor + bejelölt
- * checkbox jelenik meg. Bármelyik ELFOGADÓ útvonalon (Elfogad VAGY Pontosít+Mentés — mindkettő
- * ténnyé promótál) a decide UTÁN, ha a checkbox be van jelölve, az ütköző tény ki is kapcsol
- * (`onToggleConflict`). Elvetésnél a toggle sosem fut.
+ * checkbox jelenik meg. Bármelyik ELFOGADÓ útvonalon (Igen, jegyezd meg VAGY Pontosítom+Így
+ * jegyezd meg — mindkettő ténnyé promótál) a decide UTÁN, ha a checkbox be van jelölve, az
+ * ütköző tény ki is kapcsol (`onToggleConflict`). A „Most ne" (snooze) és a „Nem igaz" (reject)
+ * útvonalon a toggle sosem fut.
  */
 export function FactCandidateCard({ candidate, onDecide, conflictFact = null, onToggleConflict }: {
   candidate: FactCandidate
@@ -28,7 +30,7 @@ export function FactCandidateCard({ candidate, onDecide, conflictFact = null, on
   const decide = (decision: FactDecision, text?: string) => {
     if (text === undefined) onDecide(decision)
     else onDecide(decision, text)
-    if (decision !== 'reject' && conflictFact && turnOffOld) {
+    if (decision !== 'reject' && decision !== 'snooze' && conflictFact && turnOffOld) {
       onToggleConflict?.(conflictFact.id, false)
     }
   }
@@ -37,13 +39,15 @@ export function FactCandidateCard({ candidate, onDecide, conflictFact = null, on
     <article className="glass tf-case tf-c-gold tf-s-gold tud9-case tud9-cand" data-fact-candidate>
       <span className="tf-crow">
         <span className="tf-st">Tényjelölt</span>
-        <em>{factCategoryLabel(candidate.category)}</em>
+        <em>{candidateByline(candidate.owner, candidate.createdAt)}</em>
       </span>
       <span className="tf-cmain">
         <Icon3D name="t-note" size={36} />
         <span className="tf-ctxt">
           <span className="tf-ctitle">{candidate.text}</span>
-          <span className="tf-csub">Ezt a beszélgetésből szűrtem ki — csak akkor jegyzem meg, ha elfogadod.</span>
+          <span className="tf-csub">
+            {candidate.evidence ?? 'A beszélgetésből szűrtük ki — csak akkor jegyezzük meg, ha elfogadod.'}
+          </span>
         </span>
       </span>
 
@@ -74,25 +78,25 @@ export function FactCandidateCard({ candidate, onDecide, conflictFact = null, on
             onChange={(e) => setRefinedText(e.target.value)}
           />
           <button type="button" className="tud9-btn is-main" disabled={!refinedText.trim()} onClick={() => decide('refine', refinedText.trim())}>
-            Mentés
+            Így jegyezd meg
           </button>
         </div>
       ) : (
         <>
           <div className="tud9-acts">
             <button type="button" className="tud9-btn is-main" onClick={() => decide('accept')}>
-              <Icon3D name="t-tick" size={20} />Elfogad
+              <Icon3D name="t-tick" size={20} />Igen, jegyezd meg
             </button>
             <button type="button" className="tud9-btn" onClick={() => setRefining(true)}>
-              <Icon3D name="t-pencil" size={20} />Pontosít
+              <Icon3D name="t-pencil" size={20} />Pontosítom
             </button>
-            <button type="button" className="tud9-btn" onClick={() => decide('reject')}>
-              <Icon3D name="t-skip" size={20} />Elvet
+            <button type="button" className="tud9-btn" onClick={() => decide('snooze')}>
+              <Icon3D name="t-clock" size={20} />Most ne
             </button>
           </div>
-          <p className="tud9-foot">
-            Elfogad → bekerül a tudástárba · Pontosít → átírod a szövegét · Elvet → eldobom.
-          </p>
+          <button type="button" className="tud9-no" onClick={() => decide('reject')}>
+            Nem igaz
+          </button>
         </>
       )}
     </article>

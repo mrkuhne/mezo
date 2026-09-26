@@ -20,8 +20,16 @@ describe('weekly-review highlights -> anchor chips', () => {
 
   test('Fact / LifeEvent / Memory map to their Mezo-tab pages', () => {
     expect(highlightChip({ kind: 'Fact', label: 'x' }, digest)).toMatchObject({ kindLabel: 'Tudás', tone: 'gold', to: '/mezo/knowledge' })
-    expect(highlightChip({ kind: 'LifeEvent', label: 'x' }, digest)).toMatchObject({ kindLabel: 'Életesemény', tone: 'sky', to: '/mezo/knowledge' })
     expect(highlightChip({ kind: 'Memory', label: 'x' }, digest)).toMatchObject({ kindLabel: 'Emlék', tone: 'rose', to: '/mezo/memoir' })
+  })
+
+  // Task 11 (mezo-zpxv7): a LifeEvent egy "decide" link — a döntés a Rólad oldalon él, nem a
+  // Tudástáron — és a heti kontextust (?start=) is odaviszi, ha ismert.
+  test('LifeEvent → a Rólad postaládája, a heti kontextussal ha ismert, nélküle is működik', () => {
+    expect(highlightChip({ kind: 'LifeEvent', label: 'x' }, digest, '2026-09-14'))
+      .toMatchObject({ kindLabel: 'Életesemény', tone: 'sky', to: '/mezo/rolad?start=2026-09-14' })
+    expect(highlightChip({ kind: 'LifeEvent', label: 'x' }, digest))
+      .toMatchObject({ to: '/mezo/rolad' })
   })
 
   test('an unknown kind is dropped, never rendered with a guessed colour and destination', () => {

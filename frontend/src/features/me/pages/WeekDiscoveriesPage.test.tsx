@@ -57,6 +57,15 @@ describe('WeekDiscoveriesPage (mock mode)', () => {
     expect(screen.getByText('A súly csökkenő trendje folytatódik fehérjecél mellett').closest('a'))
       .toHaveAttribute('href', '/mezo/predictions')
   })
+
+  // Task 11 (mezo-zpxv7): a life event a Rólad postaládájában dönthető el — nem a retired
+  // Tudástár-linken (a `?fact=` deep link fenn marad, mert az egy KONKRÉT tényre mutat, nem
+  // egy döntés-linkre).
+  test('a life-event csempe a Rólad postaládájára visz, a heti kontextussal', () => {
+    renderPage()
+    expect(screen.getByText('Nyaralás kezdete').closest('a'))
+      .toHaveAttribute('href', `/mezo/rolad?start=${mockMeWeekStart}`)
+  })
 })
 
 describe('WeekDiscoveriesPage (real mode)', () => {

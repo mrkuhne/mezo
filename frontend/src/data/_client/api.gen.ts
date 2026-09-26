@@ -7662,6 +7662,11 @@ export interface components {
             category: string;
             /** @description 'chat' | 'pattern' | 'manual' — V1.1 creates only 'manual'; 'chat' arrives with V1.2 extraction, 'pattern' with V3.3 promotion */
             source: string;
+            /**
+             * @description U9b (mezo-zpxv7): the team character that owns the fact — the Rólad tag. User-authored facts are shown as TŐLED by the FE from `source`, not from this field.
+             * @enum {string}
+             */
+            owner: "szunya" | "mocor" | "falat" | "deru" | "mezo";
             /** @description How many times the fact was re-confirmed/re-detected (V1.3+/V3.3 increment it). */
             reinforcementCount: number;
             /** @description Whether the fact competes for the top-N system-prompt injection slots. */
@@ -7693,6 +7698,11 @@ export interface components {
             category: string;
             /** @description 'chat' (post-turn extraction, V1.2) | 'weekly_review' (the Monday weekly round's proposal, mezo-d20.7.6) — the promoted knowledge fact inherits it */
             source: string;
+            /**
+             * @description the character that brought the candidate — „<Név> hozta”
+             * @enum {string}
+             */
+            owner: "szunya" | "mocor" | "falat" | "deru" | "mezo";
             /** @description What the candidate rests on, in the proposer's own words (weekly candidates only — chat extraction does not produce one). */
             evidence?: string | null;
             /**
@@ -7713,6 +7723,7 @@ export interface components {
             createdAt: string;
         };
         FactDecisionRequest: {
+            /** @description snooze = „Most ne”: hidden for 14 days, then re-offered; stays undecided */
             decision: string;
             /** @description Required when decision is refine — the corrected fact wording. */
             refinedText?: string | null;

@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.api.dto.WeeklyLessonResponse;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.companion.entity.FactOwner;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
@@ -68,7 +69,7 @@ public class WeeklyLessonService {
     private final ProactiveMapper mapper;
 
     /** One model-proposed lesson, already parsed out of the weekly answer. */
-    public record LessonProposal(String text, String category, String evidence) {
+    public record LessonProposal(String text, String category, String evidence, String owner) {
     }
 
     /** The week's candidates, decided or not, newest first — the closed-week read. */
@@ -119,6 +120,7 @@ public class WeeklyLessonService {
             candidate.setCreatedBy(userId);
             candidate.setCandidateText(text);
             candidate.setCategory(proposal.category());
+            candidate.setOwner(FactOwner.resolve(proposal.owner(), proposal.category()));
             candidate.setSource(LearnedFactEntity.SOURCE_WEEKLY_REVIEW);
             candidate.setWeekStart(weekStart);
             candidate.setEvidence(evidenceOrNull(proposal.evidence()));

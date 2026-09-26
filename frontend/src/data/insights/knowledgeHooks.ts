@@ -86,8 +86,10 @@ export function useKnowledgeActions() {
 
   return {
     toggle: (id: string, active: boolean) => toggleM.mutate({ id, active }),
+    /** Returns the mutation promise (rejects on failure) so a caller like `useRoladInbox` can
+     *  roll back its own optimistic state — the MutationCache still toasts the error either way. */
     decide: (id: string, decision: FactDecision, refinedText?: string) =>
-      decideM.mutate({ id, decision, refinedText }),
+      decideM.mutateAsync({ id, decision, refinedText }),
     pending: toggleM.isPending || decideM.isPending,
   }
 }
@@ -105,7 +107,7 @@ function mockDecide(qc: QueryClient, input: DecideInput) {
     const candidate = base.candidates.find((c) => c.id === input.id)
     if (!candidate) return base
     const remaining = base.candidates.filter((c) => c.id !== input.id)
-    if (input.decision === 'reject') return { ...base, candidates: remaining }
+    if (input.decision === 'reject' || input.decision === 'snooze') return { ...base, candidates: remaining }
     const promoted: KnowledgeFact = {
       id: `kf-${candidate.id}`,
       text: input.decision === 'refine' && input.refinedText ? input.refinedText : candidate.text,
@@ -113,6 +115,7 @@ function mockDecide(qc: QueryClient, input: DecideInput) {
       active: true,
       reinforced: 0,
       source: 'chat',
+      owner: candidate.owner,
       lastReinforcedAt: null,
       createdAt: new Date().toISOString(),
     }

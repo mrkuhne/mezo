@@ -62,12 +62,16 @@ const ORIGIN_SENTENCE: Record<FactSource, string> = {
   pattern: 'Megerősített mintából tanultam — amikor az egyik változik, a másik jellemzően követi.',
   chat: 'A beszélgetéseitekből szűrtem ki.',
   manual: 'Te vetted fel kézzel.',
+  weekly_review: 'A heti áttekintésből derült ki.',
+  question: 'Egy kérdésre válaszoltál rá.',
 }
 
 const ORIGIN_CHIP: Record<FactSource, string> = {
   pattern: 'mintából',
   chat: 'beszélgetésből',
   manual: 'kézzel',
+  weekly_review: 'heti áttekintésből',
+  question: 'kérdésre válaszoltál',
 }
 
 /**

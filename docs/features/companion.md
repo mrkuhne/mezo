@@ -236,14 +236,24 @@ The sections below describe its current behavior and the supporting components.
 - **Two new owned tables** — `knowledge_fact` (fact_text, category `train|fuel|health|life`,
   source `chat|pattern|manual` — a fourth, `weekly_review`, joined in `mezo-d20.7.6`, and a fifth,
   `question`, in `mezo-d58h.7.5` (a once-ever question's answer — see the §5.7 note below),
-  reinforcement_count, `include_in_prompt`, last_reinforced_at)
+  reinforcement_count, `include_in_prompt`, last_reinforced_at, and, since **U9b (`mezo-zpxv7`,
+  2026-09-26)**, `owner varchar(16)` CHECK `szunya|mocor|falat|deru|mezo` NOT NULL)
   + `learned_fact` (candidate → decision `accept|reject|refine` null-until-decided →
   promoted_fact_id; **table-only in V1.1** — the extraction/confirm flow is V1.2; `mezo-d20.7.6`
   added `source`/`week_start`/`evidence` so the weekly review can propose onto the same flow —
-  see [`proactive.md`](proactive.md) WR).
+  see [`proactive.md`](proactive.md) WR; U9b added the same `owner` column plus `snoozed_until
+  timestamptz null`, migration `202609261000_mezo-zpxv7_rolad_owner_snooze.sql`).
 - **Fact CRUD on the contract** — `GET/POST /api/companion/fact` + `PATCH .../fact/{id}`
   (partial update: text/category edit + the `include_in_prompt` toggle); POST creates
   `source=manual` facts (the manual-add path shipped now, so facts exist before V1.2 extraction).
+  `KnowledgeFactResponse`/`FactCandidateResponse` both carry a required `owner` (U9b) — set by
+  `FactOwner.resolve(proposed, category)` (`feature/companion/entity/FactOwner.java`): an
+  invalid/missing model-proposed owner falls back to the category default
+  (`train→mocor`, `fuel→falat`, `health→deru`, `life→mezo`) rather than rejecting the fact;
+  manual/pattern/question producers always use the category default. The one-time backfill
+  additionally routes `health` rows through a sleep lexicon (`alv|alsz|lefekv|fekszel|fekszem|
+  ébred|sleep|bed`, case-insensitive — `FactOwner.backfill`, mirrored by the migration's `~*`
+  regex) → `szunya`.
 - **Prompt injection** — `KnowledgeFactService.renderPromptBlock(userId)`: the top-N
   (`mezo.companion.facts.top-n`, default 10) prompt-included facts by reinforcement count (then
   newest), rendered as a deterministic Hungarian block (`MEGERŐSÍTETT TÉNYEK Danielről …`, one
@@ -257,7 +267,9 @@ The sections below describe its current behavior and the supporting components.
   gated on `mezo.companion.extraction.enabled`) runs `FactExtractionService`: one cheap-tier
   LLM call over the turn transcript (strict-JSON answer, defensively parsed), normalized
   string-dedupe against confirmed facts + pending candidates, per-turn cap → undecided
-  `learned_fact` rows. A broken answer means zero candidates, never a broken turn.
+  `learned_fact` rows. A broken answer means zero candidates, never a broken turn. **Since U9b**
+  the extraction prompt's JSON also asks for `"owner":"szunya|mocor|falat|deru|mezo"` alongside
+  category (a one-line team-role gloss in the prompt), resolved the same way at persist time.
   **S3 (`mezo-d6ivw.3`) added the person-directed sibling on the same event:**
   `PersonFactExtractionListener` → `PersonFactExtractionService` (slug
   `companion_person_fact_extract`, marker `SZEMÉLYTÉNY`) extracts durable facts about
@@ -270,11 +282,14 @@ The sections below describe its current behavior and the supporting components.
   `GET /api/people/facts?sourceRefKind=chat_turn&sourceRefId={userMessageId}` on a short
   backoff). Details + consumption ([Emberek] `tudás:` line, sensitivity kind's proactive
   exclusion) in [me.md](me.md) §5.4.
-- **Decision endpoint + inbox** — `GET /api/companion/fact/candidate` (pending, newest first) +
-  `POST .../candidate/{id}/decision` (`accept|reject|refine` + `refinedText`); accept/refine
+- **Decision endpoint + inbox** — `GET /api/companion/fact/candidate` (pending, newest first,
+  `snoozed_until > now()` excluded) + `POST .../candidate/{id}/decision` (`accept|reject|refine`
+  + `refinedText`, **plus `snooze` since U9b** — sets `snoozed_until = now() + 14 days`
+  (`CandidateSnooze.DURATION`) and leaves `userDecision` null, i.e. non-terminal and
+  re-snoozable; the candidate is simply excluded from the list, not decided); accept/refine
   promote into `knowledge_fact` — with the source **INHERITED from the candidate**
-  (`chat`, or `weekly_review` for a weekly lesson, `mezo-d20.7.6`) — which the V1.1 top-N
-  injection then carries into every prompt. One decision per candidate
+  (`chat`, or `weekly_review` for a weekly lesson, `mezo-d20.7.6`) and, since U9b, the **owner
+  inherited too** — which the V1.1 top-N injection then carries into every prompt. One decision per candidate
   (400 `COMPANION_CANDIDATE_ALREADY_DECIDED`).
 - **KnowledgeListPage goes real** — dual-mode `useKnowledge`/`useKnowledgeActions`
   (`data/insights/knowledge{Api,Hooks}.ts`): pending L2 candidate cards (Elfogad / Pontosít
@@ -4826,6 +4841,13 @@ idiom transplanted onto the graph.
     - `reject` — a plain soft delete (`nodeRepository.delete`, `@SQLDelete`), **not** `archived`:
       an un-confirmed guess must leave no residue at all (the spec's own wording); `archived` stays
       reserved for nodes that WERE true and are being retired later (W2.6).
+    - **`snooze` (U9b, `mezo-zpxv7`, 2026-09-26)** — sets `knowledge_node.snoozed_until = now() +
+      14 days` (`CandidateSnooze.DURATION`, shared with the fact-candidate path above); `status`
+      stays `candidate`, so it is non-terminal and re-snoozable. `GraphService.listCandidates`
+      excludes `snoozed_until > now()`. **The nightly stale-candidate prune (below) now ages off
+      `coalesce(snoozed_until, created_at)`, not `created_at` alone** — a fix landed in the same
+      slice (a snoozed candidate must not race its own snooze window against
+      `candidateMaxAgeDays`).
     - `accept` — flips `status` to `active`, flushes, then materialises every entry in the node's
       `meta.proposedEdges` envelope via `GraphService.upsertEdge` at `weight = confidence × 0.5`
       (edges start humble, same as W2.2 — W2.5 reinforcement is what raises them), evidence
@@ -5000,7 +5022,10 @@ user just said, rendered into the chat prompt. No LLM anywhere in the slice.
      an edge that decays under `graph.prune-floor` (default 0.05) is soft-deleted in the SAME pass
      (one `findByCreatedByAndDeletedFalse` load, not a second re-query).
   2. **Stale-candidate prune** — candidate nodes (never confirmed/rejected by the W2.3 L2 inbox)
-     older than `graph.candidate-max-age-days` (default 30, keyed on `created_at`) are soft-deleted.
+     older than `graph.candidate-max-age-days` (default 30, keyed on `coalesce(snoozed_until,
+     created_at)` since U9b's snooze fix — `GraphNodeRepository.findStaleCandidates`, `mezo-zpxv7`
+     — a snoozed candidate's age is measured from when it wakes, never pruned mid-snooze) are
+     soft-deleted.
   3. **Reinforcement** — a PATTERN node with a `pattern_event` `snapshot` row from the last 24h
      (the nightly `PatternDetectionJob`'s own cadence — "fresh evidence") has EVERY edge touching
      it (both `from` and `to`) bumped by `graph.reinforcement-bump` (default 0.05), capped at 1.0,
@@ -7305,7 +7330,7 @@ curl -s -X POST $BASE/fact/candidate/$CAND_ID/decision -H "Authorization: Bearer
 
 Candidates appear automatically after chat turns (async extraction; with the fake adapter script
 them: `{"content":"mesélek [fake-facts:[{\"fact\":\"Laktózérzékeny\",\"category\":\"health\"}]]"}`).
-The FE surface is the Insights KnowledgeListPage (`/insights/knowledge`).
+The FE decision surface is Rólad (`/mezo/rolad` — moved off the Tudástár's `KnowledgeListPage` in U9b, `mezo-zpxv7`, [insights.md §2.0b](insights.md)); the Tudástár (`/mezo/knowledge`) keeps the archive.
 
 ## 7. How to extend it
 

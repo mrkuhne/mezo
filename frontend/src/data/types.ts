@@ -805,8 +805,11 @@ export interface RecurringPattern { icon: IconName; color: string; title: string
 // --- Tudás (knowledge) ---
 // V1.2: unified on the backend taxonomy (knowledge_fact.category CHECK constraint)
 export type FactCategory = 'train' | 'fuel' | 'health' | 'life'
-/** A knowledge_fact source oszlopa a dróton — chat-kivonat / minta-promóció / kézi felvétel. */
-export type FactSource = 'chat' | 'pattern' | 'manual'
+/** A knowledge_fact source oszlopa a dróton — chat-kivonat / minta-promóció / kézi felvétel /
+ *  heti áttekintés javaslata / kérdésre adott válasz. */
+export type FactSource = 'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question'
+/** U9b (mezo-zpxv7): a tényt "birtokló" csapattag — a Rólad tag. */
+export type FactOwner = 'szunya' | 'mocor' | 'falat' | 'deru' | 'mezo'
 
 export interface MemoryPatternCount { kind: string; status: string; count: number }
 export interface MemoryFactSourceCount { source: FactSource; count: number }
@@ -862,22 +865,34 @@ export interface KnowledgeFact {
   patternTitle?: string
   /** A tény eredete — az Audit nézet provenancia-chipje (a wire-ön V1.1 óta ott van). */
   source: FactSource
+  /** U9b (mezo-zpxv7): a tényt birtokló csapattag — a Rólad tag. */
+  owner: FactOwner
   /** Az utolsó megerősítés időpontja (ISO), null ha még sosem erősítették meg újra. */
   lastReinforcedAt: string | null
   /** A tény létrejötte (ISO instant) — a prompt-rangsor másodlagos kulcsa (reinforced DESC, createdAt DESC). */
   createdAt: string
 }
-/** A pending extraction candidate awaiting the explicit L2 decision (accept/refine/reject). */
+/** A pending extraction candidate awaiting the explicit L2 decision (accept/refine/reject/snooze). */
 export interface FactCandidate {
   id: string
   text: string
   category: FactCategory
+  /** U9b (mezo-zpxv7): melyik csapattag hozta a jelöltet — „<Név> hozta". */
+  owner: FactOwner
+  /** Honnan jött a jelölt — chat-kivonat vagy a heti áttekintés javaslata. */
+  source: 'chat' | 'weekly_review'
+  /** A jelölt létrejötte (ISO instant). */
+  createdAt: string
+  /** Amire a javaslat épül, a javasoló saját szavaival (csak heti jelölteknél; a chat-kivonat nem ad). */
+  evidence: string | null
+  /** A javasló heti áttekintés hétfői ISO dátuma (null a chat-kivonatnál). */
+  weekStart: string | null
   /** FE-only in this slice (mezo-ms9a): the existing fact id this candidate contradicts, or
    *  `null` when it doesn't conflict with anything. Real mode always maps to `null` — the wire
    *  doesn't carry this yet. */
   conflictsWithFactId: string | null
 }
-export type FactDecision = 'accept' | 'reject' | 'refine'
+export type FactDecision = 'accept' | 'reject' | 'refine' | 'snooze'
 export interface KnowledgeEdge { from: string; to: string; type: 'reinforces' | 'context' | 'causes' }
 
 /** W2.3 (mezo-b3pp.8): egy éjszakai kivonatoló által javasolt életesemény-jelölt (L2 inbox). */
@@ -894,9 +909,11 @@ export interface LifeEventCandidate {
   occurredOn: string | null
   /** Hány kapcsolat jönne létre, ha elfogadod. */
   proposedEdgeCount: number
+  /** A jelölt létrejötte (ISO instant) — a „mikor" a Rólad who/when csíkjához. */
+  createdAt: string
 }
 
-export type LifeEventDecision = 'accept' | 'reject'
+export type LifeEventDecision = 'accept' | 'reject' | 'snooze'
 
 export type GraphNodeKind = 'PATTERN' | 'PREFERENCE' | 'GOAL' | 'LIFE_EVENT' | 'SEASON' | 'INSIGHT' | 'PERSON'
 
@@ -915,6 +932,9 @@ export interface KnowledgeGraphNode {
   sourceKind: string | null
   /** ISO date-time (mezo-ms9a): `useKnowledgeGraphNodes()` sorts DESC by this. */
   updatedAt: string
+  /** ISO date, kind-függő jelentéssel (l. `LifeEventCandidate.occurredOn`), `null` a legtöbb
+   *  kind-nál (mezo-zpxv7 timeline dátumok). */
+  occurredOn: string | null
 }
 
 // --- Insights (AI-memory surface) ---

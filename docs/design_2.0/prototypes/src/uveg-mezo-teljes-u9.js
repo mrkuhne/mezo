@@ -83,11 +83,53 @@ function dimenziok(){
   if(ST.hub==='degraded')return topbar()+dh('KARAKTER','Amit eddig tudunk rólad')+dsh('info','A karakter-dosszié jelenleg nem elérhető — ez nem hiba, csak a funkció ki van kapcsolva.');
   return topbar()+dh('KARAKTER · 9 TÉMAKÖR · MINDEGYIK PONTOSÍTHATÓ','Amit eddig tudunk rólad')+dimRows();
 }
+/* ═════════ RÓLAD — A KÖZÖS KÉP (U9b, mezo-zpxv7; D3 kinézet + az owner 2026-09-26 döntései) ═════════
+   Idézet = a legbiztosabb karakter-állítás (Talál / Pontosítom a meglévő visszajelzés). Döntésre vár = a Tudástár
+   postaládája ide költözött: Igen, jegyezd meg · Pontosítom · Most ne (két hét múlva újra) · Nem igaz (végleg). */
+const OWN={szunya:['SZUNYA','var(--lav)'],mocor:['MOCOR','var(--sky)'],falat:['FALAT','var(--sage)'],deru:['DERŰ','var(--rose)'],mezo:['MEZO','var(--gold)'],te:['TŐLED','var(--gold)']};
+const INB=[
+  {id:'c1',kind:'TÉNYJELÖLT',who:'falat',when:'ma',ic:'note',b:'Edzés előtt 2-3 órával eszel a legszívesebben.',sm:'A beszélgetésből szűrtük ki — ha bekerül, Falat ehhez igazítja az edzésnapi étkezéseidet.'},
+  {id:'c3',kind:'TÉNYJELÖLT',who:'mocor',when:'tegnap',ic:'note',b:'A röplabdát heti egy alkalomra ritkítod — csak szombaton jársz.',sm:'A beszélgetésből szűrtük ki.',conflict:'Volleyball: kedd + csütörtök + szombat'},
+  {id:'le1',kind:'ÉLETESEMÉNY-JELÖLT',who:'mezo',when:'szept. 22.',ic:'journal',b:'Randizni kezdtél valakivel',sm:'A chatben említetted — ha bekerül, a csapat ehhez méri a következő heteidet. Ha még korai, nyugodtan mondd, hogy most ne.',life:1},
+  {id:'se1',kind:'ÉVSZAK-JELÖLT',who:'mezo',when:'2026. IV. negyedév',ic:'calendar',b:'Őszi alapozás',sm:'A negyedéves visszatekintésből — a csapat ehhez az időszakhoz méri az edzéseidet.',life:1}];
+Object.assign(ST,{rol:'full',rq:'',rinb:{},redit:''});
+const TXT={keep:'Bekerült a rólad szóló képbe — a forrásával együtt',snooze:'Most nem került be — kb. két hét múlva újra megkérdezzük',no:'Nem került be — nem kérdezzük újra'};
+function inboxCard(x,i){const d=ST.rinb[x.id];
+  if(d==='keep')return `<div class="case glass rise" style="--c:var(--sage);--s:var(--sage);--i:${i}"><span class="crow"><span class="st">${x.kind}</span><em>${OWN[x.who][0][0]+OWN[x.who][0].slice(1).toLowerCase()} hozta · ${x.when}</em></span><span class="cmain">${I(x.ic)}<span class="ctxt"><b>${ST['rt_'+x.id]||x.b}</b></span></span><span class="after big" style="margin-top:10px">${I('tick')}${TXT.keep}${x.life&&!x.kind.startsWith('ÉVSZAK')?' · 1 kapcsolattal':''}</span></div>`;
+  if(d==='snooze'||d==='no')return `<div class="m9-gone rise" style="--i:${i}">${I(d==='snooze'?'clock':'skip')}<span><b>${ST['rt_'+x.id]||x.b}</b><small>${TXT[d]}</small></span></div>`;
+  const edit=ST.redit===x.id;
+  const who=OWN[x.who][0][0]+OWN[x.who][0].slice(1).toLowerCase();
+  return `<div class="case glass rise" style="--c:var(--gold);--s:var(--gold);--i:${i}"><span class="crow"><span class="st">${x.kind}</span><em>${who} hozta · ${x.when}</em></span>
+    <span class="cmain">${I(x.ic)}<span class="ctxt"><b>${x.life?'':'„'}${x.b}${x.life?'':'”'}</b><small>${x.sm}</small></span></span>
+    ${x.conflict?`<div class="m9-conflict">Ellentmond ennek: »${x.conflict}«</div><button class="m9-chk ${ST.chk?'':'off'}" data-chk><i>${I('tick')}</i>A régit kikapcsolom</button>`:''}
+    ${edit?`<div class="m9-edit">${x.life?`<input value="${x.b}" aria-label="Cím"><textarea rows="2" aria-label="Összefoglaló">${x.sm}</textarea>`:`<textarea rows="2" aria-label="A tény szövege">${x.b}</textarea>`}<span class="inboxa"><button class="chip glass main" style="--c:var(--sage)" data-rsave="${x.id}">${I('tick')}Így jegyezd meg</button><button class="chip glass" style="--c:#8E86A3" data-redit="">Mégse</button></span></div>`:
+    `<span class="inboxa"><button class="chip glass main" style="--c:var(--sage)" data-rdec="${x.id}:keep">${I('tick')}Igen, jegyezd meg</button><button class="chip glass" style="--c:var(--gold)" data-redit="${x.id}">${I('pencil')}Pontosítom</button><button class="chip glass" style="--c:var(--lav)" data-rdec="${x.id}:snooze">${I('clock')}Most ne</button><button class="m9-no" data-rdec="${x.id}:no">Nem igaz</button></span>`}
+  </div>`}
+const RFACTS=[['szunya','Hétvégén átlag 40 perccel később fekszel le','21× visszaigazolva · beszélgetésből'],['falat','Koffein 14:00 után már nem','23× visszaigazolva · beszélgetésből'],['mocor','Röplabda: kedd + csütörtök + szombat','18× visszaigazolva · beszélgetésből'],['te','Szereted érteni a javaslatok indoklását','kézzel vetted fel · aug. 20.']];
 function rolad(){
-  return topbar()+`<div class="pgh rise m9-pgh"><div><small>TE IS ALAKÍTOD A KÉPET</small><h1>Rólad</h1></div>${B('en',true)}</div>
-  <div class="rows" style="padding-top:4px">${rowg('book','var(--sage)','Tudástár','tények, jelöltek, életesemények','#tudastar')}${rowg('chat','var(--lav)','Így beszélj velem','a saját kommunikációs kéréseid','Így beszélj velem — a beállításokban (Én II, kész)')}${rowg('graph','var(--lav)','Kapcsolatok','a tudásod térképe','#kategoriak')}</div>`+
-  sec('Amit eddig tudunk rólad','9 TÉMAKÖR · MIND PONTOSÍTHATÓ')+dimRows()+
-  `<div class="dash rise" style="margin-top:16px">${I('info')}<span>A csapatfal-terv teljes „közös kép” Rólad oldala <b style="color:var(--ink)">később, külön szeletben</b> jön (a Tudástár döntései ide költöznek). <button data-go="#rolad-terv" style="color:var(--lav);font-weight:600">Megnézem a tervet ›</button></span></div>`;
+  const off=ST.rol==='degraded',empty=ST.rol==='empty';
+  const head=topbar()+`<div class="pgh rise m9-pgh"><div><small>A KÖZÖS KÉP · AMIT A CSAPAT KIMONDOTT RÓLAD</small><h1>Rólad</h1></div>${B('en',true)}</div>`;
+  const week=ST.rol==='week'?`<div class="strip glass rise" style="--c:var(--rose)">${I('calendar')}<span>Heti áttekintés · szept. 15–21. A héten felmerült javaslatok.</span><em role="button" data-toast="Vissza ehhez a héthez — Én · Hét (kész)">Vissza ›</em></div>`:'';
+  const quote=empty?`<div class="note glass rise" style="--c:var(--rose);--i:1;margin-top:10px">${I('person')}<div><small>A CSAPAT BENYOMÁSA</small><p>Még gyűjtjük, amit rólad tudni érdemes — az első kimondott benyomás ide kerül.</p></div></div>`:
+   `<div class="quote glass rise" style="--c:var(--rose);--i:1"><p>„Hétvégén rendszeresen később fekszel le — és a hétfői edzésed ezt meg is érzi.”</p>
+    <small>Így fogalmaz most rólad <b style="color:var(--lav)">Szunya</b> · a legbiztosabb állítás · javítható benyomás, nem címke</small>
+    <span class="crow">${ST.rq==='talal'?`<span class="after" style="margin:0">${I('thumb-up')}Megerősítetted — a benyomás erősödik</span>`:`<button class="chip glass" style="--c:var(--sage)" data-rq="talal">${I('thumb-up')}Talál</button>`}<button class="chip glass" style="--c:var(--gold)" data-sheet="reply">${I('chat')}Pontosítom</button></span></div>`;
+  const items=empty?[]:(ST.rol==='week'?INB.filter(x=>!x.life):INB);
+  const open=items.filter(x=>!ST.rinb[x.id]).length;
+  const inbox=off?sec('Döntésre vár')+dsh('info','A társ jelenleg nincs bekapcsolva — a tényjavaslatok most nem elérhetők.')+`<div class="rows">${INB.filter(x=>x.life).map((x,i)=>inboxCard(x,i+2)).join('')}</div>`:
+    items.length?sec('Döntésre vár',open?`${open} JELÖLT`:'MIND ELDÖNTVE')+`<div class="rows">${items.map((x,i)=>inboxCard(x,i+2)).join('')}</div>`:
+    sec('Döntésre vár')+`<p class="m9-fn" style="padding-top:2px">Nincs döntésre váró javaslat.</p>`;
+  const nf=15+items.filter(x=>!x.life&&ST.rinb[x.id]==='keep').length;
+  const facts=off?'':empty?'':sec('A tények rólad',`${nf} AKTÍV`)+`<div class="rows">${RFACTS.map(([w,t,src],i)=>`<div class="case glass rise" style="--c:${OWN[w][1]};--s:${OWN[w][1]};--i:${i+6}"><span class="crow"><span class="st">${OWN[w][0]}</span><em>${src}</em></span><span class="cmain"><span class="ctxt"><b>${t}</b></span></span></div>`).join('')}
+    <button class="case glass lift rise" style="--c:var(--rose);--s:#8E86A3;--i:10" data-go="#tenyek"><span class="cmain">${I('book')}<span class="ctxt"><b>Mind a ${nf} tény</b><small>kereséssel, forrással és Elhallgattatom-kapcsolóval</small></span><span class="chev">›</span></span></button></div>`;
+  const le=ST.rinb.le1==='keep'?[`<span class="lifer"><u></u><span style="flex:1"><b>${ST.rt_le1||'Randizni kezdtél valakivel'}</b><small>most került be · tőled tudjuk</small></span><em>szept. 22.</em></span>`]:[];
+  const se=ST.rinb.se1==='keep'?[`<span class="lifer"><u style="background:var(--sky);box-shadow:0 0 8px rgba(125,178,221,.6)"></u><span style="flex:1"><b>${ST.rt_se1||'Őszi alapozás'}</b><small>évszak · most került be</small></span><em>2026. IV. n.év</em></span>`]:[];
+  const life=empty?'':sec('Életesemények')+`<div class="rows"><div class="glass case rise" style="--c:var(--gold);--i:11;padding-top:8px">${[...le,...se,
+    `<span class="lifer"><u></u><span style="flex:1"><b>Új munkahely első hete</b><small>hétfőn kezdtél · a naplódból, te hagytad jóvá</small></span><em>aug. 21.</em></span>`,
+    `<span class="lifer" style="border-bottom:0"><u style="background:#8E86A3;box-shadow:none"></u><span style="flex:1"><b>Nyári alapozás</b><small>lezárult évszak — a nyári hetek külön mércével számítanak</small></span><em>2026. III. n.év</em></span>`].join('')}</div></div>`;
+  const note=`<div class="note glass rise" style="--c:var(--rose);--i:12;margin-top:12px">${I('shield')}<div><small>A TE KEZEDBEN</small><p>Minden, ami itt áll, forrással együtt él — és bármit elhallgattathatsz vagy pontosíthatsz. A csapat csak azt használja, amit itt jóváhagytál.</p></div></div>`;
+  const doors=sec('Tovább')+`<div class="rows">${rowg('person','var(--rose)','A csapat képe rólad, dimenziónként','9 témakör · mindegyik pontosítható','#dimenziok')}${rowg('chat','var(--lav)','Így beszélj velem','a saját kommunikációs kéréseid','Így beszélj velem — a beállításokban (Én II, kész)')}${rowg('graph','var(--lav)','Kapcsolatok','a tudásod térképe','#kategoriak')}</div>`;
+  return head+week+quote+inbox+facts+life+note+doors;
 }
 const CLAIMS=[['BIZTOS','var(--sage)','A testzsírszázalék lassan csökken, miközben a testsúly stagnál — ez rekompozícióra utal.'],['FIGYELJÜK','var(--lav)','A gyógyszerciklus hetei egyelőre nem mutatnak kimutatható hatást a súlytrenden.'],['VALÓSZÍNŰ','var(--sky)','A reggeli mérések szórása alacsony — a mérési fegyelmed stabil alapot ad a trendnek.']];
 function dimenzio(key){
@@ -196,18 +238,11 @@ const help=`<button class="m9-help glass" data-go="#hogyan" aria-label="Hogyan m
 const tudBig=()=>ST.tud==='degraded'?'':`<div class="m9-big rise"><b>15</b><small>tény rólad · 10 megy a chatbe · 12 kapcsolat</small></div>`;
 function tudastar(){
   const doors=`<div class="rows">${ST.tud==='degraded'?'':rowg('note','var(--sage)','Tények','10 a chatben · 4 vár · 1 kikapcsolva','#tenyek','15')}${rowg('graph','var(--lav)','Kategóriák','Késői evés rontja az alvást · 12 él','#kategoriak','7')}</div>`;
-  const life=sec('Életesemény-jelöltek','1')+`<div class="rows">${cse({c:'var(--gold)',s:'var(--gold)',st:'ÉLETESEMÉNY-JELÖLT',em:'2026-08-21',ic:'journal',b:'Új munkahely első hete',sm:'Hétfőn kezdtél az új helyen, és a hét végére kimerültél. A naplódból raktam össze — csak akkor kerül a gráfba, ha elfogadod.',extra:`<span class="inboxa"><button class="chip glass main" style="--c:var(--sage)" data-toast="Bekerült a gráfba · 1 kapcsolattal">${I('tick')}Elfogad</button><button class="chip glass" style="--c:var(--gold)" data-toast="Pontosít — cím és összefoglaló szerkesztése">${I('pencil')}Pontosít</button><button class="chip glass" style="--c:${SL}" data-toast="Elvetve">${I('skip')}Elvet</button></span><span class="m9-foot">Elfogadás után 1 kapcsolat is bekerül.</span>`})}</div>`+
-    sec('Szezon-jelöltek','1')+`<div class="rows">${cse({c:'var(--sky)',s:'var(--sky)',st:'SZEZON-JELÖLT',em:'2026. III. negyedév',ic:'calendar',b:'Nyári alapozás',extra:`<span class="inboxa"><button class="chip glass main" style="--c:var(--sage)" data-toast="Elfogadva">${I('tick')}Elfogad</button><button class="chip glass" style="--c:var(--gold)" data-toast="Pontosít">${I('pencil')}Pontosít</button><button class="chip glass" style="--c:${SL}" data-toast="Elvetve">${I('skip')}Elvet</button></span>`})}</div>`;
-  if(ST.tud==='degraded')return topbar()+dh('RÓLAD','Tudástár',help)+dsh('info','A társ jelenleg nincs bekapcsolva — a tudástár most nem elérhető.')+
-    sec('Életesemények')+`<div class="rows"><div class="glass case rise" style="--c:var(--sage)"><span class="lifer" style="border-bottom:0"><u style="background:var(--sage)"></u><span style="flex:1"><b>Új munkahely első hete</b><small>Bekerült a gráfba · 1 kapcsolattal</small></span></span></div></div>`+sec('A tudás')+doors;
-  return topbar()+dh('RÓLAD','Tudástár',help)+tudBig()+
-  (ST.tud==='week'?`<div class="strip glass rise" style="--c:var(--rose)">${I('calendar')}<span>Heti áttekintés · aug. 24. A postaláda minden nyitott javaslatot mutat.</span><em role="button" data-toast="Vissza ehhez a héthez — Én · Hét (kész)">Vissza ›</em></div>`:'')+
-  sec('Jóváhagyásra vár','2 JELÖLT')+`<div class="rows">
-   ${cse({c:'var(--gold)',s:'var(--gold)',st:'TÉNYJELÖLT',em:'Étkezés · beszélgetésből',ic:'note',b:'Edzés előtt 2-3 órával eszik a legszívesebben.',sm:'Ezt a beszélgetésből szűrtem ki — csak akkor jegyzem meg, ha elfogadod.',i:1,
-     extra:`<span class="inboxa"><button class="chip glass main" style="--c:var(--sage)" data-toast="Elfogadva — bekerül a tudástárba">${I('tick')}Elfogad</button><button class="chip glass" style="--c:var(--gold)" data-toast="Pontosít — átírod a szövegét">${I('pencil')}Pontosít</button><button class="chip glass" style="--c:${SL}" data-toast="Elvetve — eldobom">${I('skip')}Elvet</button></span><span class="m9-foot">Elfogad → bekerül a tudástárba · Pontosít → átírod a szövegét · Elvet → eldobom.</span>`})}
-   ${cse({c:'var(--gold)',s:'var(--gold)',st:'TÉNYJELÖLT',em:'Edzés · beszélgetésből',ic:'note',b:'A röplabdát heti egy alkalomra ritkítod — csak szombaton jársz.',sm:'Ezt a beszélgetésből szűrtem ki — csak akkor jegyzem meg, ha elfogadod.',i:2,
-     extra:`<div class="m9-conflict">Ellentmond ennek: »Volleyball: kedd + csütörtök + szombat«</div><button class="m9-chk ${ST.chk?'':'off'}" data-chk><i>${I('tick')}</i>A régit kikapcsolom</button><span class="inboxa"><button class="chip glass main" style="--c:var(--sage)" data-toast="Elfogadva — a régi kikapcsolva">${I('tick')}Elfogad</button><button class="chip glass" style="--c:var(--gold)" data-toast="Pontosít">${I('pencil')}Pontosít</button><button class="chip glass" style="--c:${SL}" data-toast="Elvetve">${I('skip')}Elvet</button></span>`})}</div>`+
-  life+sec('A tudás')+doors;
+  const n=INB.filter(x=>!ST.rinb[x.id]&&(ST.tud!=='degraded'||x.life)).length;
+  const ptr=`<div class="rows">${n?cse({c:'var(--gold)',s:'var(--gold)',st:'DÖNTÉSRE VÁR',ic:'bell',b:`${n} javaslat vár rád a Rólad oldalon`,sm:'Ott döntesz róluk: Igen, jegyezd meg · Pontosítom · Most ne · Nem igaz',go:'#rolad',i:1}):
+    `<p class="m9-fn" style="padding-top:2px">Nincs döntésre váró javaslat. Ha a csapat újat hoz, a Rólad oldalon kérdez meg.</p>`}</div>`;
+  if(ST.tud==='degraded')return topbar()+dh('RÓLAD','Tudástár',help)+dsh('info','A társ jelenleg nincs bekapcsolva — a tudástár most nem elérhető.')+ptr+sec('A tudás')+doors;
+  return topbar()+dh('RÓLAD','Tudástár',help)+tudBig()+ptr+sec('A tudás')+doors;
 }
 const CAT={train:['EDZÉS','dumbbell','var(--sky)'],fuel:['ÉTKEZÉS','bowl','var(--sage)'],health:['EGÉSZSÉG','heart','var(--rose)'],life:['ÉLET','sun','var(--gold)']};
 const FACTS=[['train','Pull Day-en a Chest Supported Row a key compound.','12× visszaigazolva · beszélgetésből'],['fuel','A késői étkezés és az alvásminőség együtt mozog.','8× visszaigazolva · mintából — „Késői étkezés ↔ rákövetkező alvásminőség”',1],['health','A reggeli mérés 7:00 és 7:30 között történik.','6× visszaigazolva · beszélgetésből'],['life','Volleyball: kedd + csütörtök + szombat.','5× visszaigazolva · kézzel']];
@@ -229,7 +264,7 @@ function kategoriak(){
 function kind(i){const k=KINDS[+i||0];
   return topbar()+dh('KATEGÓRIA',`${k[0]} · ${k[3]}`)+`<div class="tlist rise">${[['Késői evés rontja az alvást','2 kapcsolat'],['Hétvégi fehérje-elmaradás','1 kapcsolat'],['Rövid alvás után kisebb volumen','']].slice(0,Math.max(1,k[3])).map(r=>`<button class="trow tlink" data-go="#node">${I(k[1])}<span class="ttx"><b>${r[0]}</b>${r[1]?`<small>${r[1]}</small>`:''}</span><span class="chev" style="color:var(--faint)">›</span></button>`).join('')}</div>`}
 function hogyan(){
-  const Q=[['book','Mi az a tény?','Egy rólad szóló mondat, amit a társ megjegyzett. Vagy a beszélgetéseitekből szűrte ki, vagy egy megerősített mintából tanulta, vagy te vetted fel kézzel.'],['key','Mit csinál a kapcsoló?','Bekapcsolva a tény versenyben van azért, hogy bekerüljön minden beszélgetés elé. Kikapcsolva a társ soha nem látja — sem a válaszaiban, sem a felismeréseiben.'],['repeat','Mit jelent a visszaigazolás?','Hányszor jött vissza ugyanez magától: vagy újra elmondtad a chatben, vagy a minta-motor újra kimérte. Minél többször, annál előrébb sorolódik.'],['layers','Miért marad ki néhány?','Csak a 10 legerősebb bekapcsolt tény fér be egy beszélgetésbe. A többi bekapcsolva marad és várakozik — ha megerősödik, bekerül. Kivétel: egy frissen megerősített minta-tényt az első 3 napban a rangsortól függetlenül is megkapja a társ.'],['bulb','Mi vár jóváhagyásra?','A beszélgetésből kiszűrt javaslatok. Amíg nem fogadod el őket, semmi nem történik velük — a társ nem használja őket.'],['graph','Mik a kategóriák?','Ugyanennek a tudásnak a térképe: minták, célok, életesemények és a köztük lévő kapcsolatok.']];
+  const Q=[['book','Mi az a tény?','Egy rólad szóló mondat, amit a társ megjegyzett. Vagy a beszélgetéseitekből szűrte ki, vagy egy megerősített mintából tanulta, vagy te vetted fel kézzel.'],['key','Mit csinál a kapcsoló?','Bekapcsolva a tény versenyben van azért, hogy bekerüljön minden beszélgetés elé. Kikapcsolva a társ soha nem látja — sem a válaszaiban, sem a felismeréseiben.'],['repeat','Mit jelent a visszaigazolás?','Hányszor jött vissza ugyanez magától: vagy újra elmondtad a chatben, vagy a minta-motor újra kimérte. Minél többször, annál előrébb sorolódik.'],['layers','Miért marad ki néhány?','Csak a 10 legerősebb bekapcsolt tény fér be egy beszélgetésbe. A többi bekapcsolva marad és várakozik — ha megerősödik, bekerül. Kivétel: egy frissen megerősített minta-tényt az első 3 napban a rangsortól függetlenül is megkapja a társ.'],['bulb','Hol döntök a javaslatokról?','A Rólad oldalon. Amíg nem fogadod el őket, semmi nem történik velük — a társ nem használja őket. A „Most ne” két hét múlva újra előhozza, a „Nem igaz” végleg elengedi.'],['graph','Mik a kategóriák?','Ugyanennek a tudásnak a térképe: minták, célok, életesemények és a köztük lévő kapcsolatok.']];
   return topbar()+dh('TUDÁSTÁR','Hogyan működik?')+Q.map(([ic,q,a],i)=>`<div class="tcmt rise" style="--c:var(--gold);--i:${i}"><div class="th">${I(ic)}<b>${q}</b></div><p>${a}</p></div>`).join('');
 }
 function node(){
@@ -320,7 +355,7 @@ window.MZX={
 };
 const route=()=>(location.hash||'#fal').slice(1).split('/');
 function soft(){const y=$('#scroll').scrollTop,[r,id]=route();if(!MZX.has(r))return;$('#scroll').innerHTML=MZX.view(r,id);$('#dock').innerHTML='';$('#phone').classList.remove('nofab');MZX.after(r,id);$('#scroll').scrollTop=y}
-const HOME={ch:'#chat',card:'#kartya',dg:'#diagnozis',ex:'#kiserletek',srch:'#emlekek',mem:'#memoria',hub:'#naplo',konz:'#konzilium',tud:'#tudastar',bucket:'#mintak',pred:'#elorejelzesek'};
+const HOME={ch:'#chat',card:'#kartya',dg:'#diagnozis',ex:'#kiserletek',srch:'#emlekek',mem:'#memoria',hub:'#naplo',konz:'#konzilium',tud:'#tudastar',rol:'#rolad',bucket:'#mintak',pred:'#elorejelzesek'};
 document.addEventListener('click',e=>{
   const t=e.target;
   if(t.closest('[data-closesheet]')){closeSheet();return}
@@ -340,6 +375,10 @@ document.addEventListener('click',e=>{
   const sr=t.closest('[data-src]'); if(sr){ST.src=sr.dataset.src;soft();return}
   if(t.closest('[data-wk]')){ST.wk=!ST.wk;soft();return}
   if(t.closest('[data-chk]')){ST.chk=!ST.chk;soft();return}
+  if(t.closest('[data-rq]')){ST.rq='talal';soft();toast('Talál — megerősítetted, Szunya benyomása erősödik');return}
+  const rd=t.closest('[data-rdec]'); if(rd){const [id,v]=rd.dataset.rdec.split(':');ST.rinb[id]=v;ST.redit='';soft();toast(v==='keep'?(id==='c3'&&ST.chk?'Elmentve — a régi röplabda-tény kikapcsolva':'Elmentve. A Tudástárban bármikor elhallgattathatod.'):TXT[v]);return}
+  const re=t.closest('[data-redit]'); if(re){ST.redit=re.dataset.redit;soft();return}
+  const rs=t.closest('[data-rsave]'); if(rs){const id=rs.dataset.rsave;const f=rs.closest('.m9-edit').querySelector('input,textarea');ST['rt_'+id]=f.value;ST.rinb[id]='keep';ST.redit='';soft();toast('Pontosítva és elmentve');return}
   const lf=t.closest('[data-life]'); if(lf){if(lf.dataset.life==='wait')ST.waitOpen=!ST.waitOpen;else ST.offOpen=!ST.offOpen;soft();return}
   const ak=t.closest('[data-mack]'); if(ak){ST.ack=ak.dataset.mack;soft();return}
 });

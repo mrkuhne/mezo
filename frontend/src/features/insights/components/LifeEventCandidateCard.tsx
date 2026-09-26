@@ -1,23 +1,27 @@
 import { useState } from 'react'
 import type { LifeEventCandidate, LifeEventDecision } from '@/data/types'
-import { CANDIDATE_COPY, formatCandidateDate } from '@/data/insights/graph'
+import { CANDIDATE_COPY } from '@/data/insights/graph'
+import { graphCandidateByline } from '@/features/insights/logic/roladCopy'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 
 /** Üveg (U9 · mezo-me75u.9): an életesemény speaks amber, a szezon sky — each a glass case
  *  with its own status chip and 3D icon (prototype `uveg-mezo-teljes-u9.js` tudastar). */
 const CARD_SKIN: Record<LifeEventCandidate['kind'], { accent: 'gold' | 'sky'; status: string; icon: Icon3DName }> = {
   LIFE_EVENT: { accent: 'gold', status: 'Életesemény-jelölt', icon: 't-journal' },
-  SEASON: { accent: 'sky', status: 'Szezon-jelölt', icon: 't-calendar' },
+  SEASON: { accent: 'sky', status: 'Évszak-jelölt', icon: 't-calendar' },
 }
 
 /**
  * Egy L2 gráf-jelölt kártyája — akár egy éjszakai életesemény (W2.3, mezo-b3pp.8), akár egy
- * negyedéves szezon (W5.3, mezo-b3pp.20). A kártya kimondja, honnan jött és mit tesz a két gomb —
+ * negyedéves szezon (W5.3, mezo-b3pp.20). A kártya kimondja, honnan jött és mit tesz a négy gomb —
  * a megerősítés sosem néma (IDENT-6, a FactCandidateCard idiómája).
  *
- * A „Pontosít" (mezo-ms9a Task 11) szerkeszt-aztán-elfogad affordance: a FactCandidateCard
+ * A „Pontosítom" (mezo-ms9a Task 11) szerkeszt-aztán-elfogad affordance: a FactCandidateCard
  * inline refine idiómáját követi, de kind-agnosztikus (LIFE_EVENT és SEASON is), és mindkét
  * mezőt (cím + összefoglaló) szerkeszthetővé teszi, mert a kártya mindkettőt kiírja.
+ *
+ * A négy döntésgomb (U9b Task 8, mezo-zpxv7): „Igen, jegyezd meg" / „Pontosítom" / „Most ne"
+ * (snooze) / „Nem igaz" (reject, néma szöveggomb) — a FactCandidateCard idiómája ismétlődik meg.
  */
 export function LifeEventCandidateCard({ candidate, onDecide }: {
   candidate: LifeEventCandidate
@@ -44,7 +48,7 @@ export function LifeEventCandidateCard({ candidate, onDecide }: {
     <article className={`glass tf-case tf-c-${skin.accent} tf-s-${skin.accent} tud9-case tud9-life`} data-graph-card>
       <span className="tf-crow">
         <span className="tf-st">{skin.status}</span>
-        {candidate.occurredOn && <em>{formatCandidateDate(candidate.kind, candidate.occurredOn)}</em>}
+        <em>{graphCandidateByline(candidate)}</em>
       </span>
 
       {refining ? (
@@ -66,7 +70,7 @@ export function LifeEventCandidateCard({ candidate, onDecide }: {
           />
           <div className="tud9-acts is-pair">
             <button type="button" className="tud9-btn is-main" disabled={!title.trim()} onClick={acceptRefined}>
-              <Icon3D name="t-tick" size={20} />Elfogad így
+              <Icon3D name="t-tick" size={20} />Így jegyezd meg
             </button>
             <button type="button" className="tud9-btn" onClick={() => setRefining(false)}>
               Mégse
@@ -86,20 +90,21 @@ export function LifeEventCandidateCard({ candidate, onDecide }: {
 
           <div className="tud9-acts">
             <button type="button" className="tud9-btn is-main" onClick={() => onDecide('accept')}>
-              <Icon3D name="t-tick" size={20} />Elfogad
+              <Icon3D name="t-tick" size={20} />Igen, jegyezd meg
             </button>
             <button type="button" className="tud9-btn" onClick={startRefine}>
-              <Icon3D name="t-pencil" size={20} />Pontosít
+              <Icon3D name="t-pencil" size={20} />Pontosítom
             </button>
-            <button type="button" className="tud9-btn" onClick={() => onDecide('reject')}>
-              <Icon3D name="t-skip" size={20} />Elvet
+            <button type="button" className="tud9-btn" onClick={() => onDecide('snooze')}>
+              <Icon3D name="t-clock" size={20} />Most ne
             </button>
           </div>
-          <p className="tud9-foot">
-            {candidate.proposedEdgeCount > 0
-              ? `Elfogad → bekerül a gráfba ${candidate.proposedEdgeCount} kapcsolattal · Pontosít → átírod cím/összefoglaló · Elvet → eldobom.`
-              : 'Elfogad → bekerül a gráfba · Pontosít → átírod cím/összefoglaló · Elvet → eldobom.'}
-          </p>
+          <button type="button" className="tud9-no" onClick={() => onDecide('reject')}>
+            Nem igaz
+          </button>
+          {candidate.proposedEdgeCount > 0 && (
+            <p className="tud9-foot">Elfogadás után {candidate.proposedEdgeCount} kapcsolat is bekerül.</p>
+          )}
         </>
       )}
     </article>

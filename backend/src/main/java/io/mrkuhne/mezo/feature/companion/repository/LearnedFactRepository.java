@@ -2,6 +2,8 @@ package io.mrkuhne.mezo.feature.companion.repository;
 
 import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -11,9 +13,18 @@ import java.util.UUID;
 
 public interface LearnedFactRepository extends JpaRepository<LearnedFactEntity, UUID> {
 
-    /** The pending inbox: undecided candidates, newest first (idx_learned_fact_created_by_user_decision). */
+    /** The pending inbox: undecided candidates, newest first (idx_learned_fact_created_by_user_decision).
+     *  Kept for {@code FactExtractionService}'s dedupe base — a snoozed candidate must still be
+     *  seen there so the chat never re-proposes it while it is sleeping. */
     List<LearnedFactEntity> findByCreatedByAndUserDecisionIsNullAndDeletedFalseOrderByCreatedAtDesc(
             UUID createdBy);
+
+    /** „Most ne” (U9b): the pending inbox's actual visible set — undecided AND not currently
+     *  snoozed. The derived query above stays untouched for the dedupe base. */
+    @Query("select c from LearnedFactEntity c where c.createdBy = :userId and c.userDecision is null"
+            + " and c.deleted = false and (c.snoozedUntil is null or c.snoozedUntil <= :now)"
+            + " order by c.createdAt desc")
+    List<LearnedFactEntity> findPendingVisible(@Param("userId") UUID userId, @Param("now") Instant now);
 
     /** "A hét tanulságai" (mezo-d20.7.6): the week's candidates DECIDED OR NOT — the closed-week
      *  read shows the settled state too, which the pending inbox above deliberately hides. */
@@ -31,8 +42,16 @@ public interface LearnedFactRepository extends JpaRepository<LearnedFactEntity, 
 
     Optional<LearnedFactEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 
-    /** Memória-obszervatórium (mezo-al1i) — az L2 kártya függő-jelölt száma. */
+    /** Memória-obszervatórium (mezo-al1i) — az L2 kártya függő-jelölt száma. Kept for callers that
+     *  deliberately want every undecided candidate, snoozed or not. */
     long countByCreatedByAndUserDecisionIsNullAndDeletedFalse(UUID createdBy);
+
+    /** Memória-obszervatórium (U9b final-review fix, mezo-zpxv7): a „N függő tényjelölt" a Rólad
+     *  inbox LÁTHATÓ halmazát számolja — a {@link #findPendingVisible} query számláló-változata,
+     *  ugyanazzal a snooze-szűrővel. */
+    @Query("select count(c) from LearnedFactEntity c where c.createdBy = :userId and c.userDecision is null"
+            + " and c.deleted = false and (c.snoozedUntil is null or c.snoozedUntil <= :now)")
+    long countPendingVisible(@Param("userId") UUID userId, @Param("now") Instant now);
 
     /** Karakter round-4 read layer (CharacterMetaReads): window read, bounded above for catch-up honesty. */
     List<LearnedFactEntity> findByCreatedByAndUserDecisionIsNotNullAndCreatedAtGreaterThanEqualAndCreatedAtLessThanAndDeletedFalse(

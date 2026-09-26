@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.companion.entity.FactOwner;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
@@ -48,8 +49,9 @@ public class FactExtractionService {
             TÉNYKINYERÉS. A következő beszélgetés-fordulóból gyűjtsd ki a felhasználóra ({{NÉV}}) vonatkozó ÚJ, tartós tényeket
             (preferencia, szokás, egészségi jellemző, cél) — kizárólag azt, amit {{NÉV}} maga állított vagy megerősített.
             Ne vegyél fel egyszeri eseményt, kérdést, feltételezést, sem a Mezo saját javaslatait.
+            Az owner a csapat azon tagja, akihez a tény tartozik: szunya = alvás, mocor = mozgás/edzés, falat = étkezés, deru = közérzet és test, mezo = élet és minden más.
             Válaszolj KIZÁRÓLAG egy JSON tömbbel, magyarázat nélkül, pontosan ebben a formában:
-            [{"fact":"...","category":"train|fuel|health|life"}]
+            [{"fact":"...","category":"train|fuel|health|life","owner":"szunya|mocor|falat|deru|mezo"}]
             Ha nincs új tartós tény: []""";
 
     private static final Set<String> CATEGORIES = Set.of("train", "fuel", "health", "life");
@@ -64,7 +66,7 @@ public class FactExtractionService {
     private final PromptPersona promptPersona;
 
     /** One extracted item as the LLM returns it. */
-    record ExtractedFact(String fact, String category) {}
+    record ExtractedFact(String fact, String category, String owner) {}
 
     /** Runs the whole extraction for one committed turn; returns the number of persisted candidates. */
     @Transactional
@@ -118,6 +120,7 @@ public class FactExtractionService {
             candidate.setCreatedBy(userId);
             candidate.setCandidateText(fact.fact().trim());
             candidate.setCategory(fact.category());
+            candidate.setOwner(FactOwner.resolve(fact.owner(), fact.category()));
             candidate.setSource(LearnedFactEntity.SOURCE_CHAT);
             candidate.setDerivedFromMessageId(userMessageId);
             learnedFactRepository.saveAndFlush(candidate);

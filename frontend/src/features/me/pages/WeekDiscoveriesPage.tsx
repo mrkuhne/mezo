@@ -91,7 +91,7 @@ export function WeekDiscoveriesPage() {
                 Amit a Mezo a héten <b>magától</b> tett a memóriába — ezek nem javaslatok, hanem
                 megtörtént nyomok. Koppints, és a Mezo tabon nyílnak ki.
               </div>
-              <WeekDiscoveries digest={digest} />
+              <WeekDiscoveries digest={digest} weekStart={start} />
             </>
           )}
         </EntranceGroup>

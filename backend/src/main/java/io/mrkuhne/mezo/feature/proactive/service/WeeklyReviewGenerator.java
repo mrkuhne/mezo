@@ -97,11 +97,13 @@ public class WeeklyReviewGenerator {
             + "melyik minta). Ha nincs ilyen összefüggés, a candidateFacts üres tömb; kitalált jelölt tilos. "
             + "Az ÉLETCÉLOK blokk nyilait a motor számolta ki: MAGYARÁZD őket a hét adataival, "
             + "de sose számold újra és sose mondj velük ellentétes irányt. "
+            + "Az owner a csapat azon tagja, akihez a tény tartozik: szunya = alvás, mocor = mozgás/edzés, "
+            + "falat = étkezés, deru = közérzet és test, mezo = élet és minden más. "
             + "Válaszolj KIZÁRÓLAG szigorú JSON-nal: {\"summary\": \"a heti elemzés szövege\", "
             + "\"dayNotes\": [{\"date\": \"YYYY-MM-DD\", \"note\": \"...\"}], "
             + "\"anchorIndexes\": [a felhasznált HORGONY-JELÖLTEK sorszámai], "
             + "\"candidateFacts\": [{\"text\": \"...\", \"category\": \"train|fuel|health|life\", "
-            + "\"evidence\": \"mire épül\"}]}";
+            + "\"evidence\": \"mire épül\", \"owner\": \"szunya|mocor|falat|deru|mezo\"}]}";
 
     private final WeeklyReviewRepository weeklyReviewRepository;
     private final MeWeekService meWeekService;
@@ -142,7 +144,7 @@ public class WeeklyReviewGenerator {
     record ParsedDayNote(String date, String note) {
     }
 
-    record ParsedCandidate(String text, String category, String evidence) {
+    record ParsedCandidate(String text, String category, String evidence, String owner) {
     }
 
     record ParsedReview(String summary, List<ParsedDayNote> dayNotes, List<Integer> anchorIndexes,
@@ -406,7 +408,7 @@ public class WeeklyReviewGenerator {
         }
         return candidates.stream()
                 .filter(c -> c != null)
-                .map(c -> new WeeklyLessonService.LessonProposal(c.text(), c.category(), c.evidence()))
+                .map(c -> new WeeklyLessonService.LessonProposal(c.text(), c.category(), c.evidence(), c.owner()))
                 .toList();
     }
 
