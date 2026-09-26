@@ -1256,11 +1256,13 @@ the nightly **`ReflectionJob`** at 03:40.
   `applyEngineConfirm(userId, pattern)` and called from **both** the user path and the engine path,
   so the fact promotion (`knowledge_fact`, `source=pattern`, the `promoted` event) and the
   `PatternConfirmedEvent` graph sync can never drift between the two.
-- **`ReflectionJob` (03:40) replaces `HypothesisJob` (Sunday 03:00).** Four ordered steps per user —
-  catch-up → chat-day → evaluate → propose — each wrapped in its own try/catch on top of
-  `UserFanOut`'s per-user isolation, because a failing LLM extraction must not cost that user
-  tonight's evaluation, which needs no LLM at all. The steps are ordered, not independent: the
-  evaluation reads the series the catch-up just healed. `HypothesisPipelineService.run` gains an
+- **`ReflectionJob` (03:40) replaces `HypothesisJob` (Sunday 03:00).** Ordered steps per user —
+  catch-up → chat-day → evaluate → **effects** (Mezo emlékezete S4, `mezo-d6ivw.4` — see below) →
+  propose — each wrapped in its own try/catch on top of `UserFanOut`'s per-user isolation, because
+  a failing LLM extraction must not cost that user tonight's evaluation, which needs no LLM at
+  all. The steps are ordered, not independent: the evaluation reads the series the catch-up just
+  healed, and `propose` reads the effect rows `effects` just recomputed (its double-gated prompt
+  block). `HypothesisPipelineService.run` gains an
   `extraContext` parameter (the seam S3 fills) and now reads
   `reflection.propose.max-per-night` instead of the retired `hypotheses.max-per-run`;
   `hypotheses.cron`, `HYPOTHESIS_JOB_SWITCH` and the `hypothesis-job` yml block are gone, and the
@@ -3892,6 +3894,63 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
   conversation rather than a 429 on a turn the user never asked for. The `/me/week` "Beszélgess a napról/hétről" chips
   (`useChatHandoff`, [me.md §2](me.md)) are the sole trigger.
 
+**Mezo emlékezete S4 — the named-effect engine (`mezo-d6ivw.4`) — a fifth `ReflectionJob` step,
+not a Reflexió slice.** Distinct epic (Mezo emlékezete, `mezo-d6ivw`), same nightly job: "on the
+days X happened, was your mental state/energy/stress actually different?" answered by CODE, for
+every mentioned person and a small fixed event taxonomy, never by the model.
+
+- **`EffectLinkService`** (`feature/companion/reflection/service/EffectLinkService.java`, gated
+  `COMPANION_SWITCH ∧ REFLECTION_SWITCH`) owns the whole loop. `ReflectionJob.runFor` runs it as the
+  **`"effects"`** step, between `evaluate` and `propose` — inserted there deliberately, because
+  `propose` reads what `effects` just computed (below).
+- **The math is `EffectLinkCalculator`, a pure function** (no Spring, no DB, no clock — the
+  `PatternGate` tradition): **Cliff's delta**, the non-parametric, tie- and outlier-robust effect
+  size that stays valid at the 10–60 point sample sizes a 60-day personal window yields (prior art:
+  Exist.io's strength/confidence split, Bearable's with/without framing). For each `(subject,
+  metric)` pair it splits the metric's `[today-60, today-1]` series into subject-day and
+  complement-day samples (a day absent from the series counts on neither side) and requires **≥5
+  subject days AND ≥10 complement days** (`MIN_SUBJECT_DAYS`/`MIN_COMPLEMENT_DAYS`) or it returns
+  nothing — below-gate is not "no effect", it is "not enough data to say". A `|δ|` under `0.147`
+  (`NEGLIGIBLE`) is also dropped. **Strength** (the `|δ|` band: enyhe/közepes/erős) and
+  **confidence** (a tier off `subjectDays` alone: gyenge/közepes/erős, thresholds 8/16) are decided
+  **independently** — a strong effect on few days reads "erős együttjárás, gyenge bizonyosság",
+  never blended into one score.
+- **Subjects: every mentioned person, plus a fixed 6-item event taxonomy** — `edzes` (workout
+  sessions ∪ the `edzes` mention context), `munka`/`csalad` (mention context ∪ a matching text-signal
+  topic), `kozos_program` (mention context `kozos_program`/`baratok`), `konfliktus`, `pihenes`. Code
+  enumerates them; the model is never asked to name a subject.
+- **The table is a cache of the current window, never history** — `effect_link` (`EffectLinkEntity`,
+  §4 below). Every nightly `recompute` re-derives each `(subject, metric)` pair from scratch: a pair
+  that still clears the gate is upserted **in place** (same row id — the `person_fact`-style
+  supersede idiom), one that no longer does is soft-deleted. That full recompute IS the drift
+  handling; nothing ages a row out separately. **One `REQUIRES_NEW` transaction per SUBJECT, never
+  one per run** (the `KnowledgeRecheckService` idiom): a subject's three metric rows commit
+  together, so one subject's DB failure cannot mark a shared transaction rollback-only and silently
+  discard every other subject's good night.
+- **Stress stays value-space in storage.** A positive delta on `stress` means MORE stress on the
+  subject's days — "that is bad" is a presentation decision the FE makes (stress-metric copy flips
+  polarity client-side, [me.md §2](me.md)), never a storage-side sign flip. Storing the raw
+  direction keeps the one calculator honest across all three metrics.
+- **The double-gated hypothesis-prompt block.** `EffectLinkService.promptBlock(userId)` — called
+  from `HypothesisPipelineService.nightlyContext` via an `ObjectProvider<EffectLinkService>` (empty
+  when Reflexió is off, matching every other reflection collaborator) — renders the
+  **`NEVESÍTETT EGYÜTTJÁRÁSOK`** section: rows whose strength **AND** confidence are **both** at
+  least `kozepes`, strongest-`|δ|`-first, capped at 6. A person row whose person is unknown, deleted
+  or not `active` is silently skipped, never a made-up name. Each line carries a stable **topic
+  key** — `effect-person-<first-8-hex-of-uuid>-<metric>` or `effect-event-<key>-<metric>`
+  (`EffectLinkService.topicKey`) — with an explicit instruction for the model to reuse it as
+  `topicKey` on any hypothesis it proposes off the finding, so a proposal born from a named effect
+  and the effect row itself can be correlated later. `""` when nothing clears the double gate — the
+  section is simply absent from that night's prompt, never an empty header.
+- **The serve-time confidence bump — read-only, never stored.** `effectsForPerson(userId,
+  personId)` (the `GET /api/companion/effects` read path, §4) lifts a row's confidence tier ONE
+  step (capped at `eros`) when its topic key appears as a CONFIRMED pattern's
+  `observation-topic-key:<key>` evidence item — i.e. the user, in a chat reply, told the engine "yes,
+  that observation matches my experience". The bump is applied on a **detached copy** the managed
+  entity never sees, so nothing can accidentally flush it back to the database; the underlying
+  `effect_link` row's `confidence_tier` column is untouched. This is the one place a user's own
+  confirmation can move what the effect card SAYS without moving what it computed.
+
 ## 4. Data model & API
 
 ### Personal preferences and exact context preview
@@ -4144,6 +4203,27 @@ Two migrations, both in `1.0.0_master.yml`, both column/CHECK-level — S3 adds 
   reference is deliberate: purging a pattern must orphan the anchor, never take the conversation
   (the `pattern.promoted_fact_id` precedent).
 
+
+### Backend tables (Mezo emlékezete S4 named-effect tracking, ✅ `mezo-d6ivw.4`)
+
+`202609261400_mezo-d6ivw.4_effect_link.sql` (`1.1.0`) — one new table, `effect_link`, the
+named-effect engine's cache (§3 above has the full write-up):
+
+- `id uuid pk`, `created_by uuid fk→app_user(id) ON DELETE CASCADE`, `created_at`, `is_deleted`.
+- `subject_kind varchar(8)` (`ck_effect_link_subject_kind IN person|event`), `subject_key
+  varchar(64)` (a person's UUID as text, or one of the six fixed event keys), `metric varchar(8)`
+  (`ck_effect_link_metric IN mental|energy|stress`).
+- `cliffs_delta numeric(5,3)`, `mean_diff numeric(5,2)`, `subject_days int`, `complement_days int`,
+  `strength_band varchar(8)` (`ck…IN enyhe|kozepes|eros`), `confidence_tier varchar(8)`
+  (`ck…IN gyenge|kozepes|eros`), `window_days int`, `computed_at timestamptz`.
+- **`uq_effect_link_subject_metric` — unique `(created_by, subject_kind, subject_key, metric) where
+  is_deleted = false`** — this IS the upsert key the nightly recompute matches on; there is no
+  separate history table, `effect_link` only ever holds the current window's live findings (soft-
+  deleted rows are the below-gate ones, kept for the `SQLRestriction` idiom, never purged
+  separately).
+- **`EffectLinkEntity`** (`feature/companion/reflection/entity/`) maps it 1:1, `@SQLDelete`/
+  `@SQLRestriction` soft-delete, no own feature switch on the table — every bean over it is gated on
+  `COMPANION_SWITCH ∧ REFLECTION_SWITCH` (§3).
 
 ### Backend tables (LLM audit log, ✅ `mezo-2zyu`)
 
@@ -5987,6 +6067,24 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
   reject); 400 `GRAPH_CANDIDATE_ALREADY_DECIDED`; 404 `GRAPH_NODE_NOT_FOUND`.
 - `GraphNodeResponse.proposedEdgeCount` — how many edges accepting this candidate would create
   (`0` for every non-candidate node).
+
+### REST endpoints — named effects (contract-first — tag `CompanionEffects` → `CompanionEffectsApi`)
+
+Mezo emlékezete S4 (`mezo-d6ivw.4`), fragment `api/feature/companion/companion.yml`;
+`CompanionEffectsController implements CompanionEffectsApi`, gated on `COMPANION_SWITCH ∧
+REFLECTION_SWITCH` — mirrors `CompanionObservationController`: with Reflexió off there is nothing
+named to serve. Every non-2xx returns `SystemMessageList`.
+
+| Method + path | Returns | Status | Notes |
+|---|---|---|---|
+| `GET /api/companion/effects?personId=` | `PersonEffectsResponse` | 200 · 401 | `effectLinkService.effectsForPerson(userId, personId)` mapped straight to the wire, strongest-`\|δ\|`-first. An unknown/foreign/effect-less person answers an honest `{ effects: [] }`, never a 404 — the caller (§me.md's `PersonDetailPage`) already has the person from its own bootstrap and only asks this endpoint "does anything qualify". |
+
+**Schemas:** `PersonEffectsResponse { effects: EffectResponse[] }`. `EffectResponse {metric:
+mental\|energy\|stress, direction: higher\|lower, strengthBand: enyhe\|kozepes\|eros,
+confidenceTier: gyenge\|kozepes\|eros, meanDiff: double, subjectDays: int, complementDays: int,
+computedAt: date-time}` — `direction` is derived from the stored Cliff's-delta sign at read time
+(`CompanionEffectsController.toResponse`, `signum() > 0 ⇒ higher`), never persisted as its own
+column; `meanDiff` carries the raw metric-unit mean difference the FE's "~X ponttal" line reads.
 
 ### REST endpoints — observation feed + chip reply (contract-first — tag `CompanionObservation` → `CompanionObservationApi`)
 
@@ -8452,6 +8550,26 @@ proactive-feed kinds actually WIRES the seam: morning/sleep/weight/window each a
 hand-built `MemoryContextBlock`), `CompanionMessageGeneratorIT`, `CompanionMessageJobIT`,
 `LlmCallContextTaggingIT`, `ProactiveApiFeedIT` and `ArchitectureTest`.
 
+**Mezo emlékezete S4 — named-effect tracking (`mezo-d6ivw.4`).** Three test classes, one per layer.
+`EffectLinkCalculatorTest` is a **pure unit test** (no Spring, no DB, no clock) pinning the
+`MIN_SUBJECT_DAYS`/`MIN_COMPLEMENT_DAYS` gate on both sides, the negligible-delta drop, the exact
+strength-band and confidence-tier boundaries, and that a day missing from the metric series counts
+on neither side of the split. `EffectLinkServiceIT` drives the full nightly `recompute` round-trip
+over real `mention`/`check_in` rows: a qualifying subject upserts IN PLACE on a second night (same
+row id, refreshed numbers) rather than duplicating; a subject that falls below the gate the second
+night gets its row soft-deleted, not left stale; the double-gated `promptBlock` only emits rows
+whose strength AND confidence both clear `kozepes`, strongest first, capped at 6, and skips a row
+whose person is deleted or not active without ever inventing a name; and `effectsForPerson`'s
+serve-time confidence bump lifts exactly one tier when a CONFIRMED pattern carries the row's
+`observation-topic-key:<key>` evidence item, verified NOT to have touched the underlying persisted
+row afterward (a fresh re-read still shows the un-bumped tier). `CompanionEffectsControllerIT`
+(`extends ApiIntegrationTest`) proves the wire: field mapping, `direction` derived from the Cliff's-
+delta sign, an honest empty list for a person with no rows, and the 401 gate. **Regression
+coverage:** `ReflectionJobIT` still passes with the `"effects"` step inserted between `evaluate` and
+`propose`, and `HypothesisPipelineTestPlanIT`/`HypothesisPipelineService` callers are unaffected
+since the new `ObjectProvider<EffectLinkService>` degrades to `""` with Reflexió off, exactly like
+every other reflection collaborator.
+
 ## 9. Decisions, gotchas & deferred
 
 **Plan decisions (locked in the V0.2 plan §"Decisions locked"):**
@@ -9122,6 +9240,13 @@ change is distinct from those smoothed rates. The underlying trend calculation i
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/ObservationRecoveryService.java` — exact dry-run/apply, owned audit input and expiring previews.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/ObservationRecoveryController.java` — owner-only recovery contract.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/KnowledgeRecheckService.java` and `KnowledgeRecheckJob.java` — the quarterly drift second-look over confirmed, plan-less, promoted knowledge (`mezo-d6ivw.2` Task 5, § above).
+
+**Mezo emlékezete S4 — named-effect tracking (`mezo-d6ivw.4`)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/EffectLinkService.java` — the nightly recompute (`"effects"` step, §3), the double-gated hypothesis-prompt block, the per-person read + serve-time confidence bump, and the stable topic-key format.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/service/EffectLinkCalculator.java` — the pure Cliff's-delta calculator (strength band + confidence tier, both gates).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/entity/EffectLinkEntity.java` + `repository/EffectLinkRepository.java` — the `effect_link` cache row + its finders (§4 above).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionEffectsController.java` — `GET /api/companion/effects?personId=` (§4 above); consumer: [me.md](me.md) §2/§5.4 (`PersonDetailPage`'s "Hatás · együttjárás" card).
+- `frontend/src/data/me/{personEffectsApi.ts,personEffectsHooks.ts}` — the dual-mode FE read, `usePersonEffects` (full detail: [me.md](me.md) §10).
 
 
 **Editable personal context (`mezo-txunr.1`)**

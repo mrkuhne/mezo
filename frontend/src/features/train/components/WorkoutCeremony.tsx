@@ -263,7 +263,9 @@ export function WorkoutCeremony({
     const root = rootRef.current
     const stage = stageRef.current
     if (!root || !stage) return
-    const started = performance.now()
+    // mezo-7tj3j: a start az ELSŐ rAF-időbélyeg — a rAF-óra és a performance.now() origója
+    // eltérhet, a clamp pedig ilyenkor 0-n ragadó menetet ad.
+    let started: number | null = null
     const counts: Record<string, number> = {
       sets: score.done.sets, reps: score.done.reps, volume: score.done.volume,
     }
@@ -287,8 +289,8 @@ export function WorkoutCeremony({
       root.classList.toggle('is-b3', ms >= BEATS.b3)
     }
     const frame = (now: number) => {
-      // Fix round 1 (mezo-88iwa.8): a rAF timestamp can land before `started` (observed
-      // -3 ismétlés mid-pass), so clamp both ends rather than just the top.
+      // Fix round 1 (mezo-88iwa.8): clamp both ends; mezo-7tj3j: anchor to the first frame.
+      if (started === null) started = now
       const ms = Math.max(0, Math.min(DURATION_MS, now - started))
       paint(ms)
       if (ms < DURATION_MS && stage.isConnected) requestAnimationFrame(frame)

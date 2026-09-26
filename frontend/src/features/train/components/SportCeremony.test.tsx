@@ -86,6 +86,8 @@ test('the pass drives --p, the counters and the star classes, then reveals act t
   const { container } = render(<SportCeremony {...props({ reducedMotion: false })} />)
   const stage = container.querySelector('.cer') as HTMLElement
   expect(stage.style.getPropertyValue('--p')).toBe('0')
+  // mezo-7tj3j: az első frame horgonyoz (started = az első rAF-időbélyeg), utána mér.
+  frames.shift()?.(0)
   // Halfway through the 2400 ms pass: cubic ease-out 1-(1-.5)^3 = .875 of the ratio.
   frames.shift()?.(1200)
   expect(Number(stage.style.getPropertyValue('--p'))).toBeCloseTo(0.4375, 5)

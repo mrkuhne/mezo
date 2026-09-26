@@ -2128,6 +2128,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/effects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Egy személyhez tartozó nevesített hatások (Emlékezet S4, mezo-d6ivw.4)
+         * @description A megadott személyre élő, nem törölt hatás-sorok, erősség szerint csökkenő sorrendben — a kódban számolt Cliff's delta, sáv és bizonyossági szint (a szolgáltatás megerősített észrevétel esetén egy fokkal feljebb tolja a bizonyosságot, sosem perzisztálva).
+         */
+        get: operations["listPersonEffects"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/observation": {
         parameters: {
             query?: never;
@@ -7866,6 +7886,47 @@ export interface components {
             ref?: string | null;
             /** @description A címke szövege — csak tag. */
             text?: string | null;
+        };
+        /** @description Egy személyhez tartozó nevesített hatás-sorok (Emlékezet S4, mezo-d6ivw.4), erősség szerint csökkenő sorrendben. */
+        PersonEffectsResponse: {
+            effects: components["schemas"]["EffectResponse"][];
+        };
+        /** @description Egy kódban számolt (subject, metrika) hatás-sor — sosem ok-okozat, csak együttjárás. A `direction` a tárolt előjelből származik: pozitív Cliff's delta = higher. */
+        EffectResponse: {
+            /**
+             * @description Melyik metrikát érinti a hatás.
+             * @enum {string}
+             */
+            metric: "mental" | "energy" | "stress";
+            /**
+             * @description A subject napjain a metrika magasabb vagy alacsonyabb volt-e a többi naphoz képest.
+             * @enum {string}
+             */
+            direction: "higher" | "lower";
+            /**
+             * @description A Cliff-delta abszolút értékéből származó sáv.
+             * @enum {string}
+             */
+            strengthBand: "enyhe" | "kozepes" | "eros";
+            /**
+             * @description A mintaszámból (és megerősített észrevétel esetén a serve-time bumpból) származó bizonyosság.
+             * @enum {string}
+             */
+            confidenceTier: "gyenge" | "kozepes" | "eros";
+            /**
+             * Format: double
+             * @description A subject és a komplementer napok átlagának különbsége nyers metrika-egységben.
+             */
+            meanDiff: number;
+            /** @description Hány napon fordult elő a subject az ablakban. */
+            subjectDays: number;
+            /** @description Az ablak többi (komplementer) napjainak száma. */
+            complementDays: number;
+            /**
+             * Format: date-time
+             * @description A legutóbbi éjszakai újraszámítás időpontja.
+             */
+            computedAt: string;
         };
         /** @description Egy kártya az Észrevételek fülön (Reflexió S4, mezo-eq85.4). A `fresh`/`return` kártyák egy `observation` ESEMÉNYT jelenítenek meg (az `id` az esemény azonosítója), a `watching`/`confirmed` kártyák magát a sort (az `id` a minta azonosítója) — a `patternId` mindig a soré, mert a chip-válasz arra megy. */
         ObservationResponse: {
@@ -17883,6 +17944,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    listPersonEffects: {
+        parameters: {
+            query: {
+                personId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A személy hatás-sorai */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonEffectsResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
             };
         };
     };

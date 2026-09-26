@@ -26062,6 +26062,23 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   box-shadow: 0 0 8px color-mix(in srgb, var(--dc) 60%, transparent);
 }
 .ppl-detail .ppl-ctxbar .ppl-ctxpc { width: auto; font-size: 11.5px; font-weight: 500; color: var(--text-muted); }
+/* S4 (mezo-d6ivw.4) — "Hatás · együttjárás": óvatos, nem-oki mondatok soronként, erősség
+   (kitöltött pötty) és bizonyosság (üres gyűrű) KÜLÖN jelezve — ONE glass, the person's tone. */
+.ppl-detail .ppl-effcard.glass { --c: var(--dv-rose); display: block; padding: 6px 15px 12px; border-radius: 22px; margin-bottom: 11px; }
+.ppl-detail .ppl-effrow { padding: 11px 0; }
+.ppl-detail .ppl-effrow + .ppl-effrow { border-top: 1px solid var(--divider); }
+.ppl-detail .ppl-effsent { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--text-primary); }
+.ppl-detail .ppl-effmeta { display: flex; align-items: center; gap: 14px; margin-top: 7px; flex-wrap: wrap; }
+.ppl-detail .ppl-effsig { display: flex; align-items: center; gap: 6px; }
+.ppl-detail .ppl-effsig small { font-size: 9px; letter-spacing: 0.08em; color: var(--text-muted); }
+.ppl-detail .ppl-effsig em { font-style: normal; font-size: 11px; color: var(--text-secondary); }
+.ppl-detail .ppl-effdots { display: flex; gap: 3px; }
+.ppl-detail .ppl-effdots i { width: 7px; height: 7px; border-radius: 50%; background: var(--divider); }
+.ppl-detail .ppl-effdots i.on { background: var(--c); box-shadow: 0 0 6px -1px var(--c); }
+.ppl-detail .ppl-effdots.ring i { background: transparent; border: 1.5px solid var(--divider); }
+.ppl-detail .ppl-effdots.ring i.on { border-color: var(--c); background: transparent; box-shadow: 0 0 6px -2px var(--c); }
+.ppl-detail .ppl-effn { font-style: normal; font-size: 10.5px; color: var(--text-muted); margin-left: auto; }
+.ppl-detail .ppl-efffoot { margin: 9px 0 0; padding-top: 8px; font-size: 10.5px; color: var(--text-muted); border-top: 1px solid var(--divider); }
 /* graph edges: flat rows inside ONE lavender glass */
 .ppl-detail .ppl-evtcard.glass { --c: var(--dv-lav); display: block; padding: 4px 14px; border-radius: 22px; }
 .ppl-detail .ppl-evt {

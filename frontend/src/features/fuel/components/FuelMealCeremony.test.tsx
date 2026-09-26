@@ -97,6 +97,8 @@ describe('FuelMealCeremony', () => {
     const root = container.querySelector('.fcx-screen') as HTMLElement
     expect(root.style.getPropertyValue('--rise')).toBe('1')
     expect(root).not.toHaveClass('is-told')
+    // mezo-7tj3j: az első frame horgonyoz (started = az első rAF-időbélyeg), utána mér.
+    frames.shift()?.(0)
     frames.shift()?.(600)
     expect(root).toHaveClass('is-b1')
     expect(root).not.toHaveClass('is-b2')

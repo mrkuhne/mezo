@@ -40,7 +40,9 @@ describe('DimensionPage', () => {
   test('renders the hero title and the count-up maturity', async () => {
     render(<DimensionPage />)
     expect(screen.getByRole('heading', { name: 'Fizikai' })).toBeInTheDocument()
-    await waitFor(() => expect(screen.getByText('58%')).toBeInTheDocument(), { timeout: 2000 })
+    // 900 ms setInterval count-up: telített párhuzamos futásnál az intervalok csúsznak,
+    // a 2 s-es keret gépfüggően kifutott (mezo-7tj3j vizsgálat mellékfogása).
+    await waitFor(() => expect(screen.getByText('58%')).toBeInTheDocument(), { timeout: 6000 })
   })
 
   test('renders the non-empty portrait card', () => {

@@ -15,12 +15,14 @@ import org.springframework.stereotype.Component;
 /**
  * Reflexió S2 (bd mezo-eq85.2, spec 2026-09-06 §4.4): the nightly reflection pass at 03:40. It
  * REPLACES the weekly {@code HypothesisJob} — a companion that only re-thinks its picture of the
- * user once a week cannot notice anything; the same four steps now run every night, in order:
+ * user once a week cannot notice anything; the same steps now run every night, in order:
  *
  * <ol>
  *   <li>catch-up — heal missing/stale text signals, so the series are complete before anything reads them;</li>
  *   <li>chat-day — extract yesterday's conversation as its own signal;</li>
  *   <li>evaluate — re-run every open hypothesis's test plan (pure code, no LLM);</li>
+ *   <li>effects — Emlékezet S4 (mezo-d6ivw.4): recompute the named person/event effect rows
+ *       (pure code), so tonight's proposal already sees tonight's strong findings;</li>
  *   <li>propose — the smart-tier hypothesis loop, capped by {@code reflection.propose.max-per-night}.</li>
  * </ol>
  *
@@ -45,6 +47,7 @@ public class ReflectionJob {
     private final TextSignalCatchUpService catchUpService;
     private final ChatDaySignalService chatDaySignalService;
     private final HypothesisEvaluationService evaluationService;
+    private final EffectLinkService effectLinkService;
     private final HypothesisPipelineService hypothesisPipelineService;
 
     @Scheduled(cron = "${mezo.companion.reflection.cron}")
@@ -60,6 +63,7 @@ public class ReflectionJob {
             step("catch-up", userId, () -> catchUpService.catchUp(userId, today));
             step("chat-day", userId, () -> chatDaySignalService.extractDay(userId, today.minusDays(1)));
             step("evaluate", userId, () -> evaluationService.evaluate(userId, today));
+            step("effects", userId, () -> effectLinkService.recompute(userId, today));
             step("propose", userId, () -> hypothesisPipelineService.run(userId, null));
         });
     }
