@@ -6,12 +6,12 @@ export const DEFAULT_THEME: Theme = 'light'
  *  resolves to this theme regardless of the stored preference, circadian `auto` or a force
  *  claim. Light mode is PARKED, not deleted — the mode/claim machinery and the light CSS stay,
  *  and setting this to `null` brings them back. index.html's boot script and the manifest in
- *  vite.config.ts carry the same lock (the dark canvas `#000000`). */
+ *  vite.config.ts carry the same lock (the dark canvas `#141210`). */
 export const THEME_LOCK: Theme | null = 'dark'
 
 /** Browser/PWA chrome color per theme — keep in sync with --canvas in prototype.css
     and with the static meta in index.html / manifest in vite.config.ts. */
-const THEME_COLOR: Record<Theme, string> = { light: '#FBF6EF', dark: '#000000' }
+const THEME_COLOR: Record<Theme, string> = { light: '#FBF6EF', dark: '#141210' }
 
 export function readStoredTheme(): Theme | null {
   try {

@@ -28,7 +28,7 @@ test('applyTheme sets data-theme=dark and removes it for light', () => {
 test('applyTheme syncs the browser-chrome theme-color meta', () => {
   const meta = document.querySelector('meta[name="theme-color"]')!
   applyTheme('dark')
-  expect(meta.getAttribute('content')).toBe('#000000')
+  expect(meta.getAttribute('content')).toBe('#141210')
   applyTheme('light')
   expect(meta.getAttribute('content')).toBe('#FBF6EF')
 })
