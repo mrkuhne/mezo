@@ -154,6 +154,39 @@ class ProactiveApiChallengeIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testDecide_shouldReturnToProposed_whenAcceptedChallengeIsUndone() {
+        // mezo-oy91i: the picker's check circle toggles — unticking an accepted challenge puts it
+        // back to proposed (still listed, decidable again), it does NOT dismiss it.
+        Plan plan = plantTemplate(ownerId());
+        UUID templateSessionId = plan.session().getId();
+        ChallengeEntity row = challengePopulator.challengePr(ownerId(), templateSessionId, LocalDate.now(),
+                plan.exercise().getId(), ChallengeEntity.STATUS_ACCEPTED, "90.00", 6);
+
+        ChallengeResponse undone = postForBody(
+                "/api/proactive/challenge/" + row.getId() + "/decision",
+                new ChallengeDecisionRequest().decision("undo"),
+                ownerAuthHeaders(), HttpStatus.OK, ChallengeResponse.class);
+
+        assertThat(undone.getStatus()).isEqualTo(ChallengeEntity.STATUS_PROPOSED);
+        assertThat(getForList(challengeUri(templateSessionId, LocalDate.now()),
+                ownerAuthHeaders(), HttpStatus.OK, ChallengeResponse.class))
+                .extracting(ChallengeResponse::getStatus).containsExactly(ChallengeEntity.STATUS_PROPOSED);
+    }
+
+    @Test
+    void testDecide_shouldReject409_whenUndoingAProposedChallenge() {
+        Plan plan = plantTemplate(ownerId());
+        ChallengeEntity proposed = challengePopulator.challengePr(ownerId(), plan.session().getId(), LocalDate.now(),
+                plan.exercise().getId(), ChallengeEntity.STATUS_PROPOSED, "90.00", 6);
+
+        String body = postForBody("/api/proactive/challenge/" + proposed.getId() + "/decision",
+                new ChallengeDecisionRequest().decision("undo"),
+                ownerAuthHeaders(), HttpStatus.CONFLICT, String.class);
+
+        assertHasRequestError(body, "PROACTIVE_CHALLENGE_NOT_ACCEPTED");
+    }
+
+    @Test
     void testDecide_shouldDismissAndDropFromList_whenDismissed() {
         Plan plan = plantTemplate(ownerId());
         UUID templateSessionId = plan.session().getId();

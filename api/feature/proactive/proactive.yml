@@ -654,7 +654,7 @@ components:
       type: object
       required: [decision]
       properties:
-        decision: { type: string, pattern: '^(accept|dismiss)$' }
+        decision: { type: string, pattern: '^(accept|dismiss|undo)$' }
     ChallengeRef:
       type: object
       required: [kind, label]
