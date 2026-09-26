@@ -712,6 +712,16 @@ export interface PersonFact {
   seen: boolean
   createdAt: string
 }
+/** S4 (mezo-d6ivw.4): egy kódban számolt (személy, metrika) hatás-sor — sosem ok-okozat, csak
+ *  együttjárás. Wire→domain: strengthBand→strength, confidenceTier→confidence. */
+export interface PersonEffect {
+  metric: 'mental' | 'energy' | 'stress'
+  direction: 'higher' | 'lower'
+  strength: 'enyhe' | 'kozepes' | 'eros'
+  confidence: 'gyenge' | 'kozepes' | 'eros'
+  meanDiff: number
+  subjectDays: number
+}
 export interface PersonEntry {
   id: string
   name: string

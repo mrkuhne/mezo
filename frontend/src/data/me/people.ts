@@ -1,4 +1,4 @@
-import type { PersonEntry, Mention, Affect, PersonFact } from '@/data/types'
+import type { PersonEntry, Mention, Affect, PersonFact, PersonEffect } from '@/data/types'
 
 export const people: PersonEntry[] = [
   {
@@ -362,6 +362,19 @@ export function affectColor(a: Affect): string {
 }
 export function affectLabel(a: Affect): string {
   return { positive: 'Pozitív', neutral: 'Semleges', mixed: 'Vegyes', negative: 'Nehéz' }[a]
+}
+
+/** S4 mock (mezo-d6ivw.4): nevesített hatás-sorok személyenként — Petra a kirakat-eset (3 sor,
+ *  metrikánként egy, vegyes irány, benne egy stressz 'lower'), Bence egy sor, mindenki más üres. */
+export const MOCK_PERSON_EFFECTS: Record<string, PersonEffect[]> = {
+  'pp-petra': [
+    { metric: 'mental', direction: 'higher', strength: 'eros', confidence: 'eros', meanDiff: 0.82, subjectDays: 14 },
+    { metric: 'energy', direction: 'higher', strength: 'kozepes', confidence: 'kozepes', meanDiff: 0.41, subjectDays: 14 },
+    { metric: 'stress', direction: 'lower', strength: 'enyhe', confidence: 'gyenge', meanDiff: 0.23, subjectDays: 9 },
+  ],
+  'pp-bence': [
+    { metric: 'stress', direction: 'higher', strength: 'kozepes', confidence: 'kozepes', meanDiff: 0.37, subjectDays: 11 },
+  ],
 }
 
 /** S3 mock: a „Megjegyeztem" chip demó-ténye — mock módban minden elküldött kör után ez jön. */
