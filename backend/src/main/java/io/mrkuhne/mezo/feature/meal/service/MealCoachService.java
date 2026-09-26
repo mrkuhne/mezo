@@ -88,10 +88,19 @@ public class MealCoachService {
         - glucose: 0-2 javaslat arra, hogy LEGKÖZELEBB laposabb legyen ennek a tányérnak a
           vércukor-válasza. A TÉTELEK-ből indulj ki, és NEVEZD MEG a tételt (pl. "A mézből elég a
           fele", "A banán mellé egy marék dió"): mit hagyjon el, mit cseréljen, mit tegyen mellé.
-          title legfeljebb 40 karakter, body egy mondat, miért segít. Ha a tányér kevés vagy
-          lassan felszívódó szénhidrátot tartalmaz, adj üres listát. SOHA ne írj vércukor-számot,
-          ne használd a "glikémiás index" kifejezést, és ne ítélkezz — a magas csúcs nem kudarc.
-          Pre-workout szerepnél a gyors szénhidrát szándékos: ott üres lista.
+          title legfeljebb 40 karakter, body egy mondat, miért segít NEKI.
+          - A VÉRCUKOR-SÁV-ot az app mutatja a felhasználónak: "alacsony" sávnál ÜRES lista; a
+            tippjeid ne mondjanak ellent a sávnak.
+          - Szabd a FELHASZNÁLÓ-ra: fogyásnál a nagyobb térfogatú, alacsony energiájú csere (zöldség,
+            fehérje) jobb, mint zsírt tenni mellé; tömegelésnél a mennyiséget ne vedd el, inkább
+            öltöztesd fel; rövid vagy rossz alvás és magas stressz után ugyanaz a tányér nagyobb
+            csúcsot ad — ezt kimondhatod; ülőmunkánál a séta-jellegű mozgás külön érték.
+          - Az aktív gyógyszert (pl. metformin, GLP-1) vedd figyelembe, de a gyógyszerről,
+            adagolásról SOHA ne adj tanácsot.
+          - Pre-workout szerepnél a gyors szénhidrát szándékos: ott üres lista; post-workoutnál a
+            szénhidrát-pótlás cél, csak a felszívódás tempóján finomíts.
+          - SOHA ne írj vércukor-számot, ne használd a "glikémiás index" kifejezést, ne ítélkezz —
+            a magas csúcs nem kudarc. Ahol "nincs adat", arra ne építs és ne találgass.
         - Minden kapott mealId-hoz pontosan egy objektum tartozzon.
         """;
 
@@ -117,6 +126,7 @@ public class MealCoachService {
     private final ObjectProvider<MealCoachLlm> llm;
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
+    private final MealCoachContextReader contextReader;
 
     /**
      * A day's verdicts: everything already cached, plus — when {@code allowGenerate} — ONE batched
@@ -171,7 +181,8 @@ public class MealCoachService {
                 return List.of();
             }
             String userMessage = MealCoachPrompt.userMessage(date,
-                fuelDayService.dailyTargets(userId, date), windows, List.copyOf(blocks.values()));
+                fuelDayService.dailyTargets(userId, date), windows, List.copyOf(blocks.values()),
+                person(userId, date));
             // The subject is a single meal only when exactly one is narrated (an opened score sheet);
             // a day batch is about the day, so it leaves the entity id honestly empty (mezo-2zyu).
             UUID subject = blocks.size() == 1 ? blocks.keySet().iterator().next() : null;
@@ -185,6 +196,16 @@ public class MealCoachService {
             log.warn("Meal coach failed for {} on {} — serving the deterministic envelopes",
                 userId, date, e);
             return List.of();
+        }
+    }
+
+    /** The person behind the plate; a read failure degrades to "nincs adat", never kills the call. */
+    private MealCoachContextReader.PersonContext person(UUID userId, LocalDate date) {
+        try {
+            return contextReader.read(userId, date);
+        } catch (RuntimeException e) {
+            log.warn("Meal coach: person context unavailable for {} on {}", userId, date, e);
+            return MealCoachContextReader.PersonContext.empty();
         }
     }
 

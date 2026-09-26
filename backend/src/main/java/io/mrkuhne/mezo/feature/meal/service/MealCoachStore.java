@@ -48,7 +48,14 @@ class MealCoachStore {
      * {@code fiberG} are null when the source had no data — "no data" is not "0 g".
      */
     record ItemLine(String name, BigDecimal amount, String unit, BigDecimal c, BigDecimal sugarG,
-                    BigDecimal fiberG, BigDecimal p) {
+                    BigDecimal fiberG, BigDecimal p, BigDecimal f, BigDecimal kcal,
+                    BigDecimal saturatedFatG, Integer nova, String source) {
+
+        /** The carbs-only shape (tests, older call sites) — the rest prints as "nincs adat". */
+        ItemLine(String name, BigDecimal amount, String unit, BigDecimal c, BigDecimal sugarG,
+                 BigDecimal fiberG, BigDecimal p) {
+            this(name, amount, unit, c, sugarG, fiberG, p, null, null, null, null, null);
+        }
     }
 
     private final MealRepository mealRepository;
@@ -140,7 +147,8 @@ class MealCoachStore {
             f = f.add(x.getF());
             Nutrients n = mapper.nutrients(item);
             items.add(new ItemLine(item.getSnapshotName(), item.getAmount(), item.getUnit(), x.getC(),
-                n.getSugarG(), n.getFiberG(), x.getP()));
+                n.getSugarG(), n.getFiberG(), x.getP(), x.getF(), x.getKcal(), n.getSaturatedFatG(),
+                item.getSnapshotNova() == null ? null : item.getSnapshotNova().intValue(), item.getSource()));
         }
         return new LoadedMeal(meal.getId(), meal.getTitle(), meal.getSlot(), meal.getLoggedAt(),
             meal.getBreakdown(), kcal, p, c, f, List.copyOf(items));
