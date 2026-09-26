@@ -2,7 +2,7 @@
 title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0 → Üveg)
 type: feature-platform
 status: in-progress
-updated: 2026-09-25
+updated: 2026-09-26
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -21,6 +21,24 @@ related: [_platform-data-layer, _platform-notifications, today, train, me, fuel,
 > **2026-09-25 — Üveg U8 (`mezo-me75u.8`).** Seven owner-approved sprite symbols — `t-whistle` (coaching), `t-eye` (Megfigyelő), `t-card` (the daily card), `t-diagnose` (diagnosis), `t-album` (memories), `t-layers` (memory layers), `t-pencil` (rename) — are registered in `Icon3DName`. `PageHero` gained `eyebrow` (a tinted eyebrow above the name) and `glass` (the halo hero without art, for gauge- or text-led heroes). Shared components gained opt-in üveg props instead of global restyles: `RefTag glass` (3D kind icon + screen-reader kind word), `FeedbackChips glyph3d`, `VerdictArc glow` (the segmented glowing ring). `prototype.css` gained seven blocks (`── uveg mezo1 chat|coaching|diagnozis|kiserletek|emlekek|memoar|memoria`), guarded by `U8_BLOCKS` in `prototypeCssStructure.test.ts`.
 
 > **2026-09-25 — Üveg U9 (`mezo-me75u.9`).** Four owner-approved sprite symbols join `Icon3DName`: `t-council` (Konzílium), `t-radar` (Detektor), `t-graph` (Kapcsolatok), `t-grid` (Összes funkció). The Mezo II surfaces wear the csapatfal material — the `tf-*` kit in `features/insights/boop-world.css` — with each page's own prefix in five `prototype.css` blocks (`── uveg mezo2 karakter|konzilium|gepterem|tudastar|mintak`), guarded by `U9_BLOCKS` in `prototypeCssStructure.test.ts` (which also checks that motion lives only in the no-preference branch). One clickable reference for the whole Mezo section: [`uveg-mezo-teljes.html`](../design_2.0/prototypes/uveg-mezo-teljes.html), assembled by `prototypes/src/splice-mezo-teljes.py` from the csapatfal world + U8 (scoped `.u8` by `scope-css.py`) + U9.
+
+> **2026-09-26 — U9b Rólad content redesign (`mezo-zpxv7`, no new sprite symbols — content only).**
+> The rebuilt Rólad page ([`insights.md` §2.0b](insights.md)) reuses the `.kr9-rolad` root the
+> U9 `karakter` block already owned (its own quote/inbox/afterlife/timeline rules —
+> `.kr9-rhead`/`.kr9-quote`/`.kr9-chip.is-main`/`.kr9-gone`/`.kr9-quiet`/`.kr9-lifer` — were already
+> pinned in `U9_BLOCKS['karakter']`, unchanged this round). **The inbox-card rules moved house:**
+> `FactCandidateCard`/`LifeEventCandidateCard`/`LifeEventAcceptedCard` (the `.tud9-case`/
+> `.tud9-conflict`/`.tud9-chk`/`.tud9-acts`/`.tud9-btn`/`.tud9-refine`/`.tud9-accepted` family) now
+> render on Rólad ONLY — the Tudástár shows a pointer card instead (§2.4) — so `prototype.css`'s
+> `── uveg mezo2 tudastar` block **dropped the `.tud9`-doubled selectors for the inbox-only rules**
+> (`.tud9-conflict`, `.tud9-chk`, `.tud9-btn.is-main`, `.tud9-no` — the new „Nem igaz” quiet text
+> button — `.tud9-refine`, `.tud9-accepted`, `.tud9-prov`, `.tud9-input`) down to `.kr9-rolad`-only;
+> `.tud9-acts`/`.tud9-btn`(base)/`.tud9-acts.is-left` stay doubled because `KnowledgeNodePage`
+> (`.tud9-node`) still renders the base/`:disabled`/`:focus-visible` forms, just never `.is-main`.
+> `U9_BLOCKS['tudastar']` in `prototypeCssStructure.test.ts` was re-pinned to the `.kr9-rolad`-only
+> selectors accordingly. No new block, no new sprite — a content/selector-scope change inside the
+> existing U9 `tudastar`/`karakter` blocks. `pageIndex.ts`'s search hints for `/mezo/rolad` and
+> `/mezo/knowledge` were reworded to match (decision-inbox vs. archive), not a design-system change.
 
 > **2026-09-25 — Üveg U7 (`mezo-me75u.7`).** Ten owner-approved sprite symbols — `t-bell` (notifications), `t-anchor` (habit anchor), `t-bulb` (tips), `t-scissors` ("cut it smaller"), `t-spark` (AI suggestion), `t-key`, `t-exit`, `t-palette` (settings rows), `t-flag` and `t-brain` (badges) — are registered in `Icon3DName`. `CLAY_TO_3D` gained `i-life-konyha → t-pot`, `i-life-penzugyek → t-coin` and `i-ertesites → t-bell`. The notification-kind icon map (`NTF_3D`/`ntfIcon`) moved from `app/AppHeader.tsx` to `features/notification/logic/kindIcon.ts`, shared by the header panel and the feed page. `Toggle` (shared/ui) takes an opt-in `glass` prop that drops its inline skin for the `.uv-tgl` CSS; `SettingsRow` now requires an `icon: Icon3DName` (Boop stays on the settings hero and domain tiles). `prototype.css` gained six blocks (`── uveg en2 novekedes|rutin|naplo|emberek|ertesitesek|beallitasok`), guarded by `U7_BLOCKS` in `prototypeCssStructure.test.ts`.
 >
