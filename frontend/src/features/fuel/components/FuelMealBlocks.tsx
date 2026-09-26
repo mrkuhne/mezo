@@ -19,22 +19,23 @@
 //     el egyszer), „ajánlott keret" számot sem. A gyűrűk ikonjai mezo-n9peo-val jöttek: az
 //     owner színes, ikonos grammokat kért felirat nélkül; a v2 kalibráció (mezo-l2gp0,
 //     docs/design_2.0/prototypes/fuel-kartya-ido.html) ezt arány-gyűrűkké alakította,
-//   • az idő az ablak-csíkon él ÉS az óra-dobozból kérhető le szövegesen (Task 5) — a kártyán
-//     továbbra sincs idő-szöveg,
+//   • az idő az étkezési órán él (mezo-6g52f, Task 7): a blokk mindig kint tartja a napóra-gyűrűs
+//     órát (`MealClock`), ami az óra-dobozt (`MealClockBox`) nyitja szövegesen — a kártyán nincs
+//     idő-szöveg, a naplózás előtti blokk csak az "Ajánlott" sort viszi,
 //   • a pont-chip finoman animál, hogy koppinthatónak olvasódjon (a `reduce` ág kivezeti).
 //
 // Őszinte-null + szégyenmentesség: ismeretlen kcal „—", kihagyott ablak semleges hangon
 // „még pótolható" — soha nem hiba- vagy szégyen-állapot.
 // ============================================================
 import { useState } from 'react'
-import { pct } from '@/shared/lib/pct'
 import { huInt, hu1 } from '@/shared/lib/huNum'
-import { toMin, toHHmm } from '@/data/fuel/fuelConfig'
+import { toMin } from '@/data/fuel/fuelConfig'
 import { ContentIcon } from '@/shared/ui/clay'
-import { glycemicBand } from '@/features/fuel/logic/glycemicBand'
+import { glycemicBand, type GlycemicLevel } from '@/features/fuel/logic/glycemicBand'
 import { GlycemicGlass, GlycemicMiniCurve } from '@/features/fuel/components/GlycemicGlass'
 import { macroEnergyShares, fiberSharePct } from '@/features/fuel/logic/mealShare'
-import { GlassBox } from '@/features/fuel/components/GlassBox'
+import { durHu } from '@/features/fuel/logic/mealWindow'
+import { MealClock, MealClockBox, type ClockDay } from '@/features/fuel/components/MealClockBox'
 import type { MealSlot } from '@/data/types'
 import type { WindowLaneVM, WindowTileVM } from '@/features/fuel/logic/fuelSwimlane'
 import type { DoneMealRow } from '@/features/fuel/logic/keretHero'
@@ -105,123 +106,75 @@ const BLOCK_COLOR: Record<MealSlot, string> = {
   dinner: 'var(--sky)',
 }
 
-/** Az ablak-csík fél szélessége: a prototípus 5 órás boxa (`windowBar`, :32). */
-const BOX_HALF_MIN = 150
-/** A csíkon kiemelt sáv fél szélessége — a TERVEZETT idő rajzolási toleranciája. */
-const BAND_HALF_MIN = 30
-
 /**
- * Az ablak-csík. A produkciós adat EGY időpontot tart számon ablakonként (`FuelSlot.time`:
- * nyitott ablaknál a tervezett, lezárt ablaknál a logolás ideje — buildDayPlan.ts 3. lépés),
- * ezért a csík ANKER-alapú: az 5 órás box a blokk saját idejére van centrálva, a kiemelt sáv
- * maga a tervezett idő. A prototípus „optimális 07:00–09:00" sávját NEM vesszük át: olyan
- * tényt állítana, amit a rendszer nem tárol.
+ * A blokk gyűrűje (mezo-6g52f, owner 2026-09-26): az ÉTKEZÉS SAJÁT keretéhez mér — teli kör =
+ * eltaláltad, ami túlfut, egy borostyán második kör (legfeljebb egy extra kör). Logolás előtt a
+ * pálya szaggatott, a számjegy a tervezett keret. Ismeretlen kcal/keret → „—" / nincs ív.
  */
-function WindowBar({ tile, rows }: { tile: WindowTileVM; rows: DoneMealRow[] }) {
-  const anchor = toMin(tile.time)
-  const from = anchor - BOX_HALF_MIN
-  const to = anchor + BOX_HALF_MIN
-  const at = (hhmm: string) => Math.min(98, Math.max(2, ((toMin(hhmm) - from) / (to - from)) * 100))
-  const label = rows.length
-    ? `${tile.label}-ablak ${tile.time} körül · ${rows.map(r => `${r.time}-kor ettél`).join(', ')}`
-    : `${tile.label}-ablak ${tile.time} körül`
-
-  return (
-    <div className="fmx-window" role="img" aria-label={label}>
-      <span>{toHHmm(from)}</span>
-      <i>
-        <em style={{
-          '--from': `${at(toHHmm(anchor - BAND_HALF_MIN))}%`,
-          '--to': `${at(toHHmm(anchor + BAND_HALF_MIN))}%`,
-        } as React.CSSProperties} />
-        {rows.map(r => (
-          <b key={r.mealId} className="fmx-window-at" style={{ '--at': `${at(r.time)}%` } as React.CSSProperties} />
-        ))}
-      </i>
-      <span>{toHHmm(to)}</span>
-    </div>
-  )
-}
-
-/**
- * A blokk gyűrűje (prototípus `budgetRing`, :39) — a blokk EGYETLEN kcal-száma.
- * A számjegy a logolt kcal, amíg nincs logolva, a blokk tervezett kerete; az ív a nap
- * energia-keretéből vett részt rajzolja (ugyanaz a „day-basis" olvasat, amit a
- * fuelSwimlane.ts gyűrűi is használnak). Ismeretlen kcal → „—", nincs ív.
- */
-function BudgetRing({ kcal, dayKcal, logged }: { kcal: number | null; dayKcal: number; logged: boolean }) {
-  const share = kcal == null || dayKcal <= 0 ? null : pct(kcal, dayKcal)
-  const aria = kcal == null
+function BudgetRing({ kcal, budgetKcal, logged }: { kcal: number | null; budgetKcal: number | null; logged: boolean }) {
+  const ratio = logged && kcal != null && budgetKcal ? (kcal / budgetKcal) * 100 : null
+  const fill = ratio == null ? 0 : Math.min(100, ratio)
+  const over = ratio == null ? 0 : Math.min(100, Math.max(0, ratio - 100))
+  const shown = logged ? kcal : budgetKcal
+  const aria = shown == null
     ? `${logged ? 'Logolt' : 'Tervezett'} energia: nincs adat`
-    : `${logged ? 'Logolva' : 'Keret'}: ${huInt(kcal)} kcal${share == null ? '' : ` · a napi keret ${Math.round(share)}%-a`}`
+    : logged
+      ? `Logolva: ${huInt(kcal!)}${budgetKcal ? ` / ${huInt(budgetKcal)} kcal (${Math.round(ratio!)}%)` : ' kcal'}`
+      : `Keret: ${huInt(shown)} kcal`
   return (
     <span className={`fmx-budget-ring${logged ? '' : ' is-empty'}`} role="img" aria-label={aria}>
       <svg viewBox="0 0 44 44" aria-hidden="true">
         <circle className="fmx-br-track" cx="22" cy="22" r="18" pathLength={100} />
-        <circle className="fmx-br-fill" cx="22" cy="22" r="18" pathLength={100}
-          style={{ '--p': String(share ?? 0) } as React.CSSProperties} />
+        <circle className="fmx-br-fill" cx="22" cy="22" r="18" pathLength={100} style={{ '--p': String(fill) } as React.CSSProperties} />
+        {over > 3 && <circle className="fmx-br-over" cx="22" cy="22" r="18" pathLength={100} style={{ '--p': String(over) } as React.CSSProperties} />}
       </svg>
-      <b>{kcal == null ? '—' : huInt(kcal)}</b>
+      <b>{shown == null ? '—' : huInt(shown)}</b>
     </span>
   )
 }
 
-/**
- * Az óra-doboz (mezo-l2gp0): kis üvegdoboz a logolás idejével — a kártyán az idő az
- * ablak-csíkon ÉL, szövegesen innen kérhető le. View-only (owner-döntés); a "Terv szerint"
- * sor csak akkor áll, ha a done slot hozott tervezett időt (őszinte-null).
- */
-function TimeBox({ label, blockColor, row, onClose }: {
-  label: string; blockColor: string; row: DoneMealRow; onClose: () => void
-}) {
-  return (
-    <GlassBox onClose={onClose} labelledBy="fmx-timebox-title" className="fmx-timebox"
-      style={{ '--block-color': blockColor } as React.CSSProperties}>
-      <span className="fmx-timebox-art" aria-hidden="true"><ContentIcon name="i-idozito" size={54} /></span>
-      <div className="fmx-timebox-eyebrow" id="fmx-timebox-title">Logolva</div>
-      <div className="fmx-timebox-time">{row.time}</div>
-      <div className="fmx-timebox-sub">{row.name ? `${label} · ${row.name}` : label}</div>
-      {row.plannedTime != null && (
-        <div className="fmx-timebox-items">
-          <div><span>Terv szerint</span><b>~{row.plannedTime}</b></div>
-        </div>
-      )}
-      <button type="button" className="fmx-timebox-close" onClick={onClose}>Rendben</button>
-    </GlassBox>
-  )
-}
-
-/** A pont-chip: az értékelés kapuja. Pontszám nélküli (friss) logra „folyamatban" — passzív. */
-export function FuelScoreChip({ scorePct, onOpen, size }: {
+/** A pont-chip: az értékelés kapuja. Pontszám nélküli (friss) logra „folyamatban" — passzív.
+ *  `unboxed` (mezo-6g52f): a blokk-kártyán a chip keret és háttér nélkül, kristály-ikonnal
+ *  úszik a sorban, együtt lüktetve a csoport többi ilyen chipjével (`--i` staggerrel) — a
+ *  `size="big"` hívók (a részletek/recept fejléce) változatlanok maradnak. */
+export function FuelScoreChip({ scorePct, onOpen, size, unboxed, index }: {
   scorePct: number | null
   onOpen?: () => void
   size?: 'big'
+  unboxed?: boolean
+  index?: number
 }) {
-  const cls = `fmx-score${size === 'big' ? ' is-big' : ''}`
+  const cls = `fmx-score${size === 'big' ? ' is-big' : ''}${unboxed ? ' is-unboxed' : ''}`
+  const iconSize = unboxed ? 40 : size === 'big' ? 34 : 28
   if (scorePct == null) {
     return (
       <span className={`${cls} is-pending`}>
         {/* Üveg (mezo-me75u.1): the sparkle = „értékelés folyamatban" (uveg-alap-ikonok.html). */}
-        <ContentIcon name="t-other" size={size === 'big' ? 34 : 28} />
+        <ContentIcon name="t-other" size={iconSize} />
         <b>folyamatban</b>
       </span>
     )
   }
   const value = hu1(scorePct / 10)
   return (
-    <button type="button" className={cls} onClick={onOpen} aria-label={`AI értékelés: ${value}`}>
-      <ContentIcon name="i-kristaly" size={size === 'big' ? 34 : 28} />
+    <button type="button" className={cls} onClick={onOpen} aria-label={`AI értékelés: ${value}`}
+      style={{ '--i': index ?? 0 } as React.CSSProperties}>
+      <ContentIcon name="i-kristaly" size={iconSize} />
       <b>{value}</b>
     </button>
   )
 }
+
+/** A sáv szava a chipen — az owner „csak sáv" döntése (mezo-6g52f): szám soha. */
+const BAND_WORD: Record<GlycemicLevel, string> = { low: 'Alacsony', mid: 'Közepes', high: 'Magas' }
 
 /** A sor sávja a tárolt tényekből — UGYANAZ a deriváció, amit a részletek oldal doboza kap. */
 function bandOf(row: DoneMealRow) {
   return glycemicBand({ c: row.carbsG, sugarG: row.sugarG, fiberG: row.fiberG, p: row.proteinG, f: row.fatG })
 }
 
-/** A Mai sor vércukor-chipje: a mini görbe a sáv színében, a pontszám-chip bal oldalán. */
+/** A Mai sor vércukor-chipje: a mini görbe a sáv színében + a sáv szava, a pontszám-chip
+ *  bal oldalán. */
 function GlycemicChip({ row, onOpen }: { row: DoneMealRow; onOpen: () => void }) {
   const band = bandOf(row)
   // Őszinte-null: szénhidrát-adat nélkül nincs sáv, és nincs chip sem — üres helyet hagyunk,
@@ -231,22 +184,34 @@ function GlycemicChip({ row, onOpen }: { row: DoneMealRow; onOpen: () => void })
     <button type="button" className={`fmx-glu-chip lvl-${band.level}`} onClick={onOpen}
       aria-label={`Vércukor-válasz: ${band.label}`}>
       <GlycemicMiniCurve level={band.level} />
+      <b className="fmx-glu-word">{BAND_WORD[band.level]}</b>
     </button>
   )
 }
 
-function BlockCard({ tile, rows, dayKcal, fiberTargetG, onLogInto, onOpenMeal, onOpenScore, onOpenTime, onOpenGlycemic }: {
+/** Az „Ajánlott …" sor chipje (owner 2026-09-26: marad). Szégyenmentes: a lezárt ablak nem hiba. */
+function whenChip(from: string, to: string, now: string): string {
+  const n = toMin(now), lo = toMin(from), hi = toMin(to)
+  if (n < lo) return lo - n <= 90 ? `nyílik ${durHu(lo - n)} múlva` : `nyílik ${from}`
+  if (n <= hi) return `most nyitva · még ${durHu(hi - n)}`
+  return 'még pótolható'
+}
+
+function BlockCard({ tile, rows, nowHHmm, fiberTargetG, index, onLogInto, onOpenMeal, onOpenScore, onOpenClock, onOpenGlycemic }: {
   tile: WindowTileVM
   rows: DoneMealRow[]
-  dayKcal: number
+  /** A jelen idő — az „Ajánlott" sor chipjéhez és az óra „most nyitva" jelöléséhez. */
+  nowHHmm: string
   /** A rost-gyűrű nevezője (mezo-l2gp0) — `dietSettings.fiberG`, threaded down to `MacroRings`. */
   fiberTargetG: number
+  /** A blokk sorszáma a listában — a pont-chip lüktetés-staggerének (`--i`) nevezője. */
+  index: number
   onLogInto: (tile: WindowTileVM) => void
   onOpenMeal: (mealId: string) => void
   /** A pont-chip SAJÁT célja: az AI értékelés, nem az étkezés részletei (mezo-jb84). */
   onOpenScore: (mealId: string) => void
-  /** Az óra gomb célja (mezo-l2gp0): a logolás idejét mutató üvegdoboz nyitása. */
-  onOpenTime: (mealId: string) => void
+  /** Az óra célja (mezo-6g52f): az óra-doboz nyitása erre a blokkra. */
+  onOpenClock: (tileKey: string) => void
   /** A vércukor-chip célja (mezo-ya2wp): a `GlycemicGlass` nyitása ugyanarra az étkezésre. */
   onOpenGlycemic: (mealId: string) => void
 }) {
@@ -265,16 +230,16 @@ function BlockCard({ tile, rows, dayKcal, fiberTargetG, onLogInto, onOpenMeal, o
         {/* A két kör EGY csoport a jobb szélen (owner 2026-09-16): az óra korábban a név után
             állt, így rövid néven — „Tízórai" — gazdátlanul lebegett a sor közepén. */}
         <span className="fmx-block-end">
-          {rows.length > 0 && (
-            <button type="button" className="fmx-clock" onClick={() => onOpenTime(rows[0].mealId)}
-              aria-label={`${tile.label} · logolás ideje`}>
-              <ContentIcon name="i-idozito" size={21} />
-            </button>
-          )}
-          <BudgetRing kcal={rows.length ? loggedKcal : tile.kcal} dayKcal={dayKcal} logged={rows.length > 0} />
+          <MealClock tile={tile} row={rows[0] ?? null} nowHHmm={nowHHmm} onOpen={() => onOpenClock(tile.key)} />
+          <BudgetRing kcal={rows.length ? loggedKcal : tile.budgetKcal ?? tile.kcal} budgetKcal={tile.budgetKcal} logged={rows.length > 0} />
         </span>
       </div>
-      <WindowBar tile={tile} rows={rows} />
+      {rows.length === 0 && tile.windowFrom && tile.windowTo && (
+        <div className="fmx-when">Ajánlott <b>{tile.windowFrom}–{tile.windowTo}</b>
+          <span className={`fmx-when-chip${toMin(nowHHmm) >= toMin(tile.windowFrom) && toMin(nowHHmm) <= toMin(tile.windowTo) ? ' is-now' : ''}`}>
+            {whenChip(tile.windowFrom, tile.windowTo, nowHHmm)}
+          </span></div>
+      )}
       {rows.map(r => (
         <div key={r.mealId} className="fmx-meal-row">
           {/* A név teljes szélességben (két sorig törhet) — a pont-chip az ALSÓ sorba került
@@ -291,8 +256,9 @@ function BlockCard({ tile, rows, dayKcal, fiberTargetG, onLogInto, onOpenMeal, o
                 under the rings (right-aligned) instead of splitting across two lines. */}
             <span className="fmx-meal-chips">
               <GlycemicChip row={r} onOpen={() => onOpenGlycemic(r.mealId)} />
-              {/* A chip célja változatlan: az ÉRTÉKELÉS (mezo-jb84). */}
-              <FuelScoreChip scorePct={r.scorePct} onOpen={() => onOpenScore(r.mealId)} />
+              {/* A chip célja változatlan: az ÉRTÉKELÉS (mezo-jb84). Unboxed (mezo-6g52f):
+                  keret és háttér nélkül, saját lüktetéssel a blokk-index szerint. */}
+              <FuelScoreChip scorePct={r.scorePct} onOpen={() => onOpenScore(r.mealId)} unboxed index={index} />
             </span>
           </div>
         </div>
@@ -312,23 +278,27 @@ function BlockCard({ tile, rows, dayKcal, fiberTargetG, onLogInto, onOpenMeal, o
   )
 }
 
-export function FuelMealBlocks({ lane, meals, dayKcal, fiberTargetG, onLogInto, onOpenMeal, onOpenScore }: {
+export function FuelMealBlocks({ lane, meals, day, fiberTargetG, onLogInto, onOpenMeal, onOpenScore }: {
   lane: WindowLaneVM
   meals: DoneMealRow[]
-  /** A nap energia-kerete — a blokkgyűrű ívének nevezője (honest: ha 0, nincs ív). */
-  dayKcal: number
+  /** A napóra napi kerete (mezo-6g52f) — az ablakok és az étkezésszám a lane-ből származik. */
+  day: { wake: string; bed: string; nowHHmm: string; training: { start: string; end: string; label: string } | null }
   /** A rost-gyűrű nevezője (mezo-l2gp0) — `dietSettings.fiberG`, threaded down to `MacroRings`. */
   fiberTargetG: number
   onLogInto: (tile: WindowTileVM) => void
   onOpenMeal: (mealId: string) => void
   onOpenScore: (mealId: string) => void
 }) {
-  const [timeboxFor, setTimeboxFor] = useState<string | null>(null)
+  const [clockFor, setClockFor] = useState<string | null>(null)
   const [glucoseFor, setGlucoseFor] = useState<string | null>(null)
   const glucoseRow = meals.find(m => m.mealId === glucoseFor) ?? null
   const glucoseBand = glucoseRow ? bandOf(glucoseRow) : null
-  const timeboxRow = meals.find(m => m.mealId === timeboxFor) ?? null
-  const timeboxTile = timeboxFor == null ? null : lane.tiles.find(t => t.mealId === timeboxFor) ?? null
+  const clockTile = lane.tiles.find(t => t.key === clockFor) ?? null
+  const clockDay: ClockDay = {
+    ...day,
+    windows: lane.tiles.filter(t => t.windowFrom && t.windowTo).map(t => ({ key: t.key, from: t.windowFrom!, to: t.windowTo! })),
+    mealCount: lane.tiles.length,
+  }
   if (lane.tiles.length === 0) {
     return (
       <div className="fmx-blocks">
@@ -338,15 +308,16 @@ export function FuelMealBlocks({ lane, meals, dayKcal, fiberTargetG, onLogInto, 
   }
   return (
     <div className="fmx-blocks">
-      {lane.tiles.map(tile => (
-        <BlockCard key={tile.key} tile={tile} dayKcal={dayKcal} fiberTargetG={fiberTargetG}
+      {lane.tiles.map((tile, index) => (
+        <BlockCard key={tile.key} tile={tile} nowHHmm={day.nowHHmm} fiberTargetG={fiberTargetG} index={index}
           rows={meals.filter(m => m.mealId === tile.mealId)}
-          onLogInto={onLogInto} onOpenMeal={onOpenMeal} onOpenScore={onOpenScore} onOpenTime={setTimeboxFor}
+          onLogInto={onLogInto} onOpenMeal={onOpenMeal} onOpenScore={onOpenScore} onOpenClock={setClockFor}
           onOpenGlycemic={setGlucoseFor} />
       ))}
-      {timeboxRow && timeboxTile && (
-        <TimeBox label={timeboxTile.label} row={timeboxRow} onClose={() => setTimeboxFor(null)}
-          blockColor={BLOCK_COLOR[timeboxTile.slotKey]} />
+      {clockTile && (
+        <MealClockBox tile={clockTile} row={meals.find(m => m.mealId === clockTile.mealId) ?? null}
+          day={clockDay} next={lane.tiles[lane.tiles.indexOf(clockTile) + 1] ?? null}
+          blockColor={BLOCK_COLOR[clockTile.slotKey]} onClose={() => setClockFor(null)} />
       )}
       {/* Ugyanaz a doboz, amit a részletek oldal negyedik kártyája nyit — egy komponens,
           egy deriváció, két ajtó. */}

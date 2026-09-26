@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { widenWindows, hitOf, hitLabel, durHu, windowReasonCopy, az, Az } from './mealWindow'
+import { widenWindows, hitOf, hitLabel, durHu, windowReasonCopy, az, Az, trainingSpan } from './mealWindow'
 
 const ctx = { eatingStart: 7 * 60 + 25, kitchenClose: 21 * 60 + 30, bedMin: 23 * 60 }
 const h = (hh: number, mm = 0) => hh * 60 + mm
@@ -105,4 +105,13 @@ describe('windowReasonCopy / articles', () => {
     expect(az('Vacsora')).toBe('a Vacsora')
     expect(Az('Uzsonna')).toBe('Az Uzsonna')
   })
+})
+
+describe('trainingSpan', () => {
+  it('null without blocks', () => expect(trainingSpan([])).toBeNull())
+  it('one block', () => expect(trainingSpan([{ time: '17:30', durationMin: 75, label: 'Felsőtest · gym' }]))
+    .toEqual({ start: '17:30', end: '18:45', label: 'Felsőtest' }))
+  it('envelope of two', () => expect(trainingSpan([
+    { time: '19:00', durationMin: 90, label: 'Röplabda' }, { time: '17:30', durationMin: null, label: 'Edzés' },
+  ])).toEqual({ start: '17:30', end: '20:30', label: 'Edzés +1' }))
 })

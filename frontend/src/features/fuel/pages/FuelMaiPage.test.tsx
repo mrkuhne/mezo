@@ -229,7 +229,7 @@ test('a Mai a blokkokat mutatja, és a blokk a naplózóba visz az ablakával', 
   hoisted.overrideSlots = [DONE_REGGELI, OPEN_UZSONNA]
   const { container } = renderView()
   expect(container.querySelectorAll('.fmx-block').length).toBeGreaterThan(0)
-  await userEvent.click(screen.getByRole('button', { name: /Uzsonna/ }))
+  await userEvent.click(screen.getByRole('button', { name: /Uzsonna.*logolás ide/ }))
   expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/log/uj')
   expect(screen.getByTestId('loc').textContent).toContain('w=')
   // A kulcsot az app saját `${time}-${label}` szabálya adja, nem egy kitalált string.
@@ -363,7 +363,7 @@ test('az ablakon kívüli ?d= MA-ra esik vissza', () => {
 test('múltbeli napon a blokk a pótlásba visz, a nap megtartásával', async () => {
   hoisted.overrideSlots = [DONE_REGGELI, OPEN_UZSONNA]
   renderView(`/fuel?d=${D3}`)
-  await userEvent.click(screen.getAllByRole('button', { name: /Uzsonna/ })[0])
+  await userEvent.click(screen.getAllByRole('button', { name: /Uzsonna.*logolás ide/ })[0])
   const loc = screen.getByTestId('loc').textContent!
   expect(loc).toContain('/fuel/log/uj')
   expect(loc).toContain(`d=${D3}`)

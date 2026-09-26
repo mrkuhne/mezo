@@ -10,7 +10,7 @@
 // mindig borostyán, soha piros; a szöveg „segít / általában", sosem „kell".
 // ============================================================
 import type { WindowReason } from '@/data/types'
-import { WINDOW_OFFSETS, WINDOW_MIN_WIDTH_MIN, BEFORE_BED_MIN, HIT_NEAR_MIN, toMin } from '@/data/fuel/fuelConfig'
+import { WINDOW_OFFSETS, WINDOW_MIN_WIDTH_MIN, BEFORE_BED_MIN, HIT_NEAR_MIN, DEFAULT_BLOCK_MIN, toMin, toHHmm } from '@/data/fuel/fuelConfig'
 
 export type WindowRule =
   | 'breakfast' | 'main' | 'snack' | 'pre-training-main' | 'pre-training-snack' | 'post-training'
@@ -110,6 +110,16 @@ export const Az = (label: string) => { const t = az(label); return t[0].toUpperC
 
 export interface ReasonCtx { wake: string; bed: string; trainingStart: string | null; trainingEnd: string | null }
 export interface ReasonCopy { icon: 't-sun' | 't-protein' | 't-clock' | 't-dumbbell' | 't-moon'; title: string; body: string }
+
+/** A nap edzés-burka a napórához és a forecasthoz: legkorábbi kezdet, legkésőbbi vég; több blokknál
+ *  „első címke +N". Nincs blokk → null (őszinte-null: nincs edzés-ív, nincs edzés-mondat). */
+export function trainingSpan(blocks: { time: string; durationMin: number | null; label: string }[]): { start: string; end: string; label: string } | null {
+  if (!blocks.length) return null
+  const sorted = [...blocks].sort((a, z) => toMin(a.time) - toMin(z.time))
+  const end = Math.max(...blocks.map(b => toMin(b.time) + (b.durationMin ?? DEFAULT_BLOCK_MIN)))
+  const label = sorted[0].label.split('·')[0].trim() + (blocks.length > 1 ? ` +${blocks.length - 1}` : '')
+  return { start: sorted[0].time, end: toHHmm(end), label }
+}
 
 export function windowReasonCopy(code: WindowReason, c: ReasonCtx): ReasonCopy {
   const ts = c.trainingStart ? ` (${c.trainingStart})` : ''
