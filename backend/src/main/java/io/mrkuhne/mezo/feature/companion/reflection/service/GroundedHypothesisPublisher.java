@@ -104,7 +104,7 @@ public class GroundedHypothesisPublisher {
             row.setCategoryLabel(switch (h.category()) {
                 case "physiology" -> "Fiziológia";
                 case "trigger" -> "Kiváltó ok";
-                default -> "Response";
+                default -> "Reakció";
             });
             row.setStatus(PatternEntity.STATUS_PROPOSED);
         }

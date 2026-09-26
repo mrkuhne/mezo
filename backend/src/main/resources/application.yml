@@ -1729,7 +1729,7 @@ mezo:
           lag-days: 0
         - key: sport-load~next-day-gym-volume
           category: response
-          label: Response
+          label: Reakció
           title: "Sportterhelés ↔ másnapi gym-volumen"
           mechanism: "A sportterhelés másnapra elvehet a gym-teljesítményből."
           question: "Elveszi a sport a másnapi gym-erőt?"
@@ -1741,7 +1741,7 @@ mezo:
           lag-days: 1
         - key: daily-kcal~next-morning-weight-delta
           category: response
-          label: Response
+          label: Reakció
           title: "Napi kalória ↔ másnap reggeli súlyváltozás"
           mechanism: "A napi bevitel a másnap reggeli súlyban csapódhat le."
           question: "Meglátszik a napi kalória a reggeli súlyon?"
@@ -1790,7 +1790,7 @@ mezo:
           lag-days: 1
         - key: gym-volume~next-day-joint-pain
           category: response
-          label: Response
+          label: Reakció
           title: "Gym-volumen ↔ másnapi ízületi fájdalom"
           mechanism: "A nagy volumen másnap ízületi panaszként üthet vissza — túlterhelés-jel."
           question: "Beszólnak az ízületek a nagy volumen után?"
@@ -1814,7 +1814,7 @@ mezo:
           lag-days: 0
         - key: gym-workload~next-day-checkin-body
           category: response
-          label: Response
+          label: Reakció
           title: "Gym-terhelésérzet ↔ másnapi testérzet"
           mechanism: "A nehéznek érzett edzés a másnapi testérzetben csapódhat le."
           question: "Megérzi másnap a tested a nehéz edzést?"
@@ -1862,7 +1862,7 @@ mezo:
           lag-days: 0
         - key: habits-done~checkin-mental
           category: response
-          label: Response
+          label: Reakció
           title: "Kész szokások ↔ mentális állapot"
           mechanism: "A kipipált szokások jobb mentális állapottal járhatnak."
           question: "Jobb a hangulatod, ha kipipálod a szokásaid?"
@@ -1898,7 +1898,7 @@ mezo:
           lag-days: 1
         - key: daily-xp~checkin-mental
           category: response
-          label: Response
+          label: Reakció
           title: "Napi XP ↔ mentális állapot"
           mechanism: "Az aktív, pontszerző nap jobb hangulattal járhat."
           question: "Jobb a hangulatod az aktív, pontszerző napokon?"
@@ -1970,7 +1970,7 @@ mezo:
           lag-days: 1
         - key: social-mentions~checkin-mental
           category: response
-          label: Response
+          label: Reakció
           title: "Társas említések ↔ mentális állapot"
           mechanism: "A társas nap jobb hangulattal járhat."
           question: "Jobb a hangulatod a társas napokon?"
@@ -1982,7 +1982,7 @@ mezo:
           lag-days: 0
         - key: acwr~next-day-joint-pain
           category: response
-          label: Response
+          label: Reakció
           title: "ACWR ↔ másnapi ízületi fájdalom"
           mechanism: "A hirtelen terhelés-ugrás (magas ACWR) a sérülés-kockázat klasszikus jele."
           question: "Beszólnak az ízületek, ha hirtelen megugrik a terhelés?"
