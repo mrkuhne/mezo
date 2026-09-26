@@ -400,7 +400,16 @@ public class HypothesisPipelineService {
      *  model only phrases. "" while Reflexió is off or nothing clears the double gate. */
     private String effectsBlock(UUID userId) {
         EffectLinkService service = effectLinkService.getIfAvailable();
-        return service == null ? "" : service.promptBlock(userId);
+        if (service == null) {
+            return "";
+        }
+        try {
+            return service.promptBlock(userId);
+        } catch (Exception e) {
+            log.warn("Effect prompt block failed for user {} — the propose step continues without it",
+                    userId, e);
+            return "";
+        }
     }
 
     private static void appendSection(StringBuilder out, String section) {

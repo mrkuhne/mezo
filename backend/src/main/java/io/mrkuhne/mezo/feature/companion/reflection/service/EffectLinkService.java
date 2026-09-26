@@ -181,7 +181,8 @@ public class EffectLinkService {
         Set<String> confirmedKeys = confirmedTopicKeys(userId);
         return rows.stream()
                 .sorted(byStrength())
-                .map(r -> confirmedKeys.contains(topicKey(r.getSubjectKind(), r.getSubjectKey(), r.getMetric()))
+                .map(r -> confirmedKeys.contains(GroundedHypothesisPublisher.normalizedTopicKey(
+                        topicKey(r.getSubjectKind(), r.getSubjectKey(), r.getMetric())))
                         ? bumped(r) : r)
                 .toList();
     }
@@ -337,7 +338,7 @@ public class EffectLinkService {
         if (subjectLabel == null) {
             return Optional.empty();
         }
-        String direction = row.getCliffsDelta().signum() >= 0 ? "magasabb" : "alacsonyabb";
+        String direction = row.getCliffsDelta().signum() > 0 ? "magasabb" : "alacsonyabb";
         return Optional.of("- " + oneLine(subjectLabel) + " és "
                 + METRIC_LABELS_HU.getOrDefault(row.getMetric(), row.getMetric())
                 + ": azokon a napokon " + direction

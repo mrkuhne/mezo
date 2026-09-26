@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.companion.entity.PatternEvidenceEnvelope;
 import io.mrkuhne.mezo.feature.companion.reflection.entity.EffectLinkEntity;
 import io.mrkuhne.mezo.feature.companion.reflection.repository.EffectLinkRepository;
 import io.mrkuhne.mezo.feature.companion.reflection.service.EffectLinkService;
+import io.mrkuhne.mezo.feature.companion.reflection.service.GroundedHypothesisPublisher;
 import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
@@ -208,8 +209,9 @@ class EffectLinkServiceIT extends AbstractIntegrationTest {
                 EffectLinkEntity.METRIC_MENTAL, 0.6, 10, "eros", "kozepes");
         PatternEntity confirmed = patternPopulator.reflectionNoPlan(owner, PatternEntity.STATUS_CONFIRMED);
         confirmed.setEvidence(new PatternEvidenceEnvelope(List.of("observation-topic-key:"
-                + EffectLinkService.topicKey(EffectLinkEntity.SUBJECT_PERSON, anna.getId().toString(),
-                        EffectLinkEntity.METRIC_MENTAL))));
+                + GroundedHypothesisPublisher.normalizedTopicKey(EffectLinkService.topicKey(
+                        EffectLinkEntity.SUBJECT_PERSON, anna.getId().toString(),
+                        EffectLinkEntity.METRIC_MENTAL)))));
         patternPopulator.save(confirmed);
 
         List<EffectLinkEntity> served = effectLinkService.effectsForPerson(owner, anna.getId());
