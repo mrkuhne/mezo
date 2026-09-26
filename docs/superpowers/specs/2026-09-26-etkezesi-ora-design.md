@@ -360,3 +360,18 @@ From the investigator report, filtered:
   - regenerate the CODEMAP after the merge;
   - Liquibase: no bare `?` in SQL;
   - a fixed `MOCK_NOW_HHMM` in mock mode.
+
+## Addendum (planning, 2026-09-26)
+
+- **Which window the post-log view uses.** `MealTimingDetail` gains `windowSource: plan | config`.
+  - The FE judges a logged meal against the stored window only when the source is `plan`.
+  - A `config` window (5–10 etc.) never reaches the clock; the tile's planner window is used instead.
+- **Forecast copy reuses the owner-approved band texts.**
+  - The Energia row starts with `glycemicBand().expect.energy`, used verbatim.
+  - The box's blood-sugar paragraph is `glycemicBand().tip`.
+  - `mealForecast` adds only the timing clauses: training, next window, bedtime.
+  - Its own tip exists only for the late + high meal and the low meal ≤120 min before training.
+  - §3.4's band sentences are superseded by these.
+- **The card's blood-sugar chip shows the band word under the mini curve.** This is the approved "Csak sáv" look.
+- **Steps are not shown in this slice.** "Movement today" lists only the training blocks.
+- **The "N. étkezés" wording** is `N. étkezés M közül`, which needs no Hungarian suffix agreement.
