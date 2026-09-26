@@ -713,6 +713,9 @@ mezo:
         # csapatfal H3 (mezo-a9bo7.14): az esti kiadás hangja egy hívás/nap — ha a keret szűkül,
         # a kiadás attól még megjelenik, csak a nyers rekordszöveggel (voiced=false).
         - character_edition
+        # csapatfal Act III Task 7 (mezo-a9bo7.22): the team chat voice call — over the
+        # monthly-usd-cap ceiling every line falls back to the honest template (voiced=false).
+        - team_chat
       # Never capped: the owner's admin dry-run replay bills the INSPECTED user but has to stay
       # usable on exactly the accounts that hit their ceiling (LlmCallContext.FEATURE_ADMIN_REPLAY),
       # and the boot smoke call is how we find out the provider works at all.
