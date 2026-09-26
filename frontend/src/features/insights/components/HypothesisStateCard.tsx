@@ -1,14 +1,15 @@
 // ============================================================
 // Mezo · HypothesisStateCard — a laborfüzet „Igaz ez rám?" hero-ja (Reflexió S6, mezo-eq85.6;
 // üvegben: Üvegesítés U8a, mezo-me75u.13 — prototypes/uveg-uzenofal.html #minta/viz).
-// Az oldal EGYETLEN üveg-hero-ja: kút a lombikkal + eyebrow + cím + állapot-pirula, alatta a
-// hipotézis kérdése, a nagy NAP-gyűrű (n / a terv minimuma) mellett EGY emberi válasz-mondat,
+// Az oldal EGYETLEN üveg-hero-ja: kút a lombikkal + eyebrow + a hipotézis kérdése címként +
+// állapot-pirula, alatta a miértje, a nagy NAP-gyűrű (n / a terv minimuma) mellett EGY emberi válasz-mondat,
 // a bizonyosság-sáv és — amíg dönthető — a három döntés a magyarázó sorral.
 // A bizonyosság a szerver DETERMINISZTIKUS `belief`-je — sosem LLM-becslés, és nyers
 // r/p SOHA nem kerül a kártya arcára (az a `Háttér` fold dolga).
 // ============================================================
 import type { Icon3DName } from '@/shared/ui/clay'
 import { DOMAIN_META } from '@/features/insights/logic/domains'
+import { isStatisticalMechanism, patternHeadline } from '@/features/insights/logic/patternCopy'
 import {
   DayRing, DecisionNote, DecisionRow, DetailHero, StatePill, patternDecisionButtons, type DetailTone,
 } from '@/features/insights/components/DetailHero'
@@ -24,9 +25,13 @@ const STATE_PILL: Record<PatternRowStatus, { label: string; tone: DetailTone; ar
   rejected: { label: 'ELVETVE', tone: 'mute', art: 't-skip' },
 }
 
-/** `Hipotézis: {cím}?` — a cím záró írásjele nélkül, hogy sose legyen „…?." vagy „…??". */
-export function hypothesisQuestion(title: string): string {
-  return `Hipotézis: ${title.trim().replace(/[.?!]+$/, '')}?`
+/** A cím alatti sor: MIÉRT figyeljük — a pár kézzel írt miértje. Ha ugyanazt mondaná, mint a
+ *  cím (a reflexiós sor szintetikus párjánál előfordulhat), elmarad; a nyilas belső párcím és a
+ *  gépi statisztika sosem kerül ide (mezo-0469). */
+export function hypothesisContext(pair: PatternMonitorPair, headline: string): string | null {
+  const why = pair.mechanismHu?.trim()
+  if (!why || why === headline || isStatisticalMechanism(why)) return null
+  return why
 }
 
 /**
@@ -71,15 +76,17 @@ export function HypothesisStateCard({ pattern, pair, dayCount, plan, onDecide }:
   // A már megítélt sor olvasható állapot-hero: a döntést nem lehet kétszer meghozni (a
   // katalógus-hero rég érvényes szabálya, ld. PatternDetailHero).
   const decidable = status !== 'confirmed' && status !== 'rejected'
+  const headline = patternHeadline(pair.title, pair)
+  const context = hypothesisContext(pair, headline)
   const pill = status === 'proposed' && enoughDays
     ? { label: 'DÖNTHETSZ', tone: 'gold' as const, art: 't-sprout' as const }
     : STATE_PILL[status]
 
   return (
     <DetailHero tone="lav" art="t-flask" labelledBy="pdt-answer"
-      eyebrow={`${pattern.categoryLabel} · ${domain.label.toLowerCase()}`} title={pair.title}
+      eyebrow={`${pattern.categoryLabel} · ${domain.label.toLowerCase()}`} title={headline}
       pill={<StatePill label={pill.label} tone={pill.tone} art={pill.art} />}>
-      <p className="pdt-hypothesis">{hypothesisQuestion(pattern.title)}</p>
+      {context && <p className="pdt-hypothesis">{context}</p>}
 
       <div className="pdt-core">
         {/* a gyűrű UGYANAZT a napszámot mondja, mint a lenti grafikon (mezo-twizx) */}

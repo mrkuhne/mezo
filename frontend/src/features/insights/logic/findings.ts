@@ -70,7 +70,8 @@ export function confidenceMeta(n: number, p: number): ConfidenceMeta {
   }
 }
 
-/** A cím alatti halvány pár-sor: „esti lezárás ↔ másnapi alvásminőség". */
+/** A cím alatti halvány pár-sor, köznyelven: „Figyelem: esti lezárás és másnapi alvásminőség".
+ *  Nyíl nincs benne — a jel a felhasználónak nem mond semmit (mezo-0469). */
 export function pairLine(pair: PatternMonitorPair): string {
-  return `${pair.metricALabel} ↔ ${pair.lagDays > 0 ? 'másnapi ' : ''}${pair.metricBLabel}`
+  return `Figyelem: ${pair.metricALabel} és ${pair.lagDays > 0 ? 'másnapi ' : ''}${pair.metricBLabel}`
 }

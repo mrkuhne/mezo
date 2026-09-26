@@ -115,7 +115,10 @@ describe('PatternDetailPage (mock mode)', () => {
     renderAt('/mezo/patterns/ref-anna-sleep')
     // állapot-kártya
     expect(screen.getByText('FIGYELEM')).toBeInTheDocument()
-    expect(screen.getByText('Hipotézis: Ha Anna szerepel a hála-naplóban, másnap többet alszol?')).toBeInTheDocument()
+    // a cím a kérdés, alatta a miértje — „Hipotézis:" előtag és nyilas párcím nincs (mezo-0469)
+    expect(screen.getByText('Ha Anna szerepel a hála-naplóban, másnap többet alszol?')).toBeInTheDocument()
+    expect(document.querySelector('.pdt-hypothesis')?.textContent)
+      .toBe('Az Annás napok után eddig átlagosan 40 perccel hosszabb alvás jött ki.')
     // a grafikon 16 napja (4 Annás + 12 másik) ≥ a terv 8-as minimuma (mezo-twizx)
     expect(screen.getByText('Ígéretes — elég nap van a döntéshez.')).toBeInTheDocument()
     expect(document.querySelector('.pdt-answer-sub')?.textContent)
@@ -131,7 +134,7 @@ describe('PatternDetailPage (mock mode)', () => {
     expect(screen.getByText('Ha…')).toBeInTheDocument()
     expect(document.querySelector('.pdt-plan-tile-a .pdt-plan-nm')?.textContent).toBe('„Anna” a szövegeidben')
     expect(document.querySelector('.pdt-plan-strip')?.textContent)
-      .toBe('+1 napeltolás8 napkell minimumtöbbvárt irány60 napablak')
+      .toBe('másnapnézem a hatást8 napkell a döntésheztöbbamit várok60 napennyit nézek vissza')
     // a napló: a két néma éjszaka EGY sorrá olvadt, a te válaszod és az élő éjszakák maradtak
     expect(screen.getByText(/Igen, figyeld — de nem Anna miatt/)).toBeInTheDocument()
     expect(screen.getAllByText(/Bejött/)).toHaveLength(2)

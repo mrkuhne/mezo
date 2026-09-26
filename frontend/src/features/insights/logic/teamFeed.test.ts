@@ -215,3 +215,19 @@ test('answered observation snapshot does not duplicate its monitoring pattern af
   expect(visible.filter(p => p.id === post.id || p.id === `pattern:${monitoringPattern.id}`)).toHaveLength(1)
   expect(visible.find(p => p.id === post.id)?.afterlife).toBe('Jellemző rád')
 })
+
+test('a katalógus-minta posztja a kérdést és emberi mondatot mond — nyilas párcímet és gépi statisztikát soha (mezo-0469)', () => {
+  const stat = {
+    ...lateMealPattern,
+    title: 'Késői étkezés ↔ rákövetkező alvásminőség',
+    mechanism: 'Gyenge negatív együttjárás a(z) utolsó étkezés ideje és a(z) alvásminőség között (1 napos eltolással) az elmúlt 60 napban.',
+  }
+  const human = pairs.map(p => p.key === stat.pairKey
+    ? { ...p, questionHu: 'Rosszabbul alszol, ha későn eszel?', mechanismHu: 'A késői vacsora az elalvást zavarhatja.' }
+    : p)
+  const q = buildTeamFeed({ ...input, patterns: [stat], monitorPairs: human }).days
+    .flatMap(d => [...(d.poster ? [d.poster] : []), ...d.posts])
+    .find(p => p.id === `pattern:${stat.id}`)!
+  expect(q.title).toBe('Rosszabbul alszol, ha későn eszel?')
+  expect(q.body).toBe('A késői vacsora az elalvást zavarhatja.')
+})

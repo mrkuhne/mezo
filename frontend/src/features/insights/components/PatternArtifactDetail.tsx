@@ -10,6 +10,7 @@ import {
   DecisionRow, DetailHero, SectionHead, StatePill, patternDecisionButtons, type DetailTone,
 } from '@/features/insights/components/DetailHero'
 import type { Pattern, PatternRowStatus, PatternStatus } from '@/data/types'
+import { patternHeadline, patternPlainLine } from '@/features/insights/logic/patternCopy'
 
 const STATUS_META: Record<Exclude<PatternRowStatus, 'proposed'>, {
   label: string
@@ -63,12 +64,12 @@ export function PatternArtifactDetail({
   return (
     <>
       {status === 'proposed' ? (
-        <DetailHero tone="lav" art="t-note" eyebrow={pattern.categoryLabel} title={pattern.title}
+        <DetailHero tone="lav" art="t-note" eyebrow={pattern.categoryLabel} title={patternHeadline(pattern.title)}
           pill={<StatePill tone="lav" art="t-score"
             label={pattern.confidence != null ? `bizonyosság ${(pattern.confidence * 100).toFixed(0)}%` : 'tanulom'} />}>
           <div className="pdt-seen">
             <small>Amit eddig látunk</small>
-            <p>{pattern.mechanism}</p>
+            <p>{patternPlainLine(pattern.mechanism)}</p>
           </div>
           <div className="pdt-xpl">
             <span><b>Megerősítem</b> — tartós tudás lesz: bekerül a Tudástárba és a társ fejébe, előrejelzés
@@ -79,7 +80,7 @@ export function PatternArtifactDetail({
           <DecisionRow label="Döntés a mintáról" buttons={patternDecisionButtons((verb) => onDecide(verb))} />
         </DetailHero>
       ) : (
-        <DetailHero tone={STATUS_META[status].tone} art="t-note" eyebrow={pattern.categoryLabel} title={pattern.title}
+        <DetailHero tone={STATUS_META[status].tone} art="t-note" eyebrow={pattern.categoryLabel} title={patternHeadline(pattern.title)}
           pill={<StatePill tone={STATUS_META[status].tone} art={STATUS_META[status].art} label={STATUS_META[status].label} />}>
           <p className="pdt-hero-copy">{STATUS_META[status].copy}</p>
         </DetailHero>
@@ -88,7 +89,7 @@ export function PatternArtifactDetail({
       <SectionHead title="Mit figyelt meg az app?" meta="mentett minta" />
       {(status !== 'proposed' || pattern.evidence.length > 0) && (
         <section className="pdt-flat pdt-artifact-card rise">
-          {status !== 'proposed' && <p className="pdt-artifact-mechanism">{pattern.mechanism}</p>}
+          {status !== 'proposed' && <p className="pdt-artifact-mechanism">{patternPlainLine(pattern.mechanism)}</p>}
           {pattern.evidence.length > 0 && (
             <ul className="pdt-artifact-evidence">
               {pattern.evidence.map((item) => <li key={item}><Icon3D name="t-tick" size={18} />{item}</li>)}
