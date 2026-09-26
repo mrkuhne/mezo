@@ -184,10 +184,10 @@ test('kitchen close on a non-crossing day (wake 06:00 / bed 23:00) is byte-ident
 // ── budget split — sums EXACTLY to the daily budget, drift on dinner ──────────
 test('splitBudget rounds per macro and lands the drift on the dinner window', () => {
   const windows: PlannedWindow[] = [
-    { slotKey: 'breakfast', kind: 'meal', label: 'R', time: 0, weight: 2 },
-    { slotKey: 'lunch', kind: 'meal', label: 'E', time: 1, weight: 2 },
-    { slotKey: 'snack', kind: 'snack', label: 'S', time: 2, weight: 1 },
-    { slotKey: 'dinner', kind: 'meal', label: 'V', time: 3, weight: 2 },
+    { slotKey: 'breakfast', kind: 'meal', label: 'R', time: 0, weight: 2, rule: 'breakfast' },
+    { slotKey: 'lunch', kind: 'meal', label: 'E', time: 1, weight: 2, rule: 'main' },
+    { slotKey: 'snack', kind: 'snack', label: 'S', time: 2, weight: 1, rule: 'snack' },
+    { slotKey: 'dinner', kind: 'meal', label: 'V', time: 3, weight: 2, rule: 'main' },
   ]
   const daily: Macro4 = { kcal: 2150, p: 163, c: 226, f: 66 } // Σweights = 7
   const out = splitBudget(daily, windows)
@@ -202,7 +202,7 @@ test('splitBudget rounds per macro and lands the drift on the dinner window', ()
 
 // ── splitBudgetPct (mezo-7102, template windows) ─────────────────────────────
 const pctWindow = (over: Partial<PlannedWindow> & { budgetPct: number }): PlannedWindow => ({
-  slotKey: 'lunch', kind: 'meal', label: 'W', time: 0, weight: over.budgetPct, ...over,
+  slotKey: 'lunch', kind: 'meal', label: 'W', time: 0, weight: over.budgetPct, rule: 'main', ...over,
 })
 test('splitBudgetPct: an empty windows array returns [] instead of throwing (no largest-pct index to absorb drift into)', () => {
   const daily: Macro4 = { kcal: 2000, p: 150, c: 200, f: 60 }
@@ -809,4 +809,34 @@ test('ablak nélküli extra logon nincs plannedTime — őszinte-null', () => {
   // a második reggeli nem kapott tervezett ablakot → nincs terv-idő
   expect(dones.some(s => s.plannedTime == null)).toBe(true)
   expect(dones.some(s => s.plannedTime != null)).toBe(true)
+})
+
+describe('meal windows (mezo-6g52f)', () => {
+  it('placeWindows records the placing rule', () => {
+    const ws = placeWindows('06:40', '23:00', 5, [{ kind: 'gym', time: '17:30', durationMin: 75, label: 'Edzés' }])
+    const byLabel = Object.fromEntries(ws.map(w => [w.label, w.rule]))
+    expect(byLabel['Reggeli']).toBe('breakfast')
+    expect(byLabel['Tízórai']).toBe('snack')
+    expect(Object.values(byLabel)).toContain('post-training')
+  })
+
+  it('every meal slot carries a from–to window, reasons and its kcal budget', () => {
+    const plan = buildDayPlan(baseInput())
+    const meals = plan.slots.filter(s => s.slotKey != null)
+    expect(meals.length).toBeGreaterThan(0)
+    for (const s of meals) {
+      expect(s.windowFrom).toMatch(/^\d\d:\d\d$/)
+      expect(s.windowTo).toMatch(/^\d\d:\d\d$/)
+      expect(s.windowFrom! < s.windowTo!).toBe(true)
+      expect(s.windowReasons!.length).toBeGreaterThan(0)
+      expect(s.budgetKcal).toBeGreaterThan(0)
+    }
+  })
+
+  it('a done slot keeps the planned window, not the logged time', () => {
+    const input = baseInput()
+    const plan = buildDayPlan(input)
+    const done = plan.slots.find(s => s.state === 'done' && s.slotKey != null)
+    if (done) expect(done.windowFrom).not.toBe(done.time)
+  })
 })

@@ -31,6 +31,7 @@ import {
 } from '@/data/fuel/fuelConfig'
 import { compileTemplate } from '@/features/fuel/logic/compileTemplate'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
+import { widenWindows, type WindowRule } from '@/features/fuel/logic/mealWindow'
 import type {
   FuelKind,
   FuelMeal,
@@ -90,6 +91,8 @@ export interface PlannedWindow {
   budgetPct?: number
   /** Set only by `compileTemplate` (mezo-7102) — carries the template row's recipe role through. */
   role?: RecipeRole
+  /** Melyik szabály helyezte ide (mezo-6g52f) — ebből lesz az ablak szélessége és a „Miért ekkor?". */
+  rule: WindowRule
 }
 
 const MACRO_KEYS: (keyof Macro4)[] = ['kcal', 'p', 'c', 'f']
@@ -210,12 +213,12 @@ export function placeWindows(
   const at = (frac: number) => eatingStart + frac * span
   const clamp = (t: number) => Math.min(kitchenClose, Math.max(eatingStart, t))
 
-  const reggeli: PlannedWindow = { slotKey: 'breakfast', kind: 'meal', label: 'Reggeli', time: at(0), weight: SLOT_WEIGHT.main }
-  const ebed: PlannedWindow = { slotKey: 'lunch', kind: 'meal', label: 'Ebéd', time: at(0.5), weight: SLOT_WEIGHT.main }
-  const vacsora: PlannedWindow = { slotKey: 'dinner', kind: 'meal', label: 'Vacsora', time: at(1), weight: SLOT_WEIGHT.main }
+  const reggeli: PlannedWindow = { slotKey: 'breakfast', kind: 'meal', label: 'Reggeli', time: at(0), weight: SLOT_WEIGHT.main, rule: 'breakfast' }
+  const ebed: PlannedWindow = { slotKey: 'lunch', kind: 'meal', label: 'Ebéd', time: at(0.5), weight: SLOT_WEIGHT.main, rule: 'main' }
+  const vacsora: PlannedWindow = { slotKey: 'dinner', kind: 'meal', label: 'Vacsora', time: at(1), weight: SLOT_WEIGHT.main, rule: 'main' }
   const windows: PlannedWindow[] = [reggeli, ebed, vacsora]
 
-  const snack = (time: number, label: string): PlannedWindow => ({ slotKey: 'snack', kind: 'snack', label, time, weight: SLOT_WEIGHT.snack })
+  const snack = (time: number, label: string, rule: WindowRule = 'snack'): PlannedWindow => ({ slotKey: 'snack', kind: 'snack', label, time, weight: SLOT_WEIGHT.snack, rule })
   const meals = Math.max(3, Math.min(6, mealsPerDay))
   if (meals >= 4) windows.push(snack((ebed.time + vacsora.time) / 2, 'Uzsonna')) // after Ebéd
   if (meals >= 5) windows.push(snack((reggeli.time + ebed.time) / 2, 'Tízórai')) // between Reggeli–Ebéd
@@ -229,7 +232,7 @@ export function placeWindows(
     if (!significant) continue
     const t = clamp(toMin(b.time) - 60)
     if (windows.some(w => Math.abs(w.time - t) < MIN_SLOT_GAP_MIN)) continue
-    windows.push(snack(t, 'Pre-workout snack'))
+    windows.push(snack(t, 'Pre-workout snack', 'pre-training-snack'))
   }
 
   // Training snaps — a SINGLE snap around the whole training envelope (mezo-1oy5). Two concurrent
@@ -246,10 +249,14 @@ export function placeWindows(
     if (post) {
       post.time = clamp(latestEnd + POST_WORKOUT_SNAP_MIN)
       post.weight = SLOT_WEIGHT.postWorkoutMain
+      post.rule = 'post-training'
     }
     // Pre-fuel = nearest window strictly before the EARLIEST block start (excluding post), snapped to −75.
     const pre = windows.filter(w => w !== post && w.time < earliestStart).sort((a, z) => z.time - a.time)[0]
-    if (pre) pre.time = clamp(earliestStart - PRE_WORKOUT_SNAP_MIN)
+    if (pre) {
+      pre.time = clamp(earliestStart - PRE_WORKOUT_SNAP_MIN)
+      pre.rule = pre.kind === 'meal' ? 'pre-training-main' : 'pre-training-snack'
+    }
   }
 
   for (const w of windows) w.time = clamp(w.time)
@@ -378,6 +385,18 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
     : placeWindows(wake, bed, mealsPerDay, blocks, input.weightKg ?? 0)
   const budgets = input.template ? splitBudgetPct(budget, windows) : splitBudget(budget, windows)
 
+  // Étkezési óra (mezo-6g52f): az időpontokból ablak + okok — egy forrás a kártyának, az óra-
+  // doboznak ÉS a logolásnak (ami ezt küldi a szervernek pontozásra).
+  const ranges = widenWindows(windows, {
+    eatingStart: span.wakeMin + EATING_START_OFFSET_MIN,
+    kitchenClose: kitchenCloseMin,
+    bedMin: span.bedMin,
+  })
+  const windowOf = (i: number) => ({
+    windowFrom: toHHmm(ranges[i].from), windowTo: toHHmm(ranges[i].to),
+    windowReasons: ranges[i].reasons, budgetKcal: budgets[i].kcal,
+  })
+
   // 2. Logged meals grouped by slotKey, each group sorted by loggedAt (multi-snack fills in time order).
   const loggedByKey: Record<SlotKey, FuelMeal[]> = { breakfast: [], lunch: [], dinner: [], snack: [] }
   for (const m of meals) {
@@ -406,6 +425,7 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
         p: logged.p,
         c: logged.c,
         f: logged.f,
+        ...windowOf(i),
       }
     }
     const b = budgets[i]
@@ -424,9 +444,10 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
         p: ps.p,
         c: ps.c,
         f: ps.f,
+        ...windowOf(i),
       }
     }
-    return { time: toHHmm(w.time), kind: w.kind, label: w.label, slotKey: w.slotKey, state: 'pending', kcal: b.kcal, p: b.p, c: b.c, f: b.f }
+    return { time: toHHmm(w.time), kind: w.kind, label: w.label, slotKey: w.slotKey, state: 'pending', kcal: b.kcal, p: b.p, c: b.c, f: b.f, ...windowOf(i) }
   })
 
   // 3b. Surplus logged meals — anything of a slotKey beyond that slot's window count (a 2nd snack on

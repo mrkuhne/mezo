@@ -182,7 +182,7 @@ test('doneMealRows lists the done windows chronologically, carrying name/time/kc
   expect(rows[0]).toEqual({
     mealId: 'breakfast', name: 'Zabkása', time: '07:40', kcal: 420,
     proteinG: 32, carbsG: 50, fatG: 10, scorePct: 70,
-    fiberG: null, sugarG: null, plannedTime: null,
+    fiberG: null, sugarG: null, plannedTime: null, timing: null,
   })
   expect(rows[1]).toMatchObject({ proteinG: 48, carbsG: 72, fatG: 16, scorePct: 92 })
 })
