@@ -18,6 +18,7 @@ import io.mrkuhne.mezo.feature.companion.reflection.config.ReflectionProperties;
 import io.mrkuhne.mezo.feature.companion.reflection.entity.TextSignalEntity;
 import io.mrkuhne.mezo.feature.companion.reflection.repository.TextSignalRepository;
 import io.mrkuhne.mezo.feature.companion.reflection.service.ReflectionMemoryGateway;
+import io.mrkuhne.mezo.feature.companion.reflection.service.EffectLinkService;
 import io.mrkuhne.mezo.feature.companion.reflection.service.ObservationContextService;
 import io.mrkuhne.mezo.feature.companion.reflection.service.GroundedHypothesisPublisher;
 import io.mrkuhne.mezo.feature.companion.reflection.service.TestPlanValidator;
@@ -158,6 +159,8 @@ public class HypothesisPipelineService {
     private final PatternEventAppender patternEventAppender;
     private final ObjectProvider<ObservationContextService> observationContextService;
     private final ObjectProvider<GroundedHypothesisPublisher> groundedPublisher;
+    /** S4 (mezo-d6ivw.4): the named-effect engine — REFLECTION_SWITCH-gated, so reached lazily. */
+    private final ObjectProvider<EffectLinkService> effectLinkService;
 
     /**
      * One hypothesis as the LLM returns it — {@code testPlan} is a PROPOSAL, never a decision:
@@ -386,7 +389,18 @@ public class HypothesisPipelineService {
         if (!memories.isBlank()) {
             appendSection(out, "EMLÉKEK (memória-platform):\n" + memories);
         }
+        String effects = effectsBlock(userId);
+        if (!effects.isBlank()) {
+            appendSection(out, effects);
+        }
         return out.toString();
+    }
+
+    /** S4 (mezo-d6ivw.4): the named-effect engine's strong findings — code picked them, the
+     *  model only phrases. "" while Reflexió is off or nothing clears the double gate. */
+    private String effectsBlock(UUID userId) {
+        EffectLinkService service = effectLinkService.getIfAvailable();
+        return service == null ? "" : service.promptBlock(userId);
     }
 
     private static void appendSection(StringBuilder out, String section) {
