@@ -392,7 +392,7 @@ export const patternMonitor: PatternMonitor = {
     {
       key: 'weekend~late-meal-hour',
       title: 'Hétvége ↔ késői étkezés',
-      category: 'trigger', categoryLabel: 'Trigger', lagDays: 0,
+      category: 'trigger', categoryLabel: 'Kiváltó ok', lagDays: 0,
       metricAKey: 'weekend', metricALabel: 'hétvége',
       metricAValueKind: 'binary',
       metricBKey: 'late-meal-hour', metricBLabel: 'utolsó étkezés ideje',

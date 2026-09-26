@@ -871,7 +871,7 @@ public class HypothesisPipelineService {
     private static String categoryLabel(String category) {
         return switch (category) {
             case "physiology" -> "Fiziológia";
-            case "trigger" -> "Trigger";
+            case "trigger" -> "Kiváltó ok";
             default -> "Response";
         };
     }
