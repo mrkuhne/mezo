@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.train.service.ActivityEnergyModel;
 import io.mrkuhne.mezo.feature.train.service.RunningService;
 import io.mrkuhne.mezo.feature.train.service.SportService;
 import java.util.List;
+import java.util.function.IntSupplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -38,8 +39,8 @@ public class ActivityModelMigrationRunner implements CommandLineRunner {
     }
 
     public void run() {
-        int sport = sportService.reestimateMissing();
-        int runs = runningService.reestimateMissing();
+        int sport = reestimate("sport", sportService::reestimateMissing);
+        int runs = reestimate("run", runningService::reestimateMissing);
         List<GoalEntity> stale = goalRepository.findByStatusNotAndDeletedFalse("archived").stream()
             .filter(g -> g.getTdeeBootstrap() == null
                 || g.getTdeeBootstrap().activityModel() == null
@@ -56,6 +57,17 @@ public class ActivityModelMigrationRunner implements CommandLineRunner {
         if (sport + runs + stale.size() > 0) {
             log.info("Activity model v{}: estimated {} sport + {} run session(s), re-evaluated {} goal(s).",
                 ActivityEnergyModel.VERSION, sport, runs, stale.size());
+        }
+    }
+
+    /** Isolates one {@code reestimateMissing()} call — symmetric with the per-goal try/catch below,
+     *  so a failure re-estimating one modality (e.g. a bad row) cannot abort boot or skip the other. */
+    private int reestimate(String kind, IntSupplier call) {
+        try {
+            return call.getAsInt();
+        } catch (Exception e) {
+            log.warn("Activity model rollout: {} reestimateMissing() failed — {}", kind, e.getMessage());
+            return 0;
         }
     }
 }
