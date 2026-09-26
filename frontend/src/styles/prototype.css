@@ -5648,7 +5648,6 @@ button.mz-tile:active { transform: scale(0.96); }
 .gr-chainrow.skip .gr-ck { border-style: dashed; }
 .gr-chainrow .tx { flex: 1; font-weight: 500; }
 .gr-chainrow.skip .tx { color: var(--mz-ink-mut); }
-.gr-chain-pct { font-size: 9.5px; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; font-style: italic; }
 .gr-daysum { font-size: 11px; font-weight: 300; line-height: 1.55; }
 .gr-daysum b { font-weight: 700; }
 .gr-softnote { font-size: 10.5px; color: var(--mz-ink-soft); font-weight: 300; background: var(--mz-gbar-bg); border-radius: 11px; padding: 7px 11px; margin-top: 7px; line-height: 1.5; }
@@ -5892,10 +5891,8 @@ button.mz-tile:active { transform: scale(0.96); }
 .ppl-hub-lav  { background: var(--mz-wash-lav);  box-shadow: var(--mz-shadow-lav); }
 .ppl-hub-line { font-size: 10.5px; font-weight: 300; margin-top: 2px;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.ppl-hub-spot { flex: 1; display: grid; place-items: center; padding: 5px 0; position: relative; }
 /* S4 (mezo-06o0.3) — anchor for a badge that hugs the icon itself (prototype
    `.spotwrap .anchor`) rather than the whole `.ppl-hub-spot` grid cell. */
-.ppl-hub-anchor { position: relative; display: inline-flex; }
 .ppl-hub-badge {
   position: absolute; top: -7px; right: -11px; min-width: 20px; height: 20px;
   border-radius: 999px; background: var(--mz-strength);
@@ -5915,16 +5912,10 @@ button.mz-tile:active { transform: scale(0.96); }
   color: var(--mz-cell-rose-ink); display: grid; place-items: center;
   font-size: 10px; font-weight: 700; }
 .ppl-facepile .ppl-fp-avat:first-child { margin-left: 0; }
-.ppl-hub-wide { display: block; width: 100%; text-align: left; font-family: inherit; color: inherit;
-  border-radius: 22px; padding: 13px 15px; margin-top: 11px; cursor: pointer; border: 0.5px solid rgba(43, 33, 24, 0.06);
-  background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral);
-  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
-.ppl-hub-wide:active { transform: scale(0.975); }
-.ppl-hub-snip { font-size: 11px; font-weight: 300; line-height: 1.5; margin-top: 5px; color: var(--text-primary); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
 
 @media (prefers-reduced-motion: reduce) {
-  .ppl-hub-tile, .ppl-hub-wide { transition: none; }
-  .ppl-hub-tile:active, .ppl-hub-wide:active { transform: none; }
+  .ppl-hub-tile { transition: none; }
+  .ppl-hub-tile:active { transform: none; }
   .ppl-hub-badge { animation: none; }
 }
 
@@ -7982,48 +7973,8 @@ button.mz-tile:active { transform: scale(0.96); }
   .wsh-kbar i { transition: none; }
 }
 
-/* Rutin hub — framework badge + strength bar + new-recipe highlight (mezo-3zue.3),
-   docs/design_2.0/prototypes/src/rutin-epito-head.html .fw/.strength/.hrow.new ×1.18. */
-.rt-hrow {
-  display: grid; grid-template-columns: 1fr auto; grid-template-areas: "n f" "b b";
-  column-gap: 8.3px; row-gap: 3.5px; align-items: center;
-  width: 100%; padding: 8px 2px; cursor: pointer; text-align: left;
-  border: none; background: none; font-family: inherit; color: var(--text-primary);
-}
-/* SortableList wraps each row in `[data-sortable-row]` (grip + `.col` > our `.row` > `.rt-hrow`
-   + the ▲▼ `.row`) — the `.rt-hrow` buttons are never siblings, so the separator has to anchor
-   on the sortable wrappers themselves (frontend/src/shared/ui/SortableList.tsx:124-182). */
-[data-sortable-row] + [data-sortable-row] .rt-hrow { border-top: 0.5px solid var(--mz-line-soft); }
-.rt-nm { grid-area: n; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rt-hrow .rt-fw { grid-area: f; }
-.rt-bar { grid-area: b; display: flex; align-items: center; gap: 7px; }
-.rt-tick {
-  width: 16.5px; height: 16.5px; border-radius: 50%; flex: none; display: grid; place-items: center;
-  font-size: 9.5px; border: 1.4px solid var(--mz-line); color: transparent;
-}
-.rt-done .rt-tick { background: var(--gradient-sage); border-color: transparent; color: #fff; }
-.rt-done .rt-strength div { background: var(--gradient-sage); }
-.rt-fw {
-  font-size: 8px; font-weight: 800; letter-spacing: 0.08em; border-radius: 6px;
-  padding: 2px 7px; flex: none; text-transform: uppercase; font-variant-numeric: tabular-nums;
-}
-.rt-fw-fogg { color: var(--mz-cell-sage-ink); background: var(--mz-cell-sage-bg); }
-.rt-fw-clear { color: var(--mz-cell-lav-ink); background: var(--mz-cell-lav-bg); }
-.rt-fw-none { color: var(--mz-ink-mut); background: var(--surface-recess); }
-.rt-strength {
-  flex: 1; height: 5px; border-radius: 2px; background: var(--mz-line-soft); overflow: hidden;
-}
-.rt-strength div { height: 100%; border-radius: 2px; background: var(--mz-strength); transition: width 0.6s cubic-bezier(0.22, 0.9, 0.32, 1); }
-/* The number beside the bar (spec §5, restored from the retired GrowthRutinPage): the bar alone
-   is a silent graphic, and the exact standing is the thing a user actually reads. */
-.rt-strength-n {
-  flex: none; min-width: 30px; text-align: right;
-  font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--faint);
-}
-.rt-row-new {
-  background: linear-gradient(90deg, color-mix(in srgb, var(--primary-soft) 55%, transparent), transparent);
-  border-radius: 12px;
-}
+/* Rutin hub (mezo-3zue.3) — the old `.rt-hrow` row, framework badge and strength bar retired
+   with the U7 re-dress (their dead rules left in U11, mezo-zn01o). */
 /* A paused chain stays VISIBLE and merely dims — the toggle that un-pauses it lives on this
    card, so hiding it would strand the chain (`.is-inert` is otherwise scoped to .card/.row). */
 .gr-chain.is-inert { opacity: 0.55; }
@@ -8142,13 +8093,6 @@ button.mz-tile:active { transform: scale(0.96); }
 .rt-chips.is-gold button.on { background: var(--mz-cell-gold-bg); border-color: var(--accent-base); color: var(--accent-deep); }
 .rt-chip-src { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; color: var(--mz-ink-mut); }
 .rt-chips button.on .rt-chip-src { color: inherit; opacity: 0.7; }
-.rt-stepin { display: inline-flex; align-items: center; gap: 5px; }
-.rt-stepin button {
-  width: 28px; height: 28px; border-radius: 9px; border: 1px solid var(--border-subtle);
-  background: var(--surface-card); font-size: 14px; color: var(--text-secondary);
-  cursor: pointer; font-family: inherit; padding: 0;
-}
-.rt-stepin b { min-width: 52px; text-align: center; font-size: 12.5px; font-variant-numeric: tabular-nums; }
 .rt-hint { font-size: 9.5px; color: var(--mz-ink-mut); margin-top: 7px; }
 .rt-lifegrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .rt-lifegrid button {
@@ -8185,31 +8129,11 @@ button.mz-tile:active { transform: scale(0.96); }
    `openEdit`) becomes three modifier classes on tokens: sage for Fogg, lavender for Clear,
    sand for the frameworkless legacy row. The form language itself is the wizard's
    (`.rt-fcard`/`.rt-flabel`/`.rt-fin`/`.rt-chips`/`.rt-stepin`), reused verbatim. */
-.rt-fwband {
-  display: flex; gap: 10.6px; align-items: center; border-radius: 17.7px;
-  padding: 10.6px 14px; margin-bottom: 10.6px;
-}
-.rt-fwband.is-fogg { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
-.rt-fwband.is-clear { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
-.rt-fwband.is-none { background: var(--mz-wash-sand); box-shadow: var(--mz-shadow-gold); }
-.rt-fwband-sgn { font-size: 19px; line-height: 1; flex: none; }
-.rt-fwband-t { font-size: 13px; font-weight: 700; color: var(--text-primary); }
-.rt-fwband-s { font-size: 10px; color: var(--text-secondary); line-height: 1.35; }
 .rt-fwband-sw {
   margin-left: auto; flex: none; cursor: pointer; font-family: inherit;
   font-size: 10px; font-weight: 700; color: var(--coral-deep);
   background: var(--surface-card); border: none; border-radius: 999px; padding: 4.7px 10.6px;
 }
-
-/* The 28-day strip visualises the summary's COUNTS (done28 / missed28) — the summary carries
-   no per-day bitset, so this is a proportion bar, and the caption under it says so. */
-.rt-hist { display: flex; gap: 3.5px; margin-top: 7px; }
-/* Three states must READ as three: an empty cell is the faintest, a missed day is visibly
-   darker than it, and a pipa is sage. The first pass had `is-miss` on --surface-recess
-   (rgba .05) over an empty --mz-line-soft (rgba .07) — the legend was inverted. */
-.rt-hist i { flex: 1; height: 16.5px; border-radius: 3.5px; background: var(--mz-line-soft); }
-.rt-hist i.is-done { background: var(--gradient-sage); }
-.rt-hist i.is-miss { background: color-mix(in srgb, var(--text-primary) 20%, transparent); }
 
 /* ===== Formálódás-nézet (mezo-08zl) =====
    docs/design_2.0/prototypes/rutin-formalodas.html `.poster` / `.msrail` / `.etaband` /
