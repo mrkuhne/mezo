@@ -37,8 +37,8 @@
 | `--surface-card` | `#221E1B` | solid fallback under glass |
 | `--surface-elevated` | `#2A2521` | sheets, the device-frame ring |
 | `--text-primary` | `#F5EFE6` | ink |
-| `--text-secondary` | `#B7A899` | sub copy |
-| `--text-muted` | `#8A7A6A` | eyebrows, units, hints |
+| `--text-secondary` | `#D8CEC2` | sub copy (lifted 2026-09-26, `mezo-nn7h0`) |
+| `--text-muted` | `#AFA294` | eyebrows, units, hints (lifted 2026-09-26) |
 | `--divider` | `rgba(245,239,230,.08)` | hairlines |
 
 These are the existing dark "Pulse" values in `prototype.css`. **Write the token, never the
@@ -578,3 +578,17 @@ the archive and a pointer). New backend: fact `owner` and a 14-day „Most ne”
     it must roll back when the mutation fails, or the page claims a decision that never happened.
 75. **Two sessions, one timestamp.** A parallel slice's migration landed with the same `yyyyMMddHHmm` prefix; the rebase
     kept both and moved ours an hour later. Re-run the full backend suite after any rebase that brings in a migration.
+
+### Olvashatóság + egy háttér (`mezo-nn7h0`, 2026-09-26)
+
+Owner: the gray copy was unreadable on the black ground, and every page had a different background.
+Picked variant 3 of [`prototypes/uveg-olvashatosag.html`](prototypes/uveg-olvashatosag.html).
+
+76. **The ground is near-black graphite `#141210`, not `#000`** (supersedes rule 59's value). Black made the
+    warm-gray copy sink; a slightly lifted ground keeps the glass glowing and the copy legible.
+77. **The gray ladder is `#D8CEC2` (secondary) / `#AFA294` (muted).** White title → light warm gray → mid warm gray:
+    three steps you can still tell apart. Never write the old `#B7A899` / `#8A7A6A` literals for copy.
+78. **One background for every page.** The `.uv-aurora` field (opacity .16) is back on in dark and is THE page
+    background. A hero halo is a glow around the hero object, not a page wash: the shared rule at the end of
+    `prototype.css` mutes every hero `::before` halo to 40%. A new page hero with its own halo joins that list.
+

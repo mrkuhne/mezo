@@ -481,8 +481,8 @@
   --primary-deep:  #F0966B;
 
   --secondary-bg:    #2A2521;
-  --secondary-soft:  #8A7A6A;
-  --secondary-base:  #B7A899;
+  --secondary-soft:  #AFA294;
+  --secondary-base:  #D8CEC2;
   --secondary-hover: #F5EFE6;
   --secondary-deep:  #FAF6EF;
 
@@ -510,15 +510,15 @@
   --error-hover: #F5A19D;
   --error-deep:  #F7B3AE;
 
-  --surface-page:     #000000;
+  --surface-page:     #141210; /* mezo-nn7h0: near-black warm graphite (was #000) */
   --surface-card:     #221E1B;
   --surface-elevated: #2A2521;
   --surface-recess:   rgba(245, 239, 230, 0.05);
   --mz-ntfscrim:      rgba(0, 0, 0, 0.42);
 
   --text-primary:   #F5EFE6;
-  --text-secondary: #B7A899;
-  --text-muted:     #8A7A6A;
+  --text-secondary: #D8CEC2; /* mezo-nn7h0: lifted for legibility (was #B7A899) */
+  --text-muted:     #AFA294; /* mezo-nn7h0: lifted for legibility (was #8A7A6A) */
   --text-disabled:  #5E5348;
   --text-inverse:   #191614;
 
@@ -608,7 +608,7 @@
   --lg-input-bg: var(--surface-elevated);
   --lg-ok-wash2: color-mix(in srgb, var(--dv-sage) 8%, var(--surface-card));
   --mz-sheet-bg: var(--surface-1); /* F7.3 sheet-minta — dark keeps the theme surface */
-  --mz-ink-mut: #8A7A6A;
+  --mz-ink-mut: var(--text-muted);
   /* BodyMap/MuscleChip lit-shape hairline (mezo-88iwa.4) — light párja a light blokkban. */
   --mz-body-outline: #ffffff2e;
   /* ── Fejléc-aurora dark párja (mezo-8az6): mélyebb, tompított tónusok a grafit
@@ -3008,7 +3008,7 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .wdb-night-moon { font-size: 22px; filter: drop-shadow(0 0 7px rgba(185,172,217,.45)); }
 .wdb-night-tx { flex: 1; display: flex; flex-direction: column; gap: 4px; }
 .wdb-night-t1 { font: 600 16px/1.3 var(--ff-display); color: #F5EFE6; }
-.wdb-night-t2 { font: 500 11.5px/1.55 var(--ff-body); color: #B7A899; }
+.wdb-night-t2 { font: 500 11.5px/1.55 var(--ff-body); color: var(--text-secondary); }
 .wdb-night-chev { color: #B9ACD9; font-size: 17px; }
 
 /* ═════════ Today három sziget (mezo-euze) ═════════
@@ -3248,14 +3248,14 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .ns-card, .nw-stage { display: block; width: 100%; text-align: center; margin-top: 24px;
                       background: #1A1613; border: 1px solid rgba(245,239,230,.05); border-radius: 20px; padding: 26px 20px; }
 .ns-part { font: 600 20px/1.3 var(--ff-display); color: #F5EFE6; margin-bottom: 12px; }
-.ns-tx { font: 500 13.5px/1.75 var(--ff-body); color: #B7A899; }
+.ns-tx { font: 500 13.5px/1.75 var(--ff-body); color: var(--text-secondary); }
 .ns-dots { display: flex; gap: 7px; justify-content: center; margin-top: 22px; }
 .ns-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(245,239,230,.14); }
 .ns-dot.on { background: #B9ACD9; }
 .nw-setup, .nw-remind { display: block; }
 .nw-t { display: block; font: 600 17px/1.35 var(--ff-display); color: #F5EFE6; margin-bottom: 10px; }
-.nw-tx { display: block; font: 500 13px/1.7 var(--ff-body); color: #B7A899; }
-.nw-rtx { display: block; font: 500 13px/1.7 var(--ff-body); color: #B7A899; font-style: italic; }
+.nw-tx { display: block; font: 500 13px/1.7 var(--ff-body); color: var(--text-secondary); }
+.nw-rtx { display: block; font: 500 13px/1.7 var(--ff-body); color: var(--text-secondary); font-style: italic; }
 
 /* ===== NightPage — full-screen, forced extra-dark, no clock (mezo-d71m, spec D4/D5) ===== */
 .night { display: flex; flex-direction: column; min-height: 100%; padding: 26px 20px 24px;
@@ -3274,7 +3274,7 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
               filter: drop-shadow(0 0 12px rgba(255,190,96,.28)); }
 .night-title { font: 600 26px/1.25 var(--ff-display); color: #F5EFE6; text-align: center; margin-bottom: 14px; }
 .night-title-sm { font-size: 23px; }
-.night-tx { font: 500 13.5px/1.75 var(--ff-body); color: #B7A899; text-align: center; margin: 0 8px 26px; }
+.night-tx { font: 500 13.5px/1.75 var(--ff-body); color: var(--text-secondary); text-align: center; margin: 0 8px 26px; }
 .night-cta { display: block; width: 100%; padding: 18px; border-radius: 999px; text-align: center;
              background: rgba(185,172,217,.14); border: 1px solid rgba(185,172,217,.32);
              font: 700 16px/1 var(--ff-body); color: #B9ACD9; margin-top: auto; }
@@ -3291,7 +3291,7 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .night-tool-tx b { font: 600 14px/1.2 var(--ff-body); color: #F5EFE6; }
 .night-tool-tx i { font: 500 10.5px/1.5 var(--ff-body); color: #6E6156; font-style: normal; }
 .night-steps { list-style: none; display: flex; flex-direction: column; gap: 14px; margin: 4px 6px 24px; padding: 0; }
-.night-steps li { position: relative; padding-left: 18px; font: 500 13px/1.65 var(--ff-body); color: #B7A899; }
+.night-steps li { position: relative; padding-left: 18px; font: 500 13px/1.65 var(--ff-body); color: var(--text-secondary); }
 .night-steps li::before { content: ''; position: absolute; left: 0; top: 7px; width: 6px; height: 6px;
                           border-radius: 50%; background: rgba(255,190,96,.75); }
 .night-steps b { color: #F5EFE6; font-weight: 600; }
@@ -15050,9 +15050,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .uv-aurora i:nth-child(2) { width: 260px; height: 260px; right: -100px; top: -40px; background: #C98A3A; }
 .uv-aurora i:nth-child(3) { width: 280px; height: 280px; left: 40px; top: 520px;   background: #6D5FA8; }
 .uv-aurora i:nth-child(4) { width: 220px; height: 220px; right: -80px; top: 760px; background: #B8584A; }
-/* Keep the dark shell uniformly black, without decorative background fields. */
-:root[data-theme="dark"] .phone-screen .sky,
-:root[data-theme="dark"] .uv-aurora { display: none; }
+/* One shared background on every page (mezo-nn7h0, owner pick "3 · Mindkettő egy kicsit"):
+   the near-black ground + this same faint aurora, fixed behind the scroller. The daypart sky
+   stays off; per-page hero halos are muted below so no page paints its own colored ground. */
+:root[data-theme="dark"] .phone-screen .sky { display: none; }
+:root[data-theme="dark"] .uv-aurora i { opacity: 0.16; }
 
 /* §3 the glass card */
 .glass {
@@ -29045,3 +29047,13 @@ main.settings-page {
   50% { filter: drop-shadow(0 6px 22px color-mix(in srgb, var(--dv-amber) 40%, transparent)); }
 }
 /* ── /uveg mezo2 mintak ── */
+
+/* ══ mezo-nn7h0 · one background everywhere ═════════════════════════════════════════════
+   Each page's hero halo painted a large wash in its own domain color (lila Mai, kék Fuel,
+   borostyán Edzés, rózsa Én…), so every page read as a different background. The shared
+   .uv-aurora is now THE background; the halos stay as a soft glow hugging the hero object. */
+:root[data-theme="dark"] :is(
+  .uv-halo, .fmx-hero, .fmx-detail-hero, .fmx-score-hero, .nap-hub .nap-center-orbit,
+  .trm .trm-hero, .tw-load .ld-hero, .pl-dhero, .tw-map .ld-map-page,
+  .gra-page .gr-streak.gr-band, .settings-page .settings-hero, .mzc-u8 .mzc-emptyhero
+)::before { opacity: 0.4; }
