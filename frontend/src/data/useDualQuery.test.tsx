@@ -120,6 +120,52 @@ describe('useDualQuery', () => {
     expect(result.current.data).toBe(EMPTY)
   })
 
+  it('real mode: refetchInterval polls on the given interval (mezo-a9bo7.24 fix round 1)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    vi.useFakeTimers()
+    try {
+      let calls = 0
+      const realFetch = () => {
+        calls += 1
+        return Promise.resolve(REAL)
+      }
+      renderHook(
+        () => useDualQuery({ queryKey: ['dq-interval-real'], mockData: SEED, realFetch, realEmpty: EMPTY, refetchInterval: 1000 }),
+        { wrapper: makeWrapper() },
+      )
+      await vi.advanceTimersByTimeAsync(0)
+      expect(calls).toBe(1)
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(calls).toBe(2)
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(calls).toBe(3)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('mock mode: ignores refetchInterval — the cached entry never re-fetches (mezo-a9bo7.24 fix round 1)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'true')
+    vi.useFakeTimers()
+    try {
+      const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      const wrapper = ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+      )
+      renderHook(
+        () =>
+          useDualQuery({ queryKey: ['dq-interval-mock'], mockData: SEED, realFetch: async () => REAL, realEmpty: EMPTY, refetchInterval: 1000 }),
+        { wrapper },
+      )
+      const before = qc.getQueryState(['dq-interval-mock'])?.dataUpdatedAt
+      await vi.advanceTimersByTimeAsync(5000)
+      const after = qc.getQueryState(['dq-interval-mock'])?.dataUpdatedAt
+      expect(after).toBe(before)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('refetch() re-runs the query — a failed real-mode fetch can recover without a remount', async () => {
     vi.stubEnv('VITE_USE_MOCK', 'false')
     let attempt = 0

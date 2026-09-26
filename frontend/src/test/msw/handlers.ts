@@ -1923,6 +1923,13 @@ export const handlers = [
   // Esti kiadás (csapatfal H1, mezo-a9bo7.12, Task 6) — unlike `runs` above, real mode's default
   // fixture is the honest EMPTY timeline; per-test server.use() overrides opt into a seeded one.
   http.get(`${API_BASE}/api/character/edition`, () => HttpResponse.json([])),
+  // Csapat-chat (Task 12, mezo-a9bo7.24) — real mode's default fixture is the honest EMPTY day
+  // (the `useTeamEditions` precedent above); per-test server.use() overrides opt into a seeded one.
+  http.get(`${API_BASE}/api/character/team-chat`, ({ request }) => {
+    const url = new URL(request.url)
+    const date = url.searchParams.get('date') ?? new Date().toISOString().slice(0, 10)
+    return HttpResponse.json({ date, lines: [], openThreads: [], pushesToday: 0, pushBudget: 2 })
+  }),
 
   // Life goals (mezo-iizd.1) — default fixtures mirroring the mock seed so real-mode component
   // tests that render these hooks without a per-test server.use() get the same four goals.

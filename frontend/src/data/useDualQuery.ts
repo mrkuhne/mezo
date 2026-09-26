@@ -63,6 +63,15 @@ export function useDualQuery<T>(opts: {
    * for existing callers).
    */
   enabled?: boolean
+  /**
+   * Real mode only, opt-in (mezo-a9bo7.24 fix round 1): background-refetch this query on a
+   * fixed interval (ms) even while mounted and not stale — for a screen that is genuinely
+   * "live" (the csapat-chat, `useTeamChat`) and needs a new push/reply to show up without the
+   * user navigating away and back. Mock mode ignores this and never polls (`staleTime:
+   * Infinity` already rules that out). Omitted ⇒ no interval, i.e. `refetchInterval: undefined`
+   * — identical to not passing the option, so no existing caller's behaviour changes.
+   */
+  refetchInterval?: number
 }): { data: T; isPending: boolean; isError: boolean; refetch: () => void } {
   const mock = isMockMode()
   const q = useQuery({
@@ -72,6 +81,7 @@ export function useDualQuery<T>(opts: {
     staleTime: mock ? Infinity : opts.realStaleTime,
     placeholderData: !mock && opts.keepPreviousRealData ? keepPreviousData : undefined,
     enabled: mock ? true : (opts.enabled ?? true),
+    refetchInterval: !mock ? opts.refetchInterval : undefined,
   })
   return {
     // mock: q.data is always the seed (initialData). real: the fetched value, or — while

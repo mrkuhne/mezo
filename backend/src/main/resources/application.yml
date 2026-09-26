@@ -2192,6 +2192,12 @@ mezo:
       # async listener missed still opens/resolves its ügy (a missed open never pushes).
       catchup-cron: "0 20 * * * *"
   proactive:
+    # Advice-card retirement (Csapatfal Act III, mezo-a9bo7.24): the old daily advice card that a
+    # raised flag delivers (InterventionEventListener). Off ⇒ no listener bean, no new card; the
+    # team chat carries the teendő instead. Prod flips it TOGETHER with the team chat:
+    # MEZO_PROACTIVE_ADVICE_CARD_ENABLED=false + MEZO_FEATURE_TEAM_CHAT_ENABLED=true.
+    advice-card:
+      enabled: true
     contextual-feed:
       history-days: 14 # Inclusive calendar-day window.
       history-max-messages: 12 # Total selected prior messages.

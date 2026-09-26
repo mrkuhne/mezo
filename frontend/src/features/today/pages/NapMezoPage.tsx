@@ -18,6 +18,11 @@
 // lavender+arany halo-hős az élő Mezo-Boop-pal, lapos szegmentált fülsor; a teljes üzenet
 // `.glass` (lavender, a nudge a saját igény-színében), a régebbiek lapos egysoros cellák, a
 // fej art-ja 3D ikon egy lit wellben. Csak a bőr változott: szál, fülek, chipek érintetlenek.
+// Csapatfal Act III (mezo-a9bo7.24): a napi tanácskártya a csapat-chatbe költözött. Ha a chatben
+// van mai sor vagy nyitott ügy, az Üzenetek fülön EGY lapos sor („A csapat most erről beszél” +
+// a nyitott ügyek címkéi → /mezo/elo) áll a tanácskártya helyett; üres chat-napon a régi kártya
+// marad (a kivezetés átfedő napja); a chat töltése alatt egyik sem. A kérdés-kártya és a deeplink-cél
+// sosem rejtődik el.
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -32,7 +37,12 @@ import { cn } from '@/shared/lib/cn'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { RefChips } from '@/features/insights/components/RefChips'
 import { EletjelStrip, needHueForIcon } from '@/features/today/components/EletjelStrip'
-import { useAdviceActions, useCompanionFeed, useFeedback, useObservations, useObservationReply } from '@/data/hooks'
+import { useAdviceActions, useCompanionFeed, useFeedback, useObservations, useObservationReply, useTeamChat } from '@/data/hooks'
+import { FeedAvatar } from '@/features/insights/components/feed/FeedPostHead'
+import { TEAM, type TeamCharacterId } from '@/features/insights/logic/team'
+import { stripText } from '@/features/insights/logic/teamChat'
+import { renderInline } from '@/shared/lib/markdown'
+import '@/features/insights/boop-world.css'
 import { ObservationCard } from '@/features/today/components/ObservationCard'
 import { OBSERVATION_BUDGET } from '@/data/insights/observations'
 import { feedToMessageItem, isQuestionCard, partitionMezoThread, questionAnswers, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
@@ -176,14 +186,29 @@ export function NapMezoPage() {
   const budgetLeft = Math.max(0, OBSERVATION_BUDGET.perDay - surfacedToday)
 
   const { uzenetek, eletjelek } = useMemo(() => partitionMezoThread(messages), [messages])
+  // A csapat-chat átadás (mezo-a9bo7.24): van-e ma mit mutatni a chatben.
+  const { day: teamChat, loading: teamChatLoading } = useTeamChat()
+  const teamLatest = teamChatLoading ? null : stripText(teamChat)
+  const teamOpen = teamChatLoading ? [] : teamChat.openThreads
+  const teamTalks = teamLatest != null || teamOpen.length > 0
+  // Töltés közben sem a sor, sem a régi kártya: különben valós módban a tanácskártya felvillanna,
+  // majd eltűnne, amint a chat megérkezik.
+  const holdLegacy = teamChatLoading || teamTalks
   // Prepended, not merged into the shared thread: it is what the user just tapped, and the
   // shared thread stays the shell header's unread source of truth (mezo-atry) — untouched by a
   // deeplink that only this page consumes. Deep-linked cards are always companion messages,
   // never nudges, so they only ever join the Üzenetek pane.
-  const displayUzenetek = useMemo(
-    () => (linkedItem ? [linkedItem, ...uzenetek] : uzenetek),
-    [linkedItem, uzenetek],
-  )
+  // A tanácskártya (advice, a kérdés-kártya kivételével) és elődje (intervention) a csapat-chatbe
+  // költözött: amíg a chat beszél, itt nem jelenik meg — kivéve, ha épp egy értesítés céloz rá.
+  const sameDayDeepLink = crossDay == null ? deepLinkId : null
+  const displayUzenetek = useMemo(() => {
+    const own = holdLegacy
+      ? uzenetek.filter((m) =>
+          !((m.kind === 'intervention' || (m.kind === 'advice' && !isQuestionCard(m)))
+            && m.artifactId !== sameDayDeepLink))
+      : uzenetek
+    return linkedItem ? [linkedItem, ...own] : own
+  }, [linkedItem, uzenetek, holdLegacy, sameDayDeepLink])
   const feedIds = useMemo(() => {
     const ids = feed.map((m) => m.id)
     // The deep-linked card's own feedback state must be fetched too, or its chips would render
@@ -381,6 +406,16 @@ export function NapMezoPage() {
         </div>
         {tab === 'uzenetek' && (
           <EntranceGroup>
+            {teamTalks && (
+              <>
+                <TeamChatRow latest={teamLatest} openLabels={teamOpen.map((t) => t.ruleLabel)}
+                  faces={teamOpen.length > 0 ? teamOpen.map((t) => t.owner) : [teamLatest!.speaker]}
+                  onOpen={() => navigate('/mezo/elo')} />
+                <p className="nap-mzteam-note rise" style={{ '--d': '40ms' } as React.CSSProperties}>
+                  A napi tanácskártya innen átköltözött a csapat-chatbe — ott születik, ott reagálsz rá, és ott zárul le.
+                </p>
+              </>
+            )}
             {displayUzenetek.map((m, i) =>
               i === displayUzenetek.length - 1 || isExpanded(m.id) || m.id === scrollTargetId ? (
                 renderCard(m, i, {
@@ -492,5 +527,34 @@ export function NapMezoPage() {
         )}
       </PageBody>
     </MozaikPage>
+  )
+}
+
+/** A csapat-chat átadó sora (Csapatfal Act III, mezo-a9bo7.24; prototípus #nap-uzenetek
+ *  `rowg glass`, zsálya) — ÜVEG sor: a nyitott ügyek gazdái, a címkéik, vagy ha nincs nyitott
+ *  ügy, a nap legutóbbi mondata. Semmit nem fogalmaz (ADR 0049). */
+function TeamChatRow({ latest, openLabels, faces, onOpen }: {
+  latest: { speaker: TeamCharacterId; text: string } | null
+  openLabels: string[]
+  faces: TeamCharacterId[]
+  onOpen: () => void
+}) {
+  const unique = [...new Set(faces)].slice(0, 3)
+  return (
+    <button type="button" className="nap-mzteam glass rise" onClick={onOpen}
+      style={{ '--d': '20ms', '--c': 'var(--dv-sage)' } as React.CSSProperties}>
+      <span className="nap-mzteam-minis" aria-hidden="true">
+        {unique.map((id) => <FeedAvatar key={id} id={id} size={20} />)}
+      </span>
+      <span className="grow">
+        <span className="nap-mzteam-t">A csapat most erről beszél</span>
+        <span className="pv">
+          {openLabels.length > 0
+            ? openLabels.join(' · ')
+            : latest && <><b>{TEAM[latest.speaker].name}:</b> {renderInline(latest.text, { boldOnly: true })}</>}
+        </span>
+      </span>
+      <span className="chev" aria-hidden="true">›</span>
+    </button>
   )
 }

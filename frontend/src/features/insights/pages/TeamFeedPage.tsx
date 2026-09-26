@@ -6,6 +6,7 @@ import { FeedPosterCard } from '@/features/insights/components/feed/FeedPosterCa
 import { FeedReplySheet, type FeedReplyTarget } from '@/features/insights/components/feed/FeedReplySheet'
 import type { FeedReplyMode } from '@/features/insights/components/feed/FeedTrio'
 import { IntroPosts } from '@/features/insights/components/feed/IntroPosts'
+import { LiveStrip } from '@/features/insights/components/feed/LiveStrip'
 import { StoryStrip } from '@/features/insights/components/feed/StoryStrip'
 import { useFeedSession } from '@/features/insights/components/feed/useFeedSession'
 import { useTeamFeed } from '@/features/insights/components/feed/useTeamFeed'
@@ -18,7 +19,8 @@ import '@/features/insights/boop-world.css'
 /**
  * A csapat-üzenőfal (spec 2026-09-23, mezo-a9bo7.8) — a Mezo-világ főoldala. A MÁR LÉTEZŐ
  * rekordokat (minták, kísérletek, előrejelzések, észrevételek, karakter-feed) mutatja az öt
- * karakter posztjaiként; semmit nem fogalmaz (ADR 0049). Ritmus: fejléc → story-sáv → „Rád vár”
+ * karakter posztjaiként; semmit nem fogalmaz (ADR 0049). Ritmus: fejléc → story-sáv → élő sáv (a
+ * csapat-chat bejárata, Act III) → „Rád vár”
  * sáv → napok (naponta egy üveg-poszter, a többi csendes lapos panel) → „Ennyi történt”.
  */
 export function TeamFeedPage() {
@@ -46,6 +48,7 @@ export function TeamFeedPage() {
         <h1>Üzenőfal</h1>
       </header>
       <StoryStrip today={today} fresh={feed.freshByCharacter} waiting={waitingBy} />
+      <LiveStrip />
       {waitingCount > 0 && (
         <button type="button" className="glass tf-strip tf-c-lav" onClick={toFirstWaiting}>
           <Icon3D name="t-chat" size={24} />

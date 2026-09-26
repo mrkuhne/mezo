@@ -15,13 +15,19 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * W5.2 glue (bd mezo-b3pp.19): a persisted flag raise → intervention delivery, AFTER_COMMIT (only
  * raises that really logged) and {@code @Async} off the raising thread (the
  * CompanionMessageEventListener template — a slow DB moment must never delay a check-in save).
+ *
+ * <p>Retirement (Csapatfal Act III, mezo-a9bo7.24): also gated on
+ * {@link FeaturesConfiguration#ADVICE_CARD_SWITCH} — the house way, by bean presence (no
+ * {@code @Value}, no {@code matchIfMissing}; the key is declared in application.yml, default
+ * {@code true}). With it off the bean does not exist and a raise never reaches
+ * {@link InterventionService}; the team chat carries the teendő instead.
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(
         name = {FeaturesConfiguration.COMPANION_SWITCH, FeaturesConfiguration.PROACTIVE_SWITCH,
-                FeaturesConfiguration.INTERVENTION_SWITCH},
+                FeaturesConfiguration.INTERVENTION_SWITCH, FeaturesConfiguration.ADVICE_CARD_SWITCH},
         havingValue = "true")
 public class InterventionEventListener {
 

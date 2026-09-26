@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { usePatternActions, useObservationReply } from '@/data/hooks'
 import { AFTERLIFE, type FeedPost } from '@/features/insights/logic/teamFeed'
 import { Icon3D } from '@/shared/ui/clay'
+import type { FeedbackHandle } from '@/data/feedback/feedbackTypes'
 import { useFeedSession, type FeedVote } from './useFeedSession'
 
 /** Mit kér a hármas a laptól: „Elmesélem”, vagy a „Nem így érzem” visszakérdezése (spec §2.8). */
@@ -55,22 +56,71 @@ export function FeedTrio({ post, onReply }: { post: FeedPost; onReply: (post: Fe
   }
 
   return (
+    <TrioButtons
+      vote={vote}
+      busy={busy}
+      onVote={v => void answer(v)}
+      onTell={() => onReply(post, 'tell')}
+      labels={post.observation ? OBSERVATION_LABELS : undefined}
+      error={error}
+    />
+  )
+}
+
+const DEFAULT_LABELS = { up: 'Ez talál', down: 'Nem így érzem', tell: 'Elmesélem' }
+const OBSERVATION_LABELS = { up: 'Igen, ez igaz rám', down: 'Nem, ez nem stimmel', tell: 'Beszéljük meg' }
+
+/** A hármas gombsora — egyetlen markup a fal posztjainak és a csapat-chat sorainak. */
+function TrioButtons({ vote, busy, onVote, onTell, labels = DEFAULT_LABELS, error }: {
+  vote: FeedVote | undefined
+  busy: boolean
+  onVote: (v: FeedVote) => void
+  onTell: () => void
+  labels?: { up: string; down: string; tell: string }
+  error?: string
+}) {
+  return (
     <>
       <div className="tf-acts">
-        <button type="button" aria-pressed={vote === 'up'} disabled={busy} onClick={() => void answer('up')}>
+        <button type="button" aria-pressed={vote === 'up'} disabled={busy} onClick={() => onVote('up')}>
           <Icon3D name="t-thumb-up" size={19} />
-          {post.observation ? 'Igen, ez igaz rám' : 'Ez talál'}
+          {labels.up}
         </button>
-        <button type="button" aria-pressed={vote === 'down'} disabled={busy} onClick={() => void answer('down')}>
+        <button type="button" aria-pressed={vote === 'down'} disabled={busy} onClick={() => onVote('down')}>
           <Icon3D name="t-thumb-down" size={19} />
-          {post.observation ? 'Nem, ez nem stimmel' : 'Nem így érzem'}
+          {labels.down}
         </button>
-        <button type="button" disabled={busy} onClick={() => onReply(post, 'tell')}>
+        <button type="button" disabled={busy} onClick={onTell}>
           <Icon3D name="t-chat" size={19} />
-          {post.observation ? 'Beszéljük meg' : 'Elmesélem'}
+          {labels.tell}
         </button>
       </div>
       {error && <p className="tf-error" role="alert">{error}</p>}
     </>
+  )
+}
+
+/**
+ * Az egységes hármas egy szerver-oldali műterméken (csapat-chat sor, mezo-a9bo7.24): a 👍/👎 a
+ * közös visszajelzés-csatornába megy (`useFeedback(kind, ids)` — a hívó oldal EGYSZER kéri le az
+ * összes azonosítóra, és a kezelőt adja át), újra-koppintás visszavon. A „Nem így érzem” a fal
+ * hármasához hasonlóan a válasz-lapot is kéri; az „Elmesélem” azt nyitja.
+ */
+export function ArtifactTrio({ feedback, artifactId, onReply }: {
+  feedback: FeedbackHandle
+  artifactId: string
+  onReply: (mode: FeedReplyMode) => void
+}) {
+  const vote = feedback.get(artifactId)?.verdict
+  return (
+    <TrioButtons
+      vote={vote}
+      busy={false}
+      onVote={v => {
+        feedback.vote(artifactId, v)
+        if (v === 'down' && vote !== 'down') onReply('down')
+      }}
+      onTell={() => onReply('tell')}
+    />
   )
 }
