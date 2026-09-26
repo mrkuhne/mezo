@@ -552,6 +552,149 @@ delete/"új" badge, mock fixtures (`data/me/people.ts`, chat fixture) updated;
 gate on `people.yml`; CODEMAP regen; runtime pass with the `verify` skill (dark, 320px,
 reduced motion).
 
+## S4 delta — named effect tracking (2026-09-26, owner-approved direction)
+
+**Owner decisions (2026-09-26):**
+
+1. **Person effects surface NOW, on the person page.** A restrained "Hatás" glass card
+   on `PersonDetailPage` (üveg canon, prototype + owner OK before build) shows the
+   per-person effects on mood/energy/stress. S6's hub re-lists the same rows later.
+2. **Event-type effects learn silently.** They are computed and feed the nightly
+   reflection as hypothesis candidates, but get NO visible surface in S4 — the hub's
+   Hatások section (S6) is their first listing. No temporary Minták-page list.
+
+### Prior art (S4 recon)
+
+- **Exist.io** (kb.exist.io/article/37, developer.exist.io/reference/correlations/) —
+  adopted: strength and confidence as two orthogonal signals; symmetric, non-causal
+  sentences readable in either direction; an explicit "strong but low-confidence" state;
+  drift handled by full periodic recompute, no expiry machinery. Rejected: Pearson on
+  raw values (weak for ordinal 1–10 self-reports).
+- **Bearable** (bearable.app/support/howto/the-factor-effect-report/) — adopted: the
+  tagged-day vs untagged-day comparison as the core framing, and a per-metric
+  minimum-data gate of the shape "≥N days with, ≥M days without, metric logged on
+  each". Rejected: their 3+3 threshold (too noisy) and the 4-window fan-out
+  (multiplies comparisons; we keep same-day only in S4, offset windows are a future
+  option).
+- **Daylio** (daylio.net/faq/activity-and-mood-statistics/) — adopted: a coarse
+  qualitative confidence tier is enough for a lay audience (matches the house
+  `gyenge/közepes/erős` words); "might be influencing"-style hedging by construction.
+- **Cliff's delta** (Robust CIs for effect sizes, ResearchGate 252242985; CRAN
+  `effsize`) — adopted as the strength statistic: non-parametric, tie- and
+  outlier-robust, valid at 10–60 points, reads as a probability statement ("napokon,
+  amikor X, ez többször volt magasabb, mint nem"). Magnitude bands: |δ|<0.147
+  negligible, <0.33 small, <0.474 medium, else large. Mean difference shown alongside
+  as the human-scale number ("átlagosan ~fél ponttal").
+- Nobody in this space does formal multiple-comparison correction; the practical guard
+  is the minimum-data gate + only-above-band surfacing. Adopted.
+
+### Codebase terrain (S4 recon)
+
+- **Detector to generalize:** `feature/character/detector/PeopleMoodLinkDetector.java`
+  — today anonymous (any mention), MENTAL-only, 42d, band-flip character-feed signal.
+  It STAYS as the character-feed echo; S4 builds the named engine on the companion
+  side, it does not rewrite the detector.
+- **Person-day signal:** the mention table (`MentionEntity`: person_id, ts,
+  context_label, source_ref_kind incl. `checkin_note`, `chat_turn`) is the richest
+  "interacted with X on day D" source — richer than `DerivedSeriesService`'s
+  text-signal `people:<név>` series (journal+gratitude only, name-keyed not id-keyed).
+- **Metrics:** `check_in` day means via `MetricSeriesService`
+  (`CHECKIN_MENTAL/ENERGY/STRESS`); per-metric nulls must be skipped per metric;
+  **stress polarity is inverted** (higher = worse) — copy direction flips.
+- **Event-type taxonomy reality check:** `activity_log` has NO event taxonomy
+  (gamification skill keys only). Real day-flag sources: `workout_session` (edzés),
+  mention `context_label` aggregated to day (closed 8-value set: munka, csalad,
+  baratok, edzes, konfliktus, kozos_program, segitseg, egyeb), text-signal `TOPICS`
+  day topics. The plan enumerates the initial set from THESE.
+- **Machinery to reuse:** `PatternGate.evaluate` BINARY branch (with/without gating,
+  IMBALANCED_GROUPS verdict); `PatternDetectionService` upsert-by-key nightly idiom;
+  `HypothesisPipelineService.run(userId, extraContext)` — the documented injection
+  seam `ReflectionJob` currently passes `null` to.
+- **Layering:** computation lives in companion (companion→people reads are legal, the
+  reverse is not); people code never imports companion; `companion.service` never
+  imports `companion.reflection`. Effects live in a companion-owned table; the person
+  page reads them through a companion endpoint, so no people-owned write port needed.
+- Traps inherited: per-row `TransactionTemplate`+`REQUIRES_NEW` for multi-row nightly
+  writes (lesson 11); stable hypothesis keys or re-propose loops (S2 fingerprints);
+  no new LLM call planned → no FakeCompanionLlm/admin-label work (lesson 17 applies
+  only if that changes); `PersonAffectTrendCalculator` (mention-tone weekly arc) is a
+  DIFFERENT thing that stays — naming on the person page must distinguish them.
+
+### Design (S4)
+
+**Engine (companion, code decides everything, no LLM in the loop):**
+
+- New pure calculator `EffectLinkCalculator` (companion): for a subject-day set
+  (days the subject "happened") vs complement days inside a **60-day rolling window**,
+  per metric (mental, energy, stress day means, per-metric null-skip), computes
+  Cliff's delta, mean difference, group sizes. Pure, stateless, `today` a parameter.
+- **Subjects:**
+  - `person:<personId>` — day set = distinct mention days for that person (all
+    mention sources).
+  - `event:<key>` — day set from the enumerated initial taxonomy (workout days,
+    mention-context day flags, text-signal topic days; exact set in the plan).
+- **Minimum-data gate per (subject, metric):** ≥5 subject-days and ≥10
+  complement-days, each with that metric logged; below it no row is stored (or an
+  existing row is marked below-threshold and hidden). `PatternGate`-style imbalance
+  guard applies.
+- **Strength & confidence separated:** strength = |δ| band (negligible/small/medium/
+  large → HU: elhanyagolható/enyhe/közepes/erős, negligible rows are not shown);
+  confidence = `gyenge/közepes/erős` tier from sample sizes (house words), computed
+  independently of strength. Owner confirmation of a RELATED observation (same
+  subject+metric) raises the displayed confidence one tier (cap erős) — read at
+  render time from confirmed pattern rows, not stored.
+- **Storage:** new companion-owned table `effect_link` (Liquibase 1.1.0): user_id,
+  subject_kind (person|event), subject_key (uuid or taxonomy key), metric, direction,
+  cliffs_delta, mean_diff, subject_days, complement_days, strength_band,
+  confidence_tier, window_days, computed_at; unique (user, subject_kind, subject_key,
+  metric). **Nightly full recompute + upsert** (Exist-style drift handling); rows
+  falling below gate/band are deleted — the table is a cache of the current window,
+  never history.
+- **Scheduling:** computed inside the nightly reflection job as a pre-step before the
+  hypothesis pipeline (fail-open try/catch; no LLM, no ObservationBudget concern),
+  behind the existing COMPANION∧REFLECTION switches. No new feature switch.
+- **Hypothesis injection:** strong findings (|δ| ≥ medium AND confidence ≥ közepes)
+  are formatted (code-side, hedged HU, stable ordering) into the `extraContext`
+  string of `HypothesisPipelineService.run` — replacing the current `null` from
+  `ReflectionJob`. The LLM may then propose them as observations through the normal
+  PROPOSE/CRITIQUE path; S2's fingerprints/closed-rows guard prevents re-proposing
+  refuted ones. No direct `GroundedHypothesisPublisher` minting in S4.
+
+**API + FE (person effects only, per owner decision):**
+
+- New companion endpoint `GET /companion/effects?personId=` (companion.yml, contract
+  gate) returning the person's effect rows: metric, direction, strength_band,
+  confidence_tier, mean_diff, subject_days, hedged HU sentence assembled ON THE FE
+  from structured fields (no server-side prose).
+- `PersonDetailPage` "Hatás" card (üveg canon: glass, one accent, Titanium sprite
+  icon, reduced-motion branch): up to 3 rows (one per metric), each showing the
+  hedged sentence ("Úgy tűnik, azokon a napokon, amikor X szóba kerül, nyugodtabb
+  vagy" style), strength and confidence as two separate small indicators, and the
+  sample-size hint ("N nap alapján"). Below-gate: the card simply doesn't render
+  (no "needs more data" nag). Copy is symmetric and non-causal; stress direction
+  flipped. Named clearly apart from the existing mention-tone weekly arc.
+- Prototype extends the person-page pattern per /uvegesites §1 (HTTP serve, ?v=N),
+  owner OK before build. Mock mode: fixture effects in `data/me/people.ts` mocks.
+
+**Unification note (standing question):** S4 deliberately routes its strong findings
+into the SAME nightly hypothesis pipeline (S2) instead of growing a parallel
+insight channel — effects become observations → confirmed knowledge → S5 proactive
+use, one engine. The visible surface stays on the person page now and joins the hub
+(S6) later; no csapatfal surface in S4 (the csapatfal consumes downstream S5/S6
+output).
+
+### Testing (S4)
+
+Pure unit coverage for `EffectLinkCalculator` (synthetic series: clear positive,
+clear negative, ties, per-metric nulls, below-gate, imbalance, stress polarity);
+midnight-anchored fixtures for window math. Focused ITs: nightly recompute upsert +
+delete-below-gate; extraContext injection contains only above-band findings, stable
+order; confirmed-observation confidence bump. Contract tests for the new companion
+endpoint + contract-drift gate (companion.yml, `pnpm generate:api`, mock fixtures).
+FE both modes (`CI=true`): Hatás card render/hide, strength vs confidence shown
+separately, mock fixtures; `pnpm build`; affected layout specs; CODEMAP regen;
+runtime pass with the `verify` skill (dark, 320px, reduced motion).
+
 ## Slice lessons
 
 (numbered; only what a later slice would otherwise pay for again)
