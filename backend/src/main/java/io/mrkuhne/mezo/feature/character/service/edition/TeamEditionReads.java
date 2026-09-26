@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
+import io.mrkuhne.mezo.feature.companion.reflection.service.EffectLinkService;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.PatternMonitorService;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
@@ -70,6 +71,10 @@ public class TeamEditionReads {
     private final CheckInRepository checkInRepository;
     /** Task 15 (mezo-a9bo7.25): absent when the team chat switch is off — then no recap. */
     private final ObjectProvider<TeamChatReads> teamChatReads;
+    /** S5 (mezo-d6ivw.5): {@link EffectLinkService} is COMPANION+REFLECTION-switch-gated, a
+     *  narrower cut than this facade's own CHARACTER+COMPANION gate — an {@link ObjectProvider}
+     *  keeps this class constructible when the reflection switch is off. */
+    private final ObjectProvider<EffectLinkService> effectLinks;
 
     @Transactional(readOnly = true)
     public List<PatternEntity> patterns(UUID owner) {
@@ -159,5 +164,13 @@ public class TeamEditionReads {
     public Optional<TeamChatReads.DayThreads> teamChatThreads(UUID owner, LocalDate day) {
         TeamChatReads chat = teamChatReads.getIfAvailable();
         return chat == null ? Optional.empty() : Optional.of(chat.threadsTouchedOn(owner, day));
+    }
+
+    /** S5 (mezo-d6ivw.5): the double-gated effect rows, strongest first — {@code List.of()} when
+     *  the reflection beans are off (see {@link #effectLinks}). Not {@code @Transactional} — the
+     *  delegate opens its own read-only transaction. */
+    public List<EffectLinkService.GatedEffect> gatedEffects(UUID owner) {
+        EffectLinkService service = effectLinks.getIfAvailable();
+        return service == null ? List.of() : service.gatedEffects(owner);
     }
 }

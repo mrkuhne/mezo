@@ -23,6 +23,7 @@ import io.mrkuhne.mezo.feature.character.service.edition.TeamCharacter;
 import io.mrkuhne.mezo.feature.character.service.edition.TeamEditionReads;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
+import io.mrkuhne.mezo.feature.companion.reflection.service.EffectLinkService;
 import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
 import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
@@ -58,6 +59,8 @@ class EditionCandidateCollectorTest {
         when(reads.dailyConference(eq(OWNER), any())).thenReturn(Optional.empty());
         // H5 (mezo-a9bo7.16): a Derű-jelölt csak gyér bejelentkezésnél születik — alapból 14/14 nap.
         when(reads.checkinDays(eq(OWNER), any(), any())).thenReturn(14L);
+        // S5 (mezo-d6ivw.5): alapból nincs hatás-meglátás — a tesztek felülírják, amelyik vizsgálja.
+        when(reads.gatedEffects(OWNER)).thenReturn(List.of());
     }
 
     // ---- helpers -----------------------------------------------------------------------------
@@ -727,6 +730,62 @@ class EditionCandidateCollectorTest {
         when(reads.checkinDays(OWNER, DAY.minusDays(13), DAY)).thenReturn(8L);
 
         assertThat(deru()).isEmpty();
+    }
+
+    // ---- S5 (mezo-d6ivw.5): hatás-meglátás mint esti kiadás forrás -----------------------------
+
+    private static EffectLinkService.GatedEffect gatedEffect(String subjectKind, String subjectKey, String metric,
+            String subjectLabel, boolean higher, String strengthBand, int subjectDays) {
+        return new EffectLinkService.GatedEffect(subjectKind, subjectKey, metric, subjectLabel,
+                "mentális állapot", higher, strengthBand, subjectDays, "topic-key");
+    }
+
+    private List<EditionCandidate> effectCandidates() {
+        return collector.collect(OWNER, DAY, null).stream().filter(c -> "effect".equals(c.sourceKind())).toList();
+    }
+
+    @Test void personSubjectEffectBecomesMegfigyeles() {
+        UUID personId = UUID.randomUUID();
+        when(reads.gatedEffects(OWNER)).thenReturn(List.of(
+                gatedEffect("person", personId.toString(), "mental", "Anna", true, "eros", 12)));
+
+        List<EditionCandidate> out = effectCandidates();
+
+        assertThat(out).hasSize(1);
+        EditionCandidate c = out.get(0);
+        assertThat(c.sourceKind()).isEqualTo("effect");
+        assertThat(c.sourceId()).isEqualTo("person:" + personId + ":mental");
+        assertThat(c.character()).isEqualTo(TeamCharacter.DERU);
+        assertThat(c.genre()).isEqualTo(EditionGenre.MEGFIGYELES);
+        assertThat(c.recordText()).contains("általában");
+        assertThat(c.recordText()).doesNotContain("mert ");
+        assertThat(c.sourceRoute()).isEqualTo("/me/people/" + personId);
+        assertThat(c.guests()).isEmpty();
+    }
+
+    @Test void eventSubjectEffectRoutesToNapMezo() {
+        when(reads.gatedEffects(OWNER)).thenReturn(List.of(
+                gatedEffect("event", "edzes", "energy", "Edzésnapok", false, "kozepes", 8)));
+
+        EditionCandidate c = effectCandidates().get(0);
+
+        assertThat(c.sourceRoute()).isEqualTo("/nap/mezo");
+        assertThat(c.sourceId()).isEqualTo("event:edzes:energy");
+    }
+
+    @Test void twoQualifyingEffectRowsYieldOnlyTheStrongestCandidate() {
+        // gatedEffects is strongest-first — the collector must take only the first row.
+        when(reads.gatedEffects(OWNER)).thenReturn(List.of(
+                gatedEffect("person", UUID.randomUUID().toString(), "mental", "Anna", true, "eros", 12),
+                gatedEffect("event", "edzes", "energy", "Edzésnapok", false, "kozepes", 8)));
+
+        assertThat(effectCandidates()).hasSize(1);
+    }
+
+    @Test void noQualifyingEffectRowsYieldsNoCandidate() {
+        when(reads.gatedEffects(OWNER)).thenReturn(List.of());
+
+        assertThat(effectCandidates()).isEmpty();
     }
 
     // Mockito ArgumentMatchers shortcuts (kept local, avoids a static-import clash with the DTO builders).
