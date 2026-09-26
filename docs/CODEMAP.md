@@ -279,15 +279,17 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `HydrationConsistencyDetector`, `JournalNoteDetector`, `JournalSilenceDetector`,
     `KnowledgeRejectionPatternDetector`, `LateEatingPatternDetector`, `LoggingGapDetector`, `MacroAdherenceDetector`,
     `MedCycleCovarianceDetector`, `MentionContextShiftDetector`, `MesoAdherenceDetector`,
-    `NeedsDomainImbalanceDetector`, `NiggleMapDetector`, `NightActivityDetector`, `ObservationDimensionKeysEnvelope`,
-    `ObservationSignalsEnvelope`, `PeopleMoodLinkDetector`, `PredictionCalibrationDetector`, `PriorShowing`,
-    `ProgressionAdherenceDetector`, `PromiseVsDeliveryDetector`, `ProteinTrainingMismatchDetector`,
-    `QuestCompletionCalibrationDetector`, `RestartPatternDetector`, `RetroLoggingRatioDetector`,
-    `RirCalibrationDetector`, `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`, `SelfCalibrationDetector`,
-    `SleepPerformanceChainDetector`, `SportInterferenceDetector`, `StackSkipPatternDetector`,
-    `StreakBreakResponseDetector`, `TeamCharacter`, `TeamChatActionsEnvelope`, `TeamChatCast`, `TeamChatExpiryJob`,
-    `TeamChatInterventionKeyAdapter`, `TeamChatReads`, `TeamChatService`, `TeamEditionReads`, `TeamEditionService`,
-    `TrailingWindow`, `UnderLoggingDetector`, `VoicedGuest`, `VoicedText`, `WeekendGapDetector`
+    `NeedsDomainImbalanceDetector`, `NiggleMapDetector`, `NightActivityDetector`, `NoopTeamChatKnowledge`,
+    `ObservationDimensionKeysEnvelope`, `ObservationSignalsEnvelope`, `PeopleMoodLinkDetector`,
+    `PredictionCalibrationDetector`, `PriorShowing`, `ProgressionAdherenceDetector`, `PromiseVsDeliveryDetector`,
+    `ProteinTrainingMismatchDetector`, `QuestCompletionCalibrationDetector`, `RestartPatternDetector`,
+    `RetroLoggingRatioDetector`, `RirCalibrationDetector`, `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`,
+    `SelfCalibrationDetector`, `SleepPerformanceChainDetector`, `SportInterferenceDetector`,
+    `StackSkipPatternDetector`, `StreakBreakResponseDetector`, `TeamCharacter`, `TeamChatActionsEnvelope`,
+    `TeamChatBudget`, `TeamChatCast`, `TeamChatContext`, `TeamChatContextBlock`, `TeamChatExpiryJob`,
+    `TeamChatInterventionKeyAdapter`, `TeamChatKnowledgePort`, `TeamChatLines`, `TeamChatReads`, `TeamChatService`,
+    `TeamChatVoiceWriter`, `TeamEditionReads`, `TeamEditionService`, `TrailingWindow`, `UnderLoggingDetector`,
+    `VoicedGuest`, `VoicedText`, `WeekendGapDetector`
 - **Contract** `api/feature/character/character.yml` — 20 operations
   - **endpoints:** GET /api/character · GET /api/character/dimension/{key} · GET /api/character/experts ·
     GET /api/character/feed · POST /api/character/bootstrap · GET /api/character/conference ·
@@ -313,7 +315,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **logic:** conferencePostItem.ts
   - **root:** character.css, deliberationLabels.ts, deliberationStats.ts, dossierState.ts, expertColors.ts,
     feedDayLabel.ts, inventory.ts, personaCharacter.ts, runLabels.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 56 IT + 14 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 58 IT + 15 unit
   - **ITs:** `CharacterApiCompanionOffIT`, `CharacterApiIT`, `CharacterApiSwitchOffIT`, `CharacterBootstrapIT`,
     `CharacterBootstrapMemoryDisabledIT`, `CharacterBootstrapMemoryIT`, `CharacterClaimRevisionIT`,
     `CharacterClaimTemporalIT`, `CharacterConferenceJobIT`, `CharacterConferenceListIT`,
@@ -327,9 +329,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CharacterReplyCompanionOffIT`, `CharacterReplyDiscussionIT`, `CharacterReplyRecoveryIT`, `CharacterRunLogIT`,
     `CharacterSignalReadsIT`, `CharacterWeeklySynthesisIT`, `ClaimLifecycleIT`, `ConferenceDeliberationEnvelopeIT`,
     `EditionVoiceWriterIT`, `KonziliumCrossTalkRoundIT`, `KonziliumProposalRoundIT`, `KonziliumUserFeedbackIT`,
-    `KonziliumVerdictRoundIT`, `PortraitWriterNameIT`, `TeamChatApiSwitchOffIT`, `TeamChatControllerIT`,
-    `TeamChatRepositoryIT`, `TeamChatServiceIT`, `TeamChatSwitchOffIT`, `TeamEditionReadsIT`, `TeamEditionSchemaIT`,
-    `TeamEditionServiceIT`, `TeamEditionServiceSwitchOffIT`
+    `KonziliumVerdictRoundIT`, `PortraitWriterNameIT`, `TeamChatApiSwitchOffIT`, `TeamChatBudgetIT`,
+    `TeamChatContextIT`, `TeamChatControllerIT`, `TeamChatRepositoryIT`, `TeamChatServiceIT`, `TeamChatSwitchOffIT`,
+    `TeamEditionReadsIT`, `TeamEditionSchemaIT`, `TeamEditionServiceIT`, `TeamEditionServiceSwitchOffIT`
   - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `ChallengePopulator`,
     `CharacterClaimRevisionPopulator`, `CharacterCouncilPopulator`, `CharacterReplyPopulator`, `CheckInPopulator`,
     `DailySummaryPopulator`, `DatabasePopulator`, `ExperimentPopulator`, `FeedbackPopulator`, `FlagLogPopulator`,
