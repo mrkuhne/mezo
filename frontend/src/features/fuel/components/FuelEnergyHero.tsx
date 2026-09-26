@@ -53,7 +53,9 @@ const GOAL_SUB: Record<'cut' | 'bulk' | 'maintain', string> = {
 /** The row's sub copy — Mozgás names an unplanned credit, Célod names the goal's direction. */
 function nodeSub(line: EquationLine, vm: KeretHeroVM, trajectory: Trajectory): string {
   if (line.key === 'activity' && vm.chips?.extra) return `${NODE.activity.sub} + terven kívüli mozgás`
-  if (line.key === 'goal') return trajectory ? GOAL_SUB[trajectory] : ''
+  // „tartás" only for a truly zero balance; a maintain goal's non-zero residual (the BMR floor)
+  // gets no sub rather than a word that contradicts its signed number.
+  if (line.key === 'goal') return trajectory === 'maintain' ? (line.value === 0 ? GOAL_SUB.maintain : '') : trajectory ? GOAL_SUB[trajectory] : ''
   return NODE[line.key].sub
 }
 

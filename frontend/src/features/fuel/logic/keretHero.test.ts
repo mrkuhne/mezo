@@ -332,7 +332,6 @@ describe('heroEquationLines — Célod row (mezo-32m82)', () => {
     const goal = lines.find(l => l.key === 'goal')!
     expect(goal.value).toBe(-327)
     expect(goal.sign).toBe('±')
-    expect(2356 + 922 - 327 - 0).toBe(2951)
   })
 
   test('bulk day keeps the row with a positive balance', () => {
@@ -342,6 +341,11 @@ describe('heroEquationLines — Célod row (mezo-32m82)', () => {
 
   test('maintain with zero balance hides the row', () => {
     const lines = heroEquationLines(vm({ base: 2356, activity: 500, extra: 0, balance: 0 }, 2856), 'maintain')
+    expect(lines.some(l => l.key === 'goal')).toBe(false)
+  })
+
+  test('no goal (trajectory null) → no Célod row, even with chips', () => {
+    const lines = heroEquationLines(vm({ base: 2356, activity: 500, extra: 0, balance: -327 }), null)
     expect(lines.some(l => l.key === 'goal')).toBe(false)
   })
 

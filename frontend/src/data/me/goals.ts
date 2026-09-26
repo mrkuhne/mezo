@@ -139,6 +139,36 @@ export const goal: Goal = {
   bedTime: '23:00',
 }
 
+// ── The mock prescription's energy chain (mezo-32m82) ─────────────────────────
+// One derivation, so every mock surface agrees: TDEE = BMR × NEAT + the net weekly EAT; each
+// segment's kcal = TDEE + its goal balance; its training/rest days sit a fixed shift around it
+// (DayTypeShiftCalculator); carbs close the segment kcal off the prescribed protein + fat.
+// Net activity model over the mock week at rest 1720/24, közepes band: 4 × 90′ volleyball (323) +
+// 1 × 120′ (430) + 2 × 60′ gym (179) + 2 × 45′ run (446) = 2972/week → 425/day.
+export const MOCK_GOAL_BMR = 1720
+const MOCK_GOAL_NEAT = 1.2
+const MOCK_NEAT_BASELINE_KCAL = Math.round(MOCK_GOAL_BMR * MOCK_GOAL_NEAT) // 2064
+const MOCK_WEEKLY_EAT_KCAL = 425
+const MOCK_TDEE_KCAL = MOCK_NEAT_BASELINE_KCAL + MOCK_WEEKLY_EAT_KCAL // 2489
+const MOCK_TRAINING_SHIFT_KCAL = 150
+const MOCK_REST_SHIFT_KCAL = -200
+function mockSegmentKcal(balanceKcal: number, proteinG: number, fatG: number) {
+  const kcal = MOCK_TDEE_KCAL + balanceKcal
+  return {
+    kcal,
+    trainingDayKcal: kcal + MOCK_TRAINING_SHIFT_KCAL,
+    restDayKcal: kcal + MOCK_REST_SHIFT_KCAL,
+    proteinG,
+    carbsG: Math.round((kcal - proteinG * 4 - fatG * 9) / 4),
+    fatG,
+    dailyEnergyBalanceKcal: balanceKcal,
+  }
+}
+/** Segment 1 (weeks 1–12, deep deficit): kcal 1973 · training 2123 · rest 1773 · carbs 182. */
+const MOCK_SEG1 = mockSegmentKcal(-516, 163, 66)
+/** Segment 2 (weeks 13–20, taper): kcal 2203 · training 2353 · rest 2003 · carbs 232. */
+const MOCK_SEG2 = mockSegmentKcal(-286, 155, 73)
+
 // Mock raw GoalResponse — the G4b command-center hero reads the contract shape
 // (trajectory/guards/window/weights) directly, so mock mode supplies the same
 // envelope the backend returns. ISO dates here; the hero formats them via huMonthDay.
@@ -165,11 +195,12 @@ export const goalResponse: GoalResponse = {
   // segments (deficit during the gym blocks, taper near the target) + the guard
   // status the recept card renders. Mirrors the GoalPrescription contract so the
   // card renders offline in mock mode without a backend evaluate. (mezo-g1u)
-  // NEAT model (mezo-eujg): maintenance = bmr×neat = 2064 (neatBaselineKcal); tdee = neatBaselineKcal +
-  // weeklyEatKcalPerDay (scheduled training ÷ 7). Net activity model (mezo-32m82) over the mock week
-  // at rest 1720/24, közepes band: 4 × 90′ volleyball (323) + 1 × 120′ (430) + 2 × 60′ gym (179) +
-  // 2 × 45′ run (446) = 2972/week → 425/day.
-  tdeeBootstrap: { bmr: 1720, neat: 1.2, neatBaselineKcal: 2064, weeklyEatKcalPerDay: 425, tdee: 2489, formula: 'MSJ', computedAt: '2026-05-22T06:00:00Z' },
+  // NEAT model (mezo-eujg): maintenance = bmr×neat (neatBaselineKcal); tdee = neatBaselineKcal +
+  // weeklyEatKcalPerDay (scheduled training ÷ 7) — see the energy chain above.
+  tdeeBootstrap: {
+    bmr: MOCK_GOAL_BMR, neat: MOCK_GOAL_NEAT, neatBaselineKcal: MOCK_NEAT_BASELINE_KCAL,
+    weeklyEatKcalPerDay: MOCK_WEEKLY_EAT_KCAL, tdee: MOCK_TDEE_KCAL, formula: 'MSJ', computedAt: '2026-05-22T06:00:00Z',
+  },
   prescription: {
     generatedAt: '2026-05-22T06:05:00Z',
     basis: 'formula',
@@ -178,35 +209,23 @@ export const goalResponse: GoalResponse = {
         fromWeek: 1,
         toWeek: 12,
         label: 'Mély deficit',
-        kcal: 2150,
         // Day-type shift (mezo-sxlj): mock's dayTypeShiftKcal is 200, T=4/R=3 mock schedule,
         // no floor bite — trainingDayKcal/restDayKcal demo the split even though the diet-settings
         // ghost itself stays at 0 (drift guard vs the BE config default).
-        trainingDayKcal: 2300,
-        restDayKcal: 1950,
-        proteinG: 163,
-        carbsG: 226,
-        fatG: 66,
+        ...MOCK_SEG1,
         sleepTargetH: 7.5,
         restDays: [3, 7],
         projectedRateKgPerWk: -0.55,
-        dailyEnergyBalanceKcal: -516,
         rationale: 'Ebben a szakaszban agresszívabb deficit fér bele — a fehérje magasan tartja az izmot, az alvás védi a regenerációt.',
       },
       {
         fromWeek: 13,
         toWeek: 20,
         label: 'Lassú befutó · taper',
-        kcal: 2380,
-        trainingDayKcal: 2530,
-        restDayKcal: 2180,
-        proteinG: 155,
-        carbsG: 276,
-        fatG: 73,
+        ...MOCK_SEG2,
         sleepTargetH: 8,
         restDays: [4, 7],
         projectedRateKgPerWk: -0.35,
-        dailyEnergyBalanceKcal: -286,
         rationale: 'A célsúly közeledtével lassítunk, hogy az erő-gardot ne sértsük és a forma stabil maradjon a deadline-ra.',
       },
     ],
@@ -289,15 +308,16 @@ export const goalSuggestionPreviewSeed: GoalSuggestionPreviewResponse = {
   affectedToWeek: 20,
   current: {
     trajectory: 'cut', targetWeightKg: 73, targetDate: '2026-08-15', targetRateKgPerWeek: -0.48,
-    weekAverageKcal: 2150, trainingDayKcal: 2300, restDayKcal: 1950,
-    proteinG: 163, carbsG: 226, fatG: 66,
+    weekAverageKcal: MOCK_SEG1.kcal, trainingDayKcal: MOCK_SEG1.trainingDayKcal, restDayKcal: MOCK_SEG1.restDayKcal,
+    proteinG: MOCK_SEG1.proteinG, carbsG: MOCK_SEG1.carbsG, fatG: MOCK_SEG1.fatG,
     segmentFromWeek: 3, segmentToWeek: 5, segmentLabel: 'MAV',
     guardStatus: null,
   },
   proposed: {
     trajectory: 'cut', targetWeightKg: 73, targetDate: '2026-08-15', targetRateKgPerWeek: -0.54,
-    weekAverageKcal: 2030, trainingDayKcal: 2180, restDayKcal: 1830,
-    proteinG: 163, carbsG: 196, fatG: 66,
+    // The weekly correction's −120 kcal, carbs absorbing it (−30 g).
+    weekAverageKcal: MOCK_SEG1.kcal - 120, trainingDayKcal: MOCK_SEG1.trainingDayKcal - 120, restDayKcal: MOCK_SEG1.restDayKcal - 120,
+    proteinG: MOCK_SEG1.proteinG, carbsG: MOCK_SEG1.carbsG - 30, fatG: MOCK_SEG1.fatG,
     segmentFromWeek: 3, segmentToWeek: 5, segmentLabel: 'MAV',
     guardStatus: null,
   },
@@ -346,14 +366,14 @@ export const goalOverviewSeed: GoalOverviewResponse = {
   projectedTargetDate: '2026-08-14',
   dataSufficiency: 'full',
   diet: {
-    weekAverageKcal: 2150,
+    weekAverageKcal: MOCK_SEG1.kcal,
     todayDayType: 'training',
-    todayKcal: 2300,
-    trainingDayKcal: 2300,
-    restDayKcal: 1950,
-    proteinG: 163,
-    carbsG: 226,
-    fatG: 66,
+    todayKcal: MOCK_SEG1.trainingDayKcal,
+    trainingDayKcal: MOCK_SEG1.trainingDayKcal,
+    restDayKcal: MOCK_SEG1.restDayKcal,
+    proteinG: MOCK_SEG1.proteinG,
+    carbsG: MOCK_SEG1.carbsG,
+    fatG: MOCK_SEG1.fatG,
     basis: 'formula',
     explanationCode: 'training_day_split',
   },

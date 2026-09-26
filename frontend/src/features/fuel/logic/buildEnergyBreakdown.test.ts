@@ -77,7 +77,7 @@ describe('buildEnergyBreakdown', () => {
     ])
   })
 
-  it('movement = planned + extra, and a non-zero extra adds the „Terven kívüli mozgás" line (mezo-32m82)', () => {
+  it('movement = planned + extra; the summand parts are exactly the served parts and close on the total (mezo-32m82)', () => {
     const energy = { base: 2356, planned: 570, extra: 572, balance: -327, target: 3171 }
     const bd = buildEnergyBreakdown({
       energy,
@@ -89,13 +89,17 @@ describe('buildEnergyBreakdown', () => {
       goalLabel: 'Cut',
     })!
     expect(bd.movement.kcal).toBe(energy.planned + energy.extra)
-    expect(bd.movement.blocks?.map(b => b.label)).toEqual(['Gym', 'Röplabda', 'Terven kívüli mozgás'])
-    expect(bd.movement.blocks?.at(-1)).toEqual({ label: 'Terven kívüli mozgás', kind: 'extra', min: null, kcal: energy.extra })
-    expect(bd.deficit?.kcal).toBe(energy.balance)
-    expect(bd.target).toBe(energy.target)
+    expect(bd.movement.parts).toEqual([
+      { key: 'planned', label: 'A heti terved mai része', kcal: energy.planned },
+      { key: 'extra', label: 'Terven kívüli mozgás', kcal: energy.extra },
+    ])
+    expect(bd.movement.parts!.reduce((a, p) => a + p.kcal, 0)).toBe(bd.movement.kcal)
+    // per-block previews stay, informational only
+    expect(bd.movement.blocks?.map(b => b.label)).toEqual(['Gym', 'Röplabda'])
+    expect(bd.base.kcal + bd.movement.kcal + bd.deficit!.kcal).toBe(bd.target)
   })
 
-  it('no extra → no extra line', () => {
+  it('no extra → only the planned part, still closing', () => {
     const bd = buildEnergyBreakdown({
       energy: { base: 2356, planned: 570, extra: 0, balance: -327, target: 2599 },
       blocks,
@@ -105,6 +109,7 @@ describe('buildEnergyBreakdown', () => {
       activityLabel: 'Ülő',
       goalLabel: 'Cut',
     })!
-    expect(bd.movement.blocks?.some(b => b.kind === 'extra')).toBe(false)
+    expect(bd.movement.parts?.map(p => p.key)).toEqual(['planned'])
+    expect(bd.movement.parts!.reduce((a, p) => a + p.kcal, 0)).toBe(bd.movement.kcal)
   })
 })

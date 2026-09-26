@@ -7,6 +7,19 @@ import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { makeHookWrapperWithClient } from '@/test/queryWrapper'
 import { FuelSettingsPage } from '@/features/fuel/pages/FuelSettingsPage'
+import { fuelDay } from '@/data/fuel/fuel'
+import { buildFuelSettingsMacroPreview, projectDraftTargets } from '@/features/fuel/logic/fuelSettingsPreview'
+
+// The mock seed's served targets (mezo-32m82 — derived from the mock goal), and the page's own
+// number formatting; expectations are expressions off them, never pasted literals.
+const SEED = fuelDay.targets
+const hu = (n: number) => new Intl.NumberFormat('hu-HU', { maximumFractionDigits: 0, useGrouping: true }).format(n)
+const row = (m: { pct: number; grams: number }) => `${m.pct}% · ${hu(m.grams)} g`
+const SAVED = buildFuelSettingsMacroPreview(SEED)!
+// The macros card's text with every space kind squeezed out (the page groups thousands with a
+// no-break space), so a formatted figure can be asserted without caring which space ICU picked.
+const flat = (t: string) => t.replace(/\s/g, '')
+const macrosText = () => flat(document.querySelector('[aria-labelledby="fset-macros-title"]')?.textContent ?? '')
 
 beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
@@ -129,11 +142,10 @@ describe('FuelSettingsPage', () => {
 
   test('shows the active target as kcal plus normalized percent and grams', () => {
     renderPage()
-
-    expect(screen.getByText('3 100 kcal')).toBeInTheDocument()
-    expect(screen.getByText('27% · 220 g')).toBeInTheDocument()
-    expect(screen.getByText('47% · 380 g')).toBeInTheDocument()
-    expect(screen.getByText('26% · 95 g')).toBeInTheDocument()
+    expect(macrosText()).toContain(flat(`${hu(SEED.kcal)} kcal`))
+    expect(macrosText()).toContain(flat(row(SAVED.protein)))
+    expect(macrosText()).toContain(flat(row(SAVED.carbs)))
+    expect(macrosText()).toContain(flat(row(SAVED.fat)))
   })
 
   // mezo-u2pd: the preview used to be pinned to the SAVED targets, so flipping the profile moved
@@ -143,10 +155,13 @@ describe('FuelSettingsPage', () => {
 
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Makróprofil' }), 'low_carb')
 
-    // low_carb = 0.40 fat energy share of the unchanged 3100 kcal; carbs absorb the remainder.
-    expect(screen.getByText('3 100 kcal')).toBeInTheDocument()
-    expect(screen.getByText('40% · 138 g')).toBeInTheDocument()
-    expect(screen.queryByText('26% · 95 g')).not.toBeInTheDocument()
+    // low_carb = 0.40 fat energy share of the unchanged seed kcal; carbs absorb the remainder.
+    const lowCarb = buildFuelSettingsMacroPreview(
+      projectDraftTargets(SEED, { splitPreset: 'low_carb', fatPctX10: null, proteinTier: 'moderate' }, 'moderate'))!
+    expect(macrosText()).toContain(flat(`${hu(SEED.kcal)} kcal`))
+    expect(lowCarb.fat.grams).toBe(Math.round(SEED.kcal * 0.4 / 9))
+    expect(macrosText()).toContain(flat(row(lowCarb.fat)))
+    expect(macrosText()).not.toContain(flat(row(SAVED.fat)))
     expect(screen.getByText('Előnézet — mentésre válik élessé')).toBeInTheDocument()
   })
 
@@ -155,8 +170,8 @@ describe('FuelSettingsPage', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Magas' }))
 
-    // moderate 2.0 → high 2.2 g/kg BW: the 220 g protein target scales by 1.1.
-    expect(screen.getByText(/· 242 g/)).toBeInTheDocument()
+    // moderate 2.0 → high 2.2 g/kg BW: the seed protein target scales by 1.1.
+    expect(macrosText()).toContain(flat(`· ${hu(Math.round(SEED.p * 1.1))} g`))
   })
 
   test('holds the last valid projection while a custom split does not sum to 100%', async () => {
@@ -166,7 +181,7 @@ describe('FuelSettingsPage', () => {
     fireEvent.change(screen.getByLabelText('Zsír %'), { target: { value: '10' } })
 
     // 30/40/10 is not 100 — the draft is unprojectable, so the saved split stays on screen.
-    expect(screen.getByText('26% · 95 g')).toBeInTheDocument()
+    expect(macrosText()).toContain(flat(row(SAVED.fat)))
   })
 
   test('updates the accessible hero summary and decorative meal dots from the draft', async () => {

@@ -7,7 +7,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test } from 'vitest'
-import { buildKeretHero } from '@/features/fuel/logic/keretHero'
+import { asPastDayHero, buildKeretHero } from '@/features/fuel/logic/keretHero'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
 import { FuelEnergyHero } from '@/features/fuel/components/FuelEnergyHero'
 import { huInt } from '@/shared/lib/huNum'
@@ -65,8 +65,9 @@ test('az üvegdoboz bezárható', async () => {
 test('statikus keretnél a mozgás sora gondolatjel', async () => {
   render(<FuelEnergyHero vm={vm({ staticEnergy: true })} />)
   await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
-  // Alap and Célod read a bare „—", Mozgás keeps its operator („+ —").
-  expect(within(screen.getByRole('dialog')).getAllByText('—')).toHaveLength(2)
+  // Alap reads a bare „—", Mozgás keeps its operator („+ —"); no goal → no Célod row at all.
+  expect(within(screen.getByRole('dialog')).getAllByText('—')).toHaveLength(1)
+  expect(within(screen.getByRole('dialog')).queryByText('Célod')).not.toBeInTheDocument()
   expect(within(screen.getByRole('dialog')).getByText('+ —')).toBeInTheDocument()
 })
 
@@ -100,6 +101,23 @@ test('tömegelésnél a Célod sor + előjelű', async () => {
   const goal = [...screen.getByRole('dialog').querySelectorAll('.fmx-node')][2]
   expect(goal.querySelector('b')!.textContent).toBe('+ 250')
   expect(within(goal as HTMLElement).getByText('a tömegelési célod napi része')).toBeInTheDocument()
+})
+
+test('egy célos felhasználó múltbeli napján a Célod sor őszintén „—"', async () => {
+  render(<FuelEnergyHero vm={asPastDayHero(vm({ budget: CUT }))} past trajectory="cut" />)
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  const goal = [...screen.getByRole('dialog').querySelectorAll('.fmx-node')][2]
+  expect(goal.querySelector('strong')!.textContent).toBe('Célod')
+  expect(goal.querySelector('b')!.textContent).toBe('—')
+})
+
+test('tartásnál a nem nulla maradék (BMR-padló) mellett nincs „tartás" felirat', async () => {
+  const floored: DayBudget = { ...CUT, kcal: 2956, energy: { base: 2356, planned: 570, extra: 0, balance: 30, target: 2956 } }
+  render(<FuelEnergyHero vm={vm({ budget: floored })} trajectory="maintain" />)
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  const goal = [...screen.getByRole('dialog').querySelectorAll('.fmx-node')][2]
+  expect(goal.querySelector('b')!.textContent).toBe('+ 30')
+  expect(goal.querySelector('small')!.textContent).toBe('')
 })
 
 test('tartásnál nulla egyenleggel nincs Célod sor', async () => {

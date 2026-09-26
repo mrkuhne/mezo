@@ -91,7 +91,7 @@ export function useFuelTimeline(date: string = localDateString()) {
   const bed = sleepGoal.bedTime
   const mealsPerDay = settings.mealsPerDay
 
-  // Three block lists, deliberately:
+  // Two block lists, deliberately:
   //   `blocks` is what the day holds — the schedule reconciled with the logged sport sessions
   //     (mezo-rilew) — and it drives the meal windows, so a planned session still gets its
   //     pre/post-workout fuel before it happens.

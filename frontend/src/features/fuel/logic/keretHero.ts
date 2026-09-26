@@ -236,9 +236,10 @@ export interface EquationLine {
  */
 export function heroEquationLines(vm: KeretHeroVM, trajectory: 'cut' | 'bulk' | 'maintain' | null = null): EquationLine[] {
   const balance = vm.chips?.balance ?? null
-  // A zero balance on a non-cut/bulk goal is "tartás" with nothing to add — the row would only be noise.
-  // A past day (chips null) keeps the row so it honestly reads „—" like its neighbours.
-  const showGoal = !(balance === 0 && trajectory !== 'cut' && trajectory !== 'bulk')
+  // No goal (trajectory null) → no goal row. A zero balance on a maintain goal is "tartás" with
+  // nothing to add — the row would only be noise. A goal user's past day (chips null) keeps the
+  // row so it honestly reads „—" like its neighbours.
+  const showGoal = trajectory != null && !(balance === 0 && trajectory === 'maintain')
   return [
     { key: 'base', label: 'Alap', value: vm.chips?.base ?? null, sign: null },
     { key: 'activity', label: 'Mozgás', value: vm.chips?.activity ?? null, sign: '+' },

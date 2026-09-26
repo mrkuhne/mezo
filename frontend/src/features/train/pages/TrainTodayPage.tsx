@@ -90,9 +90,8 @@ export function TrainTodayPage() {
   // Calibrated pacing (Task 12, mezo-dzbm): only the today chip's workoutMinutes reads this —
   // structureLint/peakWeekFit/programFit deliberately stay on the static estimate.
   const { data: timingProfile, isPending: timingProfilePending } = useTimingProfile()
-  // Same weight source `deriveDailyBudget` reads for Fuel's calorie budget
-  // (`frontend/src/data/fuel/timelineHooks.ts:92-110`) — Mai's energy card must never
-  // drift from the number Fuel already shows for the day (Task 5, mezo-88iwa.6).
+  // Same weight source the Fuel timeline (`useFuelTimeline`) reads for its rest energy — Mai's
+  // energy card must never drift from the number Fuel already shows for the day (Task 5, mezo-88iwa.6).
   const { goal, goalResponse } = useGoal()
   const qc = useQueryClient()
   // Morning-training reschedule (mezo-67rb): wake-anchored window over the raw gym slots.
@@ -301,8 +300,8 @@ export function TrainTodayPage() {
     ) ?? null
 
   // ── Task 5 (mezo-88iwa.6): the energy + muscle-impact cards, today-only ──
-  // Weight source: the SAME hook `deriveDailyBudget` reads for the Fuel calorie budget
-  // (`frontend/src/data/fuel/timelineHooks.ts:92-110`) — `useGoal()`, read above. Falling
+  // Weight source: the SAME hook the Fuel timeline (`useFuelTimeline`) reads — `useGoal()`,
+  // read above. Falling
   // back to 0 (not a static default) keeps the "no weight on file" honest state identical
   // to Fuel's own fallback chain.
   const weightKg = goal?.currentWeight ?? goalResponse?.startWeightKg ?? 0

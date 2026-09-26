@@ -16457,6 +16457,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .flp-etile-sub { font-size: 9.5px; color: var(--text-muted); }
 .flp-etile.is-result { background: none; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 45%, transparent); }
 .flp-etile.is-result .flp-etile-val { font-size: 18px; color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+/* mezo-32m82: the day's per-session previews under the served movement sum — informational, no operators. */
+.flp-einfo { display: block; margin: 10px 0 6px; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.flp-etiles.is-info .flp-etile { flex: 0 1 120px; opacity: 0.78; }
 .flp-ewhy { margin: 8px 0 0; font-size: 12px; line-height: 1.45; color: var(--text-secondary); }
 .flp-ewhy b { font-weight: 600; color: var(--text-primary); }
 
