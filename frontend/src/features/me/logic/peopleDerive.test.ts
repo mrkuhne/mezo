@@ -37,6 +37,7 @@ function person(over: Partial<PersonEntry> = {}): PersonEntry {
     relationship: 'friend',
     relationshipHu: 'Barát',
     aliases: [],
+    facts: [],
     status: 'active',
     sourceKind: 'manual',
     affect_baseline: 'neutral',

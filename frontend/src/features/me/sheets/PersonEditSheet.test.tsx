@@ -16,6 +16,7 @@ const PERSON: PersonEntry = {
   name: 'Marci',
   initial: 'M',
   relationship: 'friend',
+  facts: [],
   relationshipHu: 'Barát',
   aliases: ['Marcika'],
   status: 'active',

@@ -2296,7 +2296,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Full update of the editable person fields (knownFacts/ties/affectTrend are AI-curated, untouched) */
+        /** Full update of the editable person fields (knownFacts/ties/affectTrend are legacy/seed data, read-only, untouched) */
         put: operations["updatePerson"];
         post?: never;
         /** Soft-delete an owned person (mentions stay stored, leave the feed) */
@@ -2335,6 +2335,58 @@ export interface paths {
         post?: never;
         /** Revoke a mention (soft delete) */
         delete: operations["deleteMention"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/people/facts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active person facts captured from one source (the chat chip's post-hoc fetch) */
+        get: operations["getFactsBySource"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/people/{personId}/facts/{factId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Undo/retire a person fact (active=false; its text becomes a durable no-recapture veto) */
+        delete: operations["undoPersonFact"];
+        options?: never;
+        head?: never;
+        /** Per-fact prompt toggle */
+        patch: operations["updatePersonFact"];
+        trace?: never;
+    };
+    "/api/people/{personId}/facts/seen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark the person's unseen (nightly-captured) facts as seen */
+        post: operations["markPersonFactsSeen"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -8245,6 +8297,29 @@ export interface components {
             /** @description Az Emberek hub Mezo-észrevétel sávjának mondata. A mai 'people' companion-üzenet, ha van; egyébként a heti aggregátumokból számított, determinisztikus tartalék. Sosem üres — a sáv mindig igaz mondatot mutat. */
             mezoNote: string;
         };
+        UpdatePersonFactRequest: {
+            includeInPrompt: boolean;
+        };
+        /** @description S3 (mezo-d6ivw.3) — egy normalizált tény egy ismert személyről, forrás-hivatkozással. A legacy person.knownFacts tömbtől független; visszavonás után a szöveg tartós vétó. */
+        PersonFactResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            personId: string;
+            /** @enum {string} */
+            kind: "preference" | "relationship_state" | "shared_activity" | "important_date" | "sensitivity";
+            factText: string;
+            /** @enum {string} */
+            confidence: "low" | "medium" | "high";
+            /** @enum {string} */
+            sourceRefKind: "chat_turn" | "nightly_day";
+            active: boolean;
+            includeInPrompt: boolean;
+            /** @description false, amíg a (jellemzően éjszakai) tényt a személy oldalán először meg nem nézik. */
+            seen: boolean;
+            /** Format: date-time */
+            createdAt: string;
+        };
         PersonResponse: {
             /** Format: uuid */
             id: string;
@@ -8262,7 +8337,10 @@ export interface components {
             affectBaseline: "positive" | "neutral" | "mixed" | "negative";
             contactCadenceLabel?: string;
             notes?: string;
+            /** @description Legacy/seed narratív sorok — read-only, nincs írójuk; az élő tények a facts mezőben. */
             knownFacts: string[];
+            /** @description S3 — a személy AKTÍV normalizált tényei, legfrissebb elöl. */
+            facts: components["schemas"]["PersonFactResponse"][];
             ties: string[];
             /** @description Heti hangulat-olvasatok 1..5 skálán, időrendben (legfeljebb 8, a legfrissebbek). Az említések tónusából és intenzitásából SZÁMÍTOTT érték — a person.affect_trend oszlopot ez a válasz nem olvassa. */
             affectTrend: number[];
@@ -18416,6 +18494,151 @@ export interface operations {
             };
             /** @description Mention missing, foreign, or belongs to a different person (indistinguishable) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getFactsBySource: {
+        parameters: {
+            query: {
+                sourceRefKind: "chat_turn" | "nightly_day";
+                sourceRefId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Facts captured from that source (empty array while extraction is still running) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonFactResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    undoPersonFact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                factId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deactivated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Fact missing, foreign, or belongs to a different person (indistinguishable) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updatePersonFact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                factId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePersonFactRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated fact */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonFactResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Fact missing or foreign */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    markPersonFactsSeen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Stamped */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -1,9 +1,12 @@
-import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { useRef } from 'react'
 import { useDualQuery } from '@/data/useDualQuery'
 import { isMockMode } from '@/data/_client/mode'
-import { peopleApi, toMention, toPersonEntry } from '@/data/me/peopleApi'
-import { people as personSeed, mentions as mentionSeed, mezoNote as mezoNoteSeed } from '@/data/me/people'
-import type { Mention, MentionLogInput, PersonEntry, PersonSaveInput } from '@/data/types'
+import { peopleApi, toMention, toPersonEntry, toPersonFact } from '@/data/me/peopleApi'
+import {
+  people as personSeed, mentions as mentionSeed, mezoNote as mezoNoteSeed, MOCK_TURN_FACTS,
+} from '@/data/me/people'
+import type { Mention, MentionLogInput, PersonEntry, PersonFact, PersonSaveInput } from '@/data/types'
 
 export interface PeopleBootstrap {
   people: PersonEntry[]
@@ -81,6 +84,29 @@ export function usePeople() {
     onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: PEOPLE_KEY }),
   })
 
+  // --- S3 person facts: visszavonás (tartós vétó), prompt-kapcsoló, „új" jelölés leszedése ---
+  const undoFactM = useMutation({
+    mutationFn: async (input: { personId: string; factId: string }) => {
+      if (mock) { mockUndoFact(qc, input.personId, input.factId); return }
+      await peopleApi.undoFact(input.personId, input.factId)
+    },
+    onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: PEOPLE_KEY }),
+  })
+  const toggleFactM = useMutation({
+    mutationFn: async (input: { personId: string; factId: string; includeInPrompt: boolean }) => {
+      if (mock) { mockToggleFact(qc, input.personId, input.factId, input.includeInPrompt); return }
+      await peopleApi.toggleFact(input.personId, input.factId, input.includeInPrompt)
+    },
+    onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: PEOPLE_KEY }),
+  })
+  const seenFactsM = useMutation({
+    mutationFn: async (personId: string) => {
+      if (mock) { mockMarkFactsSeen(qc, personId); return }
+      await peopleApi.markFactsSeen(personId)
+    },
+    onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: PEOPLE_KEY }),
+  })
+
   return {
     people: data.people.filter(p => p.status !== 'candidate'),
     candidates: data.people.filter(p => p.status === 'candidate'),
@@ -92,8 +118,75 @@ export function usePeople() {
     undoMention: (m: Mention) => undoM.mutate(m),
     decidePerson: (personId: string, decision: 'accept' | 'reject') =>
       decideM.mutate({ personId, decision }),
+    undoFact: (personId: string, factId: string) => undoFactM.mutate({ personId, factId }),
+    toggleFact: (personId: string, factId: string, includeInPrompt: boolean) =>
+      toggleFactM.mutate({ personId, factId, includeInPrompt }),
+    markFactsSeen: (personId: string) => seenFactsM.mutate(personId),
     isPending,
   }
+}
+
+/** S3: a „Megjegyeztem" chip visszalépő lekérdezés-ütemezése (ms) — utána néma feladás. */
+const TURN_FACT_POLL_DELAYS = [2000, 3000, 5000]
+
+/**
+ * S3 (mezo-d6ivw.3): egy elküldött chat-forduló utólag befutó személy-tényei. A kinyerés a
+ * válasz UTÁN, a háttérben fut, ezért a FE rövid visszalépő ütemezéssel kérdez rá
+ * (~2s/5s/10s összesen), aztán némán feladja. Mock módban egy demó-tény jön azonnal.
+ */
+export function useTurnFacts(userMessageId: string | null): { facts: PersonFact[]; pending: boolean } {
+  const mock = isMockMode()
+  const attempts = useRef(0)
+  const lastId = useRef<string | null>(null)
+  if (lastId.current !== userMessageId) {
+    lastId.current = userMessageId
+    attempts.current = 0
+  }
+  const { data } = useQuery<PersonFact[]>({
+    queryKey: ['turn-facts', userMessageId],
+    enabled: !mock && !!userMessageId,
+    queryFn: async () => {
+      attempts.current += 1
+      const res = await peopleApi.getFactsBySource('chat_turn', userMessageId!)
+      return res.map(toPersonFact)
+    },
+    refetchInterval: (query) => {
+      const found = (query.state.data?.length ?? 0) > 0
+      if (found || attempts.current >= TURN_FACT_POLL_DELAYS.length) return false
+      return TURN_FACT_POLL_DELAYS[Math.min(attempts.current, TURN_FACT_POLL_DELAYS.length - 1)]
+    },
+    staleTime: Infinity,
+    gcTime: 5 * 60_000,
+  })
+  if (mock) {
+    return { facts: userMessageId ? MOCK_TURN_FACTS : [], pending: false }
+  }
+  const facts = data ?? []
+  const pending = !!userMessageId && facts.length === 0
+    && attempts.current < TURN_FACT_POLL_DELAYS.length
+  return { facts, pending }
+}
+
+function mapPersonFacts(qc: QueryClient, personId: string, fn: (facts: PersonFact[]) => PersonFact[]) {
+  qc.setQueryData<PeopleBootstrap>(PEOPLE_KEY, (old) => {
+    const base = old ?? MOCK_PEOPLE
+    return {
+      ...base,
+      people: base.people.map(p => p.id === personId ? { ...p, facts: fn(p.facts) } : p),
+    }
+  })
+}
+
+function mockUndoFact(qc: QueryClient, personId: string, factId: string) {
+  mapPersonFacts(qc, personId, facts => facts.filter(f => f.id !== factId))
+}
+
+function mockToggleFact(qc: QueryClient, personId: string, factId: string, includeInPrompt: boolean) {
+  mapPersonFacts(qc, personId, facts => facts.map(f => f.id === factId ? { ...f, includeInPrompt } : f))
+}
+
+function mockMarkFactsSeen(qc: QueryClient, personId: string) {
+  mapPersonFacts(qc, personId, facts => facts.map(f => f.seen ? f : { ...f, seen: true }))
 }
 
 function mockUndoMention(qc: QueryClient, mentionId: string) {
@@ -136,7 +229,7 @@ function mockSavePerson(qc: QueryClient, input: PersonSaveInput) {
       mentionCount: 0, mentionsThisWeek: 0, last_mentioned_at: '',
       lastMentionLabel: 'Még nincs említés', affectTrend: [], affectTrendStart: null,
       direction: 'flat', directionReason: null, knownFacts: [], ties: [], graphEdges: [],
-      status: 'active', sourceKind: 'manual', ...editable(input),
+      facts: [], status: 'active', sourceKind: 'manual', ...editable(input),
     }
     return { ...base, people: [...base.people, fresh] }
   })

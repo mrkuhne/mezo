@@ -1,8 +1,8 @@
 import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
 import type {
-  Affect, Mention, MentionContext, MentionSource, PersonEntry, PersonSaveInput,
-  PersonSourceKind, PersonStatus, Relationship,
+  Affect, Mention, MentionContext, MentionSource, PersonEntry, PersonFact, PersonFactKind,
+  PersonSaveInput, PersonSourceKind, PersonStatus, Relationship,
 } from '@/data/types'
 
 export type PeopleResponse = components['schemas']['PeopleResponse']
@@ -12,6 +12,8 @@ export type LogMentionRequest = components['schemas']['LogMentionRequest']
 export type CreatePersonRequest = components['schemas']['CreatePersonRequest']
 export type UpdatePersonRequest = components['schemas']['UpdatePersonRequest']
 export type PersonDecisionRequest = components['schemas']['PersonDecisionRequest']
+export type PersonFactResponse = components['schemas']['PersonFactResponse']
+export type UpdatePersonFactRequest = components['schemas']['UpdatePersonFactRequest']
 
 const PEOPLE = '/api/people'
 
@@ -50,6 +52,21 @@ export function toMention(m: MentionResponse): Mention {
   }
 }
 
+/** S3: wire → FE domain (factText→text, sourceRefKind→sourceKind). */
+export function toPersonFact(f: PersonFactResponse): PersonFact {
+  return {
+    id: f.id,
+    personId: f.personId,
+    kind: f.kind as PersonFactKind,
+    text: f.factText,
+    confidence: f.confidence,
+    sourceKind: f.sourceRefKind,
+    includeInPrompt: f.includeInPrompt,
+    seen: f.seen,
+    createdAt: f.createdAt,
+  }
+}
+
 export function toPersonEntry(p: PersonResponse): PersonEntry {
   return {
     id: p.id,
@@ -76,6 +93,7 @@ export function toPersonEntry(p: PersonResponse): PersonEntry {
     knownFacts: p.knownFacts,
     ties: p.ties,
     graphEdges: p.graphEdges,
+    facts: p.facts.map(toPersonFact),
   }
 }
 
@@ -112,4 +130,17 @@ export const peopleApi = {
     }),
   deleteMention: (personId: string, mentionId: string) =>
     apiFetch<void>(`${PEOPLE}/${personId}/mentions/${mentionId}`, { method: 'DELETE' }),
+  // --- S3 person facts ---
+  getFactsBySource: (sourceRefKind: 'chat_turn' | 'nightly_day', sourceRefId: string) =>
+    apiFetch<PersonFactResponse[]>(
+      `${PEOPLE}/facts?sourceRefKind=${sourceRefKind}&sourceRefId=${encodeURIComponent(sourceRefId)}`),
+  undoFact: (personId: string, factId: string) =>
+    apiFetch<void>(`${PEOPLE}/${personId}/facts/${factId}`, { method: 'DELETE' }),
+  toggleFact: (personId: string, factId: string, includeInPrompt: boolean) =>
+    apiFetch<PersonFactResponse>(`${PEOPLE}/${personId}/facts/${factId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ includeInPrompt } satisfies UpdatePersonFactRequest),
+    }),
+  markFactsSeen: (personId: string) =>
+    apiFetch<void>(`${PEOPLE}/${personId}/facts/seen`, { method: 'POST' }),
 }
