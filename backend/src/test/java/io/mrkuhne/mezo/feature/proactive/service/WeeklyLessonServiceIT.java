@@ -42,7 +42,11 @@ class WeeklyLessonServiceIT extends AbstractIntegrationTest {
     @Autowired private UserPopulator userPopulator;
 
     private static LessonProposal lesson(String text, String category, String evidence) {
-        return new LessonProposal(text, category, evidence);
+        return new LessonProposal(text, category, evidence, null);
+    }
+
+    private static LessonProposal lesson(String text, String category, String evidence, String owner) {
+        return new LessonProposal(text, category, evidence, owner);
     }
 
     @Test
@@ -60,6 +64,28 @@ class WeeklyLessonServiceIT extends AbstractIntegrationTest {
                     assertThat(c.getUserDecision()).isNull();
                     assertThat(c.getDerivedFromMessageId()).isNull();
                 });
+    }
+
+    @Test
+    void aProposedOwnerPersistsAsGiven() {
+        UUID user = userPopulator.createUser("wl-owner-given@test.local").getId();
+
+        assertThat(service.propose(user, WEEK_START,
+                List.of(lesson("Hétvégén később fekszel.", "health", null, "szunya")))).isEqualTo(1);
+
+        assertThat(learnedFactRepository.findByCreatedByAndDeletedFalse(user)).singleElement()
+                .satisfies(c -> assertThat(c.getOwner()).isEqualTo("szunya"));
+    }
+
+    @Test
+    void anAbsentOwnerDefaultsToTheCategoryOwner() {
+        UUID user = userPopulator.createUser("wl-owner-absent@test.local").getId();
+
+        assertThat(service.propose(user, WEEK_START,
+                List.of(lesson("Edzés után korábban fekszel.", "train", null)))).isEqualTo(1);
+
+        assertThat(learnedFactRepository.findByCreatedByAndDeletedFalse(user)).singleElement()
+                .satisfies(c -> assertThat(c.getOwner()).isEqualTo("mocor"));
     }
 
     @Test

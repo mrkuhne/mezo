@@ -869,7 +869,7 @@ open the app, not things worth a phone buzz — see §9's "what deliberately sta
 | `pattern_inbox` | `pattern` | `/insights/patterns/{pairKey}` | F1 — `PatternDetectionService.upsert` |
 | `pattern_signal` | `pattern` | `/insights/patterns/{pairKey}` | F1 — `PatternDetectionService.recordSnapshot` |
 | `hypothesis_new` | `pattern` | `/insights` | F2 — `HypothesisPipelineService` |
-| `fact_candidate` | `knowledge` | `/insights/knowledge` | F2 — `FactExtractionService` |
+| `fact_candidate` | `knowledge` | `/mezo/rolad` | F2 — `FactExtractionService` |
 | `fact_reinforced` | `knowledge` | `/insights/knowledge` | F1 — `PatternDetectionService.reinforcePromotedFact`; **also F2** — `FactExtractionService`'s chat-side reinforcement branch (two independent producers, one dedup-key shape, §3a) |
 | `memoir_ready` | **null** | `/insights/memoir` | F2 — `MemoirGenerator` — familyKey is null *by design*: the existing `memoir` push category already covers this event, so a second push category would double-notify |
 | `prediction_new` | `prediction` | `/insights/predictions` | F2 — `PredictionGenerator` |
@@ -882,7 +882,7 @@ open the app, not things worth a phone buzz — see §9's "what deliberately sta
 | `life_goal_plan` | **null** | `/me/goals/{goalId}` | `mezo-iizd.7` — `LifeGoalTriggerService` |
 | `goal_suggestion` | **null** | `/me/goals/weight/suggestions/{suggestionId}` | `mezo-ricj.4` — `GoalSuggestionNotificationListener`, after a committed `GoalSuggestionProposedEvent` |
 | `person_candidate` | **null** | `/me/people/jeloltek` | `mezo-0cbh` — `PersonExtractionService` (the nightly `GraphMaintenanceJob` 4th phase), ONE row per night's whole crop |
-| `graph_candidate` | **null** | `/mezo/knowledge` | `mezo-0cbh` — **two producers, one kind** (the `challenge_event` shape): `LifeEventExtractionService` (nightly LIFE_EVENT) and `QuarterlyReviewService` (quarterly SEASON), different dedup keys and different words |
+| `graph_candidate` | **null** | `/mezo/rolad` | `mezo-0cbh` — **two producers, one kind** (the `challenge_event` shape): `LifeEventExtractionService` (nightly LIFE_EVENT) and `QuarterlyReviewService` (quarterly SEASON), different dedup keys and different words |
 | `habit_formation` | **null** | `/me/rutin/szokas/{habitKey}` | `mezo-0cbh` — `HabitService.emitFormationIfCrossed`, swept nightly by `HabitJob`; once-ever per habit via the dedup key |
 | `character_portrait` | **null** | `/me/karakter` | `mezo-0cbh` — `CharacterMonthlyService` (the month's first Sunday deep read) |
 | `konzilium_verdict` | **null** | `/me/karakter/konzilium` | `mezo-0cbh` — `CharacterConferenceService` (weekly), **only when `changes` is non-empty** |

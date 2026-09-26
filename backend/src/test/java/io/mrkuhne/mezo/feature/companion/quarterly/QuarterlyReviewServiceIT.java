@@ -81,7 +81,7 @@ class QuarterlyReviewServiceIT extends AbstractIntegrationTest {
             .singleElement()
             .satisfies(n -> {
                 assertThat(n.getTitle()).isEqualTo("Egy szezon vár döntésre");
-                assertThat(n.getDeeplink()).isEqualTo("/mezo/knowledge");
+                assertThat(n.getDeeplink()).isEqualTo("/mezo/rolad");
             });
     }
 

@@ -76,7 +76,45 @@ class FactExtractionServiceIT extends AbstractIntegrationTest {
         assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(userId))
                 .filteredOn(n -> n.getKind().equals("fact_candidate"))
                 .hasSize(2)
-                .allSatisfy(n -> assertThat(n.getDeeplink()).isEqualTo("/insights/knowledge"));
+                .allSatisfy(n -> assertThat(n.getDeeplink()).isEqualTo("/mezo/rolad"));
+    }
+
+    @Test
+    void testExtractFromTurn_shouldPersistTheProposedOwner_whenValid() {
+        UUID userId = databasePopulator.populateUser("extract-owner-valid@test.local");
+        String content = "mesélek magamról [fake-facts:[" +
+                "{\"fact\":\"Hétvégén később fekszem le\",\"category\":\"health\",\"owner\":\"szunya\"}]]";
+
+        int persisted = factExtractionService.extractFromTurn(userId, null, content, "értem");
+
+        assertThat(persisted).isEqualTo(1);
+        assertThat(pending(userId).getFirst().getOwner()).isEqualTo("szunya");
+    }
+
+    @Test
+    void testExtractFromTurn_shouldFallBackToCategoryDefault_whenProposedOwnerIsInvalid() {
+        UUID userId = databasePopulator.populateUser("extract-owner-invalid@test.local");
+        String content = "mesélek magamról [fake-facts:[" +
+                "{\"fact\":\"Szeretem a zabot\",\"category\":\"fuel\",\"owner\":\"doki\"}]]";
+
+        int persisted = factExtractionService.extractFromTurn(userId, null, content, "értem");
+
+        assertThat(persisted).isEqualTo(1);
+        LearnedFactEntity candidate = pending(userId).getFirst();
+        assertThat(candidate.getCandidateText()).isEqualTo("Szeretem a zabot");
+        assertThat(candidate.getOwner()).isEqualTo("falat"); // invalid owner falls back to the category default
+    }
+
+    @Test
+    void testExtractFromTurn_shouldDefaultOwnerToCategory_whenOwnerAbsent() {
+        UUID userId = databasePopulator.populateUser("extract-owner-absent@test.local");
+        String content = "mesélek magamról [fake-facts:[" +
+                "{\"fact\":\"Reggel edz szívesen\",\"category\":\"train\"}]]";
+
+        int persisted = factExtractionService.extractFromTurn(userId, null, content, "értem");
+
+        assertThat(persisted).isEqualTo(1);
+        assertThat(pending(userId).getFirst().getOwner()).isEqualTo("mocor");
     }
 
     @Test

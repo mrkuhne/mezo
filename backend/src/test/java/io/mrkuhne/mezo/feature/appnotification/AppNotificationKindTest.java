@@ -27,7 +27,7 @@ class AppNotificationKindTest {
         // weekly_review_ready: same no-family rationale as memoir_ready (mezo-p2tr).
         assertThat(AppNotificationKind.WEEKLY_REVIEW_READY.familyKey()).isNull();
         assertThat(AppNotificationKind.WEEKLY_REVIEW_READY.deeplink()).isEqualTo("/me/week");
-        assertThat(AppNotificationKind.FACT_CANDIDATE.deeplink()).isEqualTo("/insights/knowledge");
+        assertThat(AppNotificationKind.FACT_CANDIDATE.deeplink()).isEqualTo("/mezo/rolad");
         assertThat(AppNotificationKind.CHALLENGE_EVENT.deeplink()).isEqualTo("/train");
         assertThat(AppNotificationKind.MEMORY_NOTE.deeplink()).isEqualTo("/insights/memoria");
         // life_goal_plan (mezo-iizd.7): feed-only — a ha–akkor terv nem kap saját push-kategóriát
@@ -44,7 +44,7 @@ class AppNotificationKindTest {
         assertThat(AppNotificationKind.PERSON_CANDIDATE.familyKey()).isNull();
         assertThat(AppNotificationKind.PERSON_CANDIDATE.deeplink()).isEqualTo("/me/people/jeloltek");
         assertThat(AppNotificationKind.GRAPH_CANDIDATE.familyKey()).isNull();
-        assertThat(AppNotificationKind.GRAPH_CANDIDATE.deeplink()).isEqualTo("/mezo/knowledge");
+        assertThat(AppNotificationKind.GRAPH_CANDIDATE.deeplink()).isEqualTo("/mezo/rolad");
         assertThat(AppNotificationKind.HABIT_FORMATION.familyKey()).isNull();
         assertThat(AppNotificationKind.HABIT_FORMATION.deeplink()).isEqualTo("/me/rutin/szokas");
         assertThat(AppNotificationKind.CHARACTER_PORTRAIT.familyKey()).isNull();

@@ -17,7 +17,7 @@ public enum AppNotificationKind {
     PATTERN_INBOX("pattern_inbox", "pattern", "/insights/patterns/"),
     PATTERN_SIGNAL("pattern_signal", "pattern", "/insights/patterns/"),
     HYPOTHESIS_NEW("hypothesis_new", "pattern", "/insights"),
-    FACT_CANDIDATE("fact_candidate", "knowledge", "/insights/knowledge"),
+    FACT_CANDIDATE("fact_candidate", "knowledge", "/mezo/rolad"),
     FACT_REINFORCED("fact_reinforced", "knowledge", "/insights/knowledge"),
     MEMOIR_READY("memoir_ready", null, "/insights/memoir"),
     PREDICTION_NEW("prediction_new", "prediction", "/insights/predictions"),
@@ -42,7 +42,7 @@ public enum AppNotificationKind {
     PERSON_CANDIDATE("person_candidate", null, "/me/people/jeloltek"),
     /** An undecided graph candidate: LIFE_EVENT from the nightly pass, SEASON from the quarterly
      *  deep read. Two producers, one kind — the {@code challenge_event} precedent. */
-    GRAPH_CANDIDATE("graph_candidate", null, "/mezo/knowledge"),
+    GRAPH_CANDIDATE("graph_candidate", null, "/mezo/rolad"),
     /** A habit crossed the automaticity threshold. The deeplink base takes the habit key at emit
      *  time (the pattern kinds' idiom); once-ever per habit, enforced by the dedup key. */
     HABIT_FORMATION("habit_formation", null, "/me/rutin/szokas"),

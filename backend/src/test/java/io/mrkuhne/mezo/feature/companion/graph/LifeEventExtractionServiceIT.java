@@ -91,7 +91,7 @@ class LifeEventExtractionServiceIT extends AbstractIntegrationTest {
             .singleElement()
             .satisfies(n -> {
                 assertThat(n.getTitle()).isEqualTo("Egy életesemény vár döntésre");
-                assertThat(n.getDeeplink()).isEqualTo("/mezo/knowledge");
+                assertThat(n.getDeeplink()).isEqualTo("/mezo/rolad");
             });
 
         List<GraphNodeEntity> nodes = nodeRepository.findAll().stream()
