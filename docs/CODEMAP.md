@@ -144,7 +144,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### appnotification
 
-*BE + API* · read next: [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-25, mixed)
+*BE + API* · read next: [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-26, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/appnotification`
   - **sub-features:** `domain`
@@ -235,7 +235,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### character
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-25, shipped)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-26, shipped)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
   - **sub-features:** `detector`
@@ -336,7 +336,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### companion
 
 *BE + API + FE-data* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-09-09, done) ·
-  [docs/features/character.md](features/character.md) (updated 2026-09-25, shipped) ·
+  [docs/features/character.md](features/character.md) (updated 2026-09-26, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-09-26, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-25, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-18, in-progress) ·
@@ -369,11 +369,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MemoryVectorRepository`, `MessageFeedbackRepository`, `PatternEventRepository`, `PatternRepository`,
     `PeriodSummaryRepository`, `PersonalRecordQuery`, `PersonalRecordSource`, `TextSignalRepository`,
     `WeeklyScoreRepository`
-  - **services:** `AdviceRankPort`, `ChatDaySignalService`, `ChatMemoryContextAdapter`, `ChatMentionListener`,
-    `ChatService`, `ChatStreamService`, `ChatTurnCompleted`, `CompanionPreferencesService`, `ConsolidationJob`,
-    `ContextSnapshotAssembler`, `ConversationHistory`, `ConversationService`, `ConversationTurnService`,
-    `DailyCardPort`, `DailySummaryJob`, `DailySummaryService`, `DayEvaluationEngine`, `DayReviewLlm`,
-    `DayReviewService`, `DayReviewWarmupJob`, `DayScoreService`, `DecisionContextAssemblerAdapter`,
+  - **services:** `AdviceRankPort`, `CandidateSnooze`, `ChatDaySignalService`, `ChatMemoryContextAdapter`,
+    `ChatMentionListener`, `ChatService`, `ChatStreamService`, `ChatTurnCompleted`, `CompanionPreferencesService`,
+    `ConsolidationJob`, `ContextSnapshotAssembler`, `ConversationHistory`, `ConversationService`,
+    `ConversationTurnService`, `DailyCardPort`, `DailySummaryJob`, `DailySummaryService`, `DayEvaluationEngine`,
+    `DayReviewLlm`, `DayReviewService`, `DayReviewWarmupJob`, `DayScoreService`, `DecisionContextAssemblerAdapter`,
     `DenseMemoryRetriever`, `DerivedSeriesService`, `FactCandidateService`, `FactExtractionListener`,
     `FactExtractionService`, `FactMemoryRetriever`, `FeedMessageKindSource`, `FeedbackLearningJob`,
     `FeedbackLearningService`, `FlagCatalog`, `FlagEvaluationListener`, `FlagEvaluator`, `FlagFactRenderer`, `FlagKey`,
@@ -429,7 +429,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `AllHealthyRule`, `BiometricsTools`, `CharacterPromptSource`, `ChatHistory`, `CheckInNoteSourceAdapter`,
     `ClinicalOutputCheck`, `CompanionAdvisorChain`, `CompanionHelloRunner`, `CompanionLlm`, `CompanionToolRegistry`,
     `ConsumerPolicy`, `ConversationContextTools`, `DayReviewJson`, `DayReviewLlmAdapter`, `EmbeddingPort`,
-    `EnergyDipMealTimingRule`, `FakeCompanionLlm`, `FakeEmbeddingAdapter`, `FeedContextTools`,
+    `EnergyDipMealTimingRule`, `FactOwner`, `FakeCompanionLlm`, `FakeEmbeddingAdapter`, `FeedContextTools`,
     `FeedbackRollupStatsEnvelope`, `FlagPayloadEnvelope`, `FuelTools`, `GeminiCompanionLlm`, `GeminiEmbeddingAdapter`,
     `GoalTools`, `GoogleGenAiUsageExtractor`, `GraphEdgeEvidence`, `GraphProposedEdge`, `GrowthTools`,
     `HabitSuggestLlmAdapter`, `HighlightCitationSource`, `IgnoredNudgeRule`, `InsightsTools`, `JointOveruseRule`,
@@ -479,7 +479,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/companion`
   - **hooks (via `@/data/hooks`):** `useAccountSettings`, `useCompanionPreferences`, `usePersonalContext`
   - **modules:** preferencesApi.ts, preferencesHooks.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 266 IT + 88 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 267 IT + 89 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,
@@ -504,8 +504,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `DailySummaryJobIT`, `DailySummaryJobSwitchOffIT`, `DailySummaryServiceIT`, `DayEvaluationApiIT`,
     `DayEvaluationSwitchOffApiIT`, `DayReviewRepositoryIT`, `DayReviewWarmupJobIT`, `DayReviewWarmupJobSwitchOffIT`,
     `DayScoreServiceIT`, `DayScoreServiceWindowFetchCountIT`, `EnergyDipMealTimingRuleSwitchOffIT`,
-    `FactCandidateServiceIT`, `FactExtractionServiceIT`, `FakeEmbeddingAdapterIT`, `FeedReadToolsIT`,
-    `FeedbackLearningJobSwitchOffIT`, `FeedbackLearningPropertiesIT`, `FeedbackLearningServiceIT`,
+    `FactCandidateServiceIT`, `FactExtractionServiceIT`, `FactOwnerPersistenceIT`, `FakeEmbeddingAdapterIT`,
+    `FeedReadToolsIT`, `FeedbackLearningJobSwitchOffIT`, `FeedbackLearningPropertiesIT`, `FeedbackLearningServiceIT`,
     `FeedbackRollupPersistenceIT`, `FlagEvaluationListenerIT`, `FlagEvaluatorAcuteBadDayIT`,
     `FlagEvaluatorEnergyDipIT`, `FlagEvaluatorIgnoredNudgeIT`, `FlagEvaluatorJointOveruseIT`,
     `FlagEvaluatorLateEatingIT`, `FlagEvaluatorLoadFuelMismatchIT`, `FlagEvaluatorLoggingGapIT`,
@@ -570,7 +570,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### feedback
 
-*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-09-25, mixed)
+*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-09-26, mixed)
 
 - **FE data** `frontend/src/data/feedback`
   - **hooks (via `@/data/hooks`):** `useFeedback`
@@ -749,7 +749,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### insights
 
 *FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-26, mixed) ·
-  [docs/features/insights.md](features/insights.md) (updated 2026-09-25, mixed)
+  [docs/features/insights.md](features/insights.md) (updated 2026-09-26, mixed)
 
 - **FE data** `frontend/src/data/insights`
   - **hooks (via `@/data/hooks`):** `MemoryRetrievalFeedback`, `MemoryRetrievalFeedbackAction`,
@@ -784,14 +784,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     PatternArtifactDetail.tsx, PatternDecisionCard.tsx, PatternDetailHero.tsx, PatternDomainMark.tsx,
     PatternEvidenceChart.tsx, PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx,
     PatternStrengthChart.tsx, ProfileNodeCard.tsx, ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx,
-    RememberedChips.tsx, RoomCaseCard.tsx, SimilarDayCard.tsx, StoryStrip.tsx, TestPlanTiles.tsx, TokenColumns.tsx,
-    ToolWorkStrip.tsx, VerdictArc.tsx, experimentStatus.tsx, useFeedSession.ts, useTeamFeed.ts
+    RememberedChips.tsx, RoladFacts.tsx, RoladInbox.tsx, RoladQuote.tsx, RoladTimeline.tsx, RoomCaseCard.tsx,
+    SimilarDayCard.tsx, StoryStrip.tsx, TestPlanTiles.tsx, TokenColumns.tsx, ToolWorkStrip.tsx, VerdictArc.tsx,
+    experimentStatus.tsx, riseStyle.ts, useFeedSession.ts, useTeamFeed.ts
   - **logic:** boopNavigation.ts, chatRefs.ts, coachingCopy.ts, diagnosisCatalog.ts, diagnosisCopy.ts, domains.ts,
     factCopy.ts, findings.ts, humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternCatalog.ts,
-    patternEvidence.ts, patternHistory.ts, predictionStatus.ts, quickQuestions.ts, team.ts, teamEdition.ts,
-    teamFeed.fixtures.ts, teamFeed.ts, teamRooms.ts, toolDomains.ts, useStickToBottom.ts, useVoiceInput.ts,
-    verdicts.ts
-  - **root:** boop-world.css
+    patternEvidence.ts, patternHistory.ts, predictionStatus.ts, quickQuestions.ts, roladCopy.ts, team.ts,
+    teamEdition.ts, teamFeed.fixtures.ts, teamFeed.ts, teamRooms.ts, toolDomains.ts, useStickToBottom.ts,
+    useVoiceInput.ts, verdicts.ts
+  - **root:** boop-world.css, useRoladInbox.ts
 
 ### intention
 
@@ -926,7 +927,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/me.md](features/me.md) (updated 2026-09-26, mixed) ·
   [docs/features/today.md](features/today.md) (updated 2026-09-25, mixed) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-25, done) ·
-  [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-25, mixed)
+  [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-26, mixed)
 
 - **FE data** `frontend/src/data/me`
   - **hooks (via `@/data/hooks`):** `DayEvaluationResponse`, `NormalizedDayDimension`, `NormalizedDayEvaluation`,
@@ -1043,7 +1044,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### notification
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-25, mixed)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-26, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/notification`
   - **sub-features:** `domain`
@@ -1156,7 +1157,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### proactive
 
 *BE + API* · read next: [docs/features/contextual-feed-evaluation.md](features/contextual-feed-evaluation.md) (updated 2026-09-24, complete) ·
-  [docs/features/proactive.md](features/proactive.md) (updated 2026-09-24, complete)
+  [docs/features/proactive.md](features/proactive.md) (updated 2026-09-26, complete)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/proactive`
   - **entities→tables:** `ChallengeEntity`→`challenge`, `CompanionMessageEntity`→`companion_message`,
@@ -1388,7 +1389,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *FE-data + FE-ui* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-25, done) ·
   [docs/features/intention.md](features/intention.md) (updated 2026-09-23, done) ·
   [docs/features/needs.md](features/needs.md) (updated 2026-09-23, done) ·
-  [docs/features/proactive.md](features/proactive.md) (updated 2026-09-24, complete) ·
+  [docs/features/proactive.md](features/proactive.md) (updated 2026-09-26, complete) ·
   [docs/features/ritual.md](features/ritual.md) (updated 2026-09-23, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-09-25, mixed)
 
