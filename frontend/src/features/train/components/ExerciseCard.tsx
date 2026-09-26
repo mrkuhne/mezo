@@ -13,7 +13,7 @@ import type { GymExercise } from '@/data/types'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { setStyle } from '@/features/train/logic/setBudget'
 import { formatDecimal, parseDecimal } from '@/features/train/logic/decimalInput'
-import { ClayIcon } from '@/shared/ui/clay'
+import { ClayIcon, Icon3D } from '@/shared/ui/clay'
 
 /** targetRIR values the two style buttons write — mirrors ExerciseAccordionRow's toggle. */
 const FAILURE_RIR = 0
@@ -182,13 +182,13 @@ export function ExerciseCard({
             type="button" aria-pressed={isFailure} className={isFailure ? 'on fire' : undefined}
             onClick={() => onChange({ targetRIR: FAILURE_RIR })}
           >
-            🔥 Failure
+            <Icon3D name="t-flame" size={16} className="uv-inline" />Failure
           </button>
           <button
             type="button" aria-pressed={!isFailure} className={!isFailure ? 'on leaf' : undefined}
             onClick={() => onChange({ targetRIR: VOLUME_RIR })}
           >
-            🌿 Volume
+            <Icon3D name="t-sprout" size={16} className="uv-inline" />Volume
           </button>
         </span>
         <NumField label="Bemelegítő szettek" value={ex.warmupSets} min={0} max={5}

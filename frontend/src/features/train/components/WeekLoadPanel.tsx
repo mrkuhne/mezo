@@ -15,6 +15,7 @@ import { structureLint } from '@/features/train/logic/structureLint'
 import { MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useState } from 'react'
+import { Icon3D } from '@/shared/ui/clay'
 
 const ARROW = { up: '▲', down: '▼', hold: '=' } as const
 
@@ -154,7 +155,7 @@ export function WeekLoadPanel({ days, priorities, volumePerMuscle, onBack }: Wee
 
           {conflicts.length > 0 ? conflicts.map((c) => (
             <div className="mz-lint rise" key={`${c.fromDay}-${c.toDay}`}>
-              <span aria-hidden="true">⚠️</span>
+              <Icon3D name="t-info" size={18} />
               <span>
                 <b>{c.groups.map((g) => g.label).join(' + ')}</b> egymást követő napokon
                 ({c.fromDay} {c.fromType} → {c.toDay} {c.toType}) — pihenőnap ajánlott közéjük.
@@ -169,7 +170,7 @@ export function WeekLoadPanel({ days, priorities, volumePerMuscle, onBack }: Wee
 
           {peakFits.length > 0 ? peakFits.map((f) => (
             <div className="mz-lint rise" key={f.day}>
-              <span aria-hidden="true">⚠️</span>
+              <Icon3D name="t-info" size={18} />
               <span>{peakFitLine(f)}</span>
             </div>
           )) : (
@@ -181,7 +182,7 @@ export function WeekLoadPanel({ days, priorities, volumePerMuscle, onBack }: Wee
 
           {structure.map((f, i) => (
             <div className="mz-lint rise" data-testid="structure-lint" key={`${f.rule}-${f.day ?? ''}-${i}`}>
-              <span aria-hidden="true">⚠️</span>
+              <Icon3D name="t-info" size={18} />
               <span><b>{f.label}</b>{f.detail ? ` ${f.detail}` : ''}</span>
             </div>
           ))}

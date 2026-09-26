@@ -11,6 +11,7 @@
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { SESSION_MUSCLE_CAP, type DayGroupRow } from '@/features/train/logic/setBudget'
+import { Icon3D } from '@/shared/ui/clay'
 
 export interface DayBreakdownWarning {
   label: string
@@ -58,7 +59,7 @@ export function DayBreakdownCard({ rows, warnings }: DayBreakdownCardProps) {
                       className="label-mono"
                       style={{ fontSize: 10, color: row.over ? 'var(--error)' : undefined, fontWeight: row.over ? 700 : undefined }}
                     >
-                      {row.sets} / {SESSION_MUSCLE_CAP}{row.over && ' ⚠'}
+                      {row.sets} / {SESSION_MUSCLE_CAP}{row.over && <><Icon3D name="t-info" size={14} className="uv-inline uv-after" /><span className="sr-only"> · plafon fölött</span></>}
                     </span>
                   )}
                 </div>
@@ -89,7 +90,7 @@ export function DayBreakdownCard({ rows, warnings }: DayBreakdownCardProps) {
                 background: 'var(--wash-amber)', color: 'var(--amber-deep)',
               }}
             >
-              ⚠ <strong>{warning.label}: ma {warning.sets} szett</strong> — {SESSION_MUSCLE_CAP} fölött nincs kimutatható plusz.
+              <Icon3D name="t-info" size={16} className="uv-inline" /><strong>{warning.label}: ma {warning.sets} szett</strong> — {SESSION_MUSCLE_CAP} fölött nincs kimutatható plusz.
               {warning.suggestDay != null && ` Vigyél át szettet egy másik napra (pl. ${warning.suggestDay})!`}
             </div>
           ))}

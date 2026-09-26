@@ -17,12 +17,15 @@ describe('InterviewStep', () => {
     const { rerender } = render(
       <InterviewStep state={state} dispatch={dispatch} onGenerate={vi.fn()} generating={false} />,
     )
-    const idleBtn = screen.getByRole('button', { name: '✨ Program generálása' })
+    const idleBtn = screen.getByRole('button', { name: 'Program generálása' })
     expect(idleBtn).toBeEnabled()
+    // mezo-z5lov: the ✨ emoji became the 3D t-spark sprite (aria-hidden), not part of the name.
+    expect(idleBtn.querySelector('use[href="#t-spark"]')).not.toBeNull()
+    expect(idleBtn.textContent).not.toMatch(/✨/)
 
     rerender(<InterviewStep state={state} dispatch={dispatch} onGenerate={vi.fn()} generating />)
     const busyBtn = screen.getByRole('button', { name: 'Mezo dolgozik…' })
     expect(busyBtn).toBeDisabled()
-    expect(screen.queryByRole('button', { name: '✨ Program generálása' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Program generálása' })).not.toBeInTheDocument()
   })
 })
