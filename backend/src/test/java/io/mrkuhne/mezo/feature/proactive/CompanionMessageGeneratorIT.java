@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.companion.tools.ToolText;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
+import io.mrkuhne.mezo.feature.proactive.repository.ProactiveMemoryUseRepository;
 import io.mrkuhne.mezo.feature.proactive.service.CompanionMessageGenerator;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
@@ -77,6 +78,7 @@ class CompanionMessageGeneratorIT extends AbstractIntegrationTest {
     @Autowired private PersonPopulator personPopulator;
     @Autowired private MentionPopulator mentionPopulator;
     @Autowired private FakeCompanionLlm fakeLlm;
+    @Autowired private ProactiveMemoryUseRepository proactiveMemoryUseRepository;
 
     @Test
     void testGenerateMorning_shouldPersistEnvelope_whenNarrativeWindowHasSummaries() {
@@ -152,6 +154,28 @@ class CompanionMessageGeneratorIT extends AbstractIntegrationTest {
                 .containsExactly(
                         tuple("FuelDay", "mai üzemanyag"),
                         tuple("Memory", DAY.minusDays(1).toString()));
+    }
+
+    /**
+     * S5 (bd mezo-d6ivw.5) Task 4 — the no-apropó path only: this class disables the reflection
+     * switch ({@code EffectLinkService}'s own gate), so {@code ProactiveMemoryBlock.apropo}
+     * always resolves empty here. The positive-match wiring (block present, ref appended, use
+     * row recorded) is covered by {@code CompanionMessageGeneratorApropoIT}, a non-class-
+     * transactional fixture with reflection ON — the {@code ReflectionDigestMorningIT} precedent.
+     */
+    @Test
+    void testGenerateMorning_shouldNotIncludeApropoBlock_whenNothingMatches() {
+        UUID user = userPopulator.createUser("morning-no-apropo@test.local").getId();
+        dailySummaryPopulator.summary(user, DAY.minusDays(1), "Tegnap pihenőnap volt.");
+        checkInPopulator.createCheckIn(user, DAY, "06:30", 4, 2,
+                "[fake-feed-morning:{\"eyebrow\":\"Jó reggelt\",\"body\":[\"Mai terv.\"],\"refIndexes\":[]}]");
+
+        CompanionMessageEntity message = companionMessageGenerator.generateMorning(user, DAY);
+
+        assertThat(message).isNotNull();
+        assertThat(fakeLlm.lastUserMessage()).doesNotContain("AKTUÁLIS APROPÓ");
+        assertThat(message.getContent().refs()).extracting("kind").doesNotContain("Effect");
+        assertThat(proactiveMemoryUseRepository.findByCreatedByAndUsedOnGreaterThanEqual(user, DAY)).isEmpty();
     }
 
     @Test
@@ -327,6 +351,28 @@ class CompanionMessageGeneratorIT extends AbstractIntegrationTest {
         assertThat(message.getContent().body()).containsExactly("Szép napot zártál.");
         assertThat(message.getContent().refs()).isEmpty();
         assertThat(message.getGeneratedAt()).isNotNull();
+    }
+
+    /**
+     * S5 (bd mezo-d6ivw.5) Task 4 — the no-apropó path only: see {@code
+     * testGenerateMorning_shouldNotIncludeApropoBlock_whenNothingMatches}'s javadoc for why
+     * (reflection is off in this class). The positive-match wiring for the window path lives in
+     * {@code CompanionMessageGeneratorApropoIT}.
+     */
+    @Test
+    void testGenerateWindow_shouldNotIncludeApropoBlock_whenNothingMatches() {
+        UUID user = userPopulator.createUser("evening-no-apropo@test.local").getId();
+        dailySummaryPopulator.summary(user, DAY.minusDays(1), "Tegnap pihenőnap volt.");
+        checkInPopulator.createCheckIn(user, DAY, "20:00", 3, 2,
+                "[fake-heartbeat:Szép napot zártál.]");
+
+        CompanionMessageEntity message =
+                companionMessageGenerator.generateWindow(user, DAY, CompanionMessageEntity.KIND_EVENING);
+
+        assertThat(message).isNotNull();
+        assertThat(fakeLlm.lastUserMessage()).doesNotContain("AKTUÁLIS APROPÓ");
+        assertThat(message.getContent().refs()).extracting("kind").doesNotContain("Effect");
+        assertThat(proactiveMemoryUseRepository.findByCreatedByAndUsedOnGreaterThanEqual(user, DAY)).isEmpty();
     }
 
     @Test

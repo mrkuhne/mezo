@@ -2,14 +2,22 @@ package io.mrkuhne.mezo.feature.proactive.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
+import io.mrkuhne.mezo.feature.companion.reflection.entity.EffectLinkEntity;
+import io.mrkuhne.mezo.feature.companion.reflection.repository.EffectLinkRepository;
+import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
+import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
+import io.mrkuhne.mezo.feature.proactive.repository.ProactiveMemoryUseRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.*;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -34,6 +42,80 @@ class ContextualFeedKindsIT extends AbstractIntegrationTest {
     @Autowired private WaterLogPopulator water;
     @Autowired private CheckInPopulator checkins;
     @Autowired private FakeCompanionLlm fake;
+    @Autowired private EffectLinkRepository effectLinkRepository;
+    @Autowired private MentionRepository mentionRepository;
+    @Autowired private ProactiveMemoryUseRepository proactiveMemoryUseRepository;
+
+    /** S5 (bd mezo-d6ivw.5) Task 4 — same idiom as {@code ProactiveMemoryBlockIT#effectRow}. */
+    private EffectLinkEntity effectRow(UUID owner, String kind, String key, String metric, double delta) {
+        EffectLinkEntity e = new EffectLinkEntity();
+        e.setCreatedBy(owner);
+        e.setSubjectKind(kind);
+        e.setSubjectKey(key);
+        e.setMetric(metric);
+        e.setCliffsDelta(BigDecimal.valueOf(delta).setScale(3));
+        e.setMeanDiff(new BigDecimal("1.50"));
+        e.setSubjectDays(8);
+        e.setComplementDays(20);
+        e.setStrengthBand("eros");
+        e.setConfidenceTier("kozepes");
+        e.setWindowDays(60);
+        e.setComputedAt(Instant.now());
+        return effectLinkRepository.saveAndFlush(e);
+    }
+
+    /** Same idiom as {@code ProactiveMemoryBlockIT#contextMention}. */
+    private void contextMention(UUID owner, UUID personId, Instant ts, String contextLabel) {
+        MentionEntity m = new MentionEntity();
+        m.setCreatedBy(owner);
+        m.setPersonId(personId);
+        m.setTs(ts);
+        m.setSource("chip");
+        m.setExcerpt("Teszt említés.");
+        m.setContextLabel(contextLabel);
+        m.setFlagged(false);
+        mentionRepository.saveAndFlush(m);
+    }
+
+    /**
+     * S5 (bd mezo-d6ivw.5) Task 4: the contextual morning path hands the apropó block to
+     * {@code FeedGenerationService} through its {@code facts} argument — no envelope-ref
+     * assertion here, refs on the contextual path are the contextual service's own.
+     *
+     * <p>Morning only ever matches a PLANNED-today or a YESTERDAY signal (never same-day —
+     * {@code ProactiveMemoryBlock.candidateTriggers}), so the context mention here is dated
+     * yesterday, mirroring {@code ProactiveMemoryBlockIT#yesterdayPersonMatchWithFactFiresMorningApropo}.
+     */
+    @Test
+    void testGenerateMorning_shouldIncludeApropoBlockAndRecordUse_whenYesterdayMatchExists() {
+        var user = users.createUser().getId();
+        var date = LocalDate.now();
+        summaries.summary(user, date.minusDays(1));
+        var person = people.createPerson(user, "Anna");
+        contextMention(user, person.getId(),
+                date.minusDays(1).atStartOfDay(ZoneId.systemDefault()).plusHours(18).toInstant(), "kozos_program");
+        effectRow(user, EffectLinkEntity.SUBJECT_EVENT, "kozos_program", EffectLinkEntity.METRIC_STRESS, 0.7);
+
+        CompanionMessageEntity row = generator.generateMorning(user, date);
+
+        assertThat(row).isNotNull();
+        assertThat(fake.lastUserMessage()).contains("AKTUÁLIS APROPÓ");
+        assertThat(proactiveMemoryUseRepository.findByCreatedByAndUsedOnGreaterThanEqual(user, date))
+                .hasSize(1);
+    }
+
+    @Test
+    void testGenerateMorning_shouldNotIncludeApropoBlock_whenNothingMatches() {
+        var user = users.createUser().getId();
+        var date = LocalDate.now();
+        summaries.summary(user, date.minusDays(1));
+
+        CompanionMessageEntity row = generator.generateMorning(user, date);
+
+        assertThat(row).isNotNull();
+        assertThat(fake.lastUserMessage()).doesNotContain("AKTUÁLIS APROPÓ");
+        assertThat(proactiveMemoryUseRepository.findByCreatedByAndUsedOnGreaterThanEqual(user, date)).isEmpty();
+    }
 
     @ParameterizedTest
     @ValueSource(strings = {"morning", "sleep", "weight", "midday", "evening", "people", "advice", "hydration"})

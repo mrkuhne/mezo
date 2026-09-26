@@ -49,6 +49,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -272,6 +273,9 @@ public class CompanionMessageGenerator {
      *  exactly as it did pre-S7, with no {@code [Hosszú távú memória]} block. */
     private final ObjectProvider<MemoryContextBlock> memoryContextBlock;
     private final ObjectProvider<FeedGenerationService> contextualFeed;
+    /** Emlékezet S5 (mezo-d6ivw.5): the proactive apropó matcher — plain (ungated) bean, guards
+     *  its own kinds internally so every caller here stays dumb about which kinds qualify. */
+    private final ProactiveMemoryBlock proactiveMemoryBlock;
 
     /**
      * Generates (or returns the existing) morning message for one day. Returns null when there
@@ -289,13 +293,21 @@ public class CompanionMessageGenerator {
         List<DailySummaryEntity> past = dailySummaryRepository
                 .findByCreatedByAndSummaryDateGreaterThanEqualOrderBySummaryDateDesc(
                         userId, date.minusDays(properties.feed().pastDays()));
+        Optional<ProactiveMemoryBlock.Apropo> apropo =
+                proactiveMemoryBlock.apropo(userId, date, CompanionMessageEntity.KIND_MORNING);
         if (contextualFeed.getIfAvailable() != null) {
             if (past.isEmpty() && !hasRecentEvent(userId, date)) return null;
             String facts = past.stream().filter(p -> !p.getSummaryDate().isAfter(date))
                     .map(p -> p.getSummaryDate() + ": " + p.getNarrative()).collect(Collectors.joining("\n"));
             var digest = reflectionDigest(userId, date);
-            return generateContextual(userId, date, "morning", facts + missedWorkoutsBlock(userId, date)
-                    + (digest == null ? "" : "\nÉszrevétel: " + digest.sentence()));
+            CompanionMessageEntity generated = generateContextual(userId, date, "morning",
+                    facts + missedWorkoutsBlock(userId, date) + apropo.map(ProactiveMemoryBlock.Apropo::block).orElse("")
+                            + (digest == null ? "" : "\nÉszrevétel: " + digest.sentence()));
+            if (generated != null) {
+                apropo.ifPresent(a -> proactiveMemoryBlock.recordUse(
+                        userId, date, CompanionMessageEntity.KIND_MORNING, a));
+            }
+            return generated;
         }
         if (past.isEmpty()) {
             log.debug("No daily summaries for {} in the {}-day window before {} — no morning message",
@@ -310,6 +322,7 @@ public class CompanionMessageGenerator {
         List<CompanionMessageEnvelope.Ref> candidates =
                 new ArrayList<>(presentCandidates(MORNING_CANDIDATES, snapshot));
         payload.append(knowledgeFactService.renderPromptBlock(userId));
+        apropo.ifPresent(a -> payload.append(a.block()));
         payload.append("\n\nKORÁBBI NAPOK (legfrissebb elöl):\n");
         for (DailySummaryEntity summary : past) {
             payload.append("- ").append(summary.getSummaryDate()).append(": ")
@@ -345,14 +358,25 @@ public class CompanionMessageGenerator {
             log.warn("Unusable morning-message answer for {} on {} — no row persisted", userId, date);
             return null;
         }
+        List<CompanionMessageEnvelope.Ref> resolvedRefs =
+                new ArrayList<>(resolveRefs(parsed.refIndexes(), candidates));
+        // mezo-d6ivw.5: code decides provenance, not the model — the apropó ref is appended
+        // unconditionally when an apropó fired, regardless of whether the model's own
+        // refIndexes cited it.
+        apropo.ifPresent(a -> {
+            if (!resolvedRefs.contains(a.ref())) {
+                resolvedRefs.add(a.ref());
+            }
+        });
         CompanionMessageEntity message = new CompanionMessageEntity();
         message.setCreatedBy(userId);
         message.setMessageDate(date);
         message.setKind(CompanionMessageEntity.KIND_MORNING);
-        message.setContent(new CompanionMessageEnvelope(
-                parsed.eyebrow(), parsed.body(), resolveRefs(parsed.refIndexes(), candidates)));
+        message.setContent(new CompanionMessageEnvelope(parsed.eyebrow(), parsed.body(), resolvedRefs));
         message.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
-        return companionMessageRepository.saveAndFlush(message);
+        CompanionMessageEntity saved = companionMessageRepository.saveAndFlush(message);
+        apropo.ifPresent(a -> proactiveMemoryBlock.recordUse(userId, date, CompanionMessageEntity.KIND_MORNING, a));
+        return saved;
     }
 
     /**
@@ -558,12 +582,18 @@ public class CompanionMessageGenerator {
         List<DailySummaryEntity> past = dailySummaryRepository
                 .findByCreatedByAndSummaryDateGreaterThanEqualOrderBySummaryDateDesc(
                         userId, date.minusDays(properties.feed().pastDays()));
+        Optional<ProactiveMemoryBlock.Apropo> apropo = proactiveMemoryBlock.apropo(userId, date, kind);
         if (contextualFeed.getIfAvailable() != null) {
             if (past.isEmpty() && !hasRecentEvent(userId, date)) return null;
             String facts = past.stream().filter(p -> !p.getSummaryDate().isAfter(date))
                     .map(p -> p.getSummaryDate() + ": " + p.getNarrative()).collect(Collectors.joining("\n"));
-            return generateContextual(userId, date, kind, facts + hydrationBlock(userId, date, LocalTime.now())
-                    + batchLoggerBlock(userId, date));
+            CompanionMessageEntity generated = generateContextual(userId, date, kind,
+                    facts + hydrationBlock(userId, date, LocalTime.now()) + batchLoggerBlock(userId, date)
+                            + apropo.map(ProactiveMemoryBlock.Apropo::block).orElse(""));
+            if (generated != null) {
+                apropo.ifPresent(a -> proactiveMemoryBlock.recordUse(userId, date, kind, a));
+            }
+            return generated;
         }
         if (past.isEmpty()) {
             log.debug("No daily summaries for {} in the {}-day window before {} — no {} message",
@@ -582,6 +612,7 @@ public class CompanionMessageGenerator {
                 + earlierMessagesBlock(userId, date)
                 + hydrationBlock(userId, date, LocalTime.now())
                 + batchLoggerBlock(userId, date)
+                + apropo.map(ProactiveMemoryBlock.Apropo::block).orElse("")
                 + mem.block()
                 + "\n\nABLAK: " + window;
 
@@ -601,13 +632,20 @@ public class CompanionMessageGenerator {
                         .map(r -> new CompanionMessageEnvelope.Ref(r.kind(), r.id()))
                         .toList());
         refs.addAll(memoryRefCandidates(mem));
+        apropo.ifPresent(a -> {
+            if (!refs.contains(a.ref())) {
+                refs.add(a.ref());
+            }
+        });
         CompanionMessageEntity message = new CompanionMessageEntity();
         message.setCreatedBy(userId);
         message.setMessageDate(date);
         message.setKind(kind);
         message.setContent(new CompanionMessageEnvelope(eyebrow, List.of(answer.strip()), refs));
         message.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
-        return companionMessageRepository.saveAndFlush(message);
+        CompanionMessageEntity saved = companionMessageRepository.saveAndFlush(message);
+        apropo.ifPresent(a -> proactiveMemoryBlock.recordUse(userId, date, kind, a));
+        return saved;
     }
 
     /**
