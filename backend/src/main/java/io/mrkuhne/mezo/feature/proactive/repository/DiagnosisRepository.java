@@ -17,6 +17,9 @@ public interface DiagnosisRepository extends JpaRepository<DiagnosisEntity, UUID
     List<DiagnosisEntity> findByCreatedByAndPhenomenonOrderByGeneratedAtDesc(
             UUID createdBy, String phenomenon);
 
+    /** The unfiltered list (mezo-tpmr2) — every phenomenon, newest first. */
+    List<DiagnosisEntity> findByCreatedByOrderByGeneratedAtDesc(UUID createdBy);
+
     /** The WEEK-ANCHORED {@code weight} phenomenon's reuse lookup (mezo-85x5r): checked BEFORE
      *  the weigh-in gate — a non-stale row for the same anchor week is returned as-is (no LLM
      *  call, no quota burn, and no 409) even if the live weigh-in count has since dropped below

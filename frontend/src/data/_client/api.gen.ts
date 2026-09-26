@@ -23314,6 +23314,7 @@ export interface operations {
     listDiagnoses: {
         parameters: {
             query?: {
+                /** @description Optional filter; omitted = every phenomenon (mezo-tpmr2). */
                 phenomenon?: string;
             };
             header?: never;
