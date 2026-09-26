@@ -719,18 +719,37 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
             pool.shutdownNow();
         }
 
-        List<AppNotificationEntity> pushes = teamChatPushes(owner).stream()
-                .sorted(java.util.Comparator.comparing(AppNotificationEntity::getOccurredAt))
-                .toList();
-        assertThat(pushes).hasSizeBetween(1, properties.maxPushesPerDay());
+        // Order-free (drain-debug follow-up): the emit now runs AFTER the reservation committed, so
+        // the notifications' occurredAt no longer mirrors the decision order. Assert on the
+        // reservations (the pushed ügyek) instead.
         List<TeamChatThreadEntity> pushedThreads = threadsOf(owner).stream().filter(TeamChatThreadEntity::getPushed)
                 .toList();
-        assertThat(pushedThreads).hasSize(pushes.size());
-        if (pushes.size() == 2) {
-            // Serialized decisions: the second push must outrank the first (never a race winner).
-            String firstFlag = threads.findById(pushes.get(0).getRefId()).orElseThrow().getFlagKey();
-            String secondFlag = threads.findById(pushes.get(1).getRefId()).orElseThrow().getFlagKey();
-            assertThat(AdvicePriority.outranks(secondFlag, firstFlag)).isTrue();
+        assertThat(pushedThreads).hasSizeBetween(1, properties.maxPushesPerDay());
+        assertThat(teamChatPushes(owner)).extracting(AppNotificationEntity::getRefId)
+                .containsExactlyInAnyOrderElementsOf(pushedThreads.stream().map(TeamChatThreadEntity::getId).toList());
+        if (pushedThreads.size() == 2) {
+            // Serialized decisions: one of the two must strictly outrank the other (it was the second
+            // decision) — never two peers that both slipped through a race.
+            String a = pushedThreads.get(0).getFlagKey();
+            String b = pushedThreads.get(1).getFlagKey();
+            assertThat(AdvicePriority.outranks(a, b) || AdvicePriority.outranks(b, a)).isTrue();
         }
+    }
+
+    // Drain-debug follow-up (mezo-a9bo7.25): the push decision runs after open's model call; a clear
+    // that resolved the ügy in between must never page the user.
+    @Test
+    void anUgyResolvedBeforeThePushDecision_isNeverPushed() {
+        UUID owner = owner();
+        raiseSleepDebtLog(owner);
+        TeamChatThreadEntity thread =
+                service.open(owner, FlagKey.SLEEP_DEBT, todayAt(10, 0), false).orElseThrow();
+        service.resolve(owner, FlagKey.SLEEP_DEBT,
+                new FlagVerdict.ClearEvidence("deficit_hours", 2.0, 5.0, null), todayAt(10, 1));
+
+        service.decidePush(thread.getId(), "sor", true, false);
+
+        assertThat(teamChatPushes(owner)).isEmpty();
+        assertThat(threads.findById(thread.getId()).orElseThrow().getPushed()).isNotEqualTo(Boolean.TRUE);
     }
 }

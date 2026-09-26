@@ -457,9 +457,11 @@ public class TeamChatService {
             return Optional.empty();
         }
         threads.lockPushBudget(userId);
-        // Re-read under the lock: a racing decision for the same ügy may already have pushed it.
+        // Re-read under the lock: a racing decision for the same ügy may already have pushed it, and
+        // a clear may have resolved it while open's model call ran (the decision now follows the
+        // committed lines, drain-debug mezo-a9bo7.25) — a resolved ügy never pages the user.
         TeamChatThreadEntity thread = threads.findById(threadId).orElseThrow();
-        if (Boolean.TRUE.equals(thread.getPushed())) {
+        if (Boolean.TRUE.equals(thread.getPushed()) || !STATUS_OPEN.equals(thread.getStatus())) {
             return Optional.empty();
         }
         List<String> pushedToday = pushedTodayFlagKeys(userId, thread.getOpenedAt());
