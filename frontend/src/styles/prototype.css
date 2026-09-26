@@ -28403,6 +28403,9 @@ main.settings-page {
 .kr9-rolad .kr9-quote figcaption { display: block; margin-top: 7px; font-size: 10.5px; line-height: 1.45; color: var(--text-muted); }
 .kr9-rolad .kr9-quote figcaption b { font-weight: 700; color: color-mix(in srgb, var(--c) 80%, #fff); }
 .kr9-rolad .kr9-quote .kr9-qthanks { margin: 0; align-self: center; }
+/* mezo-plbev item 5: `.kr9-page .kr9-thread` (descendant) never matches the reply-thread wrapper,
+   which carries BOTH classes on the same element — this page-owned rule does the actual work. */
+.kr9-rolad .kr9-quote-thread { margin-top: 10px; }
 .kr9-rolad .kr9-qempty, .kr9-rolad .kr9-note { margin-top: 10px; }
 .kr9-rolad .kr9-note { margin-top: 18px; }
 .kr9-rolad .kr9-kept .tf-after { margin-bottom: 0; }

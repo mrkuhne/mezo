@@ -363,6 +363,30 @@ describe('real mode', () => {
     const { result } = renderHook(() => useCharacterOverview(), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(result.current.isLoading).toBe(false))
     expect(result.current.overview).toBeNull()
+    expect(result.current.isError).toBe(false)
+  })
+
+  // Rólad polish (mezo-plbev, item 1): a non-404 failure must surface as `isError` + a working
+  // `refetch`, not silently swallow into a permanent loading/empty state — RoladQuote needs this
+  // to show an honest error + retry instead of nothing.
+  test('useCharacterOverview surfaces a non-404 failure as isError, with a working refetch', async () => {
+    let calls = 0
+    server.use(
+      http.get(`${API_BASE}/api/character`, () => {
+        calls++
+        return calls === 1
+          ? new HttpResponse(null, { status: 500 })
+          : HttpResponse.json({ dimensions: [] })
+      }),
+    )
+    const { result } = renderHook(() => useCharacterOverview(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(result.current.overview).toBeNull()
+    expect(typeof result.current.refetch).toBe('function')
+
+    result.current.refetch()
+    await waitFor(() => expect(result.current.isError).toBe(false))
+    expect(result.current.overview).toEqual({ dimensions: [] })
   })
 
   test('useCharacterDimension maps the DTO through and 404s to null', async () => {
