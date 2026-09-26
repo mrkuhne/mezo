@@ -81,7 +81,7 @@ public class QuickNoticeService {
 
     /** Every quick-notice row is a TRIGGER: something in today's text may drive something else. */
     private static final String CATEGORY = "trigger";
-    private static final String CATEGORY_LABEL = "Trigger";
+    private static final String CATEGORY_LABEL = "Kiváltó ok";
     private static final int MAX_TITLE_CHARS = 200;
 
     private static final String NOTICE_PROMPT = NOTICE_MARKER + """

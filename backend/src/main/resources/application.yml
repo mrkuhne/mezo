@@ -1705,7 +1705,7 @@ mezo:
           lag-days: 1
         - key: late-meal~next-sleep-quality
           category: trigger
-          label: Trigger
+          label: Kiváltó ok
           title: "Késői étkezés ↔ rákövetkező alvásminőség"
           mechanism: "A késői étkezés ronthatja a rákövetkező éjszaka minőségét."
           question: "Rosszabbul alszol, ha későn eszel?"
@@ -1753,7 +1753,7 @@ mezo:
           lag-days: 1
         - key: checkin-stress~sleep-quality
           category: trigger
-          label: Trigger
+          label: Kiváltó ok
           title: "Stressz-szint ↔ aznapi alvásminőség"
           mechanism: "A stresszes nap ronthatja az aznapi alvásminőséget."
           question: "Elrontja az alvásod a stresszes nap?"
@@ -1826,7 +1826,7 @@ mezo:
           lag-days: 1
         - key: bedtime-hour~sleep-quality
           category: trigger
-          label: Trigger
+          label: Kiváltó ok
           title: "Lefekvés ideje ↔ aznapi alvásminőség"
           mechanism: "Alvás-higiénia: a késői lefekvés ronthatja az alvás minőségét."
           question: "Rosszabbul alszol, ha későn fekszel?"
@@ -1838,7 +1838,7 @@ mezo:
           lag-days: 0
         - key: late-meal~next-sleep-awakenings
           category: trigger
-          label: Trigger
+          label: Kiváltó ok
           title: "Késői étkezés ↔ rákövetkező éjszakai ébredések"
           mechanism: "A késői étkezés szétdarabolhatja az éjszakát — több ébredés."
           question: "Többször ébredsz fel, ha későn eszel?"
@@ -1850,7 +1850,7 @@ mezo:
           lag-days: 1
         - key: checkin-stress~late-meal-hour
           category: trigger
-          label: Trigger
+          label: Kiváltó ok
           title: "Stressz-szint ↔ aznapi késői étkezés"
           mechanism: "Stressz-evés: a feszült nap kitolhatja az utolsó étkezést."
           question: "Kitolja a stressz az utolsó étkezést?"
@@ -1874,7 +1874,7 @@ mezo:
           lag-days: 0
         - key: ritual-closed~next-sleep-quality
           category: trigger
-          label: Trigger
+          label: Kiváltó ok
           title: "Esti lezárás ↔ rákövetkező alvásminőség"
           mechanism: "Az esti lezárás lecsendesítheti az elalvást — jobb alvásminőség."
           question: "Jobban alszol, ha este lezárod a napot?"
@@ -1946,7 +1946,7 @@ mezo:
           lag-days: 1
         - key: wakeup-hour~checkin-energy
           category: trigger
-          label: Trigger
+          label: Kiváltó ok
           title: "Ébredés ideje ↔ energia-szint"
           mechanism: "A korábbi vagy későbbi ébredés az aznapi energiában érződhet."
           question: "Több energiád van, ha korábban kelsz?"
@@ -2006,7 +2006,7 @@ mezo:
           lag-days: 0
         - key: bedtime-variability~checkin-mental
           category: trigger
-          label: Trigger
+          label: Kiváltó ok
           title: "Lefekvés-szórás ↔ mentális állapot"
           mechanism: "Social jetlag: a szórt lefekvés a hangulatban érződhet."
           question: "Megérzi a hangulatod a szórt lefekvési időket?"
@@ -2018,7 +2018,7 @@ mezo:
           lag-days: 0
         - key: weekend~late-meal-hour
           category: trigger
-          label: Trigger
+          label: Kiváltó ok
           title: "Hétvége ↔ késői étkezés"
           mechanism: "Hétvége-hatás: lazább napokon később csúszhat az utolsó étkezés."
           question: "Hétvégén később csúszik az utolsó étkezés?"

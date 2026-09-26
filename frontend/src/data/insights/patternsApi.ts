@@ -7,6 +7,7 @@ import type {
   PatternStatus,
   PatternTestPlan,
 } from '@/data/types'
+import { categoryLabelHu } from './categoryLabel'
 
 export type PatternResponse = components['schemas']['PatternResponse']
 export type PatternDecisionRequest = components['schemas']['PatternDecisionRequest']
@@ -20,7 +21,7 @@ export function toPattern(w: PatternResponse): Pattern {
     pairKey: w.pairKey,
     // wire strings come from our own backend CHECK constraints
     category: w.category as PatternCategory,
-    categoryLabel: w.categoryLabel,
+    categoryLabel: categoryLabelHu(w.categoryLabel),
     confidence: w.confidence ?? undefined,
     title: w.title,
     mechanism: w.mechanism ?? '',

@@ -6,6 +6,7 @@ import type {
   PatternMetricValueKind,
   PatternMonitorPair,
 } from '@/data/types'
+import { categoryLabelHu } from './categoryLabel'
 
 type PairWire = components['schemas']['PatternMonitorPair']
 
@@ -15,7 +16,7 @@ export function toPatternMonitorPair(w: PairWire): PatternMonitorPair {
     key: w.key,
     title: w.title,
     category: w.category as PatternCategory,
-    categoryLabel: w.categoryLabel,
+    categoryLabel: categoryLabelHu(w.categoryLabel),
     lagDays: w.lagDays,
     metricAKey: w.metricAKey,
     metricALabel: w.metricALabel,
