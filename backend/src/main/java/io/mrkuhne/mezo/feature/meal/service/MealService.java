@@ -22,6 +22,7 @@ import io.mrkuhne.mezo.feature.nutrition.service.DayContext;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService.ScoredLine;
+import io.mrkuhne.mezo.feature.nutrition.service.MealWindow;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
@@ -249,8 +250,10 @@ public class MealService {
         DailyTargets base = fuelDayService.dailyTargets(userId, meal.getMealDate());
         DayContext day = fuelDayService.dayContext(userId, meal.getMealDate(),
             loggedAt.toInstant(), meal.getId());
+        MealWindow window = meal.getWindowFrom() == null ? null
+            : new MealWindow(meal.getWindowFrom(), meal.getWindowTo());
         MealBreakdownJson breakdown =
-            scoringService.scoreMeal(meal.getSlot(), lines, loggedAt.toLocalTime(), role, base, day);
+            scoringService.scoreMeal(meal.getSlot(), lines, loggedAt.toLocalTime(), role, base, day, window);
         meal.setBreakdown(breakdown);
         meal.setScore(breakdown.value());
     }

@@ -83,6 +83,8 @@ public final class BreakdownDtoMapper {
                 .windowFrom(d.timing().windowFrom())
                 .windowTo(d.timing().windowTo())
                 .slotLabel(d.timing().slotLabel())
+                .windowSource(d.timing().windowSource() == null ? null
+                    : MealTimingDetail.WindowSourceEnum.fromValue(d.timing().windowSource()))
                 .build())
             .build();
     }
