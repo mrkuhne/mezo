@@ -438,6 +438,140 @@ test('done meal/snack slots carry the FULL logged-meal totals — nothing logged
   expect({ kcal: sum('kcal'), p: sum('p'), c: sum('c'), f: sum('f') }).toEqual(expected)
 })
 
+// ── snack window assignment (mezo-7i6ah): a logged snack lands on its OWN window, not the ──────
+// first free one by cursor position. 5 meals/day → Tízórai (~10:xx) + Uzsonna (~16-18:xx).
+test('a snack carrying a stored plan-window match lands on that window even though it is NOT the nearest by time', () => {
+  const bare = buildDayPlan(baseInput({ mealsPerDay: 5, meals: [] }))
+  const uzsonnaWindow = bare.slots.find(s => s.label === 'Uzsonna')!
+  // Logged near the Tízórai anchor (10:20) but carrying a stored server-side window pointing at
+  // Uzsonna (mezo-6g52f: windowSource 'plan') — the stored match must win over nearest-time.
+  const logged = meal({
+    id: 'snack-u', slot: 'snack', loggedAt: '2026-07-02T10:20:00',
+    breakdown: {
+      confidence: 1, summary: null, tagline: null, improve: [], tools: [],
+      dimensions: [{
+        id: 'context', label: 'Kontextus', weight: 0, score: 0, color: '#fff', detail: '', context: [],
+        timing: { eatenAt: '10:20', windowFrom: uzsonnaWindow.windowFrom!, windowTo: uzsonnaWindow.windowTo!, slotLabel: 'Uzsonna', windowSource: 'plan' },
+      }],
+    },
+  })
+  const plan = buildDayPlan(baseInput({ mealsPerDay: 5, meals: [logged] }))
+  const uzsonna = plan.slots.find(s => s.label === 'Uzsonna')!
+  const tizorai = plan.slots.find(s => s.label === 'Tízórai')!
+  expect(uzsonna).toMatchObject({ state: 'done', mealId: 'snack-u' })
+  expect(tizorai.state).not.toBe('done')
+})
+test('a snack with no stored timing lands on the nearest-by-time window (real-mode enum slot)', () => {
+  const logged = meal({ id: 'snack-1', slot: 'snack', loggedAt: '2026-07-02T16:20:00' })
+  const plan = buildDayPlan(baseInput({ mealsPerDay: 5, meals: [logged] }))
+  const uzsonna = plan.slots.find(s => s.label === 'Uzsonna')!
+  const tizorai = plan.slots.find(s => s.label === 'Tízórai')!
+  expect(uzsonna).toMatchObject({ state: 'done', mealId: 'snack-1' })
+  expect(tizorai.state).not.toBe('done')
+})
+test('a mock-style slot label wins over nearest-time (label logged AT the other window\'s time)', () => {
+  // Logged at 10:05 — essentially ON TOP of the Tízórai anchor — but the mock label says Uzsonna.
+  const logged = meal({ id: 'snack-label', slot: 'Uzsonna · 10:05', loggedAt: '2026-07-02T10:05:00' })
+  const plan = buildDayPlan(baseInput({ mealsPerDay: 5, meals: [logged] }))
+  const uzsonna = plan.slots.find(s => s.label === 'Uzsonna')!
+  const tizorai = plan.slots.find(s => s.label === 'Tízórai')!
+  expect(uzsonna).toMatchObject({ state: 'done', mealId: 'snack-label' })
+  expect(tizorai.state).not.toBe('done')
+})
+test('two snacks each land on their own window (Tízórai + Uzsonna), regardless of input order', () => {
+  const tiz = meal({ id: 'tiz', slot: 'snack', loggedAt: '2026-07-02T10:30:00' })
+  const uzs = meal({ id: 'uzs', slot: 'snack', loggedAt: '2026-07-02T16:20:00' })
+  const plan = buildDayPlan(baseInput({ mealsPerDay: 5, meals: [uzs, tiz] })) // deliberately out of order
+  const tizoraiSlot = plan.slots.find(s => s.label === 'Tízórai')!
+  const uzsonnaSlot = plan.slots.find(s => s.label === 'Uzsonna')!
+  expect(tizoraiSlot).toMatchObject({ state: 'done', mealId: 'tiz' })
+  expect(uzsonnaSlot).toMatchObject({ state: 'done', mealId: 'uzs' })
+})
+
+// ── review round 2 fixes (mezo-7i6ah) ────────────────────────────────────────
+test('on a ONE-window key, a LATER meal carrying a stored plan-window match can never steal the window from an earlier-logged meal', () => {
+  // The three assignment passes must run PER MEAL in loggedAt order, not pass-then-pass across the
+  // whole key — otherwise a later meal's stored-window match (pass 1) would claim the single
+  // breakfast window before the earlier meal (which has no such match) ever gets a chance at it.
+  const bare = buildDayPlan(baseInput({ meals: [] }))
+  const breakfastWindow = bare.slots.find(s => s.label === 'Reggeli')!
+  const early = meal({ id: 'b-early', slot: 'breakfast', loggedAt: '2026-07-02T07:10:00' }) // no timing
+  const late = meal({
+    id: 'b-late', slot: 'breakfast', loggedAt: '2026-07-02T09:40:00',
+    breakdown: {
+      confidence: 1, summary: null, tagline: null, improve: [], tools: [],
+      dimensions: [{
+        id: 'context', label: 'Kontextus', weight: 0, score: 0, color: '#fff', detail: '', context: [],
+        timing: { eatenAt: '09:40', windowFrom: breakfastWindow.windowFrom!, windowTo: breakfastWindow.windowTo!, slotLabel: 'Reggeli', windowSource: 'plan' },
+      }],
+    },
+  })
+  const plan = buildDayPlan(baseInput({ meals: [early, late] }))
+  // A surplus slot is labelled from the same-key window too (step 3b's `labelByKey` fallback), so
+  // `.find(s => s.label === 'Reggeli')` alone is ambiguous here — distinguish the real planned
+  // window (carries `windowFrom`) from the surplus extra slot (never does).
+  const windowSlot = plan.slots.find(s => s.slotKey === 'breakfast' && s.windowFrom != null)!
+  const surplusSlot = plan.slots.find(s => s.slotKey === 'breakfast' && s.windowFrom == null)!
+  expect(windowSlot.mealId).toBe('b-early') // earliest-logged wins the ONE window
+  expect(surplusSlot.mealId).toBe('b-late') // later meal, even with a stored plan-window match, becomes surplus
+  expect(surplusSlot.state).toBe('done') // never dropped — just not on the Reggeli window
+})
+
+test('nearest-time assignment compares on the UNWRAPPED axis, not raw HH:mm minutes, across a midnight-crossing day', () => {
+  // wake 07:00 / bed 03:00 (crosses midnight). Two same-key snack windows straddling midnight:
+  // 'Esti snack' at 23:50 (raw minute 1430, unwrapped stays 1430 — before wake, already past it on
+  // the raw axis so no +1440) and 'Hajnali snack' at bed−100 = 01:20 (raw minute 80, unwrapped 1520
+  // since it is genuinely the LAST window of the day, past midnight). A snack logged at 00:05 is
+  // REALLY only 15 minutes after 'Esti snack' (unwrapped 1445 vs 1430) and 75 minutes before
+  // 'Hajnali snack' (1445 vs 1520) — 'Esti snack' is the true nearest window. Comparing on the RAW
+  // axis instead (the pre-fix bug) computes the 'Esti snack' distance as |5 − 1430| = 1425 minutes
+  // (nonsensical — it does not know the day wrapped) against 'Hajnali snack's |5 − 80| = 75, and
+  // wrongly picks the far window. This is the same class of defect flagged in review: nearest-time
+  // must use the same continuous wake→bed axis `unwrap`/`unwrappedNow` already use elsewhere in
+  // this function.
+  const midnightSnackTemplate: SlotTemplate = {
+    dayType: 'rest',
+    slots: [
+      templateRow({ label: 'Esti snack', slotKind: 'snack', anchor: { type: 'fixed', time: '23:50' }, budgetPct: 20 }),
+      templateRow({ label: 'Hajnali snack', slotKind: 'snack', anchor: { type: 'bed', offsetMin: -100 }, budgetPct: 15 }),
+    ],
+  }
+  const bare = buildDayPlan(baseInput({ wake: '07:00', bed: '03:00', template: midnightSnackTemplate, meals: [] }))
+  const bareEsti = bare.slots.find(s => s.label === 'Esti snack')!
+  const bareHajnali = bare.slots.find(s => s.label === 'Hajnali snack')!
+  expect(bareEsti.time).toBe('23:50') // sanity-check the fixture's anchor resolution
+  expect(bareHajnali.time).toBe('01:20')
+
+  const logged = meal({ id: 'late-night-snack', slot: 'snack', loggedAt: '2026-07-03T00:05:00' })
+  const plan = buildDayPlan(baseInput({ wake: '07:00', bed: '03:00', template: midnightSnackTemplate, meals: [logged] }))
+  const esti = plan.slots.find(s => s.label === 'Esti snack')!
+  const hajnali = plan.slots.find(s => s.label === 'Hajnali snack')!
+  // A done slot's `time` becomes the logged wall-clock time, not the planned window's — identify the
+  // window by `plannedTime` (which stays the anchor time) instead.
+  expect(esti).toMatchObject({ state: 'done', mealId: 'late-night-snack', plannedTime: '23:50' }) // the genuine nearest window
+  expect(hajnali.state).not.toBe('done')
+})
+
+test('the label pass prefers the LONGEST matching label so a short label cannot steal a more specific window', () => {
+  // 'Snack' is a substring of 'Esti snack' (lowercased), so a meal logged as 'Esti snack · 21:05'
+  // matches BOTH window labels via plain substring — without a specificity tiebreak, `idxs.find`
+  // would hand it to whichever window comes first in time order (here: 'Snack' at 15:00), even
+  // though the meal is unambiguously an "Esti snack".
+  const snackLabelTemplate: SlotTemplate = {
+    dayType: 'rest',
+    slots: [
+      templateRow({ label: 'Snack', slotKind: 'snack', anchor: { type: 'fixed', time: '15:00' }, budgetPct: 15 }),
+      templateRow({ label: 'Esti snack', slotKind: 'snack', anchor: { type: 'fixed', time: '21:00' }, budgetPct: 15 }),
+    ],
+  }
+  const logged = meal({ id: 'esti-snack', slot: 'Esti snack · 21:05', loggedAt: '2026-07-02T21:05:00' })
+  const plan = buildDayPlan(baseInput({ template: snackLabelTemplate, meals: [logged] }))
+  const snack = plan.slots.find(s => s.label === 'Snack')!
+  const estiSnack = plan.slots.find(s => s.label === 'Esti snack')!
+  expect(estiSnack).toMatchObject({ state: 'done', mealId: 'esti-snack' })
+  expect(snack.state).not.toBe('done')
+})
+
 // ── buildDayPlan template branch (mezo-7102) ─────────────────────────────────
 const templateRow = (over: Partial<SlotTemplateRow> & { label: string; anchor: SlotTemplateRow['anchor'] }): SlotTemplateRow => ({
   slotKind: 'lunch', role: 'standard', budgetPct: 50, ...over,
