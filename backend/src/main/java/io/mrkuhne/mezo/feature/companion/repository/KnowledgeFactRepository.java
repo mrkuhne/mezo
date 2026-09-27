@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -34,4 +35,15 @@ public interface KnowledgeFactRepository extends JpaRepository<KnowledgeFactEnti
      *  flip-detection input. Single-user volumes: the caller matches the text in memory against the
      *  two answers that question can produce, which needs no schema for the question key. */
     List<KnowledgeFactEntity> findByCreatedByAndSourceAndDeletedFalse(UUID createdBy, String source);
+
+    /** S7 (mezo-d6ivw.7): the csapatfal knowledge block — active, in-prompt, non-superseded facts
+     *  owned by any of the given team characters, strongest first. */
+    List<KnowledgeFactEntity>
+            findByCreatedByAndOwnerInAndIncludeInPromptTrueAndSupersededByIsNullAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(
+                    UUID createdBy, Collection<String> owners, Pageable page);
+
+    /** S7 (mezo-d6ivw.7): which of these facts still exist and still ride the prompt — the team
+     *  chat exception follows its fact (a deleted or muted fact silences the exception). */
+    List<KnowledgeFactEntity> findByIdInAndCreatedByAndIncludeInPromptTrueAndDeletedFalse(
+            Collection<UUID> ids, UUID createdBy);
 }

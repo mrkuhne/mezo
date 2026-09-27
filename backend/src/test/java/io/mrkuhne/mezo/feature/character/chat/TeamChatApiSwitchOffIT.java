@@ -8,10 +8,12 @@ import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.character.config.TeamChatProperties;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.TestPropertySource;
 
@@ -31,7 +33,7 @@ class TeamChatApiSwitchOffIT {
         @Autowired private TeamChatProperties properties;
 
         @Test
-        void dayIsEmpty_replyAndApplyAre404() {
+        void dayIsEmpty_replyApplyAnswerAndUndoAre404() {
             databasePopulator.populateUser(ownerProperties.ownerEmail());
             LocalDate date = LocalDate.of(2026, 9, 20);
 
@@ -47,6 +49,11 @@ class TeamChatApiSwitchOffIT {
                     new TeamChatReplyRequest("szia"), ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
             postForBody("/api/character/team-chat/threads/" + UUID.randomUUID() + "/apply/x",
                     null, ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+            // S7 (mezo-d6ivw.7): the one-tap answer and the remembered chip's undo too.
+            postForBody("/api/character/team-chat/threads/" + UUID.randomUUID() + "/answer",
+                    Map.of("choice", "EXCUSED"), ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+            exchangeForBody(HttpMethod.DELETE, "/api/character/team-chat/threads/" + UUID.randomUUID()
+                    + "/remembered", null, ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
         }
     }
 }

@@ -14,6 +14,16 @@ const SLUG_RE = /new LlmCallContext\(\s*"([a-z0-9_]+)"/g
 // `new LlmCallContext(LLM_FEATURE, ...)`. Collect those slugs too, in files that also
 // contain a `new LlmCallContext(` call, and union them with the literal scan.
 const CONST_SLUG_RE = /(?:FEATURE[A-Z_]*|LLM_FEATURE)\s*=\s*"([a-z0-9_]+)"/g
+// Some call sites reach a CROSS-CLASS constant instead, e.g. `TeamChatBudget.FEATURE` used as
+// `new LlmCallContext(TeamChatBudget.FEATURE, ...)` inside TeamChatVoiceWriter.java, while the
+// `static final String FEATURE = "team_chat";` field itself lives in TeamChatBudget.java — a
+// DIFFERENT file, which never contains a `new LlmCallContext(` call of its own and so is invisible
+// to the same-file CONST_SLUG_RE above. Two passes fix this without re-litigating file layout:
+//   1) map every file's simple class name (the file's own basename) to its own FEATURE*/LLM_FEATURE
+//      constant's slug, across ALL backend files;
+//   2) in every file that DOES contain `new LlmCallContext(`, find `<ClassName>.FEATURE*`
+//      references and resolve them through that map.
+const CLASS_REF_RE = /\b([A-Za-z_][A-Za-z0-9_]*)\.FEATURE[A-Z_]*\b/g
 
 function javaFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -23,14 +33,30 @@ function javaFiles(dir: string): string[] {
   })
 }
 
+function classNameOf(file: string): string {
+  return file.slice(file.lastIndexOf('/') + 1).replace(/\.java$/, '')
+}
+
 describe('label dictionary completeness', () => {
   it('covers every LlmCallContext feature slug in the backend', () => {
+    const files = javaFiles(BACKEND_SRC)
+    // Pass 1: className -> the slug of ITS OWN FEATURE*/LLM_FEATURE constant, if any.
+    const classSlug = new Map<string, string>()
+    for (const file of files) {
+      const src = readFileSync(file, 'utf8')
+      for (const m of src.matchAll(CONST_SLUG_RE)) classSlug.set(classNameOf(file), m[1])
+    }
     const slugs = new Set<string>()
-    for (const file of javaFiles(BACKEND_SRC)) {
+    for (const file of files) {
       const src = readFileSync(file, 'utf8')
       for (const m of src.matchAll(SLUG_RE)) slugs.add(m[1])
       if (src.includes('new LlmCallContext(')) {
         for (const m of src.matchAll(CONST_SLUG_RE)) slugs.add(m[1])
+        // Pass 2: resolve cross-class `<ClassName>.FEATURE*` references via the pass-1 map.
+        for (const m of src.matchAll(CLASS_REF_RE)) {
+          const mapped = classSlug.get(m[1])
+          if (mapped) slugs.add(mapped)
+        }
       }
     }
     expect(slugs.size).toBeGreaterThan(30) // sanity: the scan actually found the call sites

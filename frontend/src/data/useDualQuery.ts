@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery, type QueryKey } from '@tanstack/react-query'
+import { keepPreviousData, useQuery, type Query, type QueryKey } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 
 /**
@@ -70,8 +70,12 @@ export function useDualQuery<T>(opts: {
    * user navigating away and back. Mock mode ignores this and never polls (`staleTime:
    * Infinity` already rules that out). Omitted ⇒ no interval, i.e. `refetchInterval: undefined`
    * — identical to not passing the option, so no existing caller's behaviour changes.
+   *
+   * A function form is accepted too (mezo-d6ivw.7, `useTeamChat`'s "awaiting answer" backoff):
+   * react-query re-invokes it with the live `Query` after every settled fetch, so a caller can
+   * compute the next delay from its own closure state (e.g. a backoff table).
    */
-  refetchInterval?: number
+  refetchInterval?: number | ((query: Query<T, unknown, T, QueryKey>) => number | false)
 }): { data: T; isPending: boolean; isError: boolean; refetch: () => void } {
   const mock = isMockMode()
   const q = useQuery({

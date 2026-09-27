@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { Icon3D } from '@/shared/ui/clay'
-import type { MemoryOverview } from '@/data/types'
+import type { FactSource, MemoryOverview } from '@/data/types'
 import { MemoryLayerCard } from '@/features/insights/components/MemoryLayerCard'
 import { humanizeCron } from '@/features/insights/logic/humanizeCron'
 
@@ -8,7 +8,11 @@ const KIND_HU: Record<string, string> = { statistical: 'statisztikai', ai_hypoth
 const STATUS_HU: Record<string, string> = {
   proposed: 'javasolt', monitoring: 'figyelt', confirmed: 'megerősített', rejected: 'elvetett',
 }
-const SOURCE_HU: Record<string, string> = { chat: 'chat', pattern: 'minta', manual: 'kézi' }
+/** Every fact source's short label — exhaustive over `FactSource`, so a new source cannot
+ *  silently fall back to its raw key. */
+const SOURCE_HU: Record<FactSource, string> = {
+  chat: 'chat', pattern: 'minta', manual: 'kézi', weekly_review: 'heti', question: 'kérdés', team_chat: 'csapatfal',
+}
 
 /** Hungarian labels for the wire's `kind` field (mezo-b3pp.22) — since mezo-eq85.10 this is
  *  `memory_item.source_kind` counted over a live serving-version `memory_vector` row, not

@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.FactOwner;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
+import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
@@ -20,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -27,9 +29,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -58,6 +62,11 @@ public class KnowledgeFactService {
             "fuel", "étkezés",
             "health", "egészség",
             "life", "élet");
+
+    /** Owner → category: the inverse of {@link FactOwner}'s category fallback (szunya is sleep,
+     *  which falls back to health). */
+    private static final Map<String, String> CATEGORY_BY_OWNER =
+            Map.of("mocor", "train", "falat", "fuel", "deru", "health", "szunya", "health", "mezo", "life");
 
     private final KnowledgeFactRepository repository;
     private final PatternRepository patternRepository;
@@ -234,6 +243,7 @@ public class KnowledgeFactService {
      * promoted fact loses its prompt seat — muted, never deleted, so the Tudástár keeps it
      * visible and re-enableable. Fires the same {@link KnowledgeFactChangedEvent} the manual
      * toggle does, so the graph re-syncs through the one consumer that already reacts to it.
+     * Also the S7 team-chat undo ({@link #muteFromTeamChat}).
      *
      * <p>Fail-open: called from {@code companion.reflection.service} (the ArchUnit direction lets
      * reflection import companion.service, never the reverse), where a missing/already-gone fact
@@ -249,6 +259,65 @@ public class KnowledgeFactService {
         fact.setIncludeInPrompt(false);
         repository.save(fact);
         eventPublisher.publishEvent(new KnowledgeFactChangedEvent(userId, factId));
+    }
+
+    /**
+     * S7 (mezo-d6ivw.7): the user's own explanation on a csapatfal ügy, remembered as a fact
+     * owned by the ügy's character — in every prompt (chat, proactive, csapatfal) from now on.
+     * Same precedent as {@code QuestionAnswerService}: the user said it, so no Tudástár accept
+     * step. Publishes {@link KnowledgeFactChangedEvent} so the graph syncs through its one
+     * consumer.
+     */
+    @Transactional
+    public UUID captureFromTeamChat(UUID userId, String text, String owner, UUID lineId, UUID threadId) {
+        KnowledgeFactEntity fact = new KnowledgeFactEntity();
+        fact.setCreatedBy(userId);
+        fact.setFactText(text);
+        fact.setOwner(FactOwner.OWNERS.contains(owner) ? owner : "mezo");
+        fact.setCategory(CATEGORY_BY_OWNER.getOrDefault(fact.getOwner(), "life"));
+        fact.setSource(KnowledgeFactEntity.SOURCE_TEAM_CHAT);
+        fact.setLastReinforcedAt(Instant.now());
+        fact.setProvenance(MemoryProvenanceEnvelope.teamChat(lineId, threadId));
+        KnowledgeFactEntity saved = repository.saveAndFlush(fact);
+        eventPublisher.publishEvent(new KnowledgeFactChangedEvent(userId, saved.getId()));
+        return saved.getId();
+    }
+
+    /** S7 (mezo-d6ivw.7): undo / "Nem, figyelj rá" on a captured csapatfal fact — the S2
+     *  mute-not-delete idiom, fail-open on an unknown id. */
+    @Transactional
+    public void muteFromTeamChat(UUID userId, UUID factId) {
+        muteFromRefutedPattern(userId, factId);
+    }
+
+    /**
+     * S7 (mezo-d6ivw.7): the csapatfal knowledge block — active, in-prompt, non-superseded facts
+     * of the given owners, strongest first, rendered as plain sentences (no category label —
+     * the character voice supplies its own framing).
+     */
+    @Transactional(readOnly = true)
+    public List<String> promptFactsForOwners(UUID userId, List<String> owners, int limit) {
+        return repository
+                .findByCreatedByAndOwnerInAndIncludeInPromptTrueAndSupersededByIsNullAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(
+                        userId, owners, PageRequest.of(0, limit))
+                .stream()
+                .map(KnowledgeFactEntity::getFactText)
+                .toList();
+    }
+
+    /**
+     * S7 (mezo-d6ivw.7): the subset of {@code factIds} that still exist and are still in the
+     * prompt (not deleted, not muted in the Tudástár) — a remembered csapatfal exception is only
+     * live while its fact is. Read-only; unknown or foreign ids are simply absent.
+     */
+    @Transactional(readOnly = true)
+    public Set<UUID> liveInPrompt(UUID userId, Collection<UUID> factIds) {
+        if (factIds == null || factIds.isEmpty()) {
+            return Set.of();
+        }
+        return repository.findByIdInAndCreatedByAndIncludeInPromptTrueAndDeletedFalse(factIds, userId).stream()
+                .map(KnowledgeFactEntity::getId)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private KnowledgeFactEntity getOwned(UUID userId, UUID factId) {

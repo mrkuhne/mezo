@@ -38,6 +38,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -57,7 +58,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  * with {@code voiced=false} and no company.
  *
  * <p><b>Safety cap:</b> at most {@code daily-line-cap} character lines per user per local day
- * (all kinds). At the cap {@link #open} writes nothing and warns; {@link #resolve} still closes
+ * (every kind but REPLY, which has its own {@code reply-daily-cap}). At the cap {@link #open} writes nothing and warns; {@link #resolve} still closes
  * the ügy as RESOLVED but drops its RESOLVE line.
  */
 @Slf4j
@@ -74,11 +75,23 @@ public class TeamChatService {
     static final String STATUS_RESOLVED = "RESOLVED";
     static final String STATUS_EXPIRED = "EXPIRED";
 
+    /** S7 (mezo-d6ivw.7): why a RESOLVED ügy closed. */
+    static final String CLOSE_DATA = "DATA";
+    static final String CLOSE_REPLY = "REPLY";
+    static final String CLOSE_EXCUSED = "EXCUSED";
+
+    /** S7: the offer riding a RESOLVED ügy — a known-exception question, or a capped re-check. */
+    static final String OFFER_EXCUSE = "EXCUSE";
+    static final String OFFER_REVIEW = "REVIEW";
+
     static final String KIND_OPEN = "OPEN";
     static final String KIND_GUEST = "GUEST";
     static final String KIND_RESOLVE = "RESOLVE";
     static final String KIND_SKEPTIC = "SKEPTIC";
     static final String KIND_USER = "USER";
+    /** S7: the owner character's answer to the user's USER line(s) ({@link TeamChatReplyService});
+     *  counted against its own {@code reply-daily-cap}, never the shared {@code daily-line-cap}. */
+    static final String KIND_REPLY = "REPLY";
 
     static final int REPLY_MAX_CHARS = 1000;
 
@@ -98,6 +111,10 @@ public class TeamChatService {
     private final UserFanOut userFanOut;
     private final NotificationProperties notificationProperties;
     private final ObjectProvider<TeamChatService> self;
+    private final ApplicationEventPublisher events;
+    /** S7 (mezo-d6ivw.7): the known-exception gate at open — a provider, since the exception
+     *  service writes its answer lines through this class. */
+    private final ObjectProvider<TeamChatExceptionService> exceptionGate;
 
     /** Task 11 (mezo-a9bo7.23): the catch-up sweep's lookback — how far back a missed raise still
      *  gets picked up. Final review M6 (mezo-a9bo7.25): 2 h, not 24 — the sweep runs hourly, so two
@@ -153,7 +170,8 @@ public class TeamChatService {
 
     /** What {@link #claimThread} hands the voice step: the committed ügy plus everything its lines
      *  are written from. */
-    record Claim(TeamChatThreadEntity thread, AdvicePick picked, List<String> facts, boolean skepticEligible) {
+    record Claim(TeamChatThreadEntity thread, AdvicePick picked, List<String> facts, boolean skepticEligible,
+            String templateOverride, boolean silent) {
     }
 
     /**
@@ -178,11 +196,13 @@ public class TeamChatService {
             return Optional.empty();
         }
         Claim c = claim.get();
-        TeamChatLines voiced = voice(c.thread(), KIND_OPEN, c.facts(), c.picked().textHu(), c.skepticEligible());
+        String template = c.templateOverride() != null ? c.templateOverride() : c.picked().textHu();
+        TeamChatLines voiced = voice(c.thread(), KIND_OPEN, c.facts(), template, c.skepticEligible());
         self.getObject().writeOpenLines(c.thread(), voiced, c.facts(), at);
         log.info("Team chat ügy {} opened for user {} flag {} by {}", c.thread().getId(), userId, flagKey,
                 c.thread().getOwnerCharacter());
-        return Optional.of(new Opened(c.thread(), voiced.ownerBody(), c.picked().pushAllowed(),
+        // S7: a known-exception question (EXCUSE / REVIEW) never pages the user.
+        return Optional.of(new Opened(c.thread(), voiced.ownerBody(), !c.silent() && c.picked().pushAllowed(),
                 c.picked().quietHoursExempt()));
     }
 
@@ -194,6 +214,22 @@ public class TeamChatService {
             return Optional.empty();
         }
         if (threads.findFirstByCreatedByAndFlagKeyAndStatusAndDeletedFalse(userId, flagKey, STATUS_OPEN).isPresent()) {
+            return Optional.empty();
+        }
+        // S7 (mezo-d6ivw.7): a remembered exception — a silent hit, a one-tap question or a review.
+        TeamChatExceptionService gateService = exceptionGate.getIfAvailable();
+        TeamChatExceptionService.Gate gate = gateService == null
+                ? TeamChatExceptionService.Gate.none() : gateService.gate(userId, flagKey, at);
+        if (gate.kind() == TeamChatExceptionService.Gate.Kind.SKIP) {
+            log.info("Team chat {} for user {} skipped — known exception '{}' named today", flagKey, userId,
+                    gate.exception().getContextTag());
+            return Optional.empty();
+        }
+        if (gateService != null
+                && threads.findFirstByCreatedByAndFlagKeyAndStatusAndDeletedFalse(userId, flagKey, STATUS_OPEN)
+                        .isPresent()) {
+            // Re-checked after the gate: when it waited on the exception lock, a concurrent open or a
+            // remembered-chip undo may have committed an OPEN ügy of this rule meanwhile.
             return Optional.empty();
         }
         if (capReached(userId, at)) {
@@ -219,6 +255,14 @@ public class TeamChatService {
         draft.setActions(new TeamChatActionsEnvelope(actionCatalog.forCard(userId, flagKey).stream()
                 .map(a -> new TeamChatActionsEnvelope.Action(a.key(), a.label(), a.params()))
                 .toList()));
+        boolean offer = gate.kind() == TeamChatExceptionService.Gate.Kind.EXCUSE
+                || gate.kind() == TeamChatExceptionService.Gate.Kind.REVIEW;
+        String templateOverride = null;
+        if (offer) {
+            draft.setOffer(gate.kind() == TeamChatExceptionService.Gate.Kind.REVIEW ? OFFER_REVIEW : OFFER_EXCUSE);
+            draft.setExceptionId(gate.exception().getId());
+            templateOverride = TeamChatExceptionService.template(gate);
+        }
         TeamChatThreadEntity thread = threads.saveAndFlush(draft);
 
         // The Szkeptikus speaks only on an honest coverage gap in the raise's own frozen payload;
@@ -226,7 +270,11 @@ public class TeamChatService {
         Optional<String> gap = TeamChatVoiceWriter.skepticGap(flagKey, picked.payload());
         List<String> facts = gap.map(g -> Stream.concat(picked.facts().stream(), Stream.of(g)).toList())
                 .orElse(picked.facts());
-        return Optional.of(new Claim(thread, picked, facts, gap.isPresent()));
+        if (gate.kind() == TeamChatExceptionService.Gate.Kind.REVIEW) {
+            // The review sentence carries its hit count — as a fact, so the voice guard lets it through.
+            facts = Stream.concat(facts.stream(), Stream.of(templateOverride)).toList();
+        }
+        return Optional.of(new Claim(thread, picked, facts, gap.isPresent(), templateOverride, offer));
     }
 
     /** Step 3 of {@link #openThread}: the OPEN line (always — the cap was checked at the claim) and
@@ -263,14 +311,16 @@ public class TeamChatService {
      *  cleared rule must not linger as OPEN until it expires). */
     @Transactional
     Optional<TeamChatThreadEntity> closeThread(UUID userId, String flagKey, Instant at) {
-        Optional<TeamChatThreadEntity> open =
-                threads.findFirstByCreatedByAndFlagKeyAndStatusAndDeletedFalse(userId, flagKey, STATUS_OPEN);
-        if (open.isEmpty()) {
+        // S7 (mezo-d6ivw.7): row-locked — a reply-close or a one-tap answer holding the lock wins,
+        // and this clear then finds no OPEN ügy instead of overwriting its close reason.
+        Optional<TeamChatThreadEntity> open = threads.lockOpenByFlag(userId, flagKey);
+        if (open.isEmpty() || !STATUS_OPEN.equals(open.get().getStatus())) {
             return Optional.empty();
         }
         TeamChatThreadEntity thread = open.get();
         thread.setStatus(STATUS_RESOLVED);
         thread.setClosedAt(at);
+        thread.setCloseReason(CLOSE_DATA);
         TeamChatThreadEntity saved = threads.saveAndFlush(thread);
         if (capReached(userId, at)) {
             log.warn("Team chat daily line cap reached for user {} — RESOLVE line of {} dropped", userId, flagKey);
@@ -315,8 +365,15 @@ public class TeamChatService {
 
     @Transactional
     void catchUpUser(UUID userId, Instant now) {
-        catchUpMissedOpens(userId, now);
+        // Resolves BEFORE opens — a lock-order rule (S7, mezo-d6ivw.7): an open's exception gate
+        // takes the per-user exception advisory lock, held to the end of this transaction, while
+        // TeamChatExceptionService.answer / TeamChatReplyService.commit take an ügy's row lock and
+        // THEN that advisory lock. A resolve (closeThread's row lock) after an open would wait on a
+        // row lock while holding the advisory lock — a deadlock cycle. Accepted cost: a raise and
+        // its clear that both fall inside one sweep window leave the ügy OPEN until the next hourly
+        // run resolves it.
         catchUpMissedResolves(userId);
+        catchUpMissedOpens(userId, now);
     }
 
     /** Every raise in the last {@link #CATCH_UP_LOOKBACK_HOURS} hours with no thread opened at/after
@@ -356,7 +413,14 @@ public class TeamChatService {
         }
     }
 
-    /** The user's reply — a USER line on their own ügy; it never resolves the ügy. */
+    /** The user's reply — a USER line on their own ügy, written synchronously; the owner answers
+     *  asynchronously (S7, {@link TeamChatReplyService} via {@link TeamChatReplyListener}, after
+     *  commit), and only that answer may close the ügy.
+     *
+     *  <p>Takes the ügy's row lock ({@code lockOwned}) — the same lock {@link TeamChatReplyService}'s
+     *  commit holds — so USER lines and REPLY lines of one ügy are written strictly one after the
+     *  other and their {@code occurredAt} order is their commit order. That is what lets the answer
+     *  step tell "a USER line newer than the burst I answered" apart from "already answered". */
     @Transactional
     public TeamChatLineEntity reply(UUID userId, UUID threadId, String text) {
         String body = text == null ? "" : text.trim();
@@ -364,8 +428,10 @@ public class TeamChatService {
             throw new SystemRuntimeErrorException(
                     SystemMessage.error("CHARACTER_TEAM_CHAT_REPLY_INVALID").build(), HttpStatus.BAD_REQUEST);
         }
-        TeamChatThreadEntity thread = owned(userId, threadId);
-        return writeLine(thread, KIND_USER, null, body, false, List.of(), Instant.now());
+        TeamChatThreadEntity thread = threads.lockOwned(threadId, userId).orElseThrow(TeamChatService::notFound);
+        TeamChatLineEntity line = writeLine(thread, KIND_USER, null, body, false, List.of(), Instant.now());
+        events.publishEvent(new TeamChatRepliedEvent(userId, threadId, line.getId()));
+        return line;
     }
 
     /** Applies an offered action exactly once — the {@code AdviceApplyService.apply} contract on
@@ -463,7 +529,7 @@ public class TeamChatService {
     Optional<ReservedPush> reservePush(UUID threadId, String ownerBody, boolean pushAllowed,
             boolean quietHoursExempt) {
         if (!pushAllowed) {
-            log.info("Team chat ügy {} not pushed — a feed-only library entry", threadId);
+            log.info("Team chat ügy {} not pushed — a feed-only library entry or a silent exception offer", threadId);
             return Optional.empty();
         }
         Optional<TeamChatThreadEntity> found = threads.findById(threadId);
@@ -541,8 +607,9 @@ public class TeamChatService {
         LocalDate day = at.atZone(properties.zone()).toLocalDate();
         Instant from = day.atStartOfDay(properties.zone()).toInstant();
         Instant to = day.plusDays(1).atStartOfDay(properties.zone()).toInstant().minusNanos(1000);
-        return lines.countByCreatedByAndCharacterIsNotNullAndOccurredAtBetweenAndDeletedFalse(userId, from, to)
-                >= properties.dailyLineCap();
+        // S7: REPLY lines have their own cap (reply-daily-cap) and never eat this one.
+        return lines.countByCreatedByAndCharacterIsNotNullAndKindNotAndOccurredAtBetweenAndDeletedFalse(
+                userId, KIND_REPLY, from, to) >= properties.dailyLineCap();
     }
 
     /** A guest / skeptic line — dropped (with a warn) rather than breaking the cap. */
@@ -556,7 +623,8 @@ public class TeamChatService {
         writeLine(thread, kind, character, body, voiced, facts, at);
     }
 
-    private TeamChatLineEntity writeLine(TeamChatThreadEntity thread, String kind, String character, String body,
+    /** Package-private for {@link TeamChatReplyService} (S7) — joins the caller's transaction. */
+    TeamChatLineEntity writeLine(TeamChatThreadEntity thread, String kind, String character, String body,
             boolean voiced, List<String> facts, Instant at) {
         TeamChatLineEntity line = new TeamChatLineEntity();
         line.setCreatedBy(thread.getCreatedBy());
@@ -568,10 +636,6 @@ public class TeamChatService {
         line.setFacts(new EditionFactsEnvelope(facts));
         line.setOccurredAt(at);
         return lines.saveAndFlush(line);
-    }
-
-    private TeamChatThreadEntity owned(UUID userId, UUID threadId) {
-        return threads.findByIdAndCreatedByAndDeletedFalse(threadId, userId).orElseThrow(TeamChatService::notFound);
     }
 
     private static SystemRuntimeErrorException notFound() {

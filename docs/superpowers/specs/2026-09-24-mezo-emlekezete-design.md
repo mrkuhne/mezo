@@ -853,6 +853,226 @@ through the full merge chain (lessons 21–22).
   exist; switch off → source silent; existing candidate sources unaffected.
 - Budget/idempotency untouched: one message per (user, date, kind) still holds.
 
+## S7 delta — the csapatfal reply: the character answers, the explanation becomes durable knowledge (2026-09-27, owner-approved direction)
+
+Bead `mezo-d6ivw.7`. Today `TeamChatService.reply()` only writes a `USER` line; nothing
+answers, nothing is remembered, and the "Te hogy látod?" row promises a conversation it
+does not hold. Owner decisions (2026-09-26 bd comment + 2026-09-27 brainstorm):
+
+1. **Every reply gets an answer** from the ügy's owner character, server-written (ADR 0049),
+   1–2 sentences, acknowledging an explanation rather than repeating the advice.
+2. **The character MAY close the ügy** when the explanation is acceptable. **Only a concrete,
+   nameable context closes** (event, programme, illness, travel, work); mood/"nem volt kedvem",
+   disagreement or a question gets a kind answer and the ügy stays OPEN.
+3. **Closing is visible** in the thread ("Falat lezárta: meccsnap") and comes with a
+   "Megjegyeztem: …" chip + **Visszavonom**. **Undo reverts everything**: the fact is muted and
+   vetoed, and the ügy returns to OPEN — unless a newer OPEN ügy already exists for the same
+   rule (one OPEN per rule), in which case the old one stays closed and only the knowledge is
+   withdrawn.
+4. **Where the knowledge lives:** a `knowledge_fact` (owner = the character), so the chat,
+   the proactive messages and the whole csapatfal read it. S7 also ships the **real
+   `TeamChatKnowledgePort` adapter**: every csapatfal line now sees the durable knowledge
+   (confirmed observations, chat facts, question answers, team-chat exceptions), not only this
+   slice's sentences.
+5. **Known exception next time (option B + "rákérdez"):** when the same rule fires again —
+   - the day's own texts name the exception's context → no ügy, a silent **excused hit**
+     (strigula);
+   - otherwise the ügy opens **without push** and the character asks ("Meccsnap volt ma is?")
+     with a one-tap **"Igen, meccsnap volt"** that closes it as excused (a hit).
+6. **Not endless absolution:** the 5th hit of one exception inside a rolling 30 days opens,
+   once and without push, a **review ügy** ("Mostanában sok a meccsnapos késő vacsora — ez még
+   rendben van így?") with two taps: **"Rendben van"** (the count restarts) / **"Nem, figyelj
+   rá"** (the exception switches off, its fact is muted, normal nudging resumes).
+
+Non-goals: no manual pre-declared exceptions ("szombatonként meccsem van" — later, hub idea);
+no person_fact capture from team chat (a named person in a reply is left to S3's chat path);
+no push from anything in the reply path; no new feature switch (rides `TEAM_CHAT_SWITCH`).
+
+### Prior art (S7 recon)
+
+- **ChatGPT "Memory updated"** (https://openai.com/index/memory-and-new-controls-for-chatgpt/)
+  — one readable sentence, inline, undo at the chip, memory is its own record. *Adopted*; our
+  undo is stronger (also reopens the ügy).
+- **Loop Habit Tracker "skip" / Habitica "Rest in the Inn"**
+  (https://github.com/iSoron/uhabits/discussions/88) — an excused day is a third state, still
+  recorded, not erased. *Adopted* as the excused hit; Habitica's blanket pause *rejected*
+  (our exception is scoped to one rule + one context).
+- **Duolingo Streak Freeze** (https://duoplanet.com/duolingo-streak-freeze/) — a code-enforced
+  cap on excuses. *Adopted* as the 5-in-30-days review; the gem economy is irrelevant.
+- **JITAI receptivity** (https://pmc.ncbi.nlm.nih.gov/articles/PMC13324450/) — user-given
+  context means "a nudge won't help now"; suppression is a dose decision, not a verdict.
+  *Adopted*: scoped suppression, silent (no-push) exception questions.
+- **Aimi MI coach** (https://pmc.ncbi.nlm.nih.gov/articles/PMC13336328/) — the model labels,
+  the workflow decides; replies were too long and reflective. *Adopted*: the LLM returns a
+  verdict + proposal, code decides the close; replies capped at 2 sentences. Their separate
+  label call *rejected* for cost — one JSON call carries both label and reply.
+
+### Codebase terrain (S7 recon)
+
+- **Engine:** `character/service/chat/TeamChatService.java` — `reply()` :359 (one
+  `@Transactional`, USER line only); the open path's claim (short tx) → voice (no tx) → write
+  (short tx) three-step :175-240 via the `self` proxy (pinned by
+  `TeamChatVoiceOutsideTransactionIT`); `claimThread` dedupe :191-230 (the seat for exception
+  suppression); `resolve`/`closeThread` keyed by **flagKey** :247-290; no reopen exists;
+  push only on open :438-500; `capReached` :540 counts every `character IS NOT NULL` line
+  against `daily-line-cap: 12`.
+- **Voice:** `TeamChatVoiceWriter` (`MARKER = "CSAPATFAL-ELO-BESZELGETES"` :54, JSON
+  `{owner,guest,skeptic}`, budget-first, `EditionVoiceGuard` 2–4 sentences + numbers only from
+  facts, template fallback, never throws). `FakeCompanionLlm` dispatches by
+  `systemPrompt.startsWith(marker)` in order (:816) — a new marker must not share the prefix.
+- **Context:** `TeamChatContext.build` → todayLines (the only reply consumer today),
+  pastEpisodes (no reply content/close reason), reactions, knowledge (`TeamChatKnowledgePort`,
+  only `NoopTeamChatKnowledge` exists — its javadoc and `character.md:468` wrongly credit S5).
+- **Schema:** `1.1.0/script/202609261500_mezo-a9bo7_team_chat.sql` — status check
+  OPEN/RESOLVED/EXPIRED, `uq_team_chat_thread_open` (one OPEN per user+flag),
+  `uq_team_chat_line_resolve` (one RESOLVE line per thread), `kind varchar(8)` + check; no
+  close-reason column. Released → changes go in a new script.
+- **Knowledge:** `KnowledgeFactEntity` (`source` check `chat|pattern|manual|weekly_review|question`,
+  `owner` via `FactOwner`, `provenance` `MemoryProvenanceEnvelope`, `include_in_prompt`); no
+  source ref, no veto, no undo endpoint. Direct-write precedent `QuestionAnswerService:63-70`;
+  mute-not-delete precedent `KnowledgeFactService.muteFromRefutedPattern` :241. Knowledge facts
+  already reach RAG (`FactMemoryRetriever`), graph (`GraphPromotionListener`), chat
+  (`renderPromptBlock`, `ChatService:416`) and proactive — the common substrate.
+- **Day texts** for exception matching: `companion/NarrativeNoteSource.notesOn(userId, day)`
+  (activity + check-in notes), plus the day's team chat USER lines.
+- **FE:** `features/insights/pages/TeamChatPage.tsx` (reply row :202, `ReplyComposer` :379
+  ignores the returned line, `REPLY_INTRO` copy :350 "lezárni viszont csak az adataid
+  tudják" — stale after this slice), `data/character/teamChatHooks.ts` (reply is a no-op in
+  mock), `teamChatMock.ts`, msw handlers; chip idiom `RememberedChips.tsx` + `useTurnFacts`
+  backoff.
+- **Layering:** character → companion/proactive/people allowed; never the reverse
+  (`feature_slices_are_cycle_free` frozen). The knowledge adapter therefore lives in
+  character and calls companion's `KnowledgeFactService`.
+- **Traps:** guard rejects 1-sentence replies and numbers from user text (needs a reply
+  profile); replies would starve the 12-line day cap; the $1.00/30-day `team_chat` budget is
+  shared; mock reply no-op hides the whole feature in mock mode (lesson 16); the `team_chat`
+  slug has no admin label and the completeness gate misses it (constant declared by
+  reference); **S6 (`mezo-d6ivw.6`) is in flight on knowledge_fact** — coordinate the
+  `source` check widening and ask for a merge window.
+
+### Design (S7)
+
+**Data (character-owned, new Liquibase script):**
+
+- `team_chat_thread` gains `close_reason varchar(8)` (`DATA | REPLY | EXCUSED`, set only on
+  RESOLVED — null while OPEN and on EXPIRED; existing RESOLVED rows backfill `DATA`),
+  `close_note varchar(60)` (the context tag, e.g. "meccsnap"), `offer varchar(8)`
+  (`EXCUSE | REVIEW`, null for a normal ügy) and `exception_id uuid` (nullable FK).
+- `team_chat_line.kind` widens with `REPLY` (the character's answer). The reply-close writes
+  **no RESOLVE line** — the thread's `close_reason`/`close_note` render the "Falat lezárta:
+  meccsnap" tag — so `uq_team_chat_line_resolve` is untouched and undo needs no line surgery.
+- New `team_chat_exception` (`OwnedEntity`): `flag_key`, `owner_character`, `context_tag`,
+  `normalized_tag`, `keywords jsonb` (the LLM's 1–6 lowercase stems, e.g.
+  `["meccs","kupa","röpi"]`), `knowledge_fact_id`, `source_thread_id`, `source_line_id`,
+  `active`, `window_started_at`. Unique live row per (user, flag_key, normalized_tag).
+  An undone/stopped row stays (inactive) as the **veto**: the same normalized tag for the same
+  rule is never captured again.
+- New `team_chat_exception_hit`: `exception_id`, `hit_on date`, `source`
+  (`NOTES | TAP | REPLY`), `thread_id` nullable. Unique per (exception, day).
+
+**Reply flow (code decides, the LLM proposes):**
+
+1. `POST .../threads/{id}/reply` stays synchronous and cheap: validates, writes the USER line
+   (short tx), publishes `TeamChatReplied` and returns the line.
+2. An `@Async` AFTER_COMMIT listener (`LlmActorContext.runAs`) runs
+   `TeamChatReplyService.answer(userId, threadId)`: it answers **all unanswered USER lines of
+   the thread at once** (one REPLY per burst). No transaction around the LLM call.
+3. **Rate + budget:** at most `reply-voiced-per-thread-day` (default 4) voiced answers per
+   thread per local day and only while `TeamChatBudget.hasRoom`; past either, a per-character
+   template acknowledgement (`voiced=false`) that can never close. REPLY lines are **excluded
+   from `capReached`** and have their own day cap (`reply-daily-cap`, default 20).
+4. **One LLM call**, new marker `CSAPATFAL-VALASZ` (distinct prefix), slug
+   `LlmCallContext(team_chat, reply, team_chat_thread, threadId)`. Input: the ügy's lines,
+   the owner's persona + voice, the knowledge block, the thread's offer, active exceptions for
+   the rule. Answer JSON: `{reply, verdict, contextTag, factText, keywords}` with
+   `verdict ∈ concrete_context | mood | disagreement | question | other`.
+5. **Close decision in code:** close iff thread OPEN ∧ `offer` null ∧ verdict
+   `concrete_context` ∧ contextTag non-blank (≤ 40 chars) ∧ factText non-blank (≤ 160 chars)
+   ∧ ≥ 1 keyword ∧ the normalized tag is not vetoed for this rule. If an **active** exception
+   with the same normalized tag exists, the reply is recorded as a hit on it (no second
+   fact). Otherwise: create the knowledge fact (companion port, below), the exception row, a
+   `REPLY` hit, and close the thread (`RESOLVED`, `close_reason=REPLY`, `close_note=tag`) —
+   row-locked like `apply()` so it serialises against a concurrent data clear; a thread
+   already RESOLVED by data just gets the answer.
+6. **Guard:** a reply profile of `EditionVoiceGuard` — 1–2 sentences, numbers allowed from the
+   ügy's facts **and the user's own text**, same jargon/emoji rules. Guard failure → the
+   template, and **no close** (a close is only made with a voiced, guarded answer).
+7. On an `offer` ügy free text is answered but never closes or mints: on an EXCUSE ügy a
+   `concrete_context` reply whose normalized tag equals the exception's tag acts exactly like
+   the EXCUSED tap; anything else (including on a REVIEW ügy) only gets an answer — stopping
+   an exception is a button, never an inference from free text.
+
+**Knowledge (companion side, called from character):**
+
+- `ck_knowledge_fact_source` widens with `team_chat` (new script; coordinate with S6).
+- `KnowledgeFactService.captureFromTeamChat(userId, text, category, owner, provenance)`
+  → id (`include_in_prompt=true`, provenance `MemoryProvenanceEnvelope.teamChat(lineId,
+  threadId)`), publishing the same events other producers publish so RAG/graph pick it up;
+  `muteFromTeamChat(userId, factId)` (mute, never delete — the S2 idiom). No new contract on
+  companion.yml; S6's hub lists these rows through the existing fact API with the new
+  source label.
+- **`TeamChatKnowledgeAdapter`** (character, replaces the Noop bean): `forArea(owner, area)` =
+  the user's active, `include_in_prompt`, non-superseded knowledge facts whose `owner` is the
+  area's slug, plus up to 2 `mezo`-owned facts, newest-reinforced first, capped at 6, as plain
+  sentences. Fail-open (empty list on error). Every open, resolve and reply voice sees it.
+
+**Next occurrence (inside `claimThread`, before push is reserved):**
+
+1. Active exceptions for (user, flagKey). None → today's behaviour.
+2. For the first exception whose window count (hits since `max(window_started_at, now-30d)`)
+   is **≥ 4**: open a REVIEW ügy (`offer=REVIEW`, `exception_id`, no push) — at most one per
+   exception per window.
+3. Else if any keyword occurs (case-insensitive, accent-folded substring) in the day's texts
+   (`NarrativeNoteSource.notesOn` + the day's team chat USER lines): record a `NOTES` hit, open
+   nothing, no push.
+4. Else open an EXCUSE ügy (`offer=EXCUSE`, `exception_id`, **no push**); the voice
+   situation line tells the character to ask about the known context in one sentence.
+
+**Quick answers + undo (new endpoints on character.yml):**
+
+- `POST .../threads/{id}/answer {choice: EXCUSED | KEEP | STOP}` — EXCUSED on an EXCUSE ügy:
+  `TAP` hit, close `EXCUSED` with `close_note=tag`; KEEP on a REVIEW: `window_started_at=now`,
+  close `EXCUSED`; STOP on a REVIEW: exception inactive, fact muted, close
+  `REPLY` with `close_note` "kivétel kikapcsolva". Idempotent per choice; 409 on a mismatched offer.
+  The server writes a short templated acknowledgement line (REPLY kind, `voiced=false`).
+- `DELETE .../threads/{id}/remembered` — undo: exception inactive (veto), fact muted, the
+  REPLY hit deleted; if the thread is `REPLY`-closed and no other OPEN ügy exists for the
+  rule, it returns to OPEN (`close_reason/close_note` null). Idempotent.
+- `TeamChatThread` (contract) gains `closeReason`, `closeNote`, `offer`, and
+  `remembered: {text, contextTag, active}` (the exception born from this thread);
+  `TeamChatLine.kind` gains `REPLY`. Enums as `enum:` (lesson 21).
+
+**FE (TeamChatPage, üveg canon — prototype first):**
+
+- After send the composer closes and the thread shows a "Falat ír…" typing row; the day query
+  polls on the `useTurnFacts` backoff (2s/5s/10s, then the normal 60s) until a REPLY line
+  newer than the user line appears.
+- REPLY lines render as the owner's bubble; a closed-by-reply thread shows the
+  "Falat lezárta: meccsnap" tag and the `RememberedChips`-style "Megjegyeztem: … ·
+  Visszavonom" chip; EXCUSE/REVIEW threads show their one or two tap buttons.
+- `REPLY_INTRO` copy and the RESOLVE tag copy updated to the new truth.
+- Mock mode: the mock `reply` appends a synthetic REPLY (and, for a scripted sentence, a close
+  + remembered) so the flow is visible in mock (lesson 16); msw handlers mirror the endpoints.
+
+**Docs:** `character.md` §Csapat-chat, `insights.md` reply row, the csapat-élő-beszélgetés
+spec §5.x close rule, `character.yml` reply summary, the port/Noop javadocs; admin label for
+`team_chat` (and a completeness-gate fix so by-reference slugs are caught); CODEMAP regen.
+
+### Testing (S7)
+
+- Unit: close decision table (each verdict × offer × veto × active-duplicate), window count
+  boundaries (4 → review on the 5th; 30-day floor off-by-one, lesson 25), keyword matching
+  (accent-folded), guard reply profile (user-text numbers allowed, 3 sentences rejected).
+- IT (Testcontainers, reflection/team-chat switches on): reply → REPLY line + fact + exception
+  + RESOLVED(REPLY); mood reply → REPLY line, still OPEN; burst of 3 USER lines → one REPLY;
+  voiced cap → template, no close; undo → OPEN + fact muted + veto blocks re-capture; undo
+  with a newer OPEN ügy → stays closed; next raise with keyword in a check-in note → hit, no
+  thread, no push; without → EXCUSE ügy, no push; `answer EXCUSED` → closed + hit; 5th hit →
+  REVIEW; KEEP/STOP; LLM call outside any transaction; adapter feeds knowledge into the open
+  voice prompt.
+- FE: both modes, `CI=true`; component tests for typing row, chip + undo, offer buttons;
+  layout spec for the thread at 320px; runtime verify dark + reduced motion.
+
 ## Facts-always delta — minden bekapcsolt tény, minden csatornán (2026-09-27, owner-approved direction, mezo-d6ivw.8)
 
 ### Owner decisions (2026-09-27)
@@ -1102,3 +1322,23 @@ through the full merge chain (lessons 21–22).
     numbers, not logic. Session-tooling trap paid for too: the Maven wrapper lives at
     `backend/mvnw` (repo root has none), and `cmd | tail` swallows a launch failure —
     `set -o pipefail` before piping gate commands.
+31. **(S7)** An async "answer the user's burst" pipeline is only exact when the USER line
+    write takes the same row lock as the answer's commit (`TeamChatService.reply` →
+    `lockOwned`); otherwise a line stamped before the answer but committed after it sorts
+    above the REPLY and its own event steps back — silently unanswered. Pair it with an
+    event that carries the line id and a "newer USER line exists → step back" claim.
+32. **(S7)** A single-transaction sweep (`catchUpUser`) that takes an advisory lock in one
+    phase and a row lock in the next inverts the lock order of any request path that takes
+    row → advisory. Order the sweep's phases so it never waits on a row after holding the
+    advisory lock (resolves before opens), and pin it with a two-thread IT — taking the
+    advisory lock "first" does not fix the cycle.
+33. **(S7)** An FE block gated on "the ügy is closed" disappears exactly when an undo
+    reopens it — the confirmation the user needs most never renders. Gate post-action
+    feedback on the artefact (`remembered != null`) and pick the copy from the status.
+34. **(S7)** Anything derived from a knowledge fact (a csapatfal exception) must follow the
+    fact's live state (muted/deleted in the Tudástár → the derived behaviour stops);
+    `KnowledgeFactService.liveInPrompt` is the read seam. S6's hub edits/re-enables are a
+    known gap (mezo-d6ivw.11).
+35. **(S7)** Test-support truncation lists (`ResetDatabase`) are a hidden migration
+    touchpoint: every new owned table must be added, or `AdminDataBrowserIT` fails only in
+    the FULL suite — focused ITs never see it.

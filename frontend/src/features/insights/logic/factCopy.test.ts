@@ -74,6 +74,11 @@ describe('originSentence', () => {
     expect(originChipLabel('weekly_review')).toBe('heti áttekintésből')
     expect(originChipLabel('question')).toBe('kérdésre válaszoltál')
   })
+
+  it('a csapatfal-válaszból megjegyzett tényt is megnevezi (S7, mezo-d6ivw.7)', () => {
+    expect(originSentence(fact({ source: 'team_chat' }))).toBe('A csapatfalon adott válaszodból jegyeztem meg.')
+    expect(originChipLabel('team_chat')).toBe('csapatfalról')
+  })
 })
 
 describe('reinforcementSentence', () => {

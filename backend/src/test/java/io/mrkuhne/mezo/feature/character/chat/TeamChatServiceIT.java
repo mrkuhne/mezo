@@ -56,7 +56,8 @@ import org.springframework.transaction.support.TransactionTemplate;
  * Csapatfal Act III Task 5 (mezo-a9bo7.21) + Task 9 (mezo-a9bo7.22): the team chat engine, voiced
  * through the fake LLM (owner, cross-talk guest, Szkeptikus on a payload gap) —
  * a raise opens an ügy owned by the rule's character, a clear resolves it, 7 days open expires
- * it, a reply never resolves, and an offered action is applied exactly once. No class-level
+ * it, a reply writes a USER line synchronously (the async answer is TeamChatReplyIT's domain), and
+ * an offered action is applied exactly once. No class-level
  * {@code @Transactional}: case (a) needs the raise to really commit so the AFTER_COMMIT listener
  * fires (the {@code InterventionServiceIT} precedent).
  */
@@ -179,6 +180,7 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
         });
         TeamChatThreadEntity reread = threads.findById(thread.getId()).orElseThrow();
         assertThat(reread.getStatus()).isEqualTo("RESOLVED");
+        assertThat(reread.getCloseReason()).isEqualTo("DATA");
         assertThat(reread.getClosedAt()).isNotNull();
     }
 
@@ -359,9 +361,10 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
         assertThat(threads.findById(fresh.getId()).orElseThrow().getStatus()).isEqualTo("OPEN");
     }
 
-    // (h) a reply writes a USER line and never resolves.
+    // (h) a reply writes a USER line synchronously. S7 (mezo-d6ivw.7): the owner's async answer —
+    // which may close the ügy — is TeamChatReplyIT's domain, so nothing here waits for it.
     @Test
-    void reply_writesAUserLine_andLeavesTheThreadOpen() {
+    void reply_writesAUserLineSynchronously() {
         UUID owner = owner();
         raiseSleepDebtLog(owner);
         TeamChatThreadEntity thread = service.open(owner, FlagKey.SLEEP_DEBT, Instant.now()).orElseThrow();
@@ -371,8 +374,8 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
         assertThat(reply.getKind()).isEqualTo("USER");
         assertThat(reply.getCharacter()).isNull();
         assertThat(reply.getBody()).isEqualTo("Rendben, ma korábban fekszem.");
-        assertThat(threads.findById(thread.getId()).orElseThrow().getStatus()).isEqualTo("OPEN");
-        assertThat(linesOf(owner)).hasSize(2);
+        assertThat(reply.getThreadId()).isEqualTo(thread.getId());
+        assertThat(lines.findById(reply.getId())).isPresent();
     }
 
     @Test
@@ -751,5 +754,52 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
 
         assertThat(teamChatPushes(owner)).isEmpty();
         assertThat(threads.findById(thread.getId()).orElseThrow().getPushed()).isNotEqualTo(Boolean.TRUE);
+    }
+
+    // S7 Task 7 fold-in (mezo-d6ivw.7): closeThread row-locks the OPEN ügy and re-checks it — a
+    // clear racing a reply-close must not overwrite closeReason/closeNote or add a RESOLVE line.
+    @Test
+    void resolve_racingAReplyClose_neverRecloses_theUgyAsData() throws Exception {
+        UUID owner = owner();
+        raiseSleepDebtLog(owner);
+        TeamChatThreadEntity thread = service.open(owner, FlagKey.SLEEP_DEBT, todayAt(10, 0), false).orElseThrow();
+        CountDownLatch locked = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            // A reply-close holding the ügy's row lock (TeamChatReplyService.commit's shape).
+            Future<?> replyClose = pool.submit(() -> tx.executeWithoutResult(s -> {
+                TeamChatThreadEntity row = threads.lockOwned(thread.getId(), owner).orElseThrow();
+                row.setStatus("RESOLVED");
+                row.setCloseReason("REPLY");
+                row.setCloseNote("meccsnap");
+                row.setClosedAt(Instant.now());
+                threads.saveAndFlush(row);
+                locked.countDown();
+                try {
+                    release.await(10, SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }));
+            assertThat(locked.await(10, SECONDS)).isTrue();
+            Future<Optional<TeamChatLineEntity>> resolve = pool.submit(() -> service.resolve(owner,
+                    FlagKey.SLEEP_DEBT, new FlagVerdict.ClearEvidence("deficit_hours", 2.0, 5.0, null),
+                    todayAt(10, 5)));
+            Thread.sleep(500); // let the resolve reach (and block on) the row
+            release.countDown();
+            replyClose.get(10, SECONDS);
+
+            assertThat(resolve.get(10, SECONDS)).isEmpty();
+        } finally {
+            release.countDown();
+            pool.shutdownNow();
+        }
+        TeamChatThreadEntity reread = threads.findById(thread.getId()).orElseThrow();
+        assertThat(reread.getStatus()).isEqualTo("RESOLVED");
+        assertThat(reread.getCloseReason()).isEqualTo("REPLY");
+        assertThat(reread.getCloseNote()).isEqualTo("meccsnap");
+        assertThat(lines.findByThreadIdAndDeletedFalse(thread.getId()))
+                .noneMatch(l -> "RESOLVE".equals(l.getKind()));
     }
 }

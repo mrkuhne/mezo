@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.character.repository;
 import io.mrkuhne.mezo.feature.character.entity.TeamChatThreadEntity;
 import jakarta.persistence.LockModeType;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -78,6 +79,15 @@ public interface TeamChatThreadRepository extends JpaRepository<TeamChatThreadEn
     @Query("select t from TeamChatThreadEntity t where t.id = :id and t.createdBy = :owner and t.deleted = false")
     Optional<TeamChatThreadEntity> lockOwned(UUID id, UUID owner);
 
+    /** S7 (mezo-d6ivw.7): the rule's OPEN ügy, row-locked — {@code TeamChatService.closeThread}'s
+     *  read. The status predicate is re-evaluated after the lock wait (Postgres re-checks a
+     *  {@code FOR UPDATE} row's WHERE against its newest version), so an ügy a reply-close or an
+     *  answer closed meanwhile comes back EMPTY instead of being overwritten as DATA. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select t from TeamChatThreadEntity t where t.createdBy = :owner and t.flagKey = :flagKey"
+            + " and t.status = 'OPEN' and t.deleted = false")
+    Optional<TeamChatThreadEntity> lockOpenByFlag(UUID owner, String flagKey);
+
     /** Task 15 (mezo-a9bo7.25): every ügy the day touched — opened OR closed in {@code [from, to)} —
      *  for the evening edition's {@code team_chat_day} recap; oldest first. */
     @Query("""
@@ -86,4 +96,14 @@ public interface TeamChatThreadRepository extends JpaRepository<TeamChatThreadEn
               and ((t.openedAt >= :from and t.openedAt < :to) or (t.closedAt >= :from and t.closedAt < :to))
             order by t.openedAt asc""")
     List<TeamChatThreadEntity> touchedBetween(UUID owner, Instant from, Instant to);
+
+    /** S7: is there already an EXCUSE/REVIEW offer for this exception opened since the window
+     *  start — the "don't re-offer within the same window" gate. */
+    Optional<TeamChatThreadEntity> findFirstByCreatedByAndExceptionIdAndOfferAndOpenedAtGreaterThanEqualAndDeletedFalse(
+            UUID createdBy, UUID exceptionId, String offer, Instant since);
+
+    /** S7: the REVIEW ügyek answered "Nem, figyelj rá" (STOP, closed with the STOP note) for these
+     *  exceptions — a STOP-withdrawn exception is not an undo, so its source ügy shows no chip. */
+    List<TeamChatThreadEntity> findByCreatedByAndExceptionIdInAndOfferAndCloseNoteAndDeletedFalse(
+            UUID createdBy, Collection<UUID> exceptionIds, String offer, String closeNote);
 }

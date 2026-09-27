@@ -252,13 +252,14 @@ public class TeamChatVoiceWriter {
         return sb.toString().strip();
     }
 
-    private static String describe(TeamCharacter c) {
+    /** Package-private: shared with {@link TeamChatReplyVoiceWriter} (same character-line prefix). */
+    static String describe(TeamCharacter c) {
         return c.displayName()
                 + (c.area().isBlank() ? "" : " · " + c.area())
                 + " · " + (c.emoji().isEmpty() ? "emoji nélkül" : "emoji: " + String.join(" ", new TreeSet<>(c.emoji())));
     }
 
-    private static void section(StringBuilder sb, String label, List<String> items) {
+    static void section(StringBuilder sb, String label, List<String> items) {
         if (items == null || items.isEmpty()) {
             return;
         }
@@ -268,15 +269,16 @@ public class TeamChatVoiceWriter {
         }
     }
 
-    /** Strips optional ```json fences and surrounding prose down to the outermost JSON object. */
-    private static String stripFences(String raw) {
+    /** Strips optional ```json fences and surrounding prose down to the outermost JSON object.
+     *  Package-private: shared with {@link TeamChatReplyVoiceWriter} (same LLM answer shape). */
+    static String stripFences(String raw) {
         String trimmed = raw.strip();
         int start = trimmed.indexOf('{');
         int end = trimmed.lastIndexOf('}');
         return start >= 0 && end > start ? trimmed.substring(start, end + 1) : trimmed;
     }
 
-    private static String oneLine(String text) {
+    static String oneLine(String text) {
         return text == null ? "" : text.replaceAll("\\s+", " ").strip();
     }
 }

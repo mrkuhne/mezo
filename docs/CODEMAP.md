@@ -81,7 +81,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### admin
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-26, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-27, done) ·
   [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-09-26, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/admin`
@@ -164,7 +164,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### auth
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-26, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-27, done) ·
   [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-09-26, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/auth`
@@ -245,14 +245,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CharacterCouncilEditionEntity`→`character_council_edition`, `CharacterDimensionEntity`→`character_dimension`,
     `CharacterMaturityWeekEntity`→`character_maturity_week`, `CharacterObservationEntity`→`character_observation`,
     `CharacterPortraitRevisionEntity`→`character_portrait_revision`, `CharacterReplyEntity`→`character_reply`,
-    `CharacterRunEntity`→`character_run`, `TeamChatLineEntity`→`team_chat_line`,
+    `CharacterRunEntity`→`character_run`, `TeamChatExceptionEntity`→`team_chat_exception`,
+    `TeamChatExceptionHitEntity`→`team_chat_exception_hit`, `TeamChatLineEntity`→`team_chat_line`,
     `TeamChatThreadEntity`→`team_chat_thread`, `TeamEditionEntity`→`team_edition`,
     `TeamEditionPostEntity`→`team_edition_post`
   - **repositories:** `CharacterClaimRepository`, `CharacterClaimRevisionRepository`, `CharacterConferenceRepository`,
     `CharacterCouncilEditionRepository`, `CharacterDimensionRepository`, `CharacterMaturityWeekRepository`,
     `CharacterObservationRepository`, `CharacterPortraitRevisionRepository`, `CharacterReplyRepository`,
-    `CharacterRunRepository`, `TeamChatLineRepository`, `TeamChatThreadRepository`, `TeamEditionPostRepository`,
-    `TeamEditionRepository`
+    `CharacterRunRepository`, `TeamChatExceptionHitRepository`, `TeamChatExceptionRepository`,
+    `TeamChatLineRepository`, `TeamChatThreadRepository`, `TeamEditionPostRepository`, `TeamEditionRepository`
   - **services:** `CharacterBootstrapService`, `CharacterClaimRevisionService`, `CharacterConferenceJob`,
     `CharacterConferenceService`, `CharacterConfidenceWords`, `CharacterCoreCatalog`, `CharacterCouncilBudget`,
     `CharacterCouncilEvidenceTools`, `CharacterCouncilJob`, `CharacterCouncilPeriodTools`,
@@ -270,7 +271,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **config:** `CharacterCouncilBudgetProperties`, `CharacterCouncilDebateProperties`, `CharacterCouncilProperties`,
     `CharacterFollowupProperties`, `CharacterMaturityProperties`, `CharacterProperties`, `CharacterReplyProperties`,
     `TeamChatProperties`
-  - **events/listeners:** `TeamChatEventListener`
+  - **events/listeners:** `TeamChatEventListener`, `TeamChatRepliedEvent`, `TeamChatReplyListener`
   - **other:** `AvoidancePatternDetector`, `CharacterDetector`, `CharacterFollowupsEnvelope`,
     `CharacterReplyDiscussionEnvelope`, `ChatToolDomains`, `ChatTopicShiftDetector`, `CheckinGapDetector`,
     `CheckinLatencyDetector`, `CheckinSlotDriftDetector`, `ClaimConfidenceHistoryEnvelope`, `ClaimEvidenceEnvelope`,
@@ -280,21 +281,22 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `EditionCandidate`, `EditionCandidateCollector`, `EditionFactsEnvelope`, `EditionGenre`, `EditionGuestsEnvelope`,
     `EditionMeal`, `EditionRef`, `EditionRefsEnvelope`, `EditionSelector`, `EditionVoiceGuard`, `EditionVoiceWriter`,
     `ExperimentOutcomeLedgerDetector`, `GratitudeFocusDetector`, `GuestSeed`, `HrRecoveryTrendDetector`,
-    `HydrationConsistencyDetector`, `JournalNoteDetector`, `JournalSilenceDetector`,
+    `HydrationConsistencyDetector`, `JournalNoteDetector`, `JournalSilenceDetector`, `KeywordsEnvelope`,
     `KnowledgeRejectionPatternDetector`, `LateEatingPatternDetector`, `LoggingGapDetector`, `MacroAdherenceDetector`,
     `MedCycleCovarianceDetector`, `MentionContextShiftDetector`, `MesoAdherenceDetector`,
-    `NeedsDomainImbalanceDetector`, `NiggleMapDetector`, `NightActivityDetector`, `NoopTeamChatKnowledge`,
-    `ObservationDimensionKeysEnvelope`, `ObservationSignalsEnvelope`, `PeopleMoodLinkDetector`,
-    `PredictionCalibrationDetector`, `PriorShowing`, `ProgressionAdherenceDetector`, `PromiseVsDeliveryDetector`,
-    `ProteinTrainingMismatchDetector`, `QuestCompletionCalibrationDetector`, `RestartPatternDetector`,
-    `RetroLoggingRatioDetector`, `RirCalibrationDetector`, `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`,
-    `SelfCalibrationDetector`, `SleepPerformanceChainDetector`, `SportInterferenceDetector`,
-    `StackSkipPatternDetector`, `StreakBreakResponseDetector`, `TeamCharacter`, `TeamChatActionsEnvelope`,
-    `TeamChatBudget`, `TeamChatCast`, `TeamChatContext`, `TeamChatContextBlock`, `TeamChatExpiryJob`,
-    `TeamChatInterventionKeyAdapter`, `TeamChatKnowledgePort`, `TeamChatLines`, `TeamChatPushPolicy`, `TeamChatReads`,
-    `TeamChatService`, `TeamChatVoiceWriter`, `TeamEditionReads`, `TeamEditionService`, `TrailingWindow`,
-    `UnderLoggingDetector`, `VoicedGuest`, `VoicedText`, `WeekendGapDetector`
-- **Contract** `api/feature/character/character.yml` — 21 operations
+    `NeedsDomainImbalanceDetector`, `NiggleMapDetector`, `NightActivityDetector`, `ObservationDimensionKeysEnvelope`,
+    `ObservationSignalsEnvelope`, `PeopleMoodLinkDetector`, `PredictionCalibrationDetector`, `PriorShowing`,
+    `ProgressionAdherenceDetector`, `PromiseVsDeliveryDetector`, `ProteinTrainingMismatchDetector`,
+    `QuestCompletionCalibrationDetector`, `RestartPatternDetector`, `RetroLoggingRatioDetector`,
+    `RirCalibrationDetector`, `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`, `SelfCalibrationDetector`,
+    `SleepPerformanceChainDetector`, `SportInterferenceDetector`, `StackSkipPatternDetector`,
+    `StreakBreakResponseDetector`, `TeamCharacter`, `TeamChatActionsEnvelope`, `TeamChatBudget`, `TeamChatCast`,
+    `TeamChatContext`, `TeamChatContextBlock`, `TeamChatExceptionMatcher`, `TeamChatExceptionService`,
+    `TeamChatExpiryJob`, `TeamChatInterventionKeyAdapter`, `TeamChatKnowledgeAdapter`, `TeamChatKnowledgePort`,
+    `TeamChatLines`, `TeamChatPushPolicy`, `TeamChatReads`, `TeamChatReplyDecision`, `TeamChatReplyDraft`,
+    `TeamChatReplyService`, `TeamChatReplyVoiceWriter`, `TeamChatService`, `TeamChatVoiceWriter`, `TeamEditionReads`,
+    `TeamEditionService`, `TrailingWindow`, `UnderLoggingDetector`, `VoicedGuest`, `VoicedText`, `WeekendGapDetector`
+- **Contract** `api/feature/character/character.yml` — 23 operations
   - **endpoints:** GET /api/character · GET /api/character/dimension/{key} · GET /api/character/experts ·
     GET /api/character/feed · POST /api/character/bootstrap · GET /api/character/conference ·
     POST /api/character/conference · GET /api/character/runs · GET /api/character/edition ·
@@ -303,7 +305,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/character/replies/{replyId}/retry · GET /api/character/council ·
     GET /api/character/claims/{claimId}/revisions · POST /api/character/revisions/{revisionId}/undo ·
     GET /api/character/team-chat · POST /api/character/team-chat/threads/{threadId}/reply ·
-    POST /api/character/team-chat/threads/{threadId}/apply/{actionKey}
+    POST /api/character/team-chat/threads/{threadId}/apply/{actionKey} ·
+    POST /api/character/team-chat/threads/{threadId}/answer ·
+    DELETE /api/character/team-chat/threads/{threadId}/remembered
 - **FE data** `frontend/src/data/character`
   - **hooks (via `@/data/hooks`):** `useCharacterClaimRevisions`, `useCharacterCouncilStatus`, `useCharacterReplies`,
     `useCharacterReplyDraft`, `useTeamChat`, `useTeamChatActions`
@@ -320,7 +324,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **logic:** conferencePostItem.ts
   - **root:** character.css, deliberationLabels.ts, deliberationStats.ts, dossierState.ts, expertColors.ts,
     feedDayLabel.ts, inventory.ts, personaCharacter.ts, runLabels.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 63 IT + 19 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 68 IT + 22 unit
   - **ITs:** `CharacterApiCompanionOffIT`, `CharacterApiIT`, `CharacterApiSwitchOffIT`, `CharacterBootstrapIT`,
     `CharacterBootstrapMemoryDisabledIT`, `CharacterBootstrapMemoryIT`, `CharacterClaimRevisionIT`,
     `CharacterClaimTemporalIT`, `CharacterConferenceJobIT`, `CharacterConferenceListIT`,
@@ -334,11 +338,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CharacterReplyCompanionOffIT`, `CharacterReplyDiscussionIT`, `CharacterReplyRecoveryIT`, `CharacterRunLogIT`,
     `CharacterSignalReadsIT`, `CharacterWeeklySynthesisIT`, `ClaimLifecycleIT`, `ConferenceDeliberationEnvelopeIT`,
     `EditionCandidateCollectorIT`, `EditionVoiceWriterIT`, `KonziliumCrossTalkRoundIT`, `KonziliumProposalRoundIT`,
-    `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`, `PortraitWriterNameIT`, `TeamChatApiSwitchOffIT`,
-    `TeamChatBudgetIT`, `TeamChatContextIT`, `TeamChatControllerIT`, `TeamChatListenerActorIT`,
-    `TeamChatProductionSwitchIT`, `TeamChatRepositoryIT`, `TeamChatServiceIT`, `TeamChatSwitchOffIT`,
-    `TeamChatVoiceOutsideTransactionIT`, `TeamEditionReadsIT`, `TeamEditionSchemaIT`, `TeamEditionServiceIT`,
-    `TeamEditionServiceSwitchOffIT`
+    `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`, `PortraitWriterNameIT`, `TeamChatAnswerControllerIT`,
+    `TeamChatApiSwitchOffIT`, `TeamChatBudgetIT`, `TeamChatCatchUpLockOrderIT`, `TeamChatContextIT`,
+    `TeamChatControllerIT`, `TeamChatExceptionIT`, `TeamChatKnowledgeAdapterIT`, `TeamChatListenerActorIT`,
+    `TeamChatProductionSwitchIT`, `TeamChatReplyIT`, `TeamChatRepositoryIT`, `TeamChatServiceIT`,
+    `TeamChatSwitchOffIT`, `TeamChatVoiceOutsideTransactionIT`, `TeamEditionReadsIT`, `TeamEditionSchemaIT`,
+    `TeamEditionServiceIT`, `TeamEditionServiceSwitchOffIT`
   - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `ChallengePopulator`,
     `CharacterClaimRevisionPopulator`, `CharacterCouncilPopulator`, `CharacterReplyPopulator`, `CheckInPopulator`,
     `DailySummaryPopulator`, `DatabasePopulator`, `ExperimentPopulator`, `FeedbackPopulator`, `FlagLogPopulator`,
@@ -496,7 +501,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/companion`
   - **hooks (via `@/data/hooks`):** `useAccountSettings`, `useCompanionPreferences`, `usePersonalContext`
   - **modules:** preferencesApi.ts, preferencesHooks.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 271 IT + 91 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 272 IT + 91 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,
@@ -539,7 +544,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `GraphTraversalQueryIT`, `GraphUserArchiveIT`, `GroundedHypothesisPipelineIT`, `HybridMemoryRetrieverIT`,
     `HypothesisClosedContextIT`, `HypothesisEvaluationRollbackIT`, `HypothesisEvaluationServiceIT`,
     `HypothesisGatherContextIT`, `HypothesisPipelineServiceIT`, `HypothesisPipelineTestPlanIT`,
-    `KnowledgeFactPromptCapIT`, `KnowledgeFactServiceIT`, `KnowledgeRecheckJobSwitchOffIT`,
+    `KnowledgeFactPromptCapIT`, `KnowledgeFactServiceIT`, `KnowledgeFactTeamChatIT`, `KnowledgeRecheckJobSwitchOffIT`,
     `KnowledgeRecheckServiceBudgetOffIT`, `KnowledgeRecheckServiceIT`, `LearnedFactPersistenceIT`,
     `LifeEventExtractionMemoryDisabledIT`, `LifeEventExtractionMemoryIT`, `LifeEventExtractionServiceIT`,
     `LifeGoalProposeNameIT`, `LlmMemoryCallContextIT`, `LlmModelRoutingIT`, `MeWeekControllerIT`,
@@ -599,7 +604,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-27, done) ·
   [docs/features/pantry.md](features/pantry.md) (updated 2026-09-23, done) ·
   [docs/features/recipe.md](features/recipe.md) (updated 2026-09-26, done) ·
-  [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-26, done) ·
+  [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-27, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-26, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/fuel`
@@ -808,12 +813,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     IntroPosts.tsx, KategoriakView.tsx, KindNodeList.tsx, KindTileGrid.tsx, KnowledgeBaseView.tsx,
     KnowledgeFactRow.tsx, LifeEventAcceptedCard.tsx, LifeEventCandidateCard.tsx, LifecycleSection.tsx, LiveStrip.tsx,
     MemoryAuditPanel.tsx, MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx,
-    PatternAnswerHero.tsx, PatternArtifactDetail.tsx, PatternDecisionCard.tsx, PatternDomainMark.tsx,
+    OfferButtons.tsx, PatternAnswerHero.tsx, PatternArtifactDetail.tsx, PatternDecisionCard.tsx, PatternDomainMark.tsx,
     PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx, PatternLeanMeter.tsx, PatternRuleCard.tsx,
     PatternZoneChart.tsx, ProfileNodeCard.tsx, ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx,
-    RememberedChips.tsx, RoladFacts.tsx, RoladInbox.tsx, RoladQuote.tsx, RoladTimeline.tsx, RoomCaseCard.tsx,
-    SimilarDayCard.tsx, StoryStrip.tsx, TokenColumns.tsx, ToolWorkStrip.tsx, VerdictArc.tsx, experimentStatus.tsx,
-    riseStyle.ts, useFeedSession.ts, useTeamFeed.ts
+    RememberedChips.tsx, ReplyAfterlife.tsx, RoladFacts.tsx, RoladInbox.tsx, RoladQuote.tsx, RoladTimeline.tsx,
+    RoomCaseCard.tsx, SimilarDayCard.tsx, StoryStrip.tsx, TokenColumns.tsx, ToolWorkStrip.tsx, VerdictArc.tsx,
+    experimentStatus.tsx, riseStyle.ts, useFeedSession.ts, useTeamFeed.ts
   - **logic:** boopNavigation.ts, chatRefs.ts, coachingCopy.ts, diagnosisCatalog.ts, diagnosisCopy.ts,
     diagnosisTeam.ts, domains.ts, factCopy.ts, findings.ts, humanizeCron.ts, lifecycle.ts, memoirArchive.ts,
     metricFormat.ts, patternCatalog.ts, patternCopy.ts, patternEvidence.ts, patternHistory.ts, patternReading.ts,
@@ -913,7 +918,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### llmlog
 
-*BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-26, done) ·
+*BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-27, done) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-09-27, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`

@@ -2,7 +2,7 @@
 title: Admin hub — owner console
 type: feature-domain
 status: done
-updated: 2026-09-26
+updated: 2026-09-27
 tags: [me, auth, admin, llmlog, backend, frontend, data-layer, design]
 key_files:
   - api/feature/admin/admin.yml
@@ -316,10 +316,14 @@ render goes through a `*Label()` helper (`featureLabel`, `screenLabel`, `tableLa
 rather than silently lying about it. `labels.completeness.test.ts` fails CI the moment a new
 backend `LlmCallContext` feature slug ships with no Hungarian entry — it scans
 `backend/src/main/java` for `new LlmCallContext("...")` call sites (plus the named-constant
-variant) and asserts every discovered slug is a `FEATURE_LABELS` key. Latest entry:
+variant, resolved in TWO passes so a constant used through another class, e.g.
+`TeamChatBudget.FEATURE` read from `TeamChatVoiceWriter`/`TeamChatReplyVoiceWriter`, is still
+found even though the constant's OWN file never calls `new LlmCallContext(`) and asserts every
+discovered slug is a `FEATURE_LABELS` key. Latest entry: `team_chat` („Csapat-chat (élő
+beszélgetés)”, Emlékezet S7 `mezo-d6ivw.7`) — the csapatfal ügy-beszélgetés's guarded voice calls
+(nyitó/lezáró sorok és a felhasználó válaszára adott karakter-hang). (Previous entry:
 `companion_recheck` („Tudás-újraellenőrzés”, `mezo-d6ivw.2`) — the quarterly re-check of a
-hand-confirmed, plan-less knowledge fact. (Previous entry: `character_edition` („Esti kiadás
-hangja”, csapatfal H3 `mezo-a9bo7.14`) — the evening edition's one voice call per day.)
+hand-confirmed, plan-less knowledge fact.)
 
 **Honesty rules** (repeated across every admin surface, not just this doc's pages): `null` and
 `0` are never conflated — a `null` `errorPct`/`p90LatencyMs`/`acceptedShare`/`costPerUse` means

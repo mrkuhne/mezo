@@ -37,7 +37,7 @@ public class TeamChatLineEntity extends OwnedEntity {
     private UUID threadId;
 
     @NotNull @Size(max = 8)
-    @Pattern(regexp = "OPEN|GUEST|RESOLVE|SKEPTIC|USER")
+    @Pattern(regexp = "OPEN|GUEST|RESOLVE|SKEPTIC|USER|REPLY")
     @Column(nullable = false, length = 8)
     private String kind;
 
