@@ -55,7 +55,19 @@ public enum MetricKey {
     DAILY_FAT_G("napi zsír", "Étkezés-napló", MetricDomain.FUEL),
     DAILY_SUGAR_G("napi cukor", "Étkezés-napló (címke-pillanatképek)", MetricDomain.FUEL),
     DAILY_SALT_G("napi só", "Étkezés-napló (címke-pillanatképek)", MetricDomain.FUEL),
-    DAILY_FIBER_G("napi rost", "Étkezés-napló (címke-pillanatképek)", MetricDomain.FUEL);
+    DAILY_FIBER_G("napi rost", "Étkezés-napló (címke-pillanatképek)", MetricDomain.FUEL),
+    // Check-in 2.0 (mezo-ck2, spec §3.8): a nap megválaszolt slotjainak átlaga (NULL = nem
+    // válaszolt, sosem számít) — kivéve CHECKIN_PAIN, ami a nap csúcs-intenzitása, „Nem" = 0.
+    CHECKIN_MOOD("hangulat", "Check-in sheet", MetricDomain.MIND),
+    CHECKIN_RESTED("kipihentség", "Check-in sheet (reggel)", MetricDomain.SLEEP),
+    CHECKIN_SORENESS("izomláz", "Check-in sheet", MetricDomain.BODY),
+    CHECKIN_PAIN("fájdalom (napi csúcs)", "Check-in sheet (fájdalom-lépés)", MetricDomain.BODY),
+    CHECKIN_MOTIVATION("motiváció", "Check-in sheet", MetricDomain.MIND),
+    CHECKIN_HUNGER("éhség", "Check-in sheet", MetricDomain.FUEL),
+    CHECKIN_CRAVING("sóvárgás", "Check-in sheet", MetricDomain.FUEL),
+    CHECKIN_DIGESTION("emésztés", "Check-in sheet", MetricDomain.FUEL),
+    CHECKIN_CONNECTION("kapcsolódás", "Check-in sheet (este)", MetricDomain.MIND),
+    CHECKIN_DAY("a nap mérlege", "Check-in sheet (este)", MetricDomain.MIND);
 
     private final String labelHu;
     private final String sourceHu;

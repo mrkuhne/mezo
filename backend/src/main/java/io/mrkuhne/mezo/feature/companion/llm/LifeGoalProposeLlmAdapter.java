@@ -42,7 +42,8 @@ public class LifeGoalProposeLlmAdapter implements LifeGoalProposePort {
         Set.of("positive_emotion", "engagement", "relationships", "meaning", "accomplishment", "health");
     static final Set<String> KINDS = Set.of("habit", "average", "target", "baseline", "linked");
     /** The only trigger sources anything downstream can evaluate — see the system prompt's rule 4. */
-    static final Set<String> TRIGGER_SOURCES = Set.of("sport_session_logged", "checkin_energy_lte", "ritual_missed");
+    static final Set<String> TRIGGER_SOURCES = Set.of("sport_session_logged", "checkin_energy_lte", "ritual_missed",
+        "checkin_motivation_lte", "checkin_mood_lte");
 
     // LifeGoalUpsertRequest / IfThenPlan / LifeGoalPillarInput schema maxima (api/feature/lifegoal).
     private static final int MAX_ITEMS = 5;
@@ -61,7 +62,8 @@ public class LifeGoalProposeLlmAdapter implements LifeGoalProposePort {
                fajtával (kind) és skill-lel (skillKey a [Skillek] listából). threshold/comparator az átlag és
                szokás fajtához, daysPerWeek a szokáshoz, startValue/targetValue a cél-értékhez.
             4) 1–3 akadály és 1–3 ha–akkor terv; a triggerSource csak sport_session_logged, checkin_energy_lte,
-               ritual_missed vagy null lehet.
+               checkin_motivation_lte (alacsony kedv), checkin_mood_lte (rossz hangulat), ritual_missed vagy null
+               lehet; a checkin_*_lte triggerCondition egy 1–10 küszöb (alapból 4).
             Válaszolj KIZÁRÓLAG egy JSON objektummal:
             {"dimension":"...","secondaryDimension":null,"frame":"...","frameNote":"...","reframedWhy":null,
              "pillars":[{"catalogId":"...","label":"...","kind":"...","skillKey":"...","weight":1,"threshold":null,

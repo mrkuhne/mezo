@@ -25658,6 +25658,12 @@ components:
         checkinEnergyAvg:
           type: number
           nullable: true
+        checkinMoodAvg:
+          type: number
+          nullable: true
+          description: >-
+            Check-in 2.0 (mezo-ck2) — mean of the day's answered mood items
+            (1–10); null when none
         workoutCount:
           type: integer
           description: gym + sport + run sessions logged on the day
@@ -25687,6 +25693,12 @@ components:
         avgCheckinEnergy:
           type: number
           nullable: true
+        avgCheckinMood:
+          type: number
+          nullable: true
+          description: >-
+            Check-in 2.0 (mezo-ck2) — mean of the day means (days with a mood
+            answer)
         checkinRatio:
           type: number
           nullable: true

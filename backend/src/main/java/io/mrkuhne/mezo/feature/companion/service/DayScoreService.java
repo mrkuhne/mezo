@@ -84,7 +84,8 @@ import org.springframework.transaction.annotation.Transactional;
  *       can backdate it), {@code created_at} is when it was written down — which is exactly what
  *       the logging dimension's timeliness component measures;</li>
  *   <li>{@code waterLogged} — {@link WaterLogRepository#sumsBetween} (one grouped query);</li>
- *   <li>{@code checkinCount} — {@link CheckInRepository}'s windowed finder, unchanged;</li>
+ *   <li>{@code checkinCount} — {@link CheckInRepository}'s windowed finder, only the rows
+ *       {@link #countsAsFilled} accepts (Check-in 2.0: core answered, quick exit or legacy);</li>
  *   <li>{@code weightKg} — the day's LATEST weigh-in, via the shared
  *       {@link WeightByDateSupport#latestWeightByDate} fold (also used by {@code MeWeekService})
  *       over {@link WeightLogRepository#findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc}
@@ -301,9 +302,25 @@ public class DayScoreService {
     private Map<LocalDate, Long> checkinCounts(UUID userId, LocalDate from, LocalDate to) {
         Map<LocalDate, Long> counts = new HashMap<>();
         for (CheckInEntity checkIn : checkInRepository.findByCreatedByAndDeletedFalseAndDateBetween(userId, from, to)) {
-            counts.merge(checkIn.getDate(), 1L, Long::sum);
+            if (countsAsFilled(checkIn)) {
+                counts.merge(checkIn.getDate(), 1L, Long::sum);
+            }
         }
         return counts;
+    }
+
+    /**
+     * Check-in 2.0 (mezo-ck2, spec §3.11): does this row count as a FILLED check-in for the logging
+     * dimension? A legacy row ({@code askedItems == null} — written before the question plan
+     * existed) always does; a „Most csak ennyi" quick exit does (it saves after the core); any
+     * other v2 row only when all five core items (energy, mood, stress, body, mental) were answered.
+     */
+    static boolean countsAsFilled(CheckInEntity checkIn) {
+        if (checkIn.getAskedItems() == null || checkIn.isQuickExit()) {
+            return true;
+        }
+        return checkIn.getEnergy() != null && checkIn.getMood() != null && checkIn.getStress() != null
+                && checkIn.getBody() != null && checkIn.getMental() != null;
     }
 
     /** Days with any water logged at all — the logging dimension only asks the boolean question. */

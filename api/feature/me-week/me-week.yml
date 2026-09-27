@@ -132,6 +132,7 @@ components:
         sleepQuality: { type: number, nullable: true }
         checkinCount: { type: integer }
         checkinEnergyAvg: { type: number, nullable: true }
+        checkinMoodAvg: { type: number, nullable: true, description: "Check-in 2.0 (mezo-ck2) — mean of the day's answered mood items (1–10); null when none" }
         workoutCount: { type: integer, description: gym + sport + run sessions logged on the day }
         xp: { type: integer, nullable: true }
     MeWeekAggregates:
@@ -143,6 +144,7 @@ components:
         avgProteinG: { type: number, nullable: true }
         avgSleepMin: { type: number, nullable: true }
         avgCheckinEnergy: { type: number, nullable: true }
+        avgCheckinMood: { type: number, nullable: true, description: "Check-in 2.0 (mezo-ck2) — mean of the day means (days with a mood answer)" }
         checkinRatio: { type: number, nullable: true, description: filled slots / (4 × elapsed days of the week) }
         latestWeightKg: { type: number, nullable: true }
         weightWeeklyRateKg: { type: number, nullable: true, description: EWMA weekly rate from the weight trend }

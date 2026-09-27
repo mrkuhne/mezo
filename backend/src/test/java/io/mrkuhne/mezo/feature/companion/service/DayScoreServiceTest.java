@@ -88,6 +88,8 @@ class DayScoreServiceTest {
     private final Map<LocalDate, List<Window>> windows = new HashMap<>();
     private final Map<LocalDate, Integer> waterMl = new HashMap<>();
     private final Map<LocalDate, Integer> checkins = new HashMap<>();
+    /** Check-in 2.0 rows with explicit answers (the {@link #checkins} counts seed legacy rows). */
+    private final List<CheckInEntity> answeredCheckins = new ArrayList<>();
     private final Map<LocalDate, Double> weightKg = new HashMap<>();
     private final Map<LocalDate, Double> xp = new HashMap<>();
     private final List<MealEntity> mealRows = new ArrayList<>();
@@ -144,7 +146,26 @@ class DayScoreServiceTest {
                 }
             }
         });
+        answeredCheckins.stream()
+            .filter(c -> !c.getDate().isBefore(from) && !c.getDate().isAfter(to))
+            .forEach(rows::add);
         return rows;
+    }
+
+    /** A Check-in 2.0 row (askedItems set) answering the given core items; the rest stays NULL. */
+    private CheckInEntity v2CheckIn(LocalDate date, Integer energy, Integer mood, Integer stress,
+                                    Integer body, Integer mental, boolean quickExit) {
+        CheckInEntity c = new CheckInEntity();
+        c.setCreatedBy(USER);
+        c.setDate(date);
+        c.setAskedItems(List.of("energy", "mood", "stress", "body", "mental", "rested"));
+        c.setEnergy(energy);
+        c.setMood(mood);
+        c.setStress(stress);
+        c.setBody(body);
+        c.setMental(mental);
+        c.setQuickExit(quickExit);
+        return c;
     }
 
     /** Every seeded weigh-in from {@code from} onward — the repository's own contract (no upper
@@ -238,6 +259,30 @@ class DayScoreServiceTest {
     }
 
     // --- Tests ----------------------------------------------------------------------------
+
+    /**
+     * Check-in 2.0 (mezo-ck2, spec §3.11): the logging dimension counts a check-in as filled when
+     * its five core items were all answered (quick exit included — it saves after the core), or
+     * when it is a legacy row ({@code askedItems == null}). A v2 row that skipped a core item is
+     * not a filled check-in. Weight and denominator unchanged.
+     */
+    @Test
+    void testScores_shouldCountOnlyCoreAnsweredOrLegacyCheckins_whenLoggingScored() {
+        checkins.put(MONDAY, 1);                                                 // legacy -> counts
+        answeredCheckins.add(v2CheckIn(MONDAY, 6, 7, 3, 6, 7, false));           // full core -> counts
+        answeredCheckins.add(v2CheckIn(MONDAY, 5, 6, null, 5, 6, true));         // quick exit -> counts
+        answeredCheckins.add(v2CheckIn(MONDAY, 5, null, 4, 5, 6, false));        // mood skipped -> no
+
+        DayScoreService.DayScore monday = service.scores(USER, MONDAY, MONDAY).get(0);
+
+        assertThat(dimension(monday, "logging").facts())
+            .anySatisfy(f -> {
+                assertThat(f.label()).isEqualTo("check-in");
+                assertThat(f.value()).isEqualTo("3 / 4");
+            });
+        assertThat(DayScoreService.countsAsFilled(v2CheckIn(MONDAY, 1, 1, 1, 1, null, false))).isFalse();
+        assertThat(DayScoreService.countsAsFilled(new CheckInEntity())).isTrue();
+    }
 
     /**
      * The wire-compat regression the brief asks for: {@code scores()} still yields one element per

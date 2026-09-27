@@ -10367,6 +10367,8 @@ export interface components {
             sleepQuality?: number | null;
             checkinCount: number;
             checkinEnergyAvg?: number | null;
+            /** @description Check-in 2.0 (mezo-ck2) — mean of the day's answered mood items (1–10); null when none */
+            checkinMoodAvg?: number | null;
             /** @description gym + sport + run sessions logged on the day */
             workoutCount: number;
             xp?: number | null;
@@ -10380,6 +10382,8 @@ export interface components {
             avgProteinG?: number | null;
             avgSleepMin?: number | null;
             avgCheckinEnergy?: number | null;
+            /** @description Check-in 2.0 (mezo-ck2) — mean of the day means (days with a mood answer) */
+            avgCheckinMood?: number | null;
             /** @description filled slots / (4 × elapsed days of the week) */
             checkinRatio?: number | null;
             latestWeightKg?: number | null;

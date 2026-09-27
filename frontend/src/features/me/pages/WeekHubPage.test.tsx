@@ -40,7 +40,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       if (hoisted.forceEmptyWeekly) {
         return { ...real, week: { ...real.week, weekly: {
           score: null, prevWeekScore: null, avgKcal: null, avgProteinG: null, avgSleepMin: null,
-          avgCheckinEnergy: null, checkinRatio: null, latestWeightKg: null,
+          avgCheckinEnergy: null, avgCheckinMood: null, checkinRatio: null, latestWeightKg: null,
           weightWeeklyRateKg: null, totalXp: null,
         } } }
       }
@@ -86,12 +86,13 @@ describe('Heti hub (mock mode)', () => {
     expect(screen.getByText('előző hét 74')).toBeInTheDocument()
   })
 
-  test('eight mini-cells, including Energia and Súly — the two /api/me/week already returns and the old UI dropped', () => {
+  test('nine mini-cells, including Energia, Hangulat and Súly', () => {
     renderPage()
-    for (const label of ['Kcal átlag', 'Fehérje', 'Alvás', 'Check-in', 'Energia', 'Súly', 'Súly-trend', 'XP']) {
+    for (const label of ['Kcal átlag', 'Fehérje', 'Alvás', 'Check-in', 'Energia', 'Hangulat', 'Súly', 'Súly-trend', 'XP']) {
       expect(screen.getByText(label)).toBeInTheDocument()
     }
     expect(screen.getByText('7,0')).toBeInTheDocument()   // avgCheckinEnergy
+    expect(screen.getByText('6,9')).toBeInTheDocument()   // avgCheckinMood (Check-in 2.0, mezo-ck2)
     expect(screen.getByText('83,9')).toBeInTheDocument()  // latestWeightKg
     expect(screen.getByText('−0,30')).toBeInTheDocument() // weightWeeklyRateKg
   })
@@ -99,10 +100,10 @@ describe('Heti hub (mock mode)', () => {
   test('missing data renders „—", never a 0', () => {
     hoisted.forceEmptyWeekly = true
     renderPage()
-    // eight cells + the „A hét tanulságai" tile's own „—" (no week-scoped candidates yet) +
+    // nine cells + the „A hét tanulságai" tile's own „—" (no week-scoped candidates yet) +
     // one WeekGoalsCard arrow glyph (mezo-iizd.9: the third mock goal's arrow is `insufficient`,
     // which honestly renders the same „—" glyph as the no-data placeholder, never a direction)
-    expect(screen.getAllByText('—').length).toBe(10)
+    expect(screen.getAllByText('—').length).toBe(11)
     expect(screen.queryByText('0')).not.toBeInTheDocument()
   })
 

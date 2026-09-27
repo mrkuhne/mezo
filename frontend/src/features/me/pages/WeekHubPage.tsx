@@ -4,7 +4,7 @@
 // plus the `hub()` function in the „Heti áttekintés" IIFE, x1.18.
 //
 // Replaces the long-scroll WeekPage: hero (animated score ring + delta pill +
-// 8-week trend) → eight mini-cells → four view tiles, each opening its own page
+// 8-week trend) → nine mini-cells → four view tiles, each opening its own page
 // → the „Mezo · a következő heted" band → the honesty footnote. The four detail
 // pages (/me/week/elemzes | tanulsagok | napok | felfedezesek) are owned by the
 // sibling slices; this page only navigates to them.
@@ -16,8 +16,8 @@
 // a failed load offers a retry instead of rendering as an empty week.
 //
 // Üveg (mezo-me75u.6, prototype uveg-en-body.html `het()`): the hero is a frameless lavender
-// halo (week title, the glowing score ring, the sage delta pill, the subline); the eight
-// cells are lit flat; the four view tiles are `.glass` (analysis lav · lessons gold · days
+// halo (week title, the glowing score ring, the sage delta pill, the subline); the nine
+// cells (three rows of three since Check-in 2.0 put Hangulat next to Energia) are lit flat; the four view tiles are `.glass` (analysis lav · lessons gold · days
 // sage · discoveries sky) with Titanium 3D art; the week stepper is two round glass buttons.
 // ============================================================
 import type { CSSProperties } from 'react'
@@ -205,14 +205,12 @@ export function WeekHubPage() {
       <PageBody>
         <EntranceGroup replayKey={start} className="mz-panel-stack">
           <div className="wkh-cellstack">
-            <MCells className="wkh-cells rise" cells={cells.slice(0, 4).map((c) => ({
-              tone: c.tone, label: c.label,
-              value: <>{c.value}{c.unit && <span className="wkh-cellunit"> {c.unit}</span>}</>,
-            }))} />
-            <MCells className="wkh-cells rise" cells={cells.slice(4).map((c) => ({
-              tone: c.tone, label: c.label,
-              value: <>{c.value}{c.unit && <span className="wkh-cellunit"> {c.unit}</span>}</>,
-            }))} />
+            {[cells.slice(0, 3), cells.slice(3, 6), cells.slice(6)].map((row, i) => (
+              <MCells key={i} className="wkh-cells rise" cells={row.map((c) => ({
+                tone: c.tone, label: c.label,
+                value: <>{c.value}{c.unit && <span className="wkh-cellunit"> {c.unit}</span>}</>,
+              }))} />
+            ))}
           </div>
 
           <div className="wkh-lsec rise" style={d(80)}>
