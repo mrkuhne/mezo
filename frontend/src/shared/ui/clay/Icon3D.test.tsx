@@ -101,6 +101,15 @@ test('the sprite is hidden by zero size, never display:none', () => {
   expect(titaniumRaw).not.toMatch(/display:\s*none/)
 })
 
+// S6 (mezo-d6ivw.6): the Tudástár hub verbs the owner approved on prototypes/uveg-tudastar-hub.html#ikonok —
+// Elhallgattatom, Elfelejtem, Honnan tudom?, and the Hatások tile (két hullám együtt mozog).
+test('the sprite carries the S6 Tudástár hub icons', () => {
+  const ids = symbolIds()
+  for (const id of ['t-mute', 't-eraser', 't-source', 't-cowave'] satisfies Icon3DName[]) {
+    expect(ids, id).toContain(id)
+  }
+})
+
 test('Icon3D renders an aria-hidden 64-viewBox svg with a use ref, carrying the kit class', () => {
   const name: Icon3DName = 't-bowl'
   const { container } = render(<Icon3D name={name} size={40} className="x" />)

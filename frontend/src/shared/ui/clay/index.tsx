@@ -94,6 +94,8 @@ export type Icon3DName =
   | 't-council' | 't-radar' | 't-graph' | 't-grid'
   // U10 (mezo-me75u.10) — owner OK on prototypes/uveg-reteg.html#ikonok: the six athletic skills
   | 't-jump' | 't-sprint' | 't-core' | 't-juggle' | 't-stretch' | 't-target'
+  // S6 (mezo-d6ivw.6) — owner OK on prototypes/uveg-tudastar-hub.html#ikonok
+  | 't-mute' | 't-eraser' | 't-source' | 't-cowave'
 
 /** Mounts the clay + Titanium <symbol>/<gradient> defs once (main.tsx). */
 export const ClaySprites = memo(function ClaySprites() {
