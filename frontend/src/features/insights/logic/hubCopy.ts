@@ -183,7 +183,7 @@ export const personHead = (on: number, muted: number) => `${on} tény bekapcsolv
 
 export const EFFECT_GROUPS = { people: 'Emberek', peopleHint: 'ábécérendben', events: 'Események', eventsHint: 'erősség szerint' } as const
 export const effectSubjectKindLabel = (kind: 'person' | 'event', n: number) => `${kind === 'person' ? 'ember' : 'esemény'} · ${n} jelzés`
-export const EFFECT_SIGNAL = { strength: 'EGYÜTTJÁRÁS', confidence: 'BIZONYOSSÁG', foot: 'Együttjárás, nem ok-okozat.' } as const
+export { EFFECT_SIGNAL } from '@/features/me/logic/effectCopy'
 export const DEGRADED = {
   facts: 'A társ jelenleg nincs bekapcsolva — a tudástár most nem elérhető.',
   section: 'A társ most nincs bekapcsolva — ez a szakasz most nem elérhető.',

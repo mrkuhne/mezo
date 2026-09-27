@@ -12,6 +12,7 @@ import { ForgetUndoBar } from '@/features/insights/components/hub/ForgetUndoBar'
 import { TenyekSection } from '@/features/insights/components/hub/TenyekSection'
 import { EmberekSection } from '@/features/insights/components/hub/EmberekSection'
 import { EszrevetelekSection } from '@/features/insights/components/hub/EszrevetelekSection'
+import { HatasokSection } from '@/features/insights/components/hub/HatasokSection'
 import { useForgetUndo } from '@/features/insights/hooks/useForgetUndo'
 import { hubCounts } from '@/features/insights/logic/hubCounts'
 import { KategoriakView } from '@/features/insights/components/KategoriakView'
@@ -238,9 +239,9 @@ export function KnowledgeListPage() {
 
   if (view === 'hatasok') {
     return (
-      <TudasFrame view={view}>
+      <TudasFrame view="hatasok">
         <EntranceGroup className="tud9-flow" replayKey={replayKey}>
-          {null /* B12: HatasokSection */}
+          <HatasokSection forget={undo.start} isHidden={undo.isHidden} />
         </EntranceGroup>
         {undoBar}
       </TudasFrame>

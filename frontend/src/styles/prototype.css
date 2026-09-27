@@ -27623,6 +27623,12 @@ main.settings-page {
 .tud9 .th-eh b { display: block; font-size: 16px; font-weight: 600; letter-spacing: -0.3px; }
 .tud9 .th-eh small { display: block; font-size: 11px; color: var(--text-muted); margin-top: 1px; }
 .tud9 .th-eff .th-strip { margin-left: 0; margin-top: 10px; }
+.tud9 .th-eff { position: relative; }
+.tud9 .th-eh { padding-right: 40px; }
+.tud9 .th-eh .th-mono { width: 44px; height: 44px; font-size: 17px; }
+/* the ⋯ sits in the head (prototype effCard); the strip opens below it */
+.tud9 .th-eff > .th-act { position: absolute; top: 20px; right: 14px; margin: 0; min-height: 0; }
+.tud9 .th-eff .ppl-effrow:first-of-type { padding-top: 12px; }
 .tud9 .th-foot { margin: 18px 22px 0; padding-top: 12px; border-top: 1px solid var(--divider); font-size: 11.5px; color: var(--text-muted); line-height: 1.5; text-align: center; }
 .tud9 .th-foot b { display: block; color: var(--text-secondary); font-weight: 600; margin-bottom: 2px; }
 

@@ -33,23 +33,12 @@ import { usePeople } from '@/data/hooks'
 import { usePersonEffects } from '@/data/me/personEffectsHooks'
 import { contextBreakdown, trendAxisLabels, trendHeights } from '@/features/me/logic/peopleDerive'
 import { TONE_META, CTX_META, SRC_META, GRAPH_KIND_META, GRAPH_KIND_FALLBACK, toneColor } from '@/features/me/logic/peopleVisuals'
-import {
-  STRENGTH_META, CONFIDENCE_META, formatMeanDiff, personEffectSentence,
-} from '@/features/me/logic/effectCopy'
+import { personEffectSentence } from '@/features/me/logic/effectCopy'
+import { EffectRows } from '@/features/me/components/EffectRows'
 import { PersonLogSheet } from '@/features/me/sheets/PersonLogSheet'
 import { PersonEditSheet } from '@/features/me/sheets/PersonEditSheet'
 import { FACT_KIND_LABEL } from '@/features/me/logic/personFactCopy'
 import type { Mention, PersonFact } from '@/data/types'
-
-function EffectDots({ n, ring, label }: { n: number; ring?: boolean; label: string }) {
-  return (
-    <span className={`ppl-effdots${ring ? ' ring' : ''}`} role="img" aria-label={label}>
-      {[1, 2, 3].map((i) => (
-        <i key={i} className={i <= n ? 'on' : ''} />
-      ))}
-    </span>
-  )
-}
 
 function factProvenance(f: PersonFact): string {
   const src = f.sourceKind === 'chat_turn' ? 'chatből' : 'éjszakai jegyzetből'
@@ -194,25 +183,7 @@ export function PersonDetailPage() {
                 <span className="mz-eyebrow">Hatás · együttjárás</span>
               </div>
               <div className="ppl-effcard glass rise" style={{ '--c': color, '--i': 3 } as CSSProperties}>
-                {effects.map((e, i) => (
-                  <div className="ppl-effrow" key={`${e.metric}-${i}`}>
-                    <p className="ppl-effsent">{personEffectSentence(person.name, e)}</p>
-                    <div className="ppl-effmeta">
-                      <span className="ppl-effsig">
-                        <small>EGYÜTTJÁRÁS</small>
-                        <EffectDots n={STRENGTH_META[e.strength].n} label={`erősség: ${STRENGTH_META[e.strength].label}`} />
-                        <em>{STRENGTH_META[e.strength].label}</em>
-                      </span>
-                      <span className="ppl-effsig">
-                        <small>BIZONYOSSÁG</small>
-                        <EffectDots n={CONFIDENCE_META[e.confidence].n} ring label={`bizonyosság: ${CONFIDENCE_META[e.confidence].label}`} />
-                        <em>{CONFIDENCE_META[e.confidence].label}</em>
-                      </span>
-                      <em className="ppl-effn">{e.subjectDays} nap alapján · átlagosan ~{formatMeanDiff(e.meanDiff)} ponttal</em>
-                    </div>
-                  </div>
-                ))}
-                <p className="ppl-efffoot">Együttjárás, nem ok-okozat.</p>
+                <EffectRows effects={effects} sentence={(e) => personEffectSentence(person.name, e)} />
               </div>
             </>
           )}

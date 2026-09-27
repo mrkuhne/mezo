@@ -45,3 +45,9 @@ export function eventEffectSentence(key: string, e: PersonEffect): string {
   return `Úgy tűnik, ${EVENT_LEAD[key] ?? 'ezeken a napokon'} ${METRIC_COPY[e.metric][e.direction]}.`
 }
 export const effectEvidenceLine = (e: PersonEffect) => `${e.subjectDays} nap alapján · átlagosan ~${formatMeanDiff(e.meanDiff)} ponttal`
+
+// S6 (mezo-d6ivw.6): the two signal labels, their dot-row a11y names and the standing non-causal
+// footnote — shared by the person page and the Tudástár Hatások cards (EffectRows).
+export const EFFECT_SIGNAL = { strength: 'EGYÜTTJÁRÁS', confidence: 'BIZONYOSSÁG', foot: 'Együttjárás, nem ok-okozat.' } as const
+export const strengthAria = (e: PersonEffect) => `erősség: ${STRENGTH_META[e.strength].label}`
+export const confidenceAria = (e: PersonEffect) => `bizonyosság: ${CONFIDENCE_META[e.confidence].label}`

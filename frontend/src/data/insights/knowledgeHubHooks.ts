@@ -13,7 +13,8 @@ import { knowledgeHubApi, type KnowledgeObservation } from '@/data/insights/know
 import { knowledgeApi } from '@/data/insights/knowledgeApi'
 import type { KnowledgeBootstrap } from '@/data/insights/knowledgeHooks'
 import { MOCK_EFFECT_SUBJECTS, MOCK_FACT_EVIDENCE, MOCK_OBSERVATIONS } from '@/data/insights/knowledgeHub'
-import type { EffectSubject, KnowledgeFact } from '@/data/types'
+import { MOCK_PERSON_EFFECTS } from '@/data/me/people'
+import type { EffectSubject, KnowledgeFact, PersonEffect } from '@/data/types'
 import type { EvidenceItem } from '@/shared/ui/evidence/observationEvidence'
 
 const OBS_KEY = ['knowledge-observations'] as const
@@ -176,6 +177,10 @@ function mockRemoveObservation(qc: QueryClient, patternId: string) {
 }
 
 function mockPatchEffect(qc: QueryClient, kind: 'person' | 'event', key: string, mode: 'muted' | 'forgotten' | 'on') {
+  // the person page hides a muted/forgotten subject (real mode: the refetch drops it)
+  if (kind === 'person') {
+    qc.setQueryData<PersonEffect[]>(['person-effects', key], mode === 'on' ? (MOCK_PERSON_EFFECTS[key] ?? []) : [])
+  }
   qc.setQueryData<Section<EffectSubject[]>>(EFFECTS_KEY, (old) => {
     if (!old) return old
     if (mode === 'forgotten') {

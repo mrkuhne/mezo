@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   METRIC_COPY, personEffectSentence, eventEffectSentence, formatMeanDiff, effectEvidenceLine,
+  EFFECT_SIGNAL, strengthAria, confidenceAria,
 } from '@/features/me/logic/effectCopy'
 import type { PersonEffect } from '@/data/types'
 
@@ -28,5 +29,11 @@ describe('effectCopy', () => {
   it('effectEvidenceLine', () => {
     const e: PersonEffect = { metric: 'energy', direction: 'higher', strength: 'enyhe', confidence: 'gyenge', meanDiff: 0.5, subjectDays: 11 }
     expect(effectEvidenceLine(e)).toBe('11 nap alapján · átlagosan ~0,5 ponttal')
+  })
+  it('the two signals keep separate labels and a11y names', () => {
+    const e: PersonEffect = { metric: 'energy', direction: 'higher', strength: 'kozepes', confidence: 'gyenge', meanDiff: 0.5, subjectDays: 6 }
+    expect(EFFECT_SIGNAL).toEqual({ strength: 'EGYÜTTJÁRÁS', confidence: 'BIZONYOSSÁG', foot: 'Együttjárás, nem ok-okozat.' })
+    expect(strengthAria(e)).toBe('erősség: közepes')
+    expect(confidenceAria(e)).toBe('bizonyosság: gyenge')
   })
 })

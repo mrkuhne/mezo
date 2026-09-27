@@ -47,6 +47,8 @@ export function HubActs(p: {
   onForget: () => void
   /** Javítom — present only on editable rows */
   onStartEdit?: () => void
+  /** the strip's note; defaults to the muted/active pair (an effect subject has its own) */
+  note?: 'effect'
 }) {
   const [open, setOpen] = useState<null | 'acts' | 'src'>(null)
   const toggle = (next: 'acts' | 'src') => setOpen((cur) => (cur === next ? null : next))
@@ -81,7 +83,7 @@ export function HubActs(p: {
           <button type="button" className="th-pill warn" onClick={() => { setOpen(null); p.onForget() }}>
             <Icon3D name="t-eraser" size={20} />{VERB.forget}
           </button>
-          <span className="th-strip-n">{stripNote(p.muted ? 'muted' : 'active')}</span>
+          <span className="th-strip-n">{stripNote(p.note ?? (p.muted ? 'muted' : 'active'))}</span>
         </div>
       )}
       {open === 'src' && p.source?.()}
