@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.api.dto.CharacterFeedItem;
 import io.mrkuhne.mezo.api.dto.CharacterOverviewResponse;
 import io.mrkuhne.mezo.api.dto.CharacterRunResponse;
 import io.mrkuhne.mezo.api.dto.CharacterRunSummary;
+import io.mrkuhne.mezo.api.dto.TeamChatAnswerRequest;
 import io.mrkuhne.mezo.api.dto.TeamChatDay;
 import io.mrkuhne.mezo.api.dto.TeamChatLine;
 import io.mrkuhne.mezo.api.dto.TeamChatReplyRequest;
@@ -24,6 +25,8 @@ import io.mrkuhne.mezo.feature.character.config.CharacterMaturityProperties;
 import io.mrkuhne.mezo.feature.character.config.TeamChatProperties;
 import io.mrkuhne.mezo.feature.character.service.CharacterMaturityService;
 import io.mrkuhne.mezo.feature.character.entity.TeamChatLineEntity;
+import io.mrkuhne.mezo.feature.character.entity.TeamChatThreadEntity;
+import io.mrkuhne.mezo.feature.character.service.chat.TeamChatExceptionService;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatReads;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatService;
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
@@ -78,6 +81,7 @@ public class CharacterController implements CharacterApi {
      */
     private final ObjectProvider<TeamChatReads> teamChatReads;
     private final ObjectProvider<TeamChatService> teamChatService;
+    private final ObjectProvider<TeamChatExceptionService> teamChatExceptionService;
     private final TeamChatProperties teamChatProperties;
     private final CharacterMaturityService maturityService;
     private final CharacterMaturityProperties maturityProperties;
@@ -221,6 +225,30 @@ public class CharacterController implements CharacterApi {
     @Override
     public TeamChatThread applyTeamChatAction(UUID threadId, String actionKey) {
         return TeamChatReads.toThread(teamChat().apply(currentUserId.get(), threadId, actionKey));
+    }
+
+    @Override
+    public TeamChatThread answerTeamChatThread(UUID threadId, TeamChatAnswerRequest request) {
+        UUID owner = currentUserId.get();
+        TeamChatThreadEntity thread = exceptionService().answer(owner, threadId, request.getChoice().getValue());
+        return teamChatReads.getObject().thread(owner, thread);
+    }
+
+    @Override
+    public TeamChatThread undoTeamChatRemembered(UUID threadId) {
+        UUID owner = currentUserId.get();
+        TeamChatThreadEntity thread = exceptionService().undoRemembered(owner, threadId);
+        return teamChatReads.getObject().thread(owner, thread);
+    }
+
+    /** S7 (mezo-d6ivw.7): absent with the team chat switched off — 404, the {@link #teamChat()} idiom. */
+    private TeamChatExceptionService exceptionService() {
+        TeamChatExceptionService service = teamChatExceptionService.getIfAvailable();
+        if (service == null) {
+            throw new SystemRuntimeErrorException(
+                    SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND);
+        }
+        return service;
     }
 
     private TeamChatService teamChat() {

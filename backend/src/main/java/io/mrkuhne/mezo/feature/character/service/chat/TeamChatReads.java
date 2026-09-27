@@ -109,6 +109,17 @@ public class TeamChatReads {
                 .pushesToday((int) pushes).pushBudget(properties.maxPushesPerDay()).build();
     }
 
+    /** S7 (mezo-d6ivw.7): one ügy as the API shows it, with its remembered exception (born on it)
+     *  and its offer's exception — the answer / undo endpoints' response. */
+    @Transactional(readOnly = true)
+    public TeamChatThread thread(UUID userId, TeamChatThreadEntity thread) {
+        TeamChatExceptionEntity born =
+                exceptions.findFirstBySourceThreadIdAndCreatedByAndDeletedFalse(thread.getId(), userId).orElse(null);
+        TeamChatExceptionEntity offerException = thread.getOffer() == null || thread.getExceptionId() == null ? null
+                : exceptions.findByIdAndCreatedByAndDeletedFalse(thread.getExceptionId(), userId).orElse(null);
+        return toThread(thread, born, offerException);
+    }
+
     /** Task 15 (mezo-a9bo7.25): the ügyek opened or closed on {@code date} (the user's local day),
      *  oldest first, together with the {@code [from, to)} window they were fetched with — the
      *  evening edition's {@code team_chat_day} recap classifies them against the SAME window. */

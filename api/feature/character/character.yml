@@ -580,6 +580,66 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/character/team-chat/threads/{threadId}/answer:
+    post:
+      tags: [Character]
+      operationId: answerTeamChatThread
+      summary: >-
+        The one-tap answer on a known-exception question — EXCUSED on an EXCUSE offer ("yes,
+        today too"), KEEP or STOP on a REVIEW offer; the same answer again is an idempotent no-op
+      parameters:
+        - { name: threadId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TeamChatAnswerRequest' }
+      responses:
+        '200':
+          description: The answered ügy
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TeamChatThread' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: No such ügy for this user, or the team chat is switched off
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '409':
+          description: The answer does not fit the ügy's offer, or a different answer was already recorded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/character/team-chat/threads/{threadId}/remembered:
+    delete:
+      tags: [Character]
+      operationId: undoTeamChatRemembered
+      summary: >-
+        Undo the remembered chip — the exception captured off this ügy is withdrawn for good (never
+        re-captured) and the ügy reopens when no newer ügy of its rule is open
+      parameters:
+        - { name: threadId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: The ügy after the undo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TeamChatThread' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: No such ügy (or remembered exception) for this user, or the team chat is switched off
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     TeamChatDay:
@@ -648,6 +708,11 @@ components:
       properties:
         key: { type: string }
         label: { type: string }
+    TeamChatAnswerRequest:
+      type: object
+      required: [choice]
+      properties:
+        choice: { type: string, enum: [EXCUSED, KEEP, STOP] }
     TeamChatReplyRequest:
       type: object
       required: [text]
