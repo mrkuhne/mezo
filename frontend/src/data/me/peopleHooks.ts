@@ -31,7 +31,7 @@ const MOCK_PEOPLE: PeopleBootstrap = { people: personSeed, mentions: mentionSeed
 export function usePeople() {
   const qc = useQueryClient()
   const mock = isMockMode()
-  const { data, isPending } = useDualQuery<PeopleBootstrap>({
+  const { data, isPending, isError, refetch } = useDualQuery<PeopleBootstrap>({
     queryKey: PEOPLE_KEY,
     mockData: MOCK_PEOPLE,
     realFetch: async () => {
@@ -106,6 +106,13 @@ export function usePeople() {
     },
     onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: PEOPLE_KEY }),
   })
+  const editFactM = useMutation({
+    mutationFn: async (input: { personId: string; factId: string; text: string }) => {
+      if (mock) { mockEditFact(qc, input.personId, input.factId, input.text); return }
+      await peopleApi.editFact(input.personId, input.factId, input.text)
+    },
+    onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: PEOPLE_KEY }),
+  })
 
   return {
     people: data.people.filter(p => p.status !== 'candidate'),
@@ -122,7 +129,10 @@ export function usePeople() {
     toggleFact: (personId: string, factId: string, includeInPrompt: boolean) =>
       toggleFactM.mutate({ personId, factId, includeInPrompt }),
     markFactsSeen: (personId: string) => seenFactsM.mutate(personId),
+    editFact: (personId: string, factId: string, text: string) => editFactM.mutate({ personId, factId, text }),
     isPending,
+    isError,
+    refetch,
   }
 }
 
@@ -187,6 +197,10 @@ function mockToggleFact(qc: QueryClient, personId: string, factId: string, inclu
 
 function mockMarkFactsSeen(qc: QueryClient, personId: string) {
   mapPersonFacts(qc, personId, facts => facts.map(f => f.seen ? f : { ...f, seen: true }))
+}
+
+function mockEditFact(qc: QueryClient, personId: string, factId: string, text: string) {
+  mapPersonFacts(qc, personId, facts => facts.map(f => f.id === factId ? { ...f, text } : f))
 }
 
 function mockUndoMention(qc: QueryClient, mentionId: string) {

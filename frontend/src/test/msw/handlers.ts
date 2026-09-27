@@ -2,6 +2,9 @@ import { http, HttpResponse } from 'msw'
 import { API_BASE } from '@/data/_client/api'
 import { initialChat, cannedReply } from '@/data/insights/chat'
 import { facts as knowledgeSeed, candidateSeed } from '@/data/insights/knowledge'
+import { MOCK_EFFECT_SUBJECTS, MOCK_FACT_EVIDENCE, MOCK_FACT_EVIDENCE_SOURCES, MOCK_OBSERVATIONS } from '@/data/insights/knowledgeHub'
+import type { KnowledgeObservation } from '@/data/insights/knowledgeHubApi'
+import type { EvidenceItem } from '@/shared/ui/evidence/observationEvidence'
 import { mockPatternPairDetail, patterns as patternSeed, REFLECTION_KEY } from '@/data/insights/insights'
 import { notificationPrefSeed } from '@/data/notification/notificationMock'
 import { ADMIN_INVITES_MOCK, ADMIN_USERS_MOCK } from '@/data/admin/adminMock'
@@ -329,6 +332,56 @@ function patternWire(p: Pattern) {
     evidenceMisses: p.evidenceMisses,
     origin: p.origin ?? null,
   }
+}
+
+// --- S6 (mezo-d6ivw.6): Tudástár hub wire builders — the mock seed IS the single source of
+// truth (knowledgeHub.ts); these helpers rebuild the wire shape from it instead of hand-writing
+// a second copy, so mock and real mode read the same content through `useDualQuery`. ---
+
+/** `EvidenceItem[]` → `ObservationEvidenceItem[]` — the inverse of `mapEvidence`. `sources[i]`
+ *  supplies the raw wire source key for the i-th `kind: 'record'` item (see
+ *  `knowledgeHub.ts`'s `MOCK_FACT_EVIDENCE_SOURCES`); tags round-trip directly. */
+function evidenceToWire(items: EvidenceItem[], sources: string[]) {
+  let ri = 0
+  return items.map((e) => {
+    if (e.kind === 'tag') return { type: 'tag', text: e.text }
+    return { type: 'record', source: sources[ri++], date: e.date, time: e.time ?? null, quote: e.quote ?? null, fields: {} }
+  })
+}
+
+function observationWire(o: KnowledgeObservation) {
+  return {
+    patternId: o.patternId,
+    title: o.title,
+    confirmedAt: o.confirmedAt,
+    recheckedAt: o.recheckedAt,
+    status: o.status,
+    factId: o.factId,
+    factMutedReason: o.factMutedReason,
+    factMutedAt: o.factMutedAt,
+    replacesPatternId: o.replacesPatternId,
+    replacedByPatternId: o.replacedByPatternId,
+    topicKey: o.topicKey,
+    evidence: evidenceToWire(o.evidence, o.evidenceSources),
+  }
+}
+
+/** The wire is flat (one row per subject×metric) — the hub seed is per-subject; flatten back. */
+function effectWireRows() {
+  return MOCK_EFFECT_SUBJECTS.flatMap((s) => s.effects.map((e) => ({
+    metric: e.metric,
+    direction: e.direction,
+    strengthBand: e.strength,
+    confidenceTier: e.confidence,
+    meanDiff: e.meanDiff,
+    subjectDays: e.subjectDays,
+    complementDays: 30,
+    computedAt: '2026-09-27T03:40:00Z',
+    subjectKind: s.kind,
+    subjectKey: s.key,
+    subjectLabel: s.label,
+    muted: s.muted,
+  })))
 }
 
 export const handlers = [
@@ -1638,6 +1691,43 @@ export const handlers = [
       refinedText: body.refinedText ?? null,
       promotedFactId: body.decision === 'reject' ? null : `kf-${candidate.id}`,
       createdAt: '2026-07-03T06:00:00Z',
+    })
+  }),
+
+  // S6 (mezo-d6ivw.6) Tudástár hub — megerősített észrevételek, tény-bizonyíték, hatás-alanyok
+  // + a hub összes felejtés/némítás művelete. Lásd az `observationWire`/`effectWireRows` fenti
+  // wire-buildereket: a mock seed (`knowledgeHub.ts`) az egyetlen tartalom-forrás.
+  http.get(`${API_BASE}/api/companion/observation/knowledge`, () =>
+    HttpResponse.json(MOCK_OBSERVATIONS.map(observationWire)),
+  ),
+  http.get(`${API_BASE}/api/companion/fact/:id/evidence`, ({ params }) => {
+    const id = params.id as string
+    return HttpResponse.json(evidenceToWire(MOCK_FACT_EVIDENCE[id] ?? [], MOCK_FACT_EVIDENCE_SOURCES[id] ?? []))
+  }),
+  http.get(`${API_BASE}/api/companion/effects`, ({ request }) => {
+    const personId = new URL(request.url).searchParams.get('personId')
+    const rows = effectWireRows()
+    const filtered = personId ? rows.filter((r) => r.subjectKind === 'person' && r.subjectKey === personId) : rows
+    return HttpResponse.json({ effects: filtered })
+  }),
+  http.delete(`${API_BASE}/api/companion/fact/:id`, () => new HttpResponse(null, { status: 204 })),
+  http.delete(`${API_BASE}/api/companion/observation/:id`, () => new HttpResponse(null, { status: 204 })),
+  http.put(`${API_BASE}/api/companion/effects/:kind/:key/mute`, () => new HttpResponse(null, { status: 204 })),
+  http.delete(`${API_BASE}/api/companion/effects/:kind/:key/mute`, () => new HttpResponse(null, { status: 204 })),
+  http.patch(`${API_BASE}/api/people/:personId/facts/:factId`, async ({ params, request }) => {
+    const body = (await request.json()) as { factText?: string; includeInPrompt?: boolean }
+    return HttpResponse.json({
+      id: params.factId,
+      personId: params.personId,
+      kind: 'preference',
+      factText: body.factText ?? 'Szerkesztett tény',
+      confidence: 'high',
+      sourceRefKind: 'chat_turn',
+      sourceRefId: 'mock-turn-1',
+      active: true,
+      includeInPrompt: body.includeInPrompt ?? true,
+      seen: true,
+      createdAt: '2026-07-01T06:00:00Z',
     })
   }),
 

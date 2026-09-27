@@ -78,8 +78,15 @@ describe('knowledgeApi wire mapping', () => {
 
   it('lists facts and candidates from the default MSW fixtures (seed mirror)', async () => {
     expect(await knowledgeApi.listFacts()).toEqual(
+      // S6 (mezo-d6ivw.6): f8/f9 now carry real mute/pattern-link seed values — default only
+      // the fields a given seed row doesn't already set (mirrors toKnowledgeFact's own `?? `).
       knowledgeSeed.map((f) => ({
-        ...f, mutedReason: null, mutedAt: null, supersededBy: null, patternId: null, sourceMessageId: null,
+        ...f,
+        mutedReason: f.mutedReason ?? null,
+        mutedAt: f.mutedAt ?? null,
+        supersededBy: f.supersededBy ?? null,
+        patternId: f.patternId ?? null,
+        sourceMessageId: null,
       })),
     )
     // real mode always maps conflictsWithFactId to null — the wire doesn't carry it yet, so the
