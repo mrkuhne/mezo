@@ -68,8 +68,8 @@ describe('unreadCount', () => {
 })
 
 describe('chips', () => {
-  test('a mintanap: 2 nyitott, 1 rendeződött, 2 / 2 értesítés', () => {
-    expect(chips(buildTeamChatDay(DATE))).toEqual({ open: 2, resolved: 1, pushes: '2 / 2' })
+  test('a mintanap: 3 nyitott, 1 rendeződött, 2 / 2 értesítés', () => {
+    expect(chips(buildTeamChatDay(DATE))).toEqual({ open: 3, resolved: 1, pushes: '2 / 2' })
   })
   test('üres nap', () => {
     expect(chips(day([], { pushBudget: 2 }))).toEqual({ open: 0, resolved: 0, pushes: '0 / 2' })

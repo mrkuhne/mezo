@@ -2,7 +2,7 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { useTeamChat, useTeamChatActions } from '@/data/character/teamChatHooks'
-import { buildTeamChatDay, MOCK_TEAM_CHAT_DAY } from '@/data/character/teamChatMock'
+import { buildTeamChatDay, mockReplyAfter, MOCK_TEAM_CHAT_DAY, OPEN_ID } from '@/data/character/teamChatMock'
 import type { TeamChatDay, TeamChatThread } from '@/data/character/teamChatApi'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -45,14 +45,16 @@ describe('mock mode', () => {
       ['RESOLVE', 'falat'],
       ['GUEST', 'mocor'],
       ['OPEN', 'deru'],
+      ['OPEN', 'falat'],
     ])
 
     const userLine = day.lines.find((l) => l.kind === 'USER')
     expect(userLine?.body).toBe('Rizses csirkét ettem, dupla adag rizzsel.')
 
-    // Two OPEN ügy remain open (sleep_debt, sustained_stress); load_fuel_mismatch resolved at 13:05.
-    expect(day.openThreads).toHaveLength(2)
-    const [sleepDebt, sustainedStress] = day.openThreads
+    // Three OPEN ügy remain open (sleep_debt, sustained_stress, the seeded EXCUSE-offer
+    // late_eating); load_fuel_mismatch resolved at 13:05.
+    expect(day.openThreads).toHaveLength(3)
+    const [sleepDebt, sustainedStress, lateEating] = day.openThreads
     expect(sleepDebt.flagKey).toBe('sleep_debt')
     expect(sleepDebt.ruleLabel).toBe('Alvásadósság')
     expect(sleepDebt.pushed).toBe(true)
@@ -60,6 +62,10 @@ describe('mock mode', () => {
     expect(sustainedStress.flagKey).toBe('sustained_stress')
     expect(sustainedStress.ruleLabel).toBe('Tartós stressz')
     expect(sustainedStress.pushed).toBe(false)
+    expect(lateEating.id).toBe(OPEN_ID)
+    expect(lateEating.flagKey).toBe('late_eating')
+    expect(lateEating.offer).toBe('EXCUSE')
+    expect(lateEating.offerTag).toBe('meccsnap')
 
     const loadFuelLine = day.lines.find((l) => l.kind === 'OPEN' && l.character === 'mocor')
     expect(loadFuelLine?.thread?.status).toBe('RESOLVED')
@@ -72,16 +78,54 @@ describe('mock mode', () => {
     expect(day.lines[0].occurredAt.startsWith('2026-01-05T07:40:00')).toBe(true)
   })
 
-  test('useTeamChatActions reply/apply are no-ops in mock mode', async () => {
+  test('useTeamChatActions.apply is a no-op in mock mode', async () => {
     const { result } = renderHook(() => useTeamChatActions(), { wrapper: makeHookWrapper() })
-    await act(async () => {
-      result.current.reply('tc-thread-sleep-debt', 'kösz!')
-    })
-    await waitFor(() => expect(result.current.pending).toBe(false))
     await act(async () => {
       result.current.apply('tc-thread-sleep-debt', 'shift_sleep_anchor')
     })
     await waitFor(() => expect(result.current.pending).toBe(false))
+  })
+
+  test('mock reply with a concrete reason appends USER + REPLY and closes with remembered', async () => {
+    const day = mockReplyAfter(MOCK_TEAM_CHAT_DAY, OPEN_ID, '10-kor ért véget a röpi kupa')
+    const reply = day.lines.at(-1)!
+    expect(reply.kind).toBe('REPLY')
+    expect(reply.thread?.closeReason).toBe('REPLY')
+    expect(reply.thread?.remembered?.text).toMatch(/Meccsnapokon/)
+    expect(day.openThreads.find((t) => t.id === OPEN_ID)).toBeUndefined()
+  })
+
+  test('mock reply without a reason answers and keeps the ügy open', async () => {
+    const day = mockReplyAfter(MOCK_TEAM_CHAT_DAY, OPEN_ID, 'Bocs, csak elfelejtettem szólni.')
+    const reply = day.lines.at(-1)!
+    expect(reply.kind).toBe('REPLY')
+    expect(reply.body).toBe('Értem, köszönöm, hogy elmondtad.')
+    expect(reply.thread?.status).toBe('OPEN')
+    expect(day.openThreads.find((t) => t.id === OPEN_ID)?.status).toBe('OPEN')
+  })
+
+  test('useTeamChatActions.reply in mock mode: awaiting, then the synthetic REPLY lands after the typing delay', async () => {
+    vi.useFakeTimers()
+    try {
+      const { wrapper, client } = makeHookWrapperWithClient()
+      client.setQueryData(['teamChat', null], MOCK_TEAM_CHAT_DAY)
+      const { result } = renderHook(() => useTeamChatActions(), { wrapper })
+
+      let resolved = false
+      act(() => { result.current.reply(OPEN_ID, 'Elment a meccsnap miatt').then(() => { resolved = true }) })
+      await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+      expect(result.current.awaiting.has(OPEN_ID)).toBe(true)
+      expect(resolved).toBe(false)
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(1200) })
+
+      expect(resolved).toBe(true)
+      expect(result.current.awaiting.has(OPEN_ID)).toBe(false)
+      const day = client.getQueryData<TeamChatDay>(['teamChat', null])!
+      expect(day.lines.at(-1)?.kind).toBe('REPLY')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   test('useTeamChat never polls in mock mode, even after minutes (mezo-a9bo7.24 fix round 1)', async () => {
@@ -199,5 +243,87 @@ describe('real mode', () => {
     expect(client.getQueryState(['fuelDay'])?.isInvalidated).toBe(true)
     // Unrelated key (a different action's own extra invalidation) must stay untouched.
     expect(client.getQueryState(['train', 'sportSlotSkips', '2026-09-07'])?.isInvalidated).toBe(false)
+  })
+
+  test('real answer() posts the choice and invalidates the day', async () => {
+    let body: unknown = null
+    server.use(
+      http.post(`${API_BASE}/api/character/team-chat/threads/:threadId/answer`, async ({ request }) => {
+        body = await request.json()
+        return HttpResponse.json({
+          id: OPEN_ID, flagKey: 'late_eating', ruleLabel: 'Késői étkezés', owner: 'falat', guest: null,
+          status: 'RESOLVED', openedAt: new Date().toISOString(), closedAt: new Date().toISOString(),
+          pushed: false, actions: [], applied: null, closeReason: 'EXCUSED', closeNote: 'meccsnap',
+          offer: null, offerTag: null, remembered: null,
+        })
+      }),
+    )
+    const { wrapper, client } = makeHookWrapperWithClient()
+    client.setQueryData(['teamChat', null], { date: localDateString(), lines: [], openThreads: [], pushesToday: 0, pushBudget: 2 })
+
+    const { result } = renderHook(() => useTeamChatActions(), { wrapper })
+    result.current.answer(OPEN_ID, 'EXCUSED')
+
+    await waitFor(() => expect(result.current.pending).toBe(false))
+    expect(body).toEqual({ choice: 'EXCUSED' })
+    expect(client.getQueryState(['teamChat', null])?.isInvalidated).toBe(true)
+  })
+
+  test('real undoRemembered() sends DELETE', async () => {
+    let method: string | null = null
+    server.use(
+      http.delete(`${API_BASE}/api/character/team-chat/threads/:threadId/remembered`, ({ request }) => {
+        method = request.method
+        return HttpResponse.json({
+          id: OPEN_ID, flagKey: 'late_eating', ruleLabel: 'Késői étkezés', owner: 'falat', guest: null,
+          status: 'OPEN', openedAt: new Date().toISOString(), closedAt: null,
+          pushed: false, actions: [], applied: null, closeReason: null, closeNote: null,
+          offer: null, offerTag: null, remembered: null,
+        })
+      }),
+    )
+    const { wrapper, client } = makeHookWrapperWithClient()
+    client.setQueryData(['teamChat', null], { date: localDateString(), lines: [], openThreads: [], pushesToday: 0, pushBudget: 2 })
+
+    const { result } = renderHook(() => useTeamChatActions(), { wrapper })
+    result.current.undoRemembered(OPEN_ID)
+
+    await waitFor(() => expect(result.current.pending).toBe(false))
+    expect(method).toBe('DELETE')
+    expect(client.getQueryState(['teamChat', null])?.isInvalidated).toBe(true)
+  })
+
+  test('reply marks the thread awaiting, and useTeamChat backs off through TURN_FACT_POLL_DELAYS then 60s', async () => {
+    vi.useFakeTimers()
+    try {
+      server.use(
+        http.post(`${API_BASE}/api/character/team-chat/threads/:threadId/reply`, () =>
+          HttpResponse.json({
+            id: 'new-line', threadId: OPEN_ID, kind: 'USER', character: null,
+            body: 'kösz!', voiced: false, facts: [], occurredAt: new Date().toISOString(),
+          })),
+        http.get(`${API_BASE}/api/character/team-chat`, () =>
+          HttpResponse.json({ date: localDateString(), lines: [], openThreads: [], pushesToday: 0, pushBudget: 2 })),
+      )
+      const { wrapper, client } = makeHookWrapperWithClient()
+      renderHook(() => useTeamChat(), { wrapper })
+      const actionsHook = renderHook(() => useTeamChatActions(), { wrapper })
+      await vi.advanceTimersByTimeAsync(0)
+
+      actionsHook.result.current.reply(OPEN_ID, 'kösz!')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(client.getQueryData<ReadonlySet<string>>(['teamChat', 'awaiting'])?.has(OPEN_ID)).toBe(true)
+
+      // The answer never actually lands (the GET handler always serves the empty day) — the
+      // backoff (2s/3s/5s) runs to the end and useTeamChat falls back to the plain 60s poll.
+      await vi.advanceTimersByTimeAsync(2000)
+      await vi.advanceTimersByTimeAsync(3000)
+      await vi.advanceTimersByTimeAsync(5000)
+      await vi.advanceTimersByTimeAsync(60_000)
+      // Still marked awaiting (no REPLY line ever arrived) — but polling no longer blew up.
+      expect(client.getQueryData<ReadonlySet<string>>(['teamChat', 'awaiting'])?.has(OPEN_ID)).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

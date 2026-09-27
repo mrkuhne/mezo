@@ -1931,6 +1931,22 @@ export const handlers = [
     const date = url.searchParams.get('date') ?? localDateString()
     return HttpResponse.json({ date, lines: [], openThreads: [], pushesToday: 0, pushBudget: 2 })
   }),
+  // Csapat-chat answer/undo (S7, mezo-d6ivw.7, Task 8) — default fixtures are a RESOLVED /
+  // reopened-OPEN ügy respectively; per-test server.use() overrides assert on the request body.
+  http.post(`${API_BASE}/api/character/team-chat/threads/:threadId/answer`, ({ params }) =>
+    HttpResponse.json({
+      id: params.threadId as string, flagKey: 'late_eating', ruleLabel: 'Késői étkezés', owner: 'falat',
+      guest: null, status: 'RESOLVED', openedAt: new Date().toISOString(), closedAt: new Date().toISOString(),
+      pushed: false, actions: [], applied: null, closeReason: 'EXCUSED', closeNote: 'meccsnap',
+      offer: null, offerTag: null, remembered: null,
+    })),
+  http.delete(`${API_BASE}/api/character/team-chat/threads/:threadId/remembered`, ({ params }) =>
+    HttpResponse.json({
+      id: params.threadId as string, flagKey: 'late_eating', ruleLabel: 'Késői étkezés', owner: 'falat',
+      guest: null, status: 'OPEN', openedAt: new Date().toISOString(), closedAt: null,
+      pushed: false, actions: [], applied: null, closeReason: null, closeNote: null,
+      offer: null, offerTag: null, remembered: null,
+    })),
   // Heti érettség-történet (mezo-a9bo7.11) — real mode's default is the honest empty history.
   http.get(`${API_BASE}/api/character/maturity-history`, () => HttpResponse.json({ weeks: [] })),
 

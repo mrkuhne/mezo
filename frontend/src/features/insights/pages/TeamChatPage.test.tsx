@@ -39,7 +39,12 @@ describe('TeamChatPage (mock mode)', () => {
     reply.mockReset()
     apply.mockResolvedValue(undefined)
     reply.mockResolvedValue(undefined)
-    vi.mocked(useTeamChatActions).mockReturnValue({ apply, reply, pending: false })
+    vi.mocked(useTeamChatActions).mockReturnValue({
+      apply, reply, pending: false,
+      answer: vi.fn().mockResolvedValue(undefined),
+      undoRemembered: vi.fn().mockResolvedValue(undefined),
+      awaiting: new Set(),
+    })
     localStorage.removeItem(TEAM_CHAT_LAST_SEEN_KEY)
   })
   afterEach(() => vi.unstubAllEnvs())
@@ -60,7 +65,7 @@ describe('TeamChatPage (mock mode)', () => {
   test('a chipek és a rendeződött ügy címkéje', async () => {
     renderChat()
     await screen.findByText('A csapat beszél')
-    expect(screen.getByText('2 nyitott ügy')).toBeInTheDocument()
+    expect(screen.getByText('3 nyitott ügy')).toBeInTheDocument()
     expect(screen.getByText('1 rendeződött')).toBeInTheDocument()
     expect(screen.getByText('értesítés ma: 2 / 2')).toBeInTheDocument()
     expect(screen.getByText('Rendeződött · 13:05')).toBeInTheDocument()
@@ -78,7 +83,7 @@ describe('TeamChatPage (mock mode)', () => {
   test('nyitott ügynél a chip figyelmeztető színű', async () => {
     renderChat()
     await screen.findByText('A csapat beszél')
-    expect(screen.getByText('2 nyitott ügy')).toHaveClass('is-warn')
+    expect(screen.getByText('3 nyitott ügy')).toHaveClass('is-warn')
   })
 
   test('„Miből látszik?” a sor tényeit és a Gépterem-linket mutatja', async () => {

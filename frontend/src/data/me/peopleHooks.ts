@@ -126,8 +126,10 @@ export function usePeople() {
   }
 }
 
-/** S3: a „Megjegyeztem" chip visszalépő lekérdezés-ütemezése (ms) — utána néma feladás. */
-const TURN_FACT_POLL_DELAYS = [2000, 3000, 5000]
+/** S3: a „Megjegyeztem" chip visszalépő lekérdezés-ütemezése (ms) — utána néma feladás.
+ *  Exported for `useTeamChat` (S7, mezo-d6ivw.7) — the same backoff idiom for an
+ *  "awaiting async server answer" poll, just against a different query. */
+export const TURN_FACT_POLL_DELAYS = [2000, 3000, 5000]
 
 /**
  * S3 (mezo-d6ivw.3): egy elküldött chat-forduló utólag befutó személy-tényei. A kinyerés a
