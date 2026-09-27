@@ -122,6 +122,61 @@ class FlagEvaluatorAcuteBadDayIT extends AbstractIntegrationTest {
                 org.assertj.core.groups.Tuple.tuple("20:00", 8, 2));
     }
 
+    /** Check-in 2.0 (mezo-ck2, spec 2026-09-27 §3.2): a low mood qualifies a slot on its own. */
+    @Test
+    void testEvaluate_shouldRaise_whenMoodIsLowOnTwoCheckIns() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        checkInPopulator.createCheckIn(owner, today, "06:30", c -> { c.setMood(3); c.setEnergy(7); });
+        checkInPopulator.createCheckIn(owner, today, "14:00", c -> c.setMood(2));
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.ACUTE_BAD_DAY);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.RAISED);
+        assertThat(verdict.payload().acuteBadDay().moodAtMost()).isEqualTo(3);
+        assertThat(verdict.payload().acuteBadDay().qualifyingCheckIns())
+            .extracting("slotTime", "mood")
+            .containsExactly(
+                org.assertj.core.groups.Tuple.tuple("06:30", 3),
+                org.assertj.core.groups.Tuple.tuple("14:00", 2));
+    }
+
+    /** …and so does a strong pain (intensity ≥ 7), combined here with a low-energy slot. */
+    @Test
+    void testEvaluate_shouldRaise_whenPainIntensityIsHighOnOneAndEnergyLowOnAnother() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        checkInPopulator.createCheckIn(owner, today, "06:30", c -> { c.setPain(true); c.setPainIntensity(7); });
+        checkInPopulator.createCheckIn(owner, today, "14:00", c -> c.setEnergy(2));
+
+        assertThat(keys(owner)).contains(FlagKey.ACUTE_BAD_DAY);
+    }
+
+    @Test
+    void testEvaluate_shouldStaySilent_whenMoodFourAndPainSix() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        checkInPopulator.createCheckIn(owner, today, "06:30", c -> { c.setMood(4); c.setPainIntensity(6); });
+        checkInPopulator.createCheckIn(owner, today, "14:00", c -> { c.setMood(4); c.setPainIntensity(6); });
+
+        assertThat(keys(owner)).doesNotContain(FlagKey.ACUTE_BAD_DAY);
+    }
+
+    /** NULL audit (spec §6): a slot where NOTHING was answered never qualifies — not body, not
+     *  energy, not mood, not pain. */
+    @Test
+    void testEvaluate_shouldNotQualifyAnUnansweredSlot_whenEveryItemIsNull() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        checkInPopulator.createCheckIn(owner, today, "06:30", c -> c.setMood(1));
+        checkInPopulator.createCheckIn(owner, today, "14:00", c -> { });
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.ACUTE_BAD_DAY);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().observed()).isEqualTo(1.0);
+    }
+
     @Test
     void is_unavailable_with_only_one_check_in_today() {
         UUID owner = ownerId();

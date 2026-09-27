@@ -27,7 +27,11 @@ public record FlagPayloadEnvelope(
     LateEating lateEating,
     ProtocolLapse protocolLapse,
     MealRhythmDrift mealRhythmDrift,
-    EnergyDipMealTiming energyDipMealTiming
+    EnergyDipMealTiming energyDipMealTiming,
+    PersistentPain persistentPain,
+    PoorRestedness poorRestedness,
+    CravingStreak cravingStreak,
+    MotivationSlump motivationSlump
 ) {
 
     public record SustainedStress(
@@ -45,9 +49,23 @@ public record FlagPayloadEnvelope(
         double dropRatio, double minBaseline, List<String> missedGymDays) {
     }
 
+    /** Check-in 2.0 (mezo-ck2) widened the sleep arm: a low check-in {@code rested} or a strong
+     *  {@code soreness} (raw check-in rows inside the same window) is an alternative to short sleep.
+     *  The four new components are nullable — a pre-Check-in-2.0 row simply lacks them — and
+     *  {@code restedAtMost}/{@code sorenessAtLeast} freeze the thresholds the raise compared to. */
     public record RecoveryNeeded(
         int windowDays, double sleepFloorHours, double rpeThreshold, double stressThreshold,
-        Double sleepHours, String sleepDay, Double rpe, String rpeDay, Double stress, String stressDay) {
+        Double sleepHours, String sleepDay, Double rpe, String rpeDay, Double stress, String stressDay,
+        Integer restedAtMost, Integer rested, String restedDay,
+        Integer sorenessAtLeast, Integer soreness, String sorenessDay) {
+
+        /** The pre-Check-in-2.0 shape (sleep-hours arm only). */
+        public RecoveryNeeded(
+            int windowDays, double sleepFloorHours, double rpeThreshold, double stressThreshold,
+            Double sleepHours, String sleepDay, Double rpe, String rpeDay, Double stress, String stressDay) {
+            this(windowDays, sleepFloorHours, rpeThreshold, stressThreshold, sleepHours, sleepDay,
+                rpe, rpeDay, stress, stressDay, null, null, null, null, null, null);
+        }
     }
 
     public record AllHealthy(int quietDays, int observedDays) {
@@ -70,10 +88,25 @@ public record FlagPayloadEnvelope(
      *  the day's pattern rather than reciting a count. */
     public record AcuteBadDay(
         int minCheckIns, int bodyOrEnergyAtMost, int qualifyingCount,
-        List<QualifyingCheckIn> qualifyingCheckIns) {
+        List<QualifyingCheckIn> qualifyingCheckIns,
+        Integer moodAtMost, Integer painIntensityAtLeast) {
+
+        /** The pre-Check-in-2.0 shape (body/energy only). */
+        public AcuteBadDay(int minCheckIns, int bodyOrEnergyAtMost, int qualifyingCount,
+                           List<QualifyingCheckIn> qualifyingCheckIns) {
+            this(minCheckIns, bodyOrEnergyAtMost, qualifyingCount, qualifyingCheckIns, null, null);
+        }
     }
 
-    public record QualifyingCheckIn(String slotTime, Integer body, Integer energy) {
+    /** Check-in 2.0 (mezo-ck2): {@code mood}/{@code painIntensity} join body/energy — nullable,
+     *  as answered (NULL = not answered). */
+    public record QualifyingCheckIn(String slotTime, Integer body, Integer energy,
+                                    Integer mood, Integer painIntensity) {
+
+        /** The pre-Check-in-2.0 shape. */
+        public QualifyingCheckIn(String slotTime, Integer body, Integer energy) {
+            this(slotTime, body, energy, null, null);
+        }
     }
 
     /** Spec 2026-09-03 §4 row 2 (rank 2): 7-day training load vs. fuel/sleep conjunction.
@@ -212,69 +245,121 @@ public record FlagPayloadEnvelope(
         String groupAMedianLunchTime, String groupBMedianLunchTime) {
     }
 
+    /** Check-in 2.0 (mezo-ck2, spec 2026-09-27 §3.2). {@code region} is the {@code PainRegion}
+     *  constant name (e.g. {@code "TERD"}), frozen so the pure renderer can name it;
+     *  {@code painDays} lists the ISO days the region was reported on (window order), and
+     *  {@code maxIntensity} is the strongest answered intensity on those days (null when none was
+     *  answered). {@code answeredDays} counts days with ANY pain answer (Nem or Igen). */
+    public record PersistentPain(
+        String region, int regionDays, int minDays, int windowDays, int answeredDays,
+        List<String> painDays, Integer maxIntensity) {
+    }
+
+    /** Check-in 2.0 (mezo-ck2). {@code restedByMorning} maps each ISO day of the window that HAS a
+     *  morning answer to it; {@code runDays} are the consecutive mornings that raised. */
+    public record PoorRestedness(
+        int restedAtMost, int consecutiveMornings, int windowDays, String morningSlot,
+        Map<String, Integer> restedByMorning, List<String> runDays) {
+    }
+
+    /** Check-in 2.0 (mezo-ck2). {@code kind} is the {@code CravingKind} constant name;
+     *  {@code dominantDaypart} is {@code reggel|délelőtt|délután|este} when more than half of the
+     *  qualifying check-ins fell into one daypart, else null (the card then names no daypart). */
+    public record CravingStreak(
+        String kind, int kindDays, int minDays, int windowDays, int cravingAtLeast,
+        int answeredDays, List<String> cravingDays, String dominantDaypart) {
+    }
+
+    /** Check-in 2.0 (mezo-ck2). {@code motivationByDay} is the day-MEAN motivation of every
+     *  answered day in the window (ISO day → mean). */
+    public record MotivationSlump(
+        double motivationAtMost, int lowDays, int minDays, int windowDays,
+        Map<String, Double> motivationByDay) {
+    }
+
     public static FlagPayloadEnvelope sustainedStress(SustainedStress p) {
-        return new FlagPayloadEnvelope(p, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(p, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope sleepDebt(SleepDebt p) {
-        return new FlagPayloadEnvelope(null, p, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, p, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope momentumAtRisk(MomentumAtRisk p) {
-        return new FlagPayloadEnvelope(null, null, p, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, p, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope recoveryNeeded(RecoveryNeeded p) {
-        return new FlagPayloadEnvelope(null, null, null, p, null, null, null, null, null, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, p, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope allHealthy(AllHealthy p) {
-        return new FlagPayloadEnvelope(null, null, null, null, p, null, null, null, null, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, p, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope loggingGap(LoggingGap p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, p, null, null, null, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, p, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope missedWorkouts(MissedWorkouts p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, p, null, null, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, p, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope acuteBadDay(AcuteBadDay p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, p, null, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, p, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope loadFuelMismatch(LoadFuelMismatch p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, p, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, p, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope rapidWeightLoss(RapidWeightLoss p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, p, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, p, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope jointOveruse(JointOveruse p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null, p, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null, p, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope ignoredNudge(IgnoredNudge p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null, null, p, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null, null, p, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope lateEating(LateEating p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null, null, null, p, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null, null, null, p, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope protocolLapse(ProtocolLapse p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null, null, null, null, p, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null, null, null, null, p, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope energyDipMealTiming(EnergyDipMealTiming p) {
         return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, null, p);
+            null, null, null, null, null, p, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope mealRhythmDrift(MealRhythmDrift p) {
         return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null,
-            null, null, null, null, p, null);
+            null, null, null, null, p, null, null, null, null, null);
+    }
+
+    public static FlagPayloadEnvelope persistentPain(PersistentPain p) {
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, p, null, null, null);
+    }
+
+    public static FlagPayloadEnvelope poorRestedness(PoorRestedness p) {
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, p, null, null);
+    }
+
+    public static FlagPayloadEnvelope cravingStreak(CravingStreak p) {
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, p, null);
+    }
+
+    public static FlagPayloadEnvelope motivationSlump(MotivationSlump p) {
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null, p);
     }
 }

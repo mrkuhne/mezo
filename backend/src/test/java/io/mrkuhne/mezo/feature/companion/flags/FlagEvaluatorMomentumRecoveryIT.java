@@ -155,6 +155,52 @@ class FlagEvaluatorMomentumRecoveryIT extends AbstractIntegrationTest {
         assertThat(keys(owner)).contains(FlagKey.RECOVERY_NEEDED);
     }
 
+    /** Check-in 2.0 (mezo-ck2, spec 2026-09-27 §3.2): a low morning "kipihentség" stands in for
+     *  the sleep-hours arm — no sleep log at all here. */
+    @Test
+    void testEvaluate_shouldRaiseRecovery_whenRestedIsLowInsteadOfShortSleep() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        checkInPopulator.createCheckIn(owner, today, "06:30", c -> { c.setStress(7); c.setRested(3); });
+        trainPopulator.createSportSessionWithRpe(owner, today.minusDays(1), 8);
+
+        var verdict = evaluator.evaluate(owner).stream()
+            .filter(v -> FlagKey.RECOVERY_NEEDED.equals(v.flagKey())).findFirst().orElseThrow();
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.RAISED);
+        assertThat(verdict.payload().recoveryNeeded().rested()).isEqualTo(3);
+        assertThat(verdict.payload().recoveryNeeded().restedDay()).isEqualTo(today.toString());
+        assertThat(verdict.payload().recoveryNeeded().sleepHours()).isNull();
+    }
+
+    /** …and so does a strong "izomláz". */
+    @Test
+    void testEvaluate_shouldRaiseRecovery_whenSorenessIsHighInsteadOfShortSleep() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        checkInPopulator.createCheckIn(owner, today.minusDays(1), "20:00", c -> c.setSoreness(7));
+        checkInPopulator.createCheckIn(owner, today, "06:30", c -> c.setStress(7));
+        trainPopulator.createSportSessionWithRpe(owner, today.minusDays(1), 8);
+
+        assertThat(keys(owner)).contains(FlagKey.RECOVERY_NEEDED);
+    }
+
+    /** Below both new thresholds, and NULL answers, the sleep arm stays unmet. */
+    @Test
+    void testEvaluate_shouldStayQuietRecovery_whenRestedFiveSorenessSixOrUnanswered() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        checkInPopulator.createCheckIn(owner, today, "06:30", c -> { c.setStress(7); c.setRested(5); c.setSoreness(6); });
+        checkInPopulator.createCheckIn(owner, today, "20:00", c -> { });
+        trainPopulator.createSportSessionWithRpe(owner, today.minusDays(1), 8);
+
+        var verdict = evaluator.evaluate(owner).stream()
+            .filter(v -> FlagKey.RECOVERY_NEEDED.equals(v.flagKey())).findFirst().orElseThrow();
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().detail()).isEqualTo("sleep");
+    }
+
     @Test
     void recovery_needed_stays_quiet_when_one_leg_is_missing() {
         UUID owner = ownerId();

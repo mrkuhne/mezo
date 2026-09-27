@@ -349,6 +349,18 @@ class FlagFactRendererTest {
                 new FlagPayloadEnvelope.EnergyDipMealTiming("lunch_time",
                     "earlier_lunch", "later_lunch", 30, 12, 10, 6, 6, 4,
                     8.0, 5.0, 3.0, 1.0, 1.0, 0.70, "A", "12:00", "14:30"));
+            case FlagKey.PERSISTENT_PAIN -> FlagPayloadEnvelope.persistentPain(
+                new FlagPayloadEnvelope.PersistentPain("TERD", 3, 3, 5, 4,
+                    List.of("2026-09-25", "2026-09-26", "2026-09-27"), 6));
+            case FlagKey.POOR_RESTEDNESS -> FlagPayloadEnvelope.poorRestedness(
+                new FlagPayloadEnvelope.PoorRestedness(4, 2, 3, "06:30",
+                    Map.of("2026-09-26", 3, "2026-09-27", 4), List.of("2026-09-26", "2026-09-27")));
+            case FlagKey.CRAVING_STREAK -> FlagPayloadEnvelope.cravingStreak(
+                new FlagPayloadEnvelope.CravingStreak("EDES", 3, 3, 5, 7, 4,
+                    List.of("2026-09-24", "2026-09-26", "2026-09-27"), "délután"));
+            case FlagKey.MOTIVATION_SLUMP -> FlagPayloadEnvelope.motivationSlump(
+                new FlagPayloadEnvelope.MotivationSlump(3.0, 3, 3, 4,
+                    Map.of("2026-09-25", 2.0, "2026-09-26", 3.0, "2026-09-27", 2.5)));
             default -> throw new AssertionError(
                 "no FlagFactRendererTest fixture for live flag key '" + flagKey + "' — "
                     + "add both a fixture here and a render() branch in FlagFactRenderer");
@@ -397,5 +409,99 @@ class FlagFactRendererTest {
         assertThat(facts).hasSize(3);
         assertThat(facts.get(0)).contains("reggeli");
         assertThat(facts).noneMatch(f -> f.contains("null"));
+    }
+
+    // ── Check-in 2.0 (mezo-ck2): the prototype's card copy (elo/nap.html, FIGYELMEZTETŐ KÁRTYÁK),
+    //    templated with the frozen region / kind / daypart. ────────────────────────────────────
+
+    @Test
+    void testRender_shouldOpenWithThePrototypeCopy_whenPersistentPainRaised() {
+        List<String> facts = FlagFactRenderer.render(FlagKey.PERSISTENT_PAIN,
+            FlagPayloadEnvelope.persistentPain(new FlagPayloadEnvelope.PersistentPain("TERD", 3, 3, 5, 4,
+                List.of("2026-09-25", "2026-09-26", "2026-09-27"), 6)));
+
+        assertThat(facts).containsExactly(
+            "Harmadik napja fáj a térded. Érdemes ránézni.",
+            "Térd: fájdalom 3 napon az utolsó 5 nap közül (küszöb: 3 nap), legerősebb 6/10");
+    }
+
+    @Test
+    void testRender_shouldTemplateTheRegionAndDayCount_whenAnotherRegionRaised() {
+        List<String> facts = FlagFactRenderer.render(FlagKey.PERSISTENT_PAIN,
+            FlagPayloadEnvelope.persistentPain(new FlagPayloadEnvelope.PersistentPain("DEREK", 4, 3, 5, 5,
+                List.of("2026-09-24", "2026-09-25", "2026-09-26", "2026-09-27"), null)));
+
+        assertThat(facts.getFirst()).isEqualTo("Negyedik napja fáj a derekad. Érdemes ránézni.");
+        assertThat(facts.get(1)).doesNotContain("legerősebb");
+    }
+
+    @Test
+    void testRender_shouldUseThePrototypeCopy_whenPoorRestednessRaised() {
+        List<String> facts = FlagFactRenderer.render(FlagKey.POOR_RESTEDNESS,
+            FlagPayloadEnvelope.poorRestedness(new FlagPayloadEnvelope.PoorRestedness(4, 2, 3, "06:30",
+                Map.of("2026-09-26", 3, "2026-09-27", 4), List.of("2026-09-26", "2026-09-27"))));
+
+        assertThat(facts).containsExactly(
+            "Két reggel egymás után nem pihented ki magad.",
+            "Reggeli kipihentség: 2026-09-26: 3/10, 2026-09-27: 4/10 (legfeljebb 4 számít alacsonynak)");
+    }
+
+    @Test
+    void testRender_shouldNameKindAndDaypart_whenCravingStreakRaised() {
+        List<String> facts = FlagFactRenderer.render(FlagKey.CRAVING_STREAK,
+            FlagPayloadEnvelope.cravingStreak(new FlagPayloadEnvelope.CravingStreak("EDES", 3, 3, 5, 7, 4,
+                List.of("2026-09-24", "2026-09-26", "2026-09-27"), "délután")));
+
+        assertThat(facts).containsExactly(
+            "Sokszor kívánsz mostanában édeset, főleg délután.",
+            "Erős sóvárgás (legalább 7/10) 3 napon az utolsó 5 nap közül (küszöb: 3 nap)");
+    }
+
+    @Test
+    void testRender_shouldOmitTheDaypart_whenNoDaypartDominates() {
+        List<String> facts = FlagFactRenderer.render(FlagKey.CRAVING_STREAK,
+            FlagPayloadEnvelope.cravingStreak(new FlagPayloadEnvelope.CravingStreak("SOS", 3, 3, 5, 7, 3,
+                List.of("2026-09-24", "2026-09-26", "2026-09-27"), null)));
+
+        assertThat(facts.getFirst()).isEqualTo("Sokszor kívánsz mostanában sósat.");
+    }
+
+    @Test
+    void testRender_shouldUseThePrototypeCopy_whenMotivationSlumpRaised() {
+        List<String> facts = FlagFactRenderer.render(FlagKey.MOTIVATION_SLUMP,
+            FlagPayloadEnvelope.motivationSlump(new FlagPayloadEnvelope.MotivationSlump(3.0, 3, 3, 4,
+                Map.of("2026-09-25", 2.0))));
+
+        assertThat(facts).containsExactly(
+            "Pár napja alacsony a kedved. Kisebb lépések?",
+            "A motiváció napi átlaga legfeljebb 3,0 volt 3 napon az utolsó 4 nap közül (küszöb: 3 nap)");
+    }
+
+    /** The changed acute_bad_day (mezo-ck2): mood and pain intensity appear when answered. */
+    @Test
+    void testRender_shouldNameMoodAndPain_whenAcuteBadDayQualifiedOnThem() {
+        List<String> facts = FlagFactRenderer.render(FlagKey.ACUTE_BAD_DAY,
+            FlagPayloadEnvelope.acuteBadDay(new FlagPayloadEnvelope.AcuteBadDay(2, 3, 2, List.of(
+                new FlagPayloadEnvelope.QualifyingCheckIn("06:30", 6, 5, 2, null),
+                new FlagPayloadEnvelope.QualifyingCheckIn("14:00", null, null, null, 8)), 3, 7)));
+
+        assertThat(facts).containsExactly(
+            "Ma 2 check-in is jelzett nehéz napot (test vagy energia legfeljebb 3, hangulat legfeljebb 3, "
+                + "vagy fájdalom legalább 7 a 10-ből)",
+            "06:30: test 6, energia 5, hangulat 2",
+            "14:00: test –, energia –, fájdalom 8");
+    }
+
+    /** The changed recovery_needed (mezo-ck2): the self-reported sleep-arm alternatives. */
+    @Test
+    void testRender_shouldNameRestedAndSoreness_whenRecoveryRaisedOnThem() {
+        List<String> facts = FlagFactRenderer.render(FlagKey.RECOVERY_NEEDED,
+            FlagPayloadEnvelope.recoveryNeeded(new FlagPayloadEnvelope.RecoveryNeeded(
+                2, 6.0, 7.0, 6.0, null, null, 8.0, "2026-09-26", 7.0, "2026-09-27",
+                4, 3, "2026-09-27", 7, 8, "2026-09-27")));
+
+        assertThat(facts).contains("Kipihentség 2026-09-27: 3/10 (legfeljebb 4)",
+            "Izomláz 2026-09-27: 8/10 (legalább 7)");
+        assertThat(facts).noneMatch(f -> f.startsWith("Alvás"));
     }
 }

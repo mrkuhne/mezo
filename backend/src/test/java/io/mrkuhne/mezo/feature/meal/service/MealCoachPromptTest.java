@@ -2,6 +2,8 @@ package io.mrkuhne.mezo.feature.meal.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
+import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CravingKind;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
@@ -155,8 +157,8 @@ class MealCoachPromptTest {
         var person = new MealCoachContextReader.PersonContext("M", 34, new BigDecimal("182"),
             new BigDecimal("84.5"), new BigDecimal("18"), "DESK", "cut", List.of("muscle"),
             new MealCoachContextReader.Sleep(DATE, new BigDecimal("5.5"), 4, 3), "Metformin (metformin)",
-            List.of(new MealCoachContextReader.CheckIn("05:30", 3, 8, 5, 4),
-                    new MealCoachContextReader.CheckIn("20:00", 9, 1, 9, 9)));
+            List.of(checkIn("05:30", 3, 8, 5, 4),
+                    checkIn("20:00", 9, 1, 9, 9)));
 
         String msg = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(),
             List.of(block("Zabkása", 1, BigDecimal.ZERO)), person);
@@ -165,7 +167,8 @@ class MealCoachPromptTest {
             .contains("ülőmunka").contains("fogyás").contains("muscle")
             .contains("5.5 óra").contains("minőség 4/10").contains("Metformin")
             // the 06:15 meal sees the 05:30 check-in, never the evening one
-            .contains("05:30 · energia 3/10 · stressz 8/10").doesNotContain("20:00");
+            .contains("05:30 · energia 3/10, stressz 8/10, testi érzés 5/10, fejtisztaság 4/10")
+            .doesNotContain("20:00");
     }
 
     @Test
@@ -175,5 +178,38 @@ class MealCoachPromptTest {
 
         assertThat(msg).contains("nem nincs adat").contains("legutóbbi alvás: nincs adat")
             .contains("aktív gyógyszer: nincs rögzítve").contains("nincs check-in");
+    }
+
+    /** Check-in 2.0 (mezo-ck2, spec §3.4/§3.4b): hunger, craving + kind and digestion reach the
+     *  coach through the shared renderer; an unanswered item is absent, never "?". */
+    @Test
+    void testUserMessage_shouldRenderHungerCravingAndDigestion_whenAnswered() {
+        CheckInEntity c = new CheckInEntity();
+        c.setSlotTime("05:30");
+        c.setEnergy(6);
+        c.setHunger(8);
+        c.setCraving(7);
+        c.setCravingKinds(List.of(CravingKind.EDES));
+        c.setDigestion(4);
+        var person = new MealCoachContextReader.PersonContext(null, null, null, null, null, null, null,
+            List.of(), null, null, List.of(MealCoachContextReader.CheckIn.of(c)));
+
+        String msg = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(),
+            List.of(block("Zabkása", 1, BigDecimal.ZERO)), person);
+
+        assertThat(msg).contains("Közérzet eddig a pontig: 05:30 · energia 6/10, éhség 8/10, "
+                + "sóvárgás 7/10 (édes), emésztés 4/10")
+            .doesNotContain("stressz").doesNotContain("?/10");
+    }
+
+    private static MealCoachContextReader.CheckIn checkIn(String slot, Integer energy, Integer stress,
+                                                          Integer body, Integer mental) {
+        CheckInEntity c = new CheckInEntity();
+        c.setSlotTime(slot);
+        c.setEnergy(energy);
+        c.setStress(stress);
+        c.setBody(body);
+        c.setMental(mental);
+        return MealCoachContextReader.CheckIn.of(c);
     }
 }
