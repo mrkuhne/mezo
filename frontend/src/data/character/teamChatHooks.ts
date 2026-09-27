@@ -16,7 +16,6 @@ import type { TeamChatAnswerChoice, TeamChatDay } from '@/data/character/teamCha
 import { buildTeamChatDay, mockAnswer, mockReplyAfter, mockUndo, MOCK_TEAM_CHAT_DAY } from '@/data/character/teamChatMock'
 import { ACTION_INVALIDATES } from '@/data/today/adviceHooks'
 import type { AdviceActionKey } from '@/data/types'
-import { TURN_FACT_POLL_DELAYS } from '@/data/me/peopleHooks'
 
 const TEAM_CHAT_KEY = ['teamChat']
 
@@ -96,10 +95,16 @@ function useAwaiting(qc: QueryClient): ReadonlySet<string> {
   )
 }
 
-/** `TURN_FACT_POLL_DELAYS`, as cumulative ms-since-joined milestones — `[2000,3000,5000]`
- *  becomes `[2000,5000,10000]`. A thread's own elapsed-since-join time is compared against
+/** The csapatfal's own answer backoff (S7 final review): the server answers after a ~1.5s
+ *  debounce plus a full JSON LLM call with its context build — often 5–15s, sometimes more — so
+ *  the people hook's 10s `TURN_FACT_POLL_DELAYS` gave up (and dropped the typing dots) before a
+ *  realistic answer arrived. ~30s total. */
+export const TEAM_CHAT_ANSWER_POLL_DELAYS = [2000, 3000, 5000, 10_000, 10_000] as const
+
+/** `TEAM_CHAT_ANSWER_POLL_DELAYS`, as cumulative ms-since-joined milestones —
+ *  `[2000,5000,10000,20000,30000]`. A thread's own elapsed-since-join time is compared against
  *  these, never against how many times the shared query has actually polled. */
-const CUM_POLL_DELAYS = TURN_FACT_POLL_DELAYS.reduce<number[]>((acc, d) => [...acc, (acc.at(-1) ?? 0) + d], [])
+const CUM_POLL_DELAYS = TEAM_CHAT_ANSWER_POLL_DELAYS.reduce<number[]>((acc, d) => [...acc, (acc.at(-1) ?? 0) + d], [])
 const TOTAL_POLL_BACKOFF_MS = CUM_POLL_DELAYS.at(-1) ?? 0
 
 /** A thread has "left" awaiting once the day has a REPLY line on it newer than the user's own
@@ -118,8 +123,8 @@ function resolvedThreadIds(day: TeamChatDay, awaiting: ReadonlySet<string>): str
 /** One day's csapat-chat (all lines + every currently OPEN ügy, any day). Real mode refetches
  *  every 60s (the chat is genuinely live — a new push/reply can land any time the page is
  *  open); mock mode never refetches (the `useDualQuery` idiom's `staleTime: Infinity`).
- *  While any thread is `awaiting` an answer, real mode instead follows `TURN_FACT_POLL_DELAYS`
- *  (~2s/3s/5s) so a just-sent reply's answer shows up fast, then falls back to the plain 60s
+ *  While any thread is `awaiting` an answer, real mode instead follows
+ *  `TEAM_CHAT_ANSWER_POLL_DELAYS` (2s/3s/5s/10s/10s, ~30s) so a just-sent reply's answer shows up fast, then falls back to the plain 60s
  *  poll once the backoff runs out (whether or not the answer ever arrived). Real mode's
  *  unresolved-window fallback is the honest empty day (`realEmpty`), never the mock seed. */
 export function useTeamChat(date?: string): { day: TeamChatDay; loading: boolean } {
@@ -134,7 +139,7 @@ export function useTeamChat(date?: string): { day: TeamChatDay; loading: boolean
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
     // Each thread's own elapsed-since-`addAwaiting` time decides ITS next milestone/exhaustion
     // (see `getAwaitingMap`'s doc comment) — the shared poll fires at the soonest of them, and
-    // any thread whose own 10s (`TOTAL_POLL_BACKOFF_MS`) budget is fully spent leaves `awaiting`
+    // any thread whose own ~30s (`TOTAL_POLL_BACKOFF_MS`) budget is fully spent leaves `awaiting`
     // right here, not just "stops being polled fast".
     refetchInterval: () => {
       const map = getAwaitingMap(qc)

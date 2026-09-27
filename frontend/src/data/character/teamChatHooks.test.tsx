@@ -359,12 +359,19 @@ describe('real mode', () => {
       await vi.advanceTimersByTimeAsync(0)
       expect(client.getQueryData<ReadonlyMap<string, number>>(['teamChat', 'awaiting'])?.has(OPEN_ID)).toBe(true)
 
-      // The answer never actually lands (the GET handler always serves the empty day). The
-      // backoff (2s + 3s + 5s = 10s since the thread JOINED awaiting) runs out here — this is
-      // the binding resolution: the thread must LEAVE `awaiting`, not just stop being polled fast.
+      // The answer never actually lands (the GET handler always serves the empty day). At 10s
+      // (the old, too-short budget) the thread is still awaiting — a real LLM answer often takes
+      // longer than that.
       await vi.advanceTimersByTimeAsync(2000)
       await vi.advanceTimersByTimeAsync(3000)
       await vi.advanceTimersByTimeAsync(5000)
+      expect(client.getQueryData<ReadonlyMap<string, number>>(['teamChat', 'awaiting'])?.has(OPEN_ID)).toBe(true)
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(client.getQueryData<ReadonlyMap<string, number>>(['teamChat', 'awaiting'])?.has(OPEN_ID)).toBe(true)
+      // The backoff (2s + 3s + 5s + 10s + 10s = 30s since the thread JOINED awaiting) runs out
+      // here — this is the binding resolution: the thread must LEAVE `awaiting`, not just stop
+      // being polled fast.
+      await vi.advanceTimersByTimeAsync(10_000)
       expect(client.getQueryData<ReadonlyMap<string, number>>(['teamChat', 'awaiting'])?.has(OPEN_ID)).toBe(false)
 
       // And nothing breaks once it falls back to the plain 60s poll.
@@ -399,20 +406,20 @@ describe('real mode', () => {
       actionsHook.result.current.reply(THREAD_A, 'kösz!')
       await vi.advanceTimersByTimeAsync(0)
 
-      // B joins 4s into A's own 10s budget.
+      // B joins 4s into A's own 30s budget.
       await vi.advanceTimersByTimeAsync(4000)
       actionsHook.result.current.reply(THREAD_B, 'kösz!')
       await vi.advanceTimersByTimeAsync(0)
       expect(awaiting()?.has(THREAD_A)).toBe(true)
       expect(awaiting()?.has(THREAD_B)).toBe(true)
 
-      // 6s later (10s since A joined): A's own budget is spent — it leaves. B (joined 4s later)
-      // has only used 6s of ITS own 10s budget, unaffected by A's shorter remaining wait — it stays.
-      await vi.advanceTimersByTimeAsync(6000)
+      // 26s later (30s since A joined): A's own budget is spent — it leaves. B (joined 4s later)
+      // has only used 26s of ITS own 30s budget, unaffected by A's shorter remaining wait — it stays.
+      await vi.advanceTimersByTimeAsync(26_000)
       expect(awaiting()?.has(THREAD_A)).toBe(false)
       expect(awaiting()?.has(THREAD_B)).toBe(true)
 
-      // A further 4s (10s since B joined): B's own full budget is now spent too.
+      // A further 4s (30s since B joined): B's own full budget is now spent too.
       await vi.advanceTimersByTimeAsync(4000)
       expect(awaiting()?.has(THREAD_B)).toBe(false)
     } finally {
