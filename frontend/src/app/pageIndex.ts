@@ -109,6 +109,7 @@ export const PAGE_INDEX: IndexedPage[] = [
 
   // ── Mezo ─────────────────────────────────────────────────────────────────
   { route: '/mezo/rolad', label: 'Rólad', hint: 'a közös kép rólad — itt döntesz a javaslatokról.' },
+  { route: '/mezo/rolad/eletesemenyek', label: 'Életesemények', hint: 'a nagy fordulatok idővonala, amikhez a csapat igazodik.' },
   { route: '/mezo', label: 'Üzenőfal', hint: 'Az öt karakter posztjai: mit vettek észre, és mit kérdeznek tőled.' },
   { route: '/mezo/csapat', label: 'A csapat', hint: 'Az öt karakter szobája: mit figyelnek most, és mennyit tudnak rólad.' },
   { route: '/mezo/elo', label: 'A csapat beszél', hint: 'A csapat élő beszélgetése: ma ki szólt, mi vár rád, és mi rendeződött.' },
