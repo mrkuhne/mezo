@@ -7821,6 +7821,37 @@ export interface components {
             patternTitle?: string | null;
             /** @description In how many of the recent weekly reviews the companion cited this fact as something the week was built on (mezo-d20.7.7). A SEPARATE, weaker signal than reinforcementCount — the model citing its own knowledge is not the user re-confirming it — derived live from the non-deleted weekly_review rows. Null = not measurable (the proactive/weekly feature is off), never a stand-in zero. */
             citedWeeks?: number | null;
+            /**
+             * @description S6 (mezo-d6ivw.6) — miért hallgat a tény: user = te hallgattattad el, refuted = később nem igazolódott (S2 cáfolat), superseded = felülírta egy újabb észrevétel. Null, ha bekapcsolt.
+             * @enum {string|null}
+             */
+            mutedReason?: "user" | "refuted" | "superseded" | null;
+            /**
+             * Format: date-time
+             * @description S6 — mikor hallgattatták el; null, ha bekapcsolt vagy S6 előtti némítás.
+             */
+            mutedAt?: string | null;
+            /**
+             * Format: uuid
+             * @description S6 — a tény, ami felülírta (drift-megerősítés).
+             */
+            supersededBy?: string | null;
+            provenance: components["schemas"]["KnowledgeFactProvenance"];
+        };
+        /** @description S6 (mezo-d6ivw.6) — honnan jön a tény. A bizonyíték-elemeket a GET /api/companion/fact/{factId}/evidence adja lustán (Honnan tudom?). */
+        KnowledgeFactProvenance: {
+            /** @enum {string} */
+            sourceKind: "chat" | "pattern" | "manual" | "weekly_review" | "question";
+            /**
+             * Format: uuid
+             * @description Az észrevétel, amiből a tény született (source=pattern).
+             */
+            patternId?: string | null;
+            /**
+             * Format: uuid
+             * @description A beszélgetés-üzenet, amiből a jelölt született (chat).
+             */
+            sourceMessageId?: string | null;
         };
         CreateFactRequest: {
             factText: string;
@@ -7829,7 +7860,8 @@ export interface components {
         /** @description Partial update — only the provided fields are applied. */
         UpdateFactRequest: {
             factText?: string | null;
-            category?: string | null;
+            /** @enum {string|null} */
+            category?: "train" | "fuel" | "health" | "life" | null;
             includeInPrompt?: boolean | null;
         };
         FactCandidateResponse: {

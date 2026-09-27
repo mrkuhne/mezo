@@ -19510,6 +19510,7 @@ components:
         - reinforcementCount
         - includeInPrompt
         - createdAt
+        - provenance
       properties:
         id:
           type: string
@@ -19569,6 +19570,57 @@ components:
             knowledge is not the user re-confirming it — derived live from the
             non-deleted weekly_review rows. Null = not measurable (the
             proactive/weekly feature is off), never a stand-in zero.
+        mutedReason:
+          type: string
+          nullable: true
+          enum:
+            - user
+            - refuted
+            - superseded
+          description: >-
+            S6 (mezo-d6ivw.6) — miért hallgat a tény: user = te hallgattattad
+            el, refuted = később nem igazolódott (S2 cáfolat), superseded =
+            felülírta egy újabb észrevétel. Null, ha bekapcsolt.
+        mutedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >-
+            S6 — mikor hallgattatták el; null, ha bekapcsolt vagy S6 előtti
+            némítás.
+        supersededBy:
+          type: string
+          format: uuid
+          nullable: true
+          description: 'S6 — a tény, ami felülírta (drift-megerősítés).'
+        provenance:
+          $ref: '#/components/schemas/KnowledgeFactProvenance'
+    KnowledgeFactProvenance:
+      type: object
+      description: >-
+        S6 (mezo-d6ivw.6) — honnan jön a tény. A bizonyíték-elemeket a GET
+        /api/companion/fact/{factId}/evidence adja lustán (Honnan tudom?).
+      required:
+        - sourceKind
+      properties:
+        sourceKind:
+          type: string
+          enum:
+            - chat
+            - pattern
+            - manual
+            - weekly_review
+            - question
+        patternId:
+          type: string
+          format: uuid
+          nullable: true
+          description: 'Az észrevétel, amiből a tény született (source=pattern).'
+        sourceMessageId:
+          type: string
+          format: uuid
+          nullable: true
+          description: 'A beszélgetés-üzenet, amiből a jelölt született (chat).'
     CreateFactRequest:
       type: object
       required:
@@ -19593,7 +19645,11 @@ components:
           nullable: true
         category:
           type: string
-          pattern: ^(train|fuel|health|life)$
+          enum:
+            - train
+            - fuel
+            - health
+            - life
           nullable: true
         includeInPrompt:
           type: boolean

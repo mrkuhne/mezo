@@ -8,9 +8,11 @@ import io.mrkuhne.mezo.feature.companion.HighlightCitationSource;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.FactOwner;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
+import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
+import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
@@ -67,6 +69,7 @@ public class KnowledgeFactService {
     /** mezo-d20.7.7 — absent when the proactive switch is off; then the signal is null, not 0. */
     private final ObjectProvider<HighlightCitationSource> citationSource;
     private final PromptPersona promptPersona;
+    private final LearnedFactRepository learnedFactRepository;
 
     public List<KnowledgeFactResponse> list(UUID userId) {
         // V3.3 evidence link: pattern-sourced facts carry their promoting pattern's title
@@ -74,11 +77,17 @@ public class KnowledgeFactService {
                 .findByCreatedByAndPromotedFactIdIsNotNullAndDeletedFalse(userId).stream()
                 .collect(Collectors.toMap(PatternEntity::getPromotedFactId, PatternEntity::getTitle,
                         (first, second) -> first));
+        // S6 (mezo-d6ivw.6): the chat turn behind each accepted candidate — one read, not one per fact
+        Map<UUID, UUID> sourceMessageByFactId = learnedFactRepository
+                .findByCreatedByAndPromotedFactIdIsNotNullAndDeletedFalse(userId).stream()
+                .filter(c -> c.getDerivedFromMessageId() != null)
+                .collect(Collectors.toMap(LearnedFactEntity::getPromotedFactId,
+                        LearnedFactEntity::getDerivedFromMessageId, (first, second) -> first));
         Map<UUID, Integer> cited = citedWeeks(userId);
         return repository.findByCreatedByAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(userId)
                 .stream()
-                .map(fact -> mapper.toKnowledgeFactResponse(
-                        fact, patternTitleByFactId.get(fact.getId()), citedWeeksOf(cited, fact.getId())))
+                .map(fact -> mapper.toKnowledgeFactResponse(fact, patternTitleByFactId.get(fact.getId()),
+                        citedWeeksOf(cited, fact.getId()), sourceMessageByFactId.get(fact.getId())))
                 .toList();
     }
 
@@ -123,14 +132,15 @@ public class KnowledgeFactService {
             fact.setFactText(request.getFactText());
         }
         if (request.getCategory() != null) {
+            String category = request.getCategory().getValue();
             // mezo-plbev item 3: re-derive the owner ONLY when it still carries the OLD
             // category's default (nobody named it explicitly) — an owner the team gave by name
             // (e.g. szunya on a health fact, via the sleep-lexicon backfill or a live producer)
             // must survive a category edit untouched.
             if (fact.getOwner().equals(FactOwner.forCategory(fact.getCategory()))) {
-                fact.setOwner(FactOwner.forCategory(request.getCategory()));
+                fact.setOwner(FactOwner.forCategory(category));
             }
-            fact.setCategory(request.getCategory());
+            fact.setCategory(category);
         }
         if (request.getIncludeInPrompt() != null) {
             boolean include = request.getIncludeInPrompt();
