@@ -82,7 +82,7 @@ public class GraphPromotionService {
     @Transactional
     public Optional<GraphNodeEntity> promotePattern(UUID userId, UUID patternId) {
         Optional<PatternEntity> found = patternRepository.findByIdAndCreatedByAndDeletedFalse(patternId, userId)
-            .filter(p -> PatternEntity.STATUS_CONFIRMED.equals(p.getStatus()));
+            .filter(p -> patternQualifies(userId, p));
         if (found.isEmpty()) {
             return Optional.empty();
         }
@@ -277,7 +277,7 @@ public class GraphPromotionService {
     @Transactional
     public Optional<GraphNodeEntity> retractPattern(UUID userId, UUID patternId) {
         boolean stillConfirmed = patternRepository.findByIdAndCreatedByAndDeletedFalse(patternId, userId)
-            .filter(p -> PatternEntity.STATUS_CONFIRMED.equals(p.getStatus()))
+            .filter(p -> patternQualifies(userId, p))
             .isPresent();
         if (stillConfirmed) {
             return Optional.empty();
@@ -352,7 +352,38 @@ public class GraphPromotionService {
         // transaction — unlike reconcile()'s per-item proxy calls (see that javadoc for why
         // THOSE must not share one).
         Optional<GraphNodeEntity> promoted = promoteFact(userId, factId);
-        return promoted.isPresent() ? promoted : retractFact(userId, factId);
+        Optional<GraphNodeEntity> factNode = promoted.isPresent() ? promoted : retractFact(userId, factId);
+        Optional<GraphNodeEntity> patternNode = syncPatternOfFact(userId, factId);
+        return factNode.isPresent() ? factNode : patternNode;
+    }
+
+    /**
+     * S6 (mezo-d6ivw.6): a pattern-sourced fact has no node of its own — its knowledge lives in
+     * the source pattern's PATTERN node. So the fact's prompt seat IS that node's seat: muting the
+     * fact (the user's toggle, a refute, a drift supersession) archives the node, and re-enabling
+     * it revives the node (a user-archived node stays archived — {@link #raiseStatus}).
+     */
+    private Optional<GraphNodeEntity> syncPatternOfFact(UUID userId, UUID factId) {
+        return patternRepository.findFirstByCreatedByAndPromotedFactIdAndDeletedFalse(userId, factId)
+            .flatMap(p -> patternQualifies(userId, p)
+                ? promotePattern(userId, p.getId())
+                : archiveBySource(userId, SOURCE_PATTERN, p.getId()));
+    }
+
+    /**
+     * A PATTERN node asserts its claim in the chat prompt, so a pattern qualifies only while the
+     * user still stands behind it: confirmed (a forgotten, refuted or rejected row never is), and
+     * — S6 — when it was promoted into a fact, that fact must still be live and in the prompt.
+     * A confirmed row with no fact (vetoed, or older than V3.3 promotion) qualifies as before.
+     */
+    private boolean patternQualifies(UUID userId, PatternEntity pattern) {
+        if (!PatternEntity.STATUS_CONFIRMED.equals(pattern.getStatus())) {
+            return false;
+        }
+        UUID factId = pattern.getPromotedFactId();
+        return factId == null || knowledgeFactRepository.findByIdAndCreatedByAndDeletedFalse(factId, userId)
+            .filter(KnowledgeFactEntity::isIncludeInPrompt)
+            .isPresent();
     }
 
     /** Archive the node behind one source row, if there is one and it is not archived already. */
