@@ -30,7 +30,9 @@ public class LifeGoalTriggerListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onCheckInSaved(CheckInSavedEvent event) {
-        fire(event.userId(), LifeGoalTriggerRules.CHECKIN_ENERGY_LTE, event.date());
+        for (String source : LifeGoalTriggerRules.CHECKIN_TRIGGERS) {
+            fire(event.userId(), source, event.date());
+        }
     }
 
     @Async

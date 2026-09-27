@@ -8,7 +8,8 @@ export type MeWeekAggregates = components['schemas']['MeWeekAggregates']
 // One deterministic demo week (Monday 2026-05-18, mezo-p2tr) for the weekly review page —
 // 5 dense days (full nutrition/quality/training/sleep/logging coverage) + 2 sparse days, one of
 // which is a genuine "tanulom" day (score: null, no data logged at all). Sleep quality and
-// checkin energy are 1–10 scales (see MeWeekDay.sleepQuality / checkinEnergyAvg).
+// checkin energy / mood are 1–10 scales (see MeWeekDay.sleepQuality / checkinEnergyAvg /
+// checkinMoodAvg — the latter Check-in 2.0, mezo-ck2).
 // mezo-jcpt.5: `subscores` carries the napi motor hat dimenzióját (nutrition/quality/training/
 // sleep/logging/rhythm); at least one day below leaves BOTH quality and rhythm null so the
 // `is-none` stub still renders somewhere in the mock.
@@ -27,7 +28,7 @@ const SEED_DAYS: readonly MeWeekDay[] = [
     kcalTarget: KCAL_TARGET, proteinTargetG: PROTEIN_TARGET_G,
     weightKg: 84.3,
     sleepMin: 445, sleepQuality: 7,
-    checkinCount: 4, checkinEnergyAvg: 7,
+    checkinCount: 4, checkinEnergyAvg: 7, checkinMoodAvg: 7.5,
     workoutCount: 1, xp: 140,
   },
   // Kedd — dense: volleyball day
@@ -39,7 +40,7 @@ const SEED_DAYS: readonly MeWeekDay[] = [
     kcalTarget: KCAL_TARGET, proteinTargetG: PROTEIN_TARGET_G,
     weightKg: 84.2,
     sleepMin: 398, sleepQuality: 6,
-    checkinCount: 4, checkinEnergyAvg: 6,
+    checkinCount: 4, checkinEnergyAvg: 6, checkinMoodAvg: 6,
     workoutCount: 1, xp: 110,
   },
   // Szerda — dense: gym day, best sleep of the week
@@ -51,7 +52,7 @@ const SEED_DAYS: readonly MeWeekDay[] = [
     kcalTarget: KCAL_TARGET, proteinTargetG: PROTEIN_TARGET_G,
     weightKg: 84.1,
     sleepMin: 470, sleepQuality: 8,
-    checkinCount: 4, checkinEnergyAvg: 8,
+    checkinCount: 4, checkinEnergyAvg: 8, checkinMoodAvg: 8,
     workoutCount: 1, xp: 155,
   },
   // Csütörtök — sparse: only checkins logged, no sleep/fuel/workout data
@@ -63,7 +64,7 @@ const SEED_DAYS: readonly MeWeekDay[] = [
     kcalTarget: KCAL_TARGET, proteinTargetG: PROTEIN_TARGET_G,
     weightKg: null,
     sleepMin: null, sleepQuality: null,
-    checkinCount: 2, checkinEnergyAvg: 6,
+    checkinCount: 2, checkinEnergyAvg: 6, checkinMoodAvg: 5.5,
     workoutCount: 0, xp: 20,
   },
   // Péntek — dense: gym day, lighter session
@@ -75,7 +76,7 @@ const SEED_DAYS: readonly MeWeekDay[] = [
     kcalTarget: KCAL_TARGET, proteinTargetG: PROTEIN_TARGET_G,
     weightKg: 84.0,
     sleepMin: 420, sleepQuality: 7,
-    checkinCount: 3, checkinEnergyAvg: 7,
+    checkinCount: 3, checkinEnergyAvg: 7, checkinMoodAvg: 7,
     workoutCount: 1, xp: 100,
   },
   // Szombat — "tanulom" day: genuinely no data logged at all
@@ -87,7 +88,7 @@ const SEED_DAYS: readonly MeWeekDay[] = [
     kcalTarget: KCAL_TARGET, proteinTargetG: PROTEIN_TARGET_G,
     weightKg: null,
     sleepMin: null, sleepQuality: null,
-    checkinCount: 0, checkinEnergyAvg: null,
+    checkinCount: 0, checkinEnergyAvg: null, checkinMoodAvg: null,
     workoutCount: 0, xp: null,
   },
   // Vasárnap — dense: rest day, still logged
@@ -99,7 +100,7 @@ const SEED_DAYS: readonly MeWeekDay[] = [
     kcalTarget: KCAL_TARGET, proteinTargetG: PROTEIN_TARGET_G,
     weightKg: 83.9,
     sleepMin: 460, sleepQuality: 8,
-    checkinCount: 4, checkinEnergyAvg: 7,
+    checkinCount: 4, checkinEnergyAvg: 7, checkinMoodAvg: 7.5,
     workoutCount: 0, xp: 60,
   },
 ] as const
@@ -127,6 +128,7 @@ export function mockMeWeek(startIso: string): MeWeek {
       avgProteinG: 212,
       avgSleepMin: 439,
       avgCheckinEnergy: 7,
+      avgCheckinMood: 6.9,
       checkinRatio: 0.75,
       latestWeightKg: 83.9,
       weightWeeklyRateKg: -0.3,

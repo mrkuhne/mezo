@@ -149,6 +149,16 @@ public class MetricSeriesService {
             case TEXT_ENERGY -> textSignal(TextSignalSeriesService.Field.ENERGY, userId, from, to);
             case TEXT_STRESS -> textSignal(TextSignalSeriesService.Field.STRESS, userId, from, to);
             case TEXT_SOCIAL_CONTACT -> textSocialContact(userId, from, to);
+            case CHECKIN_MOOD -> checkIn(userId, from, to, CheckInEntity::getMood);
+            case CHECKIN_RESTED -> checkIn(userId, from, to, CheckInEntity::getRested);
+            case CHECKIN_SORENESS -> checkIn(userId, from, to, CheckInEntity::getSoreness);
+            case CHECKIN_PAIN -> checkInPainPeak(userId, from, to);
+            case CHECKIN_MOTIVATION -> checkIn(userId, from, to, CheckInEntity::getMotivation);
+            case CHECKIN_HUNGER -> checkIn(userId, from, to, CheckInEntity::getHunger);
+            case CHECKIN_CRAVING -> checkIn(userId, from, to, CheckInEntity::getCraving);
+            case CHECKIN_DIGESTION -> checkIn(userId, from, to, CheckInEntity::getDigestion);
+            case CHECKIN_CONNECTION -> checkIn(userId, from, to, CheckInEntity::getConnection);
+            case CHECKIN_DAY -> checkIn(userId, from, to, CheckInEntity::getDayRating);
         };
     }
 
@@ -491,6 +501,27 @@ public class MetricSeriesService {
             }
         }
         return average(perDay);
+    }
+
+    /**
+     * Check-in 2.0 (mezo-ck2): a nap fájdalom-CSÚCSA — egy „Igen" slot a saját intenzitásával, egy
+     * „Nem" slot 0-val számít (megválaszolt, fájdalommentes nap ≠ hiányzó nap). Ahol a kérdés el
+     * sem hangzott ({@code pain == null}) vagy az „Igen" intenzitás nélkül maradt, az nem ad értéket.
+     */
+    private Map<LocalDate, Double> checkInPainPeak(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (CheckInEntity checkIn : checkInRepository.findByCreatedByAndDeletedFalseAndDateBetween(userId, from, to)) {
+            Double value = null;
+            if (Boolean.FALSE.equals(checkIn.getPain())) {
+                value = 0.0;
+            } else if (Boolean.TRUE.equals(checkIn.getPain()) && checkIn.getPainIntensity() != null) {
+                value = checkIn.getPainIntensity().doubleValue();
+            }
+            if (value != null) {
+                series.merge(checkIn.getDate(), value, Math::max);
+            }
+        }
+        return series;
     }
 
     /** 0/1 hétvége-jel (szo–vas) — tiszta naptári sorozat, kontroll-változó. */

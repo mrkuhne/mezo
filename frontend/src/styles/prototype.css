@@ -22469,10 +22469,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   outline: 2px solid var(--c); outline-offset: 2px;
 }
 
-/* ── the lit flat mini-cells (prototype `.mcell`): hub (8, two rows of 4) + napok (3) ── */
+/* ── the lit flat mini-cells (prototype `.mcell`): hub (9, three rows of 3 — Check-in 2.0 put
+   Hangulat next to Energia, mezo-ck2) + napok (3) ── */
 .wkh-page .wkh-cellstack { gap: 6px; }
 .wkh-page .wkh-cells.mz-mcells, .wkd-page .wkd-cells.mz-mcells {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;
 }
 .wkd-page .wkd-cells.mz-mcells { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 12px; }
 .wkh-page .mz-mcells .mz-c-lav, .wkd-page .mz-mcells .mz-c-lav { --c: var(--dv-lav); }
@@ -22835,7 +22836,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   color: var(--canvas); background: var(--dv-sage); box-shadow: 0 0 14px color-mix(in srgb, var(--dv-sage) 55%, transparent);
 }
 @media (max-width: 360px) {
-  .wkh-page .wkh-cells.mz-mcells { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .wkd-page .wkd-chip { font-size: 9.5px; }
 }
 

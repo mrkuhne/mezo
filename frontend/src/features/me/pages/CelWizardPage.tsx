@@ -18,6 +18,8 @@ const STEPS = ['Cél', 'Keret', 'Pillérek', 'Ha–akkor', 'Összegzés'] as con
 const TITLES = ['Mit építünk?', 'Miért fontos?', 'Miből mérjük?', 'Mi jön közbe?', 'Így indul'] as const
 const TRIGGER_LABEL: Record<string, string> = {
   sport_session_logged: 'sport-napló · másnap szólok', checkin_energy_lte: 'check-in · rögtön utána szólok', ritual_missed: 'napzárás · másnap reggel szólok',
+  checkin_motivation_lte: 'ha alacsony a kedvem · check-in után rögtön szólok',
+  checkin_mood_lte: 'ha rossz a hangulatom · check-in után rögtön szólok',
 }
 
 interface WizardDraft {

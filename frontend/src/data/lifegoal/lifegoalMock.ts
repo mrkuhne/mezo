@@ -176,7 +176,10 @@ export const MOCK_SIGNAL_CATALOG: SignalCatalogEntry[] = withLiveness([
   { id: 'hr_recovery', source: metric('RUN_HR_RECOVERY_S'), label: 'Pulzus-visszaállás', group: 'Edzés', kinds: ['average', 'baseline'], unit: 'mp', defaultSkillKey: 'aerobic_capacity' },
   { id: 'weight_goal', source: { type: 'weight_goal' }, label: 'Súlycél · ütem', group: 'Edzés', kinds: ['linked'], unit: 'ítélet', defaultSkillKey: 'recovery' },
   { id: 'checkin_energy', source: metric('CHECKIN_ENERGY'), label: 'Check-in energia', group: 'Elme', kinds: ['average', 'baseline'], unit: '1–10', defaultSkillKey: 'mindset' },
-  { id: 'checkin_mental', source: metric('CHECKIN_MENTAL'), label: 'Check-in hangulat', group: 'Elme', kinds: ['average', 'baseline'], unit: '1–10', defaultSkillKey: 'mindfulness' },
+  { id: 'checkin_mental', source: metric('CHECKIN_MENTAL'), label: 'Check-in fejtisztaság', group: 'Elme', kinds: ['average', 'baseline'], unit: '1–10', defaultSkillKey: 'mindfulness' },
+  { id: 'checkin_mood', source: metric('CHECKIN_MOOD'), label: 'Check-in hangulat', group: 'Elme', kinds: ['average', 'baseline'], unit: '1–10', defaultSkillKey: 'mindfulness' },
+  { id: 'checkin_motivation', source: metric('CHECKIN_MOTIVATION'), label: 'Motiváció', group: 'Elme', kinds: ['average', 'baseline'], unit: '1–10', defaultSkillKey: 'mindset' },
+  { id: 'checkin_rested', source: metric('CHECKIN_RESTED'), label: 'Kipihentség', group: 'Test', kinds: ['average', 'baseline'], unit: '1–10', defaultSkillKey: 'recovery' },
   { id: 'checkin_stress', source: metric('CHECKIN_STRESS'), label: 'Stressz', group: 'Elme', kinds: ['average', 'baseline'], unit: '1–10', defaultSkillKey: 'mindfulness' },
   { id: 'habits_done', source: metric('HABITS_DONE'), label: 'Kész szokások', group: 'Elme', kinds: ['habit', 'average'], unit: 'db', defaultSkillKey: 'mindset' },
   { id: 'ritual_closed', source: metric('RITUAL_CLOSED'), label: 'Napzárás', group: 'Elme', kinds: ['habit'], unit: 'igen/nem', defaultSkillKey: 'mindset' },
@@ -187,6 +190,7 @@ export const MOCK_SIGNAL_CATALOG: SignalCatalogEntry[] = withLiveness([
   { id: 'activity_connection', source: activitySrc('connection', 'count'), label: 'Kapcsolatok · alkalom', group: 'Activity', kinds: ['habit', 'baseline', 'target'], unit: 'alkalom', defaultSkillKey: 'connection' },
   { id: 'activity_cooking', source: activitySrc('cooking', 'count'), label: 'Konyha · alkalom', group: 'Activity', kinds: ['habit', 'baseline', 'target'], unit: 'alkalom', defaultSkillKey: 'cooking' },
   { id: 'social_mentions', source: { type: 'social_mentions' }, label: 'Társas említések', group: 'Emberek', kinds: ['habit', 'average', 'baseline'], unit: 'ember', defaultSkillKey: 'connection' },
+  { id: 'checkin_connection', source: metric('CHECKIN_CONNECTION'), label: 'Kapcsolódás', group: 'Emberek', kinds: ['average', 'baseline'], unit: '1–10', defaultSkillKey: 'connection' },
   { id: 'ring_mozgas', source: ring('mozgas'), label: 'Mozgás-gyűrű', group: 'Életjel', kinds: ['average', 'baseline'], unit: '%', defaultSkillKey: 'recovery' },
   { id: 'ring_pihenes', source: ring('pihenes'), label: 'Pihenés-gyűrű', group: 'Életjel', kinds: ['average', 'baseline'], unit: '%', defaultSkillKey: 'recovery' },
   { id: 'ring_lelek', source: ring('lelek'), label: 'Lélek-gyűrű', group: 'Életjel', kinds: ['average', 'baseline'], unit: '%', defaultSkillKey: 'mindfulness' },
@@ -226,6 +230,7 @@ function signalSource(id: string): PillarSource {
     activity_connection: activitySrc('connection', 'count'),
     ring_mozgas: ring('mozgas'),
     checkin_mental: metric('CHECKIN_MENTAL'),
+    checkin_mood: metric('CHECKIN_MOOD'),
   }
   return table[id]
 }
@@ -252,12 +257,12 @@ const PILLARS_BY_DIMENSION: Record<string, LifeGoalPillarInput[]> = {
     proposalHabit('ritual_closed', 'Napzárás', 'mindset', 5),
   ],
   positive_emotion: [
-    proposalAvg('checkin_mental', 'Hangulat', 'mindfulness', 7),
+    proposalAvg('checkin_mood', 'Hangulat', 'mindfulness', 7),
     proposalAvg('sleep_duration', 'Alvás', 'recovery', 7.0),
   ],
   meaning: [
     proposalHabit('ritual_closed', 'Napzárás', 'mindset', 5),
-    proposalAvg('checkin_mental', 'Hangulat', 'mindfulness', 7),
+    proposalAvg('checkin_mood', 'Hangulat', 'mindfulness', 7),
   ],
 }
 

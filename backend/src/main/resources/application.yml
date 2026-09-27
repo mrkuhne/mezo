@@ -2131,6 +2131,190 @@ mezo:
           metric-a: weekend
           metric-b: late-meal-hour
           lag-days: 0
+        # --- Check-in 2.0 (mezo-ck2, spec §3.8/§3.8b) — az új check-in tételek 15 párja ---
+        # day-score~checkin-day kimarad: a napi pontszám nem MetricKey-sorozat.
+        # meal-processing~checkin-digestion helyett meal-score~checkin-digestion: nincs külön
+        # feldolgozottság/NOVA-arány metrika; a legközelebbi a NOVA-dimenziót is súlyozó étkezés-pontszám.
+        - key: sleep-duration~checkin-rested
+          category: physiology
+          label: Fiziológia
+          title: "Alváshossz ↔ kipihentség"
+          mechanism: "A hosszabb éjszaka után kipihentebbnek érezheted magad reggel."
+          question: "Kipihentebb vagy, ha tovább alszol?"
+          expected-direction: positive
+          when-positive-hu: "a hosszabb éjszakák után {erősség} kipihentebbnek érezted magad"
+          when-negative-hu: "a hosszabb éjszakák után {erősség} kevésbé érezted magad kipihentnek"
+          metric-a: sleep-duration-h
+          metric-b: checkin-rested
+          lag-days: 0
+        - key: sleep-quality~checkin-rested
+          category: physiology
+          label: Fiziológia
+          title: "Alvásminőség ↔ kipihentség"
+          mechanism: "A jobb minőségű alvás után kipihentebbnek érezheted magad — azt is mutatja, mennyire egyezik az érzeted a naplóddal."
+          question: "Kipihentebb vagy, ha jobban aludtál?"
+          expected-direction: positive
+          when-positive-hu: "a jobb alvás után {erősség} kipihentebbnek érezted magad"
+          when-negative-hu: "a jobb alvás után {erősség} kevésbé érezted magad kipihentnek"
+          metric-a: sleep-quality
+          metric-b: checkin-rested
+          lag-days: 0
+        - key: sleep-duration~next-day-checkin-craving
+          category: physiology
+          label: Fiziológia
+          title: "Alváshossz ↔ másnapi sóvárgás"
+          mechanism: "A rövid alvás felhangolhatja az étvágyat — másnap erősebb sóvárgás jöhet."
+          question: "Többet kívánsz valamit a rövid éjszakák után?"
+          expected-direction: negative
+          when-positive-hu: "a hosszabb éjszakák után {erősség} erősebb volt a sóvárgás"
+          when-negative-hu: "a hosszabb éjszakák után {erősség} gyengébb volt a sóvárgás"
+          metric-a: sleep-duration-h
+          metric-b: checkin-craving
+          lag-days: 1
+        - key: checkin-stress~checkin-craving
+          category: trigger
+          label: Kiváltó ok
+          title: "Stressz ↔ sóvárgás"
+          mechanism: "A feszültség gyakran vált ki evési kedvet — édes, sós vagy bármi."
+          question: "Jobban kívánsz valamit, ha feszült vagy?"
+          expected-direction: positive
+          when-positive-hu: "a feszültebb napokon {erősség} erősebb volt a sóvárgás"
+          when-negative-hu: "a feszültebb napokon {erősség} gyengébb volt a sóvárgás"
+          metric-a: checkin-stress
+          metric-b: checkin-craving
+          lag-days: 0
+        - key: daily-protein~checkin-hunger
+          category: physiology
+          label: Fiziológia
+          title: "Napi fehérje ↔ éhség"
+          mechanism: "A fehérje jól laktat — a fehérjedúsabb napokon kisebb lehet az éhség."
+          question: "Kevésbé vagy éhes a fehérjedús napokon?"
+          expected-direction: negative
+          when-positive-hu: "a fehérjedúsabb napokon {erősség} éhesebb voltál"
+          when-negative-hu: "a fehérjedúsabb napokon {erősség} kevésbé voltál éhes"
+          metric-a: daily-protein-g
+          metric-b: checkin-hunger
+          lag-days: 0
+        - key: meal-score~checkin-craving
+          category: physiology
+          label: Fiziológia
+          title: "Étkezés-pontszám ↔ sóvárgás"
+          mechanism: "A kiegyensúlyozott étkezés kisimíthatja a vércukrot — kevesebb sóvárgás jöhet."
+          question: "Kevesebbet kívánsz, ha jól eszel?"
+          expected-direction: negative
+          when-positive-hu: "a jobb étkezés-pontszámú napokon {erősség} erősebb volt a sóvárgás"
+          when-negative-hu: "a jobb étkezés-pontszámú napokon {erősség} gyengébb volt a sóvárgás"
+          metric-a: meal-score
+          metric-b: checkin-craving
+          lag-days: 0
+        - key: gym-workload~next-day-checkin-soreness
+          category: physiology
+          label: Fiziológia
+          title: "Gym-terhelésérzet ↔ másnapi izomláz"
+          mechanism: "A megterhelő edzés másnapra izomlázat hozhat — ez a klasszikus késleltetett izomfájdalom."
+          question: "Nagyobb az izomláz a kemény edzések után?"
+          expected-direction: positive
+          when-positive-hu: "a keményebb edzések után {erősség} erősebb volt az izomláz"
+          when-negative-hu: "a keményebb edzések után {erősség} gyengébb volt az izomláz"
+          metric-a: gym-workload
+          metric-b: checkin-soreness
+          lag-days: 1
+        - key: training-monotony~checkin-motivation
+          category: response
+          label: Reakció
+          title: "Edzés-monotónia ↔ motiváció"
+          mechanism: "Az egyhangú terhelés kiolthatja a kedvet — a változatosság frissen tart."
+          question: "Csökken a kedved az egyhangú edzésterheléstől?"
+          expected-direction: negative
+          when-positive-hu: "az egyhangúbb terhelésű időszakokban {erősség} több kedved volt a dolgaidhoz"
+          when-negative-hu: "az egyhangúbb terhelésű időszakokban {erősség} kevesebb kedved volt a dolgaidhoz"
+          metric-a: training-monotony
+          metric-b: checkin-motivation
+          lag-days: 0
+        - key: sleep-quality~checkin-motivation
+          category: physiology
+          label: Fiziológia
+          title: "Alvásminőség ↔ motiváció"
+          mechanism: "A jó alvás a lendületben is érződhet — több kedv a napi dolgokhoz."
+          question: "Több kedved van a dolgaidhoz, ha jól aludtál?"
+          expected-direction: positive
+          when-positive-hu: "a jobb alvás után {erősség} több kedved volt a dolgaidhoz"
+          when-negative-hu: "a jobb alvás után {erősség} kevesebb kedved volt a dolgaidhoz"
+          metric-a: sleep-quality
+          metric-b: checkin-motivation
+          lag-days: 0
+        - key: social-mentions~checkin-mood
+          category: response
+          label: Reakció
+          title: "Társas említések ↔ hangulat"
+          mechanism: "A társas nap jobb hangulattal járhat."
+          question: "Jobb a hangulatod a társas napokon?"
+          expected-direction: positive
+          when-positive-hu: "a társas, több említéses napokon {erősség} jobb volt a hangulatod"
+          when-negative-hu: "a társas, több említéses napokon {erősség} rosszabb volt a hangulatod"
+          metric-a: social-mentions
+          metric-b: checkin-mood
+          lag-days: 0
+        - key: habits-done~checkin-mood
+          category: response
+          label: Reakció
+          title: "Kész szokások ↔ hangulat"
+          mechanism: "A kipipált szokások jobb hangulattal járhatnak."
+          question: "Jobb a hangulatod, ha kipipálod a szokásaid?"
+          expected-direction: positive
+          when-positive-hu: "a több kész szokással záruló napokon {erősség} jobb volt a hangulatod"
+          when-negative-hu: "a több kész szokással záruló napokon {erősség} rosszabb volt a hangulatod"
+          metric-a: habits-done
+          metric-b: checkin-mood
+          lag-days: 0
+        - key: daily-xp~checkin-mood
+          category: response
+          label: Reakció
+          title: "Napi XP ↔ hangulat"
+          mechanism: "Az aktív, pontszerző nap jobb hangulattal járhat."
+          question: "Jobb a hangulatod az aktív, pontszerző napokon?"
+          expected-direction: positive
+          when-positive-hu: "a több XP-t hozó napokon {erősség} jobb volt a hangulatod"
+          when-negative-hu: "a több XP-t hozó napokon {erősség} rosszabb volt a hangulatod"
+          metric-a: daily-xp
+          metric-b: checkin-mood
+          lag-days: 0
+        - key: checkin-mood~checkin-day
+          category: response
+          label: Reakció
+          title: "Hangulat ↔ a nap mérlege"
+          mechanism: "A pillanatnyi hangulat előre jelezheti, milyennek látod este az egész napot."
+          question: "Jobbnak látod a napot, ha közben jó a hangulatod?"
+          expected-direction: positive
+          when-positive-hu: "a jobb hangulatú napokat {erősség} jobbnak értékelted este"
+          when-negative-hu: "a jobb hangulatú napokat {erősség} rosszabbnak értékelted este"
+          metric-a: checkin-mood
+          metric-b: checkin-day
+          lag-days: 0
+        - key: meal-score~checkin-digestion
+          category: physiology
+          label: Fiziológia
+          title: "Étkezés-pontszám ↔ emésztés"
+          mechanism: "A kevésbé feldolgozott, kiegyensúlyozott étkezés (a pontszám NOVA-része) könnyebb gyomorral járhat."
+          question: "Könnyebb a gyomrod, ha jól eszel?"
+          expected-direction: positive
+          when-positive-hu: "a jobb étkezés-pontszámú napokon {erősség} könnyebb volt a gyomrod"
+          when-negative-hu: "a jobb étkezés-pontszámú napokon {erősség} nehezebb volt a gyomrod"
+          metric-a: meal-score
+          metric-b: checkin-digestion
+          lag-days: 0
+        - key: social-mentions~checkin-connection
+          category: response
+          label: Reakció
+          title: "Társas említések ↔ kapcsolódás"
+          mechanism: "Ahol több ember szerepel a napodban, ott kapcsolódottabbnak érezheted magad."
+          question: "Kapcsolódottabbnak érzed magad a társas napokon?"
+          expected-direction: positive
+          when-positive-hu: "a társas, több említéses napokon {erősség} kapcsolódottabbnak érezted magad"
+          when-negative-hu: "a társas, több említéses napokon {erősség} kevésbé érezted magad kapcsolódva"
+          metric-a: social-mentions
+          metric-b: checkin-connection
+          lag-days: 0
     advisors:
       # V1.3 post-response advisor chain. S9.8 (mezo-rj214.7, mezo-rj214.5) dropped the LLM
       # verdict from the live path — the chain is now two deterministic checks only: the

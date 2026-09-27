@@ -86,6 +86,32 @@ class LifeGoalTriggerRulesTest {
             .extracting(s -> s.type() + ":" + s.key()).isEqualTo("metric:RITUAL_CLOSED");
     }
 
+    /** Check-in 2.0 (mezo-ck2, spec §3.9): „ha nincs kedvem / rossz a hangulatom, akkor…" tervek. */
+    @Test
+    void matches_shouldReadTheConditionAsTheThreshold_forMotivationAndMoodTriggers() {
+        for (String source : List.of("checkin_motivation_lte", "checkin_mood_lte")) {
+            assertThat(LifeGoalTriggerRules.matches(source, "3", BigDecimal.valueOf(3))).as(source).isTrue();
+            assertThat(LifeGoalTriggerRules.matches(source, "3", BigDecimal.valueOf(3.5))).as(source).isFalse();
+            // NINCS condition → a 4-es alapérték
+            assertThat(LifeGoalTriggerRules.matches(source, null, BigDecimal.valueOf(4))).as(source).isTrue();
+            assertThat(LifeGoalTriggerRules.matches(source, null, BigDecimal.valueOf(5))).as(source).isFalse();
+            // nincs válasz aznap (kihagyta / nem kérdeztük) → nem tüzel
+            assertThat(LifeGoalTriggerRules.matches(source, null, null)).as(source).isFalse();
+            // értelmezhetetlen condition → néma
+            assertThat(LifeGoalTriggerRules.matches(source, "kevés", BigDecimal.ONE)).as(source).isFalse();
+        }
+    }
+
+    @Test
+    void sourceFor_shouldMapMotivationAndMoodTriggersToTheirCheckinMetrics() {
+        assertThat(LifeGoalTriggerRules.sourceFor("checkin_motivation_lte")).get()
+            .extracting(s -> s.type() + ":" + s.key()).isEqualTo("metric:CHECKIN_MOTIVATION");
+        assertThat(LifeGoalTriggerRules.sourceFor("checkin_mood_lte")).get()
+            .extracting(s -> s.type() + ":" + s.key()).isEqualTo("metric:CHECKIN_MOOD");
+        assertThat(LifeGoalTriggerRules.CHECKIN_TRIGGERS)
+            .containsExactlyInAnyOrder("checkin_energy_lte", "checkin_motivation_lte", "checkin_mood_lte");
+    }
+
     private static IfThenPlanJson plan(String ha, String akkor, String source) {
         return new IfThenPlanJson(ha, akkor, new PlanTriggerJson(source, null, 0));
     }

@@ -41,7 +41,11 @@ public class SignalCatalog {
         new SignalCatalogEntry("hr_recovery", metric("RUN_HR_RECOVERY_S"), "Pulzus-visszaállás", "Edzés", AVG_BASE, "mp", "aerobic_capacity"),
         new SignalCatalogEntry("weight_goal", new PillarSourceJson("weight_goal", null, null, null, null, null), "Súlycél · ütem", "Edzés", List.of("linked"), "ítélet", "recovery"),
         new SignalCatalogEntry("checkin_energy", metric("CHECKIN_ENERGY"), "Check-in energia", "Elme", AVG_BASE, "1–10", "mindset"),
-        new SignalCatalogEntry("checkin_mental", metric("CHECKIN_MENTAL"), "Check-in hangulat", "Elme", AVG_BASE, "1–10", "mindfulness"),
+        // Check-in 2.0 (mezo-ck2): a „mental" tétel a fejtisztaság, a hangulat saját tétel lett.
+        new SignalCatalogEntry("checkin_mental", metric("CHECKIN_MENTAL"), "Check-in fejtisztaság", "Elme", AVG_BASE, "1–10", "mindfulness"),
+        new SignalCatalogEntry("checkin_mood", metric("CHECKIN_MOOD"), "Check-in hangulat", "Elme", AVG_BASE, "1–10", "mindfulness"),
+        new SignalCatalogEntry("checkin_motivation", metric("CHECKIN_MOTIVATION"), "Motiváció", "Elme", AVG_BASE, "1–10", "mindset"),
+        new SignalCatalogEntry("checkin_rested", metric("CHECKIN_RESTED"), "Kipihentség", "Test", AVG_BASE, "1–10", "recovery"),
         new SignalCatalogEntry("checkin_stress", metric("CHECKIN_STRESS"), "Stressz", "Elme", AVG_BASE, "1–10", "mindfulness"),
         new SignalCatalogEntry("habits_done", metric("HABITS_DONE"), "Kész szokások", "Elme", HABIT_AVG, "db", "mindset"),
         new SignalCatalogEntry("ritual_closed", metric("RITUAL_CLOSED"), "Napzárás", "Elme", List.of("habit"), "igen/nem", "mindset"),
@@ -52,6 +56,7 @@ public class SignalCatalog {
         new SignalCatalogEntry("activity_connection", activity("connection", "count"), "Kapcsolatok · alkalom", "Activity", HABIT_BASE_TARGET, "alkalom", "connection"),
         new SignalCatalogEntry("activity_cooking", activity("cooking", "count"), "Konyha · alkalom", "Activity", HABIT_BASE_TARGET, "alkalom", "cooking"),
         new SignalCatalogEntry("social_mentions", new PillarSourceJson("social_mentions", null, null, null, null, null), "Társas említések", "Emberek", HABIT_AVG_BASE, "ember", "connection"),
+        new SignalCatalogEntry("checkin_connection", metric("CHECKIN_CONNECTION"), "Kapcsolódás", "Emberek", AVG_BASE, "1–10", "connection"),
         new SignalCatalogEntry("ring_mozgas", ring("mozgas"), "Mozgás-gyűrű", "Életjel", AVG_BASE, "%", "recovery"),
         new SignalCatalogEntry("ring_pihenes", ring("pihenes"), "Pihenés-gyűrű", "Életjel", AVG_BASE, "%", "recovery"),
         new SignalCatalogEntry("ring_lelek", ring("lelek"), "Lélek-gyűrű", "Életjel", AVG_BASE, "%", "mindfulness"));

@@ -134,7 +134,7 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
         assertThat(response.getWindowTo()).isIn(dayBefore.minusDays(1), dayAfter.minusDays(1));
         assertThat(response.getWindowFrom()).isEqualTo(response.getWindowTo().minusDays(59));
         assertThat(response.getLastRunAt()).isNull();
-        assertThat(response.getPairs()).hasSize(29); // V3.4 katalógus (8 eredeti + 21 új)
+        assertThat(response.getPairs()).hasSize(44); // V3.4 katalógus (8 eredeti + 21 új) + 15 check-in 2.0 (mezo-ck2)
         // A teljes V3.4 katalógus a NEM korrelálható kulcsok nélkül (mezo-dqzm: a TEXT_SOCIAL_CONTACT
         // belső jellé lépett vissza, a „társas nap" sorra a SOCIAL_MENTIONS felel).
         long correlatable = Arrays.stream(MetricKey.values()).filter(MetricKey::correlatable).count();
@@ -283,7 +283,7 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
             assertThat(p.getMechanismHu()).isNotBlank();
             assertThat(p.getMetricADomain()).isNotBlank();
             assertThat(p.getMetricBDomain()).isNotBlank();
-            // mezo-fj1g: emberi nyelvű kártya-szövegek — mind a 29 páron kötelezőek
+            // mezo-fj1g: emberi nyelvű kártya-szövegek — mind a 44 páron kötelezőek
             assertThat(p.getQuestionHu()).isNotBlank();
             assertThat(p.getExpectedDirection()).isIn("positive", "negative");
             assertThat(p.getWhenPositiveHu()).contains("{erősség}");
@@ -310,7 +310,7 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
         assertThat(stress.getCoveredDays()).isEqualTo(6);
         assertThat(stress.getWindowDays()).isEqualTo(60);
         assertThat(stress.getLastDayWithData()).isEqualTo(today.minusDays(1));
-        assertThat(stress.getPairCount()).isEqualTo(2); // V3.4: + checkin-stress~late-meal-hour
+        assertThat(stress.getPairCount()).isEqualTo(3); // V3.4: + checkin-stress~late-meal-hour; mezo-ck2: + checkin-stress~checkin-craving
         assertThat(metric(response, "daily-kcal").getCoveredDays()).isZero();
         assertThat(metric(response, "daily-kcal").getLastDayWithData()).isNull();
     }

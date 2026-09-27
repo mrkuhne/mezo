@@ -46,8 +46,8 @@ public class LifeGoalTemplateProposer {
             case "relationships" -> List.of(base("social_mentions", "Társas élet", "connection"),
                 habit("activity_connection", "Tudatos találkozó", "connection", 1), avg("ring_mozgas", "Mozgás-gyűrű", "recovery", "60"));
             case "engagement" -> List.of(base("activity_learning", "Elmélyülés", "learning"), habit("ritual_closed", "Napzárás", "mindset", 5));
-            case "positive_emotion" -> List.of(avg("checkin_mental", "Hangulat", "mindfulness", "7"), avg("sleep_duration", "Alvás", "recovery", "7.0"));
-            default -> List.of(habit("ritual_closed", "Napzárás", "mindset", 5), avg("checkin_mental", "Hangulat", "mindfulness", "7"));
+            case "positive_emotion" -> List.of(avg("checkin_mood", "Hangulat", "mindfulness", "7"), avg("sleep_duration", "Alvás", "recovery", "7.0"));
+            default -> List.of(habit("ritual_closed", "Napzárás", "mindset", 5), avg("checkin_mood", "Hangulat", "mindfulness", "7"));
         };
         return new Proposal(dim, null, extrinsic ? "extrinsic" : "intrinsic",
             extrinsic ? "Ez külső keret — a belső (egészség, képesség) tartósabb motiváció." : "Belső keret — ez tartós motiváció.",
