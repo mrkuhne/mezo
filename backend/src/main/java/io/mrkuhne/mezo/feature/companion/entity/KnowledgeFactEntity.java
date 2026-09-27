@@ -42,6 +42,11 @@ public class KnowledgeFactEntity extends OwnedEntity {
      *  accept step. */
     public static final String SOURCE_QUESTION = "question";
 
+    /** S6 (mezo-d6ivw.6): why a fact is muted — mirrors ck_knowledge_fact_muted_reason. */
+    public static final String MUTED_USER = "user";
+    public static final String MUTED_REFUTED = "refuted";
+    public static final String MUTED_SUPERSEDED = "superseded";
+
     @Id
     @GeneratedValue
     @Column(columnDefinition = "uuid")
@@ -108,9 +113,33 @@ public class KnowledgeFactEntity extends OwnedEntity {
     @Column(nullable = false, length = 16)
     private String owner;
 
+    /** S6: null while the fact is active; set together with include_in_prompt=false. */
+    @Size(max = 16)
+    @Pattern(regexp = "user|refuted|superseded")
+    @Column(name = "muted_reason", length = 16)
+    private String mutedReason;
+
+    /** S6: when it was muted; null when active or when a pre-S6 mute was backfilled. */
+    @Column(name = "muted_at")
+    private Instant mutedAt;
+
     @AssertTrue(message = "valid_to must not precede valid_from")
     public boolean isValidityRangeValid() {
         return validFrom == null || validTo == null || !validTo.isBefore(validFrom);
+    }
+
+    /** S6: the ONE way to silence a fact — the prompt seat and the reason move together. */
+    public void mute(String reason, Instant at) {
+        this.includeInPrompt = false;
+        this.mutedReason = reason;
+        this.mutedAt = at;
+    }
+
+    /** S6: re-enable clears the reason, whatever it was (the user may revive a superseded fact). */
+    public void unmute() {
+        this.includeInPrompt = true;
+        this.mutedReason = null;
+        this.mutedAt = null;
     }
 
     @PrePersist
