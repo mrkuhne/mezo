@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
@@ -99,14 +99,17 @@ function HowLearned({ baseKcal }: { baseKcal: number }) {
   const [open, setOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const btnRef = useRef<HTMLButtonElement>(null)
+  const scrollTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const panelId = useId()
+  useEffect(() => () => clearTimeout(scrollTimer.current), [])
   const toggle = () => {
     const next = !open
     setOpen(next)
+    clearTimeout(scrollTimer.current)
     if (next) {
       setMounted(true)
       const reduce = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      setTimeout(() => btnRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }), reduce ? 0 : 120)
+      scrollTimer.current = setTimeout(() => btnRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }), reduce ? 0 : 120)
     }
   }
   return (

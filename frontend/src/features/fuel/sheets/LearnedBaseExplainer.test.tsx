@@ -107,7 +107,7 @@ describe('LearnedBaseExplainerBody — hidden when missing', () => {
   })
 
   it('no tissue rate (HOLDING) → no calculation section', () => {
-    body({ tissueRateKgPerWeek: null as unknown as number })
+    body({ tissueRateKgPerWeek: null })
     expect(screen.queryByText(/ami súlyként megmaradt/)).not.toBeInTheDocument()
     expect(screen.queryByText('A számítás, egyszerűen')).not.toBeInTheDocument()
   })
@@ -222,5 +222,14 @@ describe('EnergyBreakdownSheet — the „Hogy tanultam?” toggle', () => {
     render(<QueryWrapper><EnergyBreakdownSheet breakdown={learned} initial="base" onClose={vi.fn()} /></QueryWrapper>)
     await user.click(screen.getByRole('button', { name: /Hogy tanultam\?/ }))
     expect(await screen.findByText('Még nincs elég adat a magyarázathoz.')).toBeInTheDocument()
+  })
+
+  it('real mode: 500 → the honest error line', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    server.use(http.get(`${API_BASE}/api/goals/expenditure/explanation`, () => new HttpResponse(null, { status: 500 })))
+    const user = userEvent.setup()
+    render(<QueryWrapper><EnergyBreakdownSheet breakdown={learned} initial="base" onClose={vi.fn()} /></QueryWrapper>)
+    await user.click(screen.getByRole('button', { name: /Hogy tanultam\?/ }))
+    expect(await screen.findByText('Most nem sikerült betölteni a magyarázatot.')).toBeInTheDocument()
   })
 })

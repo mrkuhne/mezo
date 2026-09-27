@@ -22,8 +22,10 @@ const prefersReducedMotion = () =>
 const ease = (t: number) => 1 - Math.pow(1 - t, 3)
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n))
 
-export function LearnedBaseChart({ series, reducedMotion }: {
+export function LearnedBaseChart({ series, historyWeeks, reducedMotion }: {
   series: ExpenditureSeriesPoint[]
+  /** The explanation's own week count — the chart's aria-label reports this, not a guess from `series.length`. */
+  historyWeeks: number
   /** Test seam; defaults to `prefers-reduced-motion: reduce`. */
   reducedMotion?: boolean
 }) {
@@ -86,8 +88,7 @@ export function LearnedBaseChart({ series, reducedMotion }: {
 
   const barCount = series.filter(p => p.intakeKcal != null && p.status !== 'unlogged').length
   let barIdx = 0
-  const weeks = Math.round(n / 7)
-  const label = `Napi evés oszlopokban, súly pontokban és trendvonalban, ${weeks} hét (${huShortDate(series[0].date)} – ${huShortDate(series[n - 1].date)})`
+  const label = `Napi evés oszlopokban, súly pontokban és trendvonalban, ${historyWeeks} hét (${huShortDate(series[0].date)} – ${huShortDate(series[n - 1].date)})`
 
   return (
     <svg className="flp-how-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label} data-progress={t}>

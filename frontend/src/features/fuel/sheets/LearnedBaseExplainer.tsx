@@ -75,8 +75,7 @@ export function LearnedBaseExplainerBody({ explanation: x, reducedMotion }: {
   const [reduce] = useState(() => reducedMotion ?? prefersReducedMotion())
 
   // `tissueRateKgPerWeek` is null on HOLDING rows / without a filter trace → no section 3 at all.
-  const tissueRate: number | null = x.tissueRateKgPerWeek ?? null
-  const hasCalc = x.simpleBaseKcal != null && x.avgIntakeKcal != null && tissueRate != null
+  const hasCalc = x.avgIntakeKcal != null && x.tissueRateKgPerWeek != null && x.avgMovementKcal != null && x.simpleBaseKcal != null
   const hasChart = x.series.length > 0
   const suspicious = x.excludedDays.filter(d => d.reason === 'suspicious')
   const marked = x.excludedDays.filter(d => d.reason === 'marked')
@@ -88,7 +87,6 @@ export function LearnedBaseExplainerBody({ explanation: x, reducedMotion }: {
   const num = { data: ++n, chart: hasChart ? ++n : 0, calc: hasCalc ? ++n : 0, filtered: hasFiltered ? ++n : 0, conf: ++n, steps: ++n }
   const simple = x.simpleBaseKcal
   const showWhy = simple != null && Math.abs(x.appliedBaseKcal - simple) >= WHY_NOTE_MIN_GAP_KCAL
-  const tissue = x.tissueKcalPerDay
 
   return (
     <div className="flp-how-in">
@@ -103,7 +101,7 @@ export function LearnedBaseExplainerBody({ explanation: x, reducedMotion }: {
 
       {hasChart && (
         <Cell num={num.chart} title="A súlyod és az evésed együtt">
-          <LearnedBaseChart series={x.series} reducedMotion={reduce} />
+          <LearnedBaseChart series={x.series} historyWeeks={x.historyWeeks} reducedMotion={reduce} />
           <div className="flp-how-legend">
             <span><i className="ok" />számít</span>
             <span><i className="bad" />hiányosnak tűnt</span>
@@ -118,17 +116,15 @@ export function LearnedBaseExplainerBody({ explanation: x, reducedMotion }: {
           <div className="flp-how-calc">
             <div className="row"><Icon3D name="t-bowl" size={24} />
               <span className="l">Átlagosan ennyit ettél<small>a {x.usableDays} teljes napon</small></span><span className="r">{nf(x.avgIntakeKcal!)}</span></div>
-            {tissue != null && (
-              <div className="row"><Icon3D name="t-weight" size={24} />
-                {tissue >= 0
-                  ? <span className="l">− ami súlyként megmaradt<small>+{dec(Math.abs(tissueRate!), 2)} kg/hét valódi gyarapodás (víz nélkül)</small></span>
-                  : <span className="l">+ amit a tartalékaidból pótoltál<small>−{dec(Math.abs(tissueRate!), 2)} kg/hét valódi fogyás (víz nélkül)</small></span>}
-                <span className="r">{signed(-tissue)}</span></div>
-            )}
-            {x.avgMovementKcal != null && (
-              <div className="row"><Icon3D name="t-steps" size={24} />
-                <span className="l">− amit mozgással égettél<small>edzések + terven kívüli mozgás, napi átlag</small></span><span className="r">{signed(-x.avgMovementKcal)}</span></div>
-            )}
+            <div className="row"><Icon3D name="t-weight" size={24} />
+              {x.tissueRateKgPerWeek! > 0
+                ? <span className="l">− ami súlyként megmaradt<small>+{dec(x.tissueRateKgPerWeek!, 2)} kg/hét valódi gyarapodás (víz nélkül)</small></span>
+                : x.tissueRateKgPerWeek! < 0
+                  ? <span className="l">+ amit a tartalékaidból pótoltál<small>−{dec(Math.abs(x.tissueRateKgPerWeek!), 2)} kg/hét valódi fogyás (víz nélkül)</small></span>
+                  : <span className="l">± nem változott a súlyod<small>0 kg/hét (víz nélkül)</small></span>}
+              <span className="r">{signed(-x.tissueKcalPerDay!)}</span></div>
+            <div className="row"><Icon3D name="t-steps" size={24} />
+              <span className="l">− amit mozgással égettél<small>edzések + terven kívüli mozgás, napi átlag</small></span><span className="r">{signed(-x.avgMovementKcal!)}</span></div>
             <div className="row tot"><span className="l">= ennyit égetsz mozgás nélkül</span><span className="r">≈ {nf(round10(simple!))}</span></div>
           </div>
           {showWhy && (
