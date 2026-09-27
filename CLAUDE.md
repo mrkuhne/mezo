@@ -121,6 +121,116 @@ The programme `mezo-me75u` is **complete (2026-09-27, U1–U11)**: every surface
 follows the üveg bible + the kit; the canon order is in [`docs/design_2.0/README.md`](docs/design_2.0/README.md).
 Any new screen still gets a clickable prototype and the owner's OK before code.
 
+## Frontend change workflow (MANDATORY for every change the owner will see)
+
+The owner's working rhythm (set 2026-09-23 in `/uvegesites` and `/csapatfal`, made the default
+for all frontend work 2026-09-27, `mezo-u75pt`). Follow it without being asked:
+
+**The three owner gates — and nothing after them.**
+
+1. **Brainstorm → spec → owner OK.** `superpowers:brainstorming` with `brainstorm-recon`.
+   Questions one at a time, in Hungarian business language (§Communication). The spec lands in
+   `docs/superpowers/specs/`.
+2. **Clickable prototype → owner OK.** The approved look is the build target (see *Living
+   prototypes* below). Iterate here as often as the owner wants — **this is the only place for
+   visual iteration.**
+3. **Plan → owner OK.** `superpowers:writing-plans`, in `docs/superpowers/plans/`, with the
+   *Kész, ha…* checklist (below) included.
+
+After the third OK the owner does **not** want to iterate again. Build to match the approved
+prototype exactly, then run straight through: **build → gates → merge → push → deploy → verify
+live → report.** No "does this look right?" round after the build. Stop and ask only if a
+blocker would change what the owner sees; then use the §Communication decision format.
+
+Scaling: a small change may fold spec + plan into one short doc with one OK (the prototype OK
+still stands on its own). A pure bug fix with no visible change skips the prototype. When in
+doubt, prototype.
+
+**Prototype rules** (the full recipe is `/uvegesites` Procedure §1; it applies verbatim):
+- Realistic: built on the app's real chrome (header, bottom menu, domain switcher, copied from
+  `fuel-uveg.html`), real-looking Hungarian content of the real record types (read the page
+  components; never invent features), clickable with a hash router, sheets and back buttons.
+- **Custom icons, always.** Every icon on the screen maps to the Titanium 3D sprite; where
+  nothing fits, draw a new one in the üveg bible §4 recipe — never an emoji, never a near-miss
+  glyph. New icons go on an **"Új ikonok"** sheet in the prototype for the owner's OK; after the
+  OK they go into the shared sprite.
+- Verify it yourself before handing it over: serve over HTTP
+  (`python3 -m http.server <port> --bind 127.0.0.1`, background; `file://` renders
+  script-less), click every route in the in-app browser, console clean, `?v=N` cache-bust,
+  320px width, the reduced-motion branch.
+- Hand-off in Hungarian: the link, what to click, what changed in everyday words, 1–2 genuine
+  questions. Then **stop and wait**.
+
+### Living prototypes — one per domain, never rebuilt from zero
+
+Each bottom-menu domain has **one living prototype** that always shows that domain as it is
+now (all four tabs, their sheets), in the approved Üveg look:
+
+| Domain | File | Seed it from (first use only) |
+|---|---|---|
+| Nap | `docs/design_2.0/prototypes/elo/nap.html` | `uveg-nap.html`, `uveg-napod.html` |
+| Edzés | `docs/design_2.0/prototypes/elo/edzes.html` | `uveg-edzes.html`, `uveg-edzes2.html` |
+| Fuel | `docs/design_2.0/prototypes/elo/fuel.html` | `fuel-uveg.html`, `uveg-fuel-tobbi.html` |
+| Mezo | `docs/design_2.0/prototypes/elo/mezo.html` | `uveg-mezo-teljes.html` |
+| Én | `docs/design_2.0/prototypes/elo/en.html` | `uveg-en.html`, `uveg-en2.html` |
+
+- A frontend change **edits the living prototype of its domain** (a new hash route, or the
+  changed page in place) instead of starting a new file. A change spanning domains edits each.
+  The first time a domain is touched, seed its file from the listed sources, matched against
+  the live screens, and commit that seed before the change itself.
+- **Publish it as an Artifact** (`Artifact` tool, `artifact-design` loaded first) and keep
+  **one fixed URL per domain**, recorded in
+  [`docs/design_2.0/prototypes/elo/README.md`](docs/design_2.0/prototypes/elo/README.md).
+  Later sessions republish to that URL (`read` it first, then publish with `url`), so the owner
+  always opens the same link. The in-app browser cannot open artifact URLs — verify over the
+  local HTTP server, publish for the owner.
+- After the change ships, the living prototype must match production. If the build had to
+  deviate, update the prototype in the same merge.
+
+### *Kész, ha…* — the done-checklist (agentic loop)
+
+Before writing code, write the checklist the work must satisfy into the bd issue
+(`bd update <id> --acceptance "..."`) and into the plan. Derive it from the spec and the
+approved prototype; every item is checkable with evidence. It always covers:
+
+- **What the owner sees:** each route/screen/sheet of the prototype, matching it; every new
+  icon from the sprite; empty / loading / error states; 320px; reduced motion.
+- **Parity:** every control, state and data field of each touched screen still present
+  (reverse parity list), no behaviour change outside the spec.
+- **Gates:** FE tests in both modes (`CI=true`, mock + `VITE_USE_MOCK=false`), affected
+  `frontend/tests/layout` specs, `pnpm build`; backend focused tests if backend changed;
+  `node scripts/gen-codemap.mjs`; `node scripts/lint-docs.mjs` 0 errors / 0 stale; feature
+  doc updated.
+- **Shipped:** merged to main, `deploy` workflow green for that commit, the new version live on
+  the production URL (checked in the browser), and — when data is involved — the production DB
+  shows the expected rows (see §Production database access).
+- **Living prototype** in sync and republished.
+
+Then loop: build → check every item → fix what fails → re-check. Tick an item only with
+evidence (command output, screenshot, query result — `superpowers:verification-before-completion`).
+**Never report done with an unticked item**; if one cannot be met, say so plainly in the report.
+The final Hungarian report to the owner walks the checklist in everyday words.
+
+## Production database access (standing permission)
+
+You can query the live database yourself at any time — no need for the owner to remind you or
+to fetch data for you. Use it to understand real data before designing, to check a bug against
+reality, and to verify a deploy. Details: [`docs/infrastructure/deployment-k3s-argocd.md`](docs/infrastructure/deployment-k3s-argocd.md)
+§Current deployment and [`docs/infrastructure/runbook.md`](docs/infrastructure/runbook.md) §Inspect the database.
+
+```bash
+export KUBECONFIG=~/.kube/mezo-k3s.yaml   # context `mezo`, over Tailscale
+kubectl exec -n mezo postgres-0 -- psql -U mezo -d mezo -c "SELECT ..."
+```
+
+- No `-it` (non-interactive shell). pgAdmin is at `https://pgadmin.tail8ce56d.ts.net`; the app
+  itself at `https://46.225.112.172.sslip.io/`.
+- **Reads are free; writes are not.** `SELECT` needs no permission. Any `INSERT`/`UPDATE`/
+  `DELETE`/DDL against production needs the owner's explicit OK for that specific change
+  (explain it per §Communication); schema changes go through Liquibase, never by hand.
+- It is the owner's real personal data: pull only what the task needs, and never copy it into
+  commits, docs, prototypes or artifacts — prototypes use real-*looking* content.
+
 ## Claude-specific notes
 
 - Superpowers process skills (brainstorming → writing-plans → executing-plans, TDD,
