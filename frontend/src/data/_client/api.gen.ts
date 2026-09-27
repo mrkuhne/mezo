@@ -2189,6 +2189,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/observation/knowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** S6 (mezo-d6ivw.6) — a Tudástár Észrevételek szakasza: a megerősített (és a cáfolt, de tényt hagyó) észrevételek, a belőlük tanult tény állapotával, a drift-párral és a sor saját bizonyítékaival (legfeljebb 5). */
+        get: operations["listKnowledgeObservations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/observation/{patternId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** S6 — Elfelejtem egy észrevételre: a belőle tanult tény törlődik (vétóval), az észrevétel soha többé nem jelenik meg és nem tanulódik újra. */
+        delete: operations["forgetObservation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/fact/{factId}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** S6 — Honnan tudom? egy tényre: a forrás strukturált bizonyítékai (chat → a beszélgetés-üzenet; észrevétel → a sor bizonyítékai), legfeljebb 5 elem. */
+        get: operations["getFactEvidence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/conversation/{conversationId}/message/stream": {
         parameters: {
             query?: never;
@@ -8131,6 +8182,43 @@ export interface components {
             repliedChoice?: string | null;
             /** @description Melyik felület ikonját mutassa a kártya — a teszt-terv seriesA előtagjából származtatva; terv nélkül mezo. */
             sourceIcon: string;
+        };
+        /** @description S6 (mezo-d6ivw.6) — egy észrevétel a Tudástárban. A némítás a belőle tanult TÉNYEN él (factMutedReason); a drift-pár a replacesPatternId / replacedByPatternId mezőkön. */
+        KnowledgeObservationResponse: {
+            /** Format: uuid */
+            patternId: string;
+            title: string;
+            /**
+             * Format: date-time
+             * @description A legutóbbi megerősítés ideje.
+             */
+            confirmedAt: string;
+            /**
+             * Format: date-time
+             * @description A negyedéves újraellenőrzés legutóbbi ítélete (holds/drift); null = még nem.
+             */
+            recheckedAt?: string | null;
+            /** @enum {string} */
+            status: "confirmed" | "refuted";
+            /** Format: uuid */
+            factId?: string | null;
+            /** @enum {string|null} */
+            factMutedReason?: "user" | "refuted" | "superseded" | null;
+            /** Format: date-time */
+            factMutedAt?: string | null;
+            /**
+             * Format: uuid
+             * @description Drift-sor: az eredeti észrevétel, amit felülírt.
+             */
+            replacesPatternId?: string | null;
+            /**
+             * Format: uuid
+             * @description Eredeti sor: a megerősített drift-sor, ami felülírta.
+             */
+            replacedByPatternId?: string | null;
+            /** @description A normalizált observation-topic-key (a FE téma-csoportosításához). */
+            topicKey?: string | null;
+            evidence: components["schemas"]["ObservationEvidenceItem"][];
         };
         /** @description A chip-válasz (Reflexió S4, mezo-eq85.4) — a `text` a „mesélj” ágon a saját szavaid. */
         PatternReplyRequest: {
@@ -18314,6 +18402,113 @@ export interface operations {
                 };
             };
             /** @description Pattern not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listKnowledgeObservations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Observations, newest confirmation first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeObservationResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    forgetObservation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patternId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Forgotten */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found, foreign, or not a reflection-owned observation */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getFactEvidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                factId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Evidence items (may be empty for manual facts) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObservationEvidenceItem"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Fact not found (or owned by someone else) */
             404: {
                 headers: {
                     [name: string]: unknown;

@@ -677,6 +677,81 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/companion/observation/knowledge:
+    get:
+      tags: [CompanionObservation]
+      operationId: listKnowledgeObservations
+      summary: >-
+        S6 (mezo-d6ivw.6) — a Tudástár Észrevételek szakasza: a megerősített (és a cáfolt, de
+        tényt hagyó) észrevételek, a belőlük tanult tény állapotával, a drift-párral és a sor
+        saját bizonyítékaival (legfeljebb 5).
+      responses:
+        '200':
+          description: Observations, newest confirmation first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/KnowledgeObservationResponse' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/companion/observation/{patternId}:
+    delete:
+      tags: [CompanionObservation]
+      operationId: forgetObservation
+      summary: >-
+        S6 — Elfelejtem egy észrevételre: a belőle tanult tény törlődik (vétóval), az
+        észrevétel soha többé nem jelenik meg és nem tanulódik újra.
+      parameters:
+        - name: patternId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Forgotten }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Not found, foreign, or not a reflection-owned observation
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/companion/fact/{factId}/evidence:
+    get:
+      tags: [CompanionObservation]
+      operationId: getFactEvidence
+      summary: >-
+        S6 — Honnan tudom? egy tényre: a forrás strukturált bizonyítékai (chat → a
+        beszélgetés-üzenet; észrevétel → a sor bizonyítékai), legfeljebb 5 elem.
+      parameters:
+        - name: factId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Evidence items (may be empty for manual facts)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ObservationEvidenceItem' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Fact not found (or owned by someone else)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/companion/conversation/{conversationId}/message/stream:
     post:
       tags: [CompanionStream]
@@ -1358,6 +1433,27 @@ components:
         belief: { type: number, format: double, nullable: true, description: 'Determinisztikus bizonyosság 0..1 — sosem LLM-becslés.' }
         repliedChoice: { type: string, nullable: true, pattern: '^(watch|reject|talk)$', description: 'A legfrissebb chip-válaszod — null, ha még nem válaszoltál. ESEMÉNY-kártyán (fresh/return) a saját eseménye idejétől kezdve adott válasz, mert a chipek ARRA az észrevételre felelnek; SOR-kártyán (watching/confirmed) a sor legfrissebb válasza, időponthoz kötés nélkül, mert annak nincs saját pillanata.' }
         sourceIcon: { type: string, pattern: '^(naplo|alvas|edzes|vacsora|hold|mezo)$', description: 'Melyik felület ikonját mutassa a kártya — a teszt-terv seriesA előtagjából származtatva; terv nélkül mezo.' }
+    KnowledgeObservationResponse:
+      type: object
+      description: >-
+        S6 (mezo-d6ivw.6) — egy észrevétel a Tudástárban. A némítás a belőle tanult TÉNYEN él
+        (factMutedReason); a drift-pár a replacesPatternId / replacedByPatternId mezőkön.
+      required: [patternId, title, confirmedAt, status, evidence]
+      properties:
+        patternId: { type: string, format: uuid }
+        title: { type: string }
+        confirmedAt: { type: string, format: date-time, description: 'A legutóbbi megerősítés ideje.' }
+        recheckedAt: { type: string, format: date-time, nullable: true, description: 'A negyedéves újraellenőrzés legutóbbi ítélete (holds/drift); null = még nem.' }
+        status: { type: string, enum: [confirmed, refuted] }
+        factId: { type: string, format: uuid, nullable: true }
+        factMutedReason: { type: string, nullable: true, enum: [user, refuted, superseded] }
+        factMutedAt: { type: string, format: date-time, nullable: true }
+        replacesPatternId: { type: string, format: uuid, nullable: true, description: 'Drift-sor: az eredeti észrevétel, amit felülírt.' }
+        replacedByPatternId: { type: string, format: uuid, nullable: true, description: 'Eredeti sor: a megerősített drift-sor, ami felülírta.' }
+        topicKey: { type: string, nullable: true, description: 'A normalizált observation-topic-key (a FE téma-csoportosításához).' }
+        evidence:
+          type: array
+          items: { $ref: '#/components/schemas/ObservationEvidenceItem' }
     PatternReplyRequest:
       type: object
       description: A chip-válasz (Reflexió S4, mezo-eq85.4) — a `text` a „mesélj” ágon a saját szavaid.

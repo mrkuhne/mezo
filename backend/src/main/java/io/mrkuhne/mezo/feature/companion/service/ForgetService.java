@@ -50,6 +50,24 @@ public class ForgetService {
         source.ifPresent(pattern -> forgetPatternRow(userId, pattern));
     }
 
+    /** "Elfelejtem" on an observation row: its learned fact (if any) goes with its text vetoed,
+     *  and the row itself becomes {@code forgotten} + pattern-vetoed, so it is never shown or
+     *  promoted again. Only reflection-owned rows are the user's to forget — statistical rows
+     *  are recomputed nightly and have no Tudástár presence. */
+    @Transactional
+    public void forgetObservation(UUID userId, UUID patternId) {
+        PatternEntity pattern = patternRepository.findByIdAndCreatedByAndDeletedFalse(patternId, userId)
+                .filter(PatternEntity::isReflectionOwned)
+                .filter(p -> !p.isForgotten())
+                .orElseThrow(() -> new SystemRuntimeErrorException(
+                        SystemMessage.error("COMPANION_PATTERN_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
+        if (pattern.getPromotedFactId() != null) {
+            factRepository.findByIdAndCreatedByAndDeletedFalse(pattern.getPromotedFactId(), userId)
+                    .ifPresent(fact -> deleteAndVeto(userId, fact));
+        }
+        forgetPatternRow(userId, pattern);
+    }
+
     private Optional<PatternEntity> sourcePattern(UUID userId, KnowledgeFactEntity fact) {
         UUID viaEnvelope = fact.getProvenance() == null ? null : fact.getProvenance().patternId();
         if (viaEnvelope != null) {

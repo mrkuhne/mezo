@@ -77,4 +77,40 @@ class ForgetServiceIT extends AbstractIntegrationTest {
                 .isInstanceOf(SystemRuntimeErrorException.class);
         assertThat(facts.findById(fact.getId())).isPresent();
     }
+
+    @Test
+    void forgetObservation_shouldForgetTheRowAndItsFact_andNeverRepromote() {
+        UUID owner = userPopulator.createUser().getId();
+        PatternEntity row = patternPopulator.reflectionNoPlan(owner, PatternEntity.STATUS_CONFIRMED);
+        KnowledgeFactEntity fact = factPopulator.fact(owner, row.getTitle(), "health", 0, true,
+                KnowledgeFactEntity.SOURCE_PATTERN);
+        row.setPromotedFactId(fact.getId());
+        patternPopulator.save(row);
+
+        forgetService.forgetObservation(owner, row.getId());
+
+        PatternEntity reread = patterns.findById(row.getId()).orElseThrow();
+        assertThat(reread.isForgotten()).isTrue();
+        assertThat(facts.findByIdAndCreatedByAndDeletedFalse(fact.getId(), owner)).isEmpty();
+        assertThat(vetoes.existsByCreatedByAndDomainAndVetoKeyAndDeletedFalse(
+                owner, MemoryForgetVetoEntity.DOMAIN_PATTERN, row.getId().toString())).isTrue();
+    }
+
+    @Test
+    void forgetObservation_shouldReturn404_forAStatisticalRow() {
+        UUID owner = userPopulator.createUser().getId();
+        PatternEntity stat = patternPopulator.statistical(owner);
+        assertThatThrownBy(() -> forgetService.forgetObservation(owner, stat.getId()))
+                .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    @Test
+    void forgetObservation_shouldReturn404_forAForeignRow() {
+        UUID owner = userPopulator.createUser().getId();
+        UUID stranger = userPopulator.createUser().getId();
+        PatternEntity row = patternPopulator.reflectionNoPlan(owner, PatternEntity.STATUS_CONFIRMED);
+        assertThatThrownBy(() -> forgetService.forgetObservation(stranger, row.getId()))
+                .isInstanceOf(SystemRuntimeErrorException.class);
+        assertThat(patterns.findById(row.getId()).orElseThrow().isForgotten()).isFalse();
+    }
 }
