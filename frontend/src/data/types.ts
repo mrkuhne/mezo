@@ -53,6 +53,8 @@ export interface SlotItem { type: 'supplement'; refId: string; label: string; do
 export type WindowReason =
   | 'after-wake' | 'protein-start' | 'protein-spacing' | 'bridge'
   | 'pre-training-main' | 'pre-training-snack' | 'post-training' | 'before-bed' | 'template-fixed'
+  /** mezo-9sltu: egy késői logolás miatt később tolt ablak — mindig az okok ELEJÉN. */
+  | 'shifted'
 
 export interface FuelSlot {
   time: string
@@ -67,6 +69,8 @@ export interface FuelSlot {
   plannedTime?: string
   /** Étkezési óra (mezo-6g52f): az ajánlott ablak "HH:mm"-ben, az okai, és az ablak kcal-kerete. */
   windowFrom?: string; windowTo?: string; windowReasons?: WindowReason[]; budgetKcal?: number
+  /** mezo-9sltu: csak eltolt ablakon — az előző étkezés címkéje és ideje (HH:mm), ami miatt később került. */
+  shiftedAfter?: { label: string; at: string }
   mezoNote?: string
   windowTip?: string
   kcal?: number; p?: number; c?: number; f?: number

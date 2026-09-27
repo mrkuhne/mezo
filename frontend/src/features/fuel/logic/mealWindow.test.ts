@@ -46,6 +46,14 @@ describe('widenWindows', () => {
     expect(w.to - w.from).toBeGreaterThanOrEqual(30)
   })
 
+  it('a capped crowd at kitchen close still yields ≥30 min for every window (mezo-9sltu)', () => {
+    const out = widenWindows([
+      { time: h(21, 30), kind: 'snack', rule: 'snack' },
+      { time: h(21, 30), kind: 'meal', rule: 'main' },
+    ], ctx)
+    for (const w of out) expect(w.to - w.from).toBeGreaterThanOrEqual(30)
+  })
+
   it('maps template anchors to reasons', () => {
     const out = widenWindows([
       { time: h(8), kind: 'meal', rule: 'template-wake' },
@@ -94,11 +102,19 @@ describe('windowReasonCopy / articles', () => {
   })
   it('never uses imperative must-copy', () => {
     const codes = ['after-wake', 'protein-start', 'protein-spacing', 'bridge', 'pre-training-main',
-      'pre-training-snack', 'post-training', 'before-bed', 'template-fixed'] as const
+      'pre-training-snack', 'post-training', 'before-bed', 'template-fixed', 'shifted'] as const
     for (const code of codes) {
       const { title, body } = windowReasonCopy(code, c)
       expect(`${title} ${body}`).not.toMatch(/\bkell\b|különben/)
     }
+  })
+  it('names the meal that caused a shift (mezo-9sltu)', () => {
+    const r = windowReasonCopy('shifted', { ...c, shiftedAfter: { label: 'Ebéd', at: '14:50' } })
+    expect(r.icon).toBe('t-clock')
+    expect(r.title).toBe('Eltolva: az ebéd később volt (14:50)')
+    expect(r.body).toBe('Így nagyjából másfél óra jut a két étkezés közé — a nap többi ablaka ehhez igazodik.')
+    expect(windowReasonCopy('shifted', { ...c, shiftedAfter: { label: 'Vacsora', at: '19:10' } }).title).toBe('Eltolva: a vacsora később volt (19:10)')
+    expect(windowReasonCopy('shifted', c).title).toBe('Eltolva az előző ablak után')
   })
   it('picks the Hungarian article', () => {
     expect(az('Ebéd')).toBe('az Ebéd')
