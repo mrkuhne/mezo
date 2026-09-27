@@ -1156,7 +1156,7 @@ S2) · *felülírta egy újabb észrevétel, <dátum>* (drift, decision 4).
   Elfelejtem per subject.
 - One shared row-action building block for all four sections; every Hungarian string in a
   pure, unit-tested copy module (the `factCopy.ts` / `roladCopy.ts` idiom).
-- **Prototype first:** a new `docs/design_2.0/prototypes/tudastar-hub-uveg.html` per
+- **Prototype first:** a new `docs/design_2.0/prototypes/uveg-tudastar-hub.html` per
   /uvegesites §1 (HTTP serve, `?v=N`, chrome from `fuel-uveg.html` untouched, §3.4
   ranking — rows are NOT each a glass card; one glass card per section tile / per effect
   subject), reusing the U9 Tudástár block and `ember-hatas-uveg.html`'s effect block.
