@@ -189,7 +189,9 @@ test('az üvegdoboz ajtaja a részletes, Énnel közös magyarázatot nyitja', a
   renderView()
   await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
   await userEvent.click(await screen.findByRole('button', { name: /Részletesen, honnan jön a keret/ }))
-  expect(await screen.findByText(/Alapanyagcsere/i)).toBeInTheDocument()
+  // The demo day's learned base shows "Tanult alap" (mezo-zz91i) — the formula-comparison
+  // "Alapanyagcsere" tile only appears on the (retired for learned users) formula path.
+  expect((await screen.findAllByText(/Tanult alap/i)).length).toBeGreaterThan(0)
   await userEvent.click(screen.getByRole('button', { name: 'Bezárás' }))
   await waitFor(() => expect(screen.queryByText(/Honnan jön a/)).toBeNull())
 })

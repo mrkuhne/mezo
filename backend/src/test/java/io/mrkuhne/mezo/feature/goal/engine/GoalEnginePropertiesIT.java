@@ -78,4 +78,14 @@ class GoalEnginePropertiesIT extends AbstractIntegrationTest {
         assertThat(props.overview().rateTolerancePercent()).isEqualByComparingTo("20");
         assertThat(props.overview().rateToleranceFloorKgPerWeek()).isEqualByComparingTo("0.10");
     }
+
+    @Test
+    void testExpenditureTunables_shouldBindFromYml() {
+        assertThat(props.expenditure().enabled()).isTrue();
+        assertThat(props.expenditure().windowDays()).isEqualTo(120);
+        assertThat(props.expenditure().maxStepKcal()).isEqualTo(150);
+        assertThat(props.expenditure().waterPhi()).isEqualTo(0.90);
+        assertThat(props.expenditure().sigmaInitMassKg()).isEqualTo(0.5);
+        assertThat(props.expenditure().sigmaInitWaterKg()).isEqualTo(0.3);
+    }
 }

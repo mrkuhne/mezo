@@ -59,6 +59,12 @@ public interface GoalMapper {
             .tdee(j.tdee())
             .formula(j.formula() == null ? null : TdeeBootstrap.FormulaEnum.fromValue(j.formula()))
             .computedAt(j.computedAt())
+            // mezo-zz91i: a pre-learning snapshot (baseSource null) reads as formula
+            .baseSource(TdeeBootstrap.BaseSourceEnum.fromValue(j.learned() ? "learned" : "formula"))
+            .formulaNeatBaselineKcal(j.formulaNeatBaselineKcal())
+            .learnedSdKcal(j.learnedSdKcal())
+            .learnedConfidence(j.learnedConfidence() == null ? null
+                : TdeeBootstrap.LearnedConfidenceEnum.fromValue(j.learnedConfidence()))
             .build();
     }
 

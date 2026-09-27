@@ -26,7 +26,16 @@ export interface EnergyPart {
   kcal: number
 }
 export interface EnergyBreakdown {
-  base: { kcal: number; bmr: number; neat: number; neatLabel: string; formula: 'KATCH' | 'MSJ' }
+  base: {
+    kcal: number; bmr: number; neat: number; neatLabel: string; formula: 'KATCH' | 'MSJ'
+    /** Learned-base provenance (mezo-zz91i). Absent/`'formula'` → the BMR × NEAT tiles (unchanged). */
+    source?: 'formula' | 'learned'
+    /** BMR × NEAT, shown next to a learned base. */
+    formulaKcal?: number
+    /** Learned base uncertainty (±1 SD kcal); null for formula. */
+    sdKcal?: number | null
+    confidence?: 'low' | 'medium' | 'high' | null
+  }
   /** `parts` (Fuel, the served day): the summands that close on `kcal`; `blocks` are then only
    *  informational per-session previews, shown without operators. No `parts` (the Én hub's TDEE):
    *  one weekly-average tile. */
@@ -42,9 +51,13 @@ const PART_TILE: Record<EnergyPart['key'], { icon: Icon3DName; sub: string }> = 
 }
 const SEG_COLOR = { sage: 'var(--dv-sage)', amber: 'var(--dv-amber)', coral: 'var(--dv-coral)' } as const
 const FORMULA_LABEL = { KATCH: 'Katch-McArdle', MSJ: 'Mifflin-St Jeor' } as const
+// Learned-base confidence words (mezo-zz91i), verbatim per the spec.
+const CONFIDENCE_WORD = { low: 'Még tanulok', medium: 'Közepesen biztos', high: 'Biztos' } as const
 
 // The app renders plain rounded kcal (no thousands grouping — see the screenshots / BiometricCard).
 const nf = (n: number) => String(Math.round(n))
+// Confidence line SD, rounded to the nearest 10 kcal (mezo-zz91i) — the uncertainty is not that precise.
+const round10 = (n: number) => Math.round(n / 10) * 10
 const signed = (n: number) => (n < 0 ? `−${nf(Math.abs(n))}` : `+${nf(n)}`)
 // HU decimal comma for the small multiplier / rate values (2 fraction digits).
 const dec = (n: number) => n.toLocaleString('hu-HU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -128,16 +141,42 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
               <span className="flp-estit">Alaphő · NEAT</span>
               <span className="flp-esamt">{nf(base.kcal)}</span>
             </div>
-            <div className="flp-etiles">
-              <Tile icon="t-flame" name="Alapanyagcsere" sub={FORMULA_LABEL[base.formula]} value={nf(base.bmr)} unit="kcal" />
-              <div className="op">×</div>
-              <Tile icon="t-hike" name="NEAT-szorzó" sub={base.neatLabel || 'életmód'} value={dec(base.neat)} unit="×" />
-              <div className="op">=</div>
-              <Tile result sub="Alaphő" value={nf(base.kcal)} unit="kcal" />
-            </div>
-            <p className="flp-ewhy">
-              Az <b>alapanyagcseréd</b> ({FORMULA_LABEL[base.formula]}) szorozva az <b>életmód-szorzóddal</b>. Ennyit égetsz el egy átlagos napon <b>edzés nélkül</b>.
-            </p>
+            {base.source === 'learned' ? (
+              <>
+                <div className="flp-etiles">
+                  {base.formulaKcal != null && (
+                    <>
+                      <Tile icon="t-hike" name="Képlet szerint" sub="BMR × NEAT" value={nf(base.formulaKcal)} unit="kcal" />
+                      <div className="op">→</div>
+                    </>
+                  )}
+                  <Tile result sub="Tanult alap" value={nf(base.kcal)} unit="kcal" />
+                </div>
+                <span className="flp-einfo">
+                  {['Tanult alap', base.confidence && CONFIDENCE_WORD[base.confidence], base.sdKcal != null && `±${nf(round10(base.sdKcal))} kcal`]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+                <p className="flp-ewhy">
+                  Ennyit égetsz <b>edzés nélkül</b> — az app a <b>súlytrendedből és a felírt evésedből</b> tanulta meg.
+                  {base.formulaKcal != null && <> A képlet {nf(base.formulaKcal)} kcal-t mondana.</>}
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="flp-etiles">
+                  <Tile icon="t-flame" name="Alapanyagcsere" sub={FORMULA_LABEL[base.formula]} value={nf(base.bmr)} unit="kcal" />
+                  <div className="op">×</div>
+                  <Tile icon="t-hike" name="NEAT-szorzó" sub={base.neatLabel || 'életmód'} value={dec(base.neat)} unit="×" />
+                  <div className="op">=</div>
+                  <Tile result sub="Alaphő" value={nf(base.kcal)} unit="kcal" />
+                </div>
+                <span className="flp-einfo">Képlet alapján</span>
+                <p className="flp-ewhy">
+                  Az <b>alapanyagcseréd</b> ({FORMULA_LABEL[base.formula]}) szorozva az <b>életmód-szorzóddal</b>. Ennyit égetsz el egy átlagos napon <b>edzés nélkül</b>.
+                </p>
+              </>
+            )}
           </Seg>
 
           {/* MOVEMENT */}

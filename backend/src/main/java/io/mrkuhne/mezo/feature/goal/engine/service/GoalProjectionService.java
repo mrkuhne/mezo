@@ -168,7 +168,7 @@ public class GoalProjectionService {
 
         // 3. Collapse contiguous identical loads into segments, then 4. compute the per-segment numbers.
         BigDecimal weightKg = currentWeightKg(goal, trend);
-        BigDecimal balance = dailyEnergyBalance(goal, weightKg);
+        BigDecimal balance = dailyEnergyBalance(goal, weightKg, bootstrap);
         List<ProjectionSegment> segments = new ArrayList<>();
         int start = 1;
         for (int w = 1; w <= weeks; w++) {
@@ -372,10 +372,11 @@ public class GoalProjectionService {
      * per-week segment override (slice 4) substitutes a DIFFERENT value entirely for its own week
      * (see {@link #buildSegment}'s {@code effectiveBalance}) — the adjustment therefore composes
      * with the override as "override wins per week": weeks with an accepted deload/maintenance
-     * override do not feel the adjustment, every other week does.
+     * override do not feel the adjustment, every other week does. While the base is learned
+     * (mezo-zz91i) the accepted correction lives inside the base and is not added again.
      */
-    private BigDecimal dailyEnergyBalance(GoalEntity goal, BigDecimal weightKg) {
-        BigDecimal adjustment = goal.getBalanceAdjustmentKcal() == null
+    private BigDecimal dailyEnergyBalance(GoalEntity goal, BigDecimal weightKg, TdeeBootstrapJson bootstrap) {
+        BigDecimal adjustment = bootstrap != null && bootstrap.learned() || goal.getBalanceAdjustmentKcal() == null
             ? BigDecimal.ZERO : BigDecimal.valueOf(goal.getBalanceAdjustmentKcal());
         if (TRAJ_MAINTAIN.equalsIgnoreCase(goal.getTrajectory())) {
             return adjustment; // an accepted correction calibrates maintain too

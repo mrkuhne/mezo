@@ -17,7 +17,14 @@ const KG_KCAL = 7700 // kcal per kg body fat — fallback rate ↔ daily-deficit
  * (`activityEnergy.netKcal`) at rest BMR/24.
  */
 export function buildEnergyBreakdown(input: {
-  energy: { base: number; planned: number; extra: number; balance: number; target: number }
+  energy: {
+    base: number; planned: number; extra: number; balance: number; target: number
+    /** Learned-base provenance (mezo-zz91i) — the served day's own `FuelDayEnergy.baseSource` et al. */
+    source?: 'formula' | 'learned'
+    formulaBase?: number | null
+    sd?: number | null
+    confidence?: 'low' | 'medium' | 'high' | null
+  }
   blocks: PlannerBlock[]
   weightKg: number
   tdeeBootstrap: { bmr: number; neat: number; formula: 'KATCH' | 'MSJ' } | null | undefined
@@ -39,7 +46,14 @@ export function buildEnergyBreakdown(input: {
     : undefined
 
   return {
-    base: { kcal: energy.base, bmr: tb.bmr, neat: tb.neat, neatLabel: activityLabel, formula: tb.formula },
+    base: {
+      kcal: energy.base, bmr: tb.bmr, neat: tb.neat, neatLabel: activityLabel, formula: tb.formula,
+      // Undefined (older/static-shaped input) reads as the formula path — the sheet's default.
+      source: energy.source ?? 'formula',
+      formulaKcal: energy.formulaBase ?? undefined,
+      sdKcal: energy.sd,
+      confidence: energy.confidence,
+    },
     movement: {
       kcal: energy.planned + energy.extra,
       isWeeklyAvg: true,

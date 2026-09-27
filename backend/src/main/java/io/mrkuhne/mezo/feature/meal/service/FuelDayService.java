@@ -30,6 +30,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -232,6 +233,11 @@ public class FuelDayService {
             .extraMovementKcal(e.extraMovementKcal())
             .balanceKcal(e.balanceKcal())
             .targetKcal(e.targetKcal())
+            .baseSource(FuelDayEnergy.BaseSourceEnum.fromValue(e.baseSource()))
+            .formulaBaseKcal(e.formulaBaseKcal())
+            .baseSdKcal(e.baseSdKcal())
+            .baseConfidence(e.baseConfidence() == null ? null
+                : FuelDayEnergy.BaseConfidenceEnum.fromValue(e.baseConfidence().toLowerCase(Locale.ROOT)))
             .build();
     }
 

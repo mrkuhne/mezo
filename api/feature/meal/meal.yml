@@ -573,6 +573,16 @@ components:
         extraMovementKcal: { type: integer }
         balanceKcal: { type: integer }
         targetKcal: { type: integer }
+        baseSource:
+          type: string
+          enum: [formula, learned]
+          description: Where baseKcal comes from (mezo-zz91i) — the BMR × NEAT formula or the base learned from intake + weight trend.
+        formulaBaseKcal: { type: integer, nullable: true, description: 'BMR × NEAT, shown next to a learned base.' }
+        baseSdKcal: { type: integer, nullable: true, description: 'Learned base uncertainty (±1 SD kcal); null for formula.' }
+        baseConfidence:
+          type: string
+          nullable: true
+          enum: [low, medium, high]
     FuelWeekResponse:
       type: object
       required: [start, days]

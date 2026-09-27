@@ -596,7 +596,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### fuel
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-26, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-27, done) ·
   [docs/features/pantry.md](features/pantry.md) (updated 2026-09-23, done) ·
   [docs/features/recipe.md](features/recipe.md) (updated 2026-09-26, done) ·
   [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-26, done) ·
@@ -694,27 +694,30 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### goal
 
-*BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-26, done) ·
+*BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-27, done) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-27, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/goal`
   - **sub-features:** `engine`
-  - **entities→tables:** `GoalEntity`→`goal`, `GoalPlanLinkEntity`→`goal_plan_link`,
-    `GoalSuggestionEntity`→`goal_suggestion`
-  - **repositories:** `GoalPlanLinkRepository`, `GoalRepository`, `GoalSuggestionRepository`
+  - **entities→tables:** `ExpenditureEstimateEntity`→`expenditure_estimate`, `GoalEntity`→`goal`,
+    `GoalPlanLinkEntity`→`goal_plan_link`, `GoalSuggestionEntity`→`goal_suggestion`
+  - **repositories:** `ExpenditureEstimateRepository`, `GoalPlanLinkRepository`, `GoalRepository`,
+    `GoalSuggestionRepository`
   - **services:** `AdaptiveCorrectionService`, `AdaptiveReviewJob`, `AdaptiveReviewService`, `DayTypeShiftCalculator`,
-    `DietPreferences`, `DietPreferencesPort`, `GoalDeletedEvent`, `GoalEngineService`, `GoalEvaluationService`,
+    `DietPreferences`, `DietPreferencesPort`, `ExpenditureFilter`, `ExpenditureLearningService`,
+    `ExpenditureStepPolicy`, `GoalDeletedEvent`, `GoalEngineService`, `GoalEvaluationService`,
     `GoalFeasibilityService`, `GoalInvariantValidator`, `GoalOverviewCourseService`, `GoalOverviewService`,
     `GoalPlanLinkService`, `GoalPrescriptionCalculator`, `GoalProjectionService`, `GoalSavedEvent`, `GoalService`,
     `GoalSuggestionDraftApplier`, `GoalSuggestionFingerprintService`, `GoalSuggestionNotificationListener`,
     `GoalSuggestionPreviewService`, `GoalSuggestionProposedEvent`, `GoalSuggestionService`,
     `GoalSuggestionSupersedeWriter`, `GoalSuggestionTriggerService`, `GoalTimelineService`, `GuardEvaluationService`,
-    `MesoLifecycleSuggestionListener`, `TdeeBootstrapService`, `TrainGoalRecomputeAdapter`
+    `IntakeDayClassifier`, `LearnedBaseResolver`, `MesoLifecycleSuggestionListener`, `TdeeBootstrapService`,
+    `TrainGoalRecomputeAdapter`
   - **controllers→contract:** `GoalController`→`GoalApi`
   - **mappers:** `GoalMapper`, `GoalPlanLinkMapper`, `GoalSuggestionMapper`
-  - **other:** `ActivityModelMigrationRunner`, `GoalEngineProperties`, `GoalPrescriptionJson`, `GoalReevaluateRunner`,
-    `GoalSeedData`, `GoalSegmentOverrideJson`, `GoalSuggestionPayloadJson`, `IntakeAdherencePort`, `SleepAdequacyPort`,
-    `TdeeBootstrapJson`
+  - **other:** `ActivityModelMigrationRunner`, `DailyIntakePort`, `ExcludedIntakeDayJson`, `ExpenditureRolloutRunner`,
+    `GoalEngineProperties`, `GoalPrescriptionJson`, `GoalReevaluateRunner`, `GoalSeedData`, `GoalSegmentOverrideJson`,
+    `GoalSuggestionPayloadJson`, `IntakeAdherencePort`, `SleepAdequacyPort`, `TdeeBootstrapJson`
 - **Contract** `api/feature/goal/goal.yml` — 17 operations
   - **endpoints:** GET /api/goals · POST /api/goals · POST /api/goals/feasibility-preview · GET /api/goals/{id} ·
     PUT /api/goals/{id} · DELETE /api/goals/{id} · GET /api/goals/{id}/overview · POST /api/goals/{id}/activate ·
@@ -722,14 +725,16 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/goals/{id}/plans · DELETE /api/goals/{id}/plans/{linkId} · GET /api/goals/{id}/suggestions ·
     GET /api/goals/{id}/suggestions/{suggestionId}/preview · POST /api/goals/{id}/suggestions/{suggestionId}/accept ·
     POST /api/goals/{id}/suggestions/{suggestionId}/dismiss
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 19 IT + 6 unit
-  - **ITs:** `ActivityModelMigrationRunnerIT`, `AdaptiveReviewServiceIT`, `GoalContractIT`, `GoalEnginePropertiesIT`,
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 22 IT + 12 unit
+  - **ITs:** `ActivityModelMigrationRunnerIT`, `AdaptiveReviewServiceIT`, `ExpenditureEstimateRepositoryIT`,
+    `ExpenditureLearningServiceIT`, `ExpenditureRolloutRunnerIT`, `GoalContractIT`, `GoalEnginePropertiesIT`,
     `GoalEngineRecomputeIT`, `GoalEvaluationServiceIT`, `GoalFeasibilityServiceIT`, `GoalOverviewApiIT`,
     `GoalPlanLinkServiceIT`, `GoalProjectionServiceIT`, `GoalReevaluateRunnerIT`, `GoalServiceIT`,
     `GoalSuggestionNotificationIT`, `GoalSuggestionPreviewApiIT`, `GoalSuggestionServiceIT`, `GoalSuggestionTriggerIT`,
     `GoalTimelineContractIT`, `GoalTimelineServiceIT`, `GuardEvaluationServiceIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`,
-    `GoalSuggestionPopulator`, `RunningPopulator`, `TrainPopulator`, `UserPopulator`, `WeightLogPopulator`
+    `GoalSuggestionPopulator`, `MealPopulator`, `RunningPopulator`, `TrainPopulator`, `UserPopulator`,
+    `WeightLogPopulator`
 
 ### habit
 
@@ -995,14 +1000,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### meal
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-26, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-27, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/meal`
   - **entities→tables:** `MealEntity`→`meal`, `MealItemEntity`→`meal_item`, `WaterLogEntity`→`water_log`
   - **repositories:** `MealItemRepository`, `MealRepository`, `WaterLogRepository`
-  - **services:** `FuelDayService`, `GoalIntakeAdherenceAdapter`, `MealAiDraftService`, `MealAiDraftValidator`,
-    `MealCoachContextReader`, `MealCoachEagerListener`, `MealCoachLlm`, `MealCoachPrompt`, `MealCoachService`,
-    `MealCoachStore`, `MealCompositeLines`, `MealDraftLlm`, `MealSavedEvent`, `MealService`, `WaterLogService`
+  - **services:** `FuelDayService`, `GoalDailyIntakeAdapter`, `GoalIntakeAdherenceAdapter`, `MealAiDraftService`,
+    `MealAiDraftValidator`, `MealCoachContextReader`, `MealCoachEagerListener`, `MealCoachLlm`, `MealCoachPrompt`,
+    `MealCoachService`, `MealCoachStore`, `MealCompositeLines`, `MealDraftLlm`, `MealSavedEvent`, `MealService`,
+    `WaterLogService`
   - **controllers→contract:** `MealAiDraftController`→`MealAiLogApi`, `MealController`→`MealApi`
   - **mappers:** `MealMapper`
   - **config:** `MealAiLogProperties`
@@ -1012,13 +1018,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/fuel/day/{date} · GET /api/fuel/week/{start} · POST /api/meal · PUT /api/meal/{id} ·
     DELETE /api/meal/{id} · POST /api/meal/ai-draft · GET /api/recipe/{id}/logs · GET /api/meal/coach ·
     GET /api/meal/{id}/coach · POST /api/water-log · DELETE /api/water-log/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 25 IT + 8 unit
-  - **ITs:** `FuelDayDayTypeIT`, `FuelDayServiceIT`, `GoalIntakeAdherenceAdapterIT`, `MealAiDraftApiIT`,
-    `MealAiDraftServiceIT`, `MealAiDraftSwitchOffApiIT`, `MealAiLlmUnavailableApiIT`, `MealAiUploadLimitApiIT`,
-    `MealApiIT`, `MealCoachApiIT`, `MealCoachServiceIT`, `MealCoachStoreIT`, `MealCoachSwitchOffApiIT`,
-    `MealItemRecipeOverridesIT`, `MealOverridesIT`, `MealOverridesScoringIT`, `MealOverridesServiceIT`,
-    `MealRecipeCompositeScoringIT`, `MealRepositoryIT`, `MealRescoreRunnerIT`, `MealSaturatedFatBackfillRunnerIT`,
-    `MealServiceIT`, `NutritionTargetsPropertiesIT`, `RecipeLogsServiceIT`, `WaterLogApiIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 26 IT + 8 unit
+  - **ITs:** `FuelDayDayTypeIT`, `FuelDayServiceIT`, `GoalDailyIntakeAdapterIT`, `GoalIntakeAdherenceAdapterIT`,
+    `MealAiDraftApiIT`, `MealAiDraftServiceIT`, `MealAiDraftSwitchOffApiIT`, `MealAiLlmUnavailableApiIT`,
+    `MealAiUploadLimitApiIT`, `MealApiIT`, `MealCoachApiIT`, `MealCoachServiceIT`, `MealCoachStoreIT`,
+    `MealCoachSwitchOffApiIT`, `MealItemRecipeOverridesIT`, `MealOverridesIT`, `MealOverridesScoringIT`,
+    `MealOverridesServiceIT`, `MealRecipeCompositeScoringIT`, `MealRepositoryIT`, `MealRescoreRunnerIT`,
+    `MealSaturatedFatBackfillRunnerIT`, `MealServiceIT`, `NutritionTargetsPropertiesIT`, `RecipeLogsServiceIT`,
+    `WaterLogApiIT`
   - **populators:** `DatabasePopulator`, `GoalPopulator`, `MealPopulator`, `PantryCatalogPopulator`,
     `PantryItemPopulator`, `RecipePopulator`, `TrainPopulator`, `WaterLogPopulator`, `WeightLogPopulator`
 
@@ -1099,7 +1106,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### nutrition
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-26, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-27, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/nutrition`
   - **entities→tables:** `DietSettingsEntity`→`diet_settings`
@@ -1434,8 +1441,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### train
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-26, done) ·
-  [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-26, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-27, done) ·
+  [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-27, done) ·
   [docs/features/train.md](features/train.md) (updated 2026-09-26, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-26, done)
 

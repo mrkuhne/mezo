@@ -14,8 +14,13 @@ import org.springframework.stereotype.Component;
 
 /**
  * Monday adaptive-review sweep (diet-plan slice 5) — the {@code WeeklyReviewJob} idiom: per-user
- * failures isolated, idempotent (AdaptiveReviewService skips an already-reviewed week), the bean
- * absent when the switch is off. Suggest + approve: the job only ever proposes.
+ * failures isolated, idempotent (AdaptiveReviewService skips an already-reviewed week; the learned
+ * path stays idempotent via {@code expenditure_estimate}'s per-week upsert), the bean absent when
+ * the switch is off. Per user: {@link ExpenditureLearningService#reviewWeek} is tried first for the
+ * week that just ended; a learning user (a row comes back, HOLDING included) never also gets the
+ * weight-only {@code weekly_correction} suggestion — owner decision L4, the two are exclusive. Only
+ * a non-learning user (empty) falls back to the old suggest-only path,
+ * {@link AdaptiveReviewService#reviewUser}.
  */
 @Slf4j
 @Component
@@ -25,20 +30,24 @@ public class AdaptiveReviewJob {
 
     private final AppUserRepository appUserRepository;
     private final AdaptiveReviewService adaptiveReviewService;
+    private final ExpenditureLearningService expenditureLearning;
 
     @Scheduled(cron = "${mezo.goal.adaptive.cron}")
     public void run() {
         LocalDate weekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        int learned = 0;
         int proposed = 0;
         for (AppUserEntity user : appUserRepository.findAll()) {
             try {
-                if (adaptiveReviewService.reviewUser(user.getId(), weekStart)) {
+                if (expenditureLearning.reviewWeek(user.getId(), weekStart.minusWeeks(1)).isPresent()) {
+                    learned++;
+                } else if (adaptiveReviewService.reviewUser(user.getId(), weekStart)) {
                     proposed++;
                 }
             } catch (Exception e) {
                 log.warn("Adaptive review failed for user {} week {}", user.getId(), weekStart, e);
             }
         }
-        log.info("Adaptive-review run for {}: {} correction(s) proposed", weekStart, proposed);
+        log.info("Weekly energy review for {}: {} learned, {} correction(s) proposed", weekStart, learned, proposed);
     }
 }

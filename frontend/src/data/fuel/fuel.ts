@@ -442,6 +442,12 @@ export const fuelDayEnergy: FuelDayEnergy = {
   extraMovementKcal: MOCK_EXTRA_KCAL,
   balanceKcal: MOCK_TARGET_KCAL - MOCK_BASE_KCAL - MOCK_PLANNED_KCAL - MOCK_EXTRA_KCAL,
   targetKcal: MOCK_TARGET_KCAL,
+  // Learned-base demo fixture (mezo-zz91i): baseKcal above IS the learned base; formulaBaseKcal is
+  // the BMR × NEAT the confidence line's formula tile shows next to it.
+  baseSource: 'learned',
+  formulaBaseKcal: MOCK_BASE_KCAL + 180,
+  baseSdKcal: 140,
+  baseConfidence: 'medium',
 }
 
 export const fuelDay: FuelDay = {

@@ -97,3 +97,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609270230_mezo-d6ivw.5_proactive_memory_use_naming.sql
+  - changeSet:
+      id: "1.1.0:202609262200_mezo-zz91i_expenditure_estimate"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609262200_mezo-zz91i_expenditure_estimate.sql

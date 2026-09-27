@@ -124,7 +124,28 @@ class DayTargetProjectorTest {
             () -> new WorkoutWindowQueryService.DayMovement(false, 573), FALLBACK);
         assertThat(t.kcal()).isEqualTo(3172);
         assertThat(t.c()).isEqualTo(300 + Math.round(573 / 4f));
-        assertThat(t.energy()).isEqualTo(new DailyTargets.Energy(2356, 570, 573, -327, 3172));
+        assertThat(t.energy()).isEqualTo(new DailyTargets.Energy(2356, 570, 573, -327, 3172, "formula", 2356, null, null));
+    }
+
+    @Test
+    void aLearnedBaseCarriesItsProvenanceWithoutChangingTheArithmetic() {
+        // mezo-zz91i: Alap is the learned 2356 (formula 2480); the equation still closes the same way.
+        EnergyBase learned = EnergyBase.of(new io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson(
+            new BigDecimal("1963"), new BigDecimal("1.26"), new BigDecimal("2356"), new BigDecimal("570"),
+            new BigDecimal("2926"), "MSJ", java.time.OffsetDateTime.parse("2026-09-21T06:00:00Z"), 2,
+            "learned", new BigDecimal("2480.40"), 140, "MEDIUM"));
+        DailyTargets t = DayTargetProjector.project(segment(2599, 170, 300, 86, null, null, -327), learned,
+            () -> new WorkoutWindowQueryService.DayMovement(false, 573), FALLBACK);
+        assertThat(t.energy()).isEqualTo(new DailyTargets.Energy(2356, 570, 573, -327, 3172, "learned", 2480, 140, "MEDIUM"));
+    }
+
+    @Test
+    void aPreLearningSnapshotReadsAsFormula() {
+        EnergyBase base = EnergyBase.of(new io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson(
+            new BigDecimal("1963"), new BigDecimal("1.2"), new BigDecimal("2355.60"), BigDecimal.ZERO,
+            new BigDecimal("2355.60"), "MSJ", java.time.OffsetDateTime.parse("2026-09-21T06:00:00Z"), 2));
+        assertThat(base).isEqualTo(new EnergyBase(new BigDecimal("1963"), new BigDecimal("2355.60"),
+            "formula", 2356, null, null));
     }
 
     @Test

@@ -15559,7 +15559,8 @@ components:
       type: object
       description: >-
         Formula-TDEE bootstrap snapshot computed at first evaluation. tdee =
-        neatBaselineKcal + weeklyEatKcalPerDay.
+        neatBaselineKcal + weeklyEatKcalPerDay; neatBaselineKcal is the learned
+        base when baseSource = learned (mezo-zz91i).
       required:
         - bmr
         - neat
@@ -15599,6 +15600,34 @@ components:
         computedAt:
           type: string
           format: date-time
+        baseSource:
+          type: string
+          nullable: true
+          enum:
+            - formula
+            - learned
+          description: >-
+            Where neatBaselineKcal comes from (mezo-zz91i): the bmr × neat
+            formula or the base learned from intake + weight trend; null =
+            formula (older snapshots)
+        formulaNeatBaselineKcal:
+          type: number
+          nullable: true
+          description: >-
+            bmr × neat, kept next to a learned neatBaselineKcal (kcal/day); null
+            on a formula snapshot
+        learnedSdKcal:
+          type: integer
+          nullable: true
+          description: Learned base uncertainty (±1 SD kcal/day); null for formula
+        learnedConfidence:
+          type: string
+          nullable: true
+          enum:
+            - LOW
+            - MEDIUM
+            - HIGH
+          description: Learned base confidence; null for formula
     GoalPrescription:
       type: object
       description: >-
@@ -18279,6 +18308,29 @@ components:
           type: integer
         targetKcal:
           type: integer
+        baseSource:
+          type: string
+          enum:
+            - formula
+            - learned
+          description: >-
+            Where baseKcal comes from (mezo-zz91i) — the BMR × NEAT formula or
+            the base learned from intake + weight trend.
+        formulaBaseKcal:
+          type: integer
+          nullable: true
+          description: 'BMR × NEAT, shown next to a learned base.'
+        baseSdKcal:
+          type: integer
+          nullable: true
+          description: Learned base uncertainty (±1 SD kcal); null for formula.
+        baseConfidence:
+          type: string
+          nullable: true
+          enum:
+            - low
+            - medium
+            - high
     FuelWeekResponse:
       type: object
       required:

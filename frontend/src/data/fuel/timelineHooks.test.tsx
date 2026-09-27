@@ -137,6 +137,9 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK === 'false')('useFuelTimeline / us
     expect(e).toEqual({
       base: fuelDayEnergy.baseKcal, planned: fuelDayEnergy.plannedMovementKcal, extra: fuelDayEnergy.extraMovementKcal,
       balance: fuelDayEnergy.balanceKcal, target: fuelDayEnergy.targetKcal,
+      // Learned-base provenance passthrough (mezo-zz91i) — the mock fixture serves a learned base.
+      source: fuelDayEnergy.baseSource, formulaBase: fuelDayEnergy.formulaBaseKcal,
+      sd: fuelDayEnergy.baseSdKcal, confidence: fuelDayEnergy.baseConfidence,
     })
     expect(e.base + e.planned + e.extra + e.balance).toBe(e.target)
     expect(result.current.budget.kcal).toBe(e.target) // targets.kcal IS the served target
