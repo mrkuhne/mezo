@@ -108,7 +108,11 @@ export function hitLabel(h: Hit): string {
 export const az = (label: string) => (/^[AÁEÉIÍOÓÖŐUÚÜŰ]/i.test(label) ? 'az ' : 'a ') + label
 export const Az = (label: string) => { const t = az(label); return t[0].toUpperCase() + t.slice(1) }
 
-export interface ReasonCtx { wake: string; bed: string; trainingStart: string | null; trainingEnd: string | null }
+export interface ReasonCtx {
+  wake: string; bed: string; trainingStart: string | null; trainingEnd: string | null
+  /** mezo-9sltu: a 'shifted' ok forrása — az előző étkezés címkéje és ideje. */
+  shiftedAfter?: { label: string; at: string }
+}
 export interface ReasonCopy { icon: 't-sun' | 't-protein' | 't-clock' | 't-dumbbell' | 't-moon'; title: string; body: string }
 
 /** A nap edzés-burka a napórához és a forecasthoz: legkorábbi kezdet, legkésőbbi vég; több blokknál
@@ -134,5 +138,10 @@ export function windowReasonCopy(code: WindowReason, c: ReasonCtx): ReasonCopy {
     case 'post-training': return { icon: 't-dumbbell', title: `Az edzés${te} után fél–másfél órával`, body: 'Fehérje és szénhidrát segíti a regenerációt és a raktárak visszatöltését.' }
     case 'before-bed': return { icon: 't-moon', title: `Lefekvés (${c.bed}) előtt legalább 2,5 órával`, body: 'Késő este ugyanaz az étel általában nagyobb vércukor-emelkedést okoz, és ronthatja az alvást.' }
     case 'template-fixed': return { icon: 't-clock', title: 'A saját napi sablonod szerint', body: 'Ezt az időpontot a napi sablonodban rögzítetted.' }
+    case 'shifted': return {
+      icon: 't-clock',
+      title: c.shiftedAfter ? `Eltolva: ${az(c.shiftedAfter.label.toLowerCase())} később volt (${c.shiftedAfter.at})` : 'Eltolva az előző étkezés miatt',
+      body: 'Így nagyjából másfél óra jut a két étkezés közé — a nap többi ablaka ehhez igazodik.',
+    }
   }
 }

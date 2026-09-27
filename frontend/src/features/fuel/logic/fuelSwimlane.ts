@@ -96,6 +96,8 @@ export interface WindowTileVM {
   budgetKcal: number | null
   /** A tervezett időpont (done tile-on a `time` a logolás ideje). */
   plannedTime: string
+  /** mezo-9sltu: csak eltolt ablakon — ami miatt később került (a 'shifted' ok szövegéhez). */
+  shiftedAfter?: { label: string; at: string }
 }
 
 export interface WindowLaneVM {
@@ -205,6 +207,7 @@ export function buildWindowLane(input: {
       windowReasons: slot.windowReasons ?? [],
       budgetKcal: slot.budgetKcal ?? null,
       plannedTime: slot.plannedTime ?? slot.time,
+      ...(slot.shiftedAfter ? { shiftedAfter: slot.shiftedAfter } : {}),
     }
   })
 

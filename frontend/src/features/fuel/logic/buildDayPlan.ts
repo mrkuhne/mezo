@@ -5,7 +5,8 @@
 // the day's intakes, it composes a `FuelPlanToday` (meal windows around the workouts, per-slot
 // budgets, recipe suggestions, supplement + block slots, fixed-plan missed/now/pending state, the
 // dynamic-energy breakdown). Windows sit at their ANCHORED times — the plan does not re-flow around
-// `now` (mezo-1oy5); `now` only classifies each window's state. No ambient time (no Date.now /
+// `now` (mezo-1oy5); `now` only classifies each window's state. Only a LATE LOG pushes the remaining
+// windows later (mezo-9sltu, step 2c). No ambient time (no Date.now /
 // `new Date()` / random): `nowHHmm` is injected; logged-at strings are parsed deterministically via
 // `new Date(iso)`. Design: docs/superpowers/specs/2026-07-02-fuel-p5-merged-timeline-design.md §3.
 
@@ -102,6 +103,10 @@ export interface PlannedWindow {
 }
 
 const MACRO_KEYS: (keyof Macro4)[] = ['kcal', 'p', 'c', 'f']
+/** Rules whose window is pinned to a training block (mezo-9sltu) — the late-log reflow never moves them. */
+const TRAINING_ANCHORED: ReadonlySet<WindowRule> = new Set<WindowRule>([
+  'pre-training-main', 'pre-training-snack', 'post-training', 'template-training-start', 'template-training-end',
+])
 
 // ── mealSlotKey ──────────────────────────────────────────────────────────────
 // Real mode: `FuelMeal.slot` is the enum ('breakfast'|'lunch'|'dinner'|'snack').
@@ -360,15 +365,13 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
 
   // Étkezési óra (mezo-6g52f): az időpontokból ablak + okok — egy forrás a kártyának, az óra-
   // doboznak ÉS a logolásnak (ami ezt küldi a szervernek pontozásra).
-  const ranges = widenWindows(windows, {
+  //    These ORIGINAL ranges drive step 2b's stored-window matching; the slots get the reflowed ones (2c).
+  const widenCtx = {
     eatingStart: span.wakeMin + EATING_START_OFFSET_MIN,
     kitchenClose: kitchenCloseMin,
     bedMin: span.bedMin,
-  })
-  const windowOf = (i: number) => ({
-    windowFrom: toHHmm(ranges[i].from), windowTo: toHHmm(ranges[i].to),
-    windowReasons: ranges[i].reasons, budgetKcal: budgets[i].kcal,
-  })
+  }
+  const ranges = widenWindows(windows, widenCtx)
 
   // 2. Logged meals grouped by slotKey, each group sorted by loggedAt (multi-snack fills in time order).
   const loggedByKey: Record<SlotKey, FuelMeal[]> = { breakfast: [], lunch: [], dinner: [], snack: [] }
@@ -442,9 +445,58 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
     }
   }
 
-  // 3. Fill each window at its FIXED anchored time (mezo-1oy5 — the plan no longer re-flows around
-  //    `now`): logged → done; else recipe suggestion; else budget-only.
-  const mealSlots: FuelSlot[] = windows.map((w, i) => {
+  // 2c. Late-log reflow (mezo-9sltu, owner option A 2026-09-27). After the chronologically LAST done
+  //     window (by placed time), each still-unassigned window is pushed LATER — never earlier — so it
+  //     starts ≥ MIN_SLOT_GAP_MIN after the previous meal in the sequence: for the first one that is
+  //     the done meal's ACTUAL logged time, then each following window cascades off the previous
+  //     (possibly shifted) placed time. Training-anchored windows never move but still act as the
+  //     previous meal (as max(previous, anchor) — a meal logged AFTER the anchor's placed time stays
+  //     the real previous meal, so the 90-min spacing to it holds). A shift is capped at kitchen close
+  //     (windows may crowd there; none is dropped). Log-driven, not clock-driven: `now` is irrelevant,
+  //     so past days reflow the same way. All on the unwrapped axis (mezo-9rtw).
+  const unwrapMin = (t: number) => (span.crossesMidnight && t < span.wakeMin ? t + 1440 : t)
+  const wrapMin = (t: number) => ((t % 1440) + 1440) % 1440
+  const flowWindows: PlannedWindow[] = windows.map(w => ({ ...w }))
+  const shiftedAfter: ({ label: string; at: string } | undefined)[] = new Array(windows.length).fill(undefined)
+  const order = windows.map((_, i) => i).sort((a, z) => unwrapMin(windows[a].time) - unwrapMin(windows[z].time))
+  const lastDonePos = order.reduce((last, i, pos) => (assignedMeal[i] ? pos : last), -1)
+  if (lastDonePos >= 0) {
+    const doneIdx = order[lastDonePos]
+    const doneAt = hhmmFromLoggedAt(assignedMeal[doneIdx]!.loggedAt, toHHmm(windows[doneIdx].time))
+    let prev = { t: unwrap(doneAt), label: windows[doneIdx].label, at: doneAt }
+    for (const i of order.slice(lastDonePos + 1)) {
+      const w = flowWindows[i]
+      const orig = unwrapMin(w.time)
+      if (TRAINING_ANCHORED.has(w.rule)) {
+        if (orig >= prev.t) prev = { t: orig, label: w.label, at: toHHmm(w.time) }
+        continue
+      }
+      // Every window past the last done one is unassigned by construction.
+      const wanted = Math.min(prev.t + MIN_SLOT_GAP_MIN, kitchenCloseMin)
+      if (wanted > orig) {
+        w.time = wrapMin(wanted)
+        shiftedAfter[i] = { label: prev.label, at: prev.at }
+      }
+      prev = { t: Math.max(orig, wanted), label: w.label, at: toHHmm(w.time) }
+    }
+  }
+  //     Re-widen with the reflowed times: an unassigned window gets its reflowed range; a done window
+  //     keeps its ORIGINAL range — the window the meal was actually logged into.
+  const flowRanges = widenWindows(flowWindows, widenCtx)
+  const windowOf = (i: number) => {
+    const r = assignedMeal[i] ? ranges[i] : flowRanges[i]
+    const moved = shiftedAfter[i]
+    return {
+      windowFrom: toHHmm(r.from), windowTo: toHHmm(r.to),
+      windowReasons: moved ? (['shifted', ...r.reasons] as FuelSlot['windowReasons']) : r.reasons,
+      budgetKcal: budgets[i].kcal,
+      ...(moved ? { shiftedAfter: moved } : {}),
+    }
+  }
+
+  // 3. Fill each window at its anchored time — or its late-log reflowed time (2c) — never re-flowed
+  //    around `now` (mezo-1oy5): logged → done; else recipe suggestion; else budget-only.
+  const mealSlots: FuelSlot[] = flowWindows.map((w, i) => {
     const logged = assignedMeal[i]
     if (logged) {
       return {
