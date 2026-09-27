@@ -53,6 +53,7 @@ they inline come from `../assets/`.
 | `admin-hub.html` | — (not yet published; /admin desktop hub — 12 oszlopos mozaik, user-lista + becsúszó részlet, feature × nap mátrix, LLM költség-mátrix Háttér-oszloppal, adatböngésző — mezo-d5iy) |
 | `admin-memory.html` | — (not yet published; a user Memória tabja alatt — Futások/Gráf/Térkép/Rétegek négyutas szegmens-sáv + közös inspector, dry-run replay, RAG memória-felfedező part 2 — mezo-4qyt) |
 | `admin-pulzus.html` | — (design-decision record, not published; the APPROVED "A irány — Pulzus" direction for the admin value-dashboard redesign, frozen verbatim 2026-09-08; not wired into build.sh — see `docs/features/admin-hub.md` for the shipped surface — mezo-l096/mezo-wg4x) |
+| `hogy-tanultam.html` | — (not yet published; the „Hogy tanultam?" learned-base explainer inside the Fuel energy-breakdown sheet — six honest sections: what was looked at, the weight/intake mini-chart, the simple arithmetic, what was filtered out, the confidence meter, the step chain — owner-approved, built as `LearnedBaseExplainer`/`LearnedBaseChart` — mezo-y72o3) |
 
 ## Workflow
 

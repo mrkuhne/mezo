@@ -1395,14 +1395,28 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   border-radius: var(--r-3xl) var(--r-3xl) 0 0;   /* DS sheet radius (28) */
   padding: 4px 20px calc(20px + env(safe-area-inset-bottom));
   z-index: 201;
-  overscroll-behavior: contain;
   max-height: 88%;
-  overflow-y: auto;
+  /* `.sheet` is now the non-scrolling FRAME (mezo-zz91i follow-up): its own box never scrolls,
+     so a `.glass::before` hairline (or any other frame decoration) painted on it always outlines
+     the whole visible sheet. `.sheet-scroll` below carries the actual overflow. A subclass that
+     restates `overflow-y: auto`/`overscroll-behavior` on `.sheet.xxx` (the old "U1 rule 1+3"
+     pattern) is stale and should be dropped — the frame must stay `hidden`. */
+  overflow-y: hidden;
+  display: flex; flex-direction: column;
   box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.6);
   /* Slide up from the bottom on mount; `both` keeps the start frame applied
      before the first paint so it never flashes at full position. */
   animation: sheet-rise 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
   will-change: transform;
+}
+/* The inner scroller (mezo-zz91i follow-up): everything but the drag handle lives here, so the
+   handle stays pinned at the top of the frame and the frame's own box (see `.sheet` above) never
+   needs to scroll. `min-height: 0` is required for a flex child to actually shrink and scroll
+   instead of pushing `.sheet` taller than its `max-height`. */
+.sheet-scroll {
+  flex: 1 1 auto; min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 /* ============================================================
    F7.3 · A sheet-minta (mezo-d20.8.3.1, fuel-mely.html §D)
@@ -6989,7 +7003,7 @@ button.mz-tile:active { transform: scale(0.96); }
          place-items: center; font-size: 12px; box-shadow: 0 2px 6px rgba(255, 91, 54, .30); }
 
 /* ── Napi küldetések sheet ── */
-.td-quest-sheet { max-height: 76%; overflow-y: auto; }
+.td-quest-sheet { max-height: 76%; overflow-y: hidden; }
 .td-quest-summary { display: flex; justify-content: space-between; padding: 0 var(--sp-4) 8px;
                     font-size: 12.5px; color: var(--text-muted); }
 .td-quest-progress { height: 5px; margin: 0 var(--sp-4) 8px; overflow: hidden;
@@ -13649,7 +13663,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .sheet.glass.uv-sheet {
   --c: var(--dv-lav);
   position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
-  overflow-x: hidden; overflow-y: auto; border: 0; border-radius: 30px;
+  overflow-x: hidden; overflow-y: hidden; border: 0; border-radius: 30px;
   padding: 4px 18px 18px; color: var(--text-primary);
 }
 .sheet.glass.uv-sheet::after { display: none; }
@@ -14064,7 +14078,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* ── Kamra sheets: one gold glass surface each ── */
 /* U1 rules 1 + 3: `.glass` would re-anchor the sheet and clip its scroll — restate both */
 .sheet.fkk-sheet.glass { --c: var(--dv-amber); position: absolute; left: 10px; right: 10px;
-  bottom: calc(10px + env(safe-area-inset-bottom)); max-height: calc(100% - 70px); overflow-y: auto;
+  bottom: calc(10px + env(safe-area-inset-bottom)); max-height: calc(100% - 70px); overflow-y: hidden;
   padding: 4px 18px 22px; border: 0; border-radius: 30px; }
 .sheet.fkk-sheet .sheet-handle-zone { margin: 0 -18px 4px; }
 .sheet.fkk-sheet .sheet-handle { width: 40px; height: 5px; background: rgba(245, 239, 230, 0.18); }
@@ -14970,6 +14984,103 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .flp-ewhy { margin: 8px 0 0; font-size: 12px; line-height: 1.45; color: var(--text-secondary); }
 .flp-ewhy b { font-weight: 600; color: var(--text-primary); }
 
+/* ─ „Hogy tanultam?” (mezo-y72o3, prototype hogy-tanultam.html) — the learned base's explainer inside
+   the Alap block. The sheet is the only glass: the toggle is a hue-tinted flat button, every section a
+   FLAT cell (rank 3). `--c` is the Alap block's sage. ─ */
+.flp-how-btn { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 12px; padding: 10px 12px; border: 0;
+  border-radius: 14px; text-align: left; font: inherit; color: var(--text-primary); cursor: pointer; scroll-margin-top: 12px;
+  background: color-mix(in srgb, var(--c) 10%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 35%, transparent);
+  transition: background 0.2s cubic-bezier(0.2, 0.78, 0.24, 1); }
+.flp-how-btn:hover { background: color-mix(in srgb, var(--c) 16%, rgba(245, 239, 230, 0.03)); }
+.flp-how-btn .t-ico { filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 8px color-mix(in srgb, var(--c) 45%, transparent)); }
+.flp-how-btn .lbl { flex: 1; font-size: 14px; font-weight: 600; }
+.flp-how-btn .lbl small { display: block; margin-top: 1px; font-size: 11px; font-weight: 400; color: var(--text-muted); }
+.flp-how-btn .chev { width: 18px; height: 18px; flex: 0 0 auto; color: var(--text-muted); transition: transform 0.3s cubic-bezier(0.2, 0.78, 0.24, 1); }
+.flp-how-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
+
+.flp-how { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.45s cubic-bezier(0.2, 0.78, 0.24, 1); }
+.flp-how.is-open { grid-template-rows: 1fr; }
+.flp-how > div { overflow: hidden; min-height: 0; }
+.flp-how-in { padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+.flp-how-cell { padding: 12px; border-radius: 14px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.flp-how-cell h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 12.5px; font-weight: 600; color: var(--text-primary); }
+.flp-how-cell h4 .num { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; font-size: 10.5px;
+  background: color-mix(in srgb, var(--c) 22%, transparent); color: color-mix(in srgb, var(--c) 85%, var(--text-primary)); }
+.flp-how-cell p { margin: 0; font-size: 12px; line-height: 1.5; color: var(--text-secondary); }
+.flp-how-cell p b { color: var(--text-primary); font-weight: 600; }
+.flp-how-cell .flp-how-fine, .flp-how-fine { margin: 8px 0 0; font-size: 10.5px; line-height: 1.45; color: var(--text-muted); }
+.flp-how-cell .flp-how-why b { color: var(--text-secondary); }
+.flp-how-state { margin: 0; }
+
+/* 1 · data stats */
+.flp-how-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.flp-how-stat { padding: 8px 6px; border-radius: 12px; text-align: center; background: rgba(245, 239, 230, 0.035); }
+.flp-how-stat .t-ico { margin: 0 auto 4px; filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.5)); }
+.flp-how-stat b { display: block; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.flp-how-stat span { display: block; font-size: 10px; line-height: 1.3; color: var(--text-muted); }
+
+/* 2 · chart */
+.flp-how-chart { display: block; width: 100%; height: auto; margin-top: 2px; }
+.flp-how-chart .flp-how-ax { font-size: 8.5px; fill: var(--text-muted); font-family: var(--ff-body); }
+.flp-how-chart .flp-how-trend { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--dv-sky) 60%, transparent)); }
+.flp-how-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; font-size: 10px; color: var(--text-muted); }
+.flp-how-legend i { display: inline-block; width: 9px; height: 9px; margin-right: 4px; border-radius: 2px; vertical-align: -1px; }
+.flp-how-legend i.ok { background: color-mix(in srgb, var(--dv-sage) 70%, transparent); }
+.flp-how-legend i.bad { background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--dv-rose) 85%, transparent) 0 2px,
+  color-mix(in srgb, var(--dv-rose) 14%, transparent) 2px 4px); }
+.flp-how-legend i.ln { width: 14px; height: 2px; border-radius: 1px; vertical-align: 2px; }
+.flp-how-legend i.trend { background: var(--dv-sky); }
+.flp-how-legend i.water { background: var(--dv-lav); }
+
+/* 3 · the equation, spelled out */
+.flp-how-calc { display: flex; flex-direction: column; gap: 2px; font-variant-numeric: tabular-nums; }
+.flp-how-calc .row { display: flex; align-items: center; gap: 10px; padding: 7px 2px; border-bottom: 1px dashed var(--divider); }
+.flp-how-calc .row .t-ico { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
+.flp-how-calc .row .l { flex: 1; font-size: 12px; line-height: 1.35; color: var(--text-secondary); }
+.flp-how-calc .row .l small { display: block; font-size: 10.5px; color: var(--text-muted); }
+.flp-how-calc .row .r { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.flp-how-calc .row.tot { border-bottom: 0; padding-top: 9px; }
+.flp-how-calc .row.tot .l { font-weight: 600; color: var(--text-primary); }
+.flp-how-calc .row.tot .r { font-size: 18px; color: color-mix(in srgb, var(--c) 85%, var(--text-primary));
+  text-shadow: 0 0 12px color-mix(in srgb, var(--c) 45%, transparent); }
+
+/* 4 · filtered */
+.flp-how-chips { display: flex; flex-direction: column; gap: 6px; }
+.flp-how-chip { display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px; border-radius: 12px; background: rgba(245, 239, 230, 0.035); }
+.flp-how-chip .t-ico { margin-top: 1px; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
+.flp-how-chip .tx { font-size: 12px; line-height: 1.4; color: var(--text-secondary); }
+.flp-how-chip .tx b { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-primary); }
+.flp-how-chip .days { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.flp-how-chip .days span { padding: 2px 7px; border-radius: 8px; font-size: 10.5px; font-variant-numeric: tabular-nums; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+
+/* 5 · confidence meter */
+.flp-how-meter { position: relative; height: 10px; margin: 14px 0 6px; border-radius: 6px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--dv-amber) 45%, transparent),
+    color-mix(in srgb, var(--dv-sage) 30%, transparent) 55%, color-mix(in srgb, var(--dv-sage) 70%, transparent)); }
+.flp-how-meter .pin { position: absolute; top: 50%; width: 16px; height: 16px; border-radius: 50%; transform: translate(-50%, -50%);
+  background: var(--text-primary); box-shadow: 0 0 0 3px rgba(20, 18, 16, 0.9), 0 0 14px color-mix(in srgb, var(--dv-amber) 70%, transparent);
+  transition: left 1s cubic-bezier(0.2, 0.78, 0.24, 1); }
+.flp-how-meter-lbl { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); }
+.flp-how-meter-lbl .on { color: var(--dv-amber); font-weight: 600; }
+
+/* 6 · steps */
+.flp-how-steps { display: flex; align-items: stretch; gap: 4px; }
+.flp-how-step { flex: 1; min-width: 0; padding: 8px 4px; border-radius: 12px; text-align: center; background: rgba(245, 239, 230, 0.035); }
+.flp-how-step b { display: block; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.flp-how-step span { display: block; margin-top: 2px; font-size: 9.5px; line-height: 1.3; color: var(--text-muted); }
+.flp-how-step.is-now { background: none; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 45%, transparent); }
+.flp-how-step.is-now b { color: color-mix(in srgb, var(--c) 85%, var(--text-primary)); }
+.flp-how-step.is-down b { color: var(--dv-coral); }
+.flp-how-step.is-up b { color: var(--dv-sage); }
+.flp-how-steps .ar { align-self: center; font-size: 13px; color: var(--text-muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  .flp-how, .flp-how-btn .chev, .flp-how-meter .pin { transition: none; }
+}
+
 /* ─ Motion: the live mic breathes (feedback, not decoration); reduced motion = still ─ */
 @keyframes flp-mic-breathe {
   0%, 100% { box-shadow: 0 16px 30px -16px rgba(0, 0, 0, 0.75), 0 0 26px -6px color-mix(in srgb, var(--dv-coral) 40%, transparent),
@@ -15359,7 +15470,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 
 /* ── the stack sheets: ONE glass surface each (StackItemSheet gold, dose + medform sky) ── */
 .sheet.glass.fsx-sheet {
-  position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); overflow-x: hidden; overflow-y: auto;
+  position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); overflow-x: hidden; overflow-y: hidden;
   border: 0; border-radius: 30px; padding-bottom: 18px;
 }
 .sheet.fsx-sheet.is-gold { --c: var(--dv-amber); }
@@ -16165,7 +16276,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .sheet.glass.nap-glass-sheet {
   --c: var(--dv-amber);
   position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
-  overflow-x: hidden; overflow-y: auto; border: 0; border-radius: 30px; padding-bottom: 18px;
+  overflow-x: hidden; overflow-y: hidden; border: 0; border-radius: 30px; padding-bottom: 18px;
 }
 .sheet.glass.nap-glass-sheet .sheet-handle { background: rgba(245, 239, 230, 0.22); }
 .nap-glass-sheet .h-display { color: var(--text-primary); }
@@ -16231,7 +16342,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .sheet.capture-sheet.glass {
   --c: var(--capture-accent, var(--dv-sage));
   position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
-  max-height: calc(100% - 70px); overflow-x: hidden; overflow-y: auto;
+  max-height: calc(100% - 70px); overflow-x: hidden; overflow-y: hidden;
   padding: 4px 18px 22px; border: 0; border-radius: 30px;
 }
 .sheet.capture-sheet .sheet-handle-zone { margin: 0 -18px 4px; }
@@ -17902,7 +18013,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .sheet.glass.wos-sheet {
   --c: var(--dv-coral);
   position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
-  overflow-x: hidden; overflow-y: auto; border: 0; border-radius: 30px; padding: 4px 18px 18px;
+  overflow-x: hidden; overflow-y: hidden; border: 0; border-radius: 30px; padding: 4px 18px 18px;
 }
 .sheet.glass.wos-sheet.is-lav { --c: var(--dv-lav); }
 .sheet.glass.wos-sheet .sheet-handle-zone { margin: 0 -18px 4px; }
@@ -17956,7 +18067,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   color: var(--text-primary); color-scheme: dark; background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
 }
 .wos-sheet .setnote::placeholder, .wos-sheet .wos-sheet-ta::placeholder { color: var(--text-muted); }
-.wos-sheet > .wos-primary { margin-top: 16px; }
+.wos-sheet .sheet-scroll > .wos-primary { margin-top: 16px; }
 /* the RP debrief: three questions, flat pill options */
 .wos-sheet .wos-choices { display: grid; gap: 14px; }
 .wos-sheet .wos-choice { display: grid; gap: 6px; }
@@ -19542,7 +19653,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .sheet.glass.gyx-sheet {
   --c: var(--dv-amber);
   position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
-  overflow-x: hidden; overflow-y: auto; border: 0; border-radius: 30px; padding: 4px 18px 18px;
+  overflow-x: hidden; overflow-y: hidden; border: 0; border-radius: 30px; padding: 4px 18px 18px;
 }
 .sheet.glass.gyx-sheet .sheet-handle { background: rgba(245, 239, 230, 0.22); }
 .gyx-sheet .gyx-shh { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 6px; }
@@ -21001,7 +21112,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .sheet.glass.enc-pcat {
   --c: var(--dv-sage);
   position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
-  overflow-x: hidden; overflow-y: auto; border-radius: 30px; padding: 4px 18px 18px;
+  overflow-x: hidden; overflow-y: hidden; border-radius: 30px; padding: 4px 18px 18px;
 }
 .sheet.glass.enc-pcat .sheet-handle { background: rgba(245, 239, 230, 0.22); }
 .enc-pcat .enc-pcat-head { display: flex; align-items: center; gap: 12px; margin: 4px 0 4px; }
@@ -21638,7 +21749,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .sheet.glass.goal-attach-sheet {
   --c: var(--dv-sky);
   position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
-  overflow-x: hidden; overflow-y: auto; border: 0; border-radius: 30px; padding: 4px 18px 18px;
+  overflow-x: hidden; overflow-y: hidden; border: 0; border-radius: 30px; padding: 4px 18px 18px;
 }
 .sheet.glass.goal-attach-sheet .sheet-handle { background: rgba(245, 239, 230, 0.22); }
 .goal-attach-sheet .gas-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
@@ -22156,7 +22267,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .sheet.glass.sst-sheet {
   --c: var(--dv-amber);
   position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
-  max-height: calc(100% - 70px); overflow-x: hidden; overflow-y: auto;
+  max-height: calc(100% - 70px); overflow-x: hidden; overflow-y: hidden;
   padding: 4px 18px 22px; border: 0; border-radius: 30px;
 }
 .sheet.glass.sst-sheet .sheet-handle { width: 40px; height: 5px; background: rgba(245, 239, 230, 0.2); }
@@ -24039,7 +24150,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .sheet.glass.rt-sheet {
   --c: var(--dv-amber);
   position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
-  overflow-x: hidden; overflow-y: auto; border-radius: 30px; padding: 4px 18px 18px;
+  overflow-x: hidden; overflow-y: hidden; border-radius: 30px; padding: 4px 18px 18px;
 }
 .sheet.glass.rt-sheet.is-lav { --c: var(--dv-lav); }
 .sheet.glass.rt-sheet .sheet-handle { background: rgba(245, 239, 230, 0.22); }
@@ -24773,7 +24884,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .sheet.glass.ppl-sheet {
   --c: var(--dv-rose);
   position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
-  max-height: calc(100% - 70px); overflow-x: hidden; overflow-y: auto;
+  max-height: calc(100% - 70px); overflow-x: hidden; overflow-y: hidden;
   padding: 4px 18px 20px; border: 0; border-radius: 30px; color: var(--text-primary);
 }
 .sheet.glass.ppl-sheet .sheet-handle { width: 40px; height: 5px; background: rgba(245, 239, 230, 0.22); }
@@ -25349,7 +25460,7 @@ main.settings-page {
 .sheet.glass.settings-guard-sheet {
   --c: var(--dv-lav);
   position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
-  overflow-x: hidden; overflow-y: auto; border: 0; border-radius: 30px; padding: 4px 18px 18px;
+  overflow-x: hidden; overflow-y: hidden; border: 0; border-radius: 30px; padding: 4px 18px 18px;
 }
 .sheet.glass.settings-guard-sheet .sheet-handle { background: rgba(245, 239, 230, 0.22); }
 .settings-guard-sheet .settings-guard-body { display: grid; gap: 10px; padding: 6px 0 0; }
@@ -25749,7 +25860,7 @@ main.settings-page {
 .sheet.glass.mzc-sheet {
   --c: var(--dv-lav);
   position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
-  overflow-x: hidden; overflow-y: auto; border: 0; border-radius: 30px; padding: 4px 18px 18px;
+  overflow-x: hidden; overflow-y: hidden; border: 0; border-radius: 30px; padding: 4px 18px 18px;
 }
 .sheet.glass.mzc-sheet .sheet-handle-zone { margin: 0 -18px 4px; }
 .sheet.glass.mzc-sheet .sheet-handle { width: 40px; height: 5px; background: rgba(245, 239, 230, 0.22); }
@@ -27557,7 +27668,7 @@ main.settings-page {
 .sheet.glass.m9m-sheet {
   --c: var(--dv-amber);
   position: absolute; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom));
-  overflow-x: hidden; overflow-y: auto; border: 0; border-radius: 30px; padding-bottom: 18px;
+  overflow-x: hidden; overflow-y: hidden; border: 0; border-radius: 30px; padding-bottom: 18px;
 }
 .sheet.glass.m9m-sheet .sheet-handle { background: rgba(245, 239, 230, 0.22); }
 .m9m-sheet .mnt-filter-head { justify-content: flex-start; }
@@ -28392,8 +28503,9 @@ main.settings-page {
    docs/design_2.0/prototypes/src/uveg-reteg-body.html `openKz()` / `udv()`, `.kz*` / `.wel*`.
    The sheet is the kit `<Sheet glass>` in gold; everything inside it is flat (rule 5). */
 .sheet.glass.uv-sheet.kalauz-sheet { --c: var(--dv-amber); padding: 4px 18px 16px; }
-/* rule 2: `.glass > *` would drop the sr-only title and the peek bar into the flow */
-.sheet.glass.kalauz-sheet > .sr-only { position: absolute; }
+/* the sr-only title is now a grandchild (inside `.sheet-scroll`, mezo-zz91i follow-up), so
+   `.glass > *`'s `position: relative` never reaches it — no restate needed, `.sr-only`'s own
+   base rule (`position: absolute`, clipped to 1x1px) already does the job. */
 .sheet.glass.uv-sheet.kalauz-sheet.is-peek {
   animation: none; overflow: hidden;
   transform: translateY(calc(100% - 90px + env(safe-area-inset-bottom)));
@@ -28411,7 +28523,18 @@ main.settings-page {
       0 0 0 9999px rgba(0, 0, 0, 0.72);
   }
 }
-.sheet.glass.kalauz-sheet > .kalauz-peekbar {
+/* Retargeted through `.sheet-scroll` (mezo-zz91i follow-up: the peekbar is now a grandchild of
+   `.sheet`, not a direct child). `.glass > *` (§3) also matches `.sheet-scroll` — it's a direct
+   child of `.sheet.glass` — which would make `.sheet-scroll` (not `.sheet`) this bar's containing
+   block, offset by the handle zone's height and inset by the scroller's own side padding: in
+   `.is-peek` (only the sheet's top 90px shows) that clips the 80px bar. Restated back to `static`
+   below so `.sheet` — the non-scrolling frame, positioned exactly as before the wrapper existed —
+   stays the containing block: `top:10px; left:14px; right:12px` anchor from the frame's padding
+   box again, matching the pre-wrapper geometry. */
+.sheet.glass.kalauz-sheet .sheet-scroll {
+  position: static;
+}
+.sheet.glass.kalauz-sheet .sheet-scroll > .kalauz-peekbar {
   position: absolute; z-index: 4; left: 14px; right: 12px; top: 10px; height: 80px;
   display: flex; align-items: center; gap: 10px; cursor: pointer;
 }

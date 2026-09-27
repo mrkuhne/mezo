@@ -59,6 +59,48 @@ class ExpenditureEstimateRepositoryIT extends AbstractIntegrationTest {
         assertThat(expenditureEstimateRepository.existsByCreatedByAndDeletedFalse(UUID.randomUUID())).isFalse();
     }
 
+    @Test
+    void testFindLatestWithExplanation_shouldSkipUnexplainedRows_andReturnTheNewerExplainedWeek() {
+        UUID user = databasePopulator.populateUser("expenditure-estimate-explained-" + UUID.randomUUID() + "@test.local");
+
+        // Oldest: written before the explainer shipped — explanation stays null.
+        ExpenditureEstimateEntity week1 = newEstimate(user, LocalDate.of(2026, 9, 7));
+        expenditureEstimateRepository.saveAndFlush(week1);
+
+        // Middle: has an explanation.
+        ExpenditureEstimateEntity week2 = newEstimate(user, LocalDate.of(2026, 9, 14));
+        week2.setExplanation(explanationOf(LocalDate.of(2026, 9, 14)));
+        expenditureEstimateRepository.saveAndFlush(week2);
+
+        // Newest: written after the explainer shipped but re-run before it (still null) — must be skipped.
+        ExpenditureEstimateEntity week3 = newEstimate(user, LocalDate.of(2026, 9, 21));
+        expenditureEstimateRepository.saveAndFlush(week3);
+
+        ExpenditureEstimateEntity latestExplained = expenditureEstimateRepository
+            .findFirstByCreatedByAndDeletedFalseAndExplanationIsNotNullOrderByWeekStartDesc(user)
+            .orElseThrow();
+
+        assertThat(latestExplained.getWeekStart()).isEqualTo(LocalDate.of(2026, 9, 14));
+        assertThat(latestExplained.getExplanation()).isNotNull();
+    }
+
+    @Test
+    void testFindLatestWithExplanation_shouldReturnEmpty_whenNoRowHasAnExplanation() {
+        UUID user = databasePopulator.populateUser("expenditure-estimate-no-explanation-" + UUID.randomUUID() + "@test.local");
+        expenditureEstimateRepository.saveAndFlush(newEstimate(user, LocalDate.of(2026, 9, 14)));
+
+        assertThat(expenditureEstimateRepository
+            .findFirstByCreatedByAndDeletedFalseAndExplanationIsNotNullOrderByWeekStartDesc(user))
+            .isEmpty();
+    }
+
+    private io.mrkuhne.mezo.feature.goal.entity.ExpenditureExplanationJson explanationOf(LocalDate windowEnd) {
+        return new io.mrkuhne.mezo.feature.goal.entity.ExpenditureExplanationJson(
+            windowEnd.minusDays(55), windowEnd, windowEnd.minusDays(30), 20, 15, 5, 5,
+            2200, 300, new java.math.BigDecimal("-0.30"), -150, 2350, 2180,
+            List.of(), List.of(), List.of());
+    }
+
     private ExpenditureEstimateEntity newEstimate(UUID user, LocalDate weekStart) {
         ExpenditureEstimateEntity e = new ExpenditureEstimateEntity();
         e.setCreatedBy(user);

@@ -4,6 +4,7 @@ import type {
 } from '@/data/types'
 import { currentWeekOf, localDateString } from '@/shared/lib/dates'
 import { goalResponse, goalTimeline } from '@/data/me/goals'
+import { expenditureExplanationSeed } from '@/data/fuel/expenditureExplanation'
 import { netKcal, restKcalPerHour } from '@/data/train/activityEnergy'
 
 const TODAY = localDateString()
@@ -426,12 +427,14 @@ const m4Dimensions: MealDimension[] = [
 // session is done (the mock schedule's `today: true` gym day) → dayKcal = trainingDayKcal; today's
 // 90′ RPE 6.6 volleyball is credited as off-plan `extra` (net model at rest BMR/24);
 // target = max(BMR, dayKcal + extra); carbs = segment carbs + (target − segment kcal)/4.
-// The equation: base = BMR × NEAT, planned = dayKcal − base − balance, balance absorbs the floor.
+// The equation: base = the learned base (the explainer seed), planned = dayKcal − base − balance, balance absorbs the floor.
 const MOCK_SEGMENTS = goalResponse.prescription!.segments
 const MOCK_WEEK = currentWeekOf(goalResponse.startDate!, goalTimeline.weeks)
 const MOCK_SEGMENT = MOCK_SEGMENTS.find(s => MOCK_WEEK >= s.fromWeek && MOCK_WEEK <= s.toWeek) ?? MOCK_SEGMENTS[0]
 const MOCK_BMR = goalResponse.tdeeBootstrap!.bmr
-const MOCK_BASE_KCAL = goalResponse.tdeeBootstrap!.neatBaselineKcal
+// The served base is the LEARNED one, told as the same story as the „Hogy tanultam?” fixture
+// (mezo-y72o3): applied 2159 (formula 2356, ±200, low) — so the sheet and its explainer agree.
+const MOCK_BASE_KCAL = expenditureExplanationSeed.appliedBaseKcal
 const MOCK_DAY_KCAL = MOCK_SEGMENT.trainingDayKcal ?? MOCK_SEGMENT.kcal
 const MOCK_EXTRA_KCAL = netKcal('volleyball', 6.6, 90, restKcalPerHour(MOCK_BMR)) ?? 0
 const MOCK_TARGET_KCAL = Math.max(MOCK_BMR, MOCK_DAY_KCAL + MOCK_EXTRA_KCAL)
@@ -443,11 +446,11 @@ export const fuelDayEnergy: FuelDayEnergy = {
   balanceKcal: MOCK_TARGET_KCAL - MOCK_BASE_KCAL - MOCK_PLANNED_KCAL - MOCK_EXTRA_KCAL,
   targetKcal: MOCK_TARGET_KCAL,
   // Learned-base demo fixture (mezo-zz91i): baseKcal above IS the learned base; formulaBaseKcal is
-  // the BMR × NEAT the confidence line's formula tile shows next to it.
+  // the BMR × NEAT the confidence line's formula tile shows next to it. All from the explainer seed.
   baseSource: 'learned',
-  formulaBaseKcal: MOCK_BASE_KCAL + 180,
-  baseSdKcal: 140,
-  baseConfidence: 'medium',
+  formulaBaseKcal: expenditureExplanationSeed.formulaBaseKcal,
+  baseSdKcal: expenditureExplanationSeed.posteriorSdKcal,
+  baseConfidence: expenditureExplanationSeed.confidence,
 }
 
 export const fuelDay: FuelDay = {

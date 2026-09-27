@@ -150,7 +150,15 @@ export function Sheet({ children, onClose, className, labelledBy, onBackdropClic
         >
           <div className="sheet-handle" />
         </div>
-        {typeof children === 'function' ? children(requestClose) : children}
+        {/* The sheet's OWN box (`.sheet`) is now a non-scrolling frame — the glass hairline
+            (`.glass::before`, inset:0 on `.sheet` itself) must always outline the box actually on
+            screen, never scroll away with tall content. This inner scroller carries the overflow
+            instead (kit-level fix, mezo-zz91i follow-up: a long sheet like the Fuel energy
+            breakdown used to cut the frame mid-card because `.sheet` itself was the scroll
+            container the pseudo-element's `inset:0` scrolled along with). */}
+        <div className="sheet-scroll">
+          {typeof children === 'function' ? children(requestClose) : children}
+        </div>
       </div>
     </>,
     target,

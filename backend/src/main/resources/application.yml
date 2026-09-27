@@ -256,6 +256,9 @@ mezo:
       min-base-bmr-ratio: 1.10
       high-confidence-sd-kcal: 100
       medium-confidence-sd-kcal: 200
+      # "Hogy tanultam?" explainer (mezo-y72o3): a 7-day glycogen-water rise at least this big is
+      # listed as a water event ("víz, nem zsír").
+      water-event-kg: 0.8
   nutrition:
     # Owner-wide daily macro targets feeding the Fuel-day MacroHero (targets vs consumed).
     # Binds onto NutritionTargetsProperties. Since mezo-najo kcal+p are only the FALLBACK —

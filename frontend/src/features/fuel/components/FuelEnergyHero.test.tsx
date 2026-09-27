@@ -61,6 +61,24 @@ test('az üvegdoboz bezárható', async () => {
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
 
+// mezo-zz91i: a tanult alap az Alap sor sub-szövegét cseréli, a formula-fogalmazás nélkül.
+test('tanult alapnál az Alap sor a súlytrendből tanulást mondja, nem a képletet', async () => {
+  const LEARNED: DayBudget = { ...BUDGET, energy: { ...BUDGET.energy, source: 'learned' } }
+  render(<FuelEnergyHero vm={vm({ budget: LEARNED })} />)
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  const box = screen.getByRole('dialog')
+  const base = [...box.querySelectorAll('.fmx-node')][0]
+  expect(base.querySelector('small')!.textContent).toBe('a súlytrendedből és az evésedből tanulva')
+})
+
+test('formula alapnál az Alap sor a régi életmód-szöveget mondja', async () => {
+  render(<FuelEnergyHero vm={vm()} />)
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  const box = screen.getByRole('dialog')
+  const base = [...box.querySelectorAll('.fmx-node')][0]
+  expect(base.querySelector('small')!.textContent).toBe('az alapanyagcseréd és az életmódod')
+})
+
 // Őszinte-null: statikus keretnél nincs kitalált mozgás-szám.
 test('statikus keretnél a mozgás sora gondolatjel', async () => {
   render(<FuelEnergyHero vm={vm({ staticEnergy: true })} />)

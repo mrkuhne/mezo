@@ -48,6 +48,23 @@ test('unmount clears the pending exit timer — no onClose after unmount', () =>
   }
 })
 
+// mezo-zz91i follow-up: the sheet's own box is a non-scrolling FRAME — a glass hairline painted
+// on it (`.glass::before`) must always outline the whole visible sheet, never scroll away with
+// tall content. Children live in an inner `.sheet-scroll`; the drag handle stays outside it, in
+// the frame, so it's always visible regardless of scroll position.
+test('children render inside .sheet-scroll; the handle zone stays outside it', () => {
+  render(<Sheet onClose={() => {}}><p>tartalom</p></Sheet>)
+  const dialog = screen.getByRole('dialog')
+  const scroll = dialog.querySelector('.sheet-scroll')
+  expect(scroll).toBeTruthy()
+  expect(scroll!.contains(screen.getByText('tartalom'))).toBe(true)
+  const handleZone = dialog.querySelector('.sheet-handle-zone')!
+  expect(scroll!.contains(handleZone)).toBe(false)
+  expect(dialog.contains(handleZone)).toBe(true)
+  // the handle zone comes before the scroller — the handle is always the first thing on screen
+  expect(handleZone.compareDocumentPosition(scroll!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+})
+
 // U10 (mezo-me75u.10): `glass` opts the sheet into the kit's floating glass recipe; without it
 // the caller's own className is untouched (the slices that dressed their sheets keep their scope).
 test('glass opts into the kit glass sheet, and only then', () => {

@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.goal.engine.service;
 
 import io.mrkuhne.mezo.feature.goal.engine.GoalEngineProperties;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,6 +36,18 @@ public final class ExpenditureFilter {
     public record Estimate(double baseKcal, double sdKcal) {
     }
 
+    /** A run's posterior plus its per-day state trace (mezo-y72o3, the "Hogy tanultam?" explainer). */
+    public record Traced(Estimate estimate, List<DayTrace> days) {
+    }
+
+    /**
+     * The filtered state at the end of one day (after that day's weigh-in update, if any): tissue
+     * {@code m}, transient water {@code w} and the glycogen-water input {@code G} the day's weigh-in
+     * was priced against — so {@code m + w + G} is the de-noised scale trend.
+     */
+    public record DayTrace(LocalDate date, double tissueKg, double waterKg, double glycogenKg) {
+    }
+
     public record Params(int kcalPerKg, double priorSdKcal, double sigmaScaleKg, double sigmaTissueKg,
                          double intakeErrorPct, double sigmaUnknownKcal, double waterPhi, double sigmaWaterKg,
                          double sigmaBaseKcal, double glycogenKgPerG, double glycogenMaxKg, double glycogenAlpha,
@@ -53,6 +66,17 @@ public final class ExpenditureFilter {
 
     /** @return the posterior base at the end of the last day, or empty when no day has a weigh-in */
     public static Optional<Estimate> run(List<Day> days, double priorBaseKcal, Params p) {
+        return runWithTrace(days, priorBaseKcal, p).map(Traced::estimate);
+    }
+
+    /**
+     * {@link #run} plus one {@link DayTrace} per calendar day from the first weigh-in on — the same
+     * arithmetic; the trace is only read off the state, never fed back.
+     *
+     * @return empty when no day has a weigh-in
+     */
+    public static Optional<Traced> runWithTrace(List<Day> days, double priorBaseKcal, Params p) {
+        List<DayTrace> trace = new ArrayList<>();
         double cref = medianCarbs(days);
         double rho = p.kcalPerKg();
         double[] x = null;
@@ -67,11 +91,13 @@ public final class ExpenditureFilter {
                 }
                 // A morning weigh-in predates the day's own eating, so it is priced against the carb
                 // EWMA as it stood BEFORE d — the EWMA folds in d's carbs only after this init step.
-                x = new double[] {d.weightKg() - glycogen(carbEwma, cref, p), 0, priorBaseKcal};
+                double g0 = glycogen(carbEwma, cref, p);
+                x = new double[] {d.weightKg() - g0, 0, priorBaseKcal};
                 cov = new double[][] {
                     {sq(p.sigmaInitMassKg()), 0, 0},
                     {0, sq(p.sigmaInitWaterKg()), 0},
                     {0, 0, p.priorSdKcal() * p.priorSdKcal()}};
+                trace.add(new DayTrace(d.date(), x[0], x[1], g0));
                 prev = d;
                 carbEwma = updateCarbEwma(carbEwma, d, p);
                 continue;
@@ -97,8 +123,9 @@ public final class ExpenditureFilter {
                 {qm, 0, 0}, {0, sq(p.sigmaWaterKg()), 0}, {0, 0, sq(p.sigmaBaseKcal())}});
             // Update on a weigh-in: z = m + w + G + v. Priced against the EWMA as it stood BEFORE d,
             // same reasoning as the init step above — d's own carbs are folded in only afterward.
+            double g = glycogen(carbEwma, cref, p);
             if (d.weightKg() != null) {
-                double y = d.weightKg() - glycogen(carbEwma, cref, p) - (x[0] + x[1]);
+                double y = d.weightKg() - g - (x[0] + x[1]);
                 double s = cov[0][0] + cov[0][1] + cov[1][0] + cov[1][1] + sq(p.sigmaScaleKg());
                 double[] k = new double[3];
                 double[] hp = new double[3];
@@ -113,10 +140,12 @@ public final class ExpenditureFilter {
                     }
                 }
             }
+            trace.add(new DayTrace(d.date(), x[0], x[1], g));
             prev = d;
             carbEwma = updateCarbEwma(carbEwma, d, p);
         }
-        return x == null ? Optional.empty() : Optional.of(new Estimate(x[2], Math.sqrt(cov[2][2])));
+        return x == null ? Optional.empty()
+            : Optional.of(new Traced(new Estimate(x[2], Math.sqrt(cov[2][2])), List.copyOf(trace)));
     }
 
     private static Double updateCarbEwma(Double carbEwma, Day d, Params p) {
