@@ -67,6 +67,7 @@ public class DietSettingsService {
         row.setWaterMl(req.getWaterMl());
         row.setFiberG(req.getFiberG());
         row.setDayTypeShiftKcal(req.getDayTypeShiftKcal());
+        row.setLearningEnabled(req.getLearningEnabled() != null ? req.getLearningEnabled() : row.getLearningEnabled());
         repository.save(row);
         // The split moved (Diet Plan slice 1 — the 7th recompute trigger): re-prescribe the owner's
         // ACTIVE goal so segments carry the new carbsG/fatG. No active goal → skip gracefully.
@@ -91,7 +92,7 @@ public class DietSettingsService {
         validateCustomSplit(req);
         LocalDate today = LocalDate.now();
         GoalPrescriptionJson.Segment seg =
-            goalEngineService.previewActiveGoalSegment(userId, toPreferences(req), today);
+            goalEngineService.previewActiveGoalSegment(userId, toPreferences(userId, req), today);
         // No goal handle here (the engine owns the draft recompute): no EnergyBase, so no BMR floor
         // and no breakdown — the preview only reads kcal and macros (mezo-32m82).
         DailyTargets t = DayTargetProjector.project(
@@ -105,9 +106,17 @@ public class DietSettingsService {
             .build();
     }
 
-    /** The request as engine preferences — the custom pcts drop out for every named preset, as on save. */
-    private static DietPreferences toPreferences(SetDietSettingsRequest req) {
+    /**
+     * The request as engine preferences — the custom pcts drop out for every named preset, as on
+     * save. The learning switch is not part of the draft's macro fields, but the calculator still
+     * reads {@link DietPreferences#learningEnabled()} (mezo-3n2so): honour the draft's value when
+     * the caller sent one, else fall back to the caller's stored/resolved switch.
+     */
+    private DietPreferences toPreferences(UUID userId, SetDietSettingsRequest req) {
         boolean custom = PRESET_CUSTOM.equals(req.getSplitPreset().getValue());
+        boolean learningEnabled = req.getLearningEnabled() != null
+            ? req.getLearningEnabled()
+            : resolver.resolve(userId).learningEnabled();
         return new DietPreferences(
             req.getSplitPreset().getValue(),
             custom ? req.getProteinPctX10() : null,
@@ -117,7 +126,7 @@ public class DietSettingsService {
             req.getWaterMl(),
             req.getFiberG(),
             req.getDayTypeShiftKcal(),
-            true); // the learning switch is not part of this preview draft (mezo-3n2so); irrelevant to macro projection
+            learningEnabled);
     }
 
     /** Custom split must sum to exactly 100.0% (all three fields present). */
@@ -144,6 +153,7 @@ public class DietSettingsService {
             .waterMl(p.waterMl())
             .fiberG(p.fiberG())
             .dayTypeShiftKcal(p.dayTypeShiftKcal())
+            .learningEnabled(p.learningEnabled())
             .build();
     }
 }

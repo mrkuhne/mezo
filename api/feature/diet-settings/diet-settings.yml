@@ -80,7 +80,7 @@ components:
   schemas:
     DietSettingsResponse:
       type: object
-      required: [splitPreset, proteinTier, waterMl, fiberG, dayTypeShiftKcal]
+      required: [splitPreset, proteinTier, waterMl, fiberG, dayTypeShiftKcal, learningEnabled]
       properties:
         splitPreset:
           type: string
@@ -107,6 +107,9 @@ components:
           minimum: 0
           maximum: 500
           description: 'Kcal moved off each rest day onto training days (weekly budget unchanged); 0 = uniform days'
+        learningEnabled:
+          type: boolean
+          description: The learned-expenditure learning switch (mezo-3n2so) — on by default
     DietSettingsPreviewResponse:
       type: object
       required: [kcal, proteinG, carbsG, fatG, source]
@@ -139,3 +142,6 @@ components:
           minimum: 0
           maximum: 500
           description: 'Kcal moved off each rest day onto training days (weekly budget unchanged); 0 = uniform days'
+        learningEnabled:
+          type: boolean
+          description: The learned-expenditure learning switch (mezo-3n2so) — absent keeps the stored/resolved value

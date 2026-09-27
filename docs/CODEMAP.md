@@ -730,27 +730,31 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `IntakeDayClassifier`, `IntakeDayMarkService`, `LearnedBaseResolver`, `MesoLifecycleSuggestionListener`,
     `TdeeBootstrapService`, `TrainGoalRecomputeAdapter`, `WeeklyCardPolicy`
   - **controllers→contract:** `GoalController`→`GoalApi`
-  - **mappers:** `ExpenditureExplanationMapper`, `GoalMapper`, `GoalPlanLinkMapper`, `GoalSuggestionMapper`
+  - **mappers:** `ExpenditureExplanationMapper`, `ExpenditureInsightMapper`, `GoalMapper`, `GoalPlanLinkMapper`,
+    `GoalSuggestionMapper`
   - **other:** `ActivityModelMigrationRunner`, `DailyIntakePort`, `ExcludedIntakeDayJson`,
     `ExpenditureExplanationJson`, `ExpenditureRolloutRunner`, `GoalEngineProperties`, `GoalPrescriptionJson`,
     `GoalReevaluateRunner`, `GoalSeedData`, `GoalSegmentOverrideJson`, `GoalSuggestionPayloadJson`,
     `IntakeAdherencePort`, `SleepAdequacyPort`, `TdeeBootstrapJson`
-- **Contract** `api/feature/goal/goal.yml` — 18 operations
+- **Contract** `api/feature/goal/goal.yml` — 24 operations
   - **endpoints:** GET /api/goals · POST /api/goals · POST /api/goals/feasibility-preview ·
-    GET /api/goals/expenditure/explanation · GET /api/goals/{id} · PUT /api/goals/{id} · DELETE /api/goals/{id} ·
-    GET /api/goals/{id}/overview · POST /api/goals/{id}/activate · POST /api/goals/{id}/archive ·
-    GET /api/goals/{id}/timeline · POST /api/goals/{id}/evaluate · POST /api/goals/{id}/plans ·
-    DELETE /api/goals/{id}/plans/{linkId} · GET /api/goals/{id}/suggestions ·
+    GET /api/goals/expenditure/explanation · GET /api/goals/expenditure/weeks · GET /api/goals/expenditure/weekly-card ·
+    POST /api/goals/expenditure/weekly-card/{weekStart}/dismiss · GET /api/goals/expenditure/days ·
+    PUT /api/goals/expenditure/days/{date}/mark · DELETE /api/goals/expenditure/days/{date}/mark · GET /api/goals/{id} ·
+    PUT /api/goals/{id} · DELETE /api/goals/{id} · GET /api/goals/{id}/overview · POST /api/goals/{id}/activate ·
+    POST /api/goals/{id}/archive · GET /api/goals/{id}/timeline · POST /api/goals/{id}/evaluate ·
+    POST /api/goals/{id}/plans · DELETE /api/goals/{id}/plans/{linkId} · GET /api/goals/{id}/suggestions ·
     GET /api/goals/{id}/suggestions/{suggestionId}/preview · POST /api/goals/{id}/suggestions/{suggestionId}/accept ·
     POST /api/goals/{id}/suggestions/{suggestionId}/dismiss
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 26 IT + 15 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 27 IT + 15 unit
   - **ITs:** `ActivityModelMigrationRunnerIT`, `AdaptiveReviewServiceIT`, `ExpenditureEstimateRepositoryIT`,
-    `ExpenditureExplanationControllerIT`, `ExpenditureInsightServiceIT`, `ExpenditureLearningServiceIT`,
-    `ExpenditureRolloutRunnerIT`, `GoalContractIT`, `GoalEnginePropertiesIT`, `GoalEngineRecomputeIT`,
-    `GoalEvaluationServiceIT`, `GoalFeasibilityServiceIT`, `GoalOverviewApiIT`, `GoalPlanLinkServiceIT`,
-    `GoalProjectionServiceIT`, `GoalReevaluateRunnerIT`, `GoalServiceIT`, `GoalSuggestionNotificationIT`,
-    `GoalSuggestionPreviewApiIT`, `GoalSuggestionServiceIT`, `GoalSuggestionTriggerIT`, `GoalTimelineContractIT`,
-    `GoalTimelineServiceIT`, `GuardEvaluationServiceIT`, `IntakeDayMarkRepositoryIT`, `IntakeDayMarkServiceIT`
+    `ExpenditureExplanationControllerIT`, `ExpenditureInsightControllerIT`, `ExpenditureInsightServiceIT`,
+    `ExpenditureLearningServiceIT`, `ExpenditureRolloutRunnerIT`, `GoalContractIT`, `GoalEnginePropertiesIT`,
+    `GoalEngineRecomputeIT`, `GoalEvaluationServiceIT`, `GoalFeasibilityServiceIT`, `GoalOverviewApiIT`,
+    `GoalPlanLinkServiceIT`, `GoalProjectionServiceIT`, `GoalReevaluateRunnerIT`, `GoalServiceIT`,
+    `GoalSuggestionNotificationIT`, `GoalSuggestionPreviewApiIT`, `GoalSuggestionServiceIT`, `GoalSuggestionTriggerIT`,
+    `GoalTimelineContractIT`, `GoalTimelineServiceIT`, `GuardEvaluationServiceIT`, `IntakeDayMarkRepositoryIT`,
+    `IntakeDayMarkServiceIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`,
     `GoalSuggestionPopulator`, `MealPopulator`, `RunningPopulator`, `TrainPopulator`, `UserPopulator`,
     `WeightLogPopulator`
