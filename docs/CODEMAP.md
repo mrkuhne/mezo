@@ -812,8 +812,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     CoachingCardPage.tsx, CoachingHubPage.tsx, CoachingObserverPage.tsx, DiagnosisDetailPage.tsx,
     DiagnosisListPage.tsx, ExperimentDetailPage.tsx, ExperimentsPage.tsx, KnowledgeListPage.tsx, KnowledgeNodePage.tsx,
     MemoirArchivePage.tsx, MemoirChapterPage.tsx, MemoirPage.tsx, MemoryDayPage.tsx, MemoryPage.tsx, MezoHubPage.tsx,
-    PatternDetailPage.tsx, PatternsPage.tsx, PredictionDetailPage.tsx, PredictionsPage.tsx, TeamChatPage.tsx,
-    TeamFeedPage.tsx, TeamPage.tsx
+    PatternDetailPage.tsx, PatternsPage.tsx, PredictionDetailPage.tsx, PredictionsPage.tsx, RoladLifeEventsPage.tsx,
+    TeamChatPage.tsx, TeamFeedPage.tsx, TeamPage.tsx
   - **sheets:** ConversationActionsSheet.tsx, ConversationPickerSheet.tsx, NodeDetailSheet.tsx
   - **components:** AskTeamRow.tsx, AskTeamSheet.tsx, CategoryHeader.tsx, ChatMessage.tsx, CoachingRuleTile.tsx,
     DetailHero.tsx, EmberekSection.tsx, EszrevetelekSection.tsx, EvidenceLog.tsx, FactCandidateCard.tsx,
@@ -825,9 +825,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     PatternAnswerHero.tsx, PatternArtifactDetail.tsx, PatternDecisionCard.tsx, PatternDomainMark.tsx,
     PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx, PatternLeanMeter.tsx, PatternRuleCard.tsx,
     PatternZoneChart.tsx, ProfileNodeCard.tsx, ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx,
-    RememberedChips.tsx, ReplyAfterlife.tsx, RoladFacts.tsx, RoladInbox.tsx, RoladQuote.tsx, RoladTimeline.tsx,
-    RoomCaseCard.tsx, SimilarDayCard.tsx, StoryStrip.tsx, TenyekSection.tsx, TokenColumns.tsx, ToolWorkStrip.tsx,
-    VerdictArc.tsx, experimentStatus.tsx, riseStyle.ts, useFeedSession.ts, useTeamFeed.ts
+    RememberedChips.tsx, ReplyAfterlife.tsx, RoladInbox.tsx, RoladQuote.tsx, RoladTimeline.tsx, RoomCaseCard.tsx,
+    SimilarDayCard.tsx, StoryStrip.tsx, TenyekSection.tsx, TokenColumns.tsx, ToolWorkStrip.tsx, VerdictArc.tsx,
+    experimentStatus.tsx, riseStyle.ts, useFeedSession.ts, useTeamFeed.ts
   - **logic:** boopNavigation.ts, chatRefs.ts, coachingCopy.ts, diagnosisCatalog.ts, diagnosisCopy.ts,
     diagnosisTeam.ts, domains.ts, factCopy.ts, findings.ts, hubCopy.ts, hubCounts.ts, hubSearch.ts, hubTopics.ts,
     humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternCatalog.ts, patternCopy.ts,
