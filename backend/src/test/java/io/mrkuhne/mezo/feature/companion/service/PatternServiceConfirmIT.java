@@ -83,12 +83,14 @@ class PatternServiceConfirmIT extends AbstractIntegrationTest {
     }
 
     /**
-     * S2 delta (final-review adjudications 2026-09-25): a drift card's confirm ("igen, ez most is
-     * így van") only freezes the row — it must NEVER mint a fact that would contradict the
-     * ORIGINAL confirmed fact the drift row is about. Superseding it is S6's job.
+     * S6 (mezo-d6ivw.6) inverts the S2 delta: a drift card's confirm ("igen, ez most is így van")
+     * is now an automatic replacement — it promotes through the normal confirm path just like any
+     * other plan-less row. Superseding the ORIGINAL confirmed fact (when one exists) is exercised
+     * by {@code DriftSupersessionIT}; here the drift row's {@code pairKey} points at no live
+     * original, so supersession is a no-op and only the promote-only path is asserted.
      */
     @Test
-    void testApplyUserConfirm_shouldFreezeWithoutPromoting_whenRowIsADriftCard() {
+    void testApplyUserConfirm_shouldPromoteAndFreeze_whenRowIsADriftCard() {
         UUID owner = userPopulator.createUser().getId();
         PatternEntity row = patternPopulator.reflectionNoPlan(owner, PatternEntity.STATUS_PROPOSED);
         row.setPairKey(PatternEntity.PAIR_KEY_DRIFT_PREFIX + UUID.randomUUID());
@@ -99,13 +101,12 @@ class PatternServiceConfirmIT extends AbstractIntegrationTest {
 
         PatternEntity saved = patternRepository.findById(row.getId()).orElseThrow();
         assertThat(saved.getStatus()).isEqualTo(PatternEntity.STATUS_CONFIRMED);
-        assertThat(saved.getPromotedFactId()).isNull();
+        assertThat(saved.getPromotedFactId()).isNotNull();
         assertThat(knowledgeFactRepository.findByCreatedByAndSourceAndDeletedFalse(owner,
-                KnowledgeFactEntity.SOURCE_PATTERN)).isEmpty();
+                KnowledgeFactEntity.SOURCE_PATTERN)).hasSize(1);
         assertThat(patternEventRepository
                 .findByCreatedByAndPatternIdAndDeletedFalseOrderByOccurredAtAsc(owner, row.getId()))
                 .extracting(PatternEventEntity::getKind)
-                .containsExactly(PatternEventEntity.KIND_CONFIRMED)
-                .doesNotContain(PatternEventEntity.KIND_PROMOTED);
+                .containsExactly(PatternEventEntity.KIND_CONFIRMED, PatternEventEntity.KIND_PROMOTED);
     }
 }
