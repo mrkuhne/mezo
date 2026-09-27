@@ -28427,10 +28427,11 @@ main.settings-page {
   }
 }
 /* Retargeted through `.sheet-scroll` (mezo-zz91i follow-up: the peekbar is now a grandchild of
-   `.sheet`, not a direct child). `.sheet-scroll` itself stays `position: static` (deliberately —
-   see Sheet.tsx/`.sheet-scroll`), so this absolutely positioned bar's containing block is still
-   `.sheet` (the non-scrolling frame), exactly as before: anchored to the frame, not the scroller,
-   so it never scrolls away under the (aria-hidden, `.is-peek`-only) card body beneath it. */
+   `.sheet`, not a direct child). `.glass > *` (§3) also matches `.sheet-scroll` — it's a direct
+   child of `.sheet.glass` — so `.sheet-scroll` is `position: relative`, not static, and IS this
+   bar's containing block. That is the same geometry as before the wrapper: `.sheet` itself used
+   to be both the scroll container and the containing block, so the bar scrolled with its content
+   then too. Nothing changed here — only the selector needed to follow the bar to its new parent. */
 .sheet.glass.kalauz-sheet .sheet-scroll > .kalauz-peekbar {
   position: absolute; z-index: 4; left: 14px; right: 12px; top: 10px; height: 80px;
   display: flex; align-items: center; gap: 10px; cursor: pointer;
