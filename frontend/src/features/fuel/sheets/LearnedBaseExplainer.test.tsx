@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { delay, http, HttpResponse } from 'msw'
@@ -9,6 +9,7 @@ import { expenditureExplanationSeed as seed } from '@/data/fuel/expenditureExpla
 import { fuelDayEnergy } from '@/data/fuel/fuel'
 import type { ExpenditureExplanation } from '@/data/fuel/expenditureApi'
 import { LearnedBaseExplainerBody, meterPosition } from '@/features/fuel/sheets/LearnedBaseExplainer'
+import { LearnedBaseChart } from '@/features/fuel/sheets/LearnedBaseChart'
 import { EnergyBreakdownSheet, type EnergyBreakdown } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 
 const body = (x: Partial<ExpenditureExplanation> = {}, reducedMotion = true) =>
@@ -22,7 +23,10 @@ const learned: EnergyBreakdown = {
   target: 1963,
 }
 
-afterEach(() => vi.unstubAllEnvs())
+afterEach(() => {
+  vi.unstubAllEnvs()
+  vi.restoreAllMocks()
+})
 
 describe('LearnedBaseExplainerBody — the fixture numbers', () => {
   it('renders all six sections with the persisted numbers', () => {
@@ -166,11 +170,36 @@ describe('LearnedBaseExplainerBody — motion', () => {
     expect(Number(first.getAttribute('height'))).toBeGreaterThan(0)
     expect(chart.querySelector('.flp-how-trend')!.getAttribute('stroke-dashoffset')).toBe('0')
   })
-  it('with motion the chart starts undrawn and draws in', async () => {
-    body({}, false)
+  // The chart's own one-shot rAF pass reads real wall-clock time (`performance.now()`) over a real
+  // 900ms — under a loaded full-suite run that never reliably finishes inside a `waitFor` timeout
+  // (mezo-y72o3 follow-up: this flaked main's CI). Driven deterministically instead, the same way
+  // WorkoutCeremony.test.tsx drives its own rAF pass: spy `requestAnimationFrame` to capture the
+  // frame callback instead of scheduling it, pin `performance.now()` so the pass's `t0` is known,
+  // then invoke the captured callback by hand with a chosen timestamp — no real animation, no
+  // clock, no flake. Rendered as the bare `<LearnedBaseChart>` (not the full explainer body) so
+  // the single captured frame is unambiguously the chart's own, not entangled with the sibling
+  // confidence-meter's independent rAF pass.
+  it('with motion the chart starts undrawn and draws in', () => {
+    const frames: FrameRequestCallback[] = []
+    const raf = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+      frames.push(cb)
+      return frames.length
+    })
+    vi.spyOn(performance, 'now').mockReturnValue(0)
+
+    render(<LearnedBaseChart series={seed.series} historyWeeks={seed.historyWeeks} reducedMotion={false} />)
     const chart = screen.getByRole('img')
+
+    // First frame (mount): undrawn — progress 0, the trend line's dash fully offset (hidden).
+    expect(chart.getAttribute('data-progress')).toBe('0')
     expect(Number(chart.querySelector('.flp-how-trend')!.getAttribute('stroke-dashoffset'))).toBeGreaterThan(0)
-    await waitFor(() => expect(chart.getAttribute('data-progress')).toBe('1'), { timeout: 3000 })
+    expect(raf).toHaveBeenCalledTimes(1)
+
+    // Advance by hand straight to the pass's own 900ms duration (DUR in LearnedBaseChart.tsx) —
+    // the final frame: fully drawn.
+    act(() => { frames[0]?.(900) })
+    expect(chart.getAttribute('data-progress')).toBe('1')
+    expect(chart.querySelector('.flp-how-trend')!.getAttribute('stroke-dashoffset')).toBe('0')
   })
 })
 
