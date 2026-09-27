@@ -43,7 +43,7 @@ The load-bearing ones:
    EXTENDS this file (hash-routed pages), so it stays one coherent clickable world.
 3. **`docs/design_2.0/2026-09-23-uveg-style-bible.md`** — the glass material, icons (§4),
    data graphics (§5), motion (§6), chrome (§7). Where it conflicts with older bibles, it wins.
-4. The `/uvegesites` skill — its Procedure §1 (prototype rules: HTTP serve, cache-bust,
+4. The prototype recipe `docs/design_2.0/prototype-recipe.md` (formerly `/uvegesites` §1) (prototype rules: HTTP serve, cache-bust,
    "Új ikonok" sheet, §3.4 ranking) applies here verbatim.
 5. For what a screen must cover: `docs/features/{insights,character,companion,proactive}.md`
    and the 2026-09-21 audit (`docs/superpowers/specs/2026-09-21-boop-social-ai-audit.md`) —

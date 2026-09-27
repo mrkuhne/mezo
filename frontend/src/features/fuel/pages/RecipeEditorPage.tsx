@@ -1,6 +1,6 @@
 // ============================================================
 // Mezo · RecipeEditorPage (Receptek — create = edit PAGE)
-// Approved full-page editor (docs/design/recipes-editor.html · left phone),
+// Approved full-page editor (docs/archive/design-v1/recipes-editor.html · left phone),
 // replacing the retired NewRecipeSheet. Captures every real field: név, slot
 // (segmented), csillag, adag + elő/főzési idő (steppers), címkék (chips),
 // hozzávalók (picked rows = MacroCells contribution at the line amount, live via

@@ -1,6 +1,6 @@
 // ============================================================
 // Mezo · ServingToggle (/adag ↔ egész)
-// The segmented basis switch from docs/design/recipes-detail.html (.segtoggle).
+// The segmented basis switch from docs/archive/design-v1/recipes-detail.html (.segtoggle).
 // Used by RecipeDetailPage's macro hero, RecipeEditorPage's live total card and the Műhely hero.
 // `servings` is the real recipe value; the "whole" label echoes it.
 // ============================================================

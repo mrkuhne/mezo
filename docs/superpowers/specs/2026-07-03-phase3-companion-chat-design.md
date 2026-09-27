@@ -3,7 +3,7 @@
 - **Date:** 2026-07-03
 - **Status:** accepted (point-in-time design artifact)
 - **Driver:** bd `mezo-fnnq` (epic) · roadmap: [`../plans/2026-07-03-companion-roadmap.md`](../plans/2026-07-03-companion-roadmap.md)
-- **Sources:** old Supabase-era docs — [`../../old docs/mezo-prd.md`](../../old%20docs/mezo-prd.md) (PRD v2.1) + [`../../old docs/mezo-architecture.md`](../../old%20docs/mezo-architecture.md) (Architecture v2.1). This spec is the **distillation** of those docs onto the current stack; slice sessions should read THIS, not the old docs (link into them only where this spec points at a section for extra depth).
+- **Sources:** old Supabase-era docs — [`../../archive/old-docs/mezo-prd.md`](../../archive/old-docs/mezo-prd.md) (PRD v2.1) + [`../../archive/old-docs/mezo-architecture.md`](../../archive/old-docs/mezo-architecture.md) (Architecture v2.1). This spec is the **distillation** of those docs onto the current stack; slice sessions should read THIS, not the old docs (link into them only where this spec points at a section for extra depth).
 
 ## 1. Product goal — the pain this kills
 
