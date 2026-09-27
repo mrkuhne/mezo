@@ -94,6 +94,10 @@ class ForgetServiceIT extends AbstractIntegrationTest {
         assertThat(facts.findByIdAndCreatedByAndDeletedFalse(fact.getId(), owner)).isEmpty();
         assertThat(vetoes.existsByCreatedByAndDomainAndVetoKeyAndDeletedFalse(
                 owner, MemoryForgetVetoEntity.DOMAIN_PATTERN, row.getId().toString())).isTrue();
+        // final review Minor 15: the learned fact's text is vetoed too, not only the row
+        assertThat(vetoes.existsByCreatedByAndDomainAndVetoKeyAndDeletedFalse(
+                owner, MemoryForgetVetoEntity.DOMAIN_FACT_TEXT,
+                MemoryForgetVetoEntity.factTextVetoKey(row.getTitle()))).isTrue();
     }
 
     @Test

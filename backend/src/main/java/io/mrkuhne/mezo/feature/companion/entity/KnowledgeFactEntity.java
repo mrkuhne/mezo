@@ -139,11 +139,14 @@ public class KnowledgeFactEntity extends OwnedEntity {
         this.mutedAt = at;
     }
 
-    /** S6: re-enable clears the reason, whatever it was (the user may revive a superseded fact). */
+    /** S6: re-enable clears the reason, whatever it was (the user may revive a superseded fact).
+     *  A revived superseded fact drops its successor link too — retrieval and the S7 owner read
+     *  both skip rows with {@code superseded_by} set, so keeping it would re-enable in name only. */
     public void unmute() {
         this.includeInPrompt = true;
         this.mutedReason = null;
         this.mutedAt = null;
+        this.supersededBy = null;
     }
 
     @PrePersist

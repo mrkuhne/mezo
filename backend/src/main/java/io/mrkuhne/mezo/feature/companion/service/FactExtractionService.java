@@ -98,10 +98,10 @@ public class FactExtractionService {
         learnedFactRepository
                 .findByCreatedByAndUserDecisionIsNullAndDeletedFalseOrderByCreatedAtDesc(userId)
                 .forEach(c -> known.add(normalize(c.getCandidateText())));
-        // S6 (mezo-d6ivw.6): a forgotten text is never proposed again from the chat. Added to
-        // `known` (not to `confirmed`), so a hit is silent — no candidate, no reinforcement.
-        vetoRepository.findByCreatedByAndDomainAndDeletedFalse(userId, MemoryForgetVetoEntity.DOMAIN_FACT_TEXT)
-                .forEach(v -> known.add(v.getVetoKey()));
+        // S6 (mezo-d6ivw.6): a forgotten text is never proposed again from the chat. Compared
+        // through the ONE shared key helper (the stored key is width-capped), and a hit is
+        // silent — no candidate, no reinforcement.
+        Set<String> vetoed = vetoedFactTextKeys(userId);
         int persisted = 0;
         for (ExtractedFact fact : extracted) {
             if (persisted >= properties.extraction().maxCandidatesPerTurn()) {
@@ -123,6 +123,9 @@ public class FactExtractionService {
                 }
                 continue; // duplicate of a confirmed fact, a pending candidate, or this batch
             }
+            if (vetoed.contains(MemoryForgetVetoEntity.factTextVetoKey(fact.fact()))) {
+                continue; // the user made Mezo forget this text
+            }
             LearnedFactEntity candidate = new LearnedFactEntity();
             candidate.setCreatedBy(userId);
             candidate.setCandidateText(fact.fact().trim());
@@ -139,6 +142,11 @@ public class FactExtractionService {
                     "fact_candidate:" + candidate.getId());
         }
         return persisted;
+    }
+
+    private Set<String> vetoedFactTextKeys(UUID userId) {
+        return vetoRepository.findByCreatedByAndDomainAndDeletedFalse(userId, MemoryForgetVetoEntity.DOMAIN_FACT_TEXT)
+                .stream().map(MemoryForgetVetoEntity::getVetoKey).collect(Collectors.toSet());
     }
 
     /** Defensive parse: first '['..last ']' substring, tolerant of fences/prose around the array. */

@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -81,10 +82,28 @@ public class ForgetService {
     }
 
     void deleteAndVeto(UUID userId, KnowledgeFactEntity fact) {
-        veto(userId, MemoryForgetVetoEntity.DOMAIN_FACT_TEXT,
-                MemoryForgetVetoEntity.normalizeFactText(fact.getFactText()));
+        veto(userId, MemoryForgetVetoEntity.DOMAIN_FACT_TEXT, MemoryForgetVetoEntity.factTextVetoKey(fact.getFactText()));
         factRepository.delete(fact); // @SQLDelete → soft delete
         eventPublisher.publishEvent(new KnowledgeFactChangedEvent(userId, fact.getId()));
+        releaseSuperseded(userId, fact.getId());
+    }
+
+    /**
+     * A drift supersession's successor is gone, so "felülírta egy újabb észrevétel" is no longer
+     * true of the original. It is not re-injected on its own (the user made the knowledge go
+     * away, not come back) — it becomes the user's own mute: silent, listed under
+     * Elhallgattatott, one tap from Visszakapcsolom.
+     */
+    private void releaseSuperseded(UUID userId, UUID forgottenId) {
+        Instant now = Instant.now();
+        for (KnowledgeFactEntity original : factRepository.findByCreatedByAndSupersededByAndDeletedFalse(userId, forgottenId)) {
+            if (KnowledgeFactEntity.MUTED_SUPERSEDED.equals(original.getMutedReason())) {
+                original.mute(KnowledgeFactEntity.MUTED_USER, now);
+            }
+            original.setSupersededBy(null);
+            factRepository.save(original);
+            eventPublisher.publishEvent(new KnowledgeFactChangedEvent(userId, original.getId()));
+        }
     }
 
     void forgetPatternRow(UUID userId, PatternEntity pattern) {
@@ -107,7 +126,7 @@ public class ForgetService {
         MemoryForgetVetoEntity veto = new MemoryForgetVetoEntity();
         veto.setCreatedBy(userId);
         veto.setDomain(domain);
-        veto.setVetoKey(key.length() > 500 ? key.substring(0, 500) : key);
+        veto.setVetoKey(key);
         vetoRepository.save(veto);
     }
 }

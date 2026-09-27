@@ -100,6 +100,8 @@ public class PatternService {
     @Transactional
     public PatternResponse decide(UUID userId, UUID patternId, PatternDecisionRequest request) {
         PatternEntity pattern = patternRepository.findByIdAndCreatedByAndDeletedFalse(patternId, userId)
+                // S6: a forgotten row is gone for the user — a decision must not revive it
+                .filter(p -> !p.isForgotten())
                 .orElseThrow(() -> new SystemRuntimeErrorException(
                         SystemMessage.error("COMPANION_PATTERN_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
         String status = DECISION_TO_STATUS.get(request.getDecision());

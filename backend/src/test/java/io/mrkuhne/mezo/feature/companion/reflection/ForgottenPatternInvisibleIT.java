@@ -3,10 +3,12 @@ package io.mrkuhne.mezo.feature.companion.reflection;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.mrkuhne.mezo.api.dto.PatternDecisionRequest;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.reflection.service.ObservationFeedService;
 import io.mrkuhne.mezo.feature.companion.reflection.service.ReflectionReplyService;
+import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.PatternService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.PatternEventPopulator;
@@ -17,6 +19,7 @@ import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
@@ -41,6 +44,7 @@ class ForgottenPatternInvisibleIT extends AbstractIntegrationTest {
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private PatternEventPopulator patternEventPopulator;
     @Autowired private UserPopulator userPopulator;
+    @Autowired private PatternRepository patternRepository;
 
     @Test
     void forgottenRow_shouldNotAppearInThePatternListOrTheFeed() {
@@ -61,5 +65,19 @@ class ForgottenPatternInvisibleIT extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> replyService.reply(owner, row.getId(), "watch", null))
                 .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    /** Final review Minor 8: a forgotten row cannot be revived by a Minták decision. */
+    @Test
+    void forgottenRow_shouldRejectDecide_withNotFound() {
+        UUID owner = userPopulator.createUser().getId();
+        PatternEntity row = patternPopulator.reflectionNoPlan(owner, PatternEntity.STATUS_FORGOTTEN);
+
+        assertThatThrownBy(() -> patternService.decide(owner, row.getId(),
+                new PatternDecisionRequest().decision("confirm")))
+                .isInstanceOf(SystemRuntimeErrorException.class)
+                .extracting(e -> ((SystemRuntimeErrorException) e).getStatus())
+                .isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(patternRepository.findById(row.getId()).orElseThrow().isForgotten()).isTrue();
     }
 }

@@ -49,8 +49,19 @@ public class MemoryForgetVetoEntity extends OwnedEntity {
     @Column(name = "veto_key", nullable = false, length = 500)
     private String vetoKey;
 
+    /** The veto_key column width. */
+    public static final int VETO_KEY_MAX = 500;
+
     /** The extraction dedupe rule (FactExtractionService / WeeklyLessonService normalize). */
     public static String normalizeFactText(String text) {
         return text.trim().toLowerCase().replaceAll("\\s+", " ");
+    }
+
+    /** The ONE fact_text veto key — the writer (ForgetService) stores it and every reader
+     *  compares against it, so a text longer than the column still matches: both sides normalize
+     *  and truncate identically. */
+    public static String factTextVetoKey(String text) {
+        String normalized = normalizeFactText(text);
+        return normalized.length() > VETO_KEY_MAX ? normalized.substring(0, VETO_KEY_MAX) : normalized;
     }
 }

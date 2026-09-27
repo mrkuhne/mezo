@@ -81,4 +81,20 @@ class ForgetVetoWritersIT extends AbstractIntegrationTest {
 
         assertThat(patterns.findById(row.getId()).orElseThrow().getPromotedFactId()).isNull();
     }
+
+    /** Final review Minor 7: the veto key column holds 500 chars, but writers compare the whole
+     *  normalized text — a long forgotten fact must still match (one shared key helper). */
+    @Test
+    void chatExtraction_shouldNotProposeAForgottenText_longerThanTheVetoKeyColumn() {
+        UUID owner = userPopulator.createUser().getId();
+        String longText = "Hosszú emlék ".repeat(50).trim() + "."; // ~650 chars
+        KnowledgeFactEntity fact = factPopulator.fact(owner, longText, "life", 0, true,
+                KnowledgeFactEntity.SOURCE_CHAT);
+        forgetService.forgetFact(owner, fact.getId());
+
+        int persisted = extraction.extractFromTurn(owner, UUID.randomUUID(),
+                "[fake-facts:[{\"fact\":\"" + longText.toUpperCase() + "\",\"category\":\"life\"}]]", "Rendben.");
+
+        assertThat(persisted).isZero();
+    }
 }

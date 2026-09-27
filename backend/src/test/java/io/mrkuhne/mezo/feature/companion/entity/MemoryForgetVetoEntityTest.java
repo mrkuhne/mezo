@@ -20,4 +20,13 @@ class MemoryForgetVetoEntityTest {
         assertThat(MemoryForgetVetoEntity.normalizeFactText(raw))
                 .isEqualTo(raw.trim().toLowerCase().replaceAll("\\s+", " "));
     }
+
+    @Test
+    void factTextVetoKey_shouldNormalizeAndCapAtTheColumnWidth() {
+        assertThat(MemoryForgetVetoEntity.factTextVetoKey("  Rövid  SZÖVEG ")).isEqualTo("rövid szöveg");
+        String longText = "A".repeat(700);
+        assertThat(MemoryForgetVetoEntity.factTextVetoKey(longText))
+                .hasSize(MemoryForgetVetoEntity.VETO_KEY_MAX)
+                .isEqualTo(MemoryForgetVetoEntity.factTextVetoKey(longText.toLowerCase() + "  "));
+    }
 }

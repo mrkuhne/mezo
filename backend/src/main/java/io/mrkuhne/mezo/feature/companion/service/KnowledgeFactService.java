@@ -260,7 +260,6 @@ public class KnowledgeFactService {
      * promoted fact loses its prompt seat — muted, never deleted, so the Tudástár keeps it
      * visible and re-enableable. Fires the same {@link KnowledgeFactChangedEvent} the manual
      * toggle does, so the graph re-syncs through the one consumer that already reacts to it.
-     * Also the S7 team-chat undo ({@link #muteFromTeamChat}).
      *
      * <p>Fail-open: called from {@code companion.reflection.service} (the ArchUnit direction lets
      * reflection import companion.service, never the reverse), where a missing/already-gone fact
@@ -301,10 +300,18 @@ public class KnowledgeFactService {
     }
 
     /** S7 (mezo-d6ivw.7): undo / "Nem, figyelj rá" on a captured csapatfal fact — the S2
-     *  mute-not-delete idiom, fail-open on an unknown id. */
+     *  mute-not-delete idiom, fail-open on an unknown id. S6: it is the USER's own act, so the
+     *  hub says "te hallgattattad el", never the refute reason. */
     @Transactional
     public void muteFromTeamChat(UUID userId, UUID factId) {
-        muteFromRefutedPattern(userId, factId);
+        KnowledgeFactEntity fact = repository.findByIdAndCreatedByAndDeletedFalse(factId, userId).orElse(null);
+        if (fact == null) {
+            log.info("Team-chat mute skipped — fact {} of user {} is already gone", factId, userId);
+            return;
+        }
+        fact.mute(KnowledgeFactEntity.MUTED_USER, Instant.now());
+        repository.save(fact);
+        eventPublisher.publishEvent(new KnowledgeFactChangedEvent(userId, factId));
     }
 
     /**

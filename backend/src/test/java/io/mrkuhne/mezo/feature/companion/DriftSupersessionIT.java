@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
+import io.mrkuhne.mezo.feature.companion.service.ForgetService;
 import io.mrkuhne.mezo.feature.companion.service.PatternService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.KnowledgeFactPopulator;
@@ -21,6 +22,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 class DriftSupersessionIT extends AbstractIntegrationTest {
 
     @Autowired private PatternService patternService;
+    @Autowired private ForgetService forgetService;
     @Autowired private PatternRepository patterns;
     @Autowired private KnowledgeFactRepository facts;
     @Autowired private KnowledgeFactPopulator factPopulator;
@@ -97,5 +99,26 @@ class DriftSupersessionIT extends AbstractIntegrationTest {
         confirm(owner, drift.getId());
 
         assertThat(patterns.findById(drift.getId()).orElseThrow().getPromotedFactId()).isNotNull();
+    }
+
+    /** Final review Important 2: forgetting the SUPERSEDING fact must not strand the original as
+     *  "felülírta egy újabb" with a link to a deleted fact. It becomes the user's own mute: silent
+     *  (no auto re-inject), one tap from "Visszakapcsolom". */
+    @Test
+    void forgetSuccessor_shouldTurnTheOriginalIntoAUserMute_withoutASupersededLink() {
+        UUID owner = userPopulator.createUser().getId();
+        PatternEntity original = original(owner);
+        PatternEntity drift = drift(owner, original.getId());
+        confirm(owner, drift.getId());
+        UUID freshId = patterns.findById(drift.getId()).orElseThrow().getPromotedFactId();
+
+        forgetService.forgetFact(owner, freshId);
+
+        assertThat(facts.findById(freshId)).isEmpty();
+        KnowledgeFactEntity old = facts.findById(original.getPromotedFactId()).orElseThrow();
+        assertThat(old.isIncludeInPrompt()).isFalse();
+        assertThat(old.getMutedReason()).isEqualTo(KnowledgeFactEntity.MUTED_USER);
+        assertThat(old.getSupersededBy()).isNull();
+        assertThat(old.getMutedAt()).isNotNull();
     }
 }
