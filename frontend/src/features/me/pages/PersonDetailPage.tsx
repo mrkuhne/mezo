@@ -33,38 +33,12 @@ import { usePeople } from '@/data/hooks'
 import { usePersonEffects } from '@/data/me/personEffectsHooks'
 import { contextBreakdown, trendAxisLabels, trendHeights } from '@/features/me/logic/peopleDerive'
 import { TONE_META, CTX_META, SRC_META, GRAPH_KIND_META, GRAPH_KIND_FALLBACK, toneColor } from '@/features/me/logic/peopleVisuals'
+import {
+  STRENGTH_META, CONFIDENCE_META, formatMeanDiff, personEffectSentence,
+} from '@/features/me/logic/effectCopy'
 import { PersonLogSheet } from '@/features/me/sheets/PersonLogSheet'
 import { PersonEditSheet } from '@/features/me/sheets/PersonEditSheet'
-import type { Mention, PersonEffect, PersonFact, PersonFactKind } from '@/data/types'
-
-// S4 (mezo-d6ivw.4): a "Hatás · együttjárás" kártya — óvatos, nem-oki mondat + KÜLÖN
-// erősség/bizonyosság jelzés (Exist-minta). A stressz-metrika polaritása itt fordul meg:
-// "lower" stressz = "nyugodtabb vagy" (jó irány), nem a nyers irány szó szerinti fordítása.
-const METRIC_COPY: Record<PersonEffect['metric'], { higher: string; lower: string }> = {
-  mental: { higher: 'jobb a hangulatod', lower: 'nyomottabb a hangulatod' },
-  energy: { higher: 'több az energiád', lower: 'kevesebb az energiád' },
-  stress: { higher: 'feszültebb vagy', lower: 'nyugodtabb vagy' },
-}
-
-function effectSentence(name: string, e: PersonEffect): string {
-  return `Úgy tűnik, azokon a napokon, amikor ${name} szóba kerül, ${METRIC_COPY[e.metric][e.direction]}.`
-}
-
-// Wire values (enyhe/kozepes/eros, gyenge/kozepes/eros) → accented display labels + dot count.
-const STRENGTH_META: Record<PersonEffect['strength'], { label: string; n: number }> = {
-  enyhe: { label: 'enyhe', n: 1 },
-  kozepes: { label: 'közepes', n: 2 },
-  eros: { label: 'erős', n: 3 },
-}
-const CONFIDENCE_META: Record<PersonEffect['confidence'], { label: string; n: number }> = {
-  gyenge: { label: 'gyenge', n: 1 },
-  kozepes: { label: 'közepes', n: 2 },
-  eros: { label: 'erős', n: 3 },
-}
-
-function formatMeanDiff(meanDiff: number): string {
-  return Math.abs(meanDiff).toFixed(1).replace('.', ',')
-}
+import type { Mention, PersonFact, PersonFactKind } from '@/data/types'
 
 function EffectDots({ n, ring, label }: { n: number; ring?: boolean; label: string }) {
   return (
@@ -230,7 +204,7 @@ export function PersonDetailPage() {
               <div className="ppl-effcard glass rise" style={{ '--c': color, '--i': 3 } as CSSProperties}>
                 {effects.map((e, i) => (
                   <div className="ppl-effrow" key={`${e.metric}-${i}`}>
-                    <p className="ppl-effsent">{effectSentence(person.name, e)}</p>
+                    <p className="ppl-effsent">{personEffectSentence(person.name, e)}</p>
                     <div className="ppl-effmeta">
                       <span className="ppl-effsig">
                         <small>EGYÜTTJÁRÁS</small>

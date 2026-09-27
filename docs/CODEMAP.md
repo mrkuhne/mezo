@@ -818,10 +818,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     RoladTimeline.tsx, RoomCaseCard.tsx, SimilarDayCard.tsx, StoryStrip.tsx, TestPlanTiles.tsx, TokenColumns.tsx,
     ToolWorkStrip.tsx, VerdictArc.tsx, experimentStatus.tsx, riseStyle.ts, useFeedSession.ts, useTeamFeed.ts
   - **logic:** boopNavigation.ts, chatRefs.ts, coachingCopy.ts, diagnosisCatalog.ts, diagnosisCopy.ts,
-    diagnosisTeam.ts, domains.ts, factCopy.ts, findings.ts, hubSearch.ts, hubTopics.ts, humanizeCron.ts, lifecycle.ts,
-    memoirArchive.ts, metricFormat.ts, patternCatalog.ts, patternCopy.ts, patternEvidence.ts, patternHistory.ts,
-    predictionStatus.ts, quickQuestions.ts, roladCopy.ts, team.ts, teamChat.ts, teamEdition.ts, teamFeed.fixtures.ts,
-    teamFeed.ts, teamRooms.ts, toolDomains.ts, useStickToBottom.ts, useVoiceInput.ts, verdicts.ts
+    diagnosisTeam.ts, domains.ts, factCopy.ts, findings.ts, hubCopy.ts, hubSearch.ts, hubTopics.ts, humanizeCron.ts,
+    lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternCatalog.ts, patternCopy.ts, patternEvidence.ts,
+    patternHistory.ts, predictionStatus.ts, quickQuestions.ts, roladCopy.ts, team.ts, teamChat.ts, teamEdition.ts,
+    teamFeed.fixtures.ts, teamFeed.ts, teamRooms.ts, toolDomains.ts, useStickToBottom.ts, useVoiceInput.ts,
+    verdicts.ts
   - **root:** boop-world.css, kerdezd.css, useRoladInbox.ts
 
 ### intention
@@ -998,13 +999,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     WeekGoalsCard.tsx, WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx, WeekReviewCard.tsx, WeekScoreBars.tsx,
     WeekScoreRing.tsx, WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx, WeightTrendChart.tsx,
     goalSettingsEditor.css
-  - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, chainStacking.ts, goalLabels.ts, goalOverviewCopy.ts,
-    goalSettings.ts, goalSkillChips.ts, goalSuggestionDiff.ts, goalWeekSentence.ts, gratitudeStreak.ts,
-    growthJournal.ts, growthStats.ts, habitAnchors.ts, habitEffort.ts, habitFormation.ts, habitMetricPalette.ts,
-    humanGeneratedAt.ts, knowledgeNodeVisuals.ts, lifegoalLabels.ts, llmCallFormat.ts, nightContent.ts, nightFlow.ts,
-    nightTrace.ts, notificationForecast.ts, peopleDerive.ts, peopleVisuals.ts, perkMilestones.ts, pillarFromCatalog.ts,
-    routineSentence.ts, scoreBand.ts, sleepEducation.ts, sleepEscalation.ts, sleepPhases.ts, sleepStats.ts,
-    useChatHandoff.ts, weekDay.ts, weekHighlight.ts, weekHub.ts, weekNav.ts, weightStats.ts
+  - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, chainStacking.ts, effectCopy.ts, goalLabels.ts,
+    goalOverviewCopy.ts, goalSettings.ts, goalSkillChips.ts, goalSuggestionDiff.ts, goalWeekSentence.ts,
+    gratitudeStreak.ts, growthJournal.ts, growthStats.ts, habitAnchors.ts, habitEffort.ts, habitFormation.ts,
+    habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts, lifegoalLabels.ts, llmCallFormat.ts,
+    nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, peopleDerive.ts, peopleVisuals.ts,
+    perkMilestones.ts, pillarFromCatalog.ts, routineSentence.ts, scoreBand.ts, sleepEducation.ts, sleepEscalation.ts,
+    sleepPhases.ts, sleepStats.ts, useChatHandoff.ts, weekDay.ts, weekHighlight.ts, weekHub.ts, weekNav.ts,
+    weightStats.ts
 
 ### meal
 
