@@ -1,6 +1,6 @@
 import {
   humanizeFactText, originSentence, originChipLabel, reinforcementSentence,
-  promptStatusLabel, bucketFacts, matchesQuery, sortFacts,
+  promptStatusLabel, bucketFacts, matchesQuery,
 } from '@/features/insights/logic/factCopy'
 import type { KnowledgeFact } from '@/data/types'
 
@@ -97,7 +97,8 @@ describe('bucketFacts', () => {
 
   it('minden bekapcsolt tény a chatben van — nincs várólista (facts-always, mezo-d6ivw.8)', () => {
     const { inPrompt, off } = bucketFacts(facts)
-    expect(inPrompt.map((f) => f.id)).toEqual(sortFacts(facts.filter((f) => f.active)).map((f) => f.id))
+    // reinforcement DESC (b=9 elöl), egyenlőségnél (a és d: 5-5) az újabb createdAt nyer (d 06-01 > a 01-01)
+    expect(inPrompt.map((f) => f.id)).toEqual(['b', 'd', 'a'])
     expect(off.every((f) => !f.active)).toBe(true)
   })
 
