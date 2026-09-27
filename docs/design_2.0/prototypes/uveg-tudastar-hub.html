@@ -1775,8 +1775,8 @@ svg{overflow:visible}
 /* csendes másodlagos linkek + ajtó-sorok (laposak) */
 .th-links{margin:14px 16px 0;padding:0 12px;border-radius:16px;background:rgba(245,239,230,.03);box-shadow:inset 0 0 0 1px var(--hair)}
 .th-lk{display:flex;align-items:center;gap:10px;width:100%;padding:11px 2px;border-bottom:1px solid var(--hair);text-align:left}
-.th-lk>span:not(.chev){flex:1;min-width:0}.th-lk .chev{margin-left:auto;flex:none}
 .th-links .th-lk:last-child{border-bottom:0}
+.th-lk>span:not(.chev){flex:1;min-width:0}.th-lk .chev{margin-left:auto;flex:none}
 .th-lk .icon{width:26px;height:26px}
 .th-lk span{flex:1;min-width:0}
 .th-lk b{display:block;font-size:13px;font-weight:600}
@@ -1945,6 +1945,36 @@ svg{overflow:visible}
 .th-sizes .icon{filter:none!important}
 .iccard em{font-style:normal;font-size:10px;color:var(--faint)}
 .notes ul a{color:var(--lav)}
+/* R2 · témák + kereső (fél év után ~180 dolog) */
+.th-search{display:flex;align-items:center;gap:9px;margin:6px 16px 4px;padding:0 6px 0 12px;min-height:44px;border-radius:16px;background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair);cursor:text}
+.th-search:focus-within{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--lav) 60%,transparent),0 0 14px -6px var(--lav)}
+.th-search>.icon{width:22px;height:22px;filter:none;opacity:.85;flex:0 0 auto}
+.th-search input{flex:1;min-width:0;height:42px;border:0;outline:0;background:none;font:inherit;font-size:14px;color:var(--ink)}
+.th-search input::placeholder{color:var(--faint)}
+.th-search .x{visibility:hidden;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;font-size:13px;color:var(--sub);background:rgba(245,239,230,.06)}
+.th-search.has .x{visibility:visible}
+mark{background:color-mix(in srgb,var(--gold) 32%,transparent);color:var(--ink);border-radius:3px;padding:0 1px;box-shadow:0 0 0 1px color-mix(in srgb,var(--gold) 40%,transparent)}
+.th-fold small{display:block;margin-top:1px;font-size:10.5px;font-weight:500;color:var(--faint)}
+.th-fold>.icon{filter:drop-shadow(0 3px 4px rgba(0,0,0,.5));opacity:1}
+.th-fold+.th-fold{margin-top:8px}
+.th-list+.th-fold{margin-top:10px}
+.th-use{display:inline-flex;align-items:center;gap:4px;padding:0 7px 0 5px;border-radius:999px;font-size:10px;font-weight:600;color:color-mix(in srgb,var(--sage) 85%,var(--ink));background:color-mix(in srgb,var(--sage) 12%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--sage) 35%,transparent)}
+.th-use i{width:6px;height:6px;border-radius:50%;background:var(--sage);box-shadow:0 0 6px var(--sage)}
+.th-chips{display:flex;flex-wrap:wrap;gap:6px;padding:6px 16px 2px}
+.th-chips button{display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:5px 11px;border-radius:999px;font-size:12px;font-weight:600;color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+.th-chips button b{font-weight:700;opacity:.6}
+.th-chips button.on{color:#191614;background:var(--gold);box-shadow:0 0 12px color-mix(in srgb,var(--gold) 45%,transparent)}
+.th-prow{display:flex;align-items:center;gap:11px;width:100%;padding:10px 2px;border-bottom:1px solid var(--hair);text-align:left}
+.th-links .th-prow:last-child{border-bottom:0}
+.th-prow .t{flex:1;min-width:0}
+.th-prow .t b{display:block;font-size:14px;font-weight:600;letter-spacing:-.2px}
+.th-prow .t small{display:block;font-size:10.5px;color:var(--faint);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.th-prow .n{flex:0 0 auto;text-align:right}
+.th-prow .n b{display:block;font-size:12px;font-weight:600;color:var(--sub);white-space:nowrap}
+.th-prow .n small{display:block;font-size:10px;color:var(--faint);margin-top:1px;white-space:nowrap}
+.th-prow .chev{color:var(--faint);font-size:18px;flex:0 0 auto}
+.th-pg .th-link{flex:0 0 auto}
+
 /* 320 px: a keret zsugorodik, ahogy élesben (bible U1 · 8. szabály); a műveletpillék kisebbek */
 @media (max-width:360px){
   .topbar{gap:6px;padding:14px 10px 10px}
@@ -1983,7 +2013,7 @@ svg{overflow:visible}
   </div>
   <aside class="notes">
     <span class="ov">MEZO EMLÉKEZETE · 6. SZELET · ÜVEG</span>
-    <h1>Tudástár: minden, amit Mezo tud rólad</h1>
+    <h1>Tudástár: minden, amit Mezo tud rólad — fél év után is</h1>
     <p>Egy hely, ahol látod, mit tud rólad a rendszer — és elhallgattathatod, kijavíthatod vagy végleg elfelejtetheted. A Rólad fülön, a tények ajtaján át érsz ide.</p>
     <p class="abnote">Minden sorban ugyanaz a négy szó: <em>Honnan tudom?</em> (megmutatja a forrást), <em>Javítom</em> (csak tényeknél), <em>Elhallgattatom</em> (megmarad, de semmire nem használom — bármikor visszakapcsolható), <em>Elfelejtem</em> (törlés, pár másodpercig visszavonható, és ugyanabból a forrásból nem tanulom meg újra). Egy sor jobb szélén a <em>⋯</em> nyitja a többit.</p>
     <nav id="jump">
@@ -1995,14 +2025,17 @@ svg{overflow:visible}
       <a href="#hatasok" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-cowave"/></svg>Hatások</a>
       <a href="#ikonok" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-spark"/></svg>Új ikonok</a>
     </nav>
+    <span class="ov">2. KÖR · TÉMÁK + KERESŐ</span>
+    <p class="abnote" style="margin-top:6px">Fél év után ~180 dolgot tud rólad — ezért minden szakasz <em>témákra bontva, összecsukva</em> nyílik, fölötte egy <em>kereső</em>. Gépelés közben minden csoportban (az Elhallgattatottban is) szűr, kinyitja, ahol van találat, és kiemeli a szót. Ékezet nélkül is talál.</p>
     <span class="ov">AMIT ÉRDEMES KIPRÓBÁLNI</span>
     <ul>
-      <li><b>Rólad</b>: a „Mind a N tény” ajtó most a Tudástárba visz.</li>
-      <li><b>Tudástár</b>: a nagy szám az egyetlen hangos dolog — ennyit tud rólad. Alatta a négy szakasz, mindegyik a saját színében.</li>
-      <li><b>Tények</b>: nyisd ki a „Honnan tudom?”-at; a ⋯ alatt javíts egy mondatot, hallgattass el egyet (átcsúszik az Elhallgattatott listába), majd kapcsold vissza. Az „észrevételből” címke az észrevételhez visz.</li>
-      <li><b>Elfelejtem</b>: a sor eltűnik, alul 5 másodperces visszaszámlálás — „Visszavonom” mindent visszatesz.</li>
-      <li><b>Észrevételek</b>: a „Randi után estére lemerülsz” régi észrevételt felülírta az új, mindkettő látszik.</li>
-      <li><b>Hatások</b>: az együttjárás (telt pöttyök) és a bizonyosság (üres karikák) külön jelzés; lent a „nem ok-okozat” lábjegyzet.</li>
+      <li><b>Rólad</b>: a „Mind a N tény” ajtó a Tudástárba visz.</li>
+      <li><b>Tudástár</b>: a nagy szám az egyetlen hangos dolog. Egy észrevételt a belőle tanult ténnyel együtt egyszer számol.</li>
+      <li><b>Tények</b>: négy téma (Edzés, Étkezés, Egészség, Élet), mindegyik fején a darabszám és hogy hány van <em>használatban</em>. A zöld „használatban” jel a soron azt mutatja, mi megy most a beszélgetés elé. Írd be: <em>kave</em> vagy <em>alvas</em>.</li>
+      <li><b>Emberek</b>: névsor 18 emberrel. Keress rá egy tényre (pl. <em>szuletes</em>) — az ember „N találat”-tal jön fel, és a lapján már szűrve látod.</li>
+      <li><b>Észrevételek</b>: öt téma, fölötte állapot-szűrő: Mind · Még igaz · Felülírva · Elhallgattatva. A „Randi után estére lemerülsz” régi észrevételt felülírta az új (Kapcsolatok).</li>
+      <li><b>Hatások</b>: két összecsukott csoport, Emberek és Események; kinyitva alanyonként egy kártya.</li>
+      <li><b>Minden sorban</b>: Honnan tudom? · ⋯ → Javítom / Elhallgattatom / Elfelejtem (5 mp-es Visszavonom). A csoportszámok azonnal frissülnek.</li>
     </ul>
     <span class="ov" style="display:block;margin-top:18px">ÁLLAPOTOK (TUDÁSTÁR)</span>
     <ul>
@@ -2037,13 +2070,21 @@ function tabbar(active){
     tabs.map(([l,ic,go])=>`<button class="tb ${l===active?'on':''}" ${go[0]==='#'?`data-go="${go}"`:`data-toast="${go}"`}>${C(ic)}<span>${l}</span></button>`).join('');
 }
 
-/* ═════════ ADATOK (valószerű demó) ═════════ */
-const CAT={train:['edzés','dumbbell','var(--sky)'],fuel:['étkezés','bowl','var(--sage)'],health:['egészség','heart','var(--rose)'],life:['élet','sun','var(--gold)']};
+
+/* ═════════ ADATOK — fél év után (~180 dolog): kézzel írt első sorok + determinisztikusan generált többi ═════════ */
+const CAT={train:['edzés','dumbbell','var(--sky)','Edzés'],fuel:['étkezés','bowl','var(--sage)','Étkezés'],health:['egészség','heart','var(--rose)','Egészség'],life:['élet','sun','var(--gold)','Élet']};
+const CATS=['train','fuel','health','life'];
 const ORIGIN={chat:'A beszélgetéseitekből szűrtem ki.',pattern:'Megerősített észrevételből tanultam — amikor az egyik változik, a másik jellemzően követi.',manual:'Te vetted fel kézzel.'};
 const CHIP={chat:'beszélgetésből',pattern:'észrevételből',manual:'kézzel'};
 const TEAM={szunya:['SZUNYA','var(--lav)'],mocor:['MOCOR','var(--sky)'],falat:['FALAT','var(--sage)'],deru:['DERŰ','var(--rose)'],mezo:['MEZO','var(--gold)']};
 const WHY={user:['te hallgattattad el','mute'],refuted:['később nem igazolódott','down'],superseded:['felülírta egy újabb észrevétel','history']};
 const whyText=m=>m.r==='superseded'?`${WHY.superseded[0]}, ${m.d}`:`${WHY[m.r][0]} · ${m.d}`;
+/* determinisztikus „véletlen”, hogy minden betöltés ugyanazt mutassa */
+let seed=7;const rnd=()=>{seed=(seed*16807)%2147483647;return (seed-1)/2147483646};
+const pick=a=>a[Math.floor(rnd()*a.length)];
+const MON=['márc.','ápr.','máj.','jún.','júl.','aug.','szept.'];
+const day=()=>`${pick(MON)} ${1+Math.floor(rnd()*27)}.`;
+const clk=()=>`${String(7+Math.floor(rnd()*15)).padStart(2,'0')}:${String(Math.floor(rnd()*60)).padStart(2,'0')}`;
 
 /* bizonyítéksorok — az EvidenceList formája (forrás · nap — „saját szavaid” · értékek) */
 const E={
@@ -2054,7 +2095,82 @@ const E={
   meal:(when,t,vals)=>({ic:'bowl',t,sub:'étkezés',when,vals}),
   workout:(when,t,vals)=>({ic:'dumbbell',t,sub:'edzés',when,vals}),
 };
-const OBS_EV={
+const ck=(hot)=>{const v=[['energia',String(3+Math.floor(rnd()*6))],['stressz',String(2+Math.floor(rnd()*6))],['hangulat',String(4+Math.floor(rnd()*5))]];v[hot][2]=1;return v};
+
+/* ── tények (Rólad) ── [kategória, gazda, N×, szöveg, a te szavaid] ── */
+const CHAT_FACTS=[
+  ['train','mocor',12,'Hétfőn, szerdán és pénteken reggel 7-kor edzel.','Hétfő, szerda, péntek reggel hétkor edzek, ez most fix.'],
+  ['train','mocor',9,'A Chest Supported Row a húzónapod kulcsgyakorlata.','A mellre támasztott evezés nélkül nincs húzónap.'],
+  ['train','mocor',7,'Novemberre egy 10 km-es futóversenyt tervezel.','Novemberben lefutnám a tízet, erre készülök.'],
+  ['train','mocor',6,'Futni inkább este szeretsz, a Margitszigeten.','Este a szigeten futok, reggel nem megy.'],
+  ['train','mocor',5,'Otthon van egy 24 kg-os kettlebelled.','Van itthon egy 24-es kettlebell, azzal is lehet.'],
+  ['train','mocor',4,'A röpicsapatban te vagy a feladó.','Feladó vagyok a csapatban, sok az ugrás.'],
+  ['train','mocor',3,'Nem szereted a gépes lábgyakorlatokat.','A lábtoló gépet utálom, inkább guggolok.'],
+  ['train','mocor',1,'A vállnyomásnál a bal oldal érzékenyebb.','A bal vállam megint nyekergett a nyomásnál.'],
+  ['fuel','falat',8,'Reggelente zabkását eszel, gyakran banánnal.','Reggel zabkása, banánnal, ez a rutin.'],
+  ['fuel','falat',7,'Laktózérzékeny vagy — tejtermékből a laktózmenteset kéred.','Laktózérzékeny vagyok, csak laktózmentes jöhet.'],
+  ['fuel','falat',6,'A napi fehérjecélod 150 g.','Legyen 150 gramm fehérje a cél.'],
+  ['fuel','falat',5,'Munkanapokon a menzán ebédelsz.','Hétköznap a menzán eszem, nincs más.'],
+  ['fuel','falat',4,'Hetente egyszer előre főzöl egy nagy adagot.','Vasárnap főzök egy nagy lábassal a hétre.'],
+  ['fuel','falat',3,'Kávéból napi kettőt iszol, a másodikat 14 óra előtt.','Két kávé, a második kettő előtt.'],
+  ['fuel','falat',2,'Hétvégén később kezdődik az első étkezés.','Hétvégén tizenegy előtt nem nagyon eszem.'],
+  ['fuel','falat',2,'A csípőset nem szereted.','A csípős kaját hagyjuk.'],
+  ['health','mezo',6,'A reggeli súlymérés 7:00 és 7:30 között történik.','Mindig fél nyolc előtt mérek, rögtön ébredés után.'],
+  ['health','szunya',5,'Magnéziumot szedsz lefekvés előtt.','Este beveszem a magnéziumot, attól jobban alszom.'],
+  ['health','mezo',5,'D-vitamint szedsz reggel, napi 2000 NE-t.','Reggel 2000-es D-vitamin.'],
+  ['health','mocor',4,'Kreatint szedsz, napi 5 g-ot.','Napi öt gramm kreatin, edzés után.'],
+  ['health','szunya',3,'Pollenszezonban rosszabbul alszol.','Tavasszal a pollen miatt alig alszom.'],
+  ['health','deru',3,'Ha keveset iszol, hajlamos vagy a fejfájásra.','Megint fáj a fejem, biztos keveset ittam.'],
+  ['health','mocor',2,'Tavasszal húzódás volt a jobb combhajlítódban.','Áprilisban meghúztam a jobb combhajlítómat.'],
+  ['health','mezo',2,'A nyugalmi pulzusod 52 körül van.','Az óra szerint 52 a nyugalmi pulzusom.'],
+  ['life','deru',6,'Augusztusban új munkahelyen kezdtél.','Hétfőn kezdek az új helyen, izgulok.'],
+  ['life','mezo',4,'Budán, a XI. kerületben laksz.','Itt lakunk a tizenegyedikben.'],
+  ['life','deru',4,'Van egy Mázli nevű macskád.','Mázli megint rám feküdt reggel.'],
+  ['life','deru',3,'Hetente egyszer gitárórára jársz.','Csütörtökön gitárórám van.'],
+  ['life','mezo',2,'Októberben egy hetet Portugáliában leszel.','Októberben megyünk Portugáliába egy hétre.'],
+  ['life','deru',2,'Szombat reggelente a piacra jársz.','Szombat reggel piac, ez szent.'],
+];
+const LIFTS=[['Guggolás','100 kg × 5'],['Felhúzás','130 kg × 3'],['Fekvenyomás','80 kg × 6'],['Vállnyomás','47,5 kg × 6'],['Húzódzkodás','+10 kg × 6'],['Román felhúzás','90 kg × 8'],['Kitörés','2 × 20 kg × 10'],['Csípőemelés','110 kg × 10'],['Döntött törzsű evezés','70 kg × 8'],['Mellhez húzás','60 kg × 10'],['Tolódzkodás','+15 kg × 8'],['Oldalemelés','10 kg × 15'],['Bicepsz hajlítás','14 kg × 10'],['Tricepsz letolás','30 kg × 12'],['Arnold-nyomás','18 kg × 10']];
+const DISHES=['a lencsefőzelék','a csirkés rizottó','a sült lazac édesburgonyával','a túrós csusza','a görög saláta','a paprikás krumpli','a gombapaprikás'];
+const SUPPS=[['Omega-3-at szedsz ebéd után.','Ebéd után jön az omega-3.'],['Szemüveget hordasz a képernyőhöz.','A képernyőhöz kell a szemüveg.'],['Évente egyszer vérvételre jársz, legutóbb júniusban voltál.','Júniusban voltam vérvételen, minden rendben.']];
+
+/* ── észrevételek: [id, téma, cím, megerősítve, ellenőrizve, N×, állapot] ── */
+const OBS_DEF=[
+  ['o1','Alvás','A késői vacsora és a felszínes alvás együtt mozog.','aug. 30.','szept. 20.',8],
+  ['o2','Edzés','A rövid alvás utáni napon kisebb az edzésvolumened.','szept. 3.','szept. 24.',4],
+  ['o3old','Kapcsolatok','Randi után estére lemerülsz.','aug. 12.','szept. 21.',3,{r:'superseded',d:'szept. 21.'}],
+  ['o3','Kapcsolatok','Mostanában a randis napok estéje is feltölt.','szept. 21.','szept. 21.',1],
+  ['o5','Étkezés','Hétvégén kevesebb a fehérje.','szept. 7.','szept. 18.',3],
+  ['o4','Hangulat','Edzés után mindig kevesebb a stresszed.','aug. 22.','szept. 16.',2,{r:'refuted',d:'szept. 16.'}],
+  ['o6','Edzés','Reggeli edzés után délután jobban koncentrálsz.','júl. 14.','szept. 22.',5],
+  ['o7','Edzés','A blokk harmadik hetén rendre csökken a súlyzós volumen.','aug. 5.','szept. 19.',4],
+  ['o8','Edzés','Pihenőnap után erősebb a guggolásod.','júl. 2.','szept. 23.',6],
+  ['o9','Edzés','Bemelegítés nélkül gyakrabban fáj a vállad.','jún. 18.','szept. 17.',3],
+  ['o10','Edzés','A röpi utáni napon lassabb a futótempód.','aug. 9.','szept. 20.',2],
+  ['o11','Edzés','Kávé nélkül ritkábban mész el reggel edzeni.','jún. 30.','szept. 12.',2,{r:'refuted',d:'szept. 12.'}],
+  ['o12','Alvás','Ha 23 óra után is képernyőzöl, később alszol el.','máj. 20.','szept. 21.',7],
+  ['o13','Alvás','Hétvégén átlagosan egy órával később fekszel.','máj. 3.','szept. 22.',9],
+  ['o14','Alvás','Délutáni kávé után rövidebb a mély alvás.','jún. 11.','szept. 18.',4],
+  ['o15','Alvás','Esti séta után hamarabb elalszol.','júl. 27.','szept. 24.',3],
+  ['o16','Alvás','Alkohol után többször ébredsz fel éjjel.','jún. 22.','szept. 10.',3,{r:'user',d:'szept. 9.'}],
+  ['o17','Alvás','Hűvös hálószobában jobban alszol.','aug. 19.','szept. 21.',2],
+  ['o18','Étkezés','Stresszes munkanapokon kimarad az ebéd.','aug. 28.','szept. 23.',4],
+  ['o19','Étkezés','Edzésnapokon este többet nassolsz.','júl. 8.','szept. 19.',3],
+  ['o20','Étkezés','Ha reggelizel, este kevesebbet eszel.','máj. 29.','szept. 20.',5],
+  ['o21','Étkezés','Szerdánként rendelsz a leggyakrabban.','aug. 2.','szept. 17.',2],
+  ['o22','Étkezés','Fehérjés reggeli után tovább bírod ebédig.','jún. 5.','szept. 22.',4],
+  ['o23','Kapcsolatok','A vasárnapi telefon anyával megnyugtat.','jún. 16.','szept. 21.',5],
+  ['o24','Kapcsolatok','Röpi után, Danival jobb a hangulatod.','júl. 11.','szept. 19.',4],
+  ['o25','Kapcsolatok','A hétfői megbeszélés után este feszültebb vagy.','szept. 1.','szept. 22.',3],
+  ['o26','Hangulat','Napos napokon jobb a hangulatod.','máj. 12.','szept. 24.',6],
+  ['o27','Hangulat','Egy szétszórt hét után nyomottabb a vasárnap.','jún. 25.','szept. 21.',3],
+  ['o28','Hangulat','Ha este naplót írsz, másnap nyugodtabb vagy.','júl. 19.','szept. 23.',4],
+  ['o29','Hangulat','Hosszú munkanap után ingerlékenyebb vagy.','aug. 25.','szept. 20.',3],
+];
+const TOPIC={'Edzés':['dumbbell','train','mocor'],'Alvás':['sleep','health','szunya'],'Étkezés':['bowl','fuel','falat'],'Kapcsolatok':['people','life','deru'],'Hangulat':['spark','health','deru']};
+const TOPICS=Object.keys(TOPIC);
+const OBS_EV={};
+const OBS_EV_HAND={
   o1:[E.meal('szept. 19. · 21:40','Vacsora',[['kezdés','21:40',1]]),E.sleep('szept. 20., éjjel',[['mély alvás','38 perc',1],['ébredés','3×']]),E.checkin('szept. 20., reggel',[['energia','4',1],['stressz','3'],['hangulat','6']],'Nehezen keltem, pedig időben feküdtem.')],
   o2:[E.sleep('szept. 23., éjjel',[['alvás','5 ó 40 p',1]]),E.workout('szept. 24. · 07:05','Pull Day',[['volumen','−18%',1],['RPE','8']])],
   o3:[E.checkin('szept. 22., délután',[['energia','7',1],['stressz','2'],['hangulat','8']],'Fura, de a randi után is maradt erőm.'),E.journal('szept. 20. · 22:48','Barbival sétáltunk egy nagyot, feltöltött az egész este.')],
@@ -2062,59 +2178,106 @@ const OBS_EV={
   o4:[E.workout('szept. 12. · 18:10','Push Day',[['RPE','9']]),E.checkin('szept. 12., este',[['energia','5'],['stressz','6',1],['hangulat','5']],'Edzés után is pörgött az agyam a meló miatt.')],
   o5:[E.meal('szept. 13–14.','Hétvége',[['fehérje','92 g',1],['cél','150 g']]),E.meal('szept. 20–21.','Hétvége',[['fehérje','104 g',1],['cél','150 g']])],
 };
-const FACTS0=[
-  {id:'f1',t:'Hétfőn, szerdán és pénteken reggel 7-kor edzel.',cat:'train',src:'chat',own:'mocor',n:12,b:'in',ev:[E.chat('szept. 18. · 07:42','Hétfő, szerda, péntek reggel hétkor edzek, ez most fix.')]},
-  {id:'f2',t:'A késői vacsora és a felszínes alvás együtt mozognak.',cat:'fuel',src:'pattern',own:'szunya',n:8,b:'in',obs:'o1'},
-  {id:'f11',t:'A rövid alvás utáni napon kisebb az edzésvolumened.',cat:'train',src:'pattern',own:'mocor',n:4,b:'in',obs:'o2'},
-  {id:'f3',t:'A reggeli súlymérés 7:00 és 7:30 között történik.',cat:'health',src:'chat',own:'mezo',n:6,b:'in',ev:[E.chat('szept. 9. · 07:12','Mindig fél nyolc előtt mérek, rögtön ébredés után.')]},
-  {id:'f4',t:'Röpi: kedd, csütörtök és szombat este.',cat:'life',src:'manual',own:'mezo',n:5,b:'in',added:'aug. 14.'},
-  {id:'f5',t:'Mostanában a randis napok estéje is feltölt.',cat:'life',src:'pattern',own:'deru',n:1,b:'in',obs:'o3'},
-  {id:'f6',t:'Hétvégén később kezdődik az első étkezés.',cat:'fuel',src:'chat',own:'falat',n:2,b:'wait',ev:[E.chat('szept. 14. · 11:20','Hétvégén tizenegy előtt nem nagyon eszem.'),E.journal('szept. 21. · 12:05','Első kaja délben, megint.')]},
-  {id:'f12',t:'Hétvégén kevesebb a fehérje.',cat:'fuel',src:'pattern',own:'falat',n:3,b:'wait',obs:'o5'},
-  {id:'f7',t:'A vállnyomásnál a bal oldal érzékenyebb.',cat:'train',src:'chat',own:'mocor',n:1,b:'wait',ev:[E.chat('szept. 24. · 18:30','A bal vállam megint nyekergett a nyomásnál.')]},
-  {id:'f8',t:'Randi után estére lemerülsz.',cat:'life',src:'pattern',own:'deru',n:3,b:'wait',obs:'o3old',m:{r:'superseded',d:'szept. 21.'}},
-  {id:'f9',t:'A kifli.hu az elsődleges élelmiszer-forrásod.',cat:'fuel',src:'chat',own:'falat',n:3,b:'wait',m:{r:'user',d:'szept. 12.'},ev:[E.chat('aug. 30. · 19:02','Mindent a kiflin rendelek, azt nézd.')]},
-  {id:'f10',t:'Edzés után mindig kevesebb a stresszed.',cat:'health',src:'pattern',own:'deru',n:2,b:'wait',obs:'o4',m:{r:'refuted',d:'szept. 16.'}},
-];
-const OBS0=[
-  {id:'o1',f:'f2',t:'A késői vacsora és a felszínes alvás együtt mozog.',conf:'aug. 30.',chk:'szept. 20.'},
-  {id:'o2',f:'f11',t:'A rövid alvás utáni napon kisebb az edzésvolumened.',conf:'szept. 3.',chk:'szept. 24.'},
-  {id:'o3',f:'f5',t:'Mostanában a randis napok estéje is feltölt.',conf:'szept. 21.',chk:'szept. 21.',replaces:'o3old'},
-  {id:'o3old',f:'f8',t:'Randi után estére lemerülsz.',conf:'aug. 12.',chk:'szept. 21.',by:'o3'},
-  {id:'o5',f:'f12',t:'Hétvégén kevesebb a fehérje.',conf:'szept. 7.',chk:'szept. 18.'},
-  {id:'o4',f:'f10',t:'Edzés után mindig kevesebb a stresszed.',conf:'aug. 22.',chk:'szept. 16.'},
-];
+function genEv(topic){
+  const d1=day(),d2=day();
+  if(topic==='Edzés')return [E.workout(`${d1} · ${clk()}`,pick(['Pull Day','Push Day','Láb nap','Futás']),[['volumen',`${pick(['−','+'])}${6+Math.floor(rnd()*14)}%`,1],['RPE',String(6+Math.floor(rnd()*4))]]),E.checkin(`${d1}, este`,ck(0))];
+  if(topic==='Alvás')return [E.sleep(`${d1}, éjjel`,[['alvás',`${5+Math.floor(rnd()*3)} ó ${String(Math.floor(rnd()*60)).padStart(2,'0')} p`,1],['mély alvás',`${30+Math.floor(rnd()*50)} perc`]]),E.checkin(`${d2}, reggel`,ck(0))];
+  if(topic==='Étkezés')return [E.meal(`${d1} · ${clk()}`,pick(['Reggeli','Ebéd','Vacsora','Nasi']),[['kcal',String(300+Math.floor(rnd()*600)),1]]),E.checkin(`${d1}, este`,ck(2))];
+  if(topic==='Kapcsolatok')return [E.journal(`${d1} · ${clk()}`,pick(['Jó volt beszélgetni, könnyebb lett a fejem.','Kicsit sok volt ma az emberekből.','Hosszú hívás volt, de megérte.'])),E.checkin(`${d1}, este`,ck(2))];
+  return [E.checkin(`${d1}, este`,ck(2),pick(['Ma valahogy könnyebb volt minden.','Nyűgös nap, semmi nem ment.',null])),E.journal(`${d2} · ${clk()}`,pick(['Leírtam, ami bántott, utána jobb lett.','Ma semmi különös, csak fáradt vagyok.']))];
+}
+
 const KIND={preference:['kedveli / nem szereti','thumb-up'],relationship_state:['kapcsolat most','person'],shared_activity:['közös','link'],important_date:['fontos dátum','calendar'],sensitivity:['érzékeny','shield']};
-const PPL0=[
-  {id:'anya',n:'Anya',rel:'Édesanya',c:'var(--gold)',facts:[
-    {id:'a1',k:'shared_activity',t:'Vasárnap esténként telefonáltok.',src:'chatből · szept. 7.',ev:[E.chat('szept. 7. · 20:15','Most beszéltem anyával, vasárnap este mindig hív.')]},
-    {id:'a2',k:'important_date',t:'Születésnapja: március 3.',src:'éjszakai jegyzetből · aug. 28.',ev:[E.journal('aug. 27. · 22:30','Márc. 3. — anya szülinap, ne felejtsem el időben.')]},
-    {id:'a3',k:'sensitivity',t:'A térdműtétje most érzékeny téma — óvatosan érdemes szóba hozni.',src:'chatből · szept. 19.',ev:[E.chat('szept. 19. · 21:05','Aggódom anya térde miatt, nem akarok erről sokat beszélni.')]}]},
-  {id:'barbi',n:'Barbi',rel:'Randi · szeptember óta',c:'var(--rose)',facts:[
-    {id:'b1',k:'preference',t:'Nem szereti a meglepetés-programokat — az előre egyeztetett tervekben érzi jól magát.',src:'chatből · szept. 15.',ev:[E.chat('szept. 15. · 19:40','Barbi nem bírja a meglepetéseket, inkább megbeszéljük előre.')]},
-    {id:'b2',k:'shared_activity',t:'Csütörtökönként együtt vacsoráztok.',src:'éjszakai jegyzetből · szept. 19.',ev:[E.journal('szept. 18. · 23:10','Csütörtöki vacsi Barbival, lassan hagyomány.')]},
-    {id:'b3',k:'preference',t:'Nem eszik húst.',src:'chatből · szept. 11.',ev:[E.chat('szept. 11. · 12:30','Barbi vega, ezt jegyezd meg a receptekhez.')]}]},
-  {id:'dani',n:'Dani',rel:'Csapattárs · röpi',c:'var(--sky)',facts:[
-    {id:'d1',k:'shared_activity',t:'A csütörtök esti röpi a közös horgonyotok.',src:'éjszakai jegyzetből · szept. 5.',ev:[E.journal('szept. 4. · 22:15','Röpi után Danival még sokáig beszélgettünk.')]},
-    {id:'d2',k:'relationship_state',t:'Októberben költözik — megígérted, hogy segítesz.',src:'chatből · szept. 22.',ev:[E.chat('szept. 22. · 17:48','Dani októberben költözik, megígértem, hogy segítek cipelni.')]}]},
-  {id:'gergo',n:'Gergő',rel:'Kolléga · új munkahely',c:'var(--lav)',facts:[
-    {id:'g1',k:'relationship_state',t:'Ő a csapatvezetőd az új munkahelyen.',src:'chatből · aug. 21.',ev:[E.chat('aug. 21. · 18:02','Gergő lett a csapatvezetőm, jó fejnek tűnik.')]},
-    {id:'g2',k:'sensitivity',t:'A hétfői megbeszélések vele feszültek.',src:'éjszakai jegyzetből · szept. 16.',m:{r:'user',d:'szept. 23.'},ev:[E.journal('szept. 15. · 21:30','Megint feszült volt a hétfői megbeszélés Gergővel.')]}]},
-];
+/* emberek: az első négy kézzel írt, a többiek egy sablon-készletből */
+const PPL_HAND={
+  anya:[['shared_activity','Vasárnap esténként telefonáltok.','chatből · szept. 7.','Most beszéltem anyával, vasárnap este mindig hív.'],
+    ['important_date','Születésnapja: március 3.','éjszakai jegyzetből · aug. 28.','Márc. 3. — anya szülinap, ne felejtsem el időben.'],
+    ['sensitivity','A térdműtétje most érzékeny téma — óvatosan érdemes szóba hozni.','chatből · szept. 19.','Aggódom anya térde miatt, nem akarok erről sokat beszélni.'],
+    ['preference','Szereti, ha virágot viszel neki, főleg tulipánt.','chatből · máj. 4.','Anyának tulipánt viszek, azt imádja.'],
+    ['shared_activity','Nyaranta együtt mentek a Balatonra egy hétre.','éjszakai jegyzetből · júl. 22.','Balaton anyával, mint minden nyáron.'],
+    ['relationship_state','Egyedül él Szegeden, havonta meglátogatod.','chatből · jún. 9.','Havonta lemegyek anyához Szegedre.']],
+  barbi:[['preference','Nem szereti a meglepetés-programokat — az előre egyeztetett tervekben érzi jól magát.','chatből · szept. 15.','Barbi nem bírja a meglepetéseket, inkább megbeszéljük előre.'],
+    ['shared_activity','Csütörtökönként együtt vacsoráztok.','éjszakai jegyzetből · szept. 19.','Csütörtöki vacsi Barbival, lassan hagyomány.'],
+    ['preference','Nem eszik húst.','chatből · szept. 11.','Barbi vega, ezt jegyezd meg a receptekhez.'],
+    ['relationship_state','Szeptember eleje óta randiztok.','chatből · szept. 4.','Randizom valakivel, Barbinak hívják.'],
+    ['important_date','Születésnapja: november 18.','chatből · szept. 20.','Barbi novemberben, 18-án lesz 29.'],
+    ['preference','Szereti a jazzt, együtt jártok koncertre.','éjszakai jegyzetből · szept. 14.','Jazzkoncert Barbival, jó este volt.'],
+    ['shared_activity','Hétvégente sokat sétáltok a Gellérthegyen.','chatből · szept. 21.','Megint felsétáltunk a Gellérthegyre.'],
+    ['sensitivity','A korábbi kapcsolatáról nem szeret beszélni.','chatből · szept. 17.','Az exéről Barbi nem szívesen beszél.']],
+  dani:[['shared_activity','A csütörtök esti röpi a közös horgonyotok.','éjszakai jegyzetből · szept. 5.','Röpi után Danival még sokáig beszélgettünk.'],
+    ['relationship_state','Októberben költözik — megígérted, hogy segítesz.','chatből · szept. 22.','Dani októberben költözik, megígértem, hogy segítek cipelni.'],
+    ['preference','Mindig ő szervezi a csapatbulit.','chatből · júl. 3.','Dani szervezi a bulit, mint mindig.'],
+    ['important_date','Születésnapja: január 9.','éjszakai jegyzetből · jan. 10.','Dani szülinapja volt tegnap.'],
+    ['shared_activity','Időnként együtt futtok a szigeten.','chatből · aug. 14.','Danival futottunk egy kört a szigeten.']],
+  gergo:[['relationship_state','Ő a csapatvezetőd az új munkahelyen.','chatből · aug. 21.','Gergő lett a csapatvezetőm, jó fejnek tűnik.'],
+    ['sensitivity','A hétfői megbeszélések vele feszültek.','éjszakai jegyzetből · szept. 16.','Megint feszült volt a hétfői megbeszélés Gergővel.',{r:'user',d:'szept. 23.'}],
+    ['preference','A rövid, lényegre törő üzeneteket szereti.','chatből · szept. 2.','Gergő a hosszú e-maileket nem olvassa el.'],
+    ['shared_activity','Péntekenként együtt ebédel a csapat.','chatből · szept. 12.','Pénteken csapatebéd volt Gergővel.'],
+    ['important_date','Október 15-én van a próbaidős értékelésed vele.','chatből · szept. 18.','Október közepén lesz az értékelésem Gergővel.']],
+};
+const PPL_META=[['anya','Anya','Édesanya','var(--gold)'],['apa','Apa','Édesapa','var(--sky)'],['adam','Ádám','Mentee · Mizu Velünk','var(--sage)'],['barbi','Barbi','Randi · szeptember óta','var(--rose)'],['bence','Bence','Csapattárs · röpi','var(--sky)'],['dani','Dani','Csapattárs · röpi','var(--sky)'],['eszter','Eszter','Nővér','var(--rose)'],['gergo','Gergő','Kolléga · új munkahely','var(--lav)'],['kata','Kata','Barát · egyetem óta','var(--gold)'],['levi','Levi','Keresztfiú','var(--sage)'],['mark','Márk','Mentee · Mizu Velünk','var(--sage)'],['nagyi','Nagymama','Nagymama','var(--gold)'],['nori','Nóri','Kolléga · új munkahely','var(--lav)'],['reka','Réka','Mentee · Mizu Velünk','var(--sage)'],['tomi','Tomi','Legjobb barát','var(--coral)'],['vera','Vera','Edző · konditerem','var(--coral)'],['zoli','Zoli','Szomszéd','var(--sky)'],['zsofi','Zsófi','Barát · gitárórán','var(--rose)']];
+const P_POOL={
+  shared_activity:['Havonta egyszer együtt futtok.','Együtt jártok a piacra szombatonként.','Néha együtt ebédeltek.','Közös társasozós estéitek vannak.','Kéthetente beszéltek videóhívásban.','Nyáron együtt túráztatok a Bükkben.'],
+  important_date:['Születésnapja: április 12.','Születésnapja: június 30.','Születésnapja: augusztus 8.','Születésnapja: december 2.','Névnapja november 25-én van.'],
+  preference:['Kávé helyett teát iszik.','Imádja a sushit.','Nem szereti a késő esti programokat.','Szereti a társasjátékokat, főleg a Catant.','Nem szereti, ha az utolsó pillanatban mondasz le valamit.','A hegyeket jobban szereti, mint a tengert.'],
+  relationship_state:['Mostanában ritkábban beszéltek.','Nemrég kezdett új állásban.','Most ír szakdolgozatot.','Tavaly óta ismeritek egymást.'],
+  sensitivity:['A költözésük most feszült pont.','Az egészsége most érzékeny téma.','A munkahelyváltása most érzékeny téma.'],
+};
+const KINDS=Object.keys(P_POOL);
+
+/* ── hatások: alanyonként ── */
 const FX={hangulat:{up:'jobb a hangulatod',down:'rosszabb a hangulatod'},energia:{up:'több az energiád',down:'kevesebb az energiád'},stressz:{up:'feszültebb vagy',down:'nyugodtabb vagy'}};
 const EFF0=[
   {id:'anya',kind:'p',n:'Anya',sub:'11 közös nap a jegyzeteidben',ic:'person',c:'var(--gold)',rows:[['hangulat','up',2,'közepes',2,'közepes','11 nap alapján · átlagosan ~fél ponttal'],['stressz','up',1,'enyhe',1,'gyenge','6 nap alapján · átlagosan ~fél ponttal']]},
   {id:'barbi',kind:'p',n:'Barbi',sub:'14 közös nap a jegyzeteidben',ic:'person',c:'var(--rose)',rows:[['hangulat','up',3,'erős',2,'közepes','14 nap alapján · átlagosan ~1 ponttal'],['energia','up',1,'enyhe',1,'gyenge','7 nap alapján · átlagosan ~fél ponttal']]},
   {id:'dani',kind:'p',n:'Dani',sub:'18 közös nap a jegyzeteidben',ic:'person',c:'var(--sky)',rows:[['energia','up',2,'közepes',3,'erős','18 nap alapján · átlagosan ~fél ponttal']]},
+  {id:'eszter',kind:'p',n:'Eszter',sub:'9 közös nap a jegyzeteidben',ic:'person',c:'var(--rose)',rows:[['hangulat','up',1,'enyhe',2,'közepes','9 nap alapján · átlagosan ~fél ponttal']]},
   {id:'gergo',kind:'p',n:'Gergő',sub:'12 közös nap a jegyzeteidben',ic:'person',c:'var(--lav)',rows:[['stressz','up',2,'közepes',2,'közepes','12 nap alapján · átlagosan ~1 ponttal'],['hangulat','down',1,'enyhe',1,'gyenge','5 nap alapján · átlagosan ~fél ponttal']]},
+  {id:'nagyi',kind:'p',n:'Nagymama',sub:'6 közös nap a jegyzeteidben',ic:'person',c:'var(--gold)',rows:[['stressz','down',1,'enyhe',1,'gyenge','6 nap alapján · átlagosan ~fél ponttal']]},
+  {id:'tomi',kind:'p',n:'Tomi',sub:'15 közös nap a jegyzeteidben',ic:'person',c:'var(--coral)',rows:[['hangulat','up',2,'közepes',3,'erős','15 nap alapján · átlagosan ~1 ponttal'],['energia','down',1,'enyhe',1,'gyenge','8 nap alapján · átlagosan ~fél ponttal']]},
   {id:'randi',kind:'e',n:'Randi',lead:'a randis napokon',sub:'9 randis nap a naptáradban',ic:'heart',c:'var(--rose)',rows:[['hangulat','up',3,'erős',3,'erős','9 nap alapján · átlagosan ~1,5 ponttal'],['energia','up',2,'közepes',1,'gyenge','6 nap alapján · átlagosan ~fél ponttal']]},
   {id:'edzes',kind:'e',n:'Edzés',lead:'az edzésnapokon',sub:'24 edzésnap',ic:'dumbbell',c:'var(--coral)',rows:[['stressz','down',2,'közepes',3,'erős','24 nap alapján · átlagosan ~fél ponttal'],['energia','up',1,'enyhe',2,'közepes','24 nap alapján · átlagosan ~fél ponttal']]},
   {id:'munka',kind:'e',n:'Munkahelyi stressz',lead:'a munkahelyi stresszes napokon',sub:'10 nap a jegyzeteidben',ic:'flame',c:'var(--gold)',rows:[['energia','down',2,'közepes',2,'közepes','10 nap alapján · átlagosan ~1 ponttal'],['hangulat','down',1,'enyhe',1,'gyenge','10 nap alapján · átlagosan ~fél ponttal']]},
+  {id:'ropi',kind:'e',n:'Röpi',lead:'a röpis napokon',sub:'31 röpis nap',ic:'volley',c:'var(--sky)',rows:[['hangulat','up',2,'közepes',3,'erős','31 nap alapján · átlagosan ~fél ponttal']]},
   {id:'est',kind:'e',n:'Késő esti program',lead:'a késő esti programok után',sub:'6 nap a naptáradban',ic:'moon',c:'var(--lav)',m:{r:'user',d:'szept. 24.'},rows:[['energia','down',1,'enyhe',1,'gyenge','6 nap alapján · átlagosan ~fél ponttal']]},
 ];
+
+/* ── a demó állapotának felépítése ── */
+function build(){
+  seed=7; let fid=0; const nid=()=>'f'+(++fid);
+  const facts=[], obs=[];
+  const chatF=(cat,own,n,t,q,m)=>{const d=day();const f={id:nid(),t,cat,src:'chat',own,n,ev:[E.chat(`${d} · ${clk()}`,q)]};if(m)f.m=m;facts.push(f);return f};
+  for(const r of CHAT_FACTS)chatF(...r);
+  facts.push({id:nid(),t:'Röpi: kedd, csütörtök és szombat este.',cat:'life',src:'manual',own:'mezo',n:5,added:'aug. 14.'});
+  facts.push({id:nid(),t:'A Mizu Velünk közösségben mentorálsz.',cat:'life',src:'manual',own:'mezo',n:3,added:'máj. 2.'});
+  LIFTS.forEach(([x,w],i)=>chatF('train','mocor',1+(i%3),`${x}: a munkasúlyod most ${w}.`,`${x} ma ${w} ment, jól bírtam.`));
+  DISHES.forEach((d,i)=>chatF('fuel','falat',1+(i%2),`Az egyik kedvenc ételed ${d}.`,`Ma ${d} volt, imádom.`));
+  SUPPS.forEach(([t,q])=>chatF('health','mezo',1,t,q));
+  chatF('fuel','falat',3,'A kifli.hu az elsődleges élelmiszer-forrásod.','Mindent a kiflin rendelek, azt nézd.',{r:'user',d:'szept. 12.'});
+  chatF('train','mocor',2,'Szombatonként hosszú futást csinálsz.','Szombaton jön a hosszú futás.',{r:'user',d:'aug. 30.'});
+  chatF('health','szunya',2,'Éjjel a telefon a hálószobán kívül töltődik.','Kiraktam a telefont a hálóból.',{r:'user',d:'júl. 18.'});
+  for(const [id,topic,t,conf,chk,n,m] of OBS_DEF){
+    const [,cat,own]=TOPIC[topic]; const f={id:nid(),t,cat,src:'pattern',own,n,obs:id}; if(m)f.m=m; if(id==='o3')f.fresh=true; facts.push(f);
+    const o={id,f:f.id,t,topic,conf,chk}; if(id==='o3')o.replaces='o3old'; if(id==='o3old')o.by='o3'; obs.push(o);
+    OBS_EV[id]=OBS_EV_HAND[id]||genEv(topic);
+  }
+  let pid=0;
+  const ppl=PPL_META.map(([id,n,rel,c])=>{
+    let fs;
+    if(PPL_HAND[id])fs=PPL_HAND[id].map(([k,t,src,q,m])=>{const f={id:'p'+(++pid),k,t,src,ev:[src.startsWith('chat')?E.chat(src.split(' · ')[1]+' · '+clk(),q):E.journal(src.split(' · ')[1]+' · '+clk(),q)]};if(m)f.m=m;return f});
+    else{const cnt=2+Math.floor(rnd()*4), used=new Set(); fs=[];
+      while(fs.length<cnt){const k=pick(KINDS), t=pick(P_POOL[k]); if(used.has(t))continue; used.add(t);
+        const d=day(), chat=rnd()<.6; fs.push({id:'p'+(++pid),k,t,src:`${chat?'chatből':'éjszakai jegyzetből'} · ${d}`,ev:[chat?E.chat(`${d} · ${clk()}`,null):E.journal(`${d} · ${clk()}`,null)]})}}
+    return {id,n,rel,c,facts:fs};
+  });
+  /* két generált ember-tény elhallgattatva, hogy a lista ne legyen steril */
+  ppl.find(p=>p.id==='kata').facts[0].m={r:'user',d:'szept. 3.'};
+  ppl.find(p=>p.id==='zoli').facts[0].m={r:'user',d:'aug. 17.'};
+  return {facts,obs,ppl,eff:clone(EFF0)};
+}
 const clone=o=>JSON.parse(JSON.stringify(o));
 let S;
-function reset(){S={facts:clone(FACTS0),obs:clone(OBS0),ppl:clone(PPL0),eff:clone(EFF0),open:{},fold:{wait:true,mf:false,mp:false,mo:false,me:false},hub:'ok'}}
+function reset(){S={...build(),open:{},g:{},gq:{},q:{f:'',p:'',pp:'',o:'',e:''},of:'mind',hub:'ok'}}
 reset();
 
 /* ── keresők ── */
@@ -2125,6 +2288,16 @@ function item(key){const [k,id]=key.split(':');
   if(k==='f')return fact(id); if(k==='p')return pfact(id)[0]; if(k==='o'){const o=obsOf(id);return o&&fact(o.f)} if(k==='e')return S.eff.find(x=>x.id===id)}
 const sortEff=a=>a.slice().sort((x,y)=>Math.max(...y.rows.map(r=>r[2]))-Math.max(...x.rows.map(r=>r[2]))||y.rows.reduce((s,r)=>s+r[4],0)-x.rows.reduce((s,r)=>s+r[4],0));
 const byName=(a,b)=>a.n.localeCompare(b.n,'hu');
+/* „használatban” = a 10 legerősebb bekapcsolt tény + a friss észrevétel-tények (a mai prompt-szabály) */
+function inUse(){const a=S.facts.filter(f=>!f.m).sort((x,y)=>y.n-x.n);const s=new Set(a.slice(0,10).map(f=>f.id));a.forEach(f=>{if(f.fresh)s.add(f.id)});return s}
+
+/* keresés: ékezet-független, a találat kiemelve */
+const fold1=ch=>ch.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().charAt(0)||ch;
+const norm=s=>[...String(s)].map(fold1).join('');
+const has=(s,q)=>!q||!q.trim()||norm(s).includes(norm(q.trim()));
+function hl(s,q){q=(q||'').trim();if(!q)return esc(s);const chars=[...String(s)],n=norm(s),nq=norm(q);let out='',i=0,j;
+  while((j=n.indexOf(nq,i))>-1){out+=esc(chars.slice(i,j).join(''))+'<mark>'+esc(chars.slice(j,j+nq.length).join(''))+'</mark>';i=j+nq.length}
+  return out+esc(chars.slice(i).join(''))}
 
 /* számok a hubhoz (élőben, a demó állapotából) */
 function counts(){
@@ -2132,7 +2305,7 @@ function counts(){
   const pf=S.ppl.flatMap(p=>p.facts), pOn=pf.filter(x=>!x.m).length;
   const ob=S.obs.filter(o=>fact(o.f)), oOn=ob.filter(o=>!fact(o.f).m).length, oSup=ob.filter(o=>fact(o.f).m&&fact(o.f).m.r==='superseded').length;
   const ef=S.eff, eOn=ef.filter(x=>!x.m).length;
-  return {f:[f.length,fOn],p:[pf.length,pOn,S.ppl.filter(p=>p.facts.length).length],o:[ob.length,oOn,oSup],e:[ef.length,eOn,ef.filter(x=>x.kind==='p'&&!x.m).length,ef.filter(x=>x.kind==='e'&&!x.m).length]};
+  return {f:[f.length,fOn,inUse().size],p:[pf.length,pOn,S.ppl.filter(p=>p.facts.length).length],o:[ob.length,oOn,oSup],e:[ef.length,eOn,ef.filter(x=>x.kind==='p'&&!x.m).length,ef.filter(x=>x.kind==='e'&&!x.m).length]};
 }
 
 /* ═════════ KÖZÖS ÉPÍTŐKÖVEK ═════════ */
@@ -2152,21 +2325,27 @@ function acts(key,o){
 function row(key,o){
   const edit=S.open[key]==='edit';
   return `<div class="th-row ${o.muted?'is-muted':''}" data-row="${key}" style="--c:${o.c||'var(--lav)'}"><div class="th-rm">${I(o.ic)}<div class="th-tx">`+
-    (edit?`<div class="th-edit"><textarea id="ed-${key.replace(':','-')}" aria-label="A tény szövege">${esc(o.text)}</textarea><div class="b"><button class="th-pill" data-a="cancel" data-k="${key}">Mégse</button><button class="th-pill main" data-a="save" data-k="${key}">${I('tick')}Mentés</button></div></div>`:`<b>${esc(o.text)}</b>`)+
+    (edit?`<div class="th-edit"><textarea id="ed-${key.replace(':','-')}" aria-label="A tény szövege">${esc(o.text)}</textarea><div class="b"><button class="th-pill" data-a="cancel" data-k="${key}">Mégse</button><button class="th-pill main" data-a="save" data-k="${key}">${I('tick')}Mentés</button></div></div>`:`<b>${o.html||esc(o.text)}</b>`)+
     `${o.sub?`<small>${o.sub}</small>`:''}${o.status||''}${o.why?`<span class="th-why">${I(o.whyIc)}${o.why}</span>`:''}${o.extra||''}</div></div>`+
     (edit?'':acts(key,o))+(o.after||'')+`</div>`;
 }
-const fold=(k,label,n,ic='mute')=>`<button class="th-fold" data-fold="${k}" aria-expanded="${!!S.fold[k]}">${I(ic)}<span>${label} · ${n}</span>${S.fold[k]?'⌃':'⌄'}</button>`;
+/* összecsukható csoport: keresés közben a találatos csoportok maguktól nyitva */
+function grp(key,label,count,hint,ic,body,q){
+  const open=q?!S.gq[key]:!!S.g[key];
+  return `<button class="th-fold" data-g="${key}" aria-expanded="${open}">${I(ic)}<span>${label} · ${count}${hint?`<small>${hint}</small>`:''}</span>${open?'⌃':'⌄'}</button>${open?body():''}`;
+}
+const search=(k,ph)=>`<label class="th-search rise ${S.q[k]?'has':''}">${I('lens')}<input type="text" data-q="${k}" value="${esc(S.q[k]||'')}" placeholder="${ph}" autocomplete="off" spellcheck="false" enterkeyhint="search" aria-label="${ph}"><button type="button" class="x" data-clear="${k}" aria-label="Keresés törlése">✕</button></label>`;
+const none=(k)=>`<div class="th-empty">${I('lens')}Nincs találat erre: „${esc(S.q[k])}”. <button class="th-link" data-clear="${k}" style="--c:var(--lav)">Keresés törlése</button></div>`;
 
 /* ═════════ RÓLAD (rövidítve: a bejárat) ═════════ */
 function rolad(){
-  const active=S.facts.filter(f=>!f.m), top=active.slice(0,4);
+  const use=inUse(), active=S.facts.filter(f=>!f.m), top=active.filter(f=>use.has(f.id)).sort((a,b)=>b.n-a.n).slice(0,4);
   return topbar()+`<div class="th-pgh rise"><small>A KÖZÖS KÉP · AMIT A CSAPAT KIMONDOTT RÓLAD</small><h1>Rólad</h1></div>`+
   `<p class="th-skip rise" style="--i:1">A Rólad oldal eleje (a csapat idézete, a döntésre váró javaslatok) változatlan. Ebben a körben csak a tények blokkjának ajtaja változik.</p>`+
   sec('A tények rólad',`${active.length} AKTÍV`)+
   `<div class="th-rows">${top.map((f,i)=>{const [lb,c]=f.src==='manual'?['TŐLED','var(--gold)']:TEAM[f.own];
     return `<div class="th-case glass rise" style="--c:${c};--i:${i+2}"><span class="crow"><span class="stc">${lb}</span><em>${CHIP[f.src]} · ${f.n}×</em></span><b>${esc(f.t)}</b></div>`}).join('')}
-  <button class="th-case glass lift rise" style="--c:var(--rose);--i:6" data-go="#tudastar"><span class="cm">${I('book')}<span><b>Mind a ${S.facts.length} tény</b><small>a Tudástárban — az emberekkel, észrevételekkel és hatásokkal együtt, mind elhallgattatható</small></span><span class="chev">›</span></span></button></div>`+
+  <button class="th-case glass lift rise" style="--c:var(--rose);--i:6" data-go="#tudastar"><span class="cm">${I('book')}<span><b>Mind a ${S.facts.length} tény</b><small>a Tudástárban — témák szerint, kereséssel, az emberekkel, észrevételekkel és hatásokkal együtt</small></span><span class="chev">›</span></span></button></div>`+
   `<p class="th-skip" style="margin-top:14px">Életesemények, „A te kezedben”, Tovább — változatlan.</p>`;
 }
 
@@ -2178,10 +2357,10 @@ function tudastar(){
   const on_={f:!off,p:true,o:!off,e:!off&&!err};
   let avail=0,muted=0; /* az észrevétel a belőle tanult tényen keresztül számít — egy dolgot egyszer számolunk */ for(const k of ['f','p','o','e']) if(on_[k]&&!(k==='o'&&on_.f)){avail+=n[k][0];muted+=n[k][0]-n[k][1]}
   const hero=`<div class="th-hero rise">${I('brain','art')}<span class="big">${avail}</span><h1>dolgot tud rólad Mezo</h1><p>és te döntöd el, mit használhat belőle.</p>
-    <div class="th-split"><span><i></i><b>${avail-muted}</b> használatban</span><span><i class="o"></i><b>${muted}</b> elhallgattatva</span></div></div>`;
-  const note=off?`<p class="th-fn" style="text-align:center;padding-top:0">A társ most ki van kapcsolva: a tények, az észrevételek és a hatások most nem elérhetők, ezért a szám csak az embereket számolja.</p>`:err?`<p class="th-fn" style="text-align:center;padding-top:0">A hatások most nem töltődtek be, ezért a szám nélkülük áll.</p>`:'';
+    <div class="th-split"><span><i></i><b>${avail-muted}</b> bekapcsolva</span><span><i class="o"></i><b>${muted}</b> elhallgattatva</span></div></div>`;
+  const note=off?`<p class="th-fn" style="text-align:center;padding-top:0">A társ most ki van kapcsolva: a tények, az észrevételek és a hatások most nem elérhetők, ezért a szám csak az embereket számolja.</p>`:err?`<p class="th-fn" style="text-align:center;padding-top:0">A hatások most nem töltődtek be, ezért a szám nélkülük áll.</p>`:`<p class="th-fn" style="text-align:center;padding-top:0">Egy észrevételt a belőle tanult ténnyel együtt egyszer számolok.</p>`;
   const tiles=`<div class="th-tiles">${
-    off?dash('var(--rose)','person','Rólad','A társ most nincs bekapcsolva — a tények most nem elérhetők.',1):tile('var(--rose)','person','Rólad',n.f[0],`${n.f[1]} használatban · ${n.f[0]-n.f[1]} elhallgattatva`,'#tenyek',1)}${
+    off?dash('var(--rose)','person','Rólad','A társ most nincs bekapcsolva — a tények most nem elérhetők.',1):tile('var(--rose)','person','Rólad',n.f[0],`${n.f[2]} használatban · ${n.f[0]-n.f[1]} elhallgattatva`,'#tenyek',1)}${
     tile('var(--lav)','people','Emberek',n.p[0],`${n.p[2]} ember · ${n.p[0]-n.p[1]} elhallgattatva`,'#emberek',2)}${
     off?dash('var(--gold)','pattern','Észrevételek','A társ most nincs bekapcsolva.',3):tile('var(--gold)','pattern','Észrevételek',n.o[0],`${n.o[1]} még igaz · ${n.o[2]} felülírva · ${n.o[0]-n.o[1]-n.o[2]} elhallgattatva`,'#eszrevetelek',3)}${
     off?dash('var(--sky)','cowave','Hatások','A társ most nincs bekapcsolva.',4):err?dash('var(--sky)','cowave','Hatások','Most nem sikerült betölteni.',4,true):tile('var(--sky)','cowave','Hatások',n.e[0],`${n.e[2]} ember · ${n.e[3]} esemény · ${n.e[0]-n.e[1]} elhallgattatva`,'#hatasok',4)}</div>`;
@@ -2192,102 +2371,154 @@ function tudastar(){
   return topbar()+dh('RÓLAD','Tudástár','#rolad')+hero+note+tiles+links;
 }
 
-/* ═════════ RÓLAD SZAKASZ: TÉNYEK ═════════ */
-function factRow(f){
+/* ═════════ RÓLAD SZAKASZ: TÉNYEK — témák + kereső ═════════ */
+function factRow(f,q,use){
   const [cl,ci,cc]=CAT[f.cat], key='f:'+f.id, o=f.obs&&obsOf(f.obs);
   const tag=f.src==='pattern'&&o?`<button class="th-tag" data-go="#eszrevetelek/${o.id}">${I('pattern')}észrevételből</button>`:CHIP[f.src];
-  return row(key,{ic:ci,c:cc,text:f.t,muted:!!f.m,why:f.m&&whyText(f.m),whyIc:f.m&&WHY[f.m.r][1],fix:true,
-    sub:`${cl} · ${f.n}× visszaigazolva · ${tag}`,
+  const u=use&&use.has(f.id)?`<span class="th-use"><i></i>használatban</span> `:'';
+  return row(key,{ic:ci,c:cc,text:f.t,html:hl(f.t,q),muted:!!f.m,why:f.m&&whyText(f.m),whyIc:f.m&&WHY[f.m.r][1],fix:true,
+    sub:`${u}${f.n}× visszaigazolva · ${tag}${f.m?` · ${cl}`:''}`,
     origin:f.src==='manual'?`${ORIGIN.manual} · ${f.added}`:ORIGIN[f.src],ev:f.src==='pattern'&&o?OBS_EV[o.id]:f.ev,go:f.src==='pattern'&&o?`#eszrevetelek/${o.id}`:''});
 }
+function tenyekBody(){
+  const q=S.q.f, use=inUse(), act=S.facts.filter(f=>!f.m), mut=S.facts.filter(f=>f.m);
+  let out='', hits=0;
+  for(const c of CATS){
+    const all=act.filter(f=>f.cat===c).sort((a,b)=>(use.has(b.id)-use.has(a.id))||b.n-a.n), list=all.filter(f=>has(f.t,q));
+    if(q&&!list.length)continue; hits+=list.length;
+    const u=all.filter(f=>use.has(f.id)).length;
+    out+=grp('f:'+c,CAT[c][3],q?`${list.length} találat`:all.length,u?`${u} használatban`:'',CAT[c][1],()=>`<div class="th-list">${list.map(f=>factRow(f,q,use)).join('')}</div>`,q);
+  }
+  const ml=mut.filter(f=>has(f.t,q)); hits+=ml.length;
+  if(!q||ml.length)out+=grp('f:muted','Elhallgattatott',q?`${ml.length} találat`:mut.length,'megőrzöm, de semmire nem használom','mute',()=>`<div class="th-list">${ml.map(f=>factRow(f,q)).join('')}</div>`,q);
+  if(q&&!hits)return none('f');
+  return (q?'':`<p class="th-fn" style="padding:0 18px 4px"><span class="th-use"><i></i>használatban</span> = most minden beszélgetés elé megy: a 10 legerősebb bekapcsolt tény, plusz a frissen megerősített észrevételek.</p>`)+out;
+}
 function tenyek(){
-  const inp=S.facts.filter(f=>!f.m&&f.b==='in'), wait=S.facts.filter(f=>!f.m&&f.b==='wait'), mut=S.facts.filter(f=>f.m);
+  const use=inUse(), mut=S.facts.filter(f=>f.m).length;
   return topbar()+dh('TUDÁSTÁR · RÓLAD','Tények rólad')+
-  `<p class="th-lead rise">${S.facts.length} tény · ${inp.length+wait.length} bekapcsolva · ${mut.length} elhallgattatva</p>`+
-  sec('Ezeket használja most',`${inp.length}`)+(inp.length?`<div class="th-list rise" style="--i:1">${inp.map(factRow).join('')}</div>`:`<div class="th-empty">Most egy tény sem megy a beszélgetések elé.</div>`)+
-  `<p class="th-fn">Minden beszélgetés elején ezek mennek elé: a 10 legerősebb bekapcsolt tény, plusz a frissen megerősített észrevételek.</p>`+
-  (wait.length?fold('wait','Bekapcsolva, de most kimarad',wait.length,'hold')+(S.fold.wait?`<div class="th-list">${wait.map(factRow).join('')}</div><p class="th-fn">Ha megerősödnek, vagy egy erősebb tény kiesik, bekerülnek.</p>`:''):'')+
-  (mut.length?fold('mf','Elhallgattatott',mut.length)+(S.fold.mf?`<div class="th-list">${mut.map(factRow).join('')}</div><p class="th-fn">Megőrzöm őket, de semmire nem használom — sem a beszélgetésben, sem az észrevételekben.</p>`:''):'')+
+  `<p class="th-lead rise">${S.facts.length} tény, ${CATS.length} témában · ${use.size} használatban · ${mut} elhallgattatva</p>`+
+  search('f','Keresés a tények között…')+`<div id="thb">${tenyekBody()}</div>`+
   sec('A csapatról')+`<div class="th-links" style="margin-top:0"><button class="th-lk" data-toast="A karakterek dossziéjába visz — ott olvashatod, mit gondol rólad a csapat">${I('council')}<span><b>A csapat véleménye rólad · 12 állítás</b><small>a karakterek dossziéjában — ebben a körben csak megnézni lehet</small></span><span class="chev">›</span></button></div>`;
 }
 
-/* ═════════ EMBEREK ═════════ */
-function pRow(f,p,showName){
+/* ═════════ EMBEREK — névsor + kereső, egy ember = saját aloldal ═════════ */
+function pRow(f,p,q){
   const [kl,ki]=KIND[f.k];
-  return row('p:'+f.id,{ic:ki,c:p.c,text:f.t,muted:!!f.m,why:f.m&&whyText(f.m),whyIc:'mute',fix:true,
-    sub:`${showName?`<b style="color:var(--sub);font-weight:600">${p.n}</b> · `:''}${kl} · ${f.src}`,origin:f.src.startsWith('chat')?ORIGIN.chat:'Egy éjszakai jegyzetből szűrtem ki.',ev:f.ev});
+  return row('p:'+f.id,{ic:ki,c:p.c,text:f.t,html:hl(f.t,q),muted:!!f.m,why:f.m&&whyText(f.m),whyIc:'mute',fix:true,
+    sub:`${kl} · ${f.src}`,origin:f.src.startsWith('chat')?ORIGIN.chat:'Egy éjszakai jegyzetből szűrtem ki.',ev:f.ev});
+}
+function emberekBody(){
+  const q=S.q.p, ppl=S.ppl.slice().sort(byName);
+  const rows=ppl.map(p=>{const on=p.facts.filter(f=>!f.m).length, mu=p.facts.length-on, nameHit=has(p.n,q)||has(p.rel,q), fh=q?p.facts.filter(f=>has(f.t,q)).length:0;
+    if(q&&!nameHit&&!fh)return '';
+    return `<button class="th-prow" data-go="#emberek/${p.id}" ${fh&&!has(p.n,q)?`data-pq="${esc(q)}"`:''}><span class="th-mono" style="--c:${p.c}">${p.n[0]}</span><span class="t"><b>${hl(p.n,q)}</b><small>${esc(p.rel)}</small></span><span class="n"><b>${q&&fh?`${fh} találat`:`${on} tény`}</b>${mu?`<small>${mu} elhallgattatva</small>`:''}</span><span class="chev">›</span></button>`}).join('');
+  if(q&&!rows)return none('p');
+  return `<div class="th-links" style="margin-top:4px">${rows}</div>`;
 }
 function emberek(){
-  const ppl=S.ppl.slice().sort(byName), mut=ppl.flatMap(p=>p.facts.filter(f=>f.m).map(f=>[f,p]));
-  const groups=ppl.map((p,i)=>{const on=p.facts.filter(f=>!f.m); if(!on.length)return '';
-    return `<button class="th-pg rise" style="--c:${p.c};--i:${i}" data-toast="${p.n} lapja — Én · Emberek (változatlan)"><span class="th-mono" style="--c:${p.c}">${p.n[0]}</span><span><b>${p.n}</b><small>${p.rel} · ${on.length} tény</small></span><em>Lapja ›</em></button>
-      <div class="th-list rise" style="--i:${i}">${on.map(f=>pRow(f,p)).join('')}</div>`}).join('');
+  const n=S.ppl.flatMap(p=>p.facts).length;
   return topbar()+dh('TUDÁSTÁR · EMBEREK','Emberek az életedben')+
-  `<p class="th-lead rise">Amit Mezo a beszélgetéseidből és a jegyzeteidből tud róluk — ábécérendben, nincs rangsor.</p>`+groups+
-  (mut.length?fold('mp','Elhallgattatott',mut.length)+(S.fold.mp?`<div class="th-list">${mut.map(([f,p])=>pRow(f,p,true)).join('')}</div>`:''):'')+
+  `<p class="th-lead rise">${S.ppl.length} ember · ${n} tény — ábécérendben, nincs rangsor. Keresni névre és arra is lehet, amit tudok róluk.</p>`+
+  search('p','Keresés név vagy tény szerint…')+`<div id="thb">${emberekBody()}</div>`+
   `<p class="th-foot"><b>Az ember lapja változatlan</b>ott továbbra is kapcsolóval és „Visszavonom”-mal kezelheted ugyanezeket.</p>`;
 }
+function personBody(id){
+  const p=S.ppl.find(x=>x.id===id); if(!p)return '';
+  const q=S.q.pp, on=p.facts.filter(f=>!f.m&&has(f.t,q)), mu=p.facts.filter(f=>f.m), ml=mu.filter(f=>has(f.t,q));
+  if(q&&!on.length&&!ml.length)return none('pp');
+  return (on.length?`<div class="th-list">${on.map(f=>pRow(f,p,q)).join('')}</div>`:`<div class="th-empty">Most egy tényt sem használok róla.</div>`)+
+    ((!q&&mu.length)||ml.length?grp(`p:${id}:muted`,'Elhallgattatott',q?`${ml.length} találat`:mu.length,'','mute',()=>`<div class="th-list">${ml.map(f=>pRow(f,p,q)).join('')}</div>`,q):'');
+}
+function person(id){
+  const p=S.ppl.find(x=>x.id===id); if(!p)return emberek();
+  const on=p.facts.filter(f=>!f.m).length;
+  return topbar()+dh('TUDÁSTÁR · EMBEREK',esc(p.n),'#emberek')+
+  `<div class="th-pg rise" style="--c:${p.c};margin-top:2px"><span class="th-mono" style="--c:${p.c}">${p.n[0]}</span><span><b>${esc(p.rel)}</b><small>${on} tény használatban${p.facts.length-on?` · ${p.facts.length-on} elhallgattatva`:''}</small></span><button class="th-link" style="--c:${p.c}" data-toast="${esc(p.n)} lapja — Én · Emberek (változatlan)">A lapja ›</button></div>`+
+  search('pp',`Keresés ${p.n} tényei között…`)+`<div id="thb">${personBody(id)}</div>`;
+}
 
-/* ═════════ ÉSZREVÉTELEK ═════════ */
-function obsRow(o){
-  const f=fact(o.f), key='o:'+o.id, old=o.replaces&&obsOf(o.replaces);
-  const oldF=old&&fact(old.f);
+/* ═════════ ÉSZREVÉTELEK — témák + állapot-chipek + kereső ═════════ */
+const ost=o=>{const f=fact(o.f);return !f.m?'igaz':f.m.r==='superseded'?'felul':'elh'};
+function obsRow(o,q,pair){
+  const f=fact(o.f), key='o:'+o.id, old=pair&&o.replaces&&obsOf(o.replaces), oldF=old&&fact(old.f);
   let status;
-  if(!f.m) status=o.replaces&&old?`<span class="th-st" style="--k:var(--gold)"><i></i>ez váltotta a régit · ${o.conf}</span>`:`<span class="th-st"><i></i>legutóbb ellenőrizve ${o.chk} · még igaz</span>`;
+  if(!f.m) status=old&&oldF?`<span class="th-st" style="--k:var(--gold)"><i></i>ez váltotta a régit · ${o.conf}</span>`:`<span class="th-st"><i></i>legutóbb ellenőrizve ${o.chk} · még igaz</span>`;
   else if(f.m.r==='superseded') status=`<span class="th-st"><i class="o"></i>felülírta egy újabb észrevétel, ${f.m.d}</span>`;
   else status=`<span class="th-st"><i class="o"></i>elhallgattatva · ${WHY[f.m.r][0]}${f.m.r==='refuted'?'':`, ${f.m.d}`}</span>`;
   let extra='';
   if(old&&oldF){const k2='o:'+old.id, on=!oldF.m;
-    extra=`<div class="th-drift ${on?'is-on':''}" data-row="${k2}" style="--c:var(--gold)"><span class="eb">${on?'A RÉGI IS BE VAN KAPCSOLVA':'KORÁBBAN · MEGERŐSÍTVE '+old.conf.toUpperCase()}</span><b>${esc(old.t)}</b>
+    extra=`<div class="th-drift ${on?'is-on':''}" data-row="${k2}" style="--c:var(--gold)"><span class="eb">${on?'A RÉGI IS BE VAN KAPCSOLVA':'KORÁBBAN · MEGERŐSÍTVE '+old.conf.toUpperCase()}</span><b>${hl(old.t,q)}</b>
       <span class="th-st"><i class="o"></i>${on?`újra bekapcsoltad — mindkettőt használom`:whyText(oldF.m)}</span>
       ${acts(k2,{muted:!on,origin:ORIGIN.pattern,ev:OBS_EV[old.id]})}</div>`}
-  return row(key,{ic:'pattern',c:'var(--gold)',text:o.t,muted:!!f.m,sub:`megerősítve ${o.conf}`,status,after:extra,origin:'A napjaidból számoltam ki, és te erősítetted meg. Ezekből a napokból látszik:',ev:OBS_EV[o.id]});
+  return row(key,{ic:TOPIC[o.topic][0],c:'var(--gold)',text:o.t,html:hl(o.t,q),muted:!!f.m,sub:`megerősítve ${o.conf}`,status,after:extra,origin:'A napjaidból számoltam ki, és te erősítetted meg. Ezekből a napokból látszik:',ev:OBS_EV[o.id]});
+}
+function eszrevetelekBody(){
+  const q=S.q.o, live=S.obs.filter(o=>fact(o.f));
+  const inPair=o=>o.by&&obsOf(o.by)&&fact(obsOf(o.by).f);
+  const F={mind:o=>!inPair(o),igaz:o=>ost(o)==='igaz',felul:o=>ost(o)==='felul',elh:o=>ost(o)==='elh'};
+  const cnt=k=>k==='mind'?live.length:live.filter(F[k]).length;
+  const chips=`<div class="th-chips">${[['mind','Mind'],['igaz','Még igaz'],['felul','Felülírva'],['elh','Elhallgattatva']].map(([k,l])=>`<button class="${S.of===k?'on':''}" data-of="${k}" aria-pressed="${S.of===k}">${l} <b>${cnt(k)}</b></button>`).join('')}</div>`;
+  const pair=S.of==='mind';
+  const hit=o=>has(o.t,q)||(pair&&o.replaces&&obsOf(o.replaces)&&has(obsOf(o.replaces).t,q));
+  let out='',hits=0;
+  for(const t of TOPICS){
+    const all=live.filter(o=>o.topic===t&&F[S.of](o)), list=all.filter(hit);
+    if(!all.length||(q&&!list.length))continue; hits+=list.length;
+    const igaz=all.filter(o=>ost(o)==='igaz').length;
+    out+=grp('o:'+t,t,q?`${list.length} találat`:all.length,S.of==='mind'&&igaz<all.length?`${igaz} még igaz`:'',TOPIC[t][0],()=>`<div class="th-list">${list.map(o=>obsRow(o,q,pair)).join('')}</div>`,q);
+  }
+  if(q&&!hits)return chips+none('o');
+  if(!out)return chips+`<div class="th-empty">Ebben az állapotban most nincs észrevétel.</div>`;
+  return chips+out;
 }
 function eszrevetelek(){
-  const live=S.obs.filter(o=>fact(o.f)&&!o.by), on=live.filter(o=>!fact(o.f).m);
-  const orphanOld=S.obs.filter(o=>o.by&&fact(o.f)&&!obsOf(o.by));
-  const mut=live.filter(o=>fact(o.f).m).concat(orphanOld);
   return topbar()+dh('TUDÁSTÁR · ÉSZREVÉTELEK','Észrevételek')+
-  `<p class="th-lead rise">Amit a napjaidból vettem észre, és te megerősítetted. Hetente újra megnézem, igaz-e még.</p>`+
-  sec('Megerősítve',`${on.length}`)+(on.length?`<div class="th-list rise" style="--i:1">${on.map(obsRow).join('')}</div>`:`<div class="th-empty">Még nincs megerősített észrevétel.</div>`)+
-  (mut.length?fold('mo','Elhallgattatott',mut.length)+(S.fold.mo?`<div class="th-list">${mut.map(obsRow).join('')}</div><p class="th-fn">Egy elhallgattatott észrevételt nem használok, és a belőle tanult tény is hallgat.</p>`:''):'')+
+  `<p class="th-lead rise">Amit a napjaidból vettem észre, és te megerősítetted — témák szerint. Hetente újra megnézem, igaz-e még.</p>`+
+  search('o','Keresés az észrevételek között…')+`<div id="thb">${eszrevetelekBody()}</div>`+
   `<p class="th-foot"><b>Javítani itt nem lehet</b>egy észrevétel a napjaidból számolódik — elhallgattatni vagy elfelejteni lehet. A belőle tanult mondatot a Tények között javíthatod.</p>`;
 }
 
-/* ═════════ HATÁSOK ═════════ */
+/* ═════════ HATÁSOK — két csoport + kereső ═════════ */
 const dots=(n,ring)=>`<span class="effdots${ring?' ring':''}">${[1,2,3].map(i=>`<i class="${i<=n?'on':''}"></i>`).join('')}</span>`;
-function effCard(e,i){
+function effCard(e,i,q){
   const key='e:'+e.id, st=S.open[key];
   const sent=r=>e.kind==='p'?`Úgy tűnik, azokon a napokon, amikor ${e.n} szóba kerül, ${FX[r[0]][r[1]]}.`:`Úgy tűnik, ${e.lead} ${FX[r[0]][r[1]]}.`;
   return `<div class="th-eff glass rise" data-row="${key}" style="--c:${e.c};--i:${i}">
-    <div class="th-eh">${e.kind==='p'?`<span class="th-mono" style="--c:${e.c};width:44px;height:44px;font-size:17px">${e.n[0]}</span>`:`<span class="well" style="--c:${e.c}">${I(e.ic)}</span>`}<span class="t"><b>${e.n}</b><small>${e.sub}</small></span><button class="th-more" data-a="more" data-k="${key}" aria-expanded="${st==='acts'}" aria-label="További műveletek">⋯</button></div>
+    <div class="th-eh">${e.kind==='p'?`<span class="th-mono" style="--c:${e.c};width:44px;height:44px;font-size:17px">${e.n[0]}</span>`:`<span class="well" style="--c:${e.c}">${I(e.ic)}</span>`}<span class="t"><b>${hl(e.n,q)}</b><small>${e.sub}</small></span><button class="th-more" data-a="more" data-k="${key}" aria-expanded="${st==='acts'}" aria-label="További műveletek">⋯</button></div>
     ${st==='acts'?`<div class="th-strip"><button class="th-pill" data-a="mute" data-k="${key}">${I('mute')}Elhallgattatom</button><button class="th-pill warn" data-a="forget" data-k="${key}">${I('eraser')}Elfelejtem</button><span class="th-strip-n">Elhallgattatva nem mutatom és nem használom, de bármikor visszakapcsolhatod. Elfelejtve soha többé.</span></div>`:''}
     ${e.rows.map(r=>`<div class="effrow"><span class="effm">${r[0].toUpperCase()}</span><p class="effsent">${sent(r)}</p>
       <div class="effmeta"><span class="effsig"><small>EGYÜTTJÁRÁS</small>${dots(r[2])}<em>${r[3]}</em></span><span class="effsig"><small>BIZONYOSSÁG</small>${dots(r[4],true)}<em>${r[5]}</em></span><em class="effn">${r[6]}</em></div></div>`).join('')}
     <p class="efffoot">Együttjárás, nem ok-okozat.</p></div>`;
 }
-function effMutedRow(e){
-  return row('e:'+e.id,{ic:e.ic,c:e.c,text:e.n,muted:true,src:false,why:whyText(e.m),whyIc:'mute',sub:`${e.kind==='p'?'ember':'esemény'} · ${e.rows.length} jelzés`});
+function effMutedRow(e,q){
+  return row('e:'+e.id,{ic:e.ic,c:e.c,text:e.n,html:hl(e.n,q),muted:true,src:false,why:whyText(e.m),whyIc:'mute',sub:`${e.kind==='p'?'ember':'esemény'} · ${e.rows.length} jelzés`});
+}
+function hatasokBody(){
+  const q=S.q.e, hit=e=>has(e.n,q), on=S.eff.filter(e=>!e.m), mut=S.eff.filter(e=>e.m);
+  const ppl=on.filter(e=>e.kind==='p').sort(byName), ev=sortEff(on.filter(e=>e.kind==='e'));
+  const pl=ppl.filter(hit), el=ev.filter(hit), ml=mut.filter(hit);
+  if(q&&!pl.length&&!el.length&&!ml.length)return none('e');
+  let out='';
+  if(!q||pl.length)out+=grp('e:ppl','Emberek',q?`${pl.length} találat`:ppl.length,'ábécérendben','people',()=>pl.length?`<div class="th-cards" style="margin-top:8px">${pl.map((e,i)=>effCard(e,i+1,q)).join('')}</div>`:`<div class="th-empty" style="margin-top:8px">Most egy emberről sem mutatok hatást.</div>`,q);
+  if(!q||el.length)out+=grp('e:evt','Események',q?`${el.length} találat`:ev.length,'erősség szerint','calendar',()=>el.length?`<div class="th-cards" style="margin-top:8px">${el.map((e,i)=>effCard(e,i+1,q)).join('')}</div>`:`<div class="th-empty" style="margin-top:8px">Most egy eseményről sem mutatok hatást.</div>`,q);
+  if((!q&&mut.length)||ml.length)out+=grp('e:muted','Elhallgattatott',q?`${ml.length} találat`:mut.length,'nem mutatom és nem használom','mute',()=>`<div class="th-list">${ml.map(e=>effMutedRow(e,q)).join('')}</div>`,q);
+  return out;
 }
 function hatasok(){
   if(S.hub==='err')return topbar()+dh('TUDÁSTÁR · HATÁSOK','Hatások')+`<div class="th-empty" style="--c:var(--sky)">${I('info')}Most nem sikerült betölteni a hatásokat. <button class="th-link" data-hub="ok" style="--c:var(--sky)">Újrapróbálom</button></div>`;
-  const on=S.eff.filter(e=>!e.m), mut=S.eff.filter(e=>e.m);
-  const ppl=on.filter(e=>e.kind==='p').sort(byName), ev=sortEff(on.filter(e=>e.kind==='e'));
   return topbar()+dh('TUDÁSTÁR · HATÁSOK','Hatások')+
   `<p class="th-lead rise">Milyenek a napjaid — hangulatban, energiában, nyugalomban —, amikor valaki vagy valami felbukkan bennük.</p>`+
-  sec('Emberek','ÁBÉCÉRENDBEN')+(ppl.length?`<div class="th-cards">${ppl.map((e,i)=>effCard(e,i+1)).join('')}</div>`:`<div class="th-empty">Most egy emberről sem mutatok hatást.</div>`)+
-  sec('Események','ERŐSSÉG SZERINT')+(ev.length?`<div class="th-cards">${ev.map((e,i)=>effCard(e,i+1)).join('')}</div>`:`<div class="th-empty">Most egy eseményről sem mutatok hatást.</div>`)+
-  (mut.length?fold('me','Elhallgattatott',mut.length)+(S.fold.me?`<div class="th-list">${mut.map(effMutedRow).join('')}</div><p class="th-fn">Ezeket nem mutatom máshol, és a beszélgetésben sem hozom elő.</p>`:''):'')+
+  search('e','Keresés ember vagy esemény szerint…')+`<div id="thb">${hatasokBody()}</div>`+
   `<p class="th-foot"><b>Együttjárás, nem ok-okozat</b>azt mutatja, mi szokott együtt járni a napjaidban — nem azt, hogy mi okozza. Két külön jelzés: mennyire jár együtt (telt pöttyök), és mennyi nap támasztja alá (üres karikák).</p>`;
 }
-
 /* ═════════ ÚJ IKONOK ═════════ */
 function ikonok(){
   const N=[['mute','Elhallgattatom','minden sor ⋯ menüjében, az „Elhallgattatott” csoportok fején és az okát mutató címkén','var(--lav)'],
     ['eraser','Elfelejtem','a ⋯ menüben és a visszavonás-sávon','var(--coral)'],
     ['source','Honnan tudom?','minden tény, ember-tény és észrevétel sorában','var(--gold)'],
     ['cowave','Hatások','a Tudástár Hatások csempéje (együttjárás: két hullám együtt mozog)','var(--sky)']];
-  const R=[['brain','A Tudástár hőse'],['person','Rólad csempe, ember-hatás'],['people','Emberek csempe'],['pattern','Észrevételek, „észrevételből” címke'],['book','„Mind a N tény” ajtó'],['pencil','Javítom'],['repeat','Visszakapcsolom'],['history','felülírta egy újabb'],['down','később nem igazolódott'],['hold','Bekapcsolva, de most kimarad'],['council','A csapat véleménye'],['chat','bizonyíték: beszélgetés'],['checkin','bizonyíték: check-in'],['journal','bizonyíték: napló'],['heart','Randi'],['dumbbell','Edzés'],['flame','Munkahelyi stressz'],['moon','Késő esti program'],['thumb-up','ember-tény: kedveli'],['calendar','ember-tény: fontos dátum'],['shield','ember-tény: érzékeny'],['link','ember-tény: közös']];
+  const R=[['brain','A Tudástár hőse'],['person','Rólad csempe, ember-hatás'],['people','Emberek csempe'],['pattern','Észrevételek, „észrevételből” címke'],['book','„Mind a N tény” ajtó'],['pencil','Javítom'],['repeat','Visszakapcsolom'],['history','felülírta egy újabb'],['down','később nem igazolódott'],['hold','Bekapcsolva, de most kimarad'],['council','A csapat véleménye'],['lens','Kereső minden szakaszban'],['sleep','Alvás téma'],['spark','Hangulat téma'],['volley','Röpi'],['bowl','Étkezés téma'],['sun','Élet téma'],['chat','bizonyíték: beszélgetés'],['checkin','bizonyíték: check-in'],['journal','bizonyíték: napló'],['heart','Randi'],['dumbbell','Edzés'],['flame','Munkahelyi stressz'],['moon','Késő esti program'],['thumb-up','ember-tény: kedveli'],['calendar','ember-tény: fontos dátum'],['shield','ember-tény: érzékeny'],['link','ember-tény: közös']];
   return topbar()+dh('MEZO EMLÉKEZETE · 6. SZELET','Új ikonok','#tudastar')+
   `<p class="th-lead">Ezek eddig nem voltak a 3D-s készletben. Jóváhagyás után a közös készletbe kerülnek, és a későbbi körök is ezeket használják.</p>
   <div class="icgrid" style="margin-top:8px">${N.map((n,i)=>`<div class="iccard glass rise" style="--c:${n[3]};--i:${i}">${I(n[0])}<strong>${n[1]}</strong><small>${n[2]}</small><span class="th-sizes">${I(n[0])}${I(n[0])}</span><em>t-${n[0]}</em></div>`).join('')}</div>`+
@@ -2295,6 +2526,7 @@ function ikonok(){
   sec('A meglévő készletből, új helyen')+`<div class="th-list" style="padding:10px 12px"><div class="wrapchips">${R.map(m=>`<span class="flatchip" style="--c:var(--lav)">${I(m[0])}${m[1]}</span>`).join('')}</div></div>
   <p class="th-fn">A ⋯ és a ‹ › jelek maradnak, ahogy a keretben is.</p>`;
 }
+
 
 /* ═════════ MŰVELETEK ═════════ */
 const RM=()=>document.body.classList.contains('still')||matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -2307,17 +2539,21 @@ function reveal(el){if(!el)return;const sc=$('#scroll'),r=el.getBoundingClientRe
 async function arrive(key){const el=document.querySelector(`[data-row="${key}"]`);if(!el)return;reveal(el);if(RM())return;el.classList.add('th-arrive');
   await tween(1100,p=>el.style.setProperty('--glow',String(p<.2?p/.2:1-(p-.2)/.8)));el.classList.remove('th-arrive')}
 
-function setMute(key,on){
-  const it=item(key); if(!it)return;
-  it.m=on?{r:'user',d:TODAY}:null;
+function setMute(key,on){const it=item(key);if(it)it.m=on?{r:'user',d:TODAY}:null}
+/* melyik csoport nyíljon ki, hogy a sor „megérkezését” lássa */
+function openFor(key,on){
+  const [k,id]=key.split(':');
+  if(k==='f'){const f=fact(id);S.g[on?'f:muted':'f:'+f.cat]=true}
+  if(k==='p'){const [,p]=pfact(id);S.g[`p:${p.id}:muted`]=true}
+  if(k==='e'){const e=S.eff.find(x=>x.id===id);S.g[on?'e:muted':(e.kind==='p'?'e:ppl':'e:evt')]=true}
+  if(k==='o'){const o=obsOf(id);const main=o.by&&obsOf(o.by)?obsOf(o.by):o;S.g['o:'+main.topic]=true}
 }
-const FOLD={f:'mf',p:'mp',o:'mo',e:'me'};
 async function mute(key,on){
   const el=document.querySelector(`[data-row="${key}"]`);
   const inDrift=el&&el.classList.contains('th-drift');
-  if(!inDrift)await collapse(el);
-  setMute(key,on); S.open[key]=null;
-  const k=key[0]; if(on&&!inDrift)S.fold[FOLD[k]]=true; if(!on&&k==='f'&&item(key).b==='wait')S.fold.wait=true;
+  const stays=key[0]==='o'&&S.of==='mind'; /* az Észrevételeknél a „Mind” szűrőben a sor helyben halkul el */
+  if(!inDrift&&!stays)await collapse(el);
+  setMute(key,on); S.open[key]=null; openFor(key,on); S.gq={};
   soft(); arrive(key);
   toast(on?'Elhallgattattam — megőrzöm, de nem használom':'Visszakapcsoltam — újra használhatom');
 }
@@ -2347,26 +2583,45 @@ function tick(){if(!P)return;const left=Math.max(0,P.dur-(performance.now()-P.t0
   const b=$('#undoB'); if(b)b.style.width=(RM()?s/5*100:left/P.dur*100)+'%';
   if(left<=0){finalize(true);return} P.raf=requestAnimationFrame(tick)}
 function finalize(expired){if(!P)return;cancelAnimationFrame(P.raf);P=null;$('#undo').classList.remove('on');if(expired)toast('Végleg elfelejtve')}
-function undo(){if(!P)return;const key=P.key;cancelAnimationFrame(P.raf);P.restore();P=null;$('#undo').classList.remove('on');soft();arrive(key);toast('Visszavonva — minden a helyén')}
+function undo(){if(!P)return;const key=P.key;cancelAnimationFrame(P.raf);P.restore();P=null;$('#undo').classList.remove('on');openFor(key,!!(item(key)||{}).m);soft();arrive(key);toast('Visszavonva — minden a helyén')}
 
 /* ── router ─────────────────────────────────────────────── */
-const VW={rolad,tudastar,tenyek,emberek,eszrevetelek,hatasok,ikonok};
-function paint(r){$('#scroll').innerHTML=(VW[r]||tudastar)()}
+const VW={rolad,tudastar,tenyek,emberek:id=>id?person(id):emberek(),eszrevetelek,hatasok,ikonok};
+const BODY={tenyek:tenyekBody,emberek:id=>id?personBody(id):emberekBody(),eszrevetelek:eszrevetelekBody,hatasok:hatasokBody};
+const route=()=>(location.hash||'#tudastar').slice(1).split('/');
+function paint(r,id){$('#scroll').innerHTML=(VW[r]||tudastar)(id)}
 function render(){
-  const [r,id]=(location.hash||'#tudastar').slice(1).split('/');
-  S.open={}; if(id){S.fold.mo=true;S.fold.mf=true} $('#scroll').classList.remove('norise'); paint(r); $('#scroll').scrollTop=0;
+  const [r,id]=route();
+  S.open={}; S.gq={};
+  if(r==='eszrevetelek'&&id){const o=obsOf(id);if(o){openFor('o:'+id);S.of='mind';S.q.o=''}}
+  if(r==='emberek'&&!S.carry)S.q.pp=''; S.carry=false;
+  $('#scroll').classList.remove('norise'); paint(r,id); $('#scroll').scrollTop=0;
   ntfOpen=false;$('#ntf').classList.remove('on');$('#switcher').classList.remove('on');$('#scrim').classList.remove('on');
   tabbar('Rólad');
   document.querySelectorAll('#jump a').forEach(a=>a.setAttribute('aria-current',String(a.getAttribute('href')==='#'+r)));
-  if(id){const key=(r==='eszrevetelek'?'o:':'f:')+id; requestAnimationFrame(()=>arrive(key))}
+  if(r==='eszrevetelek'&&id)requestAnimationFrame(()=>arrive('o:'+id));
 }
-function soft(){const y=$('#scroll').scrollTop;$('#scroll').classList.add('norise');paint((location.hash||'#tudastar').slice(1).split('/')[0]);$('#scroll').scrollTop=y}
+/* újrarajzolás helyben: a görgetés és a kereső fókusza megmarad */
+function soft(){
+  const sc=$('#scroll'),y=sc.scrollTop,ae=document.activeElement,fq=ae&&ae.dataset&&ae.dataset.q,pos=fq?ae.selectionStart:0;
+  sc.classList.add('norise');const [r,id]=route();paint(r,id);sc.scrollTop=y;
+  if(fq){const i=document.querySelector(`[data-q="${fq}"]`);if(i){i.focus();i.setSelectionRange(pos,pos)}}
+}
 let toastT;
 function toast(t){clearTimeout(toastT);$('#toast').textContent=t;$('#toast').classList.add('on');toastT=setTimeout(()=>$('#toast').classList.remove('on'),2600)}
+
+/* élő szűrés: csak a találati rész rajzolódik újra, a mező nem */
+document.addEventListener('input',e=>{
+  const i=e.target.closest('[data-q]'); if(!i)return;
+  S.q[i.dataset.q]=i.value; S.gq={}; i.closest('.th-search').classList.toggle('has',!!i.value);
+  const [r,id]=route(), b=$('#thb'); if(b&&BODY[r]){$('#scroll').classList.add('norise');b.innerHTML=BODY[r](id)}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const i=e.target.closest&&e.target.closest('[data-q]');if(i&&i.value){S.q[i.dataset.q]='';soft()}}});
 
 document.addEventListener('click',e=>{
   const t=e.target;
   if(t.closest('[data-undo]')){undo();return}
+  const cl=t.closest('[data-clear]'); if(cl){e.preventDefault();S.q[cl.dataset.clear]='';S.gq={};soft();const i=document.querySelector(`[data-q="${cl.dataset.clear}"]`);if(i)i.focus();return}
   const a=t.closest('[data-a]');
   if(a){e.preventDefault();const key=a.dataset.k,act=a.dataset.a;
     if(act==='src'||act==='more'){const want=act==='src'?'src':'acts';S.open[key]=S.open[key]===want?null:want;soft();return}
@@ -2378,16 +2633,17 @@ document.addEventListener('click',e=>{
     if(act==='unmute'){mute(key,false);return}
     if(act==='forget'){forget(key);return}
   }
-  const fo=t.closest('[data-fold]'); if(fo){const k=fo.dataset.fold;S.fold[k]=!S.fold[k];soft();return}
+  const g=t.closest('[data-g]'); if(g){const k=g.dataset.g,[r]=route(),qk={tenyek:'f',eszrevetelek:'o',hatasok:'e'}[r]||'pp';
+    if(S.q[qk])S.gq[k]=!S.gq[k]; else S.g[k]=!S.g[k]; soft();return}
+  const of=t.closest('[data-of]'); if(of){S.of=of.dataset.of;S.gq={};soft();return}
   const hb=t.closest('[data-hub]'); if(hb){e.preventDefault();S.hub=hb.dataset.hub;const cur=(location.hash||'').split('/')[0];if(cur==='#tudastar'||cur==='#hatasok')soft();else location.hash='#tudastar';if(hb.classList.contains('retry')||hb.classList.contains('th-link'))toast('Újra betöltve');return}
   if(t.closest('[data-reset]')){e.preventDefault();finalize(false);reset();soft();toast('A demó visszaállítva');return}
   const go=t.closest('[data-go]'), tt=t.closest('[data-toast]');
-  if(go){e.preventDefault();if(location.hash===go.dataset.go){render()}else{location.hash=go.dataset.go}return}
+  if(go){e.preventDefault();if(go.dataset.go.startsWith('#emberek/')){S.q.pp=go.dataset.pq||'';S.carry=true}if(location.hash===go.dataset.go){render()}else{location.hash=go.dataset.go}return}
   if(tt){e.preventDefault();toast(tt.dataset.toast);return}
 });
 addEventListener('hashchange',render);
 $('#still').addEventListener('change',e=>document.body.classList.toggle('still',e.target.checked));
-
 (function chrome(){
   const D=[['nap','Nap','var(--gold)'],['train','Edzés','var(--coral)'],['fuel','Fuel','var(--sage)'],['mezo','Mezo','var(--lav)'],['en','Én','var(--rose)']];
   $('#switcher').innerHTML=`<small>TERÜLETVÁLTÓ</small><div class="sw-grid">${D.map(([d,n,c])=>`<button class="sw ${d==='mezo'?'on':''}" style="--c:${c}" ${d==='mezo'?'data-switch':`data-toast="${n} — másik terület, nem része ennek a körnek"`}>${B(d)}${n}</button>`).join('')}</div>`;
