@@ -40,8 +40,13 @@ import java.util.stream.Collectors;
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
 public class KnowledgeFactService {
 
-    /** The injection block header — ChatService inserts it between the context snapshot and the history. */
-    public static final String FACTS_HEADER = "\n\nMEGERŐSÍTETT TÉNYEK {{NÉV}} személyéről (legfontosabb elöl):\n";
+    /** The injection block header — appended as a sibling block on every channel (facts-always,
+     *  mezo-d6ivw.8). The second line is the passive-use rule (Claude-memory pattern, spec delta
+     *  2026-09-27): use naturally when relevant, never enumerate, never cite the remembering. */
+    public static final String FACTS_HEADER =
+            "\n\nMEGERŐSÍTETT TÉNYEK {{NÉV}} személyéről (legfontosabb elöl):\n"
+            + "Ezeket tudod róla korábbról. Használd természetesen, amikor releváns — "
+            + "ne sorold fel, és ne hivatkozz arra, hogy \"megjegyezted\".\n";
 
     /** The V3.3 acknowledgment header — freshly promoted pattern-facts the companion mentions once. */
     public static final String NEW_PATTERN_FACTS_HEADER =
