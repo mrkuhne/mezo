@@ -81,6 +81,15 @@ test('the sprite carries the U9 Mezo II icons', () => {
   }
 })
 
+// Check-in 2.0 (mezo-ck2): the Edzés readiness card's reason + care icons, approved on
+// prototypes/elo/edzes.html (kipihentség, izomláz, fájdalom, kedv).
+test('the sprite carries the Check-in 2.0 readiness icons', () => {
+  const ids = symbolIds()
+  for (const id of ['t-rested', 't-soreness', 't-pain', 't-motivation'] satisfies Icon3DName[]) {
+    expect(ids, id).toContain(id)
+  }
+})
+
 test('every symbol is 64×64 art (Icon3D renders viewBox 0 0 64 64)', () => {
   const { container } = render(<ClaySprites />)
   const syms = container.querySelectorAll('symbol[id^="t-"]')

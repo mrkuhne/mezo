@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.train.service;
 import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
 import io.mrkuhne.mezo.api.dto.LastWeekRef;
 import io.mrkuhne.mezo.api.dto.OverloadSummary;
+import io.mrkuhne.mezo.api.dto.PrescribedSet;
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
 import io.mrkuhne.mezo.api.dto.SetUpdateRequest;
 import io.mrkuhne.mezo.api.dto.TodayExercise;
@@ -40,6 +41,7 @@ import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -131,6 +133,9 @@ public class WorkoutService {
     // effectiveWorkingSets resolves the muscle-group volume distribution (see below) — subtracting
     // it earlier would corrupt that week-wide proportional split instead of lightening one day.
     private final WorkoutDayAdjustmentRepository workoutDayAdjustmentRepository;
+    // Check-in 2.0 readiness (mezo-ck2): the day's „Könnyítsük" overlay — every prescription capped
+    // at HOLD, and the pain-loaded (care) exercises drop their heavy sets. Read-time only.
+    private final ReadinessAssessor readinessAssessor;
 
     public WorkoutTodayResponse getToday(UUID createdBy, UUID templateSessionId) {
         // Settle abandoned instances FIRST (own @Transactional bean — getToday is a read):
@@ -241,6 +246,10 @@ public class WorkoutService {
             .findByCreatedByAndDateAndDeletedFalse(createdBy, LocalDate.now())
             .map(a -> (int) a.getSetDelta())
             .orElse(0);
+        // Readiness „Könnyítsük" (mezo-ck2): present only when the user chose LIGHTEN for today.
+        // Care exercise id → the pain region that flagged it. Undo deletes the choice, so the next
+        // read prescribes normally again; logged sets are never touched (targets are per request).
+        Optional<Map<UUID, String>> lighten = readinessAssessor.lightening(createdBy, LocalDate.now(), exercises);
         int weightUp = 0;
         int weightDown = 0;
         int repUp = 0;
@@ -259,9 +268,17 @@ public class WorkoutService {
             }
             int effective = effectiveSets.getOrDefault(e.getId(), e.getWorkingSets());
             effective = Math.max(1, effective + dayDelta);
+            String careRegion = lighten.map(m -> m.get(e.getId())).orElse(null);
+            if (careRegion != null) {
+                effective = 1; // the heavy working sets drop — one light working set remains
+            }
             t.setWorkingSets(effective);
             if (hypertrophyGate.getIfAvailable() != null) {
-                Prescription p = setRecommendationService.prescribe(createdBy, e, deloadWeek, effective);
+                Prescription p = setRecommendationService.prescribe(
+                    createdBy, e, deloadWeek, effective, lighten.isPresent());
+                if (careRegion != null) {
+                    p = lightCareSet(p, careRegion);
+                }
                 t.setPrescribedSets(p.sets());
                 t.setRationale(p.rationale());
                 t.setProgression(p.progression());
@@ -297,6 +314,34 @@ public class WorkoutService {
             .weekDoneDates(weekDoneDates)
             .overloadSummary(overloadSummary)
             .build();
+    }
+
+    /**
+     * Readiness care exercise (mezo-ck2): its heavy working sets are dropped — the one remaining
+     * working set carries the top warm-up rung's weight (the lighter load the ramp already
+     * computed), or keeps its held target when there is no weighted warm-up. The rationale names
+     * the pain region.
+     */
+    private static Prescription lightCareSet(Prescription p, String region) {
+        BigDecimal light = p.sets().stream()
+            .filter(s -> s.getKind() == PrescribedSet.KindEnum.WARMUP && s.getTargetWeightKg() != null)
+            .map(PrescribedSet::getTargetWeightKg)
+            .max(BigDecimal::compareTo)
+            .orElse(null);
+        if (light != null) {
+            p.sets().stream()
+                .filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING)
+                .forEach(s -> s.setTargetWeightKg(light));
+        }
+        String rationale = "Fáj a " + PainRegionMap.possessive(region)
+            + " — a nehéz szettek kimaradnak, egy könnyebb munkaszett";
+        if (p.progression() != null) {
+            p.progression().setRationale(rationale);
+            if (light != null) {
+                p.progression().setTargetWeightKg(light);
+            }
+        }
+        return new Prescription(p.sets(), rationale, p.progression());
     }
 
     /** An owned TEMPLATE row (templateSessionId == null) by id — 404 on anything else. */

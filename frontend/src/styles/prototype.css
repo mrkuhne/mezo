@@ -17496,6 +17496,40 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
 }
 
+/* ── Check-in 2.0 · „Mai állapot" (mezo-ck2, elo/edzes.html `.ready`): one glass card under the
+   hero — lavender offer, sage once lightened. Chips, the care row and the ghost pill are FLAT
+   cells inside it (never glass in glass). ── */
+.trm .trd.glass { display: block; margin: 14px 0 0; padding: 16px; border: 0; border-radius: 24px; text-align: left; }
+.trm .trd-eb { display: block; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: color-mix(in srgb, var(--c) 85%, var(--text-primary)); }
+.trm .trd-title { margin: 2px 0 0; font-size: 18px; font-weight: 600; letter-spacing: -0.4px; color: var(--text-primary); }
+.trm .trd-why { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.trm .trd-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; color: var(--text-secondary); white-space: nowrap;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.trm .trd-chip .t-ico { width: 18px; height: 18px; filter: none; }
+.trm .trd-care {
+  display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 10px 12px; border-radius: 16px;
+  background: color-mix(in srgb, var(--dv-rose) 10%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-rose) 35%, transparent);
+}
+.trm .trd-care .t-ico { width: 28px; height: 28px; flex: 0 0 auto; }
+.trm .trd-care span { min-width: 0; font-size: 13px; line-height: 1.4; color: var(--text-secondary); overflow-wrap: anywhere; }
+.trm .trd-care b { font-weight: 600; color: var(--text-primary); }
+.trm .trd-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.trm .trd-pill {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 8px 14px; border: 0; border-radius: 999px;
+  font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  color: #191614; background: var(--c); box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.trm .trd-pill.is-ghost { font-weight: 600; color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.trm .trd-pill:disabled { opacity: 0.45; cursor: default; }
+.trm .trd-pill:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.trm .trd-note { margin: 10px 0 0; font-size: 11.5px; color: var(--text-muted); }
+.trm .trd-ok { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.trm .trd-ok .t-ico { width: 20px; height: 20px; flex: 0 0 auto; }
+
 /* ── the loading skeleton: same rail, same geometry ── */
 .trm-sk .trm-sk-hero { display: grid; justify-items: center; gap: 8px; padding: 14px 4px 18px; }
 .trm-sk .trm-sk-row { display: flex; justify-content: center; gap: 6px; }

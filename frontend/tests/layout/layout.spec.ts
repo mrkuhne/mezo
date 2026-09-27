@@ -773,3 +773,37 @@ test('the dark shell header background does not overpaint the page top at rest',
   }
   expect(clearAtRest || probe.bgBottom <= probe.contentTop).toBe(true)
 })
+
+// ── Check-in 2.0 · „Mai állapot" on Edzés · Mai (mezo-ck2), at 320px ────────────────────────────
+// The readiness card sits right under the gym hero: its reason chips, the care row and both
+// pills must wrap inside the card at the narrowest phone, never push the page sideways.
+test('Edzés Mai · the readiness card stays contained and its taps are reachable @ 320px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 820 })
+  await page.clock.setFixedTime(new Date('2026-05-21T08:42:00')) // a Thursday — the mock Pull day
+  await page.goto('/train/mai')
+  await page.waitForLoadState('networkidle')
+  await page.evaluate(() => document.fonts.ready)
+
+  const card = page.locator('.trd')
+  await card.scrollIntoViewIfNeeded()
+  await expect(card).toBeVisible()
+  const box = await page.evaluate(() => {
+    const el = document.querySelector('.trd') as HTMLElement
+    const sc = document.querySelector('.screen-content') as HTMLElement
+    const r = el.getBoundingClientRect()
+    const children = Array.from(el.querySelectorAll('.trd-chip, .trd-care, .trd-pill')) as HTMLElement[]
+    return {
+      cardOverflow: el.scrollWidth - el.clientWidth,
+      pageOverflow: sc.scrollWidth - sc.clientWidth,
+      right: r.right,
+      viewport: window.innerWidth,
+      childrenOutside: children.filter((c) => c.getBoundingClientRect().right > r.right + 0.5).length,
+    }
+  })
+  expect(box.cardOverflow).toBeLessThanOrEqual(1)
+  expect(box.pageOverflow).toBeLessThanOrEqual(1)
+  expect(box.right).toBeLessThanOrEqual(box.viewport)
+  expect(box.childrenOutside).toBe(0)
+  await expect(page.getByRole('button', { name: 'Könnyítsük' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Maradjon a terv' })).toBeVisible()
+})

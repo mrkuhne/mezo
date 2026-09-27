@@ -56,6 +56,25 @@ public final class ProgressionDecider {
         return new Decision(Lever.HOLD, w, repMin, null, null, "Súly tart, cél a tartomány alja");
     }
 
+    /**
+     * Readiness "Könnyítsük" (Check-in 2.0, mezo-ck2): caps a decision at HOLD — never more weight
+     * or reps than last week. An upward move (WEIGHT +, REP) becomes HOLD at last week's weight and
+     * last week's reps (clamped into the recipe range); a move that is already a hold or lighter
+     * (HOLD, WEIGHT −, DELOAD) is returned unchanged.
+     */
+    public static Decision capAtHold(Decision d, RefSet ref, int repMin, int repMax) {
+        boolean up = d.lever() == Lever.REP
+            || (d.lever() == Lever.WEIGHT && d.deltaKg() != null && d.deltaKg().signum() > 0);
+        if (!up) {
+            return d;
+        }
+        int reps = Math.max(repMin, Math.min(ref.reps(), repMax));
+        return new Decision(Lever.HOLD, ref.weightKg(), reps, null, null, LIGHTENED_RATIONALE);
+    }
+
+    /** HU rationale of a readiness-held exercise. */
+    public static final String LIGHTENED_RATIONALE = "Könnyített nap — a múlt heti súly marad";
+
     private static BigDecimal round(BigDecimal x, BigDecimal step) {
         BigDecimal rounded = x.divide(step, 0, RoundingMode.HALF_UP).multiply(step);
         return rounded.max(BigDecimal.ZERO).min(BigDecimal.valueOf(999));

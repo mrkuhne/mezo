@@ -942,6 +942,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/readiness/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Today's readiness hint — suggestion, reasons, care exercises and the day's choice
+         * @description Pure read. Source = today's 06:30 check-in, else the first check-in of the day that answered rested / soreness / motivation / pain. suggest = rested <= 4 OR soreness >= 7 OR motivation <= 3 (thresholds: mezo.train.readiness). state: LIGHTENED / KEPT when a choice is stored for today; else OFFER when suggest is true or a care exercise exists on a planned gym day; else NONE (no morning check-in, nothing to flag, or no planned gym today).
+         */
+        get: operations["getTodayReadiness"];
+        put?: never;
+        /**
+         * Store today's choice — LIGHTEN (hold every weight, drop the care exercises' heavy sets) or KEEP (hide the card)
+         * @description Idempotent upsert of the (user, today) choice. LIGHTEN changes today's prescriptions (GET /api/train/workouts/today) for sets not yet logged; already-logged sets are untouched.
+         */
+        post: operations["chooseTodayReadiness"];
+        /** Undo today's choice ("Visszaállítom a tervet") — normal prescriptions again for sets not yet logged */
+        delete: operations["undoTodayReadiness"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/goals": {
         parameters: {
             query?: never;
@@ -6511,6 +6536,34 @@ export interface components {
             setCycleCompound: number;
             setCycleIsolation: number;
             transition: number;
+        };
+        ReadinessChoiceRequest: {
+            /** @enum {string} */
+            choice: "LIGHTEN" | "KEEP";
+        };
+        ReadinessTodayResponse: {
+            /** @description A threshold fired on rested / soreness / motivation */
+            suggest: boolean;
+            /** @enum {string} */
+            state: "OFFER" | "LIGHTENED" | "KEPT" | "NONE";
+            /** @description The answered morning values of rested, soreness, motivation (in that order) */
+            reasons: components["schemas"]["ReadinessReason"][];
+            /** @description Today's planned exercises whose muscle group a reported pain region loads */
+            care: components["schemas"]["ReadinessCare"][];
+        };
+        ReadinessReason: {
+            /** @enum {string} */
+            item: "rested" | "soreness" | "motivation";
+            value: number;
+        };
+        ReadinessCare: {
+            exerciseName: string;
+            /** @description The check-in pain region (PainRegion value, e.g. VALL) */
+            region: string;
+            /** @description Hungarian possessive phrase for "fáj a …" — e.g. "vállad", "térded" */
+            regionLabel: string;
+            /** @description The reported pain intensity (null when not answered) */
+            intensity?: number | null;
         };
         /** @description "Hogy tanultam?" (mezo-y72o3) — the caller's most recent reviewed week that carries an explanation, joining the expenditure_estimate row with its persisted explanation jsonb. Every nullable field is honestly absent (no fallback), not a fabricated 0/'medium'. */
         ExpenditureExplanationResponse: {
@@ -15031,6 +15084,106 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TimingProfileResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getTodayReadiness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Today's readiness (state NONE when there is nothing to show) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadinessTodayResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    chooseTodayReadiness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReadinessChoiceRequest"];
+            };
+        };
+        responses: {
+            /** @description The readiness after the choice */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadinessTodayResponse"];
+                };
+            };
+            /** @description Missing choice */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    undoTodayReadiness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The readiness after the undo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadinessTodayResponse"];
                 };
             };
             /** @description Missing/invalid token */
