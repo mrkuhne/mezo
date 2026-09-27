@@ -5,17 +5,10 @@
 // chip-sor a napokat, a vizsgált eltolást és az ablakot mondja ki egy pillantásra.
 // ============================================================
 import { Icon3D } from '@/shared/ui/clay'
-import { ruleSentence, type Reading } from '@/features/insights/logic/patternReading'
+import { lagWord, ruleSentence, type Reading } from '@/features/insights/logic/patternReading'
 import { Bold } from '@/features/insights/components/PatternAnswerHero'
 import { cn } from '@/shared/lib/cn'
 import type { PatternMonitorPair, PatternTestPlan } from '@/data/types'
-
-/** Mikor nézzük a hatást — köznyelven, kód-eltolás nélkül. */
-function lagWord(lagDays: number): string {
-  if (lagDays === 0) return 'aznap'
-  if (lagDays === 1) return 'másnap'
-  return `${lagDays} nappal később`
-}
 
 export function PatternRuleCard({ pair, plan, reading, windowDays }: {
   pair: PatternMonitorPair

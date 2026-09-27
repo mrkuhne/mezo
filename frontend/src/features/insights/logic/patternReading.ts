@@ -221,7 +221,7 @@ export function niceTicks(lo: number, hi: number, clock: boolean, count = 3): nu
 
 export const mean = (days: AlignedDay[]) => days.reduce((s, d) => s + d.b, 0) / (days.length || 1)
 export const az = (word: string): 'a' | 'az' => (/^[aáeéiíoóöőuúüű]/i.test(word) ? 'az' : 'a')
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+export const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 const hu1 = (v: number) => (Math.round(v * 10) / 10).toFixed(1).replace('.', ',')
 
 /** Zóna-átlag kiírva: óra-metrikán „20:39", egyébként egy tizedes vesszővel. */
@@ -273,7 +273,8 @@ export function saySentence(reading: Reading, pair: PatternMonitorPair, days: Al
   return base + (tail[reading.state] ?? '')
 }
 
-function lagWord(lagDays: number): string {
+/** Mikor nézzük a hatást — köznyelven, kód-eltolás nélkül. */
+export function lagWord(lagDays: number): string {
   if (lagDays === 0) return 'aznap'
   if (lagDays === 1) return 'másnap'
   return `${lagDays} nappal később`

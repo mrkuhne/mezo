@@ -12,12 +12,10 @@ import { PATTERN_DOMAIN_ART } from '@/features/insights/components/PatternDomain
 import { PatternDayPips, PatternLeanMeter } from '@/features/insights/components/PatternLeanMeter'
 import { patternHeadline } from '@/features/insights/logic/patternCopy'
 import {
-  answerLook, decisionPlan, saySentence, type DecisionVerb, type Reading,
+  answerLook, cap, decisionPlan, saySentence, type DecisionVerb, type Reading,
 } from '@/features/insights/logic/patternReading'
 import { cn } from '@/shared/lib/cn'
 import type { AlignedDay, Pattern, PatternEvent, PatternMonitorPair, PatternStatus } from '@/data/types'
-
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 const VERB_ICON: Record<DecisionVerb, Icon3DName> = { confirm: 't-tick', monitor: 't-lens', reject: 't-skip' }
 
