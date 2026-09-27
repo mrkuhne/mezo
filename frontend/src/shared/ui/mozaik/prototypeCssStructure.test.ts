@@ -303,9 +303,21 @@ describe('the glassbox section is registered (mezo-88iwa.13, re-dressed mezo-ju4
     const start = rawCss.indexOf(START_MARKER)
     const end = rawCss.indexOf(END_MARKER)
     const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
-    for (const cls of ['.gl-backdrop', '.gl-card', '.gl-head', '.gl-x', '.gl-anim']) {
+    for (const cls of ['.gl-backdrop', '.gl-card', '.gl-head-title', '.gl-anim']) {
       expect(section, `${cls} missing from the glassbox section`).toContain(cls)
     }
+  })
+
+  test('the section keeps geometry only; the skin is the U10 glass (U11, mezo-6661l)', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const rules = stripComments(rawCss.slice(start, end))
+    // the pre-üveg light sheet skin (veil, tint radial, white top edge) is gone …
+    expect(rules).not.toMatch(/\.gl-card \{[^}]*background/)
+    expect(rules).not.toMatch(/\.gl-backdrop \{[^}]*background/)
+    // … and the head / close button are dressed by the uveg reteg ablak block only
+    expect(stripComments(rawCss)).toMatch(/\.uv-gb \.gl-x \{/)
+    expect(stripComments(rawCss)).toMatch(/\.gl-card\.glass\.uv-gb \{/)
   })
 })
 
