@@ -1524,6 +1524,11 @@ export const handlers = [
         lastReinforcedAt: f.lastReinforcedAt,
         createdAt: f.createdAt,
         patternTitle: f.patternTitle ?? null,
+        // S6 (mezo-d6ivw.6) — mute/provenance mezők; a seed egyike sem néma, ezért itt mindig null.
+        mutedReason: f.mutedReason ?? null,
+        mutedAt: f.mutedAt ?? null,
+        supersededBy: f.supersededBy ?? null,
+        provenance: { sourceKind: f.source, patternId: f.patternId ?? null, sourceMessageId: f.sourceMessageId ?? null },
       })),
     ),
   ),
@@ -1613,10 +1618,12 @@ export const handlers = [
       factText: body.factText ?? fact.text,
       category: body.category ?? fact.category,
       source: 'manual',
+      owner: fact.owner,
       reinforcementCount: fact.reinforced,
       includeInPrompt: body.includeInPrompt ?? fact.active,
       lastReinforcedAt: null,
       createdAt: '2026-07-01T06:00:00Z',
+      provenance: { sourceKind: 'manual' },
     })
   }),
   http.post(`${API_BASE}/api/companion/fact/candidate/:id/decision`, async ({ params, request }) => {

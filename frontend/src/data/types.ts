@@ -740,6 +740,8 @@ export interface PersonFact {
   text: string
   confidence: 'low' | 'medium' | 'high'
   sourceKind: 'chat_turn' | 'nightly_day'
+  /** S6 (mezo-d6ivw.6) — a forrás azonosítója (chat_turn: az üzenet; nightly_day: a nap). */
+  sourceRefId: string
   includeInPrompt: boolean
   /** false, amíg a (jellemzően éjszakai) tényt a személy oldalán először meg nem nézik. */
   seen: boolean
@@ -754,6 +756,15 @@ export interface PersonEffect {
   confidence: 'gyenge' | 'kozepes' | 'eros'
   meanDiff: number
   subjectDays: number
+}
+/** S6 (mezo-d6ivw.6) — a Tudástár Hatások szakaszának alany-kártyája: a dróton lapos
+ *  (alany×metrika) sorokat a wire mapper alanyonként csoportosítja egy kártyává. */
+export interface EffectSubject {
+  kind: 'person' | 'event'
+  key: string
+  label: string
+  muted: boolean
+  effects: PersonEffect[]
 }
 export interface PersonEntry {
   id: string
@@ -853,6 +864,9 @@ export type FactCategory = 'train' | 'fuel' | 'health' | 'life'
 export type FactSource = 'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question'
 /** U9b (mezo-zpxv7): a tényt "birtokló" csapattag — a Rólad tag. */
 export type FactOwner = 'szunya' | 'mocor' | 'falat' | 'deru' | 'mezo'
+/** S6 (mezo-d6ivw.6) — miért hallgat egy tény/észrevétel: user = te hallgattattad el,
+ *  refuted = később nem igazolódott (S2 cáfolat), superseded = felülírta egy újabb észrevétel. */
+export type FactMuteReason = 'user' | 'refuted' | 'superseded'
 
 export interface MemoryPatternCount { kind: string; status: string; count: number }
 export interface MemoryFactSourceCount { source: FactSource; count: number }
@@ -914,6 +928,17 @@ export interface KnowledgeFact {
   lastReinforcedAt: string | null
   /** A tény létrejötte (ISO instant) — a prompt-rangsor másodlagos kulcsa (reinforced DESC, createdAt DESC). */
   createdAt: string
+  /** S6 (mezo-d6ivw.6) — miért hallgat a tény; null, ha bekapcsolt. Optional so the mock seeds
+   *  (written before S6) stay valid — the wire mapper always sets it. */
+  mutedReason?: FactMuteReason | null
+  /** S6 — mikor hallgattatták el; null, ha bekapcsolt vagy S6 előtti némítás. */
+  mutedAt?: string | null
+  /** S6 — a tény, ami felülírta (drift-megerősítés). */
+  supersededBy?: string | null
+  /** S6 — az észrevétel, amiből a tény született (source=pattern). */
+  patternId?: string | null
+  /** S6 — a beszélgetés-üzenet, amiből a jelölt született (chat). */
+  sourceMessageId?: string | null
 }
 /** A pending extraction candidate awaiting the explicit L2 decision (accept/refine/reject/snooze). */
 export interface FactCandidate {

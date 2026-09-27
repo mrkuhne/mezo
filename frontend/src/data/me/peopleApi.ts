@@ -61,6 +61,7 @@ export function toPersonFact(f: PersonFactResponse): PersonFact {
     text: f.factText,
     confidence: f.confidence,
     sourceKind: f.sourceRefKind,
+    sourceRefId: f.sourceRefId,
     includeInPrompt: f.includeInPrompt,
     seen: f.seen,
     createdAt: f.createdAt,
@@ -143,4 +144,9 @@ export const peopleApi = {
     }),
   markFactsSeen: (personId: string) =>
     apiFetch<void>(`${PEOPLE}/${personId}/facts/seen`, { method: 'POST' }),
+  editFact: (personId: string, factId: string, text: string) =>
+    apiFetch<PersonFactResponse>(`${PEOPLE}/${personId}/facts/${factId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ factText: text } satisfies UpdatePersonFactRequest),
+    }),
 }
