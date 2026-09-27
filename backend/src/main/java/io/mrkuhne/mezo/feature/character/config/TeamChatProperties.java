@@ -22,4 +22,15 @@ public record TeamChatProperties(
         @NotNull @DecimalMin("0.00") BigDecimal monthlyUsdCap,
         /** The expiry sweep's schedule. */ @NotBlank String expiryCron,
         /** Task 11 (mezo-a9bo7.23): the hourly catch-up sweep's schedule. */
-        @NotBlank String catchupCron) {}
+        @NotBlank String catchupCron,
+        /** S7 (mezo-d6ivw.7): voiced (LLM) REPLY answers per ügy per local day; past it a
+         *  template answers. */
+        @Min(1) @Max(20) int replyVoicedPerThreadDay,
+        /** S7: all REPLY lines per user per local day (their own cap — they never eat the
+         *  shared {@code dailyLineCap}). */
+        @Min(1) @Max(200) int replyDailyCap,
+        /** S7: an exception's hit window in days. */
+        @Min(1) @Max(120) int exceptionWindowDays,
+        /** S7: the hits already inside the window that turn the next occurrence into a
+         *  one-time review question („ez még rendben van így?"). */
+        @Min(1) @Max(30) int exceptionReviewHits) {}

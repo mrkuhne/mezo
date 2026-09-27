@@ -41,6 +41,9 @@ public class KnowledgeFactEntity extends OwnedEntity {
      *  question with one tap, which is a confirmation in its own right and needs no Tudástár
      *  accept step. */
     public static final String SOURCE_QUESTION = "question";
+    /** A csapatfal REPLY that closed an ügy with a concrete explanation (S7, mezo-d6ivw.7) —
+     *  captured as a durable {@code TeamChatExceptionEntity}, mirrored here for the Tudástár. */
+    public static final String SOURCE_TEAM_CHAT = "team_chat";
 
     @Id
     @GeneratedValue
@@ -60,10 +63,11 @@ public class KnowledgeFactEntity extends OwnedEntity {
 
     /** Mirrors ck_knowledge_fact_source — V1.1 creates only 'manual'; 'chat' = V1.2 extraction,
      *  'pattern' = V3.3 promotion, 'weekly_review' = an accepted weekly lesson (mezo-d20.7.6),
-     *  'question' = a once-ever question's answer (mezo-d58h.7.5). */
+     *  'question' = a once-ever question's answer (mezo-d58h.7.5), 'team_chat' = a csapatfal
+     *  REPLY exception (S7, mezo-d6ivw.7). */
     @NotNull
     @Size(max = 16)
-    @Pattern(regexp = "chat|pattern|manual|weekly_review|question")
+    @Pattern(regexp = "chat|pattern|manual|weekly_review|question|team_chat")
     @Column(nullable = false, length = 16)
     private String source;
 

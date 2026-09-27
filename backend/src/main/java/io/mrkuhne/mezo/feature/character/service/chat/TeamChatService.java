@@ -74,11 +74,22 @@ public class TeamChatService {
     static final String STATUS_RESOLVED = "RESOLVED";
     static final String STATUS_EXPIRED = "EXPIRED";
 
+    /** S7 (mezo-d6ivw.7): why a RESOLVED ügy closed. */
+    static final String CLOSE_DATA = "DATA";
+    static final String CLOSE_REPLY = "REPLY";
+    static final String CLOSE_EXCUSED = "EXCUSED";
+
+    /** S7: the offer riding a RESOLVED ügy — a known-exception question, or a capped re-check. */
+    static final String OFFER_EXCUSE = "EXCUSE";
+    static final String OFFER_REVIEW = "REVIEW";
+
     static final String KIND_OPEN = "OPEN";
     static final String KIND_GUEST = "GUEST";
     static final String KIND_RESOLVE = "RESOLVE";
     static final String KIND_SKEPTIC = "SKEPTIC";
     static final String KIND_USER = "USER";
+    /** S7: the user's explanation line that closes an ügy with CLOSE_REPLY. */
+    static final String KIND_REPLY = "REPLY";
 
     static final int REPLY_MAX_CHARS = 1000;
 

@@ -86,4 +86,9 @@ public interface TeamChatThreadRepository extends JpaRepository<TeamChatThreadEn
               and ((t.openedAt >= :from and t.openedAt < :to) or (t.closedAt >= :from and t.closedAt < :to))
             order by t.openedAt asc""")
     List<TeamChatThreadEntity> touchedBetween(UUID owner, Instant from, Instant to);
+
+    /** S7: is there already an EXCUSE/REVIEW offer for this exception opened since the window
+     *  start — the "don't re-offer within the same window" gate. */
+    Optional<TeamChatThreadEntity> findFirstByCreatedByAndExceptionIdAndOfferAndOpenedAtGreaterThanEqualAndDeletedFalse(
+            UUID createdBy, UUID exceptionId, String offer, Instant since);
 }
