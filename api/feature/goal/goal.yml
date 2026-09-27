@@ -218,7 +218,7 @@ components:
         Every nullable field is honestly absent (no fallback), not a fabricated 0/'medium'.
       required: [weekStart, status, confidence, formulaBaseKcal, posteriorBaseKcal, posteriorSdKcal,
                  appliedBaseKcal, stepKcal, windowStart, windowEnd, usableDays, weighInDays,
-                 unloggedDays, historyWeeks, tissueRateKgPerWeek, startBaseKcal, excludedDays,
+                 unloggedDays, historyWeeks, startBaseKcal, excludedDays,
                  waterEvents, series]
       properties:
         weekStart: { type: string, format: date, description: The reviewed week's Monday }
@@ -238,7 +238,7 @@ components:
         historyWeeks: { type: integer, minimum: 0 }
         avgIntakeKcal: { type: integer, nullable: true, description: Mean usable intake; absent with no usable day }
         avgMovementKcal: { type: integer, nullable: true, description: Mean movement input over the usable days; absent with no usable day }
-        tissueRateKgPerWeek: { type: number, description: "The filter's tissue change over the traced span, per week" }
+        tissueRateKgPerWeek: { type: number, nullable: true, description: "The filter's tissue change over the traced span, per week; absent with no trace (no weigh-ins in the window) or on a HOLDING week" }
         tissueKcalPerDay: { type: integer, nullable: true, description: That rate as kcal/day }
         simpleBaseKcal: { type: integer, nullable: true, description: 'avgIntake − tissueKcalPerDay − avgMovement; absent when either input is missing' }
         startBaseKcal: { type: integer, description: The base this week's step started from }

@@ -6313,8 +6313,8 @@ export interface components {
             avgIntakeKcal?: number | null;
             /** @description Mean movement input over the usable days; absent with no usable day */
             avgMovementKcal?: number | null;
-            /** @description The filter's tissue change over the traced span, per week */
-            tissueRateKgPerWeek: number;
+            /** @description The filter's tissue change over the traced span, per week; absent with no trace (no weigh-ins in the window) or on a HOLDING week */
+            tissueRateKgPerWeek?: number | null;
             /** @description That rate as kcal/day */
             tissueKcalPerDay?: number | null;
             /** @description avgIntake − tissueKcalPerDay − avgMovement; absent when either input is missing */
