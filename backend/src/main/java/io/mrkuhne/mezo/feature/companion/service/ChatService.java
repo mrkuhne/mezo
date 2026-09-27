@@ -450,6 +450,10 @@ public class ChatService {
      * context (W2.4, "" when the graph switch is off or nothing matched) → TONE_REMINDER
      * (mezo-q71s, always last). The history travels as real prior messages, not a transcript here.
      *
+     * <p>On the conversation-first path (mezo-rj214.7's single volatile assembly), the volatile
+     * half now ends with the full confirmed-facts block instead of stopping at the personal-context
+     * snapshot (facts-always, mezo-d6ivw.8) — see {@link #conversationContext}.
+     *
      * <p>This method returns the STABLE half only — the voice, and nothing that changes between
      * turns. It is what the provider caches: it sits in front of the 46 tool schemas in the request
      * the adapter builds, so anything volatile placed here would invalidate the tool definitions'
@@ -504,7 +508,11 @@ public class ChatService {
         return promptPersona.render(userId, "\n\n[Beszélgetés]\nMa: " + today + "\n"
                 + "A beszélgetési előzmény korlátozott ablak; régebbi részlet kérésre lekérhető.\n"
                 + anchoredBlock(userId, conversation.getContextKind(), conversation.getContextDate()))
-                + personalContextAssembler.render(userId, today);
+                + personalContextAssembler.render(userId, today)
+                // facts-always (mezo-d6ivw.8): confirmed facts are identity, not data lookup —
+                // they join date/preferences as initial background (ADR 0043 amendment); the
+                // model uses them passively (preamble in FACTS_HEADER), tools stay for the rest
+                + knowledgeFactService.renderPromptBlock(userId);
     }
 
     /**
