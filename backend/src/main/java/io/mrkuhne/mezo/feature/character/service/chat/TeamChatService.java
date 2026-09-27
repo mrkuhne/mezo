@@ -365,8 +365,15 @@ public class TeamChatService {
 
     @Transactional
     void catchUpUser(UUID userId, Instant now) {
-        catchUpMissedOpens(userId, now);
+        // Resolves BEFORE opens — a lock-order rule (S7, mezo-d6ivw.7): an open's exception gate
+        // takes the per-user exception advisory lock, held to the end of this transaction, while
+        // TeamChatExceptionService.answer / TeamChatReplyService.commit take an ügy's row lock and
+        // THEN that advisory lock. A resolve (closeThread's row lock) after an open would wait on a
+        // row lock while holding the advisory lock — a deadlock cycle. Accepted cost: a raise and
+        // its clear that both fall inside one sweep window leave the ügy OPEN until the next hourly
+        // run resolves it.
         catchUpMissedResolves(userId);
+        catchUpMissedOpens(userId, now);
     }
 
     /** Every raise in the last {@link #CATCH_UP_LOOKBACK_HOURS} hours with no thread opened at/after

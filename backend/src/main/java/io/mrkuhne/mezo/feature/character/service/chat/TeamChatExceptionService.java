@@ -199,11 +199,15 @@ public class TeamChatExceptionService {
         exceptions.lockUserExceptions(userId);
         TeamChatExceptionEntity e = exceptions.findByIdAndCreatedByAndDeletedFalse(thread.getExceptionId(), userId)
                 .orElseThrow(TeamChatExceptionService::notFound);
+        if (!Boolean.TRUE.equals(e.getActive())) {
+            throw conflict(); // withdrawn meanwhile (undo / STOP): no hit, no window restart
+        }
         Instant now = Instant.now();
         String body;
         switch (choice) {
             case CHOICE_EXCUSED -> {
-                LocalDate day = now.atZone(properties.zone()).toLocalDate();
+                // The occurrence's own day — a post-midnight tap must not swallow the next day's hit.
+                LocalDate day = thread.getOpenedAt().atZone(properties.zone()).toLocalDate();
                 if (!hits.existsByExceptionIdAndHitOnAndDeletedFalse(e.getId(), day)) {
                     saveHit(userId, e.getId(), day, TeamChatReplyService.HIT_TAP, thread.getId());
                 }

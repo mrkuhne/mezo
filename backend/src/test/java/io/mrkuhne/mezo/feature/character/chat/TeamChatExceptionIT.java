@@ -25,6 +25,7 @@ import io.mrkuhne.mezo.feature.character.service.chat.TeamChatService;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
@@ -273,6 +274,79 @@ class TeamChatExceptionIT extends AbstractIntegrationTest {
         TeamChatThreadEntity t = service.open(owner, FlagKey.LATE_EATING, todayAt(12, 0)).orElseThrow();
 
         assertThat(t.getOffer()).isEqualTo("EXCUSE");
+    }
+
+    @Test
+    void hitAtExactlyTheWindowFloor_counts() {
+        UUID owner = owner();
+        TeamChatExceptionEntity ex = activeException(owner);
+        // floor = day − (window − 1): a hit ON the floor day is inside the window.
+        seedHit(owner, ex.getId(), today().minusDays(properties.exceptionWindowDays() - 1L));
+        for (int d = 1; d < properties.exceptionReviewHits(); d++) {
+            seedHit(owner, ex.getId(), today().minusDays(d));
+        }
+        raiseLateEatingLog(owner);
+
+        TeamChatThreadEntity t = service.open(owner, FlagKey.LATE_EATING, todayAt(12, 0)).orElseThrow();
+
+        assertThat(t.getOffer()).isEqualTo("REVIEW");
+    }
+
+    @Test
+    void reviewAlreadyOpenedThisWindow_closedByDataUnanswered_nextOccurrenceIsAnExcuse() {
+        UUID owner = owner();
+        TeamChatExceptionEntity ex = activeException(owner);
+        for (int d = 1; d <= properties.exceptionReviewHits(); d++) {
+            seedHit(owner, ex.getId(), today().minusDays(d));
+        }
+        raiseLateEatingLog(owner);
+        TeamChatThreadEntity review = service.open(owner, FlagKey.LATE_EATING, todayAt(12, 0)).orElseThrow();
+        assertThat(review.getOffer()).isEqualTo("REVIEW");
+        service.resolve(owner, FlagKey.LATE_EATING,
+                new FlagVerdict.ClearEvidence("late_days", 0.0, 2.0, null), todayAt(12, 10));
+        assertThat(reread(review.getId()).getCloseReason()).isEqualTo("DATA");
+
+        backdate(review);
+        raiseLateEatingLog(owner);
+        TeamChatThreadEntity next = service.open(owner, FlagKey.LATE_EATING, todayAt(13, 0)).orElseThrow();
+
+        assertThat(next.getOffer()).isEqualTo("EXCUSE");
+        assertThat(next.getExceptionId()).isEqualTo(ex.getId());
+    }
+
+    @Test
+    void answerExcused_afterMidnight_recordsTheHitOnTheOccurrencesDay() {
+        UUID owner = owner();
+        TeamChatExceptionEntity ex = activeException(owner);
+        raiseLateEatingLog(owner);
+        LocalDate yesterday = today().minusDays(1);
+        TeamChatThreadEntity t = service.open(owner, FlagKey.LATE_EATING,
+                yesterday.atTime(23, 30).atZone(zone()).toInstant()).orElseThrow();
+        assertThat(t.getOffer()).isEqualTo("EXCUSE");
+
+        exceptionService.answer(owner, t.getId(), "EXCUSED");
+
+        assertThat(hits.findFirstByExceptionIdAndThreadIdAndSourceAndDeletedFalse(ex.getId(), t.getId(), "TAP"))
+                .get().extracting(TeamChatExceptionHitEntity::getHitOn).isEqualTo(yesterday);
+        assertThat(hits.existsByExceptionIdAndHitOnAndDeletedFalse(ex.getId(), today())).isFalse();
+    }
+
+    @Test
+    void answerOnAnOfferWhoseExceptionWasWithdrawn_is409_noHit() {
+        UUID owner = owner();
+        TeamChatExceptionEntity ex = activeException(owner);
+        raiseLateEatingLog(owner);
+        TeamChatThreadEntity t = service.open(owner, FlagKey.LATE_EATING, todayAt(12, 0)).orElseThrow();
+        TeamChatExceptionEntity withdrawn = exceptions.findById(ex.getId()).orElseThrow();
+        withdrawn.setActive(false);
+        exceptions.saveAndFlush(withdrawn);
+
+        assertThatThrownBy(() -> exceptionService.answer(owner, t.getId(), "EXCUSED"))
+                .satisfies(e -> assertThat(statusOf(e)).isEqualTo(HttpStatus.CONFLICT));
+
+        assertThat(reread(t.getId()).getStatus()).isEqualTo("OPEN");
+        assertThat(hits.countByExceptionIdAndHitOnGreaterThanEqualAndDeletedFalse(ex.getId(), today().minusDays(60)))
+                .isZero();
     }
 
     @Test
