@@ -20028,8 +20028,11 @@ components:
         source:
           type: string
           description: >-
-            'chat' | 'pattern' | 'manual' — V1.1 creates only 'manual'; 'chat'
-            arrives with V1.2 extraction, 'pattern' with V3.3 promotion
+            'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question' |
+            'team_chat' — V1.1 creates only 'manual'; 'chat' arrives with V1.2
+            extraction, 'pattern' with V3.3 promotion, 'weekly_review' with
+            mezo-d20.7.6, 'question' with mezo-d58h.7.5, 'team_chat' with S7
+            (mezo-d6ivw.7)
         owner:
           type: string
           enum:

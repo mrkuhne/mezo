@@ -4002,6 +4002,100 @@ every mentioned person and a small fixed event taxonomy, never by the model.
   `@Transactional(readOnly = true)`; the character-side `TeamEditionReads.gatedEffects` wrapper is
   NOT (its delegate already opens its own read-only transaction).
 
+**Mezo emlékezete S6 — Elfelejtem/Elhallgattatom, the ONE place "forget" happens
+(`mezo-d6ivw.6`).** The Tudástár hub ([`insights.md`](insights.md) §2.4) needs one honest verb
+contract across four different kinds of knowledge (manually/chat/pattern-sourced facts, person
+facts, computed observations, computed effects), and "forget" must actually mean forget — no
+resurrection, ever, from any writer.
+
+- **`ForgetService`** (`feature/companion/service/ForgetService.java`, `COMPANION_SWITCH`-gated) is
+  the only place a fact or an observation is soft-deleted for good. `forgetFact(userId, factId)`
+  soft-deletes the `knowledge_fact` row (`@SQLDelete`), vetoes its normalized text, and — if the
+  fact is pattern-sourced — also forgets the source pattern row (`sourcePattern` resolves it from
+  the fact's own `provenance.patternId` envelope, falling back to a loose `promotedFactId` scan for
+  pre-S2 promotions that carry no envelope). `forgetObservation(userId, patternId)` is the mirror
+  entry from the Észrevételek side: it 404s on a foreign, non-reflection-owned or already-forgotten
+  row (`COMPANION_PATTERN_NOT_FOUND`), forgets the learned fact if one exists, then the pattern row
+  itself. Either path ends at `forgetPatternRow`: the pattern's `status` becomes **`forgotten`**
+  (`PatternEntity.STATUS_FORGOTTEN`) — a NEW terminal status, distinct from `refuted` — its id is
+  vetoed, and an open drift card about it (`PAIR_KEY_DRIFT_PREFIX + patternId`, unless the user has
+  already frozen it) is forgotten too, so a claim the user erased can't keep asking to be
+  re-confirmed.
+- **There is no restore endpoint.** The FE's `useForgetUndo` hook shows a ~5 s countdown bar
+  (`UNDO_MS = 5000`) and only calls `DELETE`/the forget endpoint when the window expires — see
+  [`insights.md`](insights.md) §2.4 for the full verb contract and the undo window's unmount
+  semantics.
+- **`memory_forget_veto`** (`MemoryForgetVetoEntity`, §4 below) is the "never re-mint this" ledger,
+  two domains: `fact_text` (a normalized-text key — `MemoryForgetVetoEntity.factTextVetoKey`,
+  `trim().toLowerCase().replaceAll("\\s+", " ")`, the same rule `FactExtractionService.normalize`
+  already used, capped at 500 chars **on both the write and every read side** — the column is
+  `varchar(500)`, so a longer forgotten fact would silently never match its own veto row if only
+  one side truncated) and `pattern` (the pattern id as text — a forgotten hypothesis's identity
+  never changes, so no normalization is needed). **Readers**, i.e. every writer that must refuse to
+  re-propose vetoed text or re-detect a vetoed pattern: `FactExtractionService` (chat-turn
+  extraction — checked after the confirmed-reinforcement dedupe, so a still-active fact keeps
+  reinforcing exactly as before), `WeeklyLessonService` (the Monday weekly candidate proposal), and
+  `PatternService` (a `decide`/promote path must 404 — same as forgetting — rather than resurrect a
+  forgotten row: see the `isForgotten()` guard below).
+- **`knowledge_fact.muted_reason`** (nullable, enum `user|refuted|superseded`) + `muted_at`
+  distinguish a MUTED fact (kept, excluded from the prompt and from every count that means "active
+  knowledge", one tap from **Visszakapcsolom**) from a FORGOTTEN one (gone, no way back).
+  `KnowledgeFactEntity.mute(reason, at)` sets both; **`unmute()` clears `mutedReason`, `mutedAt`
+  AND `supersededBy`** — a re-enabled superseded fact that kept its stale `supersededBy` pointer
+  stayed excluded from `KnowledgeFactRetrievalQuery` and from S7's `promptFactsForOwners` even
+  though `mutedReason` said it was live again (fixed in the final-review pass, `KnowledgeFactEntity.java:149`).
+- **Drift-confirm supersession** (the quarterly recheck's "yes, still true, but differently" path,
+  §3 above): confirming a drift mints a **NEW** fact (`source=pattern`, provenance pointing at the
+  drift row) and mutes the ORIGINAL `superseded`, with `supersededBy = <new id>` — a missing or
+  already-gone original promotes only (fail-open, logged). **Forgetting the SUPERSEDING fact
+  releases the original**: `ForgetService.releaseSuperseded` finds every live fact whose
+  `supersededBy` points at the id just forgotten and, for each still `MUTED_SUPERSEDED`, turns it
+  into the user's own mute (`mute(MUTED_USER, now)`) and clears `supersededBy` — the original does
+  NOT come back on its own (the user made the knowledge go away, not come back); it sits under
+  **Elhallgattatott**, one tap from **Visszakapcsolom**, and the hub stops saying "felülírta egy
+  újabb észrevétel" about a fact that no longer exists.
+- **Reading `pattern.status = forgotten` is a new obligation for EVERY reader that filters by
+  status** — the final whole-branch review found the plan's own reader list had missed **five**:
+  `proactive/service/WeeklySuggestionGenerator`, `MemoirGenerator`, `WeeklyReviewGenerator`,
+  `WeeklyReviewDigestService` (all four read confirmed-pattern events for weekly narrative/digest
+  material) and `companion/service/ConversationService` (a forgotten row could still seed a chat
+  and title it). All five now exclude `forgotten` explicitly; `PatternService.decide` also refuses
+  a forgotten row (404, same idiom as `forgetObservation`) so a stray decision can't revive it.
+  Readers that were already safe by construction: the character layer's status-confirmed finders,
+  `EditionCandidateCollector` (only turns `proposed`/`confirmed` rows into candidates),
+  `MemoryObservatoryService` (counts per kind|status, exposes no content) and
+  `PatternMonitorService` (statistical-only).
+- **`KnowledgeBackfillRunner`** (`feature/companion/KnowledgeBackfillRunner.java`, a
+  `CommandLineRunner`, `@Order(220)`, `COMPANION_SWITCH`-gated, bd `mezo-4rh4r` folded into this
+  slice) — a pre-existing gap the hub's "every confirmed observation should have a fact" promise
+  exposed: before S2 shipped, "Igen, ez igaz rám" on a plan-less grounded row only moved it to
+  `monitoring`, nothing was left to measure, so it never promoted and the user's confirmed
+  knowledge never became a fact. On every app start it re-applies `PatternService.applyUserConfirm`
+  (events, provenance, graph event, veto guard included) to exactly those stuck rows — one
+  `REQUIRES_NEW` transaction per row (slice lesson 11), a bad row logged and skipped rather than
+  rolling back the batch. Idempotent by construction: a promoted row leaves the work list.
+- **`effect_mute`** (`EffectMuteEntity`, §4 below) is per **SUBJECT** — muting a person mutes ALL
+  of that person's metrics, not one row — and survives the nightly `EffectLinkService.recompute`
+  (a muted subject's rows keep recomputing underneath; the mute is a separate veto layer, not a
+  flag on `effect_link` itself). Two modes: `muted` (kept, excluded from surfaces, reversible) and
+  `forgotten` (permanent — neither a later `muted` PUT nor the `DELETE` unmute brings it back).
+  **All three prompt/edition readers of `EffectLinkService.gatedEffects`** — the hypothesis prompt
+  block (`promptBlock`), the proactive apropó matcher (`ProactiveMemoryBlock`, [proactive.md
+  §3](proactive.md)) and the character layer's csapatfal edition source
+  (`TeamEditionReads.gatedEffects` → `EditionCandidateCollector`, [character.md §3](character.md))
+  — share the SAME private `gatedRows`, which skips both muted AND forgotten subjects; the person
+  page ([me.md §2](me.md)) and the Tudástár Hatások section skip forgotten subjects and flag muted
+  ones instead of hiding them (a muted effect is still "true", just quieted).
+- **`muteFromTeamChat`** (S7 interaction, `KnowledgeFactService.java:306`) has its own body — it
+  calls `fact.mute(MUTED_USER, now)` directly rather than delegating to
+  `muteFromRefutedPattern` — so a user un-muting their own csapatfal-sourced fact sees the honest
+  "te hallgattattad el" reason, not the pattern-refutation copy that delegating would have shown.
+- **A muted or forgotten pattern-sourced fact silences its graph PATTERN node too.**
+  `GraphPromotionService.patternQualifies` requires a confirmed pattern's promoted fact (if it has
+  one) to be live AND `includeInPrompt`; `syncFact` re-syncs the source pattern's node when the fact
+  it backs changes, archiving the node while the fact is muted/deleted and reviving it on
+  re-enable — a forgotten pattern is never confirmed, so it never re-qualifies on its own.
+
 ## 4. Data model & API
 
 ### Personal preferences and exact context preview
@@ -4083,6 +4177,16 @@ Migration `202607031707_mezo-fnnq.6_create_knowledge_learned_fact.sql` (in `1.0.
   read-only batch — which of these ids still exist with `include_in_prompt=true`) lets the
   character's exception gate skip an exception whose fact the user deleted or muted in the
   Tudástár, and revive it when the fact is turned back on. Companion never imports character.
+  **S6 (`mezo-d6ivw.6`) adds `muted_reason varchar(16)` (nullable,
+  `ck_knowledge_fact_muted_reason IN (user,refuted,superseded)`) and `muted_at timestamptz`
+  (nullable) — `202609271200_mezo-d6ivw.6_memory_forget.sql` + the one-off backfill
+  `202609271201_mezo-d6ivw.6_fact_mute_reason_backfill.sql` (a pre-existing muted fact whose
+  promoting pattern was refuted backfills to `refuted`, `muted_at` stays null; every other
+  pre-existing muted fact backfills to `user` — the old boolean toggle was never timestamped, so a
+  made-up date would lie). `superseded_by uuid fk→knowledge_fact ON DELETE SET NULL` already
+  existed from the drift-confirm feature (`mezo-6dii.1`); S6 adds the write paths that clear it on
+  unmute and release it on forget (§3 above, "Elfelejtem/Elhallgattatom" has the full
+  forget/mute/drift-supersession semantics). Null `muted_reason` = active/on.
 - **`learned_fact`** — `id uuid pk`, owner columns as above, `candidate_text text`,
   `category varchar(16)` (`ck_learned_fact_category`, **added by the V1.2 migration**
   `202607031812_mezo-fnnq.7_learned_fact_category.sql` — the extractor classifies at capture,
@@ -4296,6 +4400,35 @@ named-effect engine's cache (§3 above has the full write-up):
 - **`EffectLinkEntity`** (`feature/companion/reflection/entity/`) maps it 1:1, `@SQLDelete`/
   `@SQLRestriction` soft-delete, no own feature switch on the table — every bean over it is gated on
   `COMPANION_SWITCH ∧ REFLECTION_SWITCH` (§3).
+
+### Backend tables (Mezo emlékezete S6 forget/mute spine, ✅ `mezo-d6ivw.6`)
+
+`202609271200_mezo-d6ivw.6_memory_forget.sql` (`1.1.0`) — the Tudástár hub's "Elfelejtem"/
+"Elhallgattatom" plumbing (§3 above has the full write-up): the `knowledge_fact.muted_reason`/
+`muted_at` columns (§4 above) plus two new columns and two new tables.
+
+- **`pattern` gains `rechecked_at timestamptz`** — stamped on every row the quarterly drift recheck
+  (`mezo-d6ivw.2`, §3) actually evaluated to a verdict (`holds` or `drift`), never on a row it
+  skipped. **`ck_pattern_status` is re-issued** (drop + add, name unchanged) adding `forgotten` as a
+  seventh terminal value alongside `proposed|monitoring|confirmed|rejected|refuted|dormant` —
+  `forgotten` never resurfaces and is never re-promoted (`PatternEntity.STATUS_FORGOTTEN`,
+  `isForgotten()`).
+- **`memory_forget_veto`** — `id uuid pk`, `created_by fk→app_user ON DELETE CASCADE`, `created_at`,
+  `is_deleted`, `domain varchar(16)` (`ck_memory_forget_veto_domain IN (fact_text,pattern)`),
+  `veto_key varchar(500) not null`. **`uq_memory_forget_veto_key (created_by, domain, veto_key)
+  where is_deleted = false`** is the existence check every writer uses before inserting a candidate
+  (`MemoryForgetVetoRepository.existsByCreatedByAndDomainAndVetoKeyAndDeletedFalse`). No `INSERT`
+  seed data, no history — a veto row is permanent once written (nothing ever un-vetoes it; the
+  ONLY way text stops being vetoed is for the user to type it again as a fresh, separately-created
+  fact).
+- **`effect_mute`** — `id uuid pk`, `created_by fk→app_user ON DELETE CASCADE`, `created_at`,
+  `is_deleted`, `subject_kind varchar(8)` (`ck…IN (person,event)`), `subject_key varchar(64)`,
+  `mode varchar(16)` (`ck_effect_mute_mode IN (muted,forgotten)`). **`uq_effect_mute_subject
+  (created_by, subject_kind, subject_key) where is_deleted = false`** — one row per subject (never
+  per metric), which is what makes muting a person mute all three of their metrics at once. Kept as
+  its own table, not a column on `effect_link`, precisely because `effect_link` rows are
+  soft-deleted and re-created every night by the recompute (§3 above) — a flag on the row would die
+  with it.
 
 ### Backend tables (LLM audit log, ✅ `mezo-2zyu`)
 
@@ -5978,7 +6111,8 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `POST /api/companion/conversation/{id}/message/stream` | SSE `(delta\|tool\|phase)*, (done\|error)` | 200 · 400 · 401 · 404 | The **streamed** turn (V0.4, tag `CompanionStream`, **hand-written** — §9 Decision 11); `tool` events interleave live since mezo-280 (progress only — the `done` row's `tools[]` stays authoritative). **Since S9.6 (`mezo-rj214.7`):** 0..n `phase` events (`planning`\|`retrieving`\|`answering`, a replan lap repeats `retrieving`/`answering`) narrate a LOOKUP/ANALYSIS pipeline turn's pre-answer wait — progress only, never terminal, and the SSE response now OPENS before the pipeline lap runs (§3 "The streamed turn") so the frames arrive DURING the wait; a fallback turn emits only `planning`, a `CHAT` turn emits none. Two-transaction; `error` ⇒ no assistant row. Non-2xx are plain JSON before the stream starts. |
 | `GET /api/companion/fact` | `KnowledgeFactResponse[]` | 200 · 401 | V1.1 — owner's facts, `reinforcement_count desc, created_at desc`. |
 | `POST /api/companion/fact` | `KnowledgeFactResponse` | 201 · 400 · 401 | V1.1 manual add — `CreateFactRequest {factText 1..500, category pattern}`; `source=manual`, `include_in_prompt=true`, `reinforcement_count=0`. |
-| `PATCH /api/companion/fact/{id}` | `KnowledgeFactResponse` | 200 · 400 · 401 · 404 | V1.1 partial update — `UpdateFactRequest {factText?, category?, includeInPrompt?}`, only provided fields applied (the KnowledgeListPage toggle). |
+| `PATCH /api/companion/fact/{id}` | `KnowledgeFactResponse` | 200 · 400 · 401 · 404 | V1.1 partial update — `UpdateFactRequest {factText?, category?, includeInPrompt?}`, only provided fields applied (the hub's **Javítom**/toggle). `category` is `enum:` (S6, `mezo-d6ivw.6` — was `pattern:`, slice lesson 21). |
+| `DELETE /api/companion/fact/{id}` | — | 204 · 401 · 404 | S6 (`mezo-d6ivw.6`) — **Elfelejtem**: soft-deletes the fact and vetoes its normalized text (never re-learned from the same source). No restore — the FE's undo window sends this only on expiry. §3 above. |
 | `GET /api/companion/fact/candidate` | `FactCandidateResponse[]` | 200 · 401 | V1.2 — the pending inbox: undecided candidates, newest first. |
 | `POST /api/companion/fact/candidate/{id}/decision` | `FactCandidateResponse` | 200 · 400 · 401 · 404 | V1.2 — `FactDecisionRequest {decision accept\|reject\|refine, refinedText?}`; accept/refine promote (`promotedFactId` set); refine without text → FIELD `VALIDATION_REQUIRED_FIELD`; re-decide → `COMPANION_CANDIDATE_ALREADY_DECIDED`. |
 | `GET /api/companion/pattern/monitor` | `PatternMonitorResponse` | 200 · 401 | `mezo-viqs` — live diagnostics: re-runs `PatternGate` over the exact windows the nightly job uses, writing nothing; per-pair verdict + per-`MetricKey` coverage. `missingDays` exists only for `few_days`; `bottleneckMetricKey` for `few_days`/`no_data`/`degenerate`. **mezo-0469:** every pair carries both `metric*ValueKind` fields; binary pairs that reach the total-size gate carry `groupZeroDays`/`groupOneDays`/`requiredPerGroup`, and `imbalanced_groups` deliberately has no correlation stats. **mezo-18bx:** pairs also carry `mechanismHu` + domains, coverage rows `sourceHu` + domain. |
@@ -6027,8 +6161,14 @@ JSON; `StreamToolCall.name` carries the SAME pre-baked `"name(args)"` label as `
 'answering'`, deliberately NOT enum-constrained in the schema, §3 "The streamed turn" — with no
 persisted counterpart: unlike `tool`/`delta`, a `phase` frame has no row on the `done` event, it
 narrates the wait and then is gone),
-`KnowledgeFactResponse {id, factText, category, source, reinforcementCount,
-includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1). **`mezo-al1i`** adds
+`KnowledgeFactResponse {id, factText, category, source, owner, reinforcementCount,
+includeInPrompt, lastReinforcedAt?, createdAt, patternTitle?, citedWeeks?, mutedReason?, mutedAt?,
+supersededBy?, provenance}` (V1.1; `owner`/`patternTitle` U9b/`mezo-tk88`; `citedWeeks`
+`mezo-d20.7.7`; **`mutedReason`/`mutedAt`/`supersededBy`/`provenance` are S6 (`mezo-d6ivw.6`)** —
+`mutedReason` is `user\|refuted\|superseded\|null` (§3 above), `provenance` is
+`KnowledgeFactProvenance {sourceKind: chat\|pattern\|manual\|weekly_review\|question\|team_chat,
+patternId?, sourceMessageId?}`, the structured "honnan jön" the lazy `GET
+/api/companion/fact/{factId}/evidence` (below) expands into evidence items). **`mezo-al1i`** adds
 `MemoryOverviewResponse {l0, l1, l2, l3, jobs}` (nested `MemoryOverviewL0/L1/L2/L3/Jobs` +
 `MemoryPatternCount {kind, status, count}` + `MemoryFactSourceCount {source, count}` +
 `MemoryEmbeddingKindCount {kind, count}` — **`MemoryOverviewL1.embeddings` is `MemoryEmbeddingKindCount[]`
@@ -6161,23 +6301,31 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
 - `GraphNodeResponse.proposedEdgeCount` — how many edges accepting this candidate would create
   (`0` for every non-candidate node).
 
-### REST endpoints — named effects (contract-first — tag `CompanionEffects` → `CompanionEffectsApi`)
+### REST endpoints — named effects + S6 mute (contract-first — tag `CompanionEffects` → `CompanionEffectsApi`)
 
-Mezo emlékezete S4 (`mezo-d6ivw.4`), fragment `api/feature/companion/companion.yml`;
-`CompanionEffectsController implements CompanionEffectsApi`, gated on `COMPANION_SWITCH ∧
-REFLECTION_SWITCH` — mirrors `CompanionObservationController`: with Reflexió off there is nothing
-named to serve. Every non-2xx returns `SystemMessageList`.
+Mezo emlékezete S4 (`mezo-d6ivw.4`); the mute pair is S6 (`mezo-d6ivw.6`), fragment
+`api/feature/companion/companion.yml`; `CompanionEffectsController implements
+CompanionEffectsApi`, gated on `COMPANION_SWITCH ∧ REFLECTION_SWITCH` — mirrors
+`CompanionObservationController`: with Reflexió off there is nothing named to serve. Every non-2xx
+returns `SystemMessageList`.
 
 | Method + path | Returns | Status | Notes |
 |---|---|---|---|
-| `GET /api/companion/effects?personId=` | `PersonEffectsResponse` | 200 · 401 | `effectLinkService.effectsForPerson(userId, personId)` mapped straight to the wire, strongest-`\|δ\|`-first. An unknown/foreign/effect-less person answers an honest `{ effects: [] }`, never a 404 — the caller (§me.md's `PersonDetailPage`) already has the person from its own bootstrap and only asks this endpoint "does anything qualify". |
+| `GET /api/companion/effects?personId=` | `PersonEffectsResponse` | 200 · 401 | `effectLinkService.effectViews(userId, personId)` mapped straight to the wire, strongest-`\|δ\|`-first. **S6: `personId` is now OPTIONAL** — without it, every live person- and event-subject's rows (the Tudástár Hatások section, [insights.md §2.4](insights.md)); an unknown/foreign/effect-less person still answers an honest `{ effects: [] }`, never a 404. |
+| `PUT /api/companion/effects/{subjectKind}/{subjectKey}/mute` | — | 204 · 400 · 401 | S6 — `EffectMuteRequest {mode: muted\|forgotten}` (`EffectMuteService.mute`). `subjectKind` `person\|event`; a `subjectKey` over 64 chars or an unknown kind is a 400. Forgetting is permanent — see §3 above. |
+| `DELETE /api/companion/effects/{subjectKind}/{subjectKey}/mute` | — | 204 · 400 · 401 | S6 — **Visszakapcsolom** on a muted subject (`EffectMuteService.unmute`); a no-op, still 204, on an unmuted or unknown subject; has **no effect on a `forgotten` subject** (no restore). |
 
-**Schemas:** `PersonEffectsResponse { effects: EffectResponse[] }`. `EffectResponse {metric:
-mental\|energy\|stress, direction: higher\|lower, strengthBand: enyhe\|kozepes\|eros,
-confidenceTier: gyenge\|kozepes\|eros, meanDiff: double, subjectDays: int, complementDays: int,
-computedAt: date-time}` — `direction` is derived from the stored Cliff's-delta sign at read time
-(`CompanionEffectsController.toResponse`, `signum() > 0 ⇒ higher`), never persisted as its own
-column; `meanDiff` carries the raw metric-unit mean difference the FE's "~X ponttal" line reads.
+**Schemas:** `PersonEffectsResponse { effects: EffectResponse[] }`. `EffectResponse {subjectKind:
+person\|event, subjectKey, subjectLabel, metric: mental\|energy\|stress, direction: higher\|lower,
+strengthBand: enyhe\|kozepes\|eros, confidenceTier: gyenge\|kozepes\|eros, meanDiff: double,
+subjectDays: int, complementDays: int, computedAt: date-time, muted: boolean}` — `direction` is
+derived from the stored Cliff's-delta sign at read time (`CompanionEffectsController.toResponse`,
+`signum() > 0 ⇒ higher`), never persisted as its own column; `meanDiff` carries the raw metric-unit
+mean difference the FE's "~X ponttal" line reads. **`subjectKind`/`subjectKey`/`subjectLabel`/
+`muted` are S6 additions** — the FE's `groupEffectSubjects` (`data/insights/knowledgeHubApi.ts`)
+re-groups the flat, one-row-per-subject×metric wire shape into one card per subject for the hub,
+since a mute/forget action targets the whole subject, not one metric row. `EffectMuteRequest
+{mode: muted\|forgotten}`.
 
 ### REST endpoints — observation feed + chip reply (contract-first — tag `CompanionObservation` → `CompanionObservationApi`)
 
@@ -6192,6 +6340,9 @@ an empty list that reads as "nothing happened today". Every non-2xx returns `Sys
 | `POST /api/companion/pattern/{patternId}/reply` | `PatternReplyResponse` | 200 · 400 · 401 · 404 | The chip answer — `PatternReplyRequest {choice: watch\|reject\|talk, text? ≤500}` (`ReflectionReplyService.reply`). `watch` on a `proposed` row ⇒ `monitoring`; the SECOND `reject` ⇒ `refuted`; `talk` ⇒ a `seedPatternId` conversation whose id rides back in `conversationId`. 404 `COMPANION_PATTERN_NOT_FOUND` for a missing, foreign **or** statistical row (no existence leak, no 403). |
 
 | `POST /api/companion/observation/recovery` | `ObservationRecoveryResponse` | 200 · 400 · 401 · 403 | OWNER-only `mode=preview` or `mode=apply, planId`. Preview has no pattern/event writes; apply consumes exactly the server-held candidates and never pushes. Expired/unknown plan: `OBSERVATION_RECOVERY_EXPIRED`. |
+| `GET /api/companion/observation/knowledge` | `KnowledgeObservationResponse[]` | 200 · 401 | S6 (`mezo-d6ivw.6`) — the Tudástár Észrevételek section: confirmed (and refuted-but-fact-bearing) observations with the learned fact's mute state, the drift pair, and the row's own evidence (capped at `ROW_EVIDENCE_LIMIT` = 5), newest confirmation first. |
+| `DELETE /api/companion/observation/{patternId}` | — | 204 · 401 · 404 | S6 — **Elfelejtem** on an observation: its learned fact (if any) is forgotten with it (text vetoed); the row becomes `forgotten` and is vetoed by id — never shown or re-detected again. 404 for missing, foreign, non-reflection-owned or already-forgotten. §3 above. |
+| `GET /api/companion/fact/{factId}/evidence` | `ObservationEvidenceItem[]` | 200 · 401 · 404 | S6 — **Honnan tudom?**: the fact's source evidence (chat → the conversation message; pattern → the row's own evidence), capped at 5. Empty for a manual or `team_chat` fact. 404 for a missing or foreign fact. |
 
 **Schemas:** `ObservationResponse {id, patternId, kind?, hypothesisKey, card fresh|return|watching|confirmed,
 occurredAt, title, text, question?, evidence: ObservationEvidenceItem[], status, evidenceHits, evidenceMisses, minN, belief?,
@@ -6205,7 +6356,13 @@ payload split on its last newline (a row card carries `text: ""` and no question
 conversationId?}`. **No migration:** `card`/`choice`/`sourceIcon` are WIRE vocabularies — nothing
 stores them — and the two status moves (`monitoring`, `refuted`) plus the three event kinds
 (`user_reply`, `monitoring`, `refuted`) were already in `ck_pattern_status`/`ck_pattern_event_kind`
-since S2.
+since S2. **`KnowledgeObservationResponse` (S6) {patternId, title, confirmedAt, recheckedAt?,
+status: confirmed\|refuted, factId?, factMutedReason?, factMutedAt?, replacesPatternId?,
+replacedByPatternId?, topicKey?, evidence: ObservationEvidenceItem[]}** — the FE
+(`knowledgeHubApi.ts`) captures each evidence item's raw wire `source` into `evidenceSources`
+BEFORE `mapEvidence` renames it to a display label (e.g. `check_in` → "Check-in") — anything keyed
+on the catalogue source, like the hub's topic grouping (`logic/hubTopics.ts`), must read that raw
+value, never the renamed one.
 
 ### Companion read-tool catalog (ownership-scoped, audited)
 
@@ -8656,6 +8813,21 @@ proactive-feed kinds actually WIRES the seam: morning/sleep/weight/window each a
 hand-built `MemoryContextBlock`), `CompanionMessageGeneratorIT`, `CompanionMessageJobIT`,
 `LlmCallContextTaggingIT`, `ProactiveApiFeedIT` and `ArchitectureTest`.
 
+**Mezo emlékezete S6 — Elfelejtem/Elhallgattatom (`mezo-d6ivw.6`).** `ForgetServiceIT` (soft-delete +
+veto round-trip for both fact and observation forgets, incl. the `fact_text` veto row assertion),
+`ForgetVetoWritersIT` (every veto-checking writer — chat extraction, weekly lesson, pattern
+promotion — actually refuses vetoed text/ids, incl. a >500-char fact exercising the truncated-key
+consistency fix), `DriftSupersessionIT` (confirming a drift mutes/links the original; forgetting the
+successor releases it to a plain user-mute, §3 above), `KnowledgeFactMuteReasonIT` (`unmute()`
+clears `supersededBy`), `ForgottenPatternInvisibleIT`/`ForgottenPatternProactiveIT` (a forgotten row
+404s `decide` and is absent from every proactive reader — the five-reader sweep, §9), `EffectMuteIT`
++ `CompanionEffectsControllerIT` (mute/forget per subject, all three `gatedEffects` readers skip
+both), `GraphPatternFactMuteIT` (a muted/forgotten fact's pattern node is archived/revived), plus
+`ArchitectureTest`. FE: `hub/*.test.tsx` (one per section + `HubTiles`/`HubFold`/`HubRow`/
+`ForgetUndoBar`/`hubWriteFailure` — real-mode optimistic-write rollback + error toast), `logic/
+{hubCopy,hubCounts,hubSearch,hubTopics}.test.ts`, `hooks/useForgetUndo.test.tsx` (the undo-window
+timing and the unmount-commits-outstanding-forget contract) — full detail: [`insights.md`](insights.md) §8.
+
 **Mezo emlékezete S4 — named-effect tracking (`mezo-d6ivw.4`).** Three test classes, one per layer.
 `EffectLinkCalculatorTest` is a **pure unit test** (no Spring, no DB, no clock) pinning the
 `MIN_SUBJECT_DAYS`/`MIN_COMPLEMENT_DAYS` gate on both sides, the negligible-delta drop, the exact
@@ -8665,7 +8837,9 @@ over real `mention`/`check_in` rows: a qualifying subject upserts IN PLACE on a 
 row id, refreshed numbers) rather than duplicating; a subject that falls below the gate the second
 night gets its row soft-deleted, not left stale; the double-gated `promptBlock` only emits rows
 whose strength AND confidence both clear `kozepes`, strongest first, capped at 6, and skips a row
-whose person is deleted or not active without ever inventing a name; and `effectsForPerson`'s
+whose person is deleted or not active without ever inventing a name; and `effectViews`' (the
+S6 rename of the former `effectsForPerson` — dead after the endpoint switched to listing every
+subject, deleted in the final S6 review pass)
 serve-time confidence bump lifts exactly one tier when a CONFIRMED pattern carries the row's
 `observation-topic-key:<key>` evidence item, verified NOT to have touched the underlying persisted
 row afterward (a fresh re-read still shows the un-bumped tier). **Emlékezet S5** (`mezo-d6ivw.5`)
@@ -9330,6 +9504,35 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   `topEdges` per node) and the hero's active-edge COUNT is real since `mezo-ms9a`'s
   `GET /api/companion/graph/edge/count`; only `useKnowledge()`'s own legacy `edges` field (the
   pre-graph mock fact-edges) is still mock-only real-mode-`[]` — see [`insights.md` §2.4/§5.1](insights.md).
+- **Mezo emlékezete S6 gotchas (`mezo-d6ivw.6`):**
+  - **A pattern that must never resurface is soft-deleted only if it is also a NEW terminal
+    status.** `GroundedHypothesisPublisher` (and every catalogue-pair detector) dedupes against
+    LIVE, non-deleted rows only — a `forgotten` row is still a live row with a terminal status, so
+    the next night's detector sees it and skips re-minting; a plain soft-delete alone would have let
+    the pattern come back the very next night.
+  - **A forgotten/muted row's status must be honoured by every reader that filters by pattern
+    status, not just the obvious ones.** The final whole-branch review found the S6 plan's own
+    reader list had missed five: `WeeklySuggestionGenerator`, `MemoirGenerator`,
+    `WeeklyReviewGenerator`, `WeeklyReviewDigestService` (proactive) and `ConversationService`
+    (companion, seeding a chat's title). All five are fixed; see §3 above.
+  - **The forget-veto key must be truncated identically on the write side AND every read side.**
+    The `varchar(500)` column forced a truncation; `MemoryForgetVetoEntity.factTextVetoKey` is the
+    ONE helper both `ForgetService` and every veto-checking writer call, so a >500-char forgotten
+    fact still matches its own veto row.
+  - **`unmute()` must clear `supersededBy`, not just `mutedReason`/`mutedAt`** — otherwise a
+    re-enabled superseded fact stays invisible to `KnowledgeFactRetrievalQuery` (`superseded_by is
+    null`) even though the UI says it is active again.
+  - **`effect_mute` outliving the nightly `effect_link` recompute is the whole point of the separate
+    table** — a mute flag ON `effect_link` itself would have been erased the moment that subject's
+    rows were soft-deleted and re-created.
+  - **A new enum value landing on `origin/main` from a parallel slice can 500 a strict enum
+    mapper.** S7 (`mezo-d6ivw.7`, csapatfal reply → durable knowledge) added `source=team_chat` to
+    `knowledge_fact` on main while this slice was still open; merging main WITHOUT widening
+    `KnowledgeFactProvenance.sourceKind`'s `enum:` list first made `SourceKindEnum.fromValue("team_chat")`
+    throw in `CompanionMapper`, 500ing `GET /api/companion/fact` for any user with a csapatfal fact.
+    **Merge the parallel slice before the final review, and re-check every strict enum this slice's
+    endpoints touch** — a 500 from a sibling slice's own DB value is not caught by this slice's own
+    tests, only by exercising the merged state.
 
 The feed reuses the chat read stack through `CompanionToolRegistry.feedCallbacks(audit)`:
 domain readers, `PersonalRecordTools`, and `FeedContextTools` memory search. It excludes the
@@ -9363,6 +9566,16 @@ change is distinct from those smoothed rates. The underlying trend calculation i
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/entity/EffectLinkEntity.java` + `repository/EffectLinkRepository.java` — the `effect_link` cache row + its finders (§4 above).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionEffectsController.java` — `GET /api/companion/effects?personId=` (§4 above); consumer: [me.md](me.md) §2/§5.4 (`PersonDetailPage`'s "Hatás · együttjárás" card).
 - `frontend/src/data/me/{personEffectsApi.ts,personEffectsHooks.ts}` — the dual-mode FE read, `usePersonEffects` (full detail: [me.md](me.md) §10).
+
+**Mezo emlékezete S6 — Elfelejtem/Elhallgattatom + the Tudástár hub backend (`mezo-d6ivw.6`)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ForgetService.java` — the one place a fact or observation is permanently forgotten; soft-delete + text/pattern veto, drift-supersession release (§3 above).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryForgetVetoEntity.java` + `repository/MemoryForgetVetoRepository.java` — the `memory_forget_veto` row + `factTextVetoKey` (the shared normalize-and-truncate helper every veto writer/reader calls).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/reflection/entity/EffectMuteEntity.java` + `repository/EffectMuteRepository.java` + `service/EffectMuteService.java` — the per-subject `effect_mute` row and its mute/unmute service.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/KnowledgeBackfillRunner.java` — the startup re-promotion of stuck pre-S2 confirmed observations (bd `mezo-4rh4r`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionEffectsController.java` — now also `PUT`/`DELETE .../effects/{subjectKind}/{subjectKey}/mute` (§4 above).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionObservationController.java` — `GET .../observation/knowledge`, `DELETE .../observation/{patternId}`, `GET .../fact/{factId}/evidence` (§4 above).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/graph/service/GraphPromotionService.java` — `syncPatternOfFact`/`patternQualifies`: a muted/forgotten fact silences (and a re-enabled one revives) its source pattern's graph node.
+- The Tudástár hub FE lives in `insights` (frontend consumer), not here — [`insights.md`](insights.md) §2.4/§10: `components/hub/*`, `logic/{hubCopy,hubSearch,hubTopics,hubCounts}.ts`, `hooks/useForgetUndo.ts`, `data/insights/knowledgeHub*.ts`.
 
 
 **Editable personal context (`mezo-txunr.1`)**

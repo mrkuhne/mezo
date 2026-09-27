@@ -32,7 +32,7 @@ Insights is the user-facing window onto mezo's N=1 self-model: it presents the b
 |---|---|---|
 | FE mock | ✅ done | the hub + 7 sibling pages, all views + tests present |
 | FE real-mode | ✅ all 7 tabs (Chat + Patterns + Knowledge + Memoir + Predictions + Experiments + **Memória**) | **Chat** real since companion V0.4 (`chatHooks.ts` + `chatApi.ts`, SSE — [`companion.md`](companion.md) §5.1); **Patterns** (V3.1) + **Knowledge** (V1.2) real over the companion backend — Patterns' dashboard also reads `GET /api/companion/pattern/monitor` directly since **`mezo-tk88.4`** (the retired Motor tab's diagnostics, §2.1); **Memoir** real since **proactive W2 (`mezo-h4wp.4`)** — `data/insights/memoirHooks.ts` reads `GET /api/proactive/memoir` (404→null→honest „készül" state), anniversary/archive mock-only, the demo reaction row retired at W4.1 for real feedback chips (§2.3); **Predictions** real since **proactive P1 (`mezo-h4wp.7`)** — `data/insights/predictionsHooks.ts` reads `GET /api/proactive/prediction` (list; `[]`→honest still-learning state, „tanulom" on null confidence); **Experiments** real since **proactive P2 (`mezo-h4wp.8`)** — `data/insights/experimentsHooks.ts` reads `GET /api/proactive/experiment` + `useExperimentActions` writes L2 decisions/propose; **Memória** real (both modes) since **`mezo-al1i`** (post-epic) — `data/insights/memoryHooks.ts` reads the 4 `GET /api/companion/memory/*` endpoints off `MemoryObservatoryService`, §2.9. **No mock-only Insights tab remains** — all 7 are real (§2). **Proaktív coaching** (3 routes under `/mezo/coaching`, not a tab, since **`mezo-6269.3`**) is real (both modes) over the companion flag-trace read — `useCoachingTrace`/`useCoachingCard`, §2.10, §5.8. **Motor (was the 8th tab) is RETIRED (`mezo-tk88.4`)** — `/mezo/motor` redirects to `/mezo/patterns`. **Weekly (was the 2nd tab) is RETIRED (`mezo-p2tr`)** — `/mezo/weekly` redirects to `/me/week` ([`me.md`](me.md)). **All seven surfaces survived the Design 2.0 rename unchanged in data terms** — they are now full pages under `/mezo/*` instead of sub-tabs under `/insights/*` (§2). |
-| Backend (Java) | 🔶 companion only | `feature/companion` backs the chat (`ai_conversation`/`ai_message`); no `pattern`/`knowledge_fact` backend yet. |
+| Backend (Java) | ✅ `feature/companion` (+ `feature/people`/`feature/companion/graph`/`feature/companion/reflection`) | Chat (`ai_conversation`/`ai_message`), knowledge facts (`knowledge_fact`/`learned_fact`), patterns (`pattern`/`pattern_event`), the knowledge graph (`graph_node`/`graph_edge`), named effects (`effect_link`/`effect_mute`) and the S6 forget/mute spine (`memory_forget_veto`) are all real — see [`companion.md`](companion.md). Stale note superseded: this row used to say "no `pattern`/`knowledge_fact` backend yet", true only at the Phase-2 seed-only stage (§ below). |
 
 This is **intentional**. Insights is the Phase-3 "AI brain" surface; the single FE↔data boundary (`frontend/src/data/hooks.ts`) is pre-built so the real-mode swap is mechanical, exactly as already proven for biometrics/Train (the barrel is app-wide shared — unrelated domains' re-export additions, e.g. the `mezo-53su` `useFuelSettings` export, move this key_file without touching Insights' own data path). There are **two distinct roadmap stages** the doc keeps separate:
 - **Phase-2 Slice D — "Insights seed-only"**: **DROPPED as superseded (2026-07-04 re-map)** — Phase 3 built the real `pattern`/`knowledge_fact`/`ai_conversation` stack, so seeding was never needed. What remains is **D′** (`mezo-t16y.1`): deterministic Weekly review + honest surface for Memoir/Predictions/Experiments — `docs/superpowers/plans/2026-07-04-phase2-completion-roadmap.md` §D′.
@@ -407,60 +407,155 @@ Two new lav Mozaik pages over one shared read, **`useMemoirArchive()`** (`memoir
 - **`/mezo/memoir/archivum`** — the Day One–pattern timeline: `PageHead` (`‹ Memoár`), hero (clay `i-memoar` + chapter count + „fejezet · N hónap közös történet"), then `groupByMonth` (`logic/memoirArchive.ts` — hu-HU month heads, year appended only when the shelf spans years) over full-card chapter buttons (`.mz-march-card`: week chip + `deriveWeekTitle` range + anchor count + Fraunces title + 2-line first-paragraph excerpt). **The whole card is one tap target** (Apple Journal's ambiguous-zone lesson) and it **navigates** to the chapter page — no modal (Daniel's call on the prototype). Empty shelf → honest „Még nincs fejezet…" card.
 - **`/mezo/memoir/:weekStart`** — one chapter in the `mezo-uajy` language: `PageHead` (`‹ Archívum`), hero (`Hét N` + date range), the `.mz-memoir` card with the **drop-cap paragraph rhythm** (`.mz-march-bd` — body split on `\n\n`, prompt v2's paragraph contract; a legacy single-block body renders as one paragraph), the **„Miből íródott"** `RefTag` anchor row (static — anchor target-refs remain `mezo-uajy`'s deferred backend flag), `FeedbackChips` (`useFeedback('memoir', [id])` — every chapter is votable, same artifact kind as the latest read), and the **előző/következő pager** walking the shelf order (ends render a ghost tile). Unknown `weekStart` → honest „Ez a fejezet nincs meg az archívumban." (loading shows „A fejezet töltődik…"). Routes registered above the `:weekStart` param so `archivum` never shadows.
 
-### 2.4 Tudástár (`pages/KnowledgeListPage.tsx`) — **real dual-mode since companion V1.2, érthetőség-redesign `mezo-9ryh` + review fix wave; Mozaik re-face `mezo-d20.5.5`; egyesített Tudástár+Tudásgráf `mezo-ms9a`, 2026-09-01; approval inbox moved to Rólad U9b `mezo-zpxv7`, 2026-09-26**
-At `/mezo/knowledge`, reached from the Tudástár/Kapcsolatok door. **Since U9b (§2.0b) the Tudástár is the archive, not the decision surface** — the base view's approval inbox is gone; `KnowledgeBaseView` opens on a single pointer card instead („N javaslat vár rád a Rólad oldalon →", `/mezo/rolad`) when a candidate is pending, or the quiet „Nincs döntésre váró javaslat." line when not — one decision lives in one place (spec D4). What stays here unchanged: the full fact list (search, source, Elhallgattatom switch — `?view=tenyek`), Kategóriák (`?view=kategoriak`), Hogyan működik (`?view=hogyan`). **`mezo-ms9a` egyesítette az addig két oldalon (Tudástár + az Én-tab Tudásgráfja, `/me/knowledge`) élő felületet EGY oldallá** — a Tudásgráf oldal (`KnowledgePage.tsx`) törölve, a kind-lánca (`KindTileGrid`/`KindNodeList`/`NodeDetailSheet`/`CategoryHeader`) és a profil-kártya (`ProfileNodeCard`) az `insights` feature-be költözött, `/me/knowledge` pedig bare redirect a `/mezo/knowledge`-re (`MeKnowledgeRedirect`, `router.tsx` — egy `?kind=` paramétert `?view=kategoriak&kind=`-re fordít). A döntést a design doksi ([`2026-09-01-tudastar-egyben-design.md`](../superpowers/specs/2026-09-01-tudastar-egyben-design.md)) rögzíti; a rövid összefoglaló: a `mezo-0ap9` szerep-tisztázás (fact-lista = Tudástár, gráf = Tudásgráf) a duplikációt megszüntette, de a két-oldal FORMA maradt a súrlódás forrása (láthatatlan határ, a Tudásgráfnak nincs önálló léte a hub-tile-reorg óta, az elfogadás eredménye a másik oldalon landolt) — `mezo-ms9a` ezt oldotta fel egyetlen oldallá, a `mezo-o486` „pages don't move, only tiles do" szabályát tudatosan felülírva. **A `mezo-0ap9` mag-elve túlélte az összevonást: tény-lista pontosan egy van** — a `?view=kategoriak` (volt Tudásgráf) nézet SOHA nem listáz tényeket, csak node-okat/éleket; a fact-owner a `?view=tenyek` nézet marad, a kategória-nézetek innen csak linkelnek.
+### 2.4 Tudástár (`pages/KnowledgeListPage.tsx`) — **the four-section hub, S6 `mezo-d6ivw.6`; real dual-mode since companion V1.2; egyesített Tudástár+Tudásgráf `mezo-ms9a`, 2026-09-01; approval inbox moved to Rólad U9b `mezo-zpxv7`, 2026-09-26**
 
-Minden alábbi viselkedési szerződés (a fact-rész) változatlan a `mezo-9ryh` redesign óta. A companion fact-memóriájának L2 confirm felülete ([`companion.md`](companion.md) §4). Betöltési sorrend, mielőtt bármi más renderelne: `isPending` → `GhostState` („A tudástár betöltése…", `useKnowledge()`-ből forwardolt real-mode-only cold-load guard, a `PatternsPage.tsx` mintáját követve — mock mode `isPending`-je mindig `false`); `isError` (genuinely failed fetch, pl. 500) → `GhostState` retry CTA-val (`refetch`), hogy egy valós hiba sose olvasson az őszinte-de-hazug „0 megy a chatbe" `realEmpty` állapotként; majd a meglévő `degraded` (companion switch-off 404) ág. **A `degraded` EGYEDÜL a tény-felületet fedi le** — a gráf-hookok (`useLifeEventCandidates`/`useKnowledgeGraphNodes`/`useGraphEdgeCount`) 404-szemantikája FÜGGETLEN a társ-kapcsolótól, a két 404-jelentés nem egyesíthető: az alapnézeten a degraded kártya csak a pointer-card sávot (`KnowledgeBaseView`, §2.0b-re mutat) és a Tények csempét helyettesíti (a Kategóriák csempe a saját, gráf-hook adatával renderel tovább — U9b óta ez a base view egyetlen másik szegmense, a candidate-csoportok a Rólad oldalra kerültek), a `?view=tenyek` nézeten pedig egyedül ő látszik; egy üres gráf-lista ilyenkor becsületes üres-állapot a Kategóriák csempén, nem hiba.
+At `/mezo/knowledge`, reached from the Tudástár/Kapcsolatok door. **S6 (`mezo-d6ivw.6`, 2026-09-27)
+replaced the old fact-only page with a four-section hub**: **Rólad** (facts), **Emberek** (per-person
+facts), **Észrevételek** (confirmed observations + the fact each one taught) and **Hatások** (named
+person/event effects) are now four equal doors off one hero, instead of "the Tudástár is a fact list
+plus a Kategóriák door". The **`FactsView`/`KnowledgeFactRow`** components the pre-S6 fact-only
+surface used are **RETIRED** — their fact-list behavior lives on as the **`TenyekSection`** hub
+section (below), and their card is now `HubRow`, shared by all four sections.
 
-**A `TudasFrame` közös oldalkeret** (`KnowledgeListPage.tsx`) minden nézetet `MozaikPage`+`PageHead`+`PageHero`+`PageBody`-ba csomagol, nézetenként váltó tone-nal/hero-névvel/vissza-chippel (`VIEW_TONE`/`VIEW_HERO_NAME`); a betöltés/hiba ágak a `view` felbontása ELŐTT térnek vissza, ezért mindig base tone-nal, „‹ Mezo" chippel renderelnek. A nézet-térkép, `?view=` szerint (`useSearchParams`-derivált, lokális nézet-state nélkül — a `KnowledgePage` mai idiómája, minden vissza-chip `replace:true`-val törli a paramot, a `mezo-ni86` egy-vissza-affordancia elv):
+**`KnowledgeListPage` loads all four hub sources up front** (`useKnowledge`, `usePeople`,
+`useKnowledgeObservations`, `useEffectSubjects`) — there is no page-wide loading/error/degraded
+early return any more; each section owns its own pending/error/degraded state and renders it inside
+its own tile/body. `useForgetUndo()` (§ "The undo window" below) lives once per page, so a forget
+started in one section keeps its countdown running when the user navigates back to the hub or into
+a different section. Kategóriák/Hogyan (the graph kind-chain and the explainer) are unchanged from
+before S6 and keep their own paragraphs below.
 
-- **Alapnézet** (`?view=` hiányzik/érvénytelen, tone `sage`) — a jóváhagyás-inbox az egyetlen azonnal látható tartalomblokk, alatta a szekció-mozaik. `PageHead`-en egy `?` help-chip nyitja a Hogyan-nézetet.
-- **`?view=tenyek`** (tone sage, `FactsView`) — a régi Tudástár tény-fele, változatlan szerződésekkel (lásd lentebb). Vissza-chip „‹ Tudástár".
-- **`?view=kategoriak`** (tone lav, `KategoriakView`) — a volt Tudásgráf kind-lánca, kód-mozgatva az `insights` feature-be (lásd külön bekezdés lentebb). Vissza-chip „‹ Tudástár", kind-drillben „‹ Kategóriák".
-- **`?view=profil`** redirects to `/settings/mezo/communication`, with or without a learned node.
-- **`?view=hogyan`** (tone gold, `HowItWorksView`) — a törölt `KnowledgeExplainer` öt Q&A-blokkja + egy hatodik („Mik a kategóriák?"), külön nézetként, nem összecsukható panelként. Nem perzisztál állapotot.
+**`?view=` map** (`useSearchParams`-derived, no local view state, every back-chip `replace: true` —
+the `mezo-ni86` one-back-affordance idiom):
 
-**Hero** — `N tény` + `M megy a chatbe · K kapcsolat`. **Facts-always óta (2026-09-27,
-mezo-d6ivw.8) M egyszerűen `buckets.inPrompt.length`** — minden bekapcsolt (`active`) tény, a
-TELJES (szűretlen) listán számolva. A régi kettős-csatornás rangsor-logika (egy `PROMPT_TOP_N = 10`
-top-N blokk + a `PATTERN_ACK_DAYS` friss-minta kivétel, két külön FE konstanssal
-`data/insights/knowledge.ts`-ben tartva szinkronban a backenddel) megszűnt: a backend most minden
-bekapcsolt tényt injektál (a `prompt-cap` csak egy 200-as biztonsági fék, amit a UI szándékosan nem
-tükröz), úgyhogy a FE-nek nincs mit tükröznie sem — `bucketFacts()` (`features/insights/logic/
-factCopy.ts`) két vödröt ad vissza, `inPrompt`/`off`, a kapcsoló (`f.active`) az egyetlen szűrő,
-mindkét mirror-konstans törölve. A **`· K kapcsolat` szegmens** a `mezo-ms9a` backend-kiegészítéséből
-jön (`useGraphEdgeCount()` → `GET /api/companion/graph/edge/count`, active-endpoint-filtered
-él-összesítő); a hook 404/hiba/pending esetén `count: null`-t ad, SOHA nem 0-t — a hero ilyenkor
-egyszerűen ELHAGYJA a szegmenst, nem hazudik nulla kapcsolatról. A hero szám degraded alatt sincs
-fabrikálva („0 tény"): nagy szám/alcím nélkül marad.
+- **absent/invalid → base** (the hub: hero + four section tiles + quiet links to Kategóriák/Hogyan
+  and, when a candidate is pending, the Rólad decision pointer — `KnowledgeBaseView`).
+- **`tenyek`** — the Rólad section, `TenyekSection`.
+- **`emberek`** (+ **`&person=<id>`**, S6) — the Emberek section, `EmberekSection`; an id the loaded
+  person list does not know reads as the plain list, not an error.
+- **`eszrevetelek`** (+ **`&obs=<patternId>`**, S6 — the Rólad "észrevételből" tag's target) — the
+  Észrevételek section, `EszrevetelekSection`; the target pattern's topic opens, its row is
+  highlighted, and the status filter starts at **Mind**. Read on every render (an in-app link does
+  not remount the page) and keyed on the value so a new target re-runs the section's opening state.
+- **`hatasok`** — the Hatások section, `HatasokSection`.
+- **`kategoriak`** (+ `?kind=`) — unchanged from pre-S6 (see below).
+- **`profil`** — unchanged redirect to `/settings/mezo/communication`.
+- **`hogyan`** — unchanged (see below).
+- **`?fact=<id>`** (T10 deep link, unchanged) — still overrides the view to `tenyek` and opens/
+  highlights that row; the one-shot mount capture and URL self-clean are unchanged from before S6.
 
-**A jóváhagyás-inbox (fact-jelöltek `FactCandidateCard`, gráf-jelöltek `LifeEventCandidateCard`, mindkettő a négy döntéssel: Igen, jegyezd meg / Pontosítom / Most ne / Nem igaz — a conflict checkbox, a `formatCandidateDate` gráf-dátum és a szerkeszt-aztán-elfogad idióma is) MOZOG el ide, a Rólad oldalra U9b óta (`mezo-zpxv7`, §2.0b: `RoladInbox`/`useRoladInbox`) — ez a bekezdés a §2.0b-ben él, itt nem ismétlődik.** A base view helyette `KnowledgeBaseView`-t renderel: a pointer card fent (`?view=`-től független), alatta a szekció-mozaik.
-- **Szekció-mozaik**: two tiles, Tények (`?view=tenyek`) and Kategóriák (`?view=kategoriak`). Communication preferences live in central settings.
-- **Genuinely üres tudásbázis** (`facts.length === 0`, nem pending/error/degraded, a `?view=tenyek` nézeten) — a kereső/kategória-chip sor és a szakaszok helyett egy őszinte sor: „Még egy tényt sem tanultam rólad — ahogy beszélgettek, itt fognak megjelenni."
+**The hero** (`KnowledgeBaseView`) shows one number: everything Mezo knows, an observation and the
+fact it taught counted **once** (via the fact — `hubCounts.ts`, `logic/hubCounts.ts`), split into
+**bekapcsolva**/**elhallgattatva**, with an honesty note (`heroNote`) that changes when a section is
+switched off (companion off ⇒ the number counts only Emberek) or partially unavailable (some
+section failed to load ⇒ the note says so). **No section that failed to load, is still loading, or
+is switched off contributes to the count — never an invented zero**; if NO section counted, the
+hero shows why (`Betöltés…` / `Most egyik szakaszt sem sikerült betölteni.`) instead of a number.
+The four **section tiles** (`HubTiles`) mirror the same rule per section: `ok` (a real count + a
+one-line sub e.g. "N bekapcsolva · M elhallgattatva"), `loading`, `error` (with its own retry), or
+`off` (companion switched off) — a non-`ok` tile is dashed with an em dash, never `0`.
 
-**`?view=tenyek` (`FactsView`)** — **Kereső + kategória-chipek** — `.searchfield` + `chip tapchip` sor (`Mind` + `FACT_CATEGORIES`); a szűrés csak a megjelenítést szűkíti, a vödrözés mindig a TELJES listán fut (különben egy aktív szűrő átírná a prompt-státuszokat). A keresés (`matchesQuery`) a humanizált szövegre, a kategória-címkére ÉS az eredet-mondatba fűzött minta-címre (`patternTitle`) illeszkedik. A **„Mind" chip csak a kategóriát törli** — a keresőmezőt érintetlenül hagyja. Nulla találat → „Nincs találat a keresésre." + egy „Szűrők törlése" gomb, ami mindkettőt (keresés + kategória) törli. **Két szakasz, nem három (facts-always óta, mezo-d6ivw.8 — a „várakozó" vödör megszűnt).**
-„Ezeket tudja rólad · N" (a SZŰRT darabszám, a globális fejléccel ellentétben) egy sima `<section>`
-minden bekapcsolt (`active`) tényre, a lábjegyzet őszintén kimondja: „Ami itt be van kapcsolva, azt
-a társ minden beszélgetésben és minden magától küldött üzenetében tudja rólad — a
-legmegerősítettebb áll elöl." — nincs se rangsor-plafon, se friss-minta kivétel, amit meg kellene
-magyarázni, mert mindegyik bekapcsolt tény megy. Utána egyetlen `LifecycleSection`: „Kikapcsolva"
-(csukva indul, `forceOpen` amíg aktív szűrő fut VAGY amíg a `?fact=` deep-link célja épp ott ül).
-A korábbi „Bekapcsolva, de most kimarad" (a `reinforced: 0`-val frissen elfogadott, rangsor alá eső
-tények várakozó vödre) eltűnt — nincs többé olyan bekapcsolt tény, ami kimaradna. **`KnowledgeFactRow`**
-(`components/`) — önmagyarázó kártya: kategória + eredet-chip, humanizált cím, eredet-mondat,
-visszaigazolás-mondat, és a `Toggle` mellett kimondott státusz-címke.
+**The verb contract — the SAME four Hungarian verbs across all four sections** (`logic/hubCopy.ts`
+`VERB`), rendered by the shared `HubRow`/`HubActs`:
 
-**`?fact=<id>` deep link (Task 10, `mezo-ms9a` — spec §4.1)** — a `WeekDiscoveries` már régóta gyárt ilyen linket, de eddig senki nem fogyasztotta (a `feedMock.ts`-beli halott `/insights/knowledge` deeplinkjeit is `/mezo/knowledge`-ra javította ez a slice). Az oldal most fogyasztja: `?fact=` jelenlétekor a `?view=` paramot felülírva mindig a Tények nézet nyílik — a `highlightFactId` a mountkor `useState`-be rögzített id, hogy a kiemelés a param eltűnése UTÁN is éljen — a tény-sor a megfelelő (akár csukva induló) vödörben `forceOpen`-nel válik láthatóvá és vizuálisan kiemelődik (`KnowledgeFactRow`'s `highlight` prop). A `?fact` paramot egy mountkor egyszer futó `useEffect` törli az URL-ből `replace:true`-val, más paraméterek (pl. egy jövőbeli `?view=`) érintetlenül maradnak. Ismeretlen id → sima Tények nézet, kiemelés nélkül, összeomlás nélkül.
+| Verb | Meaning | Reversible? |
+|---|---|---|
+| **Honnan tudom?** | expands the row's evidence (lazy-fetched — `useFactEvidence`/inline observation evidence) | — |
+| **Javítom** | edit the fact's/person-fact's text inline (facts + Emberek only; observations/effects are computed, not editable) | n/a |
+| **Elhallgattatom** | mute: kept, excluded from the prompt/every "active knowledge" surface, flagged **Elhallgattatva** with a WHY (`whyText`/`WHY_ICON` — `te hallgattattad el` / `később nem igazolódott` / `felülírta egy újabb észrevétel`) | ✅ **Visszakapcsolom** |
+| **Elfelejtem** | permanent forget — gone for good, never re-learned from the same source | ❌ no restore endpoint (see "The undo window" below) |
 
-**`?view=kategoriak` (`KategoriakView`, tone lav — a gráf-örökség tónusa, szándékos váltás az alapnézet sage-jéhez képest)** — a volt `KnowledgePage` overview-first kind-lánca, egy szinttel beljebb tolva, kód-mozgatással (`me` → `insights`): `kind === null` → **`KindTileGrid`** (egy `Tile` kind-enként, `GRAPH_KIND_GROUPS` szerint, üres kind halványan bent marad); `?kind=<GraphNodeKind>` (érvényes érték, `KIND_LABELS`-szel validálva — érvénytelen `kind` a rács-nézetre esik vissza) → **`KindNodeList`** (`CategoryHeader` + kompakt sorok); sor-koppintás → **`NodeDetailSheet`** (lokális `selectedId` state a shellben, a régi archiválás-viselkedéssel: `useKnowledgeGraphActions().archive`, a node eltűnése a listából magától zárja a sheet-et). A vissza-affordancia a `TudasFrame` page-head chipje (`mezo-ni86`): a rács-nézeten „‹ Tudástár", a kind-drillben „‹ Kategóriák" (törli csak a `kind` paramot, `replace:true`).
+`stripNote(kind)` renders the small print next to the two destructive verbs, worded per row kind
+(`active` — "Elhallgattatva megőrzöm… Elfelejtve törlöm — pár másodpercig visszavonható";
+`muted` — the plain "megőrzöm, de semmire nem használom"; `effect` — computed effects have no
+"pár másodpercig visszavonható" clause, since a mute/forget there does not delete a row, it flips a
+flag). Backend semantics, the veto and every reader that must honour a forget/mute: [`companion.md`](companion.md)
+"Elfelejtem/Elhallgattatom".
 
-**Communication profile:** managed by `MezoPersonalPage` in central settings; the same `ProfileNodeCard` retains the archive action. Own instructions and learned inclusion remain independent.
+**The undo window — the ONLY undo, and it is time, not a server round-trip** (`hooks/useForgetUndo.ts`).
+"Elfelejtem" on any row starts a **5 s** countdown (`UNDO_MS`, `ForgetUndoBar` — a glass bar fixed
+above the tab bar with a draining fill + a live countdown number, a reduced-motion branch that steps
+once per second instead of animating continuously) during which the row is hidden
+(`isHidden(rowKey)`) but nothing has been sent yet. **Visszavonom** cancels it — the row reappears,
+nothing was ever requested. Letting it run out, or starting a NEW forget while one is pending
+(`commitNow(false)` fires the outstanding one first), sends the actual `DELETE`/forget request —
+**exactly once**, and **only then**. **Unmounting the page while a forget is pending commits it too**
+(the hook's cleanup effect calls `send` on whatever is still in `ref.current`) — leaving is not an
+undo, it is the same as letting the timer expire; this is a deliberate policy, not an oversight: a
+forget-by-delay design that let navigation silently cancel the request would mean a user's
+"Elfelejtem" sometimes never happens. A failed commit shows an honest rollback toast
+(`TOAST.forgetFailed`/`muteFailed`) rather than the success toast — the four sections' writes are
+**optimistic with rollback** (`useKnowledgeHubActions`/`useForgetUndo`'s `send`): the row disappears
+immediately, and only comes back if the request actually failed.
 
-**`?view=hogyan` (`HowItWorksView`) — Hogyan-nézet (Task 7, `mezo-ms9a` — spec §3.5)** — a törölt `KnowledgeExplainer` (összecsukható „Hogyan működik a tudástár?" panel, `localStorage`-kulcs `mezo.knowledge.explainer.collapsed`) öt Q&A-bekezdése VERBATIM ide másolva, plusz egy hatodik („Mik a kategóriák?"), Q&A-kártyaként; a `PageHead` `?`-chipje nyitja bármely nézetről. Nem perzisztál összecsukott állapotot — külön nézet, nem áll az útban a mindig-nyitott alapnézetnek.
+**`?view=tenyek` (`TenyekSection`, replaces the retired `FactsView`)** — unchanged fact-list
+contracts from the pre-S6 `mezo-9ryh` redesign (search + category chips, `humanizeFactText`/
+`originSentence`/`reinforcementSentence` from `logic/factCopy.ts`, facts-always since `mezo-d6ivw.8`
+— every active fact goes into every conversation, no per-row "in use" marker), now rendered as
+collapsible **topic folds** (`HubFold`, grouped by category, muted facts under their own
+**Elhallgattatott** fold) instead of the old two-`LifecycleSection` shape, each row a `HubRow` with
+all four verbs (**Javítom** opens an inline textarea, accessible name `EDIT_ARIA` — "A tény
+szövege"). The `?fact=` deep-link highlight and the search's group auto-open behave as before.
+**"Honnan tudom?"** now reads the fact's structured `provenance` (`KnowledgeFactResponse.provenance`)
+through the lazy `GET /api/companion/fact/{factId}/evidence` (`useFactEvidence`, S6) — a manual fact
+never fetches (no evidence to show); a pattern-sourced fact's card also carries a **"Ugorj az
+észrevételhez"** button (`GO_TO_OBSERVATION`) that navigates to `?view=eszrevetelek&obs=<patternId>`.
 
-**Minden felhasználói mondat a `logic/factCopy.ts` tiszta moduljából jön** (unit-tesztelt): `humanizeFactText()` az „A ↔ B" alakú minta-tényekből mondatot képez (a promóció a minta CÍMÉT másolja a tény szövegébe — `PatternService.promote()`), `originSentence()`/`originChipLabel()` a `source`-ot fordítja, `reinforcementSentence()` a `×N reinforced`-et. **A régi önismétlő `minta: {title}` chip megszűnt** — a minta-cím már csak akkor jelenik meg (evidenciaként, az eredet-mondat végén), ha eltér a tény szövegétől. A humanizálás egy szó akkor tekinti rövidítésnek (és hagyja változatlanul, névelőt is a betűnév kiejtése — nem az írott alak — szerint választva, pl. **„az RPE"**, **„a HRV"**), ha a szó ELSŐ KÉT karaktere nagybetű (a toldalékolt „HRV-alapú" is helyesen felismerve); a záró mondatvégi írásjelet mindkét oldalról levágja, hogy ne dupláződjon a sablon lezáró pontjával.
+**`?view=emberek` (`EmberekSection`, new S6 section)** — one row per active person with at least one
+fact (from `usePeople()`, shared with [`me.md`](me.md)'s Emberek hub), the person's facts nested
+under it; **`&person=<id>`** opens that person's own sub-view (its own `TudasFrame` back-chip
+returns to the Emberek list, not the hub) — the search box carries a matched query into the person
+sub-view (the prototype's `data-pq` carry, `onOpenPerson(id, carry)`) so opening a person from a hit
+keeps the filter. Facts here use the SAME four verbs — **Javítom** calls `PersonFactService.update`'s
+`factText` field (S6, [`me.md`](me.md) §3 has the endpoint), **Elhallgattatom**/**Elfelejtem** the
+`includeInPrompt` toggle / `DELETE`. A muted person fact's WHY is always `te hallgattattad el` (a
+person fact has no pattern-refutation/drift-supersession path).
 
-Real mode a companion switch-off 404-en változatlanul az őszinte degraded bannert adja (*"A társ jelenleg nincs bekapcsolva…"*), a fact-felületre korlátozva (lásd fent).
+**`?view=eszrevetelek` (`EszrevetelekSection`, new S6 section)** — confirmed (and refuted-but-still-
+fact-bearing) observations from `GET /api/companion/observation/knowledge` (S6), grouped into six
+fixed **topics** (`logic/hubTopics.ts` — Alvás/Edzés/Étkezés/Kapcsolatok/Hangulat/Egyéb; a
+person-topic observation is always **Kapcsolatok**, otherwise the majority RAW evidence source
+wins, `Egyéb` on a tie/no-evidence — deterministic, ties broken by topic order). **A slice-lesson
+trap:** the topic grouper reads `evidenceSources` — the evidence items' raw wire `source` values
+CAPTURED BEFORE `mapEvidence` renamed them to their display label (e.g. `check_in` → "Check-in") —
+because any FE logic keyed on the catalogue source must run before that rename, not after. Four
+status chips (`OBS_FILTERS` — Mind/Még igaz/Felülírva/Elhallgattatva, `logic/hubCounts.ts`'s
+`obsState` is the single source of truth both the tile sub and these chips use) filter within a
+topic. **Drift pairs** (a quarterly recheck confirming "still true, but differently") render both
+halves: the newer with a gold **"KORÁBBAN · MEGERŐSÍTVE …"** eyebrow is absent, the older with
+`DRIFT_EYEBROW.older`/`.bothOn` when the user re-enabled it too. **`&obs=<patternId>`** opens that
+observation's topic, highlights its row, and resets the filter to Mind. Each row's own evidence
+(capped at **`ROW_EVIDENCE_LIMIT` = 5**, [`companion.md`](companion.md) lesson 3) renders through
+the shared `EvidenceList` — never re-parsed client-side.
+
+**`?view=hatasok` (`HatasokSection`, new S6 section)** — one card **per SUBJECT** (a person or one
+of the six fixed event keys), never per metric row — `groupEffectSubjects`
+(`data/insights/knowledgeHubApi.ts`) re-groups the flat wire (one row per subject×metric) before the
+section ever sees it, because a mute/forget action targets the whole subject. Grouped into
+**Emberek**/**Események**/**Elhallgattatott** (`EFFECT_GROUPS`), each card rendering the SAME
+`EffectRows` component and `effectCopy.ts` sentences the person page's "Hatás · együttjárás" card
+uses ([`me.md`](me.md) §2/§10 — shared, not duplicated). **Elhallgattatom** here mutes the WHOLE
+subject (`PUT .../effects/{kind}/{key}/mute {mode: muted}`) — survives the nightly recompute,
+reversible; **Elfelejtem** sends `{mode: forgotten}` — permanent, no unmute. A muted subject is
+flagged here (unlike the person page, which simply omits it, [`me.md`](me.md) §2) since this is the
+ONE surface with an unmute action.
+
+**`?view=kategoriak` (`KategoriakView`, unchanged since `mezo-ms9a`)** — the former `KnowledgePage`
+overview-first kind-chain, one level in: `kind === null` → `KindTileGrid`; `?kind=<GraphNodeKind>`
+→ `KindNodeList` + `CategoryHeader`; a row → `NodeDetailSheet`. Tone `lav` (a deliberate switch from
+the hub's `sage`), back-chip "‹ Tudástár" / "‹ Kategóriák" in the kind-drill.
+
+**Communication profile:** managed by `MezoPersonalPage` in central settings (`?view=profil`
+redirects there); unchanged by S6.
+
+**`?view=hogyan` (`HowItWorksView`, unchanged since `mezo-ms9a`)** — the six Q&A blocks, a `?`-chip
+opens it from any view.
+
+Real mode on the companion switch-off 404 still gives the honest degraded banner
+(*"A társ jelenleg nincs bekapcsolva…"*), scoped per section exactly as the hero/tiles are (§ above)
+— the graph hooks' (`useLifeEventCandidates`/`useKnowledgeGraphNodes`) own 404 semantics stay
+independent of the companion switch, unaffected by S6.
+
 
 ### 2.5 Chat (`pages/ChatPage.tsx`) — ✅ REAL since companion V0.4 (chips real since V0.5)
 At `/mezo/chat`. **Not a tile — the hub's composer-shaped opener is its door** (§2.0), which is the point: the chat is the companion, so it sits above the directory rather than in it. The page renders its own „Mezo · társ" header (a `ClaySpot` orb since Design 2.0); since `mezo-oq8z` this is the route's **only** header — `AppLayout` suppresses the generic shell `AppHeader` here, and `.mzc-chathead` sticks directly at `top: 0`, eliminating the former double-header stack without removing any conversation controls. The companion conversation is **dual-mode** over `useChat(selection)` + `useChatActions(selection, onCreated)` + `useConversations()` (from `@/data/hooks`; backend + hook details in [`companion.md`](companion.md) §3/§5.1). Header: "Mezo · társ" + an **honest mode subtitle** (`demo beszélgetés` / `Gemini · élő` / `új beszélgetés` / `a társ most nem elérhető`) — the Phase-1 fake "`23 facts active`" string and "L4 aktív" chip are gone — plus two chip actions: **Beszélgetések** (opens `sheets/ConversationPickerSheet.tsx`) and **Új beszélgetés**. **Real mode:** bootstraps the selected conversation + history, `send()` renders the optimistic user bubble + thinking-dots, then the answer **streams in** (SSE deltas into a draft bubble) and the persisted pair lands in the `['chat', <selection>]` cache; stream failure → inline error bubble + history refetch; companion switch off (404) → degraded banner (`A társ jelenleg nincs bekapcsolva…`) + disabled composer, no dead-end (IDENT-3). **Mock mode:** the Phase-1 demo — `initialChat` seed + the 1.2s `cannedReply` (branches on `"fáradt"`, fabricated `tools`/`refs`). Only the seeded `mock-conversation` carries that transcript: a conversation started during the session opens EMPTY and gets its own auto-title from the first message, exactly as it would against the backend (`mockThread()` in `chatHooks.ts` — returning the seed for every id made new mock threads inherit the demo's messages). **„Emlékek · N" — the recalled-memory disclosure row (`components/RecalledMemoriesRow.tsx`, `mezo-6dii.7`).** An answer assembled from the shared memory platform ([`companion.md`](companion.md) §4) carries its retrieved items as a collapsed row under the bubble; opening it lists each item with its kind label and a door to the source. In **NEW serving mode** each card that carries a stable audit id also gets a feedback group (`role="group"`, „Visszajelzés erről az emlékről"): **hasznos / nem releváns**, and — only for candidates that have a canonical `memory_item` — a **two-tap suppression** (the second tap reads „Biztosan ne használd többé?"). Suppression flips the canonical item to `suppressed` so every later retriever skips it; **nothing is deleted** — neither the source record nor its audit history. Fact and graph candidates have no canonical item, so they keep useful/irrelevant and are never offered suppression (the API rejects such a request too). The page batch-loads the feedback state for the newest 100 visible result ids in ONE request (`data/insights/memoryFeedbackHooks.ts`) and writes optimistically with rollback on failure; a pre-rollout card with no retrieval id stays **display-only** rather than rendering a dead control.
@@ -989,7 +1084,7 @@ Contrast with a real-mode feature (e.g. `useWeight` in `weightHooks.ts` / `useSl
 - `useInsights()` (`data/insights/insightsHooks.ts`) → `{ patterns, recentlyConfirmed, memoir, anniversaryNote, predictions, experiments }` — direct static re-exports. **Every page has now split out to its own dual-mode hook** (Memoir at W2, Predictions at P1, **Experiments at P2** → `useExperiments()`/`useExperimentActions()`; the former Weekly split, D′, is **retired entirely** — `mezo-p2tr`, §2.2). **`useInsights` has NO live consumers left** — `PatternsPage` uses `usePatterns` (V3.1). The `memoir`/`anniversaryNote`/`predictions`/`experiments` fields survive only because the dedicated hooks re-import the seed straight from `insights.ts` for their mock branch; `useInsights` itself is now effectively dead and can be removed in a cleanup pass.
 - `useKnowledge()` (`data/insights/knowledgeHooks.ts` since V1.2) → dual-mode `{ facts, candidates, edges, activeCount, degraded, mode, isPending, isError, refetch }` (`['knowledge']` `useDualQuery`; real fetches `GET /api/companion/fact` + `.../fact/candidate`, `edges` real-mode `[]`; mock = seed). `isPending`/`isError`/`refetch` forwarded straight from `useDualQuery` (`mezo-9ryh` review fix) — `KnowledgeListPage` gates on them before rendering any prompt-status number (§2.4). Actions: `useKnowledgeActions()` → `{ toggle, decide, pending }`.
 - `useLifeEventCandidates()` (`data/insights/graphHooks.ts`, W2.3 `mezo-b3pp.8`) → `{ candidates, isPending, isError, refetch }` (`['graph','candidates']` `useDualQuery`; real fetches `GET /api/companion/graph/node/candidate`, a **404 is an honest `[]`, not `degraded`** — the graph switch is independent of the companion switch; mock = `data/insights/graph.ts` seed). Actions: `useLifeEventActions()` → `{ decide, pending }` (`POST .../node/{id}/decision`, mock módban a jelölt lekerül a listáról).
-- `useKnowledgeGraphNodes()` (`data/insights/graphHooks.ts`, W2.6 `mezo-b3pp.11`) → `{ nodes, isPending, isError, refetch }`, nodes DESC `updatedAt` rendezve (`GET /api/companion/graph/node`, 404 → honest `[]`, same independent-switch idiom). Actions: `useKnowledgeGraphActions()` → `{ archive }`. **`useGraphEdgeCount()` (`mezo-ms9a`)** → `{ count: number | null }` (`GET /api/companion/graph/edge/count`, active-edge count; 404/hiba/pending → `null`, SOHA nem `0` — a Tudástár hero `· K kapcsolat` szegmensét adja, §2.4).
+- `useKnowledgeGraphNodes()` (`data/insights/graphHooks.ts`, W2.6 `mezo-b3pp.11`) → `{ nodes, isPending, isError, refetch }`, nodes DESC `updatedAt` rendezve (`GET /api/companion/graph/node`, 404 → honest `[]`, same independent-switch idiom). Actions: `useKnowledgeGraphActions()` → `{ archive }`. **`useGraphEdgeCount()` (`mezo-ms9a`) is RETIRED (S6, `mezo-d6ivw.6` final review)** — the old hero's `· K kapcsolat` segment did not survive the S6 hub redesign (§2.4's new hero counts facts/people/observations/effects only), so the FE hook and its `graphApi.edgeCount` caller were pruned as dead code; the backend endpoint (`GET /api/companion/graph/edge/count`, `GraphController.countGraphEdges`) is untouched and still live, just unconsumed by the FE today.
 
 **Exception — Chat swapped at companion V0.4:** `useChat()` + `useChatActions()` moved to
 `data/insights/chatHooks.ts` (re-exported from the `hooks.ts` barrel) and are **real dual-mode**
@@ -1071,11 +1166,11 @@ coherent frozen 32-day decision snapshot rather than the dashboard monitor's liv
 Insights is the **hub the other tabs point *toward*** and is itself **fed conceptually by a cross-system "pattern engine."** Today these are **mock-level cross-references** (shared copy / shared data module), not live data flows — but they define the contracts Phase 3 must honor.
 
 ### 5.1 `useKnowledge` — **ONE view since `mezo-ms9a`** (2026-09-01; it used to be shared across two, before that three)
-`useKnowledge()` used to back two views on two tabs — the Mezo-tab `KnowledgeListPage` (facts) and the Én-tab `KnowledgePage` (graph); before that, three (`ProfilePage`, deleted `mezo-d20.6.1`). **`mezo-ms9a` merged the two-page split into `KnowledgeListPage` alone** — `KnowledgePage.tsx` is deleted, `/me/knowledge` redirects into `/mezo/knowledge`. `useKnowledge()` now has a single consumer; the graph-side reads (`useKnowledgeGraphNodes`, `useLifeEventCandidates`, `useGraphEdgeCount`) are called by the SAME page, not a second one.
+`useKnowledge()` used to back two views on two tabs — the Mezo-tab `KnowledgeListPage` (facts) and the Én-tab `KnowledgePage` (graph); before that, three (`ProfilePage`, deleted `mezo-d20.6.1`). **`mezo-ms9a` merged the two-page split into `KnowledgeListPage` alone** — `KnowledgePage.tsx` is deleted, `/me/knowledge` redirects into `/mezo/knowledge`. `useKnowledge()` now has a single consumer; the graph-side reads (`useKnowledgeGraphNodes`, `useLifeEventCandidates`) are called by the SAME page, not a second one (`useGraphEdgeCount` is retired, S6 — § above).
 
 **The ownership boundary the two-page era fought for is the hard-won part, and it is unchanged by the merge** (`mezo-0ap9`, restated + folded into a single page by `mezo-ms9a`): *„mit kap most a társ"* (facts, the candidate inbox, the on/off toggles, the prompt buckets) and *„hogyan függ össze, amit rólam tud"* (nodes, edges, archiving) are still two separate answers — they just live behind two `?view=` tiles on the same page (`?view=tenyek` / `?view=kategoriak`) instead of two routes on two hubs. **Tény-lista pontosan egy van** — the `?view=kategoriak` (ex-Tudásgráf) chain never re-lists facts, exactly as `KnowledgePage`'s deleted `Kategóriánként` section never should have (§2.4).
 
-**Crossing type:** `KnowledgeFact[]` + `KnowledgeGraphNode[]` + an edge count. Since V1.2 the fact half is real; since W2.6 (`mezo-b3pp.11`) the graph-node half is real; since `mezo-ms9a`'s backend leg the hero's `· K kapcsolat` edge count is real too (`GET /api/companion/graph/edge/count`, §2.4) — the last honest-`[]`/mock-only gap (`edges`) is gone.
+**Crossing type:** `KnowledgeFact[]` + `KnowledgeGraphNode[]`. Since V1.2 the fact half is real; since W2.6 (`mezo-b3pp.11`) the graph-node half is real — the last honest-`[]`/mock-only gap (`edges`) is gone. The edge-COUNT read (`GET /api/companion/graph/edge/count`) went real with `mezo-ms9a`'s backend leg but its FE consumer (the old hero's `· K kapcsolat` segment) did not survive the S6 hub redesign (§2.4 above) and was pruned.
 
 ### 5.2 Nap → Mezo (a tab, not a link)
 **This seam dissolved into the IA.** The path from the day surface into the brain surface was, in order: an `InsightsTeaser.tsx` card on Today (removed by the Napív S3 re-composition, `mezo-8141` — its orphaned `useInsightsTeaser` hook went in S8, `mezo-mifi`), then a bare `<Link to="/insights" aria-label="Insights">` ✨ icon in `BrandRow`, then the same ✨ as an `AppHero` utility (`mezo-k7rn`). **Design 2.0 promoted it to a first-class tab** ([ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md)): `AppHero` and `TodayPage` are deleted, the ✨ entry with them, and `Mezo` is one tap from anywhere in the bottom `TabBar`. The Nap hub carries its own Mezo-message surface (`/nap/uzenetek`) for the companion's daily prose — a sibling, not a door into this tab ([today.md](today.md)).
@@ -1226,6 +1321,7 @@ All tests are **frontend Vitest** (no backend tests exist). They assert **verbat
 - **Data-layer:** `frontend/src/data/insights/insightsData.test.tsx` (3 patterns all ≥ floor; `p1` critique; weekly score / 4 items; memoir title + 3 anchors; `recentlyConfirmed`×3; 4 predictions w/ validated `actual`; active experiment; `patternCategoryColor('response')`). `frontend/src/data/insights/chatData.test.tsx` (3 msgs assistant→user→assistant; tool/ref shapes). *(Knowledge has no dedicated `data/` test.)*
 - **Views:** `pages/{PatternsPage,MemoirPage,KnowledgeListPage,ChatPage,PredictionsPage,ExperimentsPage}.test.tsx`, plus `components/PatternDecisionCard.test.tsx` (the decision-inbox card, `mezo-tk88.4`). `MemoirPage.test.tsx` gained a **`(real mode)` describe** (since **W2**): with an MSW memoir fixture it renders the real title/body/anchors and does NOT render anniversary/archive; on the default 404 it renders the honest „készül" placeholder, not the demo fiction. **Since W4.1** the same file asserts the Phase-1 reaction row is gone in BOTH modes and the feedback chips are present in both (including real mode — that asymmetry was the `mezo-kr9v` bug), and that the 404 placeholder carries no chips (no artifact ⇒ nothing to vote on). **`WeeklyPage.test.tsx` was deleted with the tab (`mezo-p2tr`)** — its coverage (score hero, „tanulom" null-state, live suggestion prose w/o the inert buttons) moved to the `Heti` hub's own test files under `features/me/pages/` ([`me.md`](me.md) §2/§9 has the current per-page test map); `frontend/src/app/router.weeklyRedirect.test.tsx` (mock mode) pins the weekly path landing on `/me/week`'s `Heti` hub instead of a 404 or the retired tab — since `mezo-d20.1.1` that is a **two-hop** resolution for the legacy URL (`/insights/weekly` → `/mezo/weekly` → `/me/week`), which is exactly what makes the test worth keeping.
 - **Rólad (§2.0b, U9b `mezo-zpxv7`):** `pages/BoopAboutPage.test.tsx` replaces the old 3-door-pin assertions with the §2.0b ranking (quote → inbox → facts → timeline → note → doors) in both modes; `hooks/useRoladInbox.test.tsx` (every decision — accept/refine/snooze/reject — drops the id from the open `candidates`/`lifeEvents` lists and lands it in `settled` with the right `outcome`/title); `components/rolad/{RoladQuote,RoladInbox,RoladFacts,RoladTimeline}.test.tsx` and `logic/roladCopy.test.ts` (pure-helper unit tests: `pickQuoteClaim` skips `sensitive` claims and picks highest confidence, `factOwnerTag`, `candidateByline`, `topRoladFacts`). The inbox/conflict/life-event/season/`?start=`/real-mode-POST/degraded cases that used to live in `pages/KnowledgeListPage.test.tsx` moved here; `KnowledgeListPage.test.tsx` now asserts the `KnowledgeBaseView` pointer card (pending count → link to `/mezo/rolad`, zero → the quiet line) instead.
+- **The S6 Tudástár hub (`mezo-d6ivw.6`, §2.4):** one test file per hub component — `components/hub/{TenyekSection,EmberekSection,EszrevetelekSection,HatasokSection,HubTiles,HubFold,HubRow,ForgetUndoBar}.test.tsx` (loading/error/degraded/empty per section, the verb contract incl. **Javítom**'s inline edit and **Elhallgattatom**/**Elfelejtem**'s `forget`/`isHidden` wiring, drift-pair rendering, topic grouping) plus `components/hub/hubWriteFailure.test.tsx` (real mode, MSW 500s — the optimistic-write rollback + error toast for every section's mute/forget); `logic/{hubCopy,hubCounts,hubSearch,hubTopics}.test.ts` (pure — the hero/tile counting rules incl. the "never an invented zero" branches, `obsState`, topic grouping determinism); `hooks/useForgetUndo.test.tsx` (the 5 s window, undo cancels without sending, a second forget commits the first, unmount commits the outstanding one, a failed commit's rollback toast).
 - **Weekly hook — RETIRED (`mezo-p2tr`):** `data/insights/weeklyHooks.test.tsx` is now a single `isoWeekNumber` unit test; its former real-mode composition/null-state cases moved with the review to `me.md`'s test surface. `components/GrowthWeekCard.test.tsx` is **deleted** along with the component.
 - **Feedback (W4.1, `mezo-b3pp.15`) — both modes:** `data/feedback/feedbackHooks.test.tsx` pins the
   semantics the UI leans on — mock's honest-empty seed, vote/re-tap-retract/other-verdict-overwrite,
@@ -1372,7 +1468,8 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `components/PatternFilterSheet.tsx` + `PatternDomainMark.tsx` — house `Sheet` filter/sort controls and the shared Clay domain mark; no emoji domain controls
 - `logic/patternCatalog.ts` — initial bucket, pairless `other` domain, filter/sort and five-item clamped pagination; pure and unit-tested
 - `pages/MemoirPage.tsx · KnowledgeListPage.tsx · ChatPage.tsx · PredictionsPage.tsx · ExperimentsPage.tsx` — the other 5 content sub-tabs, **all real dual-mode** (Memoir W2, Predictions P1, Experiments P2 — each with an honest null-state; ExperimentsPage adds the L2 accept/dismiss + propose write actions)
-- **`KnowledgeListPage.tsx`'s `mezo-ms9a` view components (`components/{FactsView,KnowledgeBaseView,KategoriakView,ProfileView,HowItWorksView}.tsx`, §2.4):** `KnowledgeBaseView` = the base-view approval inbox + 3-tile section mosaic; `FactsView` = the `?view=tenyek` search/chip/bucket body (the old page's fact half, unchanged); `KategoriakView` = the `?view=kategoriak` grid⇄drill switch, thin over the moved `KindTileGrid`/`KindNodeList` below; `ProfileView` = the `?view=profil` "Így beszélj velem" card + explainer, thin over the moved `ProfileNodeCard`; `HowItWorksView` = the `?view=hogyan` six Q&A cards (the deleted `KnowledgeExplainer`'s content, copied verbatim + one new block)
+- **`KnowledgeListPage.tsx`'s view components (`components/{KnowledgeBaseView,KategoriakView,HowItWorksView}.tsx`, §2.4):** `KnowledgeBaseView` = the S6 hub base view — hero + four `HubTiles` + quiet links (RETIRED the pre-S6 approval-inbox/3-tile mosaic shape); `KategoriakView` = the `?view=kategoriak` grid⇄drill switch, thin over the moved `KindTileGrid`/`KindNodeList` below (`mezo-ms9a`, unchanged by S6); `HowItWorksView` = the `?view=hogyan` six Q&A cards (`mezo-ms9a`, unchanged by S6). **`components/FactsView.tsx`/`KnowledgeFactRow.tsx` are RETIRED (S6)** — their `?view=tenyek` behavior lives on as `components/hub/TenyekSection.tsx` over the shared `HubRow`. `components/ProfileView.tsx` is orphaned dead code left over from the `?view=profil` redirect (the communication editor moved to central settings, § above) — no current route renders it.
+- **The S6 Tudástár hub (`mezo-d6ivw.6`, §2.4):** `components/hub/{TenyekSection,EmberekSection,EszrevetelekSection,HatasokSection}.tsx` — the four sections, one per hub tile; `components/hub/{HubTiles,HubFold,HubRow,HubSearch,ForgetUndoBar}.tsx` — the shared tile grid, collapsible topic fold, per-row card (icon/text/status/why/verbs), search field + no-hits state, and the undo countdown bar; `logic/{hubCopy,hubCounts,hubSearch,hubTopics}.ts` — all hub Hungarian copy (incl. the verb contract, `VERB`/`TOAST`/`stripNote`), the hero/tile/observation-status counting rules (`hubCounts`/`obsState`), the flat search+highlight helpers, and the six-topic observation grouper; `hooks/useForgetUndo.ts` — the 5 s undo window (`UNDO_MS`), unmount-commits-outstanding-forget policy; `data/insights/knowledgeHub{Api,Hooks}.ts` — the four hub reads/writes (`knowledgeHubApi`, `useKnowledgeObservations`/`useEffectSubjects`/`useFactEvidence`/`useKnowledgeHubActions`) and `groupEffectSubjects` (flat wire → per-subject cards). Backend: [`companion.md`](companion.md) "Elfelejtem/Elhallgattatom" (§3/§4/§10).
 - **Moved from `features/me/` (`mezo-ms9a`, was the `KnowledgePage.tsx` overview-first Tudásgráf chain, `mezo-2243` originally — full behavioral history in the pre-merge [`me.md`](me.md) git blame):** `components/{KindTileGrid,KindNodeList,CategoryHeader,ProfileNodeCard}.tsx` + `sheets/NodeDetailSheet.tsx`. Unchanged by the move except their consumer: `KnowledgeListPage`'s `selectedId` state now owns the sheet (was `KnowledgePage`'s), and `KategoriakView`/`ProfileView` above call them instead of the deleted page rendering them directly.
 - **`pages/MotorPage.tsx` is DELETED (`mezo-tk88.4`)** — the 8th sub-tab (`mezo-viqs`, redesigned `mezo-18bx`) is retired; its diagnostics folded into `PatternsPage.tsx` above (§2.8 carries the full retirement note + what did/didn't carry over)
 - **`pages/WeeklyPage.tsx` is DELETED (`mezo-p2tr`)** — the 2nd sub-tab (D′ `mezo-t16y.1`) is retired; its content (score hero, growth card, tervjavaslat) moved verbatim to `/me/week` (§2.2), later split by `mezo-d20.6.10` into the `Heti` hub + view-pages ([`me.md`](me.md))

@@ -1567,3 +1567,27 @@ follow-up bead (prior-art lesson), not in S6.
 35. **(S7)** Test-support truncation lists (`ResetDatabase`) are a hidden migration
     touchpoint: every new owned table must be added, or `AdminDataBrowserIT` fails only in
     the FULL suite — focused ITs never see it.
+36. **(S6)** `mapEvidence` renames a record's `source` to its display name ("Check-in"); any FE
+    logic keyed on the raw catalogue source (topic grouping, icons by source) must capture the
+    wire value BEFORE mapping (`KnowledgeObservation.evidenceSources`).
+37. **(S6)** A pattern that must never resurface is NOT soft-deleted: `GroundedHypothesisPublisher`
+    only dedupes against LIVE rows, so a deleted row lets the next night mint a fresh one. A
+    terminal status (`refuted`, `forgotten`) on a live row is what keeps a topic closed.
+38. **(S6)** Adding a pattern status means auditing every user-facing reader (list, feed incl.
+    pending release, reply, digest, pair detail) AND `closedHypotheses` — the status column is
+    read in ~15 places and only some are status-scoped queries. The plan's own reader list missed
+    five on this slice: `WeeklySuggestionGenerator`, `MemoirGenerator`, `WeeklyReviewGenerator`,
+    `WeeklyReviewDigestService` (proactive weekly/memoir/digest material) and
+    `ConversationService` (seeding a chat's title from a pattern). A whole-branch review is what
+    caught them, not any single task's own tests.
+39. **(S6)** Undo-by-delay (send the DELETE when the toast expires) needs an explicit unmount
+    policy: leaving the page commits, a second forget commits the first — otherwise a forget the
+    user asked for silently never happens.
+40. **(S6)** Merge the parallel slice before the final review, not after: a new enum value landing
+    on `origin/main` from a sibling slice (S7's `source=team_chat`) 500s any strict enum mapper
+    (`SourceKindEnum.fromValue`) this slice's own endpoints touch, and no test in THIS slice can
+    catch it — only exercising the merged state can.
+41. **(S6)** A veto/dedupe key backed by a length-capped column (here `varchar(500)`) must be
+    truncated identically on the write side AND every read side through ONE shared helper — two
+    independently-truncated copies of "the same" normalization silently diverge past the cap, and
+    the failure mode (a forgotten fact quietly comes back) has no error to grep for.

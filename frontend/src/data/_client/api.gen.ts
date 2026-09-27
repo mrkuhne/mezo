@@ -8003,7 +8003,7 @@ export interface components {
             factText: string;
             /** @description 'train' | 'fuel' | 'health' | 'life' */
             category: string;
-            /** @description 'chat' | 'pattern' | 'manual' — V1.1 creates only 'manual'; 'chat' arrives with V1.2 extraction, 'pattern' with V3.3 promotion */
+            /** @description 'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question' | 'team_chat' — V1.1 creates only 'manual'; 'chat' arrives with V1.2 extraction, 'pattern' with V3.3 promotion, 'weekly_review' with mezo-d20.7.6, 'question' with mezo-d58h.7.5, 'team_chat' with S7 (mezo-d6ivw.7) */
             source: string;
             /**
              * @description U9b (mezo-zpxv7): the team character that owns the fact — the Rólad tag. User-authored facts are shown as TŐLED by the FE from `source`, not from this field.
