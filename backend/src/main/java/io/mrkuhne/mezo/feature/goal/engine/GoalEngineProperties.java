@@ -221,7 +221,8 @@ public record GoalEngineProperties(
         @NotNull @Positive Double maxDeviation,                     // 0.35 — rails around the formula base
         @NotNull @Positive Double minBaseBmrRatio,                  // 1.10 — rail: base ≥ BMR × this
         @NotNull @Positive Integer highConfidenceSdKcal,            // 100
-        @NotNull @Positive Integer mediumConfidenceSdKcal           // 200
+        @NotNull @Positive Integer mediumConfidenceSdKcal,          // 200
+        @NotNull @Positive Double waterEventKg                      // 0.8 — glycogen jump over 7 days the explainer calls "víz"
     ) {
     }
 }

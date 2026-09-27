@@ -37,6 +37,7 @@ import { MOCK_DIMENSIONS, MOCK_EXPERTS, MOCK_OVERVIEW_EMPTY, MOCK_RUNS, MOCK_RUN
 import { MOCK_LIFE_GOALS, MOCK_SIGNAL_CATALOG, mockPropose, mockProgress, mockToday } from '@/data/lifegoal/lifegoalMock'
 import type { LifeGoalProposeRequest } from '@/data/lifegoal/lifegoalApi'
 import type { Pattern } from '@/data/types'
+import { expenditureExplanationSeed } from '@/data/fuel/expenditureExplanation'
 
 // Re-exported so hook tests keep importing it from here.
 export { API_BASE }
@@ -1414,6 +1415,8 @@ export const handlers = [
   http.put(`${API_BASE}/api/recipe/:id`, () => new HttpResponse(null, { status: 204 })),
   http.delete(`${API_BASE}/api/recipe/:id`, () => new HttpResponse(null, { status: 204 })),
 
+  // „Hogy tanultam?” (mezo-y72o3) — the prototype fixture; tests override with a 204 for the no-data path.
+  http.get(`${API_BASE}/api/goals/expenditure/explanation`, () => HttpResponse.json(expenditureExplanationSeed)),
   // Meal + fuel-day (mezo-arb) — defaults; tests override with server.use() for payload capture.
   http.get(`${API_BASE}/api/fuel/day/:date`, ({ params }) =>
     HttpResponse.json({ ...fuelDayFixture, date: String(params.date) }),
@@ -2028,6 +2031,22 @@ export const handlers = [
     const date = url.searchParams.get('date') ?? localDateString()
     return HttpResponse.json({ date, lines: [], openThreads: [], pushesToday: 0, pushBudget: 2 })
   }),
+  // Csapat-chat answer/undo (S7, mezo-d6ivw.7, Task 8) — default fixtures are a RESOLVED /
+  // reopened-OPEN ügy respectively; per-test server.use() overrides assert on the request body.
+  http.post(`${API_BASE}/api/character/team-chat/threads/:threadId/answer`, ({ params }) =>
+    HttpResponse.json({
+      id: params.threadId as string, flagKey: 'late_eating', ruleLabel: 'Késői étkezés', owner: 'falat',
+      guest: null, status: 'RESOLVED', openedAt: new Date().toISOString(), closedAt: new Date().toISOString(),
+      pushed: false, actions: [], applied: null, closeReason: 'EXCUSED', closeNote: 'meccsnap',
+      offer: null, offerTag: null, remembered: null,
+    })),
+  http.delete(`${API_BASE}/api/character/team-chat/threads/:threadId/remembered`, ({ params }) =>
+    HttpResponse.json({
+      id: params.threadId as string, flagKey: 'late_eating', ruleLabel: 'Késői étkezés', owner: 'falat',
+      guest: null, status: 'OPEN', openedAt: new Date().toISOString(), closedAt: null,
+      pushed: false, actions: [], applied: null, closeReason: null, closeNote: null,
+      offer: null, offerTag: null, remembered: null,
+    })),
   // Heti érettség-történet (mezo-a9bo7.11) — real mode's default is the honest empty history.
   http.get(`${API_BASE}/api/character/maturity-history`, () => HttpResponse.json({ weeks: [] })),
 

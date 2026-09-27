@@ -39,6 +39,18 @@ paths:
         '200': { description: Preview, content: { application/json: { schema: { $ref: '#/components/schemas/FeasibilityPreviewResponse' } } } }
         '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/goals/expenditure/explanation:
+    get:
+      tags: [Goal]
+      operationId: getExpenditureExplanation
+      summary: "\"Hogy tanultam?\" — how the caller's latest learned base came about (mezo-y72o3)"
+      responses:
+        '200':
+          description: The caller's most recent reviewed week that carries an explanation
+          content: { application/json: { schema: { $ref: '#/components/schemas/ExpenditureExplanationResponse' } } }
+        '204':
+          description: No explained week yet — nothing was ever reviewed with the explainer
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/goals/{id}:
     get:
       tags: [Goal]
@@ -198,6 +210,66 @@ paths:
         '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
 components:
   schemas:
+    ExpenditureExplanationResponse:
+      type: object
+      description: >-
+        "Hogy tanultam?" (mezo-y72o3) — the caller's most recent reviewed week that carries an
+        explanation, joining the expenditure_estimate row with its persisted explanation jsonb.
+        Every nullable field is honestly absent (no fallback), not a fabricated 0/'medium'.
+      required: [weekStart, status, confidence, formulaBaseKcal, posteriorBaseKcal, posteriorSdKcal,
+                 appliedBaseKcal, stepKcal, windowStart, windowEnd, usableDays, weighInDays,
+                 unloggedDays, historyWeeks, startBaseKcal, excludedDays,
+                 waterEvents, series]
+      properties:
+        weekStart: { type: string, format: date, description: The reviewed week's Monday }
+        status: { type: string, enum: [learning, updated, stable, holding] }
+        confidence: { type: string, enum: [low, medium, high] }
+        formulaBaseKcal: { type: integer }
+        posteriorBaseKcal: { type: integer }
+        posteriorSdKcal: { type: integer }
+        appliedBaseKcal: { type: integer, description: 'The base actually served as "Alap" this week' }
+        stepKcal: { type: integer }
+        windowStart: { type: string, format: date, description: First day of the replayed window }
+        windowEnd: { type: string, format: date, description: "Last day of the window (= weekStart's reviewed week Sunday)" }
+        dataStart: { type: string, format: date, nullable: true, description: First window day with any data (logged intake or a weigh-in); absent with none }
+        usableDays: { type: integer, minimum: 0 }
+        weighInDays: { type: integer, minimum: 0 }
+        unloggedDays: { type: integer, minimum: 0 }
+        historyWeeks: { type: integer, minimum: 0 }
+        avgIntakeKcal: { type: integer, nullable: true, description: Mean usable intake; absent with no usable day }
+        avgMovementKcal: { type: integer, nullable: true, description: Mean movement input over the usable days; absent with no usable day }
+        tissueRateKgPerWeek: { type: number, nullable: true, description: "The filter's tissue change over the traced span, per week; absent with no trace (no weigh-ins in the window) or on a HOLDING week" }
+        tissueKcalPerDay: { type: integer, nullable: true, description: That rate as kcal/day }
+        simpleBaseKcal: { type: integer, nullable: true, description: 'avgIntake − tissueKcalPerDay − avgMovement; absent when either input is missing' }
+        startBaseKcal: { type: integer, description: The base this week's step started from }
+        excludedDays: { type: array, items: { $ref: '#/components/schemas/ExpenditureExcludedDay' } }
+        waterEvents: { type: array, items: { $ref: '#/components/schemas/ExpenditureWaterEvent' } }
+        series: { type: array, items: { $ref: '#/components/schemas/ExpenditureSeriesPoint' } }
+    ExpenditureExcludedDay:
+      type: object
+      required: [date, kcal, reason]
+      properties:
+        date: { type: string, format: date }
+        kcal: { type: integer }
+        reason: { type: string, enum: [suspicious, marked] }
+    ExpenditureWaterEvent:
+      type: object
+      description: A glycogen-water jump — the first day of the run and the largest 7-day rise in it.
+      required: [date, kg]
+      properties:
+        date: { type: string, format: date }
+        kg: { type: number }
+    ExpenditureSeriesPoint:
+      type: object
+      description: One explainer-chart day (the last 56 days of the window).
+      required: [date, status]
+      properties:
+        date: { type: string, format: date }
+        intakeKcal: { type: integer, nullable: true, description: Logged total (also for an excluded day); absent when unlogged }
+        status: { type: string, enum: [usable, suspicious, marked, unlogged] }
+        weightKg: { type: number, nullable: true, description: The day's mean weigh-in; absent with none }
+        trendKg: { type: number, nullable: true, description: tissue + water + glycogen; absent before the first weigh-in }
+        tissueKg: { type: number, nullable: true, description: From the filter trace; absent before the first weigh-in }
     GoalOverviewResponse:
       type: object
       required: [goalId, title, trajectory, status, currentWeek, totalWeeks, completionPct,

@@ -27,6 +27,7 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.security.LlmActorContext;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -328,6 +329,26 @@ public class FakeCompanionLlm implements CompanionLlm {
      */
     public static String editionBody(String recordText) {
         return recordText.replaceAll("[.!?…]+$", "") + ". Ez egy második mondat.";
+    }
+
+    /** Mirror of TeamChatReplyVoiceWriter.MARKER (feature/character) — LITERAL, cycle rule (see
+     *  {@link #OBSERVATION_MARKER_MIRROR}). Drift is caught by TeamChatReplyVoiceWriterTest's
+     *  equality assertion against the real constant. Placed BEFORE {@link #TEAM_CHAT_MARKER_MIRROR}
+     *  below since the two prefixes ("CSAPATFAL-VALASZ" vs. "CSAPATFAL-ELO-BESZELGETES") differ. */
+    public static final String TEAM_CHAT_REPLY_MARKER_MIRROR = "CSAPATFAL-VALASZ";
+
+    /** The unscripted team chat reply body — one honest sentence, no number, no emoji. */
+    public static final String TEAM_CHAT_REPLY_BODY = "Értem, köszönöm, hogy elmondtad.";
+
+    /** Makes the reply answer unparseable JSON. */
+    public static final String TEAM_CHAT_REPLY_MALFORMED = "[fake-team-chat-reply-malformed]";
+
+    /** Scripts a whole reply answer from a test: plant the result in the user's reply text. */
+    private static final Pattern TEAM_CHAT_REPLY_SCRIPT = Pattern.compile("\\[fake-team-chat-reply:([A-Za-z0-9+/=]+)]");
+
+    /** Scripts a whole reply answer from a test: plant the result in the user's reply text. */
+    public static String teamChatReplyScript(String json) {
+        return "[fake-team-chat-reply:" + Base64.getEncoder().encodeToString(json.getBytes(StandardCharsets.UTF_8)) + "]";
     }
 
     /** Mirror of TeamChatVoiceWriter.MARKER (feature/character) — LITERAL, cycle rule (see
@@ -815,6 +836,17 @@ public class FakeCompanionLlm implements CompanionLlm {
         }
         if (systemPrompt.startsWith(EDITION_MARKER_MIRROR)) {
             return editionAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith(TEAM_CHAT_REPLY_MARKER_MIRROR)) {
+            if (userMessage.contains(TEAM_CHAT_REPLY_MALFORMED)) {
+                return "not-json";
+            }
+            Matcher replyScript = TEAM_CHAT_REPLY_SCRIPT.matcher(userMessage);
+            if (replyScript.find()) {
+                return new String(Base64.getDecoder().decode(replyScript.group(1)), StandardCharsets.UTF_8);
+            }
+            return "{\"reply\":\"" + jsonEscape(TEAM_CHAT_REPLY_BODY)
+                    + "\",\"verdict\":\"other\",\"contextTag\":null,\"factText\":null,\"keywords\":[]}";
         }
         if (systemPrompt.startsWith(TEAM_CHAT_MARKER_MIRROR)) {
             return teamChatAnswer(userMessage);

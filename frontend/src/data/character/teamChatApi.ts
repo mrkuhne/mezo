@@ -7,6 +7,8 @@ export type TeamChatLine = components['schemas']['TeamChatLine']
 export type TeamChatThread = components['schemas']['TeamChatThread']
 export type TeamChatAction = components['schemas']['TeamChatAction']
 export type TeamChatReplyRequest = components['schemas']['TeamChatReplyRequest']
+export type TeamChatAnswerRequest = components['schemas']['TeamChatAnswerRequest']
+export type TeamChatAnswerChoice = TeamChatAnswerRequest['choice']
 
 const BASE = '/api/character/team-chat'
 
@@ -21,5 +23,16 @@ export const teamChatApi = {
   apply: (threadId: string, actionKey: string): Promise<TeamChatThread> =>
     apiFetch<TeamChatThread>(`${BASE}/threads/${encodeURIComponent(threadId)}/apply/${encodeURIComponent(actionKey)}`, {
       method: 'POST',
+    }),
+  /** One-tap answer to a known-exception offer (EXCUSE) or the capped review (REVIEW) — 404/409 on a stale ügy. */
+  answer: (threadId: string, choice: TeamChatAnswerChoice): Promise<TeamChatThread> =>
+    apiFetch<TeamChatThread>(`${BASE}/threads/${encodeURIComponent(threadId)}/answer`, {
+      method: 'POST',
+      body: JSON.stringify({ choice } satisfies TeamChatAnswerRequest),
+    }),
+  /** Withdraws a remembered exception chip — the ügy reopens if that's what closed it. */
+  undoRemembered: (threadId: string): Promise<TeamChatThread> =>
+    apiFetch<TeamChatThread>(`${BASE}/threads/${encodeURIComponent(threadId)}/remembered`, {
+      method: 'DELETE',
     }),
 }

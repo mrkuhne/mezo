@@ -81,7 +81,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### admin
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-26, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-27, done) ·
   [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-09-26, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/admin`
@@ -164,7 +164,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### auth
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-26, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-27, done) ·
   [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-09-26, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/auth`
@@ -245,14 +245,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CharacterCouncilEditionEntity`→`character_council_edition`, `CharacterDimensionEntity`→`character_dimension`,
     `CharacterMaturityWeekEntity`→`character_maturity_week`, `CharacterObservationEntity`→`character_observation`,
     `CharacterPortraitRevisionEntity`→`character_portrait_revision`, `CharacterReplyEntity`→`character_reply`,
-    `CharacterRunEntity`→`character_run`, `TeamChatLineEntity`→`team_chat_line`,
+    `CharacterRunEntity`→`character_run`, `TeamChatExceptionEntity`→`team_chat_exception`,
+    `TeamChatExceptionHitEntity`→`team_chat_exception_hit`, `TeamChatLineEntity`→`team_chat_line`,
     `TeamChatThreadEntity`→`team_chat_thread`, `TeamEditionEntity`→`team_edition`,
     `TeamEditionPostEntity`→`team_edition_post`
   - **repositories:** `CharacterClaimRepository`, `CharacterClaimRevisionRepository`, `CharacterConferenceRepository`,
     `CharacterCouncilEditionRepository`, `CharacterDimensionRepository`, `CharacterMaturityWeekRepository`,
     `CharacterObservationRepository`, `CharacterPortraitRevisionRepository`, `CharacterReplyRepository`,
-    `CharacterRunRepository`, `TeamChatLineRepository`, `TeamChatThreadRepository`, `TeamEditionPostRepository`,
-    `TeamEditionRepository`
+    `CharacterRunRepository`, `TeamChatExceptionHitRepository`, `TeamChatExceptionRepository`,
+    `TeamChatLineRepository`, `TeamChatThreadRepository`, `TeamEditionPostRepository`, `TeamEditionRepository`
   - **services:** `CharacterBootstrapService`, `CharacterClaimRevisionService`, `CharacterConferenceJob`,
     `CharacterConferenceService`, `CharacterConfidenceWords`, `CharacterCoreCatalog`, `CharacterCouncilBudget`,
     `CharacterCouncilEvidenceTools`, `CharacterCouncilJob`, `CharacterCouncilPeriodTools`,
@@ -270,7 +271,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **config:** `CharacterCouncilBudgetProperties`, `CharacterCouncilDebateProperties`, `CharacterCouncilProperties`,
     `CharacterFollowupProperties`, `CharacterMaturityProperties`, `CharacterProperties`, `CharacterReplyProperties`,
     `TeamChatProperties`
-  - **events/listeners:** `TeamChatEventListener`
+  - **events/listeners:** `TeamChatEventListener`, `TeamChatRepliedEvent`, `TeamChatReplyListener`
   - **other:** `AvoidancePatternDetector`, `CharacterDetector`, `CharacterFollowupsEnvelope`,
     `CharacterReplyDiscussionEnvelope`, `ChatToolDomains`, `ChatTopicShiftDetector`, `CheckinGapDetector`,
     `CheckinLatencyDetector`, `CheckinSlotDriftDetector`, `ClaimConfidenceHistoryEnvelope`, `ClaimEvidenceEnvelope`,
@@ -280,21 +281,22 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `EditionCandidate`, `EditionCandidateCollector`, `EditionFactsEnvelope`, `EditionGenre`, `EditionGuestsEnvelope`,
     `EditionMeal`, `EditionRef`, `EditionRefsEnvelope`, `EditionSelector`, `EditionVoiceGuard`, `EditionVoiceWriter`,
     `ExperimentOutcomeLedgerDetector`, `GratitudeFocusDetector`, `GuestSeed`, `HrRecoveryTrendDetector`,
-    `HydrationConsistencyDetector`, `JournalNoteDetector`, `JournalSilenceDetector`,
+    `HydrationConsistencyDetector`, `JournalNoteDetector`, `JournalSilenceDetector`, `KeywordsEnvelope`,
     `KnowledgeRejectionPatternDetector`, `LateEatingPatternDetector`, `LoggingGapDetector`, `MacroAdherenceDetector`,
     `MedCycleCovarianceDetector`, `MentionContextShiftDetector`, `MesoAdherenceDetector`,
-    `NeedsDomainImbalanceDetector`, `NiggleMapDetector`, `NightActivityDetector`, `NoopTeamChatKnowledge`,
-    `ObservationDimensionKeysEnvelope`, `ObservationSignalsEnvelope`, `PeopleMoodLinkDetector`,
-    `PredictionCalibrationDetector`, `PriorShowing`, `ProgressionAdherenceDetector`, `PromiseVsDeliveryDetector`,
-    `ProteinTrainingMismatchDetector`, `QuestCompletionCalibrationDetector`, `RestartPatternDetector`,
-    `RetroLoggingRatioDetector`, `RirCalibrationDetector`, `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`,
-    `SelfCalibrationDetector`, `SleepPerformanceChainDetector`, `SportInterferenceDetector`,
-    `StackSkipPatternDetector`, `StreakBreakResponseDetector`, `TeamCharacter`, `TeamChatActionsEnvelope`,
-    `TeamChatBudget`, `TeamChatCast`, `TeamChatContext`, `TeamChatContextBlock`, `TeamChatExpiryJob`,
-    `TeamChatInterventionKeyAdapter`, `TeamChatKnowledgePort`, `TeamChatLines`, `TeamChatPushPolicy`, `TeamChatReads`,
-    `TeamChatService`, `TeamChatVoiceWriter`, `TeamEditionReads`, `TeamEditionService`, `TrailingWindow`,
-    `UnderLoggingDetector`, `VoicedGuest`, `VoicedText`, `WeekendGapDetector`
-- **Contract** `api/feature/character/character.yml` — 21 operations
+    `NeedsDomainImbalanceDetector`, `NiggleMapDetector`, `NightActivityDetector`, `ObservationDimensionKeysEnvelope`,
+    `ObservationSignalsEnvelope`, `PeopleMoodLinkDetector`, `PredictionCalibrationDetector`, `PriorShowing`,
+    `ProgressionAdherenceDetector`, `PromiseVsDeliveryDetector`, `ProteinTrainingMismatchDetector`,
+    `QuestCompletionCalibrationDetector`, `RestartPatternDetector`, `RetroLoggingRatioDetector`,
+    `RirCalibrationDetector`, `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`, `SelfCalibrationDetector`,
+    `SleepPerformanceChainDetector`, `SportInterferenceDetector`, `StackSkipPatternDetector`,
+    `StreakBreakResponseDetector`, `TeamCharacter`, `TeamChatActionsEnvelope`, `TeamChatBudget`, `TeamChatCast`,
+    `TeamChatContext`, `TeamChatContextBlock`, `TeamChatExceptionMatcher`, `TeamChatExceptionService`,
+    `TeamChatExpiryJob`, `TeamChatInterventionKeyAdapter`, `TeamChatKnowledgeAdapter`, `TeamChatKnowledgePort`,
+    `TeamChatLines`, `TeamChatPushPolicy`, `TeamChatReads`, `TeamChatReplyDecision`, `TeamChatReplyDraft`,
+    `TeamChatReplyService`, `TeamChatReplyVoiceWriter`, `TeamChatService`, `TeamChatVoiceWriter`, `TeamEditionReads`,
+    `TeamEditionService`, `TrailingWindow`, `UnderLoggingDetector`, `VoicedGuest`, `VoicedText`, `WeekendGapDetector`
+- **Contract** `api/feature/character/character.yml` — 23 operations
   - **endpoints:** GET /api/character · GET /api/character/dimension/{key} · GET /api/character/experts ·
     GET /api/character/feed · POST /api/character/bootstrap · GET /api/character/conference ·
     POST /api/character/conference · GET /api/character/runs · GET /api/character/edition ·
@@ -303,7 +305,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/character/replies/{replyId}/retry · GET /api/character/council ·
     GET /api/character/claims/{claimId}/revisions · POST /api/character/revisions/{revisionId}/undo ·
     GET /api/character/team-chat · POST /api/character/team-chat/threads/{threadId}/reply ·
-    POST /api/character/team-chat/threads/{threadId}/apply/{actionKey}
+    POST /api/character/team-chat/threads/{threadId}/apply/{actionKey} ·
+    POST /api/character/team-chat/threads/{threadId}/answer ·
+    DELETE /api/character/team-chat/threads/{threadId}/remembered
 - **FE data** `frontend/src/data/character`
   - **hooks (via `@/data/hooks`):** `useCharacterClaimRevisions`, `useCharacterCouncilStatus`, `useCharacterReplies`,
     `useCharacterReplyDraft`, `useTeamChat`, `useTeamChatActions`
@@ -320,7 +324,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **logic:** conferencePostItem.ts
   - **root:** character.css, deliberationLabels.ts, deliberationStats.ts, dossierState.ts, expertColors.ts,
     feedDayLabel.ts, inventory.ts, personaCharacter.ts, runLabels.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 63 IT + 19 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 68 IT + 22 unit
   - **ITs:** `CharacterApiCompanionOffIT`, `CharacterApiIT`, `CharacterApiSwitchOffIT`, `CharacterBootstrapIT`,
     `CharacterBootstrapMemoryDisabledIT`, `CharacterBootstrapMemoryIT`, `CharacterClaimRevisionIT`,
     `CharacterClaimTemporalIT`, `CharacterConferenceJobIT`, `CharacterConferenceListIT`,
@@ -334,11 +338,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CharacterReplyCompanionOffIT`, `CharacterReplyDiscussionIT`, `CharacterReplyRecoveryIT`, `CharacterRunLogIT`,
     `CharacterSignalReadsIT`, `CharacterWeeklySynthesisIT`, `ClaimLifecycleIT`, `ConferenceDeliberationEnvelopeIT`,
     `EditionCandidateCollectorIT`, `EditionVoiceWriterIT`, `KonziliumCrossTalkRoundIT`, `KonziliumProposalRoundIT`,
-    `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`, `PortraitWriterNameIT`, `TeamChatApiSwitchOffIT`,
-    `TeamChatBudgetIT`, `TeamChatContextIT`, `TeamChatControllerIT`, `TeamChatListenerActorIT`,
-    `TeamChatProductionSwitchIT`, `TeamChatRepositoryIT`, `TeamChatServiceIT`, `TeamChatSwitchOffIT`,
-    `TeamChatVoiceOutsideTransactionIT`, `TeamEditionReadsIT`, `TeamEditionSchemaIT`, `TeamEditionServiceIT`,
-    `TeamEditionServiceSwitchOffIT`
+    `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`, `PortraitWriterNameIT`, `TeamChatAnswerControllerIT`,
+    `TeamChatApiSwitchOffIT`, `TeamChatBudgetIT`, `TeamChatCatchUpLockOrderIT`, `TeamChatContextIT`,
+    `TeamChatControllerIT`, `TeamChatExceptionIT`, `TeamChatKnowledgeAdapterIT`, `TeamChatListenerActorIT`,
+    `TeamChatProductionSwitchIT`, `TeamChatReplyIT`, `TeamChatRepositoryIT`, `TeamChatServiceIT`,
+    `TeamChatSwitchOffIT`, `TeamChatVoiceOutsideTransactionIT`, `TeamEditionReadsIT`, `TeamEditionSchemaIT`,
+    `TeamEditionServiceIT`, `TeamEditionServiceSwitchOffIT`
   - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `ChallengePopulator`,
     `CharacterClaimRevisionPopulator`, `CharacterCouncilPopulator`, `CharacterReplyPopulator`, `CheckInPopulator`,
     `DailySummaryPopulator`, `DatabasePopulator`, `ExperimentPopulator`, `FeedbackPopulator`, `FlagLogPopulator`,
@@ -500,7 +505,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/companion`
   - **hooks (via `@/data/hooks`):** `useAccountSettings`, `useCompanionPreferences`, `usePersonalContext`
   - **modules:** preferencesApi.ts, preferencesHooks.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 286 IT + 92 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 287 IT + 92 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,
@@ -545,13 +550,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `HypothesisClosedContextIT`, `HypothesisEvaluationRollbackIT`, `HypothesisEvaluationServiceIT`,
     `HypothesisGatherContextIT`, `HypothesisPipelineServiceIT`, `HypothesisPipelineTestPlanIT`,
     `KnowledgeBackfillRunnerIT`, `KnowledgeFactMuteReasonIT`, `KnowledgeFactPromptCapIT`, `KnowledgeFactServiceIT`,
-    `KnowledgeObservationApiIT`, `KnowledgeObservationServiceIT`, `KnowledgeRecheckJobSwitchOffIT`,
-    `KnowledgeRecheckServiceBudgetOffIT`, `KnowledgeRecheckServiceIT`, `KnowledgeRecheckTraceIT`,
-    `LearnedFactPersistenceIT`, `LifeEventExtractionMemoryDisabledIT`, `LifeEventExtractionMemoryIT`,
-    `LifeEventExtractionServiceIT`, `LifeGoalProposeNameIT`, `LlmMemoryCallContextIT`, `LlmModelRoutingIT`,
-    `MeWeekControllerIT`, `MeWeekServiceFuelFetchCountIT`, `MeWeekTrendIT`, `MealRhythmDriftRuleSwitchOffIT`,
-    `MemoryContextBlockIT`, `MemoryContextServiceIT`, `MemoryEmbeddingAnnQueryIT`, `MemoryEmbeddingRepositoryIT`,
-    `MemoryEmbeddingWriterIT`, `MemoryForgetSchemaIT`, `MemoryLlmUsageIsolationIT`,
+    `KnowledgeFactTeamChatIT`, `KnowledgeObservationApiIT`, `KnowledgeObservationServiceIT`,
+    `KnowledgeRecheckJobSwitchOffIT`, `KnowledgeRecheckServiceBudgetOffIT`, `KnowledgeRecheckServiceIT`,
+    `KnowledgeRecheckTraceIT`, `LearnedFactPersistenceIT`, `LifeEventExtractionMemoryDisabledIT`,
+    `LifeEventExtractionMemoryIT`, `LifeEventExtractionServiceIT`, `LifeGoalProposeNameIT`, `LlmMemoryCallContextIT`,
+    `LlmModelRoutingIT`, `MeWeekControllerIT`, `MeWeekServiceFuelFetchCountIT`, `MeWeekTrendIT`,
+    `MealRhythmDriftRuleSwitchOffIT`, `MemoryContextBlockIT`, `MemoryContextServiceIT`, `MemoryEmbeddingAnnQueryIT`,
+    `MemoryEmbeddingRepositoryIT`, `MemoryEmbeddingWriterIT`, `MemoryForgetSchemaIT`, `MemoryLlmUsageIsolationIT`,
     `MemoryObservatorySimilarDaysDisabledIT`, `MemoryObservatorySimilarDaysIT`, `MemoryObservatorySimilarDaysOutageIT`,
     `MemoryPlatformPersistenceIT`, `MemoryPlatformPropertiesIT`, `MemoryProjectionFailureIsolationIT`,
     `MemoryProjectionServiceIT`, `MemoryProjectionWriterIT`, `MemoryQueryPreparerIT`, `MemoryRecallServiceIT`,
@@ -606,7 +611,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-27, done) ·
   [docs/features/pantry.md](features/pantry.md) (updated 2026-09-23, done) ·
   [docs/features/recipe.md](features/recipe.md) (updated 2026-09-26, done) ·
-  [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-26, done) ·
+  [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-27, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-26, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/fuel`
@@ -635,12 +640,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `useMedicationActions`, `usePantry`, `usePantryActions`, `useProtocol`, `useProtocolActions`, `useRecipeActions`,
     `useRecipeBreakdown`, `useRecipeLogs`, `useRecipes`, `useSlotTemplateActions`, `useSlotTemplateEvaluation`,
     `useSlotTemplates`, `useStack`, `useStackActions`, `useStackDay`, `useWaterActions`, `useWorkshop`
-  - **modules:** coachApi.ts, coachHooks.ts, dietSettingsApi.ts, dietSettingsHooks.ts, fuel.ts, fuelApi.ts,
-    fuelConfig.ts, fuelHooks.ts, fuelHorizonHooks.ts, fuelSettingsApi.ts, fuelSettingsHooks.ts, fuelWeek.ts,
-    fuelWeekHooks.ts, mealApi.ts, medication.ts, medicationApi.ts, medicationHooks.ts, pantry.ts, pantryApi.ts,
-    pantryHooks.ts, pantryImpact.ts, pantryPickables.ts, queryKeys.ts, recipeApi.ts, recipeHooks.ts, recipeMacros.ts,
-    slotTemplateApi.ts, slotTemplateHooks.ts, stackDayHooks.ts, stackHooks.ts, stackZones.ts, timelineHooks.ts,
-    workshopApi.ts, workshopHooks.ts, workshopMock.ts, workshopState.ts
+  - **modules:** coachApi.ts, coachHooks.ts, dietSettingsApi.ts, dietSettingsHooks.ts, expenditureApi.ts,
+    expenditureExplanation.ts, expenditureHooks.ts, fuel.ts, fuelApi.ts, fuelConfig.ts, fuelHooks.ts,
+    fuelHorizonHooks.ts, fuelSettingsApi.ts, fuelSettingsHooks.ts, fuelWeek.ts, fuelWeekHooks.ts, mealApi.ts,
+    medication.ts, medicationApi.ts, medicationHooks.ts, pantry.ts, pantryApi.ts, pantryHooks.ts, pantryImpact.ts,
+    pantryPickables.ts, queryKeys.ts, recipeApi.ts, recipeHooks.ts, recipeMacros.ts, slotTemplateApi.ts,
+    slotTemplateHooks.ts, stackDayHooks.ts, stackHooks.ts, stackZones.ts, timelineHooks.ts, workshopApi.ts,
+    workshopHooks.ts, workshopMock.ts, workshopState.ts
 - **FE ui** `frontend/src/features/fuel`
   - **pages:** FuelKamraPage.tsx, FuelKonyhaPage.tsx, FuelLogNewPage.tsx, FuelMaiPage.tsx, FuelMealDetailPage.tsx,
     FuelMealScorePage.tsx, FuelMedicationPage.tsx, FuelRecipeScorePage.tsx, FuelRecipesPage.tsx, FuelSettingsPage.tsx,
@@ -648,8 +654,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     KamraItemDetailPage.tsx, KamraSkeleton.tsx, LogFlowPage.tsx, RecipeDetailPage.tsx, RecipeEditorPage.tsx,
     RecipeWorkshopPage.tsx, RecipesSkeleton.tsx
   - **sheets:** AddPantryItemSheet.tsx, CatalogSearchSheet.tsx, CategoryFilterSheet.tsx, EnergyBreakdownSheet.tsx,
-    ImportItemSheet.tsx, IngredientPickerSheet.tsx, KamraPickSheet.tsx, KamraSheetHead.tsx, LogDoseSheet.tsx,
-    MedicationFormSheet.tsx, ReceptPickSheet.tsx, StackItemSheet.tsx, WaterLogSheet.tsx
+    ImportItemSheet.tsx, IngredientPickerSheet.tsx, KamraPickSheet.tsx, KamraSheetHead.tsx, LearnedBaseChart.tsx,
+    LearnedBaseExplainer.tsx, LogDoseSheet.tsx, MedicationFormSheet.tsx, ReceptPickSheet.tsx, StackItemSheet.tsx,
+    WaterLogSheet.tsx, learnedBaseFormat.ts
   - **components:** ContextPanel.tsx, DietSuggestionBanner.tsx, FuelEnergyHero.tsx, FuelHorizon.tsx, FuelLogModes.tsx,
     FuelMacroRings.tsx, FuelMealBlocks.tsx, FuelMealCeremony.tsx, FuelQualityBlocks.tsx, FuelScoreSurface.tsx,
     FuelStackItemGlass.tsx, FuelWaterModule.tsx, FuelWeekDayGlass.tsx, GlassBox.tsx, GlycemicGlass.tsx, KamraCard.tsx,
@@ -711,34 +718,37 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **repositories:** `ExpenditureEstimateRepository`, `GoalPlanLinkRepository`, `GoalRepository`,
     `GoalSuggestionRepository`
   - **services:** `AdaptiveCorrectionService`, `AdaptiveReviewJob`, `AdaptiveReviewService`, `DayTypeShiftCalculator`,
-    `DietPreferences`, `DietPreferencesPort`, `ExpenditureFilter`, `ExpenditureLearningService`,
-    `ExpenditureStepPolicy`, `GoalDeletedEvent`, `GoalEngineService`, `GoalEvaluationService`,
-    `GoalFeasibilityService`, `GoalInvariantValidator`, `GoalOverviewCourseService`, `GoalOverviewService`,
-    `GoalPlanLinkService`, `GoalPrescriptionCalculator`, `GoalProjectionService`, `GoalSavedEvent`, `GoalService`,
-    `GoalSuggestionDraftApplier`, `GoalSuggestionFingerprintService`, `GoalSuggestionNotificationListener`,
-    `GoalSuggestionPreviewService`, `GoalSuggestionProposedEvent`, `GoalSuggestionService`,
-    `GoalSuggestionSupersedeWriter`, `GoalSuggestionTriggerService`, `GoalTimelineService`, `GuardEvaluationService`,
-    `IntakeDayClassifier`, `LearnedBaseResolver`, `MesoLifecycleSuggestionListener`, `TdeeBootstrapService`,
-    `TrainGoalRecomputeAdapter`
+    `DietPreferences`, `DietPreferencesPort`, `ExpenditureExplainer`, `ExpenditureExplanationService`,
+    `ExpenditureFilter`, `ExpenditureLearningService`, `ExpenditureStepPolicy`, `GoalDeletedEvent`,
+    `GoalEngineService`, `GoalEvaluationService`, `GoalFeasibilityService`, `GoalInvariantValidator`,
+    `GoalOverviewCourseService`, `GoalOverviewService`, `GoalPlanLinkService`, `GoalPrescriptionCalculator`,
+    `GoalProjectionService`, `GoalSavedEvent`, `GoalService`, `GoalSuggestionDraftApplier`,
+    `GoalSuggestionFingerprintService`, `GoalSuggestionNotificationListener`, `GoalSuggestionPreviewService`,
+    `GoalSuggestionProposedEvent`, `GoalSuggestionService`, `GoalSuggestionSupersedeWriter`,
+    `GoalSuggestionTriggerService`, `GoalTimelineService`, `GuardEvaluationService`, `IntakeDayClassifier`,
+    `LearnedBaseResolver`, `MesoLifecycleSuggestionListener`, `TdeeBootstrapService`, `TrainGoalRecomputeAdapter`
   - **controllers→contract:** `GoalController`→`GoalApi`
-  - **mappers:** `GoalMapper`, `GoalPlanLinkMapper`, `GoalSuggestionMapper`
-  - **other:** `ActivityModelMigrationRunner`, `DailyIntakePort`, `ExcludedIntakeDayJson`, `ExpenditureRolloutRunner`,
-    `GoalEngineProperties`, `GoalPrescriptionJson`, `GoalReevaluateRunner`, `GoalSeedData`, `GoalSegmentOverrideJson`,
-    `GoalSuggestionPayloadJson`, `IntakeAdherencePort`, `SleepAdequacyPort`, `TdeeBootstrapJson`
-- **Contract** `api/feature/goal/goal.yml` — 17 operations
-  - **endpoints:** GET /api/goals · POST /api/goals · POST /api/goals/feasibility-preview · GET /api/goals/{id} ·
-    PUT /api/goals/{id} · DELETE /api/goals/{id} · GET /api/goals/{id}/overview · POST /api/goals/{id}/activate ·
-    POST /api/goals/{id}/archive · GET /api/goals/{id}/timeline · POST /api/goals/{id}/evaluate ·
-    POST /api/goals/{id}/plans · DELETE /api/goals/{id}/plans/{linkId} · GET /api/goals/{id}/suggestions ·
+  - **mappers:** `ExpenditureExplanationMapper`, `GoalMapper`, `GoalPlanLinkMapper`, `GoalSuggestionMapper`
+  - **other:** `ActivityModelMigrationRunner`, `DailyIntakePort`, `ExcludedIntakeDayJson`,
+    `ExpenditureExplanationJson`, `ExpenditureRolloutRunner`, `GoalEngineProperties`, `GoalPrescriptionJson`,
+    `GoalReevaluateRunner`, `GoalSeedData`, `GoalSegmentOverrideJson`, `GoalSuggestionPayloadJson`,
+    `IntakeAdherencePort`, `SleepAdequacyPort`, `TdeeBootstrapJson`
+- **Contract** `api/feature/goal/goal.yml` — 18 operations
+  - **endpoints:** GET /api/goals · POST /api/goals · POST /api/goals/feasibility-preview ·
+    GET /api/goals/expenditure/explanation · GET /api/goals/{id} · PUT /api/goals/{id} · DELETE /api/goals/{id} ·
+    GET /api/goals/{id}/overview · POST /api/goals/{id}/activate · POST /api/goals/{id}/archive ·
+    GET /api/goals/{id}/timeline · POST /api/goals/{id}/evaluate · POST /api/goals/{id}/plans ·
+    DELETE /api/goals/{id}/plans/{linkId} · GET /api/goals/{id}/suggestions ·
     GET /api/goals/{id}/suggestions/{suggestionId}/preview · POST /api/goals/{id}/suggestions/{suggestionId}/accept ·
     POST /api/goals/{id}/suggestions/{suggestionId}/dismiss
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 22 IT + 12 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 23 IT + 14 unit
   - **ITs:** `ActivityModelMigrationRunnerIT`, `AdaptiveReviewServiceIT`, `ExpenditureEstimateRepositoryIT`,
-    `ExpenditureLearningServiceIT`, `ExpenditureRolloutRunnerIT`, `GoalContractIT`, `GoalEnginePropertiesIT`,
-    `GoalEngineRecomputeIT`, `GoalEvaluationServiceIT`, `GoalFeasibilityServiceIT`, `GoalOverviewApiIT`,
-    `GoalPlanLinkServiceIT`, `GoalProjectionServiceIT`, `GoalReevaluateRunnerIT`, `GoalServiceIT`,
-    `GoalSuggestionNotificationIT`, `GoalSuggestionPreviewApiIT`, `GoalSuggestionServiceIT`, `GoalSuggestionTriggerIT`,
-    `GoalTimelineContractIT`, `GoalTimelineServiceIT`, `GuardEvaluationServiceIT`
+    `ExpenditureExplanationControllerIT`, `ExpenditureLearningServiceIT`, `ExpenditureRolloutRunnerIT`,
+    `GoalContractIT`, `GoalEnginePropertiesIT`, `GoalEngineRecomputeIT`, `GoalEvaluationServiceIT`,
+    `GoalFeasibilityServiceIT`, `GoalOverviewApiIT`, `GoalPlanLinkServiceIT`, `GoalProjectionServiceIT`,
+    `GoalReevaluateRunnerIT`, `GoalServiceIT`, `GoalSuggestionNotificationIT`, `GoalSuggestionPreviewApiIT`,
+    `GoalSuggestionServiceIT`, `GoalSuggestionTriggerIT`, `GoalTimelineContractIT`, `GoalTimelineServiceIT`,
+    `GuardEvaluationServiceIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`,
     `GoalSuggestionPopulator`, `MealPopulator`, `RunningPopulator`, `TrainPopulator`, `UserPopulator`,
     `WeightLogPopulator`
@@ -809,21 +819,21 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     DetailHero.tsx, EmberekSection.tsx, EszrevetelekSection.tsx, EvidenceLog.tsx, FactCandidateCard.tsx,
     FeedGuests.tsx, FeedPostCard.tsx, FeedPostHead.tsx, FeedPosterCard.tsx, FeedReplySheet.tsx, FeedTrio.tsx,
     FeedbackChips.tsx, ForgetUndoBar.tsx, HatasokSection.tsx, HowItWorksView.tsx, HubFold.tsx, HubRow.tsx,
-    HubSearch.tsx, HubTiles.tsx, HypothesisStateCard.tsx, IntroPosts.tsx, KategoriakView.tsx, KindNodeList.tsx,
-    KindTileGrid.tsx, KnowledgeBaseView.tsx, LifeEventAcceptedCard.tsx, LifeEventCandidateCard.tsx, LiveStrip.tsx,
-    MemoryAuditPanel.tsx, MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx,
-    PatternArtifactDetail.tsx, PatternDecisionCard.tsx, PatternDetailHero.tsx, PatternDomainMark.tsx,
-    PatternEvidenceChart.tsx, PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx,
-    PatternStrengthChart.tsx, ProfileNodeCard.tsx, ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx,
-    RememberedChips.tsx, RoladFacts.tsx, RoladInbox.tsx, RoladQuote.tsx, RoladTimeline.tsx, RoomCaseCard.tsx,
-    SimilarDayCard.tsx, StoryStrip.tsx, TenyekSection.tsx, TestPlanTiles.tsx, TokenColumns.tsx, ToolWorkStrip.tsx,
+    HubSearch.tsx, HubTiles.tsx, IntroPosts.tsx, KategoriakView.tsx, KindNodeList.tsx, KindTileGrid.tsx,
+    KnowledgeBaseView.tsx, LifeEventAcceptedCard.tsx, LifeEventCandidateCard.tsx, LiveStrip.tsx, MemoryAuditPanel.tsx,
+    MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx, OfferButtons.tsx,
+    PatternAnswerHero.tsx, PatternArtifactDetail.tsx, PatternDecisionCard.tsx, PatternDomainMark.tsx,
+    PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx, PatternLeanMeter.tsx, PatternRuleCard.tsx,
+    PatternZoneChart.tsx, ProfileNodeCard.tsx, ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx,
+    RememberedChips.tsx, ReplyAfterlife.tsx, RoladFacts.tsx, RoladInbox.tsx, RoladQuote.tsx, RoladTimeline.tsx,
+    RoomCaseCard.tsx, SimilarDayCard.tsx, StoryStrip.tsx, TenyekSection.tsx, TokenColumns.tsx, ToolWorkStrip.tsx,
     VerdictArc.tsx, experimentStatus.tsx, riseStyle.ts, useFeedSession.ts, useTeamFeed.ts
   - **logic:** boopNavigation.ts, chatRefs.ts, coachingCopy.ts, diagnosisCatalog.ts, diagnosisCopy.ts,
     diagnosisTeam.ts, domains.ts, factCopy.ts, findings.ts, hubCopy.ts, hubCounts.ts, hubSearch.ts, hubTopics.ts,
     humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternCatalog.ts, patternCopy.ts,
-    patternEvidence.ts, patternHistory.ts, predictionStatus.ts, quickQuestions.ts, roladCopy.ts, team.ts, teamChat.ts,
-    teamEdition.ts, teamFeed.fixtures.ts, teamFeed.ts, teamRooms.ts, toolDomains.ts, useStickToBottom.ts,
-    useVoiceInput.ts, verdicts.ts
+    patternEvidence.ts, patternHistory.ts, patternReading.ts, predictionStatus.ts, quickQuestions.ts, roladCopy.ts,
+    team.ts, teamChat.ts, teamEdition.ts, teamFeed.fixtures.ts, teamFeed.ts, teamRooms.ts, toolDomains.ts,
+    useStickToBottom.ts, useVoiceInput.ts, verdicts.ts
   - **root:** boop-world.css, kerdezd.css, useForgetUndo.ts, useRoladInbox.ts
 
 ### intention
@@ -918,7 +928,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### llmlog
 
-*BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-26, done) ·
+*BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-27, done) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-09-27, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`

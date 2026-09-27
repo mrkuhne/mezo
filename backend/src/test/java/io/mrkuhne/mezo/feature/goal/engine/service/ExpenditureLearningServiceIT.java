@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.within;
 import io.mrkuhne.mezo.api.dto.GoalSuggestionResponse;
 import io.mrkuhne.mezo.feature.goal.entity.ExcludedIntakeDayJson;
 import io.mrkuhne.mezo.feature.goal.entity.ExpenditureEstimateEntity;
+import io.mrkuhne.mezo.feature.goal.entity.ExpenditureExplanationJson;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalSuggestionPayloadJson;
 import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
@@ -21,6 +22,7 @@ import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.GoalSuggestionPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
+import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -30,6 +32,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,6 +70,7 @@ class ExpenditureLearningServiceIT extends AbstractIntegrationTest {
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private MealPopulator mealPopulator;
     @Autowired private DatabasePopulator databasePopulator;
+    @Autowired private EntityManager entityManager;
 
     private UUID userId;
     private UUID goalId;
@@ -112,6 +117,51 @@ class ExpenditureLearningServiceIT extends AbstractIntegrationTest {
 
         assertThat(row.getExcludedDays()).containsExactly(new ExcludedIntakeDayJson(suspicious, 604, "suspicious"));
         assertThat(row.getUsableDays()).isEqualTo(6);
+    }
+
+    @Test
+    void theRunPersistsHowItLearned() {
+        LocalDate suspicious = LocalDate.of(2026, 9, 16);
+        seedUserAndGoal(null);
+        seedMealsAndWeighIns(suspicious);
+        evaluate();
+        int planEat = goalRepository.findById(goalId).orElseThrow().getTdeeBootstrap().weeklyEatKcalPerDay()
+            .setScale(0, RoundingMode.HALF_UP).intValueExact();
+
+        ExpenditureEstimateEntity row = service.reviewWeek(userId, WEEK_START).orElseThrow();
+        entityManager.flush();
+        entityManager.clear();
+        ExpenditureEstimateEntity reloaded = estimates.findById(row.getId()).orElseThrow();
+        ExpenditureExplanationJson x = reloaded.getExplanation();
+
+        assertThat(x).isNotNull();
+        assertThat(x.windowEnd()).isEqualTo(WEEK_END);
+        assertThat(x.windowStart()).isEqualTo(WEEK_END.minusDays(119));
+        // 35 fixture days: one unlogged, one suspicious; the 85 empty days before them are not "unlogged".
+        assertThat(x.dataStart()).isEqualTo(WEEK_END.minusDays(HISTORY_DAYS - 1L));
+        assertThat(x.usableDays()).isEqualTo(33);
+        assertThat(x.weighInDays()).isEqualTo(35);
+        assertThat(x.unloggedDays()).isEqualTo(1);
+        assertThat(x.historyWeeks()).isEqualTo(5);
+        assertThat(x.avgIntakeKcal()).isEqualTo(2000);
+        assertThat(x.avgMovementKcal()).isEqualTo(planEat); // no workouts: the plan's movement average on every usable day
+        assertThat(x.startBaseKcal()).isEqualTo(row.getFormulaBaseKcal()); // no prior row, no adjustment
+        assertThat(x.excludedDays()).containsExactly(new ExcludedIntakeDayJson(suspicious, 604, "suspicious"));
+        // The scale falls 0.05 kg/day → ≈ −0.35 kg/week of tissue.
+        assertThat(x.tissueRateKgPerWeek().doubleValue()).isCloseTo(-0.35, within(0.1));
+        assertThat(x.simpleBaseKcal())
+            .isEqualTo(x.avgIntakeKcal() - x.tissueKcalPerDay() - x.avgMovementKcal())
+            .isCloseTo(row.getPosteriorBaseKcal(), within(250));
+        assertThat(x.waterEvents()).isEmpty(); // constant carbs
+        assertThat(x.series()).hasSize(56);
+        assertThat(x.series().get(55).date()).isEqualTo(WEEK_END);
+        ExpenditureExplanationJson.SeriesPoint flagged =
+            x.series().stream().filter(p -> p.date().equals(suspicious)).findFirst().orElseThrow();
+        assertThat(flagged.status()).isEqualTo("suspicious");
+        assertThat(flagged.intakeKcal()).isEqualTo(604);
+        assertThat(flagged.weightKg()).isNotNull();
+        assertThat(flagged.trendKg()).isNotNull();
+        assertThat(flagged.tissueKg()).isNotNull();
     }
 
     @Test
@@ -222,6 +272,14 @@ class ExpenditureLearningServiceIT extends AbstractIntegrationTest {
         assertThat(row.getPosteriorSdKcal()).isEqualTo(150);
         assertThat(row.getConfidence()).isEqualTo("MEDIUM");
         assertThat(row.getWeighInDays()).isZero();
+        // Nothing to anchor on → the explanation still says what was seen, without a tissue line.
+        ExpenditureExplanationJson x = row.getExplanation();
+        assertThat(x.weighInDays()).isZero();
+        assertThat(x.historyWeeks()).isZero();
+        assertThat(x.startBaseKcal()).isEqualTo(2500);
+        assertThat(x.tissueRateKgPerWeek()).isNull();
+        assertThat(x.simpleBaseKcal()).isNull();
+        assertThat(x.series()).hasSize(56).allSatisfy(p -> assertThat(p.trendKg()).isNull());
     }
 
     @Test
@@ -258,6 +316,29 @@ class ExpenditureLearningServiceIT extends AbstractIntegrationTest {
         assertThat(row.getAppliedBaseKcal() - row.getStepKcal()).isEqualTo(priorApplied);
         assertThat(row.getDirection()).isEqualTo(-1);
         assertThat(row.getStepKcal()).isCloseTo(Math.max(-150, delta), within(1)); // confirmed direction: full step
+    }
+
+    @Test
+    void anExplainerFailureNeverRollsBackTheWeeklyDecision() {
+        seedUserAndGoal(null);
+        seedMealsAndWeighIns(null);
+        evaluate();
+
+        // The explainer is presentation on top of an already-decided week (mezo-y72o3): a bug in it
+        // must never roll back the decision itself. Force it to blow up and assert the row still
+        // lands with the normal decision, just without an explanation.
+        try (MockedStatic<ExpenditureExplainer> explainer =
+                 Mockito.mockStatic(ExpenditureExplainer.class, Mockito.CALLS_REAL_METHODS)) {
+            explainer.when(() -> ExpenditureExplainer.explain(Mockito.any()))
+                .thenThrow(new RuntimeException("boom"));
+
+            ExpenditureEstimateEntity row = service.reviewWeek(userId, WEEK_START).orElseThrow();
+
+            assertThat(row.getStatus()).isEqualTo("UPDATED");
+            assertThat(row.getStepKcal()).isBetween(-150, -1);
+            assertThat(row.getAppliedBaseKcal()).isEqualTo(row.getFormulaBaseKcal() + row.getStepKcal());
+            assertThat(row.getExplanation()).isNull();
+        }
     }
 
     // ── fixtures ────────────────────────────────────────────────────────────

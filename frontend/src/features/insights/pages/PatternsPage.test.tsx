@@ -155,11 +155,13 @@ describe('PatternsPage (mock mode)', () => {
       <Route path="/mezo/patterns" element={<PatternsPage />} />
       <Route path="/mezo/patterns/:pairKey" element={<PatternDetailPage />} />
     </Routes></MemoryRouter>, { wrapper: QueryWrapper })
+    // the seed already carries monitoring rows (the reflection demos) — the decision adds one more
+    const before = Number(screen.getByRole('button', { name: /megfigyelés/i }).querySelector('b')?.textContent)
     fireEvent.click(screen.getAllByRole('button', { name: /Figyeljük/ })[0])
-    await waitFor(() => expect(screen.getByRole('button', { name: /megfigyelés/i })).toHaveTextContent('1'))
+    await waitFor(() => expect(screen.getByRole('button', { name: /megfigyelés/i })).toHaveTextContent(String(before + 1)))
     fireEvent.click(screen.getByRole('button', { name: /megfigyelés/i }))
     fireEvent.click(screen.getByRole('link', { name: /Rosszabbul alszol/ }))
-    expect(await screen.findByText('Minta részletei')).toBeInTheDocument()
+    expect(await screen.findByText('A szabály')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Vissza' }))
     expect(screen.getByRole('button', { name: /megfigyelés/i })).toHaveAttribute('aria-pressed', 'true')
   })
@@ -173,7 +175,7 @@ describe('PatternsPage (mock mode)', () => {
     const tile = container.querySelector('.m9m-tile') as HTMLAnchorElement
     expect(tile.search).toContain('sort=domain')
     fireEvent.click(tile)
-    await screen.findByText('Minta részletei')
+    await screen.findByText('A szabály')
     fireEvent.click(screen.getByRole('button', { name: 'Vissza' }))
     expect(screen.getByText('6–8 / 8')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Szűrés/ }))
@@ -183,7 +185,7 @@ describe('PatternsPage (mock mode)', () => {
     const filtered = container.querySelector('.m9m-tile') as HTMLAnchorElement
     expect(filtered.search).toContain('domain=fuel')
     fireEvent.click(filtered)
-    await screen.findByText('Minta részletei')
+    await screen.findByText('A szabály')
     fireEvent.click(screen.getByRole('button', { name: 'Vissza' }))
     expect(screen.getByText('Táplálkozás')).toBeInTheDocument()
     expect(screen.queryByText('6–8 / 8')).not.toBeInTheDocument()

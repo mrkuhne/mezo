@@ -3,7 +3,7 @@
  * csoportosítása, a fal élő sávjának szövege, az olvasatlan-szám és a szoba chipjei. Semmit nem
  * fogalmaz — minden szöveg a sorokból jön (ADR 0049).
  */
-import type { TeamChatDay, TeamChatLine } from '@/data/character/teamChatApi'
+import type { TeamChatDay, TeamChatLine, TeamChatThread } from '@/data/character/teamChatApi'
 import type { TeamCharacterId } from '@/features/insights/logic/team'
 
 export type DayPart = 'REGGEL' | 'DÉLBEN' | 'DÉLUTÁN' | 'ESTE' | 'ÉJJEL'
@@ -63,13 +63,44 @@ export function unreadCount(day: TeamChatDay, lastSeenIso: string | null): numbe
   return day.lines.filter(l => isCharacterLine(l) && Date.parse(l.occurredAt) > seen).length
 }
 
+/** Helyi naptári nap (YYYY-MM-DD) egy időbélyegből. */
+function localDayOf(iso: string): string {
+  const d = new Date(iso)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/**
+ * A nap rendeződött ügyei: a nap sorain látszó, RESOLVED állapotú ügyek (külön-külön egyszer),
+ * amelyek AZNAP zárultak — bármi zárta őket (adat: RESOLVE sor; S7: a karakter válasza vagy a
+ * kivétel, ami nem ír RESOLVE sort). Egy RESOLVE sor önmagában is számít (régi, ügy nélküli sor).
+ */
+function resolvedOn(day: TeamChatDay): number {
+  const ids = new Set<string>()
+  for (const l of day.lines) {
+    const t = l.thread
+    if (t != null && t.status === 'RESOLVED' && t.closedAt != null && localDayOf(t.closedAt) === day.date) ids.add(t.id)
+    else if (l.kind === 'RESOLVE') ids.add(l.threadId ?? l.id)
+  }
+  return ids.size
+}
+
 /** A szoba chipjei: nyitott ügyek (bármely napról), a nap lezárásai, és a napi értesítés-keret. */
 export function chips(day: TeamChatDay): { open: number; resolved: number; pushes: `${number} / ${number}` } {
   return {
     open: day.openThreads.length,
-    resolved: day.lines.filter(l => l.kind === 'RESOLVE').length,
+    resolved: resolvedOn(day),
     pushes: `${day.pushesToday} / ${day.pushBudget}`,
   }
+}
+
+/** The STOP answer's close note ("Nem, figyelj rá" on a REVIEW) — mirrors the backend's
+ *  `TeamChatExceptionService.STOP_NOTE`. */
+export const STOP_CLOSE_NOTE = 'kivétel kikapcsolva'
+
+/** S7: the ügy was closed by the character's own answer (REPLY) or as an excused exception —
+ *  the only closes that earn a close tag on a REPLY line. A DATA close has its own RESOLVE line. */
+export function closedByAnswer(thread: TeamChatThread): boolean {
+  return thread.status === 'RESOLVED' && (thread.closeReason === 'REPLY' || thread.closeReason === 'EXCUSED')
 }
 
 /** Helyi óra:perc egy sor/ügy időbélyegéből. */

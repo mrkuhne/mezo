@@ -2671,6 +2671,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/goals/expenditure/explanation:
+    get:
+      tags:
+        - Goal
+      operationId: getExpenditureExplanation
+      summary: >-
+        "Hogy tanultam?" — how the caller's latest learned base came about
+        (mezo-y72o3)
+      responses:
+        '200':
+          description: The caller's most recent reviewed week that carries an explanation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenditureExplanationResponse'
+        '204':
+          description: No explained week yet — nothing was ever reviewed with the explainer
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/goals/{id}':
     get:
       tags:
@@ -10473,10 +10496,10 @@ paths:
       operationId: getTeamChatDay
       summary: >-
         The all-day team chat for one local day (Csapatfal Act III,
-        mezo-a9bo7.21): the day's lines in time order (OPEN and RESOLVE lines
-        embed their ügy), every still-open ügy of any day, and the day's push
-        count against its budget. With the team chat switched off the day is
-        honestly empty — never a 404
+        mezo-a9bo7.21): the day's lines in time order (OPEN, RESOLVE and REPLY
+        lines embed their ügy), every still-open ügy of any day, and the day's
+        push count against its budget. With the team chat switched off the day
+        is honestly empty — never a 404
       parameters:
         - name: date
           in: query
@@ -10504,8 +10527,9 @@ paths:
         - Character
       operationId: replyTeamChatThread
       summary: >-
-        The user's reply on their own ügy — a USER line; it never resolves the
-        ügy
+        The user's reply on their own ügy — a USER line; the owner character
+        answers shortly after (a REPLY line), and a concrete explanation may
+        close the ügy
       parameters:
         - name: threadId
           in: path
@@ -10585,6 +10609,92 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '409':
           description: 'The action is not offered, or a different one was already applied'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/character/team-chat/threads/{threadId}/answer':
+    post:
+      tags:
+        - Character
+      operationId: answerTeamChatThread
+      summary: >-
+        The one-tap answer on a known-exception question — EXCUSED on an EXCUSE
+        offer ("yes, today too"), KEEP or STOP on a REVIEW offer; the same
+        answer again is an idempotent no-op
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamChatAnswerRequest'
+      responses:
+        '200':
+          description: The answered ügy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamChatThread'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: 'No such ügy for this user, or the team chat is switched off'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            The answer does not fit the ügy's offer, or a different answer was
+            already recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/character/team-chat/threads/{threadId}/remembered':
+    delete:
+      tags:
+        - Character
+      operationId: undoTeamChatRemembered
+      summary: >-
+        Undo the remembered chip — the exception captured off this ügy is
+        withdrawn for good (never re-captured) and the ügy reopens when no newer
+        ügy of its rule is open
+      parameters:
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The ügy after the undo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamChatThread'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: >-
+            No such ügy (or remembered exception) for this user, or the team
+            chat is switched off
           content:
             application/json:
               schema:
@@ -15460,6 +15570,191 @@ components:
           type: integer
         transition:
           type: integer
+    ExpenditureExplanationResponse:
+      type: object
+      description: >-
+        "Hogy tanultam?" (mezo-y72o3) — the caller's most recent reviewed week
+        that carries an explanation, joining the expenditure_estimate row with
+        its persisted explanation jsonb. Every nullable field is honestly absent
+        (no fallback), not a fabricated 0/'medium'.
+      required:
+        - weekStart
+        - status
+        - confidence
+        - formulaBaseKcal
+        - posteriorBaseKcal
+        - posteriorSdKcal
+        - appliedBaseKcal
+        - stepKcal
+        - windowStart
+        - windowEnd
+        - usableDays
+        - weighInDays
+        - unloggedDays
+        - historyWeeks
+        - startBaseKcal
+        - excludedDays
+        - waterEvents
+        - series
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: The reviewed week's Monday
+        status:
+          type: string
+          enum:
+            - learning
+            - updated
+            - stable
+            - holding
+        confidence:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        formulaBaseKcal:
+          type: integer
+        posteriorBaseKcal:
+          type: integer
+        posteriorSdKcal:
+          type: integer
+        appliedBaseKcal:
+          type: integer
+          description: The base actually served as "Alap" this week
+        stepKcal:
+          type: integer
+        windowStart:
+          type: string
+          format: date
+          description: First day of the replayed window
+        windowEnd:
+          type: string
+          format: date
+          description: Last day of the window (= weekStart's reviewed week Sunday)
+        dataStart:
+          type: string
+          format: date
+          nullable: true
+          description: >-
+            First window day with any data (logged intake or a weigh-in); absent
+            with none
+        usableDays:
+          type: integer
+          minimum: 0
+        weighInDays:
+          type: integer
+          minimum: 0
+        unloggedDays:
+          type: integer
+          minimum: 0
+        historyWeeks:
+          type: integer
+          minimum: 0
+        avgIntakeKcal:
+          type: integer
+          nullable: true
+          description: Mean usable intake; absent with no usable day
+        avgMovementKcal:
+          type: integer
+          nullable: true
+          description: Mean movement input over the usable days; absent with no usable day
+        tissueRateKgPerWeek:
+          type: number
+          nullable: true
+          description: >-
+            The filter's tissue change over the traced span, per week; absent
+            with no trace (no weigh-ins in the window) or on a HOLDING week
+        tissueKcalPerDay:
+          type: integer
+          nullable: true
+          description: That rate as kcal/day
+        simpleBaseKcal:
+          type: integer
+          nullable: true
+          description: >-
+            avgIntake − tissueKcalPerDay − avgMovement; absent when either input
+            is missing
+        startBaseKcal:
+          type: integer
+          description: The base this week's step started from
+        excludedDays:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpenditureExcludedDay'
+        waterEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpenditureWaterEvent'
+        series:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpenditureSeriesPoint'
+    ExpenditureExcludedDay:
+      type: object
+      required:
+        - date
+        - kcal
+        - reason
+      properties:
+        date:
+          type: string
+          format: date
+        kcal:
+          type: integer
+        reason:
+          type: string
+          enum:
+            - suspicious
+            - marked
+    ExpenditureWaterEvent:
+      type: object
+      description: >-
+        A glycogen-water jump — the first day of the run and the largest 7-day
+        rise in it.
+      required:
+        - date
+        - kg
+      properties:
+        date:
+          type: string
+          format: date
+        kg:
+          type: number
+    ExpenditureSeriesPoint:
+      type: object
+      description: One explainer-chart day (the last 56 days of the window).
+      required:
+        - date
+        - status
+      properties:
+        date:
+          type: string
+          format: date
+        intakeKcal:
+          type: integer
+          nullable: true
+          description: Logged total (also for an excluded day); absent when unlogged
+        status:
+          type: string
+          enum:
+            - usable
+            - suspicious
+            - marked
+            - unlogged
+        weightKg:
+          type: number
+          nullable: true
+          description: The day's mean weigh-in; absent with none
+        trendKg:
+          type: number
+          nullable: true
+          description: tissue + water + glycogen; absent before the first weigh-in
+        tissueKg:
+          type: number
+          nullable: true
+          description: From the filter trace; absent before the first weigh-in
     GoalOverviewResponse:
       type: object
       required:
@@ -25297,6 +25592,7 @@ components:
             - RESOLVE
             - SKEPTIC
             - USER
+            - REPLY
         character:
           type: string
           nullable: true
@@ -25374,6 +25670,52 @@ components:
           type: string
           nullable: true
           description: The applied actionKey
+        closeReason:
+          type: string
+          nullable: true
+          enum:
+            - DATA
+            - REPLY
+            - EXCUSED
+          description: >-
+            Why a RESOLVED ügy closed — its data cleared, the user's
+            explanation, or a known exception confirmed
+        closeNote:
+          type: string
+          nullable: true
+          description: 'The short context tag, e.g. meccsnap'
+        offer:
+          type: string
+          nullable: true
+          enum:
+            - EXCUSE
+            - REVIEW
+          description: >-
+            A known-exception question (one tap) or the capped re-check (two
+            taps)
+        offerTag:
+          type: string
+          nullable: true
+          description: 'The offered exception tag, e.g. meccsnap (EXCUSE and REVIEW only)'
+        remembered:
+          allOf:
+            - $ref: '#/components/schemas/TeamChatRemembered'
+          nullable: true
+    TeamChatRemembered:
+      type: object
+      required:
+        - text
+        - contextTag
+        - active
+      properties:
+        text:
+          type: string
+          description: The remembered sentence (the knowledge fact's text)
+        contextTag:
+          type: string
+        active:
+          type: boolean
+          description: false once undone or switched off
     TeamChatAction:
       type: object
       required:
@@ -25384,6 +25726,17 @@ components:
           type: string
         label:
           type: string
+    TeamChatAnswerRequest:
+      type: object
+      required:
+        - choice
+      properties:
+        choice:
+          type: string
+          enum:
+            - EXCUSED
+            - KEEP
+            - STOP
     TeamChatReplyRequest:
       type: object
       required:

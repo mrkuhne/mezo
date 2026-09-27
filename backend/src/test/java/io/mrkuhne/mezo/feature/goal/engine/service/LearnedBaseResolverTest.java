@@ -92,7 +92,7 @@ class LearnedBaseResolverTest {
             d.sigmaWaterKg(), d.sigmaBaseKcal(), d.glycogenKgPerG(), d.glycogenMaxKg(), d.glycogenAlpha(),
             d.suspiciousRatio(), d.referenceDays(), d.minReferenceDays(), d.minUsableDays(),
             d.minUsableDaysPerWeek(), d.minWeighInDaysPerWeek(), d.maxStepKcal(), d.deadBandKcal(),
-            d.maxDeviation(), d.minBaseBmrRatio(), d.highConfidenceSdKcal(), d.mediumConfidenceSdKcal()));
+            d.maxDeviation(), d.minBaseBmrRatio(), d.highConfidenceSdKcal(), d.mediumConfidenceSdKcal(), d.waterEventKg()));
 
         assertThat(resolver.apply(USER, FORMULA)).isSameAs(FORMULA);
         verifyNoInteractions(estimates);

@@ -11,9 +11,12 @@ import io.mrkuhne.mezo.api.dto.TeamChatThread;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.character.config.TeamChatProperties;
 import io.mrkuhne.mezo.feature.character.entity.EditionFactsEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.KeywordsEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.TeamChatActionsEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.TeamChatExceptionEntity;
 import io.mrkuhne.mezo.feature.character.entity.TeamChatLineEntity;
 import io.mrkuhne.mezo.feature.character.entity.TeamChatThreadEntity;
+import io.mrkuhne.mezo.feature.character.repository.TeamChatExceptionRepository;
 import io.mrkuhne.mezo.feature.character.repository.TeamChatLineRepository;
 import io.mrkuhne.mezo.feature.character.repository.TeamChatThreadRepository;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagCatalog;
@@ -40,6 +43,7 @@ class TeamChatControllerIT extends ApiIntegrationTest {
 
     @Autowired private TeamChatThreadRepository threads;
     @Autowired private TeamChatLineRepository lines;
+    @Autowired private TeamChatExceptionRepository exceptions;
     @Autowired private TeamChatProperties properties;
     @Autowired private OwnerProperties ownerProperties;
 
@@ -201,6 +205,47 @@ class TeamChatControllerIT extends ApiIntegrationTest {
 
         postForBody("/api/character/team-chat/threads/" + sleep.getId() + "/apply/nope",
                 null, ownerAuthHeaders(), HttpStatus.CONFLICT, String.class);
+    }
+
+    @Test
+    void day_embedsCloseReasonNoteAndRemembered_onAReplyLine() {
+        UUID owner = ownerId();
+        TeamChatThreadEntity resolved = thread(owner, FlagKey.LATE_EATING, "falat", "RESOLVED", at(DAY, 20), false);
+        resolved.setCloseReason("REPLY");
+        resolved.setCloseNote("meccsnap");
+        threads.saveAndFlush(resolved);
+        line(owner, resolved.getId(), "REPLY", "falat", "Oké, rendben van.", at(DAY, 21));
+        exception(owner, resolved.getId(), "meccsnap", "Meccsnapokon későn eszel — ez rendben van.");
+
+        TeamChatDay day = getForBody("/api/character/team-chat?date=" + DAY, ownerAuthHeaders(),
+                HttpStatus.OK, TeamChatDay.class);
+
+        assertThat(day.getLines()).singleElement().satisfies(reply -> {
+            assertThat(reply.getKind()).isEqualTo(TeamChatLine.KindEnum.REPLY);
+            TeamChatThread thread = reply.getThread();
+            assertThat(thread).isNotNull();
+            assertThat(thread.getCloseReason()).isEqualTo(TeamChatThread.CloseReasonEnum.REPLY);
+            assertThat(thread.getCloseNote()).isEqualTo("meccsnap");
+            assertThat(thread.getRemembered()).isNotNull();
+            assertThat(thread.getRemembered().getText()).isEqualTo("Meccsnapokon későn eszel — ez rendben van.");
+            assertThat(thread.getRemembered().getContextTag()).isEqualTo("meccsnap");
+            assertThat(thread.getRemembered().getActive()).isTrue();
+        });
+    }
+
+    private TeamChatExceptionEntity exception(UUID owner, UUID sourceThreadId, String contextTag, String factText) {
+        TeamChatExceptionEntity e = new TeamChatExceptionEntity();
+        e.setCreatedBy(owner);
+        e.setFlagKey(FlagKey.LATE_EATING);
+        e.setOwnerCharacter("falat");
+        e.setContextTag(contextTag);
+        e.setNormalizedTag(contextTag);
+        e.setFactText(factText);
+        e.setKeywords(new KeywordsEnvelope(List.of(contextTag)));
+        e.setSourceThreadId(sourceThreadId);
+        e.setActive(true);
+        e.setWindowStartedAt(at(DAY, 20));
+        return exceptions.saveAndFlush(e);
     }
 
     @Test

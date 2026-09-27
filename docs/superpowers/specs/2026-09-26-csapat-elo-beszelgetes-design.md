@@ -223,6 +223,8 @@ month (≈ 5 events/day, cross-talk in the same call) ≈ 0,5–0,8 USD.
   the same effectiveness rollup as the card did, keyed by the ügy's advice entry.
 - **Elmesélem** in the chat writes a user line into the ügy (the prototype's „Rizses csirkét
   ettem…"). It does not by itself resolve the ügy — only the data does (honesty).
+  > **2026-09-27, owner decision:** a concrete explanation may close — see emlékezete spec §S7
+  > (`docs/features/character.md` §Csapat-chat, "Reply → answer → close/remember").
 - „Miből látszik?" on every line opens the evidence sheet: the rule's numbers, when it turned on,
   and what closes it.
 

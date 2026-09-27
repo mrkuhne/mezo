@@ -1,18 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useFeedback, useTeamChat, useTeamChatActions } from '@/data/hooks'
-import type { TeamChatDay, TeamChatLine, TeamChatThread } from '@/data/character/teamChatApi'
+import type { TeamChatAnswerChoice, TeamChatDay, TeamChatLine, TeamChatThread } from '@/data/character/teamChatApi'
 import type { FeedbackHandle } from '@/data/feedback/feedbackTypes'
 import { TEAM, type TeamCharacterId } from '@/features/insights/logic/team'
 import {
   TEAM_CHAT_LAST_SEEN_KEY,
   chips,
   clockOf,
+  closedByAnswer,
   groupByDayPart,
   type DayPart,
 } from '@/features/insights/logic/teamChat'
 import { FeedAvatar } from '@/features/insights/components/feed/FeedPostHead'
 import { ArtifactTrio, type FeedReplyMode } from '@/features/insights/components/feed/FeedTrio'
+import { CloseTag, RememberedChip, TypingRow } from '@/features/insights/components/teamchat/ReplyAfterlife'
+import { OfferButtons } from '@/features/insights/components/teamchat/OfferButtons'
 import { renderInline } from '@/shared/lib/markdown'
 import { huMonthDay, huWeekdayFullIso, localDateString } from '@/shared/lib/dates'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
@@ -73,7 +76,7 @@ export function TeamChatPage() {
   const raw = params.get('d')
   const requested = raw && DAY_RE.test(raw) ? raw : undefined
   const { day, loading } = useTeamChat(requested)
-  const { reply, apply, pending } = useTeamChatActions()
+  const { reply, apply, answer, undoRemembered, awaiting, pending } = useTeamChatActions()
   const openLineIds = useMemo(() => day.lines.filter(l => l.kind === 'OPEN').map(l => l.id), [day.lines])
   const feedback = useFeedback('team_chat_line', openLineIds)
   const [evidence, setEvidence] = useState<TeamChatLine | null>(null)
@@ -101,6 +104,13 @@ export function TeamChatPage() {
 
   const threads = threadIndex(day)
   const groups = groupByDayPart(day.lines)
+  // S7 (mezo-d6ivw.7): the typing row goes after the LAST line of a thread that is `awaiting`
+  // an answer — never a fixed slot, since a thread's lines can span day-part sections.
+  const lastLineIdByThread = new Map<string, string>()
+  for (const l of day.lines) if (l.threadId) lastLineIdByThread.set(l.threadId, l.id)
+  // The close tag + remembered chip belong to ONE line per ügy — its last REPLY line.
+  const lastReplyIdByThread = new Map<string, string>()
+  for (const l of day.lines) if (l.threadId && l.kind === 'REPLY') lastReplyIdByThread.set(l.threadId, l.id)
   const c = chips(day)
   const waiting = [...day.openThreads].sort((a, b) => Date.parse(a.openedAt) - Date.parse(b.openedAt))[0]
   const waitingLine = waiting ? day.lines.find(l => l.kind === 'OPEN' && l.threadId === waiting.id) : undefined
@@ -184,9 +194,13 @@ export function TeamChatPage() {
                 applied={l.threadId ? applied[l.threadId] : undefined}
                 applyFailed={l.threadId ? applyError[l.threadId] === true : false}
                 busy={pending}
+                showTyping={l.threadId != null && lastLineIdByThread.get(l.threadId) === l.id && awaiting.has(l.threadId)}
+                lastReply={l.threadId != null && lastReplyIdByThread.get(l.threadId) === l.id}
                 onEvidence={() => setEvidence(l)}
                 onReply={(thread, mode) => setReplyTo({ thread, mode })}
                 onApply={onApply}
+                onAnswer={answer}
+                onUndo={undoRemembered}
               />
             ))}
           </section>
@@ -215,26 +229,36 @@ export function TeamChatPage() {
   )
 }
 
-function ChatLine({ line, thread, feedback, applied, applyFailed, busy, onEvidence, onReply, onApply }: {
+function ChatLine({ line, thread, feedback, applied, applyFailed, busy, showTyping, lastReply, onEvidence, onReply, onApply, onAnswer, onUndo }: {
   line: TeamChatLine
   thread: TeamChatThread | undefined
   feedback: FeedbackHandle
   applied: string | undefined
   applyFailed: boolean
   busy: boolean
+  /** S7: this line is the last one on a thread that is `awaiting` an answer — render the
+   *  "{Name} ír…" row right after it. */
+  showTyping: boolean
+  /** S7: this is the ügy's last REPLY line — the one that carries its close tag + remembered chip. */
+  lastReply: boolean
   onEvidence: () => void
   onReply: (thread: TeamChatThread, mode: FeedReplyMode) => void
   onApply: (thread: TeamChatThread, key: string) => Promise<void>
+  onAnswer: (threadId: string, choice: TeamChatAnswerChoice) => Promise<void>
+  onUndo: (threadId: string) => Promise<void>
 }) {
   const time = clockOf(line.occurredAt)
   if (line.kind === 'USER' || line.character == null) {
     return (
-      <div className="tf-chat-cm is-me" id={lineAnchor(line.id)}>
-        <div className="tf-chat-bub">
-          <span className="tf-chat-nm">Te<em>{time}</em></span>
-          <p className="tf-chat-tx">{line.body}</p>
+      <>
+        <div className="tf-chat-cm is-me" id={lineAnchor(line.id)}>
+          <div className="tf-chat-bub">
+            <span className="tf-chat-nm">Te<em>{time}</em></span>
+            <p className="tf-chat-tx">{line.body}</p>
+          </div>
         </div>
-      </div>
+        {showTyping && thread && <TypingRow character={thread.owner} />}
+      </>
     )
   }
 
@@ -244,65 +268,78 @@ function ChatLine({ line, thread, feedback, applied, applyFailed, busy, onEviden
   const live = opens && thread.status === 'OPEN'
   const appliedKey = thread?.applied ?? applied ?? null
   const appliedAction = appliedKey ? thread?.actions.find(a => a.key === appliedKey) : undefined
+  // S7 (mezo-d6ivw.7): a REPLY line is the owner's bubble too — the character answering in its
+  // own words — but never the trio (it isn't an OPEN ügy's opening line).
+  // Only the ügy's LAST REPLY line carries the afterlife: the close tag when the answer (REPLY)
+  // or an excuse (EXCUSED) closed it — never DATA, which has its own RESOLVE line — and the
+  // remembered chip whenever one was born on the ügy, whatever its status (an undo reopens it).
+  const afterlife = line.kind === 'REPLY' && lastReply && thread != null
+  const closed = afterlife && thread != null && closedByAnswer(thread)
 
   return (
-    <div className={`tf-chat-cm tf-c-${who.accent}${guest ? ' is-guest' : ''}`} id={lineAnchor(line.id)}>
-      <FeedAvatar id={who.id} size={guest ? 20 : 30} />
-      <div className="tf-chat-cb">
-        <div className="tf-chat-bub">
-          <span className="tf-chat-nm">
-            {who.name}
-            {!guest && who.area && <small>{who.area}</small>}
-            <em>{time}</em>
-          </span>
-          <p className="tf-chat-tx">{renderInline(line.body, { boldOnly: true })}</p>
-        </div>
-
-        {opens && (
-          <div className="tf-chat-tag">
-            <span className={`tf-st ${thread.status === 'RESOLVED' ? 'tf-s-sage' : `tf-s-${who.accent}`}`}>
-              {thread.ruleLabel} · {statusLabel(thread)}
+    <>
+      <div className={`tf-chat-cm tf-c-${who.accent}${guest ? ' is-guest' : ''}`} id={lineAnchor(line.id)}>
+        <FeedAvatar id={who.id} size={guest ? 20 : 30} />
+        <div className="tf-chat-cb">
+          <div className="tf-chat-bub">
+            <span className="tf-chat-nm">
+              {who.name}
+              {!guest && who.area && <small>{who.area}</small>}
+              <em>{time}</em>
             </span>
-            {thread.pushed ? (
-              <span className="tf-chat-pm"><Icon3D name="t-bell" size={14} />értesítettünk · {clockOf(thread.openedAt)}</span>
-            ) : (
-              <span className="tf-chat-pm"><Icon3D name="t-clock" size={14} />csendben</span>
-            )}
-            <button type="button" className="tf-chat-ev" onClick={onEvidence}>Miből látszik?</button>
+            <p className="tf-chat-tx">{renderInline(line.body, { boldOnly: true })}</p>
           </div>
-        )}
-        {line.kind === 'RESOLVE' && (
-          <div className="tf-chat-tag">
-            <span className="tf-st tf-s-sage">Rendeződött · {time}</span>
-            <span className="tf-chat-pm"><Icon3D name="t-clock" size={14} />csendben · a lezárás sosem értesít</span>
-            <button type="button" className="tf-chat-ev" onClick={onEvidence}>Miből látszik?</button>
-          </div>
-        )}
 
-        {live && (
-          <>
-            <ArtifactTrio feedback={feedback} artifactId={line.id} onReply={mode => onReply(thread, mode)} />
-            {appliedAction ? (
-              <span className="tf-after"><Icon3D name="t-tick" size={15} />Beállítva: {appliedAction.label}</span>
-            ) : (
-              thread.actions.length > 0 && (
-                <div className="tf-chat-apply">
-                  {thread.actions.map(a => (
-                    <button key={a.key} type="button" disabled={busy} onClick={() => void onApply(thread, a.key)}>
-                      <Icon3D name="t-tick" size={18} />
-                      {a.label}
-                    </button>
-                  ))}
-                </div>
-              )
-            )}
-            {applyFailed && !appliedAction && (
-              <p className="tf-error" role="alert">Nem sikerült beállítani — próbáld újra egy kicsit később.</p>
-            )}
-          </>
-        )}
+          {opens && (
+            <div className="tf-chat-tag">
+              <span className={`tf-st ${thread.status === 'RESOLVED' ? 'tf-s-sage' : `tf-s-${who.accent}`}`}>
+                {thread.ruleLabel} · {statusLabel(thread)}
+              </span>
+              {thread.pushed ? (
+                <span className="tf-chat-pm"><Icon3D name="t-bell" size={14} />értesítettünk · {clockOf(thread.openedAt)}</span>
+              ) : (
+                <span className="tf-chat-pm"><Icon3D name="t-clock" size={14} />csendben</span>
+              )}
+              <button type="button" className="tf-chat-ev" onClick={onEvidence}>Miből látszik?</button>
+            </div>
+          )}
+          {line.kind === 'RESOLVE' && (
+            <div className="tf-chat-tag">
+              <span className="tf-st tf-s-sage">Rendeződött · {time}</span>
+              <span className="tf-chat-pm"><Icon3D name="t-clock" size={14} />csendben</span>
+              <button type="button" className="tf-chat-ev" onClick={onEvidence}>Miből látszik?</button>
+            </div>
+          )}
+          {closed && thread && <CloseTag thread={thread} />}
+          {afterlife && thread?.remembered && <RememberedChip thread={thread} onUndo={onUndo} />}
+
+          {live && (
+            <>
+              {thread.offer && <OfferButtons thread={thread} onAnswer={onAnswer} busy={busy} />}
+              <ArtifactTrio feedback={feedback} artifactId={line.id} onReply={mode => onReply(thread, mode)} />
+              {appliedAction ? (
+                <span className="tf-after"><Icon3D name="t-tick" size={15} />Beállítva: {appliedAction.label}</span>
+              ) : (
+                thread.actions.length > 0 && (
+                  <div className="tf-chat-apply">
+                    {thread.actions.map(a => (
+                      <button key={a.key} type="button" disabled={busy} onClick={() => void onApply(thread, a.key)}>
+                        <Icon3D name="t-tick" size={18} />
+                        {a.label}
+                      </button>
+                    ))}
+                  </div>
+                )
+              )}
+              {applyFailed && !appliedAction && (
+                <p className="tf-error" role="alert">Nem sikerült beállítani — próbáld újra egy kicsit később.</p>
+              )}
+            </>
+          )}
+        </div>
       </div>
-    </div>
+      {showTyping && thread && <TypingRow character={thread.owner} />}
+    </>
   )
 }
 
@@ -346,9 +383,11 @@ function EvidenceSheet({ line, thread, onClose }: { line: TeamChatLine | null; t
   )
 }
 
-const REPLY_INTRO: Record<FeedReplyMode, string> = {
-  tell: 'Mi az, amit csak te tudhatsz erről? A válaszod az ügyhöz kerül, a csapat látja — lezárni viszont csak az adataid tudják.',
-  down: 'Mi nem stimmel? Ebből tanulunk a legtöbbet — írd meg a saját szavaiddal, az ügyhöz kerül.',
+/** S7 (mezo-d6ivw.7): the "Elmesélem" intro is built from the ügy's owner name — a concrete
+ *  reason (meccs, utazás, betegség) lets the character close the ügy itself and remember it. */
+function replyIntro(mode: FeedReplyMode, ownerName: string): string {
+  if (mode === 'down') return 'Mi nem stimmel? Ebből tanulunk a legtöbbet — írd meg a saját szavaiddal, az ügyhöz kerül.'
+  return `Mi az, amit csak te tudhatsz erről? ${ownerName} válaszol rá — ha konkrét okot mondasz (meccs, utazás, betegség), le is zárja az ügyet, és megjegyzi.`
 }
 
 /** Az „Elmesélem” / „Nem így érzem” lapja a csapat-chatben — a válasz az ügybe íródik. Csak a
@@ -401,7 +440,7 @@ function ReplyComposer({ target, onSend, onClose }: {
   }
   return (
     <div className="tf-reply">
-      <p className="tf-reply-intro">{REPLY_INTRO[target.mode]}</p>
+      <p className="tf-reply-intro">{replyIntro(target.mode, TEAM[target.thread.owner].name)}</p>
       <textarea
         className="tf-reply-text"
         aria-label="A válaszod"

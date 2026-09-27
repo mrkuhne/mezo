@@ -64,6 +64,7 @@ const ORIGIN_SENTENCE: Record<FactSource, string> = {
   manual: 'Te vetted fel kézzel.',
   weekly_review: 'A heti áttekintésből derült ki.',
   question: 'Egy kérdésre válaszoltál rá.',
+  team_chat: 'A csapatfalon adott válaszodból jegyeztem meg.',
 }
 
 const ORIGIN_CHIP: Record<FactSource, string> = {
@@ -72,6 +73,7 @@ const ORIGIN_CHIP: Record<FactSource, string> = {
   manual: 'kézzel',
   weekly_review: 'heti áttekintésből',
   question: 'kérdésre válaszoltál',
+  team_chat: 'csapatfalról',
 }
 
 /**

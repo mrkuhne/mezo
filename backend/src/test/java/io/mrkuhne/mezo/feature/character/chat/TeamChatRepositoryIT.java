@@ -4,8 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.character.entity.KeywordsEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.TeamChatExceptionEntity;
+import io.mrkuhne.mezo.feature.character.entity.TeamChatExceptionHitEntity;
 import io.mrkuhne.mezo.feature.character.entity.TeamChatLineEntity;
 import io.mrkuhne.mezo.feature.character.entity.TeamChatThreadEntity;
+import io.mrkuhne.mezo.feature.character.repository.TeamChatExceptionHitRepository;
+import io.mrkuhne.mezo.feature.character.repository.TeamChatExceptionRepository;
 import io.mrkuhne.mezo.feature.character.repository.TeamChatLineRepository;
 import io.mrkuhne.mezo.feature.character.repository.TeamChatThreadRepository;
 import io.mrkuhne.mezo.feature.companion.feedback.entity.MessageFeedbackEntity;
@@ -13,7 +18,10 @@ import io.mrkuhne.mezo.feature.companion.feedback.repository.MessageFeedbackRepo
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.FeedbackPopulator;
+import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +45,9 @@ class TeamChatRepositoryIT extends AbstractIntegrationTest {
     @Autowired private TeamChatLineRepository lineRepository;
     @Autowired private MessageFeedbackRepository feedbackRepository;
     @Autowired private FeedbackPopulator feedbackPopulator;
+    @Autowired private TeamChatExceptionRepository exceptions;
+    @Autowired private TeamChatExceptionHitRepository hits;
+    @Autowired private UserPopulator userPopulator;
 
     private UUID owner() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -148,5 +159,37 @@ class TeamChatRepositoryIT extends AbstractIntegrationTest {
         assertThat(feedbackRepository.findByCreatedByAndArtifactKindAndArtifactIdAndDeletedFalse(
                 owner, MessageFeedbackEntity.KIND_TEAM_CHAT_LINE, line.getId()))
                 .isPresent();
+    }
+
+    @Test
+    void exceptionAndHit_roundTrip_andTheDayIsUniquePerException() {
+        UUID owner = userPopulator.createUser().getId();
+        TeamChatExceptionEntity e = new TeamChatExceptionEntity();
+        e.setCreatedBy(owner);
+        e.setFlagKey("late_eating");
+        e.setOwnerCharacter("falat");
+        e.setContextTag("meccsnap");
+        e.setNormalizedTag("meccsnap");
+        e.setFactText("Meccsnap később eszik, mert edzés után kupa van.");
+        e.setKeywords(new KeywordsEnvelope(List.of("meccs", "kupa")));
+        e.setWindowStartedAt(Instant.now());
+        TeamChatExceptionEntity saved = exceptions.saveAndFlush(e);
+        assertThat(exceptions.findByCreatedByAndFlagKeyAndActiveTrueAndDeletedFalseOrderByCreatedAtAsc(owner, "late_eating"))
+                .extracting(TeamChatExceptionEntity::getKeywords).containsExactly(new KeywordsEnvelope(List.of("meccs", "kupa")));
+
+        LocalDate today = LocalDate.now();
+        hits.saveAndFlush(hit(owner, saved.getId(), today, "NOTES"));
+        assertThatThrownBy(() -> hits.saveAndFlush(hit(owner, saved.getId(), today, "TAP")))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThat(hits.countByExceptionIdAndHitOnGreaterThanEqualAndDeletedFalse(saved.getId(), today.minusDays(29))).isEqualTo(1);
+    }
+
+    private TeamChatExceptionHitEntity hit(UUID owner, UUID exceptionId, LocalDate hitOn, String source) {
+        TeamChatExceptionHitEntity h = new TeamChatExceptionHitEntity();
+        h.setCreatedBy(owner);
+        h.setExceptionId(exceptionId);
+        h.setHitOn(hitOn);
+        h.setSource(source);
+        return h;
     }
 }

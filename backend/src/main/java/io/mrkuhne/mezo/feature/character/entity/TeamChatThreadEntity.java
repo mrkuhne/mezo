@@ -75,4 +75,25 @@ public class TeamChatThreadEntity extends OwnedEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private TeamChatActionsEnvelope.Applied applied;
+
+    /** S7: why a RESOLVED ügy closed — DATA (a clear), REPLY (the user's explanation), EXCUSED
+     *  (a known exception confirmed). Null while OPEN and on EXPIRED. */
+    @Size(max = 8)
+    @Pattern(regexp = "DATA|REPLY|EXCUSED")
+    @Column(name = "close_reason", length = 8)
+    private String closeReason;
+
+    /** S7: the short context tag shown as „Falat lezárta: meccsnap". */
+    @Size(max = 60)
+    @Column(name = "close_note", length = 60)
+    private String closeNote;
+
+    /** S7: EXCUSE (the known-exception question) or REVIEW (the capped re-check); null otherwise. */
+    @Size(max = 8)
+    @Pattern(regexp = "EXCUSE|REVIEW")
+    @Column(length = 8)
+    private String offer;
+
+    @Column(name = "exception_id", columnDefinition = "uuid")
+    private UUID exceptionId;
 }

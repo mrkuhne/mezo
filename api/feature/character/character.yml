@@ -494,9 +494,9 @@ paths:
       operationId: getTeamChatDay
       summary: >-
         The all-day team chat for one local day (Csapatfal Act III, mezo-a9bo7.21): the day's
-        lines in time order (OPEN and RESOLVE lines embed their ügy), every still-open ügy of any
-        day, and the day's push count against its budget. With the team chat switched off the day
-        is honestly empty — never a 404
+        lines in time order (OPEN, RESOLVE and REPLY lines embed their ügy), every still-open ügy
+        of any day, and the day's push count against its budget. With the team chat switched off
+        the day is honestly empty — never a 404
       parameters:
         - name: date
           in: query
@@ -518,7 +518,9 @@ paths:
     post:
       tags: [Character]
       operationId: replyTeamChatThread
-      summary: The user's reply on their own ügy — a USER line; it never resolves the ügy
+      summary: >-
+        The user's reply on their own ügy — a USER line; the owner character answers shortly
+        after (a REPLY line), and a concrete explanation may close the ügy
       parameters:
         - { name: threadId, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -578,6 +580,66 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/character/team-chat/threads/{threadId}/answer:
+    post:
+      tags: [Character]
+      operationId: answerTeamChatThread
+      summary: >-
+        The one-tap answer on a known-exception question — EXCUSED on an EXCUSE offer ("yes,
+        today too"), KEEP or STOP on a REVIEW offer; the same answer again is an idempotent no-op
+      parameters:
+        - { name: threadId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TeamChatAnswerRequest' }
+      responses:
+        '200':
+          description: The answered ügy
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TeamChatThread' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: No such ügy for this user, or the team chat is switched off
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '409':
+          description: The answer does not fit the ügy's offer, or a different answer was already recorded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/character/team-chat/threads/{threadId}/remembered:
+    delete:
+      tags: [Character]
+      operationId: undoTeamChatRemembered
+      summary: >-
+        Undo the remembered chip — the exception captured off this ügy is withdrawn for good (never
+        re-captured) and the ügy reopens when no newer ügy of its rule is open
+      parameters:
+        - { name: threadId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: The ügy after the undo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TeamChatThread' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: No such ügy (or remembered exception) for this user, or the team chat is switched off
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     TeamChatDay:
@@ -598,7 +660,7 @@ components:
       properties:
         id: { type: string, format: uuid }
         threadId: { type: string, format: uuid, nullable: true }
-        kind: { type: string, enum: [OPEN, GUEST, RESOLVE, SKEPTIC, USER] }
+        kind: { type: string, enum: [OPEN, GUEST, RESOLVE, SKEPTIC, USER, REPLY] }
         character: { type: string, nullable: true, enum: [szunya, mocor, falat, deru, mezo, szkeptikus] }
         body: { type: string }
         voiced: { type: boolean }
@@ -620,12 +682,37 @@ components:
         pushed: { type: boolean }
         actions: { type: array, items: { $ref: '#/components/schemas/TeamChatAction' } }
         applied: { type: string, nullable: true, description: The applied actionKey }
+        closeReason:
+          type: string
+          nullable: true
+          enum: [DATA, REPLY, EXCUSED]
+          description: Why a RESOLVED ügy closed — its data cleared, the user's explanation, or a known exception confirmed
+        closeNote: { type: string, nullable: true, description: 'The short context tag, e.g. meccsnap' }
+        offer:
+          type: string
+          nullable: true
+          enum: [EXCUSE, REVIEW]
+          description: A known-exception question (one tap) or the capped re-check (two taps)
+        offerTag: { type: string, nullable: true, description: 'The offered exception tag, e.g. meccsnap (EXCUSE and REVIEW only)' }
+        remembered: { allOf: [ { $ref: '#/components/schemas/TeamChatRemembered' } ], nullable: true }
+    TeamChatRemembered:
+      type: object
+      required: [text, contextTag, active]
+      properties:
+        text: { type: string, description: The remembered sentence (the knowledge fact's text) }
+        contextTag: { type: string }
+        active: { type: boolean, description: false once undone or switched off }
     TeamChatAction:
       type: object
       required: [key, label]
       properties:
         key: { type: string }
         label: { type: string }
+    TeamChatAnswerRequest:
+      type: object
+      required: [choice]
+      properties:
+        choice: { type: string, enum: [EXCUSED, KEEP, STOP] }
     TeamChatReplyRequest:
       type: object
       required: [text]
