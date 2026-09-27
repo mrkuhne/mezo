@@ -15,7 +15,6 @@ base = open('uveg-uzenofal.html').read()
 sprite = open('../../../frontend/src/shared/ui/clay/titanium-icons.svg').read()
 u8css = open('src/uveg-mezo-teljes-u8.css').read()
 u9css = open('src/uveg-mezo-teljes-u9.css').read()
-s6css = open('src/uveg-mezo-teljes-s6.css').read()
 js = open('src/uveg-mezo-teljes-u8.js').read() + open('src/uveg-mezo-teljes-u9.js').read() + open('src/uveg-mezo-teljes-s6.js').read()
 notes = open('src/uveg-mezo-teljes-notes.html').read()
 
@@ -25,7 +24,7 @@ def once(s, old, new):
 
 s = base
 s = re.sub(r'<title>.*?</title>', '<title>Mezo · a teljes szekció · Üveg (U8 + U9 + csapatfal)</title>', s, count=1)
-s = once(s, '</style>', '\n/* ══ U8 · Mezo I — a uveg-mezo.html kitje, a .u8 alá zárva ══ */\n' + u8css + '\n' + u9css + '\n' + s6css + '\n</style>')
+s = once(s, '</style>', '\n/* ══ U8 · Mezo I — a uveg-mezo.html kitje, a .u8 alá zárva ══ */\n' + u8css + '\n' + u9css + '\n</style>')
 s = once(s, '<div class="stage">', sprite + '\n<div class="stage">')
 s = once(s, '<div class="scroll" id="scroll"></div>', '<div class="scroll" id="scroll"></div>\n    <div id="dock"></div>')
 s = re.sub(r'<aside class="notes">.*?</aside>', lambda m: notes.strip(), s, count=1, flags=re.S)
