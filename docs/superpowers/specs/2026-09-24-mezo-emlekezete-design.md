@@ -1612,3 +1612,14 @@ options): the Rólad page becomes a **short distributor**:
     truncated identically on the write side AND every read side through ONE shared helper — two
     independently-truncated copies of "the same" normalization silently diverge past the cap, and
     the failure mode (a forgotten fact quietly comes back) has no error to grep for.
+42. **(S6c)** A bead claimed by someone AND a same-topic feat branch parked in another worktree
+    means a parallel session is mid-flight on the SAME slice — `git fetch` and read main's recent
+    log BEFORE brainstorming, and again before every phase. S6c only noticed after building a
+    duplicate prototype layer; the reconciliation cost a full extra round.
+43. **(S6c)** Every new FE route must land in `PAGE_INDEX` (or `NOT_INDEXED` with a reason) in
+    `frontend/src/app/pageIndex.ts` — the coverage gate (`pageIndex.coverage.test.ts`) fails only
+    in the FULL suite, so focused test runs pass and the failure surfaces late.
+44. **(S6c)** A scoped kit block (`.tud9 .th-tiles`) is reused on another page by wrapping in a
+    scope div, never by forking the CSS — but audit the scope class's OWN page-level rules first
+    (`.tud9 { padding-bottom }` leaked; one neutralizing rule fixes it). A `<button>`→`<a>` swap
+    on a kit tile needs `color:inherit;text-decoration:none` or the browser link skin shows.
