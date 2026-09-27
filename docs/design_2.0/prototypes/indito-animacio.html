@@ -81,6 +81,7 @@ h1{margin:4px 0 0;font-size:30px;font-weight:700;letter-spacing:-1px;line-height
 .ic{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;opacity:0;will-change:transform,opacity}
 .ic svg{width:100%;height:100%;display:block;filter:drop-shadow(0 6px 7px rgba(0,0,0,.55)) drop-shadow(0 0 10px color-mix(in srgb,var(--c) 55%,transparent))}
 
+.has-orbit .mark{margin-block:56px}
 .word{position:relative;font-family:var(--ff);font-size:48px;font-weight:700;letter-spacing:-2px;line-height:1;
   background:linear-gradient(120deg,#F5EFE6 0%,#E6DDFF 55%,#E9C48A 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 0 18px rgba(171,159,210,.35))}
@@ -155,8 +156,8 @@ h1{margin:4px 0 0;font-size:30px;font-weight:700;letter-spacing:-1px;line-height
       <button class="opt" role="tab" data-v="most" style="--c:var(--faint)"><i class="tag">0</i><b>Mostani</b><span>Lassan lebeg, a folyadék hullámzik. Ehhez mérjük a többit.</span></button>
       <button class="opt" role="tab" data-v="lelegzes"><i class="tag">A</i><b>Lélegzés</b><span>A gömb kétszer megduzzad, a fénye vele erősödik, és egy halvány gyűrű fut ki belőle.</span></button>
       <button class="opt" role="tab" data-v="toltodes" style="--c:var(--sky)"><i class="tag">B</i><b>Töltődés</b><span>A lila folyadék az indulással együtt feltölti a gömböt, buborékok szállnak, a végén fénycsík söpör át rajta.</span></button>
-      <button class="opt" role="tab" data-v="keringes" style="--c:var(--gold)"><i class="tag">C</i><b>Keringés</b><span>Öt ikon kering körülötte: nap, súlyzó, tál, vízcsepp, hold. Hátul a gömb üvege mögé bújnak.</span></button>
-      <button class="opt" role="tab" data-v="kombo" style="--c:var(--coral)"><i class="tag">D</i><b>Töltődés + keringés</b><span>A gömb feltöltődik, közben az öt ikon kering körülötte. A végén a fénycsík átsöpör az üvegen.</span></button>
+      <button class="opt" role="tab" data-v="keringes" style="--c:var(--gold)"><i class="tag">C</i><b>Keringés</b><span>Öt ikon kering körben a gömb körül: nap, súlyzó, tál, vízcsepp, hold.</span></button>
+      <button class="opt" role="tab" data-v="kombo" style="--c:var(--coral)"><i class="tag">D</i><b>Töltődés + keringés</b><span>A gömb feltöltődik, közben az öt ikon körben kering körülötte. A végén a fénycsík átsöpör az üvegen.</span></button>
     </div>
     <div class="ctl">
       <button class="btn" id="replay" type="button">Újrajátszás</button>
@@ -202,9 +203,9 @@ function splashHTML(v) {
     ? `<path class="back" fill="#5E4F9A" opacity=".55" d="M-20 88 Q0 98 20 88 T60 88 T100 88 T140 88 T180 88 V220 H-20Z"/>` : '';
   const ripples = v === 'lelegzes' ? '<i class="ripple"></i><i class="ripple"></i><i class="ripple"></i>' : '';
   const orbit = (v === 'keringes' || v === 'kombo')
-    ? `<svg class="trail" width="300" height="100" viewBox="-150 -50 300 100"><ellipse cx="0" cy="0" rx="118" ry="34"/></svg>` +
+    ? `<svg class="trail" width="240" height="240" viewBox="-120 -120 240 240"><ellipse cx="0" cy="0" rx="108" ry="108"/></svg>` +
       ORBIT.map(o => `<span class="ic" style="--c:${o.c}"><svg viewBox="0 0 64 64"><use href="#${o.id}"/></svg></span>`).join('') : '';
-  return `<div class="splash" role="status" aria-label="Boop betöltése">
+  return `<div class="splash${orbit ? ' has-orbit' : ''}" role="status" aria-label="Boop betöltése">
     <div class="mark" aria-hidden="true">
       <div class="halo"></div><div class="glow"></div>${ripples}${orbit}
       <div class="orb">
@@ -237,7 +238,7 @@ function build(v) {
          back: q('.back'), sheen: q('.sheen'), word: q('.word'), ripples: qa('.ripple'), bubs: qa('.bub'),
          icons: qa('.ic'), trail: q('.trail') };
   const w = stage.clientWidth || 360;
-  el.rx = Math.min(118, (w - 64) / 2); el.ry = el.rx * .29;
+  el.rx = Math.min(108, (w - 60) / 2); el.ry = el.rx;
   if (el.trail) { const e = el.trail.querySelector('ellipse'); e.setAttribute('rx', el.rx); e.setAttribute('ry', el.ry); }
 }
 
@@ -315,20 +316,16 @@ const R = {
 };
 
 function orbit(t, still) {
-    const tilt = -10 * Math.PI / 180, ct = Math.cos(tilt), st = Math.sin(tilt);
-    const spin = still ? .35 : t / 4600;
+    const spin = still ? 0 : t / 5200;
     el.trail.style.opacity = still ? .9 : clamp((t - 150) / 700) * .9;
-    el.trail.style.transform = `translate(-50%,-50%) rotate(-10deg)`;
+    el.trail.style.transform = 'translate(-50%,-50%)';
     el.icons.forEach((ic, i) => {
       const e = still ? 1 : outCubic(clamp((t - 120 - i * 110) / 750));
-      const th = 2 * Math.PI * (i / ORBIT.length + spin) + Math.PI / 2;
-      const r = .3 + .7 * e;
-      const x0 = el.rx * r * Math.cos(th), y0 = el.ry * r * Math.sin(th);
-      const x = x0 * ct - y0 * st, y = x0 * st + y0 * ct;
-      const z = Math.sin(th), d = (z + 1) / 2;
-      ic.style.transform = `translate(${x}px,${y}px) scale(${(.68 + .36 * d) * (.6 + .4 * e)})`;
-      ic.style.opacity = e * (.5 + .5 * d);
-      ic.style.zIndex = z > 0 ? 3 : 1;
+      const th = 2 * Math.PI * (i / ORBIT.length + spin) - Math.PI / 2;
+      const r = el.rx * (.55 + .45 * e);
+      ic.style.transform = `translate(${r * Math.cos(th)}px,${r * Math.sin(th)}px) scale(${.6 + .4 * e})`;
+      ic.style.opacity = e;
+      ic.style.zIndex = 3;
     });
 }
 
