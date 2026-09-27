@@ -66,8 +66,21 @@ describe('hubCounts', () => {
     const base = MOCK_OBSERVATIONS[0]
     expect(obsState(base)).toBe('igaz')
     expect(obsState({ ...base, factMutedReason: 'superseded' })).toBe('felul')
-    expect(obsState({ ...base, replacedByPatternId: 'x' })).toBe('felul')
+    expect(obsState({ ...base, replacedByPatternId: 'x', factId: null })).toBe('felul')
+    expect(obsState({ ...base, replacedByPatternId: 'x', factMutedReason: 'superseded' })).toBe('felul')
+    // the older half whose fact the user switched back on holds again (prototype `ost`)
+    expect(obsState({ ...base, replacedByPatternId: 'x' })).toBe('igaz')
+    expect(obsState({ ...base, replacedByPatternId: 'x', factMutedReason: 'user' })).toBe('elh')
     expect(obsState({ ...base, factMutedReason: 'user' })).toBe('elh')
     expect(obsState({ ...base, status: 'refuted' })).toBe('elh')
+  })
+
+  it('re-enabling the older half of a drift pair moves it from felülírva to még igaz on the tile', () => {
+    const older = { ...MOCK_OBSERVATIONS[0], patternId: 'old', replacedByPatternId: 'new', factMutedReason: 'superseded' as const }
+    const newer = { ...MOCK_OBSERVATIONS[0], patternId: 'new', factId: 'fn', replacesPatternId: 'old' }
+    const before = hubCounts(ok(factSeed), ok(personSeed), ok([older, newer]), ok(MOCK_EFFECT_SUBJECTS))
+    expect(before.sections.observations.sub).toBe(tileSub.observations(1, 1, 0))
+    const after = hubCounts(ok(factSeed), ok(personSeed), ok([{ ...older, factMutedReason: null }, newer]), ok(MOCK_EFFECT_SUBJECTS))
+    expect(after.sections.observations.sub).toBe(tileSub.observations(2, 0, 0))
   })
 })

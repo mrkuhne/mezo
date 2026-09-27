@@ -11,12 +11,14 @@ function state(l: { degraded: boolean; isPending: boolean; isError: boolean }): 
   return l.isPending ? 'loading' : l.isError ? 'error' : l.degraded ? 'off' : 'ok'
 }
 
-/** An observation's standing, as the hub counts it (the prototype's `n.o`): `felul` when a newer
- *  confirmed observation replaced it (a drift pair's older half, or its fact muted as superseded),
- *  `elh` when it or its fact is muted (refuted / by the user), else `igaz`. */
+/** An observation's standing, as the hub tile AND the Észrevételek chips count it (the
+ *  prototype's `ost`): `felul` when its fact is muted as superseded, or when a newer observation
+ *  replaced it and it has no fact of its own; `elh` when it or its fact is muted (refuted / by the
+ *  user); else `igaz` — including a replaced older half whose fact the user switched back on. */
 export function obsState(o: KnowledgeObservation): 'igaz' | 'felul' | 'elh' {
-  if (o.factMutedReason === 'superseded' || o.replacedByPatternId) return 'felul'
+  if (o.factMutedReason === 'superseded') return 'felul'
   if (o.factMutedReason || o.status === 'refuted') return 'elh'
+  if (o.replacedByPatternId && !o.factId) return 'felul'
   return 'igaz'
 }
 

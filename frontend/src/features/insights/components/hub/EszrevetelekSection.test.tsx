@@ -160,6 +160,9 @@ describe(`EszrevetelekSection (${isMockMode() ? 'mock' : 'real'} mode)`, () => {
       if (!isMockMode()) await waitFor(() => expect(deletes).toEqual(['o1']))
       await act(() => vi.advanceTimersByTimeAsync(10_000))
       if (!isMockMode()) expect(deletes).toEqual(['o1'])
+      // mock: after the window the observation stays gone (removed from the cache). Real mode
+      // refetches from the static test server, which does not model the forget.
+      if (isMockMode()) expect(rowOf('o1')).toBeNull()
     })
 
     test('forgetting the older half from inside the drift block leaves the newer row alone', async () => {
@@ -188,6 +191,15 @@ describe(`EszrevetelekSection (${isMockMode() ? 'mock' : 'real'} mode)`, () => {
     expect(foldOf('o1')).toHaveAttribute('aria-expanded', 'true')
     expect(rowOf('o1')).toHaveClass('tud9-hl')
     expect(screen.getByRole('button', { name: /^Mind/ })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  test('a deep link to the older half of a pair opens the newer row\'s topic and highlights the drift block', async () => {
+    renderPage('/?view=eszrevetelek&obs=o3old')
+    await screen.findByRole('button', { name: /^Mind/ })
+    expect(foldOf('o3')).toHaveAttribute('aria-expanded', 'true')
+    const drift = rowOf('o3')!.querySelector('.th-drift[data-row="o:o3old"]')
+    expect(drift).toHaveClass('tud9-hl')
+    expect(rowOf('o3')).not.toHaveClass('tud9-hl')
   })
 
   test('the "észrevételből" tag on a Rólad fact lands on its observation', async () => {
@@ -228,6 +240,40 @@ describe(`EszrevetelekSection (${isMockMode() ? 'mock' : 'real'} mode)`, () => {
       renderPage()
       await userEvent.click(await screen.findByRole('button', { name: 'Felülírva 0' }))
       expect(screen.getByText(EMPTY.obsState)).toBeInTheDocument()
+    })
+
+    test('real mode: switching the older half back on moves it from Felülírva to Még igaz', async () => {
+      let oldMuted: string | null = 'superseded'
+      const wire = () => [
+        { patternId: 'n1', title: 'Az új.', confirmedAt: '2026-09-21T07:00:00Z', status: 'confirmed', factId: 'fn',
+          replacesPatternId: 'd1', evidence: [] },
+        { patternId: 'd1', title: 'A régi.', confirmedAt: '2026-08-12T06:00:00Z', status: 'confirmed', factId: 'fd',
+          factMutedReason: oldMuted, factMutedAt: oldMuted ? '2026-09-21T07:00:00Z' : null,
+          replacedByPatternId: 'n1', evidence: [] },
+      ]
+      let body: unknown = null
+      server.use(
+        http.get(`${API_BASE}/api/companion/observation/knowledge`, () => HttpResponse.json(wire())),
+        http.patch(`${API_BASE}/api/companion/fact/:id`, async ({ params, request }) => {
+          body = { id: params.id, ...(await request.json() as object) }
+          oldMuted = null
+          return HttpResponse.json({})
+        }),
+      )
+      renderPage()
+      expect(await screen.findByRole('button', { name: 'Felülírva 1' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Még igaz 1' })).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: /^Egyéb ·/ }))
+      const drift = rowOf('n1')!.querySelector('.th-drift') as HTMLElement
+      expect(within(drift).getByText(/^KORÁBBAN · MEGERŐSÍTVE /)).toBeInTheDocument()
+      await userEvent.click(within(drift).getByRole('button', { name: /Visszakapcsolom/ }))
+      await waitFor(() => expect(body).toEqual({ id: 'fd', includeInPrompt: true }))
+      expect(await screen.findByRole('button', { name: 'Még igaz 2' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Felülírva 0' })).toBeInTheDocument()
+      const after = rowOf('n1')!.querySelector('.th-drift') as HTMLElement
+      expect(after).toHaveClass('is-on')
+      expect(within(after).getByText('A RÉGI IS BE VAN KAPCSOLVA')).toBeInTheDocument()
+      expect(within(after).getByText('újra bekapcsoltad — mindkettőt használom')).toBeInTheDocument()
     })
 
     test('real mode: a failed load offers a retry', async () => {
