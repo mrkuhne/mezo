@@ -500,7 +500,9 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   per local day) — its own budget, separate from and never counted against the shared
   `daily-line-cap`. No push on a reply, ever.
   - **Code-decided close (`TeamChatReplyDecision`).** Only a voiced `concrete_context` verdict with
-    a non-blank `contextTag`/`factText`/`keywords` can close; every other verdict, an `OFFER_REVIEW`
+    a non-blank `contextTag` (that also normalizes to a non-empty tag — an emoji/punctuation-only tag
+    only answers) and non-blank `factText`/`keywords` (each keyword 3–24 chars after
+    `TeamChatExceptionMatcher.cleanKeywords`; 2-letter substrings match nearly any day) can close; every other verdict, an `OFFER_REVIEW`
     thread, or a vetoed same-tag exception all resolve to `ANSWER_ONLY` (the ügy stays `OPEN`). A
     closing verdict sets `closeReason=REPLY` + a truncated `closeNote` (≤60 chars) directly on the
     thread row — **no separate `RESOLVE` line** (unlike a data-driven clear, which still writes one).
@@ -511,11 +513,19 @@ in Mezo's own bullet — this subsection is the chat engine itself.
     `KnowledgeFactService.captureFromTeamChat`), and records one `team_chat_exception_hit`
     (`source=REPLY`). An **inactive** exception on the same tag is a durable veto — undone once via
     `.../remembered` (below), it is never re-captured, and a later reply on that tag always answers
-    `ANSWER_ONLY`.
+    `ANSWER_ONLY`. On an `EXCUSE` offer ügy a free-text reply whose tag matches the offer's
+    exception is the tap (`EXCUSE_TAP_EQUIVALENT`: `closeReason=EXCUSED`, a `TAP` hit on the ügy's
+    `openedAt` local day) — but only while that exception is still active; a withdrawn one (undo /
+    STOP) degrades to a plain answer, as the tap endpoint 409s.
   - **Next occurrence (`TeamChatExceptionService.gate`, called inside `claimThread` on every
-    open).** Order: an active exception with `≥ exception-review-hits` (default **4**) hits inside
-    the last `exception-window-days` (default **30**) that hasn't already offered a review this
-    window → a `REVIEW` offer (once per window, two quick-answer buttons); else the day's texts
+    open).** The exception follows its knowledge fact: an active exception whose fact was deleted
+    or muted in the Tudástár (`includeInPrompt=false`, read via
+    `KnowledgeFactService.liveInPrompt`) is skipped — never mutated, so turning the fact back on
+    revives it. Order: an active exception with `≥ exception-review-hits` (default **4**) hits
+    inside the last `exception-window-days` (default **30**) that hasn't already offered a review in
+    that SAME rolling window (since max(`windowStartedAt`, the floor day's start) — an ignored,
+    expired or data-closed review therefore silences reviews only until it rolls out of the window)
+    → a `REVIEW` offer (two quick-answer buttons); else the day's texts
     (`NarrativeNoteSource` notes across every injected source + that day's own `USER` lines) already
     name the context (`TeamChatExceptionMatcher.matches`) → a silent `NOTES` hit, no ügy opens at
     all; else an already-hit-today exception → skipped; otherwise an `EXCUSE` offer — a one-tap "ma
@@ -524,6 +534,10 @@ in Mezo's own bullet — this subsection is the chat engine itself.
     `DELETE /api/character/team-chat/threads/{threadId}/remembered` — veto (deactivate the
     exception), mute the knowledge fact, delete that thread's `REPLY` hit, and reopen the thread
     (only if it was `RESOLVED` with `closeReason=REPLY` and no other `OPEN` thread shares the flag).
+    Reads (`TeamChatReads`) keep an undone exception on its source ügy's `remembered` (inactive —
+    the FE's "Visszavonva" confirmation) but drop one a REVIEW "Nem, figyelj rá" (STOP, close note
+    `kivétel kikapcsolva`) withdrew: that was never an undo, and the review ügy's own REPLY line
+    says what happened.
     Lock order: the ügy row lock (`TeamChatThreadRepository.lockOwned`) is always taken before the
     per-user exception advisory lock (`TeamChatExceptionRepository.lockUserExceptions`) in `answer`/
     `undoRemembered`; `gate` itself never locks the thread row, only the exception lock, and only

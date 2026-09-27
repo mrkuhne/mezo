@@ -867,7 +867,8 @@ today's live view. It gates on `ScreenSkeleton` before the empty state (the `Tea
 precedent, avoids a "csend van" flash on half-loaded data), then renders a header
 („Ma · élőben · <weekday>” or „<month day> · <weekday>”), a five-avatar „Mind az öten figyelnek —
 akkor szólnak, ha teendő van” banner (today only), three chips (nyitott ügy count, rendeződött
-count, „értesítés ma/aznap: n / pushBudget”), a glass **„Rád vár”** strip (`tf-strip tf-c-lav`,
+count — distinct ügyek on the day's lines `RESOLVED` that day, whatever closed them (data, the
+character's answer, an excuse), since S7's reply/excuse closes write no `RESOLVE` line, „értesítés ma/aznap: n / pushBudget”), a glass **„Rád vár”** strip (`tf-strip tf-c-lav`,
 the oldest open ügy) that either scrolls to that ügy's opening line or — if the line belongs to a
 different day — navigates to `/mezo/elo?d=<that day>`, then the day's lines grouped by time-of-day
 (Reggel/Délben/Délután/Este/Éjjel, `logic/teamChat.ts`'s `groupByDayPart`, 05-11/11-14/14-18/18-22/
@@ -889,21 +890,26 @@ area, matching the wall's `FeedGuests` convention.
 to enters an `awaiting` state (tracked client-side, not a server field) until a `REPLY` line newer
 than that `USER` line appears in the day data; `frontend/src/features/insights/components/teamchat/ReplyAfterlife.tsx`'s
 `TypingRow` («{Owner} ír…», animated dots) renders on that thread's last line while it is awaiting.
-Once the answer lands: a `RESOLVED` thread whose `closeReason=REPLY` (a code-decided close, no
-manual close ever exists — see [character.md](character.md) §Csapat-chat) shows `CloseTag`
-(„Kivétel: {closeNote}” or „{Owner} lezárta: {closeNote}”, with a silent „csendben” pill when the
-close carried no push) and, once the close also wrote a `knowledge_fact`, `RememberedChip`
-(„Megjegyeztem: …” with a „Visszavonom” undo button — undo calls
-`DELETE …/threads/{id}/remembered`, which vetoes the exception, mutes the fact, deletes that
-thread's hit, and reopens the ügy if nothing else claimed the flag meanwhile; the chip then reads
-„Visszavonva — …”). A live `OPEN` thread carrying an `offer` renders `OfferButtons` above the trio
+Once the answer lands, the ügy's **last `REPLY` line only** carries the afterlife: a `RESOLVED`
+thread whose `closeReason` is `REPLY` or `EXCUSED` (a code-decided close, no manual close ever
+exists — see [character.md](character.md) §Csapat-chat; a `DATA` close gets no tag here, its own
+`RESOLVE` line says „Rendeződött”) shows `CloseTag` („Kivétel: {closeNote}” or „{Owner} lezárta:
+{closeNote}”, with a silent „csendben” pill), and a thread carrying `remembered` shows
+`RememberedChip` whatever its status („Megjegyeztem: …” with a „Visszavonom” undo button — undo
+calls `DELETE …/threads/{id}/remembered`, which vetoes the exception, mutes the fact, deletes that
+thread's hit, and reopens the ügy if nothing else claimed the flag meanwhile). After an undo the
+chip reads „Visszavonva — nem jegyeztem meg, és az ügy újra nyitott.” while the ügy is `OPEN` again,
+or „Visszavonva — nem jegyeztem meg.” when a newer ügy of the rule kept it closed; a REVIEW „Nem,
+figyelj rá” is not an undo — the server drops that exception from `remembered`, so no chip claims
+one. A live `OPEN` thread carrying an `offer` renders `OfferButtons` above the trio
 instead: an `EXCUSE` offer is one tap („Igen, {tag} volt” → `answer('EXCUSED')`); a `REVIEW` offer
 (the ≥4-hits-in-30-days cap, once per window) is two taps („Rendben van” → `answer('KEEP')` /
 „Nem, figyelj rá” → `answer('STOP')`). All three components are distinct from the older, unrelated
 `RememberedChips.tsx` (plural — an S3 chat-turn fact-extraction chip). The data layer
 (`frontend/src/data/character/teamChatHooks.ts`) tracks awaiting threads in a plain
 `Map<threadId, joinedAtMs>` kept outside the query cache (to dodge invalidation), backs off through
-a handful of short real-mode polls (~2s/3s/5s cumulative) before falling back to the room's normal
+a handful of real-mode polls (`TEAM_CHAT_ANSWER_POLL_DELAYS` 2s/3s/5s/10s/10s, ~30s per thread —
+the server's debounce + LLM answer often takes 5–15s) before falling back to the room's normal
 60s poll, and in mock mode simulates the same shape: `reply()` marks the thread awaiting, waits
 ~1.2s, then applies a scripted mock answer/close (`teamChatMock.ts`'s `mockReplyAfter`); `answer`/
 `undoRemembered` mirror it with `mockAnswer`/`mockUndo`.
@@ -1006,7 +1012,7 @@ The one remaining mock "interactivity" is pattern Confirm/Monitor/Reject, which 
 
 **Knowledge** (`types.ts:350-352`):
 - `FactCategory = 'physiology' | 'preference' | 'trigger' | 'tendency' | 'goal_state'`
-- `FactSource = 'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question'` (`types.ts`, `mezo-al1i`; `weekly_review`/`question` added U9b `mezo-zpxv7`, a drift fix — the backend `knowledge_fact.source` CHECK already carried both) — mirrored FE-side for the Audit panel's provenance grouping (§2.9) and `factCopy.ts`'s `originChipLabel`/`originSentence`.
+- `FactSource = 'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question' | 'team_chat'` (`types.ts`, `mezo-al1i`; `weekly_review`/`question` added U9b `mezo-zpxv7`, a drift fix — the backend `knowledge_fact.source` CHECK already carried both; `team_chat` added S7 `mezo-d6ivw.7` — chip „csapatfalról”, `MemoryLayersPanel` label „csapatfal”) — mirrored FE-side for the Audit panel's provenance grouping (§2.9) and `factCopy.ts`'s `originChipLabel`/`originSentence`.
 - `FactOwner = 'szunya' | 'mocor' | 'falat' | 'deru' | 'mezo'` (`types.ts`, U9b `mezo-zpxv7`) — the team character that owns a fact/candidate (backend `owner` column, resolved server-side, category is the fallback). Rólad's `factOwnerTag`/`candidateByline` (§2.0b) map it to the `TEAM` accent/name; `TŐLED` is a frontend-only label for `source: manual|question`, not an `owner` value.
 - `KnowledgeFact { id; text; category: FactCategory; active: boolean; reinforced: number; patternTitle?; source: FactSource; owner: FactOwner; lastReinforcedAt: string | null; createdAt: string }` — 15 facts (`f1`–`f15`, `knowledge.ts`). **`source`/`lastReinforcedAt` are FE fields since `mezo-al1i`**; **`owner`/`createdAt` are new (U9b)** — `owner` required (real mode maps the wire's `KnowledgeFactResponse.owner`, mock seeds one per fact), `createdAt` widened onto `toKnowledgeFact` for Rólad's freshest-first ordering (`topRoladFacts`).
 - `FactCandidate` gained `owner: FactOwner`, `source: 'chat' | 'weekly_review'`, `createdAt: string`, `evidence: string | null`, `weekStart: string | null` (U9b) — `knowledgeApi.ts`'s `toFactCandidate` widened to keep them (previously dropped who/when). `FactDecision`/`LifeEventDecision` gained `'snooze'` (§2.0b); `LifeEventCandidate` gained `createdAt`; `KnowledgeGraphNode` gained `occurredOn: string | null` (`graphApi.ts`'s `toKnowledgeGraphNode`, previously dropped it — Rólad's `RoladTimeline` needs it for the SEASON/LIFE_EVENT date).

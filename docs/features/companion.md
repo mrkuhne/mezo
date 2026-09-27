@@ -4079,6 +4079,10 @@ Migration `202607031707_mezo-fnnq.6_create_knowledge_learned_fact.sql` (in `1.0.
   key that owned the thread (falling back to `mezo`), and `provenance` is a structured team-chat
   envelope (`MemoryProvenanceEnvelope.teamChat`) carrying the source line/thread id — not a bare
   string tag — so a later read can point straight back at the chat line that produced the fact.
+  The fact also drives its exception: `KnowledgeFactService.liveInPrompt(userId, factIds)` (a
+  read-only batch — which of these ids still exist with `include_in_prompt=true`) lets the
+  character's exception gate skip an exception whose fact the user deleted or muted in the
+  Tudástár, and revive it when the fact is turned back on. Companion never imports character.
 - **`learned_fact`** — `id uuid pk`, owner columns as above, `candidate_text text`,
   `category varchar(16)` (`ck_learned_fact_category`, **added by the V1.2 migration**
   `202607031812_mezo-fnnq.7_learned_fact_category.sql` — the extractor classifies at capture,
