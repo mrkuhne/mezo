@@ -154,8 +154,8 @@ h1{margin:4px 0 0;font-size:30px;font-weight:700;letter-spacing:-1px;line-height
       <button class="opt" role="tab" data-v="most" style="--c:var(--faint)"><i class="tag">0</i><b>Mostani</b><span>Lassan lebeg, a folyadék hullámzik. Ehhez mérjük a többit.</span></button>
       <button class="opt" role="tab" data-v="lelegzes"><i class="tag">A</i><b>Lélegzés</b><span>A gömb kétszer megduzzad, a fénye vele erősödik, és egy halvány gyűrű fut ki belőle.</span></button>
       <button class="opt" role="tab" data-v="toltodes" style="--c:var(--sky)"><i class="tag">B</i><b>Töltődés</b><span>A lila folyadék az indulással együtt feltölti a gömböt, buborékok szállnak, a végén fénycsík söpör át rajta.</span></button>
-      <button class="opt" role="tab" data-v="keringes" style="--c:var(--gold)"><i class="tag">C</i><b>Keringés</b><span>Öt ikon kering körben a gömb körül: nap, súlyzó, tál, vízcsepp, hold.</span></button>
-      <button class="opt" role="tab" data-v="kombo" style="--c:var(--coral)"><i class="tag">D</i><b>Töltődés + keringés</b><span>A gömb feltöltődik, közben az öt ikon körben kering körülötte. A végén a fénycsík átsöpör az üvegen.</span></button>
+      <button class="opt" role="tab" data-v="keringes" style="--c:var(--gold)"><i class="tag">C</i><b>Keringés</b><span>Öt ikon egyesével felvillan a gömb körül, és körben kering: nap, súlyzó, tál, vízcsepp, hold.</span></button>
+      <button class="opt" role="tab" data-v="kombo" style="--c:var(--coral)"><i class="tag">D</i><b>Töltődés + keringés</b><span>A gömb feltöltődik, közben az öt ikon egyesével felvillan körülötte, és körben kering. A végén a fénycsík átsöpör az üvegen.</span></button>
     </div>
     <div class="ctl">
       <button class="btn" id="replay" type="button">Újrajátszás</button>
@@ -188,6 +188,7 @@ if (mq.matches) stillBox.checked = true;
 
 const clamp = x => Math.max(0, Math.min(1, x));
 const outCubic = x => 1 - Math.pow(1 - x, 3);
+const backOut = x => 1 + 2.4 * Math.pow(x - 1, 3) + 1.4 * Math.pow(x - 1, 2);
 const inOutCubic = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
 const bob = (t, p) => (1 - Math.cos(2 * Math.PI * t / p)) / 2;
 
@@ -314,11 +315,13 @@ const R = {
 function orbit(t, still) {
     const spin = still ? 0 : t / 5200;
     el.icons.forEach((ic, i) => {
-      const e = still ? 1 : outCubic(clamp((t - 120 - i * 110) / 750));
+      // spawn: one by one, in place on the circle — a quick pop with a light flash
+      const p = still ? 1 : clamp((t - 180 - i * 240) / 480);
       const th = 2 * Math.PI * (i / ORBIT.length + spin) - Math.PI / 2;
-      const r = el.rx * (.55 + .45 * e);
-      ic.style.transform = `translate(${r * Math.cos(th)}px,${r * Math.sin(th)}px) scale(${.6 + .4 * e})`;
-      ic.style.opacity = e;
+      const r = el.rx;
+      ic.style.transform = `translate(${r * Math.cos(th)}px,${r * Math.sin(th)}px) scale(${.35 + .65 * backOut(p)})`;
+      ic.style.opacity = outCubic(p);
+      ic.style.filter = p > 0 && p < 1 ? `brightness(${1 + 1.1 * (1 - p)})` : '';
       ic.style.zIndex = 3;
     });
 }
