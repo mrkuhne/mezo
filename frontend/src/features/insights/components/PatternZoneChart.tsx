@@ -56,16 +56,18 @@ export function PatternZoneChart({ days, pair, showAverages, tone }: {
   const xTicks = binary ? [] : niceTicks(aLo, aHi, pair.metricAValueKind === 'clock_hour')
     .filter((v) => v >= aLo && v <= aHi)
 
-  const xOf = (day: AlignedDay): number => {
+  // `i` is the point's index in the `days` prop (jitter and selection both key off it) — the
+  // caller always has it in hand (a `.map` index, or the stored `selected` state), so this never
+  // needs to re-derive it with `days.indexOf`.
+  const xOf = (day: AlignedDay, i: number): number => {
     if (!binary) return xOfValue(day.a)
-    const i = days.indexOf(day)
     const jitter = ((i * 37) % 23 - 11) * 5.4
     return (day.a >= 0.5 ? (R + 183) / 2 : (L + 177) / 2) + jitter
   }
 
   const split = binary
     ? 180
-    : (zone0.length && zone1.length ? (xOf(zone0[zone0.length - 1]) + xOf(zone1[0])) / 2 : (L + R) / 2)
+    : (zone0.length && zone1.length ? (xOf(zone0[zone0.length - 1], 0) + xOf(zone1[0], 0)) / 2 : (L + R) / 2)
 
   const zeroLabel = binaryGroupLabels(pair.metricAKey).zero.axis
   const oneLabel = binaryGroupLabels(pair.metricAKey).one.axis
@@ -103,8 +105,8 @@ export function PatternZoneChart({ days, pair, showAverages, tone }: {
 
   const selectedDay = selected != null ? days[selected] : null
   let tooltip: { px: number; py: number; tx: number; ty: number; w: number; line1: string; line2: string } | null = null
-  if (selectedDay) {
-    const px = xOf(selectedDay)
+  if (selectedDay && selected != null) {
+    const px = xOf(selectedDay, selected)
     const py = y(selectedDay.b)
     const line1 = `${huMonthDay(selectedDay.date)} · ${binary ? aValueOf(selectedDay) : `${pair.metricALabel} ${aValueOf(selectedDay)}`}`
     const line2 = `${pair.metricBLabel}: ${bValueOf(selectedDay)}`
@@ -116,7 +118,7 @@ export function PatternZoneChart({ days, pair, showAverages, tone }: {
 
   return (
     <section className={cn('glass', 'pmx-chart', 'rise', toneClass(tone))}>
-      <svg viewBox={`0 0 ${W} ${H}`} role="img"
+      <svg viewBox={`0 0 ${W} ${H}`} role="group"
         aria-label={`${days.length} nap: ${pair.metricALabel} és ${pair.metricBLabel} kapcsolata`}>
         <rect className="pmx-zone" x={L} y={T - 44} width={Math.max(0, split - L - 3)} height={BT - T + 48} rx={14} />
         <rect className="pmx-zone b" x={split + 3} y={T - 44} width={Math.max(0, R - split - 3)} height={BT - T + 48} rx={14} />
@@ -132,7 +134,7 @@ export function PatternZoneChart({ days, pair, showAverages, tone }: {
         {avg(zone1, split, R)}
         {days.map((day, i) => (
           <circle key={day.date} className={cn('pmx-pt', selected === i && 'is-selected')}
-            cx={xOf(day)} cy={y(day.b)} r={5.5}
+            cx={xOf(day, i)} cy={y(day.b)} r={5.5}
             role="button" tabIndex={0}
             aria-label={binary
               ? `${day.date}: ${aValueOf(day)}, ${pair.metricBLabel} ${bValueOf(day)}`

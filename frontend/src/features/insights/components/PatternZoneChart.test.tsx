@@ -15,6 +15,13 @@ test('zone averages sit on top, the x metric is named once', () => {
   expect(screen.queryByText(/napok$/)).toBeNull() // no per-zone x-metric captions any more
 })
 
+test('the dots sit in an accessible group, not a flattened image', () => {
+  render(<PatternZoneChart days={days} pair={pair} showAverages tone="lav" />)
+  const group = screen.getByRole('group', { name: /ébredés ideje/ })
+  const dot = screen.getAllByRole('button', { name: /energia-szint/ })[0]
+  expect(group).toContainElement(dot)
+})
+
 test('tapping a dot shows its day and value without leaving the chart', () => {
   render(<PatternZoneChart days={days} pair={pair} showAverages tone="lav" />)
   const dot = screen.getAllByRole('button', { name: /energia-szint/ })[0]
