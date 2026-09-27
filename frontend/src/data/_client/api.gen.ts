@@ -957,6 +957,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/goals/expenditure/explanation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** "Hogy tanultam?" — how the caller's latest learned base came about (mezo-y72o3) */
+        get: operations["getExpenditureExplanation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/goals/{id}": {
         parameters: {
             query?: never;
@@ -6255,6 +6272,86 @@ export interface components {
             setCycleCompound: number;
             setCycleIsolation: number;
             transition: number;
+        };
+        /** @description "Hogy tanultam?" (mezo-y72o3) — the caller's most recent reviewed week that carries an explanation, joining the expenditure_estimate row with its persisted explanation jsonb. Every nullable field is honestly absent (no fallback), not a fabricated 0/'medium'. */
+        ExpenditureExplanationResponse: {
+            /**
+             * Format: date
+             * @description The reviewed week's Monday
+             */
+            weekStart: string;
+            /** @enum {string} */
+            status: "learning" | "updated" | "stable" | "holding";
+            /** @enum {string} */
+            confidence: "low" | "medium" | "high";
+            formulaBaseKcal: number;
+            posteriorBaseKcal: number;
+            posteriorSdKcal: number;
+            /** @description The base actually served as "Alap" this week */
+            appliedBaseKcal: number;
+            stepKcal: number;
+            /**
+             * Format: date
+             * @description First day of the replayed window
+             */
+            windowStart: string;
+            /**
+             * Format: date
+             * @description Last day of the window (= weekStart's reviewed week Sunday)
+             */
+            windowEnd: string;
+            /**
+             * Format: date
+             * @description First window day with any data (logged intake or a weigh-in); absent with none
+             */
+            dataStart?: string | null;
+            usableDays: number;
+            weighInDays: number;
+            unloggedDays: number;
+            historyWeeks: number;
+            /** @description Mean usable intake; absent with no usable day */
+            avgIntakeKcal?: number | null;
+            /** @description Mean movement input over the usable days; absent with no usable day */
+            avgMovementKcal?: number | null;
+            /** @description The filter's tissue change over the traced span, per week; absent with no trace (no weigh-ins in the window) or on a HOLDING week */
+            tissueRateKgPerWeek?: number | null;
+            /** @description That rate as kcal/day */
+            tissueKcalPerDay?: number | null;
+            /** @description avgIntake − tissueKcalPerDay − avgMovement; absent when either input is missing */
+            simpleBaseKcal?: number | null;
+            /** @description The base this week's step started from */
+            startBaseKcal: number;
+            excludedDays: components["schemas"]["ExpenditureExcludedDay"][];
+            waterEvents: components["schemas"]["ExpenditureWaterEvent"][];
+            series: components["schemas"]["ExpenditureSeriesPoint"][];
+        };
+        ExpenditureExcludedDay: {
+            /** Format: date */
+            date: string;
+            kcal: number;
+            /** @enum {string} */
+            reason: "suspicious" | "marked";
+        };
+        /** @description A glycogen-water jump — the first day of the run and the largest 7-day rise in it. */
+        ExpenditureWaterEvent: {
+            /** Format: date */
+            date: string;
+            kg: number;
+        };
+        /** @description One explainer-chart day (the last 56 days of the window). */
+        ExpenditureSeriesPoint: {
+            /** Format: date */
+            date: string;
+            /** @description Logged total (also for an excluded day); absent when unlogged */
+            intakeKcal?: number | null;
+            /** @enum {string} */
+            status: "usable" | "suspicious" | "marked" | "unlogged";
+            /** @description The day's mean weigh-in; absent with none */
+            weightKg?: number | null;
+            /** @description tissue + water + glycogen; absent before the first weigh-in */
+            trendKg?: number | null;
+            /** @description From the filter trace; absent before the first weigh-in */
+            tissueKg?: number | null;
         };
         GoalOverviewResponse: {
             /** Format: uuid */
@@ -14653,6 +14750,42 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getExpenditureExplanation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The caller's most recent reviewed week that carries an explanation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpenditureExplanationResponse"];
+                };
+            };
+            /** @description No explained week yet — nothing was ever reviewed with the explainer */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Missing/invalid token */
             401: {

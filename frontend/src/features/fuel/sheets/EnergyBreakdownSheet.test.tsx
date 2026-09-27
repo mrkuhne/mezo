@@ -69,6 +69,12 @@ describe('EnergyBreakdownSheet', () => {
     expect(screen.queryByText(/MET-alapú/)).not.toBeInTheDocument()
   })
 
+  it('the base section title reads "Alap · tanult" on the learned path, not the formula "Alaphő · NEAT" (mezo-zz91i)', () => {
+    render(<EnergyBreakdownSheet breakdown={learnedBreakdown} initial="base" onClose={vi.fn()} />)
+    expect(screen.getByText('Alap · tanult')).toBeInTheDocument()
+    expect(screen.queryByText('Alaphő · NEAT')).not.toBeInTheDocument()
+  })
+
   it('renders the learned-base confidence line + formula tile joined by an arrow, no ×/= (mezo-zz91i)', () => {
     render(<EnergyBreakdownSheet breakdown={learnedBreakdown} initial="base" onClose={vi.fn()} />)
     expect(screen.getByText(/Tanult alap · Közepesen biztos · ±140 kcal/)).toBeInTheDocument()

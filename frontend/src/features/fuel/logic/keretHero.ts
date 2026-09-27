@@ -29,6 +29,10 @@ export interface KeretHeroVM {
   /** The served energy equation (mezo-32m82): `activity` = planned + extra (the Mozgás row), `extra`
    *  rides along only for the row's sub copy, `balance` is the goal's signed deficit/surplus (Célod). */
   chips: { base: number; activity: number; extra: number; balance: number } | null
+  /** Alap provenance passthrough (mezo-zz91i, `DayBudget.energy.source`) — 'learned' swaps the
+   *  Alap row's sub copy from the formula wording to the learned-base one. Independent of `chips`
+   *  (static-energy days have neither, a past day keeps this while chips clears). */
+  baseSource?: 'formula' | 'learned'
   rings: RingVM[]
 }
 
@@ -126,6 +130,7 @@ export function buildKeretHero(input: {
       extra: budget.energy.extra,
       balance: budget.energy.balance,
     },
+    baseSource: budget.energy.source,
     rings,
   }
 }

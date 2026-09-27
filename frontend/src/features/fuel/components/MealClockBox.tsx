@@ -114,7 +114,7 @@ export function MealClockBox({ tile, row, day, next, blockColor, onClose }: {
 }) {
   const window = judgedWindow(tile, row)
   const idx = day.windows.findIndex(w => w.key === tile.key) + 1
-  const reasonCtx = { wake: day.wake, bed: day.bed, trainingStart: day.training?.start ?? null, trainingEnd: day.training?.end ?? null }
+  const reasonCtx = { wake: day.wake, bed: day.bed, trainingStart: day.training?.start ?? null, trainingEnd: day.training?.end ?? null, shiftedAfter: tile.shiftedAfter }
   const hit = row && window ? hitOf(window.from, window.to, row.time) : null
   const band = row ? glycemicBand({ c: row.carbsG, sugarG: row.sugarG, fiberG: row.fiberG, p: row.proteinG, f: row.fatG }) : null
   const late = row ? (() => { const d = toMin(day.bed) - toMin(row.time); return d >= 0 && d <= BEFORE_BED_MIN })() : false

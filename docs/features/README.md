@@ -34,37 +34,50 @@ These docs are **overwritten in place; git is the history.** When a feature chan
 
 ## 2. Index
 
-Status legend: ✅ done · 🔶 mock-only (Phase-1 FE, no real backend yet) · 🟣 Phase-3 (AI brain) deferred · mixed = per sub-feature.
+Status legend: ✅ done · 🔶 mock-only (no real backend yet) · 🟣 Phase-3 (AI brain) deferred · mixed = per sub-feature. Statuses below are each doc's own declared status (frontmatter `status:` + its §1 detail) — read the doc for the exact per-layer breakdown.
+
+**Last reviewed: 2026-09-27.**
+
+Live nav (5 domains × 4 tabs, [`frontend/src/app/navModel.ts`](../../frontend/src/app/navModel.ts)): **Nap** (`/nap` Mai · `/nap/napom` A napom · `/nap/uzenetek` Beszélgetés · `/nap/rutin` Rutin) · **Edzés** (`/train/mai` Mai · `/train/mesocycles` Terv · `/train/week` Terhelés · `/train/exercises` Gyakorlatok) · **Fuel** (`/fuel` Mai · `/fuel/stack` Kiegészítők · `/fuel/trendek` Trendek · `/fuel/konyha` Konyha) · **Mezo** (`/mezo` Üzenőfal · `/mezo/csapat` A csapat · `/mezo/rolad` Rólad · `/mezo/emlekek` Emlékek) · **Én** (`/me` Áttekintés · `/me/weight` Súly · `/me/sleep` Alvás · `/me/naplo` Napló). Visual language: dark-only "Üveg" ([`docs/design_2.0/2026-09-23-uveg-style-bible.md`](../design_2.0/2026-09-23-uveg-style-bible.md)).
 
 ### Domain docs
 
-- [Central settings](settings.md): domain preferences and inspectable personal companion context.
-
 | Doc | Area | Status | One-line |
 |---|---|---|---|
-| [`today.md`](today.md) | Today (`/today`, "Ma") | 🔶 mock-only (one real seam: check-in save) | Daily morning-briefing aggregation surface; every section mock except the `POST /api/biometrics/checkin` write. Includes AnchorMode + the "Heartbeat" 4×/day check-in. |
-| [`train.md`](train.md) | Train (`/train`, "Edzés") | ✅ done (FE mock + FE real + backend) | The largest domain: six tabs (Mai · GYM · Sport · Futás · Gyakorlatok · Mesociklusok) — mesocycles, workout execution, exercise catalog/records, volleyball, interval running. AI/cross-load engine is 🟣 Phase-3. |
-| [`fuel.md`](fuel.md) | Fuel (`/fuel`) | 🔶 mock-only (Slice C not started) | Nutrition: meal pacing, supplement stack/protocol, pantry ("Kamra"), recipes, weekly rhythm. AI scoring/replan/import simulated client-side. |
-| [`pantry.md`](pantry.md) | Pantry / Kamra (`/fuel/kamra`) | ✅ done | Shared definition catalog (`pantry_catalog`, master + user-authored) + per-user shelf state (`pantry_item`); OFF/URL/photo import; catalog search "Hozzáadás a közösből". |
-| [`recipe.md`](recipe.md) | Recipes / Receptek (`/fuel/recipes`) | ✅ done | Owned recipe aggregate with frozen line snapshots, deterministic mezo-fit at read, AI breakdown, stateless Receptműhely turn. |
-| [`insights.md`](insights.md) | Insights (`/insights`) | 🔶 mock-only (🟣 Phase-3 landing zone) | The "AI brain" read surface: 7 sub-tabs (patterns, weekly, memoir, knowledge, chat, predictions, experiments) — hand-authored mock copy simulating the future AI. |
-| [`me.md`](me.md) | Me (`/me`, "Én") | mixed — `Cél`/`Alvás` ✅ backed; `Profil`/`Emberek`/`Tudás` 🔶 | Profile + biometrics + relationships hub. Weight (`Cél`) and sleep (`Alvás`) are real; profile, People, and the Knowledge alias are mock. |
-| [`companion.md`](companion.md) | Companion (AI chat brain, Phase-3) | mixed — backend ✅ V0.2 spine; FE 🔶 mock | The Phase-3 AI companion: persisted conversations + a sync Hungarian chat endpoint over the `CompanionLlm` port (Spring AI 2 / Gemini). No FE surface yet — the ChatPage stays the mock `insights` chat until V0.4. |
-| [`character.md`](character.md) | Karakter (user character dossier, no route yet) | mixed — backend ✅ S1–S7; FE 🔴 not started | The synthesis layer over everything mezo remembers: 7 CORE dimensions + AI-opened chapters, confidence-carrying claims, a 7-expert persona team + Szkeptikus + Mezo, a nightly detector pass, a weekly konzílium (proposal → verdict → portrait rewrite), bootstrap + monthly deep read, the `[Karakter]` prompt block on all four narrative surfaces (chat, memoir, prediction, weekly review), and claim feedback (talál/nem igaz/pontosítom). No FE surface — blocked on the design 2.0 prototype round. |
-| [`growth.md`](growth.md) | Growth (daily quests, no own route — Today card) | ✅ E1 done | Gamified growth layer per ADR 0010: deterministic catalog-driven daily quests (BODY+FUELBIO), derived completion → XP via the progression award tail, LIFE band seed (`recovery`), reroll, cron backstops. E2 (LIFE band + activity log + GrowthCard) planned. |
-| [`ritual.md`](ritual.md) | Ritual (`/ritual`, sleep-anchored Napzárás closing flow) | ✅ BE+FE done; R4 visual goldens + reduced-motion audit shipped | Full-screen 6-act evening closing ritual (Megérkezés → A napod íve → Ma milyen volt → Nyitott hurkok → Termés → Elengedés — the prose-reflection act joined at 3 in Phase 5 W1.2, `mezo-b3pp.2`) entered via the Today evening island's Napzárás CTA (`IslandEvening`) or the `evening_ritual` habit row; closes open loops (check-in/reflection), stages the day's XP/coin/skill Harvest, hands off into sleep-prep. No new progression source — rides the HABIT tail. |
-| [`journal.md`](journal.md) | Journal (`/me/naplo`, "Napló"; also reachable from QuickInput) | ✅ done | Free-prose journal entries (`journal_entry`) feeding the companion's `memory_embedding(kind=journal_entry)` narrative memory via a post-commit event → `JournalEmbeddingListener` → the single `MemoryEmbeddingWriter` write path. W1.1 of the Phase 5 "deep memory" epic (`mezo-b3pp`) — the schema/pipeline shape W1.2–W1.5 (reflection/gratitude/decision/catch-up) reuse. |
-| [`admin-hub.md`](admin-hub.md) | Admin hub (`/admin/*`, OWNER-only, desktop) | ✅ done (BE + FE real + FE mock) | Installation overview, per-user activity/footprint/cost, feature-usage and cost matrices, a generic `information_schema`-driven row browser, plus the pre-existing invite/account console and AI-napló now living under `/admin/accounts` and `/admin/cost` (`mezo-d5iy`). |
+| [`today.md`](today.md) | Nap hub + siblings (`/nap`, `/nap/napom`, `/nap/uzenetek`, `/nap/gyors`, `/nap/kuldetesek`, `/nap/checkin`) | mixed | Daily capture hub: the orbital Mai hub (companion block + one computed next step + tiles), "A napom" live/closed-day view, the companion-thread page, the FAB's quick-log picker, day's quests, check-in slots. |
+| [`habit.md`](habit.md) | Nap → Rutin (`/nap/rutin`) + Én → Rutin (`/me/rutin`) | ✅ done | Two fixed habit-stacking chains (9 morning + 6 evening catalog items), mostly DERIVED off already-logged data, HABIT progression XP, trailing-28-day habit strength (no hard streaks). |
+| [`intention.md`](intention.md) | rides the Nap hub (`/nap`, `IntentionSheet`) — no route of its own | ✅ done | Standing creed + up to 3 daily foci + a holistic evening reflection; two DERIVED habits + one DERIVED `growth_intention` GROWTH quest; only the first daily focus earns XP. |
+| [`needs.md`](needs.md) | Nap → Életjelek (`/nap/eletjel`) | ✅ done | Six real-time decaying "life-sign" rings (Energia/Hidratáció/Pihenés/Mozgás/Lélek/Rend) refilled from existing logs; FE pure engine + UI, backend day-close snapshot/award/streak. |
+| [`ritual.md`](ritual.md) | full-screen `/ritual` (chrome hidden; entered from Nap's evening island, "A napom", or the Rutin tab's `evening_ritual` row) | ✅ done | Sleep-anchored 6-act evening closing ritual (Megérkezés → … → Termés → Elengedés); R4 visual goldens + reduced-motion audit shipped; rides the HABIT XP tail. |
+| [`growth.md`](growth.md) | Nap → Küldetések tile (`/nap/kuldetesek`) + Én → Növekedés (`/me/growth`, `/me/growth/{skillek,naplo,kituntetesek}`) | ✅ done (E1+E2+E3 + the Growth page) | Gamified layer: 3 daily side quests (derived completion, never self-claimed) + a free-text activity log (companion-proposed, server-disposed XP) feeding one 8-skill LIFE economy. E4 (shop/coins) remains, under `mezo-52vz`. |
+| [`train.md`](train.md) | Edzés (`/train/mai`, `/train/mesocycles`, `/train/week`, `/train/exercises`) | ✅ done (FE mock + FE real + backend) | Four owner-approved tabs — Mai, Terv (mesocycles), Terhelés (weekly muscle/load), Gyakorlatok (exercise catalog) — periodized mesocycles, workout execution, volleyball, interval running. Cross-load AI narrative stays 🟣 Phase-3. |
+| [`fuel.md`](fuel.md) | Fuel (`/fuel`, `/fuel/stack`, `/fuel/trendek`, `/fuel/konyha`) | ✅ done (Phase-2 exit audit closed 2026-07-05) | Four tabs — Mai (meal pacing + deterministic 8-dim scoring), Kiegészítők (stack/protocol), Trendek, Konyha (pantry + recipes) — all backend-backed; only the Replan cascade + Stack-recommendation fixtures stay 🟣 P8 theater. |
+| [`pantry.md`](pantry.md) | Fuel → Konyha (`/fuel/kamra`) | ✅ done | Shared definition catalog (`pantry_catalog`, master + user-authored) + per-user shelf state (`pantry_item`); OFF/URL/photo import; catalog search "Hozzáadás a közösből". |
+| [`recipe.md`](recipe.md) | Fuel → Konyha (`/fuel/recipes`) | ✅ done | Owned recipe aggregate with frozen line snapshots, deterministic mezo-fit at read, AI breakdown, stateless Receptműhely turn. |
+| [`goal-engine.md`](goal-engine.md) | no route of its own — feeds Én → Cél (`/me/goals/weight`) | ✅ done (backend) | TDEE-bootstrap → segmented projection → soft-guards → feasibility-graded prescription engine behind a body-weight goal's "recept"; adaptive TDEE + learned-expenditure Part 1 landed. Only the Phase-3 AI evaluator (replacing the heuristic gate) is deferred. |
+| [`lifegoal.md`](lifegoal.md) | Én → Célok (`/me/goals`) | in-progress | General-purpose life goals tagged to a PERMAH dimension, measured by 1–5 signal-backed pillars; CRUD/scorer/nightly-eval/ha-akkor triggers/chat+prompt embedding all shipped (slice 3). Still 🔴 not built: the knowledge-graph `GOAL` node. |
+| [`insights.md`](insights.md) | Mezo (`/mezo`, `/mezo/csapat`, `/mezo/rolad`, `/mezo/emlekek`) | mixed | The "AI brain" surface, now rooted in the five-character csapat-üzenőfal social wall (`TeamFeedPage`). Chat/Patterns/Knowledge/Memoir/Predictions/Experiments/Memória are all real over the companion + proactive backends — **no mock-only Insights tab remains**; the backend itself is companion-only (no dedicated `pattern`/`knowledge_fact` service). |
+| [`character.md`](character.md) | Mezo (`/mezo/karakter/*`, opens on Üzenőfal; Rólad and A csapat are the other primary destinations) | shipped | Karakter dossier: 7 domain-expert personas + a Szkeptikus chaired by Mezo, 20 nightly detectors across 3 rounds, weekly konzílium, bootstrap + monthly deep read, a `[Karakter]` prompt block on all four narrative surfaces, a claim feedback loop, contextual social-feed replies. |
+| [`companion.md`](companion.md) | AI conversation layer, no route of its own — surfaces via Mezo's Chat/Knowledge pages | mixed | Open-ended Hungarian conversation with owner-scoped data access: a smart retrieval loop + native streaming, 18 domain reads + 5 context/source reads on an audited 15-call budget. Backend real; FE surface is Insights' `ChatPage`/`KnowledgeListPage`. |
+| [`proactive.md`](proactive.md) | no dedicated route — feeds Nap's `/nap/uzenetek` thread, the companion feed, and Mezo's coaching pages | complete | The Phase-4 "companion speaks first" layer: one `companion_message` table, 9 kinds (morning/sleep/weight/midday/evening/people/advice, plus `intervention`/`setup` as pre-S4 history), event/cron-driven, one unified `GET /api/proactive/feed`. |
+| [`journal.md`](journal.md) | Én → Napló (`/me/naplo`; also reachable from the global QuickInput sheet) | ✅ done | Free-prose journal + gratitude + decision entries feeding the companion's narrative-memory embedding pipeline (`memory_embedding`); an open-decisions block with due chips + a review sheet. |
+| [`me.md`](me.md) | Én (`/me`, `/me/weight`, `/me/sleep`, `/me/naplo`) | mixed | Personal hub: identity/progression hero, weight goal, sleep, journal, weekly review, people, knowledge. Weight/sleep/journal/growth/habit/`Heti` are backend-real; `Emberek`/`Tudás` stay a trimmed mock shell. |
+| [`tutorial.md`](tutorial.md) | cross-cutting overlay — header "?" button on any route; first-launch welcome pager on `/nap` | mixed | Per-route "Mezo-kalauz" onboarding sheet + registry; the motor + 5 T1 hub guides + 22 T2 sub-page guides (Nap/Edzés/Fuel) are shipped. Still unbuilt: the Mezo/Én T2 batches and every T3 guide. |
+| [`admin-hub.md`](admin-hub.md) | `/admin/*` (desktop, OWNER-only) | ✅ done (BE + FE real + FE mock) | Owner console: a value dashboard (Pulzus · Emberek · Funkciók · Költés · Memória · Meghívók) plus a generic "Nyers adatok" `information_schema` row browser. |
+| [`admin-memory-explorer.md`](admin-memory-explorer.md) | `/admin/memory`, `/admin/users/:id/memory` | ✅ done (BE + FE real + FE mock) | RAG memory explorer, part 2 of the admin/observability series: an install-wide entry page + a per-user 5-view explorer (Áttekintés · Felidézések · Gráf · Térkép · Rétegek) over one shared inspector. |
 
-### Platform docs (cross-cutting, `_`-prefixed — no route/tab of their own)
+**Records:** [`contextual-feed-evaluation.md`](contextual-feed-evaluation.md) is not a feature surface — it is the release-gate evaluation record for the contextual Mezo feed ([ADR 0050](../decisions/0050-contextual-mezo-feed.md), `mezo-7nron.6`): fake-backed ITs plus a real-provider prose review over twelve synthetic cases. Kept beside [`proactive.md`](proactive.md) and [`companion.md`](companion.md), which it gates.
+
+### Platform docs (cross-cutting, `_`-prefixed — no route/tab of their own — plus `settings.md`)
 
 | Doc | Area | Status | One-line |
 |---|---|---|---|
 | [`_platform-data-layer.md`](_platform-data-layer.md) | Data Layer & Dual-Mode | ✅ done (some hooks 🔶 mock-only) | The single FE↔data boundary (`data/hooks.ts`) + `isMockMode()` dual-mode switch + TanStack Query wiring + typed REST clients. Read before wiring any domain to the backend. |
-| [`_platform-api-backend.md`](_platform-api-backend.md) | API Contract & Backend Architecture | ✅ done (auth · biometrics · Train) | The contract-first OpenAPI pipeline (`api/`) + the Spring Boot 4 backend spine (`techcore/` + `feature/<x>/…`) + the FE consumption seam. Drift = compile error. |
+| [`_platform-api-backend.md`](_platform-api-backend.md) | API Contract & Backend Architecture | ✅ done (Phase-2 infrastructure closed 2026-07-05) | The contract-first OpenAPI pipeline (`api/`) + the Spring Boot 4 backend spine (`techcore/` + `feature/<x>/…`) + the FE consumption seam. Backs auth, biometrics, goal, Train, Fuel, People, companion. Drift = compile error. |
 | [`_platform-auth-security.md`](_platform-auth-security.md) | Auth & Security | ✅ backend done (S1); ✅ FE persisted token + `AuthGate` | Multi-user auth (`mezo-qw37`): invite-gated register/login → 30-day HS256 JWT → resource-server filter → per-request `CurrentUser` status check → server-side `created_by` ownership. |
-| [`_platform-design-system.md`](_platform-design-system.md) | Design System & UI Primitives ("Deep Current v2") | ✅ done (Phase-1, FE-only) | The CSS-token vocabulary, ~25 React primitives, and the iPhone-frame app shell every screen renders on. No backend. |
-| [`_platform-notifications.md`](_platform-notifications.md) | Push Notifications (Web Push delivery) | mixed — N1 delivery spine ✅; N2 dispatcher/prefs + N3 FE-schedule 🔴 not built | `techcore/webpush` (in-house VAPID ES256 + RFC 8291 `aes128gcm`, [ADR 0014](../decisions/0014-own-webpush-implementation.md)) + `feature/notification` (subscribe/unsubscribe/test-push) + the Me → `Értesítés` opt-in page. No dispatcher, no categories, no push ever delivered to a real device yet. |
+| [`_platform-design-system.md`](_platform-design-system.md) | Design System & UI Primitives (now "Üveg") | in-progress (per doc) — the app-wide Üveg re-dress programme itself is complete | Dark-only "Üveg" material: Mozaik colors on a warm-graphite ground, wearing Titanium (3D icon sprite, glass cards with a gradient frame, sheen, glow). Epic `mezo-me75u` (U1–U11) closed 2026-09-27 — every surface wears it. |
+| [`_platform-notifications.md`](_platform-notifications.md) | Push Notifications Platform | mixed | `techcore/webpush` (in-house VAPID ES256 + RFC 8291 `aes128gcm`) + `feature/notification`/`feature/appnotification`; N1 (delivery spine) + N2 (dispatcher/prefs) + N3 (FE-schedule/preview) are all shipped, all 22 push categories are live, and real Web Push delivery to a device is confirmed. FE surface: `/me/ertesitesek`. |
+| [`settings.md`](settings.md) | Central settings & personal context — reached via the header cog, `/settings` | ✅ done | Domain preference groups (Fuel/Train/Mezo/Én/Nap) + notifications/appearance/account, plus the inspectable personal companion context the AI reads from. |
 
 ---
 
@@ -74,42 +87,58 @@ Jump from a route, tab, sub-feature, or concept to the doc + the section that co
 
 | You're looking at / for… | Route | Doc → section |
 |---|---|---|
-| The home screen, "Ma", morning briefing | `/today` | [`today.md`](today.md) §2 |
-| Check-in / "Heartbeat" strip / `CheckInSheet` | `/today` | [`today.md`](today.md) §3–§4 (the one real Today seam) |
-| AnchorMode (rough-day recovery view) | `/today?day=rough` | [`today.md`](today.md) §2, §9 |
-| Medication phase bar / cycle (generic, permanently empty — no active medication) | `/today`, `/fuel` | [`today.md`](today.md) §2 · [`fuel.md`](fuel.md) §5 |
-| Weekly cross-domain agenda (gym+volley+run) | `/train` (Mai) | [`train.md`](train.md) §2, §5 (`TrainTodayPage`) |
-| Active week / gym split | `/train/gym` | [`train.md`](train.md) §2 (`GymPage`) |
-| Active workout / per-set logging / resume | `/train/session` | [`train.md`](train.md) §2, §4 (workout execution) |
-| Mesocycle library / planner / builder | `/train/mesocycles`, `/new`, `/:id` | [`train.md`](train.md) §2, §4 (mesocycles) |
-| Volleyball ("Röplabda") schedule + log | `/train/sport` | [`train.md`](train.md) §2, §4 (sport) |
-| Interval running ("Futás") + block builder | `/train/futas`, `/train/futas/:id` | [`train.md`](train.md) §2, §4 (running) |
+| The Nap hub, "Mai", daily capture orbit | `/nap` | [`today.md`](today.md) §2 |
+| "A napom" — live day view / closed-day review | `/nap/napom`, `/nap/napom/:date` | [`today.md`](today.md) §2–§3 |
+| Companion thread ("Mezo · ma") | `/nap/uzenetek` | [`today.md`](today.md) §2 · [`proactive.md`](proactive.md) §2 |
+| Quick-log picker (FAB, full-page) | `/nap/gyors` | [`today.md`](today.md) §2 |
+| Check-in / "Heartbeat" slots | `/nap/checkin` | [`today.md`](today.md) §2 |
+| Rutin (morning/evening habit chains) | `/nap/rutin`, `/me/rutin` | [`habit.md`](habit.md) §2 |
+| Daily intention creed + foci + evening reflection | rides `/nap` (`IntentionSheet`) | [`intention.md`](intention.md) §2 |
+| Életjel-ringek (six life-sign rings) | `/nap/eletjel` | [`needs.md`](needs.md) §1–§2 |
+| Napzárás (sleep-anchored evening closing ritual) | `/ritual` | [`ritual.md`](ritual.md) §2 |
+| Daily quests / activity log / Growth | `/nap/kuldetesek`, `/me/growth`, `/me/growth/{skillek,naplo,kituntetesek}` | [`growth.md`](growth.md) §2 |
+| Weekly cross-domain agenda (gym+volley+run) | `/train/mai` | [`train.md`](train.md) §2, §5 |
+| Active week / weekly muscle-load review | `/train/week` | [`train.md`](train.md) §2 |
+| Active workout / per-set logging / resume | `/train/session` (owned by Mai tab) | [`train.md`](train.md) §2, §4 (workout execution) |
+| Mesocycle library / plan wizard / templates | `/train/mesocycles`, `/train/templates` | [`train.md`](train.md) §2, §4 (mesocycles) |
+| Volleyball ("Röplabda") schedule + log | `/train/sport` (owned by Mai tab) | [`train.md`](train.md) §2, §4 (sport) |
+| Interval running ("Futás") + block builder | `/train/futas` (owned by Terv tab) | [`train.md`](train.md) §2, §4 (running) |
 | Exercise catalog + per-exercise records | `/train/exercises` | [`train.md`](train.md) §2, §4 (catalog/records) |
-| Meal pacing ("Mai") + meal score sheet | `/fuel` | [`fuel.md`](fuel.md) §2 (`FuelMaiPage`) |
-| Weekly fuel rhythm / gym-time grid | `/fuel/plan` | [`fuel.md`](fuel.md) §2 (`FuelPlanPage`) |
-| Supplement protocol builder | `/fuel/stack` | [`fuel.md`](fuel.md) §2, §3 (`buildProtocol`) |
-| Recipe library / new recipe | `/fuel/recipes` | [`recipe.md`](recipe.md) §2 |
-| Pantry / "Kamra" / scrape import | `/fuel/kamra` | [`pantry.md`](pantry.md) §2–§4 |
-| Detected patterns (critique grid, confirm/reject) | `/insights` | [`insights.md`](insights.md) §2.1 |
-| Weekly review / memoir / predictions / experiments | `/insights/{weekly,memoir,predictions,experiments}` | [`insights.md`](insights.md) §2.2–§2.7 |
-| Companion chat (simulated) | `/insights/chat` | [`insights.md`](insights.md) §2.5 |
-| Knowledge facts (flat list, prompt toggles) | `/insights/knowledge` | [`insights.md`](insights.md) §2.4, §5.1 |
-| Knowledge graph / "Élő mindmap" | `/me/knowledge` | [`me.md`](me.md) §5.5 → data is Insights-domain ([`insights.md`](insights.md) §5.1) |
-| Profile dashboard / settings / theme toggle | `/me` (Profil) | [`me.md`](me.md) §2 · theme: [`_platform-design-system.md`](_platform-design-system.md) §2 |
-| Weight goal + log ("Cél") | `/me/goals` | [`me.md`](me.md) §2–§4 (weight ✅ backed) |
+| Meal pacing ("Mai") + meal score sheet | `/fuel` | [`fuel.md`](fuel.md) §2 |
+| Meal-slot templates / weekly fuel rhythm editor | `/fuel/slots` | [`fuel.md`](fuel.md) §1–§2 |
+| Supplement stack / protocol builder | `/fuel/stack` | [`fuel.md`](fuel.md) §2 |
+| Recipe library / editor / Receptműhely | `/fuel/recipes` (owned by Konyha tab) | [`recipe.md`](recipe.md) §2 |
+| Pantry / "Kamra" / OFF-URL-photo import | `/fuel/kamra` (owned by Konyha tab) | [`pantry.md`](pantry.md) §2–§4 |
+| Goal engine "recept" (kcal/protein/sleep prescription) | feeds `/me/goals/weight` | [`goal-engine.md`](goal-engine.md) §2 · Me surface: [`me.md`](me.md) §2 |
+| Célok (general-purpose life goals, PERMAH + pillars) | `/me/goals` | [`lifegoal.md`](lifegoal.md) §2 |
+| Csapat-üzenőfal (five-character social wall) | `/mezo` | [`insights.md`](insights.md) §1 (Csapat-üzenőfal Act I note) |
+| Detected patterns (pattern dashboard + decision inbox) | `/mezo/patterns` (owned by Üzenőfal tab) | [`insights.md`](insights.md) §2.1 |
+| Memoir / predictions / experiments | `/mezo/memoir` (Emlékek tab) · `/mezo/predictions`, `/mezo/experiments` (Üzenőfal tab) | [`insights.md`](insights.md) §2.3–§2.7 |
+| Weekly review (score bars, AI summary) | `/me/week` | [`me.md`](me.md) §1 (retired from Insights, `/mezo/weekly` redirects) |
+| Companion chat (real, Spring AI 2 / Gemini) | `/mezo/chat` | [`insights.md`](insights.md) §1 · [`companion.md`](companion.md) §3–§4 |
+| Knowledge facts / knowledge graph ("Tudástár") | `/mezo/knowledge` (owned by Rólad tab) | [`insights.md`](insights.md) §2.4 · [`me.md`](me.md) §1 |
+| Memória (RAG memory observatory) | `/mezo/memoria` (owned by A csapat tab) | [`insights.md`](insights.md) §2.9 |
+| Karakter dossier (7 experts + Szkeptikus, chaired by Mezo) | `/mezo/karakter/*` | [`character.md`](character.md) §2 |
+| Proactive companion feed (morning/sleep/weight/midday/evening/people/advice) | surfaces on `/nap/uzenetek` | [`proactive.md`](proactive.md) §2–§3 |
+| Áttekintés hub — identity/progression, tiles | `/me` | [`me.md`](me.md) §1–§2 |
+| Weight goal + log ("Cél") | `/me/goals/weight` | [`me.md`](me.md) §2–§4 (weight ✅ backed) · engine: [`goal-engine.md`](goal-engine.md) |
 | Sleep log ("Alvás") | `/me/sleep` | [`me.md`](me.md) §2–§4 (sleep ✅ backed) |
-| People / "Mizu Velünk" 1:1 ritual ("Emberek") | `/me/people` | [`me.md`](me.md) §2 (mock-only) |
-| Push-notification opt-in ("Értesítés") — install-gate, subscribe toggle, test push | `/me/ertesitesek/beallitasok` | [`me.md`](me.md) §2, §5.8 · protocol/data-model/categories: [`_platform-notifications.md`](_platform-notifications.md) |
-| Free-prose journal ("Napló") — write/edit/delete, month-grouped read view | `/me/naplo` | [`journal.md`](journal.md) §2 · Me surface: [`me.md`](me.md) §2 |
-| Meghívó kódok / felhasználók / jelszó-reset / letiltás | `/admin/accounts` (was `/me/beallitasok/admin`, redirects) | [`admin-hub.md`](admin-hub.md) §2, §4 |
-| AI-napló per-user chips, owner-only LLM-usage | `/admin/cost` (was `/me/ai-usage`, redirects) | [`admin-hub.md`](admin-hub.md) §3 · [`me.md`](me.md) §2 |
+| People ("Emberek") | `/me/people` | [`me.md`](me.md) §2 (mock shell) |
+| Push-notification opt-in ("Értesítés") — subscribe toggle, test push, feed | `/me/ertesitesek` | [`me.md`](me.md) §2 · protocol/data-model/categories: [`_platform-notifications.md`](_platform-notifications.md) |
+| Free-prose journal / gratitude / decisions ("Napló") | `/me/naplo` | [`journal.md`](journal.md) §2 · Me surface: [`me.md`](me.md) §2 |
+| Per-route onboarding sheet ("Mezo-kalauz") / welcome pager | header "?" on any route · first launch on `/nap` | [`tutorial.md`](tutorial.md) §1–§2 |
+| Central settings (Fuel/Train/Mezo/Én/Nap preferences, notifications, appearance, account) | `/settings` | [`settings.md`](settings.md) §2 |
+| Meghívó kódok / felhasználók / jelszó-reset / letiltás | `/admin/accounts` | [`admin-hub.md`](admin-hub.md) §2, §4 |
+| AI-napló per-user chips, owner-only LLM-usage | `/admin/cost` | [`admin-hub.md`](admin-hub.md) §3 · [`me.md`](me.md) §2 |
 | Admin overview / users / usage / data browser | `/admin`, `/admin/users(/:id)`, `/admin/usage`, `/admin/data` | [`admin-hub.md`](admin-hub.md) §2, §4 |
+| RAG memory explorer (install-wide + per-user) | `/admin/memory`, `/admin/users/:id/memory` | [`admin-memory-explorer.md`](admin-memory-explorer.md) §2 |
+| Contextual feed release-gate evaluation (not a UI surface) | — | [`contextual-feed-evaluation.md`](contextual-feed-evaluation.md) |
 | The `useX()` hooks / mock-vs-real / ghost-guard rule | — | [`_platform-data-layer.md`](_platform-data-layer.md) §2, §4 |
 | OpenAPI contract / `api/feature/<x>.yml` / codegen | — | [`_platform-api-backend.md`](_platform-api-backend.md) §3–§4 |
 | `OwnedEntity` / `CurrentUserId` / soft delete / typed jsonb | — | [`_platform-api-backend.md`](_platform-api-backend.md) §4b · [`_platform-auth-security.md`](_platform-auth-security.md) §4 |
 | Login / JWT / owner seed / token bootstrap | `/api/auth/login` | [`_platform-auth-security.md`](_platform-auth-security.md) §3–§4 |
-| Tokens / primitives / `Sheet` / `GhostState` / accent convention | — | [`_platform-design-system.md`](_platform-design-system.md) §5–§6 |
-| Companion chat backend (conversations + sync message) | `/api/companion/*` | [`companion.md`](companion.md) §3–§4 |
+| Üveg tokens / glass recipe / 3D icon sprite / accent convention | — | [`_platform-design-system.md`](_platform-design-system.md) §3, §5–§6 |
+| Companion chat backend (conversations + sync/streamed message) | `/api/companion/*` | [`companion.md`](companion.md) §3–§4 |
 
 ---
 
@@ -132,7 +161,7 @@ Derived from each doc's **§5 Integrations**. The named **contract** is the type
 | **Train (gym) ↔ Fuel** | Fuel owns a copy | `GymScheduleDay` / `VolleyballSession` — Fuel keeps its **own private copy** of the schedule, not read from Train | [`fuel.md`](fuel.md) §5 |
 | **Fuel ↔ Me/`Alvás`** 🟣 | Fuel → Sleep | `SleepLogResponse.mealToSleep` hardcoded `0` "until Fuel lands" — *the* documented future seam | [`me.md`](me.md) §5.3 · [`fuel.md`](fuel.md) §1 |
 | **Fuel replan cascade** 🟣 | Fuel → Sleep/Insights/Train | `ReplanScenario.cascades[].system` (`'Fuel'|'Train'|'Sleep'|'Insights'`) — the simulated "context ripples across domains" model | [`fuel.md`](fuel.md) §5 |
-| **Me/Knowledge ↔ Insights/Knowledge** | shared hook | `KnowledgeFact[]` + `KnowledgeEdge[]` — `useKnowledge` backs `/insights/knowledge` (flat list) **and** `/me/knowledge` (graph) — co-design any backend | [`insights.md`](insights.md) §5.1 · [`me.md`](me.md) §5.5 |
+| **Me/Knowledge ↔ Insights/Knowledge** | shared hook | `KnowledgeFact[]` + `KnowledgeEdge[]` — `useKnowledge` backs the Tudástár (`/mezo/knowledge`, under Rólad) **and** `/me/knowledge` (graph) — co-design any backend | [`insights.md`](insights.md) §5.1 · [`me.md`](me.md) §5.5 |
 | **Cross-system "pattern engine"** 🟣 | Insights ← Train/Sleep/Fuel/Goals | shared stable pattern IDs (`P2`/`P3`) referenced by hand in mock copy across domains — build as a **shared service**, not Insights-local | [`insights.md`](insights.md) §5.4 |
 | **`TrendInsight` (lightweight insight)** | embedded in Goals/Sleep | `TrendInsight {type, text}` — a parallel, lighter insight type vs the rich `Pattern`; Phase-3 must reconcile | [`insights.md`](insights.md) §5.3 |
 | **Today ↔ Me** | shared object | `UserMeta` — `useProfile` re-exports the same `user` defined in Today's mock; biometrics backend is shared (check-in is a weight/sleep sibling) | [`me.md`](me.md) §5.1 |

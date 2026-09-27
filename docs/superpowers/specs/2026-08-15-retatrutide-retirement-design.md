@@ -98,7 +98,7 @@ Ez az egyetlen hely, ahol **új** viselkedés kell.
 
 **Új ADR** rögzíti magát a döntést: a gyógyszer-domain generikussá tétele, a tartósan üres tab, a fizikai törlés soft-delete helyett, és az `rx-terms` kivétel.
 
-**Érintetlen** (befagyasztott, pont-az-időben artefaktumok — a CLAUDE.md tiltja az átírásukat): `docs/superpowers/specs/*`, `docs/superpowers/plans/*`, `docs/old docs/*`, `docs/design/ux-*.html`. Ezekben a „reta" történelmi tény arról, ami akkor volt; a git history amúgy is megőrzi.
+**Érintetlen** (befagyasztott, pont-az-időben artefaktumok — a CLAUDE.md tiltja az átírásukat): `docs/superpowers/specs/*`, `docs/superpowers/plans/*`, `docs/archive/old-docs/*`, `docs/archive/design-v1/ux-*.html`. Ezekben a „reta" történelmi tény arról, ami akkor volt; a git history amúgy is megőrzi.
 
 ## 8. Sorrend és kapuk
 
@@ -114,7 +114,7 @@ Kontraktus-first (`api_contract_conventions.md`):
 
 **Kapuk:** `cd backend && ./mvnw clean test` · `cd frontend && pnpm build && pnpm test && VITE_USE_MOCK=true pnpm test` · `node scripts/lint-docs.mjs`. Végül `feat/retire-retatrutide` branch → self-PR → CI zöld → lokális `--no-ff` merge.
 
-**Elfogadási kritérium:** `rg -i 'retatrutid' -- ':!docs/superpowers' ':!docs/old docs' ':!docs/design'` üres találatot ad, az `application.yml` `rx-terms` sorát kivéve; és `rg -iE '\breta\b|reta[A-Z]|--reta-|\.reta-'` ugyanezen a hatókörön szintén üres.
+**Elfogadási kritérium:** `rg -i 'retatrutid' -- ':!docs/superpowers' ':!docs/archive/old-docs' ':!docs/archive'` üres találatot ad, az `application.yml` `rx-terms` sorát kivéve; és `rg -iE '\breta\b|reta[A-Z]|--reta-|\.reta-'` ugyanezen a hatókörön szintén üres.
 
 ## 9. Kockázatok
 

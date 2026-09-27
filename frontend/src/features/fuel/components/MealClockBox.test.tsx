@@ -54,6 +54,12 @@ describe('MealClockBox', () => {
     expect(screen.getByText('Hogyan illik a napodba')).toBeInTheDocument()
     expect(screen.getByText(/Edzés 17:30–18:45/)).toBeInTheDocument()
   })
+  it('pre-log on a shifted window: names the meal that pushed it (mezo-9sltu)', () => {
+    render(<MealClockBox tile={tile({ label: 'Uzsonna', windowReasons: ['shifted', 'bridge'], shiftedAfter: { label: 'Ebéd', at: '14:50' } })}
+      row={null} day={day} next={null} blockColor="var(--lav)" onClose={vi.fn()} />)
+    expect(screen.getByText('Eltolva: az ebéd később volt (14:50)')).toBeInTheDocument()
+    expect(screen.getByText('Két fő étkezés között')).toBeInTheDocument()
+  })
   it('post-log: logged time, hit chip, band without a number, forecast', () => {
     render(<MealClockBox tile={tile({ label: 'Reggeli', state: 'done', windowFrom: '07:20', windowTo: '09:20' })} row={row()} day={day} next={tile()} blockColor="var(--amber)" onClose={vi.fn()} />)
     expect(screen.getByText('Logolva')).toBeInTheDocument()

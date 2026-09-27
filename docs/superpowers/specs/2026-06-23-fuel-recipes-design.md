@@ -36,7 +36,7 @@ Back the existing **mock** Recipes (Receptek) Fuel sub-view with a real Spring B
 
 ## 3. UI/UX Redesign (approved via mockup brainstorm)
 
-All surfaces keep the **"Deep Current" chamfer** design system (clip-path notches, square dots, Antonio/Inter/JetBrains Mono). Mockups live in `docs/design/recipes-*` (exported from the brainstorm; see "Mockup provenance" below).
+All surfaces keep the **"Deep Current" chamfer** design system (clip-path notches, square dots, Antonio/Inter/JetBrains Mono). Mockups live in `docs/archive/design-v1/recipes-*` (exported from the brainstorm; see "Mockup provenance" below).
 
 ### 3.1 Library (`FuelRecipesView`)
 - **Editorial cards** (image-forward): full-width image band with overlaid name (Antonio), slot tag + star top-left, **fit badge top-right**; below the band a 4-cell macro chip row (kcal/P/C/F) + a meta line (N hozzávaló · idő · NOVA).
@@ -216,7 +216,7 @@ Integration-first (`ApiIntegrationTest`, Testcontainers/fixed `mezo_test`): CRUD
 ---
 
 ## 9. Mockup provenance
-The approved mockups were produced in the brainstorm visual companion (`.superpowers/brainstorm/`, gitignored) and **exported to `docs/design/` for durable reference**:
+The approved mockups were produced in the brainstorm visual companion (`.superpowers/brainstorm/`, gitignored) and **exported to `docs/archive/design-v1/` for durable reference**:
 - `recipes-library.html` — editorial cards + segmented filter + P2 fit badge (pending/scored).
 - `recipes-detail.html` — full-page detail (the "A" phone) + the sheet alternative for reference.
 - `recipes-editor.html` — full-page editor with macro-cell pick-rows + /adag toggle, alongside the modal picker (`/100g` cells). Use these as the visual source of truth when building the components.

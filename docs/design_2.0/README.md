@@ -23,6 +23,9 @@
 > 4. [Ceremony pattern](2026-09-15-ceremony-pattern.md) — the *pattern* is canon; its material is
 >    glass with a gold glow.
 >
+> **How a prototype is made:** [prototype recipe](prototype-recipe.md); **where new work goes:** the
+> living per-domain prototypes in [prototypes/elo/](prototypes/elo/README.md).
+>
 > New UI work starts from (1)+(2) and the shared kit (`frontend/src/shared/ui/mozaik`,
 > `shared/ui/clay`, the `── uveg kit (` block of `prototype.css`). Everything below this banner is
 > history and parity sources: read it for *what a screen must do*, never for *what it looks like*.

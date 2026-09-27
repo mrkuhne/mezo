@@ -4,7 +4,7 @@
 - **Driving bd:** `mezo-9xu` (brainstorm & design parent; implementation issues created by writing-plans)
 - **Status:** design approved → ready for implementation plan
 - **Phase:** 2 (core data backend) · first Fuel sub-slice
-- **Mockups:** `docs/design/kamra-mockup-v3-A.html` (chosen layout — design-system primitives), `kamra-mockup-v1.html` (entity-model comparison), `kamra-mockup-v2-layouts.html` (layout comparison)
+- **Mockups:** `docs/archive/design-v1/kamra-mockup-v3-A.html` (chosen layout — design-system primitives), `kamra-mockup-v1.html` (entity-model comparison), `kamra-mockup-v2-layouts.html` (layout comparison)
 
 ---
 

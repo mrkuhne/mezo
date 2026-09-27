@@ -29,10 +29,10 @@ export function useWorkoutDetail(id: string | null) {
 }
 
 /**
- * Mon-anchored query key for this week's workout summaries — single source of
- * truth for both `useWeekWorkouts` and `useWeekMuscleLog`'s pending observer
- * (mezo-oyhy.7). Keeps the Monday derivation and key shape from silently
- * desyncing between the two call sites.
+ * Mon-anchored query key for this week's workout summaries — the single source of truth for the
+ * key shape and the Monday derivation (mezo-oyhy.7). `useWeekWorkouts` is the ONLY observer of this
+ * key (it carries the queryFn); read `isPending` from it rather than adding a queryFn-less observer
+ * (mezo-fp5s4).
  */
 export function weekWorkoutsQueryKey(): { key: readonly [string, string, string]; monday: string; sunday: string } {
   const now = new Date()
@@ -55,7 +55,7 @@ export function useWeekWorkouts() {
     queryFn: mock ? async () => [] : () => trainApi.listWorkouts(monday, sunday),
     initialData: mock ? [] : undefined,
   })
-  return { workouts: q.data ?? [] }
+  return { workouts: q.data ?? [], isPending: q.isPending }
 }
 
 /**

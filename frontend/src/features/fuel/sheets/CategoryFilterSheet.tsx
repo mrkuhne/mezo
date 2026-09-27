@@ -1,6 +1,6 @@
 // ============================================================
 // Mezo · CategoryFilterSheet
-// The pantry category filter as a bottom-sheet (docs/design/kamra-detail-edit-v1.html
+// The pantry category filter as a bottom-sheet (docs/archive/design-v1/kamra-detail-edit-v1.html
 // · phone 4) — NOT 18 inline chips. Lists only the categories PRESENT in the current
 // items, each with its count, as multi-select chamfer chips. Clear + Apply close the
 // loop. The parent owns the committed selection; this sheet edits a local draft and

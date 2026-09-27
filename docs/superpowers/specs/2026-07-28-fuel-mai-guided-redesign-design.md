@@ -3,7 +3,7 @@
 - **Driving issue:** `mezo-rrtj`
 - **Date:** 2026-07-28
 - **Scope:** frontend only — zero backend, zero OpenAPI contract change
-- **Mockups:** [`docs/design/fuel-mai-directions-v1.html`](../../design/fuel-mai-directions-v1.html) (4 directions + scroll meter) · [`docs/design/fuel-mai-hybrid-v1.html`](../../design/fuel-mai-hybrid-v1.html) (chosen hybrid + hero state gallery + motion plan)
+- **Mockups:** [`docs/archive/design-v1/fuel-mai-directions-v1.html`](../../archive/design-v1/fuel-mai-directions-v1.html) (4 directions + scroll meter) · [`docs/archive/design-v1/fuel-mai-hybrid-v1.html`](../../archive/design-v1/fuel-mai-hybrid-v1.html) (chosen hybrid + hero state gallery + motion plan)
 - **Living doc to update:** [`docs/features/fuel.md`](../../features/fuel.md) §2, [`docs/features/_platform-design-system.md`](../../features/_platform-design-system.md) §1a
 
 ## 1. Problem

@@ -7,7 +7,7 @@
 // subline and a MacroCells strip (/100g). Tapping ＋ fires onPick(ing) but does NOT
 // close the sheet, so several items can be added in one open; a row already in the
 // recipe (addedRefIds) shows a disabled "Hozzáadva" state instead.
-// docs/design/recipes-editor.html (right phone · `.prow` + `.macstrip`).
+// docs/archive/design-v1/recipes-editor.html (right phone · `.prow` + `.macstrip`).
 // Üveg U2 (mezo-me75u.2, prototype `SH.kamrapick`): the gold 3D stack head; search and every
 // row are FLAT cells inside the sheet (no glass in the glass sheet), the category hue an inset
 // left edge, and ＋ a lit gold flat chip (✓ dimmed once added).

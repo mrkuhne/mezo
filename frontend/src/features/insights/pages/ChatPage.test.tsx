@@ -145,7 +145,7 @@ describe('ChatPage (mock mode)', () => {
     renderPage()
     // seed ref [Workout w-2026-05-21] → kind label Edzés + derived date
     // both seed answers carry a refs footer
-    expect(screen.getAllByText('Amire épült · L3')).toHaveLength(2)
+    expect(screen.getAllByText('Amire épült')).toHaveLength(2)
     const workoutRef = screen.getAllByText('Edzés').find((el) => el.classList.contains('mzc-refk'))
     expect(workoutRef).toBeTruthy()
     expect(workoutRef!.parentElement).toHaveTextContent('máj. 21.')

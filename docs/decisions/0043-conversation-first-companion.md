@@ -43,3 +43,12 @@ The existing domain tool coverage limits still apply; this is not arbitrary data
 
 See [design](../superpowers/specs/2026-09-18-conversation-first-design.md) and
 [living companion reference](../features/companion.md).
+
+## Amendment (2026-09-27, mezo-d6ivw.8 — facts-always)
+
+Confirmed personal facts (`knowledge_fact`, enabled ones) are initial background again:
+they join the date, preferences and explicit anchors in the volatile context half, because
+they are identity, not data lookup — the model must never contradict what the user confirmed
+about themselves. Everything else this ADR moved behind tools stays behind tools (snapshots,
+memory search, character, history). The block carries a passive-use preamble; the model is
+not asked to mention it.

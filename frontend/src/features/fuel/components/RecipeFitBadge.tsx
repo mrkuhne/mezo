@@ -1,6 +1,6 @@
 // ============================================================
 // Mezo · RecipeFitBadge (Mezo-fit slot — pending vs scored)
-// The stable top-right badge from docs/design/recipes-library.html / -detail.html.
+// The stable top-right badge from docs/archive/design-v1/recipes-library.html / -detail.html.
 // v1: fit_score is always null (Phase-3 scoring deferred) → P2 sparkle "pending"
 // signal. When a real score lands the SAME slot shows the Antonio number + "fit"
 // — no layout shift. `size="hero"` is the bigger detail-hero variant.

@@ -1,9 +1,9 @@
 import type { FactSource, KnowledgeFact } from '@/data/types'
-import { PATTERN_ACK_DAYS, PROMPT_TOP_N, factCategoryLabel } from '@/data/insights/knowledge'
+import { factCategoryLabel } from '@/data/insights/knowledge'
 import { huMonthDay } from '@/shared/lib/dates'
 
-/** A tény prompt-státusza — ez a három vödör adja a lista három szakaszát is. */
-export type FactBucket = 'in-prompt' | 'waiting' | 'off'
+/** A tény prompt-státusza — ez a két vödör adja a lista két szakaszát is. */
+export type FactBucket = 'in-prompt' | 'off'
 
 const VOWELS = 'aáeéiíoóöőuúüű'
 /** Magyar betűnév-kiejtés: ezek a nagybetűk "e"-re/magánhangzóra végződő hangzású névvel
@@ -99,8 +99,7 @@ export function reinforcementSentence(reinforced: number, lastReinforcedAt: stri
 }
 
 const STATUS_LABEL: Record<FactBucket, string> = {
-  'in-prompt': 'Most benne van a chatben',
-  waiting: 'Bekapcsolva, de most kimarad',
+  'in-prompt': 'A társ tudja — minden beszélgetésben ott van',
   off: 'Kikapcsolva — a társ nem látja',
 }
 
@@ -114,21 +113,13 @@ export function sortFacts(facts: KnowledgeFact[]): KnowledgeFact[] {
 }
 
 /**
- * A három prompt-státusz vödör — a lista szakaszai.
- *
- * Két injektálási csatornát tükröz (`KnowledgeFactService`-ben): a top-N rangsoros blokkot
- * (`renderPromptBlock()`) ÉS a `renderNewPatternFactsBlock()`-ot, ami a rangsortól FÜGGETLENÜL
- * minden bekapcsolt, `PATTERN_ACK_DAYS` napon belül létrejött `source: 'pattern'` tényt bevisz —
- * egy frissen megerősített minta `reinforced: 0`-val a topN alá sorolódna, miközben a társ
- * ténylegesen kapja és említi. `now` a teszteléshez opcionális (alapból a valós idő).
+ * Két vödör (facts-always, mezo-d6ivw.8): MINDEN bekapcsolt tény megy a chatbe és minden
+ * generált üzenetbe — a kapcsoló az egyetlen szűrő. A backend 200-as prompt-plafonja
+ * biztonsági fék, nem munkalimit; a UI szándékosan nem tükrözi.
  */
-export function bucketFacts(facts: KnowledgeFact[], topN: number = PROMPT_TOP_N, now: Date = new Date()) {
-  const active = sortFacts(facts.filter((f) => f.active))
-  const ackCutoff = now.getTime() - PATTERN_ACK_DAYS * 24 * 60 * 60 * 1000
-  const isFreshPattern = (f: KnowledgeFact) => f.source === 'pattern' && new Date(f.createdAt).getTime() >= ackCutoff
+export function bucketFacts(facts: KnowledgeFact[]) {
   return {
-    inPrompt: active.filter((f, i) => i < topN || isFreshPattern(f)),
-    waiting: active.filter((f, i) => i >= topN && !isFreshPattern(f)),
+    inPrompt: sortFacts(facts.filter((f) => f.active)),
     off: sortFacts(facts.filter((f) => !f.active)),
   }
 }

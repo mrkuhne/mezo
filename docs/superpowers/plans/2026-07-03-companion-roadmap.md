@@ -18,7 +18,7 @@
 > claim, implementáld. Végén: kapuk zölden, feature-doc frissítés, push, close.
 > ```
 > `bd ready` shows the next unblocked slice. Do NOT feed the old Supabase-era docs
-> (`docs/old docs/`) into slice sessions — the spec distills them; link into them only where a brief points at a section.
+> (`docs/archive/old-docs/`) into slice sessions — the spec distills them; link into them only where a brief points at a section.
 
 **Driving principles (decided 2026-07-03):**
 

@@ -21,7 +21,7 @@
 - **Nyelv:** minden felhasználónak látszó szöveg magyar. A kódkommentek a fájl meglévő nyelvét követik (a repo túlnyomórészt angol kommenteket használ magyar UI-szövegekkel).
 - **Commit-formátum:** conventional subject a driving bd id-val, pl. `refactor(medication): retaDay -> cycleDay a kontraktusban (mezo-lwmq)`.
 - **Az `rx-terms` lista (`application.yml`, `mezo.companion.advisors.rx-terms`) VÁLTOZATLAN marad.** Ez a `ClinicalOutputCheck` őrének szótára, nem felhasználói adat. Ez a terv egyetlen helye, ahol a „retatrutid" szó a kódban maradhat.
-- **A befagyasztott dokumentumokhoz nem nyúlunk:** `docs/superpowers/specs/*` (a §Task 8-ban létrehozott újat kivéve), `docs/superpowers/plans/*` (ezt a fájlt kivéve), `docs/old docs/*`, `docs/design/ux-*.html`.
+- **A befagyasztott dokumentumokhoz nem nyúlunk:** `docs/superpowers/specs/*` (a §Task 8-ban létrehozott újat kivéve), `docs/superpowers/plans/*` (ezt a fájlt kivéve), `docs/archive/old-docs/*`, `docs/archive/design-v1/ux-*.html`.
 
 ---
 
@@ -1118,11 +1118,11 @@ Elvárt: nulla hiba, és a frissített feature-doksik staleness-jelzése tisztul
 - [ ] **Step 4: Az elfogadási kritérium ellenőrzése**
 
 ```bash
-rg -i 'retatrutid' -g '!docs/superpowers' -g '!docs/old docs' -g '!docs/design' -g '!.git'
+rg -i 'retatrutid' -g '!docs/superpowers' -g '!docs/archive/old-docs' -g '!docs/archive' -g '!.git'
 ```
 
 ```bash
-rg -iE '\breta\b|reta[A-Z]|--reta-|\.reta-|RETA_' -g '!docs/superpowers' -g '!docs/old docs' -g '!docs/design' -g '!.git' -g '!*rename_medication_pattern_keys.sql'
+rg -iE '\breta\b|reta[A-Z]|--reta-|\.reta-|RETA_' -g '!docs/superpowers' -g '!docs/archive/old-docs' -g '!docs/archive' -g '!.git' -g '!*rename_medication_pattern_keys.sql'
 ```
 
 Mindkét keresésre **kizárólag a következő találatok megengedettek**; bármi más maradék hiba:

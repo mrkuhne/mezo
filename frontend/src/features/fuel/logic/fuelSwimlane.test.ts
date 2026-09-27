@@ -271,3 +271,15 @@ describe('a done tile P/C/F rings are the meal\'s own energy split, a planned wi
     expect(tiles[0].rings.map(r => [r.pct, r.basis])).toEqual([[0, 'day'], [0, 'day'], [0, 'day']])
   })
 })
+
+test('a shifted window carries its cause onto the tile (mezo-9sltu); an unshifted one has none', () => {
+  const { tiles } = buildWindowLane({
+    slots: [
+      slot({ time: '07:30', label: 'Reggeli', slotKey: 'breakfast' }),
+      slot({ time: '16:20', label: 'Uzsonna', slotKey: 'snack', windowReasons: ['shifted', 'bridge'], shiftedAfter: { label: 'Ebéd', at: '14:50' } }),
+    ],
+    budget, meals: [],
+  })
+  expect(tiles[1].shiftedAfter).toEqual({ label: 'Ebéd', at: '14:50' })
+  expect(tiles[0].shiftedAfter).toBeUndefined()
+})

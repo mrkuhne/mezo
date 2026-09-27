@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.goal.controller;
 
 import io.mrkuhne.mezo.api.controller.GoalApi;
+import io.mrkuhne.mezo.api.dto.ExpenditureExplanationResponse;
 import io.mrkuhne.mezo.api.dto.FeasibilityPreviewRequest;
 import io.mrkuhne.mezo.api.dto.FeasibilityPreviewResponse;
 import io.mrkuhne.mezo.api.dto.GoalPlanAttachRequest;
@@ -14,6 +15,7 @@ import io.mrkuhne.mezo.api.dto.GoalTimelineResponse;
 import io.mrkuhne.mezo.api.dto.GoalUpsertRequest;
 import io.mrkuhne.mezo.feature.goal.engine.service.GoalEngineService;
 import io.mrkuhne.mezo.feature.goal.engine.service.GoalFeasibilityService;
+import io.mrkuhne.mezo.feature.goal.service.ExpenditureExplanationService;
 import io.mrkuhne.mezo.feature.goal.service.GoalPlanLinkService;
 import io.mrkuhne.mezo.feature.goal.service.GoalOverviewService;
 import io.mrkuhne.mezo.feature.goal.service.GoalService;
@@ -24,7 +26,9 @@ import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Implements the generated {@link GoalApi}; mappings/validation come from the interface. */
 @RestController
@@ -39,6 +43,7 @@ public class GoalController implements GoalApi {
     private final GoalFeasibilityService goalFeasibilityService;
     private final GoalSuggestionService goalSuggestionService;
     private final GoalSuggestionPreviewService goalSuggestionPreviewService;
+    private final ExpenditureExplanationService expenditureExplanationService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -134,5 +139,18 @@ public class GoalController implements GoalApi {
     @Override
     public void dismissGoalSuggestion(UUID id, UUID suggestionId) {
         goalSuggestionService.dismiss(currentUserId.get(), id, suggestionId);
+    }
+
+    /**
+     * The generated {@code GoalApi} fixes this to a single {@code @ResponseStatus(200)}
+     * (spring-generator {@code useResponseEntity=false}, house-wide), but the contract also
+     * declares a bodyless {@code 204} for "nothing was ever reviewed with the explainer" — see
+     * {@code api/feature/goal/goal.yml}. A {@link ResponseStatusException} is the standard Spring
+     * escape hatch for that one path (mirrors {@code CharacterController.bootstrapCharacter}).
+     */
+    @Override
+    public ExpenditureExplanationResponse getExpenditureExplanation() {
+        return expenditureExplanationService.getLatestExplanation(currentUserId.get())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NO_CONTENT));
     }
 }

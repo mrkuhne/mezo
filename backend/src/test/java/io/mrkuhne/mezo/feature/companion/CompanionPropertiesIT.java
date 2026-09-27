@@ -55,8 +55,8 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testFactsConfig_shouldBindTopNFromYaml_whenContextStarts() {
-        assertThat(properties.facts().topN()).isEqualTo(10);
+    void testFactsConfig_shouldBindPromptCapFromYaml_whenContextStarts() {
+        assertThat(properties.facts().promptCap()).isEqualTo(200);
         assertThat(properties.facts().patternAckDays()).isEqualTo(3);
     }
 
