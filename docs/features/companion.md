@@ -4045,11 +4045,17 @@ Migration `202607031707_mezo-fnnq.6_create_knowledge_learned_fact.sql` (in `1.0.
   `created_at`, `fact_text text`, `category varchar(16)` (`ck_knowledge_fact_category IN
   (train,fuel,health,life)`), `source varchar(16)` (`ck_knowledge_fact_source IN
   (chat,pattern,manual)`, later widened with `weekly_review` by
-  `202608291100_mezo-d20.7.6_learned_fact_weekly_source.sql` and with `question` by
-  `202609061800_mezo-d58h.7.5_knowledge_fact_source_question.sql`), `reinforcement_count int default 0`, `include_in_prompt boolean
+  `202608291100_mezo-d20.7.6_learned_fact_weekly_source.sql`, with `question` by
+  `202609061800_mezo-d58h.7.5_knowledge_fact_source_question.sql`, and with `team_chat` by S7's
+  `202609271000_mezo-d6ivw.7_team_chat_reply.sql`), `reinforcement_count int default 0`, `include_in_prompt boolean
   default true`, `last_reinforced_at timestamptz`; index
   `idx_knowledge_fact_created_by_include_reinforcement (created_by, include_in_prompt,
-  reinforcement_count desc)` — the injection query's key.
+  reinforcement_count desc)` — the injection query's key. **`source=team_chat`**
+  (`KnowledgeFactService.captureFromTeamChat`, S7 `mezo-d6ivw.7`) is written when a csapatfal reply
+  concretely closes an ügy ([character.md](character.md) §Csapat-chat): `owner` is the character
+  key that owned the thread (falling back to `mezo`), and `provenance` is a structured team-chat
+  envelope (`MemoryProvenanceEnvelope.teamChat`) carrying the source line/thread id — not a bare
+  string tag — so a later read can point straight back at the chat line that produced the fact.
 - **`learned_fact`** — `id uuid pk`, owner columns as above, `candidate_text text`,
   `category varchar(16)` (`ck_learned_fact_category`, **added by the V1.2 migration**
   `202607031812_mezo-fnnq.7_learned_fact_category.sql` — the extractor classifies at capture,

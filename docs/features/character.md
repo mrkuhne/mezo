@@ -371,9 +371,13 @@ instead of writing one advice message, and its clear resolves that same thread. 
 recap** of the day's ügyek (`team_chat_day` esti kiadás candidate) is already documented above,
 in Mezo's own bullet — this subsection is the chat engine itself.
 
-- **Ügy lifecycle (`TeamChatService`, `TeamChatThreadEntity`):** `OPEN` → `RESOLVED` (a clear) or
-  `EXPIRED` (still `OPEN` after `expireAfterDays`, a nightly sweep — never a manual close).
-  `open(userId, flagKey, at)` no-ops when the flag has no owner (`all_healthy`), an ügy for that
+- **Ügy lifecycle (`TeamChatService`, `TeamChatThreadEntity`):** `OPEN` → `RESOLVED` (a clear, or —
+  since S7 (`mezo-d6ivw.7`) — a code-decided close on a reply, below) or `EXPIRED` (still `OPEN`
+  after `expireAfterDays`, a nightly sweep). A `RESOLVED` close carries `closeReason`
+  (`DATA`/`REPLY`/`EXCUSED`, max 8 chars) and `closeNote` (max 60 chars, truncated); a clear from
+  data still writes the `RESOLVE` line as before, but a reply-close writes no separate line kind —
+  the `KIND_REPLY` line answers, and `closeReason`/`closeNote`/`closedAt` are set directly on the
+  thread row (`TeamChatReplyService.close`). `open(userId, flagKey, at)` no-ops when the flag has no owner (`all_healthy`), an ügy for that
   flag is already `OPEN`, the day's line cap is reached (below — the thread itself is never
   created in that case, not just its line), or `InterventionService.pick` finds no eligible
   library entry; otherwise it persists the thread (`ownerCharacter`, `guestCharacter`,
@@ -404,7 +408,9 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   overload (silent, catch-up only); `resolve(userId, flagKey, evidence, at)`; `expire(now)`
   (returns the count expired); `catchUp(now)` / `catchUpUser` / `catchUpMissedOpens` /
   `catchUpMissedResolves` (below); `reply(userId, threadId, text)` — a `USER` line on the caller's
-  own ügy, 1–1000 chars, never resolves anything; `apply(userId, threadId, actionKey)` — applies
+  own ügy, 1–1000 chars; the line by itself never resolves anything, but it triggers the async S7
+  reply pipeline below, which *can* close the ügy once the owner's answer is voiced and concrete
+  (never on the raw USER line, never on a template fallback); `apply(userId, threadId, actionKey)` — applies
   one offered action exactly once via `AdviceApplyService.applyPort` (409 if not offered, 409 if a
   *different* action was already applied, idempotent no-op on the same one again, row-locked via
   `TeamChatThreadRepository.lockOwned` to serialize a concurrent double-tap).
@@ -466,8 +472,64 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   happened to notice) — but never before the ügy's own `openedAt` (a stale clear older than the
   raise that opened it). Idempotent — a second run changes nothing.
 - **Knowledge seam (`TeamChatKnowledgePort.forArea(owner, area)`):** background sentences for the
-  voice's context block — Character owns *when/where* a line speaks, Emlékezet (`mezo-d6ivw.5`)
-  will own *what it knows*; until then `NoopTeamChatKnowledge` answers with nothing.
+  voice's context block — Character owns *when/where* a line speaks, Emlékezet owns *what it
+  knows*. Since S7 (`mezo-d6ivw.7`) `TeamChatKnowledgeAdapter` replaces the earlier
+  `NoopTeamChatKnowledge`: for a postable character area it reads the Tudástár's own-area owner
+  facts, plus up to `MEZO_MAX=2` Mezo-owned facts, capped at `MAX=6` total
+  (`facts.promptFactsForOwners`); for Mezo itself (and Szkeptikus, whose `key()` matches no owner)
+  it returns Mezo facts only, up to the same cap. Fail-open: any `RuntimeException` yields an empty
+  list, never a thrown error.
+- **Reply → answer → close/remember (S7, `mezo-d6ivw.7`, package `service/chat/`).** A `USER`
+  line triggers `TeamChatRepliedEvent`; `TeamChatReplyListener` (`@Async`,
+  `@TransactionalEventListener(AFTER_COMMIT)`) waits `reply-debounce-ms` (default **1500 ms**) so a
+  burst of quick lines gets ONE answer — from the newest unanswered `USER` line only
+  (`TeamChatReplyService.isUnansweredNewest`/`pendingUserLines`, re-checked in `commit` in case the
+  burst grew mid-debounce) — then calls `TeamChatReplyService.answer` as the event's user
+  (`LlmActorContext.runAs`, so the voice call's cost lands on the right owner). The flow is
+  claim (short `readOnly` tx) → voice (no tx) → commit (short tx, row-locked via
+  `TeamChatThreadRepository.lockOwned`): `TeamChatReplyVoiceWriter` (marker `CSAPATFAL-VALASZ`,
+  `LlmCallContext(TeamChatBudget.FEATURE, "reply", "team_chat_thread", threadId)`) writes ONE
+  guarded 1–2 sentence line classified into a verdict (`concrete_context`/`mood`/`disagreement`/
+  `question`/`other`); `EditionVoiceGuard.checkGuest` runs with the user's own reply text passed in
+  as an extra whitelist argument, so a number/name the user already typed doesn't trip the guard on
+  the owner's answer. No budget room, an LLM error, an unparseable answer, or a guard rejection all
+  fall back to a fixed Hungarian template line (`voiced=false`, `verdict=null`) — the fallback never
+  closes anything (closing requires a **voiced** `concrete_context` verdict,
+  `TeamChatReplyDecision.decide`). Caps: `reply-voiced-per-thread-day` (default **4**) — past it a
+  template answers instead of the LLM; `reply-daily-cap` (default **20**, all `REPLY` lines per user
+  per local day) — its own budget, separate from and never counted against the shared
+  `daily-line-cap`. No push on a reply, ever.
+  - **Code-decided close (`TeamChatReplyDecision`).** Only a voiced `concrete_context` verdict with
+    a non-blank `contextTag`/`factText`/`keywords` can close; every other verdict, an `OFFER_REVIEW`
+    thread, or a vetoed same-tag exception all resolve to `ANSWER_ONLY` (the ügy stays `OPEN`). A
+    closing verdict sets `closeReason=REPLY` + a truncated `closeNote` (≤60 chars) directly on the
+    thread row — **no separate `RESOLVE` line** (unlike a data-driven clear, which still writes one).
+    The close also opens a new `team_chat_exception` (`ownerCharacter`, `contextTag`,
+    `normalizedTag`, `factText`, `keywords`, `active=true`, linked to the source thread/line), writes
+    a `knowledge_fact` (`source=team_chat`, `owner`=the character key, `provenance` = a structured
+    team-chat envelope carrying the line/thread id, `createdBy`=the user —
+    `KnowledgeFactService.captureFromTeamChat`), and records one `team_chat_exception_hit`
+    (`source=REPLY`). An **inactive** exception on the same tag is a durable veto — undone once via
+    `.../remembered` (below), it is never re-captured, and a later reply on that tag always answers
+    `ANSWER_ONLY`.
+  - **Next occurrence (`TeamChatExceptionService.gate`, called inside `claimThread` on every
+    open).** Order: an active exception with `≥ exception-review-hits` (default **4**) hits inside
+    the last `exception-window-days` (default **30**) that hasn't already offered a review this
+    window → a `REVIEW` offer (once per window, two quick-answer buttons); else the day's texts
+    (`NarrativeNoteSource` notes across every injected source + that day's own `USER` lines) already
+    name the context (`TeamChatExceptionMatcher.matches`) → a silent `NOTES` hit, no ügy opens at
+    all; else an already-hit-today exception → skipped; otherwise an `EXCUSE` offer — a one-tap "ma
+    is ez volt?" question ügy, opened without a push. Quick answers land on
+    `POST /api/character/team-chat/threads/{threadId}/answer {choice: EXCUSED|KEEP|STOP}`; undo on
+    `DELETE /api/character/team-chat/threads/{threadId}/remembered` — veto (deactivate the
+    exception), mute the knowledge fact, delete that thread's `REPLY` hit, and reopen the thread
+    (only if it was `RESOLVED` with `closeReason=REPLY` and no other `OPEN` thread shares the flag).
+    Lock order: the ügy row lock (`TeamChatThreadRepository.lockOwned`) is always taken before the
+    per-user exception advisory lock (`TeamChatExceptionRepository.lockUserExceptions`) in `answer`/
+    `undoRemembered`; `gate` itself never locks the thread row, only the exception lock, and only
+    once a matching active exception is already known to exist. The catch-up sweep runs its resolves
+    before its opens specifically to avoid a lock-order deadlock against this path
+    (`TeamChatExpiryJob.runCatchUp`).
 - **Intervention-key adapter (`TeamChatInterventionKeyAdapter`):** the team-chat side of
   `TeamChatInterventionKeySource` — resolves a line id to its ügy's `advice_key`, owner-scoped on
   both the line and the thread, for whatever downstream feedback/reward wiring keys off the
@@ -478,7 +540,10 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   `POST /api/character/team-chat/threads/{threadId}/reply` (`TeamChatReplyRequest{text}` →
   `TeamChatLine`, 400 empty/oversized, 404 foreign/unknown); `POST
   /api/character/team-chat/threads/{threadId}/apply/{actionKey}` (→ `TeamChatThread`, 404
-  foreign/unknown, 409 not-offered/conflicting). All three are `CHARACTER_SWITCH`-gated at the
+  foreign/unknown, 409 not-offered/conflicting); since S7, `POST
+  /api/character/team-chat/threads/{threadId}/answer` (`{choice: EXCUSED|KEEP|STOP}`) and `DELETE
+  /api/character/team-chat/threads/{threadId}/remembered` (the review/excuse quick-answer + undo
+  above). All are `CHARACTER_SWITCH`-gated at the
   controller (`CharacterController`), with the write two additionally 404ing when
   `TEAM_CHAT_SWITCH` leaves `TeamChatService`'s `ObjectProvider` empty. Consumed by
   `frontend/src/data/character/teamChatApi.ts` + `teamChatHooks.ts` (`useTeamChat` — dual-mode,

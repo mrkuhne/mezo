@@ -2,7 +2,7 @@
 title: Insights (the Mezo tab)
 type: feature-domain
 status: mixed
-updated: 2026-09-26
+updated: 2026-09-27
 tags: [insights, mezo-tab, frontend, data-layer]
 key_files:
   - frontend/src/features/insights
@@ -836,17 +836,41 @@ the oldest open ügy) that either scrolls to that ügy's opening line or — if 
 different day — navigates to `/mezo/elo?d=<that day>`, then the day's lines grouped by time-of-day
 (Reggel/Délben/Délután/Este/Éjjel, `logic/teamChat.ts`'s `groupByDayPart`, 05-11/11-14/14-18/18-22/
 else, split into consecutive same-part runs so an early-morning and a late-night block never merge),
-and finally, on today's room with any lines, a reply row: „Te hogy látod? Válaszolj…” opening a
-compose sheet against the oldest open ügy. Each character bubble carries a timestamp, and an
-`OPEN`/`RESOLVE` line adds a status tag (`nyitott`/`rendeződött HH:mm`/`lejárt`), a push indicator
-(`értesítettünk · HH:mm` or `csendben`), and „Miből látszik?” opening `EvidenceSheet` — the line's
-own `facts[]` list plus, for a `voiced` line, an honest note that only those numbers could have
-fed the sentence (a failed check falls back to the raw rule text). A still-`OPEN` line also carries
-the unified `ArtifactTrio` (feedback + „Elmesélem”/„Nem így érzem” reply) and, when the ügy offers
-actions (e.g. „Horgony −30 perc”), apply buttons that only show a confirmed „Beállítva: …” after the
-server accepts the write (never optimistically) and a Hungarian retry note on failure. `GUEST`/
-`SKEPTIC` lines (a second character or the Szkeptikus answering under the same ügy) render smaller
-and unlabelled by area, matching the wall's `FeedGuests` convention.
+and finally, on today's room — and, since S7, whenever ANY thread on the page is still awaiting an
+answer, not just today's — a reply row: „Te hogy látod? Válaszolj…” opening a compose sheet against
+the oldest open ügy. Each character bubble carries a timestamp, and an `OPEN`/`RESOLVE` line adds a
+status tag (`nyitott`/`rendeződött HH:mm`/`lejárt`), a push indicator (`értesítettünk · HH:mm` or
+`csendben`), and „Miből látszik?” opening `EvidenceSheet` — the line's own `facts[]` list plus, for
+a `voiced` line, an honest note that only those numbers could have fed the sentence (a failed check
+falls back to the raw rule text). A still-`OPEN` line also carries the unified `ArtifactTrio`
+(feedback + „Elmesélem”/„Nem így érzem” reply) and, when the ügy offers actions (e.g. „Horgony
+−30 perc”), apply buttons that only show a confirmed „Beállítva: …” after the server accepts the
+write (never optimistically) and a Hungarian retry note on failure. `GUEST`/`SKEPTIC` lines (a
+second character or the Szkeptikus answering under the same ügy) render smaller and unlabelled by
+area, matching the wall's `FeedGuests` convention.
+
+**A csapatfal válaszol (S7, `mezo-d6ivw.7`).** After a `USER` reply, the thread the reply belongs
+to enters an `awaiting` state (tracked client-side, not a server field) until a `REPLY` line newer
+than that `USER` line appears in the day data; `frontend/src/features/insights/components/teamchat/ReplyAfterlife.tsx`'s
+`TypingRow` («{Owner} ír…», animated dots) renders on that thread's last line while it is awaiting.
+Once the answer lands: a `RESOLVED` thread whose `closeReason=REPLY` (a code-decided close, no
+manual close ever exists — see [character.md](character.md) §Csapat-chat) shows `CloseTag`
+(„Kivétel: {closeNote}” or „{Owner} lezárta: {closeNote}”, with a silent „csendben” pill when the
+close carried no push) and, once the close also wrote a `knowledge_fact`, `RememberedChip`
+(„Megjegyeztem: …” with a „Visszavonom” undo button — undo calls
+`DELETE …/threads/{id}/remembered`, which vetoes the exception, mutes the fact, deletes that
+thread's hit, and reopens the ügy if nothing else claimed the flag meanwhile; the chip then reads
+„Visszavonva — …”). A live `OPEN` thread carrying an `offer` renders `OfferButtons` above the trio
+instead: an `EXCUSE` offer is one tap („Igen, {tag} volt” → `answer('EXCUSED')`); a `REVIEW` offer
+(the ≥4-hits-in-30-days cap, once per window) is two taps („Rendben van” → `answer('KEEP')` /
+„Nem, figyelj rá” → `answer('STOP')`). All three components are distinct from the older, unrelated
+`RememberedChips.tsx` (plural — an S3 chat-turn fact-extraction chip). The data layer
+(`frontend/src/data/character/teamChatHooks.ts`) tracks awaiting threads in a plain
+`Map<threadId, joinedAtMs>` kept outside the query cache (to dodge invalidation), backs off through
+a handful of short real-mode polls (~2s/3s/5s cumulative) before falling back to the room's normal
+60s poll, and in mock mode simulates the same shape: `reply()` marks the thread awaiting, waits
+~1.2s, then applies a scripted mock answer/close (`teamChatMock.ts`'s `mockReplyAfter`); `answer`/
+`undoRemembered` mirror it with `mockAnswer`/`mockUndo`.
 
 `logic/teamChat.ts` is the pure layer behind both surfaces: `dayPartOf`/`groupByDayPart` (the
 time-of-day bucketing above), `stripText`/`unreadCount` (the live strip's copy + badge),
