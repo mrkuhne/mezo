@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.ToIntFunction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -171,9 +172,12 @@ public class ExpenditureLearningService {
                           int prevApplied) {
     }
 
-    /** Gathers the window, classifies the days and runs the filter; empty when there is no active goal with a bootstrap. */
-    private Optional<Replay> replay(UUID userId, LocalDate weekStart) {
-        GoalEngineProperties.Expenditure e = props.expenditure();
+    /** What both {@code replay} and {@code dayStatuses} need from the active goal's bootstrap. */
+    private record GoalBasis(GoalEntity goal, TdeeBootstrapJson boot, int formulaBase, int planEat, int adjustment) {
+    }
+
+    /** Empty when the caller has no active goal with a usable bootstrap. */
+    private Optional<GoalBasis> goalBasis(UUID userId) {
         GoalEntity goal = goalRepository.findByCreatedByAndStatusAndDeletedFalse(userId, STATUS_ACTIVE)
             .stream().findFirst().orElse(null);
         TdeeBootstrapJson boot = goal == null ? null : goal.getTdeeBootstrap();
@@ -184,6 +188,21 @@ public class ExpenditureLearningService {
             ? boot.formulaNeatBaselineKcal() : boot.neatBaselineKcal());
         int planEat = round(boot.weeklyEatKcalPerDay() == null ? BigDecimal.ZERO : boot.weeklyEatKcalPerDay());
         int adjustment = goal.getBalanceAdjustmentKcal() == null ? 0 : goal.getBalanceAdjustmentKcal();
+        return Optional.of(new GoalBasis(goal, boot, formulaBase, planEat, adjustment));
+    }
+
+    /** Gathers the window, classifies the days and runs the filter; empty when there is no active goal with a bootstrap. */
+    private Optional<Replay> replay(UUID userId, LocalDate weekStart) {
+        GoalEngineProperties.Expenditure e = props.expenditure();
+        Optional<GoalBasis> basis = goalBasis(userId);
+        if (basis.isEmpty()) {
+            return Optional.empty();
+        }
+        GoalEntity goal = basis.get().goal();
+        TdeeBootstrapJson boot = basis.get().boot();
+        int formulaBase = basis.get().formulaBase();
+        int planEat = basis.get().planEat();
+        int adjustment = basis.get().adjustment();
         LocalDate weekEnd = weekStart.plusDays(6);
         LocalDate windowStart = weekEnd.minusDays(e.windowDays() - 1L);
 
@@ -229,6 +248,71 @@ public class ExpenditureLearningService {
         Map<LocalDate, Boolean> out = new HashMap<>();
         for (IntakeDayMarkEntity m : marks.findByCreatedByAndDayBetweenAndDeletedFalse(userId, from, to)) {
             out.put(m.getDay(), "COMPLETE".equals(m.getStatus()));
+        }
+        return out;
+    }
+
+    /**
+     * One day's live classification for the weekly summary / learning-page reads (mezo-3n2so, spec
+     * §5.3, §6.3) — computed fresh with {@link IntakeDayClassifier}, never read from a stored
+     * explanation. {@code status} is one of {@code usable|suspicious|marked_incomplete|
+     * confirmed_complete|unlogged}; {@code mark} mirrors the owner's mark ({@code complete|
+     * incomplete}) or {@code null} when the day carries none.
+     */
+    public record DayStatus(LocalDate date, Integer kcal, String status, String mark) {
+    }
+
+    /**
+     * Live day statuses for {@code [from, to]} — same kcal source, reference window and fallback
+     * rule the weekly run replays with ({@link #replay}), so a day shown here matches what the next
+     * Monday run would see. Two fallback cases when a day has fewer than
+     * {@code minReferenceDays} logged days in the prior {@code referenceDays}:
+     * <ul>
+     *   <li>an active goal with a bootstrap exists → the day's reference is the caller's latest
+     *       applied base (or the formula base, when there is no row yet) plus the plan's daily EAT
+     *       — the same "served target" idea {@link #replay} uses, without the goal's per-day balance
+     *       (Task 4 decision: this read has no single week to resolve a balance segment for);</li>
+     *   <li>no active goal/bootstrap at all → there is nothing to invent a reference from, so the
+     *       day is never flagged suspicious from too little history — it is simply {@code usable}.</li>
+     * </ul>
+     */
+    @Transactional(readOnly = true)
+    public List<DayStatus> dayStatuses(UUID userId, LocalDate from, LocalDate to) {
+        GoalEngineProperties.Expenditure e = props.expenditure();
+        Optional<GoalBasis> basis = goalBasis(userId);
+        ToIntFunction<LocalDate> fallbackRefKcal;
+        if (basis.isPresent()) {
+            int formulaBase = basis.get().formulaBase();
+            int planEat = basis.get().planEat();
+            int fallbackBase = estimates.findFirstByCreatedByAndDeletedFalseOrderByWeekStartDesc(userId)
+                .map(ExpenditureEstimateEntity::getAppliedBaseKcal).orElse(formulaBase);
+            fallbackRefKcal = d -> fallbackBase + planEat;
+        } else {
+            // No formula/plan to fall back on — never invent a reference, so a day with too little
+            // own history is simply usable rather than guessed at.
+            fallbackRefKcal = d -> 0;
+        }
+
+        LocalDate refWindowStart = from.minusDays(e.referenceDays());
+        Map<LocalDate, Integer> kcal = new HashMap<>();
+        for (DailyIntakePort.DayIntake d : dailyIntake.between(userId, refWindowStart, to)) {
+            kcal.put(d.date(), d.kcal());
+        }
+        Map<LocalDate, Boolean> markMap = marksBetween(userId, from, to);
+        Map<LocalDate, IntakeDayClassifier.Status> status = IntakeDayClassifier.classify(from, to, kcal, markMap,
+            fallbackRefKcal, e.suspiciousRatio(), e.referenceDays(), e.minReferenceDays());
+
+        List<DayStatus> out = new ArrayList<>();
+        for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
+            Boolean mark = markMap.get(d);
+            String outMark = mark == null ? null : (mark ? "complete" : "incomplete");
+            String outStatus = switch (status.get(d)) {
+                case UNLOGGED -> "unlogged";
+                case MARKED_INCOMPLETE -> "marked_incomplete";
+                case SUSPICIOUS -> "suspicious";
+                case USABLE -> Boolean.TRUE.equals(mark) ? "confirmed_complete" : "usable";
+            };
+            out.add(new DayStatus(d, kcal.get(d), outStatus, outMark));
         }
         return out;
     }

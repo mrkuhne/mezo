@@ -429,6 +429,61 @@ class ExpenditureLearningServiceIT extends AbstractIntegrationTest {
         assertThat(goal.getPrescription().basis()).isEqualTo("learned");
     }
 
+    // ── Task 4 (mezo-3n2so): live day statuses ─────────────────────────────
+
+    @Test
+    void dayStatusesReflectsAutoAndOwnerMarks() {
+        LocalDate suspicious = LocalDate.of(2026, 9, 16);
+        LocalDate confirmedComplete = LocalDate.of(2026, 9, 17);
+        LocalDate markedIncomplete = LocalDate.of(2026, 9, 18);
+        seedUserAndGoal(null);
+        seedWeighIns();
+        LocalDate first = WEEK_END.minusDays(HISTORY_DAYS - 1L);
+        for (int i = 0; i < HISTORY_DAYS; i++) {
+            LocalDate d = first.plusDays(i);
+            if (d.equals(UNLOGGED_DAY)) {
+                continue;
+            }
+            String kcal = (d.equals(suspicious) || d.equals(confirmedComplete)) ? "604" : DAILY_KCAL;
+            mealPopulator.createMealWithItems(userId, d, "lunch",
+                List.of(new MealPopulator.Line("Day status day", kcal, "150", "200", "70", (short) 1)));
+        }
+        evaluate();
+        mark(confirmedComplete, "COMPLETE");
+        mark(markedIncomplete, "INCOMPLETE");
+
+        List<ExpenditureLearningService.DayStatus> days = service.dayStatuses(userId, WEEK_START, WEEK_END);
+
+        assertThat(byDate(days, suspicious).status()).isEqualTo("suspicious");
+        assertThat(byDate(days, suspicious).mark()).isNull();
+        assertThat(byDate(days, confirmedComplete).status()).isEqualTo("confirmed_complete");
+        assertThat(byDate(days, confirmedComplete).mark()).isEqualTo("complete");
+        assertThat(byDate(days, markedIncomplete).status()).isEqualTo("marked_incomplete");
+        assertThat(byDate(days, markedIncomplete).mark()).isEqualTo("incomplete");
+        assertThat(byDate(days, WEEK_START).status()).isEqualTo("usable");
+        assertThat(byDate(days, WEEK_START).mark()).isNull();
+        assertThat(days).hasSize(7);
+    }
+
+    @Test
+    void dayStatusesMarksAnUnloggedDayWithNoKcalAndNoMark() {
+        seedUserAndGoal(null);
+        seedMealsAndWeighIns(null);
+        evaluate();
+
+        List<ExpenditureLearningService.DayStatus> days = service.dayStatuses(userId, UNLOGGED_DAY, UNLOGGED_DAY);
+
+        assertThat(days).hasSize(1);
+        assertThat(days.get(0).status()).isEqualTo("unlogged");
+        assertThat(days.get(0).kcal()).isNull();
+        assertThat(days.get(0).mark()).isNull();
+    }
+
+    private static ExpenditureLearningService.DayStatus byDate(List<ExpenditureLearningService.DayStatus> days, LocalDate d) {
+        return days.stream().filter(x -> x.date().equals(d)).findFirst()
+            .orElseThrow(() -> new AssertionError("no day-status for " + d));
+    }
+
     // ── fixtures ────────────────────────────────────────────────────────────
 
     private void mark(LocalDate day, String status) {
