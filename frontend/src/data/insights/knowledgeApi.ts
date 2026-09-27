@@ -23,6 +23,11 @@ export function toKnowledgeFact(f: KnowledgeFactResponse): KnowledgeFact {
     owner: f.owner,
     lastReinforcedAt: f.lastReinforcedAt ?? null,
     createdAt: f.createdAt,
+    mutedReason: f.mutedReason ?? null,
+    mutedAt: f.mutedAt ?? null,
+    supersededBy: f.supersededBy ?? null,
+    patternId: f.provenance?.patternId ?? null,
+    sourceMessageId: f.provenance?.sourceMessageId ?? null,
   }
 }
 

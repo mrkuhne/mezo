@@ -1197,6 +1197,231 @@ spec §5.x close rule, `character.yml` reply summary, the port/Noop javadocs; ad
 - Existing fixture updates: `KnowledgeFactServiceIT` cutoff, `CompanionPropertiesIT`.
 - FE: bucketing tests collapse to enabled/disabled; copy snapshot updates; both modes.
 
+## S6 delta — the Tudástár hub + forget controls (2026-09-27, owner-approved direction)
+
+**Owner decisions (2026-09-27):**
+
+1. **Two steps.** S6 = the hub (four sections, provenance, mute / forget / edit, drift
+   supersession). The in-chat "ezt ne jegyezd meg" intent moves to a follow-up slice
+   (S6b, own bead); today's S3 "Megjegyeztem" chip + Visszavonom stays as is.
+2. **Forget is permanent.** "Elfelejtem" deletes, is undoable for a few seconds, and the
+   same thing is never re-learned **from the same source** (a veto, the `person_fact`
+   precedent). New, different information may still be learned. For observations and
+   effects "Elfelejtem" = never shown or used again (they are computed, so the
+   computation cannot be erased — only permanently suppressed).
+3. **Character claims: visible only.** The Rólad section gets one door row
+   ("A csapat véleménye rólad · N állítás") into the existing dossier; no mute/forget for
+   claims in S6 — filed as a separate bead.
+4. **Drift confirm = automatic replacement.** Confirming a drift card promotes the drifted
+   claim to a new fact and mutes the original with a visible reason
+   ("felülírta egy újabb észrevétel, <dátum>"); the user can re-enable the old one.
+5. **Folded in:** mezo-4rh4r (backfill pre-S2 user-confirmed plan-less rows into facts) so
+   the Észrevételek section never shows a confirmed observation without its fact.
+   **Not folded in:** mezo-fp95 (archived graph nodes), mezo-b3pp.39 (profile card now
+   lives in settings), mezo-n7y9j.
+
+**Home (unification answer):** the hub IS the csapatfal world already — `/mezo/knowledge`
+is owned by the **Rólad** dock tab (`navModel.ts:113`), Üveg-dressed by U9
+(`mezo-me75u.9`, `.tud9` + `tf-*` kit), and `RoladFacts`' "Mind a N tény" door leads
+there. S6 extends that surface in place; no new route family, nothing built twice.
+
+### Prior art (S6 recon)
+
+- **ChatGPT Memory** (help.openai.com/en/articles/8590148-memory-faq): one flat, auditable
+  list with three distinct verbs — delete, de-prioritise, restore. **Adopted:** separate
+  verbs (Elfelejtem ≠ Elhallgattatom ≠ Javítom). **Rejected:** a hidden second recall layer
+  with no list — the root of "I can't find what it knows"; and deletes that do not cascade
+  (deleting a chat leaves its memories). Pre-2025 "memory full" silently dropped entries.
+- **Claude memory** (support.claude.com/en/articles/11817273): entries grouped by topic
+  (incl. "people in your life"), in-chat "forget X" takes effect immediately, citations
+  link to source chats. **Adopted:** topic sections + per-item provenance link.
+  **Deferred:** the conversational forget → S6b.
+- **Replika memory** (help.replika.com/hc/en-us/articles/360000874712): the memory list
+  lives on the character's own surface. **Adopted:** entry from the character world (Rólad
+  dock). **Rejected:** no provenance, no mute tier, an undisclosed "deeper" layer.
+- **Exist.io correlations** (kb.exist.io/article/37-what-are-correlations): strength and
+  confidence shown separately; explicit "not cause and effect". **Adopted** for Hatások
+  (already the S4 contract).
+- **ChatGPT "Dreaming" critique** (techtimes.com, 2026-06-05): silent rewriting of
+  out-of-date memories destroys the audit trail; "don't mention this" that only
+  de-prioritises feels like a broken delete. **Adopted:** superseded/refuted facts stay
+  visible as muted with reason + date; "forget" really deletes and vetoes re-learning.
+
+### Codebase terrain (S6 recon)
+
+- **FE:** `frontend/src/features/insights/pages/KnowledgeListPage.tsx` (URL-driven
+  `?view=` switch, `TudasFrame` shell, honest pending/error/degraded branches),
+  `components/KnowledgeBaseView.tsx` (today: pointer card + 2 tiles), `FactsView.tsx`,
+  `KnowledgeFactRow.tsx` (Toggle only), `logic/factCopy.ts` (all fact copy, `bucketFacts`),
+  `data/insights/knowledgeApi.ts` / `knowledgeHooks.ts` (`useDualQuery`).
+  Person side: `features/me/pages/PersonDetailPage.tsx:305-335` (toggle + undo idiom),
+  `data/me/peopleHooks.ts`, `personEffectsHooks.ts`. Provenance canon:
+  `shared/ui/evidence` (`mapEvidence` + `EvidenceList`, lesson 6) — the base spec's
+  "ref-chip pattern" wording is superseded by lesson 6. Prototype canon:
+  `uveg-mezo-teljes.html:5470-5500` (Tudástár), `ember-hatas-uveg.html` (`.effrow`/
+  `.effdots`, lesson 24), `uveg-uzenofal.html:2184-2200` ("Miből látszik?" + Elhallgattatom).
+- **knowledge_fact:** GET/POST/PATCH exist (`companion.yml:286,329`; PATCH already takes
+  `factText`/`category`/`includeInPrompt`); **no DELETE**; `KnowledgeFactResponse` carries
+  no provenance / mute reason. Entity has an unused `superseded_by` and a `provenance`
+  jsonb S2 fills (`PatternService.promote`). `include_in_prompt` is honoured by every
+  consumer (chat, nightly, 9 proactive generators, retrieval, graph via
+  `KnowledgeFactChangedEvent`) — **muting via `include_in_prompt` is the only path
+  already honoured everywhere**; `superseded_by` is read only by
+  `KnowledgeFactRetrievalQuery:39`.
+- **Chat facts** are candidates first (`FactExtractionService` → `LearnedFactEntity`,
+  `derived_from_message_id`); dedupe is normalized text against **non-deleted** facts +
+  pending candidates — a soft-deleted fact does NOT block re-proposal today.
+- **person_fact:** per-person facts ride in `PersonResponse.facts`; DELETE = undo
+  (`active=false`, row kept as normalized-text veto); PATCH `includeInPrompt` only;
+  `PersonFactResponse` has no `sourceRefKind/Id`.
+- **pattern:** `GET /api/companion/pattern` lists live rows; `KnowledgeRecheckService`
+  persists nothing on a "holds" verdict; `applyDriftConfirm` freezes only; the drift row's
+  `pairKey = "drift-" + originalPatternId`, the original's `promotedFactId` is the fact.
+- **effect_link:** `GET /api/companion/effects?personId=` (required) only; the table is a
+  nightly cache (rows upserted / soft-deleted by threshold) — a mute ON the row dies with
+  it. Readers: `gatedEffects` (apropó + csapatfal edition), `promptBlock` (nightly),
+  `effectsForPerson` (person page).
+- **Traps:** ArchUnit (`companion.service` ↛ `companion.reflection`; people ↛ companion);
+  contract chain (lessons 21–22; `UpdateFactRequest.category` still uses `pattern:`);
+  switch-gated beans via `ObjectProvider` (lesson 19); effects/recheck gated COMPANION ∧
+  REFLECTION; row evidence cap 5 (lesson 3); PWA stale bundle after a wire change
+  (lesson 7); codemap after every merge.
+
+### Design (S6)
+
+**Vocabulary (one contract across all four sections):**
+
+| Verb | Meaning | Reversible |
+|---|---|---|
+| **Honnan tudom?** | expands the item's provenance (shared `EvidenceList`, ≤5 items) | — |
+| **Elhallgattatom / Visszakapcsolom** | kept, visible under "Elhallgattatott", used nowhere | yes, any time |
+| **Elfelejtem** | removed + vetoed from the same source; FE shows a ~5 s undo toast and only then sends the delete (no server-side restore endpoint) | only during the toast |
+| **Javítom** | inline text edit — facts only (Rólad, Emberek) | yes (edit again) |
+
+Every muted item shows WHY: *te hallgattattad el* · *később nem igazolódott* (refute,
+S2) · *felülírta egy újabb észrevétel, <dátum>* (drift, decision 4).
+
+**Backend**
+
+1. **knowledge_fact**
+   - New columns `muted_reason` (`user|refuted|superseded`, null when active) and
+     `muted_at`; `update(includeInPrompt=false)` sets `user`, re-enable clears both;
+     `muteFromRefutedPattern` sets `refuted`. Existing muted rows backfill to `user`
+     unless their promoting pattern is refuted (→ `refuted`).
+   - **`DELETE /api/companion/fact/{id}`** = forget: soft-delete + a veto row +
+     `KnowledgeFactChangedEvent` (graph re-syncs / archives the node — plan verifies the
+     listener handles a gone fact).
+   - **Veto store** `memory_forget_veto` (user, domain, key, created_at; unique):
+     domain `fact_text` (normalized text) is checked by `FactExtractionService`'s dedupe
+     (no new candidate from a forgotten text) and by every other fact writer that mints
+     from text (weekly review, question — plan enumerates); domain `pattern` (pattern id)
+     is checked by `PatternService` promotion so a forgotten observation's fact is never
+     re-minted.
+   - `KnowledgeFactResponse` gains: `mutedReason`, `mutedAt`, `supersededBy`,
+     `provenance` {`sourceKind`, `patternId?`, `sourceMessageId?`} and `evidence`
+     (`ObservationEvidenceItem[]`, ≤5): chat facts → the source chat turn (via the
+     accepted candidate's `derived_from_message_id`); pattern facts → the pattern's row
+     evidence (built by `ObservationFeedService`, never re-formatted); manual → none.
+     Enum-like fields use `enum:` (lesson 21); fix `UpdateFactRequest.category` to `enum:`
+     while touching it.
+2. **Drift supersession** (`PatternService.applyDriftConfirm`): promote the drift row's
+   claim to a new fact (source `pattern`, provenance → the drift row); set the original
+   fact `include_in_prompt=false`, `muted_reason=superseded`, `superseded_by=<new id>`;
+   publish the fact events for both. Missing/already-deleted original → promote only
+   (fail-open, logged).
+3. **Recheck trace:** `KnowledgeRecheckService` stamps `pattern.rechecked_at` on every
+   evaluated row (holds AND drift), so the hub can say "legutóbb ellenőrizve <dátum>,
+   még igaz".
+4. **Observations:** the hub lists user/engine-confirmed reflection rows (+ drift rows)
+   with: title, confirm date, `rechecked_at`, drift state, linked fact id + its mute state,
+   row evidence (≤5). Mute = mute the linked fact. **Forget** = forget the linked fact
+   (veto `pattern`) + mark the pattern forgotten so it never resurfaces as a card and its
+   pair key is never re-published (plan finds the publisher's dedupe point and whether a
+   new status or the veto table carries this; the refute-never-resurfaces invariant is
+   the model). Endpoint cut (extend `GET /pattern` vs. a hub-specific read) is the plan's
+   call.
+5. **Backfill (mezo-4rh4r):** one-off job/migration promotes pre-S2 user-confirmed
+   plan-less rows that have no `promotedFactId`, through the S2 promotion path.
+6. **person_fact:** `PersonFactResponse` gains `sourceRefKind`/`sourceRefId` (+ resolved
+   evidence item); PATCH accepts `factText` (re-normalized; an edit to a text equal to a
+   vetoed one is allowed — the user typed it). Forget = existing DELETE (already a veto).
+   Hub reads everything from `GET /api/people` (facts incl. muted ones); no new list
+   endpoint unless the plan proves the payload too heavy. Remember the four hand-assembled
+   `PersonResponse` paths (lesson 18).
+7. **Effects:** `GET /api/companion/effects` — `personId` becomes optional; without it,
+   all live person + event subjects. New table `effect_mute` (user, subject_kind,
+   subject_key, mode `muted|forgotten`, created_at; unique per subject) — **per subject**,
+   covering all its metrics; it survives the nightly cache. `gatedEffects`, `promptBlock`
+   and the edition source skip muted+forgotten subjects; `effectsForPerson` and the hub
+   skip forgotten ones and return muted ones flagged. New PUT/DELETE on the mute
+   (plan names the paths).
+
+**Frontend (`/mezo/knowledge`, Üveg canon, dark only)**
+
+- **Scale (owner decision 2026-09-27, prototype round 2): "Témák + kereső".** After half a
+  year a section holds ~200 items, so no section is a flat list: every section has a live
+  search (filters all groups incl. Elhallgattatott, auto-expands hits); Rólad and
+  Észrevételek group by topic (collapsed, with counts; Rólad by the live categories);
+  Emberek is an alphabetical people list with counts → `?view=emberek&person=<id>`;
+  Hatások has collapsed Emberek / Események groups. "In prompt now" becomes a per-row
+  marker, not a bucket. Search is client-side over the already-loaded section (the
+  per-user sets are small enough); the plan re-checks payload size.
+- **Facts-always alignment (2026-09-27, parallel slice mezo-d6ivw.8):** that slice removes
+  the top-10 prompt selection — `include_in_prompt` becomes the only filter on every
+  channel and the "Bekapcsolva, de most kimarad" bucket disappears. S6 therefore has NO
+  "in prompt now" row marker and no such bucket: a fact is either **bekapcsolva** (the
+  companion always knows it) or **elhallgattatva** (with reason). The prototype was
+  aligned. Sequencing: .8 touches `factCopy.ts`, `FactsView.tsx`, `KnowledgeFactService`
+  and `CompanionProperties` — S6 rebases onto main after .8 lands and builds its FE on the
+  collapsed two-state model; S6 backend work that does not touch those files may go first.
+
+- **Base view:** four section tiles with counts — **Rólad · Emberek · Észrevételek ·
+  Hatások** — replacing today's two tiles; "Kategóriák" and "Hogyan tanul?" become quiet
+  secondary links below. Honest pending/error/degraded per section (no invented numbers).
+- **`?view=tenyek` (Rólad):** today's `FactsView` buckets kept (in prompt / on but
+  left out), the "off" bucket becomes the collapsed **Elhallgattatott** list with reasons;
+  each row gets the four verbs; pattern-sourced facts carry an "észrevételből" tag linking
+  to the Észrevételek item. Bottom door row: "A csapat véleménye rólad · N állítás" →
+  the existing dossier route.
+- **`?view=emberek`:** grouped per person, **alphabetical** (no ranking), each group
+  links to `/me/people/<id>`; rows with the four verbs.
+- **`?view=eszrevetelek`:** confirmed observations with a status line (ellenőrizve /
+  felülírva / elhallgattatva + reason), Honnan tudom?, Elhallgattatom, Elfelejtem.
+- **`?view=hatasok`:** two groups — Emberek (alphabetical) and Események (by strength);
+  each subject one card with its metrics in the approved `.effrow/.effdots` indicators,
+  strength and confidence separate, standing non-causal footnote; Elhallgattatom /
+  Elfelejtem per subject.
+- One shared row-action building block for all four sections; every Hungarian string in a
+  pure, unit-tested copy module (the `factCopy.ts` / `roladCopy.ts` idiom).
+- **Prototype first:** a new `docs/design_2.0/prototypes/uveg-tudastar-hub.html` per
+  /uvegesites §1 (HTTP serve, `?v=N`, chrome from `fuel-uveg.html` untouched, §3.4
+  ranking — rows are NOT each a glass card; one glass card per section tile / per effect
+  subject), reusing the U9 Tudástár block and `ember-hatas-uveg.html`'s effect block.
+  Owner OK before code.
+
+**Non-goals (S6):** the chat "ezt ne jegyezd meg" intent (S6b); mute/forget for character
+claims (own bead); archived graph nodes (mezo-fp95); any new LLM call or slug; cascade
+from deleting a source record (journal/check-in) to its derived facts — noted as a
+follow-up bead (prior-art lesson), not in S6.
+
+### Testing (S6)
+
+- **Unit:** veto normalization + lookup; mute-reason transitions (user / refuted /
+  superseded / re-enable clears); drift supersession (new fact minted, original muted +
+  `superseded_by`, both events; missing original → promote only); effect-mute filtering
+  in all three readers; FE copy module (every status line, empty/degraded texts), undo
+  toast timing (fake timers: undo inside the window sends nothing; expiry sends one
+  DELETE).
+- **ITs (Testcontainers):** DELETE fact → absent from list/prompt/graph + chat extraction
+  of the same text creates no candidate; forgotten observation's pattern never
+  re-promotes and never resurfaces as a card; effect mute survives a nightly recompute
+  that drops and re-creates the row; `gatedEffects`/`promptBlock` skip muted subjects;
+  recheck stamps `rechecked_at` on a holds verdict; backfill promotes stuck rows exactly
+  once (idempotent); `PersonFactResponse` source ref on all four `PersonResponse` paths.
+- **Contract:** drift gate green; MSW handlers + mock fixtures carry the new fields;
+  FE tests in both modes (`CI=true`, `VITE_USE_MOCK` unset AND `=false`); `pnpm build`;
+  affected `tests/layout` specs; runtime pass (verify skill) dark, 320 px, reduced motion.
+
 ## Slice lessons
 
 (numbered; only what a later slice would otherwise pay for again)
@@ -1342,3 +1567,27 @@ spec §5.x close rule, `character.yml` reply summary, the port/Noop javadocs; ad
 35. **(S7)** Test-support truncation lists (`ResetDatabase`) are a hidden migration
     touchpoint: every new owned table must be added, or `AdminDataBrowserIT` fails only in
     the FULL suite — focused ITs never see it.
+36. **(S6)** `mapEvidence` renames a record's `source` to its display name ("Check-in"); any FE
+    logic keyed on the raw catalogue source (topic grouping, icons by source) must capture the
+    wire value BEFORE mapping (`KnowledgeObservation.evidenceSources`).
+37. **(S6)** A pattern that must never resurface is NOT soft-deleted: `GroundedHypothesisPublisher`
+    only dedupes against LIVE rows, so a deleted row lets the next night mint a fresh one. A
+    terminal status (`refuted`, `forgotten`) on a live row is what keeps a topic closed.
+38. **(S6)** Adding a pattern status means auditing every user-facing reader (list, feed incl.
+    pending release, reply, digest, pair detail) AND `closedHypotheses` — the status column is
+    read in ~15 places and only some are status-scoped queries. The plan's own reader list missed
+    five on this slice: `WeeklySuggestionGenerator`, `MemoirGenerator`, `WeeklyReviewGenerator`,
+    `WeeklyReviewDigestService` (proactive weekly/memoir/digest material) and
+    `ConversationService` (seeding a chat's title from a pattern). A whole-branch review is what
+    caught them, not any single task's own tests.
+39. **(S6)** Undo-by-delay (send the DELETE when the toast expires) needs an explicit unmount
+    policy: leaving the page commits, a second forget commits the first — otherwise a forget the
+    user asked for silently never happens.
+40. **(S6)** Merge the parallel slice before the final review, not after: a new enum value landing
+    on `origin/main` from a sibling slice (S7's `source=team_chat`) 500s any strict enum mapper
+    (`SourceKindEnum.fromValue`) this slice's own endpoints touch, and no test in THIS slice can
+    catch it — only exercising the merged state can.
+41. **(S6)** A veto/dedupe key backed by a length-capped column (here `varchar(500)`) must be
+    truncated identically on the write side AND every read side through ONE shared helper — two
+    independently-truncated copies of "the same" normalization silently diverge past the cap, and
+    the failure mode (a forgotten fact quietly comes back) has no error to grep for.

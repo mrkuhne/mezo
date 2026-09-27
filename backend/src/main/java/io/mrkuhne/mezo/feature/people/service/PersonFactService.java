@@ -121,10 +121,16 @@ public class PersonFactService {
         personFactRepository.save(fact);
     }
 
+    /** S6 (mezo-d6ivw.6): partial update — prompt toggle and/or the user's own text fix. */
     @Transactional
-    public PersonFactEntity setIncludeInPrompt(UUID userId, UUID personId, UUID factId, boolean include) {
+    public PersonFactEntity update(UUID userId, UUID personId, UUID factId, Boolean includeInPrompt, String factText) {
         PersonFactEntity fact = requireOwnedFact(userId, personId, factId);
-        fact.setIncludeInPrompt(include);
+        if (includeInPrompt != null) {
+            fact.setIncludeInPrompt(includeInPrompt);
+        }
+        if (factText != null && !factText.isBlank()) {
+            fact.setFactText(factText.trim());
+        }
         return personFactRepository.save(fact);
     }
 

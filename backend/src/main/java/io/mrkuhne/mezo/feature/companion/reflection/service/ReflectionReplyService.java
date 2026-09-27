@@ -92,6 +92,7 @@ public class ReflectionReplyService {
         // a chip answer must never be able to move its status or rewrite its belief.
         PatternEntity row = patternRepository.findByIdAndCreatedByAndDeletedFalse(patternId, userId)
                 .filter(PatternEntity::isReflectionOwned)
+                .filter(p -> !p.isForgotten())
                 .orElseThrow(() -> new SystemRuntimeErrorException(
                         SystemMessage.error("COMPANION_PATTERN_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
         if (choice == null || !CHOICES.contains(choice)) {

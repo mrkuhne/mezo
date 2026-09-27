@@ -61,6 +61,10 @@ public class PatternEntity extends OwnedEntity {
     /** S2: no data for long enough that testing it is meaningless — parked, revives on data. */
     public static final String STATUS_DORMANT = "dormant";
 
+    /** S6 (mezo-d6ivw.6): the user forgot this observation — terminal, never a card again, never
+     *  re-published (the publisher keeps any non-open live row closed) and never re-promoted. */
+    public static final String STATUS_FORGOTTEN = "forgotten";
+
     /** S2 delta (mezo-d6ivw.2, final-review adjudications 2026-09-25): the quarterly knowledge
      *  re-check's drift row identity ({@code drift-<sourcePatternId>}) — shared between
      *  {@code companion.service} ({@link io.mrkuhne.mezo.feature.companion.service.PatternService})
@@ -145,7 +149,7 @@ public class PatternEntity extends OwnedEntity {
     /** Mirrors ck_pattern_status — proposed until Daniel judges it (L2 surface). */
     @NotNull
     @Size(max = 16)
-    @Pattern(regexp = "proposed|monitoring|confirmed|rejected|refuted|dormant")
+    @Pattern(regexp = "proposed|monitoring|confirmed|rejected|refuted|dormant|forgotten")
     @Column(nullable = false, length = 16)
     private String status = STATUS_PROPOSED;
 
@@ -195,6 +199,10 @@ public class PatternEntity extends OwnedEntity {
     @Column(name = "last_detected_at", nullable = false)
     private Instant lastDetectedAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
 
+    /** S6: when the quarterly re-check last EVALUATED this row (holds or drift); null = never. */
+    @Column(name = "rechecked_at")
+    private Instant recheckedAt;
+
     /**
      * S2: has the USER judged this row? {@code confirmed}/{@code rejected} are Daniel's verdicts —
      * the engine's nightly pass reads them and stops, whatever the statistics say.
@@ -218,5 +226,10 @@ public class PatternEntity extends OwnedEntity {
      *  {@link #PAIR_KEY_DRIFT_PREFIX}. */
     public boolean isDrift() {
         return pairKey != null && pairKey.startsWith(PAIR_KEY_DRIFT_PREFIX);
+    }
+
+    /** S6: see {@link #STATUS_FORGOTTEN}. */
+    public boolean isForgotten() {
+        return STATUS_FORGOTTEN.equals(status);
     }
 }

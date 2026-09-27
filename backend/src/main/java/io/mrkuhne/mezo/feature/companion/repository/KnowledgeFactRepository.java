@@ -22,6 +22,9 @@ public interface KnowledgeFactRepository extends JpaRepository<KnowledgeFactEnti
 
     Optional<KnowledgeFactEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 
+    /** S6: the originals a drift successor superseded — released when the successor is forgotten. */
+    List<KnowledgeFactEntity> findByCreatedByAndSupersededByAndDeletedFalse(UUID createdBy, UUID supersededBy);
+
     /** The V3.3 in-chat acknowledgment window — freshly promoted, still-prompt-enabled facts. */
     List<KnowledgeFactEntity> findByCreatedByAndSourceAndIncludeInPromptTrueAndCreatedAtGreaterThanEqualAndDeletedFalseOrderByCreatedAtDesc(
             UUID createdBy, String source, Instant since);

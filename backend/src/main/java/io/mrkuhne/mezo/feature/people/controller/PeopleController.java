@@ -84,8 +84,8 @@ public class PeopleController implements PeopleApi {
     @Override
     public PersonFactResponse updatePersonFact(UUID personId, UUID factId,
             UpdatePersonFactRequest updatePersonFactRequest) {
-        return mapper.toFactResponse(facts().setIncludeInPrompt(
-                currentUserId.get(), personId, factId, updatePersonFactRequest.getIncludeInPrompt()));
+        return mapper.toFactResponse(facts().update(currentUserId.get(), personId, factId,
+                updatePersonFactRequest.getIncludeInPrompt(), updatePersonFactRequest.getFactText()));
     }
 
     @Override

@@ -101,7 +101,7 @@ describe('BoopAboutPage — Rólad, a közös kép (mock mode)', () => {
     const row = screen.getByText('Sleep target: 7.5h, evening kitchen close 21:30').closest('[data-rolad-fact]') as HTMLElement
     expect(within(row).getByText('SZUNYA')).toBeInTheDocument()
     expect(screen.getByText('14 AKTÍV')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Mind a 15 tény/ })).toHaveAttribute('href', '/mezo/knowledge?view=tenyek')
+    expect(screen.getByRole('link', { name: /Mind a 16 tény/ })).toHaveAttribute('href', '/mezo/knowledge?view=tenyek')
   })
 
   test('the doors: dimensions, communication, connections — and no embedded dimension list', () => {
@@ -193,7 +193,7 @@ describe('BoopAboutPage — Rólad, a közös kép (mock mode)', () => {
     expect(within(card).getByLabelText('A régit kikapcsolom')).toBeChecked()
     await userEvent.click(within(card).getByRole('button', { name: 'Igen, jegyezd meg' }))
     expect(await within(inbox()).findByText(ROLAD_COPY.keep)).toBeInTheDocument()
-    await waitFor(() => expect(screen.getByRole('link', { name: /Mind a 16 tény/ })).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByRole('link', { name: /Mind a 17 tény/ })).toBeInTheDocument())
     expect(screen.getByText('14 AKTÍV')).toBeInTheDocument()
   })
 

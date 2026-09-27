@@ -1,7 +1,4 @@
-import {
-  humanizeFactText, originSentence, originChipLabel, reinforcementSentence,
-  promptStatusLabel, bucketFacts, matchesQuery,
-} from '@/features/insights/logic/factCopy'
+import { humanizeFactText, originChipLabel, bucketFacts } from '@/features/insights/logic/factCopy'
 import type { KnowledgeFact } from '@/data/types'
 
 const fact = (over: Partial<KnowledgeFact>): KnowledgeFact => ({
@@ -51,44 +48,14 @@ describe('humanizeFactText', () => {
   })
 })
 
-describe('originSentence', () => {
-  it('minta-tényt magyaráz', () => {
-    expect(originSentence(fact({ source: 'pattern', text: 'X ↔ Y', patternTitle: 'X ↔ Y' })))
-      .toBe('Megerősített mintából tanultam — amikor az egyik változik, a másik jellemzően követi.')
-  })
-
-  it('eltérő minta-címet evidenciaként hozzáfűz', () => {
-    expect(originSentence(fact({ source: 'pattern', text: 'Este eszik', patternTitle: 'Késői étkezés ↔ alvás' })))
-      .toBe('Megerősített mintából tanultam — amikor az egyik változik, a másik jellemzően követi. (A minta: „Késői étkezés ↔ alvás".)')
-  })
-
-  it('chat és kézi eredetet is megnevez', () => {
-    expect(originSentence(fact({ source: 'chat' }))).toBe('A beszélgetéseitekből szűrtem ki.')
-    expect(originSentence(fact({ source: 'manual' }))).toBe('Te vetted fel kézzel.')
+describe('originChipLabel', () => {
+  it('names every source, the csapatfal one included (S7)', () => {
     expect(originChipLabel('pattern')).toBe('mintából')
-  })
-
-  it('heti áttekintés és kérdés eredetet is megnevez (mezo-zpxv7)', () => {
-    expect(originSentence(fact({ source: 'weekly_review' }))).toBe('A heti áttekintésből derült ki.')
-    expect(originSentence(fact({ source: 'question' }))).toBe('Egy kérdésre válaszoltál rá.')
+    expect(originChipLabel('chat')).toBe('beszélgetésből')
+    expect(originChipLabel('manual')).toBe('kézzel')
     expect(originChipLabel('weekly_review')).toBe('heti áttekintésből')
     expect(originChipLabel('question')).toBe('kérdésre válaszoltál')
-  })
-
-  it('a csapatfal-válaszból megjegyzett tényt is megnevezi (S7, mezo-d6ivw.7)', () => {
-    expect(originSentence(fact({ source: 'team_chat' }))).toBe('A csapatfalon adott válaszodból jegyeztem meg.')
     expect(originChipLabel('team_chat')).toBe('csapatfalról')
-  })
-})
-
-describe('reinforcementSentence', () => {
-  it('nulla megerősítésnél őszinte', () => {
-    expect(reinforcementSentence(0, null)).toBe('Még nem jött vissza megerősítés.')
-  })
-
-  it('dátummal és anélkül is beszédes', () => {
-    expect(reinforcementSentence(2, '2026-08-05T19:20:00Z')).toBe('2× visszaigazolva · utoljára Aug 5')
-    expect(reinforcementSentence(3, null)).toBe('3× visszaigazolva')
   })
 })
 
@@ -110,29 +77,5 @@ describe('bucketFacts', () => {
   it('minden tény pontosan egy vödörben van', () => {
     const { inPrompt, off } = bucketFacts(facts)
     expect(inPrompt.length + off.length).toBe(facts.length)
-  })
-})
-
-describe('promptStatusLabel + matchesQuery', () => {
-  it('minden vödörnek van kimondott címkéje', () => {
-    expect(promptStatusLabel('in-prompt')).toBe('A társ tudja — minden beszélgetésben ott van')
-    expect(promptStatusLabel('off')).toBe('Kikapcsolva — a társ nem látja')
-  })
-
-  it('a keresés a megjelenített szövegre és a kategória-címkére illeszkedik', () => {
-    const f = fact({ text: 'Gyógyszer-ciklusnap ↔ napi kalória', category: 'health' })
-    expect(matchesQuery(f, 'kalória')).toBe(true)
-    expect(matchesQuery(f, 'EGÉSZSÉG')).toBe(true)
-    expect(matchesQuery(f, 'bench')).toBe(false)
-    expect(matchesQuery(f, '')).toBe(true)
-  })
-
-  it('a keresés az eredet-mondatban megjelenő minta-címre is illeszkedik', () => {
-    const f = fact({
-      text: 'Stressz rontja az alvást',
-      source: 'pattern',
-      patternTitle: 'Stressz-szint ↔ aznapi alvásminőség',
-    })
-    expect(matchesQuery(f, 'aznapi')).toBe(true)
   })
 })

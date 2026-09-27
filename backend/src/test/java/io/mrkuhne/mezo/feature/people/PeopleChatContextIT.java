@@ -143,7 +143,7 @@ class PeopleChatContextIT extends AbstractIntegrationTest {
             new PersonFactService.PersonFactCapture(anna.getId(), "sensitivity",
                 "Gyász a családban", "medium"))).getFirst();
         personFactService.undo(owner, anna.getId(), undone.getId());
-        personFactService.setIncludeInPrompt(owner, anna.getId(), toggled.getId(), false);
+        personFactService.update(owner, anna.getId(), toggled.getId(), false, null);
 
         List<PersonChatContext> ctx = peopleService.chatContext(owner, LocalDate.now());
 

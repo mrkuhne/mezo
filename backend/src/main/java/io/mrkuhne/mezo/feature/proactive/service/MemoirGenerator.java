@@ -245,6 +245,8 @@ public class MemoirGenerator {
         List<PatternEntity> patterns = patternRepository
                 .findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(userId)
                 .stream()
+                // S6 (mezo-d6ivw.6): an in-week event must not drag a forgotten row back in
+                .filter(p -> !p.isForgotten())
                 .filter(p -> PatternEntity.STATUS_CONFIRMED.equals(p.getStatus())
                         || eventPatternIds.contains(p.getId()))
                 .toList();

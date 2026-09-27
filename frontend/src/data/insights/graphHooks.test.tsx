@@ -5,10 +5,8 @@ import { API_BASE } from '@/data/_client/api'
 import { makeHookWrapper, makeHookWrapperWithClient } from '@/test/queryWrapper'
 import {
   useLifeEventCandidates, useKnowledgeGraphNodes, useKnowledgeGraphActions, useLifeEventActions,
-  useGraphEdgeCount,
 } from '@/data/insights/graphHooks'
 import { lifeEventCandidateSeed, graphNodeSeed, graphNodeSeedByUpdatedAt } from '@/data/insights/graph'
-import { edges as edgeSeed } from '@/data/insights/knowledge'
 
 describe('useLifeEventCandidates (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
@@ -154,49 +152,6 @@ describe('useKnowledgeGraphActions (archive)', () => {
     const { result } = renderHook(() => useKnowledgeGraphActions(), { wrapper: makeHookWrapper() })
     result.current.archive('n1')
     await waitFor(() => expect(called).toBe(true))
-    vi.unstubAllEnvs()
-  })
-})
-
-describe('useGraphEdgeCount', () => {
-  it('mock módban a seed-élszámot adja vissza', async () => {
-    vi.stubEnv('VITE_USE_MOCK', 'true')
-    const { result } = renderHook(() => useGraphEdgeCount(), { wrapper: makeHookWrapper() })
-    await waitFor(() => expect(result.current.count).toBe(edgeSeed.length))
-    vi.unstubAllEnvs()
-  })
-
-  it('real módban a GET /graph/edge/count választ adja vissza', async () => {
-    vi.stubEnv('VITE_USE_MOCK', 'false')
-    server.use(
-      http.get(`${API_BASE}/api/companion/graph/edge/count`, () => HttpResponse.json({ count: 7 })),
-    )
-    const { result } = renderHook(() => useGraphEdgeCount(), { wrapper: makeHookWrapper() })
-    await waitFor(() => expect(result.current.count).toBe(7))
-    vi.unstubAllEnvs()
-  })
-
-  it('real módban 404-re (gráf-kapcsoló ki) null-t ad, nem hibát', async () => {
-    vi.stubEnv('VITE_USE_MOCK', 'false')
-    server.use(
-      http.get(`${API_BASE}/api/companion/graph/edge/count`, () => new HttpResponse(null, { status: 404 })),
-    )
-    const { result } = renderHook(() => useGraphEdgeCount(), { wrapper: makeHookWrapper() })
-    await waitFor(() => expect(result.current.count).toBe(null))
-    vi.unstubAllEnvs()
-  })
-
-  it('real módban amíg függőben van, null-t ad (a hero elhagyja a szegmenst, sose 0-t mutat)', async () => {
-    vi.stubEnv('VITE_USE_MOCK', 'false')
-    server.use(
-      http.get(`${API_BASE}/api/companion/graph/edge/count`, async () => {
-        await new Promise((r) => setTimeout(r, 50))
-        return HttpResponse.json({ count: 3 })
-      }),
-    )
-    const { result } = renderHook(() => useGraphEdgeCount(), { wrapper: makeHookWrapper() })
-    expect(result.current.count).toBe(null)
-    await waitFor(() => expect(result.current.count).toBe(3))
     vi.unstubAllEnvs()
   })
 })

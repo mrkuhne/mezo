@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion.mapper;
 
 import io.mrkuhne.mezo.api.dto.ConversationResponse;
 import io.mrkuhne.mezo.api.dto.FactCandidateResponse;
+import io.mrkuhne.mezo.api.dto.KnowledgeFactProvenance;
 import io.mrkuhne.mezo.api.dto.KnowledgeFactResponse;
 import io.mrkuhne.mezo.api.dto.MessageRef;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
@@ -15,6 +16,7 @@ import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
+import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.PatternCritiqueEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
@@ -28,6 +30,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.UUID;
 
 @Mapper(componentModel = "spring")
 public interface CompanionMapper {
@@ -140,6 +143,14 @@ public interface CompanionMapper {
      *  this" (see {@code HighlightCitationSource}); {@code null} = not measurable. */
     default KnowledgeFactResponse toKnowledgeFactResponse(
             KnowledgeFactEntity entity, String patternTitle, Integer citedWeeks) {
+        return toKnowledgeFactResponse(entity, patternTitle, citedWeeks, null);
+    }
+
+    /** S6 (mezo-d6ivw.6): + mute state and provenance. The pattern id comes from the S2
+     *  promotion envelope; the chat message id from the accepted candidate (list-time join). */
+    default KnowledgeFactResponse toKnowledgeFactResponse(
+            KnowledgeFactEntity entity, String patternTitle, Integer citedWeeks, UUID sourceMessageId) {
+        MemoryProvenanceEnvelope envelope = entity.getProvenance();
         return KnowledgeFactResponse.builder()
                 .citedWeeks(citedWeeks)
                 .id(entity.getId())
@@ -152,6 +163,15 @@ public interface CompanionMapper {
                 .lastReinforcedAt(toOffset(entity.getLastReinforcedAt()))
                 .createdAt(toOffset(entity.getCreatedAt()))
                 .patternTitle(patternTitle)
+                .mutedReason(entity.getMutedReason() == null ? null
+                        : KnowledgeFactResponse.MutedReasonEnum.fromValue(entity.getMutedReason()))
+                .mutedAt(toOffset(entity.getMutedAt()))
+                .supersededBy(entity.getSupersededBy())
+                .provenance(KnowledgeFactProvenance.builder()
+                        .sourceKind(KnowledgeFactProvenance.SourceKindEnum.fromValue(entity.getSource()))
+                        .patternId(envelope == null ? null : envelope.patternId())
+                        .sourceMessageId(sourceMessageId)
+                        .build())
                 .build();
     }
 

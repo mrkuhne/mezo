@@ -2013,7 +2013,8 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /** S6 (mezo-d6ivw.6) — Elfelejtem: a tény törlődik, és ugyanebből a forrásból soha nem tanulódik újra (vétó). Nincs visszaállítás — a FE visszavonás-ablaka után hívódik. */
+        delete: operations["forgetFact"];
         options?: never;
         head?: never;
         /** Partially update a fact — edit its text/category or toggle include_in_prompt */
@@ -2165,6 +2166,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/effects/{subjectKind}/{subjectKey}/mute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** S6 (mezo-d6ivw.6) — egy hatás-alany elhallgattatása (muted) vagy végleges elfelejtése (forgotten). Az elfelejtés végleges: sem egy későbbi muted, sem a DELETE nem hozza vissza. */
+        put: operations["muteEffectSubject"];
+        post?: never;
+        /** S6 — Visszakapcsolom egy elhallgattatott hatás-alanyra (egy elfelejtettre nem hat). */
+        delete: operations["unmuteEffectSubject"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/observation": {
         parameters: {
             query?: never;
@@ -2199,6 +2218,57 @@ export interface paths {
          * @description A válasz mindig append-only ESEMÉNY. `watch` egy `proposed` sort `monitoring`-ra állít; `reject` MÁSODJÁRA refutálja (egyetlen `reject` nem mozdít státuszt); `talk` egy a sejtésre magolt beszélgetést nyit és visszaadja az azonosítóját. A `belief` mindig kódból számolódik újra — sosem LLM-becslés.
          */
         post: operations["replyToPattern"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/observation/knowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** S6 (mezo-d6ivw.6) — a Tudástár Észrevételek szakasza: a megerősített (és a cáfolt, de tényt hagyó) észrevételek, a belőlük tanult tény állapotával, a drift-párral és a sor saját bizonyítékaival (legfeljebb 5). */
+        get: operations["listKnowledgeObservations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/observation/{patternId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** S6 — Elfelejtem egy észrevételre: a belőle tanult tény törlődik (vétóval), az észrevétel soha többé nem jelenik meg és nem tanulódik újra. */
+        delete: operations["forgetObservation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/fact/{factId}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** S6 — Honnan tudom? egy tényre: a forrás strukturált bizonyítékai (chat → a beszélgetés-üzenet; észrevétel → a sor bizonyítékai), legfeljebb 5 elem. */
+        get: operations["getFactEvidence"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2408,7 +2478,7 @@ export interface paths {
         delete: operations["undoPersonFact"];
         options?: never;
         head?: never;
-        /** Per-fact prompt toggle */
+        /** Per-fact prompt toggle and text edit (S6) */
         patch: operations["updatePersonFact"];
         trace?: never;
     };
@@ -7933,7 +8003,7 @@ export interface components {
             factText: string;
             /** @description 'train' | 'fuel' | 'health' | 'life' */
             category: string;
-            /** @description 'chat' | 'pattern' | 'manual' — V1.1 creates only 'manual'; 'chat' arrives with V1.2 extraction, 'pattern' with V3.3 promotion */
+            /** @description 'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question' | 'team_chat' — V1.1 creates only 'manual'; 'chat' arrives with V1.2 extraction, 'pattern' with V3.3 promotion, 'weekly_review' with mezo-d20.7.6, 'question' with mezo-d58h.7.5, 'team_chat' with S7 (mezo-d6ivw.7) */
             source: string;
             /**
              * @description U9b (mezo-zpxv7): the team character that owns the fact — the Rólad tag. User-authored facts are shown as TŐLED by the FE from `source`, not from this field.
@@ -7952,6 +8022,37 @@ export interface components {
             patternTitle?: string | null;
             /** @description In how many of the recent weekly reviews the companion cited this fact as something the week was built on (mezo-d20.7.7). A SEPARATE, weaker signal than reinforcementCount — the model citing its own knowledge is not the user re-confirming it — derived live from the non-deleted weekly_review rows. Null = not measurable (the proactive/weekly feature is off), never a stand-in zero. */
             citedWeeks?: number | null;
+            /**
+             * @description S6 (mezo-d6ivw.6) — miért hallgat a tény: user = te hallgattattad el, refuted = később nem igazolódott (S2 cáfolat), superseded = felülírta egy újabb észrevétel. Null, ha bekapcsolt.
+             * @enum {string|null}
+             */
+            mutedReason?: "user" | "refuted" | "superseded" | null;
+            /**
+             * Format: date-time
+             * @description S6 — mikor hallgattatták el; null, ha bekapcsolt vagy S6 előtti némítás.
+             */
+            mutedAt?: string | null;
+            /**
+             * Format: uuid
+             * @description S6 — a tény, ami felülírta (drift-megerősítés).
+             */
+            supersededBy?: string | null;
+            provenance: components["schemas"]["KnowledgeFactProvenance"];
+        };
+        /** @description S6 (mezo-d6ivw.6) — honnan jön a tény. A bizonyíték-elemeket a GET /api/companion/fact/{factId}/evidence adja lustán (Honnan tudom?). */
+        KnowledgeFactProvenance: {
+            /** @enum {string} */
+            sourceKind: "chat" | "pattern" | "manual" | "weekly_review" | "question" | "team_chat";
+            /**
+             * Format: uuid
+             * @description Az észrevétel, amiből a tény született (source=pattern).
+             */
+            patternId?: string | null;
+            /**
+             * Format: uuid
+             * @description A beszélgetés-üzenet, amiből a jelölt született (chat).
+             */
+            sourceMessageId?: string | null;
         };
         CreateFactRequest: {
             factText: string;
@@ -7960,7 +8061,8 @@ export interface components {
         /** @description Partial update — only the provided fields are applied. */
         UpdateFactRequest: {
             factText?: string | null;
-            category?: string | null;
+            /** @enum {string|null} */
+            category?: "train" | "fuel" | "health" | "life" | null;
             includeInPrompt?: boolean | null;
         };
         FactCandidateResponse: {
@@ -8180,6 +8282,21 @@ export interface components {
              * @description A legutóbbi éjszakai újraszámítás időpontja.
              */
             computedAt: string;
+            /**
+             * @description S6 — az alany fajtája.
+             * @enum {string}
+             */
+            subjectKind: "person" | "event";
+            /** @description S6 — személy-uuid vagy esemény-kulcs (edzes, munka, csalad, kozos_program, konfliktus, pihenes). */
+            subjectKey: string;
+            /** @description S6 — a személy neve / az esemény magyar címkéje. */
+            subjectLabel?: string | null;
+            /** @description S6 — az alany el van hallgattatva (a prompt nem látja). */
+            muted: boolean;
+        };
+        EffectMuteRequest: {
+            /** @enum {string} */
+            mode: "muted" | "forgotten";
         };
         /** @description Egy kártya az Észrevételek fülön (Reflexió S4, mezo-eq85.4). A `fresh`/`return` kártyák egy `observation` ESEMÉNYT jelenítenek meg (az `id` az esemény azonosítója), a `watching`/`confirmed` kártyák magát a sort (az `id` a minta azonosítója) — a `patternId` mindig a soré, mert a chip-válasz arra megy. */
         ObservationResponse: {
@@ -8229,6 +8346,43 @@ export interface components {
             repliedChoice?: string | null;
             /** @description Melyik felület ikonját mutassa a kártya — a teszt-terv seriesA előtagjából származtatva; terv nélkül mezo. */
             sourceIcon: string;
+        };
+        /** @description S6 (mezo-d6ivw.6) — egy észrevétel a Tudástárban. A némítás a belőle tanult TÉNYEN él (factMutedReason); a drift-pár a replacesPatternId / replacedByPatternId mezőkön. */
+        KnowledgeObservationResponse: {
+            /** Format: uuid */
+            patternId: string;
+            title: string;
+            /**
+             * Format: date-time
+             * @description A legutóbbi megerősítés ideje.
+             */
+            confirmedAt: string;
+            /**
+             * Format: date-time
+             * @description A negyedéves újraellenőrzés legutóbbi ítélete (holds/drift); null = még nem.
+             */
+            recheckedAt?: string | null;
+            /** @enum {string} */
+            status: "confirmed" | "refuted";
+            /** Format: uuid */
+            factId?: string | null;
+            /** @enum {string|null} */
+            factMutedReason?: "user" | "refuted" | "superseded" | null;
+            /** Format: date-time */
+            factMutedAt?: string | null;
+            /**
+             * Format: uuid
+             * @description Drift-sor: az eredeti észrevétel, amit felülírt.
+             */
+            replacesPatternId?: string | null;
+            /**
+             * Format: uuid
+             * @description Eredeti sor: a megerősített drift-sor, ami felülírta.
+             */
+            replacedByPatternId?: string | null;
+            /** @description A normalizált observation-topic-key (a FE téma-csoportosításához). */
+            topicKey?: string | null;
+            evidence: components["schemas"]["ObservationEvidenceItem"][];
         };
         /** @description A chip-válasz (Reflexió S4, mezo-eq85.4) — a `text` a „mesélj” ágon a saját szavaid. */
         PatternReplyRequest: {
@@ -8622,8 +8776,10 @@ export interface components {
             /** @description Az Emberek hub Mezo-észrevétel sávjának mondata. A mai 'people' companion-üzenet, ha van; egyébként a heti aggregátumokból számított, determinisztikus tartalék. Sosem üres — a sáv mindig igaz mondatot mutat. */
             mezoNote: string;
         };
+        /** @description Részleges frissítés — csak a megadott mezők érvényesülnek (S6: szöveg-javítás is). Egy korábban visszavont szöveg beírása megengedett: azt a felhasználó maga írta. */
         UpdatePersonFactRequest: {
-            includeInPrompt: boolean;
+            includeInPrompt?: boolean | null;
+            factText?: string | null;
         };
         /** @description S3 (mezo-d6ivw.3) — egy normalizált tény egy ismert személyről, forrás-hivatkozással. A legacy person.knownFacts tömbtől független; visszavonás után a szöveg tartós vétó. */
         PersonFactResponse: {
@@ -8638,6 +8794,8 @@ export interface components {
             confidence: "low" | "medium" | "high";
             /** @enum {string} */
             sourceRefKind: "chat_turn" | "nightly_day";
+            /** @description S6 — a forrás azonosítója (chat_turn: az üzenet; nightly_day: a nap). */
+            sourceRefId: string;
             active: boolean;
             includeInPrompt: boolean;
             /** @description false, amíg a (jellemzően éjszakai) tényt a személy oldalán először meg nem nézik. */
@@ -17998,6 +18156,44 @@ export interface operations {
             };
         };
     };
+    forgetFact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                factId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Forgotten */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Fact not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     updateFact: {
         parameters: {
             query?: never;
@@ -18333,8 +18529,9 @@ export interface operations {
     };
     listPersonEffects: {
         parameters: {
-            query: {
-                personId: string;
+            query?: {
+                /** @description Nélküle: minden élő személy- és esemény-alany — a Tudástár Hatások szakasza (S6). */
+                personId?: string;
             };
             header?: never;
             path?: never;
@@ -18349,6 +18546,88 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PersonEffectsResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    muteEffectSubject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                subjectKind: "person" | "event";
+                subjectKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EffectMuteRequest"];
+            };
+        };
+        responses: {
+            /** @description Stored */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    unmuteEffectSubject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                subjectKind: "person" | "event";
+                subjectKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unmuted (or nothing to do) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error (unknown subjectKind, or a subjectKey over 64 chars) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Missing or invalid token */
@@ -18436,6 +18715,113 @@ export interface operations {
                 };
             };
             /** @description Pattern not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listKnowledgeObservations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Observations, newest confirmation first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeObservationResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    forgetObservation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patternId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Forgotten */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found, foreign, or not a reflection-owned observation */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getFactEvidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                factId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Evidence items (may be empty for manual facts) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObservationEvidenceItem"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Fact not found (or owned by someone else) */
             404: {
                 headers: {
                     [name: string]: unknown;

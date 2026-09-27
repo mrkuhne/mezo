@@ -22,7 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 /**
  * The named-effect HTTP surface for one person (Emlékezet S4, mezo-d6ivw.4) —
- * {@code EffectLinkService.effectsForPerson} is unit-covered by {@code EffectLinkServiceIT}; this
+ * {@code EffectLinkService.effectViews} is unit-covered by {@code EffectLinkServiceIT}; this
  * class only checks the wire: field mapping, direction-from-sign, and the auth gate.
  */
 @ActiveProfiles("companion-fake")

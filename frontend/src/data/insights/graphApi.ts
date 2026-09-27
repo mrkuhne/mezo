@@ -4,10 +4,8 @@ import type { KnowledgeGraphNode, LifeEventCandidate, LifeEventDecision } from '
 
 export type GraphNodeResponse = components['schemas']['GraphNodeResponse']
 export type GraphCandidateDecisionRequest = components['schemas']['GraphCandidateDecisionRequest']
-export type GraphEdgeCountResponse = components['schemas']['GraphEdgeCountResponse']
 
 const NODE = '/api/companion/graph/node'
-const EDGE = '/api/companion/graph/edge'
 
 /** Edit-then-approve fields on a candidate accept (mezo-ms9a) — omitted (undefined) means "keep
  *  the candidate's own title/summary", never an empty-string overwrite. */
@@ -56,5 +54,4 @@ export const graphApi = {
     }),
   listNodes: async () => (await apiFetch<GraphNodeResponse[]>(NODE)).map(toKnowledgeGraphNode),
   archiveNode: (id: string) => apiFetch<GraphNodeResponse>(`${NODE}/${id}/archive`, { method: 'POST' }),
-  edgeCount: () => apiFetch<GraphEdgeCountResponse>(`${EDGE}/count`),
 }

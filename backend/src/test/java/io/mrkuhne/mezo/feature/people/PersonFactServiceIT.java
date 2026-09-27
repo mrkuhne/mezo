@@ -166,7 +166,7 @@ class PersonFactServiceIT extends AbstractIntegrationTest {
             PersonFactEntity.SOURCE_CHAT_TURN, "msg-12",
             List.of(cap(beni.getId(), PersonFactEntity.KIND_PREFERENCE, "Éjszakai bagoly"))).get(0);
 
-        PersonFactEntity toggled = personFactService.setIncludeInPrompt(userId, beni.getId(), muted.getId(), false);
+        PersonFactEntity toggled = personFactService.update(userId, beni.getId(), muted.getId(), false, null);
         assertThat(toggled.isIncludeInPrompt()).isFalse();
 
         List<PersonFactEntity> prompt = personFactService.promptFacts(userId,

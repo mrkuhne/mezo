@@ -115,7 +115,7 @@ public class PatternPairDetailService {
         PatternEntity row = labels == null ? null
                 : patternRepository.findByCreatedByAndHypothesisKeyAndDeletedFalse(userId, pairKey)
                         .orElse(null);
-        if (row == null || row.getTestPlan() == null) {
+        if (row == null || row.isForgotten() || row.getTestPlan() == null) {
             throw new SystemRuntimeErrorException(
                     SystemMessage.error("COMPANION_PATTERN_PAIR_NOT_FOUND").build(), HttpStatus.NOT_FOUND);
         }

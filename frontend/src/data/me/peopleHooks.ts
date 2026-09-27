@@ -31,7 +31,7 @@ const MOCK_PEOPLE: PeopleBootstrap = { people: personSeed, mentions: mentionSeed
 export function usePeople() {
   const qc = useQueryClient()
   const mock = isMockMode()
-  const { data, isPending } = useDualQuery<PeopleBootstrap>({
+  const { data, isPending, isError, refetch } = useDualQuery<PeopleBootstrap>({
     queryKey: PEOPLE_KEY,
     mockData: MOCK_PEOPLE,
     realFetch: async () => {
@@ -85,24 +85,44 @@ export function usePeople() {
   })
 
   // --- S3 person facts: visszavonás (tartós vétó), prompt-kapcsoló, „új" jelölés leszedése ---
-  const undoFactM = useMutation({
-    mutationFn: async (input: { personId: string; factId: string }) => {
-      if (mock) { mockUndoFact(qc, input.personId, input.factId); return }
-      await peopleApi.undoFact(input.personId, input.factId)
+  // S6 final review: undo and the prompt toggle patch the cache when they START (both modes —
+  // in mock mode the patch is the whole write), so a forgotten fact never flashes back before the
+  // refetch; a failed real-mode write restores the snapshot and the promise rejects.
+  const optimisticFactWrite = <V extends { personId: string; factId: string }>(
+    write: (v: V) => Promise<unknown>, patch: (v: V) => void,
+  ) => ({
+    mutationFn: async (v: V) => { if (!mock) await write(v) },
+    onMutate: async (v: V) => {
+      await qc.cancelQueries({ queryKey: PEOPLE_KEY })
+      const snap = qc.getQueryData<PeopleBootstrap>(PEOPLE_KEY)
+      if (mock || snap) patch(v) // real mode: never seed a cold cache with mock people
+      return { snap }
     },
-    onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: PEOPLE_KEY }),
-  })
-  const toggleFactM = useMutation({
-    mutationFn: async (input: { personId: string; factId: string; includeInPrompt: boolean }) => {
-      if (mock) { mockToggleFact(qc, input.personId, input.factId, input.includeInPrompt); return }
-      await peopleApi.toggleFact(input.personId, input.factId, input.includeInPrompt)
+    onError: (_e: Error, _v: V, ctx: { snap?: PeopleBootstrap } | undefined) => {
+      if (ctx?.snap) qc.setQueryData(PEOPLE_KEY, ctx.snap)
     },
-    onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: PEOPLE_KEY }),
+    onSettled: mock ? undefined : () => qc.invalidateQueries({ queryKey: PEOPLE_KEY }),
   })
+  const undoFactM = useMutation(optimisticFactWrite(
+    (i: { personId: string; factId: string }) => peopleApi.undoFact(i.personId, i.factId),
+    (i) => mockUndoFact(qc, i.personId, i.factId),
+  ))
+  const toggleFactM = useMutation(optimisticFactWrite(
+    (i: { personId: string; factId: string; includeInPrompt: boolean }) =>
+      peopleApi.toggleFact(i.personId, i.factId, i.includeInPrompt),
+    (i) => mockToggleFact(qc, i.personId, i.factId, i.includeInPrompt),
+  ))
   const seenFactsM = useMutation({
     mutationFn: async (personId: string) => {
       if (mock) { mockMarkFactsSeen(qc, personId); return }
       await peopleApi.markFactsSeen(personId)
+    },
+    onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: PEOPLE_KEY }),
+  })
+  const editFactM = useMutation({
+    mutationFn: async (input: { personId: string; factId: string; text: string }) => {
+      if (mock) { mockEditFact(qc, input.personId, input.factId, input.text); return }
+      await peopleApi.editFact(input.personId, input.factId, input.text)
     },
     onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: PEOPLE_KEY }),
   })
@@ -119,10 +139,17 @@ export function usePeople() {
     decidePerson: (personId: string, decision: 'accept' | 'reject') =>
       decideM.mutate({ personId, decision }),
     undoFact: (personId: string, factId: string) => undoFactM.mutate({ personId, factId }),
+    /** The hub's "Elfelejtem": rejects when the veto failed (the cache is already rolled back). */
+    undoFactAsync: (personId: string, factId: string) => undoFactM.mutateAsync({ personId, factId }),
     toggleFact: (personId: string, factId: string, includeInPrompt: boolean) =>
       toggleFactM.mutate({ personId, factId, includeInPrompt }),
+    toggleFactAsync: (personId: string, factId: string, includeInPrompt: boolean) =>
+      toggleFactM.mutateAsync({ personId, factId, includeInPrompt }),
     markFactsSeen: (personId: string) => seenFactsM.mutate(personId),
+    editFact: (personId: string, factId: string, text: string) => editFactM.mutate({ personId, factId, text }),
     isPending,
+    isError,
+    refetch,
   }
 }
 
@@ -187,6 +214,10 @@ function mockToggleFact(qc: QueryClient, personId: string, factId: string, inclu
 
 function mockMarkFactsSeen(qc: QueryClient, personId: string) {
   mapPersonFacts(qc, personId, facts => facts.map(f => f.seen ? f : { ...f, seen: true }))
+}
+
+function mockEditFact(qc: QueryClient, personId: string, factId: string, text: string) {
+  mapPersonFacts(qc, personId, facts => facts.map(f => f.id === factId ? { ...f, text } : f))
 }
 
 function mockUndoMention(qc: QueryClient, mentionId: string) {
