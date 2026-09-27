@@ -132,6 +132,8 @@ public class WeeklySuggestionGenerator {
                 memoryBlock(userId, weekStart.plusDays(6), memoryQuery, "generate", null);
         String patterns = patternRepository
                 .findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(userId).stream()
+                // S6 (mezo-d6ivw.6): a forgotten observation never reaches a prompt again
+                .filter(p -> !p.isForgotten())
                 .map(p -> "- " + p.getTitle() + " (státusz: " + p.getStatus() + ")")
                 .collect(Collectors.joining("\n"));
         // mezo-ned9: ONE owner-local derivation feeds both dates on this path — `weekStart` is the

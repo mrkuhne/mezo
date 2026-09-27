@@ -5272,6 +5272,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - Companion
+      operationId: forgetFact
+      summary: >-
+        S6 (mezo-d6ivw.6) — Elfelejtem: a tény törlődik, és ugyanebből a
+        forrásból soha nem tanulódik újra (vétó). Nincs visszaállítás — a FE
+        visszavonás-ablaka után hívódik.
+      parameters:
+        - name: factId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Forgotten
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Fact not found (or owned by someone else)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/companion/fact/candidate:
     get:
       tags:
@@ -5521,7 +5551,10 @@ paths:
       parameters:
         - name: personId
           in: query
-          required: true
+          required: false
+          description: >-
+            Nélküle: minden élő személy- és esemény-alany — a Tudástár Hatások
+            szakasza (S6).
           schema:
             type: string
             format: uuid
@@ -5532,6 +5565,90 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PersonEffectsResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/effects/{subjectKind}/{subjectKey}/mute':
+    put:
+      tags:
+        - CompanionEffects
+      operationId: muteEffectSubject
+      summary: >-
+        S6 (mezo-d6ivw.6) — egy hatás-alany elhallgattatása (muted) vagy
+        végleges elfelejtése (forgotten). Az elfelejtés végleges: sem egy
+        későbbi muted, sem a DELETE nem hozza vissza.
+      parameters:
+        - name: subjectKind
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - person
+              - event
+        - name: subjectKey
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EffectMuteRequest'
+      responses:
+        '204':
+          description: Stored
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - CompanionEffects
+      operationId: unmuteEffectSubject
+      summary: >-
+        S6 — Visszakapcsolom egy elhallgattatott hatás-alanyra (egy
+        elfelejtettre nem hat).
+      parameters:
+        - name: subjectKind
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - person
+              - event
+        - name: subjectKey
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 64
+      responses:
+        '204':
+          description: Unmuted (or nothing to do)
+        '400':
+          description: >-
+            Validation error (unknown subjectKind, or a subjectKey over 64
+            chars)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Missing or invalid token
           content:
@@ -5621,6 +5738,99 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Pattern not found (or owned by someone else)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/observation/knowledge:
+    get:
+      tags:
+        - CompanionObservation
+      operationId: listKnowledgeObservations
+      summary: >-
+        S6 (mezo-d6ivw.6) — a Tudástár Észrevételek szakasza: a megerősített (és
+        a cáfolt, de tényt hagyó) észrevételek, a belőlük tanult tény
+        állapotával, a drift-párral és a sor saját bizonyítékaival (legfeljebb
+        5).
+      responses:
+        '200':
+          description: 'Observations, newest confirmation first'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/KnowledgeObservationResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/observation/{patternId}':
+    delete:
+      tags:
+        - CompanionObservation
+      operationId: forgetObservation
+      summary: >-
+        S6 — Elfelejtem egy észrevételre: a belőle tanult tény törlődik
+        (vétóval), az észrevétel soha többé nem jelenik meg és nem tanulódik
+        újra.
+      parameters:
+        - name: patternId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Forgotten
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: 'Not found, foreign, or not a reflection-owned observation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/fact/{factId}/evidence':
+    get:
+      tags:
+        - CompanionObservation
+      operationId: getFactEvidence
+      summary: >-
+        S6 — Honnan tudom? egy tényre: a forrás strukturált bizonyítékai (chat →
+        a beszélgetés-üzenet; észrevétel → a sor bizonyítékai), legfeljebb 5
+        elem.
+      parameters:
+        - name: factId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Evidence items (may be empty for manual facts)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ObservationEvidenceItem'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Fact not found (or owned by someone else)
           content:
             application/json:
               schema:
@@ -6214,7 +6424,7 @@ paths:
       tags:
         - People
       operationId: updatePersonFact
-      summary: Per-fact prompt toggle
+      summary: Per-fact prompt toggle and text edit (S6)
       parameters:
         - name: personId
           in: path
@@ -19805,6 +20015,7 @@ components:
         - reinforcementCount
         - includeInPrompt
         - createdAt
+        - provenance
       properties:
         id:
           type: string
@@ -19817,8 +20028,11 @@ components:
         source:
           type: string
           description: >-
-            'chat' | 'pattern' | 'manual' — V1.1 creates only 'manual'; 'chat'
-            arrives with V1.2 extraction, 'pattern' with V3.3 promotion
+            'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question' |
+            'team_chat' — V1.1 creates only 'manual'; 'chat' arrives with V1.2
+            extraction, 'pattern' with V3.3 promotion, 'weekly_review' with
+            mezo-d20.7.6, 'question' with mezo-d58h.7.5, 'team_chat' with S7
+            (mezo-d6ivw.7)
         owner:
           type: string
           enum:
@@ -19864,6 +20078,58 @@ components:
             knowledge is not the user re-confirming it — derived live from the
             non-deleted weekly_review rows. Null = not measurable (the
             proactive/weekly feature is off), never a stand-in zero.
+        mutedReason:
+          type: string
+          nullable: true
+          enum:
+            - user
+            - refuted
+            - superseded
+          description: >-
+            S6 (mezo-d6ivw.6) — miért hallgat a tény: user = te hallgattattad
+            el, refuted = később nem igazolódott (S2 cáfolat), superseded =
+            felülírta egy újabb észrevétel. Null, ha bekapcsolt.
+        mutedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >-
+            S6 — mikor hallgattatták el; null, ha bekapcsolt vagy S6 előtti
+            némítás.
+        supersededBy:
+          type: string
+          format: uuid
+          nullable: true
+          description: 'S6 — a tény, ami felülírta (drift-megerősítés).'
+        provenance:
+          $ref: '#/components/schemas/KnowledgeFactProvenance'
+    KnowledgeFactProvenance:
+      type: object
+      description: >-
+        S6 (mezo-d6ivw.6) — honnan jön a tény. A bizonyíték-elemeket a GET
+        /api/companion/fact/{factId}/evidence adja lustán (Honnan tudom?).
+      required:
+        - sourceKind
+      properties:
+        sourceKind:
+          type: string
+          enum:
+            - chat
+            - pattern
+            - manual
+            - weekly_review
+            - question
+            - team_chat
+        patternId:
+          type: string
+          format: uuid
+          nullable: true
+          description: 'Az észrevétel, amiből a tény született (source=pattern).'
+        sourceMessageId:
+          type: string
+          format: uuid
+          nullable: true
+          description: 'A beszélgetés-üzenet, amiből a jelölt született (chat).'
     CreateFactRequest:
       type: object
       required:
@@ -19888,7 +20154,11 @@ components:
           nullable: true
         category:
           type: string
-          pattern: ^(train|fuel|health|life)$
+          enum:
+            - train
+            - fuel
+            - health
+            - life
           nullable: true
         includeInPrompt:
           type: boolean
@@ -20330,6 +20600,9 @@ components:
         - subjectDays
         - complementDays
         - computedAt
+        - subjectKind
+        - subjectKey
+        - muted
       properties:
         metric:
           type: string
@@ -20378,6 +20651,34 @@ components:
           type: string
           format: date-time
           description: A legutóbbi éjszakai újraszámítás időpontja.
+        subjectKind:
+          type: string
+          enum:
+            - person
+            - event
+          description: S6 — az alany fajtája.
+        subjectKey:
+          type: string
+          description: >-
+            S6 — személy-uuid vagy esemény-kulcs (edzes, munka, csalad,
+            kozos_program, konfliktus, pihenes).
+        subjectLabel:
+          type: string
+          nullable: true
+          description: S6 — a személy neve / az esemény magyar címkéje.
+        muted:
+          type: boolean
+          description: S6 — az alany el van hallgattatva (a prompt nem látja).
+    EffectMuteRequest:
+      type: object
+      required:
+        - mode
+      properties:
+        mode:
+          type: string
+          enum:
+            - muted
+            - forgotten
     ObservationResponse:
       type: object
       description: >-
@@ -20491,6 +20792,73 @@ components:
           description: >-
             Melyik felület ikonját mutassa a kártya — a teszt-terv seriesA
             előtagjából származtatva; terv nélkül mezo.
+    KnowledgeObservationResponse:
+      type: object
+      description: >-
+        S6 (mezo-d6ivw.6) — egy észrevétel a Tudástárban. A némítás a belőle
+        tanult TÉNYEN él (factMutedReason); a drift-pár a replacesPatternId /
+        replacedByPatternId mezőkön.
+      required:
+        - patternId
+        - title
+        - confirmedAt
+        - status
+        - evidence
+      properties:
+        patternId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        confirmedAt:
+          type: string
+          format: date-time
+          description: A legutóbbi megerősítés ideje.
+        recheckedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >-
+            A negyedéves újraellenőrzés legutóbbi ítélete (holds/drift); null =
+            még nem.
+        status:
+          type: string
+          enum:
+            - confirmed
+            - refuted
+        factId:
+          type: string
+          format: uuid
+          nullable: true
+        factMutedReason:
+          type: string
+          nullable: true
+          enum:
+            - user
+            - refuted
+            - superseded
+        factMutedAt:
+          type: string
+          format: date-time
+          nullable: true
+        replacesPatternId:
+          type: string
+          format: uuid
+          nullable: true
+          description: 'Drift-sor: az eredeti észrevétel, amit felülírt.'
+        replacedByPatternId:
+          type: string
+          format: uuid
+          nullable: true
+          description: 'Eredeti sor: a megerősített drift-sor, ami felülírta.'
+        topicKey:
+          type: string
+          nullable: true
+          description: A normalizált observation-topic-key (a FE téma-csoportosításához).
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/ObservationEvidenceItem'
     PatternReplyRequest:
       type: object
       description: >-
@@ -21417,11 +21785,19 @@ components:
             mondatot mutat.
     UpdatePersonFactRequest:
       type: object
-      required:
-        - includeInPrompt
+      description: >-
+        Részleges frissítés — csak a megadott mezők érvényesülnek (S6:
+        szöveg-javítás is). Egy korábban visszavont szöveg beírása megengedett:
+        azt a felhasználó maga írta.
       properties:
         includeInPrompt:
           type: boolean
+          nullable: true
+        factText:
+          type: string
+          minLength: 1
+          maxLength: 300
+          nullable: true
     PersonFactResponse:
       type: object
       description: >-
@@ -21435,6 +21811,7 @@ components:
         - factText
         - confidence
         - sourceRefKind
+        - sourceRefId
         - active
         - includeInPrompt
         - seen
@@ -21468,6 +21845,12 @@ components:
           enum:
             - chat_turn
             - nightly_day
+        sourceRefId:
+          type: string
+          maxLength: 64
+          description: >-
+            S6 — a forrás azonosítója (chat_turn: az üzenet; nightly_day: a
+            nap).
         active:
           type: boolean
         includeInPrompt:

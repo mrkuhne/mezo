@@ -92,7 +92,8 @@ class KnowledgeFactServiceIT extends AbstractIntegrationTest {
         KnowledgeFactEntity fact = factPopulator.fact(userId, "Pontatlan tény", "life", 0);
 
         KnowledgeFactResponse updated = knowledgeFactService.update(userId, fact.getId(),
-                UpdateFactRequest.builder().factText("Pontosított tény").category("health").build());
+                UpdateFactRequest.builder().factText("Pontosított tény")
+                        .category(UpdateFactRequest.CategoryEnum.HEALTH).build());
 
         assertThat(updated.getFactText()).isEqualTo("Pontosított tény");
         assertThat(updated.getCategory()).isEqualTo("health");
@@ -109,7 +110,7 @@ class KnowledgeFactServiceIT extends AbstractIntegrationTest {
         assertThat(fact.getOwner()).isEqualTo("mocor"); // the "train" category default
 
         knowledgeFactService.update(userId, fact.getId(),
-                UpdateFactRequest.builder().category("health").build());
+                UpdateFactRequest.builder().category(UpdateFactRequest.CategoryEnum.HEALTH).build());
 
         KnowledgeFactEntity updated = knowledgeFactRepository.findById(fact.getId()).orElseThrow();
         assertThat(updated.getOwner()).isEqualTo("deru"); // the "health" category default
@@ -124,7 +125,7 @@ class KnowledgeFactServiceIT extends AbstractIntegrationTest {
         knowledgeFactRepository.saveAndFlush(fact);
 
         knowledgeFactService.update(userId, fact.getId(),
-                UpdateFactRequest.builder().category("train").build());
+                UpdateFactRequest.builder().category(UpdateFactRequest.CategoryEnum.TRAIN).build());
 
         KnowledgeFactEntity updated = knowledgeFactRepository.findById(fact.getId()).orElseThrow();
         assertThat(updated.getOwner()).isEqualTo("szunya");

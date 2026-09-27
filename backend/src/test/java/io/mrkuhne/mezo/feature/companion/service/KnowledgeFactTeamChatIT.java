@@ -45,6 +45,11 @@ class KnowledgeFactTeamChatIT extends AbstractIntegrationTest {
         service.muteFromTeamChat(owner, id);
         assertThat(repository.findByIdAndCreatedByAndDeletedFalse(id, owner)).get()
                 .extracting(KnowledgeFactEntity::isIncludeInPrompt).isEqualTo(false);
+        // S6 final review Important 5: the user's own undo reads "te hallgattattad el" in the
+        // hub — never "később nem igazolódott" (the refute reason).
+        assertThat(repository.findByIdAndCreatedByAndDeletedFalse(id, owner)).get()
+                .extracting(KnowledgeFactEntity::getMutedReason).isEqualTo(KnowledgeFactEntity.MUTED_USER);
+        assertThat(repository.findByIdAndCreatedByAndDeletedFalse(id, owner).orElseThrow().getMutedAt()).isNotNull();
         assertThat(service.promptFactsForOwners(owner, List.of("falat"), 6)).isEmpty();
         service.muteFromTeamChat(owner, UUID.randomUUID()); // unknown id: fail-open, no throw
     }

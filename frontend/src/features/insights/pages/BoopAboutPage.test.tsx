@@ -30,12 +30,20 @@ const OPEN = candidateSeed.length + lifeEventCandidateSeed.length
 const renderPage = (search = '') =>
   render(
     <MemoryRouter initialEntries={[`/mezo/rolad${search}`]}>
-      <Routes><Route path="/mezo/rolad" element={<BoopAboutPage />} /></Routes>
+      <Routes>
+        <Route path="/mezo/rolad" element={<BoopAboutPage />} />
+        <Route path="/mezo/knowledge" element={<div data-testid="hub-route" />} />
+      </Routes>
     </MemoryRouter>,
     { wrapper: QueryWrapper },
   )
 
 const inbox = () => screen.getByRole('region', { name: 'Döntésre vár' })
+// S6c: the collapsed inbox shows 2 open cards — tests that touch the rest open the fold first.
+const expandInbox = async () => {
+  const fold = within(inbox()).queryByRole('button', { name: /Még \d+ javaslat/ })
+  if (fold) await userEvent.click(fold)
+}
 const graphCard = (title: string) =>
   within(inbox()).getByText(title).closest('[data-graph-card]') as HTMLElement
 
@@ -51,20 +59,21 @@ describe('BoopAboutPage — Rólad, a közös kép (mock mode)', () => {
     expect(screen.getByText('A közös kép · amit a csapat kimondott rólad')).toBeInTheDocument()
   })
 
-  test('ranking: quote → Döntésre vár → A tények rólad → Életesemények → A te kezedben', () => {
+  test('ranking (S6c short distributor): quote → Döntésre vár → kirakat → Tovább → footnote', () => {
     const { container } = renderPage()
     const order = [
       container.querySelector('.kr9-quote'),
       screen.getByRole('heading', { name: 'Döntésre vár' }),
-      screen.getByRole('heading', { name: 'A tények rólad' }),
-      screen.getByRole('heading', { name: 'Életesemények' }),
-      screen.getByText('A te kezedben'),
+      screen.getByRole('heading', { name: ROLAD_COPY.kirakatTitle }),
+      screen.getByRole('heading', { name: 'Tovább' }),
+      screen.getByText(ROLAD_COPY.note),
     ]
     order.forEach((el) => expect(el).not.toBeNull())
     for (let i = 1; i < order.length; i++) {
       expect(order[i - 1]!.compareDocumentPosition(order[i]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     }
-    expect(screen.getByText(ROLAD_COPY.note)).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'A tények rólad' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Életesemények' })).not.toBeInTheDocument()
   })
 
   test('the quote is the most certain claim, in its character’s name', () => {
@@ -96,17 +105,22 @@ describe('BoopAboutPage — Rólad, a közös kép (mock mode)', () => {
     expect(quote.querySelector('.kr-reply-thread')).not.toBeNull()
   })
 
-  test('the facts: the seeded sleep fact wears SZUNYA, the door opens the full Tények view', () => {
+  test('the kirakat: the hub\u2019s four tiles, the facts tile reads „Tények rólad” and doors into the hub', async () => {
     renderPage()
-    const row = screen.getByText('Sleep target: 7.5h, evening kitchen close 21:30').closest('[data-rolad-fact]') as HTMLElement
-    expect(within(row).getByText('SZUNYA')).toBeInTheDocument()
-    expect(screen.getByText('14 AKTÍV')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Mind a 15 tény/ })).toHaveAttribute('href', '/mezo/knowledge?view=tenyek')
+    const kirakat = document.querySelector('[data-rolad-kirakat]') as HTMLElement
+    expect(within(kirakat).getByText(ROLAD_COPY.kirakatHint)).toBeInTheDocument()
+    for (const t of [ROLAD_COPY.factsTile, 'Emberek', 'Észrevételek', 'Hatások']) {
+      expect(within(kirakat).getByText(t)).toBeInTheDocument()
+    }
+    expect(within(kirakat).queryByText('Rólad')).not.toBeInTheDocument()
+    await userEvent.click(within(kirakat).getByRole('button', { name: new RegExp(ROLAD_COPY.factsTile) }))
+    expect(await screen.findByTestId('hub-route')).toBeInTheDocument()
   })
 
   test('the doors: dimensions, communication, connections — and no embedded dimension list', () => {
     renderPage()
     expect(screen.getByRole('link', { name: /A csapat képe rólad, dimenziónként/ })).toHaveAttribute('href', '/mezo/karakter/dimenziok')
+    expect(screen.getByRole('link', { name: /^Életesemények/ })).toHaveAttribute('href', '/mezo/rolad/eletesemenyek')
     expect(screen.getByRole('link', { name: /^Így beszélj velem/ })).toHaveAttribute('href', '/settings/mezo/communication')
     expect(screen.getByRole('link', { name: /^Kapcsolatok/ })).toHaveAttribute('href', '/mezo/knowledge?view=kategoriak')
     expect(screen.getByRole('link', { name: /dimenziónként/ }).querySelector('use[href="#t-person"]')).toBeInTheDocument()
@@ -139,9 +153,10 @@ describe('BoopAboutPage — Rólad, a közös kép (mock mode)', () => {
     expect(card).toHaveClass('glass', 'tf-case', 'tf-c-gold')
   })
 
-  test('renders the pending candidates with the four actions', () => {
+  test('renders the pending candidates with the four actions', async () => {
     renderPage()
     expect(within(inbox()).getByText(`${OPEN} JELÖLT`)).toBeInTheDocument()
+    await expandInbox()
     expect(within(inbox()).getAllByRole('button', { name: 'Igen, jegyezd meg' })).toHaveLength(OPEN)
     expect(within(inbox()).getAllByRole('button', { name: 'Most ne' })).toHaveLength(OPEN)
     expect(within(inbox()).getAllByRole('button', { name: 'Nem igaz' })).toHaveLength(OPEN)
@@ -151,8 +166,7 @@ describe('BoopAboutPage — Rólad, a közös kép (mock mode)', () => {
     renderPage()
     const card = within(inbox()).getByText(candidateSeed[0].text).closest('[data-fact-candidate]') as HTMLElement
     await userEvent.click(within(card).getByRole('button', { name: 'Igen, jegyezd meg' }))
-    expect(await screen.findByText('15 AKTÍV')).toBeInTheDocument()
-    expect(within(inbox()).getByText(`${OPEN - 1} JELÖLT`)).toBeInTheDocument()
+    expect(await within(inbox()).findByText(`${OPEN - 1} JELÖLT`)).toBeInTheDocument()
     const kept = within(inbox()).getByText(candidateSeed[0].text).closest('.tf-case') as HTMLElement
     expect(kept).toHaveTextContent(ROLAD_COPY.keep)
   })
@@ -165,7 +179,7 @@ describe('BoopAboutPage — Rólad, a közös kép (mock mode)', () => {
     await userEvent.clear(input)
     await userEvent.type(input, 'Pontosított tudás')
     await userEvent.click(within(card).getByRole('button', { name: 'Így jegyezd meg' }))
-    expect(await screen.findByText('15 AKTÍV')).toBeInTheDocument()
+    expect(await within(inbox()).findByText('Pontosított tudás')).toBeInTheDocument()
     expect(within(inbox()).getByText('Pontosított tudás').closest('.tf-case')).toHaveTextContent(ROLAD_COPY.keep)
   })
 
@@ -175,7 +189,6 @@ describe('BoopAboutPage — Rólad, a közös kép (mock mode)', () => {
     await userEvent.click(within(card).getByRole('button', { name: 'Nem igaz' }))
     expect(await within(inbox()).findByText(`${OPEN - 1} JELÖLT`)).toBeInTheDocument()
     expect(within(inbox()).getByText(candidateSeed[0].text).closest('.kr9-gone')).toHaveTextContent(ROLAD_COPY.reject)
-    expect(screen.getByText('14 AKTÍV')).toBeInTheDocument()
   })
 
   test('snoozing a candidate says it will come back in about two weeks', async () => {
@@ -189,16 +202,16 @@ describe('BoopAboutPage — Rólad, a közös kép (mock mode)', () => {
   // "A régit kikapcsolom" also switches f4 off: +1 promoted, −1 silenced → still 14 active.
   test('accepting the conflicting c3 with the box ticked switches the old f4 off', async () => {
     renderPage()
+    await expandInbox()
     const card = within(inbox()).getByText(candidateSeed[2].text).closest('[data-fact-candidate]') as HTMLElement
     expect(within(card).getByLabelText('A régit kikapcsolom')).toBeChecked()
     await userEvent.click(within(card).getByRole('button', { name: 'Igen, jegyezd meg' }))
     expect(await within(inbox()).findByText(ROLAD_COPY.keep)).toBeInTheDocument()
-    await waitFor(() => expect(screen.getByRole('link', { name: /Mind a 16 tény/ })).toBeInTheDocument())
-    expect(screen.getByText('14 AKTÍV')).toBeInTheDocument()
   })
 
-  it('renders the life-event and season candidates with their own provenance', () => {
+  it('renders the life-event and season candidates with their own provenance', async () => {
     renderPage()
+    await expandInbox()
     expect(graphCard('Új munkahely első hete')).toHaveTextContent('Életesemény-jelölt')
     expect(graphCard('Nyári alapozás')).toHaveTextContent('Évszak-jelölt')
     expect(within(inbox()).getByText(
@@ -211,6 +224,7 @@ describe('BoopAboutPage — Rólad, a közös kép (mock mode)', () => {
 
   it('rejecting a life event turns the card into the quiet rejected line', async () => {
     renderPage()
+    await expandInbox()
     await userEvent.click(within(graphCard('Új munkahely első hete')).getByRole('button', { name: 'Nem igaz' }))
     await waitFor(() => expect(within(inbox()).getByText('Új munkahely első hete').closest('.kr9-gone')).not.toBeNull())
     expect(within(inbox()).queryAllByText('Új munkahely első hete').map((e) => e.closest('[data-graph-card]')).filter(Boolean)).toHaveLength(0)
@@ -218,6 +232,7 @@ describe('BoopAboutPage — Rólad, a közös kép (mock mode)', () => {
 
   it('accepting a SEASON that proposes no edge gives the short confirmation', async () => {
     renderPage()
+    await expandInbox()
     await userEvent.click(within(graphCard('Nyári alapozás')).getByRole('button', { name: 'Igen, jegyezd meg' }))
     const confirmed = (await within(inbox()).findByText('Nyári alapozás')).closest('[data-graph-card]') as HTMLElement
     expect(within(confirmed).getByText('Bekerült a gráfba')).toBeInTheDocument()
@@ -226,6 +241,7 @@ describe('BoopAboutPage — Rólad, a közös kép (mock mode)', () => {
 
   it('once everything is decided the hint says MIND ELDÖNTVE, never „0 JELÖLT”', async () => {
     renderPage()
+    await expandInbox()
     for (let n = 0; n < OPEN; n++) {
       await userEvent.click(within(inbox()).getAllByRole('button', { name: 'Most ne' })[0])
     }
@@ -235,6 +251,7 @@ describe('BoopAboutPage — Rólad, a közös kép (mock mode)', () => {
 
   it('an accepted life event keeps a confirmation card in place, without buttons or a link', async () => {
     renderPage()
+    await expandInbox()
     await userEvent.click(within(graphCard('Új munkahely első hete')).getByRole('button', { name: 'Igen, jegyezd meg' }))
     const accepted = (await within(inbox()).findByText(/Bekerült a gráfba/)).closest('[data-graph-card]') as HTMLElement
     expect(accepted).toHaveTextContent('Új munkahely első hete')
@@ -245,6 +262,7 @@ describe('BoopAboutPage — Rólad, a közös kép (mock mode)', () => {
 
   it('Pontosítom + Így jegyezd meg shows the edited title on the confirmation', async () => {
     renderPage()
+    await expandInbox()
     const card = graphCard('Új munkahely első hete')
     await userEvent.click(within(card).getByRole('button', { name: 'Pontosítom' }))
     const titleInput = within(card).getByLabelText('Jelölt címe')
@@ -256,11 +274,6 @@ describe('BoopAboutPage — Rólad, a közös kép (mock mode)', () => {
     expect(within(inbox()).queryByText('Új munkahely első hete')).not.toBeInTheDocument()
   })
 
-  test('the timeline shows the seeded life event', () => {
-    const { container } = renderPage()
-    const rows = container.querySelectorAll('[data-life-row]')
-    expect([...rows].some((r) => r.textContent?.includes('Új munkahely első hete'))).toBe(true)
-  })
 })
 
 describe('BoopAboutPage — Rólad (real mode)', () => {
@@ -319,7 +332,8 @@ describe('BoopAboutPage — Rólad (real mode)', () => {
     renderPage()
     expect(await screen.findByText(/A társ jelenleg nincs bekapcsolva — a tényjavaslatok most nem elérhetők/)).toBeInTheDocument()
     expect(await within(inbox()).findByText('Új munkahely első hete')).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'A tények rólad' })).not.toBeInTheDocument()
+    // the kirakat's facts tile is an honest dash, never an invented zero (S6c)
+    expect(document.querySelector('[data-rolad-kirakat] .th-tile[data-state="off"]')).not.toBeNull()
   })
 
   test('the honest loading state while the fetch is unresolved', async () => {

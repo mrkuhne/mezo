@@ -2,8 +2,10 @@ package io.mrkuhne.mezo.feature.companion.reflection.service;
 
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.reflection.entity.EffectLinkEntity;
+import io.mrkuhne.mezo.feature.companion.reflection.entity.EffectMuteEntity;
 import io.mrkuhne.mezo.feature.companion.reflection.entity.TextSignalEntity;
 import io.mrkuhne.mezo.feature.companion.reflection.repository.EffectLinkRepository;
+import io.mrkuhne.mezo.feature.companion.reflection.repository.EffectMuteRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.companion.service.MetricSeriesService;
@@ -105,6 +107,7 @@ public class EffectLinkService {
     private static final int NAME_MAX_CHARS = 120;
 
     private final EffectLinkRepository effectLinkRepository;
+    private final EffectMuteRepository effectMuteRepository;
     private final MetricSeriesService metricSeriesService;
     private final TextSignalSeriesService textSignalSeriesService;
     private final MentionRepository mentionRepository;
@@ -185,28 +188,6 @@ public class EffectLinkService {
                 .toList();
     }
 
-    /**
-     * One person's live effect rows, strongest first, with the serve-time confidence bump: a row
-     * whose topic key a CONFIRMED observation carries as {@code observation-topic-key:<key>} is
-     * lifted one tier (cap {@code eros}). The bump lives on a detached copy only — never stored.
-     */
-    @Transactional(readOnly = true)
-    public List<EffectLinkEntity> effectsForPerson(UUID userId, UUID personId) {
-        List<EffectLinkEntity> rows = effectLinkRepository
-                .findByCreatedByAndSubjectKindAndSubjectKeyAndDeletedFalse(
-                        userId, EffectLinkEntity.SUBJECT_PERSON, personId.toString());
-        if (rows.isEmpty()) {
-            return List.of();
-        }
-        Set<String> confirmedKeys = confirmedTopicKeys(userId);
-        return rows.stream()
-                .sorted(byStrength())
-                .map(r -> confirmedKeys.contains(GroundedHypothesisPublisher.normalizedTopicKey(
-                        topicKey(r.getSubjectKind(), r.getSubjectKey(), r.getMetric())))
-                        ? bumped(r) : r)
-                .toList();
-    }
-
     /** {@code effect-person-<first 8 hex of the uuid>-<metric>} / {@code effect-event-<key>-<metric>}. */
     public static String topicKey(String subjectKind, String subjectKey, String metric) {
         if (EffectLinkEntity.SUBJECT_PERSON.equals(subjectKind)) {
@@ -214,6 +195,49 @@ public class EffectLinkService {
             return "effect-person-" + hex.substring(0, Math.min(8, hex.length())) + "-" + metric;
         }
         return "effect-event-" + subjectKey + "-" + metric;
+    }
+
+    /** S6 (mezo-d6ivw.6): one effect row as the hub / person page sees it. */
+    public record EffectView(EffectLinkEntity row, String subjectLabel, boolean muted) {}
+
+    /** {@code kind:key} → mode, for the user's live mutes. */
+    private Map<String, String> muteModes(UUID userId) {
+        return effectMuteRepository.findByCreatedByAndDeletedFalse(userId).stream()
+                .collect(Collectors.toMap(m -> m.getSubjectKind() + ':' + m.getSubjectKey(),
+                        EffectMuteEntity::getMode, (a, b) -> a));
+    }
+
+    private static String subjectId(EffectLinkEntity row) {
+        return row.getSubjectKind() + ':' + row.getSubjectKey();
+    }
+
+    /**
+     * S6 (mezo-d6ivw.6): the hub/person read. Forgotten subjects never appear; muted ones come
+     * back flagged. With a person id: that person's rows (label = their name if active). Without:
+     * every live subject whose label resolves — an inactive/unknown person is skipped, exactly
+     * like the prompt readers do. Strongest first; the confirmed-observation bump applies.
+     */
+    @Transactional(readOnly = true)
+    public List<EffectView> effectViews(UUID userId, UUID personIdOrNull) {
+        Map<String, String> mutes = muteModes(userId);
+        Map<String, String> names = activePersonNames(userId);
+        Set<String> confirmedKeys = confirmedTopicKeys(userId);
+        List<EffectLinkEntity> rows = personIdOrNull == null
+                ? effectLinkRepository.findByCreatedByAndDeletedFalse(userId)
+                : effectLinkRepository.findByCreatedByAndSubjectKindAndSubjectKeyAndDeletedFalse(
+                        userId, EffectLinkEntity.SUBJECT_PERSON, personIdOrNull.toString());
+        return rows.stream()
+                .filter(r -> !EffectMuteEntity.MODE_FORGOTTEN.equals(mutes.get(subjectId(r))))
+                .map(r -> {
+                    String label = EffectLinkEntity.SUBJECT_PERSON.equals(r.getSubjectKind())
+                            ? names.get(r.getSubjectKey()) : EVENT_LABELS_HU.get(r.getSubjectKey());
+                    return new EffectView(confirmedKeys.contains(GroundedHypothesisPublisher.normalizedTopicKey(
+                            topicKey(r.getSubjectKind(), r.getSubjectKey(), r.getMetric()))) ? bumped(r) : r,
+                            label == null ? null : oneLine(label), mutes.containsKey(subjectId(r)));
+                })
+                .filter(v -> personIdOrNull != null || v.subjectLabel() != null)
+                .sorted(Comparator.comparing((EffectView v) -> v.row().getCliffsDelta().abs()).reversed())
+                .toList();
     }
 
     // ---------------------------------------------------------------- recompute internals
@@ -342,7 +366,9 @@ public class EffectLinkService {
     /** The shared double gate + order for {@link #promptBlock} and {@link #gatedEffects}: strength
      *  AND confidence both at least {@code kozepes}, strongest first. NO cap — callers cap. */
     private List<EffectLinkEntity> gatedRows(UUID userId) {
+        Map<String, String> mutes = muteModes(userId);
         return effectLinkRepository.findByCreatedByAndDeletedFalse(userId).stream()
+                .filter(r -> !mutes.containsKey(subjectId(r))) // S6: muted AND forgotten are silent
                 .filter(r -> PROMPT_STRENGTHS.contains(r.getStrengthBand()))
                 .filter(r -> PROMPT_CONFIDENCES.contains(r.getConfidenceTier()))
                 .sorted(byStrength())

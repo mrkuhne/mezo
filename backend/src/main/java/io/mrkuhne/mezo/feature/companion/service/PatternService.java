@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.PatternDecisionRequest;
 import io.mrkuhne.mezo.api.dto.PatternResponse;
 import io.mrkuhne.mezo.feature.companion.HighlightCitationSource;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
+import io.mrkuhne.mezo.feature.companion.entity.MemoryForgetVetoEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventPayloadEnvelope;
@@ -11,11 +12,13 @@ import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
 import io.mrkuhne.mezo.feature.companion.mapper.PatternTestPlanMapper;
+import io.mrkuhne.mezo.feature.companion.repository.MemoryForgetVetoRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
@@ -23,8 +26,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -35,6 +40,7 @@ import java.util.UUID;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
 public class PatternService {
 
@@ -49,6 +55,7 @@ public class PatternService {
 
     private final PatternRepository patternRepository;
     private final KnowledgeFactRepository knowledgeFactRepository;
+    private final MemoryForgetVetoRepository vetoRepository;
     /** S4 (mezo-eq85.4): the shared event-append helper — see PatternEventAppender. */
     private final PatternEventAppender patternEventAppender;
     private final CompanionMapper mapper;
@@ -62,6 +69,7 @@ public class PatternService {
         Map<UUID, Integer> cited = citedWeeks(userId);
         return patternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(userId)
                 .stream()
+                .filter(pattern -> !pattern.isForgotten())
                 .map(pattern -> mapper.toPatternResponse(pattern, citedWeeksOf(cited, pattern.getId()),
                         testPlanMapper.toWire(pattern.getTestPlan())))
                 .toList();
@@ -92,6 +100,8 @@ public class PatternService {
     @Transactional
     public PatternResponse decide(UUID userId, UUID patternId, PatternDecisionRequest request) {
         PatternEntity pattern = patternRepository.findByIdAndCreatedByAndDeletedFalse(patternId, userId)
+                // S6: a forgotten row is gone for the user — a decision must not revive it
+                .filter(p -> !p.isForgotten())
                 .orElseThrow(() -> new SystemRuntimeErrorException(
                         SystemMessage.error("COMPANION_PATTERN_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
         String status = DECISION_TO_STATUS.get(request.getDecision());
@@ -149,14 +159,14 @@ public class PatternService {
      * and freezes as before.
      *
      * <p>S2 delta (final-review adjudications 2026-09-25): a drift row ({@link
-     * PatternEntity#isDrift()}) is always plan-less, but its confirm must NOT mint a fact that
-     * contradicts the original claim — see {@link #applyDriftConfirm}.
+     * PatternEntity#isDrift()}) is always plan-less; its confirm is an automatic replacement —
+     * see {@link #applyDriftConfirm}.
      */
     @Transactional
     public void applyUserConfirm(UUID userId, PatternEntity pattern) {
         if (pattern.getTestPlan() == null) {
             if (pattern.isDrift()) {
-                applyDriftConfirm(pattern);
+                applyDriftConfirm(userId, pattern);
                 return;
             }
             applyConfirm(userId, pattern, CONFIRM_SOURCE_USER);
@@ -166,20 +176,43 @@ public class PatternService {
     }
 
     /**
-     * S2 delta (final-review adjudications 2026-09-25, spec §S2 delta): confirming a drift card
-     * ("igen, ez most is így van") only freezes the row and records the confirm — it deliberately
-     * does NOT promote a new fact or fire {@code PatternConfirmedEvent}/{@code
-     * KnowledgeFactPromotedEvent}, because superseding the ORIGINAL confirmed fact with the
-     * drifted claim is S6's job (the drift hub), not this slice's.
+     * S6 (mezo-d6ivw.6, owner decision 4): confirming a drift card is an automatic replacement.
+     * The drifted claim (the row's title — the recheck's {@code claim}) becomes a NEW fact through
+     * the normal confirm path, and the ORIGINAL fact is muted with a visible reason and a link to
+     * its successor. The user may re-enable the old one from the hub. Fail-open: a missing or
+     * already-gone original means promote only.
      */
-    private void applyDriftConfirm(PatternEntity pattern) {
-        pattern.setStatus(PatternEntity.STATUS_CONFIRMED);
-        recordEvent(pattern, PatternEntity.STATUS_CONFIRMED,
-                PatternEventPayloadEnvelope.confirmed(CONFIRM_SOURCE_USER));
+    private void applyDriftConfirm(UUID userId, PatternEntity drift) {
+        applyConfirm(userId, drift, CONFIRM_SOURCE_USER);
+        UUID freshFactId = drift.getPromotedFactId();
+        if (freshFactId == null) return; // vetoed or already promoted — nothing to supersede with
+        originalFactOf(userId, drift).ifPresentOrElse(old -> {
+            if (!old.isIncludeInPrompt() && KnowledgeFactEntity.MUTED_SUPERSEDED.equals(old.getMutedReason())) return;
+            old.mute(KnowledgeFactEntity.MUTED_SUPERSEDED, Instant.now());
+            old.setSupersededBy(freshFactId);
+            knowledgeFactRepository.save(old);
+            eventPublisher.publishEvent(new KnowledgeFactChangedEvent(userId, old.getId()));
+        }, () -> log.info("Drift supersession: no live original fact for drift row {} of user {} — promote only",
+                drift.getId(), userId));
+    }
+
+    private Optional<KnowledgeFactEntity> originalFactOf(UUID userId, PatternEntity drift) {
+        UUID originalId;
+        try {
+            originalId = UUID.fromString(drift.getPairKey().substring(PatternEntity.PAIR_KEY_DRIFT_PREFIX.length()));
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
+        }
+        return patternRepository.findByIdAndCreatedByAndDeletedFalse(originalId, userId)
+                .map(PatternEntity::getPromotedFactId)
+                .flatMap(factId -> knowledgeFactRepository.findByIdAndCreatedByAndDeletedFalse(factId, userId));
     }
 
     private void promoteIfFirst(UUID userId, PatternEntity pattern, String source) {
         if (pattern.getPromotedFactId() != null) return;
+        // S6 (mezo-d6ivw.6): a forgotten observation's knowledge is never re-minted.
+        if (vetoRepository.existsByCreatedByAndDomainAndVetoKeyAndDeletedFalse(
+                userId, MemoryForgetVetoEntity.DOMAIN_PATTERN, pattern.getId().toString())) return;
         pattern.setPromotedFactId(promote(userId, pattern, source));
         recordEvent(pattern, PatternEventEntity.KIND_PROMOTED,
                 PatternEventPayloadEnvelope.promoted(pattern.getPromotedFactId()));

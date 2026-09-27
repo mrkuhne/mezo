@@ -216,10 +216,10 @@ class EffectLinkServiceIT extends AbstractIntegrationTest {
                         EffectLinkEntity.METRIC_MENTAL)))));
         patternPopulator.save(confirmed);
 
-        List<EffectLinkEntity> served = effectLinkService.effectsForPerson(owner, anna.getId());
+        List<EffectLinkService.EffectView> served = effectLinkService.effectViews(owner, anna.getId());
 
         assertThat(served).singleElement()
-                .extracting(EffectLinkEntity::getConfidenceTier).isEqualTo("eros");
+                .extracting(v -> v.row().getConfidenceTier()).isEqualTo("eros");
         assertThat(effectLinkRepository.findById(stored.getId()).orElseThrow().getConfidenceTier())
                 .isEqualTo("kozepes");
     }

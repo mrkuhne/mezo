@@ -39,4 +39,12 @@ public interface PatternRepository extends JpaRepository<PatternEntity, UUID> {
 
     /** All promoting patterns of a user — the V3.3 fact→pattern evidence-link batch map. */
     List<PatternEntity> findByCreatedByAndPromotedFactIdIsNotNullAndDeletedFalse(UUID createdBy);
+
+    /** S6: the row a (possibly muted or deleted) fact was promoted from — the graph re-syncs its
+     *  PATTERN node when the fact's prompt seat changes. */
+    Optional<PatternEntity> findFirstByCreatedByAndPromotedFactIdAndDeletedFalse(UUID createdBy, UUID promotedFactId);
+
+    /** S6 (mezo-d6ivw.6, mezo-4rh4r): the one-off backfill's work list, across all users. */
+    List<PatternEntity> findByKindInAndStatusAndPromotedFactIdIsNullAndDeletedFalse(
+            Collection<String> kinds, String status);
 }

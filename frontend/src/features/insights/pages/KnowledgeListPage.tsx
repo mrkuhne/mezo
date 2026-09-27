@@ -1,25 +1,29 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { GhostState } from '@/shared/ui/GhostState'
-import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import {
-  useKnowledge, useKnowledgeActions, useLifeEventCandidates,
-  useKnowledgeGraphNodes, useGraphEdgeCount,
+  useKnowledge, useLifeEventCandidates,
+  useKnowledgeGraphNodes, useKnowledgeObservations, useEffectSubjects,
 } from '@/data/hooks'
+import { usePeople } from '@/data/me/peopleHooks'
 import { GRAPH_KIND_GROUPS, PROFILE_SOURCE_KIND } from '@/data/insights/graph'
-import { FactsView } from '@/features/insights/components/FactsView'
-import { KnowledgeBaseView } from '@/features/insights/components/KnowledgeBaseView'
+import { KnowledgeBaseView, type HubNavTarget } from '@/features/insights/components/KnowledgeBaseView'
+import { ForgetUndoBar } from '@/features/insights/components/hub/ForgetUndoBar'
+import { TenyekSection } from '@/features/insights/components/hub/TenyekSection'
+import { EmberekSection } from '@/features/insights/components/hub/EmberekSection'
+import { EszrevetelekSection } from '@/features/insights/components/hub/EszrevetelekSection'
+import { HatasokSection } from '@/features/insights/components/hub/HatasokSection'
+import { useForgetUndo } from '@/features/insights/hooks/useForgetUndo'
+import { hubCounts } from '@/features/insights/logic/hubCounts'
 import { KategoriakView } from '@/features/insights/components/KategoriakView'
 import { HowItWorksView } from '@/features/insights/components/HowItWorksView'
-import { bucketFacts } from '@/features/insights/logic/factCopy'
 import type { GraphNodeKind } from '@/data/types'
-import { Icon3D } from '@/shared/ui/clay'
 import '@/features/insights/boop-world.css'
 
-/** mezo-ms9a: the unified Tudástár's URL-driven view switch — `?view=` (+ `kind`/`fact`
- *  later, T10). An invalid/absent `view` always reads as the base (section-mosaic) view. */
-type KnowledgeView = 'base' | 'tenyek' | 'kategoriak' | 'profil' | 'hogyan'
-const VIEWS = new Set(['tenyek', 'kategoriak', 'profil', 'hogyan'])
+/** mezo-ms9a: the unified Tudástár's URL-driven view switch — `?view=` (+ `kind`/`fact`, T10;
+ *  `person` under `emberek`, S6). An invalid/absent `view` always reads as the base (hub) view. */
+export type KnowledgeView = 'base' | 'tenyek' | 'emberek' | 'eszrevetelek' | 'hatasok' | 'kategoriak' | 'profil' | 'hogyan'
+const VIEWS = new Set(['tenyek', 'emberek', 'eszrevetelek', 'hatasok', 'kategoriak', 'profil', 'hogyan'])
 const KIND_LABELS = new Map(GRAPH_KIND_GROUPS)
 
 function withWeek(next: Record<string, string>, current: URLSearchParams) {
@@ -30,22 +34,23 @@ function withWeek(next: Record<string, string>, current: URLSearchParams) {
 /** Üveg (U9 · mezo-me75u.9): the csapatfal `tf-dhead` frame — eyebrow + title per view
  *  (prototype `uveg-mezo-teljes-u9.js` tudastar/tenyek/kategoriak/hogyan). */
 const VIEW_EYEBROW: Record<KnowledgeView, string> = {
-  base: 'Rólad', tenyek: 'Tudástár', kategoriak: 'Tudástár · ugyanennek a tudásnak a térképe',
-  profil: 'Tudástár', hogyan: 'Tudástár',
+  base: 'Rólad', tenyek: 'Tudástár · Rólad', emberek: 'Tudástár · Emberek',
+  eszrevetelek: 'Tudástár · Észrevételek', hatasok: 'Tudástár · Hatások',
+  kategoriak: 'Tudástár · ugyanennek a tudásnak a térképe', profil: 'Tudástár', hogyan: 'Tudástár',
 }
 const VIEW_TITLE: Record<KnowledgeView, string> = {
-  base: 'Tudástár', tenyek: 'Tények', kategoriak: 'Kategóriák', profil: 'Így beszélj velem', hogyan: 'Hogyan működik?',
+  base: 'Tudástár', tenyek: 'Tények rólad', emberek: 'Emberek az életedben', eszrevetelek: 'Észrevételek',
+  hatasok: 'Hatások', kategoriak: 'Kategóriák', profil: 'Így beszélj velem', hogyan: 'Hogyan működik?',
 }
 
 /** The page frame every branch renders inside — the way back must exist on all of them
  *  (ADR 0032 / fidelity audit mezo-d20.11: the Tudástár mounted no PageHead at all).
- *  Nézet-függő lett (mezo-ms9a): cím/vissza-cél a `view` szerint vált, de a
- *  betöltés/hiba/degraded ágak minden nézeten ugyanazt a keretet kapják — base címmel,
- *  „Mezo" vissza-céllal, mert ezek az ágak a `view` felbontása ELŐTT térnek vissza.
+ *  Nézet-függő (mezo-ms9a): cím/vissza-cél a `view` szerint vált; S6 óta nincs oldal-szintű
+ *  betöltés/hiba ág — minden szakasz a saját állapotát mutatja a saját keretében.
  *  Üveg (U9): a kerek üveg vissza-gomb a célt az akadálymentes nevében mondja ki
  *  („Vissza: Mezo / Tudástár / Kategóriák"), a nagy szám + alcím a fejléc alatt áll. */
 function TudasFrame({
-  view = 'base', kind = null, big, sub, help, children,
+  view = 'base', kind = null, big, sub, backTo, title, children,
 }: {
   view?: KnowledgeView
   /** Only meaningful for `view === 'kategoriak'` — a non-null kind means the back control
@@ -55,34 +60,29 @@ function TudasFrame({
   kind?: GraphNodeKind | null
   big?: ReactNode
   sub?: string
-  help?: boolean
+  /** S6: a sub-view's own way back (the person sub-view returns to `?view=emberek`, not the hub). */
+  backTo?: { label: string; params: Record<string, string> }
+  /** S6: overrides the view title (the person sub-view shows the person's name). */
+  title?: string
   children: ReactNode
 }) {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const isBase = view === 'base'
   const inKindDrill = view === 'kategoriak' && kind !== null
-  const onBack = isBase
-    ? () => navigate('/mezo')
-    : inKindDrill
-      ? () => setParams(withWeek({ view: 'kategoriak' }, params), { replace: true })
-      : () => setParams(withWeek({}, params), { replace: true })
-  const backTo = isBase ? 'Mezo' : inKindDrill ? 'Kategóriák' : 'Tudástár'
+  const onBack = backTo
+    ? () => setParams(withWeek(backTo.params, params), { replace: true })
+    : isBase
+      ? () => navigate('/mezo')
+      : inKindDrill
+        ? () => setParams(withWeek({ view: 'kategoriak' }, params), { replace: true })
+        : () => setParams(withWeek({}, params), { replace: true })
+  const backLabel = backTo ? backTo.label : isBase ? 'Mezo' : inKindDrill ? 'Kategóriák' : 'Tudástár'
   return (
     <div className="tud9 tf-page" data-view={view}>
       <div className="tf-dhead">
-        <button type="button" className="glass tf-back" aria-label={`Vissza: ${backTo}`} onClick={onBack}>‹</button>
-        <span className="tf-dtitle"><small>{VIEW_EYEBROW[view]}</small><strong>{VIEW_TITLE[view]}</strong></span>
-        {help && (
-          <button
-            type="button"
-            className="glass is-round tud9-help"
-            aria-label="Hogyan működik?"
-            onClick={() => setParams(withWeek({ view: 'hogyan' }, params))}
-          >
-            ?
-          </button>
-        )}
+        <button type="button" className="glass tf-back" aria-label={`Vissza: ${backLabel}`} onClick={onBack}>‹</button>
+        <span className="tf-dtitle"><small>{VIEW_EYEBROW[view]}</small><strong>{title ?? VIEW_TITLE[view]}</strong></span>
       </div>
       {big !== undefined && (
         <div className="tud9-big">
@@ -103,6 +103,7 @@ export function KnowledgeListPage() {
   const rawKind = params.get('kind')
   const kind: GraphNodeKind | null =
     rawKind && KIND_LABELS.has(rawKind as GraphNodeKind) ? (rawKind as GraphNodeKind) : null
+  const personId = params.get('person')
 
   // T10 (mezo-ms9a): `?fact=<id>` deep link — a WeekDiscoveries innen már küld linkeket. Az id-t
   // EGYSZER, mountkor rögzítjük `useState`-ben: a param maga egy alábbi `useEffect`-ben eltűnik
@@ -112,21 +113,32 @@ export function KnowledgeListPage() {
   // második WeekDiscoveries-kattintás mount nélkül) NEM váltaná újra a kiemelést — jelenleg
   // nincs ilyen producer, de ha lesz, ennek a state-nek a mountot is újra kell futtatnia.
   const [highlightFactId] = useState<string | null>(() => params.get('fact'))
+  // S6: an Emberek fact-text search carried into the person it matched (prototype `data-pq`) —
+  // held here because the person sub-view remounts under a new replayKey.
+  const [personQuery, setPersonQuery] = useState('')
 
+  // S6 (mezo-d6ivw.6): the hub loads all four sources up front — each owns its own
+  // pending/error/degraded state, so there is no page-wide early return any more. Every hook
+  // stays ABOVE the only early return (the legacy `profil` redirect).
   const { facts, candidates, degraded, isPending, isError, refetch } = useKnowledge()
-  const { toggle } = useKnowledgeActions()
   const { candidates: lifeEvents } = useLifeEventCandidates()
   const { nodes } = useKnowledgeGraphNodes()
-  const { count: edgeCount } = useGraphEdgeCount()
+  const peopleQ = usePeople()
+  const obsQ = useKnowledgeObservations()
+  const effectsQ = useEffectSubjects()
+  const undo = useForgetUndo()
 
   // Task 11 (mezo-zpxv7): a döntés a Rólad oldalon él — a Tudástár csak a darabszámot mutatja
-  // (a pointer kártyán). Degraded alatt a fact-candidate felét fedi (a lifeEvents/SEASON
+  // (a pointer linken). Degraded alatt a fact-candidate felét fedi (a lifeEvents/SEASON
   // jelöltek gráf-eredetűek, függetlenek a társ-kapcsolótól).
   const pendingCount = (degraded ? 0 : candidates.length) + lifeEvents.length
 
-  const buckets = useMemo(() => bucketFacts(facts), [facts])
-  // Prototype hero big number (#tudasBig) spins up. The hook stays ABOVE every early return.
-  const heroCount = useCountUp(facts.length)
+  const counts = hubCounts(
+    { items: facts, degraded, isPending, isError, refetch },
+    { items: peopleQ.people, degraded: false, isPending: peopleQ.isPending, isError: peopleQ.isError, refetch: peopleQ.refetch },
+    { items: obsQ.observations, degraded: obsQ.degraded, isPending: obsQ.isPending, isError: obsQ.isError, refetch: obsQ.refetch },
+    { items: effectsQ.subjects, degraded: effectsQ.degraded, isPending: effectsQ.isPending, isError: effectsQ.isError, refetch: effectsQ.refetch },
+  )
 
   const profileNode = nodes.find((n) => n.sourceKind === PROFILE_SOURCE_KIND) ?? null
   const graphNodes = nodes.filter((n) => n.sourceKind !== PROFILE_SOURCE_KIND)
@@ -158,109 +170,119 @@ export function KnowledgeListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot: must fire exactly once on mount
   }, [])
 
-  const latestGraphNode = graphNodes[0] ?? null // useKnowledgeGraphNodes() már DESC updatedAt szerint rendezve (T3)
-  const kategLine = latestGraphNode
-    ? `${latestGraphNode.title}${edgeCount !== null ? ` · ${edgeCount} él` : ''}`
-    : 'Még nincs kategorizált kapcsolat'
-  // Real-mode-only cold-load window (mock mode's isPending is always false): facts=[]/degraded=false
-  // read as "genuinely empty" below WITHOUT this guard — a fabricated „0 tény / 0 megy a chatbe"
-  // header would reach a live user during the unresolved window (the mezo-yew/mezo-0xl bug class,
-  // PatternsPage.tsx örököse).
   if (requestedView === 'profil') return <Navigate to="/settings/mezo/communication" replace />
 
-  if (isPending) {
-    return <TudasFrame><GhostState message="A tudástár betöltése…" /></TudasFrame>
-  }
+  const go = (v: HubNavTarget) => setParams(withWeek({ view: v }, params))
+  const replayKey = `${view}:${kind ?? ''}:${personId ?? ''}`
+  // The forget-undo bar lives once per page, on every view (a forget started in a section keeps
+  // its window when the user steps back to the hub).
+  const undoBar = <ForgetUndoBar pending={undo.pending} onUndo={undo.undo} />
 
-  // Genuinely failed fetch (500, network) — külön a 404-degraded ÉS a betöltés-alatti ablaktól.
-  // Enélkül egy 500 a `realEmpty`-t adná vissza, ami itt „0 megy a chatbe"-ként olvasna
-  // ÁLLANDÓAN, miközben a társ éppen fut és tényeket injektál.
-  if (isError) {
+  if (view === 'tenyek') {
+    // S6 (mezo-d6ivw.6): the Rólad section — topics, search, Elhallgattatott, the dossier door.
+    // It owns its own loading/error/degraded/empty states; the `?fact=` target opens its fold.
     return (
-      <TudasFrame>
-        <GhostState message="Nem sikerült betölteni a tudástárat." ctaLabel="Újra" onCta={refetch} />
+      <TudasFrame view="tenyek">
+        <EntranceGroup className="tud9-flow" replayKey={replayKey}>
+          <TenyekSection
+            facts={facts} degraded={degraded} isPending={isPending} isError={isError} refetch={refetch}
+            highlightFactId={highlightFactId} forget={undo.start} isHidden={undo.isHidden}
+          />
+        </EntranceGroup>
+        {undoBar}
       </TudasFrame>
     )
   }
 
-  // `degraded` (real-mode 404, companion switch off) EGYEDÜL a tény-felületet fedi le — a
-  // gráf-hookok (useLifeEventCandidates/useKnowledgeGraphNodes/useGraphEdgeCount) 404-szemantikája
-  // FÜGGETLEN a társ-kapcsolótól (l. graphHooks.ts), ezért egy régi teljes-oldalas early return
-  // itt egy MÁSIK réteg működő adatát is elnyomná. A degraded kártya csak a tény-részt fedi:
-  // a base nézeten az inbox candidate-blokkot és a Tények csempét helyettesíti (a LIFE_EVENT/
-  // SEASON csoportok és a Kategóriák/Így beszélj velem csempék változatlanul rendereinek, ha a
-  // gráf-hook adott adatot), a ?view=tenyek nézeten pedig egyedül ő látszik. A hero soha nem
-  // fabrikál „0 tény"-t degraded alatt — nagy szám/alcím nélkül marad.
-  const hasNoFacts = facts.length === 0
-  const heroBig = degraded ? undefined : heroCount
-  const heroSub = degraded
-    ? undefined
-    : `tény rólad · ${buckets.inPrompt.length} megy a chatbe${edgeCount !== null ? ` · ${edgeCount} kapcsolat` : ''}`
-
-  if (view === 'tenyek') {
+  if (view === 'emberek') {
+    // `?person=<id>` opens that person's sub-view; its way back is the Emberek list, not the hub.
+    // An id that the loaded list does not know reads as the plain list.
+    const person = personId ? peopleQ.people.find((p) => p.id === personId) ?? null : null
+    const inPerson = !!personId && (peopleQ.isPending || person !== null)
     return (
-      <TudasFrame view="tenyek" big={heroBig} sub={heroSub}>
-        <EntranceGroup className="tud9-flow" replayKey={`${view}:${kind ?? ''}`}>
-          {degraded ? (
-            <div className="tf-dash tud9-dash rise" style={{ '--d': '0ms' } as React.CSSProperties}>
-              <Icon3D name="t-info" size={28} />
-              <span>A társ jelenleg nincs bekapcsolva — a tudástár most nem elérhető.</span>
-            </div>
-          ) : hasNoFacts ? (
-            <div className="tf-dash tud9-dash rise" style={{ '--d': '0ms' } as React.CSSProperties}>
-              <Icon3D name="t-note" size={28} />
-              <span>Még egy tényt sem tanultam rólad — ahogy beszélgettek, itt fognak megjelenni.</span>
-            </div>
-          ) : (
-            <FactsView facts={facts} buckets={buckets} onToggle={toggle} highlightFactId={highlightFactId} />
-          )}
+      <TudasFrame
+        view="emberek"
+        title={inPerson ? person?.name : undefined}
+        backTo={inPerson ? { label: 'Emberek', params: { view: 'emberek' } } : undefined}
+      >
+        <EntranceGroup className="tud9-flow" replayKey={replayKey}>
+          <EmberekSection
+            personId={personId}
+            initialPersonQuery={personQuery}
+            onOpenPerson={(id, carry) => {
+              setPersonQuery(carry)
+              setParams(withWeek({ view: 'emberek', person: id }, params))
+            }}
+            forget={undo.start} isHidden={undo.isHidden}
+          />
         </EntranceGroup>
+        {undoBar}
+      </TudasFrame>
+    )
+  }
+
+  if (view === 'eszrevetelek') {
+    // `&obs=<patternId>` (the Rólad "észrevételből" tag): its topic opens, its row is highlighted,
+    // the filter starts at Mind. Read on every render (an in-app link does not remount the page);
+    // keyed on it so a new target re-runs the section's opening state.
+    const obs = params.get('obs')
+    return (
+      <TudasFrame view="eszrevetelek">
+        <EntranceGroup className="tud9-flow" replayKey={replayKey}>
+          <EszrevetelekSection key={obs ?? ''} highlightPatternId={obs}
+            forget={undo.start} isHidden={undo.isHidden} />
+        </EntranceGroup>
+        {undoBar}
+      </TudasFrame>
+    )
+  }
+
+  if (view === 'hatasok') {
+    return (
+      <TudasFrame view="hatasok">
+        <EntranceGroup className="tud9-flow" replayKey={replayKey}>
+          <HatasokSection forget={undo.start} isHidden={undo.isHidden} />
+        </EntranceGroup>
+        {undoBar}
       </TudasFrame>
     )
   }
 
   if (view === 'kategoriak') {
     return (
-        <TudasFrame view="kategoriak" kind={kind}>
-          <EntranceGroup className="tud9-flow" replayKey={`${view}:${kind ?? ''}`}>
-            <KategoriakView
-              nodes={graphNodes}
-              kind={kind}
-              onOpenKind={(k) => setParams(withWeek({ view: 'kategoriak', kind: k }, params))}
-              onOpenNode={(n) => navigate(`/mezo/knowledge/node/${n.id}?${params}`)}
-            />
-          </EntranceGroup>
-        </TudasFrame>
-    )
-  }
-
-
-  if (view === 'hogyan') {
-    return (
-      <TudasFrame view="hogyan">
-        <EntranceGroup className="tud9-flow" replayKey={`${view}:${kind ?? ''}`}>
-          <HowItWorksView />
+      <TudasFrame view="kategoriak" kind={kind}>
+        <EntranceGroup className="tud9-flow" replayKey={replayKey}>
+          <KategoriakView
+            nodes={graphNodes}
+            kind={kind}
+            onOpenKind={(k) => setParams(withWeek({ view: 'kategoriak', kind: k }, params))}
+            onOpenNode={(n) => navigate(`/mezo/knowledge/node/${n.id}?${params}`)}
+          />
         </EntranceGroup>
+        {undoBar}
       </TudasFrame>
     )
   }
 
-  /* Üveg (U9 · mezo-me75u.9): the big light fact count + "tény rólad · N megy a chatbe" under
-     the tf-dhead frame. Same honest numbers as the old header (full-list buckets, never the
-     filtered view). */
+  if (view === 'hogyan') {
+    return (
+      <TudasFrame view="hogyan">
+        <EntranceGroup className="tud9-flow" replayKey={replayKey}>
+          <HowItWorksView />
+        </EntranceGroup>
+        {undoBar}
+      </TudasFrame>
+    )
+  }
+
+  /* S6 (mezo-d6ivw.6): the hub — hero numeral + four section tiles + quiet links. Each section
+     reports its own loading/error/switched-off state; nothing is invented. */
   return (
-    <TudasFrame view="base" big={heroBig} sub={heroSub} help>
-      <EntranceGroup className="tud9-flow" replayKey={`${view}:${kind ?? ''}`}>
-        <KnowledgeBaseView
-          degraded={degraded}
-          pendingCount={pendingCount}
-          facts={facts}
-          buckets={buckets}
-          kindCount={GRAPH_KIND_GROUPS.length}
-          kategLine={kategLine}
-          onNavigate={(v) => setParams(withWeek({ view: v }, params))}
-        />
+    <TudasFrame view="base">
+      <EntranceGroup className="tud9-flow" replayKey={replayKey}>
+        <KnowledgeBaseView pendingCount={pendingCount} counts={counts} onNavigate={go} />
       </EntranceGroup>
+      {undoBar}
     </TudasFrame>
   )
 }

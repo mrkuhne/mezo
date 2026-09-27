@@ -72,6 +72,7 @@ import { TeamChatPage } from '@/features/insights/pages/TeamChatPage'
 import { BoopMenuPage } from '@/features/insights/pages/BoopMenuPage'
 import { ALL_FEATURES_ROUTE } from '@/features/insights/logic/boopNavigation'
 import { BoopAboutPage } from '@/features/insights/pages/BoopAboutPage'
+import { RoladLifeEventsPage } from '@/features/insights/pages/RoladLifeEventsPage'
 import { PatternsPage } from '@/features/insights/pages/PatternsPage'
 import { PatternDetailPage } from '@/features/insights/pages/PatternDetailPage'
 import { MemoirPage } from '@/features/insights/pages/MemoirPage'
@@ -428,6 +429,8 @@ export const routes: RouteObject[] = [
       // a saved `/mezo/menu` link lands on the same grid.
       { path: 'mezo/menu', element: <Navigate to={ALL_FEATURES_ROUTE} replace /> },
       { path: 'mezo/rolad', element: <BoopAboutPage /> },
+      // S6c (mezo-2dfy2): the life-event timeline moved behind the Rólad page's own door.
+      { path: 'mezo/rolad/eletesemenyek', element: <RoladLifeEventsPage /> },
       { path: 'mezo/patterns', element: <PatternsPage /> },
       // Heti retired (mezo-p2tr): the review moved to /me/week (WeekHubPage) — including the
       // score hero, the growth card and the weekly tervjavaslat prose. The route survives as

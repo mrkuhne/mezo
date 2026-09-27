@@ -8,10 +8,12 @@ import io.mrkuhne.mezo.feature.companion.HighlightCitationSource;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.FactOwner;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
+import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
 import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
+import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
@@ -76,6 +78,7 @@ public class KnowledgeFactService {
     /** mezo-d20.7.7 — absent when the proactive switch is off; then the signal is null, not 0. */
     private final ObjectProvider<HighlightCitationSource> citationSource;
     private final PromptPersona promptPersona;
+    private final LearnedFactRepository learnedFactRepository;
 
     public List<KnowledgeFactResponse> list(UUID userId) {
         // V3.3 evidence link: pattern-sourced facts carry their promoting pattern's title
@@ -83,11 +86,17 @@ public class KnowledgeFactService {
                 .findByCreatedByAndPromotedFactIdIsNotNullAndDeletedFalse(userId).stream()
                 .collect(Collectors.toMap(PatternEntity::getPromotedFactId, PatternEntity::getTitle,
                         (first, second) -> first));
+        // S6 (mezo-d6ivw.6): the chat turn behind each accepted candidate — one read, not one per fact
+        Map<UUID, UUID> sourceMessageByFactId = learnedFactRepository
+                .findByCreatedByAndPromotedFactIdIsNotNullAndDeletedFalse(userId).stream()
+                .filter(c -> c.getDerivedFromMessageId() != null)
+                .collect(Collectors.toMap(LearnedFactEntity::getPromotedFactId,
+                        LearnedFactEntity::getDerivedFromMessageId, (first, second) -> first));
         Map<UUID, Integer> cited = citedWeeks(userId);
         return repository.findByCreatedByAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(userId)
                 .stream()
-                .map(fact -> mapper.toKnowledgeFactResponse(
-                        fact, patternTitleByFactId.get(fact.getId()), citedWeeksOf(cited, fact.getId())))
+                .map(fact -> mapper.toKnowledgeFactResponse(fact, patternTitleByFactId.get(fact.getId()),
+                        citedWeeksOf(cited, fact.getId()), sourceMessageByFactId.get(fact.getId())))
                 .toList();
     }
 
@@ -132,17 +141,25 @@ public class KnowledgeFactService {
             fact.setFactText(request.getFactText());
         }
         if (request.getCategory() != null) {
+            String category = request.getCategory().getValue();
             // mezo-plbev item 3: re-derive the owner ONLY when it still carries the OLD
             // category's default (nobody named it explicitly) — an owner the team gave by name
             // (e.g. szunya on a health fact, via the sleep-lexicon backfill or a live producer)
             // must survive a category edit untouched.
             if (fact.getOwner().equals(FactOwner.forCategory(fact.getCategory()))) {
-                fact.setOwner(FactOwner.forCategory(request.getCategory()));
+                fact.setOwner(FactOwner.forCategory(category));
             }
-            fact.setCategory(request.getCategory());
+            fact.setCategory(category);
         }
         if (request.getIncludeInPrompt() != null) {
-            fact.setIncludeInPrompt(request.getIncludeInPrompt());
+            boolean include = request.getIncludeInPrompt();
+            if (include && !fact.isIncludeInPrompt()) {
+                fact.unmute();
+            } else if (!include && fact.isIncludeInPrompt()) {
+                // S6 (mezo-d6ivw.6): the user's own toggle — "te hallgattattad el". An already
+                // muted fact keeps its original reason (a no-op toggle never rewrites history).
+                fact.mute(KnowledgeFactEntity.MUTED_USER, Instant.now());
+            }
         }
         // mezo-b3pp.30: include_in_prompt is the user's kill-switch for EVERY injection channel,
         // and the knowledge graph is one of them — GraphPromptAssembler renders traversed nodes
@@ -243,7 +260,6 @@ public class KnowledgeFactService {
      * promoted fact loses its prompt seat — muted, never deleted, so the Tudástár keeps it
      * visible and re-enableable. Fires the same {@link KnowledgeFactChangedEvent} the manual
      * toggle does, so the graph re-syncs through the one consumer that already reacts to it.
-     * Also the S7 team-chat undo ({@link #muteFromTeamChat}).
      *
      * <p>Fail-open: called from {@code companion.reflection.service} (the ArchUnit direction lets
      * reflection import companion.service, never the reverse), where a missing/already-gone fact
@@ -256,7 +272,7 @@ public class KnowledgeFactService {
             log.info("Refute-mutes-fact skipped — fact {} of user {} is already gone", factId, userId);
             return;
         }
-        fact.setIncludeInPrompt(false);
+        fact.mute(KnowledgeFactEntity.MUTED_REFUTED, Instant.now());
         repository.save(fact);
         eventPublisher.publishEvent(new KnowledgeFactChangedEvent(userId, factId));
     }
@@ -284,10 +300,18 @@ public class KnowledgeFactService {
     }
 
     /** S7 (mezo-d6ivw.7): undo / "Nem, figyelj rá" on a captured csapatfal fact — the S2
-     *  mute-not-delete idiom, fail-open on an unknown id. */
+     *  mute-not-delete idiom, fail-open on an unknown id. S6: it is the USER's own act, so the
+     *  hub says "te hallgattattad el", never the refute reason. */
     @Transactional
     public void muteFromTeamChat(UUID userId, UUID factId) {
-        muteFromRefutedPattern(userId, factId);
+        KnowledgeFactEntity fact = repository.findByIdAndCreatedByAndDeletedFalse(factId, userId).orElse(null);
+        if (fact == null) {
+            log.info("Team-chat mute skipped — fact {} of user {} is already gone", factId, userId);
+            return;
+        }
+        fact.mute(KnowledgeFactEntity.MUTED_USER, Instant.now());
+        repository.save(fact);
+        eventPublisher.publishEvent(new KnowledgeFactChangedEvent(userId, factId));
     }
 
     /**

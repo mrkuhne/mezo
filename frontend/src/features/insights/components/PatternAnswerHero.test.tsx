@@ -58,3 +58,20 @@ test('a binary pair short on one day group shows no pips and never cites the day
   expect(screen.getByText(/mindkét fajta napból megvan a 3/)).toBeInTheDocument()
   expect(container.textContent).not.toMatch(/8-ból|8\. nap/)
 })
+
+test('revoking asks first, and "Mégse" backs out without deciding', () => {
+  const onDecide = vi.fn()
+  const strong = { ...pair, r: -0.9, n: 20 } as PatternMonitorPair
+  const confirmed = { ...pattern, status: 'confirmed' } as Pattern
+  const reading = readPattern({ pair: strong, pattern: confirmed, days, events: [] }, 8)
+  render(<PatternAnswerHero pair={strong} pattern={confirmed} reading={reading} days={days} events={[]} onDecide={onDecide} />)
+  fireEvent.click(screen.getByRole('button', { name: 'Mégsem igaz rám — visszavonom' }))
+  expect(screen.getByText('Biztosan visszavonod?')).toBeInTheDocument()
+  expect(screen.getByText(/A Tudástárba került mondatot ott tudod törölni/)).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Mégse' }))
+  expect(onDecide).not.toHaveBeenCalled()
+  expect(screen.queryByText('Biztosan visszavonod?')).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Mégsem igaz rám — visszavonom' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Igen, visszavonom' }))
+  expect(onDecide).toHaveBeenCalledWith('reject')
+})

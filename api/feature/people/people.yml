@@ -219,7 +219,7 @@ paths:
     patch:
       tags: [People]
       operationId: updatePersonFact
-      summary: Per-fact prompt toggle
+      summary: Per-fact prompt toggle and text edit (S6)
       parameters:
         - { name: personId, in: path, required: true, schema: { type: string, format: uuid } }
         - { name: factId, in: path, required: true, schema: { type: string, format: uuid } }
@@ -333,15 +333,18 @@ components:
             Sosem üres — a sáv mindig igaz mondatot mutat.
     UpdatePersonFactRequest:
       type: object
-      required: [includeInPrompt]
+      description: >-
+        Részleges frissítés — csak a megadott mezők érvényesülnek (S6: szöveg-javítás is).
+        Egy korábban visszavont szöveg beírása megengedett: azt a felhasználó maga írta.
       properties:
-        includeInPrompt: { type: boolean }
+        includeInPrompt: { type: boolean, nullable: true }
+        factText: { type: string, minLength: 1, maxLength: 300, nullable: true }
     PersonFactResponse:
       type: object
       description: >-
         S3 (mezo-d6ivw.3) — egy normalizált tény egy ismert személyről, forrás-hivatkozással.
         A legacy person.knownFacts tömbtől független; visszavonás után a szöveg tartós vétó.
-      required: [id, personId, kind, factText, confidence, sourceRefKind, active, includeInPrompt, seen, createdAt]
+      required: [id, personId, kind, factText, confidence, sourceRefKind, sourceRefId, active, includeInPrompt, seen, createdAt]
       properties:
         id: { type: string, format: uuid }
         personId: { type: string, format: uuid }
@@ -351,6 +354,10 @@ components:
         factText: { type: string, maxLength: 300 }
         confidence: { type: string, enum: [low, medium, high] }
         sourceRefKind: { type: string, enum: [chat_turn, nightly_day] }
+        sourceRefId:
+          type: string
+          maxLength: 64
+          description: 'S6 — a forrás azonosítója (chat_turn: az üzenet; nightly_day: a nap).'
         active: { type: boolean }
         includeInPrompt: { type: boolean }
         seen:

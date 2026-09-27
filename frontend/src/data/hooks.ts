@@ -21,7 +21,10 @@ export { usePredictions } from '@/data/insights/predictionsHooks'
 export { useExperiments, useExperimentActions } from '@/data/insights/experimentsHooks'
 export { useDiagnoses, useDiagnosis, useDiagnosisActions, useDiagnosisForWeek } from '@/data/insights/diagnosisHooks'
 export { useKnowledge, useKnowledgeActions } from '@/data/insights/knowledgeHooks'
-export { useLifeEventCandidates, useLifeEventActions, useKnowledgeGraphNodes, useKnowledgeGraphActions, useGraphEdgeCount } from '@/data/insights/graphHooks'
+export {
+  useKnowledgeObservations, useEffectSubjects, useFactEvidence, useKnowledgeHubActions,
+} from '@/data/insights/knowledgeHubHooks'
+export { useLifeEventCandidates, useLifeEventActions, useKnowledgeGraphNodes, useKnowledgeGraphActions } from '@/data/insights/graphHooks'
 export { usePatterns, usePatternActions } from '@/data/insights/patternsHooks'
 export { useObservations, useObservationReply } from '@/data/insights/observationsHooks'
 export { usePatternMonitor } from '@/data/insights/monitorHooks'

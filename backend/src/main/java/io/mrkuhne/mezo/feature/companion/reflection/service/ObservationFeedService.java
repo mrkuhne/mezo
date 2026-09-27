@@ -93,6 +93,7 @@ public class ObservationFeedService {
             PatternEntity row = row(userId, rows, event.getPatternId());
             if (row == null || !row.isReflectionOwned() || !validEvidence(userId, row)
                     || !validEventEvidence(userId, event)
+                    || row.isForgotten()
                     || (inbox && (PatternEntity.isUserFrozen(row.getStatus())
                     || PatternEntity.STATUS_DORMANT.equals(row.getStatus())
                     || PatternEntity.STATUS_REFUTED.equals(row.getStatus())))) {
@@ -129,7 +130,7 @@ public class ObservationFeedService {
                 continue;
             }
             PatternEntity row = row(userId, rows, event.getPatternId());
-            if (row == null || !row.isReflectionOwned() || !validEvidence(userId, row)) {
+            if (row == null || row.isForgotten() || !row.isReflectionOwned() || !validEvidence(userId, row)) {
                 continue; // a statistical row the user confirmed belongs to Minták, not here
             }
             // one card per row even if the day carries several confirmations — the newest wins
@@ -173,6 +174,7 @@ public class ObservationFeedService {
             var row = patternRepository.findByIdAndCreatedByAndDeletedFalse(event.getPatternId(), userId).orElse(null);
             if (row == null || !row.isReflectionOwned() || !validEvidence(userId, row)
                     || !validEventEvidence(userId, event)
+                    || row.isForgotten()
                     || PatternEntity.isUserFrozen(row.getStatus())
                     || PatternEntity.STATUS_DORMANT.equals(row.getStatus())
                     || PatternEntity.STATUS_REFUTED.equals(row.getStatus())) continue;
@@ -305,6 +307,18 @@ public class ObservationFeedService {
                 .build();
     }
 
+    /** S6 (mezo-d6ivw.6): a row's own evidence exactly as the row cards render it — capped at
+     *  {@link #ROW_EVIDENCE_LIMIT} records (slice lesson 3). Shared with the Tudástár hub. */
+    public List<ObservationEvidenceItem> rowEvidence(UUID userId, PatternEntity row) {
+        return capToNewestRecords(evidenceItems(userId,
+                row.getEvidence() == null ? null : row.getEvidence().items()));
+    }
+
+    /** S6: canonical refs (e.g. {@code ai_message:<uuid>}) resolved losslessly, capped at 5. */
+    public List<ObservationEvidenceItem> refEvidence(UUID userId, List<String> refs) {
+        return capToNewestRecords(evidenceItems(userId, refs));
+    }
+
     /** A {@code watching}/{@code confirmed} card renders the ROW's state; its id is the row's. */
     private ObservationResponse rowCard(UUID userId, PatternEntity row, String card, Instant occurredAt,
                                         List<PatternEventEntity> replies) {
@@ -314,8 +328,7 @@ public class ObservationFeedService {
                 // no prose of its own: on these cards the tallies ARE the message
                 .text("")
                 .question(null)
-                .evidence(capToNewestRecords(evidenceItems(userId,
-                        row.getEvidence() == null ? null : row.getEvidence().items())))
+                .evidence(rowEvidence(userId, row))
                 // the ROW's newest answer, NOT one anchored on `occurredAt`: `lastDetectedAt` is
                 // bumped by the nightly evaluation, which would re-arm the chips every night
                 .repliedChoice(newestChoice(replies))

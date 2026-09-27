@@ -5,6 +5,7 @@
 // nap-pipák (csoport-hiánynál egyik sem: a mondat viszi), végül a döntés — `decisionPlan` szerint gombolva, sosem az oldal saját logikájával.
 // A `pattern == null` (katalógus-pár, nincs tárolt sor) esetén NINCS döntés-blokk.
 // ============================================================
+import { useState } from 'react'
 import type { Icon3DName } from '@/shared/ui/clay'
 import { Icon3D } from '@/shared/ui/clay'
 import { toneClass } from '@/features/insights/components/DetailHero'
@@ -43,6 +44,39 @@ function DomainChip({ domain, label }: { domain: PatternMonitorPair['metricADoma
   )
 }
 
+/**
+ * A megerősített minta visszavonása két lépésben (owner, 2026-09-27: „kéne Biztos kérdés") —
+ * a ház kétkoppintásos mintája (RecalledMemoriesRow): az első koppintás csak rákérdez, a
+ * második hajtja végre, a „Mégse" visszaáll. A kérdés alatti sor őszintén mondja, mi történik:
+ * a Tudástár-bejegyzést NEM törli (PatternService.applyConfirm javadoc).
+ */
+export function RevokeConfirm({ label, className, onRevoke }: {
+  label: string
+  className: string
+  onRevoke: () => void
+}) {
+  const [asking, setAsking] = useState(false)
+  if (!asking) {
+    return (
+      <button type="button" className={className} onClick={() => setAsking(true)}>
+        {className.includes('pmx-dact') && <Icon3D name="t-skip" size={22} />}{label}
+      </button>
+    )
+  }
+  return (
+    <div className="pmx-confirm" role="group" aria-label="Visszavonás megerősítése">
+      <p className="pmx-confirm-q"><b>Biztosan visszavonod?</b> Lekerül a beépült minták közül, és Mezo nem
+        számol vele mintaként. A Tudástárba került mondatot ott tudod törölni.</p>
+      <div className="pmx-row2">
+        <button type="button" className="pmx-dact is-rec" onClick={() => { setAsking(false); onRevoke() }}>
+          <Icon3D name="t-skip" size={22} />Igen, visszavonom
+        </button>
+        <button type="button" className="pmx-dact" onClick={() => setAsking(false)}>Mégse</button>
+      </div>
+    </div>
+  )
+}
+
 function Decision({ reading, status, onDecide }: {
   reading: Reading
   status: Pattern['status'] | null
@@ -57,7 +91,10 @@ function Decision({ reading, status, onDecide }: {
       )}
       {plan.buttons.length > 0 && (
         <div className="pmx-row2">
-          {plan.buttons.map((btn) => (
+          {plan.buttons.map((btn) => status === 'confirmed' && btn.verb === 'reject' ? (
+            <RevokeConfirm key={btn.verb} label={btn.label} className={cn('pmx-dact', btn.recommended && 'is-rec')}
+              onRevoke={() => onDecide('reject')} />
+          ) : (
             <button key={btn.verb} type="button" className={cn('pmx-dact', btn.recommended && 'is-rec')}
               aria-pressed={btn.verb === 'monitor' ? status === 'monitoring' : undefined}
               onClick={() => onDecide(btn.verb)}>
@@ -67,9 +104,7 @@ function Decision({ reading, status, onDecide }: {
         </div>
       )}
       {plan.revokeLink && (
-        <button type="button" className="pmx-link" onClick={() => onDecide('reject')}>
-          Mégsem igaz rám — visszavonom
-        </button>
+        <RevokeConfirm label="Mégsem igaz rám — visszavonom" className="pmx-link" onRevoke={() => onDecide('reject')} />
       )}
       {plan.note && <p className="pmx-why"><Bold text={plan.note} /></p>}
     </div>

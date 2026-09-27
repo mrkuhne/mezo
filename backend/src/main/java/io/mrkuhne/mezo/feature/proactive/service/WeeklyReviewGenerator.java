@@ -215,8 +215,12 @@ public class WeeklyReviewGenerator {
         Instant since = WeeklyReviewWeekWindow.since(weekStart);
         Instant until = WeeklyReviewWeekWindow.until(weekEnd);
 
+        // S6 (mezo-d6ivw.6): a forgotten observation's in-week events never reach the prompt
         List<PatternEventEntity> patternEvents =
-                WeeklyReviewWeekWindow.patternEvents(patternEventRepository, userId, since, until);
+                WeeklyReviewWeekWindow.patternEvents(patternEventRepository, userId, since, until).stream()
+                        .filter(event -> patternRepository.findByIdAndCreatedByAndDeletedFalse(event.getPatternId(), userId)
+                                .map(p -> !p.isForgotten()).orElse(true))
+                        .toList();
         if (!patternEvents.isEmpty()) {
             payload.append("\nMINTA-ESEMÉNYEK A HÉTEN:\n");
             for (PatternEventEntity event : patternEvents) {

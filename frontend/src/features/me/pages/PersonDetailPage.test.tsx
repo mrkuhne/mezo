@@ -6,12 +6,15 @@
 // Navigation is asserted through the REAL `routes` export (PeopleKorPage.test.tsx
 // idiom) so the query-controlled route guard (isPending vs. genuinely-missing) is
 // exercised against the actual router wiring, not a test-local stand-in.
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/data/_client/api'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { routes } from '@/app/router'
-import { people, mentions } from '@/data/me/people'
+import { people, mentions, MOCK_PERSON_EFFECTS } from '@/data/me/people'
 import { contextBreakdown, trendAxisLabels, trendHeights } from '@/features/me/logic/peopleDerive'
 import { TONE_META, CTX_META } from '@/features/me/logic/peopleVisuals'
 
@@ -23,16 +26,19 @@ const hoisted = vi.hoisted(() => ({
   cadenceOverrideFor: null as string | null,
   factsOverrideFor: null as string | null,
   logMention: null as ((input: unknown) => void) | null,
+  /** real-mode tests: keep the seeded people (the real-mode people list is empty in MSW) */
+  seedPeople: false,
 }))
 
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
+  const seed = await import('@/data/me/people')
   return {
     ...actual,
     usePeople: () => {
       const real = actual.usePeople()
-      let people = real.people
-      let mentions = real.mentions
+      let people = hoisted.seedPeople ? seed.people : real.people
+      let mentions = hoisted.seedPeople ? seed.mentions : real.mentions
       if (hoisted.emptyTrendFor) {
         people = people.map((p) => (p.id === hoisted.emptyTrendFor
           ? { ...p, affectTrend: [], affectTrendStart: null, direction: 'flat' as const, directionReason: null }
@@ -82,6 +88,7 @@ afterEach(() => {
   hoisted.cadenceOverrideFor = null
   hoisted.factsOverrideFor = null
   hoisted.logMention = null
+  hoisted.seedPeople = false
 })
 
 function renderAt(path: string) {
@@ -288,20 +295,29 @@ test('S4: the section is OMITTED entirely for a person with no effect rows', () 
   expect(document.querySelector('.ppl-effcard')).toBeNull()
 })
 
-test('S4: stress + lower renders the "nyugodtabb" copy (polarity flip)', () => {
-  renderAt(`/me/people/${petra.id}`)
-  expect(screen.getByText(`Úgy tűnik, azokon a napokon, amikor ${petra.name} szóba kerül, nyugodtabb vagy.`)).toBeInTheDocument()
-})
+// The sentence wording and the two separate dot rows live in EffectRows.test.tsx (S6 B12).
 
-test('S4: strength and confidence render as two separate indicators with distinct aria-labels', () => {
+test('S6: a muted effect subject is neither shown nor used on the person page (real mode)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  hoisted.seedPeople = true
+  let served = false
+  server.use(http.get(`${API_BASE}/api/companion/effects`, () => {
+    served = true
+    // mute is per SUBJECT: every metric row of Petra carries it
+    return HttpResponse.json({
+      effects: MOCK_PERSON_EFFECTS[petra.id].map((e) => ({
+        metric: e.metric, direction: e.direction, strengthBand: e.strength, confidenceTier: e.confidence,
+        meanDiff: e.meanDiff, subjectDays: e.subjectDays, complementDays: 30, computedAt: '2026-09-27T03:40:00Z',
+        subjectKind: 'person', subjectKey: petra.id, subjectLabel: petra.name, muted: true,
+      })),
+    })
+  }))
   renderAt(`/me/people/${petra.id}`)
-  // pp-petra's mental row: strength 'eros' → 'erős', confidence 'eros' → 'erős'; both present
-  // but distinctly labeled (erősség vs. bizonyosság), never conflated into one indicator.
-  expect(screen.getAllByRole('img', { name: 'erősség: erős' }).length).toBeGreaterThan(0)
-  expect(screen.getAllByRole('img', { name: 'bizonyosság: erős' }).length).toBeGreaterThan(0)
-  // pp-petra's stress row: strength 'enyhe', confidence 'gyenge' — the accented/plain split.
-  expect(screen.getByRole('img', { name: 'erősség: enyhe' })).toBeInTheDocument()
-  expect(screen.getByRole('img', { name: 'bizonyosság: gyenge' })).toBeInTheDocument()
+  expect(await screen.findByText('Hangulat-ív')).toBeInTheDocument()
+  await waitFor(() => expect(served).toBe(true))
+  await new Promise((r) => setTimeout(r, 50))
+  expect(document.querySelector('.ppl-effrow')).toBeNull()
+  expect(screen.queryByText('Hatás · együttjárás')).toBeNull()
 })
 
 test('"Log most" opens PersonLogSheet preselecting this person', () => {

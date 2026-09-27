@@ -66,6 +66,7 @@ public class ConversationService {
             // Ownership gate BEFORE anything is written: 404 for missing OR foreign (house idiom).
             var pattern = patternRepository
                     .findByIdAndCreatedByAndDeletedFalse(seedPatternId, userId)
+                    .filter(p -> !p.isForgotten()) // S6: a forgotten row seeds nothing
                     .orElseThrow(() -> new SystemRuntimeErrorException(
                             SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
             conversation.setSeedPatternId(seedPatternId);

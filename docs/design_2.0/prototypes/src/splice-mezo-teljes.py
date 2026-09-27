@@ -15,7 +15,7 @@ base = open('uveg-uzenofal.html').read()
 sprite = open('../../../frontend/src/shared/ui/clay/titanium-icons.svg').read()
 u8css = open('src/uveg-mezo-teljes-u8.css').read()
 u9css = open('src/uveg-mezo-teljes-u9.css').read()
-js = open('src/uveg-mezo-teljes-u8.js').read() + open('src/uveg-mezo-teljes-u9.js').read()
+js = open('src/uveg-mezo-teljes-u8.js').read() + open('src/uveg-mezo-teljes-u9.js').read() + open('src/uveg-mezo-teljes-s6.js').read()
 notes = open('src/uveg-mezo-teljes-notes.html').read()
 
 def once(s, old, new):

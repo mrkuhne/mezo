@@ -56,4 +56,9 @@ public interface LearnedFactRepository extends JpaRepository<LearnedFactEntity, 
     /** Karakter round-4 read layer (CharacterMetaReads): window read, bounded above for catch-up honesty. */
     List<LearnedFactEntity> findByCreatedByAndUserDecisionIsNotNullAndCreatedAtGreaterThanEqualAndCreatedAtLessThanAndDeletedFalse(
             UUID createdBy, Instant from, Instant toExclusive);
+
+    /** S6 (mezo-d6ivw.6): accepted candidates → the chat turn each fact came from (provenance). */
+    List<LearnedFactEntity> findByCreatedByAndPromotedFactIdIsNotNullAndDeletedFalse(UUID createdBy);
+
+    Optional<LearnedFactEntity> findFirstByCreatedByAndPromotedFactIdAndDeletedFalse(UUID createdBy, UUID promotedFactId);
 }
