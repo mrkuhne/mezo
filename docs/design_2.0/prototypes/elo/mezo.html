@@ -4175,6 +4175,7 @@ body:not(.still) .u8 .typing i:nth-child(3){animation-delay:.3s}
       <li>Tudástár: <a href="#" data-st="tud:full">rendes</a> · <a href="#" data-st="tud:degraded">kikapcsolva</a> · a négy szakasz a <a href="../uveg-tudastar-hub.html#tudastar">hub-oldalon</a></li>
       <li>Minták: <a href="#" data-st="bucket:decide">döntésre vár</a> · <a href="#" data-st="bucket:confirmed">megerősítve</a> · <a href="#" data-st="bucket:monitoring">megfigyelés</a> · <a href="#" data-st="bucket:gathering">még gyűlik</a> · <a href="#" data-st="bucket:noRel">nincs kapcsolat</a> · <a href="#" data-msheet9="filter">szűrés</a></li>
       <li>Előrejelzések: <a href="#" data-st="pred:all">mind</a> · <a href="#" data-st="pred:pending">folyamatban</a> · <a href="#" data-st="pred:closed">lezárt</a> · <a href="#" data-st="pred:empty">még nincs</a></li>
+      <li><b>Chat-memória (S8, új):</b> <a href="#" data-s8="reset">a teljes beszélgetés</a> · négy jelzés: Megjegyeztem · Megjegyezném · Emlékszem · Elfelejtettem — új ikon nincs, mind a meglévő készletből (spark, bulb, people, eraser)</li>
       <li>Beszélgetés: <a href="#" data-st="ch:full">beszélgetés</a> · <a href="#" data-st="ch:typing">Mezo dolgozik</a> · <a href="#" data-st="ch:err">hiba</a> · <a href="#" data-st="ch:empty">új</a> · <a href="#" data-st="ch:off">nem elérhető</a></li>
       <li>Napi kártya: <a href="#" data-st="card:open">még nem léptél</a> · <a href="#" data-st="card:done">alkalmaztad</a> · <a href="#" data-st="card:none">ma nincs</a></li>
       <li>Kísérletek: <a href="#" data-st="ex:mind">mind</a> · <a href="#" data-st="ex:aktiv">aktív</a> · <a href="#" data-st="ex:ures">üres</a> · Memória: <a href="#" data-st="mem:retegek">rétegek</a> · <a href="#" data-st="mem:naplo">napló</a> · <a href="#" data-st="mem:kereso">kereső</a> · <a href="#" data-st="mem:audit">audit</a></li>
@@ -5153,6 +5154,65 @@ document.addEventListener('click',e=>{
 tabbar();
 render();
 </script>
+<style>
+/* ══ S8 · a chat memóriája — látható és őszinte (mezo-d6ivw.12, 2026-09-27) ══
+   Négy jelzés, egy közös chip-alak (a csapatfal S7 „Megjegyeztem" chipjéből kiemelve):
+   megjegyeztem (spark) · megjegyezném (bulb) · emlékszem (people) · elfelejtettem (eraser).
+   Lapos pirula a buborékon kívül, nincs üveg az üvegben. */
+.u8 .s8turn{display:grid;gap:6px;justify-items:start;margin-top:-6px}
+.u8 .s8chip{--c:var(--lav);display:flex;align-items:center;gap:8px;max-width:92%;padding:7px 8px 7px 9px;border-radius:14px;
+  background:linear-gradient(150deg,rgba(245,239,230,.035),color-mix(in srgb,var(--c) 10%,rgba(245,239,230,.02)));
+  box-shadow:inset 0 0 0 .5px color-mix(in srgb,var(--c) 38%,transparent),0 0 16px color-mix(in srgb,var(--c) 12%,transparent);
+  animation:s8in .45s cubic-bezier(.3,.8,.4,1) both;animation-delay:var(--d,0s)}
+@keyframes s8in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.u8 .s8chip>.icon{width:20px;height:20px;flex:none}
+.u8 .s8tx{flex:1;min-width:0;font-size:12px;line-height:1.4;color:var(--sub)}
+.u8 .s8tx b{color:var(--ink);font-weight:650}
+.u8 .s8tx small{display:block;margin-top:2px;font-size:10.5px;color:var(--faint)}
+.u8 .s8acts{display:flex;gap:4px;flex:none;align-self:center}
+.u8 .s8btn{min-height:30px;padding:5px 10px;border-radius:999px;font-size:11.5px;font-weight:650;color:color-mix(in srgb,var(--c) 80%,var(--ink));
+  background:color-mix(in srgb,var(--c) 12%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 34%,transparent)}
+.u8 .s8btn.ghost{background:none;box-shadow:none;color:var(--sub)}
+.u8 .s8btn:focus-visible{outline:2px solid color-mix(in srgb,var(--c) 70%,white);outline-offset:2px}
+.u8 .s8chip.prop{--c:var(--gold)}
+.u8 .s8chip.gone{--c:var(--rose)}
+.u8 .s8chip.gone ul{margin:4px 0 0;padding:0;list-style:none;display:grid;gap:3px}
+.u8 .s8chip.gone li{position:relative;padding-left:11px;color:var(--sub)}
+.u8 .s8chip.gone li::before{content:"";position:absolute;left:1px;top:.62em;width:5px;height:1.5px;border-radius:1px;background:color-mix(in srgb,var(--rose) 70%,white)}
+.u8 .s8chip.gone .s8btn{margin-top:8px}
+.u8 .s8chip.gone{align-items:flex-start}
+.u8 .s8chip.gone>.icon{margin-top:1px}
+.u8 .s8done{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--faint);padding:2px 4px;animation:s8in .35s both}
+.u8 .s8done .icon{width:16px;height:16px;opacity:.75}
+.u8 .s8done s{text-decoration-color:color-mix(in srgb,var(--rose) 60%,transparent)}
+.u8 .s8rec{display:flex;align-items:center;gap:7px;margin-top:10px;padding:5px 10px 5px 6px;border-radius:999px;font-size:12px;font-weight:600;color:var(--sub);
+  background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.u8 .s8rec .icon{width:20px;height:20px}
+.u8 .s8rec b{color:color-mix(in srgb,var(--lav) 70%,var(--ink));font-weight:650}
+.u8 .s8rec em{font-style:normal;color:var(--faint);margin-left:2px}
+.u8 .s8pend{display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:600;color:var(--faint);padding:0 4px}
+.u8 .s8pend i{width:6px;height:6px;border-radius:50%;background:var(--lav);animation:s8p 1.6s ease-in-out infinite}
+@keyframes s8p{0%,100%{opacity:.35}50%{opacity:1}}
+.u8 .s8who{display:grid;gap:10px;margin-top:6px}
+.u8 .s8who .pp{padding:12px 14px;border-radius:16px;background:rgba(245,239,230,.035);box-shadow:inset 0 0 0 1px var(--hair)}
+.u8 .s8who .pp strong{display:flex;align-items:center;gap:8px;font-size:14.5px}
+.u8 .s8who .pp strong .icon{width:22px;height:22px}
+.u8 .s8who .pp li{font-size:13px;line-height:1.45;color:var(--sub);margin-top:5px;list-style:none;padding-left:12px;position:relative}
+.u8 .s8who .pp li::before{content:"";position:absolute;left:0;top:.6em;width:5px;height:5px;border-radius:50%;background:var(--lav);opacity:.7}
+.u8 .s8foot{font-size:12px;line-height:1.5;color:var(--faint);margin-top:12px}
+.u8 .s8list{margin:8px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+.u8 .s8list li{font-size:13.5px;line-height:1.45;color:var(--sub);padding:9px 12px;border-radius:12px;background:rgba(245,239,230,.035);box-shadow:inset 0 0 0 1px var(--hair)}
+.u8 .s8list li small{display:block;font-size:11px;color:var(--faint);margin-top:2px}
+.u8 .s8row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+@media (prefers-reduced-motion:reduce){.u8 .s8chip,.u8 .s8done{animation:none}.u8 .s8pend i{animation:none;opacity:.7}}
+body.still .u8 .s8chip,body.still .u8 .s8done{animation:none}
+/* seed-javítás: a U8 lap-tartalom a scope-olás óta rejtve maradt (.sheet .u8{visibility:hidden} párja hiányzott) */
+.sheet.on .u8{visibility:visible;transition:visibility 0s}
+.sheet .u8 .s8list li{display:block}
+.sheet .u8 .s8who .pp li{display:block;background:none;box-shadow:none;border-radius:0;padding:0 0 0 12px;min-height:0}
+.sheet .u8 .s8who .pp li::before{top:.6em}
+</style>
+
 <script type="module">
 /* ══ U8 · Mezo I — a uveg-mezo.html nézetei, változatlanul (mezo-me75u.8) ══ */
 
@@ -5881,6 +5941,83 @@ document.addEventListener('click',e=>{
 
 render();
 
+
+/* ═════════ S8 · A CHAT MEMÓRIÁJA — LÁTHATÓ ÉS ŐSZINTE (mezo-d6ivw.12 + S6b, owner 2026-09-27) ═════════
+   Egy fordulóhoz négy jelzés tartozhat: amit megjegyzett (emberről, azonnal, visszavonható),
+   amit megjegyezne (rólad, te döntesz: Igen / Ne), amit elővett (Emlékszem: nevek) és amit
+   elfelejtett („ezt ne jegyezd meg" → a legutóbbit, és megmutatja, mit; egy koppintással az egészet). */
+
+const S8F={
+  dori:{w:'Dóri',t:'a strandröpi-párod, együtt nyertétek a szeptemberi tornát',turn:1,k:'rem'},
+  self:{w:'',t:'Egy nagy közös élmény után nehezen viselem az egyedül töltött estét.',turn:1,k:'prop'},
+  anna:{w:'Anna',t:'régi csapattársad, rég beszéltetek',turn:2,k:'rem'},
+  bence:{w:'Bence',t:'jövőre hármasban játszana veled és Annával',turn:2,k:'rem'}
+};
+const S8R={dori:['tavasz óta a strandröpi-párod','hétköznap ritkán ér rá, inkább hétvégén játszotok'],bence:['az egyetem óta ismeritek','ő szervezi a szombati edzéseket']};
+const s8init=()=>({dori:'on',self:'ask',anna:'gone',bence:'gone',all:false});
+Object.assign(ST,{ch:'mem',s8:s8init()});
+
+const s8txt=f=>f.w?`<b>${f.w}</b> — ${f.t}`:f.t;
+function s8chip(id,d){const f=S8F[id],s=ST.s8[id];
+  if(s==='undone')return `<p class="s8done">${I('spark')}Visszavonva — nem jegyeztem meg.</p>`;
+  if(s==='gone')return `<p class="s8done">${I('eraser')}<span>Elfelejtve · <s>${f.w?f.w+' — ':''}${f.t}</s></span></p>`;
+  if(s==='no')return `<p class="s8done">${I('bulb')}Rendben, nem jegyzem meg — és nem is javaslom újra.</p>`;
+  if(f.k==='prop'&&s==='ask')return `<div class="s8chip prop" style="--d:${d}s">${I('bulb')}<span class="s8tx"><b>Megjegyezném:</b> ${f.t}<small>rólad szól, ezért előbb megkérdezlek</small></span>
+    <span class="s8acts"><button class="s8btn" data-s8="keep:${id}">Igen</button><button class="s8btn ghost" data-s8="no:${id}">Ne</button></span></div>`;
+  const kept=f.k==='prop';
+  return `<div class="s8chip" style="--d:${d}s">${I('spark')}<span class="s8tx"><b>Megjegyeztem:</b> ${s8txt(f)}${kept?'<small>a Tudástár Rólad részében látod</small>':''}</span>
+    <span class="s8acts"><button class="s8btn ghost" data-s8="undo:${id}">Visszavonom</button></span></div>`}
+const s8turn=(ids,d0=0)=>`<div class="s8turn">${ids.map((id,i)=>s8chip(id,d0+i*.12)).join('')}</div>`;
+const s8rec=(names,key)=>`<button class="s8rec" data-s8="rec:${key}" aria-label="Mit vettem elő róluk">${I('people')}<span>Emlékszem: <b>${names.join(' · ')}</b></span><em>›</em></button>`;
+function s8gone(){const latest=['anna','bence'],rest=['dori','self'].filter(id=>ST.s8[id]==='on'||ST.s8[id]==='ask'||ST.s8[id]==='kept');
+  const list=(ST.s8.all?[...latest,...['dori','self'].filter(id=>ST.s8[id]==='gone')]:latest).map(id=>`<li>${S8F[id].w?S8F[id].w+' — ':''}${S8F[id].t}</li>`).join('');
+  return `<div class="s8turn"><div class="s8chip gone">${I('eraser')}<span class="s8tx"><b>Elfelejtettem:</b><ul>${list}</ul>
+    <small>végleg — ezeket többé nem használom, és nem is tanulom meg újra</small>
+    ${!ST.s8.all&&rest.length?`<button class="s8btn" data-s8="allask">Mindent ebből a beszélgetésből?</button>`:''}</span></div></div>`}
+
+function s8chat(){
+  const meta=(t,x='')=>`<div class="msg-meta">${I('chat')}<b>Mezo</b>${t}${x}</div>`;
+  const u1=`<div class="msg-u rise" style="--i:1">Megnyertük ma a strandröpi-tornát Dórival és Bencével! Aztán mindenki hazament, én meg itt ülök egyedül. Furcsa ez a csend.<small>22:05</small></div>`;
+  const a1=`<div class="msg-a glass rise" style="--i:2">${meta('22:05')}
+    <p>Gratulálok, ez nagy nap volt! Dórival tavasz óta játszotok párban, és most jött ki igazán.</p>
+    <p>Nem meglepő, hogy ilyen csúcs után furcsa a csend: egy nagy közös élmény után a hirtelen egyedüllét sokakat lehúz egy kicsit. Mi esne most jól, átbeszélni a meccset, vagy inkább lecsendesedni?</p>
+    ${s8rec(['Dóri','Bence'],'1')}</div>`;
+  const u2=`<div class="msg-u rise" style="--i:4">Átbeszélni. Bence mondta, hogy jövőre Annával is összeállhatnánk, vele régen nem beszéltem. Ezt el tudod menteni valahova?<small>22:07</small></div>`;
+  const a2=`<div class="msg-a glass rise" style="--i:5">${meta('22:07')}
+    <p>Igen, a magam módján: a beszélgetés után megjegyzem, ami fontos. Amit az emberekről mondasz, azt elmentem, amit magadról, azt előbb megkérdezem. Mindkettőt itt a beszélgetésben látod, és később a Tudástárban is.</p>
+    <p>Bence ötlete jó alkalom lehet: ha Annával rég beszéltél, egy közös edzés könnyebb belépő, mint egy nagy „mi van veled".</p>
+    ${s8rec(['Bence'],'2')}</div>`;
+  const u3=`<div class="msg-u rise" style="--i:7">Az Annásat inkább ne jegyezd meg.<small>22:09</small></div>`;
+  const a3=`<div class="msg-a glass rise" style="--i:8">${meta('22:09')}
+    <p>Rendben, elfelejtettem. Lent látod pontosan, mit: az előző üzenetedből tanult két dolgot. Ha a mai estéről semmit ne tartsak meg, egy koppintás.</p></div>`;
+  return chatHead()+`<div class="thread">${u1}${a1}${s8turn(['dori','self'],.3)}${u2}${a2}${s8turn(['anna','bence'],.3)}${u3}${a3}${s8gone()}</div>`;
+}
+
+const _s8chat=U8V.chat; U8V.chat=id=>ST.ch==='mem'?s8chat():_s8chat(id);
+STATUS.mem=['élő · Gemini',''];
+
+SH.s8rec=['var(--lav)',()=>{const k=ST.s8rk,names=k==='1'?['dori','bence']:['bence'];
+  return `<div class="shh">${I('people')}<div class="grow"><span class="eb">EMLÉKSZEM</span><h3>Ezt vettem elő a válaszhoz</h3></div>${x}</div>
+  <div class="s8who">${names.map(n=>`<div class="pp"><strong>${I('person')}${n==='dori'?'Dóri':'Bence'}</strong><ul style="margin:0;padding:0">${S8R[n].map(x=>`<li>${x}</li>`).join('')}</ul></div>`).join('')}</div>
+  <p class="s8foot">Csak azt veszem elő, amit a Tudástárban is látsz. Ha valamelyiket nem szeretnéd, ott elhallgattathatod vagy elfelejtheted.</p>
+  <div class="s8row"><button class="s8btn" style="--c:var(--lav)" data-toast="Tudástár · Emberek">Emberek a Tudástárban ›</button></div>`}];
+SH.s8all=['var(--rose)',()=>{const rest=['dori','self'].filter(id=>ST.s8[id]!=='undone'&&ST.s8[id]!=='no'&&ST.s8[id]!=='gone');
+  return `<div class="shh">${I('eraser')}<div class="grow"><span class="eb">MINDENT EBBŐL A BESZÉLGETÉSBŐL</span><h3>${rest.length===1?'Ezt az egyet':'Ezt a kettőt'} is elfelejtem</h3></div>${x}</div>
+  <ul class="s8list">${rest.map(id=>`<li>${S8F[id].w?`<b>${S8F[id].w}</b> — `:''}${S8F[id].t}<small>${S8F[id].k==='prop'?'javaslat, még nem döntöttél róla':'22:05-kor jegyeztem meg'}</small></li>`).join('')}</ul>
+  <p class="s8foot">Végleges: nem használom többé, és ugyanebből nem tanulom meg újra. Amit máskor, máshol mondasz, azt továbbra is megjegyezhetem.</p>
+  <div class="s8row"><button class="s8btn" style="--c:var(--rose)" data-s8="allgo">${rest.length===1?'Elfelejtem':'Elfelejtem mind a kettőt'}</button><button class="s8btn ghost" data-closesheet>Mégse</button></div>`}];
+
+document.addEventListener('click',e=>{const b=e.target.closest('[data-s8]');if(!b)return;e.preventDefault();e.stopPropagation();
+  const [a,id]=b.dataset.s8.split(':');const S=ST.s8;
+  if(a==='keep'){S[id]='kept';soft();toast('Elmentve — a Tudástárban bármikor elhallgattathatod.');return}
+  if(a==='no'){S[id]='no';soft();return}
+  if(a==='undo'){S[id]='undone';soft();return}
+  if(a==='rec'){ST.s8rk=id;openSheet('s8rec');return}
+  if(a==='allask'){openSheet('s8all');return}
+  if(a==='allgo'){['dori','self'].forEach(k=>{if(S[k]!=='undone'&&S[k]!=='no')S[k]='gone'});S.all=true;closeSheet();soft();toast('Elfelejtve — ebből a beszélgetésből semmit nem tartok meg.');return}
+  if(a==='reset'){ST.s8=s8init();ST.ch='mem';location.hash==='#chat'?soft():(location.hash='#chat');return}
+},true);
+if(route()[0]==='chat')soft();
 </script>
 </body>
 </html>
