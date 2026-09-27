@@ -148,7 +148,7 @@ h1{margin:4px 0 0;font-size:30px;font-weight:700;letter-spacing:-1px;line-height
   <section class="side">
     <div>
       <div class="eyebrow">Indítókép · mozgás</div>
-      <h1>Három életre keltett Boop-gömb</h1>
+      <h1>Életre keltett Boop-gömb</h1>
     </div>
     <p class="lede">Ugyanaz az üveggömb és ugyanaz a három másodperc, mint most. Csak az változik, mit csinál közben. Válassz egyet, és nézd meg a telefonon.</p>
     <div class="picker" role="tablist" aria-label="Változatok">
@@ -156,6 +156,7 @@ h1{margin:4px 0 0;font-size:30px;font-weight:700;letter-spacing:-1px;line-height
       <button class="opt" role="tab" data-v="lelegzes"><i class="tag">A</i><b>Lélegzés</b><span>A gömb kétszer megduzzad, a fénye vele erősödik, és egy halvány gyűrű fut ki belőle.</span></button>
       <button class="opt" role="tab" data-v="toltodes" style="--c:var(--sky)"><i class="tag">B</i><b>Töltődés</b><span>A lila folyadék az indulással együtt feltölti a gömböt, buborékok szállnak, a végén fénycsík söpör át rajta.</span></button>
       <button class="opt" role="tab" data-v="keringes" style="--c:var(--gold)"><i class="tag">C</i><b>Keringés</b><span>Öt ikon kering körülötte: nap, súlyzó, tál, vízcsepp, hold. Hátul a gömb üvege mögé bújnak.</span></button>
+      <button class="opt" role="tab" data-v="kombo" style="--c:var(--coral)"><i class="tag">D</i><b>Töltődés + keringés</b><span>A gömb feltöltődik, közben az öt ikon kering körülötte. A végén a fénycsík átsöpör az üvegen.</span></button>
     </div>
     <div class="ctl">
       <button class="btn" id="replay" type="button">Újrajátszás</button>
@@ -194,12 +195,13 @@ const bob = (t, p) => (1 - Math.cos(2 * Math.PI * t / p)) / 2;
 let variant = 'lelegzes', raf = 0, timer = 0, t0 = 0, el = {};
 
 function splashHTML(v) {
-  const bubbles = v === 'toltodes'
+  const fill = v === 'toltodes' || v === 'kombo';
+  const bubbles = fill
     ? Array.from({ length: 7 }, (_, i) => `<circle class="bub" r="${1.4 + (i % 3) * .7}" fill="rgba(255,255,255,.6)" opacity="0"/>`).join('') : '';
-  const backWave = v === 'toltodes'
+  const backWave = fill
     ? `<path class="back" fill="#5E4F9A" opacity=".55" d="M-20 88 Q0 98 20 88 T60 88 T100 88 T140 88 T180 88 V220 H-20Z"/>` : '';
   const ripples = v === 'lelegzes' ? '<i class="ripple"></i><i class="ripple"></i><i class="ripple"></i>' : '';
-  const orbit = v === 'keringes'
+  const orbit = (v === 'keringes' || v === 'kombo')
     ? `<svg class="trail" width="300" height="100" viewBox="-150 -50 300 100"><ellipse cx="0" cy="0" rx="118" ry="34"/></svg>` +
       ORBIT.map(o => `<span class="ic" style="--c:${o.c}"><svg viewBox="0 0 64 64"><use href="#${o.id}"/></svg></span>`).join('') : '';
   return `<div class="splash" role="status" aria-label="Boop betöltése">
@@ -303,6 +305,16 @@ const R = {
   keringes(t, still) {
     common(t, still);
     el.orb.style.transform = still ? '' : `translateY(${-5 * bob(t, 5000)}px)`;
+    orbit(t, still);
+  },
+
+  kombo(t, still) {
+    R.toltodes(t, still);
+    orbit(t, still);
+  },
+};
+
+function orbit(t, still) {
     const tilt = -10 * Math.PI / 180, ct = Math.cos(tilt), st = Math.sin(tilt);
     const spin = still ? .35 : t / 4600;
     el.trail.style.opacity = still ? .9 : clamp((t - 150) / 700) * .9;
@@ -318,8 +330,7 @@ const R = {
       ic.style.opacity = e * (.5 + .5 * d);
       ic.style.zIndex = z > 0 ? 3 : 1;
     });
-  },
-};
+}
 
 function stop() { cancelAnimationFrame(raf); clearTimeout(timer); }
 
@@ -354,13 +365,13 @@ function finish() {
 }
 
 function select(v) {
-  if (!R[v]) v = 'lelegzes';
+  if (!R[v]) v = 'kombo';
   variant = v;
   document.querySelectorAll('.opt').forEach(b => b.setAttribute('aria-selected', b.dataset.v === v));
   run();
 }
 
-const HASH = { most: 'most', lelegzes: 'lelegzes', toltodes: 'toltodes', keringes: 'keringes' };
+const HASH = { most: 'most', lelegzes: 'lelegzes', toltodes: 'toltodes', keringes: 'keringes', kombo: 'kombo' };
 document.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => {
   if (location.hash.slice(1) === b.dataset.v) select(b.dataset.v); else location.hash = b.dataset.v;
 }));
@@ -368,6 +379,6 @@ addEventListener('hashchange', () => select(HASH[location.hash.slice(1)]));
 document.getElementById('replay').addEventListener('click', run);
 stillBox.addEventListener('change', run);
 loopBox.addEventListener('change', () => { if (loopBox.checked && !after.hidden) run(); });
-select(HASH[location.hash.slice(1)] || 'lelegzes');
+select(HASH[location.hash.slice(1)] || 'kombo');
 })();
 </script>
