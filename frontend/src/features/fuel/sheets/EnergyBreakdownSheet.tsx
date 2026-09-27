@@ -1,7 +1,8 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { useId, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import { LearnedBaseExplainer } from '@/features/fuel/sheets/LearnedBaseExplainer'
 
 // Shared, presentational explanation of a composed daily-energy number (base + movement ± deficit).
 // Opened from the Fuel "Mai cél" chips and the Profile Alap-TDEE card; both build the `EnergyBreakdown`
@@ -92,6 +93,38 @@ function Seg({ tone, on, children }: { tone: keyof typeof SEG_COLOR; on: boolean
   )
 }
 
+// „Hogy tanultam?” (mezo-y72o3): the learned base's explainer toggle. The explainer (and its fetch)
+// mounts on the FIRST open and stays mounted, so closing animates and reopening needs no refetch.
+function HowLearned({ baseKcal }: { baseKcal: number }) {
+  const [open, setOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const panelId = useId()
+  const toggle = () => {
+    const next = !open
+    setOpen(next)
+    if (next) {
+      setMounted(true)
+      const reduce = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      setTimeout(() => btnRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }), reduce ? 0 : 120)
+    }
+  }
+  return (
+    <>
+      <button ref={btnRef} type="button" className="flp-how-btn" aria-expanded={open} aria-controls={panelId} onClick={toggle}>
+        <Icon3D name="t-lens" size={30} />
+        <span className="lbl">Hogy tanultam?<small>Mit néztem meg, és hogyan jött ki a {nf(baseKcal)}</small></span>
+        <svg className="chev" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M5 8l5 5 5-5" />
+        </svg>
+      </button>
+      <div id={panelId} className={`flp-how${open ? ' is-open' : ''}`} aria-hidden={!open} inert={!open}>
+        <div>{mounted && <LearnedBaseExplainer />}</div>
+      </div>
+    </>
+  )
+}
+
 export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
   breakdown: EnergyBreakdown
   initial: EnergySection
@@ -161,6 +194,7 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
                   Ennyit égetsz <b>edzés nélkül</b> — az app a <b>súlytrendedből és a felírt evésedből</b> tanulta meg.
                   {base.formulaKcal != null && <> A képlet {nf(base.formulaKcal)} kcal-t mondana.</>}
                 </p>
+                <HowLearned baseKcal={base.kcal} />
               </>
             ) : (
               <>
