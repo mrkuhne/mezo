@@ -15,13 +15,33 @@ const inbox = (over: Partial<RoladInboxState> = {}): RoladInboxState => ({
 })
 
 describe('RoladInbox', () => {
-  test('one list under „Döntésre vár”, counting every open candidate', () => {
+  // S6c (mezo-2dfy2): the short distributor — at most 2 open cards, the rest behind the fold.
+  test('collapsed by default: 2 open cards, the hint still counts every open candidate', () => {
     render(<RoladInbox inbox={inbox()} />)
     const region = screen.getByRole('region', { name: 'Döntésre vár' })
     const open = candidateSeed.length + lifeEventCandidateSeed.length
     expect(within(region).getByText(`${open} JELÖLT`)).toBeInTheDocument()
-    expect(region.querySelectorAll('[data-fact-candidate]')).toHaveLength(candidateSeed.length)
-    expect(region.querySelectorAll('[data-graph-card]')).toHaveLength(lifeEventCandidateSeed.length)
+    expect(region.querySelectorAll('[data-fact-candidate], [data-graph-card]')).toHaveLength(2)
+    expect(within(region).getByRole('button', { name: new RegExp(ROLAD_COPY.foldMore(open - 2)) })).toBeInTheDocument()
+  })
+
+  test('the fold expands to every open card and collapses back', async () => {
+    render(<RoladInbox inbox={inbox()} />)
+    const region = screen.getByRole('region', { name: 'Döntésre vár' })
+    const open = candidateSeed.length + lifeEventCandidateSeed.length
+    await userEvent.click(within(region).getByRole('button', { name: /Még \d+ javaslat/ }))
+    expect(region.querySelectorAll('[data-fact-candidate], [data-graph-card]')).toHaveLength(open)
+    await userEvent.click(within(region).getByRole('button', { name: new RegExp(ROLAD_COPY.foldLess) }))
+    expect(region.querySelectorAll('[data-fact-candidate], [data-graph-card]')).toHaveLength(2)
+  })
+
+  test('an afterlife line stays visible in place while collapsed (settled this mount)', () => {
+    render(<RoladInbox inbox={inbox({
+      settled: [{ id: 'x', kind: 'FACT', title: 'Most eldöntött', outcome: 'snooze', edgeCount: 0 }],
+    })} />)
+    const region = screen.getByRole('region', { name: 'Döntésre vár' })
+    expect(within(region).getByText('Most eldöntött').closest('.kr9-gone')).not.toBeNull()
+    expect(region.querySelectorAll('[data-fact-candidate], [data-graph-card]')).toHaveLength(2)
   })
 
   test('a fact candidate’s decision reaches the hook with the candidate', async () => {

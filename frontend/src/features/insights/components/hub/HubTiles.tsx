@@ -24,6 +24,9 @@ export function HubTiles(p: {
   observations: SectionState
   effects: SectionState
   onOpen: (v: HubSectionKey) => void
+  /** S6c (mezo-2dfy2): on the Rólad page the first tile reads „Tények rólad” — a tile called
+   *  „Rólad” ON the Rólad page would point at itself. */
+  factsTitle?: string
 }) {
   const tiles: Array<[HubSectionKey, SectionState]> = [
     ['tenyek', p.facts], ['emberek', p.people], ['eszrevetelek', p.observations], ['hatasok', p.effects],
@@ -32,12 +35,13 @@ export function HubTiles(p: {
     <div className="th-tiles">
       {tiles.map(([key, s], i) => {
         const skin = SKIN[key]
+        const title = key === 'tenyek' && p.factsTitle ? p.factsTitle : skin.title
         const style = { '--c': skin.c, '--i': i + 1 } as CSSProperties
         if (s.state === 'ok') {
           return (
             <button key={key} type="button" className="th-tile glass lift rise" style={style} onClick={() => p.onOpen(key)}>
               <span className="top"><Icon3D name={skin.icon} size={34} /><b>{s.total}</b></span>
-              <strong>{skin.title}</strong><small>{s.sub}</small>
+              <strong>{title}</strong><small>{s.sub}</small>
             </button>
           )
         }
@@ -45,7 +49,7 @@ export function HubTiles(p: {
         return (
           <div key={key} className="th-tile is-dash rise" style={style} data-state={s.state}>
             <span className="top"><Icon3D name={skin.icon} size={34} /><b aria-hidden="true">—</b></span>
-            <strong>{skin.title}</strong><small>{text}</small>
+            <strong>{title}</strong><small>{text}</small>
             {s.state === 'error' && s.retry && (
               <button type="button" className="retry" onClick={s.retry}>{TILE_STATE.retry}</button>
             )}

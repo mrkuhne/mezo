@@ -20,9 +20,20 @@ export const ROLAD_COPY = {
   quoteLoading: 'A csapat benyomásának betöltése…',
   quoteError: 'Nem sikerült betölteni a csapat benyomását.',
   lifeEventsError: 'Nem sikerült betölteni az életeseményeket.',
+  lifeEventsEmpty: 'Még nincs bejegyzett életesemény — az első javaslatként érkezik majd a Rólad oldalra.',
+  lifeEventsLede: 'A nagy fordulatok, amikhez a csapat igazodik — a mércék és a javaslatok ezekhez képest értelmeződnek.',
+  lifeEventsFoot: 'Új életesemény javaslatként érkezik a Rólad oldalra — ott döntesz róla.',
   lifeEventCandidatesError: 'Nem sikerült betölteni az életesemény-javaslatokat.',
   retry: 'Újra',
   note: 'Minden, ami itt áll, forrással együtt él — és bármit elhallgattathatsz vagy pontosíthatsz. A csapat csak azt használja, amit itt jóváhagytál.',
+  // S6c (mezo-2dfy2): the short-distributor strings — the inbox fold and the kirakat section.
+  foldMore: (n: number) => `Még ${n} javaslat`,
+  foldMoreSub: 'korábban eldöntöttek és további jelöltek',
+  foldLess: 'Mutass kevesebbet',
+  foldLessSub: 'vissza a rövid nézethez',
+  kirakatTitle: 'Amit a csapat megjegyzett',
+  kirakatHint: 'A TUDÁSTÁRBAN',
+  factsTile: 'Tények rólad',
 } as const
 
 export interface RoladQuoteClaim { id: string; text: string; character: TeamCharacterId }
@@ -77,9 +88,4 @@ export function graphCandidateByline(candidate: LifeEventCandidate): string {
       : formatCandidateDate(candidate.kind, candidate.occurredOn)
     : candidateDay(candidate.createdAt)
   return `Mezo hozta · ${when}`
-}
-
-export function topRoladFacts(facts: KnowledgeFact[], n = 4): KnowledgeFact[] {
-  const key = (f: KnowledgeFact) => f.lastReinforcedAt ?? f.createdAt
-  return facts.filter((f) => f.active).sort((a, b) => key(b).localeCompare(key(a))).slice(0, n)
 }

@@ -1422,6 +1422,27 @@ follow-up bead (prior-art lesson), not in S6.
   FE tests in both modes (`CI=true`, `VITE_USE_MOCK` unset AND `=false`); `pnpm build`;
   affected `tests/layout` specs; runtime pass (verify skill) dark, 320 px, reduced motion.
 
+## S6c addendum — a Rólad oldal rövid elosztó (2026-09-27, owner direction, prototype phase)
+
+Owner, later the same day, after the S6 hub landed and he reviewed the full Rólad page:
+"baromira kaotikus, végtelen scroll — gondoljuk újra". Direction (owner-picked from
+options): the Rólad page becomes a **short distributor**:
+
+1. team quote (unchanged) → 2. **Döntésre vár** — max 2 undecided cards, the rest behind
+   a "Még N javaslat" fold → 3. **kirakat**: the hub's four section tiles (counts +
+   subtitles mirroring the hub base view) dooring into `/mezo/knowledge`'s views →
+   4. doors (dimenziók · **Életesemények** — moved off the page onto its own subpage ·
+   Így beszélj velem · Kapcsolatok) → 5. the "A te kezedben" note shrinks to a footnote.
+   The freshest-facts block leaves the page entirely (it duplicates the hub's Rólad
+   section). This supersedes the S6 delta's "the Rólad page front is unchanged" stance
+   for layout; the dossier door row (S6 delta decision 3) lives inside the hub's Rólad
+   section, unaffected.
+2. The global **"pause learning" master switch is deferred** to a follow-up bead
+   (owner decision this session, echoing the Shape-of-AI middle-ground pattern).
+3. Prototype: the S6c layer in `src/uveg-mezo-teljes-s6.js` (rolad + eletesemenyek
+   views; kirakat tiles cross-link to `uveg-tudastar-hub.html`). Status: awaiting owner
+   OK; the implementation bead (BoopAboutPage rework) is filed on the OK.
+
 ## Slice lessons
 
 (numbered; only what a later slice would otherwise pay for again)

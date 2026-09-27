@@ -26949,6 +26949,9 @@ main.settings-page {
 .kr9-rolad .kr9-gone b { display: block; font-size: 12.5px; font-weight: 600; line-height: 1.35; color: var(--text-secondary); overflow-wrap: anywhere; }
 .kr9-rolad .kr9-gone small { display: block; margin-top: 2px; font-size: 11px; color: var(--text-muted); }
 .kr9-rolad .kr9-quiet { margin: 0; padding: 2px 18px 0; font-size: 11.5px; line-height: 1.45; color: var(--text-muted); }
+/* S6c (mezo-2dfy2): the kirakat reuses the hub's `.tud9 .th-tiles` grid on the Rólad page — the
+   `.tud9` scope wrapper must not bring the hub PAGE's bottom padding along. */
+.kr9-rolad .kr9-kirakat.tud9 { padding-bottom: 0; }
 /* mezo-plbev fix round 1: `.kr9-page .kr9-link` never matches inside `.kr9-rolad` (no `.kr9-page`
    ancestor here) — this page-owned rule mirrors its declaration for the inbox's quiet retry. */
 .kr9-rolad .kr9-retry {
