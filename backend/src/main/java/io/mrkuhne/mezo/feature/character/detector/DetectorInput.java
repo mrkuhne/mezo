@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.character.detector;
 
+import io.mrkuhne.mezo.feature.biometrics.checkin.entity.PainRegion;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -23,8 +24,14 @@ public record DetectorInput(LocalDate day,
                             MesoContext meso,
                             TrendWindow trend) {
     public record WeightPoint(LocalDate date, BigDecimal kg) {}
-    /** One completed gym instance day with per-exercise aggregates (working sets only). */
-    public record GymDay(LocalDate date, List<ExerciseWork> exercises) {}
+    /** One completed gym instance day with per-exercise aggregates (working sets only).
+     *  {@code sessionType} is the instance's own {@code workout_session.type} (e.g. "Push", "Láb"),
+     *  null when unknown — Check-in 2.0's {@code soreness-recovery} groups by it. */
+    public record GymDay(LocalDate date, List<ExerciseWork> exercises, String sessionType) {
+        public GymDay(LocalDate date, List<ExerciseWork> exercises) {
+            this(date, exercises, null);
+        }
+    }
     /** Per-exercise aggregate for one session. Nullable aggregates mean "no data", never zero. */
     public record ExerciseWork(String exerciseName,
                                int workingSets,
@@ -65,8 +72,15 @@ public record DetectorInput(LocalDate day,
                                List<MealPoint> meals) {}
 
     /** One logged meal. {@code loggedAtLocalTime} is {@code loggedAt} in the JVM default zone —
-     *  the same clock the character jobs take {@code LocalDate.now()} from. */
-    public record MealPoint(String slot, LocalTime loggedAtLocalTime, BigDecimal kcal, Integer nova) {}
+     *  the same clock the character jobs take {@code LocalDate.now()} from. {@code itemNames}
+     *  (Check-in 2.0, mezo-ck2) is the meal's line snapshot names, lower-cased, trimmed and
+     *  distinct in line order — the "ingredient" attribute {@code food-digestion} groups by. */
+    public record MealPoint(String slot, LocalTime loggedAtLocalTime, BigDecimal kcal, Integer nova,
+                            List<String> itemNames) {
+        public MealPoint(String slot, LocalTime loggedAtLocalTime, BigDecimal kcal, Integer nova) {
+            this(slot, loggedAtLocalTime, kcal, nova, List.of());
+        }
+    }
 
     /** A day with at least one water log; an absent date means "not logged", never 0 ml. */
     public record WaterDayPoint(LocalDate date, int amountMl, int targetMl) {}
@@ -86,10 +100,29 @@ public record DetectorInput(LocalDate day,
     public record StackDayPoint(LocalDate date, Set<UUID> takenPantryItemIds) {}
 
     /** Per-day means of the day's logged check-in slots; a null scale means nobody logged it.
-     *  energy/body/mental: higher = better. stress: higher = worse. All 1..10. */
+     *  energy/body/mental: higher = better. stress: higher = worse. All 1..10.
+     *
+     *  <p>Check-in 2.0 (mezo-ck2) adds the new items' day means — null when NOBODY answered the
+     *  item that day (a skipped or never-asked item is absent, never "közepes"). Higher = better
+     *  for mood, rested, motivation, digestion, connection and dayRating; higher = worse for
+     *  soreness, painIntensity; hunger and craving are neutral intensities (higher = more).
+     *  {@code painRegions} is the distinct self-reported pain regions of the day in enum order,
+     *  empty when none was reported. */
     public record CheckinDayPoint(LocalDate date, int count,
                                   BigDecimal energy, BigDecimal stress,
-                                  BigDecimal body, BigDecimal mental) {}
+                                  BigDecimal body, BigDecimal mental,
+                                  BigDecimal mood, BigDecimal rested, BigDecimal soreness,
+                                  BigDecimal painIntensity, BigDecimal motivation,
+                                  BigDecimal hunger, BigDecimal craving, BigDecimal digestion,
+                                  BigDecimal connection, BigDecimal dayRating,
+                                  List<PainRegion> painRegions) {
+        /** The pre-2.0 shape: every new item absent. */
+        public CheckinDayPoint(LocalDate date, int count, BigDecimal energy, BigDecimal stress,
+                               BigDecimal body, BigDecimal mental) {
+            this(date, count, energy, stress, body, mental,
+                    null, null, null, null, null, null, null, null, null, null, List.of());
+        }
+    }
 
     /** Active medication cycle context; null when the owner has no active medication. */
     public record MedContext(int cycleLengthDays, List<MedCycleDayPoint> days) {}
@@ -141,9 +174,27 @@ public record DetectorInput(LocalDate day,
      *  historically-faithful nominal time available: {@code notification_schedule} is replaced
      *  wholesale on every save and has no history. {@code writtenAt} is {@code createdAt} in the
      *  JVM default zone — deliberately NOT {@code savedAt}, which every edit moves forward.
-     *  {@code notePreview} is the raw note truncated for EVIDENCE only, or null. */
+     *  {@code notePreview} is the raw note truncated for EVIDENCE only, or null.
+     *  {@code motivation}/{@code digestion} (Check-in 2.0, mezo-ck2) are the ROW's own answers
+     *  (null = not answered): "morning motivation" and "digestion N hours after a meal" need the
+     *  slot, not the day mean. */
     public record CheckinSlotPoint(LocalDate date, String slotTime, LocalDateTime writtenAt,
-                                   String notePreview) {}
+                                   String notePreview, Integer motivation, Integer digestion) {
+        /** The pre-2.0 shape: no per-row item answers. */
+        public CheckinSlotPoint(LocalDate date, String slotTime, LocalDateTime writtenAt,
+                                String notePreview) {
+            this(date, slotTime, writtenAt, notePreview, null, null);
+        }
+    }
+
+    /** One day's journal/chat-text mood (Check-in 2.0 {@code mood-text-calibration}): the mean of
+     *  that day's newest-version, {@code sure} {@code text_signal.mood} values on its OWN 1..5
+     *  scale. A day with no such signal is absent. */
+    public record TextMoodPoint(LocalDate date, BigDecimal mood) {}
+
+    /** One day of the habit engine: how many habit rows the day had and how many were done as of
+     *  the observed day. A day with no habit row is absent. */
+    public record HabitDayPoint(LocalDate date, int planned, int done) {}
 
     /** One logged record's "the day it is about" vs "the day it was written" pair.
      *  {@code genre} is {@code "esemeny"} (gym, run, sport, weight, sleep, meal) or
@@ -192,7 +243,12 @@ public record DetectorInput(LocalDate day,
      *  because a day fell off the end rather than because the behaviour changed.
      *
      *  <p>Round 4 adds the people mentions, the assistant tool-call series and the nested
-     *  {@code MetaWindow} (system-side sources, gathered by {@code CharacterMetaReads}). */
+     *  {@code MetaWindow} (system-side sources, gathered by {@code CharacterMetaReads}).
+     *
+     *  <p>Check-in 2.0 (mezo-ck2) adds {@code sleepGoalMinutes} (the CURRENT
+     *  {@code sleep_goal.target_minutes}, null without a goal — a config row with no history, so a
+     *  catch-up run sees today's goal; {@code sleep-need} only ever PROPOSES a change to it),
+     *  {@code textMoods} and {@code habitDays} (both over the 8 weeks, bounded above by day). */
     public record TrendWindow(List<RunPoint> runsEightWeeks, List<GymDay> gymEightWeeks,
                               List<MealDayPoint> mealDays, List<WaterDayPoint> waterDays,
                               StackContext stack, List<CheckinDayPoint> checkinDays,
@@ -207,5 +263,30 @@ public record DetectorInput(LocalDate day,
                               List<LogLatencyPoint> logLatencies,
                               List<MentionPoint> mentions,
                               List<ChatToolCallPoint> chatToolCalls,
-                              MetaWindow meta) {}
+                              MetaWindow meta,
+                              Integer sleepGoalMinutes,
+                              List<TextMoodPoint> textMoods,
+                              List<HabitDayPoint> habitDays) {
+        /** The pre-Check-in-2.0 shape: no sleep goal, no text moods, no habit days. */
+        public TrendWindow(List<RunPoint> runsEightWeeks, List<GymDay> gymEightWeeks,
+                           List<MealDayPoint> mealDays, List<WaterDayPoint> waterDays,
+                           StackContext stack, List<CheckinDayPoint> checkinDays,
+                           MedContext med,
+                           List<SleepPoint> sleepEightWeeks,
+                           List<IntentionDayPoint> intentionDays,
+                           List<DecisionPoint> decisions,
+                           List<GratitudePoint> gratitudes,
+                           NeedsContext needs,
+                           List<CheckinSlotPoint> checkinSlots,
+                           List<LocalDateTime> userChatTimes,
+                           List<LogLatencyPoint> logLatencies,
+                           List<MentionPoint> mentions,
+                           List<ChatToolCallPoint> chatToolCalls,
+                           MetaWindow meta) {
+            this(runsEightWeeks, gymEightWeeks, mealDays, waterDays, stack, checkinDays, med,
+                    sleepEightWeeks, intentionDays, decisions, gratitudes, needs, checkinSlots,
+                    userChatTimes, logLatencies, mentions, chatToolCalls, meta,
+                    null, List.of(), List.of());
+        }
+    }
 }

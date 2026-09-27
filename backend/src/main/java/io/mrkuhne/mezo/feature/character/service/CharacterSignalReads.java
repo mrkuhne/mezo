@@ -1,14 +1,19 @@
 package io.mrkuhne.mezo.feature.character.service;
 
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
+import io.mrkuhne.mezo.feature.biometrics.checkin.entity.PainRegion;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
+import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepGoalEntity;
+import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepGoalRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.character.detector.DetectorInput;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
+import io.mrkuhne.mezo.feature.companion.reflection.entity.TextSignalEntity;
+import io.mrkuhne.mezo.feature.companion.reflection.repository.TextSignalRepository;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.fuel.entity.ProtocolEntity;
 import io.mrkuhne.mezo.feature.fuel.entity.ProtocolItemEntity;
@@ -19,6 +24,8 @@ import io.mrkuhne.mezo.feature.fuel.repository.SupplementIntakeRepository;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
+import io.mrkuhne.mezo.feature.habit.entity.HabitDayEntity;
+import io.mrkuhne.mezo.feature.habit.repository.HabitDayRepository;
 import io.mrkuhne.mezo.feature.intention.entity.DailyIntentionEntity;
 import io.mrkuhne.mezo.feature.intention.entity.IntentionFocusEntity;
 import io.mrkuhne.mezo.feature.intention.repository.DailyIntentionRepository;
@@ -145,6 +152,9 @@ public class CharacterSignalReads {
     private final NeedsProperties needsProperties;
     private final MentionRepository mentionRepository;
     private final CharacterMetaReads metaReads;
+    private final SleepGoalRepository sleepGoalRepository;
+    private final TextSignalRepository textSignalRepository;
+    private final HabitDayRepository habitDayRepository;
 
     /**
      * Round 4 (mezo-1gim.15): {@code gatherChatToolCalls} lazily navigates {@code AiMessageEntity
@@ -252,7 +262,66 @@ public class CharacterSignalReads {
                         mealDays, waterDays, stack, checkinDays, medCycle,
                         sleepEightWeeks, intentionDays, decisions, gratitudes, needs,
                         checkinSlots, userChatTimes, logLatencies, mentions, chatToolCalls,
-                        metaReads.gather(owner, trendStart, day)));
+                        metaReads.gather(owner, trendStart, day),
+                        sleepGoalMinutes(owner),
+                        gatherTextMoods(owner, trendStart, day),
+                        gatherHabitDays(owner, trendStart, day)));
+    }
+
+    /** The CURRENT sleep goal's target; null without a goal. A config row with no history, so a
+     *  catch-up run reads today's value — {@code sleep-need} only proposes against it. */
+    private Integer sleepGoalMinutes(UUID owner) {
+        return sleepGoalRepository.findByCreatedByAndDeletedFalse(owner)
+                .map(SleepGoalEntity::getTargetMinutes)
+                .orElse(null);
+    }
+
+    /**
+     * Per-day text mood on the signal's OWN 1..5 scale, following {@code TextSignalSeriesService}'s
+     * two rules (read inline, because that service is gated on the companion/reflection switches):
+     * ONE signal per {@code (source_kind, source_id)} — the newest version — and only {@code sure}
+     * rows contribute a number. A signal extracted after {@code to} is dropped (catch-up honesty).
+     */
+    private List<DetectorInput.TextMoodPoint> gatherTextMoods(UUID owner, LocalDate from, LocalDate to) {
+        Map<String, TextSignalEntity> newest = new LinkedHashMap<>();
+        for (TextSignalEntity signal : textSignalRepository
+                .findByCreatedByAndOccurredOnBetweenAndDeletedFalseOrderByOccurredOnAscVersionDesc(owner, from, to)) {
+            LocalDate writtenOn = localDate(signal.getCreatedAt());
+            if (writtenOn != null && writtenOn.isAfter(to)) {
+                continue;
+            }
+            newest.putIfAbsent(signal.getSourceKind() + ':' + signal.getSourceId(), signal);
+        }
+        Map<LocalDate, List<Integer>> perDay = new TreeMap<>();
+        for (TextSignalEntity signal : newest.values()) {
+            if (signal.isSure() && signal.getMood() != null) {
+                perDay.computeIfAbsent(signal.getOccurredOn(), k -> new ArrayList<>()).add(signal.getMood());
+            }
+        }
+        List<DetectorInput.TextMoodPoint> out = new ArrayList<>();
+        for (Map.Entry<LocalDate, List<Integer>> e : perDay.entrySet()) {
+            int sum = e.getValue().stream().mapToInt(Integer::intValue).sum();
+            out.add(new DetectorInput.TextMoodPoint(e.getKey(), BigDecimal.valueOf(sum)
+                    .divide(BigDecimal.valueOf(e.getValue().size()), 2, RoundingMode.HALF_UP)));
+        }
+        return List.copyOf(out);
+    }
+
+    /** Habit rows per day: planned = every row, done = rows done AS OF {@code to} (a completion
+     *  stamped after the observed day had not happened yet during a catch-up run). */
+    private List<DetectorInput.HabitDayPoint> gatherHabitDays(UUID owner, LocalDate from, LocalDate to) {
+        Map<LocalDate, int[]> byDate = new TreeMap<>();
+        for (HabitDayEntity h : habitDayRepository.findByCreatedByAndHabitDateBetween(owner, from, to)) {
+            int[] counts = byDate.computeIfAbsent(h.getHabitDate(), k -> new int[2]);
+            counts[0]++;
+            LocalDate doneOn = localDate(h.getDoneAt());
+            if (HabitDayEntity.STATUS_DONE.equals(h.getStatus()) && (doneOn == null || !doneOn.isAfter(to))) {
+                counts[1]++;
+            }
+        }
+        List<DetectorInput.HabitDayPoint> out = new ArrayList<>();
+        byDate.forEach((d, c) -> out.add(new DetectorInput.HabitDayPoint(d, c[0], c[1])));
+        return List.copyOf(out);
     }
 
     /** People mentions in the window, {@code ts} → local date; bounded above by the end of {@code to}. */
@@ -302,13 +371,40 @@ public class CharacterSignalReads {
         }
         List<DetectorInput.CheckinDayPoint> out = new ArrayList<>();
         for (Map.Entry<LocalDate, List<CheckInEntity>> e : byDate.entrySet()) {
-            out.add(new DetectorInput.CheckinDayPoint(e.getKey(), e.getValue().size(),
-                    mean(e.getValue(), CheckInEntity::getEnergy),
-                    mean(e.getValue(), CheckInEntity::getStress),
-                    mean(e.getValue(), CheckInEntity::getBody),
-                    mean(e.getValue(), CheckInEntity::getMental)));
+            List<CheckInEntity> rows = e.getValue();
+            out.add(new DetectorInput.CheckinDayPoint(e.getKey(), rows.size(),
+                    mean(rows, CheckInEntity::getEnergy),
+                    mean(rows, CheckInEntity::getStress),
+                    mean(rows, CheckInEntity::getBody),
+                    mean(rows, CheckInEntity::getMental),
+                    mean(rows, CheckInEntity::getMood),
+                    mean(rows, CheckInEntity::getRested),
+                    mean(rows, CheckInEntity::getSoreness),
+                    mean(rows, CheckInEntity::getPainIntensity),
+                    mean(rows, CheckInEntity::getMotivation),
+                    mean(rows, CheckInEntity::getHunger),
+                    mean(rows, CheckInEntity::getCraving),
+                    mean(rows, CheckInEntity::getDigestion),
+                    mean(rows, CheckInEntity::getConnection),
+                    mean(rows, CheckInEntity::getDayRating),
+                    painRegions(rows)));
         }
         return List.copyOf(out);
+    }
+
+    /** The distinct regions any of the day's rows reported, in enum order; empty when none. */
+    private static List<PainRegion> painRegions(List<CheckInEntity> rows) {
+        java.util.EnumSet<PainRegion> regions = java.util.EnumSet.noneOf(PainRegion.class);
+        for (CheckInEntity c : rows) {
+            if (c.getPainRegions() != null) {
+                for (PainRegion r : c.getPainRegions()) {
+                    if (r != null) {
+                        regions.add(r);
+                    }
+                }
+            }
+        }
+        return List.copyOf(regions);
     }
 
     private static BigDecimal mean(List<CheckInEntity> rows,
@@ -342,7 +438,7 @@ public class CharacterSignalReads {
             }
             out.add(new DetectorInput.CheckinSlotPoint(c.getDate(), c.getSlotTime(),
                     c.getCreatedAt().atZone(ZoneId.systemDefault()).toLocalDateTime(),
-                    preview(c.getNote())));
+                    preview(c.getNote()), c.getMotivation(), c.getDigestion()));
         }
         out.sort(Comparator.comparing(DetectorInput.CheckinSlotPoint::date)
                 .thenComparing(DetectorInput.CheckinSlotPoint::slotTime));
@@ -559,7 +655,7 @@ public class CharacterSignalReads {
             List<ExerciseSetEntity> sets = exerciseSetRepository
                     .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(owner, instance.getId());
             if (sets.isEmpty()) {
-                gymDays.add(new DetectorInput.GymDay(instance.getDate(), List.of()));
+                gymDays.add(new DetectorInput.GymDay(instance.getDate(), List.of(), instance.getType()));
                 continue;
             }
             Map<UUID, List<ExerciseSetEntity>> byExercise = new LinkedHashMap<>();
@@ -596,7 +692,7 @@ public class CharacterSignalReads {
                         fb != null ? fb.getPump() : null,
                         fb != null ? fb.getWorkload() : null));
             }
-            gymDays.add(new DetectorInput.GymDay(instance.getDate(), works));
+            gymDays.add(new DetectorInput.GymDay(instance.getDate(), works, instance.getType()));
         }
         return gymDays;
     }
@@ -694,10 +790,14 @@ public class CharacterSignalReads {
             for (MealEntity m : e.getValue()) {
                 BigDecimal mealKcal = BigDecimal.ZERO;
                 Integer dominantNova = null;
+                java.util.LinkedHashSet<String> itemNames = new java.util.LinkedHashSet<>();
                 BigDecimal dominantKcal = BigDecimal.ZERO;
                 for (MealItemEntity item : m.getItems()) {
                     BigDecimal lineKcal = nz(item.getSnapshotKcal());
                     mealKcal = mealKcal.add(lineKcal);
+                    if (item.getSnapshotName() != null && !item.getSnapshotName().isBlank()) {
+                        itemNames.add(item.getSnapshotName().strip().toLowerCase(java.util.Locale.ROOT));
+                    }
                     protein = protein.add(nz(item.getSnapshotProteinG()));
                     carbs = carbs.add(nz(item.getSnapshotCarbsG()));
                     fat = fat.add(nz(item.getSnapshotFatG()));
@@ -716,7 +816,7 @@ public class CharacterSignalReads {
                 mealPoints.add(new DetectorInput.MealPoint(
                         m.getSlot(),
                         LocalTime.from(m.getLoggedAt().atZone(ZoneId.systemDefault())),
-                        mealKcal, dominantNova));
+                        mealKcal, dominantNova, List.copyOf(itemNames)));
             }
             BigDecimal coverage = kcal.signum() == 0 ? null
                     : classifiedKcal.divide(kcal, 4, RoundingMode.HALF_UP);
