@@ -129,7 +129,7 @@ public class TeamChatReplyVoiceWriter {
     private static String userMessage(TeamCharacter owner, TeamChatThreadEntity thread, List<String> userTexts,
             List<String> threadFacts, String offerNote, TeamChatContextBlock background) {
         StringBuilder sb = new StringBuilder();
-        sb.append("karakter: ").append(describe(owner)).append(" · ").append(owner.voice()).append('\n');
+        sb.append("karakter: ").append(TeamChatVoiceWriter.describe(owner)).append(" · ").append(owner.voice()).append('\n');
         sb.append("ügy: ").append(FlagCatalog.labelOf(thread.getFlagKey())).append('\n');
         sb.append("tények:\n");
         for (String fact : threadFacts == null ? List.<String>of() : threadFacts) {
@@ -148,12 +148,6 @@ public class TeamChatReplyVoiceWriter {
         TeamChatVoiceWriter.section(sb, "reakciók", background.reactions());
         TeamChatVoiceWriter.section(sb, "tudás", background.knowledge());
         return sb.toString().strip();
-    }
-
-    private static String describe(TeamCharacter c) {
-        return c.displayName()
-                + (c.area().isBlank() ? "" : " · " + c.area())
-                + " · " + (c.emoji().isEmpty() ? "emoji nélkül" : "emoji: " + String.join(" ", new java.util.TreeSet<>(c.emoji())));
     }
 
     private static String blankToNull(String text) {

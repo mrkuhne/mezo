@@ -252,7 +252,8 @@ public class TeamChatVoiceWriter {
         return sb.toString().strip();
     }
 
-    private static String describe(TeamCharacter c) {
+    /** Package-private: shared with {@link TeamChatReplyVoiceWriter} (same character-line prefix). */
+    static String describe(TeamCharacter c) {
         return c.displayName()
                 + (c.area().isBlank() ? "" : " · " + c.area())
                 + " · " + (c.emoji().isEmpty() ? "emoji nélkül" : "emoji: " + String.join(" ", new TreeSet<>(c.emoji())));
