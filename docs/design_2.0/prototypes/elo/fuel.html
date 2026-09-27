@@ -2037,6 +2037,86 @@ svg{overflow:visible}
 body.still .hw,body.still .hw-btn .chv,body.still .hw-meter i{transition:none}
 </style>
 
+<style>
+/* ══ 2. rész · magától tanuló energiaigény (mezo-3n2so) ══ */
+/* prototípus-állapotváltó: szaggatott, halk — nem része az appnak */
+.demo{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:2px 16px 10px;padding:6px 8px;border-radius:14px;border:1px dashed rgba(245,239,230,.22)}
+.demo span{font-size:9px;font-weight:600;letter-spacing:1.2px;color:var(--faint);margin-right:2px}
+.demo button{padding:4px 9px;border-radius:999px;font-size:11px;color:var(--sub);background:rgba(245,239,230,.04)}
+.demo button.on{color:#141210;background:var(--faint)}
+/* gomb-pirula a kártyán és a sorokban (lapos, üvegben nem üveg) */
+.qbtn{--c:var(--sage);flex:0 0 auto;padding:7px 12px;border-radius:999px;font-size:12.5px;font-weight:600;color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair);white-space:nowrap}
+.qbtn.on{color:#141210;background:var(--c);box-shadow:0 0 12px color-mix(in srgb,var(--c) 50%,transparent)}
+.qbtn.ghost{background:none;box-shadow:none;color:var(--faint)}
+/* 5.1 heti kártya */
+.wcard{margin:0 16px 12px;padding:14px;border-radius:22px;display:grid;gap:10px}
+.wc-head{display:flex;align-items:center;gap:12px}
+.wc-head .well{width:48px;height:48px}.wc-head .well .icon{width:32px;height:32px}
+.wc-head .grow{flex:1;min-width:0}
+.wc-head strong{display:block;font-size:20px;font-weight:600;letter-spacing:-.5px;margin-top:2px}
+.wc-head small{display:block;font-size:11.5px;color:var(--sub);margin-top:1px}
+.wc-step{font-size:14px;color:var(--sub)}.wc-step b{font-size:24px;font-weight:600;letter-spacing:-.8px;margin-right:4px}
+.wc-why{font-family:var(--serif);font-style:italic;font-size:14px;line-height:1.4;color:var(--sub)}
+.wc-why b{font-family:var(--ff);font-style:normal;color:var(--ink);font-weight:600}
+.wc-days{display:grid;gap:6px;padding-top:10px;border-top:1px solid var(--hair)}
+.wc-day{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:rgba(245,239,230,.04)}
+.wc-day .icon{width:26px;height:26px}
+.wc-day .grow{flex:1;min-width:0}
+.wc-day strong{display:block;font-size:13.5px;font-weight:600}
+.wc-day small{font-size:11.5px;color:var(--sub)}
+.wc-day em,.stchip{font-style:normal}
+.wc-fine{font-size:10.5px;color:var(--faint);line-height:1.4}
+.wc-msg{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;font-size:13px;font-weight:600;color:var(--ink);background:color-mix(in srgb,var(--c) 12%,transparent);box-shadow:inset 3px 0 0 var(--c)}
+.wc-msg .icon{width:22px;height:22px;filter:none!important}
+.wc-foot{display:flex;justify-content:space-between;align-items:center}
+/* állapot-szavak */
+.st-ok{color:var(--sage)}.st-sus{color:var(--rose)}.st-mc{color:#BFE3C9}.st-mi{color:var(--gold)}.st-none{color:var(--faint)}
+.stchip{flex:0 0 auto;padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:600;background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px currentColor;white-space:nowrap}
+.stchip.st-none{box-shadow:inset 0 0 0 1px var(--hair)}
+/* 5.4 nap-jelölés a napló alján — csendes sor, nem üveg */
+.dmark{display:flex;align-items:center;gap:10px;margin:14px 16px 0;padding:12px 2px 2px;border-top:1px solid var(--hair)}
+.dmark>.icon{width:26px;height:26px;opacity:.9}
+.dmark .grow{flex:1;min-width:0;font-size:13px;color:var(--sub);line-height:1.4}
+.dmark small{display:block;font-size:11px;color:var(--faint);margin-top:2px}
+.dmark .link{display:block;margin-top:3px;font-size:11.5px;font-weight:600;color:var(--sky)}
+/* 5.3 tanulás oldal */
+.lhero{text-align:center;padding:14px 22px 6px}
+.lhero .num{margin:6px 0 4px}
+.lh-line{font-size:13.5px;font-weight:600;color:var(--ink)}
+.lh-sub{font-size:12px;color:var(--faint);margin-top:2px}
+.lh-off{font-size:17px;color:var(--ink);margin-top:6px}.lh-off b{font-weight:600}
+.lh-muted{font-size:12.5px;color:var(--faint);margin-top:6px}
+.wkchart{width:100%;height:auto;display:block}
+.wkd{padding:10px 12px;border-radius:14px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.wkd strong{display:block;font-size:13.5px;font-weight:600;margin-bottom:8px}
+.wkd .kv{grid-template-columns:1fr 1fr 1fr}
+.wkd .kv .cell{padding:7px 8px}
+.wkd .kv .cell b{font-size:13px}
+.wkd p{font-size:11.5px;color:var(--sub);margin-top:8px;line-height:1.4}
+.ld-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--hair)}
+.ld-row:first-child{border-top:0}
+.ld-row .grow{flex:1;min-width:0}
+.ld-row strong{display:block;font-size:13.5px;font-weight:600}
+.ld-row small{font-size:11px;color:var(--faint)}
+.switch{--c:var(--sage);position:relative;flex:0 0 auto;width:44px;height:26px;border-radius:13px;background:rgba(245,239,230,.10);box-shadow:inset 0 0 0 1px var(--hair);transition:background .2s}
+.switch i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#D8CEC2;box-shadow:0 2px 4px rgba(0,0,0,.4);transition:transform .2s var(--ease)}
+.switch.on{background:var(--c);box-shadow:0 0 12px color-mix(in srgb,var(--c) 45%,transparent)}
+.switch.on i{transform:translateX(18px);background:#fff}
+.swph{width:44px;flex:0 0 auto}
+.hw-page .hw-cell{background:rgba(245,239,230,.04)}
+/* energia-lap: az Alap sor összefoglalója */
+.hw-btn .more{font-size:12.5px;font-weight:600;color:var(--sage);white-space:nowrap}
+/* 5.5 kapcsoló-sor */
+.lsrow{display:flex;align-items:center;gap:10px;padding-top:12px;border-top:1px solid var(--hair)}
+.lsrow>.icon{width:30px;height:30px}
+.lsrow .grow{flex:1;min-width:0}
+.lsrow strong{display:block;font-size:14px;font-weight:600}
+.lsrow small{display:block;font-size:11.5px;color:var(--sub);margin-top:2px;line-height:1.35}
+.lsrow .switch{--c:var(--lav)}
+@media (max-width:360px){.wkd .kv{grid-template-columns:1fr 1fr}.stchip{padding:3px 7px;font-size:10px}.ld-row{gap:6px}.wc-day{flex-wrap:wrap}.wc-day .grow{flex-basis:calc(100% - 40px)}.wc-day .qbtn{margin-left:36px}}
+@media (prefers-reduced-motion:reduce){.switch,.switch i{transition:none}}
+body.still .switch,body.still .switch i{transition:none}
+</style>
 
 
 <div class="stage">
@@ -2070,7 +2150,7 @@ body.still .hw,body.still .hw-btn .chv,body.still .hw-meter i{transition:none}
       <a href="#receptek" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-book"/></svg>Receptek</a>
       <a href="#muhely" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-chef"/></svg>Receptműhely</a>
       <a href="#beallitas" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-gear"/></svg>Fuel beállítások</a>
-      <!--part2-nav-->
+      <a href="#tanulas" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-lens"/></svg>Hogy tanultam? · ÚJ</a>
     </nav>
     <span class="ov">LAPOK, AMIK ALULRÓL JÖNNEK</span>
     <ul>
@@ -2079,7 +2159,16 @@ body.still .hw,body.still .hw-btn .chv,body.still .hw-meter i{transition:none}
       <li>Kamra: Import, Közös, ＋ Új tétel, Szűrők</li>
       <li>Kiegészítők: koppints egy tételre · Trendek: koppints egy napra</li>
     </ul>
-    <!--part2-notes-->
+    <span class="ov">ÚJ · MAGÁTÓL TANULÓ ENERGIAIGÉNY, 2. RÉSZ</span>
+    <ul>
+      <li>Mai (ma): <b>Heti tanulás</b> kártya a nap-lapozó fölött. Állapotok: <a href="#mai?kartya=lepett">lépett</a> · <a href="#mai?kartya=kizart">kizárt nap</a> · <a href="#mai?kartya=kevesadat">kevés adat</a> · <a href="#mai?kartya=nincs">nincs kártya</a></li>
+      <li>Harang → „Heti tanulás: +60 kcal” → a tanulás oldala</li>
+      <li><a href="#tanulas">Hogy tanultam?</a> oldal: <a href="#tanulas?allapot=tanul">tanul</a> · <a href="#tanulas?allapot=ures">még nincs adat</a> · <a href="#tanulas?allapot=ki">kikapcsolva</a></li>
+      <li>A napló alján: „Ez a nap számít…” sor — lapozz vissza napokat (szept. 27: hiányosnak tűnt, 23: hiányosnak tűnt, 22: te jelölted teljesnek, 25: nincs felírva → nincs sor)</li>
+      <li>Honnan jön a napi cél? lap: az Alap sor most egy összefoglaló + Részletek</li>
+      <li><a href="#beallitas">Fuel beállítások</a> → Finomhangolás: a tanulás kapcsolója, majd Mentés</li>
+      <li>A szaggatott „PROTOTÍPUS” sorok csak a bemutató állapotváltói. Új ikon nem kellett: minden a meglévő 3D készletből jön.</li>
+    </ul>
     <label class="toggle"><input type="checkbox" id="still"> Mozgás kikapcsolása</label>
   </aside>
 </div>
@@ -2583,7 +2672,8 @@ const HQ=()=>{const h=location.hash||'#mai';const [path,q='']=h.slice(1).split('
 
 /* a nap energiája — az éles FuelDayEnergy-hez hasonlóan: alap (tanult) + mozgás = mai cél */
 const E={formula:2400,learned:2480,sd:150,conf:'medium',move:320};
-const baseNow=()=>E.learned;
+const baseNow=()=>E.learnedServed===false?E.formula:E.learned;
+E.prev=2420;   /* az előző heti keret-alap */
 const target=()=>baseNow()+E.move;
 
 /* a napló: 7 napos pótlási ablak (backfillWindow) — ma + 7 nap vissza */
@@ -2668,9 +2758,9 @@ function mai(){
   <section class="macros rise" style="--i:2">${mac.map(([a,c,v,t,u],i)=>`<div class="macro ${a==='water'?'btn-like':''}" style="--c:${c}" ${a==='water'?'data-sheet="water" role="button" aria-label="Víz logolása"':''}>${I(a)}<div class="mring" style="--c:${c}">${ring(Math.round(parseFloat(String(v).replace(',','.'))/t*100),c,34,80).replace('style="','style="--i:'+i+';')}<span><strong class="tint">${v}</strong><small>/ ${fmt(t)} ${u}</small></span></div></div>`).join('')}</section>`}
   <div class="bhead rise" style="--i:3"><h2>${past?'Ezen a napon':'A mai blokkjaid'}</h2><span>${log.length} ÉTKEZÉS</span></div>
   <div class="blocks">${blocks(iso)}</div>
+  ${markSlot(iso)}
   <button class="loggen rise" style="--i:8" data-go="#log" aria-label="Logolás ablakon kívül">${I('bowl')}<span><b>Logolj bármit</b> · ablakon kívül is</span><span class="chev">›</span></button>
-  ${!past&&yMissed?`<button class="pastchip rise" style="--i:9" data-go="#mai?d=${y}">${I('history')}<span>${huMD(y)} · ${yMissed} ablak pótolható</span></button>`:''}
-  ${markSlot(iso)}`;
+  ${!past&&yMissed?`<button class="pastchip rise" style="--i:9" data-go="#mai?d=${y}">${I('history')}<span>${huMD(y)} · ${yMissed} ablak pótolható</span></button>`:''}`;
 }
 /* 2. rész helyei — az 1. lépésben (a mostani éles állapot) üresek */
 function cardSlot(){return ''}
@@ -2741,7 +2831,7 @@ function explainer(){
   +cell(5,'Mennyire vagyok biztos benne',`<p>A mostani becslésem <b>±${E.sd} kcal</b> pontos. Már elég sok adatot láttam, de a keretet továbbra is csak lépésenként igazítom.</p>
       <div class="hw-meter"><i data-pin="${pin}" style="left:0%"></i></div><div class="hw-mlbl">${Object.entries(CONF_WORD).map(([k,w])=>`<span class="${k===E.conf?'on':''}">${w}</span>`).join('')}</div>
       <p class="hw-fine">Minél több teljes napot és mérlegelést látok, annál biztosabb leszek.</p>`)
-  +cell(6,'Hogyan léptem',`<div class="hw-steps"><div class="hw-step"><b>${E.formula}</b><span>képlet</span></div><span class="ar">→</span><div class="hw-step"><b>2420</b><span>a korábbi igazításaiddal</span></div><span class="ar">→</span><div class="hw-step up"><b>+60</b><span>e heti lépés</span></div><span class="ar">→</span><div class="hw-step now"><b>2480</b><span>most</span></div></div>
+  +cell(6,'Hogyan léptem',`<div class="hw-steps"><div class="hw-step"><b>${E.formula}</b><span>képlet</span></div><span class="ar">→</span><div class="hw-step"><b>${E.prev}</b><span>a korábbi igazításaiddal</span></div><span class="ar">→</span>${E.learned!==E.prev?`<div class="hw-step ${E.learned>E.prev?'up':'down'}"><b>${sgn(E.learned-E.prev)}</b><span>e heti lépés</span></div><span class="ar">→</span>`:''}<div class="hw-step now"><b>${E.learned}</b><span>most</span></div></div>
       <p class="hw-fine">Hetente csak kis lépést teszek, és új irányba először csak félig — egy furcsa hét így nem rántja el a keretet.</p>`);
 }
 const reduced=()=>document.body.classList.contains('still')||matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -2958,6 +3048,187 @@ document.addEventListener('click',e=>{
   if(e.target.id==='scrim'){toggleNtf(false);toggleSwitch(false)}
 },true);
 
+
+/* ══ 2. RÉSZ · magától tanuló energiaigény (mezo-3n2so, spec §5) ══════════════════
+   Heti kártya a Mai tetején, harang-értesítés, „Hogy tanultam?" saját oldal (#tanulas),
+   a lap Alap sora egy összefoglaló + Részletek, nap-jelölés a napló alján, és a tanulás
+   kapcsolója a Fuel beállításokban. A „PROTOTÍPUS" feliratú szaggatott sorok csak a
+   bemutatót szolgálják (állapotváltó), az appba nem kerülnek. */
+const LS={card:'lepett',dismissed:false,on:true,draftOn:true,page:'tanul',sel:11,msg:null,hashCard:null,hashPage:null};
+const VAR_BASE={lepett:2480,kizart:2420,kevesadat:2420,nincs:2420};
+/* a napok: [dátum, felírt kcal | null, a szabály szerint (számít/hiányosnak tűnt/nincs felírva), a jelölésed] */
+const LD=[['2026-09-14',2710,'usable',null],['2026-09-15',2890,'usable',null],['2026-09-16',1340,'suspicious',null],['2026-09-17',null,'unlogged',null],
+  ['2026-09-18',3050,'usable',null],['2026-09-19',2150,'usable','incomplete'],['2026-09-20',2980,'usable',null],['2026-09-21',2820,'usable',null],
+  ['2026-09-22',1610,'suspicious','complete'],['2026-09-23',1180,'suspicious',null],['2026-09-24',2760,'usable',null],['2026-09-25',null,'unlogged',null],
+  ['2026-09-26',3120,'usable',null],['2026-09-27',1020,'suspicious',null],['2026-09-28',1180,'usable',null]]
+  .map(([iso,kcal,rule,mark])=>({iso,kcal,rule,mark,mark0:mark}));
+const LDI=iso=>LD.find(d=>d.iso===iso);
+const isOn=(d,m=d.mark)=>m?m==='complete':d.rule==='usable';
+const effect=d=>Math.round((d.kcal-2800)*.025/10)*10;            /* egy nap beszámítása ennyit mozdít */
+const reviewed=d=>d.iso<TODAY&&LS.page!=='ures';                 /* ma még nem zárult le a hét */
+Object.defineProperty(E,'learned',{get(){return VAR_BASE[LS.card]+LD.reduce((s,d)=>s+(d.rule==='unlogged'||!reviewed(d)?0:(isOn(d)-isOn(d,d.mark0))*effect(d)),0)}});
+E.learnedServed=true;
+const STATUS=d=>d.rule==='unlogged'?['nincs felírva','none']:d.mark==='complete'?['te jelölted teljesnek','mc']:d.mark==='incomplete'?['te jelölted hiányosnak','mi']:d.rule==='usable'?['számít','ok']:['hiányosnak tűnt','sus'];
+
+/* jelölés: azonnal újraszámol (P1), és egy rövid sor mondja meg, mennyit mozdult a keret */
+function setOn(iso,want){
+  const d=LDI(iso); if(!d||d.rule==='unlogged') return;
+  const before=E.learned;
+  d.mark=want===(d.rule==='usable')?null:(want?'complete':'incomplete');
+  changeMsg(d,E.learned-before);
+}
+function clearMark(iso){const d=LDI(iso);const before=E.learned;d.mark=null;changeMsg(d,E.learned-before)}
+function changeMsg(d,delta){
+  let m;
+  if(!reviewed(d)) m=LS.page==='ures'?'Elmentettem — amint elég adatom lesz, beleszámolom.':'Elmentettem — a mai napot jövő hétfőn számolom bele.';
+  else if(!LS.on) m='Elmentettem — a tanult érték frissült, a keretet most a képlet adja.';
+  else m=delta?`A keret ${sgn(delta)} kcal-lal változott`:'A keret nem változott';
+  LS.msg=m; toast(m); soft();
+}
+
+/* ── demó-állapotváltó (csak a prototípusban) ── */
+const demo=(label,key,opts,cur)=>`<div class="demo rise"><span>PROTOTÍPUS · ${label}</span>${opts.map(([v,l])=>`<button class="${v===cur?'on':''}" data-demo="${key}|${v}">${l}</button>`).join('')}</div>`;
+function syncHash(){
+  const {path,q}=HQ();
+  if(path==='mai'&&q.kartya&&q.kartya!==LS.hashCard){LS.hashCard=q.kartya;if(VAR_BASE[q.kartya]!=null){LS.card=q.kartya;LS.dismissed=false;LS.msg=null}}
+  if(path==='tanulas'&&q.allapot&&q.allapot!==LS.hashPage){LS.hashPage=q.allapot;LS.page=q.allapot==='ures'?'ures':'tanul';LS.on=LS.draftOn=E.learnedServed=q.allapot!=='ki';LS.sel=11}
+}
+
+/* ── 5.1 Heti kártya — Mai, csak a mai napon ── */
+const WEEK_DAYS=['2026-09-23','2026-09-27'];
+function cardSlot(){
+  syncHash();
+  const dm=demo('kártya','kartya',[['lepett','Lépett'],['kizart','Kizárt nap'],['kevesadat','Kevés adat'],['nincs','Nincs']],LS.card);
+  if(!LS.on||LS.card==='nincs'||LS.dismissed) return dm;
+  const hold=LS.card==='kevesadat', c=hold?'var(--gold)':'var(--sage)';
+  const days=WEEK_DAYS.map(LDI);
+  return `${dm}<section class="wcard glass rise" style="--c:${c};--i:0" aria-label="Heti tanulás">
+    <div class="wc-head"><span class="well" style="--c:${c}">${I(hold?'hold':'lens')}</span><span class="grow"><span class="eb">HETI TANULÁS · SZEPT. 21–27.</span>
+      <strong>${hold?'Ezen a héten vártam':`Alap ${kc(E.learned)} kcal`}</strong>
+      <small>${hold?`Alap ${kc(E.learned)} kcal · `:''}${CONF_WORD[E.conf]} · ±${E.sd} kcal</small></span></div>
+    ${!hold&&E.learned!==E.prev?`<div class="wc-step"><b class="tint">${sgn(E.learned-E.prev)} kcal</b> a napi keretedben</div>`:''}
+    ${LS.card==='lepett'?`<p class="wc-why">A súlyod lassabban nőtt, mint amit a felírt evés alapján vártam.</p>`:''}
+    ${hold?`<p class="wc-why">Kevés adat volt: <b>3 teljes nap, 1 mérlegelés</b> — legalább 4 és 2 kell. A keret nem változott.</p>`:''}
+    <div class="wc-days"><span class="eb">KIHAGYOTT NAPOK</span>${days.map(d=>{const [st,cls]=STATUS(d);return `<div class="wc-day">${I(isOn(d)?'tick':'shield')}<span class="grow"><strong>${huWD(d.iso)}</strong><small>${kc(d.kcal)} kcal · <em class="st-${cls}">${st}</em></small></span>
+      ${d.mark?`<button class="qbtn" data-unmark="${d.iso}">Visszavonom</button>`:`<button class="qbtn on" data-mark="${d.iso}|1">Teljes volt</button>`}</div>`}).join('')}
+      <p class="wc-fine">Ha nem nyúlsz hozzá, ezeket a napokat kihagyva hagyom.</p></div>
+    ${LS.msg?`<p class="wc-msg">${I('ring')}${LS.msg}</p>`:''}
+    <div class="wc-foot"><button class="qbtn" data-go="#tanulas">Részletek ›</button><button class="qbtn ghost" data-wc-close>Bezárom</button></div>
+  </section>`;
+}
+
+/* ── 5.4 Nap-jelölés a napló alján ── */
+function markSlot(iso){
+  const d=LDI(iso); if(!d||d.rule==='unlogged') return '';
+  const today=iso===TODAY;
+  const [txt,act]=d.mark==='complete'?['Ezt a napot teljesnek jelölted — számít a tanulásban',`<button class="qbtn" data-unmark="${iso}">Visszavonom</button>`]
+    :d.mark==='incomplete'?['Ezt a napot hiányosnak jelölted — kihagyom a tanulásból',`<button class="qbtn" data-unmark="${iso}">Visszavonom</button>`]
+    :d.rule==='usable'?['Ez a nap számít a tanulásban',`<button class="qbtn" data-mark="${iso}|0">Hiányos volt</button>`]
+    :['Ez a nap hiányosnak tűnt, kihagytam',`<button class="qbtn on" data-mark="${iso}|1">Teljes volt</button>`];
+  return `<div class="dmark rise" style="--i:8">${I(isOn(d)?'tick':'shield')}<span class="grow"><span>${txt}</span>
+    ${today?`<small>A mai napot jövő hétfőn számolom bele — a jelölést addig is elmentem.</small>`:''}<button class="link" data-go="#tanulas">Mit jelent ez?</button></span>${act}</div>`;
+}
+
+/* ── 5.2 Harang ── */
+function ntfRows(){
+  if(!LS.on||LS.card==='nincs') return [];
+  const t={lepett:'Heti tanulás: +60 kcal',kizart:'Heti tanulás: 2 nap kimaradt',kevesadat:'Heti tanulás: kevés adat volt'}[LS.card];
+  return [{ic:'lens',t,s:`Alap ${kc(E.learned)} kcal · ±${E.sd} kcal — koppints, és megmutatom, hogyan tanultam.`,tm:'06:40',unread:true,go:'#tanulas'}];
+}
+
+/* ── energia-lap: az Alap sor kinyíló magyarázata helyett egy összefoglaló + Részletek ── */
+function learnedFoot(){
+  return `<p>Ennyit égetsz <b>edzés nélkül</b> — az app a <b>súlytrendedből és a felírt evésedből</b> tanulta meg. A képlet ${E.formula} kcal-t mondana.</p>
+    <button class="hw-btn" data-go="#tanulas">${I('lens')}<span class="lbl">Tanult alap · ${CONF_WORD[E.conf]} · ±${E.sd} kcal<small>Hogy tanultam? — hétről hétre, és a napjaid</small></span><span class="more">Részletek ›</span></button>`;
+}
+
+/* ── 5.3 A tanulás oldala (#tanulas) ── */
+const WK=[ /* [hét kezdete, képlet, tanult, ±, keret alapja, teljes nap, mérlegelés, vártam?] — null: nincs sor erre a hétre */
+  ['2026-07-06',2400,2400,300,2400,3,1,1],['2026-07-13',2396,2440,285,2400,4,1,1],['2026-07-20',2402,2465,265,2430,6,3,0],null,
+  ['2026-08-03',2405,2470,245,2455,5,2,0],['2026-08-10',2398,2462,235,2455,3,2,1],['2026-08-17',2400,2485,220,2475,6,4,0],['2026-08-24',2403,2460,205,2455,6,3,0],
+  ['2026-08-31',2401,2452,190,2455,2,1,1],['2026-09-07',2399,2445,178,2440,5,3,0],['2026-09-14',2400,2450,165,2420,6,4,0],['2026-09-21',2400,2470,150,null,4,4,0]];
+const wkRow=i=>{const w=WK[i];if(!w)return null;const [s,f,p,sd,a,u,wi,h]=w;const last=i===WK.length-1;
+  const hold=last?LS.card==='kevesadat':!!h, app=last?E.learned:a;
+  return {s,f,p,sd,a:app,u:last&&hold?3:u,wi:last&&hold?1:wi,hold}};
+const wkRange=s=>{const e=addDays(s,6),a=dp(s),b=dp(e);return a.m===b.m?`${HU_M[a.m]} ${a.d}–${b.d}.`:`${HU_M[a.m]} ${a.d} – ${HU_M[b.m]} ${b.d}.`};
+function weekChart(){
+  const W=320,H=176,L=34,R=8,T=12,B=26,n=WK.length,x=i=>L+(W-L-R)*(i+.5)/n,lo=2050,hi=2780,y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo));
+  const rows=WK.map((_,i)=>wkRow(i));
+  const seg=(get)=>{let d='',pen=false;rows.forEach((r,i)=>{if(!r){pen=false;return}d+=`${pen?'L':'M'}${x(i).toFixed(1)} ${y(get(r)).toFixed(1)}`;pen=true});return d};
+  let band='';{let run=[];const flush=()=>{if(run.length){band+=`<path d="${run.map((r,k)=>`${k?'L':'M'}${x(r.i).toFixed(1)} ${y(r.p+r.sd).toFixed(1)}`).join('')}${run.slice().reverse().map(r=>`L${x(r.i).toFixed(1)} ${y(r.p-r.sd).toFixed(1)}`).join('')}Z" fill="color-mix(in srgb,var(--sage) 16%,transparent)"/>`;run=[]}};
+    rows.forEach((r,i)=>r?run.push({...r,i}):flush());flush()}
+  const grid=[2200,2400,2600].map(v=>`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="rgba(245,239,230,.06)"/><text x="${L-6}" y="${y(v)+3}" text-anchor="end" font-size="9" fill="#AFA294">${v}</text>`).join('');
+  const gap=rows.map((r,i)=>r?'':`<rect x="${(x(i)-9).toFixed(1)}" y="${T}" width="18" height="${H-T-B}" rx="6" fill="rgba(245,239,230,.03)" stroke="rgba(245,239,230,.10)" stroke-dasharray="3 3"/><text x="${x(i).toFixed(1)}" y="${T+(H-T-B)/2}" text-anchor="middle" font-size="8.5" fill="#AFA294" transform="rotate(-90 ${x(i).toFixed(1)} ${T+(H-T-B)/2})">nincs adat</text>`).join('');
+  const dots=rows.map((r,i)=>r?`<circle cx="${x(i).toFixed(1)}" cy="${y(r.a).toFixed(1)}" r="${i===LS.sel?5:3.6}" fill="${r.hold?'#141210':'#8FB49A'}" stroke="#8FB49A" stroke-width="${r.hold?1.8:1}" style="filter:drop-shadow(0 0 ${i===LS.sel?7:3}px rgba(143,180,154,.8))"/>`:'').join('');
+  const hits=WK.map((_,i)=>`<rect data-week="${i}" x="${(x(i)-(W-L-R)/n/2).toFixed(1)}" y="0" width="${((W-L-R)/n).toFixed(1)}" height="${H}" fill="transparent" style="cursor:pointer"><title>${wkRange(WK[i]?WK[i][0]:addDays('2026-07-06',i*7))}</title></rect>`).join('');
+  const sel=`<line x1="${x(LS.sel).toFixed(1)}" x2="${x(LS.sel).toFixed(1)}" y1="${T}" y2="${H-B}" stroke="rgba(245,239,230,.18)"/>`;
+  const xl=[0,4,8,11].map(i=>`<text x="${x(i).toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="9" fill="#AFA294">${huShort(WK[i]?WK[i][0]:addDays('2026-07-06',i*7))}</text>`).join('');
+  return `<svg class="wkchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="A keret alapja hétről hétre, 12 hét: szaggatott a képlet, folytonos a tanult keret-alap, körülötte a bizonytalanság sávja">
+    ${grid}${band}${gap}${sel}<path d="${seg(r=>r.f)}" fill="none" stroke="#AFA294" stroke-width="1.4" stroke-dasharray="4 4" opacity=".7"/>
+    <path d="${seg(r=>r.a)}" fill="none" stroke="#8FB49A" stroke-width="2.4" stroke-linejoin="round" style="filter:drop-shadow(0 0 5px rgba(143,180,154,.7))"/>${dots}${xl}${hits}</svg>`;
+}
+function weekDetail(){
+  const i=LS.sel, r=wkRow(i), s=WK[i]?WK[i][0]:addDays('2026-07-06',i*7);
+  if(!r) return `<div class="wkd"><strong>${wkRange(s)}</strong><p>Erről a hétről nincs sorom — kevés volt a felírás és a mérlegelés, ezért nem tippelek számot.</p></div>`;
+  const prev=WK.slice(0,i).reverse().find(Boolean), step=prev?r.a-prev[4]:0;
+  return `<div class="wkd"><strong>${wkRange(s)}${r.hold?' · ezen a héten vártam':''}</strong>
+    <div class="kv">${[['Képlet szerint',`${kc(r.f)} kcal`],['Tanult',`${kc(r.p)} ± ${r.sd} kcal`],['A keret alapja',`${kc(r.a)} kcal`],['Lépés',r.hold||!step?'nem léptem':`${sgn(step)} kcal`],['Teljes nap',`${r.u}`],['Mérlegelés',`${r.wi}`]].map(([a,b])=>`<div class="cell"><small>${a}</small><b>${b}</b></div>`).join('')}</div>
+    ${r.hold?`<p>Kevés adat volt (legalább 4 teljes nap és 2 mérlegelés kell), ezért a keret nem mozdult.</p>`:''}</div>`;
+}
+function dayRows(){
+  return LD.filter(d=>d.iso<TODAY).reverse().map(d=>{const [st,cls]=STATUS(d),on=isOn(d);
+    return `<div class="ld-row"><span class="grow"><strong>${huWD(d.iso)}</strong>${d.kcal==null?'':`<small>${kc(d.kcal)} kcal</small>`}</span><span class="stchip st-${cls}">${st}</span>
+      ${d.rule==='unlogged'?'<span class="swph"></span>':`<button class="switch ${on?'on':''}" role="switch" aria-checked="${on}" aria-label="${huWD(d.iso)} számít" data-mark="${d.iso}|${on?0:1}"><i></i></button>`}</div>`}).join('');
+}
+function tanulas(){
+  syncHash();
+  const empty=LS.page==='ures', cur=empty?'ures':LS.on?'tanul':'ki';
+  const hero=empty?`<div class="dash rise" style="--c:var(--sage);margin:6px 16px 0;display:flex;gap:12px;align-items:center">${I('lens')}<p style="font-size:13.5px;line-height:1.5;color:var(--sub)"><b style="color:var(--ink)">Még nem tanultam</b> — ehhez legalább 10 felírt nap kell az utolsó 4 hétből és heti 2 mérlegelés.</p></div>`
+    :LS.on?`<section class="lhero halo rise" style="--c:var(--sage);--c2:var(--lav)"><span class="eb">TANULT ALAP</span><div class="num">${E.learned}<small>kcal</small></div>
+      <p class="lh-line">Tanult alap · ${CONF_WORD[E.conf]} · ±${E.sd} kcal</p><p class="lh-sub">A képlet ${kc(E.formula)} kcal-t mondana.</p></section>`
+    :`<section class="lhero halo rise" style="--c:var(--gold);--c2:var(--sage)"><span class="eb">MOST NEM HASZNÁLOM</span><p class="lh-off">A keret a képletből jön · <b>${kc(E.formula)} kcal</b></p>
+      <p class="lh-muted">Közben csendben tovább tanultam: ${kc(E.learned)} ± ${E.sd} kcal</p><button class="flat" style="margin-top:10px" data-go="#beallitas">Bekapcsolás a Fuel beállításokban</button></section>`;
+  return `${topbar()}
+  <div class="dhead rise"><button class="back glass" data-back aria-label="Vissza">‹</button><span class="t"><small>FUEL · ENERGIAIGÉNY</small><strong>Hogy tanultam?</strong></span></div>
+  ${demo('oldal','allapot',[['tanul','Tanul'],['ures','Még nincs adat'],['ki','Kikapcsolva']],cur)}
+  ${hero}
+  ${empty?'':`${sec('Hétről hétre','12 HÉT')}
+  <div class="fcard glass rise" style="--c:var(--sage);--i:2;gap:8px">${weekChart()}
+    <div class="hw-legend"><span><i class="ln" style="background:repeating-linear-gradient(90deg,#AFA294 0 4px,transparent 4px 7px)"></i>képlet</span><span><i class="ln" style="background:var(--sage)"></i>a keret alapja</span><span><i style="background:color-mix(in srgb,var(--sage) 30%,transparent)"></i>bizonytalanság (±)</span><span><i style="border:1.6px solid var(--sage);border-radius:50%;background:transparent"></i>vártam</span></div>
+    <p class="hw-fine" style="margin-top:0">Koppints egy hétre a számaiért. Ahol nincs sor, ott a vonal megszakad — nem töltöm ki.</p>
+    ${weekDetail()}</div>`}
+  ${sec('Az utolsó 14 nap','A MAI NEM SZÁMÍT')}
+  <div class="fcard glass rise" style="--c:var(--lav);--i:3;gap:0">${dayRows()}
+    <p class="hw-fine">A kapcsolóval megmondod, hogy egy nap teljes volt-e. Azonnal újraszámolom. Felírás nélküli napot nem lehet jelölni — ott nincs mit számolni.</p></div>
+  ${empty?'':`${sec('A legutóbbi hét részletei','SZEPT. 21–27.')}<div class="p16 hw-page rise" style="--i:4;display:flex;flex-direction:column;gap:10px">${explainer()}</div>`}`;
+}
+EXTRA_ROUTES.tanulas=tanulas;
+function afterRender(r){
+  if(r!=='tanulas')return;
+  drawHowChart(document.querySelector('.hw-page [data-hwchart]'));
+  const p=document.querySelector('.hw-page [data-pin]'); if(p) requestAnimationFrame(()=>p.style.left=p.dataset.pin+'%');
+}
+
+/* ── 5.5 A kapcsoló a Finomhangolás kártyán ── */
+function learnSwitch(){
+  return `<div class="lsrow">${I('lens')}<span class="grow"><strong>Tanulás a súlyomból és az evésemből</strong><small>Hetente megtanulom, mennyi energiát használsz valójában</small></span>
+    <button class="switch ${LS.draftOn?'on':''}" role="switch" aria-checked="${LS.draftOn}" aria-label="Tanulás a súlyomból és az evésemből" data-lswitch><i></i></button></div>`;
+}
+function saveSettings(){
+  if(LS.draftOn===LS.on){toast('Mentve');return}
+  const before=target(); LS.on=LS.draftOn; E.learnedServed=LS.on; LS.hashPage=null;
+  const d=target()-before; toast(d?`Mentve · A keret ${sgn(d)} kcal-lal változott`:'Mentve · A keret nem változott'); soft();
+}
+
+EXTRA_CLICKS.push((e,t)=>{
+  const dm=t.closest('[data-demo]'); if(dm){const [k,v]=dm.dataset.demo.split('|');location.hash=k==='kartya'?`#mai?kartya=${v}`:`#tanulas?allapot=${v}`;if(k==='kartya'&&LS.hashCard===v){LS.card=v;LS.dismissed=false;LS.msg=null;soft()}if(k==='allapot'&&LS.hashPage===v){LS.hashPage=null;soft()}return true}
+  const mk=t.closest('[data-mark]'); if(mk){const [iso,w]=mk.dataset.mark.split('|');setOn(iso,w==='1');return true}
+  const um=t.closest('[data-unmark]'); if(um){clearMark(um.dataset.unmark);return true}
+  if(t.closest('[data-wc-close]')){LS.dismissed=true;LS.msg=null;soft();toast('Elrejtettem — ezt a hetet nem mutatom újra');return true}
+  const wk=t.closest('[data-week]'); if(wk){LS.sel=+wk.dataset.week;soft();return true}
+  if(t.closest('[data-lswitch]')){LS.draftOn=!LS.draftOn;soft();return true}
+  return false;
+});
 
 render();
 </script>
