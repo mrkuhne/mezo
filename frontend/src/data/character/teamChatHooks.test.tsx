@@ -2,7 +2,7 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { useTeamChat, useTeamChatActions } from '@/data/character/teamChatHooks'
-import { buildTeamChatDay, mockReplyAfter, MOCK_TEAM_CHAT_DAY, OPEN_ID } from '@/data/character/teamChatMock'
+import { buildTeamChatDay, mockAnswer, mockReplyAfter, mockUndo, MOCK_TEAM_CHAT_DAY, OPEN_ID } from '@/data/character/teamChatMock'
 import type { TeamChatDay, TeamChatThread } from '@/data/character/teamChatApi'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -102,6 +102,51 @@ describe('mock mode', () => {
     expect(reply.body).toBe('Értem, köszönöm, hogy elmondtad.')
     expect(reply.thread?.status).toBe('OPEN')
     expect(day.openThreads.find((t) => t.id === OPEN_ID)?.status).toBe('OPEN')
+  })
+
+  test.each([
+    ['EXCUSED', 'Rendben, akkor ez most is kivétel volt.', 'EXCUSED', 'meccsnap'],
+    ['KEEP', 'Rendben, akkor marad így — tovább figyelek.', 'EXCUSED', 'meccsnap'],
+    ['STOP', 'Rendben, akkor újra szólok, ha előjön.', 'REPLY', 'kivétel kikapcsolva'],
+  ] as const)('mockAnswer(%s) sets the exact body + closeReason/closeNote', (choice, body, closeReason, closeNote) => {
+    const day = mockAnswer(MOCK_TEAM_CHAT_DAY, OPEN_ID, choice)
+    const line = day.lines.at(-1)!
+    expect(line.kind).toBe('REPLY')
+    expect(line.body).toBe(body)
+    expect(line.thread?.status).toBe('RESOLVED')
+    expect(line.thread?.closeReason).toBe(closeReason)
+    expect(line.thread?.closeNote).toBe(closeNote)
+    expect(line.thread?.offer).toBeNull()
+    expect(day.openThreads.find((t) => t.id === OPEN_ID)).toBeUndefined()
+  })
+
+  test('mockUndo deactivates the remembered chip and reopens a REPLY-closed ügy', () => {
+    const closed = mockReplyAfter(MOCK_TEAM_CHAT_DAY, OPEN_ID, '10-kor ért véget a röpi kupa')
+    const undone = mockUndo(closed, OPEN_ID)
+    const thread = undone.lines.find((l) => l.threadId === OPEN_ID && l.thread != null)!.thread!
+    expect(thread.remembered?.active).toBe(false)
+    expect(thread.status).toBe('OPEN')
+    expect(thread.closedAt).toBeNull()
+    expect(thread.closeReason).toBeNull()
+    expect(thread.closeNote).toBeNull()
+    expect(undone.openThreads.find((t) => t.id === OPEN_ID)?.status).toBe('OPEN')
+  })
+
+  test('mockUndo deactivates the remembered chip but does NOT reopen an EXCUSED-closed ügy', () => {
+    // mockAnswer never sets `remembered` itself — seed it directly to isolate mockUndo's own
+    // reopen-only-on-REPLY rule from mockAnswer's own behaviour.
+    const answered = mockAnswer(MOCK_TEAM_CHAT_DAY, OPEN_ID, 'EXCUSED')
+    const withRemembered = {
+      ...answered,
+      lines: answered.lines.map((l) => (l.threadId === OPEN_ID && l.thread != null)
+        ? { ...l, thread: { ...l.thread, remembered: { text: 'x', contextTag: 'meccsnap', active: true } } }
+        : l),
+    }
+    const undone = mockUndo(withRemembered, OPEN_ID)
+    const thread = undone.lines.find((l) => l.threadId === OPEN_ID && l.thread != null)!.thread!
+    expect(thread.remembered?.active).toBe(false)
+    expect(thread.status).toBe('RESOLVED')
+    expect(thread.closeReason).toBe('EXCUSED')
   })
 
   test('useTeamChatActions.reply in mock mode: awaiting, then the synthetic REPLY lands after the typing delay', async () => {
@@ -293,7 +338,7 @@ describe('real mode', () => {
     expect(client.getQueryState(['teamChat', null])?.isInvalidated).toBe(true)
   })
 
-  test('reply marks the thread awaiting, and useTeamChat backs off through TURN_FACT_POLL_DELAYS then 60s', async () => {
+  test('reply marks the thread awaiting; once the backoff runs out it LEAVES awaiting and polling falls back to 60s', async () => {
     vi.useFakeTimers()
     try {
       server.use(
@@ -312,16 +357,64 @@ describe('real mode', () => {
 
       actionsHook.result.current.reply(OPEN_ID, 'kösz!')
       await vi.advanceTimersByTimeAsync(0)
-      expect(client.getQueryData<ReadonlySet<string>>(['teamChat', 'awaiting'])?.has(OPEN_ID)).toBe(true)
+      expect(client.getQueryData<ReadonlyMap<string, number>>(['teamChat', 'awaiting'])?.has(OPEN_ID)).toBe(true)
 
-      // The answer never actually lands (the GET handler always serves the empty day) — the
-      // backoff (2s/3s/5s) runs to the end and useTeamChat falls back to the plain 60s poll.
+      // The answer never actually lands (the GET handler always serves the empty day). The
+      // backoff (2s + 3s + 5s = 10s since the thread JOINED awaiting) runs out here — this is
+      // the binding resolution: the thread must LEAVE `awaiting`, not just stop being polled fast.
       await vi.advanceTimersByTimeAsync(2000)
       await vi.advanceTimersByTimeAsync(3000)
       await vi.advanceTimersByTimeAsync(5000)
+      expect(client.getQueryData<ReadonlyMap<string, number>>(['teamChat', 'awaiting'])?.has(OPEN_ID)).toBe(false)
+
+      // And nothing breaks once it falls back to the plain 60s poll.
       await vi.advanceTimersByTimeAsync(60_000)
-      // Still marked awaiting (no REPLY line ever arrived) — but polling no longer blew up.
-      expect(client.getQueryData<ReadonlySet<string>>(['teamChat', 'awaiting'])?.has(OPEN_ID)).toBe(true)
+      expect(client.getQueryData<ReadonlyMap<string, number>>(['teamChat', 'awaiting'])?.has(OPEN_ID)).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  test('a thread that joins mid-backoff of another still gets its own full backoff', async () => {
+    vi.useFakeTimers()
+    try {
+      server.use(
+        http.post(`${API_BASE}/api/character/team-chat/threads/:threadId/reply`, ({ params }) =>
+          HttpResponse.json({
+            id: `new-line-${params.threadId as string}`, threadId: params.threadId as string, kind: 'USER',
+            character: null, body: 'kösz!', voiced: false, facts: [], occurredAt: new Date().toISOString(),
+          })),
+        http.get(`${API_BASE}/api/character/team-chat`, () =>
+          HttpResponse.json({ date: localDateString(), lines: [], openThreads: [], pushesToday: 0, pushBudget: 2 })),
+      )
+      const THREAD_A = OPEN_ID
+      const THREAD_B = 'tc-thread-sleep-debt'
+      const { wrapper, client } = makeHookWrapperWithClient()
+      renderHook(() => useTeamChat(), { wrapper })
+      const actionsHook = renderHook(() => useTeamChatActions(), { wrapper })
+      await vi.advanceTimersByTimeAsync(0)
+
+      const awaiting = () => client.getQueryData<ReadonlyMap<string, number>>(['teamChat', 'awaiting'])
+
+      actionsHook.result.current.reply(THREAD_A, 'kösz!')
+      await vi.advanceTimersByTimeAsync(0)
+
+      // B joins 4s into A's own 10s budget.
+      await vi.advanceTimersByTimeAsync(4000)
+      actionsHook.result.current.reply(THREAD_B, 'kösz!')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(awaiting()?.has(THREAD_A)).toBe(true)
+      expect(awaiting()?.has(THREAD_B)).toBe(true)
+
+      // 6s later (10s since A joined): A's own budget is spent — it leaves. B (joined 4s later)
+      // has only used 6s of ITS own 10s budget, unaffected by A's shorter remaining wait — it stays.
+      await vi.advanceTimersByTimeAsync(6000)
+      expect(awaiting()?.has(THREAD_A)).toBe(false)
+      expect(awaiting()?.has(THREAD_B)).toBe(true)
+
+      // A further 4s (10s since B joined): B's own full budget is now spent too.
+      await vi.advanceTimersByTimeAsync(4000)
+      expect(awaiting()?.has(THREAD_B)).toBe(false)
     } finally {
       vi.useRealTimers()
     }

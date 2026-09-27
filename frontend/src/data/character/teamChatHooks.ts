@@ -6,7 +6,7 @@
 // S7 (mezo-d6ivw.7, Task 8) adds the character's answer: `reply` now gets a genuine follow-up
 // (mock: a synthetic Falat line after a short delay; real: an async server answer, polled for),
 // plus the one-tap `answer` and `undoRemembered` actions.
-import { useEffect, useRef, useSyncExternalStore } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 import { useMutation, useQueryClient, type QueryClient, type QueryKey } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 import { DEFAULT_QUERY_STALE_TIME_MS, useDualQuery } from '@/data/useDualQuery'
@@ -32,30 +32,56 @@ const TEAM_CHAT_KEY = ['teamChat']
 const AWAITING_KEY: QueryKey = ['teamChat', 'awaiting']
 const EMPTY_AWAITING: ReadonlySet<string> = new Set()
 
+/**
+ * The cached value is a thread id -> "joined `awaiting` at" (ms epoch) map, NOT a bare `Set` —
+ * fix round 1 (review): multiple threads share the ONE day query's `refetchInterval`, so a
+ * thread's own backoff budget has to be judged against its OWN join time, never a shared
+ * attempt counter. Otherwise a thread joining mid-another's-backoff shortens the interval for
+ * both, and the earlier one's counter gets "used up" faster than its own delays actually
+ * elapsed. `useAwaiting` derives the public `ReadonlySet<string>` from this map's keys.
+ */
+type AwaitingMap = ReadonlyMap<string, number>
+const EMPTY_AWAITING_MAP: AwaitingMap = new Map()
+
 function sameKey(a: readonly unknown[], b: readonly unknown[]): boolean {
   return a.length === b.length && a.every((v, i) => v === b[i])
 }
 
-function getAwaiting(qc: QueryClient): ReadonlySet<string> {
-  return qc.getQueryData<ReadonlySet<string>>(AWAITING_KEY) ?? EMPTY_AWAITING
+function getAwaitingMap(qc: QueryClient): AwaitingMap {
+  return qc.getQueryData<AwaitingMap>(AWAITING_KEY) ?? EMPTY_AWAITING_MAP
 }
 
 function addAwaiting(qc: QueryClient, threadId: string): void {
-  qc.setQueryData<ReadonlySet<string>>(AWAITING_KEY, (old) => {
-    const base = old ?? EMPTY_AWAITING
+  qc.setQueryData<AwaitingMap>(AWAITING_KEY, (old) => {
+    const base = old ?? EMPTY_AWAITING_MAP
     if (base.has(threadId)) return base
-    return new Set(base).add(threadId)
+    return new Map(base).set(threadId, Date.now())
   })
 }
 
 function removeAwaiting(qc: QueryClient, threadIds: Iterable<string>): void {
-  qc.setQueryData<ReadonlySet<string>>(AWAITING_KEY, (old) => {
-    if (old == null || old.size === 0) return old ?? EMPTY_AWAITING
+  qc.setQueryData<AwaitingMap>(AWAITING_KEY, (old) => {
+    if (old == null || old.size === 0) return old ?? EMPTY_AWAITING_MAP
     let changed = false
-    const next = new Set(old)
+    const next = new Map(old)
     for (const id of threadIds) if (next.delete(id)) changed = true
     return changed ? next : old
   })
+}
+
+// Memoized per-map-instance (not per-call) so `useSyncExternalStore`'s snapshot is referentially
+// stable across renders where the map hasn't changed — `addAwaiting`/`removeAwaiting` above only
+// ever produce a NEW map instance when the contents actually change, so a `WeakMap` keyed on
+// that instance is exactly as stable as the cache entry itself.
+const awaitingSetCache = new WeakMap<AwaitingMap, ReadonlySet<string>>()
+function awaitingIdsOf(map: AwaitingMap): ReadonlySet<string> {
+  if (map.size === 0) return EMPTY_AWAITING
+  let ids = awaitingSetCache.get(map)
+  if (ids == null) {
+    ids = new Set(map.keys())
+    awaitingSetCache.set(map, ids)
+  }
+  return ids
 }
 
 /** Reactive read of `AWAITING_KEY` via a direct cache subscription (see the comment above for
@@ -65,10 +91,16 @@ function useAwaiting(qc: QueryClient): ReadonlySet<string> {
     (onStoreChange) => qc.getQueryCache().subscribe((event) => {
       if (sameKey(event.query.queryKey, AWAITING_KEY)) onStoreChange()
     }),
-    () => getAwaiting(qc),
+    () => awaitingIdsOf(getAwaitingMap(qc)),
     () => EMPTY_AWAITING,
   )
 }
+
+/** `TURN_FACT_POLL_DELAYS`, as cumulative ms-since-joined milestones — `[2000,3000,5000]`
+ *  becomes `[2000,5000,10000]`. A thread's own elapsed-since-join time is compared against
+ *  these, never against how many times the shared query has actually polled. */
+const CUM_POLL_DELAYS = TURN_FACT_POLL_DELAYS.reduce<number[]>((acc, d) => [...acc, (acc.at(-1) ?? 0) + d], [])
+const TOTAL_POLL_BACKOFF_MS = CUM_POLL_DELAYS.at(-1) ?? 0
 
 /** A thread has "left" awaiting once the day has a REPLY line on it newer than the user's own
  *  last line there — i.e. Falat (mock) or the real backend has actually answered. */
@@ -93,9 +125,6 @@ function resolvedThreadIds(day: TeamChatDay, awaiting: ReadonlySet<string>): str
 export function useTeamChat(date?: string): { day: TeamChatDay; loading: boolean } {
   const qc = useQueryClient()
   const awaiting = useAwaiting(qc)
-  const awaitingRef = useRef(awaiting)
-  awaitingRef.current = awaiting
-  const attempts = useRef(0)
 
   const { data, isPending } = useDualQuery<TeamChatDay>({
     queryKey: [...TEAM_CHAT_KEY, date ?? null],
@@ -103,15 +132,25 @@ export function useTeamChat(date?: string): { day: TeamChatDay; loading: boolean
     realFetch: () => teamChatApi.day(date),
     realEmpty: { date: date ?? localDateString(), lines: [], openThreads: [], pushesToday: 0, pushBudget: 2 },
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
+    // Each thread's own elapsed-since-`addAwaiting` time decides ITS next milestone/exhaustion
+    // (see `getAwaitingMap`'s doc comment) — the shared poll fires at the soonest of them, and
+    // any thread whose own 10s (`TOTAL_POLL_BACKOFF_MS`) budget is fully spent leaves `awaiting`
+    // right here, not just "stops being polled fast".
     refetchInterval: () => {
-      if (awaitingRef.current.size === 0) {
-        attempts.current = 0
-        return 60_000
+      const map = getAwaitingMap(qc)
+      if (map.size === 0) return 60_000
+      const now = Date.now()
+      const exhausted: string[] = []
+      let minWait: number | null = null
+      for (const [threadId, joinedAt] of map) {
+        const elapsed = now - joinedAt
+        if (elapsed >= TOTAL_POLL_BACKOFF_MS) { exhausted.push(threadId); continue }
+        const nextMilestone = CUM_POLL_DELAYS.find((c) => c > elapsed) ?? TOTAL_POLL_BACKOFF_MS
+        const wait = nextMilestone - elapsed
+        if (minWait == null || wait < minWait) minWait = wait
       }
-      if (attempts.current >= TURN_FACT_POLL_DELAYS.length) return 60_000
-      const delay = TURN_FACT_POLL_DELAYS[attempts.current]
-      attempts.current += 1
-      return delay
+      if (exhausted.length > 0) removeAwaiting(qc, exhausted)
+      return minWait ?? 60_000
     },
   })
 
@@ -152,9 +191,14 @@ export function useTeamChatActions(): {
   const mock = isMockMode()
   const awaiting = useAwaiting(qc)
 
+  // Excludes AWAITING_KEY by an explicit key check, not a shape guess on the cached value — the
+  // predicate runs alongside the (prefix-matching) `queryKey` filter, so `['teamChat','awaiting']`
+  // never reaches `updater`, which only knows how to handle a `TeamChatDay`.
   const applyMockDayUpdate = (updater: (d: TeamChatDay) => TeamChatDay) => {
-    qc.setQueriesData<unknown>({ queryKey: TEAM_CHAT_KEY }, (d: unknown) =>
-      (d == null || d instanceof Set) ? d : updater(d as TeamChatDay))
+    qc.setQueriesData<TeamChatDay>(
+      { queryKey: TEAM_CHAT_KEY, predicate: (query) => !sameKey(query.queryKey, AWAITING_KEY) },
+      (d) => (d == null ? d : updater(d)),
+    )
   }
 
   const replyMutation = useMutation({

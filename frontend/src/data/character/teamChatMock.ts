@@ -292,6 +292,9 @@ export function mockReplyAfter(day: TeamChatDay, threadId: string, text: string)
   if (current == null) return day
 
   const userAt = nowOffsetIso()
+  // +60s is a deliberate ORDERING choice, not simulated elapsed time — it only has to sort
+  // after `userAt` (`resolvedThreadIds` in teamChatHooks.ts compares occurredAt strings to
+  // decide a reply "landed"); the real typing delay is the caller's `setTimeout(1200)`.
   const replyAt = nowOffsetIso(new Date(Date.now() + 60_000))
   const concrete = CONCRETE_REASON_RE.test(text)
 
