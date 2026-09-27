@@ -230,14 +230,17 @@ renders inside `PatternFrame` → the shared **`DetailFrame`** (`components/Deta
 
 **Üveg (Üvegesítés U8a, `mezo-me75u.13`; parity: `docs/design_2.0/prototypes/uveg-uzenofal.html`
 `#minta/*`, `#elore/*`, `#kiserlet-oldal/*`, owner OK 2026-09-24).** The pattern, prediction and
-experiment detail pages share one anatomy from `components/DetailHero.tsx`: `DetailFrame` (the kit's
-glass back pill `PageHead glass` + a quiet right-aligned eyebrow „Minta részletei" / „Előrejelzés" /
-„Kísérlet", an `EntranceGroup` body with 64px end padding so the last card clears the glass bar and
-FAB), **ONE `.glass` hero per page** (`DetailHero`: lit well + eyebrow + title + `StatePill`, one
-accent via `.pdt-tone-*`), the big `DayRing` (n / minimum), `DecisionRow` (icon-over-word cells,
-`t-tick` / `t-lens` / `t-skip`) + `DecisionNote`, `SectionHead`, and `DetailState` (dashed empty /
-error / loading). Everything below the hero is a flat panel (`.pdt-flat`, `.pdt-fold`); the evidence
-log is upright prose (bible U23). CSS: `prototype.css` `── uveg mezo mibol (` (guarded in
+experiment detail pages still share the outer shell from `components/DetailHero.tsx`: `DetailFrame`
+(the kit's glass back pill `PageHead glass` + a quiet right-aligned eyebrow „Minta részletei" /
+„Előrejelzés" / „Kísérlet", an `EntranceGroup` body with 64px end padding so the last card clears
+the glass bar and FAB), `SectionHead`, and `DetailState` (dashed empty / error / loading). **Since
+the `mezo-rstt7` rewrite the pattern page no longer uses `DetailHero`/`StatePill`/`DayRing`/
+`DecisionRow`/`DecisionNote`** — those stay `DetailHero.tsx` exports used only by the prediction and
+experiment detail pages now; the pattern page's own hero, day meter and decision block are
+`PatternAnswerHero`/`PatternLeanMeter`/`PatternDayPips` (below), with the state pill moved out to
+`PatternFrame`'s `aside` slot (`StatusPill`, off the raw `PatternRowStatus`, not `DetailTone`'s
+generic `StatePill`). Everything below the hero is a flat panel (`.pdt-flat`, `.pdt-fold`); the
+evidence log is upright prose (bible U23). CSS: `prototype.css` `── uveg mezo mibol (` (guarded in
 `prototypeCssStructure.test.ts`); the old Mozaik-wash `.pdt-*` blocks were deleted with it.
 **Back goes where you came from** (owner, 2026-09-24): `useBackTo(fallback, label)`
 (`shared/hooks/useBackNav.ts`) pops history when there is an in-app entry behind the page (the wall,
@@ -267,106 +270,117 @@ rows receive a read-only status hero plus only their saved mechanism/evidence an
 explanation that no chart is available. It never invents
 paired days, history or statistics.
 
-**Top to bottom (`mezo-0469`; normative visual spec:
-`docs/superpowers/specs/2026-09-04-pattern-detail-redesign-design.md`):**
+**Újramesélve — EGY olvasat, EGY elrendezés (`mezo-rstt7`, 2026-09-27; normative visual spec:
+`docs/design_2.0/prototypes/uveg-minta-body.html`).** The six-block catalog layout and the separate
+laborfüzet branch below are gone. Every row — catalog pair or self-proposed hypothesis, with or
+without a `testPlan` — now reads through **one pure function, `logic/patternReading.ts`'s
+`readPattern`**, and renders through **one component tree**. `HypothesisStateCard`,
+`PatternDetailHero`, `TestPlanTiles`, `PatternEvidenceChart` and `PatternStrengthChart` are
+**deleted**; their jobs are folded into `PatternAnswerHero`, `PatternZoneChart` and `PatternRuleCard`
+below (or absorbed into `readPattern` itself, which needed no visual counterpart).
 
-1. **Story hero (`PatternDetailHero`)** — the page's one glass hero: domain well
-   (`PATTERN_DOMAIN_ART`, `data-pattern-domain`), a `DayRing` with the plotted day count (the
-   weekend tally `groupCount / requiredPerGroup` while `imbalanced_groups`), hypothesis and finding
-   as separate deterministic sentences (no LLM). „Azt vizsgáljuk…” says the question; the large answer says what is currently
-   knowable. State mapping: `imbalanced_groups`/other non-live → „Még gyűlik”; live weak → „Még
-   bizonytalan”; live strong + proposed → „Döntésre vár” and three decision buttons; monitoring →
-   „Figyeljük”; confirmed/rejected → read-only judged summary. A stale proposed row therefore has
-   no CTA when today's pair is not LIVE. The 8+1 weekend case says „Még nincs elég hétvégi adat.”,
-   names the imbalance, and shows `groupOneDays / requiredPerGroup` progress without an effect claim.
-2. **„Az összevetés alapja”** — binary A metrics get two Design 2.0 wash cards derived from the
-   actual `days`: count, middle value (median only from 3 observations), range, and `+N nap kell`
-   on the thin group. The fixture reads 8 days / 19:38 versus 1 day / 14:35 without turning that
-   one point into a weekend habit.
-3. **Historical strength, only when valid** — `PatternStrengthChart` remains for live/frozen pairs
-   with at least two snapshots, retitled „Hogyan változott a kapcsolat?”. Collecting pairs show no
-   strength chart; its caption still comes from the first/last snapshot `n`.
-4. **„Az eddigi napok” (`PatternEvidenceChart`)** — `metricAValueKind`, never a metric-key
-   allowlist, chooses the renderer. `binary` draws two softly coloured columns, jittered daily
-   points, real clock/number ticks, conditional median bars and a gold latest-point ring, with no
-   regression line. `number`/`clock_hour` uses an observed-range scatter and draws its dashed fit
-   only when `verdict === 'live'`. `Napok listája →` is a semantic `<details>` table over the same
-   data. Under 2 days the chart returns `null` and the page states that more data is needed.
-5. **„Mit vigyél magaddal?”** — coral/sage story tiles explain what the evidence does and does not
-   mean and name the next data step. Copy comes from verdict + group summary, never generation.
-6. **Progressively disclosed background** — „A minta története” keeps only significant events:
-   first computable snapshot, decisions, fact promotion and reinforcement. Strength-band chatter
-   is gone; `imbalanced_groups` appends a „Most — Még gyűlik: X/Y” row. `PatternImpactCard` renders
-   only for a persisted pattern or actual impact. „Hogyan számoltuk?” first exposes window, paired
-   days, group ratio, last calculation and sources; raw `r/n/p` sit in a nested „Technikai számok”
-   disclosure. Non-live current pairs never present stale stats as today's result; frozen rows show
-   the decision-time numbers and freeze note.
+**Top to bottom:**
 
-**The laborfüzet — a hypothesis with a pre-registered test plan (Reflexió S6, `mezo-eq85.6`;
-visual truth: `docs/design_2.0/prototypes/eszrevetelek.html` `#labScreen`).** When
-`detail.pattern?.testPlan` exists (any `kind`), the page renders a **different layout** — the six
-catalog blocks above are for correlation pairs; a self-proposed, falsifiable hypothesis is a lab
-notebook. Rows without a plan are untouched by this branch.
+1. **`PatternAnswerHero`** — the page's one frameless hero (no `.glass` card, a halo instead): a
+   domain-chip pair row (`A → B`), the question in small type (`pair.questionHu` or
+   `patternHeadline`), then the **answer as the heading** — one Hungarian word or short phrase from
+   `answerLook` (see the state table below), a matching Clay icon and tone. Under it, `saySentence`
+   writes the one sentence of evidence prose (group averages, day count, direction), and — only
+   while the state is `kerdes`/`gyulik` — the latest `observation` event's first paragraph, quoted
+   as „AMIBŐL MEZO FELVETETTE". Then either **`PatternLeanMeter`** (once a `now` reading exists) or
+   **`PatternDayPips`** (day tally vs `minN`, while still `gyulik`) — **neither** while a binary
+   pair is short on one day group (`reading.groupsShort`: one 0/1 group under
+   `requiredPerGroup ?? 3`, or the gate says `imbalanced_groups`). Then the sentence carries the
+   news instead („**8** hétköznapi nap mellett még csak **1** hétvégi nap van. Mindkét fajta napból
+   legalább 3 kell…", built from `reading.groups` so it works on frozen rows too) and `minN` is
+   never cited anywhere. The meter's lit side comes from the reading state (`leanSide`), not its
+   own threshold. Binary sentences use the group's day adjective („A hétvégi napokon az …",
+   „Az említéses napokon …"). Last, the decision block —
+   buttons, a settled line, or the quiet „Mégsem igaz rám — visszavonom" link — driven entirely by
+   `decisionPlan(reading, status)`, never by ad-hoc JSX conditions; it is omitted outright for a
+   catalogue pair with no persisted row (`pattern == null`).
+2. **„Mit mutat az adat" → `PatternZoneChart`** — the page's one glass card, a two-zone SVG: binary
+   A metrics split into two fixed columns (jittered points, no false continuous axis), continuous A
+   metrics split at the median into a lo/hi zone; both draw a zone-average label only once
+   `reading.dayCount >= reading.minN`, no group is short, and the state is not `gyulik`/`allo`/
+   `kerdes` (an average from too few days would overclaim; the note under the chart says when it
+   will appear). Dot labels, tooltip and table use the human date and a decimal comma.
+   Every dot is a `role="button"`, tappable (or Enter/Space) to open a small tooltip with that day's
+   two values. **Selection is the chart's OWN `useState`**, not page or router state: a tap never
+   re-runs the page's entrance animation and never moves scroll (see the style-bible lesson below).
+   Under 2 aligned days the page shows the honest „Még egy közös nap sincs" empty state instead.
+3. **„A szabály" → `PatternRuleCard`** — a flat (non-glass) card stating the **pre-registered**
+   rule (`ruleSentence`, built from `testPlan` when present, else the catalogue pair — never from
+   today's numbers, so a look at the result can't retroactively reshape the hypothesis), plus a
+   chip row: day progress (`n / minN`, or `n nap · elég` once past it), the lag word (`lagWord`,
+   „aznap" / „másnap" / „N nappal később") and the window (`windowDays` nap).
+4. **„Ami eddig történt" (`HistoryFold`)** — a `<details>` fold: a plan-driven (reflection) row
+   shows `EvidenceLog`; everything else shows the catalogue's `PatternJournal`; both empty ⇒ one
+   honest „Még nincs jelentős esemény" line. Unchanged from before this rewrite.
+5. **`PatternImpactCard`** — unchanged: renders only for a persisted pattern or actual impact
+   (fact/predictions/experiments/challenges).
+6. **„Számok, ha érdekel" (`Diagnostics`)** — unchanged fold: window, paired days, group ratio,
+   last calculation, sources, and a nested „Technikai számok" disclosure for raw `r`/`n`/`p`. Its
+   window/`lastComputedAt` are still **passed in by the page**, not read off the pair monitor — a
+   plan-driven row shows `testPlan.windowDays` / `pattern.lastDetectedAt` (its own nightly run has
+   its own window), a catalogue row shows `monitor.lookbackDays` / `monitor.lastRunAt`.
 
-1. **`HypothesisStateCard`** replaces `PatternDetailHero` (the „Igaz ez rám?" glass hero): `t-flask` well + eyebrow
-   (`{categoryLabel} · {domén}`) + a state pill off the persisted row status — `FIGYELEM`
-   (`monitoring`), `GYŰLIK` (`proposed`), `BEÉPÜLT` (`confirmed`), `ELENGEDVE` (`refuted`),
-   `PIHEN` (`dormant`), `ELVETVE` (`rejected`). Then `Hipotézis: {cím}?`, ONE human answer
-   (`hypothesisAnswer`: `Beépült.` when confirmed → `Ígéretes, de még gyűlik.` while
-   the chart has fewer than `testPlan.minN` days → `Ígéretes — elég nap van a döntéshez.` while the
-   nightly tally `evidenceHits + evidenceMisses` is still below `minN` → `Nem igazolódik.` when
-   misses beat hits → `Tartja magát.` at hits ≥ 3×misses → otherwise `Vegyes kép — még figyelem.`),
-   and a sub-line that compares the two groups (`groupOneDays` vs `groupZeroDays`) or else says
-   `{N} napot tudok összevetni`, then either `{minN} napnál mondok többet.` or, once N ≥ minN,
-   `— elég ahhoz, hogy dönts.` (a `proposed` pill then reads `DÖNTHETSZ` instead of `GYŰLIK`).
-   **The answer also reads TODAY's result (`mezo-a80d0`).** `currentSupport(pair, plan)` is true
-   only for a live reading that passes the strong-signal bar (`STRONG_SIGNAL`, |r| ≥ 0.3, p ≤ 0.15 —
-   the list's „döntésre vár" bar) **in the plan's expected direction**; `null` when there is no
-   live r/p. While the tally is still short, a `false` support answers `Egyelőre nincs
-   összefüggés.` instead of `Ígéretes — …`. `hypothesisReading` also returns `confirmable`
-   (false on `Nem igazolódik.`, on `Egyelőre nincs összefüggés.`, and on `Vegyes kép` without
-   support): then the pill reads `NINCS JEL` (mute) instead of `DÖNTHETSZ`, the `Megerősítem`
-   button is **not rendered** (only `Figyeljük`/`Elvetem`), and `DecisionNote confirmable={false}`
-   says „nincs mit megerősíteni". Before this, the owner's `late-meal~next-sleep-quality`
-   (r = −0.02, p = 0.955, 14 days) was offered as „Ígéretes — DÖNTHETSZ" with a confirm button,
-   while the list correctly filed it under „nincs kapcsolat".
-   **Every day number on the card is `dayCount` = `PatternPairDetail.days.length`** — the very
-   points „Az eddigi napok" plots — never the post-proposal monitoring tally, which is 0 on a fresh
-   proposal while the chart already shows its days (`mezo-twizx`: „0 nap bizonyíték" above an
-   8-day chart). The tally only speaks once it reaches `minN`. The big **day ring** shows `dayCount/minN` (just
-   `dayCount` past the minimum), lavender while gathering and gold once it is decidable. The
-   **belief strip** — a flat cell inside the hero (`--v: {belief×100}%`) with the big light
-   percentage, the word `bizonyosság` and the "a számítás és a te válaszaid mozgatják" line. `belief` is the backend's deterministic number; **no ring at all when it is absent**,
-   never an invented one, and raw `r`/`p` never reach the card. The three decision buttons
-   (`confirm`/`monitor`/`reject` → `usePatternActions().decide`) disappear on a
-   `confirmed`/`rejected` row — the same read-only rule the catalog hero has.
-2. **„A teszt-terv" (`TestPlanTiles`)** — the pre-registered plan, so the hypothesis cannot be
-   invented after the fact: a coral `Ha…` tile (`seriesALabel`) and a lavender `…akkor` tile
-   (`seriesBLabel`), each with a clay icon picked from the series' **domain** (a `people:`/`topic:`
-   series has no metric-catalog entry to look up) and a value-kind line, plus the strip
-   `+{lagDays} nap eltolás · {minN} nap kell minimum · {több|kevesebb} várt irány · {windowDays} nap ablak`.
-3. **„Az eddigi napok"** — the same `DaysCard` (`PatternEvidenceChart` + `Napok listája →`) the
-   catalog layout uses, so the two readings can never disagree.
-4. **„Bizonyíték-napló" (`EvidenceLog`)** — everything that happened, oldest first, stamped
-   `Szept. 6. · 14:12` (LOCAL time; the wire is UTC). Per kind: `observation` (coral),
-   `user_reply` (lavender, your own words quoted, upright, in a lavender-edged cell, `te`), `revised` (gold),
-   `evidence` (gold — `Bejött` / `Nem jött be` + `· n nap` from `hit`, or, when the gate could not
-   say, ONE sentence per `PatternGate.Verdict`: `Kevés nap` (`FEW_DAYS`), `Még vékony csoport`
-   (`IMBALANCED_GROUPS`), `Nem mozdult` (`DEGENERATE`), `Nincs adat` (`NO_DATA` and any unknown
-   verdict)). Decision/engine events keep the `PatternJournal` copy **verbatim**, bold included
-   (`**Megerősítetted.**`, `Újra előjött ugyanabban az irányban — a tudás megerősödött (×N).`,
-   `Először számolhatóvá vált — N közös nap.`, `Megnéztük — nem igazolódott.`,
-   `Pihen — várom az adatot.` …) — the two readings of the same event must never drift.
-   **The log is filtered the way `patternHistory.journalEntries` filters the catalog's:** the
-   nightly job writes an `evidence` row for EVERY hypothesis EVERY night, so a run of consecutive
-   silent nights with the same verdict collapses into ONE row carrying the latest stamp and the
-   night count (`Kevés nap · 12 éjszaka`), and only the FIRST `snapshot` gets a line. Every
-   user-meaningful event survives untouched. Empty ⇒ one honest line, never an empty rail.
-5. **„Háttér"** — the same `Diagnostics` fold, but its window and „utolsó számítás" are **passed in
-   by the page, not read off the pair monitor**: a hypothesis is computed by the nightly reflection
-   run with its OWN window, so the fold shows `testPlan.windowDays` and the row's `lastDetectedAt`
-   (the catalog branch still passes `monitor.lookbackDays` / `monitor.lastRunAt`). Raw `r`/`n`/`p`
-   stay behind its nested „Technikai számok" disclosure.
+**The reading states (`ReadingState`, `logic/patternReading.ts`).** `readPattern` maps
+`{pair, pattern, days, events}` to exactly one state; `answerLook` turns a state (plus the
+persisted `status`) into the Hungarian answer word, tone and icon the hero shows:
+
+| State | Meaning | Answer word (`answerLook`) |
+| --- | --- | --- |
+| `kerdes` | no aligned days yet | „Még csak egy kérdés" |
+| `gyulik` | collecting (`few_days`/`imbalanced_groups`/under `minN`) | „Még gyűjtöm" |
+| `allo` | the compared metric never moved (`degenerate`) | „Nincs mit összevetni" |
+| `nincs` | enough days, `\|support\| < 0.15` | „Nincs összefüggés" |
+| `halvany` | weak support in the expected direction | „Halvány jel" |
+| `halvanyFordit` | weak support against the expected direction | „Inkább fordítva" |
+| `fordit` | the 90% band sits fully against the expected direction | „Épp fordítva" |
+| `eros` | the 90% band sits fully in the expected direction | „Erős jel" |
+| `elvetve` | `pattern.status === 'rejected'` | „Elvetetted" |
+| `elengedve` | `pattern.status === 'refuted'` | „Mezo elengedte" |
+| `pihen` | `pattern.status === 'dormant'` | „Pihen" |
+
+On a **`confirmed`** row `answerLook` overrides the plain word with a status-aware one instead
+(`eros` → „Tartja magát", `halvany` → „Azóta gyengült" / „Halvány maradt" (see below), `nincs` → „Az adat nem igazolja", `fordit`/`halvanyFordit` → „Most ellentmond",
+`gyulik`/`kerdes` → „Még alig mért", or „Kevés az egyik fajta nap" when a binary pair has
+enough days but one group is short; `allo` keeps „Nincs mit összevetni" with a „Várjunk" note
+and no recommended revoke; „Azóta gyengült" only when today's support is truly below the
+decision-time one) — the confirmed word always names how *today's* live data
+compares to the belief already in the Tudástár, never repeats the plain discovery word.
+
+**The lean band — the „merre húz" meter's math.** `lean(r, n, dir)` turns a Pearson `r` into a
+`Lean {r, n, support, lo, hi}`: `support = r * dir` (the raw sign flips so support always reads
+positive when the data agrees with the hypothesis' own expected direction), and, for `n > 3`, a 90%
+Fisher-z interval around it — `z = atanh(support)`, `se = 1 / sqrt(n - 3)`, `k = 1.645` (the 90%
+critical value, `Z90` in the module) — giving `lo = tanh(z − k·se)`, `hi = tanh(z + k·se)`. `classify`
+then reads the band: `lo > 0` → `eros`, `hi < 0` → `fordit`, `|support| < 0.15` (`FLAT`) → `nincs`,
+else `halvany`/`halvanyFordit` by the sign of `support`. `PatternLeanMeter` draws `support` as a dot
+and `[lo, hi]` as the shaded band on a fixed −1..+1 track (labelled „Épp fordítva" / „Nincs hatás" /
+„Igaz rád"); a `then` reading (see below), when present, draws as a lavender ghost dot alongside it.
+
+**Revoke ≠ delete.** The confirmed hero's only action is the quiet „Mégsem igaz rám —
+visszavonom" link. It calls the exact same `usePatternActions().decide(pattern.id, 'reject')` any
+other reject button calls — there is no separate revoke endpoint or FE code path. This retracts the
+pattern's node from the knowledge graph (the row's `status` becomes `rejected`, so it drops out of
+"beépült" everywhere), but it does **not** delete a Tudástár fact that decision already promoted —
+a fact, once written, is not retroactively un-written by revoking the pattern that produced it.
+(Re-confirming later would need a fresh `confirm` decision; nothing here resurrects the retracted
+node automatically.)
+
+**Where „most" and „amikor megerősítetted" come from.** `reading.now` is always computed **live in
+the FE** from the `days` the detail read returns — even for an already-`frozen`/`confirmed` pair,
+the meter's dot moves as new days come in, because `pearson(days)` and `lean(...)` re-run on
+whatever `days` the page currently holds; the backend's own frozen `pair.r`/`pair.n` are used only
+as a fallback when `days` is empty (`readPattern`'s `frozen` branch calls `pearson(days)` itself).
+`reading.then` — the ghost dot / „amikor megerősítetted" — is the **frozen** snapshot from the
+moment of confirmation: for a statistical (non-plan) row that's `pair.r`/`pair.n` as frozen by the
+backend at decide-time (`pair.verdict === 'frozen'`); for a **reflection/plan row** (no such freeze)
+it is instead the last event with both `r` and `n` set that occurred at or before the `confirmed`
+event (`thenLean` walks `events` for the latest `r != null && n != null` row not later than the
+confirmation stamp) — i.e. the last numbered data point Mezo actually saw before you confirmed.
 
 **A `people:`/`topic:` presence series is binary everywhere it is read.** `metricFormat`'s
 `isPresenceSeries` is the single predicate: `formatMetricValue` renders it `igen`/`nem` (never a raw
@@ -406,13 +420,35 @@ Minden alábbi viselkedési szerződés (a fact-rész) változatlan a `mezo-9ryh
 - **`?view=profil`** redirects to `/settings/mezo/communication`, with or without a learned node.
 - **`?view=hogyan`** (tone gold, `HowItWorksView`) — a törölt `KnowledgeExplainer` öt Q&A-blokkja + egy hatodik („Mik a kategóriák?"), külön nézetként, nem összecsukható panelként. Nem perzisztál állapotot.
 
-**Hero** — `N tény` + `M megy a chatbe · K kapcsolat`, ahol M a ténylegesen injektált tények száma a TELJES (szűretlen) listán, **nem** az összes bekapcsolté: a `bucketFacts()` a backend két injektálási csatornáját tükrözi — a rangsoros top-N blokkot (`reinforced DESC, createdAt DESC`, `PROMPT_TOP_N = 10`, a `mezo.companion.facts.top-n` kézzel szinkronban tartott tükre) ÉS a `renderNewPatternFactsBlock()` friss-minta kivételt (minden bekapcsolt, `source: 'pattern'` tény, ami `PATTERN_ACK_DAYS = 3` napon belül jött létre, a rangsortól függetlenül bekerül — a `mezo.companion.facts.pattern-ack-days` tükre, mindkét konstans `data/insights/knowledge.ts`-ben). A **`· K kapcsolat` szegmens** a `mezo-ms9a` backend-kiegészítéséből jön (`useGraphEdgeCount()` → `GET /api/companion/graph/edge/count`, active-endpoint-filtered él-összesítő); a hook 404/hiba/pending esetén `count: null`-t ad, SOHA nem 0-t — a hero ilyenkor egyszerűen ELHAGYJA a szegmenst, nem hazudik nulla kapcsolatról. A hero szám degraded alatt sincs fabrikálva („0 tény"): nagy szám/alcím nélkül marad.
+**Hero** — `N tény` + `M megy a chatbe · K kapcsolat`. **Facts-always óta (2026-09-27,
+mezo-d6ivw.8) M egyszerűen `buckets.inPrompt.length`** — minden bekapcsolt (`active`) tény, a
+TELJES (szűretlen) listán számolva. A régi kettős-csatornás rangsor-logika (egy `PROMPT_TOP_N = 10`
+top-N blokk + a `PATTERN_ACK_DAYS` friss-minta kivétel, két külön FE konstanssal
+`data/insights/knowledge.ts`-ben tartva szinkronban a backenddel) megszűnt: a backend most minden
+bekapcsolt tényt injektál (a `prompt-cap` csak egy 200-as biztonsági fék, amit a UI szándékosan nem
+tükröz), úgyhogy a FE-nek nincs mit tükröznie sem — `bucketFacts()` (`features/insights/logic/
+factCopy.ts`) két vödröt ad vissza, `inPrompt`/`off`, a kapcsoló (`f.active`) az egyetlen szűrő,
+mindkét mirror-konstans törölve. A **`· K kapcsolat` szegmens** a `mezo-ms9a` backend-kiegészítéséből
+jön (`useGraphEdgeCount()` → `GET /api/companion/graph/edge/count`, active-endpoint-filtered
+él-összesítő); a hook 404/hiba/pending esetén `count: null`-t ad, SOHA nem 0-t — a hero ilyenkor
+egyszerűen ELHAGYJA a szegmenst, nem hazudik nulla kapcsolatról. A hero szám degraded alatt sincs
+fabrikálva („0 tény"): nagy szám/alcím nélkül marad.
 
 **A jóváhagyás-inbox (fact-jelöltek `FactCandidateCard`, gráf-jelöltek `LifeEventCandidateCard`, mindkettő a négy döntéssel: Igen, jegyezd meg / Pontosítom / Most ne / Nem igaz — a conflict checkbox, a `formatCandidateDate` gráf-dátum és a szerkeszt-aztán-elfogad idióma is) MOZOG el ide, a Rólad oldalra U9b óta (`mezo-zpxv7`, §2.0b: `RoladInbox`/`useRoladInbox`) — ez a bekezdés a §2.0b-ben él, itt nem ismétlődik.** A base view helyette `KnowledgeBaseView`-t renderel: a pointer card fent (`?view=`-től független), alatta a szekció-mozaik.
 - **Szekció-mozaik**: two tiles, Tények (`?view=tenyek`) and Kategóriák (`?view=kategoriak`). Communication preferences live in central settings.
 - **Genuinely üres tudásbázis** (`facts.length === 0`, nem pending/error/degraded, a `?view=tenyek` nézeten) — a kereső/kategória-chip sor és a szakaszok helyett egy őszinte sor: „Még egy tényt sem tanultam rólad — ahogy beszélgettek, itt fognak megjelenni."
 
-**`?view=tenyek` (`FactsView`)** — **Kereső + kategória-chipek** — `.searchfield` + `chip tapchip` sor (`Mind` + `FACT_CATEGORIES`); a szűrés csak a megjelenítést szűkíti, a vödrözés mindig a TELJES listán fut (különben egy aktív szűrő átírná a prompt-státuszokat). A keresés (`matchesQuery`) a humanizált szövegre, a kategória-címkére ÉS az eredet-mondatba fűzött minta-címre (`patternTitle`) illeszkedik. A **„Mind" chip csak a kategóriát törli** — a keresőmezőt érintetlenül hagyja. Nulla találat → „Nincs találat a keresésre." + egy „Szűrők törlése" gomb, ami mindkettőt (keresés + kategória) törli. **Három prompt-státusz szakasz** — „Most ezeket kapja meg a társ · N" (a SZŰRT darabszám, a globális fejléccel ellentétben; a lábjegyzet mondja ki a `PROMPT_TOP_N` + friss-minta kivétel szabályt), majd két `LifecycleSection` (újrahasznosítva a Minták dashboardról): „Bekapcsolva, de most kimarad" **nyitva indul** (`defaultOpen`), „Kikapcsolva" csukva — egy frissen elfogadott tény-jelölt `reinforced: 0`-val a várakozó vödörbe sorolódik, és eltűnne a DOM-ból abban a pillanatban, amikor a felhasználó elfogadja, ha a szakasz csukva indulna. Mindkét `LifecycleSection` megkapja a `forceOpen`-t, amíg aktív szűrő fut, VAGY amíg a `?fact=` deep-link célja épp abban a vödörben ül (lásd lentebb). **`KnowledgeFactRow`** (`components/`) — önmagyarázó kártya: kategória + eredet-chip, humanizált cím, eredet-mondat, visszaigazolás-mondat, és a `Toggle` mellett kimondott státusz-címke.
+**`?view=tenyek` (`FactsView`)** — **Kereső + kategória-chipek** — `.searchfield` + `chip tapchip` sor (`Mind` + `FACT_CATEGORIES`); a szűrés csak a megjelenítést szűkíti, a vödrözés mindig a TELJES listán fut (különben egy aktív szűrő átírná a prompt-státuszokat). A keresés (`matchesQuery`) a humanizált szövegre, a kategória-címkére ÉS az eredet-mondatba fűzött minta-címre (`patternTitle`) illeszkedik. A **„Mind" chip csak a kategóriát törli** — a keresőmezőt érintetlenül hagyja. Nulla találat → „Nincs találat a keresésre." + egy „Szűrők törlése" gomb, ami mindkettőt (keresés + kategória) törli. **Két szakasz, nem három (facts-always óta, mezo-d6ivw.8 — a „várakozó" vödör megszűnt).**
+„Ezeket tudja rólad · N" (a SZŰRT darabszám, a globális fejléccel ellentétben) egy sima `<section>`
+minden bekapcsolt (`active`) tényre, a lábjegyzet őszintén kimondja: „Ami itt be van kapcsolva, azt
+a társ minden beszélgetésben és minden magától küldött üzenetében tudja rólad — a
+legmegerősítettebb áll elöl." — nincs se rangsor-plafon, se friss-minta kivétel, amit meg kellene
+magyarázni, mert mindegyik bekapcsolt tény megy. Utána egyetlen `LifecycleSection`: „Kikapcsolva"
+(csukva indul, `forceOpen` amíg aktív szűrő fut VAGY amíg a `?fact=` deep-link célja épp ott ül).
+A korábbi „Bekapcsolva, de most kimarad" (a `reinforced: 0`-val frissen elfogadott, rangsor alá eső
+tények várakozó vödre) eltűnt — nincs többé olyan bekapcsolt tény, ami kimaradna. **`KnowledgeFactRow`**
+(`components/`) — önmagyarázó kártya: kategória + eredet-chip, humanizált cím, eredet-mondat,
+visszaigazolás-mondat, és a `Toggle` mellett kimondott státusz-címke.
 
 **`?fact=<id>` deep link (Task 10, `mezo-ms9a` — spec §4.1)** — a `WeekDiscoveries` már régóta gyárt ilyen linket, de eddig senki nem fogyasztotta (a `feedMock.ts`-beli halott `/insights/knowledge` deeplinkjeit is `/mezo/knowledge`-ra javította ez a slice). Az oldal most fogyasztja: `?fact=` jelenlétekor a `?view=` paramot felülírva mindig a Tények nézet nyílik — a `highlightFactId` a mountkor `useState`-be rögzített id, hogy a kiemelés a param eltűnése UTÁN is éljen — a tény-sor a megfelelő (akár csukva induló) vödörben `forceOpen`-nel válik láthatóvá és vizuálisan kiemelődik (`KnowledgeFactRow`'s `highlight` prop). A `?fact` paramot egy mountkor egyszer futó `useEffect` törli az URL-ből `replace:true`-val, más paraméterek (pl. egy jövőbeli `?view=`) érintetlenül maradnak. Ismeretlen id → sima Tények nézet, kiemelés nélkül, összeomlás nélkül.
 
@@ -499,7 +535,7 @@ lifecycle rows never render raw `r`/`p`/`n`, only the human
 `findingSentence`/`confidenceMeta`/`verdictSentence` translations that already existed
 (`logic/findings.ts`/`logic/verdicts.ts`, unchanged, still exercised by the dashboard).
 
-**Frozen day counts (`mezo-bsb6h`, 2026-09-25).** On a judged (`verdict: 'frozen'`) pair, `pair.n`/`alignedDays` are the aligned days AT THE DECISION, while the hero ring and the days card count the CURRENT window's plotted points (`days.length`). When they differ, `PatternDetailHero` names both — „A döntésedkor N közös nap …” + „Azóta az ablak továbbcsúszott: a grafikon most M napot mutat.” (`frozenDaysDiffer`) — and the „Hogyan számoltuk?” labels read „… a döntésedkor”. Never two bare, different day counts on one page (üveg bible rule 51).
+**Frozen day counts (`mezo-bsb6h`, 2026-09-25; superseded by `mezo-rstt7`'s rewrite — the rule survives, the component doesn't).** On a judged (`verdict: 'frozen'`) pair, `pair.n`/`alignedDays` are the aligned days AT THE DECISION, while the chart and the reading count the CURRENT window's plotted points (`days.length` — see „Where „most" and „amikor megerősítetted" come from" in §2.1b above). The dual-count naming this note used to describe lived in the now-deleted `PatternDetailHero`; today the same discipline is carried by `Diagnostics`' „Párosított nap a döntésedkor” label plus the „Hogyan számoltuk?” disclosure's decision-time numbers — never two bare, different day counts presented as the same thing on one page (üveg bible rule 51).
 
 ### 2.9 Memória (`pages/MemoryPage.tsx`) — read-only memory-layer observatory since `mezo-al1i`
 At `/mezo/memoria`. **Its door is the hub's `Memória` tile** (§2.0 item 7 — a full-width L0→L3 band until `mezo-e3zg`), which mirrors on the hub exactly the four-layer stack this page unfolds. Its four page-local segments and every panel below are unchanged by Design 2.0; only the cross-links moved onto `/mezo`.
@@ -1272,7 +1308,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 
 ## 9. Decisions, gotchas & deferred
 
-- **A minta SOSEM a nyilas belső párcímével vagy a gépi statisztikai mondattal szól a felhasználóhoz (mezo-0469 szabálya, 2026-09-26-i visszaesés után újra kimondva).** A katalógus `title`-je („Esti lezárás ↔ rákövetkező alvásminőség”) a motor belső neve, a tárolt statisztikai `Pattern.mechanism` („Gyenge pozitív együttjárás a(z) … között …”, `PatternDetectionService.mechanism()`) a Pearson-futás leírása. Minden felhasználói felület a `logic/patternCopy.ts` két függvényén át beszél: `patternHeadline(title, pair)` → a pár kérdése (`questionHu`, pl. „Jobban alszol, ha este lezárod a napot?”; pár nélkül a nyilas címből kérdő mondat), `patternPlainLine(mechanism, pair)` → a lelet mondata (`findingSentence`), különben a pár miértje (`mechanismHu`); az emberi (reflexiós) szöveg változatlanul megy. Használói: a fal és a szobák (`teamFeed.patternPost`/`observationPost`, `teamEdition.editionPost` régi kiadásai), a laborfüzet és a katalógus részlet-hero (`HypothesisStateCard`, `PatternDetailHero` — a „Hipotézis: {cím}?” sor megszűnt, helyette a miért), a mentett-minta fallback (`PatternArtifactDetail`). A `pairLine` nyíl helyett „Figyelem: A és másnapi B”; a teszt-terv csempék között nincs nyíl, a sáv köznyelvi („másnap · nézem a hatást”, „8 nap · kell a döntéshez”, „60 nap · ennyit nézek vissza”, érték-fajta: „megtörtént-e aznap / hánykor volt / mennyi volt aznap”). Backend-oldalon az esti kiadás jelöltje (`EditionCandidateCollector`) statisztikai sornál és gyűlő párnál a pár kérdését/miértjét viszi címnek/rekord-szövegnek. **Új felület, ami mintát mutat → ezeken a függvényeken át, soha nem `pattern.title`/`pattern.mechanism`/`pair.title` nyersen.**
+- **A minta SOSEM a nyilas belső párcímével vagy a gépi statisztikai mondattal szól a felhasználóhoz (mezo-0469 szabálya, 2026-09-26-i visszaesés után újra kimondva).** A katalógus `title`-je („Esti lezárás ↔ rákövetkező alvásminőség”) a motor belső neve, a tárolt statisztikai `Pattern.mechanism` („Gyenge pozitív együttjárás a(z) … között …”, `PatternDetectionService.mechanism()`) a Pearson-futás leírása. Minden felhasználói felület a `logic/patternCopy.ts` két függvényén át beszél: `patternHeadline(title, pair)` → a pár kérdése (`questionHu`, pl. „Jobban alszol, ha este lezárod a napot?”; pár nélkül a nyilas címből kérdő mondat), `patternPlainLine(mechanism, pair)` → a lelet mondata (`findingSentence`), különben a pár miértje (`mechanismHu`); az emberi (reflexiós) szöveg változatlanul megy. Használói: a fal és a szobák (`teamFeed.patternPost`/`observationPost`, `teamEdition.editionPost` régi kiadásai), a részlet-hero (`PatternAnswerHero`, `mezo-rstt7` óta minden sor — katalógus és laborfüzet egyaránt — ugyanazt az egy hőst kapja; a korábbi `HypothesisStateCard`/`PatternDetailHero` külön hős-párost törölte a rewrite, a „Hipotézis: {cím}?” sor változatlanul megszűnt, helyette a miért), a mentett-minta fallback (`PatternArtifactDetail`). A `pairLine` nyíl helyett „Figyelem: A és másnapi B”; a teszt-terv csempék között nincs nyíl, a sáv köznyelvi („másnap · nézem a hatást”, „8 nap · kell a döntéshez”, „60 nap · ennyit nézek vissza”, érték-fajta: „megtörtént-e aznap / hánykor volt / mennyi volt aznap”). Backend-oldalon az esti kiadás jelöltje (`EditionCandidateCollector`) statisztikai sornál és gyűlő párnál a pár kérdését/miértjét viszi címnek/rekord-szövegnek. **Új felület, ami mintát mutat → ezeken a függvényeken át, soha nem `pattern.title`/`pattern.mechanism`/`pair.title` nyersen.**
 - **Mock-only, intentionally** — Insights is the Phase-3 brain surface; the FE↔data boundary (`hooks.ts`) is pre-built for a mechanical real-mode swap, matching biometrics/Train.
 - **Two roadmap stages, do not conflate:** (a) Phase-2 Insights work is now **D′** (deterministic Weekly + honest surface, `mezo-t16y.1` — the old seed-only Slice D was dropped as superseded on 2026-07-04); (b) Phase-3 = the actual AI (Spring AI/pgvector/RAG) — ✅ shipped (`mezo-fnnq`, see `companion.md`).
 - **The last unpersisted "feedback" affordance is gone (W4.1, `mezo-b3pp.15` — closes `mezo-kr9v`).** Knowledge Toggle + candidate decisions + pattern decisions went real at V1.2/V3.1; the memoir's Like/Love/Save/Dismiss row was the survivor — mock-only, unpersisted, and (after W2 hid it in live mode) an affordance the real app never offered at all. It is **deleted**, replaced by the real `FeedbackChips` row that renders in BOTH modes and writes to `message_feedback` (§2.3/§5.7). Every validation/feedback loop this doc used to list as "to wire to the backend" is now wired.
@@ -1344,10 +1380,12 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `components/MotorStateHero.tsx` — **`mezo-tk88.4`**, the dashboard hero (§2.1 step 1): question count + confirmed/decide prose, the six `BUCKET_ORDER` tiles, the domain-chip filter row (`onToggleDomain`, the „Mind" chip's same-batch multi-toggle) — pure props, `bucketize()`'s counts computed by the caller
 - `components/PatternDecisionCard.tsx` — **`mezo-tk88.4`**, the dashboard decision-inbox card (§2.1 step 2): category/confidence chips, the deterministic `findingSentence` block (never raw `r/p/n`), optional decision explainer, Confirm/Monitor/Reject and the detail link. Since `mezo-0469` the pair-backed detail page no longer reuses this inbox-shaped card, and since `mezo-me75u.13` neither does the pairless fallback.
 - `components/LifecycleSection.tsx` — **`mezo-tk88.4`**, dashboard-only `LifecycleSection` (collapsible title+count card) + `LifecycleMiniRow` (title + one-line sub + detail link) for the five buckets and „Adat-egészség”. The detail page's former mismatched diagnostics reuse ended in `mezo-0469`.
-- `components/PatternDetailHero.tsx` (+ test) — **`mezo-0469`**, the detail state table and deterministic question/conclusion split; it is the sole owner of group-progress rendering and detail-page CTA eligibility.
-- `components/PatternEvidenceChart.tsx` (+ test) — **`mezo-0469`**, value-kind-adaptive binary/numeric SVG evidence chart with real ticks, conditional medians/trend and accessible latest-point ring; replaces the deleted `PatternScatter`.
-- `components/PatternStrengthChart.tsx` — **`mezo-tk88.5`** (Task 12), the strength-over-time hand-drawn SVG (§2.1b step 2): |r| per snapshot off `strengthSeries`, dashed „érezhető"/„határozott" guide lines, the confirm point picked out in accent; `null` under 2 points (the page renders the text fallback instead)
-- **`components/PatternScatter.tsx` is DELETED (`mezo-0469`)** — its key-agnostic chart made binary groups visually misleading; `PatternEvidenceChart` is the replacement.
+- **`components/{HypothesisStateCard,PatternDetailHero,TestPlanTiles,PatternEvidenceChart,PatternStrengthChart}.tsx` (+ tests) are DELETED (`mezo-rstt7`, 2026-09-27)** — the catalog-hero/laborfüzet-hero split, the plan-tile pair, the value-kind-adaptive evidence chart and the strength-over-time chart are all superseded by the one-reading rewrite (§2.1b): `PatternAnswerHero` + `PatternZoneChart` + `PatternRuleCard` below now cover every row, plan or no plan. `PatternScatter.tsx` had already been deleted with `PatternEvidenceChart`'s introduction (`mezo-0469`).
+- `logic/patternReading.ts` (+ test) — **`mezo-rstt7`**, the ONE pure reading module (§2.1b): `pearson`/`lean`/`classify` → `readPattern` (state), `answerLook` (word/tone/icon), `decisionPlan` (buttons/note/settled/revoke), `saySentence`/`ruleSentence`/`lagWord` (deterministic prose), `patternZones`/`niceTicks`/`mean`/`zoneValue` (chart math) — every word and color on the page traces back to this file.
+- `components/PatternAnswerHero.tsx` (+ test) — **`mezo-rstt7`**, the page's one frameless answer hero (§2.1b step 1): domain-chip pair row, question, the big answer word/icon/tone, `saySentence`, the pre-answer Mezo quote, `PatternLeanMeter`/`PatternDayPips`, and the `decisionPlan`-driven decision block (buttons / settled line / revoke link). Exports `Bold` (the `**…**` → `<b>` inline renderer `PatternRuleCard` reuses).
+- `components/PatternLeanMeter.tsx` (+ test) — **`mezo-rstt7`**, the „merre húz” band-and-dot meter (`PatternLeanMeter`, `now`/`then` ghost dot) and the day-tally pips (`PatternDayPips`, `count`/`of`) — both pure props over a `Lean`.
+- `components/PatternZoneChart.tsx` (+ test) — **`mezo-rstt7`**, the „Mit mutat az adat” two-zone SVG (§2.1b step 2): binary/continuous zone split, conditional zone-average labels, tappable/keyboard-operable day dots with an OWN `useState` selection (never page state) and a small tooltip, `Napok listája ›` details table. Replaces `PatternEvidenceChart`.
+- `components/PatternRuleCard.tsx` (+ test) — **`mezo-rstt7`**, „A szabály” flat card (§2.1b step 3): the pre-registered `ruleSentence` plus the day-progress/lag/window chip row. Replaces `TestPlanTiles`.
 - `logic/metricFormat.ts` — **`mezo-fy97`**, human-readable rendering of the engine's raw wire doubles: `formatMetricValue` (hour-kind → `HH:mm`, binary → `igen`/`nem`, else one decimal; key sets mirror the backend `MetricKey` extractors), `axisEndLabels` (scatter x-ends), `formatR`/`formatP` (diagnostics precision) — pure, unit-tested in `metricFormat.test.ts`
 - `components/PatternJournal.tsx` — **`mezo-tk88.5`**, the history timeline (§2.1b step 4): a left rail + one tone-colored dot per `journalEntries()` row, entry text through `SafeMarkdown` (bold-only inline renderer), a `→ a Tudástárban` link on a promoted `confirmed` entry
 - `components/PatternImpactCard.tsx` — **`mezo-tk88.5`**, „Mit kezd ezzel az app" (§2.1b step 5): the fact/predictions/experiments/challenges rows (only when `pattern.status === 'confirmed'`, each row omitted if its ref list is empty) or the single future-tense fallback row otherwise

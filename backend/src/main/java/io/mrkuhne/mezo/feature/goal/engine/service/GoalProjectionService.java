@@ -440,9 +440,9 @@ public class GoalProjectionService {
     private String rationale(WeekLoad ld, BigDecimal runEat) {
         if (ld.runActive()) {
             return "Futóblokk aktív → +" + runEat.stripTrailingZeros().toPlainString()
-                + " kcal/nap MET×kg×óra alapon (gym + röplabda a heti ütemtervből).";
+                + " kcal/nap becsült mozgás alapján (gym + röplabda a heti ütemtervből).";
         }
-        return "Nincs futóblokk → a TDEE a NEAT-alap + a heti ütemterv (gym + röplabda) MET×kg×óra alapon.";
+        return "Nincs futóblokk → a napi keret az Alapod + a heti edzésterved (gym + röplabda) becsült mozgása.";
     }
 
     private static BigDecimal scaled(BigDecimal v) {

@@ -127,6 +127,12 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         assertThat(segments.get(0).dailyEnergyBalanceKcal()).isNegative();
         assertThat(runOn.activeSystems()).contains("run");
         assertThat(runOff.activeSystems()).doesNotContain("run");
+
+        // the net-activity model rewrite (mezo-32m82) dropped the old MET×kg×óra wording from the
+        // user-facing rationale (mezo-zz91i follow-up) — both the run-active and run-off phrasing
+        // now speak of "becsült mozgás" instead.
+        assertThat(runOn.rationale()).contains("becsült mozgás").doesNotContain("MET×kg×óra");
+        assertThat(runOff.rationale()).contains("becsült mozgás").doesNotContain("MET×kg×óra");
     }
 
     // ── Maintain: flat target ≈ TDEE, rate ≈ 0 ──────────────────────────────────────────────────

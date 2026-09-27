@@ -1073,6 +1073,130 @@ spec §5.x close rule, `character.yml` reply summary, the port/Noop javadocs; ad
 - FE: both modes, `CI=true`; component tests for typing row, chip + undo, offer buttons;
   layout spec for the thread at 320px; runtime verify dark + reduced motion.
 
+## Facts-always delta — minden bekapcsolt tény, minden csatornán (2026-09-27, owner-approved direction, mezo-d6ivw.8)
+
+### Owner decisions (2026-09-27)
+
+- **Every enabled fact is always in the companion's head.** The top-10 selection goes
+  away: `include_in_prompt` becomes the ONLY filter, on every injection channel (chat
+  AND proactive/generators). The user's toggle is the contract; "bekapcsolva, de most
+  kimarad" must cease to exist as a state.
+- **The conversation-first chat path injects the facts block automatically** — the
+  block is passively available; the model need not use or mention it ("mindig benne
+  van, de nem kell mindig használnia").
+- **High safety ceiling (owner set 200, 2026-09-27), not a working limit**: a cap exists only as a never-normally-hit
+  brake; when it is ever approached, the answer is consolidation (merge/compress facts),
+  not rank-and-drop. Consolidation itself is out of scope here (S6+).
+
+### Design
+
+**Backend — injection**
+
+- `ChatService.conversationContext` (`ChatService.java:503-508`) appends
+  `knowledgeFactService.renderPromptBlock(userId)` as a sibling block, exactly as the
+  legacy `turnContext` does. This single edit covers sync `sendMessage`, SSE
+  `prepareTurn`, and `openingTurn` (all route through `routeAndAssemble` /
+  `conversationContext`). NOT inside `PersonalContextAssembler` — that would leak facts
+  into the settings preview endpoint and break its "preview = prompt" contract.
+- The block lives in the **volatile half** (second system message after history), never
+  in the cacheable stable voice prompt (mezo-ozri.5 discipline).
+- The legacy path, CHAT gear behavior, and `renderNewPatternFactsBlock` (ÚJ FELISMERÉSEK)
+  are untouched: with all facts injected, the fresh-pattern inclusion guarantee is
+  subsumed on the conversation path; the legacy highlight channel stays as is.
+- `get_personal_context(scope=facts)` tool description gains a note that the confirmed
+  facts are already present in context (avoids a wasted planner read); the tool itself
+  stays (it is the path for `scope=all` and legacy-off setups).
+
+**Backend — limit semantics**
+
+- `mezo.companion.facts.top-n: 10` (1..50) is replaced by
+  `mezo.companion.facts.prompt-cap: 200` (1..500) in `CompanionProperties.Facts`.
+  `topFactsForPrompt` keeps its ordering (reinforcement DESC → citation tie-break →
+  createdAt DESC) and applies the cap as a safety brake only; when the cap trims
+  anything, log a WARN naming the count (the future S6 hub can surface it).
+- The rename deliberately breaks any stale `top-n` override at startup (fail-fast via
+  `@ConfigurationProperties` binding) rather than silently keeping 10.
+- Fan-out is intentional: all `renderPromptBlock` consumers (8+ proactive generators,
+  `FeedContextAssembler`, `HypothesisPipelineService`, the tool) widen to "all enabled"
+  — owner explicitly wants one memory, same everywhere. `CharacterHistoryReads`' own
+  top-40/300-char cap is a different, deliberate budget and stays.
+
+**Backend — passive-use preamble**
+
+- `FACTS_HEADER` gains one instruction line (Claude-memory pattern): use naturally when
+  relevant; never enumerate, never cite the memory ("Ezeket tudod róla korábbról.
+  Használd természetesen, amikor releváns — ne sorold fel, és ne hivatkozz arra, hogy
+  'megjegyezted'."). Shared across channels on purpose.
+
+**Frontend — Tények view stops lying**
+
+- `bucketFacts` collapses to two buckets: enabled (all injected) and disabled.
+  The "Bekapcsolva, de most kimarad" section is deleted. `PROMPT_TOP_N` mirror constant
+  is removed (`knowledge.ts:9`); `PATTERN_ACK_DAYS` stays (legacy highlight channel).
+- Hero + section copy (`FactsView.tsx:107`, `KnowledgeListPage` hero) and the FAQ
+  (`HowItWorksView.tsx:21`) are rewritten: "ami be van kapcsolva, azt a társ minden
+  beszélgetésben és üzenetben tudja rólad". `?fact=` deep link and highlight unchanged.
+
+**ADR/doc updates**
+
+- ADR 0043 gets an amendment note: confirmed personal facts join date/preferences as
+  initial background (they are identity, not data lookup); data snapshots/memory search
+  remain tool-only. `companion.md` §facts injection (:924, :1943-1945, :2319, config
+  table :6239) and `insights.md` §2.4 updated to the new reality.
+
+### Prior art (researcher, 2026-09-27)
+
+- **Adopted — ChatGPT "Model Set Context"**: production pattern for confirmed facts is
+  inject-all-every-turn as a flat one-line list, storage-capped rather than
+  injection-ranked ([embracethered deep dive](https://embracethered.com/blog/posts/2025/chatgpt-how-does-chat-history-memory-preferences-work/)).
+- **Adopted — Claude memory passive phrasing**: preamble instructing natural, silent
+  use; never enumerate or attribute to memory ([prompt archive](https://github.com/jeremylongshore/prompts-intent-solutions/blob/main/claude-memory-system-prompt.md)).
+- **Adopted (as future valve) — Letta/MemGPT budgeted core blocks**: when the block
+  outgrows its budget, consolidate/rewrite, don't rank-and-drop ([Letta blog](https://www.letta.com/blog/agent-memory/)). Here: the prompt-cap WARN is the tripwire; consolidation is S6+.
+- **Considered, mitigated — Willison's context-contamination critique**: facts are
+  user-confirmed, user-visible, per-fact toggleable, so the involuntary-dossier risk is
+  addressed; keep the block clearly delimited ([post](https://simonwillison.net/2025/May/21/chatgpt-new-memory/)).
+- **Grounding — Lost in the Middle (Liu et al., TACL 2024)**: 30–80 terse facts
+  (~0.5–1.5k tokens) are well below measurable degradation; keep the block contiguous
+  and near an edge of the context ([arXiv 2307.03172](https://arxiv.org/abs/2307.03172)).
+- **Rejected for now**: per-line save-date stamps (ChatGPT does this; adds tokens, no
+  owner need yet), retrieval-based selection for chat (NEW memory mode stays SHADOW).
+
+### Codebase terrain (investigator, 2026-09-27)
+
+- Injection point: `ChatService.java:484-508` (`routeAndAssemble` → `conversationContext`);
+  volatile-half delivery `SpringAiCompanionLlm.java:405-423`; planner/answerer both see
+  the context (`ConversationTurnService.java:73-125`, `TurnPlanner.java:92`).
+- Block renderer: `KnowledgeFactService.java:45,161-204` (`FACTS_HEADER`,
+  `renderPromptBlock`, `topFactsForPrompt`); config `CompanionProperties.java:174-180`,
+  `application.yml:911-914`.
+- FE mirror: `knowledge.ts:9`, `factCopy.ts:125`, `FactsView.tsx:107`,
+  `HowItWorksView.tsx:21`, `KnowledgeListPage.tsx:130`.
+- Test surface: `PersonalContextConversationIT` (+ FakeCompanionLlm echoes system halves
+  → cheap block-presence IT), `KnowledgeFactServiceIT:163-204` (top-10 cutoff fixture →
+  becomes cap test), `CompanionPropertiesIT:59` (asserts 10 → new cap),
+  `ConversationFirstIT` family, FE `factCopy.test.ts`.
+- **Traps**: context re-sent every planner round → the block is paid ~(rounds+2)× per
+  turn (fine at this scale, noted); no input-side token budget exists — the prompt-cap
+  is the only brake; ADR 0043 wording must be amended, not silently violated;
+  contract-drift gate only if an API field is added (none planned — FE no longer needs
+  the number once buckets collapse).
+
+### Out of scope (facts-always)
+
+- Fact consolidation/merge when approaching the cap (S6+, with the hub).
+- NEW memory-mode retrieval for chat; per-conversation memory off-switch.
+- Editing/deleting facts from the Tények view, per-fact provenance detail rows,
+  pagination — S6 hub scope (owner flagged them 2026-09-27; carried on mezo-d6ivw.6).
+
+### Testing (facts-always)
+
+- IT: conversation path context contains `MEGERŐSÍTETT TÉNYEK` with an 11th+ fact
+  present (proves no top-10), and honors `include_in_prompt=false`; opening turn too.
+- IT: cap trim logs WARN and keeps strongest-first ordering.
+- Existing fixture updates: `KnowledgeFactServiceIT` cutoff, `CompanionPropertiesIT`.
+- FE: bucketing tests collapse to enabled/disabled; copy snapshot updates; both modes.
+
 ## Slice lessons
 
 (numbered; only what a later slice would otherwise pay for again)
@@ -1190,3 +1314,11 @@ spec §5.x close rule, `character.yml` reply summary, the port/Noop javadocs; ad
 29. **(S5)** The apropó matcher reads only the two mention projections — done-workout
     days and text-signal topic days (the other halves of `EffectLinkService.subjects`)
     do NOT fire same-day apropók; deliberate scope, documented in mezo-8eg96.
+30. **(facts-always)** The FE fact-bucket model leaks beyond the insights folder:
+    `KnowledgeBaseView` types the buckets structurally, and three test files
+    (`KnowledgeFactRow`/`KnowledgeListPage`/`MezoHubPage`) hard-code counts derived
+    from the 15-fact mock seed (14 active / 1 inactive) — a bucketing change must
+    re-derive those counts from `data/insights/knowledge.ts` or the suite fails on
+    numbers, not logic. Session-tooling trap paid for too: the Maven wrapper lives at
+    `backend/mvnw` (repo root has none), and `cmd | tail` swallows a launch failure —
+    `set -o pipefail` before piping gate commands.

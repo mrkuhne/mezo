@@ -54,7 +54,7 @@ not the ceiling; genuinely better unifying moves go to the owner as options.
      daily messages, the csapatfal evening edition (mezo-a9bo7 Act II).
 4. For the experience surface: the **/csapatfal** skill + its spec and
    `docs/design_2.0/prototypes/uveg-uzenofal.html` (the approved world, with the
-   Üzenőfal · A csapat · Rólad · Emlékek dock); the **/uvegesites** skill §1 for prototype
+   Üzenőfal · A csapat · Rólad · Emlékek dock); the prototype recipe `docs/design_2.0/prototype-recipe.md` for prototype
    rules; the üveg bible for material. Coordinate with mezo-me75u U8/U9 and mezo-a9bo7 —
    **never build the same screen twice.**
 5. `docs/features/{companion,insights,me,today,proactive,character}.md` — parity sources.
@@ -86,7 +86,7 @@ not the ceiling; genuinely better unifying moves go to the owner as options.
 ### 2. Plan (after the spec OK)
 - Invoke **superpowers:writing-plans** for the slice; save under `docs/superpowers/plans/`.
 - Where the slice has UI: a clickable prototype **before implementation**, per the
-  /uvegesites Procedure §1 verbatim (HTTP serve, cache-bust `?v=N`, "Új ikonok" sheet,
+  the prototype recipe (`docs/design_2.0/prototype-recipe.md`) verbatim (HTTP serve, cache-bust `?v=N`, "Új ikonok" sheet,
   §3.4 ranking, chrome from `fuel-uveg.html` untouched); csapatfal-world screens extend
   `uveg-uzenofal.html` per /csapatfal. **Owner OK on the prototype before code.**
 

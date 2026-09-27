@@ -2,7 +2,7 @@
 
 - **Date:** 2026-07-28 · **bd:** `mezo-9bbc` (this feature) · builds on `mezo-lruy` (stacked day rows + meta pills, shipped in PR #97) · **Feature doc:** [train.md](../../features/train.md)
 - **Source:** owner (Daniel) request — the Mai view still feels "össze vannak dobálva", needs too much downward scrolling; the cards should carry the modality's colour, and a logged session should be signalled bigger and more clearly. He explicitly asked which day-navigation option is better: side-scrollable days, day tabs, or today-only + a separate weekly view.
-- **Decided with Daniel in-session** (browser mockup round, `docs/design/train-mai-mockup-v1.html`, 2026-07-28):
+- **Decided with Daniel in-session** (browser mockup round, `docs/archive/design-v1/train-mai-mockup-v1.html`, 2026-07-28):
   - **Card language = K3** — modality wash gradient + 44px icon shield; logged state swaps the icon to a check and replaces the CTA with a `donebar`.
   - **Palette = extended** — `cross` gets amber-deep, `trx` gets lav-deep (today all three sports share `--tag-sport`).
   - **Day navigation = A + C together** — a horizontal `DayStrip` on Mai for same-page day switching **and** a separate detailed `/train/week` („Heti”) page that takes over the seven expanded `WeeklyDayRow` cards + `LoadTiles`.
@@ -138,7 +138,7 @@ Retroactive logging threads a `date` through the sheets: `SportLogSheet` and `Ru
 
 - `docs/features/train.md` — rewrite the `Mai` composition paragraph (day strip + selected-day semantics + non-today matrix), add a `Heti` subsection, update the file map and the §"gotchas" entry about `WeeklyDayRow`.
 - `docs/features/_platform-design-system.md` — the two new token pairs, `.daystrip`/`.daychip`, `.todaycard-icon`, `.donebar`.
-- Mockup kept at `docs/design/train-mai-mockup-v1.html` (the decision record for K1/K2/K3 + A/B/C).
+- Mockup kept at `docs/archive/design-v1/train-mai-mockup-v1.html` (the decision record for K1/K2/K3 + A/B/C).
 
 ## 10. Risks & open ends
 

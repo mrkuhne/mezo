@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 19 + TypeScript, Vite, Vitest + @testing-library/react, Tailwind v4 + the hand-written Napív vocabulary in `frontend/src/styles/prototype.css`.
 
-**Spec:** [`docs/superpowers/specs/2026-07-28-fuel-mai-guided-redesign-design.md`](../specs/2026-07-28-fuel-mai-guided-redesign-design.md) · **bd issue:** `mezo-rrtj` · **Mockup:** [`docs/design/fuel-mai-hybrid-v1.html`](../../design/fuel-mai-hybrid-v1.html)
+**Spec:** [`docs/superpowers/specs/2026-07-28-fuel-mai-guided-redesign-design.md`](../specs/2026-07-28-fuel-mai-guided-redesign-design.md) · **bd issue:** `mezo-rrtj` · **Mockup:** [`docs/archive/design-v1/fuel-mai-hybrid-v1.html`](../../archive/design-v1/fuel-mai-hybrid-v1.html)
 
 ## Global Constraints
 
@@ -610,7 +610,7 @@ Expected: FAIL — cannot resolve the component.
 - [ ] **Step 3: Append the CSS families to `prototype.css`**
 
 Append at the end of `frontend/src/styles/prototype.css`. Copy the rules verbatim from
-`docs/design/fuel-mai-hybrid-v1.html` (the `<style>` block), with these adaptations:
+`docs/archive/design-v1/fuel-mai-hybrid-v1.html` (the `<style>` block), with these adaptations:
 mockup-local tokens are already global here, `.nowcard`/`.daystrip`/`.zcard` keep their
 `margin: 0 20px` → change to **`margin: 0 24px`** to match the page's existing 24px gutter
 (`.pghead-np`, `.slot`), and every animation must sit behind the reduced-motion guard.
@@ -618,7 +618,7 @@ mockup-local tokens are already global here, `.nowcard`/`.daystrip`/`.zcard` kee
 ```css
 /* ===== Napív Fuel Mai — guided recomposition (mezo-rrtj) =====
    Hero now-window card, day-status card with the energy/macro breakdown, and the
-   napszak zone cards. Geometry mirrors docs/design/fuel-mai-hybrid-v1.html. */
+   napszak zone cards. Geometry mirrors docs/archive/design-v1/fuel-mai-hybrid-v1.html. */
 
 /* Reta micro-strip — replaces the full RetaPhaseBar block on this page */
 .retamicro { display: flex; gap: 3px; margin: 9px 24px 12px; }

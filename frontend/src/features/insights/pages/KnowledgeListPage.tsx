@@ -6,7 +6,6 @@ import {
   useKnowledge, useKnowledgeActions, useLifeEventCandidates,
   useKnowledgeGraphNodes, useGraphEdgeCount,
 } from '@/data/hooks'
-import { PROMPT_TOP_N } from '@/data/insights/knowledge'
 import { GRAPH_KIND_GROUPS, PROFILE_SOURCE_KIND } from '@/data/insights/graph'
 import { FactsView } from '@/features/insights/components/FactsView'
 import { KnowledgeBaseView } from '@/features/insights/components/KnowledgeBaseView'
@@ -125,9 +124,7 @@ export function KnowledgeListPage() {
   // jelöltek gráf-eredetűek, függetlenek a társ-kapcsolótól).
   const pendingCount = (degraded ? 0 : candidates.length) + lifeEvents.length
 
-  // A vödrözés a TELJES listán fut (a „10 megy a chatbe" a valóságot mondja), a szűrés csak
-  // a megjelenítést szűkíti — különben egy aktív szűrő átírná a prompt-státuszokat.
-  const buckets = useMemo(() => bucketFacts(facts, PROMPT_TOP_N), [facts])
+  const buckets = useMemo(() => bucketFacts(facts), [facts])
   // Prototype hero big number (#tudasBig) spins up. The hook stays ABOVE every early return.
   const heroCount = useCountUp(facts.length)
 

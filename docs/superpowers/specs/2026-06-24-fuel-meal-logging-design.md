@@ -44,7 +44,7 @@ Back the **100%-mock** meal-logging (Mai/Today) Fuel surface with a real Spring 
 
 ## 3. UI/UX (approved)
 
-Hybrid: **wire the existing read surfaces; build one new capture sheet.** Mockup: `docs/design/meal-logging-sheet.html`.
+Hybrid: **wire the existing read surfaces; build one new capture sheet.** Mockup: `docs/archive/design-v1/meal-logging-sheet.html`.
 
 ### 3.1 New: `LogMealSheet` (modal, chamfer "Deep Current")
 - Opens from: Recipe-detail **"+ Mai étkezéshez"** (pre-filled with that recipe, 1 adag), Kamra-detail **"+ Logolás"** (pre-filled with that pantry item), and a Mai **"＋ Log"** entry (empty).
@@ -178,7 +178,7 @@ ITs (`AbstractIntegrationTest`/`ApiIntegrationTest`, Testcontainers/`mezo_test`)
 ---
 
 ## 9. Mockup provenance
-The approved capture-sheet design is exported to `docs/design/meal-logging-sheet.html` (log-meal sheet — slot+time, recipe/pantry items with `MacroCells`, live total + daily-context bar; the 2-tab Receptek/Kamra picker). Visual source of truth for the new sheet; the wired read surfaces keep their current design.
+The approved capture-sheet design is exported to `docs/archive/design-v1/meal-logging-sheet.html` (log-meal sheet — slot+time, recipe/pantry items with `MacroCells`, live total + daily-context bar; the 2-tab Receptek/Kamra picker). Visual source of truth for the new sheet; the wired read surfaces keep their current design.
 
 ---
 

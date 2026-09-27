@@ -43,12 +43,13 @@ describe('KnowledgeListPage (mock mode)', () => {
 
   test('a hero a tényszámot és a ténylegesen promptba kerülő darabszámot mutatja', async () => {
     renderPage()
-    // 15 seed, ebből 14 bekapcsolt → a top 10 megy a chatbe. Mozaik re-face (mezo-d20.5.5):
-    // a fejléc a prototípus #page-tudas hero-ja lett — nagy szám + "tény rólad · N megy a chatbe".
+    // 15 seed, ebből 14 bekapcsolt → facts-always (mezo-d6ivw.8): MIND a 14 megy a chatbe.
+    // Mozaik re-face (mezo-d20.5.5): a fejléc a prototípus #page-tudas hero-ja lett — nagy szám
+    // + "tény rólad · N megy a chatbe".
     expect(screen.getByText('Tudástár')).toBeInTheDocument()
     await waitFor(() => expect(document.querySelector('.tud9-bignum')?.textContent).toBe('15'))
     // mock módban az edgeCount sosem null → a „kapcsolat" szegmens is látszik (e teszt)
-    expect(screen.getByText(/tény rólad · 10 megy a chatbe · \d+ kapcsolat/)).toBeInTheDocument()
+    expect(screen.getByText(/tény rólad · 14 megy a chatbe · \d+ kapcsolat/)).toBeInTheDocument()
   })
 
   // ---- (a)/(b)/(c)/(d)/(f) — mezo-ms9a shell: ?view= nézetváltás ----------------------------
@@ -64,7 +65,7 @@ describe('KnowledgeListPage (mock mode)', () => {
   test('(b) ?view=tenyek a keresőt és a vödröket mutatja, a csempék eltűnnek', () => {
     renderPage('/?view=tenyek')
     expect(screen.getByLabelText('Keresés a tények között')).toBeInTheDocument()
-    expect(screen.getByText(/Most ezeket kapja meg a társ/)).toBeInTheDocument()
+    expect(screen.getByText(/Ezeket tudja rólad/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Tények' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Kategóriák' })).not.toBeInTheDocument()
   })
@@ -254,7 +255,7 @@ describe('KnowledgeListPage (mock mode)', () => {
     expect(screen.getByText('Mi az a tény?')).toBeInTheDocument()
     expect(screen.getByText('Mit csinál a kapcsoló?')).toBeInTheDocument()
     expect(screen.getByText('Mit jelent a visszaigazolás?')).toBeInTheDocument()
-    expect(screen.getByText('Miért marad ki néhány?')).toBeInTheDocument()
+    expect(screen.getByText('Mindet tudja egyszerre?')).toBeInTheDocument()
     expect(screen.getByText('Hol döntök a javaslatokról?')).toBeInTheDocument()
     expect(screen.getByText('Mik a kategóriák?')).toBeInTheDocument()
     expect(screen.getByText(/Ugyanennek a tudásnak a térképe/)).toBeInTheDocument()
@@ -271,7 +272,7 @@ describe('KnowledgeListPage (mock mode)', () => {
     expect(trainRow!.closest('.tf-tlist')).not.toBeNull()
     // étkezés → étkezés-kategória
     expect(screen.getByText('Caffeine cutoff: 14:00 hard limit').closest('[data-fact-row]')).toHaveAttribute('data-cat', 'fuel')
-    // a nyitott szakaszok (top-10 + kimarad) mind sorként állnak
+    // az „Ezeket tudja rólad" szakasz alapból nyitva áll, a „Kikapcsolva" nem
     expect(container.querySelectorAll('[data-fact-row]').length).toBe(14)
   })
 
@@ -290,21 +291,20 @@ describe('KnowledgeListPage (mock mode)', () => {
     expect(document.querySelector('[data-fact-row].glass')).toBeNull()
   })
 
-  test('a három prompt-státusz szakasz a helyes darabszámokkal jelenik meg', () => {
+  test('a két prompt-státusz szakasz a helyes darabszámokkal jelenik meg', () => {
     renderPage('/?view=tenyek')
-    expect(screen.getByText(/Most ezeket kapja meg a társ · 10/)).toBeInTheDocument()
-    expect(screen.getByText(/Bekapcsolva, de most kimarad · 4/)).toBeInTheDocument()
+    expect(screen.getByText(/Ezeket tudja rólad · 14/)).toBeInTheDocument()
     expect(screen.getByText(/Kikapcsolva · 1/)).toBeInTheDocument()
   })
 
   test('a kapcsoló átmozgatja a tényt a kikapcsolt szakaszba', async () => {
     renderPage('/?view=tenyek')
-    // az első switch a legerősebb aktív tényé (f2, ×23) — kikapcsolva 13 aktív marad, így a
-    // top-10 továbbra is tele van, de a várakozók száma 4→3, a kikapcsoltaké 1→2 lesz
+    // az első switch a legerősebb aktív tényé (f2, ×23) — kikapcsolva a bekapcsoltak száma
+    // 14→13, a kikapcsoltaké 1→2 lesz (facts-always: nincs várakozó vödör)
     await userEvent.click(screen.getAllByRole('switch')[0])
     expect(await screen.findByText(/Kikapcsolva · 2/)).toBeInTheDocument()
-    expect(screen.getByText(/Bekapcsolva, de most kimarad · 3/)).toBeInTheDocument()
-    expect(screen.getByText(/tény rólad · 10 megy a chatbe/)).toBeInTheDocument()
+    expect(screen.getByText(/Ezeket tudja rólad · 13/)).toBeInTheDocument()
+    expect(screen.getByText(/tény rólad · 13 megy a chatbe/)).toBeInTheDocument()
   })
 
   test('a keresés a látható szövegre szűr', async () => {
@@ -357,8 +357,8 @@ describe('KnowledgeListPage (mock mode)', () => {
   test('az 1. szakasz darabszáma a szűrt listát mutatja, a globális fejléc a teljeset (mezo-9ryh review fix)', async () => {
     renderPage('/?view=tenyek')
     await userEvent.type(screen.getByLabelText('Keresés a tények között'), 'caffeine')
-    expect(screen.getByText(/tény rólad · 10 megy a chatbe/)).toBeInTheDocument()
-    expect(screen.getByText(/Most ezeket kapja meg a társ · 1$/)).toBeInTheDocument()
+    expect(screen.getByText(/tény rólad · 14 megy a chatbe/)).toBeInTheDocument()
+    expect(screen.getByText(/Ezeket tudja rólad · 1$/)).toBeInTheDocument()
   })
 
 })
@@ -399,7 +399,7 @@ describe('KnowledgeListPage (real mode)', () => {
 
   test('renders the fetched facts + the Rólad pointer, not the candidate cards', async () => {
     renderPage()
-    expect(await screen.findByText(/tény rólad · 10 megy a chatbe/)).toBeInTheDocument()
+    expect(await screen.findByText(/tény rólad · 14 megy a chatbe/)).toBeInTheDocument()
     await waitFor(() => expect(document.querySelector('.tud9-bignum')?.textContent).toBe('15'))
     expect(await screen.findByText(/\d+ javaslat vár rád a Rólad oldalon/)).toBeInTheDocument()
     expect(screen.queryByText(candidateSeed[1].text)).not.toBeInTheDocument()
@@ -412,7 +412,7 @@ describe('KnowledgeListPage (real mode)', () => {
         HttpResponse.json([{ code: 'RESOURCE_NOT_FOUND' }], { status: 404 })),
     )
     const { container } = renderPage()
-    expect(await screen.findByText(/tény rólad · 10 megy a chatbe/)).toBeInTheDocument()
+    expect(await screen.findByText(/tény rólad · 14 megy a chatbe/)).toBeInTheDocument()
     expect(container.querySelector('.tud9-sub')?.textContent).not.toMatch(/kapcsolat/)
   })
 

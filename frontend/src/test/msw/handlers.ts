@@ -34,6 +34,7 @@ import { MOCK_DIMENSIONS, MOCK_EXPERTS, MOCK_OVERVIEW_EMPTY, MOCK_RUNS, MOCK_RUN
 import { MOCK_LIFE_GOALS, MOCK_SIGNAL_CATALOG, mockPropose, mockProgress, mockToday } from '@/data/lifegoal/lifegoalMock'
 import type { LifeGoalProposeRequest } from '@/data/lifegoal/lifegoalApi'
 import type { Pattern } from '@/data/types'
+import { expenditureExplanationSeed } from '@/data/fuel/expenditureExplanation'
 
 // Re-exported so hook tests keep importing it from here.
 export { API_BASE }
@@ -1361,6 +1362,8 @@ export const handlers = [
   http.put(`${API_BASE}/api/recipe/:id`, () => new HttpResponse(null, { status: 204 })),
   http.delete(`${API_BASE}/api/recipe/:id`, () => new HttpResponse(null, { status: 204 })),
 
+  // „Hogy tanultam?” (mezo-y72o3) — the prototype fixture; tests override with a 204 for the no-data path.
+  http.get(`${API_BASE}/api/goals/expenditure/explanation`, () => HttpResponse.json(expenditureExplanationSeed)),
   // Meal + fuel-day (mezo-arb) — defaults; tests override with server.use() for payload capture.
   http.get(`${API_BASE}/api/fuel/day/:date`, ({ params }) =>
     HttpResponse.json({ ...fuelDayFixture, date: String(params.date) }),

@@ -1,7 +1,7 @@
 # Üveg style bible: Mozaik colors on warm-dark glass
 
 **Date:** 2026-09-23 · **Status:** canon · **Epic:** `mezo-me75u` (`bd list --label epic:uvegesites`)
-**Session driver:** the `/uvegesites` skill (`.claude/skills/uvegesites/SKILL.md`)
+**Session driver:** the `/uvegesites` skill, archived at `docs/archive/skills/uvegesites.md` after the programme closed (2026-09-27); its prototype recipe lives on in [`prototype-recipe.md`](prototype-recipe.md)
 **Reference prototype (owner-approved 2026-09-23):** [`prototypes/fuel-uveg.html`](prototypes/fuel-uveg.html),
 **Sötét** switch. Fuel · Mai, meal detail and meal-score detail.
 
@@ -725,3 +725,8 @@ the fixes from a findings page (not a prototype — a sweep has no new screen), 
 106. **A kit rule that must be overridable is written at zero specificity.** The `<Sheet glass>` field rule
      became `:where(.sheet.glass.uv-sheet) :is(input:where(…), textarea, select)` (0,0,1), so a slice's own
      field treatment wins without a heavier selector.
+
+### Minta részletei (mezo-rstt7, 2026-09-27)
+
+107. **A chart answers "how big", the meter answers "does it count" — never a trend line; the tap
+     tooltip lives in component state so a tap never re-runs the page's entrance.**

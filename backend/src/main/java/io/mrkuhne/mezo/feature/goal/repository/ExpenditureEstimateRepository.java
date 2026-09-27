@@ -16,4 +16,14 @@ public interface ExpenditureEstimateRepository extends JpaRepository<Expenditure
     Optional<ExpenditureEstimateEntity> findFirstByCreatedByAndDeletedFalseOrderByWeekStartDesc(UUID createdBy);
 
     boolean existsByCreatedByAndDeletedFalse(UUID createdBy);
+
+    /**
+     * The caller's most recent reviewed week that carries a "Hogy tanultam?" explanation
+     * (mezo-y72o3) — older rows written before the explainer shipped have {@code explanation == null}
+     * and are skipped, so this can land on an earlier week than
+     * {@link #findFirstByCreatedByAndDeletedFalseOrderByWeekStartDesc}. Empty when the caller has no
+     * explained row at all.
+     */
+    Optional<ExpenditureEstimateEntity> findFirstByCreatedByAndDeletedFalseAndExplanationIsNotNullOrderByWeekStartDesc(
+        UUID createdBy);
 }

@@ -913,3 +913,179 @@ describe('meal windows (mezo-6g52f)', () => {
     if (done) expect(done.windowFrom).not.toBe(done.time)
   })
 })
+
+// ── mezo-9sltu: a late log shifts the remaining windows later (owner option A, 2026-09-27) ──────
+// Baseline 4 meals, 06:00/23:00: Reggeli 06:45 · Ebéd 14:08 · Uzsonna 17:49 · Vacsora 21:30 (kitchen close).
+describe('late-log reflow (mezo-9sltu)', () => {
+  const at = (hhmm: string) => `2026-07-02T${hhmm}:00`
+  const mealSlotsOf = (plan: FuelPlanToday) => plan.slots.filter(s => s.slotKey != null)
+  const byLabel = (plan: FuelPlanToday, label: string) => mealSlotsOf(plan).find(s => s.label === label)!
+
+  it('a late lunch pushes the Uzsonna to lunch+90; its range follows; the Vacsora (already ≥90 after) stays', () => {
+    const base = buildDayPlan(baseInput())
+    const plan = buildDayPlan(baseInput({ meals: [meal({ id: 'l', slot: 'Ebéd', loggedAt: at('16:30') })] }))
+    const u = byLabel(plan, 'Uzsonna')
+    expect(u.time).toBe('18:00')
+    expect(u.windowFrom).toBe('17:30')
+    expect(u.windowTo).toBe('18:30')
+    expect(u.windowReasons![0]).toBe('shifted')
+    expect(u.windowReasons).toContain('bridge')
+    expect(u.shiftedAfter).toEqual({ label: 'Ebéd', at: '16:30' })
+    const v = byLabel(plan, 'Vacsora')
+    const v0 = byLabel(base, 'Vacsora')
+    expect(v.time).toBe(v0.time)
+    expect(v.windowReasons).toEqual(v0.windowReasons)
+    expect(v.shiftedAfter).toBeUndefined()
+  })
+
+  it('the shift cascades: a late breakfast pushes the Tízórai AND the Ebéd, not the far Uzsonna (5 meals)', () => {
+    const base = buildDayPlan(baseInput({ mealsPerDay: 5 }))
+    const plan = buildDayPlan(baseInput({ mealsPerDay: 5, meals: [meal({ id: 'b', slot: 'Reggeli', loggedAt: at('12:00') })] }))
+    expect(byLabel(plan, 'Tízórai').time).toBe('13:30')
+    expect(byLabel(plan, 'Tízórai').shiftedAfter).toEqual({ label: 'Reggeli', at: '12:00' })
+    expect(byLabel(plan, 'Ebéd').time).toBe('15:00')
+    expect(byLabel(plan, 'Ebéd').windowReasons![0]).toBe('shifted')
+    // the Ebéd was pushed by a PLACED window (the Tízórai), not a logged meal → no "később volt" cause
+    expect(byLabel(plan, 'Ebéd').shiftedAfter).toBeUndefined()
+    expect(byLabel(plan, 'Uzsonna').time).toBe(byLabel(base, 'Uzsonna').time)
+    expect(byLabel(plan, 'Uzsonna').windowReasons).not.toContain('shifted')
+  })
+
+  it('an early lunch moves nothing (only later, never earlier)', () => {
+    const base = buildDayPlan(baseInput())
+    const plan = buildDayPlan(baseInput({ meals: [meal({ id: 'l', slot: 'Ebéd', loggedAt: at('13:08') })] }))
+    for (const label of ['Uzsonna', 'Vacsora']) {
+      expect(byLabel(plan, label).time).toBe(byLabel(base, label).time)
+      expect(byLabel(plan, label).windowFrom).toBe(byLabel(base, label).windowFrom)
+      expect(byLabel(plan, label).windowReasons).not.toContain('shifted')
+    }
+  })
+
+  it('an on-time lunch with the Uzsonna already ≥90 after changes nothing', () => {
+    const base = buildDayPlan(baseInput())
+    const plan = buildDayPlan(baseInput({ meals: [meal({ id: 'l', slot: 'Ebéd', loggedAt: at('14:20') })] }))
+    for (const label of ['Uzsonna', 'Vacsora']) {
+      expect(byLabel(plan, label).time).toBe(byLabel(base, label).time)
+      expect(byLabel(plan, label).windowTo).toBe(byLabel(base, label).windowTo)
+      expect(byLabel(plan, label).windowReasons).not.toContain('shifted')
+    }
+  })
+
+  // 6 meals, gym 18:30: Ebéd 14:08 · Uzsonna 17:15 (pre-training-snack) · Esti snack 20:00 · Vacsora 21:30 (post-training).
+  const gym: PlannerBlock = { kind: 'gym', time: '18:30', durationMin: 75, label: 'Edzés' }
+  it('a training-anchored window never moves; the windows after it cascade from it', () => {
+    const base = buildDayPlan(baseInput({ mealsPerDay: 6, blocks: [gym] }))
+    const plan = buildDayPlan(baseInput({ mealsPerDay: 6, blocks: [gym], meals: [meal({ id: 'l', slot: 'Ebéd', loggedAt: at('16:30') })] }))
+    const pre = byLabel(plan, 'Uzsonna')
+    expect(pre.time).toBe('17:15')
+    expect(pre.windowReasons).toEqual(byLabel(base, 'Uzsonna').windowReasons)
+    expect(pre.windowReasons).not.toContain('shifted')
+    // cascade from the anchor: 17:15 + 90 = 18:45 ≤ 20:00 → the Esti snack keeps its time
+    expect(byLabel(plan, 'Esti snack').time).toBe('20:00')
+    expect(byLabel(plan, 'Esti snack').windowReasons).not.toContain('shifted')
+    expect(byLabel(plan, 'Vacsora').time).toBe('21:30')
+    expect(byLabel(plan, 'Vacsora').windowReasons).not.toContain('shifted')
+  })
+
+  it('a meal logged AFTER an anchored window still keeps 90 min to the next movable window', () => {
+    const plan = buildDayPlan(baseInput({ mealsPerDay: 6, blocks: [gym], meals: [meal({ id: 'l', slot: 'Ebéd', loggedAt: at('18:40') })] }))
+    expect(byLabel(plan, 'Uzsonna').time).toBe('17:15')
+    expect(byLabel(plan, 'Esti snack').time).toBe('20:10')
+    expect(byLabel(plan, 'Esti snack').shiftedAfter).toEqual({ label: 'Ebéd', at: '18:40' })
+    expect(byLabel(plan, 'Vacsora').time).toBe('21:30')
+  })
+
+  it('caps a shifted window at kitchen close and drops nothing', () => {
+    const plan = buildDayPlan(baseInput({ meals: [meal({ id: 'l', slot: 'Ebéd', loggedAt: at('20:30') })] }))
+    expect(mealSlotsOf(plan)).toHaveLength(4)
+    expect(byLabel(plan, 'Uzsonna').time).toBe('21:30')
+    expect(byLabel(plan, 'Uzsonna').windowReasons![0]).toBe('shifted')
+    expect(byLabel(plan, 'Vacsora').time).toBe('21:30')
+    for (const s of mealSlotsOf(plan)) expect(s.time <= '21:30').toBe(true)
+  })
+
+  it('a snack logged into a SHIFTED window (stored plan range ≠ any original range) still claims that window', () => {
+    // 5 meals: Tízórai 10:26 · Ebéd 14:08 · Uzsonna 17:49. A 17:00 lunch shifts the Uzsonna to 18:30.
+    const lunch = meal({ id: 'l', slot: 'lunch', loggedAt: at('17:00') })
+    const bare = buildDayPlan(baseInput({ mealsPerDay: 5 }))
+    const shifted = byLabel(buildDayPlan(baseInput({ mealsPerDay: 5, meals: [lunch] })), 'Uzsonna')
+    expect(shifted.windowFrom).not.toBe(byLabel(bare, 'Uzsonna').windowFrom) // really shifted
+    // Logged near the Tízórai's placed time (10:20), carrying the shifted Uzsonna's stored window.
+    const snack = meal({
+      id: 'snack-u', slot: 'snack', loggedAt: at('10:20'),
+      breakdown: {
+        confidence: 1, summary: null, tagline: null, improve: [], tools: [],
+        dimensions: [{
+          id: 'context', label: 'Kontextus', weight: 0, score: 0, color: '#fff', detail: '', context: [],
+          timing: { eatenAt: '10:20', windowFrom: shifted.windowFrom!, windowTo: shifted.windowTo!, slotLabel: 'Uzsonna', windowSource: 'plan' },
+        }],
+      },
+    })
+    const plan = buildDayPlan(baseInput({ mealsPerDay: 5, meals: [lunch, snack] }))
+    expect(byLabel(plan, 'Uzsonna')).toMatchObject({ state: 'done', mealId: 'snack-u' })
+    expect(byLabel(plan, 'Tízórai').state).not.toBe('done')
+  })
+
+  it('never emits a window narrower than 30 min, even when windows crowd at kitchen close', () => {
+    const plan = buildDayPlan(baseInput({ meals: [meal({ id: 'l', slot: 'Ebéd', loggedAt: at('20:30') })] }))
+    for (const s of mealSlotsOf(plan).filter(x => x.state !== 'done')) {
+      expect(toMin(s.windowTo!) - toMin(s.windowFrom!)).toBeGreaterThanOrEqual(30)
+    }
+  })
+
+  it('layout drift: a stored window matching neither the original nor the reflowed ranges falls back to nearest time', () => {
+    // 5 meals: Tízórai 10:26 · Uzsonna 17:49. A stored "Uzsonna" window from a drifted layout (16:50–17:20)
+    // matches no range today; the snack was logged at 17:30 → nearest is the Uzsonna, NOT the free Tízórai.
+    const snack = meal({
+      id: 'snack-u', slot: 'snack', loggedAt: at('17:30'),
+      breakdown: {
+        confidence: 1, summary: null, tagline: null, improve: [], tools: [],
+        dimensions: [{
+          id: 'context', label: 'Kontextus', weight: 0, score: 0, color: '#fff', detail: '', context: [],
+          timing: { eatenAt: '17:30', windowFrom: '16:50', windowTo: '17:20', slotLabel: 'Uzsonna', windowSource: 'plan' },
+        }],
+      },
+    })
+    const plan = buildDayPlan(baseInput({ mealsPerDay: 5, meals: [snack] }))
+    expect(byLabel(plan, 'Uzsonna')).toMatchObject({ state: 'done', mealId: 'snack-u' })
+    expect(byLabel(plan, 'Tízórai').state).not.toBe('done')
+  })
+
+  it('a done window with a plan-stored window emits the STORED range (the dial matches the log)', () => {
+    const lunch = meal({
+      id: 'l', slot: 'lunch', loggedAt: at('14:00'),
+      breakdown: {
+        confidence: 1, summary: null, tagline: null, improve: [], tools: [],
+        dimensions: [{
+          id: 'context', label: 'Kontextus', weight: 0, score: 0, color: '#fff', detail: '', context: [],
+          timing: { eatenAt: '14:00', windowFrom: '13:10', windowTo: '14:40', slotLabel: 'Ebéd', windowSource: 'plan' },
+        }],
+      },
+    })
+    const done = byLabel(buildDayPlan(baseInput({ meals: [lunch] })), 'Ebéd')
+    expect(done).toMatchObject({ state: 'done', windowFrom: '13:10', windowTo: '14:40' })
+  })
+
+  it('the done lunch slot keeps its original window range', () => {
+    const base = buildDayPlan(baseInput())
+    const plan = buildDayPlan(baseInput({ meals: [meal({ id: 'l', slot: 'Ebéd', loggedAt: at('16:30') })] }))
+    const done = byLabel(plan, 'Ebéd')
+    expect(done.state).toBe('done')
+    expect(done.windowFrom).toBe(byLabel(base, 'Ebéd').windowFrom)
+    expect(done.windowTo).toBe(byLabel(base, 'Ebéd').windowTo)
+    expect(done.windowReasons).not.toContain('shifted')
+  })
+
+  it('state classification runs on the reflowed time', () => {
+    const lunch = [meal({ id: 'l', slot: 'Ebéd', loggedAt: at('16:30') })]
+    // 17:55: the ORIGINAL Uzsonna (17:49) would be "now"; the reflowed one (18:00) has not started, so the
+    // current window is the latest unlogged one at/before now — the (unlogged) Reggeli.
+    const before = buildDayPlan(baseInput({ nowHHmm: '17:55', meals: lunch }))
+    expect(byLabel(before, 'Reggeli').state).toBe('now')
+    expect(byLabel(before, 'Uzsonna').state).toBe('pending')
+    // 18:05: the reflowed Uzsonna is the current window; the Reggeli is missed.
+    const after = buildDayPlan(baseInput({ nowHHmm: '18:05', meals: lunch }))
+    expect(byLabel(after, 'Uzsonna').state).toBe('now')
+    expect(byLabel(after, 'Reggeli').state).toBe('missed')
+  })
+})

@@ -21,8 +21,8 @@ export interface FuelPatternRef {
   pairKey: string
   /** A minta KANONIKUS címe, változtatás nélkül — címke, nem átírt szöveg. */
   title: string
-  /** Egy-szavas állapot. A ház MEGLÉVŐ szótárából (PatternDecisionCard / PatternDetailHero /
-   *  engineStatusCopy) — itt nem születik új megfogalmazás. */
+  /** Egy-szavas állapot. A ház MEGLÉVŐ szótárából (PatternDecisionCard /
+   *  engineStatusCopy; a volt PatternDetailHero szavai, mezo-rstt7 óta csak itt élnek) — itt nem születik új megfogalmazás. */
   stateLabel: string
   /** A kanonikus Mezo-útvonal — ide lépünk, itt NEM másolunk. */
   route: string
@@ -33,10 +33,10 @@ export interface FuelPatternRef {
 function stateLabelFor(status: Pattern['status']): string {
   const engine = engineStatusCopy(status)
   if (engine) return engine
-  if (status === 'confirmed') return 'Megerősítve'   // PatternDetailHero / PatternDecisionCard
-  if (status === 'monitoring') return 'Figyeljük'    // PatternDetailHero
-  if (status === 'rejected') return 'Elvetve'        // PatternDetailHero
-  return 'Döntésre vár'                              // PatternDetailHero („Döntésre vár")
+  if (status === 'confirmed') return 'Megerősítve'   // PatternDecisionCard
+  if (status === 'monitoring') return 'Figyeljük'    // PatternDecisionCard
+  if (status === 'rejected') return 'Elvetve'        // a volt PatternDetailHero szava
+  return 'Döntésre vár'                              // a volt PatternDetailHero szava
 }
 
 /** Táplálkozási jelzés-tokenek. A pár-kulcs gépi metrika-nevein ÉS a magyar címen is keresünk,

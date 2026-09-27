@@ -19,16 +19,18 @@ export type DetailTone = 'lav' | 'sage' | 'sky' | 'gold' | 'coral' | 'mute'
 export const toneClass = (tone: DetailTone) => `pdt-tone-${tone}`
 
 /** A mélyoldalak kerete: üveg vissza-pirula (`useBackTo` adja a célt és a nevét), jobbra az
- *  oldal halk eyebrow-ja, a test pedig egy belépő-koreográfia a `.rise` gyerekeknek. */
-export function DetailFrame({ back, eyebrow, children }: {
+ *  oldal halk eyebrow-ja — vagy, ha a hívó ad `aside`-ot (a minta állapot-pirulája, mezo-rstt7),
+ *  az áll a helyén —, a test pedig egy belépő-koreográfia a `.rise` gyerekeknek. */
+export function DetailFrame({ back, eyebrow, aside, children }: {
   back: { label: string; onBack: () => void }
-  eyebrow: string
+  eyebrow?: string
+  aside?: ReactNode
   children: ReactNode
 }) {
   return (
     <MozaikPage tone="lav" className="pdt-page">
       <PageHead glass label={back.label} onBack={back.onBack}>
-        <small className="pdt-nav-eb">{eyebrow}</small>
+        {aside ?? <small className="pdt-nav-eb">{eyebrow}</small>}
       </PageHead>
       <PageBody>
         <EntranceGroup className="pdt-body">{children}</EntranceGroup>

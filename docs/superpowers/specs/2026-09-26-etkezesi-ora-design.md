@@ -297,8 +297,11 @@ strip. Add a "Meal clock" slice lesson to the üveg bible appendix.
 ## 6. Out of scope
 
 - Any number for blood-sugar response (owner-locked, band only).
-- Rewriting the plan when a meal is late. The copy says the next window "tolódik", but the planner
-  does not yet re-place windows from actual logs. That goes into a follow-up bd issue.
+- ~~Rewriting the plan when a meal is late. The copy says the next window "tolódik", but the planner
+  does not yet re-place windows from actual logs. That goes into a follow-up bd issue.~~
+  **DONE (mezo-9sltu, 2026-09-27):** a late log now shifts the remaining unlogged windows later
+  (≥90 min after the previous meal, training-anchored windows stay, capped at kitchen close) — see
+  `docs/features/fuel.md` §2 "A late log shifts the remaining windows later".
 - Real glucose or CGM data, and step-based window changes. Steps are displayed only.
 - Plan history for past days beyond what the stored window fixes for logged meals.
 

@@ -1,7 +1,7 @@
 import type { ChatRef } from '@/data/types'
 
 // ============================================================
-// Design 2.0 chat refs (mezo-d20.5.2) — the "Hivatkozott · L3"
+// Design 2.0 chat refs (mezo-d20.5.2) — the "Amire épült" (was "Hivatkozott · L3")
 // footer speaks HUMAN labels instead of raw wire ids (the audit's
 // gap 7: "refs are inert — raw ids, no label lookup"). The label is
 // picked in three honest steps, nothing fabricated at any of them:

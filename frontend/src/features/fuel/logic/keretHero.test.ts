@@ -92,6 +92,20 @@ test('a dynamic-energy day carries the raw base/activity/balance — a negative 
   expect(vm.chips).toEqual({ base: 2000, activity: 400, extra: 0, balance: -400 })
 })
 
+// mezo-zz91i: `budget.energy.source` passes through as `baseSource`, independent of `chips`
+// (FuelEnergyHero swaps the Alap row's sub copy on it).
+test('baseSource passes through the served energy.source as-is', () => {
+  const learned: DayBudget = { ...BUDGET, energy: { ...BUDGET.energy, source: 'learned' } }
+  expect(build({ budget: learned }).baseSource).toBe('learned')
+  const formula: DayBudget = { ...BUDGET, energy: { ...BUDGET.energy, source: 'formula' } }
+  expect(build({ budget: formula }).baseSource).toBe('formula')
+  expect(build({ budget: BUDGET }).baseSource).toBeUndefined()
+})
+
+test('a static-energy day has no baseSource — the DayBudget fallback carries no source', () => {
+  expect(build({ staticEnergy: true }).baseSource).toBeUndefined()
+})
+
 test('Mozgás is planned + extra; the extra share rides along for the sub copy (mezo-32m82)', () => {
   const energy = { base: 2356, planned: 570, extra: 572, balance: -327, target: 3171 }
   const vm = build({ budget: { ...BUDGET, kcal: energy.target, energy }, staticEnergy: false })

@@ -396,7 +396,10 @@ The orb's **height** (how many of the day's signals are recorded) and its **tone
   tiles open followed the same day (`mezo-luik9`): one loud value per sheet, Mentés as the house
   primary, flat colour cells for the scales.
 
-- **App startup (`mezo-qducz`):** the app-root `StartupSplash` reuses the Dashboard's
+- **App startup — current (`mezo-1dxhp`, 2026-09-27):** the Titanium scene below is history;
+  the splash is the Üveg glass orb that fills to ~70% while five sprite icons orbit it. Canonical
+  description: `_platform-design-system.md` §9 *Startup*.
+- **App startup — original (`mezo-qducz`):** the app-root `StartupSplash` reuses the Dashboard's
   lazy Titanium geometry through the non-interactive `TitanArtwork` export in
   `TitanCompanion.tsx`. `TitanMark` uses per-instance SVG gradient IDs so the splash and
   Dashboard fallback can coexist. The splash has one slow scale pulse with three distinct

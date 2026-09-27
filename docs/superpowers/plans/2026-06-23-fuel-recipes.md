@@ -8,7 +8,7 @@
 
 **Tech Stack:** Spring Boot 4 · Java 21 · Maven · PostgreSQL 16 · Liquibase · MapStruct · Lombok · React 19 · Vite · TanStack Query · TypeScript · Tailwind v4. Chamfer "Deep Current" design system.
 
-**Driving bd:** `mezo-lns`. **Spec:** `docs/superpowers/specs/2026-06-23-fuel-recipes-design.md`. **Mockups:** `docs/design/recipes-{library,detail,editor}.html`.
+**Driving bd:** `mezo-lns`. **Spec:** `docs/superpowers/specs/2026-06-23-fuel-recipes-design.md`. **Mockups:** `docs/archive/design-v1/recipes-{library,detail,editor}.html`.
 
 ## Global Constraints
 
@@ -3410,7 +3410,7 @@ test('renders the per-basis rail label when given', () => {
 ```tsx
 // ============================================================
 // Mezo · MacroCells (shared chamfer kcal/P/C/F strip)
-// The `.mc` cell look from docs/design/recipes-*.html — used by the editorial
+// The `.mc` cell look from docs/archive/design-v1/recipes-*.html — used by the editorial
 // RecipeCard body, the RecipeDetailView ingredient rows, the editor pick-rows,
 // and the IngredientPickerSheet cards. An optional left `perLabel` rail prints
 // the basis (e.g. "160 g" for an editor row at its amount, "/100g" in the picker).
@@ -3500,7 +3500,7 @@ test('scored state shows the rounded fit number + fit label', () => {
 ```tsx
 // ============================================================
 // Mezo · RecipeFitBadge (Mezo-fit slot — pending vs scored)
-// The stable top-right badge from docs/design/recipes-library.html / -detail.html.
+// The stable top-right badge from docs/archive/design-v1/recipes-library.html / -detail.html.
 // v1: fit_score is always null (Phase-3 scoring deferred) → P2 sparkle "pending"
 // signal. When a real score lands the SAME slot shows the Antonio number + "fit"
 // — no layout shift. `size="hero"` is the bigger detail-hero variant.
@@ -3592,7 +3592,7 @@ test('renders both bases and reports a change', async () => {
 ```tsx
 // ============================================================
 // Mezo · ServingToggle (/adag ↔ egész)
-// The segmented basis switch from docs/design/recipes-detail.html (.segtoggle).
+// The segmented basis switch from docs/archive/design-v1/recipes-detail.html (.segtoggle).
 // Used by RecipeDetailView's macro hero and RecipeEditorView's live total card.
 // `servings` is the real recipe value; the "whole" label echoes it.
 // ============================================================
@@ -3683,7 +3683,7 @@ test('renders the editorial name, macro cells and pending fit; click opens', asy
 ```tsx
 // ============================================================
 // Mezo · RecipeCard (editorial library card)
-// docs/design/recipes-library.html `.rc-b`: an image band (diagonal-stripe
+// docs/archive/design-v1/recipes-library.html `.rc-b`: an image band (diagonal-stripe
 // gradient + bottom fade) with the Antonio name overlaid, a slot tag + star
 // top-left and the Mezo-fit badge top-right; below the band a MacroCells strip
 // (whole-recipe macros) and a meta line. v1 fit_score is null → the badge shows
@@ -3835,7 +3835,7 @@ test('tapping a card navigates to the detail route', async () => {
 ```tsx
 // ============================================================
 // Mezo · FuelRecipesView (Receptek — editorial library)
-// Approved redesign (docs/design/recipes-library.html): editorial RecipeCards +
+// Approved redesign (docs/archive/design-v1/recipes-library.html): editorial RecipeCards +
 // a segmented typebar filter (Mind / Reggeli / Ebéd / Vacsi / ★ with live counts,
 // the Kamra typebar pattern) replacing the old chip row. The fake "Avg fit 0.89"
 // stat is removed; the header sub shows real counts. Detail + create are now
@@ -3954,7 +3954,7 @@ export function FuelRecipesView() {
 // filters the Kamra by name + brand; each PickerRow shows a category-accented
 // card with name + source badge + brand/NOVA subline and a MacroCells strip
 // (/100g, the design-mockup cell look). Tapping ＋ fires onPick(ing).
-// docs/design/recipes-editor.html (right phone · `.prow` + `.macstrip`).
+// docs/archive/design-v1/recipes-editor.html (right phone · `.prow` + `.macstrip`).
 // ============================================================
 import { useState } from 'react'
 import type { Ingredient } from '@/data/types'
@@ -4187,7 +4187,7 @@ test('Csillag toggles the starred flag', async () => {
 ```tsx
 // ============================================================
 // Mezo · RecipeDetailView (Receptek — recipe detail PAGE)
-// Approved full-page detail (docs/design/recipes-detail.html · "A" phone),
+// Approved full-page detail (docs/archive/design-v1/recipes-detail.html · "A" phone),
 // consistent with the Kamra item detail being a route. Single scroll, v1-honest:
 // editorial hero → /adag↔egész macro hero → meta strip → Hozzávalók (per-line
 // contribution in MacroCells) → "Mezo-fit · hamarosan" sparkle zone → actions.
@@ -4529,7 +4529,7 @@ test('a picked row contribution recomputes when the amount changes', async () =>
 ```tsx
 // ============================================================
 // Mezo · RecipeEditorView (Receptek — create = edit PAGE)
-// Approved full-page editor (docs/design/recipes-editor.html · left phone),
+// Approved full-page editor (docs/archive/design-v1/recipes-editor.html · left phone),
 // replacing the retired NewRecipeSheet. Captures every real field: név, slot
 // (segmented), csillag, adag + elő/főzési idő (steppers), címkék (chips),
 // hozzávalók (picked rows = MacroCells contribution at the line amount, live via

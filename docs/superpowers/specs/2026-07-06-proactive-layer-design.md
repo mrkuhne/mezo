@@ -3,7 +3,7 @@
 - **Date:** 2026-07-06
 - **Status:** accepted (point-in-time design artifact)
 - **Driver:** bd `mezo-h4wp` (epic) · roadmap: [`../plans/2026-07-06-proactive-roadmap.md`](../plans/2026-07-06-proactive-roadmap.md)
-- **Sources:** the shipped companion stack ([`../specs/2026-07-03-phase3-companion-chat-design.md`](2026-07-03-phase3-companion-chat-design.md) + [`docs/features/companion.md`](../../features/companion.md)) and the old Supabase-era docs' proactive sections ([`../../old docs/mezo-prd.md`](../../old%20docs/mezo-prd.md) §5.1/5.8, FR-1.3.x — distilled here; slice sessions read THIS, not the old docs).
+- **Sources:** the shipped companion stack ([`../specs/2026-07-03-phase3-companion-chat-design.md`](2026-07-03-phase3-companion-chat-design.md) + [`docs/features/companion.md`](../../features/companion.md)) and the old Supabase-era docs' proactive sections ([`../../archive/old-docs/mezo-prd.md`](../../archive/old-docs/mezo-prd.md) §5.1/5.8, FR-1.3.x — distilled here; slice sessions read THIS, not the old docs).
 
 ## 1. Product goal — the pain this kills
 

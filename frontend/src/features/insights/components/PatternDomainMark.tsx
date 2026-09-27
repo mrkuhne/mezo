@@ -3,7 +3,7 @@ import { DOMAIN_META } from '@/features/insights/logic/domains'
 import type { MetricDomain } from '@/data/types'
 
 /** A domén 3D jele a „Miből látszik?" mélyoldalakon (üveg, mezo-me75u.13 — a prototípus
- *  `DOMI` térképe: uveg-uzenofal.html). A TestPlanTiles és a PatternDetailHero ezt használja. */
+ *  `DOMI` térképe: uveg-uzenofal.html). A minta-részlet válasz-hőse (PatternAnswerHero) ezt használja. */
 export const PATTERN_DOMAIN_ART: Record<MetricDomain, Icon3DName> = {
   sleep: 't-moon',
   train: 't-dumbbell',
