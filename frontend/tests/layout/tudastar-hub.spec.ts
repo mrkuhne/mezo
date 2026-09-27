@@ -39,6 +39,14 @@ for (const [name, path, rows] of HUB_ROUTES) {
       if (overlap > 0) scroller.scrollTop += overlap + 4
     })
     await expect(last).toBeVisible()
+    const spacing = await page.evaluate((selector) => {
+      const matches = document.querySelectorAll(selector)
+      const lastEl = matches[matches.length - 1] as HTMLElement
+      const row = lastEl.getBoundingClientRect()
+      const tabbar = document.querySelector('.tab-bar')!.getBoundingClientRect()
+      return { rowBottom: row.bottom, tabbarTop: tabbar.top }
+    }, rows)
+    expect(spacing.rowBottom).toBeLessThanOrEqual(spacing.tabbarTop - 1)
   })
 }
 
