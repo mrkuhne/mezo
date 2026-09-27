@@ -864,7 +864,7 @@ through the full merge chain (lessons 21–22).
 - **The conversation-first chat path injects the facts block automatically** — the
   block is passively available; the model need not use or mention it ("mindig benne
   van, de nem kell mindig használnia").
-- **High safety ceiling, not a working limit**: a cap exists only as a never-normally-hit
+- **High safety ceiling (owner set 200, 2026-09-27), not a working limit**: a cap exists only as a never-normally-hit
   brake; when it is ever approached, the answer is consolidation (merge/compress facts),
   not rank-and-drop. Consolidation itself is out of scope here (S6+).
 
@@ -890,7 +890,7 @@ through the full merge chain (lessons 21–22).
 **Backend — limit semantics**
 
 - `mezo.companion.facts.top-n: 10` (1..50) is replaced by
-  `mezo.companion.facts.prompt-cap: 150` (1..500) in `CompanionProperties.Facts`.
+  `mezo.companion.facts.prompt-cap: 200` (1..500) in `CompanionProperties.Facts`.
   `topFactsForPrompt` keeps its ordering (reinforcement DESC → citation tie-break →
   createdAt DESC) and applies the cap as a safety brake only; when the cap trims
   anything, log a WARN naming the count (the future S6 hub can surface it).
