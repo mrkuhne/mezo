@@ -2162,6 +2162,7 @@ svg{overflow:visible}
 .fxc .eb{color:color-mix(in srgb,var(--c) 85%,var(--ink))}
 .fxc .who{display:block;font-size:12px;color:var(--sub);margin-top:1px}
 .fxc .say{font-size:14px;line-height:1.45;margin-top:10px;color:var(--ink)}
+.fxc .say+.say{margin-top:6px;padding-top:6px;border-top:1px solid var(--hair)}
 .fxc .from{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
 .fxc .from .flat{font-size:10.5px;padding:4px 9px}
 .fxc .act{margin-top:10px}
@@ -2432,11 +2433,11 @@ function checkin(){
     ?`<div class="ckrow hot"><span class="tickc">${I('tick')}</span><span class="grow"><strong>${s.n} · ${s.st==='now'?'most esedékes':s.t}</strong><small>hogy vagy most?</small><span class="ckhint">${nQ(s.t)} koppintás · kb. fél perc</span></span><button class="pillx" style="--c:var(--rose)" data-ckslot="${s.t}">Kitöltöm</button></div>`
     :`<div class="ckrow dim"><span class="tickc dash"></span><span class="grow"><strong>${s.n} · ${s.t} körül</strong><small>később esedékes · ${nQ(s.t)} kérdés</small></span></div>`).join('')}
   </section>
-  <div class="ckproto rise" style="--i:3"><span class="eb">CSAK A MINTÁBAN · PRÓBÁLD KI BÁRMELYIK NAPSZAKOT</span><div class="chiprow">${Object.keys(PLAN).map(t=>`<button class="flat" style="--c:var(--rose)" data-ckslot="${t}">${SLOTN[t]} · ${nQ(t)}</button>`).join('')}</div></div>
   <div class="cklinks rise" style="--i:4">
     <a href="#hatasok" class="glass" style="--c:var(--lav)">${I('orb')}<span class="grow"><strong>Mit táplál az új check-in?</strong><small>ahol a válaszaidat észre fogod venni</small></span><span class="chev">›</span></a>
     <a href="#napom" class="glass" style="--c:var(--gold)">${I('day')}<span class="grow"><strong>A napod · Te: 7/10</strong><small>a te ítéleted az app pontszáma mellett</small></span><span class="chev">›</span></a>
   </div>
+  <div class="ckproto rise" style="--i:3"><span class="eb">CSAK A MINTÁBAN · PRÓBÁLD KI BÁRMELYIK NAPSZAKOT</span><div class="chiprow">${Object.keys(PLAN).map(t=>`<button class="flat" style="--c:var(--rose)" data-ckslot="${t}">${SLOTN[t]} · ${nQ(t)}</button>`).join('')}</div></div>
   ${principle('A kimaradt slot nem vész el —','Pótold bármikor, a társ nem büntet.')}`;
 }
 
@@ -2548,20 +2549,23 @@ function napzaras(a=1){
 
 /* ── MIT TÁPLÁL AZ ÚJ CHECK-IN ─────────────────────────────── */
 function hatasok(){
+  // [ikon, szín, TERÜLET, ki, [példák], [miből], gomb?, link?]
   const C=[
-    ['chat','var(--lav)','TÁRS · BESZÉLGETÉS','Mezo','„Látom, reggel fájt a térded. Ma a guggolás helyett legyen lábtoló?”',['fájdalom','izomláz','hangulat']],
-    ['pain','var(--rose)','FIGYELMEZTETÉS · ÚJ','Derű · a csapat orvosa','Harmadik napja fáj a térded. Érdemes ránézni — holnapra könnyítsünk a lábnapon?',['fájdalom · 3 napja ugyanott'],'Holnap könnyítsünk'],
-    ['dumbbell','var(--sky)','EDZÉS · REGGEL','Mocor · edző','Mai állapot: könnyebb nap javasolt. Rosszul pihented ki magad (4/10), és erős az izomláz (7/10).',['kipihentség','izomláz','motiváció'],'Könnyítsük'],
-    ['hunger','var(--sage)','ÉTKEZÉSI TANÁCSADÓ','Falat · táplálkozás','10-kor már 7/10 éhes voltál — kevés volt a reggeli. Holnap tegyél bele még kb. 20 g fehérjét.',['éhség','étkezések']],
-    ['craving','var(--rose)','SÓVÁRGÁS · ÉRZELMI EVÉS','Falat · táplálkozás','Az édes utáni vágy a múlt héten 3 napból 2-szer rövid alvás után jött. Nem akaraterő kérdése.',['sóvárgás','alvás','stressz']],
-    ['rested','var(--lav)','ALVÁS','Szunya · alvás','Neked kb. 7,5 óra alvás elég: ennél többtől már nem leszel kipihentebb. Beállítsam ezt alváscélnak?',['reggeli kipihentség','alvásnapló'],'Legyen ez a cél'],
-    ['pattern','var(--gold)','MINTAKERESŐ · ÚJ ÖSSZEFÜGGÉS','Mezo','Azokon a napokon, amikor emberekről írsz, átlagosan 1,4 ponttal jobb a hangulatod.',['hangulat','napló-említések']],
-    ['motivation','var(--gold)','ÉLETCÉLOK · HA–AKKOR','Mocor · fegyelem','Ha nincs kedvem (kedv ≤ 4) → akkor csak 10 perc séta. A terved ma egyszer beindult.',['motiváció']],
-    ['people','var(--lav)','ÖNISMERET','Derű · pszichológus','Amit a naplóba írsz, és ahogy a check-inben értékeled a hangulatod, 5 napból 4-szer egyezik.',['hangulat','napló']]];
+    ['chat','var(--lav)','TÁRS · BESZÉLGETÉS','Mezo · minden választ lát, nem csak az energiát és a stresszt',['„Látom, reggel fájt a térded. Ma a guggolás helyett legyen lábtoló?”','„Délben már éhes voltál és nyűgös — ettél azóta rendesen?”'],['fájdalom','éhség','hangulat']],
+    ['pain','var(--rose)','FIGYELMEZTETŐ KÁRTYÁK · 4 ÚJ','Derű · a csapat orvosa',['Harmadik napja fáj a térded. Érdemes ránézni.','Két reggel egymás után nem pihented ki magad.','Sokszor kívánsz mostanában édeset, főleg délután.','Pár napja alacsony a kedved. Kisebb lépések?'],['fájdalom','kipihentség','sóvárgás','motiváció'],'Holnap könnyítsünk'],
+    ['dumbbell','var(--sky)','EDZÉS','Mocor · edző',['Mai állapot: könnyebb nap javasolt — rosszul pihented ki magad (4/10), erős az izomláz (7/10).','A fájó vállat terhelő gyakorlatnál: „ma óvatosan”.','A Pull Day után nálad kb. 2 napig tart az izomláz.'],['kipihentség','izomláz','fájdalom','motiváció'],'Megnézem az Edzés mintában'],
+    ['hunger','var(--sage)','ÉTKEZÉSI TANÁCSADÓ','Falat · táplálkozás',['10-kor már 7/10 éhes voltál — kevés volt a reggeli. Holnap tegyél bele még kb. 20 g fehérjét.','Most sósat kívánsz: egy marék pörkölt mandula jobb választás, mint a chips.'],['éhség','sóvárgás']],
+    ['craving','var(--rose)','ÉRZELMI EVÉS','Falat · táplálkozás',['Nem a stresszből találgatunk: a sóvárgásos napokon 2× több feldolgozott étel került a tányérodra, és ezek jellemzően rossz hangulatú napok voltak.'],['sóvárgás','hangulat','stressz']],
+    ['rested','var(--lav)','ALVÁS','Szunya · alvás',['Neked kb. 7,5 óra alvás elég: ennél többtől már nem leszel kipihentebb. Beállítsam ezt alváscélnak?'],['reggeli kipihentség','alvásnapló'],'Legyen ez a cél'],
+    ['pattern','var(--gold)','MINTAKERESŐ · ÚJ ÖSSZEFÜGGÉSEK','Mezo · 14 új párt figyel',['Rossz alvás után másnap többször sóvárogsz (5 esetből 4).','Edzéses napokon átlagosan 1,2 ponttal jobb a hangulatod.','Emberekkel töltött napokon +1,4 a hangulatod — ezt eddig a fejtisztaságból számoltuk, most a valódi hangulatodból.'],['hangulat','sóvárgás','kipihentség','éhség','motiváció']],
+    ['people','var(--lav)','CSAPAT KARAKTEREK · MINDENKI KAP ÚJ TÉMÁT','Doki · Szunya · Falat · Derű · Mocor · Mezo',['Doki: „A derekad 2 hete visszatérő, főleg az ülős napokon.”','Szunya: a kipihentségedből kiszámolja, mennyi alvás kell neked.','Falat: mi előzi meg a sóvárgást — rövid alvás, stressz vagy kevés fehérje.','Derű (pszichológus): amit a naplóba írsz és ahogy a hangulatod értékeled, 5 napból 4-szer egyezik.','Mocor (fegyelem): reggel magas kedv → az esetek 80%-ában meg is lett az edzés.','Mocor (edző): melyik edzés után meddig tart az izomláz.','Mezo: kikkel töltött napokon jobb a hangulatod.'],['mindegyik új kérdés']],
+    ['motivation','var(--gold)','ÉLETCÉLOK','Mocor · fegyelem',['„Ha nincs kedvem (kedv ≤ 4) → akkor csak 10 perc séta.” — a terved ma egyszer beindult.','A lelki pillér a valódi hangulatodat mutatja, nem a fejtisztaságot.'],['motiváció','hangulat','kipihentség']],
+    ['day','var(--gold)','ESTI NAPZÁRÁS ÉS NAPI PONTSZÁM','A napod',['Te: 7/10 · App: 64/100 — „Az app szerint közepes nap, szerinted jó volt.”','A napzárás nem kérdezi meg újra, csak jelzi, hogy 7/10-re értékelted.'],['a nap mérlege'],'','#napom'],
+    ['scroll','var(--sage)','NAPI ÖSSZEFOGLALÓ, EMLÉKEZET','Mezo · visszatekintés',['„Kedd: rövid éjszaka, délelőtt fájt a hátad, délután nyűgös voltál és édeset kívántál — este mégis jónak érezted a napot.”','Egy hónap múlva is emlékszik: „Legutóbb a hosszú autóút után fájt így a derekad.”'],['minden válasz']],
+    ['trend','var(--coral)','HETI NÉZET','Én · a heted',['Az energia mellett a hangulatod heti görbéje is megjelenik.'],['hangulat','energia']]];
   return `${topbar()}${back('#checkin','Check-in')}
-  <div class="qlhead"><span class="eb">CHECK-IN 2.0 · MINTA</span><h1>Mit táplál az új check-in?</h1><p>Példák arra, hol veszed észre a válaszaidat.</p></div>
-  <section class="fx">${C.map(([ic,c,eb,who,say,from,act],i)=>`<div class="fxc glass rise" style="--c:${c};--i:${i}"><div class="hd">${I(ic)}<span><span class="eb">${eb}</span><span class="who">${who}</span></span></div><p class="say">${say}</p><div class="from">${from.map(f=>`<span class="flat">${f}</span>`).join('')}</div>${act?`<div class="act"><button class="pillx" style="--c:${c}" data-toast="Rendben — a mintában itt megáll.">${act}</button></div>`:''}</div>`).join('')}
-  <a href="#napom" class="fxc glass rise" style="--c:var(--gold);--i:10;text-decoration:none;color:var(--ink)"><div class="hd">${I('day')}<span><span class="eb">A NAPOD · ESTE</span><span class="who">a te ítéleted az app pontszáma mellett</span></span></div><p class="say">Te: 7/10 · App: 64/100 — nézd meg ›</p></a></section>
+  <div class="qlhead"><span class="eb">CHECK-IN 2.0 · MINTA</span><h1>Mit táplál az új check-in?</h1><p>Mind a ${C.length} terület, példákkal: itt veszed majd észre a válaszaidat.</p></div>
+  <section class="fx">${C.map(([ic,c,eb,who,say,from,act,link],i)=>`<div class="fxc glass rise" style="--c:${c};--i:${Math.min(i,8)}"><div class="hd">${I(ic)}<span><span class="eb">${pad2(i+1)} · ${eb}</span><span class="who">${who}</span></span></div>${say.map(x=>`<p class="say">${x}</p>`).join('')}<div class="from">${from.map(f=>`<span class="flat">${f}</span>`).join('')}</div>${act?`<div class="act"><button class="pillx" style="--c:${c}" data-toast="Rendben — a mintában itt megáll.">${act}</button></div>`:''}${link?`<div class="act"><button class="pillx ghost" data-go="${link}">Megnézem ›</button></div>`:''}</div>`).join('')}</section>
   ${principle('Üres válasz sehol nem számít —','amit kihagysz, azt semmi nem veszi „közepesnek”.')}`;
 }
 
