@@ -25,8 +25,8 @@ class ExpenditureExplainerTest {
     private static final int N = 70;
 
     /**
-     * 70 days: days 0–4 unlogged, day 10 suspicious (500), day 20 marked (900), the rest usable at 2400;
-     * movement 300, 370 on every 7th day; weigh-ins every other day from day 7; the trace from day 7
+     * 70 days: days 0–4 (before any data) and day 30 unlogged, day 10 suspicious (500), day 20 marked (900),
+     * the rest usable at 2400; movement 300, 370 on every 7th day, 1000 on the data-less days 0–4; weigh-ins every other day from day 7; the trace from day 7
      * loses 0.01 kg tissue a day with 0.1 kg water, glycogen 1.0 on days 40–44 and 0.9/1.5 on days 60/61.
      */
     private static ExpenditureExplainer.Input input(boolean withUsable, boolean withTrace) {
@@ -36,7 +36,7 @@ class ExpenditureExplainerTest {
         List<DayTrace> trace = new ArrayList<>();
         for (int i = 0; i < N; i++) {
             LocalDate d = D0.plusDays(i);
-            Status s = i < 5 ? Status.UNLOGGED : i == 10 ? Status.SUSPICIOUS : i == 20 ? Status.MARKED_INCOMPLETE
+            Status s = i < 5 || i == 30 ? Status.UNLOGGED : i == 10 ? Status.SUSPICIOUS : i == 20 ? Status.MARKED_INCOMPLETE
                 : withUsable ? Status.USABLE : Status.UNLOGGED;
             status.put(d, s);
             Integer kcal = s == Status.UNLOGGED ? null : i == 10 ? 500 : i == 20 ? 900 : 2400;
@@ -44,7 +44,7 @@ class ExpenditureExplainerTest {
                 logged.put(d, kcal);
             }
             Double w = i >= 7 && (i - 7) % 2 == 0 ? 81.0 - 0.01 * i : null;
-            days.add(new Day(d, s == Status.USABLE ? kcal : null, null, i % 7 == 0 ? 370 : 300, -300, w));
+            days.add(new Day(d, s == Status.USABLE ? kcal : null, null, i < 5 ? 1000 : i % 7 == 0 ? 370 : 300, -300, w));
             if (withTrace && i >= 7) {
                 double g = i >= 40 && i <= 44 ? 1.0 : i == 60 ? 0.9 : i == 61 ? 1.5 : 0;
                 trace.add(new DayTrace(d, 80.0 - 0.01 * (i - 7), 0.1, g));
@@ -59,9 +59,11 @@ class ExpenditureExplainerTest {
 
         assertThat(x.windowStart()).isEqualTo(D0);
         assertThat(x.windowEnd()).isEqualTo(D0.plusDays(69));
-        assertThat(x.usableDays()).isEqualTo(63);
+        assertThat(x.usableDays()).isEqualTo(62);
         assertThat(x.weighInDays()).isEqualTo(32);
-        assertThat(x.unloggedDays()).isEqualTo(5);
+        // Counted from the first day with data (day 5): the empty days 0–4 are "before", not "unlogged".
+        assertThat(x.dataStart()).isEqualTo(D0.plusDays(5));
+        assertThat(x.unloggedDays()).isEqualTo(1);
         assertThat(x.historyWeeks()).isEqualTo(9); // day 7 → day 69 = 63 days
         assertThat(x.startBaseKcal()).isEqualTo(2250);
     }
@@ -71,7 +73,8 @@ class ExpenditureExplainerTest {
         ExpenditureExplanationJson x = ExpenditureExplainer.explain(input(true, true));
 
         assertThat(x.avgIntakeKcal()).isEqualTo(2400);
-        assertThat(x.avgMovementKcal()).isEqualTo(310); // 60 × 300 + 10 × 370
+        // Over the 62 usable days only (53 × 300 + 9 × 370) — the 1000-kcal data-less days never count.
+        assertThat(x.avgMovementKcal()).isEqualTo(310);
         assertThat(x.tissueRateKgPerWeek()).isEqualByComparingTo("-0.07");
         assertThat(x.tissueKcalPerDay()).isEqualTo(-77);
         assertThat(x.simpleBaseKcal()).isEqualTo(2400 + 77 - 310);
@@ -115,7 +118,10 @@ class ExpenditureExplainerTest {
         ExpenditureExplanationJson x = ExpenditureExplainer.explain(input(false, true));
 
         assertThat(x.usableDays()).isZero();
+        assertThat(x.dataStart()).isEqualTo(D0.plusDays(7)); // the first weigh-in precedes the first logged day
+        assertThat(x.unloggedDays()).isEqualTo(61); // days 7–69 minus the two excluded
         assertThat(x.avgIntakeKcal()).isNull();
+        assertThat(x.avgMovementKcal()).isNull();
         assertThat(x.simpleBaseKcal()).isNull();
         assertThat(x.tissueKcalPerDay()).isEqualTo(-77);
     }

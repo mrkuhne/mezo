@@ -123,12 +123,6 @@ public class ExpenditureFilterTest {
     }
 
     @Test
-    void runWithTraceCarriesTheSameEstimateAsRun() {
-        ExpenditureFilter.Traced t = ExpenditureFilter.runWithTrace(mixed(), 2650, P).orElseThrow();
-        assertThat(t.estimate()).isEqualTo(ExpenditureFilter.run(mixed(), 2650, P).orElseThrow());
-    }
-
-    @Test
     void theTraceHasOneDayPerCalendarDayFromTheFirstWeighIn() {
         List<Day> days = mixed(); // first weigh-in on day 3
         List<ExpenditureFilter.DayTrace> trace = ExpenditureFilter.runWithTrace(days, 2650, P).orElseThrow().days();

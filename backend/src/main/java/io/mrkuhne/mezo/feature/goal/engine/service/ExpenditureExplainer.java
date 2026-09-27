@@ -45,14 +45,17 @@ public final class ExpenditureExplainer {
 
     public static ExpenditureExplanationJson explain(Input in) {
         int usable = count(in.status(), in.windowStart(), in.windowEnd(), Status.USABLE);
-        int unlogged = count(in.status(), in.windowStart(), in.windowEnd(), Status.UNLOGGED);
         List<Day> weighed = in.days().stream().filter(d -> d.weightKg() != null).toList();
+        LocalDate dataStart = dataStart(in, weighed);
+        int unlogged = dataStart == null ? 0 : count(in.status(), dataStart, in.windowEnd(), Status.UNLOGGED);
         int historyWeeks = weighed.isEmpty() ? 0
             : (int) Math.ceil((ChronoUnit.DAYS.between(weighed.get(0).date(), in.windowEnd()) + 1) / 7.0);
 
         Integer avgIntake = usable == 0 ? null : (int) Math.round(in.days().stream()
             .filter(d -> d.intakeKcal() != null).mapToInt(Day::intakeKcal).average().orElseThrow());
-        int avgMovement = (int) Math.round(in.days().stream().mapToInt(Day::movementKcal).average().orElse(0));
+        // Over the same (usable) days as the intake average, so the simple equation compares like with like.
+        Integer avgMovement = usable == 0 ? null : (int) Math.round(in.days().stream()
+            .filter(d -> d.intakeKcal() != null).mapToInt(Day::movementKcal).average().orElseThrow());
 
         BigDecimal rate = null;
         Integer tissueKcal = null;
@@ -66,10 +69,23 @@ public final class ExpenditureExplainer {
         }
         Integer simpleBase = avgIntake == null || tissueKcal == null ? null : avgIntake - tissueKcal - avgMovement;
 
-        return new ExpenditureExplanationJson(in.windowStart(), in.windowEnd(), usable, weighed.size(), unlogged,
+        return new ExpenditureExplanationJson(in.windowStart(), in.windowEnd(), dataStart, usable, weighed.size(), unlogged,
             historyWeeks, avgIntake, avgMovement, rate, tissueKcal, simpleBase, in.startBaseKcal(),
             excluded(in.status(), in.loggedKcal(), in.windowStart(), in.windowEnd()),
             waterEvents(trace, in.waterEventKg()), series(in));
+    }
+
+    /** The first window day with a logged intake (any status but UNLOGGED) or a weigh-in; {@code null} with neither. */
+    private static LocalDate dataStart(Input in, List<Day> weighed) {
+        LocalDate first = weighed.isEmpty() ? null : weighed.get(0).date();
+        for (LocalDate d = in.windowStart(); !d.isAfter(in.windowEnd()) && (first == null || d.isBefore(first));
+             d = d.plusDays(1)) {
+            Status s = in.status().get(d);
+            if (s != null && s != Status.UNLOGGED) {
+                return d;
+            }
+        }
+        return first;
     }
 
     /** The excluded logged days (SUSPICIOUS → "suspicious", MARKED_INCOMPLETE → "marked") in [from, to], date-ascending. */

@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.goal.engine.service;
 import io.mrkuhne.mezo.feature.goal.engine.GoalEngineProperties;
 import io.mrkuhne.mezo.feature.goal.engine.port.DailyIntakePort;
 import io.mrkuhne.mezo.feature.goal.entity.ExpenditureEstimateEntity;
+import io.mrkuhne.mezo.feature.goal.entity.ExpenditureExplanationJson;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
@@ -55,6 +56,63 @@ public class ExpenditureLearningService {
         if (!Boolean.TRUE.equals(e.enabled())) {
             return Optional.empty();
         }
+        Optional<Replay> replayed = replay(userId, weekStart);
+        if (replayed.isEmpty()) {
+            return Optional.empty();
+        }
+        Replay rp = replayed.get();
+        boolean existing = rp.prev().isPresent() || rp.thisWeek().isPresent();
+        long recentUsable = rp.status().entrySet().stream()
+            .filter(en -> !en.getKey().isBefore(rp.weekEnd().minusDays(27)))
+            .filter(en -> en.getValue() == IntakeDayClassifier.Status.USABLE).count();
+        if (!existing && recentUsable < e.minUsableDays()) {
+            return Optional.empty();
+        }
+        Optional<ExpenditureFilter.Estimate> filtered = rp.traced().map(ExpenditureFilter.Traced::estimate);
+        if (filtered.isEmpty() && !existing) {
+            return Optional.empty();
+        }
+        return Optional.of(decideAndPersist(userId, weekStart, rp, filtered, e));
+    }
+
+    /**
+     * Explain-only backfill (mezo-y72o3) for a row written before the "Hogy tanultam?" explainer:
+     * replays the week and sets ONLY {@code explanation} on the stored row — status, posterior, applied
+     * base, step, direction and confidence stay exactly as served, no goal recompute, no suggestion
+     * change. The backfilled explanation reflects the data as of the backfill (a meal or weigh-in edited
+     * since the original run shows in it), not necessarily the data the stored decision was made on.
+     *
+     * @return the updated row; empty when learning is off, the week has no row, or there is no active
+     *         goal with a bootstrap to replay against
+     */
+    @Transactional
+    public Optional<ExpenditureEstimateEntity> backfillExplanation(UUID userId, LocalDate weekStart) {
+        GoalEngineProperties.Expenditure e = props.expenditure();
+        if (!Boolean.TRUE.equals(e.enabled())) {
+            return Optional.empty();
+        }
+        Optional<Replay> replayed = replay(userId, weekStart);
+        if (replayed.isEmpty() || replayed.get().thisWeek().isEmpty()) {
+            return Optional.empty();
+        }
+        Replay rp = replayed.get();
+        ExpenditureEstimateEntity row = rp.thisWeek().get();
+        row.setExplanation(explain(rp, e));
+        return Optional.of(estimates.save(row));
+    }
+
+    /** Everything one week's run reads and replays, before any decision. */
+    private record Replay(GoalEntity goal, TdeeBootstrapJson boot, int formulaBase, LocalDate windowStart,
+                          LocalDate weekEnd, Map<LocalDate, Integer> kcal,
+                          Map<LocalDate, IntakeDayClassifier.Status> status, Map<LocalDate, BigDecimal> weights,
+                          List<ExpenditureFilter.Day> days, Optional<ExpenditureFilter.Traced> traced,
+                          Optional<ExpenditureEstimateEntity> prev, Optional<ExpenditureEstimateEntity> thisWeek,
+                          int prevApplied) {
+    }
+
+    /** Gathers the window, classifies the days and runs the filter; empty when there is no active goal with a bootstrap. */
+    private Optional<Replay> replay(UUID userId, LocalDate weekStart) {
+        GoalEngineProperties.Expenditure e = props.expenditure();
         GoalEntity goal = goalRepository.findByCreatedByAndStatusAndDeletedFalse(userId, STATUS_ACTIVE)
             .stream().findFirst().orElse(null);
         TdeeBootstrapJson boot = goal == null ? null : goal.getTdeeBootstrap();
@@ -77,7 +135,6 @@ public class ExpenditureLearningService {
         Optional<ExpenditureEstimateEntity> prev =
             estimates.findFirstByCreatedByAndWeekStartBeforeAndDeletedFalseOrderByWeekStartDesc(userId, weekStart);
         Optional<ExpenditureEstimateEntity> thisWeek = estimates.findByCreatedByAndWeekStartAndDeletedFalse(userId, weekStart);
-        boolean existing = prev.isPresent() || thisWeek.isPresent();
         // The served base for a day with a prior row is that row's applied base (adjustment already
         // folded in there) — not formulaBase + adjustment again, which double-counts a moved base.
         int prevApplied = prev.map(ExpenditureEstimateEntity::getAppliedBaseKcal).orElse(formulaBase + adjustment);
@@ -86,12 +143,6 @@ public class ExpenditureLearningService {
         Map<LocalDate, IntakeDayClassifier.Status> status = IntakeDayClassifier.classify(windowStart, weekEnd, kcal,
             Map.of(), d -> prevApplied + planEat + balanceOn(goal, d),
             e.suspiciousRatio(), e.referenceDays(), e.minReferenceDays());
-        long recentUsable = status.entrySet().stream()
-            .filter(en -> !en.getKey().isBefore(weekEnd.minusDays(27)))
-            .filter(en -> en.getValue() == IntakeDayClassifier.Status.USABLE).count();
-        if (!existing && recentUsable < e.minUsableDays()) {
-            return Optional.empty();
-        }
 
         Map<LocalDate, BigDecimal> weights = weightQuery.dailyMeanWeightKg(userId, windowStart, weekEnd);
         Map<LocalDate, WorkoutWindowQueryService.DayMovement> movement =
@@ -105,31 +156,43 @@ public class ExpenditureLearningService {
         }
         Optional<ExpenditureFilter.Traced> traced =
             ExpenditureFilter.runWithTrace(days, formulaBase, ExpenditureFilter.Params.of(props));
-        Optional<ExpenditureFilter.Estimate> filtered = traced.map(ExpenditureFilter.Traced::estimate);
-        if (filtered.isEmpty() && !existing) {
-            return Optional.empty();
-        }
+        return Optional.of(new Replay(goal, boot, formulaBase, windowStart, weekEnd, kcal, status, weights, days,
+            traced, prev, thisWeek, prevApplied));
+    }
 
-        int prevDirection = prev.map(ExpenditureEstimateEntity::getDirection).orElse(0);
-        int usableWeek = ExpenditureExplainer.count(status, weekStart, weekEnd, IntakeDayClassifier.Status.USABLE);
-        int weighInWeek = (int) weights.keySet().stream().filter(d -> !d.isBefore(weekStart)).count();
+    private ExpenditureExplanationJson explain(Replay rp, GoalEngineProperties.Expenditure e) {
+        return ExpenditureExplainer.explain(new ExpenditureExplainer.Input(rp.windowStart(), rp.weekEnd(), rp.days(),
+            rp.status(), rp.kcal(), rp.traced().map(ExpenditureFilter.Traced::days).orElse(List.of()),
+            rp.prevApplied(), props.kcalPerKg(), e.waterEventKg()));
+    }
+
+    /** Decides the step, upserts the week's row (explanation included) and serves it. */
+    private ExpenditureEstimateEntity decideAndPersist(UUID userId, LocalDate weekStart, Replay rp,
+                                                       Optional<ExpenditureFilter.Estimate> filtered,
+                                                       GoalEngineProperties.Expenditure e) {
+        LocalDate weekEnd = rp.weekEnd();
+        int prevApplied = rp.prevApplied();
+        int formulaBase = rp.formulaBase();
+        int prevDirection = rp.prev().map(ExpenditureEstimateEntity::getDirection).orElse(0);
+        int usableWeek = ExpenditureExplainer.count(rp.status(), weekStart, weekEnd, IntakeDayClassifier.Status.USABLE);
+        int weighInWeek = (int) rp.weights().keySet().stream().filter(d -> !d.isBefore(weekStart)).count();
         ExpenditureFilter.Estimate est;
         ExpenditureStepPolicy.Result r;
         if (filtered.isPresent()) {
             est = filtered.get();
             r = ExpenditureStepPolicy.decide(new ExpenditureStepPolicy.Input(
                 prevApplied, prevDirection, est.baseKcal(), est.sdKcal(), formulaBase,
-                boot.bmr().doubleValue(), usableWeek, weighInWeek), e);
+                rp.boot().bmr().doubleValue(), usableWeek, weighInWeek), e);
         } else {
             // Spec §7: an existing learner is never handed back to the weight-only fallback — nothing to
             // anchor on (no weigh-in in the window) means HOLDING: the previous belief and base carried over.
-            est = prev.map(p -> new ExpenditureFilter.Estimate(p.getPosteriorBaseKcal(), p.getPosteriorSdKcal()))
+            est = rp.prev().map(p -> new ExpenditureFilter.Estimate(p.getPosteriorBaseKcal(), p.getPosteriorSdKcal()))
                 .orElse(new ExpenditureFilter.Estimate(formulaBase, props.bootstrapUncertaintyKcal()));
             r = new ExpenditureStepPolicy.Result(prevApplied, 0, prevDirection, ExpenditureStepPolicy.Status.HOLDING,
                 ExpenditureStepPolicy.confidence(est.sdKcal(), e));
         }
 
-        ExpenditureEstimateEntity row = thisWeek.orElseGet(ExpenditureEstimateEntity::new);
+        ExpenditureEstimateEntity row = rp.thisWeek().orElseGet(ExpenditureEstimateEntity::new);
         row.setCreatedBy(userId);
         row.setWeekStart(weekStart);
         row.setStatus(r.status().name());
@@ -142,16 +205,14 @@ public class ExpenditureLearningService {
         row.setConfidence(r.confidence().name());
         row.setUsableDays(usableWeek);
         row.setWeighInDays(weighInWeek);
-        row.setExcludedDays(ExpenditureExplainer.excluded(status, kcal, weekStart, weekEnd));
-        row.setExplanation(ExpenditureExplainer.explain(new ExpenditureExplainer.Input(windowStart, weekEnd, days,
-            status, kcal, traced.map(ExpenditureFilter.Traced::days).orElse(List.of()), prevApplied,
-            props.kcalPerKg(), e.waterEventKg())));
+        row.setExcludedDays(ExpenditureExplainer.excluded(rp.status(), rp.kcal(), weekStart, weekEnd));
+        row.setExplanation(explain(rp, e));
         ExpenditureEstimateEntity saved = estimates.save(row);
 
         // Owner decision L4: a learning user never also gets the weight-only correction.
-        suggestionService.supersedeOpen(goal.getId(), WEEKLY_CORRECTION);
+        suggestionService.supersedeOpen(rp.goal().getId(), WEEKLY_CORRECTION);
         goalEngineService.recomputeActiveGoal(userId);
-        return Optional.of(saved);
+        return saved;
     }
 
     private static int round(BigDecimal v) {

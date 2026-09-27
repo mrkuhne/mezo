@@ -123,6 +123,8 @@ class ExpenditureLearningServiceIT extends AbstractIntegrationTest {
         seedUserAndGoal(null);
         seedMealsAndWeighIns(suspicious);
         evaluate();
+        int planEat = goalRepository.findById(goalId).orElseThrow().getTdeeBootstrap().weeklyEatKcalPerDay()
+            .setScale(0, RoundingMode.HALF_UP).intValueExact();
 
         ExpenditureEstimateEntity row = service.reviewWeek(userId, WEEK_START).orElseThrow();
         entityManager.flush();
@@ -133,12 +135,14 @@ class ExpenditureLearningServiceIT extends AbstractIntegrationTest {
         assertThat(x).isNotNull();
         assertThat(x.windowEnd()).isEqualTo(WEEK_END);
         assertThat(x.windowStart()).isEqualTo(WEEK_END.minusDays(119));
-        // 35 fixture days: one unlogged, one suspicious; the rest of the 120-day window is empty.
+        // 35 fixture days: one unlogged, one suspicious; the 85 empty days before them are not "unlogged".
+        assertThat(x.dataStart()).isEqualTo(WEEK_END.minusDays(HISTORY_DAYS - 1L));
         assertThat(x.usableDays()).isEqualTo(33);
         assertThat(x.weighInDays()).isEqualTo(35);
-        assertThat(x.unloggedDays()).isEqualTo(120 - 34);
+        assertThat(x.unloggedDays()).isEqualTo(1);
         assertThat(x.historyWeeks()).isEqualTo(5);
         assertThat(x.avgIntakeKcal()).isEqualTo(2000);
+        assertThat(x.avgMovementKcal()).isEqualTo(planEat); // no workouts: the plan's movement average on every usable day
         assertThat(x.startBaseKcal()).isEqualTo(row.getFormulaBaseKcal()); // no prior row, no adjustment
         assertThat(x.excludedDays()).containsExactly(new ExcludedIntakeDayJson(suspicious, 604, "suspicious"));
         // The scale falls 0.05 kg/day → ≈ −0.35 kg/week of tissue.

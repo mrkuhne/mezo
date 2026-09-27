@@ -26,9 +26,10 @@ import org.springframework.stereotype.Component;
  * goals already migrated to the current activity model.
  *
  * <p>Explanation backfill (mezo-y72o3): an existing learner whose LATEST row has no
- * {@code explanation} yet (written before the "Hogy tanultam?" explainer) gets that same week
- * re-reviewed — the idempotent upsert rewrites the row in place with its explanation. The next boot
- * finds it filled and skips.
+ * {@code explanation} yet (written before the "Hogy tanultam?" explainer) gets it through
+ * {@link ExpenditureLearningService#backfillExplanation} — explain-only: the served decision (status,
+ * posterior, applied base, step) is never touched, and the explanation reflects the data as of the
+ * backfill. The next boot finds it filled and skips.
  */
 @Slf4j
 @Component
@@ -63,9 +64,14 @@ public class ExpenditureRolloutRunner implements CommandLineRunner {
                     if (expenditureLearning.reviewWeek(goal.getCreatedBy(), weekStart).isPresent()) {
                         learned++;
                     }
-                } else if (latest.get().getExplanation() == null
-                    && expenditureLearning.reviewWeek(goal.getCreatedBy(), latest.get().getWeekStart()).isPresent()) {
-                    explained++;
+                } else if (latest.get().getExplanation() == null) {
+                    if (expenditureLearning.backfillExplanation(goal.getCreatedBy(), latest.get().getWeekStart())
+                        .isPresent()) {
+                        explained++;
+                    } else {
+                        log.info("Expenditure rollout: no explanation backfilled for user {} (week {}) — nothing to replay.",
+                            goal.getCreatedBy(), latest.get().getWeekStart());
+                    }
                 }
             } catch (Exception e) {
                 log.warn("Expenditure rollout: skipped user {} (goal {}) — {}",
