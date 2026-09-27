@@ -10,8 +10,9 @@ import type { Lean } from '@/features/insights/logic/patternReading'
 const pos = (s: number) => `${(50 + 50 * Math.max(-1, Math.min(1, s))).toFixed(1)}%`
 const SIDE = ['Épp fordítva', 'Nincs hatás', 'Igaz rád'] as const
 
-export function PatternLeanMeter({ now, then }: { now: Lean; then: Lean | null }) {
-  const side = now.support > 0.15 ? 2 : now.support < -0.15 ? 0 : 1
+/** `side` az olvasat állapotából jön (`leanSide`), nem egy saját küszöbből — így a kiemelt
+ *  felirat sosem mond mást, mint a válasz-szó. */
+export function PatternLeanMeter({ now, then, side }: { now: Lean; then: Lean | null; side: 0 | 1 | 2 }) {
   return (
     <div className={`pmx-meter${then ? ' has-ghost' : ''}`} role="img" aria-label={`Merre húz az adat: ${SIDE[side].toLowerCase()}`}>
       <div className="pmx-trk">

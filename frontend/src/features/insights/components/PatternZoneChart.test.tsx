@@ -32,6 +32,15 @@ test('tapping a dot shows its day and value without leaving the chart', () => {
   expect(screen.queryByText('energia-szint: 6')).toBeNull()
 })
 
+test('numbers read with a decimal comma and dots are named by a human date', () => {
+  const frac = days.map((d, i) => ({ ...d, b: d.b + (i === 0 ? 0.5 : 0) }))
+  render(<PatternZoneChart days={frac} pair={pair} showAverages tone="lav" />)
+  const dot = screen.getByRole('button', { name: 'Szep 10: ébredés ideje 06:12, energia-szint 6,5' })
+  fireEvent.click(dot)
+  expect(screen.getByText('energia-szint: 6,5')).toBeInTheDocument()
+  expect(screen.queryByText(/6\.5/)).toBeNull()
+})
+
 test('without averages only the day counts show', () => {
   render(<PatternZoneChart days={days.slice(0, 5)} pair={pair} showAverages={false} tone="lav" />)
   expect(screen.queryByText(/átlag/)).toBeNull()

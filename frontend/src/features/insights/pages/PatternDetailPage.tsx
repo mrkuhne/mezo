@@ -160,6 +160,13 @@ export function PatternDetailPage() {
   const reading = readPattern({ pair, pattern, days, events }, monitor?.minN ?? null)
   const look = answerLook(reading, pattern?.status ?? null)
   const plan = pattern?.testPlan ?? null
+  // átlagot csak akkor, ha az olvasat már mond valamit: gyűjtés (csoport-hiány is), álló adat és
+  // puszta kérdés mellett egy 1-2 napos „átlag" többet állítana, mint amit a napok elbírnak
+  const showAverages = reading.dayCount >= reading.minN && !reading.groupsShort
+    && !['gyulik', 'allo', 'kerdes'].includes(reading.state)
+  const averagesNote = reading.groupsShort && reading.groups
+    ? `Az átlagot akkor mutatom, ha mindkét fajta napból megvan a ${reading.groups.perGroup}.`
+    : reading.dayCount < reading.minN ? `Az átlagot ${reading.minN} napnál mutatom.` : null
   const hasImpact = pattern != null || impact.fact != null
     || impact.predictions.length + impact.experiments.length + impact.challenges.length > 0
 
@@ -171,7 +178,7 @@ export function PatternDetailPage() {
       <SectionHead title="Mit mutat az adat" meta={days.length ? `${days.length} nap` : undefined} />
       {days.length >= 2
         ? <PatternZoneChart days={days} pair={pair} tone={look.tone}
-            showAverages={reading.dayCount >= reading.minN && reading.state !== 'allo'} />
+            showAverages={showAverages} />
         : (
           <p className={cn('pmx-empty uv-empty rise', toneClass(look.tone))}>
             <Icon3D name="t-calendar" size={40} />
@@ -179,9 +186,7 @@ export function PatternDetailPage() {
             Ahogy a napok összegyűlnek, itt jelennek meg — minden nap egy pötty.
           </p>
         )}
-      {days.length >= 2 && reading.dayCount < reading.minN && (
-        <p className="pmx-cnote rise">Az átlagot {reading.minN} napnál mutatom.</p>
-      )}
+      {days.length >= 2 && averagesNote && <p className="pmx-cnote rise">{averagesNote}</p>}
 
       <SectionHead title="A szabály" meta="előre rögzítve" />
       <PatternRuleCard pair={pair} plan={plan} reading={reading}

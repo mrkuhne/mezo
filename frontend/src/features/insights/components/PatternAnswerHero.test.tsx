@@ -40,3 +40,21 @@ test('a confirmed, holding pattern only offers a quiet revoke', () => {
   expect(screen.getByText('Bekerült a Tudástárba, Mezo számol vele.')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Mégsem igaz rám — visszavonom' })).toBeInTheDocument()
 })
+
+test('a binary pair short on one day group shows no pips and never cites the day minimum', () => {
+  const weekend = {
+    ...pair, metricAKey: 'weekend', metricALabel: 'hétvége', metricAValueKind: 'binary',
+    metricBKey: 'late-meal-hour', metricBLabel: 'utolsó étkezés ideje', metricBValueKind: 'clock_hour',
+    expectedDirection: 'positive', verdict: 'imbalanced_groups', alignedDays: 9,
+    groupZeroDays: 8, groupOneDays: 1, requiredPerGroup: 3, r: null, n: null,
+  } as unknown as PatternMonitorPair
+  const d = [0, 0, 0, 0, 1, 0, 0, 0, 0].map((a, i) => ({ date: `2026-08-${24 + i}`, a, b: 20 + i / 4 }))
+  const reading = readPattern({ pair: weekend, pattern, days: d, events: [] }, 8)
+  const { container } = render(
+    <PatternAnswerHero pair={weekend} pattern={pattern} reading={reading} days={d} events={[]} onDecide={vi.fn()} />)
+  expect(container.querySelector('.pmx-pips-wrap')).toBeNull()
+  expect(container.querySelector('.pmx-say')).toHaveTextContent(
+    '8 hétköznapi nap mellett még csak 1 hétvégi nap van. Mindkét fajta napból legalább 3 kell, mielőtt irányt mondok.')
+  expect(screen.getByText(/mindkét fajta napból megvan a 3/)).toBeInTheDocument()
+  expect(container.textContent).not.toMatch(/8-ból|8\. nap/)
+})

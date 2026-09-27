@@ -7,7 +7,7 @@ import { useState, type KeyboardEvent } from 'react'
 import type { AlignedDay, PatternMonitorPair } from '@/data/types'
 import { toneClass, type DetailTone } from '@/features/insights/components/DetailHero'
 import { binaryGroupLabels, formatMetricValue } from '@/features/insights/logic/metricFormat'
-import { mean, niceTicks, patternZones, zoneValue } from '@/features/insights/logic/patternReading'
+import { huMetricValue, mean, niceTicks, patternZones, zoneValue } from '@/features/insights/logic/patternReading'
 import { cn } from '@/shared/lib/cn'
 import { huMonthDay } from '@/shared/lib/dates'
 
@@ -95,8 +95,8 @@ export function PatternZoneChart({ days, pair, showAverages, tone }: {
 
   const aValueOf = (day: AlignedDay) => binary
     ? (day.a >= 0.5 ? oneLabel : zeroLabel)
-    : formatMetricValue(pair.metricAKey, day.a)
-  const bValueOf = (day: AlignedDay) => formatMetricValue(pair.metricBKey, day.b)
+    : huMetricValue(pair.metricAKey, day.a)
+  const bValueOf = (day: AlignedDay) => huMetricValue(pair.metricBKey, day.b)
 
   const toggle = (i: number) => setSelected((s) => (s === i ? null : i))
   const onKeyDown = (i: number) => (e: KeyboardEvent<SVGCircleElement>) => {
@@ -137,8 +137,8 @@ export function PatternZoneChart({ days, pair, showAverages, tone }: {
             cx={xOf(day, i)} cy={y(day.b)} r={5.5}
             role="button" tabIndex={0}
             aria-label={binary
-              ? `${day.date}: ${aValueOf(day)}, ${pair.metricBLabel} ${bValueOf(day)}`
-              : `${day.date}: ${pair.metricALabel} ${aValueOf(day)}, ${pair.metricBLabel} ${bValueOf(day)}`}
+              ? `${huMonthDay(day.date)}: ${aValueOf(day)}, ${pair.metricBLabel} ${bValueOf(day)}`
+              : `${huMonthDay(day.date)}: ${pair.metricALabel} ${aValueOf(day)}, ${pair.metricBLabel} ${bValueOf(day)}`}
             aria-pressed={selected === i}
             onClick={() => toggle(i)}
             onKeyDown={onKeyDown(i)} />
@@ -154,7 +154,7 @@ export function PatternZoneChart({ days, pair, showAverages, tone }: {
               <g key={`x-${v}`}>
                 <line className="pmx-xt" x1={xOfValue(v)} x2={xOfValue(v)} y1={BT + 4} y2={BT + 8} />
                 <text className="pmx-tk" x={xOfValue(v)} y={BT + 20} textAnchor="middle">
-                  {formatMetricValue(pair.metricAKey, v)}
+                  {huMetricValue(pair.metricAKey, v)}
                 </text>
               </g>
             ))}

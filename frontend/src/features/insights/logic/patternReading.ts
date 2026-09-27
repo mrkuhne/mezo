@@ -8,13 +8,15 @@ import type { AlignedDay, Pattern, PatternEvent, PatternMonitorPair, PatternTest
 import type { DetailTone } from '@/features/insights/components/DetailHero'
 import type { Icon3DName } from '@/shared/ui/clay'
 import { binaryGroupLabels, formatMetricValue } from '@/features/insights/logic/metricFormat'
-import { bottleneckLabel, groupBalanceSentence } from '@/features/insights/logic/verdicts'
+import { bottleneckLabel } from '@/features/insights/logic/verdicts'
 
 export type ReadingState =
   | 'kerdes' | 'gyulik' | 'allo' | 'nincs' | 'halvany' | 'halvanyFordit' | 'fordit' | 'eros'
   | 'elvetve' | 'elengedve' | 'pihen'
 
 export interface Lean { r: number; n: number; support: number; lo: number; hi: number }
+/** Bináris (csoportos) pár két csoportjának napszáma és a csoportonkénti minimum. */
+export interface GroupCounts { zero: number; one: number; perGroup: number }
 export interface Reading {
   state: ReadingState
   now: Lean | null
@@ -22,6 +24,11 @@ export interface Reading {
   minN: number
   dayCount: number
   dir: 1 | -1
+  /** Csak bináris párnál nem-null: a két csoport napszáma (a `days`-ből, üres `days` esetén a kapu számaiból). */
+  groups: GroupCounts | null
+  /** Gyűjtés közben az egyik csoport még a minimum alatt van (vagy a kapu `imbalanced_groups`-ot mond):
+   *  ilyenkor a `minN` sehol nem hivatkozható, és nincsenek nap-pipák — a csoport-egyensúly a hír. */
+  groupsShort: boolean
 }
 
 const Z90 = 1.645
@@ -70,6 +77,16 @@ function thenLean(pair: PatternMonitorPair, pattern: Pattern | null, events: Pat
   return last ? lean(last.r!, last.n!, dir) : null
 }
 
+function groupCounts(pair: PatternMonitorPair, days: AlignedDay[]): GroupCounts | null {
+  if (pair.metricAValueKind !== 'binary') return null
+  const perGroup = pair.requiredPerGroup ?? DEFAULT_PER_GROUP
+  if (days.length > 0) {
+    const one = days.filter((d) => d.a >= 0.5).length
+    return { zero: days.length - one, one, perGroup }
+  }
+  return { zero: pair.groupZeroDays ?? 0, one: pair.groupOneDays ?? 0, perGroup }
+}
+
 export function readPattern(
   input: { pair: PatternMonitorPair; pattern: Pattern | null; days: AlignedDay[]; events: PatternEvent[] },
   catalogMinN: number | null,
@@ -81,8 +98,14 @@ export function readPattern(
     ?? (pair.missingDays != null ? pair.alignedDays + pair.missingDays : null)
     ?? catalogMinN ?? LAST_RESORT_MIN_N
   const dayCount = pair.verdict === 'frozen' ? days.length : Math.max(pair.alignedDays, days.length)
-  const base = { minN, dayCount, dir, then: thenLean(pair, pattern, events, dir) }
+  const groups = groupCounts(pair, days)
+  const base = { minN, dayCount, dir, then: thenLean(pair, pattern, events, dir), groups, groupsShort: false }
   const status = pattern?.status
+  const gathering = (): Reading => ({
+    ...base, state: 'gyulik', now: null,
+    groupsShort: groups != null && (pair.verdict === 'imbalanced_groups'
+      || groups.zero < groups.perGroup || groups.one < groups.perGroup),
+  })
 
   if (status === 'rejected') return { ...base, state: 'elvetve', now: null }
   if (status === 'refuted') return { ...base, state: 'elengedve', now: null }
@@ -92,19 +115,16 @@ export function readPattern(
     case 'no_data': return { ...base, state: 'kerdes', now: null }
     case 'degenerate': return { ...base, state: 'allo', now: null }
     case 'few_days':
-    case 'imbalanced_groups': return { ...base, state: dayCount === 0 ? 'kerdes' : 'gyulik', now: null }
+    case 'imbalanced_groups': return dayCount === 0 ? { ...base, state: 'kerdes', now: null } : gathering()
     case 'live': {
-      if (pair.r == null || pair.n == null) return { ...base, state: 'gyulik', now: null }
+      if (pair.r == null || pair.n == null) return gathering()
       const now = lean(pair.r, pair.n, dir)
       return { ...base, state: classify(now), now }
     }
     case 'frozen': {
-      if (days.length < minN) return { ...base, state: days.length === 0 ? 'kerdes' : 'gyulik', now: null }
-      if (pair.metricAValueKind === 'binary') {
-        const per = pair.requiredPerGroup ?? DEFAULT_PER_GROUP
-        const ones = days.filter((d) => d.a >= 0.5).length
-        if (ones < per || days.length - ones < per) return { ...base, state: 'gyulik', now: null }
-      }
+      if (days.length === 0) return { ...base, state: 'kerdes', now: null }
+      if (days.length < minN) return gathering()
+      if (groups && (groups.zero < groups.perGroup || groups.one < groups.perGroup)) return gathering()
       const r = pearson(days)
       if (r == null) return { ...base, state: 'allo', now: null }
       const now = lean(r, days.length, dir)
@@ -129,15 +149,31 @@ const LOOK: Record<ReadingState, AnswerLook> = {
   pihen: { word: 'Pihen', tone: 'mute', art: 't-clock' },
 }
 
+/** A megerősített, halvány minta csak akkor „gyengült", ha a mostani támogatás tényleg kisebb a döntéskorinál. */
+function weakened(reading: Reading): boolean {
+  return reading.then != null && reading.now != null && reading.now.support < reading.then.support
+}
+
+/** A „merre húz" mérő kiemelt oldala az olvasat állapotából (0 = fordítva, 1 = nincs hatás, 2 = igaz rád). */
+export function leanSide(state: ReadingState): 0 | 1 | 2 {
+  if (state === 'eros' || state === 'halvany') return 2
+  if (state === 'fordit' || state === 'halvanyFordit') return 0
+  return 1
+}
+
 export function answerLook(reading: Reading, status: Pattern['status'] | null): AnswerLook {
   if (status === 'confirmed') {
     switch (reading.state) {
       case 'eros': return { word: 'Tartja magát', tone: 'sage', art: 't-tick' }
-      case 'halvany': return { word: reading.then ? 'Azóta gyengült' : 'Halvány maradt', tone: 'gold', art: 't-trend' }
+      case 'halvany': return { word: weakened(reading) ? 'Azóta gyengült' : 'Halvány maradt', tone: 'gold', art: 't-trend' }
       case 'nincs': return { word: 'Az adat nem igazolja', tone: 'gold', art: 't-hold' }
       case 'halvanyFordit':
       case 'fordit': return { word: 'Most ellentmond', tone: 'coral', art: 't-compare' }
       case 'gyulik':
+        if (reading.groupsShort && reading.dayCount >= reading.minN) {
+          return { word: 'Kevés az egyik fajta nap', tone: 'gold', art: 't-clock' }
+        }
+        return { word: 'Még alig mért', tone: 'gold', art: 't-clock' }
       case 'kerdes': return { word: 'Még alig mért', tone: 'gold', art: 't-clock' }
       default: break
     }
@@ -165,21 +201,30 @@ export function decisionPlan(reading: Reading, status: Pattern['status'] | null)
       return { buttons: [], revokeLink: true, note: null, settled: 'Bekerült a Tudástárba, Mezo számol vele.' }
     }
     const against = reading.state === 'nincs' || reading.state === 'fordit' || reading.state === 'halvanyFordit'
-    return {
-      buttons: [b('reject', 'Visszavonom', against)], revokeLink: false, settled: null,
-      note: against
-        ? `**Ajánlom a visszavonást:** Mezo ezt tényként kezeli, pedig ${reading.state === 'nincs' ? 'az adat nem igazolja' : 'az adat most az ellenkezőjét mutatja'}.`
-        : reading.state === 'gyulik' || reading.state === 'kerdes'
-          ? `**Maradhat:** ha ${reading.minN} napnál sem igazolódik, szólok.`
-          : '**Maradhat:** még a jó irányba mutat, csak gyengébben. Szólok, ha megfordul.',
+    let note: string
+    if (against) {
+      note = `**Ajánlom a visszavonást:** Mezo ezt tényként kezeli, pedig ${reading.state === 'nincs' ? 'az adat nem igazolja' : 'az adat most az ellenkezőjét mutatja'}.`
+    } else if (reading.state === 'allo') {
+      note = '**Várjunk:** amíg az egyik adat áll, nincs mit eldönteni.'
+    } else if (reading.state === 'gyulik' && reading.groupsShort) {
+      note = '**Maradhat:** szólok, ha mindkét fajta napból lesz elég, és nem igazolódik.'
+    } else if (reading.state === 'gyulik' || reading.state === 'kerdes') {
+      note = `**Maradhat:** ha ${reading.minN} napnál sem igazolódik, szólok.`
+    } else if (weakened(reading)) {
+      note = '**Maradhat:** még a jó irányba mutat, csak gyengébben. Szólok, ha megfordul.'
+    } else {
+      note = '**Maradhat:** a jó irányba mutat, de még halványan. Szólok, ha megfordul.'
     }
+    return { buttons: [b('reject', 'Visszavonom', against)], revokeLink: false, settled: null, note }
   }
   if (status === 'rejected' || status === 'refuted' || status === 'dormant') {
     return { buttons: [b('monitor', 'Mégis figyeljük', false)], revokeLink: false, note: null, settled: null }
   }
   switch (reading.state) {
     case 'gyulik': return { buttons: [b('monitor', watch, false), b('reject', 'Elvetem', false)], revokeLink: false, settled: null,
-      note: `**Nincs teendőd:** szólok, amikor megvan a ${reading.minN}. nap.` }
+      note: reading.groupsShort && reading.groups
+        ? `**Nincs teendőd:** szólok, amikor mindkét fajta napból megvan a ${reading.groups.perGroup}.`
+        : `**Nincs teendőd:** szólok, amikor megvan a ${reading.minN}. nap.` }
     case 'kerdes': return { buttons: [b('monitor', watch, !watching), b('reject', 'Elvetem', false)], revokeLink: false, settled: null,
       note: '**Ha érdekel, figyeljük:** a napjaidból magától gyűlik.' }
     case 'allo': return { buttons: [b('monitor', watch, false), b('reject', 'Elvetem', false)], revokeLink: false, settled: null,
@@ -205,10 +250,15 @@ export function patternZones(days: AlignedDay[], binary: boolean): [AlignedDay[]
   return [sorted.slice(0, k), sorted.slice(k)]
 }
 
+const CLOCK_STEPS = [0.5, 1, 2, 3, 4, 6]
+
 export function niceTicks(lo: number, hi: number, clock: boolean, count = 3): number[] {
   let step: number
-  if (clock) step = hi - lo > 1.6 ? 1 : 0.5
-  else {
+  if (clock) {
+    // az óra-lépés is tartja a `count`-ot: a legkisebb lépés, amivel legfeljebb count+1 jel lesz
+    const ticksFor = (s: number) => Math.floor(hi / s + 1e-9) - Math.ceil(lo / s - 1e-9) + 1
+    step = CLOCK_STEPS.find((s) => ticksFor(s) <= count + 1) ?? CLOCK_STEPS[CLOCK_STEPS.length - 1]
+  } else {
     const raw = (hi - lo) / count || 1
     const p = 10 ** Math.floor(Math.log10(raw))
     const m = raw / p
@@ -224,6 +274,36 @@ export const az = (word: string): 'a' | 'az' => (/^[aáeéiíoóöőuúüű]/i.t
 export const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 const hu1 = (v: number) => (Math.round(v * 10) / 10).toFixed(1).replace('.', ',')
 
+/** `formatMetricValue` magyar tizedesvesszővel: a sima számokon „7,4", az óra („15:41") és az
+ *  igen/nem változatlan. A grafikon tooltipje, pötty-címkéi és tengelye ezt használja. */
+export function huMetricValue(metricKey: string, value: number): string {
+  return formatMetricValue(metricKey, value).replace(/^(-?\d+)\.(\d+)$/, '$1,$2')
+}
+
+/** A csoport-egyensúly mondata, a napok számából — a befagyott soron is működik (ott a kapu nem
+ *  ad csoportszámot). Sosem hivatkozik a `minN`-re. */
+function groupSentence(g: GroupCounts, pair: PatternMonitorPair): string {
+  const labels = binaryGroupLabels(pair.metricAKey)
+  const zero = { count: g.zero, day: labels.zero.day }
+  const one = { count: g.one, day: labels.one.day }
+  const per = g.perGroup
+  let first: string
+  const [more, less] = zero.count >= one.count ? [zero, one] : [one, zero]
+  if (more.count >= per && less.count === 0) first = `**${more.count}** ${more.day} nap mellett még egy ${less.day} nap sincs.`
+  else if (more.count >= per) first = `**${more.count}** ${more.day} nap mellett még csak **${less.count}** ${less.day} nap van.`
+  else first = `Eddig **${zero.count}** ${zero.day} és **${one.count}** ${one.day} nap van.`
+  return `${first} Mindkét fajta napból legalább ${per} kell, mielőtt irányt mondok.`
+}
+
+/** Melyik metrika áll? A kapu megmondja (`bottleneckMetricKey`); a befagyott sornál a napokból
+ *  döntjük el: amelyik oldal szórása nulla. */
+function flatLabel(pair: PatternMonitorPair, days: AlignedDay[]): string {
+  if (pair.bottleneckMetricKey) return bottleneckLabel(pair)
+  const flat = (vals: number[]) => vals.length > 0 && vals.every((v) => v === vals[0])
+  if (flat(days.map((d) => d.a)) && !flat(days.map((d) => d.b))) return pair.metricALabel
+  return pair.metricBLabel
+}
+
 /** Zóna-átlag kiírva: óra-metrikán „20:39", egyébként egy tizedes vesszővel. */
 export function zoneValue(pair: PatternMonitorPair, value: number): string {
   return pair.metricBValueKind === 'clock_hour' ? formatMetricValue(pair.metricBKey, value) : hu1(value)
@@ -237,13 +317,15 @@ export function saySentence(reading: Reading, pair: PatternMonitorPair, days: Al
     case 'kerdes':
       return `Még nincs egy közös nap sem. Ahogy ${az(A)} **${A}** és ${az(B)} **${B}** napjai összegyűlnek, számolni kezdem.`
     case 'gyulik':
+      if (reading.groupsShort && reading.groups) {
+        return `${status === 'confirmed' ? 'Megerősítetted. ' : ''}${groupSentence(reading.groups, pair)}`
+      }
       if (status === 'confirmed') {
         return `Megerősítetted, de eddig csak **${reading.dayCount} közös nap** van. ${reading.minN} nap kell, hogy az adat is mondjon valamit.`
       }
-      if (pair.verdict === 'imbalanced_groups') return groupBalanceSentence(pair)
       return `**${reading.dayCount} közös nap** van a ${reading.minN}-ból. Addig nem mondok irányt: ennyi napból bármi kijöhetne.`
     case 'allo': {
-      const label = pair.bottleneckMetricKey ? bottleneckLabel(pair) : B
+      const label = flatLabel(pair, days)
       return `${cap(az(label))} **${label}** a vizsgált napokon mindig ugyanannyi volt, így nincs mit összevetni. Ha mozdul, újra számolok.`
     }
     case 'elvetve': return 'Elvetetted, ezért ezt már nem számolom tovább.'
@@ -257,10 +339,12 @@ export function saySentence(reading: Reading, pair: PatternMonitorPair, days: Al
   let base: string
   if (reading.state === 'nincs' || z0.length === 0 || z1.length === 0) {
     base = 'A kétféle nap átlaga között kicsi a különbség, és nem is következetes.'
+  } else if (binary) {
+    const { zero, one } = binaryGroupLabels(pair.metricAKey)
+    base = `${cap(az(one.day))} ${one.day} napokon ${az(B)} ${B} átlagosan **${zoneValue(pair, mean(z1))}** volt, `
+      + `${az(zero.day)} ${zero.day} napokon **${zoneValue(pair, mean(z0))}**.`
   } else {
-    const who = binary
-      ? cap(binaryGroupLabels(pair.metricAKey).one.axis)
-      : `Amikor ${az(A)} ${A} ${pair.metricAValueKind === 'clock_hour' ? 'később' : 'magasabb'} volt,`
+    const who = `Amikor ${az(A)} ${A} ${pair.metricAValueKind === 'clock_hour' ? 'később' : 'magasabb'} volt,`
     base = `${who} ${az(B)} ${B} átlagosan **${zoneValue(pair, mean(z1))}** volt, a többi napon **${zoneValue(pair, mean(z0))}**.`
   }
   const tail: Partial<Record<ReadingState, string>> = {
@@ -287,7 +371,8 @@ export function ruleSentence(pair: PatternMonitorPair, plan: PatternTestPlan | n
   const lag = lagWord(plan?.lagDays ?? pair.lagDays)
   const bWord = pair.metricBValueKind === 'clock_hour' ? (up ? 'később van' : 'korábban van') : (up ? 'magasabb' : 'alacsonyabb')
   if (pair.metricAValueKind === 'binary') {
-    return `${cap(binaryGroupLabels(pair.metricAKey).one.axis)} ${lag} ${az(B)} **${B}** ${bWord}.`
+    const one = binaryGroupLabels(pair.metricAKey).one.day
+    return `${cap(az(one))} ${one} napokon ${lag} ${az(B)} **${B}** ${bWord}.`
   }
   const aWord = pair.metricAValueKind === 'clock_hour' ? 'később van' : 'magasabb'
   return `Ha **${az(A)} ${A}** ${aWord}, ${lag} **${az(B)} ${B}** ${bWord}.`

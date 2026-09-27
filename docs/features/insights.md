@@ -288,14 +288,23 @@ below (or absorbed into `readPattern` itself, which needed no visual counterpart
    writes the one sentence of evidence prose (group averages, day count, direction), and — only
    while the state is `kerdes`/`gyulik` — the latest `observation` event's first paragraph, quoted
    as „AMIBŐL MEZO FELVETETTE". Then either **`PatternLeanMeter`** (once a `now` reading exists) or
-   **`PatternDayPips`** (day tally vs `minN`, while still `gyulik`). Last, the decision block —
+   **`PatternDayPips`** (day tally vs `minN`, while still `gyulik`) — **neither** while a binary
+   pair is short on one day group (`reading.groupsShort`: one 0/1 group under
+   `requiredPerGroup ?? 3`, or the gate says `imbalanced_groups`). Then the sentence carries the
+   news instead („**8** hétköznapi nap mellett még csak **1** hétvégi nap van. Mindkét fajta napból
+   legalább 3 kell…", built from `reading.groups` so it works on frozen rows too) and `minN` is
+   never cited anywhere. The meter's lit side comes from the reading state (`leanSide`), not its
+   own threshold. Binary sentences use the group's day adjective („A hétvégi napokon az …",
+   „Az említéses napokon …"). Last, the decision block —
    buttons, a settled line, or the quiet „Mégsem igaz rám — visszavonom" link — driven entirely by
    `decisionPlan(reading, status)`, never by ad-hoc JSX conditions; it is omitted outright for a
    catalogue pair with no persisted row (`pattern == null`).
 2. **„Mit mutat az adat" → `PatternZoneChart`** — the page's one glass card, a two-zone SVG: binary
    A metrics split into two fixed columns (jittered points, no false continuous axis), continuous A
-   metrics split at the median into a lo/hi zone; both draw a zone-average label once
-   `reading.dayCount >= reading.minN` (never before — an average from too few days would overclaim).
+   metrics split at the median into a lo/hi zone; both draw a zone-average label only once
+   `reading.dayCount >= reading.minN`, no group is short, and the state is not `gyulik`/`allo`/
+   `kerdes` (an average from too few days would overclaim; the note under the chart says when it
+   will appear). Dot labels, tooltip and table use the human date and a decimal comma.
    Every dot is a `role="button"`, tappable (or Enter/Space) to open a small tooltip with that day's
    two values. **Selection is the chart's OWN `useState`**, not page or router state: a tap never
    re-runs the page's entrance animation and never moves scroll (see the style-bible lesson below).
@@ -335,9 +344,11 @@ persisted `status`) into the Hungarian answer word, tone and icon the hero shows
 | `pihen` | `pattern.status === 'dormant'` | „Pihen" |
 
 On a **`confirmed`** row `answerLook` overrides the plain word with a status-aware one instead
-(`eros` → „Tartja magát", `halvany` → „Azóta gyengült" once there is a frozen `then` reading else
-„Halvány maradt", `nincs` → „Az adat nem igazolja", `fordit`/`halvanyFordit` → „Most ellentmond",
-`gyulik`/`kerdes` → „Még alig mért") — the confirmed word always names how *today's* live data
+(`eros` → „Tartja magát", `halvany` → „Azóta gyengült" / „Halvány maradt" (see below), `nincs` → „Az adat nem igazolja", `fordit`/`halvanyFordit` → „Most ellentmond",
+`gyulik`/`kerdes` → „Még alig mért", or „Kevés az egyik fajta nap" when a binary pair has
+enough days but one group is short; `allo` keeps „Nincs mit összevetni" with a „Várjunk" note
+and no recommended revoke; „Azóta gyengült" only when today's support is truly below the
+decision-time one) — the confirmed word always names how *today's* live data
 compares to the belief already in the Tudástár, never repeats the plain discovery word.
 
 **The lean band — the „merre húz" meter's math.** `lean(r, n, dir)` turns a Pearson `r` into a

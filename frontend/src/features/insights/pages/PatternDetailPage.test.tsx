@@ -82,7 +82,11 @@ describe('PatternDetailPage (mock mode)', () => {
   test('the weekend pair says why it still collects: the group balance', () => {
     renderAt('/mezo/patterns/weekend~late-meal-hour')
     expect(answer()).toHaveTextContent('Még gyűjtöm')
-    expect(screen.getByText(/8 hétköznapi nap mellett még csak 1 hétvégi nap van/)).toBeInTheDocument()
+    expect(document.querySelector('.pmx-say')).toHaveTextContent(/8 hétköznapi nap mellett még csak 1 hétvégi nap van/)
+    // one group short: no day pips, no zone averages, and the note names the per-group minimum
+    expect(document.querySelector('.pmx-pips-wrap')).toBeNull()
+    expect(screen.queryByText(/átlag ·/)).not.toBeInTheDocument()
+    expect(screen.getByText('Az átlagot akkor mutatom, ha mindkét fajta napból megvan a 3.')).toBeInTheDocument()
   })
 
   test('the reflection hypothesis reads a strong signal and lights the recommended decision', () => {
@@ -135,10 +139,10 @@ describe('PatternDetailPage (mock mode)', () => {
   test('a dot tap shows the tooltip without re-rendering the hero', () => {
     renderAt('/mezo/patterns/ref-anna-sleep')
     const hero = answer()
-    const dot = screen.getAllByRole('button', { name: /^2026-08-27:/ })[0]
+    const dot = screen.getAllByRole('button', { name: /^Aug 27:/ })[0]
     fireEvent.click(dot)
     expect(document.querySelector('.pmx-tip')).not.toBeNull()
-    expect(screen.getByText('alváshossz: 7.4')).toBeInTheDocument()
+    expect(screen.getByText('alváshossz: 7,4')).toBeInTheDocument()
     expect(answer()).toBe(hero)
   })
 
@@ -319,7 +323,9 @@ describe('PatternDetailPage (real mode)', () => {
     renderAt(`/mezo/patterns/${weekendKey}`)
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Még gyűjtöm' })).toBeInTheDocument()
-    expect(screen.getByText(/8 hétköznapi nap mellett még csak 1 hétvégi nap van/)).toBeInTheDocument()
+    expect(document.querySelector('.pmx-say')).toHaveTextContent(/8 hétköznapi nap mellett még csak 1 hétvégi nap van/)
+    // a 1-day group never gets an „átlag" (it once showed „14:35 átlag · 1 nap")
+    expect(screen.queryByText(/átlag ·/)).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Megerősítem' })).not.toBeInTheDocument()
     expect(screen.queryByText(/r=-0\.27/)).not.toBeInTheDocument()
     expect(screen.getByText('Számok, ha érdekel')).toBeInTheDocument()
@@ -358,6 +364,59 @@ describe('PatternDetailPage (real mode)', () => {
     expect(screen.queryByRole('button', { name: 'Megerősítem' })).not.toBeInTheDocument()
     expect(screen.queryByText('Mit mutat az adat')).not.toBeInTheDocument()
     expect(screen.queryByText('Számok, ha érdekel')).not.toBeInTheDocument()
+  })
+
+  test('the saved-insight revoke link posts a reject decision', async () => {
+    const pairless = {
+      id: 'artifact-2', kind: 'ai_hypothesis', category: 'response', categoryLabel: 'Válasz',
+      title: 'A késői koffein kitolja az elalvást', mechanism: 'Délutáni koffein mellett később indult az alvás.',
+      evidence: [], confidence: 0.74, critique: null, status: 'confirmed', pairKey: 'hyp-revoke',
+    }
+    const posted: unknown[] = []
+    server.use(
+      http.get(`${API_BASE}/api/companion/pattern/pair/${pairless.pairKey}`, () =>
+        HttpResponse.json({ code: 'NOT_FOUND' }, { status: 404 }),
+      ),
+      http.get(`${API_BASE}/api/companion/pattern`, () => HttpResponse.json([pairless])),
+      http.post(`${API_BASE}/api/companion/pattern/:id/decision`, async ({ params, request }) => {
+        posted.push({ id: params.id, body: await request.json() })
+        return HttpResponse.json({ code: 'UNEXPECTED' }, { status: 500 })
+      }),
+    )
+    renderAt(`/mezo/patterns/${pairless.pairKey}`)
+    fireEvent.click(await screen.findByRole('button', { name: 'Mégsem igaz rám — visszavonom' }))
+    await vi.waitFor(() => expect(posted).toEqual([{ id: 'artifact-2', body: { decision: 'reject' } }]))
+  })
+
+  test('the holding confirmed pattern\'s revoke link posts a reject decision', async () => {
+    const posted: unknown[] = []
+    // 12 live days, better sleep → lower RPE: the plan's negative direction holds („Tartja magát")
+    const days = Array.from({ length: 12 }, (_, i) => ({
+      date: `2026-08-${String(10 + i).padStart(2, '0')}`, a: 5 + i * 0.3, b: 9 - i * 0.35 + (i % 2) * 0.2,
+    }))
+    server.use(
+      http.get(`${API_BASE}/api/companion/pattern/pair/${SHOWCASE_KEY}`, () =>
+        HttpResponse.json({
+          pair: wirePair,
+          pattern: {
+            id: 'w-pattern-2', kind: 'statistical', pairKey: SHOWCASE_KEY, category: 'physiology',
+            categoryLabel: 'Fiziológia', title: 'Alvásminőség ↔ másnapi edzés-RPE',
+            mechanism: 'A rosszabb alvás másnap nehezebbnek érződő edzést hozhat.', evidence: [], status: 'confirmed',
+          },
+          events: [],
+          days,
+          impact: { fact: null, predictions: [], experiments: [], challenges: [] },
+        }),
+      ),
+      http.post(`${API_BASE}/api/companion/pattern/:id/decision`, async ({ params, request }) => {
+        posted.push({ id: params.id, body: await request.json() })
+        return HttpResponse.json({ code: 'UNEXPECTED' }, { status: 500 })
+      }),
+    )
+    renderAt(`/mezo/patterns/${SHOWCASE_KEY}`)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Tartja magát' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Mégsem igaz rám — visszavonom' }))
+    await vi.waitFor(() => expect(posted).toEqual([{ id: 'w-pattern-2', body: { decision: 'reject' } }]))
   })
 
   // Reflexió S6 (mezo-eq85.6): a laborfüzet a KÖZÖS MSW alapértelmezésből jön — nincs

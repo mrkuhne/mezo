@@ -100,13 +100,73 @@ describe('readPattern', () => {
   })
 })
 
+describe('binary group balance (groupsShort)', () => {
+  const binPair = (over: Partial<PatternMonitorPair> = {}) => pair({
+    metricAKey: 'weekend', metricALabel: 'hétvége', metricAValueKind: 'binary',
+    metricBKey: 'late-meal-hour', metricBLabel: 'utolsó étkezés ideje', metricBValueKind: 'clock_hour',
+    expectedDirection: 'positive', ...over,
+  })
+  const eightPlusOne = days([[0, 20], [0, 21], [0, 22], [0, 19], [1, 23], [0, 20], [0, 21], [0, 22], [0, 18]])
+
+  test('a frozen confirmed 8+1 row: enough days, one group short — no minN, own sentence, own note', () => {
+    const p = binPair({ verdict: 'frozen', status: 'confirmed', r: 0.4, n: 9 })
+    const pat = pattern({ status: 'confirmed', testPlan: undefined })
+    const reading = readPattern({ pair: p, pattern: pat, days: eightPlusOne, events: [] }, 8)
+    expect(reading.state).toBe('gyulik')
+    expect(reading.groups).toEqual({ zero: 8, one: 1, perGroup: 3 })
+    expect(reading.groupsShort).toBe(true)
+    const s = saySentence(reading, p, eightPlusOne, 'confirmed')
+    expect(s).toBe('Megerősítetted. **8** hétköznapi nap mellett még csak **1** hétvégi nap van. '
+      + 'Mindkét fajta napból legalább 3 kell, mielőtt irányt mondok.')
+    expect(s).not.toMatch(/közös nap/)
+    expect(answerLook(reading, 'confirmed')).toEqual({ word: 'Kevés az egyik fajta nap', tone: 'gold', art: 't-clock' })
+    expect(decisionPlan(reading, 'confirmed').note)
+      .toBe('**Maradhat:** szólok, ha mindkét fajta napból lesz elég, és nem igazolódik.')
+  })
+  test('the live imbalanced_groups verdict: group sentence, the gather note names the per-group minimum', () => {
+    const p = binPair({ verdict: 'imbalanced_groups', alignedDays: 9, groupZeroDays: 8, groupOneDays: 1, requiredPerGroup: 3, r: null, n: null })
+    const reading = readPattern({ pair: p, pattern: pattern({ testPlan: undefined }), days: [], events: [] }, 8)
+    expect(reading.groupsShort).toBe(true)
+    expect(reading.groups).toEqual({ zero: 8, one: 1, perGroup: 3 })
+    expect(saySentence(reading, p, [], 'proposed')).toMatch(/^\*\*8\*\* hétköznapi nap mellett még csak \*\*1\*\* hétvégi nap van\./)
+    expect(decisionPlan(reading, 'proposed').note).toBe('**Nincs teendőd:** szólok, amikor mindkét fajta napból megvan a 3.')
+  })
+  test('a confirmed row still under minN keeps "Még alig mért"', () => {
+    const p = binPair({ verdict: 'frozen', status: 'confirmed', r: 0.4, n: 9 })
+    const d = eightPlusOne.slice(3, 6)
+    const reading = readPattern({ pair: p, pattern: pattern({ status: 'confirmed', testPlan: undefined }), days: d, events: [] }, 8)
+    expect(answerLook(reading, 'confirmed').word).toBe('Még alig mért')
+  })
+  test('a non-binary pair never has groups', () => {
+    const reading = readPattern({ pair: pair(), pattern: pattern(), days: LINE, events: [] }, 8)
+    expect(reading.groups).toBeNull()
+    expect(reading.groupsShort).toBe(false)
+  })
+})
+
+describe('allo names the flat metric', () => {
+  test('a frozen row with a flat A side names A', () => {
+    const p = pair({ verdict: 'frozen', status: 'confirmed', r: 0.4, n: 9 })
+    const d = days([[7, 1], [7, 2], [7, 3], [7, 4], [7, 5], [7, 6], [7, 7], [7, 8], [7, 9]])
+    const reading = readPattern({ pair: p, pattern: pattern({ status: 'confirmed' }), days: d, events: [] }, 8)
+    expect(reading.state).toBe('allo')
+    expect(saySentence(reading, p, d, 'confirmed')).toMatch(/^Az \*\*ébredés ideje\*\* a vizsgált napokon mindig ugyanannyi/)
+  })
+  test('a frozen row with a flat B side names B', () => {
+    const p = pair({ verdict: 'frozen', status: 'confirmed', r: 0.4, n: 9 })
+    const d = days([[1, 7], [2, 7], [3, 7], [4, 7], [5, 7], [6, 7], [7, 7], [8, 7], [9, 7]])
+    const reading = readPattern({ pair: p, pattern: pattern({ status: 'confirmed' }), days: d, events: [] }, 8)
+    expect(saySentence(reading, p, d, 'confirmed')).toMatch(/^Az \*\*energia-szint\*\*/)
+  })
+})
+
 describe('answerLook + decisionPlan', () => {
   const R = (state: Parameters<typeof answerLook>[0]['state'], then = false) =>
-    ({ state, now: null, then: then ? lean(0.6, 10, 1) : null, minN: 8, dayCount: 9, dir: 1 as const })
+    ({ state, now: null, then: then ? lean(0.6, 10, 1) : null, minN: 8, dayCount: 9, dir: 1 as const, groups: null, groupsShort: false })
   test('open rows speak the reading, confirmed rows speak against the decision', () => {
     expect(answerLook(R('halvany'), 'proposed').word).toBe('Halvány jel')
     expect(answerLook(R('eros'), 'confirmed').word).toBe('Tartja magát')
-    expect(answerLook(R('halvany', true), 'confirmed').word).toBe('Azóta gyengült')
+    expect(answerLook({ ...R('halvany', true), now: lean(0.3, 12, 1) }, 'confirmed').word).toBe('Azóta gyengült')
     expect(answerLook(R('halvany'), 'confirmed').word).toBe('Halvány maradt')
     expect(answerLook(R('nincs'), 'confirmed').word).toBe('Az adat nem igazolja')
     expect(answerLook(R('fordit'), 'confirmed').word).toBe('Most ellentmond')
@@ -128,6 +188,24 @@ describe('answerLook + decisionPlan', () => {
     expect(plan.revokeLink).toBe(true)
     expect(decisionPlan(R('halvany'), 'confirmed').buttons.map((b) => b.verb)).toEqual(['reject'])
   })
+  test('confirmed + allo: nothing to compare, wait — the revoke is not pushed', () => {
+    expect(answerLook(R('allo'), 'confirmed')).toEqual({ word: 'Nincs mit összevetni', tone: 'mute', art: 't-hold' })
+    const plan = decisionPlan(R('allo'), 'confirmed')
+    expect(plan.note).toBe('**Várjunk:** amíg az egyik adat áll, nincs mit eldönteni.')
+    expect(plan.buttons.every((b) => !b.recommended)).toBe(true)
+  })
+  test('confirmed + halvany only says "weakened" when today is truly weaker than at the decision', () => {
+    const weaker = { ...R('halvany', true), now: lean(0.3, 12, 1) }
+    expect(answerLook(weaker, 'confirmed').word).toBe('Azóta gyengült')
+    expect(decisionPlan(weaker, 'confirmed').note).toContain('csak gyengébben')
+    const stronger = { ...R('halvany', true), now: lean(0.7, 12, 1) }
+    expect(answerLook(stronger, 'confirmed').word).toBe('Halvány maradt')
+    expect(decisionPlan(stronger, 'confirmed').note)
+      .toBe('**Maradhat:** a jó irányba mutat, de még halványan. Szólok, ha megfordul.')
+    const noThen = { ...R('halvany'), now: lean(0.3, 12, 1) }
+    expect(answerLook(noThen, 'confirmed').word).toBe('Halvány maradt')
+    expect(decisionPlan(noThen, 'confirmed').note).not.toContain('gyengébben')
+  })
   test('a rejected row offers only "Mégis figyeljük"', () => {
     expect(decisionPlan(R('elvetve'), 'rejected').buttons).toEqual([{ verb: 'monitor', label: 'Mégis figyeljük', recommended: false }])
   })
@@ -146,6 +224,12 @@ describe('zones, ticks and sentences', () => {
     expect(niceTicks(3.8, 6.4, false)).toEqual([4, 5, 6])
     expect(niceTicks(5.9, 7.4, true)).toEqual([6, 6.5, 7])
   })
+  test('clock ticks honour the count: a 16-hour range gets at most count+1 ticks', () => {
+    const t = niceTicks(9, 25, true, 3)
+    expect(t.length).toBeLessThanOrEqual(4)
+    expect(t).toEqual([12, 16, 20, 24])
+    expect(niceTicks(20, 23, true, 3).length).toBeLessThanOrEqual(4)
+  })
   test('the answer sentence names both zone averages and the honest tail', () => {
     const d = days([[6.2, 6], [6.3, 6], [6.4, 5], [6.5, 6], [6.6, 5], [6.9, 5], [7.0, 4], [7.1, 5], [7.2, 4]])
     const reading = readPattern({ pair: pair(), pattern: pattern(), days: d, events: [] }, 8)
@@ -157,5 +241,26 @@ describe('zones, ticks and sentences', () => {
   })
   test('the rule sentence', () => {
     expect(ruleSentence(pair(), pattern().testPlan!)).toBe('Ha **az ébredés ideje** később van, aznap **az energia-szint** alacsonyabb.')
+  })
+  test('binary rule sentences are built from the day adjective', () => {
+    const bin = (metricAKey: string) => pair({ metricAKey, metricALabel: 'x', metricAValueKind: 'binary',
+      metricBKey: 'late-meal-hour', metricBLabel: 'utolsó étkezés ideje', metricBValueKind: 'clock_hour',
+      expectedDirection: 'positive' })
+    expect(ruleSentence(bin('weekend'), null))
+      .toBe('A hétvégi napokon aznap az **utolsó étkezés ideje** később van.')
+    expect(ruleSentence(bin('ritual-closed'), null))
+      .toBe('A lezárt esti napokon aznap az **utolsó étkezés ideje** később van.')
+    expect(ruleSentence(bin('people:anna'), null))
+      .toBe('Az említéses napokon aznap az **utolsó étkezés ideje** később van.')
+  })
+  test('binary answer sentences name both day groups in plain Hungarian', () => {
+    const p = pair({ metricAKey: 'weekend', metricALabel: 'hétvége', metricAValueKind: 'binary',
+      verdict: 'live', r: 0.2, n: 8, expectedDirection: 'positive' })
+    const d = days([[0, 5], [0, 6], [0, 5], [0, 6], [1, 7], [1, 8], [1, 7], [1, 6]])
+    const reading = readPattern({ pair: p, pattern: null, days: d, events: [] }, 8)
+    expect(saySentence(reading, p, d, null))
+      .toMatch(/^A hétvégi napokon az energia-szint átlagosan \*\*7,0\*\* volt, a hétköznapi napokon \*\*5,5\*\*\./)
+    const pp = { ...p, metricAKey: 'topic:uszas' }
+    expect(saySentence(reading, pp, d, null)).toMatch(/^Az említéses napokon .* az említés nélküli napokon/)
   })
 })

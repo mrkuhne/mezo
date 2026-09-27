@@ -2,7 +2,7 @@
 // Mezo · PatternAnswerHero — a minta-részlet ÚJ első hőse: keret nélküli halo, a válasz nagyban
 // (mezo-rstt7, prototypes/uveg-minta-body.html `.mh`). A kérdés kicsiben megy fel, a válasz a
 // heading; alatta a mondat, a Mezo-idézet (csak amíg gyűjt), a „merre húz" mérő vagy a
-// nap-pipák, végül a döntés — `decisionPlan` szerint gombolva, sosem az oldal saját logikájával.
+// nap-pipák (csoport-hiánynál egyik sem: a mondat viszi), végül a döntés — `decisionPlan` szerint gombolva, sosem az oldal saját logikájával.
 // A `pattern == null` (katalógus-pár, nincs tárolt sor) esetén NINCS döntés-blokk.
 // ============================================================
 import type { Icon3DName } from '@/shared/ui/clay'
@@ -12,7 +12,7 @@ import { PATTERN_DOMAIN_ART } from '@/features/insights/components/PatternDomain
 import { PatternDayPips, PatternLeanMeter } from '@/features/insights/components/PatternLeanMeter'
 import { patternHeadline } from '@/features/insights/logic/patternCopy'
 import {
-  answerLook, cap, decisionPlan, saySentence, type DecisionVerb, type Reading,
+  answerLook, cap, decisionPlan, leanSide, saySentence, type DecisionVerb, type Reading,
 } from '@/features/insights/logic/patternReading'
 import { cn } from '@/shared/lib/cn'
 import type { AlignedDay, Pattern, PatternEvent, PatternMonitorPair, PatternStatus } from '@/data/types'
@@ -109,8 +109,9 @@ export function PatternAnswerHero({ pair, pattern, reading, days, events, onDeci
         </div>
       )}
       {reading.now
-        ? <PatternLeanMeter now={reading.now} then={reading.then} />
-        : reading.state === 'gyulik' && <PatternDayPips count={reading.dayCount} of={reading.minN} />}
+        ? <PatternLeanMeter now={reading.now} then={reading.then} side={leanSide(reading.state)} />
+        : reading.state === 'gyulik' && !reading.groupsShort
+          && <PatternDayPips count={reading.dayCount} of={reading.minN} />}
       {pattern && <Decision reading={reading} status={status} onDecide={onDecide} />}
     </section>
   )
