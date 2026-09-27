@@ -9,6 +9,10 @@ import io.mrkuhne.mezo.api.dto.SleepLogResponse;
 import io.mrkuhne.mezo.api.dto.WeightLogResponse;
 import io.mrkuhne.mezo.api.dto.WeightTrendResponse;
 import io.mrkuhne.mezo.api.dto.CheckInResponse;
+import io.mrkuhne.mezo.api.dto.AdaptiveReason;
+import io.mrkuhne.mezo.api.dto.CheckInItemId;
+import io.mrkuhne.mezo.api.dto.CravingKind;
+import io.mrkuhne.mezo.api.dto.PainRegion;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -170,4 +174,38 @@ class BiometricsContractIT extends ApiIntegrationTest {
         assertThat(day).singleElement().extracting(CheckInResponse::getNote).isEqualTo(note);
     }
 
+    @Test
+    void testSaveCheckIn_shouldRoundTripCheckIn2Fields_whenPostedViaContract() {
+        HttpHeaders headers = ownerAuthHeaders();
+        postForBody("/api/biometrics/checkin",
+            SaveCheckInRequest.builder()
+                .date(LocalDate.parse("2026-06-11")).slotTime("20:00").state("done")
+                .energy(6).mood(8).stress(3).body(5).mental(7)
+                .pain(true).painRegions(List.of(PainRegion.TERD, PainRegion.DEREK)).painIntensity(5)
+                .craving(7).cravingKinds(List.of(CravingKind.EDES))
+                .digestion(4).connection(8).dayRating(7)
+                .askedItems(List.of(CheckInItemId.ENERGY, CheckInItemId.DAY))
+                .adaptiveItem(CheckInItemId.MOTIVATION).adaptiveReason(AdaptiveReason.RANDOM)
+                .build(),
+            headers, HttpStatus.OK, CheckInResponse.class);
+
+        // Raw JSON: the wire values are the contract's enum strings.
+        String json = getForBody("/api/biometrics/checkin?date=2026-06-11", headers, HttpStatus.OK, String.class);
+        assertThat(json).contains("\"painRegions\":[\"TERD\",\"DEREK\"]", "\"cravingKinds\":[\"EDES\"]",
+            "\"askedItems\":[\"energy\",\"day\"]", "\"adaptiveItem\":\"motivation\"",
+            "\"adaptiveReason\":\"RANDOM\"", "\"dayRating\":7", "\"quickExit\":false");
+    }
+
+    @Test
+    void testSaveCheckIn_shouldReturn400_whenNewScaleOutOfRange() {
+        HttpHeaders headers = ownerAuthHeaders();
+        String body = postForBody("/api/biometrics/checkin",
+            SaveCheckInRequest.builder()
+                .date(LocalDate.parse("2026-06-11")).slotTime("06:30").state("done")
+                .mood(11).painIntensity(0).dayRating(12).build(),
+            headers, HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(body, "mood", "VALIDATION_INVALID_VALUE");
+        assertHasFieldError(body, "painIntensity", "VALIDATION_INVALID_VALUE");
+        assertHasFieldError(body, "dayRating", "VALIDATION_INVALID_VALUE");
+    }
 }

@@ -1,8 +1,10 @@
 package io.mrkuhne.mezo.feature.biometrics.checkin.controller;
 
 import io.mrkuhne.mezo.api.controller.CheckInApi;
+import io.mrkuhne.mezo.api.dto.CheckInPlanResponse;
 import io.mrkuhne.mezo.api.dto.CheckInResponse;
 import io.mrkuhne.mezo.api.dto.SaveCheckInRequest;
+import io.mrkuhne.mezo.feature.biometrics.checkin.service.CheckInPlanService;
 import io.mrkuhne.mezo.feature.biometrics.checkin.service.CheckInService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.time.LocalDate;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class CheckInController implements CheckInApi {
 
     private final CheckInService service;
+    private final CheckInPlanService planService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -27,5 +30,10 @@ public class CheckInController implements CheckInApi {
     public CheckInResponse saveCheckIn(SaveCheckInRequest saveCheckInRequest) {
         // 200 OK per contract: this is an upsert, not a pure create.
         return service.save(currentUserId.get(), saveCheckInRequest);
+    }
+
+    @Override
+    public CheckInPlanResponse getCheckInPlan(LocalDate date, String slotTime) {
+        return planService.plan(currentUserId.get(), date, slotTime);
     }
 }

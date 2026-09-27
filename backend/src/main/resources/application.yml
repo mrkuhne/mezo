@@ -2662,6 +2662,37 @@ mezo:
     quest-coins: 10
     all3-coins: 20
     milestone-coins: { 7: 50, 30: 150, 100: 500 }
+  # Check-in 2.0 question plan (mezo-ck2, spec §2.2–2.3). Binds onto CheckInPlanProperties and is
+  # served by GET /api/biometrics/checkin/plan — trimming a question is a config change + deploy,
+  # no frontend release. Item ids: energy mood stress body mental (the core five, always first)
+  # rested soreness pain motivation hunger craving digestion connection day.
+  checkin:
+    plan:
+      # Slot time → items asked in that slot, in ask order. Keys are bracketed so the ":" survives
+      # Spring's map-key binding. The four slot times are the app's fixed ones.
+      slots:
+        "[06:30]":
+          items: [energy, mood, stress, body, mental, rested, soreness, pain, motivation]
+        "[10:00]":
+          items: [energy, mood, stress, body, mental, motivation, hunger]
+        "[14:00]":
+          items: [energy, mood, stress, body, mental, hunger, craving, digestion]
+        "[20:00]":
+          items: [energy, mood, stress, body, mental, soreness, pain, craving, digestion, connection, day]
+      # The question of the day: one extra non-core item per check-in, not already in the slot.
+      adaptive:
+        # Share drawn uniformly at random (planned-missingness guard, so rotating series stay
+        # unbiased); the rest goes to the thinnest series some consumer is waiting on.
+        random-share: 0.2
+        # Days of history (ending the day before the check-in) counted for "thinnest series".
+        need-window-days: 14
+        # Items meaningful in one slot only: item → the only slot time it may be offered in.
+        only-in-slot:
+          rested: "06:30"
+          day: "20:00"
+        # Hungarian "why" line under "A NAP KÉRDÉSE"; {item} = the item's phrase ("az éhséged").
+        why-need: "Most azt figyeljük, hogyan alakul {item} — erről van a legkevesebb válaszod."
+        why-random: "Ma ez a véletlen kérdés — így marad kiegyensúlyozott, amit rólad tanulunk."
   # Sleep goal defaults (mezo-dbsr): the config-default "ghost" served before the user saves a goal,
   # plus the regularity band default. Binds onto SleepGoalProperties.
   sleep:

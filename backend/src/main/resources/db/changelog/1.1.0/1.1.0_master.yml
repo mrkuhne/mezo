@@ -132,3 +132,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609271201_mezo-d6ivw.6_fact_mute_reason_backfill.sql
+  - changeSet:
+      id: "1.1.0:202609272108_mezo-ck2_checkin_2"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609272108_mezo-ck2_checkin_2.sql

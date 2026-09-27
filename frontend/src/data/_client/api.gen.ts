@@ -161,6 +161,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/biometrics/checkin/plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The question plan for one check-in slot (slot items + the question of the day)
+         * @description Check-in 2.0 (mezo-ck2). The slot's items come from server config (mezo.checkin.plan); the adaptive "question of the day" is chosen server-side (80 % need / 20 % random) and is stable for (user, date, slotTime), so reopening the sheet never reshuffles it.
+         */
+        get: operations["getCheckInPlan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/mesocycles": {
         parameters: {
             query?: never;
@@ -5302,6 +5322,35 @@ export interface components {
             stress?: number;
             body?: number;
             mental?: number;
+            /** @description "Hangulat" 1 (very bad) .. 10 (very good); null = not answered */
+            mood?: number;
+            /** @description "Kipihentség" 1..10; null = not answered */
+            rested?: number;
+            /** @description "Izomláz" 1 (none) .. 10 (very strong) — 10 = worse; null = not answered */
+            soreness?: number;
+            /** @description "Fáj valami?" — true = yes, false = "Nem", null = not answered */
+            pain?: boolean;
+            painRegions?: components["schemas"]["PainRegion"][] | null;
+            painIntensity?: number;
+            /** @description "Motiváció" 1..10; null = not answered */
+            motivation?: number;
+            /** @description "Éhség" 1..10; null = not answered */
+            hunger?: number;
+            /** @description "Sóvárgás" 1..10; null = not answered */
+            craving?: number;
+            cravingKinds?: components["schemas"]["CravingKind"][] | null;
+            /** @description "Emésztés" 1 (heavy, bloated) .. 10 (light, fine); null = not answered */
+            digestion?: number;
+            /** @description "Kapcsolódás" 1 (alone) .. 10 (very connected); null = not answered */
+            connection?: number;
+            /** @description "A nap mérlege" (item id `day`) 1..10; null = not answered */
+            dayRating?: number;
+            /** @description What the sheet showed (plan + adaptive). Asked + null = skipped; absent = not asked. Null on legacy rows. */
+            askedItems?: components["schemas"]["CheckInItemId"][] | null;
+            adaptiveItem?: components["schemas"]["CheckInItemId"];
+            adaptiveReason?: components["schemas"]["AdaptiveReason"];
+            /** @description Saved via "Most csak ennyi" after the core items */
+            quickExit?: boolean;
             /** @description Optional free-form note, without an application character limit. */
             note?: string;
         };
@@ -5316,10 +5365,96 @@ export interface components {
             stress?: number;
             body?: number;
             mental?: number;
+            /** @description "Hangulat" 1 (very bad) .. 10 (very good); null = not answered */
+            mood?: number;
+            /** @description "Kipihentség" 1..10; null = not answered */
+            rested?: number;
+            /** @description "Izomláz" 1 (none) .. 10 (very strong) — 10 = worse; null = not answered */
+            soreness?: number;
+            /** @description "Fáj valami?" — true = yes, false = "Nem", null = not answered */
+            pain?: boolean;
+            painRegions?: components["schemas"]["PainRegion"][] | null;
+            painIntensity?: number;
+            /** @description "Motiváció" 1..10; null = not answered */
+            motivation?: number;
+            /** @description "Éhség" 1..10; null = not answered */
+            hunger?: number;
+            /** @description "Sóvárgás" 1..10; null = not answered */
+            craving?: number;
+            cravingKinds?: components["schemas"]["CravingKind"][] | null;
+            /** @description "Emésztés" 1 (heavy, bloated) .. 10 (light, fine); null = not answered */
+            digestion?: number;
+            /** @description "Kapcsolódás" 1 (alone) .. 10 (very connected); null = not answered */
+            connection?: number;
+            /** @description "A nap mérlege" (item id `day`) 1..10; null = not answered */
+            dayRating?: number;
+            /** @description What the sheet showed (plan + adaptive). Asked + null = skipped; absent = not asked. Null on legacy rows. */
+            askedItems?: components["schemas"]["CheckInItemId"][] | null;
+            adaptiveItem?: components["schemas"]["CheckInItemId"];
+            adaptiveReason?: components["schemas"]["AdaptiveReason"];
+            /** @description Saved via "Most csak ennyi" after the core items */
+            quickExit?: boolean;
             /** @description Optional free-form note, without an application character limit. */
             note?: string;
             /** Format: date-time */
             savedAt: string;
+        };
+        /**
+         * @description Check-in 2.0 item ids (core five first)
+         * @enum {string}
+         */
+        CheckInItemId: "energy" | "mood" | "stress" | "body" | "mental" | "rested" | "soreness" | "pain" | "motivation" | "hunger" | "craving" | "digestion" | "connection" | "day";
+        /**
+         * @description How the sheet renders the item — a 1..10 scale, the pain gate (yes/no → regions → intensity), or the craving scale (+ kinds from 4)
+         * @enum {string}
+         */
+        CheckInItemKind: "SCALE" | "PAIN" | "CRAVING";
+        /** @enum {string} */
+        PainRegion: "FEJ" | "NYAK" | "VALL" | "KONYOK" | "CSUKLO_KEZ" | "FELSO_HAT" | "DEREK" | "CSIPO" | "HAS" | "TERD" | "BOKA_LABFEJ" | "EGYEB";
+        /** @enum {string} */
+        CravingKind: "EDES" | "SOS" | "ZSIROS" | "BARMIT";
+        /**
+         * @description Why the question of the day was chosen — need (thinnest wanted series) or random (20 % planned-missingness guard)
+         * @enum {string}
+         */
+        AdaptiveReason: "NEED" | "RANDOM";
+        /** @description A selectable sub-option with its Hungarian label (pain region or craving kind) */
+        CheckInPlanOption: {
+            /** @description PainRegion or CravingKind value */
+            id: string;
+            label: string;
+        };
+        CheckInPlanItem: {
+            id: components["schemas"]["CheckInItemId"];
+            /** @description Hungarian display label (e.g. "Energia") */
+            label: string;
+            /** @description Hungarian question (e.g. "Mennyi energia van benned most?") */
+            question: string;
+            /** @description Anchor of 1 (for PAIN the intensity scale's anchor) */
+            low?: string;
+            /** @description Anchor of 10 (for PAIN the intensity scale's anchor) */
+            high?: string;
+            kind: components["schemas"]["CheckInItemKind"];
+            /** @description PAIN → the regions, CRAVING → the kinds; absent for SCALE */
+            options?: components["schemas"]["CheckInPlanOption"][];
+        };
+        /** @description The question of the day — a CheckInPlanItem plus why it was chosen */
+        CheckInAdaptiveItem: {
+            id: components["schemas"]["CheckInItemId"];
+            label: string;
+            question: string;
+            low?: string;
+            high?: string;
+            kind: components["schemas"]["CheckInItemKind"];
+            options?: components["schemas"]["CheckInPlanOption"][];
+            /** @description One Hungarian sentence shown under "A NAP KÉRDÉSE" */
+            why: string;
+            reason: components["schemas"]["AdaptiveReason"];
+        };
+        CheckInPlanResponse: {
+            /** @description The slot's plan in ask order (core five first) */
+            items: components["schemas"]["CheckInPlanItem"][];
+            adaptive?: components["schemas"]["CheckInAdaptiveItem"];
         };
         MesocycleResponse: {
             /** Format: uuid */
@@ -12385,6 +12520,48 @@ export interface operations {
                 };
             };
             /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getCheckInPlan: {
+        parameters: {
+            query: {
+                date: string;
+                /** @description One of the configured slot times (e.g. "06:30") */
+                slotTime: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The plan for the slot */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckInPlanResponse"];
+                };
+            };
+            /** @description Unknown slot time */
             400: {
                 headers: {
                     [name: string]: unknown;
