@@ -225,10 +225,12 @@ public class TeamChatService {
                     gate.exception().getContextTag());
             return Optional.empty();
         }
-        if (gate.kind() != TeamChatExceptionService.Gate.Kind.NONE
+        if (gateService != null
                 && threads.findFirstByCreatedByAndFlagKeyAndStatusAndDeletedFalse(userId, flagKey, STATUS_OPEN)
                         .isPresent()) {
-            return Optional.empty(); // re-checked under the gate's exception lock (an undo may have reopened one)
+            // Re-checked after the gate: when it waited on the exception lock, a concurrent open or a
+            // remembered-chip undo may have committed an OPEN ügy of this rule meanwhile.
+            return Optional.empty();
         }
         if (capReached(userId, at)) {
             log.warn("Team chat daily line cap reached for user {} — open of {} dropped", userId, flagKey);
@@ -520,7 +522,7 @@ public class TeamChatService {
     Optional<ReservedPush> reservePush(UUID threadId, String ownerBody, boolean pushAllowed,
             boolean quietHoursExempt) {
         if (!pushAllowed) {
-            log.info("Team chat ügy {} not pushed — a feed-only library entry", threadId);
+            log.info("Team chat ügy {} not pushed — a feed-only library entry or a silent exception offer", threadId);
             return Optional.empty();
         }
         Optional<TeamChatThreadEntity> found = threads.findById(threadId);
