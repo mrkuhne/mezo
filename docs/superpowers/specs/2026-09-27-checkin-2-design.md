@@ -14,7 +14,10 @@
      too many. The question plan must therefore be **trimmable without a rebuild**.
   4. A **"Most csak ennyi"** quick exit after the core items.
   5. **Everything ships in one go** (one release, not two waves).
-  6. Guiding principle, in the owner's words: *"lényegében mindent is táplálni fogunk az új
+  6. **Two more items (owner OK after the prototype round):** **digestion** (afternoon + evening) and
+     **connection** (evening). Alcohol stays out of the check-in (a fact, not a feeling → a log, later).
+  7. Pain keeps **both** the body figure and the region chips. Prototype + icons approved 2026-09-27.
+  8. Guiding principle, in the owner's words: *"lényegében mindent is táplálni fogunk az új
      checkinnel … minél gazdagabb legyen tőle minden."* Every area that can use an answer must use it
      visibly.
 - **Prototype (gate 2, awaiting owner OK):** Nap living prototype
@@ -64,6 +67,8 @@ stored as `NULL` and never counted anywhere. Stress and soreness keep "10 = wors
 | `motivation` **new** | Motiváció | Mennyi kedved van a mai dolgaidhoz? | Semmi ↔ Tele vagyok vele | slot |
 | `hunger` **new** | Éhség | Mennyire vagy éhes most? | Egyáltalán nem ↔ Nagyon | slot |
 | `craving` **new** | Sóvárgás | Kívánsz most valamit? | Nem ↔ Nagyon → **mit** (édes · sós · zsíros · bármit) | slot |
+| `digestion` **new** | Emésztés | Hogy érzi magát most a gyomrod? | Nehéz, puffadt ↔ Könnyű, rendben | slot |
+| `connection` **new** | Kapcsolódás | Mennyire érezted magad ma kapcsolódva másokhoz? | Egyedül ↔ Nagyon | slot |
 | `day` **new** | A nap mérlege | Milyen volt a napod összességében? | Nagyon rossz ↔ Nagyon jó | slot |
 
 Pain regions (fixed list, multi-select, drawn on a simple front/back figure): fej · nyak · váll ·
@@ -77,8 +82,8 @@ region picker in the same drawing style.
 |---|---|---|---|---|
 | Reggel 06:30 | energia · hangulat · stressz · testi érzés · fejtisztaság | kipihentség · izomláz · fájdalom · motiváció | 1 | 10 |
 | Délelőtt 10:00 | ↑ | motiváció · éhség | 1 | 8 |
-| Délután 14:00 | ↑ | éhség · sóvárgás | 1 | 8 |
-| Este 20:00 | ↑ | izomláz · fájdalom · sóvárgás · a nap mérlege | 1 | 10 |
+| Délután 14:00 | ↑ | éhség · sóvárgás · emésztés | 1 | 9 |
+| Este 20:00 | ↑ | izomláz · fájdalom · sóvárgás · emésztés · kapcsolódás · a nap mérlege | 1 | 12 |
 
 - **Quick exit:** after the five core items a secondary button **"Most csak ennyi"** saves the
   check-in; everything not yet asked stays `NULL`. The check-in still counts as done (day score,
@@ -157,6 +162,12 @@ Changed rules:
   suggest a concrete satisfying option of that kind, not a generic one.
 - **Visible:** meal advice reflects hunger and craving ("10-kor már éhes voltál").
 
+### 3.4b Digestion (Fuel)
+- `digestion` joins the meal-coach context (last check-in after the meal) and a new Táplálkozó detector
+  **`food-digestion`**: meals in the 1–5 h before a low-digestion answer (`<= 4`), grouped by
+  ingredient / NOVA class; after ≥ 5 low answers, names the recurring culprit („a babos ebédek után
+  3-ból 3-szor nehéz volt a gyomrod"). Pattern pair `meal-processing~checkin-digestion` (same day).
+
 ### 3.5 Comfort eating
 - `ComfortEatingDetector`: low-mood test becomes `mood <= 4 OR stress >= 7` (mental no longer used
   as mood; falls back to `mental <= 4` for days with no `mood`, so history keeps working), and a
@@ -171,7 +182,7 @@ Changed rules:
 
 ### 3.7 Character team (detectors)
 `DetectorInput.CheckinDayPoint` (`:88-92`) and `CharacterSignalReads.toCheckinDays` (`:298-326`) gain
-the new day means (`mood, rested, soreness, painIntensity, motivation, hunger, craving, day`) plus
+the new day means (`mood, rested, soreness, painIntensity, motivation, hunger, craving, digestion, connection, day`) plus
 `painRegions` (distinct regions of the day). New / changed detectors:
 
 | Detector | Expert | What it says |
@@ -186,7 +197,7 @@ the new day means (`mood, rested, soreness, painIntensity, motivation, hunger, c
 
 ### 3.8 Pattern engine
 New `MetricKey`s: `CHECKIN_MOOD, CHECKIN_RESTED, CHECKIN_SORENESS, CHECKIN_PAIN, CHECKIN_MOTIVATION,
-CHECKIN_HUNGER, CHECKIN_CRAVING, CHECKIN_DAY` (`CHECKIN_PAIN` = day max intensity, 0 when answered
+CHECKIN_HUNGER, CHECKIN_CRAVING, CHECKIN_DIGESTION, CHECKIN_CONNECTION, CHECKIN_DAY` (`CHECKIN_PAIN` = day max intensity, 0 when answered
 "Nem"). `MetricSeriesService` switch + getters. New pairs in `mezo.companion.patterns.pairs`:
 
 - `sleep-duration~checkin-rested` (lag 0) · `sleep-quality~checkin-rested`
@@ -199,6 +210,15 @@ CHECKIN_HUNGER, CHECKIN_CRAVING, CHECKIN_DAY` (`CHECKIN_PAIN` = day max intensit
 - `day-score~checkin-day` (does the app's day score agree with yours?)
 
 Existing `*~checkin-mental` pairs stay (clarity is still a real series).
+
+### 3.8b Connection → Kapcsolat ring, people
+- The Lélek / „Kapcsolat" need ring (`needsInputs.ts:151-160`) stops refilling on *any* done check-in:
+  it refills from the evening `connection` answer (`connection * 10`, capped by the ring's day
+  budget); a check-in without `connection` keeps today's +20 refill so the ring does not starve on
+  quick-exit days.
+- `PeopleMoodLinkDetector` (Antropológus/Mezo) adds a `connection` arm next to `mood`.
+- Pattern pair `social-mentions~checkin-connection`; `SignalCatalog` entry `checkin_connection`
+  („Kapcsolódás", Kapcsolatok).
 
 ### 3.9 Life goals
 - `SignalCatalog`: `checkin_mental` relabelled **"Check-in fejtisztaság"**; new entries
@@ -222,7 +242,7 @@ Existing `*~checkin-mental` pairs stay (clarity is still a real series).
   automatically through `MetricKey` (verify the frontend list, `insights.ts:333-336`).
 - Day score logging component: a check-in counts as filled when **at least the core** was answered
   (quick exit included). Unchanged weight.
-- Lélek ring refill (`needsInputs.ts:151-160`) unchanged.
+- Lélek / Kapcsolat ring refill: see §3.8b.
 
 ### 3.12 Notifications and copy
 - Push body (`notificationScheduleWriter.ts`): „Hogy vagy most? Pár koppintás, fél perc."
@@ -244,6 +264,8 @@ ALTER TABLE check_in
   ADD COLUMN hunger          SMALLINT,
   ADD COLUMN craving         SMALLINT,
   ADD COLUMN craving_kinds   VARCHAR(8)[],
+  ADD COLUMN digestion       SMALLINT,
+  ADD COLUMN connection      SMALLINT,
   ADD COLUMN day_rating      SMALLINT,
   ADD COLUMN asked_items     VARCHAR(16)[],    -- what the sheet showed (plan + adaptive)
   ADD COLUMN adaptive_item   VARCHAR(16),
@@ -270,7 +292,7 @@ Contract-first as usual (`BiometricsContractIT`).
 - The question of the day is marked with a small "A nap kérdése" eyebrow and its one-line why.
 - Summary step: every answered item as a cell (skipped shown as „—"), note, save.
 - Titanium sprite icons for each item; new icons (mood, rested, soreness, pain, motivation, hunger,
-  craving, day) go on the prototype's „Új ikonok" sheet for owner OK.
+  craving, day, digestion; connection reuses `people`) go on the prototype's „Új ikonok" sheet for owner OK.
 
 ## 6. Error handling and honesty
 - Nothing is ever defaulted: `NULL` is not „közepes" anywhere (audit every raw-row reader:
