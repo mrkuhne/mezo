@@ -89,6 +89,9 @@ export const FEATURE_LABELS: Record<string, Entry> = {
   // VERIFIED: PlacementEngine — egy kamra-termék (pl. kiegészítő) napszaki idősávba
   // (reggeli/ebéd/stb.) sorolása, ha a szabálytábla és a kamra-időzítési jelzés nem dönt.
   stack_placement: { label: 'Kiegészítő napszak-besorolás', hint: 'egy kamra-tétel idősávba sorolása, ha a szabályok nem döntenek' },
+  // VERIFIED: TeamChatVoiceWriter/TeamChatReplyVoiceWriter — a csapatfal élő ügy-beszélgetés:
+  // a nyitó/lezáró sorok és a felhasználó válaszára adott karakter-hang, egy közös havi kereten.
+  team_chat: { label: 'Csapat-chat (élő beszélgetés)', hint: 'a csapatfal ügyeinek élő karakter-hangja' },
   train_meso_plan: { label: 'Edzésterv-készítés' },
   unknown: { label: 'Ismeretlen hívás', hint: 'a hívó nem hagyott azonosítót' },
   admin_replay: { label: 'Admin próba-felidézés', hint: 'a memória-böngésző tesztfuttatása' },
