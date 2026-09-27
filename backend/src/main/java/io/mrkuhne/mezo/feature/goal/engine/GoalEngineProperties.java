@@ -200,6 +200,8 @@ public record GoalEngineProperties(
         @NotNull @Min(28) @Max(365) Integer windowDays,             // 120 — history replayed each run
         @NotNull @Positive Double sigmaScaleKg,                     // 0.35 — scale noise
         @NotNull @Positive Double sigmaTissueKg,                    // 0.02 — daily tissue process noise
+        @NotNull @Positive Double sigmaInitMassKg,                  // 0.5 — m₀ prior SD at the first weigh-in
+        @NotNull @Positive Double sigmaInitWaterKg,                 // 0.3 — w₀ prior SD at the first weigh-in
         @NotNull @DecimalMin("0") Double intakeErrorPct,            // 0.10 — logged-intake error
         @NotNull @Positive Integer sigmaUnknownKcal,                // 800 — an unknown-intake day
         @NotNull @DecimalMin("0") @jakarta.validation.constraints.DecimalMax("0.99") Double waterPhi, // 0.90

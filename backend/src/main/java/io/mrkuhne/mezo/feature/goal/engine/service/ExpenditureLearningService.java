@@ -75,15 +75,18 @@ public class ExpenditureLearningService {
             kcal.put(d.date(), d.kcal());
             carbs.put(d.date(), d.carbsG());
         }
-        // Too little own history → a day is judged against its SERVED target (spec §5.3), not maintenance.
-        Map<LocalDate, IntakeDayClassifier.Status> status = IntakeDayClassifier.classify(windowStart, weekEnd, kcal,
-            Map.of(), d -> formulaBase + adjustment + planEat + balanceOn(goal, d),
-            e.suspiciousRatio(), e.referenceDays(), e.minReferenceDays());
-
         Optional<ExpenditureEstimateEntity> prev =
             estimates.findFirstByCreatedByAndWeekStartBeforeAndDeletedFalseOrderByWeekStartDesc(userId, weekStart);
         Optional<ExpenditureEstimateEntity> thisWeek = estimates.findByCreatedByAndWeekStartAndDeletedFalse(userId, weekStart);
         boolean existing = prev.isPresent() || thisWeek.isPresent();
+        // The served base for a day with a prior row is that row's applied base (adjustment already
+        // folded in there) — not formulaBase + adjustment again, which double-counts a moved base.
+        int prevApplied = prev.map(ExpenditureEstimateEntity::getAppliedBaseKcal).orElse(formulaBase + adjustment);
+
+        // Too little own history → a day is judged against its SERVED target (spec §5.3), not maintenance.
+        Map<LocalDate, IntakeDayClassifier.Status> status = IntakeDayClassifier.classify(windowStart, weekEnd, kcal,
+            Map.of(), d -> prevApplied + planEat + balanceOn(goal, d),
+            e.suspiciousRatio(), e.referenceDays(), e.minReferenceDays());
         long recentUsable = status.entrySet().stream()
             .filter(en -> !en.getKey().isBefore(weekEnd.minusDays(27)))
             .filter(en -> en.getValue() == IntakeDayClassifier.Status.USABLE).count();
@@ -107,7 +110,6 @@ public class ExpenditureLearningService {
             return Optional.empty();
         }
 
-        int prevApplied = prev.map(ExpenditureEstimateEntity::getAppliedBaseKcal).orElse(formulaBase + adjustment);
         int prevDirection = prev.map(ExpenditureEstimateEntity::getDirection).orElse(0);
         int usableWeek = count(status, weekStart, weekEnd, IntakeDayClassifier.Status.USABLE);
         int weighInWeek = (int) weights.keySet().stream().filter(d -> !d.isBefore(weekStart)).count();

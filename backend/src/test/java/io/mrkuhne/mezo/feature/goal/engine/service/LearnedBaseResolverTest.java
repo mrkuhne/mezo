@@ -87,7 +87,8 @@ class LearnedBaseResolverTest {
     void disabledServesTheFormula() {
         GoalEngineProperties.Expenditure d = ExpenditureFilterTest.defaults();
         when(props.expenditure()).thenReturn(new GoalEngineProperties.Expenditure(false, d.windowDays(),
-            d.sigmaScaleKg(), d.sigmaTissueKg(), d.intakeErrorPct(), d.sigmaUnknownKcal(), d.waterPhi(),
+            d.sigmaScaleKg(), d.sigmaTissueKg(), d.sigmaInitMassKg(), d.sigmaInitWaterKg(), d.intakeErrorPct(),
+            d.sigmaUnknownKcal(), d.waterPhi(),
             d.sigmaWaterKg(), d.sigmaBaseKcal(), d.glycogenKgPerG(), d.glycogenMaxKg(), d.glycogenAlpha(),
             d.suspiciousRatio(), d.referenceDays(), d.minReferenceDays(), d.minUsableDays(),
             d.minUsableDaysPerWeek(), d.minWeighInDaysPerWeek(), d.maxStepKcal(), d.deadBandKcal(),

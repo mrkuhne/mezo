@@ -144,17 +144,22 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
             {base.source === 'learned' ? (
               <>
                 <div className="flp-etiles">
-                  <Tile icon="t-flame" name="Alapanyagcsere" sub={FORMULA_LABEL[base.formula]} value={nf(base.bmr)} unit="kcal" />
-                  <div className="op">×</div>
-                  <Tile icon="t-hike" name="Képlet szerint" sub={FORMULA_LABEL[base.formula]} value={nf(base.formulaKcal ?? 0)} unit="kcal" />
-                  <div className="op">=</div>
+                  {base.formulaKcal != null && (
+                    <>
+                      <Tile icon="t-hike" name="Képlet szerint" sub="BMR × NEAT" value={nf(base.formulaKcal)} unit="kcal" />
+                      <div className="op">→</div>
+                    </>
+                  )}
                   <Tile result sub="Tanult alap" value={nf(base.kcal)} unit="kcal" />
                 </div>
                 <span className="flp-einfo">
-                  Tanult alap · {CONFIDENCE_WORD[base.confidence ?? 'medium']} · ±{nf(round10(base.sdKcal ?? 0))} kcal
+                  {['Tanult alap', base.confidence && CONFIDENCE_WORD[base.confidence], base.sdKcal != null && `±${nf(round10(base.sdKcal))} kcal`]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </span>
                 <p className="flp-ewhy">
-                  Ennyit égetsz <b>edzés nélkül</b> — az app a <b>súlytrendedből és a felírt evésedből</b> tanulta meg. A képlet {nf(base.formulaKcal ?? 0)} kcal-t mondana.
+                  Ennyit égetsz <b>edzés nélkül</b> — az app a <b>súlytrendedből és a felírt evésedből</b> tanulta meg.
+                  {base.formulaKcal != null && <> A képlet {nf(base.formulaKcal)} kcal-t mondana.</>}
                 </p>
               </>
             ) : (

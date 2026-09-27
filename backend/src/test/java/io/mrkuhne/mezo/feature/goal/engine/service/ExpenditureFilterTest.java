@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 public class ExpenditureFilterTest {
 
     public static GoalEngineProperties.Expenditure defaults() {
-        return new GoalEngineProperties.Expenditure(true, 120, 0.35, 0.02, 0.10, 800, 0.90, 0.20, 12.0,
+        return new GoalEngineProperties.Expenditure(true, 120, 0.35, 0.02, 0.5, 0.3, 0.10, 800, 0.90, 0.20, 12.0,
             0.007, 2.0, 0.4, 0.60, 28, 5, 10, 4, 2, 150, 30, 0.35, 1.10, 100, 200);
     }
 
@@ -63,7 +63,12 @@ public class ExpenditureFilterTest {
     void aCarbStepDoesNotMoveTheBaseBeyondControlNoise() {
         double control = maxDeviation(i -> 200);
         double step = maxDeviation(i -> i < 14 ? 200 : 420);
-        assertThat(step).isLessThan(control + 50);
+        // Final-review fix (mezo-zz91i): the carb EWMA now folds in day d's carbs only AFTER d's own
+        // init/update step (a morning weigh-in cannot reflect that day's eating yet). That delays the
+        // glycogen correction by one day on the step day, moving this margin from ~226.12 to ~226.20
+        // (control ≈176.2) — a ~0.1 kcal shift, not a real behavior regression; the +50 slack is widened
+        // slightly to +55 to absorb it.
+        assertThat(step).isLessThan(control + 55);
     }
 
     private static double maxDeviation(IntUnaryOperator carbs) {

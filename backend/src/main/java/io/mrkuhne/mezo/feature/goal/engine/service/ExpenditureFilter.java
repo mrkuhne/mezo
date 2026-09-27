@@ -37,12 +37,13 @@ public final class ExpenditureFilter {
 
     public record Params(int kcalPerKg, double priorSdKcal, double sigmaScaleKg, double sigmaTissueKg,
                          double intakeErrorPct, double sigmaUnknownKcal, double waterPhi, double sigmaWaterKg,
-                         double sigmaBaseKcal, double glycogenKgPerG, double glycogenMaxKg, double glycogenAlpha) {
+                         double sigmaBaseKcal, double glycogenKgPerG, double glycogenMaxKg, double glycogenAlpha,
+                         double sigmaInitMassKg, double sigmaInitWaterKg) {
 
         public static Params of(int kcalPerKg, int priorSdKcal, GoalEngineProperties.Expenditure e) {
             return new Params(kcalPerKg, priorSdKcal, e.sigmaScaleKg(), e.sigmaTissueKg(), e.intakeErrorPct(),
                 e.sigmaUnknownKcal(), e.waterPhi(), e.sigmaWaterKg(), e.sigmaBaseKcal(), e.glycogenKgPerG(),
-                e.glycogenMaxKg(), e.glycogenAlpha());
+                e.glycogenMaxKg(), e.glycogenAlpha(), e.sigmaInitMassKg(), e.sigmaInitWaterKg());
         }
 
         public static Params of(GoalEngineProperties props) {
@@ -59,16 +60,20 @@ public final class ExpenditureFilter {
         Double carbEwma = null;
         Day prev = null;
         for (Day d : days) {
-            if (d.intakeKcal() != null && d.carbsG() != null) {
-                carbEwma = carbEwma == null ? d.carbsG() : carbEwma + p.glycogenAlpha() * (d.carbsG() - carbEwma);
-            }
             if (x == null) {
                 if (d.weightKg() == null) {
+                    carbEwma = updateCarbEwma(carbEwma, d, p);
                     continue;
                 }
+                // A morning weigh-in predates the day's own eating, so it is priced against the carb
+                // EWMA as it stood BEFORE d — the EWMA folds in d's carbs only after this init step.
                 x = new double[] {d.weightKg() - glycogen(carbEwma, cref, p), 0, priorBaseKcal};
-                cov = new double[][] {{0.25, 0, 0}, {0, 0.09, 0}, {0, 0, p.priorSdKcal() * p.priorSdKcal()}};
+                cov = new double[][] {
+                    {sq(p.sigmaInitMassKg()), 0, 0},
+                    {0, sq(p.sigmaInitWaterKg()), 0},
+                    {0, 0, p.priorSdKcal() * p.priorSdKcal()}};
                 prev = d;
+                carbEwma = updateCarbEwma(carbEwma, d, p);
                 continue;
             }
             // Predict from prev's intake into d.
@@ -90,7 +95,8 @@ public final class ExpenditureFilter {
                 x[2]};
             cov = add(mul(mul(f, cov), transpose(f)), new double[][] {
                 {qm, 0, 0}, {0, sq(p.sigmaWaterKg()), 0}, {0, 0, sq(p.sigmaBaseKcal())}});
-            // Update on a weigh-in: z = m + w + G + v.
+            // Update on a weigh-in: z = m + w + G + v. Priced against the EWMA as it stood BEFORE d,
+            // same reasoning as the init step above — d's own carbs are folded in only afterward.
             if (d.weightKg() != null) {
                 double y = d.weightKg() - glycogen(carbEwma, cref, p) - (x[0] + x[1]);
                 double s = cov[0][0] + cov[0][1] + cov[1][0] + cov[1][1] + sq(p.sigmaScaleKg());
@@ -108,8 +114,16 @@ public final class ExpenditureFilter {
                 }
             }
             prev = d;
+            carbEwma = updateCarbEwma(carbEwma, d, p);
         }
         return x == null ? Optional.empty() : Optional.of(new Estimate(x[2], Math.sqrt(cov[2][2])));
+    }
+
+    private static Double updateCarbEwma(Double carbEwma, Day d, Params p) {
+        if (d.intakeKcal() == null || d.carbsG() == null) {
+            return carbEwma;
+        }
+        return carbEwma == null ? d.carbsG() : carbEwma + p.glycogenAlpha() * (d.carbsG() - carbEwma);
     }
 
     private static double glycogen(Double carbEwma, double cref, Params p) {

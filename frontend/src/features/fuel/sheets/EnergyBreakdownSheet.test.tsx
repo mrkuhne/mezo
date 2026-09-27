@@ -69,12 +69,43 @@ describe('EnergyBreakdownSheet', () => {
     expect(screen.queryByText(/MET-alapú/)).not.toBeInTheDocument()
   })
 
-  it('renders the learned-base confidence line + formula tile (mezo-zz91i)', () => {
+  it('renders the learned-base confidence line + formula tile joined by an arrow, no ×/= (mezo-zz91i)', () => {
     render(<EnergyBreakdownSheet breakdown={learnedBreakdown} initial="base" onClose={vi.fn()} />)
     expect(screen.getByText(/Tanult alap · Közepesen biztos · ±140 kcal/)).toBeInTheDocument()
     expect(screen.getByText('Képlet szerint')).toBeInTheDocument()
+    expect(screen.getByText('BMR × NEAT')).toBeInTheDocument()
     expect(screen.getByText('2880')).toBeInTheDocument()
     expect(screen.getByText('Tanult alap')).toBeInTheDocument()
+    const tiles = document.body.querySelector('.flp-eblk.is-hl .flp-etiles')!
+    expect(tiles.querySelector('.op')?.textContent).toBe('→')
+    expect([...tiles.querySelectorAll('.op')].map(o => o.textContent)).not.toContain('×')
+    expect([...tiles.querySelectorAll('.op')].map(o => o.textContent)).not.toContain('=')
+    // The false equation (BMR × formula = learned) is gone — no separate "Alapanyagcsere" tile.
+    expect(screen.queryByText('Alapanyagcsere')).not.toBeInTheDocument()
+  })
+
+  it('omits confidence/sd parts of the line when missing, with no fabricated defaults (mezo-zz91i)', () => {
+    const noConfidence: EnergyBreakdown = {
+      ...fuelBreakdown,
+      base: { ...fuelBreakdown.base, source: 'learned', formulaKcal: 2880, sdKcal: null, confidence: null },
+    }
+    render(<EnergyBreakdownSheet breakdown={noConfidence} initial="base" onClose={vi.fn()} />)
+    expect(screen.getAllByText('Tanult alap').length).toBeGreaterThan(0)
+    expect(screen.queryByText(/Közepesen biztos/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/±/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Még tanulok/)).not.toBeInTheDocument()
+  })
+
+  it('omits the formula tile and arrow (no "0") when formulaKcal is missing (mezo-zz91i)', () => {
+    const noFormula: EnergyBreakdown = {
+      ...fuelBreakdown,
+      base: { ...fuelBreakdown.base, source: 'learned', sdKcal: 140, confidence: 'medium' },
+    }
+    render(<EnergyBreakdownSheet breakdown={noFormula} initial="base" onClose={vi.fn()} />)
+    expect(screen.queryByText('Képlet szerint')).not.toBeInTheDocument()
+    const tiles = document.body.querySelector('.flp-eblk.is-hl .flp-etiles')!
+    expect(tiles.querySelector('.op')).toBeNull()
+    expect(screen.queryByText(/A képlet .* kcal-t mondana/)).not.toBeInTheDocument()
   })
 
   it('renders "Képlet alapján" and keeps the BMR × NEAT tiles unchanged for the formula base path', () => {

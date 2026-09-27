@@ -177,16 +177,22 @@ class ExpenditureLearningServiceIT extends AbstractIntegrationTest {
         seedUserAndGoal(null);
         seedWeighIns();
         evaluate();
-        seedPriorRow(WEEK_START.minusWeeks(1), 2500, -1, 2450, 150); // an existing learner: eligibility skipped
+        // An existing learner: eligibility skipped, AND the fallback reference must use THIS row's
+        // appliedBaseKcal (2500) — not formulaBase again — else a moved base is double-counted (§5).
+        int priorApplied = 2500;
+        seedPriorRow(WEEK_START.minusWeeks(1), priorApplied, -1, 2450, 150);
         GoalEntity goal = goalRepository.findById(goalId).orElseThrow();
         TdeeBootstrapJson boot = goal.getTdeeBootstrap();
-        int maintenance = boot.neatBaselineKcal().add(boot.weeklyEatKcalPerDay()).intValue();
+        int planEat = boot.weeklyEatKcalPerDay().intValue();
         long week = ChronoUnit.DAYS.between(goal.getStartDate(), WEEK_START) / 7 + 1;
         int balance = GoalPrescriptionJson.currentSegment(goal.getPrescription(), week).dailyEnergyBalanceKcal();
+        int servedTarget = priorApplied + planEat + balance;
+        int maintenance = priorApplied + planEat;
         int compliant = 1400;
-        // Fixture sanity: below 0.6 × maintenance, at/above 0.6 × the served (cut) target.
+        // Fixture sanity: below 0.6 × the prior-applied-based maintenance, at/above 0.6 × the served
+        // (cut) target computed off the SAME prior-applied base.
         assertThat(compliant).isLessThan((int) (0.6 * maintenance));
-        assertThat(compliant).isGreaterThanOrEqualTo((int) Math.ceil(0.6 * (maintenance + balance)));
+        assertThat(compliant).isGreaterThanOrEqualTo((int) Math.ceil(0.6 * servedTarget));
         // Only 4 logged days in total → every day has < 5 reference days → the fallback reference decides.
         for (int i = 0; i < 4; i++) {
             mealPopulator.createMealWithItems(userId, WEEK_START.plusDays(i), "lunch",
