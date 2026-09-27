@@ -254,11 +254,14 @@ The sections below describe its current behavior and the supporting components.
   additionally routes `health` rows through a sleep lexicon (`alv|alsz|lefekv|fekszel|fekszem|
   ébred|sleep|bed`, case-insensitive — `FactOwner.backfill`, mirrored by the migration's `~*`
   regex) → `szunya`.
-- **Prompt injection** — `KnowledgeFactService.renderPromptBlock(userId)`: the top-N
-  (`mezo.companion.facts.top-n`, default 10) prompt-included facts by reinforcement count (then
-  newest), rendered as a deterministic Hungarian block (`MEGERŐSÍTETT TÉNYEK Danielről …`, one
-  `- (kategória) tény` line each, `""` when none) and inserted into BOTH turn paths' system
-  prompt **between the context snapshot and the history transcript**.
+- **Prompt injection** — `KnowledgeFactService.renderPromptBlock(userId)`: as shipped at V1.1,
+  the top-N (`mezo.companion.facts.top-n`, default 10) prompt-included facts by reinforcement
+  count (then newest), rendered as a deterministic Hungarian block (`MEGERŐSÍTETT TÉNYEK
+  Danielről …`, one `- (kategória) tény` line each, `""` when none) and inserted into BOTH turn
+  paths' system prompt **between the context snapshot and the history transcript**. **Facts-always
+  (2026-09-27, mezo-d6ivw.8) replaced the ranking cap with a safety cap:** every enabled fact is
+  now injected, strongest first, up to `mezo.companion.facts.prompt-cap` (default 200, WARN-logged
+  trim past it, not a silent drop) — see §3 and the [ADR 0043 amendment](../decisions/0043-conversation-first-companion.md#amendment-2026-09-27-mezo-d6ivw8--facts-always).
 
 **V1.2 (`mezo-fnnq.7`) shipped extraction + the confirm UI — the learning loop's front half:**
 
@@ -289,7 +292,7 @@ The sections below describe its current behavior and the supporting components.
   re-snoozable; the candidate is simply excluded from the list, not decided); accept/refine
   promote into `knowledge_fact` — with the source **INHERITED from the candidate**
   (`chat`, or `weekly_review` for a weekly lesson, `mezo-d20.7.6`) and, since U9b, the **owner
-  inherited too** — which the V1.1 top-N injection then carries into every prompt. One decision per candidate
+  inherited too** — which the injection block (facts-always since mezo-d6ivw.8; V1.1 top-N originally) then carries into every prompt. One decision per candidate
   (400 `COMPANION_CANDIDATE_ALREADY_DECIDED`).
 - **KnowledgeListPage goes real** — dual-mode `useKnowledge`/`useKnowledgeActions`
   (`data/insights/knowledge{Api,Hooks}.ts`): pending L2 candidate cards (Elfogad / Pontosít
@@ -740,11 +743,14 @@ COMPLETE (all 14 slices):**
 - **Recurrence reinforcement** — when the nightly detection re-detects a CONFIRMED pattern in
   the SAME direction (sign of r), the promoted fact gets `reinforcement_count++` +
   `last_reinforced_at` — at most once per `reinforce-cooldown-days` (7): the sliding window
-  re-counts the same evidence nightly, so uncapped increments would crowd the top-N injection.
+  re-counts the same evidence nightly, so uncapped increments would distort the strongest-first
+  ordering of the injected block (facts-always, mezo-d6ivw.8 — every enabled fact is injected, but
+  reinforcement count still sets the order and, past the safety cap, which facts survive the trim).
   The pattern's own stats stay frozen (the user judged THAT correlation). Monitoring rows never
   reinforce (silent monitoring stays silent); a direction flip is NOT the pattern recurring.
 - **In-chat acknowledgment** — pattern-facts promoted within `facts.pattern-ack-days` (3) get an
-  `ÚJ FELISMERÉSEK` block in BOTH chat paths' system prompt (after the top-N facts) — the
+  `ÚJ FELISMERÉSEK` block in BOTH chat paths' system prompt (after the confirmed-facts block —
+  facts-always since mezo-d6ivw.8, every enabled fact, not just a top-N) — the
   companion naturally mentions "ezt megtanultam rólad" on the next conversation.
   `include_in_prompt` is the user's kill-switch for EVERY injection channel: a toggled-off fact
   is never announced either (review finding).
@@ -921,7 +927,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Streaming (SSE) | ✅ V0.4 | `POST .../message/stream` — `delta`/`done`/`error` events, two-transaction turn, hand-written controller (§9 Decision 11). |
 | Tool calling + audit | ✅ V0.5, expanded mezo-xixu → mezo-iizd.10 | 8 read tools at V0.5, **18 read hub-tools now** across 10 toolsets (scope-consolidated) over existing services; `RecordingToolCallback` audit + per-turn cap (raised 6→15, mezo-xixu); `tool_calls`/`refs` envelopes persisted; `mezo.companion.tools.*` tunables. |
 | Frontend | ✅ V1.2 | ChatPage real since V0.4/V0.5; **KnowledgeListPage real since V1.2** (candidate inbox + persisting toggles + degraded state). **LIVE on k3s since 2026-07-04** — `GEMINI_API_KEY` rides the `mezo-app` SealedSecret, switch on; smoke-verified with a real context-aware Gemini answer. |
-| Knowledge facts (L3) | ✅ V1.1 | `knowledge_fact`/`learned_fact` tables + fact CRUD + top-N injection block in every system prompt (`mezo.companion.facts.top-n`). |
+| Knowledge facts (L3) | ✅ V1.1, facts-always since mezo-d6ivw.8 | `knowledge_fact`/`learned_fact` tables + fact CRUD; every enabled fact (safety cap 200, `mezo.companion.facts.prompt-cap`) is injected into every system prompt — chat (both paths) and generators. |
 | Fact extraction + confirm | ✅ V1.2 | Post-turn async extraction (`mezo.companion.extraction.*`) → `learned_fact` candidates → L2 decision endpoint → promotion (`source=chat`). |
 | Advisor chain (clinical + action-claim, no judge) | ✅ V1.3 shipped it with an LLM verdict; **S9.8 (`mezo-rj214.7`/`mezo-rj214.5`) removed the judge from every live path** | Two deterministic checks, both ~0 ms, no LLM call: `ClinicalOutputCheck` (Rx dose-change regex) then `ActionClaimCheck` (fabricated first-person past-tense action claim, e.g. "Felírtam: taco…" — the production incident `mezo-q0p5a`), retry-once → `degraded` flag (`mezo.companion.advisors.*`). `TurnVerdictCheck` (the old LLM verdict — `redundantQuestion`/`unmarkedClaim`, marked speculation allowed since [ADR 0028](../decisions/0028-marked-speculation-in-chat.md)) survives only as an offline regression instrument; its `unmarkedClaim` criterion never cleared 0.60 precision. `redundantQuestion` (never-ask-twice) left the live path together with `unmarkedClaim` — no separate check replaced it. Production's default conversation-first path never ran the judge at all even before S9.8 (it took the tool-free `reviewChat` branch), so that path's own behaviour is unchanged by the removal. Honest gap: nothing on the live path mechanically checks an invented NUMBER any more — that now rests on the voice prompt plus the answering model having the raw tool data in front of it. |
 | Vector infra (pgvector + EmbeddingPort) | ✅ V2.1 | `memory_embedding` (`vector(768)`, HNSW, cosine) + `EmbeddingPort` (real Gemini SDK adapter / fake); image `pgvector/pgvector:pg16` in compose + k3s + Testcontainers. |
@@ -1940,9 +1946,12 @@ companion surface since V0.4, dual-mode:
 
 `mezo.companion.conversation.enabled=true` selects the conversation-first path in BOTH
 `ChatService.sendMessage` and `ChatStreamService.streamMessage`. The gear classifier is bypassed.
-Preparation supplies the date, a compact stored biometric/current-goal baseline, learned communication preferences, explicit day/week anchor, and
-up to 80 recent messages under a 100,000-character cap (12,000 per message). There is no automatic
-health snapshot, character assessment, memory search or newly-learned announcement.
+Preparation supplies the date, a compact stored biometric/current-goal baseline, learned communication preferences, explicit day/week anchor, the confirmed-facts block (facts-always,
+mezo-d6ivw.8 — every enabled `knowledge_fact`, `renderPromptBlock`, safety-capped at
+`mezo.companion.facts.prompt-cap`), and up to 80 recent messages under a 100,000-character cap
+(12,000 per message). The confirmed-facts block is automatic since facts-always; there is still no
+automatic health snapshot, character assessment, memory search or newly-learned announcement — those
+stay tool-only. (The legacy CHAT gear stays factless — spec 2026-09-16 §6.5's rollback exception.)
 
 `ConversationTurnService.prepare` gives the smart planner the full 23-tool catalogue, history
 and accumulated tool results. `needsData=false` stops retrieval; otherwise validated reads run
@@ -2358,6 +2367,15 @@ POST /api/companion/conversation/{id}/message   (sync JSON)
        mapper serves GET /messages, so a reloaded history re-renders the disclosure unchanged)
 ```
 
+This `assembleSystemPrompt` diagram is the gear-routed path (`mezo.companion.conversation.enabled=false`,
+rollback only). **On the default conversation-first path the volatile half is built by
+`ChatService.conversationContext` instead** — `[Beszélgetés]` (today + the anchored-context block) +
+`personalContextAssembler.render(..)` + the confirmed-facts block
+(`knowledgeFactService.renderPromptBlock(..)`, facts-always since mezo-d6ivw.8, ADR 0043 amendment) —
+i.e. the facts block now sits in the volatile half, right after the personal context, on every
+conversation-first turn; everything this diagram shows behind snapshot/memory/graph tools stays
+tool-only there.
+
 **The tool pipeline (V0.5, expanded to 18 tools across 10 toolsets by mezo-iizd.10).**
 `CompanionToolRegistry` (`tools/CompanionToolRegistry.java`, `:44-50`) is the ONLY assembly point: it
 builds the 18 callbacks from the 10 domain toolsets (`TrainTools`/`BiometricsTools`/`FuelTools`/
@@ -2553,14 +2571,18 @@ instead of relying on prompt discipline. Every OTHER companion-feed kind (`sleep
 `midday`/`evening`) calls the ordinary `render` — only `morning` is biometrics-free. See
 [proactive.md §1/§3](proactive.md) for the generator side.
 
-**The knowledge-fact injection (V1.1).** `KnowledgeFactService.renderPromptBlock(userId)`
-(`service/KnowledgeFactService.java`) loads the top-N (`mezo.companion.facts.top-n`)
-`include_in_prompt` facts ordered by `reinforcement_count desc, created_at desc` and renders
-`MEGERŐSÍTETT TÉNYEK Danielről (legfontosabb elöl):` with one `- (kategória) fact_text` line per
-fact — categories render as deterministic Hungarian labels (train→edzés, fuel→étkezés,
-health→egészség, life→élet). No facts ⇒ `""` (no empty header). Both `sendMessage` and
-`prepareTurn` insert it **between the snapshot and the history**, so the sync AND streamed turns
-silently know every confirmed fact.
+**The knowledge-fact injection (V1.1, facts-always since 2026-09-27, mezo-d6ivw.8).**
+`KnowledgeFactService.renderPromptBlock(userId)` (`service/KnowledgeFactService.java`) loads
+**every** `include_in_prompt` fact (safety-capped at `mezo.companion.facts.prompt-cap`, default
+200, WARN-logged trim if the enabled set ever outgrows it — was a top-N ranking cap at V1.1,
+default 10) ordered by `reinforcement_count desc, created_at desc` and renders `MEGERŐSÍTETT
+TÉNYEK Danielről (legfontosabb elöl):` with one `- (kategória) fact_text` line per fact —
+categories render as deterministic Hungarian labels (train→edzés, fuel→étkezés, health→egészség,
+life→élet). No facts ⇒ `""` (no empty header). `sendMessage`/`prepareTurn` (legacy gear path)
+insert it **between the snapshot and the history**; the conversation-first path's
+`ChatService.conversationContext` inserts it in the volatile half right after the personal-context
+block (ADR 0043 amendment) — either way, the sync AND streamed turns silently know every
+confirmed, enabled fact, not a ranked subset.
 
 **The advisor chain, current shape (S9.8, `mezo-rj214.7`/`mezo-rj214.5`) — two deterministic
 checks, no LLM judge on any live path.** `feature/companion/advisor/` — `CompanionAdvisorChain`
@@ -3036,8 +3058,9 @@ weaken an already-supported answer with an obligatory guess.
 
 `ChatService.TONE_REMINDER` (mezo-q71s, `public` — the advisor's retry re-prompt needs it too,
 `ChatService.java:116-119`) is appended at the very END of the FULLY assembled prompt — after
-`SYSTEM_PROMPT`, the context snapshot (V0.3), the top-N facts (V1.1) and the pattern-ack block
-(V3.3) — in BOTH `sendMessage` and `prepareTurn`. It is the recency-weighted counterweight to the
+`SYSTEM_PROMPT`, the context snapshot (V0.3), the confirmed-facts block (every enabled fact,
+facts-always since mezo-d6ivw.8) and the pattern-ack block (V3.3) — in BOTH `sendMessage` and
+`prepareTurn`. It is the recency-weighted counterweight to the
 persona sitting at the prompt's top: *"[Emlékeztető] Ez beszélgetés Daniellel, nem adatlekérdezés.
 A fenti adatblokk nyersanyag, nem a válasz formája."* — the runtime data blocks (snapshot/facts) sit
 between the persona and this reminder, so without it the last thing the model reads before
@@ -3872,7 +3895,7 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
   Monday is normalized to `previousOrSame(MONDAY)` for BOTH `kind`s — `kind=week` anchors this way
   too, not just `kind=day`, so a mid-week `contextDate` can never silently shift the rendered
   window off the ISO week it actually falls in. **Prompt position:** right after the `[Profil]`/`[Cél]`/…
-  context snapshot (V0.3) and before the top-N facts block — `assembleSystemPrompt` now takes two
+  context snapshot (V0.3) and before the confirmed-facts block — `assembleSystemPrompt` now takes two
   extra parameters, `contextKind`/`contextDate` (both `null` for a plain conversation, in which case
   the block renders `""` and every other turn is byte-identical to before this slice). **Failure
   honesty (the `GraphPromptAssembler` precedent, IDENT-3):** `render()` never throws — any failure
@@ -5563,8 +5586,9 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   reads `PROFILE_ASSEMBLER_JOB_SWITCH` by THIS bean's presence and skips its own phase-2 rebuild
   when it is absent (§4).
 - **`ProfilePromptAssembler.render(userId)`** — renders the `[Rólad tanultam]` block, positioned
-  in the canonical prompt order right after the fact blocks (top-N facts + the pattern-facts
-  acknowledgment) and BEFORE `[Emlékek]` — see the updated `assembleSystemPrompt` order in §3. Reads
+  in the canonical prompt order right after the fact blocks (confirmed facts — every enabled one,
+  facts-always since mezo-d6ivw.8 — + the pattern-facts acknowledgment) and BEFORE `[Emlékek]` —
+  see the updated `assembleSystemPrompt` order in §3. Reads
   the ACTIVE node only (an archived one renders `""`, the explicit "forget what you think of me"
   lever), is capped, and **never throws** (IDENT-3): a `RuntimeException` logs a warn and yields
   `""`, so a profile-block failure never breaks a turn. `""` also when the bean is absent
@@ -6236,8 +6260,10 @@ The Ref column describes UI/audit references, whose limits do not limit source-r
   `get_weight_trend(weeks)` (V0.5).
 - `mezo.companion.tools.max-refs-per-turn` = **10** (`@Min(1) @Max(30)`) — refs persisted per turn,
   deduped in insertion order (V0.5).
-- `mezo.companion.facts.top-n` = **10** (`@Min(1) @Max(50)`) — how many confirmed facts (by
-  reinforcement count, then newest) ride in every system prompt (V1.1).
+- `mezo.companion.facts.prompt-cap` = **200** (`@Min(1) @Max(500)`) — facts-always (mezo-d6ivw.8):
+  every enabled fact rides in every system prompt, strongest (reinforcement count, then newest)
+  first; this is a safety ceiling, not a working limit — a trim past it is WARN-logged, never
+  silent (was `mezo.companion.facts.top-n`, default 10, V1.1).
 - `mezo.companion.facts.pattern-ack-days` = **3** (`@Min(0) @Max(30)`) — pattern-facts younger
   than this get the V3.3 in-chat acknowledgment block (0 = off).
 - `mezo.companion.extraction.enabled` = **true** — the V1.2 post-turn extraction master toggle
@@ -6421,7 +6447,8 @@ The Ref column describes UI/audit references, whose limits do not limit source-r
   verdict is `imbalanced_groups` and Pearson is not run.
 - `mezo.companion.patterns.reinforce-cooldown-days` = **7** (`@Min(1) @Max(60)`) — a confirmed
   pattern reinforces its promoted fact at most once per window (the nightly lookback slides one
-  day; re-counting the same evidence would inflate top-N ranks — review finding).
+  day; re-counting the same evidence would inflate the fact's ranking within the injected block —
+  review finding).
 - `mezo.companion.patterns.pairs` = the 29-pair catalog (`@NotEmpty`, each
   `{key, category, label, title, mechanism, question, expected-direction, when-positive-hu,
   when-negative-hu, metric-a, metric-b, lag-days}`) — `mechanism` is the „miért figyeljük"
@@ -7279,8 +7306,10 @@ another feature's domain event rather than by a chat turn or a cron.
   [`train.md`](train.md) §5 for the mirror-image writeup.
 
 **V3.3 promotion seam (✅ wired — the loop closes).** Pattern-confirm →
-`knowledge_fact(source=pattern)` → the V1.1 top-N injection carries it into every prompt → the
-V3.1 nightly re-detection reinforces it → the reinforcement raises its injection rank. The next
+`knowledge_fact(source=pattern)` → the injection block (facts-always since mezo-d6ivw.8; V1.1
+top-N originally) carries it into every prompt → the V3.1 nightly re-detection reinforces it → the
+reinforcement raises its rank within the block (and its odds of surviving the safety-cap trim).
+The next
 epics (proactive briefing/heartbeat/memoir, Fuel P8) build on the now-complete
 snapshot+facts+summaries+patterns stack — see the roadmap's "Relationship to other roadmaps".
 
@@ -7797,8 +7826,9 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 - **`KnowledgeFactServiceIT`** (10 tests) — create defaults (manual/included/zero-reinforcement),
   list ordering (reinforcement desc, then newest), cross-user isolation, partial-update semantics
   (toggle-only leaves text/category; text+category edit leaves the toggle), 404 on a foreign fact,
-  and the injection block: `""` when empty, top-N cap with deterministic ordering, toggled-off
-  exclusion, Hungarian category labels.
+  and the injection block: `""` when empty, deterministic strongest-first ordering, toggled-off
+  exclusion, Hungarian category labels (the ranking cap was replaced by the `prompt-cap` safety
+  ceiling — facts-always, mezo-d6ivw.8).
 - **`LearnedFactPersistenceIT`** — the candidate → decision → promoted_fact_id shape round-trips;
   undecided rows keep every decision field null.
 - **`CompanionFactApiIT`** (6 tests, HTTP) — 401 without token, POST 201 + list round-trip,
@@ -7807,7 +7837,8 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
   verb helper added to `ApiIntegrationTest`.
 - **Extended:** `ChatServiceIT` (facts block between snapshot and history via the fake echo;
   toggled-off fact absent; no-facts turn renders no header), `CompanionApiSwitchOffIT` (fact
-  surface 404s with the switch off), `CompanionPropertiesIT` (`facts.top-n` binding).
+  surface 404s with the switch off), `CompanionPropertiesIT` (`facts.prompt-cap` binding, was
+  `facts.top-n`).
 - New populators `KnowledgeFactPopulator`/`LearnedFactPopulator`; both tables in the
   `ResetDatabase` TRUNCATE list.
 
@@ -8764,7 +8795,10 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
     ⇒ `""` (no empty header). Position: snapshot → **facts** → pattern-ack → `TONE_REMINDER`,
     shared by the sync and streamed turn (both call the same prompt assembly). **Since mezo-q71s**
     the history is no longer part of this ordering at all — it travels to the port as its own
-    parameter, not rendered into the prompt (§3 "Prompt assembly").
+    parameter, not rendered into the prompt (§3 "Prompt assembly"). **Superseded (2026-09-27,
+    mezo-d6ivw.8 — facts-always):** the top-N ranking cap is gone; every enabled fact is injected,
+    strongest-first, safety-capped at `mezo.companion.facts.prompt-cap` (default 200) instead of
+    ranked down to 10 — see §3 and the [ADR 0043 amendment](../decisions/0043-conversation-first-companion.md#amendment-2026-09-27-mezo-d6ivw8--facts-always).
 24. **`learned_fact` is table-only in V1.1** with **loose UUID refs** (`derived_from_message_id`,
     `promoted_fact_id`, both `ON DELETE SET NULL`, no `@ManyToOne`) and a CHECK that passes NULL
     (undecided candidate) — the V1.2 flow gets a ready schema, no dead code today.
@@ -8830,7 +8864,8 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
     review runs between the last delta and `done`, and the authoritative done row carries the
     corrected (or flagged) answer through the FE's existing done-swap. Known v1 limitation: a
     rejected attempt-1 is briefly visible while streaming.
-37. **Redundancy scope = the injected fact block** (top-N `include_in_prompt`) — exactly what
+37. **Redundancy scope = the injected fact block** (every enabled `include_in_prompt` fact,
+    facts-always since mezo-d6ivw.8; a top-N ranking cap at the time this was written) — exactly what
     the answering model could know; a prompt-excluded fact can't be culpably re-asked, and the
     retry can actually fix what the guard flags. Tool RESULTS are not shown to the judge in v1
     (call names only, claims from listed tools presumed grounded) — the high-value catch is the
@@ -9273,7 +9308,8 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   end-to-end on the real model — the real-API tool smoke is part of that rollout.
 - **V2.x RAG (pgvector) · V3.x patterns** — see the roadmap; `find_similar_past_days` joins the
   registry at V2.3 (`mezo-fnnq.11`); `get_knowledge_facts(topic)` is a v1-batch tool candidate
-  once facts outgrow the top-N window.
+  once the enabled set outgrows the facts-always `prompt-cap` safety ceiling (200) and needs
+  on-demand lookup instead of blanket injection.
 - **Advisor hardening (V1.3 follow-ups, bd-filed) — mostly moot after S9.8.** Tool-RESULT capture
   into `ToolCallAudit` for the verdict judge shipped (`mezo-indo`) before the judge left the live
   path; the latency/cost review of the verdict call is now irrelevant to production (the judge
@@ -9561,7 +9597,7 @@ change is distinct from those smoothed rates. The underlying trend calculation i
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ContextSnapshotAssembler.java` — the V0.3 cross-feature "today" block (8 HU blocks, `nincs adat` absences). Every prompt-facing figure now goes through `ToolText` (§3 "Three render seams"): `huWeight`/`huRate`/`huHours` for `[Profil]`'s mérés/súlytrend, `[Cél]`'s start → target and its sleep-hours target, `rating` for sleep quality and the check-in sliders (honest absence instead of the literal `null/10`), `huTrajectory` for the goal's `cut|bulk|maintain`; plus the `[Edzés]` digest's own inclusive bounds + „nem a naptári hét" and the `[Mai üzemanyag]` protocol's stated namelessness.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PromptMemoryAssembler.java` — **`mezo-b3pp.12`** W3.1 ambient recall: embed-once → five kind-group ANN queries (W3.2 added the rungs) → per-group floor/decay/cap (**per group since W3.3, `mezo-b3pp.14`**) → `(kind, ref_id)` dedupe → the `MEMORIES_HEADER` (`[Emlékek]`) render under the token cap, plus the `Memory`/date refs. **Never throws** — any `RuntimeException` becomes a `log.warn` + `AmbientRecall.EMPTY`, so the block is optional and the turn is not (IDENT-3). Not `@Transactional` (the ANN carries its own savepoint, §9).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/TodayQuestSource.java` — the companion-owned port for `[Napi gyakorlat]`'s quest count, implemented by `feature/quest/service/TodayQuestAdapter.java` (keeps the quest↔companion dependency one-directional; the `progression.QuestLedgerSource` precedent).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/KnowledgeFactService.java` — V1.1 fact CRUD + `renderPromptBlock` (top-N injection, `FACTS_HEADER`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/KnowledgeFactService.java` — V1.1 fact CRUD + `renderPromptBlock` (facts-always since mezo-d6ivw.8: every enabled fact, `prompt-cap` safety ceiling, `FACTS_HEADER`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/FactExtractionService.java` — V1.2 post-turn extraction (`EXTRACTION_MARKER`, parse/dedupe/cap).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/{ChatTurnCompleted,FactExtractionListener}.java` — the V1.2 AFTER_COMMIT async trigger.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/FactCandidateService.java` — V1.2 pending inbox + accept/refine/reject decision.

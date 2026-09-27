@@ -170,10 +170,11 @@ public record CompanionProperties(
         @Min(0) @Max(10) int lifegoalMaxGoals
     ) {}
 
-    /** V1.1 knowledge-fact injection — how much confirmed memory rides in every system prompt. */
+    /** V1.1→facts-always (mezo-d6ivw.8): EVERY enabled fact rides in every prompt; the cap is a
+     *  safety brake only (owner set 200, 2026-09-27) — trimming is logged, never silent. */
     public record Facts(
-        /** Top-N facts (by reinforcement count, then newest) injected into the system prompt. */
-        @Min(1) @Max(50) int topN,
+        /** Safety ceiling on the injected block — strongest facts survive a trim (never a working limit). */
+        @Min(1) @Max(500) int promptCap,
         /** V3.3: freshly promoted pattern-facts younger than this many days get an in-chat acknowledgment block (0 = off). */
         @Min(0) @Max(30) int patternAckDays
     ) {}

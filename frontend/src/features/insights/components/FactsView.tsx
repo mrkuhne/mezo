@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Icon3D } from '@/shared/ui/clay'
 import { cn } from '@/shared/lib/cn'
-import { FACT_CATEGORIES, PROMPT_TOP_N } from '@/data/insights/knowledge'
+import { FACT_CATEGORIES } from '@/data/insights/knowledge'
 import { LifecycleSection } from '@/features/insights/components/LifecycleSection'
 import { KnowledgeFactRow } from '@/features/insights/components/KnowledgeFactRow'
 import { matchesQuery, type FactBucket } from '@/features/insights/logic/factCopy'
@@ -9,7 +9,7 @@ import type { FactCategory, KnowledgeFact } from '@/data/types'
 
 export function FactsView(props: {
   facts: KnowledgeFact[]
-  buckets: { inPrompt: KnowledgeFact[]; waiting: KnowledgeFact[]; off: KnowledgeFact[] }
+  buckets: { inPrompt: KnowledgeFact[]; off: KnowledgeFact[] }
   onToggle: (id: string, active: boolean) => void
   /** T10 (mezo-ms9a): a `?fact=<id>` deep link célzott tény-id-je — a shell (KnowledgeListPage)
    *  tölti, egy `useState`-ben tartva a param eltűnése után is, hogy a kiemelés egyszeri legyen. */
@@ -23,17 +23,14 @@ export function FactsView(props: {
     list.filter((f) => (category === 'all' || f.category === category) && matchesQuery(f, query))
 
   const inPrompt = visible(buckets.inPrompt)
-  const waiting = visible(buckets.waiting)
   const off = visible(buckets.off)
-  const nothingMatches = facts.length > 0 && inPrompt.length + waiting.length + off.length === 0
+  const nothingMatches = facts.length > 0 && inPrompt.length + off.length === 0
   const filterActive = query.trim() !== '' || category !== 'all'
 
-  // T10 (mezo-ms9a): a highlightolt tény lehet a NEM-alapból-nyitott „Bekapcsolva, de most
-  // kimarad" / „Kikapcsolva" vödörben — a `?fact=` linknek akkor is meg kell mutatnia, nem
-  // csak akkor, ha véletlenül top-N-ben van. A membershipet a TELJES (szűretlen) vödrökön
+  // T10 (mezo-ms9a): a highlightolt tény lehet a NEM-alapból-nyitott „Kikapcsolva" vödörben —
+  // a `?fact=` linknek akkor is meg kell mutatnia. A membershipet a TELJES (szűretlen) vödrön
   // nézzük, mert a kiemelés a szűrőktől független — ha épp fut egy szűrő, a `filterActive`
-  // ág úgyis nyitva tartja mindkét szekciót.
-  const highlightInWaiting = highlightFactId != null && buckets.waiting.some((f) => f.id === highlightFactId)
+  // ág úgyis nyitva tartja a szekciót.
   const highlightInOff = highlightFactId != null && buckets.off.some((f) => f.id === highlightFactId)
 
   const rows = (list: KnowledgeFact[], bucket: FactBucket) =>
@@ -101,25 +98,14 @@ export function FactsView(props: {
         <div className="tud9-buckets">
           {inPrompt.length > 0 && (
             <section className="tud9-group rise" style={{ '--d': '110ms' } as React.CSSProperties}>
-              <h2 className="tud9-sech">Most ezeket kapja meg a társ · {inPrompt.length}</h2>
+              <h2 className="tud9-sech">Ezeket tudja rólad · {inPrompt.length}</h2>
               <div className="tf-tlist tud9-facts">{rows(inPrompt, 'in-prompt')}</div>
               <p className="tud9-fn">
-                Minden beszélgetés elején ezek a mondatok mennek elé: a {PROMPT_TOP_N} legerősebb
-                bekapcsolt tény, plusz a frissen megerősített minták.
+                Ami itt be van kapcsolva, azt a társ minden beszélgetésben és minden magától küldött
+                üzenetében tudja rólad — a legmegerősítettebb áll elöl.
               </p>
             </section>
           )}
-
-          <LifecycleSection
-            title="Bekapcsolva, de most kimarad"
-            accent="var(--text-secondary)"
-            count={waiting.length}
-            defaultOpen
-            forceOpen={filterActive || highlightInWaiting}
-            footNote="Ha megerősödnek, vagy egy erősebb tény kiesik, bekerülnek a chatbe."
-          >
-            {rows(waiting, 'waiting')}
-          </LifecycleSection>
 
           <LifecycleSection
             title="Kikapcsolva"

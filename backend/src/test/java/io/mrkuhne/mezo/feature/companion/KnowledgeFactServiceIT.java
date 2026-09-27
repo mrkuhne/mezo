@@ -164,9 +164,10 @@ class KnowledgeFactServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testRenderPromptBlock_shouldKeepTopNByReinforcement_whenMoreFactsThanBudget() {
+    void testRenderPromptBlock_shouldIncludeEveryEnabledFact_whenMoreThanTheOldTopTen() {
         UUID userId = databasePopulator.populateUser("fact-topn@test.local");
-        // 12 facts, reinforcement 1..12 — the top-10 budget (mezo.companion.facts.top-n) keeps 03..12
+        // facts-always delta (mezo-d6ivw.8): 12 facts, reinforcement 1..12 — no top-10 cutoff,
+        // every enabled fact rides; ordering stays strongest-first
         for (int i = 1; i <= 12; i++) {
             factPopulator.fact(userId, "tény-%02d".formatted(i), "train", i);
         }
@@ -175,9 +176,7 @@ class KnowledgeFactServiceIT extends AbstractIntegrationTest {
 
         assertThat(block).startsWith(KnowledgeFactService.FACTS_HEADER
                 .replace(PromptPersona.NAME_TOKEN, "fact-topn@test.local"));
-        assertThat(block).contains("tény-12").contains("tény-03");
-        assertThat(block).doesNotContain("tény-02").doesNotContain("tény-01");
-        // strongest reinforcement renders first — deterministic ordering
+        assertThat(block).contains("tény-12").contains("tény-02").contains("tény-01");
         assertThat(block.indexOf("tény-12")).isLessThan(block.indexOf("tény-11"));
     }
 

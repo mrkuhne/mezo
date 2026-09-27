@@ -2,7 +2,7 @@
 title: Insights (the Mezo tab)
 type: feature-domain
 status: mixed
-updated: 2026-09-26
+updated: 2026-09-27
 tags: [insights, mezo-tab, frontend, data-layer]
 key_files:
   - frontend/src/features/insights
@@ -406,13 +406,35 @@ Minden alábbi viselkedési szerződés (a fact-rész) változatlan a `mezo-9ryh
 - **`?view=profil`** redirects to `/settings/mezo/communication`, with or without a learned node.
 - **`?view=hogyan`** (tone gold, `HowItWorksView`) — a törölt `KnowledgeExplainer` öt Q&A-blokkja + egy hatodik („Mik a kategóriák?"), külön nézetként, nem összecsukható panelként. Nem perzisztál állapotot.
 
-**Hero** — `N tény` + `M megy a chatbe · K kapcsolat`, ahol M a ténylegesen injektált tények száma a TELJES (szűretlen) listán, **nem** az összes bekapcsolté: a `bucketFacts()` a backend két injektálási csatornáját tükrözi — a rangsoros top-N blokkot (`reinforced DESC, createdAt DESC`, `PROMPT_TOP_N = 10`, a `mezo.companion.facts.top-n` kézzel szinkronban tartott tükre) ÉS a `renderNewPatternFactsBlock()` friss-minta kivételt (minden bekapcsolt, `source: 'pattern'` tény, ami `PATTERN_ACK_DAYS = 3` napon belül jött létre, a rangsortól függetlenül bekerül — a `mezo.companion.facts.pattern-ack-days` tükre, mindkét konstans `data/insights/knowledge.ts`-ben). A **`· K kapcsolat` szegmens** a `mezo-ms9a` backend-kiegészítéséből jön (`useGraphEdgeCount()` → `GET /api/companion/graph/edge/count`, active-endpoint-filtered él-összesítő); a hook 404/hiba/pending esetén `count: null`-t ad, SOHA nem 0-t — a hero ilyenkor egyszerűen ELHAGYJA a szegmenst, nem hazudik nulla kapcsolatról. A hero szám degraded alatt sincs fabrikálva („0 tény"): nagy szám/alcím nélkül marad.
+**Hero** — `N tény` + `M megy a chatbe · K kapcsolat`. **Facts-always óta (2026-09-27,
+mezo-d6ivw.8) M egyszerűen `buckets.inPrompt.length`** — minden bekapcsolt (`active`) tény, a
+TELJES (szűretlen) listán számolva. A régi kettős-csatornás rangsor-logika (egy `PROMPT_TOP_N = 10`
+top-N blokk + a `PATTERN_ACK_DAYS` friss-minta kivétel, két külön FE konstanssal
+`data/insights/knowledge.ts`-ben tartva szinkronban a backenddel) megszűnt: a backend most minden
+bekapcsolt tényt injektál (a `prompt-cap` csak egy 200-as biztonsági fék, amit a UI szándékosan nem
+tükröz), úgyhogy a FE-nek nincs mit tükröznie sem — `bucketFacts()` (`features/insights/logic/
+factCopy.ts`) két vödröt ad vissza, `inPrompt`/`off`, a kapcsoló (`f.active`) az egyetlen szűrő,
+mindkét mirror-konstans törölve. A **`· K kapcsolat` szegmens** a `mezo-ms9a` backend-kiegészítéséből
+jön (`useGraphEdgeCount()` → `GET /api/companion/graph/edge/count`, active-endpoint-filtered
+él-összesítő); a hook 404/hiba/pending esetén `count: null`-t ad, SOHA nem 0-t — a hero ilyenkor
+egyszerűen ELHAGYJA a szegmenst, nem hazudik nulla kapcsolatról. A hero szám degraded alatt sincs
+fabrikálva („0 tény"): nagy szám/alcím nélkül marad.
 
 **A jóváhagyás-inbox (fact-jelöltek `FactCandidateCard`, gráf-jelöltek `LifeEventCandidateCard`, mindkettő a négy döntéssel: Igen, jegyezd meg / Pontosítom / Most ne / Nem igaz — a conflict checkbox, a `formatCandidateDate` gráf-dátum és a szerkeszt-aztán-elfogad idióma is) MOZOG el ide, a Rólad oldalra U9b óta (`mezo-zpxv7`, §2.0b: `RoladInbox`/`useRoladInbox`) — ez a bekezdés a §2.0b-ben él, itt nem ismétlődik.** A base view helyette `KnowledgeBaseView`-t renderel: a pointer card fent (`?view=`-től független), alatta a szekció-mozaik.
 - **Szekció-mozaik**: two tiles, Tények (`?view=tenyek`) and Kategóriák (`?view=kategoriak`). Communication preferences live in central settings.
 - **Genuinely üres tudásbázis** (`facts.length === 0`, nem pending/error/degraded, a `?view=tenyek` nézeten) — a kereső/kategória-chip sor és a szakaszok helyett egy őszinte sor: „Még egy tényt sem tanultam rólad — ahogy beszélgettek, itt fognak megjelenni."
 
-**`?view=tenyek` (`FactsView`)** — **Kereső + kategória-chipek** — `.searchfield` + `chip tapchip` sor (`Mind` + `FACT_CATEGORIES`); a szűrés csak a megjelenítést szűkíti, a vödrözés mindig a TELJES listán fut (különben egy aktív szűrő átírná a prompt-státuszokat). A keresés (`matchesQuery`) a humanizált szövegre, a kategória-címkére ÉS az eredet-mondatba fűzött minta-címre (`patternTitle`) illeszkedik. A **„Mind" chip csak a kategóriát törli** — a keresőmezőt érintetlenül hagyja. Nulla találat → „Nincs találat a keresésre." + egy „Szűrők törlése" gomb, ami mindkettőt (keresés + kategória) törli. **Három prompt-státusz szakasz** — „Most ezeket kapja meg a társ · N" (a SZŰRT darabszám, a globális fejléccel ellentétben; a lábjegyzet mondja ki a `PROMPT_TOP_N` + friss-minta kivétel szabályt), majd két `LifecycleSection` (újrahasznosítva a Minták dashboardról): „Bekapcsolva, de most kimarad" **nyitva indul** (`defaultOpen`), „Kikapcsolva" csukva — egy frissen elfogadott tény-jelölt `reinforced: 0`-val a várakozó vödörbe sorolódik, és eltűnne a DOM-ból abban a pillanatban, amikor a felhasználó elfogadja, ha a szakasz csukva indulna. Mindkét `LifecycleSection` megkapja a `forceOpen`-t, amíg aktív szűrő fut, VAGY amíg a `?fact=` deep-link célja épp abban a vödörben ül (lásd lentebb). **`KnowledgeFactRow`** (`components/`) — önmagyarázó kártya: kategória + eredet-chip, humanizált cím, eredet-mondat, visszaigazolás-mondat, és a `Toggle` mellett kimondott státusz-címke.
+**`?view=tenyek` (`FactsView`)** — **Kereső + kategória-chipek** — `.searchfield` + `chip tapchip` sor (`Mind` + `FACT_CATEGORIES`); a szűrés csak a megjelenítést szűkíti, a vödrözés mindig a TELJES listán fut (különben egy aktív szűrő átírná a prompt-státuszokat). A keresés (`matchesQuery`) a humanizált szövegre, a kategória-címkére ÉS az eredet-mondatba fűzött minta-címre (`patternTitle`) illeszkedik. A **„Mind" chip csak a kategóriát törli** — a keresőmezőt érintetlenül hagyja. Nulla találat → „Nincs találat a keresésre." + egy „Szűrők törlése" gomb, ami mindkettőt (keresés + kategória) törli. **Két szakasz, nem három (facts-always óta, mezo-d6ivw.8 — a „várakozó" vödör megszűnt).**
+„Ezeket tudja rólad · N" (a SZŰRT darabszám, a globális fejléccel ellentétben) egy sima `<section>`
+minden bekapcsolt (`active`) tényre, a lábjegyzet őszintén kimondja: „Ami itt be van kapcsolva, azt
+a társ minden beszélgetésben és minden magától küldött üzenetében tudja rólad — a
+legmegerősítettebb áll elöl." — nincs se rangsor-plafon, se friss-minta kivétel, amit meg kellene
+magyarázni, mert mindegyik bekapcsolt tény megy. Utána egyetlen `LifecycleSection`: „Kikapcsolva"
+(csukva indul, `forceOpen` amíg aktív szűrő fut VAGY amíg a `?fact=` deep-link célja épp ott ül).
+A korábbi „Bekapcsolva, de most kimarad" (a `reinforced: 0`-val frissen elfogadott, rangsor alá eső
+tények várakozó vödre) eltűnt — nincs többé olyan bekapcsolt tény, ami kimaradna. **`KnowledgeFactRow`**
+(`components/`) — önmagyarázó kártya: kategória + eredet-chip, humanizált cím, eredet-mondat,
+visszaigazolás-mondat, és a `Toggle` mellett kimondott státusz-címke.
 
 **`?fact=<id>` deep link (Task 10, `mezo-ms9a` — spec §4.1)** — a `WeekDiscoveries` már régóta gyárt ilyen linket, de eddig senki nem fogyasztotta (a `feedMock.ts`-beli halott `/insights/knowledge` deeplinkjeit is `/mezo/knowledge`-ra javította ez a slice). Az oldal most fogyasztja: `?fact=` jelenlétekor a `?view=` paramot felülírva mindig a Tények nézet nyílik — a `highlightFactId` a mountkor `useState`-be rögzített id, hogy a kiemelés a param eltűnése UTÁN is éljen — a tény-sor a megfelelő (akár csukva induló) vödörben `forceOpen`-nel válik láthatóvá és vizuálisan kiemelődik (`KnowledgeFactRow`'s `highlight` prop). A `?fact` paramot egy mountkor egyszer futó `useEffect` törli az URL-ből `replace:true`-val, más paraméterek (pl. egy jövőbeli `?view=`) érintetlenül maradnak. Ismeretlen id → sima Tények nézet, kiemelés nélkül, összeomlás nélkül.
 
