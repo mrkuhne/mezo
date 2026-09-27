@@ -4,7 +4,7 @@
 export { useMe, useAuthActions, ME_QUERY_KEY } from '@/data/auth/authHooks'
 export { useOnboardingActions } from '@/data/auth/onboardingHooks'
 export { useTodayScenario, resolveBriefing, useToday, useFuelPreview, useQuickStats } from '@/data/today/todayHooks'
-export { useCheckins } from '@/data/today/checkinHooks'
+export { useCheckins, useCheckInPlan, useCheckinDayRating } from '@/data/today/checkinHooks'
 export { useCompanionFeed } from '@/data/today/feedHooks'
 export { useAdviceActions } from '@/data/today/adviceHooks'
 export { useSleep, useSleepGoal, useSleepGoalActions, useSleepShot } from '@/data/me/sleepHooks'

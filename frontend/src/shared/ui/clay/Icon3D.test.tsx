@@ -110,6 +110,15 @@ test('the sprite carries the S6 Tudástár hub icons', () => {
   }
 })
 
+// Check-in 2.0 (mezo-ck2): the nine item icons the owner approved on prototypes/elo/nap.html#ikonok.
+test('the sprite carries the Check-in 2.0 item icons', () => {
+  const ids = symbolIds()
+  for (const id of ['t-mood', 't-rested', 't-soreness', 't-pain', 't-motivation', 't-hunger',
+    't-craving', 't-day', 't-digestion'] satisfies Icon3DName[]) {
+    expect(ids, id).toContain(id)
+  }
+})
+
 test('Icon3D renders an aria-hidden 64-viewBox svg with a use ref, carrying the kit class', () => {
   const name: Icon3DName = 't-bowl'
   const { container } = render(<Icon3D name={name} size={40} className="x" />)

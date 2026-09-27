@@ -16129,6 +16129,14 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   display: block; font-size: 9px; font-weight: 500; letter-spacing: 0; text-transform: none; opacity: 1; color: var(--text-muted);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+/* Check-in 2.0 (mezo-ck2, prototype `.mcells.n` / `.mcell b.t` / `.cktag` / `.ckhint`): as many
+   cells as the slot answered, auto-filling the row; a text answer („Térd 4") shrinks to fit. */
+.nck-page .nck-cells.mz-mcells.is-n { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); }
+.nck-page .nck-cells.mz-mcells b.is-t { overflow: hidden; padding: 0 3px; font-size: 11.5px; white-space: nowrap; text-overflow: ellipsis; }
+.nck-page .nck-tag { display: inline-flex; margin-top: 6px; padding: 4px 9px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.nck-page .nck-hint { display: block; margin-top: 2px; font-size: 11px; color: var(--text-muted); }
 
 /* ── Életjel: the six-arc ring hero, six need glasses ── */
 .ej-page .ej-hero { padding-top: 4px; min-height: 40px; }
@@ -16508,6 +16516,61 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .capture-sum > b { display: block; margin: 2px 0 6px; font: 600 20px/1.1 var(--ff-display); font-variant-numeric: tabular-nums;
   color: color-mix(in srgb, var(--c) 85%, var(--text-primary)); }
 .capture-sum .uv-bar { height: 4px; }
+
+/* ─ Check-in 2.0 (mezo-ck2, prototypes/elo/nap.html `/* ── Check-in 2.0` block): segment per
+     step + summary (the core five a shade lighter), the question line, nothing pre-selected
+     („–" in the faint ink), the question-of-the-day callout, „Most csak ennyi", the pain gate +
+     figure + chips, the craving kinds, the summary cells. Flat inside the one glass sheet. ─ */
+.ck-prog { display: grid; gap: 4px; margin: 0 0 14px; }
+.ck-prog i { height: 5px; border-radius: 3px; background: rgba(245, 239, 230, 0.08); }
+.ck-prog i.core { background: rgba(245, 239, 230, 0.14); }
+.ck-prog i.on { background: var(--c); box-shadow: 0 0 8px var(--c); }
+.ck-q { margin: 6px 0 0; font: 600 17px/1.35 var(--ff-display); letter-spacing: -0.3px; color: var(--text-primary); }
+.capture-check-value.ck-none { color: var(--text-muted); text-shadow: none; }
+.ck-loading { margin: 8px 0 4px; font-size: 13px; color: var(--text-secondary); }
+.ck-callout { padding: 12px 14px; border-radius: 18px;
+  background: color-mix(in srgb, var(--c) 8%, transparent); box-shadow: inset 3px 0 0 var(--c); }
+.ck-callout-eb { display: block; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.ck-callout p { margin: 4px 0 0; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.ck-ad { margin: 10px 0 0; }
+.ck-inl.t-ico { width: 14px; height: 14px; vertical-align: -2px; }
+.ck-stepnav { align-items: center; gap: 8px; }
+.capture-stepnav .ck-quick { min-height: 36px; padding: 8px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 700;
+  color: var(--text-primary); background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider); }
+.ck-coremsg { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
+.ck-coremsg .t-ico { width: 18px; height: 18px; }
+.ck-yn { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+.ck-yn button { padding: 16px 10px; border: 0; border-radius: 16px; cursor: pointer; text-align: center;
+  font: 600 15px/1.2 var(--ff-body); color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.ck-yn button.on { color: var(--page, #191614); background: var(--c); box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent); }
+.ck-yn button:focus-visible, .ck-chips .chip:focus-visible { outline: 2px solid color-mix(in srgb, var(--c) 70%, var(--text-primary)); outline-offset: 2px; }
+.ck-fig { display: flex; justify-content: center; gap: 18px; margin-top: 12px; }
+.ck-fig figure { margin: 0; text-align: center; }
+.ck-fig figcaption { margin-top: 2px; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+.ck-fig svg { width: 104px; height: 196px; overflow: visible; }
+.ck-fig .ck-sil { fill: rgba(245, 239, 230, 0.06); stroke: rgba(245, 239, 230, 0.28); stroke-width: 1.2; }
+.ck-fig .ck-dot { fill: rgba(245, 239, 230, 0.18); stroke: rgba(245, 239, 230, 0.45); stroke-width: 1; cursor: pointer; }
+.ck-fig .ck-dot.on { fill: var(--dv-rose); stroke: #ffe0e6; filter: drop-shadow(0 0 6px var(--dv-rose)); }
+.ck-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.capture-sheet .ck-chips .chip { min-height: 34px; padding: 7px 12px; font-size: 12px; }
+.ck-mini { display: block; margin-top: 14px; font: 700 10.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted); }
+.capture-sheet .ck-next { margin-top: 14px; }
+.ck-sumn { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.ck-sum { --c: var(--dv-coral); display: flex; align-items: center; gap: 8px; min-width: 0; padding: 9px 10px; border: 0; border-radius: 14px;
+  cursor: pointer; text-align: left; font-family: inherit;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.ck-sum .t-ico { flex: 0 0 auto; width: 26px; height: 26px; }
+.ck-sum > span { min-width: 0; }
+.ck-sum small { display: block; font-size: 10.5px; color: var(--text-muted); }
+.ck-sum b { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  font: 600 15px/1.25 var(--ff-body); color: color-mix(in srgb, var(--c) 85%, var(--text-primary)); }
+.ck-sum b.is-none { font-weight: 500; color: var(--text-muted); }
+.ck-sum.is-ad { grid-column: 1 / -1; }
+.ck-sum:focus-visible { outline: 2px solid color-mix(in srgb, var(--c) 70%, var(--text-primary)); outline-offset: 2px; }
+.ck-qbanner { margin: 0 0 12px; }
+@media (prefers-reduced-motion: reduce) { .ck-fig .ck-dot.on, .ck-yn button.on { filter: none; } }
 
 /* ─ activity (`SH.activity`): the quest callout, the skill chips, the done phase ─ */
 .capture-quest { --c: var(--dv-amber); display: flex; align-items: flex-start; gap: 10px; margin: 0 0 12px; padding: 12px 14px;
@@ -17028,6 +17091,12 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 
 /* act 3 — prose in a lavender glass box, gratitude in an amber one; inputs + chips flat */
 .rz-reflect-title { margin-top: 6px; font: 600 26px/1.18 var(--ff-display); letter-spacing: -1px; }
+/* the evening check-in's day verdict, read-only (Check-in 2.0, mezo-ck2; prototype `.rzday`) */
+.rz-day { display: flex; align-items: center; gap: 10px; margin: 16px 0 -6px; padding: 10px 12px; border-radius: 16px;
+  text-align: left; font-size: 13px; line-height: 1.4; color: var(--text-secondary);
+  background: rgba(255, 190, 96, 0.08); box-shadow: inset 0 0 0 1px rgba(255, 190, 96, 0.28); }
+.rz-day .t-ico { flex: 0 0 auto; width: 26px; height: 26px; }
+.rz-day b { color: #FFD99A; }
 .rz-reflect-box.glass, .rz-reflect-gratitude.glass { margin-top: 16px; padding: 14px; text-align: left; }
 .rz-reflect-box.glass { --c: var(--dv-lav); }
 .rz-reflect-gratitude.glass { --c: var(--dv-amber); display: flex; flex-direction: column; gap: 8px; }
@@ -19843,6 +19912,23 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .napom-page .napom-lead .uv-eyebrow { color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
 .napom-page .napom-lead strong { display: block; margin-top: 3px; font: 600 15px/1.3 var(--ff-body); letter-spacing: -0.3px; color: var(--text-primary); }
 .napom-page .napom-lead small { display: block; margin-top: 3px; font-size: 11.5px; line-height: 1.4; color: var(--text-secondary); }
+/* „Te: X/10" (Check-in 2.0, mezo-ck2; prototype `.dayc` / `.duo` / `.gapl`): the app's score and
+   the evening verdict side by side — flat halves in one gold glass, „szerinted" lit gold. */
+.napom-page .napom-dayc.glass { margin: 16px 16px 0; padding: 16px; border: 0; border-radius: 26px; }
+.napom-page .napom-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.napom-page .napom-duo > div { min-width: 0; padding: 12px; border-radius: 18px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.napom-page .napom-duo > div.is-me {
+  background: radial-gradient(90% 120% at 50% 0%, color-mix(in srgb, var(--dv-amber) 22%, transparent), rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 45%, transparent); }
+.napom-page .napom-duo small { display: block; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+.napom-page .napom-duo b { display: block; margin-top: 4px; font: 200 44px/1.1 var(--ff-display); letter-spacing: -2px;
+  font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.napom-page .napom-duo b small { display: inline; font: 500 15px/1 var(--ff-body); letter-spacing: 0; color: var(--text-secondary); }
+.napom-page .napom-duo .is-me b { color: #FFD99A; text-shadow: 0 0 18px rgba(255, 190, 96, 0.45); }
+.napom-page .napom-duo em { display: block; font-style: normal; font-size: 12.5px; color: var(--text-secondary); }
+.napom-page .napom-gapl { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 13.5px; color: var(--text-primary); }
+.napom-page .napom-gapl .t-ico { flex: 0 0 auto; width: 22px; height: 22px; }
 .napom-page .napom-go {
   flex: 0 0 auto; min-height: 36px; padding: 8px 12px; border: 0; border-radius: 999px; cursor: pointer;
   font: 600 12px/1.2 var(--ff-body); color: color-mix(in srgb, var(--c) 60%, var(--text-primary));

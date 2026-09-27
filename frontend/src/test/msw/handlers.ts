@@ -7,6 +7,7 @@ import type { KnowledgeObservation } from '@/data/insights/knowledgeHubApi'
 import type { EvidenceItem } from '@/shared/ui/evidence/observationEvidence'
 import { mockPatternPairDetail, patterns as patternSeed, REFLECTION_KEY } from '@/data/insights/insights'
 import { notificationPrefSeed } from '@/data/notification/notificationMock'
+import { mockCheckInPlan } from '@/data/today/checkinPlan'
 import { ADMIN_INVITES_MOCK, ADMIN_USERS_MOCK } from '@/data/admin/adminMock'
 import {
   ADMIN_ALERTS_MOCK,
@@ -671,6 +672,9 @@ export const handlers = [
   }),
 
   http.get(`${API_BASE}/api/biometrics/checkin`, () => HttpResponse.json([])),
+  // Check-in 2.0 (mezo-ck2): the slot's question plan — the mirrored server config.
+  http.get(`${API_BASE}/api/biometrics/checkin/plan`, ({ request }) =>
+    HttpResponse.json(mockCheckInPlan(new URL(request.url).searchParams.get('slotTime') ?? ''))),
 
   // Unified companion-message feed (companion-feed, mezo-gst9) — default: honest empty array
   // (never a 404 — a list endpoint, the P1 precedent). Tests override with server.use(...).

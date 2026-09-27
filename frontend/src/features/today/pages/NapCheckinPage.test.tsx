@@ -92,7 +92,8 @@ test('done slots render their measured values as mini-cells; non-done slots show
 test('the future slot renders muted as "később esedékes" and is not interactive', async () => {
   renderPage()
   expect(await screen.findByText('Este · 20:00 körül')).toBeInTheDocument()
-  expect(screen.getByText('később esedékes')).toBeInTheDocument()
+  // Check-in 2.0: the evening plan's size (11 items + the question of the day)
+  expect(await screen.findByText('később esedékes · 12 kérdés')).toBeInTheDocument()
   // only the hot slot offers the fill affordance
   expect(screen.getAllByRole('button', { name: 'Kitöltöm' })).toHaveLength(1)
 })
@@ -100,19 +101,46 @@ test('the future slot renders muted as "később esedékes" and is not interacti
 test('the hot slot opens the real CheckInSheet and a save flips the day to 3/4', async () => {
   renderPage()
   expect(await screen.findByText('Délután · most esedékes')).toBeInTheDocument()
-  expect(screen.getByText('hogy vagy energiával?')).toBeInTheDocument()
+  expect(screen.getByText('hogy vagy most?')).toBeInTheDocument()
+  // Check-in 2.0: the afternoon plan (8 items + the question of the day)
+  expect(await screen.findByText('9 koppintás · kb. fél perc')).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Kitöltöm' }))
   expect(await screen.findByText(/Hogy vagyunk/)).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: '8' }))
-  for (let i = 0; i < 4; i++) {
-    const skip = screen.queryByRole('button', { name: /Kihagy/ })
-    if (skip) await userEvent.click(skip)
+  await userEvent.click(await screen.findByRole('button', { name: '8' }))
+  await screen.findByText(/02 \/ 09/)
+  while (!screen.queryByText(/Mentés · /)) {
+    await userEvent.click(screen.getByRole('button', { name: /Kihagy/ }))
   }
   await userEvent.click(await screen.findByRole('button', { name: /Mentés/ }))
   await waitFor(() => expect(document.querySelector('.nap-hero-num')).toHaveTextContent('3/4'))
   // the slot row settled: no fill affordance left for it, its values render as mini-cells
   expect(screen.queryByText('Délután · most esedékes')).not.toBeInTheDocument()
   expect(document.querySelectorAll('.mz-mcells')).toHaveLength(3)
+})
+
+test('Check-in 2.0 rows: every answered item as a cell, skipped ones none, and the quick-exit tag', async () => {
+  ckStore.save(0, {
+    values: {
+      energy: 7, mood: 8, stress: 3, body: 6, mental: null, rested: 6, soreness: 5,
+      pain: { regions: ['TERD'], intensity: 4 }, motivation: 8, hunger: 5,
+    },
+    askedItems: ['energy', 'mood', 'stress', 'body', 'mental', 'rested', 'soreness', 'pain', 'motivation', 'hunger'],
+  })
+  ckStore.save(1, {
+    values: { energy: 8, mood: 7, stress: 4, body: 7, mental: 8, craving: { value: 5, kinds: ['EDES'] } },
+    quickExit: true,
+  })
+  renderPage()
+  await screen.findByText('Reggel · 06:30')
+  const [morning, late] = Array.from(document.querySelectorAll('.nck-cells'))
+  // the skipped „Fejtisztaság" has no cell: 9 of the 10 asked
+  expect(morning.querySelectorAll('span')).toHaveLength(9)
+  expect(Array.from(morning.querySelectorAll('small')).map((s) => s.textContent)).toEqual(
+    ['Energia', 'Hangulat', 'Stressz', 'Test', 'Pihent', 'Izomláz', 'Fájdalom', 'Kedv', 'Éhség'])
+  expect(morning).toHaveTextContent('Térd 4')
+  expect(late).toHaveTextContent('Édes 5')
+  expect(late).toHaveTextContent('Sóvárgás')
+  expect(screen.getAllByText('Most csak ennyi · az alap megvan')).toHaveLength(1)
 })
 
 test('the back chip navigates back', async () => {

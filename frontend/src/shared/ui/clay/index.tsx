@@ -96,6 +96,9 @@ export type Icon3DName =
   | 't-jump' | 't-sprint' | 't-core' | 't-juggle' | 't-stretch' | 't-target'
   // S6 (mezo-d6ivw.6) — owner OK on prototypes/uveg-tudastar-hub.html#ikonok
   | 't-mute' | 't-eraser' | 't-source' | 't-cowave'
+  // Check-in 2.0 (mezo-ck2) — owner OK 2026-09-27 on prototypes/elo/nap.html#ikonok
+  | 't-mood' | 't-rested' | 't-soreness' | 't-pain' | 't-motivation' | 't-hunger' | 't-craving'
+  | 't-day' | 't-digestion'
 
 /** Mounts the clay + Titanium <symbol>/<gradient> defs once (main.tsx). */
 export const ClaySprites = memo(function ClaySprites() {

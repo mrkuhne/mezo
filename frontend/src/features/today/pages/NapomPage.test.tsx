@@ -337,6 +337,47 @@ describe('NapomPage (real mode)', () => {
     expect(container.querySelectorAll('.is-fresh')).toHaveLength(0)
   })
 
+  // Check-in 2.0 (mezo-ck2, spec §3.10): the evening check-in's „A nap mérlege" next to the score.
+  const checkinRows = (date: string, dayRating?: number) => http.get(`${API_BASE}/api/biometrics/checkin`, () =>
+    HttpResponse.json(dayRating == null ? [] : [{
+      id: 'c20', date, slotTime: '20:00', state: 'done', energy: 6, dayRating, savedAt: `${date}T20:05:00Z`,
+    }]))
+
+  test('a day verdict sits next to the app score, with the gap line when the bands differ', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/me/day/:date/evaluation`, () => HttpResponse.json(evaluationFixture('2026-05-11', { score: 64, base: 64 }))),
+      checkinRows('2026-05-11', 7),
+    )
+    renderAt('/nap/napom/2026-05-11')
+    const card = await screen.findByRole('region', { name: 'A nap értékelése' })
+    expect(within(card).getByText('AZ APP SZERINT')).toBeInTheDocument()
+    expect(within(card).getByText('SZERINTED')).toBeInTheDocument()
+    expect(within(card).getByText('közepes nap')).toBeInTheDocument()
+    expect(within(card).getByText('jó nap')).toBeInTheDocument()
+    expect(card).toHaveTextContent('64/100')
+    expect(card).toHaveTextContent('7/10')
+    expect(within(card).getByText('Az app szerint közepes nap, szerinted jó volt.')).toBeInTheDocument()
+  })
+
+  test('no gap line when the bands agree', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/me/day/:date/evaluation`, () => HttpResponse.json(evaluationFixture('2026-05-11', { score: 72, base: 72 }))),
+      checkinRows('2026-05-11', 8),
+    )
+    renderAt('/nap/napom/2026-05-11')
+    const card = await screen.findByRole('region', { name: 'A nap értékelése' })
+    expect(within(card).getAllByText('jó nap')).toHaveLength(2)
+    expect(within(card).queryByText(/Az app szerint/)).toBeNull()
+  })
+
+  test('without a day verdict the page is unchanged', async () => {
+    server.use(checkinRows('2026-05-11'))
+    renderAt('/nap/napom/2026-05-11')
+    expect(await screen.findByRole('img', { name: 'Pontszám: 66 / 100' })).toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'A nap értékelése' })).toBeNull()
+    expect(screen.queryByText('SZERINTED')).toBeNull()
+  })
+
   test('a scored evaluation with no narrative renders no review card', async () => {
     server.use(http.get(`${API_BASE}/api/me/day/:date/evaluation`,
       () => HttpResponse.json(evaluationFixture('2026-05-11', { narrative: [] }))))
