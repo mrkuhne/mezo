@@ -1864,3 +1864,29 @@ describe.each(U10_BLOCKS)('the uveg reteg %s section carries the glass ranking (
     expect(css).not.toMatch(/animation\s*:\s*(?!none)[a-z]/)
   })
 })
+
+// U11 · Lezárás (mezo-me75u.11): the app-wide sweep's fixes — two builders, one block each. Pinned so a
+// later whole-file save that drops one fails CI (bible rule 41).
+const U11_BLOCKS: Array<[string, string[]]> = [
+  ['edzes', ['.pl-poster .pl-week small', '.tw-move .ld-move-box em', '.tv-wizard .mz-wfoot .cta-primary',
+    '.tv-dayrest .tv-day-stamp.is-today', ".tv-wizard .mz-daypick button[aria-pressed='true']", '.tv-wizard .mz-dct small']],
+  ['egyeb', ['.alv-page .alv-sec-head .eyebrow', '.gr-ma .gr-chip .gr-chip-mk.gr-mk3d', '.enc-celok .lg-dimchip.empty',
+    '.napom-page .napom-wd.is-fut', '.napom-page .t-ico.napom-tick', '.fsx-band.glass .fsx-check > span .t-ico']],
+]
+
+describe.each(U11_BLOCKS)('the uveg lezaras %s section (mezo-me75u.11)', (name, sels) => {
+  const section = () => stripComments(slice(`── uveg lezaras ${name} (`, `── /uveg lezaras ${name} `))
+
+  test('the block exists and carries its fixes', () => {
+    const css = section()
+    for (const sel of sels) expect(css, `${sel} missing from the uveg lezaras ${name} block`).toContain(sel)
+  })
+
+  test('never glass inside glass, never the undefined --page, motion only in the no-preference branch', () => {
+    const css = section()
+    expect(css).not.toMatch(/\.glass [^{,]*\.glass[\s,{]/)
+    expect(css).not.toContain('var(--page)')
+    expect(css.replace(/@media\s*\(prefers-reduced-motion:\s*no-preference\)\s*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, ''))
+      .not.toMatch(/animation\s*:\s*(?!none)[a-z]/)
+  })
+})

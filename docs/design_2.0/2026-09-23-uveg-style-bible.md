@@ -699,3 +699,29 @@ blood-sugar band and "Mire számíts" forecast rows post-log. Spec
     together (±5°, slight scale, ~0.6 s) once every ~6 s, staggered per card by 0.8 s — not a continuous float/breathe
     loop. A continuous idle animation reads as "this is alive", a rare joint shake reads as "this is tappable";
     reduced motion drops it to nothing, never a static substitute.
+
+### U11 · Lezárás (`mezo-me75u.11`, 2026-09-27)
+
+The closing sweep: an automated audit of all 126 routes in dark (390/320, admin at 1300), the owner picked
+the fixes from a findings page (not a prototype — a sweep has no new screen), then the dead pre-üveg CSS went
+(~5300 lines) behind a computed-style A/B crawl and a before/after pixel diff of every route. Blocks:
+`── uveg lezaras edzes|egyeb (`. The epic `mezo-me75u` closes with this slice.
+
+101. **A sweep's "prototype" is a findings page.** Screenshot + what is wrong + what we do, grouped so one fix
+     reads as one item, and the genuine choices as a decision table. The owner approves the list, then code.
+102. **Audit by machine, then look.** A probe per route (emoji/glyph text, clay `<use>` outside the chrome,
+     light surfaces, contrast < 3:1, horizontal overflow, console errors) found what eyes had missed for ten
+     slices; eyes then caught what the probe cannot (overlapping chips, an English title). Keep both.
+103. **A contrast probe lies about out-of-box children.** An absolutely placed label outside its parent's box
+     was measured against the parent's fill (1.1:1) while it really sits on the card. Check the geometry
+     before "fixing" a contrast finding — the fix would have made it invisible.
+104. **Live copy never wears `--text-disabled`.** Secondary copy is `--text-secondary`, tertiary is
+     `--text-muted`; a "not yet" state dims through a muted ink at full opacity (text ≥ 3:1), fading only its
+     non-text art. The global `.eyebrow` still reads `--faint`; repoint it in a kit pass, not per page.
+105. **Delete dead CSS only behind two proofs.** "No source renders the class" (AST scan, dynamic
+     `prefix-${x}` counted live) removes dead rules; "the crawl reached a matching element and removing it
+     changed no computed style" removes outranked ones. Then a pixel diff of every route, with a
+     baseline-vs-baseline run to know the noise floor. Rules never reached (dialogs, hover, `!important`) stay.
+106. **A kit rule that must be overridable is written at zero specificity.** The `<Sheet glass>` field rule
+     became `:where(.sheet.glass.uv-sheet) :is(input:where(…), textarea, select)` (0,0,1), so a slice's own
+     field treatment wins without a heavier selector.
