@@ -134,7 +134,8 @@ Prediction for day d, with ρ = `kcalPerKg`:
 ```
 usable intake I_d known:   m ← m + (I_d − B − movement_d)/ρ      Q_m = σ_tissue² + (ε·I_d/ρ)²
 intake unknown/excluded:   m ← m + balance_d/ρ                    Q_m = σ_tissue² + (σ_unknown/ρ)²
-                           (balance_d = the goal's daily balance, so an unlogged day drifts as planned;
+                           (balance_d = the prescription segment covering d's own goal-week, else 0
+                            — also 0 before the goal started — so an unlogged day drifts as planned;
                             B does not enter → the day carries no information about B)
 w ← φ·w                                                            Q_w = σ_water²
 B ← B                                                              Q_B = σ_base²
@@ -152,6 +153,9 @@ G_d = clamp(γ · (Ĉ_d − Cref), ±gMax)        glycogen-water input, determin
 Initialisation at the window start (the first weigh-in day inside the window):
 `m₀ = z₀`, `var 0.5²`; `w₀ = 0`, `var σ_w0²`; `B₀ = formula base (current neatBaselineKcal)`,
 `var = bootstrapUncertaintyKcal²`. The window starts at `max(first weigh-in, yesterday − windowDays)`.
+Weigh-ins come in through the techcore `WeightTrendQuery.dailyMeanWeightKg` seam (same-day entries
+averaged) — not the EWMA trend service — so the goal engine gains no new direct edge into
+biometrics.
 
 **Starting constants** (config; each is covered by a synthetic scenario test, §9):
 
@@ -205,6 +209,14 @@ appliedBase = clamp(prevApplied + step,
                     hi = formulaBase × (1 + max-deviation))
 direction   = step == 0 ? prev.direction : sign(step)
 ```
+
+An **existing** learner (a row already exists) is never dropped back to the eligibility gate above:
+a week with no weigh-in to anchor the filter (`ExpenditureFilter.run` returns empty) is written as
+`HOLDING` regardless, carrying the previous belief and applied base forward — only a brand-new
+learner's first week can come back empty and defer to the fallback (§7). A learning run also
+**supersedes** (not dismisses) any open `weekly_correction` suggestion on the goal — the same
+supersede path a semantic-drift accept already uses, so the dismissed-vs-superseded status stays
+meaningful, not just "→ empty".
 
 Status per week: `LEARNING` (σ̂ > 200: still mostly formula), `UPDATED` (a non-zero step),
 `STABLE` (below the dead band), `HOLDING` (too little data). Confidence from σ̂: ≤ 100 `HIGH`
