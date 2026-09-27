@@ -2031,7 +2031,7 @@ mark{background:color-mix(in srgb,var(--gold) 32%,transparent);color:var(--ink);
     <ul>
       <li><b>Rólad</b>: a „Mind a N tény” ajtó a Tudástárba visz.</li>
       <li><b>Tudástár</b>: a nagy szám az egyetlen hangos dolog. Egy észrevételt a belőle tanult ténnyel együtt egyszer számol.</li>
-      <li><b>Tények</b>: négy téma (Edzés, Étkezés, Egészség, Élet), mindegyik fején a darabszám és hogy hány van <em>használatban</em>. A zöld „használatban” jel a soron azt mutatja, mi megy most a beszélgetés elé. Írd be: <em>kave</em> vagy <em>alvas</em>.</li>
+      <li><b>Tények</b>: négy téma (Edzés, Étkezés, Egészség, Élet), mindegyik fején a darabszám és hogy hány van <em>bekapcsolva</em>. Ami be van kapcsolva, azt a társ mindig tudja — nincs „top 10”. Írd be: <em>kave</em> vagy <em>alvas</em>.</li>
       <li><b>Emberek</b>: névsor 18 emberrel. Keress rá egy tényre (pl. <em>szuletes</em>) — az ember „N találat”-tal jön fel, és a lapján már szűrve látod.</li>
       <li><b>Észrevételek</b>: öt téma, fölötte állapot-szűrő: Mind · Még igaz · Felülírva · Elhallgattatva. A „Randi után estére lemerülsz” régi észrevételt felülírta az új (Kapcsolatok).</li>
       <li><b>Hatások</b>: két összecsukott csoport, Emberek és Események; kinyitva alanyonként egy kártya.</li>
@@ -2288,8 +2288,8 @@ function item(key){const [k,id]=key.split(':');
   if(k==='f')return fact(id); if(k==='p')return pfact(id)[0]; if(k==='o'){const o=obsOf(id);return o&&fact(o.f)} if(k==='e')return S.eff.find(x=>x.id===id)}
 const sortEff=a=>a.slice().sort((x,y)=>Math.max(...y.rows.map(r=>r[2]))-Math.max(...x.rows.map(r=>r[2]))||y.rows.reduce((s,r)=>s+r[4],0)-x.rows.reduce((s,r)=>s+r[4],0));
 const byName=(a,b)=>a.n.localeCompare(b.n,'hu');
-/* „használatban” = a 10 legerősebb bekapcsolt tény + a friss észrevétel-tények (a mai prompt-szabály) */
-function inUse(){const a=S.facts.filter(f=>!f.m).sort((x,y)=>y.n-x.n);const s=new Set(a.slice(0,10).map(f=>f.id));a.forEach(f=>{if(f.fresh)s.add(f.id)});return s}
+/* tények-mindig (mezo-d6ivw.8): minden bekapcsolt tény minden beszélgetésben ott van — nincs top-10, nincs sor-szintű „használatban” jel */
+function inUse(){return new Set(S.facts.filter(f=>!f.m).map(f=>f.id))}
 
 /* keresés: ékezet-független, a találat kiemelve */
 const fold1=ch=>ch.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().charAt(0)||ch;
@@ -2360,7 +2360,7 @@ function tudastar(){
     <div class="th-split"><span><i></i><b>${avail-muted}</b> bekapcsolva</span><span><i class="o"></i><b>${muted}</b> elhallgattatva</span></div></div>`;
   const note=off?`<p class="th-fn" style="text-align:center;padding-top:0">A társ most ki van kapcsolva: a tények, az észrevételek és a hatások most nem elérhetők, ezért a szám csak az embereket számolja.</p>`:err?`<p class="th-fn" style="text-align:center;padding-top:0">A hatások most nem töltődtek be, ezért a szám nélkülük áll.</p>`:`<p class="th-fn" style="text-align:center;padding-top:0">Egy észrevételt a belőle tanult ténnyel együtt egyszer számolok.</p>`;
   const tiles=`<div class="th-tiles">${
-    off?dash('var(--rose)','person','Rólad','A társ most nincs bekapcsolva — a tények most nem elérhetők.',1):tile('var(--rose)','person','Rólad',n.f[0],`${n.f[2]} használatban · ${n.f[0]-n.f[1]} elhallgattatva`,'#tenyek',1)}${
+    off?dash('var(--rose)','person','Rólad','A társ most nincs bekapcsolva — a tények most nem elérhetők.',1):tile('var(--rose)','person','Rólad',n.f[0],`${n.f[2]} bekapcsolva · ${n.f[0]-n.f[1]} elhallgattatva`,'#tenyek',1)}${
     tile('var(--lav)','people','Emberek',n.p[0],`${n.p[2]} ember · ${n.p[0]-n.p[1]} elhallgattatva`,'#emberek',2)}${
     off?dash('var(--gold)','pattern','Észrevételek','A társ most nincs bekapcsolva.',3):tile('var(--gold)','pattern','Észrevételek',n.o[0],`${n.o[1]} még igaz · ${n.o[2]} felülírva · ${n.o[0]-n.o[1]-n.o[2]} elhallgattatva`,'#eszrevetelek',3)}${
     off?dash('var(--sky)','cowave','Hatások','A társ most nincs bekapcsolva.',4):err?dash('var(--sky)','cowave','Hatások','Most nem sikerült betölteni.',4,true):tile('var(--sky)','cowave','Hatások',n.e[0],`${n.e[2]} ember · ${n.e[3]} esemény · ${n.e[0]-n.e[1]} elhallgattatva`,'#hatasok',4)}</div>`;
@@ -2375,7 +2375,7 @@ function tudastar(){
 function factRow(f,q,use){
   const [cl,ci,cc]=CAT[f.cat], key='f:'+f.id, o=f.obs&&obsOf(f.obs);
   const tag=f.src==='pattern'&&o?`<button class="th-tag" data-go="#eszrevetelek/${o.id}">${I('pattern')}észrevételből</button>`:CHIP[f.src];
-  const u=use&&use.has(f.id)?`<span class="th-use"><i></i>használatban</span> `:'';
+  const u='';
   return row(key,{ic:ci,c:cc,text:f.t,html:hl(f.t,q),muted:!!f.m,why:f.m&&whyText(f.m),whyIc:f.m&&WHY[f.m.r][1],fix:true,
     sub:`${u}${f.n}× visszaigazolva · ${tag}${f.m?` · ${cl}`:''}`,
     origin:f.src==='manual'?`${ORIGIN.manual} · ${f.added}`:ORIGIN[f.src],ev:f.src==='pattern'&&o?OBS_EV[o.id]:f.ev,go:f.src==='pattern'&&o?`#eszrevetelek/${o.id}`:''});
@@ -2387,17 +2387,17 @@ function tenyekBody(){
     const all=act.filter(f=>f.cat===c).sort((a,b)=>(use.has(b.id)-use.has(a.id))||b.n-a.n), list=all.filter(f=>has(f.t,q));
     if(q&&!list.length)continue; hits+=list.length;
     const u=all.filter(f=>use.has(f.id)).length;
-    out+=grp('f:'+c,CAT[c][3],q?`${list.length} találat`:all.length,u?`${u} használatban`:'',CAT[c][1],()=>`<div class="th-list">${list.map(f=>factRow(f,q,use)).join('')}</div>`,q);
+    out+=grp('f:'+c,CAT[c][3],q?`${list.length} találat`:all.length,u?`${u} bekapcsolva`:'',CAT[c][1],()=>`<div class="th-list">${list.map(f=>factRow(f,q,use)).join('')}</div>`,q);
   }
   const ml=mut.filter(f=>has(f.t,q)); hits+=ml.length;
   if(!q||ml.length)out+=grp('f:muted','Elhallgattatott',q?`${ml.length} találat`:mut.length,'megőrzöm, de semmire nem használom','mute',()=>`<div class="th-list">${ml.map(f=>factRow(f,q)).join('')}</div>`,q);
   if(q&&!hits)return none('f');
-  return (q?'':`<p class="th-fn" style="padding:0 18px 4px"><span class="th-use"><i></i>használatban</span> = most minden beszélgetés elé megy: a 10 legerősebb bekapcsolt tény, plusz a frissen megerősített észrevételek.</p>`)+out;
+  return (q?'':`<p class="th-fn" style="padding:0 18px 4px">Ami be van kapcsolva, azt a társ minden beszélgetésben és üzenetben tudja rólad.</p>`)+out;
 }
 function tenyek(){
   const use=inUse(), mut=S.facts.filter(f=>f.m).length;
   return topbar()+dh('TUDÁSTÁR · RÓLAD','Tények rólad')+
-  `<p class="th-lead rise">${S.facts.length} tény, ${CATS.length} témában · ${use.size} használatban · ${mut} elhallgattatva</p>`+
+  `<p class="th-lead rise">${S.facts.length} tény, ${CATS.length} témában · ${use.size} bekapcsolva · ${mut} elhallgattatva</p>`+
   search('f','Keresés a tények között…')+`<div id="thb">${tenyekBody()}</div>`+
   sec('A csapatról')+`<div class="th-links" style="margin-top:0"><button class="th-lk" data-toast="A karakterek dossziéjába visz — ott olvashatod, mit gondol rólad a csapat">${I('council')}<span><b>A csapat véleménye rólad · 12 állítás</b><small>a karakterek dossziéjában — ebben a körben csak megnézni lehet</small></span><span class="chev">›</span></button></div>`;
 }
@@ -2434,7 +2434,7 @@ function person(id){
   const p=S.ppl.find(x=>x.id===id); if(!p)return emberek();
   const on=p.facts.filter(f=>!f.m).length;
   return topbar()+dh('TUDÁSTÁR · EMBEREK',esc(p.n),'#emberek')+
-  `<div class="th-pg rise" style="--c:${p.c};margin-top:2px"><span class="th-mono" style="--c:${p.c}">${p.n[0]}</span><span><b>${esc(p.rel)}</b><small>${on} tény használatban${p.facts.length-on?` · ${p.facts.length-on} elhallgattatva`:''}</small></span><button class="th-link" style="--c:${p.c}" data-toast="${esc(p.n)} lapja — Én · Emberek (változatlan)">A lapja ›</button></div>`+
+  `<div class="th-pg rise" style="--c:${p.c};margin-top:2px"><span class="th-mono" style="--c:${p.c}">${p.n[0]}</span><span><b>${esc(p.rel)}</b><small>${on} tény bekapcsolva${p.facts.length-on?` · ${p.facts.length-on} elhallgattatva`:''}</small></span><button class="th-link" style="--c:${p.c}" data-toast="${esc(p.n)} lapja — Én · Emberek (változatlan)">A lapja ›</button></div>`+
   search('pp',`Keresés ${p.n} tényei között…`)+`<div id="thb">${personBody(id)}</div>`;
 }
 

@@ -1146,6 +1146,14 @@ S2) · *felülírta egy újabb észrevétel, <dátum>* (drift, decision 4).
   Hatások has collapsed Emberek / Események groups. "In prompt now" becomes a per-row
   marker, not a bucket. Search is client-side over the already-loaded section (the
   per-user sets are small enough); the plan re-checks payload size.
+- **Facts-always alignment (2026-09-27, parallel slice mezo-d6ivw.8):** that slice removes
+  the top-10 prompt selection — `include_in_prompt` becomes the only filter on every
+  channel and the "Bekapcsolva, de most kimarad" bucket disappears. S6 therefore has NO
+  "in prompt now" row marker and no such bucket: a fact is either **bekapcsolva** (the
+  companion always knows it) or **elhallgattatva** (with reason). The prototype was
+  aligned. Sequencing: .8 touches `factCopy.ts`, `FactsView.tsx`, `KnowledgeFactService`
+  and `CompanionProperties` — S6 rebases onto main after .8 lands and builds its FE on the
+  collapsed two-state model; S6 backend work that does not touch those files may go first.
 
 - **Base view:** four section tiles with counts — **Rólad · Emberek · Észrevételek ·
   Hatások** — replacing today's two tiles; "Kategóriák" and "Hogyan tanul?" become quiet
