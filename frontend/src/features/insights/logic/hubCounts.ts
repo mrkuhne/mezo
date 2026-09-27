@@ -64,8 +64,10 @@ export function hubCounts(facts: Loadable<KnowledgeFact[]>, people: Loadable<Per
   const note = sections.facts.state === 'off' ? heroNote('off')
     : all.some((s) => s.state === 'loading' || s.state === 'error') ? heroNote('partial')
     : heroNote('ok')
-  /** Nothing has resolved yet: the hero must not show a number at all. */
-  const allLoading = all.every((s) => s.state === 'loading')
-  return { sections, total, muted, note, allLoading }
+  /** The hero shows a number only when at least one section was actually counted; otherwise it
+   *  says why there is none (still loading / nothing available) — never an invented 0. */
+  const hero: 'number' | 'loading' | 'unavailable' = counted.length > 0 ? 'number'
+    : all.some((s) => s.state === 'loading') ? 'loading' : 'unavailable'
+  return { sections, total, muted, note, hero }
 }
 export type HubCounts = ReturnType<typeof hubCounts>

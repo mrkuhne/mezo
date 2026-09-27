@@ -71,7 +71,11 @@ export const DRIFT_EYEBROW = {
   bothOnLine: 'újra bekapcsoltad — mindkettőt használom',
 } as const
 
-export const HERO = { title: 'dolgot tud rólad Mezo', sub: 'és te döntöd el, mit használhat belőle.', on: 'bekapcsolva', off: 'elhallgattatva' } as const
+export const HERO = {
+  title: 'dolgot tud rólad Mezo', sub: 'és te döntöd el, mit használhat belőle.', on: 'bekapcsolva', off: 'elhallgattatva',
+  /** No section is available to count (all failed / switched off): no number at all, never a 0. */
+  unavailable: 'Most egyik szakaszt sem sikerült betölteni.',
+} as const
 export function heroNote(state: 'ok' | 'off' | 'partial'): string {
   if (state === 'off') return 'A társ most ki van kapcsolva: a tények, az észrevételek és a hatások most nem elérhetők, ezért a szám csak az embereket számolja.'
   if (state === 'partial') return 'Néhány szakasz most nem töltődött be, ezért a szám nélkülük áll.'

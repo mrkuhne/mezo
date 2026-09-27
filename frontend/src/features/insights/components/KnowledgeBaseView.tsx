@@ -27,21 +27,23 @@ export function KnowledgeBaseView(props: {
     <>
       <div className="th-hero rise">
         <Icon3D name="t-brain" size={80} className="art" />
-        {counts.allLoading ? (
-          <span className="big is-wait" aria-live="polite">{TILE_STATE.loading}</span>
+        {counts.hero !== 'number' ? (
+          <span className="big is-wait" aria-live="polite">
+            {counts.hero === 'loading' ? TILE_STATE.loading : HERO.unavailable}
+          </span>
         ) : (
           <span className="big" data-total={counts.total}>{shown}</span>
         )}
         <h1>{HERO.title}</h1>
         <p>{HERO.sub}</p>
-        {!counts.allLoading && (
+        {counts.hero === 'number' && (
           <div className="th-split">
             <span><i /><b>{counts.total - counts.muted}</b> {HERO.on}</span>
             <span><i className="o" /><b>{counts.muted}</b> {HERO.off}</span>
           </div>
         )}
       </div>
-      {!counts.allLoading && (
+      {counts.hero === 'number' && (
         <p className="th-fn th-hero-note">{counts.note}</p>
       )}
 

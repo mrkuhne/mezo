@@ -22,7 +22,7 @@ describe('hubCounts', () => {
     expect(c.total).toBe(factSeed.length + personFacts.length + MOCK_EFFECT_SUBJECTS.length)
     expect(c.muted).toBe(factMuted + personMuted + effectMuted)
     expect(c.note).toBe(heroNote('ok'))
-    expect(c.allLoading).toBe(false)
+    expect(c.hero).toBe('number')
   })
 
   it('with facts off, the observations are counted and the note says so', () => {
@@ -40,11 +40,21 @@ describe('hubCounts', () => {
     expect(c.note).toBe(heroNote('partial'))
   })
 
-  it('a still-loading section contributes nothing; all loading flags the hero', () => {
+  it('a still-loading section contributes nothing; all loading → the hero shows no number', () => {
     const some = hubCounts(loading([]), ok(personSeed), ok(MOCK_OBSERVATIONS), ok(MOCK_EFFECT_SUBJECTS))
     expect(some.sections.facts.state).toBe('loading')
     expect(some.note).toBe(heroNote('partial'))
-    expect(hubCounts(loading([]), loading([]), loading([]), loading([])).allLoading).toBe(true)
+    expect(some.hero).toBe('number')
+    expect(hubCounts(loading([]), loading([]), loading([]), loading([])).hero).toBe('loading')
+  })
+
+  it('no section counted and none loading (all failed) → unavailable, never a 0', () => {
+    expect(hubCounts(err([]), err([]), err([]), err([])).hero).toBe('unavailable')
+    expect(hubCounts(off([]), err([]), off([]), off([])).hero).toBe('unavailable')
+  })
+
+  it('no section counted but facts still loading (rest failed) → loading, not a number', () => {
+    expect(hubCounts(loading([]), err([]), err([]), err([])).hero).toBe('loading')
   })
 
   it('the observation tile sub for the mock seeds: 3 still true, the drift pair\'s older half superseded, the refuted one muted', () => {

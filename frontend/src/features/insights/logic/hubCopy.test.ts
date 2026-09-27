@@ -68,6 +68,7 @@ describe('hubCopy · hub, tiles, sections', () => {
   it('hero + notes', () => {
     expect(C.HERO.title).toBe('dolgot tud rólad Mezo')
     expect(C.HERO.sub).toBe('és te döntöd el, mit használhat belőle.')
+    expect(C.HERO.unavailable).toBe('Most egyik szakaszt sem sikerült betölteni.')
     expect(C.heroNote('ok')).toBe('Egy észrevételt a belőle tanult ténnyel együtt egyszer számolok.')
     expect(C.heroNote('off')).toBe('A társ most ki van kapcsolva: a tények, az észrevételek és a hatások most nem elérhetők, ezért a szám csak az embereket számolja.')
     expect(C.heroNote('partial')).toBe('Néhány szakasz most nem töltődött be, ezért a szám nélkülük áll.')
