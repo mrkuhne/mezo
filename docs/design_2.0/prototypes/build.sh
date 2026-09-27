@@ -65,3 +65,5 @@ python3 src/splice-mezo-teljes.py
 { sed 's#<title>.*</title>#<title>Emodzsi-söprés · Üveg</title>#' src/uveg-en2-head.html; printf "</head>\n<body>\n"; cat src/uveg-sprite-fuel.svg.part ../../../frontend/src/shared/ui/clay/titanium-icons.svg; sed -n '1,1604p' src/uveg-en2-body.html; cat src/uveg-emodzsi-main.html; } > uveg-emodzsi.html
 # Üvegesítés U10 (mezo-me75u.10): Rétegek és ünnepek — ceremóniák, szintlépés, ablakok, lapok, üzenetsávok, kalauz, belépés, admin, Minden oldal. Dark-only; U10 new icons inline in the body until the owner OK.
 { cat src/uveg-reteg-head.html; printf "</head>\n<body>\n"; cat src/uveg-sprite-fuel.svg.part ../../../frontend/src/shared/ui/clay/titanium-icons.svg src/uveg-reteg-body.html; } > uveg-reteg.html
+# Minta részletei újramesélve (mezo-rstt7, 2026-09-27): a 30 valós minta minden esete egy oldalon. Dark-only; same chrome + the shared 3D sprite.
+{ cat src/uveg-minta-head.html; printf "</head>\n<body>\n"; cat src/uveg-sprite-fuel.svg.part ../../../frontend/src/shared/ui/clay/titanium-icons.svg src/uveg-minta-body.html; } > uveg-minta.html
