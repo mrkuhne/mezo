@@ -19,6 +19,9 @@ export const facts: KnowledgeFact[] = [
   { id: 'f13', text: 'Pre-workout fueling: 2-3h előtte protein+carb', category: 'fuel', active: true, reinforced: 13, source: 'chat', owner: 'falat', lastReinforcedAt: '2026-07-30T14:10:00Z', createdAt: '2026-03-05T14:20:00Z' },
   { id: 'f14', text: "Mentor relational frame ('Mizu Velünk')", category: 'life', active: true, reinforced: 4, source: 'manual', owner: 'mezo', lastReinforcedAt: null, createdAt: '2026-06-01T10:00:00Z' },
   { id: 'f15', text: 'System-elegance > rewards (rendszer-szerelem)', category: 'life', active: true, reinforced: 6, source: 'chat', owner: 'mezo', lastReinforcedAt: null, createdAt: '2026-01-22T18:50:00Z' },
+  // S6 (mezo-d6ivw.6) fix round 1 — a `o4` (refuted) észrevétel tanult ténye: a negyedéves
+  // recheck cáfolta, ezért `mutedReason: 'refuted'` (nem felhasználói döntés) néma a hub-on.
+  { id: 'f16', text: 'Edzés után mindig kevesebb a stresszed', category: 'health', active: false, reinforced: 2, source: 'pattern', owner: 'deru', lastReinforcedAt: null, createdAt: '2026-08-22T06:00:00Z', patternTitle: 'Edzés után mindig kevesebb a stresszed.', patternId: 'o4', mutedReason: 'refuted', mutedAt: '2026-09-16T03:40:00Z' },
 ]
 
 /** V1.2 mock candidates — the pending L2 confirm inbox of the demo. `c3` (mezo-ms9a) carries a

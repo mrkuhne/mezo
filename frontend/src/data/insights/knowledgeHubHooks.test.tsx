@@ -16,6 +16,15 @@ describe('useKnowledgeObservations', () => {
     expect(result.current.observations.map((o) => o.patternId)).toEqual(MOCK_OBSERVATIONS.map((o) => o.patternId))
   })
 
+  it('round-trips the refuted o4 row with its muted-by-refutation fact in both modes', async () => {
+    const { result } = renderHook(() => useKnowledgeObservations(), { wrapper: QueryWrapper })
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+    const o4 = result.current.observations.find((o) => o.patternId === 'o4')
+    expect(o4).toMatchObject({
+      status: 'refuted', factId: 'f16', factMutedReason: 'refuted', factMutedAt: '2026-09-16T03:40:00Z',
+    })
+  })
+
   it.runIf(!isMockMode())('maps a 404 to degraded, never to an error', async () => {
     server.use(http.get(`${API_BASE}/api/companion/observation/knowledge`, () => HttpResponse.json([], { status: 404 })))
     const { result } = renderHook(() => useKnowledgeObservations(), { wrapper: QueryWrapper })

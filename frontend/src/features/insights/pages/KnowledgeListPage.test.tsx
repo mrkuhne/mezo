@@ -164,7 +164,7 @@ describe('KnowledgeListPage (mock mode)', () => {
       const row = await screen.findByText('kifli.hu primary food source')
       expect(row.closest('[data-fact-row]')).toHaveClass('tud9-hl')
       // a szekció ténylegesen nyitva van — a sor nem csak a DOM-ban van jelen, hanem látszik is
-      expect(screen.getByText(/Kikapcsolva · 1/)).toBeInTheDocument()
+      expect(screen.getByText(/Kikapcsolva · 2/)).toBeInTheDocument()
     })
   })
 
@@ -294,15 +294,15 @@ describe('KnowledgeListPage (mock mode)', () => {
   test('a két prompt-státusz szakasz a helyes darabszámokkal jelenik meg', () => {
     renderPage('/?view=tenyek')
     expect(screen.getByText(/Ezeket tudja rólad · 14/)).toBeInTheDocument()
-    expect(screen.getByText(/Kikapcsolva · 1/)).toBeInTheDocument()
+    expect(screen.getByText(/Kikapcsolva · 2/)).toBeInTheDocument()
   })
 
   test('a kapcsoló átmozgatja a tényt a kikapcsolt szakaszba', async () => {
     renderPage('/?view=tenyek')
     // az első switch a legerősebb aktív tényé (f2, ×23) — kikapcsolva a bekapcsoltak száma
-    // 14→13, a kikapcsoltaké 1→2 lesz (facts-always: nincs várakozó vödör)
+    // 14→13, a kikapcsoltaké 2→3 lesz (facts-always: nincs várakozó vödör)
     await userEvent.click(screen.getAllByRole('switch')[0])
-    expect(await screen.findByText(/Kikapcsolva · 2/)).toBeInTheDocument()
+    expect(await screen.findByText(/Kikapcsolva · 3/)).toBeInTheDocument()
     expect(screen.getByText(/Ezeket tudja rólad · 13/)).toBeInTheDocument()
     expect(screen.getByText(/tény rólad · 13 megy a chatbe/)).toBeInTheDocument()
   })
@@ -346,7 +346,8 @@ describe('KnowledgeListPage (mock mode)', () => {
   })
 
   test('egy csak kikapcsolt tényre illeszkedő keresés kinyitja a "Kikapcsolva" szakaszt, nem mutat "Nincs találat"-ot (mezo-9ryh review fix)', async () => {
-    // f9 (kifli.hu…) az egyetlen kikapcsolt tény, és a "Kikapcsolva" szakasz alapból csukott.
+    // f9 (kifli.hu…) az egyetlen "kifli"-re illeszkedő kikapcsolt tény, és a "Kikapcsolva"
+    // szakasz alapból csukott — a szűrt lista számít, nem az összes kikapcsolt tény.
     renderPage('/?view=tenyek')
     await userEvent.type(screen.getByLabelText('Keresés a tények között'), 'kifli')
     expect(screen.queryByText('Nincs találat a keresésre.')).not.toBeInTheDocument()

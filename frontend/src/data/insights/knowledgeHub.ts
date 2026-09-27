@@ -47,10 +47,10 @@ export const MOCK_OBSERVATIONS: KnowledgeObservation[] = [
     evidenceSources: ['workout_session'],
   },
   {
-    // cáfolt — a negyedéves recheck nem igazolta vissza.
+    // cáfolt — a negyedéves recheck nem igazolta vissza; a belőle tanult tény (f16) emiatt néma.
     patternId: 'o4', title: 'Edzés után mindig kevesebb a stresszed.',
     confirmedAt: '2026-08-22T06:00:00Z', recheckedAt: '2026-09-16T03:40:00Z', status: 'refuted',
-    factId: null, factMutedReason: null, factMutedAt: null,
+    factId: 'f16', factMutedReason: 'refuted', factMutedAt: '2026-09-16T03:40:00Z',
     replacesPatternId: null, replacedByPatternId: null, topicKey: 'edzes-stressz',
     evidence: [{ kind: 'tag', text: '2/6 éjszaka igazolta' }], evidenceSources: [],
   },
