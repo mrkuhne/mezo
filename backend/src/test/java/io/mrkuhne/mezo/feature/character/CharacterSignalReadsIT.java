@@ -4,6 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
+import io.mrkuhne.mezo.feature.biometrics.checkin.entity.PainRegion;
+import io.mrkuhne.mezo.feature.companion.reflection.entity.TextSignalEntity;
+import io.mrkuhne.mezo.support.populator.HabitPopulator;
+import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
+import io.mrkuhne.mezo.support.populator.TextSignalPopulator;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
@@ -101,6 +106,9 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
     @Autowired private MentionRepository mentionRepository;
     @Autowired private AiMessageRepository aiMessageRepository;
     @Autowired private GoalPopulator goalPopulator;
+    @Autowired private TextSignalPopulator textSignalPopulator;
+    @Autowired private HabitPopulator habitPopulator;
+    @Autowired private SleepGoalPopulator sleepGoalPopulator;
 
     /** Owner shared by the round-3 read-layer tests below, which reference {@code owner} bare
      *  (no local shadow) — the other tests in this file keep their own {@code UUID owner = owner();}
@@ -676,6 +684,113 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
             assertThat(c.toolName()).isEqualTo("get_recovery");
             assertThat(c.titlePreview()).isEqualTo("Mennyit aludtam a héten, és mit mond a súlytrend?");
         });
+    }
+
+    // ── Check-in 2.0 (mezo-ck2, plan Task 6) ────────────────────────────────────
+
+    @Test
+    void gather_checkin2_dayMeansAndPainRegions_nullWhenNobodyAnswered() {
+        checkInPopulator.createCheckIn(owner, DAY, "06:30", e -> {
+            e.setMood(8);
+            e.setRested(6);
+            e.setSoreness(4);
+            e.setPain(true);
+            e.setPainRegions(List.of(PainRegion.TERD, PainRegion.DEREK));
+            e.setPainIntensity(5);
+            e.setMotivation(7);
+        });
+        checkInPopulator.createCheckIn(owner, DAY, "20:00", e -> {
+            e.setMood(6);
+            e.setSoreness(2);
+            e.setPain(true);
+            e.setPainRegions(List.of(PainRegion.DEREK));
+            e.setPainIntensity(3);
+            e.setCraving(9);
+            e.setDigestion(4);
+            e.setConnection(8);
+            e.setDayRating(7);
+        });
+
+        DetectorInput input = signalReads.gather(owner, DAY);
+
+        assertThat(input.trend().checkinDays()).singleElement().satisfies(c -> {
+            assertThat(c.count()).isEqualTo(2);
+            assertThat(c.energy()).isNull();
+            assertThat(c.mood()).isEqualByComparingTo("7.00");
+            assertThat(c.rested()).isEqualByComparingTo("6.00");
+            assertThat(c.soreness()).isEqualByComparingTo("3.00");
+            assertThat(c.painIntensity()).isEqualByComparingTo("4.00");
+            assertThat(c.motivation()).isEqualByComparingTo("7.00");
+            assertThat(c.hunger()).isNull();
+            assertThat(c.craving()).isEqualByComparingTo("9.00");
+            assertThat(c.digestion()).isEqualByComparingTo("4.00");
+            assertThat(c.connection()).isEqualByComparingTo("8.00");
+            assertThat(c.dayRating()).isEqualByComparingTo("7.00");
+            assertThat(c.painRegions()).containsExactly(PainRegion.DEREK, PainRegion.TERD);
+        });
+        assertThat(input.trend().checkinSlots()).extracting(DetectorInput.CheckinSlotPoint::slotTime,
+                        DetectorInput.CheckinSlotPoint::motivation, DetectorInput.CheckinSlotPoint::digestion)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("06:30", 7, null),
+                        org.assertj.core.groups.Tuple.tuple("20:00", null, 4));
+    }
+
+    @Test
+    void gather_checkin2_textMoodsHabitsSleepGoalSessionTypeAndMealItems() {
+        // text moods: newest version per source wins, unsure rows carry no number, and a signal
+        // extracted AFTER the observed day is dropped (catch-up honesty)
+        UUID journal = UUID.randomUUID();
+        TextSignalEntity v1 = textSignalPopulator.signal(owner, TextSignalEntity.SOURCE_JOURNAL, journal,
+                DAY.minusDays(1), 2, null, null, List.of(), List.of(), 1);
+        TextSignalEntity v2 = textSignalPopulator.signal(owner, TextSignalEntity.SOURCE_JOURNAL, journal,
+                DAY.minusDays(1), 4, null, null, List.of(), List.of(), 2);
+        TextSignalEntity chat = textSignalPopulator.signal(owner, TextSignalEntity.SOURCE_CHAT_DAY, UUID.randomUUID(),
+                DAY.minusDays(1), 5, null, null, List.of(), List.of());
+        TextSignalEntity unsure = textSignalPopulator.signal(owner, TextSignalEntity.SOURCE_CHAT_DAY, UUID.randomUUID(),
+                DAY.minusDays(2), 1, null, null, List.of(), List.of());
+        unsure.setConfidence(TextSignalEntity.CONFIDENCE_UNSURE);
+        textSignalPopulator.save(unsure);
+        for (TextSignalEntity s : List.of(v1, v2, chat, unsure)) {
+            jdbcTemplate.update("update text_signal set created_at = ? where id = ?",
+                    Timestamp.from(DAY.atStartOfDay(ZoneId.systemDefault()).toInstant()), s.getId());
+        }
+        textSignalPopulator.signal(owner, TextSignalEntity.SOURCE_CHAT_DAY, UUID.randomUUID(),
+                DAY, 1, null, null, List.of(), List.of()); // created "now" — after DAY
+
+        habitPopulator.row(owner, DAY, "morning_sunlight", "done");
+        habitPopulator.row(owner, DAY, "caffeine_cutoff", "missed");
+        sleepGoalPopulator.goal(owner, 450, "WAKE", "06:45", 15);
+
+        MesocycleEntity meso = trainPopulator.createActiveMeso(owner);
+        WorkoutSessionEntity template = trainPopulator.createWorkoutSession(owner, meso.getId(), "Hétfő", "Láb",
+                0, "active");
+        trainPopulator.createWorkoutInstance(owner, template, DAY, "completed");
+
+        mealPopulator.createMealWithItems(owner, DAY, "lunch", List.of(
+                new MealPopulator.Line("Vörösbab", "300", "20", "40", "2", (short) 1),
+                new MealPopulator.Line("Rizs", "350", "7", "75", "1", (short) 1)));
+
+        DetectorInput input = signalReads.gather(owner, DAY);
+
+        assertThat(input.trend().textMoods()).singleElement().satisfies(t -> {
+            assertThat(t.date()).isEqualTo(DAY.minusDays(1));
+            assertThat(t.mood()).isEqualByComparingTo("4.50"); // mean of journal v2 (4) + chat (5)
+        });
+        assertThat(input.trend().habitDays()).singleElement().satisfies(h -> {
+            assertThat(h.date()).isEqualTo(DAY);
+            assertThat(h.planned()).isEqualTo(2);
+            assertThat(h.done()).isEqualTo(1);
+        });
+        assertThat(input.trend().sleepGoalMinutes()).isEqualTo(450);
+        assertThat(input.trend().gymEightWeeks()).singleElement()
+                .satisfies(g -> assertThat(g.sessionType()).isEqualTo("Láb"));
+        assertThat(input.trend().mealDays()).singleElement().satisfies(m ->
+                assertThat(m.meals()).singleElement().satisfies(p ->
+                        assertThat(p.itemNames()).containsExactly("vörösbab", "rizs")));
+    }
+
+    @Test
+    void gather_checkin2_absentSleepGoalReadsNull() {
+        assertThat(signalReads.gather(owner, DAY).trend().sleepGoalMinutes()).isNull();
     }
 
     @Test
