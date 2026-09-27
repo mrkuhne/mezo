@@ -443,6 +443,6 @@ experiments · Memória = memory observatory · Éjszakai mód = night mode · P
 
 *Handoff written by Claude Code on 2026-08-26. Source docs: `docs/CODEMAP.md`,
 `docs/features/*`, `docs/decisions/*` (esp. ADR 0010/0014/0018/0022–0026), `docs/milestones/
-roadmap.md`, `docs/old docs/mezo-prd.md`, plus Daniel's usage interview in the session.
+roadmap.md`, `docs/archive/old-docs/mezo-prd.md`, plus Daniel's usage interview in the session.
 Driving bd issue: `mezo-88jw`. When a direction is chosen in Claude Design, bring the result
 back to Claude Code to turn it into a spec (`docs/superpowers/specs/`) and implementation plan.*

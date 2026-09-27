@@ -8,7 +8,7 @@
 
 **Tech Stack:** Spring Boot 4 · Java 21 · Maven · PostgreSQL 16 · Liquibase · MapStruct · Lombok · React 19 · Vite · TanStack Query · TypeScript. Chamfer "Deep Current" design system.
 
-**Driving bd:** `mezo-arb`. **Spec:** `docs/superpowers/specs/2026-06-24-fuel-meal-logging-design.md`. **Mockup:** `docs/design/meal-logging-sheet.html`. **Template:** the shipped Recipes slice (`mezo-lns`).
+**Driving bd:** `mezo-arb`. **Spec:** `docs/superpowers/specs/2026-06-24-fuel-meal-logging-design.md`. **Mockup:** `docs/archive/design-v1/meal-logging-sheet.html`. **Template:** the shipped Recipes slice (`mezo-lns`).
 
 ## Global Constraints
 
@@ -4412,7 +4412,7 @@ Per the repo `docs/` policy (swapping mock hooks to a real backend → update th
 
 # Frontend UI — Meal Logging (Mai) Slice
 
-Driving bd: `mezo-arb`. Spec: `docs/superpowers/specs/2026-06-24-fuel-meal-logging-design.md`. Visual source of truth for the new sheet: `docs/design/meal-logging-sheet.html`.
+Driving bd: `mezo-arb`. Spec: `docs/superpowers/specs/2026-06-24-fuel-meal-logging-design.md`. Visual source of truth for the new sheet: `docs/archive/design-v1/meal-logging-sheet.html`.
 
 These tasks ship the FE side of the meal-logging slice: the dual-mode `useFuelDay`/`useMealActions` hooks, the `mealApi` boundary, the recipe-logs hook, MSW handlers, the two NEW capture sheets (`LogMealSheet` + the 2-tab `MealPickerSheet`), and the wiring of the existing read surfaces (MacroHero, Mai meal list, RecipeLogsList, Today preview) + the two inert CTAs. All work is dual-mode (`VITE_USE_MOCK` true AND false green) + `pnpm build` green. The live-app meal score stays the **pending sparkle** (NULL breakdown) — reuse `RecipeFitBadge`.
 
@@ -4459,7 +4459,7 @@ The picker that opens over `LogMealSheet`. Two tabs (Receptek / Kamra), a shared
 // slot + per-serving macros) / Kamra (pantry rows: name + macros /100g). One
 // search across the active tab; tapping ＋ emits a MealPickedItem (recipe → 1 adag,
 // pantry → per g). Mirrors IngredientPickerSheet (.prow rows + MacroCells).
-// docs/design/meal-logging-sheet.html (right phone · .ptabs + .prow).
+// docs/archive/design-v1/meal-logging-sheet.html (right phone · .ptabs + .prow).
 // ============================================================
 import { useState } from 'react'
 import type { Ingredient, Recipe } from '@/data/types'
@@ -4600,7 +4600,7 @@ git commit -m "feat(fuel): MealPickerSheet 2-tab Receptek/Kamra picker (mezo-arb
 
 ### Task feui6: `LogMealSheet` — the capture sheet (slot + time + items + live total + daily-context + save)
 
-The one genuinely new surface. Modal (`Sheet`): slot segmented + time row + per-item cards (name + source tag + amount stepper + per-item `MacroCells` + delete) + "Receptből / Kamrából hozzáad" → `MealPickerSheet` + live "Ez az étkezés" total + the daily-context bar + sticky "Logolás a mai naphoz" → `useMealActions.logMeal`. Opens pre-filled when given a recipe or pantry item. Visual source: `docs/design/meal-logging-sheet.html` (left phone). TDD.
+The one genuinely new surface. Modal (`Sheet`): slot segmented + time row + per-item cards (name + source tag + amount stepper + per-item `MacroCells` + delete) + "Receptből / Kamrából hozzáad" → `MealPickerSheet` + live "Ez az étkezés" total + the daily-context bar + sticky "Logolás a mai naphoz" → `useMealActions.logMeal`. Opens pre-filled when given a recipe or pantry item. Visual source: `docs/archive/design-v1/meal-logging-sheet.html` (left phone). TDD.
 
 **Files:**
 - Create: `frontend/src/features/fuel/LogMealSheet.tsx`
@@ -4721,7 +4721,7 @@ cd frontend && pnpm exec vitest run src/features/fuel/LogMealSheet.test.tsx
 // the daily-context bar (mai eddig + ez vs cél), sticky "Logolás a mai naphoz" →
 // useMealActions.logMeal. Opens pre-filled from a recipe or a pantry item.
 // Contribution = round(macro * amount/per) — the SAME rule as the backend mapper.
-// docs/design/meal-logging-sheet.html (left phone).
+// docs/archive/design-v1/meal-logging-sheet.html (left phone).
 // ============================================================
 import { useState } from 'react'
 import type { Ingredient, MealInput, Recipe } from '@/data/types'

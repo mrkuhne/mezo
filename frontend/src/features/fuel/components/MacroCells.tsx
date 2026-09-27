@@ -1,6 +1,6 @@
 // ============================================================
 // Mezo · MacroCells (shared chamfer kcal/P/C/F strip)
-// The `.mc` cell look from docs/design/recipes-*.html — used by the editorial
+// The `.mc` cell look from docs/archive/design-v1/recipes-*.html — used by the editorial
 // RecipeCard body, the RecipeDetailPage ingredient rows, the editor pick-rows,
 // and the IngredientPickerSheet cards. An optional left `perLabel` rail prints
 // the basis (e.g. "160 g" for an editor row at its amount, "/100g" in the picker).

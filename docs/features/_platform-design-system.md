@@ -74,7 +74,7 @@ related: [_platform-data-layer, _platform-notifications, today, train, me, fuel,
 > the Mozaik colors (`--dv-*`, `--macro-*`) on the warm-graphite dark, wearing Titanium's
 > material (3D icon sprite, glass cards with a colored gradient frame, sheen, glow). **Dark
 > only**; light is parked, not deleted. Canon: the
-> [üveg style bible](../design_2.0/2026-09-23-uveg-style-bible.md); session driver `/uvegesites`,
+> [üveg style bible](../design_2.0/2026-09-23-uveg-style-bible.md); prototype recipe [`prototype-recipe.md`](../design_2.0/prototype-recipe.md) (the `/uvegesites` driver is archived),
 > one slice per session. **U1 (`mezo-me75u.1`) shipped the foundation** — see §3 *Üveg
 > foundation* below: the dark-only lock, the one glass kit, the Titanium sprite + `ContentIcon`,
 > the glass chrome, and Fuel · Mai / meal detail / score. Until `mezo-me75u` closes the app is

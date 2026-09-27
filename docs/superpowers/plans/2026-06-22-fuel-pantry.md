@@ -1580,7 +1580,7 @@ git commit -m "feat(pantry): wire manual add/edit/update/delete sheets to usePan
 - [ ] **Step 1: Parity screenshot vs the chosen mockup**
 
 Run: `cd frontend && pnpm parity`
-Expected: the Kamra view renders; compare against `docs/design/kamra-mockup-v3-A.html`. Note any drift as a follow-up bd issue (do not block on pixel-perfection — the mockup is the target, not a frozen contract).
+Expected: the Kamra view renders; compare against `docs/archive/design-v1/kamra-mockup-v3-A.html`. Note any drift as a follow-up bd issue (do not block on pixel-perfection — the mockup is the target, not a frozen contract).
 
 - [ ] **Step 2: Update the living feature doc**
 

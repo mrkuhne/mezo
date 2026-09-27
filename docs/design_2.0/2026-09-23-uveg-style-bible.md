@@ -1,7 +1,7 @@
 # Üveg style bible: Mozaik colors on warm-dark glass
 
 **Date:** 2026-09-23 · **Status:** canon · **Epic:** `mezo-me75u` (`bd list --label epic:uvegesites`)
-**Session driver:** the `/uvegesites` skill (`.claude/skills/uvegesites/SKILL.md`)
+**Session driver:** the `/uvegesites` skill, archived at `docs/archive/skills/uvegesites.md` after the programme closed (2026-09-27); its prototype recipe lives on in [`prototype-recipe.md`](prototype-recipe.md)
 **Reference prototype (owner-approved 2026-09-23):** [`prototypes/fuel-uveg.html`](prototypes/fuel-uveg.html),
 **Sötét** switch. Fuel · Mai, meal detail and meal-score detail.
 

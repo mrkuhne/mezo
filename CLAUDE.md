@@ -87,7 +87,7 @@ result:**
 
 ## Design direction (MANDATORY for any UI design/mockup work)
 
-> **Direction change, 2026-09-23 (owner decision, epic `mezo-me75u`, skill `/uvegesites`):**
+> **Direction change, 2026-09-23 (owner decision, epic `mezo-me75u`, closed; its driver is archived in `docs/archive/skills/`):**
 > the restored Mozaik/Clay world read flat to the owner. The living direction is now **"Üveg"**:
 > the **Mozaik colors** (`--dv-*`, `--macro-*`) on the app's **warm-graphite dark** ground,
 > wearing the **Titanium material**: the 3D icon sprite, glass cards with a colored gradient
@@ -123,7 +123,7 @@ Any new screen still gets a clickable prototype and the owner's OK before code.
 
 ## Frontend change workflow (MANDATORY for every change the owner will see)
 
-The owner's working rhythm (set 2026-09-23 in `/uvegesites` and `/csapatfal`, made the default
+The owner's working rhythm (set 2026-09-23 in the Üvegesítés programme and `/csapatfal`, made the default
 for all frontend work 2026-09-27, `mezo-u75pt`). Follow it without being asked:
 
 **The three owner gates — and nothing after them.**
@@ -146,7 +146,7 @@ Scaling: a small change may fold spec + plan into one short doc with one OK (the
 still stands on its own). A pure bug fix with no visible change skips the prototype. When in
 doubt, prototype.
 
-**Prototype rules** (the full recipe is `/uvegesites` Procedure §1; it applies verbatim):
+**Prototype rules** (the full recipe is [`docs/design_2.0/prototype-recipe.md`](docs/design_2.0/prototype-recipe.md)):
 - Realistic: built on the app's real chrome (header, bottom menu, domain switcher, copied from
   `fuel-uveg.html`), real-looking Hungarian content of the real record types (read the page
   components; never invent features), clickable with a hash router, sheets and back buttons.
@@ -199,8 +199,11 @@ approved prototype; every item is checkable with evidence. It always covers:
   (reverse parity list), no behaviour change outside the spec.
 - **Gates:** FE tests in both modes (`CI=true`, mock + `VITE_USE_MOCK=false`), affected
   `frontend/tests/layout` specs, `pnpm build`; backend focused tests if backend changed;
-  `node scripts/gen-codemap.mjs`; `node scripts/lint-docs.mjs` 0 errors / 0 stale; feature
-  doc updated.
+  `node scripts/gen-codemap.mjs`; `node scripts/lint-docs.mjs` 0 errors / 0 stale.
+- **Docs (no lint catches these — they drifted three weeks once, `mezo-iwmsw`):** the feature's
+  `docs/features/*.md` updated; its row in the **feature index** (`docs/features/README.md` §2–§3:
+  status + route) true; a dated entry in the **milestone log** (`docs/milestones/roadmap.md`) when
+  an epic or a user-visible feature ships, and the *Epics in flight* table moved with it.
 - **Shipped:** merged to main, `deploy` workflow green for that commit, the new version live on
   the production URL (checked in the browser), and — when data is involved — the production DB
   shows the expected rows (see §Production database access).

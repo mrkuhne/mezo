@@ -4,7 +4,7 @@
 //   - add mode (no editId): addItem(input) → appends to the ['pantry'] cache
 //   - edit mode (editId set): updateItem(editId, input)
 // Reuses the shared <Sheet> shell (portal + drag-to-close + Escape). The form now
-// edits EVERY value (docs/design/kamra-detail-edit-v1.html · phone 3), grouped in
+// edits EVERY value (docs/archive/design-v1/kamra-detail-edit-v1.html · phone 3), grouped in
 // chamfer-chrome sections: Alap / Makrók / Tápanyag / Készlet · ár. The kind toggle
 // gates the dose vs macro/nutrition fields where it makes sense; food exposes all
 // numeric nutrition fields.

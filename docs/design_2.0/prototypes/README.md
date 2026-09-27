@@ -5,6 +5,10 @@ Open them directly in a browser, or view the published artifacts below. Design d
 the full context live in `../2026-08-26-ui-ia-redesign-handoff.md`; the clay icon/spot sprites
 they inline come from `../assets/`.
 
+> **Since 2026-09-27 new work edits the living per-domain prototypes** in [`elo/`](elo/README.md)
+> (one fixed artifact URL per domain), made by the [prototype recipe](../prototype-recipe.md). The
+> table below is the history of the one-off prototypes; they remain parity references.
+
 ## Files ↔ published artifacts
 
 | File | Artifact URL (republish with `url` to keep the link) |
