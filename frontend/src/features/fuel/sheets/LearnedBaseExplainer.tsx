@@ -25,8 +25,18 @@ const prefersReducedMotion = () =>
   typeof window !== 'undefined' && typeof window.matchMedia === 'function'
   && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-/** Meter pin position (0..1) from the ±1 SD: 300 kcal → 0, 100 kcal → 1. */
-export const meterPosition = (sdKcal: number) => Math.max(0, Math.min(1, (300 - sdKcal) / 200))
+const ZONE: Record<Confidence, number> = { low: 0, medium: 1, high: 2 }
+const clamp01 = (n: number) => Math.max(0, Math.min(1, n))
+/**
+ * Meter pin position (0..1). The bar is three equal zones (low | medium | high); within a zone the
+ * ±1 SD places the pin linearly (low: 300→200, medium: 200→100, high: 100→0 kcal). The pin is
+ * always clamped into the SERVED confidence's zone, so the lit word and the pin never disagree.
+ */
+export const meterPosition = (sdKcal: number, confidence: Confidence) => {
+  const zone = ZONE[confidence]
+  const hi = 300 - zone * 100 // the zone's left-edge SD
+  return (zone + clamp01((hi - sdKcal) / 100)) / 3
+}
 
 function Cell({ num, title, children }: { num: number; title: string; children: ReactNode }) {
   return (
@@ -38,7 +48,7 @@ function Cell({ num, title, children }: { num: number; title: string; children: 
 }
 
 function Meter({ sdKcal, confidence, reduce }: { sdKcal: number; confidence: Confidence; reduce: boolean }) {
-  const target = meterPosition(sdKcal) * 100
+  const target = meterPosition(sdKcal, confidence) * 100
   const [left, setLeft] = useState(reduce ? target : 0)
   useEffect(() => {
     if (reduce) return
@@ -184,7 +194,7 @@ export function LearnedBaseExplainerBody({ explanation: x, reducedMotion }: {
           <span className="ar">→</span>
           <div className="flp-how-step is-now"><b>{nf(x.appliedBaseKcal)}</b><span>most</span></div>
         </div>
-        <p className="flp-how-fine">Hétfőnként legfeljebb 150 kcal-t lépek. Ha új irányba kellene, először csak félig — egy furcsa hét így nem rántja el a keretet.</p>
+        <p className="flp-how-fine">Hetente csak kis lépést teszek, és új irányba először csak félig — egy furcsa hét így nem rántja el a keretet.</p>
       </Cell>
     </div>
   )

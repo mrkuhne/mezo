@@ -6,6 +6,7 @@ import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { expenditureExplanationSeed as seed } from '@/data/fuel/expenditureExplanation'
+import { fuelDayEnergy } from '@/data/fuel/fuel'
 import type { ExpenditureExplanation } from '@/data/fuel/expenditureApi'
 import { LearnedBaseExplainerBody, meterPosition } from '@/features/fuel/sheets/LearnedBaseExplainer'
 import { EnergyBreakdownSheet, type EnergyBreakdown } from '@/features/fuel/sheets/EnergyBreakdownSheet'
@@ -60,12 +61,41 @@ describe('LearnedBaseExplainerBody — the fixture numbers', () => {
     expect(chart.querySelectorAll('circle')).toHaveLength(seed.series.filter(p => p.weightKg != null).length)
   })
 
-  it('meter position maps the SD onto 0..1 (300 → 0, 100 → 1)', () => {
-    expect(meterPosition(300)).toBe(0)
-    expect(meterPosition(200)).toBe(0.5)
-    expect(meterPosition(50)).toBe(1)
+  it('meter: three equal zones, the SD places the pin inside the served confidence zone', () => {
+    // low: 300→200 over [0, 1/3]; >300 clamps to the left edge
+    expect(meterPosition(350, 'low')).toBe(0)
+    expect(meterPosition(250, 'low')).toBeCloseTo(1 / 6)
+    // medium: 200→100 over [1/3, 2/3]
+    expect(meterPosition(150, 'medium')).toBeCloseTo(0.5)
+    // high: 100→0 over [2/3, 1]
+    expect(meterPosition(50, 'high')).toBeCloseTo(5 / 6)
+    expect(meterPosition(0, 'high')).toBe(1)
+  })
+
+  it('meter: the pin never leaves the zone of the served word', () => {
+    expect(meterPosition(80, 'low')).toBeCloseTo(1 / 3) // low with a tight SD → low zone's right edge
+    expect(meterPosition(260, 'medium')).toBeCloseTo(1 / 3) // medium with a wide SD → medium's left edge
+    expect(meterPosition(180, 'high')).toBeCloseTo(2 / 3) // high with a wide SD → high's left edge
+  })
+
+  it('meter pin renders in the fixture zone (low, ±200 → the low zone edge)', () => {
     body()
-    expect((document.querySelector('.flp-how-meter .pin') as HTMLElement).style.left).toBe('50%')
+    const left = parseFloat((document.querySelector('.flp-how-meter .pin') as HTMLElement).style.left)
+    expect(left).toBeCloseTo(100 / 3)
+    expect(screen.getByText(/Hetente csak kis lépést teszek/)).toBeInTheDocument()
+    expect(screen.queryByText(/150 kcal/)).not.toBeInTheDocument()
+  })
+})
+
+describe('mock story', () => {
+  it('the fuel mock serves the explainer seed\'s learned base, and its equation still closes', () => {
+    expect(fuelDayEnergy.baseKcal).toBe(seed.appliedBaseKcal)
+    expect(fuelDayEnergy.formulaBaseKcal).toBe(seed.formulaBaseKcal)
+    expect(fuelDayEnergy.baseSdKcal).toBe(seed.posteriorSdKcal)
+    expect(fuelDayEnergy.baseConfidence).toBe(seed.confidence)
+    expect(fuelDayEnergy.plannedMovementKcal).toBeGreaterThan(0)
+    expect(fuelDayEnergy.baseKcal + fuelDayEnergy.plannedMovementKcal + fuelDayEnergy.extraMovementKcal + fuelDayEnergy.balanceKcal)
+      .toBe(fuelDayEnergy.targetKcal)
   })
 })
 
