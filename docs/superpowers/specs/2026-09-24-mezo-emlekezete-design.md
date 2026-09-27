@@ -1094,3 +1094,11 @@ through the full merge chain (lessons 21–22).
 29. **(S5)** The apropó matcher reads only the two mention projections — done-workout
     days and text-signal topic days (the other halves of `EffectLinkService.subjects`)
     do NOT fire same-day apropók; deliberate scope, documented in mezo-8eg96.
+30. **(facts-always)** The FE fact-bucket model leaks beyond the insights folder:
+    `KnowledgeBaseView` types the buckets structurally, and three test files
+    (`KnowledgeFactRow`/`KnowledgeListPage`/`MezoHubPage`) hard-code counts derived
+    from the 15-fact mock seed (14 active / 1 inactive) — a bucketing change must
+    re-derive those counts from `data/insights/knowledge.ts` or the suite fails on
+    numbers, not logic. Session-tooling trap paid for too: the Maven wrapper lives at
+    `backend/mvnw` (repo root has none), and `cmd | tail` swallows a launch failure —
+    `set -o pipefail` before piping gate commands.
