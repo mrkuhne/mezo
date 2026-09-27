@@ -4229,7 +4229,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The all-day team chat for one local day (Csapatfal Act III, mezo-a9bo7.21): the day's lines in time order (OPEN and RESOLVE lines embed their ügy), every still-open ügy of any day, and the day's push count against its budget. With the team chat switched off the day is honestly empty — never a 404 */
+        /** The all-day team chat for one local day (Csapatfal Act III, mezo-a9bo7.21): the day's lines in time order (OPEN, RESOLVE and REPLY lines embed their ügy), every still-open ügy of any day, and the day's push count against its budget. With the team chat switched off the day is honestly empty — never a 404 */
         get: operations["getTeamChatDay"];
         put?: never;
         post?: never;
@@ -4248,7 +4248,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** The user's reply on their own ügy — a USER line; it never resolves the ügy */
+        /** The user's reply on their own ügy — a USER line; the owner character answers shortly after (a REPLY line), and a concrete explanation may close the ügy */
         post: operations["replyTeamChatThread"];
         delete?: never;
         options?: never;
@@ -10061,7 +10061,7 @@ export interface components {
             /** Format: uuid */
             threadId: string | null;
             /** @enum {string} */
-            kind: "OPEN" | "GUEST" | "RESOLVE" | "SKEPTIC" | "USER";
+            kind: "OPEN" | "GUEST" | "RESOLVE" | "SKEPTIC" | "USER" | "REPLY";
             /** @enum {string|null} */
             character?: "szunya" | "mocor" | "falat" | "deru" | "mezo" | "szkeptikus" | null;
             body: string;
@@ -10090,6 +10090,28 @@ export interface components {
             actions: components["schemas"]["TeamChatAction"][];
             /** @description The applied actionKey */
             applied?: string | null;
+            /**
+             * @description Why a RESOLVED ügy closed — its data cleared, the user's explanation, or a known exception confirmed
+             * @enum {string|null}
+             */
+            closeReason?: "DATA" | "REPLY" | "EXCUSED" | null;
+            /** @description The short context tag, e.g. meccsnap */
+            closeNote?: string | null;
+            /**
+             * @description A known-exception question (one tap) or the capped re-check (two taps)
+             * @enum {string|null}
+             */
+            offer?: "EXCUSE" | "REVIEW" | null;
+            /** @description The offered exception tag, e.g. meccsnap (EXCUSE and REVIEW only) */
+            offerTag?: string | null;
+            remembered?: components["schemas"]["TeamChatRemembered"] | null;
+        };
+        TeamChatRemembered: {
+            /** @description The remembered sentence (the knowledge fact's text) */
+            text: string;
+            contextTag: string;
+            /** @description false once undone or switched off */
+            active: boolean;
         };
         TeamChatAction: {
             key: string;
