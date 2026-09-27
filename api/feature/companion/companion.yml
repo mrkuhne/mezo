@@ -645,6 +645,11 @@ paths:
         - { name: subjectKey, in: path, required: true, schema: { type: string, maxLength: 64 } }
       responses:
         '204': { description: Unmuted (or nothing to do) }
+        '400':
+          description: Validation error (unknown subjectKind, or a subjectKey over 64 chars)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
         '401':
           description: Missing or invalid token
           content:
@@ -1250,7 +1255,7 @@ components:
         GET /api/companion/fact/{factId}/evidence adja lustán (Honnan tudom?).
       required: [sourceKind]
       properties:
-        sourceKind: { type: string, enum: [chat, pattern, manual, weekly_review, question] }
+        sourceKind: { type: string, enum: [chat, pattern, manual, weekly_review, question, team_chat] }
         patternId: { type: string, format: uuid, nullable: true, description: 'Az észrevétel, amiből a tény született (source=pattern).' }
         sourceMessageId: { type: string, format: uuid, nullable: true, description: 'A beszélgetés-üzenet, amiből a jelölt született (chat).' }
     CreateFactRequest:

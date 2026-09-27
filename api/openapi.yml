@@ -5641,6 +5641,14 @@ paths:
       responses:
         '204':
           description: Unmuted (or nothing to do)
+        '400':
+          description: >-
+            Validation error (unknown subjectKind, or a subjectKey over 64
+            chars)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Missing or invalid token
           content:
@@ -20108,6 +20116,7 @@ components:
             - manual
             - weekly_review
             - question
+            - team_chat
         patternId:
           type: string
           format: uuid

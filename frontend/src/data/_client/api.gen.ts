@@ -8042,7 +8042,7 @@ export interface components {
         /** @description S6 (mezo-d6ivw.6) — honnan jön a tény. A bizonyíték-elemeket a GET /api/companion/fact/{factId}/evidence adja lustán (Honnan tudom?). */
         KnowledgeFactProvenance: {
             /** @enum {string} */
-            sourceKind: "chat" | "pattern" | "manual" | "weekly_review" | "question";
+            sourceKind: "chat" | "pattern" | "manual" | "weekly_review" | "question" | "team_chat";
             /**
              * Format: uuid
              * @description Az észrevétel, amiből a tény született (source=pattern).
@@ -18620,6 +18620,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation error (unknown subjectKind, or a subjectKey over 64 chars) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
             };
             /** @description Missing or invalid token */
             401: {

@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.KnowledgeFactResponse;
+import io.mrkuhne.mezo.api.dto.ObservationEvidenceItem;
 import io.mrkuhne.mezo.api.dto.UpdateFactRequest;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
@@ -85,5 +86,23 @@ class CompanionFactProvenanceApiIT extends ApiIntegrationTest {
         assertThat(muted.getMutedReason().getValue()).isEqualTo("user");
         assertThat(muted.getMutedAt()).isNotNull();
         assertThat(muted.getCategory()).isEqualTo("life");
+    }
+
+    /** Final-review Critical 1: an S7 csapatfal fact (source team_chat) must not 500 the list,
+     *  and its "Honnan tudom?" has no evidence to show. */
+    @Test
+    void list_shouldCarryTeamChatSource_andEvidenceIsEmpty() {
+        RegisteredUser user = registerUser("s6-team-chat");
+        HttpHeaders headers = user.headers();
+        KnowledgeFactEntity teamChat = factPopulator.fact(user.id(), "Hétfőn edzés helyett úszol", "train", 0, true,
+                KnowledgeFactEntity.SOURCE_TEAM_CHAT);
+
+        List<KnowledgeFactResponse> facts = getForList(FACTS, headers, HttpStatus.OK, KnowledgeFactResponse.class);
+
+        KnowledgeFactResponse t = facts.stream().filter(f -> f.getId().equals(teamChat.getId())).findFirst().orElseThrow();
+        assertThat(t.getProvenance().getSourceKind().getValue()).isEqualTo("team_chat");
+        List<ObservationEvidenceItem> evidence = getForList(FACTS + "/" + teamChat.getId() + "/evidence", headers,
+                HttpStatus.OK, ObservationEvidenceItem.class);
+        assertThat(evidence).isEmpty();
     }
 }
