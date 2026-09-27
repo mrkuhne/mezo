@@ -155,7 +155,7 @@ h1{margin:4px 0 0;font-size:30px;font-weight:700;letter-spacing:-1px;line-height
       <button class="opt" role="tab" data-v="lelegzes"><i class="tag">A</i><b>Lélegzés</b><span>A gömb kétszer megduzzad, a fénye vele erősödik, és egy halvány gyűrű fut ki belőle.</span></button>
       <button class="opt" role="tab" data-v="toltodes" style="--c:var(--sky)"><i class="tag">B</i><b>Töltődés</b><span>A lila folyadék az indulással együtt feltölti a gömböt, buborékok szállnak, a végén fénycsík söpör át rajta.</span></button>
       <button class="opt" role="tab" data-v="keringes" style="--c:var(--gold)"><i class="tag">C</i><b>Keringés</b><span>Öt ikon egyesével felvillan a gömb körül, és körben kering: nap, súlyzó, tál, vízcsepp, hold.</span></button>
-      <button class="opt" role="tab" data-v="kombo" style="--c:var(--coral)"><i class="tag">D</i><b>Töltődés + keringés</b><span>Előbb a gömb feltöltődik, aztán az öt ikon egyesével felvillan körülötte, és körben kering. A végén a fénycsík átsöpör az üvegen.</span></button>
+      <button class="opt" role="tab" data-v="kombo" style="--c:var(--coral)"><i class="tag">D</i><b>Töltődés + keringés</b><span>A gömb végig lassan töltődik kb. 70%-ig, közben az öt ikon egyesével felvillan körülötte, és körben kering. A végén a fénycsík átsöpör az üvegen.</span></button>
     </div>
     <div class="ctl">
       <button class="btn" id="replay" type="button">Újrajátszás</button>
@@ -277,10 +277,10 @@ const R = {
   },
 
   toltodes(t, still, o = {}) {
-    const { fillAt = 100, fillDur = 2300, bubStep = 290 } = o;
+    const { fillAt = 100, fillDur = 2300, bubStep = 290, top = 88, ease = inOutCubic } = o;
     common(t, still);
-    const p = still ? 1 : inOutCubic(clamp((t - fillAt) / fillDur));
-    const lvl = 150 + (88 - 150) * p;
+    const p = still ? 1 : ease(clamp((t - fillAt) / fillDur));
+    const lvl = 150 + (top - 150) * p;
     el.level.setAttribute('transform', `translate(0 ${lvl - 88})`);
     if (still) { el.back.setAttribute('opacity', 0); return; }
     const calm = 1 - .75 * p;
@@ -307,10 +307,11 @@ const R = {
     orbit(t, still);
   },
 
-  // fill first, then the icons spawn once the orb has settled; the sheen closes the show
+  // fill and spawn together: the fill leads by 0.1 s and runs the whole show, easing to a stop
+  // at ~70% just as the splash fades; the icons pop in one by one meanwhile
   kombo(t, still) {
-    R.toltodes(t, still, { fillAt: 80, fillDur: 1250, bubStep: 150 });
-    orbit(t, still, { spawnAt: 1250, stagger: 170, dur: 400 });
+    R.toltodes(t, still, { fillAt: 0, fillDur: DUR - FADE, bubStep: 290, top: 48, ease: x => Math.sin(x * Math.PI / 2) });
+    orbit(t, still, { spawnAt: 100, stagger: 240, dur: 480 });
   },
 };
 
