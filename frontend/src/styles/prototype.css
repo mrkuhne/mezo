@@ -13988,6 +13988,24 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 :where(.sheet.glass.uv-sheet) :is(input, textarea, select):focus-visible {
   outline: none; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 70%, transparent), 0 0 14px -4px color-mix(in srgb, var(--c) 60%, transparent);
 }
+/* Toggle `glass` (shared/ui/Toggle.tsx) — the kit's one switch (U11, mezo-7txw6; it used to be
+   copied into the ertesitesek and admin blocks). Track flat on the card, lit in the surface's
+   `--c` (sky by default) when on; a page may restyle it (the tudástár's sage variant). */
+.uv-tgl {
+  position: relative; flex: 0 0 auto; width: 44px; height: 26px; padding: 0; border: 0; border-radius: 999px;
+  cursor: pointer; background: rgba(245, 239, 230, 0.1); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.uv-tgl-knob {
+  position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: #B7A899;
+}
+.uv-tgl.is-on { background: color-mix(in srgb, var(--c, var(--dv-sky)) 70%, #1E1B18); box-shadow: 0 0 12px -2px var(--c, var(--dv-sky)); }
+.uv-tgl.is-on .uv-tgl-knob { left: 21px; background: #FFF6EA; }
+.uv-tgl:disabled { cursor: not-allowed; opacity: 0.45; }
+.uv-tgl:focus-visible { outline: 2px solid var(--c, var(--dv-sky)); outline-offset: 2px; }
+@media (prefers-reduced-motion: no-preference) {
+  .uv-tgl { transition: background 0.2s ease, box-shadow 0.2s ease; }
+  .uv-tgl-knob { transition: left 0.2s var(--uv-ease, ease), background 0.2s ease; }
+}
 /* ── /uveg kit ─────────────────────────────────────────────────────────────── */
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -25329,23 +25347,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .ntf-page .ntf-foot { margin: 0; padding: 18px 10px 0; font-size: 12px; font-weight: 400; line-height: 1.55; text-align: center; color: var(--text-muted); }
 
-/* the sky-lit switch (Toggle `glass`) — lit in the surrounding card's `--c` */
-.ntf-page .uv-tgl {
-  position: relative; flex: 0 0 auto; width: 44px; height: 26px; padding: 0; border: 0; border-radius: 999px;
-  cursor: pointer; background: rgba(245, 239, 230, 0.1); box-shadow: inset 0 0 0 1px var(--divider);
-  transition: background 0.2s ease, box-shadow 0.2s ease;
-}
-.ntf-page .uv-tgl-knob {
-  position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%;
-  background: #B7A899; transition: left 0.2s var(--uv-ease, ease), background 0.2s ease;
-}
-.ntf-page .uv-tgl.is-on {
-  background: color-mix(in srgb, var(--c, var(--dv-sky)) 70%, #1E1B18);
-  box-shadow: 0 0 12px -2px var(--c, var(--dv-sky));
-}
-.ntf-page .uv-tgl.is-on .uv-tgl-knob { left: 21px; background: #FFF6EA; }
-.ntf-page .uv-tgl:disabled { cursor: not-allowed; opacity: 0.45; }
-.ntf-page .uv-tgl:focus-visible { outline: 2px solid var(--c, var(--dv-sky)); outline-offset: 2px; }
+/* the sky-lit switch (Toggle `glass`) is the kit's `.uv-tgl` (U11, mezo-7txw6), lit in the card's `--c` */
 
 /* the install gate — the page's one object, an amber glass notice */
 .ntf-page .ntf-gate.glass { display: flex; align-items: flex-start; gap: 12px; padding: 14px 15px; border-radius: 22px; }
@@ -29665,17 +29667,6 @@ main.settings-page {
 .uv-admin .ad-input { flex: 1; min-height: 40px; border-radius: 13px; padding: 0 13px; font-size: 13px; }
 .uv-admin .ad-acrow.glass { --c: var(--dv-lav); border: 0; border-radius: 18px; padding: 10px 12px; }
 .uv-admin .ad-acrow.glass.row { justify-content: space-between; align-items: center; gap: 10px; }
-.uv-admin .uv-tgl {
-  position: relative; flex: 0 0 auto; width: 44px; height: 26px; padding: 0; border: 0; border-radius: 999px;
-  cursor: pointer; background: rgba(245, 239, 230, 0.1); box-shadow: inset 0 0 0 1px var(--divider);
-}
-.uv-admin .uv-tgl-knob {
-  position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: #B7A899;
-}
-.uv-admin .uv-tgl.is-on { background: color-mix(in srgb, var(--c, var(--dv-sky)) 70%, #1E1B18); box-shadow: 0 0 12px -2px var(--c, var(--dv-sky)); }
-.uv-admin .uv-tgl.is-on .uv-tgl-knob { left: 21px; background: #FFF6EA; }
-.uv-admin .uv-tgl:disabled { cursor: not-allowed; opacity: 0.45; }
-.uv-admin .uv-tgl:focus-visible { outline: 2px solid var(--c, var(--dv-sky)); outline-offset: 2px; }
 
 @media (prefers-reduced-motion: no-preference) {
   .uv-admin .ad-rail .ad-rail-link,
@@ -29683,8 +29674,6 @@ main.settings-page {
   .uv-admin .ad-alert,
   .uv-admin .ad-testercard,
   .uv-admin .aiu-callt { transition: background 0.15s ease, box-shadow 0.15s ease, color 0.15s ease; }
-  .uv-admin .uv-tgl { transition: background 0.2s ease, box-shadow 0.2s ease; }
-  .uv-admin .uv-tgl-knob { transition: left 0.2s var(--uv-ease, ease), background 0.2s ease; }
 }
 /* ── /uveg reteg admin ── */
 

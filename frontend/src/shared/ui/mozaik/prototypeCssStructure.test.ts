@@ -1406,6 +1406,17 @@ describe('the uveg kit section is registered and carries the §3 recipe (mezo-me
     const css = rules()
     for (const cold of ['#0B0D12', '#13151D', '#20222A']) expect(css).not.toContain(cold)
   })
+
+  test('the glass Toggle (.uv-tgl) lives here once, motion gated (U11, mezo-7txw6)', () => {
+    const css = rules()
+    expect(css).toMatch(/^\.uv-tgl \{/m)
+    expect(css).toMatch(/^\.uv-tgl\.is-on \{/m)
+    const gate = css.lastIndexOf('@media (prefers-reduced-motion: no-preference)')
+    expect(css.indexOf('.uv-tgl { transition:')).toBeGreaterThan(gate)
+    // no page keeps a copy of the kit switch; the tudástár's sage variant is a deliberate restyle
+    const copies = stripComments(rawCss).match(/^\.(ntf-page|uv-admin) \.uv-tgl\b/gm) ?? []
+    expect(copies).toEqual([])
+  })
 })
 
 describe('the uveg chrome section is registered (mezo-me75u.1, bible §7)', () => {
@@ -1687,7 +1698,7 @@ const U7_BLOCKS: Array<[string, string[]]> = [
     '.ppl-detail .mz-page-hero.ppl-phero.uv-halo', '.ppl-detail .ppl-tlcard.glass', '.sheet.glass.ppl-sheet']],
   ['ertesitesek', ['.nf-page .nf-row.unread', '.nf-page .nf-row .nf-dot', '.nf-page .nf-ico.uv-well',
     '.nf-page .nf-empty.uv-empty', '.ntf-page .ntf-prev.glass', '.ntf-page .ntf-prev-bars i.hot',
-    '.ntf-page .ntf-masterrow.glass', '.ntf-page .ntf-cats.glass', '.ntf-page .uv-tgl.is-on', '.ntf-page .ntf-gate.glass']],
+    '.ntf-page .ntf-masterrow.glass', '.ntf-page .ntf-cats.glass', '.ntf-page .ntf-gate.glass']],
   ['beallitasok', ['.settings-page .settings-back.glass', '.settings-page .settings-hero::before',
     '.settings-page .settings-current.glass', '.settings-page .settings-domain.glass:last-child',
     '.settings-page .settings-rows.glass', '.settings-page .settings-row-art.uv-well', '.settings-page .settings-day.is-on',
