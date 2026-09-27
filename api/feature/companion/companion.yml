@@ -593,7 +593,9 @@ paths:
       parameters:
         - name: personId
           in: query
-          required: true
+          required: false
+          description: >-
+            Nélküle: minden élő személy- és esemény-alany — a Tudástár Hatások szakasza (S6).
           schema: { type: string, format: uuid }
       responses:
         '200':
@@ -601,6 +603,48 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/PersonEffectsResponse' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+
+  /api/companion/effects/{subjectKind}/{subjectKey}/mute:
+    put:
+      tags: [CompanionEffects]
+      operationId: muteEffectSubject
+      summary: >-
+        S6 (mezo-d6ivw.6) — egy hatás-alany elhallgattatása (muted) vagy végleges elfelejtése
+        (forgotten). Az elfelejtés végleges: sem egy későbbi muted, sem a DELETE nem hozza vissza.
+      parameters:
+        - { name: subjectKind, in: path, required: true, schema: { type: string, enum: [person, event] } }
+        - { name: subjectKey, in: path, required: true, schema: { type: string, maxLength: 64 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EffectMuteRequest' }
+      responses:
+        '204': { description: Stored }
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+    delete:
+      tags: [CompanionEffects]
+      operationId: unmuteEffectSubject
+      summary: S6 — Visszakapcsolom egy elhallgattatott hatás-alanyra (egy elfelejtettre nem hat).
+      parameters:
+        - { name: subjectKind, in: path, required: true, schema: { type: string, enum: [person, event] } }
+        - { name: subjectKey, in: path, required: true, schema: { type: string, maxLength: 64 } }
+      responses:
+        '204': { description: Unmuted (or nothing to do) }
         '401':
           description: Missing or invalid token
           content:
@@ -1394,7 +1438,7 @@ components:
       description: >-
         Egy kódban számolt (subject, metrika) hatás-sor — sosem ok-okozat, csak együttjárás.
         A `direction` a tárolt előjelből származik: pozitív Cliff's delta = higher.
-      required: [metric, direction, strengthBand, confidenceTier, meanDiff, subjectDays, complementDays, computedAt]
+      required: [metric, direction, strengthBand, confidenceTier, meanDiff, subjectDays, complementDays, computedAt, subjectKind, subjectKey, muted]
       properties:
         metric: { type: string, enum: [mental, energy, stress], description: 'Melyik metrikát érinti a hatás.' }
         direction: { type: string, enum: [higher, lower], description: 'A subject napjain a metrika magasabb vagy alacsonyabb volt-e a többi naphoz képest.' }
@@ -1404,6 +1448,15 @@ components:
         subjectDays: { type: integer, description: 'Hány napon fordult elő a subject az ablakban.' }
         complementDays: { type: integer, description: 'Az ablak többi (komplementer) napjainak száma.' }
         computedAt: { type: string, format: date-time, description: 'A legutóbbi éjszakai újraszámítás időpontja.' }
+        subjectKind: { type: string, enum: [person, event], description: 'S6 — az alany fajtája.' }
+        subjectKey: { type: string, description: 'S6 — személy-uuid vagy esemény-kulcs (edzes, munka, csalad, kozos_program, konfliktus, pihenes).' }
+        subjectLabel: { type: string, nullable: true, description: 'S6 — a személy neve / az esemény magyar címkéje.' }
+        muted: { type: boolean, description: 'S6 — az alany el van hallgattatva (a prompt nem látja).' }
+    EffectMuteRequest:
+      type: object
+      required: [mode]
+      properties:
+        mode: { type: string, enum: [muted, forgotten] }
     ObservationResponse:
       type: object
       description: >-

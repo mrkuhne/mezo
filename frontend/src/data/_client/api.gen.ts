@@ -2149,6 +2149,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/effects/{subjectKind}/{subjectKey}/mute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** S6 (mezo-d6ivw.6) — egy hatás-alany elhallgattatása (muted) vagy végleges elfelejtése (forgotten). Az elfelejtés végleges: sem egy későbbi muted, sem a DELETE nem hozza vissza. */
+        put: operations["muteEffectSubject"];
+        post?: never;
+        /** S6 — Visszakapcsolom egy elhallgattatott hatás-alanyra (egy elfelejtettre nem hat). */
+        delete: operations["unmuteEffectSubject"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/observation": {
         parameters: {
             query?: never;
@@ -8133,6 +8151,21 @@ export interface components {
              * @description A legutóbbi éjszakai újraszámítás időpontja.
              */
             computedAt: string;
+            /**
+             * @description S6 — az alany fajtája.
+             * @enum {string}
+             */
+            subjectKind: "person" | "event";
+            /** @description S6 — személy-uuid vagy esemény-kulcs (edzes, munka, csalad, kozos_program, konfliktus, pihenes). */
+            subjectKey: string;
+            /** @description S6 — a személy neve / az esemény magyar címkéje. */
+            subjectLabel?: string | null;
+            /** @description S6 — az alany el van hallgattatva (a prompt nem látja). */
+            muted: boolean;
+        };
+        EffectMuteRequest: {
+            /** @enum {string} */
+            mode: "muted" | "forgotten";
         };
         /** @description Egy kártya az Észrevételek fülön (Reflexió S4, mezo-eq85.4). A `fresh`/`return` kártyák egy `observation` ESEMÉNYT jelenítenek meg (az `id` az esemény azonosítója), a `watching`/`confirmed` kártyák magát a sort (az `id` a minta azonosítója) — a `patternId` mindig a soré, mert a chip-válasz arra megy. */
         ObservationResponse: {
@@ -18303,8 +18336,9 @@ export interface operations {
     };
     listPersonEffects: {
         parameters: {
-            query: {
-                personId: string;
+            query?: {
+                /** @description Nélküle: minden élő személy- és esemény-alany — a Tudástár Hatások szakasza (S6). */
+                personId?: string;
             };
             header?: never;
             path?: never;
@@ -18320,6 +18354,79 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PersonEffectsResponse"];
                 };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    muteEffectSubject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                subjectKind: "person" | "event";
+                subjectKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EffectMuteRequest"];
+            };
+        };
+        responses: {
+            /** @description Stored */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    unmuteEffectSubject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                subjectKind: "person" | "event";
+                subjectKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unmuted (or nothing to do) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Missing or invalid token */
             401: {

@@ -43,6 +43,7 @@ describe('usePersonEffects (real mode)', () => {
         effects: [{
           metric: 'mental', direction: 'higher', strengthBand: 'eros', confidenceTier: 'kozepes',
           meanDiff: 0.55, subjectDays: 12, complementDays: 40, computedAt: '2026-07-03T20:14:00Z',
+          subjectKind: 'person', subjectKey: personId, muted: false,
         }],
       }
       return HttpResponse.json(body)
