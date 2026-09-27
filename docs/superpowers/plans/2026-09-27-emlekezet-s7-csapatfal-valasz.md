@@ -147,7 +147,7 @@ React + TypeScript + react-query (useDualQuery), Vitest + msw, Playwright layout
 **Interfaces:**
 - Produces:
   - Thread constants on `TeamChatService` (package-private, next to `STATUS_*`): `CLOSE_DATA="DATA"`, `CLOSE_REPLY="REPLY"`, `CLOSE_EXCUSED="EXCUSED"`, `OFFER_EXCUSE="EXCUSE"`, `OFFER_REVIEW="REVIEW"`, `KIND_REPLY="REPLY"`.
-  - `TeamChatExceptionEntity` fields: `id, flagKey, ownerCharacter, contextTag, normalizedTag, keywords (KeywordsEnvelope), knowledgeFactId, sourceThreadId, sourceLineId, active (Boolean), windowStartedAt (Instant)`.
+  - `TeamChatExceptionEntity` fields: `id, flagKey, ownerCharacter, contextTag, normalizedTag, factText, keywords (KeywordsEnvelope), knowledgeFactId, sourceThreadId, sourceLineId, active (Boolean), windowStartedAt (Instant)`.
   - `TeamChatExceptionHitEntity` fields: `id, exceptionId, hitOn (LocalDate), source (NOTES|TAP|REPLY), threadId`.
   - `TeamChatExceptionRepository`:
     - `List<TeamChatExceptionEntity> findByCreatedByAndFlagKeyAndActiveTrueAndDeletedFalseOrderByCreatedAtAsc(UUID, String)`
@@ -193,6 +193,7 @@ create table team_chat_exception (
     owner_character varchar(16) not null,
     context_tag varchar(40) not null,
     normalized_tag varchar(40) not null,
+    fact_text varchar(160) not null,    -- the remembered sentence (mirrors its knowledge fact; the chip's text)
     keywords jsonb not null,
     knowledge_fact_id uuid,
     source_thread_id uuid,
@@ -379,8 +380,9 @@ git commit -m "feat(character): S7 schema — close reason, offers, exceptions +
     - `closeReason` (nullable enum DATA/REPLY/EXCUSED)
     - `closeNote` (nullable string)
     - `offer` (nullable enum EXCUSE/REVIEW)
+    - `offerTag` (nullable string — the offered exception's tag)
     - `remembered` (nullable `TeamChatRemembered {text, contextTag, active}`)
-  - `TeamChatReads.toThread(TeamChatThreadEntity, TeamChatExceptionEntity /*nullable*/)`. The one-arg overload stays and passes null.
+  - `TeamChatReads.toThread(TeamChatThreadEntity, TeamChatExceptionEntity born /*nullable*/, TeamChatExceptionEntity offerException /*nullable*/)`. The one-arg overload stays and passes nulls.
 
 - [ ] **Step 1: Contract**
 
@@ -398,6 +400,7 @@ In `TeamChatLine.kind`: `enum: [OPEN, GUEST, RESOLVE, SKEPTIC, USER, REPLY]`. In
           nullable: true
           enum: [EXCUSE, REVIEW]
           description: A known-exception question (one tap) or the capped re-check (two taps)
+        offerTag: { type: string, nullable: true, description: The offered exception tag, e.g. meccsnap (EXCUSE and REVIEW only) }
         remembered: { $ref: '#/components/schemas/TeamChatRemembered' }
 ```
 
@@ -427,20 +430,21 @@ In `TeamChatReads`:
 - Build a `Map<UUID threadId, TeamChatExceptionEntity>` and pass it into `toLine(line, thread, exception)` / `toThread(thread, exception)`.
 
 ```java
-    public static TeamChatThread toThread(TeamChatThreadEntity thread, TeamChatExceptionEntity born) {
+    public static TeamChatThread toThread(TeamChatThreadEntity thread, TeamChatExceptionEntity born,
+            TeamChatExceptionEntity offerException) {
         // ...existing builder...
                 .closeReason(thread.getCloseReason() == null ? null
                         : TeamChatThread.CloseReasonEnum.fromValue(thread.getCloseReason()))
                 .closeNote(thread.getCloseNote())
                 .offer(thread.getOffer() == null ? null : TeamChatThread.OfferEnum.fromValue(thread.getOffer()))
                 .remembered(born == null ? null : TeamChatRemembered.builder()
-                        .text(born.getRememberedText()).contextTag(born.getContextTag())
+                        .text(born.getFactText()).contextTag(born.getContextTag())
                         .active(Boolean.TRUE.equals(born.getActive())).build())
                 .build();
     }
 ```
 
-`getRememberedText()` needs the fact's text, and the fact lives in companion. Store it on the exception too: add `fact_text varchar(160) not null` to the Task 1 SQL + entity (`factText`). Then `remembered.text = born.getFactText()`. If Task 1 is already committed, fold this into the same migration file BEFORE it has ever been pushed (it is unreleased on this branch).
+`remembered.text` is `born.getFactText()` (the exception mirrors its fact's sentence, Task 1). `offerTag` is the offer exception's `contextTag`: `day()` also loads, by id, the exceptions referenced by `thread.exceptionId` of offer threads and passes them as the third argument. Add `.offerTag(offerException == null ? null : offerException.getContextTag())` to the builder.
 
 The `openThreads` list in `day()` must also pass exceptions: include the open thread ids in the same lookup.
 
@@ -1469,7 +1473,7 @@ Regenerate (`api` → maven → later FE). Controller:
     }
 ```
 
-Add `TeamChatReads.thread(UUID userId, TeamChatThreadEntity t)`, which looks up the born exception and calls `toThread(t, born)`. `exceptionService()` mirrors `teamChat()` (404 when absent). Add the message key `CHARACTER_TEAM_CHAT_ANSWER_CONFLICT` wherever `CHARACTER_TEAM_CHAT_ACTION_CONFLICT` is defined (`grep -rn CHARACTER_TEAM_CHAT_ACTION_CONFLICT backend/src/main/resources`).
+Add `TeamChatReads.thread(UUID userId, TeamChatThreadEntity t)`, which looks up the born exception by `sourceThreadId` and the offer exception by `t.exceptionId`, and calls `toThread(t, born, offerException)`. `exceptionService()` mirrors `teamChat()` (404 when absent). Add the message key `CHARACTER_TEAM_CHAT_ANSWER_CONFLICT` wherever `CHARACTER_TEAM_CHAT_ACTION_CONFLICT` is defined (`grep -rn CHARACTER_TEAM_CHAT_ACTION_CONFLICT backend/src/main/resources`).
 
 `TeamChatAnswerControllerIT`:
 - `POST .../answer {choice: EXCUSED}` on an EXCUSE ügy → 200 `status RESOLVED`, `closeReason EXCUSED`;
@@ -1559,7 +1563,7 @@ follow the prototype.
     - Both carry the `csendben` pill.
   - `<RememberedChip thread onUndo />`: `"Megjegyeztem: {remembered.text}"` + `Visszavonom` (the `RememberedChips` visual idiom, reusing its CSS classes `mzc-remchip` etc.). It shows only while `remembered.active`. After undo it shows a single muted line `"Visszavonva — nem jegyeztem meg."`.
   - `<OfferButtons thread onAnswer busy />`:
-    - EXCUSE: one button `"Igen, {contextTag} volt"`. `contextTag` comes from the remembered/exception. The thread's `closeNote` is null while OPEN, so the backend must also expose the offer's tag: add `offerTag` (nullable string) to `TeamChatThread` in Task 2's contract, mapped from the thread's exception `contextTag`. **Go back and add it in Task 2 if it is not there.**
+    - EXCUSE: one button `"Igen, {offerTag} volt"` (`thread.offerTag`, Task 2).
     - REVIEW: two buttons, `"Rendben van"` (KEEP) and `"Nem, figyelj rá"` (STOP).
     - An error line on failure, using the `applyFailed` idiom.
 
