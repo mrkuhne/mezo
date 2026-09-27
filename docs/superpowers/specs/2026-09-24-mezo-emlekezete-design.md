@@ -954,8 +954,8 @@ no push from anything in the reply path; no new feature switch (rides `TEAM_CHAT
 
 **Data (character-owned, new Liquibase script):**
 
-- `team_chat_thread` gains `close_reason varchar(8)` (`DATA | REPLY | EXCUSED | EXPIRED`,
-  null while OPEN; existing RESOLVED rows backfill `DATA`, EXPIRED rows `EXPIRED`),
+- `team_chat_thread` gains `close_reason varchar(8)` (`DATA | REPLY | EXCUSED`, set only on
+  RESOLVED — null while OPEN and on EXPIRED; existing RESOLVED rows backfill `DATA`),
   `close_note varchar(60)` (the context tag, e.g. "meccsnap"), `offer varchar(8)`
   (`EXCUSE | REVIEW`, null for a normal ügy) and `exception_id uuid` (nullable FK).
 - `team_chat_line.kind` widens with `REPLY` (the character's answer). The reply-close writes
