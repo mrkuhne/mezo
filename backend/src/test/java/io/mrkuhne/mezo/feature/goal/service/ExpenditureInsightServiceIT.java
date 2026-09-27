@@ -164,6 +164,30 @@ class ExpenditureInsightServiceIT extends AbstractIntegrationTest {
         assertThat(history.weeks().get(0).getWeekStart()).isBefore(history.weeks().get(1).getWeekStart());
     }
 
+    @Test
+    void historyHonoursALimitBeyondTwentySixWeeks() {
+        // Regression (fix round 1): the repository used to be a fixed top-26 finder, silently
+        // truncating any limit above 26 — Task 5's API accepts up to 52.
+        for (int i = 0; i < 30; i++) {
+            seedRow(w3.minusWeeks(i), "UPDATED", i, List.of());
+        }
+
+        ExpenditureInsightService.History full = service.history(userId, 30);
+
+        assertThat(full.weeks()).hasSize(30);
+        assertThat(full.weeks().get(0).getWeekStart()).isEqualTo(w3.minusWeeks(29));
+        assertThat(full.weeks().get(29).getWeekStart()).isEqualTo(w3);
+        for (int i = 1; i < full.weeks().size(); i++) {
+            assertThat(full.weeks().get(i - 1).getWeekStart()).isBefore(full.weeks().get(i).getWeekStart());
+        }
+
+        ExpenditureInsightService.History top5 = service.history(userId, 5);
+
+        assertThat(top5.weeks()).hasSize(5);
+        assertThat(top5.weeks().get(0).getWeekStart()).isEqualTo(w3.minusWeeks(4));
+        assertThat(top5.weeks().get(4).getWeekStart()).isEqualTo(w3);
+    }
+
     // ── days (live) ─────────────────────────────────────────────────────────
 
     @Test

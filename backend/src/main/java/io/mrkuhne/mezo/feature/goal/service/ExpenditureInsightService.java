@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -75,12 +76,12 @@ public class ExpenditureInsightService {
         estimates.save(row);
     }
 
-    /** Up to the last {@code limit} reviewed weeks (capped at the repository's top-26 window), ascending. */
+    /** Up to the last {@code limit} reviewed weeks, ascending. */
     @Transactional(readOnly = true)
     public History history(UUID userId, int limit) {
-        List<ExpenditureEstimateEntity> newestFirst = estimates.findTop26ByCreatedByAndDeletedFalseOrderByWeekStartDesc(userId);
-        int n = Math.min(limit, newestFirst.size());
-        List<ExpenditureEstimateEntity> weeks = new ArrayList<>(newestFirst.subList(0, n));
+        List<ExpenditureEstimateEntity> newestFirst =
+            estimates.findByCreatedByAndDeletedFalseOrderByWeekStartDesc(userId, PageRequest.of(0, limit));
+        List<ExpenditureEstimateEntity> weeks = new ArrayList<>(newestFirst);
         Collections.reverse(weeks);
         return new History(dietPreferences.resolve(userId).learningEnabled(), weeks);
     }
