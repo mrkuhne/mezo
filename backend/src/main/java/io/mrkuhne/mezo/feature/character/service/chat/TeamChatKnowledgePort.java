@@ -7,8 +7,7 @@ import java.util.UUID;
 /**
  * The confirmed-knowledge / person-fact block for a team chat line's context (Csapatfal Act III
  * Task 8, mezo-a9bo7.22, spec §5.3 "emlékszik"). Character owns *when and where* a line speaks;
- * Emlékezet ({@code mezo-d6ivw.5}) owns *what it knows* and implements this port — until then
- * {@link NoopTeamChatKnowledge} answers with nothing.
+ * Emlékezet S7 (mezo-d6ivw.7) implements it: {@link TeamChatKnowledgeAdapter}.
  */
 public interface TeamChatKnowledgePort {
 

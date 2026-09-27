@@ -41,4 +41,11 @@ public record MemoryProvenanceEnvelope(
     public static MemoryProvenanceEnvelope patternPromotion(UUID patternId, String confirmSource) {
         return new MemoryProvenanceEnvelope("pattern", null, null, null, null, patternId, confirmSource);
     }
+
+    /** S7 (mezo-d6ivw.7): a knowledge fact born from a csapatfal reply — {@code patternId} carries
+     *  the USER line id and {@code conversationId} the ügy (thread) id, reusing the record's
+     *  existing pattern-promotion slots for the team-chat mapping. */
+    public static MemoryProvenanceEnvelope teamChat(UUID lineId, UUID threadId) {
+        return new MemoryProvenanceEnvelope("team_chat_line", null, null, threadId, null, lineId, null);
+    }
 }

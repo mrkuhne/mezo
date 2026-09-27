@@ -8,8 +8,8 @@ import io.mrkuhne.mezo.feature.character.entity.TeamChatLineEntity;
 import io.mrkuhne.mezo.feature.character.entity.TeamChatThreadEntity;
 import io.mrkuhne.mezo.feature.character.repository.TeamChatLineRepository;
 import io.mrkuhne.mezo.feature.character.repository.TeamChatThreadRepository;
-import io.mrkuhne.mezo.feature.character.service.chat.NoopTeamChatKnowledge;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatContext;
+import io.mrkuhne.mezo.feature.character.service.chat.TeamChatKnowledgePort;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatContextBlock;
 import io.mrkuhne.mezo.feature.character.service.edition.TeamCharacter;
 import io.mrkuhne.mezo.feature.companion.feedback.entity.MessageFeedbackEntity;
@@ -31,7 +31,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 /**
  * Csapatfal Act III Task 8 (mezo-a9bo7.22): the "emlékszik" context assembler — today's chat so
  * far, this rule's past episodes (30-day window, current ügy excluded), the feedback/applied
- * rollup on those episodes, and the (no-op, until Emlékezet ships) knowledge block.
+ * rollup on those episodes, and the knowledge block (Emlékezet S7, mezo-d6ivw.7 — empty here since
+ * this test captures no facts).
  */
 @ActiveProfiles("companion-fake")
 class TeamChatContextIT extends AbstractIntegrationTest {
@@ -42,7 +43,7 @@ class TeamChatContextIT extends AbstractIntegrationTest {
     @Autowired private MessageFeedbackRepository feedback;
     @Autowired private TeamChatProperties properties;
     @Autowired private UserPopulator userPopulator;
-    @Autowired private NoopTeamChatKnowledge noopKnowledge;
+    @Autowired private TeamChatKnowledgePort knowledgePort;
     @Autowired private TransactionTemplate tx;
 
     private UUID owner() {
@@ -145,7 +146,7 @@ class TeamChatContextIT extends AbstractIntegrationTest {
                 appliedDate + ": alkalmazva → " + AdviceActionKey.SHIFT_SLEEP_ANCHOR);
 
         assertThat(block.knowledge()).isEmpty();
-        assertThat(noopKnowledge.forArea(owner, TeamCharacter.SZUNYA)).isEmpty();
+        assertThat(knowledgePort.forArea(owner, TeamCharacter.SZUNYA)).isEmpty();
     }
 
     private void upvote(UUID owner, UUID lineId) {
