@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -314,6 +316,29 @@ class ExpenditureLearningServiceIT extends AbstractIntegrationTest {
         assertThat(row.getAppliedBaseKcal() - row.getStepKcal()).isEqualTo(priorApplied);
         assertThat(row.getDirection()).isEqualTo(-1);
         assertThat(row.getStepKcal()).isCloseTo(Math.max(-150, delta), within(1)); // confirmed direction: full step
+    }
+
+    @Test
+    void anExplainerFailureNeverRollsBackTheWeeklyDecision() {
+        seedUserAndGoal(null);
+        seedMealsAndWeighIns(null);
+        evaluate();
+
+        // The explainer is presentation on top of an already-decided week (mezo-y72o3): a bug in it
+        // must never roll back the decision itself. Force it to blow up and assert the row still
+        // lands with the normal decision, just without an explanation.
+        try (MockedStatic<ExpenditureExplainer> explainer =
+                 Mockito.mockStatic(ExpenditureExplainer.class, Mockito.CALLS_REAL_METHODS)) {
+            explainer.when(() -> ExpenditureExplainer.explain(Mockito.any()))
+                .thenThrow(new RuntimeException("boom"));
+
+            ExpenditureEstimateEntity row = service.reviewWeek(userId, WEEK_START).orElseThrow();
+
+            assertThat(row.getStatus()).isEqualTo("UPDATED");
+            assertThat(row.getStepKcal()).isBetween(-150, -1);
+            assertThat(row.getAppliedBaseKcal()).isEqualTo(row.getFormulaBaseKcal() + row.getStepKcal());
+            assertThat(row.getExplanation()).isNull();
+        }
     }
 
     // ── fixtures ────────────────────────────────────────────────────────────

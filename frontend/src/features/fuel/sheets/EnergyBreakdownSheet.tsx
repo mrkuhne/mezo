@@ -109,7 +109,7 @@ function HowLearned({ baseKcal }: { baseKcal: number }) {
     if (next) {
       setMounted(true)
       const reduce = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      scrollTimer.current = setTimeout(() => btnRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }), reduce ? 0 : 120)
+      scrollTimer.current = setTimeout(() => btnRef.current?.scrollIntoView?.({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }), reduce ? 0 : 120)
     }
   }
   return (

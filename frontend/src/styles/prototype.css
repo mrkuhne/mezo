@@ -18067,7 +18067,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   color: var(--text-primary); color-scheme: dark; background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
 }
 .wos-sheet .setnote::placeholder, .wos-sheet .wos-sheet-ta::placeholder { color: var(--text-muted); }
-.wos-sheet > .wos-primary { margin-top: 16px; }
+.wos-sheet .sheet-scroll > .wos-primary { margin-top: 16px; }
 /* the RP debrief: three questions, flat pill options */
 .wos-sheet .wos-choices { display: grid; gap: 14px; }
 .wos-sheet .wos-choice { display: grid; gap: 6px; }
@@ -28525,10 +28525,15 @@ main.settings-page {
 }
 /* Retargeted through `.sheet-scroll` (mezo-zz91i follow-up: the peekbar is now a grandchild of
    `.sheet`, not a direct child). `.glass > *` (§3) also matches `.sheet-scroll` — it's a direct
-   child of `.sheet.glass` — so `.sheet-scroll` is `position: relative`, not static, and IS this
-   bar's containing block. That is the same geometry as before the wrapper: `.sheet` itself used
-   to be both the scroll container and the containing block, so the bar scrolled with its content
-   then too. Nothing changed here — only the selector needed to follow the bar to its new parent. */
+   child of `.sheet.glass` — which would make `.sheet-scroll` (not `.sheet`) this bar's containing
+   block, offset by the handle zone's height and inset by the scroller's own side padding: in
+   `.is-peek` (only the sheet's top 90px shows) that clips the 80px bar. Restated back to `static`
+   below so `.sheet` — the non-scrolling frame, positioned exactly as before the wrapper existed —
+   stays the containing block: `top:10px; left:14px; right:12px` anchor from the frame's padding
+   box again, matching the pre-wrapper geometry. */
+.sheet.glass.kalauz-sheet .sheet-scroll {
+  position: static;
+}
 .sheet.glass.kalauz-sheet .sheet-scroll > .kalauz-peekbar {
   position: absolute; z-index: 4; left: 14px; right: 12px; top: 10px; height: 80px;
   display: flex; align-items: center; gap: 10px; cursor: pointer;

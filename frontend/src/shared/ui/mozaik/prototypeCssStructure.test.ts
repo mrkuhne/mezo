@@ -1896,3 +1896,63 @@ describe.each(U11_BLOCKS)('the uveg lezaras %s section (mezo-me75u.11)', (name, 
       .not.toMatch(/animation\s*:\s*(?!none)[a-z]/)
   })
 })
+
+/**
+ * Sheet-wrapper direct-child guard (mezo-y72o3 follow-up).
+ *
+ * `<Sheet>` (shared/ui/Sheet.tsx) wraps its children in a `.sheet-scroll` div; the outer
+ * `.sheet` box (the frame carrying the glass hairline/handle) never scrolls and is no longer
+ * the immediate parent of a sheet's own content. Two regressions slipped through because a
+ * selector still assumed the old flat shape:
+ *   1. `.sheet.glass.kalauz-sheet .sheet-scroll > .kalauz-peekbar` — geometry-only regression:
+ *      `.glass > *` (§3) made `.sheet-scroll` `position: relative`, moving the peek bar's
+ *      containing block off `.sheet` and clipping it in `.is-peek`. Fixed by restating
+ *      `.sheet.glass.kalauz-sheet .sheet-scroll { position: static; }`.
+ *   2. `.wos-sheet > .wos-primary` — a plain selector-form bug: the button is a grandchild of
+ *      `.wos-sheet` now (inside `.sheet-scroll`), so the direct-child combinator never matched
+ *      at all. Fixed by retargeting to `.wos-sheet .sheet-scroll > .wos-primary`.
+ *
+ * This guard catches bug #2's SHAPE for every sheet family: any selector where a compound
+ * token ending in "sheet" (the Sheet's own frame class, e.g. `.wos-sheet`, `.kalauz-sheet`,
+ * `.gyx-sheet`) is immediately followed by a direct-child combinator `>` into anything other
+ * than the allow-listed wrapper children (`.sheet-scroll`, `.sheet-handle-zone`, `.sheet-handle`)
+ * — which is exactly the family of selector #2 was, and exactly what a pre-retarget version of
+ * #1 (`.sheet.glass.kalauz-sheet > .kalauz-peekbar`, before the mezo-zz91i follow-up) would
+ * also have been.
+ */
+test('no "<sheet-frame-class> > <child>" selector bypasses .sheet-scroll (mezo-y72o3 guard)', () => {
+  const css = stripComments(rawCss)
+  const ALLOWED_TARGETS = ['.sheet-scroll', '.sheet-handle-zone', '.sheet-handle']
+  const offenders: string[] = []
+
+  const ruleRe = /([^{}]+)\{[^{}]*\}/g
+  let m: RegExpExecArray | null
+  while ((m = ruleRe.exec(css))) {
+    for (const rawSel of m[1].split(',')) {
+      const sel = rawSel.trim()
+      if (!sel || !/>/.test(sel) || !/sheet/i.test(sel)) continue
+
+      const parts = sel.split('>').map((p) => p.trim())
+      for (let i = 0; i < parts.length - 1; i++) {
+        const leftLastToken = parts[i].split(/\s+/).pop() ?? ''
+        const rightFirstToken = parts[i + 1].split(/\s+/)[0] ?? ''
+        // A compound token is several `.class` chunks glued together with no separator
+        // (`.sheet.glass.kalauz-sheet`). Only the token immediately left of `>` matters, and
+        // only if one of ITS OWN class chunks IS "sheet" or ENDS in "-sheet" (the Sheet.tsx
+        // frame's own class) — not merely contains "sheet" as a raw substring somewhere inside
+        // an unrelated compound class name (e.g. `.fkx-rsheet` — a plain grid wrapper rendered
+        // INSIDE a sheet, never the Sheet root itself; or `.rt-shh`, `.mzj-dsh-head`).
+        const classChunks = leftLastToken.split('.').filter(Boolean).map((c) => c.split(':')[0])
+        const leftIsSheetFrame = classChunks.some((c) => c === 'sheet' || c.endsWith('-sheet'))
+        if (!leftIsSheetFrame) continue
+        if (ALLOWED_TARGETS.some((t) => rightFirstToken.startsWith(t))) continue
+        offenders.push(`"${sel}" (left: ${leftLastToken}, right: ${rightFirstToken})`)
+      }
+    }
+  }
+
+  expect(
+    offenders,
+    `selector(s) target a sheet frame's direct child, bypassing the .sheet-scroll wrapper:\n${offenders.join('\n')}`,
+  ).toEqual([])
+})

@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ExpenditureLearningService {
 
     private static final String WEEKLY_CORRECTION = GoalSuggestionService.KIND_WEEKLY_CORRECTION;
@@ -206,7 +208,16 @@ public class ExpenditureLearningService {
         row.setUsableDays(usableWeek);
         row.setWeighInDays(weighInWeek);
         row.setExcludedDays(ExpenditureExplainer.excluded(rp.status(), rp.kcal(), weekStart, weekEnd));
-        row.setExplanation(explain(rp, e));
+        // The explainer is presentation on top of an already-decided week (spec §5): a bug in it must
+        // never roll back the weekly decision itself. Store null and log rather than let it propagate.
+        ExpenditureExplanationJson explanation = null;
+        try {
+            explanation = explain(rp, e);
+        } catch (RuntimeException ex) {
+            log.warn("expenditure explainer failed for user {} week {} — decision persisted without it",
+                userId, weekStart, ex);
+        }
+        row.setExplanation(explanation);
         ExpenditureEstimateEntity saved = estimates.save(row);
 
         // Owner decision L4: a learning user never also gets the weight-only correction.

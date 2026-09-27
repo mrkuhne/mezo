@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.goal;
 
+import io.mrkuhne.mezo.feature.goal.engine.GoalEngineProperties;
 import io.mrkuhne.mezo.feature.goal.engine.service.ExpenditureLearningService;
 import io.mrkuhne.mezo.feature.goal.entity.ExpenditureEstimateEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
@@ -43,6 +44,7 @@ public class ExpenditureRolloutRunner implements CommandLineRunner {
     private final GoalRepository goalRepository;
     private final ExpenditureEstimateRepository estimates;
     private final ExpenditureLearningService expenditureLearning;
+    private final GoalEngineProperties props;
 
     @Override
     public void run(String... args) {
@@ -50,6 +52,12 @@ public class ExpenditureRolloutRunner implements CommandLineRunner {
     }
 
     public void run() {
+        if (!Boolean.TRUE.equals(props.expenditure().enabled())) {
+            // Learning is off: reviewWeek/backfillExplanation would both no-op per user anyway (each
+            // checks the same flag), but looping every active-goal owner just to hit that no-op still
+            // logs a per-user "nothing to replay" line below — skip the whole backfill branch instead.
+            return;
+        }
         LocalDate weekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(1);
         List<GoalEntity> active = goalRepository.findByStatusNotAndDeletedFalse(STATUS_ARCHIVED).stream()
             .filter(g -> STATUS_ACTIVE.equals(g.getStatus()))
