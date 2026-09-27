@@ -1,23 +1,20 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { GhostState } from '@/shared/ui/GhostState'
-import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import {
-  useKnowledge, useKnowledgeActions, useLifeEventCandidates,
-  useKnowledgeGraphNodes, useGraphEdgeCount, useKnowledgeObservations, useEffectSubjects,
+  useKnowledge, useLifeEventCandidates,
+  useKnowledgeGraphNodes, useKnowledgeObservations, useEffectSubjects,
 } from '@/data/hooks'
 import { usePeople } from '@/data/me/peopleHooks'
 import { GRAPH_KIND_GROUPS, PROFILE_SOURCE_KIND } from '@/data/insights/graph'
-import { FactsView } from '@/features/insights/components/FactsView'
 import { KnowledgeBaseView, type HubNavTarget } from '@/features/insights/components/KnowledgeBaseView'
 import { ForgetUndoBar } from '@/features/insights/components/hub/ForgetUndoBar'
+import { TenyekSection } from '@/features/insights/components/hub/TenyekSection'
 import { useForgetUndo } from '@/features/insights/hooks/useForgetUndo'
 import { hubCounts } from '@/features/insights/logic/hubCounts'
 import { KategoriakView } from '@/features/insights/components/KategoriakView'
 import { HowItWorksView } from '@/features/insights/components/HowItWorksView'
-import { bucketFacts } from '@/features/insights/logic/factCopy'
 import type { GraphNodeKind } from '@/data/types'
-import { Icon3D } from '@/shared/ui/clay'
 import '@/features/insights/boop-world.css'
 
 /** mezo-ms9a: the unified Tudástár's URL-driven view switch — `?view=` (+ `kind`/`fact`, T10;
@@ -118,10 +115,8 @@ export function KnowledgeListPage() {
   // pending/error/degraded state, so there is no page-wide early return any more. Every hook
   // stays ABOVE the only early return (the legacy `profil` redirect).
   const { facts, candidates, degraded, isPending, isError, refetch } = useKnowledge()
-  const { toggle } = useKnowledgeActions()
   const { candidates: lifeEvents } = useLifeEventCandidates()
   const { nodes } = useKnowledgeGraphNodes()
-  const { count: edgeCount } = useGraphEdgeCount()
   const peopleQ = usePeople()
   const obsQ = useKnowledgeObservations()
   const effectsQ = useEffectSubjects()
@@ -138,10 +133,6 @@ export function KnowledgeListPage() {
     { items: obsQ.observations, degraded: obsQ.degraded, isPending: obsQ.isPending, isError: obsQ.isError, refetch: obsQ.refetch },
     { items: effectsQ.subjects, degraded: effectsQ.degraded, isPending: effectsQ.isPending, isError: effectsQ.isError, refetch: effectsQ.refetch },
   )
-
-  // Interim (until B9's TenyekSection): the legacy Tények list keeps its own header numbers.
-  const buckets = useMemo(() => bucketFacts(facts), [facts])
-  const heroCount = useCountUp(facts.length)
 
   const profileNode = nodes.find((n) => n.sourceKind === PROFILE_SOURCE_KIND) ?? null
   const graphNodes = nodes.filter((n) => n.sourceKind !== PROFILE_SOURCE_KIND)
@@ -182,32 +173,15 @@ export function KnowledgeListPage() {
   const undoBar = <ForgetUndoBar pending={undo.pending} onUndo={undo.undo} />
 
   if (view === 'tenyek') {
-    // Interim until B9 (TenyekSection): the legacy facts list, with its own honest
-    // loading/error/degraded/empty states.
-    const heroBig = degraded || isPending || isError ? undefined : heroCount
-    const heroSub = heroBig === undefined
-      ? undefined
-      : `tény rólad · ${buckets.inPrompt.length} megy a chatbe${edgeCount !== null ? ` · ${edgeCount} kapcsolat` : ''}`
+    // S6 (mezo-d6ivw.6): the Rólad section — topics, search, Elhallgattatott, the dossier door.
+    // It owns its own loading/error/degraded/empty states; the `?fact=` target opens its fold.
     return (
-      <TudasFrame view="tenyek" big={heroBig} sub={heroSub}>
+      <TudasFrame view="tenyek">
         <EntranceGroup className="tud9-flow" replayKey={replayKey}>
-          {isPending ? (
-            <GhostState message="A tudástár betöltése…" />
-          ) : isError ? (
-            <GhostState message="Nem sikerült betölteni a tudástárat." ctaLabel="Újra" onCta={refetch} />
-          ) : degraded ? (
-            <div className="tf-dash tud9-dash rise" style={{ '--d': '0ms' } as React.CSSProperties}>
-              <Icon3D name="t-info" size={28} />
-              <span>A társ jelenleg nincs bekapcsolva — a tudástár most nem elérhető.</span>
-            </div>
-          ) : facts.length === 0 ? (
-            <div className="tf-dash tud9-dash rise" style={{ '--d': '0ms' } as React.CSSProperties}>
-              <Icon3D name="t-note" size={28} />
-              <span>Még egy tényt sem tanultam rólad — ahogy beszélgettek, itt fognak megjelenni.</span>
-            </div>
-          ) : (
-            <FactsView facts={facts} buckets={buckets} onToggle={toggle} highlightFactId={highlightFactId} />
-          )}
+          <TenyekSection
+            facts={facts} degraded={degraded} isPending={isPending} isError={isError} refetch={refetch}
+            highlightFactId={highlightFactId} forget={undo.start} isHidden={undo.isHidden}
+          />
         </EntranceGroup>
         {undoBar}
       </TudasFrame>
