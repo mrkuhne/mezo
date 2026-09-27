@@ -138,7 +138,7 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
           {/* BASE */}
           <Seg tone="sage" on={hl('base')}>
             <div className="flp-esh">
-              <span className="flp-estit">Alaphő · NEAT</span>
+              <span className="flp-estit">{base.source === 'learned' ? 'Alap · tanult' : 'Alaphő · NEAT'}</span>
               <span className="flp-esamt">{nf(base.kcal)}</span>
             </div>
             {base.source === 'learned' ? (

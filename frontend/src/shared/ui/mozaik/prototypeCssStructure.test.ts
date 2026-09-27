@@ -1461,8 +1461,10 @@ describe('the uveg fuel konyha section carries the glass ranking (mezo-me75u.2)'
 
   test('glass that must stay put restates its geometry (U1 rules 1–3)', () => {
     const css = section()
-    // the sheet keeps its absolute anchor and its scroll under `.glass`
-    expect(css).toMatch(/\.sheet\.fkk-sheet\.glass \{[^}]*position: absolute;[^}]*overflow-y: auto;/)
+    // the sheet keeps its absolute anchor under `.glass`; the scroll now lives on the inner
+    // `.sheet-scroll` (mezo-zz91i follow-up: the frame itself must stay a non-scrolling box, or
+    // the `.glass::before` hairline would scroll away with tall content).
+    expect(css).toMatch(/\.sheet\.fkk-sheet\.glass \{[^}]*position: absolute;[^}]*overflow-y: hidden;/)
     // the capture's ＋ stays pinned in the corner under `.glass > *`
     expect(css).toMatch(/\.fkx-capture\.glass > \.fkx-plus \{[^}]*position: absolute;/)
   })
@@ -1495,7 +1497,9 @@ describe('the uveg fuel stack section carries the glass ranking (mezo-me75u.2)',
 
   test('glass that must stay put restates its geometry (U1 rules 1–3)', () => {
     const css = section()
-    expect(css).toMatch(/\.sheet\.glass\.fsx-sheet \{[^}]*position: absolute;[^}]*overflow-y: auto;/)
+    // the scroll now lives on the inner `.sheet-scroll` (mezo-zz91i follow-up); the outer frame
+    // itself stays non-scrolling so its `.glass::before` hairline never scrolls away.
+    expect(css).toMatch(/\.sheet\.glass\.fsx-sheet \{[^}]*position: absolute;[^}]*overflow-y: hidden;/)
     expect(css).toMatch(/\.fsx-poster\.glass > \.fsx-poster-go \{[^}]*position: absolute;/)
     // the old medcard's 5px accent strip must not shrink the glass frame to a strip
     expect(css).toMatch(/\.fmd-medcard\.glass::before \{[^}]*width: auto;/)
@@ -1557,10 +1561,12 @@ describe.each(U3_BLOCKS)('the uveg nap %s section carries the glass ranking (mez
   })
 })
 
-test('the U3 capture sheet floats and scrolls under `.glass` (U1 rules 1–3, U2 rule 15)', () => {
+test('the U3 capture sheet floats under `.glass` (U1 rules 1–3, U2 rule 15)', () => {
   const css = stripComments(slice('── uveg nap rogzites (', '── /uveg nap rogzites '))
   expect(css).toMatch(/\.sheet\.capture-sheet\.glass[^{]*\{[^}]*position: absolute;/)
-  expect(css).toMatch(/\.sheet\.capture-sheet\.glass[^{]*\{[^}]*overflow-y: auto;/)
+  // the scroll now lives on the inner `.sheet-scroll` (mezo-zz91i follow-up); the outer frame
+  // stays non-scrolling so its `.glass::before` hairline never scrolls away.
+  expect(css).toMatch(/\.sheet\.capture-sheet\.glass[^{]*\{[^}]*overflow-y: hidden;/)
 })
 
 /**

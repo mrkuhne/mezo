@@ -36,8 +36,14 @@ type Trajectory = 'cut' | 'bulk' | 'maintain' | null
 // in house tokens. Alap wears the flame (the BMR tile's own sprite on the shared energy sheet);
 // the target ring (`i-cel` → t-ring) moved to Célod (mezo-32m82). No violet exists in the Üveg
 // palette, so Célod takes the rose accent.
+// Alap sub copy: the learned-base path (mezo-zz91i) reads differently from the formula one.
+const BASE_SUB = {
+  formula: 'az alapanyagcseréd és az életmódod',
+  learned: 'a súlytrendedből és az evésedből tanulva',
+} as const
+
 const NODE: Record<EquationLine['key'], { color: string; icon: ClayIconName | Icon3DName; sub: string }> = {
-  base: { color: 'var(--amber)', icon: 't-flame', sub: 'az alapanyagcseréd és az életmódod' },
+  base: { color: 'var(--amber)', icon: 't-flame', sub: BASE_SUB.formula },
   activity: { color: 'var(--sage)', icon: 'i-edzes', sub: 'a heti edzésterved mai része' },
   goal: { color: 'var(--rose)', icon: 'i-cel', sub: '' },
   eaten: { color: 'var(--coral)', icon: 'i-fuel', sub: 'amit ma eddig logoltál' },
@@ -56,6 +62,7 @@ function nodeSub(line: EquationLine, vm: KeretHeroVM, trajectory: Trajectory): s
   // „tartás" only for a truly zero balance; a maintain goal's non-zero residual (the BMR floor)
   // gets no sub rather than a word that contradicts its signed number.
   if (line.key === 'goal') return trajectory === 'maintain' ? (line.value === 0 ? GOAL_SUB.maintain : '') : trajectory ? GOAL_SUB[trajectory] : ''
+  if (line.key === 'base') return vm.baseSource === 'learned' ? BASE_SUB.learned : BASE_SUB.formula
   return NODE[line.key].sub
 }
 
