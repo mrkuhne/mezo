@@ -42,6 +42,16 @@ describe('CloseTag', () => {
     expect(screen.getByText('csendben')).toBeInTheDocument()
   })
 
+  it('renders nothing for a DATA close — never a dangling "{Name} lezárta: "', () => {
+    const { container } = render(<CloseTag thread={{ ...baseThread, closeReason: 'DATA', closeNote: null }} />)
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('renders nothing while the ügy is OPEN again (e.g. after an undo reopened it)', () => {
+    const { container } = render(<CloseTag thread={{ ...baseThread, status: 'OPEN', closeReason: null, closeNote: null }} />)
+    expect(container).toBeEmptyDOMElement()
+  })
+
   it('renders nothing without a closeReason', () => {
     const { container } = render(<CloseTag thread={{ ...baseThread, closeReason: null }} />)
     expect(container).toBeEmptyDOMElement()
@@ -68,10 +78,35 @@ describe('RememberedChip', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('shows nothing while remembered.active is true after render but hides once inactive, showing the undone line instead', () => {
-    const undone: TeamChatThread = { ...resolvedThread, remembered: { ...resolvedThread.remembered!, active: false } }
-    render(<RememberedChip thread={undone} onUndo={vi.fn()} />)
+  const inactive = { ...resolvedThread.remembered!, active: false }
+
+  it('undone and the ügy reopened (OPEN): the reopen confirmation', () => {
+    const reopened: TeamChatThread = { ...resolvedThread, status: 'OPEN', closedAt: null, closeReason: null, closeNote: null, remembered: inactive }
+    render(<RememberedChip thread={reopened} onUndo={vi.fn()} />)
     expect(screen.queryByText(/Megjegyeztem:/)).not.toBeInTheDocument()
+    expect(screen.getByText('Visszavonva — nem jegyeztem meg, és az ügy újra nyitott.')).toBeInTheDocument()
+  })
+
+  it('undone but the ügy stayed closed (a newer ügy of the rule is open): no reopen claim', () => {
+    render(<RememberedChip thread={{ ...resolvedThread, remembered: inactive }} onUndo={vi.fn()} />)
+    expect(screen.getByText('Visszavonva — nem jegyeztem meg.')).toBeInTheDocument()
+    expect(screen.queryByText(/újra nyitott/)).not.toBeInTheDocument()
+  })
+
+  it('a STOP-closed ügy ("kivétel kikapcsolva") never renders a remembered block', () => {
+    const stopped: TeamChatThread = { ...resolvedThread, closeNote: 'kivétel kikapcsolva', remembered: inactive }
+    const { container } = render(<RememberedChip thread={stopped} onUndo={vi.fn()} />)
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('a just-tapped undo confirms locally, then follows the refetched thread state', async () => {
+    const onUndo = vi.fn().mockResolvedValue(undefined)
+    const { rerender } = render(<RememberedChip thread={resolvedThread} onUndo={onUndo} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Visszavonom' }))
+    expect(await screen.findByText('Visszavonva — nem jegyeztem meg.')).toBeInTheDocument()
+    rerender(<RememberedChip
+      thread={{ ...resolvedThread, status: 'OPEN', closedAt: null, closeReason: null, closeNote: null, remembered: inactive }}
+      onUndo={onUndo} />)
     expect(screen.getByText('Visszavonva — nem jegyeztem meg, és az ügy újra nyitott.')).toBeInTheDocument()
   })
 

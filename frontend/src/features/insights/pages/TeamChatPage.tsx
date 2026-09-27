@@ -8,6 +8,7 @@ import {
   TEAM_CHAT_LAST_SEEN_KEY,
   chips,
   clockOf,
+  closedByAnswer,
   groupByDayPart,
   type DayPart,
 } from '@/features/insights/logic/teamChat'
@@ -107,6 +108,9 @@ export function TeamChatPage() {
   // an answer — never a fixed slot, since a thread's lines can span day-part sections.
   const lastLineIdByThread = new Map<string, string>()
   for (const l of day.lines) if (l.threadId) lastLineIdByThread.set(l.threadId, l.id)
+  // The close tag + remembered chip belong to ONE line per ügy — its last REPLY line.
+  const lastReplyIdByThread = new Map<string, string>()
+  for (const l of day.lines) if (l.threadId && l.kind === 'REPLY') lastReplyIdByThread.set(l.threadId, l.id)
   const c = chips(day)
   const waiting = [...day.openThreads].sort((a, b) => Date.parse(a.openedAt) - Date.parse(b.openedAt))[0]
   const waitingLine = waiting ? day.lines.find(l => l.kind === 'OPEN' && l.threadId === waiting.id) : undefined
@@ -191,6 +195,7 @@ export function TeamChatPage() {
                 applyFailed={l.threadId ? applyError[l.threadId] === true : false}
                 busy={pending}
                 showTyping={l.threadId != null && lastLineIdByThread.get(l.threadId) === l.id && awaiting.has(l.threadId)}
+                lastReply={l.threadId != null && lastReplyIdByThread.get(l.threadId) === l.id}
                 onEvidence={() => setEvidence(l)}
                 onReply={(thread, mode) => setReplyTo({ thread, mode })}
                 onApply={onApply}
@@ -224,7 +229,7 @@ export function TeamChatPage() {
   )
 }
 
-function ChatLine({ line, thread, feedback, applied, applyFailed, busy, showTyping, onEvidence, onReply, onApply, onAnswer, onUndo }: {
+function ChatLine({ line, thread, feedback, applied, applyFailed, busy, showTyping, lastReply, onEvidence, onReply, onApply, onAnswer, onUndo }: {
   line: TeamChatLine
   thread: TeamChatThread | undefined
   feedback: FeedbackHandle
@@ -234,6 +239,8 @@ function ChatLine({ line, thread, feedback, applied, applyFailed, busy, showTypi
   /** S7: this line is the last one on a thread that is `awaiting` an answer — render the
    *  "{Name} ír…" row right after it. */
   showTyping: boolean
+  /** S7: this is the ügy's last REPLY line — the one that carries its close tag + remembered chip. */
+  lastReply: boolean
   onEvidence: () => void
   onReply: (thread: TeamChatThread, mode: FeedReplyMode) => void
   onApply: (thread: TeamChatThread, key: string) => Promise<void>
@@ -263,7 +270,11 @@ function ChatLine({ line, thread, feedback, applied, applyFailed, busy, showTypi
   const appliedAction = appliedKey ? thread?.actions.find(a => a.key === appliedKey) : undefined
   // S7 (mezo-d6ivw.7): a REPLY line is the owner's bubble too — the character answering in its
   // own words — but never the trio (it isn't an OPEN ügy's opening line).
-  const closed = line.kind === 'REPLY' && thread != null && thread.status === 'RESOLVED' && thread.closeReason != null
+  // Only the ügy's LAST REPLY line carries the afterlife: the close tag when the answer (REPLY)
+  // or an excuse (EXCUSED) closed it — never DATA, which has its own RESOLVE line — and the
+  // remembered chip whenever one was born on the ügy, whatever its status (an undo reopens it).
+  const afterlife = line.kind === 'REPLY' && lastReply && thread != null
+  const closed = afterlife && thread != null && closedByAnswer(thread)
 
   return (
     <>
@@ -300,7 +311,7 @@ function ChatLine({ line, thread, feedback, applied, applyFailed, busy, showTypi
             </div>
           )}
           {closed && thread && <CloseTag thread={thread} />}
-          {closed && thread?.remembered && <RememberedChip thread={thread} onUndo={onUndo} />}
+          {afterlife && thread?.remembered && <RememberedChip thread={thread} onUndo={onUndo} />}
 
           {live && (
             <>

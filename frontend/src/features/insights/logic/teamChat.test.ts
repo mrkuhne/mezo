@@ -1,5 +1,5 @@
 import { offsetIso } from '@/shared/lib/dates'
-import type { TeamChatDay, TeamChatLine } from '@/data/character/teamChatApi'
+import type { TeamChatDay, TeamChatLine, TeamChatThread } from '@/data/character/teamChatApi'
 import { buildTeamChatDay } from '@/data/character/teamChatMock'
 import { chips, clockOf, groupByDayPart, stripText, talkedFlagKeys, unreadCount } from './teamChat'
 
@@ -73,6 +73,38 @@ describe('chips', () => {
   })
   test('üres nap', () => {
     expect(chips(day([], { pushBudget: 2 }))).toEqual({ open: 0, resolved: 0, pushes: '0 / 2' })
+  })
+
+  const thread = (id: string, over: Partial<TeamChatThread> = {}): TeamChatThread => ({
+    id, flagKey: 'late_eating', ruleLabel: 'Késői étkezés', owner: 'falat', guest: null,
+    status: 'RESOLVED', openedAt: offsetIso(DATE, '17:50'), closedAt: offsetIso(DATE, '21:52'),
+    pushed: false, actions: [], applied: null, closeReason: 'REPLY', closeNote: 'meccsnap',
+    offer: null, offerTag: null, remembered: null, ...over,
+  })
+
+  test('S7: a válasszal (REPLY) és kivétellel (EXCUSED) lezárt ügy is rendeződött — RESOLVE sor nélkül is', () => {
+    const replyClosed = thread('t-reply')
+    const excused = thread('t-excused', { closeReason: 'EXCUSED' })
+    const lines = [
+      line('o1', '17:50', { threadId: 't-reply', kind: 'OPEN', character: 'falat', thread: replyClosed }),
+      line('r1', '21:52', { threadId: 't-reply', kind: 'REPLY', character: 'falat', thread: replyClosed }),
+      line('o2', '18:00', { threadId: 't-excused', kind: 'OPEN', character: 'falat', thread: excused }),
+      line('r2', '18:05', { threadId: 't-excused', kind: 'REPLY', character: 'falat', thread: excused }),
+    ]
+    expect(chips(day(lines)).resolved).toBe(2)
+  })
+
+  test('S7: egy adat-zárta ügy OPEN + RESOLVE sorral egyszer számít; a máskor zárult és a nyitott nem', () => {
+    const data = thread('t-data', { closeReason: 'DATA', closeNote: null })
+    const earlier = thread('t-old', { closedAt: offsetIso('2026-09-27', '21:00') })
+    const open = thread('t-open', { status: 'OPEN', closedAt: null, closeReason: null, closeNote: null })
+    const lines = [
+      line('o1', '08:00', { threadId: 't-data', kind: 'OPEN', character: 'falat', thread: data }),
+      line('x1', '12:00', { threadId: 't-data', kind: 'RESOLVE', character: 'falat', thread: data }),
+      line('r2', '09:00', { threadId: 't-old', kind: 'REPLY', character: 'falat', thread: earlier }),
+      line('o3', '10:00', { threadId: 't-open', kind: 'OPEN', character: 'falat', thread: open }),
+    ]
+    expect(chips(day(lines)).resolved).toBe(1)
   })
 })
 

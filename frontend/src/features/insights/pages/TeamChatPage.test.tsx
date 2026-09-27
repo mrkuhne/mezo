@@ -9,6 +9,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { useTeamChatActions } from '@/data/hooks'
 import { TEAM_CHAT_LAST_SEEN_KEY } from '@/features/insights/logic/teamChat'
+import type { TeamChatDay, TeamChatLine, TeamChatThread } from '@/data/character/teamChatApi'
 import { TeamChatPage } from './TeamChatPage'
 
 const actual = vi.hoisted(() => ({ useTeamChatActions: null as unknown as typeof import('@/data/hooks').useTeamChatActions }))
@@ -151,6 +152,9 @@ describe('TeamChatPage (mock mode)', () => {
       awaiting: new Set(),
     })
     renderChat()
+    // R2: the seeded offer reads as the backend's question-form template.
+    expect(await screen.findByText('Tudom, hogy meccsnapokon később eszel — ez rendben van. Ma is meccsnap volt?'))
+      .toBeInTheDocument()
     const btn = await screen.findByRole('button', { name: 'Igen, meccsnap volt' })
     await userEvent.click(btn)
     expect(answer).toHaveBeenCalledWith('tc-thread-late-eating', 'EXCUSED')
@@ -221,5 +225,88 @@ describe('TeamChatPage (real mode, failing saves)', () => {
     const dialog = screen.getByRole('dialog')
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('Nem sikerült elküldeni')
     expect(within(dialog).getByLabelText('A válaszod')).toHaveValue('Későn értem haza.')
+  })
+})
+
+// S7 final review (items 2, 3): the reply afterlife — close tag + remembered chip — lives on
+// the ügy's LAST REPLY line only, never on a DATA close, and the undo confirmation survives the
+// reopen the undo itself causes.
+describe('TeamChatPage (real mode, reply afterlife)', () => {
+  const lineAnchorId = (id: string) => `tc-${id}`
+  const today = localDateString()
+  const at = (hhmm: string) => new Date(`${today}T${hhmm}:00`).toISOString()
+  const thread = (over: Partial<TeamChatThread> = {}): TeamChatThread => ({
+    id: 't-late', flagKey: 'late_eating', ruleLabel: 'Késői étkezés', owner: 'falat', guest: null,
+    status: 'RESOLVED', openedAt: at('17:50'), closedAt: at('21:52'), pushed: false, actions: [],
+    applied: null, closeReason: 'REPLY', closeNote: 'meccsnap', offer: null, offerTag: null,
+    remembered: { text: 'Meccsnapokon későn eszel — ez rendben van.', contextTag: 'meccsnap', active: true },
+    ...over,
+  })
+  const line = (id: string, hhmm: string, kind: TeamChatLine['kind'], t: TeamChatThread | undefined, body = `sor ${id}`): TeamChatLine => ({
+    id, threadId: 't-late', kind, character: kind === 'USER' ? null : 'falat', body, voiced: true,
+    facts: [], occurredAt: at(hhmm), ...(t ? { thread: t } : {}),
+  })
+  const dayOf = (t: TeamChatThread, lines: TeamChatLine[]): TeamChatDay => ({
+    date: today, lines, openThreads: t.status === 'OPEN' ? [t] : [], pushesToday: 0, pushBudget: 2,
+  })
+  const serve = (d: () => TeamChatDay) =>
+    server.use(http.get(`${API_BASE}/api/character/team-chat`, () => HttpResponse.json(d())))
+
+  beforeEach(() => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    vi.mocked(useTeamChatActions).mockImplementation(() => actual.useTeamChatActions())
+  })
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('egy adattal lezárt ügy válasz-során nincs „lezárta:” címke és nincs chip', async () => {
+    const t = thread({ closeReason: 'DATA', closeNote: null, remembered: null })
+    serve(() => dayOf(t, [
+      line('o', '17:50', 'OPEN', t), line('u', '18:00', 'USER', undefined, 'Nem volt kedvem.'),
+      line('r', '18:01', 'REPLY', t, 'Értem, köszönöm.'), line('x', '21:00', 'RESOLVE', t),
+    ]))
+    renderChat()
+    expect(await screen.findByText('Értem, köszönöm.')).toBeInTheDocument()
+    expect(screen.queryByText(/lezárta:/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Megjegyeztem:/)).not.toBeInTheDocument()
+    expect(screen.getByText(/^Rendeződött ·/)).toBeInTheDocument()
+  })
+
+  test('két válasz-sorból csak az utolsó hordja a lezárás-címkét és a chipet', async () => {
+    const t = thread()
+    serve(() => dayOf(t, [
+      line('o', '17:50', 'OPEN', t), line('u1', '21:00', 'USER', undefined, 'Nem volt kedvem.'),
+      line('r1', '21:01', 'REPLY', t, 'Értem.'), line('u2', '21:50', 'USER', undefined, 'Meccs volt.'),
+      line('r2', '21:52', 'REPLY', t, 'Akkor ez kivétel volt.'),
+    ]))
+    renderChat()
+    await screen.findByText('Akkor ez kivétel volt.')
+    expect(screen.getAllByText('Falat lezárta: meccsnap')).toHaveLength(1)
+    expect(screen.getAllByText(/Megjegyeztem:/)).toHaveLength(1)
+    const lastBubble = document.getElementById(lineAnchorId('r2'))!
+    expect(within(lastBubble).getByText(/Megjegyeztem:/)).toBeInTheDocument()
+  })
+
+  test('a visszavonás újranyitja az ügyet — és a megerősítés ott marad', async () => {
+    let undone = false
+    const lines = (t: TeamChatThread) => [
+      line('o', '17:50', 'OPEN', t), line('u', '21:50', 'USER', undefined, 'Meccs volt.'),
+      line('r', '21:52', 'REPLY', t, 'Akkor ez kivétel volt.'),
+    ]
+    serve(() => {
+      const t = undone
+        ? thread({ status: 'OPEN', closedAt: null, closeReason: null, closeNote: null,
+          remembered: { text: 'Meccsnapokon későn eszel — ez rendben van.', contextTag: 'meccsnap', active: false } })
+        : thread()
+      return dayOf(t, lines(t))
+    })
+    server.use(http.delete(`${API_BASE}/api/character/team-chat/threads/:threadId/remembered`, () => {
+      undone = true
+      return HttpResponse.json(thread({ status: 'OPEN' }))
+    }))
+    renderChat()
+    await userEvent.click(await screen.findByRole('button', { name: 'Visszavonom' }))
+    expect(await screen.findByText('Visszavonva — nem jegyeztem meg, és az ügy újra nyitott.')).toBeInTheDocument()
+    expect(screen.queryByText(/Megjegyeztem:/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/lezárta:/)).not.toBeInTheDocument()
   })
 })

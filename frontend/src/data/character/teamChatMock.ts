@@ -176,8 +176,9 @@ const LINES: LineSeed[] = [
     character: 'falat',
     time: '17:50',
     body:
-      'Ma 17:50-kor ettél utoljára — ez jóval a szokásos 15 óra körüli sávod után van. 🍽️ Ha ennek oka volt — mondjuk meccsnap —, szólj, és megjegyzem.',
-    facts: ['utolsó étkezés: 17:50', 'szokásos sáv: 15:00 körül'],
+      // The backend EXCUSE template's question shape ("Tudom, hogy … Ma is ez volt a helyzet?").
+      'Tudom, hogy meccsnapokon később eszel — ez rendben van. Ma is meccsnap volt?',
+    facts: ['utolsó étkezés: 17:50', 'ismert kivétel: meccsnap'],
     closesThread: false,
   },
 ]

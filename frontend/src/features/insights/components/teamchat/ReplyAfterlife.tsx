@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { TeamChatThread } from '@/data/character/teamChatApi'
 import { TEAM, type TeamCharacterId } from '@/features/insights/logic/team'
 import { Icon3D } from '@/shared/ui/clay'
+import { closedByAnswer, STOP_CLOSE_NOTE } from '@/features/insights/logic/teamChat'
 
 /**
  * S7 (mezo-d6ivw.7, Task 9) — the csapatfal's answer afterlife: while the character is
@@ -24,9 +25,10 @@ export function TypingRow({ character }: { character: TeamCharacterId }) {
 }
 
 /** `RESOLVED` REPLY/EXCUSED close tag — "{Name} lezárta: {closeNote}" or "Kivétel: {closeNote}",
- *  both carrying the `csendben` pill (a lezárás sosem értesít). */
+ *  both carrying the `csendben` pill (a lezárás sosem értesít). Anything else (DATA, EXPIRED,
+ *  still OPEN) renders nothing — never a dangling "{Name} lezárta: ". */
 export function CloseTag({ thread }: { thread: TeamChatThread }) {
-  if (thread.closeReason == null) return null
+  if (!closedByAnswer(thread)) return null
   const label = thread.closeReason === 'EXCUSED'
     ? `Kivétel: ${thread.closeNote ?? ''}`
     : `${TEAM[thread.owner].name} lezárta: ${thread.closeNote ?? ''}`
@@ -40,8 +42,12 @@ export function CloseTag({ thread }: { thread: TeamChatThread }) {
 
 /** The "Megjegyeztem: …" standing-exception chip — visible only while `remembered.active`.
  *  After a successful undo (either locally just-tapped, or the thread coming back with
- *  `remembered.active === false`) shows the single muted "Visszavonva — …" line instead. A
- *  failed undo keeps the chip and shows a short error (the chip itself is the retry point). */
+ *  `remembered.active === false`) shows the single muted "Visszavonva — …" line instead: with
+ *  the reopen clause only while the ügy is actually OPEN again (an undo while a newer ügy of the
+ *  rule is open leaves this one closed). Rendered whatever the thread status — a successful
+ *  undo reopens the ügy, and the confirmation must survive that. A failed undo keeps the chip
+ *  and shows a short error (the chip itself is the retry point). A REVIEW "Nem, figyelj rá"
+ *  never lands here as an undo: the server drops a STOP-withdrawn exception from `remembered`. */
 export function RememberedChip({ thread, onUndo }: {
   thread: TeamChatThread
   onUndo: (threadId: string) => Promise<void>
@@ -50,10 +56,16 @@ export function RememberedChip({ thread, onUndo }: {
   const [error, setError] = useState(false)
   const [busy, setBusy] = useState(false)
   const remembered = thread.remembered
-  if (remembered == null) return null
+  if (remembered == null || thread.closeNote === STOP_CLOSE_NOTE) return null
 
   if (undone || !remembered.active) {
-    return <p className="tf-remgone">Visszavonva — nem jegyeztem meg, és az ügy újra nyitott.</p>
+    return (
+      <p className="tf-remgone">
+        {thread.status === 'OPEN'
+          ? 'Visszavonva — nem jegyeztem meg, és az ügy újra nyitott.'
+          : 'Visszavonva — nem jegyeztem meg.'}
+      </p>
+    )
   }
 
   const undo = async () => {
