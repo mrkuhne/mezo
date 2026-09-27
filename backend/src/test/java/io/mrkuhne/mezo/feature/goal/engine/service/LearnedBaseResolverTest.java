@@ -45,7 +45,7 @@ class LearnedBaseResolverTest {
     void noEstimateRowServesTheFormulaUnchanged() {
         when(estimates.findFirstByCreatedByAndDeletedFalseOrderByWeekStartDesc(USER)).thenReturn(Optional.empty());
 
-        assertThat(resolver.apply(USER, FORMULA)).isSameAs(FORMULA);
+        assertThat(resolver.apply(USER, FORMULA, true)).isSameAs(FORMULA);
     }
 
     @Test
@@ -53,7 +53,7 @@ class LearnedBaseResolverTest {
         when(estimates.findFirstByCreatedByAndDeletedFalseOrderByWeekStartDesc(USER))
             .thenReturn(Optional.of(row(2500, 140, "MEDIUM")));
 
-        TdeeBootstrapJson served = resolver.apply(USER, FORMULA);
+        TdeeBootstrapJson served = resolver.apply(USER, FORMULA, true);
 
         assertThat(served.neatBaselineKcal()).isEqualByComparingTo("2500");
         assertThat(served.tdee()).isEqualByComparingTo("2900");
@@ -77,7 +77,7 @@ class LearnedBaseResolverTest {
         when(estimates.findFirstByCreatedByAndDeletedFalseOrderByWeekStartDesc(USER))
             .thenReturn(Optional.of(row(2000, 140, "MEDIUM")));
 
-        TdeeBootstrapJson served = resolver.apply(USER, FORMULA);
+        TdeeBootstrapJson served = resolver.apply(USER, FORMULA, true);
 
         assertThat(served.neatBaselineKcal()).isEqualByComparingTo("2090");
         assertThat(served.tdee()).isEqualByComparingTo("2490");
@@ -94,13 +94,22 @@ class LearnedBaseResolverTest {
             d.minUsableDaysPerWeek(), d.minWeighInDaysPerWeek(), d.maxStepKcal(), d.deadBandKcal(),
             d.maxDeviation(), d.minBaseBmrRatio(), d.highConfidenceSdKcal(), d.mediumConfidenceSdKcal(), d.waterEventKg()));
 
-        assertThat(resolver.apply(USER, FORMULA)).isSameAs(FORMULA);
+        assertThat(resolver.apply(USER, FORMULA, true)).isSameAs(FORMULA);
+        verifyNoInteractions(estimates);
+    }
+
+    @Test
+    void theSwitchOffServesTheFormulaEvenWithALearnedRow() {
+        when(estimates.findFirstByCreatedByAndDeletedFalseOrderByWeekStartDesc(USER))
+            .thenReturn(Optional.of(row(2500, 140, "MEDIUM")));
+
+        assertThat(resolver.apply(USER, FORMULA, false)).isSameAs(FORMULA);
         verifyNoInteractions(estimates);
     }
 
     @Test
     void aNullOrIncompleteBootstrapPassesThrough() {
-        assertThat(resolver.apply(USER, null)).isNull();
+        assertThat(resolver.apply(USER, null, true)).isNull();
         verifyNoInteractions(estimates);
     }
 

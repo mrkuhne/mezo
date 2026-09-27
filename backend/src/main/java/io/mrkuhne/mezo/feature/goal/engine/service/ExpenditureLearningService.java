@@ -6,9 +6,11 @@ import io.mrkuhne.mezo.feature.goal.entity.ExpenditureEstimateEntity;
 import io.mrkuhne.mezo.feature.goal.entity.ExpenditureExplanationJson;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
+import io.mrkuhne.mezo.feature.goal.entity.IntakeDayMarkEntity;
 import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
 import io.mrkuhne.mezo.feature.goal.repository.ExpenditureEstimateRepository;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
+import io.mrkuhne.mezo.feature.goal.repository.IntakeDayMarkRepository;
 import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
 import io.mrkuhne.mezo.techcore.query.WeightTrendQuery;
@@ -34,6 +36,8 @@ import org.springframework.transaction.annotation.Transactional;
  * base is served. Empty = the user is not (yet) a learning user — the caller falls back to the
  * weight-only weekly_correction suggestion (owner decision L4: never both). Once a row exists the
  * user stays a learner: a week the filter cannot anchor (no weigh-in) is written as HOLDING (§7).
+ * The owner's day marks (mezo-3n2so) override the classifier; the learning switch never stops the
+ * run — it only gates serving ({@link LearnedBaseResolver}) and the weight-only suggestion's retirement.
  */
 @Service
 @RequiredArgsConstructor
@@ -51,6 +55,8 @@ public class ExpenditureLearningService {
     private final ExpenditureEstimateRepository estimates;
     private final GoalEngineService goalEngineService;
     private final GoalSuggestionService suggestionService;
+    private final IntakeDayMarkRepository marks;
+    private final DietPreferencesPort dietPreferences;
 
     @Transactional
     public Optional<ExpenditureEstimateEntity> reviewWeek(UUID userId, LocalDate weekStart) {
@@ -143,7 +149,7 @@ public class ExpenditureLearningService {
 
         // Too little own history → a day is judged against its SERVED target (spec §5.3), not maintenance.
         Map<LocalDate, IntakeDayClassifier.Status> status = IntakeDayClassifier.classify(windowStart, weekEnd, kcal,
-            Map.of(), d -> prevApplied + planEat + balanceOn(goal, d),
+            marksBetween(userId, windowStart.minusDays(e.referenceDays()), weekEnd), d -> prevApplied + planEat + balanceOn(goal, d),
             e.suspiciousRatio(), e.referenceDays(), e.minReferenceDays());
 
         Map<LocalDate, BigDecimal> weights = weightQuery.dailyMeanWeightKg(userId, windowStart, weekEnd);
@@ -160,6 +166,18 @@ public class ExpenditureLearningService {
             ExpenditureFilter.runWithTrace(days, formulaBase, ExpenditureFilter.Params.of(props));
         return Optional.of(new Replay(goal, boot, formulaBase, windowStart, weekEnd, kcal, status, weights, days,
             traced, prev, thisWeek, prevApplied));
+    }
+
+    /**
+     * The owner's day marks in [from, to] (mezo-3n2so): {@code true} = COMPLETE (the day counts even if
+     * it looks suspicious), {@code false} = INCOMPLETE (excluded as "marked"); an unmarked day is absent.
+     */
+    Map<LocalDate, Boolean> marksBetween(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, Boolean> out = new HashMap<>();
+        for (IntakeDayMarkEntity m : marks.findByCreatedByAndDayBetweenAndDeletedFalse(userId, from, to)) {
+            out.put(m.getDay(), "COMPLETE".equals(m.getStatus()));
+        }
+        return out;
     }
 
     private ExpenditureExplanationJson explain(Replay rp, GoalEngineProperties.Expenditure e) {
@@ -220,8 +238,11 @@ public class ExpenditureLearningService {
         row.setExplanation(explanation);
         ExpenditureEstimateEntity saved = estimates.save(row);
 
-        // Owner decision L4: a learning user never also gets the weight-only correction.
-        suggestionService.supersedeOpen(rp.goal().getId(), WEEKLY_CORRECTION);
+        // Owner decision L4: a learning user never also gets the weight-only correction — unless the
+        // learning switch is off (P3): then the learned base is not served and the correction stays.
+        if (dietPreferences.resolve(userId).learningEnabled()) {
+            suggestionService.supersedeOpen(rp.goal().getId(), WEEKLY_CORRECTION);
+        }
         goalEngineService.recomputeActiveGoal(userId);
         return saved;
     }

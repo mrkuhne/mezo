@@ -31,7 +31,7 @@ class AdaptiveReviewJobTest {
         when(expenditureLearning.reviewWeek(any(), any())).thenReturn(Optional.empty());
         when(service.reviewUser(eq(a.getId()), any())).thenThrow(new RuntimeException("boom"));
 
-        new AdaptiveReviewJob(users, service, expenditureLearning).run();
+        new AdaptiveReviewJob(users, service, expenditureLearning, prefs(true)).run();
 
         verify(service).reviewUser(eq(b.getId()), any()); // b still reviewed despite a's failure
     }
@@ -48,7 +48,7 @@ class AdaptiveReviewJobTest {
             .thenReturn(Optional.of(new ExpenditureEstimateEntity()));
         when(expenditureLearning.reviewWeek(eq(b.getId()), any())).thenReturn(Optional.empty());
 
-        new AdaptiveReviewJob(users, service, expenditureLearning).run();
+        new AdaptiveReviewJob(users, service, expenditureLearning, prefs(true)).run();
 
         verify(service, never()).reviewUser(eq(a.getId()), any()); // learning user: no fallback suggestion
         verify(service).reviewUser(eq(b.getId()), any()); // b is not a learning user: falls back
@@ -64,9 +64,32 @@ class AdaptiveReviewJobTest {
         when(expenditureLearning.reviewWeek(any(), any())).thenReturn(Optional.empty());
         LocalDate weekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 
-        new AdaptiveReviewJob(users, service, expenditureLearning).run();
+        new AdaptiveReviewJob(users, service, expenditureLearning, prefs(true)).run();
 
         verify(expenditureLearning).reviewWeek(eq(a.getId()), eq(weekStart.minusWeeks(1)));
+    }
+
+    @Test
+    void switchOffLearnsSilentlyAndStillOffersTheWeightOnlyCorrection() {
+        AppUserRepository users = mock(AppUserRepository.class);
+        AdaptiveReviewService service = mock(AdaptiveReviewService.class);
+        ExpenditureLearningService expenditureLearning = mock(ExpenditureLearningService.class);
+        AppUserEntity a = user();
+        when(users.findAll()).thenReturn(List.of(a));
+        when(expenditureLearning.reviewWeek(eq(a.getId()), any()))
+            .thenReturn(Optional.of(new ExpenditureEstimateEntity()));
+
+        new AdaptiveReviewJob(users, service, expenditureLearning, prefs(false)).run();
+
+        verify(expenditureLearning).reviewWeek(eq(a.getId()), any()); // learning continues silently
+        verify(service).reviewUser(eq(a.getId()), any()); // owner decision P3: the weight-only suggestion
+    }
+
+    private static DietPreferencesPort prefs(boolean learningEnabled) {
+        DietPreferencesPort port = mock(DietPreferencesPort.class);
+        when(port.resolve(any())).thenReturn(
+            new DietPreferences("balanced", null, null, null, "moderate", 3000, 30, 0, learningEnabled));
+        return port;
     }
 
     private static AppUserEntity user() {

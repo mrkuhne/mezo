@@ -9,12 +9,16 @@ import io.mrkuhne.mezo.feature.goal.entity.ExpenditureEstimateEntity;
 import io.mrkuhne.mezo.feature.goal.entity.ExpenditureExplanationJson;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalSuggestionPayloadJson;
+import io.mrkuhne.mezo.feature.goal.entity.IntakeDayMarkEntity;
 import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
 import io.mrkuhne.mezo.feature.goal.repository.ExpenditureEstimateRepository;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.goal.repository.GoalSuggestionRepository;
+import io.mrkuhne.mezo.feature.goal.repository.IntakeDayMarkRepository;
 import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionService;
+import io.mrkuhne.mezo.feature.nutrition.entity.DietSettingsEntity;
+import io.mrkuhne.mezo.feature.nutrition.repository.DietSettingsRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
@@ -71,6 +75,8 @@ class ExpenditureLearningServiceIT extends AbstractIntegrationTest {
     @Autowired private MealPopulator mealPopulator;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private EntityManager entityManager;
+    @Autowired private IntakeDayMarkRepository marks;
+    @Autowired private DietSettingsRepository dietSettings;
 
     private UUID userId;
     private UUID goalId;
@@ -341,7 +347,120 @@ class ExpenditureLearningServiceIT extends AbstractIntegrationTest {
         }
     }
 
+    // ── Part 2 (mezo-3n2so): day marks + the learning switch ───────────────
+
+    @Test
+    void completeMarkMakesSuspiciousDayUsable() {
+        LocalDate suspicious = LocalDate.of(2026, 9, 16);
+        seedUserAndGoal(null);
+        seedMealsAndWeighIns(suspicious);
+        evaluate();
+        mark(suspicious, "COMPLETE");
+
+        ExpenditureEstimateEntity row = service.reviewWeek(userId, WEEK_START).orElseThrow();
+
+        assertThat(row.getUsableDays()).isEqualTo(7); // 6 without the mark (suspiciousDaysAreExcludedAndListed)
+        assertThat(row.getExcludedDays()).extracting(ExcludedIntakeDayJson::date).doesNotContain(suspicious);
+    }
+
+    @Test
+    void incompleteMarkExcludesUsableDay() {
+        LocalDate marked = LocalDate.of(2026, 9, 17);
+        seedUserAndGoal(null);
+        seedMealsAndWeighIns(null);
+        evaluate();
+        mark(marked, "INCOMPLETE");
+
+        ExpenditureEstimateEntity row = service.reviewWeek(userId, WEEK_START).orElseThrow();
+
+        assertThat(row.getExcludedDays()).containsExactly(new ExcludedIntakeDayJson(marked, 2000, "marked"));
+        assertThat(row.getUsableDays()).isEqualTo(6);
+    }
+
+    @Test
+    void switchOffStillLearnsButKeepsCorrectionOpen() {
+        seedUserAndGoal(null);
+        seedMealsAndWeighIns(null);
+        evaluate();
+        setLearning(false);
+        UUID suggestionId = openWeeklyCorrection();
+
+        Optional<ExpenditureEstimateEntity> row = service.reviewWeek(userId, WEEK_START);
+
+        assertThat(row).isPresent(); // learning continues silently
+        assertThat(openWeeklyCorrections()).hasSize(1);
+        assertThat(suggestionRepository.findById(suggestionId).orElseThrow().getStatus()).isEqualTo("proposed");
+    }
+
+    @Test
+    void switchOffServesFormulaPlusAdjustment() {
+        seedUserAndGoal(null);
+        seedMealsAndWeighIns(null);
+        evaluate();
+        setLearning(false);
+        ExpenditureEstimateEntity row = service.reviewWeek(userId, WEEK_START).orElseThrow();
+
+        goalEngineService.recomputeActiveGoal(userId);
+        TdeeBootstrapJson off = goalRepository.findById(goalId).orElseThrow().getTdeeBootstrap();
+
+        assertThat(off.baseSource()).isNotEqualTo("learned");
+        assertThat(off.formulaNeatBaselineKcal()).isNull(); // no learned base served next to it
+        assertThat(off.neatBaselineKcal().setScale(0, RoundingMode.HALF_UP).intValueExact())
+            .isEqualTo(row.getFormulaBaseKcal());
+
+        setLearning(true);
+        goalEngineService.recomputeActiveGoal(userId);
+        TdeeBootstrapJson on = goalRepository.findById(goalId).orElseThrow().getTdeeBootstrap();
+
+        assertThat(on.baseSource()).isEqualTo("learned");
+        assertThat(on.neatBaselineKcal()).isEqualByComparingTo(BigDecimal.valueOf(row.getAppliedBaseKcal()));
+    }
+
+    @Test
+    void basisIsLearnedForLearner() {
+        seedUserAndGoal(-120);
+        seedMealsAndWeighIns(null);
+        evaluate();
+
+        service.reviewWeek(userId, WEEK_START).orElseThrow();
+
+        GoalEntity goal = goalRepository.findById(goalId).orElseThrow();
+        assertThat(goal.getBalanceAdjustmentKcal()).isNotZero();
+        assertThat(goal.getPrescription().basis()).isEqualTo("learned");
+    }
+
     // ── fixtures ────────────────────────────────────────────────────────────
+
+    private void mark(LocalDate day, String status) {
+        IntakeDayMarkEntity m = new IntakeDayMarkEntity();
+        m.setCreatedBy(userId);
+        m.setDay(day);
+        m.setStatus(status);
+        marks.saveAndFlush(m);
+    }
+
+    private void setLearning(boolean enabled) {
+        DietSettingsEntity row = dietSettings.findByCreatedByAndDeletedFalse(userId).orElseGet(() -> {
+            DietSettingsEntity r = new DietSettingsEntity();
+            r.setCreatedBy(userId);
+            r.setSplitPreset("balanced");
+            r.setProteinTier("moderate");
+            r.setWaterMl(3000);
+            r.setFiberG(30);
+            r.setDayTypeShiftKcal(0);
+            return r;
+        });
+        row.setLearningEnabled(enabled);
+        dietSettings.saveAndFlush(row);
+    }
+
+    private UUID openWeeklyCorrection() {
+        return suggestionPopulator.createOpen(userId, goalId, "weekly_correction", "weekly:2026-09-14",
+            new GoalSuggestionPayloadJson(
+                "A mért trend lassabb a célnál — heti korrekció.", null, null, null, null, null, null, null,
+                "2026-09-14", -120, new BigDecimal("-0.20"), new BigDecimal("-0.50"), false,
+                5, 1800, 2000, OffsetDateTime.parse("2026-09-14T06:40:00Z"), new BigDecimal("0.70"), 0)).getId();
+    }
 
     private List<GoalSuggestionResponse> openWeeklyCorrections() {
         return suggestionService.listOpen(userId, goalId).stream()
