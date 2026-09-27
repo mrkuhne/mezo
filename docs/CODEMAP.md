@@ -391,7 +391,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ConsolidationJob`, `ContextSnapshotAssembler`, `ConversationHistory`, `ConversationService`,
     `ConversationTurnService`, `DailyCardPort`, `DailySummaryJob`, `DailySummaryService`, `DayEvaluationEngine`,
     `DayReviewLlm`, `DayReviewService`, `DayReviewWarmupJob`, `DayScoreService`, `DecisionContextAssemblerAdapter`,
-    `DenseMemoryRetriever`, `DerivedSeriesService`, `EffectLinkCalculator`, `EffectLinkService`,
+    `DenseMemoryRetriever`, `DerivedSeriesService`, `EffectLinkCalculator`, `EffectLinkService`, `EffectMuteService`,
     `FactCandidateService`, `FactExtractionListener`, `FactExtractionService`, `FactMemoryRetriever`,
     `FeedMessageKindSource`, `FeedbackLearningJob`, `FeedbackLearningService`, `FlagCatalog`, `FlagClearedEvent`,
     `FlagEvaluationListener`, `FlagEvaluator`, `FlagFactRenderer`, `FlagKey`, `FlagOutcome`, `FlagRaisedEvent`,
@@ -498,7 +498,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/companion`
   - **hooks (via `@/data/hooks`):** `useAccountSettings`, `useCompanionPreferences`, `usePersonalContext`
   - **modules:** preferencesApi.ts, preferencesHooks.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 284 IT + 92 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 285 IT + 92 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,
@@ -523,9 +523,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ConversationQualityEvalIT`, `ConversationServiceIT`, `DailySummaryJobIT`, `DailySummaryJobSwitchOffIT`,
     `DailySummaryServiceIT`, `DayEvaluationApiIT`, `DayEvaluationSwitchOffApiIT`, `DayReviewRepositoryIT`,
     `DayReviewWarmupJobIT`, `DayReviewWarmupJobSwitchOffIT`, `DayScoreServiceIT`, `DayScoreServiceWindowFetchCountIT`,
-    `DriftSupersessionIT`, `EffectLinkServiceIT`, `EnergyDipMealTimingRuleSwitchOffIT`, `FactCandidateServiceIT`,
-    `FactExtractionServiceIT`, `FactOwnerPersistenceIT`, `FakeEmbeddingAdapterIT`, `FeedReadToolsIT`,
-    `FeedbackLearningJobSwitchOffIT`, `FeedbackLearningPropertiesIT`, `FeedbackLearningServiceIT`,
+    `DriftSupersessionIT`, `EffectLinkServiceIT`, `EffectMuteIT`, `EnergyDipMealTimingRuleSwitchOffIT`,
+    `FactCandidateServiceIT`, `FactExtractionServiceIT`, `FactOwnerPersistenceIT`, `FakeEmbeddingAdapterIT`,
+    `FeedReadToolsIT`, `FeedbackLearningJobSwitchOffIT`, `FeedbackLearningPropertiesIT`, `FeedbackLearningServiceIT`,
     `FeedbackRollupPersistenceIT`, `FlagEvaluationListenerIT`, `FlagEvaluatorAcuteBadDayIT`,
     `FlagEvaluatorEnergyDipIT`, `FlagEvaluatorIgnoredNudgeIT`, `FlagEvaluatorJointOveruseIT`,
     `FlagEvaluatorLateEatingIT`, `FlagEvaluatorLoadFuelMismatchIT`, `FlagEvaluatorLoggingGapIT`,
