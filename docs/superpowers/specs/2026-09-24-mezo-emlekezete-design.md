@@ -1138,6 +1138,15 @@ S2) · *felülírta egy újabb észrevétel, <dátum>* (drift, decision 4).
 
 **Frontend (`/mezo/knowledge`, Üveg canon, dark only)**
 
+- **Scale (owner decision 2026-09-27, prototype round 2): "Témák + kereső".** After half a
+  year a section holds ~200 items, so no section is a flat list: every section has a live
+  search (filters all groups incl. Elhallgattatott, auto-expands hits); Rólad and
+  Észrevételek group by topic (collapsed, with counts; Rólad by the live categories);
+  Emberek is an alphabetical people list with counts → `?view=emberek&person=<id>`;
+  Hatások has collapsed Emberek / Események groups. "In prompt now" becomes a per-row
+  marker, not a bucket. Search is client-side over the already-loaded section (the
+  per-user sets are small enough); the plan re-checks payload size.
+
 - **Base view:** four section tiles with counts — **Rólad · Emberek · Észrevételek ·
   Hatások** — replacing today's two tiles; "Kategóriák" and "Hogyan tanul?" become quiet
   secondary links below. Honest pending/error/degraded per section (no invented numbers).
