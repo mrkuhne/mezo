@@ -98,7 +98,7 @@ class EffectMuteIT extends AbstractIntegrationTest {
         effectLinkService.recompute(owner, TODAY); // soft-deletes and re-creates the rows
 
         assertThat(effectLinkService.effectViews(owner, null)).noneMatch(v -> v.row().getSubjectKey().equals(personKey));
-        assertThat(effectLinkService.effectsForPerson(owner, strongPersonId)).isEmpty();
+        assertThat(effectLinkService.effectViews(owner, strongPersonId)).isEmpty();
         assertThat(effectLinkService.gatedEffects(owner)).noneMatch(g -> g.subjectKey().equals(personKey));
     }
 

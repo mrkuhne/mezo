@@ -188,31 +188,6 @@ public class EffectLinkService {
                 .toList();
     }
 
-    /**
-     * One person's live effect rows, strongest first, with the serve-time confidence bump: a row
-     * whose topic key a CONFIRMED observation carries as {@code observation-topic-key:<key>} is
-     * lifted one tier (cap {@code eros}). The bump lives on a detached copy only — never stored.
-     */
-    @Transactional(readOnly = true)
-    public List<EffectLinkEntity> effectsForPerson(UUID userId, UUID personId) {
-        if (EffectMuteEntity.MODE_FORGOTTEN.equals(muteModes(userId).get(EffectLinkEntity.SUBJECT_PERSON + ':' + personId))) {
-            return List.of();
-        }
-        List<EffectLinkEntity> rows = effectLinkRepository
-                .findByCreatedByAndSubjectKindAndSubjectKeyAndDeletedFalse(
-                        userId, EffectLinkEntity.SUBJECT_PERSON, personId.toString());
-        if (rows.isEmpty()) {
-            return List.of();
-        }
-        Set<String> confirmedKeys = confirmedTopicKeys(userId);
-        return rows.stream()
-                .sorted(byStrength())
-                .map(r -> confirmedKeys.contains(GroundedHypothesisPublisher.normalizedTopicKey(
-                        topicKey(r.getSubjectKind(), r.getSubjectKey(), r.getMetric())))
-                        ? bumped(r) : r)
-                .toList();
-    }
-
     /** {@code effect-person-<first 8 hex of the uuid>-<metric>} / {@code effect-event-<key>-<metric>}. */
     public static String topicKey(String subjectKind, String subjectKey, String metric) {
         if (EffectLinkEntity.SUBJECT_PERSON.equals(subjectKind)) {

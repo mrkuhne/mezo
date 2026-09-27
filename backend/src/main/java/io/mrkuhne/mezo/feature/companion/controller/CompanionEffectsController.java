@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Emlékezet S4 (mezo-d6ivw.4): the named-effect read surface for one person — the entities
- * {@link EffectLinkService#effectsForPerson} already sorted strongest-first, with the serve-time
+ * {@link EffectLinkService#effectViews} already sorted strongest-first, with the serve-time
  * confidence bump applied on a detached copy (never persisted).
  *
  * <p>Gated on the REFLECTION switch as well as the COMPANION one, mirroring

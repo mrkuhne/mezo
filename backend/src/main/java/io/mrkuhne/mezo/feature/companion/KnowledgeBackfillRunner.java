@@ -60,7 +60,7 @@ public class KnowledgeBackfillRunner implements CommandLineRunner {
             try {
                 if (promoteOne(row.getCreatedBy(), row.getId())) promoted++;
             } catch (Exception e) {
-                log.warn("Knowledge backfill skipped pattern {} — {}", row.getId(), e.getMessage());
+                log.warn("Knowledge backfill skipped pattern {}", row.getId(), e);
             }
         }
         return promoted;
