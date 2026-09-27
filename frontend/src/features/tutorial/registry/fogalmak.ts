@@ -65,9 +65,8 @@ export const FOGALMAK: Record<FogalomKey, Fogalom> = {
     term: 'stack',
     def: 'A napi kiegészítőid protokollja: mi, mennyi, és a nap melyik zónájában. A zónák az edzésnapodhoz igazodnak.',
   },
-  // Forrás: features/fuel/components/{ScoreHero,ScoreBreakdownBody}.tsx — a bontás
-  // 0–100 skálán, „pont" egységgel jelenik meg; a hangnem sose büntető (toneOf: 90 alatt
-  // `is-mid`, nincs piros). Az „ítélet helyett visszajelzés" tagmondat ezt tartja copy-szinten.
+  // Forrás: features/fuel/components/FuelScoreSurface.tsx — a bontás 0–100 skálán, „pont"
+  // egységgel jelenik meg; a hangnem sose büntető (nincs piros). Az „ítélet helyett visszajelzés" tagmondat ezt tartja copy-szinten.
   pontszam: {
     term: 'étkezés-pontszám',
     def: 'Minden logolt étkezés kap egy 0–100 közötti értéket: mennyire illett a napodhoz. Visszajelzés, nem osztályzat.',

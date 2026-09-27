@@ -27,6 +27,8 @@ test('renders an icon-only button carrying the prototype aria-label verbatim', (
   // Icon-only: no visible text at all, only the aria-label (the prototype inlines it
   // inside an <h3>, where any rendered text would read as part of the heading).
   expect(btn.textContent).toBe('')
+  // U11 (mezo-me75u.11): the default trigger glyph is the Titanium 3D `t-info`, not clay.
+  expect(btn.querySelector('use')?.getAttribute('href')).toBe('#t-info')
 })
 
 test('the glass is closed until the button is tapped', () => {

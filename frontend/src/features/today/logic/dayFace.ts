@@ -12,7 +12,6 @@ import { MORNING_LEAD_MIN, type AnchorTimes } from '@/features/today/logic/windD
 export type DayFace = 'reggel' | 'nap' | 'este'
 export const DAY_FACES: readonly DayFace[] = ['reggel', 'nap', 'este'] as const
 export const FACE_LABEL: Record<DayFace, string> = { reggel: 'Reggel', nap: 'Nap', este: 'Este' }
-export const FACE_EMOJI: Record<DayFace, string> = { reggel: '🌅', nap: '☀️', este: '🌙' }
 
 /** How long the morning face runs past wake-up. */
 export const MORNING_SPAN_MIN = 300

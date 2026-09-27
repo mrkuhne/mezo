@@ -5,6 +5,11 @@ description: Session driver for the Üvegesítés programme (epic mezo-me75u, 20
 
 # Üvegesítés session driver
 
+> **✅ 2026-09-27 — the programme is COMPLETE.** U1–U11 and U9b are closed and the epic `mezo-me75u` is
+> closed. There is no next slice: if invoked, say so and point new UI work at the üveg bible + kit
+> (`docs/design_2.0/README.md` for the canon order). The procedure below is kept as the record of how
+> the slices ran, and as the template for any future re-dress programme.
+
 **One fresh session = one slice.** Every slice follows the same five steps, in this order:
 **prototype → owner OK → build → merge → deploy.** Never skip the OK and never merge without
 it. The owner set this flow on 2026-09-23.

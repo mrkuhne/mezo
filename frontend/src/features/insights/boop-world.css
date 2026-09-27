@@ -1,31 +1,11 @@
-/* Approved V3: the restored app's own clay, warm washes and persistent dock. */
-.boop-world-page{padding:20px 24px 36px;color:var(--text-primary)}
-.boop-world-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px}
-.boop-world-heading h1{font-family:var(--ff-display);font-size:30px;letter-spacing:-.035em;line-height:1.15;margin:8px 0 0}
-.boop-world-intro{font-size:13px;line-height:1.6;color:var(--text-secondary);margin:0 0 22px}
-.boop-world-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
-.boop-world-tile{display:flex;flex-direction:column;align-items:flex-start;gap:9px;min-height:146px;padding:17px;border-radius:22px;text-decoration:none;color:var(--text-primary);border:1px solid var(--border-subtle);background:var(--mz-wash-lav);box-shadow:0 17px 30px -22px color-mix(in srgb,var(--lav-deep) 35%,transparent),inset 0 1px 0 var(--surface-card);transition:transform .2s,box-shadow .2s;min-width:0}
-.boop-world-tile.mz-w-sky{background:var(--mz-wash-sky)}
-.boop-world-tile.mz-w-sage{background:var(--mz-wash-sage)}
-.boop-world-tile.mz-w-gold{background:var(--mz-wash-gold)}
-.boop-world-tile.mz-w-rose{background:var(--mz-wash-rose)}
-.boop-world-tile.mz-w-white{background:var(--surface-card)}
-.boop-world-tile strong{font-size:16px;line-height:1.3;margin-top:3px;overflow-wrap:anywhere}
-.boop-world-tile>span{font-size:12px;line-height:1.5;color:var(--text-secondary)}
-.boop-world-tile svg{transition:transform .25s}
-.boop-world-tile:active{transform:scale(.97)}
-@media(hover:hover) and (prefers-reduced-motion:no-preference){.boop-world-tile:hover{transform:translateY(-4px)}.boop-world-tile:hover svg{transform:rotate(-7deg) scale(1.07)}}
-@media(max-width:360px){.boop-world-page{padding-left:16px;padding-right:16px}.boop-world-tile{padding:14px;min-height:135px}.boop-world-tile strong{font-size:14px}}
-@media(prefers-reduced-motion:reduce){.boop-world-tile,.boop-world-tile svg{transition:none;animation:none}}
-
 /* ══ team-feed (mezo-a9bo7.7) · a csapat-üzenőfal az üveg-kánonban ══════════════════════════
    Paritás-forrás: docs/design_2.0/prototypes/uveg-uzenofal.html „ÜZENŐFAL” blokkja, `tf-` prefixszel,
    tokenekre írva (üveg-biblia §1–2). Az üveg-anyag a KÖZÖS `.glass` kit a prototype.css végén
    (U1) — itt második üveg-recept NINCS: a poszter / sor / első ügy `class="glass tf-…"`.
    Rangsor (restored bible §3.4): naponta EGY üveg (a poszter); csendes poszt, média-well,
    ügy-kártya és tudás-lista lapos panel — látható határ, üveg-tulajdonság nélkül.
-   A fenti `boop-world-*` szabályok az „Összes funkció” rácsé (Gépterem dev-menü) és a Boop-oldalak
-   chip-sávjáé; a régi hub-főoldal szabályai a fal-cserével (mezo-a9bo7.10) törlődtek. */
+   A régi hub-főoldal szabályai a fal-cserével (mezo-a9bo7.10), a renderelő nélküli `boop-world-*`
+   rács- és fejléc-szabályok a U11 holt-CSS söprésben (mezo-mcb44) törlődtek. */
 
 /* karakter-akcentusok — a `--c` az üveg/avatár/terület-címke egyetlen színforrása. A `.glass`
    (styles/prototype.css) a saját `--c: sage` alapját a bundle-ben EZEK UTÁN hozza, azonos

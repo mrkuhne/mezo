@@ -37,7 +37,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTrain, useMesoTemplates } from '@/data/hooks'
 import type { MesoDay, MesoTemplate } from '@/data/types'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
@@ -228,9 +228,9 @@ export function MesoTemplateStoryPage() {
                   <em>{day.type}</em>
                 </span>
                 <span className="pl-day-facts">
-                  <i><ClayIcon name="i-stack" size={22} className="icon" /><b>{day.exercises.length}</b><small>gyakorlat</small></i>
-                  <i><ClayIcon name="i-edzes" size={22} className="icon" /><b>{daySets(day)}</b><small>szett</small></i>
-                  <i><ClayIcon name="i-heti" size={22} className="icon" /><b>~{estimateSessionMinutes(day.exercises)}</b><small>perc</small></i>
+                  <i><Icon3D name="t-protocol" size={22} className="icon" /><b>{day.exercises.length}</b><small>gyakorlat</small></i>
+                  <i><Icon3D name="t-dumbbell" size={22} className="icon" /><b>{daySets(day)}</b><small>szett</small></i>
+                  <i><Icon3D name="t-clock" size={22} className="icon" /><b>~{estimateSessionMinutes(day.exercises)}</b><small>perc</small></i>
                 </span>
                 <span className="pl-tpl-exs">
                   {day.exercises.map((e) => {
@@ -347,7 +347,7 @@ export function MesoTemplateStoryPage() {
             aria-label="Futam indítása ebből"
             onClick={() => setStartOpen(true)}
           >
-            <span className="pl-lib-new-art"><ClayIcon name="i-lang" size={30} className="icon" /></span>
+            <span className="pl-lib-new-art"><Icon3D name="t-play" size={30} className="icon" /></span>
             <span>
               <strong>Futam indítása ebből</strong>
               <small>A sablon marad, a terv a tiéd lesz</small>

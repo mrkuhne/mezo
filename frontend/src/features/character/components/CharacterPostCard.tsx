@@ -63,7 +63,7 @@ export function CharacterPostCard({
       </header>
       <p className="tf-body kr9-ptext">{item.text}</p>
       {(source?.sourceType === 'CONFERENCE_CHANGE' || source?.sourceType === 'CONFERENCE_ITEM') && (
-        <ConferencePostContext source={source} experts={experts} onReply={reply} />
+        <ConferencePostContext source={source} onReply={reply} />
       )}
       <div className="tf-acts">
         <button type="button" onClick={() => setEvidence(true)}>
@@ -100,11 +100,9 @@ export function CharacterPostCard({
 
 function ConferencePostContext({
   source,
-  experts,
   onReply,
 }: {
   source: CharacterReplySource
-  experts: CharacterExpertDto[]
   onReply: () => void
 }) {
   const { conference, isLoading, isError, refetch } = useCharacterConference(source.sourceId)
@@ -127,7 +125,7 @@ function ConferencePostContext({
         </span>
         <span>{comments} szakértői hozzászólás</span>
       </div>
-      {proposal.reactions.slice(0, expanded ? undefined : 2).map((reaction, i) => <CharacterExpertComment key={i} reaction={reaction} experts={experts} />)}
+      {proposal.reactions.slice(0, expanded ? undefined : 2).map((reaction, i) => <CharacterExpertComment key={i} reaction={reaction} />)}
       {proposal.reactions.length > 2 && <button type="button" className="kr9-link" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
         {expanded ? 'Kevesebb hozzászólás' : `További ${proposal.reactions.length - 2} szakértői hozzászólás`}
       </button>}

@@ -132,6 +132,12 @@ The expansion must include, where present:
 
 ## Coverage closure record
 
+> **2026-09-26 — the Üveg re-dress (`mezo-me75u`, U1–U11) kept the same guarantee.** Every slice
+> was visual only (one owner-approved behaviour exception: the Rólad „közös kép”, `mezo-zpxv7`, with
+> its own spec) and closed with a reverse parity checklist on its bead; U11 then swept all 126
+> routes in dark mode (audit + fixes) and removed the dead pre-üveg CSS behind a before/after
+> pixel-diff of every route. No feature recorded here lost its home.
+
 Before prototype work, append a short record to the page-specific document:
 
 | Check | Required evidence |

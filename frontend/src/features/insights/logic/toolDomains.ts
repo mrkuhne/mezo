@@ -1,4 +1,4 @@
-import type { ClayIconName } from '@/shared/ui/clay'
+import type { ClayIconName, Icon3DName } from '@/shared/ui/clay'
 
 // ============================================================
 // mezo-vdf4: ONE domain map for the chat's provenance layers —
@@ -7,12 +7,18 @@ import type { ClayIconName } from '@/shared/ui/clay'
 // speak the same icon + wash language. Unknown values fall back
 // honestly: raw name, neutral wash, the generic orb icon —
 // nothing fabricated (the same discipline as chatRefs.ts).
+//
+// U11 (mezo-me75u.11): every consumer draws through ContentIcon, so a clay name
+// that CLAY_TO_3D maps goes 3D by itself; the context-dependent glyphs are mapped
+// HERE by meaning (bible U1 rule 7 / U3 rule 20): i-sport → t-record (a record)
+// or t-volley (Sport), i-retegek → t-album (a memory, the Emlékek page's art),
+// i-growth → t-up, i-mezo → t-orb (the neutral fallback) / t-chat (a chat turn).
 // ============================================================
 
 export type DomainWash = 'sky' | 'lav' | 'sage' | 'coral' | 'gold' | 'rose' | 'neutral'
-export interface ToolDomain { label: string; icon: ClayIconName; wash: DomainWash }
+export interface ToolDomain { label: string; icon: ClayIconName | Icon3DName; wash: DomainWash }
 
-const NEUTRAL = (label: string): ToolDomain => ({ label, icon: 'i-mezo', wash: 'neutral' })
+const NEUTRAL = (label: string): ToolDomain => ({ label, icon: 't-orb', wash: 'neutral' })
 
 /** The 18 real companion tools (backend CompanionToolRegistry inventory, 2026-09-05). */
 const TOOLS: Record<string, ToolDomain> = {
@@ -24,14 +30,14 @@ const TOOLS: Record<string, ToolDomain> = {
   get_recipes: { label: 'Receptek', icon: 'i-recept', wash: 'sage' },
   get_training_log: { label: 'Edzésnapló', icon: 'i-edzes', wash: 'coral' },
   get_training_plan: { label: 'Edzésterv', icon: 'i-meso', wash: 'coral' },
-  get_exercise_records: { label: 'Rekordok', icon: 'i-sport', wash: 'coral' },
+  get_exercise_records: { label: 'Rekordok', icon: 't-record', wash: 'coral' },
   get_goal: { label: 'Cél', icon: 'i-cel', wash: 'gold' },
-  get_growth: { label: 'Growth', icon: 'i-growth', wash: 'gold' },
+  get_growth: { label: 'Growth', icon: 't-up', wash: 'gold' },
   get_insights: { label: 'Összefüggések', icon: 'i-minta', wash: 'lav' },
   get_medication: { label: 'Gyógyszer', icon: 'i-injekcio', wash: 'rose' },
   get_protocol: { label: 'Stack', icon: 'i-stack', wash: 'sage' },
   get_daily_practice: { label: 'Napi gyakorlat', icon: 'i-nap', wash: 'gold' },
-  find_similar_past_days: { label: 'Emlékek', icon: 'i-retegek', wash: 'lav' },
+  find_similar_past_days: { label: 'Emlékek', icon: 't-album', wash: 'lav' },
   compare_periods: { label: 'Időszak-összevetés', icon: 'i-idozito', wash: 'lav' },
   get_life_goals: { label: 'Életcélok', icon: 'i-cel', wash: 'gold' },
 }
@@ -69,7 +75,7 @@ const REF_KINDS: Record<string, ToolDomain> = {
   // surveillance; a visible trail is what reads as attention.
   WorkoutNote: { label: 'Edzés-jegyzet', icon: 'i-naplo', wash: 'coral' },
   Run: { label: 'Futás', icon: 'i-futas', wash: 'coral' },
-  PR: { label: 'PR', icon: 'i-sport', wash: 'gold' },
+  PR: { label: 'PR', icon: 't-record', wash: 'gold' },
   Pattern: { label: 'Minta', icon: 'i-minta', wash: 'gold' },
   Sleep: { label: 'Alvás', icon: 'i-alvas', wash: 'lav' },
   SleepLog: { label: 'Alvás', icon: 'i-alvas', wash: 'lav' },
@@ -78,7 +84,7 @@ const REF_KINDS: Record<string, ToolDomain> = {
   Journal: { label: 'Napló', icon: 'i-naplo', wash: 'gold' },
   Meal: { label: 'Étkezés', icon: 'i-fuel', wash: 'sage' },
   GraphNode: { label: 'Összefüggés', icon: 'i-minta', wash: 'lav' },
-  Memory: { label: 'Emlék', icon: 'i-retegek', wash: 'lav' },
+  Memory: { label: 'Emlék', icon: 't-album', wash: 'lav' },
   Weight: { label: 'Súly', icon: 'i-suly', wash: 'sky' },
   WeightTrend: { label: 'Súlytrend', icon: 'i-suly', wash: 'sky' },
   FuelDay: { label: 'Fuel nap', icon: 'i-fuel', wash: 'sage' },
@@ -87,11 +93,11 @@ const REF_KINDS: Record<string, ToolDomain> = {
   Protocol: { label: 'Stack', icon: 'i-stack', wash: 'sage' },
   Goal: { label: 'Cél', icon: 'i-cel', wash: 'gold' },
   LifeGoal: { label: 'Életcél', icon: 'i-cel', wash: 'gold' },
-  Growth: { label: 'Growth', icon: 'i-growth', wash: 'gold' },
+  Growth: { label: 'Growth', icon: 't-up', wash: 'gold' },
   Practice: { label: 'Gyakorlat', icon: 'i-nap', wash: 'gold' },
   TrainingPlan: { label: 'Edzésterv', icon: 'i-meso', wash: 'coral' },
-  ExerciseRecord: { label: 'Rekord', icon: 'i-sport', wash: 'coral' },
-  Sport: { label: 'Sport', icon: 'i-sport', wash: 'coral' },
+  ExerciseRecord: { label: 'Rekord', icon: 't-record', wash: 'coral' },
+  Sport: { label: 'Sport', icon: 't-volley', wash: 'coral' },
   Medication: { label: 'Gyógyszer', icon: 'i-injekcio', wash: 'rose' },
   SleepGoal: { label: 'Alváscél', icon: 'i-alvas', wash: 'lav' },
   Insight: { label: 'Összefüggés', icon: 'i-minta', wash: 'lav' },
@@ -103,14 +109,14 @@ export function refDomain(kind: string): ToolDomain {
 
 /** Recalled-memory wire kinds (ChatRecalledMemory.kind — journal_entry/daily_summary today,
  *  the rest defensive for the recall surface's other producers). */
-const MEMORY_ICONS: Record<string, ClayIconName> = {
+const MEMORY_ICONS: Record<string, ClayIconName | Icon3DName> = {
   daily_summary: 'i-nap',
   weekly_summary: 'i-heti',
   journal_entry: 'i-naplo',
-  chat_turn: 'i-mezo',
+  chat_turn: 't-chat',
   checkin_note: 'i-checkin',
 }
 
-export function memoryIcon(kind: string): ClayIconName {
-  return MEMORY_ICONS[kind] ?? 'i-retegek'
+export function memoryIcon(kind: string): ClayIconName | Icon3DName {
+  return MEMORY_ICONS[kind] ?? 't-album'
 }

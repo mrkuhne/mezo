@@ -40,7 +40,7 @@ import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain, useMesoTemplates } from '@/data/hooks'
 import type { Mesocycle } from '@/data/types'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { MesoStartSheet } from '@/features/train/sheets/MesoStartSheet'
 import { runToTemplate } from '@/features/train/logic/runToTemplate'
 import { huDate } from '@/features/train/logic/mesoDates'
@@ -130,7 +130,7 @@ export function MesoFutamokPage() {
             ‹ Edzéstervek
           </button>
           <span className="pl-lhero-art" aria-hidden="true">
-            <ClayIcon name="i-erme" size={60} className="icon" />
+            <Icon3D name="t-history" size={60} className="icon" />
             <i />
             <i />
           </span>
@@ -186,11 +186,11 @@ export function MesoFutamokPage() {
                       <span className="pl-lib-head">
                         <strong>{m.title}</strong>
                         {range && <em>{range}</em>}
-                        <b aria-hidden="true">{compareMode ? (picked ? '✓' : '○') : '›'}</b>
+                        <b aria-hidden="true">{compareMode ? (picked ? <Icon3D name="t-tick" size={16} className="icon" /> : '○') : '›'}</b>
                       </span>
                       <span className="pl-lib-closed-row">
                         <span className="pl-lib-meta">
-                          <ClayIcon name="i-idozito" size={16} className="icon" />
+                          <Icon3D name="t-calendar" size={16} className="icon" />
                           {`${m.weeks} hét`}
                         </span>
                         {/* The report state (mezo-meyc.4): a legacy closed run may carry no
@@ -198,7 +198,7 @@ export function MesoFutamokPage() {
                             a dead end. A plain stamp, never a button — the card body is what
                             opens the report. */}
                         <span className="pl-lib-meta">
-                          <ClayIcon name="i-naplo" size={16} className="icon" />
+                          <Icon3D name="t-journal" size={16} className="icon" />
                           {m.hasReport ? 'riport' : 'nincs riport'}
                         </span>
                       </span>
@@ -231,7 +231,7 @@ export function MesoFutamokPage() {
                   </p>
                 ) : (
                   <button type="button" className="pl-lib-new" onClick={openCompare}>
-                    <span className="pl-lib-new-art"><ClayIcon name="i-retegek" size={30} className="icon" /></span>
+                    <span className="pl-lib-new-art"><Icon3D name="t-compare" size={30} className="icon" /></span>
                     <span>
                       <strong>Összevetés megnyitása</strong>
                       <small>A két kiválasztott futam egymás mellett</small>

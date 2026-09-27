@@ -63,14 +63,6 @@ export function visualOf(domain: string): { wash: MozaikWash; icon: Icon3DName }
   return DOMAIN_VISUAL[domain] ?? FALLBACK_VISUAL
 }
 
-/** Spec §6.3: flagged = domain colour, fine = calm, unmeasurable = muted. The domain colour is
- *  spent on the rules that have something to say. */
-export function washOf(rule: CoachingRule): MozaikWash {
-  const state = stateOf(rule)
-  if (state === 'raised' || state === 'suppressed') return visualOf(rule.domain).wash
-  return state === 'clear' ? 'sage' : 'white'
-}
-
 export interface CoachingSplit {
   raised: number
   suppressed: number

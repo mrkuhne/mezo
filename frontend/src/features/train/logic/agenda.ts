@@ -4,7 +4,7 @@
 // AgendaItems carrying a `timeOfDay`, sorted ascending; untimed
 // (null/'') sort last, then stable by original modality order.
 // Consumed by TrainTodayPage (Mai's DayStrip + heroes), and the
-// WeeklyAgendaDay type below by weeklyLoad/weekAgenda/dayStripItems
+// WeeklyAgendaDay type below by weekAgenda/dayStripItems
 // (the week-summary logic; the old WeeklyDayRow strip that used to sit
 // here retired with TrainWeekPage's Titanium face, mezo-88iwa.13 T12 —
 // this module kept the type since it was always the real logic home).

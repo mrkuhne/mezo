@@ -252,7 +252,7 @@ export function KonziliumPage() {
           )}
 
           {view === 'conversation' && threads != null
-            ? <KonziliumConversationView threads={threads} experts={experts} crossTalkRan={crossTalkRan} />
+            ? <KonziliumConversationView threads={threads} crossTalkRan={crossTalkRan} />
             : (
                 <>
                   <KonziliumWhatIs kind={conference.kind} />
@@ -287,7 +287,6 @@ export function KonziliumPage() {
                               <ConferenceThreadCard
                                 key={`${thread.title}-${i}`}
                                 thread={thread}
-                                experts={experts}
                                 crossTalkRan={crossTalkRan}
                               />
                             ))}

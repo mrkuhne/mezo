@@ -17,7 +17,7 @@ import { GHOST_GAMIFICATION } from '@/data/gamification/gamificationMock'
 import { GrowthHero } from '@/features/me/components/GrowthHero'
 import { MaStrip } from '@/features/me/components/MaStrip'
 import { growthStats } from '@/features/me/logic/growthStats'
-import { ClaySpot } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { Mosaic, MozaikPage, PageBody, PageHead, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { addDays, localDateString } from '@/shared/lib/dates'
@@ -49,7 +49,9 @@ export function GrowthHubPage() {
   const skillLine = stats.skillCount > 0 ? <><b>{stats.skillCount} skill</b> · legjobb Lv {stats.bestLevel}</> : undefined
   const completed = quests.filter((q) => q.status === 'completed').length
   const naploLine = (questsPending || activitiesPending) ? undefined : (
-    <><b>{completed} ✓</b> · {activities.length} ✎ <span className="mz-mut">· 30 nap</span></>
+    <><b>{completed}<Icon3D name="t-tick" size={15} className="uv-inline uv-after" /><span className="sr-only"> teljesített</span></b>
+      {' · '}{activities.length}<Icon3D name="t-pencil" size={15} className="uv-inline uv-after" /><span className="sr-only"> tevékenység</span>
+      {' '}<span className="mz-mut">· 30 nap</span></>
   )
   const done = achievements.badges.filter((b) => b.achieved).length
   const kitLine = achievements.badges.length > 0
@@ -67,21 +69,22 @@ export function GrowthHubPage() {
             consistencyWeeks={profile.traits?.consistencyWeeks ?? 0} />
           <MaStrip />
           <Mosaic className="mt-md">
-            {/* Skillek + Kitüntetések wear clay SPOTS (s-hajtas / s-medal), so they are composed by
-                hand, the same idiom the (now-retired) Edzés hub's Medálok tile used — Tile's
-                icon slot only takes i-* icons. */}
+            {/* Skillek + Kitüntetések are composed by hand (the Kitüntetések pulse dot sits in the
+                tile top). Their art is 3D since U11 (mezo-me75u.11): the sprout (the old s-hajtas
+                spot, a skill growing — t-quest would read as the küldetés chips above) and
+                t-record (the Kitüntetések page's own hero). */}
             <button type="button" className="mz-tile mz-w-lav rise" style={{ '--d': '170ms' } as CSSProperties}
               aria-label="Skillek" onClick={() => navigate('/me/growth/skillek')}>
               <div className="mz-tile-top"><span className="mz-eyebrow">Skillek</span></div>
-              <div className="mz-spotwrap"><ClaySpot name="s-hajtas" size={50} /></div>
+              <div className="mz-spotwrap"><Icon3D name="t-sprout" size={50} /></div>
               {skillLine !== undefined && <div className="mz-tile-line gr-tile-line">{skillLine}</div>}
             </button>
-            <Tile wash="sky" icon="i-naplo" iconSize={47} eyebrow="Napló" delayMs={270} className="gr-tile-line"
+            <Tile wash="sky" art="t-journal" iconSize={47} eyebrow="Napló" delayMs={270} className="gr-tile-line"
               line={naploLine} onClick={() => navigate('/me/growth/naplo')} aria-label="Napló" />
             <button type="button" className="mz-tile mz-w-sage rise" style={{ '--d': '320ms' } as CSSProperties}
               aria-label="Kitüntetések" onClick={() => navigate('/me/growth/kituntetesek')}>
               <div className="mz-tile-top"><span className="mz-eyebrow">Kitüntetések</span>{pulse && <span className="gr-pulse" aria-hidden="true" />}</div>
-              <div className="mz-spotwrap"><ClaySpot name="s-medal" size={52} /></div>
+              <div className="mz-spotwrap"><Icon3D name="t-record" size={52} /></div>
               {kitLine !== undefined && <div className="mz-tile-line gr-tile-line">{kitLine}</div>}
             </button>
           </Mosaic>

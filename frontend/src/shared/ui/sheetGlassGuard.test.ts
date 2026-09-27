@@ -20,8 +20,6 @@ const SRC_DIR = dirname(dirname(dirname(fileURLToPath(import.meta.url)))) // …
 /** Sheets with no live importer (verified 2026-09-26). Reviving one means dressing it. */
 const DEAD_SHEET_FILES = [
   'features/insights/sheets/NodeDetailSheet.tsx',
-  'features/fuel/sheets/MealScoreSheet.tsx',
-  'features/fuel/sheets/RecipeScoreSheet.tsx',
   'features/today/components/DailyQuestsSheet.tsx',
   'features/today/components/MezoMessagesSheet.tsx',
 ]

@@ -190,11 +190,10 @@ describe('prototype.css stays structurally intact (mezo-d20.9.1)', () => {
  * mode this whole test file exists to catch) fails HERE with a one-line pointer, not as a
  * silent missing style downstream.
  */
-describe('the train mai section is registered and re-dressed (mezo-ju4j6.11)', () => {
+describe('the train mai section keeps only the shared eyebrow (mezo-ju4j6.11 → U11 mezo-dr0h8)', () => {
   const START_MARKER = '── train mai ('
   const END_MARKER = '── /train mai '
   const section = () => slice(START_MARKER, END_MARKER)
-  const rules = () => stripComments(section())
 
   test('both the opening and the closing comment markers are present, in order', () => {
     const start = rawCss.indexOf(START_MARKER)
@@ -208,34 +207,15 @@ describe('the train mai section is registered and re-dressed (mezo-ju4j6.11)', (
     expect(rawCss).not.toContain('train mai titanium')
   })
 
-  test('the section actually carries the tr- class family, not just the markers', () => {
-    for (const cls of ['.tr-day', '.tr-start', '.tr-alt', '.tr-energy', '.tr-mus', '.tr-mus-track']) {
-      expect(section(), `${cls} missing from the train mai section`).toContain(cls)
+  test('the section still carries .tr-eyebrow, which the plan, template and report pages wear', () => {
+    expect(stripComments(section())).toMatch(/\.tr-eyebrow \{/)
+  })
+
+  test('the pre-üveg Mai poster families are gone from the whole stylesheet (U4 renders .trm-*)', () => {
+    const css = stripComments(rawCss)
+    for (const cls of ['.tr-day', '.tr-start', '.tr-alt', '.tr-energy', '.tr-mus', '.daychip', '.daystrip', '.mesorow', '.todaycard', '.typetag', '.metapill']) {
+      expect(css, `${cls} is dead since U4 and must not come back`).not.toMatch(new RegExp(`\\${cls}(?![\\w-])`))
     }
-  })
-
-  test('no Titanium material the style bible forbids', () => {
-    const css = rules()
-    // A prototípus áttetsző fehérjei (#ffffffXX) SÖTÉT alapra készültek — világos lapon
-    // láthatatlanok. A blokkban ezért nem maradhat nyers fehér-alfa vagy fekete árnyék.
-    expect(css).not.toMatch(/#ffffff[0-9a-f]{2}/i)
-    expect(css).not.toContain('var(--surface-glass)')
-    expect(css).not.toContain('backdrop-filter')
-    expect(css).not.toContain('drop-shadow')
-  })
-
-  test('the day poster is a wash tile and the CTA is the house primary (§2.2 A, §3.1)', () => {
-    const css = rules()
-    expect(css).toContain('box-shadow: var(--mz-shadow-coral)')
-    expect(css).toContain('border: 0.5px solid rgba(43, 33, 24, 0.06)')
-    expect(css).toContain('background: var(--gradient-cta)')
-    expect(css).toContain('box-shadow: var(--shadow-cta)')
-  })
-
-  test('the kcal figure is ONE display-200 tabular numeral (§3.2)', () => {
-    const css = rules()
-    expect(css).toMatch(/\.tr-energy-main strong \{[^}]*font-weight: 200;/)
-    expect(css).toMatch(/\.tr-energy-main strong \{[^}]*font-variant-numeric: tabular-nums;/)
   })
 })
 
@@ -323,9 +303,21 @@ describe('the glassbox section is registered (mezo-88iwa.13, re-dressed mezo-ju4
     const start = rawCss.indexOf(START_MARKER)
     const end = rawCss.indexOf(END_MARKER)
     const section = start > -1 && end > start ? rawCss.slice(start, end) : ''
-    for (const cls of ['.gl-backdrop', '.gl-card', '.gl-head', '.gl-x', '.gl-anim']) {
+    for (const cls of ['.gl-backdrop', '.gl-card', '.gl-head-title', '.gl-anim']) {
       expect(section, `${cls} missing from the glassbox section`).toContain(cls)
     }
+  })
+
+  test('the section keeps geometry only; the skin is the U10 glass (U11, mezo-6661l)', () => {
+    const start = rawCss.indexOf(START_MARKER)
+    const end = rawCss.indexOf(END_MARKER)
+    const rules = stripComments(rawCss.slice(start, end))
+    // the pre-üveg light sheet skin (veil, tint radial, white top edge) is gone …
+    expect(rules).not.toMatch(/\.gl-card \{[^}]*background/)
+    expect(rules).not.toMatch(/\.gl-backdrop \{[^}]*background/)
+    // … and the head / close button are dressed by the uveg reteg ablak block only
+    expect(stripComments(rawCss)).toMatch(/\.uv-gb \.gl-x \{/)
+    expect(stripComments(rawCss)).toMatch(/\.gl-card\.glass\.uv-gb \{/)
   })
 })
 
@@ -1414,6 +1406,17 @@ describe('the uveg kit section is registered and carries the §3 recipe (mezo-me
     const css = rules()
     for (const cold of ['#0B0D12', '#13151D', '#20222A']) expect(css).not.toContain(cold)
   })
+
+  test('the glass Toggle (.uv-tgl) lives here once, motion gated (U11, mezo-7txw6)', () => {
+    const css = rules()
+    expect(css).toMatch(/^\.uv-tgl \{/m)
+    expect(css).toMatch(/^\.uv-tgl\.is-on \{/m)
+    const gate = css.lastIndexOf('@media (prefers-reduced-motion: no-preference)')
+    expect(css.indexOf('.uv-tgl { transition:')).toBeGreaterThan(gate)
+    // no page keeps a copy of the kit switch; the tudástár's sage variant is a deliberate restyle
+    const copies = stripComments(rawCss).match(/^\.(ntf-page|uv-admin) \.uv-tgl\b/gm) ?? []
+    expect(copies).toEqual([])
+  })
 })
 
 describe('the uveg chrome section is registered (mezo-me75u.1, bible §7)', () => {
@@ -1695,7 +1698,7 @@ const U7_BLOCKS: Array<[string, string[]]> = [
     '.ppl-detail .mz-page-hero.ppl-phero.uv-halo', '.ppl-detail .ppl-tlcard.glass', '.sheet.glass.ppl-sheet']],
   ['ertesitesek', ['.nf-page .nf-row.unread', '.nf-page .nf-row .nf-dot', '.nf-page .nf-ico.uv-well',
     '.nf-page .nf-empty.uv-empty', '.ntf-page .ntf-prev.glass', '.ntf-page .ntf-prev-bars i.hot',
-    '.ntf-page .ntf-masterrow.glass', '.ntf-page .ntf-cats.glass', '.ntf-page .uv-tgl.is-on', '.ntf-page .ntf-gate.glass']],
+    '.ntf-page .ntf-masterrow.glass', '.ntf-page .ntf-cats.glass', '.ntf-page .ntf-gate.glass']],
   ['beallitasok', ['.settings-page .settings-back.glass', '.settings-page .settings-hero::before',
     '.settings-page .settings-current.glass', '.settings-page .settings-domain.glass:last-child',
     '.settings-page .settings-rows.glass', '.settings-page .settings-row-art.uv-well', '.settings-page .settings-day.is-on',
@@ -1859,5 +1862,31 @@ describe.each(U10_BLOCKS)('the uveg reteg %s section carries the glass ranking (
   test('motion lives only in the no-preference branch (bible §6)', () => {
     const css = section().replace(/@media\s*\(prefers-reduced-motion:\s*no-preference\)\s*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, '')
     expect(css).not.toMatch(/animation\s*:\s*(?!none)[a-z]/)
+  })
+})
+
+// U11 · Lezárás (mezo-me75u.11): the app-wide sweep's fixes — two builders, one block each. Pinned so a
+// later whole-file save that drops one fails CI (bible rule 41).
+const U11_BLOCKS: Array<[string, string[]]> = [
+  ['edzes', ['.pl-poster .pl-week small', '.tw-move .ld-move-box em', '.tv-wizard .mz-wfoot .cta-primary',
+    '.tv-dayrest .tv-day-stamp.is-today', ".tv-wizard .mz-daypick button[aria-pressed='true']", '.tv-wizard .mz-dct small']],
+  ['egyeb', ['.alv-page .alv-sec-head .eyebrow', '.gr-ma .gr-chip .gr-chip-mk.gr-mk3d', '.enc-celok .lg-dimchip.empty',
+    '.napom-page .napom-wd.is-fut', '.napom-page .t-ico.napom-tick', '.fsx-band.glass .fsx-check > span .t-ico']],
+]
+
+describe.each(U11_BLOCKS)('the uveg lezaras %s section (mezo-me75u.11)', (name, sels) => {
+  const section = () => stripComments(slice(`── uveg lezaras ${name} (`, `── /uveg lezaras ${name} `))
+
+  test('the block exists and carries its fixes', () => {
+    const css = section()
+    for (const sel of sels) expect(css, `${sel} missing from the uveg lezaras ${name} block`).toContain(sel)
+  })
+
+  test('never glass inside glass, never the undefined --page, motion only in the no-preference branch', () => {
+    const css = section()
+    expect(css).not.toMatch(/\.glass [^{,]*\.glass[\s,{]/)
+    expect(css).not.toContain('var(--page)')
+    expect(css.replace(/@media\s*\(prefers-reduced-motion:\s*no-preference\)\s*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, ''))
+      .not.toMatch(/animation\s*:\s*(?!none)[a-z]/)
   })
 })

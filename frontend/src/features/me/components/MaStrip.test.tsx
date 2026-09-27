@@ -44,13 +44,20 @@ test('head counts done/total quests and sums today XP (done quests + activities)
   expect(screen.getByText(`+${xp} XP`)).toBeInTheDocument()
 })
 
-test('one chip per quest with the honest state class; activities render as ✎ chips; ＋ Tevékenység last', () => {
+test('one chip per quest with the honest state class; activities render as pencil chips; ＋ Tevékenység last', () => {
   const { container } = renderStrip()
   expect(container.querySelectorAll('.gr-chip:not(.act):not(.add)')).toHaveLength(mockQuestDay.length)
   expect(container.querySelectorAll('.gr-chip.act')).toHaveLength(mockActivities.length)
   const chips = container.querySelectorAll('.gr-chip')
   expect(chips[chips.length - 1].textContent).toBe('＋ Tevékenység')
   expect(container.querySelectorAll('.gr-chip.done')).toHaveLength(mockQuestDay.filter((q) => q.status === 'completed').length)
+  // The done mark is the 3D tick with a spoken word, the activity mark the 3D pencil (U11) — no ✓/✎ glyphs.
+  for (const c of container.querySelectorAll('.gr-chip.done')) {
+    expect(c.querySelector('.gr-chip-mk use')?.getAttribute('href')).toBe('#t-tick')
+    expect(c.textContent).toMatch(/^kész: /)
+  }
+  for (const c of container.querySelectorAll('.gr-chip.act')) expect(c.querySelector('.gr-chip-mk use')?.getAttribute('href')).toBe('#t-pencil')
+  expect(container.textContent).not.toMatch(/[✓✎]/)
 })
 
 test('the head navigates to /nap/kuldetesek; a DERIVED open chip does too', async () => {

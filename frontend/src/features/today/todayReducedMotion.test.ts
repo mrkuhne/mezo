@@ -6,7 +6,7 @@ import rawCss from '@/styles/prototype.css?raw'
 
 /**
  * Guard (mezo-1khu heritage, re-anchored onto the three-islands CSS by mezo-euze): the `.isl-*`
- * blob morph, floating capsules and L1 row stagger must be neutralized under
+ * blob morph and floating capsules must be neutralized under
  * `prefers-reduced-motion`, or the Playwright goldens (which run `reducedMotion: 'reduce'`)
  * flake on in-flight frames.
  *
@@ -34,7 +34,6 @@ describe('the island family (Fuel-owned) is reduced-motion safe', () => {
   test.each([
     ':where(.isl.isl-big) .isl-blob',
     ':where(.isl:not(.isl-big))',
-    ':where(.isl-l1) .itemrow',
   ])('%s is disabled under prefers-reduced-motion', (selector) => {
     expect(REDUCED_BLOCKS).toContain(selector)
   })
@@ -45,8 +44,14 @@ describe('the island family (Fuel-owned) is reduced-motion safe', () => {
     expect(rawCss).not.toContain('isl-phasein')
   })
 
+  test('the L1 row stagger went with ItemRow (U11, mezo-8slef) — no orphan .itemrow motion', () => {
+    const rulesOnly = rawCss.replace(/\/\*[\s\S]*?\*\//g, '')
+    expect(rulesOnly).not.toContain('.itemrow')
+    expect(rulesOnly).not.toContain('isl-rowin')
+  })
+
   test('every island-motion keyframe (Fuel) has a matching reduce rule', () => {
-    for (const name of ['isl-morph', 'isl-floaty', 'isl-rowin']) {
+    for (const name of ['isl-morph', 'isl-floaty']) {
       expect(rawCss).toContain(`@keyframes ${name}`)
     }
     expect(REDUCED_BLOCKS).toMatch(/animation:\s*none/)
@@ -155,7 +160,7 @@ function cmpSpecificity(a: [number, number, number], b: [number, number, number]
 const rules = parseRules(rawCss)
 const isActive = (r: Rule) => r.media !== 'reduce' && r.media !== 'no-preference'
 
-/** The three island motion families (Fuel-owned: `shared/ui/Island.tsx` +
+/** The island motion families (Fuel-owned: `shared/ui/Island.tsx` +
  *  Fuel's belt/keret surfaces): which ACTIVE selectors belong to each (by token) and which
  *  reduce-block override must dominate them. Three families this guard used to cover are
  *  retired: the evening `.isl-phase` swap (with the island components, mezo-puci), Today's
@@ -164,7 +169,6 @@ const isActive = (r: Rule) => r.media !== 'reduce' && r.media !== 'no-preference
 const FAMILIES = [
   { name: 'blob morph', token: '.isl-blob', override: ':where(.isl.isl-big) .isl-blob' },
   { name: 'capsule floaty', token: ':not(.isl-big)', override: ':where(.isl:not(.isl-big))' },
-  { name: 'L1 row stagger', token: '.isl-l1', override: ':where(.isl-l1) .itemrow' },
 ] as const
 
 describe('the Fuel island reduced-motion overrides cannot be outranked (cascade guard)', () => {
@@ -175,8 +179,8 @@ describe('the Fuel island reduced-motion overrides cannot be outranked (cascade 
     .filter(({ sel }) => sel.includes('.isl'))
 
   test('parses a non-trivial set of animating island selectors (guards against a vacuous pass)', () => {
-    // blob + floaty base + rowin base + 7 stagger steps (nth-child 2-7 + open tail) = 10.
-    expect(animating.length).toBeGreaterThanOrEqual(10)
+    // blob + floaty base (the L1 `.itemrow` stagger retired with ItemRow, mezo-8slef).
+    expect(animating.length).toBeGreaterThanOrEqual(2)
   })
 
   test.each(FAMILIES.map((f) => [f.name, f] as const))('%s: override exists, dominates and is declared last', (_n, family) => {
@@ -202,60 +206,5 @@ describe('the Fuel island reduced-motion overrides cannot be outranked (cascade 
 
   test('sanity: the specificity check DOES fail for an un-:where()-wrapped qualifier', () => {
     expect(cmpSpecificity(specificity('.isl[data-face="este"]:not(.isl-big)'), specificity(':where(.isl:not(.isl-big))'))).toBeGreaterThan(0)
-    expect(cmpSpecificity(specificity('.isl-l1 .itemrow:nth-child(3)'), specificity(':where(.isl-l1) .itemrow'))).toBeGreaterThan(0)
-  })
-})
-
-// ============================================================================
-// The stagger ladder must leave no child un-delayed, however many rows an L1 renders —
-// the `.faceswap` :nth-child(n+8) open-tail lesson, carried over verbatim.
-// ============================================================================
-
-function parseNthChild(arg: string): { a: number; b: number } | null {
-  const t = arg.trim()
-  if (/^\d+$/.test(t)) return { a: 0, b: Number(t) }
-  if (/^n$/.test(t)) return { a: 1, b: 0 }
-  const m = t.match(/^(-?\d*)n\s*([+-]\s*\d+)?$/)
-  if (!m) return null
-  const a = m[1] === '' ? 1 : m[1] === '-' ? -1 : Number(m[1])
-  const b = m[2] ? Number(m[2].replace(/\s+/g, '')) : 0
-  return { a, b }
-}
-
-function nthChildMatches(pos: number, formula: { a: number; b: number }): boolean {
-  const { a, b } = formula
-  if (a === 0) return pos === b
-  const k = (pos - b) / a
-  return Number.isInteger(k) && k >= 0
-}
-
-describe('the L1 stagger leaves no row un-delayed, however many render', () => {
-  const delayRules = rules.filter(
-    (r) => isActive(r) && splitSelectorList(r.selector).some((s) => s.includes('.isl-l1')) && /animation-delay\s*:/.test(r.body),
-  )
-  const formulas = delayRules
-    .flatMap((r) => [...r.selector.matchAll(/:nth-child\(([^)]*)\)/g)].map((m) => parseNthChild(m[1])))
-    .filter((f): f is { a: number; b: number } => f !== null)
-
-  test('parses the explicit ladder plus an open-ended tail rule', () => {
-    expect(formulas.length).toBeGreaterThanOrEqual(7)
-    expect(formulas.some((f) => f.a !== 0)).toBe(true) // at least one UNBOUNDED formula
-  })
-
-  test.each([2, 3, 5, 7, 8, 9, 13, 18, 30, 100])(
-    'row position %i has a matching animation-delay rule',
-    (pos) => {
-      expect(
-        formulas.some((f) => nthChildMatches(pos, f)),
-        `Position ${pos} matches no :nth-child formula in the L1 stagger — it would fall ` +
-          `back to the base rule's implicit 0ms delay and pop in un-staggered.`,
-      ).toBe(true)
-    },
-  )
-
-  test('deep positions all share the SAME capped tail delay (no unbounded growth)', () => {
-    const tailFormula = formulas.find((f) => f.a !== 0)!
-    const matches = [8, 9, 13, 18, 50, 500].map((pos) => nthChildMatches(pos, tailFormula))
-    expect(matches.every(Boolean)).toBe(true)
   })
 })

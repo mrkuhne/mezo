@@ -1,15 +1,31 @@
 # Design 2.0 — index and status
 
-> ## ▶ 2026-09-23 — "Üveg": Mozaik colors, Titanium material, dark only
+> ## ✅ 2026-09-26 — "Üveg" is DONE and is THE canon (`mezo-me75u` closed)
 >
-> The owner found the restored Mozaik world flat. The living direction is now the **Üveg** style:
-> Mozaik colors on the warm-graphite dark ground, with the Titanium *material* (3D icon sprite,
-> glass cards with a gradient frame, sheen, glow). **Dark only**, and the bottom TabBar with the
-> Boop characters is untouched. **Canon:**
-> [2026-09-23 üveg style bible](2026-09-23-uveg-style-bible.md) + the approved prototype
-> [prototypes/fuel-uveg.html](prototypes/fuel-uveg.html). **How:** epic `mezo-me75u` (U1–U11),
-> one slice per fresh session via the `/uvegesites` skill. The 2026-09-17 bible below stays canon
-> for everything the üveg bible does not override (ranking §3.4, card anatomy, Appendices A–E).
+> Every surface of the app wears the **Üveg** material: Mozaik colors on the warm-graphite dark
+> ground, the Titanium *material* (3D icon sprite, glass cards with a gradient frame, sheen,
+> glow), **dark only** (light mode parked, not deleted). Slices U1–U11 each closed with a
+> clickable prototype approved by the owner and a reverse parity checklist on its bead; U11 swept
+> all 126 routes in dark and removed the dead pre-üveg CSS.
+>
+> **Canon, in this order:**
+> 1. [2026-09-23 üveg style bible](2026-09-23-uveg-style-bible.md) — THE styling reference, incl.
+>    the numbered slice-lesson appendix (every rule was paid for by a slice).
+> 2. [prototypes/fuel-uveg.html](prototypes/fuel-uveg.html) — the approved look in executable
+>    form; the per-slice approved prototypes are the parity references of their areas:
+>    `uveg-fuel-tobbi`, `uveg-nap`, `uveg-napod`, `uveg-edzes`, `uveg-edzes2`, `uveg-en`,
+>    `uveg-en2`, `uveg-eszrevetel`, `uveg-mezo`, `uveg-mezo-teljes` (the whole Mezo section,
+>    csapatfal world included), `uveg-uzenofal` (csapatfal canon), `uveg-reteg` (layers,
+>    ceremonies, auth, admin). Artifact links: [prototypes/README.md](prototypes/README.md).
+> 3. [2026-09-17 restored-world style bible](2026-09-17-restored-world-style-bible.md) — canon only
+>    for what the üveg bible does not override: card anatomy, the **§3.4 ranking**, data graphics,
+>    Appendices A–E. Its materials (washed tiles, clay icons, light ground) are superseded.
+> 4. [Ceremony pattern](2026-09-15-ceremony-pattern.md) — the *pattern* is canon; its material is
+>    glass with a gold glow.
+>
+> New UI work starts from (1)+(2) and the shared kit (`frontend/src/shared/ui/mozaik`,
+> `shared/ui/clay`, the `── uveg kit (` block of `prototype.css`). Everything below this banner is
+> history and parity sources: read it for *what a screen must do*, never for *what it looks like*.
 
 > ## ⚠️ 2026-09-17 — direction reversal
 >
@@ -47,9 +63,10 @@
 Everything in this folder is dated; this index says what is current, what is background, and what
 is visually superseded — so nobody has to reconstruct the state of the direction from file names.
 
-**Start here for any new design work:**
+**Start here for any new design work:** the Üveg canon in the banner at the top. The list below is
+the restored-world (2026-09-17 → 2026-09-23) reading order, kept as history:
 
-1. [2026-09-17 restored-world style bible](2026-09-17-restored-world-style-bible.md) — the single
+1. [2026-09-17 restored-world style bible](2026-09-17-restored-world-style-bible.md) — was the single
    styling reference for all re-dress and new UI work: palette & materials per domain, card
    anatomy, ring/gauge/sparkline treatments, icon material recipe, and the old-world treatment of
    the components that never existed pre-Titanium (GlassBox, BodyMap, in-workout list, TabBar).
@@ -59,7 +76,7 @@ is visually superseded — so nobody has to reconstruct the state of the directi
 3. The Mozaik-era prototypes in [prototypes/](prototypes/) (`*-tab.html`, `*-mely.html` and the
    flow pages) — the source of truth for look and motion. **Not** `prototypes/companion-titanium/`.
 
-## Current — restored Mozaik 2.0 / Clay canon
+## Background — restored Mozaik 2.0 / Clay (visually superseded by Üveg; ranking + anatomy still canon)
 
 | Doc | What it holds |
 | --- | --- |

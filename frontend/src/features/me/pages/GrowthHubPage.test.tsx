@@ -50,13 +50,20 @@ test('hub anatomy: ‹ Én head, hero XP (FE sum 18 985), Ma strip, three tiles 
   expect(screen.getByRole('button', { name: 'Küldetések · a Nap fülön' })).toBeInTheDocument()
   for (const t of ['Skillek', 'Napló', 'Kitüntetések']) expect(screen.getByRole('button', { name: t })).toBeInTheDocument()
   for (const r of container.querySelectorAll('.rise')) expect(r.closest('.mz-play')).not.toBeNull()
+  // U11 (mezo-me75u.11): hero + tile art is the 3D set, no clay left in the content.
+  const art = (name: string) => screen.getByRole('button', { name }).querySelector('.mz-spotwrap use')?.getAttribute('href')
+  expect(container.querySelector('.gr-hero-icon use')?.getAttribute('href')).toBe('#t-up')
+  expect(art('Skillek')).toBe('#t-sprout')
+  expect(art('Napló')).toBe('#t-journal')
+  expect(art('Kitüntetések')).toBe('#t-record')
+  expect(container.querySelector('use[href^="#i-"], use[href^="#s-"]')).toBeNull()
 })
 
 test('tile lines come from the page hooks — band lengths, journal counts, badges + streak', () => {
   renderAt('/me/growth')
   expect(screen.getByRole('button', { name: 'Skillek' })).toHaveTextContent('33 skill · legjobb Lv 7')
   const completed = mockQuestHistory.filter((q) => q.status === 'completed').length
-  expect(screen.getByRole('button', { name: 'Napló' })).toHaveTextContent(`${completed} ✓ · ${mockActivityHistory.length} ✎ · 30 nap`)
+  expect(screen.getByRole('button', { name: 'Napló' })).toHaveTextContent(`${completed} teljesített · ${mockActivityHistory.length} tevékenység · 30 nap`)
   expect(screen.getByRole('button', { name: 'Kitüntetések' })).toHaveTextContent('4 / 9 jelvény · 6 napos sorozat')
 })
 

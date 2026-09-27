@@ -169,7 +169,7 @@ export function MesoComparePage() {
     <MozaikPage tone="gold">
       <PageHead glass onBack={goBack} label="Mezociklus" />
       <EntranceGroup>
-        <PageHero icon="i-naplo" big={valid ? 'A · B' : undefined} name="Összevetés" sub="Két lezárt futam" />
+        <PageHero art="t-compare" accent="var(--dv-sky)" big={valid ? 'A · B' : undefined} name="Összevetés" sub="Két lezárt futam" />
         <PageBody className="tv-cmp">
 
       {!valid ? (

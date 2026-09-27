@@ -39,9 +39,7 @@ export function ProgressionBanner({ progression, lastWeek, bare = false }: {
           {/* Agyag-szimbólum, nem emodzsi (stíluskönyv §2.3 · §6; lezárás mezo-ju4j6.16).
               `i-lang` a ház „energia" jele — ugyanez ül a ceremónia RPE-számlálóján —, és
               a jelvény mellette amúgy is kimondja az IRÁNYT, tehát ez a jel a BLOKKOT
-              azonosítja, nem a haladás irányát. (A `SPORT_EMOJI` térkép ugyan még él a
-              `sportKinds.ts`-ben, de az EGYETLEN fogyasztója, a `logic/weeklyLoad.ts`,
-              maga is importáló nélküli holt modul — a képernyőre nem jut emodzsi onnan.) */}
+              azonosítja, nem a haladás irányát. */}
           <span className="txt"><Icon3D name="t-bolt" size={20} className="icon" /> Progresszió</span>
           <span className="delta">{progressionDeltaLabel(p)}</span>
         </div>

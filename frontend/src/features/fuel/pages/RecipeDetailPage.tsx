@@ -13,8 +13,8 @@
 // blokkjával; a szekciók stílusa az S1 `fmx-` blokkjából jön.
 //
 // Ami VÁLTOZATLAN viselkedés (a lap csak más arcot kapott): a `/adag ↔ egész` váltó, a lusta
-// AI-bontás (`useRecipeBreakdown`) és a háttér-újraértékelés őszinte jelzése, a pontszám-sheet
-// (ugyanaz a `ScoreBreakdownBody`, amit az étkezés-értékelés is rajzol), a logok listája, a
+// AI-bontás (`useRecipeBreakdown`) és a háttér-újraértékelés őszinte jelzése, a pontszám-bontás
+// (ma a `/ertekeles` oldal `FuelScoreSurface`-e, amit az étkezés-értékelés is rajzol), a logok listája, a
 // LogFlow előtöltése, a csillag, a szerkesztő-ajtó és a Műhely-iterálás `?recipeId`-vel.
 //
 // Ami SZIGORODOTT: a törlés két lépés lett (a prototípus `deleteControl`-ja, és a kamra-tétel

@@ -37,7 +37,7 @@ export function CharacterFeedPage({ embedded = false }: { embedded?: boolean }) 
       {!embedded && <KarakterBackHead small="Egyre jobban ismerünk" title="Karakter" onBack={() => navigate('/mezo')} />}
       <CharacterCouncilStatus />
       {!isLoading && !isError && featured && (
-        <CharacterMorningStory item={featured} experts={experts} onOpen={() => {
+        <CharacterMorningStory item={featured} onOpen={() => {
           setFilter('all')
           setCount(value => Math.max(value, items.indexOf(featured) + 1))
           setOpenStory(value => value + 1)

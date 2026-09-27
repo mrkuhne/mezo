@@ -1,13 +1,13 @@
 // ============================================================
 // Mezo · GrowthHero (mezo-rmi0.1) — prototype growth-tab.html `.grhero` ×1.18.
-// Title → clay i-growth + XP count-up (continues from the last shown value) → three
+// Title → 3D t-up (growth, U11) + XP count-up (continues from the last shown value) → three
 // labelled rows: Szint (gold bar, xpInLevel/xpForNext), Fegyelem (lav bar, %) and
 // Ritmus (last-8-weeks dots). Honest states: a null discipline or a missing
 // gamification level REMOVES its row (handoff §2) — never a "–" placeholder. ADR 0010:
 // nothing here gates, counts down or rewards.
 // ============================================================
 import type { CSSProperties } from 'react'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { useContinuingCountUp } from '@/shared/ui/mozaik/motion'
 import { huInt } from '@/shared/lib/huNum'
 
@@ -27,7 +27,7 @@ export function GrowthHero({ totalXp, level, disciplinePct, consistencyWeeks }: 
     <div className="gr-hero rise" style={{ '--d': '0ms' } as CSSProperties}>
       <div className="gr-hero-ttl">Growth</div>
       <div className="gr-hero-row">
-        <ClayIcon name="i-growth" size={54} className="gr-hero-icon" />
+        <Icon3D name="t-up" size={54} className="gr-hero-icon" />
         <div aria-label={`${huInt(totalXp)} XP`}>
           <span className="gr-hero-num">{huInt(shown)}</span>
           <span className="gr-hero-unit">XP</span>

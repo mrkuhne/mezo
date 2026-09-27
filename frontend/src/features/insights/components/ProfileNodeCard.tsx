@@ -1,4 +1,4 @@
-import { ClayIcon } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import type { KnowledgeGraphNode } from '@/data/types'
 
 /** W4.3 (mezo-b3pp.17): the pragmatic profile — what the companion has learned about HOW to talk
@@ -12,7 +12,8 @@ export function ProfileNodeCard({ node, onArchive }: {
 }) {
   return (
     <div data-profile-node-card className="mz-facttile">
-      <div className="mz-fic"><ClayIcon name="i-checkin" size={20} /></div>
+      {/* U11: the learned communication style — 3D t-chat by meaning (was the clay check-in glyph) */}
+      <div className="mz-fic"><Icon3D name="t-chat" size={20} /></div>
       <div className="mz-fact-grow">
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
           <b style={{ fontSize: 13, fontWeight: 700 }}>{node.title}</b>

@@ -8,7 +8,7 @@
 //   plain   — a thin/empty closed day: value only, no status word, no bar.
 //   loading — a dashed placeholder, nothing claimed.
 // A row with no score (NO_DATA, or still open) is dashed free space, not glass (bible U1 rule 6).
-import { useId, useState, type CSSProperties } from 'react'
+import { Fragment, useId, useState, type CSSProperties } from 'react'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { cn } from '@/shared/lib/cn'
 import { DAY_DIMENSIONS, type DayDimensionKey } from '@/features/me/logic/weekDay'
@@ -42,6 +42,13 @@ export function factLineOf(dimension: NormalizedDayDimension, mode: NapomRowMode
   if (mode === 'loading') return ''
   if (dimension.facts.length > 0) return dimension.facts.map((f) => `${f.label} ${f.value}`).join(' · ')
   return dimension.status === 'NO_DATA' ? 'nincs adat' : ''
+}
+
+/** A fact value as drawn. The engine sends a done yes/no fact (víz) as the `✓` glyph; the page
+ *  draws it as the 3D tick with a spoken word (bible U3 rule 19, U11). Every other value is text. */
+function FactValue({ value }: { value: string }) {
+  if (value !== '✓') return <>{value}</>
+  return <><Icon3D name="t-tick" size={14} className="uv-inline napom-tick" /><span className="sr-only">megvan</span></>
 }
 
 export function NapomDimensionRow({ dimension, mode, goalTick = false, fresh = false, i }: {
@@ -78,7 +85,11 @@ export function NapomDimensionRow({ dimension, mode, goalTick = false, fresh = f
           {meta.label}
           {mode === 'scored' && <em className="napom-wt"> súly {Math.round(dimension.weight * 100)}%</em>}
         </strong>
-        <small id={factId}>{factLine}</small>
+        <small id={factId}>
+          {mode !== 'loading' && facts.some((f) => f.value === '✓')
+            ? facts.map((f, k) => <Fragment key={`${f.label}·${f.value}`}>{k > 0 && ' · '}{f.label} <FactValue value={f.value} /></Fragment>)
+            : factLine}
+        </small>
         {showBar && (
           <span className="napom-bar uv-bar">
             <b style={{ '--w': `${Math.max(2, Math.min(100, score ?? 0))}%` } as CSSProperties} />
@@ -94,7 +105,7 @@ export function NapomDimensionRow({ dimension, mode, goalTick = false, fresh = f
         <span className="napom-dmore">
           {facts.length > 0 && (
             <span className="napom-dchips">
-              {facts.map((f) => <span key={`${f.label}·${f.value}`} className="napom-flat">{f.label} · {f.value}</span>)}
+              {facts.map((f) => <span key={`${f.label}·${f.value}`} className="napom-flat">{f.label} · <FactValue value={f.value} /></span>)}
             </span>
           )}
           {note && <span className="napom-dnote">{note}</span>}

@@ -2,8 +2,8 @@
 // Mezo · MaStrip (mezo-rmi0.1) — the Growth hub's "Ma" strip, prototype growth-tab.html
 // `.mastrip`. Replaces the two legacy cards (DailyQuestsCard + ActivityLogCard) on Growth
 // with one strip: head (`Ma · d/n küldetés` + today XP chip → /nap/kuldetesek) and a
-// wrapping chip row — one chip per quest (done sage ✓ · open neutral · expired dashed
-// "csendben lejárt", never terracotta), one ✎ chip per activity, and `＋ Tevékenység`
+// wrapping chip row — one chip per quest (done sage t-tick · open neutral · expired dashed
+// "csendben lejárt", never terracotta), one t-pencil chip per activity, and `＋ Tevékenység`
 // that opens the real ActivityLogSheet in place. No explicit "done" exists in the domain:
 // DERIVED quests close from the logs (an open chip just goes to the quest page), an
 // ACTIVITY-mode chip opens the sheet with the quest — the DailyQuestList "Naplózz" path.
@@ -18,6 +18,7 @@ import { buildQuestRewardToast } from '@/features/progression/logic/rewardToast'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
 import { localDateString } from '@/shared/lib/dates'
 import { emitToast } from '@/shared/lib/toastBus'
+import { Icon3D } from '@/shared/ui/clay'
 
 const trim = (s: string, n = 26) => (s.length > n ? s.slice(0, n - 1) + '…' : s)
 
@@ -43,7 +44,7 @@ export function MaStrip() {
 
   const questChip = (q: DailyQuest) => {
     if (q.status === 'completed') {
-      return <span key={q.id} className="gr-chip done"><span className="gr-chip-mk" aria-hidden="true">✓</span>{trim(q.title)}</span>
+      return <span key={q.id} className="gr-chip done"><span className="gr-chip-mk gr-mk3d" aria-hidden="true"><Icon3D name="t-tick" size={17} /></span><span className="sr-only">kész: </span>{trim(q.title)}</span>
     }
     if (q.status === 'expired' || q.status === 'rerolled') {
       return <span key={q.id} className="gr-chip gone" aria-disabled="true"><span className="gr-chip-mk" aria-hidden="true" />{trim(q.title, 20)} · csendben lejárt</span>
@@ -72,7 +73,7 @@ export function MaStrip() {
           : <>
               {quests.map(questChip)}
               {activities.map((a) => (
-                <span key={a.id} className="gr-chip act"><span className="gr-chip-mk" aria-hidden="true">✎</span>{trim(a.text, 22)}{a.xpAwarded > 0 ? ` · +${a.xpAwarded}` : ''}</span>
+                <span key={a.id} className="gr-chip act"><span className="gr-chip-mk gr-mk3d" aria-hidden="true"><Icon3D name="t-pencil" size={17} /></span>{trim(a.text, 22)}{a.xpAwarded > 0 ? ` · +${a.xpAwarded}` : ''}</span>
               ))}
             </>}
         <button type="button" className="gr-chip add" onClick={() => setSheet({ quest: null })}>＋ Tevékenység</button>

@@ -117,9 +117,9 @@ glass inside glass. In-app work reuses the shared `mozaik`/`clay` UI kit
 (`frontend/src/shared/ui/mozaik`, `frontend/src/shared/ui/clay`), extended in slice U1, rather
 than inventing a look.
 
-While `mezo-me75u` is in flight the app is deliberately mixed-look. Re-dress what you touch per
-the üveg bible, and run the programme's work through `/uvegesites` (one slice per fresh session:
-prototype → owner OK → build → merge → deploy).
+The programme `mezo-me75u` is **complete (2026-09-27, U1–U11)**: every surface wears Üveg. New UI work
+follows the üveg bible + the kit; the canon order is in [`docs/design_2.0/README.md`](docs/design_2.0/README.md).
+Any new screen still gets a clickable prototype and the owner's OK before code.
 
 ## Claude-specific notes
 

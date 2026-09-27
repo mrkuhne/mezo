@@ -26,8 +26,8 @@
 // The tint is FIXED for every info glass. It was the Titanium prototype's `#bca6f1`; the
 // üveg re-dress (U10, mezo-me75u.10, prototypes/src/uveg-reteg-body.html `GB.info`) gives
 // the shared dialog its AREA's colour, and every InfoButton lives in Edzés: coral. Inside
-// the glass the art is the Titanium 3D set (the default clay `i-info` trigger maps to
-// `t-info` at this call site; bible U1 rule 7).
+// the glass the art is the Titanium 3D set. Since U11 (mezo-me75u.11) the trigger is 3D too:
+// the default is `t-info`, so every InfoButton trigger in the app wears the 3D set.
 //
 // The copy is owner-iterated and ships word for word from the prototype; call sites
 // pass it verbatim (one placement interpolates a real MEV value — never a literal).
@@ -40,19 +40,15 @@ import { ContentIcon, type ClayIconName, type Icon3DName } from '@/shared/ui/cla
 /** The explain layer's fixed accent: Edzés coral (üveg U10; was the Titanium `#bca6f1`). */
 export const INFO_TINT = 'var(--dv-coral)'
 
-/** The prototype's own `#i-info` glyph — a titanium circle with a blue lowercase i,
- *  defined in the prototype's live sprite (companion-titanium/nap.html:40; an earlier
- *  claim that it did not exist looked in the wrong files) — is now PORTED into
- *  clay-icons.svg verbatim, adapted only to the house gradient ids (ig-*). 1:1. */
-const DEFAULT_INFO_ICON: ClayIconName = 'i-info'
+/** The default trigger glyph: the Titanium 3D `t-info` (U11, mezo-me75u.11 — the clay
+ *  `i-info` was the last clay glyph on every info trigger). */
+const DEFAULT_INFO_ICON: Icon3DName = 't-info'
 
 export interface InfoButtonProps {
   title: string
   /** The owner-iterated explanation, word for word. May contain an interpolated value. */
   copy: string
-  /** A clay name (the default `i-info`, unmapped in CLAY_TO_3D, so it still renders the clay
-   *  glyph) or — on a page already re-dressed in üveg (mezo-me75u.4) — a Titanium 3D name
-   *  (`t-info`). Rendered through ContentIcon, so existing callers are unchanged. */
+  /** A Titanium 3D name (default `t-info`) or a clay name mapped through ContentIcon. */
   icon?: ClayIconName | Icon3DName
 }
 
@@ -83,7 +79,7 @@ export function InfoButton({ title, copy, icon = DEFAULT_INFO_ICON }: InfoButton
         onClose={() => setOpen(false)}
         label={title}
         tint={INFO_TINT}
-        art={<ContentIcon name={icon === DEFAULT_INFO_ICON ? 't-info' : icon} size={30} />}
+        art={<ContentIcon name={icon} size={30} />}
         eyebrow="MEZO · RÉSZLET"
       >
         <p className="pl-info-copy">{copy}</p>
