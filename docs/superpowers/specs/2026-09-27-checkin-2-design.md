@@ -17,8 +17,11 @@
   6. Guiding principle, in the owner's words: *"lényegében mindent is táplálni fogunk az új
      checkinnel … minél gazdagabb legyen tőle minden."* Every area that can use an answer must use it
      visibly.
-- **Approved prototype:** pending (gate 2). Nap living prototype (`docs/design_2.0/prototypes/elo/nap.html`,
-  check-in sheet + Napom day rating) and Edzés living prototype (`elo/edzes.html`, readiness card).
+- **Prototype (gate 2, awaiting owner OK):** Nap living prototype
+  [`elo/nap.html`](../../design_2.0/prototypes/elo/nap.html) (routes `#checkin` + the four slot sheets,
+  `#hatasok`, `#napom`, `#napzaras/3`, `#ikonok`) and Edzés living prototype
+  [`elo/edzes.html`](../../design_2.0/prototypes/elo/edzes.html) (`#mai` readiness card). Artifact URLs in
+  [`elo/README.md`](../../design_2.0/prototypes/elo/README.md).
 
 ## 1. Problem
 
