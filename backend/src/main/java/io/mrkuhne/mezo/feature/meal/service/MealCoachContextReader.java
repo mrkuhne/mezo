@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.meal.service;
 
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
+import io.mrkuhne.mezo.feature.biometrics.checkin.service.CheckInText;
 import io.mrkuhne.mezo.feature.biometrics.profile.entity.BiometricProfileEntity;
 import io.mrkuhne.mezo.feature.biometrics.profile.repository.BiometricProfileRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
@@ -26,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
  * szükséges adatot a kajáról és a userről"). Everything that moves a post-meal glucose response and
  * that the app actually knows: body (sex, age, height, weight, body fat, NEAT band), the active goal,
  * last night's sleep (a short or poor night measurably worsens insulin sensitivity), the day's
- * check-ins (stress / energy), and an active medication (metformin, a GLP-1 … change the curve).
+ * check-ins (every answered item — incl. hunger, craving, digestion), and an active medication (metformin, a GLP-1 … change the curve).
  *
  * <p>Honest nulls: every field is nullable and the prompt prints "nincs adat" for a gap — a missing
  * profile is never read as a default person. Read in ONE short read-only transaction, detached
@@ -51,8 +52,18 @@ class MealCoachContextReader {
     record Sleep(LocalDate date, BigDecimal durationH, Integer quality, Integer awakenings) {
     }
 
-    /** One check-in; {@code slotTime} is "HH:mm", scales 1-10. */
-    record CheckIn(String slotTime, Integer energy, Integer stress, Integer body, Integer mental) {
+    /**
+     * One check-in; {@code slotTime} is "HH:mm". {@code line} is the row's every answered item as
+     * the shared {@link CheckInText} renders it (Check-in 2.0, mezo-ck2, spec §3.4/§3.4b) — the
+     * same line the chat snapshot prints, so hunger, craving (+ kind) and digestion reach the coach
+     * and a NULL (not answered) item never does. Rendered HERE, inside the read transaction, so the
+     * record stays a detached value.
+     */
+    record CheckIn(String slotTime, String line) {
+
+        static CheckIn of(CheckInEntity c) {
+            return new CheckIn(c.getSlotTime(), CheckInText.render(c));
+        }
     }
 
     private final BiometricProfileRepository profiles;
@@ -77,7 +88,7 @@ class MealCoachContextReader {
             .map(MealCoachContextReader::toSleep).orElse(null);
         List<CheckIn> dayCheckIns = checkIns.findByCreatedByAndDateOrderBySlotTime(userId, date).stream()
             .filter(c -> "done".equals(c.getState()))
-            .map(c -> new CheckIn(c.getSlotTime(), c.getEnergy(), c.getStress(), c.getBody(), c.getMental()))
+            .map(CheckIn::of)
             .toList();
         String medication = medications.findFirstByCreatedByAndActiveTrueAndDeletedFalse(userId)
             .map(MealCoachContextReader::medicationLabel).orElse(null);

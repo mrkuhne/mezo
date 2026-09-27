@@ -769,7 +769,46 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         assertThat(snapshot).contains("alvás (" + today.minusDays(1) + "): 7,2 h, minőség 4/10");
         assertThat(snapshot).contains(
-            "check-in (" + today + " 08:00): energia 4/10, stressz 2/10, megjegyzés: \"fáradtan ébredtem\"");
+            "check-in (" + today + " 08:00): energia 4/10, stressz 2/10, testi érzés 3/10, "
+                + "fejtisztaság 3/10, megjegyzés: \"fáradtan ébredtem\"");
+    }
+
+    /**
+     * Check-in 2.0 (mezo-ck2, spec §3.1): every answered item renders through the shared
+     * CheckInText, and today's EARLIER check-ins stay visible as the day-level line — a morning
+     * pain answer must not vanish once the afternoon slot is saved. Unanswered items are absent.
+     */
+    @Test
+    void testRender_shouldRenderAllItemsAndTodaysEarlierCheckIns_whenSeveralLoggedToday() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        checkInPopulator.createCheckIn(owner, today, "06:30", c -> {
+            c.setEnergy(5);
+            c.setMood(6);
+            c.setRested(3);
+            c.setPain(true);
+            c.setPainRegions(java.util.List.of(
+                io.mrkuhne.mezo.feature.biometrics.checkin.entity.PainRegion.TERD));
+            c.setPainIntensity(6);
+            c.setNote("reggeli jegyzet");
+        });
+        checkInPopulator.createCheckIn(owner, today, "10:00", c -> { });
+        checkInPopulator.createCheckIn(owner, today, "14:00", c -> {
+            c.setEnergy(7);
+            c.setHunger(8);
+            c.setCraving(7);
+            c.setCravingKinds(java.util.List.of(
+                io.mrkuhne.mezo.feature.biometrics.checkin.entity.CravingKind.EDES));
+            c.setQuickExit(true);
+        });
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("check-in (" + today + " 14:00): energia 7/10, éhség 8/10, "
+                + "sóvárgás 7/10 (édes) (gyors kitöltés); ma korábban: 06:30 — energia 5/10, "
+                + "hangulat 6/10, kipihentség 3/10, fáj: térd 6/10")
+            .doesNotContain("10:00 —")
+            .doesNotContain("reggeli jegyzet");
     }
 
     /**
@@ -838,7 +877,7 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     void testRender_shouldRenderNoDataForCheckIn_whenBothSlidersUnanswered() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate today = LocalDate.now();
-        checkInPopulator.createCheckIn(owner, today, "08:00", null, null, null);
+        checkInPopulator.createCheckIn(owner, today, "08:00", c -> { });
 
         String snapshot = assembler.render(owner, today);
 
@@ -859,7 +898,8 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         // mezo-xrhd: the block rendered the latest check-in EVER, dated but with no today-status,
         // so a day without one read as "nothing to say" and the midday note silently skipped it.
         assertThat(snapshot).contains("check-in: MA MÉG NINCS (utolsó: " + today.minusDays(1)
-            + " 08:00 — energia 4/10, stressz 2/10, megjegyzés: \"tegnapi\")");
+            + " 08:00 — energia 4/10, stressz 2/10, testi érzés 3/10, fejtisztaság 3/10, "
+            + "megjegyzés: \"tegnapi\")");
     }
 
     @Test

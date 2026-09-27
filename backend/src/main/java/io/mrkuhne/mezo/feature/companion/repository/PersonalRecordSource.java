@@ -15,7 +15,7 @@ public record PersonalRecordSource(String name, String domain, String columns, S
     }
     public static final List<PersonalRecordSource> ALL = List.of(
         s("activity_log", "activity", "id,occurred_on,text,skill_key,confidence,xp_awarded,xp_suggested,extracted,categorized_by,created_at", "occurred_on", "", ""),
-        s("check_in", "biometrics", "id,date,slot_time,state,energy,stress,body,mental,note,saved_at,created_at", "date", "", ""),
+        s("check_in", "biometrics", "id,date,slot_time,state,energy,stress,body,mental,mood,rested,soreness,pain,pain_regions,pain_intensity,motivation,hunger,craving,craving_kinds,digestion,connection,day_rating,quick_exit,note,saved_at,created_at", "date", "", ""),
         s("biometric_profile", "biometrics", "id,sex,height_cm,birth_date,body_fat_pct,activity_level,created_at", "created_at", "", ""),
         s("sleep_goal", "biometrics", "id,target_minutes,anchor,anchor_time,regularity_band_min,created_at", "created_at", "", ""),
         s("sleep_log", "biometrics", "id,date,bedtime,wakeup,duration_h,quality,awakenings,notes,in_bed_min,awake_min,light_min,rem_min,deep_min,source_quality_pct,source,hypnogram,created_at", "date", "", ""),
