@@ -1088,7 +1088,8 @@ public class FakeCompanionLlm implements CompanionLlm {
             return recheck.find() ? recheck.group(1)
                     : "{\"verdict\":\"drift\",\"text\":\"Korábban megerősítetted, hogy"
                             + " ez így van — az utóbbi hetekben mintha másképp"
-                            + " alakulna. Figyeljem tovább?\"}";
+                            + " alakulna. Figyeljem tovább?\","
+                            + "\"claim\":\"Mostanában ez másképp alakul.\"}";
         }
         if (systemPrompt.startsWith(HypothesisPipelineService.HYPOTHESIS_MARKER)) {
             if (userMessage.contains("[fake-recovery-batch:")) {
