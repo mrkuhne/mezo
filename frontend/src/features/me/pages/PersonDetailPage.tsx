@@ -38,7 +38,8 @@ import {
 } from '@/features/me/logic/effectCopy'
 import { PersonLogSheet } from '@/features/me/sheets/PersonLogSheet'
 import { PersonEditSheet } from '@/features/me/sheets/PersonEditSheet'
-import type { Mention, PersonFact, PersonFactKind } from '@/data/types'
+import { FACT_KIND_LABEL } from '@/features/me/logic/personFactCopy'
+import type { Mention, PersonFact } from '@/data/types'
 
 function EffectDots({ n, ring, label }: { n: number; ring?: boolean; label: string }) {
   return (
@@ -48,15 +49,6 @@ function EffectDots({ n, ring, label }: { n: number; ring?: boolean; label: stri
       ))}
     </span>
   )
-}
-
-// S3 (mezo-d6ivw.3): a normalizált tények fajta-címkéi a kártyán.
-const FACT_KIND_LABEL: Record<PersonFactKind, string> = {
-  preference: 'kedveli / nem szereti',
-  relationship_state: 'kapcsolat most',
-  shared_activity: 'közös',
-  important_date: 'fontos dátum',
-  sensitivity: 'érzékeny',
 }
 
 function factProvenance(f: PersonFact): string {

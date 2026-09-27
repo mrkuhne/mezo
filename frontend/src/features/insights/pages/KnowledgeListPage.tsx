@@ -10,6 +10,7 @@ import { GRAPH_KIND_GROUPS, PROFILE_SOURCE_KIND } from '@/data/insights/graph'
 import { KnowledgeBaseView, type HubNavTarget } from '@/features/insights/components/KnowledgeBaseView'
 import { ForgetUndoBar } from '@/features/insights/components/hub/ForgetUndoBar'
 import { TenyekSection } from '@/features/insights/components/hub/TenyekSection'
+import { EmberekSection } from '@/features/insights/components/hub/EmberekSection'
 import { useForgetUndo } from '@/features/insights/hooks/useForgetUndo'
 import { hubCounts } from '@/features/insights/logic/hubCounts'
 import { KategoriakView } from '@/features/insights/components/KategoriakView'
@@ -110,6 +111,9 @@ export function KnowledgeListPage() {
   // második WeekDiscoveries-kattintás mount nélkül) NEM váltaná újra a kiemelést — jelenleg
   // nincs ilyen producer, de ha lesz, ennek a state-nek a mountot is újra kell futtatnia.
   const [highlightFactId] = useState<string | null>(() => params.get('fact'))
+  // S6: an Emberek fact-text search carried into the person it matched (prototype `data-pq`) —
+  // held here because the person sub-view remounts under a new replayKey.
+  const [personQuery, setPersonQuery] = useState('')
 
   // S6 (mezo-d6ivw.6): the hub loads all four sources up front — each owns its own
   // pending/error/degraded state, so there is no page-wide early return any more. Every hook
@@ -200,7 +204,15 @@ export function KnowledgeListPage() {
         backTo={inPerson ? { label: 'Emberek', params: { view: 'emberek' } } : undefined}
       >
         <EntranceGroup className="tud9-flow" replayKey={replayKey}>
-          {null /* B10: EmberekSection */}
+          <EmberekSection
+            personId={personId}
+            initialPersonQuery={personQuery}
+            onOpenPerson={(id, carry) => {
+              setPersonQuery(carry)
+              setParams(withWeek({ view: 'emberek', person: id }, params))
+            }}
+            forget={undo.start} isHidden={undo.isHidden}
+          />
         </EntranceGroup>
         {undoBar}
       </TudasFrame>
