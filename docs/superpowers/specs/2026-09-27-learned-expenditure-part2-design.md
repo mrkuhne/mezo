@@ -1,4 +1,4 @@
-# Magától tanuló energiaigény, 2. rész — weekly card, learning page, day marks, switch (design)
+# Magától tanuló energiaigény, 2. rész — weekly summary, learning page, day marks, switch (design)
 
 - **Bead:** `mezo-3n2so` (Part 2 of `mezo-zz91i`; builds on `mezo-y72o3` „Hogy tanultam?”)
 - **Date:** 2026-09-27 · **Status:** owner-approved direction (brainstorm 2026-09-27)
@@ -19,7 +19,7 @@ story week by week. Honest throughout: no number is shown that the data does not
 | # | Question | Decision |
 |---|---|---|
 | P1 | When a day mark changes the target | **Immediately.** The mark recomputes the affected week and every later week at once; the target moves now, and a short line says by how much. |
-| P2 | Where a day can be marked | **Three places:** the weekly card (excluded days), the learning page (last 14 days), and the bottom of any day's food log in Fuel. |
+| P2 | Where a day can be marked | **Three places:** the weekly summary sheet (excluded days), the learning page (last 14 days), and the bottom of any day's food log in Fuel. |
 | P3 | Switch off | **Keeps learning silently.** The target returns to the formula (+ accepted corrections) at once; the weekly run keeps computing with the same rails, not serving. Switching on serves the value learned meanwhile, with a line saying how much the target moved. |
 | P4 | When the weekly card and bell appear | **Only when there is something to say:** the base moved, a day was excluded, or the week was holding (too little data). A quiet week gets no card and no bell. |
 | P5 | Detail page shape | **One full page.** „Hogy tanultam?” becomes its own page: week-by-week chart on top, last 14 days with toggles, then the existing six sections about the latest week. The breakdown sheet keeps a one-line summary + „Részletek”. |
@@ -109,12 +109,24 @@ Investigator report, filtered (anchors at `origin/main` 2026-09-27):
 
 ## 5. What the owner sees
 
-### 5.1 Weekly card — Fuel „Mai”, today only
+### 5.1 Weekly summary — a dot on Mai, a sheet behind it (prototype round 2)
+
+**Owner, prototype rounds 1–2:** a card on top of Mai is rejected (Mai focuses on today); pills are
+rejected too. The summary lives in a bottom **sheet „Heti tanulás”**; Mai carries only a **dot**.
 
 Shown when **all** hold: learning switch on; a row exists for `weekStart = this Monday − 7`; the
 row is *worth saying* (`step ≠ 0` OR `excluded_days` non-empty OR `status = HOLDING`); the row is
-not dismissed. Position: top of the Mai page, above the day navigator, today only (never on a past
-day). A glass card, one accent.
+not dismissed; today only (never on a past day).
+
+- **The dot** (8 px, glowing, sage; amber when holding) is a signal only, never a tap target
+  (`pointer-events: none`). It sits inside the „Miből jön össze?” button (≥ 44 px tall), which opens
+  the equation box as before.
+- In the equation box the **Alap row** is highlighted (tinted fill, accent ring, the dot, sub-line
+  „· heti tanulás ›”); the whole row (full width, ≥ 44 px) opens the sheet and closes the box.
+- On the learning page the **status row** becomes a full-width button (dot + „· heti összegző ›”)
+  opening the same sheet.
+
+Sheet content, top to bottom (each part only when it applies):
 
 Content, top to bottom (each part only when it applies):
 
@@ -125,21 +137,21 @@ Content, top to bottom (each part only when it applies):
    — legalább 4 és 2 kell”, and the base did not move.
 3. **Excluded days:** one row per excluded day: weekday + date, logged kcal, reason („hiányosnak
    tűnt” / „te jelölted hiányosnak”), and a one-tap **„Teljes volt”** (suspicious days only; a marked
-   day offers „Mégis teljes volt”). Tapping recomputes at once (P1); the card re-renders with the new
+   day offers „Mégis teljes volt”). Tapping recomputes at once (P1); the sheet re-renders in place with the new
    result and a line „A keret +40 kcal-lal változott” (or „nem változott”).
 4. **Footer:** „Részletek” → the learning page; „Bezárom” → dismiss (server-side, per week).
 
-No answer needed: an untouched card leaves suspicious days excluded (parent L2).
+No answer needed: an untouched summary leaves suspicious days excluded (parent L2).
 
 ### 5.2 Bell
 
-One feed item per week, emitted only by the Monday job, only when the card would show and the
+One feed item per week, emitted only by the Monday job, only when the summary would show and the
 switch is on: title „Heti tanulás: +60 kcal” / „Heti tanulás: kevés adat volt” / „Heti tanulás: 2
 nap kimaradt”; tap → learning page. Never from the deploy rollout or a re-chain.
 
 ### 5.3 Learning page — „Hogy tanultam?” (route `/fuel/tanulas`)
 
-Entry: the Alap row's „Részletek” in the energy breakdown sheet, the weekly card, the bell, the
+Entry: the Alap row's „Részletek” in the energy breakdown sheet, the weekly sheet, the bell, the
 day-log mark line („Mit jelent ez?”).
 
 1. **Status line:** switch on → „Tanult alap · Közepesen biztos · ±150 kcal”; switch off → „Most
@@ -242,7 +254,9 @@ stored value, so older clients cannot silently reset it).
   `useIntakeDayMark` mutation via `useDualQuery` with mock seeds; mock mutation updates the mock
   state and returns a deterministic ±kcal. Invalidations after a mark or switch save: `fuelDay`,
   `goals`, `expenditureExplanation`, `expenditureHistory`, `expenditureWeeklyCard`, `intakeDays`.
-- `features/fuel/components/WeeklyLearningCard.tsx` (Mai, today, above DayNavigator),
+- `features/fuel/sheets/WeeklyLearningSheet.tsx` (the summary sheet) + the dot: `WeeklyLearningDot`
+  inside the „Miből jön össze?” button (Mai, today) and the highlighted Alap row in the equation box
+  (both open the sheet via the Alap row only), the learning page's status row as a button,
   `components/DayLearningMark.tsx` (bottom of the day log), `pages/LearningPage.tsx` (route
   `/fuel/tanulas`, reuses `LearnedBaseExplainer`'s six sections; new `LearningHistoryChart`), the
   breakdown sheet's `HowLearned` becomes a summary line + „Részletek” link. Settings: switch row in
@@ -277,7 +291,7 @@ inside the prescription jsonb, uppercase; it stays as is and is documented as in
   week only from the job; a mark on an unlogged day → 409.
 - **Contract/controller** tests for the five new endpoints; diet-settings round trip with and
   without `learningEnabled`.
-- **FE:** card visibility states (moved / excluded / holding / dismissed / none), one-tap confirm
+- **FE:** dot + sheet visibility states (moved / excluded / holding / dismissed / none), one-tap confirm
   re-renders with the change line, learning page empty + full + switch-off states, 14-day toggles,
   day-log line states, settings switch in the dirty diff; both modes (`CI=true`, mock and
   `VITE_USE_MOCK=false`); a `tests/layout` spec for the learning page at 320 px; `pnpm build`.
@@ -286,7 +300,7 @@ inside the prescription jsonb, uppercase; it stays as is and is documented as in
 
 1. **Seed the Fuel living prototype** `elo/fuel.html` from `fuel-uveg.html` + `uveg-fuel-tobbi.html`,
    matched against the live screens; fold in `hogy-tanultam.html` as a route. Commit the seed alone.
-2. Add the Part 2 routes (card on Mai, learning page, day-log line, settings switch, bell item,
+2. Add the Part 2 routes (weekly sheet behind the Mai dot, learning page, day-log line, settings switch, bell item,
    „Új ikonok” if needed); publish as the Fuel Artifact, record the URL in `elo/README.md`.
    **Owner OK.**
 3. Plan (with the *Kész, ha…* checklist) → owner OK → build → gates → merge → deploy → verify live.
