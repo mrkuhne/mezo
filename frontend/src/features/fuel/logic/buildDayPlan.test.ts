@@ -1003,6 +1003,35 @@ describe('late-log reflow (mezo-9sltu)', () => {
     for (const s of mealSlotsOf(plan)) expect(s.time <= '21:30').toBe(true)
   })
 
+  it('a snack logged into a SHIFTED window (stored plan range ≠ any original range) still claims that window', () => {
+    // 5 meals: Tízórai 10:26 · Ebéd 14:08 · Uzsonna 17:49. A 17:00 lunch shifts the Uzsonna to 18:30.
+    const lunch = meal({ id: 'l', slot: 'lunch', loggedAt: at('17:00') })
+    const bare = buildDayPlan(baseInput({ mealsPerDay: 5 }))
+    const shifted = byLabel(buildDayPlan(baseInput({ mealsPerDay: 5, meals: [lunch] })), 'Uzsonna')
+    expect(shifted.windowFrom).not.toBe(byLabel(bare, 'Uzsonna').windowFrom) // really shifted
+    // Logged near the Tízórai's placed time (10:20), carrying the shifted Uzsonna's stored window.
+    const snack = meal({
+      id: 'snack-u', slot: 'snack', loggedAt: at('10:20'),
+      breakdown: {
+        confidence: 1, summary: null, tagline: null, improve: [], tools: [],
+        dimensions: [{
+          id: 'context', label: 'Kontextus', weight: 0, score: 0, color: '#fff', detail: '', context: [],
+          timing: { eatenAt: '10:20', windowFrom: shifted.windowFrom!, windowTo: shifted.windowTo!, slotLabel: 'Uzsonna', windowSource: 'plan' },
+        }],
+      },
+    })
+    const plan = buildDayPlan(baseInput({ mealsPerDay: 5, meals: [lunch, snack] }))
+    expect(byLabel(plan, 'Uzsonna')).toMatchObject({ state: 'done', mealId: 'snack-u' })
+    expect(byLabel(plan, 'Tízórai').state).not.toBe('done')
+  })
+
+  it('never emits a window narrower than 30 min, even when windows crowd at kitchen close', () => {
+    const plan = buildDayPlan(baseInput({ meals: [meal({ id: 'l', slot: 'Ebéd', loggedAt: at('20:30') })] }))
+    for (const s of mealSlotsOf(plan).filter(x => x.state !== 'done')) {
+      expect(toMin(s.windowTo!) - toMin(s.windowFrom!)).toBeGreaterThanOrEqual(30)
+    }
+  })
+
   it('the done lunch slot keeps its original window range', () => {
     const base = buildDayPlan(baseInput())
     const plan = buildDayPlan(baseInput({ meals: [meal({ id: 'l', slot: 'Ebéd', loggedAt: at('16:30') })] }))

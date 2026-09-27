@@ -22,6 +22,7 @@ import {
   RECIPE_FIT_TOLERANCE,
   ROLE_MACRO_MULTIPLIERS,
   SLOT_WEIGHT,
+  WINDOW_MIN_WIDTH_MIN,
   daySpan,
   toHHmm,
   toMin,
@@ -421,6 +422,21 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
       const timing = contextTiming(m)
       if (timing?.windowSource === 'plan') {
         match = idxs.find(i => free.has(i) && toHHmm(ranges[i].from) === timing.windowFrom && toHHmm(ranges[i].to) === timing.windowTo)
+        // 1b. Shifted-window round trip (mezo-9sltu): a meal logged into a window that step 2c had
+        //     pushed LATER carries the reflowed range, which equals no original range. Windows only
+        //     ever shift later, so the window it was logged into is the free same-key window with
+        //     the GREATEST original `from` still ≤ the stored `from` (unwrapped), as long as the
+        //     stored `from` is not past kitchen close. None → fall through to label / nearest.
+        if (match === undefined && timing.windowFrom) {
+          const storedFrom = unwrap(timing.windowFrom)
+          if (storedFrom <= kitchenCloseMin) {
+            let bestFrom = -Infinity
+            for (const i of idxs) {
+              const f = unwrap(toHHmm(ranges[i].from))
+              if (free.has(i) && f <= storedFrom && f > bestFrom) { bestFrom = f; match = i }
+            }
+          }
+        }
       }
 
       if (match === undefined) {
@@ -482,7 +498,10 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
   }
   //     Re-widen with the reflowed times: an unassigned window gets its reflowed range; a done window
   //     keeps its ORIGINAL range — the window the meal was actually logged into.
+  //     Crowding at kitchen close can cut a neighbour to zero width — never emit one narrower than
+  //     WINDOW_MIN_WIDTH_MIN (an overlap with the neighbour at the cap is acceptable).
   const flowRanges = widenWindows(flowWindows, widenCtx)
+  for (const r of flowRanges) if (r.to - r.from < WINDOW_MIN_WIDTH_MIN) r.from = r.to - WINDOW_MIN_WIDTH_MIN
   const windowOf = (i: number) => {
     const r = assignedMeal[i] ? ranges[i] : flowRanges[i]
     const moved = shiftedAfter[i]
