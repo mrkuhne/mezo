@@ -1,8 +1,7 @@
 import {
   humanizeFactText, originSentence, originChipLabel, reinforcementSentence,
-  promptStatusLabel, bucketFacts, matchesQuery,
+  promptStatusLabel, bucketFacts, matchesQuery, sortFacts,
 } from '@/features/insights/logic/factCopy'
-import { PATTERN_ACK_DAYS } from '@/data/insights/knowledge'
 import type { KnowledgeFact } from '@/data/types'
 
 const fact = (over: Partial<KnowledgeFact>): KnowledgeFact => ({
@@ -96,57 +95,21 @@ describe('bucketFacts', () => {
     fact({ id: 'd', reinforced: 5, createdAt: '2026-06-01T00:00:00Z' }),
   ]
 
-  it('a bekapcsoltakat megerősítés szerint rangsorolja, döntetlennél a frissebb nyer', () => {
-    const { inPrompt } = bucketFacts(facts, 10)
-    expect(inPrompt.map((f) => f.id)).toEqual(['b', 'd', 'a'])
+  it('minden bekapcsolt tény a chatben van — nincs várólista (facts-always, mezo-d6ivw.8)', () => {
+    const { inPrompt, off } = bucketFacts(facts)
+    expect(inPrompt.map((f) => f.id)).toEqual(sortFacts(facts.filter((f) => f.active)).map((f) => f.id))
+    expect(off.every((f) => !f.active)).toBe(true)
   })
 
-  it('a topN fölötti bekapcsoltak várakoznak, a kikapcsoltak külön vödörbe kerülnek', () => {
-    const { inPrompt, waiting, off } = bucketFacts(facts, 2)
-    expect(inPrompt.map((f) => f.id)).toEqual(['b', 'd'])
-    expect(waiting.map((f) => f.id)).toEqual(['a'])
-    expect(off.map((f) => f.id)).toEqual(['c'])
-  })
-
-  describe('friss minta-tény kivétel (a backend renderNewPatternFactsBlock tükre)', () => {
-    const now = new Date('2026-08-18T12:00:00Z')
-    const dayAgo = (n: number) => new Date(now.getTime() - n * 24 * 60 * 60 * 1000).toISOString()
-
-    it('egy 0-szor megerősített, tegnap létrejött minta-tény a topN alól is bekerül az inPrompt vödörbe', () => {
-      const freshPattern = fact({ id: 'p-fresh', reinforced: 0, source: 'pattern', createdAt: dayAgo(1) })
-      const { inPrompt, waiting } = bucketFacts([...facts, freshPattern], 2, now)
-      expect(inPrompt.map((f) => f.id)).toContain('p-fresh')
-      expect(waiting.map((f) => f.id)).not.toContain('p-fresh')
-    })
-
-    it('ugyanaz a tény, de a PATTERN_ACK_DAYS-nél régebbi → visszaesik a waiting vödörbe', () => {
-      expect(PATTERN_ACK_DAYS).toBe(3)
-      const oldPattern = fact({ id: 'p-old', reinforced: 0, source: 'pattern', createdAt: dayAgo(10) })
-      const { inPrompt, waiting } = bucketFacts([...facts, oldPattern], 2, now)
-      expect(waiting.map((f) => f.id)).toContain('p-old')
-      expect(inPrompt.map((f) => f.id)).not.toContain('p-old')
-    })
-
-    it('chat eredetű, tegnap létrejött tény NEM kap kivételt — csak a pattern forrás', () => {
-      const freshChat = fact({ id: 'c-fresh', reinforced: 0, source: 'chat', createdAt: dayAgo(1) })
-      const { inPrompt, waiting } = bucketFacts([...facts, freshChat], 2, now)
-      expect(waiting.map((f) => f.id)).toContain('c-fresh')
-      expect(inPrompt.map((f) => f.id)).not.toContain('c-fresh')
-    })
-
-    it('egy tény sosem szerepel két vödörben egyszerre', () => {
-      const freshPattern = fact({ id: 'p-fresh', reinforced: 0, source: 'pattern', createdAt: dayAgo(1) })
-      const { inPrompt, waiting, off } = bucketFacts([...facts, freshPattern], 2, now)
-      const allIds = [...inPrompt, ...waiting, ...off].map((f) => f.id)
-      expect(new Set(allIds).size).toBe(allIds.length)
-    })
+  it('minden tény pontosan egy vödörben van', () => {
+    const { inPrompt, off } = bucketFacts(facts)
+    expect(inPrompt.length + off.length).toBe(facts.length)
   })
 })
 
 describe('promptStatusLabel + matchesQuery', () => {
   it('minden vödörnek van kimondott címkéje', () => {
-    expect(promptStatusLabel('in-prompt')).toBe('Most benne van a chatben')
-    expect(promptStatusLabel('waiting')).toBe('Bekapcsolva, de most kimarad')
+    expect(promptStatusLabel('in-prompt')).toBe('A társ tudja — minden beszélgetésben ott van')
     expect(promptStatusLabel('off')).toBe('Kikapcsolva — a társ nem látja')
   })
 

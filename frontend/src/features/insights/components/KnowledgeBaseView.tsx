@@ -17,7 +17,7 @@ export function KnowledgeBaseView(props: {
    *  (degraded alatt 0) + life/season candidates. A shell (KnowledgeListPage) számolja. */
   pendingCount: number
   facts: { length: number }
-  buckets: { inPrompt: unknown[]; waiting: unknown[]; off: unknown[] }
+  buckets: { inPrompt: unknown[]; off: unknown[] }
   kindCount: number
   kategLine: string
   onNavigate: (view: 'tenyek' | 'kategoriak' | 'profil') => void
@@ -58,7 +58,7 @@ export function KnowledgeBaseView(props: {
           {!degraded && (
             <DoorRow
               label="Tények" icon="t-note" accent="sage" badge={facts.length}
-              line={`${buckets.inPrompt.length} a chatben · ${buckets.waiting.length} vár · ${buckets.off.length} kikapcsolva`}
+              line={`${buckets.inPrompt.length} a chatben · ${buckets.off.length} kikapcsolva`}
               onClick={() => onNavigate('tenyek')}
             />
           )}

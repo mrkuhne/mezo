@@ -14,7 +14,7 @@ test('a minta-tény emberi mondatként, eredettel és megerősítéssel jelenik 
   expect(screen.getByText('A gyógyszer-ciklusnap és a napi kalória együtt mozognak.')).toBeInTheDocument()
   expect(screen.getByText(/Megerősített mintából tanultam/)).toBeInTheDocument()
   expect(screen.getByText('2× visszaigazolva · utoljára Aug 5')).toBeInTheDocument()
-  expect(screen.getByText('Most benne van a chatben')).toBeInTheDocument()
+  expect(screen.getByText('A társ tudja — minden beszélgetésben ott van')).toBeInTheDocument()
   // a csempe kategória-sora a prototípus kisbetűs nyelvét beszéli (mezo-d20.5.5)
   expect(screen.getByText('egészség')).toBeInTheDocument()
   expect(screen.getByText('mintából')).toBeInTheDocument()
