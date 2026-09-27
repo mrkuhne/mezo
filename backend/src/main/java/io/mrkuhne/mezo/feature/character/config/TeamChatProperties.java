@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.ZoneId;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.Name;
 import org.springframework.validation.annotation.Validated;
 
 /** Csapatfal Act III team chat tuning (mezo-a9bo7.21, spec 2026-09-26 §5). */
@@ -33,4 +34,8 @@ public record TeamChatProperties(
         @Min(1) @Max(120) int exceptionWindowDays,
         /** S7: the hits already inside the window that turn the next occurrence into a
          *  one-time review question („ez még rendben van így?"). */
-        @Min(1) @Max(30) int exceptionReviewHits) {}
+        @Min(1) @Max(30) int exceptionReviewHits,
+        /** S7: how long the reply listener waits after a USER line before answering, so a burst
+         *  of quick lines gets ONE answer (the newest line's event answers them all). Bound from
+         *  {@code reply-debounce-ms}. */
+        @Name("reply-debounce-ms") @Min(0) @Max(10000) long replyDebounceMillis) {}

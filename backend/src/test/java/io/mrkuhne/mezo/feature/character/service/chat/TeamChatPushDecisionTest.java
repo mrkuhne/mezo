@@ -47,7 +47,7 @@ class TeamChatPushDecisionTest {
     @BeforeEach
     void setUp() {
         TeamChatProperties properties = new TeamChatProperties(ZONE, 7, 12, 2, new BigDecimal("1.00"),
-                "0 10 4 * * *", "0 20 * * * *", 4, 20, 30, 4);
+                "0 10 4 * * *", "0 20 * * * *", 4, 20, 30, 4, 0);
         NotificationProperties notification = new NotificationProperties(160, "09:00", "20:00", 240,
                 "0 * * * * *", 5, 5, new NotificationProperties.QuietHours("22:00", "07:00"));
         // decidePush reaches reservePush through the self proxy (its own REQUIRES_NEW transaction);
@@ -55,7 +55,7 @@ class TeamChatPushDecisionTest {
         @SuppressWarnings("unchecked")
         ObjectProvider<TeamChatService> self = mock(ObjectProvider.class);
         service = new TeamChatService(threads, null, properties, null, null, null, null, emitter, null, null,
-                null, notification, self);
+                null, notification, self, null);
         when(self.getObject()).thenReturn(service);
         when(threads.findByCreatedByAndPushedTrueAndOpenedAtBetweenAndDeletedFalse(any(), any(), any()))
                 .thenReturn(List.of());

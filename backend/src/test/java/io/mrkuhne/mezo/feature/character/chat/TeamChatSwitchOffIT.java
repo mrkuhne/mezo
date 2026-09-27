@@ -10,6 +10,8 @@ import io.mrkuhne.mezo.feature.character.service.chat.TeamChatInterventionKeyAda
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatReads;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatService;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatKnowledgePort;
+import io.mrkuhne.mezo.feature.character.service.chat.TeamChatReplyListener;
+import io.mrkuhne.mezo.feature.character.service.chat.TeamChatReplyService;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatVoiceWriter;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.character.entity.TeamChatThreadEntity;
@@ -58,6 +60,8 @@ class TeamChatSwitchOffIT {
             assertThat(context.getBeanNamesForType(TeamChatContext.class)).isEmpty();
             assertThat(context.getBeanNamesForType(TeamChatKnowledgePort.class)).isEmpty();
             assertThat(context.getBeanNamesForType(TeamChatVoiceWriter.class)).isEmpty();
+            assertThat(context.getBeanNamesForType(TeamChatReplyService.class)).isEmpty();
+            assertThat(context.getBeanNamesForType(TeamChatReplyListener.class)).isEmpty();
         }
 
         /** Task 15 (mezo-a9bo7.25): the evening edition still runs with the chat off, and the

@@ -38,6 +38,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -57,7 +58,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  * with {@code voiced=false} and no company.
  *
  * <p><b>Safety cap:</b> at most {@code daily-line-cap} character lines per user per local day
- * (all kinds). At the cap {@link #open} writes nothing and warns; {@link #resolve} still closes
+ * (every kind but REPLY, which has its own {@code reply-daily-cap}). At the cap {@link #open} writes nothing and warns; {@link #resolve} still closes
  * the ügy as RESOLVED but drops its RESOLVE line.
  */
 @Slf4j
@@ -88,7 +89,8 @@ public class TeamChatService {
     static final String KIND_RESOLVE = "RESOLVE";
     static final String KIND_SKEPTIC = "SKEPTIC";
     static final String KIND_USER = "USER";
-    /** S7: the user's explanation line that closes an ügy with CLOSE_REPLY. */
+    /** S7: the owner character's answer to the user's USER line(s) ({@link TeamChatReplyService});
+     *  counted against its own {@code reply-daily-cap}, never the shared {@code daily-line-cap}. */
     static final String KIND_REPLY = "REPLY";
 
     static final int REPLY_MAX_CHARS = 1000;
@@ -109,6 +111,7 @@ public class TeamChatService {
     private final UserFanOut userFanOut;
     private final NotificationProperties notificationProperties;
     private final ObjectProvider<TeamChatService> self;
+    private final ApplicationEventPublisher events;
 
     /** Task 11 (mezo-a9bo7.23): the catch-up sweep's lookback — how far back a missed raise still
      *  gets picked up. Final review M6 (mezo-a9bo7.25): 2 h, not 24 — the sweep runs hourly, so two
@@ -282,6 +285,7 @@ public class TeamChatService {
         TeamChatThreadEntity thread = open.get();
         thread.setStatus(STATUS_RESOLVED);
         thread.setClosedAt(at);
+        thread.setCloseReason(CLOSE_DATA);
         TeamChatThreadEntity saved = threads.saveAndFlush(thread);
         if (capReached(userId, at)) {
             log.warn("Team chat daily line cap reached for user {} — RESOLVE line of {} dropped", userId, flagKey);
@@ -367,7 +371,14 @@ public class TeamChatService {
         }
     }
 
-    /** The user's reply — a USER line on their own ügy; it never resolves the ügy. */
+    /** The user's reply — a USER line on their own ügy, written synchronously; the owner answers
+     *  asynchronously (S7, {@link TeamChatReplyService} via {@link TeamChatReplyListener}, after
+     *  commit), and only that answer may close the ügy.
+     *
+     *  <p>Takes the ügy's row lock ({@code lockOwned}) — the same lock {@link TeamChatReplyService}'s
+     *  commit holds — so USER lines and REPLY lines of one ügy are written strictly one after the
+     *  other and their {@code occurredAt} order is their commit order. That is what lets the answer
+     *  step tell "a USER line newer than the burst I answered" apart from "already answered". */
     @Transactional
     public TeamChatLineEntity reply(UUID userId, UUID threadId, String text) {
         String body = text == null ? "" : text.trim();
@@ -375,8 +386,10 @@ public class TeamChatService {
             throw new SystemRuntimeErrorException(
                     SystemMessage.error("CHARACTER_TEAM_CHAT_REPLY_INVALID").build(), HttpStatus.BAD_REQUEST);
         }
-        TeamChatThreadEntity thread = owned(userId, threadId);
-        return writeLine(thread, KIND_USER, null, body, false, List.of(), Instant.now());
+        TeamChatThreadEntity thread = threads.lockOwned(threadId, userId).orElseThrow(TeamChatService::notFound);
+        TeamChatLineEntity line = writeLine(thread, KIND_USER, null, body, false, List.of(), Instant.now());
+        events.publishEvent(new TeamChatRepliedEvent(userId, threadId, line.getId()));
+        return line;
     }
 
     /** Applies an offered action exactly once — the {@code AdviceApplyService.apply} contract on
@@ -552,8 +565,9 @@ public class TeamChatService {
         LocalDate day = at.atZone(properties.zone()).toLocalDate();
         Instant from = day.atStartOfDay(properties.zone()).toInstant();
         Instant to = day.plusDays(1).atStartOfDay(properties.zone()).toInstant().minusNanos(1000);
-        return lines.countByCreatedByAndCharacterIsNotNullAndOccurredAtBetweenAndDeletedFalse(userId, from, to)
-                >= properties.dailyLineCap();
+        // S7: REPLY lines have their own cap (reply-daily-cap) and never eat this one.
+        return lines.countByCreatedByAndCharacterIsNotNullAndKindNotAndOccurredAtBetweenAndDeletedFalse(
+                userId, KIND_REPLY, from, to) >= properties.dailyLineCap();
     }
 
     /** A guest / skeptic line — dropped (with a warn) rather than breaking the cap. */
@@ -567,7 +581,8 @@ public class TeamChatService {
         writeLine(thread, kind, character, body, voiced, facts, at);
     }
 
-    private TeamChatLineEntity writeLine(TeamChatThreadEntity thread, String kind, String character, String body,
+    /** Package-private for {@link TeamChatReplyService} (S7) — joins the caller's transaction. */
+    TeamChatLineEntity writeLine(TeamChatThreadEntity thread, String kind, String character, String body,
             boolean voiced, List<String> facts, Instant at) {
         TeamChatLineEntity line = new TeamChatLineEntity();
         line.setCreatedBy(thread.getCreatedBy());
@@ -579,10 +594,6 @@ public class TeamChatService {
         line.setFacts(new EditionFactsEnvelope(facts));
         line.setOccurredAt(at);
         return lines.saveAndFlush(line);
-    }
-
-    private TeamChatThreadEntity owned(UUID userId, UUID threadId) {
-        return threads.findByIdAndCreatedByAndDeletedFalse(threadId, userId).orElseThrow(TeamChatService::notFound);
     }
 
     private static SystemRuntimeErrorException notFound() {

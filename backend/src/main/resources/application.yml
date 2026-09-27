@@ -2243,6 +2243,9 @@ mezo:
       # into a one-time review question („ez még rendben van így?").
       exception-window-days: 30
       exception-review-hits: 4
+      # S7: the reply listener waits this long after a USER line before the owner answers — a
+      # burst of quick lines gets ONE answer, from the newest line's event.
+      reply-debounce-ms: 1500
   proactive:
     # Advice-card retirement (Csapatfal Act III, mezo-a9bo7.24..25): the old daily advice card that
     # a raised flag delivers (InterventionEventListener). Off ⇒ no listener bean, no new card; the
