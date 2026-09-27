@@ -945,7 +945,8 @@ describe('late-log reflow (mezo-9sltu)', () => {
     expect(byLabel(plan, 'Tízórai').shiftedAfter).toEqual({ label: 'Reggeli', at: '12:00' })
     expect(byLabel(plan, 'Ebéd').time).toBe('15:00')
     expect(byLabel(plan, 'Ebéd').windowReasons![0]).toBe('shifted')
-    expect(byLabel(plan, 'Ebéd').shiftedAfter).toEqual({ label: 'Tízórai', at: '13:30' })
+    // the Ebéd was pushed by a PLACED window (the Tízórai), not a logged meal → no "később volt" cause
+    expect(byLabel(plan, 'Ebéd').shiftedAfter).toBeUndefined()
     expect(byLabel(plan, 'Uzsonna').time).toBe(byLabel(base, 'Uzsonna').time)
     expect(byLabel(plan, 'Uzsonna').windowReasons).not.toContain('shifted')
   })
@@ -1032,6 +1033,39 @@ describe('late-log reflow (mezo-9sltu)', () => {
     }
   })
 
+  it('layout drift: a stored window matching neither the original nor the reflowed ranges falls back to nearest time', () => {
+    // 5 meals: Tízórai 10:26 · Uzsonna 17:49. A stored "Uzsonna" window from a drifted layout (16:50–17:20)
+    // matches no range today; the snack was logged at 17:30 → nearest is the Uzsonna, NOT the free Tízórai.
+    const snack = meal({
+      id: 'snack-u', slot: 'snack', loggedAt: at('17:30'),
+      breakdown: {
+        confidence: 1, summary: null, tagline: null, improve: [], tools: [],
+        dimensions: [{
+          id: 'context', label: 'Kontextus', weight: 0, score: 0, color: '#fff', detail: '', context: [],
+          timing: { eatenAt: '17:30', windowFrom: '16:50', windowTo: '17:20', slotLabel: 'Uzsonna', windowSource: 'plan' },
+        }],
+      },
+    })
+    const plan = buildDayPlan(baseInput({ mealsPerDay: 5, meals: [snack] }))
+    expect(byLabel(plan, 'Uzsonna')).toMatchObject({ state: 'done', mealId: 'snack-u' })
+    expect(byLabel(plan, 'Tízórai').state).not.toBe('done')
+  })
+
+  it('a done window with a plan-stored window emits the STORED range (the dial matches the log)', () => {
+    const lunch = meal({
+      id: 'l', slot: 'lunch', loggedAt: at('14:00'),
+      breakdown: {
+        confidence: 1, summary: null, tagline: null, improve: [], tools: [],
+        dimensions: [{
+          id: 'context', label: 'Kontextus', weight: 0, score: 0, color: '#fff', detail: '', context: [],
+          timing: { eatenAt: '14:00', windowFrom: '13:10', windowTo: '14:40', slotLabel: 'Ebéd', windowSource: 'plan' },
+        }],
+      },
+    })
+    const done = byLabel(buildDayPlan(baseInput({ meals: [lunch] })), 'Ebéd')
+    expect(done).toMatchObject({ state: 'done', windowFrom: '13:10', windowTo: '14:40' })
+  })
+
   it('the done lunch slot keeps its original window range', () => {
     const base = buildDayPlan(baseInput())
     const plan = buildDayPlan(baseInput({ meals: [meal({ id: 'l', slot: 'Ebéd', loggedAt: at('16:30') })] }))
@@ -1043,9 +1077,15 @@ describe('late-log reflow (mezo-9sltu)', () => {
   })
 
   it('state classification runs on the reflowed time', () => {
-    // now 17:55: the original Uzsonna (17:49) would already be "now"; shifted to 18:00 it is still the
-    // current window (now precedes it → first unlogged future window after the missed Reggeli is pending)
-    const plan = buildDayPlan(baseInput({ nowHHmm: '17:55', meals: [meal({ id: 'l', slot: 'Ebéd', loggedAt: at('16:30') })] }))
-    expect(byLabel(plan, 'Uzsonna').state).toBe('pending')
+    const lunch = [meal({ id: 'l', slot: 'Ebéd', loggedAt: at('16:30') })]
+    // 17:55: the ORIGINAL Uzsonna (17:49) would be "now"; the reflowed one (18:00) has not started, so the
+    // current window is the latest unlogged one at/before now — the (unlogged) Reggeli.
+    const before = buildDayPlan(baseInput({ nowHHmm: '17:55', meals: lunch }))
+    expect(byLabel(before, 'Reggeli').state).toBe('now')
+    expect(byLabel(before, 'Uzsonna').state).toBe('pending')
+    // 18:05: the reflowed Uzsonna is the current window; the Reggeli is missed.
+    const after = buildDayPlan(baseInput({ nowHHmm: '18:05', meals: lunch }))
+    expect(byLabel(after, 'Uzsonna').state).toBe('now')
+    expect(byLabel(after, 'Reggeli').state).toBe('missed')
   })
 })

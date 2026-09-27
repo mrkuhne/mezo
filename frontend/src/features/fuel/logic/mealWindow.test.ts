@@ -46,6 +46,14 @@ describe('widenWindows', () => {
     expect(w.to - w.from).toBeGreaterThanOrEqual(30)
   })
 
+  it('a capped crowd at kitchen close still yields ≥30 min for every window (mezo-9sltu)', () => {
+    const out = widenWindows([
+      { time: h(21, 30), kind: 'snack', rule: 'snack' },
+      { time: h(21, 30), kind: 'meal', rule: 'main' },
+    ], ctx)
+    for (const w of out) expect(w.to - w.from).toBeGreaterThanOrEqual(30)
+  })
+
   it('maps template anchors to reasons', () => {
     const out = widenWindows([
       { time: h(8), kind: 'meal', rule: 'template-wake' },
@@ -106,7 +114,7 @@ describe('windowReasonCopy / articles', () => {
     expect(r.title).toBe('Eltolva: az ebéd később volt (14:50)')
     expect(r.body).toBe('Így nagyjából másfél óra jut a két étkezés közé — a nap többi ablaka ehhez igazodik.')
     expect(windowReasonCopy('shifted', { ...c, shiftedAfter: { label: 'Vacsora', at: '19:10' } }).title).toBe('Eltolva: a vacsora később volt (19:10)')
-    expect(windowReasonCopy('shifted', c).title).toBe('Eltolva az előző étkezés miatt')
+    expect(windowReasonCopy('shifted', c).title).toBe('Eltolva az előző ablak után')
   })
   it('picks the Hungarian article', () => {
     expect(az('Ebéd')).toBe('az Ebéd')

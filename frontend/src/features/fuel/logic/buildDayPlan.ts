@@ -22,7 +22,6 @@ import {
   RECIPE_FIT_TOLERANCE,
   ROLE_MACRO_MULTIPLIERS,
   SLOT_WEIGHT,
-  WINDOW_MIN_WIDTH_MIN,
   daySpan,
   toHHmm,
   toMin,
@@ -32,7 +31,7 @@ import { blockEnergyKind, DEFAULT_GYM_MIN, DEFAULT_RUN_MIN, netKcal, restKcalPer
 import type { FuelDayEnergy } from '@/data/types'
 import { compileTemplate } from '@/features/fuel/logic/compileTemplate'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
-import { widenWindows, type WindowRule } from '@/features/fuel/logic/mealWindow'
+import { widenWindows, type WindowRange, type WindowRule } from '@/features/fuel/logic/mealWindow'
 import type {
   FuelKind,
   FuelMeal,
@@ -409,54 +408,45 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
   //          comparison over ascending-time-ordered free indices already does this).
   //     No match at any pass (every same-key window already claimed by an earlier-logged meal) →
   //     surplus, in loggedAt order.
+  //     Shifted-window round trip (mezo-9sltu): a plan-stored meal whose window equals NO original
+  //     range is HELD BACK from passes 2–3 — it may have been logged into a window step 2c pushed
+  //     later. Once every other meal is placed, each held-back meal (loggedAt order) is matched
+  //     EXACTLY against the reflowed ranges of the current assignments; only then label → nearest.
+  //     No heuristic range guessing: a drifted layout (wake/bed/training/template changed) simply
+  //     falls through to label/nearest like before.
   const assignedMeal: (FuelMeal | undefined)[] = new Array(windows.length).fill(undefined)
   const surplusByKey: Record<SlotKey, FuelMeal[]> = { breakfast: [], lunch: [], dinner: [], snack: [] }
+  const idxsByKey: Record<SlotKey, number[]> = { breakfast: [], lunch: [], dinner: [], snack: [] }
+  windows.forEach((w, i) => idxsByKey[w.slotKey].push(i))
+  const isFree = (i: number) => assignedMeal[i] === undefined
+  const exactIn = (rs: WindowRange[], k: SlotKey, t: MealTiming) =>
+    idxsByKey[k].find(i => isFree(i) && toHHmm(rs[i].from) === t.windowFrom && toHHmm(rs[i].to) === t.windowTo)
+  /** Passes 2–3 (label, then nearest unwrapped time) for one meal of key `k`. */
+  const looseMatch = (m: FuelMeal, k: SlotKey): number | undefined => {
+    const idxs = idxsByKey[k]
+    const slotLower = (m.slot ?? '').toLowerCase()
+    const labelHits = idxs.filter(i => isFree(i) && slotLower.includes(windows[i].label.toLowerCase()))
+    if (labelHits.length) return labelHits.reduce((best, i) => (windows[i].label.length > windows[best].label.length ? i : best))
+    const free = idxs.filter(isFree)
+    if (!free.length) return undefined
+    const mMin = unwrap(hhmmFromLoggedAt(m.loggedAt, toHHmm(windows[idxs[0]]?.time ?? 0)))
+    let best = -1
+    let bestDist = Infinity
+    for (const i of free) {
+      const dist = Math.abs(unwrap(toHHmm(windows[i].time)) - mMin)
+      if (dist < bestDist) { bestDist = dist; best = i }
+    }
+    return best
+  }
+  const heldBack: { m: FuelMeal; k: SlotKey; t: MealTiming }[] = []
   for (const k of Object.keys(loggedByKey) as SlotKey[]) {
-    const idxs: number[] = []
-    windows.forEach((w, i) => { if (w.slotKey === k) idxs.push(i) })
-    const free = new Set(idxs)
-
     for (const m of loggedByKey[k]) {
-      let match: number | undefined
-
       const timing = contextTiming(m)
-      if (timing?.windowSource === 'plan') {
-        match = idxs.find(i => free.has(i) && toHHmm(ranges[i].from) === timing.windowFrom && toHHmm(ranges[i].to) === timing.windowTo)
-        // 1b. Shifted-window round trip (mezo-9sltu): a meal logged into a window that step 2c had
-        //     pushed LATER carries the reflowed range, which equals no original range. Windows only
-        //     ever shift later, so the window it was logged into is the free same-key window with
-        //     the GREATEST original `from` still ≤ the stored `from` (unwrapped), as long as the
-        //     stored `from` is not past kitchen close. None → fall through to label / nearest.
-        if (match === undefined && timing.windowFrom) {
-          const storedFrom = unwrap(timing.windowFrom)
-          if (storedFrom <= kitchenCloseMin) {
-            let bestFrom = -Infinity
-            for (const i of idxs) {
-              const f = unwrap(toHHmm(ranges[i].from))
-              if (free.has(i) && f <= storedFrom && f > bestFrom) { bestFrom = f; match = i }
-            }
-          }
-        }
-      }
-
-      if (match === undefined) {
-        const slotLower = (m.slot ?? '').toLowerCase()
-        const labelHits = idxs.filter(i => free.has(i) && slotLower.includes(windows[i].label.toLowerCase()))
-        if (labelHits.length) match = labelHits.reduce((best, i) => (windows[i].label.length > windows[best].label.length ? i : best))
-      }
-
-      if (match === undefined && free.size > 0) {
-        const mMin = unwrap(hhmmFromLoggedAt(m.loggedAt, toHHmm(windows[idxs[0]]?.time ?? 0)))
-        let best = -1
-        let bestDist = Infinity
-        for (const i of free) {
-          const dist = Math.abs(unwrap(toHHmm(windows[i].time)) - mMin)
-          if (dist < bestDist) { bestDist = dist; best = i }
-        }
-        match = best
-      }
-
-      if (match !== undefined) { assignedMeal[match] = m; free.delete(match) }
+      const plan = timing?.windowSource === 'plan' ? timing : null
+      let match = plan ? exactIn(ranges, k, plan) : undefined
+      if (match === undefined && plan) { heldBack.push({ m, k, t: plan }); continue }
+      if (match === undefined) match = looseMatch(m, k)
+      if (match !== undefined) assignedMeal[match] = m
       else surplusByKey[k].push(m)
     }
   }
@@ -470,44 +460,57 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
   //     the real previous meal, so the 90-min spacing to it holds). A shift is capped at kitchen close
   //     (windows may crowd there; none is dropped). Log-driven, not clock-driven: `now` is irrelevant,
   //     so past days reflow the same way. All on the unwrapped axis (mezo-9rtw).
+  //     `shiftedAfter[i]`: undefined = not shifted; null = pushed by a PLACED window (no "later"
+  //     meal to name); {label, at} = pushed by a real LOGGED meal.
   const unwrapMin = (t: number) => (span.crossesMidnight && t < span.wakeMin ? t + 1440 : t)
   const wrapMin = (t: number) => ((t % 1440) + 1440) % 1440
-  const flowWindows: PlannedWindow[] = windows.map(w => ({ ...w }))
-  const shiftedAfter: ({ label: string; at: string } | undefined)[] = new Array(windows.length).fill(undefined)
   const order = windows.map((_, i) => i).sort((a, z) => unwrapMin(windows[a].time) - unwrapMin(windows[z].time))
-  const lastDonePos = order.reduce((last, i, pos) => (assignedMeal[i] ? pos : last), -1)
-  if (lastDonePos >= 0) {
-    const doneIdx = order[lastDonePos]
-    const doneAt = hhmmFromLoggedAt(assignedMeal[doneIdx]!.loggedAt, toHHmm(windows[doneIdx].time))
-    let prev = { t: unwrap(doneAt), label: windows[doneIdx].label, at: doneAt }
-    for (const i of order.slice(lastDonePos + 1)) {
-      const w = flowWindows[i]
-      const orig = unwrapMin(w.time)
-      if (TRAINING_ANCHORED.has(w.rule)) {
-        if (orig >= prev.t) prev = { t: orig, label: w.label, at: toHHmm(w.time) }
-        continue
+  const reflow = () => {
+    const flow: PlannedWindow[] = windows.map(w => ({ ...w }))
+    const after: ({ label: string; at: string } | null | undefined)[] = new Array(windows.length).fill(undefined)
+    const lastDonePos = order.reduce((last, i, pos) => (assignedMeal[i] ? pos : last), -1)
+    if (lastDonePos >= 0) {
+      const doneIdx = order[lastDonePos]
+      const doneAt = hhmmFromLoggedAt(assignedMeal[doneIdx]!.loggedAt, toHHmm(windows[doneIdx].time))
+      let prev: { t: number; cause: { label: string; at: string } | null } = { t: unwrap(doneAt), cause: { label: windows[doneIdx].label, at: doneAt } }
+      for (const i of order.slice(lastDonePos + 1)) {
+        const w = flow[i]
+        const orig = unwrapMin(w.time)
+        if (TRAINING_ANCHORED.has(w.rule)) {
+          if (orig >= prev.t) prev = { t: orig, cause: null }
+          continue
+        }
+        // Every window past the last done one is unassigned by construction.
+        const wanted = Math.min(prev.t + MIN_SLOT_GAP_MIN, kitchenCloseMin)
+        if (wanted > orig) {
+          w.time = wrapMin(wanted)
+          after[i] = prev.cause
+        }
+        prev = { t: Math.max(orig, wanted), cause: null }
       }
-      // Every window past the last done one is unassigned by construction.
-      const wanted = Math.min(prev.t + MIN_SLOT_GAP_MIN, kitchenCloseMin)
-      if (wanted > orig) {
-        w.time = wrapMin(wanted)
-        shiftedAfter[i] = { label: prev.label, at: prev.at }
-      }
-      prev = { t: Math.max(orig, wanted), label: w.label, at: toHHmm(w.time) }
     }
+    return { flow, after, ranges: widenWindows(flow, widenCtx) }
   }
-  //     Re-widen with the reflowed times: an unassigned window gets its reflowed range; a done window
-  //     keeps its ORIGINAL range — the window the meal was actually logged into.
-  //     Crowding at kitchen close can cut a neighbour to zero width — never emit one narrower than
-  //     WINDOW_MIN_WIDTH_MIN (an overlap with the neighbour at the cap is acceptable).
-  const flowRanges = widenWindows(flowWindows, widenCtx)
-  for (const r of flowRanges) if (r.to - r.from < WINDOW_MIN_WIDTH_MIN) r.from = r.to - WINDOW_MIN_WIDTH_MIN
+  //     Held-back meals: exact match against the reflowed ranges of the assignments so far.
+  for (const { m, k, t } of heldBack) {
+    let match = exactIn(reflow().ranges, k, t)
+    if (match === undefined) match = looseMatch(m, k)
+    if (match !== undefined) assignedMeal[match] = m
+    else surplusByKey[k].push(m)
+  }
+  const { flow: flowWindows, after: shiftedAfter, ranges: flowRanges } = reflow()
+  //     Slot ranges: an unassigned window gets its reflowed range; a done window shows the window the
+  //     meal was logged into — its STORED plan window when it carries one, else its original range.
   const windowOf = (i: number) => {
-    const r = assignedMeal[i] ? ranges[i] : flowRanges[i]
+    const logged = assignedMeal[i]
+    const stored = logged ? contextTiming(logged) : null
+    const r = logged ? ranges[i] : flowRanges[i]
+    const useStored = stored?.windowSource === 'plan' && stored.windowFrom != null && stored.windowTo != null
     const moved = shiftedAfter[i]
     return {
-      windowFrom: toHHmm(r.from), windowTo: toHHmm(r.to),
-      windowReasons: moved ? (['shifted', ...r.reasons] as FuelSlot['windowReasons']) : r.reasons,
+      windowFrom: useStored ? stored.windowFrom! : toHHmm(r.from),
+      windowTo: useStored ? stored.windowTo! : toHHmm(r.to),
+      windowReasons: moved !== undefined ? (['shifted', ...r.reasons] as FuelSlot['windowReasons']) : r.reasons,
       budgetKcal: budgets[i].kcal,
       ...(moved ? { shiftedAfter: moved } : {}),
     }

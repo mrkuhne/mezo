@@ -79,6 +79,9 @@ export function widenWindows(ws: WidenInput[], ctx: WidenCtx): WindowRange[] {
   for (const r of out) {
     r.from = Math.round(r.from)
     r.to = Math.round(r.to)
+    // mezo-9sltu: a crowd (e.g. windows capped at kitchen close) can be cut to zero by the split —
+    // never emit a window narrower than the minimum; an overlap with the neighbour is acceptable.
+    if (r.to - r.from < WINDOW_MIN_WIDTH_MIN) r.from = r.to - WINDOW_MIN_WIDTH_MIN
     if (r.to >= ctx.bedMin - BEFORE_BED_MIN && !r.reasons.includes('before-bed')) r.reasons = [...r.reasons, 'before-bed']
   }
   return out
@@ -140,7 +143,7 @@ export function windowReasonCopy(code: WindowReason, c: ReasonCtx): ReasonCopy {
     case 'template-fixed': return { icon: 't-clock', title: 'A saját napi sablonod szerint', body: 'Ezt az időpontot a napi sablonodban rögzítetted.' }
     case 'shifted': return {
       icon: 't-clock',
-      title: c.shiftedAfter ? `Eltolva: ${az(c.shiftedAfter.label.toLowerCase())} később volt (${c.shiftedAfter.at})` : 'Eltolva az előző étkezés miatt',
+      title: c.shiftedAfter ? `Eltolva: ${az(c.shiftedAfter.label.toLowerCase())} később volt (${c.shiftedAfter.at})` : 'Eltolva az előző ablak után',
       body: 'Így nagyjából másfél óra jut a két étkezés közé — a nap többi ablaka ehhez igazodik.',
     }
   }
