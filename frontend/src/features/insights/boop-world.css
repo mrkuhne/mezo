@@ -350,6 +350,15 @@ a.tf-hint { color: color-mix(in srgb, var(--c) 80%, #fff); }
 }
 @keyframes tf-chat-tdot { 0%, 60%, 100% { transform: translateY(0); opacity: 0.5; } 30% { transform: translateY(-4px); opacity: 1; } }
 
+/* R3 (S7 final review): a chip a buborék-oszlop teljes szélességét kapja (az S3-as
+   `.mzc-remchip { max-width: 85% }` itt keskenyre nyomta), és a „Visszavonom" link a sötét
+   alapon is olvasható — a `--lav-deep` (#7A6DA8) a meleg-grafit alapon túl sötét. */
+.tf-chat-cb .mzc-remchip { max-width: none; }
+.tf-chat-cb .mzc-remundo {
+  color: color-mix(in srgb, var(--dv-lav, #AB9FD2) 70%, #fff);
+  text-decoration: underline; text-underline-offset: 2px; min-height: 32px;
+}
+
 /* „Visszavonva — …" — a megjegyzett kivétel visszavonása utáni egyetlen, halvány sor. */
 .tf-remgone { margin: 7px 0 0; font-size: 11px; color: var(--text-muted); }
 
