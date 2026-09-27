@@ -133,6 +133,18 @@ function mockPatchFact(qc: QueryClient, id: string, patch: Partial<KnowledgeFact
     if (!old) return old
     return { ...old, facts: old.facts.map((f) => (f.id === id ? { ...f, ...patch } : f)) }
   })
+  // the observation the fact was learned from shows the same state (real mode refetches it)
+  if ('active' in patch) {
+    qc.setQueryData<Section<KnowledgeObservation[]>>(OBS_KEY, (old) => {
+      if (!old) return old
+      return {
+        ...old,
+        items: old.items.map((o) => (o.factId === id
+          ? { ...o, factMutedReason: patch.mutedReason ?? null, factMutedAt: patch.mutedAt ?? null }
+          : o)),
+      }
+    })
+  }
 }
 
 /** Egy tény elfelejtése — a belőle tanult észrevétel is eltűnik: egy dolgot egyszer számolunk. */

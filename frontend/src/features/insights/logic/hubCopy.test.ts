@@ -62,6 +62,18 @@ describe('hubCopy · observation status line', () => {
     expect(C.obsStatus({ ...base, factMutedReason: 'user', factMutedAt: '2026-09-09T08:00:00Z' }).text)
       .toBe('elhallgattatva · te hallgattattad el, Szep 9')
   })
+  it('the older half of a drift pair with no superseded fact: replaced on the newer one\'s day', () => {
+    expect(C.obsStatus({ ...base, replacedByPatternId: 'o3', replacedAt: '2026-09-21T07:00:00Z' }))
+      .toEqual({ text: 'felülírta egy újabb észrevétel, Szep 21', tone: 'off' })
+    expect(C.obsStatus({ ...base, replacedByPatternId: 'o3' }).text).toBe('felülírta egy újabb észrevétel')
+  })
+  it('the older half re-enabled (its fact on again): both are used', () => {
+    expect(C.obsStatus({ ...base, replacedByPatternId: 'o3', factId: 'f1' }))
+      .toEqual({ text: 'újra bekapcsoltad — mindkettőt használom', tone: 'ok' })
+  })
+  it('fold hint', () => {
+    expect(C.obsFoldHint(2)).toBe('2 még igaz')
+  })
 })
 
 describe('hubCopy · hub, tiles, sections', () => {

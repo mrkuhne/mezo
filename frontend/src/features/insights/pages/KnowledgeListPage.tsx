@@ -11,6 +11,7 @@ import { KnowledgeBaseView, type HubNavTarget } from '@/features/insights/compon
 import { ForgetUndoBar } from '@/features/insights/components/hub/ForgetUndoBar'
 import { TenyekSection } from '@/features/insights/components/hub/TenyekSection'
 import { EmberekSection } from '@/features/insights/components/hub/EmberekSection'
+import { EszrevetelekSection } from '@/features/insights/components/hub/EszrevetelekSection'
 import { useForgetUndo } from '@/features/insights/hooks/useForgetUndo'
 import { hubCounts } from '@/features/insights/logic/hubCounts'
 import { KategoriakView } from '@/features/insights/components/KategoriakView'
@@ -219,11 +220,27 @@ export function KnowledgeListPage() {
     )
   }
 
-  if (view === 'eszrevetelek' || view === 'hatasok') {
+  if (view === 'eszrevetelek') {
+    // `&obs=<patternId>` (the Rólad "észrevételből" tag): its topic opens, its row is highlighted,
+    // the filter starts at Mind. Read on every render (an in-app link does not remount the page);
+    // keyed on it so a new target re-runs the section's opening state.
+    const obs = params.get('obs')
+    return (
+      <TudasFrame view="eszrevetelek">
+        <EntranceGroup className="tud9-flow" replayKey={replayKey}>
+          <EszrevetelekSection key={obs ?? ''} highlightPatternId={obs}
+            forget={undo.start} isHidden={undo.isHidden} />
+        </EntranceGroup>
+        {undoBar}
+      </TudasFrame>
+    )
+  }
+
+  if (view === 'hatasok') {
     return (
       <TudasFrame view={view}>
         <EntranceGroup className="tud9-flow" replayKey={replayKey}>
-          {null /* B11: EszrevetelekSection · B12: HatasokSection */}
+          {null /* B12: HatasokSection */}
         </EntranceGroup>
         {undoBar}
       </TudasFrame>

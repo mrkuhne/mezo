@@ -49,6 +49,11 @@ export interface ObsStatusInput {
   factMutedReason: FactMuteReason | null
   factMutedAt: string | null
   replacesPatternId: string | null
+  /** the older half of a drift pair: the newer observation that replaced it */
+  replacedByPatternId?: string | null
+  /** when it was replaced (the newer observation's confirmation), for an older half with no fact */
+  replacedAt?: string | null
+  factId?: string | null
 }
 export function obsStatus(o: ObsStatusInput): { text: string; tone: 'ok' | 'gold' | 'off' } {
   if (o.factMutedReason === 'superseded') return { text: whyText('superseded', o.factMutedAt), tone: 'off' }
@@ -57,10 +62,17 @@ export function obsStatus(o: ObsStatusInput): { text: string; tone: 'ok' | 'gold
     const d = day(o.factMutedAt)
     return { text: `elhallgattatva · ${WHY_LABEL.user}${d ? `, ${d}` : ''}`, tone: 'off' }
   }
+  if (o.replacedByPatternId) {
+    // its fact is on again although a newer one replaced it: the user re-enabled it
+    return o.factId ? { text: DRIFT_EYEBROW.bothOnLine, tone: 'ok' } : { text: whyText('superseded', o.replacedAt ?? null), tone: 'off' }
+  }
   if (o.replacesPatternId) return { text: `ez váltotta a régit · ${day(o.confirmedAt)}`, tone: 'gold' }
   if (o.recheckedAt) return { text: `legutóbb ellenőrizve ${day(o.recheckedAt)} · még igaz`, tone: 'ok' }
   return { text: `még nem ellenőriztem újra · megerősítve ${day(o.confirmedAt)}`, tone: 'ok' }
 }
+
+/** a topic fold's hint under "Mind" when not every observation in it still holds */
+export const obsFoldHint = (n: number) => `${n} még igaz`
 
 export const OBS_FILTERS = [['mind', 'Mind'], ['igaz', 'Még igaz'], ['felul', 'Felülírva'], ['elh', 'Elhallgattatva']] as const
 export type ObsFilter = (typeof OBS_FILTERS)[number][0]

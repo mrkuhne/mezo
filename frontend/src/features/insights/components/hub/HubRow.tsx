@@ -32,68 +32,44 @@ export interface HubRowProps {
   highlight?: boolean
 }
 
-type Open = null | 'acts' | 'src' | 'edit'
-
 /**
- * S6 (mezo-d6ivw.6): the ONE row every Tudástár section uses (Rólad, Emberek, Észrevételek,
- * elhallgattatott hatások) — the prototype's `row()`/`acts()` pair. Flat, never glass (§3.4).
- * Only one of the verb strip, the source panel and the inline editor is open at a time.
+ * The verb block of a row (the prototype's `acts()`): "Honnan tudom?", "Visszakapcsolom" on a muted
+ * item, and the ⋯ strip. Only one of the strip and the source panel is open at a time. Used by
+ * `HubRow` and by any nested item that needs its own verbs (the Észrevételek drift block).
  */
-export function HubRow(p: HubRowProps) {
-  const [open, setOpen] = useState<Open>(null)
-  const [draft, setDraft] = useState(p.text)
-  const ref = useRef<HTMLDivElement | null>(null)
-  useEffect(() => {
-    if (p.highlight) ref.current?.scrollIntoView?.({ block: 'center' })
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot mount-centring (the T10 idiom)
-  }, [])
-  const toggle = (next: Exclude<Open, null>) => setOpen((cur) => (cur === next ? null : next))
-  const save = () => {
-    const t = draft.trim()
-    if (t && t !== p.text) p.onEdit?.(t)
-    setOpen(null)
-  }
+export function HubActs(p: {
+  muted: boolean
+  canMute?: boolean
+  /** shows "Visszakapcsolom" on a muted item (default true) */
+  canUnmute?: boolean
+  source?: () => ReactNode
+  onMute: (on: boolean) => void
+  onForget: () => void
+  /** Javítom — present only on editable rows */
+  onStartEdit?: () => void
+}) {
+  const [open, setOpen] = useState<null | 'acts' | 'src'>(null)
+  const toggle = (next: 'acts' | 'src') => setOpen((cur) => (cur === next ? null : next))
+  const canUnmute = p.canUnmute ?? true
   return (
-    <div ref={ref} data-row={p.rowKey} className={cn('th-row', p.muted && 'is-muted', p.highlight && 'tud9-hl')}
-      style={{ '--c': p.accent } as CSSProperties}>
-      <div className="th-rm">
-        <Icon3D name={p.icon} size={26} />
-        <div className="th-tx">
-          {open === 'edit' ? (
-            <div className="th-edit">
-              <textarea aria-label="A tény szövege" value={draft} onChange={(e) => setDraft(e.target.value)} />
-              <div className="b">
-                <button type="button" className="th-pill" onClick={() => { setDraft(p.text); setOpen(null) }}>{VERB.cancel}</button>
-                <button type="button" className="th-pill main" onClick={save}><Icon3D name="t-tick" size={20} />{VERB.save}</button>
-              </div>
-            </div>
-          ) : (
-            <b><Highlight text={p.text} query={p.query ?? ''} /></b>
-          )}
-          {p.sub && <small>{p.sub}</small>}
-          {p.status}
-          {p.why && <span className="th-why"><Icon3D name={p.why.icon} size={16} />{p.why.text}</span>}
-        </div>
+    <>
+      <div className="th-act">
+        {p.source && (
+          <button type="button" className="th-link" aria-expanded={open === 'src'} onClick={() => toggle('src')}>
+            <Icon3D name="t-source" size={17} />{VERB.source}
+          </button>
+        )}
+        {p.muted && canUnmute && (
+          <button type="button" className="th-link" onClick={() => p.onMute(false)}>
+            <Icon3D name="t-repeat" size={17} />{VERB.unmute}
+          </button>
+        )}
+        <button type="button" className="th-more" aria-label={VERB.more} aria-expanded={open === 'acts'} onClick={() => toggle('acts')}>⋯</button>
       </div>
-      {open !== 'edit' && (
-        <div className="th-act">
-          {p.source && (
-            <button type="button" className="th-link" aria-expanded={open === 'src'} onClick={() => toggle('src')}>
-              <Icon3D name="t-source" size={17} />{VERB.source}
-            </button>
-          )}
-          {p.muted && (
-            <button type="button" className="th-link" onClick={() => p.onMute(false)}>
-              <Icon3D name="t-repeat" size={17} />{VERB.unmute}
-            </button>
-          )}
-          <button type="button" className="th-more" aria-label={VERB.more} aria-expanded={open === 'acts'} onClick={() => toggle('acts')}>⋯</button>
-        </div>
-      )}
       {open === 'acts' && (
         <div className="th-strip">
-          {p.canEdit && p.onEdit && (
-            <button type="button" className="th-pill" onClick={() => { setDraft(p.text); setOpen('edit') }}>
+          {p.onStartEdit && (
+            <button type="button" className="th-pill" onClick={() => { setOpen(null); p.onStartEdit?.() }}>
               <Icon3D name="t-pencil" size={20} />{VERB.edit}
             </button>
           )}
@@ -109,6 +85,60 @@ export function HubRow(p: HubRowProps) {
         </div>
       )}
       {open === 'src' && p.source?.()}
+    </>
+  )
+}
+
+/**
+ * S6 (mezo-d6ivw.6): the ONE row every Tudástár section uses (Rólad, Emberek, Észrevételek,
+ * elhallgattatott hatások) — the prototype's `row()`/`acts()` pair. Flat, never glass (§3.4).
+ * Only one of the verb strip, the source panel and the inline editor is open at a time.
+ */
+export function HubRow(p: HubRowProps) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(p.text)
+  const ref = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    if (p.highlight) ref.current?.scrollIntoView?.({ block: 'center' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot mount-centring (the T10 idiom)
+  }, [])
+  const save = () => {
+    const t = draft.trim()
+    if (t && t !== p.text) p.onEdit?.(t)
+    setEditing(false)
+  }
+  return (
+    <div ref={ref} data-row={p.rowKey} className={cn('th-row', p.muted && 'is-muted', p.highlight && 'tud9-hl')}
+      style={{ '--c': p.accent } as CSSProperties}>
+      <div className="th-rm">
+        <Icon3D name={p.icon} size={26} />
+        <div className="th-tx">
+          {editing ? (
+            <div className="th-edit">
+              <textarea aria-label="A tény szövege" value={draft} onChange={(e) => setDraft(e.target.value)} />
+              <div className="b">
+                <button type="button" className="th-pill" onClick={() => { setDraft(p.text); setEditing(false) }}>{VERB.cancel}</button>
+                <button type="button" className="th-pill main" onClick={save}><Icon3D name="t-tick" size={20} />{VERB.save}</button>
+              </div>
+            </div>
+          ) : (
+            <b><Highlight text={p.text} query={p.query ?? ''} /></b>
+          )}
+          {p.sub && <small>{p.sub}</small>}
+          {p.status}
+          {p.why && <span className="th-why"><Icon3D name={p.why.icon} size={16} />{p.why.text}</span>}
+        </div>
+      </div>
+      {!editing && (
+        <HubActs
+          muted={p.muted}
+          canMute={p.canMute}
+          source={p.source}
+          onMute={p.onMute}
+          onForget={p.onForget}
+          onStartEdit={p.canEdit && p.onEdit ? () => { setDraft(p.text); setEditing(true) } : undefined}
+        />
+      )}
       {p.after}
     </div>
   )
