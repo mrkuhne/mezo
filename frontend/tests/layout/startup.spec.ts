@@ -11,7 +11,7 @@ import { seedKalauzSeen } from './kalauzSeed'
 
 test.beforeEach(async ({ page }) => { await seedKalauzSeen(page) })
 
-test('a startup betölti a telefon-képernyőt, az üveggömb lebeg, majd átadja a Mai-t', async ({ page }) => {
+test('a startup betölti a telefon-képernyőt, a gömb töltődik, az ikonok keringenek, majd átadja a Mai-t', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.clock.install({ time: new Date('2026-09-15T12:00:00+02:00') })
@@ -31,17 +31,26 @@ test('a startup betölti a telefon-képernyőt, az üveggömb lebeg, majd átadj
   expect(await splash.boundingBox()).toEqual({ x: 0, y: 0, width: 390, height: 844 })
   await expect(page.locator('.startup-content')).toHaveAttribute('inert', '')
 
-  // A gömb lassan lebeg, a folyadék hullámzik, és a kivezetés pontosan a három másodperc VÉGÉN kezdődik.
-  expect(await page.locator('.startup-splash__orb').evaluate((element) => getComputedStyle(element).animationName))
-    .toContain('startup-float')
-  expect(await page.locator('.startup-splash__wave').evaluate((element) => getComputedStyle(element).animationName))
-    .toBe('uv-wave')
+  // Töltődés + keringés (mezo-1dxhp): a gömb üresen indul, öt sprite-ikon egyesével felvillan
+  // körülötte és kering, a folyadék a kivezetésig emelkedik — és a kör a telefonon belül marad.
+  const icons = splash.locator('.startup-splash__orbit-ic')
+  await expect(icons).toHaveCount(5)
+  const level = () => splash.locator('.startup-splash__level').getAttribute('transform')
+  expect(await level()).toBe('translate(0 62)')
+  await page.clock.runFor(1600)
+  expect(await icons.evaluateAll((els) => els.map((el) => getComputedStyle(el).opacity))).toEqual(['1', '1', '1', '1', '1'])
+  expect(await level()).not.toBe('translate(0 62)')
+  for (const box of await icons.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON()))) {
+    expect(box.left).toBeGreaterThanOrEqual(0)
+    expect(box.right).toBeLessThanOrEqual(390)
+  }
+  // A kivezetés pontosan a három másodperc VÉGÉN kezdődik.
   expect(await page.locator('.startup-stage').evaluate((element) => {
     const style = getComputedStyle(element)
     return [style.animationDuration, style.animationDelay]
   })).toEqual(['0.3s', '2.7s'])
 
-  await page.clock.fastForward(3000)
+  await page.clock.fastForward(1400)
   await expect(splash).toHaveCount(0)
   await expect(page).toHaveURL(/\/nap$/)
   await expect(page.locator('.startup-content')).not.toHaveAttribute('inert')
@@ -66,6 +75,10 @@ test('asztali szélességen a telefon-képernyőn belül marad, csökkentett moz
   // Csökkentett mozgás: a jel ott van, de EGYETLEN animáció sem fut — a kivezetés sem.
   await expect(splash.locator('.startup-splash__orb.glass')).toHaveCount(1)
   expect(await splash.evaluate((element) => element.getAnimations({ subtree: true }).length)).toBe(0)
+  // …és a nyugalmi kocka áll: a gömb ~70%-ig tele, az öt ikon a helyén (mezo-1dxhp).
+  expect(await splash.locator('.startup-splash__level').getAttribute('transform')).toBe('translate(0 -40)')
+  expect(await splash.locator('.startup-splash__orbit-ic').evaluateAll((els) => els.map((el) => getComputedStyle(el).opacity)))
+    .toEqual(['1', '1', '1', '1', '1'])
   await page.clock.fastForward(3000)
   await expect(splash).toHaveCount(0)
   await expect(page).toHaveURL(/\/nap\/rutin$/)

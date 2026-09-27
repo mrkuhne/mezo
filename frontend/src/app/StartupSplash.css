@@ -35,6 +35,9 @@
   place-items: center;
   width: 150px;
   aspect-ratio: 1;
+  /* Töltődés + keringés (mezo-1dxhp): the orbit (r 108 + half an icon) reaches 56px past the
+     orb on every side, so the mark reserves that room and the wordmark stays clear of it. */
+  margin-block: 56px;
 }
 /* The halo box is ~3x the sphere so the ellipse fades out well INSIDE it (no straight edge). */
 .startup-splash__mark::before {
@@ -57,6 +60,44 @@
 .startup-splash__orb svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .startup-splash__liquid { opacity: 0.85; filter: drop-shadow(0 0 10px rgba(171, 159, 210, 0.7)); }
 .startup-splash__hi { fill: none; stroke: rgba(255, 255, 255, 0.55); stroke-width: 5; stroke-linecap: round; }
+.startup-splash__orb.glass { z-index: 2; }
+.startup-splash__bubble { fill: rgba(255, 255, 255, 0.6); }
+
+/* Töltődés + keringés (mezo-1dxhp, prototype indito-animacio.html „D"). Every moving value is
+   written per frame by StartupSplash's rAF loop from `splashFrame`; the CSS only sets the
+   resting geometry. A soft lavender glow behind the orb, the light sheen that crosses the glass
+   at the end, and the five orbit icons centred on the orb. */
+.startup-splash__glow {
+  position: absolute;
+  inset: -18px;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle, rgba(171, 159, 210, 0.55), rgba(171, 159, 210, 0) 68%);
+}
+.startup-splash__sheen {
+  position: absolute;
+  top: -20%; bottom: -20%; left: 0;
+  width: 34%;
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 244, 230, 0.4), transparent);
+}
+.startup-splash__orbit-ic {
+  position: absolute;
+  left: 50%; top: 50%;
+  z-index: 3;
+  width: 46px; height: 46px;
+  margin: -23px 0 0 -23px;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.startup-splash__orbit-ic .t-ico {
+  display: block;
+  width: 100%; height: 100%;
+  filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 10px color-mix(in srgb, var(--c) 55%, transparent));
+}
 
 .startup-splash__wordmark {
   position: relative;
@@ -67,18 +108,12 @@
   filter: drop-shadow(0 0 18px rgba(171, 159, 210, 0.35));
 }
 
-/* Egy lassú lebegés + a folyadék hulláma, majd kivezetés — ugyanaz a 3 másodperc, amit a
-   komponens mér. Csökkentett mozgás mellett a jel egyszerűen ott van, és a kivezetés is elmarad. */
+/* A szó-logó felemelkedése, majd kivezetés — ugyanaz a 3 másodperc, amit a komponens mér. A
+   töltődést és a keringést a rAF-hurok viszi. Csökkentett mozgás mellett a jel nyugalmi
+   kockája áll, és a kivezetés is elmarad. */
 @media (prefers-reduced-motion: no-preference) {
   .startup-stage { animation: startup-reveal 300ms ease-out 2700ms both; }
-  .startup-splash__orb { animation: startup-float 5s ease-in-out infinite; }
-  .startup-splash__wave { animation: uv-wave 3.2s ease-in-out infinite; }
   .startup-splash__wordmark { animation: startup-rise 600ms cubic-bezier(.2, .7, .3, 1) 200ms both; }
-}
-
-@keyframes startup-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
 }
 
 @keyframes startup-rise {

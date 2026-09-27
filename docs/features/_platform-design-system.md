@@ -889,7 +889,15 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
   full-bleed. The mark is the **static clay orb** (`s-orb`) on an amber halo band — the Titanium
   variant's live WebGL scene, its readiness seam and the 5-second escape hatch are all gone with
   `TitanScene` (`mezo-ju4j6.10`): a static mark is on the first frame, so there is nothing to wait
-  for. Three seconds, then the app. The router mounts under an inert, `aria-hidden` wrapper, so
+  for. **Töltődés + keringés (`mezo-1dxhp`, 2026-09-27):** the mark is the Üveg glass orb, now
+  alive — the liquid fills from empty to ~70% across the whole intro (sine-eased, at rest as the
+  fade starts), five Titanium sprite icons (`t-sun t-dumbbell t-bowl t-water t-moon`) pop in one by
+  one 0.1 s behind it, 0.24 s apart, on a flat r=108 circle and orbit; bubbles, a closing sheen.
+  The frames come from the pure `app/startupChoreography.ts` (`splashFrame(t, still)`), applied by
+  one rAF loop in `SplashMark`; reduced motion (or no rAF) paints the still frame (70%, icons in
+  place) and CSS drops the fade. The mark reserves `margin-block: 56px` so the orbit clears the
+  wordmark. Prototype: `docs/design_2.0/prototypes/indito-animacio.html` (variant D).
+  Three seconds, then the app. The router mounts under an inert, `aria-hidden` wrapper, so
   data can load without allowing early interaction; the timer removes the overlay independently of
   CSS completion. Internal navigation and background/foreground transitions never replay it; a
   reload does. The normal `/` entry still resolves to `/nap`; explicit deep links and
@@ -901,7 +909,7 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
   (always at the LATER domains, so it looked like a render gap). `tests/layout/splashSeed.ts` sets
   the flag; `startup.spec.ts` deliberately does not use it, because it measures the intro itself.
   The shipped bundle has no seam: `import.meta.env.DEV` is false there.
-  Focused tests: `app/StartupSplash.test.tsx`; browser geometry, motion and navigation:
+  Focused tests: `app/StartupSplash.test.tsx`, `app/startupChoreography.test.ts`; browser geometry, motion and navigation:
   `tests/layout/startup.spec.ts`.
 
 - **Tokens-not-`rgba()` & no `dangerouslySetInnerHTML`** are hard house rules from the phase-1 spec; `SafeMarkdown` exists specifically to enforce the latter (React nodes only, escapes everything but `**bold**`).
@@ -969,7 +977,9 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
 **App shell** (`frontend/src/app/`)
 
 - `StartupSplash.tsx` / `StartupSplash.css` — app-root 3-second startup inside `PhoneFrame`,
-  mounted in `frontend/src/main.tsx`; reused artwork from `TitanCompanion.tsx`.
+  mounted in `frontend/src/main.tsx`; the glass orb + orbit mark (`SplashMark`).
+- `startupChoreography.ts` — the splash's pure frame function `splashFrame(t, still)` (fill,
+  slosh, bubbles, icon spawn/orbit, sheen) and its timing constants (`mezo-1dxhp`).
 - `PhoneFrame.tsx` / `StatusBar.tsx` / `ScreenContent.tsx` — iPhone mockup shell. `ScreenContent` owns `.screen-content`, the single app scroller, and resets it to the top on every **route** change; the reset itself is `scrollToTop()` from **`shared/lib/screenScroll.ts`** (`mezo-vad0`), which also exports the `screenScroller()` lookup so a page that swaps its whole tree WITHOUT navigating can ask for the same reset (the active workout's phase flips — see [train.md §2](train.md)). Both go through an **instant** `scrollTo` on purpose: `.screen-content` carries `scroll-behavior: smooth`, so a bare `scrollTop =` starts an animated scroll that keeps running into the next frames and overrides whatever the landing screen does (it ate the chat's scroll-to-newest, `mezo-at8x.2`).
 - `TabBar.tsx` / `AppLayout.tsx` — 5-tab nav + layout (anchor-mode wiring). The floating **`QuickLogFab`** (`app/QuickLogFab.tsx`) owns its own `open` state and conditionally mounts `QuickInputSheet`, independently of `TabBar` (Design 2.0, `mezo-d20.1.1`). `AppLayout` also mounts **`CircadianTheme`** (`mezo-d71m`) and hides `TabBar` on `/train/session`, **`/me/sleep/night`** (the night page's light would defeat the sub-30-lux point, `mezo-d71m`), **and `/ritual`** (the full-screen Napzárás flow, `mezo-ilsj` — see [ritual.md](ritual.md)) via `hideChrome` (called `hideTabBar` until `mezo-atry`); its `LiveActivityProvider` mount was deleted in `mezo-xt65` — the rest timer is Train-local now.
 - `AppHeader.tsx` — the app's ONE header, since `mezo-atry` (previously five per-hub `.nap-head` copies). A real `<header>` element (`className="nap-head app-head"`), mounted by `AppLayout` as the first child inside `ScreenContent`, and **`position: sticky` (`mezo-8az6`)** so it kitapad at the top of the scroller instead of scrolling away, on every route except the three `hideChrome` chrome-free ones. Both popovers close on Escape, on an outside click and on a route change; the daypart items are `menuitemradio`+`aria-checked`; focus management is deliberately deferred ([today.md](today.md) §9). Six elements: **the section label + clay spot** (`headerSection.ts`, `mezo-8az6` — replaced the date eyebrow) · [kalauz „?"] · daypart switch (`?dp=` read only on `/nap`; picking one always navigates to `/nap`) · a Mezo-messages circle → `/nap/uzenetek` (the tile this pulled out of Today's daypart mosaics) · a notification bell (unread badge, 3-row peek menu) · a profile orb → `/me`. The bell's rows wear 3D icons through `NTF_3D` (`features/notification/logic/kindIcon.ts`, shared with the full feed page `/me/ertesitesek` since `mezo-me75u.7`), the call-site map for the clay glyphs that mean something else elsewhere (`i-kristaly` → t-orb, `i-termes` → t-harvest, and since `mezo-a9bo7.13` `i-mezo` → t-chat for the esti kiadás); everything else goes through the shared `CLAY_TO_3D`. See [today.md](today.md#the-header-is-the-shells-not-the-hubs) for the full behavior contract.

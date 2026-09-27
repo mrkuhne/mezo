@@ -59,6 +59,13 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-09-27 — Indítókép: töltődés + keringés (`mezo-1dxhp`).** A 3 másodperces indítókép
+  üveggömbje élő lett: a lila folyadék végig töltődik ~70%-ig (a kivezetésre áll meg), közben öt
+  Titán-ikon (nap, súlyzó, tál, vízcsepp, hold) egyesével felvillan körülötte és körben kering, a
+  végén fénycsík söpör át az üvegen. Csökkentett mozgásnál álló kép. Prototípus:
+  [`indito-animacio.html`](../design_2.0/prototypes/indito-animacio.html) („D"); terv:
+  [`2026-09-27-splash-fill-orbit`](../superpowers/plans/2026-09-27-splash-fill-orbit.md).
+
 - **2026-09-27 — Boop csapat-üzenőfal: social fal + karakter-narratíva teljes (`mezo-a9bo7`,
   `mezo-ui5by` duplikátum lezárva).** Az 5 Boop-karakter social-media-szerű üzenőfala: story-sáv
   gyűrű-szemantikával, három-súlyú fal-ritmus, platform-kánon poszt-anatómia, esti kiadás,

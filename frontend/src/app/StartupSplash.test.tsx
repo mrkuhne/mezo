@@ -34,8 +34,9 @@ test('does not replay when the routed content changes', () => {
 
 test('StrictMode still reveals once and unmount clears the pending timer', () => {
   const first = render(<StrictMode><StartupSplash>Dashboard</StartupSplash></StrictMode>)
-  // The startup deadline plus PhoneFrame's existing daypart clock.
-  expect(vi.getTimerCount()).toBe(2)
+  // The startup deadline, PhoneFrame's existing daypart clock and the choreography's next
+  // animation frame (mezo-1dxhp) — StrictMode's double effect run leaves exactly one of each.
+  expect(vi.getTimerCount()).toBe(3)
   act(() => vi.advanceTimersByTime(3000))
   expect(screen.queryByRole('status')).not.toBeInTheDocument()
   first.unmount()
@@ -54,6 +55,37 @@ test('the mark is the lavender glass orb with its liquid, and the wordmark stays
   expect(container.querySelector('.startup-splash canvas')).toBeNull()
   expect(container.querySelector('.startup-splash .titan-svg')).toBeNull()
   expect(container.querySelector('.startup-splash__wordmark')!.textContent).toBe('boop')
+})
+
+// Töltődés + keringés (mezo-1dxhp): öt Titán-ikon a gömb körül, a sprite-ból — se emoji, se
+// kirajzolt pálya; a hurok képkockáról képkockára tölti a gömböt és pörgeti a kört.
+test('five sprite icons orbit the orb while the liquid rises', () => {
+  const { container } = render(<StartupSplash>Dashboard</StartupSplash>)
+  const icons = [...container.querySelectorAll('.startup-splash__orbit-ic use')]
+  expect(icons.map((u) => u.getAttribute('href'))).toEqual(['#t-sun', '#t-dumbbell', '#t-bowl', '#t-water', '#t-moon'])
+  expect(container.querySelector('.startup-splash ellipse')).toBeNull()
+  const level = () => container.querySelector('.startup-splash__level')!.getAttribute('transform')
+  const sun = () => (container.querySelector('.startup-splash__orbit-ic') as HTMLElement).style
+  expect(level()).toBe('translate(0 62)') // empty: surface at y 150
+  expect(sun().opacity).toBe('0')
+  act(() => vi.advanceTimersByTime(1500))
+  expect(sun().opacity).toBe('1')
+  act(() => vi.advanceTimersByTime(1300)) // 2.8 s: the fill has come to rest, the splash is fading
+  expect(level()).toBe('translate(0 -40)') // ~70%: surface at y 48
+})
+
+test('reduced motion paints the resting frame: full to ~70%, icons in place', () => {
+  const matchMedia = window.matchMedia
+  window.matchMedia = ((query: string) => ({ matches: query.includes('reduce'), media: query,
+    addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia
+  try {
+    const { container } = render(<StartupSplash>Dashboard</StartupSplash>)
+    expect(container.querySelector('.startup-splash__level')!.getAttribute('transform')).toBe('translate(0 -40)')
+    const icons = [...container.querySelectorAll<HTMLElement>('.startup-splash__orbit-ic')]
+    expect(icons.every((ic) => ic.style.opacity === '1')).toBe(true)
+  } finally {
+    window.matchMedia = matchMedia
+  }
 })
 
 // ── A harness-varrat (mezo-u1n6l) ────────────────────────────────────────────────
