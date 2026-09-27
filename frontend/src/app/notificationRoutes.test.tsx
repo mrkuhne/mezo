@@ -71,7 +71,9 @@ test('header → center → notifications → center preserves the origin', asyn
   await screen.findByText('Ma')
   expect(screen.getAllByRole('button', { name: 'Beállítások' })).toHaveLength(1)
   await userEvent.click(screen.getByRole('button', { name: 'Beállítások' }))
-  await userEvent.click(await screen.findByRole('link', { name: /Értesítések Mikor/ }))
+  // jsdom loads settings.css but not prototype.css: since U11 (mezo-zn01o) the row's `display: block`
+  // lives only in the glass block, so the jsdom name may run the title into the description.
+  await userEvent.click(await screen.findByRole('link', { name: /^Értesítések\s*Mikor/ }))
   await screen.findByText('Értesítés-beállítások')
   await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
   expect(await screen.findByRole('heading', { name: 'Legyen a tiéd.' })).toBeInTheDocument()

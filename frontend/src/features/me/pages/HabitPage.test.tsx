@@ -213,8 +213,9 @@ describe('HabitPage — a részletek oldala (mezo-bk26 után)', () => {
     expect(container.querySelectorAll('.rt-cal i.is-miss').length).toBe(8)
     // A day with NO row is not a miss: rows only exist for days the app was opened, so the two
     // must not share a fill — otherwise absence reads as failure, which ADR 0010 forbids.
-    const emptyFill = rawCss.match(/\.rt-cal i \{[^}]*background:\s*([^;]+);/)?.[1]?.trim()
-    const missFill = rawCss.match(/\.rt-cal i\.is-miss \{[^}]*background:\s*([^;]+);/)?.[1]?.trim()
+    // The glass habit page (U7) paints the cells; the pre-üveg unscoped fills left in U11 (mezo-zn01o).
+    const emptyFill = rawCss.match(/\.rt-szokas \.rt-cal i \{[^}]*background:\s*([^;]+);/)?.[1]?.trim()
+    const missFill = rawCss.match(/\.rt-szokas \.rt-cal i\.is-miss,[^{]*\{[^}]*background:\s*([^;]+);/)?.[1]?.trim()
     expect(emptyFill).toBeTruthy()
     expect(missFill).toBeTruthy()
     expect(missFill).not.toEqual(emptyFill)
