@@ -96,6 +96,9 @@ public class WeeklyReviewDigestService {
                     + " for user {} — dropping the orphan ref", event.getId(), event.getPatternId(), userId);
             return null;
         }
+        if (pattern.isForgotten()) {
+            return null; // S6 (mezo-d6ivw.6): the user made Mezo forget it — the digest too
+        }
         return new WeeklyReviewPatternRef()
                 .pairKey(pattern.getPairKey())
                 .title(pattern.getTitle())
