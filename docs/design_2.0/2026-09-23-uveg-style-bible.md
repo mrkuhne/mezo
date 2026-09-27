@@ -725,3 +725,8 @@ the fixes from a findings page (not a prototype — a sweep has no new screen), 
 106. **A kit rule that must be overridable is written at zero specificity.** The `<Sheet glass>` field rule
      became `:where(.sheet.glass.uv-sheet) :is(input:where(…), textarea, select)` (0,0,1), so a slice's own
      field treatment wins without a heavier selector.
+
+### Minta részletei (mezo-rstt7, 2026-09-27)
+
+107. **A chart answers "how big", the meter answers "does it count" — never a trend line; the tap
+     tooltip lives in component state so a tap never re-runs the page's entrance.**

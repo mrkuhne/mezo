@@ -236,7 +236,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### character
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-27, shipped) ·
-  [docs/features/insights.md](features/insights.md) (updated 2026-09-26, mixed)
+  [docs/features/insights.md](features/insights.md) (updated 2026-09-27, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
   - **sub-features:** `detector`
@@ -588,7 +588,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### feedback
 
-*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-09-26, mixed)
+*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-09-27, mixed)
 
 - **FE data** `frontend/src/data/feedback`
   - **hooks (via `@/data/hooks`):** `useFeedback`
@@ -771,7 +771,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### insights
 
 *FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-27, mixed) ·
-  [docs/features/insights.md](features/insights.md) (updated 2026-09-26, mixed)
+  [docs/features/insights.md](features/insights.md) (updated 2026-09-27, mixed)
 
 - **FE data** `frontend/src/data/insights`
   - **hooks (via `@/data/hooks`):** `MemoryRetrievalFeedback`, `MemoryRetrievalFeedbackAction`,
