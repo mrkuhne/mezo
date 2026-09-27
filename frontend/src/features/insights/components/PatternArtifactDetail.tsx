@@ -1,55 +1,73 @@
 // ============================================================
-// Mezo · PatternArtifactDetail — a mentett felismerés (motor-pár nélküli minta) mélyoldala.
-// Üvegben (Üvegesítés U8a, mezo-me75u.13): prototypes/uveg-uzenofal.html #minta/mentett(+/<döntés>).
-// EGY üveg-hero: amíg dönthető, benne az „Amit eddig látunk", a döntések magyarázata és a három
-// döntés; megítélve az állapot és az, mit jelent. Alatta lapos panel: amit az app megfigyelt.
-// A lista inbox-kártyája (`PatternDecisionCard`) változatlan — ez a hero csak a részlet-oldalé.
+// Mezo · PatternArtifactDetail — a mentett felismerés (motor-pár és terv nélküli minta, pl. egy
+// régi heti AI-feltevés) mélyoldala. Újramesélve (mezo-rstt7, prototypes/src/uveg-minta-body.html
+// m6 „Csak megérzés"): ugyanaz a keret nélküli `pmx-hero`, mint a mért mintáké — de pár-sor,
+// grafikon és szabály nélkül, mert nincs mit mérni. Kérdés → válasz-szó → mondat → a „MIRE
+// ÉPÜLT" idézet → döntés. Alatta lapos panel: amit az app megfigyelt.
 // ============================================================
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import {
-  DecisionRow, DetailHero, SectionHead, StatePill, patternDecisionButtons, type DetailTone,
-} from '@/features/insights/components/DetailHero'
+import { SectionHead, patternDecisionButtons, toneClass, type DetailTone } from '@/features/insights/components/DetailHero'
 import type { Pattern, PatternRowStatus, PatternStatus } from '@/data/types'
 import { patternHeadline, patternPlainLine } from '@/features/insights/logic/patternCopy'
+import { cn } from '@/shared/lib/cn'
 
-const STATUS_META: Record<Exclude<PatternRowStatus, 'proposed'>, {
-  label: string
-  copy: string
+export interface ArtifactLook {
+  word: string
+  sentence: string
   tone: DetailTone
   art: Icon3DName
-}> = {
+}
+
+const STATUS_META: Record<Exclude<PatternRowStatus, 'proposed' | 'confirmed'>, ArtifactLook> = {
   monitoring: {
-    label: 'Megfigyelés alatt',
-    copy: 'Ezt a mintát tovább figyeljük. Még nem épül be tartós tudásként a társ válaszaiba.',
+    word: 'Megfigyelés alatt',
+    sentence: 'Ezt a mintát tovább figyeljük. Még nem épül be tartós tudásként a társ válaszaiba.',
     tone: 'sky',
     art: 't-lens',
   },
-  confirmed: {
-    label: 'Megerősítve',
-    copy: 'A társ figyelembe veszi ezt a mintát a beszélgetésekben és a későbbi előrejelzéseknél.',
-    tone: 'sage',
-    art: 't-tick',
-  },
   rejected: {
-    label: 'Elvetve',
-    copy: 'Ezt a mintát nem használjuk a társ válaszaiban, és nem kérünk róla újabb döntést.',
+    word: 'Elvetve',
+    sentence: 'Ezt a mintát nem használjuk a társ válaszaiban, és nem kérünk róla újabb döntést.',
     tone: 'mute',
     art: 't-skip',
   },
   // Reflexió S2 (mezo-eq85.2) — a motor saját két állapota. Itt csak annyi áll, ami tényszerűen
   // igaz, hogy a felület ne hallgasson el egy létező státuszt.
   refuted: {
-    label: 'Megcáfolva',
-    copy: 'Az adat többször egymás után ellentmondott ennek a sejtésnek, ezért az app elengedte.',
+    word: 'Megcáfolva',
+    sentence: 'Az adat többször egymás után ellentmondott ennek a sejtésnek, ezért az app elengedte.',
     tone: 'mute',
     art: 't-skip',
   },
   dormant: {
-    label: 'Szünetel',
-    copy: 'Régóta nincs elég adat ahhoz, hogy ezt tesztelni lehessen. Ha újra lesz, magától felébred.',
+    word: 'Szünetel',
+    sentence: 'Régóta nincs elég adat ahhoz, hogy ezt tesztelni lehessen. Ha újra lesz, magától felébred.',
     tone: 'mute',
     art: 't-clock',
   },
+}
+
+/** A mentett felismerés válasza: amíg dönthető „Mezo sejtése", megerősítve „Csak megérzés"
+ *  (a prototípus m6 esete), minden más a saját, tényszerű állapot-mondatát mondja. */
+export function artifactLook(pattern: Pattern): ArtifactLook {
+  const status = pattern.status ?? 'proposed'
+  if (status === 'proposed') {
+    return {
+      word: 'Mezo sejtése',
+      sentence: 'Ez Mezo feltevése. Nincs mögötte mérhető adatpár, ezért nem tudom számolni: te döntöd el, igaz-e rád.',
+      tone: 'lav',
+      art: 't-bulb',
+    }
+  }
+  if (status === 'confirmed') {
+    return {
+      word: 'Csak megérzés',
+      sentence: 'Ez Mezo korábbi feltevése. Nincs mögötte mérhető adatpár, ezért nem tudom számolni: a te megerősítésed tartja életben.',
+      tone: 'lav',
+      art: 't-bulb',
+    }
+  }
+  return STATUS_META[status]
 }
 
 export function PatternArtifactDetail({
@@ -60,48 +78,55 @@ export function PatternArtifactDetail({
   onDecide: (status: PatternStatus) => void
 }) {
   const status = pattern.status ?? 'proposed'
+  const look = artifactLook(pattern)
 
   return (
     <>
-      {status === 'proposed' ? (
-        <DetailHero tone="lav" art="t-note" eyebrow={pattern.categoryLabel} title={patternHeadline(pattern.title)}
-          pill={<StatePill tone="lav" art="t-score"
-            label={pattern.confidence != null ? `bizonyosság ${(pattern.confidence * 100).toFixed(0)}%` : 'tanulom'} />}>
-          <div className="pdt-seen">
-            <small>Amit eddig látunk</small>
-            <p>{patternPlainLine(pattern.mechanism)}</p>
+      <section className={cn('pmx-hero', 'pmx-hero-artifact', 'rise', toneClass(look.tone))} aria-labelledby="pmx-answer">
+        <p className="pmx-q">{patternHeadline(pattern.title)}</p>
+        <div className="pmx-ans">
+          <Icon3D name={look.art} size={54} />
+          <h1 id="pmx-answer">{look.word}</h1>
+        </div>
+        <p className="pmx-say">{look.sentence}</p>
+        <div className="pmx-quote">
+          <span className="pmx-eb">MIRE ÉPÜLT</span>
+          <p>{patternPlainLine(pattern.mechanism)}</p>
+        </div>
+        {status === 'proposed' && (
+          <div className="pmx-dec">
+            <div className="pmx-row2" role="group" aria-label="Döntés a mintáról">
+              {patternDecisionButtons((verb) => onDecide(verb)).map((button) => (
+                <button key={button.key} type="button" className="pmx-dact" onClick={button.onClick}>
+                  <Icon3D name={button.art} size={22} />{button.label}
+                </button>
+              ))}
+            </div>
+            <p className="pmx-why">
+              <b>Megerősítem</b> — tartós tudás lesz · <b>Figyeljük</b> — marad a listán, de nem tanulok
+              belőle · <b>Elvetem</b> — befagy, többé nem hozom elő.
+            </p>
           </div>
-          <div className="pdt-xpl">
-            <span><b>Megerősítem</b> — tartós tudás lesz: bekerül a Tudástárba és a társ fejébe, előrejelzés
-              és kísérlet épülhet rá.</span>
-            <span><b>Figyeljük még</b> — marad a listán, a motor tovább számolja, de nem tanulok belőle.</span>
-            <span><b>Elvetem</b> — befagy, többé nem hozom elő.</span>
+        )}
+        {status === 'confirmed' && (
+          <div className="pmx-dec">
+            <button type="button" className="pmx-link" onClick={() => onDecide('reject')}>
+              Mégsem igaz rám — visszavonom
+            </button>
           </div>
-          <DecisionRow label="Döntés a mintáról" buttons={patternDecisionButtons((verb) => onDecide(verb))} />
-        </DetailHero>
-      ) : (
-        <DetailHero tone={STATUS_META[status].tone} art="t-note" eyebrow={pattern.categoryLabel} title={patternHeadline(pattern.title)}
-          pill={<StatePill tone={STATUS_META[status].tone} art={STATUS_META[status].art} label={STATUS_META[status].label} />}>
-          <p className="pdt-hero-copy">{STATUS_META[status].copy}</p>
-        </DetailHero>
-      )}
+        )}
+      </section>
 
-      <SectionHead title="Mit figyelt meg az app?" meta="mentett minta" />
-      {(status !== 'proposed' || pattern.evidence.length > 0) && (
-        <section className="pdt-flat pdt-artifact-card rise">
-          {status !== 'proposed' && <p className="pdt-artifact-mechanism">{patternPlainLine(pattern.mechanism)}</p>}
-          {pattern.evidence.length > 0 && (
+      {pattern.evidence.length > 0 && (
+        <>
+          <SectionHead title="Mit figyelt meg az app?" meta="mentett minta" />
+          <section className="pdt-flat pdt-artifact-card rise">
             <ul className="pdt-artifact-evidence">
               {pattern.evidence.map((item) => <li key={item}><Icon3D name="t-tick" size={18} />{item}</li>)}
             </ul>
-          )}
-        </section>
+          </section>
+        </>
       )}
-
-      <p className="pdt-note pdt-artifact-note rise">
-        Ez egy mentett felismerés. Nincs hozzá külön motor-pár és napgrafikon, ezért itt csak azt mutatjuk,
-        amit a minta ténylegesen tartalmaz.
-      </p>
     </>
   )
 }

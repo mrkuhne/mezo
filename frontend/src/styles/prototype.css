@@ -22739,7 +22739,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pdt-finding b { color: var(--text-primary); font-weight: 650; }
 .pdt-finding strong { font-size: 17px; font-weight: 650; color: color-mix(in srgb, var(--c) 80%, #fff); }
 .pdt-finding small { display: block; margin-top: 4px; font-size: 11px; color: var(--text-muted); }
-.pdt-hero-copy { margin-top: 12px; font-size: 14px; line-height: 1.55; color: var(--text-primary); }
 
 /* the big day ring (prototype `.bring`); the svg keeps overflow visible so the glow never clips */
 .pdt-ring {
@@ -22762,22 +22761,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pdt-ring-n i { font-style: normal; font-size: 15px; letter-spacing: -0.3px; color: var(--text-secondary); margin-left: 1px; }
 .pdt-ring-u { position: relative; display: block; margin-top: 4px; font-size: 7.5px; font-weight: 700; letter-spacing: 1px; color: var(--text-muted); }
 
-/* belief strip inside the hero: a flat cell, big light numeral (prototype `.belief`) */
-.pdt-belief {
-  display: flex; align-items: center; gap: 11px; margin-top: 12px; padding: 10px 12px; border-radius: 14px;
-  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
-}
-.pdt-belief strong {
-  flex: 0 0 auto; font-size: 24px; font-weight: 300; letter-spacing: -1px; line-height: 1;
-  font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--c) 80%, #fff);
-}
-.pdt-belief strong small {
-  display: block; margin-top: 3px; font-size: 7.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
-  color: var(--text-muted);
-}
-.pdt-belief p { font-size: 11px; line-height: 1.45; color: var(--text-secondary); }
-.pdt-belief p b { color: var(--text-primary); font-weight: 600; }
-
 /* decisions (prototype `.acts.dec`): three equal flat cells, icon over word; the „no" word warm gold */
 .pdt-dec {
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;
@@ -22798,16 +22781,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pdt-dec button:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
 .pdt-decnote { margin-top: 9px; font-size: 11px; line-height: 1.5; color: var(--text-muted); }
 .pdt-decnote b { color: var(--text-secondary); font-weight: 600; }
-
-/* saved observation hero parts (prototype `.seen`, `.xpl`) */
-.pdt-seen {
-  margin-top: 11px; padding: 10px 12px; border-radius: 14px;
-  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
-}
-.pdt-seen small { display: block; font-size: 8.5px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-muted); }
-.pdt-seen p { margin-top: 4px; font-size: 13px; line-height: 1.5; color: var(--text-primary); }
-.pdt-xpl { display: grid; gap: 4px; margin-top: 10px; font-size: 11.5px; line-height: 1.5; color: var(--text-secondary); }
-.pdt-xpl b { color: var(--text-primary); font-weight: 600; }
 
 /* prediction: expected vs happened (prototype `.vs`) — recessed flat wells inside the hero */
 .pdt-vs { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin: 12px 0 2px; }
@@ -22840,128 +22813,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pdt-prose { font-size: 13.5px; line-height: 1.55; color: var(--text-primary); }
 .pdt-prose.is-mute { color: var(--text-secondary); }
 .pdt-note { margin-top: 6px; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
-
-/* test plan (prototype `.plan2`, `.ptile`, `.pstrip`) */
-.pdt-plan-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: stretch; }
-.pdt-plan-tile {
-  --c: var(--dv-lav); padding: 11px 11px 10px; border-radius: 15px;
-  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
-}
-.pdt-plan-tile .pdt-tile-label {
-  margin-top: 7px; font-size: 8.5px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
-  color: color-mix(in srgb, var(--c) 75%, #fff);
-}
-.pdt-plan-src { display: block; }
-.pdt-plan-nm { margin-top: 3px; font-size: 14px; font-weight: 650; letter-spacing: -0.2px; line-height: 1.25; overflow-wrap: anywhere; }
-.pdt-plan-sb { margin-top: 3px; font-size: 10.5px; color: var(--text-muted); }
-.pdt-plan-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 9px; }
-.pdt-plan-strip span {
-  padding: 9px 3px 8px; border-radius: 13px; text-align: center;
-  font-size: 8px; font-weight: 700; letter-spacing: 0.7px; line-height: 1.3; text-transform: uppercase; color: var(--text-muted);
-  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
-}
-.pdt-plan-strip b {
-  display: block; margin-bottom: 4px; font-size: 20px; font-weight: 300; letter-spacing: -0.8px; line-height: 1.05;
-  text-transform: none; font-variant-numeric: tabular-nums; color: var(--text-primary);
-}
-.pdt-plan-strip b i { font-style: normal; font-size: 10px; letter-spacing: 0; color: var(--text-secondary); }
-.pdt-plan-strip .is-word b { font-size: 14px; letter-spacing: -0.2px; line-height: 21px; }
-.pdt-plan-strip .is-key {
-  --c: var(--dv-lav);
-  background: radial-gradient(90% 90% at 50% 20%, color-mix(in srgb, var(--c) 16%, transparent), transparent 72%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent);
-}
-.pdt-plan-strip .is-key b { color: color-mix(in srgb, var(--c) 80%, #fff); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--c) 45%, transparent)); }
-
-/* the days card (prototype `.ctitle` + `.sc` + `.clegend` + `.dlist`) */
-.pdt-days { --c: var(--dv-lav); }
-.pdt-chart-title { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-bottom: 2px; }
-.pdt-chart-title > span { min-width: 0; }
-.pdt-chart-title b { display: block; font-size: 9.5px; font-weight: 700; letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted); }
-.pdt-chart-sub { display: block; margin-top: 3px; font-size: 11px; color: var(--text-secondary); }
-.pdt-chart-title strong {
-  flex: 0 0 auto; font-size: 34px; font-weight: 300; letter-spacing: -1.6px; line-height: 1;
-  font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--c) 80%, #fff);
-  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--c) 45%, transparent));
-}
-.pdt-chart-title strong i { font-style: normal; font-size: 12px; letter-spacing: 0; margin-left: 3px; color: var(--text-secondary); }
-.pdt-chart { display: block; width: 100%; height: auto; margin-top: 4px; overflow: visible; }
-.pdt-chart-grid { stroke: rgba(245, 239, 230, 0.09); stroke-width: 1; stroke-dasharray: 3 4; }
-.pdt-chart-axis { fill: none; stroke: rgba(245, 239, 230, 0.22); stroke-width: 1; }
-.pdt-chart-tick, .pdt-chart-caption { fill: var(--text-muted); font: 9.5px var(--ff-body); }
-.pdt-axis-label { fill: var(--text-secondary); font: 600 10.5px var(--ff-body); }
-.pdt-chart-col { fill: rgba(245, 239, 230, 0.035); stroke: rgba(245, 239, 230, 0.09); stroke-width: 1; }
-.pdt-group-label { font: 650 10.5px var(--ff-body); }
-.pdt-zero-label { fill: #9FC6E8; }
-.pdt-one-label { fill: #CBC1EC; }
-.pdt-dot-one, .pdt-dot-number { fill: #CBC1EC; filter: drop-shadow(0 0 4px rgba(171, 159, 210, 0.85)); }
-.pdt-dot-zero { fill: #9FC6E8; filter: drop-shadow(0 0 4px rgba(127, 178, 222, 0.8)); }
-.pdt-median-zero, .pdt-median-one { stroke-width: 2.6; stroke-linecap: round; }
-.pdt-median-zero { stroke: var(--dv-sky); }
-.pdt-median-one { stroke: var(--dv-lav); }
-.pdt-trend { stroke: var(--dv-lav); stroke-width: 2.2; stroke-linecap: round; opacity: 0.8; filter: drop-shadow(0 0 5px rgba(171, 159, 210, 0.6)); }
-.pdt-latest-ring { fill: none; stroke: var(--dv-amber); stroke-width: 2.2; filter: drop-shadow(0 0 6px rgba(255, 190, 96, 0.8)); }
-.pdt-chart-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-top: 4px; font-size: 11.5px; color: var(--text-secondary); }
-.pdt-chart-legend > i {
-  flex: 0 0 auto; width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--dv-amber);
-  box-shadow: 0 0 6px rgba(255, 190, 96, 0.7);
-}
-.pdt-chart-empty.uv-empty {
-  margin-top: 4px; padding: 14px; border-radius: 14px; text-align: center; font-size: 11.5px; color: var(--text-secondary);
-}
-.pdt-days-fold { margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--divider); }
-.pdt-days-fold > summary { list-style: none; cursor: pointer; font-size: 12px; font-weight: 600; color: #CBC1EC; }
-.pdt-days-fold > summary::-webkit-details-marker { display: none; }
-.pdt-days-fold table { width: 100%; margin-top: 8px; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
-.pdt-days-fold th {
-  padding: 6px 4px; text-align: left; font-size: 8.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
-  color: var(--text-muted); border-bottom: 1px solid var(--divider);
-}
-.pdt-days-fold td { padding: 7px 4px; color: var(--text-primary); border-bottom: 1px solid var(--divider); }
-.pdt-days-fold tr:last-child td { border-bottom: 0; }
-.pdt-days-fold tr.is-last td { color: #FFD99A; }
-
-/* catalog: the two group tiles (prototype `.cmp2 .evc`) — flat cells, one tone each */
-.pdt-compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 0 16px; }
-.pdt-compare-tile {
-  padding: 14px 10px 12px; border-radius: 16px; text-align: center;
-  background: rgba(245, 239, 230, 0.05);
-  box-shadow: inset 0 0 0 1px var(--divider), inset 0 -14px 24px -16px color-mix(in srgb, var(--c) 50%, transparent);
-}
-.pdt-compare-tile .pdt-tile-label { font-size: 8.5px; font-weight: 700; letter-spacing: 1.1px; text-transform: uppercase; color: var(--text-muted); }
-.pdt-day-count {
-  margin: 7px 0 4px; font-size: 36px; font-weight: 300; letter-spacing: -1.8px; line-height: 1.05; font-variant-numeric: tabular-nums;
-  color: color-mix(in srgb, var(--c) 82%, #fff); filter: drop-shadow(0 0 12px color-mix(in srgb, var(--c) 45%, transparent));
-}
-.pdt-day-count small { font-size: 14px; letter-spacing: 0; margin-left: 3px; }
-.pdt-typical { margin-top: 8px; font-size: 10.5px; color: var(--text-secondary); }
-.pdt-typical b { display: block; margin-top: 2px; font-size: 16px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-.pdt-range { margin-top: 4px; font-size: 10.5px; color: var(--text-muted); }
-.pdt-need-tag {
-  display: inline-flex; margin-top: 8px; padding: 4px 10px; border-radius: 999px; font-size: 10.5px; font-weight: 600;
-  color: #FFD99A; background: rgba(255, 190, 96, 0.12); box-shadow: inset 0 0 0 1px rgba(255, 190, 96, 0.35);
-}
-.pdt-compare-tile.pdt-compare-deficient { box-shadow: inset 0 0 0 1px var(--divider); }
-
-/* catalog: strength over time */
-.pdt-str { display: block; width: 100%; height: auto; overflow: visible; }
-.pdt-str-guide { stroke: rgba(245, 239, 230, 0.09); stroke-width: 1; stroke-dasharray: 3 4; }
-.pdt-str-note, .pdt-str-tick { fill: var(--text-muted); font: 9px var(--ff-body); }
-.pdt-str-tick.is-accent { fill: var(--dv-amber); font-weight: 700; }
-.pdt-str-line {
-  fill: none; stroke: var(--dv-sage); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round;
-  filter: drop-shadow(0 0 5px rgba(143, 180, 154, 0.6));
-}
-.pdt-str-dot { fill: #A9D4B3; }
-.pdt-str-ring { fill: none; stroke: var(--dv-amber); stroke-width: 2; filter: drop-shadow(0 0 6px rgba(255, 190, 96, 0.7)); }
-.pdt-str-confirm { fill: var(--dv-amber); }
-
-/* catalog: take-away tiles (prototype `.stile2`) */
-.pdt-story-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 0 16px; }
-.pdt-story-grid .pdt-flat { margin: 0; }
-.pdt-story-tile h3 { margin-top: 7px; font-size: 14px; font-weight: 650; letter-spacing: -0.2px; }
-.pdt-story-tile p { margin-top: 4px; font-size: 12px; line-height: 1.5; color: var(--text-secondary); }
-.pdt-story-tile p b { color: var(--text-primary); font-weight: 600; }
 
 /* folds (prototype `.fold`, `.dgrid`, `.srow`, `.tech`, `.tgrid`) — flat, never glass */
 .pdt-fold {
@@ -23056,12 +22907,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .pdt-chev { flex: 0 0 auto; font-size: 16px; color: var(--text-muted); }
 
 /* saved observation: what the app saw */
-.pdt-artifact-mechanism { font-size: 13.5px; line-height: 1.55; color: var(--text-primary); }
 .pdt-artifact-evidence { list-style: none; display: grid; gap: 7px; margin: 0; padding: 0; }
-.pdt-artifact-mechanism + .pdt-artifact-evidence { margin-top: 9px; }
 .pdt-artifact-evidence li { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; line-height: 1.5; color: var(--text-primary); }
 .pdt-artifact-evidence .t-ico { margin-top: 2px; }
-.pdt-artifact-note { padding: 12px 20px 0; font-size: 12px; color: var(--text-muted); }
 
 /* prediction: confidence strip + the feedback chips (FeedbackChips `.chip`, scoped — bible rule 13) */
 .pdt-conf-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -23104,23 +22952,17 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   .pdt-hero-top .pdt-pill { margin: 2px 0 0 57px; }
 }
 @media (max-width: 360px) {
-  .pdt-story-grid, .pdt-compare-grid { grid-template-columns: 1fr; }
   .pdt-ring { width: 92px; height: 92px; }
   .pdt-ring-n { font-size: 34px; }
   .pdt-answer h1 { font-size: 19px; }
   .pdt-section-head h2 { font-size: 18px; }
-  .pdt-plan-strip b { font-size: 17px; }
   .pdt-vs { grid-template-columns: 1fr; }
 }
 
 /* motion: one-shot on the kit's `.mz-play` arming (a back-pop arrives settled); calm after */
 @keyframes pdt-ring { from { stroke-dasharray: 0 100; } }
-@keyframes pdt-pop { from { opacity: 0; transform: scale(0.3); } }
-@keyframes pdt-draw { from { stroke-dashoffset: 100; } }
 @media (prefers-reduced-motion: no-preference) {
   .mz-play .pdt-ring .uv-ring-prog { animation: pdt-ring 1.1s var(--uv-ease, ease) 0.25s both; }
-  .mz-play .pdt-chart circle[class^='pdt-dot'] { transform-box: fill-box; transform-origin: center; animation: pdt-pop 0.4s ease-out 0.5s both; }
-  .mz-play .pdt-latest-ring { transform-box: fill-box; transform-origin: center; animation: pdt-pop 0.5s ease-out 1.1s both; }
   .pdt-well .t-ico { animation: uv-float 5s ease-in-out 1s infinite; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -29620,4 +29462,21 @@ main.settings-page {
   .pmx-hero .pmx-ans svg { width: 44px; height: 44px; }
   .pmx-dact { font-size: 13px; }
 }
+/* az oldal összerakva (PatternDetailPage, Task 5) */
+.pmx-status {
+  margin-left: auto; padding: 5px 9px; border-radius: 999px; font-size: 9.5px; font-weight: 700; letter-spacing: 1.2px;
+  color: color-mix(in srgb, var(--c) 70%, var(--text-primary)); background: color-mix(in srgb, var(--c) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 35%, transparent);
+}
+.pdt-page .pmx-chart { margin: 0 16px; }
+.pmx-empty.uv-empty {
+  margin: 0 16px; padding: 18px 16px; border-radius: 20px; border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent);
+  background: rgba(245, 239, 230, 0.02); font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); text-align: center;
+}
+.pmx-empty svg { display: block; margin: 0 auto 8px; }
+.pmx-cnote { margin: 6px 20px 0; font-size: 12px; color: var(--text-muted); }
+.pmx-rule + .pdt-fold { margin-top: 10px; }
+.pdt-fold .pdt-log { margin: 0; background: none; box-shadow: none; }
+/* a mentett felismerés (PatternArtifactDetail): nincs pár-sor, a kérdés nyit */
+.pmx-hero-artifact .pmx-q { margin-top: 4px; }
 /* ── /uveg minta ujramesele ── */

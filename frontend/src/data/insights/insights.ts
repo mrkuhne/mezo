@@ -38,6 +38,33 @@ const reflectionTestPlan: PatternTestPlan = {
   windowDays: 60,
 }
 
+/** Két további laborfüzet-demó (mezo-rstt7) — a minta-részlet újramesélésének két állapota:
+ *  egy még gyűlő (5 / 8 nap) és egy elvetett reflexiós sor, a `REFLECTION_KEY` mintájára. */
+export const GATHERING_REFLECTION_KEY = 'ref-mock-gyulik'
+export const REJECTED_REFLECTION_KEY = 'ref-mock-elvetve'
+
+const gatheringTestPlan: PatternTestPlan = {
+  seriesA: 'swim-min',
+  seriesB: 'checkin-energy',
+  seriesALabel: 'úszás',
+  seriesBLabel: 'esti energia',
+  lagDays: 0,
+  expectedDirection: 'negative',
+  minN: 8,
+  windowDays: 60,
+}
+
+const rejectedTestPlan: PatternTestPlan = {
+  seriesA: 'daily-fiber-g',
+  seriesB: 'checkin-energy',
+  seriesALabel: 'rostbevitel',
+  seriesBLabel: 'energia-szint',
+  lagDays: 1,
+  expectedDirection: 'positive',
+  minN: 8,
+  windowDays: 60,
+}
+
 export const patterns: Pattern[] = [
   {
     id: 'p1',
@@ -109,6 +136,42 @@ export const patterns: Pattern[] = [
     evidenceMisses: 1,
     // az ÉJSZAKAI REFLEXIÓ utolsó futása — nem a statisztikai pár-job `lastRunAt`-je
     lastDetectedAt: '2026-09-12T01:40:00Z',
+  },
+  {
+    id: 'ref-gyulik-1',
+    pairKey: GATHERING_REFLECTION_KEY,
+    hypothesisKey: GATHERING_REFLECTION_KEY,
+    category: 'response',
+    categoryLabel: 'Válasz',
+    title: 'A hosszú úszós napokon estére lejjebb megy az energiád',
+    mechanism: 'Az úszás napján estére lejjebb ment az energiád.',
+    evidence: ['5 közös nap', '8 kell a döntéshez'],
+    kind: 'reflection',
+    status: 'monitoring',
+    origin: 'nightly_reflection',
+    testPlan: gatheringTestPlan,
+    belief: 0.2,
+    evidenceHits: 0,
+    evidenceMisses: 0,
+    lastDetectedAt: '2026-09-26T01:40:00Z',
+  },
+  {
+    id: 'ref-elvetve-1',
+    pairKey: REJECTED_REFLECTION_KEY,
+    hypothesisKey: REJECTED_REFLECTION_KEY,
+    category: 'physiology',
+    categoryLabel: 'Fiziológia',
+    title: 'Több rost után másnap több az energiád',
+    mechanism: 'A rostosabb napok után másnap mintha több energiád lett volna.',
+    evidence: ['9 közös nap'],
+    kind: 'reflection',
+    status: 'rejected',
+    origin: 'nightly_reflection',
+    testPlan: rejectedTestPlan,
+    belief: 0.1,
+    evidenceHits: 1,
+    evidenceMisses: 2,
+    lastDetectedAt: '2026-09-26T01:40:00Z',
   },
 ]
 
@@ -574,6 +637,75 @@ const reflectionDetail: PatternPairDetail = {
   impact: EMPTY_IMPACT,
 }
 
+/** A még gyűlő reflexiós demó (mezo-rstt7): 5 közös nap a terv 8-ából, Mezo észrevételével. */
+const gatheringReflectionDetail: PatternPairDetail = {
+  pair: {
+    key: GATHERING_REFLECTION_KEY,
+    title: 'Úszás és az esti energiád',
+    category: 'response', categoryLabel: 'Válasz', lagDays: 0,
+    metricAKey: 'swim-min', metricALabel: 'úszás',
+    metricAValueKind: 'number',
+    metricBKey: 'checkin-energy', metricBLabel: 'esti energia',
+    metricBValueKind: 'number',
+    mechanismHu: 'Az úszás napján estére lejjebb ment az energiád.',
+    questionHu: 'A hosszú úszós napokon lejjebb megy az energiád estére?',
+    expectedDirection: 'negative',
+    whenPositiveHu: '{erősség} pozitív együttjárás',
+    whenNegativeHu: '{erősség} fordított együttjárás',
+    metricADomain: 'train', metricBDomain: 'mind',
+    verdict: 'few_days', alignedDays: 5, missingDays: 3, bottleneckMetricKey: 'swim-min',
+    groupZeroDays: null, groupOneDays: null, requiredPerGroup: null,
+    r: null, n: null, p: null, status: null,
+  },
+  pattern: patterns.find((p) => p.pairKey === GATHERING_REFLECTION_KEY)!,
+  events: [
+    { kind: 'observation', occurredAt: '2026-09-20T18:05:00Z',
+      text: 'Az úszás napján estére lejjebb ment az energiád.\n\nA hosszú úszós napokon lejjebb megy az energiád estére?' },
+  ],
+  days: [
+    { date: '2026-09-21', a: 45, b: 5 }, { date: '2026-09-22', a: 0, b: 7 },
+    { date: '2026-09-23', a: 60, b: 4 }, { date: '2026-09-24', a: 20, b: 6 },
+    { date: '2026-09-25', a: 0, b: 7 },
+  ],
+  impact: EMPTY_IMPACT,
+}
+
+/** Az elvetett reflexiós demó (mezo-rstt7): 9 élő nap, szinte nulla együttmozgás. */
+const rejectedReflectionDetail: PatternPairDetail = {
+  pair: {
+    key: REJECTED_REFLECTION_KEY,
+    title: 'Rost és a másnapi energiád',
+    category: 'physiology', categoryLabel: 'Fiziológia', lagDays: 1,
+    metricAKey: 'daily-fiber-g', metricALabel: 'rostbevitel',
+    metricAValueKind: 'number',
+    metricBKey: 'checkin-energy', metricBLabel: 'energia-szint',
+    metricBValueKind: 'number',
+    mechanismHu: 'A rostosabb napok után másnap mintha több energiád lett volna.',
+    questionHu: 'Több energiád van másnap, ha több rostot eszel?',
+    expectedDirection: 'positive',
+    whenPositiveHu: '{erősség} pozitív együttjárás',
+    whenNegativeHu: '{erősség} fordított együttjárás',
+    metricADomain: 'fuel', metricBDomain: 'mind',
+    verdict: 'live', alignedDays: 9, missingDays: null, bottleneckMetricKey: null,
+    groupZeroDays: null, groupOneDays: null, requiredPerGroup: null,
+    r: -0.04, n: 9, p: 0.92, status: null,
+  },
+  pattern: patterns.find((p) => p.pairKey === REJECTED_REFLECTION_KEY)!,
+  events: [
+    { kind: 'observation', occurredAt: '2026-09-03T12:00:00Z',
+      text: 'A rostosabb napok után másnap mintha több energiád lett volna.' },
+    { kind: 'rejected', occurredAt: '2026-09-26T09:00:00Z' },
+  ],
+  days: [
+    { date: '2026-09-15', a: 18, b: 6 }, { date: '2026-09-16', a: 31, b: 5 },
+    { date: '2026-09-17', a: 24, b: 7 }, { date: '2026-09-18', a: 12, b: 6 },
+    { date: '2026-09-19', a: 35, b: 6 }, { date: '2026-09-20', a: 22, b: 5 },
+    { date: '2026-09-21', a: 28, b: 7 }, { date: '2026-09-22', a: 15, b: 6 },
+    { date: '2026-09-23', a: 26, b: 6 },
+  ],
+  impact: EMPTY_IMPACT,
+}
+
 /** Két kézzel írt detail-seed (spec-mockup a forrás): egy megerősített pár teljes történettel
  *  + a katalógus minden MÁS párjára minimál-detail (pair a patternMonitor-ból, pattern: null,
  *  üres history/days/impact — gyűjtögető pár, még nem ment át a kapun). Ismeretlen kulcsra
@@ -582,6 +714,8 @@ export function mockPatternPairDetail(pairKey: string): PatternPairDetail | null
   if (pairKey === SHOWCASE_PAIR_KEY) return showcaseDetail
   if (pairKey === 'weekend~late-meal-hour') return weekendDetail
   if (pairKey === REFLECTION_KEY) return reflectionDetail
+  if (pairKey === GATHERING_REFLECTION_KEY) return gatheringReflectionDetail
+  if (pairKey === REJECTED_REFLECTION_KEY) return rejectedReflectionDetail
   const pair = patternMonitor.pairs.find((p) => p.key === pairKey)
   if (!pair) return null
   return { pair, pattern: null, events: [], days: [], impact: EMPTY_IMPACT }

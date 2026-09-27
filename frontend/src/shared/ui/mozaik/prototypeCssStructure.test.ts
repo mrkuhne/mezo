@@ -1653,8 +1653,8 @@ describe('the uveg mezo mibol section carries the glass ranking (mezo-me75u.13)'
   test('the block exists and dresses every surface of the three pages', () => {
     const css = section()
     for (const sel of ['.pdt-page .pdt-hero.glass', '.pdt-pill', '.pdt-ring', '.pdt-dec', '.pdt-flat', '.pdt-fold',
-      '.pdt-plan-strip .is-key', '.pdt-event-you p', '.pdt-vs', '.pdt-dcells span.is-done', '.pdt-feedback .chip',
-      '.pdt-state.uv-empty', '.pdt-log-empty.uv-empty', '.pdt-chart-empty.uv-empty', '.pdt-body']) {
+      '.pdt-event-you p', '.pdt-vs', '.pdt-dcells span.is-done', '.pdt-feedback .chip',
+      '.pdt-state.uv-empty', '.pdt-log-empty.uv-empty', '.pdt-body']) {
       expect(css, `${sel} missing from the uveg mezo mibol block`).toContain(sel)
     }
   })
@@ -1677,6 +1677,13 @@ describe('the uveg mezo mibol section carries the glass ranking (mezo-me75u.13)'
     expect(rawCss).not.toContain('Minta-részlet — közérthető bizonyítékfolyam')
     expect(rawCss).not.toContain('Laborfüzet — a reflexiós hipotézis részletoldala')
     expect(stripComments(rawCss)).not.toMatch(/\.pdt-state-card\b|\.pdt-belief-ring\b|\.pdt-hero-decision\b/)
+  })
+
+  // mezo-rstt7: the pattern detail was retold on the `pmx-*` parts (one reading, one layout) —
+  // the test-plan tiles, the old scatter/strength charts, the group and story tiles are gone.
+  test('the pattern-detail parts the retelling replaced are gone (mezo-rstt7)', () => {
+    expect(stripComments(rawCss)).not.toMatch(
+      /\.pdt-(plan|compare|story|belief|chart|dot-|median|trend|latest-ring|group-label|days|str)\b/)
   })
 })
 
