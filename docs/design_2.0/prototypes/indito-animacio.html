@@ -155,7 +155,7 @@ h1{margin:4px 0 0;font-size:30px;font-weight:700;letter-spacing:-1px;line-height
       <button class="opt" role="tab" data-v="lelegzes"><i class="tag">A</i><b>Lélegzés</b><span>A gömb kétszer megduzzad, a fénye vele erősödik, és egy halvány gyűrű fut ki belőle.</span></button>
       <button class="opt" role="tab" data-v="toltodes" style="--c:var(--sky)"><i class="tag">B</i><b>Töltődés</b><span>A lila folyadék az indulással együtt feltölti a gömböt, buborékok szállnak, a végén fénycsík söpör át rajta.</span></button>
       <button class="opt" role="tab" data-v="keringes" style="--c:var(--gold)"><i class="tag">C</i><b>Keringés</b><span>Öt ikon egyesével felvillan a gömb körül, és körben kering: nap, súlyzó, tál, vízcsepp, hold.</span></button>
-      <button class="opt" role="tab" data-v="kombo" style="--c:var(--coral)"><i class="tag">D</i><b>Töltődés + keringés</b><span>A gömb feltöltődik, közben az öt ikon egyesével felvillan körülötte, és körben kering. A végén a fénycsík átsöpör az üvegen.</span></button>
+      <button class="opt" role="tab" data-v="kombo" style="--c:var(--coral)"><i class="tag">D</i><b>Töltődés + keringés</b><span>Előbb a gömb feltöltődik, aztán az öt ikon egyesével felvillan körülötte, és körben kering. A végén a fénycsík átsöpör az üvegen.</span></button>
     </div>
     <div class="ctl">
       <button class="btn" id="replay" type="button">Újrajátszás</button>
@@ -276,9 +276,10 @@ const R = {
     });
   },
 
-  toltodes(t, still) {
+  toltodes(t, still, o = {}) {
+    const { fillAt = 100, fillDur = 2300, bubStep = 290 } = o;
     common(t, still);
-    const p = still ? 1 : inOutCubic(clamp((t - 100) / 2300));
+    const p = still ? 1 : inOutCubic(clamp((t - fillAt) / fillDur));
     const lvl = 150 + (88 - 150) * p;
     el.level.setAttribute('transform', `translate(0 ${lvl - 88})`);
     if (still) { el.back.setAttribute('opacity', 0); return; }
@@ -287,7 +288,7 @@ const R = {
     el.wave.setAttribute('transform', `translate(${-10 * bob(t, 1300)} 0)`);
     el.back.setAttribute('transform', `translate(${-10 * bob(t + 650, 1300)} ${-3})`);
     el.bubs.forEach((c, i) => {
-      const start = 180 + i * 290, age = t - start;
+      const start = fillAt + 80 + i * bubStep, age = t - start;
       const y = 142 - age * .07, x = 38 + (i * 23) % 76 + 4 * Math.sin(age / 140 + i);
       const vis = age > 0 && y > lvl + 4;
       c.setAttribute('cx', x); c.setAttribute('cy', y);
@@ -306,17 +307,19 @@ const R = {
     orbit(t, still);
   },
 
+  // fill first, then the icons spawn once the orb has settled; the sheen closes the show
   kombo(t, still) {
-    R.toltodes(t, still);
-    orbit(t, still);
+    R.toltodes(t, still, { fillAt: 80, fillDur: 1250, bubStep: 150 });
+    orbit(t, still, { spawnAt: 1250, stagger: 170, dur: 400 });
   },
 };
 
-function orbit(t, still) {
+function orbit(t, still, o = {}) {
+    const { spawnAt = 180, stagger = 240, dur = 480 } = o;
     const spin = still ? 0 : t / 5200;
     el.icons.forEach((ic, i) => {
       // spawn: one by one, in place on the circle — a quick pop with a light flash
-      const p = still ? 1 : clamp((t - 180 - i * 240) / 480);
+      const p = still ? 1 : clamp((t - spawnAt - i * stagger) / dur);
       const th = 2 * Math.PI * (i / ORBIT.length + spin) - Math.PI / 2;
       const r = el.rx;
       ic.style.transform = `translate(${r * Math.cos(th)}px,${r * Math.sin(th)}px) scale(${.35 + .65 * backOut(p)})`;
