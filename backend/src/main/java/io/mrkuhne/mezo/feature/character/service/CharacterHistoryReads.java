@@ -103,7 +103,7 @@ public class CharacterHistoryReads {
      *  {@code KnowledgeFactService.topFactsForPrompt}, uses before anything reaches a prompt).
      *  {@code includeInPrompt} is a persistent flag with no natural upper bound, so this read is
      *  capped the same deterministic way the narrative read is — a local default rather than
-     *  {@code CompanionProperties.Facts.topN()} to avoid a cross-feature config dependency. */
+     *  {@code CompanionProperties.Facts.promptCap()} to avoid a cross-feature config dependency. */
     static final int HISTORY_FACT_CAP = 40;
 
     /** Per-fact text cap (chars) — mirrors {@link #NARRATIVE_CAP_CHARS}'s treatment of narratives. */

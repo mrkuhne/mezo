@@ -20,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -143,8 +142,9 @@ public class KnowledgeFactService {
     }
 
     /**
-     * The V1.1 injection block: top-N prompt-included facts by reinforcement (then newest),
-     * one Hungarian-labelled line each; "" when the user has no qualifying facts (no empty header).
+     * The facts-always injection block (mezo-d6ivw.8): EVERY prompt-included fact, strongest by
+     * reinforcement (then newest) first, one Hungarian-labelled line each; "" when the user has
+     * no qualifying facts (no empty header).
      *
      * <p>mezo-d20.7.7 — the ONE place the weekly citation signal actually acts, and it acts as a
      * TIE-BREAKER ONLY: {@code reinforcementCount} still decides, citations only order facts the
@@ -153,9 +153,6 @@ public class KnowledgeFactService {
      * nobody has used since it was created — and can never overtake a fact the user actually
      * re-stated more often. That ceiling is the point: a highlight is the model's own selection,
      * so it may only sort what the real signal has already made indistinguishable.
-     *
-     * <p>When the citation port is absent the ORIGINAL paged query runs untouched — no behaviour
-     * change and no extra cost with the weekly feature off.
      */
     public String renderPromptBlock(UUID userId) {
         List<KnowledgeFactEntity> facts = topFactsForPrompt(userId);
@@ -174,33 +171,32 @@ public class KnowledgeFactService {
     }
 
     /**
-     * The prompt's top-N, with the citation tie-breaker applied when it is measurable.
-     *
-     * <p>The tie-break cannot be pushed into the paged query, and re-sorting a page would be
-     * wrong: an equal-reinforcement group routinely STRADDLES the top-N cut, so a cited fact just
-     * below the line has to be able to rise across it. Hence the unpaged read + in-memory sort —
-     * L3 facts are a curated, small set (the list endpoint already reads all of them unpaged), and
-     * {@code includeInPrompt} narrows it further.
+     * Facts-always (mezo-d6ivw.8): every enabled fact, strongest first; {@code promptCap} is a
+     * safety brake, not a working limit — a trim is WARN-logged so the day the list outgrows the
+     * cap is visible (the answer then is consolidation, tracked separately, not rank-and-drop).
+     * The citation tie-breaker still orders equal-reinforcement groups when it is measurable.
      */
     private List<KnowledgeFactEntity> topFactsForPrompt(UUID userId) {
         Map<UUID, Integer> cited = citedWeeks(userId);
-        if (cited == null) {
-            return repository
-                    .findByCreatedByAndIncludeInPromptTrueAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(
-                            userId, PageRequest.of(0, properties.facts().topN()));
-        }
-        return repository
+        Comparator<KnowledgeFactEntity> order = Comparator
+                .comparingInt(KnowledgeFactEntity::getReinforcementCount).reversed()
+                .thenComparing(Comparator.comparingInt(
+                        (KnowledgeFactEntity fact) -> cited == null ? 0 : cited.getOrDefault(fact.getId(), 0)).reversed())
+                .thenComparing(Comparator.comparing(
+                        KnowledgeFactEntity::getCreatedAt, Comparator.reverseOrder()));
+        List<KnowledgeFactEntity> all = repository
                 .findByCreatedByAndIncludeInPromptTrueAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(
                         userId, Pageable.unpaged())
                 .stream()
-                .sorted(Comparator
-                        .comparingInt(KnowledgeFactEntity::getReinforcementCount).reversed()
-                        .thenComparing(Comparator.comparingInt(
-                                (KnowledgeFactEntity fact) -> cited.getOrDefault(fact.getId(), 0)).reversed())
-                        .thenComparing(Comparator.comparing(
-                                KnowledgeFactEntity::getCreatedAt, Comparator.reverseOrder())))
-                .limit(properties.facts().topN())
+                .sorted(order)
                 .toList();
+        int cap = properties.facts().promptCap();
+        if (all.size() > cap) {
+            log.warn("knowledge_fact prompt-cap trimmed the block: {} enabled facts, cap {} — "
+                    + "consolidation is due (facts-always delta, mezo-d6ivw.8)", all.size(), cap);
+            return all.subList(0, cap);
+        }
+        return all;
     }
 
     /**
