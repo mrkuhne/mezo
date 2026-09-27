@@ -45,7 +45,8 @@ public class ConversationContextTools {
     private final CompanionProperties companionProperties;
 
     @Tool(name = "get_personal_context", description = "Személyes háttér rövid, korlátozott összefoglalója; nem a teljes adattár. "
-            + "scope=facts (alapértelmezés): megerősített tények; people: ismert emberek és kapcsolatuk; "
+            + "scope=facts (alapértelmezés): megerősített tények — ezek MÁR a kontextusodban vannak "
+            + "(MEGERŐSÍTETT TÉNYEK blokk), csak akkor kérd le, ha a blokkot nem látod; people: ismert emberek és kapcsolatuk; "
             + "character: tárolt karakterleírás; reflections: nyitott észrevételek; today: aktuális "
             + "egészség/nap állapotösszesítő. Használd, amikor a kérdéshez ez a személyes háttér kell. "
             + "Teljes tények/emberek/részletek: read_personal_records(source=knowledge_fact|person|mention|character_dimension). A többi forrás: list_personal_sources.")
