@@ -29858,4 +29858,7 @@ main.settings-page {
 .pdt-fold .pdt-log { margin: 0; background: none; box-shadow: none; }
 /* a mentett felismerés (PatternArtifactDetail): nincs pár-sor, a kérdés nyit */
 .pmx-hero-artifact .pmx-q { margin-top: 4px; }
+.pmx-confirm { margin-top: 10px; padding: 12px 13px; border-radius: 16px; background: rgba(245, 239, 230, 0.045); box-shadow: inset 0 0 0 1px var(--divider); }
+.pmx-confirm-q { font-size: 13px; line-height: 1.45; color: var(--text-secondary); margin: 0 0 10px; }
+.pmx-confirm-q b { color: var(--text-primary); font-weight: 600; }
 /* ── /uveg minta ujramesele ── */
