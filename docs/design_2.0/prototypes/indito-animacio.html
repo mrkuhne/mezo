@@ -61,8 +61,6 @@ h1{margin:4px 0 0;font-size:30px;font-weight:700;letter-spacing:-1px;line-height
 .glow{position:absolute;inset:-18px;border-radius:50%;pointer-events:none;opacity:0;
   background:radial-gradient(circle,rgba(171,159,210,.55),rgba(171,159,210,0) 68%)}
 .ripple{position:absolute;inset:0;border-radius:50%;pointer-events:none;opacity:0;border:1.6px solid rgba(230,221,255,.7);box-shadow:0 0 18px rgba(171,159,210,.55)}
-.trail{position:absolute;left:50%;top:50%;pointer-events:none;overflow:visible;opacity:0}
-.trail ellipse{fill:none;stroke:rgba(171,159,210,.28);stroke-width:1.2;stroke-dasharray:2 6}
 
 /* glass recipe (üveg bible §3), dark variant, round */
 .orb{--c:var(--lav);position:relative;z-index:2;width:150px;height:150px;border-radius:50%;isolation:isolate;overflow:hidden;
@@ -203,8 +201,7 @@ function splashHTML(v) {
     ? `<path class="back" fill="#5E4F9A" opacity=".55" d="M-20 88 Q0 98 20 88 T60 88 T100 88 T140 88 T180 88 V220 H-20Z"/>` : '';
   const ripples = v === 'lelegzes' ? '<i class="ripple"></i><i class="ripple"></i><i class="ripple"></i>' : '';
   const orbit = (v === 'keringes' || v === 'kombo')
-    ? `<svg class="trail" width="240" height="240" viewBox="-120 -120 240 240"><ellipse cx="0" cy="0" rx="108" ry="108"/></svg>` +
-      ORBIT.map(o => `<span class="ic" style="--c:${o.c}"><svg viewBox="0 0 64 64"><use href="#${o.id}"/></svg></span>`).join('') : '';
+    ? ORBIT.map(o => `<span class="ic" style="--c:${o.c}"><svg viewBox="0 0 64 64"><use href="#${o.id}"/></svg></span>`).join('') : '';
   return `<div class="splash${orbit ? ' has-orbit' : ''}" role="status" aria-label="Boop betöltése">
     <div class="mark" aria-hidden="true">
       <div class="halo"></div><div class="glow"></div>${ripples}${orbit}
@@ -236,10 +233,9 @@ function build(v) {
   const q = s => stage.querySelector(s), qa = s => [...stage.querySelectorAll(s)];
   el = { orb: q('.orb'), halo: q('.halo'), glow: q('.glow'), wave: q('.wave'), level: q('.level'), slosh: q('.slosh'),
          back: q('.back'), sheen: q('.sheen'), word: q('.word'), ripples: qa('.ripple'), bubs: qa('.bub'),
-         icons: qa('.ic'), trail: q('.trail') };
+         icons: qa('.ic') };
   const w = stage.clientWidth || 360;
   el.rx = Math.min(108, (w - 60) / 2); el.ry = el.rx;
-  if (el.trail) { const e = el.trail.querySelector('ellipse'); e.setAttribute('rx', el.rx); e.setAttribute('ry', el.ry); }
 }
 
 /* ── frame renderers; t in ms, still=true draws the resting frame ── */
@@ -317,8 +313,6 @@ const R = {
 
 function orbit(t, still) {
     const spin = still ? 0 : t / 5200;
-    el.trail.style.opacity = still ? .9 : clamp((t - 150) / 700) * .9;
-    el.trail.style.transform = 'translate(-50%,-50%)';
     el.icons.forEach((ic, i) => {
       const e = still ? 1 : outCubic(clamp((t - 120 - i * 110) / 750));
       const th = 2 * Math.PI * (i / ORBIT.length + spin) - Math.PI / 2;
