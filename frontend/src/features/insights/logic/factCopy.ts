@@ -1,9 +1,4 @@
 import type { FactSource, KnowledgeFact } from '@/data/types'
-import { factCategoryLabel } from '@/data/insights/knowledge'
-import { huMonthDay } from '@/shared/lib/dates'
-
-/** A tény prompt-státusza — ez a két vödör adja a lista két szakaszát is. */
-export type FactBucket = 'in-prompt' | 'off'
 
 const VOWELS = 'aáeéiíoóöőuúüű'
 /** Magyar betűnév-kiejtés: ezek a nagybetűk "e"-re/magánhangzóra végződő hangzású névvel
@@ -58,15 +53,6 @@ export function humanizeFactText(text: string): string {
   return `${lead.charAt(0).toUpperCase()}${lead.slice(1)} ${a} és ${article(b, bAbbrev)} ${b} együtt mozognak.`
 }
 
-const ORIGIN_SENTENCE: Record<FactSource, string> = {
-  pattern: 'Megerősített mintából tanultam — amikor az egyik változik, a másik jellemzően követi.',
-  chat: 'A beszélgetéseitekből szűrtem ki.',
-  manual: 'Te vetted fel kézzel.',
-  weekly_review: 'A heti áttekintésből derült ki.',
-  question: 'Egy kérdésre válaszoltál rá.',
-  team_chat: 'A csapatfalon adott válaszodból jegyeztem meg.',
-}
-
 const ORIGIN_CHIP: Record<FactSource, string> = {
   pattern: 'mintából',
   chat: 'beszélgetésből',
@@ -76,37 +62,8 @@ const ORIGIN_CHIP: Record<FactSource, string> = {
   team_chat: 'csapatfalról',
 }
 
-/**
- * Honnan tudja a társ ezt a tényt. A minta-címet CSAK akkor fűzzük hozzá, ha eltér a tény
- * szövegétől — a régi `minta: {title}` chip azért volt értelmetlen, mert a promóció miatt
- * jellemzően szó szerint megismételte a kártya címét.
- */
-export function originSentence(fact: KnowledgeFact): string {
-  const base = ORIGIN_SENTENCE[fact.source]
-  if (fact.source === 'pattern' && fact.patternTitle && fact.patternTitle.trim() !== fact.text.trim()) {
-    return `${base} (A minta: „${fact.patternTitle}".)`
-  }
-  return base
-}
-
 export function originChipLabel(source: FactSource): string {
   return ORIGIN_CHIP[source]
-}
-
-/** ×N reinforced emberi nyelven: hányszor jött vissza magától, és mikor utoljára. */
-export function reinforcementSentence(reinforced: number, lastReinforcedAt: string | null): string {
-  if (reinforced <= 0) return 'Még nem jött vissza megerősítés.'
-  const base = `${reinforced}× visszaigazolva`
-  return lastReinforcedAt ? `${base} · utoljára ${huMonthDay(lastReinforcedAt.slice(0, 10))}` : base
-}
-
-const STATUS_LABEL: Record<FactBucket, string> = {
-  'in-prompt': 'A társ tudja — minden beszélgetésben ott van',
-  off: 'Kikapcsolva — a társ nem látja',
-}
-
-export function promptStatusLabel(bucket: FactBucket): string {
-  return STATUS_LABEL[bucket]
 }
 
 /** A backend prompt-rangsora: reinforced DESC, createdAt DESC. */
@@ -124,15 +81,4 @@ export function bucketFacts(facts: KnowledgeFact[]) {
     inPrompt: sortFacts(facts.filter((f) => f.active)),
     off: sortFacts(facts.filter((f) => !f.active)),
   }
-}
-
-/** A keresés arra illeszkedik, amit a felhasználó LÁT: a humanizált szövegre, a kategória-
- *  címkére, ÉS az eredet-mondatba fűzött minta-címre (l. `originSentence`) — az utóbbi nélkül
- *  egy csak a minta-eredetben megjelenő szó (pl. "aznapi") nem lenne kereshető. */
-export function matchesQuery(fact: KnowledgeFact, query: string): boolean {
-  const q = query.trim().toLowerCase()
-  if (!q) return true
-  return `${humanizeFactText(fact.text)} ${factCategoryLabel(fact.category)} ${fact.patternTitle ?? ''}`
-    .toLowerCase()
-    .includes(q)
 }

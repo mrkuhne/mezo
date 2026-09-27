@@ -4,12 +4,10 @@ import { isMockMode } from '@/data/_client/mode'
 import { ApiError } from '@/data/_client/api'
 import { graphApi, type RefinedCandidate } from '@/data/insights/graphApi'
 import { lifeEventCandidateSeed, graphNodeSeed } from '@/data/insights/graph'
-import { edges as edgeSeed } from '@/data/insights/knowledge'
 import type { KnowledgeGraphNode, LifeEventCandidate, LifeEventDecision } from '@/data/types'
 
 const GRAPH_CANDIDATE_KEY = ['graph', 'candidates'] as const
 const GRAPH_NODE_KEY = ['graph', 'nodes'] as const
-const GRAPH_EDGE_COUNT_KEY = ['graph', 'edgeCount'] as const
 
 /** DESC-by-`updatedAt` — newest-touched node first (mezo-ms9a). ISO strings sort lexicographically. */
 function byUpdatedAtDesc(nodes: KnowledgeGraphNode[]): KnowledgeGraphNode[] {
@@ -120,29 +118,6 @@ export function useKnowledgeGraphNodes() {
     realEmpty: [],
   })
   return { nodes: byUpdatedAtDesc(data), isPending, isError, refetch }
-}
-
-/**
- * W-tudastar-egyben (mezo-ms9a): the hero's "N kapcsolat" segment — the active-edge count
- * between active nodes. Independent of both the companion AND the graph node switches, so any
- * failure (404, network, still pending) reads as `null`, never a fabricated 0 — the hero simply
- * omits the segment rather than lying about having zero edges.
- */
-export function useGraphEdgeCount(): { count: number | null } {
-  const { data } = useDualQuery<number | null>({
-    queryKey: GRAPH_EDGE_COUNT_KEY,
-    mockData: edgeSeed.length,
-    realFetch: async () => {
-      try {
-        return (await graphApi.edgeCount()).count
-      } catch (err) {
-        if (err instanceof ApiError && err.status === 404) return null
-        throw err
-      }
-    },
-    realEmpty: null,
-  })
-  return { count: data }
 }
 
 /** Archivál egy csomópontot — L2 kontroll, azonnal lekerül az aktív listáról/promptból. */
