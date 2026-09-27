@@ -385,6 +385,10 @@ describe('PatternDetailPage (real mode)', () => {
     )
     renderAt(`/mezo/patterns/${pairless.pairKey}`)
     fireEvent.click(await screen.findByRole('button', { name: 'Mégsem igaz rám — visszavonom' }))
+    // az első koppintás csak rákérdez (owner, 2026-09-27) — még semmi nem megy ki
+    expect(screen.getByText('Biztosan visszavonod?')).toBeInTheDocument()
+    expect(posted).toEqual([])
+    fireEvent.click(screen.getByRole('button', { name: 'Igen, visszavonom' }))
     await vi.waitFor(() => expect(posted).toEqual([{ id: 'artifact-2', body: { decision: 'reject' } }]))
   })
 
@@ -416,6 +420,8 @@ describe('PatternDetailPage (real mode)', () => {
     renderAt(`/mezo/patterns/${SHOWCASE_KEY}`)
     expect(await screen.findByRole('heading', { level: 1, name: 'Tartja magát' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Mégsem igaz rám — visszavonom' }))
+    expect(posted).toEqual([])
+    fireEvent.click(screen.getByRole('button', { name: 'Igen, visszavonom' }))
     await vi.waitFor(() => expect(posted).toEqual([{ id: 'w-pattern-2', body: { decision: 'reject' } }]))
   })
 

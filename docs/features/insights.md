@@ -369,6 +369,11 @@ pattern's node from the knowledge graph (the row's `status` becomes `rejected`, 
 a fact, once written, is not retroactively un-written by revoking the pattern that produced it.
 (Re-confirming later would need a fresh `confirm` decision; nothing here resurrects the retracted
 node automatically.)
+Revoking is **two-tap** (owner, 2026-09-27): every revoke control on a confirmed row (the quiet link,
+the "Visszavonom" decision button, and the saved-insight page's link) is `RevokeConfirm`
+(`components/PatternAnswerHero.tsx`): the first tap only opens "Biztosan visszavonod?" with the
+honest consequence line (the Tudástár sentence stays, delete it there) and "Igen, visszavonom" /
+"Mégse"; only the second tap calls `decide(…, 'reject')`.
 
 **Where „most" and „amikor megerősítetted" come from.** `reading.now` is always computed **live in
 the FE** from the `days` the detail read returns — even for an already-`frozen`/`confirmed` pair,

@@ -10,6 +10,7 @@ import { SectionHead, patternDecisionButtons, toneClass, type DetailTone } from 
 import type { Pattern, PatternRowStatus, PatternStatus } from '@/data/types'
 import { patternHeadline, patternPlainLine } from '@/features/insights/logic/patternCopy'
 import { cn } from '@/shared/lib/cn'
+import { RevokeConfirm } from '@/features/insights/components/PatternAnswerHero'
 
 export interface ArtifactLook {
   word: string
@@ -110,9 +111,7 @@ export function PatternArtifactDetail({
         )}
         {status === 'confirmed' && (
           <div className="pmx-dec">
-            <button type="button" className="pmx-link" onClick={() => onDecide('reject')}>
-              Mégsem igaz rám — visszavonom
-            </button>
+            <RevokeConfirm label="Mégsem igaz rám — visszavonom" className="pmx-link" onRevoke={() => onDecide('reject')} />
           </div>
         )}
       </section>
