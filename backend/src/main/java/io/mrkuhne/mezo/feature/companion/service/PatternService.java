@@ -69,6 +69,7 @@ public class PatternService {
         Map<UUID, Integer> cited = citedWeeks(userId);
         return patternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(userId)
                 .stream()
+                .filter(pattern -> !pattern.isForgotten())
                 .map(pattern -> mapper.toPatternResponse(pattern, citedWeeksOf(cited, pattern.getId()),
                         testPlanMapper.toWire(pattern.getTestPlan())))
                 .toList();

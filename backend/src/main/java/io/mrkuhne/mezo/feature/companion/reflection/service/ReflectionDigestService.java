@@ -206,7 +206,8 @@ public class ReflectionDigestService {
     /** Owned lookup, reflection-owned rows only — the digest never speaks for the Pearson job. */
     private Optional<PatternEntity> row(UUID userId, UUID patternId) {
         return patternRepository.findByIdAndCreatedByAndDeletedFalse(patternId, userId)
-                .filter(PatternEntity::isReflectionOwned);
+                .filter(PatternEntity::isReflectionOwned)
+                .filter(p -> !p.isForgotten());
     }
 
     private boolean hasUserReply(UUID userId, UUID patternId) {

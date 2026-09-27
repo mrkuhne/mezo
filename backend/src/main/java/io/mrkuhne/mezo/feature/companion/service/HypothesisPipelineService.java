@@ -471,7 +471,8 @@ public class HypothesisPipelineService {
     String closedHypotheses(UUID userId) {
         return patternRepository
                 .findByCreatedByAndStatusInAndDeletedFalse(userId,
-                        Set.of(PatternEntity.STATUS_REFUTED, PatternEntity.STATUS_REJECTED))
+                        Set.of(PatternEntity.STATUS_REFUTED, PatternEntity.STATUS_REJECTED,
+                                PatternEntity.STATUS_FORGOTTEN))
                 .stream()
                 .filter(p -> !PatternEntity.KIND_STATISTICAL.equals(p.getKind()))
                 .map(p -> "- " + p.getTitle()

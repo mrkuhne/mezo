@@ -93,6 +93,7 @@ public class ObservationFeedService {
             PatternEntity row = row(userId, rows, event.getPatternId());
             if (row == null || !row.isReflectionOwned() || !validEvidence(userId, row)
                     || !validEventEvidence(userId, event)
+                    || row.isForgotten()
                     || (inbox && (PatternEntity.isUserFrozen(row.getStatus())
                     || PatternEntity.STATUS_DORMANT.equals(row.getStatus())
                     || PatternEntity.STATUS_REFUTED.equals(row.getStatus())))) {
@@ -129,7 +130,7 @@ public class ObservationFeedService {
                 continue;
             }
             PatternEntity row = row(userId, rows, event.getPatternId());
-            if (row == null || !row.isReflectionOwned() || !validEvidence(userId, row)) {
+            if (row == null || row.isForgotten() || !row.isReflectionOwned() || !validEvidence(userId, row)) {
                 continue; // a statistical row the user confirmed belongs to Minták, not here
             }
             // one card per row even if the day carries several confirmations — the newest wins
@@ -173,6 +174,7 @@ public class ObservationFeedService {
             var row = patternRepository.findByIdAndCreatedByAndDeletedFalse(event.getPatternId(), userId).orElse(null);
             if (row == null || !row.isReflectionOwned() || !validEvidence(userId, row)
                     || !validEventEvidence(userId, event)
+                    || row.isForgotten()
                     || PatternEntity.isUserFrozen(row.getStatus())
                     || PatternEntity.STATUS_DORMANT.equals(row.getStatus())
                     || PatternEntity.STATUS_REFUTED.equals(row.getStatus())) continue;
