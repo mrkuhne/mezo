@@ -1322,3 +1322,23 @@ spec §5.x close rule, `character.yml` reply summary, the port/Noop javadocs; ad
     numbers, not logic. Session-tooling trap paid for too: the Maven wrapper lives at
     `backend/mvnw` (repo root has none), and `cmd | tail` swallows a launch failure —
     `set -o pipefail` before piping gate commands.
+31. **(S7)** An async "answer the user's burst" pipeline is only exact when the USER line
+    write takes the same row lock as the answer's commit (`TeamChatService.reply` →
+    `lockOwned`); otherwise a line stamped before the answer but committed after it sorts
+    above the REPLY and its own event steps back — silently unanswered. Pair it with an
+    event that carries the line id and a "newer USER line exists → step back" claim.
+32. **(S7)** A single-transaction sweep (`catchUpUser`) that takes an advisory lock in one
+    phase and a row lock in the next inverts the lock order of any request path that takes
+    row → advisory. Order the sweep's phases so it never waits on a row after holding the
+    advisory lock (resolves before opens), and pin it with a two-thread IT — taking the
+    advisory lock "first" does not fix the cycle.
+33. **(S7)** An FE block gated on "the ügy is closed" disappears exactly when an undo
+    reopens it — the confirmation the user needs most never renders. Gate post-action
+    feedback on the artefact (`remembered != null`) and pick the copy from the status.
+34. **(S7)** Anything derived from a knowledge fact (a csapatfal exception) must follow the
+    fact's live state (muted/deleted in the Tudástár → the derived behaviour stops);
+    `KnowledgeFactService.liveInPrompt` is the read seam. S6's hub edits/re-enables are a
+    known gap (mezo-d6ivw.11).
+35. **(S7)** Test-support truncation lists (`ResetDatabase`) are a hidden migration
+    touchpoint: every new owned table must be added, or `AdminDataBrowserIT` fails only in
+    the FULL suite — focused ITs never see it.
