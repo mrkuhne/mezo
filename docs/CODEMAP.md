@@ -396,38 +396,38 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `FeedMessageKindSource`, `FeedbackLearningJob`, `FeedbackLearningService`, `FlagCatalog`, `FlagClearedEvent`,
     `FlagEvaluationListener`, `FlagEvaluator`, `FlagFactRenderer`, `FlagKey`, `FlagOutcome`, `FlagRaisedEvent`,
     `FlagRule`, `FlagService`, `FlagSweepJob`, `FlagTraceCopy`, `FlagTraceReadService`, `FlagTraceWriter`,
-    `FlagVerdict`, `GearClassifier`, `GraphEdgeLineRenderer`, `GraphEdgeStructurer`, `GraphEdgeSuggestion`,
-    `GraphMaintenanceJob`, `GraphMaintenanceResult`, `GraphMaintenanceService`, `GraphMemoryRetriever`,
-    `GraphPromotionListener`, `GraphPromotionService`, `GraphPromptAssembler`, `GraphReconcileResult`, `GraphService`,
-    `GraphTraversalService`, `GroundedHypothesisPublisher`, `HypothesisEvaluationService`, `HypothesisLifecycle`,
-    `HypothesisPipelineService`, `KnowledgeFactChangedEvent`, `KnowledgeFactPromotedEvent`, `KnowledgeFactService`,
-    `KnowledgeRecheckJob`, `KnowledgeRecheckService`, `LexicalMemoryRetriever`, `LifeEventCandidateService`,
-    `LifeEventExtractionService`, `LifeEventSuggestion`, `LifeGoalSnapshotBlock`, `LlmMemoryQueryRewriter`,
-    `LlmMemoryReranker`, `MeWeekService`, `MemoryCandidateFusion`, `MemoryChunkText`, `MemoryContextBlock`,
-    `MemoryContextRenderer`, `MemoryContextSelector`, `MemoryContextService`, `MemoryItemFeedbackService`,
-    `MemoryObservatoryService`, `MemoryProjectionEvent`, `MemoryProjectionListener`, `MemoryProjectionService`,
-    `MemoryProjectionWriter`, `MemoryQueryAnalyzer`, `MemoryQueryEmbedder`, `MemoryQueryPreparer`,
-    `MemoryQueryRewriter`, `MemoryRecallService`, `MemoryReembeddingJob`, `MemoryReembeddingService`, `MemoryReranker`,
-    `MemoryRetrievalAuditWriter`, `MemoryRetrievalRetentionJob`, `MemoryRetriever`, `MemoryShadowRunner`,
-    `MemorySourceRepairService`, `MesoContextAssembler`, `MesoReviewGenerator`, `MesoReviewListener`,
-    `MessageFeedbackRecordedEvent`, `MessageFeedbackService`, `MetricDomain`, `MetricKey`, `MetricSeriesService`,
-    `MetricValueKind`, `NudgeSendPort`, `ObservationBudget`, `ObservationContextService`, `ObservationFeedService`,
-    `ObservationLead`, `ObservationOwnerLock`, `ObservationRecoveryService`, `ObservationSourceIcon`,
-    `PatternConfirmedEvent`, `PatternDetectionJob`, `PatternDetectionService`, `PatternEventAppender`, `PatternGate`,
-    `PatternImpactSource`, `PatternMonitorService`, `PatternPairDetailService`, `PatternRetractedEvent`,
-    `PatternService`, `PearsonCorrelation`, `PeopleSnapshotBlock`, `PeriodSummaryService`, `PersonExtractionResult`,
-    `PersonExtractionService`, `PersonFactExtractionListener`, `PersonFactExtractionService`, `PersonGraphEdgeAdapter`,
-    `PersonalBaselineContext`, `PersonalContextAssembler`, `PersonalMemorySearchService`, `PersonalRecordService`,
-    `PlanExecutor`, `PlanValidator`, `ProfileAssembler`, `ProfileAssemblerJob`, `ProfilePromptAssembler`,
-    `PromptMemoryAssembler`, `ProvenanceRetentionJob`, `QuarterlyReviewJob`, `QuarterlyReviewService`, `Quarters`,
-    `QuickNoticePreScreen`, `QuickNoticeService`, `ReflectionDigestService`, `ReflectionJob`,
-    `ReflectionMemoryGateway`, `ReflectionPromptBlock`, `ReflectionReplyRecorder`, `ReflectionReplyService`,
-    `SeasonSuggestion`, `SimilarDaysRecall`, `TeamChatInterventionKeySource`, `TestPlanValidator`,
-    `TextSignalCatchUpService`, `TextSignalExtractor`, `TextSignalListener`, `TextSignalSeriesService`,
-    `TextSignalService`, `ToolCatalogue`, `ToolOutcomeDigest`, `TraceDisposition`, `TranscriptionService`,
-    `TurnAnswerer`, `TurnGear`, `TurnGearAnalyzer`, `TurnGearRouter`, `TurnPhase`, `TurnPlan`, `TurnPlanParser`,
-    `TurnPlanner`, `TurnProvenance`, `UnavailableReason`, `ValidatedPlan`, `WeekContextRenderer`, `WeeklyScoreService`,
-    `WeightByDateSupport`
+    `FlagVerdict`, `ForgetService`, `GearClassifier`, `GraphEdgeLineRenderer`, `GraphEdgeStructurer`,
+    `GraphEdgeSuggestion`, `GraphMaintenanceJob`, `GraphMaintenanceResult`, `GraphMaintenanceService`,
+    `GraphMemoryRetriever`, `GraphPromotionListener`, `GraphPromotionService`, `GraphPromptAssembler`,
+    `GraphReconcileResult`, `GraphService`, `GraphTraversalService`, `GroundedHypothesisPublisher`,
+    `HypothesisEvaluationService`, `HypothesisLifecycle`, `HypothesisPipelineService`, `KnowledgeFactChangedEvent`,
+    `KnowledgeFactPromotedEvent`, `KnowledgeFactService`, `KnowledgeRecheckJob`, `KnowledgeRecheckService`,
+    `LexicalMemoryRetriever`, `LifeEventCandidateService`, `LifeEventExtractionService`, `LifeEventSuggestion`,
+    `LifeGoalSnapshotBlock`, `LlmMemoryQueryRewriter`, `LlmMemoryReranker`, `MeWeekService`, `MemoryCandidateFusion`,
+    `MemoryChunkText`, `MemoryContextBlock`, `MemoryContextRenderer`, `MemoryContextSelector`, `MemoryContextService`,
+    `MemoryItemFeedbackService`, `MemoryObservatoryService`, `MemoryProjectionEvent`, `MemoryProjectionListener`,
+    `MemoryProjectionService`, `MemoryProjectionWriter`, `MemoryQueryAnalyzer`, `MemoryQueryEmbedder`,
+    `MemoryQueryPreparer`, `MemoryQueryRewriter`, `MemoryRecallService`, `MemoryReembeddingJob`,
+    `MemoryReembeddingService`, `MemoryReranker`, `MemoryRetrievalAuditWriter`, `MemoryRetrievalRetentionJob`,
+    `MemoryRetriever`, `MemoryShadowRunner`, `MemorySourceRepairService`, `MesoContextAssembler`,
+    `MesoReviewGenerator`, `MesoReviewListener`, `MessageFeedbackRecordedEvent`, `MessageFeedbackService`,
+    `MetricDomain`, `MetricKey`, `MetricSeriesService`, `MetricValueKind`, `NudgeSendPort`, `ObservationBudget`,
+    `ObservationContextService`, `ObservationFeedService`, `ObservationLead`, `ObservationOwnerLock`,
+    `ObservationRecoveryService`, `ObservationSourceIcon`, `PatternConfirmedEvent`, `PatternDetectionJob`,
+    `PatternDetectionService`, `PatternEventAppender`, `PatternGate`, `PatternImpactSource`, `PatternMonitorService`,
+    `PatternPairDetailService`, `PatternRetractedEvent`, `PatternService`, `PearsonCorrelation`, `PeopleSnapshotBlock`,
+    `PeriodSummaryService`, `PersonExtractionResult`, `PersonExtractionService`, `PersonFactExtractionListener`,
+    `PersonFactExtractionService`, `PersonGraphEdgeAdapter`, `PersonalBaselineContext`, `PersonalContextAssembler`,
+    `PersonalMemorySearchService`, `PersonalRecordService`, `PlanExecutor`, `PlanValidator`, `ProfileAssembler`,
+    `ProfileAssemblerJob`, `ProfilePromptAssembler`, `PromptMemoryAssembler`, `ProvenanceRetentionJob`,
+    `QuarterlyReviewJob`, `QuarterlyReviewService`, `Quarters`, `QuickNoticePreScreen`, `QuickNoticeService`,
+    `ReflectionDigestService`, `ReflectionJob`, `ReflectionMemoryGateway`, `ReflectionPromptBlock`,
+    `ReflectionReplyRecorder`, `ReflectionReplyService`, `SeasonSuggestion`, `SimilarDaysRecall`,
+    `TeamChatInterventionKeySource`, `TestPlanValidator`, `TextSignalCatchUpService`, `TextSignalExtractor`,
+    `TextSignalListener`, `TextSignalSeriesService`, `TextSignalService`, `ToolCatalogue`, `ToolOutcomeDigest`,
+    `TraceDisposition`, `TranscriptionService`, `TurnAnswerer`, `TurnGear`, `TurnGearAnalyzer`, `TurnGearRouter`,
+    `TurnPhase`, `TurnPlan`, `TurnPlanParser`, `TurnPlanner`, `TurnProvenance`, `UnavailableReason`, `ValidatedPlan`,
+    `WeekContextRenderer`, `WeeklyScoreService`, `WeightByDateSupport`
   - **controllers→contract:** `CompanionController`→`CompanionApi`, `CompanionEffectsController`→`CompanionEffectsApi`,
     `CompanionFeedbackController`→`CompanionFeedbackApi`, `CompanionFlagTraceController`→`CompanionFlagsApi`,
     `CompanionObservationController`→`CompanionObservationApi`,
@@ -470,13 +470,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/companion-feedback/companion-feedback.yml` — 3 operations
   - **endpoints:** GET /api/companion/feedback · PUT /api/companion/feedback ·
     DELETE /api/companion/feedback/{artifactKind}/{artifactId}
-- **Contract** `api/feature/companion/companion.yml` — 29 operations
+- **Contract** `api/feature/companion/companion.yml` — 30 operations
   - **endpoints:** GET /api/companion/preferences · PUT /api/companion/preferences ·
     GET /api/companion/personal-context · GET /api/companion/flags/trace · GET /api/companion/conversation ·
     POST /api/companion/conversation · PATCH /api/companion/conversation/{conversationId} ·
     DELETE /api/companion/conversation/{conversationId} · GET /api/companion/conversation/{conversationId}/messages ·
     POST /api/companion/conversation/{conversationId}/message · GET /api/companion/fact · POST /api/companion/fact ·
-    PATCH /api/companion/fact/{factId} · GET /api/companion/fact/candidate ·
+    PATCH /api/companion/fact/{factId} · DELETE /api/companion/fact/{factId} · GET /api/companion/fact/candidate ·
     POST /api/companion/fact/candidate/{candidateId}/decision · GET /api/companion/pattern ·
     POST /api/companion/pattern/{patternId}/decision · GET /api/companion/pattern/monitor ·
     GET /api/companion/pattern/pair/{pairKey} · POST /api/companion/observation/recovery · GET /api/companion/effects ·
@@ -497,7 +497,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/companion`
   - **hooks (via `@/data/hooks`):** `useAccountSettings`, `useCompanionPreferences`, `usePersonalContext`
   - **modules:** preferencesApi.ts, preferencesHooks.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 274 IT + 92 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 276 IT + 92 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,
@@ -508,7 +508,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CompanionAdvisorsSwitchOffIT`, `CompanionApiIT`, `CompanionApiSwitchOffIT`, `CompanionEffectsControllerIT`,
     `CompanionFactApiIT`, `CompanionFactCandidateApiIT`, `CompanionFactProvenanceApiIT`, `CompanionFeedbackApiIT`,
     `CompanionFeedbackSwitchOffIT`, `CompanionFlagLogPersistenceIT`, `CompanionFlagTraceApiIT`,
-    `CompanionFlagTracePersistenceIT`, `CompanionFlagTraceReadQueriesIT`, `CompanionLlmFakeIT`,
+    `CompanionFlagTracePersistenceIT`, `CompanionFlagTraceReadQueriesIT`, `CompanionForgetApiIT`, `CompanionLlmFakeIT`,
     `CompanionMemoryLlmUsageApiIT`, `CompanionMemoryLlmUsageDisabledIT`, `CompanionMemoryOverviewApiIT`,
     `CompanionMemorySimilarDaysApiIT`, `CompanionMemorySummaryApiIT`, `CompanionMemorySwitchOffIT`,
     `CompanionObservationApiIT`, `CompanionPatternApiIT`, `CompanionPatternMonitorApiIT`,
@@ -530,9 +530,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `FlagEvaluatorLoadFuelMismatchIT`, `FlagEvaluatorLoggingGapIT`, `FlagEvaluatorMealRhythmDriftIT`,
     `FlagEvaluatorMissedWorkoutsIT`, `FlagEvaluatorMomentumRecoveryIT`, `FlagEvaluatorProtocolLapseIT`,
     `FlagEvaluatorRapidWeightLossIT`, `FlagEvaluatorStressSleepIT`, `FlagPropertiesIT`, `FlagServiceIT`,
-    `FlagServiceTraceIT`, `FlagSweepJobSwitchOffIT`, `FlagTraceReadServiceIT`, `GraphApiIT`, `GraphCandidateApiIT`,
-    `GraphEntityPersistenceIT`, `GraphFactOptOutEventIT`, `GraphFactOptOutIT`, `GraphMaintenanceJobSwitchOffIT`,
-    `GraphMaintenanceServiceIT`, `GraphPromotionEventIT`, `GraphPromotionLifeGoalIT`,
+    `FlagServiceTraceIT`, `FlagSweepJobSwitchOffIT`, `FlagTraceReadServiceIT`, `ForgetServiceIT`, `GraphApiIT`,
+    `GraphCandidateApiIT`, `GraphEntityPersistenceIT`, `GraphFactOptOutEventIT`, `GraphFactOptOutIT`,
+    `GraphMaintenanceJobSwitchOffIT`, `GraphMaintenanceServiceIT`, `GraphPromotionEventIT`, `GraphPromotionLifeGoalIT`,
     `GraphPromotionLifeGoalSwitchOffIT`, `GraphPromotionPersonIT`, `GraphPromotionServiceIT`,
     `GraphPromotionServiceReconcileIsolationIT`, `GraphPromotionSwitchOffIT`, `GraphPromptAssemblerIT`,
     `GraphPromptAssemblerRefsCapIT`, `GraphRetractionEventIT`, `GraphRetractionIT`, `GraphSeedSelectionCapIT`,

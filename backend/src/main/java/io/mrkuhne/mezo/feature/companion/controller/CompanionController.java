@@ -22,6 +22,7 @@ import io.mrkuhne.mezo.api.dto.UpdateFactRequest;
 import io.mrkuhne.mezo.feature.companion.service.ChatService;
 import io.mrkuhne.mezo.feature.companion.service.ConversationService;
 import io.mrkuhne.mezo.feature.companion.service.FactCandidateService;
+import io.mrkuhne.mezo.feature.companion.service.ForgetService;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
 import io.mrkuhne.mezo.feature.companion.service.MemoryObservatoryService;
 import io.mrkuhne.mezo.feature.companion.service.PatternMonitorService;
@@ -45,6 +46,7 @@ public class CompanionController implements CompanionApi {
     private final ConversationService conversationService;
     private final ChatService chatService;
     private final KnowledgeFactService knowledgeFactService;
+    private final ForgetService forgetService;
     private final FactCandidateService factCandidateService;
     private final PatternService patternService;
     private final PatternMonitorService patternMonitorService;
@@ -95,6 +97,11 @@ public class CompanionController implements CompanionApi {
     @Override
     public KnowledgeFactResponse updateFact(UUID factId, UpdateFactRequest request) {
         return knowledgeFactService.update(currentUserId.get(), factId, request);
+    }
+
+    @Override
+    public void forgetFact(UUID factId) {
+        forgetService.forgetFact(currentUserId.get(), factId);
     }
 
     @Override

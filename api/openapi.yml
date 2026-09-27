@@ -5249,6 +5249,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - Companion
+      operationId: forgetFact
+      summary: >-
+        S6 (mezo-d6ivw.6) — Elfelejtem: a tény törlődik, és ugyanebből a
+        forrásból soha nem tanulódik újra (vétó). Nincs visszaállítás — a FE
+        visszavonás-ablaka után hívódik.
+      parameters:
+        - name: factId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Forgotten
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Fact not found (or owned by someone else)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/companion/fact/candidate:
     get:
       tags:

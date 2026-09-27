@@ -1996,7 +1996,8 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /** S6 (mezo-d6ivw.6) — Elfelejtem: a tény törlődik, és ugyanebből a forrásból soha nem tanulódik újra (vétó). Nincs visszaállítás — a FE visszavonás-ablaka után hívódik. */
+        delete: operations["forgetFact"];
         options?: never;
         head?: never;
         /** Partially update a fact — edit its text/category or toggle include_in_prompt */
@@ -17828,6 +17829,44 @@ export interface operations {
             };
             /** @description Missing or invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    forgetFact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                factId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Forgotten */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Fact not found (or owned by someone else) */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
