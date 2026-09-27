@@ -5838,7 +5838,7 @@ function kirakat6(){
     ['pattern','var(--gold)','30','Észrevételek','26 még igaz · 1 felülírva','eszrevetelek'],
     ['cowave','var(--sky)','12','Hatások','7 ember · 4 esemény','hatasok']];
   return sec('Amit a csapat megjegyzett','A TUDÁSTÁRBAN')+
-  `<div class="iko">${K.map((k,i)=>`<a class="qt glass lift rise" style="--c:${k[1]};--i:${i}" href="${S6HUB}${k[5]}"><span class="n">${k[2]}</span>${I(k[0])}<b>${k[3]}</b><small>${k[4]}</small></a>`).join('')}</div>`;
+  `<div class="iko">${K.map((k,i)=>`<a class="qt glass lift rise" style="--c:${k[1]};--i:${i};color:inherit;text-decoration:none" href="${S6HUB}${k[5]}"><span class="n">${k[2]}</span>${I(k[0])}<b>${k[3]}</b><small>${k[4]}</small></a>`).join('')}</div>`;
 }
 function rolad6(){
   const off=ST.rol==='degraded',empty=ST.rol==='empty';
