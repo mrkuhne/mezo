@@ -2799,6 +2799,14 @@ mezo:
       seed-set-cycle-isolation: 125
       seed-transition: 240
       seed-lead-in: 480
+    # Check-in 2.0 training readiness (mezo-ck2, spec 2026-09-27 §3.3) — binds onto
+    # ReadinessProperties. This morning's check-in suggests a lighter gym day when ANY threshold
+    # fires (scales 1..10, soreness 10 = worse). Never automatic: the user taps „Könnyítsük".
+    readiness:
+      rested-max: 4          # rested <= 4 → lighter day
+      soreness-min: 7        # soreness >= 7 → lighter day
+      motivation-max: 3      # motivation <= 3 → lighter day
+      morning-slot: "06:30"  # preferred source slot; else the day's first check-in that answered
   # Fix zárás — closing exercises ensured on every gym day of the active meso; slug references
   # master exercise-catalog rows (content/exercise-catalog.json). Dead-hang reps are SECONDS
   # (plyo type -> weightless, reps-only logging on the FE).

@@ -1,0 +1,130 @@
+openapi: 3.0.3
+info: { title: mezo train-readiness fragment, version: 1.0.0 }
+tags:
+  - name: TrainReadiness
+    description: >-
+      Check-in 2.0 training readiness (mezo-ck2, spec 2026-09-27 §3.3) — today's morning check-in
+      read against the gym plan: a "lighter day" suggestion with its reasons, the planned exercises
+      a reported pain region loads, and the user's per-day choice (lighten / keep). Never automatic.
+paths:
+  /api/train/readiness/today:
+    get:
+      tags: [TrainReadiness]
+      operationId: getTodayReadiness
+      summary: Today's readiness hint — suggestion, reasons, care exercises and the day's choice
+      description: >-
+        Pure read. Source = today's 06:30 check-in, else the first check-in of the day that
+        answered rested / soreness / motivation / pain. suggest = rested <= 4 OR soreness >= 7 OR
+        motivation <= 3 (thresholds: mezo.train.readiness). state: LIGHTENED / KEPT when a choice
+        is stored for today; else OFFER when suggest is true or a care exercise exists on a planned
+        gym day; else NONE (no morning check-in, nothing to flag, or no planned gym today).
+      responses:
+        '200':
+          description: Today's readiness (state NONE when there is nothing to show)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReadinessTodayResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+    post:
+      tags: [TrainReadiness]
+      operationId: chooseTodayReadiness
+      summary: Store today's choice — LIGHTEN (hold every weight, drop the care exercises' heavy sets) or KEEP (hide the card)
+      description: >-
+        Idempotent upsert of the (user, today) choice. LIGHTEN changes today's prescriptions
+        (GET /api/train/workouts/today) for sets not yet logged; already-logged sets are untouched.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReadinessChoiceRequest' }
+      responses:
+        '200':
+          description: The readiness after the choice
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReadinessTodayResponse' }
+        '400':
+          description: Missing choice
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+    delete:
+      tags: [TrainReadiness]
+      operationId: undoTodayReadiness
+      summary: Undo today's choice ("Visszaállítom a tervet") — normal prescriptions again for sets not yet logged
+      responses:
+        '200':
+          description: The readiness after the undo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReadinessTodayResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+components:
+  schemas:
+    ReadinessChoiceRequest:
+      type: object
+      required: [choice]
+      properties:
+        choice:
+          type: string
+          enum: [LIGHTEN, KEEP]
+    ReadinessTodayResponse:
+      type: object
+      required: [suggest, state, reasons, care]
+      properties:
+        suggest:
+          type: boolean
+          description: A threshold fired on rested / soreness / motivation
+        state:
+          type: string
+          enum: [OFFER, LIGHTENED, KEPT, NONE]
+        reasons:
+          type: array
+          description: The answered morning values of rested, soreness, motivation (in that order)
+          items: { $ref: '#/components/schemas/ReadinessReason' }
+        care:
+          type: array
+          description: Today's planned exercises whose muscle group a reported pain region loads
+          items: { $ref: '#/components/schemas/ReadinessCare' }
+    ReadinessReason:
+      type: object
+      required: [item, value]
+      properties:
+        item:
+          type: string
+          enum: [rested, soreness, motivation]
+        value:
+          type: integer
+          minimum: 1
+          maximum: 10
+    ReadinessCare:
+      type: object
+      required: [exerciseName, region, regionLabel]
+      properties:
+        exerciseName:
+          type: string
+        region:
+          type: string
+          description: The check-in pain region (PainRegion value, e.g. VALL)
+        regionLabel:
+          type: string
+          description: Hungarian possessive phrase for "fáj a …" — e.g. "vállad", "térded"
+        intensity:
+          type: integer
+          minimum: 1
+          maximum: 10
+          nullable: true
+          description: The reported pain intensity (null when not answered)

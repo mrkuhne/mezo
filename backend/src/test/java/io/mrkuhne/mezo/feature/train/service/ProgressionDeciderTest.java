@@ -94,4 +94,40 @@ class ProgressionDeciderTest {
         assertThat(d.base()).isEqualByComparingTo("52.5");
         assertThat(d.deltaKg()).isEqualByComparingTo("-5");
     }
+
+    // ── Readiness „Könnyítsük" (Check-in 2.0, mezo-ck2): capAtHold ─────────────────────────
+
+    @Test
+    void testCapAtHold_shouldHoldLastWeek_whenDecisionAddsWeight() {
+        Decision d = ProgressionDecider.decide(ref("60", 8, 2), 6, 8, 2, INC, STEP, false);
+
+        Decision held = ProgressionDecider.capAtHold(d, ref("60", 8, 2), 6, 8);
+
+        assertThat(held.lever()).isEqualTo(Lever.HOLD);
+        assertThat(held.base()).isEqualByComparingTo("60");
+        assertThat(held.workingReps()).isEqualTo(8);
+        assertThat(held.deltaKg()).isNull();
+        assertThat(held.deltaReps()).isNull();
+        assertThat(held.rationale()).isEqualTo(ProgressionDecider.LIGHTENED_RATIONALE);
+    }
+
+    @Test
+    void testCapAtHold_shouldHoldLastWeekReps_whenDecisionBuildsARep() {
+        Decision d = ProgressionDecider.decide(ref("62.5", 8, 3), 6, 10, 2, INC, STEP, false);
+
+        Decision held = ProgressionDecider.capAtHold(d, ref("62.5", 8, 3), 6, 10);
+
+        assertThat(held.lever()).isEqualTo(Lever.HOLD);
+        assertThat(held.base()).isEqualByComparingTo("62.5");
+        assertThat(held.workingReps()).isEqualTo(8);
+    }
+
+    @Test
+    void testCapAtHold_shouldKeepLighterMove_whenDecisionIsDeloadOrWeightDown() {
+        Decision deload = ProgressionDecider.decide(ref("60", 8, 0), 6, 8, 0, INC, STEP, true);
+        Decision down = ProgressionDecider.decide(ref("60", 4, 0), 6, 8, 1, INC, STEP, false);
+
+        assertThat(ProgressionDecider.capAtHold(deload, ref("60", 8, 0), 6, 8)).isSameAs(deload);
+        assertThat(ProgressionDecider.capAtHold(down, ref("60", 4, 0), 6, 8)).isSameAs(down);
+    }
 }

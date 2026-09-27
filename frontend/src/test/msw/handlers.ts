@@ -1162,6 +1162,20 @@ export const handlers = [
     }),
   ),
   http.get(`${API_BASE}/api/train/workouts`, () => HttpResponse.json([])),
+  // Check-in 2.0 readiness (mezo-ck2): default = nothing to show, so pages that do not test the
+  // card stay unchanged; readiness tests override with an OFFER body via server.use.
+  http.get(`${API_BASE}/api/train/readiness/today`, () =>
+    HttpResponse.json({ suggest: false, state: 'NONE', reasons: [], care: [] }),
+  ),
+  http.post(`${API_BASE}/api/train/readiness/today`, async ({ request }) => {
+    const body = (await request.json()) as { choice: 'LIGHTEN' | 'KEEP' }
+    return HttpResponse.json({
+      suggest: true, state: body.choice === 'LIGHTEN' ? 'LIGHTENED' : 'KEPT', reasons: [], care: [],
+    })
+  }),
+  http.delete(`${API_BASE}/api/train/readiness/today`, () =>
+    HttpResponse.json({ suggest: false, state: 'NONE', reasons: [], care: [] }),
+  ),
   http.post(`${API_BASE}/api/train/workouts`, () =>
     HttpResponse.json(
       {
