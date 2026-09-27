@@ -12,7 +12,7 @@ import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import { expertColor } from '@/features/character/expertColors'
 import { personaName } from '@/features/character/personaCharacter'
 import { confidenceWord } from '@/data/character/characterApi'
-import type { CharacterExpertDto, ConferenceThread } from '@/data/character/characterApi'
+import type { ConferenceThread } from '@/data/character/characterApi'
 import { ACCEPTED_LABEL, STANCE_LABEL, STANCE_TONE } from '@/features/character/deliberationLabels'
 import { partitionDeliberation } from '@/features/character/deliberationStats'
 
@@ -66,8 +66,6 @@ function Section({ n, label, hot, empty, children }: {
 
 export function KonziliumConversationView({ threads, crossTalkRan }: {
   threads: ConferenceThread[]
-  /** Megtartva az API stabilitásáért; a kiírt nevek U9 óta a szereplő-leképezésből jönnek (personaName). */
-  experts: CharacterExpertDto[]
   crossTalkRan: boolean
 }) {
   const { items, debated, audited, ruled } = partitionDeliberation(threads)

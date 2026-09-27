@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { SPORT_KINDS, SPORT_LABELS, SPORT_TAGS, SPORT_TITLES, SPORT_EMOJI, SPORT_TONE, sportOf } from '@/features/train/logic/sportKinds'
+import { SPORT_KINDS, SPORT_LABELS, SPORT_TAGS, SPORT_TITLES, SPORT_TONE, sportOf } from '@/features/train/logic/sportKinds'
 
 test('SPORT_KINDS carries all ten wire sport ids', () => {
   expect(SPORT_KINDS).toEqual([
@@ -17,12 +17,11 @@ test('the tone map covers every kind in SPORT_KINDS', () => {
   for (const k of SPORT_KINDS) expect(SPORT_TONE[k]).toBeTruthy()
 })
 
-test('every kind has a non-empty label/tag/title/emoji', () => {
+test('every kind has a non-empty label/tag/title', () => {
   for (const k of SPORT_KINDS) {
     expect(SPORT_LABELS[k]).toBeTruthy()
     expect(SPORT_TAGS[k]).toBeTruthy()
     expect(SPORT_TITLES[k]).toBeTruthy()
-    expect(SPORT_EMOJI[k]).toBeTruthy()
   }
 })
 

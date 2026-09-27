@@ -9,8 +9,8 @@ export function Toggle({
   onToggle: () => void
   ariaLabel: string
   disabled?: boolean
-  /** Üveg variant (mezo-me75u.7): no inline skin — the track and knob are drawn by the page's
-   *  üveg block (`.uv-tgl`, lit in the surface's `--c` accent when on). The inline default
+  /** Üveg variant (mezo-me75u.7): no inline skin — the track and knob are drawn by the uveg kit
+   *  (`.uv-tgl`, U11 mezo-7txw6; lit in the surface's `--c` accent when on). The inline default
    *  below would outrank any stylesheet, so a glass page opts out here instead. */
   glass?: boolean
 }) {

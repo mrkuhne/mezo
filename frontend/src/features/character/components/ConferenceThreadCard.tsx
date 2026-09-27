@@ -15,7 +15,7 @@ import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import { expertColor } from '@/features/character/expertColors'
 import { personaName } from '@/features/character/personaCharacter'
 import { confidenceWord } from '@/data/character/characterApi'
-import type { CharacterExpertDto, ConferenceItem, ConferenceThread } from '@/data/character/characterApi'
+import type { ConferenceItem, ConferenceThread } from '@/data/character/characterApi'
 import {
   ACCEPTED_LABEL,
   NOTE_LABEL,
@@ -80,8 +80,6 @@ function outcomeBadge(item: ConferenceItem): { label: string; tone: 'acc' | 'rej
 
 export interface ConferenceThreadCardProps {
   thread: ConferenceThread
-  /** Megtartva az API stabilitásáért; a kiírt nevek U9 óta a szereplő-leképezésből jönnek (personaName). */
-  experts: CharacterExpertDto[]
   /** Lefutott-e egyáltalán a kereszt-vita kör ezen a konzíliumon (a szál TÁROLT, nem visszafejtett).
    *  Ha nem, a fejléc nem mondhat "nem vitatták"-at — az azt sugallná, hogy volt kör és senki nem szólt. */
   crossTalkRan: boolean

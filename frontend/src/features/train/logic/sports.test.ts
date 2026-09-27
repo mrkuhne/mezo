@@ -38,9 +38,8 @@ test('the run tile routes away and carries no loggable fields', () => {
 
 describe('table shape — every entry', () => {
   for (const s of SPORTS) {
-    test(`${s.id} has non-empty name/art/art3d/color/target`, () => {
+    test(`${s.id} has non-empty name/art3d/color/target`, () => {
       expect(s.name.length).toBeGreaterThan(0)
-      expect(s.art.length).toBeGreaterThan(0)
       // its own Titanium 3D glyph (üveg U4) — never the shared generic ball
       expect(s.art3d).toMatch(/^t-/)
       expect(s.color).toMatch(/^#[0-9a-f]{6}$/i)

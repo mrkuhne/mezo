@@ -1,5 +1,5 @@
 import { useCharacterConference } from '@/data/hooks'
-import type { CharacterExpertDto, CharacterFeedItem } from '@/data/character/characterApi'
+import type { CharacterFeedItem } from '@/data/character/characterApi'
 import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import { personaName } from '@/features/character/personaCharacter'
 import { feedDayLabel } from '@/features/character/feedDayLabel'
@@ -9,10 +9,9 @@ const excerpt = (text: string, limit: number) => text.length <= limit ? text : `
 
 /** The approved morning scene, grounded in the selected post instead of demo dialogue.
  *  U9 (mezo-me75u.9): the ONE glass poster of the Karakter feed (`glass tf-poster`); the author
- *  is named as the csapatfal character (`personaName`), so `experts` is no longer read here. */
+ *  is named as the csapatfal character (`personaName`). */
 export function CharacterMorningStory({ item, onOpen }: {
   item: CharacterFeedItem
-  experts: CharacterExpertDto[]
   onOpen: () => void
 }) {
   const { conference } = useCharacterConference(item.sourceType === 'CONFERENCE_CHANGE' || item.sourceType === 'CONFERENCE_ITEM' ? item.sourceId ?? null : null)

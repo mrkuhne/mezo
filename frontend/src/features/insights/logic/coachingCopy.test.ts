@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import {
-  STATE_ART, STATE_LABEL, WINNER_ART, WINNER_LABEL, dayLabel, hhmm, losersOf, splitOf, stateOf, visualOf, washOf,
+  STATE_ART, STATE_LABEL, WINNER_ART, WINNER_LABEL, dayLabel, hhmm, losersOf, splitOf, stateOf, visualOf,
   winnerRuleOf,
 } from '@/features/insights/logic/coachingCopy'
 import { huMonthDay } from '@/shared/lib/dates'
@@ -44,13 +44,6 @@ describe('the round-2 guarantee', () => {
     for (const domain of ['sleep', 'training', 'nutrition', 'recovery', 'habits', 'logging', 'body']) {
       expect(visualOf(domain)).not.toEqual(visualOf('general'))
     }
-  })
-
-  test('the wash follows the OUTCOME: flagged = domain colour, fine = calm, unmeasurable = muted', () => {
-    expect(washOf(rule({ outcome: 'raised', disposition: 'logged', domain: 'sleep' })))
-      .toBe(visualOf('sleep').wash)
-    expect(washOf(rule({ outcome: 'clear', domain: 'sleep' }))).toBe('sage')
-    expect(washOf(rule({ outcome: 'unavailable', domain: 'sleep' }))).toBe('white')
   })
 })
 
