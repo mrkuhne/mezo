@@ -16,12 +16,15 @@ import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
 import io.mrkuhne.mezo.techcore.query.WeightTrendQuery;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -80,7 +83,57 @@ public class ExpenditureLearningService {
         if (filtered.isEmpty() && !existing) {
             return Optional.empty();
         }
-        return Optional.of(decideAndPersist(userId, weekStart, rp, filtered, e));
+        ExpenditureEstimateEntity saved = persistWeek(userId, weekStart, rp, filtered, e);
+        serve(userId, rp);
+        return Optional.of(saved);
+    }
+
+    /** What a re-chain did to the served base: the latest row's applied base before and after. */
+    public record Rechain(Integer appliedBefore, Integer appliedAfter, boolean recomputed) {
+    }
+
+    /**
+     * Re-chains after an owner day mark (mezo-3n2so, spec §7): replays the marked day's week and every
+     * later reviewed week before the current one, in order, so each steps from its freshly rewritten
+     * predecessor. The goal is recomputed once, and only when the latest applied base moved. A mark in
+     * the current week (not yet reviewed), a user with no row, or learning disabled changes nothing —
+     * the next Monday run picks the mark up. The marked week without a row of its own and without a
+     * prior row is skipped (a not-yet learner gains nothing from a re-chain).
+     *
+     * @return the latest applied base before/after; both {@code null} when the user has no row
+     */
+    @Transactional
+    public Rechain rechainFrom(UUID userId, LocalDate day) {
+        GoalEngineProperties.Expenditure e = props.expenditure();
+        LocalDate weekStart = day.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate currentWeek = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        Optional<ExpenditureEstimateEntity> latest = estimates.findFirstByCreatedByAndDeletedFalseOrderByWeekStartDesc(userId);
+        Integer before = latest.map(ExpenditureEstimateEntity::getAppliedBaseKcal).orElse(null);
+        if (latest.isEmpty() || !weekStart.isBefore(currentWeek) || !Boolean.TRUE.equals(e.enabled())) {
+            return new Rechain(before, before, false);
+        }
+        List<LocalDate> weeks = new ArrayList<>();
+        weeks.add(weekStart);
+        estimates.findByCreatedByAndWeekStartGreaterThanEqualAndDeletedFalseOrderByWeekStartAsc(userId, weekStart.plusWeeks(1))
+            .forEach(r -> weeks.add(r.getWeekStart()));
+        for (LocalDate w : weeks) {
+            if (!w.isBefore(currentWeek)) {
+                continue;
+            }
+            Optional<Replay> replayed = replay(userId, w);
+            if (replayed.isPresent() && (replayed.get().prev().isPresent() || replayed.get().thisWeek().isPresent())) {
+                Replay rp = replayed.get();
+                persistWeek(userId, w, rp, rp.traced().map(ExpenditureFilter.Traced::estimate), e);
+                estimates.flush();
+            }
+        }
+        Integer after = estimates.findFirstByCreatedByAndDeletedFalseOrderByWeekStartDesc(userId)
+            .map(ExpenditureEstimateEntity::getAppliedBaseKcal).orElse(before);
+        boolean changed = !Objects.equals(before, after);
+        if (changed) {
+            goalEngineService.recomputeActiveGoal(userId);
+        }
+        return new Rechain(before, after, changed);
     }
 
     /**
@@ -186,8 +239,11 @@ public class ExpenditureLearningService {
             rp.prevApplied(), props.kcalPerKg(), e.waterEventKg()));
     }
 
-    /** Decides the step, upserts the week's row (explanation included) and serves it. */
-    private ExpenditureEstimateEntity decideAndPersist(UUID userId, LocalDate weekStart, Replay rp,
+    /**
+     * Decides the step and upserts the week's row (explanation included) — no side effects beyond the
+     * row. Reuses the stored row, so owner state on it ({@code dismissedAt}) survives a rewrite.
+     */
+    private ExpenditureEstimateEntity persistWeek(UUID userId, LocalDate weekStart, Replay rp,
                                                        Optional<ExpenditureFilter.Estimate> filtered,
                                                        GoalEngineProperties.Expenditure e) {
         LocalDate weekEnd = rp.weekEnd();
@@ -236,15 +292,17 @@ public class ExpenditureLearningService {
                 userId, weekStart, ex);
         }
         row.setExplanation(explanation);
-        ExpenditureEstimateEntity saved = estimates.save(row);
+        return estimates.save(row);
+    }
 
+    /** Serves a freshly persisted week: retires the weight-only correction (switch on) and recomputes the goal. */
+    private void serve(UUID userId, Replay rp) {
         // Owner decision L4: a learning user never also gets the weight-only correction — unless the
         // learning switch is off (P3): then the learned base is not served and the correction stays.
         if (dietPreferences.resolve(userId).learningEnabled()) {
             suggestionService.supersedeOpen(rp.goal().getId(), WEEKLY_CORRECTION);
         }
         goalEngineService.recomputeActiveGoal(userId);
-        return saved;
     }
 
     private static int round(BigDecimal v) {
