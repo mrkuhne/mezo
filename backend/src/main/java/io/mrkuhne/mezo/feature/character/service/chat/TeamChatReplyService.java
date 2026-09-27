@@ -156,8 +156,11 @@ public class TeamChatReplyService {
                             userId, thread.getFlagKey(), tag);
             boolean active = sameTag.map(e -> Boolean.TRUE.equals(e.getActive())).orElse(false);
             boolean vetoed = sameTag.isPresent() && !active;
+            // Only a still-active offer exception can be "tapped" in free text — a withdrawn one
+            // (undo / STOP) degrades to a plain answer, exactly as the tap endpoint 409s.
             String offerTag = thread.getExceptionId() == null ? null
                     : exceptions.findByIdAndCreatedByAndDeletedFalse(thread.getExceptionId(), userId)
+                            .filter(e -> Boolean.TRUE.equals(e.getActive()))
                             .map(TeamChatExceptionEntity::getNormalizedTag).orElse(null);
             outcome = TeamChatReplyDecision.decide(thread.getStatus(), thread.getOffer(), draft, active, vetoed,
                     offerTag);
@@ -190,7 +193,10 @@ public class TeamChatReplyService {
                     close(thread, TeamChatService.CLOSE_REPLY, known.getContextTag(), now);
                 }
                 case EXCUSE_TAP_EQUIVALENT -> {
-                    hit(userId, thread.getExceptionId(), thread.getId(), HIT_TAP, now);
+                    // The occurrence's own day, as the tap does — a post-midnight answer must not
+                    // swallow the next day's hit.
+                    hitOn(userId, thread.getExceptionId(), thread.getId(), HIT_TAP,
+                            thread.getOpenedAt().atZone(properties.zone()).toLocalDate());
                     close(thread, TeamChatService.CLOSE_EXCUSED,
                             sameTag.map(TeamChatExceptionEntity::getContextTag).orElse(draft.contextTag()), now);
                 }
@@ -249,7 +255,10 @@ public class TeamChatReplyService {
 
     /** One hit per (exception, local day) — a second one the same day is a no-op. */
     private void hit(UUID userId, UUID exceptionId, UUID threadId, String source, Instant now) {
-        LocalDate day = now.atZone(properties.zone()).toLocalDate();
+        hitOn(userId, exceptionId, threadId, source, now.atZone(properties.zone()).toLocalDate());
+    }
+
+    private void hitOn(UUID userId, UUID exceptionId, UUID threadId, String source, LocalDate day) {
         if (hits.existsByExceptionIdAndHitOnAndDeletedFalse(exceptionId, day)) {
             return;
         }

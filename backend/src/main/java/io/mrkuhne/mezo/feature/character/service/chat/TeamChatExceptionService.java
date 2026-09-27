@@ -19,6 +19,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -92,15 +94,15 @@ public class TeamChatExceptionService {
             return Gate.none(); // the common case: no lock taken
         }
         exceptions.lockUserExceptions(userId);
-        List<TeamChatExceptionEntity> active =
-                exceptions.findByCreatedByAndFlagKeyAndActiveTrueAndDeletedFalseOrderByCreatedAtAsc(userId, flagKey);
+        List<TeamChatExceptionEntity> active = followingTheirFacts(userId,
+                exceptions.findByCreatedByAndFlagKeyAndActiveTrueAndDeletedFalseOrderByCreatedAtAsc(userId, flagKey));
         if (active.isEmpty()) {
             return Gate.none();
         }
         LocalDate day = at.atZone(properties.zone()).toLocalDate();
         for (TeamChatExceptionEntity e : active) {
             long n = windowHits(e, day);
-            if (n >= properties.exceptionReviewHits() && !reviewedThisWindow(userId, e)) {
+            if (n >= properties.exceptionReviewHits() && !reviewedThisWindow(userId, e, day)) {
                 return new Gate(Gate.Kind.REVIEW, e, n);
             }
         }
@@ -120,6 +122,23 @@ public class TeamChatExceptionService {
             }
         }
         return new Gate(Gate.Kind.EXCUSE, active.getFirst(), 0);
+    }
+
+    /**
+     * The exception follows its knowledge fact: one whose fact was deleted or muted in the
+     * Tudástár (includeInPrompt=false) is treated as inactive here — skipped, never mutated, so
+     * re-enabling the fact brings it back. An exception with no fact link is kept.
+     */
+    private List<TeamChatExceptionEntity> followingTheirFacts(UUID userId, List<TeamChatExceptionEntity> active) {
+        List<UUID> factIds = active.stream().map(TeamChatExceptionEntity::getKnowledgeFactId)
+                .filter(Objects::nonNull).distinct().toList();
+        if (factIds.isEmpty()) {
+            return active;
+        }
+        Set<UUID> live = knowledge.liveInPrompt(userId, factIds);
+        return active.stream()
+                .filter(e -> e.getKnowledgeFactId() == null || live.contains(e.getKnowledgeFactId()))
+                .toList();
     }
 
     /** The offer's template sentence — what the voice rephrases (and the fallback line). */
@@ -142,15 +161,28 @@ public class TeamChatExceptionService {
 
     /** Hits since max(windowStartedAt's day, day − (window − 1)) — lesson 25's floor. */
     long windowHits(TeamChatExceptionEntity e, LocalDate day) {
-        LocalDate floor = day.minusDays(properties.exceptionWindowDays() - 1L);
+        LocalDate floor = windowFloor(day);
         LocalDate started = e.getWindowStartedAt().atZone(properties.zone()).toLocalDate();
         return hits.countByExceptionIdAndHitOnGreaterThanEqualAndDeletedFalse(e.getId(),
                 started.isAfter(floor) ? started : floor);
     }
 
-    private boolean reviewedThisWindow(UUID userId, TeamChatExceptionEntity e) {
+    private LocalDate windowFloor(LocalDate day) {
+        return day.minusDays(properties.exceptionWindowDays() - 1L);
+    }
+
+    /**
+     * A REVIEW already opened inside the SAME rolling window {@link #windowHits} counts over —
+     * since max(windowStartedAt, the floor day's start). Anchoring on {@code windowStartedAt}
+     * alone (only KEEP moves it) let one ignored / expired / data-closed review silence every
+     * later review forever. The KEEP instant itself (not its day) stays the lower bound, so the
+     * review KEEP just answered never counts against the restarted window.
+     */
+    private boolean reviewedThisWindow(UUID userId, TeamChatExceptionEntity e, LocalDate day) {
+        Instant floor = windowFloor(day).atStartOfDay(properties.zone()).toInstant();
+        Instant since = e.getWindowStartedAt().isAfter(floor) ? e.getWindowStartedAt() : floor;
         return threads.findFirstByCreatedByAndExceptionIdAndOfferAndOpenedAtGreaterThanEqualAndDeletedFalse(
-                userId, e.getId(), TeamChatService.OFFER_REVIEW, e.getWindowStartedAt()).isPresent();
+                userId, e.getId(), TeamChatService.OFFER_REVIEW, since).isPresent();
     }
 
     private List<String> dayTexts(UUID userId, LocalDate day) {

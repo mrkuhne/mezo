@@ -78,7 +78,8 @@ public class TeamChatReads {
         List<UUID> allThreadIds = new ArrayList<>(threadById.keySet());
         open.forEach(t -> allThreadIds.add(t.getId()));
         Map<UUID, TeamChatExceptionEntity> bornByThreadId = allThreadIds.isEmpty() ? Collections.emptyMap()
-                : exceptions.findBySourceThreadIdInAndCreatedByAndDeletedFalse(allThreadIds, userId).stream()
+                : withoutStopped(userId,
+                        exceptions.findBySourceThreadIdInAndCreatedByAndDeletedFalse(allThreadIds, userId)).stream()
                         .collect(Collectors.toMap(TeamChatExceptionEntity::getSourceThreadId, Function.identity(),
                                 (a, b) -> a));
 
@@ -113,11 +114,30 @@ public class TeamChatReads {
      *  and its offer's exception — the answer / undo endpoints' response. */
     @Transactional(readOnly = true)
     public TeamChatThread thread(UUID userId, TeamChatThreadEntity thread) {
-        TeamChatExceptionEntity born =
-                exceptions.findFirstBySourceThreadIdAndCreatedByAndDeletedFalse(thread.getId(), userId).orElse(null);
+        TeamChatExceptionEntity born = exceptions.findFirstBySourceThreadIdAndCreatedByAndDeletedFalse(
+                thread.getId(), userId).map(e -> withoutStopped(userId, List.of(e))).filter(l -> !l.isEmpty())
+                .map(List::getFirst).orElse(null);
         TeamChatExceptionEntity offerException = thread.getOffer() == null || thread.getExceptionId() == null ? null
                 : exceptions.findByIdAndCreatedByAndDeletedFalse(thread.getExceptionId(), userId).orElse(null);
         return toThread(thread, born, offerException);
+    }
+
+    /**
+     * Drops the exceptions a REVIEW "Nem, figyelj rá" (STOP) withdrew: the source ügy's
+     * remembered chip must not read as an undo the user never made — the STOP answer's own REPLY
+     * line on the review ügy says what happened. An undone exception (inactive, no STOP review)
+     * stays, so its "Visszavonva" confirmation keeps rendering.
+     */
+    private List<TeamChatExceptionEntity> withoutStopped(UUID userId, List<TeamChatExceptionEntity> born) {
+        List<UUID> inactive = born.stream().filter(e -> !Boolean.TRUE.equals(e.getActive()))
+                .map(TeamChatExceptionEntity::getId).toList();
+        if (inactive.isEmpty()) {
+            return born;
+        }
+        Set<UUID> stopped = threads.findByCreatedByAndExceptionIdInAndOfferAndCloseNoteAndDeletedFalse(userId,
+                        inactive, TeamChatService.OFFER_REVIEW, TeamChatExceptionService.STOP_NOTE).stream()
+                .map(TeamChatThreadEntity::getExceptionId).collect(Collectors.toSet());
+        return stopped.isEmpty() ? born : born.stream().filter(e -> !stopped.contains(e.getId())).toList();
     }
 
     /** Task 15 (mezo-a9bo7.25): the ügyek opened or closed on {@code date} (the user's local day),

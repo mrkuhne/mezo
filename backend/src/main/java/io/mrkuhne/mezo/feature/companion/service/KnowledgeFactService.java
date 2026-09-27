@@ -29,9 +29,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -301,6 +303,21 @@ public class KnowledgeFactService {
                 .stream()
                 .map(KnowledgeFactEntity::getFactText)
                 .toList();
+    }
+
+    /**
+     * S7 (mezo-d6ivw.7): the subset of {@code factIds} that still exist and are still in the
+     * prompt (not deleted, not muted in the Tudástár) — a remembered csapatfal exception is only
+     * live while its fact is. Read-only; unknown or foreign ids are simply absent.
+     */
+    @Transactional(readOnly = true)
+    public Set<UUID> liveInPrompt(UUID userId, Collection<UUID> factIds) {
+        if (factIds == null || factIds.isEmpty()) {
+            return Set.of();
+        }
+        return repository.findByIdInAndCreatedByAndIncludeInPromptTrueAndDeletedFalse(factIds, userId).stream()
+                .map(KnowledgeFactEntity::getId)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private KnowledgeFactEntity getOwned(UUID userId, UUID factId) {

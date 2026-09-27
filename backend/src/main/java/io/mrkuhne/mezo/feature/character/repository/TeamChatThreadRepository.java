@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.character.repository;
 import io.mrkuhne.mezo.feature.character.entity.TeamChatThreadEntity;
 import jakarta.persistence.LockModeType;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -100,4 +101,9 @@ public interface TeamChatThreadRepository extends JpaRepository<TeamChatThreadEn
      *  start — the "don't re-offer within the same window" gate. */
     Optional<TeamChatThreadEntity> findFirstByCreatedByAndExceptionIdAndOfferAndOpenedAtGreaterThanEqualAndDeletedFalse(
             UUID createdBy, UUID exceptionId, String offer, Instant since);
+
+    /** S7: the REVIEW ügyek answered "Nem, figyelj rá" (STOP, closed with the STOP note) for these
+     *  exceptions — a STOP-withdrawn exception is not an undo, so its source ügy shows no chip. */
+    List<TeamChatThreadEntity> findByCreatedByAndExceptionIdInAndOfferAndCloseNoteAndDeletedFalse(
+            UUID createdBy, Collection<UUID> exceptionIds, String offer, String closeNote);
 }

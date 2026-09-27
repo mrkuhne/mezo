@@ -41,4 +41,9 @@ public interface KnowledgeFactRepository extends JpaRepository<KnowledgeFactEnti
     List<KnowledgeFactEntity>
             findByCreatedByAndOwnerInAndIncludeInPromptTrueAndSupersededByIsNullAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(
                     UUID createdBy, Collection<String> owners, Pageable page);
+
+    /** S7 (mezo-d6ivw.7): which of these facts still exist and still ride the prompt — the team
+     *  chat exception follows its fact (a deleted or muted fact silences the exception). */
+    List<KnowledgeFactEntity> findByIdInAndCreatedByAndIncludeInPromptTrueAndDeletedFalse(
+            Collection<UUID> ids, UUID createdBy);
 }

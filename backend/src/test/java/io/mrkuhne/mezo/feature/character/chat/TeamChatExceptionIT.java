@@ -21,6 +21,7 @@ import io.mrkuhne.mezo.feature.character.repository.TeamChatExceptionRepository;
 import io.mrkuhne.mezo.feature.character.repository.TeamChatLineRepository;
 import io.mrkuhne.mezo.feature.character.repository.TeamChatThreadRepository;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatExceptionService;
+import io.mrkuhne.mezo.feature.character.service.chat.TeamChatReads;
 import io.mrkuhne.mezo.feature.character.service.chat.TeamChatService;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
@@ -64,6 +65,7 @@ class TeamChatExceptionIT extends AbstractIntegrationTest {
 
     @Autowired private TeamChatService service;
     @Autowired private TeamChatExceptionService exceptionService;
+    @Autowired private TeamChatReads reads;
     @Autowired private TeamChatThreadRepository threads;
     @Autowired private TeamChatLineRepository lines;
     @Autowired private TeamChatExceptionRepository exceptions;
@@ -536,5 +538,187 @@ class TeamChatExceptionIT extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> exceptionService.undoRemembered(owner, t.getId()))
                 .satisfies(e -> assertThat(statusOf(e)).isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    // ---- S7 final review fix wave -------------------------------------------------------------
+
+    /** A REVIEW ügy for {@code ex}, seeded directly: never answered, closed by DATA. */
+    private TeamChatThreadEntity ignoredReview(UUID owner, TeamChatExceptionEntity ex, Instant openedAt) {
+        TeamChatThreadEntity t = new TeamChatThreadEntity();
+        t.setCreatedBy(owner);
+        t.setFlagKey(FlagKey.LATE_EATING);
+        t.setOwnerCharacter("falat");
+        t.setAdviceKey("late_eating_test");
+        t.setStatus("RESOLVED");
+        t.setOpenedAt(openedAt);
+        t.setClosedAt(openedAt.plus(2, ChronoUnit.HOURS));
+        t.setCloseReason("DATA");
+        t.setPushed(false);
+        t.setOffer("REVIEW");
+        t.setExceptionId(ex.getId());
+        t.setActions(new TeamChatActionsEnvelope(List.of()));
+        return threads.saveAndFlush(t);
+    }
+
+    /** Item 5: an ignored review only suppresses reviews inside its OWN rolling window. */
+    @Test
+    void ignoredReviewBeforeTheRollingFloor_doesNotSilenceTheNextReview() {
+        UUID owner = owner();
+        TeamChatExceptionEntity ex = activeException(owner); // windowStartedAt = 60 days ago, never KEPT
+        // The ignored review sits one day before today's floor (day − (window − 1)).
+        ignoredReview(owner, ex, today().minusDays(properties.exceptionWindowDays())
+                .atTime(12, 0).atZone(zone()).toInstant());
+        for (int d = 1; d <= properties.exceptionReviewHits(); d++) {
+            seedHit(owner, ex.getId(), today().minusDays(d));
+        }
+        raiseLateEatingLog(owner);
+
+        TeamChatThreadEntity next = service.open(owner, FlagKey.LATE_EATING, todayAt(12, 0)).orElseThrow();
+
+        assertThat(next.getOffer()).isEqualTo("REVIEW");
+        assertThat(next.getExceptionId()).isEqualTo(ex.getId());
+    }
+
+    /** Item 5, the other edge: an ignored review ON the floor day still counts for this window. */
+    @Test
+    void ignoredReviewOnTheRollingFloorDay_stillCountsForThisWindow() {
+        UUID owner = owner();
+        TeamChatExceptionEntity ex = activeException(owner);
+        ignoredReview(owner, ex, today().minusDays(properties.exceptionWindowDays() - 1L)
+                .atStartOfDay(zone()).toInstant());
+        for (int d = 1; d <= properties.exceptionReviewHits(); d++) {
+            seedHit(owner, ex.getId(), today().minusDays(d));
+        }
+        raiseLateEatingLog(owner);
+
+        assertThat(service.open(owner, FlagKey.LATE_EATING, todayAt(12, 0)).orElseThrow().getOffer())
+                .isEqualTo("EXCUSE");
+    }
+
+    /** Item 6: the exception follows its fact — muted in the Tudástár → the rule nudges as normal. */
+    @Test
+    void factMutedInTheTudastar_exceptionIsSkipped_notMutated() {
+        UUID owner = owner();
+        TeamChatExceptionEntity ex = activeException(owner);
+        checkInPopulator.createCheckIn(owner, today(), "20:00", 3, 3, "Este meccs volt, későn vacsiztam");
+        knowledge.update(owner, ex.getKnowledgeFactId(),
+                new io.mrkuhne.mezo.api.dto.UpdateFactRequest().includeInPrompt(false));
+        raiseLateEatingLog(owner);
+
+        TeamChatThreadEntity normal = service.open(owner, FlagKey.LATE_EATING, todayAt(20, 0)).orElseThrow();
+
+        assertThat(normal.getOffer()).isNull();
+        assertThat(normal.getExceptionId()).isNull();
+        assertThat(hits.countByExceptionIdAndHitOnGreaterThanEqualAndDeletedFalse(ex.getId(), today().minusDays(60)))
+                .isZero();
+        assertThat(exceptions.findById(ex.getId()).orElseThrow().getActive()).isTrue(); // skipped, not mutated
+
+        // Turned back on: the exception is live again (the keyword day → a silent hit, nothing opens).
+        backdate(normal);
+        threads.findById(normal.getId()).ifPresent(t -> {
+            t.setStatus("RESOLVED");
+            t.setClosedAt(Instant.now());
+            t.setCloseReason("DATA");
+            threads.saveAndFlush(t);
+        });
+        knowledge.update(owner, ex.getKnowledgeFactId(),
+                new io.mrkuhne.mezo.api.dto.UpdateFactRequest().includeInPrompt(true));
+        raiseLateEatingLog(owner);
+        assertThat(service.open(owner, FlagKey.LATE_EATING, todayAt(20, 30))).isEmpty();
+        assertThat(hits.countByExceptionIdAndHitOnGreaterThanEqualAndDeletedFalse(ex.getId(), today())).isEqualTo(1);
+    }
+
+    /** Item 6: a deleted fact silences its exception the same way. */
+    @Test
+    void factDeleted_exceptionIsSkipped() {
+        UUID owner = owner();
+        TeamChatExceptionEntity ex = activeException(owner);
+        KnowledgeFactEntity fact = knowledgeFacts.findById(ex.getKnowledgeFactId()).orElseThrow();
+        fact.setDeleted(true);
+        knowledgeFacts.saveAndFlush(fact);
+        raiseLateEatingLog(owner);
+
+        TeamChatThreadEntity normal = service.open(owner, FlagKey.LATE_EATING, todayAt(12, 0)).orElseThrow();
+
+        assertThat(normal.getOffer()).isNull();
+        assertThat(exceptions.findById(ex.getId()).orElseThrow().getActive()).isTrue();
+    }
+
+    /** Item 10: a free-text "igen, meccs volt" on a live EXCUSE offer is the tap — hit on the
+     *  occurrence's own day. */
+    @Test
+    void freeTextExcuse_onALiveOffer_closesExcused_hitOnTheOpenedDay() {
+        UUID owner = owner();
+        TeamChatExceptionEntity ex = activeException(owner);
+        raiseLateEatingLog(owner);
+        LocalDate yesterday = today().minusDays(1);
+        TeamChatThreadEntity t = service.open(owner, FlagKey.LATE_EATING,
+                yesterday.atTime(23, 30).atZone(zone()).toInstant()).orElseThrow();
+        assertThat(t.getOffer()).isEqualTo("EXCUSE");
+
+        service.reply(owner, t.getId(), "Igen, kupa volt " + MECCS);
+        await().atMost(5, SECONDS).untilAsserted(() ->
+                assertThat(reread(t.getId()).getCloseReason()).isEqualTo("EXCUSED"));
+
+        assertThat(hits.findFirstByExceptionIdAndThreadIdAndSourceAndDeletedFalse(ex.getId(), t.getId(), "TAP"))
+                .get().extracting(TeamChatExceptionHitEntity::getHitOn).isEqualTo(yesterday);
+        assertThat(hits.existsByExceptionIdAndHitOnAndDeletedFalse(ex.getId(), today())).isFalse();
+    }
+
+    /** Item 10: once the offer's exception is withdrawn, the same free text only gets an answer. */
+    @Test
+    void freeTextExcuse_onAWithdrawnOffer_onlyAnswers_noHit_noClose() {
+        UUID owner = owner();
+        TeamChatExceptionEntity ex = activeException(owner);
+        raiseLateEatingLog(owner);
+        TeamChatThreadEntity t = service.open(owner, FlagKey.LATE_EATING, todayAt(12, 0)).orElseThrow();
+        TeamChatExceptionEntity withdrawn = exceptions.findById(ex.getId()).orElseThrow();
+        withdrawn.setActive(false);
+        exceptions.saveAndFlush(withdrawn);
+
+        service.reply(owner, t.getId(), "Igen, kupa volt " + MECCS);
+        await().atMost(5, SECONDS).untilAsserted(() -> assertThat(linesOf(t.getId()))
+                .filteredOn(l -> "REPLY".equals(l.getKind())).hasSize(1));
+
+        assertThat(reread(t.getId()).getStatus()).isEqualTo("OPEN");
+        assertThat(hits.countByExceptionIdAndHitOnGreaterThanEqualAndDeletedFalse(ex.getId(), today().minusDays(60)))
+                .isZero();
+    }
+
+    /** Item 2 (server side): a STOP on a later REVIEW is not an undo — the source ügy's
+     *  remembered block disappears; a real undo keeps it (inactive) for the confirmation. */
+    @Test
+    void stopOnAReview_dropsTheSourceUgysRemembered_whileAnUndoKeepsIt() {
+        UUID owner = owner();
+        TeamChatThreadEntity source = openLateEating(owner);
+        TeamChatExceptionEntity ex = concreteClose(owner, source);
+        assertThat(reads.thread(owner, reread(source.getId())).getRemembered()).isNotNull()
+                .satisfies(r -> assertThat(r.getActive()).isTrue());
+        // The exception's window started at capture (today); move it back so seeded hits count.
+        TeamChatExceptionEntity aged = exceptions.findById(ex.getId()).orElseThrow();
+        aged.setWindowStartedAt(today().minusDays(60).atStartOfDay(zone()).toInstant());
+        exceptions.saveAndFlush(aged);
+        for (int d = 1; d <= properties.exceptionReviewHits(); d++) {
+            seedHit(owner, ex.getId(), today().minusDays(d));
+        }
+        backdate(source);
+        raiseLateEatingLog(owner);
+        TeamChatThreadEntity review = service.open(owner, FlagKey.LATE_EATING, todayAt(12, 0)).orElseThrow();
+        assertThat(review.getOffer()).isEqualTo("REVIEW");
+
+        exceptionService.answer(owner, review.getId(), "STOP");
+
+        assertThat(reads.thread(owner, reread(source.getId())).getRemembered()).isNull();
+        assertThat(reads.day(owner, today()).getLines()).filteredOn(l -> l.getThread() != null
+                && source.getId().equals(l.getThread().getId())).allSatisfy(l ->
+                        assertThat(l.getThread().getRemembered()).isNull());
+
+        // Contrast: a plain undo on another ügy keeps its (now inactive) remembered block.
+        UUID other = owner();
+        TeamChatThreadEntity t = openLateEating(other);
+        concreteClose(other, t);
+        exceptionService.undoRemembered(other, t.getId());
+        assertThat(reads.thread(other, reread(t.getId())).getRemembered()).isNotNull()
+                .satisfies(r -> assertThat(r.getActive()).isFalse());
     }
 }
