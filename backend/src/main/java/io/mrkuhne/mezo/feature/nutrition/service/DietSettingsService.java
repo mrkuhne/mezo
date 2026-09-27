@@ -116,7 +116,8 @@ public class DietSettingsService {
             req.getProteinTier().getValue(),
             req.getWaterMl(),
             req.getFiberG(),
-            req.getDayTypeShiftKcal());
+            req.getDayTypeShiftKcal(),
+            true); // the learning switch is not part of this preview draft (mezo-3n2so); irrelevant to macro projection
     }
 
     /** Custom split must sum to exactly 100.0% (all three fields present). */

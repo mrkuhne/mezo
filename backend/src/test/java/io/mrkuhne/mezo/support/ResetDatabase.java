@@ -52,7 +52,7 @@ public class ResetDatabase {
                 + "gym_schedule_slot, sport_schedule_slot, sport_slot_skip, sport_event, sport_session, run_session_log, running_block, "
                 + "skill_progress, level_up_event, perk_unlock, "
                 + "life_goal_pillar_day, life_goal_pillar, life_goal, "
-                + "expenditure_estimate, goal_suggestion, goal_plan_link, goal, biometric_profile, "
+                + "intake_day_mark, expenditure_estimate, goal_suggestion, goal_plan_link, goal, biometric_profile, "
                 + "team_chat_exception_hit, team_chat_exception, team_chat_line, team_chat_thread, team_edition_post, team_edition, character_council_edition, character_maturity_week, character_claim_revision, character_run, character_portrait_revision, character_conference, character_observation, character_reply, character_claim, character_dimension, "
                 + "proactive_memory_use, effect_link, effect_mute, memory_forget_veto, person_fact, mention, person CASCADE").executeUpdate();
         // Hybrid catalog (S4, mezo-qw37.4): user-authored definitions go, loader master rows

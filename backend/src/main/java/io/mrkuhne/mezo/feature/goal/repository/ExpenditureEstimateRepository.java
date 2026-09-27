@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.goal.repository;
 
 import io.mrkuhne.mezo.feature.goal.entity.ExpenditureEstimateEntity;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -26,4 +27,11 @@ public interface ExpenditureEstimateRepository extends JpaRepository<Expenditure
      */
     Optional<ExpenditureEstimateEntity> findFirstByCreatedByAndDeletedFalseAndExplanationIsNotNullOrderByWeekStartDesc(
         UUID createdBy);
+
+    /** Every reviewed week from {@code weekStart} onward — the weekly summary's history (mezo-3n2so). */
+    List<ExpenditureEstimateEntity> findByCreatedByAndWeekStartGreaterThanEqualAndDeletedFalseOrderByWeekStartAsc(
+        UUID createdBy, LocalDate weekStart);
+
+    /** The caller's most recent 26 reviewed weeks, newest first (mezo-3n2so). */
+    List<ExpenditureEstimateEntity> findTop26ByCreatedByAndDeletedFalseOrderByWeekStartDesc(UUID createdBy);
 }
