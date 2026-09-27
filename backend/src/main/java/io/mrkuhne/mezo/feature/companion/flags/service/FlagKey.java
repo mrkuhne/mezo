@@ -40,6 +40,19 @@ public final class FlagKey {
      *  log, never a causal claim. 22 chars: inside the varchar(24) both CHECKed columns use. */
     public static final String ENERGY_DIP_MEAL_TIMING = "energy_dip_meal_timing";
 
+    /** Check-in 2.0 (mezo-ck2, spec 2026-09-27 §3.2): the same pain region reported on enough
+     *  of the last few days. */
+    public static final String PERSISTENT_PAIN = "persistent_pain";
+
+    /** Check-in 2.0 (mezo-ck2): the morning "kipihentség" low on consecutive mornings. */
+    public static final String POOR_RESTEDNESS = "poor_restedness";
+
+    /** Check-in 2.0 (mezo-ck2): a strong craving of the same kind on enough recent days. */
+    public static final String CRAVING_STREAK = "craving_streak";
+
+    /** Check-in 2.0 (mezo-ck2): the day-mean motivation low on most of the last few days. */
+    public static final String MOTIVATION_SLUMP = "motivation_slump";
+
     public static final String SOURCE_WRITE = "write";
     public static final String SOURCE_SWEEP = "sweep";
 

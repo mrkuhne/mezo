@@ -114,7 +114,16 @@ public final class FlagTraceCopy {
             case "missed_gym_days" -> "Nincs kihagyott edzésnap az ablakban.";
             case "signals_matched" -> "%s regenerációs jel a szükséges %s-ból (hiányzik: %s)."
                 .formatted(num(observed), num(threshold), detail == null || detail.isBlank() ? "—" : detail);
-            case "quiet_days" -> "Még nem telt el %s csendes nap.".formatted(num(threshold));
+            // Check-in 2.0 (mezo-ck2).
+            case "pain_region_days" -> "Ugyanott %s napon fájt — a jelzéshez %s kellene."
+                .formatted(num(observed), num(threshold));
+            case "low_rested_run" -> "%s egymást követő kipihenetlen reggel — a jelzéshez %s kellene."
+                .formatted(num(observed), num(threshold));
+            case "craving_kind_days" -> "Ugyanarra %s napon volt erős sóvárgás — a jelzéshez %s kellene."
+                .formatted(num(observed), num(threshold));
+            case "low_motivation_days" -> "%s alacsony motivációjú nap — a jelzéshez %s kellene."
+                .formatted(num(observed), num(threshold));
+            case "quiet_days" ->"Még nem telt el %s csendes nap.".formatted(num(threshold));
             case "other_flags_raised" -> "Ma más szabály jelzett, így a „minden rendben\" nem áll fenn.";
             default -> "A szabály lefutott, és nem talált problémát.";
         };
@@ -152,6 +161,10 @@ public final class FlagTraceCopy {
             case "notifications_off" -> "Az értesítések ki vannak kapcsolva — nem tudni, ment-e emlékeztető.";
             case "unlogged_night" -> "Rögzítetlen éjszaka a sorozatban.";
             case "no_meal_data" -> "Nincs étkezés-adat az ablakban.";
+            case "not_enough_pain_answers" -> "Túl kevés napon válaszoltál a fájdalom-kérdésre.";
+            case "not_enough_morning_answers" -> "Túl kevés reggeli kipihentség-válasz az ablakban.";
+            case "not_enough_craving_answers" -> "Túl kevés napon válaszoltál a sóvárgás-kérdésre.";
+            case "not_enough_motivation_answers" -> "Túl kevés napon válaszoltál a motiváció-kérdésre.";
             case NOT_EVALUATED_YET -> "Ez a szabály még nem futott le ezen a napon.";
             default -> "A szabály nem tudta megítélni ezt a napot.";
         };

@@ -66,5 +66,15 @@ public enum UnavailableReason {
      *  (the lunch arm additionally needs the two groups' median lunch times to be
      *  {@code min-lunch-split-separation-minutes} apart) — nothing could be compared, as opposed to
      *  comparing and finding no difference. */
-    NO_USABLE_SPLIT
+    NO_USABLE_SPLIT,
+    /** persistent_pain (Check-in 2.0, mezo-ck2): fewer days with ANY pain answer (Nem or Igen)
+     *  in the window than {@code min-days} — the rule could never raise. */
+    NOT_ENOUGH_PAIN_ANSWERS,
+    /** poor_restedness (mezo-ck2): fewer answered morning "kipihentség" values in the window than
+     *  {@code consecutive-mornings}. */
+    NOT_ENOUGH_MORNING_ANSWERS,
+    /** craving_streak (mezo-ck2): fewer days with a craving answer than {@code min-days}. */
+    NOT_ENOUGH_CRAVING_ANSWERS,
+    /** motivation_slump (mezo-ck2): fewer days with a motivation answer than {@code min-days}. */
+    NOT_ENOUGH_MOTIVATION_ANSWERS
 }

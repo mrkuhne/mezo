@@ -139,3 +139,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609272108_mezo-ck2_checkin_2.sql
+  - changeSet:
+      id: "1.1.0:202609272148_mezo-ck2_checkin_2_flag_keys"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609272148_mezo-ck2_checkin_2_flag_keys.sql
