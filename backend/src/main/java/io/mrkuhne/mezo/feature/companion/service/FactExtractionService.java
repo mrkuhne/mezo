@@ -8,8 +8,10 @@ import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.FactOwner;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
+import io.mrkuhne.mezo.feature.companion.entity.MemoryForgetVetoEntity;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
+import io.mrkuhne.mezo.feature.companion.repository.MemoryForgetVetoRepository;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -59,6 +61,7 @@ public class FactExtractionService {
     private final CompanionLlm companionLlm;
     private final KnowledgeFactRepository knowledgeFactRepository;
     private final LearnedFactRepository learnedFactRepository;
+    private final MemoryForgetVetoRepository vetoRepository;
     private final CompanionProperties properties;
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
@@ -95,6 +98,10 @@ public class FactExtractionService {
         learnedFactRepository
                 .findByCreatedByAndUserDecisionIsNullAndDeletedFalseOrderByCreatedAtDesc(userId)
                 .forEach(c -> known.add(normalize(c.getCandidateText())));
+        // S6 (mezo-d6ivw.6): a forgotten text is never proposed again from the chat. Added to
+        // `known` (not to `confirmed`), so a hit is silent — no candidate, no reinforcement.
+        vetoRepository.findByCreatedByAndDomainAndDeletedFalse(userId, MemoryForgetVetoEntity.DOMAIN_FACT_TEXT)
+                .forEach(v -> known.add(v.getVetoKey()));
         int persisted = 0;
         for (ExtractedFact fact : extracted) {
             if (persisted >= properties.extraction().maxCandidatesPerTurn()) {

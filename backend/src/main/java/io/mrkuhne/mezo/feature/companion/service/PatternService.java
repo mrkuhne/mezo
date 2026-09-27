@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.PatternDecisionRequest;
 import io.mrkuhne.mezo.api.dto.PatternResponse;
 import io.mrkuhne.mezo.feature.companion.HighlightCitationSource;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
+import io.mrkuhne.mezo.feature.companion.entity.MemoryForgetVetoEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventPayloadEnvelope;
@@ -11,6 +12,7 @@ import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
 import io.mrkuhne.mezo.feature.companion.mapper.PatternTestPlanMapper;
+import io.mrkuhne.mezo.feature.companion.repository.MemoryForgetVetoRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
@@ -49,6 +51,7 @@ public class PatternService {
 
     private final PatternRepository patternRepository;
     private final KnowledgeFactRepository knowledgeFactRepository;
+    private final MemoryForgetVetoRepository vetoRepository;
     /** S4 (mezo-eq85.4): the shared event-append helper — see PatternEventAppender. */
     private final PatternEventAppender patternEventAppender;
     private final CompanionMapper mapper;
@@ -180,6 +183,9 @@ public class PatternService {
 
     private void promoteIfFirst(UUID userId, PatternEntity pattern, String source) {
         if (pattern.getPromotedFactId() != null) return;
+        // S6 (mezo-d6ivw.6): a forgotten observation's knowledge is never re-minted.
+        if (vetoRepository.existsByCreatedByAndDomainAndVetoKeyAndDeletedFalse(
+                userId, MemoryForgetVetoEntity.DOMAIN_PATTERN, pattern.getId().toString())) return;
         pattern.setPromotedFactId(promote(userId, pattern, source));
         recordEvent(pattern, PatternEventEntity.KIND_PROMOTED,
                 PatternEventPayloadEnvelope.promoted(pattern.getPromotedFactId()));

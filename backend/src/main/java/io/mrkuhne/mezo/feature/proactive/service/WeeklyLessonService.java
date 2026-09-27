@@ -5,8 +5,10 @@ import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.FactOwner;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
+import io.mrkuhne.mezo.feature.companion.entity.MemoryForgetVetoEntity;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
+import io.mrkuhne.mezo.feature.companion.repository.MemoryForgetVetoRepository;
 import io.mrkuhne.mezo.feature.proactive.mapper.ProactiveMapper;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
@@ -65,6 +67,7 @@ public class WeeklyLessonService {
 
     private final LearnedFactRepository learnedFactRepository;
     private final KnowledgeFactRepository knowledgeFactRepository;
+    private final MemoryForgetVetoRepository vetoRepository;
     private final CompanionProperties companionProperties;
     private final ProactiveMapper mapper;
 
@@ -97,6 +100,9 @@ public class WeeklyLessonService {
         learnedFactRepository.findByCreatedByAndDeletedFalse(userId)
                 .stream().map(LearnedFactEntity::getCandidateText).map(WeeklyLessonService::normalize)
                 .forEach(known::add);
+        // S6 (mezo-d6ivw.6): the weekly review never re-offers what the user made Mezo forget.
+        vetoRepository.findByCreatedByAndDomainAndDeletedFalse(userId, MemoryForgetVetoEntity.DOMAIN_FACT_TEXT)
+                .forEach(v -> known.add(v.getVetoKey()));
 
         int cap = companionProperties.extraction().maxCandidatesPerTurn();
         int persisted = 0;
