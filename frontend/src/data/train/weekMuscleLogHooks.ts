@@ -1,6 +1,6 @@
-import { useQueries, useQuery } from '@tanstack/react-query'
+import { useQueries } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
-import { useWeekWorkouts, weekWorkoutsQueryKey } from '@/data/train/workoutDetailHooks'
+import { useWeekWorkouts } from '@/data/train/workoutDetailHooks'
 import { trainApi, type WorkoutDetailResponse, type WorkoutSummaryResponse } from '@/data/train/trainApi'
 
 /**
@@ -18,14 +18,11 @@ export function useWeekMuscleLog(): {
   pending: boolean
 } {
   const mock = isMockMode()
-  // Track the summary query to know when the week is loaded. Must stay
-  // `enabled: false` with no queryFn — useWeekWorkouts owns fetching this key;
-  // this is a read-only observer into the shared cache entry.
-  const summaryQuery = useQuery<WorkoutSummaryResponse[]>({
-    queryKey: weekWorkoutsQueryKey().key,
-    enabled: false,
-  })
-  const { workouts } = useWeekWorkouts()
+  // The week's summaries come from ONE observer, useWeekWorkouts, which owns the key AND its queryFn.
+  // A second read-only observer without a queryFn (the old pending probe) made every refetch of the
+  // shared key log "No queryFn was passed" (mezo-fp5s4): a refetch runs with the options of whichever
+  // observer set them last.
+  const { workouts, isPending: summaryPending } = useWeekWorkouts()
   const completedSummaries = workouts.filter((w) => w.status === 'completed')
   const queries = useQueries({
     queries: completedSummaries.map((w) => ({
@@ -38,6 +35,6 @@ export function useWeekMuscleLog(): {
   return {
     details: queries.map((q) => q.data).filter((d): d is WorkoutDetailResponse => d !== undefined),
     completedSummaries,
-    pending: !mock && (summaryQuery.isPending || queries.some((q) => q.isPending)),
+    pending: !mock && (summaryPending || queries.some((q) => q.isPending)),
   }
 }
