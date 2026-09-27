@@ -32,7 +32,8 @@ public class TeamChatExceptionHitEntity extends OwnedEntity {
     @Column(columnDefinition = "uuid")
     private UUID id;
 
-    @Column(name = "exception_id", columnDefinition = "uuid")
+    @NotNull
+    @Column(name = "exception_id", nullable = false, columnDefinition = "uuid")
     private UUID exceptionId;
 
     @NotNull
