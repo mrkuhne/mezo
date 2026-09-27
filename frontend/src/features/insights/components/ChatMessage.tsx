@@ -17,7 +17,7 @@ export interface ChatMessageFeedback {
 
 // Design 2.0 face (mezo-d20.5.2) — prototype mezo-body.html #page-chat anatomy:
 // assistant = orb + Mezo eyebrow + timestamp meta row, tool chips ABOVE the answer,
-// white 4/16-radius bubble with the "Amire épült · L3" human-label refs footer;
+// white 4/16-radius bubble with the "Amire épült" human-label refs footer;
 // user = warm-washed 16/4-radius bubble, timestamp below right. The behavioral
 // contracts (blank-answer naming, degraded badge, votable-only-persisted,
 // hidden-when-empty sections) are unchanged — this is a re-face, not a rewrite.
@@ -80,7 +80,7 @@ export function ChatMessage({
         )}
         {/* length, not truthiness: an empty array is truthy, and the filter above can now turn a
             non-empty refs list into an empty one — without this the eyebrow would render alone. */}
-        {visibleRefs.length > 0 && <RefChips refs={visibleRefs} eyebrow="Amire épült · L3" />}
+        {visibleRefs.length > 0 && <RefChips refs={visibleRefs} eyebrow="Amire épült" />}
       </div>
       {/* W3.1b: the answer's ambient-recall provenance, collapsed (mezo-b3pp.28). */}
       {m.recalled && <RecalledMemoriesRow items={m.recalled} feedback={memoryFeedback} />}

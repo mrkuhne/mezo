@@ -15,8 +15,8 @@ export interface RefChipItem {
 // mezo-z4h4: lifted VERBATIM from ChatMessage's local RefsFooter (mezo-vdf4) so the messages
 // page (NapMezoPage) gets the same chat-quality provenance chips — domain clay icons, human
 // Hungarian kind labels, wash colors, and the >3-refs grouping that expands one kind at a time.
-// The eyebrow text is now a prop: ChatMessage passes "Amire épült · L3" (pixel-identical to
-// before), NapMezoPage passes "Amire épült", and omitting it renders no eyebrow span at all.
+// The eyebrow text is now a prop: ChatMessage and NapMezoPage both pass "Amire épült" (the old "· L3" suffix was
+// wrong — the chips are L0/L1 tool + memory refs, never L3 facts; mezo-d20.12), and omitting it renders no eyebrow span at all.
 export function RefChips({ refs, eyebrow }: { refs: RefChipItem[]; eyebrow?: string }) {
   const [openKind, setOpenKind] = useState<string | null>(null)
   const grouped = refs.length > 3

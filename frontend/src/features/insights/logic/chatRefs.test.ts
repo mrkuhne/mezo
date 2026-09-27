@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { chatRefDisplay } from '@/features/insights/logic/chatRefs'
 
-// Design 2.0 (mezo-d20.5.2): the "Hivatkozott · L3" footer speaks human labels, not raw ids —
+// Design 2.0 (mezo-d20.5.2): the "Amire épült" (was "Hivatkozott · L3") footer speaks human labels, not raw ids —
 // the audit's gap 7 fix. The mapping is HONEST: only what the data itself carries is shown.
 // A kind gets its Hungarian name; an id yields a human date ONLY when it literally contains an
 // ISO date; anything else falls back to the raw id — no fabricated titles.
