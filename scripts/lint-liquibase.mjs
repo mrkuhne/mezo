@@ -42,6 +42,9 @@ const GRANDFATHERED = {
   // mezo-a9bo7.21: released the same day with an inline thread_id FK and two ix_ indexes;
   // 202609262000_mezo-a9bo7_team_chat_naming.sql renames all three in the live schema.
   '202609261500_mezo-a9bo7_team_chat.sql': new Set(['inline-foreign-key', 'index-prefix']),
+  // mezo-d6ivw.5: released (deployed) with an ix_ index; 202609270230_mezo-d6ivw.5_proactive_memory_use_naming.sql
+  // renames it in the live schema.
+  '202609261600_mezo-d6ivw.5_proactive_memory_use.sql': new Set(['index-prefix']),
 };
 
 // `(?:\.\d+)*` (zero or more), not `?` (at most one): CLAUDE.md mandates the
