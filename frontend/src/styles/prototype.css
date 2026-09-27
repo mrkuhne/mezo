@@ -24665,20 +24665,20 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* S4 (mezo-d6ivw.4) — "Hatás · együttjárás": óvatos, nem-oki mondatok soronként, erősség
    (kitöltött pötty) és bizonyosság (üres gyűrű) KÜLÖN jelezve — ONE glass, the person's tone. */
 .ppl-detail .ppl-effcard.glass { --c: var(--dv-rose); display: block; padding: 6px 15px 12px; border-radius: 22px; margin-bottom: 11px; }
-.ppl-detail .ppl-effrow { padding: 11px 0; }
-.ppl-detail .ppl-effrow + .ppl-effrow { border-top: 1px solid var(--divider); }
-.ppl-detail .ppl-effsent { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--text-primary); }
-.ppl-detail .ppl-effmeta { display: flex; align-items: center; gap: 14px; margin-top: 7px; flex-wrap: wrap; }
-.ppl-detail .ppl-effsig { display: flex; align-items: center; gap: 6px; }
-.ppl-detail .ppl-effsig small { font-size: 9px; letter-spacing: 0.08em; color: var(--text-muted); }
-.ppl-detail .ppl-effsig em { font-style: normal; font-size: 11px; color: var(--text-secondary); }
-.ppl-detail .ppl-effdots { display: flex; gap: 3px; }
-.ppl-detail .ppl-effdots i { width: 7px; height: 7px; border-radius: 50%; background: var(--divider); }
-.ppl-detail .ppl-effdots i.on { background: var(--c); box-shadow: 0 0 6px -1px var(--c); }
-.ppl-detail .ppl-effdots.ring i { background: transparent; border: 1.5px solid var(--divider); }
-.ppl-detail .ppl-effdots.ring i.on { border-color: var(--c); background: transparent; box-shadow: 0 0 6px -2px var(--c); }
-.ppl-detail .ppl-effn { font-style: normal; font-size: 10.5px; color: var(--text-muted); margin-left: auto; }
-.ppl-detail .ppl-efffoot { margin: 9px 0 0; padding-top: 8px; font-size: 10.5px; color: var(--text-muted); border-top: 1px solid var(--divider); }
+.ppl-detail .ppl-effrow, .tud9 .ppl-effrow { padding: 11px 0; }
+.ppl-detail .ppl-effrow + .ppl-effrow, .tud9 .ppl-effrow + .ppl-effrow { border-top: 1px solid var(--divider); }
+.ppl-detail .ppl-effsent, .tud9 .ppl-effsent { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--text-primary); }
+.ppl-detail .ppl-effmeta, .tud9 .ppl-effmeta { display: flex; align-items: center; gap: 14px; margin-top: 7px; flex-wrap: wrap; }
+.ppl-detail .ppl-effsig, .tud9 .ppl-effsig { display: flex; align-items: center; gap: 6px; }
+.ppl-detail .ppl-effsig small, .tud9 .ppl-effsig small { font-size: 9px; letter-spacing: 0.08em; color: var(--text-muted); }
+.ppl-detail .ppl-effsig em, .tud9 .ppl-effsig em { font-style: normal; font-size: 11px; color: var(--text-secondary); }
+.ppl-detail .ppl-effdots, .tud9 .ppl-effdots { display: flex; gap: 3px; }
+.ppl-detail .ppl-effdots i, .tud9 .ppl-effdots i { width: 7px; height: 7px; border-radius: 50%; background: var(--divider); }
+.ppl-detail .ppl-effdots i.on, .tud9 .ppl-effdots i.on { background: var(--c); box-shadow: 0 0 6px -1px var(--c); }
+.ppl-detail .ppl-effdots.ring i, .tud9 .ppl-effdots.ring i { background: transparent; border: 1.5px solid var(--divider); }
+.ppl-detail .ppl-effdots.ring i.on, .tud9 .ppl-effdots.ring i.on { border-color: var(--c); background: transparent; box-shadow: 0 0 6px -2px var(--c); }
+.ppl-detail .ppl-effn, .tud9 .ppl-effn { font-style: normal; font-size: 10.5px; color: var(--text-muted); margin-left: auto; }
+.ppl-detail .ppl-efffoot, .tud9 .ppl-efffoot { margin: 9px 0 0; padding-top: 8px; font-size: 10.5px; color: var(--text-muted); border-top: 1px solid var(--divider); }
 /* graph edges: flat rows inside ONE lavender glass */
 .ppl-detail .ppl-evtcard.glass { --c: var(--dv-lav); display: block; padding: 4px 14px; border-radius: 22px; }
 .ppl-detail .ppl-evt {
@@ -27454,6 +27454,243 @@ main.settings-page {
   .tud9 .tud9-kind { padding: 16px 8px 12px; }
 }
 /* ── /uveg mezo2 tudastar ── */
+
+/* ── S6 · Tudástár hub (mezo-d6ivw.6) — ported from prototypes/uveg-tudastar-hub.html, scoped to
+   the .tud9 page root. Ranking (§3.4): tiles, the hero halo and one card per effect subject are the
+   only glass; rows, folds, lists and the drift pair are flat. Tokens: --lav→--dv-lav,
+   --gold→--dv-amber, --sky→--dv-sky, --rose→--dv-rose, --sage→--dv-sage, --coral→--dv-coral,
+   --sub→--text-secondary, --faint→--text-muted, --hair→--divider. */
+
+/* head: back + title, lead */
+.tud9 .th-dh { display: flex; align-items: center; gap: 12px; padding: 6px 16px 8px; }
+.tud9 .th-back { --c: var(--text-muted); width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: 21px; line-height: 1; color: var(--text-secondary); flex: 0 0 auto; }
+.tud9 .th-back.glass::after { display: none; }
+.tud9 .th-dh .t { flex: 1; min-width: 0; }
+.tud9 .th-dh small { display: block; font-size: 10px; font-weight: 600; letter-spacing: 1.5px; color: var(--text-muted); }
+.tud9 .th-dh strong { display: block; font-size: 23px; font-weight: 600; letter-spacing: -0.8px; line-height: 1.15; }
+.tud9 .th-lead { margin: 0; padding: 0 18px 4px; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+
+/* hero: frameless halo, big numeral, 3D icon */
+.tud9 .th-hero { --c: var(--dv-lav); --c2: var(--dv-amber); position: relative; overflow-x: clip; text-align: center; padding: 2px 20px 8px; }
+.tud9 .th-hero::before { content: ''; position: absolute; left: 50%; top: 44%; width: 340px; max-width: 100%; height: 270px; transform: translate(-50%, -50%); z-index: -1; pointer-events: none; opacity: 0.4;
+  background: radial-gradient(ellipse at 50% 45%, color-mix(in srgb, var(--c) 34%, transparent), color-mix(in srgb, var(--c2) 14%, transparent) 42%, transparent 68%); }
+.tud9 .th-hero .art { display: block; width: 80px; height: 80px; margin: 0 auto; filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 18px color-mix(in srgb, var(--c) 42%, transparent)); }
+.tud9 .th-hero .big { display: block; font-size: 76px; font-weight: 300; letter-spacing: -4px; line-height: 1; margin-top: 2px; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.tud9 .th-hero h1 { margin: 4px 0 0; font-size: 18px; font-weight: 600; letter-spacing: -0.4px; }
+.tud9 .th-hero p { margin: 3px 0 0; font-family: var(--font-serif); font-style: italic; font-size: 15px; line-height: 1.4; color: var(--text-secondary); }
+.tud9 .th-split { display: flex; justify-content: center; gap: 7px; margin-top: 12px; flex-wrap: wrap; }
+.tud9 .th-split span { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; font-size: 11.5px; color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.tud9 .th-split b { color: var(--text-primary); font-weight: 600; }
+.tud9 .th-split i { width: 7px; height: 7px; border-radius: 50%; background: var(--dv-sage); box-shadow: 0 0 6px var(--dv-sage); }
+.tud9 .th-split i.o { background: transparent; box-shadow: inset 0 0 0 1.5px var(--text-muted); }
+
+/* four section tiles: one glass per tile, each in its own accent */
+.tud9 .th-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px; }
+.tud9 .th-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding: 13px; border-radius: 21px; min-width: 0; text-align: left; width: 100%; color: var(--text-primary); }
+.tud9 .th-tile .top { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.tud9 .th-tile .top .t-ico { width: 42px; height: 42px; }
+.tud9 .th-tile .top b { font-size: 32px; font-weight: 300; letter-spacing: -1.4px; line-height: 1; color: color-mix(in srgb, var(--c) 72%, var(--text-primary)); font-variant-numeric: tabular-nums; }
+.tud9 .th-tile strong { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; margin-top: 3px; }
+.tud9 .th-tile small { font-size: 11px; color: var(--text-secondary); line-height: 1.35; }
+.tud9 .th-tile.is-dash { border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent); background: rgba(245, 239, 230, 0.02); }
+.tud9 .th-tile.is-dash .top .t-ico { opacity: 0.55; filter: grayscale(0.5); }
+.tud9 .th-tile.is-dash .retry { margin-top: 4px; font-size: 11.5px; font-weight: 600; color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.tud9 .th-tile:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+
+/* quiet secondary links + door rows (flat) */
+.tud9 .th-links { margin: 14px 16px 0; padding: 0 12px; border-radius: 16px; background: rgba(245, 239, 230, 0.03); box-shadow: inset 0 0 0 1px var(--divider); }
+.tud9 .th-lk { display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 2px; border-bottom: 1px solid var(--divider); text-align: left; color: var(--text-primary); }
+.tud9 .th-links .th-lk:last-child { border-bottom: 0; }
+.tud9 .th-lk > span:not(.chev) { flex: 1; min-width: 0; }
+.tud9 .th-lk .t-ico { width: 26px; height: 26px; flex: 0 0 auto; }
+.tud9 .th-lk b { display: block; font-size: 13px; font-weight: 600; }
+.tud9 .th-lk small { display: block; font-size: 10.5px; color: var(--text-muted); margin-top: 1px; }
+.tud9 .th-lk .chev { margin-left: auto; flex: none; color: var(--text-muted); font-size: 18px; }
+.tud9 .th-lk:focus-visible, .tud9 .th-prow:focus-visible { outline: 2px solid var(--c, var(--dv-lav)); outline-offset: -2px; border-radius: 10px; }
+
+/* section head + footnote */
+.tud9 .th-sec { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 20px 18px 9px; }
+.tud9 .th-sec h2 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.4px; min-width: 0; }
+.tud9 .th-sec em { font-style: normal; font-size: 9.5px; font-weight: 600; letter-spacing: 1.2px; color: var(--text-muted); white-space: nowrap; }
+.tud9 .th-fn { margin: 0; padding: 7px 18px 0; font-size: 10.5px; line-height: 1.45; color: var(--text-muted); }
+
+/* the row: a flat list row, never a glass card */
+.tud9 .th-list { margin: 0 16px; padding: 0 12px; border-radius: 16px; background: rgba(245, 239, 230, 0.03); box-shadow: inset 0 0 0 1px var(--divider); }
+.tud9 .th-row { --c: var(--dv-lav); position: relative; padding: 12px 2px 9px; border-bottom: 1px solid var(--divider); }
+.tud9 .th-list > .th-row:last-child { border-bottom: 0; }
+.tud9 .th-rm { display: flex; gap: 10px; align-items: flex-start; }
+.tud9 .th-rm > .t-ico { flex: 0 0 auto; width: 26px; height: 26px; margin-top: 1px; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
+.tud9 .th-tx { flex: 1; min-width: 0; }
+.tud9 .th-tx > b { display: block; font-size: 13.5px; font-weight: 550; line-height: 1.4; color: var(--text-primary); overflow-wrap: anywhere; }
+.tud9 .th-tx > small { display: block; margin-top: 3px; font-size: 10.5px; color: var(--text-muted); line-height: 1.45; }
+.tud9 .th-tag { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px 1px 4px; border-radius: 999px; font-size: 10.5px; font-weight: 600; vertical-align: 1px;
+  color: color-mix(in srgb, var(--dv-amber) 80%, var(--text-primary)); background: color-mix(in srgb, var(--dv-amber) 11%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 35%, transparent); }
+.tud9 .th-tag .t-ico { width: 15px; height: 15px; filter: none; }
+.tud9 .th-use { display: inline-flex; align-items: center; gap: 4px; padding: 0 7px 0 5px; border-radius: 999px; font-size: 10px; font-weight: 600;
+  color: color-mix(in srgb, var(--dv-sage) 85%, var(--text-primary)); background: color-mix(in srgb, var(--dv-sage) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-sage) 35%, transparent); }
+.tud9 .th-use i { width: 6px; height: 6px; border-radius: 50%; background: var(--dv-sage); box-shadow: 0 0 6px var(--dv-sage); }
+.tud9 .th-why { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; padding: 3px 9px 3px 5px; border-radius: 999px; font-size: 10.5px; font-weight: 600;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.tud9 .th-why .t-ico { width: 16px; height: 16px; filter: none; }
+.tud9 .th-st { display: flex; align-items: center; gap: 6px; margin-top: 5px; font-size: 11px; color: var(--text-secondary); }
+.tud9 .th-st i { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; background: var(--k, var(--dv-sage)); box-shadow: 0 0 6px var(--k, var(--dv-sage)); }
+.tud9 .th-st i.o { background: transparent; box-shadow: inset 0 0 0 1.5px var(--text-muted); }
+.tud9 .th-row.is-muted .th-tx > b { color: var(--text-secondary); font-weight: 500; }
+.tud9 .th-row.is-muted > .th-rm > .t-ico { opacity: 0.5; filter: grayscale(0.7); }
+/* the ?fact= deep-link one-shot highlight (the arrival glow of the prototype's .th-arrive) */
+.tud9 .th-row.tud9-hl { margin: 2px -6px; padding-left: 8px; padding-right: 8px; border-radius: 12px; background: color-mix(in srgb, var(--dv-amber) 8%, transparent); }
+
+/* action line: a quiet "Honnan tudom?" + ⋯, the rest behind it */
+.tud9 .th-act { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 14px; margin: 6px 0 0 36px; min-height: 30px; }
+.tud9 .th-link { display: inline-flex; align-items: center; gap: 5px; padding: 4px 0; border: 0; background: none; white-space: nowrap; font: inherit; font-size: 11.5px; font-weight: 600; color: color-mix(in srgb, var(--c, var(--dv-lav)) 75%, var(--text-primary)); cursor: pointer; }
+.tud9 .th-link .t-ico { width: 17px; height: 17px; filter: none; }
+.tud9 .th-link[aria-expanded="true"] { color: var(--text-primary); }
+.tud9 .th-more { margin-left: auto; width: 32px; height: 30px; border-radius: 999px; display: grid; place-items: center; flex: 0 0 auto; color: var(--text-secondary); font-size: 15px; letter-spacing: 1px;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.tud9 .th-more[aria-expanded="true"] { color: var(--text-primary); background: color-mix(in srgb, var(--c) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 50%, transparent); }
+.tud9 .th-strip { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 3px 36px; }
+.tud9 .th-pill { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 6px 12px 6px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.tud9 .th-pill .t-ico { width: 20px; height: 20px; filter: none; }
+.tud9 .th-pill.warn { color: color-mix(in srgb, var(--dv-coral) 55%, var(--text-primary)); background: color-mix(in srgb, var(--dv-coral) 7%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 35%, transparent); }
+.tud9 .th-pill.main { color: var(--text-inverse, #191614); background: var(--c); box-shadow: 0 0 14px color-mix(in srgb, var(--c) 45%, transparent); }
+.tud9 .th-strip-n { flex-basis: 100%; font-size: 10.5px; color: var(--text-muted); line-height: 1.4; padding: 1px 2px 0; }
+.tud9 .th-link:focus-visible, .tud9 .th-more:focus-visible, .tud9 .th-pill:focus-visible { outline: 2px solid var(--c, var(--dv-lav)); outline-offset: 2px; }
+
+/* "Honnan tudom?" — the EvidenceList rows (nap-ev-*), flat */
+.tud9 .th-src { margin: 6px 0 4px 36px; display: grid; gap: 7px; }
+.tud9 .th-src .h { display: flex; align-items: center; gap: 8px; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+.tud9 .th-src .h::after { content: ''; flex: 1; height: 1px; background: var(--divider); }
+.tud9 .th-src .o { margin: 0; font-size: 12px; color: var(--text-secondary); line-height: 1.45; }
+.tud9 .th-src .go { justify-self: start; padding: 2px 0; border: 0; background: none; font: inherit; font-size: 11.5px; font-weight: 600; color: color-mix(in srgb, var(--dv-amber) 80%, var(--text-primary)); cursor: pointer; }
+.tud9 .th-src .go:focus-visible { outline: 2px solid var(--dv-amber); outline-offset: 2px; }
+
+/* Javítom: inline edit */
+.tud9 .th-edit { margin-top: 2px; }
+.tud9 .th-edit textarea { display: block; width: 100%; min-height: 66px; padding: 10px 12px; border-radius: 14px; border: 0; resize: vertical; font: inherit; font-size: 13.5px; line-height: 1.45; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 50%, transparent); outline: none; }
+.tud9 .th-edit textarea:focus { box-shadow: inset 0 0 0 1.5px var(--c), 0 0 14px -4px var(--c); }
+.tud9 .th-edit .b { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+
+/* collapsed topic groups */
+.tud9 .th-fold { display: flex; align-items: center; gap: 8px; width: calc(100% - 32px); margin: 12px 16px 0; padding: 12px 14px; border-radius: 18px; font-size: 12.5px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.03); box-shadow: inset 0 0 0 1px var(--divider); }
+.tud9 .th-fold > .t-ico { flex: 0 0 auto; width: 22px; height: 22px; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
+.tud9 .th-fold > span:not(.th-fold-chev) { flex: 1; min-width: 0; text-align: left; }
+.tud9 .th-fold small { display: block; margin-top: 1px; font-size: 10.5px; font-weight: 500; color: var(--text-muted); }
+.tud9 .th-fold + .th-list { margin-top: 8px; }
+.tud9 .th-fold + .th-fold { margin-top: 8px; }
+.tud9 .th-list + .th-fold { margin-top: 10px; }
+.tud9 .th-fold:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 2px; }
+
+/* the superseded pair: the old observation quietly under the new */
+.tud9 .th-drift { margin: 8px 0 2px 36px; padding: 9px 11px 6px; border-radius: 13px; background: rgba(245, 239, 230, 0.03); box-shadow: inset 0 0 0 1px var(--divider); }
+.tud9 .th-drift .eb { font-size: 9px; letter-spacing: 1.2px; color: var(--text-muted); }
+.tud9 .th-drift b { display: block; margin-top: 3px; font-size: 12.5px; font-weight: 500; line-height: 1.4; color: var(--text-secondary); text-decoration: line-through; text-decoration-color: rgba(245, 239, 230, 0.25); overflow-wrap: anywhere; }
+.tud9 .th-drift .th-act, .tud9 .th-drift .th-strip, .tud9 .th-drift .th-src { margin-left: 0; }
+.tud9 .th-drift.is-on b { text-decoration: none; color: var(--text-primary); }
+
+/* people: group head + monogram */
+.tud9 .th-pg { display: flex; align-items: center; gap: 10px; width: calc(100% - 32px); margin: 16px 16px 8px; text-align: left; }
+.tud9 .th-mono { --c: var(--dv-lav); width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto; font-size: 15px; font-weight: 650; color: color-mix(in srgb, var(--c) 75%, white);
+  background: radial-gradient(circle at 35% 28%, rgba(58, 51, 45, 1), color-mix(in srgb, var(--c) 18%, rgba(30, 27, 24, 1))); box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08), 0 0 12px -4px color-mix(in srgb, var(--c) 60%, transparent); }
+.tud9 .th-pg > span:not(.th-mono) { flex: 1; min-width: 0; }
+.tud9 .th-pg b { display: block; font-size: 15.5px; font-weight: 600; letter-spacing: -0.3px; }
+.tud9 .th-pg small { display: block; font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+.tud9 .th-pg em { font-style: normal; font-size: 11.5px; font-weight: 600; color: color-mix(in srgb, var(--c) 75%, var(--text-primary)); white-space: nowrap; }
+.tud9 .th-pg .th-link { flex: 0 0 auto; }
+.tud9 .th-prow { display: flex; align-items: center; gap: 11px; width: 100%; padding: 10px 2px; border-bottom: 1px solid var(--divider); text-align: left; color: var(--text-primary); }
+.tud9 .th-links .th-prow:last-child { border-bottom: 0; }
+.tud9 .th-prow .t { flex: 1; min-width: 0; }
+.tud9 .th-prow .t b { display: block; font-size: 14px; font-weight: 600; letter-spacing: -0.2px; }
+.tud9 .th-prow .t small { display: block; font-size: 10.5px; color: var(--text-muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tud9 .th-prow .n { flex: 0 0 auto; text-align: right; }
+.tud9 .th-prow .n b { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+.tud9 .th-prow .n small { display: block; font-size: 10px; color: var(--text-muted); margin-top: 1px; white-space: nowrap; }
+.tud9 .th-prow .chev { color: var(--text-muted); font-size: 18px; flex: 0 0 auto; }
+
+/* effects: one glass card per subject; its indicator rows reuse the person page's ppl-eff* */
+.tud9 .th-cards { display: grid; gap: 10px; padding: 0 16px; }
+.tud9 .th-eff { padding: 13px 14px 12px; border-radius: 22px; }
+.tud9 .th-eh { display: flex; align-items: center; gap: 11px; }
+.tud9 .th-eh .uv-well { width: 44px; height: 44px; }
+.tud9 .th-eh .uv-well .t-ico { width: 30px; height: 30px; }
+.tud9 .th-eh .t { flex: 1; min-width: 0; }
+.tud9 .th-eh b { display: block; font-size: 16px; font-weight: 600; letter-spacing: -0.3px; }
+.tud9 .th-eh small { display: block; font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+.tud9 .th-eff .th-strip { margin-left: 0; margin-top: 10px; }
+.tud9 .th-foot { margin: 18px 22px 0; padding-top: 12px; border-top: 1px solid var(--divider); font-size: 11.5px; color: var(--text-muted); line-height: 1.5; text-align: center; }
+.tud9 .th-foot b { display: block; color: var(--text-secondary); font-weight: 600; margin-bottom: 2px; }
+
+/* search + topic chips */
+.tud9 .th-search { display: flex; align-items: center; gap: 9px; margin: 6px 16px 4px; padding: 0 6px 0 12px; min-height: 44px; border-radius: 16px; background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); cursor: text; }
+.tud9 .th-search:focus-within { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--dv-lav) 60%, transparent), 0 0 14px -6px var(--dv-lav); }
+.tud9 .th-search > .t-ico { width: 22px; height: 22px; filter: none; opacity: 0.85; flex: 0 0 auto; }
+.tud9 .th-search input { flex: 1; min-width: 0; height: 42px; border: 0; outline: 0; background: none; font: inherit; font-size: 14px; color: var(--text-primary); }
+.tud9 .th-search input::placeholder { color: var(--text-muted); }
+.tud9 .th-search .x { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto; font-size: 13px; color: var(--text-secondary); background: rgba(245, 239, 230, 0.06); }
+.tud9 .th-search .x:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 2px; }
+.tud9 mark { background: color-mix(in srgb, var(--dv-amber) 32%, transparent); color: var(--text-primary); border-radius: 3px; padding: 0 1px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--dv-amber) 40%, transparent); }
+.tud9 .th-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 16px 2px; }
+.tud9 .th-chips button { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 5px 11px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.tud9 .th-chips button b { font-weight: 700; opacity: 0.6; }
+.tud9 .th-chips button.on { color: var(--text-inverse, #191614); background: var(--dv-amber); box-shadow: 0 0 12px color-mix(in srgb, var(--dv-amber) 45%, transparent); }
+.tud9 .th-chips button:focus-visible { outline: 2px solid var(--dv-amber); outline-offset: 2px; }
+
+/* empty + error (dashed) */
+.tud9 .th-empty { --c: var(--dv-lav); margin: 0 16px; padding: 14px 16px; border-radius: 18px; border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent); font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); background: rgba(245, 239, 230, 0.02); }
+.tud9 .th-empty .t-ico { width: 22px; height: 22px; display: inline-block; vertical-align: -6px; margin-right: 6px; filter: none; }
+
+/* undo bar (~5 s after Elfelejtem): fixed, floating above the dock */
+.tud9 .th-undo { --c: var(--dv-lav); position: fixed; left: 10px; right: 10px; max-width: 420px; margin: 0 auto; bottom: calc(var(--tabbar-h, 84px) + 12px + env(safe-area-inset-bottom)); z-index: 55;
+  padding: 11px 12px 11px 13px; border-radius: 20px; }
+.tud9 .th-undo.glass { background: radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%), linear-gradient(160deg, rgba(52, 46, 41, 0.94), rgba(30, 27, 24, 0.92)); }
+.tud9 .th-undo.glass::after { display: none; }
+.tud9 .th-undo .r { display: flex; align-items: center; gap: 10px; }
+.tud9 .th-undo .r > .t-ico { flex: 0 0 auto; width: 30px; height: 30px; }
+.tud9 .th-undo .r b { flex: 1; min-width: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 13px; font-weight: 600; line-height: 1.35; }
+.tud9 .th-undo .r2 { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.tud9 .th-undo .r2 small { flex: 1; min-width: 0; font-size: 10.5px; color: var(--text-muted); line-height: 1.35; }
+.tud9 .th-undo .u { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 7px 8px 7px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 700;
+  color: var(--text-inverse, #191614); background: var(--dv-lav); box-shadow: 0 0 14px color-mix(in srgb, var(--dv-lav) 55%, transparent); }
+.tud9 .th-undo .u:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
+.tud9 .th-undo .u i { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font-style: normal; font-size: 11px; font-variant-numeric: tabular-nums; background: rgba(25, 22, 20, 0.18); }
+.tud9 .th-undo .bar2 { height: 3px; border-radius: 2px; margin-top: 9px; background: rgba(245, 239, 230, 0.08); overflow: hidden; }
+.tud9 .th-undo .bar2 b { display: block; height: 100%; width: 100%; border-radius: 2px; background: linear-gradient(90deg, color-mix(in srgb, var(--dv-lav) 55%, white), var(--dv-lav)); box-shadow: 0 0 8px var(--dv-lav);
+  animation: th-drain linear forwards; }
+/* ForgetUndoBar's own reduced-motion branch: an inline width from the exact countdown */
+.tud9 .th-undo .bar2 b.still { animation: none; }
+@keyframes th-drain { from { width: 100%; } to { width: 0; } }
+@keyframes th-undo-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  .tud9 .th-hero .art { animation: uv-float 5s ease-in-out 1s infinite; }
+  .tud9 .th-row.tud9-hl { animation: tud9-hl 1.6s ease-out; }
+  .tud9 .th-undo { animation: th-undo-in 0.25s ease-out; }
+  .tud9 .th-tile, .tud9 .th-lk, .tud9 .th-prow { transition: transform 0.25s ease; }
+  .tud9 .th-tile:active { transform: scale(0.985); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tud9 .th-undo .bar2 b { animation-timing-function: steps(5, end); }
+}
+
+/* 320 px: the verb pills and the row gutter shrink (bible U1 · rule 8) */
+@media (max-width: 360px) {
+  .tud9 .th-pill { min-height: 32px; padding: 5px 10px 5px 7px; font-size: 11.5px; gap: 5px; }
+  .tud9 .th-pill .t-ico { width: 18px; height: 18px; }
+  .tud9 .th-act, .tud9 .th-strip, .tud9 .th-src, .tud9 .th-drift { margin-left: 30px; }
+  .tud9 .th-rm { gap: 8px; }
+  .tud9 .th-rm > .t-ico { width: 22px; height: 22px; }
+  .tud9 .th-list { padding: 0 10px; }
+  .tud9 .th-act { gap: 2px 12px; }
+  .tud9 .th-act .th-link .t-ico { display: none; }
+}
+@media (max-width: 340px) {
+  .tud9 .th-tiles { gap: 8px; }
+  .tud9 .th-hero .big { font-size: 54px; }
+  .tud9 .th-strip { flex-wrap: wrap; }
+}
+/* ── /S6 Tudástár hub ── */
 
 /* ── uveg mezo2 mintak (mezo-me75u.9) ── /mezo/patterns, /mezo/predictions ── */
 
