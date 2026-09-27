@@ -10,7 +10,7 @@ the same link. The rules are in [`CLAUDE.md`](../../../../CLAUDE.md) §Frontend 
 |---|---|---|---|
 | Nap | `nap.html` | — (not seeded yet) | — |
 | Edzés | `edzes.html` | — (not seeded yet) | — |
-| Fuel | `fuel.html` | — (not seeded yet) | — |
+| Fuel | `fuel.html` | — | 2026-09-27 |
 | Mezo | `mezo.html` | — (not seeded yet) | — |
 | Én | `en.html` | — (not seeded yet) | — |
 
