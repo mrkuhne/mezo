@@ -18,7 +18,7 @@ public class ExpenditureFilterTest {
 
     public static GoalEngineProperties.Expenditure defaults() {
         return new GoalEngineProperties.Expenditure(true, 120, 0.35, 0.02, 0.5, 0.3, 0.10, 800, 0.90, 0.20, 12.0,
-            0.007, 2.0, 0.4, 0.60, 28, 5, 10, 4, 2, 150, 30, 0.35, 1.10, 100, 200);
+            0.007, 2.0, 0.4, 0.60, 28, 5, 10, 4, 2, 150, 30, 0.35, 1.10, 100, 200, 0.8);
     }
 
     static final ExpenditureFilter.Params P = ExpenditureFilter.Params.of(7700, 300, defaults());
@@ -105,5 +105,62 @@ public class ExpenditureFilterTest {
     void noWeighInMeansNoEstimate() {
         List<Day> days = simulate(3, 14, 2300, i -> 2600, i -> 250, i -> true, i -> false);
         assertThat(ExpenditureFilter.run(days, 2700, P)).isEmpty();
+    }
+
+    // ── the trace (mezo-y72o3, "Hogy tanultam?") ────────────────────────────
+
+    /** A mixed scenario (gaps in logs and weigh-ins, a carb step) — the bits of run() before the trace existed. */
+    private static List<Day> mixed() {
+        return simulate(7, 60, 2400, i -> i < 30 ? 2500 : 2900, i -> i < 30 ? 200 : 380,
+            i -> i % 9 != 4, i -> i % 3 != 1 && i > 2);
+    }
+
+    @Test
+    void runKeepsItsExactNumbers() {
+        Estimate e = ExpenditureFilter.run(mixed(), 2650, P).orElseThrow();
+        assertThat(Double.doubleToLongBits(e.baseKcal())).isEqualTo(4657700679819020223L);
+        assertThat(Double.doubleToLongBits(e.sdKcal())).isEqualTo(4637791393091154157L);
+    }
+
+    @Test
+    void runWithTraceCarriesTheSameEstimateAsRun() {
+        ExpenditureFilter.Traced t = ExpenditureFilter.runWithTrace(mixed(), 2650, P).orElseThrow();
+        assertThat(t.estimate()).isEqualTo(ExpenditureFilter.run(mixed(), 2650, P).orElseThrow());
+    }
+
+    @Test
+    void theTraceHasOneDayPerCalendarDayFromTheFirstWeighIn() {
+        List<Day> days = mixed(); // first weigh-in on day 3
+        List<ExpenditureFilter.DayTrace> trace = ExpenditureFilter.runWithTrace(days, 2650, P).orElseThrow().days();
+        assertThat(trace).hasSize(57);
+        assertThat(trace.get(0).date()).isEqualTo(D0.plusDays(3));
+        assertThat(trace.get(56).date()).isEqualTo(D0.plusDays(59));
+    }
+
+    @Test
+    void theTraceFollowsTheScaleThroughTissueWaterAndGlycogen() {
+        List<Day> days = simulate(4, 42, 2300, i -> 2600, i -> 250, i -> true, i -> true);
+        List<ExpenditureFilter.DayTrace> trace = ExpenditureFilter.runWithTrace(days, 2700, P).orElseThrow().days();
+        double err = 0;
+        for (int i = 0; i < trace.size(); i++) {
+            ExpenditureFilter.DayTrace t = trace.get(i);
+            err += Math.abs(t.tissueKg() + t.waterKg() + t.glycogenKg() - days.get(i).weightKg());
+        }
+        assertThat(err / trace.size()).isLessThan(0.35);
+        // True tissue: +(2600 − 2300 − 300)/7700 = 0 kg/day → the tissue line stays flat within noise.
+        assertThat(trace.get(41).tissueKg() - trace.get(0).tissueKg()).isCloseTo(0, Offset.offset(0.6));
+    }
+
+    @Test
+    void aSustainedCarbStepIsTracedAsGlycogen() {
+        List<Day> days = simulate(5, 42, 2500, i -> 2800, i -> i < 21 ? 200 : 420, i -> true, i -> true);
+        List<ExpenditureFilter.DayTrace> trace = ExpenditureFilter.runWithTrace(days, 2500, P).orElseThrow().days();
+        assertThat(trace.get(30).glycogenKg() - trace.get(15).glycogenKg()).isGreaterThan(1.0);
+    }
+
+    @Test
+    void noWeighInMeansNoTrace() {
+        List<Day> days = simulate(3, 14, 2300, i -> 2600, i -> 250, i -> true, i -> false);
+        assertThat(ExpenditureFilter.runWithTrace(days, 2700, P)).isEmpty();
     }
 }

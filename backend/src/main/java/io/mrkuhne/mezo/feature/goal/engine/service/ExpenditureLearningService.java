@@ -2,7 +2,6 @@ package io.mrkuhne.mezo.feature.goal.engine.service;
 
 import io.mrkuhne.mezo.feature.goal.engine.GoalEngineProperties;
 import io.mrkuhne.mezo.feature.goal.engine.port.DailyIntakePort;
-import io.mrkuhne.mezo.feature.goal.entity.ExcludedIntakeDayJson;
 import io.mrkuhne.mezo.feature.goal.entity.ExpenditureEstimateEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
@@ -104,14 +103,15 @@ public class ExpenditureLearningService {
             days.add(new ExpenditureFilter.Day(d, usable ? kcal.get(d) : null, usable ? carbs.get(d) : null,
                 planEat + m.extraKcal(), balanceOn(goal, d), weights.containsKey(d) ? weights.get(d).doubleValue() : null));
         }
-        Optional<ExpenditureFilter.Estimate> filtered =
-            ExpenditureFilter.run(days, formulaBase, ExpenditureFilter.Params.of(props));
+        Optional<ExpenditureFilter.Traced> traced =
+            ExpenditureFilter.runWithTrace(days, formulaBase, ExpenditureFilter.Params.of(props));
+        Optional<ExpenditureFilter.Estimate> filtered = traced.map(ExpenditureFilter.Traced::estimate);
         if (filtered.isEmpty() && !existing) {
             return Optional.empty();
         }
 
         int prevDirection = prev.map(ExpenditureEstimateEntity::getDirection).orElse(0);
-        int usableWeek = count(status, weekStart, weekEnd, IntakeDayClassifier.Status.USABLE);
+        int usableWeek = ExpenditureExplainer.count(status, weekStart, weekEnd, IntakeDayClassifier.Status.USABLE);
         int weighInWeek = (int) weights.keySet().stream().filter(d -> !d.isBefore(weekStart)).count();
         ExpenditureFilter.Estimate est;
         ExpenditureStepPolicy.Result r;
@@ -142,7 +142,10 @@ public class ExpenditureLearningService {
         row.setConfidence(r.confidence().name());
         row.setUsableDays(usableWeek);
         row.setWeighInDays(weighInWeek);
-        row.setExcludedDays(excluded(status, kcal, weekStart, weekEnd));
+        row.setExcludedDays(ExpenditureExplainer.excluded(status, kcal, weekStart, weekEnd));
+        row.setExplanation(ExpenditureExplainer.explain(new ExpenditureExplainer.Input(windowStart, weekEnd, days,
+            status, kcal, traced.map(ExpenditureFilter.Traced::days).orElse(List.of()), prevApplied,
+            props.kcalPerKg(), e.waterEventKg())));
         ExpenditureEstimateEntity saved = estimates.save(row);
 
         // Owner decision L4: a learning user never also gets the weight-only correction.
@@ -153,28 +156,6 @@ public class ExpenditureLearningService {
 
     private static int round(BigDecimal v) {
         return v.setScale(0, RoundingMode.HALF_UP).intValueExact();
-    }
-
-    private static int count(Map<LocalDate, IntakeDayClassifier.Status> status, LocalDate from, LocalDate to,
-                             IntakeDayClassifier.Status want) {
-        return (int) status.entrySet().stream()
-            .filter(en -> !en.getKey().isBefore(from) && !en.getKey().isAfter(to))
-            .filter(en -> en.getValue() == want).count();
-    }
-
-    /** The week's excluded logged days (SUSPICIOUS → "suspicious", MARKED_INCOMPLETE → "marked"), date-ascending. */
-    private static List<ExcludedIntakeDayJson> excluded(Map<LocalDate, IntakeDayClassifier.Status> status,
-                                                        Map<LocalDate, Integer> kcal, LocalDate from, LocalDate to) {
-        List<ExcludedIntakeDayJson> out = new ArrayList<>();
-        for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
-            IntakeDayClassifier.Status s = status.get(d);
-            if (s == IntakeDayClassifier.Status.SUSPICIOUS) {
-                out.add(new ExcludedIntakeDayJson(d, kcal.get(d), "suspicious"));
-            } else if (s == IntakeDayClassifier.Status.MARKED_INCOMPLETE) {
-                out.add(new ExcludedIntakeDayJson(d, kcal.get(d), "marked"));
-            }
-        }
-        return out;
     }
 
     /**

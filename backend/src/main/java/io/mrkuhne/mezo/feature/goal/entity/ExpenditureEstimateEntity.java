@@ -60,4 +60,9 @@ public class ExpenditureEstimateEntity extends OwnedEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "excluded_days", nullable = false, columnDefinition = "jsonb")
     private List<ExcludedIntakeDayJson> excludedDays;
+
+    /** How this week was learned — the "Hogy tanultam?" explainer (mezo-y72o3); {@code null} on rows written before it. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "explanation", columnDefinition = "jsonb")
+    private ExpenditureExplanationJson explanation;
 }

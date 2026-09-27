@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.goal;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.goal.engine.service.GoalEngineService;
+import io.mrkuhne.mezo.feature.goal.entity.ExpenditureEstimateEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.repository.ExpenditureEstimateRepository;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
@@ -70,6 +71,31 @@ class ExpenditureRolloutRunnerIT extends AbstractIntegrationTest {
         long rowsForEligible = estimates.findAll().stream().filter(e -> eligible.equals(e.getCreatedBy())).count();
         assertThat(rowsForEligible).isEqualTo(1);
         assertThat(estimates.existsByCreatedByAndDeletedFalse(nonLogging)).isFalse();
+    }
+
+    @Test
+    void backfillsTheExplanationOfALearnersLatestRow() {
+        UUID owner = seedEligibleUser();
+        runner.run();
+        entityManager.flush();
+        entityManager.clear();
+        ExpenditureEstimateEntity first = estimates.findByCreatedByAndWeekStartAndDeletedFalse(owner, WEEK_START).orElseThrow();
+        assertThat(first.getExplanation()).isNotNull();
+        // A row written before the explainer existed (mezo-y72o3): no explanation yet.
+        first.setExplanation(null);
+        estimates.saveAndFlush(first);
+        entityManager.clear();
+
+        runner.run();
+        entityManager.flush();
+        entityManager.clear();
+
+        ExpenditureEstimateEntity backfilled = estimates.findByCreatedByAndWeekStartAndDeletedFalse(owner, WEEK_START).orElseThrow();
+        assertThat(backfilled.getId()).isEqualTo(first.getId()); // the same week re-reviewed in place
+        assertThat(backfilled.getExplanation()).isNotNull();
+        assertThat(backfilled.getExplanation().windowEnd()).isEqualTo(WEEK_END);
+        assertThat(backfilled.getAppliedBaseKcal()).isEqualTo(first.getAppliedBaseKcal());
+        assertThat(estimates.findAll().stream().filter(e -> owner.equals(e.getCreatedBy())).count()).isEqualTo(1);
     }
 
     /** Active, evaluated cut goal + a biometric profile + 35 days of meals and daily weigh-ins up

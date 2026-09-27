@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.goal;
 
 import io.mrkuhne.mezo.feature.goal.engine.service.ExpenditureLearningService;
+import io.mrkuhne.mezo.feature.goal.entity.ExpenditureEstimateEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.repository.ExpenditureEstimateRepository;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
@@ -8,6 +9,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -22,6 +24,11 @@ import org.springframework.stereotype.Component;
  * skips. A user whose intake/weigh-in history is too thin simply stays not-a-learner (empty
  * result); {@code @Order(208)}: after {@link ActivityModelMigrationRunner} (207) so it reads
  * goals already migrated to the current activity model.
+ *
+ * <p>Explanation backfill (mezo-y72o3): an existing learner whose LATEST row has no
+ * {@code explanation} yet (written before the "Hogy tanultam?" explainer) gets that same week
+ * re-reviewed — the idempotent upsert rewrites the row in place with its explanation. The next boot
+ * finds it filled and skips.
  */
 @Slf4j
 @Component
@@ -43,15 +50,22 @@ public class ExpenditureRolloutRunner implements CommandLineRunner {
 
     public void run() {
         LocalDate weekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(1);
-        List<GoalEntity> candidates = goalRepository.findByStatusNotAndDeletedFalse(STATUS_ARCHIVED).stream()
+        List<GoalEntity> active = goalRepository.findByStatusNotAndDeletedFalse(STATUS_ARCHIVED).stream()
             .filter(g -> STATUS_ACTIVE.equals(g.getStatus()))
-            .filter(g -> !estimates.existsByCreatedByAndDeletedFalse(g.getCreatedBy()))
             .toList();
         int learned = 0;
-        for (GoalEntity goal : candidates) {
+        int explained = 0;
+        for (GoalEntity goal : active) {
             try {
-                if (expenditureLearning.reviewWeek(goal.getCreatedBy(), weekStart).isPresent()) {
-                    learned++;
+                Optional<ExpenditureEstimateEntity> latest =
+                    estimates.findFirstByCreatedByAndDeletedFalseOrderByWeekStartDesc(goal.getCreatedBy());
+                if (latest.isEmpty()) {
+                    if (expenditureLearning.reviewWeek(goal.getCreatedBy(), weekStart).isPresent()) {
+                        learned++;
+                    }
+                } else if (latest.get().getExplanation() == null
+                    && expenditureLearning.reviewWeek(goal.getCreatedBy(), latest.get().getWeekStart()).isPresent()) {
+                    explained++;
                 }
             } catch (Exception e) {
                 log.warn("Expenditure rollout: skipped user {} (goal {}) — {}",
@@ -60,6 +74,9 @@ public class ExpenditureRolloutRunner implements CommandLineRunner {
         }
         if (learned > 0) {
             log.info("Expenditure rollout for {}: {} user(s) now learning.", weekStart, learned);
+        }
+        if (explained > 0) {
+            log.info("Expenditure rollout: explanation backfilled for {} learner(s).", explained);
         }
     }
 }
