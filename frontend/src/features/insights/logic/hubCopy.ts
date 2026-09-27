@@ -14,12 +14,18 @@ export const VERB = {
   edit: 'Javítom', save: 'Mentés', cancel: 'Mégse', more: 'További műveletek', undo: 'Visszavonom',
 } as const
 
+/** The Javítom textarea's accessible name. */
+export const EDIT_ARIA = 'A tény szövege'
+
 export const TOAST = {
   muted: 'Elhallgattattam — megőrzöm, de nem használom',
   unmuted: 'Visszakapcsoltam — újra használhatom',
   forgotten: 'Végleg elfelejtve',
   undone: 'Visszavonva — minden a helyén',
   edited: 'Javítottam',
+  /** S6 final review: a failed write rolls back — the toast must not have lied */
+  muteFailed: 'Nem sikerült — minden maradt a régiben',
+  forgetFailed: 'Nem sikerült elfelejteni — visszatettem a helyére',
 } as const
 
 export const undoTitle = (label: string) => `Elfelejtettem: „${label}”`

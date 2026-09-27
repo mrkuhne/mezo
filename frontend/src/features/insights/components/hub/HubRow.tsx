@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { stripNote, VERB } from '@/features/insights/logic/hubCopy'
+import { EDIT_ARIA, stripNote, VERB } from '@/features/insights/logic/hubCopy'
 import { Highlight } from '@/features/insights/components/hub/HubSearch'
 
 export interface HubRowProps {
@@ -117,7 +117,7 @@ export function HubRow(p: HubRowProps) {
         <div className="th-tx">
           {editing ? (
             <div className="th-edit">
-              <textarea aria-label="A tény szövege" value={draft} onChange={(e) => setDraft(e.target.value)} />
+              <textarea aria-label={EDIT_ARIA} value={draft} onChange={(e) => setDraft(e.target.value)} />
               <div className="b">
                 <button type="button" className="th-pill" onClick={() => { setDraft(p.text); setEditing(false) }}>{VERB.cancel}</button>
                 <button type="button" className="th-pill main" onClick={save}><Icon3D name="t-tick" size={20} />{VERB.save}</button>

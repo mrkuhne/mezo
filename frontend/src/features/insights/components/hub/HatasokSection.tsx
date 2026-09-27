@@ -75,7 +75,7 @@ export function HatasokSection({ forget, isHidden }: HatasokSectionProps) {
   const onQuery = (v: string) => { setQuery(v); setClosedWhileSearching({}) }
 
   const mute = (s: EffectSubject, on: boolean) => {
-    muteEffect(s.kind, s.key, on)
+    muteEffect(s.kind, s.key, on).catch(() => toast.show({ kind: 'error', text: TOAST.muteFailed }))
     toast.show({ kind: 'info', text: on ? TOAST.muted : TOAST.unmuted })
   }
   const onForget = (s: EffectSubject) => forget({

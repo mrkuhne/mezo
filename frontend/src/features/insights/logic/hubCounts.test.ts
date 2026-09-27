@@ -75,6 +75,14 @@ describe('hubCounts', () => {
     expect(obsState({ ...base, status: 'refuted' })).toBe('elh')
   })
 
+  it('obsState: the original of a forgotten drift successor is the user\'s own mute, not felülírva', () => {
+    // S6 final review Important 2: forgetting the newer half forgets its row (it leaves the list,
+    // so nothing replaces the original any more) and the backend re-marks the original as a
+    // user mute — it must read "elhallgattatva", one tap from Visszakapcsolom.
+    const base = MOCK_OBSERVATIONS[0]
+    expect(obsState({ ...base, factMutedReason: 'user', replacedByPatternId: null })).toBe('elh')
+  })
+
   it('re-enabling the older half of a drift pair moves it from felülírva to még igaz on the tile', () => {
     const older = { ...MOCK_OBSERVATIONS[0], patternId: 'old', replacedByPatternId: 'new', factMutedReason: 'superseded' as const }
     const newer = { ...MOCK_OBSERVATIONS[0], patternId: 'new', factId: 'fn', replacesPatternId: 'old' }

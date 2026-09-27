@@ -12,6 +12,14 @@ describe('hubCopy · verbs & toasts', () => {
     expect(C.TOAST.forgotten).toBe('Végleg elfelejtve')
     expect(C.TOAST.undone).toBe('Visszavonva — minden a helyén')
     expect(C.TOAST.edited).toBe('Javítottam')
+    expect(C.TOAST.muteFailed).toBe('Nem sikerült — minden maradt a régiben')
+    expect(C.TOAST.forgetFailed).toBe('Nem sikerült elfelejteni — visszatettem a helyére')
+    expect(C.EDIT_ARIA).toBe('A tény szövege')
+  })
+
+  it('names the csapatfal (S7) source in the origin line and the chip', () => {
+    expect(C.ORIGIN.team_chat).toBe('A csapatfalon adott válaszodból jegyeztem meg.')
+    expect(C.CHIP.team_chat).toBe('csapatfalról')
   })
 
   it('undo bar lines', () => {
@@ -118,7 +126,7 @@ describe('hubCopy · hub, tiles, sections', () => {
   it('provenance chips + origins', () => {
     expect(C.CHIP).toEqual({
       pattern: 'észrevételből', chat: 'beszélgetésből', manual: 'kézzel',
-      weekly_review: 'heti áttekintésből', question: 'kérdésre válaszoltál',
+      weekly_review: 'heti áttekintésből', question: 'kérdésre válaszoltál', team_chat: 'csapatfalról',
     })
     expect(C.ORIGIN.pattern).toBe('Megerősített észrevételből tanultam — amikor az egyik változik, a másik jellemzően követi.')
     expect(C.ORIGIN.chat).toBe('A beszélgetéseitekből szűrtem ki.')

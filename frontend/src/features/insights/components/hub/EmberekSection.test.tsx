@@ -11,7 +11,7 @@ import { people as personSeed } from '@/data/me/people'
 import type { PersonResponse } from '@/data/me/peopleApi'
 import type { PersonEntry } from '@/data/types'
 import { byNameHu } from '@/features/insights/logic/hubSearch'
-import { EMPTY, FOOT, PERSON_PAGE_LINK, TOAST, lead, personHead } from '@/features/insights/logic/hubCopy'
+import { EDIT_ARIA, EMPTY, FOOT, PERSON_PAGE_LINK, TOAST, lead, personHead } from '@/features/insights/logic/hubCopy'
 import { onToast } from '@/shared/lib/toastBus'
 
 /** The mock seed as the wire would carry it — so the real-mode run sees the same people. */
@@ -128,7 +128,7 @@ describe(`EmberekSection (${isMockMode() ? 'mock' : 'real'} mode)`, () => {
     renderPage('/?view=emberek&person=pp-petra')
     const row = await openStrip(user, 'pf-petra-2')
     await user.click(within(row).getByRole('button', { name: /Javítom/ }))
-    const box = within(row).getByRole('textbox', { name: 'A tény szövege' })
+    const box = within(row).getByRole('textbox', { name: EDIT_ARIA })
     await user.clear(box)
     await user.type(box, 'Születésnap: október 13.')
     await user.click(within(row).getByRole('button', { name: /Mentés/ }))

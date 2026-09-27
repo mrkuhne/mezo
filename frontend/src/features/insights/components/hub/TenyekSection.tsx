@@ -139,7 +139,7 @@ export function TenyekSection(props: TenyekSectionProps) {
         canEdit
         source={() => <FactSource fact={f} onOpenObservation={openObservation} />}
         onMute={(on) => {
-          muteFact(f.id, on)
+          muteFact(f.id, on).catch(() => toast.show({ kind: 'error', text: TOAST.muteFailed }))
           // the prototype's `openFor`: the fact's new home opens so the user sees where it went
           setOpenGroups((s) => ({ ...s, [on ? MUTED_KEY : `f:${f.category}`]: true }))
           setClosedWhileSearching({})

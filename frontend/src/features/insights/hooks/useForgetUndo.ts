@@ -29,15 +29,29 @@ export function useForgetUndo() {
     timer.current = null
   }
 
+  // A failed request has already rolled the row back (the data layer's optimistic write) — say so,
+  // or the "Végleg elfelejtve" toast would be a lie.
+  const send = useCallback((p: Pending) => {
+    const failed = () => toast.show({ kind: 'error', text: TOAST.forgetFailed })
+    try {
+      Promise.resolve(p.commit()).catch(failed) // sent synchronously — the request goes out now
+    } catch {
+      failed()
+    }
+  }, [toast])
+
+  const sendRef = useRef(send)
+  sendRef.current = send
+
   const commitNow = useCallback((expired: boolean) => {
     const p = ref.current
     if (!p) return
     clear()
     ref.current = null
     setPending(null)
-    void p.commit()
+    send(p)
     if (expired) toast.show({ kind: 'info', text: TOAST.forgotten })
-  }, [toast])
+  }, [toast, send])
 
   const start = useCallback((req: ForgetRequest) => {
     commitNow(false)
@@ -60,7 +74,7 @@ export function useForgetUndo() {
     const p = ref.current
     clear()
     ref.current = null
-    if (p) void p.commit()
+    if (p) sendRef.current(p)
   }, [])
 
   const isHidden = useCallback((key: string) => pending?.key === key, [pending])

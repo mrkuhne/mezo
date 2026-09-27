@@ -1,6 +1,8 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { UNDO_MS, useForgetUndo } from '@/features/insights/hooks/useForgetUndo'
+import { TOAST } from '@/features/insights/logic/hubCopy'
+import { onToast } from '@/shared/lib/toastBus'
 
 describe('useForgetUndo', () => {
   beforeEach(() => { vi.useFakeTimers() })
@@ -45,5 +47,16 @@ describe('useForgetUndo', () => {
     act(() => result.current.start({ key: 'e:event:munka', label: 'Munka', computed: true, commit }))
     unmount()
     expect(commit).toHaveBeenCalledTimes(1)
+  })
+
+  it('a failed commit says so after the forgotten toast (the row is already back)', async () => {
+    const toasts: { kind: string; text: string }[] = []
+    const off = onToast((t) => { if ('text' in t) toasts.push({ kind: t.kind, text: t.text }) })
+    const commit = vi.fn(() => Promise.reject(new Error('500')))
+    const { result } = renderHook(() => useForgetUndo())
+    act(() => result.current.start({ key: 'f:1', label: 'x', computed: false, commit }))
+    await act(async () => { vi.advanceTimersByTime(UNDO_MS) })
+    off()
+    expect(toasts).toEqual([{ kind: 'info', text: TOAST.forgotten }, { kind: 'error', text: TOAST.forgetFailed }])
   })
 })

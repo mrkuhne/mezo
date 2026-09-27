@@ -101,7 +101,7 @@ export function EszrevetelekSection({ highlightPatternId, forget, isHidden }: Es
 
   const mute = (o: KnowledgeObservation, on: boolean) => {
     if (!o.factId) return
-    muteFact(o.factId, on)
+    muteFact(o.factId, on).catch(() => toast.show({ kind: 'error', text: TOAST.muteFailed }))
     toast.show({ kind: 'info', text: on ? TOAST.muted : TOAST.unmuted })
   }
   const forgetObs = (o: KnowledgeObservation) =>

@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { HubRow } from '@/features/insights/components/hub/HubRow'
+import { EDIT_ARIA } from '@/features/insights/logic/hubCopy'
 
 const base = { rowKey: 'f:1', icon: 't-bowl' as const, accent: 'var(--dv-sage)', text: 'Laktózérzékeny vagy', muted: false, onMute: vi.fn(), onForget: vi.fn() }
 
@@ -36,7 +37,7 @@ describe('HubRow', () => {
     render(<HubRow {...base} canEdit onEdit={onEdit} />)
     await userEvent.click(screen.getByRole('button', { name: 'További műveletek' }))
     await userEvent.click(screen.getByRole('button', { name: /Javítom/ }))
-    const box = screen.getByRole('textbox', { name: 'A tény szövege' })
+    const box = screen.getByRole('textbox', { name: EDIT_ARIA })
     await userEvent.clear(box)
     await userEvent.type(box, '  Laktózérzékeny vagy, csak laktózmentes jöhet ')
     await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
@@ -52,7 +53,7 @@ describe('HubRow', () => {
     expect(screen.queryByRole('textbox')).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: 'További műveletek' }))
     await userEvent.click(screen.getByRole('button', { name: /Javítom/ }))
-    await userEvent.clear(screen.getByRole('textbox', { name: 'A tény szövege' }))
+    await userEvent.clear(screen.getByRole('textbox', { name: EDIT_ARIA }))
     await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
     expect(onEdit).not.toHaveBeenCalled()
     expect(screen.getByText('Laktózérzékeny vagy')).toBeInTheDocument()

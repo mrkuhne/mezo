@@ -183,6 +183,23 @@ describe(`EszrevetelekSection (${isMockMode() ? 'mock' : 'real'} mode)`, () => {
       await act(() => vi.advanceTimersByTimeAsync(5100))
       if (!isMockMode()) await waitFor(() => expect(deletes).toEqual(['o3old']))
     })
+
+    // S6 final review Important 2 (mock: the cache IS the store; real mode refetches the static
+    // seed): forgetting the NEWER half releases the older one — nothing replaces it any more.
+    test.skipIf(!isMockMode())('forgetting the newer half of a pair: the older half is no longer "felülírva"', async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      renderPage()
+      expect(await screen.findByRole('button', { name: 'Felülírva 1' })).toBeInTheDocument()
+      await user.click(foldOf('o3'))
+      const own = within(rowOf('o3')!).getAllByRole('button', { name: 'További műveletek' })[0]
+      await user.click(own)
+      const forgetBtn = within(rowOf('o3')!).getAllByRole('button', { name: /Elfelejtem/ })[0]
+      await user.click(forgetBtn)
+      await act(() => vi.advanceTimersByTimeAsync(5100))
+      expect(rowOf('o3')).toBeNull()
+      expect(screen.getByRole('button', { name: 'Felülírva 0' })).toBeInTheDocument()
+      expect(rowOf('o3old')).not.toBeNull()
+    })
   })
 
   test('the &obs= deep link opens its topic and highlights the observation', async () => {

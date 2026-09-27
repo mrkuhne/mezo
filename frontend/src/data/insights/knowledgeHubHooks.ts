@@ -64,72 +64,75 @@ export function useFactEvidence(factId: string | null) {
   return { evidence: data.items, isPending: !!factId && isPending, unavailable: data.degraded }
 }
 
+/** Every cache a hub write touches — snapshotted before the optimistic patch, restored on failure. */
+const HUB_KEYS: readonly (readonly unknown[])[] = [KNOWLEDGE_KEY, OBS_KEY, EFFECTS_KEY, ['person-effects']]
+type Snapshot = Array<[readonly unknown[], unknown]>
+
+/**
+ * S6 final review: every hub write patches the cache when it STARTS (both modes — in mock mode
+ * the patch is the whole write), so a forgotten row never flashes back between the undo window
+ * closing and the refetch. A failed real-mode write restores the snapshot; the returned promise
+ * rejects, so the section can say it did not happen. Real mode refetches on settle either way.
+ */
+function useOptimisticHubWrite<V>(write: (v: V) => Promise<unknown>, patch: (qc: QueryClient, v: V) => void) {
+  const qc = useQueryClient()
+  const mock = isMockMode()
+  return useMutation<unknown, Error, V, Snapshot>({
+    mutationFn: async (v) => { if (!mock) await write(v) },
+    onMutate: async (v) => {
+      await Promise.all(HUB_KEYS.map((queryKey) => qc.cancelQueries({ queryKey })))
+      const snap: Snapshot = qc.getQueriesData({ predicate: (q) => HUB_KEYS.some((k) => k.every((part, i) => q.queryKey[i] === part)) })
+      patch(qc, v)
+      return snap
+    },
+    onError: (_err, _v, snap) => { snap?.forEach(([key, data]) => qc.setQueryData(key, data)) },
+    onSettled: mock ? undefined : () => Promise.all(HUB_KEYS.map((queryKey) => qc.invalidateQueries({ queryKey }))),
+  })
+}
+
+type EffectInput = { kind: 'person' | 'event'; key: string; mode: 'muted' | 'forgotten' | 'on' }
+
 export function useKnowledgeHubActions() {
   const qc = useQueryClient()
   const mock = isMockMode()
-  const invalidateAll = () => Promise.all([
-    qc.invalidateQueries({ queryKey: KNOWLEDGE_KEY }),
-    qc.invalidateQueries({ queryKey: OBS_KEY }),
-    qc.invalidateQueries({ queryKey: EFFECTS_KEY }),
-    qc.invalidateQueries({ queryKey: ['person-effects'] }),
-  ])
 
-  const muteFactM = useMutation({
-    mutationFn: async ({ id, on }: { id: string; on: boolean }) => {
-      if (mock) {
-        mockPatchFact(qc, id, on
-          ? { active: false, mutedReason: 'user', mutedAt: new Date().toISOString() }
-          : { active: true, mutedReason: null, mutedAt: null })
-        return
-      }
-      await knowledgeApi.toggleFact(id, !on)
-    },
-    onSuccess: mock ? undefined : invalidateAll,
-  })
+  const muteFactM = useOptimisticHubWrite(
+    ({ id, on }: { id: string; on: boolean }) => knowledgeApi.toggleFact(id, !on),
+    (c, { id, on }) => patchFact(c, id, on
+      ? { active: false, mutedReason: 'user', mutedAt: new Date().toISOString() }
+      : { active: true, mutedReason: null, mutedAt: null }),
+  )
   const editFactM = useMutation({
     mutationFn: async ({ id, text }: { id: string; text: string }) => {
-      if (mock) { mockPatchFact(qc, id, { text }); return }
+      if (mock) { patchFact(qc, id, { text }); return }
       await knowledgeHubApi.editFact(id, text)
     },
-    onSuccess: mock ? undefined : invalidateAll,
+    onSuccess: mock ? undefined : () => Promise.all(HUB_KEYS.map((queryKey) => qc.invalidateQueries({ queryKey }))),
   })
-  const forgetFactM = useMutation({
-    mutationFn: async (id: string) => {
-      if (mock) { mockRemoveFact(qc, id); return }
-      await knowledgeHubApi.forgetFact(id)
-    },
-    onSuccess: mock ? undefined : invalidateAll,
-  })
-  const forgetObsM = useMutation({
-    mutationFn: async (patternId: string) => {
-      if (mock) { mockRemoveObservation(qc, patternId); return }
-      await knowledgeHubApi.forgetObservation(patternId)
-    },
-    onSuccess: mock ? undefined : invalidateAll,
-  })
-  const effectM = useMutation({
-    mutationFn: async (i: { kind: 'person' | 'event'; key: string; mode: 'muted' | 'forgotten' | 'on' }) => {
-      if (mock) { mockPatchEffect(qc, i.kind, i.key, i.mode); return }
-      if (i.mode === 'on') await knowledgeHubApi.unmuteEffect(i.kind, i.key)
-      else await knowledgeHubApi.muteEffect(i.kind, i.key, i.mode)
-    },
-    onSuccess: mock ? undefined : invalidateAll,
-  })
+  const forgetFactM = useOptimisticHubWrite((id: string) => knowledgeHubApi.forgetFact(id), removeFact)
+  const forgetObsM = useOptimisticHubWrite((patternId: string) => knowledgeHubApi.forgetObservation(patternId), removeObservation)
+  const effectM = useOptimisticHubWrite(
+    (i: EffectInput) => (i.mode === 'on'
+      ? knowledgeHubApi.unmuteEffect(i.kind, i.key)
+      : knowledgeHubApi.muteEffect(i.kind, i.key, i.mode)),
+    (c, i) => patchEffect(c, i.kind, i.key, i.mode, mock),
+  )
 
   return {
-    muteFact: (id: string, on: boolean) => muteFactM.mutate({ id, on }),
+    /** Rejects when the write failed (the cache is already rolled back) — the caller says so. */
+    muteFact: (id: string, on: boolean) => muteFactM.mutateAsync({ id, on }),
     editFact: (id: string, text: string) => editFactM.mutate({ id, text }),
     forgetFact: (id: string) => forgetFactM.mutateAsync(id),
     forgetObservation: (patternId: string) => forgetObsM.mutateAsync(patternId),
     muteEffect: (kind: 'person' | 'event', key: string, on: boolean) =>
-      effectM.mutate({ kind, key, mode: on ? 'muted' : 'on' }),
+      effectM.mutateAsync({ kind, key, mode: on ? 'muted' : 'on' }),
     forgetEffect: (kind: 'person' | 'event', key: string) => effectM.mutateAsync({ kind, key, mode: 'forgotten' }),
   }
 }
 
-// --- mock-cache patchers (a knowledgeHooks.mockToggle idióma: setQueryData a base ?? seed párral) ---
+// --- cache patchers: the whole write in mock mode, the optimistic half in real mode ---
 
-function mockPatchFact(qc: QueryClient, id: string, patch: Partial<KnowledgeFact>) {
+function patchFact(qc: QueryClient, id: string, patch: Partial<KnowledgeFact>) {
   qc.setQueryData<KnowledgeBootstrap>(KNOWLEDGE_KEY, (old) => {
     if (!old) return old
     return { ...old, facts: old.facts.map((f) => (f.id === id ? { ...f, ...patch } : f)) }
@@ -149,25 +152,62 @@ function mockPatchFact(qc: QueryClient, id: string, patch: Partial<KnowledgeFact
 }
 
 /** Egy tény elfelejtése — a belőle tanult észrevétel is eltűnik: egy dolgot egyszer számolunk. */
-function mockRemoveFact(qc: QueryClient, id: string) {
+function removeFact(qc: QueryClient, id: string) {
   qc.setQueryData<KnowledgeBootstrap>(KNOWLEDGE_KEY, (old) => {
     if (!old) return old
     return { ...old, facts: old.facts.filter((f) => f.id !== id) }
   })
+  const gone = qc.getQueryData<Section<KnowledgeObservation[]>>(OBS_KEY)?.items.filter((o) => o.factId === id) ?? []
   qc.setQueryData<Section<KnowledgeObservation[]>>(OBS_KEY, (old) => {
     if (!old) return old
     return { ...old, items: old.items.filter((o) => o.factId !== id) }
   })
+  releaseReplaced(qc, gone)
+}
+
+/**
+ * The backend's ForgetService.releaseSuperseded, mirrored: when the newer half of a drift pair is
+ * forgotten, nothing replaces the older half any more — its "felülírta" link goes, and a fact
+ * that was muted as superseded becomes the user's own mute (silent, one tap from Visszakapcsolom).
+ */
+function releaseReplaced(qc: QueryClient, gone: KnowledgeObservation[]) {
+  const originals = new Set(gone.map((o) => o.replacesPatternId).filter((x): x is string => !!x))
+  if (originals.size === 0) return
+  const now = new Date().toISOString()
+  const releasedFacts = new Set<string>()
+  qc.setQueryData<Section<KnowledgeObservation[]>>(OBS_KEY, (old) => {
+    if (!old) return old
+    return {
+      ...old,
+      items: old.items.map((o) => {
+        if (!originals.has(o.patternId)) return o
+        if (o.factMutedReason !== 'superseded') return { ...o, replacedByPatternId: null }
+        if (o.factId) releasedFacts.add(o.factId)
+        return { ...o, replacedByPatternId: null, factMutedReason: 'user', factMutedAt: now }
+      }),
+    }
+  })
+  if (releasedFacts.size === 0) return
+  qc.setQueryData<KnowledgeBootstrap>(KNOWLEDGE_KEY, (old) => {
+    if (!old) return old
+    return {
+      ...old,
+      facts: old.facts.map((f) => (releasedFacts.has(f.id) && f.mutedReason === 'superseded'
+        ? { ...f, mutedReason: 'user', mutedAt: now } : f)),
+    }
+  })
 }
 
 /** Egy észrevétel elfelejtése — a belőle tanult tény is eltűnik (fordítottja a fentinek). */
-function mockRemoveObservation(qc: QueryClient, patternId: string) {
+function removeObservation(qc: QueryClient, patternId: string) {
   const before = qc.getQueryData<Section<KnowledgeObservation[]>>(OBS_KEY)
-  const factId = before?.items.find((o) => o.patternId === patternId)?.factId ?? null
+  const gone = before?.items.filter((o) => o.patternId === patternId) ?? []
+  const factId = gone[0]?.factId ?? null
   qc.setQueryData<Section<KnowledgeObservation[]>>(OBS_KEY, (old) => {
     if (!old) return old
     return { ...old, items: old.items.filter((o) => o.patternId !== patternId) }
   })
+  releaseReplaced(qc, gone)
   if (factId) {
     qc.setQueryData<KnowledgeBootstrap>(KNOWLEDGE_KEY, (old) => {
       if (!old) return old
@@ -176,9 +216,10 @@ function mockRemoveObservation(qc: QueryClient, patternId: string) {
   }
 }
 
-function mockPatchEffect(qc: QueryClient, kind: 'person' | 'event', key: string, mode: 'muted' | 'forgotten' | 'on') {
-  // the person page hides a muted/forgotten subject (real mode: the refetch drops it)
-  if (kind === 'person') {
+function patchEffect(qc: QueryClient, kind: 'person' | 'event', key: string, mode: 'muted' | 'forgotten' | 'on', mock: boolean) {
+  // the person page hides a muted/forgotten subject; switching back on restores the mock seed
+  // (real mode: the settle refetch brings the rows back)
+  if (kind === 'person' && (mode !== 'on' || mock)) {
     qc.setQueryData<PersonEffect[]>(['person-effects', key], mode === 'on' ? (MOCK_PERSON_EFFECTS[key] ?? []) : [])
   }
   qc.setQueryData<Section<EffectSubject[]>>(EFFECTS_KEY, (old) => {

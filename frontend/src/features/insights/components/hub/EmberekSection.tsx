@@ -39,7 +39,7 @@ const accentOf = (p: PersonEntry) => toneColor(p.affect_baseline)
  * People are not gated by the companion switch, so there is no degraded branch.
  */
 export function EmberekSection({ personId, onOpenPerson, initialPersonQuery = '', forget, isHidden }: EmberekSectionProps) {
-  const { people, isPending, isError, refetch, toggleFact, undoFact, editFact } = usePeople()
+  const { people, isPending, isError, refetch, toggleFactAsync, undoFactAsync, editFact } = usePeople()
 
   if (isPending) return <GhostState message={DEGRADED.loading} />
   if (isError) return <GhostState message={DEGRADED.error} ctaLabel="Újra" onCta={refetch} />
@@ -56,9 +56,9 @@ export function EmberekSection({ personId, onOpenPerson, initialPersonQuery = ''
         person={person}
         initialQuery={initialPersonQuery}
         isHidden={isHidden}
-        onMute={(f, on) => toggleFact(person.id, f.id, !on)}
+        onMute={(f, on) => toggleFactAsync(person.id, f.id, !on)}
         onEdit={(f, text) => editFact(person.id, f.id, text)}
-        onForget={(f) => forget({ key: rowKey(f), label: f.text, computed: false, commit: () => undoFact(person.id, f.id) })}
+        onForget={(f) => forget({ key: rowKey(f), label: f.text, computed: false, commit: () => undoFactAsync(person.id, f.id) })}
       />
     )
   }
@@ -104,7 +104,8 @@ interface PersonViewProps {
   person: PersonEntry
   initialQuery: string
   isHidden: (key: string) => boolean
-  onMute: (f: PersonFact, on: boolean) => void
+  /** Rejects when the write failed (already rolled back). */
+  onMute: (f: PersonFact, on: boolean) => Promise<unknown>
   onEdit: (f: PersonFact, text: string) => void
   onForget: (f: PersonFact) => void
 }
@@ -145,7 +146,7 @@ function PersonView({ person, initialQuery, isHidden, onMute, onEdit, onForget }
         </div>
       )}
       onMute={(next) => {
-        onMute(f, next)
+        onMute(f, next).catch(() => toast.show({ kind: 'error', text: TOAST.muteFailed }))
         // the prototype's `openFor`: a freshly silenced fact's new home opens
         if (next) { setMutedOpen(true); setMutedClosedWhileSearching(false) }
         toast.show({ kind: 'info', text: next ? TOAST.muted : TOAST.unmuted })
