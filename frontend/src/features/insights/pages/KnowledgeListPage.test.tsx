@@ -8,7 +8,10 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { GRAPH_KIND_GROUPS, lifeEventCandidateSeed } from '@/data/insights/graph'
 import { KnowledgeListPage } from '@/features/insights/pages/KnowledgeListPage'
 import { KnowledgeNodePage } from '@/features/insights/pages/KnowledgeNodePage'
-import { candidateSeed } from '@/data/insights/knowledge'
+import { candidateSeed, facts as factSeed } from '@/data/insights/knowledge'
+import { people as personSeed } from '@/data/me/people'
+import { MOCK_EFFECT_SUBJECTS } from '@/data/insights/knowledgeHub'
+import { TILE_STATE, heroNote } from '@/features/insights/logic/hubCopy'
 
 const MOCK_PENDING_COUNT = candidateSeed.length + lifeEventCandidateSeed.length
 
@@ -41,44 +44,74 @@ describe('KnowledgeListPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('a hero a tényszámot és a ténylegesen promptba kerülő darabszámot mutatja', async () => {
+  // ---- S6 (mezo-d6ivw.6): the base view is the hub --------------------------------------------
+
+  test('the base view is the hub: four section tiles, secondary links, no search', () => {
     renderPage()
-    // 15 seed, ebből 14 bekapcsolt → facts-always (mezo-d6ivw.8): MIND a 14 megy a chatbe.
-    // Mozaik re-face (mezo-d20.5.5): a fejléc a prototípus #page-tudas hero-ja lett — nagy szám
-    // + "tény rólad · N megy a chatbe".
-    expect(screen.getByText('Tudástár')).toBeInTheDocument()
-    await waitFor(() => expect(document.querySelector('.tud9-bignum')?.textContent).toBe('15'))
-    // mock módban az edgeCount sosem null → a „kapcsolat" szegmens is látszik (e teszt)
-    expect(screen.getByText(/tény rólad · 14 megy a chatbe · \d+ kapcsolat/)).toBeInTheDocument()
+    for (const name of ['Rólad', 'Emberek', 'Észrevételek', 'Hatások']) {
+      expect(screen.getByRole('button', { name: new RegExp(name) })).toBeInTheDocument()
+    }
+    expect(screen.getByText('Kategóriák')).toBeInTheDocument()
+    expect(screen.getByText('Hogyan tanul?')).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).toBeNull()
+    expect(screen.getByText('dolgot tud rólad Mezo')).toBeInTheDocument()
   })
 
-  // ---- (a)/(b)/(c)/(d)/(f) — mezo-ms9a shell: ?view= nézetváltás ----------------------------
-
-  test('(a) alapnézeten a 3 szekció-csempe látszik, a kereső nem', () => {
+  test('the hero counts facts + person facts + effect subjects once each (an observation rides on its fact)', async () => {
     renderPage()
-    expect(screen.getByRole('button', { name: 'Tények' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Kategóriák' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Így beszélj velem' })).toBeNull()
-    expect(screen.queryByLabelText('Keresés a tények között')).not.toBeInTheDocument()
+    const total = factSeed.length + personSeed.flatMap((p) => p.facts).length + MOCK_EFFECT_SUBJECTS.length
+    await waitFor(() => expect(document.querySelector('.th-hero .big')?.textContent).toBe(String(total)))
+    expect(screen.getByText(heroNote('ok'))).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Rólad/ })).toHaveTextContent(String(factSeed.length))
+  })
+
+  test.each([['tenyek', 'Tények rólad'], ['emberek', 'Emberek az életedben'], ['eszrevetelek', 'Észrevételek'], ['hatasok', 'Hatások']])(
+    '?view=%s opens its section', (view, title) => {
+      renderPage(`/?view=${view}`)
+      expect(screen.getByText(title, { selector: 'strong' })).toBeInTheDocument()
+    })
+
+  test('a section tile opens its view, and its back control returns to the hub', async () => {
+    renderPageWithProbe('/')
+    await userEvent.click(screen.getByRole('button', { name: /Hatások/ }))
+    expect(screen.getByTestId('loc-probe').textContent).toBe('?view=hatasok')
+    await userEvent.click(screen.getByRole('button', { name: 'Vissza: Tudástár' }))
+    expect(screen.getByTestId('loc-probe').textContent).toBe('')
+  })
+
+  test('?view=emberek&person=<id> opens the person sub-view; back returns to Emberek', async () => {
+    const person = personSeed.find((p) => p.facts.length > 0)!
+    renderPageWithProbe(`/?view=emberek&person=${person.id}`)
+    expect(screen.getByText(person.name, { selector: 'strong' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Vissza: Emberek' }))
+    expect(screen.getByTestId('loc-probe').textContent).toBe('?view=emberek')
+    expect(screen.getByText('Emberek az életedben', { selector: 'strong' })).toBeInTheDocument()
+  })
+
+  test('an unknown ?person= id reads as the plain Emberek list', () => {
+    renderPage('/?view=emberek&person=nope')
+    expect(screen.getByText('Emberek az életedben', { selector: 'strong' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Vissza: Tudástár' })).toBeInTheDocument()
   })
 
   test('(b) ?view=tenyek a keresőt és a vödröket mutatja, a csempék eltűnnek', () => {
     renderPage('/?view=tenyek')
     expect(screen.getByLabelText('Keresés a tények között')).toBeInTheDocument()
     expect(screen.getByText(/Ezeket tudja rólad/)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Tények' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Kategóriák' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Rólad/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Kategóriák/ })).not.toBeInTheDocument()
   })
 
   test('(c) érvénytelen ?view= az alapnézetre esik vissza', () => {
     renderPage('/?view=rossz')
-    expect(screen.getByRole('button', { name: 'Tények' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Rólad/ })).toBeInTheDocument()
     expect(screen.queryByLabelText('Keresés a tények között')).not.toBeInTheDocument()
   })
 
-  test('(d) a help-chip ?view=hogyan-ra visz, a „‹ Tudástár" back-chip jelenik meg', async () => {
+  test('(d) a „Hogyan tanul?" link ?view=hogyan-ra visz, a „‹ Tudástár" back-chip jelenik meg', async () => {
     renderPage()
-    await userEvent.click(screen.getByRole('button', { name: 'Hogyan működik?' }))
+    await userEvent.click(screen.getByRole('button', { name: /Hogyan tanul\?/ }))
+    expect(screen.getByText('Hogyan működik?', { selector: 'strong' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Vissza: Tudástár' })).toBeInTheDocument()
   })
 
@@ -90,14 +123,15 @@ describe('KnowledgeListPage (mock mode)', () => {
 
   // ---- Task 11 (mezo-zpxv7): the inbox moved to Rólad — the Tudástár shows only the pointer ---
 
-  test('(g) az alapnézet a Rólad-pointert mutatja, nem az inbox-kártyákat', () => {
+  test('(g) az alapnézet a Rólad-pointert mutatja (csendes link), nem az inbox-kártyákat', () => {
     renderPage()
     expect(screen.queryByText(candidateSeed[0].text)).not.toBeInTheDocument()
     expect(document.querySelector('[data-fact-candidate]')).toBeNull()
     const pointer = screen.getByText(`${MOCK_PENDING_COUNT} javaslat vár rád a Rólad oldalon`)
     expect(pointer.closest('a')).toHaveAttribute('href', '/mezo/rolad')
-    expect(pointer.closest('a')).toHaveClass('glass', 'tf-case', 'tf-c-gold', 'tf-s-gold')
-    expect(screen.getByText('Ott döntesz róluk: Igen, jegyezd meg · Pontosítom · Most ne · Nem igaz')).toBeInTheDocument()
+    expect(pointer.closest('a')).toHaveClass('th-lk')
+    expect(pointer.closest('a')).not.toHaveClass('glass')
+    expect(screen.getByText('ott döntesz róluk')).toBeInTheDocument()
   })
 
   test('a pointer száma a tény- és az életesemény/szezon-jelölteket együtt számolja', () => {
@@ -141,7 +175,7 @@ describe('KnowledgeListPage (mock mode)', () => {
 
       // a back-chip innentől a normál Tények-nézet chipje — kattintásra visszavisz az alapnézetre.
       await userEvent.click(screen.getByRole('button', { name: 'Vissza: Tudástár' }))
-      expect(screen.getByRole('button', { name: 'Tények' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Rólad/ })).toBeInTheDocument()
       expect(getByTestId('loc-probe').textContent).toBe('')
     })
 
@@ -238,7 +272,7 @@ describe('KnowledgeListPage (mock mode)', () => {
 
   test('week context survives entry into facts and back (start= sticks, no banner on the Tudástár)', async () => {
     renderPageWithProbe('/?start=2026-09-14')
-    await userEvent.click(screen.getByRole('button', { name: 'Tények' }))
+    await userEvent.click(screen.getByRole('button', { name: /Rólad/ }))
     expect(screen.getByTestId('loc-probe')).toHaveTextContent('start=2026-09-14')
     await userEvent.click(screen.getByRole('button', { name: 'Vissza: Tudástár' }))
     expect(screen.getByTestId('loc-probe')).toHaveTextContent('start=2026-09-14')
@@ -283,11 +317,13 @@ describe('KnowledgeListPage (mock mode)', () => {
     expect(offTile).toHaveClass('off')
   })
 
-  test('a pointer az oldal egyetlen hangos üveg-ügye (üveg U9); a Tények-sorok sosem üvegek', () => {
+  test('the section tiles are the hub\'s glass (one accent each); links and fact rows never are', () => {
     renderPage()
-    const card = screen.getByText(`${MOCK_PENDING_COUNT} javaslat vár rád a Rólad oldalon`).closest('a')
-    expect(card).toHaveClass('glass', 'tf-case', 'tf-c-gold')
-    // a Tények-lista sorai sosem üvegek (rangsor, bible §3)
+    const tiles = [...document.querySelectorAll<HTMLElement>('.th-tile')]
+    expect(tiles).toHaveLength(4)
+    expect(tiles.every((t) => t.classList.contains('glass'))).toBe(true)
+    expect(new Set(tiles.map((t) => t.style.getPropertyValue('--c'))).size).toBe(4)
+    expect(document.querySelector('.th-lk.glass')).toBeNull()
     expect(document.querySelector('[data-fact-row].glass')).toBeNull()
   })
 
@@ -398,38 +434,35 @@ describe('KnowledgeListPage (real mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('renders the fetched facts + the Rólad pointer, not the candidate cards', async () => {
+  test('renders the fetched counts on the hub + the Rólad pointer, not the candidate cards', async () => {
     renderPage()
-    expect(await screen.findByText(/tény rólad · 14 megy a chatbe/)).toBeInTheDocument()
-    await waitFor(() => expect(document.querySelector('.tud9-bignum')?.textContent).toBe('15'))
+    await waitFor(() => expect(screen.getByRole('button', { name: /Rólad/ })).toHaveTextContent(String(factSeed.length)))
     expect(await screen.findByText(/\d+ javaslat vár rád a Rólad oldalon/)).toBeInTheDocument()
     expect(screen.queryByText(candidateSeed[1].text)).not.toBeInTheDocument()
     expect(document.querySelector('[data-fact-candidate]')).toBeNull()
   })
 
-  test('(e) real-mode edgeCount 404 → nincs „kapcsolat" szöveg a hero-ban', async () => {
+  test('(e) real-mode edgeCount 404 → nincs „kapcsolat" szöveg a Tények fejlécében', async () => {
     server.use(
       http.get(`${API_BASE}/api/companion/graph/edge/count`, () =>
         HttpResponse.json([{ code: 'RESOURCE_NOT_FOUND' }], { status: 404 })),
     )
-    const { container } = renderPage()
+    const { container } = renderPage('/?view=tenyek')
     expect(await screen.findByText(/tény rólad · 14 megy a chatbe/)).toBeInTheDocument()
     expect(container.querySelector('.tud9-sub')?.textContent).not.toMatch(/kapcsolat/)
   })
 
-
-
-  test('the pointer count reacts to how many candidates the API reports pending', async () => {
+  test('with no pending candidates there is no Rólad pointer at all', async () => {
     server.use(
       http.get(`${API_BASE}/api/companion/fact/candidate`, () => HttpResponse.json([])),
       http.get(`${API_BASE}/api/companion/graph/node/candidate`, () => HttpResponse.json([])),
     )
     renderPage()
-    expect(await screen.findByText('Nincs döntésre váró javaslat. Ha a csapat újat hoz, a Rólad oldalon kérdez meg.')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByRole('button', { name: /Rólad/ })).toBeInTheDocument())
     expect(screen.queryByText(/javaslat vár rád/)).not.toBeInTheDocument()
   })
 
-  test('renders the honest degraded state when the companion switch is off', async () => {
+  test('companion switch off: the Rólad tile is dashed with its own reason, Emberek still counts, the note says why', async () => {
     server.use(
       http.get(`${API_BASE}/api/companion/fact`, () =>
         HttpResponse.json([{ code: 'RESOURCE_NOT_FOUND' }], { status: 404 })),
@@ -437,11 +470,14 @@ describe('KnowledgeListPage (real mode)', () => {
         HttpResponse.json([{ code: 'RESOURCE_NOT_FOUND' }], { status: 404 })),
     )
     renderPage()
-    expect(await screen.findByText(/A társ jelenleg nincs bekapcsolva/)).toBeInTheDocument()
+    expect(await screen.findByText(TILE_STATE.offFacts)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Rólad/ })).toBeNull()
+    expect(screen.getByRole('button', { name: /Emberek/ })).toBeInTheDocument()
+    expect(screen.getByText(heroNote('off'))).toBeInTheDocument()
     expect(screen.queryByRole('switch')).not.toBeInTheDocument()
   })
 
-  test('(h) degraded a base nézeten: degraded kártya + Kategóriák csempe + a pointer csak a gráf-jelöltet számolja, Tények csempe nélkül', async () => {
+  test('(h) degraded a base nézeten: szaggatott Rólad csempe + Kategóriák link + a pointer csak a gráf-jelöltet számolja, Tények csempe nélkül', async () => {
     // A társ-kapcsoló 404-je (fact + fact/candidate) NEM a gráf-hookok 404-je (graph/node,
     // graph/node/candidate, graph/edge/count függetlenek) — ezért ezeket seed-szerű adattal
     // mockoljuk, hogy a teszt ténylegesen bizonyítsa: a gráf-eredetű jelölt degraded alatt is
@@ -472,9 +508,9 @@ describe('KnowledgeListPage (real mode)', () => {
       http.get(`${API_BASE}/api/companion/graph/edge/count`, () => HttpResponse.json({ count: 3 })),
     )
     renderPage()
-    expect(await screen.findByText(/A társ jelenleg nincs bekapcsolva/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Kategóriák' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Tények' })).not.toBeInTheDocument()
+    expect(await screen.findByText(TILE_STATE.offFacts)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Kategóriák/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Rólad/ })).not.toBeInTheDocument()
     // degraded → csak a gráf-jelölt (1) számít, a fact-candidate fele nem — de a kártya maga a
     // Rólad-pointer, nem a jelölt-kártya (az most csak ott jelenik meg).
     expect(await screen.findByText('1 javaslat vár rád a Rólad oldalon')).toBeInTheDocument()
@@ -493,7 +529,7 @@ describe('KnowledgeListPage (real mode)', () => {
         ])),
     )
     renderPage('/?view=profil')
-    expect(await screen.findByRole('button', { name: 'Kategóriák' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /Kategóriák/ })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Így beszélj velem' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Vissza: Mezo' })).toBeInTheDocument()
     expect(screen.queryByText('Rólad tanultam')).not.toBeInTheDocument()
@@ -512,7 +548,7 @@ describe('KnowledgeListPage (real mode)', () => {
     expect(screen.queryByText(/Még egy tényt sem tanultam rólad/)).not.toBeInTheDocument()
   })
 
-  test('renders the honest loading state while the fetch is unresolved, never a fabricated "0 tény / 0 megy a chatbe" header (mezo-9ryh review fix)', async () => {
+  test('unresolved facts: the Rólad tile says it is loading, never a number; the other tiles are unaffected', async () => {
     server.use(
       http.get(`${API_BASE}/api/companion/fact`, async () => {
         await delay('infinite')
@@ -524,22 +560,44 @@ describe('KnowledgeListPage (real mode)', () => {
       }),
     )
     renderPage()
-
-    expect(await screen.findByText('A tudástár betöltése…')).toBeInTheDocument()
-    expect(screen.queryByText(/tény$/)).not.toBeInTheDocument()
+    expect(await screen.findByText(TILE_STATE.loading)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Rólad/ })).toBeNull()
+    await waitFor(() => expect(screen.getByRole('button', { name: /Hatások/ })).toBeInTheDocument())
+    expect(screen.getByText(heroNote('partial'))).toBeInTheDocument()
     expect(screen.queryByText(/megy a chatbe/)).not.toBeInTheDocument()
   })
 
-  test('a genuinely failed fetch (500) renders a retry state, not the "0 megy a chatbe" realEmpty read (mezo-9ryh review fix)', async () => {
+  test('before anything resolves the hero shows no number at all', async () => {
+    const hang = async () => { await delay('infinite'); return HttpResponse.json([]) }
     server.use(
-      http.get(`${API_BASE}/api/companion/fact`, () => new HttpResponse(null, { status: 500 })),
+      http.get(`${API_BASE}/api/companion/fact`, hang),
+      http.get(`${API_BASE}/api/companion/fact/candidate`, hang),
+      http.get(`${API_BASE}/api/people`, hang),
+      http.get(`${API_BASE}/api/companion/observation/knowledge`, hang),
+      http.get(`${API_BASE}/api/companion/effects`, hang),
+    )
+    renderPage()
+    await waitFor(() => expect(document.querySelector('.th-hero .big')).toHaveTextContent(TILE_STATE.loading))
+    expect(document.querySelector('.th-split')).toBeNull()
+    expect(document.querySelectorAll('.th-tile.is-dash')).toHaveLength(4)
+  })
+
+  test('a failed facts fetch (500) puts a retry on the Rólad tile only; the retry refetches', async () => {
+    let calls = 0
+    server.use(
+      http.get(`${API_BASE}/api/companion/fact`, () => {
+        calls++
+        return calls === 1 ? new HttpResponse(null, { status: 500 }) : HttpResponse.json([])
+      }),
       http.get(`${API_BASE}/api/companion/fact/candidate`, () => HttpResponse.json([])),
     )
     renderPage()
-
-    expect(await screen.findByText('Nem sikerült betölteni a tudástárat.')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Újra' })).toBeInTheDocument()
-    expect(screen.queryByText(/megy a chatbe/)).not.toBeInTheDocument()
+    expect(await screen.findByText(TILE_STATE.error)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Rólad/ })).toBeNull()
+    await waitFor(() => expect(screen.getByRole('button', { name: /Hatások/ })).toBeInTheDocument())
+    expect(screen.getByRole('button', { name: /Emberek/ })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: TILE_STATE.retry }))
+    await waitFor(() => expect(screen.getByRole('button', { name: /Rólad/ })).toHaveTextContent('0'))
   })
 
   test('a genuinely empty knowledge base renders an honest empty line, no search/filter chrome over nothing (mezo-9ryh review fix)', async () => {

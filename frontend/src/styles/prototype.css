@@ -27476,6 +27476,8 @@ main.settings-page {
   background: radial-gradient(ellipse at 50% 45%, color-mix(in srgb, var(--c) 34%, transparent), color-mix(in srgb, var(--c2) 14%, transparent) 42%, transparent 68%); }
 .tud9 .th-hero .art { display: block; width: 80px; height: 80px; margin: 0 auto; filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 18px color-mix(in srgb, var(--c) 42%, transparent)); }
 .tud9 .th-hero .big { display: block; font-size: 76px; font-weight: 300; letter-spacing: -4px; line-height: 1; margin-top: 2px; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.tud9 .th-fn.th-hero-note { text-align: center; padding-top: 0; margin-bottom: 12px; }
+.tud9 .th-hero .big.is-wait { font-size: 18px; letter-spacing: 0; line-height: 1.4; margin: 10px 0 4px; color: var(--text-muted); }
 .tud9 .th-hero h1 { margin: 4px 0 0; font-size: 18px; font-weight: 600; letter-spacing: -0.4px; }
 .tud9 .th-hero p { margin: 3px 0 0; font-family: var(--font-serif); font-style: italic; font-size: 15px; line-height: 1.4; color: var(--text-secondary); }
 .tud9 .th-split { display: flex; justify-content: center; gap: 7px; margin-top: 12px; flex-wrap: wrap; }
