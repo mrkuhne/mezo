@@ -1,63 +1,38 @@
 // ============================================================
-// Mezo · CheckInSheet
-// 4×/nap dimenziók: Energia · Stressz · Testi · Mentális tisztaság
-// + opcionális voice/free note
+// Mezo · CheckInSheet — Check-in 2.0 (mezo-ck2, spec §2 + §5)
+// Source of truth: docs/design_2.0/prototypes/elo/nap.html `SH.checkin` (owner OK 2026-09-27).
+// The slot's question plan (server config: the five core items, the time-of-day items, then the
+// question of the day) one item per step. Nothing is pre-selected: a tap selects and advances
+// after 200 ms, „Kihagyom" stores the item as skipped (NULL), and from the sixth step
+// „Most csak ennyi" jumps to the summary — the not-yet-asked items stay empty and the check-in
+// still counts. Pain and craving have their own steps (sheets/checkin/*). The summary shows every
+// step as a cell (tap to edit), the optional note, and „Mentés · HH:mm".
 // ============================================================
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useCheckInPlan } from '@/data/hooks'
+import { CORE_ITEMS, planSteps } from '@/data/today/checkinPlan'
+import { CHECKIN_LOOK } from '@/features/today/logic/checkinItems'
+import { ScaleStep } from '@/features/today/sheets/checkin/ScaleStep'
+import { PainStep } from '@/features/today/sheets/checkin/PainStep'
+import { CravingStep, CRAVING_KINDS_FROM } from '@/features/today/sheets/checkin/CravingStep'
+import { CheckInSummary } from '@/features/today/sheets/checkin/CheckInSummary'
 import { Icon3D } from '@/shared/ui/clay'
 import { Sheet } from '@/shared/ui/Sheet'
 import { CaptureHeader } from '@/shared/ui/CaptureHeader'
-import { CaptureArt } from '@/shared/ui/CaptureArt'
-import type { CheckinSlot, CheckinValues } from '@/data/types'
+import { localDateString } from '@/shared/lib/dates'
+import type { CheckinItemId, CheckinSlot, CheckinValues } from '@/data/types'
 
-type DimId = keyof CheckinValues
+/** The four canonical slots' daypart names, by slot time (index fallback for any other time). */
+const SLOT_NAME: Record<string, string> = { '06:30': 'Reggel', '10:00': 'Délelőtt', '14:00': 'Délután', '20:00': 'Este' }
+const SLOT_NAMES = ['Reggel', 'Délelőtt', 'Délután', 'Este']
+/** The auto-advance delay after a tap — long enough to see the selection land. */
+const ADVANCE_MS = 200
 
-interface CheckinDim {
-  id: DimId
-  label: string
-  sub: string
-  color: string
-  lowLabel: string
-  highLabel: string
-}
-
-export const CHECKIN_DIMS: CheckinDim[] = [
-  {
-    id: 'energy',
-    label: 'Energia',
-    sub: 'Mennyi van benned ebben a pillanatban',
-    color: 'var(--dv-coral)',
-    lowLabel: 'Üres',
-    highLabel: 'Tele',
-  },
-  {
-    id: 'stress',
-    label: 'Stressz',
-    sub: 'Mennyire vagy feszült most',
-    color: 'var(--warning-base)',
-    lowLabel: 'Nyugodt',
-    highLabel: 'Túlfeszült',
-  },
-  {
-    id: 'body',
-    label: 'Testi',
-    sub: 'Hogy érzed magad fizikailag',
-    color: 'var(--dv-rose)',
-    lowLabel: 'Lerakva',
-    highLabel: 'Friss',
-  },
-  {
-    id: 'mental',
-    label: 'Mentális tisztaság',
-    sub: 'Mennyire tiszta a fej',
-    color: 'var(--dv-sky)',
-    lowLabel: 'Köd',
-    highLabel: 'Éles',
-  },
-]
+const pad2 = (n: number) => String(n).padStart(2, '0')
 
 export function CheckInSheet({
   slot,
+  slotIdx,
   onClose,
   onSave,
 }: {
@@ -66,46 +41,58 @@ export function CheckInSheet({
   onClose: () => void
   onSave: (data: Partial<CheckinSlot>) => void | Promise<void>
 }) {
-  const [values, setValues] = useState<CheckinValues>(
-    () => slot.values ?? { energy: 7, stress: 4, body: 7, mental: 7 },
-  )
+  const { plan, isError, refetch } = useCheckInPlan(localDateString(), slot.time)
+  const [answers, setAnswers] = useState<CheckinValues>(() => slot.values ?? {})
   const [note, setNote] = useState(slot.note ?? '')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(false)
-  const [step, setStep] = useState(0) // 0..3 = dim, 4 = note
+  const [step, setStep] = useState(0)
+  const [quick, setQuick] = useState(false)
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const isLast = step >= CHECKIN_DIMS.length
-  const dim = CHECKIN_DIMS[step]
+  const slotName = SLOT_NAME[slot.time] ?? SLOT_NAMES[slotIdx] ?? ''
+  const steps = plan ? planSteps(plan) : []
+  const adaptiveId = (plan?.adaptive?.id ?? null) as CheckinItemId | null
+  const coreCount = CORE_ITEMS.length
+  const isSummary = plan != null && step >= steps.length
+  const item = plan && !isSummary ? steps[step] : null
 
-  const handleSetValue = (val: number) => {
-    if (!dim) return
-    setValues(v => ({ ...v, [dim.id]: val }))
-    // Auto-advance after a tick — feels native
-    advanceTimer.current = setTimeout(() => setStep(s => s + 1), 200)
+  const clearTimer = () => {
+    if (advanceTimer.current != null) clearTimeout(advanceTimer.current)
+    advanceTimer.current = null
   }
+  // The auto-advance timer must not outlive the component: a timer surviving unmount calls
+  // setStep after the test environment tears down — the nondeterministic "window is not
+  // defined" CI failure (mezo-91rw class, see Sheet.tsx).
+  useEffect(() => clearTimer, [])
 
-  // The auto-advance timer must not outlive the component: a timer surviving
-  // unmount calls setStep (a parent-less but still post-teardown setState)
-  // after the test environment tears down — the nondeterministic
-  // "window is not defined" CI failure (mezo-91rw class, see Sheet.tsx).
-  useEffect(
-    () => () => {
-      if (advanceTimer.current != null) clearTimeout(advanceTimer.current)
-    },
-    [],
-  )
+  const goTo = (n: number) => { clearTimer(); setStep(n) }
+  /** Advance from step `from` after the tap has had its 200 ms to land. */
+  const advanceFrom = (from: number) => {
+    clearTimer()
+    advanceTimer.current = setTimeout(() => { advanceTimer.current = null; setStep(from + 1) }, ADVANCE_MS)
+  }
+  const setAnswer = <K extends CheckinItemId>(id: K, v: CheckinValues[K]) =>
+    setAnswers((a) => ({ ...a, [id]: v }))
 
   const save = async (close: () => void) => {
-    if (saving) return
+    if (saving || !plan) return
     setSaving(true)
     setSaveError(false)
+    const ids = steps.map((s) => s.id as CheckinItemId)
+    const askedItems = ids.filter((id) => id in answers)
+    const values: CheckinValues = {}
+    for (const id of askedItems) (values as Record<CheckinItemId, unknown>)[id] = answers[id] ?? null
     try {
       await onSave({
         state: 'done',
         values,
         note: note.trim() || null,
         savedAt: new Date().toISOString(),
+        askedItems,
+        adaptiveItem: adaptiveId,
+        adaptiveReason: plan.adaptive?.reason ?? null,
+        quickExit: quick && ids.some((id) => !(id in answers)),
       })
       close()
     } catch {
@@ -115,82 +102,122 @@ export function CheckInSheet({
     }
   }
 
+  const prog = plan && (
+    <div className="ck-prog" aria-hidden="true" style={{ gridTemplateColumns: `repeat(${steps.length + 1}, 1fr)` }}>
+      {Array.from({ length: steps.length + 1 }, (_, i) => (
+        <i key={i} className={i <= step ? 'on' : i < coreCount ? 'core' : undefined} />
+      ))}
+    </div>
+  )
+
+  const stepBody = () => {
+    if (!item) return null
+    const id = item.id as CheckinItemId
+    const look = CHECKIN_LOOK[id]
+    const isAd = adaptiveId != null && step === steps.length - 1
+    const s = step
+    const tag = s < coreCount ? ' · ALAP' : isAd ? '' : ` · ${slotName.toUpperCase()}`
+    let body
+    if (item.kind === 'PAIN') {
+      body = (
+        <PainStep
+          value={answers.pain}
+          options={item.options}
+          low={item.low}
+          high={item.high}
+          onNo={() => { setAnswer('pain', false); advanceFrom(s) }}
+          onChange={(p) => { clearTimer(); setAnswer('pain', p) }}
+          onNext={() => goTo(s + 1)}
+        />
+      )
+    } else if (item.kind === 'CRAVING') {
+      body = (
+        <CravingStep
+          icon={look.icon}
+          color={look.color}
+          value={answers.craving}
+          options={item.options}
+          low={item.low}
+          high={item.high}
+          onPick={(n) => {
+            setAnswer('craving', { value: n, kinds: answers.craving?.kinds ?? [] })
+            if (n < CRAVING_KINDS_FROM) advanceFrom(s)
+            else clearTimer()
+          }}
+          onKinds={(kinds) => setAnswer('craving', { value: answers.craving?.value ?? CRAVING_KINDS_FROM, kinds })}
+          onNext={() => goTo(s + 1)}
+        />
+      )
+    } else {
+      const v = answers[id]
+      body = (
+        <ScaleStep
+          icon={look.icon}
+          color={look.color}
+          value={typeof v === 'number' ? v : null}
+          low={item.low}
+          high={item.high}
+          onPick={(n) => { setAnswer(id, n); advanceFrom(s) }}
+        />
+      )
+    }
+    return (
+      <div className="col capture-step" style={{ '--c': look.color } as CSSProperties}>
+        <span className="capture-stepl">
+          {pad2(s + 1)} / {pad2(steps.length)} · {item.label.toUpperCase()}{tag}
+        </span>
+        {isAd && plan?.adaptive && (
+          <div className="ck-callout ck-ad" style={{ '--c': 'var(--dv-lav)' } as CSSProperties}>
+            <span className="ck-callout-eb"><Icon3D name="t-orb" size={14} className="ck-inl" /> A nap kérdése</span>
+            <p>{plan.adaptive.why}</p>
+          </div>
+        )}
+        <p className="ck-q">{item.question}</p>
+        {body}
+        {s === coreCount && (
+          <div className="ck-coremsg"><Icon3D name="t-tick" size={18} />Az alap megvan. Innen bármikor kiléphetsz.</div>
+        )}
+        {/* typographic arrows (aria-hidden); the names stay „Vissza" / „Kihagyom" */}
+        <div className="capture-stepnav ck-stepnav">
+          {s > 0 ? (
+            <button type="button" onClick={() => goTo(s - 1)}>
+              <span aria-hidden="true">‹</span> Vissza
+            </button>
+          ) : <span />}
+          {s >= coreCount && (
+            <button type="button" className="ck-quick" onClick={() => { setQuick(true); goTo(steps.length) }}>
+              Most csak ennyi
+            </button>
+          )}
+          <button type="button" onClick={() => { setAnswer(id, null); goTo(s + 1) }}>
+            Kihagyom <span aria-hidden="true">›</span>
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <Sheet onClose={onClose} labelledBy="checkin-title" className="capture-sheet capture-tone-checkin glass">
       {(close) => (
       <>
-      <CaptureHeader id="checkin-title" title="Hogy vagyunk?" eyebrow={`Heartbeat · ${slot.time}`}
+      <CaptureHeader id="checkin-title" title="Hogy vagyunk?" eyebrow={`Heartbeat · ${slotName ? `${slotName} · ` : ''}${slot.time}`}
         kind="checkin" onClose={close} />
 
-      {/* Üveg (mezo-me75u.3, `SH.checkin`): five lit progress segments, the step's number as the
-          one loud value (the 3D mark + a glowing numeral on a frameless halo in the step's hue),
-          the 1–10 scale as recess → tinted → solid cells. */}
-      <div className="capture-prog" aria-hidden="true">
-        {[0, 1, 2, 3, 4].map(i => <i key={i} className={i <= step ? 'on' : undefined} />)}
-      </div>
-
-      {/* Step body */}
-      {!isLast && (
-        <div className="col capture-step" style={{ '--c': dim.color } as CSSProperties}>
-          <div className="col gap-xs">
-            <span className="capture-stepl">
-              {String(step + 1).padStart(2, '0')} / 04 · {dim.label}
-            </span>
-            <div className="capture-stepq">
-              {dim.sub}
-            </div>
-          </div>
-
-          {/* Selected value display */}
-          <div className="capture-check-orbit" data-step={dim.id}>
-            <CaptureArt kind="checkin" size={58} />
-            <div className="capture-check-value">
-              {values[dim.id]}
-              <small> / 10</small>
-            </div>
-          </div>
-
-          {/* 1-10 scale */}
-          <div>
-            <div className="capture-rating-scale">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => {
-                const active = values[dim.id] === n
-                const filled = values[dim.id] >= n
-                return (
-                  <button
-                    key={n}
-                    onClick={() => handleSetValue(n)}
-                    className="capture-scale-cell"
-                    data-state={active ? 'active' : filled ? 'filled' : undefined}
-                    style={{ '--cell-hue': dim.color } as CSSProperties}
-                  >
-                    {n}
-                  </button>
-                )
-              })}
-            </div>
-            <div className="capture-scale-l">
-              <span>{dim.lowLabel}</span>
-              <span>{dim.highLabel}</span>
-            </div>
-          </div>
-
-          {/* Nav — typographic arrows (aria-hidden), the names stay „Vissza" / „Kihagy" */}
-          <div className="capture-stepnav">
-            {step > 0 ? (
-              <button type="button" onClick={() => setStep(s => s - 1)}>
-                <span aria-hidden="true">‹</span> Vissza
-              </button>
-            ) : <span />}
-            <button type="button" onClick={() => setStep(s => s + 1)}>
-              Kihagy <span aria-hidden="true">›</span>
-            </button>
-          </div>
+      {!plan && (isError ? (
+        <div className="col gap-sm">
+          <p role="alert" className="ck-q">Nem sikerült betölteni a kérdéseket.</p>
+          <button type="button" className="cta-ghost" onClick={refetch}>Újra</button>
         </div>
-      )}
+      ) : (
+        <p className="ck-loading" role="status">Kérdések betöltése…</p>
+      ))}
+
+      {prog}
+      {stepBody()}
 
       {/* Summary + note step */}
-      {isLast && (
+      {isSummary && (
         <div className="col gap-lg">
           <div className="col gap-xs">
             <span className="capture-sum-eyebrow">Megvan · összegzés</span>
@@ -199,22 +226,13 @@ export function CheckInSheet({
             </div>
           </div>
 
-          {/* Summary grid */}
-          <div className="capture-sum4">
-            {CHECKIN_DIMS.map(d => (
-              <button
-                key={d.id}
-                type="button"
-                onClick={() => setStep(CHECKIN_DIMS.findIndex(x => x.id === d.id))}
-                className="capture-sum"
-                style={{ '--c': d.color } as CSSProperties}
-              >
-                <small>{d.label}</small>
-                <b>{values[d.id]}</b>
-                <span className="uv-bar" aria-hidden="true"><b style={{ '--w': (values[d.id] * 10) + '%' } as CSSProperties} /></span>
-              </button>
-            ))}
-          </div>
+          <CheckInSummary
+            steps={steps.map((s) => ({ id: s.id as CheckinItemId, label: s.label }))}
+            answers={answers}
+            adaptiveId={adaptiveId}
+            quick={quick}
+            onEdit={goTo}
+          />
 
           {/* Optional free note */}
           <div className="col gap-sm">

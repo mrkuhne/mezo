@@ -174,7 +174,7 @@ export const NAP_KALAUZ: KalauzEntry[] = [
       {
         kind: 'intro', spot: 'i-checkin', orb: 's-orb',
         title: 'Ez a check-in.',
-        voice: 'Napi négy pillanatkép arról, hogy vagy: energia, stressz, testi és mentális állapot — egy-egy gyors skálán.',
+        voice: 'Napi négy pillanatkép arról, hogy vagy: energia, hangulat, stressz, test és fej, napszaktól függően pár kérdéssel még — egy-egy gyors skálán.',
       },
       {
         kind: 'hogyan', spot: 'i-eletjel', orb: 's-orb-figyel', anchor: 'checkin-sor',

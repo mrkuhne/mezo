@@ -12,6 +12,9 @@ type SetSleepGoalRequest = components['schemas']['SetSleepGoalRequest']
 type SleepShotDraftResponse = components['schemas']['SleepShotDraftResponse']
 export type CheckInResponse = components['schemas']['CheckInResponse']
 export type SaveCheckInBody = components['schemas']['SaveCheckInRequest']
+export type CheckInPlanResponse = components['schemas']['CheckInPlanResponse']
+export type CheckInPlanItem = components['schemas']['CheckInPlanItem']
+export type CheckInAdaptiveItem = components['schemas']['CheckInAdaptiveItem']
 export type WeightTrendResponse = components['schemas']['WeightTrendResponse']
 
 export const weightApi = {
@@ -94,4 +97,8 @@ export const checkinApi = {
   listForDay: (date: string) => apiFetch<CheckInResponse[]>(`/api/biometrics/checkin?date=${date}`),
   save: (body: SaveCheckInBody) =>
     apiFetch<CheckInResponse>('/api/biometrics/checkin', { method: 'POST', body: JSON.stringify(body) }),
+  /** Check-in 2.0 (mezo-ck2): the slot's question plan + the question of the day (server config). */
+  plan: (date: string, slotTime: string) =>
+    apiFetch<CheckInPlanResponse>(
+      `/api/biometrics/checkin/plan?date=${date}&slotTime=${encodeURIComponent(slotTime)}`),
 }

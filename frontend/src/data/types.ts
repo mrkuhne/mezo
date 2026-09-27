@@ -6,9 +6,55 @@ import type { PantrySourceKey } from '@/data/pantrySources'
 import type { EvidenceItem } from '@/shared/ui/evidence/observationEvidence'
 
 export type DayState = 'good' | 'medium' | 'rough'
-export interface CheckinValues { energy: number; stress: number; body: number; mental: number }
+/** Check-in 2.0 item ids (mezo-ck2, spec §2.1) — the contract's `CheckInItemId`, core five first. */
+export type CheckinItemId =
+  | 'energy' | 'mood' | 'stress' | 'body' | 'mental' | 'rested' | 'soreness' | 'pain' | 'motivation'
+  | 'hunger' | 'craving' | 'digestion' | 'connection' | 'day'
+/** Pain regions (the contract's `PainRegion`). */
+export type PainRegionId =
+  | 'FEJ' | 'NYAK' | 'VALL' | 'KONYOK' | 'CSUKLO_KEZ' | 'FELSO_HAT' | 'DEREK' | 'CSIPO' | 'HAS' | 'TERD'
+  | 'BOKA_LABFEJ' | 'EGYEB'
+/** Craving kinds (the contract's `CravingKind`). */
+export type CravingKindId = 'EDES' | 'SOS' | 'ZSIROS' | 'BARMIT'
+/** „Fáj valami?" — `false` = „Nem"; an object = „Igen" with where (multi) and how much (1–10). */
+export type CheckinPainAnswer = false | { regions: PainRegionId[]; intensity: number | null }
+/** „Kívánsz most valamit?" — the 1–10 value, plus what (asked from 4). */
+export interface CheckinCravingAnswer { value: number; kinds: CravingKindId[] }
+/** One check-in's answers (Check-in 2.0). NULL is never a value: a key that is ABSENT was not
+ *  asked, a key set to `null` was asked and skipped („Kihagyom"), anything else is the answer.
+ *  Legacy four-item rows carry only the keys they answered. */
+export interface CheckinValues {
+  energy?: number | null
+  mood?: number | null
+  stress?: number | null
+  body?: number | null
+  mental?: number | null
+  rested?: number | null
+  soreness?: number | null
+  pain?: CheckinPainAnswer | null
+  motivation?: number | null
+  hunger?: number | null
+  craving?: CheckinCravingAnswer | null
+  digestion?: number | null
+  connection?: number | null
+  /** „A nap mérlege" (wire: `dayRating`). */
+  day?: number | null
+}
 export type CheckinState = 'done' | 'now' | 'skipped' | 'pending'
-export interface CheckinSlot { time: string; state: CheckinState; values: CheckinValues | null; note: string | null; savedAt?: string }
+export interface CheckinSlot {
+  time: string
+  state: CheckinState
+  values: CheckinValues | null
+  note: string | null
+  savedAt?: string
+  /** What the sheet showed (plan + question of the day); null/absent on legacy rows. */
+  askedItems?: CheckinItemId[] | null
+  /** The question of the day and why it was asked (need-driven vs random). */
+  adaptiveItem?: CheckinItemId | null
+  adaptiveReason?: 'NEED' | 'RANDOM' | null
+  /** Saved via „Most csak ennyi" after the core items. */
+  quickExit?: boolean
+}
 export interface BriefingRef { kind: string; id?: string; label: string }
 export interface BriefingPara { type: 'p'; text: string }
 export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: BriefingRef[]; confidence?: number; tone?: string }

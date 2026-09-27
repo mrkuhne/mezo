@@ -22,7 +22,7 @@
 // ============================================================
 import { useEffect, useState, type CSSProperties } from 'react'
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { useDayEvaluation, useMeWeek, useRitualDay, normalizeDayEvaluation } from '@/data/hooks'
+import { useCheckinDayRating, useDayEvaluation, useMeWeek, useRitualDay, normalizeDayEvaluation } from '@/data/hooks'
 import { usePrefetchDayEvaluations } from '@/data/me/dayEvaluationHooks'
 import { deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import type { NormalizedDayEvaluation, NormalizedDayDimension } from '@/data/me/dayEvaluation'
@@ -37,6 +37,7 @@ import { NapomWeekStrip } from '@/features/today/components/napom/NapomWeekStrip
 import { NapomSegRing } from '@/features/today/components/napom/NapomSegRing'
 import { NAPOM_DIMENSIONS, NapomDimensionRow, factLineOf, type NapomRowMode } from '@/features/today/components/napom/NapomDimensionRow'
 import { NapomLeadCard } from '@/features/today/components/napom/NapomLeadCard'
+import { NapomDayRatingCard } from '@/features/today/components/napom/NapomDayRatingCard'
 import { NapomReviewCard } from '@/features/today/components/napom/NapomReviewCard'
 
 /** `+3` / `−2` — U+2212 for the minus, as every other HU numeral in the app. */
@@ -101,6 +102,8 @@ export function NapomPage() {
   const todayRitual = useRitualDay(today)
   const monday = mondayOf(date)
   const { week } = useMeWeek(monday)
+  // Check-in 2.0 (mezo-ck2): the evening check-in's own verdict of the viewed day, if given.
+  const dayRating = useCheckinDayRating(date)
   usePrefetchDayEvaluations([addDays(date, -1), addDays(date, 1)].filter((d) => d <= today))
 
   // Yesterday counts as SEEN only once its overnight review is actually on screen — a scored
@@ -205,6 +208,10 @@ export function NapomPage() {
             </>
           )}
         </section>
+
+        {dayRating != null && !deciding && (
+          <NapomDayRatingCard rating={dayRating} score={scored && evaluation ? evaluation.score : null} i={3} />
+        )}
 
         {action && <NapomLeadCard action={action} onGo={(to) => navigate(to)} i={3} />}
 

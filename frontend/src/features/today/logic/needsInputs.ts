@@ -150,14 +150,20 @@ function intentionEvents(intention: IntentionDay, dayIso: string, wakeTime: stri
 
 function lelekEvents(raw: RawNeedsData): NeedEvent[] {
   const { refill } = NEEDS_TUNING
+  // Check-in 2.0 (mezo-ck2, spec §3.8b): a check-in that answered „Kapcsolódás" refills by how
+  // connected the day felt (connection × 10, the engine clamps at 100); one without it (a quick
+  // exit, a morning slot) keeps the flat check-in refill so the ring does not starve.
   const checkins: NeedEvent[] = raw.checkinsToday
     .filter((slot) => slot.state === 'done')
-    .map((slot) => ({
-      at: new Date(slot.savedAt ?? `${raw.todayIso}T${slot.time}:00`),
-      kind: 'add',
-      amount: refill.checkin,
-      label: 'Check-in',
-    }))
+    .map((slot): NeedEvent => {
+      const connection = slot.values?.connection
+      return {
+        at: new Date(slot.savedAt ?? `${raw.todayIso}T${slot.time}:00`),
+        kind: 'add',
+        amount: typeof connection === 'number' ? connection * refill.connectionPerPoint : refill.checkin,
+        label: 'Check-in',
+      }
+    })
 
   const today = intentionEvents(raw.intentionToday, raw.todayIso, raw.wakeTime)
   const yesterday = intentionEvents(raw.intentionYesterday, raw.yesterdayIso, raw.wakeTime)
