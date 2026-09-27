@@ -8,6 +8,8 @@ import java.util.Objects;
 public final class TeamChatExceptionMatcher {
     static final int TAG_MAX = 40;
     static final int KEYWORDS_MAX = 6;
+    /** Shorter keywords ("ut", "ed") substring-match almost any day's notes and would silence the rule. */
+    static final int KEYWORD_MIN = 3;
     private TeamChatExceptionMatcher() {}
 
     static String fold(String s) {
@@ -21,7 +23,7 @@ public final class TeamChatExceptionMatcher {
     public static List<String> cleanKeywords(List<String> raw) {
         if (raw == null) return List.of();
         return raw.stream().filter(Objects::nonNull).map(k -> k.strip().toLowerCase(Locale.ROOT))
-                .filter(k -> k.length() >= 2 && k.length() <= 24).distinct().limit(KEYWORDS_MAX).toList();
+                .filter(k -> k.length() >= KEYWORD_MIN && k.length() <= 24).distinct().limit(KEYWORDS_MAX).toList();
     }
     public static boolean matches(List<String> keywords, List<String> dayTexts) {
         if (keywords == null || keywords.isEmpty() || dayTexts == null) return false;

@@ -13,7 +13,12 @@ class TeamChatExceptionMatcherTest {
     }
     @Test void cleanKeywords_trimsFiltersDedupesCaps() {
         assertThat(TeamChatExceptionMatcher.cleanKeywords(List.of("Meccs", "meccs", "x", "kupa", "a".repeat(30),
-                "r1", "r2", "r3", "r4", "r5"))).containsExactly("meccs", "kupa", "r1", "r2", "r3", "r4");
+                "r01", "r02", "r03", "r04", "r05"))).containsExactly("meccs", "kupa", "r01", "r02", "r03", "r04");
+    }
+    @Test void cleanKeywords_dropsTwoLetterKeywords_keepsThree() {
+        // A 2-letter substring ("ut", "ed") matches nearly any day's notes and would silence the rule.
+        assertThat(TeamChatExceptionMatcher.cleanKeywords(List.of("ut", " Ed ", "edz", "út")))
+                .containsExactly("edz");
     }
     @Test void matches_isAccentFoldedCaseInsensitiveSubstring() {
         assertThat(TeamChatExceptionMatcher.matches(List.of("röpi"), List.of("Ma RÖPI-kupa volt este"))).isTrue();

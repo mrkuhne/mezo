@@ -50,6 +50,18 @@ class TeamChatReplyDecisionTest {
                 new TeamChatReplyDraft("x", true, "concrete_context", "meccsnap", "f", List.of()), false, false, null))
                 .isEqualTo(Outcome.ANSWER_ONLY);
     }
+    @Test void tagThatNormalizesToEmpty_onlyAnswers() {
+        // emoji / punctuation only: nothing to remember, and an empty normalized tag would be
+        // shared (or vetoed) by every later empty tag.
+        for (String tag : List.of("⚽🏆", "!!! …", "—")) {
+            var d = new TeamChatReplyDraft("Értem.", true, "concrete_context", tag,
+                    "Meccsnapokon későn eszel — ez rendben van.", List.of("meccs"));
+            assertThat(TeamChatReplyDecision.decide("OPEN", null, d, false, false, null))
+                    .as(tag).isEqualTo(Outcome.ANSWER_ONLY);
+            assertThat(TeamChatReplyDecision.decide("OPEN", "EXCUSE", d, false, false, ""))
+                    .as(tag + " on an EXCUSE offer").isEqualTo(Outcome.ANSWER_ONLY);
+        }
+    }
     @Test void alreadyResolvedThread_onlyAnswers() {
         assertThat(TeamChatReplyDecision.decide("RESOLVED", null, concrete(), false, false, null)).isEqualTo(Outcome.ANSWER_ONLY);
     }

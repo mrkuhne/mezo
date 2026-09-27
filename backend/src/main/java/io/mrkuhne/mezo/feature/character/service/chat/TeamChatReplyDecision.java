@@ -16,6 +16,7 @@ public final class TeamChatReplyDecision {
             return Outcome.ANSWER_ONLY;
         }
         String tag = TeamChatExceptionMatcher.normalize(d.contextTag());
+        if (tag.isEmpty()) return Outcome.ANSWER_ONLY; // emoji/punctuation only: no tag to remember
         if (TeamChatService.OFFER_REVIEW.equals(offer)) return Outcome.ANSWER_ONLY;
         if (TeamChatService.OFFER_EXCUSE.equals(offer)) {
             return tag.equals(offerExceptionNormalizedTag) ? Outcome.EXCUSE_TAP_EQUIVALENT : Outcome.ANSWER_ONLY;
