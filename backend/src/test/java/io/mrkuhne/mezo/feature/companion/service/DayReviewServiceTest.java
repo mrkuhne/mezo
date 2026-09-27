@@ -703,6 +703,34 @@ class DayReviewServiceTest {
             .contains("alvás cél alatt");
     }
 
+    @Test
+    void testAssemble_shouldCarryMoodAndOwnDayRating_whenTheCheckInAnsweredThem() {
+        when(metricSeriesService.series(USER, MetricKey.CHECKIN_MOOD, DAY, DAY))
+            .thenReturn(new HashMap<>(Map.of(DAY, 7.5)));
+        when(metricSeriesService.series(USER, MetricKey.CHECKIN_DAY, DAY, DAY))
+            .thenReturn(new HashMap<>(Map.of(DAY, 7.0)));
+        fakeLlm.answer = answer("""
+            {"narrative":["Kontextus."],"dimensionNotes":{},"highlights":[],"adjustment":null}""");
+
+        DayEvaluationResponse response = service.assemble(USER, DAY);
+
+        assertThat(response.getContext()).extracting("label", "value").contains(
+            org.assertj.core.groups.Tuple.tuple("hangulat", "7.5 / 10"),
+            org.assertj.core.groups.Tuple.tuple("saját napértékelés", "7.0 / 10"));
+        assertThat(fakeLlm.lastUserMessage).contains("saját napértékelés");
+    }
+
+    @Test
+    void testAssemble_shouldOmitMoodAndDayRating_whenNotAnswered() {
+        fakeLlm.answer = answer("""
+            {"narrative":["Kontextus."],"dimensionNotes":{},"highlights":[],"adjustment":null}""");
+
+        DayEvaluationResponse response = service.assemble(USER, DAY);
+
+        assertThat(response.getContext()).extracting("label")
+            .doesNotContain("hangulat", "saját napértékelés");
+    }
+
     // --- warmer voice (mezo-yjzhw.2): the prompt version rides in the cache key ---------------
 
     @Test

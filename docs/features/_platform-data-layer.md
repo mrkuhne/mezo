@@ -2,7 +2,7 @@
 title: Platform · Data Layer & Dual-Mode
 type: feature-platform
 status: done
-updated: 2026-09-26
+updated: 2026-09-28
 tags: [platform, data-layer, frontend]
 key_files:
   - frontend/src/data/hooks.ts
@@ -17,6 +17,8 @@ related: [_platform-api-backend, _platform-auth-security, _platform-notification
 ---
 
 # Platform · Data Layer & Dual-Mode — Feature Documentation
+
+> **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** `hooks.ts` re-exports three new dual-mode hooks: `useCheckInPlan(date, slotTime)` + `useCheckinDayRating(date)` (`data/today/checkinHooks.ts`; the plan's mock is `mockCheckInPlan`, a mirror of the server config, and real mode returns `null` until the plan lands — never the mock) and `useTodayReadiness()` (`data/train/readinessHooks.ts`, mock `readinessMock`, real-empty `readinessEmpty`). Owners: [`today.md`](today.md), [`train.md`](train.md).
 
 > The single FE↔data boundary (`frontend/src/data/hooks.ts`) + the `isMockMode()` dual-mode switch + the TanStack Query wiring + the typed REST clients. **Status:** ✅ done (cross-cutting platform layer; some hooks 🔶 mock-only — see §2). Not a screen — it sits under **every** route/tab; the wired domains are Me (biometrics + goal), Train/Futás, and Fuel's **Pantry/Kamra** (slice C).
 

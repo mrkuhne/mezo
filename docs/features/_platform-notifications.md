@@ -2,7 +2,7 @@
 title: Push Notifications Platform
 type: feature-platform
 status: mixed
-updated: 2026-09-26
+updated: 2026-09-28
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
@@ -38,6 +38,8 @@ related: [proactive, today, ritual, me, fuel, insights, journal, companion, _pla
 > slice that completes the `mezo-h4wp` proactive epic's long-deferred **H2** item — see
 > [`proactive.md`](proactive.md) and [`roadmap.md`](../milestones/roadmap.md).
 >
+> **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** The FE-written `checkin` push body (`notificationScheduleWriter.ts`, `CHECKIN_BODY`) is now „Hogy vagy most? Pár koppintás, fél perc." (was the four-item „Energia, stressz, test, fej — 20 másodperc."), since the slot's questions now vary by time of day. Schedule, deeplinks (`/today?checkin=HH:mm`) and category unchanged. Spec [`2026-09-27-checkin-2-design.md`](../superpowers/specs/2026-09-27-checkin-2-design.md) §3.12.
+
 > **2026-09-25 — Üveg U7 (`mezo-me75u.7`).** The kind → 3D icon map (`NTF_3D`/`ntfIcon`) lives in `features/notification/logic/kindIcon.ts`, shared by the header panel and the `/me/ertesitesek` feed; the feed and `/settings/notifications` wear the dark glass material (`Toggle glass`). Behavior unchanged. Parity reference [`uveg-en2.html`](../design_2.0/prototypes/uveg-en2.html).
 
 > **In-app feed (F1/F2/F3, bd `mezo-gzhp`): F1 + F2 + F3 all DONE.** A second, sibling
