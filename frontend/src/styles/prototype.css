@@ -28406,8 +28406,9 @@ main.settings-page {
    docs/design_2.0/prototypes/src/uveg-reteg-body.html `openKz()` / `udv()`, `.kz*` / `.wel*`.
    The sheet is the kit `<Sheet glass>` in gold; everything inside it is flat (rule 5). */
 .sheet.glass.uv-sheet.kalauz-sheet { --c: var(--dv-amber); padding: 4px 18px 16px; }
-/* rule 2: `.glass > *` would drop the sr-only title and the peek bar into the flow */
-.sheet.glass.kalauz-sheet > .sr-only { position: absolute; }
+/* the sr-only title is now a grandchild (inside `.sheet-scroll`, mezo-zz91i follow-up), so
+   `.glass > *`'s `position: relative` never reaches it — no restate needed, `.sr-only`'s own
+   base rule (`position: absolute`, clipped to 1x1px) already does the job. */
 .sheet.glass.uv-sheet.kalauz-sheet.is-peek {
   animation: none; overflow: hidden;
   transform: translateY(calc(100% - 90px + env(safe-area-inset-bottom)));
@@ -28425,7 +28426,12 @@ main.settings-page {
       0 0 0 9999px rgba(0, 0, 0, 0.72);
   }
 }
-.sheet.glass.kalauz-sheet > .kalauz-peekbar {
+/* Retargeted through `.sheet-scroll` (mezo-zz91i follow-up: the peekbar is now a grandchild of
+   `.sheet`, not a direct child). `.sheet-scroll` itself stays `position: static` (deliberately —
+   see Sheet.tsx/`.sheet-scroll`), so this absolutely positioned bar's containing block is still
+   `.sheet` (the non-scrolling frame), exactly as before: anchored to the frame, not the scroller,
+   so it never scrolls away under the (aria-hidden, `.is-peek`-only) card body beneath it. */
+.sheet.glass.kalauz-sheet .sheet-scroll > .kalauz-peekbar {
   position: absolute; z-index: 4; left: 14px; right: 12px; top: 10px; height: 80px;
   display: flex; align-items: center; gap: 10px; cursor: pointer;
 }
