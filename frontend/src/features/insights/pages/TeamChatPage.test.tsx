@@ -99,6 +99,7 @@ describe('TeamChatPage (mock mode)', () => {
     renderChat()
     await screen.findByText('A csapat beszél')
     await userEvent.click(screen.getAllByRole('button', { name: /Elmesélem/ })[0])
+    expect(await screen.findByText(/Szunya válaszol rá — ha konkrét okot mondasz/)).toBeInTheDocument()
     await userEvent.type(await screen.findByLabelText('A válaszod'), 'Későn értem haza.')
     await userEvent.click(screen.getByRole('button', { name: /Válasz küldése/ }))
     expect(reply).toHaveBeenCalledWith('tc-thread-sleep-debt', 'Későn értem haza.')
@@ -138,6 +139,33 @@ describe('TeamChatPage (mock mode)', () => {
     renderChat()
     await screen.findByText('A csapat beszél')
     expect(localStorage.getItem(TEAM_CHAT_LAST_SEEN_KEY)).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+  })
+
+  // S7 (mezo-d6ivw.7, Task 9): the seeded "Késői étkezés" ügy carries an EXCUSE offer OPEN —
+  // the one-tap "ismerős kifogás?" button is visible without a reply round-trip first.
+  test('egy ismert kivétel ajánlatára koppintva az answer-t hívja EXCUSED-del', async () => {
+    const answer = vi.fn().mockResolvedValue(undefined)
+    vi.mocked(useTeamChatActions).mockReturnValue({
+      apply, reply, answer, pending: false,
+      undoRemembered: vi.fn().mockResolvedValue(undefined),
+      awaiting: new Set(),
+    })
+    renderChat()
+    const btn = await screen.findByRole('button', { name: 'Igen, meccsnap volt' })
+    await userEvent.click(btn)
+    expect(answer).toHaveBeenCalledWith('tc-thread-late-eating', 'EXCUSED')
+  })
+
+  test('amíg a válasz vár, a „Falat ír…" sor a szál utolsó sora alatt jelenik meg', async () => {
+    vi.mocked(useTeamChatActions).mockReturnValue({
+      apply, reply, pending: false,
+      answer: vi.fn().mockResolvedValue(undefined),
+      undoRemembered: vi.fn().mockResolvedValue(undefined),
+      awaiting: new Set(['tc-thread-late-eating']),
+    })
+    renderChat()
+    await screen.findByText('A csapat beszél')
+    expect(screen.getByRole('status')).toHaveTextContent('Falat ír…')
   })
 })
 
