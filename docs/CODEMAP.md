@@ -721,14 +721,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **services:** `AdaptiveCorrectionService`, `AdaptiveReviewJob`, `AdaptiveReviewService`, `DayTypeShiftCalculator`,
     `DietPreferences`, `DietPreferencesPort`, `ExpenditureExplainer`, `ExpenditureExplanationService`,
     `ExpenditureFilter`, `ExpenditureInsightService`, `ExpenditureLearningService`, `ExpenditureStepPolicy`,
-    `GoalDeletedEvent`, `GoalEngineService`, `GoalEvaluationService`, `GoalFeasibilityService`,
-    `GoalInvariantValidator`, `GoalOverviewCourseService`, `GoalOverviewService`, `GoalPlanLinkService`,
-    `GoalPrescriptionCalculator`, `GoalProjectionService`, `GoalSavedEvent`, `GoalService`,
-    `GoalSuggestionDraftApplier`, `GoalSuggestionFingerprintService`, `GoalSuggestionNotificationListener`,
-    `GoalSuggestionPreviewService`, `GoalSuggestionProposedEvent`, `GoalSuggestionService`,
-    `GoalSuggestionSupersedeWriter`, `GoalSuggestionTriggerService`, `GoalTimelineService`, `GuardEvaluationService`,
-    `IntakeDayClassifier`, `IntakeDayMarkService`, `LearnedBaseResolver`, `MesoLifecycleSuggestionListener`,
-    `TdeeBootstrapService`, `TrainGoalRecomputeAdapter`, `WeeklyCardPolicy`
+    `ExpenditureWeekLearnedEvent`, `ExpenditureWeekNotificationListener`, `GoalDeletedEvent`, `GoalEngineService`,
+    `GoalEvaluationService`, `GoalFeasibilityService`, `GoalInvariantValidator`, `GoalOverviewCourseService`,
+    `GoalOverviewService`, `GoalPlanLinkService`, `GoalPrescriptionCalculator`, `GoalProjectionService`,
+    `GoalSavedEvent`, `GoalService`, `GoalSuggestionDraftApplier`, `GoalSuggestionFingerprintService`,
+    `GoalSuggestionNotificationListener`, `GoalSuggestionPreviewService`, `GoalSuggestionProposedEvent`,
+    `GoalSuggestionService`, `GoalSuggestionSupersedeWriter`, `GoalSuggestionTriggerService`, `GoalTimelineService`,
+    `GuardEvaluationService`, `IntakeDayClassifier`, `IntakeDayMarkService`, `LearnedBaseResolver`,
+    `MesoLifecycleSuggestionListener`, `TdeeBootstrapService`, `TrainGoalRecomputeAdapter`, `WeeklyCardPolicy`
   - **controllers→contract:** `GoalController`→`GoalApi`
   - **mappers:** `ExpenditureExplanationMapper`, `ExpenditureInsightMapper`, `GoalMapper`, `GoalPlanLinkMapper`,
     `GoalSuggestionMapper`
@@ -746,12 +746,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/goals/{id}/plans · DELETE /api/goals/{id}/plans/{linkId} · GET /api/goals/{id}/suggestions ·
     GET /api/goals/{id}/suggestions/{suggestionId}/preview · POST /api/goals/{id}/suggestions/{suggestionId}/accept ·
     POST /api/goals/{id}/suggestions/{suggestionId}/dismiss
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 27 IT + 15 unit
-  - **ITs:** `ActivityModelMigrationRunnerIT`, `AdaptiveReviewServiceIT`, `ExpenditureEstimateRepositoryIT`,
-    `ExpenditureExplanationControllerIT`, `ExpenditureInsightControllerIT`, `ExpenditureInsightServiceIT`,
-    `ExpenditureLearningServiceIT`, `ExpenditureRolloutRunnerIT`, `GoalContractIT`, `GoalEnginePropertiesIT`,
-    `GoalEngineRecomputeIT`, `GoalEvaluationServiceIT`, `GoalFeasibilityServiceIT`, `GoalOverviewApiIT`,
-    `GoalPlanLinkServiceIT`, `GoalProjectionServiceIT`, `GoalReevaluateRunnerIT`, `GoalServiceIT`,
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 28 IT + 16 unit
+  - **ITs:** `ActivityModelMigrationRunnerIT`, `AdaptiveReviewJobNotificationIT`, `AdaptiveReviewServiceIT`,
+    `ExpenditureEstimateRepositoryIT`, `ExpenditureExplanationControllerIT`, `ExpenditureInsightControllerIT`,
+    `ExpenditureInsightServiceIT`, `ExpenditureLearningServiceIT`, `ExpenditureRolloutRunnerIT`, `GoalContractIT`,
+    `GoalEnginePropertiesIT`, `GoalEngineRecomputeIT`, `GoalEvaluationServiceIT`, `GoalFeasibilityServiceIT`,
+    `GoalOverviewApiIT`, `GoalPlanLinkServiceIT`, `GoalProjectionServiceIT`, `GoalReevaluateRunnerIT`, `GoalServiceIT`,
     `GoalSuggestionNotificationIT`, `GoalSuggestionPreviewApiIT`, `GoalSuggestionServiceIT`, `GoalSuggestionTriggerIT`,
     `GoalTimelineContractIT`, `GoalTimelineServiceIT`, `GuardEvaluationServiceIT`, `IntakeDayMarkRepositoryIT`,
     `IntakeDayMarkServiceIT`
