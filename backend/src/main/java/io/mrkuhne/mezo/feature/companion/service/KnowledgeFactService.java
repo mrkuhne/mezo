@@ -133,7 +133,14 @@ public class KnowledgeFactService {
             fact.setCategory(request.getCategory());
         }
         if (request.getIncludeInPrompt() != null) {
-            fact.setIncludeInPrompt(request.getIncludeInPrompt());
+            boolean include = request.getIncludeInPrompt();
+            if (include && !fact.isIncludeInPrompt()) {
+                fact.unmute();
+            } else if (!include && fact.isIncludeInPrompt()) {
+                // S6 (mezo-d6ivw.6): the user's own toggle — "te hallgattattad el". An already
+                // muted fact keeps its original reason (a no-op toggle never rewrites history).
+                fact.mute(KnowledgeFactEntity.MUTED_USER, Instant.now());
+            }
         }
         // mezo-b3pp.30: include_in_prompt is the user's kill-switch for EVERY injection channel,
         // and the knowledge graph is one of them — GraphPromptAssembler renders traversed nodes
@@ -246,7 +253,7 @@ public class KnowledgeFactService {
             log.info("Refute-mutes-fact skipped — fact {} of user {} is already gone", factId, userId);
             return;
         }
-        fact.setIncludeInPrompt(false);
+        fact.mute(KnowledgeFactEntity.MUTED_REFUTED, Instant.now());
         repository.save(fact);
         eventPublisher.publishEvent(new KnowledgeFactChangedEvent(userId, factId));
     }
