@@ -755,4 +755,51 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
         assertThat(teamChatPushes(owner)).isEmpty();
         assertThat(threads.findById(thread.getId()).orElseThrow().getPushed()).isNotEqualTo(Boolean.TRUE);
     }
+
+    // S7 Task 7 fold-in (mezo-d6ivw.7): closeThread row-locks the OPEN ügy and re-checks it — a
+    // clear racing a reply-close must not overwrite closeReason/closeNote or add a RESOLVE line.
+    @Test
+    void resolve_racingAReplyClose_neverRecloses_theUgyAsData() throws Exception {
+        UUID owner = owner();
+        raiseSleepDebtLog(owner);
+        TeamChatThreadEntity thread = service.open(owner, FlagKey.SLEEP_DEBT, todayAt(10, 0), false).orElseThrow();
+        CountDownLatch locked = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            // A reply-close holding the ügy's row lock (TeamChatReplyService.commit's shape).
+            Future<?> replyClose = pool.submit(() -> tx.executeWithoutResult(s -> {
+                TeamChatThreadEntity row = threads.lockOwned(thread.getId(), owner).orElseThrow();
+                row.setStatus("RESOLVED");
+                row.setCloseReason("REPLY");
+                row.setCloseNote("meccsnap");
+                row.setClosedAt(Instant.now());
+                threads.saveAndFlush(row);
+                locked.countDown();
+                try {
+                    release.await(10, SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }));
+            assertThat(locked.await(10, SECONDS)).isTrue();
+            Future<Optional<TeamChatLineEntity>> resolve = pool.submit(() -> service.resolve(owner,
+                    FlagKey.SLEEP_DEBT, new FlagVerdict.ClearEvidence("deficit_hours", 2.0, 5.0, null),
+                    todayAt(10, 5)));
+            Thread.sleep(500); // let the resolve reach (and block on) the row
+            release.countDown();
+            replyClose.get(10, SECONDS);
+
+            assertThat(resolve.get(10, SECONDS)).isEmpty();
+        } finally {
+            release.countDown();
+            pool.shutdownNow();
+        }
+        TeamChatThreadEntity reread = threads.findById(thread.getId()).orElseThrow();
+        assertThat(reread.getStatus()).isEqualTo("RESOLVED");
+        assertThat(reread.getCloseReason()).isEqualTo("REPLY");
+        assertThat(reread.getCloseNote()).isEqualTo("meccsnap");
+        assertThat(lines.findByThreadIdAndDeletedFalse(thread.getId()))
+                .noneMatch(l -> "RESOLVE".equals(l.getKind()));
+    }
 }

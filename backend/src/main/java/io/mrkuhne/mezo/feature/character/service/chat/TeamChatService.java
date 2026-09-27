@@ -112,6 +112,9 @@ public class TeamChatService {
     private final NotificationProperties notificationProperties;
     private final ObjectProvider<TeamChatService> self;
     private final ApplicationEventPublisher events;
+    /** S7 (mezo-d6ivw.7): the known-exception gate at open — a provider, since the exception
+     *  service writes its answer lines through this class. */
+    private final ObjectProvider<TeamChatExceptionService> exceptionGate;
 
     /** Task 11 (mezo-a9bo7.23): the catch-up sweep's lookback — how far back a missed raise still
      *  gets picked up. Final review M6 (mezo-a9bo7.25): 2 h, not 24 — the sweep runs hourly, so two
@@ -167,7 +170,8 @@ public class TeamChatService {
 
     /** What {@link #claimThread} hands the voice step: the committed ügy plus everything its lines
      *  are written from. */
-    record Claim(TeamChatThreadEntity thread, AdvicePick picked, List<String> facts, boolean skepticEligible) {
+    record Claim(TeamChatThreadEntity thread, AdvicePick picked, List<String> facts, boolean skepticEligible,
+            String templateOverride, boolean silent) {
     }
 
     /**
@@ -192,11 +196,13 @@ public class TeamChatService {
             return Optional.empty();
         }
         Claim c = claim.get();
-        TeamChatLines voiced = voice(c.thread(), KIND_OPEN, c.facts(), c.picked().textHu(), c.skepticEligible());
+        String template = c.templateOverride() != null ? c.templateOverride() : c.picked().textHu();
+        TeamChatLines voiced = voice(c.thread(), KIND_OPEN, c.facts(), template, c.skepticEligible());
         self.getObject().writeOpenLines(c.thread(), voiced, c.facts(), at);
         log.info("Team chat ügy {} opened for user {} flag {} by {}", c.thread().getId(), userId, flagKey,
                 c.thread().getOwnerCharacter());
-        return Optional.of(new Opened(c.thread(), voiced.ownerBody(), c.picked().pushAllowed(),
+        // S7: a known-exception question (EXCUSE / REVIEW) never pages the user.
+        return Optional.of(new Opened(c.thread(), voiced.ownerBody(), !c.silent() && c.picked().pushAllowed(),
                 c.picked().quietHoursExempt()));
     }
 
@@ -209,6 +215,20 @@ public class TeamChatService {
         }
         if (threads.findFirstByCreatedByAndFlagKeyAndStatusAndDeletedFalse(userId, flagKey, STATUS_OPEN).isPresent()) {
             return Optional.empty();
+        }
+        // S7 (mezo-d6ivw.7): a remembered exception — a silent hit, a one-tap question or a review.
+        TeamChatExceptionService gateService = exceptionGate.getIfAvailable();
+        TeamChatExceptionService.Gate gate = gateService == null
+                ? TeamChatExceptionService.Gate.none() : gateService.gate(userId, flagKey, at);
+        if (gate.kind() == TeamChatExceptionService.Gate.Kind.SKIP) {
+            log.info("Team chat {} for user {} skipped — known exception '{}' named today", flagKey, userId,
+                    gate.exception().getContextTag());
+            return Optional.empty();
+        }
+        if (gate.kind() != TeamChatExceptionService.Gate.Kind.NONE
+                && threads.findFirstByCreatedByAndFlagKeyAndStatusAndDeletedFalse(userId, flagKey, STATUS_OPEN)
+                        .isPresent()) {
+            return Optional.empty(); // re-checked under the gate's exception lock (an undo may have reopened one)
         }
         if (capReached(userId, at)) {
             log.warn("Team chat daily line cap reached for user {} — open of {} dropped", userId, flagKey);
@@ -233,6 +253,14 @@ public class TeamChatService {
         draft.setActions(new TeamChatActionsEnvelope(actionCatalog.forCard(userId, flagKey).stream()
                 .map(a -> new TeamChatActionsEnvelope.Action(a.key(), a.label(), a.params()))
                 .toList()));
+        boolean offer = gate.kind() == TeamChatExceptionService.Gate.Kind.EXCUSE
+                || gate.kind() == TeamChatExceptionService.Gate.Kind.REVIEW;
+        String templateOverride = null;
+        if (offer) {
+            draft.setOffer(gate.kind() == TeamChatExceptionService.Gate.Kind.REVIEW ? OFFER_REVIEW : OFFER_EXCUSE);
+            draft.setExceptionId(gate.exception().getId());
+            templateOverride = TeamChatExceptionService.template(gate);
+        }
         TeamChatThreadEntity thread = threads.saveAndFlush(draft);
 
         // The Szkeptikus speaks only on an honest coverage gap in the raise's own frozen payload;
@@ -240,7 +268,11 @@ public class TeamChatService {
         Optional<String> gap = TeamChatVoiceWriter.skepticGap(flagKey, picked.payload());
         List<String> facts = gap.map(g -> Stream.concat(picked.facts().stream(), Stream.of(g)).toList())
                 .orElse(picked.facts());
-        return Optional.of(new Claim(thread, picked, facts, gap.isPresent()));
+        if (gate.kind() == TeamChatExceptionService.Gate.Kind.REVIEW) {
+            // The review sentence carries its hit count — as a fact, so the voice guard lets it through.
+            facts = Stream.concat(facts.stream(), Stream.of(templateOverride)).toList();
+        }
+        return Optional.of(new Claim(thread, picked, facts, gap.isPresent(), templateOverride, offer));
     }
 
     /** Step 3 of {@link #openThread}: the OPEN line (always — the cap was checked at the claim) and
@@ -277,9 +309,10 @@ public class TeamChatService {
      *  cleared rule must not linger as OPEN until it expires). */
     @Transactional
     Optional<TeamChatThreadEntity> closeThread(UUID userId, String flagKey, Instant at) {
-        Optional<TeamChatThreadEntity> open =
-                threads.findFirstByCreatedByAndFlagKeyAndStatusAndDeletedFalse(userId, flagKey, STATUS_OPEN);
-        if (open.isEmpty()) {
+        // S7 (mezo-d6ivw.7): row-locked — a reply-close or a one-tap answer holding the lock wins,
+        // and this clear then finds no OPEN ügy instead of overwriting its close reason.
+        Optional<TeamChatThreadEntity> open = threads.lockOpenByFlag(userId, flagKey);
+        if (open.isEmpty() || !STATUS_OPEN.equals(open.get().getStatus())) {
             return Optional.empty();
         }
         TeamChatThreadEntity thread = open.get();

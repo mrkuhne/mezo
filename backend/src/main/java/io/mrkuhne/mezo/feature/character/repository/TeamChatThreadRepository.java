@@ -78,6 +78,15 @@ public interface TeamChatThreadRepository extends JpaRepository<TeamChatThreadEn
     @Query("select t from TeamChatThreadEntity t where t.id = :id and t.createdBy = :owner and t.deleted = false")
     Optional<TeamChatThreadEntity> lockOwned(UUID id, UUID owner);
 
+    /** S7 (mezo-d6ivw.7): the rule's OPEN ügy, row-locked — {@code TeamChatService.closeThread}'s
+     *  read. The status predicate is re-evaluated after the lock wait (Postgres re-checks a
+     *  {@code FOR UPDATE} row's WHERE against its newest version), so an ügy a reply-close or an
+     *  answer closed meanwhile comes back EMPTY instead of being overwritten as DATA. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select t from TeamChatThreadEntity t where t.createdBy = :owner and t.flagKey = :flagKey"
+            + " and t.status = 'OPEN' and t.deleted = false")
+    Optional<TeamChatThreadEntity> lockOpenByFlag(UUID owner, String flagKey);
+
     /** Task 15 (mezo-a9bo7.25): every ügy the day touched — opened OR closed in {@code [from, to)} —
      *  for the evening edition's {@code team_chat_day} recap; oldest first. */
     @Query("""
