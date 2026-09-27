@@ -58,3 +58,16 @@ test('an unparseable cron falls back honestly to the raw string on its connector
   expect(screen.getByText('napi összefoglaló · 0 20 2 1 * *')).toBeInTheDocument()
   expect(screen.getByText('minta-felismerés · minden éjjel 02:40')).toBeInTheDocument()
 })
+
+test('labels every fact source in Hungarian, including the csapatfal (S7)', () => {
+  const overview = makeOverview([])
+  overview.l3.facts = [
+    { source: 'chat', count: 3 }, { source: 'team_chat', count: 2 },
+    { source: 'weekly_review', count: 1 }, { source: 'question', count: 4 },
+  ]
+  renderPanel(overview)
+  expect(screen.getByText('3 chat')).toBeInTheDocument()
+  expect(screen.getByText('2 csapatfal')).toBeInTheDocument()
+  expect(screen.getByText('1 heti')).toBeInTheDocument()
+  expect(screen.getByText('4 kérdés')).toBeInTheDocument()
+})
