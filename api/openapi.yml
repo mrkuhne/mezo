@@ -6314,7 +6314,7 @@ paths:
       tags:
         - People
       operationId: updatePersonFact
-      summary: Per-fact prompt toggle
+      summary: Per-fact prompt toggle and text edit (S6)
       parameters:
         - name: personId
           in: path
@@ -21368,11 +21368,19 @@ components:
             mondatot mutat.
     UpdatePersonFactRequest:
       type: object
-      required:
-        - includeInPrompt
+      description: >-
+        Részleges frissítés — csak a megadott mezők érvényesülnek (S6:
+        szöveg-javítás is). Egy korábban visszavont szöveg beírása megengedett:
+        azt a felhasználó maga írta.
       properties:
         includeInPrompt:
           type: boolean
+          nullable: true
+        factText:
+          type: string
+          minLength: 1
+          maxLength: 300
+          nullable: true
     PersonFactResponse:
       type: object
       description: >-
@@ -21386,6 +21394,7 @@ components:
         - factText
         - confidence
         - sourceRefKind
+        - sourceRefId
         - active
         - includeInPrompt
         - seen
@@ -21419,6 +21428,12 @@ components:
           enum:
             - chat_turn
             - nightly_day
+        sourceRefId:
+          type: string
+          maxLength: 64
+          description: >-
+            S6 — a forrás azonosítója (chat_turn: az üzenet; nightly_day: a
+            nap).
         active:
           type: boolean
         includeInPrompt:

@@ -2443,7 +2443,7 @@ export interface paths {
         delete: operations["undoPersonFact"];
         options?: never;
         head?: never;
-        /** Per-fact prompt toggle */
+        /** Per-fact prompt toggle and text edit (S6) */
         patch: operations["updatePersonFact"];
         trace?: never;
     };
@@ -8612,8 +8612,10 @@ export interface components {
             /** @description Az Emberek hub Mezo-észrevétel sávjának mondata. A mai 'people' companion-üzenet, ha van; egyébként a heti aggregátumokból számított, determinisztikus tartalék. Sosem üres — a sáv mindig igaz mondatot mutat. */
             mezoNote: string;
         };
+        /** @description Részleges frissítés — csak a megadott mezők érvényesülnek (S6: szöveg-javítás is). Egy korábban visszavont szöveg beírása megengedett: azt a felhasználó maga írta. */
         UpdatePersonFactRequest: {
-            includeInPrompt: boolean;
+            includeInPrompt?: boolean | null;
+            factText?: string | null;
         };
         /** @description S3 (mezo-d6ivw.3) — egy normalizált tény egy ismert személyről, forrás-hivatkozással. A legacy person.knownFacts tömbtől független; visszavonás után a szöveg tartós vétó. */
         PersonFactResponse: {
@@ -8628,6 +8630,8 @@ export interface components {
             confidence: "low" | "medium" | "high";
             /** @enum {string} */
             sourceRefKind: "chat_turn" | "nightly_day";
+            /** @description S6 — a forrás azonosítója (chat_turn: az üzenet; nightly_day: a nap). */
+            sourceRefId: string;
             active: boolean;
             includeInPrompt: boolean;
             /** @description false, amíg a (jellemzően éjszakai) tényt a személy oldalán először meg nem nézik. */

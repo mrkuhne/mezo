@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.PeopleResponse;
 import io.mrkuhne.mezo.api.dto.PersonFactResponse;
+import io.mrkuhne.mezo.api.dto.PersonResponse;
 import io.mrkuhne.mezo.api.dto.UpdatePersonFactRequest;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
@@ -89,11 +90,49 @@ class PersonFactControllerIT extends ApiIntegrationTest {
 
         PersonFactResponse res = patchForBody(
             "/api/people/" + anna.getId() + "/facts/" + fact.getId(),
-            new UpdatePersonFactRequest(false),
+            UpdatePersonFactRequest.builder().includeInPrompt(false).build(),
             ownerAuthHeaders(), HttpStatus.OK, PersonFactResponse.class);
 
         assertThat(res.getIncludeInPrompt()).isFalse();
         assertThat(res.getActive()).isTrue();
+    }
+
+    @Test
+    void patch_shouldEditTheText_andKeepThePromptFlag() {
+        UUID owner = ownerId();
+        PersonEntity anna = personPopulator.createPerson(owner, "Anna");
+        PersonFactEntity fact = seedFact(owner, anna, "Szereti a társasjátékokat");
+
+        PersonFactResponse edited = patchForBody("/api/people/" + anna.getId() + "/facts/" + fact.getId(),
+            UpdatePersonFactRequest.builder().factText("  Szereti a társasjátékokat. ").build(),
+            ownerAuthHeaders(), HttpStatus.OK, PersonFactResponse.class);
+
+        assertThat(edited.getFactText()).isEqualTo("Szereti a társasjátékokat.");
+        assertThat(edited.getIncludeInPrompt()).isTrue();
+        assertThat(edited.getSourceRefId()).isNotBlank();
+    }
+
+    @Test
+    void patch_shouldReturn400_whenTextIsTooLong() {
+        UUID owner = ownerId();
+        PersonEntity anna = personPopulator.createPerson(owner, "Anna");
+        PersonFactEntity fact = seedFact(owner, anna, "Szereti a társasjátékokat");
+
+        String body = patchForBody("/api/people/" + anna.getId() + "/facts/" + fact.getId(),
+            UpdatePersonFactRequest.builder().factText("x".repeat(301)).build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(body, "factText", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void bootstrap_shouldCarrySourceRefIdOnEveryFact() {
+        UUID owner = ownerId();
+        PersonEntity anna = personPopulator.createPerson(owner, "Anna");
+        seedFact(owner, anna, "Szereti a kávét");
+
+        PeopleResponse people = getForBody("/api/people", ownerAuthHeaders(), HttpStatus.OK, PeopleResponse.class);
+        assertThat(people.getPersons()).flatExtracting(PersonResponse::getFacts)
+            .allSatisfy(f -> assertThat(f.getSourceRefId()).isNotBlank());
     }
 
     @Test
