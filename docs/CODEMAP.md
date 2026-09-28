@@ -818,12 +818,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `usePatternPairDetail`, `usePatterns`, `usePredictions`, `useSimilarDays`, `useTranscribe`
   - **modules:** categoryLabel.ts, chat.ts, chatApi.ts, chatHooks.ts, coachingCardHooks.ts, coachingCardMock.ts,
     coachingTraceApi.ts, coachingTraceHooks.ts, coachingTraceMock.ts, diagnosisApi.ts, diagnosisHooks.ts,
-    diagnosisMock.ts, experimentsApi.ts, experimentsHooks.ts, graph.ts, graphApi.ts, graphHooks.ts, insights.ts,
-    knowledge.ts, knowledgeApi.ts, knowledgeHooks.ts, knowledgeHub.ts, knowledgeHubApi.ts, knowledgeHubHooks.ts,
-    memoirApi.ts, memoirHooks.ts, memory.ts, memoryApi.ts, memoryFeedbackApi.ts, memoryFeedbackHooks.ts,
-    memoryHooks.ts, monitorApi.ts, monitorHooks.ts, observations.ts, observationsApi.ts, observationsHooks.ts,
-    patternDetailApi.ts, patternDetailHooks.ts, patternPairMapper.ts, patternsApi.ts, patternsHooks.ts,
-    predictionsApi.ts, predictionsHooks.ts, weeklyHooks.ts, weeklySuggestionApi.ts
+    diagnosisMock.ts, experimentsApi.ts, experimentsHooks.ts, forgetIntent.ts, graph.ts, graphApi.ts, graphHooks.ts,
+    insights.ts, knowledge.ts, knowledgeApi.ts, knowledgeHooks.ts, knowledgeHub.ts, knowledgeHubApi.ts,
+    knowledgeHubHooks.ts, memoirApi.ts, memoirHooks.ts, memory.ts, memoryApi.ts, memoryFeedbackApi.ts,
+    memoryFeedbackHooks.ts, memoryHooks.ts, monitorApi.ts, monitorHooks.ts, observations.ts, observationsApi.ts,
+    observationsHooks.ts, patternDetailApi.ts, patternDetailHooks.ts, patternPairMapper.ts, patternsApi.ts,
+    patternsHooks.ts, predictionsApi.ts, predictionsHooks.ts, turnMemory.ts, turnMemoryApi.ts, turnMemoryHooks.ts,
+    weeklyHooks.ts, weeklySuggestionApi.ts
 - **FE ui** `frontend/src/features/insights`
   - **pages:** BoopAboutPage.tsx, BoopMemoriesPage.tsx, BoopMenuPage.tsx, CharacterRoomPage.tsx, ChatPage.tsx,
     CoachingCardPage.tsx, CoachingHubPage.tsx, CoachingObserverPage.tsx, DiagnosisDetailPage.tsx,
@@ -831,19 +832,20 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     MemoirArchivePage.tsx, MemoirChapterPage.tsx, MemoirPage.tsx, MemoryDayPage.tsx, MemoryPage.tsx, MezoHubPage.tsx,
     PatternDetailPage.tsx, PatternsPage.tsx, PredictionDetailPage.tsx, PredictionsPage.tsx, RoladLifeEventsPage.tsx,
     TeamChatPage.tsx, TeamFeedPage.tsx, TeamPage.tsx
-  - **sheets:** ConversationActionsSheet.tsx, ConversationPickerSheet.tsx, NodeDetailSheet.tsx
+  - **sheets:** ConversationActionsSheet.tsx, ConversationPickerSheet.tsx, ForgetAllSheet.tsx, NodeDetailSheet.tsx,
+    RecallSheet.tsx
   - **components:** AskTeamRow.tsx, AskTeamSheet.tsx, CategoryHeader.tsx, ChatMessage.tsx, CoachingRuleTile.tsx,
     DetailHero.tsx, EmberekSection.tsx, EszrevetelekSection.tsx, EvidenceLog.tsx, FactCandidateCard.tsx,
     FeedGuests.tsx, FeedPostCard.tsx, FeedPostHead.tsx, FeedPosterCard.tsx, FeedReplySheet.tsx, FeedTrio.tsx,
     FeedbackChips.tsx, ForgetUndoBar.tsx, HatasokSection.tsx, HowItWorksView.tsx, HubFold.tsx, HubRow.tsx,
     HubSearch.tsx, HubTiles.tsx, IntroPosts.tsx, KategoriakView.tsx, KindNodeList.tsx, KindTileGrid.tsx,
     KnowledgeBaseView.tsx, LifeEventAcceptedCard.tsx, LifeEventCandidateCard.tsx, LiveStrip.tsx, MemoryAuditPanel.tsx,
-    MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx, OfferButtons.tsx,
-    PatternAnswerHero.tsx, PatternArtifactDetail.tsx, PatternDecisionCard.tsx, PatternDomainMark.tsx,
+    MemoryChip.tsx, MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx,
+    OfferButtons.tsx, PatternAnswerHero.tsx, PatternArtifactDetail.tsx, PatternDecisionCard.tsx, PatternDomainMark.tsx,
     PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx, PatternLeanMeter.tsx, PatternRuleCard.tsx,
     PatternZoneChart.tsx, ProfileNodeCard.tsx, ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx,
-    RememberedChips.tsx, ReplyAfterlife.tsx, RoladInbox.tsx, RoladQuote.tsx, RoladTimeline.tsx, RoomCaseCard.tsx,
-    SimilarDayCard.tsx, StoryStrip.tsx, TenyekSection.tsx, TokenColumns.tsx, ToolWorkStrip.tsx, VerdictArc.tsx,
+    ReplyAfterlife.tsx, RoladInbox.tsx, RoladQuote.tsx, RoladTimeline.tsx, RoomCaseCard.tsx, SimilarDayCard.tsx,
+    StoryStrip.tsx, TenyekSection.tsx, TokenColumns.tsx, ToolWorkStrip.tsx, TurnMemoryChips.tsx, VerdictArc.tsx,
     experimentStatus.tsx, riseStyle.ts, useFeedSession.ts, useTeamFeed.ts
   - **logic:** boopNavigation.ts, chatRefs.ts, coachingCopy.ts, diagnosisCatalog.ts, diagnosisCopy.ts,
     diagnosisTeam.ts, domains.ts, factCopy.ts, findings.ts, hubCopy.ts, hubCounts.ts, hubSearch.ts, hubTopics.ts,
