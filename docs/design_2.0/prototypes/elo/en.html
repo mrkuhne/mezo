@@ -408,6 +408,20 @@ svg{overflow:visible}
 @keyframes float{0%,100%{transform:translateY(2px) rotate(-3deg)}50%{transform:translateY(-4px) rotate(1deg)}}
 @keyframes glow{0%,100%{filter:drop-shadow(0 6px 14px rgba(155,143,196,.28))}50%{filter:drop-shadow(0 6px 26px rgba(155,143,196,.55))}}
 @keyframes breathe{0%,100%{box-shadow:0 18px 32px -18px rgba(155,143,196,.8),inset 0 1px 0 #fff}50%{box-shadow:0 18px 40px -14px rgba(155,143,196,1),0 0 22px rgba(155,143,196,.45),inset 0 1px 0 #fff}}
+
+/* súlycél = első, egyenrangú cél (owner 2026-09-28) */
+.mosaic .lgtile.wide{grid-column:1/-1;min-height:84px;flex-direction:row;gap:12px}
+.lgtile.wgoal2 .pct{font-size:22px;font-weight:600;letter-spacing:-.6px;color:color-mix(in srgb,var(--c) 80%,var(--ink))}
+.lgtile.wgoal2 .bar{margin-top:6px}
+.goalcard .grows{display:grid;gap:10px;margin-top:12px}
+.goalcard .grw{display:flex;align-items:center;gap:10px}
+.goalcard .grw .icon{width:28px;height:28px}
+.goalcard .grw .grow{flex:1;min-width:0;display:grid;gap:4px}
+.goalcard .grw .gl{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.goalcard .grw strong{font-size:13.5px;font-weight:600}
+.goalcard .grw b{font-size:13px;color:color-mix(in srgb,var(--c) 80%,var(--ink))}
+.goalcard .grw b.arr{font-size:17px;font-weight:400}
+.goalcard .grw small{font-size:11px;color:var(--sub)}
 </style>
 </head>
 <body>
@@ -3191,9 +3205,11 @@ function hub(){
   <div class="p16" style="margin-top:14px">${elv()}</div>
   <div class="p16">
   ${full?`<button class="goalcard glass lift rise" style="--i:3" data-go="#celok">
-    <div class="ct">${I('ring')}<strong>Célok állása</strong><span class="flatchip" style="--c:var(--coral)">3 aktív</span></div>
-    <div class="mcells"><span class="mcell" style="--c:var(--sage)"><b>↗ 2</b><small>emelkedik</small></span><span class="mcell" style="--c:var(--lav)"><b>→ 1</b><small>tartja</small></span><span class="mcell" style="--c:var(--gold)"><b>↘ 0</b><small>figyelmet kér</small></span></div>
-    <div class="wgrow">${I('weight')}<span class="grow"><span><span>Súlycél · <b>78,4 → 73,0 kg</b></span><b>33%</b></span>${bar(33,'var(--coral)',1)}</span></div>
+    <div class="ct">${I('ring')}<strong>Célok állása</strong><span class="flatchip" style="--c:var(--coral)">4 aktív</span></div>
+    <div class="grows">
+      <div class="grw" style="--c:var(--coral)">${I('weight')}<span class="grow"><span class="gl"><strong>Súlycél · 78,4 → 73 kg</strong><b>33%</b></span>${bar(33,'var(--coral)',1)}</span></div>
+      ${GOALS.map(g=>{const d=DIM[g.d[0]];return `<div class="grw" style="--c:${d[1]}">${I(d[2])}<span class="grow"><span class="gl"><strong>${g.t}</strong><b class="arr">${g.arrow}</b></span><small>${g.arrow==='↗'?'emelkedik':g.arrow==='→'?'tartja':'figyelmet kér'} · ${g.ma}</small></span></div>`}).join('')}
+    </div>
   </button>`:`<button class="goalcard dash rise" style="--c:var(--coral);text-align:center;--i:3" data-go="#celuj/1"><strong style="font-size:15px">＋ Első cél</strong><small class="tiny" style="display:block;margin-top:4px">Mezo pilléreket javasol hozzá</small></button>`}
   </div>
   <div class="duoen">
@@ -3217,21 +3233,23 @@ function celok(){
   const active=full?['te','el','eg','ka','er']:[];
   const cnt=k=>full?GOALS.filter(g=>g.d.includes(k)).length:0;
   return topbar()+tabhead('',`<button class="pillx" style="--c:var(--sage)" data-go="#celuj/1">＋ Új cél</button>`)+
-  eyeb(full?'3 AKTÍV · 1 PARKOL':'MÉG NINCS AKTÍV CÉL','Célok')+
-  `<section class="lghero rise" style="--i:1"><div class="permah">${permah(active)}<span class="ctr"><b>${full?3:0}</b><small>aktív cél</small></span></div>
+  eyeb(full?'4 AKTÍV · 1 PARKOL':'MÉG NINCS AKTÍV CÉL','Célok')+
+  `<section class="lghero rise" style="--i:1"><div class="permah">${permah(active)}<span class="ctr"><b>${full?3:0}</b><small>életcél</small></span></div>
     <p>${full?'A pillérek a meglévő naplódból számolnak. <b>2↗ · 1→ · 0↘</b> ezen a héten.':'Még nincs aktív célod. <b>Egy cél, két-három pillér</b> — a pillérek abból számolnak, amit már most is naplózol.'}</p></section>
   <div class="dimband rise" style="--i:2">${Object.entries(DIM).map(([k,d])=>fchip(`${d[0]} <b style="opacity:.7">${cnt(k)}</b>`,d[1],d[2],cnt(k)?'':'is-dim')).join('')}</div>
-  <div class="mosaic">${full?GOALS.map((g,i)=>{const d=DIM[g.d[0]];return `
-    <button class="lgtile glass lift rise" style="--c:${d[1]};--i:${i+3}" data-go="#cel">
+  <div class="mosaic">${full?`
+    <button class="lgtile wgoal2 glass lift rise" style="--c:var(--coral);--i:3" data-go="#sulycel">
+      <span class="top">${I('weight')}<span class="pct">33%</span></span>
+      <span class="eb">SÚLYCÉL · EGÉSZSÉG</span><strong>Fogyás · 78,4 → 73 kg</strong>${bar(33,'var(--coral)',3)}<span class="tiny">−0,5 kg / hét · kb. 11 hét</span></button>`:''}${full?GOALS.map((g,i)=>{const d=DIM[g.d[0]];return `
+    <button class="lgtile glass lift rise" style="--c:${d[1]};--i:${i+4}" data-go="#cel">
       <span class="top">${I(d[2])}<span class="arrow">${g.arrow}</span></span>
       <span class="eb">${d[0].toUpperCase()}</span><strong>${g.t}</strong>${dots(g.dots)}<span class="tiny">${g.ma}</span></button>`}).join(''):''}
-    <button class="lgtile dash rise" style="--c:var(--sage);--i:6" data-go="#celuj/1">${I('ring')}<strong>＋ Új cél</strong><span class="tiny">Mezo pilléreket javasol</span></button>
+    <button class="lgtile dash wide rise" style="--c:var(--sage);--i:7" data-go="#celuj/1">${I('ring')}<strong>＋ Új cél</strong><span class="tiny">Mezo pilléreket javasol</span></button>
   </div>
   ${full?`${h3('PARKOL')}<div class="p16"><div class="xrow flatrow" style="--c:var(--lav)">${I('book')}<span class="grow"><strong>Spanyol B2</strong><small>parkol · Elmélyülés</small></span><button class="mini" data-toast="Újra aktív">Vissza</button></div></div>`:''}
   ${h3('A CÉLOK MÖGÖTT')}
   <div class="p16">
     <button class="xrow glass lift rise" style="--c:var(--sage)" data-go="#jelek"><span class="well" style="--c:var(--sage)">${I('signal')}</span><span class="grow"><strong>Jelek · mit figyel a rendszer</strong><small>28 forrás · 19 él · 9 alszik</small></span><span class="chev">›</span></button>
-    <button class="xrow glass lift rise" style="--c:var(--coral)" data-go="#sulycel"><span class="well" style="--c:var(--coral)">${I('weight')}</span><span class="grow"><strong>Súlycél</strong><small>Fogyás · 78,4 → 73 kg</small></span><span class="chev">›</span></button>
   </div>
   ${full?`${h3('LEZÁRT CÉLOK')}<div class="p16"><div class="xrow flatrow" style="--c:var(--sage)">${I('sprout')}<span class="grow"><strong>Félmaraton</strong><small>kész · Egészség</small></span>${I('tick','okmark')}</div></div>`:''}
   ${principle('Ami nincs naplózva, az nem nulla — az üres.')}`;

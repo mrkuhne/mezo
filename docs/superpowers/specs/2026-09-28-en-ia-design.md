@@ -28,6 +28,8 @@ programmes re-skinned it (U6, U7) but kept the August Design 2.0 hub-of-tiles:
 5. The **Életvonal** instrument (chosen 2026-09-17, `mezo-88iwa.16`) goes on Hol tartok,
    directly under the week hero, replacing a small body snapshot.
 6. Test tab opens on **Súly** by default.
+7. (prototype round 1) **The weight goal is a first-class goal**, not a "behind the goals" row:
+   the first goal tile on Célok and an equal row on Hol tartok's Célok állása card.
 
 ## Design
 
@@ -63,8 +65,9 @@ Order, top to bottom:
    smoothed trend, awards earned in the window); zero stations is a valid state. Honesty:
    < 2 measurements → a calm empty state with a "Mérj" action, no curve. Tap on the card → Test (Súly).
    "A következő állomás" line (target, remaining Δ) when a weight target exists.
-4. **Célok állása** — life goals counted by direction (↗ halad / → tart / ↘ figyelmet kér,
-   never red) + weight-goal progress line → `/me/goals`; no goals → "Első cél" → `/me/goals/new`.
+4. **Célok állása** — one equal row per active goal, weight goal first (progress % + bar), then
+   each life goal with its direction (↗ emelkedik / → tartja / ↘ figyelmet kér, never red) and
+   today's pillar count → `/me/goals`; no goals → "Első cél" → `/me/goals/new`.
 5. **Two cards**: **Fejlődés** (→ `/me/growth`) and **Emberek** (→ `/me/people`).
    Alvás is represented only in the Életvonal band; the Rutin tile is removed.
 
@@ -78,7 +81,11 @@ chart, logs, sheets, night-mode entry). No `‹ Én` back chip.
 
 ### Célok (`/me/goals`)
 
-Today's `CelokPage` (life goals + Súlycél row) becomes a tab page (no back chip). All deep pages
+Today's `CelokPage` becomes a tab page (no back chip). The weight goal leaves the "A célok
+mögött" row list and becomes the **first goal tile** (same tile as a life goal: icon, % , bar,
+pace · ETA → `/me/goals/weight`); the header count includes it ("4 aktív"); the PERMAH ring
+counts life goals only ("életcél"); "＋ Új cél" becomes a wide dashed tile; Jelek stays in
+"A célok mögött". All deep pages
 (`/new`, `/:id`, `/signals`, `/weight/*`) unchanged, back label → "Célok".
 
 ### Napló (`/me/naplo`)
