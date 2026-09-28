@@ -8,11 +8,11 @@ the same link. The rules are in [`CLAUDE.md`](../../../../CLAUDE.md) §Frontend 
 
 | Domain | File | Artifact URL | Last synced with production |
 |---|---|---|---|
-| Nap | `nap.html` | https://claude.ai/artifact/K16pachHoksG9KY1yKo4C3 | 2026-09-28 — Check-in 2.0 (`mezo-ck2`) shipped to main: `#checkin`, the four slot sheets, `#napom`, `#napzaras/3`, `#ikonok` match production. Prototype-only, not app features: the slot chips on the check-in sheet and the „Mit táplál" page (`#hatasok`). The week hub's 3×3 cells with the new Hangulat cell live in the Én domain, which has no living prototype yet. (Seeded 2026-09-27 from `uveg-nap.html`; not yet merged: `uveg-napod.html` routes.) |
+| Nap | `nap.html` | https://claude.ai/artifact/K16pachHoksG9KY1yKo4C3 | 2026-09-28 — Check-in 2.0 (`mezo-ck2`) + follow-ups: `#checkin`, the four slot sheets, `#napom`, `#napzaras/3`, `#ikonok` match production; the `uveg-napod.html` routes are merged in (the A napom day views `#nap/<date>` — live, `/este`, closed/scored, thin day — `#maieste` and the „Mit írsz be?” sheet); the tabbar now matches the app (Mai · A napom · Beszélgetés · Rutin) and the header day orb opens the day view. Prototype-only, not app features: the slot chips on the check-in sheet and the „Mit táplál” page (`#hatasok`). (Seeded 2026-09-27 from `uveg-nap.html`.) |
 | Edzés | `edzes.html` | https://claude.ai/artifact/DdTK5jJ6XTBuqnPSC3fpcC | 2026-09-28 — Check-in 2.0 (`mezo-ck2`) shipped to main: the `#mai` „Mai állapot" readiness card (offer, lightened + undo) matches production; in the app it shows only on a planned gym day with a morning check-in that suggests it. (Seeded 2026-09-27 from `uveg-edzes.html`; not yet merged: `uveg-edzes2.html` routes; `companion-titanium` modules inlined so the page is self-contained.) |
 | Fuel | `fuel.html` | — (not seeded yet) | — |
 | Mezo | `mezo.html` | — (not seeded yet) | — |
-| Én | `en.html` | — (not seeded yet) | — |
+| Én | `en.html` | https://claude.ai/artifact/9tLViJToBxqsHkaLADbng5 | 2026-09-28 — seeded from `uveg-en.html` + `uveg-en2.html` (one router, 45 routes, tabs Áttekintés · Súly · Alvás · Napló per `navModel`), then the week hub `#het` got the 3×3 cells with Hangulat next to Energia (Check-in 2.0, `mezo-ck2`), matching `WeekHubPage`. Known gaps vs the app (not yet drawn): the `/me/growth` hub page, the settings editors for Fuel slots / biometrics / sleep / gym / sport, and `#rutin` still shows daily ticking (it lives on Nap · Rutin in the app). |
 
 A file is seeded the first time a change touches its domain (seed sources are listed in
 CLAUDE.md). Fill in the URL on the first publish and update the date on every merge that
