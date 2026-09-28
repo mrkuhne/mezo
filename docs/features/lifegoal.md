@@ -116,7 +116,8 @@ ADR: [`0034-measurable-life-goals.md`](../decisions/0034-measurable-life-goals.m
   (`mezo-iizd.7`) opens `/me/goals/signals` (`JelekPage`) — see below.
 - **`/me/goals/signals` → `JelekPage`** (`pages/JelekPage.tsx`, `mezo-iizd.7`, registered ahead
   of the dynamic `me/goals/:id` route). Hero: "**{live}** / {total} forrás él · volt adata az
-  elmúlt 7 napban". Two lists, Él / Alszik, one row per catalog entry — clay icon by group,
+  elmúlt 7 napban" (its aria-label reads „10 élő forrás a 32-ből" — article + -ból/-ből via
+  `huArticle`/`huFrom`, `shared/lib/huNum.ts`, Check-in 2.0 follow-up C). Two lists, Él / Alszik, one row per catalog entry — clay icon by group,
   `{daysWithData} / 7 nap · {group}` (asleep rows read "nincs adat 7 napja"), and the labels of
   the caller's active goals' active pillars fed by that source as chips. No new logging surface —
   a `principle` footer states it explicitly ("Nincs külső forrás — se naptár, se időjárás, se

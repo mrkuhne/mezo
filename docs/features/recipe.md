@@ -2,7 +2,7 @@
 title: Recipes (Receptek)
 type: feature-domain
 status: done
-updated: 2026-09-26
+updated: 2026-09-28
 tags: [fuel, recipe, frontend, data-layer, backend, llm]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/recipe
@@ -36,7 +36,7 @@ Driving specs: [`2026-06-23-fuel-recipes-design.md`](../superpowers/specs/2026-0
 
 - **`FuelRecipesPage`** (`/fuel/recipes`) — the library, each card carrying the recipe's mezo-fit badge.
 - **`RecipeDetailPage`** (`/fuel/recipes/:id`) — tabs, the AI breakdown prose, a **„Logolás"** action into meal-logging.
-- **`RecipeEditorPage`** (`/fuel/recipes/new`, `/fuel/recipes/:id/edit`) — line editing via `IngredientPickerSheet` sourced from the Kamra, a save bar.
+- **`RecipeEditorPage`** (`/fuel/recipes/new`, `/fuel/recipes/:id/edit`) — create = edit as one full page (it replaced the retired `NewRecipeSheet`): név, slot, csillag, adag + elő/főzési idő, címkék, line editing via `IngredientPickerSheet` sourced from the Kamra, a save bar. Its original v1 layout reference now lives in the archive ([`docs/archive/design-v1/recipes-editor.html`](../archive/design-v1/recipes-editor.html), left phone; `mezo-iwmsw` moved it and updated the file's header comment); the current look is the Üveg one above.
 - **`RecipeWorkshopPage`** (`/fuel/recipes/muhely[?recipeId=|?fromMeal=&d=]`) — the „✨ Műhely" chat-driven recipe builder: goals `high_protein|pre_workout|post_workout|before_bed|breakfast`, a diff view over the working draft, **„Frissítettem a vázlatot."** as the fallback reply when the model changes nothing narratable, and Save routes through the normal editor path.
 
 **Since S4:** a Workshop line the LLM could not link to a `pantryItemId` (`null` or hallucinated) but whose stated name matches an entry in the SHARED pantry catalog now arrives on the draft as a `source: "pantry"` line — and that match automatically puts the matched definition on the caller's shelf (`PantryCatalogService.ensureItem`), so the line resolves to a real owned `pantry_item` the moment the recipe is saved.

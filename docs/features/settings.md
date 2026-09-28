@@ -2,7 +2,7 @@
 title: Central settings and personal context
 type: feature-platform
 status: done
-updated: 2026-09-25
+updated: 2026-09-28
 tags: [frontend, platform, ai]
 key_files:
   - frontend/src/features/settings
@@ -55,6 +55,16 @@ and common visual framing. New companion reads use `useDualQuery`; mutations upd
 caches. Real-mode preview comes only from the shared backend assembler. Mock preview is clearly
 labelled simulation; edits persist in the session QueryClient.
 
+**Styling (since `mezo-zn01o`, U11 cleanup, 2026-09-27).** The look is owned by the üveg block
+in `frontend/src/styles/prototype.css` (`/* ── uveg en2 beallitasok (mezo-me75u.7) ── */`,
+`:25113` — `SettingsFrame`, `SettingsRow`, goal/account/Mezo pages). The pre-üveg light-world
+rules that block outranked were deleted after a computed-style A/B crawl proved them inert:
+`settings.css` keeps only the per-domain `--settings-tone`/`--settings-ink` skins, live geometry
+(`.settings-page` width/padding, breadcrumb, current-area card, theme-picker scenes), focus/
+disabled states and the logout colour — its page gradient, hero, domain-grid, row, wash, week
+and stats paint are gone; `personal-settings.css` is down to the `.personal-switch input` size
+and accent. New settings styling goes into the prototype.css üveg block, not these files.
+
 ## 4. Data model & API
 
 GET/PUT `/api/companion/preferences`: `aboutMe`, `customInstructions` (0–4000 chars),
@@ -101,4 +111,5 @@ personal preview is not the whole system prompt. Context edits apply on the next
 - `frontend/src/features/settings/components/UnsavedChangesGuard.tsx`: navigation/reload protection.
 - `frontend/src/features/settings/pages/MezoPersonalPage.tsx`: introduction, instructions and preview.
 - `frontend/src/features/settings/pages/AccountSettingsPage.tsx`: canonical account correction.
+- `frontend/src/styles/prototype.css` (`:25113`, uveg en2 beallitasok): the live settings look; `settings.css`/`personal-settings.css` hold only residual skins and geometry.
 - `frontend/src/data/companion/preferencesHooks.ts`: dual-mode queries and writes.

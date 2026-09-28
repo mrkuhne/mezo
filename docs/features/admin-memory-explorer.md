@@ -2,7 +2,7 @@
 title: RAG memory explorer — owner console part 2
 type: feature-domain
 status: done
-updated: 2026-09-26
+updated: 2026-09-28
 tags: [admin, companion, memory, rag, pgvector, knowledge-graph, backend, frontend, data-layer, design]
 key_files:
   - api/feature/admin-memory/admin-memory.yml
@@ -119,7 +119,9 @@ key with no explanation. Arriving via a deep link from a run candidate shows an 
 
 **Térkép** (`MapView`/`MapInspector`): an SVG scatter of every ready vector, coloured by source
 kind, hollow for `suppressed`/`superseded` items, radius by salience. A **sampled banner** appears
-whenever the store exceeds `vectorSampleThreshold` ("N elem látszik M-ből"). Clicking a point
+whenever the store exceeds `vectorSampleThreshold` ("N elem látszik az 1842-ből" — article and
+-ból/-ből follow the number's reading via `huArticle`/`huFrom`, `shared/lib/huNum.ts`, since
+Check-in 2.0 follow-up C; it used to print a fixed „a …-ból"). Clicking a point
 fetches its real pgvector neighbours (dashed lines). A replay query can be placed on the map: with
 `queryProjection` present the point comes from the SAME UMAP `transform()` (labelled honestly, "a
 UMAP transform()-jével lett kiszámolva ugyanabból a modellből"); without it, the query's dot is
