@@ -1,11 +1,14 @@
 package io.mrkuhne.mezo.feature.goal;
 
+import io.mrkuhne.mezo.feature.goal.engine.service.ExpenditureLearningService;
 import io.mrkuhne.mezo.feature.goal.engine.service.GoalEngineService;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
+import io.mrkuhne.mezo.feature.goal.repository.ExpenditureEstimateRepository;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.train.service.ActivityEnergyModel;
 import io.mrkuhne.mezo.feature.train.service.RunningService;
 import io.mrkuhne.mezo.feature.train.service.SportService;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.function.IntSupplier;
 import lombok.RequiredArgsConstructor;
@@ -19,10 +22,13 @@ import org.springframework.stereotype.Component;
  * (1) estimates every sport/run row whose kcal is NULL (the Liquibase changeset nulled the old
  * gross estimates once; rows without a known body simply stay NULL); (2) re-evaluates every
  * non-archived goal whose tdee_bootstrap predates {@link ActivityEnergyModel#VERSION} — a fresh
- * evaluate writes the marker, so the next boot skips it. {@code @Order(207)}: after the seed runners
- * and {@link GoalReevaluateRunner} (200) where that one is active, and BEFORE
- * {@code MealRescoreRunner} (210) so any rescore reads the recomputed goal targets (207, not 205,
- * to avoid tying with {@code MealSaturatedFatBackfillRunner}).
+ * evaluate writes the marker, so the next boot skips it. v3 (mezo-tb3s2): before that evaluate, the
+ * goal's whole learned-expenditure history is re-chained ({@link
+ * ExpenditureLearningService#rechainFrom}) from its earliest stored week, so every week's applied
+ * base reflects the served-day movement credit before the goal is re-evaluated against it.
+ * {@code @Order(207)}: after the seed runners and {@link GoalReevaluateRunner} (200) where that one
+ * is active, and BEFORE {@code MealRescoreRunner} (210) so any rescore reads the recomputed goal
+ * targets (207, not 205, to avoid tying with {@code MealSaturatedFatBackfillRunner}).
  */
 @Slf4j
 @Component
@@ -34,6 +40,8 @@ public class ActivityModelMigrationRunner implements CommandLineRunner {
     private final RunningService runningService;
     private final GoalRepository goalRepository;
     private final GoalEngineService goalEngineService;
+    private final ExpenditureLearningService expenditureLearning;
+    private final ExpenditureEstimateRepository estimates;
 
     @Override
     public void run(String... args) {
@@ -50,6 +58,10 @@ public class ActivityModelMigrationRunner implements CommandLineRunner {
             .toList();
         stale.forEach(g -> {
             try {
+                estimates.findByCreatedByAndWeekStartGreaterThanEqualAndDeletedFalseOrderByWeekStartAsc(
+                        g.getCreatedBy(), LocalDate.of(2000, 1, 1)).stream()
+                    .findFirst()
+                    .ifPresent(first -> expenditureLearning.rechainFrom(g.getCreatedBy(), first.getWeekStart()));
                 goalEngineService.evaluate(g.getCreatedBy(), g.getId());
             } catch (Exception e) {
                 log.warn("Activity model rollout: skipped goal {} (owner {}) — {}",
@@ -57,7 +69,7 @@ public class ActivityModelMigrationRunner implements CommandLineRunner {
             }
         });
         if (sport + runs + stale.size() > 0) {
-            log.info("Activity model v{}: estimated {} sport + {} run session(s), re-evaluated {} goal(s).",
+            log.info("Activity model v{}: estimated {} sport + {} run session(s), re-chained + re-evaluated {} goal(s).",
                 ActivityEnergyModel.VERSION, sport, runs, stale.size());
         }
     }
