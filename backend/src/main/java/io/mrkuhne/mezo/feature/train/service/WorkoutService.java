@@ -136,6 +136,9 @@ public class WorkoutService {
     // Check-in 2.0 readiness (mezo-ck2): the day's „Könnyítsük" overlay — every prescription capped
     // at HOLD, and the pain-loaded (care) exercises drop their heavy sets. Read-time only.
     private final ReadinessAssessor readinessAssessor;
+    // Kihagyás S1 (mezo-q4xt2.1): "is a gym day planned?" reads honour a gym skip. Does NOT
+    // depend on WorkoutService — no cycle.
+    private final PlannedSkipService plannedSkipService;
 
     public WorkoutTodayResponse getToday(UUID createdBy, UUID templateSessionId) {
         // Settle abandoned instances FIRST (own @Transactional bean — getToday is a read):
@@ -368,6 +371,13 @@ public class WorkoutService {
      */
     public Optional<WorkoutSessionEntity> findPlannedTemplateForDate(UUID createdBy, LocalDate date) {
         return findPlannedTemplateForDate(activeMesoSessions(createdBy), date);
+    }
+
+    /** Like {@link #findPlannedTemplateForDate} but empty when the user skipped that gym day
+     *  (Kihagyás S1). The pure variant stays for getToday, so a skipped day still resolves for undo. */
+    @Transactional(readOnly = true)
+    public Optional<WorkoutSessionEntity> findPlannedTemplateForDateUnlessSkipped(UUID userId, LocalDate date) {
+        return plannedSkipService.isGymSkipped(userId, date) ? Optional.empty() : findPlannedTemplateForDate(userId, date);
     }
 
     /**

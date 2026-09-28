@@ -142,7 +142,7 @@ public class ProactiveMemoryBlock {
         if (CompanionMessageEntity.KIND_MIDDAY.equals(kind) || CompanionMessageEntity.KIND_EVENING.equals(kind)) {
             addDaySignals(out, userId, date, Trigger.SAME_DAY);
         } else if (CompanionMessageEntity.KIND_MORNING.equals(kind)) {
-            if (workoutService.findPlannedTemplateForDate(userId, date).isPresent()) {
+            if (workoutService.findPlannedTemplateForDateUnlessSkipped(userId, date).isPresent()) {
                 out.putIfAbsent(subjectKey(EffectLinkEntity.SUBJECT_EVENT, EVENT_EDZES), Trigger.PLANNED_WORKOUT);
             }
             addDaySignals(out, userId, date.minusDays(1), Trigger.YESTERDAY);

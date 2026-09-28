@@ -369,7 +369,7 @@ public class TrainTools {
      */
     private String dayContentLine(UUID userId, LocalDate date, List<RunningBlockResponse> activeBlocks,
             List<SportScheduleSlotResponse> sportSlots) {
-        Optional<WorkoutSessionEntity> template = workoutService.findPlannedTemplateForDate(userId, date);
+        Optional<WorkoutSessionEntity> template = workoutService.findPlannedTemplateForDateUnlessSkipped(userId, date);
         List<ExerciseEntity> exercises = template.map(t -> exerciseRepository
                 .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(userId, List.of(t.getId())))
                 .orElse(List.of());

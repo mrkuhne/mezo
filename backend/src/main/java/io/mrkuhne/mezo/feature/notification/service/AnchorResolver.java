@@ -178,8 +178,9 @@ public class AnchorResolver {
         // convert date's ISO 1=Mon..7=Sun explicitly; do NOT compare getValue() directly here.
         int legacyDayOfWeek = date.getDayOfWeek().getValue() - 1;
 
-        // Trap #2: findPlannedTemplateForDate, never getToday() (that one writes on every call).
-        Optional<WorkoutSessionEntity> plannedTemplate = workoutService.findPlannedTemplateForDate(owner, date);
+        // Trap #2: findPlannedTemplateForDateUnlessSkipped, never getToday() (that one writes on
+        // every call). Kihagyás S1: a skipped gym day yields no gym anchor.
+        Optional<WorkoutSessionEntity> plannedTemplate = workoutService.findPlannedTemplateForDateUnlessSkipped(owner, date);
 
         List<AnchoredEvent> events = new ArrayList<>();
         for (GymScheduleSlotEntity slot : gymScheduleSlotRepository

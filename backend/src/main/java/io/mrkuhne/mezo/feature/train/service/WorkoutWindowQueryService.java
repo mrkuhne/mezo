@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.feature.train.config.TrainProperties;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunSessionLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockStructure;
@@ -53,6 +54,9 @@ public class WorkoutWindowQueryService {
     private final RunSessionLogRepository runSessionLogRepository;
     private final WorkoutService workoutService;
     private final SportSlotSkipService sportSlotSkipService;
+    // Kihagyás S1 (mezo-q4xt2.1): the gym window's label honours a gym skip too. Does NOT depend
+    // on WorkoutService or WorkoutWindowQueryService — no cycle.
+    private final PlannedSkipService plannedSkipService;
     private final TrainProperties props;
     private final ActivityEnergyModel activityEnergyModel;
     private final AthleteBodyPort athleteBodyPort;
@@ -108,12 +112,15 @@ public class WorkoutWindowQueryService {
         Set<SportSlotSkipService.SkipKey> skips = sportSlotSkipService.skipsBetween(userId, from, to);
         RunningBlockEntity activeBlock = runningBlockRepository
             .findByCreatedByAndStatusAndDeletedFalse(userId, "active").stream().findFirst().orElse(null);
+        Set<LocalDate> gymSkipDates =
+            plannedSkipService.skippedDates(userId, PlannedSkipEntity.Kind.GYM, from, to);
 
         Map<LocalDate, List<Window>> result = new LinkedHashMap<>();
         for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
             result.put(day, windowsForDay(day, gymSlots, gymDoneCounts, mesoSessions, sportSlots,
                 sportEventsByDate.getOrDefault(day, List.of()),
-                sportSessionsByDate.getOrDefault(day, List.of()), skips, activeBlock));
+                sportSessionsByDate.getOrDefault(day, List.of()), skips, activeBlock,
+                gymSkipDates.contains(day)));
         }
         return result;
     }
@@ -126,7 +133,7 @@ public class WorkoutWindowQueryService {
             Map<LocalDate, Long> gymDoneCounts, List<WorkoutSessionEntity> mesoSessions,
             List<SportScheduleSlotEntity> sportSlots, List<SportEventEntity> dayEvents,
             List<SportSessionEntity> daySessions, Set<SportSlotSkipService.SkipKey> skips,
-            RunningBlockEntity activeBlock) {
+            RunningBlockEntity activeBlock, boolean gymSkipped) {
         int dow = date.getDayOfWeek().getValue() - 1;
         List<Window> windows = new ArrayList<>();
 
@@ -134,7 +141,8 @@ public class WorkoutWindowQueryService {
             gymSlots.stream().filter(s -> s.getDayOfWeek() == dow).toList();
         boolean gymDone = !todaysGymSlots.isEmpty()
             && gymDoneCounts.getOrDefault(date, 0L) >= todaysGymSlots.size();
-        String gymLabel = workoutService.findPlannedTemplateForDate(mesoSessions, date)
+        // Kihagyás S1 (mezo-q4xt2.1): a skipped gym day carries no planned label.
+        String gymLabel = gymSkipped ? null : workoutService.findPlannedTemplateForDate(mesoSessions, date)
             .map(WorkoutSessionEntity::getType)
             .orElse(null);
         todaysGymSlots.forEach(s -> {

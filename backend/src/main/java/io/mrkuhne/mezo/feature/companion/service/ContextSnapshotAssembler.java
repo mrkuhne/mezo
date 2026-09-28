@@ -396,7 +396,7 @@ public class ContextSnapshotAssembler {
             List<SportScheduleSlotResponse> sport) {
         int dow = date.getDayOfWeek().getValue() - 1; // 0=Hét..6=Vas (schedule-slot convention)
         List<String> parts = new ArrayList<>();
-        Optional<WorkoutSessionEntity> template = workoutService.findPlannedTemplateForDate(userId, date);
+        Optional<WorkoutSessionEntity> template = workoutService.findPlannedTemplateForDateUnlessSkipped(userId, date);
         List<ExerciseEntity> exercises = template.map(t -> exerciseRepository
                 .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(userId, List.of(t.getId())))
                 .orElse(List.of());
