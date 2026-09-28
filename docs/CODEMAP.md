@@ -1647,8 +1647,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### shared (domain-free FE primitives) — `frontend/src/shared`
 
 - **hooks:** useBackNav.ts, useReducedMotion.ts, useStickyTab.ts
-- **lib:** audio.ts, cn.ts, dates.ts, daypart.ts, grams.ts, huNum.ts, markdown.tsx, pct.ts, resizeImage.ts,
-  safeMarkdown.tsx, screenScroll.ts, seenMessages.ts, theme.ts, toastBus.ts, tutorialSeen.ts, userScope.ts
+- **lib:** audio.ts, autoGrow.ts, cn.ts, dates.ts, daypart.ts, grams.ts, huNum.ts, markdown.tsx, pct.ts,
+  resizeImage.ts, safeMarkdown.tsx, screenScroll.ts, seenMessages.ts, theme.ts, toastBus.ts, tutorialSeen.ts,
+  userScope.ts
 - **ui:** AdherenceBar.tsx, CaptureArt.tsx, CaptureHeader.tsx, Chip.tsx, CoachBubble.tsx, CountUp.tsx, Cta.tsx,
   DatePicker.tsx, DayNavigator.tsx, DayOrb.tsx, Display.tsx, ErrorBoundary.tsx, Eyebrow.tsx, GhostState.tsx, Icon.tsx,
   NumberInput.tsx, ProgressBar.tsx, RefTag.tsx, ScoreRing.tsx, ScreenSkeleton.tsx, Sheet.tsx, SheetHead.tsx,
