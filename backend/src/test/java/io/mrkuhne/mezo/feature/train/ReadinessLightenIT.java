@@ -74,7 +74,7 @@ class ReadinessLightenIT extends AbstractIntegrationTest {
         TodayExercise b = byId(workoutService.getToday(owner, null), bench.getId());
 
         assertThat(b.getProgression().getLever()).isEqualTo(ProgressionSignal.LeverEnum.WEIGHT);
-        assertThat(b.getProgression().getTargetWeightKg()).isEqualByComparingTo("65");
+        assertThat(b.getProgression().getTargetWeightKg()).isEqualByComparingTo("62.5");
     }
 
     @Test

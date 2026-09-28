@@ -70,12 +70,12 @@ class WorkoutTodayPrescriptionIT extends AbstractIntegrationTest {
         assertThat(te.getLastWeek()).isNotNull();
         assertThat(te.getLastWeek().getWeightKg()).isEqualByComparingTo("60");
         assertThat(te.getLastWeek().getReps()).isEqualTo(8);
-        // 8 reps ≥ repMax(8) → double progression bumps the compound increment (60 → 65)
+        // 8 reps ≥ repMax(8) → proportional compound step (60 × 1.025 → 62.5, mezo-bk7sn)
         var working = te.getPrescribedSets().stream()
             .filter(p -> p.getKind() == io.mrkuhne.mezo.api.dto.PrescribedSet.KindEnum.WORKING)
             .toList();
         assertThat(working).isNotEmpty();
-        assertThat(working.get(0).getTargetWeightKg()).isEqualByComparingTo("65");
+        assertThat(working.get(0).getTargetWeightKg()).isEqualByComparingTo("62.5");
         assertThat(te.getRationale()).contains("Múlt hét");
     }
 

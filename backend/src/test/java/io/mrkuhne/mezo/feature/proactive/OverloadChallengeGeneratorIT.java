@@ -60,12 +60,12 @@ class OverloadChallengeGeneratorIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser("overload-biggest@test.local").getId();
         MesocycleEntity meso = trainPopulator.createActiveMeso(owner);
         WorkoutSessionEntity day = trainPopulator.createTemplateDay(owner, meso.getId(), "Pull");
-        // exA: compound → intensity engine's +5 kg increment (the bigger jump).
+        // exA: compound 60 → 62.5 (+2.5 kg, 4 % — within the jump cap).
         ExerciseEntity exA = trainPopulator.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
         seedRepMaxHistory(owner, day, exA, "60");
-        // exB: isolation → +2.5 kg increment (the smaller jump) — same day, same owner.
+        // exB: isolation 20 → 22.5 would be +12.5 % → a rep build, no kg jump (mezo-bk7sn).
         ExerciseEntity exB = trainPopulator.createExercise(owner, day.getId(), "Bicepsz Curl", "biceps", "isolation");
-        seedRepMaxHistory(owner, day, exB, "40");
+        seedRepMaxHistory(owner, day, exB, "20");
 
         List<ChallengeEntity> result = generator.generate(owner, day.getId(), LocalDate.now());
 
@@ -75,7 +75,7 @@ class OverloadChallengeGeneratorIT extends AbstractIntegrationTest {
         assertThat(ch.getExerciseId()).isEqualTo(exA.getId());           // the biggest +kg
         assertThat(ch.getExerciseName()).isEqualTo("Fekvenyomás");
         assertThat(ch.getStatus()).isEqualTo(ChallengeEntity.STATUS_PROPOSED);
-        assertThat(ch.getTargetWeightKg()).isEqualByComparingTo("65");   // 60 + 5
+        assertThat(ch.getTargetWeightKg()).isEqualByComparingTo("62.5"); // 60 × 1.025 → 62.5
         assertThat(ch.getTargetReps()).isNotNull();
         assertThat(ch.getConfidence()).isNull();                        // DC8: deterministic, no learned confidence
         assertThat(ch.getWhy()).isNotBlank();

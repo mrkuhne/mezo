@@ -38,6 +38,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 | `mezo-jcpt` — **Napi értékelés (daily score) redesign** | 🔄 open | C-hybrid score + Mozaik 2.0 UI; spec `2026-09-03-daily-score-redesign`. |
 | `mezo-06o0` / `mezo-88jw` | 🔄 open | Emberek section build-out; the daily-rhythm IA direction spec. |
 | `mezo-d6ivw` — **Mezo emlékezete** | ◐ 8/12 (66%) | A reflexiós észrevételek, a knowledge_fact/RAG memória, a Konzílium, a chat és a proaktív üzenetek egy összefüggő tanuló-motorrá és AI-élménnyé állnak össze, elsődlegesen a csapatfal (`mezo-a9bo7`) világán. Vezérli: `/emlekezet` skill. S8 (`.12`, chat-memória) shipped 2026-09-28. |
+| `mezo-q4xt2` — **Kihagyás + kímélő mód** | 🔄 open (0/4) | Edzés, sport és étkezés kihagyása egy gombbal, okkal (gyors gombok + Egyéb); komoly oknál (betegség, gyomorrontás, sérülés, utazás) több napos kímélő mód napi „Hogy vagy?” kérdéssel és fokozatos visszatéréssel; az MI megérti az okot, de nem ítélkezik. Spec [`2026-09-28-kihagyas-kimelo-mod-design`](../superpowers/specs/2026-09-28-kihagyas-kimelo-mod-design.md). Vezérli: `/kihagyas` skill. |
 | `mezo-rj214` — **Companion teljes adat-hozzáférés** | 🔄 open | A társ kérésre mindent lásson és elérjen ami az adatbázisban van (grammra pontos makrók/mikrók, összetevők, alvás, súly, naplózás, checkinek), és szabadabban tudjon beszélgetni. |
 | `mezo-ozri` — **OpenAI migráció** | 🔄 open | Provider-semleges LLM-varrat Geminiről OpenAI-ra (gpt-5.6-luna/-terra), config-vezérelt model-router, prompt-caching-optimalizált sorrend, per-user rolling USD cap. S2 (OpenAI adapter) shipped 2026-09-07; router/eval-rebaseline/prompt-caching még nyitva. |
 | `mezo-r89o` — **Mezo → Boop átnevezés** | 🔄 open | Az app és a companion-persona átnevezése Mezoról Boopra — amit a user olvas, az Boop; amit tárolunk, az marad `mezo`. |
@@ -75,6 +76,13 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
   [`mezo.html`](../design_2.0/prototypes/elo/mezo.html). Dokumentáció:
   [`companion.md`](../features/companion.md) §2–§4 · [`insights.md`](../features/insights.md) §2.5
   · [`me.md`](../features/me.md) §5.4.
+- **2026-09-28 — Arányos progressziós lépcső (`mezo-bk7sn`).** Az edzésmotor nem fix +2,5 / +5 kg-ot
+  emel, hanem a súlyhoz mért lépést (összetett ~2,5 %, izolációs ~5 %) a gép valódi súlyaira
+  kerekítve. Ha a következő valódi súly 10 %-nál nagyobb ugrás, előbb legfeljebb 3 ismétlést kér a
+  tartomány teteje fölött, aztán lép; nagy RIR-tartaléknál egy lépcsővel tovább (15 %-os határ). Az
+  új súlyhoz azonos erőfeszítésű ismétlést ad a tartomány alja helyett. A tartomány feletti cél
+  indoklása megjelenik az Eligazításon és a kártyán. Spec:
+  [`proportional-progression-design`](../superpowers/specs/2026-09-28-proportional-progression-design.md).
 - **2026-09-28 — Tanuló energiaigény 2. rész: heti összegző, „Hogy tanultam?" oldal, napi
   jelölés, kapcsoló (`mezo-3n2so`, `mezo-zz91i` folytatása).** Az 1. részben csendben tanuló
   napi energiaigény mostantól látható és javítható. Heti egyszer, csak ha van mit mondani, egy

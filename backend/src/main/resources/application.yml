@@ -2982,10 +2982,24 @@ mezo:
     default-learning-enabled: true
   hypertrophy:
     plate-step: 2.5           # kg rounding granularity for computed weights
-    default-increment: 2.5    # fallback load step when a type has no explicit increment
+    # Per-type load increment — since mezo-bk7sn ONLY the weight memory's near-swap threshold
+    # (gap-near-fraction below); the progression step itself is step-percent.
+    default-increment: 2.5
     increment:
-      compound: 5.0           # compound lifts progress in 5 kg jumps
-      isolation: 2.5          # isolation lifts in 2.5 kg jumps
+      compound: 5.0
+      isolation: 2.5
+    # Proportional progression step (mezo-bk7sn): at the range top the next REAL weight nearest to
+    # load × (1 + step-percent) is prescribed if the jump is ≤ max-jump (≤ max-jump-reserve one
+    # step further when RIR ≥ target + reserve-slack); a bigger jump first builds up to
+    # rep-overflow reps past the range top (reps before load), then is forced.
+    step-percent:
+      compound: 0.025
+      isolation: 0.05
+    default-step-percent: 0.05
+    max-jump: 0.10
+    max-jump-reserve: 0.15
+    reserve-slack: 2
+    rep-overflow: 3
     default-warmup-sets: 2
     # Per-machine weight memory (mezo-bk7l2): a swap within max(increment, 10% of the prescribed
     # kg) is evidence the prescribed weight is missing on that machine; a bigger one is a choice.

@@ -26,6 +26,8 @@ export interface BriefingExercise {
   /** "105 × 10" — the first working set's prescription; null when the plan carries none. */
   goal: string | null
   chip: { text: string; tone: 'up' | 'hold' | 'down' } | null
+  /** Why the target sits past the range top (reps before a too-big jump, mezo-bk7sn); else null. */
+  why?: string | null
 }
 
 export interface WorkoutBriefingProps {
@@ -167,6 +169,7 @@ export function WorkoutBriefing({
                 {e.sets} szett{e.goal ? ` · cél ${e.goal}` : ''}
                 {e.chip && <span className={`wo-delta is-${e.chip.tone}`}>{e.chip.text}</span>}
               </small>
+              {e.why && <em className="wbr-row-why">{e.why}</em>}
             </span>
             {questOn(e.id) && (
               <span className="wbr-row-quest" role="img" aria-label="Van vállalt küldetés">

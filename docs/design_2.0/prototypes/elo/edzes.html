@@ -2830,6 +2830,7 @@ svg{overflow:visible}
 .qpill{cursor:pointer;font:inherit;font-size:12px;font-weight:600}
 .qpill.rel{opacity:.6}
 .qpill.rel s{opacity:.8}
+.bwhy{display:block;margin-top:2px;font-style:normal;font-size:11px;color:#FFD08A}
 .dchip{display:inline-block;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.1px;vertical-align:1px}
 .dchip.up{color:#FFB39C;background:color-mix(in srgb,var(--coral) 14%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--coral) 35%,transparent)}
 .dchip.down,.dchip.hold{color:#FFD08A;background:color-mix(in srgb,var(--gold) 12%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gold) 30%,transparent)}
@@ -2875,6 +2876,7 @@ svg{overflow:visible}
       <li>Mai edzés: <a href="#" data-state="plan">betervezve</a> · <a href="#" data-state="run">folyamatban</a> · <a href="#" data-state="done">kész</a></li>
       <li><a href="#mai/pihen">Pihenőnap</a> · <a href="#mai/ures">nincs mesociklus</a></li>
       <li><b>Új:</b> <a href="#indulas">Eligazítás</a> — indítás előtt: várható idő, küldetések kiválasztása, gyakorlatlista · <a href="#session/uj">Edzés az Indulás után (0 szett)</a> · <a href="#" data-rest>pihenőóra (ketyeg)</a></li>
+      <li><b>Új (arányos lépcső):</b> a súlyemelés a súlyhoz mért (Chest Row 102,5 → 105 × 9, Lat 72 → 74,5 × 11); ha a következő valódi súly túl nagy ugrás, előbb ismétlés — Hammer Curl 15 × 13, indoklással az <a href="#indulas">Eligazításon</a> és a <a href="#session/uj">kártyán</a></li>
       <li>A gyakorlatkártyán a „Múlt hét / Ma a cél” dobozok helyett egy kis címke a név alatt (↑ +2,5 kg / +1 ism. / tartjuk)</li>
       <li>Edzés közben a küldetés csak a gyakorlaton látszik: koppints a <a href="#" data-gbox="qb" data-g="1">küldetés-jelvényre</a> → elengedés / visszavétel</li>
       <li>Edzés közben: <a href="#" data-gbox="menu">gyakorlat-menü</a> · <a href="#" data-gbox="recs">rekordok</a> · <a href="#" data-gbox="fin">befejezés</a> · <a href="#" data-rest>pihenő-óra</a></li>
@@ -3006,11 +3008,11 @@ function heat(v,entries){
 /* ── adatok (az élő mock alapján: data/train/*) ─────────────── */
 const MESO={name:'Hypertrophy 04',week:3,of:6,phase:'MAV'};
 const EX=[
-  {n:'Chest Supported Row',k:'back-mid',last:'102,5 × 9 · RIR 2',goal:'105 × 10',chg:'+2,5 kg',sets:[[105,10,2,'tick'],[105,10,1,'record'],[105,9,2,'down'],['cur',105,10,2]],chal:'105 × 10 az első szetten'},
-  {n:'Lat Pulldown · Pronated',k:'back-wide',last:'72 × 11 · RIR 2',goal:'74,5 × 12',chg:'+2,5 kg',sets:[['up',74.5,'10–12',2],['up',74.5,'10–12',2],['up',74.5,'10–12',1]]},
-  {n:'Cable Pull-Around',k:'back-wide',last:'22 × 13 · RIR 2',goal:'22 × 14',chg:'+1 ism.',sets:[['up',22,'12–15',2],['up',22,'12–15',2],['up',22,'12–15',1]],note:'Könyök magasan, lassú negatív'},
-  {n:'Hammer Curl',k:'biceps-brachialis',last:'18 × 11 · RIR 1',goal:'15,5 × 12',chg:'−2,5 kg',sets:[['up',15.5,'10–12',2],['up',15.5,'10–12',1],['up',15.5,'10–12',1]]},
-  {n:'Face Pull',k:'shoulder-rear',last:'27 × 17 · RIR 2',goal:'27 × 17',chg:'tartjuk',sets:[['up',27,'15–20',2],['up',27,'15–20',2],['up',27,'15–20',1]],cue:'Húzd a kötelet a homlokod felé, kifelé forgatva'}];
+  {n:'Chest Supported Row',k:'back-mid',last:'102,5 × 10 · RIR 1',goal:'105 × 9',chg:'+2,5 kg',sets:[[105,9,1,'tick'],[105,10,1,'record'],[105,8,2,'down'],['cur',105,9,1]],chal:'105 × 9 az első szetten'},
+  {n:'Lat Pulldown · Pronated',k:'back-wide',last:'72 × 12 · RIR 2',goal:'74,5 × 11',chg:'+2,5 kg',sets:[['up',74.5,11,2],['up',74.5,11,2],['up',74.5,11,2]]},
+  {n:'Cable Pull-Around',k:'back-wide',last:'22 × 13 · RIR 2',goal:'22 × 14',chg:'+1 ism.',sets:[['up',22,14,2],['up',22,14,2],['up',22,14,2]],note:'Könyök magasan, lassú negatív'},
+  {n:'Hammer Curl',k:'biceps-brachialis',last:'15 × 12 · RIR 1',goal:'15 × 13',chg:'+1 ism.',why:'A 17,5 kg +17% ugrás lenne — előbb ismétlés 15 kg-mal',sets:[['up',15,13,1],['up',15,13,1],['up',15,13,1]]},
+  {n:'Face Pull',k:'shoulder-rear',last:'27 × 17 · RIR 2',goal:'27 × 17',chg:'tartjuk',sets:[['up',27,17,2],['up',27,17,2],['up',27,17,2]],cue:'Húzd a kötelet a homlokod felé, kifelé forgatva'}];
 const TOTAL=16, DONE=3;
 const MUS=[['back-wide','Hát (széles)',6,0,'erős'],['back-mid','Hát (közép)',4,3,'közepes'],['shoulder-rear','Váll (hátsó)',3,0,'enyhe'],['biceps-brachialis','Kar',3,0,'enyhe']];
 
@@ -3096,7 +3098,7 @@ function wset(s,i,c){
   if(s[0]==='up') return `<div class="wset up"><span>${i+1}</span><span>${String(s[1]).replace('.',',')}</span><span>${s[2]}</span><span>${s[3]}</span><span class="tk"></span><span></span></div>`;
   return `<button class="wset done" data-sheet="set"><span>${i+1}</span><b>${s[0]}</b><b>${s[1]}</b><span>${s[2]}</span><span class="tk">${I('tick')}</span><span class="vd" aria-label="${V.find(x=>x[0]===s[3])[1]}">${I(s[3])}</span></button>`;
 }
-const freshSets=e=>e.sets.map((s,j)=>{const kg=typeof s[0]==='number'?s[0]:s[0]==='cur'?s[1]:s[1];const rep=e===EX[0]?'8–10':(typeof s[0]==='number'||s[0]==='cur')?'8–10':s[2];const rir=typeof s[0]==='number'?s[2]:s[3];return j===0&&e===EX[0]?['cur',kg,10,rir]:['up',kg,rep,rir]});
+const freshSets=e=>e.sets.map((s,j)=>{const kg=typeof s[0]==='number'?s[0]:s[1];const rep=e===EX[0]?9:s[2];const rir=typeof s[0]==='number'?s[2]:s[3];return j===0&&e===EX[0]?['cur',kg,rep,rir]:['up',kg,rep,rir]});
 function session(v){
   const fresh=v==='uj';
   let n=0; const seg=EX.map(e=>{const w=e.sets.length;const d=fresh?0:e.sets.filter(s=>typeof s[0]==='number').length;return `<i style="flex:${w};--c:${muscleColor(e.k)}"><b style="width:${d/w*100}%"></b></i>`}).join('');
@@ -3104,7 +3106,7 @@ function session(v){
   <div class="pbar">${seg}</div>
   ${EX.map((e,i)=>{const qs=exChal(e.n);return `<article class="wcard glass rise" style="--c:${muscleColor(e.k)};--i:${i+1}">
     <div class="wc-head">${mchp(e.k)}<span class="grow"><strong>${e.n}</strong><small>${dchip(e.chg)}</small></span><button class="rb" data-gbox="recs" aria-label="Rekordok">${I('journal')}</button><button class="rb" data-gbox="menu" aria-label="Gyakorlat menü">⋮</button></div>
-    ${qs.length||e.note||e.cue?`<div class="wpills">${qs.map(i=>qpill(i)).join('')}${e.note?`<span class="flat">${I('note')}${e.note}</span>`:''}${e.cue?`<span class="flat">${I('info')}${e.cue}</span>`:''}</div>`:''}
+    ${qs.length||e.note||e.cue||e.why?`<div class="wpills">${qs.map(i=>qpill(i)).join('')}${e.note?`<span class="flat">${I('note')}${e.note}</span>`:''}${e.cue?`<span class="flat">${I('info')}${e.cue}</span>`:''}${e.why?`<span class="flat">${I('info')}${e.why}</span>`:''}</div>`:''}
     <div class="sets"><div class="wset h"><span>#</span><span>KG</span><span>ISM</span><span>RIR</span><span></span><span></span></div>${(fresh?freshSets(e):e.sets).map((s,j)=>wset(s,j)).join('')}</div>
   </article>`}).join('')}
   <button class="wofin rise" data-gbox="fin">${I('star')}Edzés befejezése</button>
@@ -3132,9 +3134,9 @@ function briefing(){
     <div class="bqlist">${CHAL.map((c,i)=>`<button class="bqrow ${TICK[i]?'on':''}" data-btick="${i}" aria-pressed="${TICK[i]}"><span class="bqtx"><strong>${c.ex}</strong><span class="bqvals"><span class="bqtype">${I(QICON[c.type]||'quest')}${c.type}</span>${qchips(c.target).map(v=>`<b>${v}</b>`).join('')}</span><em>${c.conf==='tanulom'?'Még tanulom, mennyire biztos':c.conf+' biztos'} · alacsony kockázat</em><span class="bqmore" data-toast="${c.why.replace(/"/g,'')}">Miért ezt? ›</span></span><span class="bqtk">${TICK[i]?I('tick'):''}</span></button>`).join('')}</div>
     <p class="fnote">Az előre bepipáltakat javaslom. Passzolni ér — és edzés közben is elengedheted bármelyiket.</p></article></section>
   <div class="gap"></div>
-  <div class="ovl rise" style="--i:4">${I('up')}<span><strong>Túlterhelés · 2× +súly · 1× +rep · 1× −súly</strong><small>Ezeken a gyakorlatokon lépünk ma előre.</small></span></div>
+  <div class="ovl rise" style="--i:4">${I('up')}<span><strong>Túlterhelés · 2× +súly · 2× +rep</strong><small>Ezeken a gyakorlatokon lépünk ma előre.</small></span></div>
   ${eyeb('A MAI SOR','Gyakorlatok')}
-  <section class="list">${EX.map((e,i)=>`<div class="brow rise" style="--i:${i+5}">${mchp(e.k,'sm')}<span class="grow"><strong>${e.n}</strong><small>${e.sets.length} szett · cél ${e.goal} · ${e.chg}</small></span>${on(e.n)?`<span class="bqb" aria-label="Van vállalt küldetés">${I('quest')}</span>`:''}</div>`).join('')}</section>`;
+  <section class="list">${EX.map((e,i)=>`<div class="brow rise" style="--i:${i+5}">${mchp(e.k,'sm')}<span class="grow"><strong>${e.n}</strong><small>${e.sets.length} szett · cél ${e.goal} · ${e.chg}</small>${e.why?`<em class="bwhy">${e.why}</em>`:''}</span>${on(e.n)?`<span class="bqb" aria-label="Van vállalt küldetés">${I('quest')}</span>`:''}</div>`).join('')}</section>`;
 }
 const bfoot=()=>{const n=(TICK||preTick()).filter(Boolean).length;return `<div class="bfoot"><button class="primary" style="--c:var(--coral)" data-bstart>${I('play')}${n?`Indulás · ${n} küldetéssel`:'Indulás küldetés nélkül'}</button></div>`};
 
@@ -3369,7 +3371,7 @@ function runCer(){
   const t0=performance.now();const f=now=>{const ms=Math.min(D,now-t0);paint(ms);if(ms<D&&stage.isConnected)requestAnimationFrame(f)};requestAnimationFrame(f);
 }
 const CHAL=[
-  {type:'Túlterhelés',ex:'Chest Supported Row',target:'107,5 kg × 8',conf:'tanulom',why:'A mai ajánlott terhelés: +2,5 kg a múlt heti 105-höz képest (RIR 2 stabil).',glory:'Teljesítsd a mai ajánlott terhelést.',refs:[],pre:true,acc:true},
+  {type:'Túlterhelés',ex:'Chest Supported Row',target:'105 kg × 9',conf:'tanulom',why:'Múlt hét 10×102,5 kg a tartomány tetején → +2,5 kg (+2%)',glory:'Teljesítsd a mai ajánlott terhelést.',refs:[],pre:true,acc:true},
   {type:'PR-kísérlet',ex:'Chest Supported Row',target:'107,5 kg × 8',conf:'72%',why:'Március 4 óta 102,5 a stabil ablak. Múlt heti RIR 2 + 7,2 óra alvás — ez a kombináció 4-ből 3-szor bírt el +5 kg-ot.',glory:'Új súly-rekord',refs:['Chest Row 105,8 · márc 4.','Alacsony étvágy + 7h+ alvás → PR-ablak'],pre:true,acc:true},
   {type:'Mélység',ex:'Lat Pulldown · Pronated',target:'Az utolsó szett RIR 0-ig',conf:'81%',why:'Múlt héten RIR 2-vel zártuk — a 3. héten (MAV) a 3. szett RIR 0 logikus lépés. A pronált fogás kíméli a vállat.',glory:'Mélyebb inger · a 4. hétre alap',refs:['Lat Pulldown · máj 15.','3. hét · MAV'],pre:true,acc:true},
   {type:'Volumen',ex:'Face Pull',target:'+1 szett · 4 × 15–20',conf:'68%',why:'A hátsó váll heti 12 szettet kér nálad, és ezen a héten 9-nél tartunk. A Face Pull kevéssé fáraszt — kockázat nélkül beékelhető.',glory:'Heti volumen-cél teljesítve',refs:['Hátsó váll MAV = 12 szett/hét'],pre:false,acc:false}];

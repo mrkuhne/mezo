@@ -15,8 +15,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 /** Hypertrophy Drive tuning (mezo.hypertrophy): plate rounding, load increments per exercise
- * type, the count-keyed warmup ladders, the default warmup-set count for new exercises, and the
- * near-swap threshold of the per-machine weight memory. */
+ * type (now only the weight memory's near-swap threshold), the count-keyed warmup ladders, the
+ * default warmup-set count for new exercises, the near-swap threshold of the per-machine weight
+ * memory, and the proportional progression step. */
 @Validated
 @ConfigurationProperties(prefix = "mezo.hypertrophy")
 public record HypertrophyProperties(
@@ -29,7 +30,16 @@ public record HypertrophyProperties(
     @NotNull @PositiveOrZero Integer defaultWarmupSets,  // 2
     // Per-machine weight memory (mezo-bk7l2): a logged weight within max(increment, this share of
     // the prescription) of the prescribed one marks the prescribed weight as missing on the machine.
-    @NotNull @Positive @DecimalMax("0.5") BigDecimal gapNearFraction  // 0.10
+    @NotNull @Positive @DecimalMax("0.5") BigDecimal gapNearFraction,  // 0.10
+    // Proportional progression step (mezo-bk7sn): the wanted jump as a share of the load per type,
+    // the largest single jump (normal / big RIR reserve), the RIR surplus that counts as a big
+    // reserve, and how many reps past the range top are built before a too-big jump is forced.
+    @NotNull Map<String, @Positive @DecimalMax("0.5") BigDecimal> stepPercent, // compound 0.025, isolation 0.05
+    @NotNull @Positive @DecimalMax("0.5") BigDecimal defaultStepPercent,       // 0.05
+    @NotNull @Positive @DecimalMax("0.5") BigDecimal maxJump,                  // 0.10
+    @NotNull @Positive @DecimalMax("0.5") BigDecimal maxJumpReserve,           // 0.15
+    @NotNull @Min(1) Integer reserveSlack,                                     // 2
+    @NotNull @PositiveOrZero Integer repOverflow                               // 3
 ) {
     /** One warmup rung: a fraction of the working weight and an absolute rep count. */
     public record Ramp(
