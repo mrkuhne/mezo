@@ -1953,3 +1953,7 @@ conversation); rewriting daily summaries already written before the forget; `mez
 52. **(S8b)** Java text blocks strip trailing spaces: concatenating `"… and not " + fragment`
     across a `"""` boundary produced `notcoalesce`. Pad and parenthesise SQL fragments that are
     spliced into text blocks.
+53. **(S8b)** A new IT that POSTs a chat message must pass `PromptOrderFixtureGearGuardTest`
+    (a source scan, not in any focused IT list): a tool-free CHAT-gear fixture needs a domain word
+    or an adjacent `// gear-audited: <reason>`. Add the guard to every focused run that adds chat
+    fixtures — it red-lit main once (mezo-tdabt).

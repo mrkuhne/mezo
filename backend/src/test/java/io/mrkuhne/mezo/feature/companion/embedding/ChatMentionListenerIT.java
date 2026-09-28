@@ -96,6 +96,7 @@ class ChatMentionListenerIT extends ApiIntegrationTest {
         await().atMost(5, SECONDS).untilAsserted(() ->
                 assertThat(mentionRepository.findAllByCreatedByAndDeletedFalseOrderByTsDesc(owner)).hasSize(1));
 
+        // gear-audited: the forget pre-screen runs before any gear; the test asserts mentions only.
         postForBody(uri, SendMessageRequest.builder().content("Ádámról ezt ne jegyezd meg").build(),
                 ownerAuthHeaders(), HttpStatus.OK, MessageResponse.class);
 
