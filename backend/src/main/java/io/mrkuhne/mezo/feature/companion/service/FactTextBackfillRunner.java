@@ -47,8 +47,8 @@ public class FactTextBackfillRunner implements CommandLineRunner {
         AtomicInteger total = new AtomicInteger();
         userFanOut.forEachActiveUser("fact-text-backfill", user -> {
             List<FactTextBackfillService.Change> changes = apply ? service.apply(user.getId()) : service.plan(user.getId());
-            changes.forEach(c -> log.info("fact-text-backfill [%s] user=%s fact=%s muted=%s%n  ELŐTTE: %s%n  UTÁNA:  %s"
-                    .formatted(requestedMode, user.getId(), c.factId(), c.muted(), c.before(), c.after())));
+            changes.forEach(c -> log.info("fact-text-backfill [{}] user={} fact={} muted={}\n  ELŐTTE: {}\n  UTÁNA:  {}",
+                    requestedMode, user.getId(), c.factId(), c.muted(), c.before(), c.after()));
             total.addAndGet(changes.size());
         });
         log.info("fact-text-backfill [{}] done — {} row(s) {}", requestedMode, total.get(),
