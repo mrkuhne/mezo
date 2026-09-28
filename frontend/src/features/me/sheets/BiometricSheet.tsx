@@ -157,7 +157,7 @@ function TdeeRows({ tdee, explainable }: {
         <span className="amt">{Math.round(tdee.neatBaselineKcal)}</span>
       </div>
       <div className="row">
-        <span className="lab"><span className="dot dot-amber" />Betábl. mozgás</span>
+        <span className="lab"><span className="dot dot-amber" />Tervezett mozgás · heti átlag</span>
         <span className="amt">+{Math.round(tdee.weeklyEatKcalPerDay)}</span>
       </div>
       <div className="row total">

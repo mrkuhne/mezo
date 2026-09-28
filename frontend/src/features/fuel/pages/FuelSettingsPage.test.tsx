@@ -106,15 +106,16 @@ describe('FuelSettingsPage', () => {
     await user.click(screen.getByRole('button', { name: 'Magas' }))
     fireEvent.change(screen.getByLabelText('Víz-cél'), { target: { value: '3200' } })
     fireEvent.change(screen.getByLabelText('Rost-cél'), { target: { value: '35' } })
-    await user.click(screen.getByRole('button', { name: 'Edzőnap-shift növelése' }))
 
     await user.click(screen.getByRole('button', { name: /Mentés/ }))
 
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/settings'))
     expect(client.getQueryData(['fuelSettings'])).toEqual({ mealsPerDay: 5, caffeineCutoff: '13:00' })
+    // Edzőnap-shift has no control any more (mezo-tb3s2) — the stored value (the ghost's 0) is a
+    // pure pass-through, sent back unchanged rather than reset by the save.
     expect(client.getQueryData(['dietSettings'])).toEqual({
       splitPreset: 'low_carb', proteinPctX10: null, carbsPctX10: null, fatPctX10: null,
-      proteinTier: 'high', waterMl: 3200, fiberG: 35, dayTypeShiftKcal: 50, learningEnabled: true,
+      proteinTier: 'high', waterMl: 3200, fiberG: 35, dayTypeShiftKcal: 0, learningEnabled: true,
     })
   })
 
@@ -156,6 +157,12 @@ describe('FuelSettingsPage', () => {
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/settings'))
     off()
     expect(toasts).toEqual(['Mentve'])
+  })
+
+  // mezo-tb3s2: the day-type split is retired — no control, no help text.
+  test('has no Edzőnap-shift control', () => {
+    renderPage()
+    expect(screen.queryByText('Edzőnap-shift')).toBeNull()
   })
 
   test('navigates to the meal-window editor', async () => {
@@ -290,7 +297,27 @@ describe('FuelSettingsPage — real-mode cold-open prefill', () => {
     expect(screen.getByRole('button', { name: 'Magas' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByLabelText('Víz-cél')).toHaveValue(3200)
     expect(screen.getByLabelText('Rost-cél')).toHaveValue(35)
-    expect(screen.getByLabelText('Edzőnap-shift')).toHaveTextContent('200')
+  })
+
+  // mezo-tb3s2: no control edits dayTypeShiftKcal any more — a save must still round-trip the
+  // stored value unchanged (accepted-and-ignored on the backend, M4), not silently reset it to 0.
+  test('a save round-trips the stored dayTypeShiftKcal unchanged', async () => {
+    server.use(http.get(`${API_BASE}/api/diet/settings`, () => HttpResponse.json({
+      splitPreset: 'balanced', proteinTier: 'moderate', waterMl: 4000, fiberG: 30,
+      dayTypeShiftKcal: 200, learningEnabled: true,
+    })))
+    let sentBody: { dayTypeShiftKcal?: number } | undefined
+    server.use(http.put(`${API_BASE}/api/diet/settings`, async ({ request }) => {
+      sentBody = await request.json() as { dayTypeShiftKcal?: number }
+      return HttpResponse.json(sentBody)
+    }))
+    renderPage()
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /Mentés/ })).toBeEnabled())
+    await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+
+    await waitFor(() => expect(sentBody).toBeDefined())
+    expect(sentBody?.dayTypeShiftKcal).toBe(200)
   })
 })
 

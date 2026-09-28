@@ -5,7 +5,9 @@ import { dietSettingsApi, type DietTargetsPreview } from '@/data/fuel/dietSettin
 import { projectDraftTargets } from '@/features/fuel/logic/fuelSettingsPreview'
 import type { DietSettings } from '@/data/types'
 
-/** The backend's config-default ghost — the honest value in BOTH modes before a save. */
+/** The backend's config-default ghost — the honest value in BOTH modes before a save.
+ *  `dayTypeShiftKcal` is accepted and ignored since the day-type split retirement (mezo-tb3s2, M4)
+ *  — 0 is the honest default now that no split reads it back. */
 export const DIET_SETTINGS_GHOST: DietSettings = {
   splitPreset: 'balanced', proteinPctX10: null, carbsPctX10: null, fatPctX10: null,
   proteinTier: 'moderate', waterMl: 4000, fiberG: 30, dayTypeShiftKcal: 0, learningEnabled: true,

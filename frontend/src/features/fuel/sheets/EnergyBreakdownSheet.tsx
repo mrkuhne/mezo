@@ -48,6 +48,9 @@ export interface EnergyBreakdown {
     /** Today's not-yet-logged planned sessions' estimated kcal (mezo-tb3s2) — display only, absent
      *  on the Én hub's weekly-average path. */
     pending?: number
+    /** Section title override for the weekly-average path (no `parts`) — the Én hub's own
+     *  `buildTdeeBreakdown` (mezo-tb3s2). Falls back to the generic label below. */
+    label?: string
   }
   deficit?: { kcal: number; rateKgPerWk: number; goalLabel: string; rationale?: string }
   target: number
@@ -209,7 +212,7 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
           {/* MOVEMENT */}
           <Seg tone="amber" on={hl('movement')}>
             <div className="flp-esh">
-              <span className="flp-estit">{movement.parts ? 'Mozgás · ma logolva' : 'Betáblázott mozgás'}</span>
+              <span className="flp-estit">{movement.parts ? 'Mozgás · ma logolva' : movement.label ?? 'Betáblázott mozgás'}</span>
               <span className="flp-esamt">{signed(movement.kcal)}</span>
             </div>
             <div className="flp-etiles">

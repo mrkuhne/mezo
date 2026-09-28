@@ -15,7 +15,7 @@ export function buildTdeeBreakdown(profile: BiometricProfileResponse): EnergyBre
   const label = profile.activityLevel ? ACTIVITY_SHORT[profile.activityLevel as ActivityLevel] : ''
   return {
     base: { kcal: tb.neatBaselineKcal, bmr: tb.bmr, neat: tb.neat, neatLabel: label, formula: tb.formula },
-    movement: { kcal: tb.weeklyEatKcalPerDay, isWeeklyAvg: true },
+    movement: { kcal: tb.weeklyEatKcalPerDay, isWeeklyAvg: true, label: 'Tervezett mozgás · heti átlag' },
     target: tb.tdee,
   }
 }

@@ -82,9 +82,12 @@ const fuelDayFixture = {
   targets: { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 },
   consumed: { kcal: 580, p: 42, c: 78, f: 12, water: 4000 },
   meals: [mealFixture],
-  // The served equation (mezo-32m82), closing on targets.kcal: base = the profile's 1910 × 1.35;
-  // planned = its 471/day weekly share + a 50 kcal training-day shift; a maintain day (balance 0).
-  energy: { baseKcal: 2579, plannedMovementKcal: 521, extraMovementKcal: 0, balanceKcal: 0, targetKcal: 3100 },
+  // The served equation (mezo-tb3s2), closing on targets.kcal: base 2579 + planned (LOGGED) 190 +
+  // extra 0 + balance 331 = 3100; a scheduled-but-not-yet-logged session previews as pending 460.
+  energy: {
+    baseKcal: 2579, plannedMovementKcal: 190, extraMovementKcal: 0, balanceKcal: 331, targetKcal: 3100,
+    pendingMovementKcal: 460,
+  },
 }
 const recipeLogFixture = {
   recentLogs: [

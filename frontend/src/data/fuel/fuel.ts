@@ -422,12 +422,9 @@ const m4Dimensions: MealDimension[] = [
   },
 ]
 
-// The served day (mezo-32m82) for the mock, derived from the mock goal (data/me/goals.ts) the way
-// the backend's DayTargetProjector serves it: the current goal-week's segment; today's planned gym
-// session is done (the mock schedule's `today: true` gym day) → dayKcal = trainingDayKcal; today's
-// 90′ RPE 6.6 volleyball is credited as off-plan `extra` (net model at rest BMR/24);
-// target = max(BMR, dayKcal + extra); carbs = segment carbs + (target − segment kcal)/4.
-// The equation: base = the learned base (the explainer seed), planned = dayKcal − base − balance, balance absorbs the floor.
+// The served day (mezo-tb3s2) for the mock, derived the way DayTargetProjector serves it: base (the
+// learned seed) + today's LOGGED movement (the done meso gym, 58′ net, + 90′ RPE 6.6 volleyball as
+// off-plan extra) + the segment's balance, floored at BMR; the still-unlogged sessions are pending.
 const MOCK_SEGMENTS = goalResponse.prescription!.segments
 const MOCK_WEEK = currentWeekOf(goalResponse.startDate!, goalTimeline.weeks)
 const MOCK_SEGMENT = MOCK_SEGMENTS.find(s => MOCK_WEEK >= s.fromWeek && MOCK_WEEK <= s.toWeek) ?? MOCK_SEGMENTS[0]
@@ -436,16 +433,18 @@ const MOCK_BMR = goalResponse.tdeeBootstrap!.bmr
 // seed (mezo-3n2so): the latest reviewed week's applied 2480 (formula 2400, ±150, medium) — so the
 // equation box's Alap, the weekly „Heti tanulás” sheet and the „Hogy tanultam?” page agree.
 const MOCK_BASE_KCAL = LAST_WEEK.appliedBaseKcal
-const MOCK_DAY_KCAL = MOCK_SEGMENT.trainingDayKcal ?? MOCK_SEGMENT.kcal
-const MOCK_EXTRA_KCAL = netKcal('volleyball', 6.6, 90, restKcalPerHour(MOCK_BMR)) ?? 0
-const MOCK_TARGET_KCAL = Math.max(MOCK_BMR, MOCK_DAY_KCAL + MOCK_EXTRA_KCAL)
-const MOCK_PLANNED_KCAL = MOCK_DAY_KCAL - MOCK_BASE_KCAL - (MOCK_SEGMENT.dailyEnergyBalanceKcal ?? 0)
+const MOCK_REST = restKcalPerHour(MOCK_BMR)
+const MOCK_PLANNED_KCAL = netKcal('gym', null, 58, MOCK_REST) ?? 0
+const MOCK_EXTRA_KCAL = netKcal('volleyball', 6.6, 90, MOCK_REST) ?? 0
+const MOCK_BALANCE_RAW = MOCK_SEGMENT.dailyEnergyBalanceKcal ?? 0
+const MOCK_TARGET_KCAL = Math.max(MOCK_BMR, MOCK_BASE_KCAL + MOCK_PLANNED_KCAL + MOCK_EXTRA_KCAL + MOCK_BALANCE_RAW)
 export const fuelDayEnergy: FuelDayEnergy = {
   baseKcal: MOCK_BASE_KCAL,
   plannedMovementKcal: MOCK_PLANNED_KCAL,
   extraMovementKcal: MOCK_EXTRA_KCAL,
   balanceKcal: MOCK_TARGET_KCAL - MOCK_BASE_KCAL - MOCK_PLANNED_KCAL - MOCK_EXTRA_KCAL,
   targetKcal: MOCK_TARGET_KCAL,
+  pendingMovementKcal: null,
   // Learned-base demo fixture (mezo-zz91i): baseKcal above IS the learned base; formulaBaseKcal is
   // the BMR × NEAT the confidence line's formula tile shows next to it. All from the part 2 seed.
   baseSource: 'learned',

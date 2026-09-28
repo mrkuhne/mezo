@@ -209,10 +209,12 @@ export const goalResponse: GoalResponse = {
         fromWeek: 1,
         toWeek: 12,
         label: 'Mély deficit',
-        // Day-type shift (mezo-sxlj): mock's dayTypeShiftKcal is 200, T=4/R=3 mock schedule,
-        // no floor bite — trainingDayKcal/restDayKcal demo the split even though the diet-settings
-        // ghost itself stays at 0 (drift guard vs the BE config default).
+        // Day-type split retired (mezo-tb3s2, M4) — every segment's day-type fields stay null; the
+        // mock mirrors the backend. MOCK_SEG1 itself still carries the (unused-here) training/rest
+        // figures for the older Diet-overview/suggestion-preview seeds further down this file.
         ...MOCK_SEG1,
+        trainingDayKcal: null,
+        restDayKcal: null,
         sleepTargetH: 7.5,
         restDays: [3, 7],
         projectedRateKgPerWk: -0.55,
@@ -223,6 +225,8 @@ export const goalResponse: GoalResponse = {
         toWeek: 20,
         label: 'Lassú befutó · taper',
         ...MOCK_SEG2,
+        trainingDayKcal: null,
+        restDayKcal: null,
         sleepTargetH: 8,
         restDays: [4, 7],
         projectedRateKgPerWk: -0.35,
