@@ -8282,6 +8282,11 @@ export interface components {
              * @description The knowledge fact this candidate was promoted into (accept/refine).
              */
             promotedFactId?: string | null;
+            /**
+             * Format: uuid
+             * @description S8 (mezo-d6ivw.12) — the chat USER message the candidate was extracted from; null for a weekly-review candidate. The chat anchors its Megjegyezném chip on it.
+             */
+            derivedFromMessageId?: string | null;
             /** Format: date-time */
             createdAt: string;
         };

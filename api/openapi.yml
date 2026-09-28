@@ -20726,6 +20726,14 @@ components:
           format: uuid
           nullable: true
           description: The knowledge fact this candidate was promoted into (accept/refine).
+        derivedFromMessageId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            S8 (mezo-d6ivw.12) — the chat USER message the candidate was
+            extracted from; null for a weekly-review candidate. The chat anchors
+            its Megjegyezném chip on it.
         createdAt:
           type: string
           format: date-time

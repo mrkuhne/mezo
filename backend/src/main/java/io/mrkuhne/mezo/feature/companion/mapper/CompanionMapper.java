@@ -187,6 +187,7 @@ public interface CompanionMapper {
                 .userDecision(entity.getUserDecision())
                 .refinedText(entity.getRefinedText())
                 .promotedFactId(entity.getPromotedFactId())
+                .derivedFromMessageId(entity.getDerivedFromMessageId())
                 .createdAt(toOffset(entity.getCreatedAt()))
                 .build();
     }
