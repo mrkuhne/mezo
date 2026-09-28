@@ -98,6 +98,26 @@ describe('SkipReasonSheet (prototype elo/edzes.html whySheet)', () => {
     expect(onDone).not.toHaveBeenCalled()
   })
 
+  test('„Most nem mondom" keeps a typed Egyéb text silently (no toast)', async () => {
+    const toasts: ToastMessage[] = []
+    const off = onToast((t) => toasts.push(t))
+    const { onClose, onReason, onDone } = renderSheet(sk({ reasonCategory: 'OTHER' }))
+    fireEvent.change(screen.getByPlaceholderText('pl. családi program jött közbe'), { target: { value: ' vendég jött ' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Most nem mondom' }))
+    expect(onReason).toHaveBeenCalledWith('OTHER', 'vendég jött')
+    expect(onDone).not.toHaveBeenCalled()
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+    expect(toasts).toEqual([])
+    off()
+  })
+
+  test('„Most nem mondom" with unchanged Egyéb text makes no call', async () => {
+    const { onClose, onReason } = renderSheet(sk({ reasonCategory: 'OTHER', reasonText: 'program' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Most nem mondom' }))
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+    expect(onReason).not.toHaveBeenCalled()
+  })
+
   test('renders nothing when closed or without a skip', () => {
     renderSheet(sk(), false)
     expect(screen.queryByText('Miért marad ki?')).toBeNull()

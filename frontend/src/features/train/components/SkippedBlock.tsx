@@ -17,6 +17,7 @@ export function SkippedBlock({ skip, inner, onReason, onUndo }: {
   onReason(): void
   onUndo(): void
 }) {
+  // An advice skip (coach suggestion) reads as reasonless: t-skip icon, „Okot adok".
   const reason = skip.source === 'ADVICE' ? undefined : reasonOf(skip)
   return (
     <>

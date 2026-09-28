@@ -85,7 +85,13 @@ function SkipReasonSheetBody({ skip, title, onClose, onReason, onDone }: SkipRea
           </div>
 
           <div className="uvl-foot">
-            <button type="button" className="uvl-ghost" onClick={close}>Most nem mondom</button>
+            <button type="button" className="uvl-ghost"
+              onClick={() => {
+                // Like the prototype's data-whydone="0": keep a typed Egyéb text, just no toast.
+                const t = otherText()
+                if (cur === 'OTHER' && t !== (skip.reasonText?.trim() || null)) onReason('OTHER', t)
+                close()
+              }}>Most nem mondom</button>
             <button type="button" className="uvl-cta" disabled={!chosen}
               onClick={() => {
                 const t = otherText()
