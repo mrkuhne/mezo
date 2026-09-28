@@ -208,11 +208,12 @@ Brainstorm 2026-09-28 (recon: researcher + investigator). Owner answers in bold.
   time varchar(5) null (SPORT only), session_key varchar(64) null (RUN only), reason_category varchar + CHECK, reason_text text null`;
   partial unique index `(created_by, kind, date, coalesce(day_of_week,-1), coalesce(time,''),
   coalesce(session_key,''))`
-  `where is_deleted = false`, plus `source varchar (USER|ADVICE)`. A data changeset copies the
-  live `sport_slot_skip` rows in as `SPORT / NONE / source=ADVICE`. Advice skips are always
-  excused (the coach proposed them). After the copy `SportSlotSkipService` becomes a facade
-  over `PlannedSkipService` (signatures kept, so the advice writer and the 5 backend readers
-  compile unchanged) and `sport_slot_skip` is no longer written.
+  `where is_deleted = false`. **`sport_slot_skip` stays** (planning refinement 2026-09-28): the
+  advice writer keeps writing it, and the central read is the **union** of both tables — an
+  advice row reads as `SPORT / NONE / source=ADVICE`, always excused (the coach proposed it),
+  and is undoable through the same DELETE. `SportSlotSkipService.isSkipped/skipsBetween` answer
+  the union, so its 5 backend readers become user-skip-aware with no change of their own. No
+  data migration, no populator churn.
 - **Central read** in train: `PlannedSkipService` — `skipsBetween(user, from, to)`,
   `isGymSkipped(user, date)`, `isSportSkipped(user, date, dow, time)`,
   `excusedDates…` via `PlannedSkipPolicy`. Every consumer in §6 + the recon list goes through
