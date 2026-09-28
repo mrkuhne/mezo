@@ -141,15 +141,22 @@ public class WorkoutWindowQueryService {
             gymSlots.stream().filter(s -> s.getDayOfWeek() == dow).toList();
         boolean gymDone = !todaysGymSlots.isEmpty()
             && gymDoneCounts.getOrDefault(date, 0L) >= todaysGymSlots.size();
-        // Kihagyás S1 (mezo-q4xt2.1): a skipped gym day carries no planned label.
+        // Kihagyás S1 (mezo-q4xt2.1): a skipped gym day carries no planned label — and, when the
+        // gym was not actually done that day either, no gym window AT ALL (spec §8.1.9): a
+        // skipped occurrence must disappear from Fuel's pre/post-workout meal scoring exactly
+        // like a skipped sport occurrence does, not just lose its label. A gym that WAS done
+        // despite the skip (e.g. skip undone after logging, or logged before the skip) still
+        // yields its window — never hide a real workout.
         String gymLabel = gymSkipped ? null : workoutService.findPlannedTemplateForDate(mesoSessions, date)
             .map(WorkoutSessionEntity::getType)
             .orElse(null);
-        todaysGymSlots.forEach(s -> {
-            LocalTime start = LocalTime.parse(s.getTime());
-            windows.add(new Window(start, start.plusMinutes(props.gymDefaultMinutes()),
-                "gym", gymDone, gymLabel));
-        });
+        if (!gymSkipped || gymDone) {
+            todaysGymSlots.forEach(s -> {
+                LocalTime start = LocalTime.parse(s.getTime());
+                windows.add(new Window(start, start.plusMinutes(props.gymDefaultMinutes()),
+                    "gym", gymDone, gymLabel));
+            });
+        }
 
         addSportWindowsForDay(date, dow, sportSlots, dayEvents, daySessions, skips, windows);
 

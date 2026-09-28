@@ -374,8 +374,8 @@ public class WorkoutService {
     }
 
     /** Like {@link #findPlannedTemplateForDate} but empty when the user skipped that gym day
-     *  (Kihagyás S1). The pure variant stays for getToday, so a skipped day still resolves for undo. */
-    @Transactional(readOnly = true)
+     *  (Kihagyás S1). The pure variant stays for getToday, so a skipped day still resolves for
+     *  undo. No {@code @Transactional} — matches its sibling {@link #findPlannedTemplateForDate}. */
     public Optional<WorkoutSessionEntity> findPlannedTemplateForDateUnlessSkipped(UUID userId, LocalDate date) {
         return plannedSkipService.isGymSkipped(userId, date) ? Optional.empty() : findPlannedTemplateForDate(userId, date);
     }

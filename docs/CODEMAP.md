@@ -1137,8 +1137,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `NotificationPrefRepositoryIT`, `NotificationScheduleApiIT`, `PushSenderIT`, `PushSubscriptionRebindIT`,
     `PushSubscriptionRepositoryIT`, `PushSubscriptionServiceIT`
   - **populators:** `AppNotificationPopulator`, `CompanionMessagePopulator`, `DatabasePopulator`, `JournalPopulator`,
-    `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`, `NotificationPopulator`, `SleepGoalPopulator`,
-    `SportSlotSkipPopulator`, `TrainPopulator`, `UserPopulator`, `WeeklyReviewPopulator`, `WeeklySuggestionPopulator`
+    `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`, `NotificationPopulator`,
+    `PlannedSkipPopulator`, `SleepGoalPopulator`, `SportSlotSkipPopulator`, `TrainPopulator`, `UserPopulator`,
+    `WeeklyReviewPopulator`, `WeeklySuggestionPopulator`
 
 ### nutrition
 
