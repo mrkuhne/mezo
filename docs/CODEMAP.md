@@ -1506,12 +1506,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ExerciseRecordService`, `GoalRecomputePort`, `GymScheduleService`, `MedalEvaluator`, `MedalService`,
     `MesoPlanFiller`, `MesoPlanGeneratorService`, `MesoPlanLlm`, `MesoPlanMerger`, `MesoPlanSkeleton`,
     `MesoTemplateDays`, `MesoTemplateService`, `MesoWeeks`, `MesocycleReportService`, `MuscleGroup`, `OneRepMax`,
-    `PainRegionMap`, `Prescription`, `PriorityTier`, `ProgressionDecider`, `ReadinessAssessor`, `ReadinessService`,
-    `RunningService`, `SessionTimingCalculator`, `SetRecommendationService`, `SportService`, `SportSessionLoggedEvent`,
-    `SportSlotSkipService`, `TimingObservation`, `TimingObservationExtractor`, `TimingProfileListener`,
-    `TimingProfileService`, `TrainService`, `VolumeArcService`, `VolumeDecider`, `VolumeProgressionService`,
-    `WeeklyScheduledActivityService`, `WeightGapService`, `WeightSnapper`, `WorkoutAutoCloseService`,
-    `WorkoutFinishedEvent`, `WorkoutService`, `WorkoutWindowQueryService`
+    `PainRegionMap`, `PlannedSkipPolicy`, `Prescription`, `PriorityTier`, `ProgressionDecider`, `ReadinessAssessor`,
+    `ReadinessService`, `RunningService`, `SessionTimingCalculator`, `SetRecommendationService`, `SportService`,
+    `SportSessionLoggedEvent`, `SportSlotSkipService`, `TimingObservation`, `TimingObservationExtractor`,
+    `TimingProfileListener`, `TimingProfileService`, `TrainService`, `VolumeArcService`, `VolumeDecider`,
+    `VolumeProgressionService`, `WeeklyScheduledActivityService`, `WeightGapService`, `WeightSnapper`,
+    `WorkoutAutoCloseService`, `WorkoutFinishedEvent`, `WorkoutService`, `WorkoutWindowQueryService`
   - **controllers→contract:** `ReadinessController`→`TrainReadinessApi`, `TrainController`→`TrainApi`
   - **mappers:** `MesoReportMapper`, `RunningMapper`, `TrainMapper`
   - **config:** `ClosingBlockProperties`, `HypertrophyProperties`, `MesoPlanProperties`, `ReadinessProperties`,
@@ -1592,7 +1592,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     summaryStats.ts, tierLabel.ts, trainDayEnergy.ts, useEditableNumber.ts, useRestTimer.ts, warmupSuggest.ts,
     weekAgenda.ts, weekZone.ts, weeklyBands.ts, workoutCardMeta.ts, workoutComparison.ts, workoutState.ts
   - **root:** DayTile.tsx, InterviewStep.tsx, dayTiles.ts, wizardState.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 83 IT + 19 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 83 IT + 20 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
     `ClosingBlockVolumeFlagIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`, `ExerciseCatalogContractIT`,
     `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,
