@@ -47,6 +47,7 @@
 //   the day pager (DayNavigator, A13)
 //   Titán energia-hero — the remaining-kcal gauge, the tap chip, 5 macro rings (víz = a button)
 //   the day's meal BLOCKS — log into a block, open a logged meal (A10/A14)
+//   the day-log mark line (task 11, mezo-3n2so) — a quiet row, nothing while unlogged/pending
 //   the generic log action (+ the „tegnap pótolható" chip), at the BOTTOM of the meal area
 //   the water module — quick-add + undo (A12)
 //   6-tile mosaic: Terv · Stack · Receptek · Kamra · Gyógyszer · Napló
@@ -79,6 +80,7 @@ import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { FuelEnergyHero } from '@/features/fuel/components/FuelEnergyHero'
 import { DietSuggestionBanner } from '@/features/fuel/components/DietSuggestionBanner'
 import { FuelMealBlocks } from '@/features/fuel/components/FuelMealBlocks'
+import { DayLearningMark } from '@/features/fuel/components/DayLearningMark'
 import { WaterLogSheet } from '@/features/fuel/sheets/WaterLogSheet'
 import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 
@@ -202,6 +204,10 @@ export function FuelMaiPage() {
             onOpenScore={(mealId) => navigate(`/fuel/etkezes/${mealId}/ertekeles`)}
           />
         </div>
+
+        {/* Task 11 (mezo-3n2so): a nap-jelölés a napló ALJÁN — csendes sor, nem üveg. Semmit nem
+            mutat, amíg a nap felírás nélküli vagy a lekérdezés függőben van. */}
+        <DayLearningMark date={date} today={!past} />
 
         {/* Az ÁLTALÁNOS naplózás a blokkok ALATT áll (owner): a fő útvonal a blokkba logolás. */}
         <button type="button" className="fmx-loggeneric rise" style={{ '--d': '110ms' } as React.CSSProperties}
