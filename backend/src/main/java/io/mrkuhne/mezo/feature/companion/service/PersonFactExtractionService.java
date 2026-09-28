@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
@@ -60,6 +61,8 @@ public class PersonFactExtractionService {
     private final PromptPersona promptPersona;
     // ObjectProvider: a PEOPLE_SWITCH független a COMPANION párostól — kikapcsolva néma no-op.
     private final ObjectProvider<PersonFactService> personFactService;
+    private final MessageExtractionGate extractionGate;
+    private final TransactionTemplate transactionTemplate;
 
     /** Egy kinyert elem, ahogy az LLM visszaadja. */
     record ExtractedPersonFact(String name, String kind, String fact, String confidence) {}
@@ -94,8 +97,11 @@ public class PersonFactExtractionService {
         if (captures.isEmpty()) {
             return 0;
         }
-        return facts.capture(userId, PersonFactEntity.SOURCE_CHAT_TURN, userMessageId.toString(), captures)
-                .size();
+        // S8 (mezo-d6ivw.12): gate + save in ONE transaction — the gate's FOR SHARE must be held
+        // until the capture commits, or a forget could slip in between.
+        Integer saved = transactionTemplate.execute(status -> extractionGate.isBlocked(userMessageId) ? 0
+                : facts.capture(userId, PersonFactEntity.SOURCE_CHAT_TURN, userMessageId.toString(), captures).size());
+        return saved == null ? 0 : saved;
     }
 
     /** Defensive parse: first '['..last ']' substring — a {@code FactExtractionService.parse} idióma. */

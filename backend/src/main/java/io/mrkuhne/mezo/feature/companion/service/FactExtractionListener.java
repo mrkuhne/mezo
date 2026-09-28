@@ -29,6 +29,9 @@ public class FactExtractionListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onChatTurnCompleted(ChatTurnCompleted event) {
+        if (event.extractionBlocked()) {
+            return; // S8: "ezt ne jegyezd meg" — never learn from the forget request itself
+        }
         try {
             LlmActorContext.runAsCaptured(event.userId(), () -> factExtractionService.extractFromTurn(
                     event.userId(), event.userMessageId(), event.userContent(), event.assistantContent()));

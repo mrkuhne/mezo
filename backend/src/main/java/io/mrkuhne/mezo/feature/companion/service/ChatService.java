@@ -270,8 +270,10 @@ public class ChatService {
                 audit.recalled() == null ? recalled : audit.recalled());
         conversation.setLastMessageAt(Instant.now());
         conversationRepository.save(conversation);
+        // S8 (mezo-d6ivw.12): a forget request is never learned from — the listeners skip it
+        boolean blocked = messageRepository.findById(userMessageId).map(AiMessageEntity::isExtractionBlocked).orElse(false);
         eventPublisher.publishEvent(new ChatTurnCompleted(userId, userMessageId, userContent,
-                assistant.getId(), answer));
+                assistant.getId(), answer, blocked));
         return mapper.toMessageResponse(assistant, userMessageId);
     }
 
@@ -392,7 +394,7 @@ public class ChatService {
         touchConversation(conversation, request.getContent());
         // V1.2: post-turn extraction trigger — the async listener runs AFTER this turn commits
         eventPublisher.publishEvent(new ChatTurnCompleted(userId, userRow.getId(), request.getContent(),
-                assistant.getId(), answer));
+                assistant.getId(), answer, userRow.isExtractionBlocked()));
         return mapper.toMessageResponse(assistant, userRow.getId());
     }
 

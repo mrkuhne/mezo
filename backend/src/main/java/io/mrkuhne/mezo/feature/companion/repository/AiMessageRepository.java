@@ -68,4 +68,8 @@ public interface AiMessageRepository extends JpaRepository<AiMessageEntity, UUID
     /** S8 (mezo-d6ivw.12): one owned, live message of one conversation (turn-memory / forget-learned). */
     Optional<AiMessageEntity> findByIdAndConversationIdAndCreatedByAndDeletedFalse(
             UUID id, UUID conversationId, UUID createdBy);
+
+    /** S8: FOR SHARE waits for an uncommitted forget's row lock — see MessageExtractionGate. */
+    @Query(value = "select extraction_blocked from ai_message where id = :id for share", nativeQuery = true)
+    Optional<Boolean> lockExtractionBlocked(@Param("id") UUID id);
 }
