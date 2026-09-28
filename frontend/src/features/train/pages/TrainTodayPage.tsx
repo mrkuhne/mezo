@@ -67,6 +67,11 @@ import TrainTodaySkeleton from '@/features/train/pages/TrainTodaySkeleton'
 import { SPORT_KINDS, SPORT_TONE, sportOf, SPORT_TAGS, SPORT_TITLES, type SportKind } from '@/features/train/logic/sportKinds'
 import { SESSION_STATE_LABEL, sessionState } from '@/features/train/logic/sessionState'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
+import { usePlannedSkips } from '@/data/train/skipHooks'
+import { findSkip, skipWindow, type PlannedSkip, type PlannedSkipKey } from '@/features/train/logic/plannedSkips'
+import { SkippedBlock } from '@/features/train/components/SkippedBlock'
+import { SkipReasonSheet } from '@/features/train/components/SkipReasonSheet'
+import { useToast } from '@/shared/ui/ToastProvider'
 
 /** Each sport's own 3D art (the sprite carries one per wire sport); volleyball is t-volley. */
 const SPORT_ART: Record<SportKind, Icon3DName> = {
@@ -77,7 +82,7 @@ const SPORT_ART: Record<SportKind, Icon3DName> = {
 type RunLogCtx = { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number }
 
 export function TrainTodayPage() {
-  const { workout, gymSchedule, sport, activeMeso, logSportSession, gymDoneDates, workoutPending, todaySession, completedTodayWorkout, gymSlots, saveGymSchedule, plannedSkips } = useTrain()
+  const { workout, gymSchedule, sport, activeMeso, logSportSession, gymDoneDates, workoutPending, todaySession, completedTodayWorkout, gymSlots, saveGymSchedule } = useTrain()
   const { activeRunningBlock, runSessions, logRunSession, runningPending } = useRunning()
   // Completed workout summaries for this Mon–Sun week — maps each done day's ISO
   // date to its instance id so a weekly gym row can open the review (real mode).
@@ -87,6 +92,12 @@ export function TrainTodayPage() {
   const [sportLogSport, setSportLogSport] = useState<SportKind | null>(null)
   const [runLogCtx, setRunLogCtx] = useState<RunLogCtx | null>(null)
   const [customOpen, setCustomOpen] = useState(false)
+  // Kihagyás S1 (mezo-q4xt2.1, prototype elo/edzes.html): one-tap skip of a planned occurrence +
+  // the optional „Miért marad ki?" sheet. `why` names the occurrence the sheet is about; its live
+  // row is re-read from `skips` every render so the sheet follows each saved reason.
+  const { skips, skip, setReason, undo } = usePlannedSkips()
+  const [why, setWhy] = useState<{ target: PlannedSkipKey; title: string } | null>(null)
+  const toast = useToast()
   const { goal: sleepGoal } = useSleepGoal()
   // Calibrated pacing (Task 12, mezo-dzbm): only the today chip's workoutMinutes reads this —
   // structureLint/peakWeekFit/programFit deliberately stay on the static estimate.
@@ -174,7 +185,9 @@ export function TrainTodayPage() {
     sportSlots: sport.schedule?.volleyball.sessions ?? [],
     runningBlock: activeRunningBlock,
     weekWorkouts,
-    skips: plannedSkips,
+    // Mai keeps a skipped occurrence ON the page (it renders as skipped, with its undo) — so the
+    // agenda is built unfiltered here; every planning surface filters it out instead.
+    skips: [],
   })
 
   // The agenda's `isToday` is flag-based (gym/volleyball only); running blocks
@@ -300,6 +313,26 @@ export function TrainTodayPage() {
       (r) => r.blockId === activeRunningBlock?.id && r.weekNumber === activeRunningBlock?.currentWeek && r.sessionKey === key,
     ) ?? null
 
+  // ── Kihagyás S1 (mezo-q4xt2.1): the skip identity of each shown occurrence ──
+  // SPORT uses the 0=Hét..6=Vas weekday index of the day + the slot's own unnormalised time; RUN
+  // the prescribed session key; GYM the date alone — the backend's own identity match.
+  const { fromIso: skipFrom, toIso: skipTo } = skipWindow()
+  const inSkipWindow = (iso: string) => iso >= skipFrom && iso <= skipTo
+  const dayIdxOf = (day: string) => DAY_ORDER.indexOf(day as (typeof DAY_ORDER)[number])
+  const gymKey = (iso: string): PlannedSkipKey => ({ kind: 'GYM', date: iso })
+  const sportKey = (iso: string, day: string, time: string): PlannedSkipKey =>
+    ({ kind: 'SPORT', date: iso, dayOfWeek: dayIdxOf(day), time })
+  const runKey = (iso: string, key: string): PlannedSkipKey => ({ kind: 'RUN', date: iso, sessionKey: key })
+  const startSkip = (target: PlannedSkipKey, title: string) =>
+    skip(target, () => {
+      setWhy({ target, title })
+      toast.show({ kind: 'info', text: 'Kihagyva — bármikor visszavonhatod' })
+    })
+  const undoSkip = (s: PlannedSkip) => undo(s.id, () => toast.show({ kind: 'info', text: 'Visszavonva — újra a tervben' }))
+  // Today's gym poster in its plan state (not started, not finished) — the only state a skip applies to.
+  const gymHeroPlan = !completedTodayWorkout && !todaySession?.openWorkout
+  const todayGymSkip = gymHeroPlan ? findSkip(skips, gymKey(shownIso)) : undefined
+
   // ── Task 5 (mezo-88iwa.6): the energy + muscle-impact cards, today-only ──
   // Weight source: the SAME hook the Fuel timeline (`useFuelTimeline`) reads — `useGoal()`,
   // read above. Falling
@@ -321,15 +354,18 @@ export function TrainTodayPage() {
   // card can never disagree with what's on-screen just above it.
   const energyBlocks: Block[] = isTodayShown
     ? orderedToday.reduce<Block[]>((acc, item) => {
+        // A skipped (not done) block is left out — it no longer adds to the day (Kihagyás S1).
         if (item.kind === 'gym') {
-          if (gymPosterShown) acc.push({ kind: 'gym', minutes: gymMinutesToday, done: Boolean(completedTodayWorkout) })
+          if (gymPosterShown && !todayGymSkip) acc.push({ kind: 'gym', minutes: gymMinutesToday, done: Boolean(completedTodayWorkout) })
         } else if (item.kind === 'sport') {
           // A done slot shows the LOGGED session's persisted kcal, never the estimate (mezo-32m82).
           const k = sportOf(item.sport)
           const logged = shownIso ? loggedSportOn(shownIso, k) : null
+          if (!logged && findSkip(skips, sportKey(shownIso, shownDay?.day ?? '', item.sport.time))) return acc
           acc.push({ kind: 'sport', sport: k, minutes: item.sport.duration, done: sportDoneOn(shownIso, k), loggedKcal: logged?.kcal ?? null })
         } else if (item.kind === 'running') {
           const log = runLoggedFor(item.running.key)
+          if (!log && findSkip(skips, runKey(shownIso, item.running.key))) return acc
           acc.push({ kind: 'run', minutes: DEFAULT_RUN_MIN, done: Boolean(log), loggedKcal: log?.kcal ?? null })
         }
         return acc
@@ -436,6 +472,13 @@ export function TrainTodayPage() {
           // A `custom` item only ever exists for a COMPLETED saját instance.
           if (item.kind === 'custom') return true
           return Boolean(runLoggedFor(item.running.key))
+        }, (d, item) => {
+          // Kihagyás S1 (prototype `dstrip()`): a skipped session marks its day with t-skip.
+          if (!d.date) return false
+          if (item.kind === 'gym') return Boolean(findSkip(skips, gymKey(d.date)))
+          if (item.kind === 'sport') return Boolean(findSkip(skips, sportKey(d.date, d.day, item.sport.time)))
+          if (item.kind === 'running') return Boolean(findSkip(skips, runKey(d.date, item.running.key)))
+          return false
         })}
         // A real-mode rest day (no gym/sport slot matches today at all) leaves
         // `shownDay` undefined even while today is shown (§ isTodayShown above) —
@@ -481,17 +524,19 @@ export function TrainTodayPage() {
               ? 0
               : estimateSessionMinutes(workout.exercises, timingProfile ?? undefined)
             const heroState = completedTodayWorkout ? 'done' : gymInProgress ? 'live' : 'plan'
+            // Kihagyás S1 (prototype `thero()`): only the plan state can be skipped.
+            const heroSkip = heroState === 'plan' ? todayGymSkip : undefined
             return (
               <>
               {/* The hero is FRAMELESS (bible §3.4 rank 1): a coral halo, no card. Only the CTA
                   row below wears glass — one loud object per hero. */}
               <section
                 key="hero-gym"
-                className={cn('trm-hero', heroState === 'done' ? 'is-done' : heroState === 'live' && 'is-live')}
+                className={cn('trm-hero', heroState === 'done' ? 'is-done' : heroState === 'live' && 'is-live', heroSkip && 'is-skip')}
               >
-                <span className={cn('trm-stpill', heroState === 'done' && 'is-done', heroState === 'plan' && 'is-plan')}>
+                <span className={cn('trm-stpill', heroState === 'done' && 'is-done', heroState === 'plan' && !heroSkip && 'is-plan', heroSkip && 'is-skip')}>
                   <i aria-hidden="true" />
-                  {heroState === 'done' ? 'KÉSZ' : heroState === 'live' ? 'FOLYAMATBAN' : 'BETERVEZVE'}
+                  {heroSkip ? 'KIHAGYVA' : heroState === 'done' ? 'KÉSZ' : heroState === 'live' ? 'FOLYAMATBAN' : 'BETERVEZVE'}
                 </span>
                 <Icon3D name="t-dumbbell" size={98} className="trm-hero-art uv-float" />
                 <span className="trm-hero-eb">{gymEyebrow}</span>
@@ -513,7 +558,12 @@ export function TrainTodayPage() {
                   {workoutMinutes > 0 && <span className="trm-fact">~{workoutMinutes} perc</span>}
                   {gym.type && <span className="trm-fact">{gym.type}</span>}
                 </div>
-                {completedTodayWorkout ? (
+                {heroSkip ? (
+                  // Skipped (Kihagyás S1): the glass skipped block replaces the start CTA.
+                  <SkippedBlock skip={heroSkip}
+                    onReason={() => setWhy({ target: gymKey(shownIso), title: workout.title })}
+                    onUndo={() => undoSkip(heroSkip)} />
+                ) : completedTodayWorkout ? (
                   // Done-state: the workout is over (no restart until next week) — the CTA
                   // opens the read-only review of the completed instance (mezo-9bbc).
                   <button type="button" className="trm-start glass is-review np-press"
@@ -538,6 +588,7 @@ export function TrainTodayPage() {
                     <em className="trm-start-go" aria-hidden="true">›</em>
                   </button>
                 ) : (
+                  <>
                   <button type="button" className="trm-start glass is-go np-press"
                     style={{ '--c': 'var(--dv-coral)' } as CSSProperties} onClick={openSession}>
                     <Icon3D name="t-dumbbell" size={46} className="trm-start-art" />
@@ -547,11 +598,19 @@ export function TrainTodayPage() {
                     </span>
                     <em className="trm-start-go" aria-hidden="true">›</em>
                   </button>
+                  {/* Kihagyás S1: the quiet „Kihagyom" under the plan-state CTA. */}
+                  {inSkipWindow(shownIso) && (
+                    <button type="button" className="trm-skipbtn np-press"
+                      onClick={() => startSkip(gymKey(shownIso), workout.title)}>
+                      <Icon3D name="t-skip" size={18} />Kihagyom
+                    </button>
+                  )}
+                  </>
                 )}
               </section>
               {/* Check-in 2.0 (mezo-ck2): „Mai állapot" right below the hero, as the prototype's
                   readyCard() follows thero(); hidden once today's workout is done. */}
-              <TodayReadiness done={Boolean(completedTodayWorkout)} />
+              {!heroSkip && <TodayReadiness done={Boolean(completedTodayWorkout)} />}
               </>
             )
           }
@@ -565,6 +624,11 @@ export function TrainTodayPage() {
           // /today resolves to the open instance's template, so `todaySession` names it.
           const resumable = !done && Boolean(md?.id && todaySession?.openWorkout && todaySession.templateSessionId === md.id)
           const target = resumable ? `/train/session?day=${md!.id}` : md ? gymDayTarget(md, weekWorkouts) : null
+          const gymState = sessionState({ dayIso: shownDay!.date!, todayIso, timeOfDay: gym.time })
+          const gymTitle = gym.type ?? md?.type ?? 'Gym'
+          // Kihagyás S1: a not-done, not-started day in the window can be skipped (past ⇒ „Kihagytam").
+          const gymSkip = done || resumable ? undefined : findSkip(skips, gymKey(shownIso))
+          const gymCanSkip = !done && !resumable && !gymSkip && inSkipWindow(shownIso)
           return (
             <TodaySessionCard
               key="hero-gym"
@@ -572,13 +636,18 @@ export function TrainTodayPage() {
               art="t-dumbbell"
               tag="GYM"
               time={gym.time}
-              title={gym.type ?? md?.type ?? 'Gym'}
+              title={gymTitle}
               facts={[md ? `${md.exerciseCount} gyakorlat` : null, gym.duration ? `${gym.duration} perc` : null]}
               logged={done}
               loggedSummary={done ? 'Kész' : undefined}
-              stateLabel={resumable ? 'FOLYAMATBAN' : SESSION_STATE_LABEL[sessionState({ dayIso: shownDay!.date!, todayIso, timeOfDay: gym.time })]}
+              stateLabel={resumable ? 'FOLYAMATBAN' : SESSION_STATE_LABEL[gymState]}
               ctaLabel={target ? (resumable ? 'Folytassuk' : 'Kezdjük el') : undefined}
               onLog={target ? () => navigate(target) : undefined}
+              skipped={gymSkip}
+              onSkip={gymCanSkip ? () => startSkip(gymKey(shownIso), gymTitle) : undefined}
+              skipLabel={gymState === 'missed' ? 'Kihagytam' : 'Kihagyom'}
+              onSkipReason={() => setWhy({ target: gymKey(shownIso), title: gymTitle })}
+              onSkipUndo={() => gymSkip && undoSkip(gymSkip)}
             />
           )
         }
@@ -588,6 +657,10 @@ export function TrainTodayPage() {
           const k = sportOf(vb)
           const logged = loggedSportOn(shownIso, k)
           const state = sessionState({ dayIso: shownIso, todayIso, timeOfDay: vb.time })
+          // Kihagyás S1: only a recurring slot can be skipped (a one-off event is out of scope).
+          const vbKey = sportKey(shownIso, shownDay?.day ?? '', vb.time)
+          const vbSkip = logged || vb.oneOff ? undefined : findSkip(skips, vbKey)
+          const vbCanSkip = !logged && !vb.oneOff && !vbSkip && inSkipWindow(shownIso)
           return (
             <TodaySessionCard
               key={`hero-sport-${k}-${vb.time}-${i}`}
@@ -617,6 +690,11 @@ export function TrainTodayPage() {
               // below); today keeps its original copy.
               ctaLabel={state === 'planned' ? undefined : state === 'missed' ? 'Pótold' : 'Logold a session-t'}
               onLog={state === 'planned' ? undefined : () => setSportLogSport(k)}
+              skipped={vbSkip}
+              onSkip={vbCanSkip ? () => startSkip(vbKey, SPORT_TITLES[k]) : undefined}
+              skipLabel={state === 'missed' ? 'Kihagytam' : 'Kihagyom'}
+              onSkipReason={() => setWhy({ target: vbKey, title: SPORT_TITLES[k] })}
+              onSkipUndo={() => vbSkip && undoSkip(vbSkip)}
             />
           )
         }
@@ -647,6 +725,9 @@ export function TrainTodayPage() {
         const s = item.running
         const rl = runLoggedFor(s.key)
         const runState = sessionState({ dayIso: shownIso, todayIso, timeOfDay: s.timeOfDay })
+        const rKey = runKey(shownIso, s.key)
+        const runSkip = rl ? undefined : findSkip(skips, rKey)
+        const runCanSkip = !rl && !runSkip && inSkipWindow(shownIso)
         const openRunLog = () => setRunLogCtx({
           blockId: activeRunningBlock!.id,
           weekNumber: activeRunningBlock!.currentWeek,
@@ -672,11 +753,23 @@ export function TrainTodayPage() {
             // already day-scoped by session key, so `logged` needs no change.
             ctaLabel={runState === 'planned' ? undefined : runState === 'missed' ? 'Pótold' : 'Naplózd a futást'}
             onLog={runState === 'planned' ? undefined : openRunLog}
+            skipped={runSkip}
+            onSkip={runCanSkip ? () => startSkip(rKey, s.label) : undefined}
+            skipLabel={runState === 'missed' ? 'Kihagytam' : 'Kihagyom'}
+            onSkipReason={() => setWhy({ target: rKey, title: s.label })}
+            onSkipUndo={() => runSkip && undoSkip(runSkip)}
           />
         )
         })()}
         </div>
       ))}
+
+      {/* Kihagyás S1 (prototype `.skwhen`): a past day in the skip window says the missed sessions
+          can still get a reason. */}
+      {!isTodayShown && shownIso < todayIso && inSkipWindow(shownIso)
+        && orderedToday.some((it) => it.kind === 'gym' || it.kind === 'sport' || it.kind === 'running') && (
+        <p className="trm-skwhen">Az elmúlt 7 nap kimaradt alkalmaihoz utólag is megadhatod, miért maradtak ki.</p>
+      )}
 
       {/* Sports logged OUTSIDE the schedule (T8 Task 4 final review, mezo-88iwa.9) — the
           ten-sport flow can log a Kerékpár/Úszás/Túra session on a day whose 3-id schedule
@@ -935,6 +1028,20 @@ export function TrainTodayPage() {
           onSave={(body, done) => logSportSession(body, { onSuccess: (r) => showLevelUp(r?.levelUp), onSettled: done })}
         />
       )}
+      <SkipReasonSheet
+        open={Boolean(why)}
+        skip={why ? findSkip(skips, why.target) : undefined}
+        title={why?.title ?? ''}
+        onClose={() => setWhy(null)}
+        onReason={(reason, text) => why && setReason(why.target, reason, text)}
+        onDone={(text) => {
+          // The sheet already toasts „Megjegyeztem · …"; only an Egyéb text still needs saving.
+          const cur = why ? findSkip(skips, why.target) : undefined
+          if (why && cur?.reasonCategory === 'OTHER' && (text ?? null) !== (cur.reasonText ?? null)) {
+            setReason(why.target, 'OTHER', text)
+          }
+        }}
+      />
       {runLogCtx && (
         <RunLogSheet
           ctx={runLogCtx}

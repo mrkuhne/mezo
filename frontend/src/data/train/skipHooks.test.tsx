@@ -1,10 +1,11 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { makeHookWrapper } from '@/test/queryWrapper'
+import { makeHookWrapper, makeHookWrapperWithClient } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/data/_client/api'
-import { usePlannedSkips } from '@/data/train/skipHooks'
+import { usePlannedSkips, PLANNED_SKIPS_QUERY_KEY } from '@/data/train/skipHooks'
+import { DEFAULT_QUERY_STALE_TIME_MS } from '@/data/useDualQuery'
 import type { PlannedSkipResponse } from '@/data/train/skipApi'
 
 afterEach(() => vi.unstubAllEnvs())
@@ -90,5 +91,51 @@ describe('usePlannedSkips', () => {
     act(() => result.current.undo('r2', () => onDone()))
     await waitFor(() => expect(onDone).toHaveBeenCalledTimes(2))
     expect(deletedId).toBe('r2')
+  })
+  it('mock mode: OTHER text is trimmed, blank becomes null, text kept only for OTHER (mirrors the backend)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'true')
+    const t = { kind: 'GYM' as const, date: '2026-09-28' }
+    const { result } = renderHook(() => usePlannedSkips(), { wrapper: makeHookWrapper() })
+    act(() => result.current.setReason(t, 'OTHER', '  családi program  '))
+    await waitFor(() => expect(result.current.skips[0]?.reasonText).toBe('családi program'))
+    act(() => result.current.setReason(t, 'OTHER', '   '))
+    await waitFor(() => expect(result.current.skips[0]?.reasonText).toBeNull())
+    act(() => result.current.setReason(t, 'TIRED', 'nem kell'))
+    await waitFor(() => expect(result.current.skips[0]?.reasonCategory).toBe('TIRED'))
+    expect(result.current.skips[0]?.reasonText).toBeNull()
+  })
+
+  it('real mode: the list query uses the app-default staleTime (no refetch per useTrain() mount)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    const { wrapper, client } = makeHookWrapperWithClient()
+    renderHook(() => usePlannedSkips(), { wrapper })
+    const q = client.getQueryCache().findAll({ queryKey: PLANNED_SKIPS_QUERY_KEY })[0]
+    expect((q?.options as { staleTime?: number }).staleTime).toBe(DEFAULT_QUERY_STALE_TIME_MS)
+  })
+
+  it('real mode: the default PUT handler echoes a USER row', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    const onDone = vi.fn()
+    const { result } = renderHook(() => usePlannedSkips(), { wrapper: makeHookWrapper() })
+    act(() => result.current.skip({ kind: 'GYM', date: '2026-09-28' }, onDone))
+    await waitFor(() => expect(onDone).toHaveBeenCalled())
+    expect(onDone.mock.calls[0]![0]).toMatchObject({ source: 'USER', reasonCategory: 'NONE' })
+  })
+
+  it('real mode: a skip write invalidates the reads whose values depend on skips', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    const { wrapper, client } = makeHookWrapperWithClient()
+    const keys = [
+      ['train', 'weekWorkouts'], ['train', 'mesoReport', 'm1'], ['progressionProfile'],
+      ['dailyQuests', '2026-09-28'], ['fuelDay', '2026-09-28'], ['train', 'workoutToday', null],
+    ]
+    for (const k of keys) client.setQueryData(k, { seeded: true })
+    const onDone = vi.fn()
+    const { result } = renderHook(() => usePlannedSkips(), { wrapper })
+    act(() => result.current.skip({ kind: 'GYM', date: '2026-09-28' }, onDone))
+    await waitFor(() => expect(onDone).toHaveBeenCalled())
+    await waitFor(() => {
+      for (const k of keys) expect(client.getQueryState(k)?.isInvalidated, JSON.stringify(k)).toBe(true)
+    })
   })
 })

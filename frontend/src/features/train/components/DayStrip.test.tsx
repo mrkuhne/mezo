@@ -100,3 +100,19 @@ test('does not scroll under reduced motion', () => {
   render(<DayStrip items={items} selected="Vas" onSelect={() => {}} />)
   expect(spy).not.toHaveBeenCalled()
 })
+
+// Kihagyás S1 (mezo-q4xt2.1): a skipped session marks its day with the 3D t-skip (prototype
+// `dstrip()` `i.sk`), spoken in the chip's label too.
+test('a day with a skipped session carries the t-skip mark and says so', () => {
+  stubReduced()
+  const { container } = render(
+    <DayStrip
+      items={[{ day: 'Sze', dayNumber: 20, isToday: false, dots: ['gym'], doneCount: 0, sessionCount: 1, skipCount: 1 }]}
+      selected="Sze"
+      onSelect={() => {}}
+    />,
+  )
+  const ck = container.querySelector('.trm-day-ck')!
+  expect(ck.querySelector('.trm-day-sk use')?.getAttribute('href')).toBe('#t-skip')
+  expect(screen.getByRole('tab', { name: /1 kihagyva/ })).toBeInTheDocument()
+})

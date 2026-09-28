@@ -1231,7 +1231,7 @@ export const handlers = [
   http.put(`${API_BASE}/api/train/skips`, async ({ request }) => {
     const body = await request.json() as Record<string, unknown>
     return HttpResponse.json({
-      id: 'skip-1', serious: false, freePass: false, excused: false,
+      id: 'skip-1', source: 'USER', serious: false, freePass: true, excused: true,
       dayOfWeek: null, time: null, sessionKey: null, reasonText: null,
       ...body,
     })

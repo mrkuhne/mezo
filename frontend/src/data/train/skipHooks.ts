@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
-import { useDualQuery } from '@/data/useDualQuery'
+import { useDualQuery, DEFAULT_QUERY_STALE_TIME_MS } from '@/data/useDualQuery'
 import { skipApi, type PlannedSkipRequest, type PlannedSkipResponse } from '@/data/train/skipApi'
 import { findSkip, judge, skipWindow, type PlannedSkip, type PlannedSkipKey, type SkipReason } from '@/features/train/logic/plannedSkips'
 // From the dependency-free `queryKeys.ts` leaf, NOT `trainHooks.ts`/`readinessHooks.ts` directly —
@@ -42,6 +42,13 @@ function newMockId(): string {
 
 type UpsertVars = { target: PlannedSkipKey; reason: SkipReason; text?: string | null }
 
+/** The stored free text, mirroring the backend: only for OTHER, trimmed, blank → null. */
+function otherText(reason: SkipReason, text?: string | null): string | null {
+  if (reason !== 'OTHER') return null
+  const t = text?.trim()
+  return t ? t : null
+}
+
 /** What the mock server would answer to an upsert: replaces the existing row for the same target
  *  (identity match, `findSkip`) or appends a new one, then re-judges the WHOLE list — a fresh
  *  free-pass race every time a row's reason (and so its seriousness) changes. */
@@ -51,7 +58,7 @@ function mockUpsert(prev: PlannedSkip[], vars: UpsertVars): PlannedSkip[] {
     ...vars.target,
     id: existing?.id ?? newMockId(),
     reasonCategory: vars.reason,
-    reasonText: vars.reason === 'OTHER' ? (vars.text ?? null) : null,
+    reasonText: otherText(vars.reason, vars.text),
     source: 'USER',
     serious: false,
     freePass: false,
@@ -83,12 +90,22 @@ export function usePlannedSkips() {
     mockData: [],
     realFetch: () => skipApi.list(fromIso, toIso).then((rows) => rows.map(toPlannedSkip)),
     realEmpty: [],
+    // Every `useTrain()` mount observes this query — the app default, not always-stale (mezo-5cmq).
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
 
   const invalidateAfterWrite = useCallback(() => {
     void qc.invalidateQueries({ queryKey: PLANNED_SKIPS_QUERY_KEY })
     void qc.invalidateQueries({ queryKey: WORKOUT_TODAY_QUERY_KEY })
     void qc.invalidateQueries({ queryKey: READINESS_TODAY_QUERY_KEY })
+    // Server-side reads that now count skips (Kihagyás S1, Tasks 5–6): the week's workouts, the
+    // robustness streak (progression profile), the meso close report's adherence, the daily
+    // quests and the Fuel day's workout windows — all by prefix.
+    void qc.invalidateQueries({ queryKey: ['train', 'weekWorkouts'] })
+    void qc.invalidateQueries({ queryKey: ['train', 'mesoReport'] }) // `mesoReportQueryKey` prefix
+    void qc.invalidateQueries({ queryKey: ['progressionProfile'] })
+    void qc.invalidateQueries({ queryKey: ['dailyQuests'] })
+    void qc.invalidateQueries({ queryKey: ['fuelDay'] })
   }, [qc])
 
   const upsertMutation = useMutation({
@@ -107,7 +124,7 @@ export function usePlannedSkips() {
         time: vars.target.time ?? null,
         sessionKey: vars.target.sessionKey ?? null,
         reasonCategory: vars.reason,
-        reasonText: vars.reason === 'OTHER' ? (vars.text ?? null) : null,
+        reasonText: otherText(vars.reason, vars.text),
       }
       return { row: toPlannedSkip(await skipApi.upsert(req)) }
     },

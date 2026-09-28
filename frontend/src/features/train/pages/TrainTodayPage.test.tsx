@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { Link, MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, it, vi } from 'vitest'
+import { ToastProvider } from '@/shared/ui/ToastProvider'
 import { http, HttpResponse } from 'msw'
 import { TrainTodayPage } from '@/features/train/pages/TrainTodayPage'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
@@ -953,6 +954,8 @@ test('real mode: a completed today instance renders the Kész hero with Megnéze
   expect(screen.getByText('KÉSZ')).toBeInTheDocument()
   expect(screen.getByText('3 szett · megnézem')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
+  // Kihagyás S1: a finished day never offers a skip
+  expect(screen.queryByRole('button', { name: /Kihagyom/ })).not.toBeInTheDocument()
   fireEvent.click(review)
   expect(mockNavigate).toHaveBeenCalledWith('/train/review/w-done')
 })
@@ -988,6 +991,8 @@ test('real mode: an open instance renders the Folyamatban hero with Folytassuk',
   expect(screen.getByRole('button', { name: /Folytassuk/ })).toBeInTheDocument()
   expect(screen.getByText('2 szett kész')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
+  // Kihagyás S1: a started session never offers a skip
+  expect(screen.queryByRole('button', { name: /Kihagyom/ })).not.toBeInTheDocument()
 })
 
 test('real mode: prescribed run logged today ⇒ run hero flips to the done summary, not the log CTA', async () => {
@@ -1552,4 +1557,134 @@ test('every impact row renders a chip (no empty token, rest day with sport)', ()
   for (const row of rows) {
     expect(row.querySelector('.trm-mchp .muscle-chip')).not.toBeNull()
   }
+})
+
+// ── Kihagyás S1 (mezo-q4xt2.1) — prototype elo/edzes.html `thero()` / `mai()` / `dstrip()` ──
+// Mock mode, the clock pinned to the fixture's own Csü "today" (2026-07-16) so Kedd is a past
+// (ELMARADT) day and Pén a planned one — all inside the skip window (today−7 … Sunday).
+describe('Kihagyás S1 — skipping a planned occurrence on Mai', () => {
+  const renderSkips = (entry = '/train') =>
+    render(
+      <QueryWrapper>
+        <ToastProvider>
+          <MemoryRouter initialEntries={[entry]}>
+            <LevelUpProvider><TrainTodayPage /></LevelUpProvider>
+          </MemoryRouter>
+        </ToastProvider>
+      </QueryWrapper>,
+    )
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-07-16T12:00:00')) // Thursday
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('hero: Kihagyom → sheet → Fáradt vagyok → Kész shows the skipped hero; Visszavonom restores Indítsuk', async () => {
+    const { container } = renderSkips()
+    expect(screen.getByText(/MAI ÁLLAPOT/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Kihagyom' }))
+    // the reason sheet opens straight away, and the page confirms the skip
+    expect(await screen.findByText('Miért marad ki?')).toBeInTheDocument()
+    expect(await screen.findByText('Kihagyva — bármikor visszavonhatod')).toBeInTheDocument()
+    const hero = container.querySelector('.trm-hero')!
+    expect(hero).toHaveClass('is-skip')
+    expect(within(hero as HTMLElement).getByText('KIHAGYVA')).toHaveClass('is-skip')
+    expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
+    // readiness („Mai állapot") stands down on a skipped day
+    expect(screen.queryByText(/MAI ÁLLAPOT/)).not.toBeInTheDocument()
+    // (the strip's own skip mark is asserted on a past day below — mock mode's date-keyed
+    // gymDoneDates already ticks today's chip done, and a done session never reads as skipped)
+
+    fireEvent.click(screen.getByRole('button', { name: /Fáradt vagyok/ }))
+    await waitFor(() => expect(screen.getByRole('button', { name: /Fáradt vagyok/ })).toHaveAttribute('aria-pressed', 'true'))
+    fireEvent.click(screen.getByRole('button', { name: /Kész/ }))
+    await waitFor(() => expect(screen.queryByText('Miért marad ki?')).not.toBeInTheDocument())
+    expect(within(hero as HTMLElement).getByText('Kihagyva · Fáradt vagyok')).toBeInTheDocument()
+    expect(hero.querySelector('.trm-skipd.glass')).toBeInTheDocument()
+
+    fireEvent.click(within(hero as HTMLElement).getByRole('button', { name: /Visszavonom/ }))
+    expect(await screen.findByRole('button', { name: /Indítsuk/ })).toBeInTheDocument()
+    expect(await screen.findByText('Visszavonva — újra a tervben')).toBeInTheDocument()
+    expect(container.querySelector('.trm-hero')).not.toHaveClass('is-skip')
+    expect(screen.getByText('BETERVEZVE')).toBeInTheDocument()
+    expect(screen.getByText(/MAI ÁLLAPOT/)).toBeInTheDocument()
+  })
+
+  it('the energy card leaves a skipped gym block out', async () => {
+    const { container } = renderSkips()
+    const before = container.querySelector('.trm-energy-main strong')?.textContent ?? null
+    expect(before).not.toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Kihagyom' }))
+    await screen.findByText('Miért marad ki?')
+    await waitFor(() => expect(container.querySelector('.trm-energy-main strong')?.textContent ?? null).not.toBe(before))
+  })
+
+  it('a planned sport card offers Kihagyom; skipping it swaps the CTA row for the skipped block', async () => {
+    renderSkips('/train?day=4') // Pén — volleyball 18:15, planned
+    const card = await findTodayCard('Volleyball')
+    expect(within(card).getByText('TERVEZETT')).toBeInTheDocument()
+    fireEvent.click(within(card).getByRole('button', { name: 'Kihagyom' }))
+    expect(await screen.findByText('Miért marad ki?')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Most nem mondom' }))
+    await waitFor(() => expect(screen.queryByText('Miért marad ki?')).not.toBeInTheDocument())
+    const skipped = await findTodayCard('Volleyball')
+    expect(skipped).toHaveClass('is-skip')
+    expect(within(skipped).getByText('KIHAGYVA')).toBeInTheDocument()
+    expect(within(skipped).getByText('Kihagyva · ok nélkül')).toBeInTheDocument()
+    expect(within(skipped).getByRole('button', { name: 'Okot adok' })).toBeInTheDocument()
+  })
+
+  it('a past missed gym day and its missed sport both offer „Kihagytam" next to their catch-up CTA', async () => {
+    renderSkips('/train?day=1') // Kedd — Legs gym + volleyball 17:00, both ELMARADT
+    const gym = await findTodayCard('Legs')
+    expect(within(gym).getByText('ELMARADT')).toHaveClass('is-miss')
+    expect(within(gym).getByRole('button', { name: 'Kihagytam' })).toBeInTheDocument()
+    expect(within(gym).getByRole('button', { name: /Kezdjük el/ })).toBeInTheDocument()
+    const vb = await findTodayCard('Volleyball')
+    expect(within(vb).getByRole('button', { name: 'Kihagytam' })).toBeInTheDocument()
+    expect(within(vb).getByRole('button', { name: /Pótold/ })).toBeInTheDocument()
+    // the past-day hint (prototype `.skwhen`)
+    expect(screen.getByText(/utólag is megadhatod, miért maradtak ki/)).toBeInTheDocument()
+
+    fireEvent.click(within(gym).getByRole('button', { name: 'Kihagytam' }))
+    await screen.findByText('Miért marad ki?')
+    fireEvent.click(screen.getByRole('button', { name: /Beteg vagyok/ }))
+    await waitFor(() => expect(within(gym).getByText('Kihagyva · Beteg vagyok')).toBeInTheDocument())
+    expect(within(gym).getByText(/Nem számít mulasztásnak/)).toBeInTheDocument()
+    // the strip's Kedd chip carries the skip
+    expect(screen.getByRole('tab', { name: /^Kedd ·.*1 kihagyva/ })).toBeInTheDocument()
+  })
+})
+
+// Kihagyás S1 (mezo-q4xt2.1): a server-side GYM skip for today renders the skipped hero in real
+// mode; a finished instance still wins over it (a trained day is never "skipped").
+test('real mode: a stored GYM skip for today shows the skipped hero; a completed instance wins over it', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const skipRow = {
+    id: 'g1', date: localDateString(), kind: 'GYM', dayOfWeek: null, time: null, sessionKey: null,
+    reasonCategory: 'TRAVEL', reasonText: null, source: 'USER', serious: true, freePass: false, excused: true,
+  }
+  const today = (completed: boolean) => HttpResponse.json({
+    templateSessionId: 'd-1', dayLabel: todayLabel(), title: 'Pull Day', durationEst: 0,
+    exercises: [{ id: 'e-1', name: 'Row', muscle: 'back', type: 'compound', workingSets: 4, warmupSets: 2, repMin: 8, repMax: 10, targetRIR: 1 }],
+    openWorkout: null,
+    ...(completed ? { completedWorkout: { id: 'w-done', templateSessionId: 'd-1', date: localDateString(), status: 'completed', sets: [] } } : {}),
+  })
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso(todayLabel())])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/skips`, () => HttpResponse.json([skipRow])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () => today(false)),
+  )
+  const view = renderView()
+  expect(await screen.findByText('Kihagyva · Úton vagyok')).toBeInTheDocument()
+  expect(screen.getByText('KIHAGYVA')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
+  view.unmount()
+
+  server.use(http.get(`${API_BASE}/api/train/workouts/today`, () => today(true)))
+  renderView()
+  expect(await screen.findByRole('button', { name: /Eredmény/ })).toBeInTheDocument()
+  expect(screen.queryByText('KIHAGYVA')).not.toBeInTheDocument()
 })
