@@ -173,7 +173,7 @@ public class ExpenditureLearningService {
     }
 
     /** What both {@code replay} and {@code dayStatuses} need from the active goal's bootstrap. */
-    private record GoalBasis(GoalEntity goal, TdeeBootstrapJson boot, int formulaBase, int planEat, int adjustment) {
+    private record GoalBasis(GoalEntity goal, TdeeBootstrapJson boot, int formulaBase, int adjustment) {
     }
 
     /** Empty when the caller has no active goal with a usable bootstrap. */
@@ -186,9 +186,8 @@ public class ExpenditureLearningService {
         }
         int formulaBase = round(boot.formulaNeatBaselineKcal() != null
             ? boot.formulaNeatBaselineKcal() : boot.neatBaselineKcal());
-        int planEat = round(boot.weeklyEatKcalPerDay() == null ? BigDecimal.ZERO : boot.weeklyEatKcalPerDay());
         int adjustment = goal.getBalanceAdjustmentKcal() == null ? 0 : goal.getBalanceAdjustmentKcal();
-        return Optional.of(new GoalBasis(goal, boot, formulaBase, planEat, adjustment));
+        return Optional.of(new GoalBasis(goal, boot, formulaBase, adjustment));
     }
 
     /** Gathers the window, classifies the days and runs the filter; empty when there is no active goal with a bootstrap. */
@@ -201,7 +200,6 @@ public class ExpenditureLearningService {
         GoalEntity goal = basis.get().goal();
         TdeeBootstrapJson boot = basis.get().boot();
         int formulaBase = basis.get().formulaBase();
-        int planEat = basis.get().planEat();
         int adjustment = basis.get().adjustment();
         LocalDate weekEnd = weekStart.plusDays(6);
         LocalDate windowStart = weekEnd.minusDays(e.windowDays() - 1L);
@@ -219,20 +217,24 @@ public class ExpenditureLearningService {
         // folded in there) — not formulaBase + adjustment again, which double-counts a moved base.
         int prevApplied = prev.map(ExpenditureEstimateEntity::getAppliedBaseKcal).orElse(formulaBase + adjustment);
 
-        // Too little own history → a day is judged against its SERVED target (spec §5.3), not maintenance.
+        // One batched read covering the classifier's reference window too (mezo-tb3s2): the served
+        // Mozgás (planned + extra logged kcal) is both the filter's movement and the fallback's.
+        Map<LocalDate, WorkoutWindowQueryService.DayMovement> movement =
+            workoutWindows.movementBetween(userId, windowStart.minusDays(e.referenceDays()), weekEnd);
+
+        // Too little own history → a day is judged against its SERVED target (spec §5.3), not maintenance:
+        // the previous applied base + that day's logged movement + the goal balance (M5, mezo-tb3s2).
         Map<LocalDate, IntakeDayClassifier.Status> status = IntakeDayClassifier.classify(windowStart, weekEnd, kcal,
-            marksBetween(userId, windowStart.minusDays(e.referenceDays()), weekEnd), d -> prevApplied + planEat + balanceOn(goal, d),
+            marksBetween(userId, windowStart.minusDays(e.referenceDays()), weekEnd),
+            d -> prevApplied + movementOn(movement, d) + balanceOn(goal, d),
             e.suspiciousRatio(), e.referenceDays(), e.minReferenceDays());
 
         Map<LocalDate, BigDecimal> weights = weightQuery.dailyMeanWeightKg(userId, windowStart, weekEnd);
-        Map<LocalDate, WorkoutWindowQueryService.DayMovement> movement =
-            workoutWindows.movementBetween(userId, windowStart, weekEnd);
         List<ExpenditureFilter.Day> days = new ArrayList<>();
         for (LocalDate d = windowStart; !d.isAfter(weekEnd); d = d.plusDays(1)) {
             boolean usable = status.get(d) == IntakeDayClassifier.Status.USABLE;
-            var m = movement.getOrDefault(d, WorkoutWindowQueryService.DayMovement.NONE);
             days.add(new ExpenditureFilter.Day(d, usable ? kcal.get(d) : null, usable ? carbs.get(d) : null,
-                planEat + m.extraKcal(), balanceOn(goal, d), weights.containsKey(d) ? weights.get(d).doubleValue() : null));
+                movementOn(movement, d), balanceOn(goal, d), weights.containsKey(d) ? weights.get(d).doubleValue() : null));
         }
         Optional<ExpenditureFilter.Traced> traced =
             ExpenditureFilter.runWithTrace(days, formulaBase, ExpenditureFilter.Params.of(props));
@@ -269,8 +271,9 @@ public class ExpenditureLearningService {
      * {@code minReferenceDays} logged days in the prior {@code referenceDays}:
      * <ul>
      *   <li>an active goal with a bootstrap exists → the day's reference is the caller's latest
-     *       applied base (or the formula base, when there is no row yet) plus the plan's daily EAT
-     *       — the same "served target" idea {@link #replay} uses, without the goal's per-day balance
+     *       applied base (or the formula base, when there is no row yet) plus that day's served
+     *       logged movement (mezo-tb3s2) — the same "served target" idea {@link #replay} uses, without
+     *       the goal's per-day balance
      *       (Task 4 decision: this read has no single week to resolve a balance segment for);</li>
      *   <li>no active goal/bootstrap at all → there is nothing to invent a reference from, so the
      *       day is never flagged suspicious from too little history — it is simply {@code usable}.</li>
@@ -280,20 +283,21 @@ public class ExpenditureLearningService {
     public List<DayStatus> dayStatuses(UUID userId, LocalDate from, LocalDate to) {
         GoalEngineProperties.Expenditure e = props.expenditure();
         Optional<GoalBasis> basis = goalBasis(userId);
+        LocalDate refWindowStart = from.minusDays(e.referenceDays());
         ToIntFunction<LocalDate> fallbackRefKcal;
         if (basis.isPresent()) {
             int formulaBase = basis.get().formulaBase();
-            int planEat = basis.get().planEat();
             int fallbackBase = estimates.findFirstByCreatedByAndDeletedFalseOrderByWeekStartDesc(userId)
                 .map(ExpenditureEstimateEntity::getAppliedBaseKcal).orElse(formulaBase);
-            fallbackRefKcal = d -> fallbackBase + planEat;
+            Map<LocalDate, WorkoutWindowQueryService.DayMovement> mv =
+                workoutWindows.movementBetween(userId, refWindowStart, to);
+            fallbackRefKcal = d -> fallbackBase + movementOn(mv, d);
         } else {
             // No formula/plan to fall back on — never invent a reference, so a day with too little
             // own history is simply usable rather than guessed at.
             fallbackRefKcal = d -> 0;
         }
 
-        LocalDate refWindowStart = from.minusDays(e.referenceDays());
         Map<LocalDate, Integer> kcal = new HashMap<>();
         for (DailyIntakePort.DayIntake d : dailyIntake.between(userId, refWindowStart, to)) {
             kcal.put(d.date(), d.kcal());
@@ -387,6 +391,11 @@ public class ExpenditureLearningService {
             suggestionService.supersedeOpen(rp.goal().getId(), WEEKLY_CORRECTION);
         }
         goalEngineService.recomputeActiveGoal(userId);
+    }
+
+    /** The served Mozgás of {@code date} (planned + extra logged kcal, mezo-tb3s2); 0 when nothing moved. */
+    private static int movementOn(Map<LocalDate, WorkoutWindowQueryService.DayMovement> movement, LocalDate date) {
+        return movement.getOrDefault(date, WorkoutWindowQueryService.DayMovement.NONE).movementKcal();
     }
 
     private static int round(BigDecimal v) {
