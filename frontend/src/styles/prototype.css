@@ -18204,6 +18204,66 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 @media (prefers-reduced-motion: reduce) {
   .wos .wos-pbar span b { transition: none; }
 }
+/* ── Eligazítás (mezo-mgu2r): the 'brief' phase — prototypes/elo/edzes.html `#indulas`. The hero is a
+   frameless halo, the challenge card the ONE glass (gold), the exercise rows flat; the Indulás
+   foot sticks to the bottom of the scroller. ── */
+.wos.wbr { padding-bottom: 24px; }
+.wos .wbr-top .tt .t1 { flex: 1; }
+.wos .wbr-hero { position: relative; isolation: isolate; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 6px 12px 14px; }
+.wos .wbr-hero::before {
+  content: ''; position: absolute; left: 50%; top: 46%; width: 340px; max-width: 100%; height: 260px; transform: translate(-50%, -50%); z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, color-mix(in srgb, var(--dv-coral) 26%, transparent), color-mix(in srgb, var(--dv-amber) 10%, transparent) 40%, transparent 68%);
+}
+.wos .wbr-hero-art { filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 18px color-mix(in srgb, var(--dv-coral) 42%, transparent)); }
+.wos .wbr-eyebrow { display: block; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; text-transform: uppercase; color: color-mix(in srgb, var(--dv-coral) 70%, var(--text-primary)); }
+.wos .wbr-hero .wbr-eyebrow { margin-top: 6px; }
+.wos .wbr-num { margin-top: 4px; font-size: 58px; font-weight: 600; letter-spacing: -2px; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.wos .wbr-num small { margin-left: 2px; font-size: 20px; font-weight: 500; letter-spacing: -1px; color: var(--text-muted); }
+.wos .wbr-num-pending { color: var(--text-muted); }
+.wos .wbr-sub { margin: 4px 0 0; font-size: 12.5px; color: var(--text-secondary); }
+.wos .wbr-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; }
+.wos .wbr-pills .uv-flat { padding: 7px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.wos .wbr-quests.glass { --c: var(--dv-amber); margin: 0 4px 12px; padding: 14px; border-radius: 22px; }
+.wos .wbr-qhead { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.wos .wbr-qhead .wbr-eyebrow { color: color-mix(in srgb, var(--dv-amber) 75%, var(--text-primary)); }
+.wos .wbr-qhead h3 { margin: 2px 0 0; font-size: 17px; font-weight: 600; letter-spacing: -0.4px; color: var(--text-primary); }
+.wos .wbr-chlist { display: grid; gap: 10px; }
+.wos .wbr-chlist .wos-qc-conf { margin-top: 6px; }
+.wos .wbr-qnote { margin: 10px 0 0; font-size: 11px; line-height: 1.45; color: var(--text-muted); }
+.wos .wbr-qempty { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+.wos .wbr-qempty p { margin: 0 0 8px; }
+.wos .wbr-ovl { padding: 0 4px; }
+.wos .wbr-eyeb { padding: 14px 6px 10px; }
+.wos .wbr-eyeb .wbr-eyebrow { color: var(--text-muted); }
+.wos .wbr-eyeb h2 { margin: 2px 0 0; font-size: 20px; font-weight: 600; letter-spacing: -0.5px; color: var(--text-primary); }
+.wos .wbr-list { display: grid; gap: 10px; margin: 0; padding: 0 4px; list-style: none; }
+.wos .wbr-row {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 18px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.wos .wbr-row-copy { flex: 1; min-width: 0; }
+.wos .wbr-row-copy strong { display: block; font-size: 14px; font-weight: 600; letter-spacing: -0.2px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wos .wbr-row-copy small { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 2px; font-size: 11.5px; color: var(--text-secondary); }
+.wos .wbr-row-quest { flex: 0 0 auto; display: grid; place-items: center; }
+.wos .wbr-foot { position: sticky; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 15; margin: 18px 0 0; padding: 0 4px; }
+.wos .wbr-start {
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px 16px; border: 0; border-radius: 18px; cursor: pointer;
+  font: 700 15px/1.2 var(--ff-body); color: #191614; background: var(--dv-coral);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 18px color-mix(in srgb, var(--dv-coral) 45%, transparent);
+}
+.wos .wbr-start .t-ico { filter: none; }
+/* the card head's "vs last week" chip (it replaced the Múlt hét / Ma a cél cells) — also on the briefing rows */
+.wos .wo-delta {
+  display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1px; white-space: nowrap;
+  color: #FFD08A; background: color-mix(in srgb, var(--dv-amber) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 30%, transparent);
+}
+.wos .wo-delta.is-up { color: #FFB39C; background: color-mix(in srgb, var(--dv-coral) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 35%, transparent); }
+.wos .wo-card-copy .wo-delta { margin-top: 4px; }
+/* the active-phase challenge badge (tap → release / take back); released = dimmed, target struck */
+.wos .wos-pills button.wos-pill-quest { cursor: pointer; font: inherit; }
+.wos .wos-pills .wos-pill-quest.is-released { opacity: 0.6; }
+.wos .wos-pills .wos-pill-quest.is-released s { opacity: 0.8; }
+
 /* ── /uveg edzes session ── */
 
 /* ── uveg edzes zaras (mezo-me75u.4) ── the closing ceremony (WorkoutCeremony, 2 steps) + /train/review/:id (WorkoutSummary, ExerciseReview) ── */
