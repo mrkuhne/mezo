@@ -2638,6 +2638,12 @@ svg{overflow:visible}
 .mcells.m8 .mcell{padding:7px 2px 6px}
 .mcells.m8 .mcell b{font-size:13.5px}
 .mcells.m8 .mcell small{display:block;font-size:9px}
+/* Check-in 2.0 (mezo-ck2): the week hub's nine cells, three rows of three, Hangulat next to Energia */
+.mcells.m9{grid-template-columns:repeat(3,1fr);gap:6px;padding:0 16px;margin-top:14px}
+.mcells.m9 .mcell{padding:8px 2px 7px}
+.mcells.m9 .mcell b{font-size:14px}
+.mcells.m9 .mcell b .mu{font-style:normal;font-size:10px;font-weight:600;opacity:.7}
+.mcells.m9 .mcell small{display:block;font-size:9.5px}
 .wview{--c:var(--lav);display:block;width:100%;padding:14px 15px;border-radius:22px;text-align:left}
 .wview .ct{display:flex;align-items:center;gap:10px}
 .wview .ct .icon{width:40px;height:40px}
@@ -3602,8 +3608,9 @@ function het(){
     <div class="wring">${ring(78,'var(--lav)',66,150)}<span class="ctr"><b>78</b><small>/ 100</small></span></div>
     <div class="wdelta"><b>+4</b>előző hét 74</div>
     <p class="tiny" style="margin-top:6px">${run?'ez a hét · még fut':'lezárt hét · a Mezo elemzésével'}</p></section>
-  <div class="mcells m8 rise" style="--i:1">${[['3 004','Kcal átlag','var(--lav)'],['212 g','Fehérje','var(--sage)'],['7ó 19p','Alvás','var(--sky)'],['75%','Check-in','var(--coral)'],
-    ['7,0','Energia','var(--gold)'],['83,9','Súly','var(--sky)'],['−0,30','Súly-trend','var(--sage)'],['585','XP','var(--rose)']].map(m=>`<span class="mcell" style="--c:${m[2]}"><b>${m[0]}</b><small>${m[1]}</small></span>`).join('')}</div>
+  <div class="mcells m9 rise" style="--i:1">${[['3 004','kcal','Kcal átlag','var(--lav)'],['212','g','Fehérje','var(--sage)'],['7ó 19p','','Alvás','var(--sky)'],
+    ['75','%','Check-in','var(--coral)'],['7,0','/ 10','Energia','var(--gold)'],['6,8','/ 10','Hangulat','var(--lav)'],
+    ['83,9','kg','Súly','var(--sky)'],['−0,30','kg/hét','Súly-trend','var(--sage)'],['585','','XP','var(--rose)']].map(m=>`<span class="mcell" style="--c:${m[3]}"><b>${m[0]}${m[1]?`<i class="mu"> ${m[1]}</i>`:''}</b><small>${m[2]}</small></span>`).join('')}</div>
   ${h3('A HÉT NÉGY NÉZETE')}
   <div class="p16">
     <button class="wview glass lift rise" style="--i:2" data-go="#elemzes"><span class="ct">${I('score')}<strong>Mezo · heti elemzés</strong><em>${run?'hétfőn jön':'hétfő 06:15'}</em></span>
