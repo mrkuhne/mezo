@@ -101,7 +101,7 @@ Jump from a route, tab, sub-feature, or concept to the doc + the section that co
 | Daily quests / activity log / Growth | `/nap/kuldetesek`, `/me/growth`, `/me/growth/{skillek,naplo,kituntetesek}` | [`growth.md`](growth.md) §2 |
 | Weekly cross-domain agenda (gym+volley+run) | `/train/mai` | [`train.md`](train.md) §2, §5 |
 | Active week / weekly muscle-load review | `/train/week` | [`train.md`](train.md) §2 |
-| Active workout / per-set logging / resume | `/train/session` (owned by Mai tab) | [`train.md`](train.md) §2, §4 (workout execution) |
+| Workout briefing (Eligazítás) / active workout / per-set logging / resume | `/train/session` (owned by Mai tab; fresh start = briefing, resume = card list) | [`train.md`](train.md) §2, §4 (workout execution) |
 | Mesocycle library / plan wizard / templates | `/train/mesocycles`, `/train/templates` | [`train.md`](train.md) §2, §4 (mesocycles) |
 | Volleyball ("Röplabda") schedule + log | `/train/sport` (owned by Mai tab) | [`train.md`](train.md) §2, §4 (sport) |
 | Interval running ("Futás") + block builder | `/train/futas` (owned by Terv tab) | [`train.md`](train.md) §2, §4 (running) |
