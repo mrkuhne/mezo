@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleReportEntity;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.json.MesoReportJson;
 import io.mrkuhne.mezo.feature.train.mapper.MesoReportMapper;
@@ -94,6 +95,7 @@ public class MesocycleReportService {
     private final ExerciseCatalogRepository exerciseCatalogRepository;
     private final VolumeArcService volumeArcService;
     private final MedalService medalService;
+    private final PlannedSkipService plannedSkipService;
     private final MesoReportMapper mapper;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectProvider<MesoReviewGate> reviewGate;
@@ -119,7 +121,7 @@ public class MesocycleReportService {
             .findCompletedMesoInstancesInWindow(createdBy, run.getId(), start, windowEnd);
 
         MesoReportJson report = new MesoReportJson(
-            adherence(createdBy, run, weeksElapsed, instances),
+            adherence(createdBy, run, weeksElapsed, instances, windowEnd),
             // The arc's future-week mask must agree with adherence: a run whose `currentWeek` went
             // stale (it only advances on the weekly rollover) would otherwise freeze week 2 as
             // "not reached" while adherence counts a week-2 session.
@@ -200,11 +202,17 @@ public class MesocycleReportService {
      * Plan vs reality. {@code plannedSessions} counts only template days that actually carry
      * exercises (an empty day is not a session anyone could have done) times {@code weeksElapsed} —
      * {@code MesoWeeks.weekOf} against the close window's end, which at close time IS
-     * {@code clampWeek(startDate, weeks)} and stays stable if the report is regenerated later.
+     * {@code clampWeek(startDate, weeks)} and stays stable if the report is regenerated later —
+     * minus the excused GYM dates inside the run's window (Kihagyás S1, mezo-q4xt2.1): a serious
+     * reason, a free pass or an advice skip is not a session anyone could have done either, so it
+     * leaves the planned count exactly like an empty template day does. Never negative.
      */
     private MesoReportJson.Adherence adherence(UUID createdBy, MesocycleEntity run,
-            int weeksElapsed, List<WorkoutSessionEntity> instances) {
-        int plannedSessions = countNonEmptyTemplateDays(createdBy, run.getId()) * weeksElapsed;
+            int weeksElapsed, List<WorkoutSessionEntity> instances, LocalDate windowEnd) {
+        int excusedCount = plannedSkipService
+            .excusedDates(createdBy, PlannedSkipEntity.Kind.GYM, run.getStartDate(), windowEnd).size();
+        int plannedSessions = Math.max(0,
+            countNonEmptyTemplateDays(createdBy, run.getId()) * weeksElapsed - excusedCount);
         int completedSessions = instances.size();
         int completedWeeks = (int) instances.stream()
             .map(i -> MesoWeeks.weekOf(run.getStartDate(), i.getDate(), run.getWeeks()))
