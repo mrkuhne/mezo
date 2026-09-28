@@ -14996,12 +14996,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .flp-how-btn .t-ico { filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 8px color-mix(in srgb, var(--c) 45%, transparent)); }
 .flp-how-btn .lbl { flex: 1; font-size: 14px; font-weight: 600; }
 .flp-how-btn .lbl small { display: block; margin-top: 1px; font-size: 11px; font-weight: 400; color: var(--text-muted); }
-.flp-how-btn .chev { width: 18px; height: 18px; flex: 0 0 auto; color: var(--text-muted); transition: transform 0.3s cubic-bezier(0.2, 0.78, 0.24, 1); }
-.flp-how-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
-
-.flp-how { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.45s cubic-bezier(0.2, 0.78, 0.24, 1); }
-.flp-how.is-open { grid-template-rows: 1fr; }
-.flp-how > div { overflow: hidden; min-height: 0; }
+/* mezo-3n2so: the explainer moved to /fuel/tanulas — the button is now a link with „Részletek ›” */
+.flp-how-btn .more { flex: 0 0 auto; font-size: 12.5px; font-weight: 600; color: var(--dv-sage); white-space: nowrap; }
 .flp-how-in { padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
 
 .flp-how-cell { padding: 12px; border-radius: 14px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
@@ -15078,7 +15074,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .flp-how-steps .ar { align-self: center; font-size: 13px; color: var(--text-muted); }
 
 @media (prefers-reduced-motion: reduce) {
-  .flp-how, .flp-how-btn .chev, .flp-how-meter .pin { transition: none; }
+  .flp-how-btn, .flp-how-meter .pin { transition: none; }
 }
 
 /* ─ Motion: the live mic breathes (feedback, not decoration); reduced motion = still ─ */
@@ -29924,3 +29920,98 @@ main.settings-page {
 .fwl-qbtn.is-ghost { background: none; box-shadow: none; color: var(--text-disabled); }
 .fwl-qbtn:disabled { opacity: 0.6; }
 /* ── /heti tanulás ── */
+
+/* ── „Hogy tanultam?” oldal (mezo-3n2so, learned expenditure part 2, spec §5.3) ──
+   Build target: docs/design_2.0/prototypes/elo/fuel.html `tanulas()` (`.lhero`, `.wkchart`,
+   `.wkd`, `.ld-row`, `.stchip`, `.switch`, `.hw-legend`), 1:1 values in house tokens. Ranking:
+   the hero is a frameless halo; the chart and the day list are ONE glass card each; the week
+   detail and the six sections are flat cells (no glass in glass). */
+.fln-page .fln-sec { margin-top: 24px; }
+.fln-page .fln-sec small { flex: 0 0 auto; white-space: nowrap; }
+.fln-state { margin: 14px 2px 0; font-size: 12.5px; color: var(--text-muted); }
+.fln-hero { padding: 14px 22px 6px; text-align: center; }
+.fln-hero .uv-eyebrow { display: block; }
+.fln-num { margin: 6px 0 4px; font-family: var(--ff-display); font-size: 54px; font-weight: 300; letter-spacing: -3px;
+  line-height: 1; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.fln-num small { margin-left: 4px; font-family: var(--ff-body); font-size: 14px; font-weight: 400; letter-spacing: 0; color: var(--text-secondary); }
+.fln-line { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+/* owner round 2: with a weekly summary the whole status row is ONE button — dot + „· heti összegző ›” */
+.fln-tap { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; width: 100%; min-height: 44px;
+  margin-top: 4px; padding: 6px 10px; border: 0; border-radius: 14px; background: none; text-align: center;
+  font: 600 13.5px/1.35 var(--ff-body); color: var(--text-primary); cursor: pointer; }
+.fln-tap:active { background: rgba(245, 239, 230, 0.04); }
+.fln-tap:focus-visible { outline: 2px solid var(--dv-sage); outline-offset: 2px; }
+.fln-more { margin-left: 2px; font-weight: 600; color: color-mix(in srgb, var(--dv-sage) 80%, var(--text-primary)); }
+.fln-sub { margin: 2px 0 0; font-size: 12px; color: var(--text-muted); }
+.fln-off { margin: 6px 0 0; font-size: 17px; color: var(--text-primary); }
+.fln-off b { font-weight: 600; }
+.fln-muted { margin: 6px 0 0; font-size: 12.5px; color: var(--text-muted); }
+.fln-flat { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 7px 12px; border: 0;
+  border-radius: 999px; white-space: nowrap; font: 600 12px/1.2 var(--ff-body); color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); cursor: pointer; }
+.fln-empty.uv-empty { --c: var(--dv-sage); display: flex; align-items: center; gap: 12px; margin: 6px 0 0;
+  padding: 14px; border-radius: 20px; }
+.fln-empty p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+.fln-empty b { font-weight: 600; color: var(--text-primary); }
+.fln-card { display: grid; gap: 8px; padding: 14px; }
+.fln-card.fln-days { gap: 0; }
+/* the chart */
+.fln-chart-wrap { position: relative; }
+.fln-chart { display: block; width: 100%; height: auto; overflow: visible; }
+.fln-chart .fln-grid { stroke: rgba(245, 239, 230, 0.06); }
+.fln-chart .fln-ax { font-family: var(--ff-body); font-size: 9px; fill: var(--text-muted); }
+.fln-chart .fln-band { fill: color-mix(in srgb, var(--dv-sage) 16%, transparent); }
+.fln-chart .fln-gap rect { fill: rgba(245, 239, 230, 0.03); stroke: rgba(245, 239, 230, 0.10); stroke-dasharray: 3 3; }
+.fln-chart .fln-gap text { font-family: var(--ff-body); font-size: 8.5px; fill: var(--text-muted); }
+.fln-chart .fln-sel { stroke: rgba(245, 239, 230, 0.18); }
+.fln-chart .fln-formula { fill: none; stroke: var(--text-muted); stroke-width: 1.4; stroke-dasharray: 4 4; opacity: 0.7; }
+.fln-chart .fln-applied { fill: none; stroke: var(--dv-sage); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--dv-sage) 70%, transparent)); }
+.fln-chart .fln-dot { fill: var(--dv-sage); stroke: var(--dv-sage); stroke-width: 1;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--dv-sage) 80%, transparent)); }
+.fln-chart .fln-dot.is-hold { fill: #141210; stroke-width: 1.8; }
+.fln-chart .fln-dot.is-sel { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--dv-sage) 80%, transparent)); }
+/* one-shot draw of the frame's base (pathLength=1); reduced motion never arms `.is-draw` */
+@keyframes fln-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  .fln-chart.is-draw .fln-applied { stroke-dasharray: 1; animation: fln-draw 0.9s cubic-bezier(0.2, 0.78, 0.24, 1) both; }
+}
+.fln-hits { position: absolute; top: 0; bottom: 0; display: flex; }
+.fln-hit { flex: 1 1 0; min-width: 0; padding: 0; border: 0; background: transparent; cursor: pointer; border-radius: 8px; }
+.fln-hit:focus-visible { outline: 2px solid var(--dv-sage); outline-offset: -2px; }
+.fln-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; font-size: 10px; color: var(--text-muted); }
+.fln-legend i { display: inline-block; width: 9px; height: 9px; margin-right: 4px; border-radius: 2px; vertical-align: -1px; }
+.fln-legend i.ln { width: 14px; height: 2px; border-radius: 1px; vertical-align: 2px; }
+.fln-legend i.is-formula { background: repeating-linear-gradient(90deg, var(--text-muted) 0 4px, transparent 4px 7px); }
+.fln-legend i.is-applied { background: var(--dv-sage); }
+.fln-legend i.is-band { background: color-mix(in srgb, var(--dv-sage) 30%, transparent); }
+.fln-legend i.is-hold { border: 1.6px solid var(--dv-sage); border-radius: 50%; background: transparent; }
+.fln-fine { margin: 8px 0 0; font-size: 10.5px; line-height: 1.45; color: var(--text-muted); }
+.fln-card > .fln-fine:first-of-type { margin-top: 0; }
+/* the selected week — a flat cell inside the glass */
+.fln-wkd { padding: 10px 12px; border-radius: 14px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.fln-wkd strong { display: block; margin-bottom: 8px; font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+.fln-wkd p { margin: 8px 0 0; font-size: 11.5px; line-height: 1.4; color: var(--text-secondary); }
+.fln-wkd strong + p { margin-top: 0; }
+.fln-kv { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.fln-kv-cell { min-width: 0; padding: 7px 8px; border-radius: 12px; background: rgba(245, 239, 230, 0.035); }
+.fln-kv-cell small { display: block; font-size: 10px; color: var(--text-muted); }
+.fln-kv-cell b { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+/* the day list */
+.fln-day { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-top: 1px solid var(--divider); }
+.fln-day:first-child { border-top: 0; }
+.fln-grow { flex: 1; min-width: 0; }
+.fln-day strong { display: block; font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+.fln-day small { font-size: 11px; color: var(--text-muted); }
+.fln-chip { flex: 0 0 auto; padding: 3px 9px; border-radius: 999px; white-space: nowrap; font-size: 10.5px; font-weight: 600;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px currentColor; }
+.fln-chip.st-none { box-shadow: inset 0 0 0 1px var(--divider); }
+.fln-days .uv-tgl { --c: var(--dv-sage); flex: 0 0 auto; }
+.fln-swph { width: 44px; flex: 0 0 auto; }
+.fln-explainer > .flp-how-in { padding-top: 0; }
+@media (max-width: 360px) {
+  .fln-kv { grid-template-columns: 1fr 1fr; }
+  .fln-chip { padding: 3px 7px; font-size: 10px; }
+  .fln-day { gap: 6px; }
+}
+/* ── /„Hogy tanultam?” oldal ── */

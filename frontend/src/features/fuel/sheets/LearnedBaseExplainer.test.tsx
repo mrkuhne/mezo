@@ -1,5 +1,4 @@
-import { act, render, screen, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { act, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { delay, http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
@@ -8,20 +7,12 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { expenditureExplanationSeed as seed } from '@/data/fuel/expenditureExplanation'
 import { fuelDayEnergy } from '@/data/fuel/fuel'
 import type { ExpenditureExplanation } from '@/data/fuel/expenditureApi'
-import { LearnedBaseExplainerBody, meterPosition } from '@/features/fuel/sheets/LearnedBaseExplainer'
+import { LearnedBaseExplainer, LearnedBaseExplainerBody, meterPosition } from '@/features/fuel/sheets/LearnedBaseExplainer'
 import { LearnedBaseChart } from '@/features/fuel/sheets/LearnedBaseChart'
-import { EnergyBreakdownSheet, type EnergyBreakdown } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 
 const body = (x: Partial<ExpenditureExplanation> = {}, reducedMotion = true) =>
   render(<LearnedBaseExplainerBody explanation={{ ...seed, ...x }} reducedMotion={reducedMotion} />)
 const titles = () => [...document.querySelectorAll('.flp-how-cell h4')].map(h => h.textContent)
-
-const learned: EnergyBreakdown = {
-  base: { kcal: 2159, bmr: 1893, neat: 1.2, neatLabel: 'Ülő', formula: 'KATCH', source: 'learned', formulaKcal: 2356, sdKcal: 200, confidence: 'low' },
-  movement: { kcal: 426, isWeeklyAvg: true },
-  deficit: { kcal: -622, rateKgPerWk: 0.5, goalLabel: 'Cut' },
-  target: 1963,
-}
 
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -92,11 +83,11 @@ describe('LearnedBaseExplainerBody — the fixture numbers', () => {
 })
 
 describe('mock story', () => {
-  it('the fuel mock serves the explainer seed\'s learned base, and its equation still closes', () => {
-    expect(fuelDayEnergy.baseKcal).toBe(seed.appliedBaseKcal)
-    expect(fuelDayEnergy.formulaBaseKcal).toBe(seed.formulaBaseKcal)
-    expect(fuelDayEnergy.baseSdKcal).toBe(seed.posteriorSdKcal)
-    expect(fuelDayEnergy.baseConfidence).toBe(seed.confidence)
+  // mezo-3n2so: the Fuel day now serves the learned-expenditure part 2 seed's latest week (2480,
+  // see expenditureLearningSeed.test.ts), so the equation box, the weekly sheet and the
+  // „Hogy tanultam?” page agree. The served equation must still close.
+  it('the fuel mock serves a learned base, and its equation still closes', () => {
+    expect(fuelDayEnergy.baseSource).toBe('learned')
     expect(fuelDayEnergy.plannedMovementKcal).toBeGreaterThan(0)
     expect(fuelDayEnergy.baseKcal + fuelDayEnergy.plannedMovementKcal + fuelDayEnergy.extraMovementKcal + fuelDayEnergy.balanceKcal)
       .toBe(fuelDayEnergy.targetKcal)
@@ -203,43 +194,22 @@ describe('LearnedBaseExplainerBody — motion', () => {
   })
 })
 
-describe('EnergyBreakdownSheet — the „Hogy tanultam?” toggle', () => {
-  it('opens and closes (aria-expanded), mock mode shows the fixture', async () => {
+// mezo-3n2so: the explainer left the energy sheet for the „Hogy tanultam?” page (/fuel/tanulas),
+// which renders the data-bound `LearnedBaseExplainer` as its six sections.
+describe('LearnedBaseExplainer — data-bound', () => {
+  it('mock mode shows the fixture', () => {
     vi.stubEnv('VITE_USE_MOCK', 'true')
-    const user = userEvent.setup()
-    render(<QueryWrapper><EnergyBreakdownSheet breakdown={learned} initial="base" onClose={vi.fn()} /></QueryWrapper>)
-    const btn = screen.getByRole('button', { name: /Hogy tanultam\?/ })
-    expect(btn).toHaveAttribute('aria-expanded', 'false')
-    const panel = document.getElementById(btn.getAttribute('aria-controls')!)!
-    expect(panel).not.toBeNull()
-    expect(within(panel).queryByText('Mit néztem meg')).not.toBeInTheDocument() // lazy: nothing mounted yet
-    await user.click(btn)
-    expect(btn).toHaveAttribute('aria-expanded', 'true')
-    expect(panel).toHaveClass('is-open')
-    expect(within(panel).getByText('Mit néztem meg')).toBeInTheDocument()
-    await user.click(btn)
-    expect(btn).toHaveAttribute('aria-expanded', 'false')
-    expect(panel).not.toHaveClass('is-open')
+    render(<QueryWrapper><LearnedBaseExplainer reducedMotion /></QueryWrapper>)
+    expect(screen.getByText('Mit néztem meg')).toBeInTheDocument()
   })
 
-  it('is absent on the formula path', () => {
-    render(<EnergyBreakdownSheet breakdown={{ ...learned, base: { ...learned.base, source: 'formula' } }} initial="base" onClose={vi.fn()} />)
-    expect(screen.queryByRole('button', { name: /Hogy tanultam\?/ })).not.toBeInTheDocument()
-  })
-
-  it('real mode: fetches on first open, loading line first', async () => {
+  it('real mode: loading line first, then the persisted explanation', async () => {
     vi.stubEnv('VITE_USE_MOCK', 'false')
-    let calls = 0
     server.use(http.get(`${API_BASE}/api/goals/expenditure/explanation`, async () => {
-      calls++
       await delay(80)
       return HttpResponse.json(seed)
     }))
-    const user = userEvent.setup()
-    render(<QueryWrapper><EnergyBreakdownSheet breakdown={learned} initial="base" onClose={vi.fn()} /></QueryWrapper>)
-    await new Promise(r => setTimeout(r, 30))
-    expect(calls).toBe(0) // lazy: nothing fetched before the first open
-    await user.click(screen.getByRole('button', { name: /Hogy tanultam\?/ }))
+    render(<QueryWrapper><LearnedBaseExplainer reducedMotion /></QueryWrapper>)
     expect(screen.getByText('Betöltöm, hogyan tanultam…')).toBeInTheDocument()
     expect(await screen.findByText('4 hiányosnak tűnő nap')).toBeInTheDocument()
   })
@@ -247,18 +217,14 @@ describe('EnergyBreakdownSheet — the „Hogy tanultam?” toggle', () => {
   it('real mode: 204 → the honest no-data line', async () => {
     vi.stubEnv('VITE_USE_MOCK', 'false')
     server.use(http.get(`${API_BASE}/api/goals/expenditure/explanation`, () => new HttpResponse(null, { status: 204 })))
-    const user = userEvent.setup()
-    render(<QueryWrapper><EnergyBreakdownSheet breakdown={learned} initial="base" onClose={vi.fn()} /></QueryWrapper>)
-    await user.click(screen.getByRole('button', { name: /Hogy tanultam\?/ }))
+    render(<QueryWrapper><LearnedBaseExplainer reducedMotion /></QueryWrapper>)
     expect(await screen.findByText('Még nincs elég adat a magyarázathoz.')).toBeInTheDocument()
   })
 
   it('real mode: 500 → the honest error line', async () => {
     vi.stubEnv('VITE_USE_MOCK', 'false')
     server.use(http.get(`${API_BASE}/api/goals/expenditure/explanation`, () => new HttpResponse(null, { status: 500 })))
-    const user = userEvent.setup()
-    render(<QueryWrapper><EnergyBreakdownSheet breakdown={learned} initial="base" onClose={vi.fn()} /></QueryWrapper>)
-    await user.click(screen.getByRole('button', { name: /Hogy tanultam\?/ }))
+    render(<QueryWrapper><LearnedBaseExplainer reducedMotion /></QueryWrapper>)
     expect(await screen.findByText('Most nem sikerült betölteni a magyarázatot.')).toBeInTheDocument()
   })
 })

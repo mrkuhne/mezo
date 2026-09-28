@@ -141,6 +141,8 @@ export function useIntakeDayMark(): {
       if (mock) {
         const result = applyMockDayMark(input.date, input)
         refreshCachedIntakeDays(qc)
+        // the mock re-chain moved the latest applied base — the history's last row follows it
+        qc.setQueryData(EXPENDITURE_HISTORY_KEY, expenditureHistorySeed())
         return result
       }
       return input.kind === 'set'

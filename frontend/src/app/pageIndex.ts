@@ -97,6 +97,7 @@ export const PAGE_INDEX: IndexedPage[] = [
   { route: '/fuel', label: 'Mai', hint: 'A mai napod tápértéke és étkezései.' },
   { route: '/fuel/log/uj', label: 'Étel rögzítése', hint: 'Új étkezés felvitele.' },
   { route: '/fuel/trendek', label: 'Trendek', hint: 'Hogyan alakult az étkezésed hetek alatt.' },
+  { route: '/fuel/tanulas', label: 'Hogy tanultam?', hint: 'Hétről hétre, mennyit égetsz — és melyik napod számít bele.' },
   { route: '/fuel/konyha', label: 'Konyha', hint: 'A receptek, a kamra és a műhely bejárata.' },
   { route: '/fuel/recipes', label: 'Receptek', hint: 'A recept-könyvtárad.' },
   { route: '/fuel/recipes/new', label: 'Új recept', hint: 'Recept felvitele kézzel.' },

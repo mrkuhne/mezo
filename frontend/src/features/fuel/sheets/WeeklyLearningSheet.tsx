@@ -7,7 +7,7 @@ import { useToast } from '@/shared/ui/ToastProvider'
 import { huInt } from '@/shared/lib/huNum'
 import { useDismissWeeklyCard, useIntakeDayMark } from '@/data/fuel/expenditureHooks'
 import type { ExpenditureWeeklyCard, IntakeDayMarkResult, IntakeDayStatus } from '@/data/fuel/expenditureApi'
-import { CONFIDENCE_WORD, huWeekRange, huWeekdayDate, round10, signed } from '@/features/fuel/sheets/learnedBaseFormat'
+import { CONFIDENCE_WORD, DAY_STATUS, dayCounts, huWeekRange, huWeekdayDate, markChangeLine, round10, signed } from '@/features/fuel/sheets/learnedBaseFormat'
 
 // ============================================================
 // Mezo · WeeklyLearningSheet — „Heti tanulás” (mezo-3n2so, learned expenditure part 2, spec §5.1).
@@ -30,24 +30,6 @@ const REASON = {
 
 type DayState = IntakeDayStatus['status']
 
-/** Status chip copy + tone (elo/fuel.html `STATUS`). */
-const STATUS: Record<DayState, [string, string]> = {
-  usable: ['számít', 'ok'],
-  suspicious: ['hiányosnak tűnt', 'sus'],
-  confirmed_complete: ['te jelölted teljesnek', 'mc'],
-  marked_incomplete: ['te jelölted hiányosnak', 'mi'],
-  unlogged: ['nincs felírva', 'none'],
-}
-
-const counts = (s: DayState) => s === 'usable' || s === 'confirmed_complete'
-
-function changeLine(r: IntakeDayMarkResult): string {
-  const before = r.appliedBaseBeforeKcal
-  const after = r.appliedBaseAfterKcal
-  const delta = before != null && after != null ? Math.round(after - before) : 0
-  return delta ? `A keret ${signed(delta)} kcal-lal változott` : 'A keret nem változott'
-}
-
 export function WeeklyLearningSheet({ card, onClose }: { card: ExpenditureWeeklyCard; onClose: () => void }) {
   const { setMark, clearMark } = useIntakeDayMark()
   const { dismiss } = useDismissWeeklyCard()
@@ -65,7 +47,7 @@ export function WeeklyLearningSheet({ card, onClose }: { card: ExpenditureWeekly
     try {
       const r = await run()
       setStates(s => ({ ...s, [date]: r.day.status }))
-      setMsg(changeLine(r))
+      setMsg(markChangeLine(r))
     } catch {
       show({ kind: 'error', text: 'Nem sikerült menteni, próbáld újra' })
     } finally {
@@ -110,11 +92,11 @@ export function WeeklyLearningSheet({ card, onClose }: { card: ExpenditureWeekly
               <span className="uv-eyebrow">Kihagyott napok</span>
               {days.map(d => {
                 const st = states[d.date]
-                const [word, tone] = STATUS[st]
+                const [word, tone] = DAY_STATUS[st]
                 const marked = st === 'confirmed_complete' || st === 'marked_incomplete'
                 return (
                   <div key={d.date} className="fwl-day">
-                    <ContentIcon name={counts(st) ? 't-tick' : 't-shield'} size={26} />
+                    <ContentIcon name={dayCounts(st) ? 't-tick' : 't-shield'} size={26} />
                     <span className="fwl-grow">
                       <strong>{huWeekdayDate(d.date)}</strong>
                       <small>{huInt(d.kcal)} kcal · <em className={`fwl-st st-${tone}`}>{word}</em></small>

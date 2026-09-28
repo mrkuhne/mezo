@@ -1,4 +1,5 @@
 // Formatting helpers for the „Hogy tanultam?” explainer (mezo-y72o3).
+import type { IntakeDayMarkResult, IntakeDayStatus } from '@/data/fuel/expenditureApi'
 
 const HU_MONTHS_SHORT = ['jan.', 'febr.', 'márc.', 'ápr.', 'máj.', 'jún.', 'júl.', 'aug.', 'szept.', 'okt.', 'nov.', 'dec.']
 
@@ -36,3 +37,24 @@ export function huWeekdayDate(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number)
   return `${HU_WD_SHORT[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]}, ${huShortDate(iso)}.`
 }
+
+/** The line after a day mark re-chains the base (mezo-3n2so, elo/fuel.html `changeMsg`): how much
+ *  the frame moved — shared by the „Heti tanulás” sheet and the „Hogy tanultam?” page's day list. */
+export function markChangeLine(r: Pick<IntakeDayMarkResult, 'appliedBaseBeforeKcal' | 'appliedBaseAfterKcal'>): string {
+  const before = r.appliedBaseBeforeKcal
+  const after = r.appliedBaseAfterKcal
+  const delta = before != null && after != null ? Math.round(after - before) : 0
+  return delta ? `A keret ${signed(delta)} kcal-lal változott` : 'A keret nem változott'
+}
+
+/** A day's status chip: copy + tone (elo/fuel.html `STATUS`; tones map to `.fwl-st.st-*`). */
+export const DAY_STATUS: Record<IntakeDayStatus['status'], [string, string]> = {
+  usable: ['számít', 'ok'],
+  suspicious: ['hiányosnak tűnt', 'sus'],
+  confirmed_complete: ['te jelölted teljesnek', 'mc'],
+  marked_incomplete: ['te jelölted hiányosnak', 'mi'],
+  unlogged: ['nincs felírva', 'none'],
+}
+
+/** Does the day count in the learning? (elo/fuel.html `isOn`) */
+export const dayCounts = (s: IntakeDayStatus['status']) => s === 'usable' || s === 'confirmed_complete'

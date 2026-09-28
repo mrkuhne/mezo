@@ -21,7 +21,7 @@ const lastReviewedMonday = (): string => addDays(thisMonday(), -7)
 
 // ── 6.3 Hétről hétre — 12 calendar weeks, 11 reviewed rows, one gap (mezo-3n2so §6.3) ──
 // [weeksBack from the last reviewed week, formula, posterior, sd, applied, step, usable, weighIn,
-//  confidence, status] — weeksBack 8 is the gap (no row).
+//  confidence, status] — weeksBack 8 is the gap (no row); weeksBack 0 is LAST_WEEK below.
 const WEEK_ROWS: Array<{
   weeksBack: number
   formulaBaseKcal: number
@@ -34,21 +34,23 @@ const WEEK_ROWS: Array<{
   confidence: ExpenditureWeek['confidence']
   status: ExpenditureWeek['status']
 }> = [
-  { weeksBack: 10, formulaBaseKcal: 2400, posteriorBaseKcal: 2400, posteriorSdKcal: 320, appliedBaseKcal: 2400, stepKcal: 0, usableDays: 3, weighInDays: 1, confidence: 'low', status: 'learning' },
-  { weeksBack: 9, formulaBaseKcal: 2396, posteriorBaseKcal: 2440, posteriorSdKcal: 300, appliedBaseKcal: 2400, stepKcal: 0, usableDays: 4, weighInDays: 1, confidence: 'low', status: 'holding' },
-  { weeksBack: 8, formulaBaseKcal: 2402, posteriorBaseKcal: 2465, posteriorSdKcal: 280, appliedBaseKcal: 2430, stepKcal: 30, usableDays: 6, weighInDays: 3, confidence: 'low', status: 'updated' },
-  // weeksBack 7 — the gap week: too little data, no row at all.
-  { weeksBack: 6, formulaBaseKcal: 2405, posteriorBaseKcal: 2470, posteriorSdKcal: 260, appliedBaseKcal: 2455, stepKcal: 25, usableDays: 5, weighInDays: 2, confidence: 'low', status: 'updated' },
-  { weeksBack: 5, formulaBaseKcal: 2398, posteriorBaseKcal: 2462, posteriorSdKcal: 240, appliedBaseKcal: 2455, stepKcal: 0, usableDays: 3, weighInDays: 2, confidence: 'medium', status: 'holding' },
-  { weeksBack: 4, formulaBaseKcal: 2400, posteriorBaseKcal: 2485, posteriorSdKcal: 220, appliedBaseKcal: 2475, stepKcal: 20, usableDays: 6, weighInDays: 4, confidence: 'medium', status: 'updated' },
-  { weeksBack: 3, formulaBaseKcal: 2403, posteriorBaseKcal: 2460, posteriorSdKcal: 205, appliedBaseKcal: 2455, stepKcal: -20, usableDays: 6, weighInDays: 3, confidence: 'medium', status: 'updated' },
-  { weeksBack: 2, formulaBaseKcal: 2401, posteriorBaseKcal: 2452, posteriorSdKcal: 190, appliedBaseKcal: 2455, stepKcal: 0, usableDays: 2, weighInDays: 1, confidence: 'medium', status: 'holding' },
-  { weeksBack: 1, formulaBaseKcal: 2399, posteriorBaseKcal: 2445, posteriorSdKcal: 178, appliedBaseKcal: 2440, stepKcal: -15, usableDays: 5, weighInDays: 3, confidence: 'medium', status: 'updated' },
-  { weeksBack: 0, formulaBaseKcal: 2400, posteriorBaseKcal: 2450, posteriorSdKcal: 165, appliedBaseKcal: 2420, stepKcal: -20, usableDays: 6, weighInDays: 4, confidence: 'medium', status: 'updated' },
+  { weeksBack: 11, formulaBaseKcal: 2400, posteriorBaseKcal: 2400, posteriorSdKcal: 320, appliedBaseKcal: 2400, stepKcal: 0, usableDays: 3, weighInDays: 1, confidence: 'low', status: 'learning' },
+  { weeksBack: 10, formulaBaseKcal: 2396, posteriorBaseKcal: 2440, posteriorSdKcal: 300, appliedBaseKcal: 2400, stepKcal: 0, usableDays: 4, weighInDays: 1, confidence: 'low', status: 'holding' },
+  { weeksBack: 9, formulaBaseKcal: 2402, posteriorBaseKcal: 2465, posteriorSdKcal: 280, appliedBaseKcal: 2430, stepKcal: 30, usableDays: 6, weighInDays: 3, confidence: 'low', status: 'updated' },
+  // weeksBack 8 — the gap week: too little data, no row at all.
+  { weeksBack: 7, formulaBaseKcal: 2405, posteriorBaseKcal: 2470, posteriorSdKcal: 260, appliedBaseKcal: 2455, stepKcal: 25, usableDays: 5, weighInDays: 2, confidence: 'low', status: 'updated' },
+  { weeksBack: 6, formulaBaseKcal: 2398, posteriorBaseKcal: 2462, posteriorSdKcal: 240, appliedBaseKcal: 2455, stepKcal: 0, usableDays: 3, weighInDays: 2, confidence: 'medium', status: 'holding' },
+  { weeksBack: 5, formulaBaseKcal: 2400, posteriorBaseKcal: 2485, posteriorSdKcal: 220, appliedBaseKcal: 2475, stepKcal: 20, usableDays: 6, weighInDays: 4, confidence: 'medium', status: 'updated' },
+  { weeksBack: 4, formulaBaseKcal: 2403, posteriorBaseKcal: 2460, posteriorSdKcal: 205, appliedBaseKcal: 2455, stepKcal: -20, usableDays: 6, weighInDays: 3, confidence: 'medium', status: 'updated' },
+  { weeksBack: 3, formulaBaseKcal: 2401, posteriorBaseKcal: 2452, posteriorSdKcal: 190, appliedBaseKcal: 2455, stepKcal: 0, usableDays: 2, weighInDays: 1, confidence: 'medium', status: 'holding' },
+  { weeksBack: 2, formulaBaseKcal: 2399, posteriorBaseKcal: 2445, posteriorSdKcal: 178, appliedBaseKcal: 2440, stepKcal: -15, usableDays: 5, weighInDays: 3, confidence: 'medium', status: 'updated' },
+  { weeksBack: 1, formulaBaseKcal: 2400, posteriorBaseKcal: 2450, posteriorSdKcal: 165, appliedBaseKcal: 2420, stepKcal: -20, usableDays: 6, weighInDays: 4, confidence: 'medium', status: 'updated' },
 ]
 
-/** The last reviewed week — the row the weekly-summary card also describes. */
-const LAST_WEEK = {
+/** The last reviewed week — the row the weekly-summary card also describes, and the learned base
+ *  the mock Fuel day serves (data/fuel/fuel.ts `fuelDayEnergy`), so the equation box's Alap, the
+ *  weekly sheet and the learning page all show the same 2480 ± 150 kcal. */
+export const LAST_WEEK = {
   formulaBaseKcal: 2400,
   posteriorBaseKcal: 2470,
   posteriorSdKcal: 150,
@@ -56,7 +58,7 @@ const LAST_WEEK = {
   stepKcal: 60,
   usableDays: 4,
   weighInDays: 4,
-  confidence: 'high' as ExpenditureWeek['confidence'],
+  confidence: 'medium' as ExpenditureWeek['confidence'],
   status: 'updated' as ExpenditureWeek['status'],
 }
 
@@ -81,35 +83,49 @@ export function expenditureHistorySeed(): ExpenditureHistory {
     formulaBaseKcal: LAST_WEEK.formulaBaseKcal,
     posteriorBaseKcal: LAST_WEEK.posteriorBaseKcal,
     posteriorSdKcal: LAST_WEEK.posteriorSdKcal,
-    appliedBaseKcal: LAST_WEEK.appliedBaseKcal,
-    stepKcal: LAST_WEEK.stepKcal,
+    // The mock re-chain (`applyMockDayMark`) moves the latest applied base — the history follows.
+    appliedBaseKcal: mockState.appliedBaseKcal,
+    stepKcal: LAST_WEEK.stepKcal + (mockState.appliedBaseKcal - LAST_WEEK.appliedBaseKcal),
     usableDays: LAST_WEEK.usableDays,
     weighInDays: LAST_WEEK.weighInDays,
   })
   return { learningEnabled: true, weeks }
 }
 
-// ── 5.4 Az utolsó 14 nap — every status represented, anchored to TODAY ──
-const LAST_14_DAYS: Array<{
-  daysAgo: number
+// ── 5.4 Az utolsó 14 nap — every status represented ──
+// Keyed by the day's offset from the LAST REVIEWED week's Monday (L), not by "days ago": the
+// weekly card's excluded days (L+2 Sze 1180, L+6 V 1020 kcal) must BE suspicious days of this list
+// with the same kcal on any weekday, so „Teljes volt” tells the same −40 story on the card and on
+// the learning page. L−7…L+7 are the prototype's 09-14…09-28 verbatim (its today is a Monday);
+// L+8…L+13 extend the list through the rest of the current week, so the 14 days before today are
+// always covered (today can be L+7…L+13) — the list is filtered to ≤ today, never past it.
+const DAYS_FROM_L: Array<{
+  offset: number
   kcal: number | null
   rule: 'usable' | 'suspicious' | 'unlogged'
   mark: 'complete' | 'incomplete' | null
 }> = [
-  { daysAgo: 13, kcal: 2710, rule: 'usable', mark: null },
-  { daysAgo: 12, kcal: 2890, rule: 'usable', mark: null },
-  { daysAgo: 11, kcal: 1340, rule: 'suspicious', mark: null },
-  { daysAgo: 10, kcal: null, rule: 'unlogged', mark: null },
-  { daysAgo: 9, kcal: 3050, rule: 'usable', mark: null },
-  { daysAgo: 8, kcal: 2150, rule: 'usable', mark: 'incomplete' },
-  { daysAgo: 7, kcal: 2980, rule: 'usable', mark: null },
-  { daysAgo: 6, kcal: 2820, rule: 'usable', mark: null },
-  { daysAgo: 5, kcal: 1610, rule: 'suspicious', mark: 'complete' },
-  { daysAgo: 4, kcal: 1180, rule: 'suspicious', mark: null },
-  { daysAgo: 3, kcal: 2760, rule: 'usable', mark: null },
-  { daysAgo: 2, kcal: null, rule: 'unlogged', mark: null },
-  { daysAgo: 1, kcal: 3120, rule: 'usable', mark: null },
-  { daysAgo: 0, kcal: 2200, rule: 'usable', mark: null },
+  { offset: -7, kcal: 2710, rule: 'usable', mark: null },
+  { offset: -6, kcal: 2890, rule: 'usable', mark: null },
+  { offset: -5, kcal: 1340, rule: 'suspicious', mark: null },
+  { offset: -4, kcal: null, rule: 'unlogged', mark: null },
+  { offset: -3, kcal: 3050, rule: 'usable', mark: null },
+  { offset: -2, kcal: 2150, rule: 'usable', mark: 'incomplete' },
+  { offset: -1, kcal: 2980, rule: 'usable', mark: null },
+  { offset: 0, kcal: 2820, rule: 'usable', mark: null },
+  { offset: 1, kcal: 1610, rule: 'suspicious', mark: 'complete' },
+  { offset: 2, kcal: 1180, rule: 'suspicious', mark: null }, // Sze — on the weekly card
+  { offset: 3, kcal: 2760, rule: 'usable', mark: null },
+  { offset: 4, kcal: null, rule: 'unlogged', mark: null },
+  { offset: 5, kcal: 3120, rule: 'usable', mark: null },
+  { offset: 6, kcal: 1020, rule: 'suspicious', mark: null }, // V — on the weekly card
+  { offset: 7, kcal: 1180, rule: 'usable', mark: null },
+  { offset: 8, kcal: 2640, rule: 'usable', mark: null },
+  { offset: 9, kcal: 2910, rule: 'usable', mark: null },
+  { offset: 10, kcal: 2240, rule: 'usable', mark: 'incomplete' },
+  { offset: 11, kcal: null, rule: 'unlogged', mark: null },
+  { offset: 12, kcal: 3010, rule: 'usable', mark: null },
+  { offset: 13, kcal: 2750, rule: 'usable', mark: null },
 ]
 
 /** The status a day would show, given its unmarked rule and the owner's mark (if any). */
@@ -161,18 +177,19 @@ function liveMarkFor(date: string, seedMark: 'complete' | 'incomplete' | null): 
 
 /**
  * Live per-day statuses, canonical across every mounted range — always reads the current
- * `mockState`, never a snapshot. `from`/`to` filter the fixed 14-day window; omit either to get
+ * `mockState`, never a snapshot. `from`/`to` filter the seeded window (never past today); omit either to get
  * the whole window (used internally to look a day up regardless of what range a caller asked for).
  */
 export function intakeDaysSeed(from?: string, to?: string): IntakeDayStatus[] {
   const today = todayIso()
-  return LAST_14_DAYS
-    .map(({ daysAgo, kcal, rule, mark }) => {
-      const date = addDays(today, -daysAgo)
+  const anchor = lastReviewedMonday()
+  return DAYS_FROM_L
+    .map(({ offset, kcal, rule, mark }) => {
+      const date = addDays(anchor, offset)
       const liveMark = liveMarkFor(date, mark)
       return { date, kcal, status: deriveStatus(rule, liveMark), mark: liveMark }
     })
-    .filter((d) => (from == null || d.date >= from) && (to == null || d.date <= to))
+    .filter((d) => d.date <= today && (from == null || d.date >= from) && (to == null || d.date <= to))
 }
 
 // ── 5.1 A heti kártya — the last reviewed week, two suspicious excluded days, +60 kcal step ──

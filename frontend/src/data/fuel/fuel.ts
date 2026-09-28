@@ -4,7 +4,7 @@ import type {
 } from '@/data/types'
 import { currentWeekOf, localDateString } from '@/shared/lib/dates'
 import { goalResponse, goalTimeline } from '@/data/me/goals'
-import { expenditureExplanationSeed } from '@/data/fuel/expenditureExplanation'
+import { LAST_WEEK } from '@/data/fuel/expenditureLearningSeed'
 import { netKcal, restKcalPerHour } from '@/data/train/activityEnergy'
 
 const TODAY = localDateString()
@@ -432,9 +432,10 @@ const MOCK_SEGMENTS = goalResponse.prescription!.segments
 const MOCK_WEEK = currentWeekOf(goalResponse.startDate!, goalTimeline.weeks)
 const MOCK_SEGMENT = MOCK_SEGMENTS.find(s => MOCK_WEEK >= s.fromWeek && MOCK_WEEK <= s.toWeek) ?? MOCK_SEGMENTS[0]
 const MOCK_BMR = goalResponse.tdeeBootstrap!.bmr
-// The served base is the LEARNED one, told as the same story as the „Hogy tanultam?” fixture
-// (mezo-y72o3): applied 2159 (formula 2356, ±200, low) — so the sheet and its explainer agree.
-const MOCK_BASE_KCAL = expenditureExplanationSeed.appliedBaseKcal
+// The served base is the LEARNED one, told as the same story as the learned-expenditure part 2
+// seed (mezo-3n2so): the latest reviewed week's applied 2480 (formula 2400, ±150, medium) — so the
+// equation box's Alap, the weekly „Heti tanulás” sheet and the „Hogy tanultam?” page agree.
+const MOCK_BASE_KCAL = LAST_WEEK.appliedBaseKcal
 const MOCK_DAY_KCAL = MOCK_SEGMENT.trainingDayKcal ?? MOCK_SEGMENT.kcal
 const MOCK_EXTRA_KCAL = netKcal('volleyball', 6.6, 90, restKcalPerHour(MOCK_BMR)) ?? 0
 const MOCK_TARGET_KCAL = Math.max(MOCK_BMR, MOCK_DAY_KCAL + MOCK_EXTRA_KCAL)
@@ -446,11 +447,11 @@ export const fuelDayEnergy: FuelDayEnergy = {
   balanceKcal: MOCK_TARGET_KCAL - MOCK_BASE_KCAL - MOCK_PLANNED_KCAL - MOCK_EXTRA_KCAL,
   targetKcal: MOCK_TARGET_KCAL,
   // Learned-base demo fixture (mezo-zz91i): baseKcal above IS the learned base; formulaBaseKcal is
-  // the BMR × NEAT the confidence line's formula tile shows next to it. All from the explainer seed.
+  // the BMR × NEAT the confidence line's formula tile shows next to it. All from the part 2 seed.
   baseSource: 'learned',
-  formulaBaseKcal: expenditureExplanationSeed.formulaBaseKcal,
-  baseSdKcal: expenditureExplanationSeed.posteriorSdKcal,
-  baseConfidence: expenditureExplanationSeed.confidence,
+  formulaBaseKcal: LAST_WEEK.formulaBaseKcal,
+  baseSdKcal: LAST_WEEK.posteriorSdKcal,
+  baseConfidence: LAST_WEEK.confidence,
 }
 
 export const fuelDay: FuelDay = {
