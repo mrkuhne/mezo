@@ -166,7 +166,7 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
 
         Prescription p = svc.prescribe(owner, ex, false);
         var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
-        assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(85)); // 80 + 5
+        assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(82.5)); // 80 × 1.025 = 82 → nearest real weight 82.5
     }
 
     @Test
@@ -185,7 +185,7 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
 
         Prescription p = svc.prescribe(owner, ex, false);
         var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
-        assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(85)); // 80 + 5
+        assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(82.5)); // 80 × 1.025 = 82 → nearest real weight 82.5
     }
 
     @Test
@@ -194,15 +194,15 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
         var meso = train.createActiveMeso(owner);
         var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
         ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
-        // completed instance with a working top set 8 × 77.5 (repMax=8 → +5 for compound)
+        // completed instance with a working top set 8 × 77.5 (repMax=8 → compound 2.5 % step)
         train.completedInstanceWithWorkingSet(owner, day.getId(), ex.getId(),
             BigDecimal.valueOf(77.5), 8, 0);
 
         Prescription p = svc.prescribe(owner, ex, false);
 
         var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
-        assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(82.5)); // 77.5 + 5
-        assertThat(p.rationale()).contains("+5");
+        assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(80)); // 77.5 × 1.025 = 79.4 → 80
+        assertThat(p.rationale()).contains("+2,5 kg (+3%)");
     }
 
     @Test
@@ -226,11 +226,11 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
         var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
         ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
         train.completedInstanceWithWorkingSet(owner, day.getId(), ex.getId(),
-            BigDecimal.valueOf(80), 4, 0); // 4 < 6 → -5
+            BigDecimal.valueOf(80), 4, 0); // 4 < 6, grind → 80 × 0.975 = 78 → 77.5
 
         Prescription p = svc.prescribe(owner, ex, false);
         var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
-        assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(75));
+        assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(77.5));
     }
 
     @Test
@@ -247,7 +247,7 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
 
         Prescription p = svc.prescribe(owner, ex, false);
         var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
-        assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(85)); // 80 + 5
+        assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(82.5)); // 80 × 1.025 = 82 → nearest real weight 82.5
     }
 
     @Test
@@ -257,14 +257,14 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
         var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
         ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
         train.completedInstanceWithWorkingSet(owner, day.getId(), ex.getId(),
-            BigDecimal.valueOf(60), 8, 0); // repMax hit → +5 (compound)
+            BigDecimal.valueOf(60), 8, 0); // repMax hit → 60 × 1.025 = 61.5 → 62.5 (compound)
 
         Prescription p = svc.prescribe(owner, ex, false);
 
         assertThat(p.progression()).isNotNull();
         assertThat(p.progression().getLever()).isEqualTo(ProgressionSignal.LeverEnum.WEIGHT);
-        assertThat(p.progression().getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(65));
-        assertThat(p.progression().getDeltaKg()).isEqualByComparingTo(BigDecimal.valueOf(5));
+        assertThat(p.progression().getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(62.5));
+        assertThat(p.progression().getDeltaKg()).isEqualByComparingTo(BigDecimal.valueOf(2.5));
     }
 
     @Test

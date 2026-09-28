@@ -286,8 +286,9 @@ public class WorkoutService {
                     var signal = p.progression();
                     switch (signal.getLever()) {
                         case WEIGHT -> {
-                            // A null/zero deltaKg is currently unreachable here: ProgressionDecider
-                            // always sets a non-zero ± increment for the WEIGHT lever. If that ever
+                            // A null/zero deltaKg is currently unreachable here: ProgressionDecider's
+                            // WEIGHT lever always moves to a real weight strictly above/below the
+                            // reference (deltaKg = base − ref, mezo-bk7sn). If that ever
                             // changes, this deliberately falls through to weightUp so the tally total
                             // still matches the exercise count.
                             if (signal.getDeltaKg() != null && signal.getDeltaKg().signum() < 0) weightDown++;
