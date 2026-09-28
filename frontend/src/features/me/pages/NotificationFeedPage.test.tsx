@@ -5,7 +5,8 @@ import { NotificationFeedPage } from '@/features/me/pages/NotificationFeedPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 // A mock seed (data/notification/feedMock.ts) MAI napra van kötve (`at(daysAgo, hh:mm)`):
-// 3 olvasatlan ma (nf-1..nf-3), 3 olvasott tegnap-előtti napokon szétosztva (nf-4..nf-6).
+// 4 olvasatlan ma (nf-1..nf-3, nf-7 + mezo-3n2so nf-12), 3 olvasott tegnap-előtti napokon
+// szétosztva (nf-4..nf-6).
 // Ezért a mód kényszerítve van, hogy a real-módú CI-futás is ugyanezt lássa.
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
@@ -29,8 +30,8 @@ test('a hero a nyitáskori olvasatlan-számot viszi, nem nullát', async () => {
   const { container } = renderPage()
   expect(await screen.findByText('Értesítések')).toBeInTheDocument()
   // A szám a `notificationFeedSeed` olvasatlan sorainak száma — a seedből SZÁRMAZIK,
-  // nem önálló tény (mezo-0cbh vitte 3-ról 4-re).
-  expect(container.querySelector('.mz-bignum')).toHaveTextContent('4')
+  // nem önálló tény (mezo-0cbh vitte 3-ról 4-re, mezo-3n2so 4-ről 5-re).
+  expect(container.querySelector('.mz-bignum')).toHaveTextContent('5')
 })
 
 test('a mai elemek a Ma csoportba kerülnek, a régebbiek dátum-címke alá', async () => {
@@ -40,7 +41,7 @@ test('a mai elemek a Ma csoportba kerülnek, a régebbiek dátum-címke alá', a
   expect(labels[0]).toBe('Ma')
   expect(labels).not.toContain('Korábban')
   const maGroup = container.querySelector('.nf-group')!
-  expect(within(maGroup as HTMLElement).getAllByRole('button')).toHaveLength(4)
+  expect(within(maGroup as HTMLElement).getAllByRole('button')).toHaveLength(5)
 })
 
 test('egy sor koppintása a deeplinkre navigál', async () => {
@@ -55,8 +56,8 @@ test('egy sor koppintása a deeplinkre navigál', async () => {
 test('a nyitáskor olvasatlan sorok kiemelve maradnak az oldalon', async () => {
   const { container } = renderPage()
   await screen.findByText('Ma')
-  expect(container.querySelectorAll('.nf-row.unread')).toHaveLength(4)
-  expect(container.querySelectorAll('.nf-dot')).toHaveLength(4)
+  expect(container.querySelectorAll('.nf-row.unread')).toHaveLength(5)
+  expect(container.querySelectorAll('.nf-dot')).toHaveLength(5)
 })
 
 test('the feed does not duplicate the global settings entry', async () => {

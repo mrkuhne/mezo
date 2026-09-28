@@ -74,16 +74,18 @@ public class GoalPrescriptionCalculator {
         BigDecimal rest = ActivityEnergyModel.restKcalPerHour(bootstrapService.bmr(profile, currentWeightKg), currentWeightKg)
             .orElse(null);
         BigDecimal weeklyEat = weeklyActivity.totalWeeklyEatKcalPerDay(userId, rest);
-        TdeeBootstrapJson bootstrap = learnedBase.apply(userId,
-            bootstrapService.compute(profile, currentWeightKg, weeklyEat));
         DietPreferences preferences =
             draftPreferences != null ? draftPreferences : dietPreferences.resolve(userId);
+        // Resolved first so a draft with the learning switch flipped projects what the save would serve.
+        TdeeBootstrapJson bootstrap = learnedBase.apply(userId,
+            bootstrapService.compute(profile, currentWeightKg, weeklyEat), preferences.learningEnabled());
         List<ProjectionSegment> segments = projectionService.project(
             goal, userId, bootstrap, trend, preferences.dayTypeShiftKcal());
         BigDecimal sleepTargetH = sleepTargetPort.targetHours(userId);
         GoalPrescriptionJson prescription = evaluationService.assemble(
             goal, currentWeightKg, profile.getBodyFatPct(), segments, guards,
-            preferences, sleepTargetH);
+            preferences, sleepTargetH,
+            bootstrap != null && LearnedBaseResolver.SOURCE_LEARNED.equals(bootstrap.baseSource()));
         return new Calculation(bootstrap, prescription);
     }
 

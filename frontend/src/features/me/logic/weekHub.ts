@@ -110,32 +110,24 @@ export function analysisSnippet(review: WeeklyReview | null, phase: WeekPhase): 
 
 // ── discoveries tile ───────────────────────────────────────────────────────
 
-export type DiscoveryDot = 'pattern' | 'fact' | 'life' | 'memoir' | 'prediction'
-export interface DiscoverySummary { count: number; parts: string[]; dots: DiscoveryDot[] }
+export type DiscoveryKind = 'pattern' | 'fact' | 'life' | 'memoir' | 'prediction'
+/** One slice of the tile's proportion bar + its legend entry (mezo-p87ok). A bar, not one dot per
+ *  trace: 72 dots filled the row and crushed the text to a word per line. */
+export interface DiscoverySegment { kind: DiscoveryKind; count: number; label: string }
+export interface DiscoverySummary { count: number; segments: DiscoverySegment[] }
 
 export function discoverySummary(digest: WeeklyReviewDigest | null): DiscoverySummary {
-  const patterns = digest?.patterns ?? []
-  const facts = digest?.newFacts ?? []
-  const life = digest?.lifeEvents ?? []
-  const predictions = digest?.predictions ?? []
-  const memoir = digest?.memoir === true
-
-  const parts: string[] = []
-  if (patterns.length) parts.push(`${patterns.length} minta`)
-  if (facts.length) parts.push(`${facts.length} új tudás`)
-  if (life.length) parts.push(`${life.length} életesemény`)
-  if (memoir) parts.push('memoár')
-  if (predictions.length) parts.push(`${predictions.length} előrejelzés`)
-
-  const dots: DiscoveryDot[] = [
-    ...patterns.map((): DiscoveryDot => 'pattern'),
-    ...facts.map((): DiscoveryDot => 'fact'),
-    ...life.map((): DiscoveryDot => 'life'),
-    ...(memoir ? (['memoir'] as DiscoveryDot[]) : []),
-    ...predictions.map((): DiscoveryDot => 'prediction'),
+  const all: DiscoverySegment[] = [
+    { kind: 'pattern', count: digest?.patterns.length ?? 0, label: 'minta' },
+    { kind: 'fact', count: digest?.newFacts.length ?? 0, label: 'új tudás' },
+    { kind: 'life', count: digest?.lifeEvents.length ?? 0, label: 'életesemény' },
+    { kind: 'memoir', count: digest?.memoir === true ? 1 : 0, label: 'emlékkönyv' },
+    { kind: 'prediction', count: digest?.predictions.length ?? 0, label: 'előrejelzés' },
   ]
-
-  return { count: dots.length, parts, dots }
+  const segments = all
+    .filter((s) => s.count > 0)
+    .map((s) => ({ ...s, label: `${s.count} ${s.label}` }))
+  return { count: segments.reduce((n, s) => n + s.count, 0), segments }
 }
 
 // ── the nine mini-cells ───────────────────────────────────────────────────

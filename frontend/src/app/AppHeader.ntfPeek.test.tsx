@@ -10,7 +10,7 @@
 // ============================================================
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { vi } from 'vitest'
 import { AppHeader } from '@/app/AppHeader'
 import type { AppNotificationView } from '@/data/types'
@@ -209,4 +209,34 @@ test('a panel a fejléc közvetlen gyereke — a teljes szélesség ezen múlik'
   await openPeek()
   const panel = document.querySelector('.nap-ntfpanel')
   expect(panel?.parentElement?.tagName).toBe('HEADER')
+})
+
+// mezo-3n2so: a heti tanulás értesítése (`expenditure_week`) a saját 3D ikonját (`t-lens`)
+// viseli és a tanulás oldalára navigál — ugyanaz a szerződés, mint a fenti `memory_note` teszt.
+test('a heti tanulás sora a t-lens ikont viszi és a tanulás oldalára navigál', async () => {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  hoisted.items = [
+    { id: 'nf-tanulas', kind: 'expenditure_week', title: 'Heti tanulás: +60 kcal',
+      body: 'Nézd meg, mit tanultam a múlt hétből.', deeplink: '/fuel/tanulas',
+      occurredAt: new Date(2026, 7, 30, 6, 0).toISOString(), readAt: null },
+  ]
+  render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={['/nap']}>
+        <TutorialProvider>
+          <MezoThreadProvider>
+            <Routes>
+              <Route path="/nap" element={<AppHeader />} />
+              <Route path="/fuel/tanulas" element={<div data-testid="loc">/fuel/tanulas</div>} />
+            </Routes>
+          </MezoThreadProvider>
+        </TutorialProvider>
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+  await user.click(await screen.findByRole('button', { name: /^Értesítések/ }))
+  const row = document.querySelector('.nap-ntfrow')!
+  expect(row.querySelector('.nap-ntfico use[href="#t-lens"]')).not.toBeNull()
+  await user.click(row)
+  expect(await screen.findByTestId('loc')).toHaveTextContent('/fuel/tanulas')
 })

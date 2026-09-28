@@ -9,7 +9,7 @@ import { useDualQuery } from '@/data/useDualQuery'
 import { fuelDay } from '@/data/fuel/fuel'
 import { ingredients, recipes as mockRecipes, MOCK_AI_MEAL_DRAFT } from '@/data/fuel/pantry'
 import { computeRecipeMacrosWithOverrides } from '@/data/fuel/recipeMacros'
-import { PANTRY_KEY, RECIPES_KEY } from '@/data/fuel/queryKeys'
+import { EXPENDITURE_WEEKLY_CARD_KEY, INTAKE_DAYS_ROOT, PANTRY_KEY, RECIPES_KEY } from '@/data/fuel/queryKeys'
 import type { MealInput, MealItemLine, FuelMeal, FuelDay, MacroSet, RecipeLog, MealAiDraft } from '@/data/types'
 
 const FUELDAY_KEY = 'fuelDay'
@@ -57,7 +57,7 @@ export function useFuelDay(date: string = localDateString()): { fuel: FuelDay; i
 }
 
 /** log/update/delete on the ['fuelDay', date] cache. Real writes invalidate fuelDay + recipes +
- *  pantry (logging shifts recipe recentLogs + pantry usage). */
+ *  pantry (logging shifts recipe recentLogs + pantry usage) + the learned-expenditure day reads. */
 export function useMealActions(date: string = localDateString()) {
   const qc = useQueryClient()
   const mock = isMockMode()
@@ -71,6 +71,10 @@ export function useMealActions(date: string = localDateString()) {
     // ✓ appears without a remount (the water path already nudges the quest read).
     qc.invalidateQueries({ queryKey: ['habitDay'] })
     qc.invalidateQueries({ queryKey: ['dailyQuests', date] })
+    // A food write changes the day's logged kcal → its learning status (the day-log mark line
+    // appears / flips) and possibly the weekly card's excluded days (mezo-3n2so).
+    qc.invalidateQueries({ queryKey: INTAKE_DAYS_ROOT })
+    qc.invalidateQueries({ queryKey: EXPENDITURE_WEEKLY_CARD_KEY })
   }
 
   const logM = useMutation({

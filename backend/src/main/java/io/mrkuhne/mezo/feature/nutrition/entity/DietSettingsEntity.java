@@ -71,4 +71,9 @@ public class DietSettingsEntity extends OwnedEntity {
     @Max(500)
     @Column(name = "day_type_shift_kcal", nullable = false)
     private Integer dayTypeShiftKcal;
+
+    /** The learned-expenditure learning switch (mezo-3n2so, owner decision P3) — on by default. */
+    @NotNull
+    @Column(name = "learning_enabled", nullable = false)
+    private Boolean learningEnabled = true;
 }

@@ -9,7 +9,7 @@ class AppNotificationKindTest {
 
     @Test
     void testCatalog_shouldPinFifteenKindsWithFamiliesAndDeeplinks_perSpec() {
-        assertThat(AppNotificationKind.values()).hasSize(23);
+        assertThat(AppNotificationKind.values()).hasSize(24);
         assertThat(AppNotificationKind.PATTERN_INBOX.key()).isEqualTo("pattern_inbox");
         assertThat(AppNotificationKind.PATTERN_INBOX.familyKey()).isEqualTo("pattern");
         assertThat(AppNotificationKind.PATTERN_SIGNAL.familyKey()).isEqualTo("pattern");
@@ -66,6 +66,10 @@ class AppNotificationKindTest {
         assertThat(AppNotificationKind.TEAM_CHAT.key()).isEqualTo("team_chat");
         assertThat(AppNotificationKind.TEAM_CHAT.familyKey()).isEqualTo("intervention");
         assertThat(AppNotificationKind.TEAM_CHAT.deeplink()).isEqualTo("/mezo/elo");
+        // mezo-3n2so Task 6 — feed-only, like the other weekly summaries; the Monday job's own bell.
+        assertThat(AppNotificationKind.EXPENDITURE_WEEK.key()).isEqualTo("expenditure_week");
+        assertThat(AppNotificationKind.EXPENDITURE_WEEK.familyKey()).isNull();
+        assertThat(AppNotificationKind.EXPENDITURE_WEEK.deeplink()).isEqualTo("/fuel/tanulas");
         assertThat(AppNotificationKind.fromKey("pattern_inbox")).contains(AppNotificationKind.PATTERN_INBOX);
         assertThat(AppNotificationKind.fromKey("nope")).isEmpty();
     }

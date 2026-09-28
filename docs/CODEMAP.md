@@ -364,10 +364,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API + FE-data* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-09-26, done) ·
   [docs/features/character.md](features/character.md) (updated 2026-09-28, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-09-28, mixed) ·
-  [docs/features/journal.md](features/journal.md) (updated 2026-09-25, done) ·
+  [docs/features/journal.md](features/journal.md) (updated 2026-09-28, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-28, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-28, mixed) ·
-  [docs/features/settings.md](features/settings.md) (updated 2026-09-25, done) ·
+  [docs/features/settings.md](features/settings.md) (updated 2026-09-28, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-09-28, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/companion`
@@ -627,7 +627,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-28, done) ·
   [docs/features/pantry.md](features/pantry.md) (updated 2026-09-23, done) ·
-  [docs/features/recipe.md](features/recipe.md) (updated 2026-09-26, done) ·
+  [docs/features/recipe.md](features/recipe.md) (updated 2026-09-28, done) ·
   [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-28, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-28, done)
 
@@ -658,29 +658,30 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `useRecipeBreakdown`, `useRecipeLogs`, `useRecipes`, `useSlotTemplateActions`, `useSlotTemplateEvaluation`,
     `useSlotTemplates`, `useStack`, `useStackActions`, `useStackDay`, `useWaterActions`, `useWorkshop`
   - **modules:** coachApi.ts, coachHooks.ts, dietSettingsApi.ts, dietSettingsHooks.ts, expenditureApi.ts,
-    expenditureExplanation.ts, expenditureHooks.ts, fuel.ts, fuelApi.ts, fuelConfig.ts, fuelHooks.ts,
-    fuelHorizonHooks.ts, fuelSettingsApi.ts, fuelSettingsHooks.ts, fuelWeek.ts, fuelWeekHooks.ts, mealApi.ts,
-    medication.ts, medicationApi.ts, medicationHooks.ts, pantry.ts, pantryApi.ts, pantryHooks.ts, pantryImpact.ts,
-    pantryPickables.ts, queryKeys.ts, recipeApi.ts, recipeHooks.ts, recipeMacros.ts, slotTemplateApi.ts,
-    slotTemplateHooks.ts, stackDayHooks.ts, stackHooks.ts, stackZones.ts, timelineHooks.ts, workshopApi.ts,
-    workshopHooks.ts, workshopMock.ts, workshopState.ts
+    expenditureExplanation.ts, expenditureHooks.ts, expenditureLearningSeed.ts, fuel.ts, fuelApi.ts, fuelConfig.ts,
+    fuelHooks.ts, fuelHorizonHooks.ts, fuelSettingsApi.ts, fuelSettingsHooks.ts, fuelWeek.ts, fuelWeekHooks.ts,
+    mealApi.ts, medication.ts, medicationApi.ts, medicationHooks.ts, pantry.ts, pantryApi.ts, pantryHooks.ts,
+    pantryImpact.ts, pantryPickables.ts, queryKeys.ts, recipeApi.ts, recipeHooks.ts, recipeMacros.ts,
+    slotTemplateApi.ts, slotTemplateHooks.ts, stackDayHooks.ts, stackHooks.ts, stackZones.ts, timelineHooks.ts,
+    workshopApi.ts, workshopHooks.ts, workshopMock.ts, workshopState.ts
 - **FE ui** `frontend/src/features/fuel`
   - **pages:** FuelKamraPage.tsx, FuelKonyhaPage.tsx, FuelLogNewPage.tsx, FuelMaiPage.tsx, FuelMealDetailPage.tsx,
     FuelMealScorePage.tsx, FuelMedicationPage.tsx, FuelRecipeScorePage.tsx, FuelRecipesPage.tsx, FuelSettingsPage.tsx,
     FuelSlotsPage.tsx, FuelStackAddPage.tsx, FuelStackPage.tsx, FuelStackProtocolPage.tsx, FuelTrendekPage.tsx,
-    KamraItemDetailPage.tsx, KamraSkeleton.tsx, LogFlowPage.tsx, RecipeDetailPage.tsx, RecipeEditorPage.tsx,
-    RecipeWorkshopPage.tsx, RecipesSkeleton.tsx
+    KamraItemDetailPage.tsx, KamraSkeleton.tsx, LearningPage.tsx, LogFlowPage.tsx, RecipeDetailPage.tsx,
+    RecipeEditorPage.tsx, RecipeWorkshopPage.tsx, RecipesSkeleton.tsx
   - **sheets:** AddPantryItemSheet.tsx, CatalogSearchSheet.tsx, CategoryFilterSheet.tsx, EnergyBreakdownSheet.tsx,
     ImportItemSheet.tsx, IngredientPickerSheet.tsx, KamraPickSheet.tsx, KamraSheetHead.tsx, LearnedBaseChart.tsx,
     LearnedBaseExplainer.tsx, LogDoseSheet.tsx, MedicationFormSheet.tsx, ReceptPickSheet.tsx, StackItemSheet.tsx,
-    WaterLogSheet.tsx, learnedBaseFormat.ts
-  - **components:** ContextPanel.tsx, DietSuggestionBanner.tsx, FuelEnergyHero.tsx, FuelHorizon.tsx, FuelLogModes.tsx,
-    FuelMacroRings.tsx, FuelMealBlocks.tsx, FuelMealCeremony.tsx, FuelQualityBlocks.tsx, FuelScoreSurface.tsx,
-    FuelStackItemGlass.tsx, FuelWaterModule.tsx, FuelWeekDayGlass.tsx, GlassBox.tsx, GlycemicGlass.tsx, KamraCard.tsx,
-    MacroCells.tsx, MacroPanel.tsx, MealClock.tsx, MealClockBox.tsx, MealComposer.tsx, MealTimingStrip.tsx,
-    MedicationCycleBar.tsx, MicroPanel.tsx, NovaDot.tsx, NovaPanel.tsx, NutrientCells.tsx, RecipeFitBadge.tsx,
-    RecipeIngredientList.tsx, RecipeIngredientRow.tsx, RecipeLogsList.tsx, RecipeOverrideRow.tsx, ServingToggle.tsx,
-    SourceBadge.tsx, StackMealMatch.tsx, StackPageScaffold.tsx, StackTimeline.tsx, SuggestionCard.tsx,
+    WaterLogSheet.tsx, WeeklyLearningSheet.tsx, learnedBaseFormat.ts
+  - **components:** ContextPanel.tsx, DayLearningMark.tsx, DietSuggestionBanner.tsx, FuelEnergyHero.tsx,
+    FuelHorizon.tsx, FuelLogModes.tsx, FuelMacroRings.tsx, FuelMealBlocks.tsx, FuelMealCeremony.tsx,
+    FuelQualityBlocks.tsx, FuelScoreSurface.tsx, FuelStackItemGlass.tsx, FuelWaterModule.tsx, FuelWeekDayGlass.tsx,
+    GlassBox.tsx, GlycemicGlass.tsx, KamraCard.tsx, LearningDaysList.tsx, LearningHistoryChart.tsx, MacroCells.tsx,
+    MacroPanel.tsx, MealClock.tsx, MealClockBox.tsx, MealComposer.tsx, MealTimingStrip.tsx, MedicationCycleBar.tsx,
+    MicroPanel.tsx, NovaDot.tsx, NovaPanel.tsx, NutrientCells.tsx, RecipeFitBadge.tsx, RecipeIngredientList.tsx,
+    RecipeIngredientRow.tsx, RecipeLogsList.tsx, RecipeOverrideRow.tsx, ServingToggle.tsx, SourceBadge.tsx,
+    StackMealMatch.tsx, StackPageScaffold.tsx, StackTimeline.tsx, SuggestionCard.tsx, WeeklyLearningDot.tsx,
     WorkshopChatDock.tsx, WorkshopIngredientRow.tsx, mealClockWindow.ts
   - **logic:** amountGuard.ts, backfillWindow.ts, buildDayPlan.ts, buildEnergyBreakdown.ts, buildProtocol.ts,
     compileTemplate.ts, dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, dimensionFace.ts, doseAdvice.ts,
@@ -725,47 +726,53 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### goal
 
-*BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-27, done) ·
+*BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-28, done) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-28, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/goal`
   - **sub-features:** `engine`
   - **entities→tables:** `ExpenditureEstimateEntity`→`expenditure_estimate`, `GoalEntity`→`goal`,
-    `GoalPlanLinkEntity`→`goal_plan_link`, `GoalSuggestionEntity`→`goal_suggestion`
+    `GoalPlanLinkEntity`→`goal_plan_link`, `GoalSuggestionEntity`→`goal_suggestion`,
+    `IntakeDayMarkEntity`→`intake_day_mark`
   - **repositories:** `ExpenditureEstimateRepository`, `GoalPlanLinkRepository`, `GoalRepository`,
-    `GoalSuggestionRepository`
+    `GoalSuggestionRepository`, `IntakeDayMarkRepository`
   - **services:** `AdaptiveCorrectionService`, `AdaptiveReviewJob`, `AdaptiveReviewService`, `DayTypeShiftCalculator`,
     `DietPreferences`, `DietPreferencesPort`, `ExpenditureExplainer`, `ExpenditureExplanationService`,
-    `ExpenditureFilter`, `ExpenditureLearningService`, `ExpenditureStepPolicy`, `GoalDeletedEvent`,
-    `GoalEngineService`, `GoalEvaluationService`, `GoalFeasibilityService`, `GoalInvariantValidator`,
-    `GoalOverviewCourseService`, `GoalOverviewService`, `GoalPlanLinkService`, `GoalPrescriptionCalculator`,
-    `GoalProjectionService`, `GoalSavedEvent`, `GoalService`, `GoalSuggestionDraftApplier`,
-    `GoalSuggestionFingerprintService`, `GoalSuggestionNotificationListener`, `GoalSuggestionPreviewService`,
-    `GoalSuggestionProposedEvent`, `GoalSuggestionService`, `GoalSuggestionSupersedeWriter`,
-    `GoalSuggestionTriggerService`, `GoalTimelineService`, `GuardEvaluationService`, `IntakeDayClassifier`,
-    `LearnedBaseResolver`, `MesoLifecycleSuggestionListener`, `TdeeBootstrapService`, `TrainGoalRecomputeAdapter`
+    `ExpenditureFilter`, `ExpenditureInsightService`, `ExpenditureLearningService`, `ExpenditureStepPolicy`,
+    `ExpenditureWeekLearnedEvent`, `ExpenditureWeekNotificationListener`, `GoalDeletedEvent`, `GoalEngineService`,
+    `GoalEvaluationService`, `GoalFeasibilityService`, `GoalInvariantValidator`, `GoalOverviewCourseService`,
+    `GoalOverviewService`, `GoalPlanLinkService`, `GoalPrescriptionCalculator`, `GoalProjectionService`,
+    `GoalSavedEvent`, `GoalService`, `GoalSuggestionDraftApplier`, `GoalSuggestionFingerprintService`,
+    `GoalSuggestionNotificationListener`, `GoalSuggestionPreviewService`, `GoalSuggestionProposedEvent`,
+    `GoalSuggestionService`, `GoalSuggestionSupersedeWriter`, `GoalSuggestionTriggerService`, `GoalTimelineService`,
+    `GuardEvaluationService`, `IntakeDayClassifier`, `IntakeDayMarkService`, `LearnedBaseResolver`,
+    `MesoLifecycleSuggestionListener`, `TdeeBootstrapService`, `TrainGoalRecomputeAdapter`, `WeeklyCardPolicy`
   - **controllers→contract:** `GoalController`→`GoalApi`
-  - **mappers:** `ExpenditureExplanationMapper`, `GoalMapper`, `GoalPlanLinkMapper`, `GoalSuggestionMapper`
+  - **mappers:** `ExpenditureExplanationMapper`, `ExpenditureInsightMapper`, `GoalMapper`, `GoalPlanLinkMapper`,
+    `GoalSuggestionMapper`
   - **other:** `ActivityModelMigrationRunner`, `DailyIntakePort`, `ExcludedIntakeDayJson`,
     `ExpenditureExplanationJson`, `ExpenditureRolloutRunner`, `GoalEngineProperties`, `GoalPrescriptionJson`,
     `GoalReevaluateRunner`, `GoalSeedData`, `GoalSegmentOverrideJson`, `GoalSuggestionPayloadJson`,
     `IntakeAdherencePort`, `SleepAdequacyPort`, `TdeeBootstrapJson`
-- **Contract** `api/feature/goal/goal.yml` — 18 operations
+- **Contract** `api/feature/goal/goal.yml` — 24 operations
   - **endpoints:** GET /api/goals · POST /api/goals · POST /api/goals/feasibility-preview ·
-    GET /api/goals/expenditure/explanation · GET /api/goals/{id} · PUT /api/goals/{id} · DELETE /api/goals/{id} ·
-    GET /api/goals/{id}/overview · POST /api/goals/{id}/activate · POST /api/goals/{id}/archive ·
-    GET /api/goals/{id}/timeline · POST /api/goals/{id}/evaluate · POST /api/goals/{id}/plans ·
-    DELETE /api/goals/{id}/plans/{linkId} · GET /api/goals/{id}/suggestions ·
+    GET /api/goals/expenditure/explanation · GET /api/goals/expenditure/weeks · GET /api/goals/expenditure/weekly-card ·
+    POST /api/goals/expenditure/weekly-card/{weekStart}/dismiss · GET /api/goals/expenditure/days ·
+    PUT /api/goals/expenditure/days/{date}/mark · DELETE /api/goals/expenditure/days/{date}/mark · GET /api/goals/{id} ·
+    PUT /api/goals/{id} · DELETE /api/goals/{id} · GET /api/goals/{id}/overview · POST /api/goals/{id}/activate ·
+    POST /api/goals/{id}/archive · GET /api/goals/{id}/timeline · POST /api/goals/{id}/evaluate ·
+    POST /api/goals/{id}/plans · DELETE /api/goals/{id}/plans/{linkId} · GET /api/goals/{id}/suggestions ·
     GET /api/goals/{id}/suggestions/{suggestionId}/preview · POST /api/goals/{id}/suggestions/{suggestionId}/accept ·
     POST /api/goals/{id}/suggestions/{suggestionId}/dismiss
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 23 IT + 14 unit
-  - **ITs:** `ActivityModelMigrationRunnerIT`, `AdaptiveReviewServiceIT`, `ExpenditureEstimateRepositoryIT`,
-    `ExpenditureExplanationControllerIT`, `ExpenditureLearningServiceIT`, `ExpenditureRolloutRunnerIT`,
-    `GoalContractIT`, `GoalEnginePropertiesIT`, `GoalEngineRecomputeIT`, `GoalEvaluationServiceIT`,
-    `GoalFeasibilityServiceIT`, `GoalOverviewApiIT`, `GoalPlanLinkServiceIT`, `GoalProjectionServiceIT`,
-    `GoalReevaluateRunnerIT`, `GoalServiceIT`, `GoalSuggestionNotificationIT`, `GoalSuggestionPreviewApiIT`,
-    `GoalSuggestionServiceIT`, `GoalSuggestionTriggerIT`, `GoalTimelineContractIT`, `GoalTimelineServiceIT`,
-    `GuardEvaluationServiceIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 28 IT + 17 unit
+  - **ITs:** `ActivityModelMigrationRunnerIT`, `AdaptiveReviewJobNotificationIT`, `AdaptiveReviewServiceIT`,
+    `ExpenditureEstimateRepositoryIT`, `ExpenditureExplanationControllerIT`, `ExpenditureInsightControllerIT`,
+    `ExpenditureInsightServiceIT`, `ExpenditureLearningServiceIT`, `ExpenditureRolloutRunnerIT`, `GoalContractIT`,
+    `GoalEnginePropertiesIT`, `GoalEngineRecomputeIT`, `GoalEvaluationServiceIT`, `GoalFeasibilityServiceIT`,
+    `GoalOverviewApiIT`, `GoalPlanLinkServiceIT`, `GoalProjectionServiceIT`, `GoalReevaluateRunnerIT`, `GoalServiceIT`,
+    `GoalSuggestionNotificationIT`, `GoalSuggestionPreviewApiIT`, `GoalSuggestionServiceIT`, `GoalSuggestionTriggerIT`,
+    `GoalTimelineContractIT`, `GoalTimelineServiceIT`, `GuardEvaluationServiceIT`, `IntakeDayMarkRepositoryIT`,
+    `IntakeDayMarkServiceIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`,
     `GoalSuggestionPopulator`, `MealPopulator`, `RunningPopulator`, `TrainPopulator`, `UserPopulator`,
     `WeightLogPopulator`
@@ -879,7 +886,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### journal
 
-*BE + API + FE-data* · read next: [docs/features/journal.md](features/journal.md) (updated 2026-09-25, done)
+*BE + API + FE-data* · read next: [docs/features/journal.md](features/journal.md) (updated 2026-09-28, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/journal`
   - **entities→tables:** `DecisionEntryEntity`→`decision_entry`, `GratitudeEntryEntity`→`gratitude_entry`,
@@ -983,7 +990,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *FE-data + FE-ui* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-09-26, done) ·
   [docs/features/habit.md](features/habit.md) (updated 2026-09-25, done) ·
-  [docs/features/journal.md](features/journal.md) (updated 2026-09-25, done) ·
+  [docs/features/journal.md](features/journal.md) (updated 2026-09-28, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-28, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-28, mixed) ·
   [docs/features/today.md](features/today.md) (updated 2026-09-28, mixed) ·
@@ -1029,8 +1036,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     WeekGoalsCard.tsx, WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx, WeekReviewCard.tsx, WeekScoreBars.tsx,
     WeekScoreRing.tsx, WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx, WeightTrendChart.tsx,
     goalSettingsEditor.css
-  - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, chainStacking.ts, effectCopy.ts, goalLabels.ts,
-    goalOverviewCopy.ts, goalSettings.ts, goalSkillChips.ts, goalSuggestionDiff.ts, goalWeekSentence.ts,
+  - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, chainStacking.ts, discoveryDrawers.ts, effectCopy.ts,
+    goalLabels.ts, goalOverviewCopy.ts, goalSettings.ts, goalSkillChips.ts, goalSuggestionDiff.ts, goalWeekSentence.ts,
     gratitudeStreak.ts, growthJournal.ts, growthStats.ts, habitAnchors.ts, habitEffort.ts, habitFormation.ts,
     habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts, lifegoalLabels.ts, llmCallFormat.ts,
     nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, peopleDerive.ts, peopleVisuals.ts,
@@ -1161,7 +1168,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/diet/settings · PUT /api/diet/settings · POST /api/diet/settings/preview
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 3 IT + 2 unit
   - **ITs:** `DietPreferencesResolverIT`, `DietSettingsApiIT`, `DietSettingsDayTypeShiftIT`
-  - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`
+  - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `GoalSuggestionPopulator`
 
 ### pantry
 
@@ -1380,7 +1387,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### recipe
 
-*BE + API* · read next: [docs/features/recipe.md](features/recipe.md) (updated 2026-09-26, done)
+*BE + API* · read next: [docs/features/recipe.md](features/recipe.md) (updated 2026-09-28, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/recipe`
   - **entities→tables:** `RecipeEntity`→`recipe`, `RecipeIngredientEntity`→`recipe_ingredient`
@@ -1425,7 +1432,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### settings
 
-*FE-ui* · read next: [docs/features/settings.md](features/settings.md) (updated 2026-09-25, done)
+*FE-ui* · read next: [docs/features/settings.md](features/settings.md) (updated 2026-09-28, done)
 
 - **FE ui** `frontend/src/features/settings`
   - **pages:** AccountSettingsPage.tsx, MeSettingsPage.tsx, MezoPersonalPage.tsx, MezoSettingsPage.tsx,
@@ -1483,7 +1490,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### train
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-28, done) ·
-  [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-27, done) ·
+  [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-28, done) ·
   [docs/features/train.md](features/train.md) (updated 2026-09-28, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-28, done)
 
@@ -1583,19 +1590,19 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     ProgressionBanner.tsx, ReadinessCard.tsx, RunCrossLoadCard.tsx, RunSessionCard.tsx, RunWeekEditor.tsx,
     RunWeekStrip.tsx, SetStepper.tsx, SportCeremony.tsx, SportSessionCard.tsx, StrengthCurve.tsx,
     StructureLintCard.tsx, TodaySessionCard.tsx, VideoDemo.tsx, WeekLoadPanel.tsx, WeekdayGrid.tsx,
-    WeeklyBandsCard.tsx, WorkoutCard.tsx, WorkoutCeremony.tsx, WorkoutDock.tsx, WorkoutMenuGlass.tsx,
-    WorkoutOverloadLine.tsx, WorkoutRecordsGlass.tsx, WorkoutSummary.tsx, ZoneBar.tsx
-  - **logic:** actualDuration.ts, agenda.ts, bodyGeometry.gen.ts, bodyMapShapes.ts, cerScore.ts, challengeDisplay.ts,
-    dayImpact.ts, dayStripItems.ts, decimalInput.ts, exerciseDefaults.ts, exerciseLibrary.ts, growthForecast.ts,
-    gymDayTarget.ts, libraryStory.ts, loadWeek.ts, medalLabels.ts, mesoBands.ts, mesoCompare.ts, mesoDates.ts,
-    mesoDays.ts, mesoLoad.ts, mesoPlan.ts, mesoWeek.ts, mesoWeekDone.ts, morningWindow.ts, muscleColors.ts,
-    muscleFilters.ts, musclePriorities.ts, muscleWeek.ts, offDay.ts, peakWeekFit.ts, recordFor.ts, repEquivalence.ts,
-    restTimer.ts, rir.ts, runToTemplate.ts, sessionLength.ts, sessionState.ts, setBudget.ts, sportKinds.ts,
-    sportMuscleLoad.ts, sportScore.ts, sports.ts, structureLint.ts, summaryStats.ts, tierLabel.ts, trainDayEnergy.ts,
-    useEditableNumber.ts, useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts, weekZone.ts, weeklyBands.ts,
-    workoutCardMeta.ts, workoutComparison.ts, workoutState.ts
+    WeeklyBandsCard.tsx, WorkoutBriefing.tsx, WorkoutCard.tsx, WorkoutCeremony.tsx, WorkoutDock.tsx,
+    WorkoutMenuGlass.tsx, WorkoutOverloadLine.tsx, WorkoutRecordsGlass.tsx, WorkoutSummary.tsx, ZoneBar.tsx
+  - **logic:** actualDuration.ts, agenda.ts, bodyGeometry.gen.ts, bodyMapShapes.ts, briefing.ts, cerScore.ts,
+    challengeDisplay.ts, dayImpact.ts, dayStripItems.ts, decimalInput.ts, exerciseDefaults.ts, exerciseLibrary.ts,
+    growthForecast.ts, gymDayTarget.ts, libraryStory.ts, loadWeek.ts, medalLabels.ts, mesoBands.ts, mesoCompare.ts,
+    mesoDates.ts, mesoDays.ts, mesoLoad.ts, mesoPlan.ts, mesoWeek.ts, mesoWeekDone.ts, morningWindow.ts,
+    muscleColors.ts, muscleFilters.ts, musclePriorities.ts, muscleWeek.ts, offDay.ts, peakWeekFit.ts,
+    progressionChip.ts, recordFor.ts, repEquivalence.ts, restTimer.ts, rir.ts, runToTemplate.ts, sessionLength.ts,
+    sessionState.ts, setBudget.ts, sportKinds.ts, sportMuscleLoad.ts, sportScore.ts, sports.ts, structureLint.ts,
+    summaryStats.ts, tierLabel.ts, trainDayEnergy.ts, useEditableNumber.ts, useRestTimer.ts, warmupSuggest.ts,
+    weekAgenda.ts, weekZone.ts, weeklyBands.ts, workoutCardMeta.ts, workoutComparison.ts, workoutState.ts
   - **root:** DayTile.tsx, InterviewStep.tsx, dayTiles.ts, wizardState.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 81 IT + 19 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 82 IT + 19 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
     `ClosingBlockVolumeFlagIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`, `ExerciseCatalogContractIT`,
     `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,
@@ -1609,8 +1616,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ScheduleGoalRecomputeIT`, `SetRecommendationServiceIT`, `SportContractIT`, `SportEventContractIT`,
     `SportServiceIT`, `SportSessionRangeIT`, `SportSignalCalculatorIT`, `SportSlotSkipContractIT`,
     `SportSlotSkipPersistenceIT`, `TimingProfileIT`, `TimingProfileSwitchOffIT`, `TrainContractIT`, `TrainSeedDataIT`,
-    `TrainServiceIT`, `VolumeArcContractIT`, `VolumeArcVolumeFlagIT`, `VolumeBaselineSeedIT`,
-    `VolumeBaselineSeedSwitchOffIT`, `VolumeEffectiveSetsIT`, `VolumeEffectiveSetsSwitchOffIT`,
+    `TrainServiceIT`, `TrainingStreakCalculatorIT`, `VolumeArcContractIT`, `VolumeArcVolumeFlagIT`,
+    `VolumeBaselineSeedIT`, `VolumeBaselineSeedSwitchOffIT`, `VolumeEffectiveSetsIT`, `VolumeEffectiveSetsSwitchOffIT`,
     `VolumeProgressionServiceIT`, `VolumeProgressionTierIT`, `VolumePropertiesIT`, `WarmupExclusionIT`,
     `WeeklyScheduledActivityServiceIT`, `WeeklyScheduledActivityTrainingDaysIT`, `WorkoutAutoCloseIT`,
     `WorkoutClosingNoteApiIT`, `WorkoutContractIT`, `WorkoutDayAdjustmentPersistenceIT`, `WorkoutDetailContractIT`,
@@ -1658,8 +1665,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### shared (domain-free FE primitives) — `frontend/src/shared`
 
 - **hooks:** useBackNav.ts, useReducedMotion.ts, useStickyTab.ts
-- **lib:** audio.ts, cn.ts, dates.ts, daypart.ts, grams.ts, huNum.ts, markdown.tsx, pct.ts, resizeImage.ts,
-  safeMarkdown.tsx, screenScroll.ts, seenMessages.ts, theme.ts, toastBus.ts, tutorialSeen.ts, userScope.ts
+- **lib:** audio.ts, autoGrow.ts, cn.ts, dates.ts, daypart.ts, grams.ts, huNum.ts, markdown.tsx, pct.ts,
+  resizeImage.ts, safeMarkdown.tsx, screenScroll.ts, seenMessages.ts, theme.ts, toastBus.ts, tutorialSeen.ts,
+  userScope.ts
 - **ui:** AdherenceBar.tsx, CaptureArt.tsx, CaptureHeader.tsx, Chip.tsx, CoachBubble.tsx, CountUp.tsx, Cta.tsx,
   DatePicker.tsx, DayNavigator.tsx, DayOrb.tsx, Display.tsx, ErrorBoundary.tsx, Eyebrow.tsx, GhostState.tsx, Icon.tsx,
   NumberInput.tsx, ProgressBar.tsx, RefTag.tsx, ScoreRing.tsx, ScreenSkeleton.tsx, Sheet.tsx, SheetHead.tsx,

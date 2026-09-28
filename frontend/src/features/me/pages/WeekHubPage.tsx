@@ -293,12 +293,20 @@ export function WeekHubPage() {
               <span className="wkh-chev" aria-hidden="true">›</span>
             </div>
             {discoveries.count > 0 ? (
-              <div className="wkh-widefoot">
-                <span className="wkh-discparts">{discoveries.parts.join(' · ')}</span>
-                <span className="wkh-dots" aria-hidden="true">
-                  {discoveries.dots.map((dot, i) => <i key={`${dot}-${i}`} className={dot} />)}
+              <>
+                {/* mezo-p87ok: a weighted bar + a wrapping legend — one dot per trace crushed the
+                    text once a week held 72. The legend carries the numbers; the bar only the mix. */}
+                <span className="wkh-discbar" aria-hidden="true">
+                  {discoveries.segments.map((seg) => (
+                    <i key={seg.kind} className={seg.kind} style={{ flexGrow: seg.count }} />
+                  ))}
                 </span>
-              </div>
+                <span className="wkh-disclegend">
+                  {discoveries.segments.map((seg) => (
+                    <span key={seg.kind} className={seg.kind}><i aria-hidden="true" />{seg.label}</span>
+                  ))}
+                </span>
+              </>
             ) : (
               <div className="wkh-discempty">nem született új minta vagy tudás</div>
             )}

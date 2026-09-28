@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
  * was written, e.g. after a weigh-in) and {@code tdee} follows. The formula base is kept in
  * {@code formulaNeatBaselineKcal} — the learning run reads its prior from there, so the learned
  * base never compounds on itself. This is the ONE served-target rule: nothing else changes.
+ * The owner's learning switch (mezo-3n2so, P3) gates only this serving step; learning goes on.
  */
 @Service
 @RequiredArgsConstructor
@@ -29,10 +30,15 @@ public class LearnedBaseResolver {
     private final ExpenditureEstimateRepository estimates;
 
     /**
-     * @param formula the freshly computed formula bootstrap
-     * @return the formula unchanged (disabled, no row, or an incomplete bootstrap), else the learned-base bootstrap
+     * @param formula         the freshly computed formula bootstrap
+     * @param learningEnabled the owner's learning switch — off serves the formula unchanged
+     * @return the formula unchanged (switch off, disabled, no row, or an incomplete bootstrap), else the
+     *         learned-base bootstrap
      */
-    public TdeeBootstrapJson apply(UUID userId, TdeeBootstrapJson formula) {
+    public TdeeBootstrapJson apply(UUID userId, TdeeBootstrapJson formula, boolean learningEnabled) {
+        if (!learningEnabled) {
+            return formula;
+        }
         GoalEngineProperties.Expenditure e = props.expenditure();
         if (formula == null || formula.bmr() == null || formula.neatBaselineKcal() == null
             || e == null || !Boolean.TRUE.equals(e.enabled())) {

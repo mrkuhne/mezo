@@ -15,6 +15,7 @@ import { useStickToBottom } from '@/features/insights/logic/useStickToBottom'
 import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
 import { VoiceBubble } from '@/shared/ui/voice/VoiceBubble'
 import { cn } from '@/shared/lib/cn'
+import { autoGrow } from '@/shared/lib/autoGrow'
 import { QUICK_QUESTIONS } from '@/features/insights/logic/quickQuestions'
 
 // Üveg (mezo-me75u.8): each quick question wears a 3D icon for its domain. Keyed by the copy so a
@@ -27,10 +28,6 @@ const QQ_ICON: Record<string, Icon3DName> = {
 }
 
 const SUBTITLE = { mock: 'demo beszélgetés', live: 'élő · Gemini' } as const
-
-// A composer legfeljebb ennyire nő meg (~5 sor 13px/1.45-nél), utána a mező befelé görget —
-// egy hosszú üzenet sem eszi meg az egész beszélgetést (mezo-a837).
-const COMPOSER_MAX_HEIGHT = 104
 
 // mezo-rj214.7: the Hungarian narration for each SSE/mock phase — the thinking bubble's only
 // window into what the companion is doing before any draft text exists. An unknown phase value
@@ -174,14 +171,11 @@ export function ChatPage() {
     if (turn) scrollIfStuck()
   }, [turn, turn?.draft, turn?.tools.length, scrollIfStuck])
 
-  // A mező textarea, hogy a hosszú üzenet TÖRJÖN, ne oldalra csússzon (mezo-a837): minden
-  // változásnál egy sorra nullázzuk, majd a tartalom magasságára állítjuk — a maxHeight fölött
-  // már a textarea saját görgetője viszi tovább.
+  // A mező textarea, hogy a hosszú üzenet TÖRJÖN, ne oldalra csússzon (mezo-a837), és a
+  // szöveggel együtt nőjön a képernyő ~40%-áig — csak afölött görget befelé. A közös autoGrow
+  // gépelésre magától fut; itt a hangbevitel és a javaslat-chip programozott beírását kapjuk el.
   useLayoutEffect(() => {
-    const el = draftRef.current
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${Math.min(el.scrollHeight, COMPOSER_MAX_HEIGHT)}px`
+    if (draftRef.current) autoGrow(draftRef.current)
   }, [draft])
 
   const submit = () => {
@@ -456,7 +450,6 @@ export function ChatPage() {
             lineHeight: 1.45,
             resize: 'none',
             overflowY: 'auto',
-            maxHeight: COMPOSER_MAX_HEIGHT,
           }}
         />
         <button

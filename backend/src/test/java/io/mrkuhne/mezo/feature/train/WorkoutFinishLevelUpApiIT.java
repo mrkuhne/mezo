@@ -60,5 +60,8 @@ class WorkoutFinishLevelUpApiIT extends ApiIntegrationTest {
         assertThat(body.getLevelUp().getTotalXp()).isGreaterThan(0L);
         assertThat(body.getLevelUp().getGains()).anySatisfy(
             gn -> assertThat(gn.getSkillKey()).isEqualTo("chest"));
+        // the finishing instance counts toward the completed-only streak in the same transaction:
+        // 'completed' is set before applyGym and the streak's JPQL read auto-flushes it (mezo-iz4kt)
+        assertThat(body.getLevelUp().getRobustness().getStreakWeeks()).isGreaterThanOrEqualTo(1);
     }
 }

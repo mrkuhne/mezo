@@ -3,6 +3,7 @@ import { useSettingsOrigin } from '@/features/settings/components/SettingsFrame'
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal, flushSync } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import type { DietSettings } from '@/data/types'
 import {
   useDietSettings,
@@ -15,8 +16,11 @@ import {
 import { buildFuelSettingsMacroPreview } from '@/features/fuel/logic/fuelSettingsPreview'
 import { Icon } from '@/shared/ui/Icon'
 import { Icon3D } from '@/shared/ui/clay'
+import { Toggle } from '@/shared/ui/Toggle'
 import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { useToast } from '@/shared/ui/ToastProvider'
+import { localDateString } from '@/shared/lib/dates'
 
 const PRESET_LABELS: Record<DietSettings['splitPreset'], string> = {
   balanced: 'Kiegyensúlyozott',
@@ -65,6 +69,8 @@ function NumberStepper({ label, actionLabel = label, value, min, max, step = 1, 
 
 export function FuelSettingsPage() {
   const navigate = useNavigate()
+  const qc = useQueryClient()
+  const toast = useToast()
   const { state: originState } = useSettingsOrigin()
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState(false)
@@ -84,6 +90,7 @@ export function FuelSettingsPage() {
   const [waterMl, setWaterMl] = useState(diet.waterMl)
   const [fiberG, setFiberG] = useState(diet.fiberG)
   const [dayTypeShiftKcal, setDayTypeShiftKcal] = useState(diet.dayTypeShiftKcal)
+  const [learningEnabled, setLearningEnabled] = useState(diet.learningEnabled)
   const [touchedFuel, setTouchedFuel] = useState(false)
   const [touchedDiet, setTouchedDiet] = useState(false)
 
@@ -103,8 +110,10 @@ export function FuelSettingsPage() {
     setWaterMl(diet.waterMl)
     setFiberG(diet.fiberG)
     setDayTypeShiftKcal(diet.dayTypeShiftKcal)
+    setLearningEnabled(diet.learningEnabled)
   }, [dietPending, touchedDiet, diet.splitPreset, diet.proteinPctX10, diet.carbsPctX10,
-    diet.fatPctX10, diet.proteinTier, diet.waterMl, diet.fiberG, diet.dayTypeShiftKcal])
+    diet.fatPctX10, diet.proteinTier, diet.waterMl, diet.fiberG, diet.dayTypeShiftKcal,
+    diet.learningEnabled])
 
   const customSumOk = splitPreset !== 'custom' || Math.round((pPct + cPct + fPct) * 10) === 1000
   const busy = pending || isPending || dietSaving || dietPending || fuelError || dietError || !customSumOk
@@ -118,7 +127,8 @@ export function FuelSettingsPage() {
     carbsPctX10: splitPreset === 'custom' ? Math.round(cPct * 10) : null,
     fatPctX10: splitPreset === 'custom' ? Math.round(fPct * 10) : null,
     proteinTier, waterMl, fiberG, dayTypeShiftKcal,
-  }), [splitPreset, pPct, cPct, fPct, proteinTier, waterMl, fiberG, dayTypeShiftKcal])
+    learningEnabled,
+  }), [splitPreset, pPct, cPct, fPct, proteinTier, waterMl, fiberG, dayTypeShiftKcal, learningEnabled])
   const projectable = useMemo(
     () => (customSumOk ? draft : { ...draft, splitPreset: diet.splitPreset, fatPctX10: diet.fatPctX10 }),
     [customSumOk, draft, diet.splitPreset, diet.fatPctX10])
@@ -126,7 +136,7 @@ export function FuelSettingsPage() {
   const preview = useMemo(() => buildFuelSettingsMacroPreview(draftTargets), [draftTargets])
   const dietDirty = splitPreset !== diet.splitPreset
     || proteinTier !== diet.proteinTier || waterMl !== diet.waterMl || fiberG !== diet.fiberG
-    || dayTypeShiftKcal !== diet.dayTypeShiftKcal
+    || dayTypeShiftKcal !== diet.dayTypeShiftKcal || learningEnabled !== diet.learningEnabled
     || (splitPreset === 'custom' && (
       Math.round(pPct * 10) !== diet.proteinPctX10
       || Math.round(cPct * 10) !== diet.carbsPctX10
@@ -141,12 +151,26 @@ export function FuelSettingsPage() {
   const save = async () => {
     if (busy) return
     setSaveError(false)
-    try { await Promise.all([
-      setSettings({ mealsPerDay, caffeineCutoff }),
-      setDiet(draft),
-    ])
-    flushSync(() => setSaved(true))
-    navigate('/settings', { state: originState })
+    const beforeKcal = fuel.targets.kcal
+    try {
+      await Promise.all([
+        setSettings({ mealsPerDay, caffeineCutoff }),
+        setDiet(draft),
+      ])
+      // The save may have re-prescribed today's served kcal (the learning switch's own effect,
+      // mezo-3n2so) — refetch the day and diff against the pre-save reading. Mock mode's fuelDay
+      // seed never reacts to the switch, so this resolves to the same value there and the diff
+      // is always 0 → plain "Mentve" (told to the owner as a known mock-mode simplification).
+      await qc.refetchQueries({ queryKey: ['fuelDay', localDateString()] })
+      const afterKcal = qc.getQueryData<{ targets: { kcal: number } }>(['fuelDay', localDateString()])
+        ?.targets.kcal ?? beforeKcal
+      const diff = Math.round(afterKcal - beforeKcal)
+      toast.show({
+        kind: 'success',
+        text: diff !== 0 ? `Mentve · A keret ${diff > 0 ? '+' : ''}${diff} kcal-lal változott` : 'Mentve',
+      })
+      flushSync(() => setSaved(true))
+      navigate('/settings', { state: originState })
     } catch { setSaveError(true) }
   }
 
@@ -331,6 +355,15 @@ export function FuelSettingsPage() {
             a cél a kettő közül a nagyobb, egy felső korláttal. A mentés után a Makrók előnézete
             rögtön a választott szint szerinti grammot mutatja.
           </p>
+          <div className="fset-learnrow">
+            <span className="uv-well" aria-hidden="true"><Icon3D name="t-lens" size={20} /></span>
+            <span className="fset-learnrow-tx">
+              <strong>Tanulás a súlyomból és az evésemből</strong>
+              <small>Hetente megtanulom, mennyi energiát használsz valójában</small>
+            </span>
+            <Toggle glass on={learningEnabled} ariaLabel="Tanulás a súlyomból és az evésemből"
+              onToggle={() => { setTouchedDiet(true); setLearningEnabled((value) => !value) }} />
+          </div>
         </section>
 
         <button type="button" className="fset-card fset-slots glass np-press rise"

@@ -8,16 +8,24 @@ import io.mrkuhne.mezo.api.dto.SetDietSettingsRequest;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.biometrics.profile.entity.BiometricProfileEntity;
 import io.mrkuhne.mezo.feature.biometrics.profile.repository.BiometricProfileRepository;
+import io.mrkuhne.mezo.feature.goal.entity.ExpenditureEstimateEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
+import io.mrkuhne.mezo.feature.goal.entity.GoalSuggestionEntity;
+import io.mrkuhne.mezo.feature.goal.entity.GoalSuggestionPayloadJson;
+import io.mrkuhne.mezo.feature.goal.repository.GoalSuggestionRepository;
+import io.mrkuhne.mezo.feature.goal.repository.ExpenditureEstimateRepository;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.goal.service.GoalService;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
+import io.mrkuhne.mezo.support.populator.GoalSuggestionPopulator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,11 +36,14 @@ import org.springframework.http.HttpStatus;
 class DietSettingsApiIT extends ApiIntegrationTest {
 
     @Autowired private GoalRepository goalRepository;
+    @Autowired private ExpenditureEstimateRepository expenditureEstimateRepository;
     @Autowired private GoalPopulator goalPopulator;
     @Autowired private BiometricProfilePopulator profilePopulator;
     @Autowired private BiometricProfileRepository profileRepository;
     @Autowired private GoalService goalService;
     @Autowired private OwnerProperties ownerProperties;
+    @Autowired private GoalSuggestionPopulator suggestionPopulator;
+    @Autowired private GoalSuggestionRepository suggestionRepository;
 
     @Test
     void testGetDietSettings_shouldReturnConfigDefaultGhost_whenNoneSet() {
@@ -84,6 +95,41 @@ class DietSettingsApiIT extends ApiIntegrationTest {
     @Test
     void testDietSettingsEndpoints_shouldReturn401_whenNoToken() {
         getForBody("/api/diet/settings", null, HttpStatus.UNAUTHORIZED, Void.class);
+    }
+
+    @Test
+    void testGetDietSettings_shouldReturnLearningEnabledTrue_whenNoneSet() {
+        DietSettingsResponse s =
+            getForBody("/api/diet/settings", ownerAuthHeaders(), HttpStatus.OK, DietSettingsResponse.class);
+
+        assertThat(s.getLearningEnabled()).isTrue(); // config ghost default (mezo-3n2so)
+    }
+
+    @Test
+    void testSetDietSettings_shouldStoreLearningEnabled_whenTheRequestSendsIt() {
+        HttpHeaders auth = ownerAuthHeaders();
+
+        DietSettingsResponse off = putForBody("/api/diet/settings",
+            SetDietSettingsRequest.builder()
+                .splitPreset(SetDietSettingsRequest.SplitPresetEnum.BALANCED)
+                .proteinTier(SetDietSettingsRequest.ProteinTierEnum.MODERATE)
+                .waterMl(4000).fiberG(30).dayTypeShiftKcal(0)
+                .learningEnabled(false).build(),
+            auth, HttpStatus.OK, DietSettingsResponse.class);
+        assertThat(off.getLearningEnabled()).isFalse();
+
+        // A save WITHOUT the field keeps the stored value — never silently flips it back on.
+        DietSettingsResponse stillOff = putForBody("/api/diet/settings",
+            SetDietSettingsRequest.builder()
+                .splitPreset(SetDietSettingsRequest.SplitPresetEnum.LOW_CARB)
+                .proteinTier(SetDietSettingsRequest.ProteinTierEnum.MODERATE)
+                .waterMl(4000).fiberG(30).dayTypeShiftKcal(0).build(),
+            auth, HttpStatus.OK, DietSettingsResponse.class);
+        assertThat(stillOff.getLearningEnabled()).isFalse();
+
+        DietSettingsResponse read =
+            getForBody("/api/diet/settings", auth, HttpStatus.OK, DietSettingsResponse.class);
+        assertThat(read.getLearningEnabled()).isFalse();
     }
 
     @Test
@@ -225,6 +271,98 @@ class DietSettingsApiIT extends ApiIntegrationTest {
 
         assertThat(preview.getSource()).isEqualTo(DietSettingsPreviewResponse.SourceEnum.CONFIG);
         assertThat(preview.getKcal()).isPositive();
+    }
+
+    @Test
+    void testPreviewDietSettings_shouldHonourTheCallerStoredLearningSwitch_whenTheDraftOmitsIt() {
+        UUID owner = databasePopulator.populateUser(ownerProperties.ownerEmail());
+        HttpHeaders auth = ownerAuthHeaders();
+        profilePopulator.create(owner);
+        activeGoalCoveringToday(owner);
+        // A learned row whose applied base clearly differs from the formula base the goal would
+        // otherwise compute — whichever preview reads it will show a different kcal.
+        ExpenditureEstimateEntity row = new ExpenditureEstimateEntity();
+        row.setCreatedBy(owner);
+        row.setWeekStart(LocalDate.now().minusWeeks(2).with(java.time.DayOfWeek.MONDAY));
+        row.setStatus("STABLE");
+        row.setFormulaBaseKcal(2200);
+        row.setPosteriorBaseKcal(1700);
+        row.setPosteriorSdKcal(80);
+        row.setAppliedBaseKcal(1700);
+        row.setStepKcal(-50);
+        row.setDirection(-1);
+        row.setConfidence("HIGH");
+        row.setUsableDays(6);
+        row.setWeighInDays(4);
+        row.setExcludedDays(List.of());
+        expenditureEstimateRepository.saveAndFlush(row);
+        // Stored switch off — the draft below sends no learningEnabled at all.
+        putForBody("/api/diet/settings",
+            SetDietSettingsRequest.builder()
+                .splitPreset(SetDietSettingsRequest.SplitPresetEnum.BALANCED)
+                .proteinTier(SetDietSettingsRequest.ProteinTierEnum.MODERATE)
+                .waterMl(4000).fiberG(30).dayTypeShiftKcal(0)
+                .learningEnabled(false).build(),
+            auth, HttpStatus.OK, DietSettingsResponse.class);
+
+        DietSettingsPreviewResponse withoutField = postForBody("/api/diet/settings/preview",
+            draft(SetDietSettingsRequest.SplitPresetEnum.LOW_CARB, SetDietSettingsRequest.ProteinTierEnum.MODERATE),
+            auth, HttpStatus.OK, DietSettingsPreviewResponse.class);
+        DietSettingsPreviewResponse explicitOff = postForBody("/api/diet/settings/preview",
+            SetDietSettingsRequest.builder()
+                .splitPreset(SetDietSettingsRequest.SplitPresetEnum.LOW_CARB)
+                .proteinTier(SetDietSettingsRequest.ProteinTierEnum.MODERATE)
+                .waterMl(4000).fiberG(30).dayTypeShiftKcal(0)
+                .learningEnabled(false).build(),
+            auth, HttpStatus.OK, DietSettingsPreviewResponse.class);
+        DietSettingsPreviewResponse explicitOn = postForBody("/api/diet/settings/preview",
+            SetDietSettingsRequest.builder()
+                .splitPreset(SetDietSettingsRequest.SplitPresetEnum.LOW_CARB)
+                .proteinTier(SetDietSettingsRequest.ProteinTierEnum.MODERATE)
+                .waterMl(4000).fiberG(30).dayTypeShiftKcal(0)
+                .learningEnabled(true).build(),
+            auth, HttpStatus.OK, DietSettingsPreviewResponse.class);
+
+        // Omitting the field must resolve the STORED (off) value — never hardcode true.
+        assertThat(withoutField.getKcal()).isEqualTo(explicitOff.getKcal());
+        assertThat(withoutField.getKcal()).isNotEqualTo(explicitOn.getKcal());
+    }
+
+    private static SetDietSettingsRequest withLearning(boolean on) {
+        return SetDietSettingsRequest.builder()
+            .splitPreset(SetDietSettingsRequest.SplitPresetEnum.BALANCED)
+            .proteinTier(SetDietSettingsRequest.ProteinTierEnum.MODERATE)
+            .waterMl(4000).fiberG(30).dayTypeShiftKcal(0)
+            .learningEnabled(on).build();
+    }
+
+    /**
+     * mezo-3n2so final review: a weekly_correction proposed while the switch was off is a
+     * weight-only balance tweak the learned path ignores — turning learning back ON must retire
+     * it (superseded, never dismissed), or accepting it would write a dead balanceAdjustment.
+     */
+    @Test
+    void testSetDietSettings_shouldSupersedeOpenWeeklyCorrection_whenLearningIsSwitchedOn() {
+        UUID owner = databasePopulator.populateUser(ownerProperties.ownerEmail());
+        HttpHeaders auth = ownerAuthHeaders();
+        profilePopulator.create(owner);
+        GoalEntity goal = activeGoalCoveringToday(owner);
+        putForBody("/api/diet/settings", withLearning(false), auth, HttpStatus.OK, DietSettingsResponse.class);
+        GoalSuggestionEntity open = suggestionPopulator.createOpen(owner, goal.getId(), "weekly_correction",
+            "weekly:" + LocalDate.now(), new GoalSuggestionPayloadJson(
+                "Kis korrekció.", null, null, null, null, null, null, "cut",
+                LocalDate.now().toString(), -120, new BigDecimal("-0.20"), new BigDecimal("-0.50"), false,
+                5, 2800, 2920, OffsetDateTime.now(), new BigDecimal("0.70"), 0));
+
+        // A save that keeps the switch OFF leaves the proposal alone …
+        putForBody("/api/diet/settings", withLearning(false), auth, HttpStatus.OK, DietSettingsResponse.class);
+        assertThat(suggestionRepository.findById(open.getId()).orElseThrow().getStatus()).isEqualTo("proposed");
+
+        // … the false→true flip retires it.
+        putForBody("/api/diet/settings", withLearning(true), auth, HttpStatus.OK, DietSettingsResponse.class);
+        GoalSuggestionEntity after = suggestionRepository.findById(open.getId()).orElseThrow();
+        assertThat(after.getStatus()).isEqualTo("superseded");
+        assertThat(after.getDecidedAt()).isNotNull();
     }
 
     @Test

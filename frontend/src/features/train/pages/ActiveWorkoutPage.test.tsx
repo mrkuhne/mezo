@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -27,7 +27,8 @@ beforeEach(() => resetMockMedalHistory())
 // Seed nélkül a 0 ms-os (reduced-motion) auto-open a tesztek fölé nyitná a sheetet.
 beforeEach(() => seedAllKalauzSeen())
 
-function setup() {
+/** Render the page on its first frame — a fresh start opens the Eligazítás (mezo-mgu2r). */
+function setupBrief() {
   return render(
     <QueryWrapper>
       <MemoryRouter initialEntries={['/train/session']}>
@@ -39,6 +40,14 @@ function setup() {
       </MemoryRouter>
     </QueryWrapper>,
   )
+}
+/** Render + tap Indulás with the pre-ticked defaults (mock mode is synchronous), landing on
+ *  the card list — the entry every active-phase test below starts from. */
+function setup() {
+  const r = setupBrief()
+  const start = screen.queryByRole('button', { name: /^Indulás/ })
+  if (start) fireEvent.click(start)
+  return r
 }
 
 // ---- the card-list idiom (mezo-88iwa.7, T6 Task 3) ----
@@ -81,16 +90,15 @@ async function logSet(user: ReturnType<typeof userEvent.setup>, name = EX1) {
   await user.click(submitOf(name))
   await skipRest(user)
 }
-// The workout OPENS in the card list now (mezo-e1ii9) — there is no start CTA to tap.
-// In real mode the page shows the skeleton until /today + /meso resolve, so tests that
-// need the list await it here; mock mode seeds synchronously and never needs this.
+// A fresh start opens the Eligazítás (mezo-mgu2r); an open instance resumes straight into the
+// list. In real mode the page shows the skeleton until /today + /meso resolve, so tests that
+// need the list await it here and tap Indulás when the briefing is up; mock mode's setup()
+// already did.
 async function enterList() {
   await screen.findByRole('button', { name: 'Vissza' })
-}
-/** Open the header ⋯ menu's Küldetések glass — accept/dismiss's home since mezo-e1ii9. */
-async function openChallenges(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
-  await user.click(screen.getByText('Küldetések'))
+  const start = screen.queryByRole('button', { name: /^Indulás/ })
+  if (start) fireEvent.click(start)
+  await waitFor(() => expect(document.querySelector('.wo-list')).not.toBeNull())
 }
 // Set counts vary per exercise (warmup + working sets), so a fixed loop is fragile:
 // log until the card has no editable row left (its debrief CTA is then up).
@@ -104,128 +112,86 @@ async function completeExerciseSets(user: ReturnType<typeof userEvent.setup>, na
   }
 }
 
-// ── The workout opens in the card list (mezo-e1ii9, Train parity P1 Task 1) ──────────
-// The pre-Titanium PREP mosaic is retired: the prototype (companion-titanium/session.js
-// `openSession()`) has no such screen, Mai's CTA opens the list itself. These are the
-// whole-screen assertions that the first frame IS the list.
+// ── Eligazítás (mezo-mgu2r): a fresh start opens the briefing, Indulás opens the list ──────
+// It reverses mezo-e1ii9's "no prep screen" with a NEW, single screen — the old prep mosaic
+// (XP forecast, six tiles, "Kezdjük el") stays retired.
 const RETIRED_TILE_LABELS = ['Gyakorlatok', 'Fejlődés', 'Heti zóna', 'Bemelegítés', 'Niggle']
+const startBtn = () => screen.getByRole('button', { name: /^Indulás/ })
 
-test('the session renders the card list on the FIRST frame — no prep screen at all', () => {
-  setup()
-  // The card list (T6 Task 3): EVERY exercise is on screen, immediately.
-  expect(document.querySelector('.wo-list')).not.toBeNull()
-  expect(document.querySelectorAll('.wo-card')).toHaveLength(5)
-  expect(within(card(EX1)).getByText(EX1)).toBeInTheDocument()
-  expect(submitOf(EX1)).toBeInTheDocument()
-  expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
+test('a fresh start opens the Eligazítás — duration band, counts, no cards yet', () => {
+  setupBrief()
+  expect(screen.getByText('Eligazítás')).toBeInTheDocument()
+  expect(screen.getByLabelText(/várható időtartam/).textContent).toMatch(/\d+–\d+perc/)
+  expect(screen.getByText('5 gyakorlat')).toBeInTheDocument()
+  expect(document.querySelector('.wo-card')).toBeNull()
 })
 
-test('none of the retired prep surfaces survive: no start CTA, no XP forecast, no mosaic tiles', () => {
-  setup()
+test('none of the retired prep surfaces come back: no Kezdjük el, no XP forecast, no mosaic tiles', () => {
+  setupBrief()
   expect(screen.queryByText(/Kezdjük el/)).toBeNull()
   expect(screen.queryByText(/várható XP/)).toBeNull()
-  expect(document.querySelector('.tp-hero')).toBeNull()
   expect(document.querySelector('.mz-mosaic')).toBeNull()
-  for (const label of RETIRED_TILE_LABELS) {
-    expect(screen.queryByRole('button', { name: label })).toBeNull()
-  }
-  // The prep mosaic's Küldetések TILE is gone too (its exact-named tile button). Its successor
-  // is the owner-approved start row card (U4, mezo-me75u.4) — a glass row whose name carries
-  // the accepted count, covered by its own tests below — plus the ⋯ menu's row.
-  expect(screen.queryByRole('button', { name: 'A mai küldetések' })).toBeNull()
+  for (const label of RETIRED_TILE_LABELS) expect(screen.queryByRole('button', { name: label })).toBeNull()
 })
 
-// The niggle's home is the banner the card list already renders (the retired Niggle tile
-// and its confirm page carried this before).
-test('an active niggle surfaces as the card list\'s own banner, carrying the real detail prose', () => {
-  setup()
-  expect(screen.getByText(/Jobb váll/)).toBeInTheDocument()
-  const strip = document.querySelector('.warmstrip')
-  expect(strip).not.toBeNull()
-  // mezo-e1ii9 fix round 1: the banner renders `niggleWarning.detail` — the backend's own
-  // sentence — not just the muscle label plus a hardcoded "óvatos, először warm-up".
-  expect(strip?.textContent).toContain('a Cable Pull-Around-ot előrébb hozzuk')
-  expect(strip?.textContent).not.toContain('óvatos, először warm-up')
+test('the briefing carries the niggle with its real detail prose; the list no longer does', () => {
+  setupBrief()
+  const strip = screen.getByRole('note', { name: 'Sérülés-figyelmeztetés' })
+  expect(strip.textContent).toContain('a Cable Pull-Around-ot előrébb hozzuk')
+  fireEvent.click(startBtn())
+  expect(document.querySelector('.wo-list')).not.toBeNull()
+  expect(document.querySelector('.warmstrip')).toBeNull()
 })
 
-// The warm-up ramp has NO home on the card any more (mezo-i8ahy, owner ruling): the
-// engine still prescribes it, the card shows working sets only, and every count on
-// screen matches the rows.
-test('no warm-up row survives on a card — the rows are the working sets, numbered 1..n', () => {
-  setup()
-  const idx = Array.from(card(EX1).querySelectorAll('.wo-idx')).map((n) => n.textContent)
-  expect(idx).toEqual(['1', '2', '3'])
-  expect(card(EX1).textContent).not.toContain('bemelegítő')
+test('the pre-tick rule: the overload one and the low-risk ≥70% ones come ticked', () => {
+  setupBrief()
+  const pressed = screen.getAllByRole('button', { name: /: vállalva$/ })
+  const offered = screen.getAllByRole('button', { name: /: vállalom$/ })
+  expect(pressed.length + offered.length).toBe(4)
+  expect(startBtn()).toHaveTextContent(`Indulás · ${pressed.length} küldetéssel`)
 })
 
-// ── Küldetések: accept/dismiss's new home, the header ⋯ menu's glass ─────────────────
-test('the ⋯ menu carries a Küldetések row with the day\'s accepted/total hint', async () => {
-  const user = userEvent.setup()
-  setup()
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
-  expect(screen.getByText('Küldetések')).toBeInTheDocument()
-  expect(screen.getByText('0/4 elfogadva')).toBeInTheDocument()
+test('unticking everything reads "Indulás küldetés nélkül" and starts with no badge', () => {
+  setupBrief()
+  for (const b of screen.getAllByRole('button', { name: /: vállalva$/ })) fireEvent.click(b)
+  expect(startBtn()).toHaveTextContent('Indulás küldetés nélkül')
+  fireEvent.click(startBtn())
+  expect(screen.queryAllByRole('button', { name: /küldetés · (vállalva|elengedve)$/ })).toHaveLength(0)
 })
 
-// ── The start-of-workout quest row (owner-approved U4 addition, mezo-me75u.4) ──────────
-const questRow = () => screen.queryByRole('button', { name: /^A mai küldetések/ })
-
-test('at 0 logged sets a glass "A mai küldetések" row tops the list with the accepted count', () => {
-  setup()
-  const row = questRow()
-  expect(row).not.toBeNull()
-  expect(row).toHaveClass('glass')
-  expect(row).toHaveTextContent('4 ajánlat vár')
-  // It sits at the top of the list, above every exercise card.
-  const list = document.querySelector('.wo-list')!
-  expect(list.firstElementChild).toBe(row)
+test('the exercise list marks the exercises a ticked challenge targets', () => {
+  setupBrief()
+  expect(screen.getAllByRole('img', { name: 'Van vállalt küldetés' }).length).toBeGreaterThan(0)
 })
 
-test('the quest row opens the SAME Küldetések glass the ⋯ menu reaches', async () => {
-  const user = userEvent.setup()
-  setup()
-  await user.click(questRow()!)
-  expect(screen.getByRole('dialog', { name: 'A mai küldetések' })).toBeInTheDocument()
-  expect(screen.getByText(/passzolni ér/)).toBeInTheDocument()
-  expect(screen.getByText('PR-kísérlet')).toBeInTheDocument()
-})
-
-// mezo-oy91i: ticking a challenge in the picker turns the start row gold with the target chips.
-test('mock mode: ticking a challenge turns the start row into "1 küldetés vállalva"', async () => {
-  const user = userEvent.setup()
-  setup()
-  await user.click(questRow()!)
-  await user.click(screen.getAllByRole('button', { name: /: vállalom$/ })[0])
-  await user.click(screen.getByRole('button', { name: 'Indulhat · 1 küldetéssel' }))
-  const row = screen.getByRole('button', { name: /küldetés vállalva/ })
-  expect(row).toHaveClass('is-accepted')
-})
-
-test('the quest row leaves once the first set is logged — the ⋯ menu entry stays', async () => {
-  const user = userEvent.setup()
-  setup()
-  expect(questRow()).not.toBeNull()
-  await logSet(user)
-  expect(questRow()).toBeNull()
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
-  expect(screen.getByText('Küldetések')).toBeInTheDocument()
-})
-
-// mezo-oy91i: the picker drops the old card's machine text — no "conf", no tool-call chips.
-test('mock mode: the seed challenge reads as chips, with no conf code and no tool chips', async () => {
-  const user = userEvent.setup()
-  setup()
-  await openChallenges(user)
-  expect(screen.getByText('PR-kísérlet')).toBeInTheDocument()
+test('the "Miért ezt?" fold reads prose — no conf code, no tool chips; passzolni ér is said', () => {
+  setupBrief()
+  fireEvent.click(screen.getAllByRole('button', { name: 'Miért ezt? ›' })[0])
   expect(screen.queryByText(/conf/i)).not.toBeInTheDocument()
   expect(screen.queryByText('get_pr_history(ex=chest_row)')).not.toBeInTheDocument()
+  expect(screen.getByText(/Passzolni ér/)).toBeInTheDocument()
 })
 
-test('mock mode: the challenges glass carries the honest "passzolni ér" principle', async () => {
+test('after Indulás the list carries no session-level panel: no quest row, no overload line, no menu Küldetések', async () => {
   const user = userEvent.setup()
   setup()
-  await openChallenges(user)
-  expect(screen.getByText(/passzolni ér/)).toBeInTheDocument()
+  expect(document.querySelector('.wos-fresh')).toBeNull()
+  expect(document.querySelector('.wos-ovl')).toBeNull()
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  expect(screen.queryByText('Küldetések')).toBeNull()
+})
+
+test('a challenge taken on shows as its card\'s badge; Elengedem releases it, Visszaveszem takes it back', async () => {
+  const user = userEvent.setup()
+  setup()
+  const badge = within(card(EX2)).getByRole('button', { name: 'Mélység küldetés · vállalva' })
+  await user.click(badge)
+  await user.click(screen.getByRole('button', { name: 'Elengedem' }))
+  const released = within(card(EX2)).getByRole('button', { name: 'Mélység küldetés · elengedve' })
+  expect(released).toHaveClass('is-released')
+  await user.click(released)
+  await user.click(screen.getByRole('button', { name: 'Visszaveszem' }))
+  expect(within(card(EX2)).getByRole('button', { name: 'Mélység küldetés · vállalva' })).toBeInTheDocument()
 })
 
 test('a card names its exercise and carries one row per WORKING slot', async () => {
@@ -235,13 +201,11 @@ test('a card names its exercise and carries one row per WORKING slot', async () 
   expect(rowsOf(EX1)).toHaveLength(3)
 })
 
-test('mock mode: the last-week comparison is surfaced in the card\'s own progression banner', async () => {
+test('mock mode: the card head carries the vs-last-week chip — no Múlt hét / Ma a cél cells (mezo-mgu2r)', async () => {
   setup()
-  // ex1.lastWeek = { weight: 102.5, reps: 9, rir: 2 }. The banner is no longer behind
-  // a collapsible strip — it lives inside its exercise's card (T6 Task 3).
-  const banner = card(EX1).querySelector('.pobanner') as HTMLElement
-  expect(within(banner).getByText('Múlt hét')).toBeInTheDocument()
-  expect(within(banner).getByText('102,5 × 9 · RIR 2')).toBeInTheDocument()
+  expect(card(EX1).querySelector('.wo-card-head .wo-delta')).toHaveTextContent('↑ +2,5 kg')
+  expect(card(EX1).querySelector('.pobanner')).toBeNull()
+  expect(within(card(EX1)).queryByText('Múlt hét')).toBeNull()
 })
 
 // ---- Execution card v2 (mezo-8xmf) → calm re-face (mezo-d20.3.9): the muscle-themed
@@ -406,15 +370,12 @@ test('mock mode: the rows are the working slots, numbered 1..n', async () => {
 // HAS a lastWeek to compare — the structured ProgressionBanner is the single statement
 // of progression (the owner saw the same sentence three times). The rationale prose
 // keeps its one slot for a first-ever exercise only (WorkoutCard.tsx, the `cue` const).
-test('mock mode: a card with a progression shows the banner only — no .wo-cue, sentence once', async () => {
+test('mock mode: a card with a progression shows the chip only — no .wo-cue, no sentence', async () => {
   setup()
   const c = card(EX1)
   expect(c.querySelector('.wo-cue')).toBeNull()
-  expect(c.querySelector('.pobanner')).not.toBeNull()
-  // The rationale prose is the .wo-cue's own text; with lastWeek present that slot is
-  // gone, so the raw sentence renders at most once on the card (never duplicated).
-  expect(within(c).queryAllByText(/Múlt hét 9 × 102.5 kg → \+2.5 kg/).length).toBeLessThanOrEqual(1)
-  expect(c.querySelector('.pobanner-why')).toBeNull()
+  expect(c.querySelector('.wo-delta')).not.toBeNull()
+  expect(within(c).queryAllByText(/Múlt hét 9 × 102.5 kg → \+2.5 kg/)).toHaveLength(0)
 })
 
 test('mock mode: the first logged row is the first WORKING set, not a warm-up', async () => {
@@ -1330,6 +1291,9 @@ test('real mode: an open instance resumes mid-workout with seeded sets', async (
   setup()
   // a resumed instance seeds straight to set 2 (and re-POSTs no start)
   await waitFor(() => expect(document.querySelector('.wo-card')).not.toBeNull())
+  // …and never shows the Eligazítás (mezo-mgu2r D2: resume skips the briefing)
+  expect(screen.queryByText('Eligazítás')).toBeNull()
+  expect(screen.queryByRole('button', { name: /^Indulás/ })).toBeNull()
   expect(calls).not.toContain('start:d-1')
   expect(rowsOf(EX1)).toHaveLength(2)
   expect(doneRowsOf(EX1)).toHaveLength(1) // the persisted set is a done row
@@ -1913,6 +1877,7 @@ test('real mode: a custom workout with NO active meso renders the card list inst
     </QueryWrapper>,
   )
   expect((await screen.findAllByText('Saját HIIT')).length).toBeGreaterThan(0)
+  await enterList()
   expect(document.querySelector('.wo-list')).not.toBeNull()
 })
 
@@ -1981,47 +1946,75 @@ function useChallengeHandlers(rows: Record<string, unknown>[], calls: string[]) 
   )
 }
 
+/** Real mode: wait for the briefing to be up (the skeleton resolves first). */
+async function enterBrief() {
+  await screen.findByRole('button', { name: /^Indulás/ })
+}
+
 test('real mode: a proposed challenge with null confidence says "még tanulom" and shows NO tool chips', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useChallengeHandlers([challengeWire()], calls)
-  const user = userEvent.setup()
-  setup()
-  await enterList()
-  await openChallenges(user)
-  await user.click(await screen.findByRole('button', { name: 'Miért ezt? ›' }))
-  expect(screen.getByText(/Még tanulom, mennyire biztos/)).toBeInTheDocument()
+  setupBrief()
+  await enterBrief()
+  expect(await screen.findByText(/Még tanulom, mennyire biztos/)).toBeInTheDocument()
   expect(screen.queryByText(/get_pr_history/)).not.toBeInTheDocument() // live sends no tools
   expect(screen.queryByText(/⚔/)).not.toBeInTheDocument()
 })
 
-test('real mode: ticking a challenge POSTs an accept decision', async () => {
+test('real mode: the start POST fires only on Indulás, exactly once', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useChallengeHandlers([], calls)
+  setupBrief()
+  await enterBrief()
+  expect(calls.filter((c) => c.startsWith('start:'))).toHaveLength(0)
+  fireEvent.click(screen.getByRole('button', { name: /^Indulás/ }))
+  fireEvent.click(screen.queryByRole('button', { name: /^Indulás/ }) ?? document.body)
+  await waitFor(() => expect(calls).toContain('start:d-1'))
+  expect(calls.filter((c) => c.startsWith('start:'))).toHaveLength(1)
+})
+
+test('real mode: ticking a challenge on the briefing POSTs an accept decision at Indulás', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useChallengeHandlers([challengeWire()], calls)
   const user = userEvent.setup()
-  setup()
-  await enterList()
-  await openChallenges(user)
-  await user.click(await screen.findByRole('button', { name: /Chest Supported Row: vállalom/ }))
+  setupBrief()
+  await enterBrief()
+  await user.click(await screen.findByRole('button', { name: /Chest Supported Row · PR-kísérlet: vállalom/ }))
+  expect(calls.some((c) => c.startsWith('decide:'))).toBe(false) // a draft until Indulás
+  await user.click(screen.getByRole('button', { name: 'Indulás · 1 küldetéssel' }))
   await waitFor(() => expect(calls).toContain('decide:chal-1:accept'))
 })
 
 // mezo-oy91i: unticking an ACCEPTED challenge is an 'undo' (back to an offer) — the old
 // 'dismiss' answered 409 on a non-proposed row.
-test('real mode: unticking an accepted challenge POSTs an undo decision', async () => {
+test('real mode: unticking an accepted challenge POSTs an undo decision at Indulás', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useChallengeHandlers([challengeWire({ status: 'accepted' })], calls)
+  const user = userEvent.setup()
+  setupBrief()
+  await enterBrief()
+  await user.click(await screen.findByRole('button', { name: /Chest Supported Row · PR-kísérlet: vállalva/ }))
+  await user.click(screen.getByRole('button', { name: 'Indulás küldetés nélkül' }))
+  await waitFor(() => expect(calls).toContain('decide:chal-1:undo'))
+})
+
+test('real mode: releasing a badge mid-workout POSTs an undo decision', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useChallengeHandlers([challengeWire({ status: 'accepted' })], calls)
   const user = userEvent.setup()
   setup()
   await enterList()
-  await openChallenges(user)
-  await user.click(await screen.findByRole('button', { name: /Chest Supported Row: vállalva/ }))
+  await user.click(await within(card(EX1)).findByRole('button', { name: 'PR-kísérlet küldetés · vállalva' }))
+  await user.click(screen.getByRole('button', { name: 'Elengedem' }))
   await waitFor(() => expect(calls).toContain('decide:chal-1:undo'))
 })
 
-test('real mode: a resolved (hit) challenge shows its outcome icon and outcome line, no check button', async () => {
+test('real mode: a resolved (hit) challenge badge opens its outcome, with no action', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useChallengeHandlers(
@@ -2031,43 +2024,33 @@ test('real mode: a resolved (hit) challenge shows its outcome icon and outcome l
   const user = userEvent.setup()
   setup()
   await enterList()
-  await openChallenges(user)
-  expect(await screen.findByRole('img', { name: 'teljesült' })).toBeInTheDocument()
-  const dialog = screen.getByRole('dialog', { name: 'A mai küldetések' })
-  expect(within(dialog).queryByRole('button', { name: /: vállal/ })).not.toBeInTheDocument()
-  await user.click(screen.getByRole('button', { name: 'Miért ezt? ›' }))
+  await user.click(await within(card(EX1)).findByRole('button', { name: 'PR-kísérlet küldetés · lezárva' }))
   expect(screen.getByText('110 kg × 8 — cél igazolva (+2.5 kg)')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Elengedem|Visszaveszem/ })).not.toBeInTheDocument()
 })
 
-// mezo-oy91i: the start row never vanishes — an empty day says so instead.
-test('real mode: a day with NO challenges keeps the start row, saying there is none today', async () => {
+test('real mode: a day with NO challenges says so on the briefing', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useChallengeHandlers([], calls)
-  setup()
-  await enterList()
-  expect(await screen.findByText('Ma nincs küldetés')).toBeInTheDocument()
+  setupBrief()
+  await enterBrief()
+  expect(await screen.findByText(/Ma nincs küldetés/)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Indulás küldetés nélkül' })).toBeInTheDocument()
 })
 
-test('real mode: a failed challenge read keeps the start row with a retry', async () => {
+test('real mode: a failed challenge read says so on the briefing, with a retry, and Indulás still works', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useChallengeHandlers([], calls)
   server.use(http.get(`${API_BASE}/api/proactive/challenge`, () => new HttpResponse(null, { status: 500 })))
-  setup()
-  await enterList()
-  expect(await screen.findByText('A küldetések nem jöttek le')).toBeInTheDocument()
+  setupBrief()
+  await enterBrief()
+  expect(await screen.findByText(/A küldetések nem jöttek le/, {}, { timeout: 8000 })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Újra' })).toBeInTheDocument()
-})
-
-test('real mode: a proposed challenge surfaces the quest row with its real count', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'false')
-  const calls: string[] = []
-  useChallengeHandlers([challengeWire()], calls)
-  setup()
-  await enterList()
-  expect(await screen.findByRole('button', { name: /^A mai küldetések/ })).toHaveTextContent('1 ajánlat vár')
-})
+  fireEvent.click(screen.getByRole('button', { name: /^Indulás/ }))
+  await waitFor(() => expect(calls).toContain('start:d-1'))
+}, 15000)
 
 test('a logged working set shows its RIR in the row\'s own RIR cell', async () => {
   const user = userEvent.setup()
@@ -2204,24 +2187,11 @@ test('the active phase is ONE list of cards — no collapsible reference strips,
   expect(container.querySelectorAll('.mz-colstrip')).toHaveLength(0)
 })
 
-test('each card carries its own progression banner — the reference content is per exercise', async () => {
+test('each card carries its own vs-last-week chip — the reference content is per exercise', async () => {
   setup()
-  // ex1's banner (+2,5 kg, weight lever) and ex3's banner (+1 rep, rep lever) are each
-  // exercise's OWN structured signal, not one shared strip (mezo-i8ahy round 2: the
-  // banner is now the single statement of progression, the cue reserved for first-ever
-  // exercises only).
-  // A címke jele AGYAG-SZIMBÓLUM, nem emodzsi (stíluskönyv §2.3; mezo-ju4j6.16) — a `⚡`
-  // helyén jel áll, ezért a felirat szövege önmagában „Progresszió". U4 (mezo-me75u.4): a jel
-  // a Titanium 3D villám (`t-bolt`), nem a korábbi agyag `i-lang`.
-  const banner1 = card(EX1).querySelector('.pobanner') as HTMLElement
-  expect(within(banner1).getByText('Progresszió')).toBeInTheDocument()
-  expect(banner1.querySelector('use[href="#t-bolt"]')).not.toBeNull()
-  expect(within(banner1).getByText('+2,5 kg ↑')).toBeInTheDocument()
-
-  const banner3 = card(EX3).querySelector('.pobanner') as HTMLElement
-  expect(within(banner3).getByText('Progresszió')).toBeInTheDocument()
-  expect(banner3.querySelector('use[href="#t-bolt"]')).not.toBeNull()
-  expect(within(banner3).getByText('+1 rep ↑')).toBeInTheDocument()
+  // ex1 (+2,5 kg, weight lever) and ex3 (+1 rep, rep lever) each show their OWN signal.
+  expect(card(EX1).querySelector('.wo-delta')).toHaveTextContent('↑ +2,5 kg')
+  expect(card(EX3).querySelector('.wo-delta')).toHaveTextContent('↑ +1 ism.')
 })
 
 test('a fully logged exercise reads as complete and offers no editable row', async () => {

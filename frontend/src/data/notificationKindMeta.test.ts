@@ -23,6 +23,8 @@ const BACKEND_KINDS = [
   'team_edition',
   // mezo-a9bo7.23 — egy csapat-üzenőfali ügy phone pusha
   'team_chat',
+  // mezo-3n2so — a heti tanulás (a súlyból és az evésből tanult energiaigény) feed-only pusha.
+  'expenditure_week',
 ] as const
 
 describe('APP_NOTIFICATION_KIND_META', () => {
@@ -52,6 +54,10 @@ describe('APP_NOTIFICATION_KIND_META', () => {
 
   it('a csapat-üzenőfali ügy pusha is a Mezo-világ ikonját viszi', () => {
     expect(APP_NOTIFICATION_KIND_META.team_chat).toMatchObject({ clay: 'i-mezo', tint: 'character' })
+  })
+
+  it('a heti tanulás a t-lens 3D ikont és a sage tintet viszi', () => {
+    expect(APP_NOTIFICATION_KIND_META.expenditure_week).toMatchObject({ clay: 't-lens', tint: 'sage' })
   })
 
   it('az életcél-terv a cél clay ikonját viszi', () => {
