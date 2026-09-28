@@ -2,8 +2,10 @@ package io.mrkuhne.mezo.feature.goal.repository;
 
 import io.mrkuhne.mezo.feature.goal.entity.ExpenditureEstimateEntity;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ExpenditureEstimateRepository extends JpaRepository<ExpenditureEstimateEntity, UUID> {
@@ -26,4 +28,15 @@ public interface ExpenditureEstimateRepository extends JpaRepository<Expenditure
      */
     Optional<ExpenditureEstimateEntity> findFirstByCreatedByAndDeletedFalseAndExplanationIsNotNullOrderByWeekStartDesc(
         UUID createdBy);
+
+    /** Every reviewed week from {@code weekStart} onward — the weekly summary's history (mezo-3n2so). */
+    List<ExpenditureEstimateEntity> findByCreatedByAndWeekStartGreaterThanEqualAndDeletedFalseOrderByWeekStartAsc(
+        UUID createdBy, LocalDate weekStart);
+
+    /**
+     * The caller's most recent reviewed weeks, newest first, capped by {@code page} (mezo-3n2so) —
+     * pass {@code PageRequest.of(0, limit)} so a caller-chosen limit (up to 52, Task 5's API cap) is
+     * honoured rather than silently truncated to a fixed top-N.
+     */
+    List<ExpenditureEstimateEntity> findByCreatedByAndDeletedFalseOrderByWeekStartDesc(UUID createdBy, Pageable page);
 }

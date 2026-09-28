@@ -1,21 +1,20 @@
 // ============================================================
 // Mezo · ActiveWorkoutPage — full-screen active-workout mode
-// (sibling route /train/session, NO sub-nav). Two-phase state machine:
-//   active  → THE ENTRY POINT (mezo-e1ii9): the workout opens directly in the Titanium
-//             card list — Mai's CTA lands here, exactly like the prototype's
-//             `openSession()`. The pre-Titanium PREP mosaic ("⚡ Kezdjük el", the six
-//             GYAKORLATOK/FEJLŐDÉS/HETI ZÓNA/KÜLDETÉSEK/BEMELEGÍTÉS/NIGGLE tiles) is
-//             RETIRED: the exercise/set counts ARE the list, the XP forecast is answered
-//             by the ceremony's real +XP, the weekly zone is the Terhelés tab, the warmup
-//             is the cards' amber B-rows, the niggle is the banner below the header, and
-//             the challenges moved into the header ⋯ menu's Küldetések glass.
-//             Per-set logging (weight/reps/RIR), Múlt hét comparison,
+// (sibling route /train/session, NO sub-nav). Three-phase state machine:
+//   brief   → the Eligazítás (mezo-mgu2r, owner 2026-09-28 — it reverses mezo-e1ii9's
+//             "no prep screen"): a FRESH start opens here, a resumed workout never does.
+//             Duration band, counts, niggle, the day's challenges to opt into (pre-ticked),
+//             the overload line, the exercise list; Indulás sends the challenge decisions,
+//             POSTs the start and flips to `active`. The old prep mosaic (XP forecast, six
+//             tiles, "Kezdjük el") stays retired.
+//   active  → the Titanium card list. Session-level panels live on the briefing only; a
+//             challenge shows as the badge on its own card (tap → release / take back).
+//             Per-set logging (weight/reps/RIR), the vs-last-week chip,
 //             set dots, today's set history, PR toast + feedback debrief
 //   summary → the post-finish two-step closing ceremony (WorkoutCeremony): stars +
 //             counters + stats + records + the accepted küldetések' outcomes (owner-
 //             approved, mezo-me75u.4), then muscles + kcal. The full challenge strip
-//             lives on the review page; picking them, in the header ⋯ Küldetések glass.
-//   complete→ the SAME ceremony read back settled (no pass) + the pending-sets note
+//             lives on the review page; picking them, on the briefing.
 // Every exit (Bezárás / back / Mentés) navigates back to /train.
 // Ported from prototype train.jsx (the active-workout TrainSection).
 // ============================================================
@@ -33,9 +32,11 @@ import { sessionProgressSegments } from '@/features/train/logic/workoutCardMeta'
 import { useRestTimer } from '@/features/train/logic/useRestTimer'
 import { WorkoutDock } from '@/features/train/components/WorkoutDock'
 import { WorkoutCard, prefill, setSlotLabel } from '@/features/train/components/WorkoutCard'
-import { WorkoutChallengesGlass, WorkoutMenuGlass, WorkoutVideoGlass } from '@/features/train/components/WorkoutMenuGlass'
+import { ChallengeDetailGlass, WorkoutMenuGlass, WorkoutVideoGlass, type ChallengeBadgeState } from '@/features/train/components/WorkoutMenuGlass'
+import { WorkoutBriefing } from '@/features/train/components/WorkoutBriefing'
+import { briefingDecisions, durationRange, preTicked } from '@/features/train/logic/briefing'
+import { overflowWhy, progressionChip } from '@/features/train/logic/progressionChip'
 import { WorkoutRecordsGlass } from '@/features/train/components/WorkoutRecordsGlass'
-import { WorkoutOverloadLine } from '@/features/train/components/WorkoutOverloadLine'
 import { FinishConfirmGlass } from '@/features/train/components/FinishConfirmGlass'
 import { recordFor } from '@/features/train/logic/recordFor'
 import type { LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
@@ -66,7 +67,7 @@ import {
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon3D } from '@/shared/ui/clay'
-import { challengeTypeIcon, challengeTypeLabel, targetChips } from '@/features/train/logic/challengeDisplay'
+import { challengeTypeLabel } from '@/features/train/logic/challengeDisplay'
 import { MedalToast } from '@/features/train/components/MedalToast'
 import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
 import { WorkoutCeremony, ceremonyChallenges, ceremonyRecord } from '@/features/train/components/WorkoutCeremony'
@@ -78,7 +79,7 @@ import { actualMinutes, type SessionTiming } from '@/features/train/logic/actual
 import { SetEditSheet, type SetEditValues } from '@/features/train/sheets/SetEditSheet'
 import { adjustedTarget } from '@/features/train/logic/repEquivalence'
 
-type Phase = 'active' | 'summary'
+type Phase = 'brief' | 'active' | 'summary'
 type Side = 'L' | 'B' | 'R'
 
 // The RECORD-tier medal toast auto-hides after this long (mezo-wp6n; was PR_TOAST_MS).
@@ -232,18 +233,16 @@ function ActiveWorkoutSession({
     goBack()
   }
 
-  const niggleActive = !!W.niggleWarning
-
   const open = todaySession?.openWorkout ?? null
   // Seed once on mount — a mid-workout reload resumes straight into 'active'.
   // The exerciseId-keyed pure model owns the per-set bookkeeping (workoutState.ts).
   const [initialSession] = useState<Session>(() =>
     open ? seedFromOpen(W.exercises, { sets: open.sets }) : makeSession(W.exercises),
   )
-  // The session HAS no other entry face since mezo-e1ii9: entering the route IS starting
-  // the workout, so the card list renders on the first frame whether or not an instance
-  // was already open (the mount effect below opens one when it wasn't).
-  const [phase, setPhase] = useState<Phase>('active')
+  // Decided ONCE at mount (mezo-mgu2r): a fresh start opens the Eligazítás, an already-open
+  // instance (resume FAB, "Folytassuk", a reload mid-workout) goes straight to the list. A
+  // later refetch must never flip a running session back to the briefing.
+  const [phase, setPhase] = useState<Phase>(() => (open ? 'active' : 'brief'))
   // Mezo-kalauz (mezo-gb1s.5, D11): ez az oldal chrome-mentes (AppLayout hideChrome),
   // a fejléc ?-e itt nem létezik — az újranyitás a kártyalista fejlécének mini ?-én át megy.
   const kalauz = useTutorial()
@@ -302,12 +301,18 @@ function ActiveWorkoutSession({
   // an explicit feedback target that overrides `viewedId` until the debrief closes.
   const [feedbackEx, setFeedbackEx] = useState<LoggedWorkoutExercise | null>(null)
   const [acceptedChallenges, setAcceptedChallenges] = useState<string[]>([])
+  // The briefing's tick draft (mezo-mgu2r): null = untouched, then the pre-tick rule applies to
+  // whatever list is current (a late challenge fetch still arrives pre-ticked).
+  const [tickDraft, setTickDraft] = useState<Record<string, boolean> | null>(null)
+  // The challenges taken on at Indulás — their badge stays on the card even once released,
+  // so the owner can take one back (spec D3).
+  const [startedChallengeIds, setStartedChallengeIds] = useState<ReadonlySet<string>>(() => new Set())
   // The per-card glass surface open right now (T6 Task 4/5) — null = closed. `kind`
   // distinguishes the ⋮ menu itself, the Videó glass it can switch to, the records
-  // glass opened straight from the card's own log button, and (mezo-e1ii9) the
-  // Küldetések glass that inherited the retired prep mosaic's challenge tile; `id`
+  // glass opened straight from the card's own log button, and (mezo-mgu2r) one challenge's
+  // detail glass opened from its card badge — there `id` is the CHALLENGE id; otherwise it
   // addresses the card, exactly like the old menuExId did for ExerciseActionSheet.
-  const [glass, setGlass] = useState<{ kind: 'menu' | 'video' | 'records' | 'challenges'; id: string } | null>(null)
+  const [glass, setGlass] = useState<{ kind: 'menu' | 'video' | 'records' | 'challenge'; id: string } | null>(null)
   // After "＋ Szett" we offer to persist the bumped set count to the template (F2).
   const [addSetPrompt, setAddSetPrompt] = useState<{ exerciseId: string } | null>(null)
   // F4 durable per-exercise note: which exercise's editor is open + a per-exercise
@@ -406,15 +411,14 @@ function ActiveWorkoutSession({
   // (owner-approved in the üveg prototype, mezo-me75u.4 — `ceremonyChallenges` below); the
   // review page (WorkoutReviewPage → WorkoutSummary) keeps the full challenge strip.
 
-  // Starting the workout is no longer a tap — entering the route IS the start (mezo-e1ii9,
-  // the prototype's `openSession()`). BOTH old "⚡ Kezdjük el" paths survive verbatim, they
-  // just fire on mount instead of on click:
+  // Starting the workout is the briefing's Indulás tap again (mezo-mgu2r; mezo-e1ii9 had moved
+  // it onto mount). Two paths:
   //   · mock mode has no `todaySession` → nothing to POST, the local session model is the
   //     whole truth (byte-parity with the Phase-1 behaviour);
   //   · real mode POSTs `startWorkout` and binds the returned instance id.
-  // A session resumed mid-workout (`open`) already HAS an instance — re-POSTing would
-  // start a second one — so the effect skips it. The ref makes this once-per-mount under
-  // StrictMode's double-invoke (a second POST would be a second workout instance).
+  // A session resumed mid-workout (`open`) already HAS an instance and never sees the
+  // briefing. The ref keeps the start once-per-mount (a second POST would be a second
+  // workout instance).
   const startedRef = useRef(false)
   const runStart = (retry: boolean) => {
     if (!todaySession) return
@@ -431,14 +435,32 @@ function ActiveWorkoutSession({
       },
     })
   }
-  useEffect(() => {
+  // A card badge's state: a resolved outcome wins, else taken on vs released (spec D3).
+  const badgeState = (c: (typeof challenges)[number]): ChallengeBadgeState =>
+    c.status === 'hit' || c.status === 'miss' || c.status === 'inconclusive'
+      ? c.status
+      : acceptedMap[c.id] ? 'accepted' : 'released'
+  const ticked = tickDraft ?? preTicked(challenges, acceptedMap)
+  const toggleTick = (id: string) => setTickDraft({ ...ticked, [id]: !ticked[id] })
+  const handleStart = () => {
     if (startedRef.current) return
     startedRef.current = true
-    if (open || !todaySession) return
-    runStart(false)
-    // Mount-only on purpose (empty deps): the start is an EVENT, not a synchronisation —
-    // re-running it when `todaySession` re-fetches would POST a second instance.
-  }, [])
+    // The mock clock measures from the START, not from the briefing's mount.
+    enteredAtRef.current = Date.now()
+    const tickedIds = challenges.filter((c) => ticked[c.id]).map((c) => c.id)
+    if (isMock) {
+      setAcceptedChallenges(tickedIds)
+    } else {
+      // Decisions ride alongside the start and never block it: a failure surfaces through the
+      // global mutation-error toast and the row keeps its server state.
+      const d = briefingDecisions(challenges, ticked, acceptedMap)
+      d.accept.forEach((id) => decide(id, 'accept'))
+      d.undo.forEach((id) => decide(id, 'undo'))
+    }
+    setStartedChallengeIds(new Set(tickedIds))
+    if (!open && todaySession) runStart(false)
+    setPhase('active')
+  }
   // Logging is blocked exactly while a start we ATTEMPTED has left us without an instance
   // id. Mock mode has no `todaySession` and never starts anything, so it never blocks.
   const logBlocked = startFailed && !workoutId
@@ -850,6 +872,52 @@ function ActiveWorkoutSession({
     )
   }
 
+  // ---------- BRIEF (Eligazítás, mezo-mgu2r) ----------
+  if (phase === 'brief') {
+    const fmtKg = (n: number) => n.toLocaleString('hu-HU')
+    const goalOf = (e: LoggedWorkoutExercise): string | null => {
+      const p = e.prescribedSets?.find((x) => x.kind === 'working')
+      const kg = p?.targetWeightKg ?? e.progression?.targetWeightKg ?? null
+      const reps = p?.targetReps ?? e.progression?.targetReps ?? null
+      return kg != null && reps != null ? `${fmtKg(kg)} × ${reps}` : null
+    }
+    const ordered = session.order.map((id) => exerciseById(id)).filter((e): e is LoggedWorkoutExercise => !!e)
+    return (
+      <WorkoutBriefing
+        title={W.title}
+        eyebrow={activeMeso ? `${W.title} · ${activeMeso.currentWeek}. hét / ${activeMeso.weeks}` : W.title}
+        minutes={timingProfilePending ? null : durationRange(estimateSessionMinutes(W.exercises, timingProfile ?? undefined))}
+        exerciseCount={ordered.length}
+        setCount={ordered.reduce((a, e) => a + effectiveSetCount(session, e.id), 0)}
+        niggle={W.niggleWarning ?? null}
+        challenges={challenges}
+        pending={challengesPending}
+        failed={challengesFailed}
+        onRetry={retryChallenges}
+        ticked={ticked}
+        onToggle={toggleTick}
+        overload={W.overloadSummary}
+        exercises={ordered.map((e) => ({
+          id: e.id,
+          name: e.name,
+          muscle: e.muscle,
+          sets: effectiveSetCount(session, e.id),
+          goal: goalOf(e),
+          chip: e.progression ? progressionChip(e.progression) : null,
+          why: overflowWhy(e.repMax, e.progression),
+        }))}
+        onBack={onExit}
+        onStart={handleStart}
+        kalauzButton={kalauz.current ? (
+          <button type="button" className="wos-rb wos-q np-press" aria-label="Kalauz ehhez az oldalhoz"
+            aria-haspopup="dialog" onClick={() => kalauz.open(kalauz.current!.id)}>
+            <span aria-hidden="true">?</span>
+          </button>
+        ) : undefined}
+      />
+    )
+  }
+
   // ---------- ACTIVE (Titanium card list, mezo-88iwa.7 T6 Task 3) ----------
   // Every exercise is a `.wo-card` in one `.wo-list` — no viewed exercise, no rail,
   // no pager, no swipe. The only ordering rule left is INSIDE a card: its sets are
@@ -969,7 +1037,7 @@ function ActiveWorkoutSession({
         const menuOpen = glass?.kind === 'menu' && !feedbackEx
         const videoOpen = glass?.kind === 'video' && !feedbackEx
         const recordsOpen = glass?.kind === 'records' && !feedbackEx
-        const challengesOpen = glass?.kind === 'challenges' && !feedbackEx
+        const detail = glass?.kind === 'challenge' && !feedbackEx ? challenges.find((c) => c.id === glass.id) ?? null : null
         const position = session.order.indexOf(menuEx.id)
         const slotCount = effectiveSetCount(session, menuEx.id)
         const lastSlotPending = (session.logged[menuEx.id]?.length ?? 0) < slotCount
@@ -986,12 +1054,8 @@ function ActiveWorkoutSession({
               skipped={session.skipped.includes(menuEx.id)}
               hasNote={!!noteOf(menuEx)}
               canRemoveTrailingSet={canRemoveSet(session, menuEx.id) && lastSlotPending}
-              acceptedChallenges={challenges.filter((c) => acceptedMap[c.id]).length}
-              totalChallenges={challenges.length}
-              challengesPending={challengesPending}
               onClose={() => setGlass(null)}
               onVideo={() => setGlass({ kind: 'video', id: menuEx.id })}
-              onChallenges={() => setGlass({ kind: 'challenges', id: menuEx.id })}
               onEditNote={() => setNoteEditExId(menuEx.id)}
               onAddSet={() => {
                 setSession((s) => addExtraSet(s, menuEx.id))
@@ -1008,15 +1072,12 @@ function ActiveWorkoutSession({
               tint={tint}
               onClose={() => setGlass(null)}
             />
-            <WorkoutChallengesGlass
-              open={!!challengesOpen}
-              challenges={challenges}
-              accepted={acceptedMap}
-              onToggle={toggleChallenge}
-              pending={challengesPending}
-              failed={challengesFailed}
-              onRetry={retryChallenges}
-              tint={tint}
+            <ChallengeDetailGlass
+              open={!!detail}
+              challenge={detail}
+              state={detail ? badgeState(detail) : 'accepted'}
+              tint={detail ? muscleColor(exerciseById(detail.exerciseId)?.muscle ?? menuEx.muscle).rail : tint}
+              onToggle={() => detail && toggleChallenge(detail.id)}
               onClose={() => setGlass(null)}
             />
             <WorkoutRecordsGlass
@@ -1156,24 +1217,6 @@ function ActiveWorkoutSession({
           })}
         </div>
 
-        {/* Niggle banner if active */}
-        {niggleActive && (
-          <div className="wos-warn-wrap">
-            {/* The real `detail` prose (mezo-e1ii9 fix round 1): the backend ships a
-                per-niggle sentence and it had no reader once the prep mosaic's niggle
-                tile retired — the banner printed only the muscle + a hardcoded line.
-                The generic line stays as the fallback for a warning with no detail.
-                U4: an amber callout led by the 3D bandage (the ⚠ glyph retired). */}
-            <div className="warmstrip wos-warn" role="note" aria-label="Sérülés-figyelmeztetés">
-              <Icon3D name="t-bandage" size={30} />
-              <span>
-                <b>{W.niggleWarning?.muscleLabel ?? 'Jobb váll'} aktív</b> ·{' '}
-                {W.niggleWarning?.detail || 'óvatos, először warm-up'}
-              </span>
-            </div>
-          </div>
-        )}
-
         {/* THE list — one card per exercise, in session order. */}
         {/* Padding (including the bottom room the portalled dock floats over) lives in
             `.wo-list`'s own CSS rule now — see prototype.css, fix wave C1. */}
@@ -1197,85 +1240,6 @@ function ActiveWorkoutSession({
               </button>
             </div>
           )}
-          {/* The day-level overload tally (mezo-88iwa.4) — its only surface since the prep
-              mosaic retired. Honest-empty: nothing to say, nothing rendered. */}
-          {/* The start-of-workout quest row (U4, mezo-me75u.4; mezo-oy91i): at 0 logged sets it
-              ALWAYS tops the list — it used to vanish on an empty or failed list, which read as
-              "the challenge choice is gone". Five states: offers waiting, accepted (gold, the
-              accepted targets as chips), being generated, none today, could not load (+ retry). */}
-          {doneSets === 0 && (() => {
-            const acc = challenges.filter((c) => acceptedMap[c.id])
-            const open = () => setGlass({ kind: 'challenges', id: current.id })
-            if (challengesPending) {
-              return (
-                <button type="button" className="wos-fresh glass" onClick={open}>
-                  <Icon3D name="t-quest" size={42} />
-                  <span className="wos-fresh-copy">
-                    <strong>A mai küldetések</strong>
-                    <small>Mezo most rakja össze őket…</small>
-                    <i className="wos-fresh-shim" aria-hidden="true" />
-                  </span>
-                  <b className="wos-chev" aria-hidden="true">›</b>
-                </button>
-              )
-            }
-            if (challengesFailed) {
-              return (
-                <div className="wos-fresh glass is-failed">
-                  <Icon3D name="t-quest" size={42} />
-                  <span className="wos-fresh-copy">
-                    <strong>A küldetések nem jöttek le</strong>
-                    <small>Az edzés ettől még indulhat.</small>
-                  </span>
-                  <button type="button" className="wos-pill is-lit" onClick={retryChallenges}>Újra</button>
-                </div>
-              )
-            }
-            if (challenges.length === 0) {
-              return (
-                <div className="wos-fresh glass is-off">
-                  <Icon3D name="t-quest" size={42} />
-                  <span className="wos-fresh-copy">
-                    <strong>Ma nincs küldetés</strong>
-                    <small>Ehhez az edzéshez még kevés az előzmény — tiszta edzés.</small>
-                  </span>
-                </div>
-              )
-            }
-            if (acc.length > 0) {
-              return (
-                <button type="button" className="wos-fresh glass is-accepted" onClick={open}>
-                  <Icon3D name="t-quest" size={42} />
-                  <span className="wos-fresh-copy">
-                    <strong>{acc.length} küldetés vállalva</strong>
-                    <span className="wos-fresh-accs">
-                      {acc.map((c) => (
-                        <span key={c.id} className="uv-flat">
-                          <Icon3D name={challengeTypeIcon(c.type)} size={16} />
-                          {targetChips(c.target).join(' · ')}
-                        </span>
-                      ))}
-                    </span>
-                  </span>
-                  <b className="wos-chev" aria-hidden="true">›</b>
-                </button>
-              )
-            }
-            return (
-              <button type="button" className="wos-fresh glass" onClick={open}>
-                <Icon3D name="t-quest" size={42} />
-                <span className="wos-fresh-copy">
-                  <strong>A mai küldetések</strong>
-                  <small>{challenges.length} ajánlat vár · válassz, mielőtt nekiállsz</small>
-                </span>
-                <span className="wos-fresh-stack" aria-hidden="true">
-                  {challenges.map((c) => <Icon3D key={c.id} name={challengeTypeIcon(c.type)} size={26} />)}
-                </span>
-                <b className="wos-chev" aria-hidden="true">›</b>
-              </button>
-            )
-          })()}
-          <WorkoutOverloadLine overload={W.overloadSummary} />
           {session.order.map((id) => {
             const e = W.exercises.find((x) => x.id === id)
             if (!e) return null
@@ -1289,10 +1253,10 @@ function ActiveWorkoutSession({
                 medalsBySetIdx={medalsOf(id)}
                 failedLocalIds={failedSetLocalIds}
                 logBlocked={logBlocked}
-                challenge={(() => {
-                  const c = challenges.find((x) => x.exerciseId === id && acceptedMap[x.id])
-                  return c ? { label: challengeTypeLabel(c.typeLabel), target: c.target } : null
-                })()}
+                challenges={challenges
+                  .filter((c) => c.exerciseId === id && (acceptedMap[c.id] || startedChallengeIds.has(c.id)))
+                  .map((c) => ({ id: c.id, label: challengeTypeLabel(c.typeLabel), target: c.target.replace(/(\d)\.(\d)/g, '$1,$2'), state: badgeState(c) }))}
+                onOpenChallenge={(cid) => setGlass({ kind: 'challenge', id: cid })}
                 onLogSet={(input) => handleLogSet(e, input)}
                 onTapDoneRow={(idx) => setEditingSet({ exerciseId: id, idx })}
                 onOpenRecords={() => setGlass({ kind: 'records', id })}

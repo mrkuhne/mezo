@@ -16,7 +16,13 @@ related: [_platform-data-layer, _platform-notifications, today, train, me, fuel,
 ---
 > **2026-09-27 — Üveg U11 (`mezo-me75u.11`) — the epic closes.** An app-wide audit of all 126 routes drove the last fixes (legible copy — live text never uses `--text-disabled`; the last clay art in content → 3D, incl. `InfoButton`'s default `t-info` and the chat reference icons in `insights/logic/toolDomains.ts`; tick glyphs → `t-tick`; dark ink on lit coral). The dead pre-üveg CSS went (~5300 lines incl. dead emoji modules), the kit's `<Sheet glass>` field rule is zero-specificity (`:where()`), and `.uv-tgl` (glass Toggle) lives once in the uveg kit. Blocks `── uveg lezaras edzes|egyeb (`, pinned as `U11_BLOCKS`. Canon order: `docs/design_2.0/README.md`.
 
+> **2026-09-28 — Eligazítás (`mezo-mgu2r`).** `prototype.css`'s `uveg edzes session` block gained the briefing family (`.wbr-*`: frameless hero halo, the gold glass challenge card reusing the variant-B `.wos-qc` rows, flat exercise rows, the portalled `.wbr-foot` Indulás that floats over `.phone-screen` like the dock), the card-head vs-last-week chip `.wo-delta` (`is-up` coral / hold-down amber), the tappable released badge (`.wos-pill-quest.is-released`) and the challenge detail glass body (`.wos-gb-qd`). No new primitive, no new sprite symbol.
+
+> **2026-09-28 — Arányos lépcső (`mezo-bk7sn`).** One more briefing-row line: `.wbr-row-why` (11px amber, the `.wo-delta` hold tone) carries the engine's reason when a target sits past the range top. The workout card reuses its existing `.wo-cue` slot for the same sentence. No new primitive.
+
 > **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** Nine owner-approved sprite symbols for the new check-in items — `t-mood`, `t-rested`, `t-soreness`, `t-pain`, `t-motivation`, `t-hunger`, `t-craving`, `t-day`, `t-digestion` (connection reuses `t-people`) — added to `docs/design_2.0/assets/titanium-custom.svg` and regenerated into both sprite copies (`Icon3D.test.tsx` pins the ids). `prototype.css` gained the check-in sheet (`.ck-*`), the answered-cell rows (`.nck-*`), the Napom duo (`.napom-dayc`/`.napom-duo`), the ritual day hint (`.rz-day`) and the Edzés readiness card (`.trd-*`) families; `app/pageIndex.ts`'s check-in hint reads „pár koppintás, fél perc". No new primitive.
+
+> **2026-09-28 — Tanuló energiaigény 2. rész (`mezo-3n2so`).** `prototype.css` gained the weekly learning dot (`.fwl-dot`, sage / amber `is-hold`, `pointer-events:none`), the highlighted Alap row and the „Heti tanulás” sheet family (`.fwl-*`, incl. the `:has()` bleed rule so the row ring is not clipped by the equation box scroller), the `/fuel/tanulas` page (`.fln-*`: history chart, band, gap, day list) and the day-log mark row (`.fmx-mark`). No new primitive, no new sprite symbol.
 
 > **2026-09-26 — Üveg U10 (`mezo-me75u.10`) — the layers.** Every surface that sits OVER a page is glass now, from the kit: `<Sheet glass>` (`.sheet.glass.uv-sheet`, floating 10px off the edges, flat fields; a guard test `shared/ui/sheetGlassGuard.test.ts` fails a new `<Sheet>` that ships on the old skin), `SheetHead`/`SheetError` (`shared/ui/SheetHead.tsx`), the shared `GlassBox` (glass by DEFAULT plus a `className` prop — the `.gl-card:has()` workaround is retired, mezo-8vfr2), the toast stack (one glass card per toast, `--c` by kind, 3D icon), the DatePicker popover, the FloatingReturnLayer FAB/bar, the ErrorBoundary card, the meal + sport ceremonies (the meal sheet rises first, the score ignites only after it lands), the level-up overlay (3D icons via `skillDisplay().art3d`), KalauzSheet + the T0 welcome (copy rewritten to today's chrome), auth + boot failure (wordmark „boop”), the StartupSplash glass orb, Minden oldal and the admin shell (`.uv-admin` scope). **Every `<Boop>` is alive by default** (blink/look/brow/breathe) with a per-instance phase (`--boop-delay`), so a screenful never blinks in unison. Six new sprite icons for the athletic skills: `t-jump t-sprint t-core t-juggle t-stretch t-target`. Blocks: `── uveg reteg unnep|szint|ablak|lap|kalauz|belepes|admin (`, pinned in `prototypeCssStructure.test.ts` (`U10_BLOCKS`).
 
@@ -885,6 +891,12 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
 
 ## 9. Decisions, gotchas & deferred
 
+- **A bare `.sky` class is taken (`mezo-p87ok`, 2026-09-28).** The daypart sky band's dark-theme
+  rules are global: `:root[data-theme="dark"] .sky { opacity: .5 }` and
+  `:root[data-theme="dark"] .phone-screen .sky { display: none }`. Any component that uses `sky` as a
+  tone modifier class (`className="… sky …"`) is silently hidden in the app's only theme. The weekly
+  discoveries life-event tile hit this and shipped invisible; its tone is now `life`. Name tone
+  modifiers after the content (`life`, `pred`), or scope them (`.wkd-tile.life`), never bare `sky`.
 - **Startup (`mezo-qducz`; visszaöltöztetve `mezo-ju4j6.3`):** `main.tsx` wraps the router in
   `StartupSplash` once per document. The existing `PhoneFrame` contains the theme-token startup
   canvas, so desktop demos show it inside the same phone bezel as the app; real mobile/PWA stays

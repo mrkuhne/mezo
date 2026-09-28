@@ -6,11 +6,20 @@
 // ============================================================
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expect, test } from 'vitest'
+import { MemoryRouter } from 'react-router-dom'
+import { expect, test, vi } from 'vitest'
+import type { ExpenditureWeeklyCard } from '@/data/fuel/expenditureApi'
 import { asPastDayHero, buildKeretHero } from '@/features/fuel/logic/keretHero'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
 import { FuelEnergyHero } from '@/features/fuel/components/FuelEnergyHero'
 import { huInt } from '@/shared/lib/huNum'
+
+// The weekly-learning sheet (mezo-3n2so) reads its mark/dismiss hooks; stubbed so the hero tests
+// stay provider-free and mode-independent.
+vi.mock('@/data/fuel/expenditureHooks', () => ({
+  useIntakeDayMark: () => ({ setMark: vi.fn(), clearMark: vi.fn(), pending: false }),
+  useDismissWeeklyCard: () => ({ dismiss: vi.fn() }),
+}))
 
 // The keretHero.test.ts fixture style, with a consumed figure that leaves a round 2 060.
 const BUDGET: DayBudget = { kcal: 2400, p: 160, c: 260, f: 80, energy: { base: 2000, planned: 400, extra: 0, balance: 0, target: 2400 } }
@@ -205,4 +214,67 @@ test('a hero három részes: ettél · műszer · még belefér', () => {
   expect(sides[0].querySelector('small')!.textContent).toBe('KCAL·T ETTÉL')
   expect(sides[1].querySelector('small')!.textContent).toBe('MÉG BELEFÉR')
   expect(container.querySelector('.fmx-hero-pair .fmx-gauge')).not.toBeNull()
+})
+
+// ── mezo-3n2so: heti tanulás — izzó pötty a chipen, kiemelt Alap sor, „Heti tanulás” lap ──
+const WEEKLY: ExpenditureWeeklyCard = {
+  weekStart: '2026-09-21', weekEnd: '2026-09-27', status: 'updated', confidence: 'high',
+  appliedBaseKcal: 2480, posteriorSdKcal: 150, stepKcal: 60, usableDays: 4, weighInDays: 4,
+  minUsableDays: 4, minWeighInDays: 2,
+  excludedDays: [{ date: '2026-09-23', kcal: 1180, reason: 'suspicious' }],
+}
+const inRouter = (ui: React.ReactElement) => render(<MemoryRouter>{ui}</MemoryRouter>)
+
+test('heti kártyával a mai napon izzó pötty ül a „Miből jön össze?” chipen', () => {
+  const { container } = inRouter(<FuelEnergyHero vm={vm()} weeklyCard={WEEKLY} />)
+  const dot = container.querySelector('.fmx-tapchip .fwl-dot') as HTMLElement
+  expect(dot).not.toBeNull()
+  expect(dot.tagName).toBe('SPAN')
+  expect(dot.getAttribute('aria-hidden')).toBe('true')
+  expect(dot.className).not.toContain('is-hold')
+})
+
+test('kevés adatnál a pötty borostyán', () => {
+  const { container } = inRouter(<FuelEnergyHero vm={vm()} weeklyCard={{ ...WEEKLY, status: 'holding' }} />)
+  expect(container.querySelector('.fwl-dot')!.className).toContain('is-hold')
+})
+
+test('kártya nélkül, vagy múltbeli napon nincs pötty', () => {
+  const { container, unmount } = inRouter(<FuelEnergyHero vm={vm()} weeklyCard={null} />)
+  expect(container.querySelector('.fwl-dot')).toBeNull()
+  unmount()
+  const past = inRouter(<FuelEnergyHero vm={vm()} past weeklyCard={WEEKLY} />)
+  expect(past.container.querySelector('.fwl-dot')).toBeNull()
+})
+
+test('múltbeli napon az Alap sor nem gomb, és nem kínál heti tanulást', async () => {
+  inRouter(<FuelEnergyHero vm={vm()} past weeklyCard={WEEKLY} />)
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  expect(within(screen.getByRole('dialog')).queryByRole('button', { name: /heti tanulás/ })).not.toBeInTheDocument()
+  expect(screen.getByRole('dialog').textContent).not.toMatch(/heti tanulás/)
+})
+
+test('heti kártyával az Alap sor egy kiemelt gomb, és a „Heti tanulás” lapot nyitja', async () => {
+  inRouter(<FuelEnergyHero vm={vm()} weeklyCard={WEEKLY} />)
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  const alap = within(screen.getByRole('dialog')).getByRole('button', { name: /^Alap 2 000 kcal — heti tanulás: \+60 kcal, megnyitás$/ })
+  expect(alap.className).toContain('is-weekly')
+  expect(alap.querySelector('.fwl-dot')).not.toBeNull()
+  expect(alap.querySelector('small')!.textContent).toBe('az alapanyagcseréd és az életmódod · heti tanulás ›')
+  // Reverse parity: the value and the other rows are untouched.
+  expect(alap.querySelector('b')!.textContent).toBe('2 000')
+  expect(screen.getByRole('dialog').querySelectorAll('.fmx-node')).toHaveLength(4)
+  await userEvent.click(alap)
+  const sheet = screen.getByRole('dialog')
+  expect(within(sheet).getByText('Heti tanulás · szept. 21–27.')).toBeInTheDocument()
+  // The equation box closed behind it — one dialog at a time.
+  expect(screen.getAllByRole('dialog')).toHaveLength(1)
+})
+
+test('heti kártya nélkül az Alap sor változatlan (nem gomb)', async () => {
+  render(<FuelEnergyHero vm={vm()} />)
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  const base = [...screen.getByRole('dialog').querySelectorAll('.fmx-node')][0]
+  expect(base.tagName).toBe('DIV')
+  expect(base.querySelector('small')!.textContent).toBe('az alapanyagcseréd és az életmódod')
 })

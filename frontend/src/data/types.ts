@@ -1,6 +1,6 @@
 import type { IconName } from '@/shared/ui/Icon'
 import type { Tool } from '@/shared/ui/ToolChip'
-import type { ClayIconName } from '@/shared/ui/clay'
+import type { ClayIconName, Icon3DName } from '@/shared/ui/clay'
 import type { NovaGroup } from '@/data/nova'
 import type { PantrySourceKey } from '@/data/pantrySources'
 import type { EvidenceItem } from '@/shared/ui/evidence/observationEvidence'
@@ -147,6 +147,8 @@ export interface DietSettings {
   waterMl: number
   fiberG: number
   dayTypeShiftKcal: number
+  /** Weekly learned-expenditure switch (mezo-3n2so, spec §5.5) — off keeps the day's target formula-derived. */
+  learningEnabled: boolean
 }
 /** Mezo-kalauz seen-store (mezo-gb1s): one record per guide id, the whole map is the per-user singleton. */
 export interface TutorialProgressEntry {
@@ -2027,6 +2029,8 @@ export type AppNotificationKindKey =
   // mezo-a9bo7.23: egy csapat-üzenőfali ügy phone pusha (legfeljebb napi 2, a második csak
   // súlyosabb ügyre).
   | 'team_chat'
+  // mezo-3n2so: a heti tanulás — a súlyból és az evésből tanult energiaigény — feed-only pusha.
+  | 'expenditure_week'
 
 export interface AppNotificationView {
   id: string
@@ -2045,7 +2049,7 @@ export interface AppNotificationView {
  *  3D-ikont visel, emoji nincs — üveg bible §4.) */
 export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, {
   tint: string
-  clay: ClayIconName
+  clay: ClayIconName | Icon3DName
 }> = {
   pattern_inbox: { tint: 'pattern', clay: 'i-minta' },
   pattern_signal: { tint: 'pattern', clay: 'i-minta' },
@@ -2069,6 +2073,7 @@ export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, {
   konzilium_verdict: { tint: 'character', clay: 'i-muhely' },
   team_edition: { tint: 'character', clay: 'i-mezo' },
   team_chat: { tint: 'character', clay: 'i-mezo' },
+  expenditure_week: { tint: 'sage', clay: 't-lens' },
 }
 
 /** Semleges bejegyzés egy olyan fajtára, amit ez a build még nem ismer. */

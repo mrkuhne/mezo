@@ -2697,6 +2697,28 @@ svg{overflow:visible}
 .disc .dt .eb{flex:1;color:color-mix(in srgb,var(--c) 70%,var(--ink))}
 .disc strong{font-size:14.5px;font-weight:600;line-height:1.35}
 .disc small{font-size:11px;color:var(--faint);margin-top:auto}
+/* mezo-p87ok — the discovery card's proportion bar + legend (replaces one dot per item) */
+.fbar{display:flex;gap:3px;height:7px;margin-top:10px;width:100%}
+.fbar i{flex-basis:0;min-width:7px;border-radius:999px;background:var(--c);box-shadow:0 0 6px color-mix(in srgb,var(--c) 60%,transparent)}
+.flegend{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:9px;font-size:11.5px;color:var(--sub)}
+.flegend span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.flegend i{width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 5px var(--c)}
+/* mezo-p87ok — the two bulk drawers on the discoveries page */
+.drawer{--c:var(--lav);padding:13px 14px 8px;border-radius:22px}
+.drawer+.drawer{margin-top:12px}
+.drawer .dh2{display:flex;align-items:center;gap:10px;padding-bottom:6px}
+.drawer .dh2 .icon{width:36px;height:36px}
+.drawer .dh2 .grow{flex:1;min-width:0}
+.drawer .dh2 strong{display:block;font-size:15px;font-weight:600;letter-spacing:-.2px}
+.drawer .dh2 small{display:block;margin-top:2px;font-size:11.5px;color:var(--sub)}
+.drawer .dn{font-size:28px;font-weight:300;letter-spacing:-1px;color:color-mix(in srgb,var(--c) 75%,var(--ink));text-shadow:0 0 14px color-mix(in srgb,var(--c) 45%,transparent)}
+.drows{display:flex;flex-direction:column}
+.drow{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:9px 0;border-top:1px solid var(--hair);text-align:left;font-size:13.5px;line-height:1.35;color:var(--ink)}
+.drow .grow{flex:1;min-width:0}
+.drow .flatchip{flex:none}
+.drow .chev{color:var(--faint)}
+.dmore{display:block;width:100%;min-height:44px;margin-top:2px;border-top:1px solid var(--hair);font-size:13px;font-weight:600;color:color-mix(in srgb,var(--c) 80%,var(--ink))}
+.dashcard{background:transparent;box-shadow:inset 0 0 0 1.5px var(--hair);border:1.5px dashed var(--hair)}
 
 @media (max-width:360px){
   .lghero{grid-template-columns:1fr;justify-items:center;text-align:center}
@@ -3171,6 +3193,7 @@ svg{overflow:visible}
       <li>Naplózás: <a href="#" data-sheet="weight">súly mérése</a> · <a href="#" data-sheet="sleep">alvás rögzítése</a> · <a href="#" data-sheet="stats">„miért számít”</a></li>
       <li>Éjszaka: <a href="#ejszaka/idle">felébredtél?</a> · <a href="#ejszaka/wait">figyelem az időt</a> · <a href="#ejszaka/legzes">légzés</a> · <a href="#ejszaka/getup">ideje felkelni</a></li>
       <li>Hét: <a href="#" data-st="het:run">a mostani hét</a> · <a href="#" data-st="het:closed">lezárt hét</a></li>
+      <li>Felfedezések: <a href="#" data-st="disc:sok">sok (34)</a> · <a href="#" data-st="disc:keves">kevés (5)</a> · <a href="#" data-st="disc:csend">csendes hét</a></li>
       <li>Rutin: <a href="#" data-st="rutin:full">ma, félúton</a> · <a href="#" data-st="rutin:done">mind megvan</a> · <a href="#" data-st="rutin:past">egy korábbi nap</a> · <a href="#" data-sheet="ai">AI javaslat</a> · <a href="#" data-sheet="chain">új lánc</a></li>
       <li>Lánc: <a href="#" data-st="lanc:view">nézet</a> · <a href="#" data-st="lanc:edit">szerkesztés</a></li>
       <li>Varázsló: <a href="#uj/fw">keret</a> · <a href="#uj/anchor">horgony</a> · <a href="#uj/act">tett</a> · <a href="#uj/celeb">ünneplés</a></li>
@@ -3192,7 +3215,7 @@ const I=(n,c='')=>`<svg class="icon ${c}" aria-hidden="true"><use href="#t-${n}"
 const ring=(p,c,r=34,vb=80)=>`<svg viewBox="0 0 ${vb} ${vb}" aria-hidden="true"><circle class="ring-track" cx="${vb/2}" cy="${vb/2}" r="${r}" pathLength="100"/><circle class="ring-prog" cx="${vb/2}" cy="${vb/2}" r="${r}" pathLength="100" style="--p:${p};--c:${c}"/></svg>`;
 const bar=(w,c,i=0)=>`<span class="bar" style="--c:${c}"><b style="--w:${Math.max(2,Math.min(100,w))}%;--i:${i}"></b></span>`;
 let ntfOpen=false;
-const ST={hub:'full',celok:'full',suly:'full',het:'run',rutin:'full',lanc:'view',dec:'open',jel:'full',tit:'letra',nf:'full'};
+const ST={hub:'full',celok:'full',suly:'full',het:'run',rutin:'full',lanc:'view',dec:'open',jel:'full',tit:'letra',nf:'full',disc:'sok'};
 let sklOpen={life:false}, fwPick='fogg', effort=[1,0,1,2], sklFilter=[true,true,true,false], pplF='mind';
 
 /* ── fejléc + keret (fuel-uveg.html, változatlan; Én akcentus) ── */
@@ -3620,9 +3643,7 @@ function het(){
       <button class="wview glass lift rise" style="--c:var(--gold);--i:3" data-go="#tanulsagok">${I('gem')}<b>—</b><strong>A hét tanulságai</strong><small>${run?'a hét közben még gyűlik':'nincs javaslat ehhez a héthez'}</small></button>
       <button class="wview glass lift rise" style="--c:var(--sage);--i:4" data-go="#napok">${I('sun')}<b>4 / 7</b><strong>A hét napjai</strong><small>nézd meg egyesével</small>${seg7()}</button>
     </div>
-    <button class="wview glass lift rise" style="--c:var(--sky);margin-top:10px;--i:5" data-go="#felfedezesek"><span class="ct">${I('lens')}<strong>Heti felfedezések</strong><span class="chev">›</span></span>
-      <p><b style="color:var(--ink)">5 új nyom a memóriában</b> · 1 minta · 1 új tudás · 1 életesemény · memoár · 1 előrejelzés</p>
-      <span class="fdots">${['var(--lav)','var(--gold)','var(--sky)','var(--rose)','var(--coral)'].map(c=>`<i style="--c:${c}"></i>`).join('')}</span></button>
+    ${discCard()}
   </div>
   ${run?`${h3('CÉLOK · A HÉT IRÁNYA','3 cél')}
   <div class="p16"><div class="card glass" style="--c:var(--sage)">${GOALS.map(g=>`<div class="wgoal" style="--c:${DIM[g.d[0]][1]}"><b>${g.arrow}</b><span><strong style="font-size:13.5px">${g.t}</strong> ${fchip(DIM[g.d[0]][0],DIM[g.d[0]][1])}<small>${g.arrow==='↗'?'Emelkedik: a pillérei többsége a héten célon volt.':'Tartja: a pillérek a múlt heti szinten.'}</small></span></div>`).join('')}
@@ -3665,15 +3686,69 @@ function napok(){
   <div class="p16" style="margin-top:12px"><div class="legend" style="flex-wrap:wrap;justify-content:center;font-size:11px">${['tápanyag','minőség','edzés','alvás','logolás','ritmus'].map(n=>`<span>${n}</span>`).join('·')}</div></div>
   <p class="foot">A hat pálcika a nap részpontszáma: balra a táplálkozás és az edzés, jobbra az alvás, a logolás és a ritmus.</p>`;
 }
+/* ── Heti felfedezések (mezo-p87ok): a hét nyomai típusonként, fiókokban ─────────────
+   A ritka, fontos nyomok (életesemény, emlékkönyv, előrejelzés) mindig egészben, felül.
+   A két tömeges típus (minták, új tudás) egy-egy fiókban: az első 3 látszik, a többi
+   egy koppintással nyílik ki HELYBEN. Sorrend a fiókban: minták → előléptetve, erősödött,
+   megerősítve; tudás → legfrissebb elől. */
+const PAT_EV={promoted:['Előléptetve','var(--gold)','record'],reinforced:['Erősödött','var(--lav)','up'],confirmed:['Megerősítve','var(--sage)','tick']};
+const PAT_HEAD=[['A késői lefekvés a másnapi napstruktúrát is gyengítheti','promoted'],
+  ['Edzésnapokon mélyebben alszol','reinforced'],['A munkahelyi fókusz nehézsége összefügghet a gyengébb mentális közérzettel','reinforced'],
+  ['A hirtelen mérlegemelkedés fokozhatja az aznapi stresszt','reinforced'],['Vízbevitel és napi energia','reinforced']];
+const SIG=['Fehérjebevitel','Alvásminőség','Lépésszám','Koffein','Hangulat','Esti képernyőidő','Edzésnap','Stressz','Reggeli check-in','Hála-napló'];
+const SIG2=['másnapi energia','fókusz','étvágy','pihentség','edzésteljesítmény','türelem'];
+/* Egy minta = egy nyom (mezo-p87ok): a hét több eseménye ugyanarról a mintáról egyetlen sor,
+   a legnagyobb hírrel (előléptetve > erősödött > megerősítve). 23 minta, mint egy valódi héten. */
+const PATS=[['A késői lefekvés a másnapi napstruktúrát is gyengítheti','promoted'],
+  ...Array.from({length:13},(_,i)=>[`${SIG[i%SIG.length]} és ${SIG2[i%SIG2.length]}`,'promoted']),
+  ...PAT_HEAD.slice(1,5),
+  ...Array.from({length:5},(_,i)=>[`${SIG[(i+13)%SIG.length]} és ${SIG2[(i+13)%SIG2.length]}`,'confirmed'])];
+const FACTS=['A fehérjecél tartása javítja a check-in energiát','Hétköznap 23:00 után fekszel le a legtöbbször','A kedd a legsűrűbb munkanapod','Futás után jobb a hangulatod','A hétvégi reggeli rendszerint kimarad',
+  'A délutáni kávé után később alszol el','Az edzések 70%-a reggel van','Hosszú meeting után ritkábban logolsz','Vasárnap este tervezed a hetet','A séták főleg ebédszünetben vannak',
+  'A vacsora a napi kalória 40%-a','Stresszes napokon több a nassolás','Pénteken a legjobb a hangulatod','A hála-naplót este írod','Utazós napokon kimarad az edzés',
+  'A 7 óránál rövidebb alvás után gyengébb a fókusz','A húst a hét elején eszed','A szombat a legaktívabb napod','Kevesebb víz megy le munkanapokon','A reggeli check-in 8 előtt van',
+  'Hétvégén 1 órával többet alszol','A lábnapok után fáradtabb vagy','A barátokkal töltött este jót tesz','A zöldségbevitel a hét végére csökken','Az esti olvasás segít elaludni','Hétfőn a legnagyobb a lendületed'];
+const DSET={sok:{p:PATS,f:FACTS.slice(0,6),l:[['Nyaralás kezdete','szept. 23.'],['Új munkahelyi projekt','szept. 22.'],['Költözés előkészítése','szept. 26.']],m:1,r:[['A súly csökkenő trendje folytatódik fehérjecél mellett','pending']]},
+  keves:{p:PATS.slice(1,2),f:FACTS.slice(0,1),l:[['Nyaralás kezdete','szept. 23.']],m:1,r:[['A súly csökkenő trendje folytatódik fehérjecél mellett','pending']]},
+  csend:{p:[],f:[],l:[],m:0,r:[]}};
+const PRED={pending:['Folyamatban','var(--lav)','clock'],validated:['Bevált','var(--sage)','tick'],missed:['Nem jött be','var(--gold)','skip']};
+const dsum=D=>D.p.length+D.f.length+D.l.length+D.r.length+D.m;
+let drawerOpen={p:false,f:false};
+function discCard(){
+  const D=DSET[ST.disc], n=dsum(D);
+  const parts=[[D.p.length,'minta','var(--lav)'],[D.f.length,'új tudás','var(--gold)'],[D.l.length,'életesemény','var(--sky)'],[D.m,'emlékkönyv','var(--rose)'],[D.r.length,'előrejelzés','var(--coral)']].filter(x=>x[0]);
+  return `<button class="wview glass lift rise" style="--c:var(--sky);margin-top:10px;--i:5" data-go="#felfedezesek"><span class="ct">${I('lens')}<strong>Heti felfedezések</strong><span class="chev">›</span></span>
+    ${n?`<p><b style="color:var(--ink)">${n} új nyom a memóriában</b></p>
+      <span class="fbar" aria-hidden="true">${parts.map(x=>`<i style="--c:${x[2]};flex-grow:${x[0]}"></i>`).join('')}</span>
+      <span class="flegend">${parts.map(x=>`<span style="--c:${x[2]}"><i></i>${x[0]} ${x[1]}</span>`).join('')}</span>`
+    :`<p><b style="color:var(--ink)">Csendes hét volt</b></p><p class="tiny">nem született új minta vagy tudás</p>`}</button>`;
+}
+function drawer(k,title,icon,c,items,row,chipsum){
+  const open=drawerOpen[k], shown=open?items:items.slice(0,3), rest=items.length-3;
+  return `<div class="drawer glass rise" style="--c:${c}">
+    <div class="dh2">${I(icon)}<span class="grow"><strong>${title}</strong>${chipsum?`<small>${chipsum}</small>`:''}</span><b class="dn">${items.length}</b></div>
+    <div class="drows">${shown.map(row).join('')}</div>
+    ${rest>0?`<button class="dmore" data-drawer="${k}">${open?'Kevesebb ‹':`Mind a ${items.length} ${k==='p'?'minta':'új tudás'} ›`}</button>`:''}</div>`;
+}
 function felfedezesek(){
-  const T=[['MINTA','Edzésnapokon jobban alszol','pattern','var(--lav)',1,'✓ Megerősítve'],['ÚJ TUDÁS','A fehérjecél tartása javítja a check-in energiát.','book','var(--gold)',1,''],
-    ['ÉLETESEMÉNY','Nyaralás kezdete','pin','var(--sky)',0,'szept. 23.'],['EMLÉKKÖNYV','Új bejegyzés készült a hétről','scroll','var(--rose)',0,'olvasd el ›'],
-    ['ELŐREJELZÉS','A súly csökkenő trendje folytatódik fehérjecél mellett','orb','var(--coral)',1,'◐ Folyamatban']];
+  const D=DSET[ST.disc], n=dsum(D);
+  if(!n) return topbar()+wkhead()+
+    `<div class="pagehero rise" style="--c:var(--sky)">${I('lens','art')}<span class="eb">HETI FELFEDEZÉSEK</span><div class="num">—</div><p>csendes hét volt</p></div>
+    <div class="p16"><div class="card rise dashcard"><p class="body" style="margin:0">Csendes hét volt — nem született új minta vagy tudás. Ez nem hiba: a memória csak akkor nő, ha van mit tanulni.</p></div></div>`;
+  const cnt={};D.p.forEach(p=>cnt[p[1]]=(cnt[p[1]]||0)+1);
+  const psum=['promoted','reinforced','confirmed'].filter(e=>cnt[e]).map(e=>`${cnt[e]} ${PAT_EV[e][0].toLowerCase()}`).join(' · ');
+  const rare=[...D.l.map(l=>`<button class="disc glass lift rise" style="--c:var(--sky)" data-toast="Életesemény — a Rólad oldalon döntesz róla"><span class="dt">${I('pin')}<span class="eb">ÉLETESEMÉNY</span></span><strong>${l[0]}</strong><small>${l[1]}</small></button>`),
+    ...(D.m?[`<button class="disc glass lift rise" style="--c:var(--rose)" data-toast="Emlékkönyv (Mezo)"><span class="dt">${I('scroll')}<span class="eb">EMLÉKKÖNYV</span></span><strong>Új bejegyzés készült a hétről</strong><small>olvasd el ›</small></button>`]:[]),
+    ...D.r.map(r=>`<button class="disc wide glass lift rise" style="--c:var(--coral)" data-toast="Előrejelzések (Mezo)"><span class="dt">${I('orb')}<span class="eb">ELŐREJELZÉS</span>${fchip(PRED[r[1]][0],PRED[r[1]][1],PRED[r[1]][2])}</span><strong>${r[0]}</strong></button>`)];
   return topbar()+wkhead()+
-  `<div class="pagehero rise" style="--c:var(--sky)">${I('lens','art')}<span class="eb">HETI FELFEDEZÉSEK</span><div class="num">5</div><p>új nyom a memóriában</p></div>
-  <p class="lead" style="text-align:center">Amit a Mezo a héten <b style="color:var(--ink)">magától</b> tett a memóriába — nem kellett hozzá semmit csinálnod.</p>
-  <div class="mosaic" style="padding-top:4px">${T.map((t,i)=>`<button class="disc glass lift rise ${t[4]?'wide':''}" style="--c:${t[3]};--i:${i}" data-toast="${t[0].toLowerCase()} — Mezo (a 8. szeletben kap üveget)">
-    <span class="dt">${I(t[2])}<span class="eb">${t[0]}</span>${t[5]&&t[4]?fchip(t[5],t[3]):''}</span><strong>${t[1]}</strong>${!t[4]&&t[5]?`<small>${t[5]}</small>`:''}</button>`).join('')}</div>`;
+  `<div class="pagehero rise" style="--c:var(--sky)">${I('lens','art')}<span class="eb">HETI FELFEDEZÉSEK</span><div class="num">${n}</div><p>új nyom a memóriában</p></div>
+  <p class="lead" style="text-align:center">Amit a Mezo a héten <b style="color:var(--ink)">magától</b> tett a memóriába — ezek nem javaslatok, hanem megtörtént nyomok.</p>
+  ${rare.length?`${h3('A HÉT KIEMELT NYOMAI')}<div class="mosaic" style="padding-top:0">${rare.join('')}</div>`:''}
+  ${D.p.length||D.f.length?h3('AMIT A MEMÓRIA TANULT'):''}
+  <div class="p16">
+  ${D.p.length?drawer('p','Minták','pattern','var(--lav)',D.p,p=>`<button class="drow" data-toast="Minta oldala (Mezo)"><span class="grow">${p[0]}</span>${fchip(PAT_EV[p[1]][0],PAT_EV[p[1]][1],PAT_EV[p[1]][2])}</button>`,psum):''}
+  ${D.f.length?drawer('f','Új tudás','book','var(--gold)',D.f,f=>`<button class="drow" data-toast="Ez a tudás a Tudástárban"><span class="grow">${f}</span><span class="chev">›</span></button>`,'a legfrissebb elöl'):''}
+  </div>`;
 }
 function tanulsagok(){
   return topbar()+wkhead()+
@@ -4204,7 +4279,7 @@ function render(){
 let toastT;
 function toast(t){clearTimeout(toastT);$('#toast').textContent=t;$('#toast').classList.add('on');toastT=setTimeout(()=>$('#toast').classList.remove('on'),2400)}
 function soft(){const y=$('#scroll').scrollTop;$('#scroll').innerHTML=view();$('#scroll').scrollTop=y}
-const HOME={hub:'#en',celok:'#celok',suly:'#sulycel',het:'#het',rutin:'#rutin',lanc:'#lanc',dec:'#naplo',jel:'#emberek',tit:'#kitunt',nf:'#ertesitesek'};
+const HOME={hub:'#en',celok:'#celok',suly:'#sulycel',het:'#het',rutin:'#rutin',lanc:'#lanc',dec:'#naplo',jel:'#emberek',tit:'#kitunt',nf:'#ertesitesek',disc:'#felfedezesek'};
 document.addEventListener('click',e=>{
   const t=e.target, go=t.closest('[data-go]'), tt=t.closest('[data-toast]'), sh=t.closest('[data-sheet]'), gb=t.closest('[data-gbox]');
   if(t.closest('[data-closesheet]')){closeSheet();return}
@@ -4216,6 +4291,7 @@ document.addEventListener('click',e=>{
   const cv=t.closest('[data-celv]'); if(cv){celView=cv.dataset.celv;soft();return}
   const pr=t.closest('[data-period]'); if(pr){period=pr.dataset.period;soft();return}
   const sw=t.closest('[data-swin]'); if(sw){sleepWin=sw.dataset.swin;soft();return}
+  const dr=t.closest('[data-drawer]'); if(dr){const k=dr.dataset.drawer;drawerOpen[k]=!drawerOpen[k];soft();return}
   const wk=t.closest('[data-wk]'); if(wk){const i=+wk.dataset.wk;wkOpen=wkOpen===i?-1:i;soft();return}
   /* Én II (U7) nézet-kapcsolók */
   if(t.closest('[data-lifemore]')){sklOpen.life=!sklOpen.life;soft();return}
@@ -4231,7 +4307,7 @@ document.addEventListener('click',e=>{
   if(tt){e.preventDefault();toast(tt.dataset.toast);return}
   if(t.id==='scrim'){closeSheet();closeGb()}
 });
-addEventListener('hashchange',render);
+addEventListener('hashchange',()=>{drawerOpen={p:false,f:false};render()});
 $('#still').addEventListener('change',e=>document.body.classList.toggle('still',e.target.checked));
 
 function tabbar(active){

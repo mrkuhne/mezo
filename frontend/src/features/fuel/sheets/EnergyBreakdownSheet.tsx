@@ -1,8 +1,9 @@
-import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { type CSSProperties, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { LearnedBaseExplainer } from '@/features/fuel/sheets/LearnedBaseExplainer'
+import { CONFIDENCE_WORD } from '@/features/fuel/sheets/learnedBaseFormat'
 
 // Shared, presentational explanation of a composed daily-energy number (base + movement ± deficit).
 // Opened from the Fuel "Mai cél" chips and the Profile Alap-TDEE card; both build the `EnergyBreakdown`
@@ -52,8 +53,6 @@ const PART_TILE: Record<EnergyPart['key'], { icon: Icon3DName; sub: string }> = 
 }
 const SEG_COLOR = { sage: 'var(--dv-sage)', amber: 'var(--dv-amber)', coral: 'var(--dv-coral)' } as const
 const FORMULA_LABEL = { KATCH: 'Katch-McArdle', MSJ: 'Mifflin-St Jeor' } as const
-// Learned-base confidence words (mezo-zz91i), verbatim per the spec.
-const CONFIDENCE_WORD = { low: 'Még tanulok', medium: 'Közepesen biztos', high: 'Biztos' } as const
 
 // The app renders plain rounded kcal (no thousands grouping — see the screenshots / BiometricCard).
 const nf = (n: number) => String(Math.round(n))
@@ -93,38 +92,18 @@ function Seg({ tone, on, children }: { tone: keyof typeof SEG_COLOR; on: boolean
   )
 }
 
-// „Hogy tanultam?” (mezo-y72o3): the learned base's explainer toggle. The explainer (and its fetch)
-// mounts on the FIRST open and stays mounted, so closing animates and reopening needs no refetch.
-function HowLearned({ baseKcal }: { baseKcal: number }) {
-  const [open, setOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
-  const btnRef = useRef<HTMLButtonElement>(null)
-  const scrollTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  const panelId = useId()
-  useEffect(() => () => clearTimeout(scrollTimer.current), [])
-  const toggle = () => {
-    const next = !open
-    setOpen(next)
-    clearTimeout(scrollTimer.current)
-    if (next) {
-      setMounted(true)
-      const reduce = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      scrollTimer.current = setTimeout(() => btnRef.current?.scrollIntoView?.({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }), reduce ? 0 : 120)
-    }
-  }
+// „Hogy tanultam?” (mezo-3n2so, elo/fuel.html `learnedFoot()`): the learned Alap block ends in ONE
+// summary line — the learned base's word + σ̂ — and „Részletek ›” to the learning page, where the
+// six-section explainer now lives (with the week-by-week chart and the day switches). Rendered only
+// on the learned path, so the formula path (and the Én hub's TDEE) never needs a router.
+function LearnedSummaryLink({ line, onClose }: { line: string; onClose: () => void }) {
+  const navigate = useNavigate()
   return (
-    <>
-      <button ref={btnRef} type="button" className="flp-how-btn" aria-expanded={open} aria-controls={panelId} onClick={toggle}>
-        <Icon3D name="t-lens" size={30} />
-        <span className="lbl">Hogy tanultam?<small>Mit néztem meg, és hogyan jött ki a {nf(baseKcal)}</small></span>
-        <svg className="chev" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M5 8l5 5 5-5" />
-        </svg>
-      </button>
-      <div id={panelId} className={`flp-how${open ? ' is-open' : ''}`} aria-hidden={!open} inert={!open}>
-        <div>{mounted && <LearnedBaseExplainer />}</div>
-      </div>
-    </>
+    <button type="button" className="flp-how-btn" onClick={() => { onClose(); navigate('/fuel/tanulas') }}>
+      <Icon3D name="t-lens" size={30} />
+      <span className="lbl">{line}<small>Hogy tanultam? — hétről hétre, és a napjaid</small></span>
+      <span className="more">Részletek ›</span>
+    </button>
   )
 }
 
@@ -188,16 +167,16 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
                   )}
                   <Tile result sub="Tanult alap" value={nf(base.kcal)} unit="kcal" />
                 </div>
-                <span className="flp-einfo">
-                  {['Tanult alap', base.confidence && CONFIDENCE_WORD[base.confidence], base.sdKcal != null && `±${nf(round10(base.sdKcal))} kcal`]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </span>
                 <p className="flp-ewhy">
                   Ennyit égetsz <b>edzés nélkül</b> — az app a <b>súlytrendedből és a felírt evésedből</b> tanulta meg.
                   {base.formulaKcal != null && <> A képlet {nf(base.formulaKcal)} kcal-t mondana.</>}
                 </p>
-                <HowLearned baseKcal={base.kcal} />
+                <LearnedSummaryLink
+                  onClose={onClose}
+                  line={['Tanult alap', base.confidence && CONFIDENCE_WORD[base.confidence], base.sdKcal != null && `±${nf(round10(base.sdKcal))} kcal`]
+                    .filter(Boolean)
+                    .join(' · ')}
+                />
               </>
             ) : (
               <>

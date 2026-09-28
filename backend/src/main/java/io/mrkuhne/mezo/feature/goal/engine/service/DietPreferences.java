@@ -9,5 +9,6 @@ public record DietPreferences(
     String proteinTier,
     int waterMl,
     int fiberG,
-    int dayTypeShiftKcal
+    int dayTypeShiftKcal,
+    boolean learningEnabled
 ) {}

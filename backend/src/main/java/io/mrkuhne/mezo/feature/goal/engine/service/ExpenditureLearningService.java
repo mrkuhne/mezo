@@ -6,22 +6,28 @@ import io.mrkuhne.mezo.feature.goal.entity.ExpenditureEstimateEntity;
 import io.mrkuhne.mezo.feature.goal.entity.ExpenditureExplanationJson;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
+import io.mrkuhne.mezo.feature.goal.entity.IntakeDayMarkEntity;
 import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
 import io.mrkuhne.mezo.feature.goal.repository.ExpenditureEstimateRepository;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
+import io.mrkuhne.mezo.feature.goal.repository.IntakeDayMarkRepository;
 import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
 import io.mrkuhne.mezo.techcore.query.WeightTrendQuery;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.ToIntFunction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,6 +40,8 @@ import org.springframework.transaction.annotation.Transactional;
  * base is served. Empty = the user is not (yet) a learning user — the caller falls back to the
  * weight-only weekly_correction suggestion (owner decision L4: never both). Once a row exists the
  * user stays a learner: a week the filter cannot anchor (no weigh-in) is written as HOLDING (§7).
+ * The owner's day marks (mezo-3n2so) override the classifier; the learning switch never stops the
+ * run — it only gates serving ({@link LearnedBaseResolver}) and the weight-only suggestion's retirement.
  */
 @Service
 @RequiredArgsConstructor
@@ -51,6 +59,8 @@ public class ExpenditureLearningService {
     private final ExpenditureEstimateRepository estimates;
     private final GoalEngineService goalEngineService;
     private final GoalSuggestionService suggestionService;
+    private final IntakeDayMarkRepository marks;
+    private final DietPreferencesPort dietPreferences;
 
     @Transactional
     public Optional<ExpenditureEstimateEntity> reviewWeek(UUID userId, LocalDate weekStart) {
@@ -74,7 +84,57 @@ public class ExpenditureLearningService {
         if (filtered.isEmpty() && !existing) {
             return Optional.empty();
         }
-        return Optional.of(decideAndPersist(userId, weekStart, rp, filtered, e));
+        ExpenditureEstimateEntity saved = persistWeek(userId, weekStart, rp, filtered, e);
+        serve(userId, rp);
+        return Optional.of(saved);
+    }
+
+    /** What a re-chain did to the served base: the latest row's applied base before and after. */
+    public record Rechain(Integer appliedBefore, Integer appliedAfter, boolean recomputed) {
+    }
+
+    /**
+     * Re-chains after an owner day mark (mezo-3n2so, spec §7): replays the marked day's week and every
+     * later reviewed week before the current one, in order, so each steps from its freshly rewritten
+     * predecessor. The goal is recomputed once, and only when the latest applied base moved. A mark in
+     * the current week (not yet reviewed), a user with no row, or learning disabled changes nothing —
+     * the next Monday run picks the mark up. The marked week without a row of its own and without a
+     * prior row is skipped (a not-yet learner gains nothing from a re-chain).
+     *
+     * @return the latest applied base before/after; both {@code null} when the user has no row
+     */
+    @Transactional
+    public Rechain rechainFrom(UUID userId, LocalDate day) {
+        GoalEngineProperties.Expenditure e = props.expenditure();
+        LocalDate weekStart = day.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate currentWeek = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        Optional<ExpenditureEstimateEntity> latest = estimates.findFirstByCreatedByAndDeletedFalseOrderByWeekStartDesc(userId);
+        Integer before = latest.map(ExpenditureEstimateEntity::getAppliedBaseKcal).orElse(null);
+        if (latest.isEmpty() || !weekStart.isBefore(currentWeek) || !Boolean.TRUE.equals(e.enabled())) {
+            return new Rechain(before, before, false);
+        }
+        List<LocalDate> weeks = new ArrayList<>();
+        weeks.add(weekStart);
+        estimates.findByCreatedByAndWeekStartGreaterThanEqualAndDeletedFalseOrderByWeekStartAsc(userId, weekStart.plusWeeks(1))
+            .forEach(r -> weeks.add(r.getWeekStart()));
+        for (LocalDate w : weeks) {
+            if (!w.isBefore(currentWeek)) {
+                continue;
+            }
+            Optional<Replay> replayed = replay(userId, w);
+            if (replayed.isPresent() && (replayed.get().prev().isPresent() || replayed.get().thisWeek().isPresent())) {
+                Replay rp = replayed.get();
+                persistWeek(userId, w, rp, rp.traced().map(ExpenditureFilter.Traced::estimate), e);
+                estimates.flush();
+            }
+        }
+        Integer after = estimates.findFirstByCreatedByAndDeletedFalseOrderByWeekStartDesc(userId)
+            .map(ExpenditureEstimateEntity::getAppliedBaseKcal).orElse(before);
+        boolean changed = !Objects.equals(before, after);
+        if (changed) {
+            goalEngineService.recomputeActiveGoal(userId);
+        }
+        return new Rechain(before, after, changed);
     }
 
     /**
@@ -112,9 +172,12 @@ public class ExpenditureLearningService {
                           int prevApplied) {
     }
 
-    /** Gathers the window, classifies the days and runs the filter; empty when there is no active goal with a bootstrap. */
-    private Optional<Replay> replay(UUID userId, LocalDate weekStart) {
-        GoalEngineProperties.Expenditure e = props.expenditure();
+    /** What both {@code replay} and {@code dayStatuses} need from the active goal's bootstrap. */
+    private record GoalBasis(GoalEntity goal, TdeeBootstrapJson boot, int formulaBase, int planEat, int adjustment) {
+    }
+
+    /** Empty when the caller has no active goal with a usable bootstrap. */
+    private Optional<GoalBasis> goalBasis(UUID userId) {
         GoalEntity goal = goalRepository.findByCreatedByAndStatusAndDeletedFalse(userId, STATUS_ACTIVE)
             .stream().findFirst().orElse(null);
         TdeeBootstrapJson boot = goal == null ? null : goal.getTdeeBootstrap();
@@ -125,6 +188,21 @@ public class ExpenditureLearningService {
             ? boot.formulaNeatBaselineKcal() : boot.neatBaselineKcal());
         int planEat = round(boot.weeklyEatKcalPerDay() == null ? BigDecimal.ZERO : boot.weeklyEatKcalPerDay());
         int adjustment = goal.getBalanceAdjustmentKcal() == null ? 0 : goal.getBalanceAdjustmentKcal();
+        return Optional.of(new GoalBasis(goal, boot, formulaBase, planEat, adjustment));
+    }
+
+    /** Gathers the window, classifies the days and runs the filter; empty when there is no active goal with a bootstrap. */
+    private Optional<Replay> replay(UUID userId, LocalDate weekStart) {
+        GoalEngineProperties.Expenditure e = props.expenditure();
+        Optional<GoalBasis> basis = goalBasis(userId);
+        if (basis.isEmpty()) {
+            return Optional.empty();
+        }
+        GoalEntity goal = basis.get().goal();
+        TdeeBootstrapJson boot = basis.get().boot();
+        int formulaBase = basis.get().formulaBase();
+        int planEat = basis.get().planEat();
+        int adjustment = basis.get().adjustment();
         LocalDate weekEnd = weekStart.plusDays(6);
         LocalDate windowStart = weekEnd.minusDays(e.windowDays() - 1L);
 
@@ -143,7 +221,7 @@ public class ExpenditureLearningService {
 
         // Too little own history → a day is judged against its SERVED target (spec §5.3), not maintenance.
         Map<LocalDate, IntakeDayClassifier.Status> status = IntakeDayClassifier.classify(windowStart, weekEnd, kcal,
-            Map.of(), d -> prevApplied + planEat + balanceOn(goal, d),
+            marksBetween(userId, windowStart.minusDays(e.referenceDays()), weekEnd), d -> prevApplied + planEat + balanceOn(goal, d),
             e.suspiciousRatio(), e.referenceDays(), e.minReferenceDays());
 
         Map<LocalDate, BigDecimal> weights = weightQuery.dailyMeanWeightKg(userId, windowStart, weekEnd);
@@ -162,14 +240,94 @@ public class ExpenditureLearningService {
             traced, prev, thisWeek, prevApplied));
     }
 
+    /**
+     * The owner's day marks in [from, to] (mezo-3n2so): {@code true} = COMPLETE (the day counts even if
+     * it looks suspicious), {@code false} = INCOMPLETE (excluded as "marked"); an unmarked day is absent.
+     */
+    Map<LocalDate, Boolean> marksBetween(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, Boolean> out = new HashMap<>();
+        for (IntakeDayMarkEntity m : marks.findByCreatedByAndDayBetweenAndDeletedFalse(userId, from, to)) {
+            out.put(m.getDay(), "COMPLETE".equals(m.getStatus()));
+        }
+        return out;
+    }
+
+    /**
+     * One day's live classification for the weekly summary / learning-page reads (mezo-3n2so, spec
+     * §5.3, §6.3) — computed fresh with {@link IntakeDayClassifier}, never read from a stored
+     * explanation. {@code status} is one of {@code usable|suspicious|marked_incomplete|
+     * confirmed_complete|unlogged}; {@code mark} mirrors the owner's mark ({@code complete|
+     * incomplete}) or {@code null} when the day carries none.
+     */
+    public record DayStatus(LocalDate date, Integer kcal, String status, String mark) {
+    }
+
+    /**
+     * Live day statuses for {@code [from, to]} — same kcal source, reference window and fallback
+     * rule the weekly run replays with ({@link #replay}), so a day shown here matches what the next
+     * Monday run would see. Two fallback cases when a day has fewer than
+     * {@code minReferenceDays} logged days in the prior {@code referenceDays}:
+     * <ul>
+     *   <li>an active goal with a bootstrap exists → the day's reference is the caller's latest
+     *       applied base (or the formula base, when there is no row yet) plus the plan's daily EAT
+     *       — the same "served target" idea {@link #replay} uses, without the goal's per-day balance
+     *       (Task 4 decision: this read has no single week to resolve a balance segment for);</li>
+     *   <li>no active goal/bootstrap at all → there is nothing to invent a reference from, so the
+     *       day is never flagged suspicious from too little history — it is simply {@code usable}.</li>
+     * </ul>
+     */
+    @Transactional(readOnly = true)
+    public List<DayStatus> dayStatuses(UUID userId, LocalDate from, LocalDate to) {
+        GoalEngineProperties.Expenditure e = props.expenditure();
+        Optional<GoalBasis> basis = goalBasis(userId);
+        ToIntFunction<LocalDate> fallbackRefKcal;
+        if (basis.isPresent()) {
+            int formulaBase = basis.get().formulaBase();
+            int planEat = basis.get().planEat();
+            int fallbackBase = estimates.findFirstByCreatedByAndDeletedFalseOrderByWeekStartDesc(userId)
+                .map(ExpenditureEstimateEntity::getAppliedBaseKcal).orElse(formulaBase);
+            fallbackRefKcal = d -> fallbackBase + planEat;
+        } else {
+            // No formula/plan to fall back on — never invent a reference, so a day with too little
+            // own history is simply usable rather than guessed at.
+            fallbackRefKcal = d -> 0;
+        }
+
+        LocalDate refWindowStart = from.minusDays(e.referenceDays());
+        Map<LocalDate, Integer> kcal = new HashMap<>();
+        for (DailyIntakePort.DayIntake d : dailyIntake.between(userId, refWindowStart, to)) {
+            kcal.put(d.date(), d.kcal());
+        }
+        Map<LocalDate, Boolean> markMap = marksBetween(userId, from, to);
+        Map<LocalDate, IntakeDayClassifier.Status> status = IntakeDayClassifier.classify(from, to, kcal, markMap,
+            fallbackRefKcal, e.suspiciousRatio(), e.referenceDays(), e.minReferenceDays());
+
+        List<DayStatus> out = new ArrayList<>();
+        for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
+            Boolean mark = markMap.get(d);
+            String outMark = mark == null ? null : (mark ? "complete" : "incomplete");
+            String outStatus = switch (status.get(d)) {
+                case UNLOGGED -> "unlogged";
+                case MARKED_INCOMPLETE -> "marked_incomplete";
+                case SUSPICIOUS -> "suspicious";
+                case USABLE -> Boolean.TRUE.equals(mark) ? "confirmed_complete" : "usable";
+            };
+            out.add(new DayStatus(d, kcal.get(d), outStatus, outMark));
+        }
+        return out;
+    }
+
     private ExpenditureExplanationJson explain(Replay rp, GoalEngineProperties.Expenditure e) {
         return ExpenditureExplainer.explain(new ExpenditureExplainer.Input(rp.windowStart(), rp.weekEnd(), rp.days(),
             rp.status(), rp.kcal(), rp.traced().map(ExpenditureFilter.Traced::days).orElse(List.of()),
             rp.prevApplied(), props.kcalPerKg(), e.waterEventKg()));
     }
 
-    /** Decides the step, upserts the week's row (explanation included) and serves it. */
-    private ExpenditureEstimateEntity decideAndPersist(UUID userId, LocalDate weekStart, Replay rp,
+    /**
+     * Decides the step and upserts the week's row (explanation included) — no side effects beyond the
+     * row. Reuses the stored row, so owner state on it ({@code dismissedAt}) survives a rewrite.
+     */
+    private ExpenditureEstimateEntity persistWeek(UUID userId, LocalDate weekStart, Replay rp,
                                                        Optional<ExpenditureFilter.Estimate> filtered,
                                                        GoalEngineProperties.Expenditure e) {
         LocalDate weekEnd = rp.weekEnd();
@@ -218,12 +376,17 @@ public class ExpenditureLearningService {
                 userId, weekStart, ex);
         }
         row.setExplanation(explanation);
-        ExpenditureEstimateEntity saved = estimates.save(row);
+        return estimates.save(row);
+    }
 
-        // Owner decision L4: a learning user never also gets the weight-only correction.
-        suggestionService.supersedeOpen(rp.goal().getId(), WEEKLY_CORRECTION);
+    /** Serves a freshly persisted week: retires the weight-only correction (switch on) and recomputes the goal. */
+    private void serve(UUID userId, Replay rp) {
+        // Owner decision L4: a learning user never also gets the weight-only correction — unless the
+        // learning switch is off (P3): then the learned base is not served and the correction stays.
+        if (dietPreferences.resolve(userId).learningEnabled()) {
+            suggestionService.supersedeOpen(rp.goal().getId(), WEEKLY_CORRECTION);
+        }
         goalEngineService.recomputeActiveGoal(userId);
-        return saved;
     }
 
     private static int round(BigDecimal v) {

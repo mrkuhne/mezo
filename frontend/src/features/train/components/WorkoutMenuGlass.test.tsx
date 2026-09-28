@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Challenge, LoggedWorkoutExercise } from '@/data/types'
-import { WorkoutChallengesGlass, WorkoutMenuGlass, WorkoutVideoGlass, challengeHint, noteHint } from '@/features/train/components/WorkoutMenuGlass'
+import { ChallengeDetailGlass, WorkoutMenuGlass, WorkoutVideoGlass, noteHint } from '@/features/train/components/WorkoutMenuGlass'
 
 // WorkoutMenuGlass (mezo-88iwa.7, T6 Task 4) — the per-card ⋮ menu, GlassBox-hosted.
 // Ports the prototype's `menuGlass` (session.js:101-126) row-for-row: Videó (only with
@@ -25,12 +25,8 @@ function baseProps() {
     skipped: false,
     hasNote: false,
     canRemoveTrailingSet: true,
-    acceptedChallenges: 1,
-    totalChallenges: 3,
-    challengesPending: false,
     onClose: vi.fn(),
     onVideo: vi.fn(),
-    onChallenges: vi.fn(),
     onEditNote: vi.fn(),
     onAddSet: vi.fn(),
     onRemoveSet: vi.fn(),
@@ -171,106 +167,43 @@ test('no demo url -> the frame renders the empty-state copy, not an iframe', () 
   expect(within(frame).getByText('Nincs elérhető videó')).toBeInTheDocument()
 })
 
-// ── Küldetések row (mezo-e1ii9): accept/dismiss's new home, opened from the header ⋯ ──
-test('the Küldetések row opens the challenges glass WITHOUT closing the menu itself', async () => {
-  const user = userEvent.setup()
-  const p = baseProps()
-  render(<WorkoutMenuGlass {...p} />)
-  await user.click(screen.getByText('Küldetések'))
-  expect(p.onChallenges).toHaveBeenCalled()
-  expect(p.onClose).not.toHaveBeenCalled()
+// ── The menu lost its Küldetések row (mezo-mgu2r): picking lives on the briefing ──
+test('the menu carries no Küldetések row any more', () => {
+  render(<WorkoutMenuGlass {...baseProps()} />)
+  expect(screen.queryByText('Küldetések')).not.toBeInTheDocument()
 })
 
-test('challengeHint: pending -> készül, empty -> the honest line, else accepted/total', () => {
-  expect(challengeHint(true, 0, 0)).toMatch(/készülnek/)
-  expect(challengeHint(false, 0, 0)).toBe('Ma nincs küldetés')
-  expect(challengeHint(false, 1, 3)).toBe('1/3 elfogadva')
-})
-
-// ── WorkoutChallengesGlass · the three-state guard (mezo-e1ii9 fix round 1) ──
-// The retired PrepKuldetesekPage.test.tsx covered all three states; the glass inherited
-// the priority (pending → honest-empty → list) but only the loaded path had cover. The
-// priority IS the mezo-hbwi silent-gap fix: "still generating" must never be shown as
-// "ma nincs kihívás", so the pending branch has to win over an empty list.
+// ── ChallengeDetailGlass · a card badge's glass: release / take back (mezo-mgu2r) ──
 const CHALLENGE: Challenge = {
-  id: 'c1', type: 'PR', typeLabel: 'PR-kísérlet', exerciseId: 'e-1', exercise: 'Chest Supported Row',
-  target: '80 kg × 5', risk: 'low', why: 'jó formában vagy', refs: [], glory: 'új csúcs',
+  id: 'c1', type: 'PR', typeLabel: 'PR-attempt', exerciseId: 'e-1', exercise: 'Chest Supported Row',
+  target: '107.5 kg × 8', confidence: 0.72, risk: 'low', why: 'jó formában vagy', refs: [], glory: 'új csúcs',
 }
 
-function challengeProps(over: Partial<React.ComponentProps<typeof WorkoutChallengesGlass>> = {}) {
-  return {
-    open: true,
-    challenges: [CHALLENGE],
-    accepted: {} as Record<string, boolean>,
-    onToggle: vi.fn(),
-    pending: false,
-    tint: '#abcdef',
-    onClose: vi.fn(),
-    ...over,
-  }
+function detailProps(over: Partial<React.ComponentProps<typeof ChallengeDetailGlass>> = {}) {
+  return { open: true, challenge: CHALLENGE, state: 'accepted' as const, tint: '#abcdef', onToggle: vi.fn(), onClose: vi.fn(), ...over }
 }
 
-test('challenges glass · pending: the generation loader wins, and NEVER the honest-empty line', () => {
-  render(<WorkoutChallengesGlass {...challengeProps({ challenges: [], pending: true })} />)
-  expect(screen.getByRole('status')).toBeInTheDocument()
-  // U4 (mezo-me75u.4): the glass is titled "A mai küldetések"; its sub-line carries the state.
-  expect(screen.getByRole('dialog', { name: 'A mai küldetések' })).toBeInTheDocument()
-  expect(screen.getByText('készül…')).toBeInTheDocument()
-  expect(screen.queryByText(/Ma nincs küldetés/)).not.toBeInTheDocument()
-})
-
-test('challenges glass · resolved empty: the honest-empty line, no loader, a "no challenge" way out', () => {
-  render(<WorkoutChallengesGlass {...challengeProps({ challenges: [], pending: false })} />)
-  expect(screen.queryByRole('status')).not.toBeInTheDocument()
-  expect(screen.getByText(/Ma nincs küldetés/)).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Ma küldetés nélkül' })).toBeInTheDocument()
-})
-
-test('challenges glass · failed: says so and offers a retry', async () => {
-  const onRetry = vi.fn()
-  render(<WorkoutChallengesGlass {...challengeProps({ challenges: [], failed: true, onRetry })} />)
-  expect(screen.getByText(/nem jöttek le/)).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: 'Újra' }))
-  expect(onRetry).toHaveBeenCalled()
-})
-
-// ── the variant-B picker (mezo-oy91i) ──
-test('challenges glass · a row reads name, then ONE chip line: the Hungarian type chip + the target values', () => {
-  render(<WorkoutChallengesGlass {...challengeProps({ challenges: [{ ...CHALLENGE, typeLabel: 'PR-attempt', target: '107.5 kg × 8' }] })} />)
-  expect(screen.getByText('Chest Supported Row')).toBeInTheDocument()
-  expect(screen.getByText('PR-kísérlet')).toBeInTheDocument()
+test('detail glass · an accepted challenge reads its target and offers Elengedem', async () => {
+  const user = userEvent.setup()
+  const p = detailProps()
+  render(<ChallengeDetailGlass {...p} />)
+  expect(screen.getByRole('dialog', { name: 'PR-kísérlet küldetés' })).toBeInTheDocument()
   expect(screen.getByText('107,5 kg')).toBeInTheDocument()
-  expect(screen.getByText('8 ism.')).toBeInTheDocument()
-  // the machine labels of the old card are gone
-  expect(screen.queryByText(/conf/i)).not.toBeInTheDocument()
-  expect(screen.queryByText('PR-attempt')).not.toBeInTheDocument()
-})
-
-test('challenges glass · the check circle toggles the challenge; the foot names how many were taken', async () => {
-  const onToggle = vi.fn()
-  const { rerender } = render(<WorkoutChallengesGlass {...challengeProps({ onToggle })} />)
-  expect(screen.getByText('Válassz, amennyit bírsz')).toBeInTheDocument()
-  const ck = screen.getByRole('button', { name: /Chest Supported Row: vállalom/ })
-  expect(ck).toHaveAttribute('aria-pressed', 'false')
-  await userEvent.click(ck)
-  expect(onToggle).toHaveBeenCalledWith('c1')
-  rerender(<WorkoutChallengesGlass {...challengeProps({ onToggle, accepted: { c1: true } })} />)
-  expect(screen.getByText('1 vállalva')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /Chest Supported Row: vállalva/ })).toHaveAttribute('aria-pressed', 'true')
-  expect(screen.getByRole('button', { name: 'Indulhat · 1 küldetéssel' })).toBeInTheDocument()
-})
-
-test('challenges glass · „Miért ezt?" folds the reason, the reward and the confidence line open', async () => {
-  render(<WorkoutChallengesGlass {...challengeProps({ challenges: [{ ...CHALLENGE, confidence: 0.72 }] })} />)
-  expect(screen.queryByText('jó formában vagy')).not.toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: 'Miért ezt? ›' }))
-  expect(screen.getByText('jó formában vagy')).toBeInTheDocument()
-  expect(screen.getByText('új csúcs')).toBeInTheDocument()
   expect(screen.getByText('72% biztos · alacsony kockázat')).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Elengedem' }))
+  expect(p.onToggle).toHaveBeenCalledTimes(1)
+  expect(p.onClose).toHaveBeenCalled()
 })
 
-test('challenges glass · a resolved challenge shows its outcome instead of a check button', () => {
-  render(<WorkoutChallengesGlass {...challengeProps({ challenges: [{ ...CHALLENGE, status: 'hit' }], accepted: { c1: true } })} />)
-  expect(screen.getByRole('img', { name: 'teljesült' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: /vállal/ })).not.toBeInTheDocument()
+test('detail glass · a released challenge offers Visszaveszem', () => {
+  render(<ChallengeDetailGlass {...detailProps({ state: 'released' })} />)
+  expect(screen.getByRole('button', { name: 'Visszaveszem' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Elengedem' })).not.toBeInTheDocument()
+})
+
+test('detail glass · a resolved challenge shows its outcome and no action', () => {
+  render(<ChallengeDetailGlass {...detailProps({ state: 'hit', challenge: { ...CHALLENGE, status: 'hit', outcome: '108 × 8 lett' } })} />)
+  expect(screen.getByText('108 × 8 lett')).toBeInTheDocument()
+  expect(screen.getByText('Teljesült.')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Elengedem|Visszaveszem/ })).not.toBeInTheDocument()
 })

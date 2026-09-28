@@ -48,3 +48,17 @@ test('loading and invalid states never leak stale calories', () => {
   expect(screen.getByText('Céljavítás szükséges')).toBeInTheDocument()
   expect(screen.queryByText('2 940 kcal')).not.toBeInTheDocument()
 })
+
+test('names the provenance of the frame — formula, adaptive or learned (mezo-3n2so)', () => {
+  const first = renderPage()
+  expect(screen.getByText('Formula-alap')).toBeInTheDocument()
+  first.unmount()
+  mocks.useGoalOverview.mockReturnValue({ overview: { courseStatus: 'on_track', diet: { ...diet, basis: 'adaptive' } }, pending: false })
+  const second = renderPage()
+  expect(screen.getByText('Adaptív terv')).toBeInTheDocument()
+  second.unmount()
+  mocks.useGoalOverview.mockReturnValue({ overview: { courseStatus: 'on_track', diet: { ...diet, basis: 'learned' } }, pending: false })
+  renderPage()
+  expect(screen.getByText('Tanult alap')).toBeInTheDocument()
+  expect(screen.queryByText('Formula-alap')).not.toBeInTheDocument()
+})

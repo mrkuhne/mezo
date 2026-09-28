@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
@@ -65,4 +66,8 @@ public class ExpenditureEstimateEntity extends OwnedEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "explanation", columnDefinition = "jsonb")
     private ExpenditureExplanationJson explanation;
+
+    /** When the owner dismissed this week's summary (mezo-3n2so) — cross-device, null until dismissed. */
+    @Column(name = "dismissed_at")
+    private OffsetDateTime dismissedAt;
 }

@@ -68,7 +68,11 @@ public enum AppNotificationKind {
      *  ({@code AnchorResolver.feedAnchors}) wake-defers it like every other feed family, riding the
      *  existing {@code intervention} push category rather than a new one. Deeplinks into the ügy's
      *  own chat surface, not the {@link #TEAM_EDITION} wall. */
-    TEAM_CHAT("team_chat", "intervention", "/mezo/elo");
+    TEAM_CHAT("team_chat", "intervention", "/mezo/elo"),
+    /** mezo-3n2so Task 6: the Monday adaptive-review run's own bell — a worth-saying learned week
+     *  (the {@link io.mrkuhne.mezo.feature.goal.engine.service.WeeklyCardPolicy} the weekly-summary
+     *  card already uses). Feed-only (familyKey null), like the other weekly summaries. */
+    EXPENDITURE_WEEK("expenditure_week", null, "/fuel/tanulas");
 
     /** Final review I3 (mezo-a9bo7.25): the dedup-key suffix a producer appends when its row may
      *  ring inside the quiet window (a library entry's {@code quietHoursExempt}). The feed-anchored

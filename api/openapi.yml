@@ -2831,6 +2831,212 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/goals/expenditure/weeks:
+    get:
+      tags:
+        - Goal
+      operationId: getExpenditureHistory
+      summary: >-
+        The caller's last N reviewed weeks, oldest first, plus the learning
+        switch (mezo-3n2so, spec §6.3)
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 52
+            default: 26
+      responses:
+        '200':
+          description: History
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenditureHistoryResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/goals/expenditure/weekly-card:
+    get:
+      tags:
+        - Goal
+      operationId: getExpenditureWeeklyCard
+      summary: >-
+        The current weekly-summary card, when there is one to show (mezo-3n2so,
+        spec §5.1)
+      responses:
+        '200':
+          description: A card worth showing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenditureWeeklyCardResponse'
+        '204':
+          description: >-
+            Nothing to show — switch off, no reviewed row, not worth saying, or
+            already dismissed
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/goals/expenditure/weekly-card/{weekStart}/dismiss':
+    post:
+      tags:
+        - Goal
+      operationId: dismissExpenditureWeeklyCard
+      summary: >-
+        Dismiss the weekly-summary card for one reviewed week — cross-device,
+        per week (mezo-3n2so)
+      parameters:
+        - name: weekStart
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '204':
+          description: Dismissed
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No reviewed week of the caller's starting on weekStart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/goals/expenditure/days:
+    get:
+      tags:
+        - Goal
+      operationId: getIntakeDays
+      summary: >-
+        Live per-day statuses for a range — never past today (mezo-3n2so, spec
+        §6.3)
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Days of the range
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IntakeDayStatus'
+        '400':
+          description: 'Range too long, or to is after today'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/goals/expenditure/days/{date}/mark':
+    put:
+      tags:
+        - Goal
+      operationId: setIntakeDayMark
+      summary: >-
+        Mark a logged, non-future day complete/incomplete — re-chains the
+        learned base from that week on (mezo-3n2so, spec §7)
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntakeDayMarkRequest'
+      responses:
+        '200':
+          description: 'Marked — the recomputed applied base, before/after'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntakeDayMarkResult'
+        '400':
+          description: Future day
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: 'No logged intake on that day, or a concurrent mark on the same day'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - Goal
+      operationId: clearIntakeDayMark
+      summary: >-
+        Remove a day's mark — the classifier's rule decides again; a no-op when
+        unmarked (mezo-3n2so)
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 'Cleared (or already unmarked) — the applied base, before/after'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntakeDayMarkResult'
+        '400':
+          description: Future day
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/goals/{id}':
     get:
       tags:
@@ -16265,6 +16471,189 @@ components:
           type: number
           nullable: true
           description: From the filter trace; absent before the first weigh-in
+    ExpenditureWeek:
+      type: object
+      description: 'One reviewed week''s row on the history chart (mezo-3n2so, spec §6.3).'
+      required:
+        - weekStart
+        - status
+        - confidence
+        - formulaBaseKcal
+        - posteriorBaseKcal
+        - posteriorSdKcal
+        - appliedBaseKcal
+        - stepKcal
+        - usableDays
+        - weighInDays
+      properties:
+        weekStart:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+            - learning
+            - updated
+            - stable
+            - holding
+        confidence:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        formulaBaseKcal:
+          type: integer
+        posteriorBaseKcal:
+          type: integer
+        posteriorSdKcal:
+          type: integer
+        appliedBaseKcal:
+          type: integer
+          description: The base actually served as "Alap" this week
+        stepKcal:
+          type: integer
+        usableDays:
+          type: integer
+          minimum: 0
+        weighInDays:
+          type: integer
+          minimum: 0
+    ExpenditureHistoryResponse:
+      type: object
+      required:
+        - learningEnabled
+        - weeks
+      properties:
+        learningEnabled:
+          type: boolean
+        weeks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpenditureWeek'
+    ExpenditureWeeklyCardResponse:
+      type: object
+      description: >-
+        The current weekly-summary card (mezo-3n2so, spec §5.1) — shown only
+        when it says something.
+      required:
+        - weekStart
+        - weekEnd
+        - status
+        - confidence
+        - appliedBaseKcal
+        - posteriorSdKcal
+        - stepKcal
+        - usableDays
+        - weighInDays
+        - minUsableDays
+        - minWeighInDays
+        - excludedDays
+      properties:
+        weekStart:
+          type: string
+          format: date
+        weekEnd:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+            - learning
+            - updated
+            - stable
+            - holding
+        confidence:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        appliedBaseKcal:
+          type: integer
+        posteriorSdKcal:
+          type: integer
+        stepKcal:
+          type: integer
+        usableDays:
+          type: integer
+          minimum: 0
+        weighInDays:
+          type: integer
+          minimum: 0
+        minUsableDays:
+          type: integer
+          minimum: 0
+          description: 'Below this, the week HOLDs (config)'
+        minWeighInDays:
+          type: integer
+          minimum: 0
+          description: 'Below this, the week HOLDs (config)'
+        excludedDays:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpenditureExcludedDay'
+    IntakeDayStatus:
+      type: object
+      description: >-
+        One day's live classification for the calendar (mezo-3n2so, spec
+        §6.3/§7).
+      required:
+        - date
+        - status
+      properties:
+        date:
+          type: string
+          format: date
+        kcal:
+          type: integer
+          nullable: true
+          description: Logged total; absent when unlogged
+        status:
+          type: string
+          enum:
+            - usable
+            - suspicious
+            - marked_incomplete
+            - confirmed_complete
+            - unlogged
+        mark:
+          type: string
+          enum:
+            - complete
+            - incomplete
+          nullable: true
+          description: 'The owner''s explicit mark, if any'
+    IntakeDayMarkRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - complete
+            - incomplete
+    IntakeDayMarkResult:
+      type: object
+      description: >-
+        The outcome of setting/clearing a day's mark — the re-chain's served
+        base, before/after (mezo-3n2so).
+      required:
+        - day
+        - recomputed
+      properties:
+        day:
+          $ref: '#/components/schemas/IntakeDayStatus'
+        appliedBaseBeforeKcal:
+          type: integer
+          nullable: true
+          description: Absent when the caller has never been learned (no row yet)
+        appliedBaseAfterKcal:
+          type: integer
+          nullable: true
+        recomputed:
+          type: boolean
     GoalOverviewResponse:
       type: object
       required:
@@ -16400,6 +16789,7 @@ components:
           enum:
             - formula
             - adaptive
+            - learned
             - unavailable
         explanationCode:
           type: string
@@ -16655,6 +17045,7 @@ components:
           enum:
             - formula
             - adaptive
+            - learned
         segments:
           type: array
           items:
@@ -24325,6 +24716,7 @@ components:
         - waterMl
         - fiberG
         - dayTypeShiftKcal
+        - learningEnabled
       properties:
         splitPreset:
           type: string
@@ -24376,6 +24768,9 @@ components:
           description: >-
             Kcal moved off each rest day onto training days (weekly budget
             unchanged); 0 = uniform days
+        learningEnabled:
+          type: boolean
+          description: The learned-expenditure learning switch (mezo-3n2so) — on by default
     DietSettingsPreviewResponse:
       type: object
       required:
@@ -24458,6 +24853,11 @@ components:
           description: >-
             Kcal moved off each rest day onto training days (weekly budget
             unchanged); 0 = uniform days
+        learningEnabled:
+          type: boolean
+          description: >-
+            The learned-expenditure learning switch (mezo-3n2so) — absent keeps
+            the stored/resolved value
     TutorialProgressEntry:
       type: object
       required:

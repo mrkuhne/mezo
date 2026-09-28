@@ -2452,6 +2452,8 @@ button.donebar { cursor: pointer; }
 .nf-ico.people { background: color-mix(in srgb, var(--dv-sky) 22%, transparent); }
 .nf-ico.habit { background: color-mix(in srgb, var(--dv-sage) 24%, transparent); }
 .nf-ico.character { background: color-mix(in srgb, var(--dv-lav) 24%, transparent); }
+/* mezo-3n2so — a heti tanulás saját sage tintje (a Fuel finomhangolás kapcsolójának színe). */
+.nf-ico.sage { background: color-mix(in srgb, var(--dv-sage) 20%, transparent); }
 
 /* ===== Habit routine =====
    The `.hab-chain`/`.hab-row`/`.hab-node`/`.hab-main`/`.hab-anchor`/`.hab-title`/`.hab-link`/
@@ -6434,7 +6436,7 @@ button.mz-tile:active { transform: scale(0.96); }
 .wkd-tile.wide { grid-column: 1 / -1; }
 .wkd-tile.lav  { background: var(--mz-wash-lav);  --wkd-glow: var(--mz-wkd-glow-lav); }
 .wkd-tile.gold { background: var(--mz-wash-gold); --wkd-glow: var(--mz-wkd-glow-gold); }
-.wkd-tile.sky  { background: var(--mz-wash-sky);  --wkd-glow: var(--mz-wkd-glow-sky); }
+.wkd-tile.life { background: var(--mz-wash-sky);  --wkd-glow: var(--mz-wkd-glow-sky); }
 .wkd-tile.rose { background: var(--mz-wash-rose); --wkd-glow: var(--mz-wkd-glow-rose); }
 .wkd-tile.pred { background: var(--mz-qdone-bg);  --wkd-glow: var(--mz-wkd-glow-sage); }
 .wkd-row { display: flex; align-items: center; gap: 9px; }
@@ -6451,7 +6453,7 @@ button.mz-tile:active { transform: scale(0.96); }
 }
 .wkd-eb.lav  { color: var(--mz-cell-lav-ink); }
 .wkd-eb.gold { color: var(--mz-stch-prop-ink); }
-.wkd-eb.sky  { color: var(--mz-wkd-life-ink); }
+.wkd-eb.life { color: var(--mz-wkd-life-ink); }
 .wkd-eb.rose { color: var(--mz-cell-rose-ink); }
 .wkd-eb.pred { color: var(--mz-stch-ok-ink); }
 .wkd-chev { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
@@ -7638,6 +7640,19 @@ button.mz-tile:active { transform: scale(0.96); }
 .fset-selectrow { align-items: stretch; flex-direction: column; padding: 3px 0 12px; gap: 7px; }
 .fset-selectrow > span { align-self: flex-start; }
 .fset-selectrow select { width: 100%; padding: 0 38px 0 12px; cursor: pointer; }
+
+/* mezo-3n2so — a tanulás-kapcsoló sora (prototype `.lsrow`, elo/fuel.html#beallitas): egy
+   3D ikon-tok, a felirat + hint két sora, a switch a jobb szélen. */
+.fset-learnrow {
+  display: flex; align-items: center; gap: 10px; padding-top: 12px; margin-top: 12px;
+  border-top: 1px solid var(--divider);
+}
+.fset-learnrow .uv-well { width: 30px; height: 30px; flex: none; }
+.fset-learnrow-tx { flex: 1; min-width: 0; }
+.fset-learnrow-tx strong { display: block; font-size: 14px; font-weight: 600; }
+.fset-learnrow-tx small {
+  display: block; font-size: 11.5px; color: var(--text-secondary); margin-top: 2px; line-height: 1.35;
+}
 
 @keyframes fset-draw { to { stroke-dashoffset: 0; } }
 
@@ -9307,6 +9322,17 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-block-log strong { display: block; font-size: 15px; font-weight: 600; }
 .fmx-block-log small { display: block; margin-top: 3px; font-size: 11.5px; color: var(--sub); }
 .fmx-block-empty { margin: 0; padding: 12px 2px; font-size: 11px; color: var(--sub); }
+
+/* Nap-jelölés a napló alján (task 11, mezo-3n2so) — csendes sor egy hajszál-vonallal, NEM üveg
+   (elo/fuel.html `.dmark`, §5.4). A `.fwl-qbtn`/`.is-on` gombot a „Heti tanulás” laptól örökli. */
+.fmx-mark { display: flex; align-items: center; gap: 10px; margin: 14px 0 0;
+  padding: 12px 2px 2px; border-top: 1px solid var(--divider); }
+.fmx-mark > svg { flex: 0 0 auto; opacity: 0.9; }
+.fmx-mark .grow { flex: 1; min-width: 0; font-size: 13px; color: var(--sub); line-height: 1.4; }
+.fmx-mark .grow > span { display: block; }
+.fmx-mark small { display: block; font-size: 11px; color: var(--faint); margin-top: 2px; }
+.fmx-mark .link { display: block; margin-top: 3px; padding: 0; border: 0; background: none;
+  font: 600 11.5px/1.2 var(--ff-body); color: var(--sky); }
 
 /* Az ÁLTALÁNOS naplózás sávja: a blokkok alatt, halkabban — a fő útvonal a blokkba logolás. */
 /* Másodlagos út (§3.4): lapos sor hajszál-kerettel — a lap elsődleges tárgyai a blokkok. */
@@ -14996,12 +15022,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .flp-how-btn .t-ico { filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 8px color-mix(in srgb, var(--c) 45%, transparent)); }
 .flp-how-btn .lbl { flex: 1; font-size: 14px; font-weight: 600; }
 .flp-how-btn .lbl small { display: block; margin-top: 1px; font-size: 11px; font-weight: 400; color: var(--text-muted); }
-.flp-how-btn .chev { width: 18px; height: 18px; flex: 0 0 auto; color: var(--text-muted); transition: transform 0.3s cubic-bezier(0.2, 0.78, 0.24, 1); }
-.flp-how-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
-
-.flp-how { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.45s cubic-bezier(0.2, 0.78, 0.24, 1); }
-.flp-how.is-open { grid-template-rows: 1fr; }
-.flp-how > div { overflow: hidden; min-height: 0; }
+/* mezo-3n2so: the explainer moved to /fuel/tanulas — the button is now a link with „Részletek ›” */
+.flp-how-btn .more { flex: 0 0 auto; font-size: 12.5px; font-weight: 600; color: var(--dv-sage); white-space: nowrap; }
 .flp-how-in { padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
 
 .flp-how-cell { padding: 12px; border-radius: 14px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
@@ -15078,7 +15100,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .flp-how-steps .ar { align-self: center; font-size: 13px; color: var(--text-muted); }
 
 @media (prefers-reduced-motion: reduce) {
-  .flp-how, .flp-how-btn .chev, .flp-how-meter .pin { transition: none; }
+  .flp-how-btn, .flp-how-meter .pin { transition: none; }
 }
 
 /* ─ Motion: the live mic breathes (feedback, not decoration); reduced motion = still ─ */
@@ -18204,6 +18226,75 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 @media (prefers-reduced-motion: reduce) {
   .wos .wos-pbar span b { transition: none; }
 }
+/* ── Eligazítás (mezo-mgu2r): the 'brief' phase — prototypes/elo/edzes.html `#indulas`. The hero is a
+   frameless halo, the challenge card the ONE glass (gold), the exercise rows flat; the Indulás
+   foot sticks to the bottom of the scroller. ── */
+.wos.wbr { padding-bottom: 24px; }
+.wos .wbr-top .tt .t1 { flex: 1; }
+.wos .wbr-hero { position: relative; isolation: isolate; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 6px 12px 14px; }
+.wos .wbr-hero::before {
+  content: ''; position: absolute; left: 50%; top: 46%; width: 340px; max-width: 100%; height: 260px; transform: translate(-50%, -50%); z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, color-mix(in srgb, var(--dv-coral) 26%, transparent), color-mix(in srgb, var(--dv-amber) 10%, transparent) 40%, transparent 68%);
+}
+.wos .wbr-hero-art { filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 18px color-mix(in srgb, var(--dv-coral) 42%, transparent)); }
+.wos .wbr-eyebrow { display: block; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; text-transform: uppercase; color: color-mix(in srgb, var(--dv-coral) 70%, var(--text-primary)); }
+.wos .wbr-hero .wbr-eyebrow { margin-top: 6px; }
+.wos .wbr-num { margin-top: 4px; font-size: 58px; font-weight: 600; letter-spacing: -2px; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.wos .wbr-num small { margin-left: 2px; font-size: 20px; font-weight: 500; letter-spacing: -1px; color: var(--text-muted); }
+.wos .wbr-num-pending { color: var(--text-muted); }
+.wos .wbr-sub { margin: 4px 0 0; font-size: 12.5px; color: var(--text-secondary); }
+.wos .wbr-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; }
+.wos .wbr-pills .uv-flat { padding: 7px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.wos .wbr-quests.glass { --c: var(--dv-amber); margin: 0 4px 12px; padding: 14px; border-radius: 22px; }
+.wos .wbr-qhead { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.wos .wbr-qhead .wbr-eyebrow { color: color-mix(in srgb, var(--dv-amber) 75%, var(--text-primary)); }
+.wos .wbr-qhead h3 { margin: 2px 0 0; font-size: 17px; font-weight: 600; letter-spacing: -0.4px; color: var(--text-primary); }
+.wos .wbr-chlist { display: grid; gap: 10px; }
+.wos .wbr-chlist .wos-qc-conf { margin-top: 6px; }
+.wos .wbr-qnote { margin: 10px 0 0; font-size: 11px; line-height: 1.45; color: var(--text-muted); }
+.wos .wbr-qempty { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+.wos .wbr-qempty p { margin: 0 0 8px; }
+.wos .wbr-ovl { padding: 0 4px; }
+.wos .wbr-eyeb { padding: 14px 6px 10px; }
+.wos .wbr-eyeb .wbr-eyebrow { color: var(--text-muted); }
+.wos .wbr-eyeb h2 { margin: 2px 0 0; font-size: 20px; font-weight: 600; letter-spacing: -0.5px; color: var(--text-primary); }
+.wos .wbr-list { display: grid; gap: 10px; margin: 0; padding: 0 4px; list-style: none; }
+.wos .wbr-row {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 18px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.wos .wbr-row-copy { flex: 1; min-width: 0; }
+.wos .wbr-row-copy strong { display: block; font-size: 14px; font-weight: 600; letter-spacing: -0.2px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wos .wbr-row-copy small { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 2px; font-size: 11.5px; color: var(--text-secondary); }
+.wos .wbr-row-quest { flex: 0 0 auto; display: grid; place-items: center; }
+.wbr-foot { position: absolute; left: 10px; right: 10px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 40; max-width: 408px; margin: 0 auto; }
+.wbr-start {
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px 16px; border: 0; border-radius: 18px; cursor: pointer;
+  font: 700 15px/1.2 var(--ff-body); color: #191614; background: var(--dv-coral);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 18px color-mix(in srgb, var(--dv-coral) 45%, transparent);
+}
+.wbr-start .t-ico { filter: none; }
+/* the card head's "vs last week" chip (it replaced the Múlt hét / Ma a cél cells) — also on the briefing rows */
+.wos .wo-delta {
+  display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1px; white-space: nowrap;
+  color: #FFD08A; background: color-mix(in srgb, var(--dv-amber) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 30%, transparent);
+}
+.wos .wo-delta.is-up { color: #FFB39C; background: color-mix(in srgb, var(--dv-coral) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 35%, transparent); }
+.wos .wo-card-copy .wo-delta { justify-self: start; width: max-content; margin-top: 4px; }
+/* why a briefing row's target sits past the range top (reps before a too-big jump, mezo-bk7sn) */
+.wos .wbr-row-why { display: block; margin-top: 2px; font-style: normal; font-size: 11px; line-height: 1.35; color: #FFD08A; }
+/* the active-phase challenge badge (tap → release / take back); released = dimmed, target struck */
+.wos .wos-pills button.wos-pill-quest { cursor: pointer; font: inherit; }
+.wos .wos-pills .wos-pill-quest.is-released { opacity: 0.6; }
+.wos .wos-pills .wos-pill-quest.is-released s { opacity: 0.8; }
+
+/* the challenge detail glass (card badge → release / take back) */
+.gl-card .wos-gb-qd .wos-qd-target { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 6px; }
+.gl-card .wos-gb-qd .wos-qd-target b { font-size: 24px; font-weight: 600; letter-spacing: -0.6px; color: var(--text-primary); }
+.gl-card .wos-gb-qd .wos-qd-why { margin: 10px 0 0; font-size: 13px; line-height: 1.55; color: var(--text-secondary); }
+.gl-card .wos-gb-qd .wos-pill.is-block { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 14px; }
+.gl-card .wos-gb-qd .wos-qd-note { margin: 10px 0 0; font-size: 11px; line-height: 1.45; color: var(--text-muted); }
+
 /* ── /uveg edzes session ── */
 
 /* ── uveg edzes zaras (mezo-me75u.4) ── the closing ceremony (WorkoutCeremony, 2 steps) + /train/review/:id (WorkoutSummary, ExerciseReview) ── */
@@ -22603,15 +22694,26 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .wkh-page .wkh-open { font-size: 11px; font-weight: 600; color: color-mix(in srgb, var(--dv-lav) 80%, var(--text-primary)); }
 .wkh-page .wkh-disceb { color: color-mix(in srgb, var(--dv-sky) 75%, var(--text-primary)); }
 .wkh-page .wkh-disctitle { margin-top: 2px; font-size: 15px; font-weight: 600; letter-spacing: -0.3px; color: var(--text-primary); }
-.wkh-page .wkh-discparts { min-width: 0; font-size: 12px; line-height: 1.4; color: var(--text-secondary); }
 .wkh-page .wkh-discempty { margin-top: 8px; font-size: 12px; color: var(--text-secondary); }
-.wkh-page .wkh-dots { gap: 5px; flex: none; }
-.wkh-page .wkh-dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--dc); box-shadow: 0 0 6px var(--dc); }
-.wkh-page .wkh-dots i.pattern { --dc: var(--dv-lav); }
-.wkh-page .wkh-dots i.fact { --dc: var(--dv-amber); }
-.wkh-page .wkh-dots i.life { --dc: var(--dv-sky); }
-.wkh-page .wkh-dots i.memoir { --dc: var(--dv-rose); }
-.wkh-page .wkh-dots i.prediction { --dc: var(--dv-coral); }
+/* mezo-p87ok: the discoveries mix as ONE weighted bar + a wrapping legend. One dot per trace
+   (flex:none) filled the row at 72 and crushed the text to a word per line. A 7px floor keeps a
+   single memoir or prediction visible; the legend carries the numbers. */
+.wkh-page .wkh-discbar { display: flex; gap: 3px; width: 100%; height: 7px; margin-top: 10px; }
+.wkh-page .wkh-discbar i {
+  flex-basis: 0; min-width: 7px; border-radius: 999px; background: var(--dc);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--dc) 60%, transparent);
+}
+.wkh-page .wkh-disclegend {
+  display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 9px;
+  font-size: 11.5px; line-height: 1.4; color: var(--text-secondary);
+}
+.wkh-page .wkh-disclegend > span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.wkh-page .wkh-disclegend i { width: 7px; height: 7px; border-radius: 50%; background: var(--dc); box-shadow: 0 0 5px var(--dc); }
+.wkh-page :is(.wkh-discbar, .wkh-disclegend) .pattern { --dc: var(--dv-lav); }
+.wkh-page :is(.wkh-discbar, .wkh-disclegend) .fact { --dc: var(--dv-amber); }
+.wkh-page :is(.wkh-discbar, .wkh-disclegend) .life { --dc: var(--dv-sky); }
+.wkh-page :is(.wkh-discbar, .wkh-disclegend) .memoir { --dc: var(--dv-rose); }
+.wkh-page :is(.wkh-discbar, .wkh-disclegend) .prediction { --dc: var(--dv-coral); }
 
 /* „Készítsd el most": the lit lavender CTA with the t-score icon (every colour restated, rule 36) */
 .wkh-page .wkh-genbtn {
@@ -22853,7 +22955,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .wkf-page .wkd-tile.wide.glass { min-height: 0; }
 .wkf-page .wkd-tile.gold.glass { --c: var(--dv-amber); }
-.wkf-page .wkd-tile.sky.glass { --c: var(--dv-sky); }
+.wkf-page .wkd-tile.life.glass { --c: var(--dv-sky); }
 .wkf-page .wkd-tile.rose.glass { --c: var(--dv-rose); }
 .wkf-page .wkd-tile.pred.glass { --c: var(--dv-coral); }
 .wkf-page .wkd-row { flex-wrap: wrap; gap: 10px; }
@@ -22876,6 +22978,37 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .wkf-page .wkd-stch.warn { --sc: var(--dv-amber); }
 .wkf-page .wkd-stch.mut { --sc: var(--text-muted); }
 .wkf-page .wkd-stch .t-ico { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.45)); }
+/* mezo-p87ok — section eyebrows + the two bulk drawers (Minták / Új tudás). The drawer is the
+   glass; its rows are flat hairline rows (never glass inside glass). */
+.wkf-page .wkd-sec { margin: 16px 4px 8px; }
+.wkf-page .wkd-sec:first-child { margin-top: 2px; }
+.wkf-page .wkd-drawer.glass { --c: var(--dv-lav); display: block; padding: 13px 14px 6px; border-radius: 22px; }
+.wkf-page .wkd-drawer.gold.glass { --c: var(--dv-amber); }
+.wkf-page .wkd-drawer + .wkd-drawer { margin-top: 12px; }
+.wkf-page .wkd-drhead { display: flex; align-items: center; gap: 10px; padding-bottom: 6px; }
+.wkf-page .wkd-drhead .wkd-grow { flex: 1 1 auto; min-width: 0; }
+.wkf-page .wkd-drtitle { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; color: var(--text-primary); }
+.wkf-page .wkd-drsub { margin-top: 2px; font-size: 11.5px; line-height: 1.35; color: var(--text-secondary); }
+.wkf-page .wkd-drcount {
+  font-size: 28px; font-weight: 300; letter-spacing: -1px; font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+  text-shadow: 0 0 14px color-mix(in srgb, var(--c) 45%, transparent);
+}
+.wkf-page .wkd-drows { display: flex; flex-direction: column; }
+.wkf-page .wkd-drow {
+  display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 9px 0;
+  border-top: 1px solid var(--divider);
+  font-size: 13.5px; line-height: 1.35; color: var(--text-primary); text-decoration: none;
+}
+.wkf-page .wkd-drow .wkd-grow { flex: 1 1 auto; min-width: 0; }
+.wkf-page .wkd-drow .wkd-stch { flex: none; }
+.wkf-page .wkd-drmore {
+  display: block; width: 100%; min-height: 44px; padding: 0; border: 0;
+  border-top: 1px solid var(--divider); background: none;
+  font: inherit; font-size: 13px; font-weight: 600; text-align: left; cursor: pointer;
+  color: color-mix(in srgb, var(--c) 80%, var(--text-primary));
+}
+.wkf-page .wkd-drmore:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; border-radius: 8px; }
 .wkf-page .wkl-ghost.uv-empty {
   --c: var(--dv-sky); margin-bottom: 12px; padding: 14px 16px; border-radius: 20px;
   background: rgba(245, 239, 230, 0.025); box-shadow: none;
@@ -24992,6 +25125,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .nf-page .nf-ico.experiment, .nf-page .nf-ico.memoir { --c: var(--dv-amber); }
 .nf-page .nf-ico.goal { --c: var(--dv-coral); }
 .nf-page .nf-ico.memory { --c: var(--text-muted); }
+.nf-page .nf-ico.sage { --c: var(--dv-sage); }
 .nf-page .nf-ico .t-ico { filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.5)); }
 .nf-page .nf-txt { flex: 1; min-width: 0; display: block; }
 .nf-page .nf-t { display: block; font: 600 14px/1.3 var(--ff-body); color: var(--text-primary); }
@@ -29985,3 +30119,162 @@ main.settings-page {
 .pmx-confirm-q { font-size: 13px; line-height: 1.45; color: var(--text-secondary); margin: 0 0 10px; }
 .pmx-confirm-q b { color: var(--text-primary); font-weight: 600; }
 /* ── /uveg minta ujramesele ── */
+
+/* ── heti tanulás (mezo-3n2so, learned expenditure part 2, spec §5.1) ──
+   Build target: docs/design_2.0/prototypes/elo/fuel.html `.wdot` / `.node.wl` / `SH.weekly`
+   (`.wc-*`, `.qbtn`, `.st-*`), 1:1 values in house tokens. The dot is a SIGNAL only (no pointer
+   events, no pulse); the Alap row around it is the tap target. Sage, amber when the week held. */
+.fmx-tapchip { min-height: 44px; }
+.fwl-dot {
+  --c: var(--dv-sage);
+  display: inline-block; flex: 0 0 auto; width: 8px; height: 8px; margin: 0 3px 1px 7px;
+  border-radius: 50%; vertical-align: middle; background: var(--c); pointer-events: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 22%, transparent), 0 0 9px var(--c);
+}
+.fwl-dot.is-hold { --c: var(--dv-amber); }
+/* The highlighted Alap row: one full-width button. It bleeds 10px past the flow on both sides so
+   its icon stays on the equation spine while the tinted fill + ring get their inner padding. */
+.fmx-node.is-weekly {
+  --c: var(--dv-sage); --node-color: var(--c);
+  width: calc(100% + 20px); min-height: 52px; margin: 0 -10px; padding: 9px 10px;
+  border: 0; border-radius: 14px; font: inherit; color: inherit; cursor: pointer;
+  background: color-mix(in srgb, var(--c) 10%, rgba(245, 239, 230, 0.035));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 45%, transparent), 0 0 14px -6px var(--c);
+}
+.fmx-node.is-weekly.is-hold { --c: var(--dv-amber); }
+/* The box's scroll layer clips horizontally (overflow-y: auto): give it the bleed's 10px back out
+   of the box's 21px padding, only while the weekly row is present. */
+.fmx-glass-scroll:has(.fmx-node.is-weekly) { margin-inline: -10px; padding-inline: 10px; }
+.fmx-node.is-weekly .fmx-node-copy small { color: color-mix(in srgb, var(--c) 70%, var(--text-secondary)); }
+.fmx-node.is-weekly:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+/* the „Heti tanulás” sheet */
+.sheet.glass.uv-sheet.uvl-fuel.fwl-sheet.is-hold { --c: var(--dv-amber); }
+.fwl-sheet .fwl-head { margin-bottom: 12px; }
+.fwl-sub { display: block; margin-top: 2px; font-size: 11.5px; color: var(--text-secondary); }
+.fwl-step { margin-top: 10px; font-size: 14px; color: var(--text-secondary); }
+.fwl-step b { margin-right: 4px; font-size: 24px; font-weight: 600; letter-spacing: -0.8px;
+  color: color-mix(in srgb, var(--c) 78%, var(--text-primary)); }
+.fwl-why { margin: 10px 0 0; font: italic 400 14px/1.4 var(--ff-serif); color: var(--text-secondary); }
+.fwl-why b { font-family: var(--ff-body); font-style: normal; font-weight: 600; color: var(--text-primary); }
+.fwl-days { display: grid; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--divider); }
+.fwl-day { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px;
+  background: rgba(245, 239, 230, 0.04); }
+.fwl-grow { flex: 1; min-width: 0; }
+.fwl-day strong { display: block; font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+.fwl-day small { font-size: 11.5px; color: var(--text-secondary); }
+.fwl-st { font-style: normal; }
+.fwl-st.st-ok { color: var(--dv-sage); }
+.fwl-st.st-sus { color: var(--dv-rose); }
+.fwl-st.st-mc { color: #BFE3C9; }
+.fwl-st.st-mi { color: var(--dv-amber); }
+.fwl-st.st-none { color: var(--text-disabled); }
+.fwl-fine { margin: 4px 0 0; font-size: 10.5px; line-height: 1.4; color: var(--text-disabled); }
+.fwl-msg { display: flex; align-items: center; gap: 8px; margin: 10px 0 0; padding: 8px 10px; border-radius: 12px;
+  font-size: 13px; font-weight: 600; color: var(--text-primary);
+  background: color-mix(in srgb, var(--c) 12%, transparent); box-shadow: inset 3px 0 0 var(--c); }
+.fwl-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+/* A felirat tördelhet, a gomb zsugorodhat: egy hosszú felirat se tolja szét a sort (layout.spec „hosszú nevek”). */
+.fwl-qbtn { flex: 0 1 auto; max-width: 50%; padding: 7px 12px; border: 0; border-radius: 999px;
+  white-space: normal; overflow-wrap: anywhere; text-align: center;
+  font: 600 12.5px/1.2 var(--ff-body); color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fwl-qbtn.is-on { color: #141210; background: var(--dv-sage);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--dv-sage) 50%, transparent); }
+.fwl-qbtn.is-ghost { background: none; box-shadow: none; color: var(--text-disabled); }
+.fwl-qbtn:disabled { opacity: 0.6; }
+/* ── /heti tanulás ── */
+
+/* ── „Hogy tanultam?” oldal (mezo-3n2so, learned expenditure part 2, spec §5.3) ──
+   Build target: docs/design_2.0/prototypes/elo/fuel.html `tanulas()` (`.lhero`, `.wkchart`,
+   `.wkd`, `.ld-row`, `.stchip`, `.switch`, `.hw-legend`), 1:1 values in house tokens. Ranking:
+   the hero is a frameless halo; the chart and the day list are ONE glass card each; the week
+   detail and the six sections are flat cells (no glass in glass). */
+.fln-page .fln-sec { margin-top: 24px; }
+.fln-page .fln-sec small { flex: 0 0 auto; white-space: nowrap; }
+.fln-state { margin: 14px 2px 0; font-size: 12.5px; color: var(--text-muted); }
+.fln-hero { padding: 14px 22px 6px; text-align: center; }
+.fln-hero .uv-eyebrow { display: block; }
+.fln-num { margin: 6px 0 4px; font-family: var(--ff-display); font-size: 54px; font-weight: 300; letter-spacing: -3px;
+  line-height: 1; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.fln-num small { margin-left: 4px; font-family: var(--ff-body); font-size: 14px; font-weight: 400; letter-spacing: 0; color: var(--text-secondary); }
+.fln-line { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+/* owner round 2: with a weekly summary the whole status row is ONE button — dot + „· heti összegző ›” */
+.fln-tap { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; width: 100%; min-height: 44px;
+  margin-top: 4px; padding: 6px 10px; border: 0; border-radius: 14px; background: none; text-align: center;
+  font: 600 13.5px/1.35 var(--ff-body); color: var(--text-primary); cursor: pointer; }
+.fln-tap:active { background: rgba(245, 239, 230, 0.04); }
+.fln-tap:focus-visible { outline: 2px solid var(--dv-sage); outline-offset: 2px; }
+.fln-more { margin-left: 2px; font-weight: 600; color: color-mix(in srgb, var(--dv-sage) 80%, var(--text-primary)); }
+.fln-sub { margin: 2px 0 0; font-size: 12px; color: var(--text-muted); }
+.fln-off { margin: 6px 0 0; font-size: 17px; color: var(--text-primary); }
+.fln-off b { font-weight: 600; }
+.fln-muted { margin: 6px 0 0; font-size: 12.5px; color: var(--text-muted); }
+.fln-flat { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 7px 12px; border: 0;
+  border-radius: 999px; white-space: nowrap; font: 600 12px/1.2 var(--ff-body); color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); cursor: pointer; }
+.fln-empty.uv-empty { --c: var(--dv-sage); display: flex; align-items: center; gap: 12px; margin: 6px 0 0;
+  padding: 14px; border-radius: 20px; }
+.fln-empty p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+.fln-empty b { font-weight: 600; color: var(--text-primary); }
+.fln-card { display: grid; gap: 8px; padding: 14px; }
+.fln-card.fln-days { gap: 0; }
+/* the chart */
+.fln-chart-wrap { position: relative; }
+.fln-chart { display: block; width: 100%; height: auto; overflow: visible; }
+.fln-chart .fln-grid { stroke: rgba(245, 239, 230, 0.06); }
+.fln-chart .fln-ax { font-family: var(--ff-body); font-size: 9px; fill: var(--text-muted); }
+.fln-chart .fln-band { fill: color-mix(in srgb, var(--dv-sage) 16%, transparent); }
+.fln-chart .fln-gap rect { fill: rgba(245, 239, 230, 0.03); stroke: rgba(245, 239, 230, 0.10); stroke-dasharray: 3 3; }
+.fln-chart .fln-gap text { font-family: var(--ff-body); font-size: 8.5px; fill: var(--text-muted); }
+.fln-chart .fln-sel { stroke: rgba(245, 239, 230, 0.18); }
+.fln-chart .fln-formula { fill: none; stroke: var(--text-muted); stroke-width: 1.4; stroke-dasharray: 4 4; opacity: 0.7; }
+.fln-chart .fln-applied { fill: none; stroke: var(--dv-sage); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--dv-sage) 70%, transparent)); }
+.fln-chart .fln-dot { fill: var(--dv-sage); stroke: var(--dv-sage); stroke-width: 1;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--dv-sage) 80%, transparent)); }
+.fln-chart .fln-dot.is-hold { fill: #141210; stroke-width: 1.8; }
+.fln-chart .fln-dot.is-sel { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--dv-sage) 80%, transparent)); }
+/* one-shot draw of the frame's base (pathLength=1); reduced motion never arms `.is-draw` */
+@keyframes fln-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  .fln-chart.is-draw .fln-applied { stroke-dasharray: 1; animation: fln-draw 0.9s cubic-bezier(0.2, 0.78, 0.24, 1) both; }
+}
+.fln-hits { position: absolute; top: 0; bottom: 0; display: flex; }
+.fln-hit { flex: 1 1 0; min-width: 0; padding: 0; border: 0; background: transparent; cursor: pointer; border-radius: 8px; }
+.fln-hit:focus-visible { outline: 2px solid var(--dv-sage); outline-offset: -2px; }
+.fln-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; font-size: 10px; color: var(--text-muted); }
+.fln-legend i { display: inline-block; width: 9px; height: 9px; margin-right: 4px; border-radius: 2px; vertical-align: -1px; }
+.fln-legend i.ln { width: 14px; height: 2px; border-radius: 1px; vertical-align: 2px; }
+.fln-legend i.is-formula { background: repeating-linear-gradient(90deg, var(--text-muted) 0 4px, transparent 4px 7px); }
+.fln-legend i.is-applied { background: var(--dv-sage); }
+.fln-legend i.is-band { background: color-mix(in srgb, var(--dv-sage) 30%, transparent); }
+.fln-legend i.is-hold { border: 1.6px solid var(--dv-sage); border-radius: 50%; background: transparent; }
+.fln-fine { margin: 8px 0 0; font-size: 10.5px; line-height: 1.45; color: var(--text-muted); }
+.fln-card > .fln-fine:first-of-type { margin-top: 0; }
+/* the selected week — a flat cell inside the glass */
+.fln-wkd { padding: 10px 12px; border-radius: 14px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.fln-wkd strong { display: block; margin-bottom: 8px; font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+.fln-wkd p { margin: 8px 0 0; font-size: 11.5px; line-height: 1.4; color: var(--text-secondary); }
+.fln-wkd strong + p { margin-top: 0; }
+.fln-kv { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.fln-kv-cell { min-width: 0; padding: 7px 8px; border-radius: 12px; background: rgba(245, 239, 230, 0.035); }
+.fln-kv-cell small { display: block; font-size: 10px; color: var(--text-muted); }
+.fln-kv-cell b { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+/* the day list */
+.fln-day { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-top: 1px solid var(--divider); }
+.fln-day:first-child { border-top: 0; }
+.fln-grow { flex: 1; min-width: 0; }
+.fln-day strong { display: block; font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+.fln-day small { font-size: 11px; color: var(--text-muted); }
+.fln-chip { flex: 0 0 auto; padding: 3px 9px; border-radius: 999px; white-space: nowrap; font-size: 10.5px; font-weight: 600;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px currentColor; }
+.fln-chip.st-none { box-shadow: inset 0 0 0 1px var(--divider); }
+.fln-days .uv-tgl { --c: var(--dv-sage); flex: 0 0 auto; }
+.fln-swph { width: 44px; flex: 0 0 auto; }
+.fln-explainer > .flp-how-in { padding-top: 0; }
+@media (max-width: 360px) {
+  .fln-kv { grid-template-columns: 1fr 1fr; }
+  .fln-chip { padding: 3px 7px; font-size: 10px; }
+  .fln-day { gap: 6px; }
+}
+/* ── /„Hogy tanultam?” oldal ── */

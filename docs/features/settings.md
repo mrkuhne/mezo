@@ -20,6 +20,13 @@ related: [_platform-design-system, companion, me, fuel, train, insights, _platfo
 > Téma picker on `/settings` is hidden while `THEME_LOCK` holds; its code and the stored
 > preference are kept so light can return. The header's controls are unchanged in content and
 > wear glass (see [design system](_platform-design-system.md) §3 *Üveg foundation*).
+>
+> **2026-09-27 (`mezo-zn01o`, `mezo-wqzx8`, `mezo-mcb44`):** the outranked pre-üveg rules were dropped
+> from `features/settings/settings.css` (the light washes, Fraunces heroes, domain grid, rows, week strip)
+> and `personal-settings.css` (the `.personal-*` editor/core/context/raw blocks and `.settings-account`
+> inputs) — the glass layer in `prototype.css` already outranked them. What stays: the per-domain
+> `--settings-tone`/`--settings-ink` variables, the Téma picker's scene art (parked with light mode),
+> focus rings, and a few layout rules.
 
 > **2026-09-24 (`mezo-yjzhw.4`):** the header's day orb (`AppHeader.tsx`, the filling coral
 > `nap-avatar` button) now opens `/nap/napom/<today>` — A napom, the day's own reading — instead

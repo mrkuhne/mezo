@@ -153,3 +153,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609272148_mezo-ck2_checkin_2_flag_keys.sql
+  - changeSet:
+      id: "1.1.0:202609272000_mezo-3n2so_learned_expenditure_part2"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609272000_mezo-3n2so_learned_expenditure_part2.sql

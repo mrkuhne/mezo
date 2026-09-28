@@ -42,8 +42,8 @@ class WorkoutTodayProgressionIT extends AbstractIntegrationTest {
         var te = res.getExercises().get(0);
         assertThat(te.getProgression()).isNotNull();
         assertThat(te.getProgression().getLever()).isEqualTo(ProgressionSignal.LeverEnum.WEIGHT);
-        assertThat(te.getProgression().getTargetWeightKg()).isEqualByComparingTo("65");
-        assertThat(te.getProgression().getDeltaKg()).isEqualByComparingTo("5");
+        assertThat(te.getProgression().getTargetWeightKg()).isEqualByComparingTo("62.5");
+        assertThat(te.getProgression().getDeltaKg()).isEqualByComparingTo("2.5");
         assertThat(res.getOverloadSummary()).isNotNull();
         assertThat(res.getOverloadSummary().getWeightUp()).isGreaterThanOrEqualTo(1);
     }

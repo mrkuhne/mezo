@@ -120,7 +120,7 @@ describe('the analysis tile', () => {
 })
 
 describe('discoverySummary', () => {
-  test('counts every kind, memoir included, and orders the dots as the prototype does', () => {
+  test('counts every kind, memoir included, one segment per present kind in prototype order', () => {
     const s = discoverySummary({
       patterns: [{ pairKey: 'p', title: 'P', event: 'confirmed' }],
       newFacts: [{ id: 'f', text: 'F' }],
@@ -129,13 +129,26 @@ describe('discoverySummary', () => {
       predictions: [{ id: 'x', title: 'X', status: 'pending' }],
     })
     expect(s.count).toBe(5)
-    expect(s.parts).toEqual(['1 minta', '1 új tudás', '1 életesemény', 'memoár', '1 előrejelzés'])
-    expect(s.dots).toEqual(['pattern', 'fact', 'life', 'memoir', 'prediction'])
+    expect(s.segments.map((x) => x.kind)).toEqual(['pattern', 'fact', 'life', 'memoir', 'prediction'])
+    expect(s.segments.map((x) => x.label)).toEqual(['1 minta', '1 új tudás', '1 életesemény', '1 emlékkönyv', '1 előrejelzés'])
+  })
+
+  test('a big week is a few weighted segments, never one mark per trace (mezo-p87ok)', () => {
+    const s = discoverySummary({
+      patterns: Array.from({ length: 23 }, (_, i) => ({ pairKey: `p${i}`, title: `P${i}`, event: 'confirmed' })),
+      newFacts: Array.from({ length: 6 }, (_, i) => ({ id: `f${i}`, text: `F${i}` })),
+      lifeEvents: [], memoir: false, predictions: [],
+    })
+    expect(s.count).toBe(29)
+    expect(s.segments).toEqual([
+      { kind: 'pattern', count: 23, label: '23 minta' },
+      { kind: 'fact', count: 6, label: '6 új tudás' },
+    ])
   })
 
   test('an empty (or absent) digest is a quiet week, not a zero', () => {
     expect(discoverySummary(null).count).toBe(0)
-    expect(discoverySummary(null).parts).toEqual([])
+    expect(discoverySummary(null).segments).toEqual([])
   })
 })
 

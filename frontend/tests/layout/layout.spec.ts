@@ -807,3 +807,31 @@ test('Edzés Mai · the readiness card stays contained and its taps are reachabl
   await expect(page.getByRole('button', { name: 'Könnyítsük' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Maradjon a terv' })).toBeVisible()
 })
+
+// Eligazítás (mezo-mgu2r): the briefing and the list after Indulás stay horizontally contained at
+// the narrowest phone, and the floating Indulás foot sits at the bottom of the frame, not above
+// the scroller's tab-bar padding (the first build's sticky foot floated ~130px up).
+test('train · the Eligazítás and the list after Indulás stay contained at 320px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 })
+  await page.goto('/train/session')
+  await page.waitForLoadState('networkidle')
+  await page.evaluate(() => document.fonts.ready)
+  const start = page.getByRole('button', { name: /^Indulás/ })
+  await expect(start).toBeVisible()
+
+  const brief = await page.evaluate(() => {
+    const sc = document.querySelector('.screen-content') as HTMLElement
+    const foot = document.querySelector('.wbr-foot') as HTMLElement
+    return { scrollWidth: sc.scrollWidth, clientWidth: sc.clientWidth, footGap: Math.round(innerHeight - foot.getBoundingClientRect().bottom) }
+  })
+  expect(brief.scrollWidth).toBeLessThanOrEqual(brief.clientWidth + 1)
+  expect(brief.footGap).toBeLessThanOrEqual(40)
+
+  await start.click()
+  await expect(page.locator('.wo-list')).toBeVisible()
+  const list = await page.evaluate(() => {
+    const sc = document.querySelector('.screen-content') as HTMLElement
+    return { scrollWidth: sc.scrollWidth, clientWidth: sc.clientWidth }
+  })
+  expect(list.scrollWidth).toBeLessThanOrEqual(list.clientWidth + 1)
+})

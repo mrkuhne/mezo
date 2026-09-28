@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
 import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
+import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.proactive.entity.MemoirAnchorsEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.MemoirEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.WeeklyReviewEntity;
@@ -64,6 +65,7 @@ class WeeklyReviewControllerIT extends ApiIntegrationTest {
     @Autowired private CheckInPopulator checkInPopulator;
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private PatternEventRepository patternEventRepository;
+    @Autowired private PatternRepository patternRepository;
     @Autowired private KnowledgeFactPopulator knowledgeFactPopulator;
     @Autowired private LearnedFactPopulator learnedFactPopulator;
     @Autowired private LearnedFactRepository learnedFactRepository;
@@ -94,6 +96,19 @@ class WeeklyReviewControllerIT extends ApiIntegrationTest {
         event.setKind(PatternEventEntity.KIND_CONFIRMED);
         event.setOccurredAt(weekStart.plusDays(2).atStartOfDay(ZoneOffset.UTC).toInstant());
         patternEventRepository.saveAndFlush(event);
+    }
+
+    private void seedPatternEvent(UUID owner, PatternEntity pattern, String kind, Instant at) {
+        PatternEventEntity event = new PatternEventEntity();
+        event.setCreatedBy(owner);
+        event.setPatternId(pattern.getId());
+        event.setKind(kind);
+        event.setOccurredAt(at);
+        patternEventRepository.saveAndFlush(event);
+    }
+
+    private Instant dayOf(int offset, int hour) {
+        return WEEK_START.plusDays(offset).atStartOfDay(ZoneOffset.UTC).plusHours(hour).toInstant();
     }
 
     private GraphNodeEntity seedLifeEvent(UUID owner, LocalDate weekStart, String title) {
@@ -242,6 +257,47 @@ class WeeklyReviewControllerIT extends ApiIntegrationTest {
         assertThat(digest.getLifeEvents().get(0).getOccurredOn()).isEqualTo(WEEK_START.plusDays(3));
         assertThat(digest.getMemoir()).isFalse();
         assertThat(digest.getPredictions()).isEmpty();
+    }
+
+    /** mezo-p87ok: the digest is one trace per discovery, not one row per pattern_event. A pair
+     *  confirmed then promoted in the same week is ONE ref carrying the bigger news; its promotion
+     *  fact is not counted again; refs are ranked promoted > reinforced > confirmed, newest first
+     *  within a kind; facts newest first. */
+    @Test
+    void digestFoldsEventsToOneRefPerPatternAndDropsPromotionFacts() {
+        UUID owner = ownerId();
+        PatternEntity promotedPair = patternPopulator.createPattern(owner, "pair-fold-promoted", "Előléptetett minta");
+        PatternEntity reinforcedPair = patternPopulator.createPattern(owner, "pair-fold-reinforced", "Erősödött minta");
+        PatternEntity confirmedOld = patternPopulator.createPattern(owner, "pair-fold-confirmed-old", "Régebbi megerősítés");
+        PatternEntity confirmedNew = patternPopulator.createPattern(owner, "pair-fold-confirmed-new", "Újabb megerősítés");
+
+        seedPatternEvent(owner, promotedPair, PatternEventEntity.KIND_CONFIRMED, dayOf(1, 8));
+        seedPatternEvent(owner, promotedPair, PatternEventEntity.KIND_PROMOTED, dayOf(2, 8));
+        seedPatternEvent(owner, reinforcedPair, PatternEventEntity.KIND_REINFORCED, dayOf(3, 8));
+        seedPatternEvent(owner, reinforcedPair, PatternEventEntity.KIND_CONFIRMED, dayOf(4, 8));
+        seedPatternEvent(owner, confirmedOld, PatternEventEntity.KIND_CONFIRMED, dayOf(1, 9));
+        seedPatternEvent(owner, confirmedNew, PatternEventEntity.KIND_CONFIRMED, dayOf(5, 9));
+
+        var promotionFact = knowledgeFactPopulator.factAt(owner, "Az előléptetett minta ténye.", "health", dayOf(2, 8));
+        promotedPair.setPromotedFactId(promotionFact.getId());
+        patternRepository.saveAndFlush(promotedPair);
+        knowledgeFactPopulator.factAt(owner, "Régebbi csevegés-tény.", "life", dayOf(1, 10));
+        knowledgeFactPopulator.factAt(owner, "Újabb csevegés-tény.", "life", dayOf(4, 10));
+
+        WeeklyReviewDigestResponse digest = getForBody(
+                "/api/proactive/weekly-review/" + WEEK_START + "/digest",
+                ownerAuthHeaders(), HttpStatus.OK, WeeklyReviewDigestResponse.class);
+
+        assertThat(digest.getPatterns())
+                .extracting(p -> p.getPairKey() + ":" + p.getEvent())
+                .containsExactly(
+                        "pair-fold-promoted:" + PatternEventEntity.KIND_PROMOTED,
+                        "pair-fold-reinforced:" + PatternEventEntity.KIND_REINFORCED,
+                        "pair-fold-confirmed-new:" + PatternEventEntity.KIND_CONFIRMED,
+                        "pair-fold-confirmed-old:" + PatternEventEntity.KIND_CONFIRMED);
+        assertThat(digest.getNewFacts())
+                .extracting(f -> f.getText())
+                .containsExactly("Újabb csevegés-tény.", "Régebbi csevegés-tény.");
     }
 
     @Test

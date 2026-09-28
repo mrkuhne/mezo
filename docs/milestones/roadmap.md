@@ -38,6 +38,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 | `mezo-jcpt` — **Napi értékelés (daily score) redesign** | 🔄 open | C-hybrid score + Mozaik 2.0 UI; spec `2026-09-03-daily-score-redesign`. |
 | `mezo-06o0` / `mezo-88jw` | 🔄 open | Emberek section build-out; the daily-rhythm IA direction spec. |
 | `mezo-d6ivw` — **Mezo emlékezete** | 🔄 open | A reflexiós észrevételek, a knowledge_fact/RAG memória, a Konzílium, a chat és a proaktív üzenetek egy összefüggő tanuló-motorrá és AI-élménnyé állnak össze, elsődlegesen a csapatfal (`mezo-a9bo7`) világán. Vezérli: `/emlekezet` skill. |
+| `mezo-q4xt2` — **Kihagyás + kímélő mód** | 🔄 open (0/4) | Edzés, sport és étkezés kihagyása egy gombbal, okkal (gyors gombok + Egyéb); komoly oknál (betegség, gyomorrontás, sérülés, utazás) több napos kímélő mód napi „Hogy vagy?” kérdéssel és fokozatos visszatéréssel; az MI megérti az okot, de nem ítélkezik. Spec [`2026-09-28-kihagyas-kimelo-mod-design`](../superpowers/specs/2026-09-28-kihagyas-kimelo-mod-design.md). Vezérli: `/kihagyas` skill. |
 | `mezo-rj214` — **Companion teljes adat-hozzáférés** | 🔄 open | A társ kérésre mindent lásson és elérjen ami az adatbázisban van (grammra pontos makrók/mikrók, összetevők, alvás, súly, naplózás, checkinek), és szabadabban tudjon beszélgetni. |
 | `mezo-ozri` — **OpenAI migráció** | 🔄 open | Provider-semleges LLM-varrat Geminiről OpenAI-ra (gpt-5.6-luna/-terra), config-vezérelt model-router, prompt-caching-optimalizált sorrend, per-user rolling USD cap. S2 (OpenAI adapter) shipped 2026-09-07; router/eval-rebaseline/prompt-caching még nyitva. |
 | `mezo-r89o` — **Mezo → Boop átnevezés** | 🔄 open | Az app és a companion-persona átnevezése Mezoról Boopra — amit a user olvas, az Boop; amit tárolunk, az marad `mezo`. |
@@ -60,6 +61,42 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-09-28 — Arányos progressziós lépcső (`mezo-bk7sn`).** Az edzésmotor nem fix +2,5 / +5 kg-ot
+  emel, hanem a súlyhoz mért lépést (összetett ~2,5 %, izolációs ~5 %) a gép valódi súlyaira
+  kerekítve. Ha a következő valódi súly 10 %-nál nagyobb ugrás, előbb legfeljebb 3 ismétlést kér a
+  tartomány teteje fölött, aztán lép; nagy RIR-tartaléknál egy lépcsővel tovább (15 %-os határ). Az
+  új súlyhoz azonos erőfeszítésű ismétlést ad a tartomány alja helyett. A tartomány feletti cél
+  indoklása megjelenik az Eligazításon és a kártyán. Spec:
+  [`proportional-progression-design`](../superpowers/specs/2026-09-28-proportional-progression-design.md).
+- **2026-09-28 — Tanuló energiaigény 2. rész: heti összegző, „Hogy tanultam?" oldal, napi
+  jelölés, kapcsoló (`mezo-3n2so`, `mezo-zz91i` folytatása).** Az 1. részben csendben tanuló
+  napi energiaigény mostantól látható és javítható. Heti egyszer, csak ha van mit mondani, egy
+  finom pont jelenik meg a Fuel Mai oldalon, amely egy lap mögött megmutatja mi változott és
+  miért; bármelyik nap egy koppintással megjelölhető teljesnek/hiányosnak — a hét és minden
+  utána következő hét azonnal újraszámol; egy kapcsoló a Finomhangolásban kiveheti a tanulást a
+  napi keretből; egy önálló oldal (`/fuel/tanulas`) heti bontásban mutatja a teljes tanulási
+  történetet. Backend: `intake_day_mark` tábla + azonnali újraláncolás, `diet_settings.
+  learning_enabled` kapcsoló, öt új végpont, heti értesítés a hétfői futásból. Frontend: a heti
+  pont + lap, a tanulási oldal (történeti grafikon, utolsó 14 nap kapcsolókkal), a napi jelölés
+  sor a naplóban, a beállítás-kapcsoló. Élő prototípus szinkronban: [`fuel.html`](../design_2.0/prototypes/elo/fuel.html).
+  Elmaradt: a Profil TDEE-kártya továbbra is a képlet szerinti alapot mutatja tanulónál is
+  (`mezo-qnsl9`, külön követve — ArchUnit-tár regenerálást igényel). Spec:
+  [`2026-09-27-learned-expenditure-part2-design`](../superpowers/specs/2026-09-27-learned-expenditure-part2-design.md).
+  Dokumentáció: [`goal-engine.md`](../features/goal-engine.md) §3 · [`fuel.md`](../features/fuel.md) §2.
+- **2026-09-28 — Eligazítás (`mezo-mgu2r`).** Az edzés indítása előtt újra van egy felkészítő
+  képernyő, de egyetlen, új formában: várható idő sávban, gyakorlat- és szettszám, fájdalom-jelzés,
+  a napi küldetések előre bepipálva (a túlterhelés és az alacsony kockázatú, legalább 70%-ban biztos
+  ajánlatok), a túlterhelés-sor, a gyakorlatlista és egy mindig látható Indulás gomb. Félbehagyott
+  edzés folytatásakor nem jön elő. Az edzés közbeni lista letisztult: a küldetés a saját gyakorlatán
+  ül jelvényként (koppintásra elengedhető, visszavehető), a kártyafejen a „Múlt hét / Ma a cél”
+  dobozok helyett egy „↑ +2,5 kg” típusú címke. Spec: [`workout-briefing-design`](../superpowers/specs/2026-09-28-workout-briefing-design.md).
+  See [train.md](../features/train.md).
+- **2026-09-28 — Heti felfedezések: egy felfedezés = egy nyom (`mezo-p87ok`).** A heti felfedezések
+  kártyája 72 elemnél szétesett (elemenként egy pötty), az oldala egy 72 csempés fal volt. A digest
+  most mintánként egy nyomot ad (a hét legnagyobb hírével), az előléptetés saját ténye nem számít
+  újra (a 2026-09-21-i hét 72 → ~34); a kártyán egy arány-csík + jelmagyarázat, az oldalon a ritka
+  nyomok egészben felül, a minták és az új tudás lenyitható fiókban. Mellékesen: sötét módban az
+  életesemény-csempe egy globális `.sky` szabály miatt láthatatlan volt. [`me.md`](../features/me.md).
 - **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** A check-in négy fix kérdésből tizennégy tételes,
   napszakhoz igazodó kérdéssorrá nőtt: az öt alap (energia, hangulat, stressz, testi érzés,
   fejtisztaság) után reggel kipihentség, izomláz, fájdalom (testrész-ábrával) és motiváció,

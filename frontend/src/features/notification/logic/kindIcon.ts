@@ -22,5 +22,8 @@ export const NTF_3D: Partial<Record<ClayIconName, Icon3DName>> = {
   'i-mezo': 't-chat',        // team_edition — a csapat megszólalt a falon (mezo-a9bo7.13)
 }
 
-/** The icon name a notification kind's clay glyph renders as (feed `ContentIcon` input). */
-export const ntfIcon = (name: ClayIconName): ClayIconName | Icon3DName => NTF_3D[name] ?? name
+/** The icon name a notification kind's clay glyph renders as (feed `ContentIcon` input). A meta
+ *  entry may already carry a 3D name directly (e.g. `expenditure_week`'s `t-lens`, mezo-3n2so) —
+ *  those pass through unchanged, same as any clay name absent from the remap above. */
+export const ntfIcon = (name: ClayIconName | Icon3DName): ClayIconName | Icon3DName =>
+  NTF_3D[name as ClayIconName] ?? name

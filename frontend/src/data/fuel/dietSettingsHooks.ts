@@ -8,7 +8,7 @@ import type { DietSettings } from '@/data/types'
 /** The backend's config-default ghost — the honest value in BOTH modes before a save. */
 export const DIET_SETTINGS_GHOST: DietSettings = {
   splitPreset: 'balanced', proteinPctX10: null, carbsPctX10: null, fatPctX10: null,
-  proteinTier: 'moderate', waterMl: 4000, fiberG: 30, dayTypeShiftKcal: 0,
+  proteinTier: 'moderate', waterMl: 4000, fiberG: 30, dayTypeShiftKcal: 0, learningEnabled: true,
 }
 
 export function useDietSettings() {
@@ -36,6 +36,12 @@ export function useDietSettingsActions() {
       qc.invalidateQueries({ queryKey: ['dietSettings'] })
       qc.invalidateQueries({ queryKey: ['goals'] })    // save re-prescribed the active goal (carbsG/fatG)
       qc.invalidateQueries({ queryKey: ['fuelDay'] })  // day targets changed with the split
+      // The learning switch lives on this same settings save (mezo-3n2so) — flipping it stales
+      // every learned-expenditure read just like the split does above.
+      qc.invalidateQueries({ queryKey: ['expenditureExplanation'] })
+      qc.invalidateQueries({ queryKey: ['expenditureHistory'] })
+      qc.invalidateQueries({ queryKey: ['expenditureWeeklyCard'] })
+      qc.invalidateQueries({ queryKey: ['intakeDays'] })
     },
   })
   return {

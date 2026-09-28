@@ -181,6 +181,33 @@ describe('useFuelDay (real mode)', () => {
     })
   })
 
+  // Final review (mezo-3n2so): the day-log mark line reads ['intakeDays', d, d] — logging or
+  // deleting food changes that day's status, so both writes must refetch it (and the weekly card).
+  it('logMeal and deleteMeal invalidate ["intakeDays"] and ["expenditureWeeklyCard"]', async () => {
+    const { qc, Wrapper } = sharedWrapper()
+    const spy = vi.spyOn(qc, 'invalidateQueries')
+    server.use(
+      http.post(`${API_BASE}/api/meal`, async () => HttpResponse.json({
+        id: 'new', slot: 'breakfast', loggedAt: '2026-07-02T08:00:00+02:00', mealDate: '2026-07-02',
+        title: 'Teszt', macros: { kcal: 260, p: 20, c: 30, f: 5 }, score: { value: 0.8 }, items: [],
+      }, { status: 201 })),
+      http.delete(`${API_BASE}/api/meal/m1`, () => new HttpResponse(null, { status: 204 })),
+    )
+    const { result } = renderHook(() => useMealActions('2026-07-02'), { wrapper: Wrapper })
+    const keysNow = () => spy.mock.calls.map(c => JSON.stringify((c[0] as { queryKey: unknown }).queryKey))
+    act(() => result.current.logMeal(newMeal))
+    await waitFor(() => {
+      expect(keysNow()).toContain(JSON.stringify(['intakeDays']))
+      expect(keysNow()).toContain(JSON.stringify(['expenditureWeeklyCard']))
+    })
+    spy.mockClear()
+    act(() => result.current.deleteMeal('m1'))
+    await waitFor(() => {
+      expect(keysNow()).toContain(JSON.stringify(['intakeDays']))
+      expect(keysNow()).toContain(JSON.stringify(['expenditureWeeklyCard']))
+    })
+  })
+
   it('logMeal invalidates ["habitDay"] and the day quest read (derived habit + quest re-derive)', async () => {
     // protein_breakfast / kitchen_close habits + protein_target / own_recipe_meal quests are
     // re-derived server-side on the next read — a meal log must nudge both, or the ✓ never appears.

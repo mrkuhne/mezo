@@ -9,6 +9,7 @@ import { makeHookWrapperWithClient } from '@/test/queryWrapper'
 import { FuelSettingsPage } from '@/features/fuel/pages/FuelSettingsPage'
 import { fuelDay } from '@/data/fuel/fuel'
 import { buildFuelSettingsMacroPreview, projectDraftTargets } from '@/features/fuel/logic/fuelSettingsPreview'
+import { onToast } from '@/shared/lib/toastBus'
 
 // The mock seed's served targets (mezo-32m82 — derived from the mock goal), and the page's own
 // number formatting; expectations are expressions off them, never pasted literals.
@@ -113,8 +114,48 @@ describe('FuelSettingsPage', () => {
     expect(client.getQueryData(['fuelSettings'])).toEqual({ mealsPerDay: 5, caffeineCutoff: '13:00' })
     expect(client.getQueryData(['dietSettings'])).toEqual({
       splitPreset: 'low_carb', proteinPctX10: null, carbsPctX10: null, fatPctX10: null,
-      proteinTier: 'high', waterMl: 3200, fiberG: 35, dayTypeShiftKcal: 50,
+      proteinTier: 'high', waterMl: 3200, fiberG: 35, dayTypeShiftKcal: 50, learningEnabled: true,
     })
+  })
+
+  // mezo-3n2so: a Finomhangolás kártya tanulás-kapcsolója — külön draft-mező, ami a
+  // `dietDirty`-t is mozgatja, és a mentésnél a saját `learningEnabled` értékét küldi.
+  test('the learning switch starts on (the ghost default) and toggling it flips the value', async () => {
+    renderPage()
+    const toggle = screen.getByRole('switch', { name: 'Tanulás a súlyomból és az evésemből' })
+    expect(toggle).toHaveAttribute('aria-checked', 'true')
+
+    await userEvent.click(toggle)
+
+    expect(toggle).toHaveAttribute('aria-checked', 'false')
+  })
+
+  test('toggling the learning switch makes the form dirty and saves learningEnabled:false', async () => {
+    const { client } = renderPage()
+    const toggle = screen.getByRole('switch', { name: 'Tanulás a súlyomból és az evésemből' })
+
+    await userEvent.click(toggle)
+    expect(screen.getByRole('button', { name: /Mentés/ })).toBeEnabled()
+    await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/settings'))
+    expect(client.getQueryData(['dietSettings'])).toMatchObject({ learningEnabled: false })
+  })
+
+  // mezo-3n2so: mock módban a Fuel nap kcal-célja nem reagál a kapcsolóra (nincs motor), tehát a
+  // kiszolgált kcal a mentés előtt/után változatlan marad — a diff-toast ekkor sima „Mentve” (a
+  // task-brief engedélye szerint: N = 0 → sima „Mentve”).
+  test('save toasts plain "Mentve" in mock mode (served kcal is unchanged)', async () => {
+    const toasts: string[] = []
+    const off = onToast((t) => { if ('text' in t) toasts.push(t.text) })
+    renderPage()
+
+    await userEvent.click(screen.getByRole('switch', { name: 'Tanulás a súlyomból és az evésemből' }))
+    await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/settings'))
+    off()
+    expect(toasts).toEqual(['Mentve'])
   })
 
   test('navigates to the meal-window editor', async () => {

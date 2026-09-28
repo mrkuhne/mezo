@@ -54,6 +54,7 @@ import { FuelLogNewPage } from '@/features/fuel/pages/FuelLogNewPage'
 import { FuelMealDetailPage } from '@/features/fuel/pages/FuelMealDetailPage'
 import { FuelMealScorePage } from '@/features/fuel/pages/FuelMealScorePage'
 import { FuelTrendekPage } from '@/features/fuel/pages/FuelTrendekPage'
+import { LearningPage } from '@/features/fuel/pages/LearningPage'
 import { FuelKonyhaPage } from '@/features/fuel/pages/FuelKonyhaPage'
 import { FuelStackPage } from '@/features/fuel/pages/FuelStackPage'
 import { FuelStackProtocolPage } from '@/features/fuel/pages/FuelStackProtocolPage'
@@ -378,6 +379,9 @@ export const routes: RouteObject[] = [
       { path: 'fuel/etkezes/:id', element: <FuelMealDetailPage /> },
       // Fuel Titanium S0 (mezo-o6uv): a két új cél route-ja — a tartalom S3/S4.
       { path: 'fuel/trendek', element: <FuelTrendekPage /> },
+      // „Hogy tanultam?” (mezo-3n2so): the learned base week by week, the last 14 days' switches and
+      // the six-section explainer — opened from the energy sheet, the weekly sheet and the bell.
+      { path: 'fuel/tanulas', element: <LearningPage /> },
       { path: 'fuel/konyha', element: <FuelKonyhaPage /> },
       { path: 'fuel/stack', element: <FuelStackPage /> },
       { path: 'fuel/stack/protocol', element: <FuelStackProtocolPage /> },

@@ -14,7 +14,7 @@ import { localDateString } from '@/shared/lib/dates'
 // Mock módban a companion-feed üres, a demo-briefing viszont megvan, és az Életjel-ringek
 // küszöb-nudge-jai a szál végére kerülnek — a badge a TELJES szálat számolja (mezo-atry:
 // a fejléc korábban nudge-ok nélkül épített szálat, ezért a vízjel sosem talált). A
-// notificationFeedSeed-ben 3 olvasatlan értesítés van (nf-1..nf-3).
+// notificationFeedSeed-ben 5 olvasatlan értesítés van (nf-1..nf-3, nf-7, nf-12).
 // Az óra 13:00-ra van fagyasztva: a `mockSleepGoal` (ébredés 06:45, cél 450 perc → lefekvés
 // 23:15) `faceWindows`-a ekkor reggel 06:15–11:45, nap 11:45–19:15, este 19:15–06:15 — 13:00
 // egyértelműen `nap`, determinisztikusan mindkét CI-módban. Enélkül a `?dp=` navigáció és az
@@ -128,10 +128,10 @@ test('az Üzenetek karika badge-e a szál TELJES hosszát viseli, a nudge-okkal 
 test('az értesítés-karika badge-e az olvasatlan értesítések számát viseli', async () => {
   renderAt('/nap')
   const btn = await screen.findByRole('button', { name: /^Értesítések/ })
-  // 4 az `notificationFeedSeed` olvasatlan sorainak száma (mezo-0cbh adta a negyediket) —
+  // 5 az `notificationFeedSeed` olvasatlan sorainak száma (mezo-3n2so adta az ötödiket) —
   // a szám a seedből SZÁRMAZIK, nem önálló tény.
-  expect(btn.getAttribute('aria-label')).toBe('Értesítések, 4 olvasatlan')
-  expect(btn.querySelector('.nap-badge')).toHaveTextContent('4')
+  expect(btn.getAttribute('aria-label')).toBe('Értesítések, 5 olvasatlan')
+  expect(btn.querySelector('.nap-badge')).toHaveTextContent('5')
 })
 
 test('az értesítés-dropdown a /me/ertesitesek oldalra visz a lábléceről', async () => {

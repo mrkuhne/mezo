@@ -9,9 +9,8 @@
 //   head  — MuscleChip art · name (+ KIHAGYVA tag) · records button · ⋮ menu
 //   note  — the durable per-exercise note as a `.wo-note` pill (tap → editor)
 //   cue   — the plan's OWN rationale sentence (never invented copy)
-//   band  — the ProgressionBanner when the engine emitted a progression signal.
-//           The cue and the banner are NOT mutually exclusive (mezo-i8ahy): the cue
-//           belongs to the exercise, the banner to today's target.
+//   head  — the vs-last-week chip when the engine emitted a progression signal (mezo-mgu2r:
+//           it replaced the ProgressionBanner's Múlt hét / Ma a cél cells).
 //   rows  — `.wo-rows-head` + one `.wo-row` per WORKING slot
 //
 // Warm-up slots are prescribed but never rendered (mezo-i8ahy, owner ruling): the card
@@ -45,7 +44,8 @@ import { adjustedRange, adjustedTarget, equivalentReps } from '@/features/train/
 import { formatDecimal, parseDecimal } from '@/features/train/logic/decimalInput'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { MedalChip } from '@/features/train/components/MedalChip'
-import { ProgressionBanner } from '@/features/train/components/ProgressionBanner'
+import { overflowWhy, progressionChip } from '@/features/train/logic/progressionChip'
+import type { ChallengeBadgeState } from '@/features/train/components/WorkoutMenuGlass'
 import { Icon3D } from '@/shared/ui/clay'
 import {
   type Session,
@@ -102,9 +102,11 @@ export interface WorkoutCardProps {
   medalsBySetIdx?: Record<number, Medal[]>
   /** localIds of this exercise's logged sets whose POST failed (mezo-l3on F1). */
   failedLocalIds?: ReadonlySet<string>
-  /** The accepted challenge (mezo-88iwa quest) targeting THIS exercise, if any —
-   *  restored per-card after fd58c790c removed the single-exercise metaline chip. */
-  challenge?: { label: string; target: string } | null
+  /** The challenges on THIS exercise that the owner took on at Indulás (mezo-mgu2r) — accepted,
+   *  released mid-workout, or already resolved. Each is a tappable badge. */
+  challenges?: { id: string; label: string; target: string; state: ChallengeBadgeState }[]
+  /** Opens the challenge's detail glass (release / take back). */
+  onOpenChallenge?: (id: string) => void
   /** No instance id to log against (a failed start — mezo-e1ii9 fix round 1): the cursor
    *  row's ✓ is disabled, so a set that the server cannot store is never shown as stored. */
   logBlocked?: boolean
@@ -112,7 +114,7 @@ export interface WorkoutCardProps {
 
 export function WorkoutCard({
   exercise, session, busy, onLogSet, onTapDoneRow, onOpenRecords, onOpenMenu, onEditNote,
-  note = '', medalsBySetIdx = {}, failedLocalIds, challenge, logBlocked = false,
+  note = '', medalsBySetIdx = {}, failedLocalIds, challenges = [], onOpenChallenge, logBlocked = false,
 }: WorkoutCardProps) {
   const id = exercise.id
   const logged = session.logged[id] ?? []
@@ -131,9 +133,11 @@ export function WorkoutCard({
   // FIRST-EVER exercise (no lastWeek to compare — the banner's left cell is an em dash):
   // there the rationale explains the starting choice, so it keeps that one slot. The real
   // coaching cue arrives with its own field (mezo-b516k's cue work).
+  // mezo-bk7sn: a target past the range top (reps before a too-big weight jump) carries its
+  // reason in the same slot — "13" in a 10–12 range is not self-explaining.
   const cue = exercise.lastWeek == null
     ? (exercise.rationale ?? exercise.progression?.rationale ?? null)
-    : null
+    : overflowWhy(exercise.repMax, exercise.progression)
 
   // The draft for the ONE editable row (the cursor slot). Reset whenever the cursor
   // moves or the slot count changes — a removeSet splices the prescription, so the
@@ -168,7 +172,7 @@ export function WorkoutCard({
 
   // Skipped = the dashed free state (bible §3 rank 4), everything else ONE glass card.
   const cardClass = 'wo-card' + (skipped ? ' is-skipped uv-empty' : ' glass' + (complete ? ' is-complete' : ''))
-  const hasPills = !!challenge || !!note || (!skipped && !!cue)
+  const hasPills = challenges.length > 0 || !!note || (!skipped && !!cue)
 
   return (
     <section
@@ -184,6 +188,12 @@ export function WorkoutCard({
         <span className="wo-card-copy">
           <strong>{exercise.name}</strong>
           {skipped && <small className="is-skip">KIHAGYVA</small>}
+          {/* The one-glance vs-last-week chip (mezo-mgu2r) — it replaced the Múlt hét / Ma a cél
+              cells: the pre-filled rows already carry today's target. */}
+          {!skipped && exercise.progression && (() => {
+            const chip = progressionChip(exercise.progression)
+            return <span className={`wo-delta is-${chip.tone}`} title="A múlt héthez képest">{chip.text}</span>
+          })()}
         </span>
         <button
           type="button"
@@ -206,12 +216,20 @@ export function WorkoutCard({
 
       {hasPills && (
         <div className="wos-pills">
-          {challenge && (
-            <div className="wo-note wos-pill-quest" title={challenge.label} aria-label={`Elfogadott kihívás — ${challenge.label}`}>
+          {challenges.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              className={`wo-note wos-pill-quest${c.state === 'released' ? ' is-released' : ''}`}
+              aria-label={`${c.label} küldetés · ${c.state === 'released' ? 'elengedve' : c.state === 'accepted' ? 'vállalva' : 'lezárva'}`}
+              onClick={() => onOpenChallenge?.(c.id)}
+            >
               <Icon3D name="t-quest" size={18} />
-              <span className="ntext">{challenge.target}</span>
-            </div>
-          )}
+              <span className="ntext">
+                {c.state === 'released' ? <>elengedve · <s>{c.target}</s></> : `${c.label} · ${c.target}`}
+              </span>
+            </button>
+          ))}
 
           {note && (
             <button type="button" className="wo-note exercise-note-pill" aria-label="Gyakorlat-jegyzet" onClick={onEditNote}>
@@ -232,10 +250,6 @@ export function WorkoutCard({
 
       {!skipped && (
         <>
-          {exercise.progression && (
-            <ProgressionBanner progression={exercise.progression} lastWeek={exercise.lastWeek} />
-          )}
-
           <div className="wo-rows">
             <div className="wo-rows-head" aria-hidden="true">
               <span>#</span>
