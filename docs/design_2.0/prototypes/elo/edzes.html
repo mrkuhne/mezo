@@ -3134,7 +3134,7 @@ function briefing(){
     <div class="bqlist">${CHAL.map((c,i)=>`<button class="bqrow ${TICK[i]?'on':''}" data-btick="${i}" aria-pressed="${TICK[i]}"><span class="bqtx"><strong>${c.ex}</strong><span class="bqvals"><span class="bqtype">${I(QICON[c.type]||'quest')}${c.type}</span>${qchips(c.target).map(v=>`<b>${v}</b>`).join('')}</span><em>${c.conf==='tanulom'?'Még tanulom, mennyire biztos':c.conf+' biztos'} · alacsony kockázat</em><span class="bqmore" data-toast="${c.why.replace(/"/g,'')}">Miért ezt? ›</span></span><span class="bqtk">${TICK[i]?I('tick'):''}</span></button>`).join('')}</div>
     <p class="fnote">Az előre bepipáltakat javaslom. Passzolni ér — és edzés közben is elengedheted bármelyiket.</p></article></section>
   <div class="gap"></div>
-  <div class="ovl rise" style="--i:4">${I('up')}<span><strong>Túlterhelés · 2× +súly · 2× +ism.</strong><small>Ezeken a gyakorlatokon lépünk ma előre.</small></span></div>
+  <div class="ovl rise" style="--i:4">${I('up')}<span><strong>Túlterhelés · 2× +súly · 2× +rep</strong><small>Ezeken a gyakorlatokon lépünk ma előre.</small></span></div>
   ${eyeb('A MAI SOR','Gyakorlatok')}
   <section class="list">${EX.map((e,i)=>`<div class="brow rise" style="--i:${i+5}">${mchp(e.k,'sm')}<span class="grow"><strong>${e.n}</strong><small>${e.sets.length} szett · cél ${e.goal} · ${e.chg}</small>${e.why?`<em class="bwhy">${e.why}</em>`:''}</span>${on(e.n)?`<span class="bqb" aria-label="Van vállalt küldetés">${I('quest')}</span>`:''}</div>`).join('')}</section>`;
 }

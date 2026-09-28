@@ -61,6 +61,13 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-09-28 — Arányos progressziós lépcső (`mezo-bk7sn`).** Az edzésmotor nem fix +2,5 / +5 kg-ot
+  emel, hanem a súlyhoz mért lépést (összetett ~2,5 %, izolációs ~5 %) a gép valódi súlyaira
+  kerekítve. Ha a következő valódi súly 10 %-nál nagyobb ugrás, előbb legfeljebb 3 ismétlést kér a
+  tartomány teteje fölött, aztán lép; nagy RIR-tartaléknál egy lépcsővel tovább (15 %-os határ). Az
+  új súlyhoz azonos erőfeszítésű ismétlést ad a tartomány alja helyett. A tartomány feletti cél
+  indoklása megjelenik az Eligazításon és a kártyán. Spec:
+  [`proportional-progression-design`](../superpowers/specs/2026-09-28-proportional-progression-design.md).
 - **2026-09-28 — Tanuló energiaigény 2. rész: heti összegző, „Hogy tanultam?" oldal, napi
   jelölés, kapcsoló (`mezo-3n2so`, `mezo-zz91i` folytatása).** Az 1. részben csendben tanuló
   napi energiaigény mostantól látható és javítható. Heti egyszer, csak ha van mit mondani, egy
