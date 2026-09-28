@@ -69,6 +69,13 @@ public class ForgetService {
         forgetPatternRow(userId, pattern);
     }
 
+    /** S8 (mezo-d6ivw.12): a rejected proposal is never proposed again — the SAME fact_text veto a
+     *  forget writes, through the one shared key helper (lesson 41). Idempotent. */
+    @Transactional
+    public void vetoFactText(UUID userId, String text) {
+        veto(userId, MemoryForgetVetoEntity.DOMAIN_FACT_TEXT, MemoryForgetVetoEntity.factTextVetoKey(text));
+    }
+
     private Optional<PatternEntity> sourcePattern(UUID userId, KnowledgeFactEntity fact) {
         UUID viaEnvelope = fact.getProvenance() == null ? null : fact.getProvenance().patternId();
         if (viaEnvelope != null) {

@@ -918,6 +918,11 @@ mezo:
       # V3.3: pattern-facts promoted within this many days get an in-chat acknowledgment
       # block ("ezt megtanultam rólad"); 0 = off
       pattern-ack-days: 3
+    # S8 (mezo-d6ivw.12): one-shot rewrite of title-only pattern facts into full sentences.
+    # "off" | dry-run | apply — QUOTED: a bare off is YAML boolean false. Prod flips it for one
+    # deploy via MEZO_COMPANION_FACTTEXTBACKFILL_MODE; apply only after the owner's OK.
+    fact-text-backfill:
+      mode: "off"
     # Spec 2026-09-16 (mezo-rj214.7): a turn's gear decides how much thinking it earns.
     # The gear never decides WHICH MODEL plans — the smart tier always does.
     turn:
@@ -959,6 +964,11 @@ mezo:
       # Max learned_fact candidates persisted per chat turn (dedupe against confirmed facts
       # + pending candidates runs first)
       max-candidates-per-turn: 3
+    # S8 (mezo-d6ivw.12): the chat recalls the people a message names — deterministically (the
+    # MentionDetectionService TextFold/word-start rule), before routing. Off ⇒ no block, no
+    # "Emlékszem" disclosure; the planner can still fetch people through get_personal_context.
+    people-recall:
+      enabled: true
     embedding:
       # V2.1 memory vectors (L1 episodic recall) — embedding model behind the EmbeddingPort.
       # The 768 dimension is structural (memory_embedding vector(768) + EmbeddingPort.DIMENSIONS), not config.

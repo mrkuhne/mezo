@@ -36,6 +36,7 @@ public class FactCandidateService {
     private final KnowledgeFactRepository knowledgeFactRepository;
     private final CompanionMapper mapper;
     private final ApplicationEventPublisher eventPublisher;
+    private final ForgetService forgetService;
 
     public List<FactCandidateResponse> listPending(UUID userId) {
         return learnedFactRepository
@@ -52,12 +53,13 @@ public class FactCandidateService {
             throw new SystemRuntimeErrorException(
                     SystemMessage.error("COMPANION_CANDIDATE_ALREADY_DECIDED").build());
         }
-        if (LearnedFactEntity.DECISION_SNOOZE.equals(request.getDecision())) {
+        String decision = request.getDecision().getValue();
+        if (LearnedFactEntity.DECISION_SNOOZE.equals(decision)) {
             // „Most ne” (U9b): not a decision — the candidate stays open and returns in 14 days.
             candidate.setSnoozedUntil(Instant.now().plus(CandidateSnooze.DURATION));
             return mapper.toFactCandidateResponse(learnedFactRepository.saveAndFlush(candidate));
         }
-        switch (request.getDecision()) {
+        switch (decision) {
             case LearnedFactEntity.DECISION_ACCEPT ->
                     candidate.setPromotedFactId(promote(userId, candidate.getCandidateText(), candidate));
             case LearnedFactEntity.DECISION_REFINE -> {
@@ -68,12 +70,13 @@ public class FactCandidateService {
                 candidate.setRefinedText(request.getRefinedText());
                 candidate.setPromotedFactId(promote(userId, request.getRefinedText(), candidate));
             }
-            case LearnedFactEntity.DECISION_REJECT -> { /* decision only — nothing is promoted */ }
-            // unreachable while the contract pattern holds — honest 400 if it ever drifts
+            // S8 (mezo-d6ivw.12): "Ne" is permanent — chat chip AND inbox. The extractor's veto
+            // check (FactExtractionService) then never re-proposes the same text.
+            case LearnedFactEntity.DECISION_REJECT -> forgetService.vetoFactText(userId, candidate.getCandidateText());
             default -> throw new SystemRuntimeErrorException(
                     SystemMessage.field("VALIDATION_INVALID_VALUE", "decision").build());
         }
-        candidate.setUserDecision(request.getDecision());
+        candidate.setUserDecision(decision);
         if (candidate.getPromotedFactId() != null) {
             // W2.2 (mezo-b3pp.7): accept/refine just minted (or re-confirmed) a knowledge_fact —
             // promote it into a PREFERENCE node. Reject never sets promotedFactId, so no event fires.

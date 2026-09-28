@@ -7,8 +7,8 @@ import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.people.entity.PersonFactEntity;
 import io.mrkuhne.mezo.feature.people.service.PersonFactService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.text.TextFold;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
@@ -26,7 +27,7 @@ import tools.jackson.databind.ObjectMapper;
  * {@link PersonFactService} kapun át íródnak (ArchUnit-irány: companion → people).
  *
  * <p>Földelés kódban, nem az LLM-ben: csak olyan tény marad meg, amelynek a neve PONTOSAN EGY
- * aktív személy nevére/aliasára illeszkedik (hu-fold, kisbetűs egyezés) — nulla vagy több találat
+ * aktív személy nevére/aliasára illeszkedik (TextFold: kisbetű + ékezet nélkül) — nulla vagy több találat
  * = eldobás (owner-döntés: sosem találgatunk két hasonló név között). Ismeretlen névből itt nem
  * lesz semmi: az éjszakai jelölt-út ({@code PersonExtractionService}) a chat-szöveget is olvassa,
  * így az új arc felvételi javaslata onnan érkezik.
@@ -40,19 +41,21 @@ public class PersonFactExtractionService {
     /** A prompt első szava — a fake LLM erre kulcsolja a determinisztikus választ. */
     public static final String PERSON_FACT_MARKER = "SZEMÉLYTÉNY";
 
-    static final String EXTRACTION_PROMPT = """
-            SZEMÉLYTÉNY. A beszélgetés-fordulóból gyűjtsd ki az ISMERT SZEMÉLYEKRŐL szóló ÚJ, tartós tényeket
+    public static final String EXTRACTION_PROMPT = """
+            SZEMÉLYTÉNY. A beszélgetés-fordulóból gyűjtsd ki az ISMERT SZEMÉLYEKRŐL szóló tartós tényeket
             — kizárólag azt, amit {{NÉV}} maga állított. NEM {{NÉV}}-ről: róla más gyűjtő gondoskodik.
             Fajták: preference (mit szeret/nem szeret), relationship_state (a kapcsolat mostani állapota),
             shared_activity (közös, ismétlődő tevékenység), important_date (fontos dátum),
             sensitivity (mire érzékeny, mivel bánj óvatosan).
-            Csak az ISMERT SZEMÉLYEK listáján szereplő nevekhez írj tényt; bizonytalan egyezésnél hagyd ki.
-            Egyszeri eseményt, kérdést, feltételezést NE vegyél fel.
+            Tartós tény egy stabil kapcsolati állapot vagy egy ismétlődő minta is („tavasz óta a párom
+            a pályán", „hétköznap ritkán ér rá") — akkor is, ha egy érzelmes, személyes történet
+            közben hangzik el. Egy tisztán egyszeri eseményt („tegnap felhívott"), kérdést vagy
+            feltételezést NE vegyél fel.
+            Csak az ISMERT SZEMÉLYEK listáján szereplő nevekhez írj tényt, és a nevet úgy add vissza,
+            ahogy a listán szerepel.
             Válaszolj KIZÁRÓLAG egy JSON tömbbel, magyarázat nélkül, pontosan ebben a formában:
             [{"name":"...","kind":"preference","fact":"...","confidence":"low|medium|high"}]
             Ha nincs ilyen tény: []""";
-
-    private static final Locale HU = Locale.forLanguageTag("hu");
 
     private final CompanionLlm companionLlm;
     private final LlmCallContextHolder llmCallContextHolder;
@@ -60,6 +63,8 @@ public class PersonFactExtractionService {
     private final PromptPersona promptPersona;
     // ObjectProvider: a PEOPLE_SWITCH független a COMPANION párostól — kikapcsolva néma no-op.
     private final ObjectProvider<PersonFactService> personFactService;
+    private final MessageExtractionGate extractionGate;
+    private final TransactionTemplate transactionTemplate;
 
     /** Egy kinyert elem, ahogy az LLM visszaadja. */
     record ExtractedPersonFact(String name, String kind, String fact, String confidence) {}
@@ -94,8 +99,11 @@ public class PersonFactExtractionService {
         if (captures.isEmpty()) {
             return 0;
         }
-        return facts.capture(userId, PersonFactEntity.SOURCE_CHAT_TURN, userMessageId.toString(), captures)
-                .size();
+        // S8 (mezo-d6ivw.12): gate + save in ONE transaction — the gate's FOR SHARE must be held
+        // until the capture commits, or a forget could slip in between.
+        Integer saved = transactionTemplate.execute(status -> extractionGate.isBlocked(userMessageId) ? 0
+                : facts.capture(userId, PersonFactEntity.SOURCE_CHAT_TURN, userMessageId.toString(), captures).size());
+        return saved == null ? 0 : saved;
     }
 
     /** Defensive parse: first '['..last ']' substring — a {@code FactExtractionService.parse} idióma. */
@@ -113,16 +121,18 @@ public class PersonFactExtractionService {
         }
     }
 
-    /** Pontosan EGY aktív személyre illeszkedő név (név vagy alias, hu-fold) — különben eldobás. */
+    /** Pontosan EGY aktív személyre illeszkedő név (név vagy alias, TextFold: kisbetű + ékezet
+     *  nélkül — „Dori" = „Dóri") — különben eldobás. S8 óta ugyanaz a szabály, mint az éjszakai
+     *  {@code PersonExtractionService.validFacts}-é. */
     private static PersonFactService.PersonFactCapture resolve(
             List<PersonFactService.KnownPerson> known, ExtractedPersonFact f) {
         if (f.name() == null || f.fact() == null || !PersonFactEntity.KINDS.contains(f.kind())) {
             return null;
         }
-        String needle = f.name().strip().toLowerCase(HU);
+        String needle = TextFold.fold(f.name().strip());
         List<PersonFactService.KnownPerson> matches = known.stream()
-                .filter(p -> p.name().toLowerCase(HU).equals(needle)
-                        || p.aliases().stream().anyMatch(a -> a.toLowerCase(HU).equals(needle)))
+                .filter(p -> TextFold.fold(p.name()).equals(needle)
+                        || p.aliases().stream().anyMatch(a -> TextFold.fold(a).equals(needle)))
                 .toList();
         if (matches.size() != 1) {
             return null; // 0 = ismeretlen név (jelölt-út dolga), 2+ = kétértelmű — sosem találgatunk

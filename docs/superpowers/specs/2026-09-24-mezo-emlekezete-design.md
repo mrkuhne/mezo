@@ -1443,6 +1443,286 @@ options): the Rólad page becomes a **short distributor**:
    views; kirakat tiles cross-link to `uveg-tudastar-hub.html`). Status: awaiting owner
    OK; the implementation bead (BoopAboutPage rework) is filed on the OK.
 
+## S8 delta — the chat's memory, visible and honest (2026-09-27, owner-approved direction, mezo-d6ivw.12 + folded S6b mezo-d6ivw.9)
+
+**Trigger:** the 2026-09-26 late-night loneliness conversation (evidence in the bead). Across 4
+turns the planner fetched people context once. The chat said "Nem tudom elmenteni" while two
+owner facts were being extracted in the background. Nothing in the chat showed what was
+learned. The person-fact extractor returned `[]` for a conversation about five people, and the
+nightly run stored facts for only 3 of 5 people named in one sentence. The one "Jegyezd meg"
+confirm became a knowledge fact made of the observation's **title** only.
+
+**Owner decisions (2026-09-27):**
+
+1. **S6b folds in.** The in-chat "ezt ne jegyezd meg" and the chip undo are one surface, with
+   one prototype and one OK.
+2. **Owner facts are asked for in place, not auto-saved.** The chat shows a
+   **"Megjegyezném: … [Igen] [Ne]"** chip for each `learned_fact` candidate the turn produced.
+   - *Igen* accepts it: the existing decide → promote path.
+   - *Ne* rejects it **permanently**: a fact_text veto, so it is never proposed again.
+   - Ignored → the candidate stays in the Tudástár inbox, exactly as today.
+   - Person facts keep S3's auto-save + **"Megjegyeztem: … [Mégse]"**.
+3. **"Ezt ne jegyezd meg" forgets the latest, then shows what.** It removes what the most
+   recent fact-producing turn of this conversation learned. The reply carries an
+   **"Elfelejtettem: …"** chip listing each forgotten item, plus a one-tap
+   **"Mindent ebből a beszélgetésből?"** that widens the forget to the whole conversation.
+   Forget is permanent (S6 decision 2: veto, never re-learned from the same text).
+4. **Recall is visible.** When the answer used what Mezo knows about people named in the
+   message, a discreet **"Emlékszem: Barbi · Nóri"** line appears under the reply. Tapping it
+   shows the facts that went into the prompt.
+5. **Confirmed observations become full sentences, including the 25 existing ones.** New
+   promotions write a prompt-ready sentence built from the mechanism. A one-time backfill
+   rewrites the 25 live title-only facts (42 facts in total; all 25 have a mechanism). Muted
+   and forgotten facts stay muted or forgotten. **The production write needs a separate owner
+   OK after he is shown the before/after list** (CLAUDE.md §Production database access).
+6. **Controller-decided (presented and accepted in the design summary):**
+   - one shared chip component across chat and csapatfal;
+   - deterministic people recall (code matches the names, not the planner);
+   - the nightly cap becomes per person;
+   - the in-chat person-fact extractor prompt is loosened.
+   - No write tool: `CompanionToolRegistry` stays read-only.
+
+**Out of scope:** weekly fact consolidation (mezo-d6ivw.10), the learning master switch
+(mezo-rrjxe), source-delete cascade (mezo-9wp4g), and a sensitive-category gate for the
+extractors. The researcher recommends that gate; it is filed as a follow-up, not built here.
+
+**Unification answer:** S8 makes the **turn** the unit of visible memory, across all four
+memory motions on one surface: *learned* (person fact), *proposed* (owner fact), *recalled*
+(people/facts that fed the answer) and *forgotten*. It reuses rather than adds:
+- the csapatfal's S7 `RememberedChip` is extracted into one shared chip (chat + csapatfal);
+- recall disclosure extends the existing `ai_message.recalled_memories` envelope (already on
+  the wire as `MessageResponse.recalled`; no FE renders it today);
+- forget goes through S6's `ForgetService` and the `memory_forget_veto` store.
+The chat and the hub now speak the same verbs.
+
+### Prior art (S8 recon)
+
+- **ChatGPT "Memory updated"** (https://help.openai.com/en/articles/8590148-memory-faq,
+  https://openai.com/index/memory-and-new-controls-for-chatgpt/):
+  - **adopted:** the quiet one-line indicator under the message, tappable in place.
+  - **improved on:** our chip names the fact itself and carries the action. The generic label
+    hides *what* was saved, and users rarely open it
+    (https://arxiv.org/html/2508.07664v1).
+- **ChatGPT `bio` tool honesty rule** (leaked prompt, https://dejan.ai/blog/gpt-5-system-prompt/):
+  - The model may say "noted" only after the tool call.
+  - **adopted in spirit:** we have no write tool, so the stable prompt describes the real
+    background memory, and a volatile block lists what this conversation actually saved. The
+    model may name an item as saved only if it is listed there.
+  - A "Forget …" entry acts as a lasting marker → **adopted** as our veto.
+- **Visible recall vs silent injection** (https://simonwillison.net/2025/Sep/12/claude-memory/;
+  Gemini's delayed deletion, https://support.google.com/gemini/answer/16598469):
+  - **adopted:** "Emlékszem" disclosure.
+  - **rejected:** any deletion lag. Forget and undo take effect on the next turn.
+- **Memory log study** (https://arxiv.org/html/2602.01450):
+  - 96% of memories are unrequested and 14% are inferred.
+  - It supports per-fact chips and a visible "Elfelejtettem" confirmation.
+  - The sensitive-category gate is deferred (see Out of scope).
+- No primary material found for Pi / Replika / Character.ai / Kin in the timebox.
+
+### Codebase terrain (S8 recon)
+
+- **Stable prompt:** `ConversationTurnService.VOICE` (`:32-62`) is live
+  (`mezo.companion.conversation.enabled: true`).
+  - Lines 45-47 ("Nem tudsz … menteni … Soha ne állítsd, hogy elvégeztél valamit") and
+    `KnowledgeFactService.FACTS_HEADER` (`:52`, "ne hivatkozz arra, hogy megjegyezted")
+    **contradict** honesty. Rewrite them; don't append.
+  - Legacy `ChatService.SYSTEM_PROMPT` (`:77-130`) has the same ban.
+  - Stable half `ChatService.stableSystemPrompt:462`; volatile half `conversationContext:507`.
+- **Background memory:** four `@Async AFTER_COMMIT` listeners on `ChatTurnCompleted`
+  (`ChatService:273,394`):
+  - `TurnEmbeddingListener`
+  - `ChatMentionListener`
+  - `FactExtractionListener` → `FactExtractionService.extractFromTurn:76-145`
+  - `PersonFactExtractionListener`
+- **learned_fact:**
+  - `user_decision` null|accept|reject|refine (`LearnedFactEntity:86`); `derivedFromMessageId`
+    = user message id (`:81`).
+  - The dedupe base is confirmed + undecided only (`FactExtractionService:96-100`), so
+    **a rejected candidate comes back**.
+  - `FactCandidateResponse` lacks `derivedFromMessageId`; there is no per-message query.
+  - `FactDecisionRequest.decision` is still `pattern:` (lesson 21).
+- **person_fact:**
+  - `GET /api/people/facts?sourceRefKind&sourceRefId` and
+    `DELETE /api/people/{personId}/facts/{factId}` (`PeopleController:73-81`).
+  - `undo` = `active=false`, which acts as its own veto (`PersonFactService:117-122`).
+  - `MAX_FACTS_PER_SOURCE = 3` (`:55`) caps the **whole nightly run** (source =
+    nightly_day/date). This is the real cause of the Réka/Hetey miss: the 09-27 night proposed
+    4 facts and kept 3.
+- **Extractor `[]`:** all 5 production `companion_person_fact_extract` calls returned `[]`, 3 of
+  them with known names present. The cause is the prompt (`PersonFactExtractionService:43-53`,
+  "ÚJ, tartós … Egyszeri eseményt NE … bizonytalan egyezésnél hagyd ki"), not parsing.
+  - Name resolution `:117-132` is plain `toLowerCase` equality, not `TextFold`. The docs claim
+    hu-fold (staleness).
+- **Recall:**
+  - The planner made **zero tool calls** in the 6 assistant turns 09-25..09-27.
+  - `PersonalContextAssembler` has no people section.
+  - `MentionDetectionService` (people, TextFold, word-start needles) is the deterministic
+    matcher to reuse.
+  - `PeopleSnapshotBlock` renders `[Emberek]` with ≤3 facts/person.
+- **Confirm → fact:**
+  - `PatternService.promote:224-231` sets `fact_text = title`.
+  - `PatternEntity.mechanism` is nullable and may be multi-sentence LLM text, a Q&A answer
+    (`KnowledgeRecheckService:286`, `QuickNoticeService`), or deterministic statistical text
+    (`PatternDetectionService:137`).
+  - `UpdateFactRequest.factText` is capped at 500.
+- **FE:**
+  - `RememberedChips.tsx` (S3; fire-and-forget undo, no error state).
+  - `teamchat/ReplyAfterlife.tsx:51-100` `RememberedChip` (busy / error / "Visszavonva", same
+    `mzc-remchip` CSS) is the better base.
+  - `ChatPage.tsx:122-127` has the chip anchor with the `mock-turn-<n>` synthetic id
+    (lesson 16).
+  - Missing MSW handlers for people-fact GET/DELETE.
+  - Forget-undo idiom: `useForgetUndo` + `ForgetUndoBar`.
+
+### Design (S8)
+
+**Backend**
+
+1. **One turn-memory read (the chip source).**
+   - `GET /api/companion/chat/turn-memory?messageId=<user message id>` returns
+     `{ learned: PersonFactChip[], proposed: FactCandidateChip[], forgotten: ForgottenItem[] }`
+     for that turn.
+   - The companion service composes it: person facts through the people-owned read port
+     (companion → people, allowed); candidates via a new
+     `LearnedFactRepository.findByDerivedFromMessageId`; the forgotten list from the forget
+     record (item 4).
+   - `recalled` stays on the assistant `MessageResponse` (item 3). It is synchronous with the
+     reply, so no poll is needed.
+   - The FE polls turn-memory with the existing `[2000,3000,5000]` ladder and replaces
+     `useTurnFacts`.
+   - `FactCandidateResponse` gains `derivedFromMessageId`.
+2. **Reject = permanent veto.**
+   - Every `reject` decision, from the chat chip **and** the inbox, writes a `fact_text` veto
+     through `ForgetService`'s shared `factTextVetoKey()` (lesson 41). The extractor's existing
+     veto check at `:126` then blocks re-proposal.
+   - `FactDecisionRequest.decision` moves to `enum:` (lesson 21).
+3. **Deterministic people recall.**
+   - Before routing (`ChatService.routeAndAssemble`), the user message is matched with
+     `MentionDetectionService`'s TextFold/word-start matcher. The read-only variant does not
+     persist mentions; the async listener still does.
+   - Matched people (≤5) get an `[Emberek]` block in the **volatile** context, rendered by
+     `PeopleSnapshotBlock` (≤3 active facts each). It is the same block the planner tool would
+     fetch, so the prompt meaning does not change.
+   - The recalled people are appended to the answer's `recalled_memories` envelope as
+     `kind=person` items: `refId` = person id, `label` = name, `gist` = the facts rendered.
+     They reach the FE through the existing `MessageResponse.recalled`, and the FE renders only
+     `kind=person` items as "Emlékszem".
+   - Feature switch `mezo.companion.people-recall.enabled` (default on in prod; the
+     `PEOPLE_SWITCH` family), fail-open: matcher failure → no block, the turn proceeds.
+4. **"Ezt ne jegyezd meg" intent.**
+   - A deterministic pre-screen in `ChatService` before routing. It matches a narrow Hungarian
+     phrase set, TextFold-normalized: *ne jegyezd meg*, *ezt ne jegyezd meg*, *felejtsd el
+     (ezt / amit mondtam)*, *ezt ne mentsd / ne tárold*. The plan fixes the exact list and its
+     negative cases, e.g. "felejtsd el a tervet" must NOT trigger.
+   - On a match:
+     - (a) The target is the **immediately preceding** user message of this conversation, and
+       only that one (owner ruling 2026-09-28: no walking back to older turns; forget is
+       permanent). If it learned nothing, the result is empty: the model says there was
+       nothing to forget and the FE "Elfelejtettem" chip offers "Mindent ebből a
+       beszélgetésből?" instead of a list.
+     - (b) The target is forgotten: person facts → `PersonFactService.undo`; undecided
+       candidates → reject + veto; candidates already accepted in this conversation → forget
+       their promoted fact through `ForgetService.forgetFact`.
+     - (c) The current message is marked no-extract: `ChatTurnCompleted` carries a flag and the
+       fact and person-fact listeners skip it.
+     - (d) A `forgotten_memories` jsonb envelope (new nullable column on `ai_message`, the
+       `RecalledMemoriesEnvelope` precedent) records the items on the **current user message**
+       for turn-memory.
+     - (e) A volatile `[Elfelejtve]` line tells the model what was forgotten, so the reply
+       acknowledges it truthfully.
+   - Nothing found → the envelope is empty and the model is told "nem volt mit elfelejteni".
+   - **"Mindent ebből a beszélgetésből?"** →
+     `POST /api/companion/conversation/{id}/forget-learned`, the same forget over every user
+     message of the conversation. It returns the forgotten items and appends them to the
+     triggering message's envelope.
+   - Known race: an extraction for the target turn still in flight lands after the forget. The
+     plan closes it with a per-message no-extract marker checked by both listeners before
+     saving (`derived_from_message_id` / `source_ref_id`).
+5. **Honest prompt.**
+   - Rewrite `VOICE` 45-47 and the legacy `SYSTEM_PROMPT` equivalent (stable, fixed text): you
+     cannot perform actions, but the app remembers in the background. Facts about the user
+     arrive as a proposal the user approves in the chat. Facts about people are saved and can
+     be undone. Everything is visible in the Tudástár. Never say you cannot remember. Never
+     claim a specific item is saved unless it is in `[Ebben a beszélgetésben]`. For "ne jegyezd
+     meg" the app forgets, and you confirm what `[Elfelejtve]` says.
+   - Rewrite `FACTS_HEADER`'s "ne hivatkozz arra, hogy megjegyezted" to allow a natural, rare
+     acknowledgement.
+   - A volatile block `[Ebben a beszélgetésben]` lists what this conversation learned or
+     proposed, from the same source as turn-memory, capped at 8 lines.
+   - `FakeCompanionLlm` gets branches for any new marker (lesson 17).
+6. **Person-fact extraction.**
+   - Loosen the prompt (`PersonFactExtractionService:43-53`): a stable relationship state or a
+     recurring pattern stated about a known person counts, even inside an emotional retelling.
+     A pure one-off event still does not.
+   - Name resolution → `TextFold` (fixes the doc drift too).
+   - An eval fixture built from the 09-26 conversation, paraphrased, never real text (it must
+     return ≥1 fact) runs in the IT against the fake LLM's sentinel plus a manual prod check
+     after deploy.
+   - The nightly cap `MAX_FACTS_PER_SOURCE` becomes **per person per source** (3 per person per
+     night) with an overall nightly ceiling of 15.
+7. **Full-sentence confirm facts.**
+   - `PatternService.promote` builds `fact_text` via a new pure `FactTextComposer`: mechanism
+     when present and not statistical boilerplate (rows from `PatternDetectionService` keep the
+     title). It uses the first 1–2 sentences, capped at 500 characters to match the edit cap.
+     Otherwise it falls back to the title.
+   - The veto key is computed from the new text. The pattern-domain veto (by pattern id) still
+     guards re-minting.
+   - **Backfill** (a Liquibase changeset is NOT used, because the data is user-specific): an
+     admin-only one-shot service method is dry-run first. It lists the 25 before/after pairs for
+     the owner, then applies after the OK: it rewrites `fact_text` for live facts whose text
+     equals their promoting pattern's title, publishes `KnowledgeFactChangedEvent` per row
+     (graph + RAG resync), and leaves muted and deleted rows' mute state untouched.
+
+**Frontend**
+
+8. **One shared memory chip** (`shared/ui` or `features/insights/components/memory/`), extracted
+   from S7's `RememberedChip`, with four variants on the `mzc-remchip` base:
+   - `remembered` (Megjegyeztem · Mégse)
+   - `proposed` (Megjegyezném · Igen / Ne)
+   - `recalled` (Emlékszem · names, tap → sheet with the facts)
+   - `forgotten` (Elfelejtettem · list + "Mindent ebből a beszélgetésből?")
+
+   Every variant has busy, error and done states (lesson 33: gate on the artefact). S7's
+   csapatfal reply switches to it with no visible change. `RememberedChips.tsx` is replaced.
+9. **ChatPage:** the turn-memory chips sit under the user turn's reply; `recalled` sits under the
+   assistant bubble.
+   - Mock mode: `mock-turn-<n>` anchor plus an inline seed covering all four variants
+     (lesson 16).
+   - MSW handlers for turn-memory, the candidate decision (exists), forget-learned, and the
+     missing people-fact GET/DELETE.
+10. **Üveg canon, dark only.** The chips are small glass pills, not glass-in-glass (§3.4). Any
+    new icon (e.g. the forget glyph) goes on the prototype's "Új ikonok" sheet.
+
+**Prototype:** the chat route of the Mezo living prototype (`docs/design_2.0/prototypes/elo/mezo.html`,
+seeded from `uveg-mezo-teljes.html` on first use), showing all four chips in the 09-26-like
+conversation (real-looking, invented content), the recall sheet, and the forget flow including
+the widen-to-conversation step. Published to the Mezo artifact URL; owner OK before code.
+
+### Testing (S8)
+
+- **Backend ITs:**
+  - turn-memory composition;
+  - reject writes a veto and the extractor does not re-propose;
+  - forget intent: phrase positives and negatives, latest-target selection, the three forget
+    routes, no-extract on the forget message, the race marker;
+  - forget-learned;
+  - people recall: block injected, envelope persisted, switch off, matcher failure fail-open;
+  - `FactTextComposer` unit table: null, statistical, multi-sentence, >500;
+  - backfill dry-run/apply;
+  - per-person nightly cap;
+  - person-fact extractor fixture.
+- ArchUnit via the full suite with Testcontainers: companion → people only.
+- Contract-drift gate; `pnpm generate:api`.
+- **FE:** chip component variants (states); ChatPage in both modes (`CI=true`, mock +
+  `VITE_USE_MOCK=false`); csapatfal reply unchanged; affected `tests/layout` specs;
+  `pnpm build`.
+- Runtime `verify`: dark, 320px, reduced motion.
+- **Post-deploy:**
+  - a real chat turn naming known people shows "Emlékszem";
+  - an owner-fact turn shows "Megjegyezném";
+  - "ezt ne jegyezd meg" shows "Elfelejtettem";
+  - a prod DB check that the veto rows and the forgotten envelope exist.
+
 ## Slice lessons
 
 (numbered; only what a later slice would otherwise pay for again)

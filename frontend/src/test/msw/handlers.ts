@@ -1585,6 +1585,13 @@ export const handlers = [
       })),
     ),
   ),
+  // S8 (mezo-d6ivw.12): turn memory + the widen flow; the people-fact GET/DELETE that were missing.
+  http.get(`${API_BASE}/api/companion/conversation/:id/turn-memory`, () =>
+    HttpResponse.json({ learned: [], proposed: [], forgotten: [], forgetRequest: false })),
+  http.get(`${API_BASE}/api/companion/conversation/:id/forget-learned`, () => HttpResponse.json([])),
+  http.post(`${API_BASE}/api/companion/conversation/:id/forget-learned`, () => HttpResponse.json({ forgotten: [] })),
+  http.get(`${API_BASE}/api/people/facts`, () => HttpResponse.json([])),
+  http.delete(`${API_BASE}/api/people/:personId/facts/:factId`, () => new HttpResponse(null, { status: 204 })),
   // Companion knowledge facts (V1.2) — wire fixtures mirror the mock seeds so page/hook
   // tests assert the same strings in both modes. Stateless by design: tests that need a
   // mutating flow (accept → refetch without the candidate) override with server.use.
@@ -1779,6 +1786,7 @@ export const handlers = [
         controller.enqueue(encoder.encode(frame('done', {
           id: 'msg-done', role: 'assistant', content: reply,
           createdAt: '2026-07-03T07:00:05Z',
+          turnUserMessageId: 'msg-user-done',
           tools: [{
             type: 'read', name: 'get_recovery(days=3)',
             why: 'Meg akartam nézni, hogy a fáradtság az alváshiányból jön-e.',

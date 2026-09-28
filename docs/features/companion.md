@@ -278,7 +278,7 @@ The sections below describe its current behavior and the supporting components.
   **S3 (`mezo-d6ivw.3`) added the person-directed sibling on the same event:**
   `PersonFactExtractionListener` → `PersonFactExtractionService` (slug
   `companion_person_fact_extract`, marker `SZEMÉLYTÉNY`) extracts durable facts about
-  MENTIONED, already-known active persons (5 kinds; exactly-one hu-fold name/alias match or the
+  MENTIONED, already-known active persons (5 kinds; exactly-one TextFold name/alias match or the
   fact is dropped — never a guess) and writes through the people-owned `PersonFactService` port
   (`ObjectProvider`, PEOPLE_SWITCH). The nightly `PersonExtractionService` emits the same
   fact shape as a third task of its single LLM call (`facts` array), persisted after
@@ -1145,7 +1145,8 @@ holds an LLM-extracted `mood`/`energy`/`stress` (1..5), a `confidence`, and the 
   `GratitudeEntrySaved/Deleted`) the embedding seam already uses. It reads the rows through the
   journal **repositories**, not a journal service, deliberately staying inside the dependency
   envelope `companion/embedding` established. The third source is **`chat_day`**: the day's own
-  `role=user` turns joined into one text by `ChatDaySignalService`, keyed by a stable
+  `role=user` turns joined into one text by `ChatDaySignalService` (since S8, `mezo-d6ivw.12`, minus
+  the `extraction_blocked` turns a forget request covered), keyed by a stable
   `UUID.nameUUIDFromBytes(userId + ":" + day)` so a day that gains turns re-versions instead of
   duplicating.
 - **The four new metrics.** `MetricKey.TEXT_MOOD` / `TEXT_ENERGY` / `TEXT_STRESS` (NUMBER) and
@@ -1957,6 +1958,22 @@ companion surface since V0.4, dual-mode:
   `mezo-d20.12`: the eyebrow's own „· L3" label is arguably wrong (every chip it labels today is an
   L0/L1 ref, never an L3 fact), but the string is pinned as prototype copy in three Design 2.0
   documents, so it is not touched here.
+- **S8 (`mezo-d6ivw.12`) — the chat shows what each turn learned, proposed, recalled and forgot.**
+  Under an assistant answer (`TurnMemoryChips`, [insights.md §2.5](insights.md)), a shared
+  `MemoryChip` renders per turn-memory signal: **Megjegyeztem** (a saved person fact, with
+  "Visszavonom"), **Megjegyezném** (an owner-fact proposal awaiting "Igen"/"Ne"), **Emlékszem:
+  <names> ›** (opens `RecallSheet`, listing the facts recalled about each named person), and — only
+  on a turn that matched `ForgetIntent` — **Elfelejtettem: <list>** with a "Mindent ebből a
+  beszélgetésből?" widen offer (`ForgetAllSheet`). An empty forget turn (the preceding message
+  learned nothing) renders its own honest state: "Nem volt mit elfelejteni — az előző üzenetedből
+  semmit nem jegyeztem meg." plus the same widen offer, never nothing (owner ruling 2026-09-28). The
+  chips poll `GET .../turn-memory` on a 2s/3s/5s backoff ladder that stops as soon as the backend
+  flags `forgetRequest` or a non-empty `forgotten` list lands, or a chip action runs on the turn;
+  they disarm (drop their pending poll) on any conversation change. Every chip action PATCHES the
+  turn's query cache and settles it (no refetch — the backend lists only live items, so a refetch
+  after "Ne"/"Visszavonom" dropped the item and its confirmation with it); "Igen" takes the promoted
+  fact id from the decision response, and a forget-all settles every turn of the conversation. A reject or a forget is permanent — its chip becomes a flat
+  "Elfelejtve · <struck-through text>" line, never an active control again.
 - **Mock mode** (`VITE_USE_MOCK=true`): the Phase-1 demo — seeded `initialChat`, the canned
   1.2s `cannedReply` (branches on `"fáradt"`), subtitle `demo beszélgetés`. The V0.4 rewrite
   removed the fake `"23 facts active · Gemini 3.1 Pro"` line and the `"L4 aktív"` chip — the
@@ -4118,6 +4135,67 @@ resurrection, ever, from any writer.
   it backs changes, archiving the node while the fact is muted/deleted and reviving it on
   re-enable — a forgotten pattern is never confirmed, so it never re-qualifies on its own.
 
+**S8 (`mezo-d6ivw.12`) — the chat turn's own memory, honestly.** Three deterministic pieces run
+around every turn (`ChatService.routeAndAssemble`/`forgetIfAsked`, `ChatService.java:514,524-527,551`):
+
+- **Forget pre-screen — `ForgetIntent`** (`service/ForgetIntent.java`) is a code-only, deliberately
+  NARROW regex matcher on the `TextFold`-ed user message (never the LLM): "ne jegyezd meg" anywhere,
+  "felejtsd el" + an explicit memory object, the whole message being just the request, or "ezt/azt
+  ne mentsd/tárold". `forgetIfAsked` (`ChatService.java:549-552`) runs it BEFORE the new user row is
+  persisted, so "the latest turn" it acts on is always the conversation's *previous* user message —
+  never the one just typed. Owner ruling 2026-09-28 (`docs/superpowers/specs/2026-09-27-emlekezet-s8-chat-memoria.md`
+  §S8, amended by the same-day delta doc): forget targets ONLY that immediately-preceding message,
+  never walking back further, even if it learned nothing.
+- **`ChatForgetService.forgetLatest`** (`service/ChatForgetService.java:48-58`) marks that preceding
+  row `extraction_blocked` (closing the race with its own still-in-flight async extraction — the
+  row lock the `UPDATE` takes is what `MessageExtractionGate` waits on), THEN reads its live memory
+  items and forgets each one through the writer the item's kind already owns: a person fact →
+  `PersonFactService.undo` (people-owned, via `ObjectProvider`), an undecided owner-fact candidate →
+  `FactCandidateService.decide(REJECT)` (which since S8 also vetoes the candidate's text —
+  `ForgetService.vetoFactText`, the same veto key a knowledge-fact forget writes), an already-accepted
+  candidate → `ForgetService.forgetFact`. Every forget is **permanent** — there is no restore. An
+  empty preceding message (nothing to forget) returns an empty list, not an error; the chat still
+  flags the turn as a forget request (`TurnMemoryResponse.forgetRequest`, below) so the FE can render
+  the honest "nothing to forget" state instead of nothing at all.
+- **Widen to the whole conversation** — `ChatForgetService.preview`/`forgetAll`
+  (`service/ChatForgetService.java:61-81`) back the „Mindent ebből a beszélgetésből?" offer: `preview`
+  lists every still-live item the conversation ever produced (`GET .../forget-learned`), `forgetAll`
+  blocks every user row, forgets everything live, and appends the result onto the triggering
+  message's `forgotten_memories` envelope (`POST .../forget-learned`, §4).
+- **Deterministic people recall — `PeopleRecall`** (`service/PeopleRecall.java`) replaces what used
+  to be an LLM-driven planner lookup that went six turns without ever reading a person: the user
+  message is matched against active persons with the SAME `TextFold`/word-start rule
+  `MentionDetectionService.matchActivePersons` already used for mention logging (read-only, capped
+  at 5 persons), the matched ids render an `[Emberek]` block via `PeopleSnapshotBlock.renderMentioned`
+  (the volatile half, same shape the old planner tool would have fetched), and any matched person
+  with prompt-enabled facts (`PersonFactService.promptFacts`, ≤3/person) is disclosed as a
+  `RecalledMemoriesEnvelope` `kind=person` item — the chat's **"Emlékszem: <names>"** line (§2).
+  **Fail-open by construction, not by convention**: `matchActivePersons` and
+  `PeopleService.chatContextFor` are deliberately NOT `@Transactional` — the chat turn calls them
+  inside its own transaction, and a throwing participating `@Transactional` callee would mark that
+  transaction rollback-only past `PeopleRecall.recall`'s own try/catch (fixed in S8 review round 1,
+  pinned by `PeopleRecallFailOpenIT`). Any failure ⇒ `PeopleRecall.Result.EMPTY`, never a broken turn.
+- **`TurnMemoryService.turnMemory`** (`service/TurnMemoryService.java:47-66`) composes what a chat
+  turn did, read-only: `learned` = the turn's saved person facts (people-owned port), `proposed` =
+  the turn's owner-fact candidates (undecided, or accepted with a still-live promoted fact),
+  `forgotten` = the triggering message's forget envelope, and `forgetRequest` = `ForgetIntent.matches`
+  re-evaluated on that same message — the field the FE polls to distinguish "still extracting" from
+  "this was a forget turn that legitimately found nothing" (§4, §9).
+- **`ChatMemoryBlocks.conversationBlock`** — the per-turn `[Ebben a beszélgetésben]` block (what this
+  conversation learned or proposed; the only items the model may call "megjegyeztem") — is
+  fail-open the same way (S8 final review): any exception logs and yields "". Its read path
+  (`TurnMemoryService.userMessageIds`/`liveItems`/`liveItemsOf`, `PersonFactService.bySourceRefs`/
+  `personNames`) is deliberately NOT `@Transactional` — reads join the turn's transaction — pinned by
+  `ChatMemoryBlocksFailOpenIT`. It is also cheap: the conversation's user message ids come from an
+  id-only query (`AiMessageRepository.findUserMessageIds`), and accepted candidates' promoted facts
+  are checked in ONE batched query (`KnowledgeFactRepository.findLiveIds`), not one per candidate.
+- **Forgotten stays forgotten at night too** (S8 final review): the nightly
+  `PersonExtractionService` narrative and the `chat_day` text signal read the day's chat through
+  `findByCreatedByAndRoleAndDeletedFalseAndExtractionBlockedFalse…`, so an `extraction_blocked`
+  message is never re-read and re-saved in other words (`PersonFactService.capture` only drops exact
+  normalized repeats). The other day-level readers were checked: weekly review lessons and life-event
+  extraction never read chat; character signals read chat timestamps only.
+
 ## 4. Data model & API
 
 ### Personal preferences and exact context preview
@@ -4174,7 +4252,14 @@ Migration `202607031400_mezo-fnnq.2_create_ai_conversation_message.sql` (registe
   `ProvenanceRetentionJob` can NULL it independently of `tool_calls` once a row passes
   `provenance.retention-days` (default 90) — `tool_calls` (including the planner's `why`) is never
   touched by that job. **Null** on user rows and on every turn that retrieved nothing (the same
-  null-not-empty precedent as `refs`/`recalled_memories`).
+  null-not-empty precedent as `refs`/`recalled_memories`). **S8 (`mezo-d6ivw.12`)** adds
+  `forgotten_memories jsonb` (`ForgottenMemoriesEnvelope`, null when the message forgot nothing —
+  the same envelope precedent as above) and `extraction_blocked boolean not null default false`
+  (`202609272300_mezo-d6ivw.12_ai_message_forget.sql`) — the per-message no-extract marker
+  `ChatForgetService.block` sets with a row-locking `UPDATE` BEFORE reading a row's live memory
+  items, so the post-turn fact/person-fact extractors (re-reading it `FOR SHARE` right before
+  saving) never write onto a row a concurrent forget just cleared; a forget that commits first
+  always wins. Both columns are additive, no backfill.
 
 ### Backend tables (V1.1, ✅)
 
@@ -6136,7 +6221,7 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `PATCH /api/companion/fact/{id}` | `KnowledgeFactResponse` | 200 · 400 · 401 · 404 | V1.1 partial update — `UpdateFactRequest {factText?, category?, includeInPrompt?}`, only provided fields applied (the hub's **Javítom**/toggle). `category` is `enum:` (S6, `mezo-d6ivw.6` — was `pattern:`, slice lesson 21). |
 | `DELETE /api/companion/fact/{id}` | — | 204 · 401 · 404 | S6 (`mezo-d6ivw.6`) — **Elfelejtem**: soft-deletes the fact and vetoes its normalized text (never re-learned from the same source). No restore — the FE's undo window sends this only on expiry. §3 above. |
 | `GET /api/companion/fact/candidate` | `FactCandidateResponse[]` | 200 · 401 | V1.2 — the pending inbox: undecided candidates, newest first. |
-| `POST /api/companion/fact/candidate/{id}/decision` | `FactCandidateResponse` | 200 · 400 · 401 · 404 | V1.2 — `FactDecisionRequest {decision accept\|reject\|refine, refinedText?}`; accept/refine promote (`promotedFactId` set); refine without text → FIELD `VALIDATION_REQUIRED_FIELD`; re-decide → `COMPANION_CANDIDATE_ALREADY_DECIDED`. |
+| `POST /api/companion/fact/candidate/{id}/decision` | `FactCandidateResponse` | 200 · 400 · 401 · 404 | V1.2 — `FactDecisionRequest {decision, refinedText?}`; accept/refine promote (`promotedFactId` set); refine without text → FIELD `VALIDATION_REQUIRED_FIELD`; re-decide → `COMPANION_CANDIDATE_ALREADY_DECIDED`. **`decision` is `enum: [accept, reject, refine, snooze]` since S8 (`mezo-d6ivw.12`, was `pattern:`, slice lesson 21)**; **a `reject` now also vetoes the candidate's normalized text** (`FactCandidateService.decide` → `ForgetService.vetoFactText`, the SAME `fact_text` veto key a knowledge-fact forget writes) — a rejected proposal is never proposed again from the same wording. |
 | `GET /api/companion/pattern/monitor` | `PatternMonitorResponse` | 200 · 401 | `mezo-viqs` — live diagnostics: re-runs `PatternGate` over the exact windows the nightly job uses, writing nothing; per-pair verdict + per-`MetricKey` coverage. `missingDays` exists only for `few_days`; `bottleneckMetricKey` for `few_days`/`no_data`/`degenerate`. **mezo-0469:** every pair carries both `metric*ValueKind` fields; binary pairs that reach the total-size gate carry `groupZeroDays`/`groupOneDays`/`requiredPerGroup`, and `imbalanced_groups` deliberately has no correlation stats. **mezo-18bx:** pairs also carry `mechanismHu` + domains, coverage rows `sourceHu` + domain. |
 | `GET /api/companion/pattern/pair/{pairKey}` | `PatternPairDetailResponse` | 200 · 401 · 404 | **S1 close (`mezo-tk88.3`):** the pattern detail page's one-stop read — `PatternPairDetailService.detail` reuses `PatternMonitorService.toPair` (package-widened) so the gate verdict can never disagree with the Motor dashboard. `pattern` is `null` until the pair goes live (no synthetic row); `events[]` is the `pattern_event` history (first reader, oldest-first); `days[]` are the CURRENT window's aligned points, computed live (never stored — frozen `confirmed`/`rejected` rows still show today's data); `impact` is the "what came of this" block (promoted fact + grounded predictions/experiments/challenges). **Reflexió S6 (`mezo-eq85.6`):** a catalog miss is no longer the end — the key is then looked up as a `hypothesis_key` (`findByCreatedByAndHypothesisKeyAndDeletedFalse`, owner-scoped in SQL), and a row carrying a `test_plan` is served as a **synthetic pair** built by the new `PatternMonitorService.toPair(plan, …)` overload: series and window from the PLAN (not the catalog `lookbackDays`), labels/value-kinds from `DerivedSeriesService`, `metric*Domain` = the `MetricKey`'s domain or `mind` for a `people:`/`topic:` presence series, generic `{erősség} pozitív/fordított együttjárás` direction templates, and `verdict`/`alignedDays`/group counts from `PatternGate.evaluate` (no `frozen` short-circuit — a reflection row's `r`/`n`/`p` columns are not maintained, its evidence lives in `evidence` events). `metricAKey` on such a pair may therefore be a **series** key that is absent from the metric catalog — consumers must not assume a catalog lookup succeeds; `metricALabel`/`metricBLabel` already carry the human rendering. `DerivedSeriesService` is injected behind an `ObjectProvider` (Reflexió switch off ⇒ a non-catalog key can only 404). An unknown key, a foreign row, or a row without a test plan → 404 `COMPANION_PATTERN_PAIR_NOT_FOUND`, exactly as before. **FE consumer since `mezo-tk88.5`:** `usePatternPairDetail(pairKey)` (`patternDetailHooks.ts`) → `PatternDetailPage.tsx` (`/insights/patterns/:pairKey`) — any 404 (unknown key OR the companion switch off) maps to one honest `notFound` state; see [`insights.md`](insights.md) §2.1b/§4. |
 | `GET /api/companion/memory/overview` | `MemoryOverviewResponse` | 200 · 401 · 404 | `mezo-al1i` — L0–L3 layer counts + the 3 job cron strings, one read-only aggregate (`MemoryObservatoryService.overview`). |
@@ -6144,14 +6229,21 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `GET /api/companion/memory/similar-days` | `SimilarDaysResponse` | 200 · 400 · 401 · 404 | `mezo-al1i` — reuses `MemoryRecallService` (V2.3) verbatim; `q` required (1..∞ chars), `k` 1..5 (default 3); below-floor matches never returned (the same honest empty-list rule as the tool). |
 | `GET /api/companion/memory/llm-usage` | `LlmUsageResponse` | 200 · 401 · 404 | `mezo-al1i` — daily rollup over `llm_log_history` (`days` 1..90, default 30); `enabled:false` + empty `perDay` + zeroed `totals` when the `mezo.feature.llm-log.enabled` switch is off — the query never runs. |
 | `POST /api/companion/transcribe` | `TranscriptionResponse` | 200 · 400 · 401 · 404 · 502 | **`mezo-at8x.4`** — multipart `audio` → transcript. Own tag `CompanionVoice` → `CompanionVoiceApi` → `CompanionVoiceController`. Stateless + ephemeral: nothing persisted, the bytes live only for the one model call (`CompanionLlm.complete(system, "", InlineAudio)`, `CallKind.TRANSCRIBE`). Size/mime checked in `TranscriptionService` against `mezo.companion.transcription.*` (base mime only — `MediaRecorder`'s `;codecs=opus` is stripped) → FIELD `VALIDATION_INVALID_VALUE` on `audio`. **Empty text is a success, not an error** (silence); a model that narrates instead of transcribing (> 8 000 chars) → 502 `COMPANION_TRANSCRIBE_FAILED`. |
+| `GET /api/companion/conversation/{id}/turn-memory` | `TurnMemoryResponse` | 200 · 401 · 404 | **S8 (`mezo-d6ivw.12`)** — `TurnMemoryService.turnMemory`; required query `messageId` (the turn's USER message id). `learned`/`proposed`/`forgotten` may each be empty; `forgetRequest` is `ForgetIntent.matches` re-run on that message. The chat chips poll this on a 2s/3s/5s ladder, stopping on `forgetRequest`, a non-empty `forgotten`, or a chip action (the client patches its cache from then on). 404 for a missing/foreign conversation OR a `messageId` that is not that conversation's own USER row. |
+| `GET /api/companion/conversation/{id}/forget-learned` | `MemoryItemResponse[]` | 200 · 401 · 404 | **S8** — `ChatForgetService.preview`; every still-live memory item the conversation ever produced, newest first (the „Mindent ebből a beszélgetésből?" sheet's list). |
+| `POST /api/companion/conversation/{id}/forget-learned` | `ForgetLearnedResponse` | 200 · 401 · 404 | **S8** — `ChatForgetService.forgetAll`; body `ForgetLearnedRequest {triggerMessageId}` (the message whose Elfelejtettem chip offered the widen). Forgets every still-live item permanently and appends the result onto the trigger message's `forgotten_memories`. 404 for a missing/foreign conversation or trigger message. |
 
 **Schemas:** `ConversationResponse {id, title?, startedAt, lastMessageAt?}`,
-`MessageResponse {id, role, content, createdAt, tools[], refs[], recalled[], degraded}` (**filled
+`MessageResponse {id, role, content, createdAt, tools[], refs[], recalled[], degraded,
+turnUserMessageId?}` (**filled
 since V0.5** on tool-using turns; a tool-less turn's null envelope still maps to `[]`,
 `CompanionMapper.toTools/toRefs`; `degraded` required boolean since V1.3 — always false on user
 rows; **`recalled` required array since W3.1b `mezo-b3pp.28`**, `[]` when the answer disclosed
 nothing — the `tools`/`refs` "required, empty is the absence" convention, so the FE never
-branches on undefined), `RecalledMemory {occurredOn (date), kind, label, gist, similarity}` (W3.1b
+branches on undefined; **`turnUserMessageId` since S8 (`mezo-d6ivw.12`, `CompanionMapper.java:56-57`)**
+— nullable, set ONLY on the answer a `send`/stream `done` returns (never on a plain history read),
+carrying the turn's own USER message id as the anchor `TurnMemoryChips` polls `turn-memory` with),
+`RecalledMemory {occurredOn (date), kind, label, gist, similarity}` (W3.1b
 — one `[Emlékek]` line the model was given, in prompt order: `kind` is the raw
 `memory_embedding.kind`, `label` the Hungarian source tag exactly as rendered in the prompt
 (`napló`, `napi összefoglaló`, …), `gist` the injected one-liner byte-identical to the prompt line.
@@ -8902,6 +8994,33 @@ coverage:** `ReflectionJobIT` still passes with the `"effects"` step inserted be
 since the new `ObjectProvider<EffectLinkService>` degrades to `""` with Reflexió off, exactly like
 every other reflection collaborator.
 
+**S8 — the chat's own memory (`mezo-d6ivw.12`).** `ForgetIntentTest` is a pure unit test pinning
+the four regex branches plus the traps ("felejtsd el a tervet" is not a memory object, "ne felejtsd
+el…" is the opposite request, "elfelejtettem" is the user's own forgetting, bare "jegyezd meg" is
+not a forget). `TurnMemoryServiceIT` covers `turnMemory`'s three lists (learned/proposed/forgotten)
+plus `forgetRequest`, `liveItems`/`liveItemsOf` ordering and the "rejected candidate never shows
+again" filter. `ChatForgetServiceIT` and `ChatForgetTurnIT` cover `forgetLatest` targeting only the
+immediately-preceding message (never walking back further), the row-lock/`extraction_blocked`
+race close against a concurrent in-flight extraction, `forgetAll`'s widen + envelope-append, and
+each memory kind's writer being invoked (person fact undo, candidate reject-with-veto, accepted
+fact forget). `ForgetServiceIT`/`ForgetVetoWritersIT` cover the S8-added `vetoFactText` sharing the
+SAME veto key a knowledge-fact forget writes. `PeopleRecallIT`/`PeopleRecallStreamIT` cover the
+`[Emberek]` block + the `kind=person` disclosure on both the sync and streamed turn paths;
+`PeopleRecallSwitchOffIT` covers `COMPANION_PEOPLE_RECALL_SWITCH` off ⇒ no block, no disclosure,
+no error; **`PeopleRecallFailOpenIT`** is the fix-round regression pin — a `RuntimeException` from
+`matchActivePersons`/`chatContextFor` must NOT poison the turn's surrounding transaction (the bug
+S8 review round 1 caught: those two entry points had been `@Transactional`, which marks a
+participating transaction rollback-only past the caller's own catch). `CompanionTurnMemoryApiIT`
+and `CompanionForgetApiIT` are the wire-level `ApiIntegrationTest`s for `GET .../turn-memory` and
+the `GET`/`POST .../forget-learned` pair (404s, ownership, the empty-forget-turn shape).
+`MemoryForgetSchemaIT`/`MemoryForgetVetoEntityTest` cover the `ai_message` column additions and the
+`MemoryForgetVetoEntity.factTextVetoKey` helper. FE: `ForgetIntent` has no FE mirror by design (the
+backend computes `forgetRequest`, closing the S8 review-round finding that an FE copy of the
+matcher would drift from the backend's and risk a destructive false positive) — see §9 below;
+`TurnMemoryChips.test.tsx`, `MemoryChip.test.tsx`, `RecallSheet.test.tsx`, `ForgetAllSheet.test.tsx`
+and the `tests/layout/chat-memory.spec.ts` Playwright spec (320px, no horizontal overflow, the
+reduced-motion branch) cover the FE surface — full detail: [`insights.md`](insights.md) §8.
+
 ## 9. Decisions, gotchas & deferred
 
 **Check-in 2.0 (`mezo-ck2`, 2026-09-28) — decisions, deviations, follow-ups.** NULL is never a
@@ -9605,7 +9724,75 @@ this stack for all eight daily kinds; verbatim question cards preserve their exi
 `weeks` controls the displayed weekly points, not the fitted full-history slope. Raw endpoint
 change is distinct from those smoothed rates. The underlying trend calculation is unchanged.
 
+- **S8 (`mezo-d6ivw.12`) — spec/code contradictions found while planning, fixed in-plan:**
+  1. The spec's premise that no FE surface renders `MessageResponse.recalled` was false
+     (`ChatMessage.tsx` already rendered `RecalledMemoriesRow`, "Emlékek · N"). Resolved by
+     splitting the list: `kind=person` items feed the new "Emlékszem" line only, every other kind
+     keeps feeding `RecalledMemoriesRow` — parity, no item shown twice, none dropped.
+  2. **The S3-era real-mode chip anchor was silently broken**: `chatHooks.sendReal` appended the
+     optimistic user bubble WITHOUT an id, so the chip's turn-anchor logic actually resolved to the
+     *previous* user message. Fixed by adding `MessageResponse.turnUserMessageId` (§4) — set only
+     on the answer a send/`done` returns — and anchoring the user bubble's id on it.
+  3. The advisor chain's `ActionClaimCheck` already flags `elmentettem`/`töröltem` as fabricated
+     write claims (`application.yml`); the S8 prompt instructs the model to say `„megjegyeztem" /
+     „elfelejtettem"` instead — the FE copy mirrors the same two verbs (§2) — without widening the
+     advisor's term list.
+  4. On the production `routeAndAssemble` path, `ChatService.completeTurn` picks `audit.recalled()`
+     over the turn's own envelope when a tool ran; a naive append of the `kind=person` disclosure
+     onto the turn's own list would have been silently dropped whenever a tool ALSO recalled that
+     turn. Fixed with `RecalledMemoriesEnvelope.withExtra(base, personItems)` on both the
+     tool-recalled and the plain base list, on both the sync and streamed paths.
+  5. (Non-contradiction, same plan) `docs/features/companion.md:279` and `me.md` claimed
+     hu-fold/lowercase-equality name matching; the person-fact writers already used exact
+     `toLowerCase(HU)` equality. S8 Task 9 switched them to `TextFold` for real (word-start,
+     accent-insensitive), which is what both docs now describe.
+- **"ezt ne jegyezd meg" forgets only the immediately-preceding message — owner ruling
+  2026-09-28, NOT a full conversation walk-back.** The original plan let a forget request search
+  backward for the nearest turn that learned something; the owner's ruling (§S8 spec delta,
+  `docs/superpowers/specs/2026-09-27-emlekezet-s8-chat-memoria.md`) narrowed it: "ezt" means the
+  last thing the user said, full stop — even when that message taught nothing. The FE renders the
+  honest empty state (§2) rather than silently reaching further back; "Mindent ebből a
+  beszélgetésből?" is the explicit, one-tap escape hatch for "actually, more than that."
+- **No FE mirror of `ForgetIntent` — the backend is the only judge, by design.** An S8 review-round
+  finding: an FE-side regex copy of the forget matcher would inevitably drift from the backend's
+  and a drift here is not cosmetic — a false-positive forget destroys memory permanently. The
+  contract carries the verdict instead: `TurnMemoryResponse.forgetRequest` is computed server-side
+  (`ForgetIntent.matches`, re-run against the persisted message) and the FE polls it, never
+  pattern-matching the user's text itself.
+- **People recall's read path is deliberately non-`@Transactional`** (`MentionDetectionService
+  .matchActivePersons`, `PeopleService.chatContextFor`) — see §3/§8 above; a fix-round finding
+  (`PeopleRecallFailOpenIT`) after the original S3-precedent annotation turned out to poison the
+  surrounding chat turn's transaction on any exception, defeating `PeopleRecall.recall`'s own
+  try/catch. The remaining caveat (documented on `PeopleRecall`'s javadoc): an exception escaping a
+  DIFFERENT, still-`@Transactional` callee (in practice a repository `DataAccessException`) still
+  aborts the transaction — Postgres would have aborted it anyway.
+- **Per-person fact cap widened and reinterpreted, S8.** `PersonFactService
+  .MAX_FACTS_PER_PERSON_PER_SOURCE` is now **3 per person per source** (was a single
+  `MAX_FACTS_PER_SOURCE = 3` shared across every person a source mentioned — a five-person sentence
+  could starve four of them down to zero); a new `MAX_FACTS_PER_SOURCE = 15` caps the source's total
+  regardless of how many people it names. Both are enforced in `capture` (§3 in
+  [`me.md`](me.md) §5.4).
+- **Deferred, filed as follow-up beads (out of scope for S8):** an unknown `FactDecisionRequest`
+  enum body still 500s rather than a clean 400 (`mezo-jq98o`); the sensitive-category proactive gate
+  the S3/S5 `PROACTIVE_EXCLUDED_KINDS` constant was meant to eventually enforce everywhere remains
+  unbuilt (`mezo-gwh0y`, tracked since before S8, still open).
+
 ## 10. Key files
+
+**S8 — the chat's own memory (`mezo-d6ivw.12`)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ForgetIntent.java` — the pure, code-only "ezt ne jegyezd meg" phrase matcher (§3, §8, §9).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/TurnMemoryService.java` — read side: composes one turn's `learned`/`proposed`/`forgotten`/`forgetRequest`, and a conversation's live memory items (§3, §4).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatForgetService.java` — write side: `forgetLatest`/`preview`/`forgetAll`, delegating to `PersonFactService.undo`, `FactCandidateService.decide(reject)`, `ForgetService.forgetFact` (§3, §8, §9).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PeopleRecall.java` — deterministic people recall (the `[Emberek]` block + the `kind=person` "Emlékszem" disclosure), switch-gated, fail-open (§3, §8, §9).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ForgetService.java` — S8 addition: `vetoFactText` (§3, §9), the same veto key a knowledge-fact forget already wrote.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/ChatMemoryItem.java` + `ForgottenMemoriesEnvelope.java` — the jsonb item shape + the `ai_message.forgotten_memories` envelope (§4).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/mapper/CompanionMapper.java` — `toMessageResponse(entity, turnUserMessageId)` (§4), `toTurnPersonFactResponse`, `toFactCandidateResponse`, `toMemoryItemResponse`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionController.java` — `getTurnMemory`, `previewForgetLearned`, `forgetLearned` (§4).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/people/service/MentionDetectionService.java` (`matchActivePersons`) + `PeopleService.java` (`chatContextFor`) — the people-owned, deliberately non-`@Transactional` recall reads (§3, §9).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/people/service/PersonFactService.java` — `MAX_FACTS_PER_PERSON_PER_SOURCE`/`MAX_FACTS_PER_SOURCE` (§9); [me.md §5.4](me.md).
+- `backend/src/main/resources/db/changelog/1.1.0/script/202609272300_mezo-d6ivw.12_ai_message_forget.sql` — `ai_message.forgotten_memories`/`extraction_blocked` (§4).
+- `api/feature/companion/companion.yml` — `TurnMemoryResponse`, `TurnPersonFactResponse`, `MemoryItemResponse`, `ForgetLearnedRequest`/`Response`, the three new endpoints, `FactDecisionRequest.decision` widened to `enum:` (§4).
+- FE: `frontend/src/features/insights/components/memory/{MemoryChip,TurnMemoryChips}.tsx`, `frontend/src/features/insights/sheets/{RecallSheet,ForgetAllSheet}.tsx`, `frontend/src/data/insights/{turnMemoryApi,turnMemoryHooks,turnMemory}.ts`, `frontend/tests/layout/chat-memory.spec.ts` — full FE detail: [`insights.md`](insights.md) §10.
 
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PersonalMemorySearchService.java` — shared memory-search invocation and logging scope.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/FeedContextTools.java` — conversation-independent memory search for the feed.

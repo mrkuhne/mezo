@@ -3,6 +3,8 @@ package io.mrkuhne.mezo.feature.companion.repository;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -21,6 +23,11 @@ public interface KnowledgeFactRepository extends JpaRepository<KnowledgeFactEnti
             UUID createdBy, Pageable pageable);
 
     Optional<KnowledgeFactEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
+
+    /** S8 (mezo-d6ivw.12): which of these facts are still live — ONE query for a whole
+     *  conversation's accepted candidates instead of one lookup per candidate. */
+    @Query("select f.id from KnowledgeFactEntity f where f.id in :ids and f.createdBy = :createdBy and f.deleted = false")
+    List<UUID> findLiveIds(@Param("ids") Collection<UUID> ids, @Param("createdBy") UUID createdBy);
 
     /** S6: the originals a drift successor superseded — released when the successor is forgotten. */
     List<KnowledgeFactEntity> findByCreatedByAndSupersededByAndDeletedFalse(UUID createdBy, UUID supersededBy);

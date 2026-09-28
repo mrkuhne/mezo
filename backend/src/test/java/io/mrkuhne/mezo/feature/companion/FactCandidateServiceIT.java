@@ -2,16 +2,24 @@ package io.mrkuhne.mezo.feature.companion;
 
 import io.mrkuhne.mezo.api.dto.FactCandidateResponse;
 import io.mrkuhne.mezo.api.dto.FactDecisionRequest;
+import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
+import io.mrkuhne.mezo.feature.companion.entity.MemoryForgetVetoEntity;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
+import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
+import io.mrkuhne.mezo.feature.companion.repository.MemoryForgetVetoRepository;
 import io.mrkuhne.mezo.feature.companion.service.FactCandidateService;
+import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
+import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
+import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
 import io.mrkuhne.mezo.support.populator.LearnedFactPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -23,15 +31,23 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /** The V1.2 pending inbox + the accept/refine/reject decision (L2 confirm — never silent). */
 @Transactional
+@ActiveProfiles("companion-fake")
 class FactCandidateServiceIT extends AbstractIntegrationTest {
 
     @Autowired private FactCandidateService factCandidateService;
     @Autowired private KnowledgeFactRepository knowledgeFactRepository;
     @Autowired private LearnedFactPopulator learnedFactPopulator;
     @Autowired private DatabasePopulator databasePopulator;
+    @Autowired private FactExtractionService factExtractionService;
+    @Autowired private MemoryForgetVetoRepository vetoRepository;
+    @Autowired private LearnedFactRepository learnedFactRepository;
+    @Autowired private AiConversationPopulator conversationPopulator;
+    @Autowired private AiMessagePopulator messagePopulator;
 
     private FactDecisionRequest decision(String decision, String refinedText) {
-        return FactDecisionRequest.builder().decision(decision).refinedText(refinedText).build();
+        return FactDecisionRequest.builder()
+                .decision(FactDecisionRequest.DecisionEnum.fromValue(decision))
+                .refinedText(refinedText).build();
     }
 
     @Test
@@ -153,6 +169,40 @@ class FactCandidateServiceIT extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> factCandidateService.decide(userId, candidate.getId(), decision("accept", null)))
                 .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    @Test
+    void testDecide_shouldVetoTextAndBlockReproposal_whenRejected() {
+        UUID userId = databasePopulator.populateUser("s8-reject-veto@test.local");
+        LearnedFactEntity candidate = learnedFactPopulator.candidate(userId, "Hajnalban szeretek futni", "train", null);
+
+        factCandidateService.decide(userId, candidate.getId(), decision("reject", null));
+
+        assertThat(vetoRepository.existsByCreatedByAndDomainAndVetoKeyAndDeletedFalse(userId,
+                MemoryForgetVetoEntity.DOMAIN_FACT_TEXT,
+                MemoryForgetVetoEntity.factTextVetoKey("Hajnalban szeretek futni"))).isTrue();
+        int persisted = factExtractionService.extractFromTurn(userId, UUID.randomUUID(),
+                "[fake-facts:[{\"fact\":\"hajnalban  szeretek FUTNI\",\"category\":\"train\",\"owner\":\"mocor\"}]]",
+                "ok");
+        assertThat(persisted).isZero();
+    }
+
+    @Test
+    void testListPending_shouldCarryTheSourceMessageId_andQueryByMessage() {
+        UUID userId = databasePopulator.populateUser("s8-derived@test.local");
+        var conversation = conversationPopulator.conversation(userId);
+        UUID messageA = messagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "A üzenet").getId();
+        UUID messageB = messagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "B üzenet").getId();
+        learnedFactPopulator.candidate(userId, "A-ból", "life", messageA);
+        learnedFactPopulator.candidate(userId, "B-ből", "life", messageB);
+        learnedFactPopulator.candidate(userId, "heti", "life", null);
+
+        assertThat(factCandidateService.listPending(userId))
+                .filteredOn(c -> "A-ból".equals(c.getCandidateText()))
+                .extracting(FactCandidateResponse::getDerivedFromMessageId).containsExactly(messageA);
+        assertThat(learnedFactRepository.findByCreatedByAndDerivedFromMessageIdInAndDeletedFalseOrderByCreatedAtAsc(
+                userId, List.of(messageB)))
+                .extracting(LearnedFactEntity::getCandidateText).containsExactly("B-ből");
     }
 
     @Test

@@ -165,6 +165,12 @@ class KnowledgeFactServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testFactsHeader_shouldAllowARareNaturalAcknowledgement() {
+        assertThat(KnowledgeFactService.FACTS_HEADER).doesNotContain("ne hivatkozz arra")
+                .contains("ahogy mondtad");
+    }
+
+    @Test
     void testRenderPromptBlock_shouldIncludeEveryEnabledFact_whenMoreThanTheOldTopTen() {
         UUID userId = databasePopulator.populateUser("fact-topn@test.local");
         // facts-always delta (mezo-d6ivw.8): 12 facts, reinforcement 1..12 — no top-10 cutoff,

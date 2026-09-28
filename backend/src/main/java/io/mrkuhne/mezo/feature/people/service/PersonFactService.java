@@ -11,8 +11,10 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -52,7 +54,10 @@ public class PersonFactService {
      */
     public static final Set<String> PROACTIVE_EXCLUDED_KINDS = Set.of(PersonFactEntity.KIND_SENSITIVITY);
 
-    static final int MAX_FACTS_PER_SOURCE = 3;
+    /** S8 (mezo-d6ivw.12): the nightly run is ONE source (nightly_day/date) — a per-source cap of 3
+     *  kept 3 of 5 people's facts from a single sentence. Now 3 per person per source, 15 overall. */
+    static final int MAX_FACTS_PER_PERSON_PER_SOURCE = 3;
+    static final int MAX_FACTS_PER_SOURCE = 15;
     private static final Set<String> CONFIDENCES = Set.of("low", "medium", "high");
     private static final String CONFIDENCE_FALLBACK = "medium";
     private static final String STATUS_ACTIVE = "active";
@@ -68,16 +73,21 @@ public class PersonFactService {
 
     /**
      * Javaslatok mentése egy forrásból. Kód dönt, az LLM sosem: fajta-whitelist, hossz-plafon,
-     * normalizált dedupe + vétó, volatile-supersede, forrásonként {@value #MAX_FACTS_PER_SOURCE}
-     * darab plafon. A kihagyott javaslat néma — sosem hiba.
+     * normalizált dedupe + vétó, volatile-supersede, plafon személyenként és forrásonként
+     * {@value #MAX_FACTS_PER_PERSON_PER_SOURCE}, forrásonként összesen {@value #MAX_FACTS_PER_SOURCE}.
+     * A kihagyott javaslat néma — sosem hiba.
      */
     @Transactional
     public List<PersonFactEntity> capture(UUID userId, String sourceRefKind, String sourceRefId,
             List<PersonFactCapture> captures) {
         List<PersonFactEntity> saved = new ArrayList<>();
+        Map<UUID, Integer> perPerson = new java.util.HashMap<>();
         for (PersonFactCapture c : captures) {
             if (saved.size() >= MAX_FACTS_PER_SOURCE) {
                 break;
+            }
+            if (c.personId() != null && perPerson.getOrDefault(c.personId(), 0) >= MAX_FACTS_PER_PERSON_PER_SOURCE) {
+                continue;
             }
             if (c.personId() == null || c.text() == null || c.text().isBlank()
                     || c.text().trim().length() > PersonFactEntity.FACT_TEXT_MAX_CHARS
@@ -109,6 +119,7 @@ public class PersonFactService {
             fact.setSourceRefKind(sourceRefKind);
             fact.setSourceRefId(sourceRefId);
             saved.add(personFactRepository.saveAndFlush(fact));
+            perPerson.merge(c.personId(), 1, Integer::sum);
         }
         return saved;
     }
@@ -182,6 +193,32 @@ public class PersonFactService {
             .findByCreatedByAndPersonIdAndDeletedFalseOrderByCreatedAtDesc(userId, personId).stream()
             .filter(PersonFactEntity::isActive)
             .toList();
+    }
+
+    /** S8 (mezo-d6ivw.12): {@link #bySourceRef} for several sources at once — the turn-memory read.
+     *  Deliberately NOT {@code @Transactional}, like {@link #personNames}: the chat turn's memory
+     *  block calls it inside the turn's transaction and must stay fail-open — a throwing
+     *  participating transactional method would mark the turn rollback-only past the caller's
+     *  catch ({@code PeopleService#chatContextFor} lesson). Reads join the caller's transaction. */
+    public List<PersonFactEntity> bySourceRefs(UUID userId, String sourceRefKind, Collection<String> sourceRefIds) {
+        if (sourceRefIds.isEmpty()) {
+            return List.of();
+        }
+        return personFactRepository
+            .findByCreatedByAndSourceRefKindAndSourceRefIdInAndActiveTrueAndDeletedFalseOrderByCreatedAtAsc(
+                userId, sourceRefKind, sourceRefIds);
+    }
+
+    /** S8: display names for fact chips — any non-deleted person, whatever its status. Not
+     *  {@code @Transactional} — see {@link #bySourceRefs}. */
+    public Map<UUID, String> personNames(UUID userId, Collection<UUID> personIds) {
+        if (personIds.isEmpty()) {
+            return Map.of();
+        }
+        Set<UUID> wanted = Set.copyOf(personIds);
+        return personRepository.findAllByCreatedByAndDeletedFalseOrderByNameAsc(userId).stream()
+            .filter(p -> wanted.contains(p.getId()))
+            .collect(Collectors.toMap(PersonEntity::getId, PersonEntity::getName));
     }
 
     private PersonFactEntity requireOwnedFact(UUID userId, UUID personId, UUID factId) {
