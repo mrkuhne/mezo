@@ -28,6 +28,8 @@ related: [_platform-data-layer, _platform-design-system, me, insights, companion
 
 > **2026-09-25 — Üveg U9 (`mezo-me75u.9`).** `router.tsx`: `/mezo/karakter/csapat` (the retired 9-expert roster) now redirects to `/mezo/csapat`. No Nap route changed.
 
+> **2026-09-28 — `mezo-3n2so`.** `router.tsx` gained the Fuel route `/fuel/tanulas` („Hogy tanultam?”, see [`fuel.md`](fuel.md)). No Nap route changed.
+
 > **2026-09-24 — A napom (`mezo-yjzhw`).** The day page behind the header's day orb moved off `/me/week/napok/:date` onto its own Nap-domain tab, **A napom** (`/nap/napom`, `/nap/napom/:date`), replacing the Napzárás tab. It is a live day view (six-segment ring, a rule-based one-line reading, a "most érdemes" next-step card) by day, and a fully-reviewed closed day (every `DayReviewJson` layer, upright Geist prose) once the overnight warm-up job has run. The Napzárás ritual itself is unchanged; its evening entry point moved to a new card on Mai (`NapzarasCard`). Design: [`specs/2026-09-24-a-napom-design.md`](../superpowers/specs/2026-09-24-a-napom-design.md).
 
 > The Nap tab at `/nap` is the default landing page. **Napközpont** (`mezo-26fw0`) combines five immediate capture actions around the Titanium companion, actual daily nutrition, one grounded Mezo observation and a recorded-moments timeline. Existing shell navigation and sibling pages remain. Design: [approved Napközpont spec](../superpowers/specs/2026-09-17-napkozpont-design.md).
