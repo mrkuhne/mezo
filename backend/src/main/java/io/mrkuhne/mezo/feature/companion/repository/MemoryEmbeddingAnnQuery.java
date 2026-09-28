@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.repository;
 
+import io.mrkuhne.mezo.feature.companion.memory.repository.MemorySourceVisibilitySql;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.RowMapper;
@@ -55,14 +56,24 @@ public class MemoryEmbeddingAnnQuery {
 
     private static final String SAVEPOINT_NAME = "ambient_recall_ann";
 
+    /**
+     * mezo-tdabt: a {@code chat_turn} row whose paired USER message was forgotten ("ezt ne jegyezd
+     * meg" → {@code extraction_blocked}) is never recalled. {@code ref_id} is the assistant row; the
+     * pairing is the unified store's ({@link MemorySourceVisibilitySql#forgottenTurn}).
+     */
+    private static final String FORGOTTEN_TURN_EXCLUSION =
+            "  and not (e.kind = 'chat_turn' and exists (select 1 from ai_message fa\n"
+            + "    where fa.id = e.ref_id and fa.created_by = :userId and "
+            + MemorySourceVisibilitySql.forgottenTurn("fa", "userId") + "))\n";
+
     private static final String SQL_HEAD = """
         select id, kind, ref_id, content, occurred_on,
                (embedding <=> cast(:queryVector as vector)) as distance
-        from memory_embedding
+        from memory_embedding e
         where created_by = :userId
           and is_deleted = false
           and kind in (:kinds)
-        """;
+        """ + FORGOTTEN_TURN_EXCLUSION;
 
     /**
      * W3.2 (mezo-b3pp.13) coverage floor: ambient recall can stop asking for fine-grained rows

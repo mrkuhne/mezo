@@ -4195,6 +4195,25 @@ around every turn (`ChatService.routeAndAssemble`/`forgetIfAsked`, `ChatService.
   message is never re-read and re-saved in other words (`PersonFactService.capture` only drops exact
   normalized repeats). The other day-level readers were checked: weekly review lessons and life-event
   extraction never read chat; character signals read chat timestamps only.
+- **Forget really forgets — every memory channel** (`mezo-tdabt`): a chat turn whose USER message
+  is `extraction_blocked` is gone from recall, not only from extraction. The pairing is the
+  `chat_turn` projection's own (`MemorySourceVisibilitySql.forgottenTurn`: the latest live
+  `role='user'` row of the conversation with `created_at <=` the assistant row's, ties by id).
+  Unified recall (`LexicalMemoryQuery`, `DenseMemoryQuery`, `PersonalRecordQuery`'s `memory_item`)
+  hides it through `MemorySourceVisibilitySql.predicate`; `MemorySourceRepairQuery` treats the pair
+  as not-live, so the nightly sweep's `orphaned()` suppresses the projected item and `changed()`
+  never re-projects it. Legacy pgvector: `MemoryEmbeddingAnnQuery` excludes such `chat_turn` rows,
+  `TurnEmbeddingListener` skips a blocked event and `MemoryEmbeddingWriter.embedTurnByMessageId`
+  (live + catch-up) never embeds a forgotten turn. People: `ChatMentionListener` skips a blocked
+  event and re-checks the row under `MessageExtractionGate` (FOR SHARE) in the write transaction;
+  `ChatForgetService` (both routes, after the block) calls
+  `MentionDetectionService.forgetBySourceRefs(user, "chat_turn", ids)` — soft-delete, so the daily
+  summary and the person page stop quoting it and detect's including-deleted dedup never revives
+  it. Raw reads (`PersonalRecordQuery` `ai_message`: the LLM personal-record tool and the
+  reflection evidence of `ObservationContextService`) hide the blocked user row AND its paired
+  assistant reply. Not covered: the conversation's own history window, and daily summaries
+  written before the forget. Pinned by `ChatForgetRecallIT`, `ChatMentionListenerIT`,
+  `MemoryEmbeddingAnnQueryIT`.
 
 ## 4. Data model & API
 
