@@ -60,6 +60,12 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-09-28 — Heti felfedezések: egy felfedezés = egy nyom (`mezo-p87ok`).** A heti felfedezések
+  kártyája 72 elemnél szétesett (elemenként egy pötty), az oldala egy 72 csempés fal volt. A digest
+  most mintánként egy nyomot ad (a hét legnagyobb hírével), az előléptetés saját ténye nem számít
+  újra (a 2026-09-21-i hét 72 → ~34); a kártyán egy arány-csík + jelmagyarázat, az oldalon a ritka
+  nyomok egészben felül, a minták és az új tudás lenyitható fiókban. Mellékesen: sötét módban az
+  életesemény-csempe egy globális `.sky` szabály miatt láthatatlan volt. [`me.md`](../features/me.md).
 - **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** A check-in négy fix kérdésből tizennégy tételes,
   napszakhoz igazodó kérdéssorrá nőtt: az öt alap (energia, hangulat, stressz, testi érzés,
   fejtisztaság) után reggel kipihentség, izomláz, fájdalom (testrész-ábrával) és motiváció,

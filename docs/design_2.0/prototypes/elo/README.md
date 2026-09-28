@@ -12,7 +12,7 @@ the same link. The rules are in [`CLAUDE.md`](../../../../CLAUDE.md) §Frontend 
 | Edzés | `edzes.html` | https://claude.ai/artifact/DdTK5jJ6XTBuqnPSC3fpcC | 2026-09-28 — Check-in 2.0 (`mezo-ck2`) shipped to main: the `#mai` „Mai állapot" readiness card (offer, lightened + undo) matches production; in the app it shows only on a planned gym day with a morning check-in that suggests it. (Seeded 2026-09-27 from `uveg-edzes.html`; not yet merged: `uveg-edzes2.html` routes; `companion-titanium` modules inlined so the page is self-contained.) |
 | Fuel | `fuel.html` | — (not seeded yet) | — |
 | Mezo | `mezo.html` | — (not seeded yet) | — |
-| Én | `en.html` | https://claude.ai/artifact/TpZ8YTcX6rBLvLhpkfAK8M | 2026-09-28 — seeded from `uveg-en.html` (not yet merged: `uveg-en2.html` routes; the live week hub has since grown cells the seed does not show). Prototype for `mezo-p87ok`: `#het` discovery card (bar + legend) and `#felfedezesek` (rare traces on top, Minták / Új tudás drawers) — awaiting owner OK. |
+| Én | `en.html` | https://claude.ai/artifact/TpZ8YTcX6rBLvLhpkfAK8M | 2026-09-28 — seeded from `uveg-en.html` (not yet merged: `uveg-en2.html` routes; the live week hub has since grown cells the seed does not show). `mezo-p87ok` shipped to main: `#het` discovery card (bar + legend) and `#felfedezesek` (rare traces on top, Minták / Új tudás drawers) match production. |
 
 A file is seeded the first time a change touches its domain (seed sources are listed in
 CLAUDE.md). Fill in the URL on the first publish and update the date on every merge that
