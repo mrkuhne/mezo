@@ -67,7 +67,12 @@ public enum MetricKey {
     CHECKIN_CRAVING("sóvárgás", "Check-in sheet", MetricDomain.FUEL),
     CHECKIN_DIGESTION("emésztés", "Check-in sheet", MetricDomain.FUEL),
     CHECKIN_CONNECTION("kapcsolódás", "Check-in sheet (este)", MetricDomain.MIND),
-    CHECKIN_DAY("a nap mérlege", "Check-in sheet (este)", MetricDomain.MIND);
+    CHECKIN_DAY("a nap mérlege", "Check-in sheet (este)", MetricDomain.MIND),
+    // Check-in 2.0 follow-up B (mezo-ck2, spec §3.8/§3.4b): az app lezárt napjainak pontszáma
+    // (a DayEvaluationEngine alapja — csak a mai nap előtti napok, pontszám nélküli nap = nincs
+    // adat), és a nap NOVA-besorolt kalóriájából a NOVA 4 (ultrafeldolgozott) százaléka.
+    DAY_SCORE("napi pontszám (app)", "Napértékelés (lezárt napok)", MetricDomain.MIND),
+    NOVA4_KCAL_PCT("ultrafeldolgozott arány", "Étkezés-napló (NOVA-besorolás)", MetricDomain.FUEL);
 
     private final String labelHu;
     private final String sourceHu;
