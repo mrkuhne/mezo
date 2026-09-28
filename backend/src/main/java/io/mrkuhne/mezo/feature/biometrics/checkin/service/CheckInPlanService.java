@@ -110,12 +110,20 @@ public class CheckInPlanService {
         return wanted;
     }
 
-    /** Deterministic across JVMs: UUID, epoch day and String hashes are all specified. */
+    /**
+     * Deterministic across JVMs: UUID, epoch day and String hashes are all specified. The raw
+     * polynomial is passed through the SplitMix64 finaliser: {@link Random}'s first draw from
+     * seeds that differ by a small step (31 per day) is nearly identical, so without the mix about
+     * one user in eight got the random pick every day and never a need pick (mezo-ck2 follow-up).
+     */
     static long seed(UUID userId, LocalDate date, String slotTime) {
         long seed = userId.getMostSignificantBits();
         seed = 31 * seed + userId.getLeastSignificantBits();
         seed = 31 * seed + date.toEpochDay();
-        return 31 * seed + slotTime.hashCode();
+        seed = 31 * seed + slotTime.hashCode();
+        seed = (seed ^ (seed >>> 30)) * 0xbf58476d1ce4e5b9L;
+        seed = (seed ^ (seed >>> 27)) * 0x94d049bb133111ebL;
+        return seed ^ (seed >>> 31);
     }
 
     static CheckInPlanItem toPlanItem(CheckInItem item) {
