@@ -81,6 +81,9 @@ to choose whether it is **only for today** or **also saved into the mesocycle**.
 ## 4. Technical design
 
 ### 4.1 Data model — instance-scoped exercise rows
+
+> **Refined in the plan** (`docs/superpowers/plans/2026-09-28-workout-exercise-swap-add.md` §Data model): every change (both scopes) creates an instance row; a MESO change additionally writes the template with `added_in_workout_id` (hidden in that instance) and flags the instance row `saved_to_plan`. The text below is the original sketch.
+
 `exercise.workout_session_id` already FKs to `workout_session`, and an **instance** is a
 `workout_session` row too. So a **"Csak ma" exercise is an `exercise` row whose
 `workout_session_id` = the instance id**. No new table.
