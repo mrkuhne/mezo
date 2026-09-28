@@ -64,7 +64,9 @@ public class AdviceActionCatalog {
         if (FlagKey.SLEEP_DEBT.equals(adviceKey) || FlagKey.IGNORED_NUDGE.equals(adviceKey)) {
             return shiftSleepAnchorOffer(userId);
         }
-        if (FlagKey.JOINT_OVERUSE.equals(adviceKey)) {
+        // persistent_pain (check-in 2.0, mezo-ck2) offers the same one-step lightening: a region
+        // that hurts three days running is exactly the joint_overuse situation, self-reported.
+        if (FlagKey.JOINT_OVERUSE.equals(adviceKey) || FlagKey.PERSISTENT_PAIN.equals(adviceKey)) {
             return lightenTomorrowOffer();
         }
         return List.of();

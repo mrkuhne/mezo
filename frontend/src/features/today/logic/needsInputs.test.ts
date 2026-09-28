@@ -228,6 +228,32 @@ describe('buildNeedsEvents — 💗 lélek (check-ins + intention + ritual)', ()
     ])
   })
 
+  // Check-in 2.0 (mezo-ck2, spec §3.8b): the ring refills from „Kapcsolódás", not from the mere fact
+  test('a check-in that answered connection refills connection × 10', () => {
+    const raw = {
+      ...baseRaw(),
+      checkinsToday: [
+        { time: '20:00', state: 'done' as const, values: { energy: 6, connection: 8 }, note: null, savedAt: `${TODAY}T20:05:00` },
+        { time: '06:30', state: 'done' as const, values: { energy: 7, connection: 2 }, note: null, savedAt: `${TODAY}T06:35:00` },
+      ],
+    }
+    expect(buildNeedsEvents(raw).lelek).toEqual([
+      { at: new Date(`${TODAY}T20:05:00`), kind: 'add', amount: 80, label: 'Check-in' },
+      { at: new Date(`${TODAY}T06:35:00`), kind: 'add', amount: 20, label: 'Check-in' },
+    ])
+  })
+
+  test('a done check-in without connection (quick exit, skipped) keeps the flat +20', () => {
+    const raw = {
+      ...baseRaw(),
+      checkinsToday: [
+        { time: '10:00', state: 'done' as const, values: { energy: 8 }, note: null, savedAt: `${TODAY}T10:05:00`, quickExit: true },
+        { time: '20:00', state: 'done' as const, values: { energy: 6, connection: null }, note: null, savedAt: `${TODAY}T20:05:00` },
+      ],
+    }
+    expect(buildNeedsEvents(raw).lelek.map((e) => e.amount)).toEqual([20, 20])
+  })
+
   test('a non-done check-in is ignored', () => {
     const raw = { ...baseRaw(), checkinsToday: [{ time: '09:00', state: 'pending' as const, values: null, note: null }] }
     expect(buildNeedsEvents(raw).lelek).toEqual([])

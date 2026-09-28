@@ -173,6 +173,29 @@ class DailySummaryServiceIT extends AbstractIntegrationTest {
                 .doesNotContain("null");
     }
 
+    /** Check-in 2.0 (mezo-ck2, spec §3.1): every answered item reaches the persisted digest through
+     *  the shared renderer; an unanswered one is absent. */
+    @Test
+    void testGenerate_shouldRenderEveryAnsweredCheckInItem_whenCheckIn2ItemsAnswered() {
+        UUID owner = userPopulator.createUser().getId();
+        checkInPopulator.createCheckIn(owner, DAY, "20:00", c -> {
+            c.setMood(3);
+            c.setPain(true);
+            c.setPainRegions(java.util.List.of(
+                io.mrkuhne.mezo.feature.biometrics.checkin.entity.PainRegion.DEREK));
+            c.setPainIntensity(7);
+            c.setDigestion(4);
+            c.setConnection(8);
+            c.setDayRating(6);
+        });
+
+        String narrative = dailySummaryService.generate(owner, DAY).getNarrative();
+
+        assertThat(narrative).contains("Check-in (20:00): hangulat 3/10, fáj: derék 7/10, emésztés 4/10, "
+                + "kapcsolódás 8/10, a nap: 6/10")
+                .doesNotContain("energia").doesNotContain("null");
+    }
+
     /**
      * mezo-b6zt sibling: sport intensity is 1..10 (the DB's own {@code ck_sport_session_intensity}),
      * and "/5" halved its ceiling in the day's PERSISTED narrative — where later prompts read it

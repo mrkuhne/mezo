@@ -23,7 +23,7 @@ Detail lives elsewhere (`decisions/`, `infrastructure/`, `superpowers/`); this i
   [deployment architecture](../infrastructure/deployment-k3s-argocd.md). Goal doubles as hands-on practice
   with the stack Daniel's clients use.
 
-## Epics in flight (state as of 2026-09-27)
+## Epics in flight (state as of 2026-09-28)
 
 The phase list above is the long arc; this is the **current working set** — the epics that own the
 day-to-day slices. Authoritative status is always `bd show <id>`; this table is the index over it.
@@ -53,11 +53,30 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 | `mezo-3zue` — **Rutin-építő** | ✅ closed | Own Én tile + page + Fogg/Clear framework wizard. [`habit.md`](../features/habit.md). |
 | `mezo-ju4j6` — **Boop visszaöltöztetés** | ✅ closed | Titanium visual rollback to Mozaik/Clay, functionality kept. See the milestone log (2026-09-20). |
 | `mezo-a9bo7` / `mezo-ui5by` — **Boop csapat-üzenőfal** | ✅ closed | Social wall + karakter-narratíva; `mezo-ui5by` a duplikátum. See the milestone log (2026-09-27). |
+| `mezo-ck2` — **Check-in 2.0** | ✅ shipped 2026-09-28 | 14-item check-in (5 core + time-of-day items + adaptive „A nap kérdése"), feeding chat, flags, patterns, detectors, life goals, meal coach, training readiness, Napom, ritual, rings. Follow-ups: `persistent_pain` lighten action, day-review reading the day rating. See the milestone log (2026-09-28). [`today.md`](../features/today.md), [`me.md`](../features/me.md). |
 | `mezo-me75u` — **Üvegesítés** | ✅ closed | Whole app onto the dark glass material (U1–U11). See the milestone log (2026-09-27). |
 
 > **Milestone-log gap backfilled 2026-09-27** from `bd` + `git log --merges`, `mezo-s8wg`.
 
 ## Milestone log
+
+- **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** A check-in négy fix kérdésből tizennégy tételes,
+  napszakhoz igazodó kérdéssorrá nőtt: az öt alap (energia, hangulat, stressz, testi érzés,
+  fejtisztaság) után reggel kipihentség, izomláz, fájdalom (testrész-ábrával) és motiváció,
+  napközben éhség, sóvárgás és emésztés, este kapcsolódás és „a nap mérlege" — plusz minden
+  kitöltésnél egy „A nap kérdése". Semmi sincs előre kijelölve, a kihagyott kérdés üres marad, és
+  az alap után „Most csak ennyi"-vel ki lehet lépni. A kérdéssor szerver-beállítás, frissítés nélkül
+  szűkíthető. A válaszok mindenhová eljutnak: a társ és a napi összefoglaló minden választ lát, négy
+  új figyelmeztetés (visszatérő fájdalom, rossz pihenés, sóvárgás-sorozat, motiváció-mélypont),
+  tíz új mérési sor és tizenöt új összefüggés-pár, hét új karakter-detektor (47 összesen),
+  két új életcél-trigger, az étkezési coach látja az éhséget/sóvárgást/emésztést, az Edzés „Mai
+  állapot" kártyája egy koppintással könnyíti a napot, A napom mellé kerül a saját 1–10-es
+  értékelés, a Napzárás nem kérdezi meg újra, a Kapcsolat-gyűrű az esti kapcsolódásból töltődik, a
+  heti nézetben megjelenik a hangulat. Spec:
+  [`checkin-2-design`](../superpowers/specs/2026-09-27-checkin-2-design.md); terv:
+  [`checkin-2`](../superpowers/plans/2026-09-27-checkin-2.md); élő prototípusok:
+  [`elo/nap.html`](../design_2.0/prototypes/elo/nap.html),
+  [`elo/edzes.html`](../design_2.0/prototypes/elo/edzes.html).
 
 - **2026-09-27 — Indítókép: töltődés + keringés (`mezo-1dxhp`).** A 3 másodperces indítókép
   üveggömbje élő lett: a lila folyadék végig töltődik ~70%-ig (a kivezetésre áll meg), közben öt

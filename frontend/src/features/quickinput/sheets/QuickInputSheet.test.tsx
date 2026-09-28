@@ -4,7 +4,6 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { QuickInputSheet } from '@/features/quickinput/sheets/QuickInputSheet'
-import { CHECKIN_DIMS } from '@/features/today/sheets/CheckInSheet'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { initialCheckins } from '@/data/today/checkins'
@@ -290,7 +289,7 @@ test('the Check-in tile swaps the menu for the check-in sheet on the next fillab
   // Asserts the exact slot, not just that A sheet opened: `initialCheckins` has 06:30 and 10:00
   // done, so the next fillable slot is index 2 (14:00). A regression that pinned a constant index
   // instead of `nextCheckInIdx` would still open a sheet — only the time gives it away.
-  expect(await screen.findByText('Heartbeat · 14:00')).toBeInTheDocument()
+  expect(await screen.findByText('Heartbeat · Délután · 14:00')).toBeInTheDocument()
   expect(screen.queryByText('Gyors logolás')).not.toBeInTheDocument()
   expect(onClose).not.toHaveBeenCalled()
 })
@@ -350,11 +349,12 @@ test('driving a check-in all the way to Mentés closes the sheet (regression)', 
   await userEvent.click(screen.getByText('Check-in'))
   expect(await screen.findByText(/Heartbeat ·/)).toBeInTheDocument()
 
-  // Skip every dimension (the auto-advance-on-tap step) to reach the summary/save step —
-  // agnostic to which slot index was picked, since it only depends on the dimension count.
-  for (let i = 0; i < CHECKIN_DIMS.length; i++) {
-    // the step nav's arrows are typographic and aria-hidden (Üveg, mezo-me75u.3): the button's
-    // name is the word itself
+  // Skip every item of the slot's plan (Check-in 2.0: the count depends on the slot and the
+  // question of the day) until the summary/save step shows — agnostic to which slot was picked.
+  // The step nav's arrows are typographic and aria-hidden (Üveg, mezo-me75u.3): the button's
+  // name is the word itself.
+  await screen.findByRole('button', { name: /^Kihagy/ })
+  while (!screen.queryByText(/Mentés ·/)) {
     await userEvent.click(screen.getByRole('button', { name: /^Kihagy/ }))
   }
 

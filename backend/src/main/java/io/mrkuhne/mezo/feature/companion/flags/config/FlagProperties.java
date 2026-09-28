@@ -46,7 +46,12 @@ public record FlagProperties(
 
     @NotNull @Valid MealRhythmDrift mealRhythmDrift,
 
-    @NotNull @Valid EnergyDipMealTiming energyDipMealTiming
+    @NotNull @Valid EnergyDipMealTiming energyDipMealTiming,
+
+    @NotNull @Valid PersistentPain persistentPain,
+    @NotNull @Valid PoorRestedness poorRestedness,
+    @NotNull @Valid CravingStreak cravingStreak,
+    @NotNull @Valid MotivationSlump motivationSlump
 ) {
 
     /** Check-in stress is a 1–10 scale (the contract's SaveCheckInRequest bounds). */
@@ -87,7 +92,12 @@ public record FlagProperties(
         @Min(1) @Max(7) int windowDays,
         @DecimalMin("0.0") @DecimalMax("12.0") double sleepFloorHours,
         @DecimalMin("1.0") @DecimalMax("10.0") double rpeThreshold,
-        @DecimalMin("1.0") @DecimalMax("10.0") double stressThreshold
+        @DecimalMin("1.0") @DecimalMax("10.0") double stressThreshold,
+        /** Check-in 2.0 (mezo-ck2, spec §3.2): a check-in {@code rested} (1–10, nullable) at or
+         *  below this is an alternative to the sleep-hours arm. */
+        @Min(1) @Max(10) int restedAtMost,
+        /** …and so is a check-in {@code soreness} (1–10, 10 = worse, nullable) at or above this. */
+        @Min(1) @Max(10) int sorenessAtLeast
     ) {
     }
 
@@ -135,7 +145,11 @@ public record FlagProperties(
         @Min(1) @Max(20) int minCheckIns,
         /** body/energy (1–10 scale, nullable — a null is "not answered", not a low score) at or
          *  below this counts as a "bad" check-in. */
-        @Min(1) @Max(10) int bodyOrEnergyAtMost
+        @Min(1) @Max(10) int bodyOrEnergyAtMost,
+        /** Check-in 2.0 (mezo-ck2, spec §3.2): a {@code mood} at or below this also qualifies. */
+        @Min(1) @Max(10) int moodAtMost,
+        /** …and so does a {@code pain_intensity} at or above this. */
+        @Min(1) @Max(10) int painIntensityAtLeast
     ) {
     }
 
@@ -286,6 +300,46 @@ public record FlagProperties(
     ) {
     }
 
+    /** Check-in 2.0 (mezo-ck2, spec 2026-09-27 §3.2): the same pain region on at least
+     *  {@code minDays} of the last {@code windowDays} days (today included) — see
+     *  {@code PersistentPainRule}. */
+    public record PersistentPain(
+        @Min(2) @Max(30) int windowDays,
+        @Min(2) @Max(30) int minDays
+    ) {
+    }
+
+    /** Check-in 2.0 (mezo-ck2): the morning {@code rested} at or below {@code restedAtMost} on
+     *  {@code consecutiveMornings} consecutive mornings inside the last {@code windowDays} days
+     *  (today included). The morning value is the 06:30 slot's, else the day's first check-in's. */
+    public record PoorRestedness(
+        @Min(2) @Max(14) int windowDays,
+        @Min(2) @Max(7) int consecutiveMornings,
+        @Min(1) @Max(10) int restedAtMost,
+        /** The planned morning slot's {@code HH:mm} — preferred over the day's first check-in. */
+        @NotBlank String morningSlot
+    ) {
+    }
+
+    /** Check-in 2.0 (mezo-ck2): {@code craving >= cravingAtLeast} of the SAME kind on at least
+     *  {@code minDays} of the last {@code windowDays} days (today included). */
+    public record CravingStreak(
+        @Min(2) @Max(30) int windowDays,
+        @Min(2) @Max(30) int minDays,
+        @Min(1) @Max(10) int cravingAtLeast
+    ) {
+    }
+
+    /** Check-in 2.0 (mezo-ck2): the day-MEAN {@code motivation} at or below
+     *  {@code motivationAtMost} on at least {@code minDays} of the last {@code windowDays} days
+     *  (today included). */
+    public record MotivationSlump(
+        @Min(2) @Max(30) int windowDays,
+        @Min(2) @Max(30) int minDays,
+        @DecimalMin("1.0") @DecimalMax("10.0") double motivationAtMost
+    ) {
+    }
+
     /** Per-flag re-raise cooldown; a flag re-raises only once its own window has passed. */
     public record CooldownHours(
         @Min(1) @Max(8760) int sustainedStress,
@@ -303,7 +357,11 @@ public record FlagProperties(
         @Min(1) @Max(8760) int lateEating,
         @Min(1) @Max(8760) int protocolLapse,
         @Min(1) @Max(8760) int mealRhythmDrift,
-        @Min(1) @Max(8760) int energyDipMealTiming
+        @Min(1) @Max(8760) int energyDipMealTiming,
+        @Min(1) @Max(8760) int persistentPain,
+        @Min(1) @Max(8760) int poorRestedness,
+        @Min(1) @Max(8760) int cravingStreak,
+        @Min(1) @Max(8760) int motivationSlump
     ) {
 
         /** The cooldown for {@code flagKey} — keeps the switch out of the service. */
@@ -325,6 +383,10 @@ public record FlagProperties(
                 case "protocol_lapse" -> protocolLapse;
                 case "meal_rhythm_drift" -> mealRhythmDrift;
                 case "energy_dip_meal_timing" -> energyDipMealTiming;
+                case "persistent_pain" -> persistentPain;
+                case "poor_restedness" -> poorRestedness;
+                case "craving_streak" -> cravingStreak;
+                case "motivation_slump" -> motivationSlump;
                 default -> throw new SystemRuntimeErrorException(
                     SystemMessage.error("COMPANION_FLAG_UNKNOWN_KEY").params(List.of(flagKey)).build());
             };

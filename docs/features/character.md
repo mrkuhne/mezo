@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-09-27
+updated: 2026-09-28
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -16,6 +16,8 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
 # Karakter (user character dossier) — Feature Documentation
+
+> **2026-09-28 — Check-in 2.0 detectors (`mezo-ck2`).** Seven new detectors over the new check-in items — `pain-map` (doki), `sleep-need` (szomnologus), `craving-trigger` and `food-digestion` (taplalkozo), `mood-text-calibration` (pszichologus), `motivation-follow-through` (drill), `soreness-recovery` (edzo) — and three changed ones: `people-mood-link` (reads `mood`, falls back to `mental`; new `connection` arm), `comfort-eating` (low mood = `mood <= 4 OR stress >= 7`, `mental` only as fallback; new direct craving arm), `self-calibration` (new rested × sleep-quality pair). The catalog is now **47** detectors (`DetektorokPage`). `DetectorInput.CheckinDayPoint` carries the new day means + `painRegions`; `CharacterSignalReads` fills them. §1 „Check-in 2.0 round". Spec [`2026-09-27-checkin-2-design.md`](../superpowers/specs/2026-09-27-checkin-2-design.md) §3.4b–§3.7.
 
 > One-line: a synthesis layer over everything mezo already remembers — a persisted,
 > dimension-structured picture of *who Daniel is*, built by a visible team of 7 domain-expert
@@ -123,8 +125,9 @@ twelve more still (`self-calibration`, `promise-vs-delivery`, `decision-profile`
 `needs-domain-imbalance`), and round 4 ("Kapcsolatok & AI-meta") landed the last eight
 (`people-mood-link`, `mention-context-shift`, `weekend-gap`, `chat-topic-shift`,
 `knowledge-rejection-pattern`, `prediction-calibration`, `quest-completion-calibration`,
-`experiment-outcome-ledger`), **40 of them are implemented** — the `MINDENT be` inventory is
-exhausted; only the `weight-gap` variant remains (`mezo-1gim.12`). Round 4 reads seven more
+`experiment-outcome-ledger`), **40 of them were implemented** — the `MINDENT be` inventory is
+exhausted; only the `weight-gap` variant remains (`mezo-1gim.12`). **Check-in 2.0 (`mezo-ck2`,
+2026-09-28) added seven more — 47 in all** (see „Check-in 2.0 round" below). Round 4 reads seven more
 sources — people mentions (context label), sleep bedtime/wakeup clocks, the assistant's executed
 tool calls (+ conversation title as evidence), Tudástár fact decisions + pattern events,
 predictions, quests, experiment/challenge outcomes — the last four through a second read
@@ -149,6 +152,34 @@ check-in slot rows, the user's own chat timestamps, and the logging-latency seri
 the state-change-gate idiom
 further still: seven of its twelve detectors carry **no** new-data pre-filter at all, because for
 them absence IS the signal (see §9's round-3 gate rule).
+
+### Check-in 2.0 round (`mezo-ck2`, 2026-09-28)
+
+Inputs: `DetectorInput.CheckinDayPoint` gained the day means of `mood, rested, soreness,
+painIntensity, motivation, hunger, craving, digestion, connection, dayRating` (null when nobody
+answered that day — never „közepes") plus `painRegions` (distinct `PainRegion`s of the day);
+`CheckinSlotPoint` gained the row's own `motivation`/`digestion` (slot-level answers);
+`GymDay.sessionType` and `MealPoint.itemNames` were added for the soreness and digestion
+groupings. All filled by `CharacterSignalReads` (`CharacterSignalReadsIT`). Every new detector is
+a switch-gated `@Component`, uses the 8-week series and the state-change gate, and carries the
+**Whoop guard** (no finding until ≥ 5 answers per compared group, or the detector's own `MIN_*`).
+
+| Key | Expert | What it finds (guards) |
+|---|---|---|
+| `pain-map` | doki | a self-reported pain region on ≥ 3 distinct days of the trailing window; adds one clear-cut context (gym day / day after, weekday vs weekend) — the self-reported twin of `niggle-map` |
+| `sleep-need` | szomnologus | the personal sleep need: 30-min duration buckets of the night before vs morning `rested`; ≥ 14 paired nights, ≥ 5 per bucket, a real spread and a longer bucket above the plateau; salience rises when it suggests updating the sleep goal (never writes it) |
+| `craving-trigger` | taplalkozo | which prior factor (short sleep, previous-day high stress, previous-day low protein vs target) precedes strong-craving days (`craving >= 7`), ≥ 5 days per group |
+| `food-digestion` | taplalkozo | which ingredient / NOVA class recurs in the 1–5 h before a low digestion answer (`<= 4`), ≥ 5 low and ≥ 5 OK paired answers |
+| `mood-text-calibration` | pszichologus | check-in `mood` vs the journal/chat `text_signal.mood` (1–5 rescaled to 1–10), ≥ 8 paired days; agreement band + direction |
+| `motivation-follow-through` | drill | morning motivation vs done/planned (planned gym day + habits), ≥ 5 low- and ≥ 5 high-motivation days |
+| `soreness-recovery` | edzo | per session type, days until soreness returns to the user's own baseline, ≥ 5 episodes per type |
+
+Changed: `people-mood-link` (mood with `mental` fallback + a `connection` arm under the Whoop
+guard), `comfort-eating` (low mood `mood <= 4 OR stress >= 7`, `mental <= 4` only for days with no
+mood; direct craving arm = NOVA-4 share on `craving >= 7` days), `self-calibration` (third pair:
+`rested` × the night's `sleep_log.quality`, ≥ 5 days each side). Tests:
+`detector/CheckinTwoDetectorTest` (positive / negative / small-n per detector). The Gépterem
+`DetektorokPage` lists all 47 with their new lines.
 
 ### Social navigation and contextual replies (mezo-njcgs)
 
@@ -743,7 +774,7 @@ The social surface follows the approved Clay/Mozaik v3 prototype: warm author-le
     All of this content is STATIC (`frontend/src/features/character/inventory.ts`) — see that
     file's own header for why: it IS the `mezo-1gim.15` ("MINDENT be") working checklist, not a
     live read off any backend catalog.
-  - **Detektorok** (`/me/karakter/gepterem/detektorok`, `DetektorokPage`) — the 40 REAL,
+  - **Detektorok** (`/me/karakter/gepterem/detektorok`, `DetektorokPage`) — the 47 REAL (40 + the 7 Check-in 2.0 ones),
     `DetectorRegistry`-discovered detectors, one line each (key, one-line semantic, owning expert
     in their domain color), closing with "A kód csak észlel — az értelmezés mindig az adott
     szakértő LLM-hívása." This is the runtime truth `inventory.ts` explicitly is NOT.
@@ -1096,7 +1127,7 @@ audited `raw_query` stays within the cap.
 - **Add a detector**: implement `CharacterDetector` (`detector/CharacterDetector.java`,
   `String key(); List<DetectorSignal> detect(DetectorInput)`) as a `@Component` gated
   `@ConditionalOnProperty(name = FeaturesConfiguration.CHARACTER_SWITCH, havingValue = "true")`
-  (all 40 detectors follow this, S7 polish — with the switch off the beans don't exist,
+  (all 47 detectors follow this, S7 polish — with the switch off the beans don't exist,
   not merely no-op, so `DetectorRegistry`'s injected `List<CharacterDetector>` is legitimately
   empty rather than short-circuited) — it is auto-discovered by `DetectorRegistry.runAll` and
   gains a free per-key kill switch too (`mezo.character.detector.<key>.enabled`, defaults
@@ -1179,7 +1210,7 @@ Adatforrások+kör/Detektorok) were added to it.
   (whole-block-drop-on-overflow), `CharacterPromptWiringIT` (`@Nested`: `SwitchOn` covers all
   four wired surfaces — chat, memoir, prediction, weekly review; `SwitchOff` covers chat only).
 - **Unit tests (pure code, no Spring context)**: `detector/DetectorTest` (fixture-day-in/
-  signal-out for all 40 detectors, incl. the HU decimal-comma formatting, the 14-day honest
+  signal-out for the original 40 detectors — the seven Check-in 2.0 ones and the three changed arms live in `detector/CheckinTwoDetectorTest` — incl. the HU decimal-comma formatting, the 14-day honest
   streak-cap case, the round-2 state-change gate fire/no-fire/quiet-when-no-new-data cases, the
   `hydration-consistency` band-change gate, the `comfort-eating`/`med-cycle-covariance`
   below-minimum-sample silence, the `stack-skip-pattern` rest-day-fallback exclusion, the
@@ -1328,7 +1359,7 @@ investigating.
   - **Weekend = Saturday/Sunday in the server zone** (`weekend-gap`) — a named, accepted
     limitation (no obligation-schedule data exists to do better), not a Roenneberg-style
     workday/free-day split.
-- **Detector beans are switch-gated, not just no-op** (S7). Each of the 40 detectors carries
+- **Detector beans are switch-gated, not just no-op** (S7). Each of the 47 detectors carries
   `@ConditionalOnProperty(CHARACTER_SWITCH)` directly, so with the switch off the beans don't
   exist at all — `CharacterApiSwitchOffIT.the_detector_beans_are_absent` asserts every detector
   bean and `DetectorRegistry` itself are absent from the context, not merely quiet.
@@ -1628,7 +1659,10 @@ Social additions: `service/CharacterReplyService.java` (owned save/list/retry), 
   `ChatTopicShiftDetector` (+ its own `ChatToolDomains` tool-name-to-domain map, the backend
   mirror of the FE's `toolDomains.ts`), and the four szkeptikus-owned, `self-audit`-dimension
   detectors `KnowledgeRejectionPatternDetector`, `PredictionCalibrationDetector`,
-  `QuestCompletionCalibrationDetector`, `ExperimentOutcomeLedgerDetector` — + `DetectorGates`
+  `QuestCompletionCalibrationDetector`, `ExperimentOutcomeLedgerDetector` — and the Check-in 2.0
+  (`mezo-ck2`) 7 — `PainMapDetector`, `SleepNeedDetector`, `CravingTriggerDetector`,
+  `FoodDigestionDetector`, `MoodTextCalibrationDetector`, `MotivationFollowThroughDetector`,
+  `SorenessRecoveryDetector` (tests `detector/CheckinTwoDetectorTest`) — + `DetectorGates`
   (renamed from `RoundOneGates` in round 2 — the shared "new domain data since last run" gate
   helpers, now covering rounds 1–3's sources; round 4 adds none, see §9's round-4 no-pre-filter
   rule) + `TrailingWindow` (renamed from `RoundTwoWindow` in round 3 — the shared
@@ -1778,7 +1812,7 @@ The API fragment remains `api/feature/character/character.yml`.
 - `pages/AdatforrasokPage.tsx` (S9) — Bekötve | Tervezett segmented control over
   `inventory.ts`'s static content
 - `pages/KorPage.tsx` (S9) — one MINDENT-be round's item list (`/kor/:n`)
-- `pages/DetektorokPage.tsx` (S9) — the 40 real detectors, one line + owning expert each
+- `pages/DetektorokPage.tsx` (S9) — the 47 real detectors (Check-in 2.0 added 7), one line + owning expert each
 - `inventory.ts` (S9) — the Adatforrások/Tervezett static corpus module (`INVENTORY_ROUNDS` now
   `[]` — round 4 was the last round); ALSO the `mezo-1gim.15` working checklist, now closed (see
   its own header comment and §9)

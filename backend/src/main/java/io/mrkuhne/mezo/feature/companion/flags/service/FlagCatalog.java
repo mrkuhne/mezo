@@ -43,8 +43,11 @@ public final class FlagCatalog {
         ENTRIES.put(FlagKey.LOAD_FUEL_MISMATCH, new Entry("Terhelés–táplálás", DOMAIN_NUTRITION));
         ENTRIES.put(FlagKey.RAPID_WEIGHT_LOSS, new Entry("Gyors fogyás", DOMAIN_BODY));
         ENTRIES.put(FlagKey.JOINT_OVERUSE, new Entry("Vállterhelés", DOMAIN_TRAINING));
+        // Check-in 2.0 (bd mezo-ck2): the four check-in rules, each at its AdvicePriority rank.
+        ENTRIES.put(FlagKey.PERSISTENT_PAIN, new Entry("Visszatérő fájdalom", DOMAIN_BODY));
         ENTRIES.put(FlagKey.MISSED_WORKOUTS, new Entry("Kimaradt edzések", DOMAIN_TRAINING));
         ENTRIES.put(FlagKey.SLEEP_DEBT, new Entry("Alvásadósság", DOMAIN_SLEEP));
+        ENTRIES.put(FlagKey.POOR_RESTEDNESS, new Entry("Kipihenetlen reggelek", DOMAIN_SLEEP));
         ENTRIES.put(FlagKey.LOGGING_GAP, new Entry("Rögzítési hiány", DOMAIN_LOGGING));
         ENTRIES.put(FlagKey.IGNORED_NUDGE, new Entry("Elengedett emlékeztető", DOMAIN_SLEEP));
         ENTRIES.put(FlagKey.LATE_EATING, new Entry("Késői evés", DOMAIN_NUTRITION));
@@ -62,8 +65,10 @@ public final class FlagCatalog {
         // the user eats). Insertion order again mirrors AdvicePriority.ORDER, where it sits
         // directly after meal_rhythm_drift.
         ENTRIES.put(FlagKey.ENERGY_DIP_MEAL_TIMING, new Entry("Délutáni energia", DOMAIN_NUTRITION));
+        ENTRIES.put(FlagKey.CRAVING_STREAK, new Entry("Sóvárgás", DOMAIN_NUTRITION));
         ENTRIES.put(FlagKey.RECOVERY_NEEDED, new Entry("Regeneráció kell", DOMAIN_RECOVERY));
         ENTRIES.put(FlagKey.SUSTAINED_STRESS, new Entry("Tartós stressz", DOMAIN_RECOVERY));
+        ENTRIES.put(FlagKey.MOTIVATION_SLUMP, new Entry("Alacsony kedv", DOMAIN_RECOVERY));
         ENTRIES.put(FlagKey.MOMENTUM_AT_RISK, new Entry("Lendület veszélyben", DOMAIN_HABITS));
         ENTRIES.put(FlagKey.ALL_HEALTHY, new Entry("Minden rendben", DOMAIN_HABITS));
     }

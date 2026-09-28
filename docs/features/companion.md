@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-27
+updated: 2026-09-28
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -16,6 +16,8 @@ related: [insights, proactive, today, me, character, _platform-api-backend, _pla
 ---
 
 # Companion (AI chat brain) — Feature Documentation
+
+> **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** One shared renderer, `CheckInText` (biometrics), now prints every answered check-in item for the chat snapshot (latest row + a „ma korábban" line of today's other slots), the daily summary, the `get_recovery` tool (`scope=checkins`) and the meal coach; `PersonalRecordSource` exposes the new `check_in` columns. Flags: four new rules (`persistent_pain`, `poor_restedness`, `craving_streak`, `motivation_slump`) and two widened (`acute_bad_day` + mood/pain, `recovery_needed` + rested/soreness arm). Patterns: ten new `MetricKey`s and fifteen new pairs. `DayScoreService` counts a check-in as filled only when legacy / quick exit / core answered; `MeWeekService` adds the mood average. Details: §5.5 „Check-in 2.0 feeds", §4 flag table, the pattern-catalog block „Check-in 2.0 extended the catalog". Spec [`2026-09-27-checkin-2-design.md`](../superpowers/specs/2026-09-27-checkin-2-design.md).
 
 > Open-ended Hungarian conversation with owner-scoped data access when relevant. The default
 > path uses a smart retrieval loop and natively streamed answers; context and memory are fetched
@@ -756,6 +758,26 @@ COMPLETE (all 14 slices):**
   is never announced either (review finding).
 - **Evidence link on the Knowledge tab** — additive `KnowledgeFactResponse.patternTitle` (the
   promoting pattern's title, batch reverse-lookup); the FE fact card renders a `minta: …` chip.
+
+**Check-in 2.0 (`mezo-ck2`, 2026-09-28) extended the catalog again:**
+
+- **10 new `MetricKey`s** (`MetricKey.java`, `MetricSeriesService` switch + getters): `checkin-mood`,
+  `checkin-rested`, `checkin-soreness`, `checkin-pain`, `checkin-motivation`, `checkin-hunger`,
+  `checkin-craving`, `checkin-digestion`, `checkin-connection`, `checkin-day` — each the day mean
+  of the ANSWERED slots (NULL never counts), except `checkin-pain` = the day's **max** intensity,
+  0 when the pain gate was answered „Nem" (`MetricSeriesCheckinItemsIT`). They appear on the
+  pattern monitor / insights series automatically.
+- **15 new pairs** in `mezo.companion.patterns.pairs` (`application.yml`, „Check-in 2.0" block):
+  `sleep-duration~checkin-rested`, `sleep-quality~checkin-rested`,
+  `sleep-duration~next-day-checkin-craving`, `checkin-stress~checkin-craving`,
+  `daily-protein~checkin-hunger`, `meal-score~checkin-craving`,
+  `gym-workload~next-day-checkin-soreness`, `training-monotony~checkin-motivation`,
+  `sleep-quality~checkin-motivation`, `social-mentions~checkin-mood`, `habits-done~checkin-mood`,
+  `daily-xp~checkin-mood`, `checkin-mood~checkin-day`, `meal-score~checkin-digestion`,
+  `social-mentions~checkin-connection`. **Deviations from spec §3.8:** `day-score~checkin-day` is
+  skipped (the day score is not a `MetricKey` series), and `meal-processing~checkin-digestion` is
+  realised as `meal-score~checkin-digestion` (no separate NOVA-share metric; the meal score weighs
+  NOVA). The existing `*~checkin-mental` pairs stay (clarity is still a real series).
 
 **V3.4 (`mezo-6ha5`) shipped the catalog expansion + AI-context enrichment (spec:
 `2026-08-11-pattern-catalog-expansion-design.md`):**
@@ -6874,10 +6896,14 @@ are whole days computed from `LocalDate.now()`; missing days stay absent, never 
 | `sustained_stress` | per-day avg `CHECKIN_STRESS` ≥ `threshold` on ≥ `min-days` of the last `window-days` days (today included) | `MetricKey.CHECKIN_STRESS` |
 | `sleep_debt` | over the last `nights` nights ending TODAY (`sleep_log.date` is the wake morning, so today's row is last night): Σ max(0, goalHours − durationH) ≥ `deficit-hours`, and at least `min-nights` of them are logged | `MetricKey.SLEEP_DURATION_H`, `sleep_goal.target_minutes` (fallback `default-goal-hours`) |
 | `momentum_at_risk` | recentAvg(`HABITS_DONE`) ≤ baselineAvg × (1 − `drop-ratio`) **and** ≥1 missed planned gym day in the recent window; guarded by baselineAvg ≥ `min-baseline` | `MetricKey.HABITS_DONE`, `gym_schedule_slot.day_of_week`, `WorkoutSessionRepository.findDoneInstanceDates` |
-| `recovery_needed` | inside the last `window-days` days (today included): a day with `SLEEP_DURATION_H` ≤ `sleep-floor-hours` **and** a day with `TRAINING_RPE` ≥ `rpe-threshold` **and** a day with avg `CHECKIN_STRESS` ≥ `stress-threshold` | those three series |
+| `recovery_needed` | inside the last `window-days` days (today included): a day with `SLEEP_DURATION_H` ≤ `sleep-floor-hours` — **or (Check-in 2.0) a raw check-in with `rested` ≤ `rested-at-most` (4) or `soreness` ≥ `soreness-at-least` (7)** — **and** a day with `TRAINING_RPE` ≥ `rpe-threshold` **and** a day with avg `CHECKIN_STRESS` ≥ `stress-threshold` | those three series + `check_in.rested`/`.soreness` (raw rows, newest qualifying frozen in the payload) |
 | `logging_gap` | `≥ min-stale-domains` of {meals, check-ins, sleep} stale (thresholds above); a domain with no row at all counts as stale | `meal_.logged_at`, `check_in.saved_at`, `sleep_log.date` (direct repository reads, not `MetricSeriesService`) |
 | `missed_workouts` | `≥ min-consecutive-missed` consecutive PLANNED gym days (in the sequence of planned days) with no completed workout instance, inside the `window-days`-day window ending YESTERDAY (today is still in progress), itself clamped to never start before the oldest surviving `gym_schedule_slot.created_at` — a day before the current schedule existed cannot be a violation of it (review fix, bd `mezo-d58h.2`) | `gym_schedule_slot.day_of_week`, `gym_schedule_slot.created_at`, `WorkoutSessionRepository.findDoneInstanceDates` |
-| `acute_bad_day` | ≥ `min-check-ins` of TODAY's raw check-ins have body OR energy ≤ `body-or-energy-at-most`; a null score never qualifies | `check_in.body`/`check_in.energy` (direct repository read, TODAY only) |
+| `acute_bad_day` | ≥ `min-check-ins` of TODAY's raw check-ins have body OR energy ≤ `body-or-energy-at-most` — **or (Check-in 2.0) mood ≤ `mood-at-most` (3) or pain intensity ≥ `pain-intensity-at-least` (7)**; a null score never qualifies | `check_in.body`/`.energy`/`.mood`/`.pain_intensity` (direct repository read, TODAY only) |
+| `persistent_pain` (Check-in 2.0) | the same pain region reported on ≥ `persistent-pain.min-days` (3) of the last `window-days` (5) days; UNAVAILABLE while fewer days carry any pain answer (Nem or Igen). Card: „Harmadik napja fáj a {térded}. Érdemes ránézni." The card offers the same „Holnap könnyebb legyen" (`lighten_tomorrow`, delta −1) action as `joint_overuse` (`AdviceActionCatalog`); the payload freezes the region | `check_in.pain`/`pain_regions`/`pain_intensity` (raw rows) |
+| `poor_restedness` (Check-in 2.0) | `rested` ≤ `rested-at-most` (4) on `consecutive-mornings` (2) consecutive mornings inside `window-days` (3); the morning value is the `morning-slot` (06:30) answer, else the day's first. Card: „Két reggel egymás után nem pihented ki magad." | `check_in.rested` (raw rows) |
+| `craving_streak` (Check-in 2.0) | `craving` ≥ `craving-at-least` (7) of the SAME kind on ≥ `min-days` (3) of the last `window-days` (5); names the dominant daypart. Card: „Sokszor kívánsz mostanában {édeset}, főleg {délután}." | `check_in.craving`/`craving_kinds` (raw rows) |
+| `motivation_slump` (Check-in 2.0) | day-mean `motivation` ≤ `motivation-at-most` (3.0) on ≥ `min-days` (3) of the last `window-days` (4). Card: „Pár napja alacsony a kedved. Kisebb lépések?" | `check_in.motivation` |
 | `load_fuel_mismatch` | 7-day `COMBINED_LOAD_MIN` avg ≥ `load-threshold` **and** (7-day `DAILY_KCAL` avg < `kcal-fraction-of-target` × the day's target **or** 7-day `SLEEP_DURATION_H` avg < `sleep-floor-hours`); each side's own `≥ min-logged-days-per-side` gate counted from the SPARSE series, never the calendar-complete load series | `MetricKey.COMBINED_LOAD_MIN`/`DAILY_KCAL`/`SLEEP_DURATION_H`, `FuelDayService.getDay` (kcal target); `WEIGHT_TREND_PCT_WK` rides along as a fact only |
 | `rapid_weight_loss` | `WEIGHT_TREND_PCT_WK` < `pct-per-week-at-most` (more negative) **and** the single ACTIVE goal's `trajectory` ≠ `cut`; no active goal ⇒ silent (unreadable precondition) | `MetricKey.WEIGHT_TREND_PCT_WK`, `goal.trajectory` |
 | `joint_overuse` | 7-day `SHOULDER_STRAIN` avg ≥ `strain-avg-at-least` **and** tomorrow's planned gym session is `muscle-needle`-focused (via `findPlannedTemplateForDate`, never `getToday`) | `MetricKey.SHOULDER_STRAIN`, `WorkoutService.findPlannedTemplateForDate` |
@@ -6886,7 +6912,7 @@ are whole days computed from `LocalDate.now()`; missing days stay absent, never 
 | `protocol_lapse` | one active protocol item missed on ≥ `consecutive-missed-days` consecutive DUE days, **and** ≥ `min-history-due-days` due days of adherence-≥`min-history-adherence` history immediately before the miss run; "due" is DERIVED, never stored — a `pre_workout`/`post_workout` item is due only on a day with a completed gym instance (a rest day is not a miss), every other item is due every day; the scan is bounded BELOW by the item's own `created_at` (a freshly added item cannot have "missed" a habit that never had room to exist), and the window ends YESTERDAY, never today (today is still in progress); the per-item 7-day re-announce cooldown lives inside the rule itself, separate from the 24h key-level cooldown below | `protocol_item`, `supplement_intake`, `WorkoutSessionRepository.findDoneInstanceDates` |
 | `meal_rhythm_drift` | over a `window-days` rolling window ending YESTERDAY, with at least `min-days-with-meals` days carrying a logged meal: **slot drift** — a planned slot's actual logged time (earliest row of that `slotKind` that day) deviates from its planned time by a median of more than `drift-minutes`, with at least `min-same-direction-share` of the observed days drifting the same way — OR **dead slot** — a slot planned on ≥ `min-slot-planned-days` days carries a meal on ≤ `dead-slot-max-presence` of them while the other tracked slots average ≥ `other-slots-min-presence`. Only `fixed`-anchor slots can drift (relative anchors are resolved in the FRONTEND only); `snack` and any duplicated `slotKind` are excluded as ambiguous; the day's template is chosen by a DERIVED day type (`resolveDayType.ts` ported: no completed instance ⇒ rest, earliest start before noon ⇒ training_am, else training_pm), and a training day with no `started_at` is skipped entirely; deviations use a SIGNED CIRCULAR minute difference in `(-720, 720]`, never `LateEatingRule`'s +24 shift | `meal_slot_template`, `meal`, `WorkoutSessionRepository.findDoneInstancesBetween` |
 | `energy_dip_meal_timing` | over a `window-days` rolling window ending YESTERDAY: a day QUALIFIES when it carries a check-in with an energy value inside the INCLUSIVE `[afternoon-from-hour, afternoon-to-hour]` band (matched on the `slot_time` wall clock; the day's value is the MEDIAN of its in-band check-ins) AND at least one logged meal of any kind — fewer than `min-qualifying-days` such days ⇒ silence. Those days are split in two: **lunch time** (primary) — the days with a lunch row, halved at their own median lunch minute, usable only when both halves reach `min-group-days` AND their own median lunch times are `min-lunch-split-separation-minutes` apart — or, ONLY when that split is unusable, **breakfast presence** (fallback) — days with a logged `breakfast` row vs days without. Raises when the two groups' median afternoon energies differ by ≥ `min-energy-delta` AND the Mann–Whitney probability of superiority (oriented to the higher group) reaches `min-superiority`. Reports a CORRELATION, never a cause; a usable split that does not separate is a CLEAR, not an unavailable | `check_in` (`findByCreatedByAndDeletedFalseAndDateBetween`), `meal` |
-| `all_healthy` | none of the other fifteen fire now, **and** no problem row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
+| `all_healthy` | none of the other nineteen fire now, **and** no problem row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
 
 `all_healthy`'s "no problem row" check (`existsProblemRaiseSince`) excludes `all_healthy` itself,
 `logging_gap`, `ignored_nudge`, and (whole-branch review fix, bd `mezo-d58h.6`) `joint_overuse`:
@@ -7266,6 +7292,27 @@ Companion is now a backed feature on the contract-first pipeline
 compile error.
 
 ### 5.5 Companion ← other features (✅ V0.3 wired — read-only)
+
+**Check-in 2.0 feeds (`mezo-ck2`, 2026-09-28).** Every check-in reader renders through the
+biometrics-owned `CheckInText.render(CheckInEntity)` ([`me.md` §4](me.md)): the answered items in
+fixed order, body/mental labelled „testi érzés"/„fejtisztaság", pain as „fáj: térd, derék 5/10",
+craving as „sóvárgás 7/10 (édes)", a quick exit suffixed „(gyors kitöltés)", NULL omitted
+(`CheckInTextTest`). Callers: `ContextSnapshotAssembler` (the latest row, plus `earlierTodayLine`
+— „; ma korábban: 06:30 — …" for today's OTHER slots, values only, the note cap unchanged;
+`ContextSnapshotAssemblerIT`), `DailySummaryService.addCheckIns` (`DailySummaryServiceIT`),
+`BiometricsTools.renderCheckIns` (`get_recovery`, `scope=checkins`; `CompanionToolsRenderIT`) and
+`MealCoachPrompt` ([`fuel.md`](fuel.md)). `PersonalRecordSource` lists every new `check_in` column
+for the full-source reader. The flags (§4 flag table + `FlagProperties` „Check-in 2.0" keys:
+`persistent-pain`, `poor-restedness`, `craving-streak`, `motivation-slump`, their cooldowns
+72/60/96/84 h matching the library entries `persistent_pain_check`, `poor_restedness_evening`,
+`craving_streak_plan`, `motivation_small_steps`), the metrics/pairs (pattern-catalog block above)
+and `DayScoreService.countsAsFilled` / `MeWeekService.avgCheckinMood` ([`me.md` §4](me.md)) are the
+other consumers. `AdvicePriority` slots the new keys next to their siblings (pain after `joint_overuse`,
+restedness after `sleep_debt`, craving after `energy_dip_meal_timing`, motivation after
+`sustained_stress`).
+The flag-key CHECKs on `companion_flag_log` and the observer trace were widened to 20 keys by
+`1.1.0/script/202609272148_mezo-ck2_checkin_2_flag_keys.sql`.
+
 **`ContextSnapshotAssembler` is live**: companion now injects reads from **twelve** other
 features — `biometrics` (`BiometricProfileRepository`, `WeightTrendService`, `WeightLogRepository`,
 `SleepLogRepository`, `CheckInRepository`), `goal` (`GoalRepository` + the prescription jsonb), `train`
@@ -8857,6 +8904,17 @@ every other reflection collaborator.
 
 ## 9. Decisions, gotchas & deferred
 
+**Check-in 2.0 (`mezo-ck2`, 2026-09-28) — decisions, deviations, follow-ups.** NULL is never a
+value in any rule, metric or renderer (legacy rows are read as-is). `persistent_pain` offers
+the general `lighten_tomorrow` action (like `joint_overuse`); narrowing it to „only when a planned
+exercise loads that region" via train's `PainRegionMap` is a possible refinement. `day-score~checkin-day` was skipped (no
+day-score `MetricKey`); `meal-processing~checkin-digestion` became `meal-score~checkin-digestion`.
+`DayReviewService.contextSignals` carries `hangulat` (CHECKIN_MOOD) and `saját napértékelés`
+(CHECKIN_DAY) when answered, and the prompt tells the review to acknowledge a differing verdict
+without changing the points; A napom also shows the rating next to the score ([`today.md`](today.md)). The question-of-the-day need source is the catch-all
+`AllNonCoreNeedSource`; a companion-side `CheckInNeedSource` (active hypotheses / open pairs) is
+the intended next consumer ([`me.md` §4](me.md)).
+
 **Plan decisions (locked in the V0.2 plan §"Decisions locked"):**
 
 1. **Window = config, in messages not turns.** `mezo.companion.chat.history-window` = 20 (≈10
@@ -9600,6 +9658,12 @@ change is distinct from those smoothed rates. The underlying trend calculation i
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/ConversationProperties.java` — rollback and all continuity/retrieval bounds.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/service/ConversationFirstIT.java` — default flow regressions; sibling `ConversationQualityEvalIT.java` captures real-model comparisons.
 
+
+**Backend — Check-in 2.0 feeds (`mezo-ck2` — §4 flag table, §5.5)**
+- `flags/service/rule/{PersistentPainRule,PoorRestednessRule,CravingStreakRule,MotivationSlumpRule}.java` (new) + `AcuteBadDayRule`/`RecoveryNeededRule` (widened); wiring in `FlagKey`, `FlagEvaluator`, `FlagCatalog`, `FlagPayloadEnvelope`, `FlagFactRenderer`, `FlagTraceCopy`, `UnavailableReason`, `config/FlagProperties`, `proactive/service/AdvicePriority`; migration `1.1.0/script/202609272148_mezo-ck2_checkin_2_flag_keys.sql`; tests `PersistentPainRuleIT`, `PoorRestednessRuleIT`, `CravingStreakRuleIT`, `MotivationSlumpRuleIT`, `FlagEvaluatorAcuteBadDayIT`, `FlagEvaluatorMomentumRecoveryIT`, `FlagPropertiesIT`, `service/FlagFactRendererTest`
+- `service/{MetricKey,MetricSeriesService}.java` (10 check-in keys; `MetricSeriesCheckinItemsIT`), `application.yml` pattern pairs (`CompanionPatternMonitorApiIT`, `CompanionPropertiesIT`)
+- `service/ContextSnapshotAssembler.java` (`earlierTodayLine`), `service/DailySummaryService.java`, `tools/BiometricsTools.java`, `repository/PersonalRecordSource.java` — all via `feature/biometrics/checkin/service/CheckInText.java`
+- `service/DayScoreService.java` (`countsAsFilled`, `DayScoreServiceTest`), `service/MeWeekService.java` (`avgCheckinMood`, `MeWeekControllerIT`)
 
 **API contract**
 - `api/feature/companion/companion.yml` — the conversation/fact/pattern surface (tag `Companion` → `CompanionApi`), the SSE turn (tag `CompanionStream`, hand-written), the voice note (tag `CompanionVoice` → `CompanionVoiceApi`, `mezo-at8x.4`) and, since **`mezo-al1i`**, the `memory/{overview,summary,similar-days,llm-usage}` reads on the same `Companion` tag;

@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.test.context.TestComponent;
 
@@ -35,6 +36,21 @@ public class CheckInPopulator {
         e.setMental(mental);
         e.setNote(note);
         e.setSavedAt(Instant.now());
+        return repository.saveAndFlush(e);
+    }
+
+    /**
+     * Check-in 2.0 (mezo-ck2): a bare "done" row whose answers the {@code answers} customizer
+     * sets — nothing else is filled, so every unset item stays NULL (not answered).
+     */
+    public CheckInEntity createCheckIn(UUID owner, LocalDate date, String slotTime, Consumer<CheckInEntity> answers) {
+        CheckInEntity e = new CheckInEntity();
+        e.setCreatedBy(owner);
+        e.setDate(date);
+        e.setSlotTime(slotTime);
+        e.setState("done");
+        e.setSavedAt(Instant.now());
+        answers.accept(e);
         return repository.saveAndFlush(e);
     }
 }

@@ -63,6 +63,8 @@ export const NEEDS_TUNING: {
     waterGlass: number
     activity: number
     checkin: number
+    /** Check-in 2.0: the Lélek ring refill per „Kapcsolódás" point (1–10 → 10–100). */
+    connectionPerPoint: number
     intention: number
     reflection: number
     habitTick: number
@@ -85,6 +87,7 @@ export const NEEDS_TUNING: {
     waterGlass: 12,
     activity: 25,
     checkin: 20,
+    connectionPerPoint: 10,
     intention: 15,
     reflection: 25,
     habitTick: 12,

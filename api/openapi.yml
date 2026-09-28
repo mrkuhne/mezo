@@ -22,6 +22,12 @@ tags:
     description: Daily check-in slots (biometrics)
   - name: Train
     description: Training domain — mesocycles (with volume provenance) and sport sessions
+  - name: TrainReadiness
+    description: >-
+      Check-in 2.0 training readiness (mezo-ck2, spec 2026-09-27 §3.3) — today's
+      morning check-in read against the gym plan: a "lighter day" suggestion
+      with its reasons, the planned exercises a reported pain region loads, and
+      the user's per-day choice (lighten / keep). Never automatic.
   - name: Goal
     description: Goal domain — goal-rooted timeline (trajectory + quality guards + window)
   - name: BiometricProfile
@@ -536,6 +542,52 @@ paths:
                 $ref: '#/components/schemas/CheckInResponse'
         '400':
           description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/biometrics/checkin/plan:
+    get:
+      tags:
+        - CheckIn
+      operationId: getCheckInPlan
+      summary: >-
+        The question plan for one check-in slot (slot items + the question of
+        the day)
+      description: >-
+        Check-in 2.0 (mezo-ck2). The slot's items come from server config
+        (mezo.checkin.plan); the adaptive "question of the day" is chosen
+        server-side (80 % need / 20 % random) and is stable for (user, date,
+        slotTime), so reopening the sheet never reshuffles it.
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: slotTime
+          in: query
+          required: true
+          description: 'One of the configured slot times (e.g. "06:30")'
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        '200':
+          description: The plan for the slot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckInPlanResponse'
+        '400':
+          description: Unknown slot time
           content:
             application/json:
               schema:
@@ -2581,6 +2633,91 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TimingProfileResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/readiness/today:
+    get:
+      tags:
+        - TrainReadiness
+      operationId: getTodayReadiness
+      summary: >-
+        Today's readiness hint — suggestion, reasons, care exercises and the
+        day's choice
+      description: >-
+        Pure read. Source = today's 06:30 check-in, else the first check-in of
+        the day that answered rested / soreness / motivation / pain. suggest =
+        rested <= 4 OR soreness >= 7 OR motivation <= 3 (thresholds:
+        mezo.train.readiness). state: LIGHTENED / KEPT when a choice is stored
+        for today; else OFFER when suggest is true or a care exercise exists on
+        a planned gym day; else NONE (no morning check-in, nothing to flag, or
+        no planned gym today).
+      responses:
+        '200':
+          description: Today's readiness (state NONE when there is nothing to show)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessTodayResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - TrainReadiness
+      operationId: chooseTodayReadiness
+      summary: >-
+        Store today's choice — LIGHTEN (hold every weight, drop the care
+        exercises' heavy sets) or KEEP (hide the card)
+      description: >-
+        Idempotent upsert of the (user, today) choice. LIGHTEN changes today's
+        prescriptions (GET /api/train/workouts/today) for sets not yet logged;
+        already-logged sets are untouched.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReadinessChoiceRequest'
+      responses:
+        '200':
+          description: The readiness after the choice
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessTodayResponse'
+        '400':
+          description: Missing choice
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - TrainReadiness
+      operationId: undoTodayReadiness
+      summary: >-
+        Undo today's choice ("Visszaállítom a tervet") — normal prescriptions
+        again for sets not yet logged
+      responses:
+        '200':
+          description: The readiness after the undo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessTodayResponse'
         '401':
           description: Missing/invalid token
           content:
@@ -12803,6 +12940,87 @@ components:
           type: integer
           minimum: 1
           maximum: 10
+        mood:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: '"Hangulat" 1 (very bad) .. 10 (very good); null = not answered'
+        rested:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: '"Kipihentség" 1..10; null = not answered'
+        soreness:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: >-
+            "Izomláz" 1 (none) .. 10 (very strong) — 10 = worse; null = not
+            answered
+        pain:
+          type: boolean
+          description: '"Fáj valami?" — true = yes, false = "Nem", null = not answered'
+        painRegions:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/PainRegion'
+        painIntensity:
+          type: integer
+          minimum: 1
+          maximum: 10
+        motivation:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: '"Motiváció" 1..10; null = not answered'
+        hunger:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: '"Éhség" 1..10; null = not answered'
+        craving:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: '"Sóvárgás" 1..10; null = not answered'
+        cravingKinds:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/CravingKind'
+        digestion:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: >-
+            "Emésztés" 1 (heavy, bloated) .. 10 (light, fine); null = not
+            answered
+        connection:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: '"Kapcsolódás" 1 (alone) .. 10 (very connected); null = not answered'
+        dayRating:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: '"A nap mérlege" (item id `day`) 1..10; null = not answered'
+        askedItems:
+          type: array
+          nullable: true
+          description: >-
+            What the sheet showed (plan + adaptive). Asked + null = skipped;
+            absent = not asked. Null on legacy rows.
+          items:
+            $ref: '#/components/schemas/CheckInItemId'
+        adaptiveItem:
+          $ref: '#/components/schemas/CheckInItemId'
+        adaptiveReason:
+          $ref: '#/components/schemas/AdaptiveReason'
+        quickExit:
+          type: boolean
+          description: Saved via "Most csak ennyi" after the core items
         note:
           type: string
           description: 'Optional free-form note, without an application character limit.'
@@ -12833,12 +13051,217 @@ components:
           type: integer
         mental:
           type: integer
+        mood:
+          type: integer
+          description: '"Hangulat" 1 (very bad) .. 10 (very good); null = not answered'
+        rested:
+          type: integer
+          description: '"Kipihentség" 1..10; null = not answered'
+        soreness:
+          type: integer
+          description: >-
+            "Izomláz" 1 (none) .. 10 (very strong) — 10 = worse; null = not
+            answered
+        pain:
+          type: boolean
+          description: '"Fáj valami?" — true = yes, false = "Nem", null = not answered'
+        painRegions:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/PainRegion'
+        painIntensity:
+          type: integer
+        motivation:
+          type: integer
+          description: '"Motiváció" 1..10; null = not answered'
+        hunger:
+          type: integer
+          description: '"Éhség" 1..10; null = not answered'
+        craving:
+          type: integer
+          description: '"Sóvárgás" 1..10; null = not answered'
+        cravingKinds:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/CravingKind'
+        digestion:
+          type: integer
+          description: >-
+            "Emésztés" 1 (heavy, bloated) .. 10 (light, fine); null = not
+            answered
+        connection:
+          type: integer
+          description: '"Kapcsolódás" 1 (alone) .. 10 (very connected); null = not answered'
+        dayRating:
+          type: integer
+          description: '"A nap mérlege" (item id `day`) 1..10; null = not answered'
+        askedItems:
+          type: array
+          nullable: true
+          description: >-
+            What the sheet showed (plan + adaptive). Asked + null = skipped;
+            absent = not asked. Null on legacy rows.
+          items:
+            $ref: '#/components/schemas/CheckInItemId'
+        adaptiveItem:
+          $ref: '#/components/schemas/CheckInItemId'
+        adaptiveReason:
+          $ref: '#/components/schemas/AdaptiveReason'
+        quickExit:
+          type: boolean
+          description: Saved via "Most csak ennyi" after the core items
         note:
           type: string
           description: 'Optional free-form note, without an application character limit.'
         savedAt:
           type: string
           format: date-time
+    CheckInItemId:
+      type: string
+      description: Check-in 2.0 item ids (core five first)
+      enum:
+        - energy
+        - mood
+        - stress
+        - body
+        - mental
+        - rested
+        - soreness
+        - pain
+        - motivation
+        - hunger
+        - craving
+        - digestion
+        - connection
+        - day
+    CheckInItemKind:
+      type: string
+      description: >-
+        How the sheet renders the item — a 1..10 scale, the pain gate (yes/no →
+        regions → intensity), or the craving scale (+ kinds from 4)
+      enum:
+        - SCALE
+        - PAIN
+        - CRAVING
+    PainRegion:
+      type: string
+      enum:
+        - FEJ
+        - NYAK
+        - VALL
+        - KONYOK
+        - CSUKLO_KEZ
+        - FELSO_HAT
+        - DEREK
+        - CSIPO
+        - HAS
+        - TERD
+        - BOKA_LABFEJ
+        - EGYEB
+    CravingKind:
+      type: string
+      enum:
+        - EDES
+        - SOS
+        - ZSIROS
+        - BARMIT
+    AdaptiveReason:
+      type: string
+      description: >-
+        Why the question of the day was chosen — need (thinnest wanted series)
+        or random (20 % planned-missingness guard)
+      enum:
+        - NEED
+        - RANDOM
+    CheckInPlanOption:
+      type: object
+      description: >-
+        A selectable sub-option with its Hungarian label (pain region or craving
+        kind)
+      required:
+        - id
+        - label
+      properties:
+        id:
+          type: string
+          description: PainRegion or CravingKind value
+        label:
+          type: string
+    CheckInPlanItem:
+      type: object
+      required:
+        - id
+        - label
+        - question
+        - kind
+      properties:
+        id:
+          $ref: '#/components/schemas/CheckInItemId'
+        label:
+          type: string
+          description: Hungarian display label (e.g. "Energia")
+        question:
+          type: string
+          description: Hungarian question (e.g. "Mennyi energia van benned most?")
+        low:
+          type: string
+          description: Anchor of 1 (for PAIN the intensity scale's anchor)
+        high:
+          type: string
+          description: Anchor of 10 (for PAIN the intensity scale's anchor)
+        kind:
+          $ref: '#/components/schemas/CheckInItemKind'
+        options:
+          type: array
+          description: 'PAIN → the regions, CRAVING → the kinds; absent for SCALE'
+          items:
+            $ref: '#/components/schemas/CheckInPlanOption'
+    CheckInAdaptiveItem:
+      type: object
+      description: The question of the day — a CheckInPlanItem plus why it was chosen
+      required:
+        - id
+        - label
+        - question
+        - kind
+        - why
+        - reason
+      properties:
+        id:
+          $ref: '#/components/schemas/CheckInItemId'
+        label:
+          type: string
+        question:
+          type: string
+        low:
+          type: string
+        high:
+          type: string
+        kind:
+          $ref: '#/components/schemas/CheckInItemKind'
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckInPlanOption'
+        why:
+          type: string
+          description: One Hungarian sentence shown under "A NAP KÉRDÉSE"
+        reason:
+          $ref: '#/components/schemas/AdaptiveReason'
+    CheckInPlanResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          description: The slot's plan in ask order (core five first)
+          items:
+            $ref: '#/components/schemas/CheckInPlanItem'
+        adaptive:
+          $ref: '#/components/schemas/CheckInAdaptiveItem'
     MesocycleResponse:
       type: object
       required:
@@ -15578,6 +16001,85 @@ components:
           type: integer
         transition:
           type: integer
+    ReadinessChoiceRequest:
+      type: object
+      required:
+        - choice
+      properties:
+        choice:
+          type: string
+          enum:
+            - LIGHTEN
+            - KEEP
+    ReadinessTodayResponse:
+      type: object
+      required:
+        - suggest
+        - state
+        - reasons
+        - care
+      properties:
+        suggest:
+          type: boolean
+          description: A threshold fired on rested / soreness / motivation
+        state:
+          type: string
+          enum:
+            - OFFER
+            - LIGHTENED
+            - KEPT
+            - NONE
+        reasons:
+          type: array
+          description: >-
+            The answered morning values of rested, soreness, motivation (in that
+            order)
+          items:
+            $ref: '#/components/schemas/ReadinessReason'
+        care:
+          type: array
+          description: >-
+            Today's planned exercises whose muscle group a reported pain region
+            loads
+          items:
+            $ref: '#/components/schemas/ReadinessCare'
+    ReadinessReason:
+      type: object
+      required:
+        - item
+        - value
+      properties:
+        item:
+          type: string
+          enum:
+            - rested
+            - soreness
+            - motivation
+        value:
+          type: integer
+          minimum: 1
+          maximum: 10
+    ReadinessCare:
+      type: object
+      required:
+        - exerciseName
+        - region
+        - regionLabel
+      properties:
+        exerciseName:
+          type: string
+        region:
+          type: string
+          description: 'The check-in pain region (PainRegion value, e.g. VALL)'
+        regionLabel:
+          type: string
+          description: 'Hungarian possessive phrase for "fáj a …" — e.g. "vállad", "térded"'
+        intensity:
+          type: integer
+          minimum: 1
+          maximum: 10
+          nullable: true
+          description: The reported pain intensity (null when not answered)
     ExpenditureExplanationResponse:
       type: object
       description: >-
@@ -25326,6 +25828,12 @@ components:
         checkinEnergyAvg:
           type: number
           nullable: true
+        checkinMoodAvg:
+          type: number
+          nullable: true
+          description: >-
+            Check-in 2.0 (mezo-ck2) — mean of the day's answered mood items
+            (1–10); null when none
         workoutCount:
           type: integer
           description: gym + sport + run sessions logged on the day
@@ -25355,6 +25863,12 @@ components:
         avgCheckinEnergy:
           type: number
           nullable: true
+        avgCheckinMood:
+          type: number
+          nullable: true
+          description: >-
+            Check-in 2.0 (mezo-ck2) — mean of the day means (days with a mood
+            answer)
         checkinRatio:
           type: number
           nullable: true

@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-09-27
+updated: 2026-09-28
 tags: [platform, backend, data-layer, frontend]
 key_files:
   - api/openapi.yml
@@ -17,6 +17,8 @@ related: [_platform-data-layer, _platform-auth-security, _platform-notifications
 ---
 
 # Platform · API Contract & Backend Architecture — Feature Documentation
+
+> **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** One new contract fragment, `api/feature/train/train-readiness.yml` (tag `TrainReadiness`), registered in `api/generate/merge.yml`; `api/feature/checkin/checkin.yml` gained `GET /api/biometrics/checkin/plan` and the new check-in fields (enums `CheckInItemId`, `CheckInItemKind`, `PainRegion`, `CravingKind`, `AdaptiveReason` as `enum:`). Two features gained ports to stay cycle-free: train's `DayCheckInPort` (implemented in biometrics) and biometrics' `CheckInNeedSource`. Details: [`me.md` §4](me.md), [`train.md` §4](train.md).
 
 > One-line: the contract-first OpenAPI pipeline (`api/`) + the Spring Boot 4 backend spine (`backend/`) + the frontend consumption seam (`frontend/src/data/*`, `frontend/src/data/hooks.ts`). **Status ✅ done as Phase-2 infrastructure** for auth · biometrics · goal · Train · Fuel (all sub-slices) · People · companion; the durable backbone every backed feature flows through — **Phase 2 closed 2026-07-05**. Not a route/tab — it underlies all of them.
 

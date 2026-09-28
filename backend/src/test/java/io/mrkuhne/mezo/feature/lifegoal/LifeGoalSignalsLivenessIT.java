@@ -55,7 +55,7 @@ class LifeGoalSignalsLivenessIT extends ApiIntegrationTest {
         SignalCatalogResponse res = getForBody(
             "/api/life-goals/signals", ownerAuthHeaders(), HttpStatus.OK, SignalCatalogResponse.class);
 
-        assertThat(res.getEntries()).hasSize(28);
+        assertThat(res.getEntries()).hasSize(32); // 28 + 4 check-in 2.0 jel (mezo-ck2)
 
         SignalCatalogEntry checkinEnergy = entryById(res, "checkin_energy");
         assertThat(checkinEnergy.getLive()).isTrue();

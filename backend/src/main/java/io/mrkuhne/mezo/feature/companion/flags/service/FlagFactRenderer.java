@@ -63,6 +63,10 @@ public final class FlagFactRenderer {
             case FlagKey.PROTOCOL_LAPSE -> protocolLapse(payload.protocolLapse());
             case FlagKey.MEAL_RHYTHM_DRIFT -> mealRhythmDrift(payload.mealRhythmDrift());
             case FlagKey.ENERGY_DIP_MEAL_TIMING -> energyDipMealTiming(payload.energyDipMealTiming());
+            case FlagKey.PERSISTENT_PAIN -> persistentPain(payload.persistentPain());
+            case FlagKey.POOR_RESTEDNESS -> poorRestedness(payload.poorRestedness());
+            case FlagKey.CRAVING_STREAK -> cravingStreak(payload.cravingStreak());
+            case FlagKey.MOTIVATION_SLUMP -> motivationSlump(payload.motivationSlump());
             default -> List.of();
         };
     }
@@ -173,6 +177,15 @@ public final class FlagFactRenderer {
             facts.add("Stressz %s: %s (küszöb %s)"
                 .formatted(p.stressDay(), num(p.stress()), num(p.stressThreshold())));
         }
+        // Check-in 2.0 (mezo-ck2): the self-reported alternatives to the sleep-hours arm.
+        if (p.rested() != null) {
+            facts.add("Kipihentség %s: %d/10 (legfeljebb %d)"
+                .formatted(p.restedDay(), p.rested(), p.restedAtMost()));
+        }
+        if (p.soreness() != null) {
+            facts.add("Izomláz %s: %d/10 (legalább %d)"
+                .formatted(p.sorenessDay(), p.soreness(), p.sorenessAtLeast()));
+        }
         return List.copyOf(facts);
     }
 
@@ -181,12 +194,20 @@ public final class FlagFactRenderer {
             return List.of();
         }
         List<String> facts = new ArrayList<>();
-        facts.add("Ma %d check-in is jelzett nehéz napot (test vagy energia legfeljebb %d a 10-ből)"
-            .formatted(p.qualifyingCount(), p.bodyOrEnergyAtMost()));
+        facts.add(p.moodAtMost() == null || p.painIntensityAtLeast() == null
+            ? "Ma %d check-in is jelzett nehéz napot (test vagy energia legfeljebb %d a 10-ből)"
+                .formatted(p.qualifyingCount(), p.bodyOrEnergyAtMost())
+            // Check-in 2.0 (mezo-ck2): mood and pain intensity qualify a slot too.
+            : ("Ma %d check-in is jelzett nehéz napot (test vagy energia legfeljebb %d, hangulat "
+                + "legfeljebb %d, vagy fájdalom legalább %d a 10-ből)")
+                .formatted(p.qualifyingCount(), p.bodyOrEnergyAtMost(), p.moodAtMost(),
+                    p.painIntensityAtLeast()));
         if (p.qualifyingCheckIns() != null) {
             for (FlagPayloadEnvelope.QualifyingCheckIn c : p.qualifyingCheckIns()) {
-                facts.add("%s: test %s, energia %s".formatted(
-                    c.slotTime(), scoreOrDash(c.body()), scoreOrDash(c.energy())));
+                facts.add("%s: test %s, energia %s%s%s".formatted(
+                    c.slotTime(), scoreOrDash(c.body()), scoreOrDash(c.energy()),
+                    c.mood() == null ? "" : ", hangulat " + c.mood(),
+                    c.painIntensity() == null ? "" : ", fájdalom " + c.painIntensity()));
             }
         }
         return List.copyOf(facts);
@@ -348,6 +369,149 @@ public final class FlagFactRenderer {
         facts.add("Ablak: %d nap, ebből %d nap volt értékelhető; a napok %s%%-ában áll fenn ez a sorrend"
             .formatted(p.windowDays(), p.qualifyingDays(), pct(p.superiority())));
         return List.copyOf(facts);
+    }
+
+    /** Check-in 2.0 (mezo-ck2, spec 2026-09-27 §3.2). The first line is the card copy of the
+     *  owner-approved prototype ({@code elo/nap.html}, FIGYELMEZTETŐ KÁRTYÁK) templated with the
+     *  frozen region and day count; the second is the evidence in the rule's own numbers. */
+    private static List<String> persistentPain(FlagPayloadEnvelope.PersistentPain p) {
+        if (p == null) {
+            return List.of();
+        }
+        List<String> facts = new ArrayList<>();
+        facts.add("%s napja fáj %s. Érdemes ránézni.".formatted(dayOrdinalHu(p.regionDays()),
+            painRegionPossessiveHu(p.region())));
+        facts.add("%s: fájdalom %d napon az utolsó %d nap közül (küszöb: %d nap)%s".formatted(
+            painRegionLabelHu(p.region()), p.regionDays(), p.windowDays(), p.minDays(),
+            p.maxIntensity() == null ? "" : ", legerősebb %d/10".formatted(p.maxIntensity())));
+        return List.copyOf(facts);
+    }
+
+    private static List<String> poorRestedness(FlagPayloadEnvelope.PoorRestedness p) {
+        if (p == null) {
+            return List.of();
+        }
+        List<String> facts = new ArrayList<>();
+        facts.add("%s reggel egymás után nem pihented ki magad."
+            .formatted(countWordHu(p.consecutiveMornings())));
+        if (p.runDays() != null && p.restedByMorning() != null) {
+            List<String> mornings = new ArrayList<>();
+            for (String day : p.runDays()) {
+                Integer value = p.restedByMorning().get(day);
+                mornings.add("%s: %s/10".formatted(day, value == null ? "–" : value));
+            }
+            facts.add("Reggeli kipihentség: %s (legfeljebb %d számít alacsonynak)"
+                .formatted(String.join(", ", mornings), p.restedAtMost()));
+        }
+        return List.copyOf(facts);
+    }
+
+    private static List<String> cravingStreak(FlagPayloadEnvelope.CravingStreak p) {
+        if (p == null) {
+            return List.of();
+        }
+        List<String> facts = new ArrayList<>();
+        facts.add("Sokszor kívánsz mostanában %s%s.".formatted(cravingKindAccusativeHu(p.kind()),
+            p.dominantDaypart() == null ? "" : ", főleg " + p.dominantDaypart()));
+        facts.add("Erős sóvárgás (legalább %d/10) %d napon az utolsó %d nap közül (küszöb: %d nap)"
+            .formatted(p.cravingAtLeast(), p.kindDays(), p.windowDays(), p.minDays()));
+        return List.copyOf(facts);
+    }
+
+    private static List<String> motivationSlump(FlagPayloadEnvelope.MotivationSlump p) {
+        if (p == null) {
+            return List.of();
+        }
+        List<String> facts = new ArrayList<>();
+        facts.add("Pár napja alacsony a kedved. Kisebb lépések?");
+        facts.add("A motiváció napi átlaga legfeljebb %s volt %d napon az utolsó %d nap közül (küszöb: %d nap)"
+            .formatted(num(p.motivationAtMost()), p.lowDays(), p.windowDays(), p.minDays()));
+        return List.copyOf(facts);
+    }
+
+    /** "Harmadik napja" — the ordinal the card opens with; beyond the table the numeral form. */
+    private static String dayOrdinalHu(int days) {
+        return switch (days) {
+            case 2 -> "Második";
+            case 3 -> "Harmadik";
+            case 4 -> "Negyedik";
+            case 5 -> "Ötödik";
+            case 6 -> "Hatodik";
+            case 7 -> "Hetedik";
+            default -> days + ".";
+        };
+    }
+
+    /** "Két reggel" — the count word the restedness card opens with. */
+    private static String countWordHu(int n) {
+        return switch (n) {
+            case 2 -> "Két";
+            case 3 -> "Három";
+            case 4 -> "Négy";
+            case 5 -> "Öt";
+            case 6 -> "Hat";
+            case 7 -> "Hét";
+            default -> String.valueOf(n);
+        };
+    }
+
+    /** The frozen {@code PainRegion} constant as "fáj a …" wants it ("a térded"). An unknown token
+     *  falls back to a neutral phrase rather than a fabricated body part. */
+    private static String painRegionPossessiveHu(String region) {
+        if (region == null) {
+            return "ugyanott";
+        }
+        return switch (region) {
+            case "FEJ" -> "a fejed";
+            case "NYAK" -> "a nyakad";
+            case "VALL" -> "a vállad";
+            case "KONYOK" -> "a könyököd";
+            case "CSUKLO_KEZ" -> "a csuklód vagy a kezed";
+            case "FELSO_HAT" -> "a felső hátad";
+            case "DEREK" -> "a derekad";
+            case "CSIPO" -> "a csípőd";
+            case "HAS" -> "a hasad";
+            case "TERD" -> "a térded";
+            case "BOKA_LABFEJ" -> "a bokád vagy a lábfejed";
+            case "EGYEB" -> "ugyanott";
+            default -> "ugyanott";
+        };
+    }
+
+    /** The region's display label ({@code PainRegion.label()}'s twin — this renderer is pure and
+     *  reads only the frozen payload). */
+    private static String painRegionLabelHu(String region) {
+        if (region == null) {
+            return "Fájdalom";
+        }
+        return switch (region) {
+            case "FEJ" -> "Fej";
+            case "NYAK" -> "Nyak";
+            case "VALL" -> "Váll";
+            case "KONYOK" -> "Könyök";
+            case "CSUKLO_KEZ" -> "Csukló, kéz";
+            case "FELSO_HAT" -> "Felső hát";
+            case "DEREK" -> "Derék";
+            case "CSIPO" -> "Csípő";
+            case "HAS" -> "Has";
+            case "TERD" -> "Térd";
+            case "BOKA_LABFEJ" -> "Boka, lábfej";
+            case "EGYEB" -> "Egyéb";
+            default -> region;
+        };
+    }
+
+    /** "kívánsz … édeset" — the frozen {@code CravingKind} in the accusative. */
+    private static String cravingKindAccusativeHu(String kind) {
+        if (kind == null) {
+            return "valamit";
+        }
+        return switch (kind) {
+            case "EDES" -> "édeset";
+            case "SOS" -> "sósat";
+            case "ZSIROS" -> "zsírosat";
+            default -> "valamit";
+        };
     }
 
     /** A 0.0-1.0 arány egész százalékként — null-biztos, mert a fél-kitöltött payload a

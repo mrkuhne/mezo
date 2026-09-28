@@ -183,6 +183,39 @@ class MeWeekControllerIT extends ApiIntegrationTest {
         assertThat(response.getWeekly().getCheckinRatio().doubleValue()).isEqualTo(0.2857);
     }
 
+    /**
+     * Check-in 2.0 (mezo-ck2, spec §3.11): mood rides next to energy — the day value is the mean of
+     * the ANSWERED mood items (a skipped slot is not a 0), the week value the mean of the day means.
+     */
+    @Test
+    void testWeek_shouldAverageMoodLikeEnergy_whenCheckinsCarryMood() {
+        UUID owner = ownerId();
+        // MONDAY: 4 and 8 answered, one slot skipped the item -> 6.00 (not 4.00)
+        checkInPopulator.createCheckIn(owner, MONDAY, "06:30", c -> { c.setEnergy(5); c.setMood(4); });
+        checkInPopulator.createCheckIn(owner, MONDAY, "14:00", c -> { c.setEnergy(7); c.setMood(8); });
+        checkInPopulator.createCheckIn(owner, MONDAY, "20:00", c -> c.setEnergy(6));
+        // TUESDAY: a single 9 -> 9.00; the week mean of day means = (6 + 9) / 2 = 7.50
+        checkInPopulator.createCheckIn(owner, MONDAY.plusDays(1), "06:30", c -> c.setMood(9));
+        // WEDNESDAY: a check-in without any mood answer -> null, never 0
+        checkInPopulator.createCheckIn(owner, MONDAY.plusDays(2), "06:30", c -> c.setEnergy(3));
+
+        MeWeekResponse response = week(MONDAY);
+
+        assertThat(response.getDays().get(0).getCheckinMoodAvg()).isEqualByComparingTo("6.00");
+        assertThat(response.getDays().get(0).getCheckinEnergyAvg()).isEqualByComparingTo("6.00");
+        assertThat(response.getDays().get(1).getCheckinMoodAvg()).isEqualByComparingTo("9.00");
+        assertThat(response.getDays().get(2).getCheckinMoodAvg()).isNull();
+        assertThat(response.getDays().get(3).getCheckinMoodAvg()).isNull();
+        assertThat(response.getWeekly().getAvgCheckinMood()).isEqualByComparingTo("7.50");
+    }
+
+    @Test
+    void testWeek_shouldReturnNullMood_whenNoCheckinAnsweredIt() {
+        MeWeekResponse response = week(MONDAY.plusWeeks(3));
+
+        assertThat(response.getWeekly().getAvgCheckinMood()).isNull();
+    }
+
     @Test
     void nonMondayIs400() {
         LocalDate tuesday = MONDAY.plusDays(1);

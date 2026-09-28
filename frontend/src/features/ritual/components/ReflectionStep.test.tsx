@@ -35,7 +35,11 @@ function stubReduced(matches = true) {
 // records each `saveReflection` invocation on the way through. That is what lets the four
 // transitions below assert "no write happened at all" — a cache-content assertion cannot tell a
 // skipped write apart from a write that stored the identical value.
-const spies = vi.hoisted(() => ({ saveReflection: vi.fn(), addEntry: vi.fn() }))
+const spies = vi.hoisted(() => ({
+  saveReflection: vi.fn(), addEntry: vi.fn(),
+  // Check-in 2.0: a pinned day of check-ins (null = the real hook)
+  checkins: null as null | { checkins: import('@/data/types').CheckinSlot[] },
+}))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
@@ -50,6 +54,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
         },
       }
     },
+    useCheckins: () => spies.checkins ?? actual.useCheckins(),
     useGratitudeActions: () => {
       const real = actual.useGratitudeActions()
       return {
@@ -116,6 +121,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
   vi.unstubAllEnvs()
   vi.clearAllMocks()
+  spies.checkins = null
 })
 
 describe('ReflectionStep', () => {
@@ -126,6 +132,24 @@ describe('ReflectionStep', () => {
     expect(screen.getByText('Ma milyen volt')).toBeInTheDocument()
     expect(screen.getByText('Milyen volt a napod valójában?')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Írd le, ahogy volt — senki más nem olvassa…')).toBeInTheDocument()
+    // no evening verdict today → no hint
+    expect(screen.queryByText(/Az esti check-inben/)).toBeNull()
+  })
+
+  // Check-in 2.0 (mezo-ck2, spec §3.10): the evening check-in's day verdict, read-only.
+  test('shows the evening check-in\'s day verdict above the text box', async () => {
+    spies.checkins = {
+      checkins: [
+        { time: '06:30', state: 'done', values: { energy: 7 }, note: null },
+        { time: '20:00', state: 'done', values: { energy: 6, day: 7 }, note: null },
+      ],
+    }
+    render(<ReflectionStep onNext={vi.fn()} />, { wrapper })
+    await readySettled()
+    const hint = screen.getByText(/Az esti check-inben/).closest('.rz-day')!
+    expect(hint).toHaveTextContent('Az esti check-inben 7/10-re értékelted a napot. Ide már csak a szavaid kellenek.')
+    expect(hint.querySelector('b')).toHaveTextContent('7/10')
+    expect(hint.querySelector('use')?.getAttribute('href')).toBe('#t-day')
   })
 
   // ── The four seed × edit transitions. „Tovább" writes iff the prose CHANGED against the seed.

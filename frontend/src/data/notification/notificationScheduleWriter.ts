@@ -17,7 +17,7 @@ type NotificationScheduleEntry = components['schemas']['NotificationScheduleEntr
 
 const MAX_TITLE_CHARS = 120
 const MAX_BODY_CHARS = 300
-const CHECKIN_BODY = 'Hogy vagy most? Energia, stressz, test, fej — 20 másodperc.'
+const CHECKIN_BODY = 'Hogy vagy most? Pár koppintás, fél perc.'
 const FUEL_DEEPLINK = '/fuel/stack'
 
 /**

@@ -13,7 +13,7 @@ import type { SignalCatalogEntry } from '@/data/lifegoal/lifegoalApi'
 // Üveg (mezo-me75u.6, prototypes/uveg-en.html#jelek): a csoport-ikonok a Titanium 3D készletből.
 const GROUP_ICON: Record<string, Icon3DName> = {
   'Alvás': 't-sleep', 'Fuel': 't-bowl', 'Edzés': 't-dumbbell', 'Elme': 't-checkin',
-  'Activity': 't-steps', 'Emberek': 't-people', 'Életjel': 't-heart',
+  'Activity': 't-steps', 'Emberek': 't-people', 'Életjel': 't-heart', 'Test': 't-muscle',
 }
 
 export default function JelekPage() {

@@ -43,6 +43,16 @@ public class SetRecommendationService {
      */
     public Prescription prescribe(
             UUID createdBy, ExerciseEntity ex, boolean deloadWeek, int effectiveWorkingSets) {
+        return prescribe(createdBy, ex, deloadWeek, effectiveWorkingSets, false);
+    }
+
+    /**
+     * Readiness shape (Check-in 2.0, mezo-ck2): {@code holdOnly} caps the progression at HOLD —
+     * no weight or rep increase versus last week ({@link ProgressionDecider#capAtHold}) — for the
+     * day the user tapped „Könnyítsük". Lighter moves (deload, weight down) stand.
+     */
+    public Prescription prescribe(UUID createdBy, ExerciseEntity ex, boolean deloadWeek,
+                                  int effectiveWorkingSets, boolean holdOnly) {
         ExerciseSetEntity ref = referenceWorkingSet(createdBy, ex);
         BigDecimal base;
         int workingReps;
@@ -51,9 +61,12 @@ public class SetRecommendationService {
 
         if (ref != null && ref.getWeightKg() != null) {
             BigDecimal inc = props.increment().getOrDefault(ex.getType(), props.defaultIncrement());
+            RefSet refSet = new RefSet(ref.getWeightKg(), ref.getReps(), ref.getRir());
             Decision d = ProgressionDecider.decide(
-                new RefSet(ref.getWeightKg(), ref.getReps(), ref.getRir()),
-                ex.getRepMin(), ex.getRepMax(), ex.getTargetRir(), inc, props.plateStep(), deloadWeek);
+                refSet, ex.getRepMin(), ex.getRepMax(), ex.getTargetRir(), inc, props.plateStep(), deloadWeek);
+            if (holdOnly) {
+                d = ProgressionDecider.capAtHold(d, refSet, ex.getRepMin(), ex.getRepMax());
+            }
             base = d.base();
             workingReps = d.workingReps();
             rationale = d.rationale();
@@ -86,14 +99,24 @@ public class SetRecommendationService {
                 .build();
         } else if (ref != null) {
             base = null; // weightless history (plyo/bodyweight)
-            workingReps = Math.min(ref.getReps() + 1, ex.getRepMax());
-            rationale = "Testsúlyos — ismétlésre progresszálunk";
-            progression = ProgressionSignal.builder()
-                .lever(ProgressionSignal.LeverEnum.REP)
-                .deltaReps(1)
-                .targetReps(workingReps)
-                .rationale(rationale)
-                .build();
+            if (holdOnly) {
+                workingReps = Math.min(ref.getReps(), ex.getRepMax());
+                rationale = ProgressionDecider.LIGHTENED_RATIONALE;
+                progression = ProgressionSignal.builder()
+                    .lever(ProgressionSignal.LeverEnum.HOLD)
+                    .targetReps(workingReps)
+                    .rationale(rationale)
+                    .build();
+            } else {
+                workingReps = Math.min(ref.getReps() + 1, ex.getRepMax());
+                rationale = "Testsúlyos — ismétlésre progresszálunk";
+                progression = ProgressionSignal.builder()
+                    .lever(ProgressionSignal.LeverEnum.REP)
+                    .deltaReps(1)
+                    .targetReps(workingReps)
+                    .rationale(rationale)
+                    .build();
+            }
         } else if (ex.getAnchorWeightKg() != null) {
             base = roundClamp(ex.getAnchorWeightKg());
             workingReps = ex.getRepMax();

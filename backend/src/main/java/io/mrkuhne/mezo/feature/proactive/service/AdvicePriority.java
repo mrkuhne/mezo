@@ -31,6 +31,13 @@ import lombok.extern.slf4j.Slf4j;
  * not a signal about a state), but still a statement about the user's own body, so it stays inside
  * the flag block rather than dropping below the setup checks.
  *
+ * <p>Check-in 2.0 (bd mezo-ck2, spec 2026-09-27 §3.2): {@link FlagKey#PERSISTENT_PAIN} sits right
+ * after {@code joint_overuse} (a body signal the user reported three days running outranks a
+ * missed-workout nudge); {@link FlagKey#POOR_RESTEDNESS} right after {@code sleep_debt} (its
+ * self-reported twin); {@link FlagKey#CRAVING_STREAK} right after {@code energy_dip_meal_timing}
+ * (an eating-pattern observation, the tail of the flag block); {@link FlagKey#MOTIVATION_SLUMP}
+ * right after {@code sustained_stress} in the round-0 tail — a mood signal, never above a health card.
+ *
  * <p>Round 2 S5 (bd mezo-d58h.7.5): the two once-ever QUESTION keys sit at the very tail, above only
  * {@code all_healthy} — a survey question must never displace a health signal, a setup card, or even
  * a momentum nudge. {@code OneTimeQuestionService} also refuses to speak at all on a day that
@@ -53,18 +60,22 @@ public final class AdvicePriority {
         FlagKey.LOAD_FUEL_MISMATCH,
         FlagKey.RAPID_WEIGHT_LOSS,
         FlagKey.JOINT_OVERUSE,
+        FlagKey.PERSISTENT_PAIN,
         FlagKey.MISSED_WORKOUTS,
         FlagKey.SLEEP_DEBT,
+        FlagKey.POOR_RESTEDNESS,
         FlagKey.LOGGING_GAP,
         FlagKey.IGNORED_NUDGE,
         FlagKey.LATE_EATING,
         FlagKey.PROTOCOL_LAPSE,
         FlagKey.MEAL_RHYTHM_DRIFT,
         FlagKey.ENERGY_DIP_MEAL_TIMING,
+        FlagKey.CRAVING_STREAK,
         SetupCheckService.CHECK_MISSING_SLEEP_GOAL,
         SetupCheckService.CHECK_PLAN_FEASIBILITY,
         FlagKey.RECOVERY_NEEDED,
         FlagKey.SUSTAINED_STRESS,
+        FlagKey.MOTIVATION_SLUMP,
         FlagKey.MOMENTUM_AT_RISK,
         OneTimeQuestionService.QUESTION_FEATURE_ABANDONMENT,
         OneTimeQuestionService.QUESTION_FLAT_FEEDBACK,

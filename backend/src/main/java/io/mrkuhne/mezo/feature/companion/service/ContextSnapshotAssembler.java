@@ -16,6 +16,7 @@ import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.WeightTrendResponse;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
+import io.mrkuhne.mezo.feature.biometrics.checkin.service.CheckInText;
 import io.mrkuhne.mezo.feature.biometrics.profile.entity.BiometricProfileEntity;
 import io.mrkuhne.mezo.feature.biometrics.profile.repository.BiometricProfileRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
@@ -636,8 +637,29 @@ public class ContextSnapshotAssembler {
         } else {
             b.append(" (").append(checkIn.getDate()).append(' ').append(checkIn.getSlotTime()).append("): ")
                     .append(checkInValues(checkIn));
+            b.append(earlierTodayLine(userId, today, checkIn));
         }
         return b.toString();
+    }
+
+    /**
+     * Check-in 2.0 (mezo-ck2, spec §3.1): the day-level line — today's OTHER check-ins, not just
+     * the latest, so a morning "fáj a térdem" or a 10:00 hunger answer is still visible to the
+     * model after the afternoon slot is saved. Values only: the note cap stays the latest row's
+     * (the snapshot's note budget is unchanged). An earlier slot with nothing answered is skipped.
+     */
+    private String earlierTodayLine(UUID userId, LocalDate today, CheckInEntity latest) {
+        List<String> earlier = new ArrayList<>();
+        for (CheckInEntity c : checkInRepository.findByCreatedByAndDateOrderBySlotTime(userId, today)) {
+            if (c.getId() != null && c.getId().equals(latest.getId())) {
+                continue;
+            }
+            String values = CheckInText.render(c);
+            if (!values.isEmpty()) {
+                earlier.add(c.getSlotTime() + " — " + values);
+            }
+        }
+        return earlier.isEmpty() ? "" : "; ma korábban: " + String.join("; ", earlier);
     }
 
     /**
@@ -665,27 +687,15 @@ public class ContextSnapshotAssembler {
     /**
      * One check-in's rendered values — shared by the today and the MA MÉG NINCS branch above.
      *
-     * <p>The two figures were already /10 (correct), but as LITERALS. They go through
-     * {@link ToolText#rating} because the ceiling having two homes is exactly what let the day
-     * narrative say "energia 8/5" about the same two columns this block rendered as "energia 8/10"
-     * (mezo-b6zt siblings) — one referenced ceiling, no fourth place to drift.
-     *
-     * <p>Reading {@code rating()}'s null also closes a latent hole: {@code check_in.energy} and
-     * {@code .stress} are both nullable, so an unanswered slider used to reach the prompt as the
-     * literal "energia null/10". An absent reading is now omitted, and a slot with neither renders
-     * the honest {@link #NO_DATA} — the {@code BiometricsTools#renderCheckIns} idiom.
+     * <p>Since Check-in 2.0 (mezo-ck2) every answered item renders through the shared
+     * {@link CheckInText} — the same line the daily summary, the {@code get_recovery} tool and the
+     * meal coach print, so no two prompts describe one row differently (the mezo-b6zt lesson). An
+     * unanswered item is omitted, never defaulted; a slot with nothing answered renders the honest
+     * {@link #NO_DATA}.
      */
     private String checkInValues(CheckInEntity checkIn) {
-        List<String> ratings = new ArrayList<>();
-        String energy = ToolText.rating(checkIn.getEnergy());
-        if (energy != null) {
-            ratings.add("energia " + energy);
-        }
-        String stress = ToolText.rating(checkIn.getStress());
-        if (stress != null) {
-            ratings.add("stressz " + stress);
-        }
-        StringBuilder b = new StringBuilder(ratings.isEmpty() ? NO_DATA : String.join(", ", ratings));
+        String values = CheckInText.render(checkIn);
+        StringBuilder b = new StringBuilder(values.isEmpty() ? NO_DATA : values);
         if (checkIn.getNote() != null && !checkIn.getNote().isBlank()) {
             int max = properties.snapshot().checkinNoteMaxChars();
             String note = checkIn.getNote();

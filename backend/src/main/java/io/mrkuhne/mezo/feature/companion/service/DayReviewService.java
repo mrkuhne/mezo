@@ -82,7 +82,9 @@ public class DayReviewService {
     static final String SYSTEM_PROMPT = """
         Egy fitness-app napi értékelő rétege vagy: a felhasználó reggel ezt olvassa el a tegnapjáról.
         Megkapod a nap determinisztikus dimenzió-pontjait, tényeit, a nem pontozott kontextus-jeleket
-        (energia, súlytrend) és az előző napok mintáit.
+        (energia, hangulat, saját napértékelés, súlytrend) és az előző napok mintáit.
+        Ha a "saját napértékelés" jel eltér a pontszámtól, egy mondatban ismerd el a felhasználó
+        ítéletét is — ne vitatkozz vele, és ne változtass miatta a pontokon.
         Válaszolj EGY JSON objektummal:
         {"narrative":[string,...],"dimensionNotes":{"<dim-id>":string},
          "highlights":[{"kind":"key|pattern|win","label":string}],
@@ -219,6 +221,9 @@ public class DayReviewService {
      * invents them. A signal with no measurement is ABSENT, never a fabricated neutral value.
      * <ul>
      *   <li>{@code energia} — the day's {@code CHECKIN_ENERGY} mean ({@link MetricSeriesService});</li>
+     *   <li>{@code hangulat} — the day's {@code CHECKIN_MOOD} mean (check-in 2.0, mezo-ck2);</li>
+     *   <li>{@code saját napértékelés} — the evening check-in's "a nap mérlege" ({@code CHECKIN_DAY}),
+     *       so the review can acknowledge when the user's verdict differs from the score;</li>
      *   <li>{@code súlytrend} — {@link WeightTrendService#computeTrend}'s EWMA weekly rate;</li>
      *   <li>{@code alvás cél alatt} — consecutive days ending at {@code date} whose logged sleep
      *       was under {@link DayEvaluationProperties#sleepTargetH()}. A day with NO sleep log
@@ -232,6 +237,18 @@ public class DayReviewService {
             .series(userId, MetricKey.CHECKIN_ENERGY, date, date).get(date);
         if (energy != null) {
             signals.add(new DayReviewJson.ContextSignal("energia", fmt1(energy) + " / 10"));
+        }
+
+        Double mood = metricSeriesService
+            .series(userId, MetricKey.CHECKIN_MOOD, date, date).get(date);
+        if (mood != null) {
+            signals.add(new DayReviewJson.ContextSignal("hangulat", fmt1(mood) + " / 10"));
+        }
+
+        Double dayRating = metricSeriesService
+            .series(userId, MetricKey.CHECKIN_DAY, date, date).get(date);
+        if (dayRating != null) {
+            signals.add(new DayReviewJson.ContextSignal("saját napértékelés", fmt1(dayRating) + " / 10"));
         }
 
         BigDecimal rate = weeklyRate(userId);

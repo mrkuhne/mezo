@@ -120,7 +120,11 @@ final class MealCoachPrompt {
           .append('\n');
     }
 
-    /** The check-ins up to this meal (1-10 scales) — stress and a flat day both move glucose. */
+    /**
+     * The last check-in up to this meal, every answered item (Check-in 2.0, mezo-ck2): stress and
+     * a flat day move glucose; hunger, craving (+ kind) and digestion shape what the next plate
+     * should be (spec §3.4, §3.4b). An unanswered item is simply absent — never "?" or a default.
+     */
     private static void appendCheckIns(StringBuilder sb, List<MealCoachContextReader.CheckIn> upTo) {
         sb.append("Közérzet eddig a pontig: ");
         if (upTo.isEmpty()) {
@@ -128,14 +132,9 @@ final class MealCoachPrompt {
             return;
         }
         MealCoachContextReader.CheckIn last = upTo.getLast();
-        sb.append(last.slotTime()).append(" · energia ").append(scale(last.energy()))
-          .append(" · stressz ").append(scale(last.stress()))
-          .append(" · test ").append(scale(last.body()))
-          .append(" · fej ").append(scale(last.mental())).append('\n');
-    }
-
-    private static String scale(Integer v) {
-        return v == null ? "?" : v + "/10";
+        sb.append(last.slotTime()).append(" · ")
+          .append(last.line() == null || last.line().isEmpty() ? "nincs megválaszolt tétel" : last.line())
+          .append('\n');
     }
 
     private static String orNa(String v) {

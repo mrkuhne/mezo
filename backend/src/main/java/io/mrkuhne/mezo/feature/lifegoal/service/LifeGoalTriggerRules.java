@@ -7,10 +7,11 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Optional;
 
 /**
- * A ha–akkor triggerek zárt szabálykészlete (mezo-iizd.7, spec §.7). A három forrás — pontosan
+ * A ha–akkor triggerek zárt szabálykészlete (mezo-iizd.7, spec §.7). Az öt forrás — pontosan
  * az, amit a {@code LifeGoalProposeLlmAdapter.TRIGGER_SOURCES} beenged — EGYETLEN alakra képződik
  * le: „egy metrika-jel adott napi értéke kielégít-e egy predikátumot". Ettől az azonnali
  * (esemény-listener) és a késleltetett (éjjeli job) ág UGYANAZT a döntést hozza, és a jel a
@@ -23,9 +24,17 @@ public final class LifeGoalTriggerRules {
     public static final String SPORT_SESSION_LOGGED = "sport_session_logged";
     public static final String CHECKIN_ENERGY_LTE = "checkin_energy_lte";
     public static final String RITUAL_MISSED = "ritual_missed";
+    /** Check-in 2.0 (mezo-ck2, spec §3.9): „ha nincs kedvem…" — CHECKIN_MOTIVATION ≤ küszöb. */
+    public static final String CHECKIN_MOTIVATION_LTE = "checkin_motivation_lte";
+    /** Check-in 2.0 (mezo-ck2, spec §3.9): „ha rossz a hangulatom…" — CHECKIN_MOOD ≤ küszöb. */
+    public static final String CHECKIN_MOOD_LTE = "checkin_mood_lte";
 
-    /** A {@code checkin_energy_lte} küszöbe, ha a terv NEM mond sajátot (1–10 skála alsó harmada). */
-    static final int DEFAULT_ENERGY_THRESHOLD = 4;
+    /** A check-in mentése után azonnal kiértékelt források (a {@code LifeGoalTriggerListener} köre). */
+    public static final List<String> CHECKIN_TRIGGERS =
+        List.of(CHECKIN_ENERGY_LTE, CHECKIN_MOTIVATION_LTE, CHECKIN_MOOD_LTE);
+
+    /** A {@code checkin_*_lte} triggerek küszöbe, ha a terv NEM mond sajátot (1–10 skála alsó harmada). */
+    static final int DEFAULT_CHECKIN_THRESHOLD = 4;
 
     /** A {@code planKey} hossza BÁJTBAN — 6 bájt = 12 hex, egy cél terv-listájához bőven elég. */
     private static final int PLAN_KEY_BYTES = 6;
@@ -43,6 +52,8 @@ public final class LifeGoalTriggerRules {
         return switch (triggerSource) {
             case SPORT_SESSION_LOGGED -> Optional.of(metric("SPORT_LOAD_MIN"));
             case CHECKIN_ENERGY_LTE -> Optional.of(metric("CHECKIN_ENERGY"));
+            case CHECKIN_MOTIVATION_LTE -> Optional.of(metric("CHECKIN_MOTIVATION"));
+            case CHECKIN_MOOD_LTE -> Optional.of(metric("CHECKIN_MOOD"));
             case RITUAL_MISSED -> Optional.of(metric("RITUAL_CLOSED"));
             default -> Optional.empty();
         };
@@ -90,7 +101,7 @@ public final class LifeGoalTriggerRules {
         }
         return switch (triggerSource) {
             case SPORT_SESSION_LOGGED -> dayValue != null && dayValue.signum() > 0;
-            case CHECKIN_ENERGY_LTE -> matchesEnergy(condition, dayValue);
+            case CHECKIN_ENERGY_LTE, CHECKIN_MOTIVATION_LTE, CHECKIN_MOOD_LTE -> matchesAtMost(condition, dayValue);
             case RITUAL_MISSED -> dayValue == null || dayValue.signum() == 0;
             default -> false;
         };
@@ -106,7 +117,7 @@ public final class LifeGoalTriggerRules {
      */
     private static Integer threshold(String condition) {
         if (condition == null) {
-            return DEFAULT_ENERGY_THRESHOLD;
+            return DEFAULT_CHECKIN_THRESHOLD;
         }
         try {
             return Integer.parseInt(condition.trim());
@@ -115,7 +126,8 @@ public final class LifeGoalTriggerRules {
         }
     }
 
-    private static boolean matchesEnergy(String condition, BigDecimal dayValue) {
+    /** Egy check-in tétel napi átlaga legfeljebb a küszöb? A kihagyott tétel ({@code null}) sosem tüzel. */
+    private static boolean matchesAtMost(String condition, BigDecimal dayValue) {
         Integer threshold = threshold(condition);
         return dayValue != null && threshold != null
             && dayValue.compareTo(BigDecimal.valueOf(threshold)) <= 0;

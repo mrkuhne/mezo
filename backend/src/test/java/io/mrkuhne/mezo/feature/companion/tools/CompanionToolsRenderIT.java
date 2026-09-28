@@ -265,11 +265,26 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         // default window: 7 days
 
         assertThat(out).startsWith("Bejelentkezések (utolsó 7 nap):")
-                .contains(LocalDate.now().minusDays(1) + " 08:00: energia 7/10, stressz 3/10, testi 3/10, mentális 3/10")
+                .contains(LocalDate.now().minusDays(1) + " 08:00: energia 7/10, stressz 3/10, testi érzés 3/10, fejtisztaság 3/10")
                 .contains("Délután fejfájás")
                 .doesNotContain(LocalDate.now().minusDays(40).toString());
         assertThat(audit.toRefsEnvelope().refs())
                 .containsExactly(new RefsEnvelope.Ref("CheckIn", LocalDate.now().minusDays(1).toString()));
+    }
+
+    /** Check-in 2.0 (mezo-ck2): the tool prints the same shared line as the snapshot. */
+    @Test
+    void testGetRecovery_shouldRenderCheckIn2Items_whenScopeCheckins() {
+        UUID owner = userPopulator.createUser().getId();
+        checkInPopulator.createCheckIn(owner, LocalDate.now(), "10:00", c -> {
+            c.setMotivation(2);
+            c.setHunger(8);
+            c.setPain(false);
+        });
+
+        String out = biometricsTools.getRecovery("checkins", null, null, null, null, ctx(owner));
+
+        assertThat(out).contains(LocalDate.now() + " 10:00: nem fáj semmi, motiváció 2/10, éhség 8/10");
     }
 
     @Test

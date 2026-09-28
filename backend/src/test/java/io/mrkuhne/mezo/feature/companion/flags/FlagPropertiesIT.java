@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion.flags;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 class FlagPropertiesIT extends AbstractIntegrationTest {
 
     @Autowired private FlagProperties properties;
+    @Autowired private CompanionProperties companionProperties;
 
     @Test
     void binds_every_rule_threshold_from_application_yml() {
@@ -168,5 +170,37 @@ class FlagPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.energyDipMealTiming().minLunchSplitSeparationMinutes()).isEqualTo(45);
         assertThat(properties.cooldownHours().energyDipMealTiming()).isEqualTo(720);
         assertThat(properties.cooldownHours().forFlag(FlagKey.ENERGY_DIP_MEAL_TIMING)).isEqualTo(720);
+    }
+
+    /** Check-in 2.0 (mezo-ck2, spec 2026-09-27 §3.2): the four new rules' thresholds, the two
+     *  changed rules' new arms, and each new key's cooldown agreeing with its library entry. */
+    @Test
+    void testBind_shouldCarryTheCheckIn2Thresholds_whenLoadedFromApplicationYml() {
+        assertThat(properties.persistentPain().windowDays()).isEqualTo(5);
+        assertThat(properties.persistentPain().minDays()).isEqualTo(3);
+        assertThat(properties.poorRestedness().windowDays()).isEqualTo(3);
+        assertThat(properties.poorRestedness().consecutiveMornings()).isEqualTo(2);
+        assertThat(properties.poorRestedness().restedAtMost()).isEqualTo(4);
+        assertThat(properties.poorRestedness().morningSlot()).isEqualTo("06:30");
+        assertThat(properties.cravingStreak().windowDays()).isEqualTo(5);
+        assertThat(properties.cravingStreak().minDays()).isEqualTo(3);
+        assertThat(properties.cravingStreak().cravingAtLeast()).isEqualTo(7);
+        assertThat(properties.motivationSlump().windowDays()).isEqualTo(4);
+        assertThat(properties.motivationSlump().minDays()).isEqualTo(3);
+        assertThat(properties.motivationSlump().motivationAtMost()).isEqualTo(3.0);
+        assertThat(properties.acuteBadDay().moodAtMost()).isEqualTo(3);
+        assertThat(properties.acuteBadDay().painIntensityAtLeast()).isEqualTo(7);
+        assertThat(properties.recovery().restedAtMost()).isEqualTo(4);
+        assertThat(properties.recovery().sorenessAtLeast()).isEqualTo(7);
+
+        for (String key : java.util.List.of(FlagKey.PERSISTENT_PAIN, FlagKey.POOR_RESTEDNESS,
+                FlagKey.CRAVING_STREAK, FlagKey.MOTIVATION_SLUMP)) {
+            int keyCooldown = properties.cooldownHours().forFlag(key);
+            assertThat(companionProperties.interventions())
+                .as(key)
+                .filteredOn(i -> i.flag().equals(key))
+                .isNotEmpty()
+                .allSatisfy(i -> assertThat(i.cooldownHours()).isEqualTo(keyCooldown));
+        }
     }
 }

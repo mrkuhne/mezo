@@ -372,7 +372,7 @@ describe('needsAt', () => {
     expect(NEEDS_TUNING.bands).toEqual({ green: 60, red: 30, critical: 15 })
     expect(NEEDS_TUNING.refill).toEqual({
       mainMeal: 40, snack: 15, waterGlassMl: 250, waterGlass: 12, activity: 25,
-      checkin: 20, intention: 15, reflection: 25, habitTick: 12,
+      checkin: 20, connectionPerPoint: 10, intention: 15, reflection: 25, habitTick: 12,
     })
   })
 })

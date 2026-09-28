@@ -138,7 +138,7 @@ export function discoverySummary(digest: WeeklyReviewDigest | null): DiscoverySu
   return { count: dots.length, parts, dots }
 }
 
-// ── the eight mini-cells ───────────────────────────────────────────────────
+// ── the nine mini-cells ───────────────────────────────────────────────────
 
 export type WeekCellTone = 'lav' | 'sage' | 'sky' | 'coral' | 'amber' | 'rose'
 export interface WeekStatCell { label: string; value: string; unit: string | null; tone: WeekCellTone }
@@ -149,9 +149,10 @@ function sleepHm(min: number | null | undefined): string {
 }
 
 /**
- * The eight cells, in the prototype's order and tone palette. `avgCheckinEnergy`
- * (Energia) and `latestWeightKg` (Súly) are the two the backend has always returned
- * and the old UI threw away. Missing data is `—` and NEVER a zero.
+ * The nine cells (three rows of three), in the prototype's order and tone palette.
+ * `avgCheckinEnergy` (Energia) and `latestWeightKg` (Súly) are the two the backend has always
+ * returned and the old UI threw away; Hangulat (`avgCheckinMood`, Check-in 2.0, mezo-ck2) sits
+ * right next to Energia. Missing data is `—` and NEVER a zero.
  */
 export function weekStatCells(weekly: MeWeekAggregates): WeekStatCell[] {
   return [
@@ -164,6 +165,8 @@ export function weekStatCells(weekly: MeWeekAggregates): WeekStatCell[] {
       unit: weekly.checkinRatio != null ? '%' : null, tone: 'coral' },
     { label: 'Energia', value: weekly.avgCheckinEnergy != null ? huDec(weekly.avgCheckinEnergy) : '—',
       unit: weekly.avgCheckinEnergy != null ? '/ 10' : null, tone: 'amber' },
+    { label: 'Hangulat', value: weekly.avgCheckinMood != null ? huDec(weekly.avgCheckinMood) : '—',
+      unit: weekly.avgCheckinMood != null ? '/ 10' : null, tone: 'lav' },
     { label: 'Súly', value: weekly.latestWeightKg != null ? huDec(weekly.latestWeightKg) : '—',
       unit: weekly.latestWeightKg != null ? 'kg' : null, tone: 'sky' },
     { label: 'Súly-trend', value: weekly.weightWeeklyRateKg != null ? huDec(weekly.weightWeeklyRateKg, 2) : '—',

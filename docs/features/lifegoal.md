@@ -2,7 +2,7 @@
 title: Life goals
 type: feature-domain
 status: in-progress
-updated: 2026-09-18
+updated: 2026-09-28
 tags: [me, growth, companion, backend, data-layer, frontend]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal
@@ -14,6 +14,8 @@ key_files:
   - frontend/src/features/me/pages/CelPage.tsx
 related: [goal-engine, growth, companion, me, today, train, ../research/entities/exist-io.md, ../research/concepts/goal-type-taxonomies.md, ../research/concepts/perma-and-wellbeing-taxonomies.md, ../research/concepts/goal-conflict.md, ../research/concepts/goal-pursuit-evidence.md]
 ---
+
+> **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** The signal catalog grew from 28 to **32** entries: `checkin_mental` is relabelled „Check-in fejtisztaság" (it measures clarity, not mood), and `checkin_mood` („Check-in hangulat", Elme), `checkin_motivation` („Motiváció", Elme), `checkin_rested` („Kipihentség", new group **Test**, 3D `t-muscle` on Jelek) and `checkin_connection` („Kapcsolódás", Emberek) are new. Two new ha–akkor trigger sources fire right after a check-in save: `checkin_motivation_lte` („ha alacsony a kedvem") and `checkin_mood_lte` („ha rossz a hangulatom"), default threshold 4. `LifeGoalTemplateProposer`'s „Hangulat" pillar (positive-emotion and default templates) now points at `checkin_mood`. Spec [`2026-09-27-checkin-2-design.md`](../superpowers/specs/2026-09-27-checkin-2-design.md) §3.9.
 
 > **2026-09-24 — Üveg U6 (`mezo-me75u.6`).** Célok, Cél, the new-goal wizard, Jelek and the pillar catalog sheet wear the dark glass material: the PERMAH ring is a frameless halo, goal tiles and pillar cards are glass in their dimension colour (`DIMENSION_ACCENT` in `logic/lifegoalLabels.ts`), the done tick and the wizard's frame glyphs are 3D icons with accessible names. Behavior unchanged. Parity reference [`uveg-en.html`](../design_2.0/prototypes/uveg-en.html).
 
@@ -57,7 +59,7 @@ ADR: [`0034-measurable-life-goals.md`](../decisions/0034-measurable-life-goals.m
 **Status per layer, slice 2:**
 - **Backend:** ✅ real — three tables (`life_goal`, `life_goal_pillar`, `life_goal_pillar_day`),
   full CRUD + status lifecycle (draft → active/parked/done/archived, **no cap on active goals**,
-  D7), the closed 28-entry signal catalog + pillar validation, AI propose (companion port + LLM
+  D7), the closed signal catalog (28 entries then, 32 since Check-in 2.0) + pillar validation, AI propose (companion port + LLM
   adapter + deterministic template fallback), a `demofixtures` seed of three goals + one parked —
   **plus, this slice:** the pure `LifeGoalScorer` engine (daily hit/partial/miss/no_data per pillar
   kind, weighted daily goal-point, 7-vs-21-day arrow), 5 `SignalSource` adapters, and
@@ -66,7 +68,7 @@ ADR: [`0034-measurable-life-goals.md`](../decisions/0034-measurable-life-goals.m
   (nightly cron, dual `@ConditionalOnProperty`, calling `evaluateDays` for every user's `active`
   goals with per-user + per-goal error isolation) and `LifeGoalXpService` (the D-1-keyed, hit-only
   XP seam on the pillar's own skill, `source_type=LIFE_GOAL`, see below) — see §3/§5/§9. **Plus,
-  `mezo-iizd.7`:** `LifeGoalTriggerRules` (the closed 3-source → metric-predicate mapping),
+  `mezo-iizd.7`:** `LifeGoalTriggerRules` (the closed 3-source → metric-predicate mapping; 5 sources since Check-in 2.0),
   `LifeGoalTriggerService` (immediate + delayed evaluation over the same predicate),
   `LifeGoalTriggerListener` (`CheckInSavedEvent` + the new `SportSessionLoggedEvent`),
   `LifeGoalEvalJob` also firing the delayed branch, `AppNotificationKind.LIFE_GOAL_PLAN`, and
@@ -247,7 +249,7 @@ window by one day. **`LifeGoalEntity.STATUS_ACTIVE`** is now the one shared `"ac
 
 **Ha–akkor trigger evaluation, two entry points over one predicate** (`mezo-iizd.7`,
 `feature/lifegoal/service/{LifeGoalTriggerRules,LifeGoalTriggerService,LifeGoalTriggerListener}`,
-spec §.7/D-3): a plan's `trigger.source` is one of exactly three closed values — the same three
+spec §.7/D-3; widened to five by Check-in 2.0, `mezo-ck2`): a plan's `trigger.source` is one of exactly five closed values — the same five
 `LifeGoalProposeLlmAdapter.TRIGGER_SOURCES` whitelists (§3 above) — and `LifeGoalTriggerRules`
 (a pure, dependency-free class, fully covered by `LifeGoalTriggerRulesTest`) maps each to a
 `PillarSourceJson` metric signal plus a day-value predicate:
@@ -256,6 +258,8 @@ spec §.7/D-3): a plan's `trigger.source` is one of exactly three closed values 
 |---|---|---|
 | `sport_session_logged` | `metric:SPORT_LOAD_MIN` | a napi érték > 0 |
 | `checkin_energy_lte` | `metric:CHECKIN_ENERGY` | a napi érték ≤ küszöb. A küszöb a `condition` szám-szövege; HIÁNYZÓ `condition` esetén 4 az alapérték, NEM-SZÁM `condition` esetén viszont **nem tüzelünk** — a 4-es fallback lazíthatna a szándékon (egy `"<=2"` kétszer lazábbra esne vissza) |
+| `checkin_motivation_lte` (Check-in 2.0) | `metric:CHECKIN_MOTIVATION` | a napi átlag ≤ küszöb — ugyanaz a szabály (`matchesAtMost`), mint az energiánál: hiányzó `condition` → 4, nem-szám → nem tüzel; kihagyott tétel (`null`) sosem tüzel |
+| `checkin_mood_lte` (Check-in 2.0) | `metric:CHECKIN_MOOD` | ugyanaz, a hangulat napi átlagára |
 | `ritual_missed` | `metric:RITUAL_CLOSED` | a napi érték hiányzik VAGY 0 — az EGYETLEN hiány-alapú szabály. **Adopciós kapu:** csak akkor szólalhat meg, ha a kiértékelt napot megelőző 14 napban volt legalább EGY lezárt rituálé-nap; aki nem (vagy már nem) használja a rituálét, azt nem nyaggatjuk |
 
 The signal value itself comes from the same `SignalSource` dispatch `LifeGoalProgressService`
@@ -272,7 +276,7 @@ uses): **`fireImmediate(userId, source, day)`** evaluates every active goal's pl
 `trigger.source` matches the fired source, for plans with `delayHours` null/0 — called from
 `LifeGoalTriggerListener`, an `@Async` + `@TransactionalEventListener(AFTER_COMMIT)` component
 (the `FlagEvaluationListener` pattern) on the pre-existing `CheckInSavedEvent`
-(`checkin_energy_lte`) and the NEW `SportSessionLoggedEvent` (`sport_session_logged`), published
+(every source in `LifeGoalTriggerRules.CHECKIN_TRIGGERS` — `checkin_energy_lte`, and since Check-in 2.0 `checkin_motivation_lte` + `checkin_mood_lte`) and the NEW `SportSessionLoggedEvent` (`sport_session_logged`), published
 by `SportService.logSportSession` in `feature/train` — AFTER_COMMIT so only a persisted row
 triggers evaluation, `@Async` so a notification can never slow or fail the check-in/sport-session
 response. **`fireDelayed(userId, goal, today)`** evaluates plans with `delayHours > 0` PLUS EVERY
@@ -427,7 +431,8 @@ and then 400 on save, dead-ending the wizard. `LifeGoalProposeLlmAdapter` theref
 240, obstacle 300); `LifeGoalProposeService.toResponse` re-checks each proposed `kind` against
 its catalog entry's allowed `kinds()` — the same check `LifeGoalPillarService.validate` applies
 on save — and drops a pillar that would fail it. A plan's `triggerSource` is whitelisted to
-`sport_session_logged` / `checkin_energy_lte` / `ritual_missed`; anything else **nulls the
+`sport_session_logged` / `checkin_energy_lte` / `checkin_motivation_lte` / `checkin_mood_lte`
+(the last two since Check-in 2.0) / `ritual_missed`; anything else **nulls the
 trigger but keeps the plan**, so the UI falls through to its honest "nincs hozzá jel" label
 instead of promising „Mezo figyeli (<source>)" for a trigger nothing will ever evaluate.
 
@@ -488,7 +493,7 @@ the code already threw it, the contract just hadn't caught up (`mezo-iizd.8`):
 | DELETE | `/api/life-goals/{id}` | 204 | soft-delete goal + pillars + their day rows |
 | POST | `/api/life-goals/{id}/status` | `LifeGoalResponse` | lifecycle transition; 409 on illegal one; a **same-status request is an idempotent 200 no-op**, not a 409 (`mezo-iizd.3`) |
 | PUT | `/api/life-goals/{id}/pillars` | `LifeGoalResponse` | replaces the whole list, `maxItems: 5`; an echoed `id` keeps that pillar |
-| GET | `/api/life-goals/signals` | `SignalCatalogResponse` | the 28-entry closed catalog + per-entry `live`/`daysWithData`/`fedPillars` liveness (`mezo-iizd.7`, see below) |
+| GET | `/api/life-goals/signals` | `SignalCatalogResponse` | the 32-entry closed catalog + per-entry `live`/`daysWithData`/`fedPillars` liveness (`mezo-iizd.7`, see below) |
 | POST | `/api/life-goals/propose` | `LifeGoalProposeResponse` | AI-or-template draft, never empty |
 | GET | `/api/life-goals/{id}/progress` | `LifeGoalProgressResponse` | `from`/`to` query params, `from ≤ to` (400 otherwise); read-only, never writes |
 | POST | `/api/life-goals/{id}/evaluate` | `LifeGoalProgressResponse` | idempotent upsert of the last 3 closed days, then returns a 28-day `progress` |
@@ -537,12 +542,15 @@ comparable. The frontend upholds its half of this in `CelPage.addPillar`, which 
 `position` (server-derived) and sends every existing pillar back with its id; the mock hook and
 the MSW handler mirror the same rule (`lifegoalHooks.replacePillars`, `handlers.lifeGoalEcho`).
 
-**Signal catalog** (`SignalCatalog`, 28 entries, seven Hungarian groups): Alvás (3: sleep
+**Signal catalog** (`SignalCatalog`, 32 entries, eight Hungarian groups): Alvás (3: sleep
 duration/quality, bedtime variability), Fuel (5: protein, kcal, water, late-meal hour, meal
 score), Edzés (5: gym volume, sport load, ACWR, HR recovery, the `weight_goal` linked entry),
-Elme (6: check-in energy/mental/stress, habits-done, ritual-closed, daily-XP), Activity
+Elme (8: check-in energy / fejtisztaság (`checkin_mental`) / stress, and since Check-in 2.0 check-in
+hangulat (`checkin_mood`) + motiváció; habits-done, ritual-closed, daily-XP), Test (1, Check-in 2.0:
+kipihentség), Activity
 (5: productivity/learning/financial/connection/cooking, each keyed by an `activity_log.skill_key`
-+ `measure`), Emberek (1: social mentions), Életjel (3: mozgás/pihenés/lélek needs rings).
++ `measure`), Emberek (2: social mentions, and since Check-in 2.0 check-in kapcsolódás), Életjel
+(3: mozgás/pihenés/lélek needs rings).
 `GET /api/life-goals/signals` exposes it verbatim, plus per-entry liveness
 (`LifeGoalSignalService.catalog`, `mezo-iizd.7`): `daysWithData` — how many of the trailing 7
 days (today inclusive) the same `SignalSource` dispatch `LifeGoalProgressService` uses returned a
@@ -708,7 +716,7 @@ import {
 const { goals, isPending, isError, refetch } = useLifeGoals()          // LifeGoalResponse[]
 const { goal, isPending, isError, refetch, goalCount } = useLifeGoal(id) // one goal or null, derived from the list
 const { create, update, changeStatus, replacePillars, remove, pending } = useLifeGoalMutations()
-const { entries } = useSignalCatalog()                       // the 28-entry catalog
+const { entries } = useSignalCatalog()                       // the 32-entry catalog
 const { propose, pending: proposing } = useLifeGoalPropose() // AI/template draft
 const { progress, isPending, isError } = useLifeGoalProgress(id) // fixed 28-day window (today-27..today)
 const { today, isPending, isError } = useLifeGoalToday()          // per-active-goal arrow/dots/tally

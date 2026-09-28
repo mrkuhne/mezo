@@ -51,6 +51,13 @@
 // QuestCompletionCalibration,ExperimentOutcomeLedger}Detector.java`'s own
 // `DetectorSignal(key(), who, ...)` calls. The catalog is now 40 detectors.
 //
+// Check-in 2.0 (mezo-ck2, plan Task 6): seven new detectors — pain-map (`doki`), sleep-need
+// (`szomnologus`), craving-trigger, food-digestion (both `taplalkozo`), mood-text-calibration
+// (`pszichologus`), motivation-follow-through (`drill`), soreness-recovery (`edzo`) — appended in
+// that order, `who` verified against their `DetectorSignal(key(), who, ...)` calls; the lines of
+// comfort-eating, self-calibration and people-mood-link now name their new check-in arms. The
+// catalog is now 47 detectors.
+//
 // Üveg re-dress (U9, mezo-me75u.9) — uveg-mezo-teljes-u9.js `detektorok()`: slate dev-door head,
 // ONE flat `tf-tlist` (sentence, monospace key chip, the owner as the csapatfal character's name
 // in its accent — `who` itself stays the real persona key), principle footer.
@@ -68,7 +75,7 @@ interface DetectorEntry {
   line: string
 }
 
-/** The 40 real detectors — key/who verified against the detector source (see header comment),
+/** The 47 real detectors — key/who verified against the detector source (see header comment),
  *  one-line semantics paraphrasing what each `detect()` actually checks. */
 export const DETECTORS: DetectorEntry[] = [
   { key: 'logging-gap', who: 'drill', line: 'N napja nincs étkezés logolva (2+ egymást követő nap, 14 napos honest cap) — hiányzó kaja-napló jelzés.' },
@@ -84,14 +91,14 @@ export const DETECTORS: DetectorEntry[] = [
   { key: 'hr-recovery-trend', who: 'doki', line: '8 hetes pulzus-megnyugvás trend — csak sávváltáskor szólal meg.' },
   { key: 'sleep-performance-chain', who: 'szomnologus', line: 'Rossz alvás utáni napokon visszaesik-e az edzés-teljesítmény.' },
   { key: 'avoidance-pattern', who: 'drill', line: 'Ugyanannál a gyakorlatnál ismétlődő szett-kihagyások.' },
-  { key: 'comfort-eating', who: 'taplalkozo', line: 'Rossz közérzetű napokon megugrik-e a bevitel — a feldolgozott étel aránya vagy a napi kalória, saját 8 hetes átlaghoz mérve.' },
+  { key: 'comfort-eating', who: 'taplalkozo', line: 'Rossz hangulatú vagy feszült napokon megugrik-e a bevitel — a feldolgozott étel aránya vagy a napi kalória, saját 8 hetes átlaghoz mérve —, és az erős sóvárgású napokon több-e az ultrafeldolgozott étel.' },
   { key: 'macro-adherence', who: 'taplalkozo', line: 'A kalória- vagy fehérje-cél szisztematikus alul-/túllövése a valós napi célhoz képest.' },
   { key: 'hydration-consistency', who: 'taplalkozo', line: 'A napi vízcél 90%-át elérő napok aránya — csak sávváltáskor szólal meg.' },
   { key: 'protein-training-mismatch', who: 'taplalkozo', line: 'A fehérje pont az edzésnapokon marad-e el, az edzés nélküli napokhoz képest.' },
   { key: 'late-eating-pattern', who: 'szomnologus', line: 'Késő esti nagyobb étkezés után rosszabb-e az azt követő éjszaka.' },
   { key: 'stack-skip-pattern', who: 'drill', line: 'Ismétlődő kiegészítő-kihagyások — a pihenőnapi elhagyás és a felvétel előtti napok nem számítanak kihagyásnak.' },
   { key: 'med-cycle-covariance', who: 'doki', line: 'A check-in skálák ciklusnap szerinti eltérése a ciklus átlagától — érzékeny, leíró jel.' },
-  { key: 'self-calibration', who: 'pszichologus', line: 'Együtt mozog-e az önértékelés a mérhető párjával: energia × előző éjszakai alvás, testi × ízületi terheltség. A mentális és a stressz skála kimarad — nincs objektív párjuk.' },
+  { key: 'self-calibration', who: 'pszichologus', line: 'Együtt mozog-e az önértékelés a mérhető párjával: energia × előző éjszakai alvás, testi × ízületi terheltség, reggeli kipihentség × az éjszaka alvásminősége. A mentális és a stressz skála kimarad — nincs objektív párjuk.' },
   { key: 'promise-vs-delivery', who: 'drill', line: 'A reggel kitűzött fókuszok és az esti napzárás viszonya — külön a lezárás aránya és a lezárt napok teljesülése.' },
   { key: 'decision-profile', who: 'pszichologus', line: 'A visszanézett döntések 1–5 kimenet-értékelése hat hét alatt; a döntés szövege példaként megy át, elemzés nélkül.' },
   { key: 'decision-review-backlog', who: 'drill', line: 'Hány döntés lépte túl a saját visszanézési határidejét anélkül, hogy átnézték volna.' },
@@ -103,7 +110,7 @@ export const DETECTORS: DetectorEntry[] = [
   { key: 'checkin-latency', who: 'drill', line: 'Mennyivel a saját idősávja után készül el a check-in (a soron tárolt idősáv és az első írás között).' },
   { key: 'checkin-slot-drift', who: 'drill', line: 'Melyik korábban rendszeres check-in idősáv kopott ki az elmúlt két hétben.' },
   { key: 'needs-domain-imbalance', who: 'pszichologus', line: 'Melyik Életjel-terület marad tartósan a többi mögött — a kontraszt a jel, nem az alacsony szint önmagában.' },
-  { key: 'people-mood-link', who: 'antropologus', line: 'A mentális check-in máshol áll-e azokon a napokon, amikor embert említesz — együttjárás, nem irány, és sosem nevez embert.' },
+  { key: 'people-mood-link', who: 'antropologus', line: 'A hangulatod (régebbi napokon a fejtisztaság) és az esti kapcsolódás-érzésed máshol áll-e azokon a napokon, amikor embert említesz — együttjárás, nem irány, és sosem nevez embert.' },
   { key: 'mention-context-shift', who: 'antropologus', line: 'Milyen kontextusban kerülnek elő az emberek (a rendszer éjszakai címkéi), és nő-e a konfliktus-részarány.' },
   { key: 'weekend-gap', who: 'antropologus', line: 'Hétvégi alvásközép-eltolás (Roenneberg social jetlag, 1 h / 2 h sávok) és hétvégi logolás-rés. Hétvége = szombat–vasárnap.' },
   { key: 'chat-topic-shift', who: 'pszichologus', line: 'Melyik domén körül forognak a beszélgetéseid a társsal — a lekért eszközökből, a szöveg olvasása nélkül.' },
@@ -111,6 +118,13 @@ export const DETECTORS: DetectorEntry[] = [
   { key: 'prediction-calibration', who: 'szkeptikus', line: 'A zárult predikciók találati aránya a kimondott magabiztossághoz képest: túlbiztos, alulbiztos vagy kalibrált volt a társ.' },
   { key: 'quest-completion-calibration', who: 'szkeptikus', line: 'Slotonkénti quest-teljesítés a motor saját sávjaihoz (85% / 50%) képest — a nehézség-kalibráció, a szöveg soha.' },
   { key: 'experiment-outcome-ledger', who: 'szkeptikus', line: 'Hány javasolt kísérlet és kihívás zárult jó kimenettel, és hány nem indult el (elvetve indulás előtt).' },
+  { key: 'pain-map', who: 'doki', line: 'Melyik testrész fáj visszatérően a saját check-in jelzéseid szerint (2 hét alatt legalább 3 nap), és edzéshez vagy hétköznaphoz kötődik-e.' },
+  { key: 'sleep-need', who: 'szomnologus', line: 'Hány óra alvás után nem leszel már kipihentebb — a reggeli kipihentség és az előző éjszaka hossza alapján. Ha eltér az alváscélodtól, javasolja az igazítást, de magától sosem írja át.' },
+  { key: 'craving-trigger', who: 'taplalkozo', line: 'Mi előzi meg az erős sóvárgású napokat: rövid alvás, előző napi magas stressz vagy kevés fehérje — legalább 5-5 napos összevetésből.' },
+  { key: 'food-digestion', who: 'taplalkozo', line: 'Melyik étel vagy ételtípus kerül elő újra és újra 1–5 órával a nehéz, puffadt gyomrot jelző válaszaid előtt.' },
+  { key: 'mood-text-calibration', who: 'pszichologus', line: 'Úgy írsz-e, ahogy értékelsz: a check-in hangulat és a napló / beszélgetés hangulata (1–5-ről 1–10-re átszámolva) mennyire egyezik.' },
+  { key: 'motivation-follow-through', who: 'drill', line: 'Előre jelzi-e a reggeli motiváció, mennyi teljesül a napi tervezett edzésből és szokásokból — vagy a kedvtől függetlenül hozod.' },
+  { key: 'soreness-recovery', who: 'edzo', line: 'Edzéstípusonként hány nap alatt áll vissza az izomlázad a saját alapszintedre.' },
 ]
 
 const PRINCIPLE = 'A kód csak észlel — az értelmezés mindig az adott szakértő LLM-hívása. '

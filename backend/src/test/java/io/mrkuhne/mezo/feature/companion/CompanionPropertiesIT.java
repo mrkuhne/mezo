@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.config.LlmProvider;
+import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import jakarta.validation.Validator;
@@ -109,7 +110,7 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.patterns().minGroupN()).isEqualTo(3);
         assertThat(properties.patterns().reinforceCooldownDays()).isEqualTo(7);
         assertThat(properties.patterns().loadGymKgPerMin()).isEqualTo(100); // V3.4 derivált terhelés-skála
-        assertThat(properties.patterns().pairs()).hasSize(29); // V3.4 katalógus (8 v1 + 21 új)
+        assertThat(properties.patterns().pairs()).hasSize(44); // V3.4 katalógus (8 v1 + 21 új) + 15 check-in 2.0 (mezo-ck2)
         assertThat(properties.patterns().pairs())
                 .allSatisfy(p -> assertThat(p.mechanism()).isNotBlank()); // mezo-18bx: miért figyeljük
         assertThat(properties.patterns().pairs().getFirst().key())
@@ -117,6 +118,42 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.patterns().pairs().getFirst().metricA())
                 .isEqualTo(io.mrkuhne.mezo.feature.companion.service.MetricKey.SLEEP_QUALITY);
         assertThat(properties.patterns().pairs().getFirst().lagDays()).isEqualTo(1);
+    }
+
+    /**
+     * Check-in 2.0 (mezo-ck2): every pair's two metrics resolve to a correlatable {@code MetricKey}
+     * (a misspelt wire key would bind to null or fail the context), keys stay unique, and the new
+     * check-in pairs are wired to the series they name.
+     */
+    @Test
+    void testPatternsConfig_shouldResolveEveryPairMetric_whenCatalogLoads() {
+        var pairs = properties.patterns().pairs();
+        assertThat(pairs).allSatisfy(p -> {
+            assertThat(p.metricA()).as(p.key()).isNotNull();
+            assertThat(p.metricB()).as(p.key()).isNotNull();
+            assertThat(p.metricA().correlatable()).as(p.key()).isTrue();
+            assertThat(p.metricB().correlatable()).as(p.key()).isTrue();
+        });
+        assertThat(pairs).extracting(CompanionProperties.PatternPair::key).doesNotHaveDuplicates();
+
+        java.util.Map<String, CompanionProperties.PatternPair> byKey = pairs.stream()
+                .collect(java.util.stream.Collectors.toMap(CompanionProperties.PatternPair::key, p -> p));
+        assertThat(byKey.get("sleep-duration~checkin-rested").metricB())
+                .isEqualTo(MetricKey.CHECKIN_RESTED);
+        assertThat(byKey.get("sleep-duration~next-day-checkin-craving").lagDays()).isEqualTo(1);
+        assertThat(byKey.get("gym-workload~next-day-checkin-soreness").metricB())
+                .isEqualTo(MetricKey.CHECKIN_SORENESS);
+        assertThat(byKey.get("gym-workload~next-day-checkin-soreness").lagDays()).isEqualTo(1);
+        assertThat(byKey.get("checkin-mood~checkin-day").metricA()).isEqualTo(MetricKey.CHECKIN_MOOD);
+        assertThat(byKey.get("checkin-mood~checkin-day").metricB()).isEqualTo(MetricKey.CHECKIN_DAY);
+        assertThat(byKey.get("social-mentions~checkin-connection").metricB())
+                .isEqualTo(MetricKey.CHECKIN_CONNECTION);
+        assertThat(byKey.get("meal-score~checkin-digestion").metricB())
+                .isEqualTo(MetricKey.CHECKIN_DIGESTION);
+        assertThat(byKey).containsKeys("sleep-quality~checkin-rested", "checkin-stress~checkin-craving",
+                "daily-protein~checkin-hunger", "meal-score~checkin-craving",
+                "training-monotony~checkin-motivation", "sleep-quality~checkin-motivation",
+                "social-mentions~checkin-mood", "habits-done~checkin-mood", "daily-xp~checkin-mood");
     }
 
     @Test
